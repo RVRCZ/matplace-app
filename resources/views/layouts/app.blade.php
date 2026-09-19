@@ -24,7 +24,11 @@
                     <a href="{{ route('register', ['role' => 'printer']) }}" class="hidden sm:inline hover:text-slate-900">{{ __('nav.for_printers') }}</a>
                     <a href="{{ route('login') }}" class="font-medium hover:text-slate-900">{{ __('nav.login') }}</a>
                 @endauth
-                <a href="{{ request()->fullUrlWithQuery(['lang' => app()->getLocale() === 'cs' ? 'en' : 'cs']) }}" class="hover:text-slate-900">{{ __('lang.switch') }}</a>
+                <span class="flex items-center gap-1 text-xs">
+                    @foreach(\App\Http\Middleware\SetLocale::SUPPORTED as $l)
+                        <a href="{{ request()->fullUrlWithQuery(['lang' => $l]) }}" class="rounded px-1.5 py-0.5 uppercase {{ app()->getLocale() === $l ? 'bg-slate-800 text-white' : 'hover:text-slate-900' }}">{{ $l }}</a>
+                    @endforeach
+                </span>
             </nav>
         </div>
     </header>

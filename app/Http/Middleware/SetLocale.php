@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 /** Locale from ?lang=, then cookie, then Accept-Language; default cs. Supported: cs, en. */
 class SetLocale
 {
-    public const SUPPORTED = ['cs', 'en'];
+    public const SUPPORTED = ['cs', 'en', 'es'];
 
     public function handle(Request $request, Closure $next): Response
     {

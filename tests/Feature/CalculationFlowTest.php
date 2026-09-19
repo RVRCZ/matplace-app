@@ -61,7 +61,7 @@ class CalculationFlowTest extends TestCase
 
         // share page and public API work without any cookie
         $this->flushSession();
-        $this->get('/k/'.$token)->assertOk()->assertSee('cube.stl');
+        $this->get('/c/'.$token)->assertOk()->assertSee('cube.stl');
         $this->getJson('/api/calculations/'.$token)->assertOk()->assertJsonPath('calculation.status', 'done');
         $this->get('/api/files/'.$uuid.'/model.stl')->assertOk()->assertHeader('Content-Type', 'model/stl');
     }

@@ -15,7 +15,7 @@
         </div>
         <p class="text-xs text-slate-500">{{ __('account.location_hint') }}</p>
         <label class="block text-sm font-semibold">{{ __('account.locale') }}
-            <select name="locale" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"><option value="cs" @selected($user->locale === 'cs')>Čeština</option><option value="en" @selected($user->locale === 'en')>English</option></select>
+            <select name="locale" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"><option value="cs" @selected($user->locale === 'cs')>Čeština</option><option value="en" @selected($user->locale === 'en')>English</option><option value="es" @selected($user->locale === 'es')>Español</option></select>
         </label>
         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="notify_email" value="1" @checked($user->notify_email)> {{ __('account.notify_email') }}</label>
         <details class="text-sm"><summary class="cursor-pointer text-teal-700">{{ __('account.change_password') }}</summary>

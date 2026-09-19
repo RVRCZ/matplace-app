@@ -14,13 +14,13 @@ use Illuminate\Support\Facades\Route;
 
 // ── Public: the one screen ───────────────────────────────────────────────────
 Route::get('/', [CalculatorController::class, 'index'])->name('home');
-Route::get('/k/{calculation}', [CalculatorController::class, 'share'])->name('calc.share');
+Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share');
 
 // Public quote (online version of the PDF) — no account needed
-Route::get('/n/{quote}', [QuoteController::class, 'publicShow'])->name('quote.public');
-Route::get('/n/{quote}/pdf', [QuoteController::class, 'publicPdf'])->name('quote.public.pdf');
-Route::post('/n/{quote}/prijmout', [QuoteController::class, 'accept'])->name('quote.accept');
-Route::post('/n/{quote}/odmitnout', [QuoteController::class, 'decline'])->name('quote.decline');
+Route::get('/q/{quote}', [QuoteController::class, 'publicShow'])->name('quote.public');
+Route::get('/q/{quote}/pdf', [QuoteController::class, 'publicPdf'])->name('quote.public.pdf');
+Route::post('/q/{quote}/accept', [QuoteController::class, 'accept'])->name('quote.accept');
+Route::post('/q/{quote}/decline', [QuoteController::class, 'decline'])->name('quote.decline');
 
 // ── JSON API used by the calculator ──────────────────────────────────────────
 Route::prefix('api')->name('api.')->group(function () {
@@ -34,41 +34,41 @@ Route::prefix('api')->name('api.')->group(function () {
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
-    Route::get('/prihlaseni', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/prihlaseni', [AuthController::class, 'login'])->middleware('throttle:6,1');
-    Route::get('/registrace', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/registrace', [AuthController::class, 'register'])->middleware('throttle:6,1');
-    Route::get('/zapomenute-heslo', [AuthController::class, 'showForgot'])->name('password.request');
-    Route::post('/zapomenute-heslo', [AuthController::class, 'sendReset'])->middleware('throttle:6,1')->name('password.email');
-    Route::get('/heslo/{token}', [AuthController::class, 'showReset'])->name('password.reset');
-    Route::post('/heslo', [AuthController::class, 'reset'])->middleware('throttle:6,1')->name('password.update');
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:6,1');
+    Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendReset'])->middleware('throttle:6,1')->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'reset'])->middleware('throttle:6,1')->name('password.update');
     Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])->name('oauth.redirect');
     Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
 });
-Route::post('/odhlaseni', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
 // ── Account (any role) ───────────────────────────────────────────────────────
-Route::middleware('auth')->prefix('ucet')->name('account')->group(function () {
+Route::middleware('auth')->prefix('account')->name('account')->group(function () {
     Route::get('/', [AccountController::class, 'index']);
-    Route::get('/profil', [AccountController::class, 'profile'])->name('.profile');
-    Route::post('/profil', [AccountController::class, 'updateProfile'])->name('.profile.update');
-    Route::post('/role/{role}/zapnout', [AccountController::class, 'enableRole'])->name('.roles.enable');
-    Route::post('/role/{role}/vypnout', [AccountController::class, 'disableRole'])->name('.roles.disable');
+    Route::get('/profile', [AccountController::class, 'profile'])->name('.profile');
+    Route::post('/profile', [AccountController::class, 'updateProfile'])->name('.profile.update');
+    Route::post('/roles/{role}/enable', [AccountController::class, 'enableRole'])->name('.roles.enable');
+    Route::post('/roles/{role}/disable', [AccountController::class, 'disableRole'])->name('.roles.disable');
 });
 
 // ── Printer tools (role switch "I own a printer") ────────────────────────────
-Route::middleware(['auth', 'role:printer'])->prefix('tiskar')->name('printer.')->group(function () {
+Route::middleware(['auth', 'role:printer'])->prefix('printer')->name('printer.')->group(function () {
     Route::get('/', [PrinterController::class, 'dashboard'])->name('dashboard');
-    Route::get('/profil', [PrinterController::class, 'profile'])->name('profile');
-    Route::post('/profil', [PrinterController::class, 'updateProfile'])->name('profile.update');
-    Route::get('/kalkulacka', [PrinterController::class, 'calculator'])->name('calculator');
-    Route::get('/kalkulacka/{calculation}', [PrinterController::class, 'calculator'])->name('calculator.open');
+    Route::get('/profile', [PrinterController::class, 'profile'])->name('profile');
+    Route::post('/profile', [PrinterController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/calculator', [PrinterController::class, 'calculator'])->name('calculator');
+    Route::get('/calculator/{calculation}', [PrinterController::class, 'calculator'])->name('calculator.open');
 
-    Route::get('/nabidky', [QuoteController::class, 'index'])->name('quotes');
-    Route::post('/nabidky', [QuoteController::class, 'store'])->name('quotes.store');
-    Route::get('/nabidky/{quote}', [QuoteController::class, 'edit'])->name('quotes.edit');
-    Route::post('/nabidky/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
-    Route::post('/nabidky/{quote}/odeslat', [QuoteController::class, 'send'])->name('quotes.send');
-    Route::post('/nabidky/{quote}/kopie', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
-    Route::get('/nabidky/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
+    Route::get('/quotes', [QuoteController::class, 'index'])->name('quotes');
+    Route::post('/quotes', [QuoteController::class, 'store'])->name('quotes.store');
+    Route::get('/quotes/{quote}', [QuoteController::class, 'edit'])->name('quotes.edit');
+    Route::post('/quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
+    Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
+    Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
+    Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
 });

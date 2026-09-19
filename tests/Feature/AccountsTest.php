@@ -34,7 +34,7 @@ class AccountsTest extends TestCase
         $this->assertSame($session->id, Calculation::first()->anonymous_session_id);
 
         $this->withUnencryptedCookie(AnonymousSession::COOKIE, $session->token)
-            ->post('/registrace', ['name' => 'Roman', 'email' => 'roman@example.com', 'password' => 'secret123', 'terms' => 1, 'role' => 'printer'])
+            ->post('/register', ['name' => 'Roman', 'email' => 'roman@example.com', 'password' => 'secret123', 'terms' => 1, 'role' => 'printer'])
             ->assertRedirect(route('account.roles.enable', 'printer'));
         $user = User::where('email', 'roman@example.com')->firstOrFail();
         $this->assertTrue($user->hasRole('customer'));
@@ -51,15 +51,15 @@ class AccountsTest extends TestCase
 
     public function test_printer_area_requires_role(): void
     {
-        $this->get('/tiskar')->assertRedirect(route('login'));
+        $this->get('/printer')->assertRedirect(route('login'));
         $user = User::factory()->create();
-        $this->actingAs($user)->get('/tiskar')->assertRedirect(route('account'));
+        $this->actingAs($user)->get('/printer')->assertRedirect(route('account'));
     }
 
     public function test_login_and_role_switch_off_keeps_data(): void
     {
         $user = User::factory()->create(['password' => 'secret123']);
-        $this->post('/prihlaseni', ['email' => $user->email, 'password' => 'secret123'])->assertRedirect(route('account'));
+        $this->post('/login', ['email' => $user->email, 'password' => 'secret123'])->assertRedirect(route('account'));
         $this->actingAs($user)->post(route('account.roles.enable', 'printer'));
         $this->actingAs($user)->post(route('account.roles.disable', 'printer'))->assertRedirect(route('account'));
         $this->assertFalse($user->fresh()->isPrinter());

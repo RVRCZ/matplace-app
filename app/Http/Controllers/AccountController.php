@@ -38,7 +38,7 @@ class AccountController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'zip' => ['nullable', 'string', 'max:10'],
             'city' => ['nullable', 'string', 'max:100'],
-            'locale' => ['nullable', 'in:cs,en'],
+            'locale' => ['nullable', 'in:cs,en,es'],
             'notify_email' => ['nullable', 'boolean'],
             'password' => ['nullable', 'confirmed', PasswordRule::min(8)],
         ]);

@@ -18,7 +18,7 @@ const initial = (window as unknown as { MP_INITIAL: CalcInfo | null }).MP_INITIA
 const ownProfileId = (window as unknown as { MP_OWN_PROFILE_ID: number | null }).MP_OWN_PROFILE_ID ?? null;
 const t = (k: string, r: Record<string, string | number> = {}) => Object.entries(r).reduce((s, [a, b]) => s.replace(`:${a}`, String(b)), i18n[k] ?? k);
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const fmt = new Intl.NumberFormat(document.documentElement.lang === 'en' ? 'en-GB' : 'cs-CZ', { maximumFractionDigits: 0 });
+const fmt = new Intl.NumberFormat({ en: 'en-GB', es: 'es-ES' }[document.documentElement.lang] ?? 'cs-CZ', { maximumFractionDigits: 0 });
 
 /** State of the single screen. */
 const state = {
