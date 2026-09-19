@@ -29,7 +29,8 @@ final class MakerWorldSearch implements ModelSearch
             return new SearchResultSet([], $query, ['makerworld']);
         }
         $key = 'search:makerworld:'.sha1(mb_strtolower($query).':'.$options->limit);
-        $items = Cache::remember($key, now()->addHours(6), function () use ($query, $options) {
+        // cache only non-empty answers: a blocked/failed call must not hide results for hours
+        $items = Cache::get($key) ?? tap((function () use ($query, $options) {
             try {
                 $res = Http::timeout(10)->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
@@ -60,7 +61,7 @@ final class MakerWorldSearch implements ModelSearch
             } catch (\Throwable) {
                 return [];
             }
-        });
+        })(), fn ($v) => $v ? Cache::put($key, $v, now()->addHours(6)) : null);
 
         return new SearchResultSet(array_map(fn ($r) => new ModelCandidate(
             source: 'makerworld', externalId: $r['id'], title: $r['title'], previewUrl: $r['preview'], externalUrl: $r['url'],

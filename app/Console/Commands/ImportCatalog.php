@@ -81,7 +81,7 @@ class ImportCatalog extends Command
 
     private static function externalId(string $url): ?string
     {
-        if (preg_match('#printables\.com/model/(\d+)#', $url, $m) || preg_match('#makerworld\.com/[a-z]{2}/models/(\d+)#', $url, $m) || preg_match('#/(\d+)(?:[/?#-]|$)#', $url, $m)) {
+        if (preg_match('~printables\.com/model/(\d+)~', $url, $m) || preg_match('~makerworld\.com/[a-z]{2}/models/(\d+)~', $url, $m) || preg_match('~/(\d+)(?:[/?#-]|$)~', $url, $m)) {
             return $m[1];
         }
 

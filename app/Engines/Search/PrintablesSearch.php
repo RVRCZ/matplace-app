@@ -28,7 +28,8 @@ final class PrintablesSearch implements ModelSearch
             return new SearchResultSet([], $query, ['printables']);
         }
         $key = 'search:printables:'.sha1(mb_strtolower($query).':'.$options->limit);
-        $items = Cache::remember($key, now()->addHours(6), function () use ($query, $options) {
+        // cache only non-empty answers: a blocked/failed call must not hide results for hours
+        $items = Cache::get($key) ?? tap((function () use ($query, $options) {
             try {
                 $res = Http::timeout(12)->withHeaders(['User-Agent' => 'matplace-search/2.0'])->post(self::GQL, [
                     'query' => 'query Search($q: String!, $limit: Int, $offset: Int) { searchPrints2(query: $q, limit: $limit, offset: $offset) { items { id slug name image { filePath } license { name } user { publicUsername } } } }',
@@ -54,7 +55,7 @@ final class PrintablesSearch implements ModelSearch
             } catch (\Throwable) {
                 return [];
             }
-        });
+        })(), fn ($v) => $v ? Cache::put($key, $v, now()->addHours(6)) : null);
 
         return new SearchResultSet(array_map(fn ($r) => new ModelCandidate(
             source: 'printables', externalId: $r['id'], title: $r['title'], previewUrl: $r['preview'], externalUrl: $r['url'],
