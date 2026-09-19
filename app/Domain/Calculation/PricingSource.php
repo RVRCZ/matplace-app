@@ -86,7 +86,7 @@ final class PricingSource
             ->where('visible', true)
             ->where('capacity', '!=', 'paused')
             ->whereHas('materials', fn ($m) => $m->where('material_code', $materialCode)->where('in_stock', true))
-            ->whereHas('pricingProfiles')
+            ->whereHas('pricingProfiles', fn ($q) => $q->where(fn ($w) => $w->where('hourly_rate', '>', 0)->orWhere('price_per_gram', '>', 0)))
             ->whereHas('user', fn ($u) => $u->whereNull('blocked_at'));
 
         if ($lat !== null && $lng !== null) {

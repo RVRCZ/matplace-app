@@ -67,6 +67,9 @@ class PrinterProfile extends Model
             return null;
         }
         $perGram = (float) $profile->price_per_gram;
+        if ((float) $profile->hourly_rate <= 0 && $perGram <= 0) {
+            return null; // no usable rates yet: never quote 0 Kč
+        }
         if ($materialCode) {
             $m = $this->materials->firstWhere('material_code', strtoupper($materialCode));
             if ($m && $m->price_per_gram !== null) {

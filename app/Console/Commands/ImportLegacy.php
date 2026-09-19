@@ -172,8 +172,9 @@ class ImportLegacy extends Command
             // pricing: legacy per-gram / hourly / min order → default price list
             $pricing = $profile->pricingProfiles()->where('is_default', true)->first() ?? new PricingProfile(['printer_profile_id' => $profile->id, 'name' => 'Standard', 'is_default' => true]);
             if (! $pricing->exists) {
-                $pricing->hourly_rate = $row->hourly_rate ?? 60;
-                $pricing->price_per_gram = $row->price_per_gram ?? 2;
+                // legacy stored 0 for "not set": fall back to sensible defaults so nobody quotes 0 Kč
+                $pricing->hourly_rate = ((float) ($row->hourly_rate ?? 0)) > 0 ? $row->hourly_rate : 60;
+                $pricing->price_per_gram = ((float) ($row->price_per_gram ?? 0)) > 0 ? $row->price_per_gram : 2;
                 $pricing->min_price = $row->min_order_price ?? 0;
                 $pricing->lead_time_days = $profile->lead_time_days;
                 $pricing->save();
