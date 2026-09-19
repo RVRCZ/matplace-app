@@ -10,8 +10,9 @@ return [
         'line_width_mm' => 0.4,
         'shell_fraction_fallback' => 0.25,   // when surface area unknown
         'support_factor' => 1.12,
-        'minutes_per_gram' => 5.5,           // 0.20 mm, ~50 mm/s reference
-        'overhead_minutes' => 10,
+        // Calibrated on Anycubic Kobra S1 slices: 20 mm cube 3.6 g → 14 min, phone stand 22.9 g → 41 min.
+        'minutes_per_gram' => 1.4,           // 0.20 mm, modern fast FDM printer
+        'overhead_minutes' => 8,
         'quality_time_factor' => ['draft' => 0.75, 'standard' => 1.0, 'fine' => 1.6],
         'quality_layer_mm' => ['draft' => 0.28, 'standard' => 0.20, 'fine' => 0.12],
         'range_low' => 0.85,                 // rough price range = estimate × [low, high]

@@ -25,8 +25,8 @@ class RoughEstimatorTest extends TestCase
         // volume 8000 mm³, area 2400 mm²: shell = 2400×2×0.4 = 1920, inner = 6080 × 15 % = 912 → 2832 mm³ × 1.24 = 3.51 g
         $r = $this->estimator()->estimate(8000, 2400, 'PLA', 'standard', 15, false, 1.0);
         $this->assertSame(3.5, $r['grams']);
-        $this->assertSame((int) round(3.51168 * 5.5 + 10), $r['minutes']); // 29
-        $this->assertSame(29, $r['minutes']);
+        $this->assertSame((int) round(3.51168 * 1.4 + 8), $r['minutes']); // 13, slicer says 14
+        $this->assertSame(13, $r['minutes']);
     }
 
     public function test_scale_and_supports(): void
