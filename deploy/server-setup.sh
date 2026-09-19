@@ -63,10 +63,32 @@ systemctl daemon-reload
 systemctl enable matplace-worker >/dev/null
 
 echo "== nginx"
-if [ ! -f /etc/nginx/sites-available/matplace-app ]; then
+DOMAIN=${BETA_DOMAIN:-beta.matplace.com}
+if [ -f /etc/letsencrypt/live/${DOMAIN}/fullchain.pem ]; then
     cp "${APP_DIR}/deploy/nginx-matplace-app.conf" /etc/nginx/sites-available/matplace-app
-    ln -sf /etc/nginx/sites-available/matplace-app /etc/nginx/sites-enabled/matplace-app
-    echo "nginx vhost installed; run: certbot --nginx -d beta.matplace.com && nginx -t && systemctl reload nginx"
+else
+    # No certificate yet (DNS not pointed / certbot not run): serve plain HTTP so the app can be smoke-tested.
+    cat > /etc/nginx/sites-available/matplace-app <<NGINX
+server {
+    listen 80;
+    server_name ${DOMAIN};
+    root ${APP_DIR}/public;
+    index index.php;
+    client_max_body_size 120M;
+    location / { try_files \$uri \$uri/ /index.php?\$query_string; }
+    location ~ \.php\$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 120;
+    }
+    location ~ /\.(?!well-known) { deny all; }
+}
+NGINX
+    echo "HTTP-only vhost for ${DOMAIN}. After DNS points here: certbot --nginx -d ${DOMAIN} && cp deploy/nginx-matplace-app.conf /etc/nginx/sites-available/matplace-app && nginx -t && systemctl reload nginx"
 fi
+ln -sf /etc/nginx/sites-available/matplace-app /etc/nginx/sites-enabled/matplace-app
+nginx -t && systemctl reload nginx
 
 echo "done. Next: deploy/deploy.sh"
