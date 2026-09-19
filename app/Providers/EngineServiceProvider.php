@@ -8,6 +8,7 @@ use App\Engines\Contracts\ModelGenerator;
 use App\Engines\Contracts\Slicer;
 use App\Engines\Converter\ConverterChain;
 use App\Engines\Converter\FreeCadConverter;
+use App\Engines\Converter\OcpCadConverter;
 use App\Engines\Converter\PythonMeshConverter;
 use App\Engines\Converter\ThreeMfConverter;
 use App\Engines\Generator\NullGenerator;
@@ -46,6 +47,7 @@ class EngineServiceProvider extends ServiceProvider
         $this->app->singleton(ConverterChain::class, function ($app) {
             $map = [
                 'threemf' => fn () => new ThreeMfConverter,
+                'ocp' => fn () => new OcpCadConverter($app->make(PythonTool::class)),
                 'freecad' => fn () => new FreeCadConverter(config('engines.freecad')),
                 'trimesh' => fn () => new PythonMeshConverter($app->make(PythonTool::class)),
             ];

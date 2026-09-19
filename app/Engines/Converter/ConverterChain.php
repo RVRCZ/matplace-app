@@ -44,7 +44,7 @@ final class ConverterChain
     public function inputFormats(): array
     {
         $all = ['stl'];
-        foreach (['3mf', 'obj', 'ply', 'off', 'glb', 'gltf', 'amf', 'step', 'stp', 'iges', 'igs'] as $ext) {
+        foreach (['3mf', 'obj', 'ply', 'off', 'glb', 'gltf', 'amf', 'step', 'stp', 'iges', 'igs', 'brep'] as $ext) {
             if ($this->find($ext, 'stl')) {
                 $all[] = $ext;
             }

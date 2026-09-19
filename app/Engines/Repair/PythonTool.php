@@ -5,22 +5,22 @@ namespace App\Engines\Repair;
 use App\Engines\Exceptions\EngineException;
 use Illuminate\Support\Facades\Process;
 
-/** Thin runner around engines/python/mesh_tool.py (trimesh). Returns the tool's JSON output. */
+/** Thin runner around engines/python/mesh_tool.py (trimesh, optional cadquery). Returns the tool's JSON output. */
 final class PythonTool
 {
-    private ?bool $available = null;
+    private ?array $probe = null;
 
     public function __construct(private readonly array $config) {}
 
     public function available(): bool
     {
-        if ($this->available === null) {
-            $r = Process::timeout(20)->run([$this->config['bin'], base_path('engines/python/mesh_tool.py'), 'probe']);
-            $json = json_decode(trim($r->output()), true);
-            $this->available = $r->successful() && ! empty($json['ok']);
-        }
+        return (bool) ($this->probe()['ok'] ?? false);
+    }
 
-        return $this->available;
+    /** cadquery/OpenCascade present → STEP/IGES conversion possible. */
+    public function hasCad(): bool
+    {
+        return $this->available() && (bool) ($this->probe()['cad'] ?? false);
     }
 
     /** @return array<string,mixed> */
@@ -34,5 +34,20 @@ final class PythonTool
         }
 
         return $json;
+    }
+
+    private function probe(): array
+    {
+        if ($this->probe === null) {
+            try {
+                $r = Process::timeout(30)->run([$this->config['bin'], base_path('engines/python/mesh_tool.py'), 'probe']);
+                $json = json_decode(trim($r->output()), true);
+                $this->probe = ($r->successful() && is_array($json)) ? $json : ['ok' => false];
+            } catch (\Throwable) {
+                $this->probe = ['ok' => false];
+            }
+        }
+
+        return $this->probe;
     }
 }

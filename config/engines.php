@@ -8,7 +8,7 @@ return [
     'repair' => env('ENGINE_REPAIR', 'trimesh'),     // trimesh | null
     'generator' => env('ENGINE_GENERATOR', 'null'),  // null | tripo | meshy (later)
     'settlement' => env('ENGINE_SETTLEMENT', 'qr-manual'),
-    'converters' => ['threemf', 'trimesh', 'freecad'], // tried in order; STL needs no conversion
+    'converters' => ['threemf', 'trimesh', 'ocp', 'freecad'], // tried in order; STL needs no conversion
 
     'orca' => [
         'bin' => env('ORCA_BIN', '/opt/orca/squashfs-root/AppRun'),

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-Mesh utility for matplace engines (trimesh, optional pymeshfix).
+Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquery/OCP for CAD formats).
 
-  mesh_tool.py probe                      -> {"ok": true, "trimesh": "x.y.z", "pymeshfix": bool}
-  mesh_tool.py check <in>                 -> geometry + topology report (mm)
-  mesh_tool.py repair <in> <out.stl>      -> repaired binary STL + report
-  mesh_tool.py convert <in> <out.stl>     -> any trimesh-readable format to binary STL (scene merged)
+  mesh_tool.py probe                                  -> {"ok": true, "trimesh": "x.y.z", "pymeshfix": bool, "cad": bool}
+  mesh_tool.py check <in>                             -> geometry + topology report (mm)
+  mesh_tool.py repair <in> <out.stl>                  -> repaired binary STL + report
+  mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
+  mesh_tool.py cad <in.step|iges> <out.stl> [lin] [ang] -> CAD B-rep to STL via OpenCascade (cadquery); lin=mm, ang=rad
 
 Always prints exactly one JSON object on stdout.
 """
@@ -39,7 +40,6 @@ def load(path):
 
 
 def report(m, extra=None):
-    import trimesh
     bb = m.extents
     shells = 1
     try:
@@ -71,6 +71,34 @@ def report(m, extra=None):
     return r
 
 
+def cad_to_stl(src, dst, lin=0.05, ang=0.3):
+    """STEP/IGES/BREP → STL through OpenCascade (same kernel FreeCAD uses)."""
+    import cadquery as cq
+    from cadquery import exporters
+    ext = src.lower().rsplit(".", 1)[-1]
+    if ext in ("step", "stp"):
+        shape = cq.importers.importStep(src)
+    elif ext in ("iges", "igs"):
+        # cadquery has no IGES importer; use OCP directly
+        from OCP.IGESControl import IGESControl_Reader
+        from OCP.IFSelect import IFSelect_RetDone
+        reader = IGESControl_Reader()
+        if reader.ReadFile(src) != IFSelect_RetDone:
+            raise ValueError("cannot read IGES")
+        reader.TransferRoots()
+        shape = cq.Workplane("XY").newObject([cq.Shape.cast(reader.OneShape())])
+    elif ext == "brep":
+        from OCP.BRepTools import BRepTools
+        from OCP.TopoDS import TopoDS_Shape
+        from OCP.BRep import BRep_Builder
+        s = TopoDS_Shape()
+        BRepTools.Read_s(s, src, BRep_Builder())
+        shape = cq.Workplane("XY").newObject([cq.Shape.cast(s)])
+    else:
+        raise ValueError("unsupported CAD format " + ext)
+    exporters.export(shape, dst, exportType="STL", tolerance=lin, angularTolerance=ang)
+
+
 def main(argv):
     if len(argv) < 2:
         fail("usage")
@@ -83,12 +111,24 @@ def main(argv):
                 pf = True
             except Exception:
                 pf = False
-            out({"ok": True, "trimesh": trimesh.__version__, "pymeshfix": pf})
+            try:
+                import cadquery  # noqa: F401
+                cad = True
+            except Exception:
+                cad = False
+            out({"ok": True, "trimesh": trimesh.__version__, "pymeshfix": pf, "cad": cad})
         if cmd == "check":
             out(report(load(argv[2])))
         if cmd == "convert":
             m = load(argv[2])
             m.export(argv[3], file_type="stl")
+            out(report(m, {"out": argv[3]}))
+        if cmd == "cad":
+            lin = float(argv[4]) if len(argv) > 4 else 0.05
+            ang = float(argv[5]) if len(argv) > 5 else 0.3
+            cad_to_stl(argv[2], argv[3], lin, ang)
+            m = load(argv[3])
+            m.export(argv[3], file_type="stl")  # normalise to binary STL
             out(report(m, {"out": argv[3]}))
         if cmd == "repair":
             m = load(argv[2])
@@ -96,7 +136,8 @@ def main(argv):
             trimesh.repair.fix_normals(m)
             trimesh.repair.fix_winding(m)
             trimesh.repair.fill_holes(m)
-            m.remove_degenerate_faces() if hasattr(m, "remove_degenerate_faces") else None
+            if hasattr(m, "remove_degenerate_faces"):
+                m.remove_degenerate_faces()
             if not m.is_watertight:
                 try:
                     import pymeshfix
