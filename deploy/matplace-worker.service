@@ -1,0 +1,18 @@
+[Unit]
+Description=matplace queue worker (slicing, conversion, generation jobs)
+After=network.target mariadb.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/matplace-app
+ExecStart=/usr/bin/php /var/www/matplace-app/artisan queue:work database --sleep=2 --tries=3 --max-time=3600 --memory=512
+Restart=always
+RestartSec=5
+# OrcaSlicer needs a writable HOME and a virtual X display (xvfb-run is invoked by the engine itself)
+Environment=HOME=/var/www/matplace-app/storage/app/slicer
+StandardOutput=append:/var/log/matplace-worker.log
+StandardError=append:/var/log/matplace-worker.log
+
+[Install]
+WantedBy=multi-user.target

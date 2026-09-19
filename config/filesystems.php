@@ -38,6 +38,13 @@ return [
             'report' => false,
         ],
 
+        'models' => [
+            'driver' => 'local',
+            'root' => storage_path('app/models'),
+            'serve' => false,
+            'throw' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

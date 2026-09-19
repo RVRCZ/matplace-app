@@ -5,11 +5,14 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
         }),
         tailwindcss(),
     ],
+    build: {
+        chunkSizeWarningLimit: 1200,
+    },
     server: {
         watch: {
             ignored: ['**/storage/framework/views/**'],
