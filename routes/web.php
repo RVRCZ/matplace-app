@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\ModelFileController;
+use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OAuthController;
@@ -30,6 +31,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('files/{modelFile}/model.stl', [ModelFileController::class, 'stl'])->name('files.stl');
     Route::post('calculations', [CalculationController::class, 'store'])->middleware('throttle:calculations')->name('calculations.store');
     Route::get('calculations/{calculation}', [CalculationController::class, 'show'])->name('calculations.show');
+    Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1')->name('search');
+    Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1')->name('describe');
 });
 
 // ── Auth ─────────────────────────────────────────────────────────────────────

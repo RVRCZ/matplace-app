@@ -233,5 +233,22 @@
     "quote.mail.accepted_heading": "Quote accepted 🎉",
     "quote.mail.accepted_intro": "Your client just accepted quote :number (:client) for :total CZK. Arrange payment and delivery with them.",
     "quote.mail.accepted_button": "Open quote",
-    "quote.mail.accepted_footer": "matplace only connected you; payment and delivery are between you."
+    "quote.mail.accepted_footer": "matplace only connected you; payment and delivery are between you.",
+    "search.placeholder": "What do you need? e.g. “Samsung remote battery cover”",
+    "search.button": "Search",
+    "search.searching": "Searching ready-made models…",
+    "search.identifying": "Identifying the object…",
+    "search.none": "Nothing ready-made found. Upload your own file, or wait for generation and designers.",
+    "search.error": "Search failed, please try again.",
+    "search.not_image": "That is not a photo. Upload a JPG or PNG.",
+    "search.daily_limit": "You have used today’s :n photo identifications. Try tomorrow or describe the part in words.",
+    "search.open_source": "Open on :s",
+    "search.results_title": "Ready-made models for:",
+    "search.results_hint": "Download the file at the source and upload it above to see the price. Check the licence with the author.",
+    "search.size_guess": "guess",
+    "search.price_range": "Price roughly",
+    "search.range_hint": "Range based on the estimated size. The exact price appears once there is a model.",
+    "search.have_file": "I have a file, upload",
+    "search.generate": "Generate a rough model",
+    "search.designer_soon": "Exact model by a designer within 24 h – coming soon"
 }

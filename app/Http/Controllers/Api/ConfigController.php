@@ -33,6 +33,8 @@ class ConfigController extends Controller
             'qualities' => SliceParams::QUALITIES,
             'formats' => $converters->inputFormats(),
             'max_upload_mb' => (int) config('uploads.max_mb', 100),
+            'vision' => (string) config('ai.anthropic.api_key') !== '',
+            'generator' => app(\App\Engines\Contracts\ModelGenerator::class)->name() !== 'null',
             'lay' => collect(['home', 'decor', 'hand', 'strong', 'outdoor', 'outdoor_light', 'flexible', 'technical', 'detail'])
                 ->mapWithKeys(fn ($k) => [$k => __('lay.'.$k)])->all(),
         ];

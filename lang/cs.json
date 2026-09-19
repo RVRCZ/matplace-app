@@ -233,5 +233,22 @@
     "quote.mail.accepted_heading": "Nabídka přijata 🎉",
     "quote.mail.accepted_intro": "Nabídku :number (:client) za :total Kč klient právě přijal. Domluv s ním platbu a dodání.",
     "quote.mail.accepted_button": "Otevřít nabídku",
-    "quote.mail.accepted_footer": "matplace vás jen spojil; platba a dodání jsou mezi vámi."
+    "quote.mail.accepted_footer": "matplace vás jen spojil; platba a dodání jsou mezi vámi.",
+    "search.placeholder": "Co potřebuješ? Např. „kryt na dálkové ovládání Samsung“",
+    "search.button": "Najít",
+    "search.searching": "Hledám hotové modely…",
+    "search.identifying": "Poznávám, co je na fotce…",
+    "search.none": "Nic hotového jsme nenašli. Nahraj vlastní soubor, nebo počkej na generování a designéry.",
+    "search.error": "Hledání se nepovedlo, zkus to znovu.",
+    "search.not_image": "Tohle není fotka. Nahraj JPG nebo PNG.",
+    "search.daily_limit": "Dnes už jsi vyčerpal :n rozpoznání z fotky. Zkus to zítra nebo popiš díl slovy.",
+    "search.open_source": "Otevřít na :s",
+    "search.results_title": "Hotové modely pro:",
+    "search.results_hint": "Soubor stáhni u zdroje a nahoře ho nahraj, hned uvidíš cenu. Licenci si zkontroluj u autora.",
+    "search.size_guess": "odhad",
+    "search.price_range": "Cena přibližně",
+    "search.range_hint": "Rozpětí podle odhadnuté velikosti. Přesnou cenu ukážeme, jakmile bude model.",
+    "search.have_file": "Mám soubor, nahrát",
+    "search.generate": "Vygenerovat hrubý model",
+    "search.designer_soon": "Přesný model od designéra do 24 h – připravujeme"
 }

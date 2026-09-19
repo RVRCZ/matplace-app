@@ -8,6 +8,7 @@ return [
     'repair' => env('ENGINE_REPAIR', 'trimesh'),     // trimesh | null
     'generator' => env('ENGINE_GENERATOR', 'null'),  // null | tripo | meshy (later)
     'settlement' => env('ENGINE_SETTLEMENT', 'qr-manual'),
+    'search' => ['local', 'printables', 'makerworld'],       // ModelSearch sources, merged in this order
     'converters' => ['threemf', 'trimesh', 'ocp', 'freecad'], // tried in order; STL needs no conversion
 
     'orca' => [

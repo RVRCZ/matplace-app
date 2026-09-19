@@ -15,6 +15,11 @@ use App\Engines\Generator\NullGenerator;
 use App\Engines\Repair\PhpStlRepair;
 use App\Engines\Repair\PythonTool;
 use App\Engines\Repair\TrimeshRepair;
+use App\Engines\Search\CompositeSearch;
+use App\Engines\Search\LocalCatalogSearch;
+use App\Engines\Search\MakerWorldSearch;
+use App\Engines\Search\PrintablesSearch;
+use App\Engines\Vision\VisionDescriber;
 use App\Engines\Slicer\FakeSlicer;
 use App\Engines\Slicer\OrcaSlicer;
 use Illuminate\Support\ServiceProvider;
@@ -43,6 +48,22 @@ class EngineServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(ModelGenerator::class, fn () => new NullGenerator);
+
+        $this->app->singleton(VisionDescriber::class, fn () => new VisionDescriber([
+            'api_key' => config('ai.anthropic.api_key'), 'model' => config('ai.anthropic.vision_model'), 'timeout' => config('ai.anthropic.timeout'),
+        ]));
+
+        $this->app->singleton(CompositeSearch::class, function ($app) {
+            $map = ['local' => fn () => new LocalCatalogSearch, 'printables' => fn () => new PrintablesSearch, 'makerworld' => fn () => new MakerWorldSearch];
+            $list = [];
+            foreach (config('engines.search', ['local', 'printables', 'makerworld']) as $key) {
+                if (isset($map[$key])) {
+                    $list[] = $map[$key]();
+                }
+            }
+
+            return new CompositeSearch($list, $app->make(VisionDescriber::class));
+        });
 
         $this->app->singleton(ConverterChain::class, function ($app) {
             $map = [

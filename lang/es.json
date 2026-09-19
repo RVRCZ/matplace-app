@@ -233,5 +233,22 @@
     "quote.mail.accepted_heading": "Presupuesto aceptado 🎉",
     "quote.mail.accepted_intro": "Tu cliente acaba de aceptar el presupuesto :number (:client) por :total. Acuerda con él el pago y la entrega.",
     "quote.mail.accepted_button": "Abrir presupuesto",
-    "quote.mail.accepted_footer": "matplace solo os ha puesto en contacto; el pago y la entrega son cosa vuestra."
+    "quote.mail.accepted_footer": "matplace solo os ha puesto en contacto; el pago y la entrega son cosa vuestra.",
+    "search.placeholder": "¿Qué necesitas? P. ej. «tapa de mando Samsung»",
+    "search.button": "Buscar",
+    "search.searching": "Buscando modelos listos…",
+    "search.identifying": "Identificando el objeto…",
+    "search.none": "No hemos encontrado nada hecho. Sube tu archivo o espera a la generación y a los diseñadores.",
+    "search.error": "La búsqueda ha fallado, inténtalo de nuevo.",
+    "search.not_image": "Eso no es una foto. Sube un JPG o PNG.",
+    "search.daily_limit": "Has agotado las :n identificaciones de hoy. Prueba mañana o describe la pieza con palabras.",
+    "search.open_source": "Abrir en :s",
+    "search.results_title": "Modelos listos para:",
+    "search.results_hint": "Descarga el archivo en la fuente y súbelo arriba para ver el precio. Comprueba la licencia con el autor.",
+    "search.size_guess": "estimación",
+    "search.price_range": "Precio aproximado",
+    "search.range_hint": "Rango según el tamaño estimado. El precio exacto aparece cuando haya un modelo.",
+    "search.have_file": "Tengo un archivo, subir",
+    "search.generate": "Generar un modelo aproximado",
+    "search.designer_soon": "Modelo exacto por un diseñador en 24 h – muy pronto"
 }

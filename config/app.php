@@ -15,6 +15,9 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // where legacy catalogue thumbnails are still served from (until they are copied over)
+    'legacy_assets_url' => env('LEGACY_ASSETS_URL', 'https://matplace.com'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

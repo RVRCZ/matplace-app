@@ -11,6 +11,8 @@
         'calc.breakdown.material','calc.breakdown.time','calc.breakdown.setup','calc.breakdown.total',
         'calc.warn.exceeds_typical_bed','calc.warn.supports_added','calc.warn.not_watertight',
         'calc.warn.multiple_shells','calc.warn.flipped_normals','calc.printers_count',
+        'search.searching','search.identifying','search.none','search.error','search.not_image','search.daily_limit','search.open_source',
+        'search.size_guess','search.price_range','search.range_hint','search.have_file','search.generate','search.designer_soon','hero.soon','calc.size','calc.material',
     ])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();
 @endphp
 
@@ -21,7 +23,7 @@
     window.MP_INITIAL = @json($initial);
     window.MP_MODE = @json($mode);
     window.MP_OWN_PROFILE_ID = @json($ownProfileId ?? null);
-    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
+    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
 </script>
 @endpush
 
@@ -51,16 +53,25 @@
         <div class="mt-3 flex flex-wrap gap-2 text-sm">
             <button type="button" class="rounded-full bg-teal-600 px-4 py-2 font-semibold text-white" onclick="document.getElementById('file-input').click()">{{ __('hero.choose_file') }}</button>
             @if($mode !== 'printer')
-                <button type="button" class="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-400" disabled title="{{ __('hero.soon') }}">📷 {{ __('hero.photo') }} <span class="text-xs">({{ __('hero.soon') }})</span></button>
-                <button type="button" class="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-400" disabled title="{{ __('hero.soon') }}">✍️ {{ __('hero.text') }} <span class="text-xs">({{ __('hero.soon') }})</span></button>
+                @if($config['vision'])
+                    <button type="button" id="hero-photo-btn" class="rounded-full border border-teal-600 bg-white px-4 py-2 font-semibold text-teal-700">📷 {{ __('hero.photo') }}</button>
+                    <input id="photo-input" type="file" accept="image/*" capture="environment" class="sr-only">
+                @endif
+                <button type="button" id="hero-text-btn" class="rounded-full border border-teal-600 bg-white px-4 py-2 font-semibold text-teal-700">✍️ {{ __('hero.text') }}</button>
             @endif
         </div>
+        <form id="search-form" class="mt-3 hidden gap-2 sm:flex">
+            <input id="search-input" type="search" maxlength="200" placeholder="{{ __('search.placeholder') }}" class="w-full rounded-xl border border-slate-300 px-4 py-3">
+            <button class="mt-2 rounded-xl bg-teal-600 px-5 py-3 font-semibold text-white sm:mt-0">{{ __('search.button') }}</button>
+        </form>
+        <div id="search-busy" class="mt-3 hidden items-center justify-center gap-2 text-sm text-slate-600"><span class="h-4 w-4 animate-spin rounded-full border-2 border-teal-600 border-t-transparent"></span><span id="search-busy-text"></span></div>
         <p id="hero-error" class="mt-3 hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"></p>
+        <div id="describe-box" class="mt-4 hidden rounded-2xl border border-slate-200 bg-white p-4 text-left"></div>
 
         @if($mode !== 'printer')
         <div class="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
             @foreach ([['broken','📸', null],['idea','💡', null],['file','📄', null],['printer','🖨️', auth()->check() ? (auth()->user()->isPrinter() ? route('printer.dashboard') : route('account')) : route('register', ['role' => 'printer'])],['designer','🧩', null]] as [$k,$ico,$href])
-                <a href="{{ $href ?? ($k === 'file' ? '#dropzone' : '#') }}" class="calc-tile {{ $k === 'file' ? 'ring-2 ring-teal-500' : ($href ? '' : 'opacity-70') }}" @if($k==='file') onclick="document.getElementById('file-input').click();return false;" @endif>
+                <a href="{{ $href ?? '#' }}" data-tile="{{ $k }}" class="calc-tile {{ in_array($k, ['file','idea']) || ($k === 'broken' && $config['vision']) || $href ? '' : 'opacity-70' }}" @if($k==='file') onclick="document.getElementById('file-input').click();return false;" @endif>
                     <span class="text-2xl">{{ $ico }}</span>
                     <span class="mt-1 font-semibold">{{ __('tiles.'.$k) }}</span>
                     <span class="text-xs text-slate-500">{{ __('tiles.'.$k.'.hint') }}</span>
@@ -68,6 +79,14 @@
             @endforeach
         </div>
         @endif
+
+        <section id="search-section" class="mt-8 hidden text-left">
+            <div class="flex items-baseline justify-between gap-3">
+                <h2 class="text-lg font-bold">{{ __('search.results_title') }} <span id="search-query" class="font-normal text-slate-500"></span></h2>
+            </div>
+            <p id="search-hint" class="hidden text-sm text-slate-500">{{ __('search.results_hint') }}</p>
+            <div id="search-results" class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"></div>
+        </section>
     </section>
 
     {{-- ── Result: viewer + controls + price ─────────────────────────── --}}
