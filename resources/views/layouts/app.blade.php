@@ -7,6 +7,7 @@
     <meta name="description" content="{{ $description ?? __('app.subline') }}">
     @if(!empty($ogImage))<meta property="og:image" content="{{ $ogImage }}">@endif
     <meta property="og:title" content="{{ $title ?? 'matplace' }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" href="/favicon.ico">
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
     @stack('head')
@@ -16,7 +17,13 @@
         <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
             <a href="{{ route('home') }}" class="text-xl font-extrabold tracking-tight text-teal-700">matplace</a>
             <nav class="flex items-center gap-4 text-sm text-slate-600">
-                <a href="#tools" class="hidden sm:inline hover:text-slate-900">{{ __('footer.tools') }}</a>
+                @auth
+                    @if(auth()->user()->isPrinter())<a href="{{ route('printer.dashboard') }}" class="hover:text-slate-900">🖨️ {{ __('nav.printer') }}</a>@endif
+                    <a href="{{ route('account') }}" class="font-medium hover:text-slate-900">{{ __('nav.account') }}</a>
+                @else
+                    <a href="{{ route('register', ['role' => 'printer']) }}" class="hidden sm:inline hover:text-slate-900">{{ __('nav.for_printers') }}</a>
+                    <a href="{{ route('login') }}" class="font-medium hover:text-slate-900">{{ __('nav.login') }}</a>
+                @endauth
                 <a href="{{ request()->fullUrlWithQuery(['lang' => app()->getLocale() === 'cs' ? 'en' : 'cs']) }}" class="hover:text-slate-900">{{ __('lang.switch') }}</a>
             </nav>
         </div>

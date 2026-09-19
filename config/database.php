@@ -64,6 +64,21 @@ return [
             ]) : [],
         ],
 
+        // Read-only view of the legacy matplace database (catalog3d) for `matplace:import-legacy`.
+        'legacy' => [
+            'driver' => env('LEGACY_DB_DRIVER', 'mariadb'),
+            'host' => env('LEGACY_DB_HOST', '127.0.0.1'),
+            'port' => env('LEGACY_DB_PORT', '3306'),
+            'database' => env('LEGACY_DB_DATABASE', 'catalog3d'),
+            'username' => env('LEGACY_DB_USERNAME', 'catalog3d'),
+            'password' => env('LEGACY_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => false,
+            'engine' => null,
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

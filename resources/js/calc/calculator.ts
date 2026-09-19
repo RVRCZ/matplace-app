@@ -15,6 +15,7 @@ interface Config {
 const cfg = (window as unknown as { MP_CONFIG: Config }).MP_CONFIG;
 const i18n = (window as unknown as { MP_I18N: Record<string, string> }).MP_I18N;
 const initial = (window as unknown as { MP_INITIAL: CalcInfo | null }).MP_INITIAL;
+const ownProfileId = (window as unknown as { MP_OWN_PROFILE_ID: number | null }).MP_OWN_PROFILE_ID ?? null;
 const t = (k: string, r: Record<string, string | number> = {}) => Object.entries(r).reduce((s, [a, b]) => s.replace(`:${a}`, String(b)), i18n[k] ?? k);
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const fmt = new Intl.NumberFormat(document.documentElement.lang === 'en' ? 'en-GB' : 'cs-CZ', { maximumFractionDigits: 0 });
@@ -81,17 +82,30 @@ function renderBreakdown(bds: { profile: string; label?: string | null; unit: { 
 /** Precise numbers from the server slice. */
 function renderPrecise(c: CalcInfo): void {
     if (!c.slicer || !c.prices) return;
-    const totals = c.prices.map((p) => p.total);
-    const [lo, hi] = range(cfg.rough, cfg.round_to, totals, false);
-    $('price-main').textContent = lo === hi ? fmt.format(lo) : `${fmt.format(lo)} – ${fmt.format(hi)}`;
     const q = state.params.quantity;
-    $('price-sub').textContent = q > 1 ? `${t('calc.price.per_piece')} ${fmt.format(Math.round(lo / q))} – ${fmt.format(Math.round(hi / q))}` : '';
+    const own = ownProfileId ? c.prices.find((p) => (p as { printer_profile_id?: number | null }).printer_profile_id === ownProfileId) : undefined;
+    const others = own ? c.prices.filter((p) => p !== own) : c.prices;
+    if (own) {
+        $('price-main').textContent = fmt.format(own.total);
+        const parts = [q > 1 ? `${t('calc.price.per_piece')} ${fmt.format(Math.round(own.total / q))}` : ''];
+        if (others.length) parts.push(t('calc.others_from', { n: fmt.format(Math.min(...others.map((p) => p.total))), c: others.length }));
+        $('price-sub').textContent = parts.filter(Boolean).join(' · ');
+    } else {
+        const totals = c.prices.map((p) => p.total);
+        const [lo, hi] = range(cfg.rough, cfg.round_to, totals, false);
+        $('price-main').textContent = lo === hi ? fmt.format(lo) : `${fmt.format(lo)} – ${fmt.format(hi)}`;
+        const real = c.prices.filter((p) => (p as { printer_profile_id?: number | null }).printer_profile_id);
+        const sub = [q > 1 ? `${t('calc.price.per_piece')} ${fmt.format(Math.round(lo / q))} – ${fmt.format(Math.round(hi / q))}` : ''];
+        if (real.length) sub.push(t('calc.printers_count', { c: real.length }));
+        $('price-sub').textContent = sub.filter(Boolean).join(' · ');
+    }
+    enableQuote(c);
     $('stat-grams').textContent = `${fmt.format(c.slicer.grams * q)} g`;
     $('stat-time').textContent = minutesText(c.slicer.minutes * q);
     const leads = c.prices.map((p) => p.lead_time_days);
     $('stat-lead').textContent = t('calc.days', { n: `${Math.min(...leads)}–${Math.max(...leads)}` });
     $('dims-badge').textContent = `${fmt.format(c.slicer.dims.x)} × ${fmt.format(c.slicer.dims.y)} × ${fmt.format(c.slicer.dims.z)} mm`;
-    renderBreakdown(c.prices.map((p) => ({ ...p, label: p.label ?? t(`calc.profile.${p.profile}`) })), false);
+    renderBreakdown(c.prices.map((p) => ({ ...p, label: ownProfileId && (p as { printer_profile_id?: number | null }).printer_profile_id === ownProfileId ? t('calc.profile.mine') : (p.label ?? t(`calc.profile.${p.profile}`)) })), false);
     const warns = [...(c.slicer.warnings ?? []), ...(c.file?.issues ?? [])];
     $('warnings').innerHTML = [...new Set(warns)].filter((w) => i18n[`calc.warn.${w}`]).map((w) => `<li>⚠️ ${t(`calc.warn.${w}`)}</li>`).join('');
 }
@@ -138,6 +152,16 @@ async function showServerStl(url: string): Promise<void> {
     } catch { /* viewer is optional */ }
 }
 
+/** Printer mode: "Create quote" needs a finished calculation token. */
+function enableQuote(c: CalcInfo | null): void {
+    const btn = document.getElementById('cta-quote') as HTMLButtonElement | null;
+    const tok = document.getElementById('quote-calc-token') as HTMLInputElement | null;
+    if (!btn || !tok) return;
+    const ok = !!c && c.status === 'done';
+    btn.disabled = !ok;
+    tok.value = ok ? c!.token : '';
+}
+
 function enableDownload(file: FileInfo | null): void {
     const a = $('cta-download') as HTMLAnchorElement;
     if (file?.stl_url) {
@@ -154,6 +178,7 @@ function requestPrecise(): void {
     state.debounce = window.setTimeout(async () => {
         try {
             setStatus('calc.status.queued', true);
+            enableQuote(null);
             const c = await createCalculation({
                 file: state.file!.uuid,
                 ...state.params,

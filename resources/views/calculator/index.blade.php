@@ -1,15 +1,16 @@
 @extends('layouts.app', ['title' => $initial ? ($initial['file']['name'] ?? 'matplace') . ' · matplace' : 'matplace'])
 
 @php
+    $mode = $mode ?? 'public';
     $formats = strtoupper(implode(', ', $config['formats']));
     $i18n = collect([
         'calc.status.reading','calc.status.rough','calc.status.uploading','calc.status.queued','calc.status.done',
         'calc.status.failed','calc.status.converting','calc.price.from','calc.price.range','calc.price.per_piece',
         'calc.days','calc.cta.copied','calc.error.read','calc.error.upload','calc.error.too_big','calc.est_only',
-        'calc.profile.budget','calc.profile.standard','calc.profile.express','calc.breakdown.material',
-        'calc.breakdown.time','calc.breakdown.setup','calc.breakdown.total',
+        'calc.profile.budget','calc.profile.standard','calc.profile.express','calc.profile.mine','calc.others_from',
+        'calc.breakdown.material','calc.breakdown.time','calc.breakdown.setup','calc.breakdown.total',
         'calc.warn.exceeds_typical_bed','calc.warn.supports_added','calc.warn.not_watertight',
-        'calc.warn.multiple_shells','calc.warn.flipped_normals',
+        'calc.warn.multiple_shells','calc.warn.flipped_normals','calc.printers_count',
     ])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();
 @endphp
 
@@ -18,17 +19,27 @@
     window.MP_CONFIG = @json($config);
     window.MP_I18N = @json($i18n);
     window.MP_INITIAL = @json($initial);
-    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')) };
+    window.MP_MODE = @json($mode);
+    window.MP_OWN_PROFILE_ID = @json($ownProfileId ?? null);
+    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
 </script>
 @endpush
 
 @section('content')
-<div id="calculator" data-state="idle">
+<div id="calculator" data-state="idle" data-mode="{{ $mode }}">
+    @if($mode === 'printer')
+        <div class="mb-4">@include('printer.nav')</div>
+    @endif
 
     {{-- ── Hero: one field ──────────────────────────────────────────── --}}
     <section id="hero" class="calc-hero">
-        <h1 class="text-2xl font-extrabold leading-tight sm:text-4xl">{{ __('app.tagline') }}</h1>
-        <p class="mt-2 text-slate-600">{{ __('app.subline') }}</p>
+        @if($mode === 'printer')
+            <h1 class="text-2xl font-extrabold leading-tight sm:text-3xl">{{ __('printer.calc.title') }}</h1>
+            <p class="mt-2 text-slate-600">{{ __('printer.calc.lead') }}</p>
+        @else
+            <h1 class="text-2xl font-extrabold leading-tight sm:text-4xl">{{ __('app.tagline') }}</h1>
+            <p class="mt-2 text-slate-600">{{ __('app.subline') }}</p>
+        @endif
 
         <label id="dropzone" class="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-teal-300 bg-white px-4 py-10 text-center transition hover:border-teal-500 hover:bg-teal-50">
             <svg class="h-10 w-10 text-teal-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
@@ -39,20 +50,24 @@
 
         <div class="mt-3 flex flex-wrap gap-2 text-sm">
             <button type="button" class="rounded-full bg-teal-600 px-4 py-2 font-semibold text-white" onclick="document.getElementById('file-input').click()">{{ __('hero.choose_file') }}</button>
-            <button type="button" class="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-400" disabled title="{{ __('hero.soon') }}">📷 {{ __('hero.photo') }} <span class="text-xs">({{ __('hero.soon') }})</span></button>
-            <button type="button" class="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-400" disabled title="{{ __('hero.soon') }}">✍️ {{ __('hero.text') }} <span class="text-xs">({{ __('hero.soon') }})</span></button>
+            @if($mode !== 'printer')
+                <button type="button" class="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-400" disabled title="{{ __('hero.soon') }}">📷 {{ __('hero.photo') }} <span class="text-xs">({{ __('hero.soon') }})</span></button>
+                <button type="button" class="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-400" disabled title="{{ __('hero.soon') }}">✍️ {{ __('hero.text') }} <span class="text-xs">({{ __('hero.soon') }})</span></button>
+            @endif
         </div>
         <p id="hero-error" class="mt-3 hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"></p>
 
+        @if($mode !== 'printer')
         <div class="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
-            @foreach ([['broken','📸'],['idea','💡'],['file','📄'],['printer','🖨️'],['designer','🧩']] as [$k,$ico])
-                <a href="{{ $k === 'file' ? '#dropzone' : '#' }}" class="calc-tile {{ $k === 'file' ? 'ring-2 ring-teal-500' : 'opacity-70' }}" @if($k==='file') onclick="document.getElementById('file-input').click();return false;" @endif>
+            @foreach ([['broken','📸', null],['idea','💡', null],['file','📄', null],['printer','🖨️', auth()->check() ? (auth()->user()->isPrinter() ? route('printer.dashboard') : route('account')) : route('register', ['role' => 'printer'])],['designer','🧩', null]] as [$k,$ico,$href])
+                <a href="{{ $href ?? ($k === 'file' ? '#dropzone' : '#') }}" class="calc-tile {{ $k === 'file' ? 'ring-2 ring-teal-500' : ($href ? '' : 'opacity-70') }}" @if($k==='file') onclick="document.getElementById('file-input').click();return false;" @endif>
                     <span class="text-2xl">{{ $ico }}</span>
                     <span class="mt-1 font-semibold">{{ __('tiles.'.$k) }}</span>
                     <span class="text-xs text-slate-500">{{ __('tiles.'.$k.'.hint') }}</span>
                 </a>
             @endforeach
         </div>
+        @endif
     </section>
 
     {{-- ── Result: viewer + controls + price ─────────────────────────── --}}
@@ -65,7 +80,6 @@
             </div>
 
             <div class="flex flex-col gap-4">
-                {{-- price panel --}}
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <div class="flex items-center justify-between text-sm">
                         <span id="status" class="font-medium text-slate-600">{{ __('calc.status.reading') }}</span>
@@ -82,13 +96,12 @@
                         <div><dt class="text-slate-500">{{ __('calc.lead') }}</dt><dd id="stat-lead" class="font-semibold">—</dd></div>
                     </dl>
                     <ul id="warnings" class="mt-3 space-y-1 text-sm text-amber-700"></ul>
-                    <details class="mt-3 text-sm">
+                    <details class="mt-3 text-sm" @if($mode === 'printer') open @endif>
                         <summary class="cursor-pointer text-teal-700">{{ __('calc.breakdown') }}</summary>
                         <div id="breakdown" class="mt-2 space-y-2"></div>
                     </details>
                 </div>
 
-                {{-- controls --}}
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <div class="text-sm font-semibold text-slate-700">{{ __('calc.material') }}</div>
                     <div id="materials" class="mt-2 flex flex-wrap gap-2"></div>
@@ -127,12 +140,15 @@
                     </details>
                 </div>
 
-                {{-- actions --}}
                 <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <button id="cta-make" type="button" class="rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white disabled:opacity-60" title="{{ __('calc.cta.make.soon') }}">{{ __('calc.cta.make') }}</button>
+                    @if($mode === 'printer')
+                        <form method="post" action="{{ route('printer.quotes.store') }}" id="quote-form" class="sm:col-span-2">@csrf<input type="hidden" name="calculation" id="quote-calc-token" value=""><button id="cta-quote" type="submit" class="w-full rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white disabled:opacity-50" disabled>{{ __('printer.calc.create_quote') }}</button></form>
+                    @else
+                        <button id="cta-make" type="button" class="rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white disabled:opacity-60" title="{{ __('calc.cta.make.soon') }}">{{ __('calc.cta.make') }}</button>
+                    @endif
                     <a id="cta-download" href="#" class="rounded-xl border border-teal-600 px-4 py-3 text-center font-semibold text-teal-700 aria-disabled:opacity-50" aria-disabled="true">{{ __('calc.cta.download') }}</a>
                     <button id="cta-share" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700">{{ __('calc.cta.share') }}</button>
-                    <button id="cta-new" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700">{{ __('calc.cta.new') }}</button>
+                    <button id="cta-new" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 {{ $mode === 'printer' ? 'sm:col-span-2' : '' }}">{{ __('calc.cta.new') }}</button>
                 </div>
                 <p id="make-note" class="hidden text-sm text-slate-500">{{ __('calc.cta.make.soon') }}</p>
             </div>

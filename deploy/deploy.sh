@@ -32,6 +32,7 @@ composer install --no-dev --optimize-autoloader --no-interaction --quiet
 npm ci --silent && npm run build --silent
 [ -f .env ] || { cp .env.example .env; php artisan key:generate --force; echo "!! fill in .env (DB, ORCA_*, PYTHON_BIN=/opt/matplace-py/bin/python)"; }
 php artisan migrate --force
+php artisan storage:link >/dev/null 2>&1 || true
 php artisan optimize
 chown -R www-data:www-data storage bootstrap/cache
 systemctl restart matplace-worker
