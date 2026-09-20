@@ -61,6 +61,20 @@ class UploadController extends Controller
         return response()->json(['file' => self::describe($modelFile)]);
     }
 
+    /** Products that consist of several printed parts offer each one as its own download. */
+    private static function partsOf(ModelFile $f): array
+    {
+        $p = (array) $f->tool_params;
+
+        return match ($f->kind()) {
+            'box' => ! empty($p['lid']) ? ['body', 'lid'] : [],
+            'vase' => ($p['purpose'] ?? '') === 'pot' && ! empty($p['saucer']) ? ['body', 'saucer'] : [],
+            'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
+            'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
+            default => [],
+        };
+    }
+
     public static function describe(ModelFile $f): array
     {
         return [
@@ -75,8 +89,10 @@ class UploadController extends Controller
             'area_mm2' => $f->area_mm2,
             'triangles' => $f->triangles,
             // a box with its lid is two bodies on one plate by design, not a defect
-            'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], $f->kind() === 'box' ? ['multiple_shells'] : [])),
-            'parts' => $f->kind() === 'box' && ! empty($f->tool_params['lid']) ? ['body', 'lid'] : [],
+            'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], self::partsOf($f) || in_array($f->kind(), ['logo', 'qr', 'stamp'], true) ? ['multiple_shells'] : [])),
+            'parts' => self::partsOf($f),
+            // lets the tool page reopen this design ("edit" from the calculator)
+            'tool' => $f->origin === 'tool' && is_array($f->tool_params) && \Illuminate\Support\Facades\Route::has('tools.'.$f->origin_ref) ? ['kind' => $f->origin_ref, 'params' => $f->tool_params, 'url' => route('tools.'.$f->origin_ref, ['from' => $f->uuid])] : null,
             'stl_url' => $f->stl_path ? route('api.files.stl', $f->uuid) : null,
             'kind' => $f->kind(),
             'check' => \App\Domain\Tools\ModelCheck::report($f),

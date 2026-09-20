@@ -2,11 +2,11 @@
 
 @php
     $integer = fn (array $f) => $f[3] === 1;
-    $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count'], true) ? '' : ($k === 'angle' ? '°' : 'mm');
-    $main = ['organizer' => ['width', 'depth', 'height', 'rows', 'cols'], 'box' => ['inner_w', 'inner_d', 'inner_h'], 'phone_stand' => ['width', 'device', 'angle', 'back'], 'cable_holder' => ['count', 'cable']][$kind];
+    $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : 'mm');
     $i18n = collect(['param.working', 'param.failed', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
         'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
-        'param.part.body', 'param.part.lid', 'param.part.all'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
+        'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
+        'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
     $colors = ['white', 'black', 'grey', 'red', 'blue', 'green', 'yellow', 'orange', 'any'];
 @endphp
 
@@ -18,6 +18,9 @@
         create: @json(route('api.tools.param')),
         home: @json(route('home')),
         presets: {{ \Illuminate\Support\Js::from($presets) }},
+        artworkUrl: @json(route('api.tools.artwork')),
+        files: @json(url('/api/files')),
+        from: @json(request('from')),
         config: {{ \Illuminate\Support\Js::from($config) }},
         locale: @json(app()->getLocale()),
         i18n: {{ \Illuminate\Support\Js::from($i18n) }},
@@ -54,6 +57,40 @@
                 </fieldset>
             @endif
 
+            @if($texts || $artwork)
+                <fieldset>
+                    <legend class="lbl">{{ __('param.'.$kind.'.content') }}</legend>
+                    <div class="mt-2 grid gap-3 sm:grid-cols-2">
+                        @foreach($texts as $key => $t)
+                            <label class="text-sm font-medium text-ink {{ $key === 'url' ? 'sm:col-span-2' : '' }}">{{ __('param.t.'.$kind.'.'.$key) }}
+                                <input data-text="{{ $key }}" maxlength="{{ $t[0] }}" value="{{ $t[2] }}" @if($t[1]) required @endif class="field" @if($key === 'url') inputmode="url" autocapitalize="off" spellcheck="false" @endif>
+                            </label>
+                        @endforeach
+                    </div>
+                    @if($artwork)
+                        <div class="mt-3 rounded-xl border border-dashed border-line p-3">
+                            <label class="text-sm font-medium text-ink">{{ __('param.artwork') }} <span class="font-normal text-muted">{{ __('param.artwork.hint') }}</span>
+                                <input id="param-artwork" type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-action-soft file:px-4 file:py-2.5 file:font-semibold file:text-action-dark">
+                            </label>
+                            <p id="param-artwork-state" class="mt-1 text-sm text-muted" aria-live="polite"></p>
+                        </div>
+                    @endif
+                </fieldset>
+            @endif
+
+            @foreach($choices as $key => $options)
+                <fieldset>
+                    <legend class="lbl">{{ __('param.c.'.$kind.'.'.$key) }}</legend>
+                    <div class="mt-2 flex flex-wrap gap-2" role="radiogroup">
+                        @foreach($options as $i => $o)
+                            <label class="cursor-pointer rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-ink has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action">
+                                <input type="radio" name="c-{{ $key }}" data-choice="{{ $key }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('param.o.'.$kind.'.'.$o) }}
+                            </label>
+                        @endforeach
+                    </div>
+                </fieldset>
+            @endforeach
+
             <fieldset>
                 <legend class="lbl">{{ __('param.'.$kind.'.size') }}</legend>
                 <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -69,7 +106,7 @@
 
             @foreach($flags as $flag)
                 <label class="flex items-start gap-3 text-sm text-ink">
-                    <input data-flag="{{ $flag }}" type="checkbox" class="mt-1 h-5 w-5 accent-action" @checked($flag === 'cable')>
+                    <input data-flag="{{ $flag }}" type="checkbox" class="mt-1 h-5 w-5 accent-action" @checked(in_array($flag, $flagsOn, true))>
                     <span><span class="font-semibold">{{ __('param.flag.'.$flag) }}</span><br><span class="text-muted">{{ __('param.flag.'.$flag.'.hint') }}</span></span>
                 </label>
             @endforeach
@@ -122,12 +159,14 @@
             <div class="card overflow-hidden">
                 <div class="relative">
                     <canvas id="param-viewer" class="block h-[42vh] w-full touch-none lg:h-[52vh]" role="img" aria-label="{{ __('param.viewer') }}"></canvas>
+                    <div id="param-views" class="absolute left-3 top-3 flex flex-wrap gap-1" role="group" aria-label="{{ __('param.view') }}"></div>
                     <div id="param-busy" class="absolute right-3 top-3 hidden rounded-full bg-white/90 px-3 py-1 text-xs text-muted shadow">{{ __('param.working') }}</div>
                 </div>
                 <dl id="param-dims" class="grid grid-cols-1 gap-x-4 gap-y-1 border-t border-line px-4 py-3 text-sm sm:grid-cols-2" aria-live="polite"></dl>
             </div>
 
             <div id="param-error" class="note-error hidden" role="alert"></div>
+            <ul id="param-warnings" class="note-warn hidden list-disc space-y-1 pl-8 text-sm"></ul>
 
             <div class="card p-5">
                 <div class="text-sm text-muted">{{ __('param.estimate.title') }}</div>

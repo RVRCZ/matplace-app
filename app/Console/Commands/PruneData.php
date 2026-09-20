@@ -59,7 +59,18 @@ class PruneData extends Command
             }
         }
 
-        $this->info(($dry ? '[dry-run] ' : '')."photos={$photos} files={$files} gcodes={$gcodes}");
+        // uploaded artwork and half-built tool previews live for a day (a created model keeps its own copy)
+        $temp = 0;
+        foreach (array_merge(glob(storage_path('app/tmp/artwork/*')) ?: [], glob(storage_path('app/tmp/param/*')) ?: []) as $t) {
+            if (is_file($t) && filemtime($t) < time() - 86400) {
+                $temp++;
+                if (! $dry) {
+                    @unlink($t);
+                }
+            }
+        }
+
+        $this->info(($dry ? '[dry-run] ' : '')."photos={$photos} files={$files} gcodes={$gcodes} temp={$temp}");
 
         return self::SUCCESS;
     }

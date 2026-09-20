@@ -4,8 +4,8 @@ Parametric everyday products as exact watertight solids (manifold3d): no AI, no 
 
   param_tool.py <kind> <out.stl> <params-json> [part] [view]
 
-kind:  organizer | box | phone_stand | cable_holder
-part:  all (default) | body | lid                       (box with a lid: separate exports)
+kind:  organizer | box | phone_stand | cable_holder | vase | logo | stamp | qr   (the last four live in creative_kinds.py)
+part:  all (default) | body | lid | saucer | handle | stand | imprint   (separate exports of multi-part products)
 view:  print (default, the orientation it should be printed in) | use (how it stands on the desk; for previews)
 
 All lengths in millimetres. Limits are enforced here as well as in the web layer, so the tool can never be asked
@@ -13,7 +13,10 @@ for an impossible or absurdly heavy shape. Prints one JSON object: {ok, bbox, vo
 """
 import json
 import math
+import os
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 LIMITS = {
     "organizer": {"width": (30, 400), "depth": (30, 400), "height": (10, 150), "rows": (1, 8), "cols": (1, 8), "wall": (0.8, 4), "floor": (0.8, 4)},
@@ -229,9 +232,16 @@ def main(argv):
         import manifold3d as M
         import numpy as np
         p = json.loads(argv[3] or "{}")
-        if kind not in LIMITS or not isinstance(p, dict):
+        builders = {"organizer": organizer, "box": box, "phone_stand": phone_stand, "cable_holder": cable_holder}
+        if not isinstance(p, dict):
             raise Invalid("unknown_kind")
-        parts, notes = {"organizer": organizer, "box": box, "phone_stand": phone_stand, "cable_holder": cable_holder}[kind](M, p)
+        if kind in builders:
+            parts, notes = builders[kind](M, p)
+        else:
+            import creative_kinds
+            if kind not in creative_kinds.BUILDERS:
+                raise Invalid("unknown_kind")
+            parts, notes = creative_kinds.BUILDERS[kind](M, Invalid, p)
         key = "use" if (view == "use" and "use" in parts) else (part if part in parts else "all")
         solid = parts[key]
         if solid.is_empty() or solid.status() != M.Error.NoError or solid.volume() <= 0:

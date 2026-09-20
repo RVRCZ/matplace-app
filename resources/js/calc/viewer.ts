@@ -46,7 +46,7 @@ export class Viewer {
         if (this.grid) this.scene.remove(this.grid);
         if (!geom.getAttribute('normal')) geom.computeVertexNormals();
         // Z-up files (all print formats) → three.js Y-up
-        const plate = paintByHeight(geom, kind === 'lithophane');
+        const plate = paintByHeight(geom, kind === 'lithophane', kind === 'qr');
         this.mesh = new Mesh(geom, plate ? this.plateMaterial : this.material);
         this.mesh.rotation.x = -Math.PI / 2;
         this.mesh.scale.setScalar(scale);
@@ -103,7 +103,7 @@ export class Viewer {
  * Normal plates: low = dark teal, high = near white (embossed text pops, a relief looks like its photo).
  * Lithophane: thin = bright, thick = dark — what you see with a light behind it.
  */
-function paintByHeight(geom: BufferGeometry, backlit: boolean): boolean {
+function paintByHeight(geom: BufferGeometry, backlit: boolean, darkOnLight = false): boolean {
     const pos = geom.getAttribute('position');
     if (!pos) return false;
     geom.computeBoundingBox();
@@ -116,13 +116,14 @@ function paintByHeight(geom: BufferGeometry, backlit: boolean): boolean {
     // the relief side is where heights vary; a standing lithophane has its flat back at max, relief towards min
     const towardsMin = backlit && axis === 1;
     // colours are multiplied by strong studio lights: keep the plate deep so the near-white top layer stands out
-    const lo = backlit ? [0.13, 0.1, 0.07] : [0.02, 0.2, 0.19];
-    const hi = backlit ? [1.0, 0.93, 0.78] : [0.96, 1.0, 0.99];
+    // a QR sign is printed as a light plate with dark modules (filament swap): scanners expect dark on light
+    const lo = backlit ? [0.13, 0.1, 0.07] : darkOnLight ? [0.97, 0.97, 0.95] : [0.02, 0.2, 0.19];
+    const hi = backlit ? [1.0, 0.93, 0.78] : darkOnLight ? [0.04, 0.05, 0.08] : [0.96, 1.0, 0.99];
     const colors = new Float32Array(pos.count * 3);
     for (let i = 0; i < pos.count; i++) {
         let h = ((axis === 0 ? pos.getX(i) : axis === 1 ? pos.getY(i) : pos.getZ(i)) - min) / size[axis];
         if (towardsMin) h = 1 - h;
-        const k = backlit ? 1 - h : h * h * h;   // cubic: the plate stays dark, only the top layer lights up
+        const k = backlit ? 1 - h : darkOnLight ? (h > 0.85 ? 1 : 0) : h * h * h;   // cubic: the plate stays dark, only the top layer lights up
         colors[i * 3] = lo[0] + (hi[0] - lo[0]) * k;
         colors[i * 3 + 1] = lo[1] + (hi[1] - lo[1]) * k;
         colors[i * 3 + 2] = lo[2] + (hi[2] - lo[2]) * k;

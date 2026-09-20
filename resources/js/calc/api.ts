@@ -13,6 +13,7 @@ export interface FileInfo {
     hints?: { supports?: boolean; infill?: number; quality?: string };
     generation?: { token: string; refinable: boolean } | null;
     parts?: string[];
+    tool?: { kind: string; params: Record<string, unknown>; url: string } | null;
     check?: { status: string; items: { level: 'error' | 'advice' | 'ok'; code: string; params: Record<string, string> }[] };
 }
 

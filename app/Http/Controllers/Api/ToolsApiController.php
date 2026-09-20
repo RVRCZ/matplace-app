@@ -48,11 +48,19 @@ class ToolsApiController extends Controller
         $request->validate(['kind' => ['required', Rule::in(array_keys(ParametricGenerator::FIELDS))]]);
         $data = $request->validate(ParametricGenerator::rules($kind) + [
             'params' => ['nullable', 'array'],
-            'part' => ['nullable', 'in:all,body,lid'],
+            'part' => ['nullable', Rule::in(ParametricGenerator::PARTS)],
             'view' => ['nullable', 'in:print,use'],
         ]);
 
         return [$kind, (array) ($data['params'] ?? []), $data['part'] ?? 'all', $data['view'] ?? 'print'];
+    }
+
+    /** POST /api/tools/artwork (multipart: file) → {artwork: id} used as params.artwork by logo, stamp… */
+    public function artwork(Request $request): JsonResponse
+    {
+        $request->validate(['file' => ['required', 'file', 'max:5120', 'mimes:svg,png,jpg,jpeg,webp']]);
+
+        return response()->json(['artwork' => ParametricGenerator::storeArtwork($request->file('file')), 'name' => $request->file('file')->getClientOriginalName()], 201);
     }
 
     /** POST /api/tools/param/preview {kind, params, part?, view?, download?} → STL + X-Model-Meta (size, volume, notes) */
@@ -89,7 +97,7 @@ class ToolsApiController extends Controller
     public function paramPart(ModelFile $modelFile, string $part, ParametricGenerator $tools): BinaryFileResponse
     {
         abort_unless($modelFile->origin === 'tool' && isset(ParametricGenerator::FIELDS[$modelFile->origin_ref]) && is_array($modelFile->tool_params), 404);
-        abort_unless(in_array($part, ['body', 'lid'], true), 404);
+        abort_unless(in_array($part, ParametricGenerator::PARTS, true) && $part !== 'all', 404);
         $built = $tools->build($modelFile->origin_ref, $modelFile->tool_params, $part);
 
         return response()->download($built['path'], pathinfo($modelFile->original_name, PATHINFO_FILENAME).'-'.$part.'.stl', ['Content-Type' => 'model/stl'])->deleteFileAfterSend(true);

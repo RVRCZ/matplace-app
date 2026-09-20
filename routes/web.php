@@ -36,6 +36,10 @@ Route::get('/tools/check', [ToolsController::class, 'check'])->name('tools.check
 Route::get('/tools/organizer', [ToolsController::class, 'param'])->defaults('kind', 'organizer')->name('tools.organizer');
 Route::get('/tools/box', [ToolsController::class, 'param'])->defaults('kind', 'box')->name('tools.box');
 Route::get('/tools/phone-stand', [ToolsController::class, 'param'])->defaults('kind', 'phone_stand')->name('tools.phone_stand');
+Route::get('/tools/vase', [ToolsController::class, 'param'])->defaults('kind', 'vase')->name('tools.vase');
+Route::get('/tools/logo', [ToolsController::class, 'param'])->defaults('kind', 'logo')->name('tools.logo');
+Route::get('/tools/stamp', [ToolsController::class, 'param'])->defaults('kind', 'stamp')->name('tools.stamp');
+Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');
 Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('kind', 'cable_holder')->name('tools.cable_holder');
 
 // Public quote (online version of the PDF) — no account needed
@@ -69,6 +73,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('generate/{generation}', [GenerationController::class, 'show'])->name('generate.show');
     Route::post('generate/{generation}/refine', [GenerationController::class, 'refine'])->middleware('throttle:10,1')->name('generate.refine');
     Route::post('tools/sign', [ToolsApiController::class, 'sign'])->middleware('throttle:20,1')->name('tools.sign');
+    Route::post('tools/artwork', [ToolsApiController::class, 'artwork'])->middleware('throttle:30,1')->name('tools.artwork');
     Route::post('tools/param/preview', [ToolsApiController::class, 'paramPreview'])->middleware('throttle:90,1')->name('tools.param.preview');
     Route::post('tools/param', [ToolsApiController::class, 'paramCreate'])->middleware('throttle:20,1')->name('tools.param');
     Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware('throttle:30,1')->name('tools.param.part');

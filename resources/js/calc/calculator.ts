@@ -407,6 +407,8 @@ function showKindTip(kind: string | undefined): void {
     const text = t(key);
     el.textContent = text === key ? '' : text;
     el.classList.toggle('hidden', text === key);
+    const edit = state.file?.tool?.url;
+    if (edit && text !== key) { const a = document.createElement('a'); a.href = edit; a.className = 'ml-2 font-semibold underline'; a.textContent = t('calc.edit_design'); el.appendChild(a); }
     showRefine(kind === 'generated' ? state.file : null);
 }
 

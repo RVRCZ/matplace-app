@@ -39,6 +39,11 @@ class ToolsController extends Controller
             'available' => $tools->available(),
             'fields' => ParametricGenerator::FIELDS[$kind],
             'flags' => ParametricGenerator::FLAGS[$kind] ?? [],
+            'flagsOn' => ParametricGenerator::FLAGS_ON,
+            'choices' => ParametricGenerator::CHOICES[$kind] ?? [],
+            'texts' => ParametricGenerator::TEXTS[$kind] ?? [],
+            'artwork' => in_array($kind, ParametricGenerator::ARTWORK, true),
+            'main' => ParametricGenerator::MAIN[$kind],
             'presets' => ParametricGenerator::PRESETS[$kind] ?? [],
             'config' => ConfigController::payload($materials, $converters),
         ]);

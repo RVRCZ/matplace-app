@@ -17,7 +17,7 @@ apt-get install -y -qq php8.2-fpm php8.2-mysql php8.2-mbstring php8.2-xml php8.2
 echo "== python tools (trimesh + pymeshfix in a venv)"
 python3 -m venv /opt/matplace-py
 /opt/matplace-py/bin/pip install -q --upgrade pip
-/opt/matplace-py/bin/pip install -q trimesh numpy scipy networkx pymeshfix pillow manifold3d lxml || /opt/matplace-py/bin/pip install -q trimesh numpy pillow
+/opt/matplace-py/bin/pip install -q trimesh numpy scipy networkx pymeshfix pillow manifold3d lxml svgelements segno fonttools || /opt/matplace-py/bin/pip install -q trimesh numpy pillow
 
 echo "== node (for vite build)"
 if ! command -v node >/dev/null; then

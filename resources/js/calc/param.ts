@@ -8,8 +8,8 @@ import { estimate, price, range, RoughConfig, Profile } from './rough';
 
 interface Material { code: string; density: number }
 interface Cfg {
-    kind: string; preview: string; create: string; home: string; locale: string;
-    presets: Record<string, Record<string, number>>;
+    kind: string; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
+    presets: Record<string, Record<string, number | string>>;
     config: { rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; currency: string; materials: Material[] };
     i18n: Record<string, string>;
 }
@@ -22,18 +22,23 @@ export function bootParam(): void {
     const canvas = document.getElementById('param-viewer') as HTMLCanvasElement | null;
     if (!cfg || !form || !canvas) return;
 
-    const t = (k: string, r: Record<string, string | number> = {}) => Object.entries(r).reduce((s, [a, b]) => s.replace(`:${a}`, String(b)), cfg.i18n[k] ?? k);
+    const t = (k: string, r: Record<string, string | number> = {}) => Object.entries(r).reduce((s, [a, b]) => s.split(`:${a}`).join(String(b)), cfg.i18n[k] ?? k);
     const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const nf = new Intl.NumberFormat(cfg.locale, { maximumFractionDigits: 1 });
     const money = new Intl.NumberFormat(cfg.locale, { style: 'currency', currency: cfg.config.currency || 'CZK', maximumFractionDigits: 0 });
     const viewer = new Viewer(canvas);
     const holes: Hole[] = [];
     let seq = 0; let timer = 0; let lastMeta: Meta | null = null; let valid = false;
+    let artwork: string | null = null;      // uploaded SVG / picture reference
+    let viewPart = 'all';                   // which part the preview shows
 
     const params = (): Record<string, unknown> => {
         const p: Record<string, unknown> = {};
         form.querySelectorAll<HTMLInputElement>('[data-param]').forEach((i) => { p[i.dataset.param!] = Number(i.value); });
         form.querySelectorAll<HTMLInputElement>('[data-flag]').forEach((i) => { p[i.dataset.flag!] = i.checked; });
+        form.querySelectorAll<HTMLInputElement>('[data-choice]:checked').forEach((i) => { p[i.dataset.choice!] = i.value; });
+        form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { p[i.dataset.text!] = i.value; });
+        if (artwork) p.artwork = artwork;
         if (cfg.kind === 'box') p.holes = holes;
         return p;
     };
@@ -82,6 +87,44 @@ export function bootParam(): void {
         $('param-price-sub').textContent = t('param.estimate', { g: nf.format(est.grams * qty), t: h ? `${h} h ${min} min` : `${min} min`, q: qty });
     };
 
+    /** Separately printed parts of the current design (mirrors UploadController::partsOf). */
+    const partsNow = (): string[] => {
+        const p = params();
+        if (cfg.kind === 'box' && p.lid) return ['body', 'lid'];
+        if (cfg.kind === 'vase' && p.purpose === 'pot' && p.saucer) return ['body', 'saucer'];
+        if (cfg.kind === 'stamp' && p.handle === 'knob') return ['body', 'handle'];
+        if (cfg.kind === 'qr' && p.stand) return ['body', 'stand'];
+        return [];
+    };
+
+    /** Assembly / single parts / (stamp) the imprint it leaves: buttons over the viewer. */
+    const renderViews = (): void => {
+        const box = document.getElementById('param-views');
+        if (!box) return;
+        const views = ['all', ...partsNow(), ...(cfg.kind === 'stamp' ? ['imprint'] : [])];
+        if (!views.includes(viewPart)) viewPart = 'all';
+        box.innerHTML = '';
+        if (views.length < 2) return;
+        views.forEach((v) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = `chip !py-1 text-xs ${v === viewPart ? 'chip-on' : ''}`; b.textContent = t(`param.part.${v}`);
+            b.setAttribute('aria-pressed', v === viewPart ? 'true' : 'false');
+            b.onclick = () => { viewPart = v; refresh(); };
+            box.appendChild(b);
+        });
+    };
+
+    const renderWarnings = (m: Meta): void => {
+        const n = m.notes as { warnings?: string[]; needs?: string[]; missing_chars?: string[]; thin_pct?: number; pieces?: number; module_mm?: number; modules?: number; quiet_zone_mm?: number; saucer_d?: number; drainage_holes?: number };
+        const out: string[] = (n.warnings ?? []).map((w) => t(`param.warn.${w}`, { n: n.thin_pct ?? 0, c: (n.missing_chars ?? []).join(' '), p: n.pieces ?? 0 }));
+        if (n.module_mm) out.push(t('param.qr.facts', { m: nf.format(n.module_mm), q: nf.format(n.quiet_zone_mm ?? 0), c: n.modules ?? 0 }));
+        if (n.saucer_d) out.push(t('param.saucer', { d: nf.format(n.saucer_d), h: n.drainage_holes ?? 0 }));
+        if ((n.needs ?? []).length) out.push(`${t('param.needs')}: ${(n.needs ?? []).map((x) => t(`param.need.${x}`)).join(', ')}`);
+        const el = $('param-warnings');
+        el.innerHTML = out.map((o) => `<li>${o.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c] as string))}</li>`).join('');
+        el.classList.toggle('hidden', out.length === 0);
+    };
+
     const post = (body: Record<string, unknown>) => fetch(cfg.preview, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) });
     const firstError = (b: { message?: string; errors?: Record<string, string[]> }) => Object.values(b.errors ?? {})[0]?.[0] ?? b.message ?? t('param.failed');
 
@@ -90,13 +133,14 @@ export function bootParam(): void {
         const mine = ++seq;
         $('param-busy').classList.remove('hidden');
         try {
-            const res = await post({ kind: cfg.kind, params: params(), view: 'use' });
+            renderViews();
+            const res = await post({ kind: cfg.kind, params: params(), view: 'use', part: viewPart });
             if (mine !== seq) return;                       // a newer change is already on its way
             if (!res.ok) { valid = false; showError(firstError(await res.json())); return; }
             lastMeta = JSON.parse(res.headers.get('X-Model-Meta') ?? 'null');
             viewer.setGeometry(new STLLoader().parse(await res.arrayBuffer()), 1, cfg.kind);
             valid = true; showError(null);
-            if (lastMeta) { renderDims(lastMeta); renderPrice(); }
+            if (lastMeta) { renderDims(lastMeta); renderWarnings(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderDownloads();
         } catch {
             if (mine === seq) { valid = false; showError(t('param.failed')); }
@@ -108,7 +152,7 @@ export function bootParam(): void {
 
     /** Separate exports: whole plate, and for a box with a lid also the box and the lid alone. */
     const renderDownloads = (): void => {
-        const parts = cfg.kind === 'box' && (params().lid as boolean) ? ['all', 'body', 'lid'] : ['all'];
+        const parts = ['all', ...partsNow()];
         const box = $('param-downloads');
         box.innerHTML = '';
         parts.forEach((part) => {
@@ -166,11 +210,46 @@ export function bootParam(): void {
         };
     }
 
+    /** Fill the form from a preset or from a stored design. */
+    const applyValues = (set: Record<string, unknown>): void => {
+        Object.entries(set).forEach(([k, v]) => {
+            const num = form.querySelector<HTMLInputElement>(`[data-param="${k}"]`); if (num) num.value = String(v);
+            const txt = form.querySelector<HTMLInputElement>(`[data-text="${k}"]`); if (txt) txt.value = String(v ?? '');
+            const flag = form.querySelector<HTMLInputElement>(`[data-flag="${k}"]`); if (flag) flag.checked = Boolean(v);
+            const choice = form.querySelector<HTMLInputElement>(`[data-choice="${k}"][value="${String(v)}"]`); if (choice) choice.checked = true;
+        });
+        if (Array.isArray(set.holes)) { holes.splice(0, holes.length, ...(set.holes as Hole[])); renderHoles(); }
+        if (typeof set.artwork === 'string') { artwork = set.artwork; artworkState(t('param.artwork.remove'), true); }
+    };
+
+    // ── uploaded artwork (SVG or a simple picture) ─────────────────────────
+    const artInput = document.getElementById('param-artwork') as HTMLInputElement | null;
+    const artworkState = (text: string, removable = false): void => {
+        const el = document.getElementById('param-artwork-state'); if (!el) return;
+        el.textContent = '';
+        if (!removable) { el.textContent = text; return; }
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'font-semibold text-action-dark underline'; b.textContent = text;
+        b.onclick = () => { artwork = null; if (artInput) artInput.value = ''; artworkState(''); refresh(); };
+        el.appendChild(b);
+    };
+    if (artInput) {
+        artInput.onchange = async () => {
+            const f = artInput.files?.[0]; if (!f) return;
+            artworkState(t('param.artwork.uploading'));
+            try {
+                const fd = new FormData(); fd.append('file', f);
+                const res = await fetch(cfg.artworkUrl, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: fd });
+                const body = await res.json();
+                if (!res.ok) { artwork = null; artworkState(firstError(body)); return; }
+                artwork = body.artwork; artworkState(t('param.artwork.remove'), true); refresh();
+            } catch { artwork = null; artworkState(t('param.artwork.failed')); }
+        };
+    }
+
     // ── presets, inputs, order choices ─────────────────────────────────────
     form.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((b) => {
         b.onclick = () => {
-            const set = cfg.presets[b.dataset.preset!] ?? {};
-            Object.entries(set).forEach(([k, v]) => { const i = form.querySelector<HTMLInputElement>(`[data-param="${k}"]`); if (i) i.value = String(v); });
+            applyValues(cfg.presets[b.dataset.preset!] ?? {});
             form.querySelectorAll('[data-preset]').forEach((o) => o.classList.toggle('chip-on', o === b));
             refresh();
         };
@@ -193,5 +272,14 @@ export function bootParam(): void {
         }
     };
 
-    refresh();
+    // reopen a stored design ("edit" from the calculator): same numbers, same artwork
+    if (cfg.from && /^[0-9a-f-]{36}$/.test(cfg.from)) {
+        fetch(`${cfg.files}/${cfg.from}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((b) => { if (b?.file?.tool?.kind === cfg.kind) applyValues(b.file.tool.params); })
+            .catch(() => undefined)
+            .finally(refresh);
+    } else {
+        refresh();
+    }
 }

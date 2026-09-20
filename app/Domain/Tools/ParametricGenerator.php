@@ -35,11 +35,49 @@ final class ParametricGenerator
         'cable_holder' => [
             'count' => [1, 8, 3, 1], 'cable' => [3, 14, 6, 0.5], 'depth' => [10, 40, 20, 1], 'wall' => [2, 5, 3, 0.5],
         ],
+        'vase' => [
+            'height' => [40, 300, 140, 1], 'top_d' => [30, 250, 90, 1], 'bottom_d' => [30, 250, 70, 1], 'wall' => [0.8, 4, 1.6, 0.2], 'floor' => [0.8, 5, 1.6, 0.2],
+            'ribs' => [6, 48, 16, 1], 'twist' => [0, 180, 90, 1],
+        ],
+        'logo' => ['width' => [20, 250, 80, 1], 'thickness' => [0.6, 10, 2, 0.2], 'plate' => [0.8, 6, 2, 0.2], 'margin' => [0, 20, 5, 1]],
+        'stamp' => ['width' => [15, 120, 50, 1], 'relief' => [0.8, 4, 1.6, 0.2], 'plate' => [2, 6, 3, 0.5]],
+        'qr' => ['size' => [30, 150, 70, 1], 'plate' => [1.6, 4, 2.4, 0.2], 'relief' => [0.6, 2, 1, 0.2]],
     ];
 
-    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable'], 'cable_holder' => ['screws']];
+    /** kind → choice → allowed values (the first one is the default) */
+    public const CHOICES = [
+        'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['cone', 'belly', 'tulip'], 'style' => ['smooth', 'ribs', 'twist']],
+        'logo' => ['mode' => ['relief', 'cutout'], 'shape' => ['rounded', 'rect', 'circle']],
+        'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
+    ];
+
+    /** kind → text input → [max length, required, default] */
+    public const TEXTS = [
+        'logo' => ['line1' => [30, false, 'LOGO'], 'line2' => [30, false, '']],
+        'stamp' => ['line1' => [20, false, 'EVA'], 'line2' => [20, false, '']],
+        'qr' => ['url' => [300, true, 'https://matplace.com'], 'label' => [40, false, 'matplace.com']],
+    ];
+
+    /** kinds that accept an uploaded SVG or picture instead of text */
+    public const ARTWORK = ['logo', 'stamp'];
+
+    /** the fields shown first; everything else sits under "more" */
+    public const MAIN = [
+        'organizer' => ['width', 'depth', 'height', 'rows', 'cols'], 'box' => ['inner_w', 'inner_d', 'inner_h'], 'phone_stand' => ['width', 'device', 'angle', 'back'],
+        'cable_holder' => ['count', 'cable'], 'vase' => ['height', 'top_d', 'bottom_d'], 'logo' => ['width', 'thickness'], 'stamp' => ['width', 'relief'], 'qr' => ['size'],
+    ];
+
+    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint'];
+
+    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable'], 'cable_holder' => ['screws'], 'vase' => ['drainage', 'saucer'], 'logo' => ['invert'], 'stamp' => ['invert'], 'qr' => ['stand', 'hole']];
+
+    /** flags that start switched on */
+    public const FLAGS_ON = ['cable', 'drainage', 'saucer'];
 
     public const PRESETS = [
+        'vase' => [
+            'smooth' => ['style' => 'smooth', 'profile' => 'belly'], 'ribs' => ['style' => 'ribs', 'profile' => 'cone'], 'twist' => ['style' => 'twist', 'profile' => 'belly', 'twist' => 90],
+        ],
         'organizer' => [
             'drawer' => ['width' => 300, 'depth' => 200, 'height' => 45, 'rows' => 2, 'cols' => 4, 'wall' => 1.6, 'floor' => 1.2],
             'office' => ['width' => 200, 'depth' => 100, 'height' => 60, 'rows' => 1, 'cols' => 3, 'wall' => 1.6, 'floor' => 1.2],
@@ -66,6 +104,15 @@ final class ParametricGenerator
         foreach (self::FLAGS[$kind] ?? [] as $flag) {
             $rules['params.'.$flag] = ['nullable', 'boolean'];
         }
+        foreach (self::CHOICES[$kind] ?? [] as $key => $options) {
+            $rules['params.'.$key] = ['nullable', 'in:'.implode(',', $options)];
+        }
+        foreach (self::TEXTS[$kind] ?? [] as $key => [$max, $required]) {
+            $rules['params.'.$key] = [$required ? 'required' : 'nullable', 'string', 'max:'.$max];
+        }
+        if (in_array($kind, self::ARTWORK, true)) {
+            $rules['params.artwork'] = ['nullable', 'string', 'regex:/^(file:)?[0-9a-f-]{36}$/'];
+        }
         if ($kind === 'box') {
             $rules += [
                 'params.holes' => ['nullable', 'array', 'max:'.self::MAX_HOLES],
@@ -90,7 +137,17 @@ final class ParametricGenerator
             $out[$key] = $step === 1 ? (int) $v : round((float) $v, 2);
         }
         foreach (self::FLAGS[$kind] ?? [] as $flag) {
-            $out[$flag] = filter_var($p[$flag] ?? ($flag === 'cable'), FILTER_VALIDATE_BOOLEAN);
+            $out[$flag] = filter_var($p[$flag] ?? in_array($flag, self::FLAGS_ON, true), FILTER_VALIDATE_BOOLEAN);
+        }
+        foreach (self::CHOICES[$kind] ?? [] as $key => $options) {
+            $out[$key] = in_array($p[$key] ?? null, $options, true) ? $p[$key] : $options[0];
+        }
+        foreach (self::TEXTS[$kind] ?? [] as $key => [$max, , $default]) {
+            // an emptied field stays empty (the framework turns '' into null); the default is only for a field that was never sent
+            $out[$key] = mb_substr(trim((string) (array_key_exists($key, $p) ? ($p[$key] ?? '') : $default)), 0, $max);
+        }
+        if (in_array($kind, self::ARTWORK, true) && ! empty($p['artwork'])) {
+            $out['artwork'] = (string) $p['artwork'];
         }
         if ($kind === 'box') {
             $out['holes'] = array_values(array_map(fn ($h) => [
@@ -113,7 +170,7 @@ final class ParametricGenerator
         $dir = storage_path('app/tmp/param');
         File::ensureDirectoryExists($dir);
         $path = $dir.'/'.Str::uuid().'.stl';
-        $r = $this->python->runScript('param_tool.py', [$kind, $path, json_encode(self::clean($kind, $params)), $part, $view], 30);
+        $r = $this->python->runScript('param_tool.py', [$kind, $path, json_encode($this->forTool($kind, self::clean($kind, $params)), JSON_UNESCAPED_UNICODE), $part, $view], 60);
         if (empty($r['ok']) || ! is_file($path)) {
             @unlink($path);
             $code = (string) ($r['code'] ?? 'failed');
@@ -122,6 +179,47 @@ final class ParametricGenerator
         }
 
         return ['path' => $path, 'meta' => ['bbox' => $r['bbox'], 'volume_mm3' => $r['volume_mm3'], 'area_mm2' => $r['area_mm2'], 'triangles' => $r['triangles'], 'notes' => $r['notes'] ?? []]];
+    }
+
+    /** Adds what only the server knows: the font file and where the uploaded artwork lives. */
+    private function forTool(string $kind, array $clean): array
+    {
+        if (isset(self::TEXTS[$kind]) || in_array($kind, self::ARTWORK, true)) {
+            $clean['font'] = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf');
+            $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? ''], fn ($l) => $l !== ''));
+        }
+        if (! empty($clean['artwork'])) {
+            $clean['artwork_path'] = self::artworkPath($clean['artwork']);
+            if (! $clean['artwork_path']) {
+                throw ValidationException::withMessages(['params' => [__('param.error.artwork_gone')]])->status(422);
+            }
+        } elseif (in_array($kind, self::ARTWORK, true) && empty($clean['lines'])) {
+            throw ValidationException::withMessages(['params' => [__('param.error.no_text')]])->status(422);
+        }
+
+        return $clean;
+    }
+
+    /** "<uuid>" = fresh upload (kept for a day), "file:<uuid>" = artwork stored with a created model (kept with it). */
+    public static function artworkPath(string $ref): ?string
+    {
+        $stored = str_starts_with($ref, 'file:');
+        $id = $stored ? substr($ref, 5) : $ref;
+        $pattern = $stored ? Storage::disk(ModelFile::DISK)->path('files/'.$id.'/artwork.*') : storage_path('app/tmp/artwork/'.$id.'.*');
+        $hit = File::glob($pattern);
+
+        return $hit ? str_replace('\\', '/', $hit[0]) : null;
+    }
+
+    /** Uploaded SVG or picture → a reference the form sends along with the numbers. */
+    public static function storeArtwork(\Illuminate\Http\UploadedFile $file): string
+    {
+        $id = (string) Str::uuid();
+        $ext = strtolower($file->getClientOriginalExtension()) === 'svg' ? 'svg' : (['image/png' => 'png', 'image/webp' => 'webp'][$file->getMimeType()] ?? 'jpg');
+        File::ensureDirectoryExists(storage_path('app/tmp/artwork'));
+        File::copy($file->getRealPath(), storage_path('app/tmp/artwork/'.$id.'.'.$ext));
+
+        return $id;
     }
 
     public static function explain(string $code, string $raw = ''): string
@@ -142,6 +240,10 @@ final class ParametricGenerator
         $abs = Storage::disk(ModelFile::DISK)->path($rel);
         File::ensureDirectoryExists(dirname($abs));
         File::move($built['path'], $abs);
+        if (! empty($clean['artwork']) && ($src = self::artworkPath($clean['artwork']))) {
+            File::copy($src, dirname($abs).'/artwork.'.pathinfo($src, PATHINFO_EXTENSION));
+            $clean['artwork'] = 'file:'.$uuid;
+        }
 
         $o = $built['meta']['notes']['outer'] ?? [$built['meta']['bbox']['x'], $built['meta']['bbox']['y'], $built['meta']['bbox']['z']];
         $name = str_replace('_', '-', $kind).'-'.implode('x', array_map(fn ($v) => (string) round((float) $v), $o));

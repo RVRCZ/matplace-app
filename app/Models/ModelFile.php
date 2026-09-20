@@ -75,7 +75,7 @@ class ModelFile extends Model
         return match ($this->kind()) {
             'generated' => ['supports' => true],                                           // organic shapes: tree supports
             'lithophane' => ['infill' => 100, 'quality' => 'fine', 'supports' => false],   // must be solid, fine layers = smooth picture
-            'relief', 'sign', 'logo', 'organizer', 'box', 'phone_stand', 'cable_holder' => ['supports' => false],
+            'relief', 'sign', 'logo', 'stamp', 'qr', 'vase', 'organizer', 'box', 'phone_stand', 'cable_holder' => ['supports' => false],
             default => [],
         };
     }
