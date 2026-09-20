@@ -476,6 +476,8 @@ export function boot(): void {
         if (q >= 1 && q <= 1000) { state.params.quantity = Math.round(q); ($('quantity') as HTMLInputElement).value = String(state.params.quantity); }
         const colour = document.querySelector<HTMLInputElement>('#inquiry-form [name=color]');
         if (colour && query.get('color')) colour.value = (query.get('color') ?? '').slice(0, 40);
+        const note = document.querySelector<HTMLTextAreaElement>('#inquiry-form [name=note]');
+        if (note && query.get('note')) note.value = (query.get('note') ?? '').slice(0, 900);
         buildMaterials();
         history.replaceState(null, '', '/');
         openFile(open);

@@ -34,6 +34,7 @@ Route::get('/tools/relief', [ToolsController::class, 'relief'])->name('tools.rel
 Route::get('/tools/spare-part', [ToolsController::class, 'spare'])->name('tools.spare');
 Route::get('/tools/check', [ToolsController::class, 'check'])->name('tools.check');
 Route::get('/tools/organizer', [ToolsController::class, 'param'])->defaults('kind', 'organizer')->name('tools.organizer');
+Route::get('/tools/modular-organizer', [ToolsController::class, 'param'])->defaults('kind', 'modular')->name('tools.modular');
 Route::get('/tools/box', [ToolsController::class, 'param'])->defaults('kind', 'box')->name('tools.box');
 Route::get('/tools/phone-stand', [ToolsController::class, 'param'])->defaults('kind', 'phone_stand')->name('tools.phone_stand');
 Route::get('/tools/vase', [ToolsController::class, 'param'])->defaults('kind', 'vase')->name('tools.vase');

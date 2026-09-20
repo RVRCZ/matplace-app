@@ -10,6 +10,11 @@
             <path d="M22 30 L74 22 L100 34 L48 44Z" fill="{{ $l }}"/><path d="M22 30 L48 44 L48 60 L22 46Z" fill="{{ $a }}"/><path d="M48 44 L100 34 L100 50 L48 60Z" fill="{{ $d }}"/>
             <path d="M39 27.5 L65 39.5 M56.5 25 L82.5 37 M35 37 L87 28" stroke="{{ $d }}" stroke-width="2" fill="none"/>
             @break
+        @case('modular')
+            <rect x="18" y="20" width="84" height="44" rx="6" fill="#F3EBDD" stroke="{{ $g }}"/>
+            <rect x="22" y="24" width="48" height="17" rx="4" fill="#24407A"/><rect x="73" y="24" width="25" height="17" rx="4" fill="{{ $a }}"/>
+            <rect x="22" y="44" width="22" height="16" rx="4" fill="#fff" stroke="{{ $g }}"/><rect x="47" y="44" width="23" height="16" rx="4" fill="#24407A"/><rect x="73" y="44" width="25" height="16" rx="4" fill="#fff" stroke="{{ $g }}"/>
+            @break
         @case('box')
             <path d="M30 34 L66 28 L90 38 L54 46Z" fill="{{ $l }}"/><path d="M30 34 L54 46 L54 64 L30 52Z" fill="{{ $a }}"/><path d="M54 46 L90 38 L90 56 L54 64Z" fill="{{ $d }}"/>
             <path d="M32 18 L68 12 L92 22 L56 30Z" fill="{{ $a }}"/><path d="M32 18 L56 30 L56 34 L32 22Z" fill="{{ $d }}"/><circle cx="72" cy="50" r="3.5" fill="#FCEEE7"/>

@@ -48,7 +48,7 @@ class ToolsApiController extends Controller
         $request->validate(['kind' => ['required', Rule::in(array_keys(ParametricGenerator::FIELDS))]]);
         $data = $request->validate(ParametricGenerator::rules($kind) + [
             'params' => ['nullable', 'array'],
-            'part' => ['nullable', Rule::in(ParametricGenerator::PARTS)],
+            'part' => ['nullable', 'string', 'regex:/^('.implode('|', ParametricGenerator::PARTS).'|tray|bin_\d{1,2}x\d{1,2})$/'],
             'view' => ['nullable', 'in:print,use'],
         ]);
 
@@ -97,8 +97,12 @@ class ToolsApiController extends Controller
     public function paramPart(ModelFile $modelFile, string $part, ParametricGenerator $tools): BinaryFileResponse
     {
         abort_unless($modelFile->origin === 'tool' && isset(ParametricGenerator::FIELDS[$modelFile->origin_ref]) && is_array($modelFile->tool_params), 404);
-        abort_unless(in_array($part, ParametricGenerator::PARTS, true) && $part !== 'all', 404);
+        abort_unless((in_array($part, ParametricGenerator::PARTS, true) && $part !== 'all') || preg_match('/^(tray|bin_\d{1,2}x\d{1,2})$/', $part), 404);
         $built = $tools->build($modelFile->origin_ref, $modelFile->tool_params, $part);
+        if ($built['meta']['part'] !== $part) {
+            @unlink($built['path']);                     // this design has no such part: never hand out the whole set under its name
+            abort(404);
+        }
 
         return response()->download($built['path'], pathinfo($modelFile->original_name, PATHINFO_FILENAME).'-'.$part.'.stl', ['Content-Type' => 'model/stl'])->deleteFileAfterSend(true);
     }

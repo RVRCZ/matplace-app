@@ -35,6 +35,10 @@ final class ParametricGenerator
         'cable_holder' => [
             'count' => [1, 8, 3, 1], 'cable' => [3, 14, 6, 0.5], 'depth' => [10, 40, 20, 1], 'wall' => [2, 5, 3, 0.5],
         ],
+        'modular' => [
+            'inner_w' => [60, 600, 300, 1], 'inner_d' => [60, 600, 150, 1], 'height' => [15, 120, 40, 1], 'cols' => [1, 12, 6, 1], 'rows' => [1, 12, 3, 1],
+            'radius' => [0, 15, 6, 0.5], 'wall' => [0.8, 3, 1.6, 0.2], 'floor' => [0.8, 3, 1.2, 0.2], 'gap' => [0.3, 1.5, 0.6, 0.1],
+        ],
         'vase' => [
             'height' => [40, 300, 140, 1], 'top_d' => [30, 250, 90, 1], 'bottom_d' => [30, 250, 70, 1], 'wall' => [0.8, 4, 1.6, 0.2], 'floor' => [0.8, 5, 1.6, 0.2],
             'ribs' => [6, 48, 16, 1], 'twist' => [0, 180, 90, 1],
@@ -72,12 +76,12 @@ final class ParametricGenerator
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols'], 'box' => ['inner_w', 'inner_d', 'inner_h'], 'phone_stand' => ['width', 'device', 'angle', 'back'],
-        'cable_holder' => ['count', 'cable'], 'vase' => ['height', 'top_d', 'bottom_d'], 'logo' => ['width', 'thickness'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'],
+        'cable_holder' => ['count', 'cable'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d'], 'logo' => ['width', 'thickness'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'],
     ];
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'face', 'diffuser', 'back'];
 
-    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable'], 'cable_holder' => ['screws'], 'vase' => ['drainage', 'saucer'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole']];
+    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole']];
 
     /** flags that start switched on */
     public const FLAGS_ON = ['cable', 'drainage', 'saucer'];
@@ -94,6 +98,10 @@ final class ParametricGenerator
     ];
 
     public const MAX_HOLES = 8;
+
+    public const MAX_BINS = 24;
+
+    public const COLORS = ['white', 'black', 'grey', 'red', 'blue', 'green', 'yellow', 'orange'];
 
     public function __construct(private readonly PythonTool $python) {}
 
@@ -120,6 +128,16 @@ final class ParametricGenerator
         }
         if (in_array($kind, self::ARTWORK, true)) {
             $rules['params.artwork'] = ['nullable', 'string', 'regex:/^(file:)?[0-9a-f-]{36}$/'];
+        }
+        if ($kind === 'modular') {
+            $rules += [
+                'params.bins' => ['required', 'array', 'min:1', 'max:'.self::MAX_BINS],
+                'params.bins.*.x' => ['required', 'integer', 'min:0', 'max:11'],
+                'params.bins.*.y' => ['required', 'integer', 'min:0', 'max:11'],
+                'params.bins.*.w' => ['required', 'integer', 'min:1', 'max:12'],
+                'params.bins.*.h' => ['required', 'integer', 'min:1', 'max:12'],
+                'params.bins.*.color' => ['nullable', 'in:'.implode(',', self::COLORS)],
+            ];
         }
         if ($kind === 'box') {
             $rules += [
@@ -157,6 +175,12 @@ final class ParametricGenerator
         if (in_array($kind, self::ARTWORK, true) && ! empty($p['artwork'])) {
             $out['artwork'] = (string) $p['artwork'];
         }
+        if ($kind === 'modular') {
+            $out['bins'] = array_values(array_map(fn ($b) => [
+                'x' => (int) $b['x'], 'y' => (int) $b['y'], 'w' => (int) $b['w'], 'h' => (int) $b['h'],
+                'color' => in_array($b['color'] ?? null, self::COLORS, true) ? $b['color'] : 'white',
+            ], array_slice((array) ($p['bins'] ?? []), 0, self::MAX_BINS)));
+        }
         if ($kind === 'box') {
             $out['holes'] = array_values(array_map(fn ($h) => [
                 'wall' => (string) $h['wall'], 'shape' => (string) $h['shape'], 'w' => round((float) $h['w'], 1),
@@ -186,7 +210,7 @@ final class ParametricGenerator
             throw ValidationException::withMessages(['params' => [self::explain($code, (string) ($r['error'] ?? ''))]])->status(422);
         }
 
-        return ['path' => $path, 'meta' => ['bbox' => $r['bbox'], 'volume_mm3' => $r['volume_mm3'], 'area_mm2' => $r['area_mm2'], 'triangles' => $r['triangles'], 'notes' => $r['notes'] ?? []]];
+        return ['path' => $path, 'meta' => ['part' => $r['part'] ?? 'all', 'bbox' => $r['bbox'], 'volume_mm3' => $r['volume_mm3'], 'area_mm2' => $r['area_mm2'], 'triangles' => $r['triangles'], 'notes' => $r['notes'] ?? []]];
     }
 
     /** Adds what only the server knows: the font file and where the uploaded artwork lives. */

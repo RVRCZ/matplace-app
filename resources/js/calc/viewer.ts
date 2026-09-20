@@ -38,7 +38,7 @@ export class Viewer {
     }
 
     /** kind: what the model is ('lithophane' previews as if lit from behind: thin = bright) */
-    setGeometry(geom: BufferGeometry, scale = 1, kind: string | null = null): void {
+    setGeometry(geom: BufferGeometry, scale = 1, kind: string | null = null, regions: Region[] | null = null): void {
         if (this.mesh) {
             this.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
@@ -46,7 +46,7 @@ export class Viewer {
         if (this.grid) this.scene.remove(this.grid);
         if (!geom.getAttribute('normal')) geom.computeVertexNormals();
         // Z-up files (all print formats) → three.js Y-up
-        const plate = paintByHeight(geom, kind === 'lithophane', kind === 'qr');
+        const plate = regions?.length ? paintByRegion(geom, regions) : paintByHeight(geom, kind === 'lithophane', kind === 'qr');
         this.mesh = new Mesh(geom, plate ? this.plateMaterial : this.material);
         this.mesh.rotation.x = -Math.PI / 2;
         this.mesh.scale.setScalar(scale);
@@ -96,6 +96,32 @@ export class Viewer {
         this.renderer.render(this.scene, this.camera);
         requestAnimationFrame(this.loop);
     };
+}
+
+export interface Region { x0: number; y0: number; x1: number; y1: number; z0: number; color: string }
+
+/** Filament colours as they look printed (slightly muted), keyed by the colour names used across the app. */
+export const FILAMENT: Record<string, [number, number, number]> = {
+    white: [0.93, 0.9, 0.84], black: [0.09, 0.09, 0.1], grey: [0.55, 0.57, 0.6], red: [0.72, 0.13, 0.12], blue: [0.13, 0.24, 0.47],
+    green: [0.16, 0.45, 0.27], yellow: [0.92, 0.74, 0.16], orange: [0.82, 0.32, 0.12],
+};
+
+/** Multi-part sets: each part gets the colour of the filament it will be printed from; the rest (a tray) stays neutral. */
+function paintByRegion(geom: BufferGeometry, regions: Region[]): boolean {
+    const pos = geom.getAttribute('position');
+    if (!pos) return false;
+    const colors = new Float32Array(pos.count * 3);
+    const base = FILAMENT.white;
+    for (let t = 0; t < pos.count; t += 3) {
+        // a triangle belongs to one body: decide by its centre so neighbouring bins never bleed into each other
+        const cx = (pos.getX(t) + pos.getX(t + 1) + pos.getX(t + 2)) / 3; const cy = (pos.getY(t) + pos.getY(t + 1) + pos.getY(t + 2)) / 3;
+        const cz = (pos.getZ(t) + pos.getZ(t + 1) + pos.getZ(t + 2)) / 3;
+        const r = regions.find((g) => cx >= g.x0 - 0.01 && cx <= g.x1 + 0.01 && cy >= g.y0 - 0.01 && cy <= g.y1 + 0.01 && cz >= g.z0 - 0.01);
+        const c = r ? (FILAMENT[r.color] ?? base) : base;
+        for (let k = 0; k < 3; k++) { colors[(t + k) * 3] = c[0]; colors[(t + k) * 3 + 1] = c[1]; colors[(t + k) * 3 + 2] = c[2]; }
+    }
+    geom.setAttribute('color', new Float32BufferAttribute(colors, 3));
+    return true;
 }
 
 /**

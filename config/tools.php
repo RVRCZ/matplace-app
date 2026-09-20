@@ -13,6 +13,7 @@ return [
     'personalize' => ['route' => 'tools.personalize', 'intent' => 'file', 'categories' => ['file', 'gifts'], 'available' => false],
 
     'organizer' => ['route' => 'tools.organizer', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
+    'modular' => ['route' => 'tools.modular', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'box' => ['route' => 'tools.box', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'phone_stand' => ['route' => 'tools.phone_stand', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'cable_holder' => ['route' => 'tools.cable_holder', 'intent' => 'create', 'categories' => ['home'], 'available' => true],

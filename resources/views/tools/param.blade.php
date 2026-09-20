@@ -5,7 +5,8 @@
     $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : 'mm');
     $i18n = collect(['param.working', 'param.failed', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
         'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
-        'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
+        'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
+        'color.white', 'color.black', 'color.grey', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
         'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
     $colors = ['white', 'black', 'grey', 'red', 'blue', 'green', 'yellow', 'orange', 'any'];
 @endphp
@@ -111,6 +112,24 @@
                 </label>
             @endforeach
 
+            @if($kind === 'modular')
+                <fieldset>
+                    <legend class="lbl">{{ __('param.bins') }}</legend>
+                    <p class="hint" id="bins-help">{{ __('param.bins.hint') }}</p>
+                    <div id="bin-grid" class="mt-2 grid select-none gap-1 rounded-xl bg-page p-2" role="grid" aria-describedby="bins-help"></div>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <span class="text-sm font-semibold text-ink">{{ __('param.bins.color') }}</span>
+                        <div id="bin-colors" class="flex flex-wrap gap-1" role="radiogroup" aria-label="{{ __('param.bins.color') }}"></div>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        <button type="button" id="bins-fill" class="btn-quiet text-sm">{{ __('param.bins.fill') }}</button>
+                        <button type="button" id="bins-remove" class="btn-quiet text-sm">{{ __('param.bins.remove') }}</button>
+                        <button type="button" id="bins-clear" class="btn-quiet text-sm">{{ __('param.bins.clear') }}</button>
+                    </div>
+                    <p id="bins-state" class="mt-1 text-sm text-muted" aria-live="polite"></p>
+                </fieldset>
+            @endif
+
             @if($kind === 'box')
                 <fieldset>
                     <legend class="lbl">{{ __('param.holes') }}</legend>
@@ -142,11 +161,16 @@
                             @foreach($config['materials'] as $m)<option value="{{ $m['code'] }}" @selected($m['code'] === $config['default_material'])>{{ $m['label'] }} ({{ $m['code'] }})</option>@endforeach
                         </select>
                     </label>
+                    @if($kind === 'modular')
+                        {{-- every bin has its own colour: they travel to the inquiry as a bill of parts --}}
+                        <input type="hidden" id="param-color" value="">
+                    @else
                     <label class="lbl">{{ __('param.color') }}
                         <select id="param-color" class="field">
                             @foreach($colors as $c)<option value="{{ $c }}">{{ __('color.'.$c) }}</option>@endforeach
                         </select>
                     </label>
+                    @endif
                     <label class="lbl">{{ __('calc.quantity') }}
                         <input id="param-qty" type="number" inputmode="numeric" min="1" max="1000" value="1" class="field">
                     </label>
@@ -166,6 +190,7 @@
             </div>
 
             <div id="param-error" class="note-error hidden" role="alert"></div>
+            <div id="param-bom" class="card hidden p-4 text-sm"></div>
             <ul id="param-warnings" class="note-warn hidden list-disc space-y-1 pl-8 text-sm"></ul>
 
             <div class="card p-5">

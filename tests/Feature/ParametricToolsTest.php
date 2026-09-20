@@ -111,6 +111,65 @@ class ParametricToolsTest extends TestCase
         $this->get('/api/tools/param/'.$file->uuid.'/roof.stl')->assertNotFound();
     }
 
+    public function test_modular_bins_fill_the_drawer_exactly_with_rounded_corners_colours_and_a_bill_of_parts(): void
+    {
+        $this->needsPython();
+        $bins = [
+            ['x' => 0, 'y' => 1, 'w' => 4, 'h' => 1, 'color' => 'blue'], ['x' => 4, 'y' => 0, 'w' => 2, 'h' => 2, 'color' => 'orange'],
+            ['x' => 0, 'y' => 0, 'w' => 2, 'h' => 1, 'color' => 'white'], ['x' => 2, 'y' => 0, 'w' => 2, 'h' => 1, 'color' => 'white'],
+        ];
+        $p = ['inner_w' => 300, 'inner_d' => 120, 'height' => 40, 'cols' => 6, 'rows' => 2, 'radius' => 8, 'gap' => 0.6, 'wall' => 1.6, 'floor' => 1.2, 'bins' => $bins];
+        $set = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'modular', 'params' => $p, 'view' => 'use'])->assertOk());
+        $this->assertSame([50.0, 60.0], array_map('floatval', $set['notes']['unit']));
+        $this->assertEqualsWithDelta(300 - 0.6, $set['bbox']['x'], 0.01);                 // the set fills the drawer, less half a gap on each side
+        $this->assertEqualsWithDelta(120 - 0.6, $set['bbox']['y'], 0.01);
+        $this->assertSame(0, $set['notes']['free_cells']);
+        $this->assertCount(4, $set['notes']['regions']);                                   // one colour region per bin, for the preview
+        $bom = collect($set['notes']['bom'])->keyBy(fn ($b) => $b['size'].$b['color']);
+        $this->assertSame(2, $bom['2x1white']['count']);                                   // identical bins are one file printed twice
+        $this->assertEqualsWithDelta(99.4, $bom['2x1white']['w_mm'], 0.01);
+
+        // rounded corners really remove material, inside and out, and keep the wall constant
+        $round = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'modular', 'params' => $p, 'part' => 'bin_2x1'])->assertOk());
+        $square = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'modular', 'params' => ['radius' => 0] + $p, 'part' => 'bin_2x1'])->assertOk());
+        $this->assertEqualsWithDelta(99.4, $round['bbox']['x'], 0.01);
+        $this->assertEqualsWithDelta(59.4, $round['bbox']['y'], 0.01);
+        $this->assertLessThan($square['volume_mm3'], $round['volume_mm3']);
+        $this->assertGreaterThan($square['volume_mm3'] * 0.9, $round['volume_mm3']);
+
+        // tray: bigger than the inside, its own part, and the print layout keeps the bins beside it
+        $tray = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'modular', 'params' => ['tray' => true] + $p, 'part' => 'tray'])->assertOk());
+        $this->assertEqualsWithDelta(300 + 4 + 0.6, $tray['bbox']['x'], 0.01);
+        $plate = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'modular', 'params' => ['tray' => true] + $p])->assertOk());
+        $this->assertGreaterThan(600, $plate['bbox']['x']);
+
+        // impossible layouts are refused with a reason
+        $over = $p;
+        $over['bins'][] = ['x' => 1, 'y' => 0, 'w' => 1, 'h' => 1, 'color' => 'red'];
+        $this->postJson('/api/tools/param/preview', ['kind' => 'modular', 'params' => $over])->assertStatus(422)->assertJsonValidationErrors('params');
+        $out = $p;
+        $out['bins'] = [['x' => 5, 'y' => 0, 'w' => 2, 'h' => 1]];
+        $this->postJson('/api/tools/param/preview', ['kind' => 'modular', 'params' => $out])->assertStatus(422);
+        $this->postJson('/api/tools/param/preview', ['kind' => 'modular', 'params' => ['cols' => 12, 'inner_w' => 100] + $p])->assertStatus(422);
+        $this->postJson('/api/tools/param/preview', ['kind' => 'modular', 'params' => ['bins' => []] + $p])->assertStatus(422);
+        $this->postJson('/api/tools/param/preview', ['kind' => 'modular', 'params' => ['bins' => [['x' => 0, 'y' => 0, 'w' => 1, 'h' => 1, 'color' => 'pink']]] + $p])->assertStatus(422);
+
+        // created set: parts per bin size, stored layout, price
+        Storage::fake('models');
+        config(['engines.repair' => 'trimesh']);
+        $r = $this->postJson('/api/tools/param', ['kind' => 'modular', 'params' => $p])->assertCreated();
+        $r->assertJsonPath('file.kind', 'modular')->assertJsonPath('file.parts', ['bin_4x1', 'bin_2x2', 'bin_2x1']);
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertSame('orange', $file->tool_params['bins'][1]['color']);
+        $this->assertNotContains('multiple_shells', $r->json('file.issues') ?? []);
+        $this->get('/api/tools/param/'.$file->uuid.'/bin_2x2.stl')->assertOk();
+        $this->getJson('/api/tools/param/'.$file->uuid.'/bin_9x9.stl')->assertNotFound();    // no such bin in this layout
+        $this->postJson('/api/calculations', ['file' => $file->uuid, 'material' => 'PLA'])->assertCreated()->assertJsonPath('calculation.status', 'done');
+        foreach (['cs', 'en', 'es'] as $lang) {
+            $this->get('/tools/modular-organizer?lang='.$lang)->assertOk();
+        }
+    }
+
     public function test_stand_and_cable_holder_follow_their_numbers(): void
     {
         $this->needsPython();

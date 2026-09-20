@@ -3,7 +3,7 @@
  * numbers → live solid from the server (exact, the same one that is exported) → orientation price → calculator / inquiry.
  */
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
-import { Viewer } from './viewer';
+import { Viewer, Region, FILAMENT } from './viewer';
 import { estimate, price, range, RoughConfig, Profile } from './rough';
 
 interface Material { code: string; density: number }
@@ -14,6 +14,8 @@ interface Cfg {
     i18n: Record<string, string>;
 }
 interface Hole { wall: string; shape: string; w: number; h: number; x: number; z: number }
+interface Bin { x: number; y: number; w: number; h: number; color: string }
+interface BomLine { size: string; w_mm: number; d_mm: number; color: string; count: number }
 interface Meta { bbox: { x: number; y: number; z: number }; volume_mm3: number; area_mm2: number; notes: Record<string, unknown> }
 
 export function bootParam(): void {
@@ -28,6 +30,8 @@ export function bootParam(): void {
     const money = new Intl.NumberFormat(cfg.locale, { style: 'currency', currency: cfg.config.currency || 'CZK', maximumFractionDigits: 0 });
     const viewer = new Viewer(canvas);
     const holes: Hole[] = [];
+    const bins: Bin[] = [];
+    let binColor = 'blue'; let binStart: { x: number; y: number } | null = null; let binSelected = -1;
     let seq = 0; let timer = 0; let lastMeta: Meta | null = null; let valid = false;
     let artwork: string | null = null;      // uploaded SVG / picture reference
     let viewPart = 'all';                   // which part the preview shows
@@ -40,6 +44,7 @@ export function bootParam(): void {
         form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { p[i.dataset.text!] = i.value; });
         if (artwork) p.artwork = artwork;
         if (cfg.kind === 'box') p.holes = holes;
+        if (cfg.kind === 'modular') p.bins = bins;
         return p;
     };
 
@@ -95,8 +100,11 @@ export function bootParam(): void {
         if (cfg.kind === 'stamp' && p.handle === 'knob') return ['body', 'handle'];
         if (cfg.kind === 'qr' && p.stand) return ['body', 'stand'];
         if (cfg.kind === 'lightbox') return ['body', 'face', 'diffuser', 'back'];
+        if (cfg.kind === 'modular') return [...(p.tray ? ['tray'] : []), ...new Set(bins.map((b) => `bin_${b.w}x${b.h}`))];
         return [];
     };
+
+    const partLabel = (v: string): string => (v.startsWith('bin_') ? t('param.part.bin', { s: v.slice(4).replace('x', ' × ') }) : t(`param.part.${v}`));
 
     /** Assembly / single parts / (stamp) the imprint it leaves: buttons over the viewer. */
     const renderViews = (): void => {
@@ -108,11 +116,24 @@ export function bootParam(): void {
         if (views.length < 2) return;
         views.forEach((v) => {
             const b = document.createElement('button');
-            b.type = 'button'; b.className = `chip !py-1 text-xs ${v === viewPart ? 'chip-on' : ''}`; b.textContent = t(`param.part.${v}`);
+            b.type = 'button'; b.className = `chip !py-1 text-xs ${v === viewPart ? 'chip-on' : ''}`; b.textContent = partLabel(v);
             b.setAttribute('aria-pressed', v === viewPart ? 'true' : 'false');
             b.onclick = () => { viewPart = v; refresh(); };
             box.appendChild(b);
         });
+    };
+
+    /** Bill of parts of a modular set: what gets printed, how many times and in which colour. */
+    const bomText = (m: Meta): string[] => ((m.notes as { bom?: BomLine[] }).bom ?? []).map((b) => t('param.bom.line', { n: b.count, s: b.size.replace('x', ' × '), w: nf.format(b.w_mm), d: nf.format(b.d_mm), c: t(`color.${b.color}`) }));
+    const renderBom = (m: Meta): void => {
+        const el = document.getElementById('param-bom'); if (!el) return;
+        const n = m.notes as { bom?: BomLine[]; unit?: number[]; free_cells?: number; tray_size?: number[] };
+        if (!n.bom) { el.classList.add('hidden'); return; }
+        const lines = bomText(m);
+        if (n.tray_size) lines.unshift(`1 × ${t('param.part.tray')} ${n.tray_size.map((v) => nf.format(v)).join(' × ')} mm`);
+        el.innerHTML = `<div class="font-bold text-ink">${t('param.bom')}</div><ul class="mt-1 list-disc space-y-0.5 pl-5 text-ink">${lines.map((l) => `<li>${l}</li>`).join('')}</ul>`
+            + `<p class="mt-2 text-muted">${t('param.unit', { x: nf.format(n.unit?.[0] ?? 0), y: nf.format(n.unit?.[1] ?? 0) })}${n.free_cells ? ` ${t('param.bins.free', { n: n.free_cells })}` : ''}</p>`;
+        el.classList.remove('hidden');
     };
 
     const renderWarnings = (m: Meta): void => {
@@ -142,9 +163,10 @@ export function bootParam(): void {
             if (mine !== seq) return;                       // a newer change is already on its way
             if (!res.ok) { valid = false; showError(firstError(await res.json())); return; }
             lastMeta = JSON.parse(res.headers.get('X-Model-Meta') ?? 'null');
-            viewer.setGeometry(new STLLoader().parse(await res.arrayBuffer()), 1, cfg.kind);
+            const regions = viewPart === 'all' ? ((lastMeta?.notes as { regions?: Region[] } | undefined)?.regions ?? null) : null;
+            viewer.setGeometry(new STLLoader().parse(await res.arrayBuffer()), 1, cfg.kind, regions);
             valid = true; showError(null);
-            if (lastMeta) { renderDims(lastMeta); renderWarnings(lastMeta); if (viewPart === 'all') renderPrice(); }
+            if (lastMeta) { renderDims(lastMeta); renderWarnings(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderDownloads();
         } catch {
             if (mine === seq) { valid = false; showError(t('param.failed')); }
@@ -161,7 +183,7 @@ export function bootParam(): void {
         box.innerHTML = '';
         parts.forEach((part) => {
             const b = document.createElement('button');
-            b.type = 'button'; b.className = 'btn-quiet text-sm'; b.textContent = `${t(`param.part.${part}`)} (.stl)`;
+            b.type = 'button'; b.className = 'btn-quiet text-sm'; b.textContent = `${partLabel(part)} (.stl)`;
             b.onclick = async () => {
                 if (!valid) return;
                 b.disabled = true;
@@ -223,6 +245,7 @@ export function bootParam(): void {
             const choice = form.querySelector<HTMLInputElement>(`[data-choice="${k}"][value="${String(v)}"]`); if (choice) choice.checked = true;
         });
         if (Array.isArray(set.holes)) { holes.splice(0, holes.length, ...(set.holes as Hole[])); renderHoles(); }
+        if (Array.isArray(set.bins)) { bins.splice(0, bins.length, ...(set.bins as Bin[])); renderGrid(); }
         if (typeof set.artwork === 'string') { artwork = set.artwork; artworkState(t('param.artwork.remove'), true); }
     };
 
@@ -250,6 +273,82 @@ export function bootParam(): void {
         };
     }
 
+    // ── modular organizer: bins on the customer's own grid ─────────────────
+    const grid = document.getElementById('bin-grid');
+    const gridSize = (): [number, number] => {
+        const v = (k: string, d: number) => Math.max(1, Math.min(12, Math.round(Number(form.querySelector<HTMLInputElement>(`[data-param="${k}"]`)?.value) || d)));
+        return [v('cols', 6), v('rows', 3)];
+    };
+    const binAt = (x: number, y: number): number => bins.findIndex((b) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h);
+    const say = (k: string, r: Record<string, string | number> = {}): void => { const el = document.getElementById('bins-state'); if (el) el.textContent = k ? t(k, r) : ''; };
+    const css = (c: string): string => { const f = FILAMENT[c] ?? FILAMENT.white; return `rgb(${f.map((v) => Math.round(v * 255)).join(',')})`; };
+    const renderGrid = (): void => {
+        if (!grid) return;
+        const [cols, rows] = gridSize();
+        for (let i = bins.length - 1; i >= 0; i--) if (bins[i].x + bins[i].w > cols || bins[i].y + bins[i].h > rows) bins.splice(i, 1);   // the grid shrank
+        if (binSelected >= bins.length) binSelected = -1;
+        grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+        grid.innerHTML = '';
+        for (let y = rows - 1; y >= 0; y--) {                                   // row 0 is the front of the drawer: drawn at the bottom
+            for (let x = 0; x < cols; x++) {
+                const i = binAt(x, y);
+                const cell = document.createElement('button');
+                cell.type = 'button'; cell.setAttribute('role', 'gridcell');
+                cell.className = 'aspect-square min-h-8 rounded-md border text-xs font-semibold';
+                if (i >= 0) {
+                    const b = bins[i];
+                    cell.style.background = css(b.color); cell.style.color = ['white', 'yellow', 'grey'].includes(b.color) ? '#172B4D' : '#fff';
+                    cell.style.borderColor = i === binSelected ? '#C94714' : 'transparent'; cell.style.borderWidth = i === binSelected ? '3px' : '1px';
+                    cell.textContent = x === b.x && y === b.y + b.h - 1 ? `${b.w}×${b.h}` : '';
+                    cell.setAttribute('aria-label', t('param.bins.bin', { s: `${b.w} × ${b.h}`, c: t(`color.${b.color}`) }));
+                } else {
+                    const start = binStart && binStart.x === x && binStart.y === y;
+                    cell.className += start ? ' border-action bg-action-soft' : ' border-dashed border-slate-300 bg-white';
+                    cell.setAttribute('aria-label', t('param.bins.empty', { x: x + 1, y: y + 1 }));
+                }
+                cell.onclick = () => clickCell(x, y);
+                grid.appendChild(cell);
+            }
+        }
+    };
+    /** Two taps make a bin: the first corner, then the opposite one. A tap on a bin selects it (colour, remove). */
+    const clickCell = (x: number, y: number): void => {
+        const hit = binAt(x, y);
+        if (hit >= 0 && !binStart) { binSelected = hit === binSelected ? -1 : hit; if (binSelected >= 0) binColor = bins[hit].color; renderColors(); renderGrid(); return; }
+        if (!binStart) { binStart = { x, y }; binSelected = -1; say('param.bins.pick_end'); renderGrid(); return; }
+        const nb = { x: Math.min(binStart.x, x), y: Math.min(binStart.y, y), w: Math.abs(binStart.x - x) + 1, h: Math.abs(binStart.y - y) + 1, color: binColor };
+        binStart = null;
+        const clash = bins.some((b) => nb.x < b.x + b.w && nb.x + nb.w > b.x && nb.y < b.y + b.h && nb.y + nb.h > b.y);
+        if (clash) { say('param.bins.taken'); renderGrid(); return; }
+        if (bins.length >= 24) { renderGrid(); return; }
+        bins.push(nb); say(''); renderGrid(); soon();
+    };
+    const renderColors = (): void => {
+        const box = document.getElementById('bin-colors'); if (!box) return;
+        box.innerHTML = '';
+        Object.keys(FILAMENT).forEach((c) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', c === binColor ? 'true' : 'false'); b.setAttribute('aria-label', t(`color.${c}`)); b.title = t(`color.${c}`);
+            b.className = 'h-9 w-9 rounded-full border-2'; b.style.background = css(c); b.style.borderColor = c === binColor ? '#C94714' : '#DDE2EA';
+            b.onclick = () => { binColor = c; if (binSelected >= 0) { bins[binSelected].color = c; renderGrid(); soon(); } renderColors(); };
+            box.appendChild(b);
+        });
+    };
+    if (grid) {
+        // a sensible start: a long tray for pens at the back, small bins in front (like a desk drawer)
+        bins.push({ x: 0, y: 2, w: 4, h: 1, color: 'blue' }, { x: 4, y: 1, w: 2, h: 2, color: 'orange' }, { x: 0, y: 0, w: 2, h: 2, color: 'white' },
+            { x: 2, y: 0, w: 2, h: 2, color: 'blue' }, { x: 4, y: 0, w: 2, h: 1, color: 'white' });
+        document.getElementById('bins-fill')!.onclick = () => {
+            const [cols, rows] = gridSize();
+            for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) if (binAt(x, y) < 0 && bins.length < 24) bins.push({ x, y, w: 1, h: 1, color: binColor });
+            renderGrid(); soon();
+        };
+        document.getElementById('bins-remove')!.onclick = () => { if (binSelected >= 0) { bins.splice(binSelected, 1); binSelected = -1; renderGrid(); soon(); } };
+        document.getElementById('bins-clear')!.onclick = () => { bins.splice(0, bins.length); binSelected = -1; binStart = null; renderGrid(); soon(); };
+        form.querySelectorAll<HTMLInputElement>('[data-param="cols"],[data-param="rows"]').forEach((i) => i.addEventListener('input', renderGrid));
+        renderColors(); renderGrid();
+    }
+
     // ── presets, inputs, order choices ─────────────────────────────────────
     form.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((b) => {
         b.onclick = () => {
@@ -269,7 +368,8 @@ export function bootParam(): void {
             const res = await fetch(cfg.create, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ kind: cfg.kind, params: params() }) });
             const body = await res.json();
             if (!res.ok) { showError(firstError(body)); go.textContent = label; return; }
-            const q = new URLSearchParams({ open: body.file.uuid, material: ($('param-material') as HTMLSelectElement).value, quantity: ($('param-qty') as HTMLInputElement).value || '1', color: ($('param-color') as HTMLSelectElement).value });
+            const bomNote = lastMeta ? bomText(lastMeta).join('; ') : '';
+            const q = new URLSearchParams({ ...(bomNote ? { note: bomNote.slice(0, 900) } : {}), open: body.file.uuid, material: ($('param-material') as HTMLSelectElement).value, quantity: ($('param-qty') as HTMLInputElement).value || '1', color: ($('param-color') as HTMLSelectElement).value });
             location.href = `${cfg.home}?${q}`;
         } catch {
             showError(t('param.failed')); go.disabled = false; go.textContent = label;

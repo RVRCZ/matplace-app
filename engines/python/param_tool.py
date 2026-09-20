@@ -23,9 +23,12 @@ LIMITS = {
     "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6)},
     "phone_stand": {"width": (50, 140), "device": (7, 20), "angle": (50, 80), "back": (60, 150), "thickness": (3, 8)},
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 40), "wall": (2, 5)},
+    "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
 }
 MIN_CELL = 8.0
 MAX_HOLES = 8
+MAX_BINS = 24
+MIN_UNIT = 15.0
 
 
 class Invalid(Exception):
@@ -77,6 +80,82 @@ def organizer(M, p):
             cells.append(rounded_rect(M, cw, cd, 2.0).extrude(h).translate([x, y, floor]))
     solid = body - M.Manifold.batch_boolean(cells, M.OpType.Add)
     return {"all": solid}, {"outer": [w, d, h], "cell": [round(cw, 1), round(cd, 1), round(h - floor, 1)]}
+
+
+def modular(M, p):
+    """
+    Loose bins on the customer's own grid that fill a drawer (or an optional tray) exactly.
+    bins: [{x, y, w, h, color}] in grid cells, x/y from the front-left corner. Every bin is its own print in its own colour.
+    """
+    k = "modular"
+    iw, idp, h = num(p, k, "inner_w", 300), num(p, k, "inner_d", 150), num(p, k, "height", 40)
+    cols, rows = int(num(p, k, "cols", 6)), int(num(p, k, "rows", 3))
+    wall, floor, radius, gap = num(p, k, "wall", 1.6), num(p, k, "floor", 1.2), num(p, k, "radius", 6), num(p, k, "gap", 0.6)
+    tray = bool(p.get("tray", False))
+    ux, uy = iw / cols, idp / rows
+    if ux < MIN_UNIT or uy < MIN_UNIT:
+        raise Invalid("grid_too_fine", "%.0f x %.0f" % (ux, uy))
+    if floor >= h - 3:
+        raise Invalid("floor_too_thick")
+    bins = p.get("bins") or []
+    if not isinstance(bins, list) or not bins:
+        raise Invalid("no_bins")
+    if len(bins) > MAX_BINS:
+        raise Invalid("too_many_bins", str(MAX_BINS))
+    taken = [[0] * cols for _ in range(rows)]
+    clean = []
+    for i, b in enumerate(bins):
+        try:
+            x, y, w, d = int(b.get("x", 0)), int(b.get("y", 0)), int(b.get("w", 1)), int(b.get("h", 1))
+        except (TypeError, ValueError):
+            raise Invalid("not_a_number", "bin %d" % (i + 1))
+        if w < 1 or d < 1 or x < 0 or y < 0 or x + w > cols or y + d > rows:
+            raise Invalid("bin_outside", str(i + 1))
+        for yy in range(y, y + d):
+            for xx in range(x, x + w):
+                if taken[yy][xx]:
+                    raise Invalid("bins_overlap", "%d+%d" % (taken[yy][xx], i + 1))
+                taken[yy][xx] = i + 1
+        clean.append((x, y, w, d, str(b.get("color", "white"))[:12]))
+
+    def bin_solid(w, d):
+        ow, od = w * ux - gap, d * uy - gap
+        r = min(radius, ow / 2 - 0.5, od / 2 - 0.5)
+        outer = rounded_rect(M, ow, od, r).extrude(h)
+        # the same radius inside, less the wall: a constant wall all the way round the corner
+        cavity = rounded_rect(M, ow - 2 * wall, od - 2 * wall, max(0.0, r - wall)).extrude(h).translate([wall, wall, floor])
+        return outer - cavity, ow, od
+
+    sizes, placed, regions, bom = {}, [], [], {}
+    t_wall, t_floor = 2.0, 1.6
+    off = (t_wall + gap / 2, t_floor) if tray else (0.0, 0.0)
+    for (x, y, w, d, color) in clean:
+        key = "%dx%d" % (w, d)
+        if key not in sizes:
+            sizes[key] = bin_solid(w, d)
+        solid, ow, od = sizes[key]
+        px, py = off[0] + x * ux + gap / 2, off[0] + y * uy + gap / 2
+        placed.append(solid.translate([px, py, off[1]]))
+        regions.append({"x0": round(px, 2), "y0": round(py, 2), "x1": round(px + ow, 2), "y1": round(py + od, 2), "z0": round(off[1], 2), "color": color})
+        item = bom.setdefault((key, color), {"size": key, "w_mm": round(ow, 1), "d_mm": round(od, 1), "color": color, "count": 0})
+        item["count"] += 1
+
+    assembled = M.Manifold.compose(placed)
+    parts = {"bin_" + key: v[0] for key, v in sizes.items()}
+    notes = {"unit": [round(ux, 1), round(uy, 1)], "inner": [iw, idp, h], "bins": len(clean), "free_cells": sum(row.count(0) for row in taken),
+             "bom": sorted(bom.values(), key=lambda b: (b["size"], b["color"])), "regions": regions, "tray": tray, "outer": [iw, idp, h]}
+    if tray:
+        tw, td, th = iw + 2 * t_wall + gap, idp + 2 * t_wall + gap, max(12.0, round(h * 0.7, 1)) + t_floor
+        tr = radius + t_wall if radius > 0 else 0.0
+        shell = rounded_rect(M, tw, td, tr).extrude(th) - rounded_rect(M, tw - 2 * t_wall, td - 2 * t_wall, max(0.0, tr - t_wall)).extrude(th).translate([t_wall, t_wall, t_floor])
+        parts["tray"] = shell
+        assembled = M.Manifold.compose([shell, assembled])
+        notes["outer"] = [round(tw, 1), round(td, 1), round(max(th, h + t_floor), 1)]
+        notes["tray_size"] = [round(tw, 1), round(td, 1), round(th, 1)]
+    parts["use"] = assembled                         # how it sits in the drawer: the preview, with its colours
+    # priced as a set. With a tray the bins lie beside it, not in it: touching bodies would be sliced as one piece.
+    parts["all"] = M.Manifold.compose([parts["tray"], M.Manifold.compose(placed).translate([notes["outer"][0] + 8.0, 0, -off[1]])]) if tray else assembled
+    return parts, notes
 
 
 def wall_frame(wall_name, iw, idp, wall):
@@ -232,7 +311,7 @@ def main(argv):
         import manifold3d as M
         import numpy as np
         p = json.loads(argv[3] or "{}")
-        builders = {"organizer": organizer, "box": box, "phone_stand": phone_stand, "cable_holder": cable_holder}
+        builders = {"organizer": organizer, "box": box, "phone_stand": phone_stand, "cable_holder": cable_holder, "modular": modular}
         if not isinstance(p, dict):
             raise Invalid("unknown_kind")
         if kind in builders:
