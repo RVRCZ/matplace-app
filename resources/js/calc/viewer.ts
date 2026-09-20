@@ -116,7 +116,7 @@ function paintByRegion(geom: BufferGeometry, regions: Region[]): boolean {
         // a triangle belongs to one body: decide by its centre so neighbouring bins never bleed into each other
         const cx = (pos.getX(t) + pos.getX(t + 1) + pos.getX(t + 2)) / 3; const cy = (pos.getY(t) + pos.getY(t + 1) + pos.getY(t + 2)) / 3;
         const cz = (pos.getZ(t) + pos.getZ(t + 1) + pos.getZ(t + 2)) / 3;
-        const r = regions.find((g) => cx >= g.x0 - 0.01 && cx <= g.x1 + 0.01 && cy >= g.y0 - 0.01 && cy <= g.y1 + 0.01 && cz >= g.z0 - 0.01);
+        const r = regions.find((g) => cx >= g.x0 - 0.01 && cx <= g.x1 + 0.01 && cy >= g.y0 - 0.01 && cy <= g.y1 + 0.01 && cz >= g.z0);
         const c = r ? (FILAMENT[r.color] ?? base) : base;
         for (let k = 0; k < 3; k++) { colors[(t + k) * 3] = c[0]; colors[(t + k) * 3 + 1] = c[1]; colors[(t + k) * 3 + 2] = c[2]; }
     }

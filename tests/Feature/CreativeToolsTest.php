@@ -91,6 +91,14 @@ class CreativeToolsTest extends TestCase
         $this->assertEqualsWithDelta(120, $logoPart['bbox']['x'], 0.1);
         $this->assertGreaterThan(120, $basePart['bbox']['x']);                        // the base is wider than the foot it holds
         $this->assertContains('floating_pieces', $this->meta($this->preview('logo', ['line1' => 'Jiří'] + $p)->assertOk())['notes']['warnings']);
+        // base height is the customer's choice, and the preview colours only the logo itself, never the top of the base
+        $tall = $this->meta($this->preview('logo', ['base_h' => 25] + $p, 'stand')->assertOk());
+        $this->assertEqualsWithDelta(25, $tall['bbox']['z'], 0.01);
+        $this->assertEqualsWithDelta(11, $basePart['bbox']['z'], 0.01);
+        $region = $stand['notes']['regions'][0];
+        $this->assertGreaterThan(11, $region['z0']);
+        $this->assertEqualsWithDelta(4, $region['y1'] - $region['y0'], 0.2);           // as thick as the logo, not the whole base
+        $this->preview('logo', ['base_h' => 3] + $p)->assertStatus(422);
 
         // SVG: fills are used, bare outlines are reported
         $id = $this->post('/api/tools/artwork', ['file' => $this->svg('<rect x="10" y="10" width="80" height="30" fill="#000"/><path d="M0 0 L100 0" stroke="#000" fill="none"/>')], ['Accept' => 'application/json'])->assertCreated()->json('artwork');

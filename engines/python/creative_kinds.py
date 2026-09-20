@@ -8,7 +8,7 @@ import shape2d as S
 
 LIMITS = {
     "vase": {"height": (40, 300), "top_d": (30, 250), "bottom_d": (30, 250), "wall": (0.8, 4), "floor": (0.8, 5), "ribs": (6, 48), "twist": (0, 180)},
-    "logo": {"width": (20, 250), "thickness": (0.6, 10), "plate": (0.8, 6), "margin": (0, 20)},
+    "logo": {"width": (20, 250), "thickness": (0.6, 10), "plate": (0.8, 6), "margin": (0, 20), "base_h": (8, 40)},
     "stamp": {"width": (15, 120), "relief": (0.8, 4), "plate": (2, 6), "text_height": (4, 40)},
     "qr": {"size": (30, 150), "plate": (1.6, 4), "relief": (0.6, 2)},
     "stencil": {"width": (30, 250), "thickness": (0.8, 3), "margin": (5, 40), "bridge": (0.8, 3)},
@@ -161,7 +161,7 @@ def logo(M, Invalid, p):
         logo_flat = S.fit(figure, width_mm=S.size(figure)[0]).extrude(t)
         fw, fh = S.size(figure)
         clearance = 0.25
-        base_w, base_d, base_h = max(40.0, (bx1 - bx0) + 24.0), max(32.0, t + 26.0), sink + 5.0
+        base_w, base_d, base_h = max(40.0, (bx1 - bx0) + 24.0), max(32.0, t + 26.0), max(sink + 2.0, n("base_h", 11))
         base = S.rounded_rect(M, base_w, base_d, 4).extrude(base_h)
         slot = M.Manifold.cube([(bx1 - bx0) + 2 * clearance, t + 2 * clearance, sink + 1.0]).translate([(base_w - (bx1 - bx0)) / 2 - clearance, (base_d - t) / 2 - clearance, base_h - sink])
         base = base - slot
@@ -177,7 +177,8 @@ def logo(M, Invalid, p):
             "use": M.Manifold.compose([base.translate([shift, 0, 0]), upright.translate([shift, 0, 0])]),
         }
         notes = {"outer": [round(max(base_w, fw), 1), round(base_d, 1), round(base_h - sink + fh, 1)], "pieces": pieces, "needs": ["glue_optional"],
-                 "regions": [{"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": round(base_h + 0.01, 2), "color": "orange"},
+                 # preview colours: only what stands in the slot is the logo; the top face of the base belongs to the base
+                 "regions": [{"x0": -1, "y0": round((base_d - t) / 2 - 0.05, 2), "x1": 9999, "y1": round((base_d + t) / 2 + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange"},
                              {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue"}]}
         notes.update({"warnings": warn, "thin_pct": thin, "missing_chars": info.get("missing_chars", [])})
         return parts, notes

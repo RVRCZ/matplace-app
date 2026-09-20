@@ -1035,5 +1035,6 @@
     "figure.pedestal.name_ph": "např. Babička Věra",
     "figure.pedestal.dedication": "Věnování (menším písmem)",
     "figure.pedestal.dedication_ph": "např. k 80. narozeninám",
-    "figure.pedestal.hint": "Text vystoupí na přední straně podstavce jako součást modelu. U malých figurek volte krátký text, písmo pod 3 mm se nevytiskne čitelně."
+    "figure.pedestal.hint": "Text vystoupí na přední straně podstavce jako součást modelu. U malých figurek volte krátký text, písmo pod 3 mm se nevytiskne čitelně.",
+    "param.f.base_h": "Výška podstavce (u stojícího loga)"
 }

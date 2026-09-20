@@ -1035,5 +1035,6 @@
     "figure.pedestal.name_ph": "p. ej. Abuela Vera",
     "figure.pedestal.dedication": "Dedicatoria (letra más pequeña)",
     "figure.pedestal.dedication_ph": "p. ej. por tus 80 años",
-    "figure.pedestal.hint": "El texto sobresale en el frente del pedestal como parte del modelo. En figuras pequeñas use texto corto, las letras de menos de 3 mm no se imprimen legibles."
+    "figure.pedestal.hint": "El texto sobresale en el frente del pedestal como parte del modelo. En figuras pequeñas use texto corto, las letras de menos de 3 mm no se imprimen legibles.",
+    "param.f.base_h": "Altura de la base (logo de pie)"
 }

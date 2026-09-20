@@ -1035,5 +1035,6 @@
     "figure.pedestal.name_ph": "e.g. Grandma Vera",
     "figure.pedestal.dedication": "Dedication (smaller letters)",
     "figure.pedestal.dedication_ph": "e.g. for your 80th birthday",
-    "figure.pedestal.hint": "The text is raised on the front of the pedestal as part of the model. Keep it short on small figures, letters under 3 mm do not print legibly."
+    "figure.pedestal.hint": "The text is raised on the front of the pedestal as part of the model. Keep it short on small figures, letters under 3 mm do not print legibly.",
+    "param.f.base_h": "Base height (standing logo)"
 }
