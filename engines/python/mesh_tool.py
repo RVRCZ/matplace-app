@@ -7,7 +7,9 @@ Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquer
   mesh_tool.py repair <in> <out.stl>                  -> repaired binary STL + report
   mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
   mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal,solid] [extras-json]
-                                                          extras: {"pedestal": round|square|hexagon|column|plaque, "name": "…", "dedication": "…", "font": path}
+                                                          extras: {"pedestal": round|square|hexagon|column|plaque|none, "name": "…", "dedication": "…", "font": path,
+                                                                   "front": auto|keep|left|right|back, "source_out": path of the figure without a base,
+                                                                   "strip_pedestal": true}
                                                        -> millimetres (largest side = max_mm), Z-up, on the bed;
                                                           clean = drop dust fragments, pedestal = flat round base,
                                                           solid = close holes and union all parts into one watertight body
@@ -116,10 +118,135 @@ def solidify(m, target, extra=None):
                 return u
         except Exception:
             pass
+    if len(fixed) == 1 and fixed[0].is_watertight:
+        return fixed[0]
+    # torn surfaces that cannot be closed exactly (hundreds of open pieces): rebuild the shape through a voxel grid
+    try:
+        body = rebuild_solid(trimesh.util.concatenate(fixed[:-1] if extra is not None else fixed), target)
+        if extra is None:
+            return body
+        u = trimesh.boolean.union([body, extra], engine="manifold")
+        if len(u.faces) and u.is_watertight:
+            return u
+    except Exception:
+        pass
     return fixed[0] if len(fixed) == 1 else trimesh.util.concatenate(fixed)
 
 
-def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras):
+def rebuild_solid(m, target):
+    """
+    One closed body from any soup of surfaces: voxelise the surface, close the gaps, fill the inside, mesh it again.
+    Detail is limited by the grid (about 0.3 mm on an 80 mm figure), which is below what a nozzle prints.
+    """
+    import numpy as np
+    import trimesh
+    from scipy import ndimage
+    from skimage import measure
+
+    pad = 4
+    pitch = max(0.3, float(max(m.extents)) / 220.0)
+    vox = m.voxelized(pitch)
+    grid = np.pad(vox.matrix, pad)
+    closed = ndimage.binary_closing(grid, structure=ndimage.generate_binary_structure(3, 1), iterations=3)
+    # inside = enclosed when looked at along at least two of the three axes; survives holes that a flood fill would leak through
+    votes = np.zeros(closed.shape, dtype=np.uint8)
+    for axis in range(3):
+        moved = np.moveaxis(closed, axis, 0)
+        votes += np.moveaxis(np.stack([ndimage.binary_fill_holes(layer) for layer in moved]), 0, axis)
+    solid = (votes >= 2) | closed
+    solid = ndimage.binary_opening(solid, iterations=1) | closed            # drops whiskers, keeps every real surface voxel
+    field = ndimage.gaussian_filter(solid.astype(np.float32), 0.8)
+    verts, faces, _, _ = measure.marching_cubes(field, level=0.5)
+    verts = (verts - pad) * pitch + vox.transform[:3, 3]
+    out_mesh = trimesh.Trimesh(verts, faces[:, ::-1], process=True)
+    bodies = [b for b in out_mesh.split(only_watertight=True) if b.volume > 0]
+    if not bodies:
+        raise ValueError("rebuild produced no closed body")
+    biggest = max(b.volume for b in bodies)
+    keep = [b for b in bodies if b.volume >= biggest * 0.02]
+    body = keep[0] if len(keep) == 1 else trimesh.boolean.union(keep, engine="manifold")
+    return simplified(body, pitch * 0.12)
+
+
+def simplified(mesh, tolerance):
+    """Marching cubes gives hundreds of thousands of tiny triangles; merge the flat ones so the file stays small."""
+    try:
+        import numpy as np
+        import trimesh
+        import manifold3d as M
+        man = M.Manifold(M.Mesh(vert_properties=np.asarray(mesh.vertices, dtype=np.float32), tri_verts=np.asarray(mesh.faces, dtype=np.uint32)))
+        if man.is_empty():
+            return mesh
+        res = man.simplify(tolerance).to_mesh()
+        slim = trimesh.Trimesh(vertices=np.asarray(res.vert_properties)[:, :3], faces=np.asarray(res.tri_verts), process=True)
+        return slim if len(slim.faces) and slim.is_watertight else mesh
+    except Exception:
+        return mesh
+
+
+def face_front(m):
+    """
+    Busts do not always arrive looking at -Y. Shoulders are the wide axis; the head sits in front of the chest.
+    Returns the quarter turns about Z (0-3) that bring the face to -Y; 0 when the shape gives no clear answer.
+    """
+    import numpy as np
+    c, a = m.triangles_center, m.area_faces
+    z0, h = float(m.bounds[0][2]), float(m.extents[2])
+    low = (c[:, 2] < z0 + 0.45 * h)
+    top = (c[:, 2] > z0 + 0.62 * h)
+    if low.sum() < 10 or top.sum() < 10:
+        return 0
+    spread = c[low][:, :2].max(0) - c[low][:, :2].min(0)
+    if max(spread) < 1.25 * min(spread):
+        return 0                                                          # no clear shoulder line
+    depth_axis = 0 if spread[1] > spread[0] else 1
+    chest = np.average(c[low][:, depth_axis], weights=a[low])
+    head = np.average(c[top][:, depth_axis], weights=a[top])
+    if abs(head - chest) < 0.03 * h:
+        return 0
+    forward = 1 if head > chest else -1
+    # quarter turns counter-clockwise: +X -> 3 (to -Y), +Y -> 2, -X -> 1, -Y -> 0
+    return {(0, 1): 3, (1, 1): 2, (0, -1): 1, (1, -1): 0}[(depth_axis, forward)]
+
+
+def seat_of(m):
+    """
+    Where the base has to reach: the lowest level at which the figure is really there. A hanging hand or a strand
+    of hair below the chest must not decide it, otherwise the body floats above the base.
+    Returns (z_seat, cx, cy, r) from the slice of the body just above that level.
+    """
+    import numpy as np
+    z0, h = float(m.bounds[0][2]), float(m.extents[2])
+    z_seat = z0
+    try:
+        import manifold3d as M
+        man = M.Manifold(M.Mesh(vert_properties=np.asarray(m.vertices, dtype=np.float32), tri_verts=np.asarray(m.faces, dtype=np.uint32)))
+        levels = np.linspace(z0 + 0.003 * h, z0 + 0.35 * h, 48)
+        areas = np.array([man.slice(float(z)).area() for z in levels])
+        if areas.max() > 0:
+            z_seat = float(levels[int(np.argmax(areas >= 0.5 * areas.max()))])
+    except Exception:
+        pass
+    v = m.vertices
+    band = v[(v[:, 2] >= z_seat) & (v[:, 2] <= z_seat + 0.10 * h)]
+    if len(band) < 10:
+        band = v[v[:, 2] <= z0 + 0.10 * h]
+    cx, cy = float((band[:, 0].min() + band[:, 0].max()) / 2), float((band[:, 1].min() + band[:, 1].max()) / 2)
+    r = float(np.percentile(np.hypot(band[:, 0] - cx, band[:, 1] - cy), 92)) * 1.08
+    return z_seat, cx, cy, r
+
+
+def without_pedestal(m):
+    """Older generated files carry their base as a separate closed part standing on the bed; take it away again."""
+    import trimesh
+    parts = m.split(only_watertight=False)
+    rest = [p for p in parts if not (p.is_watertight and abs(float(p.bounds[0][2]) - float(m.bounds[0][2])) < 0.05 and float(p.extents[2]) < 0.4 * float(m.extents[2]) and len(p.faces) < 20000)]
+    if len(rest) == len(parts) or not rest:
+        raise ValueError("no_separate_pedestal")
+    return trimesh.util.concatenate(rest)
+
+
+def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None):
     """
     Base under a figure or bust, built as one exact solid (manifold3d) and handed back as a trimesh.
     "plaque" is a taller plinth with a flat front that carries a name and an optional dedication, raised 1 mm.
@@ -174,7 +301,8 @@ def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras):
     else:
         kind = "round"
         solid = M.Manifold.cylinder(ped_h + overlap, r, r, 96)
-    mesh = solid.translate([cx, cy, -ped_h]).to_mesh()
+    # the top of the base ends `overlap` inside the figure
+    mesh = solid.translate([cx, cy, (overlap if z_top is None else z_top) - (ped_h + overlap)]).to_mesh()
     note["pedestal"] = kind
     note["pedestal_height"] = round(float(ped_h), 1)
     return trimesh.Trimesh(vertices=np.asarray(mesh.vert_properties)[:, :3], faces=np.asarray(mesh.tri_verts), process=True), note
@@ -264,30 +392,55 @@ def main(argv):
                     removed = len(parts) - len(keep)
                     if keep and removed:
                         m = trimesh.util.concatenate(keep)
+            if extras.get("strip_pedestal"):
+                m = without_pedestal(m)
             m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
-            if "pedestal" in opts:
-                # round base under the figure: flat first layer, no supports under a ragged cut, stands on a shelf.
-                # It overlaps the model by a few millimetres; slicers merge overlapping shells.
-                h = float(m.extents[2])
-                low = m.vertices[m.vertices[:, 2] <= h * 0.10]
-                cx, cy = float(low[:, 0].mean()), float(low[:, 1].mean())
-                r = float(np.percentile(np.hypot(low[:, 0] - cx, low[:, 1] - cy), 92)) * 1.08
+            if "solid" in opts:
+                m = solidify(m, target, None)
+            front = str(extras.get("front", "keep"))
+            turns = face_front(m) if front == "auto" else {"right": 3, "back": 2, "left": 1}.get(front, 0)      # where the face looks now, seen from the front
+            if turns:
+                m.apply_transform(trimesh.transformations.rotation_matrix(turns * np.pi / 2, [0, 0, 1]))
+                ped_note["turned"] = turns * 90
+            m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+            if extras.get("source_out"):
+                # the figure alone, closed and facing the front: a different base later costs no new generation
+                m.export(str(extras["source_out"]), file_type="stl")
+            kind = str(extras.get("pedestal", "round"))
+            if "pedestal" in opts and kind != "none":
+                # base under the figure: flat first layer, no supports under a ragged cut, stands on a shelf
+                z_seat, cx, cy, r = seat_of(m)
                 r = max(r, target * 0.18)
                 r = min(r, float(max(m.extents[0], m.extents[1])) * 0.55)   # never much wider than the figure itself
                 ped_h = max(3.0, target * 0.05)
                 overlap = max(2.0, target * 0.035)
                 try:
-                    ped, ped_note = pedestal_mesh(str(extras.get("pedestal", "round")), cx, cy, r, ped_h, overlap, extras)
+                    ped, note = pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_seat + overlap)
                 except Exception as e:  # noqa: BLE001 - fall back to the plain round base
                     ped = trimesh.creation.cylinder(radius=r, height=ped_h + overlap, sections=96)
-                    ped.apply_translation([cx, cy, (ped_h + overlap) / 2.0 - ped_h])
-                    ped_note = {"pedestal": "round", "pedestal_error": str(e)[:120]}
-                m = solidify(m, target, ped) if "solid" in opts else trimesh.util.concatenate([m, ped])
+                    ped.apply_translation([cx, cy, z_seat + overlap - (ped_h + overlap) / 2.0])
+                    note = {"pedestal": "round", "pedestal_error": str(e)[:120]}
+                ped_note.update(note)
+                floor = float(ped.bounds[0][2])
+                if float(m.bounds[0][2]) < floor - 0.01:
+                    # whatever hangs below the base (a hand, a strand of hair) would lift the print off the bed
+                    try:
+                        import manifold3d as M
+                        cut = M.Manifold(M.Mesh(vert_properties=np.asarray(m.vertices, dtype=np.float32), tri_verts=np.asarray(m.faces, dtype=np.uint32))).trim_by_plane([0, 0, 1], floor).to_mesh()
+                        if len(cut.tri_verts):
+                            m = trimesh.Trimesh(vertices=np.asarray(cut.vert_properties)[:, :3], faces=np.asarray(cut.tri_verts), process=True)
+                    except Exception:
+                        pass
+                joined = None
+                if "solid" in opts and m.is_watertight:
+                    try:
+                        u = trimesh.boolean.union([m, ped], engine="manifold")
+                        joined = u if len(u.faces) and u.is_watertight else None
+                    except Exception:
+                        joined = None
+                m = joined if joined is not None else trimesh.util.concatenate([m, ped])
                 m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
                 m.apply_scale(target / float(max(m.extents)))
-            elif "solid" in opts:
-                m = solidify(m, target, None)
-                m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
             m.export(argv[3], file_type="stl")
             out(report(m, dict({"out": argv[3], "removed_fragments": removed}, **ped_note)))
         if cmd == "cad":

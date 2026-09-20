@@ -1036,5 +1036,17 @@
     "figure.pedestal.dedication": "Věnování (menším písmem)",
     "figure.pedestal.dedication_ph": "např. k 80. narozeninám",
     "figure.pedestal.hint": "Text vystoupí na přední straně podstavce jako součást modelu. U malých figurek volte krátký text, písmo pod 3 mm se nevytiskne čitelně.",
-    "param.f.base_h": "Výška podstavce (u stojícího loga)"
+    "param.f.base_h": "Výška podstavce (u stojícího loga)",
+    "pedestal.title": "Změnit podstavec",
+    "pedestal.hint": "Zdarma a bez nového generování, model zůstane stejný. Trvá to pár vteřin.",
+    "pedestal.type": "Tvar podstavce",
+    "figure.pedestal.none": "Bez podstavce",
+    "pedestal.front": "Kam se teď dívá obličej",
+    "pedestal.front.keep": "Dopředu, je to správně",
+    "pedestal.front.right": "Doprava, otočit",
+    "pedestal.front.left": "Doleva, otočit",
+    "pedestal.front.back": "Dozadu, otočit",
+    "pedestal.apply": "Použít",
+    "pedestal.working": "Upravuji podstavec…",
+    "pedestal.failed": "Podstavec se u tohoto modelu nepodařilo změnit. Zkuste to znovu, případně vytvořte model znovu."
 }

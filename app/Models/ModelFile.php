@@ -91,7 +91,11 @@ class ModelFile extends Model
             return null;
         }
 
-        return ['token' => $req->token, 'refinable' => app(\App\Domain\Generation\GenerationService::class)->basePrompt($req) !== null];
+        return [
+            'token' => $req->token,
+            'refinable' => app(\App\Domain\Generation\GenerationService::class)->basePrompt($req) !== null,
+            'pedestal' => app(\App\Domain\Generation\PedestalChanger::class)->state($this),
+        ];
     }
 
     /** Organic AI meshes print best with tree supports. */

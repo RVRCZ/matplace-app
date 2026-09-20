@@ -1036,5 +1036,17 @@
     "figure.pedestal.dedication": "Dedicatoria (letra más pequeña)",
     "figure.pedestal.dedication_ph": "p. ej. por tus 80 años",
     "figure.pedestal.hint": "El texto sobresale en el frente del pedestal como parte del modelo. En figuras pequeñas use texto corto, las letras de menos de 3 mm no se imprimen legibles.",
-    "param.f.base_h": "Altura de la base (logo de pie)"
+    "param.f.base_h": "Altura de la base (logo de pie)",
+    "pedestal.title": "Cambiar la base",
+    "pedestal.hint": "Gratis y sin nueva generación, el modelo no cambia. Tarda unos segundos.",
+    "pedestal.type": "Forma de la base",
+    "figure.pedestal.none": "Sin base",
+    "pedestal.front": "Hacia dónde mira la cara ahora",
+    "pedestal.front.keep": "Al frente, está bien",
+    "pedestal.front.right": "A la derecha, girar",
+    "pedestal.front.left": "A la izquierda, girar",
+    "pedestal.front.back": "Hacia atrás, girar",
+    "pedestal.apply": "Aplicar",
+    "pedestal.working": "Cambiando la base…",
+    "pedestal.failed": "No se pudo cambiar la base de este modelo. Inténtelo de nuevo o cree el modelo otra vez."
 }

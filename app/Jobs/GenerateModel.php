@@ -77,6 +77,10 @@ class GenerateModel implements ShouldQueue
                 'pedestal' => $req->description['pedestal'] ?? null,
                 'name' => $req->description['pedestal_name'] ?? null,
                 'dedication' => $req->description['pedestal_dedication'] ?? null,
+                // busts do not always arrive facing the front; the name belongs under the face
+                'front' => $kind === 'bust' ? 'auto' : null,
+                // the closed figure without a base is kept: changing the base later needs no new generation
+                'source_out' => in_array($kind, ['bust', 'figure'], true) ? dirname($abs).'/source.stl' : null,
             ]));
             @unlink((string) $status->meshPath);
 

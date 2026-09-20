@@ -14,7 +14,7 @@
         'search.searching','search.identifying','search.none','search.error','search.not_image','search.daily_limit','search.open_source',
         'search.size_guess','search.price_range','search.range_hint','search.have_file','search.generate','search.designer_soon','hero.soon','calc.size','calc.material','inquiry.error',
         'search.gen_size','search.generating','search.gen_done','search.gen_failed','search.gen_daily_limit','search.gen_global_limit','search.gen_text_hint',
-        'refine.working','refine.failed','refine.photo_only','check.head.error','check.head.advice','check.head.ok','check.group.error','check.group.advice','check.group.ok','check.disclaimer','check.units_tiny','check.units_tiny.impact','check.units_huge','check.units_huge.impact','check.very_small','check.very_small.impact','check.exceeds_bed','check.exceeds_bed.impact','check.parts_fit','check.parts_fit.impact','check.part_exceeds_bed','check.part_exceeds_bed.impact','check.size_ok','check.size_ok.impact','check.too_thin','check.too_thin.impact','check.watertight_ok','check.watertight_ok.impact','check.not_watertight','check.not_watertight.impact','check.flipped_normals','check.flipped_normals.impact','check.multiple_shells','check.multiple_shells.impact','check.heavy_mesh','check.heavy_mesh.impact','check.very_coarse','check.very_coarse.impact',
+        'refine.working','refine.failed','pedestal.working','pedestal.failed','refine.photo_only','check.head.error','check.head.advice','check.head.ok','check.group.error','check.group.advice','check.group.ok','check.disclaimer','check.units_tiny','check.units_tiny.impact','check.units_huge','check.units_huge.impact','check.very_small','check.very_small.impact','check.exceeds_bed','check.exceeds_bed.impact','check.parts_fit','check.parts_fit.impact','check.part_exceeds_bed','check.part_exceeds_bed.impact','check.size_ok','check.size_ok.impact','check.too_thin','check.too_thin.impact','check.watertight_ok','check.watertight_ok.impact','check.not_watertight','check.not_watertight.impact','check.flipped_normals','check.flipped_normals.impact','check.multiple_shells','check.multiple_shells.impact','check.heavy_mesh','check.heavy_mesh.impact','check.very_coarse','check.very_coarse.impact',
         'calc.tip.organizer','calc.tip.modular','param.part.tray','param.part.bin','param.part.body.logo','param.part.stand.logo','param.part.body.vase','param.part.body.stamp','param.part.body.qr','param.part.body.lightbox','calc.tip.stencil','calc.tip.lightbox','param.part.face','param.part.diffuser','param.part.back','calc.tip.vase','calc.tip.logo','calc.tip.stamp','calc.tip.qr','calc.edit_design','param.part.saucer','param.part.handle','param.part.stand','calc.tip.box','calc.tip.phone_stand','calc.tip.cable_holder','download.parts','param.part.body','param.part.lid','calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
     ])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();
 @endphp
@@ -85,6 +85,32 @@
                             <button class="rounded-lg bg-action px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{{ __('refine.submit') }}</button>
                         </div>
                         <p id="refine-msg" class="mt-1 text-xs text-slate-500">{{ __('refine.hint') }}</p>
+                    </form>
+                    {{-- generated busts and figures: another base without a new generation --}}
+                    <form id="pedestal-box" class="mt-3 hidden rounded-xl bg-slate-50 p-3">
+                        <div class="text-sm font-semibold text-slate-700">{{ __('pedestal.title') }}</div>
+                        <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                            <label class="block text-xs font-semibold text-slate-600">{{ __('pedestal.type') }}
+                                <select id="pedestal-type" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-normal">
+                                    @foreach(\App\Domain\Generation\PedestalChanger::TYPES as $pk)<option value="{{ $pk }}">{{ __('figure.pedestal.'.$pk) }}</option>@endforeach
+                                </select>
+                            </label>
+                            <label class="block text-xs font-semibold text-slate-600">{{ __('pedestal.front') }}
+                                <select id="pedestal-front" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-normal">
+                                    @foreach(\App\Domain\Generation\PedestalChanger::FRONTS as $fk)<option value="{{ $fk }}">{{ __('pedestal.front.'.$fk) }}</option>@endforeach
+                                </select>
+                            </label>
+                            <label data-plaque class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.name') }}
+                                <input id="pedestal-name" maxlength="24" placeholder="{{ __('figure.pedestal.name_ph') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-normal">
+                            </label>
+                            <label data-plaque class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.dedication') }}
+                                <input id="pedestal-dedication" maxlength="40" placeholder="{{ __('figure.pedestal.dedication_ph') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-normal">
+                            </label>
+                        </div>
+                        <div class="mt-2 flex items-center gap-3">
+                            <button class="rounded-lg bg-action px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{{ __('pedestal.apply') }}</button>
+                            <p id="pedestal-msg" class="text-xs text-slate-500" role="status">{{ __('pedestal.hint') }}</p>
+                        </div>
                     </form>
                     <details class="mt-3 text-sm" @if($mode === 'printer') open @endif>
                         <summary class="cursor-pointer text-action-dark">{{ __('calc.breakdown') }}</summary>

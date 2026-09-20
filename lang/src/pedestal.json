@@ -1,0 +1,14 @@
+{
+    "pedestal.title": ["Změnit podstavec", "Change the base", "Cambiar la base"],
+    "pedestal.hint": ["Zdarma a bez nového generování, model zůstane stejný. Trvá to pár vteřin.", "Free and without a new generation, the model stays the same. It takes a few seconds.", "Gratis y sin nueva generación, el modelo no cambia. Tarda unos segundos."],
+    "pedestal.type": ["Tvar podstavce", "Base shape", "Forma de la base"],
+    "figure.pedestal.none": ["Bez podstavce", "No base", "Sin base"],
+    "pedestal.front": ["Kam se teď dívá obličej", "Where the face looks now", "Hacia dónde mira la cara ahora"],
+    "pedestal.front.keep": ["Dopředu, je to správně", "To the front, it is right", "Al frente, está bien"],
+    "pedestal.front.right": ["Doprava, otočit", "To the right, turn it", "A la derecha, girar"],
+    "pedestal.front.left": ["Doleva, otočit", "To the left, turn it", "A la izquierda, girar"],
+    "pedestal.front.back": ["Dozadu, otočit", "To the back, turn it", "Hacia atrás, girar"],
+    "pedestal.apply": ["Použít", "Apply", "Aplicar"],
+    "pedestal.working": ["Upravuji podstavec…", "Changing the base…", "Cambiando la base…"],
+    "pedestal.failed": ["Podstavec se u tohoto modelu nepodařilo změnit. Zkuste to znovu, případně vytvořte model znovu.", "The base of this model could not be changed. Try again, or create the model again.", "No se pudo cambiar la base de este modelo. Inténtelo de nuevo o cree el modelo otra vez."]
+}

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Generation\PedestalChanger;
 use App\Engines\Contracts\ProjectExporter;
 use App\Engines\DTO\SliceParams;
 use App\Engines\Exceptions\EngineException;
@@ -56,6 +57,25 @@ class ModelFileController extends Controller
         $name = Str::slug(pathinfo($modelFile->original_name, PATHINFO_FILENAME)) ?: 'model';
 
         return response()->download($path, $name.'-'.$data['printer'].'.3mf', ['Content-Type' => 'model/3mf'])->deleteFileAfterSend(true);
+    }
+
+    /** POST /api/files/{uuid}/pedestal — another base, name or front for a generated bust or figure; answers with the new file */
+    public function pedestal(Request $request, ModelFile $modelFile, PedestalChanger $changer): JsonResponse
+    {
+        abort_unless($modelFile->isReady() && $changer->state($modelFile) !== null, 404);
+        $data = $request->validate([
+            'type' => ['required', 'in:'.implode(',', PedestalChanger::TYPES)],
+            'name' => ['nullable', 'string', 'max:24'],
+            'dedication' => ['nullable', 'string', 'max:40'],
+            'front' => ['nullable', 'in:'.implode(',', PedestalChanger::FRONTS)],
+        ]);
+        try {
+            $new = $changer->change($modelFile, $data, $data['front'] ?? 'keep');
+        } catch (\RuntimeException) {
+            return response()->json(['error' => 'pedestal_failed'], 422);
+        }
+
+        return response()->json(['file' => UploadController::describe($new)], 201);
     }
 
     /** GET /api/files/{uuid}/model.stl — normalised STL for the viewer and for "I have a printer, download". */

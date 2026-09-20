@@ -111,4 +111,30 @@ class FigureToolTest extends TestCase
         $this->assertEqualsWithDelta(80, $plaque->bbox->max(), 0.1);               // still the size the customer asked for
         \Illuminate\Support\Facades\File::deleteDirectory($dir);
     }
+
+    public function test_base_of_a_generated_bust_can_be_changed_without_a_new_generation(): void
+    {
+        if (! app(\App\Engines\Repair\PythonTool::class)->available()) {
+            $this->markTestSkipped('Python is not installed.');
+        }
+        $this->moderation(true);
+        $r = $this->post('/api/generate', ['image' => UploadedFile::fake()->image('me.jpg', 600, 800), 'kind' => 'bust', 'consent' => 1, 'pedestal' => 'round'], ['Accept' => 'application/json'])->assertCreated();
+        $uuid = $r->json('generation.file.uuid');
+        $r->assertJsonPath('generation.file.generation.pedestal.type', 'round');
+        Storage::disk('models')->assertExists('files/'.$uuid.'/source.stl');      // the figure alone is kept for later changes
+
+        $this->postJson('/api/files/'.$uuid.'/pedestal', ['type' => 'pyramid'])->assertStatus(422);
+        $p = $this->postJson('/api/files/'.$uuid.'/pedestal', ['type' => 'plaque', 'name' => 'Věra', 'front' => 'right'])->assertCreated();
+        $p->assertJsonPath('file.generation.pedestal.type', 'plaque')->assertJsonPath('file.generation.pedestal.name', 'Věra');
+        $this->assertNotSame($uuid, $p->json('file.uuid'));
+        $this->assertSame(1, GenerationRequest::count());                         // no new generation, no credits
+        $new = ModelFile::where('uuid', $p->json('file.uuid'))->firstOrFail();
+        $this->assertTrue($new->isReady());
+        $this->assertGreaterThan(ModelFile::where('uuid', $uuid)->firstOrFail()->triangles + 500, $new->triangles);   // the raised name is in the mesh
+        Storage::disk('models')->assertExists('files/'.$new->uuid.'/source.stl');
+
+        // an uploaded model has no base to change
+        $plain = ModelFile::create(['uuid' => (string) \Illuminate\Support\Str::uuid(), 'original_name' => 'a.stl', 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => 1, 'sha256' => str_repeat('a', 64), 'storage_path' => 'files/x/original.stl', 'origin' => 'upload', 'status' => ModelFile::STATUS_UPLOADED]);
+        $this->postJson('/api/files/'.$plain->uuid.'/pedestal', ['type' => 'round'])->assertNotFound();
+    }
 }

@@ -399,6 +399,35 @@ function showRefine(file: FileInfo | null): void {
     };
 }
 
+/** Generated busts and figures: another base, name or front. Pure geometry on the server, no new generation. */
+function showPedestal(file: FileInfo | null): void {
+    const box = document.getElementById('pedestal-box') as HTMLFormElement | null;
+    if (!box) return;
+    const ped = file?.generation?.pedestal ?? null;
+    box.classList.toggle('hidden', !ped || !file);
+    if (!ped || !file) return;
+    const type = $('pedestal-type') as HTMLSelectElement; const front = $('pedestal-front') as HTMLSelectElement;
+    const name = $('pedestal-name') as HTMLInputElement; const dedication = $('pedestal-dedication') as HTMLInputElement;
+    const msg = $('pedestal-msg'); const btn = box.querySelector('button') as HTMLButtonElement;
+    const hint = msg.dataset.hint ?? (msg.dataset.hint = msg.textContent ?? '');
+    const plaque = () => box.querySelectorAll<HTMLElement>('[data-plaque]').forEach((e) => { e.classList.toggle('hidden', type.value !== 'plaque'); e.classList.toggle('block', type.value === 'plaque'); });
+    type.value = ped.type; front.value = 'keep'; name.value = ped.name; dedication.value = ped.dedication;
+    msg.textContent = hint; btn.disabled = false;
+    plaque(); type.onchange = plaque;
+    box.onsubmit = async (e) => {
+        e.preventDefault();
+        btn.disabled = true; msg.textContent = t('pedestal.working');
+        try {
+            const res = await fetch(`${routes().files}/${file.uuid}/pedestal`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ type: type.value, front: front.value, name: name.value.trim(), dedication: dedication.value.trim() }) });
+            const body = await res.json();
+            if (!res.ok || !body.file) throw new Error(body.error ?? 'pedestal');
+            await openFile(body.file.uuid);
+        } catch {
+            msg.textContent = t('pedestal.failed'); btn.disabled = false;
+        }
+    };
+}
+
 /** Tool-specific line under the viewer: how this kind of model is meant to be printed. */
 function showKindTip(kind: string | undefined): void {
     const el = document.getElementById('kind-tip');
@@ -410,6 +439,7 @@ function showKindTip(kind: string | undefined): void {
     const edit = state.file?.tool?.url;
     if (edit && text !== key) { const a = document.createElement('a'); a.href = edit; a.className = 'ml-2 font-semibold underline'; a.textContent = t('calc.edit_design'); el.appendChild(a); }
     showRefine(kind === 'generated' ? state.file : null);
+    showPedestal(kind === 'generated' ? state.file : null);
 }
 
 async function restore(c: CalcInfo): Promise<void> {

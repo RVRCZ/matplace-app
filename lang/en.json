@@ -1036,5 +1036,17 @@
     "figure.pedestal.dedication": "Dedication (smaller letters)",
     "figure.pedestal.dedication_ph": "e.g. for your 80th birthday",
     "figure.pedestal.hint": "The text is raised on the front of the pedestal as part of the model. Keep it short on small figures, letters under 3 mm do not print legibly.",
-    "param.f.base_h": "Base height (standing logo)"
+    "param.f.base_h": "Base height (standing logo)",
+    "pedestal.title": "Change the base",
+    "pedestal.hint": "Free and without a new generation, the model stays the same. It takes a few seconds.",
+    "pedestal.type": "Base shape",
+    "figure.pedestal.none": "No base",
+    "pedestal.front": "Where the face looks now",
+    "pedestal.front.keep": "To the front, it is right",
+    "pedestal.front.right": "To the right, turn it",
+    "pedestal.front.left": "To the left, turn it",
+    "pedestal.front.back": "To the back, turn it",
+    "pedestal.apply": "Apply",
+    "pedestal.working": "Changing the base…",
+    "pedestal.failed": "The base of this model could not be changed. Try again, or create the model again."
 }
