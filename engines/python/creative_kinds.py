@@ -139,9 +139,9 @@ def logo(M, Invalid, p):
         warn.append("missing_chars")
     if mode == "standing":
         # The logo stands in a slotted base. It prints lying flat (clean on both faces, its own colour) and is pushed in.
-        sink, show = 6.0, 2.5                                           # how deep it sits in the slot / how much of the foot stays visible
+        sink, show = 6.0, 1.5                                           # how deep it sits in the slot / how much of the foot stays visible
         x0, y0, x1, y1 = art.bounds()
-        reach = descent + 3.0 if info.get("source") == "text" else min(8.0, max(3.0, hgt * 0.18))   # up to the baseline and a bit: a J or g must not be the only letter caught
+        reach = descent + 2.0 if info.get("source") == "text" else min(8.0, max(3.0, hgt * 0.18))   # up to the baseline and a bit: a J or g must not be the only letter caught
         band = art ^ M.CrossSection.square([w, reach]).translate([x0, y0])
         if band.is_empty():
             bx0, bx1 = x0, x1
@@ -174,7 +174,10 @@ def logo(M, Invalid, p):
         parts = {
             "body": logo_flat, "stand": base,
             "all": M.Manifold.compose([logo_flat, base.translate([fw + 8.0, 0, 0])]),
-            "use": M.Manifold.compose([base.translate([shift, 0, 0]), upright.translate([shift, 0, 0])]),
+            # the assembled view shows what you see on the shelf: the part of the logo that is hidden in the slot is left out,
+            # so every visible face belongs wholly to the logo or wholly to the base (clean colours, no slivers across the joint)
+            "use": M.Manifold.compose([S.rounded_rect(M, base_w, base_d, 4).extrude(base_h).translate([shift, 0, 0]),
+                                       upright.translate([shift, 0, 0]).trim_by_plane([0, 0, 1], base_h)]),
         }
         notes = {"outer": [round(max(base_w, fw), 1), round(base_d, 1), round(base_h - sink + fh, 1)], "pieces": pieces, "needs": ["glue_optional"],
                  # preview colours: only what stands in the slot is the logo; the top face of the base belongs to the base
