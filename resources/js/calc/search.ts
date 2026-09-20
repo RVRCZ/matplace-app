@@ -1,4 +1,5 @@
-/** "Describe it" / "Take a photo": text or image → what it is, size + price range, ready-made models. */
+/** "Describe it" / "Take a photo": text or image → what it is, size + price range, ready-made models, rough generated model. */
+import { openFile } from './calculator';
 
 interface Candidate {
     source: string; externalId: string; title: string; previewUrl: string | null; externalUrl: string | null;
@@ -63,6 +64,13 @@ async function searchText(q: string): Promise<void> {
         const body = await res.json();
         if (!res.ok) throw new Error(body.message ?? 'search');
         renderResults(body.results, body.query);
+        const cfg = (window as unknown as { MP_CONFIG: { generator: boolean } }).MP_CONFIG;
+        if (cfg.generator) {
+            const box = $('describe-box');
+            box.innerHTML = `<div class="text-sm text-slate-600">${t('search.gen_text_hint')}</div><div class="mt-2 flex flex-wrap items-center gap-2">${generateControls(80)}</div>`;
+            box.classList.remove('hidden');
+            bindGenerate({ prompt: q });
+        }
     } catch {
         showError(t('search.error'));
     } finally {
@@ -89,12 +97,52 @@ function renderDescription(d: DescribeResponse): void {
                 <p class="mt-1 text-xs text-slate-500">${t('search.range_hint')}</p>
                 <div class="mt-3 flex flex-wrap gap-2 text-sm">
                     <button type="button" class="rounded-full bg-teal-600 px-4 py-2 font-semibold text-white" onclick="document.getElementById('file-input').click()">${t('search.have_file')}</button>
-                    ${d.generator ? `<button type="button" id="cta-generate" class="rounded-full border border-teal-600 px-4 py-2 font-semibold text-teal-700">${t('search.generate')}</button>` : `<span class="rounded-full border border-slate-200 px-4 py-2 text-slate-400" title="${t('hero.soon')}">${t('search.generate')} (${t('hero.soon')})</span>`}
+                    ${d.generator ? generateControls(desc.bbox_mm ? Math.max(desc.bbox_mm.x, desc.bbox_mm.y, desc.bbox_mm.z) : 80) : `<span class="rounded-full border border-slate-200 px-4 py-2 text-slate-400" title="${t('hero.soon')}">${t('search.generate')} (${t('hero.soon')})</span>`}
                     <span class="rounded-full border border-slate-200 px-4 py-2 text-slate-500">${t('search.designer_soon')}</span>
                 </div>
             </div>
         </div>`;
     box.classList.remove('hidden');
+    bindGenerate({ describe: d.token });
+}
+
+/** Size input + button + progress bar. The size is the largest side of the real object in mm. */
+function generateControls(defaultMm: number): string {
+    return `<span class="inline-flex items-center gap-2">
+        <label class="text-xs text-slate-500">${t('search.gen_size')} <input id="gen-target" type="number" min="5" max="1000" value="${Math.round(defaultMm)}" class="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"> mm</label>
+        <button type="button" id="cta-generate" class="rounded-full border border-teal-600 px-4 py-2 font-semibold text-teal-700">${t('search.generate')}</button>
+    </span>
+    <div id="gen-progress" class="hidden w-full"><div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200"><div id="gen-bar" class="h-2 w-0 bg-teal-600 transition-all"></div></div><p id="gen-text" class="mt-1 text-xs text-slate-500"></p></div>`;
+}
+
+function bindGenerate(payload: Record<string, unknown>): void {
+    const btn = document.getElementById('cta-generate') as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.onclick = async () => {
+        btn.disabled = true;
+        const target = Number((document.getElementById('gen-target') as HTMLInputElement | null)?.value || 80);
+        const prog = $('gen-progress'); const bar = $('gen-bar'); const txt = $('gen-text');
+        prog.classList.remove('hidden'); txt.textContent = t('search.generating');
+        try {
+            const res = await fetch(routes().generate, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ ...payload, target_mm: target }) });
+            const body = await res.json();
+            if (res.status === 429) { txt.textContent = t(body.error === 'global_limit' ? 'search.gen_global_limit' : 'search.gen_daily_limit', { n: body.limit, m: body.login_limit }); btn.disabled = false; return; }
+            if (!res.ok) throw new Error(body.error ?? 'generate');
+            let g = body.generation;
+            while (g.status !== 'done' && g.status !== 'failed') {
+                bar.style.width = `${Math.max(5, g.progress)}%`;
+                await new Promise((r) => setTimeout(r, 3000));
+                const r2 = await fetch(`${routes().generateShow}/${g.token}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                g = (await r2.json()).generation;
+            }
+            if (g.status === 'failed' || !g.file) { txt.textContent = t('search.gen_failed'); btn.disabled = false; return; }
+            bar.style.width = '100%';
+            txt.textContent = t('search.gen_done');
+            await openFile(g.file.uuid);
+        } catch {
+            txt.textContent = t('search.gen_failed'); btn.disabled = false;
+        }
+    };
 }
 
 async function describePhoto(file: File): Promise<void> {

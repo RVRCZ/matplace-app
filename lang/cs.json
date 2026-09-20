@@ -347,5 +347,12 @@
     "inquiry.mail.msg_printer.subject": "Nová zpráva od zákazníka (:model)",
     "inquiry.mail.msg_printer.heading": "Zákazník ti píše",
     "inquiry.mail.msg_printer.body": ":client poslal zprávu k poptávce na :model.",
-    "inquiry.mail.msg_printer.button": "Otevřít chat"
+    "inquiry.mail.msg_printer.button": "Otevřít chat",
+    "search.gen_size": "Největší rozměr",
+    "search.generating": "Vytvářím hrubý model, trvá to asi minutu…",
+    "search.gen_done": "Model je hotový, počítám cenu…",
+    "search.gen_failed": "Model se nepodařilo vytvořit. Zkus jinou fotku (jeden předmět, světlé pozadí) nebo popis.",
+    "search.gen_daily_limit": "Dnešní limit (:n) je vyčerpaný. Po přihlášení máš :m modely denně.",
+    "search.gen_global_limit": "Dnes už jsme vygenerovali maximum modelů. Zkus to prosím zítra.",
+    "search.gen_text_hint": "Nenašel jsi, co hledáš? Necháme z popisu vytvořit hrubý model. Tvar je přibližný, rozměr nastav podle skutečnosti."
 }

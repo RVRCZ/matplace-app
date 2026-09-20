@@ -11,7 +11,9 @@ use App\Engines\Converter\FreeCadConverter;
 use App\Engines\Converter\OcpCadConverter;
 use App\Engines\Converter\PythonMeshConverter;
 use App\Engines\Converter\ThreeMfConverter;
+use App\Engines\Generator\FakeGenerator;
 use App\Engines\Generator\NullGenerator;
+use App\Engines\Generator\TripoGenerator;
 use App\Engines\Repair\PhpStlRepair;
 use App\Engines\Repair\PythonTool;
 use App\Engines\Repair\TrimeshRepair;
@@ -47,7 +49,11 @@ class EngineServiceProvider extends ServiceProvider
             return new PhpStlRepair;
         });
 
-        $this->app->singleton(ModelGenerator::class, fn () => new NullGenerator);
+        $this->app->singleton(ModelGenerator::class, fn () => match (config('engines.generator')) {
+            'tripo' => new TripoGenerator(config('ai.tripo')),
+            'fake' => new FakeGenerator,
+            default => new NullGenerator,
+        });
 
         $this->app->singleton(VisionDescriber::class, fn () => new VisionDescriber([
             'api_key' => config('ai.anthropic.api_key'), 'model' => config('ai.anthropic.vision_model'), 'timeout' => config('ai.anthropic.timeout'),

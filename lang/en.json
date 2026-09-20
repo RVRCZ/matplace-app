@@ -347,5 +347,12 @@
     "inquiry.mail.msg_printer.subject": "New message from the customer (:model)",
     "inquiry.mail.msg_printer.heading": "The customer wrote to you",
     "inquiry.mail.msg_printer.body": ":client sent a message about :model.",
-    "inquiry.mail.msg_printer.button": "Open chat"
+    "inquiry.mail.msg_printer.button": "Open chat",
+    "search.gen_size": "Largest side",
+    "search.generating": "Creating a rough model, about a minute…",
+    "search.gen_done": "The model is ready, calculating the price…",
+    "search.gen_failed": "Could not create the model. Try another photo (one object, plain background) or a description.",
+    "search.gen_daily_limit": "Today’s limit (:n) is used up. Signed-in users get :m models a day.",
+    "search.gen_global_limit": "We have generated the maximum number of models today. Please try tomorrow.",
+    "search.gen_text_hint": "Not what you were looking for? We can create a rough model from the description. The shape is approximate; set the real size."
 }

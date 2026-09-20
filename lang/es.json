@@ -347,5 +347,12 @@
     "inquiry.mail.msg_printer.subject": "Nuevo mensaje del cliente (:model)",
     "inquiry.mail.msg_printer.heading": "El cliente te ha escrito",
     "inquiry.mail.msg_printer.body": ":client envió un mensaje sobre :model.",
-    "inquiry.mail.msg_printer.button": "Abrir chat"
+    "inquiry.mail.msg_printer.button": "Abrir chat",
+    "search.gen_size": "Lado más largo",
+    "search.generating": "Creando un modelo aproximado, tarda un minuto…",
+    "search.gen_done": "El modelo está listo, calculando el precio…",
+    "search.gen_failed": "No se pudo crear el modelo. Prueba otra foto (un objeto, fondo claro) o una descripción.",
+    "search.gen_daily_limit": "El límite de hoy (:n) está agotado. Con cuenta tienes :m modelos al día.",
+    "search.gen_global_limit": "Hoy ya hemos generado el máximo de modelos. Prueba mañana.",
+    "search.gen_text_hint": "¿No es lo que buscabas? Creamos un modelo aproximado a partir de la descripción. La forma es aproximada; indica el tamaño real."
 }

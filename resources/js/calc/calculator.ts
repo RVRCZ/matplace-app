@@ -349,6 +349,27 @@ async function restore(c: CalcInfo): Promise<void> {
     else { renderRough(); poll(c.token); }
 }
 
+/** Open a file that already exists on the server (generated model): wait until processed, show it, price it. */
+export async function openFile(uuid: string): Promise<void> {
+    stopPolling();
+    state.geometry = null; state.geo = null; state.calc = null; state.localFile = null;
+    showResult();
+    setStatus('calc.status.converting', true);
+    for (let i = 0; i < 60; i++) {
+        try {
+            const info = await getFile(uuid);
+            state.file = info;
+            $('file-badge').textContent = info.name;
+            if (info.status === 'ready') break;
+            if (info.status === 'failed') { setStatus('calc.status.failed', false); return; }
+        } catch { /* retry */ }
+        await new Promise((r) => setTimeout(r, 1500));
+    }
+    if (state.file?.stl_url) await showServerStl(state.file.stl_url);
+    renderRough();
+    requestPrecise();
+}
+
 export function boot(): void {
     if (!document.getElementById('calculator')) return;
     bindControls();

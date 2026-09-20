@@ -6,6 +6,7 @@ Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquer
   mesh_tool.py check <in>                             -> geometry + topology report (mm)
   mesh_tool.py repair <in> <out.stl>                  -> repaired binary STL + report
   mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
+  mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1>  -> millimetres (largest side = max_mm), Z-up, on the bed
   mesh_tool.py cad <in.step|iges> <out.stl> [lin] [ang] -> CAD B-rep to STL via OpenCascade (cadquery); lin=mm, ang=rad
 
 Always prints exactly one JSON object on stdout.
@@ -121,6 +122,25 @@ def main(argv):
             out(report(load(argv[2])))
         if cmd == "convert":
             m = load(argv[2])
+            m.export(argv[3], file_type="stl")
+            out(report(m, {"out": argv[3]}))
+        if cmd == "normalize":
+            import numpy as np
+            import trimesh
+            m = trimesh.load(argv[2], force="mesh")
+            if isinstance(m, trimesh.Scene):
+                m = trimesh.util.concatenate(list(m.geometry.values()))
+            if m.is_empty or len(m.faces) == 0:
+                raise ValueError("mesh has no faces")
+            target = float(argv[4])
+            if len(argv) > 5 and argv[5] == "1":
+                # glTF is Y-up; printers are Z-up: rotate +90 degrees about X
+                m.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0]))
+            ext = float(max(m.extents))
+            if ext <= 0:
+                raise ValueError("degenerate mesh")
+            m.apply_scale(target / ext)
+            m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
             m.export(argv[3], file_type="stl")
             out(report(m, {"out": argv[3]}))
         if cmd == "cad":

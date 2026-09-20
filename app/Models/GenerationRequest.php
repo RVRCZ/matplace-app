@@ -9,10 +9,10 @@ class GenerationRequest extends Model
 {
     protected $fillable = [
         'token', 'owner_user_id', 'anonymous_session_id', 'ip', 'type', 'prompt', 'image_path', 'description', 'engine',
-        'external_id', 'status', 'cost_cents', 'result_model_file_id', 'error',
+        'external_id', 'status', 'cost_cents', 'result_model_file_id', 'error', 'image_sha256', 'target_mm', 'progress', 'source_request_id',
     ];
 
-    protected $casts = ['description' => 'array'];
+    protected $casts = ['description' => 'array', 'target_mm' => 'int', 'progress' => 'int', 'cost_cents' => 'int'];
 
     public function getRouteKeyName(): string
     {
@@ -28,13 +28,16 @@ class GenerationRequest extends Model
     public static function usedToday(?string $ip, ?int $sessionId, ?int $userId): int
     {
         $since = now()->startOfDay();
-        $q = static::where('created_at', '>=', $since)->where('type', '!=', 'describe');
-        $counts = [
-            $ip ? (clone $q)->where('ip', $ip)->count() : 0,
-            $sessionId ? (clone $q)->where('anonymous_session_id', $sessionId)->count() : 0,
-            $userId ? (clone $q)->where('owner_user_id', $userId)->count() : 0,
-        ];
+        // cached answers cost nothing and do not count
+        $q = static::where('created_at', '>=', $since)->whereIn('type', ['image', 'text'])->where('engine', 'not like', '%+cache');
+        if ($userId) {
+            return (clone $q)->where('owner_user_id', $userId)->count(); // accounts are counted on their own (shared IPs!)
+        }
+        $guest = (clone $q)->whereNull('owner_user_id');
 
-        return max($counts);
+        return max(
+            $ip ? (clone $guest)->where('ip', $ip)->count() : 0,
+            $sessionId ? (clone $guest)->where('anonymous_session_id', $sessionId)->count() : 0,
+        );
     }
 }

@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\ModelFileController;
+use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\ThreadController;
@@ -45,6 +46,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('calculations/{calculation}', [CalculationController::class, 'show'])->name('calculations.show');
     Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1')->name('search');
     Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1')->name('describe');
+    Route::post('generate', [GenerationController::class, 'store'])->middleware('throttle:10,1')->name('generate.store');
+    Route::get('generate/{generation}', [GenerationController::class, 'show'])->name('generate.show');
     Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware('throttle:10,1')->name('inquiries.store');
     Route::get('threads/{thread}/messages', [ThreadController::class, 'messages'])->name('threads.messages');
     Route::post('threads/{thread}/messages', [ThreadController::class, 'post'])->middleware('throttle:30,1')->name('threads.post');

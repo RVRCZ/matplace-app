@@ -1,0 +1,89 @@
+<?php
+
+namespace App\Jobs;
+
+use App\Domain\Generation\ModelNormalizer;
+use App\Engines\Contracts\ModelGenerator;
+use App\Engines\DTO\GenerationHandle;
+use App\Engines\DTO\GenerationOptions;
+use App\Engines\DTO\GenerationStatus;
+use App\Models\GenerationRequest;
+use App\Models\ModelFile;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
+/**
+ * Text/photo → mesh through the configured ModelGenerator. Starts the remote task once, then re-queues itself
+ * every few seconds until it finishes. The result enters the normal pipeline as a ModelFile (origin "generated").
+ */
+class GenerateModel implements ShouldQueue
+{
+    use Queueable;
+
+    public int $tries = 120;     // × 5 s ≈ 10 minutes
+
+    public int $timeout = 300;
+
+    public function __construct(public readonly int $requestId) {}
+
+    public function handle(ModelGenerator $generator, ModelNormalizer $normalizer): void
+    {
+        $req = GenerationRequest::find($this->requestId);
+        if (! $req || in_array($req->status, ['done', 'failed'], true)) {
+            return;
+        }
+
+        try {
+            if (! $req->external_id) {
+                $options = new GenerationOptions(targetSizeMm: $req->target_mm ? (float) $req->target_mm : null);
+                $handle = $req->type === 'image'
+                    ? $generator->fromImage(Storage::disk('local')->path((string) $req->image_path), $req->prompt, $options)
+                    : $generator->fromText((string) $req->prompt, $options);
+                $req->update(['external_id' => $handle->externalId, 'engine' => $handle->engine, 'status' => 'running', 'cost_cents' => (int) ($handle->meta['credits'] ?? $generator->estimatedCostCents())]);
+            }
+
+            $status = $generator->poll(new GenerationHandle((string) $req->engine, (string) $req->external_id));
+
+            if ($status->state === GenerationStatus::FAILED) {
+                $req->update(['status' => 'failed', 'error' => $status->error]);
+
+                return;
+            }
+            if ($status->state !== GenerationStatus::DONE) {
+                $req->update(['progress' => max((int) $req->progress, min(99, $status->progress))]);
+                if ($this->attempts() >= $this->tries - 1) {
+                    $req->update(['status' => 'failed', 'error' => 'timeout']);
+
+                    return;
+                }
+                $this->release(5);
+
+                return;
+            }
+
+            // done: normalise to mm + Z-up and hand over to the standard file pipeline
+            $uuid = (string) Str::uuid();
+            $rel = 'files/'.$uuid.'/original.stl';
+            $abs = Storage::disk(ModelFile::DISK)->path($rel);
+            File::ensureDirectoryExists(dirname($abs));
+            $normalizer->toPrintableStl((string) $status->meshPath, $abs, (float) ($req->target_mm ?: config('ai.default_target_mm', 80)));
+            @unlink((string) $status->meshPath);
+
+            $name = Str::slug(Str::limit((string) ($req->description['name_en'] ?? $req->prompt ?? 'model'), 40, '')) ?: 'model';
+            $file = ModelFile::create([
+                'uuid' => $uuid, 'owner_user_id' => $req->owner_user_id, 'anonymous_session_id' => $req->anonymous_session_id,
+                'original_name' => $name.'.stl', 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
+                'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $req->token, 'status' => ModelFile::STATUS_UPLOADED,
+            ]);
+            $req->update(['status' => 'done', 'progress' => 100, 'result_model_file_id' => $file->id]);
+            ProcessModelFile::dispatch($file->id);
+        } catch (\Throwable $e) {
+            Log::warning('GenerateModel failed', ['id' => $req->id, 'error' => $e->getMessage()]);
+            $req->update(['status' => 'failed', 'error' => mb_substr($e->getMessage(), 0, 500)]);
+        }
+    }
+}
