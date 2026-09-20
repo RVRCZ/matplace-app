@@ -69,13 +69,15 @@ export class Viewer {
         const radius = Math.max(size.x, size.y, size.z) || 1;
         this.grid = new GridHelper(radius * 2.5, 10, 0xcbd5e1, 0xe2e8f0);
         this.scene.add(this.grid);
-        const dist = radius / Math.tan((this.camera.fov * Math.PI) / 360) * 1.1;
+        // frame the bounding sphere: whatever the proportions, the model fills the view without being cut off
+        const sphere = 0.5 * Math.hypot(size.x, size.y, size.z) || 1;
+        const half = (this.camera.fov * Math.PI) / 360;
+        const dist = (sphere / Math.sin(half)) * 1.08 / Math.min(1, this.camera.aspect || 1);
         // flat things (signs, plates, reliefs) are looked at from above, tall things from the side
         const flat = size.y / radius < 0.2;
         const standingPlate = !flat && size.z / radius < 0.2; // lithophane standing on its edge: look at its face
-        if (flat) this.camera.position.set(dist * 0.1, dist * 0.62, dist * 0.36);   // plates fill the view
-        else if (standingPlate) this.camera.position.set(dist * 0.25, size.y / 2 + dist * 0.12, dist * 0.95);
-        else this.camera.position.set(dist * 0.8, dist * 0.6, dist * 0.9);
+        const dir = flat ? new Vector3(0.14, 0.86, 0.5) : standingPlate ? new Vector3(0.25, 0.18, 0.95) : new Vector3(0.62, 0.45, 0.7);
+        this.camera.position.copy(dir.normalize().multiplyScalar(dist)).add(new Vector3(0, size.y / 2, 0));
         this.camera.near = radius / 100;
         this.camera.far = radius * 100;
         this.camera.updateProjectionMatrix();
