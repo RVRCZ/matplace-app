@@ -13,9 +13,10 @@ interface Config {
     formats: string[]; max_upload_mb: number; lay: Record<string, string>;
 }
 
-const cfg = (window as unknown as { MP_CONFIG: Config }).MP_CONFIG;
-const i18n = (window as unknown as { MP_I18N: Record<string, string> }).MP_I18N;
-const initial = (window as unknown as { MP_INITIAL: CalcInfo | null }).MP_INITIAL;
+// MP_CONFIG exists only on calculator pages; this module is bundled into every page, so stay safe at import time.
+const cfg = ((window as unknown as { MP_CONFIG?: Config }).MP_CONFIG ?? { default_material: 'PLA', materials: [], orientation_profiles: [] }) as Config;
+const i18n = (window as unknown as { MP_I18N?: Record<string, string> }).MP_I18N ?? {};
+const initial = (window as unknown as { MP_INITIAL?: CalcInfo | null }).MP_INITIAL ?? null;
 const ownProfileId = (window as unknown as { MP_OWN_PROFILE_ID: number | null }).MP_OWN_PROFILE_ID ?? null;
 const t = (k: string, r: Record<string, string | number> = {}) => Object.entries(r).reduce((s, [a, b]) => s.replace(`:${a}`, String(b)), i18n[k] ?? k);
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -44,6 +45,11 @@ function minutesText(min: number): string {
     return h ? `${h} h ${m} min` : `${m} min`;
 }
 
+function leadRange(days: number[]): string {
+    const lo = Math.min(...days), hi = Math.max(...days);
+    return lo === hi ? String(lo) : `${lo}–${hi}`;
+}
+
 function setStatus(key: string, spinning: boolean): void {
     $('status').textContent = t(key);
     $('status-spinner').classList.toggle('hidden', !spinning);
@@ -61,7 +67,7 @@ function renderRough(): void {
     $('stat-grams').textContent = `≈ ${fmt.format(est.grams * state.params.quantity)} g`;
     $('stat-time').textContent = `≈ ${minutesText(est.minutes * state.params.quantity)}`;
     const leads = bds.map((b) => b.lead_time_days);
-    $('stat-lead').textContent = t('calc.days', { n: `${Math.min(...leads)}–${Math.max(...leads)}` });
+    $('stat-lead').textContent = t('calc.days', { n: leadRange(leads) });
     const s = state.params.scale;
     $('dims-badge').textContent = `${fmt.format(g.bbox.x * s)} × ${fmt.format(g.bbox.y * s)} × ${fmt.format(g.bbox.z * s)} mm`;
     renderBreakdown(bds.map((b) => ({ ...b, label: t(`calc.profile.${b.profile}`) })), true);
@@ -104,7 +110,7 @@ function renderPrecise(c: CalcInfo): void {
     $('stat-grams').textContent = `${fmt.format(c.slicer.grams * q)} g`;
     $('stat-time').textContent = minutesText(c.slicer.minutes * q);
     const leads = c.prices.map((p) => p.lead_time_days);
-    $('stat-lead').textContent = t('calc.days', { n: `${Math.min(...leads)}–${Math.max(...leads)}` });
+    $('stat-lead').textContent = t('calc.days', { n: leadRange(leads) });
     $('dims-badge').textContent = `${fmt.format(c.slicer.dims.x)} × ${fmt.format(c.slicer.dims.y)} × ${fmt.format(c.slicer.dims.z)} mm`;
     renderBreakdown(c.prices.map((p) => ({ ...p, label: ownProfileId && (p as { printer_profile_id?: number | null }).printer_profile_id === ownProfileId ? t('calc.profile.mine') : (p.label ?? t(`calc.profile.${p.profile}`)) })), false);
     const warns = [...(c.slicer.warnings ?? []), ...(c.file?.issues ?? [])];

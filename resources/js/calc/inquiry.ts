@@ -1,7 +1,7 @@
 /** "Make it for me": small form under the price → POST /api/inquiries → customer page /i/{token}. */
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
-const i18n = (window as unknown as { MP_I18N: Record<string, string> }).MP_I18N;
+const i18n = (window as unknown as { MP_I18N?: Record<string, string> }).MP_I18N ?? {};
 const t = (k: string) => i18n[k] ?? k;
 
 export function bootInquiry(getCalcToken: () => string | null): void {

@@ -136,7 +136,7 @@ class ImportLegacy extends Command
                 'contact_email' => $email,
                 'contact_phone' => $row->phone ?: null,
                 'pickup_address' => $row->pickup_address ?: null,
-                'lead_time_days' => max(1, (int) ceil(((int) ($row->response_time_hours ?? 0)) / 24)) ?: 5,
+                'lead_time_days' => 5, // legacy only knew the response time, not a delivery time
                 'capacity' => empty($row->accepting_orders) ? 'paused' : 'open',
                 'next_available_at' => $row->next_available ?? null,
                 'bio' => $row->bio ?: null,

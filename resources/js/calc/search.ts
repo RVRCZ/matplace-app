@@ -14,7 +14,7 @@ interface DescribeResponse {
 }
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
-const i18n = (window as unknown as { MP_I18N: Record<string, string> }).MP_I18N;
+const i18n = (window as unknown as { MP_I18N?: Record<string, string> }).MP_I18N ?? {};
 const t = (k: string, r: Record<string, string | number> = {}) => Object.entries(r).reduce((s, [a, b]) => s.replace(`:${a}`, String(b)), i18n[k] ?? k);
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const fmt = new Intl.NumberFormat({ en: 'en-GB', es: 'es-ES' }[document.documentElement.lang] ?? 'cs-CZ', { maximumFractionDigits: 0 });

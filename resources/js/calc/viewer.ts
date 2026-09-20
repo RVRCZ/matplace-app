@@ -1,5 +1,5 @@
 import {
-    AmbientLight, BufferGeometry, Color, DirectionalLight, GridHelper, Mesh, MeshStandardMaterial,
+    AmbientLight, BufferGeometry, Color, DirectionalLight, GridHelper, HemisphereLight, Mesh, MeshStandardMaterial,
     PerspectiveCamera, Scene, Vector3, WebGLRenderer, Box3,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -12,7 +12,8 @@ export class Viewer {
     private controls: OrbitControls;
     private mesh: Mesh | null = null;
     private grid: GridHelper | null = null;
-    private material = new MeshStandardMaterial({ color: 0x0f766e, roughness: 0.55, metalness: 0.05 });
+    // light teal + flat shading: layer-like facets and embossed letters stay readable
+    private material = new MeshStandardMaterial({ color: 0x5eead4, roughness: 0.75, metalness: 0.0, flatShading: true });
 
     constructor(private canvas: HTMLCanvasElement) {
         this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false });
@@ -21,12 +22,13 @@ export class Viewer {
         this.camera = new PerspectiveCamera(40, 1, 0.1, 100000);
         this.controls = new OrbitControls(this.camera, canvas);
         this.controls.enableDamping = true;
-        this.scene.add(new AmbientLight(0xffffff, 0.7));
-        const key = new DirectionalLight(0xffffff, 1.1);
-        key.position.set(1, 2, 3);
+        this.scene.add(new AmbientLight(0xffffff, 0.9));
+        this.scene.add(new HemisphereLight(0xffffff, 0x94a3b8, 1.2));
+        const key = new DirectionalLight(0xffffff, 2.6);   // raking light from the front-left: relief casts readable shading
+        key.position.set(-1.5, 2.2, 2.5);
         this.scene.add(key);
-        const fill = new DirectionalLight(0xffffff, 0.4);
-        fill.position.set(-2, -1, -1);
+        const fill = new DirectionalLight(0xffffff, 1.0);
+        fill.position.set(2.5, 1.0, -1.5);
         this.scene.add(fill);
         new ResizeObserver(() => this.resize()).observe(canvas);
         this.resize();
@@ -64,7 +66,10 @@ export class Viewer {
         this.grid = new GridHelper(radius * 2.5, 10, 0xcbd5e1, 0xe2e8f0);
         this.scene.add(this.grid);
         const dist = radius / Math.tan((this.camera.fov * Math.PI) / 360) * 1.1;
-        this.camera.position.set(dist * 0.8, dist * 0.6, dist * 0.9);
+        // flat things (signs, plates, reliefs) are looked at from above, tall things from the side
+        const flat = size.y / radius < 0.2;
+        if (flat) this.camera.position.set(dist * 0.15, dist * 0.95, dist * 0.55);
+        else this.camera.position.set(dist * 0.8, dist * 0.6, dist * 0.9);
         this.camera.near = radius / 100;
         this.camera.far = radius * 100;
         this.camera.updateProjectionMatrix();

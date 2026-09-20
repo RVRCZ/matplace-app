@@ -3,8 +3,9 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
-        "dev": "vite"
+        "build": "vite build && node scripts/check_bundle.mjs",
+        "dev": "vite",
+        "check": "node scripts/check_bundle.mjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
