@@ -67,12 +67,35 @@ final class GenerationService
         return $this->reuseOrDispatch($req, fn ($q) => $q->whereRaw('1 = 0'));
     }
 
-    public function fromText(string $prompt, int $targetMm, ?string $ip, ?AnonymousSession $session, ?User $user): GenerationRequest
+    public function fromText(string $prompt, int $targetMm, ?string $ip, ?AnonymousSession $session, ?User $user, ?int $sourceRequestId = null): GenerationRequest
     {
         $prompt = trim($prompt);
-        $req = $this->make('text', $ip, $session, $user, ['prompt' => $prompt, 'image_sha256' => hash('sha256', 'text:'.mb_strtolower($prompt)), 'target_mm' => $targetMm]);
+        $req = $this->make('text', $ip, $session, $user, ['prompt' => $prompt, 'image_sha256' => hash('sha256', 'text:'.mb_strtolower($prompt)), 'target_mm' => $targetMm, 'source_request_id' => $sourceRequestId]);
 
         return $this->reuseOrDispatch($req, fn ($q) => $q->where('type', 'text')->where('image_sha256', $req->image_sha256));
+    }
+
+    /** What the first generation was about, in words; null when it was a personal photo (likeness cannot be described). */
+    public function basePrompt(GenerationRequest $src): ?string
+    {
+        if (! empty($src->description['delete_photo'])) {
+            return null;
+        }
+        $base = $src->type === 'text' ? (string) $src->prompt : (string) ($src->description['name_en'] ?? $src->prompt ?? '');
+
+        return trim($base) !== '' ? trim($base) : null;
+    }
+
+    /** "Make the handle longer": a new text generation from the original subject plus the wish. Counts as a generation. */
+    public function refine(GenerationRequest $src, string $instruction, ?string $ip, ?AnonymousSession $session, ?User $user): GenerationRequest
+    {
+        $base = $this->basePrompt($src);
+        if ($base === null) {
+            throw new \InvalidArgumentException('not_refinable');
+        }
+        $prompt = mb_substr(rtrim($base, '. ').'. '.trim($instruction), 0, 500);
+
+        return $this->fromText($prompt, (int) ($src->target_mm ?: config('ai.default_target_mm', 80)), $ip, $session, $user, $src->id);
     }
 
     private function make(string $type, ?string $ip, ?AnonymousSession $session, ?User $user, array $attrs): GenerationRequest

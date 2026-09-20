@@ -40,6 +40,13 @@
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
                 <label class="text-sm font-semibold">{{ __('printer.f.min_price') }} <span class="font-normal text-slate-500">Kč</span><input name="min_price" type="number" step="1" min="0" value="{{ old('min_price', $pricing->min_price) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.express_pct') }} <span class="font-normal text-slate-500">%</span><input name="express_pct" type="number" step="1" min="0" value="{{ old('express_pct', $pricing->express_pct) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+                <label class="text-sm font-semibold sm:col-span-2">{{ __('printer.f.speed') }} <span class="font-normal text-slate-500">{{ __('printer.f.speed_hint') }}</span>
+                    <select name="time_factor" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal">
+                        @foreach (['1' => 'fast', '1.3' => 'medium', '1.8' => 'slow', '2.5' => 'very_slow'] as $v => $k)
+                            <option value="{{ $v }}" @selected(abs((float) old('time_factor', $pricing->time_factor ?: 1) - (float) $v) < 0.01)>{{ __('printer.f.speed.'.$k) }}</option>
+                        @endforeach
+                    </select>
+                </label>
                 <label class="text-sm font-semibold sm:col-span-2">{{ __('printer.f.qty_discounts') }} <span class="font-normal text-slate-500">{{ __('printer.f.qty_discounts_hint') }}</span><input name="qty_discounts" value="{{ old('qty_discounts', \App\Http\Controllers\Printer\PrinterController::discountsToString($pricing->qty_discounts)) }}" placeholder="5:10, 20:20" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
             </div>
 

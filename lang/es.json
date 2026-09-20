@@ -425,5 +425,18 @@
     "calc.tip.generated": "Este modelo lo creó la IA a partir de su referencia. Contamos con soportes de árbol, que se quitan fácilmente tras imprimir.",
     "calc.tip.lithophane": "La litofanía se imprime de pie, maciza y en material blanco. La vista previa muestra cómo se ve a contraluz.",
     "calc.tip.relief": "El relieve se imprime tumbado y sin soportes. Un color más claro en la vista previa indica una zona más alta.",
-    "calc.tip.sign": "El cartel se imprime tumbado y sin soportes. El texto puede ir en otro color cambiando el filamento en las últimas capas."
+    "calc.tip.sign": "El cartel se imprime tumbado y sin soportes. El texto puede ir en otro color cambiando el filamento en las últimas capas.",
+    "printer.f.speed": "Velocidad de la impresora",
+    "printer.f.speed_hint": "los tiempos se calculan para una impresora rápida, las más lentas se ajustan",
+    "printer.f.speed.fast": "Rápida (Bambu Lab, Prusa CORE One, Creality K1, Anycubic Kobra S1…)",
+    "printer.f.speed.medium": "Media (Prusa MK4, perfiles cuidadosos) – 30 % más",
+    "printer.f.speed.slow": "Más lenta (Prusa MK3, Ender 3…) – 80 % más",
+    "printer.f.speed.very_slow": "Muy lenta – 2,5× más",
+    "refine.title": "¿Quiere cambiar algo del modelo?",
+    "refine.placeholder": "p. ej. asa más larga, sin base, forma más angular",
+    "refine.submit": "Cambiar",
+    "refine.hint": "La IA crea un modelo nuevo a partir de la petición original y su cambio. Cuenta para el límite diario.",
+    "refine.working": "Creando el modelo modificado…",
+    "refine.failed": "El cambio no ha funcionado. Intente describirlo de otra forma.",
+    "refine.photo_only": "Un modelo de una foto personal no se puede cambiar con palabras, el parecido no se puede describir. Suba otra foto."
 }

@@ -14,7 +14,7 @@
         'search.searching','search.identifying','search.none','search.error','search.not_image','search.daily_limit','search.open_source',
         'search.size_guess','search.price_range','search.range_hint','search.have_file','search.generate','search.designer_soon','hero.soon','calc.size','calc.material','inquiry.error',
         'search.gen_size','search.generating','search.gen_done','search.gen_failed','search.gen_daily_limit','search.gen_global_limit','search.gen_text_hint',
-        'calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
+        'refine.working','refine.failed','refine.photo_only','calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
     ])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();
 @endphp
 
@@ -118,6 +118,14 @@
                         <div><dt class="text-slate-500">{{ __('calc.lead') }}</dt><dd id="stat-lead" class="font-semibold">—</dd></div>
                     </dl>
                     <ul id="warnings" class="mt-3 space-y-1 text-sm text-amber-700"></ul>
+                    <form id="refine-box" class="mt-3 hidden rounded-xl bg-slate-50 p-3">
+                        <label class="block text-sm font-semibold text-slate-700" for="refine-text">{{ __('refine.title') }}</label>
+                        <div class="mt-1 flex gap-2">
+                            <input id="refine-text" maxlength="300" placeholder="{{ __('refine.placeholder') }}" class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <button class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{{ __('refine.submit') }}</button>
+                        </div>
+                        <p id="refine-msg" class="mt-1 text-xs text-slate-500">{{ __('refine.hint') }}</p>
+                    </form>
                     <details class="mt-3 text-sm" @if($mode === 'printer') open @endif>
                         <summary class="cursor-pointer text-teal-700">{{ __('calc.breakdown') }}</summary>
                         <div id="breakdown" class="mt-2 space-y-2"></div>

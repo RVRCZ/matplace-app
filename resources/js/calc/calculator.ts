@@ -6,6 +6,8 @@ import { estimate, price, range, RoughConfig, Profile, Params } from './rough';
 import { uploadFile, createCalculation, getCalculation, getFile, CalcInfo, FileInfo } from './api';
 import { bootInquiry } from './inquiry';
 
+const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
+
 interface MaterialCfg { code: string; density: number; lay: string[]; sliceable: boolean; label: string; hint: string }
 interface Config {
     rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; currency: string; max_scale: number;
@@ -108,7 +110,9 @@ function renderPrecise(c: CalcInfo): void {
     }
     enableQuote(c);
     $('stat-grams').textContent = `${fmt.format(c.slicer.grams * q)} g`;
-    $('stat-time').textContent = minutesText(c.slicer.minutes * q);
+    const mins = c.prices.map((p) => (p as { minutes?: number | null }).minutes ?? c.slicer!.minutes);
+    const tLo = Math.min(c.slicer.minutes, ...mins) * q; const tHi = Math.max(c.slicer.minutes, ...mins) * q;
+    $('stat-time').textContent = tHi > tLo * 1.05 ? `${minutesText(tLo)} – ${minutesText(tHi)}` : minutesText(tLo);
     const leads = c.prices.map((p) => p.lead_time_days);
     $('stat-lead').textContent = t('calc.days', { n: leadRange(leads) });
     $('dims-badge').textContent = `${fmt.format(c.slicer.dims.x)} × ${fmt.format(c.slicer.dims.y)} × ${fmt.format(c.slicer.dims.z)} mm`;
@@ -344,6 +348,42 @@ function syncControls(): void {
     $('supports').querySelectorAll<HTMLElement>('.seg').forEach((s) => s.classList.toggle('seg-on', s.dataset.supports === sup));
 }
 
+/** Generated models: "change it in words" → a new generation, then the new model opens here. */
+function showRefine(file: FileInfo | null): void {
+    const box = document.getElementById('refine-box') as HTMLFormElement | null;
+    if (!box) return;
+    const gen = file?.generation ?? null;
+    box.classList.toggle('hidden', !gen);
+    if (!gen) return;
+    const input = $('refine-text') as HTMLInputElement; const msg = $('refine-msg'); const btn = box.querySelector('button') as HTMLButtonElement;
+    const hint = msg.dataset.hint ?? (msg.dataset.hint = msg.textContent ?? '');
+    input.disabled = btn.disabled = !gen.refinable;
+    msg.textContent = gen.refinable ? hint : t('refine.photo_only');
+    box.onsubmit = async (e) => {
+        e.preventDefault();
+        const instruction = input.value.trim();
+        if (instruction.length < 3) { input.focus(); return; }
+        btn.disabled = true; msg.textContent = t('refine.working');
+        try {
+            const res = await fetch(`${routes().generateShow}/${gen.token}/refine`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ instruction }) });
+            const body = await res.json();
+            if (res.status === 429) { msg.textContent = t(body.error === 'global_limit' ? 'search.gen_global_limit' : 'search.gen_daily_limit', { n: body.limit, m: body.login_limit }); btn.disabled = false; return; }
+            if (!res.ok) throw new Error(body.error ?? 'refine');
+            let g = body.generation;
+            while (g.status !== 'done' && g.status !== 'failed') {
+                msg.textContent = `${t('refine.working')} ${Math.max(5, g.progress)} %`;
+                await new Promise((r) => setTimeout(r, 3000));
+                g = (await (await fetch(`${routes().generateShow}/${g.token}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } })).json()).generation;
+            }
+            if (g.status === 'failed' || !g.file) throw new Error('failed');
+            input.value = '';
+            await openFile(g.file.uuid);
+        } catch {
+            msg.textContent = t('refine.failed'); btn.disabled = false;
+        }
+    };
+}
+
 /** Tool-specific line under the viewer: how this kind of model is meant to be printed. */
 function showKindTip(kind: string | undefined): void {
     const el = document.getElementById('kind-tip');
@@ -352,6 +392,7 @@ function showKindTip(kind: string | undefined): void {
     const text = t(key);
     el.textContent = text === key ? '' : text;
     el.classList.toggle('hidden', text === key);
+    showRefine(kind === 'generated' ? state.file : null);
 }
 
 async function restore(c: CalcInfo): Promise<void> {

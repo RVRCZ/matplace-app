@@ -425,5 +425,18 @@
     "calc.tip.generated": "This model was made by AI from your input. We count with tree supports, which snap off easily after printing.",
     "calc.tip.lithophane": "A lithophane is printed standing, solid and in white material. The preview shows how it looks against light.",
     "calc.tip.relief": "A relief prints lying flat without supports. A lighter colour in the preview means a higher spot.",
-    "calc.tip.sign": "The sign prints lying flat without supports. The text can be a different colour by swapping filament for the last layers."
+    "calc.tip.sign": "The sign prints lying flat without supports. The text can be a different colour by swapping filament for the last layers.",
+    "printer.f.speed": "Printer speed",
+    "printer.f.speed_hint": "times are computed for a fast printer, slower ones get adjusted",
+    "printer.f.speed.fast": "Fast (Bambu Lab, Prusa CORE One, Creality K1, Anycubic Kobra S1…)",
+    "printer.f.speed.medium": "Medium (Prusa MK4, careful profiles) – 30% longer",
+    "printer.f.speed.slow": "Slower (Prusa MK3, Ender 3…) – 80% longer",
+    "printer.f.speed.very_slow": "Very slow – 2.5× longer",
+    "refine.title": "Want to change something on the model?",
+    "refine.placeholder": "e.g. longer handle, no base, more angular shape",
+    "refine.submit": "Change",
+    "refine.hint": "AI creates a new model from the original request plus your change. It counts towards the daily limit.",
+    "refine.working": "Creating the changed model…",
+    "refine.failed": "The change did not work. Try describing it differently.",
+    "refine.photo_only": "A model from a personal photo cannot be changed in words, a likeness cannot be described. Please upload another photo."
 }

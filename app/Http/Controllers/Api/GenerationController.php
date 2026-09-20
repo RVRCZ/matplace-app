@@ -60,6 +60,25 @@ class GenerationController extends Controller
         return response()->json(['generation' => self::describe($req)], 201);
     }
 
+    /** POST /api/generate/{token}/refine {instruction} → a new generation: the same subject changed in words */
+    public function refine(Request $request, GenerationRequest $generation, GenerationService $service): JsonResponse
+    {
+        abort_unless(in_array($generation->type, ['image', 'text'], true), 404);
+        if (! $service->enabled()) {
+            return response()->json(['error' => 'generator_unavailable'], 503);
+        }
+        $data = $request->validate(['instruction' => ['required', 'string', 'min:3', 'max:300']]);
+        try {
+            $req = $service->refine($generation, $data['instruction'], $request->ip(), $request->attributes->get('anon_session'), $request->user());
+        } catch (\InvalidArgumentException) {
+            return response()->json(['error' => 'not_refinable'], 422);
+        } catch (QuotaExceeded $e) {
+            return response()->json(['error' => $e->reason, 'limit' => $e->limit, 'login_limit' => (int) config('ai.daily_limits.generate_user')], 429);
+        }
+
+        return response()->json(['generation' => self::describe($req)], 201);
+    }
+
     /** GET /api/generate/{token} */
     public function show(GenerationRequest $generation): JsonResponse
     {

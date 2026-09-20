@@ -56,6 +56,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1')->name('describe');
     Route::post('generate', [GenerationController::class, 'store'])->middleware('throttle:10,1')->name('generate.store');
     Route::get('generate/{generation}', [GenerationController::class, 'show'])->name('generate.show');
+    Route::post('generate/{generation}/refine', [GenerationController::class, 'refine'])->middleware('throttle:10,1')->name('generate.refine');
     Route::post('tools/sign', [ToolsApiController::class, 'sign'])->middleware('throttle:20,1')->name('tools.sign');
     Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1')->name('tools.relief');
     Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware('throttle:10,1')->name('inquiries.store');

@@ -22,6 +22,7 @@ final class PricingProfile
         public readonly array $qtyDiscounts = [],
         public readonly ?int $printerProfileId = null,
         public readonly ?string $label = null,
+        public readonly float $timeFactor = 1.0, // how much longer this printer takes than the reference fast printer
     ) {}
 
     public static function fromArray(array $a): self
@@ -38,6 +39,7 @@ final class PricingProfile
             qtyDiscounts: array_values((array) ($a['qty_discounts'] ?? [])),
             printerProfileId: isset($a['printer_profile_id']) ? (int) $a['printer_profile_id'] : null,
             label: $a['label'] ?? null,
+            timeFactor: max(0.5, min(5.0, (float) ($a['time_factor'] ?? 1.0))),
         );
     }
 

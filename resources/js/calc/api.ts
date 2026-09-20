@@ -11,6 +11,7 @@ export interface FileInfo {
     stl_url: string | null;
     kind?: string;
     hints?: { supports?: boolean; infill?: number; quality?: string };
+    generation?: { token: string; refinable: boolean } | null;
 }
 
 export interface CalcInfo {

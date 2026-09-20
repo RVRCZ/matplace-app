@@ -73,6 +73,25 @@ class GenerationTest extends TestCase
         $this->assertSame(0, GenerationRequest::latest('id')->first()->cost_cents);
     }
 
+    public function test_generated_model_can_be_changed_in_words_but_not_a_personal_photo(): void
+    {
+        $user = User::factory()->create();
+        $a = $this->actingAs($user)->postJson('/api/generate', ['prompt' => 'small vase', 'target_mm' => 90]);
+        $a->assertCreated()->assertJsonPath('generation.file.kind', 'generated')->assertJsonPath('generation.file.generation.refinable', true);
+
+        $this->actingAs($user)->postJson('/api/generate/'.$a->json('generation.token').'/refine', ['instruction' => ''])->assertStatus(422);
+        $b = $this->actingAs($user)->postJson('/api/generate/'.$a->json('generation.token').'/refine', ['instruction' => 'wider neck']);
+        $b->assertCreated();
+        $new = GenerationRequest::where('token', $b->json('generation.token'))->firstOrFail();
+        $this->assertSame('small vase. wider neck', $new->prompt);
+        $this->assertSame(90, $new->target_mm);
+        $this->assertSame(GenerationRequest::where('token', $a->json('generation.token'))->value('id'), $new->source_request_id);
+
+        // a bust from a personal photo has no describable subject
+        $photo = GenerationRequest::create(['token' => 'phototoken01', 'type' => 'image', 'status' => 'done', 'engine' => 'fake', 'prompt' => 'bust', 'description' => ['kind' => 'bust', 'delete_photo' => true]]);
+        $this->actingAs($user)->postJson('/api/generate/'.$photo->token.'/refine', ['instruction' => 'add a hat'])->assertStatus(422)->assertJsonPath('error', 'not_refinable');
+    }
+
     public function test_disabled_generator_returns_503(): void
     {
         config(['engines.generator' => 'null']);

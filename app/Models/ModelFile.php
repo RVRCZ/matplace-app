@@ -80,6 +80,20 @@ class ModelFile extends Model
         };
     }
 
+    /** For generated models: the generation token and whether it can be changed in words. */
+    public function generationInfo(): ?array
+    {
+        if ($this->origin !== 'generated' || ! $this->origin_ref) {
+            return null;
+        }
+        $req = GenerationRequest::where('token', $this->origin_ref)->first();
+        if (! $req) {
+            return null;
+        }
+
+        return ['token' => $req->token, 'refinable' => app(\App\Domain\Generation\GenerationService::class)->basePrompt($req) !== null];
+    }
+
     /** Organic AI meshes print best with tree supports. */
     public function wantsTreeSupports(): bool
     {

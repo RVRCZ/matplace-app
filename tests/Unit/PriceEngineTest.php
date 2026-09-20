@@ -33,6 +33,16 @@ class PriceEngineTest extends TestCase
         $this->assertSame(150.0, $b2->total); // 140.6 → 150
     }
 
+    public function test_slower_printer_takes_longer_and_costs_more_time(): void
+    {
+        // 100 min on the reference printer, a slower printer (×1.8) needs 180 min = 3 h × 60 = 180
+        $b = $this->engine()->price(10, 100, 1, $this->profile(['time_factor' => 1.8]));
+        $this->assertSame(180, $b->minutes);
+        $this->assertSame(180.0, $b->unitTime);
+        $this->assertSame(100, $this->engine()->price(10, 100, 1, $this->profile())->minutes);
+        $this->assertSame(180, $b->toArray()['minutes']);
+    }
+
     public function test_quantity_setup_once_and_discount(): void
     {
         $p = $this->profile(['qty_discounts' => [['from' => 10, 'pct' => 10]]]);

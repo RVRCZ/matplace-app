@@ -21,6 +21,7 @@ final class PriceBreakdown
         public readonly int $leadTimeDays,
         public readonly ?int $printerProfileId = null,
         public readonly ?string $label = null,
+        public readonly ?int $minutes = null, // print time per piece on this printer
     ) {}
 
     public function toArray(): array
@@ -43,6 +44,7 @@ final class PriceBreakdown
             'margin' => round($this->margin, 2),
             'total' => $this->total,
             'lead_time_days' => $this->leadTimeDays,
+            'minutes' => $this->minutes,
         ];
     }
 }

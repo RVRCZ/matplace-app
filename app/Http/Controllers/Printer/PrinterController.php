@@ -68,6 +68,7 @@ class PrinterController extends Controller
             'lead_time_days' => ['required', 'integer', 'min:0', 'max:365'],
             'min_price' => ['nullable', 'numeric', 'min:0'],
             'express_pct' => ['nullable', 'numeric', 'min:0', 'max:500'],
+            'time_factor' => ['nullable', 'numeric', 'in:1,1.3,1.8,2.5'],
             'qty_discounts' => ['nullable', 'string', 'max:200'],   // "5:10, 20:20"
             'materials' => ['nullable', 'array'],
             'materials.*' => ['in:'.implode(',', $codes)],
@@ -106,6 +107,7 @@ class PrinterController extends Controller
             'min_price' => $data['min_price'] ?? 0,
             'lead_time_days' => $data['lead_time_days'],
             'express_pct' => $data['express_pct'] ?? 0,
+            'time_factor' => $data['time_factor'] ?? 1,
             'qty_discounts' => self::parseDiscounts($data['qty_discounts'] ?? ''),
         ])->save();
 

@@ -5,7 +5,7 @@ namespace App\Domain\Calculation;
 /**
  * grams + minutes + quantity + pricing profile → price with a breakdown.
  *
- *   unit      = grams × price_per_gram + hours × hourly_rate (+ royalty per piece)
+ *   unit      = grams × price_per_gram + hours × time_factor × hourly_rate (+ royalty per piece)
  *   subtotal  = unit × qty + setup_fee
  *   discount  = subtotal × qty discount %
  *   margin    = (subtotal − discount) × margin %
@@ -30,7 +30,8 @@ final class PriceEngine
     ): PriceBreakdown {
         $quantity = max(1, $quantity);
         $unitMaterial = $overrideUnitMaterial ?? $grams * $profile->pricePerGram;
-        $unitTime = $overrideUnitTime ?? ($minutes / 60.0) * $profile->hourlyRate;
+        $printMinutes = (int) round($minutes * $profile->timeFactor);   // the slicer measures a fast reference printer
+        $unitTime = $overrideUnitTime ?? ($printMinutes / 60.0) * $profile->hourlyRate;
         $setup = $overrideSetup ?? $profile->setupFee;
         $unit = $unitMaterial + $unitTime + max(0.0, $royaltyPerPiece);
 
@@ -59,6 +60,7 @@ final class PriceEngine
             leadTimeDays: $profile->leadTimeDays,
             printerProfileId: $profile->printerProfileId,
             label: $profile->label,
+            minutes: $printMinutes,
         );
     }
 

@@ -425,5 +425,18 @@
     "calc.tip.generated": "Model vytvořila AI z vaší předlohy. Počítáme se stromovými podpěrami, které jdou po tisku snadno odlomit.",
     "calc.tip.lithophane": "Litofanie se tiskne nastojato, plná a z bílého materiálu. Náhled ukazuje, jak bude vypadat proti světlu.",
     "calc.tip.relief": "Reliéf se tiskne naležato bez podpěr. Světlejší barva v náhledu znamená vyšší místo.",
-    "calc.tip.sign": "Cedulka se tiskne naležato bez podpěr. Písmo jde udělat jinou barvou výměnou filamentu na poslední vrstvy."
+    "calc.tip.sign": "Cedulka se tiskne naležato bez podpěr. Písmo jde udělat jinou barvou výměnou filamentu na poslední vrstvy.",
+    "printer.f.speed": "Rychlost tiskárny",
+    "printer.f.speed_hint": "časy počítáme pro rychlou tiskárnu, pomalejší si je přepočítá",
+    "printer.f.speed.fast": "Rychlá (Bambu Lab, Prusa CORE One, Creality K1, Anycubic Kobra S1…)",
+    "printer.f.speed.medium": "Střední (Prusa MK4, pečlivé profily) – o 30 % déle",
+    "printer.f.speed.slow": "Pomalejší (Prusa MK3, Ender 3…) – o 80 % déle",
+    "printer.f.speed.very_slow": "Velmi pomalá – 2,5× déle",
+    "refine.title": "Chcete na modelu něco změnit?",
+    "refine.placeholder": "např. delší ucho, bez podstavce, hranatější tvar",
+    "refine.submit": "Upravit",
+    "refine.hint": "AI vytvoří nový model podle původního zadání a vaší úpravy. Počítá se do denního limitu.",
+    "refine.working": "Vytvářím upravený model…",
+    "refine.failed": "Úprava se nepovedla. Zkuste ji popsat jinak.",
+    "refine.photo_only": "Model z osobní fotky slovy upravit nejde, podobu neumíme popsat. Nahrajte prosím jinou fotku."
 }

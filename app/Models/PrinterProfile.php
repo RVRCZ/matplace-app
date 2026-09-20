@@ -89,6 +89,7 @@ class PrinterProfile extends Model
             qtyDiscounts: (array) ($profile->qty_discounts ?? []),
             printerProfileId: $this->id,
             label: $this->display_name,
+            timeFactor: (float) ($profile->time_factor ?: 1.0),
         );
     }
 

@@ -10,7 +10,7 @@ class PricingProfile extends Model
 {
     protected $fillable = [
         'printer_profile_id', 'name', 'is_default', 'hourly_rate', 'price_per_gram', 'setup_fee', 'margin_pct', 'min_price',
-        'lead_time_days', 'express_pct', 'qty_discounts', 'finishing',
+        'lead_time_days', 'express_pct', 'qty_discounts', 'finishing', 'time_factor',
     ];
 
     protected $casts = ['is_default' => 'bool', 'qty_discounts' => 'array', 'finishing' => 'array'];
