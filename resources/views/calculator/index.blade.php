@@ -94,12 +94,14 @@
     {{-- ── Result: viewer + controls + price ─────────────────────────── --}}
     <section id="result" class="hidden">
         <div class="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-            <div class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                <div class="relative">
                 <canvas id="viewer" class="block h-[45vh] w-full touch-none lg:h-[70vh]"></canvas>
                 <div class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-slate-700 shadow" id="file-badge"></div>
                 <div class="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow" id="dims-badge"></div>
+                </div>
+                <p id="kind-tip" class="hidden border-t border-slate-100 bg-teal-50 px-4 py-2 text-sm text-teal-900"></p>
             </div>
-            <p id="kind-tip" class="hidden rounded-xl bg-teal-50 px-4 py-2 text-sm text-teal-900 lg:col-span-2"></p>
 
             <div class="flex flex-col gap-4">
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">

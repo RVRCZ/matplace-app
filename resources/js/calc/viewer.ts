@@ -73,7 +73,7 @@ export class Viewer {
         // flat things (signs, plates, reliefs) are looked at from above, tall things from the side
         const flat = size.y / radius < 0.2;
         const standingPlate = !flat && size.z / radius < 0.2; // lithophane standing on its edge: look at its face
-        if (flat) this.camera.position.set(dist * 0.15, dist * 0.95, dist * 0.55);
+        if (flat) this.camera.position.set(dist * 0.1, dist * 0.62, dist * 0.36);   // plates fill the view
         else if (standingPlate) this.camera.position.set(dist * 0.25, size.y / 2 + dist * 0.12, dist * 0.95);
         else this.camera.position.set(dist * 0.8, dist * 0.6, dist * 0.9);
         this.camera.near = radius / 100;
@@ -115,7 +115,8 @@ function paintByHeight(geom: BufferGeometry, backlit: boolean): boolean {
     const min = [bb.min.x, bb.min.y, bb.min.z][axis];
     // the relief side is where heights vary; a standing lithophane has its flat back at max, relief towards min
     const towardsMin = backlit && axis === 1;
-    const lo = backlit ? [0.13, 0.1, 0.07] : [0.06, 0.46, 0.43];
+    // colours are multiplied by strong studio lights: keep the plate deep so the near-white top layer stands out
+    const lo = backlit ? [0.13, 0.1, 0.07] : [0.02, 0.2, 0.19];
     const hi = backlit ? [1.0, 0.93, 0.78] : [0.96, 1.0, 0.99];
     const colors = new Float32Array(pos.count * 3);
     for (let i = 0; i < pos.count; i++) {
