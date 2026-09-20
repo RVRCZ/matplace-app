@@ -20,13 +20,11 @@
             <div class="mt-1 text-lg font-bold">{{ __('tools.sign.title') }}</div>
             <div class="text-sm text-slate-500">{{ __('tools.sign.hint') }}</div>
         </a>
-        @foreach (['relief' => '🖼️'] as $k => $ico)
-            <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-5 opacity-70">
-                <div class="text-2xl">{{ $ico }}</div>
-                <div class="mt-1 text-lg font-bold">{{ __('tools.'.$k.'.title') }} <span class="text-xs font-normal text-slate-400">({{ __('hero.soon') }})</span></div>
-                <div class="text-sm text-slate-500">{{ __('tools.'.$k.'.hint') }}</div>
-            </div>
-        @endforeach
+        <a href="{{ route('tools.relief') }}" class="rounded-2xl border border-slate-200 bg-white p-5 hover:border-teal-400">
+            <div class="text-2xl">🖼️</div>
+            <div class="mt-1 text-lg font-bold">{{ __('tools.relief.title') }}</div>
+            <div class="text-sm text-slate-500">{{ __('tools.relief.hint') }}</div>
+        </a>
     </div>
 </div>
 @endsection

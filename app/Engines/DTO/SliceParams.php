@@ -14,6 +14,7 @@ final class SliceParams
         public readonly ?bool $supports = null, // null = auto (try without, retry with)
         public readonly float $scale = 1.0,
         public readonly bool $vaseMode = false,
+        public readonly bool $treeSupports = false, // set by the pipeline for organic (generated) models, not by the customer
     ) {}
 
     public static function fromArray(array $a): self
@@ -30,6 +31,7 @@ final class SliceParams
             supports: $supports === null ? null : (bool) $supports,
             scale: max(0.1, min(10.0, (float) ($a['scale'] ?? 1.0))),
             vaseMode: (bool) ($a['vase'] ?? false),
+            treeSupports: (bool) ($a['tree'] ?? false),
         );
     }
 
@@ -42,6 +44,7 @@ final class SliceParams
             'supports' => $this->supports,
             'scale' => $this->scale,
             'vase' => $this->vaseMode,
+            'tree' => $this->treeSupports,
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Generation\GenerationService;
+use App\Domain\Tools\ReliefGenerator;
 use App\Domain\Tools\SignGenerator;
 use Illuminate\Contracts\View\View;
 
@@ -17,6 +18,11 @@ class ToolsController extends Controller
     public function sign(SignGenerator $signs): View
     {
         return view('tools.sign', ['available' => $signs->available(), 'fonts' => array_keys($signs->fonts())]);
+    }
+
+    public function relief(ReliefGenerator $reliefs): View
+    {
+        return view('tools.relief', ['available' => $reliefs->available()]);
     }
 
     public function figure(GenerationService $generation): View

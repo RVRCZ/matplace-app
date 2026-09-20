@@ -155,7 +155,7 @@ async function showServerStl(url: string): Promise<void> {
         const geom = await loadGeometryFromUrl(url);
         state.geometry = geom;
         state.geo = stats(geom);
-        viewer?.setGeometry(geom, state.params.scale);
+        viewer?.setGeometry(geom, state.params.scale, state.file?.kind ?? null);
     } catch { /* viewer is optional */ }
 }
 
@@ -241,6 +241,7 @@ async function handleFile(file: File): Promise<void> {
     if (file.size > cfg.max_upload_mb * 1024 * 1024) { heroError(t('calc.error.too_big', { max: cfg.max_upload_mb })); return; }
 
     state.localFile = file;
+    showKindTip(undefined);
     showResult();
     $('file-badge').textContent = file.name;
     setStatus('calc.status.reading', true);
@@ -335,6 +336,24 @@ function bindControls(): void {
 }
 
 /** Shared link: restore parameters and result from the server. */
+/** Make the controls show what is in state.params (after restoring a link or applying tool hints). */
+function syncControls(): void {
+    ($('infill') as HTMLInputElement).value = String(state.params.infill); $('infill-val').textContent = `${state.params.infill} %`;
+    $('quality').querySelectorAll<HTMLElement>('.seg').forEach((s) => s.classList.toggle('seg-on', s.dataset.quality === state.params.quality));
+    const sup = state.params.supports === null ? 'auto' : state.params.supports ? '1' : '0';
+    $('supports').querySelectorAll<HTMLElement>('.seg').forEach((s) => s.classList.toggle('seg-on', s.dataset.supports === sup));
+}
+
+/** Tool-specific line under the viewer: how this kind of model is meant to be printed. */
+function showKindTip(kind: string | undefined): void {
+    const el = document.getElementById('kind-tip');
+    if (!el) return;
+    const key = `calc.tip.${kind ?? ''}`;
+    const text = t(key);
+    el.textContent = text === key ? '' : text;
+    el.classList.toggle('hidden', text === key);
+}
+
 async function restore(c: CalcInfo): Promise<void> {
     const p = c.params as Record<string, unknown>;
     state.params = {
@@ -347,6 +366,8 @@ async function restore(c: CalcInfo): Promise<void> {
     $('quality').querySelectorAll<HTMLElement>('.seg').forEach((s) => s.classList.toggle('seg-on', s.dataset.quality === state.params.quality));
     buildMaterials();
     state.calc = c; state.file = c.file;
+    syncControls();
+    showKindTip(c.file?.kind);
     showResult();
     $('file-badge').textContent = c.file?.name ?? '';
     if (c.file?.stl_url) await showServerStl(c.file.stl_url);
@@ -371,6 +392,14 @@ export async function openFile(uuid: string): Promise<void> {
         } catch { /* retry */ }
         await new Promise((r) => setTimeout(r, 1500));
     }
+    const h = state.file?.hints;
+    if (h) {
+        if (h.supports !== undefined) state.params.supports = h.supports;
+        if (h.infill !== undefined) state.params.infill = h.infill;
+        if (h.quality) state.params.quality = h.quality;
+        syncControls();
+    }
+    showKindTip(state.file?.kind);
     if (state.file?.stl_url) await showServerStl(state.file.stl_url);
     renderRough();
     requestPrecise();

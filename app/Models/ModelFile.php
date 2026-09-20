@@ -59,6 +59,33 @@ class ModelFile extends Model
         return $this->stl_path ? Storage::disk(self::DISK)->path($this->stl_path) : null;
     }
 
+    /** What the model is, for tool-specific defaults and texts: upload | generated | sign | lithophane | relief | … */
+    public function kind(): string
+    {
+        return $this->origin === 'tool' ? (string) ($this->origin_ref ?: 'tool') : (string) ($this->origin ?: 'upload');
+    }
+
+    /**
+     * Sensible print settings for this kind of model; the calculator starts from them, the customer can still change them.
+     *
+     * @return array<string, mixed>
+     */
+    public function printHints(): array
+    {
+        return match ($this->kind()) {
+            'generated' => ['supports' => true],                                           // organic shapes: tree supports
+            'lithophane' => ['infill' => 100, 'quality' => 'fine', 'supports' => false],   // must be solid, fine layers = smooth picture
+            'relief', 'sign' => ['supports' => false],
+            default => [],
+        };
+    }
+
+    /** Organic AI meshes print best with tree supports. */
+    public function wantsTreeSupports(): bool
+    {
+        return $this->origin === 'generated';
+    }
+
     public function isReady(): bool
     {
         return $this->status === self::STATUS_READY && $this->stl_path !== null;

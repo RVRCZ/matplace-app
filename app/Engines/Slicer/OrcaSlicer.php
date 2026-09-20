@@ -55,6 +55,10 @@ final class OrcaSlicer implements Slicer
                     $proc['sparse_infill_density'] = $params->infillPercent.'%';
                 }
                 $proc['enable_support'] = $supports ? '1' : '0';
+                if ($supports && $params->treeSupports) {
+                    $proc['support_type'] = 'tree(auto)';
+                    $proc['support_style'] = 'default';
+                }
                 $tag = $supports ? 'sup' : 'std';
                 $procFile = $work.'/process_'.$tag.'.json';
                 File::put($procFile, json_encode($proc));
@@ -116,7 +120,7 @@ final class OrcaSlicer implements Slicer
                 supportsUsed: $wantSupports || $autoSupports,
                 gcodePath: $keep,
                 warnings: $warnings,
-                raw: ['engine' => 'orca', 'filament' => basename($filament), 'process' => basename($process)],
+                raw: ['engine' => 'orca', 'tree_supports' => ($wantSupports || $autoSupports) && $params->treeSupports, 'filament' => basename($filament), 'process' => basename($process)],
             );
         } finally {
             File::deleteDirectory($work);

@@ -76,6 +76,8 @@ class UploadController extends Controller
             'triangles' => $f->triangles,
             'issues' => $f->mesh_report['issues'] ?? [],
             'stl_url' => $f->stl_path ? route('api.files.stl', $f->uuid) : null,
+            'kind' => $f->kind(),
+            'hints' => $f->printHints(),
         ];
     }
 }

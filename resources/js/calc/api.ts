@@ -9,6 +9,8 @@ export interface FileInfo {
     area_mm2: number | null;
     issues: string[];
     stl_url: string | null;
+    kind?: string;
+    hints?: { supports?: boolean; infill?: number; quality?: string };
 }
 
 export interface CalcInfo {

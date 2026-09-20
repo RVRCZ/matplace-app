@@ -14,6 +14,7 @@
         'search.searching','search.identifying','search.none','search.error','search.not_image','search.daily_limit','search.open_source',
         'search.size_guess','search.price_range','search.range_hint','search.have_file','search.generate','search.designer_soon','hero.soon','calc.size','calc.material','inquiry.error',
         'search.gen_size','search.generating','search.gen_done','search.gen_failed','search.gen_daily_limit','search.gen_global_limit','search.gen_text_hint',
+        'calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
     ])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();
 @endphp
 
@@ -98,6 +99,7 @@
                 <div class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-slate-700 shadow" id="file-badge"></div>
                 <div class="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow" id="dims-badge"></div>
             </div>
+            <p id="kind-tip" class="hidden rounded-xl bg-teal-50 px-4 py-2 text-sm text-teal-900 lg:col-span-2"></p>
 
             <div class="flex flex-col gap-4">
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">

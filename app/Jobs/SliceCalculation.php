@@ -56,7 +56,7 @@ class SliceCalculation implements ShouldQueue
         $calc->save();
 
         try {
-            $result = $slicer->slice($file->absoluteStlPath(), SliceParams::fromArray($calc->params));
+            $result = $slicer->slice($file->absoluteStlPath(), SliceParams::fromArray(['tree' => $file->wantsTreeSupports()] + $calc->params));
             $service->applySlice($calc, $result, $slicer->name());
         } catch (\Throwable $e) {
             Log::warning('SliceCalculation failed', ['id' => $calc->id, 'error' => $e->getMessage()]);
