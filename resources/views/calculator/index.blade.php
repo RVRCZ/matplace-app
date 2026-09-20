@@ -14,7 +14,7 @@
         'search.searching','search.identifying','search.none','search.error','search.not_image','search.daily_limit','search.open_source',
         'search.size_guess','search.price_range','search.range_hint','search.have_file','search.generate','search.designer_soon','hero.soon','calc.size','calc.material','inquiry.error',
         'search.gen_size','search.generating','search.gen_done','search.gen_failed','search.gen_daily_limit','search.gen_global_limit','search.gen_text_hint',
-        'refine.working','refine.failed','refine.photo_only','calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
+        'refine.working','refine.failed','refine.photo_only','calc.tip.organizer','calc.tip.box','calc.tip.phone_stand','calc.tip.cable_holder','download.parts','param.part.body','param.part.lid','calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
     ])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();
 @endphp
 
@@ -25,7 +25,7 @@
     window.MP_INITIAL = @json($initial);
     window.MP_MODE = @json($mode);
     window.MP_OWN_PROFILE_ID = @json($ownProfileId ?? null);
-    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), inquiries: @json(route('api.inquiries.store')), generate: @json(route('api.generate.store')), generateShow: @json(url('/api/generate')), printers: @json(route('api.printers')), printerShow: @json(url('/printers/id')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
+    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), inquiries: @json(route('api.inquiries.store')), generate: @json(route('api.generate.store')), generateShow: @json(url('/api/generate')), paramPart: @json(url('/api/tools/param')), printers: @json(route('api.printers')), printerShow: @json(url('/printers/id')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
 </script>
 @endpush
 
@@ -197,6 +197,7 @@
                         <p class="mt-1 text-xs text-slate-500">{{ __('download.check') }}</p>
                     </div>
                     <a id="dl-stl" href="#" class="mt-3 block text-center text-sm text-teal-700 underline">{{ __('download.stl') }}</a>
+                    <div id="dl-parts" class="mt-2 hidden text-center text-sm"></div>
                 </div>
                 @if($mode !== 'printer')
                 <div id="inquiry-panel" class="hidden rounded-2xl border border-teal-200 bg-teal-50 p-4">
@@ -214,6 +215,8 @@
                         <input name="zip" required value="{{ auth()->user()?->zip }}" placeholder="{{ __('account.zip') }}" class="rounded-lg border border-slate-300 px-3 py-2">
                         <input name="city" value="{{ auth()->user()?->city }}" placeholder="{{ __('account.city') }}" class="rounded-lg border border-slate-300 px-3 py-2">
                         <label class="text-sm text-slate-600">{{ __('calc.quantity') }}<input name="quantity" type="number" min="1" max="1000" value="1" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
+                        <label class="text-sm text-slate-600">{{ __('inquiry.form.color') }}<input name="color" maxlength="40" list="inquiry-colors" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
+                        <datalist id="inquiry-colors">@foreach(['white','black','grey','red','blue','green','yellow','orange','any'] as $c)<option value="{{ __('color.'.$c) }}">@endforeach</datalist>
                         <label class="text-sm text-slate-600">{{ __('inquiry.form.wanted_by') }}<input name="wanted_by" type="date" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
                         <select name="delivery_pref" class="rounded-lg border border-slate-300 px-3 py-2 sm:col-span-2">
                             <option value="any">{{ __('inquiry.delivery.any') }}</option><option value="pickup">{{ __('inquiry.delivery.pickup') }}</option><option value="shipping">{{ __('inquiry.delivery.shipping') }}</option>

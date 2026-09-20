@@ -74,7 +74,9 @@ class UploadController extends Controller
             'volume_mm3' => $f->volume_mm3,
             'area_mm2' => $f->area_mm2,
             'triangles' => $f->triangles,
-            'issues' => $f->mesh_report['issues'] ?? [],
+            // a box with its lid is two bodies on one plate by design, not a defect
+            'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], $f->kind() === 'box' ? ['multiple_shells'] : [])),
+            'parts' => $f->kind() === 'box' && ! empty($f->tool_params['lid']) ? ['body', 'lid'] : [],
             'stl_url' => $f->stl_path ? route('api.files.stl', $f->uuid) : null,
             'kind' => $f->kind(),
             'hints' => $f->printHints(),

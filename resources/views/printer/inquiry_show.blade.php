@@ -8,7 +8,7 @@
     <div class="mt-5 flex flex-wrap items-start justify-between gap-3">
         <div>
             <h1 class="text-2xl font-extrabold">{{ $inquiry->modelFile?->original_name ?? __('inquiry.title') }}</h1>
-            <div class="text-sm text-slate-500">{{ $inquiry->material_code }} · {{ __('calc.quality.'.($inquiry->params['quality'] ?? 'standard')) }} · {{ $inquiry->params['infill'] ?? '' }} % · {{ $inquiry->quantity }} {{ __('inquiry.pcs') }}
+            <div class="text-sm text-slate-500">{{ $inquiry->material_code }} · {{ __('calc.quality.'.($inquiry->params['quality'] ?? 'standard')) }} · {{ $inquiry->params['infill'] ?? '' }} % · {{ $inquiry->quantity }} {{ __('inquiry.pcs') }}@if($inquiry->color) · {{ __('inquiry.form.color') }}: {{ $inquiry->color }}@endif
                 @if(!empty($inquiry->params['scale']) && (float)$inquiry->params['scale'] !== 1.0)· {{ (int)($inquiry->params['scale']*100) }} %@endif</div>
             <div class="text-sm text-slate-500">{{ $inquiry->contact_name }} · {{ $inquiry->city ?: $inquiry->zip }}@if($dispatch->distance_km !== null) · {{ round($dispatch->distance_km) }} km @endif · {{ __('inquiry.delivery.'.$inquiry->delivery_pref) }}@if($inquiry->wanted_by) · {{ __('inquiry.wanted_by') }} {{ $inquiry->wanted_by->format('j. n. Y') }}@endif</div>
         </div>

@@ -6,7 +6,7 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
             <h1 class="text-2xl font-extrabold">{{ __('inquiry.title') }} <span class="text-slate-400">#{{ $inquiry->token }}</span></h1>
-            <div class="text-sm text-slate-500">{{ $inquiry->modelFile?->original_name }} · {{ $inquiry->material_code }} · {{ $inquiry->quantity }} {{ __('inquiry.pcs') }} · {{ $inquiry->city ?: $inquiry->zip }}</div>
+            <div class="text-sm text-slate-500">{{ $inquiry->modelFile?->original_name }} · {{ $inquiry->material_code }} · {{ $inquiry->quantity }} {{ __('inquiry.pcs') }}@if($inquiry->color) · {{ $inquiry->color }}@endif · {{ $inquiry->city ?: $inquiry->zip }}</div>
         </div>
         <span class="rounded-full px-3 py-1 text-sm font-semibold {{ ['pending' => 'bg-amber-50 text-amber-800', 'open' => 'bg-blue-50 text-blue-800', 'offered' => 'bg-blue-50 text-blue-800', 'accepted' => 'bg-teal-50 text-teal-800', 'done' => 'bg-teal-50 text-teal-800', 'cancelled' => 'bg-slate-100 text-slate-600', 'expired' => 'bg-slate-100 text-slate-600'][$inquiry->status] }}">{{ __('inquiry.status.'.$inquiry->status) }}</span>
     </div>

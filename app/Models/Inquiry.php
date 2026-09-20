@@ -24,12 +24,13 @@ class Inquiry extends Model
     public const STATUS_EXPIRED = 'expired';
 
     protected $fillable = [
-        'token', 'calculation_id', 'model_file_id', 'customer_user_id', 'contact_name', 'contact_email', 'contact_phone', 'country',
+        'token', 'kind', 'color', 'details', 'calculation_id', 'model_file_id', 'customer_user_id', 'contact_name', 'contact_email', 'contact_phone', 'country',
         'zip', 'city', 'lat', 'lng', 'material_code', 'quantity', 'params', 'summary', 'note', 'wanted_by', 'delivery_pref', 'status',
         'verification_code', 'verified_at', 'accepted_quote_id', 'accepted_at', 'done_at', 'expires_at', 'locale',
     ];
 
     protected $casts = [
+        'details' => 'array',
         'params' => 'array', 'summary' => 'array', 'wanted_by' => 'date', 'verified_at' => 'datetime', 'accepted_at' => 'datetime',
         'done_at' => 'datetime', 'expires_at' => 'datetime', 'lat' => 'float', 'lng' => 'float',
     ];

@@ -5,5 +5,6 @@ import { bootMiniViewers } from './calc/mini';
 import { bootFigure } from './calc/figure';
 import { bootSign } from './calc/sign';
 import { bootRelief } from './calc/relief';
+import { bootParam } from './calc/param';
 
-document.addEventListener('DOMContentLoaded', () => { boot(); bootSearch(); bootChat(); bootMiniViewers(); bootFigure(); bootSign(); bootRelief(); });
+document.addEventListener('DOMContentLoaded', () => { boot(); bootSearch(); bootChat(); bootMiniViewers(); bootFigure(); bootSign(); bootRelief(); bootParam(); });

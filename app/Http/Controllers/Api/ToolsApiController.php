@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
 use App\Domain\Tools\SignGenerator;
 use App\Engines\Exceptions\EngineException;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use App\Models\ModelFile;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ToolsApiController extends Controller
 {
@@ -36,6 +40,59 @@ class ToolsApiController extends Controller
         }
 
         return response()->json(['file' => UploadController::describe($file)], 201);
+    }
+
+    private function paramInput(Request $request): array
+    {
+        $kind = (string) $request->input('kind');
+        $request->validate(['kind' => ['required', Rule::in(array_keys(ParametricGenerator::FIELDS))]]);
+        $data = $request->validate(ParametricGenerator::rules($kind) + [
+            'params' => ['nullable', 'array'],
+            'part' => ['nullable', 'in:all,body,lid'],
+            'view' => ['nullable', 'in:print,use'],
+        ]);
+
+        return [$kind, (array) ($data['params'] ?? []), $data['part'] ?? 'all', $data['view'] ?? 'print'];
+    }
+
+    /** POST /api/tools/param/preview {kind, params, part?, view?, download?} → STL + X-Model-Meta (size, volume, notes) */
+    public function paramPreview(Request $request, ParametricGenerator $tools): BinaryFileResponse|JsonResponse
+    {
+        if (! $tools->available()) {
+            return response()->json(['error' => 'tool_unavailable'], 503);
+        }
+        [$kind, $params, $part, $view] = $this->paramInput($request);
+        $built = $tools->build($kind, $params, $part, $view);
+        $name = str_replace('_', '-', $kind).($part !== 'all' ? '-'.$part : '').'.stl';
+
+        return response()->file($built['path'], [
+            'Content-Type' => 'model/stl',
+            'Content-Disposition' => ($request->boolean('download') ? 'attachment' : 'inline').'; filename="'.$name.'"',
+            'X-Model-Meta' => json_encode($built['meta']),
+            'Cache-Control' => 'no-store',
+        ])->deleteFileAfterSend(true);
+    }
+
+    /** POST /api/tools/param {kind, params} → a model file that opens in the calculator (price, inquiry, download) */
+    public function paramCreate(Request $request, ParametricGenerator $tools): JsonResponse
+    {
+        if (! $tools->available()) {
+            return response()->json(['error' => 'tool_unavailable'], 503);
+        }
+        [$kind, $params] = $this->paramInput($request);
+        $file = $tools->create($kind, $params, $request->attributes->get('anon_session'), $request->user());
+
+        return response()->json(['file' => UploadController::describe($file)], 201);
+    }
+
+    /** GET /api/tools/param/{uuid}/{part}.stl → the box or its lid alone, rebuilt from the stored parameters */
+    public function paramPart(ModelFile $modelFile, string $part, ParametricGenerator $tools): BinaryFileResponse
+    {
+        abort_unless($modelFile->origin === 'tool' && isset(ParametricGenerator::FIELDS[$modelFile->origin_ref]) && is_array($modelFile->tool_params), 404);
+        abort_unless(in_array($part, ['body', 'lid'], true), 404);
+        $built = $tools->build($modelFile->origin_ref, $modelFile->tool_params, $part);
+
+        return response()->download($built['path'], pathinfo($modelFile->original_name, PATHINFO_FILENAME).'-'.$part.'.stl', ['Content-Type' => 'model/stl'])->deleteFileAfterSend(true);
     }
 
     /** POST /api/tools/relief (multipart: photo + options) → lithophane or relief plaque; the photo is not stored */

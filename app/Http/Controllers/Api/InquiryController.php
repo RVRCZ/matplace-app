@@ -23,6 +23,7 @@ class InquiryController extends Controller
             'country' => ['nullable', 'string', 'size:2'],
             'quantity' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'note' => ['nullable', 'string', 'max:2000'],
+            'color' => ['nullable', 'string', 'max:40'],
             'wanted_by' => ['nullable', 'date', 'after:today'],
             'delivery_pref' => ['nullable', 'in:any,pickup,shipping'],
             'website' => ['prohibited'], // honeypot

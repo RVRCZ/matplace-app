@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Generation\GenerationService;
+use App\Domain\Calculation\MaterialCatalog;
+use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
+use App\Engines\Converter\ConverterChain;
+use App\Http\Controllers\Api\ConfigController;
 use App\Domain\Tools\SignGenerator;
 use Illuminate\Contracts\View\View;
 
@@ -23,6 +27,21 @@ class ToolsController extends Controller
     public function relief(ReliefGenerator $reliefs): View
     {
         return view('tools.relief', ['available' => $reliefs->available()]);
+    }
+
+    /** Organizer, box, phone stand, cable holder: one page, the fields come from the generator's own limits. */
+    public function param(string $kind, ParametricGenerator $tools, MaterialCatalog $materials, ConverterChain $converters): View
+    {
+        abort_unless(isset(ParametricGenerator::FIELDS[$kind]), 404);
+
+        return view('tools.param', [
+            'kind' => $kind,
+            'available' => $tools->available(),
+            'fields' => ParametricGenerator::FIELDS[$kind],
+            'flags' => ParametricGenerator::FLAGS[$kind] ?? [],
+            'presets' => ParametricGenerator::PRESETS[$kind] ?? [],
+            'config' => ConfigController::payload($materials, $converters),
+        ]);
     }
 
     public function figure(GenerationService $generation): View

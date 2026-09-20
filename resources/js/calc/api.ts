@@ -12,6 +12,7 @@ export interface FileInfo {
     kind?: string;
     hints?: { supports?: boolean; infill?: number; quality?: string };
     generation?: { token: string; refinable: boolean } | null;
+    parts?: string[];
 }
 
 export interface CalcInfo {

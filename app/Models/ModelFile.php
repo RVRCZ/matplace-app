@@ -22,10 +22,10 @@ class ModelFile extends Model
     protected $fillable = [
         'uuid', 'owner_user_id', 'anonymous_session_id', 'original_name', 'ext', 'mime', 'size_bytes', 'sha256',
         'storage_path', 'stl_path', 'preview_path', 'bbox', 'volume_mm3', 'area_mm2', 'triangles', 'mesh_report',
-        'origin', 'origin_ref', 'status', 'error',
+        'origin', 'origin_ref', 'tool_params', 'status', 'error',
     ];
 
-    protected $casts = [
+    protected $casts = ['tool_params' => 'array', 
         'bbox' => 'array',
         'mesh_report' => 'array',
         'volume_mm3' => 'float',
@@ -75,7 +75,7 @@ class ModelFile extends Model
         return match ($this->kind()) {
             'generated' => ['supports' => true],                                           // organic shapes: tree supports
             'lithophane' => ['infill' => 100, 'quality' => 'fine', 'supports' => false],   // must be solid, fine layers = smooth picture
-            'relief', 'sign' => ['supports' => false],
+            'relief', 'sign', 'logo', 'organizer', 'box', 'phone_stand', 'cable_holder' => ['supports' => false],
             default => [],
         };
     }

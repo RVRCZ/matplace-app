@@ -463,6 +463,17 @@ export function boot(): void {
     if (!document.getElementById('calculator')) return;
     bindControls();
     if (initial) { restore(initial); return; }
-    const open = new URLSearchParams(location.search).get('open');
-    if (open && /^[0-9a-f-]{36}$/.test(open)) { history.replaceState(null, '', '/'); openFile(open); }
+    const query = new URLSearchParams(location.search);
+    const open = query.get('open');
+    if (open && /^[0-9a-f-]{36}$/.test(open)) {
+        const m = (query.get('material') ?? '').toUpperCase();
+        if (cfg.materials.some((x) => x.code === m)) state.params.material = m;
+        const q = Number(query.get('quantity'));
+        if (q >= 1 && q <= 1000) { state.params.quantity = Math.round(q); ($('quantity') as HTMLInputElement).value = String(state.params.quantity); }
+        const colour = document.querySelector<HTMLInputElement>('#inquiry-form [name=color]');
+        if (colour && query.get('color')) colour.value = (query.get('color') ?? '').slice(0, 40);
+        buildMaterials();
+        history.replaceState(null, '', '/');
+        openFile(open);
+    }
 }

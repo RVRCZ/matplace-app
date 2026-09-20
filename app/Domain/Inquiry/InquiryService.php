@@ -54,6 +54,7 @@ final class InquiryService
                 'precise' => isset($slicer['grams']),
             ],
             'note' => $data['note'] ?? null,
+            'color' => $data['color'] ?? null,
             'wanted_by' => $data['wanted_by'] ?? null,
             'delivery_pref' => in_array($data['delivery_pref'] ?? 'any', ['any', 'pickup', 'shipping'], true) ? ($data['delivery_pref'] ?? 'any') : 'any',
             'status' => Inquiry::STATUS_PENDING,
