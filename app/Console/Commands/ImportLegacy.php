@@ -21,9 +21,28 @@ use Illuminate\Support\Facades\DB;
  */
 class ImportLegacy extends Command
 {
-    protected $signature = 'matplace:import-legacy {--dry-run : Only report what would be imported} {--connection=legacy}';
+    protected $signature = 'matplace:import-legacy {--dry-run : Only report what would be imported} {--connection=legacy} {--only-extras : Only fill the public page extras of already imported printers, touch nothing else}';
 
     protected $description = 'Import legacy users, printers and designers into the unified account model';
+
+    /** Cover, video, languages, services, verified company number: only what the printer has not set in the new app yet. */
+    private function fillPublicExtras(PrinterProfile $profile, object $row): void
+    {
+        $profile->cover_path = $profile->cover_path ?: (! empty($row->cover_photo) ? 'legacy/covers/'.basename((string) $row->cover_photo) : null);
+        $profile->video_path = $profile->video_path ?: (! empty($row->profile_video) ? 'legacy/videos/'.basename((string) $row->profile_video) : null);
+        $profile->video_url = $profile->video_url ?: (! empty($row->profile_video_yt) ? 'https://youtu.be/'.$row->profile_video_yt : null);
+        if (empty($profile->languages)) {
+            $map = ['CZ' => 'cs', 'CS' => 'cs', 'SK' => 'sk', 'EN' => 'en', 'DE' => 'de', 'ES' => 'es', 'PL' => 'pl'];
+            $profile->languages = array_values(array_unique(array_filter(array_map(fn ($l) => $map[strtoupper(trim((string) $l))] ?? null, self::json($row->languages ?? null) ?? []))));
+        }
+        if (empty($profile->services)) {
+            $profile->services = array_values(array_intersect(PrinterProfile::SERVICES, array_map('strval', self::json($row->services_offered ?? null) ?? [])));
+        }
+        if (! $profile->ico_verified_at && ! empty($row->ares_verified)) {
+            $profile->ico_verified_at = $row->ares_verified_at ?? now();
+            $profile->ico_subject_name = $row->ares_subject_name ?? null;
+        }
+    }
 
     private const MATERIAL_MAP = [
         'PLA' => 'PLA', 'PLA+' => 'PLA', 'PETG' => 'PETG', 'ASA' => 'ASA', 'ABS' => 'ASA', 'TPU' => 'TPU', 'TPU / TPE' => 'TPU', 'TPE' => 'TPU',
@@ -36,6 +55,21 @@ class ImportLegacy extends Command
     {
         $conn = DB::connection($this->option('connection'));
         $dry = (bool) $this->option('dry-run');
+
+        if ($this->option('only-extras')) {
+            $n = 0;
+            foreach ($conn->table('printers')->orderBy('id')->cursor() as $row) {
+                $profile = PrinterProfile::where('legacy_printer_id', $row->id)->first();
+                if ($profile && ! $dry) {
+                    $this->fillPublicExtras($profile, $row);
+                    $n += $profile->isDirty() ? 1 : 0;
+                    $profile->save();
+                }
+            }
+            $this->info("Public page extras filled for {$n} printers.");
+
+            return self::SUCCESS;
+        }
 
         $this->importUsers($conn, $dry);
         $this->importPrinters($conn, $dry);
@@ -145,6 +179,7 @@ class ImportLegacy extends Command
                 'legacy_printer_id' => $row->id,
             ]);
             $profile->logo_path = $profile->logo_path; // avatars are copied by a separate file sync
+            $this->fillPublicExtras($profile, $row);
             $profile->save();
 
             // materials: legacy JSON strings → catalogue codes

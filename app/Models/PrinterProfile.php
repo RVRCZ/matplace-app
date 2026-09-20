@@ -12,14 +12,22 @@ class PrinterProfile extends Model
 {
     public const CAPACITY = ['open', 'busy', 'paused'];
 
+    public const LANGUAGES = ['cs', 'sk', 'en', 'de', 'es', 'pl'];
+
+    public const SERVICES = ['express', 'postprocessing', 'design', 'delivery'];
+
     protected $fillable = [
         'user_id', 'display_name', 'slug', 'company', 'ico', 'logo_path', 'contact_email', 'contact_phone', 'pickup_address',
         'delivery_options', 'lead_time_days', 'capacity', 'next_available_at', 'bio', 'regions', 'visible', 'legacy_printer_id',
+        'cover_path', 'video_url', 'video_path', 'languages', 'services', 'ico_verified_at', 'ico_subject_name',
     ];
 
     protected $casts = [
         'delivery_options' => 'array',
         'regions' => 'array',
+        'languages' => 'array',
+        'services' => 'array',
+        'ico_verified_at' => 'datetime',
         'visible' => 'bool',
         'next_available_at' => 'date',
     ];
@@ -52,6 +60,25 @@ class PrinterProfile extends Model
     public function quotes(): HasMany
     {
         return $this->hasMany(Quote::class);
+    }
+
+    /** Embeddable player address for a YouTube / Vimeo link, null for anything else. */
+    public function videoEmbedUrl(): ?string
+    {
+        $u = (string) $this->video_url;
+        if (preg_match('~(?:youtube\.com/(?:watch\?(?:.*&)?v=|shorts/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})~', $u, $m)) {
+            return 'https://www.youtube-nocookie.com/embed/'.$m[1];
+        }
+        if (preg_match('~vimeo\.com/(?:video/)?(\d{6,12})~', $u, $m)) {
+            return 'https://player.vimeo.com/video/'.$m[1];
+        }
+
+        return null;
+    }
+
+    public function mediaUrl(?string $path): ?string
+    {
+        return $path ? \Illuminate\Support\Facades\Storage::disk('public')->url($path) : null;
     }
 
     public function defaultPricing(): ?PricingProfile

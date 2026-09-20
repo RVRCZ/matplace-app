@@ -54,14 +54,30 @@
             <div class="mt-2 grid gap-3 sm:grid-cols-2">
                 <label class="text-sm font-semibold">{{ __('printer.f.display_name') }}<input name="display_name" required value="{{ old('display_name', $profile->display_name) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.company') }}<input name="company" value="{{ old('company', $profile->company) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
-                <label class="text-sm font-semibold">IČO<input name="ico" value="{{ old('ico', $profile->ico) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+                <label class="text-sm font-semibold">IČO @if($profile->ico_verified_at)<span class="font-normal text-teal-700">✓ {{ $profile->ico_subject_name }}</span>@endif<input name="ico" value="{{ old('ico', $profile->ico) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.logo') }}<input name="logo" type="file" accept="image/*" class="mt-1 w-full text-sm font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.contact_email') }}<input name="contact_email" type="email" value="{{ old('contact_email', $profile->contact_email) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.contact_phone') }}<input name="contact_phone" value="{{ old('contact_phone', $profile->contact_phone) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('account.zip') }}<input name="zip" value="{{ old('zip', $user->zip) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('account.city') }}<input name="city" value="{{ old('city', $user->city) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold sm:col-span-2">{{ __('printer.f.pickup_address') }}<input name="pickup_address" value="{{ old('pickup_address', $profile->pickup_address) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+                <label class="text-sm font-semibold">{{ __('printer.f.cover') }} <span class="font-normal text-slate-500">{{ __('printer.f.cover_hint') }}</span><input name="cover" type="file" accept="image/*" class="mt-1 w-full text-sm font-normal"></label>
+                <label class="text-sm font-semibold">{{ __('printer.f.video_url') }} <span class="font-normal text-slate-500">YouTube / Vimeo</span><input name="video_url" type="url" value="{{ old('video_url', $profile->video_url) }}" placeholder="https://youtu.be/…" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold sm:col-span-2">{{ __('printer.f.bio') }}<textarea name="bio" rows="2" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal">{{ old('bio', $profile->bio) }}</textarea></label>
+            </div>
+
+            <div class="mt-4 text-sm font-semibold">{{ __('printer.f.languages') }}</div>
+            <div class="mt-1 flex flex-wrap gap-3 text-sm">
+                @foreach(\App\Models\PrinterProfile::LANGUAGES as $l)
+                    <label class="flex items-center gap-1"><input type="checkbox" name="languages[]" value="{{ $l }}" @checked(in_array($l, old('languages', $profile->languages ?? [])))> {{ __('printer.lang.'.$l) }}</label>
+                @endforeach
+            </div>
+
+            <div class="mt-4 text-sm font-semibold">{{ __('printer.f.services') }}</div>
+            <div class="mt-1 flex flex-wrap gap-3 text-sm">
+                @foreach(\App\Models\PrinterProfile::SERVICES as $sv)
+                    <label class="flex items-center gap-1"><input type="checkbox" name="services[]" value="{{ $sv }}" @checked(in_array($sv, old('services', $profile->services ?? [])))> {{ __('printer.service.'.$sv) }}</label>
+                @endforeach
             </div>
 
             <div class="mt-4 text-sm font-semibold">{{ __('printer.f.delivery') }}</div>
@@ -93,6 +109,19 @@
                 </label>
             </div>
 
+            <h3 class="mt-6 font-bold">{{ __('printer.profile.portfolio') }}</h3>
+            <p class="text-sm text-slate-500">{{ __('printer.f.portfolio_hint') }}</p>
+            <div class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                @foreach($profile->portfolioItems as $item)
+                    <label class="relative block cursor-pointer">
+                        <img src="{{ $profile->mediaUrl($item->photo_path) }}" alt="" loading="lazy" class="aspect-square w-full rounded-lg object-cover">
+                        <span class="absolute left-1 top-1 flex items-center gap-1 rounded bg-white/90 px-1 text-xs"><input type="checkbox" name="portfolio_delete[]" value="{{ $item->id }}"> {{ __('printer.f.portfolio_delete') }}</span>
+                    </label>
+                @endforeach
+            </div>
+            <input name="portfolio[]" type="file" accept="image/*" multiple class="mt-2 w-full text-sm">
+
+            @if($profile->visible)<p class="mt-4 text-sm"><a class="text-teal-700 underline" href="{{ route('printers.show', $profile->slug) }}" target="_blank">{{ __('printer.profile.view_public') }}</a></p>@endif
             <label class="mt-5 flex items-center gap-2 text-sm"><input type="checkbox" name="visible" value="1" @checked(old('visible', $profile->visible))> {{ __('printer.f.visible') }}</label>
         </details>
 

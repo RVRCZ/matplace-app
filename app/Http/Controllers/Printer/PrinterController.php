@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Printer;
 
 use App\Domain\Calculation\MaterialCatalog;
+use App\Domain\Geo\Geocoder;
+use App\Domain\Registry\Ares;
 use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
@@ -11,6 +13,7 @@ use App\Models\Calculation;
 use App\Models\PricingProfile;
 use App\Models\PrinterMachine;
 use App\Models\PrinterMaterial;
+use App\Models\PrinterPortfolioItem;
 use App\Models\PrinterProfile;
 use App\Models\Quote;
 use Illuminate\Contracts\View\View;
@@ -93,6 +96,16 @@ class PrinterController extends Controller
             'machine_bed_z' => ['nullable', 'integer', 'min:1', 'max:5000'],
             'machine_count' => ['nullable', 'integer', 'min:1', 'max:500'],
             'logo' => ['nullable', 'image', 'max:4096'],
+            'cover' => ['nullable', 'image', 'max:8192'],
+            'video_url' => ['nullable', 'url', 'max:255', 'regex:~(youtube\.com|youtu\.be|vimeo\.com)/~i'],
+            'languages' => ['nullable', 'array'],
+            'languages.*' => ['in:'.implode(',', PrinterProfile::LANGUAGES)],
+            'services' => ['nullable', 'array'],
+            'services.*' => ['in:'.implode(',', PrinterProfile::SERVICES)],
+            'portfolio' => ['nullable', 'array', 'max:8'],
+            'portfolio.*' => ['image', 'max:8192'],
+            'portfolio_delete' => ['nullable', 'array'],
+            'portfolio_delete.*' => ['integer'],
             'visible' => ['nullable', 'boolean'],
         ]);
 
@@ -135,6 +148,28 @@ class PrinterController extends Controller
             ])->save();
         }
 
+        if ($request->hasFile('cover')) {
+            $profile->cover_path = $request->file('cover')->store('covers/'.$profile->id, 'public');
+        }
+        foreach ($request->file('portfolio', []) as $photo) {
+            if ($profile->portfolioItems()->count() >= 40) {
+                break;
+            }
+            PrinterPortfolioItem::create(['printer_profile_id' => $profile->id, 'photo_path' => $photo->store('portfolio/'.$profile->id, 'public')]);
+        }
+        foreach ($profile->portfolioItems()->whereIn('id', $data['portfolio_delete'] ?? [])->get() as $item) {
+            if (! str_starts_with((string) $item->photo_path, 'legacy/')) {
+                Storage::disk('public')->delete($item->photo_path);   // imported files stay, only the record goes
+            }
+            $item->delete();
+        }
+        // company number: verified against the public register whenever it changes
+        $newIco = preg_replace('/\D/', '', (string) ($data['ico'] ?? '')) ?: null;
+        if ($newIco !== (preg_replace('/\D/', '', (string) $profile->ico) ?: null) || ($newIco && ! $profile->ico_verified_at)) {
+            $found = $newIco ? app(Ares::class)->lookup($newIco) : null;
+            $profile->ico_verified_at = $found ? now() : null;
+            $profile->ico_subject_name = $found['name'] ?? null;
+        }
         if ($request->hasFile('logo')) {
             $path = $request->file('logo')->store('logos/'.$profile->id, 'public');
             $profile->logo_path = $path;
@@ -150,11 +185,23 @@ class PrinterController extends Controller
             'delivery_options' => array_values($data['delivery_options'] ?? []),
             'capacity' => $data['capacity'],
             'bio' => $data['bio'] ?? null,
+            'video_url' => $data['video_url'] ?? null,
+            'languages' => array_values($data['languages'] ?? []),
+            'services' => array_values($data['services'] ?? []),
             'lead_time_days' => $data['lead_time_days'],
             'visible' => $request->boolean('visible', true) && $wanted !== [],
         ])->save();
 
-        $user->fill(['zip' => $data['zip'] ?? $user->zip, 'city' => $data['city'] ?? $user->city])->save();
+        $user->fill(['zip' => $data['zip'] ?? $user->zip, 'city' => $data['city'] ?? $user->city]);
+        if ($user->isDirty(['zip', 'city']) || ($user->lat === null && ($user->zip || $user->city))) {
+            // distance to customers is computed from this point: keep it in step with the postcode
+            $point = app(Geocoder::class)->resolve($user->zip, $user->city, $user->country ?: 'CZ');
+            if ($point) {
+                $user->lat = $point['lat'];
+                $user->lng = $point['lng'];
+            }
+        }
+        $user->save();
 
         return redirect()->route('printer.profile')->with('status', __('printer.profile_saved'));
     }

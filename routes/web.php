@@ -25,6 +25,8 @@ Route::get('/', [CalculatorController::class, 'index'])->name('home');
 Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share');
 
 // Tools menu (everything that is not the one main screen)
+Route::get('/printers/id/{id}', [\App\Http\Controllers\PrinterPageController::class, 'byId'])->whereNumber('id')->name('printers.by_id');
+Route::get('/printers/{printerProfile:slug}', [\App\Http\Controllers\PrinterPageController::class, 'show'])->name('printers.show');
 Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
 Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
 Route::get('/tools/sign', [ToolsController::class, 'sign'])->name('tools.sign');

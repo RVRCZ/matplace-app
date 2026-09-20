@@ -76,7 +76,7 @@ function renderRough(): void {
     if (!material(state.params.material).sliceable) $('price-sub').textContent = t('calc.est_only');
 }
 
-function renderBreakdown(bds: { profile: string; label?: string | null; unit: { material: number; time: number }; setup: number; subtotal?: number; discount?: number; margin?: number; total: number; lead_time_days: number }[], rough: boolean): void {
+function renderBreakdown(bds: { profile: string; label?: string | null; printer_profile_id?: number | null; unit: { material: number; time: number }; setup: number; subtotal?: number; discount?: number; margin?: number; total: number; lead_time_days: number }[], rough: boolean): void {
     // everything between the three lines and the total is said out loud: discount, margin, minimum order price, rounding
     const extras = (b: typeof bds[number]): string => {
         if (b.subtotal === undefined) return '';
@@ -90,7 +90,7 @@ function renderBreakdown(bds: { profile: string; label?: string | null; unit: { 
     };
     $('breakdown').innerHTML = bds.map((b) => `
         <div class="rounded-lg bg-slate-50 p-2">
-            <div class="flex justify-between font-semibold"><span>${b.label ?? t(`calc.profile.${b.profile}`)}</span><span>${rough ? '≈ ' : ''}${fmt.format(b.total)}</span></div>
+            <div class="flex justify-between font-semibold"><span>${b.printer_profile_id ? `<a class="underline decoration-slate-300 hover:text-teal-700" target="_blank" href="${routes().printerShow}/${b.printer_profile_id}">${b.label ?? ''}</a>` : (b.label ?? t(`calc.profile.${b.profile}`))}</span><span>${rough ? '≈ ' : ''}${fmt.format(b.total)}</span></div>
             <div class="grid grid-cols-3 gap-1 text-xs text-slate-500">
                 <span>${t('calc.breakdown.material')}: ${fmt.format(b.unit.material * state.params.quantity)}</span>
                 <span>${t('calc.breakdown.time')}: ${fmt.format(b.unit.time * state.params.quantity)}</span>

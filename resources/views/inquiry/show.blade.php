@@ -50,7 +50,7 @@
                 <div class="rounded-2xl border {{ $isAccepted ? 'border-teal-500' : 'border-slate-200' }} bg-white p-4">
                     <div class="flex flex-wrap items-start justify-between gap-2">
                         <div>
-                            <div class="font-bold">{{ $p->display_name }} @if($p->user->rating_count) <span class="text-sm font-normal text-amber-600">★ {{ number_format($p->user->rating_avg, 1) }} ({{ $p->user->rating_count }})</span>@endif</div>
+                            <div class="font-bold">@if($p->visible)<a class="underline decoration-slate-300 hover:text-teal-700" target="_blank" href="{{ route('printers.show', $p->slug) }}">{{ $p->display_name }}</a>@else{{ $p->display_name }}@endif @if($p->user->rating_count) <span class="text-sm font-normal text-amber-600">★ {{ number_format($p->user->rating_avg, 1) }} ({{ $p->user->rating_count }})</span>@endif</div>
                             <div class="text-xs text-slate-500">{{ $p->user->city ?: '' }} @php $d = $inquiry->dispatches->firstWhere('printer_profile_id', $p->id); @endphp @if($d?->distance_km !== null)· {{ round($d->distance_km) }} km @endif @if($o->lead_time_days !== null)· {{ __('calc.days', ['n' => $o->lead_time_days]) }}@endif</div>
                         </div>
                         <div class="text-right">
