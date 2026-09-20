@@ -11,12 +11,16 @@ LIMITS = {
     "logo": {"width": (20, 250), "thickness": (0.6, 10), "plate": (0.8, 6), "margin": (0, 20)},
     "stamp": {"width": (15, 120), "relief": (0.8, 4), "plate": (2, 6), "text_height": (4, 40)},
     "qr": {"size": (30, 150), "plate": (1.6, 4), "relief": (0.6, 2)},
+    "stencil": {"width": (30, 250), "thickness": (0.8, 3), "margin": (5, 40), "bridge": (0.8, 3)},
+    "lightbox": {"width": (80, 300), "depth": (25, 80), "wall": (1.6, 4), "face": (0.8, 2), "margin": (6, 40), "bridge": (0.8, 3), "cable": (3, 10), "clearance": (0.1, 0.6)},
 }
 CHOICES = {
     "vase": {"profile": ("cone", "belly", "tulip"), "style": ("smooth", "ribs", "twist"), "purpose": ("vase", "pot")},
     "logo": {"mode": ("relief", "cutout"), "shape": ("rounded", "rect", "circle")},
     "stamp": {"mode": ("raised", "recessed"), "handle": ("knob", "none")},
     "qr": {},
+    "stencil": {},
+    "lightbox": {"led": ("strip8", "strip10", "module")},
 }
 
 
@@ -71,10 +75,10 @@ def vase(M, Invalid, p):
     if float(np.min(radius(ts))) - wall * (1 + amp) < 6:
         raise Invalid("vase_too_narrow")
     r0 = bottom
-    ang = np.linspace(0, 2 * np.pi, 180, endpoint=False)
+    ang = np.linspace(0, 2 * np.pi, 120 if style == "smooth" else 144, endpoint=False)
     ring = np.stack([r0 * (1 + amp * np.cos(ribs * ang)) * np.cos(ang), r0 * (1 + amp * np.cos(ribs * ang)) * np.sin(ang)], 1)
     base = M.CrossSection([ring])
-    div = int(max(24, min(160, h / 1.5)))
+    div = int(max(20, min(90, h / 2.5)))            # enough for a smooth profile, light enough for a live preview
 
     def shaped(z0, z1, inset):
         solid = M.Manifold.extrude(base, z1 - z0, div, twist * (z1 - z0) / h).translate([0, 0, z0])
@@ -270,4 +274,119 @@ def qr(M, Invalid, p):
     return parts, notes
 
 
-BUILDERS = {"vase": vase, "logo": logo, "stamp": stamp, "qr": qr}
+def _bridged_mask(M, plate, motif, bridge):
+    """
+    plate − motif, with every loose island (the inside of O, A, closed shapes) tied back to the frame by a thin bridge.
+    Bridges run vertically through the island's middle: the shortest way that always reaches the frame.
+    Returns (mask, number_of_bridges).
+    """
+    import numpy as np
+    mask = plate - motif
+    x0, y0, x1, y1 = plate.bounds()
+    bridges = 0
+    for _ in range(3):                                   # a bridge can free nothing new, but nested shapes need a second look
+        pieces = mask.decompose()
+        if len(pieces) <= 1:
+            break
+        frame = max(pieces, key=lambda c: c.area())
+        bars = []
+        for piece in pieces:
+            if piece is frame or piece.area() < 0.3:
+                continue
+            px0, py0, px1, py1 = piece.bounds()
+            cx = (px0 + px1) / 2
+            bars.append(M.CrossSection.square([bridge, y1 - y0]).translate([cx - bridge / 2, y0]))
+            bridges += 1
+        if not bars:
+            break
+        mask = mask + (M.CrossSection.batch_boolean(bars, M.OpType.Add) ^ plate)
+    dust = [c for c in mask.decompose() if c.area() < 0.3]
+    return mask, bridges, len(dust)
+
+
+# ── painting stencil ────────────────────────────────────────────────────────
+
+def stencil(M, Invalid, p):
+    k = "stencil"
+    n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
+    width, t, margin, bridge = n("width", 120), n("thickness", 1.2), n("margin", 12), n("bridge", 1.2)
+    art, info = _art(M, Invalid, p, width, None)
+    art = S.fit(art, width_mm=width)
+    w, hgt = S.size(art)
+    if hgt > 300:
+        raise Invalid("artwork_too_tall")
+    pw, ph = w + 2 * margin, hgt + 2 * margin
+    plate = S.rounded_rect(M, pw, ph, 4)
+    mask, bridges, _ = _bridged_mask(M, plate, S.centre_on(art, pw, ph), bridge)
+    warn = []
+    thin = S.printability(M, art, 0.6)["thin_pct"]
+    if thin > 30:
+        warn.append("thin_lines")
+    if info.get("missing_chars"):
+        warn.append("missing_chars")
+    if info.get("ignored_outlines"):
+        warn.append("outlines_ignored")
+    notes = {"outer": [round(pw, 1), round(ph, 1), round(t, 1)], "bridges": bridges, "warnings": warn, "thin_pct": thin, "missing_chars": info.get("missing_chars", [])}
+    return {"all": mask.extrude(t)}, notes
+
+
+# ── illuminated sign ────────────────────────────────────────────────────────
+
+LED = {"strip8": (8.0, 3.0), "strip10": (10.0, 3.5), "module": (18.0, 8.0)}     # width and height the light source needs on the wall / back
+
+
+def lightbox(M, Invalid, p):
+    k = "lightbox"
+    n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
+    width, depth, wall, face_t = n("width", 160), n("depth", 35), n("wall", 2.0), n("face", 1.2)
+    margin, bridge, cable, clearance = n("margin", 12), n("bridge", 1.4), n("cable", 5), n("clearance", 0.25)
+    led = _pick(Invalid, p, k, "led")
+    art, info = _art(M, Invalid, p, width - 2 * margin, None)
+    art = S.fit(art, width_mm=width - 2 * margin)
+    w, hgt = S.size(art)
+    height = hgt + 2 * margin
+    if height > 300:
+        raise Invalid("artwork_too_tall")
+    led_w, led_h = LED[led]
+    if depth < led_w + 12:
+        raise Invalid("lightbox_too_shallow", "%d" % math.ceil(led_w + 12))
+
+    outer = S.rounded_rect(M, width, height, 5)
+    inner = S.rounded_rect(M, width - 2 * wall, height - 2 * wall, 3.5).translate([wall, wall])
+    # body: an open frame; a ledge 1.6 mm wide inside the front holds the diffuser and the face
+    ledge = S.rounded_rect(M, width - 2 * wall - 3.2, height - 2 * wall - 3.2, 2.5).translate([wall + 1.6, wall + 1.6])
+    body = (outer - inner).extrude(depth) + (inner - ledge).extrude(1.6).translate([0, 0, depth - face_t - 1.0 - 1.6])
+    hole = M.Manifold.cylinder(wall + 2, cable / 2, cable / 2, 32).rotate([90, 0, 0]).translate([width / 2, wall + 1, 6 + cable / 2])
+    body = body - hole
+
+    seat_w, seat_h = width - 2 * wall - 2 * clearance, height - 2 * wall - 2 * clearance
+    seat = S.rounded_rect(M, seat_w, seat_h, 3.3)
+    mask, bridges, _ = _bridged_mask(M, seat, S.centre_on(art, seat_w, seat_h), bridge)
+    face = mask.extrude(face_t)                                        # dark: the light comes only through the motif
+    diffuser = seat.extrude(1.0)                                       # white or natural: spreads the light evenly
+    lip_wall = 1.6
+    back = outer.extrude(wall) + (seat - S.rounded_rect(M, seat_w - 2 * lip_wall, seat_h - 2 * lip_wall, 2).translate([lip_wall, lip_wall])).extrude(5).translate([wall + clearance, wall + clearance, wall])
+
+    gap = 8.0
+    parts = {
+        "body": body, "face": face, "diffuser": diffuser, "back": back,
+        "all": body + face.translate([width + gap, 0, 0]) + diffuser.translate([width + gap, height + gap, 0]) + back.translate([0, height + gap, 0]),
+        # how it goes together, pulled apart along the depth so every layer is visible
+        "use": (back + body.translate([0, 0, wall + 6]) + diffuser.translate([wall + clearance, wall + clearance, wall + depth + 14]) + face.translate([wall + clearance, wall + clearance, wall + depth + 24])).rotate([90, 0, 0]),
+    }
+    strip = 2 * (width + height - 4 * wall) / 1000.0
+    warn = []
+    thin = S.printability(M, art, 0.6)["thin_pct"]
+    if thin > 30:
+        warn.append("thin_lines")
+    if info.get("missing_chars"):
+        warn.append("missing_chars")
+    if info.get("ignored_outlines"):
+        warn.append("outlines_ignored")
+    notes = {"outer": [round(width, 1), round(height, 1), round(depth + wall, 1)], "bridges": bridges, "warnings": warn, "thin_pct": thin,
+             "missing_chars": info.get("missing_chars", []), "needs": ["led_" + led, "usb_power", "tape"], "led_m": round(strip, 2), "cable_mm": cable,
+             "colors": {"body": "dark", "face": "dark", "diffuser": "white", "back": "dark"}}
+    return parts, notes
+
+
+BUILDERS = {"vase": vase, "logo": logo, "stamp": stamp, "qr": qr, "stencil": stencil, "lightbox": lightbox}

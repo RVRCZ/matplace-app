@@ -40,6 +40,8 @@
                 @if($quote->valid_until)<div><dt class="text-muted">{{ __('quote.valid_until') }}</dt><dd class="font-semibold text-ink">{{ $quote->valid_until->format('j. n. Y') }}</dd></div>@endif
             </dl>
 
+            <p class="mt-3 rounded-lg bg-action-soft px-3 py-2 text-sm text-action-dark"><strong>{{ __('quote.scope') }}:</strong> {{ __('quote.scope.'.($quote->params['scope'] ?? 'prints')) }}</p>
+
             <table class="mt-4 w-full text-sm">
                 <caption class="sr-only">{{ __('quote.pdf.title') }}</caption>
                 @foreach($lines as $l)

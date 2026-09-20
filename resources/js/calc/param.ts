@@ -94,6 +94,7 @@ export function bootParam(): void {
         if (cfg.kind === 'vase' && p.purpose === 'pot' && p.saucer) return ['body', 'saucer'];
         if (cfg.kind === 'stamp' && p.handle === 'knob') return ['body', 'handle'];
         if (cfg.kind === 'qr' && p.stand) return ['body', 'stand'];
+        if (cfg.kind === 'lightbox') return ['body', 'face', 'diffuser', 'back'];
         return [];
     };
 
@@ -118,6 +119,9 @@ export function bootParam(): void {
         const n = m.notes as { warnings?: string[]; needs?: string[]; missing_chars?: string[]; thin_pct?: number; pieces?: number; module_mm?: number; modules?: number; quiet_zone_mm?: number; saucer_d?: number; drainage_holes?: number };
         const out: string[] = (n.warnings ?? []).map((w) => t(`param.warn.${w}`, { n: n.thin_pct ?? 0, c: (n.missing_chars ?? []).join(' '), p: n.pieces ?? 0 }));
         if (n.module_mm) out.push(t('param.qr.facts', { m: nf.format(n.module_mm), q: nf.format(n.quiet_zone_mm ?? 0), c: n.modules ?? 0 }));
+        const lb = m.notes as { led_m?: number; bridges?: number };
+        if (lb.bridges) out.push(t('param.bridges', { n: lb.bridges }));
+        if (lb.led_m) out.push(t('param.lightbox.led', { m: nf.format(lb.led_m) }));
         if (n.saucer_d) out.push(t('param.saucer', { d: nf.format(n.saucer_d), h: n.drainage_holes ?? 0 }));
         if ((n.needs ?? []).length) out.push(`${t('param.needs')}: ${(n.needs ?? []).map((x) => t(`param.need.${x}`)).join(', ')}`);
         const el = $('param-warnings');

@@ -42,6 +42,9 @@
                     <label class="lbl sm:col-span-2">{{ __('quote.title') }}<input name="title" value="{{ old('title', $quote->title) }}" class="field"></label>
                     <label class="lbl">{{ __('calc.material') }}<input name="material" value="{{ old('material', $quote->params['material'] ?? '') }}" class="field" placeholder="PLA, PETG…"></label>
                     <label class="lbl">{{ __('param.color') }}<input name="color" value="{{ old('color', $quote->color) }}" class="field"></label>
+                    <label class="lbl sm:col-span-2">{{ __('quote.scope') }}
+                        <select name="scope" class="field">@foreach(['prints', 'parts', 'assembled'] as $sc)<option value="{{ $sc }}" @selected(old('scope', $quote->params['scope'] ?? 'prints') === $sc)>{{ __('quote.scope.'.$sc) }}</option>@endforeach</select>
+                    </label>
                     <label class="lbl">{{ __('quote.shipping_label') }}<input name="shipping_label" value="{{ old('shipping_label', $quote->shipping_label) }}" class="field" placeholder="{{ __('quote.shipping_ph') }}"></label>
                     <label class="lbl">{{ __('quote.shipping_price') }} <span class="font-normal text-muted">Kč</span><input name="shipping_price" id="shipping-price" type="number" inputmode="decimal" min="0" step="1" value="{{ old('shipping_price', (float) $quote->shipping_price) }}" class="field"></label>
                 </div>

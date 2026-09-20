@@ -142,6 +142,7 @@ class Quote extends Model
             'title' => $this->title,
             'material' => $this->params['material'] ?? null,
             'color' => $this->color,
+            'scope' => $this->params['scope'] ?? 'prints',
             'quantity' => (int) ($this->params['quantity'] ?? $this->cost['quantity'] ?? 1),
             'lines' => $this->customerLines(),
             'total' => (float) $this->total,

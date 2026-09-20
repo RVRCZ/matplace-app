@@ -36,7 +36,7 @@ final class ModelCheck
         $add = function (string $level, string $code, array $params = []) use (&$items) {
             $items[] = ['level' => $level, 'code' => $code, 'params' => array_map('strval', $params)];
         };
-        $intended = in_array($file->kind(), ['box', 'vase', 'stamp', 'qr', 'logo'], true);   // our own multi-part products are several bodies by design
+        $intended = in_array($file->kind(), ['box', 'vase', 'stamp', 'qr', 'logo', 'lightbox'], true);   // our own multi-part products are several bodies by design
 
         // ── size: the most common real problem is the wrong unit ───────────────
         if ($max < 1.0) {

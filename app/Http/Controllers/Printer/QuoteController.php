@@ -81,6 +81,7 @@ class QuoteController extends Controller
             'title' => ['nullable', 'string', 'max:200'],
             'material' => ['nullable', 'string', 'max:20'],
             'color' => ['nullable', 'string', 'max:40'],
+            'scope' => ['nullable', 'in:prints,parts,assembled'],
             'valid_until' => ['nullable', 'date'],
             'lead_time_days' => ['nullable', 'integer', 'min:0', 'max:365'],
             'note' => ['nullable', 'string', 'max:2000'],
@@ -114,7 +115,7 @@ class QuoteController extends Controller
             'note' => $data['note'] ?? null,
             'shipping_label' => $data['shipping_label'] ?? null,
             'shipping_price' => $data['shipping_price'] ?? 0,
-            'params' => ['material' => $data['material'] ?? ($quote->params['material'] ?? null)] + (array) $quote->params,
+            'params' => ['material' => $data['material'] ?? ($quote->params['material'] ?? null), 'scope' => $data['scope'] ?? ($quote->params['scope'] ?? 'prints')] + (array) $quote->params,
         ]);
         $builder->apply($quote, $data['cost'], $builder->normaliseLines($data['lines'] ?? []));
         $quote->pdf_path = null;

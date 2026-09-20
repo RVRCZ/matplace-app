@@ -141,7 +141,7 @@ class PrinterQuoteFlowTest extends TestCase
         $this->flushSession();
         auth()->logout();
         $page = $this->get(route('quote.public', $quote))->assertOk()->assertSee('Jan Novák')->assertSee('Tiskárna Test')
-            ->assertSee('PETG')->assertSee('černá')->assertSee('Zásilkovna')->assertSee('Broušení')->assertSee('699');
+            ->assertSee(__('quote.scope.prints'))->assertSee('PETG')->assertSee('černá')->assertSee('Zásilkovna')->assertSee('Broušení')->assertSee('699');
         // nothing of the cost sheet leaks: no cost, no margin, no machine rate, no reserve
         foreach (['464', __('quote.cost.margin'), __('quote.cost.markup'), __('quote.sheet.cost'), __('quote.cost.failure_pct'), __('quote.line.time')] as $secret) {
             $page->assertDontSee($secret);

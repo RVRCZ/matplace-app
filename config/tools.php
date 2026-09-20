@@ -23,8 +23,8 @@ return [
     'qr' => ['route' => 'tools.qr', 'intent' => 'create', 'categories' => ['signs'], 'available' => true],
     'logo' => ['route' => 'tools.logo', 'intent' => 'create', 'categories' => ['signs', 'craft'], 'available' => true],
     'stamp' => ['route' => 'tools.stamp', 'intent' => 'create', 'categories' => ['craft'], 'available' => true],
-    'stencil' => ['route' => 'tools.stencil', 'intent' => 'create', 'categories' => ['craft'], 'available' => false],
-    'lightbox' => ['route' => 'tools.lightbox', 'intent' => 'create', 'categories' => ['signs', 'gifts'], 'available' => false],
+    'stencil' => ['route' => 'tools.stencil', 'intent' => 'create', 'categories' => ['craft'], 'available' => true],
+    'lightbox' => ['route' => 'tools.lightbox', 'intent' => 'create', 'categories' => ['signs', 'gifts'], 'available' => true],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['craft', 'gifts'], 'available' => false],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => [], 'available' => true],

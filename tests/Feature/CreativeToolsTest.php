@@ -152,6 +152,50 @@ class CreativeToolsTest extends TestCase
         $this->assertGreaterThan(30, $stand['bbox']['x']);
     }
 
+    public function test_stencil_keeps_letter_insides_with_bridges_and_stays_one_piece(): void
+    {
+        config(['engines.repair' => 'trimesh']);                                 // the exact mesh check, not the PHP approximation
+        $r = $this->preview('stencil', ['line1' => 'BOA 8', 'width' => 120, 'margin' => 12, 'thickness' => 1.2])->assertOk();
+        $m = $this->meta($r);
+        $this->assertGreaterThanOrEqual(5, $m['notes']['bridges']);               // B has two insides, O, A and 8 (two)
+        $this->assertEqualsWithDelta(144, $m['bbox']['x'], 0.1);
+        $this->assertEqualsWithDelta(1.2, $m['bbox']['z'], 0.01);
+        // one connected plate: nothing can fall out
+        $report = app(\App\Engines\Contracts\MeshRepair::class)->check($r->baseResponse->getFile()->getPathname());
+        $this->assertTrue($report->watertight);
+        $this->assertSame(1, $report->shells);
+
+        $none = $this->meta($this->preview('stencil', ['line1' => 'ILL', 'width' => 80])->assertOk());
+        $this->assertSame(0, $none['notes']['bridges']);                          // no closed shapes, no bridges
+        $this->get('/tools/stencil')->assertOk();
+    }
+
+    public function test_illuminated_sign_has_four_parts_room_for_the_light_and_names_what_is_not_printed(): void
+    {
+        $p = ['line1' => 'OPEN', 'width' => 180, 'depth' => 35, 'wall' => 2, 'led' => 'strip8', 'cable' => 5];
+        $all = $this->meta($this->preview('lightbox', $p)->assertOk());
+        $this->assertSame([180.0, 37.0], [(float) $all['notes']['outer'][0], (float) $all['notes']['outer'][2]]);
+        $this->assertEqualsCanonicalizing(['led_strip8', 'usb_power', 'tape'], $all['notes']['needs']);
+        $this->assertGreaterThan(0.3, $all['notes']['led_m']);
+        $this->assertGreaterThanOrEqual(2, $all['notes']['bridges']);             // O and P
+
+        $body = $this->meta($this->preview('lightbox', $p, 'body')->assertOk());
+        $face = $this->meta($this->preview('lightbox', $p, 'face')->assertOk());
+        $back = $this->meta($this->preview('lightbox', $p, 'back')->assertOk());
+        $this->assertEqualsWithDelta(35, $body['bbox']['z'], 0.01);
+        $this->assertEqualsWithDelta(180 - 2 * 2 - 2 * 0.25, $face['bbox']['x'], 0.05);   // the mask drops into the frame with clearance
+        $this->assertEqualsWithDelta(180, $back['bbox']['x'], 0.05);
+        // the cable hole really removes material from the body
+        $solid = $this->meta($this->preview('lightbox', ['cable' => 3] + $p, 'body')->assertOk())['volume_mm3'];
+        $this->assertGreaterThan($body['volume_mm3'], $solid);
+
+        $shallow = $this->preview('lightbox', ['led' => 'module', 'depth' => 25] + $p)->assertStatus(422);
+        $this->assertStringContainsString('30', $shallow->json('errors.params.0'));
+        foreach (['cs', 'en', 'es'] as $lang) {
+            $this->get('/tools/illuminated-sign?lang='.$lang)->assertOk();
+        }
+    }
+
     public function test_created_design_is_stored_with_its_artwork_and_can_be_reopened(): void
     {
         Storage::fake('models');

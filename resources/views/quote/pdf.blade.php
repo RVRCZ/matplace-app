@@ -65,6 +65,7 @@
     @if($preview)<td class="num" style="width:210px"><img class="preview" src="{{ $preview }}" alt=""></td>@endif
 </tr></table>
 
+<p style="margin-top:10px"><strong>{{ __('quote.scope') }}:</strong> {{ __('quote.scope.'.($quote->params['scope'] ?? 'prints')) }}</p>
 <table class="lines">
     <thead><tr><th>{{ __('quote.pdf.item') }}</th><th class="num">{{ __('quote.pdf.qty') }}</th><th class="num">{{ __('quote.pdf.unit') }}</th><th class="num">{{ __('quote.pdf.total') }}</th></tr></thead>
     <tbody>

@@ -71,6 +71,7 @@ class UploadController extends Controller
             'vase' => ($p['purpose'] ?? '') === 'pot' && ! empty($p['saucer']) ? ['body', 'saucer'] : [],
             'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
             'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
+            'lightbox' => ['body', 'face', 'diffuser', 'back'],
             default => [],
         };
     }

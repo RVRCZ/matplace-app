@@ -242,7 +242,7 @@ def main(argv):
             if kind not in creative_kinds.BUILDERS:
                 raise Invalid("unknown_kind")
             parts, notes = creative_kinds.BUILDERS[kind](M, Invalid, p)
-        key = "use" if (view == "use" and "use" in parts) else (part if part in parts else "all")
+        key = part if (part != "all" and part in parts) else ("use" if (view == "use" and "use" in parts) else "all")
         solid = parts[key]
         if solid.is_empty() or solid.status() != M.Error.NoError or solid.volume() <= 0:
             raise Invalid("empty_result")
