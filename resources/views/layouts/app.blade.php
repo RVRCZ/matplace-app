@@ -15,9 +15,9 @@
 </head>
 <body class="min-h-full bg-page text-ink antialiased">
     <header class="border-b border-slate-200 bg-white">
-        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-            <a href="{{ route('home') }}" class="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-ink" aria-label="matplace">matplace<span class="-ml-1.5 text-action" aria-hidden="true">.</span><span class="rounded border border-line px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-muted">beta</span></a>
-            <nav class="flex items-center gap-4 text-sm text-slate-600">
+        <div class="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
+            <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2 text-xl font-extrabold tracking-tight text-ink sm:text-2xl" aria-label="matplace">matplace<span class="-ml-1.5 text-action" aria-hidden="true">.</span><span class="hidden rounded border border-line px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-muted sm:inline">beta</span></a>
+            <nav class="flex min-w-0 items-center gap-2 text-sm text-slate-600 sm:gap-4">
                 <a href="{{ route('tools') }}" class="hover:text-slate-900">{{ __('footer.tools') }}</a>
                 @auth
                     @if(auth()->user()->isPrinter())<a href="{{ route('printer.dashboard') }}" class="hover:text-slate-900">🖨️ {{ __('nav.printer') }}</a>@endif
@@ -26,7 +26,7 @@
                     <a href="{{ route('register', ['role' => 'printer']) }}" class="hidden sm:inline hover:text-slate-900">{{ __('nav.for_printers') }}</a>
                     <a href="{{ route('login') }}" class="font-medium hover:text-slate-900">{{ __('nav.login') }}</a>
                 @endauth
-                <span class="flex items-center gap-1 text-xs">
+                <span class="flex items-center gap-0.5 text-xs sm:gap-1">
                     @foreach(\App\Http\Middleware\SetLocale::SUPPORTED as $l)
                         <a href="{{ request()->fullUrlWithQuery(['lang' => $l]) }}" class="rounded px-1.5 py-0.5 uppercase {{ app()->getLocale() === $l ? 'bg-slate-800 text-white' : 'hover:text-slate-900' }}">{{ $l }}</a>
                     @endforeach
