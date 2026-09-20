@@ -12,7 +12,7 @@
         'calc.warn.exceeds_typical_bed','calc.warn.supports_added','calc.warn.not_watertight',
         'calc.warn.multiple_shells','calc.warn.flipped_normals','calc.printers_count',
         'search.searching','search.identifying','search.none','search.error','search.not_image','search.daily_limit','search.open_source',
-        'search.size_guess','search.price_range','search.range_hint','search.have_file','search.generate','search.designer_soon','hero.soon','calc.size','calc.material',
+        'search.size_guess','search.price_range','search.range_hint','search.have_file','search.generate','search.designer_soon','hero.soon','calc.size','calc.material','inquiry.error',
     ])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();
 @endphp
 
@@ -23,7 +23,7 @@
     window.MP_INITIAL = @json($initial);
     window.MP_MODE = @json($mode);
     window.MP_OWN_PROFILE_ID = @json($ownProfileId ?? null);
-    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
+    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), inquiries: @json(route('api.inquiries.store')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
 </script>
 @endpush
 
@@ -169,7 +169,34 @@
                     <button id="cta-share" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700">{{ __('calc.cta.share') }}</button>
                     <button id="cta-new" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 {{ $mode === 'printer' ? 'sm:col-span-2' : '' }}">{{ __('calc.cta.new') }}</button>
                 </div>
-                <p id="make-note" class="hidden text-sm text-slate-500">{{ __('calc.cta.make.soon') }}</p>
+                <p id="make-note" class="hidden text-sm text-slate-500">{{ __('inquiry.wait_precise') }}</p>
+                @if($mode !== 'printer')
+                <div id="inquiry-panel" class="hidden rounded-2xl border border-teal-200 bg-teal-50 p-4">
+                    <div class="font-bold">{{ __('inquiry.form.title') }}</div>
+                    <p class="text-sm text-slate-600">{{ __('inquiry.form.hint') }}</p>
+                    <form id="inquiry-form" class="mt-3 grid gap-2 sm:grid-cols-2">
+                        <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+                        @guest
+                            <input name="email" type="email" required placeholder="{{ __('auth.email') }}" class="rounded-lg border border-slate-300 px-3 py-2">
+                            <input name="name" placeholder="{{ __('auth.name') }}" class="rounded-lg border border-slate-300 px-3 py-2">
+                        @else
+                            <input name="name" value="{{ auth()->user()->name }}" placeholder="{{ __('auth.name') }}" class="rounded-lg border border-slate-300 px-3 py-2">
+                            <input name="phone" value="{{ auth()->user()->phone }}" placeholder="{{ __('account.phone') }}" class="rounded-lg border border-slate-300 px-3 py-2">
+                        @endguest
+                        <input name="zip" required value="{{ auth()->user()?->zip }}" placeholder="{{ __('account.zip') }}" class="rounded-lg border border-slate-300 px-3 py-2">
+                        <input name="city" value="{{ auth()->user()?->city }}" placeholder="{{ __('account.city') }}" class="rounded-lg border border-slate-300 px-3 py-2">
+                        <label class="text-sm text-slate-600">{{ __('calc.quantity') }}<input name="quantity" type="number" min="1" max="1000" value="1" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
+                        <label class="text-sm text-slate-600">{{ __('inquiry.form.wanted_by') }}<input name="wanted_by" type="date" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
+                        <select name="delivery_pref" class="rounded-lg border border-slate-300 px-3 py-2 sm:col-span-2">
+                            <option value="any">{{ __('inquiry.delivery.any') }}</option><option value="pickup">{{ __('inquiry.delivery.pickup') }}</option><option value="shipping">{{ __('inquiry.delivery.shipping') }}</option>
+                        </select>
+                        <textarea name="note" rows="2" placeholder="{{ __('inquiry.form.note') }}" class="rounded-lg border border-slate-300 px-3 py-2 sm:col-span-2"></textarea>
+                        <p id="inquiry-error" class="hidden text-sm text-red-700 sm:col-span-2"></p>
+                        <button type="submit" class="rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white sm:col-span-2">{{ __('inquiry.form.submit') }}</button>
+                        <p class="text-xs text-slate-500 sm:col-span-2">{{ __('inquiry.form.promise') }}</p>
+                    </form>
+                </div>
+                @endif
             </div>
         </div>
     </section>

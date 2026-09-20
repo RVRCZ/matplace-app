@@ -52,7 +52,7 @@
                 @if($quote->calculation)
                     <div class="mt-3 text-xs text-slate-500">
                         {{ __('quote.from_calc') }}: <a href="{{ route('printer.calculator.open', $quote->calculation) }}" class="text-teal-700">{{ $quote->calculation->token }}</a>
-                        @if($quote->calculation->slicer)<br>{{ $quote->calculation->slicer['grams'] }} g · {{ $quote->calculation->slicer['minutes'] }} min · {{ $quote->calculation->slicer['dims']['x'] }}×{{ $quote->calculation->slicer['dims']['y'] }}×{{ $quote->calculation->slicer['dims']['z'] }} mm@endif
+                        @if($quote->calculation->slicer)<br>{{ $quote->calculation->slicer['grams'] }} g · {{ $quote->calculation->slicer['minutes'] }} min · {{ $quote->calculation->slicer['dims']['x'] }}×{{ $quote->calculation->slicer['dims']['y'] }}×{{ $quote->calculation->slicer['dims']['z'] }} mm @endif
                     </div>
                 @endif
             </div>

@@ -105,6 +105,10 @@ class PrinterQuoteFlowTest extends TestCase
         $this->assertContains('setup', $keys);
         $own = collect($calc['prices'])->firstWhere('printer_profile_id', $printer->printerProfile->id);
         $this->assertEqualsWithDelta($own['total'], $quote->total, 1.0);
+        $this->actingAs($printer)->get(route('printer.quotes.edit', $quote))->assertOk()->assertSee($quote->number);
+        $this->actingAs($printer)->get(route('printer.quotes'))->assertOk();
+        $this->actingAs($printer)->get(route('printer.dashboard'))->assertOk();
+        $this->actingAs($printer)->get(route('printer.calculator'))->assertOk();
 
         // edit lines manually: the total follows the lines
         $lines = $quote->lines;

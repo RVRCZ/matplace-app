@@ -4,7 +4,11 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\ModelFileController;
+use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\ThreadController;
+use App\Http\Controllers\InquiryController;
+use App\Http\Controllers\Printer\InquiryController as PrinterInquiryController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OAuthController;
@@ -23,6 +27,14 @@ Route::get('/q/{quote}/pdf', [QuoteController::class, 'publicPdf'])->name('quote
 Route::post('/q/{quote}/accept', [QuoteController::class, 'accept'])->name('quote.accept');
 Route::post('/q/{quote}/decline', [QuoteController::class, 'decline'])->name('quote.decline');
 
+// Customer inquiry ("Make it for me") — the e-mailed link is the access
+Route::get('/i/{inquiry}', [InquiryController::class, 'show'])->name('inquiry.show');
+Route::get('/i/{inquiry}/verify/{code}', [InquiryController::class, 'verify'])->name('inquiry.verify');
+Route::post('/i/{inquiry}/accept/{quote}', [InquiryController::class, 'accept'])->name('inquiry.accept');
+Route::post('/i/{inquiry}/done', [InquiryController::class, 'done'])->name('inquiry.done');
+Route::post('/i/{inquiry}/cancel', [InquiryController::class, 'cancel'])->name('inquiry.cancel');
+Route::post('/i/{inquiry}/rate', [InquiryController::class, 'rate'])->name('inquiry.rate');
+
 // ── JSON API used by the calculator ──────────────────────────────────────────
 Route::prefix('api')->name('api.')->group(function () {
     Route::get('config', [ConfigController::class, 'show'])->name('config');
@@ -33,6 +45,10 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('calculations/{calculation}', [CalculationController::class, 'show'])->name('calculations.show');
     Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1')->name('search');
     Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1')->name('describe');
+    Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware('throttle:10,1')->name('inquiries.store');
+    Route::get('threads/{thread}/messages', [ThreadController::class, 'messages'])->name('threads.messages');
+    Route::post('threads/{thread}/messages', [ThreadController::class, 'post'])->middleware('throttle:30,1')->name('threads.post');
+    Route::get('threads/{thread}/attachments/{message}', [ThreadController::class, 'attachment'])->name('threads.attachment');
 });
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -74,4 +90,9 @@ Route::middleware(['auth', 'role:printer'])->prefix('printer')->name('printer.')
     Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
     Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
     Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
+
+    Route::get('/inquiries', [PrinterInquiryController::class, 'index'])->name('inquiries');
+    Route::get('/inquiries/{inquiry}', [PrinterInquiryController::class, 'show'])->name('inquiries.show');
+    Route::post('/inquiries/{inquiry}/offer', [PrinterInquiryController::class, 'offer'])->name('inquiries.offer');
+    Route::post('/inquiries/{inquiry}/decline', [PrinterInquiryController::class, 'decline'])->name('inquiries.decline');
 });

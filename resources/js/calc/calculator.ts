@@ -4,6 +4,7 @@ import { loadGeometry, loadGeometryFromUrl, extensionOf, BROWSER_FORMATS } from 
 import { stats, normaliseUnits, GeoStats } from './geometry';
 import { estimate, price, range, RoughConfig, Profile, Params } from './rough';
 import { uploadFile, createCalculation, getCalculation, getFile, CalcInfo, FileInfo } from './api';
+import { bootInquiry } from './inquiry';
 
 interface MaterialCfg { code: string; density: number; lay: string[]; sliceable: boolean; label: string; hint: string }
 interface Config {
@@ -324,7 +325,7 @@ function bindControls(): void {
         if (navigator.share) { try { await navigator.share({ url }); } catch { /* cancelled */ } }
         const b = $('cta-share'); const old = b.textContent; b.textContent = t('calc.cta.copied'); setTimeout(() => (b.textContent = old), 1500);
     };
-    $('cta-make').onclick = () => $('make-note').classList.remove('hidden');
+    bootInquiry(() => (state.calc && state.calc.status === 'done' ? state.calc.token : null));
 }
 
 /** Shared link: restore parameters and result from the server. */
