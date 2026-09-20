@@ -59,7 +59,7 @@
             </div>
         @endif
         @if($quote->calculation && $quote->calculation->slicer)
-            <div class="muted">{{ __('calc.size') }}: {{ $quote->calculation->slicer['dims']['x'] }} × {{ $quote->calculation->slicer['dims']['y'] }} × {{ $quote->calculation->slicer['dims']['z'] }} mm · {{ __('calc.weight') }}: {{ $quote->calculation->slicer['grams'] }} g · {{ __('calc.time') }}: {{ $quote->calculation->slicer['minutes'] }} min</div>
+            <div class="muted">{{ __('calc.size') }}: {{ $quote->calculation->slicer['dims']['x'] }} × {{ $quote->calculation->slicer['dims']['y'] }} × {{ $quote->calculation->slicer['dims']['z'] }} mm @if($quote->color) · {{ __('param.color') }}: {{ $quote->color }}@endif</div>
         @endif
     </td>
     @if($preview)<td class="num" style="width:210px"><img class="preview" src="{{ $preview }}" alt=""></td>@endif
@@ -68,7 +68,7 @@
 <table class="lines">
     <thead><tr><th>{{ __('quote.pdf.item') }}</th><th class="num">{{ __('quote.pdf.qty') }}</th><th class="num">{{ __('quote.pdf.unit') }}</th><th class="num">{{ __('quote.pdf.total') }}</th></tr></thead>
     <tbody>
-    @foreach($quote->lines as $l)
+    @foreach($quote->customerLines() as $l)
         <tr><td>{{ $l['label'] }}</td><td class="num">{{ rtrim(rtrim(number_format($l['qty'], 2, ',', ' '), '0'), ',') }}</td><td class="num">{{ number_format($l['unit_price'], 2, ',', ' ') }}</td><td class="num">{{ number_format($l['total'], 2, ',', ' ') }}</td></tr>
     @endforeach
     <tr class="total"><td colspan="3">{{ __('quote.pdf.sum') }}</td><td class="num">{{ number_format($quote->total, 0, ',', ' ') }} {{ $quote->currency === 'CZK' ? 'Kč' : $quote->currency }}</td></tr>

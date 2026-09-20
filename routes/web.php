@@ -40,7 +40,8 @@ Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('
 Route::get('/q/{quote}', [QuoteController::class, 'publicShow'])->name('quote.public');
 Route::get('/q/{quote}/pdf', [QuoteController::class, 'publicPdf'])->name('quote.public.pdf');
 Route::post('/q/{quote}/accept', [QuoteController::class, 'accept'])->name('quote.accept');
-Route::post('/q/{quote}/decline', [QuoteController::class, 'decline'])->name('quote.decline');
+Route::post('/q/{quote}/decline', [QuoteController::class, 'decline'])->middleware('throttle:20,1')->name('quote.decline');
+Route::post('/q/{quote}/change', [QuoteController::class, 'requestChange'])->middleware('throttle:10,1')->name('quote.change');
 
 // Customer inquiry ("Make it for me") — the e-mailed link is the access
 Route::get('/i/{inquiry}', [InquiryController::class, 'show'])->name('inquiry.show');
@@ -114,6 +115,8 @@ Route::middleware(['auth', 'role:printer'])->prefix('printer')->name('printer.')
     Route::post('/quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
     Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
     Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
+    Route::post('/quotes/{quote}/revoke', [QuoteController::class, 'revoke'])->name('quotes.revoke');
+    Route::post('/quotes/{quote}/relink', [QuoteController::class, 'relink'])->name('quotes.relink');
     Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
 
     Route::get('/inquiries', [PrinterInquiryController::class, 'index'])->name('inquiries');

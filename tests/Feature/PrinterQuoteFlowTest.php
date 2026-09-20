@@ -86,6 +86,16 @@ class PrinterQuoteFlowTest extends TestCase
         $this->assertNotNull($own);
     }
 
+    /** What a printer types into the quote form. */
+    private function form(array $cost = [], array $over = []): array
+    {
+        return $over + [
+            'client_name' => 'Jan Novák', 'client_email' => 'jan@example.com', 'title' => 'Krabička', 'material' => 'PETG', 'color' => 'černá',
+            'valid_until' => now()->addDays(7)->toDateString(), 'lead_time_days' => 5, 'shipping_label' => 'Zásilkovna', 'shipping_price' => 89,
+            'cost' => $cost + ['quantity' => 2, 'material_cost' => 40, 'machine_hours' => 2, 'machine_rate' => 100, 'setup_cost' => 50, 'labour_minutes' => 30, 'labour_rate' => 300, 'failure_pct' => 10, 'mode' => 'markup', 'pct' => 25, 'min_price' => 0],
+        ];
+    }
+
     public function test_quote_from_calculation_to_acceptance(): void
     {
         Mail::fake();
@@ -93,16 +103,16 @@ class PrinterQuoteFlowTest extends TestCase
         $uuid = $this->uploadCube();
         $calc = $this->actingAs($printer)->postJson('/api/calculations', ['file' => $uuid, 'material' => 'PLA', 'quantity' => 2])->json('calculation');
 
-        // create from calculation
+        // create from calculation: the cost sheet is filled from the price list and gives the calculator's price
         $this->actingAs($printer)->post(route('printer.quotes.store'), ['calculation' => $calc['token']])->assertRedirect();
         $quote = Quote::firstOrFail();
         $this->assertSame('draft', $quote->status);
         $this->assertStringStartsWith('N-', $quote->number);
         $this->assertSame('cube.stl', $quote->title);
-        $keys = array_column($quote->lines, 'key');
-        $this->assertContains('material', $keys);
-        $this->assertContains('time', $keys);
-        $this->assertContains('setup', $keys);
+        $this->assertSame(32, strlen($quote->token));                       // hard to guess
+        $this->assertSame(['production'], array_column($quote->lines, 'key'));
+        $this->assertGreaterThan(0, $quote->cost['material_cost']);
+        $this->assertSame(100.0, (float) $quote->cost['machine_rate']);
         $own = collect($calc['prices'])->firstWhere('printer_profile_id', $printer->printerProfile->id);
         $this->assertEqualsWithDelta($own['total'], $quote->total, 1.0);
         $this->actingAs($printer)->get(route('printer.quotes.edit', $quote))->assertOk()->assertSee($quote->number);
@@ -110,39 +120,91 @@ class PrinterQuoteFlowTest extends TestCase
         $this->actingAs($printer)->get(route('printer.dashboard'))->assertOk();
         $this->actingAs($printer)->get(route('printer.calculator'))->assertOk();
 
-        // edit lines manually: the total follows the lines
-        $lines = $quote->lines;
-        $lines[0]['unit_price'] = 100;
-        $lines[] = ['label' => 'Broušení', 'qty' => 1, 'unit_price' => 30];
-        $this->actingAs($printer)->post(route('printer.quotes.update', $quote), [
-            'client_name' => 'Jan Novák', 'client_email' => 'jan@example.com', 'lines' => $lines, 'valid_until' => now()->addDays(7)->toDateString(), 'lead_time_days' => 5,
-        ])->assertRedirect();
+        // cost sheet: (40 + 2×100) × 1.10 + 50 + 150 = 464 → 25 % markup = 580; + extra item 30 + shipping 89
+        $this->actingAs($printer)->post(route('printer.quotes.update', $quote), $this->form([], ['lines' => [['label' => 'Broušení', 'qty' => 1, 'unit_price' => 30]]]))->assertRedirect()->assertSessionHasNoErrors();
         $quote->refresh();
         $this->assertSame('Jan Novák', $quote->client_name);
-        $this->assertSame(Quote::sumLines($quote->lines), $quote->total);
-        $this->assertSame(30.0, (float) $quote->lines[count($quote->lines) - 1]['total']);
+        $this->assertEqualsWithDelta(464.0, $quote->cost['cost'], 0.01);
+        $this->assertEqualsWithDelta(580.0, $quote->cost['final'], 0.01);
+        $this->assertEqualsWithDelta(20.0, $quote->cost['margin_pct'], 0.05);   // the same price said as a margin
+        $this->assertSame(580.0 + 30 + 89, $quote->total);
 
-        // send: PDF generated + mail + public page works without login
+        // send: version 1 frozen, PDF + mail, public page works without login
         $this->actingAs($printer)->post(route('printer.quotes.send', $quote))->assertRedirect();
         $quote->refresh();
         $this->assertSame('sent', $quote->status);
-        $this->assertNotNull($quote->pdf_path);
+        $this->assertSame(1, $quote->version);
+        $this->assertSame(699.0, (float) $quote->versions()->first()->snapshot['total']);
         Storage::disk('local')->assertExists($quote->pdf_path);
         Mail::assertSent(QuoteSent::class, fn ($m) => $m->hasTo('jan@example.com'));
 
         $this->flushSession();
-        $this->get(route('quote.public', $quote))->assertOk()->assertSee('Jan Novák')->assertSee('Tiskárna Test');
+        auth()->logout();
+        $page = $this->get(route('quote.public', $quote))->assertOk()->assertSee('Jan Novák')->assertSee('Tiskárna Test')
+            ->assertSee('PETG')->assertSee('černá')->assertSee('Zásilkovna')->assertSee('Broušení')->assertSee('699');
+        // nothing of the cost sheet leaks: no cost, no margin, no machine rate, no reserve
+        foreach (['464', __('quote.cost.margin'), __('quote.cost.markup'), __('quote.sheet.cost'), __('quote.cost.failure_pct'), __('quote.line.time')] as $secret) {
+            $page->assertDontSee($secret);
+        }
+        $this->assertArrayNotHasKey('cost', $quote->fresh()->toArray());
         $this->assertSame('viewed', $quote->fresh()->status);
         $this->get(route('quote.public.pdf', $quote))->assertOk()->assertHeader('Content-Type', 'application/pdf');
 
-        $this->post(route('quote.accept', $quote))->assertRedirect(route('quote.public', $quote));
-        $this->assertSame('accepted', $quote->fresh()->status);
+        // the customer asks for a change → printer edits and re-sends → version 2; the old version can no longer be accepted
+        $this->post(route('quote.change', $quote), ['version' => 1, 'message' => 'Šlo by to v bílé?'])->assertRedirect();
+        $this->assertSame('change', $quote->fresh()->status);
+        Mail::assertSent(\App\Mail\QuoteChangeRequested::class);
+        $this->post(route('quote.accept', $quote), ['version' => 1])->assertNotFound();      // not open while a change is pending
+
+        $this->actingAs($printer)->post(route('printer.quotes.update', $quote), $this->form([], ['color' => 'bílá']))->assertRedirect();
+        $this->actingAs($printer)->post(route('printer.quotes.send', $quote))->assertRedirect();
+        $quote->refresh();
+        $this->assertSame(2, $quote->version);
+        $this->assertSame(669.0, $quote->total);
+        auth()->logout();
+        $this->post(route('quote.accept', $quote), ['version' => 1])->assertRedirect()->assertSessionHasErrors('version');
+        $this->assertSame('sent', $quote->fresh()->status);
+        $this->post(route('quote.accept', $quote), ['version' => 2])->assertRedirect(route('quote.public', $quote));
+        $quote->refresh();
+        $this->assertSame('accepted', $quote->status);
+        $this->assertSame(2, $quote->accepted_version);
+        $this->assertNotNull($quote->versions()->where('version', 2)->first()->accepted_at);
+        $this->assertNull($quote->versions()->where('version', 1)->first()->accepted_at);
         Mail::assertSent(\App\Mail\QuoteAccepted::class);
 
-        // duplicate = repeat order
+        // an accepted quote is frozen; "repeat" makes a new draft with a new link
+        $this->actingAs($printer)->post(route('printer.quotes.update', $quote), $this->form())->assertStatus(409);
         $this->actingAs($printer)->post(route('printer.quotes.duplicate', $quote))->assertRedirect();
-        $this->assertSame(2, Quote::count());
-        $this->assertSame('draft', Quote::latest('id')->first()->status);
+        $copy = Quote::latest('id')->first();
+        $this->assertSame('draft', $copy->status);
+        $this->assertNotSame($quote->token, $copy->token);
+    }
+
+    public function test_link_can_be_revoked_and_replaced(): void
+    {
+        Mail::fake();
+        $printer = $this->printer();
+        $this->actingAs($printer)->post(route('printer.quotes.store'));
+        $quote = Quote::firstOrFail();
+        $this->actingAs($printer)->post(route('printer.quotes.update', $quote), $this->form(['final_price' => 500], ['client_email' => null]));
+        $this->actingAs($printer)->post(route('printer.quotes.send', $quote))->assertRedirect();
+        $old = $quote->fresh()->token;
+        $this->assertSame(500.0 + 89, $quote->fresh()->total);                 // the printer's own price wins over the suggestion
+        $this->assertTrue($quote->fresh()->cost['overridden']);
+
+        $this->actingAs($printer)->post(route('printer.quotes.revoke', $quote))->assertRedirect();
+        auth()->logout();
+        $this->get('/q/'.$old)->assertStatus(410);
+        $this->get('/q/'.$old.'/pdf')->assertStatus(410);
+        $this->post('/q/'.$old.'/accept', ['version' => 1])->assertStatus(410);
+
+        $this->actingAs($printer)->post(route('printer.quotes.relink', $quote))->assertRedirect();
+        $new = $quote->fresh()->token;
+        $this->assertNotSame($old, $new);
+        auth()->logout();
+        $this->get('/q/'.$old)->assertNotFound();                               // the old address is gone for good
+        $this->get('/q/'.$new)->assertOk();
+        $this->get('/q/'.substr($new, 0, 31).'x')->assertNotFound();
     }
 
     public function test_other_printer_cannot_open_my_quote(): void

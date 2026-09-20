@@ -7,6 +7,7 @@
     <meta name="description" content="{{ $description ?? __('app.subline') }}">
     @if(!empty($ogImage))<meta property="og:image" content="{{ $ogImage }}">@endif
     <meta property="og:title" content="{{ $title ?? 'matplace' }}">
+    @if(!empty($noindex))<meta name="robots" content="noindex, nofollow">@endif
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" href="/favicon.ico">
     @vite(['resources/css/app.css', 'resources/js/app.ts'])

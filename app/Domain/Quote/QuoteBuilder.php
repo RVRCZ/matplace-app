@@ -12,72 +12,70 @@ use Symfony\Component\HttpFoundation\Response;
 /** Turns a calculation (or nothing) into an editable quote and renders its PDF. */
 final class QuoteBuilder
 {
-    /** Lines from the printer's own price breakdown of the calculation; falls back to an empty template. */
+    /**
+     * A calculation (or nothing) → draft quote. The printer's price list fills the internal cost sheet, so the suggested
+     * price equals what the calculator showed; the printer then adds hand work, a reserve for failed prints, shipping…
+     */
     public function fromCalculation(PrinterProfile $profile, ?Calculation $calc): Quote
     {
-        $lines = [];
-        $params = null;
-        $title = null;
-        $qty = 1;
-
-        if ($calc) {
-            $params = $calc->params;
-            $qty = max(1, (int) ($params['quantity'] ?? 1));
-            $title = $calc->modelFile?->original_name;
-            $bd = collect($calc->prices ?? [])->firstWhere('printer_profile_id', $profile->id)
-                ?? collect($calc->rough['prices'] ?? [])->firstWhere('printer_profile_id', $profile->id);
-            if (! $bd) {
-                // calculation was made without this printer's price list: price it now from grams/minutes
-                $g = (float) ($calc->slicer['grams'] ?? $calc->rough['grams'] ?? 0);
-                $m = (int) ($calc->slicer['minutes'] ?? $calc->rough['minutes'] ?? 0);
-                $dto = $profile->pricingDto((string) ($params['material'] ?? 'PLA'));
-                if ($dto && ($g > 0 || $m > 0)) {
-                    $bd = app(\App\Domain\Calculation\PriceEngine::class)->price($g, $m, $qty, $dto)->toArray();
-                }
-            }
-            if ($bd) {
-                $lines[] = self::line('material', __('quote.line.material', ['material' => $params['material'] ?? '']), $qty, (float) $bd['unit']['material']);
-                $lines[] = self::line('time', __('quote.line.time'), $qty, (float) $bd['unit']['time']);
-                if ((float) $bd['setup'] > 0) {
-                    $lines[] = self::line('setup', __('quote.line.setup'), 1, (float) $bd['setup']);
-                }
-                if ((float) $bd['unit']['royalty'] > 0) {
-                    $lines[] = self::line('royalty', __('quote.line.royalty'), $qty, (float) $bd['unit']['royalty']);
-                }
-                if ((float) $bd['discount'] > 0) {
-                    $lines[] = self::line('discount', __('quote.line.discount', ['pct' => $bd['discount_pct']]), 1, -(float) $bd['discount']);
-                }
-                if ((float) $bd['margin'] > 0) {
-                    $lines[] = self::line('margin', __('quote.line.margin'), 1, (float) $bd['margin']);
-                }
-                // keep the engine's rounding/min-price as a visible adjustment line
-                $sum = Quote::sumLines($lines);
-                $diff = round((float) $bd['total'] - $sum, 2);
-                if (abs($diff) >= 0.5) {
-                    $lines[] = self::line('rounding', __('quote.line.rounding'), 1, $diff);
-                }
-            }
-        }
-        if (! $lines) {
-            $lines[] = self::line('print', __('quote.line.print'), $qty, 0);
-        }
-
+        $params = $calc?->params;
+        $qty = max(1, (int) ($params['quantity'] ?? 1));
         $pricing = $profile->defaultPricing();
+        $dto = $profile->pricingDto((string) ($params['material'] ?? 'PLA'));
+        $grams = (float) ($calc?->slicer['grams'] ?? $calc?->rough['grams'] ?? 0);
+        $minutes = (float) ($calc?->slicer['minutes'] ?? $calc?->rough['minutes'] ?? 0);
 
-        return Quote::create([
+        $cost = [
+            'quantity' => $qty,
+            'material_cost' => round($grams * $qty * (float) ($dto?->pricePerGram ?? 0), 2),
+            'machine_hours' => round($minutes * (float) ($dto?->timeFactor ?? 1) * $qty / 60, 2),
+            'machine_rate' => (float) ($dto?->hourlyRate ?? 0),
+            'setup_cost' => (float) ($dto?->setupFee ?? 0),
+            'labour_minutes' => 0, 'labour_rate' => 0, 'failure_pct' => 0,
+            'mode' => CostSheet::MODE_MARKUP,                       // the price list's "margin_pct" has always been a markup on cost
+            'pct' => (float) ($dto?->marginPct ?? 0),
+            'min_price' => (float) ($dto?->minPrice ?? 0),
+        ];
+        $extras = [];
+        $discountPct = $dto ? $dto->discountPctFor($qty) : 0.0;
+
+        $quote = new Quote([
             'token' => Quote::newToken(),
             'number' => Quote::nextNumber($profile->id),
             'printer_profile_id' => $profile->id,
             'calculation_id' => $calc?->id,
             'model_file_id' => $calc?->model_file_id,
-            'title' => $title,
-            'params' => $params,
-            'lines' => $lines,
-            'total' => Quote::sumLines($lines),
+            'title' => $calc?->modelFile?->original_name,
+            'params' => $params ?? ['quantity' => 1],
             'valid_until' => now()->addDays(14),
             'lead_time_days' => $pricing?->lead_time_days ?: $profile->lead_time_days,
             'status' => Quote::STATUS_DRAFT,
+            'version' => 1,
         ]);
+        $sheet = CostSheet::compute($cost, (int) config('pricing.round_to', 1));
+        if ($discountPct > 0) {
+            // quantity discounts are something the customer should see
+            $extras[] = self::line('custom', __('quote.line.discount', ['pct' => $discountPct]), 1, -round($sheet['final'] * $discountPct / 100, 0));
+        }
+        $this->apply($quote, $cost, $extras);
+        $quote->save();
+
+        return $quote;
+    }
+
+    /** Cost sheet + customer-visible extra items + shipping → lines and total. The one place a quote's money is put together. */
+    public function apply(Quote $quote, array $costInput, array $extraLines): void
+    {
+        $sheet = CostSheet::compute($costInput, (int) config('pricing.round_to', 1));
+        $lines = [self::line('production', __('quote.line.production'), $sheet['quantity'], $sheet['unit_price'])];
+        $lines[0]['total'] = $sheet['final'];                       // unit price is rounded for display, the total is exact
+        foreach ($extraLines as $l) {
+            $lines[] = ['key' => 'custom'] + $l;
+        }
+        $quote->cost = $sheet;
+        $quote->lines = $lines;
+        $quote->params = ['quantity' => $sheet['quantity']] + (array) $quote->params;
+        $quote->total = Quote::sumLines($lines) + round((float) $quote->shipping_price, 0);
     }
 
     public static function line(string $key, string $label, float $qty, float $unitPrice): array
@@ -93,7 +91,7 @@ final class QuoteBuilder
             $qty = (float) $l['qty'];
             $unit = (float) $l['unit_price'];
             $out[] = [
-                'key' => $existing[$i]['key'] ?? 'custom',
+                'key' => 'custom',
                 'label' => trim((string) $l['label']),
                 'qty' => $qty,
                 'unit_price' => round($unit, 2),
