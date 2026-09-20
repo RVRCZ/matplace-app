@@ -92,6 +92,17 @@ class GenerationTest extends TestCase
         $this->actingAs($user)->postJson('/api/generate/'.$photo->token.'/refine', ['instruction' => 'add a hat'])->assertStatus(422)->assertJsonPath('error', 'not_refinable');
     }
 
+    public function test_printers_get_a_higher_daily_limit(): void
+    {
+        config(['ai.daily_limits.generate_user' => 1, 'ai.daily_limits.generate_printer' => 3]);
+        $printer = User::factory()->create();
+        $printer->roles()->create(['role' => User::ROLE_PRINTER]);
+        foreach (['vase one', 'vase two', 'vase three'] as $prompt) {
+            $this->actingAs($printer)->postJson('/api/generate', ['prompt' => $prompt])->assertCreated();
+        }
+        $this->actingAs($printer)->postJson('/api/generate', ['prompt' => 'vase four'])->assertStatus(429)->assertJsonPath('limit', 3);
+    }
+
     public function test_disabled_generator_returns_503(): void
     {
         config(['engines.generator' => 'null']);

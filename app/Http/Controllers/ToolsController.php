@@ -30,7 +30,7 @@ class ToolsController extends Controller
         return view('tools.figure', [
             'generator' => $generation->enabled(),
             'guestLimit' => (int) config('ai.daily_limits.generate_guest'),
-            'userLimit' => (int) config('ai.daily_limits.generate_user'),
+            'userLimit' => $generation->limitFor(auth()->user()) > (int) config('ai.daily_limits.generate_user') ? $generation->limitFor(auth()->user()) : (int) config('ai.daily_limits.generate_user'),
         ]);
     }
 }

@@ -13,6 +13,7 @@ return [
         'describe' => (int) env('AI_LIMIT_DESCRIBE', 20),   // photo identifications per visitor per day
         'generate_guest' => (int) env('AI_LIMIT_GENERATE_GUEST', 1),     // 3D generations per anonymous visitor per day
         'generate_user' => (int) env('AI_LIMIT_GENERATE_USER', 3),       // … per signed-in account per day
+        'generate_printer' => (int) env('AI_LIMIT_GENERATE_PRINTER', 15), // … per signed-in printer per day (they prepare models for customers)
         'generate_global' => (int) env('AI_LIMIT_GENERATE_GLOBAL', 100), // hard cap for the whole site per day (cost ceiling)
     ],
 

@@ -23,7 +23,7 @@ final class GenerationService
     /** @return array{allowed: bool, reason: ?string, used: int, limit: int} */
     public function quota(?string $ip, ?AnonymousSession $session, ?User $user): array
     {
-        $limit = (int) config($user ? 'ai.daily_limits.generate_user' : 'ai.daily_limits.generate_guest');
+        $limit = $this->limitFor($user);
         $used = GenerationRequest::usedToday($ip, $session?->id, $user?->id);
         $global = GenerationRequest::where('created_at', '>=', now()->startOfDay())->whereIn('type', ['image', 'text'])->whereNotNull('external_id')->count();
         if ($global >= (int) config('ai.daily_limits.generate_global')) {
@@ -31,6 +31,16 @@ final class GenerationService
         }
 
         return ['allowed' => $used < $limit, 'reason' => $used < $limit ? null : 'daily_limit', 'used' => $used, 'limit' => $limit];
+    }
+
+    /** Daily count of generations: guest < account < printer. */
+    public function limitFor(?User $user): int
+    {
+        return (int) config(match (true) {
+            $user === null => 'ai.daily_limits.generate_guest',
+            $user->isPrinter() => 'ai.daily_limits.generate_printer',
+            default => 'ai.daily_limits.generate_user',
+        });
     }
 
     public function fromDescribe(GenerationRequest $describe, int $targetMm, ?string $ip, ?AnonymousSession $session, ?User $user): GenerationRequest
