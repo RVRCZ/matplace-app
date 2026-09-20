@@ -55,10 +55,18 @@ final class PythonTool
     private function probe(): array
     {
         if ($this->probe === null) {
+            // the probe imports the CAD kernel (seconds): ask once an hour, not on every page view
+            $cached = \Illuminate\Support\Facades\Cache::get('python_probe:'.md5((string) $this->config['bin']));
+            if (is_array($cached) && ! empty($cached['ok'])) {
+                return $this->probe = $cached;
+            }
             try {
                 $r = Process::timeout(30)->run([$this->config['bin'], base_path('engines/python/mesh_tool.py'), 'probe']);
                 $json = json_decode(trim($r->output()), true);
                 $this->probe = ($r->successful() && is_array($json)) ? $json : ['ok' => false];
+                if (! empty($this->probe['ok'])) {
+                    \Illuminate\Support\Facades\Cache::put('python_probe:'.md5((string) $this->config['bin']), $this->probe, 3600);
+                }
             } catch (\Throwable) {
                 $this->probe = ['ok' => false];
             }
