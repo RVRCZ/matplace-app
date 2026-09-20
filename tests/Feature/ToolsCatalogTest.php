@@ -38,6 +38,14 @@ class ToolsCatalogTest extends TestCase
                 $page->assertDontSee(route('home').'/tools/'.$key, false);      // nothing "coming soon" with a dead button
             }
         }
+        // every listed tool has its product picture in both sizes (a missing one would fall back to the drawing)
+        foreach (array_keys(array_filter(config('tools'), fn ($t) => $t['available'])) + [99 => 'printer_tools'] as $key) {
+            foreach (['-480.webp', '-800.webp', '-800.jpg'] as $suffix) {
+                $this->assertFileExists(public_path('img/tools/'.$key.$suffix));
+            }
+            $this->assertLessThan(60 * 1024, filesize(public_path('img/tools/'.$key.'-800.webp')), $key);
+        }
+        $page->assertSee('img/tools/modular-800.jpg', false)->assertSee('img/tools/printer_tools-800.jpg', false);
         $this->get('/tools?lang=en')->assertOk()->assertSee('I have a file');
         $this->get('/tools?lang=es')->assertOk()->assertSee('Tengo un archivo');
     }

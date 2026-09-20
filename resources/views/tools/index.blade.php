@@ -55,8 +55,8 @@
     @endif
 
     <section class="mt-10 rounded-2xl border border-line bg-card p-5" aria-labelledby="h-printers">
-        <div class="grid items-center gap-4 sm:grid-cols-[140px_1fr_auto]">
-            <div class="hidden sm:block">@include('tools.art', ['key' => 'printer_tools'])</div>
+        <div class="grid items-center gap-5 sm:grid-cols-[220px_1fr_auto]">
+            <div class="overflow-hidden rounded-2xl">@include('tools.picture', ['key' => 'printer_tools', 'sizes' => '(min-width: 640px) 220px, 100vw'])</div>
             <div>
                 <h2 id="h-printers" class="text-xl font-bold text-ink">{{ __('tools.printers.title') }}</h2>
                 <p class="hint">{{ __('tools.printers.lead') }}</p>
