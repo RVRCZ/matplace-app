@@ -7,6 +7,7 @@ use App\Domain\Calculation\PriceEngine;
 use App\Domain\Calculation\RoughEstimator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,6 +23,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Anonymous use is unlimited by design; these limits only stop abuse of the heavy endpoints.
+        // Staging safety: real people were imported from the legacy site. Until launch every outgoing mail goes to one inbox.
+        if ($to = config('mail.always_to')) {
+            Mail::alwaysTo($to);
+        }
+
         RateLimiter::for('uploads', fn (Request $r) => Limit::perMinute(20)->by($r->ip()));
         RateLimiter::for('calculations', fn (Request $r) => Limit::perMinute(60)->by($r->ip()));
     }

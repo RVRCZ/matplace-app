@@ -16,6 +16,9 @@ return [
 
     'default' => env('MAIL_MAILER', 'log'),
 
+    // When set, every e-mail is delivered to this address instead of the real recipient (beta/staging).
+    'always_to' => env('MAIL_ALWAYS_TO'),
+
     /*
     |--------------------------------------------------------------------------
     | Mailer Configurations
