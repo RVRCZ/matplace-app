@@ -19,16 +19,33 @@ class GenerationController extends Controller
             return response()->json(['error' => 'generator_unavailable'], 503);
         }
         $data = $request->validate([
-            'describe' => ['nullable', 'string', 'max:16', 'required_without:prompt'],
-            'prompt' => ['nullable', 'string', 'min:3', 'max:500', 'required_without:describe'],
+            'describe' => ['nullable', 'string', 'max:16', 'required_without_all:prompt,image'],
+            'prompt' => ['nullable', 'string', 'min:3', 'max:500', 'required_without_all:describe,image'],
+            'image' => ['nullable', 'image', 'max:12288'],
+            'kind' => ['nullable', 'in:bust,figure', 'required_with:image'],
             'target_mm' => ['nullable', 'integer', 'min:5', 'max:1000'],
-            'consent' => ['nullable', 'boolean'],
+            'consent' => $request->hasFile('image') ? ['accepted'] : ['nullable'],
         ]);
         $session = $request->attributes->get('anon_session');
         $user = $request->user();
 
         try {
-            if (! empty($data['describe'])) {
+            if ($request->hasFile('image')) {
+                $rel = 'photos/figures/'.\Illuminate\Support\Str::uuid().'.'.(strtolower($request->file('image')->getClientOriginalExtension()) ?: 'jpg');
+                \Illuminate\Support\Facades\Storage::disk('local')->put($rel, file_get_contents($request->file('image')->getRealPath()));
+                $check = app(\App\Engines\Vision\VisionDescriber::class)->moderate(\Illuminate\Support\Facades\Storage::disk('local')->path($rel));
+                if (! $check['ok']) {
+                    \Illuminate\Support\Facades\Storage::disk('local')->delete($rel);
+
+                    return response()->json(['error' => 'photo_rejected', 'reason' => $check['reason']], 422);
+                }
+                try {
+                    $req = $service->fromPhoto($rel, $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user);
+                } catch (QuotaExceeded $e) {
+                    \Illuminate\Support\Facades\Storage::disk('local')->delete($rel);
+                    throw $e;
+                }
+            } elseif (! empty($data['describe'])) {
                 $describe = GenerationRequest::where('token', $data['describe'])->where('type', 'describe')->where('status', 'done')->firstOrFail();
                 $bbox = $describe->description['bbox_mm'] ?? null;
                 $target = (int) ($data['target_mm'] ?? ($bbox ? max($bbox['x'], $bbox['y'], $bbox['z']) : config('ai.default_target_mm', 80)));

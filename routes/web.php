@@ -15,12 +15,17 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\Printer\PrinterController;
+use App\Http\Controllers\ToolsController;
 use App\Http\Controllers\Printer\QuoteController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public: the one screen ───────────────────────────────────────────────────
 Route::get('/', [CalculatorController::class, 'index'])->name('home');
 Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share');
+
+// Tools menu (everything that is not the one main screen)
+Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
+Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
 
 // Public quote (online version of the PDF) — no account needed
 Route::get('/q/{quote}', [QuoteController::class, 'publicShow'])->name('quote.public');

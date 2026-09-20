@@ -50,6 +50,7 @@ class GenerateModel implements ShouldQueue
 
             if ($status->state === GenerationStatus::FAILED) {
                 $req->update(['status' => 'failed', 'error' => $status->error]);
+                $this->forgetPhoto($req);
 
                 return;
             }
@@ -80,10 +81,22 @@ class GenerateModel implements ShouldQueue
                 'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $req->token, 'status' => ModelFile::STATUS_UPLOADED,
             ]);
             $req->update(['status' => 'done', 'progress' => 100, 'result_model_file_id' => $file->id]);
+            $this->forgetPhoto($req);
             ProcessModelFile::dispatch($file->id);
         } catch (\Throwable $e) {
             Log::warning('GenerateModel failed', ['id' => $req->id, 'error' => $e->getMessage()]);
             $req->update(['status' => 'failed', 'error' => mb_substr($e->getMessage(), 0, 500)]);
+            $this->forgetPhoto($req);
         }
+    }
+
+    /** Personal photos (figures, busts) are not kept: delete the file and the path once the run is over. */
+    private function forgetPhoto(GenerationRequest $req): void
+    {
+        if (empty($req->description['delete_photo']) || ! $req->image_path) {
+            return;
+        }
+        Storage::disk('local')->delete($req->image_path);
+        $req->update(['image_path' => null]);
     }
 }

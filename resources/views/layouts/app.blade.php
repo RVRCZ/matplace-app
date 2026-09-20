@@ -17,6 +17,7 @@
         <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
             <a href="{{ route('home') }}" class="text-xl font-extrabold tracking-tight text-teal-700">matplace</a>
             <nav class="flex items-center gap-4 text-sm text-slate-600">
+                <a href="{{ route('tools') }}" class="hover:text-slate-900">{{ __('footer.tools') }}</a>
                 @auth
                     @if(auth()->user()->isPrinter())<a href="{{ route('printer.dashboard') }}" class="hover:text-slate-900">🖨️ {{ __('nav.printer') }}</a>@endif
                     <a href="{{ route('account') }}" class="font-medium hover:text-slate-900">{{ __('nav.account') }}</a>

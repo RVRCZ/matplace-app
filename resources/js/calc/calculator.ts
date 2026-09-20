@@ -373,5 +373,7 @@ export async function openFile(uuid: string): Promise<void> {
 export function boot(): void {
     if (!document.getElementById('calculator')) return;
     bindControls();
-    if (initial) restore(initial);
+    if (initial) { restore(initial); return; }
+    const open = new URLSearchParams(location.search).get('open');
+    if (open && /^[0-9a-f-]{36}$/.test(open)) { history.replaceState(null, '', '/'); openFile(open); }
 }

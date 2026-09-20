@@ -20,6 +20,46 @@ final class VisionDescriber
     }
 
     /**
+     * Safety check before a photo of a person is turned into a figure: what is on it and whether it is acceptable.
+     *
+     * @return array{ok: bool, subject: string, reason: string}
+     */
+    public function moderate(string $imagePath): array
+    {
+        if (! $this->available()) {
+            return ['ok' => true, 'subject' => 'unknown', 'reason' => 'moderation_unavailable'];
+        }
+        $bytes = (string) file_get_contents($imagePath);
+        $info = @getimagesizefromstring($bytes);
+        $mime = $info['mime'] ?? 'image/jpeg';
+        $system = 'You screen photos for a service that turns a photo into a 3D-printable figure or bust. '
+            .'Answer ONLY with JSON: {"ok": <bool>, "subject": "person|pet|object|character|other", "reason": "<short English reason when ok=false, else empty>"}. '
+            .'Set ok=false for nudity or sexual content, violence or gore, hate symbols, weapons presented as the main subject, '
+            .'or when no clear single subject is visible. Ordinary portraits, pets, toys and objects are ok.';
+        $res = Http::timeout((int) ($this->config['timeout'] ?? 45))
+            ->withHeaders(['x-api-key' => $this->config['api_key'], 'anthropic-version' => '2023-06-01'])
+            ->post('https://api.anthropic.com/v1/messages', [
+                'model' => $this->config['model'] ?? 'claude-haiku-4-5-20251001',
+                'max_tokens' => 120,
+                'system' => $system,
+                'messages' => [['role' => 'user', 'content' => [
+                    ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $mime, 'data' => base64_encode($bytes)]],
+                    ['type' => 'text', 'text' => 'Screen this photo.'],
+                ]]],
+            ]);
+        if (! $res->ok()) {
+            return ['ok' => true, 'subject' => 'unknown', 'reason' => 'moderation_unavailable']; // fail open: the provider filters too
+        }
+        $text = (string) ($res->json('content.0.text') ?? '');
+        if (preg_match('/\{[\s\S]*\}/', $text, $m)) {
+            $text = $m[0];
+        }
+        $d = json_decode($text, true);
+
+        return ['ok' => (bool) ($d['ok'] ?? true), 'subject' => (string) ($d['subject'] ?? 'other'), 'reason' => (string) ($d['reason'] ?? '')];
+    }
+
+    /**
      * @return array{name: string, query: string, queries: string[], category: string, bbox_mm: array{x:int,y:int,z:int}|null,
      *               size_known: bool, material: string, printable: bool, notes: string, lang: string}
      */

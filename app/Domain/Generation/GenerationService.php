@@ -50,6 +50,23 @@ final class GenerationService
         return $this->reuseOrDispatch($req, fn ($q) => $q->where('type', 'image')->where('image_sha256', $sha));
     }
 
+    /**
+     * Figure / bust from a personal photo. No result sharing between visitors (no cache key) and the photo is
+     * deleted as soon as the generation ends; consent is recorded with the request.
+     */
+    public function fromPhoto(string $imageRelPath, string $kind, int $targetMm, ?string $ip, ?AnonymousSession $session, ?User $user): GenerationRequest
+    {
+        $req = $this->make('image', $ip, $session, $user, [
+            'image_path' => $imageRelPath,
+            'image_sha256' => null,
+            'prompt' => $kind,
+            'description' => ['kind' => $kind, 'name_en' => $kind === 'bust' ? 'bust' : 'figure', 'delete_photo' => true, 'consent_at' => now()->toIso8601String()],
+            'target_mm' => $targetMm,
+        ]);
+
+        return $this->reuseOrDispatch($req, fn ($q) => $q->whereRaw('1 = 0'));
+    }
+
     public function fromText(string $prompt, int $targetMm, ?string $ip, ?AnonymousSession $session, ?User $user): GenerationRequest
     {
         $prompt = trim($prompt);
