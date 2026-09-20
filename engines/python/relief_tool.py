@@ -10,7 +10,7 @@ params: {
   "min_thickness": 0.8,    thinnest place (lithophane: brightest pixel; relief: background)
   "max_thickness": 3.0,    thickest place (lithophane: darkest pixel; relief: highest point)
   "frame": 2.0,            frame width in mm (0 = none), frame height = max_thickness
-  "pitch": 0.4,            grid step in mm (roughly the nozzle width)
+  "points": 560,           grid points on the longer side (detail of the picture; the grid step follows from it)
   "invert": false,
   "standing": true         stand the plate up (default for lithophane: prints much better standing)
 }
@@ -47,7 +47,9 @@ def main():
         tmin = max(0.4, min(5.0, float(p.get("min_thickness", 0.8))))
         tmax = max(tmin + 0.4, min(12.0, float(p.get("max_thickness", 3.0))))
         frame = max(0.0, min(15.0, float(p.get("frame", 2.0))))
-        pitch = max(0.25, min(1.0, float(p.get("pitch", 0.4))))
+        # grid step: as fine as the triangle budget allows (about 560 points on the longer side), never coarser than 0.4 mm
+        points = int(p.get("points", 560))
+        pitch = max(0.12, min(0.4, (width - 2 * float(p.get("frame", 2.0))) / max(100, points)))
         invert = bool(p.get("invert", False))
         standing = bool(p.get("standing", mode == "lithophane"))
 
@@ -55,12 +57,12 @@ def main():
         img = ImageOps.exif_transpose(img).convert("L")
         w0, h0 = img.size
         long_px = int(round((width - 2 * frame) / pitch))
-        long_px = max(40, min(450, long_px))
+        long_px = max(40, min(700, long_px))
         if w0 >= h0:
             cols, rows = long_px, max(20, int(round(long_px * h0 / w0)))
         else:
             rows, cols = long_px, max(20, int(round(long_px * w0 / h0)))
-        img = ImageOps.autocontrast(img, cutoff=1).resize((cols, rows), Image.LANCZOS).filter(ImageFilter.GaussianBlur(0.6))
+        img = ImageOps.autocontrast(img, cutoff=1).resize((cols, rows), Image.LANCZOS).filter(ImageFilter.GaussianBlur(0.5))
         g = np.asarray(img, dtype=np.float32) / 255.0          # 0 = black, 1 = white
         if mode == "lithophane":
             level = 1.0 - g                                     # dark -> thick
