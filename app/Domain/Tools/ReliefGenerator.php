@@ -41,6 +41,7 @@ final class ReliefGenerator
             'max_thickness' => (float) ($p['max_thickness'] ?? ($mode === 'lithophane' ? 3.0 : 4.0)),
             'frame' => ($p['frame'] ?? true) ? 2.0 : 0.0,
             'invert' => (bool) ($p['invert'] ?? false),
+            'stand' => (bool) ($p['stand'] ?? false),
             'standing' => $mode === 'lithophane',
         ];
 
@@ -59,7 +60,7 @@ final class ReliefGenerator
         $file = ModelFile::create([
             'uuid' => $uuid, 'owner_user_id' => $user?->id, 'anonymous_session_id' => $session?->id,
             'original_name' => $mode.'-'.$base.'.stl', 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
-            'storage_path' => $rel, 'origin' => 'tool', 'origin_ref' => $mode, 'status' => ModelFile::STATUS_UPLOADED,
+            'storage_path' => $rel, 'origin' => 'tool', 'origin_ref' => $mode, 'tool_params' => ['stand' => (bool) ($p['stand'] ?? false)], 'status' => ModelFile::STATUS_UPLOADED,
         ]);
         ProcessModelFile::dispatch($file->id);
 

@@ -90,7 +90,7 @@ class UploadController extends Controller
             'area_mm2' => $f->area_mm2,
             'triangles' => $f->triangles,
             // a box with its lid is two bodies on one plate by design, not a defect
-            'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], self::partsOf($f) || in_array($f->kind(), ['logo', 'qr', 'stamp'], true) ? ['multiple_shells'] : [])),
+            'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], self::partsOf($f) || in_array($f->kind(), ['logo', 'qr', 'stamp'], true) || ! empty($f->tool_params['stand']) ? ['multiple_shells'] : [])),
             'parts' => self::partsOf($f),
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => $f->origin === 'tool' && is_array($f->tool_params) && \Illuminate\Support\Facades\Route::has('tools.'.$f->origin_ref) ? ['kind' => $f->origin_ref, 'params' => $f->tool_params, 'url' => route('tools.'.$f->origin_ref, ['from' => $f->uuid])] : null,

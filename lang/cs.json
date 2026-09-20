@@ -936,5 +936,6 @@
     "quote.scope": "Co cena zahrnuje",
     "quote.scope.prints": "Jen vytištěné díly, bez elektroniky, spojovacího materiálu a sestavení",
     "quote.scope.parts": "Vytištěné díly a netištěné součásti (osvětlení, spojovací materiál), bez sestavení",
-    "quote.scope.assembled": "Kompletní sestavený a vyzkoušený výrobek včetně osvětlení"
+    "quote.scope.assembled": "Kompletní sestavený a vyzkoušený výrobek včetně osvětlení",
+    "relief.stand": "Přidat stolní stojánek"
 }

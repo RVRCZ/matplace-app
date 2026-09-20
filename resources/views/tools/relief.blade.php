@@ -40,6 +40,7 @@
         <div class="flex flex-wrap gap-4 text-sm">
             <label class="flex items-center gap-2"><input type="checkbox" name="frame" value="1" checked> {{ __('relief.frame') }}</label>
             <label class="flex items-center gap-2"><input type="checkbox" name="invert" value="1"> {{ __('relief.invert') }}</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="stand" value="1"> {{ __('relief.stand') }}</label>
         </div>
 
         <button class="w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-60">{{ __('relief.submit') }}</button>

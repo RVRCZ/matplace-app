@@ -113,6 +113,7 @@ class ToolsApiController extends Controller
             'max_thickness' => ['nullable', 'numeric', 'min:1.6', 'max:10'],
             'frame' => ['nullable', 'boolean'],
             'invert' => ['nullable', 'boolean'],
+            'stand' => ['nullable', 'boolean'],
         ]);
         if (! $reliefs->available()) {
             return response()->json(['error' => 'tool_unavailable'], 503);

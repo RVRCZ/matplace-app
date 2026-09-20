@@ -32,6 +32,7 @@ export function bootRelief(): void {
         const fd = new FormData(form);
         fd.set('frame', fd.has('frame') ? '1' : '0');
         fd.set('invert', fd.has('invert') ? '1' : '0');
+        fd.set('stand', fd.has('stand') ? '1' : '0');
         try {
             const res = await fetch(cfg.url, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: fd });
             const body = await res.json();

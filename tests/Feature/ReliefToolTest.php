@@ -57,6 +57,13 @@ class ReliefToolTest extends TestCase
         $this->assertGreaterThan(50, $file->bbox['z']);
         $this->assertSame('lithophane-babicka.stl', $file->original_name);
 
+        // photo gift: a lithophane with its own desk stand, printed beside it
+        $r = $this->post('/api/tools/relief', ['photo' => UploadedFile::fake()->image('Děda.jpg', 400, 300), 'mode' => 'lithophane', 'width' => 80, 'stand' => 1], ['Accept' => 'application/json']);
+        $r->assertCreated();
+        $withStand = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertGreaterThan(80 + 8 + 40, $withStand->bbox['x']);                  // plate + gap + stand
+        $this->assertNotContains('multiple_shells', $r->json('file.issues') ?? []);
+
         $r = $this->post('/api/tools/relief', ['photo' => UploadedFile::fake()->image('a.png', 300, 300), 'mode' => 'relief', 'width' => 60, 'frame' => 1], ['Accept' => 'application/json']);
         $r->assertCreated()->assertJsonPath('file.kind', 'relief');
         $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();

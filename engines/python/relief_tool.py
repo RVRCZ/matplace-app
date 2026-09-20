@@ -12,7 +12,8 @@ params: {
   "frame": 2.0,            frame width in mm (0 = none), frame height = max_thickness
   "points": 560,           grid points on the longer side (detail of the picture; the grid step follows from it)
   "invert": false,
-  "standing": true         stand the plate up (default for lithophane: prints much better standing)
+  "standing": true,        stand the plate up (default for lithophane: prints much better standing)
+  "stand": false           add a separate desk stand with a slot for the plate (printed beside it)
 }
 lithophane: dark = thick (light shines through thin places) — print standing, view against light.
 relief:     bright = high — decorative plaque, print lying.
@@ -113,9 +114,21 @@ def main():
         m = trimesh.Trimesh(vertices=verts, faces=faces, process=False)
         if m.volume < 0:
             m.invert()
+        has_stand = False
+        if bool(p.get("stand", False)):
+            # a low block with a slot the plate drops into; lies beside the plate so both print in one go
+            import manifold3d as M
+            plate_w = float(cols - 1) * pitch
+            sw, sd, sh, slot = max(40.0, plate_w * 0.6), 30.0, 12.0, tmax + 0.5
+            block = M.Manifold.cube([sw, sd, sh]) - M.Manifold.cube([sw + 2, slot, sh]).translate([-1, (sd - slot) / 2, 3.0])
+            sm = block.to_mesh()
+            stand = trimesh.Trimesh(vertices=np.asarray(sm.vert_properties)[:, :3], faces=np.asarray(sm.tri_verts), process=False)
+            stand.apply_translation([m.bounds[1][0] + 8.0, 0.0, 0.0])
+            m = trimesh.util.concatenate([m, stand])
+            has_stand = True
         m.export(out, file_type="stl")
         print(json.dumps({
-            "ok": True, "out": out, "mode": mode, "standing": standing,
+            "ok": True, "out": out, "mode": mode, "standing": standing, "stand": has_stand,
             "width": round(float(cols - 1) * pitch, 1), "height": round(float(rows - 1) * pitch, 1), "thickness": tmax,
             "triangles": int(len(faces)), "watertight": bool(m.is_watertight),
         }))

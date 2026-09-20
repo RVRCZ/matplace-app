@@ -936,5 +936,6 @@
     "quote.scope": "What the price covers",
     "quote.scope.prints": "Printed parts only, without electronics, fasteners or assembly",
     "quote.scope.parts": "Printed parts and non-printed components (lighting, fasteners), without assembly",
-    "quote.scope.assembled": "A complete, assembled and tested product including lighting"
+    "quote.scope.assembled": "A complete, assembled and tested product including lighting",
+    "relief.stand": "Add a desk stand"
 }

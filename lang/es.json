@@ -936,5 +936,6 @@
     "quote.scope": "Qué incluye el precio",
     "quote.scope.prints": "Solo las piezas impresas, sin electrónica, tornillería ni montaje",
     "quote.scope.parts": "Piezas impresas y componentes no impresos (iluminación, tornillería), sin montaje",
-    "quote.scope.assembled": "Producto completo, montado y probado, con iluminación"
+    "quote.scope.assembled": "Producto completo, montado y probado, con iluminación",
+    "relief.stand": "Añadir soporte de mesa"
 }
