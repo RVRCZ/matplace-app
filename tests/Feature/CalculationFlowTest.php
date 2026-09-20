@@ -103,4 +103,24 @@ class CalculationFlowTest extends TestCase
         $uuid = $this->postJson('/api/uploads', ['file' => $this->cube()])->json('file.uuid');
         $this->postJson('/api/calculations', ['file' => $uuid, 'scale' => 99])->assertStatus(422);
     }
+
+    public function test_homepage_keeps_the_working_entrance_on_top_of_the_new_look(): void
+    {
+        foreach (['cs' => 'Z nápadu', 'en' => 'From an idea', 'es' => 'De la idea'] as $lang => $title) {
+            $page = $this->get('/?lang='.$lang)->assertOk()->assertSee($title);
+            // the inputs the scripts bind to are all there, before any marketing section
+            $html = $page->getContent();
+            foreach (['id="dropzone"', 'id="file-input"', 'id="hero-text-btn"', 'id="search-form"', 'id="result"', 'data-tile="idea"'] as $needle) {
+                $this->assertStringContainsString($needle, $html);
+            }
+            $this->assertLessThan(strpos($html, 'id="home-tools"'), strpos($html, 'id="dropzone"'));
+            $page->assertSee(__('home.benefit.real_prices'))->assertSee(route('tools.modular'), false)->assertSee(route('tools.spare'), false);
+        }
+        foreach (['hero', 'organizer', 'vases'] as $img) {
+            foreach (['-640.webp', '-1024.webp', '-1536.webp', '-1024.jpg'] as $suffix) {
+                $this->assertFileExists(public_path('img/home/'.$img.$suffix));
+            }
+        }
+        $this->assertLessThan(120 * 1024, filesize(public_path('img/home/hero-1536.webp')));      // a light first screen
+    }
 }

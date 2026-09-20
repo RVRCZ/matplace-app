@@ -16,7 +16,7 @@
 <body class="min-h-full bg-page text-ink antialiased">
     <header class="border-b border-slate-200 bg-white">
         <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-            <a href="{{ route('home') }}" class="text-xl font-extrabold tracking-tight text-action-dark">matplace</a>
+            <a href="{{ route('home') }}" class="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-ink" aria-label="matplace">matplace<span class="-ml-1.5 text-action" aria-hidden="true">.</span><span class="rounded border border-line px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-muted">beta</span></a>
             <nav class="flex items-center gap-4 text-sm text-slate-600">
                 <a href="{{ route('tools') }}" class="hover:text-slate-900">{{ __('footer.tools') }}</a>
                 @auth
