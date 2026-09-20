@@ -5,6 +5,7 @@ import { stats, normaliseUnits, GeoStats } from './geometry';
 import { estimate, price, range, RoughConfig, Profile, Params } from './rough';
 import { uploadFile, createCalculation, getCalculation, getFile, CalcInfo, FileInfo } from './api';
 import { bootInquiry } from './inquiry';
+import { bootDownload, setDownload, refresh as refreshDownload } from './download';
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
 
@@ -185,12 +186,11 @@ function enableQuote(c: CalcInfo | null): void {
 }
 
 function enableDownload(file: FileInfo | null): void {
-    const a = $('cta-download') as HTMLAnchorElement;
-    if (file?.stl_url) {
-        a.href = file.stl_url;
-        a.setAttribute('download', file.name.replace(/\.[^.]+$/, '') + '.stl');
-        a.setAttribute('aria-disabled', 'false');
-    }
+    setDownload(
+        file,
+        () => ({ material: state.params.material, quality: state.params.quality, infill: state.params.infill, supports: state.params.supports, scale: state.params.scale }),
+        () => { const b = state.calc?.slicer?.dims ?? null; return b ? { x: b.x, y: b.y, z: b.z } : null; },
+    );
 }
 
 /** Ask the server for a precise calculation (debounced on slider moves). */
@@ -225,6 +225,7 @@ function requestPrecise(): void {
 function onParamsChanged(): void {
     renderRough();
     viewer?.setScale(state.params.scale);
+    refreshDownload();
     requestPrecise();
 }
 
@@ -347,6 +348,7 @@ function bindControls(): void {
         if (navigator.share) { try { await navigator.share({ url }); } catch { /* cancelled */ } }
         const b = $('cta-share'); const old = b.textContent; b.textContent = t('calc.cta.copied'); setTimeout(() => (b.textContent = old), 1500);
     };
+    bootDownload();
     bootInquiry(() => (state.calc && state.calc.status === 'done' ? state.calc.token : null));
 }
 

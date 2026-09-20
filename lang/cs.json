@@ -470,5 +470,15 @@
     "printer.public.cta": "Zjistit cenu u tohoto tiskaře",
     "printer.public.cta_hint": "Nahrajte model nebo fotku, ceny uvidíte hned.",
     "printer.public.lead": "Obvykle hotovo do :n dní",
-    "printer.public.paused": "Teď nepřijímá zakázky"
+    "printer.public.paused": "Teď nepřijímá zakázky",
+    "download.title": "Stáhnout připravené pro moji tiskárnu",
+    "download.lead": "Vyberte tiskárnu. Dostanete soubor, kde je model už položený a nastavení tisku vyplněné.",
+    "download.vendor": "Výrobce",
+    "download.model": "Model tiskárny",
+    "download.project": "Stáhnout projekt (.3mf)",
+    "download.how": "Soubor otevřete v programu OrcaSlicer nebo Bambu Studio (oba zdarma), stiskněte „Slice“ a tiskněte. PrusaSlicer tento soubor zatím nepřečte.",
+    "download.check": "Počítáme s tryskou 0,4 mm. Před tiskem zkontrolujte, že sedí tiskárna, tryska a materiál.",
+    "download.stl": "Jen samotný model (.stl)",
+    "download.too_big": "Model se na tuto tiskárnu nevejde (:bed). Zmenšete ho posuvníkem velikosti.",
+    "download.no_material": "Pro tuto tiskárnu nemáme nastavení materiálu :m, použijeme běžný plast (PLA)."
 }

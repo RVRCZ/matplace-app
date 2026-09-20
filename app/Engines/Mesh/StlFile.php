@@ -111,6 +111,18 @@ final class StlFile
     }
 
     /** Starts a binary STL writer; returns handle. Finish with endBinary(). */
+    /** Axis-aligned box from the origin, binary STL (smoke tests of engines). */
+    public static function writeBox(string $outPath, float $x, float $y, float $z): void
+    {
+        $v = [[0, 0, 0], [$x, 0, 0], [$x, $y, 0], [0, $y, 0], [0, 0, $z], [$x, 0, $z], [$x, $y, $z], [0, $y, $z]];
+        $faces = [[0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7], [0, 1, 5], [0, 5, 4], [2, 3, 7], [2, 7, 6], [0, 4, 7], [0, 7, 3], [1, 2, 6], [1, 6, 5]];
+        $fh = self::beginBinary($outPath);
+        foreach ($faces as [$a, $b, $c]) {
+            self::writeTriangle($fh, $v[$a], $v[$b], $v[$c]);
+        }
+        self::endBinary($fh, count($faces));
+    }
+
     public static function beginBinary(string $outPath)
     {
         $fh = fopen($outPath, 'wb');

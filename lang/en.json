@@ -470,5 +470,15 @@
     "printer.public.cta": "Get a price from this printer",
     "printer.public.cta_hint": "Upload a model or a photo, prices show right away.",
     "printer.public.lead": "Usually done within :n days",
-    "printer.public.paused": "Not taking jobs right now"
+    "printer.public.paused": "Not taking jobs right now",
+    "download.title": "Download ready for my printer",
+    "download.lead": "Pick your printer. You get a file with the model placed and the print settings filled in.",
+    "download.vendor": "Brand",
+    "download.model": "Printer model",
+    "download.project": "Download project (.3mf)",
+    "download.how": "Open the file in OrcaSlicer or Bambu Studio (both free), press \"Slice\" and print. PrusaSlicer cannot read this file yet.",
+    "download.check": "We assume a 0.4 mm nozzle. Before printing check that the printer, nozzle and material match yours.",
+    "download.stl": "Just the model (.stl)",
+    "download.too_big": "The model does not fit this printer (:bed). Make it smaller with the size slider.",
+    "download.no_material": "We have no :m settings for this printer, the standard plastic (PLA) will be used."
 }

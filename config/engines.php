@@ -5,6 +5,7 @@
  */
 return [
     'slicer' => env('ENGINE_SLICER', 'orca'),        // orca | fake
+    'project_exporter' => env('ENGINE_PROJECT_EXPORTER', env('ENGINE_SLICER', 'orca')), // orca | fake
     'repair' => env('ENGINE_REPAIR', 'trimesh'),     // trimesh | null
     'generator' => env('ENGINE_GENERATOR', 'null'),  // null | tripo | meshy (later)
     'settlement' => env('ENGINE_SETTLEMENT', 'qr-manual'),
@@ -17,6 +18,9 @@ return [
         'xvfb' => env('ORCA_XVFB', true),
         'work_dir' => env('ORCA_WORK_DIR', storage_path('app/slicer')),
         'timeout' => (int) env('ORCA_TIMEOUT', 180),
+        // printer catalogue for 3MF projects: vendor presets shipped with OrcaSlicer
+        'vendor_profiles' => env('ORCA_VENDOR_PROFILES', '/opt/orca/squashfs-root/resources/profiles'),
+        'catalog' => storage_path('app/printer_catalog.json'),
         // material code → filament profile file; quality → process profile file
         'machine' => 'machine.json',
         'filaments' => [

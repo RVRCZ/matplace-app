@@ -2,12 +2,59 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Engines\Contracts\ProjectExporter;
+use App\Engines\DTO\SliceParams;
+use App\Engines\Exceptions\EngineException;
 use App\Http\Controllers\Controller;
 use App\Models\ModelFile;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ModelFileController extends Controller
 {
+    /** GET /api/printers — printers a ready-made slicer project can be made for, grouped for a two-step picker */
+    public function printers(ProjectExporter $exporter): JsonResponse
+    {
+        $groups = [];
+        foreach ($exporter->printers() as $p) {
+            $groups[$p['vendor_label']][] = ['id' => $p['id'], 'model' => $p['model'], 'bed' => $p['bed'], 'materials' => $p['materials']];
+        }
+        ksort($groups, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return response()->json(['vendors' => array_map(fn ($v, $list) => ['vendor' => $v, 'printers' => $list], array_keys($groups), $groups)])
+            ->header('Cache-Control', 'public, max-age=3600');
+    }
+
+    /** GET /api/files/{uuid}/project.3mf?printer=…&material=…&quality=…&infill=…&supports=…&scale=… */
+    public function project(Request $request, ModelFile $modelFile, ProjectExporter $exporter): BinaryFileResponse|JsonResponse
+    {
+        abort_unless($modelFile->isReady(), 404);
+        $data = $request->validate([
+            'printer' => ['required', 'string', 'max:80'],
+            'material' => ['nullable', 'string', 'max:10'],
+            'quality' => ['nullable', 'in:draft,standard,fine'],
+            'infill' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'supports' => ['nullable'],
+            'scale' => ['nullable', 'numeric', 'min:0.1', 'max:10'],
+        ]);
+        $hints = $modelFile->printHints();
+        // "auto" supports become the tool's recommendation: a project file has to say yes or no
+        $supports = $data['supports'] ?? 'auto';
+        $data['supports'] = in_array($supports, ['auto', '', null], true) ? (int) ($hints['supports'] ?? false) : (int) (bool) $supports;
+        $params = SliceParams::fromArray(['tree' => $modelFile->wantsTreeSupports()] + $data);
+        try {
+            $path = $exporter->export($modelFile->absoluteStlPath(), $data['printer'], $params, ['kind' => $modelFile->kind()]);
+        } catch (EngineException $e) {
+            return response()->json(['error' => 'export_failed', 'message' => $e->getMessage()], 422);
+        }
+        $name = Str::slug(pathinfo($modelFile->original_name, PATHINFO_FILENAME)) ?: 'model';
+
+        return response()->download($path, $name.'-'.$data['printer'].'.3mf', ['Content-Type' => 'model/3mf'])->deleteFileAfterSend(true);
+    }
+
     /** GET /api/files/{uuid}/model.stl — normalised STL for the viewer and for "I have a printer, download". */
     public function stl(ModelFile $modelFile): StreamedResponse
     {

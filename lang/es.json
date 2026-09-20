@@ -470,5 +470,15 @@
     "printer.public.cta": "Obtener precio de este impresor",
     "printer.public.cta_hint": "Suba un modelo o una foto, verá los precios al instante.",
     "printer.public.lead": "Normalmente listo en :n días",
-    "printer.public.paused": "Ahora no acepta pedidos"
+    "printer.public.paused": "Ahora no acepta pedidos",
+    "download.title": "Descargar listo para mi impresora",
+    "download.lead": "Elija su impresora. Recibirá un archivo con el modelo colocado y los ajustes de impresión rellenados.",
+    "download.vendor": "Marca",
+    "download.model": "Modelo de impresora",
+    "download.project": "Descargar proyecto (.3mf)",
+    "download.how": "Abra el archivo en OrcaSlicer o Bambu Studio (ambos gratis), pulse «Slice» e imprima. PrusaSlicer aún no lee este archivo.",
+    "download.check": "Suponemos una boquilla de 0,4 mm. Antes de imprimir compruebe que la impresora, la boquilla y el material coinciden.",
+    "download.stl": "Solo el modelo (.stl)",
+    "download.too_big": "El modelo no cabe en esta impresora (:bed). Redúzcalo con el control de tamaño.",
+    "download.no_material": "No tenemos ajustes de :m para esta impresora, se usará el plástico estándar (PLA)."
 }

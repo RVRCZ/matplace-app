@@ -52,6 +52,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('uploads', [UploadController::class, 'store'])->middleware('throttle:uploads')->name('uploads.store');
     Route::get('files/{modelFile}', [UploadController::class, 'show'])->name('files.show');
     Route::get('files/{modelFile}/model.stl', [ModelFileController::class, 'stl'])->name('files.stl');
+    Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware('throttle:20,1')->name('files.project');
+    Route::get('printers', [ModelFileController::class, 'printers'])->name('printers');
     Route::post('calculations', [CalculationController::class, 'store'])->middleware('throttle:calculations')->name('calculations.store');
     Route::get('calculations/{calculation}', [CalculationController::class, 'show'])->name('calculations.show');
     Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1')->name('search');

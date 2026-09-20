@@ -25,7 +25,7 @@
     window.MP_INITIAL = @json($initial);
     window.MP_MODE = @json($mode);
     window.MP_OWN_PROFILE_ID = @json($ownProfileId ?? null);
-    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), inquiries: @json(route('api.inquiries.store')), generate: @json(route('api.generate.store')), generateShow: @json(url('/api/generate')), printerShow: @json(url('/printers/id')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
+    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), inquiries: @json(route('api.inquiries.store')), generate: @json(route('api.generate.store')), generateShow: @json(url('/api/generate')), printers: @json(route('api.printers')), printerShow: @json(url('/printers/id')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
 </script>
 @endpush
 
@@ -178,11 +178,26 @@
                     @else
                         <button id="cta-make" type="button" class="rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white disabled:opacity-60" title="{{ __('calc.cta.make.soon') }}">{{ __('calc.cta.make') }}</button>
                     @endif
-                    <a id="cta-download" href="#" class="rounded-xl border border-teal-600 px-4 py-3 text-center font-semibold text-teal-700 aria-disabled:opacity-50" aria-disabled="true">{{ __('calc.cta.download') }}</a>
+                    <button id="cta-download" type="button" class="rounded-xl border border-teal-600 px-4 py-3 text-center font-semibold text-teal-700 aria-disabled:opacity-50" aria-disabled="true">{{ __('calc.cta.download') }}</button>
                     <button id="cta-share" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700">{{ __('calc.cta.share') }}</button>
                     <button id="cta-new" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 {{ $mode === 'printer' ? 'sm:col-span-2' : '' }}">{{ __('calc.cta.new') }}</button>
                 </div>
                 <p id="make-note" class="hidden text-sm text-slate-500">{{ __('inquiry.wait_precise') }}</p>
+                <div id="download-panel" class="hidden rounded-2xl border border-slate-200 bg-white p-4">
+                    <div id="dl-picker">
+                        <div class="font-bold">{{ __('download.title') }}</div>
+                        <p class="text-sm text-slate-600">{{ __('download.lead') }}</p>
+                        <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                            <label class="text-sm font-semibold">{{ __('download.vendor') }}<select id="dl-vendor" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></select></label>
+                            <label class="text-sm font-semibold">{{ __('download.model') }}<select id="dl-model" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></select></label>
+                        </div>
+                        <p id="dl-note" class="mt-2 hidden rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" data-too-big="{{ __('download.too_big') }}" data-no-material="{{ __('download.no_material') }}"></p>
+                        <a id="dl-project" aria-disabled="true" class="mt-3 block rounded-xl bg-teal-600 px-4 py-3 text-center font-semibold text-white aria-disabled:opacity-50">{{ __('download.project') }}</a>
+                        <p class="mt-2 text-xs text-slate-500">{{ __('download.how') }}</p>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('download.check') }}</p>
+                    </div>
+                    <a id="dl-stl" href="#" class="mt-3 block text-center text-sm text-teal-700 underline">{{ __('download.stl') }}</a>
+                </div>
                 @if($mode !== 'printer')
                 <div id="inquiry-panel" class="hidden rounded-2xl border border-teal-200 bg-teal-50 p-4">
                     <div class="font-bold">{{ __('inquiry.form.title') }}</div>
