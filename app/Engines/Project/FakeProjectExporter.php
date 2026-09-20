@@ -17,8 +17,8 @@ final class FakeProjectExporter implements ProjectExporter
     public function printers(): array
     {
         return [
-            ['id' => 'bbl-a1-mini', 'vendor' => 'BBL', 'vendor_label' => 'Bambu Lab', 'model' => 'A1 mini', 'bed' => ['x' => 180, 'y' => 180, 'z' => 180], 'materials' => ['PLA', 'PETG', 'TPU']],
-            ['id' => 'prusa-mk4s', 'vendor' => 'Prusa', 'vendor_label' => 'Prusa', 'model' => 'MK4S', 'bed' => ['x' => 250, 'y' => 210, 'z' => 220], 'materials' => ['PLA', 'PETG', 'ASA']],
+            ['id' => 'bbl-a1-mini', 'vendor' => 'BBL', 'vendor_label' => 'Bambu Lab', 'model' => 'A1 mini', 'slicer' => 'orca', 'bed' => ['x' => 180, 'y' => 180, 'z' => 180], 'materials' => ['PLA', 'PETG', 'TPU']],
+            ['id' => 'prusa-mk4s', 'vendor' => 'Prusa', 'vendor_label' => 'Prusa', 'model' => 'MK4S', 'slicer' => 'prusaslicer', 'bed' => ['x' => 250, 'y' => 210, 'z' => 220], 'materials' => ['PLA', 'PETG', 'ASA']],
         ];
     }
 

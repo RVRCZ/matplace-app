@@ -476,9 +476,10 @@
     "download.vendor": "Marca",
     "download.model": "Modelo de impresora",
     "download.project": "Descargar proyecto (.3mf)",
-    "download.how": "Abra el archivo en OrcaSlicer o Bambu Studio (ambos gratis), pulse «Slice» e imprima. PrusaSlicer aún no lee este archivo.",
+    "download.how": "Abra el archivo en OrcaSlicer o Bambu Studio (ambos gratis), pulse «Slice» e imprima. ¿Tiene una Prusa y PrusaSlicer? Elija la marca «Prusa (PrusaSlicer)».",
     "download.check": "Suponemos una boquilla de 0,4 mm. Antes de imprimir compruebe que la impresora, la boquilla y el material coinciden.",
     "download.stl": "Solo el modelo (.stl)",
     "download.too_big": "El modelo no cabe en esta impresora (:bed). Redúzcalo con el control de tamaño.",
-    "download.no_material": "No tenemos ajustes de :m para esta impresora, se usará el plástico estándar (PLA)."
+    "download.no_material": "No tenemos ajustes de :m para esta impresora, se usará el plástico estándar (PLA).",
+    "download.how_prusa": "Abra el archivo en PrusaSlicer (gratis). La impresora y los ajustes se seleccionan solos, pulse «Slice now» e imprima."
 }

@@ -20,7 +20,10 @@ class ModelFileController extends Controller
     {
         $groups = [];
         foreach ($exporter->printers() as $p) {
-            $groups[$p['vendor_label']][] = ['id' => $p['id'], 'model' => $p['model'], 'bed' => $p['bed'], 'materials' => $p['materials']];
+            $slicer = $p['slicer'] ?? 'orca';
+            // Prusa owners choose by the program they use; every other brand has one entry
+            $label = $p['vendor_label'] === 'Prusa' ? 'Prusa ('.($slicer === 'prusaslicer' ? 'PrusaSlicer' : 'OrcaSlicer').')' : $p['vendor_label'];
+            $groups[$label][] = ['id' => $p['id'], 'model' => $p['model'], 'slicer' => $slicer, 'bed' => $p['bed'], 'materials' => $p['materials']];
         }
         ksort($groups, SORT_NATURAL | SORT_FLAG_CASE);
 

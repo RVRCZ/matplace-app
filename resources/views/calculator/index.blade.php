@@ -193,7 +193,7 @@
                         </div>
                         <p id="dl-note" class="mt-2 hidden rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" data-too-big="{{ __('download.too_big') }}" data-no-material="{{ __('download.no_material') }}"></p>
                         <a id="dl-project" aria-disabled="true" class="mt-3 block rounded-xl bg-teal-600 px-4 py-3 text-center font-semibold text-white aria-disabled:opacity-50">{{ __('download.project') }}</a>
-                        <p class="mt-2 text-xs text-slate-500">{{ __('download.how') }}</p>
+                        <p id="dl-how" class="mt-2 text-xs text-slate-500" data-orca="{{ __('download.how') }}" data-prusa="{{ __('download.how_prusa') }}">{{ __('download.how') }}</p>
                         <p class="mt-1 text-xs text-slate-500">{{ __('download.check') }}</p>
                     </div>
                     <a id="dl-stl" href="#" class="mt-3 block text-center text-sm text-teal-700 underline">{{ __('download.stl') }}</a>

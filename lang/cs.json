@@ -476,9 +476,10 @@
     "download.vendor": "Výrobce",
     "download.model": "Model tiskárny",
     "download.project": "Stáhnout projekt (.3mf)",
-    "download.how": "Soubor otevřete v programu OrcaSlicer nebo Bambu Studio (oba zdarma), stiskněte „Slice“ a tiskněte. PrusaSlicer tento soubor zatím nepřečte.",
+    "download.how": "Soubor otevřete v programu OrcaSlicer nebo Bambu Studio (oba zdarma), stiskněte „Slice“ a tiskněte. Máte Prusu a PrusaSlicer? Vyberte značku „Prusa (PrusaSlicer)“.",
     "download.check": "Počítáme s tryskou 0,4 mm. Před tiskem zkontrolujte, že sedí tiskárna, tryska a materiál.",
     "download.stl": "Jen samotný model (.stl)",
     "download.too_big": "Model se na tuto tiskárnu nevejde (:bed). Zmenšete ho posuvníkem velikosti.",
-    "download.no_material": "Pro tuto tiskárnu nemáme nastavení materiálu :m, použijeme běžný plast (PLA)."
+    "download.no_material": "Pro tuto tiskárnu nemáme nastavení materiálu :m, použijeme běžný plast (PLA).",
+    "download.how_prusa": "Soubor otevřete v PrusaSliceru (zdarma). Tiskárna i nastavení se vyberou samy, stiskněte „Slice now“ a tiskněte."
 }

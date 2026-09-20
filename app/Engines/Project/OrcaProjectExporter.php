@@ -27,7 +27,7 @@ final class OrcaProjectExporter implements ProjectExporter
     public function printers(): array
     {
         return array_map(fn (array $p) => [
-            'id' => $p['id'], 'vendor' => $p['vendor'], 'vendor_label' => $p['vendor_label'], 'model' => $p['model'],
+            'id' => $p['id'], 'vendor' => $p['vendor'], 'vendor_label' => $p['vendor_label'], 'model' => $p['model'], 'slicer' => 'orca',
             'bed' => $p['bed'], 'materials' => array_keys($p['filaments']),
         ], $this->catalog());
     }
@@ -97,7 +97,9 @@ final class OrcaProjectExporter implements ProjectExporter
                 $mesh = $work.'/model.stl';
                 StlFile::scale($stlPath, $mesh, $params->scale);
             }
-            $process = $printer['processes'][$params->quality] ?? $printer['processes']['standard'];
+            // a lithophane needs the finest layers whatever the customer picked for price comparison
+            $quality = ($hints['kind'] ?? '') === 'lithophane' ? 'fine' : $params->quality;
+            $process = $printer['processes'][$quality] ?? $printer['processes']['standard'];
             $filament = $printer['filaments'][$params->materialCode] ?? $printer['filaments']['PLA'];
 
             $r = $this->python->runScript('orca_profiles.py', [

@@ -36,6 +36,14 @@ return [
         ],
     ],
 
+    // PrusaSlicer projects: Prusa's public vendor bundle, refreshed by `php artisan matplace:printer-catalog`
+    'prusa' => [
+        'repository' => env('PRUSA_PROFILES_URL', 'https://raw.githubusercontent.com/prusa3d/PrusaSlicer-settings-prusa-fff/main/PrusaResearch'),
+        'bundle' => storage_path('app/prusa/PrusaResearch.ini'),
+        'catalog' => storage_path('app/prusa_catalog.json'),
+        'work_dir' => env('ORCA_WORK_DIR', storage_path('app/slicer')),
+    ],
+
     'python' => [
         'bin' => env('PYTHON_BIN', PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3'),
         'timeout' => (int) env('PYTHON_TIMEOUT', 120),

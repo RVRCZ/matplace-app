@@ -4,7 +4,7 @@
  */
 import { FileInfo } from './api';
 
-interface PrinterItem { id: string; model: string; bed: { x: number; y: number; z: number }; materials: string[] }
+interface PrinterItem { id: string; model: string; slicer?: string; bed: { x: number; y: number; z: number }; materials: string[] }
 interface VendorGroup { vendor: string; printers: PrinterItem[] }
 export interface DownloadParams { material: string; quality: string; infill: number; supports: boolean | null; scale: number }
 
@@ -51,6 +51,8 @@ export function refresh(): void {
     const qs = new URLSearchParams({ printer: p.id, material: q.material, quality: q.quality, infill: String(q.infill), supports: q.supports === null ? 'auto' : q.supports ? '1' : '0', scale: String(q.scale) });
     a.href = `${routes().files}/${current.file.uuid}/project.3mf?${qs}`;
     a.setAttribute('aria-disabled', 'false');
+    const how = el('dl-how');
+    if (how) how.textContent = (p.slicer === 'prusaslicer' ? how.dataset.prusa : how.dataset.orca) ?? '';
     if (note) {
         const d = current.dims(); const msgs: string[] = [];
         const dims = d ? [d.x, d.y].sort((m, n) => n - m) : null; const bed = [p.bed.x, p.bed.y].sort((m, n) => n - m);

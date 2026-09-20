@@ -42,7 +42,10 @@ class EngineServiceProvider extends ServiceProvider
 
         $this->app->singleton(\App\Engines\Contracts\ProjectExporter::class, fn ($app) => match (config('engines.project_exporter')) {
             'fake' => new \App\Engines\Project\FakeProjectExporter,
-            default => new \App\Engines\Project\OrcaProjectExporter(config('engines.orca'), $app->make(PythonTool::class)),
+            default => new \App\Engines\Project\CompositeProjectExporter([
+                new \App\Engines\Project\PrusaProjectExporter(config('engines.prusa'), $app->make(PythonTool::class)),
+                new \App\Engines\Project\OrcaProjectExporter(config('engines.orca'), $app->make(PythonTool::class)),
+            ]),
         });
 
         $this->app->singleton(MeshRepair::class, function ($app) {

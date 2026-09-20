@@ -476,9 +476,10 @@
     "download.vendor": "Brand",
     "download.model": "Printer model",
     "download.project": "Download project (.3mf)",
-    "download.how": "Open the file in OrcaSlicer or Bambu Studio (both free), press \"Slice\" and print. PrusaSlicer cannot read this file yet.",
+    "download.how": "Open the file in OrcaSlicer or Bambu Studio (both free), press \"Slice\" and print. Got a Prusa and PrusaSlicer? Pick the brand \"Prusa (PrusaSlicer)\".",
     "download.check": "We assume a 0.4 mm nozzle. Before printing check that the printer, nozzle and material match yours.",
     "download.stl": "Just the model (.stl)",
     "download.too_big": "The model does not fit this printer (:bed). Make it smaller with the size slider.",
-    "download.no_material": "We have no :m settings for this printer, the standard plastic (PLA) will be used."
+    "download.no_material": "We have no :m settings for this printer, the standard plastic (PLA) will be used.",
+    "download.how_prusa": "Open the file in PrusaSlicer (free). The printer and settings select themselves, press \"Slice now\" and print."
 }
