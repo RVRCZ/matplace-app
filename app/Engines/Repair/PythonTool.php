@@ -36,6 +36,22 @@ final class PythonTool
         return $json;
     }
 
+    /**
+     * Runs another script from engines/python with the same interpreter (e.g. sign_tool.py). One JSON object on stdout.
+     *
+     * @return array<string,mixed>
+     */
+    public function runScript(string $script, array $args, int $timeout = 90): array
+    {
+        $r = Process::timeout($timeout)->run(array_merge([$this->config['bin'], base_path('engines/python/'.$script)], $args));
+        $json = json_decode(trim($r->output()), true);
+        if (! is_array($json)) {
+            throw new EngineException($script.' returned no JSON: '.mb_substr($r->output().$r->errorOutput(), -500));
+        }
+
+        return $json;
+    }
+
     private function probe(): array
     {
         if ($this->probe === null) {

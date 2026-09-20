@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\ThreadController;
+use App\Http\Controllers\Api\ToolsApiController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\Printer\InquiryController as PrinterInquiryController;
 use App\Http\Controllers\Api\UploadController;
@@ -26,6 +27,7 @@ Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('ca
 // Tools menu (everything that is not the one main screen)
 Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
 Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
+Route::get('/tools/sign', [ToolsController::class, 'sign'])->name('tools.sign');
 
 // Public quote (online version of the PDF) — no account needed
 Route::get('/q/{quote}', [QuoteController::class, 'publicShow'])->name('quote.public');
@@ -53,6 +55,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1')->name('describe');
     Route::post('generate', [GenerationController::class, 'store'])->middleware('throttle:10,1')->name('generate.store');
     Route::get('generate/{generation}', [GenerationController::class, 'show'])->name('generate.show');
+    Route::post('tools/sign', [ToolsApiController::class, 'sign'])->middleware('throttle:20,1')->name('tools.sign');
     Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware('throttle:10,1')->name('inquiries.store');
     Route::get('threads/{thread}/messages', [ThreadController::class, 'messages'])->name('threads.messages');
     Route::post('threads/{thread}/messages', [ThreadController::class, 'post'])->middleware('throttle:30,1')->name('threads.post');
