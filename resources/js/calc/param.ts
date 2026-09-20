@@ -98,13 +98,19 @@ export function bootParam(): void {
         if (cfg.kind === 'box' && p.lid) return ['body', 'lid'];
         if (cfg.kind === 'vase' && p.purpose === 'pot' && p.saucer) return ['body', 'saucer'];
         if (cfg.kind === 'stamp' && p.handle === 'knob') return ['body', 'handle'];
+        if (cfg.kind === 'logo' && p.mode === 'standing') return ['body', 'stand'];
         if (cfg.kind === 'qr' && p.stand) return ['body', 'stand'];
         if (cfg.kind === 'lightbox') return ['body', 'face', 'diffuser', 'back'];
         if (cfg.kind === 'modular') return [...(p.tray ? ['tray'] : []), ...new Set(bins.map((b) => `bin_${b.w}x${b.h}`))];
         return [];
     };
 
-    const partLabel = (v: string): string => (v.startsWith('bin_') ? t('param.part.bin', { s: v.slice(4).replace('x', ' × ') }) : t(`param.part.${v}`));
+    /** "body" and "stand" mean different things per product: the box, the logo, the sign… */
+    const partLabel = (v: string): string => {
+        if (v.startsWith('bin_')) return t('param.part.bin', { s: v.slice(4).replace('x', ' × ') });
+        const own = `param.part.${v}.${cfg.kind}`;
+        return cfg.i18n[own] ? t(own) : t(`param.part.${v}`);
+    };
 
     /** Assembly / single parts / (stamp) the imprint it leaves: buttons over the viewer. */
     const renderViews = (): void => {

@@ -15,6 +15,7 @@ final class ModelCandidate
         public readonly ?int $localModelId = null,
         public readonly float $score = 0.0,
         public readonly bool $fileAvailable = false,
+        public readonly ?string $origin = null, // where the link really leads (printables, makerworld…); null = the same as source
     ) {}
 
     public function toArray(): array

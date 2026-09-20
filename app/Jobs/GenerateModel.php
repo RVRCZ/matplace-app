@@ -73,7 +73,11 @@ class GenerateModel implements ShouldQueue
             File::ensureDirectoryExists(dirname($abs));
             $kind = $req->description['kind'] ?? null;
             $options = in_array($kind, ['bust', 'figure'], true) ? ['clean', 'pedestal', 'solid'] : ['clean', 'solid'];
-            $normalizer->toPrintableStl((string) $status->meshPath, $abs, (float) ($req->target_mm ?: config('ai.default_target_mm', 80)), str_ends_with(strtolower((string) $status->meshPath), '.glb'), $options);
+            $normalizer->toPrintableStl((string) $status->meshPath, $abs, (float) ($req->target_mm ?: config('ai.default_target_mm', 80)), str_ends_with(strtolower((string) $status->meshPath), '.glb'), $options, array_filter([
+                'pedestal' => $req->description['pedestal'] ?? null,
+                'name' => $req->description['pedestal_name'] ?? null,
+                'dedication' => $req->description['pedestal_dedication'] ?? null,
+            ]));
             @unlink((string) $status->meshPath);
 
             $name = Str::slug(Str::limit((string) ($req->description['name_en'] ?? $req->prompt ?? 'model'), 40, '')) ?: 'model';

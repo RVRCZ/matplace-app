@@ -84,4 +84,31 @@ class FigureToolTest extends TestCase
         $this->assertSame(1, ModelFile::count());
         $this->assertNull(ModelFile::find($old->id));
     }
+
+    public function test_pedestal_choice_and_name_travel_to_the_model(): void
+    {
+        $this->get('/tools/figure')->assertOk()->assertSee(__('figure.pedestal.plaque'));
+        $this->post('/api/generate', ['image' => \Illuminate\Http\UploadedFile::fake()->image('a.jpg', 600, 600), 'kind' => 'bust', 'consent' => 1, 'pedestal' => 'pyramid'], ['Accept' => 'application/json'])->assertStatus(422);
+
+        // the plinth with a name is real geometry: one closed body, taller than the plain base, letters raised on the front
+        $python = app(\App\Engines\Repair\PythonTool::class);
+        if (! $python->available()) {
+            $this->markTestSkipped('Python is not installed.');
+        }
+        $dir = sys_get_temp_dir().'/mp_ped_'.uniqid();
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($dir);
+        \Tests\Support\MeshFixtures::cubeStl($dir.'/in.stl', 1);
+        $n = app(\App\Domain\Generation\ModelNormalizer::class);
+        config(['engines.repair' => 'trimesh']);
+        $check = app(\App\Engines\Contracts\MeshRepair::class);
+        $n->toPrintableStl($dir.'/in.stl', $dir.'/round.stl', 80, false, ['clean', 'pedestal', 'solid'], ['pedestal' => 'round']);
+        $n->toPrintableStl($dir.'/in.stl', $dir.'/plaque.stl', 80, false, ['clean', 'pedestal', 'solid'], ['pedestal' => 'plaque', 'name' => 'Babička Věra', 'dedication' => 'k 80. narozeninám']);
+        $round = $check->check($dir.'/round.stl');
+        $plaque = $check->check($dir.'/plaque.stl');
+        $this->assertTrue($plaque->watertight);
+        $this->assertSame(1, $plaque->shells);
+        $this->assertGreaterThan($round->triangles + 500, $plaque->triangles);      // the letters are in the mesh, not just in a picture
+        $this->assertEqualsWithDelta(80, $plaque->bbox->max(), 0.1);               // still the size the customer asked for
+        \Illuminate\Support\Facades\File::deleteDirectory($dir);
+    }
 }

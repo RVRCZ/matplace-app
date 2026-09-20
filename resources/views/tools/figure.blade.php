@@ -41,6 +41,23 @@
             <input id="figure-size" name="target_mm" type="range" min="30" max="250" step="5" value="80" class="mt-1 w-full accent-action">
         </label>
 
+        <fieldset>
+            <legend class="text-sm font-semibold">{{ __('figure.pedestal') }}</legend>
+            <div class="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
+                @foreach(['round' => '⬤', 'square' => '◼', 'hexagon' => '⬢', 'column' => '▂', 'plaque' => '▭'] as $pk => $ico)
+                    <label class="cursor-pointer rounded-xl border border-slate-300 p-2 text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action">
+                        <input type="radio" name="pedestal" value="{{ $pk }}" class="sr-only" @checked($pk === 'round')><div class="text-lg" aria-hidden="true">{{ $ico }}</div>{{ __('figure.pedestal.'.$pk) }}
+                    </label>
+                @endforeach
+            </div>
+            <div id="figure-plaque" class="mt-3 hidden grid gap-3 sm:grid-cols-2">
+                <label class="block text-sm font-semibold">{{ __('figure.pedestal.name') }}<input name="pedestal_name" maxlength="24" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" placeholder="{{ __('figure.pedestal.name_ph') }}"></label>
+                <label class="block text-sm font-semibold">{{ __('figure.pedestal.dedication') }}<input name="pedestal_dedication" maxlength="40" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal" placeholder="{{ __('figure.pedestal.dedication_ph') }}"></label>
+                <p class="text-xs text-slate-500 sm:col-span-2">{{ __('figure.pedestal.hint') }}</p>
+            </div>
+        </fieldset>
+        <script>document.querySelectorAll('input[name=pedestal]').forEach((r) => r.addEventListener('change', () => document.getElementById('figure-plaque').classList.toggle('hidden', !(r.checked && r.value === 'plaque'))));</script>
+
         <label class="flex items-start gap-2 text-sm"><input id="figure-consent" type="checkbox" name="consent" value="1" class="mt-1"> <span>{{ __('figure.consent') }}</span></label>
         <p class="text-xs text-slate-500">{{ __('figure.privacy') }}</p>
 

@@ -70,6 +70,7 @@ class UploadController extends Controller
             'box' => ! empty($p['lid']) ? ['body', 'lid'] : [],
             'vase' => ($p['purpose'] ?? '') === 'pot' && ! empty($p['saucer']) ? ['body', 'saucer'] : [],
             'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
+            'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
             'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
             'lightbox' => ['body', 'face', 'diffuser', 'back'],
             'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),

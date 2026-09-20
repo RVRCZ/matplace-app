@@ -179,9 +179,20 @@ class ParametricToolsTest extends TestCase
         $this->assertEqualsWithDelta(70, $use['bbox']['y'], 0.01);                         // preview: standing on the desk
         $this->assertEqualsWithDelta($a['volume_mm3'], $use['volume_mm3'], 0.5);
 
-        $c3 = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'cable_holder', 'params' => ['count' => 3, 'cable' => 6]])->assertOk());
-        $c5 = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'cable_holder', 'params' => ['count' => 5, 'cable' => 6]])->assertOk());
-        $this->assertEqualsWithDelta(2 * (6.6 + 3), $c5['bbox']['x'] - $c3['bbox']['x'], 0.05);
+        $c3 = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'cable_holder', 'params' => ['count' => 3, 'cable' => 6, 'wall' => 7]])->assertOk());
+        $c5 = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'cable_holder', 'params' => ['count' => 5, 'cable' => 6, 'wall' => 7]])->assertOk());
+        $this->assertEqualsWithDelta(2 * (6.6 + 7), $c5['bbox']['x'] - $c3['bbox']['x'], 0.05);      // two more channels, each a seat plus a finger
+        $this->assertEqualsWithDelta(45, $c3['bbox']['z'], 0.01);                                     // a deep desk block by default
+
+        // rounding is real geometry: softer stand, rounder organizer, same outer size
+        $sharp = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['radius' => 0]])->assertOk());
+        $soft = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['radius' => 1.2]])->assertOk());
+        $this->assertGreaterThan($sharp['triangles'], $soft['triangles']);
+        $square = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'organizer', 'params' => ['radius' => 0]])->assertOk());
+        $round = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'organizer', 'params' => ['radius' => 16]])->assertOk());
+        $this->assertSame($square['bbox'], $round['bbox']);
+        $this->assertLessThan($square['volume_mm3'], $round['volume_mm3']);                           // corners are cut away, nothing is added inside
+        $this->assertGreaterThan($square['volume_mm3'] * 0.95, $round['volume_mm3']);
         $this->assertEqualsWithDelta(6.6, $c3['notes']['slot'], 0.01);
     }
 }

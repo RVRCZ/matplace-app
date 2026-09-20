@@ -50,6 +50,8 @@ final class LocalCatalogSearch implements ModelSearch
         }
 
         $max = max(1e-9, (float) $rows->max('score'));
+        // a card has to lead somewhere: either to the source's page or to a file we hold
+        $rows = $rows->filter(fn (CatalogModel $m) => $m->hasWebLink() || $m->file_available)->values();
         $items = $rows->map(fn (CatalogModel $m) => $m->toCandidate(round(((float) $m->score) / $max, 3)))->all();
         if ($options->requireFile) {
             $items = array_values(array_filter($items, fn (ModelCandidate $c) => $c->fileAvailable));

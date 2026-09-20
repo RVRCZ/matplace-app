@@ -80,6 +80,18 @@ class CreativeToolsTest extends TestCase
         $this->assertSame(2, $cut['notes']['pieces']);
         $this->assertContains('separate_pieces', $cut['notes']['warnings']);
 
+        // standing logo: two parts, a slot that fits the logo's thickness, letters held together by the foot, loose accents reported
+        $p = ['line1' => 'MATPLACE', 'mode' => 'standing', 'width' => 120, 'thickness' => 4];
+        $stand = $this->meta($this->preview('logo', $p)->assertOk());
+        $this->assertSame(1, $stand['notes']['pieces']);
+        $this->assertSame([], $stand['notes']['warnings']);
+        $logoPart = $this->meta($this->preview('logo', $p, 'body')->assertOk());
+        $basePart = $this->meta($this->preview('logo', $p, 'stand')->assertOk());
+        $this->assertEqualsWithDelta(4, $logoPart['bbox']['z'], 0.01);                 // prints lying flat, as thick as asked
+        $this->assertEqualsWithDelta(120, $logoPart['bbox']['x'], 0.1);
+        $this->assertGreaterThan(120, $basePart['bbox']['x']);                        // the base is wider than the foot it holds
+        $this->assertContains('floating_pieces', $this->meta($this->preview('logo', ['line1' => 'Jiří'] + $p)->assertOk())['notes']['warnings']);
+
         // SVG: fills are used, bare outlines are reported
         $id = $this->post('/api/tools/artwork', ['file' => $this->svg('<rect x="10" y="10" width="80" height="30" fill="#000"/><path d="M0 0 L100 0" stroke="#000" fill="none"/>')], ['Accept' => 'application/json'])->assertCreated()->json('artwork');
         $svg = $this->meta($this->preview('logo', ['artwork' => $id, 'width' => 80, 'margin' => 0, 'shape' => 'rect'])->assertOk());

@@ -16,7 +16,7 @@ LIMITS = {
 }
 CHOICES = {
     "vase": {"profile": ("cone", "belly", "tulip"), "style": ("smooth", "ribs", "twist"), "purpose": ("vase", "pot")},
-    "logo": {"mode": ("relief", "cutout"), "shape": ("rounded", "rect", "circle")},
+    "logo": {"mode": ("relief", "cutout", "standing"), "shape": ("rounded", "rect", "circle")},
     "stamp": {"mode": ("raised", "recessed"), "handle": ("knob", "none")},
     "qr": {},
     "stencil": {},
@@ -126,6 +126,7 @@ def logo(M, Invalid, p):
     art, info = _art(M, Invalid, p, width, None)
     art = S.fit(art, width_mm=width)
     w, hgt = S.size(art)
+    descent = float(info.get("descent_ratio", 0.0)) * width          # how far letters like J or g hang below the baseline, in millimetres
     if hgt > 300:
         raise Invalid("artwork_too_tall")
     warn = []
@@ -136,6 +137,50 @@ def logo(M, Invalid, p):
         warn.append("outlines_ignored")
     if info.get("missing_chars"):
         warn.append("missing_chars")
+    if mode == "standing":
+        # The logo stands in a slotted base. It prints lying flat (clean on both faces, its own colour) and is pushed in.
+        sink, show = 6.0, 2.5                                           # how deep it sits in the slot / how much of the foot stays visible
+        x0, y0, x1, y1 = art.bounds()
+        reach = descent + 3.0 if info.get("source") == "text" else min(8.0, max(3.0, hgt * 0.18))   # up to the baseline and a bit: a J or g must not be the only letter caught
+        band = art ^ M.CrossSection.square([w, reach]).translate([x0, y0])
+        if band.is_empty():
+            bx0, bx1 = x0, x1
+        else:
+            bx0, _, bx1, _ = band.bounds()
+        if bx1 - bx0 < 0.45 * w:                                        # a round logo touches the ground in one point: give it a proper foot
+            c = (bx0 + bx1) / 2
+            bx0, bx1 = max(x0, c - 0.225 * w), min(x1, c + 0.225 * w)
+        foot = M.CrossSection.square([bx1 - bx0, sink + show + reach]).translate([bx0, y0 - sink - show])
+        figure = art + foot
+        pieces = len(figure.decompose())
+        if pieces > 1:
+            warn.append("floating_pieces")
+        if thin > 20 and "thin_lines" not in warn:
+            warn.append("thin_lines")                                  # a standing shape is more fragile than a relief
+        t = max(t, 2.4)                                                  # a standing shape needs some body
+        logo_flat = S.fit(figure, width_mm=S.size(figure)[0]).extrude(t)
+        fw, fh = S.size(figure)
+        clearance = 0.25
+        base_w, base_d, base_h = max(40.0, (bx1 - bx0) + 24.0), max(32.0, t + 26.0), sink + 5.0
+        base = S.rounded_rect(M, base_w, base_d, 4).extrude(base_h)
+        slot = M.Manifold.cube([(bx1 - bx0) + 2 * clearance, t + 2 * clearance, sink + 1.0]).translate([(base_w - (bx1 - bx0)) / 2 - clearance, (base_d - t) / 2 - clearance, base_h - sink])
+        base = base - slot
+        upright = logo_flat.rotate([90, 0, 0]).translate([0, t, 0])
+        ux0, uy0, uz0, _, _, _ = upright.bounding_box()
+        fx0 = figure.bounds()[0]
+        upright = upright.translate([-ux0 + (base_w - (bx1 - bx0)) / 2 - (bx0 - fx0), -uy0 + (base_d - t) / 2, -uz0 + base_h - sink])
+        lx0, ly0, lz0, lx1, ly1, lz1 = upright.bounding_box()
+        shift = max(0.0, -lx0)
+        parts = {
+            "body": logo_flat, "stand": base,
+            "all": M.Manifold.compose([logo_flat, base.translate([fw + 8.0, 0, 0])]),
+            "use": M.Manifold.compose([base.translate([shift, 0, 0]), upright.translate([shift, 0, 0])]),
+        }
+        notes = {"outer": [round(max(base_w, fw), 1), round(base_d, 1), round(base_h - sink + fh, 1)], "pieces": pieces, "needs": ["glue_optional"],
+                 "regions": [{"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": round(base_h + 0.01, 2), "color": "orange"},
+                             {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue"}]}
+        notes.update({"warnings": warn, "thin_pct": thin, "missing_chars": info.get("missing_chars", [])})
+        return parts, notes
     if mode == "cutout":
         pieces = len(art.decompose())
         if pieces > 1:

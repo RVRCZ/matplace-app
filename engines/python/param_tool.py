@@ -19,10 +19,10 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 LIMITS = {
-    "organizer": {"width": (30, 400), "depth": (30, 400), "height": (10, 150), "rows": (1, 8), "cols": (1, 8), "wall": (0.8, 4), "floor": (0.8, 4)},
+    "organizer": {"width": (30, 400), "depth": (30, 400), "height": (10, 150), "rows": (1, 8), "cols": (1, 8), "wall": (0.8, 4), "floor": (0.8, 4), "radius": (0, 20)},
     "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6)},
-    "phone_stand": {"width": (50, 140), "device": (7, 20), "angle": (50, 80), "back": (60, 150), "thickness": (3, 8)},
-    "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 40), "wall": (2, 5)},
+    "phone_stand": {"width": (50, 140), "device": (7, 20), "angle": (50, 80), "back": (60, 150), "thickness": (3, 8), "radius": (0, 3)},
+    "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
     "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
 }
 MIN_CELL = 8.0
@@ -72,13 +72,17 @@ def organizer(M, p):
         raise Invalid("cells_too_small", "%.1f x %.1f" % (cw, cd))
     if floor >= h - 2:
         raise Invalid("floor_too_thick")
-    body = rounded_rect(M, w, d, 4.0).extrude(h)
+    radius = num(p, k, "radius", 4)
+    body = rounded_rect(M, w, d, radius).extrude(h)
     cells = []
     for r in range(rows):
         for c in range(cols):
             x, y = wall + c * (cw + wall), wall + r * (cd + wall)
-            cells.append(rounded_rect(M, cw, cd, 2.0).extrude(h).translate([x, y, floor]))
-    solid = body - M.Manifold.batch_boolean(cells, M.OpType.Add)
+            cells.append(rounded_rect(M, cw, cd, 2.0).translate([x, y]))
+    # only the corners that follow the outside get the big radius; partitions keep small ones, so no plastic is wasted inside
+    inside = rounded_rect(M, w - 2 * wall, d - 2 * wall, max(1.0, radius - wall)).translate([wall, wall])
+    cavity = (M.CrossSection.batch_boolean(cells, M.OpType.Add) ^ inside).extrude(h).translate([0, 0, floor])
+    solid = body - cavity
     return {"all": solid}, {"outer": [w, d, h], "cell": [round(cw, 1), round(cd, 1), round(h - floor, 1)]}
 
 
@@ -261,6 +265,9 @@ def phone_stand(M, p):
     mid = (fx + ux * back * 0.62, uy * back * 0.62)  # the strut meets the rest here: a light, stiff triangle
     rear_x = mid[0] + mid[1] * 0.45
     profile = bar(0, 0, rear_x, 0) + bar(0, 0, 0, lip_h) + bar(fx, 0, top[0], top[1]) + bar(rear_x, 0, mid[0], mid[1])
+    r = min(num(p, k, "radius", 1.2), t * 0.32)       # soft edges all along the profile, never more than the slab can take
+    if r > 0.05:
+        profile = profile.offset(-r, M.JoinType.Round, 2.0, 24).offset(2 * r, M.JoinType.Round, 2.0, 24).offset(-r, M.JoinType.Round, 2.0, 24)
     solid = profile.extrude(width)                   # the profile lies on the bed: prints without supports
     if p.get("cable", True):
         solid = solid - M.Manifold.cube([t + device * 0.6, t + lip_h + 2, 14.0]).translate([-1, -1, width / 2 - 7.0])
@@ -269,31 +276,34 @@ def phone_stand(M, p):
 
 
 def cable_holder(M, p):
+    """A weighty desk block: channels run front to back, a cable clicks in from the top and stays in the round seat."""
     k = "cable_holder"
-    count, cable = int(num(p, k, "count", 3)), num(p, k, "cable", 6)
-    depth, wall = num(p, k, "depth", 20), num(p, k, "wall", 3)
+    count, cable = int(num(p, k, "count", 4)), num(p, k, "cable", 6)
+    depth, wall, radius = num(p, k, "depth", 45), num(p, k, "wall", 7), num(p, k, "radius", 3)
     screws = bool(p.get("screws", False))
     hole = cable + 0.6                              # the cable should slide, not jam
     pitch = hole + wall
     ear = 14.0 if screws else 0.0
     length = wall + count * pitch + 2 * ear
-    base = 3.0
-    height = base + hole + wall
+    base = 4.0
+    height = base + hole + max(6.0, hole * 0.9)     # fingers tall enough to guide the cable in
     C = M.CrossSection
-    block = rounded_rect(M, length, height, 1.5)
+    block = rounded_rect(M, length, height, radius)
     cuts = []
     for i in range(count):
         cx = ear + wall + hole / 2 + i * pitch
         cy = base + hole / 2
-        cuts.append(C.circle(hole / 2, 48).translate([cx, cy]))
-        slit = hole * 0.7                           # narrower than the cable: it clicks in and stays
+        cuts.append(C.circle(hole / 2, 64).translate([cx, cy]))
+        slit = hole * 0.72                          # narrower than the cable: it clicks in and stays
         cuts.append(C.square([slit, height]).translate([cx - slit / 2, cy]))
     if ear:
         # ears are only as high as the base, so a screw head has room
         cuts.append(C.square([ear, height]).translate([0, base + 1.0]))
         cuts.append(C.square([ear, height]).translate([length - ear, base + 1.0]))
     profile = block - C.batch_boolean(cuts, M.OpType.Add)
-    solid = profile.extrude(depth)                  # profile on the bed: no supports, strong clips (layers across the hook)
+    soft = min(0.8, wall * 0.12)                     # finger tops and slit mouths lose their sharp edge
+    profile = profile.offset(-soft, M.JoinType.Round, 2.0, 16).offset(soft, M.JoinType.Round, 2.0, 16)
+    solid = profile.extrude(depth)                  # profile on the bed: no supports, strong fingers (layers run along them)
     if screws:
         for x in (ear / 2, length - ear / 2):
             solid = solid - M.Manifold.cylinder(base + 4, 2.2, 2.2, 32).rotate([-90, 0, 0]).translate([x, -1, depth / 2])

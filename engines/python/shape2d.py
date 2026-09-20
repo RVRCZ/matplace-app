@@ -106,7 +106,11 @@ def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center"):
     if total > MAX_POINTS:
         raise ArtworkError("too_complex")
     cs = M.CrossSection(polys, M.FillRule.NonZero)
-    return cs, {"missing_chars": sorted(missing), "source": "text"}
+    bx0, by0, bx1, by1 = cs.bounds()
+    # the baseline of the last line sits at y = -(lines-1)·step; how far the ink hangs below it, relative to the text width
+    base_y = -(len(rows) - 1) * step * k
+    hang = max(0.0, base_y - by0) / max(1e-6, bx1 - bx0)
+    return cs, {"missing_chars": sorted(missing), "source": "text", "descent_ratio": hang}
 
 
 # ── SVG ──────────────────────────────────────────────────────────────────────

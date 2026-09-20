@@ -23,17 +23,17 @@ final class ParametricGenerator
     public const FIELDS = [
         'organizer' => [
             'width' => [30, 400, 200, 1], 'depth' => [30, 400, 120, 1], 'height' => [10, 150, 40, 1],
-            'rows' => [1, 8, 2, 1], 'cols' => [1, 8, 3, 1], 'wall' => [0.8, 4, 1.6, 0.2], 'floor' => [0.8, 4, 1.2, 0.2],
+            'rows' => [1, 8, 2, 1], 'cols' => [1, 8, 3, 1], 'radius' => [0, 20, 4, 0.5], 'wall' => [0.8, 4, 1.6, 0.2], 'floor' => [0.8, 4, 1.2, 0.2],
         ],
         'box' => [
             'inner_w' => [10, 300, 80, 1], 'inner_d' => [10, 300, 50, 1], 'inner_h' => [8, 200, 30, 1],
             'wall' => [1.2, 5, 2, 0.2], 'floor' => [1, 5, 1.6, 0.2], 'clearance' => [0.1, 0.6, 0.25, 0.05],
         ],
         'phone_stand' => [
-            'width' => [50, 140, 70, 1], 'device' => [7, 20, 12, 1], 'angle' => [50, 80, 65, 1], 'back' => [60, 150, 100, 1], 'thickness' => [3, 8, 3.5, 0.5],
+            'width' => [50, 140, 70, 1], 'device' => [7, 20, 12, 1], 'angle' => [50, 80, 65, 1], 'back' => [60, 150, 100, 1], 'thickness' => [3, 8, 3.5, 0.5], 'radius' => [0, 3, 1.2, 0.1],
         ],
         'cable_holder' => [
-            'count' => [1, 8, 3, 1], 'cable' => [3, 14, 6, 0.5], 'depth' => [10, 40, 20, 1], 'wall' => [2, 5, 3, 0.5],
+            'count' => [1, 8, 4, 1], 'cable' => [3, 14, 6, 0.5], 'depth' => [10, 80, 45, 1], 'wall' => [2, 12, 7, 0.5], 'radius' => [0, 6, 3, 0.5],
         ],
         'modular' => [
             'inner_w' => [60, 600, 300, 1], 'inner_d' => [60, 600, 150, 1], 'height' => [15, 120, 40, 1], 'cols' => [1, 12, 6, 1], 'rows' => [1, 12, 3, 1],
@@ -56,7 +56,7 @@ final class ParametricGenerator
     /** kind → choice → allowed values (the first one is the default) */
     public const CHOICES = [
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['cone', 'belly', 'tulip'], 'style' => ['smooth', 'ribs', 'twist']],
-        'logo' => ['mode' => ['relief', 'cutout'], 'shape' => ['rounded', 'rect', 'circle']],
+        'logo' => ['mode' => ['relief', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
         'lightbox' => ['led' => ['strip8', 'strip10', 'module']],
     ];
@@ -75,8 +75,8 @@ final class ParametricGenerator
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
-        'organizer' => ['width', 'depth', 'height', 'rows', 'cols'], 'box' => ['inner_w', 'inner_d', 'inner_h'], 'phone_stand' => ['width', 'device', 'angle', 'back'],
-        'cable_holder' => ['count', 'cable'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d'], 'logo' => ['width', 'thickness'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'],
+        'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h'], 'phone_stand' => ['width', 'device', 'angle', 'back'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d'], 'logo' => ['width', 'thickness'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'],
     ];
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'face', 'diffuser', 'back'];
@@ -91,7 +91,7 @@ final class ParametricGenerator
             'smooth' => ['style' => 'smooth', 'profile' => 'belly'], 'ribs' => ['style' => 'ribs', 'profile' => 'cone'], 'twist' => ['style' => 'twist', 'profile' => 'belly', 'twist' => 90],
         ],
         'organizer' => [
-            'drawer' => ['width' => 300, 'depth' => 200, 'height' => 45, 'rows' => 2, 'cols' => 4, 'wall' => 1.6, 'floor' => 1.2],
+            'drawer' => ['width' => 300, 'depth' => 200, 'height' => 45, 'rows' => 2, 'cols' => 4, 'radius' => 4, 'wall' => 1.6, 'floor' => 1.2],
             'office' => ['width' => 200, 'depth' => 100, 'height' => 60, 'rows' => 1, 'cols' => 3, 'wall' => 1.6, 'floor' => 1.2],
             'parts' => ['width' => 160, 'depth' => 120, 'height' => 25, 'rows' => 4, 'cols' => 5, 'wall' => 1.2, 'floor' => 1.0],
         ],

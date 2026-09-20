@@ -64,13 +64,15 @@ final class GenerationService
      * Figure / bust from a personal photo. No result sharing between visitors (no cache key) and the photo is
      * deleted as soon as the generation ends; consent is recorded with the request.
      */
-    public function fromPhoto(string $imageRelPath, string $kind, int $targetMm, ?string $ip, ?AnonymousSession $session, ?User $user): GenerationRequest
+    public function fromPhoto(string $imageRelPath, string $kind, int $targetMm, ?string $ip, ?AnonymousSession $session, ?User $user, array $pedestal = []): GenerationRequest
     {
         $req = $this->make('image', $ip, $session, $user, [
             'image_path' => $imageRelPath,
             'image_sha256' => null,
             'prompt' => $kind,
-            'description' => ['kind' => $kind, 'name_en' => $kind === 'bust' ? 'bust' : 'figure', 'delete_photo' => true, 'consent_at' => now()->toIso8601String()],
+            'description' => ['kind' => $kind, 'name_en' => $kind === 'bust' ? 'bust' : 'figure', 'delete_photo' => true, 'consent_at' => now()->toIso8601String()] + array_filter([
+                'pedestal' => $pedestal['type'] ?? null, 'pedestal_name' => $pedestal['name'] ?? null, 'pedestal_dedication' => $pedestal['dedication'] ?? null,
+            ]),
             'target_mm' => $targetMm,
         ]);
 

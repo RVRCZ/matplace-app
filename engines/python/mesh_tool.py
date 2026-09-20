@@ -6,7 +6,8 @@ Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquer
   mesh_tool.py check <in>                             -> geometry + topology report (mm)
   mesh_tool.py repair <in> <out.stl>                  -> repaired binary STL + report
   mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
-  mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal]
+  mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal,solid] [extras-json]
+                                                          extras: {"pedestal": round|square|hexagon|column|plaque, "name": "…", "dedication": "…", "font": path}
                                                        -> millimetres (largest side = max_mm), Z-up, on the bed;
                                                           clean = drop dust fragments, pedestal = flat round base,
                                                           solid = close holes and union all parts into one watertight body
@@ -118,6 +119,67 @@ def solidify(m, target, extra=None):
     return fixed[0] if len(fixed) == 1 else trimesh.util.concatenate(fixed)
 
 
+def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras):
+    """
+    Base under a figure or bust, built as one exact solid (manifold3d) and handed back as a trimesh.
+    "plaque" is a taller plinth with a flat front that carries a name and an optional dedication, raised 1 mm.
+    The front of a generated model looks towards -Y.
+    """
+    import os
+    import numpy as np
+    import trimesh
+    import manifold3d as M
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import shape2d as S
+
+    def rounded(w, d, rad):
+        return S.rounded_rect(M, w, d, rad).translate([-w / 2, -d / 2])
+
+    note = {"pedestal": kind}
+    if kind == "square":
+        solid = rounded(2 * r, 2 * r, r * 0.12).extrude(ped_h + overlap)
+    elif kind == "hexagon":
+        a = np.linspace(0, 2 * np.pi, 6, endpoint=False) + np.pi / 6
+        solid = M.CrossSection([np.stack([r * 1.12 * np.cos(a), r * 1.12 * np.sin(a)], 1)]).extrude(ped_h + overlap)
+    elif kind == "column":
+        ped_h = ped_h * 2.2
+        step = ped_h * 0.35
+        solid = M.Manifold.cylinder(step, r * 1.15, r * 1.15, 96) + M.Manifold.cylinder(ped_h + overlap - step, r * 0.92, r * 0.92, 96).translate([0, 0, step])
+    elif kind == "plaque":
+        ped_h = max(ped_h * 2.6, 12.0)
+        w, d = 2 * r * 1.05, 2 * r * 0.9
+        solid = rounded(w, d, 2.0).extrude(ped_h + overlap)
+        lines = [t for t in (str(extras.get("name", "")).strip()[:24], str(extras.get("dedication", "")).strip()[:40]) if t]
+        font = extras.get("font")
+        if lines and font and os.path.isfile(font):
+            try:
+                y_top = ped_h * 0.86
+                for i, line in enumerate(lines):
+                    band = ped_h * (0.42 if i == 0 else 0.24)            # the name is the big line, the dedication the small one
+                    cs, info = S.text(M, [line], font, band * 0.72)
+                    tw, th = S.size(cs)
+                    if tw > w * 0.86:
+                        cs = S.fit(cs, width_mm=w * 0.86)
+                        tw, th = S.size(cs)
+                    x0, y0, _, _ = cs.bounds()
+                    flat = cs.translate([-x0 - tw / 2, -y0]).extrude(1.2)
+                    y_top -= band
+                    # up stays up, the extrusion points at the viewer (-Y); 0.2 mm sits inside the plinth so the union is clean
+                    solid = solid + flat.rotate([90, 0, 0]).translate([0, -d / 2 + 0.2, y_top + (band - th) / 2])
+                    if info.get("missing_chars"):
+                        note["missing_chars"] = info["missing_chars"]
+                note["engraved_lines"] = len(lines)
+            except Exception as e:  # noqa: BLE001 - a name that cannot be set must never lose the customer their model
+                note["text_error"] = str(e)[:120]
+    else:
+        kind = "round"
+        solid = M.Manifold.cylinder(ped_h + overlap, r, r, 96)
+    mesh = solid.translate([cx, cy, -ped_h]).to_mesh()
+    note["pedestal"] = kind
+    note["pedestal_height"] = round(float(ped_h), 1)
+    return trimesh.Trimesh(vertices=np.asarray(mesh.vert_properties)[:, :3], faces=np.asarray(mesh.tri_verts), process=True), note
+
+
 def cad_to_stl(src, dst, lin=0.05, ang=0.3):
     """STEP/IGES/BREP → STL through OpenCascade (same kernel FreeCAD uses)."""
     import cadquery as cq
@@ -186,6 +248,11 @@ def main(argv):
             if ext <= 0:
                 raise ValueError("degenerate mesh")
             opts = set((argv[6] if len(argv) > 6 else "").split(","))
+            try:
+                extras = json.loads(argv[7]) if len(argv) > 7 and argv[7] else {}
+            except ValueError:
+                extras = {}
+            ped_note = {}
             m.apply_scale(target / ext)
             removed = 0
             if "clean" in opts:
@@ -209,8 +276,12 @@ def main(argv):
                 r = min(r, float(max(m.extents[0], m.extents[1])) * 0.55)   # never much wider than the figure itself
                 ped_h = max(3.0, target * 0.05)
                 overlap = max(2.0, target * 0.035)
-                ped = trimesh.creation.cylinder(radius=r, height=ped_h + overlap, sections=96)
-                ped.apply_translation([cx, cy, (ped_h + overlap) / 2.0 - ped_h])
+                try:
+                    ped, ped_note = pedestal_mesh(str(extras.get("pedestal", "round")), cx, cy, r, ped_h, overlap, extras)
+                except Exception as e:  # noqa: BLE001 - fall back to the plain round base
+                    ped = trimesh.creation.cylinder(radius=r, height=ped_h + overlap, sections=96)
+                    ped.apply_translation([cx, cy, (ped_h + overlap) / 2.0 - ped_h])
+                    ped_note = {"pedestal": "round", "pedestal_error": str(e)[:120]}
                 m = solidify(m, target, ped) if "solid" in opts else trimesh.util.concatenate([m, ped])
                 m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
                 m.apply_scale(target / float(max(m.extents)))
@@ -218,7 +289,7 @@ def main(argv):
                 m = solidify(m, target, None)
                 m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
             m.export(argv[3], file_type="stl")
-            out(report(m, {"out": argv[3], "removed_fragments": removed}))
+            out(report(m, dict({"out": argv[3], "removed_fragments": removed}, **ped_note)))
         if cmd == "cad":
             lin = float(argv[4]) if len(argv) > 4 else 0.05
             ang = float(argv[5]) if len(argv) > 5 else 0.3

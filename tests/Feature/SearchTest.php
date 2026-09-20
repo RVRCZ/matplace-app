@@ -20,7 +20,7 @@ class SearchTest extends TestCase
         parent::setUp();
         config(['engines.search' => ['local', 'printables', 'makerworld'], 'ai.anthropic.api_key' => 'test-key', 'ai.daily_limits.describe' => 2]);
         CatalogModel::create(['title' => 'Phone stand adjustable', 'keywords' => 'stojánek telefon', 'source' => 'printables', 'external_url' => 'https://www.printables.com/model/1-x', 'preview_url' => 'https://matplace.com/assets/thumbs/a.jpg', 'license' => 'cc_by']);
-        CatalogModel::create(['title' => 'Remote control battery cover', 'keywords' => 'kryt baterie ovladač', 'source' => 'makerworld']);
+        CatalogModel::create(['title' => 'Remote control battery cover', 'keywords' => 'kryt baterie ovladač', 'source' => 'makerworld', 'external_url' => 'https://makerworld.com/en/models/7']);
         CatalogModel::create(['title' => 'Hidden model', 'active' => false]);
     }
 
@@ -96,5 +96,19 @@ class SearchTest extends TestCase
         config(['ai.anthropic.api_key' => '']);
         Storage::fake('local');
         $this->post('/api/describe', ['image' => UploadedFile::fake()->image('a.jpg')], ['Accept' => 'application/json'])->assertStatus(503);
+    }
+
+    public function test_catalogue_cards_are_named_after_the_site_they_open_and_dead_ends_are_hidden(): void
+    {
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response('', 403)]);
+        \App\Models\CatalogModel::create(['title' => 'Dragon keychain A', 'keywords' => 'drak klicenka dragon', 'source' => 'printables', 'external_url' => 'https://www.printables.com/model/1-dragon', 'active' => true]);
+        \App\Models\CatalogModel::create(['title' => 'Dragon keychain B', 'keywords' => 'drak klicenka dragon', 'source' => 'makerworld', 'external_url' => 'https://makerworld.com/en/models/2', 'active' => true]);
+        \App\Models\CatalogModel::create(['title' => 'Dragon keychain C', 'keywords' => 'drak klicenka dragon', 'source' => 'drive', 'external_url' => 'drive-folder:abc', 'active' => true]);
+
+        $results = collect($this->postJson('/api/search', ['q' => 'dragon keychain'])->assertOk()->json('results'))->keyBy('title');
+        $this->assertSame('printables', $results['Dragon keychain A']['origin']);
+        $this->assertSame('makerworld', $results['Dragon keychain B']['origin']);
+        $this->assertStringStartsWith('https://', $results['Dragon keychain A']['externalUrl']);
+        $this->assertArrayNotHasKey('Dragon keychain C', $results->all());          // no page to open, no file to price: not shown
     }
 }

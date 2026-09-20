@@ -23,6 +23,9 @@ class GenerationController extends Controller
             'prompt' => ['nullable', 'string', 'min:3', 'max:500', 'required_without_all:describe,image'],
             'image' => ['nullable', 'image', 'max:12288'],
             'kind' => ['nullable', 'in:bust,figure', 'required_with:image'],
+            'pedestal' => ['nullable', 'in:round,square,hexagon,column,plaque'],
+            'pedestal_name' => ['nullable', 'string', 'max:24'],
+            'pedestal_dedication' => ['nullable', 'string', 'max:40'],
             'target_mm' => ['nullable', 'integer', 'min:5', 'max:1000'],
             'consent' => $request->hasFile('image') ? ['accepted'] : ['nullable'],
         ]);
@@ -40,7 +43,11 @@ class GenerationController extends Controller
                     return response()->json(['error' => 'photo_rejected', 'reason' => $check['reason']], 422);
                 }
                 try {
-                    $req = $service->fromPhoto($rel, $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user);
+                    $req = $service->fromPhoto($rel, $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user, [
+                        'type' => $data['pedestal'] ?? 'round',
+                        'name' => ($data['pedestal'] ?? '') === 'plaque' ? ($data['pedestal_name'] ?? null) : null,
+                        'dedication' => ($data['pedestal'] ?? '') === 'plaque' ? ($data['pedestal_dedication'] ?? null) : null,
+                    ]);
                 } catch (QuotaExceeded $e) {
                     \Illuminate\Support\Facades\Storage::disk('local')->delete($rel);
                     throw $e;
