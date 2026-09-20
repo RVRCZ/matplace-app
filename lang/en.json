@@ -438,5 +438,9 @@
     "refine.hint": "AI creates a new model from the original request plus your change. It counts towards the daily limit.",
     "refine.working": "Creating the changed model…",
     "refine.failed": "The change did not work. Try describing it differently.",
-    "refine.photo_only": "A model from a personal photo cannot be changed in words, a likeness cannot be described. Please upload another photo."
+    "refine.photo_only": "A model from a personal photo cannot be changed in words, a likeness cannot be described. Please upload another photo.",
+    "calc.breakdown.discount": "quantity discount",
+    "calc.breakdown.margin": "margin",
+    "calc.breakdown.min_price": "minimum order price",
+    "calc.breakdown.rounded": "rounded"
 }

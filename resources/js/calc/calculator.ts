@@ -76,7 +76,18 @@ function renderRough(): void {
     if (!material(state.params.material).sliceable) $('price-sub').textContent = t('calc.est_only');
 }
 
-function renderBreakdown(bds: { profile: string; label?: string | null; unit: { material: number; time: number }; setup: number; total: number; lead_time_days: number }[], rough: boolean): void {
+function renderBreakdown(bds: { profile: string; label?: string | null; unit: { material: number; time: number }; setup: number; subtotal?: number; discount?: number; margin?: number; total: number; lead_time_days: number }[], rough: boolean): void {
+    // everything between the three lines and the total is said out loud: discount, margin, minimum order price, rounding
+    const extras = (b: typeof bds[number]): string => {
+        if (b.subtotal === undefined) return '';
+        const sum = b.subtotal - (b.discount ?? 0) + (b.margin ?? 0);
+        const out: string[] = [];
+        if ((b.discount ?? 0) > 0.005) out.push(`${t('calc.breakdown.discount')}: −${fmt.format(Math.round(b.discount!))}`);
+        if ((b.margin ?? 0) > 0.005) out.push(`${t('calc.breakdown.margin')}: ${fmt.format(Math.round(b.margin!))}`);
+        if (b.total - sum > cfg.round_to) out.push(`<strong class="text-slate-700">${t('calc.breakdown.min_price')}: ${fmt.format(b.total)}</strong>`);
+        else if (b.total - sum > 0.5) out.push(`${t('calc.breakdown.rounded')}: ${fmt.format(Math.round(sum))} → ${fmt.format(b.total)}`);
+        return out.length ? `<div class="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-500">${out.map((o) => `<span>${o}</span>`).join('')}</div>` : '';
+    };
     $('breakdown').innerHTML = bds.map((b) => `
         <div class="rounded-lg bg-slate-50 p-2">
             <div class="flex justify-between font-semibold"><span>${b.label ?? t(`calc.profile.${b.profile}`)}</span><span>${rough ? '≈ ' : ''}${fmt.format(b.total)}</span></div>
@@ -84,7 +95,7 @@ function renderBreakdown(bds: { profile: string; label?: string | null; unit: { 
                 <span>${t('calc.breakdown.material')}: ${fmt.format(b.unit.material * state.params.quantity)}</span>
                 <span>${t('calc.breakdown.time')}: ${fmt.format(b.unit.time * state.params.quantity)}</span>
                 <span>${t('calc.breakdown.setup')}: ${fmt.format(b.setup)}</span>
-            </div>
+            </div>${extras(b)}
         </div>`).join('');
 }
 

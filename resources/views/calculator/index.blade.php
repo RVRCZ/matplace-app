@@ -8,7 +8,7 @@
         'calc.status.failed','calc.status.converting','calc.price.from','calc.price.range','calc.price.per_piece',
         'calc.days','calc.cta.copied','calc.error.read','calc.error.upload','calc.error.too_big','calc.est_only',
         'calc.profile.budget','calc.profile.standard','calc.profile.express','calc.profile.mine','calc.others_from',
-        'calc.breakdown.material','calc.breakdown.time','calc.breakdown.setup','calc.breakdown.total',
+        'calc.breakdown.material','calc.breakdown.time','calc.breakdown.setup','calc.breakdown.total','calc.breakdown.discount','calc.breakdown.margin','calc.breakdown.min_price','calc.breakdown.rounded',
         'calc.warn.exceeds_typical_bed','calc.warn.supports_added','calc.warn.not_watertight',
         'calc.warn.multiple_shells','calc.warn.flipped_normals','calc.printers_count',
         'search.searching','search.identifying','search.none','search.error','search.not_image','search.daily_limit','search.open_source',

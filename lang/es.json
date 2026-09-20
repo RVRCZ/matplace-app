@@ -438,5 +438,9 @@
     "refine.hint": "La IA crea un modelo nuevo a partir de la petición original y su cambio. Cuenta para el límite diario.",
     "refine.working": "Creando el modelo modificado…",
     "refine.failed": "El cambio no ha funcionado. Intente describirlo de otra forma.",
-    "refine.photo_only": "Un modelo de una foto personal no se puede cambiar con palabras, el parecido no se puede describir. Suba otra foto."
+    "refine.photo_only": "Un modelo de una foto personal no se puede cambiar con palabras, el parecido no se puede describir. Suba otra foto.",
+    "calc.breakdown.discount": "descuento por cantidad",
+    "calc.breakdown.margin": "margen",
+    "calc.breakdown.min_price": "precio mínimo del pedido",
+    "calc.breakdown.rounded": "redondeado"
 }

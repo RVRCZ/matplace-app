@@ -438,5 +438,9 @@
     "refine.hint": "AI vytvoří nový model podle původního zadání a vaší úpravy. Počítá se do denního limitu.",
     "refine.working": "Vytvářím upravený model…",
     "refine.failed": "Úprava se nepovedla. Zkuste ji popsat jinak.",
-    "refine.photo_only": "Model z osobní fotky slovy upravit nejde, podobu neumíme popsat. Nahrajte prosím jinou fotku."
+    "refine.photo_only": "Model z osobní fotky slovy upravit nejde, podobu neumíme popsat. Nahrajte prosím jinou fotku.",
+    "calc.breakdown.discount": "množstevní sleva",
+    "calc.breakdown.margin": "přirážka",
+    "calc.breakdown.min_price": "minimální cena zakázky",
+    "calc.breakdown.rounded": "zaokrouhleno"
 }
