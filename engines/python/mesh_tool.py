@@ -122,7 +122,8 @@ def solidify(m, target, extra=None):
         return fixed[0]
     # torn surfaces that cannot be closed exactly (hundreds of open pieces): rebuild the shape through a voxel grid
     try:
-        body = rebuild_solid(trimesh.util.concatenate(fixed[:-1] if extra is not None else fixed), target)
+        # from the untouched parts: a patch that pymeshfix closed on its own has grown a back side, which shows as beads along the seams
+        body = rebuild_solid(trimesh.util.concatenate(parts), target)
         if extra is None:
             return body
         u = trimesh.boolean.union([body, extra], engine="manifold")
@@ -135,53 +136,170 @@ def solidify(m, target, extra=None):
 
 def rebuild_solid(m, target):
     """
-    One closed body from any soup of surfaces: voxelise the surface, close the gaps, fill the inside, mesh it again.
-    Detail is limited by the grid (about 0.3 mm on an 80 mm figure), which is below what a nozzle prints.
+    One closed body from any soup of surfaces. The voxel grid only decides what is inside (gaps closed, inside filled);
+    the surface itself comes from the true distance to the original triangles in a narrow band around them, so the
+    result follows the original to about a tenth of a millimetre instead of looking melted.
     """
     import numpy as np
     import trimesh
     from scipy import ndimage
+    from scipy.spatial import cKDTree
     from skimage import measure
 
-    pad = 4
-    pitch = max(0.3, float(max(m.extents)) / 220.0)
+    pitch = max(0.25, float(max(m.extents)) / 260.0)
+    close_it = max(2, int(round(1.0 / pitch)))                              # gaps up to about 2 mm are closed whatever the grid
+    pad = close_it + 3
     vox = m.voxelized(pitch)
     grid = np.pad(vox.matrix, pad)
-    closed = ndimage.binary_closing(grid, structure=ndimage.generate_binary_structure(3, 1), iterations=3)
+    origin = vox.transform[:3, 3] - pad * pitch
+    closed = ndimage.binary_closing(grid, structure=ndimage.generate_binary_structure(3, 1), iterations=close_it)
     # inside = enclosed when looked at along at least two of the three axes; survives holes that a flood fill would leak through
     votes = np.zeros(closed.shape, dtype=np.uint8)
     for axis in range(3):
         moved = np.moveaxis(closed, axis, 0)
         votes += np.moveaxis(np.stack([ndimage.binary_fill_holes(layer) for layer in moved]), 0, axis)
     solid = (votes >= 2) | closed
-    solid = ndimage.binary_opening(solid, iterations=1) | closed            # drops whiskers, keeps every real surface voxel
-    field = ndimage.gaussian_filter(solid.astype(np.float32), 0.8)
-    verts, faces, _, _ = measure.marching_cubes(field, level=0.5)
-    verts = (verts - pad) * pitch + vox.transform[:3, 3]
-    out_mesh = trimesh.Trimesh(verts, faces[:, ::-1], process=True)
+    # torn models leak through that fill and stay hollow, and a thin hollow wall is pierced by every noisy seam.
+    # A second, coarse look (3x3x3 blocks, gaps up to about 4 mm closed) finds the inside for sure; it is pulled
+    # back two blocks from the surface so it never touches the detail.
+    k = 3
+    nx, ny, nz = (int(np.ceil(n / k)) * k for n in grid.shape)
+    big = np.zeros((nx, ny, nz), dtype=bool)
+    big[:grid.shape[0], :grid.shape[1], :grid.shape[2]] = grid
+    coarse = big.reshape(nx // k, k, ny // k, k, nz // k, k).any(axis=(1, 3, 5))
+    coarse = np.pad(coarse, 3)
+    coarse = ndimage.binary_fill_holes(ndimage.binary_closing(coarse, iterations=2))
+    core = ndimage.binary_erosion(coarse, iterations=2)[3:-3, 3:-3, 3:-3]
+    core = np.repeat(np.repeat(np.repeat(core, k, 0), k, 1), k, 2)[:grid.shape[0], :grid.shape[1], :grid.shape[2]]
+    solid |= core
+    # a bust is cut open at the chest, so nothing encloses it from the side and the fills above leak. Horizontal slices
+    # are rings; a tear crossing a slice opens the ring, so each slice is closed generously in 2D (tears up to ~7 mm),
+    # filled, and the filling pulled back: bays narrower than that stay open and the detail near the surface is
+    # left to the distance field.
+    reach = max(3, int(round(3.6 / pitch)))
+    edt = ndimage.distance_transform_edt
+    for z in range(closed.shape[2]):
+        ring = closed[:, :, z]
+        if not ring.any():
+            continue
+        wide = edt(~ring) <= reach                                         # dilate
+        full = ndimage.binary_fill_holes(wide)
+        if full.sum() == wide.sum():
+            continue                                                        # nothing enclosed in this slice
+        inner = edt(full) > 2 * reach                                       # undo the dilation, then erode by the reach
+        if inner.any():
+            solid[:, :, z] |= (edt(~inner) <= reach - 3) & full            # grow back to about 1 mm under the outline
+    solid = ndimage.binary_fill_holes(solid)
+
+    # coarse field from the mask (positive inside, roughly in voxels); it rules wherever there is no surface nearby
+    field = (ndimage.gaussian_filter(solid.astype(np.float32), 1.0) - 0.5) * 3.0
+    band = ndimage.binary_dilation(grid, iterations=2)
+    p = np.argwhere(band) * pitch + origin
+    pts, fidx = trimesh.sample.sample_surface(m, 1_200_000)
+    normals = m.face_normals
+    near = 12
+    kd, kn = cKDTree(pts).query(p, k=near, workers=-1)
+    # which side are we on: a weighted vote of the nearest surface points, so a stray sliver at a seam between
+    # two patches is outvoted by the skin around it (the nearest triangle alone leaves rows of pits and beads)
+    vote = np.zeros(len(p))
+    for j in range(near):
+        side_j = np.einsum("ij,ij->i", p - pts[kn[:, j]], normals[fidx[kn[:, j]]]) / np.maximum(kd[:, j], 1e-9)
+        vote += side_j / (kd[:, j] + 0.25 * pitch) ** 2
+    tri = fidx[kn[:, 0]]
+    dist = np.linalg.norm(p - trimesh.triangles.closest_point(m.triangles[tri], p), axis=1) / pitch
+    outside = vote > 0
+    sd = np.where(outside, -dist, dist)
+    # deep inside the mask the normal of a stray inner patch must not open a bubble
+    # (generated meshes often carry an inner skin about a millimetre under the outer one; it would carve the model hollow)
+    sd = np.where(ndimage.binary_erosion(solid, iterations=3)[band], np.abs(sd), sd)
+    w = np.clip(2.0 - dist, 0, 1)                                           # 1 closer than a voxel, 0 beyond two
+    field[band] = w * sd + (1 - w) * field[band]
+
+    # open borders of patches: the side of the nearest triangle means nothing next to them. Fill those voxels from
+    # their trusted neighbours so a seam becomes a smooth join. Only seams lying on the body: thin free-standing
+    # sheets (glasses, strands of hair) consist of borders and must stay.
+    edges = m.edges_sorted
+    _, first, count = np.unique(edges, axis=0, return_index=True, return_counts=True)
+    border = edges[first[count == 1]]
+    if len(border):
+        a, b = m.vertices[border[:, 0]], m.vertices[border[:, 1]]
+        steps = np.maximum(1, np.ceil(np.linalg.norm(b - a, axis=1) / (0.5 * pitch)).astype(int))
+        rep = np.repeat(np.arange(len(border)), steps + 1)
+        frac = np.concatenate([np.linspace(0, 1, n + 1) for n in steps])[:, None]
+        cell = np.unique(np.round((a[rep] * (1 - frac) + b[rep] * frac - origin) / pitch).astype(int), axis=0)
+        cell = cell[np.all((cell >= 0) & (cell < np.array(field.shape)), axis=1)]
+        doubt = np.zeros(field.shape, dtype=bool)
+        doubt[cell[:, 0], cell[:, 1], cell[:, 2]] = True
+        doubt = ndimage.binary_dilation(doubt, iterations=2)
+        doubt &= ndimage.binary_dilation(ndimage.binary_erosion(solid, iterations=3), iterations=5)
+        trust = (~doubt).astype(np.float32)
+        den = ndimage.gaussian_filter(trust, 1.2)
+        fill = doubt & (den > 0.05)
+        field[fill] = ndimage.gaussian_filter(field * trust, 1.2)[fill] / den[fill]
+
+    verts, faces, _, _ = measure.marching_cubes(field, level=0.013)         # not exactly 0: values that ARE 0 give degenerate triangles
+    out_mesh = trimesh.Trimesh(verts * pitch + origin, faces, process=True)
+    if out_mesh.volume < 0:
+        out_mesh.invert()
     bodies = [b for b in out_mesh.split(only_watertight=True) if b.volume > 0]
     if not bodies:
         raise ValueError("rebuild produced no closed body")
     biggest = max(b.volume for b in bodies)
     keep = [b for b in bodies if b.volume >= biggest * 0.02]
     body = keep[0] if len(keep) == 1 else trimesh.boolean.union(keep, engine="manifold")
-    return simplified(body, pitch * 0.12)
+    return simplified(body, 0.05)
+
+
+def as_manifold(mesh):
+    import numpy as np
+    import manifold3d as M
+    return M.Manifold(M.Mesh(vert_properties=np.asarray(mesh.vertices, dtype=np.float32), tri_verts=np.asarray(mesh.faces, dtype=np.uint32)))
+
+
+def from_manifold(man):
+    """
+    Exact solids come back with vertices that may share a spot (a tunnel pinched shut, an edge collapsed). Every program
+    that loads the STL welds such vertices and then calls the model "not watertight", so they are moved a few microns apart.
+    """
+    import numpy as np
+    import trimesh
+    res = man.to_mesh()
+    faces = np.asarray(res.tri_verts)
+    mesh = trimesh.Trimesh(vertices=np.asarray(res.vert_properties)[:, :3].astype(np.float64), faces=faces, process=False)
+    for attempt in range(4):
+        _, inv, cnt = np.unique(np.round(mesh.vertices.astype(np.float32), 4), axis=0, return_inverse=True, return_counts=True)
+        twin = cnt[inv.ravel()] > 1
+        if not twin.any():
+            break
+        vv = mesh.vertices.copy()
+        vv[twin] += mesh.vertex_normals[twin] * -0.004 + np.random.default_rng(attempt).normal(0, 0.002, (int(twin.sum()), 3))
+        mesh = trimesh.Trimesh(vertices=vv, faces=faces, process=False)
+    return big_shells(trimesh.Trimesh(vertices=mesh.vertices, faces=mesh.faces, process=True))
 
 
 def simplified(mesh, tolerance):
-    """Marching cubes gives hundreds of thousands of tiny triangles; merge the flat ones so the file stays small."""
+    """Marching cubes gives a million tiny triangles; merge the flat ones so the file stays small. Any failure hands back the input."""
     try:
-        import numpy as np
-        import trimesh
-        import manifold3d as M
-        man = M.Manifold(M.Mesh(vert_properties=np.asarray(mesh.vertices, dtype=np.float32), tri_verts=np.asarray(mesh.faces, dtype=np.uint32)))
+        man = as_manifold(mesh)
         if man.is_empty():
             return mesh
-        res = man.simplify(tolerance).to_mesh()
-        slim = trimesh.Trimesh(vertices=np.asarray(res.vert_properties)[:, :3], faces=np.asarray(res.tri_verts), process=True)
+        slim = from_manifold(man.simplify(tolerance))
         return slim if len(slim.faces) and slim.is_watertight else mesh
     except Exception:
         return mesh
+
+
+def big_shells(mesh):
+    """Keep the real bodies; crumbs and closed bubbles inside the model (shells with negative volume) go."""
+    import trimesh
+    parts = mesh.split(only_watertight=False)
+    if len(parts) <= 1:
+        return mesh
+    biggest = max(float(p.volume) if p.is_watertight else 0.0 for p in parts)
+    keep = [p for p in parts if p.is_watertight and float(p.volume) >= 0.01 * biggest]
+    if not keep or biggest <= 0:
+        return mesh
+    return keep[0] if len(keep) == 1 else trimesh.util.concatenate(keep)
 
 
 def face_front(m):
@@ -425,16 +543,14 @@ def main(argv):
                 if float(m.bounds[0][2]) < floor - 0.01:
                     # whatever hangs below the base (a hand, a strand of hair) would lift the print off the bed
                     try:
-                        import manifold3d as M
-                        cut = M.Manifold(M.Mesh(vert_properties=np.asarray(m.vertices, dtype=np.float32), tri_verts=np.asarray(m.faces, dtype=np.uint32))).trim_by_plane([0, 0, 1], floor).to_mesh()
-                        if len(cut.tri_verts):
-                            m = trimesh.Trimesh(vertices=np.asarray(cut.vert_properties)[:, :3], faces=np.asarray(cut.tri_verts), process=True)
+                        cut = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], floor))
+                        m = cut if len(cut.faces) and cut.is_watertight else m
                     except Exception:
                         pass
                 joined = None
                 if "solid" in opts and m.is_watertight:
                     try:
-                        u = trimesh.boolean.union([m, ped], engine="manifold")
+                        u = from_manifold(as_manifold(m) + as_manifold(ped))
                         joined = u if len(u.faces) and u.is_watertight else None
                     except Exception:
                         joined = None

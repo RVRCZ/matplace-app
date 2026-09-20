@@ -46,7 +46,7 @@ return [
 
     'python' => [
         'bin' => env('PYTHON_BIN', PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3'),
-        'timeout' => (int) env('PYTHON_TIMEOUT', 120),
+        'timeout' => (int) env('PYTHON_TIMEOUT', 240),
     ],
 
     'freecad' => [
