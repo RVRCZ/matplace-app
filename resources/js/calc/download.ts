@@ -85,12 +85,17 @@ export function bootDownload(): void {
     };
 }
 
+/** A tool page sent the visitor here for the slicer project: show the printer picker as soon as the model is processed. */
+let wanted = false;
+export function openWhenReady(): void { wanted = true; }
+
 /** Called by the calculator when a processed file is available. */
 export function setDownload(file: FileInfo | null, params: () => DownloadParams, dims: () => { x: number; y: number; z: number } | null): void {
     const btn = el('cta-download'); const stl = el<HTMLAnchorElement>('dl-stl');
     if (!btn || !file?.stl_url) return;
     current = { file, params, dims };
     btn.setAttribute('aria-disabled', 'false');
+    if (wanted) { wanted = false; if (el('download-panel')?.classList.contains('hidden')) btn.click(); }
     if (stl) { stl.href = file.stl_url; stl.setAttribute('download', file.name.replace(/\.[^.]+$/, '') + '.stl'); }
     // a box with a lid: each part on its own
     const parts = el('dl-parts');

@@ -42,6 +42,10 @@ class SignToolTest extends TestCase
         $this->assertGreaterThan(40, $file->bbox['x']);
         $this->assertSame('zlutoucky-kun-c-p-12.stl', $file->original_name);
 
+        // the design can be reopened with the same settings (our own geometry, no AI credits)
+        $r->assertJsonPath('file.tool.params.line1', 'Žluťoučký kůň')->assertJsonPath('file.tool.params.hole', true);
+        $this->assertStringContainsString('/tools/sign?from='.$file->uuid, $r->json('file.tool.url'));
+
         // prices like any other model
         $this->postJson('/api/calculations', ['file' => $file->uuid, 'material' => 'PLA'])->assertCreated()->assertJsonPath('calculation.status', 'done');
     }

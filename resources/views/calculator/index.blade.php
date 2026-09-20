@@ -58,6 +58,10 @@
                 <div class="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow" id="dims-badge"></div>
                 </div>
                 <p id="kind-tip" class="hidden border-t border-slate-100 bg-action-soft px-4 py-2 text-sm text-action-dark"></p>
+                <div id="edit-design" class="hidden flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-3">
+                    <a id="edit-design-link" href="#" class="btn-secondary text-sm">{{ __('calc.edit_design') }}</a>
+                    <span class="text-xs text-slate-500">{{ __('calc.edit_design.hint') }}</span>
+                </div>
             </div>
 
             <div class="flex flex-col gap-4">

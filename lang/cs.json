@@ -891,7 +891,7 @@
     "param.error.qr_bad_text": "Zadejte odkaz nebo text o délce 4 až 300 znaků.",
     "param.error.qr_too_dense": "Při této velikosti by pole kódu vyšla pod 0,9 mm a tiskárna je nevytiskne čitelně. Zvětšete kód aspoň na :n mm, nebo zkraťte odkaz.",
     "param.error.qr_unreadable": "Kontrolní čtení návrhu nevyšlo. Zvětšete kód nebo zkraťte odkaz.",
-    "calc.edit_design": "Upravit návrh",
+    "calc.edit_design": "Upravit tvar a rozměry",
     "calc.tip.vase": "Tiskne se dnem dolů bez podpěr. Výtisk nemusí být vodotěsný; na vodu vložte sklenici nebo požádejte tiskaře o utěsnění.",
     "calc.tip.logo": "Tiskne se naležato bez podpěr. Motiv jinou barvou vznikne výměnou filamentu.",
     "calc.tip.stamp": "Razítko a držadlo se tisknou vedle sebe, držadlo se přilepí vteřinovým lepidlem (není součástí).",
@@ -1048,5 +1048,9 @@
     "pedestal.front.back": "Dozadu, otočit",
     "pedestal.apply": "Použít",
     "pedestal.working": "Upravuji podstavec…",
-    "pedestal.failed": "Podstavec se u tohoto modelu nepodařilo změnit. Zkuste to znovu, případně vytvořte model znovu."
+    "pedestal.failed": "Podstavec se u tohoto modelu nepodařilo změnit. Zkuste to znovu, případně vytvořte model znovu.",
+    "param.download.project": "Projekt pro moji tiskárnu (.3mf)",
+    "param.download.project.hint": "Návrh se uloží, vyberete tiskárnu a stáhnete hotový projekt s nastavením tisku.",
+    "calc.edit_design.hint": "Zdarma. Tento model počítáme sami, úpravy nestojí žádné AI kredity.",
+    "relief.photo_again": "Nastavení je zpět. Fotku neukládáme, vyberte ji prosím znovu."
 }

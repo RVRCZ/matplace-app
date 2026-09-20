@@ -205,6 +205,8 @@
                 <div class="mt-4 border-t border-line pt-3">
                     <div class="text-sm font-semibold text-ink">{{ __('param.download') }}</div>
                     <div id="param-downloads" class="mt-2 flex flex-wrap gap-2"></div>
+                    <button id="param-3mf" type="button" class="btn-secondary mt-3 w-full text-sm">{{ __('param.download.project') }}</button>
+                    <p class="mt-1 text-xs text-muted">{{ __('param.download.project.hint') }}</p>
                 </div>
             </div>
             <p class="text-xs text-muted">{{ __('param.'.$kind.'.tip') }}</p>

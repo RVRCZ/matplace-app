@@ -78,7 +78,9 @@ final class SignGenerator
         $file = ModelFile::create([
             'uuid' => $uuid, 'owner_user_id' => $user?->id, 'anonymous_session_id' => $session?->id,
             'original_name' => $name.'.stl', 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
-            'storage_path' => $rel, 'origin' => 'tool', 'origin_ref' => 'sign', 'status' => ModelFile::STATUS_UPLOADED,
+            'storage_path' => $rel, 'origin' => 'tool', 'origin_ref' => 'sign',
+            'tool_params' => ['line1' => $lines[0], 'line2' => $lines[1] ?? '', 'font' => (string) ($p['font'] ?? 'sans'), 'text_height' => $params['text_height'], 'shape' => $params['shape'], 'thickness' => $params['thickness'], 'relief' => $params['relief'], 'style' => $params['style'], 'hole' => $params['hole'], 'border' => $params['border']],
+            'status' => ModelFile::STATUS_UPLOADED,
         ]);
         ProcessModelFile::dispatch($file->id);
 

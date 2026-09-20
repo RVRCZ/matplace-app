@@ -6,7 +6,7 @@ import { estimate, price, range, RoughConfig, Profile, Params } from './rough';
 import { uploadFile, createCalculation, getCalculation, getFile, CalcInfo, FileInfo } from './api';
 import { bootInquiry } from './inquiry';
 import { renderCheck } from './check';
-import { bootDownload, setDownload, refresh as refreshDownload } from './download';
+import { bootDownload, setDownload, refresh as refreshDownload, openWhenReady as openDownloadWhenReady } from './download';
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
 
@@ -436,8 +436,12 @@ function showKindTip(kind: string | undefined): void {
     const text = t(key);
     el.textContent = text === key ? '' : text;
     el.classList.toggle('hidden', text === key);
-    const edit = state.file?.tool?.url;
-    if (edit && text !== key) { const a = document.createElement('a'); a.href = edit; a.className = 'ml-2 font-semibold underline'; a.textContent = t('calc.edit_design'); el.appendChild(a); }
+    const edit = state.file?.tool?.url ?? null;
+    const bar = document.getElementById('edit-design');
+    if (bar) {
+        bar.classList.toggle('hidden', !edit); bar.classList.toggle('flex', Boolean(edit));
+        if (edit) (document.getElementById('edit-design-link') as HTMLAnchorElement).href = edit;
+    }
     showRefine(kind === 'generated' ? state.file : null);
     showPedestal(kind === 'generated' ? state.file : null);
 }
@@ -508,6 +512,7 @@ export function boot(): void {
         if (colour && query.get('color')) colour.value = (query.get('color') ?? '').slice(0, 40);
         const note = document.querySelector<HTMLTextAreaElement>('#inquiry-form [name=note]');
         if (note && query.get('note')) note.value = (query.get('note') ?? '').slice(0, 900);
+        if (query.get('download') === '1') openDownloadWhenReady();
         buildMaterials();
         history.replaceState(null, '', '/');
         openFile(open);

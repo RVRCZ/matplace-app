@@ -2,7 +2,7 @@
 
 @push('head')
 <script>
-    window.MP_RELIEF = { url: @json(route('api.tools.relief')), home: @json(route('home')), i18n: { working: @json(__('relief.working')), failed: @json(__('relief.failed')), not_image: @json(__('search.not_image')) } };
+    window.MP_RELIEF = { url: @json(route('api.tools.relief')), home: @json(route('home')), files: @json(url('/api/files')), i18n: { working: @json(__('relief.working')), failed: @json(__('relief.failed')), not_image: @json(__('search.not_image')), photo_again: @json(__('relief.photo_again')) } };
 </script>
 @endpush
 

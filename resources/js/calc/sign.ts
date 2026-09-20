@@ -1,6 +1,26 @@
 /** Tools → sign / name tag / keychain: form → parametric model → opens in the calculator. */
 
-interface SignCfg { url: string; home: string; i18n: { working: string; failed: string } }
+interface SignCfg { url: string; home: string; files: string; i18n: { working: string; failed: string } }
+
+/** "?from=<uuid>": put the saved settings of an earlier design back into the form. */
+async function restoreForm(form: HTMLFormElement, filesUrl: string): Promise<boolean> {
+    const from = new URLSearchParams(location.search).get('from');
+    if (!from || !/^[0-9a-f-]{36}$/.test(from)) return false;
+    try {
+        const res = await fetch(`${filesUrl}/${from}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+        const p = ((await res.json()).file?.tool?.params ?? null) as Record<string, unknown> | null;
+        if (!p) return false;
+        Object.entries(p).forEach(([k, v]) => {
+            form.querySelectorAll<HTMLInputElement | HTMLSelectElement>(`[name="${k}"]`).forEach((el) => {
+                if (el instanceof HTMLInputElement && el.type === 'checkbox') el.checked = Boolean(v);
+                else if (el instanceof HTMLInputElement && el.type === 'radio') el.checked = el.value === String(v);
+                else if (!(el instanceof HTMLInputElement && el.type === 'file')) el.value = String(v);
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        });
+        return true;
+    } catch { return false; }
+}
 
 export function bootSign(): void {
     const form = document.getElementById('sign-form') as HTMLFormElement | null;
@@ -10,6 +30,8 @@ export function bootSign(): void {
     const msg = document.getElementById('sign-msg') as HTMLElement;
     const btn = form.querySelector('button') as HTMLButtonElement;
     th.oninput = () => { (document.getElementById('sign-th-val') as HTMLElement).textContent = `${th.value} mm`; };
+
+    void restoreForm(form, cfg.files);
 
     form.onsubmit = async (e) => {
         e.preventDefault();

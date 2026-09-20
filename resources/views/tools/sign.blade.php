@@ -2,7 +2,7 @@
 
 @push('head')
 <script>
-    window.MP_SIGN = { url: @json(route('api.tools.sign')), home: @json(route('home')), i18n: { working: @json(__('sign.working')), failed: @json(__('sign.failed')) } };
+    window.MP_SIGN = { url: @json(route('api.tools.sign')), home: @json(route('home')), files: @json(url('/api/files')), i18n: { working: @json(__('sign.working')), failed: @json(__('sign.failed')) } };
 </script>
 @endpush
 

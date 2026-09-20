@@ -78,6 +78,21 @@ class UploadController extends Controller
         };
     }
 
+    /** The tool page this design came from; the page reopens with the same settings. Our own geometry, so changing it costs nothing. */
+    private static function toolOf(ModelFile $f): ?array
+    {
+        $route = 'tools.'.(in_array($f->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : $f->origin_ref);
+        if ($f->origin !== 'tool' || ! is_array($f->tool_params) || ! \Illuminate\Support\Facades\Route::has($route)) {
+            return null;
+        }
+        // older reliefs stored only the stand flag: nothing to reopen
+        if ($route === 'tools.relief' && ! isset($f->tool_params['mode'])) {
+            return null;
+        }
+
+        return ['kind' => $f->origin_ref, 'params' => $f->tool_params, 'url' => route($route, ['from' => $f->uuid])];
+    }
+
     public static function describe(ModelFile $f): array
     {
         return [
@@ -95,7 +110,7 @@ class UploadController extends Controller
             'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], self::partsOf($f) || in_array($f->kind(), ['logo', 'qr', 'stamp'], true) || ! empty($f->tool_params['stand']) ? ['multiple_shells'] : [])),
             'parts' => self::partsOf($f),
             // lets the tool page reopen this design ("edit" from the calculator)
-            'tool' => $f->origin === 'tool' && is_array($f->tool_params) && \Illuminate\Support\Facades\Route::has('tools.'.$f->origin_ref) ? ['kind' => $f->origin_ref, 'params' => $f->tool_params, 'url' => route('tools.'.$f->origin_ref, ['from' => $f->uuid])] : null,
+            'tool' => self::toolOf($f),
             'stl_url' => $f->stl_path ? route('api.files.stl', $f->uuid) : null,
             'kind' => $f->kind(),
             'check' => \App\Domain\Tools\ModelCheck::report($f),

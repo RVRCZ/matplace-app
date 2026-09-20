@@ -366,21 +366,26 @@ export function bootParam(): void {
     form.addEventListener('input', (e) => { if ((e.target as HTMLElement).closest('#holes')) return; soon(); renderPrice(); });
     form.addEventListener('submit', (e) => e.preventDefault());
 
-    ($('param-go') as HTMLButtonElement).onclick = async () => {
+    // the design is saved (our own geometry, free) and opens in the calculation; "download" opens the printer picker there
+    const save = async (go: HTMLButtonElement, download: boolean): Promise<void> => {
         if (!valid) return;
-        const go = $('param-go') as HTMLButtonElement; const label = go.textContent;
+        const label = go.textContent;
         go.disabled = true; go.textContent = t('param.creating');
         try {
             const res = await fetch(cfg.create, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ kind: cfg.kind, params: params() }) });
             const body = await res.json();
-            if (!res.ok) { showError(firstError(body)); go.textContent = label; return; }
+            if (!res.ok) { showError(firstError(body)); go.disabled = false; go.textContent = label; return; }
             const bomNote = lastMeta ? bomText(lastMeta).join('; ') : '';
-            const q = new URLSearchParams({ ...(bomNote ? { note: bomNote.slice(0, 900) } : {}), open: body.file.uuid, material: ($('param-material') as HTMLSelectElement).value, quantity: ($('param-qty') as HTMLInputElement).value || '1', color: ($('param-color') as HTMLSelectElement).value });
+            const q = new URLSearchParams({ ...(bomNote ? { note: bomNote.slice(0, 900) } : {}), open: body.file.uuid, material: ($('param-material') as HTMLSelectElement).value, quantity: ($('param-qty') as HTMLInputElement).value || '1', color: ($('param-color') as HTMLSelectElement).value, ...(download ? { download: '1' } : {}) });
             location.href = `${cfg.home}?${q}`;
         } catch {
             showError(t('param.failed')); go.disabled = false; go.textContent = label;
         }
     };
+
+    ($('param-go') as HTMLButtonElement).onclick = (e) => save(e.currentTarget as HTMLButtonElement, false);
+    const project = document.getElementById('param-3mf') as HTMLButtonElement | null;
+    if (project) project.onclick = () => save(project, true);
 
     // reopen a stored design ("edit" from the calculator): same numbers, same artwork
     if (cfg.from && /^[0-9a-f-]{36}$/.test(cfg.from)) {

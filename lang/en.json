@@ -891,7 +891,7 @@
     "param.error.qr_bad_text": "Enter a link or a text of 4 to 300 characters.",
     "param.error.qr_too_dense": "At this size the modules would be under 0.9 mm and a printer cannot print them legibly. Make the code :n mm at least, or shorten the link.",
     "param.error.qr_unreadable": "The read-back check of the design failed. Make the code bigger or shorten the link.",
-    "calc.edit_design": "Edit the design",
+    "calc.edit_design": "Change shape and size",
     "calc.tip.vase": "It prints floor down without supports. The print may not be watertight; put a glass inside or ask the printer to seal it.",
     "calc.tip.logo": "It prints lying flat without supports. A motif in another colour comes from a filament swap.",
     "calc.tip.stamp": "The stamp and the handle print side by side; the handle is glued on with superglue (not included).",
@@ -1048,5 +1048,9 @@
     "pedestal.front.back": "To the back, turn it",
     "pedestal.apply": "Apply",
     "pedestal.working": "Changing the base…",
-    "pedestal.failed": "The base of this model could not be changed. Try again, or create the model again."
+    "pedestal.failed": "The base of this model could not be changed. Try again, or create the model again.",
+    "param.download.project": "Project for my printer (.3mf)",
+    "param.download.project.hint": "The design is saved, you pick your printer and download a ready project with print settings.",
+    "calc.edit_design.hint": "Free. We compute this model ourselves, changes cost no AI credits.",
+    "relief.photo_again": "Your settings are back. We do not keep the photo, please choose it again."
 }

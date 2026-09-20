@@ -29,7 +29,7 @@ class ParametricToolsTest extends TestCase
     public function test_pages_render_in_all_languages(): void
     {
         foreach (['organizer', 'box', 'phone-stand', 'cable-holder'] as $slug) {
-            $this->get('/tools/'.$slug)->assertOk();
+            $this->get('/tools/'.$slug)->assertOk()->assertSee('param-3mf', false);   // every generator offers the slicer project
             $this->get('/tools/'.$slug.'?lang=en')->assertOk();
             $this->get('/tools/'.$slug.'?lang=es')->assertOk();
         }

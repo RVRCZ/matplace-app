@@ -891,7 +891,7 @@
     "param.error.qr_bad_text": "Introduzca un enlace o texto de 4 a 300 caracteres.",
     "param.error.qr_too_dense": "Con este tamaño los módulos quedarían por debajo de 0,9 mm y la impresora no los imprime legibles. Amplíe el código al menos a :n mm o acorte el enlace.",
     "param.error.qr_unreadable": "La comprobación de lectura del diseño falló. Amplíe el código o acorte el enlace.",
-    "calc.edit_design": "Editar el diseño",
+    "calc.edit_design": "Cambiar forma y tamaño",
     "calc.tip.vase": "Se imprime con el fondo hacia abajo y sin soportes. Puede no ser estanco; ponga un vaso dentro o pida al impresor que lo selle.",
     "calc.tip.logo": "Se imprime tumbado sin soportes. El motivo en otro color se hace cambiando el filamento.",
     "calc.tip.stamp": "El sello y el mango se imprimen juntos; el mango se pega con pegamento instantáneo (no incluido).",
@@ -1048,5 +1048,9 @@
     "pedestal.front.back": "Hacia atrás, girar",
     "pedestal.apply": "Aplicar",
     "pedestal.working": "Cambiando la base…",
-    "pedestal.failed": "No se pudo cambiar la base de este modelo. Inténtelo de nuevo o cree el modelo otra vez."
+    "pedestal.failed": "No se pudo cambiar la base de este modelo. Inténtelo de nuevo o cree el modelo otra vez.",
+    "param.download.project": "Proyecto para mi impresora (.3mf)",
+    "param.download.project.hint": "El diseño se guarda, elige su impresora y descarga un proyecto listo con los ajustes de impresión.",
+    "calc.edit_design.hint": "Gratis. Este modelo lo calculamos nosotros, los cambios no cuestan créditos de IA.",
+    "relief.photo_again": "Sus ajustes están de vuelta. No guardamos la foto, elíjala de nuevo."
 }

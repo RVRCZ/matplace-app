@@ -1,0 +1,7 @@
+{
+    "param.download.project": ["Projekt pro moji tiskárnu (.3mf)", "Project for my printer (.3mf)", "Proyecto para mi impresora (.3mf)"],
+    "param.download.project.hint": ["Návrh se uloží, vyberete tiskárnu a stáhnete hotový projekt s nastavením tisku.", "The design is saved, you pick your printer and download a ready project with print settings.", "El diseño se guarda, elige su impresora y descarga un proyecto listo con los ajustes de impresión."],
+    "calc.edit_design": ["Upravit tvar a rozměry", "Change shape and size", "Cambiar forma y tamaño"],
+    "calc.edit_design.hint": ["Zdarma. Tento model počítáme sami, úpravy nestojí žádné AI kredity.", "Free. We compute this model ourselves, changes cost no AI credits.", "Gratis. Este modelo lo calculamos nosotros, los cambios no cuestan créditos de IA."],
+    "relief.photo_again": ["Nastavení je zpět. Fotku neukládáme, vyberte ji prosím znovu.", "Your settings are back. We do not keep the photo, please choose it again.", "Sus ajustes están de vuelta. No guardamos la foto, elíjala de nuevo."]
+}

@@ -60,7 +60,7 @@ final class ReliefGenerator
         $file = ModelFile::create([
             'uuid' => $uuid, 'owner_user_id' => $user?->id, 'anonymous_session_id' => $session?->id,
             'original_name' => $mode.'-'.$base.'.stl', 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
-            'storage_path' => $rel, 'origin' => 'tool', 'origin_ref' => $mode, 'tool_params' => ['stand' => (bool) ($p['stand'] ?? false)], 'status' => ModelFile::STATUS_UPLOADED,
+            'storage_path' => $rel, 'origin' => 'tool', 'origin_ref' => $mode, 'tool_params' => ['stand' => $params['stand'], 'mode' => $mode, 'width' => $params['width'], 'frame' => $params['frame'] > 0, 'invert' => $params['invert']],   // the photo itself is not kept 'status' => ModelFile::STATUS_UPLOADED,
         ]);
         ProcessModelFile::dispatch($file->id);
 
