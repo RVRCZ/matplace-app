@@ -969,5 +969,9 @@
     "param.error.too_many_bins": "Nejvýše :n misek v jedné sadě.",
     "param.error.bin_outside": "Miska :n přesahuje mřížku.",
     "param.error.bins_overlap": "Misky :n se překrývají.",
-    "calc.tip.modular": "Cena je za celou sadu. Každá miska se tiskne zvlášť ve své barvě, shodné misky opakovaně z jednoho souboru; barvy a počty jsme předvyplnili do poznámky poptávky. Jednotlivé díly najdete u stažení."
+    "calc.tip.modular": "Cena je za celou sadu. Každá miska se tiskne zvlášť ve své barvě, shodné misky opakovaně z jednoho souboru; barvy a počty jsme předvyplnili do poznámky poptávky. Jednotlivé díly najdete u stažení.",
+    "check.parts_fit": "Největší díl sady (:size) se vejde na běžnou tiskárnu",
+    "check.parts_fit.impact": "",
+    "check.part_exceeds_bed": "Největší díl sady (:size) se nevejde na běžnou tiskárnu (:bed)",
+    "check.part_exceeds_bed.impact": "Ostatní díly se tisknou zvlášť a vejdou se. Tento díl vytiskne jen tiskař s větší tiskárnou; u organizéru pomůže vypnout tác nebo rozdělit dlouhou misku na dvě."
 }

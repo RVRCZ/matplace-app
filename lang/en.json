@@ -969,5 +969,9 @@
     "param.error.too_many_bins": ":n bins per set at most.",
     "param.error.bin_outside": "Bin :n reaches outside the grid.",
     "param.error.bins_overlap": "Bins :n overlap.",
-    "calc.tip.modular": "The price is for the whole set. Every bin prints separately in its own colour, identical bins repeatedly from one file; colours and counts are prefilled in the inquiry note. Single parts are under the download."
+    "calc.tip.modular": "The price is for the whole set. Every bin prints separately in its own colour, identical bins repeatedly from one file; colours and counts are prefilled in the inquiry note. Single parts are under the download.",
+    "check.parts_fit": "The biggest part of the set (:size) fits an ordinary printer",
+    "check.parts_fit.impact": "",
+    "check.part_exceeds_bed": "The biggest part of the set (:size) does not fit an ordinary printer (:bed)",
+    "check.part_exceeds_bed.impact": "The other parts print separately and fit. Only a printer with a bigger machine can make this one; for the organizer, turn the tray off or split a long bin in two."
 }

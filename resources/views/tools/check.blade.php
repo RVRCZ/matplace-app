@@ -3,7 +3,7 @@
 @php
     $keys = ['check.head.error', 'check.head.advice', 'check.head.ok', 'check.group.error', 'check.group.advice', 'check.group.ok', 'check.disclaimer',
         'check.page.bad_format', 'check.page.too_big', 'check.page.uploading', 'check.page.checking', 'check.page.failed'];
-    foreach (['units_tiny', 'units_huge', 'very_small', 'exceeds_bed', 'size_ok', 'too_thin', 'watertight_ok', 'not_watertight', 'flipped_normals', 'multiple_shells', 'heavy_mesh', 'very_coarse'] as $c) {
+    foreach (['units_tiny', 'units_huge', 'very_small', 'exceeds_bed', 'size_ok', 'parts_fit', 'part_exceeds_bed', 'too_thin', 'watertight_ok', 'not_watertight', 'flipped_normals', 'multiple_shells', 'heavy_mesh', 'very_coarse'] as $c) {
         $keys[] = 'check.'.$c; $keys[] = 'check.'.$c.'.impact';
     }
     $i18n = collect($keys)->mapWithKeys(fn ($k) => [$k => __($k)])->all();

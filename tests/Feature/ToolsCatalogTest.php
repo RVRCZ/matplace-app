@@ -79,6 +79,14 @@ class ToolsCatalogTest extends TestCase
         $box = ModelCheck::report($file(['x' => 140, 'y' => 54, 'z' => 32], ['watertight' => true, 'shells' => 2], 'tool', 'box'));
         $this->assertSame('ok', $box['status']);
 
+        // a modular set is judged by its biggest part: 300 mm of bins is fine, a 300 mm tray is not
+        $setParams = ['inner_w' => 300, 'inner_d' => 150, 'height' => 40, 'cols' => 6, 'rows' => 3, 'bins' => [['x' => 0, 'y' => 0, 'w' => 4, 'h' => 1, 'color' => 'blue']]];
+        $set = new ModelFile(['status' => ModelFile::STATUS_READY, 'stl_path' => 'x.stl', 'bbox' => ['x' => 299.4, 'y' => 149.4, 'z' => 40], 'mesh_report' => ['watertight' => true, 'shells' => 5], 'origin' => 'tool', 'origin_ref' => 'modular', 'tool_params' => $setParams]);
+        $this->assertSame('ok', ModelCheck::report($set)['status']);
+        $this->assertContains('parts_fit', $codes(ModelCheck::report($set), 'ok'));
+        $set->tool_params = ['tray' => true] + $setParams;
+        $this->assertContains('part_exceeds_bed', $codes(ModelCheck::report($set), 'advice'));
+
         $this->assertSame('pending', ModelCheck::report(new ModelFile(['status' => ModelFile::STATUS_UPLOADED]))['status']);
         foreach (['cs', 'en', 'es'] as $lang) {
             app()->setLocale($lang);

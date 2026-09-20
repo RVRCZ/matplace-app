@@ -15,6 +15,35 @@ use App\Models\ModelFile;
  */
 final class ModelCheck
 {
+    private static function fmt(array $d): string
+    {
+        return implode(' × ', array_map(fn ($v) => rtrim(rtrim(number_format((float) $v, 1, '.', ''), '0'), '.'), $d)).' mm';
+    }
+
+    /** @return array{0: float, 1: float, 2: float}|null biggest separately printed part of a modular set */
+    private static function largestPart(ModelFile $file): ?array
+    {
+        $p = (array) $file->tool_params;
+        if ($file->kind() !== 'modular' || empty($p['bins'])) {
+            return null;
+        }
+        $ux = (float) $p['inner_w'] / max(1, (int) $p['cols']);
+        $uy = (float) $p['inner_d'] / max(1, (int) $p['rows']);
+        $best = [0.0, 0.0, (float) $p['height']];
+        foreach ($p['bins'] as $b) {
+            $w = $b['w'] * $ux;
+            $d = $b['h'] * $uy;
+            if (max($w, $d) > max($best[0], $best[1])) {
+                $best = [$w, $d, (float) $p['height']];
+            }
+        }
+        if (! empty($p['tray'])) {
+            $best = [(float) $p['inner_w'] + 4.6, (float) $p['inner_d'] + 4.6, (float) $p['height']];
+        }
+
+        return $best;
+    }
+
     /** @return array{status: string, items: array<int, array{level: string, code: string, params: array<string, string>}>} */
     public static function report(ModelFile $file): array
     {
@@ -24,10 +53,13 @@ final class ModelCheck
             return ['status' => 'pending', 'items' => []];
         }
         $dims = [(float) ($bbox['x'] ?? 0), (float) ($bbox['y'] ?? 0), (float) ($bbox['z'] ?? 0)];
+        // a modular set is printed part by part: what has to fit the printer is its biggest part, not the whole layout
+        $largest = self::largestPart($file);
+        $fit = $largest ?? $dims;
         $max = max($dims);
         $min = min($dims);
         $bed = (array) config('pricing.bed_mm', ['x' => 250, 'y' => 250, 'z' => 250]);
-        $sorted = $dims;
+        $sorted = $fit;
         rsort($sorted);
         $bedSorted = [(float) $bed['x'], (float) $bed['y'], (float) $bed['z']];
         rsort($bedSorted);
@@ -46,9 +78,9 @@ final class ModelCheck
         } elseif ($max < 5.0) {
             $add('advice', 'very_small', ['size' => $size]);
         } elseif ($sorted[0] > $bedSorted[0] || $sorted[1] > $bedSorted[1] || $sorted[2] > $bedSorted[2]) {
-            $add('advice', 'exceeds_bed', ['size' => $size, 'bed' => (int) $bed['x'].' × '.(int) $bed['y'].' × '.(int) $bed['z'].' mm']);
+            $add('advice', $largest ? 'part_exceeds_bed' : 'exceeds_bed', ['size' => $largest ? self::fmt($largest) : $size, 'bed' => (int) $bed['x'].' × '.(int) $bed['y'].' × '.(int) $bed['z'].' mm']);
         } else {
-            $add('ok', 'size_ok', ['size' => $size]);
+            $add('ok', $largest ? 'parts_fit' : 'size_ok', ['size' => $largest ? self::fmt($largest) : $size]);
         }
         if ($max >= 1.0 && $min < 0.8) {
             $add('error', 'too_thin', ['t' => rtrim(rtrim(number_format($min, 2, '.', ''), '0'), '.')]);
