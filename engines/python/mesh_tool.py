@@ -6,7 +6,9 @@ Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquer
   mesh_tool.py check <in>                             -> geometry + topology report (mm)
   mesh_tool.py repair <in> <out.stl>                  -> repaired binary STL + report
   mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
-  mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1>  -> millimetres (largest side = max_mm), Z-up, on the bed
+  mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal]
+                                                       -> millimetres (largest side = max_mm), Z-up, on the bed;
+                                                          clean = drop dust fragments, pedestal = flat round base
   mesh_tool.py cad <in.step|iges> <out.stl> [lin] [ang] -> CAD B-rep to STL via OpenCascade (cadquery); lin=mm, ang=rad
 
 Always prints exactly one JSON object on stdout.
@@ -139,10 +141,36 @@ def main(argv):
             ext = float(max(m.extents))
             if ext <= 0:
                 raise ValueError("degenerate mesh")
+            opts = set((argv[6] if len(argv) > 6 else "").split(","))
             m.apply_scale(target / ext)
+            removed = 0
+            if "clean" in opts:
+                # generated meshes carry tiny floating fragments; keep everything that is a real part (glasses, hair)
+                parts = m.split(only_watertight=False)
+                if len(parts) > 1:
+                    limit = target * 0.02
+                    keep = [p for p in parts if float(max(p.extents)) >= limit]
+                    removed = len(parts) - len(keep)
+                    if keep and removed:
+                        m = trimesh.util.concatenate(keep)
             m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+            if "pedestal" in opts:
+                # round base under the figure: flat first layer, no supports under a ragged cut, stands on a shelf.
+                # It overlaps the model by a few millimetres; slicers merge overlapping shells.
+                h = float(m.extents[2])
+                low = m.vertices[m.vertices[:, 2] <= h * 0.10]
+                cx, cy = float(low[:, 0].mean()), float(low[:, 1].mean())
+                r = float(np.percentile(np.hypot(low[:, 0] - cx, low[:, 1] - cy), 92)) * 1.08
+                r = max(r, target * 0.18)
+                ped_h = max(3.0, target * 0.05)
+                overlap = max(2.0, target * 0.035)
+                ped = trimesh.creation.cylinder(radius=r, height=ped_h + overlap, sections=96)
+                ped.apply_translation([cx, cy, (ped_h + overlap) / 2.0 - ped_h])
+                m = trimesh.util.concatenate([m, ped])
+                m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+                m.apply_scale(target / float(max(m.extents)))
             m.export(argv[3], file_type="stl")
-            out(report(m, {"out": argv[3]}))
+            out(report(m, {"out": argv[3], "removed_fragments": removed}))
         if cmd == "cad":
             lin = float(argv[4]) if len(argv) > 4 else 0.05
             ang = float(argv[5]) if len(argv) > 5 else 0.3
