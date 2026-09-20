@@ -54,7 +54,7 @@
             <div class="mt-2 grid gap-3 sm:grid-cols-2">
                 <label class="text-sm font-semibold">{{ __('printer.f.display_name') }}<input name="display_name" required value="{{ old('display_name', $profile->display_name) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.company') }}<input name="company" value="{{ old('company', $profile->company) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
-                <label class="text-sm font-semibold">IČO @if($profile->ico_verified_at)<span class="font-normal text-teal-700">✓ {{ $profile->ico_subject_name }}</span>@endif<input name="ico" value="{{ old('ico', $profile->ico) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+                <label class="text-sm font-semibold">IČO @if($profile->ico_verified_at)<span class="font-normal text-action-dark">✓ {{ $profile->ico_subject_name }}</span>@endif<input name="ico" value="{{ old('ico', $profile->ico) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.logo') }}<input name="logo" type="file" accept="image/*" class="mt-1 w-full text-sm font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.contact_email') }}<input name="contact_email" type="email" value="{{ old('contact_email', $profile->contact_email) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.contact_phone') }}<input name="contact_phone" value="{{ old('contact_phone', $profile->contact_phone) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
@@ -121,11 +121,11 @@
             </div>
             <input name="portfolio[]" type="file" accept="image/*" multiple class="mt-2 w-full text-sm">
 
-            @if($profile->visible)<p class="mt-4 text-sm"><a class="text-teal-700 underline" href="{{ route('printers.show', $profile->slug) }}" target="_blank">{{ __('printer.profile.view_public') }}</a></p>@endif
+            @if($profile->visible)<p class="mt-4 text-sm"><a class="text-action-dark underline" href="{{ route('printers.show', $profile->slug) }}" target="_blank">{{ __('printer.profile.view_public') }}</a></p>@endif
             <label class="mt-5 flex items-center gap-2 text-sm"><input type="checkbox" name="visible" value="1" @checked(old('visible', $profile->visible))> {{ __('printer.f.visible') }}</label>
         </details>
 
-        <button class="w-full rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white">{{ __('printer.profile.save') }}</button>
+        <button class="w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('printer.profile.save') }}</button>
     </form>
 </div>
 @endsection

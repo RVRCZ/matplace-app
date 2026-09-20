@@ -81,6 +81,63 @@ final class InquiryService
         return $inquiry;
     }
 
+    /**
+     * Spare part: no model yet, only photos, measurements and what the part has to withstand. The request goes to
+     * printers who also design; they answer with a quote for modelling + printing. Nothing is promised automatically.
+     *
+     * @param  \Illuminate\Http\UploadedFile[]  $photos
+     */
+    public function createSparePart(array $data, array $photos, ?User $user): Inquiry
+    {
+        $geo = $this->geocoder->resolve($data['zip'] ?? null, $data['city'] ?? null, $data['country'] ?? 'CZ');
+        $folder = 'spare/'.Str::random(40);
+        $stored = [];
+        foreach (array_slice($photos, 0, 5) as $i => $photo) {
+            $stored[] = $photo->storeAs($folder, ($i + 1).'.'.(strtolower($photo->getClientOriginalExtension()) ?: 'jpg'), 'public');
+        }
+        $material = strtoupper((string) ($data['material'] ?? ''));
+        $inquiry = Inquiry::create([
+            'token' => Inquiry::newToken(),
+            'kind' => 'spare_part',
+            'customer_user_id' => $user?->id,
+            'contact_name' => $data['name'] ?? $user?->name,
+            'contact_email' => strtolower(trim($data['email'] ?? $user?->email ?? '')),
+            'contact_phone' => $data['phone'] ?? $user?->phone,
+            'country' => strtoupper($data['country'] ?? 'CZ'),
+            'zip' => $data['zip'] ?? null,
+            'city' => $data['city'] ?? null,
+            'lat' => $geo['lat'] ?? null,
+            'lng' => $geo['lng'] ?? null,
+            'material_code' => $material !== '' ? $material : 'PLA',          // "I don't know" is matched as the most common plastic
+            'quantity' => max(1, (int) ($data['quantity'] ?? 1)),
+            'details' => [
+                'what' => $data['what'],
+                'use' => $data['use'] ?? null,
+                'load' => $data['load'] ?? 'unknown',
+                'environment' => array_values((array) ($data['environment'] ?? [])),
+                'dims' => array_filter(['x' => $data['dim_x'] ?? null, 'y' => $data['dim_y'] ?? null, 'z' => $data['dim_z'] ?? null], fn ($v) => $v !== null && $v !== ''),
+                'material_known' => $material !== '',
+                'original_available' => (bool) ($data['original_available'] ?? false),
+                'photos' => $stored,
+            ],
+            'note' => $data['note'] ?? null,
+            'wanted_by' => $data['wanted_by'] ?? null,
+            'delivery_pref' => in_array($data['delivery_pref'] ?? 'any', ['any', 'pickup', 'shipping'], true) ? ($data['delivery_pref'] ?? 'any') : 'any',
+            'status' => Inquiry::STATUS_PENDING,
+            'verification_code' => $user ? null : Str::random(32),
+            'verified_at' => $user ? now() : null,
+            'expires_at' => now()->addDays((int) config('inquiries.expire_days', 14)),
+            'locale' => app()->getLocale(),
+        ]);
+        if ($user) {
+            $this->dispatcher->dispatch($inquiry);
+        } else {
+            Mail::to($inquiry->contact_email)->locale($inquiry->locale)->send(new CustomerInquiryVerify($inquiry));
+        }
+
+        return $inquiry;
+    }
+
     /** Guest e-mail verification link → dispatch. Returns false when the code is wrong. */
     public function verify(Inquiry $inquiry, string $code): bool
     {

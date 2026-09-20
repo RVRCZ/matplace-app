@@ -96,7 +96,7 @@ function renderDescription(d: DescribeResponse): void {
                 </dl>
                 <p class="mt-1 text-xs text-slate-500">${t('search.range_hint')}</p>
                 <div class="mt-3 flex flex-wrap gap-2 text-sm">
-                    <button type="button" class="rounded-full bg-teal-600 px-4 py-2 font-semibold text-white" onclick="document.getElementById('file-input').click()">${t('search.have_file')}</button>
+                    <button type="button" class="rounded-full bg-action px-4 py-2 font-semibold text-white" onclick="document.getElementById('file-input').click()">${t('search.have_file')}</button>
                     ${d.generator ? generateControls(desc.bbox_mm ? Math.max(desc.bbox_mm.x, desc.bbox_mm.y, desc.bbox_mm.z) : 80) : `<span class="rounded-full border border-slate-200 px-4 py-2 text-slate-400" title="${t('hero.soon')}">${t('search.generate')} (${t('hero.soon')})</span>`}
                     <span class="rounded-full border border-slate-200 px-4 py-2 text-slate-500">${t('search.designer_soon')}</span>
                 </div>
@@ -110,9 +110,9 @@ function renderDescription(d: DescribeResponse): void {
 function generateControls(defaultMm: number): string {
     return `<span class="inline-flex items-center gap-2">
         <label class="text-xs text-slate-500">${t('search.gen_size')} <input id="gen-target" type="number" min="5" max="1000" value="${Math.round(defaultMm)}" class="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"> mm</label>
-        <button type="button" id="cta-generate" class="rounded-full border border-teal-600 px-4 py-2 font-semibold text-teal-700">${t('search.generate')}</button>
+        <button type="button" id="cta-generate" class="rounded-full border border-action px-4 py-2 font-semibold text-action-dark">${t('search.generate')}</button>
     </span>
-    <div id="gen-progress" class="hidden w-full"><div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200"><div id="gen-bar" class="h-2 w-0 bg-teal-600 transition-all"></div></div><p id="gen-text" class="mt-1 text-xs text-slate-500"></p></div>`;
+    <div id="gen-progress" class="hidden w-full"><div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200"><div id="gen-bar" class="h-2 w-0 bg-action transition-all"></div></div><p id="gen-text" class="mt-1 text-xs text-slate-500"></p></div>`;
 }
 
 function bindGenerate(payload: Record<string, unknown>): void {

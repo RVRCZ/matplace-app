@@ -44,6 +44,17 @@ class ToolsController extends Controller
         ]);
     }
 
+    public function spare(MaterialCatalog $materials): View
+    {
+        return view('tools.spare', ['materials' => $materials->all()]);
+    }
+
+    /** "Check my model": the upload, the viewer and a plain-language report; the price is one click further. */
+    public function check(MaterialCatalog $materials, ConverterChain $converters): View
+    {
+        return view('tools.check', ['config' => ConfigController::payload($materials, $converters)]);
+    }
+
     public function figure(GenerationService $generation): View
     {
         return view('tools.figure', [

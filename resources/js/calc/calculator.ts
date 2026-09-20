@@ -5,6 +5,7 @@ import { stats, normaliseUnits, GeoStats } from './geometry';
 import { estimate, price, range, RoughConfig, Profile, Params } from './rough';
 import { uploadFile, createCalculation, getCalculation, getFile, CalcInfo, FileInfo } from './api';
 import { bootInquiry } from './inquiry';
+import { renderCheck } from './check';
 import { bootDownload, setDownload, refresh as refreshDownload } from './download';
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
@@ -91,7 +92,7 @@ function renderBreakdown(bds: { profile: string; label?: string | null; printer_
     };
     $('breakdown').innerHTML = bds.map((b) => `
         <div class="rounded-lg bg-slate-50 p-2">
-            <div class="flex justify-between font-semibold"><span>${b.printer_profile_id ? `<a class="underline decoration-slate-300 hover:text-teal-700" target="_blank" href="${routes().printerShow}/${b.printer_profile_id}">${b.label ?? ''}</a>` : (b.label ?? t(`calc.profile.${b.profile}`))}</span><span>${rough ? '≈ ' : ''}${fmt.format(b.total)}</span></div>
+            <div class="flex justify-between font-semibold"><span>${b.printer_profile_id ? `<a class="underline decoration-slate-300 hover:text-action-dark" target="_blank" href="${routes().printerShow}/${b.printer_profile_id}">${b.label ?? ''}</a>` : (b.label ?? t(`calc.profile.${b.profile}`))}</span><span>${rough ? '≈ ' : ''}${fmt.format(b.total)}</span></div>
             <div class="grid grid-cols-3 gap-1 text-xs text-slate-500">
                 <span>${t('calc.breakdown.material')}: ${fmt.format(b.unit.material * state.params.quantity)}</span>
                 <span>${t('calc.breakdown.time')}: ${fmt.format(b.unit.time * state.params.quantity)}</span>
@@ -129,7 +130,8 @@ function renderPrecise(c: CalcInfo): void {
     $('stat-lead').textContent = t('calc.days', { n: leadRange(leads) });
     $('dims-badge').textContent = `${fmt.format(c.slicer.dims.x)} × ${fmt.format(c.slicer.dims.y)} × ${fmt.format(c.slicer.dims.z)} mm`;
     renderBreakdown(c.prices.map((p) => ({ ...p, label: ownProfileId && (p as { printer_profile_id?: number | null }).printer_profile_id === ownProfileId ? t('calc.profile.mine') : (p.label ?? t(`calc.profile.${p.profile}`)) })), false);
-    const warns = [...(c.slicer.warnings ?? []), ...(c.file?.issues ?? [])];
+    renderCheck(document.getElementById('model-check'), c.file?.check);
+    const warns = [...(c.slicer.warnings ?? [])];
     $('warnings').innerHTML = [...new Set(warns)].filter((w) => i18n[`calc.warn.${w}`]).map((w) => `<li>⚠️ ${t(`calc.warn.${w}`)}</li>`).join('');
 }
 
@@ -335,9 +337,9 @@ function bindControls(): void {
     const input = $('file-input') as HTMLInputElement;
     input.onchange = () => { if (input.files?.[0]) handleFile(input.files[0]); input.value = ''; };
     const drop = $('dropzone');
-    drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('border-teal-500', 'bg-teal-50'); };
-    drop.ondragleave = () => drop.classList.remove('border-teal-500', 'bg-teal-50');
-    drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('border-teal-500', 'bg-teal-50'); const f = e.dataTransfer?.files?.[0]; if (f) handleFile(f); };
+    drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('border-action', 'bg-action-soft'); };
+    drop.ondragleave = () => drop.classList.remove('border-action', 'bg-action-soft');
+    drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('border-action', 'bg-action-soft'); const f = e.dataTransfer?.files?.[0]; if (f) handleFile(f); };
     document.body.addEventListener('dragover', (e) => e.preventDefault());
     document.body.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer?.files?.[0]; if (f && $('hero').classList.contains('hidden') === false) handleFile(f); });
 

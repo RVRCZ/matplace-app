@@ -6,7 +6,7 @@
         @if($p->cover_path)
             <img src="{{ $p->mediaUrl($p->cover_path) }}" alt="" class="h-40 w-full object-cover sm:h-56">
         @else
-            <div class="h-20 bg-gradient-to-r from-teal-600 to-teal-400 sm:h-28"></div>
+            <div class="h-20 bg-gradient-to-r from-action to-action-dark sm:h-28"></div>
         @endif
         <div class="flex flex-wrap items-end gap-4 px-5 pb-5">
             <div class="-mt-10 h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-4 border-white bg-slate-100 sm:h-24 sm:w-24">
@@ -18,7 +18,7 @@
                 <div class="flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-600">
                     @if($p->user->city)<span>📍 {{ $p->user->city }}</span>@endif
                     @if($ratingAvg)<span>★ {{ number_format($ratingAvg, 1, ',', '') }} ({{ $ratings->count() }})</span>@endif
-                    @if($p->ico_verified_at)<span class="text-teal-700" title="{{ $p->ico_subject_name }}">✓ {{ __('printer.public.verified') }}</span>@endif
+                    @if($p->ico_verified_at)<span class="text-action-dark" title="{{ $p->ico_subject_name }}">✓ {{ __('printer.public.verified') }}</span>@endif
                     @if($p->capacity === 'paused')<span class="text-amber-700">{{ __('printer.public.paused') }}</span>
                     @else<span>{{ __('printer.public.lead', ['n' => $p->lead_time_days]) }}</span>@endif
                 </div>
@@ -70,9 +70,9 @@
         </div>
 
         <aside class="space-y-4">
-            <a href="{{ route('home') }}" class="block rounded-2xl bg-teal-600 p-5 text-white hover:bg-teal-700">
+            <a href="{{ route('home') }}" class="block rounded-2xl bg-action p-5 text-white hover:bg-action-dark">
                 <div class="text-lg font-bold">{{ __('printer.public.cta') }}</div>
-                <div class="text-sm text-teal-50">{{ __('printer.public.cta_hint') }}</div>
+                <div class="text-sm text-white">{{ __('printer.public.cta_hint') }}</div>
             </a>
 
             <div class="rounded-2xl border border-slate-200 bg-white p-5 text-sm">

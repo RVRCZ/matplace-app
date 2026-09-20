@@ -10,7 +10,7 @@
                 </div>
                 <div class="text-right">
                     <div class="font-semibold">{{ number_format($q->total, 0, ',', ' ') }} Kč</div>
-                    <span class="rounded-full px-2 py-0.5 text-xs {{ ['draft' => 'bg-slate-100 text-slate-600', 'sent' => 'bg-blue-50 text-blue-700', 'viewed' => 'bg-blue-50 text-blue-700', 'accepted' => 'bg-teal-50 text-teal-800', 'declined' => 'bg-red-50 text-red-700', 'expired' => 'bg-slate-100 text-slate-500'][$q->status] ?? '' }}">{{ __('quote.status.'.$q->status) }}</span>
+                    <span class="rounded-full px-2 py-0.5 text-xs {{ ['draft' => 'bg-slate-100 text-slate-600', 'sent' => 'bg-blue-50 text-blue-700', 'viewed' => 'bg-blue-50 text-blue-700', 'accepted' => 'bg-action-soft text-action-dark', 'declined' => 'bg-red-50 text-red-700', 'expired' => 'bg-slate-100 text-slate-500'][$q->status] ?? '' }}">{{ __('quote.status.'.$q->status) }}</span>
                 </div>
             </a>
         @endforeach

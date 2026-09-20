@@ -11,10 +11,10 @@
         <label class="block text-sm font-semibold">{{ __('auth.email') }}<input name="email" type="email" required autocomplete="email" value="{{ old('email') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
         <label class="block text-sm font-semibold">{{ __('auth.password') }}<input name="password" type="password" required autocomplete="current-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="remember" value="1" checked> {{ __('auth.remember') }}</label>
-        <button class="w-full rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white">{{ __('auth.login') }}</button>
+        <button class="w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('auth.login') }}</button>
     </form>
     <div class="mt-4 flex justify-between text-sm">
-        <a href="{{ route('register') }}" class="text-teal-700">{{ __('auth.no_account') }}</a>
+        <a href="{{ route('register') }}" class="text-action-dark">{{ __('auth.no_account') }}</a>
         <a href="{{ route('password.request') }}" class="text-slate-500">{{ __('auth.forgot') }}</a>
     </div>
 </div>

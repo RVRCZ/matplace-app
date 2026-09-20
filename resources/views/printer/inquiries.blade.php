@@ -13,7 +13,7 @@
         <div class="mt-3 divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
             @foreach($dispatches as $d)
                 @php $i = $d->inquiry; $mine = $i->offers->first(); $th = $threads[$i->id] ?? null; $unread = $th ? $th->unreadFor('printer') : 0; @endphp
-                <a href="{{ route('printer.inquiries.show', $i) }}" class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50 {{ $d->seen_at ? '' : 'bg-teal-50/40' }}">
+                <a href="{{ route('printer.inquiries.show', $i) }}" class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50 {{ $d->seen_at ? '' : 'bg-action-soft/40' }}">
                     <div class="min-w-0">
                         <div class="truncate font-medium">{{ $i->modelFile?->original_name ?? '—' }} <span class="text-slate-500">· {{ $i->material_code }} · {{ $i->quantity }} {{ __('inquiry.pcs') }}</span></div>
                         <div class="text-xs text-slate-500">{{ $i->city ?: $i->zip }}@if($d->distance_km !== null) · {{ round($d->distance_km) }} km @endif · {{ $i->created_at->format('j. n.') }}@if($i->wanted_by) · {{ __('inquiry.wanted_by') }} {{ $i->wanted_by->format('j. n.') }}@endif

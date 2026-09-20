@@ -14,7 +14,8 @@
         'search.searching','search.identifying','search.none','search.error','search.not_image','search.daily_limit','search.open_source',
         'search.size_guess','search.price_range','search.range_hint','search.have_file','search.generate','search.designer_soon','hero.soon','calc.size','calc.material','inquiry.error',
         'search.gen_size','search.generating','search.gen_done','search.gen_failed','search.gen_daily_limit','search.gen_global_limit','search.gen_text_hint',
-        'refine.working','refine.failed','refine.photo_only','calc.tip.organizer','calc.tip.box','calc.tip.phone_stand','calc.tip.cable_holder','download.parts','param.part.body','param.part.lid','calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
+        'refine.working','refine.failed','refine.photo_only','check.head.error','check.head.advice','check.head.ok','check.group.error','check.group.advice','check.group.ok','check.disclaimer','check.units_tiny','check.units_tiny.impact','check.units_huge','check.units_huge.impact','check.very_small','check.very_small.impact','check.exceeds_bed','check.exceeds_bed.impact','check.size_ok','check.size_ok.impact','check.too_thin','check.too_thin.impact','check.watertight_ok','check.watertight_ok.impact','check.not_watertight','check.not_watertight.impact','check.flipped_normals','check.flipped_normals.impact','check.multiple_shells','check.multiple_shells.impact','check.heavy_mesh','check.heavy_mesh.impact','check.very_coarse','check.very_coarse.impact',
+        'calc.tip.organizer','calc.tip.box','calc.tip.phone_stand','calc.tip.cable_holder','download.parts','param.part.body','param.part.lid','calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
     ])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();
 @endphp
 
@@ -45,28 +46,28 @@
             <p class="mt-2 text-slate-600">{{ __('app.subline') }}</p>
         @endif
 
-        <label id="dropzone" class="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-teal-300 bg-white px-4 py-10 text-center transition hover:border-teal-500 hover:bg-teal-50">
-            <svg class="h-10 w-10 text-teal-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        <label id="dropzone" class="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-action bg-white px-4 py-10 text-center transition hover:border-action hover:bg-action-soft">
+            <svg class="h-10 w-10 text-action" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
             <span class="mt-3 text-lg font-semibold">{{ __('hero.drop') }}</span>
             <span class="mt-1 text-sm text-slate-500">{{ __('hero.formats', ['formats' => $formats, 'max' => $config['max_upload_mb']]) }}</span>
             <input id="file-input" type="file" class="sr-only" accept="{{ implode(',', array_map(fn ($f) => '.' . $f, $config['formats'])) }}">
         </label>
 
         <div class="mt-3 flex flex-wrap gap-2 text-sm">
-            <button type="button" class="rounded-full bg-teal-600 px-4 py-2 font-semibold text-white" onclick="document.getElementById('file-input').click()">{{ __('hero.choose_file') }}</button>
+            <button type="button" class="rounded-full bg-action px-4 py-2 font-semibold text-white" onclick="document.getElementById('file-input').click()">{{ __('hero.choose_file') }}</button>
             @if($mode !== 'printer')
                 @if($config['vision'])
-                    <button type="button" id="hero-photo-btn" class="rounded-full border border-teal-600 bg-white px-4 py-2 font-semibold text-teal-700">📷 {{ __('hero.photo') }}</button>
+                    <button type="button" id="hero-photo-btn" class="rounded-full border border-action bg-white px-4 py-2 font-semibold text-action-dark">📷 {{ __('hero.photo') }}</button>
                     <input id="photo-input" type="file" accept="image/*" capture="environment" class="sr-only">
                 @endif
-                <button type="button" id="hero-text-btn" class="rounded-full border border-teal-600 bg-white px-4 py-2 font-semibold text-teal-700">✍️ {{ __('hero.text') }}</button>
+                <button type="button" id="hero-text-btn" class="rounded-full border border-action bg-white px-4 py-2 font-semibold text-action-dark">✍️ {{ __('hero.text') }}</button>
             @endif
         </div>
         <form id="search-form" class="mt-3 hidden gap-2 sm:flex">
             <input id="search-input" type="search" maxlength="200" placeholder="{{ __('search.placeholder') }}" class="w-full rounded-xl border border-slate-300 px-4 py-3">
-            <button class="mt-2 rounded-xl bg-teal-600 px-5 py-3 font-semibold text-white sm:mt-0">{{ __('search.button') }}</button>
+            <button class="mt-2 rounded-xl bg-action px-5 py-3 font-semibold text-white sm:mt-0">{{ __('search.button') }}</button>
         </form>
-        <div id="search-busy" class="mt-3 hidden items-center justify-center gap-2 text-sm text-slate-600"><span class="h-4 w-4 animate-spin rounded-full border-2 border-teal-600 border-t-transparent"></span><span id="search-busy-text"></span></div>
+        <div id="search-busy" class="mt-3 hidden items-center justify-center gap-2 text-sm text-slate-600"><span class="h-4 w-4 animate-spin rounded-full border-2 border-action border-t-transparent"></span><span id="search-busy-text"></span></div>
         <p id="hero-error" class="mt-3 hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"></p>
         <div id="describe-box" class="mt-4 hidden rounded-2xl border border-slate-200 bg-white p-4 text-left"></div>
 
@@ -100,14 +101,14 @@
                 <div class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-slate-700 shadow" id="file-badge"></div>
                 <div class="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow" id="dims-badge"></div>
                 </div>
-                <p id="kind-tip" class="hidden border-t border-slate-100 bg-teal-50 px-4 py-2 text-sm text-teal-900"></p>
+                <p id="kind-tip" class="hidden border-t border-slate-100 bg-action-soft px-4 py-2 text-sm text-action-dark"></p>
             </div>
 
             <div class="flex flex-col gap-4">
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <div class="flex items-center justify-between text-sm">
                         <span id="status" class="font-medium text-slate-600">{{ __('calc.status.reading') }}</span>
-                        <span id="status-spinner" class="h-4 w-4 animate-spin rounded-full border-2 border-teal-600 border-t-transparent"></span>
+                        <span id="status-spinner" class="h-4 w-4 animate-spin rounded-full border-2 border-action border-t-transparent"></span>
                     </div>
                     <div class="mt-2 flex items-end gap-2">
                         <span id="price-main" class="text-4xl font-extrabold tracking-tight">—</span>
@@ -120,16 +121,17 @@
                         <div><dt class="text-slate-500">{{ __('calc.lead') }}</dt><dd id="stat-lead" class="font-semibold">—</dd></div>
                     </dl>
                     <ul id="warnings" class="mt-3 space-y-1 text-sm text-amber-700"></ul>
+                    <details class="mt-3 text-sm"><summary class="cursor-pointer text-action-dark">{{ __('check.title') }}</summary><div id="model-check" class="mt-2 hidden rounded-xl bg-slate-50 p-3"></div></details>
                     <form id="refine-box" class="mt-3 hidden rounded-xl bg-slate-50 p-3">
                         <label class="block text-sm font-semibold text-slate-700" for="refine-text">{{ __('refine.title') }}</label>
                         <div class="mt-1 flex gap-2">
                             <input id="refine-text" maxlength="300" placeholder="{{ __('refine.placeholder') }}" class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                            <button class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{{ __('refine.submit') }}</button>
+                            <button class="rounded-lg bg-action px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{{ __('refine.submit') }}</button>
                         </div>
                         <p id="refine-msg" class="mt-1 text-xs text-slate-500">{{ __('refine.hint') }}</p>
                     </form>
                     <details class="mt-3 text-sm" @if($mode === 'printer') open @endif>
-                        <summary class="cursor-pointer text-teal-700">{{ __('calc.breakdown') }}</summary>
+                        <summary class="cursor-pointer text-action-dark">{{ __('calc.breakdown') }}</summary>
                         <div id="breakdown" class="mt-2 space-y-2"></div>
                     </details>
                 </div>
@@ -147,22 +149,22 @@
                     </div>
 
                     <div class="mt-4 flex items-center justify-between text-sm font-semibold text-slate-700">
-                        <span>{{ __('calc.infill') }}</span><span id="infill-val" class="text-teal-700">15 %</span>
+                        <span>{{ __('calc.infill') }}</span><span id="infill-val" class="text-action-dark">15 %</span>
                     </div>
-                    <input id="infill" type="range" min="5" max="100" step="5" value="15" class="mt-1 w-full accent-teal-600">
+                    <input id="infill" type="range" min="5" max="100" step="5" value="15" class="mt-1 w-full accent-action">
                     <div class="flex justify-between text-xs text-slate-500"><span>{{ __('calc.infill.light') }}</span><span>{{ __('calc.infill.solid') }}</span></div>
 
                     <div class="mt-4 grid grid-cols-2 gap-3">
                         <label class="text-sm font-semibold text-slate-700">{{ __('calc.quantity') }}
                             <input id="quantity" type="number" min="1" max="1000" value="1" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal">
                         </label>
-                        <label class="text-sm font-semibold text-slate-700">{{ __('calc.scale') }} <span id="scale-val" class="font-normal text-teal-700">100 %</span>
-                            <input id="scale" type="range" min="25" max="{{ (int) ($config['max_scale'] * 100) }}" step="5" value="100" class="mt-3 w-full accent-teal-600">
+                        <label class="text-sm font-semibold text-slate-700">{{ __('calc.scale') }} <span id="scale-val" class="font-normal text-action-dark">100 %</span>
+                            <input id="scale" type="range" min="25" max="{{ (int) ($config['max_scale'] * 100) }}" step="5" value="100" class="mt-3 w-full accent-action">
                         </label>
                     </div>
 
                     <details class="mt-3 text-sm">
-                        <summary class="cursor-pointer text-teal-700">{{ __('calc.more') }}</summary>
+                        <summary class="cursor-pointer text-action-dark">{{ __('calc.more') }}</summary>
                         <div class="mt-2 text-sm font-semibold text-slate-700">{{ __('calc.supports') }}</div>
                         <div id="supports" class="mt-2 grid grid-cols-3 gap-2">
                             <button type="button" data-supports="auto" class="seg seg-on">{{ __('calc.supports.auto') }}</button>
@@ -174,11 +176,11 @@
 
                 <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     @if($mode === 'printer')
-                        <form method="post" action="{{ route('printer.quotes.store') }}" id="quote-form" class="sm:col-span-2">@csrf<input type="hidden" name="calculation" id="quote-calc-token" value=""><button id="cta-quote" type="submit" class="w-full rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white disabled:opacity-50" disabled>{{ __('printer.calc.create_quote') }}</button></form>
+                        <form method="post" action="{{ route('printer.quotes.store') }}" id="quote-form" class="sm:col-span-2">@csrf<input type="hidden" name="calculation" id="quote-calc-token" value=""><button id="cta-quote" type="submit" class="w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" disabled>{{ __('printer.calc.create_quote') }}</button></form>
                     @else
-                        <button id="cta-make" type="button" class="rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white disabled:opacity-60" title="{{ __('calc.cta.make.soon') }}">{{ __('calc.cta.make') }}</button>
+                        <button id="cta-make" type="button" class="rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-60" title="{{ __('calc.cta.make.soon') }}">{{ __('calc.cta.make') }}</button>
                     @endif
-                    <button id="cta-download" type="button" class="rounded-xl border border-teal-600 px-4 py-3 text-center font-semibold text-teal-700 aria-disabled:opacity-50" aria-disabled="true">{{ __('calc.cta.download') }}</button>
+                    <button id="cta-download" type="button" class="rounded-xl border border-action px-4 py-3 text-center font-semibold text-action-dark aria-disabled:opacity-50" aria-disabled="true">{{ __('calc.cta.download') }}</button>
                     <button id="cta-share" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700">{{ __('calc.cta.share') }}</button>
                     <button id="cta-new" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 {{ $mode === 'printer' ? 'sm:col-span-2' : '' }}">{{ __('calc.cta.new') }}</button>
                 </div>
@@ -192,15 +194,15 @@
                             <label class="text-sm font-semibold">{{ __('download.model') }}<select id="dl-model" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></select></label>
                         </div>
                         <p id="dl-note" class="mt-2 hidden rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" data-too-big="{{ __('download.too_big') }}" data-no-material="{{ __('download.no_material') }}"></p>
-                        <a id="dl-project" aria-disabled="true" class="mt-3 block rounded-xl bg-teal-600 px-4 py-3 text-center font-semibold text-white aria-disabled:opacity-50">{{ __('download.project') }}</a>
+                        <a id="dl-project" aria-disabled="true" class="mt-3 block rounded-xl bg-action px-4 py-3 text-center font-semibold text-white aria-disabled:opacity-50">{{ __('download.project') }}</a>
                         <p id="dl-how" class="mt-2 text-xs text-slate-500" data-orca="{{ __('download.how') }}" data-prusa="{{ __('download.how_prusa') }}">{{ __('download.how') }}</p>
                         <p class="mt-1 text-xs text-slate-500">{{ __('download.check') }}</p>
                     </div>
-                    <a id="dl-stl" href="#" class="mt-3 block text-center text-sm text-teal-700 underline">{{ __('download.stl') }}</a>
+                    <a id="dl-stl" href="#" class="mt-3 block text-center text-sm text-action-dark underline">{{ __('download.stl') }}</a>
                     <div id="dl-parts" class="mt-2 hidden text-center text-sm"></div>
                 </div>
                 @if($mode !== 'printer')
-                <div id="inquiry-panel" class="hidden rounded-2xl border border-teal-200 bg-teal-50 p-4">
+                <div id="inquiry-panel" class="hidden rounded-2xl border border-line bg-action-soft p-4">
                     <div class="font-bold">{{ __('inquiry.form.title') }}</div>
                     <p class="text-sm text-slate-600">{{ __('inquiry.form.hint') }}</p>
                     <form id="inquiry-form" class="mt-3 grid gap-2 sm:grid-cols-2">
@@ -223,7 +225,7 @@
                         </select>
                         <textarea name="note" rows="2" placeholder="{{ __('inquiry.form.note') }}" class="rounded-lg border border-slate-300 px-3 py-2 sm:col-span-2"></textarea>
                         <p id="inquiry-error" class="hidden text-sm text-red-700 sm:col-span-2"></p>
-                        <button type="submit" class="rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white sm:col-span-2">{{ __('inquiry.form.submit') }}</button>
+                        <button type="submit" class="rounded-xl bg-action px-4 py-3 font-semibold text-white sm:col-span-2">{{ __('inquiry.form.submit') }}</button>
                         <p class="text-xs text-slate-500 sm:col-span-2">{{ __('inquiry.form.promise') }}</p>
                     </form>
                 </div>

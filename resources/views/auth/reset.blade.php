@@ -10,7 +10,7 @@
         <label class="block text-sm font-semibold">{{ __('auth.email') }}<input name="email" type="email" required value="{{ old('email', $email) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
         <label class="block text-sm font-semibold">{{ __('auth.password') }}<input name="password" type="password" required minlength="8" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
         <label class="block text-sm font-semibold">{{ __('auth.password_confirm') }}<input name="password_confirmation" type="password" required minlength="8" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
-        <button class="w-full rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white">{{ __('auth.save_password') }}</button>
+        <button class="w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('auth.save_password') }}</button>
     </form>
 </div>
 @endsection

@@ -38,6 +38,12 @@ final class InquiryDispatcher
             ->reject(fn (PrinterProfile $p) => $p->user_id === $inquiry->customer_user_id)
             ->filter(fn (PrinterProfile $p) => $this->fitsMachines($p, $dims));
 
+        // a spare part has to be modelled first: printers who offer design come first, the rest only if there are none
+        if ($inquiry->kind === 'spare_part') {
+            $designers = $candidates->filter(fn (PrinterProfile $p) => in_array('design', (array) $p->services, true));
+            $candidates = $designers->isNotEmpty() ? $designers : $candidates;
+        }
+
         $scored = $candidates->map(function (PrinterProfile $p) use ($inquiry) {
             $dist = ($inquiry->lat !== null && $p->user->lat !== null)
                 ? Geocoder::distanceKm($inquiry->lat, $inquiry->lng, $p->user->lat, $p->user->lng)

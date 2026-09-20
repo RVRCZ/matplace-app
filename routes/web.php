@@ -31,6 +31,8 @@ Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
 Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
 Route::get('/tools/sign', [ToolsController::class, 'sign'])->name('tools.sign');
 Route::get('/tools/relief', [ToolsController::class, 'relief'])->name('tools.relief');
+Route::get('/tools/spare-part', [ToolsController::class, 'spare'])->name('tools.spare');
+Route::get('/tools/check', [ToolsController::class, 'check'])->name('tools.check');
 Route::get('/tools/organizer', [ToolsController::class, 'param'])->defaults('kind', 'organizer')->name('tools.organizer');
 Route::get('/tools/box', [ToolsController::class, 'param'])->defaults('kind', 'box')->name('tools.box');
 Route::get('/tools/phone-stand', [ToolsController::class, 'param'])->defaults('kind', 'phone_stand')->name('tools.phone_stand');
@@ -72,6 +74,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware('throttle:30,1')->name('tools.param.part');
     Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1')->name('tools.relief');
     Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware('throttle:10,1')->name('inquiries.store');
+    Route::post('spare-parts', [ApiInquiryController::class, 'spare'])->middleware('throttle:6,1')->name('spare');
     Route::get('threads/{thread}/messages', [ThreadController::class, 'messages'])->name('threads.messages');
     Route::post('threads/{thread}/messages', [ThreadController::class, 'post'])->middleware('throttle:30,1')->name('threads.post');
     Route::get('threads/{thread}/attachments/{message}', [ThreadController::class, 'attachment'])->name('threads.attachment');

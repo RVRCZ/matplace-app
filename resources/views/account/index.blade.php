@@ -4,7 +4,7 @@
 <div class="mx-auto max-w-4xl">
     <div class="flex flex-wrap items-center justify-between gap-3">
         <h1 class="text-2xl font-extrabold">{{ __('account.hello', ['name' => $user->name]) }}</h1>
-        <a href="{{ route('account.profile') }}" class="text-sm text-teal-700">{{ __('account.edit_profile') }}</a>
+        <a href="{{ route('account.profile') }}" class="text-sm text-action-dark">{{ __('account.edit_profile') }}</a>
     </div>
     @include('partials.flash')
 
@@ -16,12 +16,12 @@
                 <div>
                     <div class="font-semibold">{{ $ico }} {{ __('account.role.'.$role) }}</div>
                     <div class="text-xs text-slate-500">{{ __('account.role.'.$role.'.hint') }}</div>
-                    @if($on && $role === 'printer')<a href="{{ route('printer.dashboard') }}" class="mt-1 inline-block text-sm font-semibold text-teal-700">{{ __('account.open_printer') }} →</a>@endif
+                    @if($on && $role === 'printer')<a href="{{ route('printer.dashboard') }}" class="mt-1 inline-block text-sm font-semibold text-action-dark">{{ __('account.open_printer') }} →</a>@endif
                     @if($on && $role === 'designer')<span class="mt-1 inline-block text-xs text-slate-400">{{ __('account.designer_soon') }}</span>@endif
                 </div>
                 <form method="post" action="{{ $on ? route('account.roles.disable', $role) : route('account.roles.enable', $role) }}">
                     @csrf
-                    <button class="rounded-full px-4 py-1.5 text-sm font-semibold {{ $on ? 'bg-teal-600 text-white' : 'border border-slate-300 bg-white text-slate-700' }}">{{ $on ? __('account.on') : __('account.off') }}</button>
+                    <button class="rounded-full px-4 py-1.5 text-sm font-semibold {{ $on ? 'bg-action text-white' : 'border border-slate-300 bg-white text-slate-700' }}">{{ $on ? __('account.on') : __('account.off') }}</button>
                 </form>
             </div>
         @endforeach
@@ -30,7 +30,7 @@
     {{-- saved calculations --}}
     <h2 class="mt-8 text-lg font-bold">{{ __('account.calculations') }}</h2>
     @if($calculations->isEmpty())
-        <p class="mt-2 text-sm text-slate-500">{{ __('account.no_calculations') }} <a href="{{ route('home') }}" class="text-teal-700">{{ __('account.start') }}</a></p>
+        <p class="mt-2 text-sm text-slate-500">{{ __('account.no_calculations') }} <a href="{{ route('home') }}" class="text-action-dark">{{ __('account.start') }}</a></p>
     @else
         <div class="mt-2 divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
             @foreach($calculations as $c)

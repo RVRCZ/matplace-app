@@ -8,7 +8,7 @@
 
 @section('content')
 <div class="mx-auto max-w-2xl">
-    <a href="{{ route('tools') }}" class="text-sm text-teal-700">← {{ __('tools.title') }}</a>
+    <a href="{{ route('tools') }}" class="text-sm text-action-dark">← {{ __('tools.title') }}</a>
     <h1 class="mt-1 text-2xl font-extrabold">{{ __('tools.sign.title') }}</h1>
     <p class="text-slate-600">{{ __('sign.lead') }}</p>
 
@@ -21,17 +21,17 @@
 
         <div class="grid grid-cols-3 gap-2 text-sm">
             @foreach (['rounded' => '▢', 'rect' => '▭', 'oval' => '⬭'] as $k => $ico)
-                <label class="cursor-pointer rounded-xl border border-slate-300 p-2 text-center has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50"><input type="radio" name="shape" value="{{ $k }}" @checked($k === 'rounded') class="sr-only"><div class="text-xl">{{ $ico }}</div>{{ __('sign.shape.'.$k) }}</label>
+                <label class="cursor-pointer rounded-xl border border-slate-300 p-2 text-center has-[:checked]:border-action has-[:checked]:bg-action-soft"><input type="radio" name="shape" value="{{ $k }}" @checked($k === 'rounded') class="sr-only"><div class="text-xl">{{ $ico }}</div>{{ __('sign.shape.'.$k) }}</label>
             @endforeach
         </div>
 
         <div class="grid grid-cols-2 gap-2 text-sm">
-            <label class="cursor-pointer rounded-xl border border-slate-300 p-2 text-center has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50"><input type="radio" name="style" value="emboss" checked class="sr-only">{{ __('sign.style.emboss') }}</label>
-            <label class="cursor-pointer rounded-xl border border-slate-300 p-2 text-center has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50"><input type="radio" name="style" value="engrave" class="sr-only">{{ __('sign.style.engrave') }}</label>
+            <label class="cursor-pointer rounded-xl border border-slate-300 p-2 text-center has-[:checked]:border-action has-[:checked]:bg-action-soft"><input type="radio" name="style" value="emboss" checked class="sr-only">{{ __('sign.style.emboss') }}</label>
+            <label class="cursor-pointer rounded-xl border border-slate-300 p-2 text-center has-[:checked]:border-action has-[:checked]:bg-action-soft"><input type="radio" name="style" value="engrave" class="sr-only">{{ __('sign.style.engrave') }}</label>
         </div>
 
-        <label class="block text-sm font-semibold">{{ __('sign.text_height') }} <span id="sign-th-val" class="font-normal text-teal-700">12 mm</span>
-            <input id="sign-th" name="text_height" type="range" min="5" max="60" step="1" value="12" class="mt-1 w-full accent-teal-600">
+        <label class="block text-sm font-semibold">{{ __('sign.text_height') }} <span id="sign-th-val" class="font-normal text-action-dark">12 mm</span>
+            <input id="sign-th" name="text_height" type="range" min="5" max="60" step="1" value="12" class="mt-1 w-full accent-action">
         </label>
 
         <div class="flex flex-wrap gap-4 text-sm">
@@ -39,7 +39,7 @@
             <label class="flex items-center gap-2"><input type="checkbox" name="border" value="1" checked> {{ __('sign.border') }}</label>
         </div>
 
-        <details class="text-sm"><summary class="cursor-pointer text-teal-700">{{ __('calc.more') }}</summary>
+        <details class="text-sm"><summary class="cursor-pointer text-action-dark">{{ __('calc.more') }}</summary>
             <div class="mt-2 grid grid-cols-3 gap-3">
                 <label class="font-semibold">{{ __('sign.font') }}<select name="font" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 font-normal">@foreach ($fonts as $f)<option value="{{ $f }}">{{ __('sign.font.'.$f) }}</option>@endforeach</select></label>
                 <label class="font-semibold">{{ __('sign.thickness') }}<input name="thickness" type="number" min="1.2" max="10" step="0.2" value="3" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 font-normal"></label>
@@ -47,7 +47,7 @@
             </div>
         </details>
 
-        <button class="w-full rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white disabled:opacity-60">{{ __('sign.submit') }}</button>
+        <button class="w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-60">{{ __('sign.submit') }}</button>
         <p id="sign-msg" class="text-sm text-slate-600"></p>
         <p class="text-xs text-slate-400">{{ __('sign.tip') }}</p>
     </form>

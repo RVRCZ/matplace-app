@@ -17,11 +17,11 @@
     @endif
 
     <div class="mt-5 grid gap-3 sm:grid-cols-2">
-        <a href="{{ route('printer.calculator') }}" class="rounded-2xl bg-teal-600 p-5 text-white hover:bg-teal-700">
+        <a href="{{ route('printer.calculator') }}" class="rounded-2xl bg-action p-5 text-white hover:bg-action-dark">
             <div class="text-lg font-bold">{{ __('printer.calc.title') }}</div>
             <div class="text-sm opacity-90">{{ __('printer.calc.hint') }}</div>
         </a>
-        <a href="{{ route('printer.profile') }}" class="rounded-2xl border border-slate-200 bg-white p-5 hover:border-teal-400">
+        <a href="{{ route('printer.profile') }}" class="rounded-2xl border border-slate-200 bg-white p-5 hover:border-action">
             <div class="text-lg font-bold">{{ __('printer.profile.title') }}</div>
             <div class="text-sm text-slate-500">{{ __('printer.profile.hint') }}</div>
         </a>
@@ -29,7 +29,7 @@
 
     <div class="mt-8 flex items-center justify-between">
         <h2 class="text-lg font-bold">{{ __('printer.quotes.recent') }}</h2>
-        <a href="{{ route('printer.quotes') }}" class="text-sm text-teal-700">{{ __('printer.quotes.all') }} →</a>
+        <a href="{{ route('printer.quotes') }}" class="text-sm text-action-dark">{{ __('printer.quotes.all') }} →</a>
     </div>
     @include('printer.quote_list', ['quotes' => $quotes])
 </div>

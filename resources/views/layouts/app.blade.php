@@ -13,10 +13,10 @@
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
     @stack('head')
 </head>
-<body class="min-h-full bg-slate-50 text-slate-900 antialiased">
+<body class="min-h-full bg-page text-ink antialiased">
     <header class="border-b border-slate-200 bg-white">
         <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-            <a href="{{ route('home') }}" class="text-xl font-extrabold tracking-tight text-teal-700">matplace</a>
+            <a href="{{ route('home') }}" class="text-xl font-extrabold tracking-tight text-action-dark">matplace</a>
             <nav class="flex items-center gap-4 text-sm text-slate-600">
                 <a href="{{ route('tools') }}" class="hover:text-slate-900">{{ __('footer.tools') }}</a>
                 @auth

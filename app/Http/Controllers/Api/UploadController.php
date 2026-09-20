@@ -79,6 +79,7 @@ class UploadController extends Controller
             'parts' => $f->kind() === 'box' && ! empty($f->tool_params['lid']) ? ['body', 'lid'] : [],
             'stl_url' => $f->stl_path ? route('api.files.stl', $f->uuid) : null,
             'kind' => $f->kind(),
+            'check' => \App\Domain\Tools\ModelCheck::report($f),
             'hints' => $f->printHints(),
             'generation' => $f->generationInfo(),
         ];

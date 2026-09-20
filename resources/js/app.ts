@@ -6,5 +6,7 @@ import { bootFigure } from './calc/figure';
 import { bootSign } from './calc/sign';
 import { bootRelief } from './calc/relief';
 import { bootParam } from './calc/param';
+import { bootSpare } from './calc/spare';
+import { bootCheckPage } from './calc/check';
 
-document.addEventListener('DOMContentLoaded', () => { boot(); bootSearch(); bootChat(); bootMiniViewers(); bootFigure(); bootSign(); bootRelief(); bootParam(); });
+document.addEventListener('DOMContentLoaded', () => { boot(); bootSearch(); bootChat(); bootMiniViewers(); bootFigure(); bootSign(); bootRelief(); bootParam(); bootSpare(); bootCheckPage(); });

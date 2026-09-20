@@ -97,7 +97,7 @@ export function setDownload(file: FileInfo | null, params: () => DownloadParams,
     if (parts) {
         const i18n = (window as unknown as { MP_I18N?: Record<string, string> }).MP_I18N ?? {};
         parts.classList.toggle('hidden', !(file.parts ?? []).length);
-        parts.innerHTML = (file.parts ?? []).length ? `${i18n['download.parts'] ?? ''}: ` + (file.parts ?? []).map((p) => `<a class="text-teal-700 underline" href="${routes().paramPart}/${file.uuid}/${p}.stl">${i18n[`param.part.${p}`] ?? p}</a>`).join(' · ') : '';
+        parts.innerHTML = (file.parts ?? []).length ? `${i18n['download.parts'] ?? ''}: ` + (file.parts ?? []).map((p) => `<a class="text-action-dark underline" href="${routes().paramPart}/${file.uuid}/${p}.stl">${i18n[`param.part.${p}`] ?? p}</a>`).join(' · ') : '';
     }
     refresh();
 }

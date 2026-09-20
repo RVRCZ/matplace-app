@@ -18,6 +18,7 @@
     <div class="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr]">
         <div>
             <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                @if($inquiry->kind === 'spare_part')@include('inquiry.spare_details')@endif
                 @if($inquiry->modelFile && $inquiry->modelFile->isReady())
                     <canvas class="mini-viewer block h-72 w-full touch-none" data-stl="{{ route('api.files.stl', $inquiry->modelFile->uuid) }}"></canvas>
                 @endif
@@ -40,11 +41,11 @@
 
         <div class="space-y-3">
             @if($offer)
-                <div class="rounded-2xl border {{ $accepted ? 'border-teal-500' : 'border-slate-200' }} bg-white p-4">
+                <div class="rounded-2xl border {{ $accepted ? 'border-action' : 'border-slate-200' }} bg-white p-4">
                     <div class="flex items-center justify-between"><div class="font-bold">{{ __('inquiry.your_offer') }}</div><span class="text-xs text-slate-500">{{ __('quote.status.'.$offer->status) }}</span></div>
                     <div class="text-2xl font-extrabold">{{ number_format($offer->total, 0, ',', ' ') }} Kč</div>
                     @if($offer->lead_time_days !== null)<div class="text-sm text-slate-500">{{ __('calc.days', ['n' => $offer->lead_time_days]) }}</div>@endif
-                    @if($accepted)<div class="mt-2 rounded-lg bg-teal-50 px-3 py-2 text-sm text-teal-800">✅ {{ __('inquiry.accepted_printer', ['name' => $inquiry->contact_name ?: $inquiry->contact_email, 'email' => $inquiry->contact_email, 'phone' => $inquiry->contact_phone ?: '—']) }}</div>@endif
+                    @if($accepted)<div class="mt-2 rounded-lg bg-action-soft px-3 py-2 text-sm text-action-dark">✅ {{ __('inquiry.accepted_printer', ['name' => $inquiry->contact_name ?: $inquiry->contact_email, 'email' => $inquiry->contact_email, 'phone' => $inquiry->contact_phone ?: '—']) }}</div>@endif
                 </div>
             @elseif($dispatch->declined_at)
                 <div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">{{ __('inquiry.you_declined') }}</div>
@@ -59,7 +60,7 @@
                         <label class="text-sm font-semibold">{{ __('quote.lead_time') }} <span class="font-normal text-slate-500">{{ __('quote.days_short') }}</span><input name="lead_time_days" type="number" min="0" value="{{ old('lead_time_days', $profile->defaultPricing()?->lead_time_days ?? $profile->lead_time_days) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
                     </div>
                     <textarea name="note" rows="2" maxlength="2000" placeholder="{{ __('inquiry.offer_note') }}" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">{{ old('note') }}</textarea>
-                    <button class="mt-3 w-full rounded-xl bg-teal-600 px-4 py-3 font-semibold text-white">{{ __('inquiry.send_offer') }}</button>
+                    <button class="mt-3 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('inquiry.send_offer') }}</button>
                 </form>
                 <form method="post" action="{{ route('printer.inquiries.decline', $inquiry) }}" class="text-right">@csrf<input type="hidden" name="reason" value=""><button class="text-xs text-slate-500 hover:text-red-700">{{ __('inquiry.decline') }}</button></form>
             @else
