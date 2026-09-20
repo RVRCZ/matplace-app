@@ -8,7 +8,8 @@ Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquer
   mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
   mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal]
                                                        -> millimetres (largest side = max_mm), Z-up, on the bed;
-                                                          clean = drop dust fragments, pedestal = flat round base
+                                                          clean = drop dust fragments, pedestal = flat round base,
+                                                          solid = close holes and union all parts into one watertight body
   mesh_tool.py cad <in.step|iges> <out.stl> [lin] [ang] -> CAD B-rep to STL via OpenCascade (cadquery); lin=mm, ang=rad
 
 Always prints exactly one JSON object on stdout.
@@ -72,6 +73,49 @@ def report(m, extra=None):
     if extra:
         r.update(extra)
     return r
+
+
+def solidify(m, target, extra=None):
+    """
+    Generated meshes have open edges and loose shells; slicers then guess. Close every real part (pymeshfix),
+    drop dust, and union everything (manifold3d) into one watertight body. Every step falls back to the input.
+    """
+    import trimesh
+    limit = target * 0.02
+    parts = [p for p in m.split(only_watertight=False) if float(max(p.extents)) >= limit and len(p.faces) >= 4]
+    if not parts:
+        parts = [m]
+    fixed = []
+    for p in parts:
+        q = p
+        if not p.is_watertight:
+            try:
+                import pymeshfix
+                fx = pymeshfix.MeshFix(p.vertices, p.faces)
+                fx.repair()
+                vv = getattr(fx, "points", None)
+                ff = getattr(fx, "faces", None)
+                if vv is None or ff is None:
+                    vv, ff = fx.v, fx.f
+                c = trimesh.Trimesh(vv, ff, process=True)
+                # accept only a repair that kept the shape (pymeshfix may throw away a badly broken part)
+                if len(c.faces) and c.is_watertight and abs(float(max(c.extents)) - float(max(p.extents))) <= 0.03 * float(max(p.extents)):
+                    q = c
+            except Exception:
+                pass
+        if q.is_watertight and q.volume < 0:
+            q.invert()
+        fixed.append(q)
+    if extra is not None:
+        fixed.append(extra)
+    if len(fixed) > 1 and all(f.is_watertight for f in fixed):
+        try:
+            u = trimesh.boolean.union(fixed, engine="manifold")
+            if len(u.faces) and u.is_watertight:
+                return u
+        except Exception:
+            pass
+    return fixed[0] if len(fixed) == 1 else trimesh.util.concatenate(fixed)
 
 
 def cad_to_stl(src, dst, lin=0.05, ang=0.3):
@@ -162,13 +206,17 @@ def main(argv):
                 cx, cy = float(low[:, 0].mean()), float(low[:, 1].mean())
                 r = float(np.percentile(np.hypot(low[:, 0] - cx, low[:, 1] - cy), 92)) * 1.08
                 r = max(r, target * 0.18)
+                r = min(r, float(max(m.extents[0], m.extents[1])) * 0.55)   # never much wider than the figure itself
                 ped_h = max(3.0, target * 0.05)
                 overlap = max(2.0, target * 0.035)
                 ped = trimesh.creation.cylinder(radius=r, height=ped_h + overlap, sections=96)
                 ped.apply_translation([cx, cy, (ped_h + overlap) / 2.0 - ped_h])
-                m = trimesh.util.concatenate([m, ped])
+                m = solidify(m, target, ped) if "solid" in opts else trimesh.util.concatenate([m, ped])
                 m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
                 m.apply_scale(target / float(max(m.extents)))
+            elif "solid" in opts:
+                m = solidify(m, target, None)
+                m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
             m.export(argv[3], file_type="stl")
             out(report(m, {"out": argv[3], "removed_fragments": removed}))
         if cmd == "cad":

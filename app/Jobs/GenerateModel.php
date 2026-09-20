@@ -72,7 +72,7 @@ class GenerateModel implements ShouldQueue
             $abs = Storage::disk(ModelFile::DISK)->path($rel);
             File::ensureDirectoryExists(dirname($abs));
             $kind = $req->description['kind'] ?? null;
-            $options = in_array($kind, ['bust', 'figure'], true) ? ['clean', 'pedestal'] : ['clean'];
+            $options = in_array($kind, ['bust', 'figure'], true) ? ['clean', 'pedestal', 'solid'] : ['clean', 'solid'];
             $normalizer->toPrintableStl((string) $status->meshPath, $abs, (float) ($req->target_mm ?: config('ai.default_target_mm', 80)), str_ends_with(strtolower((string) $status->meshPath), '.glb'), $options);
             @unlink((string) $status->meshPath);
 
