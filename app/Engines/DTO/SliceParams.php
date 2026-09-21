@@ -15,7 +15,17 @@ final class SliceParams
         public readonly float $scale = 1.0,
         public readonly bool $vaseMode = false,
         public readonly bool $treeSupports = false, // set by the pipeline for organic (generated) models, not by the customer
+        // Print farm: the printer and material rows carry their own profile files and overrides (real plate size, no
+        // prime tower…). Empty = the shared calculator profiles from config/engines.php, exactly as before.
+        public readonly array $profiles = [],      // machine | process | filament => profile file name
+        public readonly array $overrides = [],     // machine | process | filament => [setting => value]
+        public readonly bool $keepGcode = false,   // the G-code is the product, not a by-product of the estimate
     ) {}
+
+    public function withFarmProfile(array $profiles, array $overrides): self
+    {
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $profiles, $overrides, true);
+    }
 
     public static function fromArray(array $a): self
     {
@@ -37,7 +47,7 @@ final class SliceParams
 
     public function toArray(): array
     {
-        return [
+        $a = [
             'material' => $this->materialCode,
             'quality' => $this->quality,
             'infill' => $this->infillPercent,
@@ -46,6 +56,12 @@ final class SliceParams
             'vase' => $this->vaseMode,
             'tree' => $this->treeSupports,
         ];
+        // only when used, so cache keys of ordinary calculations stay what they were
+        if ($this->profiles || $this->overrides) {
+            $a += ['profiles' => $this->profiles, 'overrides' => $this->overrides];
+        }
+
+        return $a;
     }
 
     /** Stable hash used for result caching (same file + same params = same result). */

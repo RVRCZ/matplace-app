@@ -16,12 +16,14 @@ final class SliceResult
         public readonly ?string $gcodePath = null,
         public readonly array $warnings = [],
         public readonly array $raw = [],
+        public readonly ?float $meters = null,
     ) {}
 
     public function toArray(): array
     {
         return [
             'grams' => round($this->grams, 1),
+            'meters' => $this->meters === null ? null : round($this->meters, 2),
             'minutes' => $this->minutes,
             'dims' => $this->dims->toArray(),
             'supports_used' => $this->supportsUsed,

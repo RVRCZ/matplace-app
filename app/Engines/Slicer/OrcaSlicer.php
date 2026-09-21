@@ -39,9 +39,9 @@ final class OrcaSlicer implements Slicer
         $work = $this->workDir('job');
         try {
             $mesh = $this->prepareMesh($meshPath, $params, $work);
-            $filament = $this->profile('filaments', $params->materialCode, 'material');
-            $process = $this->profile('processes', $params->quality, 'quality');
-            $machine = $this->config['profiles'].'/'.$this->config['machine'];
+            $filament = $this->patched($this->profileFile($params->profiles['filament'] ?? null) ?? $this->profile('filaments', $params->materialCode, 'material'), $params->overrides['filament'] ?? [], $work.'/filament.json');
+            $process = $this->profileFile($params->profiles['process'] ?? null) ?? $this->profile('processes', $params->quality, 'quality');
+            $machine = $this->patched($this->profileFile($params->profiles['machine'] ?? null) ?? $this->config['profiles'].'/'.$this->config['machine'], $params->overrides['machine'] ?? [], $work.'/machine.json');
 
             $attempt = function (bool $supports) use ($work, $mesh, $params, $filament, $process, $machine): array {
                 $proc = json_decode((string) File::get($process), true) ?: [];
@@ -58,6 +58,10 @@ final class OrcaSlicer implements Slicer
                 if ($supports && $params->treeSupports) {
                     $proc['support_type'] = 'tree(auto)';
                     $proc['support_style'] = 'default';
+                }
+                // the printer's own process settings win over everything above (farm: supports on auto, no prime tower…)
+                foreach ($params->overrides['process'] ?? [] as $k => $v) {
+                    $proc[$k] = $v;
                 }
                 $tag = $supports ? 'sup' : 'std';
                 $procFile = $work.'/process_'.$tag.'.json';
@@ -81,7 +85,8 @@ final class OrcaSlicer implements Slicer
                 return ['gcodes' => File::glob($out.'/*.gcode'), 'raw' => $result->output().$result->errorOutput()];
             };
 
-            $wantSupports = $params->supports ?? false;
+            $forced = ($params->overrides['process']['enable_support'] ?? null) === '1';
+            $wantSupports = $forced || ($params->supports ?? false);
             $r = $attempt($wantSupports);
             $autoSupports = false;
             if (! $r['gcodes'] && $params->supports === null && ! $params->vaseMode) {
@@ -117,10 +122,12 @@ final class OrcaSlicer implements Slicer
                 grams: $grams,
                 minutes: $minutes ?? 1,
                 dims: $dims,
-                supportsUsed: $wantSupports || $autoSupports,
+                // supports switched on for the whole farm are "auto": they count only when the slicer really built some
+                supportsUsed: $forced ? GcodeStats::hasSupports($gcode) : ($wantSupports || $autoSupports),
                 gcodePath: $keep,
                 warnings: $warnings,
-                raw: ['engine' => 'orca', 'tree_supports' => ($wantSupports || $autoSupports) && $params->treeSupports, 'filament' => basename($filament), 'process' => basename($process)],
+                raw: ['engine' => 'orca', 'tree_supports' => ($wantSupports || $autoSupports) && $params->treeSupports, 'filament' => basename($filament), 'process' => basename($process), 'machine' => basename($machine)],
+                meters: GcodeStats::meters($gcode),
             );
         } finally {
             File::deleteDirectory($work);
@@ -155,6 +162,33 @@ final class OrcaSlicer implements Slicer
         }
 
         return $path;
+    }
+
+    /** A profile named by a farm printer/material row: uploaded profiles first, then the ones shipped with the app. */
+    private function profileFile(?string $name): ?string
+    {
+        if (! $name) {
+            return null;
+        }
+        $name = basename($name);   // a row can never point outside the profile directories
+        foreach ([config('farm.profiles_dir'), $this->config['profiles']] as $dir) {
+            if ($dir && is_file($dir.'/'.$name)) {
+                return $dir.'/'.$name;
+            }
+        }
+        throw new SlicerException("Slicer profile missing: {$name}");
+    }
+
+    /** Copy of a profile with settings replaced; the profile itself when there is nothing to replace. */
+    private function patched(string $profile, array $overrides, string $target): string
+    {
+        if (! $overrides) {
+            return $profile;
+        }
+        $json = json_decode((string) File::get($profile), true) ?: [];
+        File::put($target, json_encode(array_merge($json, $overrides)));
+
+        return $target;
     }
 
     private function prefix(): array

@@ -1,23 +1,28 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Admin\FarmCatalogController;
+use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
-use App\Http\Controllers\Api\ModelFileController;
 use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
+use App\Http\Controllers\Api\ModelFileController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\ThreadController;
 use App\Http\Controllers\Api\ToolsApiController;
-use App\Http\Controllers\InquiryController;
-use App\Http\Controllers\Printer\InquiryController as PrinterInquiryController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\CalculatorController;
+use App\Http\Controllers\Farm\CreditController;
+use App\Http\Controllers\Farm\OrderController;
+use App\Http\Controllers\InquiryController;
+use App\Http\Controllers\Printer\InquiryController as PrinterInquiryController;
 use App\Http\Controllers\Printer\PrinterController;
-use App\Http\Controllers\ToolsController;
 use App\Http\Controllers\Printer\QuoteController;
+use App\Http\Controllers\PrinterPageController;
+use App\Http\Controllers\ToolsController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public: the one screen ───────────────────────────────────────────────────
@@ -25,8 +30,8 @@ Route::get('/', [CalculatorController::class, 'index'])->name('home');
 Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share');
 
 // Tools menu (everything that is not the one main screen)
-Route::get('/printers/id/{id}', [\App\Http\Controllers\PrinterPageController::class, 'byId'])->whereNumber('id')->name('printers.by_id');
-Route::get('/printers/{printerProfile:slug}', [\App\Http\Controllers\PrinterPageController::class, 'show'])->name('printers.show');
+Route::get('/printers/id/{id}', [PrinterPageController::class, 'byId'])->whereNumber('id')->name('printers.by_id');
+Route::get('/printers/{printerProfile:slug}', [PrinterPageController::class, 'show'])->name('printers.show');
 Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
 Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
 Route::get('/tools/sign', [ToolsController::class, 'param'])->defaults('kind', 'sign')->name('tools.sign');
@@ -111,6 +116,62 @@ Route::middleware('auth')->prefix('account')->name('account')->group(function ()
     Route::post('/profile', [AccountController::class, 'updateProfile'])->name('.profile.update');
     Route::post('/roles/{role}/enable', [AccountController::class, 'enableRole'])->name('.roles.enable');
     Route::post('/roles/{role}/disable', [AccountController::class, 'disableRole'])->name('.roles.disable');
+});
+
+// ── Print farm: "Rent a printer" (logged-in users; credit from the payment gateway) ──
+Route::get('/farm/terms', [OrderController::class, 'terms'])->name('farm.terms');
+Route::middleware('auth')->group(function () {
+    Route::get('/farm', [OrderController::class, 'start'])->name('farm.start');
+    Route::get('/farm/orders', [OrderController::class, 'index'])->name('farm.orders');
+    Route::post('/farm/orders', [OrderController::class, 'store'])->middleware('throttle:20,1')->name('farm.orders.store');
+    Route::get('/farm/orders/{order}', [OrderController::class, 'show'])->name('farm.orders.show');
+    Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
+    Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1')->name('farm.orders.reslice');
+    Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware('throttle:10,1')->name('farm.orders.pay');
+    Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
+    Route::get('/farm/orders/{order}/model.stl', [OrderController::class, 'model'])->name('farm.orders.model');
+    Route::get('/farm/orders/{order}/snapshot.jpg', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
+
+    Route::get('/account/credit', [CreditController::class, 'index'])->name('account.credit');
+    Route::post('/account/credit', [CreditController::class, 'topUp'])->middleware('throttle:10,1')->name('account.credit.topup');
+});
+
+// ── Admin: farm operation and data ───────────────────────────────────────────
+Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.farm.')->group(function () {
+    $orders = FarmOrderController::class;
+    $catalog = FarmCatalogController::class;
+
+    Route::get('/', [$orders, 'dashboard'])->name('dashboard');
+    Route::get('/orders', [$orders, 'index'])->name('orders');
+    Route::get('/orders/{order}', [$orders, 'show'])->name('orders.show');
+    Route::get('/orders/{order}/print.gcode', [$orders, 'gcode'])->name('orders.gcode');
+    Route::get('/orders/{order}/snapshot.jpg', [$orders, 'snapshot'])->name('orders.snapshot');
+    Route::post('/orders/{order}/approve', [$orders, 'approve'])->name('orders.approve');
+    Route::post('/orders/{order}/status', [$orders, 'status'])->name('orders.status');
+    Route::post('/orders/{order}/actuals', [$orders, 'actuals'])->name('orders.actuals');
+    Route::post('/orders/{order}/refund', [$orders, 'refund'])->name('orders.refund');
+    Route::post('/printers/{printer}/bed', [$orders, 'bed'])->name('printers.bed');
+    Route::post('/printers/{printer}/command', [$orders, 'command'])->name('printers.command');
+    Route::get('/printers/{printer}/snapshot.jpg', [$orders, 'printerSnapshot'])->name('printers.snapshot');
+
+    Route::get('/printers', [$catalog, 'printers'])->name('printers');
+    Route::get('/printers/new', [$catalog, 'editPrinter'])->name('printers.new');
+    Route::post('/printers/new', [$catalog, 'savePrinter'])->name('printers.create');
+    Route::get('/printers/{printer}', [$catalog, 'editPrinter'])->name('printers.edit');
+    Route::post('/printers/{printer}', [$catalog, 'savePrinter'])->name('printers.update');
+    Route::get('/materials', [$catalog, 'materials'])->name('materials');
+    Route::post('/materials/new', [$catalog, 'saveMaterial'])->name('materials.create');
+    Route::post('/materials/{material}', [$catalog, 'saveMaterial'])->name('materials.update');
+    Route::post('/colors/new', [$catalog, 'saveColor'])->name('colors.create');
+    Route::post('/colors/{color}', [$catalog, 'saveColor'])->name('colors.update');
+    Route::get('/settings', [$catalog, 'settings'])->name('settings');
+    Route::post('/settings', [$catalog, 'saveSettings'])->name('settings.save');
+    Route::get('/agents', [$catalog, 'agents'])->name('agents');
+    Route::post('/agents', [$catalog, 'createAgent'])->name('agents.create');
+    Route::post('/agents/{agent}/rotate', [$catalog, 'rotateAgent'])->name('agents.rotate');
+    Route::post('/agents/{agent}/revoke', [$catalog, 'revokeAgent'])->name('agents.revoke');
+    Route::get('/credit', [$catalog, 'credit'])->name('credit');
+    Route::post('/credit', [$catalog, 'adjustCredit'])->name('credit.adjust');
 });
 
 // ── Printer tools (role switch "I own a printer") ────────────────────────────

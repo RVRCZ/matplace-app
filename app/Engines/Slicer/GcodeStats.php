@@ -17,6 +17,25 @@ final class GcodeStats
         return null;
     }
 
+    /** Filament length in metres; multi-slot machines list one value per slot ("3681.80, 0.00, 0.00, 0.00"). */
+    public static function meters(string $gcode): ?float
+    {
+        if (preg_match('/^; (?:total )?filament used \[mm\]\s*=\s*([\d., ]+)/m', $gcode, $m)) {
+            return array_sum(array_map('floatval', explode(',', $m[1]))) / 1000;
+        }
+        if (preg_match('/^; (?:total )?filament used \[m\]\s*=\s*([\d., ]+)/m', $gcode, $m)) {
+            return array_sum(array_map('floatval', explode(',', $m[1])));
+        }
+
+        return null;
+    }
+
+    /** With supports on "auto" the slicer adds them only where needed: did it add any? */
+    public static function hasSupports(string $gcode): bool
+    {
+        return (bool) preg_match('/^;\s*(?:TYPE|FEATURE):\s*Support/mi', $gcode);
+    }
+
     public static function minutes(string $gcode): ?int
     {
         if (preg_match('/estimated printing time \(normal mode\)\s*=\s*(.+)/', $gcode, $m)) {

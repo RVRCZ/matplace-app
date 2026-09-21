@@ -30,6 +30,7 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="ENGINE_SLICER" value="fake"/>
         <env name="ENGINE_REPAIR" value="php"/>
+        <env name="FARM_PAYMENT_GATEWAY" value="fake"/>
         <env name="FILESYSTEM_DISK" value="local"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
