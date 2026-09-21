@@ -56,7 +56,7 @@ final class TripoGenerator implements ModelGenerator
 
         return $this->create('/v3/generation/image-to-model', [
             'file' => ['type' => $ext, 'file_token' => $token],
-        ] + $this->common(), 20);
+        ] + $this->common(), 20 + $this->detailCredits());
     }
 
     public function fromText(string $prompt, GenerationOptions $options): GenerationHandle
@@ -66,7 +66,7 @@ final class TripoGenerator implements ModelGenerator
             throw new GenerationException('Prompt is too short.');
         }
 
-        return $this->create('/v3/generation/text-to-model', ['prompt' => mb_substr($prompt, 0, 1000)] + $this->common(), 10);
+        return $this->create('/v3/generation/text-to-model', ['prompt' => mb_substr($prompt, 0, 1000)] + $this->common(), 10 + $this->detailCredits());
     }
 
     public function poll(GenerationHandle $handle): GenerationStatus
@@ -120,12 +120,23 @@ final class TripoGenerator implements ModelGenerator
     /** Geometry only, bounded triangle count (the adaptive default can exceed a million faces). */
     private function common(): array
     {
-        return [
+        return array_filter([
             'model' => $this->config['model'],
             'texture' => false,
             'pbr' => false,
-            'face_limit' => (int) $this->config['face_limit'],
-        ];
+            // UV unwrapping cuts the surface into islands; for printing that means hundreds of open patches
+            'export_uv' => false,
+            'geometry_quality' => $this->config['geometry_quality'] ?? 'standard',
+            'enable_image_autofix' => (bool) ($this->config['image_autofix'] ?? false),
+            // 0 = let the generator decide; we simplify ourselves, exactly and without tearing the mesh
+            'face_limit' => (int) $this->config['face_limit'] ?: null,
+        ], fn ($v) => $v !== null);
+    }
+
+    /** Detailed geometry costs 20 credits on top. */
+    private function detailCredits(): int
+    {
+        return ($this->config['geometry_quality'] ?? 'standard') === 'detailed' ? 20 : 0;
     }
 
     private function client(): PendingRequest

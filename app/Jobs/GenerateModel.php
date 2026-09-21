@@ -79,6 +79,8 @@ class GenerateModel implements ShouldQueue
                 'dedication' => $req->description['pedestal_dedication'] ?? null,
                 // busts do not always arrive facing the front; the name belongs under the face
                 'front' => $kind === 'bust' ? 'auto' : null,
+                // cut flat across the chest like a sculpted bust, instead of arms that end at the elbows
+                'cut' => $kind === 'bust' ? 'bust' : null,
                 // the closed figure without a base is kept: changing the base later needs no new generation
                 'source_out' => in_array($kind, ['bust', 'figure'], true) ? dirname($abs).'/source.stl' : null,
             ]));

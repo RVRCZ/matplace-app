@@ -21,7 +21,9 @@ return [
         'api_key' => env('TRIPO_API_KEY', ''),
         'base_url' => env('TRIPO_BASE_URL', 'https://openapi.tripo3d.ai'),
         'model' => env('TRIPO_MODEL', 'v3.1-20260211'),
-        'face_limit' => (int) env('TRIPO_FACE_LIMIT', 200000),
+        'face_limit' => (int) env('TRIPO_FACE_LIMIT', 0),
+        'geometry_quality' => env('TRIPO_GEOMETRY_QUALITY', 'detailed'),      // detailed = +20 credits, much finer faces and hair
+        'image_autofix' => (bool) env('TRIPO_IMAGE_AUTOFIX', true),
         'work_dir' => storage_path('app/generated'),
     ],
     'default_target_mm' => 80,

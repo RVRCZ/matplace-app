@@ -23,7 +23,7 @@ class GenerationController extends Controller
             'prompt' => ['nullable', 'string', 'min:3', 'max:500', 'required_without_all:describe,image'],
             'image' => ['nullable', 'image', 'max:12288'],
             'kind' => ['nullable', 'in:bust,figure', 'required_with:image'],
-            'pedestal' => ['nullable', 'in:round,square,hexagon,column,plaque'],
+            'pedestal' => ['nullable', 'in:round,square,hexagon,column,plaque,none'],
             'pedestal_name' => ['nullable', 'string', 'max:24'],
             'pedestal_dedication' => ['nullable', 'string', 'max:40'],
             'target_mm' => ['nullable', 'integer', 'min:5', 'max:1000'],

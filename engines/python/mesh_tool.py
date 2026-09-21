@@ -8,7 +8,7 @@ Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquer
   mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
   mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal,solid] [extras-json]
                                                           extras: {"pedestal": round|square|hexagon|column|plaque|none, "name": "…", "dedication": "…", "font": path,
-                                                                   "front": auto|keep|left|right|back, "source_out": path of the figure without a base,
+                                                                   "front": auto|keep|left|right|back, "cut": "bust", "source_out": path of the figure without a base,
                                                                    "strip_pedestal": true}
                                                        -> millimetres (largest side = max_mm), Z-up, on the bed;
                                                           clean = drop dust fragments, pedestal = flat round base,
@@ -78,12 +78,63 @@ def report(m, extra=None):
     return r
 
 
+def fix_winding_fast(m):
+    """
+    Generated meshes arrive closed but with some faces turned inside out, and exact solids refuse such a mesh.
+    trimesh needs minutes for two million faces; this walks the face graph once (scipy BFS) and flips by parity.
+    """
+    import numpy as np
+    import trimesh
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import breadth_first_order
+    pairs, edges = m.face_adjacency, m.face_adjacency_edges
+    f = m.faces
+
+    def runs_forward(face_idx):
+        tri = f[face_idx]
+        a, b = edges[:, 0][:, None], edges[:, 1][:, None]
+        return ((tri == a) & (np.roll(tri, -1, axis=1) == b)).any(axis=1)
+
+    # neighbours agree when the shared edge runs in opposite directions in the two faces
+    clash = runs_forward(pairs[:, 0]) == runs_forward(pairs[:, 1])
+    n = len(f)
+    graph = coo_matrix((np.ones(len(pairs), dtype=np.int8), (pairs[:, 0], pairs[:, 1])), shape=(n, n)).tocsr()
+    graph = graph + graph.T
+    lookup = {}
+    for (i, j), c in zip(pairs[clash].tolist(), [True] * int(clash.sum())):
+        lookup[(i, j)] = lookup[(j, i)] = c
+    flip = np.zeros(n, dtype=bool)
+    seen = np.zeros(n, dtype=bool)
+    for start in range(n):
+        if seen[start]:
+            continue
+        order, pred = breadth_first_order(graph, start, directed=False, return_predecessors=True)
+        seen[order] = True
+        for node in order[1:].tolist():
+            parent = int(pred[node])
+            flip[node] = flip[parent] ^ ((parent, node) in lookup)
+        if len(order) == n:
+            break
+    if flip.any():
+        faces = f.copy()
+        faces[flip] = faces[flip][:, ::-1]
+        m = trimesh.Trimesh(vertices=m.vertices, faces=faces, process=False)
+    if m.volume < 0:
+        m.invert()
+    return m
+
+
 def solidify(m, target, extra=None):
     """
     Generated meshes have open edges and loose shells; slicers then guess. Close every real part (pymeshfix),
     drop dust, and union everything (manifold3d) into one watertight body. Every step falls back to the input.
     """
     import trimesh
+    if m.is_watertight and not m.is_winding_consistent:
+        try:
+            m = fix_winding_fast(m)
+        except Exception:
+            pass
     limit = target * 0.02
     parts = [p for p in m.split(only_watertight=False) if float(max(p.extents)) >= limit and len(p.faces) >= 4]
     if not parts:
@@ -302,6 +353,35 @@ def big_shells(mesh):
     return keep[0] if len(keep) == 1 else trimesh.util.concatenate(keep)
 
 
+def bust_cut(m):
+    """
+    A generated bust often runs down to the elbows. A sculptor cuts it flat across the chest, about one head below
+    the chin: find the neck (narrowest slice of the upper half), measure the head above it, cut that far below.
+    Returns the mesh unchanged when no clear neck is found or the cut would take almost nothing.
+    """
+    import numpy as np
+    z0, z1 = float(m.bounds[0][2]), float(m.bounds[1][2])
+    h = z1 - z0
+    v = m.vertices
+    levels = np.linspace(z0 + 0.40 * h, z0 + 0.88 * h, 49)
+    step = levels[1] - levels[0]
+    width = np.array([np.ptp(v[(v[:, 2] >= z) & (v[:, 2] < z + step)][:, :2], axis=0).max() if ((v[:, 2] >= z) & (v[:, 2] < z + step)).sum() > 20 else np.inf for z in levels])
+    if not np.isfinite(width).any():
+        return m
+    neck = float(levels[int(np.argmin(width))])
+    shoulders = float(np.ptp(v[v[:, 2] < neck][:, :2], axis=0).max())
+    if width.min() > 0.75 * shoulders:
+        return m                                                            # no neck to speak of: not a bust shape
+    cut = neck - 1.05 * (z1 - neck)
+    if cut < z0 + 0.06 * h:
+        return m
+    try:
+        out_mesh = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], cut))
+        return out_mesh if len(out_mesh.faces) and out_mesh.is_watertight else m
+    except Exception:
+        return m
+
+
 def face_front(m):
     """
     Busts do not always arrive looking at -Y. Shoulders are the wide axis; the head sits in front of the chest.
@@ -515,6 +595,15 @@ def main(argv):
             m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
             if "solid" in opts:
                 m = solidify(m, target, None)
+                if len(m.faces) > 400000 and m.is_watertight:
+                    # a detailed generation arrives with millions of faces; 0.02 mm is far below what a nozzle shows
+                    m = simplified(m, 0.02)
+            if extras.get("cut") == "bust" and m.is_watertight:
+                before = float(m.extents[2])
+                m = bust_cut(m)
+                if float(m.extents[2]) < before - 0.01:
+                    ped_note["bust_cut"] = True
+                    m.apply_scale(target / float(max(m.extents)))
             front = str(extras.get("front", "keep"))
             turns = face_front(m) if front == "auto" else {"right": 3, "back": 2, "left": 1}.get(front, 0)      # where the face looks now, seen from the front
             if turns:

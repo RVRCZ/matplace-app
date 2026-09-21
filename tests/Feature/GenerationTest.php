@@ -124,11 +124,13 @@ class GenerationTest extends TestCase
         $img = sys_get_temp_dir().'/mp_tripo_'.uniqid().'.jpg';
         imagejpeg(imagecreatetruecolor(8, 8), $img);
 
-        $g = new TripoGenerator(['api_key' => 'tsk_test', 'base_url' => 'https://openapi.tripo3d.ai', 'model' => 'v3.1-20260211', 'face_limit' => 200000, 'work_dir' => sys_get_temp_dir().'/mp_tripo_out']);
+        $g = new TripoGenerator(['api_key' => 'tsk_test', 'base_url' => 'https://openapi.tripo3d.ai', 'model' => 'v3.1-20260211', 'face_limit' => 0, 'geometry_quality' => 'detailed', 'work_dir' => sys_get_temp_dir().'/mp_tripo_out']);
         $h = $g->fromImage($img, null, new GenerationOptions);
         $this->assertSame('task-1', $h->externalId);
         Http::assertSent(fn ($req) => str_ends_with($req->url(), '/v3/generation/image-to-model')
-            && $req['texture'] === false && $req['pbr'] === false && $req['face_limit'] === 200000
+            && $req['texture'] === false && $req['pbr'] === false
+            // no UV islands (they tear the mesh into open patches), full detail, no server-side face limit
+            && $req['export_uv'] === false && $req['geometry_quality'] === 'detailed' && ! isset($req['face_limit'])
             && $req['model'] === 'v3.1-20260211' && $req['file'] === ['type' => 'jpg', 'file_token' => 'file_abc']
             && $req->hasHeader('Authorization', 'Bearer tsk_test'));
 

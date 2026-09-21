@@ -43,8 +43,8 @@
 
         <fieldset>
             <legend class="text-sm font-semibold">{{ __('figure.pedestal') }}</legend>
-            <div class="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
-                @foreach(['round' => '⬤', 'square' => '◼', 'hexagon' => '⬢', 'column' => '▂', 'plaque' => '▭'] as $pk => $ico)
+            <div class="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-6">
+                @foreach(['round' => '⬤', 'square' => '◼', 'hexagon' => '⬢', 'column' => '▂', 'plaque' => '▭', 'none' => '∅'] as $pk => $ico)
                     <label class="cursor-pointer rounded-xl border border-slate-300 p-2 text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action">
                         <input type="radio" name="pedestal" value="{{ $pk }}" class="sr-only" @checked($pk === 'round')><div class="text-lg" aria-hidden="true">{{ $ico }}</div>{{ __('figure.pedestal.'.$pk) }}
                     </label>
