@@ -1,0 +1,27 @@
+# systemd unit for matplace farm-agent.
+#   sudo cp farm-agent.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now farm-agent
+#   journalctl -u farm-agent -f
+[Unit]
+Description=matplace farm-agent (3D printers -> matplace, outgoing HTTPS only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=farm
+Group=farm
+WorkingDirectory=/opt/farm-agent
+ExecStart=/opt/farm-agent/venv/bin/python -m farm_agent --config /opt/farm-agent/config.yaml
+Restart=always
+RestartSec=10
+
+# the agent needs the network and its own directory, nothing else
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/farm-agent/work
+
+[Install]
+WantedBy=multi-user.target

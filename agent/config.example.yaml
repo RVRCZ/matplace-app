@@ -1,0 +1,30 @@
+# matplace farm-agent — copy to config.yaml and fill in.
+# The file holds a secret (token): chmod 600 config.yaml
+
+server: https://beta.matplace.com        # matplace address, https only
+token: mpa_PASTE_THE_TOKEN_FROM_ADMIN    # /admin/farm/agents -> "Vytvořit a zobrazit token" (or env FARM_AGENT_TOKEN)
+
+poll_seconds: 5          # how often the agent asks matplace for work and reports printer states
+snapshot_seconds: 180    # camera picture of a running print, every N seconds
+work_dir: ./work         # downloaded G-code and the state that survives a restart
+log_level: INFO          # DEBUG shows every request
+
+printers:
+  # "key" must equal the printer's key in /admin/farm/printers, and the printer must be assigned to this agent there.
+  - key: kobra-s1-01
+    driver: moonraker
+    url: http://192.168.8.21:7125                          # Moonraker on the printer (Rinkhals), reserve this IP in the router
+    snapshot_url: http://192.168.8.21/webcam/?action=snapshot
+    # api_key: ...                                          # only when Moonraker is set up to require one
+
+  # Second, third… printer: one more block. One agent serves them all.
+  # - key: kobra-s1-02
+  #   driver: moonraker
+  #   url: http://192.168.8.22:7125
+  #   snapshot_url: http://192.168.8.22/webcam/?action=snapshot
+
+  # Simulated printer — try the whole order flow without a machine (see README, "Zkouška bez tiskárny").
+  # - key: kobra-s1-01
+  #   driver: mock
+  #   print_seconds: 90        # length of a simulated print
+  #   # fail_at: 40            # let the print fail at 40 % to see the refund and the alert

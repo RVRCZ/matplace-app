@@ -37,6 +37,29 @@ config/engines.php        volba motorů  ·  config/materials.php  ·  config/pr
 deploy/                   nginx vhost, systemd worker, server-setup.sh, deploy.sh
 ```
 
+## Tisková farma („Pronajmout tiskárnu“)
+
+Třetí tlačítko v kalkulaci: přihlášený zákazník nechá model vytisknout na naší tiskárně a platí předem nabitým kreditem.
+
+```
+app/Domain/Farm/          OrderService (založení, barvy, cena), OrderFlow (jediné místo změny stavu: historie, kredit, e-maily),
+                          Dispatcher (fronta → tiskárna, odhad pořadí), AgentService (hlášení agenta), Wallet (kredit = součet
+                          append-only záznamů), PriceCalculator, ModelValidator, GcodeSlot, FarmSettings
+app/Jobs/PrepareFarmOrder kontrola + oprava + orientace (engines/python/farm_tool.py) → slice → G-code + parametry → cena
+app/Engines/Farm/         PrintPreparer: Python (trimesh, pymeshfix) | PHP záloha bez opravy a orientace
+app/Engines/Payment/      PaymentGateway: Stripe Checkout | fake (testy, lokál)
+routes/agent.php          bezstavové /api/agent/* (token agenta) a /webhooks/payments/{brána}
+agent/                    farm-agent (Python): Moonraker + simulovaná tiskárna, README, systemd
+```
+
+- Tiskárny, sloty, materiály, barvy, ceny a pravidla jsou **data** (`/admin/farm`, výchozí hodnoty `config/farm.php`,
+  první naplnění `php artisan db:seed --class=FarmSeeder`). Slicer je stávající OrcaSlicer; řádek tiskárny nese
+  soubory profilů a přepisy (skutečná plocha 250 mm, stromové podpěry na auto, bez čistící věže).
+- Tisk se sám spustí jen tehdy, když obsluha v `/admin/farm` potvrdí **volnou podložku**; start potvrzení spotřebuje.
+- Tiskárna v režimu *ruční*: obsluha stáhne G-code a stavy přepíná sama. V režimu *agent*: viz `agent/README.md`.
+- První kroky na serveru: `php artisan migrate`, `php artisan db:seed --class=FarmSeeder`,
+  `php artisan farm:setup --admin=<e-mail>`; plánovač (`schedule:run`) hlídá `farm:watch` každou minutu.
+
 ## Motory
 
 Výměna motoru = změna `config/engines.php` (nebo `.env` `ENGINE_*`). Kód aplikace vidí jen rozhraní.
