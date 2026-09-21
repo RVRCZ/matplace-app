@@ -84,7 +84,11 @@ class GenerateModel implements ShouldQueue
                 // the closed figure without a base is kept: changing the base later needs no new generation
                 'source_out' => in_array($kind, ['bust', 'figure'], true) ? dirname($abs).'/source.stl' : null,
             ]));
-            @unlink((string) $status->meshPath);
+            // the paid result stays for a week next to the file: a better normalisation can be run again without new credits
+            $raw = dirname($abs).'/raw.'.(strtolower(pathinfo((string) $status->meshPath, PATHINFO_EXTENSION)) ?: 'glb');
+            if (! @rename((string) $status->meshPath, $raw)) {
+                @unlink((string) $status->meshPath);
+            }
 
             $name = Str::slug(Str::limit((string) ($req->description['name_en'] ?? $req->prompt ?? 'model'), 40, '')) ?: 'model';
             $file = ModelFile::create([

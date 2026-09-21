@@ -48,6 +48,18 @@ class PruneData extends Command
                 }
             });
 
+        // raw generator output (tens of MB each) is only a short safety net
+        $raws = 0;
+        foreach (glob(Storage::disk(ModelFile::DISK)->path('files').'/*/raw.*') ?: [] as $raw) {
+            if (filemtime($raw) < now()->subDays(7)->getTimestamp()) {
+                $raws++;
+                if (! $dry) {
+                    @unlink($raw);
+                }
+            }
+        }
+        $this->line("raw generator files removed: {$raws}");
+
         $gcodeDir = rtrim((string) config('engines.orca.work_dir'), '/').'/gcode';
         $gcodes = 0;
         foreach (glob($gcodeDir.'/*.gcode') ?: [] as $g) {

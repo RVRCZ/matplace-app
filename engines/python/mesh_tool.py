@@ -356,24 +356,51 @@ def big_shells(mesh):
 def bust_cut(m):
     """
     A generated bust often runs down to the elbows. A sculptor cuts it flat across the chest, about one head below
-    the chin: find the neck (narrowest slice of the upper half), measure the head above it, cut that far below.
-    Returns the mesh unchanged when no clear neck is found or the cut would take almost nothing.
+    the chin. Going down from the top the outline widens to the head, narrows to the neck and widens to the shoulders;
+    the neck is the narrowest slice BELOW the widest slice of the head (the crown is narrow too, and long hair can
+    hide the neck altogether). Without a clear head-neck-shoulders shape the mesh is handed back untouched.
     """
     import numpy as np
     z0, z1 = float(m.bounds[0][2]), float(m.bounds[1][2])
     h = z1 - z0
     v = m.vertices
-    levels = np.linspace(z0 + 0.40 * h, z0 + 0.88 * h, 49)
+    levels = np.linspace(z0 + 0.25 * h, z0 + 0.97 * h, 73)
     step = levels[1] - levels[0]
-    width = np.array([np.ptp(v[(v[:, 2] >= z) & (v[:, 2] < z + step)][:, :2], axis=0).max() if ((v[:, 2] >= z) & (v[:, 2] < z + step)).sum() > 20 else np.inf for z in levels])
-    if not np.isfinite(width).any():
+    layer = np.clip(((v[:, 2] - levels[0]) / step).astype(int), -1, len(levels))
+    # measured along the shoulder line only: front to back a head is deeper than its neck is wide
+    low = v[v[:, 2] < z0 + 0.4 * h]
+    axis = int(np.argmax(np.ptp(low[:, :2], axis=0)))
+    width = np.zeros(len(levels))
+    for i in range(len(levels)):
+        pts = v[layer == i]
+        if len(pts) > 20:
+            width[i] = float(np.ptp(pts[:, axis]))
+    if (width <= 0).any():
         return m
-    neck = float(levels[int(np.argmin(width))])
-    shoulders = float(np.ptp(v[v[:, 2] < neck][:, :2], axis=0).max())
-    if width.min() > 0.75 * shoulders:
-        return m                                                            # no neck to speak of: not a bust shape
-    cut = neck - 1.05 * (z1 - neck)
-    if cut < z0 + 0.06 * h:
+    width = np.convolve(np.pad(width, 1, mode="edge"), np.ones(3) / 3, mode="valid")
+    # walk down from the crown: wider and wider to the temples, then narrower to the neck, then out to the shoulders
+    head = neck = None
+    widest = narrowest = len(levels) - 1
+    for i in range(len(levels) - 1, -1, -1):
+        if head is None:
+            if width[i] > width[widest]:
+                widest = i
+            elif width[i] < 0.92 * width[widest]:
+                head, narrowest = widest, i
+        else:
+            if width[i] < width[narrowest]:
+                narrowest = i
+            elif width[i] > 1.15 * width[narrowest]:
+                neck = narrowest
+                break
+    if head is None or neck is None:
+        return m
+    shoulders = float(width[:neck + 1].max()) if neck > 0 else 0.0
+    if width[neck] > 0.9 * width[head] or shoulders < 1.5 * width[neck]:
+        return m                                                            # no neck between a head and shoulders
+    head_h = z1 - float(levels[neck])
+    cut = float(levels[neck]) - 1.05 * head_h
+    if cut < z0 + 0.06 * h or (z1 - cut) < 0.45 * h or head_h > 0.6 * (z1 - cut):
         return m
     try:
         out_mesh = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], cut))
