@@ -27,6 +27,17 @@
         @endforeach
     </div>
 
+    {{-- print farm: credit, own prints, admin desk --}}
+    @if(config('farm.enabled'))
+        <div class="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+            <span class="font-semibold">🖨️ {{ __('farm.title') }}</span>
+            <a href="{{ route('farm.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
+            <a href="{{ route('account.credit') }}" class="text-action-dark underline">{{ __('farm.credit_balance') }}: {{ number_format(app(\App\Domain\Farm\Wallet::class)->balance($user), 0, ',', ' ') }} Kč</a>
+            <a href="{{ route('farm.start') }}" class="text-action-dark underline">{{ __('farm.order.new') }}</a>
+            @if($user->isAdmin())<a href="{{ route('admin.farm.dashboard') }}" class="ml-auto font-semibold text-action-dark">{{ __('farm.admin.nav.dashboard') }} →</a>@endif
+        </div>
+    @endif
+
     {{-- saved calculations --}}
     <h2 class="mt-8 text-lg font-bold">{{ __('account.calculations') }}</h2>
     @if($calculations->isEmpty())

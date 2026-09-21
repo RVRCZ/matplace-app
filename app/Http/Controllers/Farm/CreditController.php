@@ -39,6 +39,8 @@ class CreditController extends Controller
     {
         $min = (int) $this->settings->get('topup_min');
         $max = (int) $this->settings->get('topup_max');
+        // the quick-amount buttons and the free field live in one form; a pressed button wins
+        $request->merge(['amount' => $request->input('preset', $request->input('amount'))]);
         $data = $request->validate(['amount' => ['required', 'integer', 'min:'.$min, 'max:'.$max], 'back' => ['nullable', 'string', 'size:32']]);
 
         $payment = Payment::create([

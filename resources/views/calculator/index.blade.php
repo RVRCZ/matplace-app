@@ -177,6 +177,7 @@
                     <button id="cta-new" type="button" class="rounded-xl border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 {{ $mode === 'printer' ? 'sm:col-span-2' : '' }}">{{ __('calc.cta.new') }}</button>
                 </div>
                 <p id="make-note" class="hidden text-sm text-slate-500">{{ __('inquiry.wait_precise') }}</p>
+                @if($mode !== 'printer')@include('farm.cta')@endif
                 <div id="download-panel" class="hidden rounded-2xl border border-slate-200 bg-white p-4">
                     <div id="dl-picker">
                         <div class="font-bold">{{ __('download.title') }}</div>

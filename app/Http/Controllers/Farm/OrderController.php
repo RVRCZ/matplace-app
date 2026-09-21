@@ -11,6 +11,7 @@ use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
+use App\Models\Calculation;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinterSlot;
 use App\Models\ModelFile;
@@ -30,10 +31,16 @@ class OrderController extends Controller
     public function start(Request $request): View
     {
         $file = $request->query('file') ? ModelFile::where('uuid', $request->query('file'))->first() : null;
+        $quality = (string) $request->query('quality', 'standard');
+        // from the calculator: the shared calculation knows the model and the quality the customer was looking at
+        if (! $file && $request->query('calc') && ($calc = Calculation::with('modelFile')->where('token', $request->query('calc'))->first())) {
+            $file = $calc->modelFile;
+            $quality = (string) ($calc->params['quality'] ?? $quality);
+        }
 
         return view('farm.start', [
             'file' => $file,
-            'quality' => (string) $request->query('quality', 'standard'),
+            'quality' => $quality,
             'settings' => $this->settings->all(),
             'balance' => $this->wallet->balance($request->user()),
             'slicesLeft' => max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())),
