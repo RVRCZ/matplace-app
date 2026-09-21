@@ -1,0 +1,17 @@
+{
+    "pedestal.sink": [
+        "Zasunout do podstavce",
+        "Lower into the base",
+        "Hundir en la base"
+    ],
+    "pedestal.sink.none": [
+        "Nezasouvat, busta končí na hrudi",
+        "Do not lower, the bust ends at the chest",
+        "No hundir, el busto termina en el pecho"
+    ],
+    "pedestal.sink.by": [
+        "Zasunout o :n % výšky",
+        "Lower by :n % of the height",
+        "Hundir un :n % de la altura"
+    ]
+}

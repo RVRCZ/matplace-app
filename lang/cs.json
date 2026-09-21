@@ -1052,5 +1052,8 @@
     "param.download.project": "Projekt pro moji tiskárnu (.3mf)",
     "param.download.project.hint": "Návrh se uloží, vyberete tiskárnu a stáhnete hotový projekt s nastavením tisku.",
     "calc.edit_design.hint": "Zdarma. Tento model počítáme sami, úpravy nestojí žádné AI kredity.",
-    "relief.photo_again": "Nastavení je zpět. Fotku neukládáme, vyberte ji prosím znovu."
+    "relief.photo_again": "Nastavení je zpět. Fotku neukládáme, vyberte ji prosím znovu.",
+    "pedestal.sink": "Zasunout do podstavce",
+    "pedestal.sink.none": "Nezasouvat, busta končí na hrudi",
+    "pedestal.sink.by": "Zasunout o :n % výšky"
 }

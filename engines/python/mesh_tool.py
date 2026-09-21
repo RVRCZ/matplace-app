@@ -393,14 +393,22 @@ def bust_cut(m):
             elif width[i] > 1.15 * width[narrowest]:
                 neck = narrowest
                 break
-    if head is None or neck is None:
+    # two measures of the same thing, so every bust ends at the same place on the chest:
+    #  - one head below the neck (needs a visible neck; long hair or a scarf hide it)
+    #  - a good third of the crown-to-shoulder height below the shoulder line (always there)
+    cuts = []
+    if head is not None and neck is not None:
+        span = float(width[:neck + 1].max()) if neck > 0 else 0.0
+        if width[neck] <= 0.9 * width[head] and span >= 1.5 * width[neck]:
+            cuts.append(float(levels[neck]) - 1.05 * (z1 - float(levels[neck])))
+    broad = np.nonzero(width >= 0.8 * width.max())[0]
+    if len(broad) and width.max() >= 1.3 * width[-8:].max():               # clearly broader than the top of the head
+        line = float(levels[int(broad.max())])
+        cuts.append(line - 0.36 * (z1 - line))
+    if not cuts:
         return m
-    shoulders = float(width[:neck + 1].max()) if neck > 0 else 0.0
-    if width[neck] > 0.9 * width[head] or shoulders < 1.5 * width[neck]:
-        return m                                                            # no neck between a head and shoulders
-    head_h = z1 - float(levels[neck])
-    cut = float(levels[neck]) - 1.05 * head_h
-    if cut < z0 + 0.06 * h or (z1 - cut) < 0.45 * h or head_h > 0.6 * (z1 - cut):
+    cut = float(np.mean(cuts))
+    if cut < z0 + 0.04 * h or (z1 - cut) < 0.45 * h:
         return m
     try:
         out_mesh = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], cut))
@@ -624,7 +632,7 @@ def main(argv):
                 m = solidify(m, target, None)
                 if len(m.faces) > 400000 and m.is_watertight:
                     # a detailed generation arrives with millions of faces; 0.02 mm is far below what a nozzle shows
-                    m = simplified(m, 0.02)
+                    m = simplified(m, 0.012)
             if extras.get("cut") == "bust" and m.is_watertight:
                 before = float(m.extents[2])
                 m = bust_cut(m)
@@ -640,6 +648,17 @@ def main(argv):
             if extras.get("source_out"):
                 # the figure alone, closed and facing the front: a different base later costs no new generation
                 m.export(str(extras["source_out"]), file_type="stl")
+            sink = min(0.4, max(0.0, float(extras.get("sink", 0) or 0)))
+            if sink > 0 and m.is_watertight:
+                # "lower into the base": more of the chest goes, the stored source above stays whole
+                try:
+                    lowered = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], float(m.bounds[0][2]) + sink * float(m.extents[2])))
+                    if len(lowered.faces) and lowered.is_watertight:
+                        m = lowered
+                        m.apply_translation([0, 0, -float(m.bounds[0][2])])
+                        ped_note["sink"] = sink
+                except Exception:
+                    pass
             kind = str(extras.get("pedestal", "round"))
             if "pedestal" in opts and kind != "none":
                 # base under the figure: flat first layer, no supports under a ragged cut, stands on a shelf

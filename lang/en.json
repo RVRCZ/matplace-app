@@ -1052,5 +1052,8 @@
     "param.download.project": "Project for my printer (.3mf)",
     "param.download.project.hint": "The design is saved, you pick your printer and download a ready project with print settings.",
     "calc.edit_design.hint": "Free. We compute this model ourselves, changes cost no AI credits.",
-    "relief.photo_again": "Your settings are back. We do not keep the photo, please choose it again."
+    "relief.photo_again": "Your settings are back. We do not keep the photo, please choose it again.",
+    "pedestal.sink": "Lower into the base",
+    "pedestal.sink.none": "Do not lower, the bust ends at the chest",
+    "pedestal.sink.by": "Lower by :n % of the height"
 }

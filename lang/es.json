@@ -1052,5 +1052,8 @@
     "param.download.project": "Proyecto para mi impresora (.3mf)",
     "param.download.project.hint": "El diseño se guarda, elige su impresora y descarga un proyecto listo con los ajustes de impresión.",
     "calc.edit_design.hint": "Gratis. Este modelo lo calculamos nosotros, los cambios no cuestan créditos de IA.",
-    "relief.photo_again": "Sus ajustes están de vuelta. No guardamos la foto, elíjala de nuevo."
+    "relief.photo_again": "Sus ajustes están de vuelta. No guardamos la foto, elíjala de nuevo.",
+    "pedestal.sink": "Hundir en la base",
+    "pedestal.sink.none": "No hundir, el busto termina en el pecho",
+    "pedestal.sink.by": "Hundir un :n % de la altura"
 }

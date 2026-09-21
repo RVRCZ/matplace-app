@@ -11,7 +11,7 @@ export interface FileInfo {
     stl_url: string | null;
     kind?: string;
     hints?: { supports?: boolean; infill?: number; quality?: string };
-    generation?: { token: string; refinable: boolean; pedestal?: { type: string; name: string; dedication: string } | null } | null;
+    generation?: { token: string; refinable: boolean; pedestal?: { type: string; name: string; dedication: string; sink?: number } | null } | null;
     parts?: string[];
     tool?: { kind: string; params: Record<string, unknown>; url: string } | null;
     check?: { status: string; items: { level: 'error' | 'advice' | 'ok'; code: string; params: Record<string, string> }[] };

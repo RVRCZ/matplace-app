@@ -19,6 +19,9 @@ final class PedestalChanger
 
     public const FRONTS = ['keep', 'left', 'right', 'back'];
 
+    /** How far the figure is lowered into the base, in percent of its height. */
+    public const SINKS = [0, 10, 20, 30];
+
     public function __construct(private readonly ModelNormalizer $normalizer) {}
 
     /** Current base of the file, or null when this file has none to change. */
@@ -34,6 +37,7 @@ final class PedestalChanger
             'type' => $own['pedestal'] ?? $req->description['pedestal'] ?? 'round',
             'name' => $own['name'] ?? $req->description['pedestal_name'] ?? '',
             'dedication' => $own['dedication'] ?? $req->description['pedestal_dedication'] ?? '',
+            'sink' => (int) ($own['sink'] ?? 0),
         ];
     }
 
@@ -42,7 +46,7 @@ final class PedestalChanger
      *
      * @throws \RuntimeException when the figure cannot be separated from its old base
      */
-    public function change(ModelFile $f, array $pedestal, string $front = 'keep'): ModelFile
+    public function change(ModelFile $f, array $pedestal, string $front = 'keep', int $sink = 0): ModelFile
     {
         $req = $this->request($f);
         if (! $req || $this->state($f) === null) {
@@ -63,6 +67,7 @@ final class PedestalChanger
             'name' => $plaque ? ($pedestal['name'] ?? null) : null,
             'dedication' => $plaque ? ($pedestal['dedication'] ?? null) : null,
             'front' => $front,
+            'sink' => $sink > 0 ? $sink / 100 : null,
             'source_out' => $newSource,
             // files made before the source was kept: take the old base away first
             'strip_pedestal' => ! $hasSource,
@@ -83,7 +88,7 @@ final class PedestalChanger
             'uuid' => $uuid, 'owner_user_id' => $f->owner_user_id, 'anonymous_session_id' => $f->anonymous_session_id,
             'original_name' => $f->original_name, 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
             'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $f->origin_ref, 'status' => ModelFile::STATUS_UPLOADED,
-            'tool_params' => ['pedestal' => $pedestal['type'], 'name' => $plaque ? (string) ($pedestal['name'] ?? '') : '', 'dedication' => $plaque ? (string) ($pedestal['dedication'] ?? '') : ''],
+            'tool_params' => ['pedestal' => $pedestal['type'], 'name' => $plaque ? (string) ($pedestal['name'] ?? '') : '', 'dedication' => $plaque ? (string) ($pedestal['dedication'] ?? '') : '', 'sink' => $sink],
         ]);
         ProcessModelFile::dispatch($new->id);
 

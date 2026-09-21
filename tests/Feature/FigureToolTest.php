@@ -124,7 +124,9 @@ class FigureToolTest extends TestCase
         Storage::disk('models')->assertExists('files/'.$uuid.'/source.stl');      // the figure alone is kept for later changes
 
         $this->postJson('/api/files/'.$uuid.'/pedestal', ['type' => 'pyramid'])->assertStatus(422);
-        $p = $this->postJson('/api/files/'.$uuid.'/pedestal', ['type' => 'plaque', 'name' => 'Věra', 'front' => 'right'])->assertCreated();
+        $p = $this->postJson('/api/files/'.$uuid.'/pedestal', ['type' => 'plaque', 'name' => 'Věra', 'front' => 'right', 'sink' => 20])->assertCreated();
+        $p->assertJsonPath('file.generation.pedestal.sink', 20);
+        $this->postJson('/api/files/'.$uuid.'/pedestal', ['type' => 'round', 'sink' => 55])->assertStatus(422);
         $p->assertJsonPath('file.generation.pedestal.type', 'plaque')->assertJsonPath('file.generation.pedestal.name', 'Věra');
         $this->assertNotSame($uuid, $p->json('file.uuid'));
         $this->assertSame(1, GenerationRequest::count());                         // no new generation, no credits

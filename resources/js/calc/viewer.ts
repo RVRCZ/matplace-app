@@ -3,6 +3,7 @@ import {
     PerspectiveCamera, Scene, Vector3, WebGLRenderer, Box3, Float32BufferAttribute,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /** Small three.js viewer: one mesh, orbit controls, auto-fit, resize aware, touch friendly. */
 export class Viewer {
@@ -12,8 +13,11 @@ export class Viewer {
     private controls: OrbitControls;
     private mesh: Mesh | null = null;
     private grid: GridHelper | null = null;
+    private frontal = false;
     // light teal + flat shading: layer-like facets and embossed letters stay readable
     private material = new MeshStandardMaterial({ color: 0x5eead4, roughness: 0.75, metalness: 0.0, flatShading: true });
+    // generated busts and figures: light bronze and smooth shading, so the preview reads as a small sculpture, not as facets
+    private sculptureMaterial = new MeshStandardMaterial({ color: 0xc98f5a, roughness: 0.42, metalness: 0.25, flatShading: false });
     // plates (signs, reliefs, lithophanes): colour follows the height, so letters and pictures read like a two-colour print
     private plateMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0.0, flatShading: true, vertexColors: true });
 
@@ -44,10 +48,18 @@ export class Viewer {
             this.mesh.geometry.dispose();
         }
         if (this.grid) this.scene.remove(this.grid);
+        const sculpture = kind === 'generated' && !regions?.length;
+        if (sculpture) {
+            // STL has no shared vertices; weld them so the normals blend across faces
+            geom.deleteAttribute('normal');
+            geom = mergeVertices(geom, 1e-4);
+            geom.computeVertexNormals();
+        }
         if (!geom.getAttribute('normal')) geom.computeVertexNormals();
         // Z-up files (all print formats) → three.js Y-up
         const plate = regions?.length ? paintByRegion(geom, regions) : paintByHeight(geom, kind === 'lithophane', kind === 'qr');
-        this.mesh = new Mesh(geom, plate ? this.plateMaterial : this.material);
+        this.mesh = new Mesh(geom, plate ? this.plateMaterial : sculpture ? this.sculptureMaterial : this.material);
+        this.frontal = sculpture;
         this.mesh.rotation.x = -Math.PI / 2;
         this.mesh.scale.setScalar(scale);
         this.scene.add(this.mesh);
@@ -76,7 +88,8 @@ export class Viewer {
         // flat things (signs, plates, reliefs) are looked at from above, tall things from the side
         const flat = size.y / radius < 0.2;
         const standingPlate = !flat && size.z / radius < 0.2; // lithophane standing on its edge: look at its face
-        const dir = flat ? new Vector3(0.14, 0.86, 0.5) : standingPlate ? new Vector3(0.25, 0.18, 0.95) : new Vector3(0.62, 0.45, 0.7);
+        // a bust is looked at almost from the front, like a portrait
+        const dir = flat ? new Vector3(0.14, 0.86, 0.5) : standingPlate ? new Vector3(0.25, 0.18, 0.95) : this.frontal ? new Vector3(0.38, 0.22, 0.9) : new Vector3(0.62, 0.45, 0.7);
         this.camera.position.copy(dir.normalize().multiplyScalar(dist)).add(new Vector3(0, size.y / 2, 0));
         this.camera.near = radius / 100;
         this.camera.far = radius * 100;

@@ -104,6 +104,11 @@
                                     @foreach(\App\Domain\Generation\PedestalChanger::FRONTS as $fk)<option value="{{ $fk }}">{{ __('pedestal.front.'.$fk) }}</option>@endforeach
                                 </select>
                             </label>
+                            <label class="block text-xs font-semibold text-slate-600 sm:col-span-2">{{ __('pedestal.sink') }}
+                                <select id="pedestal-sink" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-normal">
+                                    @foreach(\App\Domain\Generation\PedestalChanger::SINKS as $sk)<option value="{{ $sk }}">{{ $sk === 0 ? __('pedestal.sink.none') : __('pedestal.sink.by', ['n' => $sk]) }}</option>@endforeach
+                                </select>
+                            </label>
                             <label data-plaque class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.name') }}
                                 <input id="pedestal-name" maxlength="24" placeholder="{{ __('figure.pedestal.name_ph') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-normal">
                             </label>
