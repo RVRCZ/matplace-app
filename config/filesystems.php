@@ -45,6 +45,14 @@ return [
             'throw' => false,
         ],
 
+        // print farm: print STL, G-code, camera snapshots. Never served directly, only through authorised routes.
+        'farm' => [
+            'driver' => 'local',
+            'root' => storage_path('app/farm'),
+            'serve' => false,
+            'throw' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

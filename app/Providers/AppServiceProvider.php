@@ -18,6 +18,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(MaterialCatalog::class, fn () => new MaterialCatalog(config('materials')));
         $this->app->singleton(PriceEngine::class, fn () => new PriceEngine(config('pricing')));
         $this->app->singleton(RoughEstimator::class, fn ($app) => new RoughEstimator(config('pricing.rough'), $app->make(MaterialCatalog::class)));
+        // scoped: the admin's overrides are read once per request / queue job, never kept across them
+        $this->app->scoped(\App\Domain\Farm\FarmSettings::class);
     }
 
     public function boot(): void
