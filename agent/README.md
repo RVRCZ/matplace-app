@@ -162,5 +162,10 @@ volitelně `snapshot`, `connect`, `close`), zápis do `DRIVERS` v `drivers/__ini
 | čas tisku | 37:40 | 40:16 (`print_duration`; s přípravou 44:02) | 1,07 |
 | filament | 3681,8 mm / 10,98 g | 3722 mm = 11,10 g; váha 11 g | 1,01 |
 
+Druhý tisk (stojánek na telefon 101×105×60 mm, **vyslicováno naší serverovou Orcou** s farm profilem, slot 3 bílé PLA+ 225/220 °C):
+odhad 186 min / 17 682 mm → tiskárna **139,8 min** / 18 094 mm (54,0 g). Filament opět do 2 %; čas ale o 25 % **kratší** –
+odhad Orcy je pesimistický, zatímco Slicer Next (Benchy) byl přesný. Farma tiskne jen z Orcy, takže skutečná korekce času
+bude spíš pod 1,0; zatím zůstává 1,07 (cena raději vyšší) a upřesní se po několika tiscích (admin počítá průměr).
+
 Výchozí korekce Kobra S1 v `FarmSeeder`: čas × 1,07, hmotnost × 1,0. `filament_used` z tiskárny sedí s váhou, takže
 kalibrace hmotnosti může stát na hlášení agenta; váha je jen kontrola.
