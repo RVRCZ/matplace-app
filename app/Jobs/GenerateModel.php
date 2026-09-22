@@ -81,6 +81,7 @@ class GenerateModel implements ShouldQueue
                 'front' => $kind === 'bust' ? 'auto' : null,
                 // cut flat across the chest like a sculpted bust, instead of arms that end at the elbows
                 'cut' => $kind === 'bust' ? 'bust' : null,
+                'tidy' => in_array($kind, ['bust', 'figure'], true) ? true : null,
                 // the closed figure without a base is kept: changing the base later needs no new generation
                 'source_out' => in_array($kind, ['bust', 'figure'], true) ? dirname($abs).'/source.stl' : null,
             ]));

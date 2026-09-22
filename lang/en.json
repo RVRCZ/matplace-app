@@ -1055,5 +1055,6 @@
     "relief.photo_again": "Your settings are back. We do not keep the photo, please choose it again.",
     "pedestal.sink": "Lower into the base",
     "pedestal.sink.none": "Do not lower, the bust ends at the chest",
-    "pedestal.sink.by": "Lower by :n % of the height"
+    "pedestal.sink.by": "Lower by :n % of the height",
+    "pedestal.tidy": "Trim loose strands of hair and flaps (fewer supports, the face stays)"
 }

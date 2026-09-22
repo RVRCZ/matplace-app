@@ -69,9 +69,10 @@ class ModelFileController extends Controller
             'dedication' => ['nullable', 'string', 'max:40'],
             'front' => ['nullable', 'in:'.implode(',', PedestalChanger::FRONTS)],
             'sink' => ['nullable', 'integer', 'in:'.implode(',', PedestalChanger::SINKS)],
+            'tidy' => ['nullable', 'boolean'],
         ]);
         try {
-            $new = $changer->change($modelFile, $data, $data['front'] ?? 'keep', (int) ($data['sink'] ?? 0));
+            $new = $changer->change($modelFile, $data, $data['front'] ?? 'keep', (int) ($data['sink'] ?? 0), (bool) ($data['tidy'] ?? true));
         } catch (\RuntimeException) {
             return response()->json(['error' => 'pedestal_failed'], 422);
         }

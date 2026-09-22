@@ -8,7 +8,7 @@ Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquer
   mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
   mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal,solid] [extras-json]
                                                           extras: {"pedestal": round|square|hexagon|column|plaque|none, "name": "…", "dedication": "…", "font": path,
-                                                                   "front": auto|keep|left|right|back, "cut": "bust", "source_out": path of the figure without a base,
+                                                                   "front": auto|keep|left|right|back, "cut": "bust", "tidy": true (cut off loose strands), "sink": 0-0.4, "source_out": path of the figure without a base,
                                                                    "strip_pedestal": true}
                                                        -> millimetres (largest side = max_mm), Z-up, on the bed;
                                                           clean = drop dust fragments, pedestal = flat round base,
@@ -417,6 +417,63 @@ def bust_cut(m):
         return m
 
 
+def surface_grid(m, pitch, pad):
+    """
+    Occupied voxels of a closed mesh, in seconds even for a million faces: points sampled densely over the surface are
+    binned, the inside is filled. Returns (grid, origin); grid[i, j, k] covers origin + (i, j, k) * pitch.
+    """
+    import numpy as np
+    import trimesh
+    from scipy import ndimage
+    origin = m.bounds[0] - pad * pitch
+    shape = np.ceil((m.bounds[1] - origin) / pitch).astype(int) + pad + 1
+    n = int(min(6_000_000, max(300_000, 8 * float(m.area) / (pitch * pitch))))
+    pts, _ = trimesh.sample.sample_surface(m, n)
+    idx = np.clip(((pts - origin) / pitch).astype(int), 0, shape - 1)
+    grid = np.zeros(shape, dtype=bool)
+    grid[idx[:, 0], idx[:, 1], idx[:, 2]] = True
+    # sampling leaves pinholes and the fill would leak: fill the dilated shell, then take the dilation back
+    full = ndimage.generate_binary_structure(3, 3)
+    return ndimage.binary_erosion(ndimage.binary_fill_holes(ndimage.binary_dilation(grid, structure=full)), structure=full) | grid, origin
+
+
+def trim_loose(m, target):
+    """
+    Strands of hair, a scarf end or a loose sleeve that stand away from the body need supports and break off.
+    The body is what survives an opening (everything thicker than about 2.5 mm); everything within a couple of
+    millimetres of that body is kept in full (glasses, ears, hair lying on the head, the whole face), and only
+    thin material further away is cut off, by intersecting the mesh with that keep volume. Returns (mesh, removed share).
+    """
+    import numpy as np
+    import trimesh
+    from scipy import ndimage
+    from skimage import measure
+
+    pitch = max(0.25, float(max(m.extents)) / 260.0)
+    r = max(1.2, 0.015 * target) / pitch                                   # half the thickness that counts as body
+    reach = r + max(1.0, 0.012 * target) / pitch                            # how far from the body thin things may stand
+    pad = int(reach) + 3
+    solid, origin = surface_grid(m, pitch, pad)
+    core = ndimage.distance_transform_edt(solid) > r
+    if not core.any():
+        return m, 0.0
+    keep = ndimage.distance_transform_edt(~core) <= reach
+    loose = solid & ~keep
+    share = float(loose.sum()) / float(solid.sum())
+    if share < 0.0005:
+        return m, 0.0
+    field = ndimage.gaussian_filter(keep.astype(np.float32), 1.0)
+    verts, faces, _, _ = measure.marching_cubes(field, level=0.5)
+    hull = trimesh.Trimesh(verts * pitch + origin, faces[:, ::-1], process=True)
+    if hull.volume < 0:
+        hull.invert()
+    # the keep volume only has to be right where it cuts; a coarse hull makes the boolean ten times faster
+    cut = from_manifold(as_manifold(m) ^ as_manifold(hull).simplify(0.5 * pitch))
+    if not len(cut.faces) or not cut.is_watertight or cut.volume < 0.5 * m.volume:
+        return m, 0.0
+    return cut, share
+
+
 def face_front(m):
     """
     Busts do not always arrive looking at -Y. Shoulders are the wide axis; the head sits in front of the chest.
@@ -648,6 +705,14 @@ def main(argv):
             if extras.get("source_out"):
                 # the figure alone, closed and facing the front: a different base later costs no new generation
                 m.export(str(extras["source_out"]), file_type="stl")
+            if extras.get("tidy") and m.is_watertight:
+                # loose strands and flaps need supports and snap off; the stored source above keeps them
+                try:
+                    m, share = trim_loose(m, target)
+                    if share > 0:
+                        ped_note["trimmed_share"] = round(share, 4)
+                except Exception as e:  # noqa: BLE001 - never lose the model over a cosmetic step
+                    ped_note["trim_error"] = str(e)[:120]
             sink = min(0.4, max(0.0, float(extras.get("sink", 0) or 0)))
             if sink > 0 and m.is_watertight:
                 # "lower into the base": more of the chest goes, the stored source above stays whole

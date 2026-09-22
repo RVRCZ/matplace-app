@@ -1055,5 +1055,6 @@
     "relief.photo_again": "Sus ajustes están de vuelta. No guardamos la foto, elíjala de nuevo.",
     "pedestal.sink": "Hundir en la base",
     "pedestal.sink.none": "No hundir, el busto termina en el pecho",
-    "pedestal.sink.by": "Hundir un :n % de la altura"
+    "pedestal.sink.by": "Hundir un :n % de la altura",
+    "pedestal.tidy": "Recortar mechones y solapas sueltos (menos soportes, la cara se mantiene)"
 }

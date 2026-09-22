@@ -1055,5 +1055,6 @@
     "relief.photo_again": "Nastavení je zpět. Fotku neukládáme, vyberte ji prosím znovu.",
     "pedestal.sink": "Zasunout do podstavce",
     "pedestal.sink.none": "Nezasouvat, busta končí na hrudi",
-    "pedestal.sink.by": "Zasunout o :n % výšky"
+    "pedestal.sink.by": "Zasunout o :n % výšky",
+    "pedestal.tidy": "Zastřihnout odstávající prameny vlasů a cípy (méně podpěr, obličej zůstává)"
 }
