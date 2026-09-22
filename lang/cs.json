@@ -526,7 +526,7 @@
     "param.box.tip": "Krabička i víčko se tisknou vedle sebe bez podpěr. Otvory ve stěnách jsou malé můstky, běžná tiskárna je zvládne.",
     "param.phone_stand.lead": "Změřte tloušťku telefonu i s obalem a zvolte sklon.",
     "param.phone_stand.size": "Rozměry stojánku",
-    "param.phone_stand.tip": "Tiskne se položený na boku, bez podpěr. Náhled ho ukazuje tak, jak bude stát na stole.",
+    "param.phone_stand.tip": "Telefon sedí 16 mm nad stolem, kabel projde drážkou pod něj. Tiskne se položený na boku, bez podpěr.",
     "param.cable_holder.lead": "Změřte průměr kabelu a zvolte, kolik jich má držet.",
     "param.cable_holder.size": "Kabely",
     "param.cable_holder.tip": "Drážka je o něco užší než kabel, aby zacvakl a držel. Lepí se oboustrannou páskou nebo přišroubuje (páska ani šrouby nejsou součástí výtisku).",
@@ -550,7 +550,7 @@
     "param.flag.lid": "S nasazovacím víčkem",
     "param.flag.lid.hint": "Víčko má lem, který zapadne dovnitř krabičky.",
     "param.flag.cable": "Výřez na nabíjecí kabel",
-    "param.flag.cable.hint": "Telefon se dá nabíjet i ve stojánku.",
+    "param.flag.cable.hint": "Drážka v poličce, kabel odchází volně pod stojánkem.",
     "param.flag.screws": "S oušky na šrouby",
     "param.flag.screws.hint": "Jinak se lepí oboustrannou páskou.",
     "param.clearance.hint": "Vůle je mezera mezi lemem víčka a stěnou krabičky. 0,25 mm sedí většině tiskáren na plast; u pryskyřice nebo jiného materiálu může víčko jít ztuha nebo volně. Tiskař ji umí doladit.",
@@ -1056,5 +1056,7 @@
     "pedestal.sink": "Zasunout do podstavce",
     "pedestal.sink.none": "Nezasouvat, busta končí na hrudi",
     "pedestal.sink.by": "Zasunout o :n % výšky",
-    "pedestal.tidy": "Zastřihnout odstávající prameny vlasů a cípy (méně podpěr, obličej zůstává)"
+    "pedestal.tidy": "Zastřihnout odstávající prameny vlasů a cípy (méně podpěr, obličej zůstává)",
+    "param.flag.window": "Odlehčovací okno v opěrce",
+    "param.flag.window.hint": "Ušetří asi polovinu materiálu, pevnost zůstává."
 }

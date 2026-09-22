@@ -526,7 +526,7 @@
     "param.box.tip": "La caja y la tapa se imprimen una al lado de la otra sin soportes. Las aberturas son pequeños puentes que una impresora normal resuelve.",
     "param.phone_stand.lead": "Mida el grosor del móvil con su funda y elija el ángulo.",
     "param.phone_stand.size": "Medidas del soporte",
-    "param.phone_stand.tip": "Se imprime tumbado de lado, sin soportes. La vista previa lo muestra como queda sobre la mesa.",
+    "param.phone_stand.tip": "El teléfono queda 16 mm sobre la mesa, el cable pasa por la ranura por debajo. Se imprime tumbado de lado, sin soportes.",
     "param.cable_holder.lead": "Mida el diámetro del cable y elija cuántos debe sujetar.",
     "param.cable_holder.size": "Cables",
     "param.cable_holder.tip": "La ranura es algo más estrecha que el cable para que encaje y se quede. Se pega con cinta de doble cara o se atornilla (cinta y tornillos no incluidos en la impresión).",
@@ -550,7 +550,7 @@
     "param.flag.lid": "Con tapa encajable",
     "param.flag.lid.hint": "La tapa tiene un reborde que entra en la caja.",
     "param.flag.cable": "Hueco para el cable de carga",
-    "param.flag.cable.hint": "El móvil puede cargarse en el soporte.",
+    "param.flag.cable.hint": "Ranura en la repisa; el cable sale libremente por debajo del soporte.",
     "param.flag.screws": "Con orejetas para tornillos",
     "param.flag.screws.hint": "Si no, se pega con cinta de doble cara.",
     "param.clearance.hint": "La holgura es el hueco entre el reborde de la tapa y la pared. 0,25 mm sirve para la mayoría de impresoras de filamento; con resina u otro material la tapa puede quedar dura o floja. El impresor puede ajustarla.",
@@ -1056,5 +1056,7 @@
     "pedestal.sink": "Hundir en la base",
     "pedestal.sink.none": "No hundir, el busto termina en el pecho",
     "pedestal.sink.by": "Hundir un :n % de la altura",
-    "pedestal.tidy": "Recortar mechones y solapas sueltos (menos soportes, la cara se mantiene)"
+    "pedestal.tidy": "Recortar mechones y solapas sueltos (menos soportes, la cara se mantiene)",
+    "param.flag.window": "Ventana en el respaldo",
+    "param.flag.window.hint": "Ahorra cerca de la mitad del material, la rigidez se mantiene."
 }

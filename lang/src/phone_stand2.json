@@ -1,0 +1,22 @@
+{
+    "param.flag.window": [
+        "Odlehčovací okno v opěrce",
+        "Window in the back rest",
+        "Ventana en el respaldo"
+    ],
+    "param.flag.window.hint": [
+        "Ušetří asi polovinu materiálu, pevnost zůstává.",
+        "Saves about half the material, the stand stays stiff.",
+        "Ahorra cerca de la mitad del material, la rigidez se mantiene."
+    ],
+    "param.flag.cable.hint": [
+        "Drážka v poličce, kabel odchází volně pod stojánkem.",
+        "A slot in the shelf; the cable runs out freely under the stand.",
+        "Ranura en la repisa; el cable sale libremente por debajo del soporte."
+    ],
+    "param.phone_stand.tip": [
+        "Telefon sedí 16 mm nad stolem, kabel projde drážkou pod něj. Tiskne se položený na boku, bez podpěr.",
+        "The phone sits 16 mm above the desk, the cable passes through the slot beneath it. Printed lying on its side, no supports.",
+        "El teléfono queda 16 mm sobre la mesa, el cable pasa por la ranura por debajo. Se imprime tumbado de lado, sin soportes."
+    ]
+}

@@ -526,7 +526,7 @@
     "param.box.tip": "The box and the lid print side by side without supports. Wall openings are small bridges an ordinary printer handles.",
     "param.phone_stand.lead": "Measure your phone's thickness with its case and pick the angle.",
     "param.phone_stand.size": "Stand dimensions",
-    "param.phone_stand.tip": "It prints lying on its side, without supports. The preview shows it as it stands on the desk.",
+    "param.phone_stand.tip": "The phone sits 16 mm above the desk, the cable passes through the slot beneath it. Printed lying on its side, no supports.",
     "param.cable_holder.lead": "Measure the cable diameter and pick how many it should hold.",
     "param.cable_holder.size": "Cables",
     "param.cable_holder.tip": "The slot is slightly narrower than the cable so it clicks in and stays. Stick it with double-sided tape or screw it on (tape and screws are not part of the print).",
@@ -550,7 +550,7 @@
     "param.flag.lid": "With a slip-on lid",
     "param.flag.lid.hint": "The lid has a lip that drops inside the box.",
     "param.flag.cable": "Cut-out for the charging cable",
-    "param.flag.cable.hint": "The phone can charge while in the stand.",
+    "param.flag.cable.hint": "A slot in the shelf; the cable runs out freely under the stand.",
     "param.flag.screws": "With screw tabs",
     "param.flag.screws.hint": "Otherwise it is stuck on with double-sided tape.",
     "param.clearance.hint": "Clearance is the gap between the lid lip and the box wall. 0.25 mm suits most filament printers; with resin or another material the lid may be tight or loose. A printer can fine-tune it.",
@@ -1056,5 +1056,7 @@
     "pedestal.sink": "Lower into the base",
     "pedestal.sink.none": "Do not lower, the bust ends at the chest",
     "pedestal.sink.by": "Lower by :n % of the height",
-    "pedestal.tidy": "Trim loose strands of hair and flaps (fewer supports, the face stays)"
+    "pedestal.tidy": "Trim loose strands of hair and flaps (fewer supports, the face stays)",
+    "param.flag.window": "Window in the back rest",
+    "param.flag.window.hint": "Saves about half the material, the stand stays stiff."
 }

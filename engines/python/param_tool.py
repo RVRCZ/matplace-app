@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 LIMITS = {
     "organizer": {"width": (30, 400), "depth": (30, 400), "height": (10, 150), "rows": (1, 8), "cols": (1, 8), "wall": (0.8, 4), "floor": (0.8, 4), "radius": (0, 20)},
     "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6)},
-    "phone_stand": {"width": (50, 140), "device": (7, 20), "angle": (50, 80), "back": (60, 150), "thickness": (3, 8), "radius": (0, 3)},
+    "phone_stand": {"width": (50, 140), "device": (7, 20), "angle": (50, 80), "back": (60, 150), "thickness": (3, 8), "radius": (0, 4)},
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
     "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
 }
@@ -249,30 +249,50 @@ def box(M, p):
 
 
 def phone_stand(M, p):
+    """
+    Desk stand drawn as one side profile: the phone sits on a shelf above the table between a front lip and a leaning
+    back rest; the rest continues down to a rear foot. The profile is one closed outline with rounded corners, hollowed
+    from the inside: an arch under the shelf, open at the bottom, so the charging cable drops through the slot in the
+    shelf and runs out underneath; and a window in the rest that saves material. Printed lying on its side, no supports.
+    """
     k = "phone_stand"
     width, device, angle = num(p, k, "width", 70), num(p, k, "device", 12), num(p, k, "angle", 65)
-    back, t = num(p, k, "back", 100), num(p, k, "thickness", 3.5)
+    back, t = num(p, k, "back", 100), num(p, k, "thickness", 5)
+    r = min(num(p, k, "radius", 2.0), t * 0.45)
     a = math.radians(angle)
-    ux, uy = math.cos(a), math.sin(a)               # direction of the back rest, leaning away from the front lip
-    lip_h = 12.0
-    C = M.CrossSection
+    ux, uy = math.cos(a), math.sin(a)                # along the rest
+    nx, ny = math.sin(a), -math.cos(a)               # outward normal of the rest: backwards and down
+    shelf_h, lip_h = 16.0, 12.0                      # room for a plug under the phone; how far the lip reaches up
+    C, J = M.CrossSection, M.JoinType.Round
 
-    def bar(x0, y0, x1, y1):                         # a slab of thickness t between two points of the side profile
-        return (C.square([t, t]).translate([x0, y0]) + C.square([t, t]).translate([x1, y1])).hull()
+    def rnd(cs, rad):
+        return cs.offset(-rad, J, 2.0, 24).offset(rad, J, 2.0, 24) if rad > 0.05 else cs
 
-    fx = t + device                                  # foot of the back rest: the device sits between lip and rest
-    top = (fx + ux * back, uy * back)
-    mid = (fx + ux * back * 0.62, uy * back * 0.62)  # the strut meets the rest here: a light, stiff triangle
-    rear_x = mid[0] + mid[1] * 0.45
-    profile = bar(0, 0, rear_x, 0) + bar(0, 0, 0, lip_h) + bar(fx, 0, top[0], top[1]) + bar(rear_x, 0, mid[0], mid[1])
-    r = min(num(p, k, "radius", 1.2), t * 0.32)       # soft edges all along the profile, never more than the slab can take
+    fx = t + device + 1.0                            # foot of the rest: the phone leans between lip and rest with 1 mm play
+    top_in = (fx + ux * back, shelf_h + uy * back)
+    top_out = (top_in[0] + nx * t, top_in[1] + ny * t)
+    rear_x = fx + ux * back * 0.58 + (shelf_h + uy * back * 0.58) * 0.5 + t   # the phone's weight stays well inside the footprint
+    outer = C([[(0, 0), (rear_x, 0), top_out, top_in, (fx, shelf_h), (t, shelf_h), (t, shelf_h + lip_h), (0, shelf_h + lip_h)]])
     if r > 0.05:
-        profile = profile.offset(-r, M.JoinType.Round, 2.0, 24).offset(2 * r, M.JoinType.Round, 2.0, 24).offset(-r, M.JoinType.Round, 2.0, 24)
+        outer = outer.offset(r, J, 2.0, 24).offset(-2 * r, J, 2.0, 24).offset(r, J, 2.0, 24)   # every corner rounded
+    big = 1000.0
+    # everything hollow keeps a wall of t to the outside. The arch is inset from an outline that reaches below the
+    # floor, so it stays open at the bottom.
+    below = C([[(-big, -big), (big, -big), (big, shelf_h - t), (-big, shelf_h - t)]])
+    sunk = outer + C([[(0, -50), (rear_x, -50), (rear_x, 0.5), (0, 0.5)]])
+    profile = outer - rnd(sunk.offset(-t, J, 2.0, 24) ^ below, r * 1.5)
+    if p.get("window", True):
+        above = C([[(-big, shelf_h + t), (big, shelf_h + t), (big, big), (-big, big)]])
+        window = rnd(outer.offset(-t, J, 2.0, 24) ^ above, 4.0)
+        if window.area() > 200:
+            profile = profile - window
     solid = profile.extrude(width)                   # the profile lies on the bed: prints without supports
     if p.get("cable", True):
-        solid = solid - M.Manifold.cube([t + device * 0.6, t + lip_h + 2, 14.0]).translate([-1, -1, width / 2 - 7.0])
+        slot = min(16.0, width * 0.3)
+        # through the lip and the shelf into the arch; the front leg below stays whole
+        solid = solid - M.Manifold.cube([fx + 1.0, lip_h + t + 2.0, slot]).translate([-1.0, shelf_h - t - 1.0, width / 2 - slot / 2])
     use = solid.rotate([90, 0, 0]).translate([0, width, 0])
-    return {"all": solid, "use": use}, {"outer": [round(max(rear_x, top[0]) + t, 1), round(width, 1), round(top[1] + t, 1)]}
+    return {"all": solid, "use": use}, {"outer": [round(rear_x, 1), round(width, 1), round(top_out[1] + r, 1)], "shelf_height": shelf_h}
 
 
 def cable_holder(M, p):
