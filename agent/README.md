@@ -139,12 +139,11 @@ G‑code z matplace má stejný začátek a konec jako G‑code z Anycubic Slice
 | Navíc oproti čistému Klipperu | `print_stats.info.current_layer/total_layer`, `virtual_sdcard.remain_time` (agent je posílá v telemetrii) |
 | Uložený soubor je o pár desítek bajtů větší než originál | Rinkhals ho při uložení doplňuje; metadata (čas, filament) sedí |
 
-Zbývá vyzkoušet:
+| Volba slotu ACE | `T2` v G‑code (za `M117`) → tiskárna tiskla ze slotu 3. Rinkhals má makra `t0`…`t3`, která ACE ovládají; objekt `ota_filament_hub` hlásí stav výměny (`state`, `progress`), ne aktivní slot. Orca sama žádný `T` řádek nepíše, matplace ho vkládá. |
+| Typ podložky | Orca CLI bez `curr_bed_type` slicuje pro „Cool Plate“ (podložka 35 °C!). Farm přepisy nastavují `Textured PEI Plate` → 55 °C jako Slicer Next. |
+| Metadata souboru | u G‑code z Orcy Rinkhals nevyplní `estimated_time` v `/server/files/metadata` (u Slicer Next ano); agent metadata nepotřebuje |
 
-1. **Volba slotu ACE.** matplace mění řádek `T0` na `T<slot>`. Ověřte tisk ze slotu 2–4. Dokud to není potvrzené,
-   nechte v administraci zapnutý („nabízet“) **jen slot 1**.
-2. **Pauza / pokračování / zrušení** z administrace a chování po zrušení (hlava odjede, topení se vypne).
-3. **Hlášené hodnoty po dotištění** (`print_duration`, `filament_used`) proti stopkám a váze.
+Zbývá vyzkoušet: **pauza / pokračování / zrušení** z administrace a chování po zrušení (hlava odjede, topení se vypne).
 
 ## Vývoj
 

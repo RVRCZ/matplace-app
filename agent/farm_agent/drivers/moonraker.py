@@ -25,7 +25,7 @@ from .base import (ERROR, IDLE, JOB_CANCELLED, JOB_DONE, JOB_FAILED, JOB_PAUSED,
 
 log = logging.getLogger("farm_agent.moonraker")
 
-OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status"
+OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status&ota_filament_hub"
 
 # print_stats.state -> (printer state, job state)
 STATES = {
@@ -81,6 +81,10 @@ class MoonrakerDriver(PrinterDriver):
             telemetry["layer"] = f"{info.get('current_layer', 0)}/{info['total_layer']}"
         if sd.get("remain_time"):
             telemetry["remain_min"] = round(float(sd["remain_time"]) / 60)
+        # Anycubic ACE (Rinkhals object ota_filament_hub): standby, or busy while it changes the spool
+        hub = s.get("ota_filament_hub") or {}
+        if hub.get("state"):
+            telemetry["ace"] = hub["state"] if hub["state"] == "standby" else f"{hub['state']} {hub.get('progress', 0)}%"
         job = None
         if job_state and stats.get("filename"):
             # Verified on a Kobra S1 (Rinkhals 20260901_01): during the start macro (heating, LeviQ, purge line)

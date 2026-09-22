@@ -17,8 +17,14 @@ final class GcodeSlot
         if ($slot === 0) {
             return $gcode;
         }
+        $line = 'T'.$slot.' ; slot chosen by matplace farm';
+        $out = preg_replace('/^T0[ \t]*(;.*)?$/m', $line, $gcode, 1, $n);
+        if ($n === 0) {
+            // OrcaSlicer writes no tool line at all for a single-filament print: put one right after the start macro
+            $out = preg_replace('/^(M117[ \t]*\r?\n)/m', '$1'.$line."\n", $gcode, 1, $n);
+        }
 
-        return (string) preg_replace('/^T0[ \t]*(;.*)?$/m', 'T'.$slot.' ; slot chosen by matplace farm', $gcode);
+        return $n > 0 ? (string) $out : $gcode;
     }
 
     /** Writes the retargeted copy next to the original and returns its path (the original when nothing changes). */

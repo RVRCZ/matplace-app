@@ -39,12 +39,13 @@ class FarmSeeder extends Seeder
             // the shared calculator profile is deliberately oversized for pricing big parts; a real print needs the real plate
             'machine_overrides' => ['printable_area' => ['0x0', '250x0', '250x250', '0x250'], 'printable_height' => '250'],
             // one colour per print: no prime tower; supports only where the slicer finds overhangs, as trees
-            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30'],
+            // curr_bed_type: without it the Orca CLI slices for a "Cool Plate" (bed 35 °C); the S1 has a textured PEI plate (55 °C)
+            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'Textured PEI Plate'],
         ]);
 
         if ($printer->wasRecentlyCreated) {
             foreach ($colors as $i => $color) {
-                $printer->slots()->create(['slot' => $i, 'farm_color_id' => $color->id, 'remaining_g' => 1000, 'enabled' => $i === 0]);
+                $printer->slots()->create(['slot' => $i, 'farm_color_id' => $color->id, 'remaining_g' => 1000, 'enabled' => true]);
             }
         }
     }
