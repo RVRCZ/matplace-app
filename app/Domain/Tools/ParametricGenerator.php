@@ -59,7 +59,7 @@ final class ParametricGenerator
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['cone', 'belly', 'tulip'], 'style' => ['smooth', 'ribs', 'twist']],
         'sign' => ['style' => ['emboss', 'engrave', 'outline'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono']],
-        'logo' => ['mode' => ['relief', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
+        'logo' => ['mode' => ['relief', 'height', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
         'lightbox' => ['led' => ['strip8', 'strip10', 'module']],
     ];

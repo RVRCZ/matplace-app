@@ -17,7 +17,7 @@ LIMITS = {
 }
 CHOICES = {
     "vase": {"profile": ("cone", "belly", "tulip"), "style": ("smooth", "ribs", "twist"), "purpose": ("vase", "pot")},
-    "logo": {"mode": ("relief", "cutout", "standing"), "shape": ("rounded", "rect", "circle")},
+    "logo": {"mode": ("relief", "height", "cutout", "standing"), "shape": ("rounded", "rect", "circle")},
     "sign": {"shape": ("rounded", "rect", "oval"), "style": ("emboss", "engrave", "outline"), "typeface": ("sans", "serif", "mono")},
     "stamp": {"mode": ("raised", "recessed"), "handle": ("knob", "none")},
     "qr": {},
@@ -125,6 +125,13 @@ def logo(M, Invalid, p):
     n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
     width, t, plate_t, margin = n("width", 80), n("thickness", 2), n("plate", 2), n("margin", 5)
     mode, shape = _pick(Invalid, p, k, "mode"), _pick(Invalid, p, k, "shape")
+    if mode == "height":
+        # every shade of the picture becomes a height: a photo, a drawing or a logo with gradients comes out as a
+        # plastic relief on the plate. Text and SVG have no shades, they fall back to the plain relief.
+        art_path = p.get("artwork_path")
+        if art_path and not art_path.lower().endswith(".svg"):
+            return _logo_height(M, Invalid, p, width, t, plate_t, margin, shape, art_path)
+        mode = "relief"
     art, info = _art(M, Invalid, p, width, None)
     art = S.fit(art, width_mm=width)
     w, hgt = S.size(art)
@@ -287,6 +294,68 @@ def sign(M, Invalid, p):
                             {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white"}]
         notes["color_change_mm"] = round(t, 1)
     return parts, notes
+
+
+def _logo_height(M, Invalid, p, width, t, plate_t, margin, shape, path):
+    """Heightmap relief: dark = high (or light = high with invert), smoothed a little so the surface prints clean."""
+    import numpy as np
+    from PIL import Image, ImageOps
+    from scipy import ndimage
+    try:
+        img = ImageOps.exif_transpose(Image.open(path))
+    except Exception:  # noqa: BLE001
+        raise Invalid("image_unreadable")
+    if img.mode in ("RGBA", "LA") or "transparency" in img.info:
+        rgba = img.convert("RGBA")
+        img = Image.alpha_composite(Image.new("RGBA", rgba.size, (255, 255, 255, 255)), rgba)
+    g = img.convert("L")
+    step = 0.3                                                       # millimetres per sample: below what a nozzle shows
+    cols = max(16, min(600, int(round(width / step))))
+    rows = max(16, int(round(cols * g.size[1] / g.size[0])))
+    if rows > 1000:
+        raise Invalid("artwork_too_tall")
+    a = np.asarray(g.resize((cols, rows), Image.LANCZOS), dtype=np.float32) / 255.0
+    if bool(p.get("invert", False)):
+        a = 1.0 - a
+    hm = ndimage.gaussian_filter(1.0 - a, 0.7)                       # dark = high
+    hm = (hm - hm.min()) / max(1e-6, hm.max() - hm.min())
+    if float(hm.std()) < 0.02:
+        raise Invalid("image_blank", "0")
+    w, hgt = cols * step, rows * step
+    z = plate_t - 0.01 + hm[::-1] * t                                 # image rows run top-down, Y runs up
+    xs, ys = np.arange(cols) * step, np.arange(rows) * step
+    X, Y = np.meshgrid(xs, ys)
+    top = np.stack([X.ravel(), Y.ravel(), z.ravel()], 1)
+    bottom = np.stack([X.ravel(), Y.ravel(), np.full(top.shape[0], plate_t - 0.6)], 1)
+    verts = np.concatenate([top, bottom]).astype(np.float32)
+    idx = np.arange(rows * cols).reshape(rows, cols)
+    a0, b0, c0, d0 = idx[:-1, :-1].ravel(), idx[:-1, 1:].ravel(), idx[1:, 1:].ravel(), idx[1:, :-1].ravel()
+    n = rows * cols
+    faces = [np.stack([a0, b0, c0], 1), np.stack([a0, c0, d0], 1),                       # top, counter-clockwise seen from above
+             np.stack([a0 + n, c0 + n, b0 + n], 1), np.stack([a0 + n, d0 + n, c0 + n], 1)]  # bottom, the other way round
+    # walls along the four edges
+    def wall(line):
+        q = [np.stack([line[:-1], line[:-1] + n, line[1:] + n], 1), np.stack([line[:-1], line[1:] + n, line[1:]], 1)]
+        return q
+    for line, flip in ((idx[0, :], False), (idx[:, -1], False), (idx[-1, ::-1], False), (idx[::-1, 0], False)):
+        faces += wall(line)
+    tri = np.concatenate(faces).astype(np.uint32)
+    relief = M.Manifold(M.Mesh(vert_properties=verts, tri_verts=tri))
+    if relief.is_empty():
+        raise Invalid("image_blank", "0")
+    if relief.volume() < 0:
+        relief = M.Manifold(M.Mesh(vert_properties=verts, tri_verts=tri[:, ::-1].copy()))
+    pw, ph = w + 2 * margin, hgt + 2 * margin
+    if shape == "circle":
+        d = math.hypot(w, hgt) + 2 * margin
+        plate2d = M.CrossSection.circle(d / 2, 128).translate([d / 2, d / 2])
+        pw = ph = d
+    else:
+        plate2d = S.rounded_rect(M, pw, ph, 0 if shape == "rect" else min(6, pw / 8))
+    relief = relief.translate([(pw - w) / 2, (ph - hgt) / 2, 0])
+    solid = plate2d.extrude(plate_t) + relief
+    notes = {"outer": [round(pw, 1), round(ph, 1), round(plate_t + t, 1)], "warnings": [], "thin_pct": 0, "missing_chars": [], "samples": [cols, rows]}
+    return {"all": solid}, notes
 
 
 # ── stamp / embossing plate ──────────────────────────────────────────────────

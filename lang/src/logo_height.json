@@ -1,0 +1,12 @@
+{
+    "param.o.logo.height": [
+        "Plastický reliéf z obrázku",
+        "Shaded relief from a picture",
+        "Relieve modelado según la imagen"
+    ],
+    "param.logo.lead": [
+        "Nahrajte SVG nebo obrázek, nebo napište text. Logo ze siluety vystoupí jako plocha; u fotky nebo kresby zvolte plastický reliéf, kde výšku určují odstíny.",
+        "Upload an SVG or a picture, or type text. A silhouette logo comes out as a flat raised shape; for a photo or a drawing pick the shaded relief, where the shades set the height.",
+        "Suba un SVG o una imagen, o escriba texto. Un logotipo de silueta sale como forma plana en relieve; para una foto o un dibujo elija el relieve modelado, donde los tonos fijan la altura."
+    ]
+}

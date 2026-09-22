@@ -832,7 +832,7 @@
     "param.flag.drainage.hint": "Solo en el cubremacetas: el agua sobrante escurre.",
     "param.flag.saucer": "Con plato",
     "param.flag.saucer.hint": "Solo en el cubremacetas: pieza aparte a la medida de la base.",
-    "param.logo.lead": "Suba un SVG o una imagen sencilla de alto contraste, o escriba un texto. Verá al instante cómo queda en 3D.",
+    "param.logo.lead": "Suba un SVG o una imagen, o escriba texto. Un logotipo de silueta sale como forma plana en relieve; para una foto o un dibujo elija el relieve modelado, donde los tonos fijan la altura.",
     "param.logo.content": "Texto o diseño",
     "param.logo.size": "Tamaño",
     "param.logo.tip": "Se imprime tumbado sin soportes. Un motivo en otro color se logra cambiando el filamento. El logo de pie se imprime aparte de la base y encaja en la ranura, así cada uno puede tener su color.",
@@ -1099,5 +1099,6 @@
     "param.part.plate": "Placa",
     "param.part.text": "Letras",
     "param.t.sign.line1": "Primera línea",
-    "param.t.sign.line2": "Segunda línea (más pequeña)"
+    "param.t.sign.line2": "Segunda línea (más pequeña)",
+    "param.o.logo.height": "Relieve modelado según la imagen"
 }

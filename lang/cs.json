@@ -832,7 +832,7 @@
     "param.flag.drainage.hint": "Jen u obalu na květináč: přebytečná voda odteče.",
     "param.flag.saucer": "S podmiskou",
     "param.flag.saucer.hint": "Jen u obalu na květináč: samostatný díl, průměr odpovídá dnu.",
-    "param.logo.lead": "Nahrajte SVG nebo jednoduchý kontrastní obrázek, nebo napište text. Hned uvidíte, jak bude vypadat ve 3D.",
+    "param.logo.lead": "Nahrajte SVG nebo obrázek, nebo napište text. Logo ze siluety vystoupí jako plocha; u fotky nebo kresby zvolte plastický reliéf, kde výšku určují odstíny.",
     "param.logo.content": "Text nebo předloha",
     "param.logo.size": "Velikost",
     "param.logo.tip": "Tiskne se naležato bez podpěr. Motiv jinou barvou vznikne výměnou filamentu. Stojící logo se tiskne zvlášť od podstavce a zasune se do drážky, takže může mít každé jinou barvu.",
@@ -1099,5 +1099,6 @@
     "param.part.plate": "Deska",
     "param.part.text": "Písmo",
     "param.t.sign.line1": "První řádek",
-    "param.t.sign.line2": "Druhý řádek (menší)"
+    "param.t.sign.line2": "Druhý řádek (menší)",
+    "param.o.logo.height": "Plastický reliéf z obrázku"
 }

@@ -832,7 +832,7 @@
     "param.flag.drainage.hint": "Pot cover only: surplus water drains away.",
     "param.flag.saucer": "With a saucer",
     "param.flag.saucer.hint": "Pot cover only: a separate part sized to the base.",
-    "param.logo.lead": "Upload an SVG or a simple high-contrast picture, or type a text. You see at once how it looks in 3D.",
+    "param.logo.lead": "Upload an SVG or a picture, or type text. A silhouette logo comes out as a flat raised shape; for a photo or a drawing pick the shaded relief, where the shades set the height.",
     "param.logo.content": "Text or artwork",
     "param.logo.size": "Size",
     "param.logo.tip": "It prints lying flat without supports. A motif in another colour comes from a filament swap. A standing logo prints separately from its base and slides into the slot, so each can have its own colour.",
@@ -1099,5 +1099,6 @@
     "param.part.plate": "Plate",
     "param.part.text": "Letters",
     "param.t.sign.line1": "First line",
-    "param.t.sign.line2": "Second line (smaller)"
+    "param.t.sign.line2": "Second line (smaller)",
+    "param.o.logo.height": "Shaded relief from a picture"
 }

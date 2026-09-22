@@ -115,6 +115,17 @@ class CreativeToolsTest extends TestCase
         $this->assertSame(__('param.error.svg_unsafe'), $this->preview('logo', ['artwork' => $bomb])->assertStatus(422)->json('errors.params.0'));
 
         // a blank picture is refused with an explanation; wrong file types never get in
+        // a shaded picture becomes a plastic relief: every grey level a height, exact thickness on top of the plate
+        $img = imagecreatetruecolor(120, 80);
+        for ($x = 0; $x < 120; $x++) { $c = imagecolorallocate($img, 255 - $x * 2, 255 - $x * 2, 255 - $x * 2); imageline($img, $x, 0, $x, 79, $c); }
+        $tmp = tempnam(sys_get_temp_dir(), 'grad').'.png'; imagepng($img, $tmp);
+        $shaded = $this->post('/api/tools/artwork', ['file' => new UploadedFile($tmp, 'grad.png', 'image/png', null, true)], ['Accept' => 'application/json'])->assertCreated()->json('artwork');
+        $relief = $this->meta($this->preview('logo', ['artwork' => $shaded, 'mode' => 'height', 'width' => 60, 'thickness' => 2, 'plate' => 2, 'margin' => 4])->assertOk());
+        $this->assertEqualsWithDelta(4.0, $relief['bbox']['z'], 0.05);
+        $this->assertGreaterThan(5000, $relief['triangles']);
+        $flat = $this->meta($this->preview('logo', ['artwork' => $shaded, 'mode' => 'relief', 'width' => 60, 'thickness' => 2, 'plate' => 2, 'margin' => 4])->assertOk());
+        $this->assertLessThan($relief['triangles'], $flat['triangles']);
+
         $blank = $this->post('/api/tools/artwork', ['file' => UploadedFile::fake()->image('white.png', 200, 200)], ['Accept' => 'application/json'])->json('artwork');
         $this->assertStringContainsString('%', $this->preview('logo', ['artwork' => $blank])->assertStatus(422)->json('errors.params.0'));
         $this->post('/api/tools/artwork', ['file' => UploadedFile::fake()->create('x.exe', 5)], ['Accept' => 'application/json'])->assertStatus(422);
