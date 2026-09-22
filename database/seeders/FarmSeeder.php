@@ -31,6 +31,9 @@ class FarmSeeder extends Seeder
             'model' => 'Anycubic Kobra S1 Combo',
             'mode' => FarmPrinter::MODE_MANUAL,
             'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.4,
+            // first calibration print (Benchy, 22 Sep 2026): the machine needed 40:16 for a 37:40 estimate, filament 3722 mm
+            // for 3682 mm and 11 g on the scale for 10.98 g: time is 7 % slow, weight is right
+            'time_factor' => 1.07, 'weight_factor' => 1.0,
             'machine_profile' => 'machine.json',
             'process_profiles' => ['draft' => 'process_draft.json', 'standard' => 'process_standard.json', 'fine' => 'process_fine.json'],
             // the shared calculator profile is deliberately oversized for pricing big parts; a real print needs the real plate

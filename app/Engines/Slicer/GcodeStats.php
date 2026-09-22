@@ -30,6 +30,32 @@ final class GcodeStats
         return null;
     }
 
+    /**
+     * Print time per speed mode of the machine (Anycubic/Orca write normal, silent and sport). Key → minutes.
+     * A slicer without modes gives ['normal' => …] only.
+     *
+     * @return array<string,int>
+     */
+    public static function minutesByMode(string $gcode): array
+    {
+        $out = [];
+        if (preg_match_all('/^; estimated printing time \((\w+) mode\)\s*=\s*(.+)$/m', $gcode, $mm, PREG_SET_ORDER)) {
+            foreach ($mm as $m) {
+                $out[$m[1]] = self::parseTime(trim($m[2]));
+            }
+        }
+        if (! $out && ($n = self::minutes($gcode)) !== null) {
+            $out['normal'] = $n;
+        }
+
+        return $out;
+    }
+
+    public static function layers(string $gcode): ?int
+    {
+        return preg_match('/^; total layer number:\s*(\d+)/m', $gcode, $m) ? (int) $m[1] : null;
+    }
+
     /** With supports on "auto" the slicer adds them only where needed: did it add any? */
     public static function hasSupports(string $gcode): bool
     {

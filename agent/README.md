@@ -155,3 +155,13 @@ python -m unittest discover -s tests        # 13 testů proti simulované tiská
 
 Nový ovladač: třída odvozená z `PrinterDriver` (`drivers/base.py`: `status`, `start`, `pause`, `resume`, `cancel`,
 volitelně `snapshot`, `connect`, `close`), zápis do `DRIVERS` v `drivers/__init__.py`. Agent ani matplace se nemění.
+
+### První kalibrační tisk (Benchy ze Sliceru Next, 22. 9. 2026)
+
+| | odhad v hlavičce | tiskárna | poměr |
+|---|---|---|---|
+| čas tisku | 37:40 | 40:16 (`print_duration`; s přípravou 44:02) | 1,07 |
+| filament | 3681,8 mm / 10,98 g | 3722 mm = 11,10 g; váha 11 g | 1,01 |
+
+Výchozí korekce Kobra S1 v `FarmSeeder`: čas × 1,07, hmotnost × 1,0. `filament_used` z tiskárny sedí s váhou, takže
+kalibrace hmotnosti může stát na hlášení agenta; váha je jen kontrola.
