@@ -291,7 +291,8 @@ def phone_stand(M, p):
         slot = min(16.0, width * 0.3)
         # through the lip and the shelf into the arch; the front leg below stays whole
         solid = solid - M.Manifold.cube([fx + 1.0, lip_h + t + 2.0, slot]).translate([-1.0, shelf_h - t - 1.0, width / 2 - slot / 2])
-    use = solid.rotate([90, 0, 0]).translate([0, width, 0])
+    # on the desk, turned so the viewer's default camera looks at the phone side, not at the back
+    use = solid.rotate([90, 0, 0]).rotate([0, 0, 180]).translate([rear_x, 0, 0])
     return {"all": solid, "use": use}, {"outer": [round(rear_x, 1), round(width, 1), round(top_out[1] + r, 1)], "shelf_height": shelf_h}
 
 
