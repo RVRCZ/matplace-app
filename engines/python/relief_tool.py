@@ -116,11 +116,20 @@ def main():
             m.invert()
         has_stand = False
         if bool(p.get("stand", False)):
-            # a low block with a slot the plate drops into; lies beside the plate so both print in one go
+            # a low pillow-shaped block: rounded corners in plan, rounded top edges, the slot leans back 8 degrees and
+            # its mouth is rounded so the plate slides in; lies beside the plate so both print in one go
             import manifold3d as M
+            C, J = M.CrossSection, M.JoinType.Round
             plate_w = float(cols - 1) * pitch
             sw, sd, sh, slot = max(40.0, plate_w * 0.6), 30.0, 12.0, tmax + 0.5
-            block = M.Manifold.cube([sw, sd, sh]) - M.Manifold.cube([sw + 2, slot, sh]).translate([-1, (sd - slot) / 2, 3.0])
+            side = C.square([sd - 10.0, sh - 5.0]).translate([5.0, 0.0]).offset(5.0, J, 2.0, 32) ^ C.square([sd, sh])     # rounded top edges, flat bottom
+            side = side + C.square([sd, 5.0])
+            cut = C.square([slot, sh]).rotate(-8.0).translate([(sd - slot) / 2 + 1.0, 4.0])                                 # leans back, 4 mm floor under the plate
+            side = side - cut
+            side = side.offset(-1.5, J, 2.0, 24).offset(1.5, J, 2.0, 24)                                                     # rounded slot mouth
+            block = side.extrude(sw).rotate([90, 0, 90])                                                                     # profile in (Y, Z), width along X
+            plan = C.square([sw - 12.0, sd - 12.0]).translate([6.0, 6.0]).offset(6.0, J, 2.0, 32).extrude(sh + 1.0)       # rounded corners in plan
+            block = block ^ plan
             sm = block.to_mesh()
             stand = trimesh.Trimesh(vertices=np.asarray(sm.vert_properties)[:, :3], faces=np.asarray(sm.tri_verts), process=False)
             stand.apply_translation([m.bounds[1][0] + 8.0, 0.0, 0.0])
