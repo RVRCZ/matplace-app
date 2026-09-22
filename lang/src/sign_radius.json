@@ -1,0 +1,17 @@
+{
+    "sign.radius": [
+        "Zaoblení rohů",
+        "Corner rounding",
+        "Redondeo de esquinas"
+    ],
+    "sign.radius.hint": [
+        "Jen u zaobleného tvaru. 0 = ostré rohy.",
+        "Rounded shape only. 0 = sharp corners.",
+        "Solo con la forma redondeada. 0 = esquinas vivas."
+    ],
+    "sign.bevel": [
+        "Zkosená horní hrana",
+        "Bevelled top edge",
+        "Borde superior biselado"
+    ]
+}

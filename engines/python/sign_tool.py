@@ -14,7 +14,9 @@ params: {
   "style": "emboss" | "engrave",
   "hole": true,                       keychain hole with a tab on the left
   "margin": 5,
-  "border": true                      raised rim (emboss style only)
+  "border": true,                     raised rim (emboss style only)
+  "radius": 6,                        corner radius of a rounded plate in mm
+  "bevel": true                       soft (chamfered) top edge of the plate
 }
 Prints one JSON object: {"ok": true, "width": .., "height": .., "out": ..}
 """
@@ -53,6 +55,8 @@ def main():
     margin = max(2.0, min(30.0, float(p.get("margin", th * 0.45))))
     hole = bool(p.get("hole", False))
     border = bool(p.get("border", True)) and style == "emboss"
+    radius = max(0.0, min(30.0, float(p.get("radius", 6.0))))
+    bevel = bool(p.get("bevel", False))
     if style == "engrave":
         relief = min(relief, thickness - 0.6)
 
@@ -100,7 +104,15 @@ def main():
         else:
             plate = cq.Workplane("XY").rect(w, h).extrude(thickness)
             if shape == "rounded":
-                plate = plate.edges("|Z").fillet(min(h, w) * 0.18)
+                radius = min(radius, min(h, w) / 2 - 0.5)
+                if radius > 0.05:
+                    plate = plate.edges("|Z").fillet(radius)
+        if bevel:
+            # a soft top edge like a bevel modifier: the plate no longer looks like a cut-out slab
+            try:
+                plate = plate.edges(">Z").chamfer(min(0.8, thickness * 0.3))
+            except Exception:  # noqa: BLE001 - a shape the kernel cannot chamfer keeps its sharp edge
+                pass
 
         if hole:
             r_out = max(5.0, h * 0.28)
@@ -115,11 +127,11 @@ def main():
                 result = result.union(t.translate((0, 0, thickness)))
             if border and shape != "oval":
                 outer = cq.Workplane("XY").rect(w, h).extrude(relief)
-                if shape == "rounded":
-                    outer = outer.edges("|Z").fillet(min(h, w) * 0.18)
+                if shape == "rounded" and radius > 0.05:
+                    outer = outer.edges("|Z").fillet(radius)
                 inner = cq.Workplane("XY").rect(w - 2 * rim, h - 2 * rim).extrude(relief)
-                if shape == "rounded":
-                    inner = inner.edges("|Z").fillet(max(0.5, min(h, w) * 0.18 - rim))
+                if shape == "rounded" and radius - rim > 0.05:
+                    inner = inner.edges("|Z").fillet(radius - rim)
                 result = result.union(outer.cut(inner).translate((0, 0, thickness)))
         else:
             result = plate

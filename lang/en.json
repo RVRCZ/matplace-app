@@ -1067,5 +1067,8 @@
     "param.f.vent": "Vent slat thickness",
     "param.o.phone_stand.plate": "Plate with hooks",
     "param.o.phone_stand.wave": "Wave",
-    "color.brown": "light brown"
+    "color.brown": "light brown",
+    "sign.radius": "Corner rounding",
+    "sign.radius.hint": "Rounded shape only. 0 = sharp corners.",
+    "sign.bevel": "Bevelled top edge"
 }

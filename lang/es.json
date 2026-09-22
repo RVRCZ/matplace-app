@@ -1067,5 +1067,8 @@
     "param.f.vent": "Grosor de la lama de la rejilla",
     "param.o.phone_stand.plate": "Placa con ganchos",
     "param.o.phone_stand.wave": "Onda",
-    "color.brown": "marrón claro"
+    "color.brown": "marrón claro",
+    "sign.radius": "Redondeo de esquinas",
+    "sign.radius.hint": "Solo con la forma redondeada. 0 = esquinas vivas.",
+    "sign.bevel": "Borde superior biselado"
 }

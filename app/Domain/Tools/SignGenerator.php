@@ -61,6 +61,8 @@ final class SignGenerator
             'style' => in_array($p['style'] ?? '', self::STYLES, true) ? $p['style'] : 'emboss',
             'hole' => (bool) ($p['hole'] ?? false),
             'border' => (bool) ($p['border'] ?? true),
+            'radius' => (float) ($p['radius'] ?? 6),
+            'bevel' => (bool) ($p['bevel'] ?? false),
         ];
 
         $uuid = (string) Str::uuid();
@@ -79,7 +81,7 @@ final class SignGenerator
             'uuid' => $uuid, 'owner_user_id' => $user?->id, 'anonymous_session_id' => $session?->id,
             'original_name' => $name.'.stl', 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
             'storage_path' => $rel, 'origin' => 'tool', 'origin_ref' => 'sign',
-            'tool_params' => ['line1' => $lines[0], 'line2' => $lines[1] ?? '', 'font' => (string) ($p['font'] ?? 'sans'), 'text_height' => $params['text_height'], 'shape' => $params['shape'], 'thickness' => $params['thickness'], 'relief' => $params['relief'], 'style' => $params['style'], 'hole' => $params['hole'], 'border' => $params['border']],
+            'tool_params' => ['line1' => $lines[0], 'line2' => $lines[1] ?? '', 'font' => (string) ($p['font'] ?? 'sans'), 'text_height' => $params['text_height'], 'shape' => $params['shape'], 'thickness' => $params['thickness'], 'relief' => $params['relief'], 'style' => $params['style'], 'hole' => $params['hole'], 'border' => $params['border'], 'radius' => $params['radius'], 'bevel' => $params['bevel']],
             'status' => ModelFile::STATUS_UPLOADED,
         ]);
         ProcessModelFile::dispatch($file->id);

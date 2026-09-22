@@ -37,7 +37,12 @@
         <div class="flex flex-wrap gap-4 text-sm">
             <label class="flex items-center gap-2"><input type="checkbox" name="hole" value="1"> {{ __('sign.hole') }}</label>
             <label class="flex items-center gap-2"><input type="checkbox" name="border" value="1" checked> {{ __('sign.border') }}</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="bevel" value="1"> {{ __('sign.bevel') }}</label>
         </div>
+        <label class="block text-sm font-semibold">{{ __('sign.radius') }} <span id="sign-r-val" class="font-normal text-action-dark">6 mm</span>
+            <input id="sign-r" name="radius" type="range" min="0" max="30" step="0.5" value="6" class="mt-1 w-full accent-action">
+            <span class="text-xs font-normal text-slate-500">{{ __('sign.radius.hint') }}</span>
+        </label>
 
         <details class="text-sm"><summary class="cursor-pointer text-action-dark">{{ __('calc.more') }}</summary>
             <div class="mt-2 grid grid-cols-3 gap-3">

@@ -30,6 +30,8 @@ export function bootSign(): void {
     const msg = document.getElementById('sign-msg') as HTMLElement;
     const btn = form.querySelector('button') as HTMLButtonElement;
     th.oninput = () => { (document.getElementById('sign-th-val') as HTMLElement).textContent = `${th.value} mm`; };
+    const rad = document.getElementById('sign-r') as HTMLInputElement | null;
+    if (rad) rad.oninput = () => { (document.getElementById('sign-r-val') as HTMLElement).textContent = `${rad.value} mm`; };
 
     void restoreForm(form, cfg.files);
 
@@ -42,6 +44,7 @@ export function bootSign(): void {
         fd.forEach((v, k) => { data[k] = v; });
         data.hole = fd.has('hole');
         data.border = fd.has('border');
+        data.bevel = fd.has('bevel');
         try {
             const res = await fetch(cfg.url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) });
             const body = await res.json();

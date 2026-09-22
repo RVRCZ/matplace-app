@@ -29,6 +29,8 @@ class ToolsApiController extends Controller
             'style' => ['nullable', 'in:emboss,engrave'],
             'hole' => ['nullable', 'boolean'],
             'border' => ['nullable', 'boolean'],
+            'radius' => ['nullable', 'numeric', 'min:0', 'max:30'],
+            'bevel' => ['nullable', 'boolean'],
         ]);
         if (! $signs->available()) {
             return response()->json(['error' => 'tool_unavailable'], 503);

@@ -1067,5 +1067,8 @@
     "param.f.vent": "Tloušťka lamely ventilace",
     "param.o.phone_stand.plate": "Deska s háčky",
     "param.o.phone_stand.wave": "Vlnka",
-    "color.brown": "světle hnědá"
+    "color.brown": "světle hnědá",
+    "sign.radius": "Zaoblení rohů",
+    "sign.radius.hint": "Jen u zaobleného tvaru. 0 = ostré rohy.",
+    "sign.bevel": "Zkosená horní hrana"
 }
