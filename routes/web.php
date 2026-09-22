@@ -29,7 +29,7 @@ Route::get('/printers/id/{id}', [\App\Http\Controllers\PrinterPageController::cl
 Route::get('/printers/{printerProfile:slug}', [\App\Http\Controllers\PrinterPageController::class, 'show'])->name('printers.show');
 Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
 Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
-Route::get('/tools/sign', [ToolsController::class, 'sign'])->name('tools.sign');
+Route::get('/tools/sign', [ToolsController::class, 'param'])->defaults('kind', 'sign')->name('tools.sign');
 Route::get('/tools/relief', [ToolsController::class, 'relief'])->name('tools.relief');
 Route::get('/tools/spare-part', [ToolsController::class, 'spare'])->name('tools.spare');
 Route::get('/tools/check', [ToolsController::class, 'check'])->name('tools.check');

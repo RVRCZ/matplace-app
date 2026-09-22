@@ -9,6 +9,7 @@ import shape2d as S
 LIMITS = {
     "vase": {"height": (40, 300), "top_d": (30, 250), "bottom_d": (30, 250), "wall": (0.8, 4), "floor": (0.8, 5), "ribs": (6, 48), "twist": (0, 180)},
     "logo": {"width": (20, 250), "thickness": (0.6, 10), "plate": (0.8, 6), "margin": (0, 20), "base_h": (8, 40)},
+    "sign": {"text_height": (4, 80), "thickness": (1.2, 10), "relief": (0.4, 5), "margin": (2, 30), "radius": (0, 30)},
     "stamp": {"width": (15, 120), "relief": (0.8, 4), "plate": (2, 6), "text_height": (4, 40)},
     "qr": {"size": (30, 150), "plate": (1.6, 4), "relief": (0.6, 2)},
     "stencil": {"width": (30, 250), "thickness": (0.8, 3), "margin": (5, 40), "bridge": (0.8, 3)},
@@ -17,6 +18,7 @@ LIMITS = {
 CHOICES = {
     "vase": {"profile": ("cone", "belly", "tulip"), "style": ("smooth", "ribs", "twist"), "purpose": ("vase", "pot")},
     "logo": {"mode": ("relief", "cutout", "standing"), "shape": ("rounded", "rect", "circle")},
+    "sign": {"shape": ("rounded", "rect", "oval"), "style": ("emboss", "engrave", "outline"), "typeface": ("sans", "serif", "mono")},
     "stamp": {"mode": ("raised", "recessed"), "handle": ("knob", "none")},
     "qr": {},
     "stencil": {},
@@ -203,6 +205,88 @@ def logo(M, Invalid, p):
         notes = {"outer": [round(pw, 1), round(ph, 1), round(plate_t + t, 1)]}
     notes.update({"warnings": warn, "thin_pct": thin, "missing_chars": info.get("missing_chars", [])})
     return {"all": solid}, notes
+
+
+# ── sign / name tag / keychain ───────────────────────────────────────────────
+
+def sign(M, Invalid, p):
+    """
+    Text on a plate: raised (emboss), sunk (engrave) or raised as an outline. Keyring tab, raised rim, a bevelled top
+    edge, and the plate and the text as separate parts for a two-colour print. Exact solids, milliseconds per preview.
+    """
+    k = "sign"
+    n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
+    cap, t, relief = n("text_height", 12), n("thickness", 3), n("relief", 1.2)
+    margin, radius = n("margin", 5), n("radius", 6)
+    shape, style = _pick(Invalid, p, k, "shape"), _pick(Invalid, p, k, "style")
+    keyring, border, bevel, two = (bool(p.get(f, False)) for f in ("keyring", "border", "bevel", "two_color"))
+    border = border and style != "engrave"
+    if style == "engrave":
+        relief = min(relief, t - 0.6)
+    lines = [str(x).strip() for x in (p.get("lines") or []) if str(x).strip()]
+    if not lines:
+        raise Invalid("no_text")
+    try:
+        art, info = S.text(M, lines[:2], p.get("font"), cap)
+    except S.ArtworkError as e:
+        raise Invalid(e.code)
+    w, hgt = S.size(art)
+    warn = []
+    if info.get("missing_chars"):
+        warn.append("missing_chars")
+    if style == "outline":
+        line = max(0.6, min(1.2, cap * 0.07))
+        inner = art.offset(-line, M.JoinType.Round, 2.0, 16)
+        art = art - inner if not inner.is_empty() else art
+    thin = S.printability(M, art, 0.45)["thin_pct"]
+    if thin > 35:
+        warn.append("thin_lines")
+    rim = 1.6 if border else 0.0
+    pw, ph = w + 2 * margin + 2 * rim, hgt + 2 * margin + 2 * rim
+    C = M.CrossSection
+    if shape == "oval":
+        pw, ph = pw * 1.12, ph * 1.25
+        plate2d = C.circle(1.0, 128).scale([pw / 2, ph / 2]).translate([pw / 2, ph / 2])
+        rim2d = plate2d - C.circle(1.0, 128).scale([pw / 2 - rim, ph / 2 - rim]).translate([pw / 2, ph / 2]) if rim else None
+    else:
+        r = 0.0 if shape == "rect" else min(radius, min(pw, ph) / 2 - 0.5)
+        plate2d = S.rounded_rect(M, pw, ph, r)
+        rim2d = plate2d - S.rounded_rect(M, pw - 2 * rim, ph - 2 * rim, max(0.0, r - rim)).translate([rim, rim]) if rim else None
+    motif = S.centre_on(art, pw, ph)
+    plate = plate2d.extrude(t)
+    if bevel:
+        # a soft top edge in four 0.2 mm steps: printed in 0.2 mm layers that IS a chamfer
+        c = min(0.8, t * 0.3)
+        plate = plate2d.extrude(t - c)
+        for i in range(4):
+            plate = plate + plate2d.offset(-c * (i + 1) / 4, M.JoinType.Round, 2.0, 16).extrude(c / 4 + 0.01).translate([0, 0, t - c + c * i / 4])
+    tab_note = {}
+    if keyring:
+        r_out = max(5.0, ph * 0.28)
+        r_in = max(2.0, r_out * 0.45)
+        cx = -r_out * 0.35
+        plate = plate + C.circle(r_out, 64).translate([cx, ph / 2]).extrude(t)
+        plate = plate - M.Manifold.cylinder(t + 2, r_in, r_in, 48).translate([cx, ph / 2, -1])
+        tab_note = {"tab": round(r_out * 0.65, 1)}
+    if style == "engrave":
+        body = plate - motif.extrude(relief + 1).translate([0, 0, t - relief])
+        parts = {"all": body}
+    else:
+        raised = motif.extrude(relief).translate([0, 0, t - 0.01])
+        if rim2d is not None:
+            raised = raised + rim2d.extrude(relief).translate([0, 0, t - 0.01])
+        parts = {"all": plate + raised}
+        if two:
+            parts["plate"] = plate
+            parts["text"] = raised.translate([0, 0, -(t - 0.01)])
+    x0 = -tab_note.get("tab", 0) * 0 - (max(5.0, ph * 0.28) * 1.35 if keyring else 0.0)
+    notes = {"outer": [round(pw - x0, 1), round(ph, 1), round(t + (0 if style == "engrave" else relief), 1)], "warnings": warn, "thin_pct": thin,
+             "missing_chars": info.get("missing_chars", []), "two_color": two and style != "engrave"}
+    if two and style != "engrave":
+        notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(t + 0.05, 2), "color": "orange"},
+                            {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white"}]
+        notes["color_change_mm"] = round(t, 1)
+    return parts, notes
 
 
 # ── stamp / embossing plate ──────────────────────────────────────────────────
@@ -438,4 +522,4 @@ def lightbox(M, Invalid, p):
     return parts, notes
 
 
-BUILDERS = {"vase": vase, "logo": logo, "stamp": stamp, "qr": qr, "stencil": stencil, "lightbox": lightbox}
+BUILDERS = {"vase": vase, "logo": logo, "sign": sign, "stamp": stamp, "qr": qr, "stencil": stencil, "lightbox": lightbox}

@@ -49,4 +49,27 @@ class SignToolTest extends TestCase
         // prices like any other model
         $this->postJson('/api/calculations', ['file' => $file->uuid, 'material' => 'PLA'])->assertCreated()->assertJsonPath('calculation.status', 'done');
     }
+
+    public function test_live_sign_has_two_colour_parts_and_an_outline_style(): void
+    {
+        if (! app(SignGenerator::class)->available()) {
+            $this->markTestSkipped('Python is not installed.');
+        }
+        Storage::fake('models');
+        $this->get('/tools/sign')->assertOk()->assertSee('data-choice="style"', false);
+        $meta = fn ($r) => json_decode($r->headers->get('X-Model-Meta'), true);
+        $full = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => ['line1' => 'Žluťoučký kůň', 'style' => 'emboss', 'two_color' => true, 'keyring' => true, 'radius' => 8]])->assertOk());
+        $this->assertEqualsWithDelta(3 + 1.2, $full['bbox']['z'], 0.05);                     // plate plus raised letters, exact
+        $this->assertNotEmpty($full['notes']['regions']);                                      // the preview colours the letters
+        $text = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => ['line1' => 'Žluťoučký kůň', 'two_color' => true], 'part' => 'text'])->assertOk());
+        $this->assertSame('text', $text['part']);
+        $this->assertEqualsWithDelta(1.2, $text['bbox']['z'], 0.05);
+        $outline = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => ['line1' => 'Roman', 'style' => 'outline']])->assertOk());
+        $this->assertLessThan($full['volume_mm3'], $outline['volume_mm3']);
+        $this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => ['line1' => '']])->assertStatus(422);
+
+        $r = $this->postJson('/api/tools/param', ['kind' => 'sign', 'params' => ['line1' => 'Eva', 'two_color' => true]])->assertCreated();
+        $this->assertSame(['plate', 'text'], $r->json('file.parts'));
+        $this->assertStringContainsString('/tools/sign?from=', $r->json('file.tool.url'));
+    }
 }

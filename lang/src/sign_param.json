@@ -1,0 +1,137 @@
+{
+    "param.sign.lead": [
+        "Napište text, vyberte tvar a provedení. Náhled se mění hned, cedulka se počítá přesně na milimetry.",
+        "Type the text, pick a shape and a style. The preview changes at once, the sign is exact to the millimetre.",
+        "Escriba el texto, elija forma y acabado. La vista previa cambia al instante, la placa es exacta al milímetro."
+    ],
+    "param.sign.content": [
+        "Text",
+        "Text",
+        "Texto"
+    ],
+    "param.sign.size": [
+        "Rozměry",
+        "Sizes",
+        "Medidas"
+    ],
+    "param.sign.tip": [
+        "Tiskne se naležato bez podpěr. Dvoubarevný text: tiskař vymění filament ve výšce desky, nebo si stáhne desku a písmo zvlášť.",
+        "Prints lying flat without supports. Two-colour text: the printer swaps filament at the plate height, or downloads the plate and the letters separately.",
+        "Se imprime tumbada sin soportes. Texto en dos colores: se cambia el filamento a la altura de la placa, o se descargan placa y letras por separado."
+    ],
+    "param.c.sign.style": [
+        "Provedení písma",
+        "Lettering",
+        "Acabado del texto"
+    ],
+    "param.o.sign.emboss": [
+        "Vystouplé",
+        "Raised",
+        "En relieve"
+    ],
+    "param.o.sign.engrave": [
+        "Zapuštěné",
+        "Engraved",
+        "Grabado"
+    ],
+    "param.o.sign.outline": [
+        "Obrys",
+        "Outline",
+        "Contorno"
+    ],
+    "param.c.sign.shape": [
+        "Tvar destičky",
+        "Plate shape",
+        "Forma de la placa"
+    ],
+    "param.o.sign.rounded": [
+        "Zaoblená",
+        "Rounded",
+        "Redondeada"
+    ],
+    "param.o.sign.rect": [
+        "Pravoúhlá",
+        "Rectangular",
+        "Rectangular"
+    ],
+    "param.o.sign.oval": [
+        "Oválná",
+        "Oval",
+        "Ovalada"
+    ],
+    "param.c.sign.typeface": [
+        "Písmo",
+        "Typeface",
+        "Tipografía"
+    ],
+    "param.o.sign.sans": [
+        "Bezpatkové",
+        "Sans",
+        "Sin serifa"
+    ],
+    "param.o.sign.serif": [
+        "Patkové",
+        "Serif",
+        "Con serifa"
+    ],
+    "param.o.sign.mono": [
+        "Strojové",
+        "Monospace",
+        "Monoespaciada"
+    ],
+    "param.f.text_height": [
+        "Výška písma",
+        "Letter height",
+        "Altura de letra"
+    ],
+    "param.flag.keyring": [
+        "S očkem na klíče",
+        "Keyring tab",
+        "Con anilla para llaves"
+    ],
+    "param.flag.keyring.hint": [
+        "Ouško s otvorem na levé straně.",
+        "A tab with a hole on the left.",
+        "Una pestaña con orificio a la izquierda."
+    ],
+    "param.flag.border": [
+        "Vystouplý rámeček",
+        "Raised rim",
+        "Marco en relieve"
+    ],
+    "param.flag.border.hint": [
+        "Lem po obvodu stejné výšky jako písmo.",
+        "A rim around the edge, as high as the letters.",
+        "Un borde alrededor, tan alto como las letras."
+    ],
+    "param.flag.bevel": [
+        "Zkosená horní hrana",
+        "Bevelled top edge",
+        "Borde superior biselado"
+    ],
+    "param.flag.bevel.hint": [
+        "Jemné zkosení hrany desky.",
+        "A soft chamfer on the plate's edge.",
+        "Un chaflán suave en el borde de la placa."
+    ],
+    "param.flag.two_color": [
+        "Dvoubarevně: deska a písmo zvlášť",
+        "Two colours: plate and letters apart",
+        "Dos colores: placa y letras por separado"
+    ],
+    "param.flag.two_color.hint": [
+        "Náhled obarví písmo, ke stažení bude deska i písmo jako samostatné díly.",
+        "The preview colours the letters; the plate and the letters download as separate parts.",
+        "La vista previa colorea las letras; la placa y las letras se descargan como piezas separadas."
+    ],
+    "param.part.plate": [
+        "Deska",
+        "Plate",
+        "Placa"
+    ],
+    "param.part.text": [
+        "Písmo",
+        "Letters",
+        "Letras"
+    ]
+}
