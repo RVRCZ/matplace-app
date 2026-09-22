@@ -459,6 +459,29 @@ def trim_loose(m, target):
         return m, 0.0
     keep = ndimage.distance_transform_edt(~core) <= reach
     loose = solid & ~keep
+    # glasses stand off the face by more than the reach too. They differ from hair: a frame is a HORIZONTAL piece in
+    # front of the head, a strand hangs down. Loose pieces are labelled and the horizontal ones in front of the head
+    # (top half, sector towards -Y; busts are turned that way) are kept.
+    labels, count = ndimage.label(loose, structure=np.ones((3, 3, 3), dtype=bool))
+    if count:
+        zs = np.nonzero(solid.any(axis=(0, 1)))[0]
+        z_chin = zs[int(0.5 * (len(zs) - 1))]
+        head = solid[:, :, zs[int(0.7 * (len(zs) - 1))]:]
+        cx, cy = (float(np.nonzero(head)[i].mean()) for i in (0, 1))
+        ijk = np.argwhere(loose)
+        lab = labels[ijk[:, 0], ijk[:, 1], ijk[:, 2]]
+        size = np.bincount(lab, minlength=count + 1)
+        mean = np.stack([np.bincount(lab, weights=ijk[:, i], minlength=count + 1) for i in range(3)], 1) / np.maximum(size, 1)[:, None]
+        d = ijk - mean[lab]
+        cov = np.stack([np.bincount(lab, weights=d[:, i] * d[:, j], minlength=count + 1) for i in range(3) for j in range(3)], 1).reshape(-1, 3, 3) / np.maximum(size, 1)[:, None, None]
+        axis = np.linalg.eigh(cov)[1][:, :, 2]                                 # main direction of each piece
+        horizontal = np.abs(axis[:, 2]) < 0.5
+        in_front = (mean[:, 2] >= z_chin) & (cy - mean[:, 1] > 0) & (np.abs(mean[:, 0] - cx) < (cy - mean[:, 1]) * np.tan(np.radians(70)))
+        spared = np.nonzero(horizontal & in_front & (size >= 20))[0]
+        spared = spared[spared > 0]
+        if len(spared):
+            keep |= np.isin(labels, spared)
+            loose = solid & ~keep
     share = float(loose.sum()) / float(solid.sum())
     if share < 0.0005:
         return m, 0.0
