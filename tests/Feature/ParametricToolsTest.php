@@ -202,6 +202,12 @@ class ParametricToolsTest extends TestCase
         $sharp = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'desk', 'radius' => 0]])->assertOk());
         $soft = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'desk', 'radius' => 1.2]])->assertOk());
         $this->assertGreaterThan($sharp['triangles'], $soft['triangles']);
+        $sharpBox = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['radius' => 0, 'lid' => true]])->assertOk());
+        $roundBox = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['radius' => 15, 'lid' => true]])->assertOk());
+        $this->assertSame($sharpBox['bbox'], $roundBox['bbox']);                                    // rounding takes corners away, never size
+        $this->assertLessThan($sharpBox['volume_mm3'], $roundBox['volume_mm3']);
+        $this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['radius' => 12, 'holes' => [['wall' => 'front', 'shape' => 'circle', 'w' => 8, 'x' => 8, 'z' => 12]]]])->assertStatus(422);   // a hole in a rounded corner
+        $this->get('/tools/box?lang=cs')->assertOk()->assertSee('světle hnědá');
         $square = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'organizer', 'params' => ['radius' => 0]])->assertOk());
         $round = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'organizer', 'params' => ['radius' => 16]])->assertOk());
         $this->assertSame($square['bbox'], $round['bbox']);

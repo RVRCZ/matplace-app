@@ -117,7 +117,7 @@ export interface Region { x0: number; y0: number; x1: number; y1: number; z0: nu
 
 /** Filament colours as they look printed (slightly muted), keyed by the colour names used across the app. */
 export const FILAMENT: Record<string, [number, number, number]> = {
-    white: [0.93, 0.9, 0.84], black: [0.09, 0.09, 0.1], grey: [0.55, 0.57, 0.6], red: [0.72, 0.13, 0.12], blue: [0.13, 0.24, 0.47],
+    white: [0.93, 0.9, 0.84], black: [0.09, 0.09, 0.1], grey: [0.55, 0.57, 0.6], brown: [0.76, 0.6, 0.42], red: [0.72, 0.13, 0.12], blue: [0.13, 0.24, 0.47],
     green: [0.16, 0.45, 0.27], yellow: [0.92, 0.74, 0.16], orange: [0.82, 0.32, 0.12],
 };
 

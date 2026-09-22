@@ -27,7 +27,7 @@ final class ParametricGenerator
         ],
         'box' => [
             'inner_w' => [10, 300, 80, 1], 'inner_d' => [10, 300, 50, 1], 'inner_h' => [8, 200, 30, 1],
-            'wall' => [1.2, 5, 2, 0.2], 'floor' => [1, 5, 1.6, 0.2], 'clearance' => [0.1, 0.6, 0.25, 0.05],
+            'wall' => [1.2, 5, 2, 0.2], 'floor' => [1, 5, 1.6, 0.2], 'clearance' => [0.1, 0.6, 0.25, 0.05], 'radius' => [0, 30, 2.5, 0.5],
         ],
         'phone_stand' => [
             'width' => [50, 260, 70, 1], 'device' => [7, 20, 12, 1], 'angle' => [35, 80, 65, 1], 'back' => [60, 200, 100, 1], 'thickness' => [3, 8, 5, 0.5], 'radius' => [0, 4, 2, 0.1], 'depth' => [40, 120, 60, 1], 'vent' => [1, 4, 1.5, 0.1],
@@ -76,7 +76,7 @@ final class ParametricGenerator
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
-        'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
+        'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'],
     ];
 
@@ -108,7 +108,7 @@ final class ParametricGenerator
 
     public const MAX_BINS = 24;
 
-    public const COLORS = ['white', 'black', 'grey', 'red', 'blue', 'green', 'yellow', 'orange'];
+    public const COLORS = ['white', 'black', 'grey', 'brown', 'red', 'blue', 'green', 'yellow', 'orange'];
 
     public function __construct(private readonly PythonTool $python) {}
 

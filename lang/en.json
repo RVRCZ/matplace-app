@@ -1066,5 +1066,6 @@
     "param.o.phone_stand.car": "Car vent clip",
     "param.f.vent": "Vent slat thickness",
     "param.o.phone_stand.plate": "Plate with hooks",
-    "param.o.phone_stand.wave": "Wave"
+    "param.o.phone_stand.wave": "Wave",
+    "color.brown": "light brown"
 }

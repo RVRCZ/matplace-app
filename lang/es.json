@@ -1066,5 +1066,6 @@
     "param.o.phone_stand.car": "Clip para rejilla del coche",
     "param.f.vent": "Grosor de la lama de la rejilla",
     "param.o.phone_stand.plate": "Placa con ganchos",
-    "param.o.phone_stand.wave": "Onda"
+    "param.o.phone_stand.wave": "Onda",
+    "color.brown": "marrón claro"
 }

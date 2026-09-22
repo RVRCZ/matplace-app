@@ -210,7 +210,7 @@
                         <input name="city" value="{{ auth()->user()?->city }}" placeholder="{{ __('account.city') }}" class="rounded-lg border border-slate-300 px-3 py-2">
                         <label class="text-sm text-slate-600">{{ __('calc.quantity') }}<input name="quantity" type="number" min="1" max="1000" value="1" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
                         <label class="text-sm text-slate-600">{{ __('inquiry.form.color') }}<input name="color" maxlength="40" list="inquiry-colors" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
-                        <datalist id="inquiry-colors">@foreach(['white','black','grey','red','blue','green','yellow','orange','any'] as $c)<option value="{{ __('color.'.$c) }}">@endforeach</datalist>
+                        <datalist id="inquiry-colors">@foreach(['white','black','grey','brown','red','blue','green','yellow','orange','any'] as $c)<option value="{{ __('color.'.$c) }}">@endforeach</datalist>
                         <label class="text-sm text-slate-600">{{ __('inquiry.form.wanted_by') }}<input name="wanted_by" type="date" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
                         <select name="delivery_pref" class="rounded-lg border border-slate-300 px-3 py-2 sm:col-span-2">
                             <option value="any">{{ __('inquiry.delivery.any') }}</option><option value="pickup">{{ __('inquiry.delivery.pickup') }}</option><option value="shipping">{{ __('inquiry.delivery.shipping') }}</option>

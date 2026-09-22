@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 LIMITS = {
     "organizer": {"width": (30, 400), "depth": (30, 400), "height": (10, 150), "rows": (1, 8), "cols": (1, 8), "wall": (0.8, 4), "floor": (0.8, 4), "radius": (0, 20)},
-    "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6)},
+    "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6), "radius": (0, 30)},
     "phone_stand": {"width": (50, 260), "device": (7, 20), "angle": (35, 80), "back": (60, 200), "thickness": (3, 8), "radius": (0, 4), "depth": (40, 120), "vent": (1, 4)},
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
     "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
@@ -181,7 +181,9 @@ def box(M, p):
     clearance = num(p, k, "clearance", 0.25)
     ow, od, oh = iw + 2 * wall, idp + 2 * wall, ih + floor
     lip_h = min(6.0, max(3.0, ih * 0.2)) if lid else 0.0
-    body = rounded_rect(M, ow, od, 2.5).extrude(oh) - M.Manifold.cube([iw, idp, ih + 1]).translate([wall, wall, floor])
+    radius = min(num(p, k, "radius", 2.5), min(iw, idp) / 2 - 0.5 + wall)
+    inner_r = max(0.0, radius - wall)                      # the same rounding inside: walls stay even all the way round
+    body = rounded_rect(M, ow, od, radius).extrude(oh) - rounded_rect(M, iw, idp, inner_r).extrude(ih + 1).translate([wall, wall, floor])
 
     holes = p.get("holes") or []
     if not isinstance(holes, list) or len(holes) > MAX_HOLES:
@@ -202,8 +204,9 @@ def box(M, p):
             raise Invalid("hole_size", str(i + 1))
         (ox, oy), (ax, ay), span, _ = wall_frame(wname, iw, idp, wall)
         margin = 2.0
+        side = margin + inner_r                             # sideways also clear of the rounded corners
         top_limit = ih - lip_h - (1.0 if lid else 0.0)
-        if hx - hw / 2 < margin or hx + hw / 2 > span - margin or hz - hh / 2 < margin or hz + hh / 2 > top_limit - margin + 1.0:
+        if hx - hw / 2 < side or hx + hw / 2 > span - side or hz - hh / 2 < margin or hz + hh / 2 > top_limit - margin + 1.0:
             raise Invalid("hole_outside", str(i + 1))
         for (px, pz, pw, ph, pi) in placed.get(wname, []):
             if abs(px - hx) < (pw + hw) / 2 + 1.5 and abs(pz - hz) < (ph + hh) / 2 + 1.5:
@@ -237,8 +240,9 @@ def box(M, p):
         lw, ld = iw - 2 * clearance, idp - 2 * clearance
         if lw - 2 * lip_wall < 2 or ld - 2 * lip_wall < 2:
             raise Invalid("box_too_small_for_lid")
-        plate = rounded_rect(M, ow, od, 2.5).extrude(floor)
-        ring = M.Manifold.cube([lw, ld, lip_h]) - M.Manifold.cube([lw - 2 * lip_wall, ld - 2 * lip_wall, lip_h + 1]).translate([lip_wall, lip_wall, 0])
+        plate = rounded_rect(M, ow, od, radius).extrude(floor)
+        lip_r = max(0.0, inner_r - clearance)
+        ring = rounded_rect(M, lw, ld, lip_r).extrude(lip_h) - rounded_rect(M, lw - 2 * lip_wall, ld - 2 * lip_wall, max(0.0, lip_r - lip_wall)).extrude(lip_h + 1).translate([lip_wall, lip_wall, 0])
         parts["lid"] = plate + ring.translate([wall + clearance, wall + clearance, floor])
         notes["lip_height"] = round(lip_h, 1)
         notes["clearance"] = clearance

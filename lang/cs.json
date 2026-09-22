@@ -1066,5 +1066,6 @@
     "param.o.phone_stand.car": "Do auta na mřížku",
     "param.f.vent": "Tloušťka lamely ventilace",
     "param.o.phone_stand.plate": "Deska s háčky",
-    "param.o.phone_stand.wave": "Vlnka"
+    "param.o.phone_stand.wave": "Vlnka",
+    "color.brown": "světle hnědá"
 }
