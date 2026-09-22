@@ -305,19 +305,109 @@ def _wedge_profile(M, device, angle, depth, r):
     return block - slot, front, height, depth
 
 
+def _on_floor(solid):
+    """Move a solid so its bounding box starts at the origin."""
+    b = solid.bounding_box()
+    return solid.translate([-b[0], -b[1], -b[2]])
+
+
+def _ribbon(M, pts, t):
+    """A band of thickness t along a polyline: hulls of circles at consecutive points, so bends come out round."""
+    C = M.CrossSection
+    out = C.square([0, 0])
+    prev = C.circle(t / 2, 32).translate(list(pts[0]))
+    for q in pts[1:]:
+        nxt = C.circle(t / 2, 32).translate(list(q))
+        out = out + (prev + nxt).hull()
+        prev = nxt
+    return out
+
+
+def _arc(cx, cy, rad, a0, a1, n=12):
+    return [(cx + rad * math.cos(math.radians(a0 + (a1 - a0) * i / n)), cy + rad * math.sin(math.radians(a0 + (a1 - a0) * i / n))) for i in range(n + 1)]
+
+
+def _wave_profile(M, device, angle, back, t):
+    """
+    One bent band, seen from the side: the rest leans back, meets the ground in a round bend, the base runs forward
+    along the table, rolls up at the front and comes back as the seat. A short tail behind the bend keeps the
+    phone's weight inside the footprint. Returns (profile, depth, height, seat_y, seat x-range).
+    """
+    a = math.radians(angle)
+    ux, uy = math.cos(a), math.sin(a)
+    h = t / 2
+    R2 = max(8.0, t * 1.6)                                   # front roll (centre line radius): room for a plug under the seat
+    seat_y = h + 2 * R2 - 2.5                                # the roll's top stands 2.5 mm above the seat: the lip
+    # rest centre line passes through K = (0, h); the phone's bottom sits where the rest face meets the seat level
+    x_rest = (seat_y - h) / math.tan(a) - h / uy             # front face of the rest at seat height
+    x_end = x_rest - 1.5                                     # the seat ends just before the rest
+    D = device + 3.0 + R2 - x_end                            # front roll centre at x = -D
+    tail = x_end + 75.0 * ux + 8.0                            # ground behind K: a phone's weight (about 75 mm up) stays inside the footprint
+    front = _arc(-D, h + R2, R2, -90, 90)                     # up and over at the front
+    seat = [(-D + 3.0, seat_y), (x_end, seat_y)]
+    J = M.JoinType.Round
+    rest = _ribbon(M, [(back * ux, h + back * uy), (0.0, h)], t)
+    ground = _ribbon(M, [(tail, h), (-D, h)], t)
+    # the rest flows into the ground through a big round bend on both sides, like a bent band
+    R1 = max(8.0, 1.6 * t)
+    prof = (rest + ground).offset(R1, J, 2.0, 24).offset(-R1, J, 2.0, 24)
+    prof = prof + _ribbon(M, [(-D - 0.01, h)] + front + seat, t)
+    prof = prof.offset(1.5, J, 2.0, 24).offset(-1.5, J, 2.0, 24)              # small fillet where the seat meets the rest
+    depth = tail + h + D + R2 + h
+    return prof, depth, back * uy + t, seat_y + h, (-D + R2 - h, x_end)
+
+
 def phone_stand(M, p):
     """
     Four stands from one tool: A-frame for the desk, low wedge for watching, wall pocket, and a clip for a car vent.
     Each is a side profile extruded across the width, printed lying on its side or on its back plate, no supports.
     """
     k = "phone_stand"
-    style = str(p.get("style", "desk"))
+    style = str(p.get("style", "plate"))
     width, device = num(p, k, "width", 70), num(p, k, "device", 12)
     t = num(p, k, "thickness", 5)
     r = min(num(p, k, "radius", 2.0), t * 0.45)
     cable = bool(p.get("cable", True))
     C = M.CrossSection
     note = {}
+
+    if style == "wave":
+        angle, back = max(num(p, k, "angle", 65), 55.0), num(p, k, "back", 90)
+        profile, depth, height, seat_top, (sx0, sx1) = _wave_profile(M, device, angle, back, t)
+        solid = profile.extrude(width)
+        if cable:
+            slot = min(16.0, width * 0.3)
+            # through the seat only: the plug drops into the roll and the cable leaves at the side
+            solid = solid - M.Manifold.cube([sx1 - sx0 + 1.0, t + 1.0, slot]).translate([sx0, seat_top - t - 0.5, width / 2 - slot / 2])
+        use = _on_floor(solid.rotate([90, 0, 0]).rotate([0, 0, 180]))
+        solid = _on_floor(solid)
+        note["outer"] = [round(depth, 1), round(width, 1), round(height, 1)]
+        return {"all": solid, "use": use}, note
+
+    if style == "plate":
+        # flat base, a leaning back plate braced by a fin, two hook blocks with a seat and a lip; printed upright
+        angle, back = max(num(p, k, "angle", 65), 55.0), num(p, k, "back", 100)
+        a = math.radians(angle)
+        seat_h, lip_h, lip_t, hook_w = 10.0, 6.0, 3.0, 12.0
+        y_lip = 8.0
+        y_foot = y_lip + lip_t + device + 2.0 - seat_h / math.tan(a)        # the plate's front face meets the base here
+        fin_d = max(30.0, 0.55 * back * math.cos(a) + 10.0)                     # base behind the plate: keeps the phone's weight inside
+        depth = y_foot + fin_d
+        base = rounded_rect(M, width, depth, r).extrude(t)
+        plate = rounded_rect(M, width, back, r).extrude(t).rotate([angle, 0, 0]).translate([0, y_foot, t - 0.01])
+        fin_w = max(12.0, width * 0.25)
+        apex = (y_foot + back * 0.6 * math.cos(a) - t * math.sin(a) * 0.5, t + back * 0.6 * math.sin(a))
+        fin = C([[(y_foot - 1.0, t - 0.01), (depth - r, t - 0.01), apex]]).extrude(fin_w).rotate([90, 0, 90]).translate([(width - fin_w) / 2, 0, 0])
+        solid = base + plate + fin
+        # hooks: a block from the base up to the seat, with a lip in front; the phone's back leans on the plate
+        seat_back = y_foot + seat_h / math.tan(a)
+        hook = C([[(y_lip, t - 0.01), (y_foot, t - 0.01), (seat_back, t + seat_h), (y_lip + lip_t, t + seat_h), (y_lip + lip_t, t + seat_h + lip_h), (y_lip, t + seat_h + lip_h)]])
+        for x in (width * 0.25 - hook_w / 2, width * 0.75 - hook_w / 2):
+            solid = solid + hook.extrude(hook_w).rotate([90, 0, 90]).translate([x, 0, 0])
+        use = solid
+        note["outer"] = [round(width, 1), round(depth, 1), round(t + back * math.sin(a), 1)]
+        note["prints_upright"] = True
+        return {"all": solid, "use": use}, note
 
     if style == "wedge":
         angle = min(num(p, k, "angle", 65), 70.0)

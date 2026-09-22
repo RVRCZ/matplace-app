@@ -55,7 +55,7 @@ final class ParametricGenerator
 
     /** kind → choice → allowed values (the first one is the default) */
     public const CHOICES = [
-        'phone_stand' => ['style' => ['desk', 'wedge', 'wall', 'car']],
+        'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['cone', 'belly', 'tulip'], 'style' => ['smooth', 'ribs', 'twist']],
         'logo' => ['mode' => ['relief', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
@@ -86,7 +86,7 @@ final class ParametricGenerator
 
     /** kind → field or flag → [choice key, values it belongs to]; the form hides it for the other choices */
     public const WHEN = [
-        'phone_stand' => ['angle' => ['style', ['desk', 'wedge']], 'back' => ['style', ['desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['desk', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
+        'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']]],
     ];
 

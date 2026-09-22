@@ -1,0 +1,32 @@
+{
+    "param.o.phone_stand.plate": [
+        "Deska s háčky",
+        "Plate with hooks",
+        "Placa con ganchos"
+    ],
+    "param.o.phone_stand.wave": [
+        "Vlnka",
+        "Wave",
+        "Onda"
+    ],
+    "param.o.phone_stand.desk": [
+        "A-rám s poličkou",
+        "A-frame with a shelf",
+        "Marco en A con repisa"
+    ],
+    "param.phone_stand.tip": [
+        "Deska s háčky se tiskne nastojato na podstavě, ostatní stojánky naležato bez podpěr, kapsa na zeď zadní deskou dolů. Klip do auta tiskněte z PETG.",
+        "The plate with hooks prints upright on its base, the other stands lying down without supports, the wall pocket back plate down. Print the car clip in PETG.",
+        "La placa con ganchos se imprime de pie sobre su base, los demás soportes tumbados sin soportes, el bolsillo de pared con la placa abajo. Imprima el clip del coche en PETG."
+    ],
+    "calc.tip.phone_stand": [
+        "Deska s háčky se tiskne nastojato, ostatní stojánky naležato bez podpěr; kapsa na zeď zadní deskou dolů, klip do auta z PETG.",
+        "The plate with hooks prints upright, the other stands lying down without supports; the wall pocket back plate down, the car clip in PETG.",
+        "La placa con ganchos se imprime de pie, los demás tumbados sin soportes; el bolsillo de pared con la placa abajo, el clip del coche en PETG."
+    ],
+    "tools.phone_stand.hint": [
+        "Deska s háčky, vlnka, A-rám, nízký klín, kapsa na zeď nebo klip do auta. Podle tloušťky telefonu s obalem.",
+        "Plate with hooks, wave, A-frame, low wedge, wall pocket or a car vent clip. Sized to your phone with its case.",
+        "Placa con ganchos, onda, marco en A, cuña baja, bolsillo de pared o clip para el coche. A medida del teléfono con su funda."
+    ]
+}

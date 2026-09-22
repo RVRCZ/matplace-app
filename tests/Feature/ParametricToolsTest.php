@@ -173,13 +173,17 @@ class ParametricToolsTest extends TestCase
     public function test_stand_and_cable_holder_follow_their_numbers(): void
     {
         $this->needsPython();
-        $a = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['width' => 70, 'device' => 12]])->assertOk());
+        $a = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'desk', 'width' => 70, 'device' => 12]])->assertOk());
         $this->assertEqualsWithDelta(70, $a['bbox']['z'], 0.01);                           // print orientation: lying on its side
-        $use = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['width' => 70], 'view' => 'use'])->assertOk());
+        $use = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'desk', 'width' => 70], 'view' => 'use'])->assertOk());
         $this->assertEqualsWithDelta(70, $use['bbox']['y'], 0.01);                         // preview: standing on the desk
         $this->assertEqualsWithDelta($a['volume_mm3'], $use['volume_mm3'], 0.5);
 
         // four holders from one tool, each a different shape
+        $wave = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'wave', 'width' => 70, 'angle' => 65, 'back' => 90], 'view' => 'use'])->assertOk());
+        $this->assertGreaterThan(75 * cos(deg2rad(65)) + 20, $wave['bbox']['x']);          // the base reaches behind the phone's weight (about 75 mm up the rest)
+        $plate = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'plate', 'width' => 70]])->assertOk());
+        $this->assertEqualsWithDelta(70, $plate['bbox']['x'], 0.01);                          // printed upright: width stays width
         $wall = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'wall', 'width' => 70, 'device' => 12, 'thickness' => 4]])->assertOk());
         $this->assertEqualsWithDelta(70 + 2 + 8, $wall['bbox']['x'], 0.05);                 // phone plus play plus two walls
         $car = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'car', 'vent' => 2]])->assertOk());
@@ -195,8 +199,8 @@ class ParametricToolsTest extends TestCase
         $this->assertEqualsWithDelta(45, $c3['bbox']['z'], 0.01);                                     // a deep desk block by default
 
         // rounding is real geometry: softer stand, rounder organizer, same outer size
-        $sharp = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['radius' => 0]])->assertOk());
-        $soft = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['radius' => 1.2]])->assertOk());
+        $sharp = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'desk', 'radius' => 0]])->assertOk());
+        $soft = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'desk', 'radius' => 1.2]])->assertOk());
         $this->assertGreaterThan($sharp['triangles'], $soft['triangles']);
         $square = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'organizer', 'params' => ['radius' => 0]])->assertOk());
         $round = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'organizer', 'params' => ['radius' => 16]])->assertOk());
