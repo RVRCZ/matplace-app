@@ -8,7 +8,8 @@
     </div>
     @include('partials.flash')
 
-    {{-- role switches --}}
+    {{-- role switches (marketplace only) --}}
+    @if(config('features.marketplace'))
     <div class="mt-5 grid gap-3 sm:grid-cols-2">
         @foreach(['printer' => '🖨️', 'designer' => '🧩'] as $role => $ico)
             @php $on = $user->hasRole($role); @endphp
@@ -26,6 +27,7 @@
             </div>
         @endforeach
     </div>
+    @endif
 
     {{-- print farm: credit, own prints, admin desk --}}
     @if(config('farm.enabled'))
@@ -51,8 +53,13 @@
                         <div class="text-xs text-slate-500">{{ $c->params['material'] ?? '' }} · {{ $c->params['quantity'] ?? 1 }} ks · {{ $c->created_at->format('j. n. Y H:i') }}</div>
                     </div>
                     <div class="text-right text-sm font-semibold">
-                        @php $tot = collect($c->prices ?? $c->rough['prices'] ?? [])->pluck('total'); @endphp
-                        @if($tot->isNotEmpty()){{ number_format($tot->min(), 0, ',', ' ') }}@if($tot->count() > 1) – {{ number_format($tot->max(), 0, ',', ' ') }}@endif Kč@else —@endif
+                        @if(config('features.marketplace'))
+                            @php $tot = collect($c->prices ?? $c->rough['prices'] ?? [])->pluck('total'); @endphp
+                            @if($tot->isNotEmpty()){{ number_format($tot->min(), 0, ',', ' ') }}@if($tot->count() > 1) – {{ number_format($tot->max(), 0, ',', ' ') }}@endif Kč@else —@endif
+                        @else
+                            @php $m = $c->slicer['minutes'] ?? $c->rough['minutes'] ?? null; @endphp
+                            @if($m){{ $m >= 60 ? intdiv($m, 60).' h '.($m % 60).' min' : $m.' min' }} · {{ round($c->slicer['grams'] ?? $c->rough['grams'] ?? 0) }} g@else —@endif
+                        @endif
                     </div>
                 </a>
             @endforeach

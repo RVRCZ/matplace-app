@@ -9,6 +9,9 @@
             .'<img src="'.$base.'-1024.jpg" alt="'.e($alt).'" width="1536" height="1024" '.($eager ? 'fetchpriority="high"' : 'loading="lazy"').' decoding="async" class="h-auto w-full"></picture>';
     };
     $printerUrl = auth()->check() ? (auth()->user()->isPrinter() ? route('printer.dashboard') : route('account')) : route('register', ['role' => 'printer']);
+    // without the marketplace the copy speaks about downloading or printing on the farm, never about other printers
+    $mp = (bool) config('features.marketplace');
+    $tx = fn (string $key) => __($mp ? $key : 'home.farm.'.$key);
 @endphp
 
 <section id="hero">
@@ -16,14 +19,14 @@
         <div class="min-w-0">
             <p class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-action"><span class="h-1.5 w-1.5 rounded-full bg-action" aria-hidden="true"></span>{{ __('home.eyebrow') }}</p>
             <h1 class="mt-4 text-[2.6rem] font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">{{ __('home.title.a') }}<br>{{ __('home.title.b') }} <span class="text-action">{{ __('home.title.c') }}</span></h1>
-            <p class="mt-4 max-w-md text-base leading-relaxed text-muted sm:text-lg">{{ __('home.lead') }}</p>
+            <p class="mt-4 max-w-md text-base leading-relaxed text-muted sm:text-lg">{{ $tx('home.lead') }}</p>
 
             <div class="mt-5">
                 @include('calculator.inputs')
             </div>
 
             <ul class="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
-                @foreach(['real_prices', 'no_signup', 'share'] as $b)
+                @foreach($mp ? ['real_prices', 'no_signup', 'share'] : ['free_tools', 'download', 'farm'] as $b)
                     <li class="flex items-center gap-1.5"><svg class="h-3.5 w-3.5 text-action" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ __('home.benefit.'.$b) }}</li>
                 @endforeach
             </ul>
@@ -82,15 +85,16 @@
     {{-- how it goes --}}
     <section class="-mx-4 mt-14 bg-white/60 px-4 py-12" aria-labelledby="home-steps">
         <p class="text-xs font-bold uppercase tracking-[0.14em] text-action">{{ __('home.steps.kicker') }}</p>
-        <div class="mt-2 flex flex-wrap items-end justify-between gap-3"><h2 id="home-steps" class="text-3xl font-extrabold tracking-tight text-ink">{{ __('home.steps.title') }}</h2><p class="max-w-xs text-sm text-muted">{{ __('home.steps.note') }}</p></div>
+        <div class="mt-2 flex flex-wrap items-end justify-between gap-3"><h2 id="home-steps" class="text-3xl font-extrabold tracking-tight text-ink">{{ __('home.steps.title') }}</h2><p class="max-w-xs text-sm text-muted">{{ $tx('home.steps.note') }}</p></div>
         <ol class="mt-8 grid gap-8 md:grid-cols-3">
             @foreach([1, 2, 3] as $n)
-                <li><div class="flex items-center gap-3 text-xs font-bold text-action">0{{ $n }}<span class="h-px flex-1 bg-line" aria-hidden="true"></span></div><h3 class="mt-4 text-lg font-bold text-ink">{{ __('home.step'.$n) }}</h3><p class="mt-1 text-sm leading-relaxed text-muted">{{ __('home.step'.$n.'.text') }}</p></li>
+                <li><div class="flex items-center gap-3 text-xs font-bold text-action">0{{ $n }}<span class="h-px flex-1 bg-line" aria-hidden="true"></span></div><h3 class="mt-4 text-lg font-bold text-ink">{{ $tx('home.step'.$n) }}</h3><p class="mt-1 text-sm leading-relaxed text-muted">{{ $tx('home.step'.$n.'.text') }}</p></li>
             @endforeach
         </ol>
     </section>
 
-    {{-- printers --}}
+    {{-- printers (marketplace only) --}}
+    @if($mp)
     <section class="mt-12 grid gap-8 rounded-3xl bg-ink p-8 text-white md:grid-cols-2 md:p-12" aria-labelledby="home-printers">
         <div>
             <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#F2B79F]">{{ __('tools.printers.title') }}</p>
@@ -104,4 +108,5 @@
             @endforeach
         </ul>
     </section>
+    @endif
 </section>

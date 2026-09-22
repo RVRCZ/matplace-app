@@ -128,6 +128,8 @@ final class OrcaSlicer implements Slicer
                 warnings: $warnings,
                 raw: ['engine' => 'orca', 'tree_supports' => ($wantSupports || $autoSupports) && $params->treeSupports, 'filament' => basename($filament), 'process' => basename($process), 'machine' => basename($machine)],
                 meters: GcodeStats::meters($gcode),
+                minutesByMode: GcodeStats::minutesByMode($gcode),
+                layers: GcodeStats::layers($gcode),
             );
         } finally {
             File::deleteDirectory($work);

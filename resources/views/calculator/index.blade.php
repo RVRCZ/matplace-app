@@ -16,6 +16,7 @@
         'search.gen_size','search.generating','search.gen_done','search.gen_failed','search.gen_daily_limit','search.gen_global_limit','search.gen_text_hint',
         'refine.working','refine.failed','pedestal.working','pedestal.failed','refine.photo_only','check.head.error','check.head.advice','check.head.ok','check.group.error','check.group.advice','check.group.ok','check.disclaimer','check.units_tiny','check.units_tiny.impact','check.units_huge','check.units_huge.impact','check.very_small','check.very_small.impact','check.exceeds_bed','check.exceeds_bed.impact','check.parts_fit','check.parts_fit.impact','check.part_exceeds_bed','check.part_exceeds_bed.impact','check.size_ok','check.size_ok.impact','check.too_thin','check.too_thin.impact','check.watertight_ok','check.watertight_ok.impact','check.not_watertight','check.not_watertight.impact','check.flipped_normals','check.flipped_normals.impact','check.multiple_shells','check.multiple_shells.impact','check.heavy_mesh','check.heavy_mesh.impact','check.very_coarse','check.very_coarse.impact',
         'calc.tip.organizer','calc.tip.modular','param.part.tray','param.part.bin','param.part.body.logo','param.part.stand.logo','param.part.body.vase','param.part.body.stamp','param.part.body.qr','param.part.body.lightbox','calc.tip.stencil','calc.tip.lightbox','param.part.face','param.part.diffuser','param.part.back','calc.tip.vase','calc.tip.logo','calc.tip.stamp','calc.tip.qr','calc.edit_design','param.part.saucer','param.part.handle','param.part.stand','calc.tip.box','calc.tip.phone_stand','calc.tip.cable_holder','download.parts','param.part.body','param.part.lid','calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
+        'calc.mode.normal','calc.mode.silent','calc.mode.sport','calc.facts.rough','calc.facts.material','calc.facts.layers','calc.facts.supports','calc.facts.supports_yes','calc.facts.supports_no','calc.facts.infill','calc.facts.length','calc.status.done_facts',
     ])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();
 @endphp
 
@@ -72,13 +73,13 @@
                     </div>
                     <div class="mt-2 flex items-end gap-2">
                         <span id="price-main" class="text-4xl font-extrabold tracking-tight">—</span>
-                        <span class="pb-1 text-slate-500">{{ $config['currency'] === 'CZK' ? 'Kč' : $config['currency'] }}</span>
+                        @if($config['marketplace'])<span class="pb-1 text-slate-500">{{ $config['currency'] === 'CZK' ? 'Kč' : $config['currency'] }}</span>@else<span class="pb-1 text-slate-500">{{ __('calc.time') }}</span>@endif
                     </div>
                     <div id="price-sub" class="mt-1 text-sm text-slate-500"></div>
                     <dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
                         <div><dt class="text-slate-500">{{ __('calc.weight') }}</dt><dd id="stat-grams" class="font-semibold">—</dd></div>
-                        <div><dt class="text-slate-500">{{ __('calc.time') }}</dt><dd id="stat-time" class="font-semibold">—</dd></div>
-                        <div><dt class="text-slate-500">{{ __('calc.lead') }}</dt><dd id="stat-lead" class="font-semibold">—</dd></div>
+                        <div><dt class="text-slate-500">{{ $config['marketplace'] ? __('calc.time') : __('calc.facts.length') }}</dt><dd id="stat-time" class="font-semibold">—</dd></div>
+                        <div><dt class="text-slate-500">{{ $config['marketplace'] ? __('calc.lead') : __('calc.facts.layers') }}</dt><dd id="stat-lead" class="font-semibold">—</dd></div>
                     </dl>
                     <ul id="warnings" class="mt-3 space-y-1 text-sm text-amber-700"></ul>
                     <details class="mt-3 text-sm"><summary class="cursor-pointer text-action-dark">{{ __('check.title') }}</summary><div id="model-check" class="mt-2 hidden rounded-xl bg-slate-50 p-3"></div></details>
@@ -123,7 +124,7 @@
                         </div>
                     </form>
                     <details class="mt-3 text-sm" @if($mode === 'printer') open @endif>
-                        <summary class="cursor-pointer text-action-dark">{{ __('calc.breakdown') }}</summary>
+                        <summary class="cursor-pointer text-action-dark">{{ $config['marketplace'] ? __('calc.breakdown') : __('calc.facts.title') }}</summary>
                         <div id="breakdown" class="mt-2 space-y-2"></div>
                     </details>
                 </div>
@@ -169,7 +170,7 @@
                 <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     @if($mode === 'printer')
                         <form method="post" action="{{ route('printer.quotes.store') }}" id="quote-form" class="sm:col-span-2">@csrf<input type="hidden" name="calculation" id="quote-calc-token" value=""><button id="cta-quote" type="submit" class="w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" disabled>{{ __('printer.calc.create_quote') }}</button></form>
-                    @else
+                    @elseif($config['marketplace'])
                         <button id="cta-make" type="button" class="rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-60" title="{{ __('calc.cta.make.soon') }}">{{ __('calc.cta.make') }}</button>
                     @endif
                     <button id="cta-download" type="button" class="rounded-xl border border-action px-4 py-3 text-center font-semibold text-action-dark aria-disabled:opacity-50" aria-disabled="true">{{ __('calc.cta.download') }}</button>
@@ -194,7 +195,7 @@
                     <a id="dl-stl" href="#" class="mt-3 block text-center text-sm text-action-dark underline">{{ __('download.stl') }}</a>
                     <div id="dl-parts" class="mt-2 hidden text-center text-sm"></div>
                 </div>
-                @if($mode !== 'printer')
+                @if($mode !== 'printer' && $config['marketplace'])
                 <div id="inquiry-panel" class="hidden rounded-2xl border border-line bg-action-soft p-4">
                     <div class="font-bold">{{ __('inquiry.form.title') }}</div>
                     <p class="text-sm text-slate-600">{{ __('inquiry.form.hint') }}</p>

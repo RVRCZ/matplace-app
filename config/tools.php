@@ -28,5 +28,5 @@ return [
     'lightbox' => ['route' => 'tools.lightbox', 'intent' => 'create', 'categories' => ['signs', 'gifts'], 'available' => true],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['craft', 'gifts'], 'available' => false],
 
-    'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => [], 'available' => true],
+    'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => [], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only
 ];

@@ -26,7 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         // mp_sid is a plain random token (never encrypted) so the value survives across app-key rotations and tests
         $middleware->encryptCookies(except: [AnonymousSession::COOKIE]);
-        $middleware->alias(['role' => EnsureRole::class, 'farm.agent' => AuthenticateFarmAgent::class]);
+        $middleware->alias(['role' => EnsureRole::class, 'farm.agent' => AuthenticateFarmAgent::class, 'feature' => \App\Http\Middleware\EnsureFeature::class]);
         $middleware->redirectGuestsTo(fn () => route('login'));
         // JSON API used by the calculator page (same-origin, cookie session); CSRF is enforced by SameSite cookies.
         $middleware->validateCsrfTokens(except: ['api/*']);

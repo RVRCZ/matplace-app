@@ -55,6 +55,8 @@ final class FakeSlicer implements Slicer
             warnings: [],
             raw: ['engine' => 'fake'],
             meters: $meters,
+            minutesByMode: ['normal' => $minutes, 'silent' => (int) round($minutes * 1.7), 'sport' => (int) round($minutes * 0.86)],
+            layers: max(1, (int) ceil($stats->bbox->z * $params->scale / ['draft' => 0.28, 'standard' => 0.2, 'fine' => 0.12][$params->quality])),
         );
     }
 

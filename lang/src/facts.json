@@ -1,0 +1,57 @@
+{
+    "calc.mode.normal": [
+        "Normální",
+        "Normal",
+        "Normal"
+    ],
+    "calc.mode.silent": [
+        "Tichý",
+        "Silent",
+        "Silencioso"
+    ],
+    "calc.mode.sport": [
+        "Sport",
+        "Sport",
+        "Sport"
+    ],
+    "calc.facts.title": [
+        "Údaje o tisku",
+        "Print details",
+        "Datos de impresión"
+    ],
+    "calc.facts.rough": [
+        "Orientační odhad, přesné hodnoty počítá slicer.",
+        "Rough estimate; the slicer gives the exact numbers.",
+        "Estimación orientativa; el slicer da los valores exactos."
+    ],
+    "calc.facts.material": [
+        "Materiál",
+        "Material",
+        "Material"
+    ],
+    "calc.facts.layers": [
+        "Vrstvy",
+        "Layers",
+        "Capas"
+    ],
+    "calc.facts.supports": [
+        "Podpěry",
+        "Supports",
+        "Soportes"
+    ],
+    "calc.facts.supports_yes": [
+        "ano",
+        "yes",
+        "sí"
+    ],
+    "calc.facts.supports_no": [
+        "ne",
+        "no",
+        "no"
+    ],
+    "calc.facts.infill": [
+        "Výplň",
+        "Infill",
+        "Relleno"
+    ]
+}

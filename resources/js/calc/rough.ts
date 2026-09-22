@@ -10,6 +10,7 @@ export interface RoughConfig {
     minutes_per_gram: number;
     overhead_minutes: number;
     quality_time_factor: Record<string, number>;
+    quality_layer_mm: Record<string, number>;
     range_low: number;
     range_high: number;
 }

@@ -17,6 +17,8 @@ final class SliceResult
         public readonly array $warnings = [],
         public readonly array $raw = [],
         public readonly ?float $meters = null,
+        public readonly array $minutesByMode = [],   // normal | silent | sport → minutes, when the machine has speed modes
+        public readonly ?int $layers = null,
     ) {}
 
     public function toArray(): array
@@ -25,6 +27,8 @@ final class SliceResult
             'grams' => round($this->grams, 1),
             'meters' => $this->meters === null ? null : round($this->meters, 2),
             'minutes' => $this->minutes,
+            'minutes_by_mode' => $this->minutesByMode,
+            'layers' => $this->layers,
             'dims' => $this->dims->toArray(),
             'supports_used' => $this->supportsUsed,
             'gcode_path' => $this->gcodePath,

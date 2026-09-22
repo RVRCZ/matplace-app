@@ -29,14 +29,29 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [CalculatorController::class, 'index'])->name('home');
 Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share');
 
+// Marketplace (config/features.php): public printer pages, quotes, customer inquiries — 404 while switched off
+Route::middleware('feature:marketplace')->group(function () {
+    Route::get('/printers/id/{id}', [PrinterPageController::class, 'byId'])->whereNumber('id')->name('printers.by_id');
+    Route::get('/printers/{printerProfile:slug}', [PrinterPageController::class, 'show'])->name('printers.show');
+    Route::get('/q/{quote}', [QuoteController::class, 'publicShow'])->name('quote.public');
+    Route::get('/q/{quote}/pdf', [QuoteController::class, 'publicPdf'])->name('quote.public.pdf');
+    Route::post('/q/{quote}/accept', [QuoteController::class, 'accept'])->name('quote.accept');
+    Route::post('/q/{quote}/decline', [QuoteController::class, 'decline'])->middleware('throttle:20,1')->name('quote.decline');
+    Route::post('/q/{quote}/change', [QuoteController::class, 'requestChange'])->middleware('throttle:10,1')->name('quote.change');
+    Route::get('/i/{inquiry}', [InquiryController::class, 'show'])->name('inquiry.show');
+    Route::get('/i/{inquiry}/verify/{code}', [InquiryController::class, 'verify'])->name('inquiry.verify');
+    Route::post('/i/{inquiry}/accept/{quote}', [InquiryController::class, 'accept'])->name('inquiry.accept');
+    Route::post('/i/{inquiry}/done', [InquiryController::class, 'done'])->name('inquiry.done');
+    Route::post('/i/{inquiry}/cancel', [InquiryController::class, 'cancel'])->name('inquiry.cancel');
+    Route::post('/i/{inquiry}/rate', [InquiryController::class, 'rate'])->name('inquiry.rate');
+});
+
 // Tools menu (everything that is not the one main screen)
-Route::get('/printers/id/{id}', [PrinterPageController::class, 'byId'])->whereNumber('id')->name('printers.by_id');
-Route::get('/printers/{printerProfile:slug}', [PrinterPageController::class, 'show'])->name('printers.show');
 Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
 Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
 Route::get('/tools/sign', [ToolsController::class, 'param'])->defaults('kind', 'sign')->name('tools.sign');
 Route::get('/tools/relief', [ToolsController::class, 'relief'])->name('tools.relief');
-Route::get('/tools/spare-part', [ToolsController::class, 'spare'])->name('tools.spare');
+Route::get('/tools/spare-part', [ToolsController::class, 'spare'])->middleware('feature:marketplace')->name('tools.spare');
 Route::get('/tools/check', [ToolsController::class, 'check'])->name('tools.check');
 Route::get('/tools/organizer', [ToolsController::class, 'param'])->defaults('kind', 'organizer')->name('tools.organizer');
 Route::get('/tools/modular-organizer', [ToolsController::class, 'param'])->defaults('kind', 'modular')->name('tools.modular');
@@ -49,21 +64,6 @@ Route::get('/tools/stencil', [ToolsController::class, 'param'])->defaults('kind'
 Route::get('/tools/illuminated-sign', [ToolsController::class, 'param'])->defaults('kind', 'lightbox')->name('tools.lightbox');
 Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');
 Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('kind', 'cable_holder')->name('tools.cable_holder');
-
-// Public quote (online version of the PDF) — no account needed
-Route::get('/q/{quote}', [QuoteController::class, 'publicShow'])->name('quote.public');
-Route::get('/q/{quote}/pdf', [QuoteController::class, 'publicPdf'])->name('quote.public.pdf');
-Route::post('/q/{quote}/accept', [QuoteController::class, 'accept'])->name('quote.accept');
-Route::post('/q/{quote}/decline', [QuoteController::class, 'decline'])->middleware('throttle:20,1')->name('quote.decline');
-Route::post('/q/{quote}/change', [QuoteController::class, 'requestChange'])->middleware('throttle:10,1')->name('quote.change');
-
-// Customer inquiry ("Make it for me") — the e-mailed link is the access
-Route::get('/i/{inquiry}', [InquiryController::class, 'show'])->name('inquiry.show');
-Route::get('/i/{inquiry}/verify/{code}', [InquiryController::class, 'verify'])->name('inquiry.verify');
-Route::post('/i/{inquiry}/accept/{quote}', [InquiryController::class, 'accept'])->name('inquiry.accept');
-Route::post('/i/{inquiry}/done', [InquiryController::class, 'done'])->name('inquiry.done');
-Route::post('/i/{inquiry}/cancel', [InquiryController::class, 'cancel'])->name('inquiry.cancel');
-Route::post('/i/{inquiry}/rate', [InquiryController::class, 'rate'])->name('inquiry.rate');
 
 // ── JSON API used by the calculator ──────────────────────────────────────────
 Route::prefix('api')->name('api.')->group(function () {
@@ -87,8 +87,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('tools/param', [ToolsApiController::class, 'paramCreate'])->middleware('throttle:20,1')->name('tools.param');
     Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware('throttle:30,1')->name('tools.param.part');
     Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1')->name('tools.relief');
-    Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware('throttle:10,1')->name('inquiries.store');
-    Route::post('spare-parts', [ApiInquiryController::class, 'spare'])->middleware('throttle:6,1')->name('spare');
+    Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware(['feature:marketplace', 'throttle:10,1'])->name('inquiries.store');
+    Route::post('spare-parts', [ApiInquiryController::class, 'spare'])->middleware(['feature:marketplace', 'throttle:6,1'])->name('spare');
     Route::get('threads/{thread}/messages', [ThreadController::class, 'messages'])->name('threads.messages');
     Route::post('threads/{thread}/messages', [ThreadController::class, 'post'])->middleware('throttle:30,1')->name('threads.post');
     Route::get('threads/{thread}/attachments/{message}', [ThreadController::class, 'attachment'])->name('threads.attachment');
@@ -114,8 +114,8 @@ Route::middleware('auth')->prefix('account')->name('account')->group(function ()
     Route::get('/', [AccountController::class, 'index']);
     Route::get('/profile', [AccountController::class, 'profile'])->name('.profile');
     Route::post('/profile', [AccountController::class, 'updateProfile'])->name('.profile.update');
-    Route::post('/roles/{role}/enable', [AccountController::class, 'enableRole'])->name('.roles.enable');
-    Route::post('/roles/{role}/disable', [AccountController::class, 'disableRole'])->name('.roles.disable');
+    Route::post('/roles/{role}/enable', [AccountController::class, 'enableRole'])->middleware('feature:marketplace')->name('.roles.enable');
+    Route::post('/roles/{role}/disable', [AccountController::class, 'disableRole'])->middleware('feature:marketplace')->name('.roles.disable');
 });
 
 // ── Print farm: "Rent a printer" (logged-in users; credit from the payment gateway) ──
@@ -175,7 +175,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
 });
 
 // ── Printer tools (role switch "I own a printer") ────────────────────────────
-Route::middleware(['auth', 'role:printer'])->prefix('printer')->name('printer.')->group(function () {
+Route::middleware(['feature:marketplace', 'auth', 'role:printer'])->prefix('printer')->name('printer.')->group(function () {
     Route::get('/', [PrinterController::class, 'dashboard'])->name('dashboard');
     Route::get('/profile', [PrinterController::class, 'profile'])->name('profile');
     Route::post('/profile', [PrinterController::class, 'updateProfile'])->name('profile.update');

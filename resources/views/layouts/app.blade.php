@@ -20,10 +20,10 @@
             <nav class="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm text-slate-600 sm:gap-x-4">
                 <a href="{{ route('tools') }}" class="hover:text-slate-900">{{ __('footer.tools') }}</a>
                 @auth
-                    @if(auth()->user()->isPrinter())<a href="{{ route('printer.dashboard') }}" class="hover:text-slate-900">🖨️ {{ __('nav.printer') }}</a>@endif
+                    @if(config('features.marketplace') && auth()->user()->isPrinter())<a href="{{ route('printer.dashboard') }}" class="hover:text-slate-900">🖨️ {{ __('nav.printer') }}</a>@endif
                     <a href="{{ route('account') }}" class="font-medium hover:text-slate-900">{{ __('nav.account') }}</a>
                 @else
-                    <a href="{{ route('register', ['role' => 'printer']) }}" class="hidden sm:inline hover:text-slate-900">{{ __('nav.for_printers') }}</a>
+                    @if(config('features.marketplace'))<a href="{{ route('register', ['role' => 'printer']) }}" class="hidden sm:inline hover:text-slate-900">{{ __('nav.for_printers') }}</a>@endif
                     <a href="{{ route('login') }}" class="font-medium hover:text-slate-900">{{ __('nav.login') }}</a>
                 @endauth
                 <span class="flex items-center gap-0.5 text-xs sm:gap-1">

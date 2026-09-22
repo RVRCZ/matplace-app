@@ -303,5 +303,6 @@
         "70"
     ],
     "xy_contour_compensation": "0",
-    "xy_hole_compensation": "0"
+    "xy_hole_compensation": "0",
+    "curr_bed_type": "Textured PEI Plate"
 }

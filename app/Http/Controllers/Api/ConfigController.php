@@ -22,6 +22,8 @@ class ConfigController extends Controller
         }
 
         return [
+            'marketplace' => (bool) config('features.marketplace'),   // false: no prices in the calculator, only the slicer's facts
+            'farm' => (bool) config('farm.enabled'),
             'rough' => config('pricing.rough'),
             'orientation_profiles' => config('pricing.orientation_profiles'),
             'round_to' => config('pricing.round_to'),

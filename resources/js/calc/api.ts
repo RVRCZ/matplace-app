@@ -24,7 +24,7 @@ export interface CalcInfo {
     error: string | null;
     params: Record<string, unknown>;
     rough: { grams: number; minutes: number; price_min: number; price_max: number; prices: unknown[] } | null;
-    slicer: { grams: number; minutes: number; dims: { x: number; y: number; z: number }; supports_used: boolean; warnings: string[] } | null;
+    slicer: { grams: number; meters?: number | null; minutes: number; minutes_by_mode?: Record<string, number>; layers?: number | null; dims: { x: number; y: number; z: number }; supports_used: boolean; warnings: string[] } | null;
     prices: { profile: string; label: string | null; total: number; lead_time_days: number; unit: { material: number; time: number; royalty: number }; setup: number; quantity: number }[] | null;
     file: FileInfo | null;
 }

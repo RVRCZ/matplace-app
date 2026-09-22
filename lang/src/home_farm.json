@@ -1,0 +1,57 @@
+{
+    "home.farm.home.lead": [
+        "Nahrajte model, vyfoťte věc nebo napište, co potřebujete. Model si stáhnete pro svou tiskárnu, nebo ho vytiskneme my.",
+        "Upload a model, photograph a thing or write what you need. Download the model for your own printer, or let us print it.",
+        "Suba un modelo, fotografíe un objeto o escriba lo que necesita. Descargue el modelo para su impresora o deje que lo imprimamos nosotros."
+    ],
+    "home.benefit.free_tools": [
+        "Nástroje a generování zdarma",
+        "Free tools and generation",
+        "Herramientas y generación gratis"
+    ],
+    "home.benefit.download": [
+        "STL i projekt pro 292 tiskáren",
+        "STL and a project for 292 printers",
+        "STL y proyecto para 292 impresoras"
+    ],
+    "home.benefit.farm": [
+        "Nebo tisk na naší tiskárně",
+        "Or a print on our own printer",
+        "O una impresión en nuestra impresora"
+    ],
+    "home.farm.home.steps.note": [
+        "Nemusíte mít vlastní tiskárnu. Začněte tím, co už máte.",
+        "You do not need a printer of your own. Start with what you have.",
+        "No necesita una impresora propia. Empiece con lo que ya tiene."
+    ],
+    "home.farm.home.step1": [
+        "Ukažte, co potřebujete",
+        "Show what you need",
+        "Muestre lo que necesita"
+    ],
+    "home.farm.home.step1.text": [
+        "Nahrajte soubor či fotku, popište nápad nebo si výrobek upravte v některém z nástrojů.",
+        "Upload a file or a photo, describe the idea, or shape the product in one of the tools.",
+        "Suba un archivo o una foto, describa la idea o cree el producto con una de las herramientas."
+    ],
+    "home.farm.home.step2": [
+        "Prohlédněte si model a údaje o tisku",
+        "Check the model and the print details",
+        "Revise el modelo y los datos de impresión"
+    ],
+    "home.farm.home.step2.text": [
+        "Otočte si model, upravte velikost, vyberte materiál. Uvidíte rozměry, dobu tisku a spotřebu materiálu.",
+        "Turn the model, set the size, pick the material. You see the dimensions, print time and material use.",
+        "Gire el modelo, ajuste el tamaño, elija el material. Verá las dimensiones, el tiempo de impresión y el consumo de material."
+    ],
+    "home.farm.home.step3": [
+        "Stáhněte, nebo nechte vytisknout",
+        "Download, or let us print it",
+        "Descargue o deje que lo imprimamos"
+    ],
+    "home.farm.home.step3.text": [
+        "Stáhněte STL nebo hotový projekt pro svou tiskárnu. Nebo vyberte barvu, zaplaťte kreditem a tiskne naše tiskárna.",
+        "Download the STL or a ready project for your printer. Or pick a colour, pay with credit and our printer does the job.",
+        "Descargue el STL o un proyecto listo para su impresora. O elija un color, pague con crédito y nuestra impresora hace el trabajo."
+    ]
+}

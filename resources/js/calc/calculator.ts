@@ -15,6 +15,7 @@ interface Config {
     rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; currency: string; max_scale: number;
     bed_mm: { x: number; y: number; z: number }; materials: MaterialCfg[]; default_material: string;
     formats: string[]; max_upload_mb: number; lay: Record<string, string>;
+    marketplace?: boolean;   // false: the calculator shows the slicer's facts and no prices (the farm has its own)
 }
 
 // MP_CONFIG exists only on calculator pages; this module is bundled into every page, so stay safe at import time.
@@ -65,17 +66,45 @@ function renderRough(): void {
     if (!g) return;
     const est = estimate(cfg.rough, material(state.params.material).density, { volume_mm3: g.volume_mm3, area_mm2: g.area_mm2 }, state.params);
     const bds = cfg.orientation_profiles.map((p) => price(cfg.round_to, p, est.grams, est.minutes, state.params.quantity));
-    const [lo, hi] = range(cfg.rough, cfg.round_to, bds.map((b) => b.total), true);
-    $('price-main').textContent = lo === hi ? fmt.format(lo) : `${fmt.format(lo)} – ${fmt.format(hi)}`;
-    $('price-sub').textContent = state.params.quantity > 1 ? `${t('calc.price.per_piece')} ≈ ${fmt.format(Math.round(lo / state.params.quantity))} – ${fmt.format(Math.round(hi / state.params.quantity))}` : '';
-    $('stat-grams').textContent = `≈ ${fmt.format(est.grams * state.params.quantity)} g`;
-    $('stat-time').textContent = `≈ ${minutesText(est.minutes * state.params.quantity)}`;
-    const leads = bds.map((b) => b.lead_time_days);
-    $('stat-lead').textContent = t('calc.days', { n: leadRange(leads) });
+    const q = state.params.quantity;
     const s = state.params.scale;
     $('dims-badge').textContent = `${fmt.format(g.bbox.x * s)} × ${fmt.format(g.bbox.y * s)} × ${fmt.format(g.bbox.z * s)} mm`;
+    $('stat-grams').textContent = `≈ ${fmt.format(est.grams * q)} g`;
+    $('stat-time').textContent = `≈ ${minutesText(est.minutes * q)}`;
+    if (!marketplace()) {
+        renderFacts({ minutes: est.minutes * q, grams: est.grams * q, rough: true });
+        return;
+    }
+    const [lo, hi] = range(cfg.rough, cfg.round_to, bds.map((b) => b.total), true);
+    $('price-main').textContent = lo === hi ? fmt.format(lo) : `${fmt.format(lo)} – ${fmt.format(hi)}`;
+    $('price-sub').textContent = q > 1 ? `${t('calc.price.per_piece')} ≈ ${fmt.format(Math.round(lo / q))} – ${fmt.format(Math.round(hi / q))}` : '';
+    const leads = bds.map((b) => b.lead_time_days);
+    $('stat-lead').textContent = t('calc.days', { n: leadRange(leads) });
     renderBreakdown(bds.map((b) => ({ ...b, label: t(`calc.profile.${b.profile}`) })), true);
     if (!material(state.params.material).sliceable) $('price-sub').textContent = t('calc.est_only');
+}
+
+const marketplace = () => cfg.marketplace !== false;
+
+/**
+ * Without the marketplace the result card is about the print, not about money: the headline is the print time,
+ * with the machine's speed modes when the slicer knows them, then material, layers and supports.
+ */
+function renderFacts(f: { minutes: number; grams: number; meters?: number | null; modes?: Record<string, number>; layers?: number | null; supports?: boolean; rough: boolean }): void {
+    const approx = f.rough ? '≈ ' : '';
+    $('price-main').textContent = approx + minutesText(f.minutes);
+    const modes = f.modes && Object.keys(f.modes).length > 1 ? f.modes : null;
+    $('price-sub').innerHTML = modes
+        ? Object.entries(modes).map(([k, v]) => `<span class="mr-3">${t(`calc.mode.${k}`)}: <strong>${minutesText(v * state.params.quantity)}</strong></span>`).join('')
+        : (f.rough ? t('calc.facts.rough') : '');
+    $('stat-lead').textContent = f.layers ? String(f.layers) : '—';
+    $('stat-time').textContent = f.meters ? `${f.meters.toFixed(1)} m` : (f.rough ? '—' : $('stat-time').textContent);
+    const rows: string[] = [];
+    rows.push(`<span>${t('calc.facts.material')}: <strong>${approx}${fmt.format(f.grams)} g${f.meters ? ` · ${f.meters.toFixed(1)} m` : ''}</strong></span>`);
+    if (f.layers) rows.push(`<span>${t('calc.facts.layers')}: <strong>${f.layers}</strong> · ${cfg.rough.quality_layer_mm[state.params.quality]} mm</span>`);
+    if (f.supports !== undefined) rows.push(`<span>${t('calc.facts.supports')}: <strong>${t(f.supports ? 'calc.facts.supports_yes' : 'calc.facts.supports_no')}</strong></span>`);
+    rows.push(`<span>${t('calc.facts.infill')}: <strong>${state.params.infill} %</strong></span>`);
+    $('breakdown').innerHTML = `<div class="grid gap-1 rounded-lg bg-slate-50 p-2 text-sm text-slate-600">${rows.join('')}</div>`;
 }
 
 function renderBreakdown(bds: { profile: string; label?: string | null; printer_profile_id?: number | null; unit: { material: number; time: number }; setup: number; subtotal?: number; discount?: number; margin?: number; total: number; lead_time_days: number }[], rough: boolean): void {
@@ -105,6 +134,16 @@ function renderBreakdown(bds: { profile: string; label?: string | null; printer_
 function renderPrecise(c: CalcInfo): void {
     if (!c.slicer || !c.prices) return;
     const q = state.params.quantity;
+    if (!marketplace()) {
+        $('stat-grams').textContent = `${fmt.format(c.slicer.grams * q)} g`;
+        $('stat-time').textContent = minutesText(c.slicer.minutes * q);
+        $('dims-badge').textContent = `${fmt.format(c.slicer.dims.x)} × ${fmt.format(c.slicer.dims.y)} × ${fmt.format(c.slicer.dims.z)} mm`;
+        renderFacts({ minutes: c.slicer.minutes * q, grams: c.slicer.grams * q, meters: (c.slicer.meters ?? 0) * q || null, modes: c.slicer.minutes_by_mode, layers: c.slicer.layers, supports: c.slicer.supports_used, rough: false });
+        enableQuote(c);
+        renderCheck(document.getElementById('model-check'), c.file?.check);
+        $('warnings').innerHTML = [...new Set(c.slicer.warnings ?? [])].filter((w) => i18n[`calc.warn.${w}`]).map((w) => `<li>⚠️ ${t(`calc.warn.${w}`)}</li>`).join('');
+        return;
+    }
     const own = ownProfileId ? c.prices.find((p) => (p as { printer_profile_id?: number | null }).printer_profile_id === ownProfileId) : undefined;
     const others = own ? c.prices.filter((p) => p !== own) : c.prices;
     if (own) {
@@ -149,7 +188,7 @@ function poll(token: string): void {
             state.calc = c;
             if (c.file) state.file = c.file;
             if (c.status === 'done') {
-                setStatus('calc.status.done', false);
+                setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false);
                 renderPrecise(c);
                 enableDownload(c.file);
                 if (!state.geometry && c.file?.stl_url) await showServerStl(c.file.stl_url);
@@ -212,7 +251,7 @@ function requestPrecise(): void {
             state.calc = c;
             history.replaceState(null, '', c.url);
             if (c.status === 'done') {
-                setStatus('calc.status.done', false);
+                setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false);
                 renderPrecise(c);
                 enableDownload(c.file);
             } else {
@@ -463,7 +502,7 @@ async function restore(c: CalcInfo): Promise<void> {
     showResult();
     $('file-badge').textContent = c.file?.name ?? '';
     if (c.file?.stl_url) await showServerStl(c.file.stl_url);
-    if (c.status === 'done') { setStatus('calc.status.done', false); renderPrecise(c); enableDownload(c.file); }
+    if (c.status === 'done') { setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false); renderPrecise(c); enableDownload(c.file); }
     else if (c.status === 'failed') { setStatus('calc.status.failed', false); renderRough(); }
     else { renderRough(); poll(c.token); }
 }
