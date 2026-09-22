@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 LIMITS = {
     "organizer": {"width": (30, 400), "depth": (30, 400), "height": (10, 150), "rows": (1, 8), "cols": (1, 8), "wall": (0.8, 4), "floor": (0.8, 4), "radius": (0, 20)},
     "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6)},
-    "phone_stand": {"width": (50, 140), "device": (7, 20), "angle": (50, 80), "back": (60, 150), "thickness": (3, 8), "radius": (0, 4)},
+    "phone_stand": {"width": (50, 260), "device": (7, 20), "angle": (35, 80), "back": (60, 200), "thickness": (3, 8), "radius": (0, 4), "depth": (40, 120), "vent": (1, 4)},
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
     "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
 }
@@ -248,52 +248,151 @@ def box(M, p):
     return parts, notes
 
 
-def phone_stand(M, p):
+def _rnd(M, cs, rad):
+    J = M.JoinType.Round
+    return cs.offset(-rad, J, 2.0, 24).offset(rad, J, 2.0, 24) if rad > 0.05 else cs
+
+
+def _soft(M, cs, rad):
+    """Round every corner of an outline, inner and outer."""
+    J = M.JoinType.Round
+    return cs.offset(rad, J, 2.0, 24).offset(-2 * rad, J, 2.0, 24).offset(rad, J, 2.0, 24) if rad > 0.05 else cs
+
+
+def _desk_profile(M, device, angle, back, t, r, window):
     """
-    Desk stand drawn as one side profile: the phone sits on a shelf above the table between a front lip and a leaning
-    back rest; the rest continues down to a rear foot. The profile is one closed outline with rounded corners, hollowed
-    from the inside: an arch under the shelf, open at the bottom, so the charging cable drops through the slot in the
-    shelf and runs out underneath; and a window in the rest that saves material. Printed lying on its side, no supports.
+    A-frame: the phone sits on a shelf above the table between a front lip and a leaning rest, the rest runs down to
+    a rear foot. Hollowed from the inside: an arch under the shelf, open at the bottom (the cable runs out there),
+    and a window in the rest.
     """
-    k = "phone_stand"
-    width, device, angle = num(p, k, "width", 70), num(p, k, "device", 12), num(p, k, "angle", 65)
-    back, t = num(p, k, "back", 100), num(p, k, "thickness", 5)
-    r = min(num(p, k, "radius", 2.0), t * 0.45)
+    C = M.CrossSection
     a = math.radians(angle)
-    ux, uy = math.cos(a), math.sin(a)                # along the rest
-    nx, ny = math.sin(a), -math.cos(a)               # outward normal of the rest: backwards and down
-    shelf_h, lip_h = 16.0, 12.0                      # room for a plug under the phone; how far the lip reaches up
-    C, J = M.CrossSection, M.JoinType.Round
-
-    def rnd(cs, rad):
-        return cs.offset(-rad, J, 2.0, 24).offset(rad, J, 2.0, 24) if rad > 0.05 else cs
-
-    fx = t + device + 1.0                            # foot of the rest: the phone leans between lip and rest with 1 mm play
+    ux, uy = math.cos(a), math.sin(a)
+    nx, ny = math.sin(a), -math.cos(a)
+    shelf_h, lip_h = 16.0, 12.0
+    fx = t + device + 1.0
     top_in = (fx + ux * back, shelf_h + uy * back)
     top_out = (top_in[0] + nx * t, top_in[1] + ny * t)
-    rear_x = fx + ux * back * 0.58 + (shelf_h + uy * back * 0.58) * 0.5 + t   # the phone's weight stays well inside the footprint
-    outer = C([[(0, 0), (rear_x, 0), top_out, top_in, (fx, shelf_h), (t, shelf_h), (t, shelf_h + lip_h), (0, shelf_h + lip_h)]])
-    if r > 0.05:
-        outer = outer.offset(r, J, 2.0, 24).offset(-2 * r, J, 2.0, 24).offset(r, J, 2.0, 24)   # every corner rounded
+    rear_x = fx + ux * back * 0.58 + (shelf_h + uy * back * 0.58) * 0.5 + t
+    outer = _soft(M, C([[(0, 0), (rear_x, 0), top_out, top_in, (fx, shelf_h), (t, shelf_h), (t, shelf_h + lip_h), (0, shelf_h + lip_h)]]), r)
     big = 1000.0
-    # everything hollow keeps a wall of t to the outside. The arch is inset from an outline that reaches below the
-    # floor, so it stays open at the bottom.
     below = C([[(-big, -big), (big, -big), (big, shelf_h - t), (-big, shelf_h - t)]])
     sunk = outer + C([[(0, -50), (rear_x, -50), (rear_x, 0.5), (0, 0.5)]])
-    profile = outer - rnd(sunk.offset(-t, J, 2.0, 24) ^ below, r * 1.5)
-    if p.get("window", True):
+    profile = outer - _rnd(M, sunk.offset(-t, M.JoinType.Round, 2.0, 24) ^ below, r * 1.5)
+    if window:
         above = C([[(-big, shelf_h + t), (big, shelf_h + t), (big, big), (-big, big)]])
-        window = rnd(outer.offset(-t, J, 2.0, 24) ^ above, 4.0)
-        if window.area() > 200:
-            profile = profile - window
-    solid = profile.extrude(width)                   # the profile lies on the bed: prints without supports
-    if p.get("cable", True):
+        win = _rnd(M, outer.offset(-t, M.JoinType.Round, 2.0, 24) ^ above, 4.0)
+        if win.area() > 200:
+            profile = profile - win
+    return profile, fx, rear_x, top_out[1] + r, shelf_h, lip_h
+
+
+def _wedge_profile(M, device, angle, depth, r):
+    """
+    Low block for watching: a slot leaning back at the chosen angle, 20 mm deep, its bottom 6 mm above the table
+    so a cable can leave through the underside.
+    """
+    C = M.CrossSection
+    a = math.radians(angle)
+    slot_d, front, floor = 20.0, 10.0, 6.0
+    lean = slot_d * math.cos(a)
+    height = floor + slot_d * math.sin(a) + 4.0
+    depth = max(depth, front + device + lean + 14.0)
+    block = _soft(M, C([[(0, 0), (depth, 0), (depth, height * 0.5), (front + device + lean + 10.0, height), (0, height)]]), r)
+    # the slot: a rectangle standing on the floor line, leaned back by (90 - angle) about its front bottom corner
+    # its lowest corner (the rear bottom one, after leaning) stays on the floor line
+    slot = C.square([device, slot_d + 6.0]).rotate(-(90.0 - angle)).translate([front, floor + device * math.cos(a)])
+    return block - slot, front, height, depth
+
+
+def phone_stand(M, p):
+    """
+    Four stands from one tool: A-frame for the desk, low wedge for watching, wall pocket, and a clip for a car vent.
+    Each is a side profile extruded across the width, printed lying on its side or on its back plate, no supports.
+    """
+    k = "phone_stand"
+    style = str(p.get("style", "desk"))
+    width, device = num(p, k, "width", 70), num(p, k, "device", 12)
+    t = num(p, k, "thickness", 5)
+    r = min(num(p, k, "radius", 2.0), t * 0.45)
+    cable = bool(p.get("cable", True))
+    C = M.CrossSection
+    note = {}
+
+    if style == "wedge":
+        angle = min(num(p, k, "angle", 65), 70.0)
+        profile, mouth, height, depth = _wedge_profile(M, device, angle, num(p, k, "depth", 60), r)
+        solid = profile.extrude(width)
+        if cable:
+            slot = min(14.0, width * 0.3)
+            # from the slot bottom down through the underside, then a groove along the underside to the front edge
+            solid = solid - M.Manifold.cube([device + 6.0, 10.0, slot]).translate([mouth - 3.0, -1.0, width / 2 - slot / 2])
+            solid = solid - M.Manifold.cube([mouth + 8.0, 4.0, slot]).translate([-1.0, -1.0, width / 2 - slot / 2])
+        use = solid.rotate([90, 0, 0]).rotate([0, 0, 180]).translate([depth, 0, 0])
+        note["outer"] = [round(depth, 1), round(width, 1), round(height, 1)]
+        return {"all": solid, "use": use}, note
+
+    if style == "wall":
+        # pocket on a back plate: the phone drops in from above, a slot in the pocket floor lets the cable through
+        pocket_h, plate_h = 32.0, 70.0
+        inner_w, inner_d = width + 2.0, device + 1.5
+        plate = rounded_rect(M, inner_w + 2 * t, plate_h, r).extrude(t)
+        pocket = rounded_rect(M, inner_w + 2 * t, pocket_h, r).extrude(inner_d + 2 * t) - M.Manifold.cube([inner_w, pocket_h, inner_d]).translate([t, t, t])
+        solid = plate + pocket
+        if cable:
+            slot = min(16.0, inner_w * 0.4)
+            solid = solid - M.Manifold.cube([slot, t + 2.0, inner_d + 2.0]).translate([t + (inner_w - slot) / 2, -1.0, t - 1.0])
+        if p.get("screws", False):
+            for x in (t + 8.0, inner_w + t - 8.0):
+                solid = solid - M.Manifold.cylinder(t + 2.0, 2.2, 2.2, 32).translate([x, plate_h - 10.0, -1.0])
+                solid = solid - M.Manifold.cylinder(t + 2.0, 2.2, 2.2, 32).translate([x, pocket_h + 8.0, -1.0])
+            note["screws"] = 4
+        # printed flat on the back plate; on the wall the plate stands upright and the pocket faces the room
+        use = solid.rotate([90, 0, 0]).translate([0, inner_d + 2 * t, 0])
+        note["outer"] = [round(inner_w + 2 * t, 1), round(inner_d + 2 * t, 1), round(plate_h, 1)]
+        return {"all": solid, "use": use}, note
+
+    if style == "car":
+        # cradle: back plate with a bottom lip and two side arms; behind it two springy fingers grip a vent slat
+        vent = num(p, k, "vent", 1.5)
+        inner_w, inner_d = width + 1.0, device + 1.0
+        plate_h, lip_h, arm_h = 55.0, 14.0, 40.0
+        wall = max(2.4, t * 0.6)
+        finger_l, finger_t = 26.0, 2.4
+        jaw = vent + 0.3
+        px = inner_d + wall                                                              # front face of the back plate
+        prof = C.square([wall, plate_h]).translate([px, 0])
+        prof = prof + C.square([inner_d + 2 * wall, wall]) + C.square([wall, lip_h])      # floor and front lip
+        prof = _soft(M, prof, min(r, wall * 0.45))
+        fingers = C.square([0, 0])
+        for y in (18.0, 18.0 + jaw + finger_t):
+            fingers = fingers + C.square([finger_l + wall, finger_t]).translate([px, y])   # two fingers behind the plate
+        tip = px + wall + finger_l - 3.0
+        fingers = fingers + C.square([3.0, 0.6]).translate([tip, 18.0 + finger_t])         # bumps: the clip snaps over the slat
+        fingers = fingers + C.square([3.0, 0.6]).translate([tip, 18.0 + finger_t + jaw - 0.6])
+        prof = prof + _soft(M, fingers, 0.3)                                              # rounded lightly: the jaw must stay open
+        solid = prof.extrude(inner_w + 2 * wall)
+        for z in (0.0, inner_w + wall):                                                  # side arms, open in the middle for the buttons
+            solid = solid + M.Manifold.cube([inner_d + 2 * wall, arm_h, wall]).translate([0, 0, z])
+        if cable:
+            slot = min(14.0, inner_w * 0.35)
+            solid = solid - M.Manifold.cube([inner_d + 1.0, wall + 2.0, slot]).translate([wall - 0.5, -1.0, wall + (inner_w - slot) / 2])
+        depth = px + wall + finger_l
+        use = solid.rotate([90, 0, 0]).rotate([0, 0, 180]).translate([depth, 0, 0])
+        note["outer"] = [round(depth, 1), round(inner_w + 2 * wall, 1), round(plate_h, 1)]
+        note["material_hint"] = "petg"
+        return {"all": solid, "use": use}, note
+
+    angle, back = max(num(p, k, "angle", 65), 45.0), num(p, k, "back", 100)
+    profile, fx, rear_x, top_y, shelf_h, lip_h = _desk_profile(M, device, angle, back, t, r, bool(p.get("window", True)))
+    solid = profile.extrude(width)
+    if cable:
         slot = min(16.0, width * 0.3)
-        # through the lip and the shelf into the arch; the front leg below stays whole
         solid = solid - M.Manifold.cube([fx + 1.0, lip_h + t + 2.0, slot]).translate([-1.0, shelf_h - t - 1.0, width / 2 - slot / 2])
-    # on the desk, turned so the viewer's default camera looks at the phone side, not at the back
     use = solid.rotate([90, 0, 0]).rotate([0, 0, 180]).translate([rear_x, 0, 0])
-    return {"all": solid, "use": use}, {"outer": [round(rear_x, 1), round(width, 1), round(top_out[1] + r, 1)], "shelf_height": shelf_h}
+    note["outer"] = [round(rear_x, 1), round(width, 1), round(top_y, 1)]
+    note["shelf_height"] = shelf_h
+    return {"all": solid, "use": use}, note
 
 
 def cable_holder(M, p):

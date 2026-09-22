@@ -1,0 +1,57 @@
+{
+    "param.c.phone_stand.style": [
+        "Typ držáku",
+        "Type of holder",
+        "Tipo de soporte"
+    ],
+    "param.o.phone_stand.desk": [
+        "Na stůl",
+        "Desk stand",
+        "Para el escritorio"
+    ],
+    "param.o.phone_stand.wedge": [
+        "Nízký klín",
+        "Low wedge",
+        "Cuña baja"
+    ],
+    "param.o.phone_stand.wall": [
+        "Na zeď",
+        "Wall pocket",
+        "Para la pared"
+    ],
+    "param.o.phone_stand.car": [
+        "Do auta na mřížku",
+        "Car vent clip",
+        "Clip para rejilla del coche"
+    ],
+    "param.f.vent": [
+        "Tloušťka lamely ventilace",
+        "Vent slat thickness",
+        "Grosor de la lama de la rejilla"
+    ],
+    "param.flag.screws.hint": [
+        "Jinak se lepí oboustrannou páskou.",
+        "Otherwise it is fixed with double-sided tape.",
+        "Si no, se fija con cinta de doble cara."
+    ],
+    "param.phone_stand.lead": [
+        "Vyberte typ, změřte tloušťku telefonu i s obalem a upravte rozměry. U klínu a širokých rozměrů poslouží i tabletu.",
+        "Pick a type, measure the phone with its case and adjust the sizes. The wedge and wide sizes suit a tablet too.",
+        "Elija el tipo, mida el teléfono con su funda y ajuste las medidas. La cuña y los anchos grandes sirven también para una tableta."
+    ],
+    "param.phone_stand.tip": [
+        "Stojánky se tisknou naležato bez podpěr, kapsa na zeď zadní deskou dolů. Klip do auta tiskněte z PETG, aby pružil a snesl teplo v autě.",
+        "Stands print lying down without supports, the wall pocket with its back plate down. Print the car clip in PETG so it flexes and survives the heat in a car.",
+        "Los soportes se imprimen tumbados sin soportes, el bolsillo de pared con la placa trasera abajo. Imprima el clip para el coche en PETG para que flexione y aguante el calor."
+    ],
+    "tools.phone_stand.hint": [
+        "Na stůl, nízký klín na video, kapsa na zeď nebo klip do auta. Podle tloušťky telefonu s obalem.",
+        "Desk stand, low wedge for video, wall pocket or a car vent clip. Sized to your phone with its case.",
+        "Para el escritorio, cuña baja para vídeo, bolsillo de pared o clip para el coche. A medida del teléfono con su funda."
+    ],
+    "calc.tip.phone_stand": [
+        "Stojánek se tiskne naležato bez podpěr; kapsa na zeď zadní deskou dolů, klip do auta z PETG.",
+        "The stand prints lying down without supports; the wall pocket back plate down, the car clip in PETG.",
+        "El soporte se imprime tumbado sin soportes; el bolsillo de pared con la placa abajo, el clip del coche en PETG."
+    ]
+}

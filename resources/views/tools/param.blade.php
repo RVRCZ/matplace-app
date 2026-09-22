@@ -97,7 +97,7 @@
                 <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
                     @foreach($main as $key)
                         @php $f = $fields[$key]; @endphp
-                        <label class="text-sm font-medium text-ink">{{ __('param.f.'.$key) }} @if($unit($key))<span class="font-normal text-muted">{{ $unit($key) }}</span>@endif
+                        <label class="text-sm font-medium text-ink" @if(isset($when[$key])) data-when="{{ $when[$key][0] }}={{ implode(',', $when[$key][1]) }}" @endif>{{ __('param.f.'.$key) }} @if($unit($key))<span class="font-normal text-muted">{{ $unit($key) }}</span>@endif
                             <input data-param="{{ $key }}" type="number" inputmode="decimal" min="{{ $f[0] }}" max="{{ $f[1] }}" step="{{ $f[3] }}" value="{{ $f[2] }}" class="field" aria-describedby="range-{{ $key }}">
                             <span id="range-{{ $key }}" class="text-xs text-muted">{{ $f[0] }}–{{ $f[1] }}</span>
                         </label>
@@ -106,7 +106,7 @@
             </fieldset>
 
             @foreach($flags as $flag)
-                <label class="flex items-start gap-3 text-sm text-ink">
+                <label class="flex items-start gap-3 text-sm text-ink" @if(isset($when[$flag])) data-when="{{ $when[$flag][0] }}={{ implode(',', $when[$flag][1]) }}" @endif>
                     <input data-flag="{{ $flag }}" type="checkbox" class="mt-1 h-5 w-5 accent-action" @checked(in_array($flag, $flagsOn, true))>
                     <span><span class="font-semibold">{{ __('param.flag.'.$flag) }}</span><br><span class="text-muted">{{ __('param.flag.'.$flag.'.hint') }}</span></span>
                 </label>

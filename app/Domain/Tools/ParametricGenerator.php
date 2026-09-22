@@ -30,7 +30,7 @@ final class ParametricGenerator
             'wall' => [1.2, 5, 2, 0.2], 'floor' => [1, 5, 1.6, 0.2], 'clearance' => [0.1, 0.6, 0.25, 0.05],
         ],
         'phone_stand' => [
-            'width' => [50, 140, 70, 1], 'device' => [7, 20, 12, 1], 'angle' => [50, 80, 65, 1], 'back' => [60, 150, 100, 1], 'thickness' => [3, 8, 5, 0.5], 'radius' => [0, 4, 2, 0.1],
+            'width' => [50, 260, 70, 1], 'device' => [7, 20, 12, 1], 'angle' => [35, 80, 65, 1], 'back' => [60, 200, 100, 1], 'thickness' => [3, 8, 5, 0.5], 'radius' => [0, 4, 2, 0.1], 'depth' => [40, 120, 60, 1], 'vent' => [1, 4, 1.5, 0.1],
         ],
         'cable_holder' => [
             'count' => [1, 8, 4, 1], 'cable' => [3, 14, 6, 0.5], 'depth' => [10, 80, 45, 1], 'wall' => [2, 12, 7, 0.5], 'radius' => [0, 6, 3, 0.5],
@@ -55,6 +55,7 @@ final class ParametricGenerator
 
     /** kind → choice → allowed values (the first one is the default) */
     public const CHOICES = [
+        'phone_stand' => ['style' => ['desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['cone', 'belly', 'tulip'], 'style' => ['smooth', 'ribs', 'twist']],
         'logo' => ['mode' => ['relief', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
@@ -75,13 +76,19 @@ final class ParametricGenerator
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
-        'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h'], 'phone_stand' => ['width', 'device', 'angle', 'back'],
+        'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'],
     ];
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'face', 'diffuser', 'back'];
 
-    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable', 'window'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole']];
+    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole']];
+
+    /** kind → field or flag → [choice key, values it belongs to]; the form hides it for the other choices */
+    public const WHEN = [
+        'phone_stand' => ['angle' => ['style', ['desk', 'wedge']], 'back' => ['style', ['desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['desk', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
+        'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']]],
+    ];
 
     /** flags that start switched on */
     public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer'];

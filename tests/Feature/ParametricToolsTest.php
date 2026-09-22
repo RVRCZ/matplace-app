@@ -179,6 +179,16 @@ class ParametricToolsTest extends TestCase
         $this->assertEqualsWithDelta(70, $use['bbox']['y'], 0.01);                         // preview: standing on the desk
         $this->assertEqualsWithDelta($a['volume_mm3'], $use['volume_mm3'], 0.5);
 
+        // four holders from one tool, each a different shape
+        $wall = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'wall', 'width' => 70, 'device' => 12, 'thickness' => 4]])->assertOk());
+        $this->assertEqualsWithDelta(70 + 2 + 8, $wall['bbox']['x'], 0.05);                 // phone plus play plus two walls
+        $car = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'car', 'vent' => 2]])->assertOk());
+        $this->assertLessThan($a['volume_mm3'], $car['volume_mm3']);
+        $wedge = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'wedge', 'angle' => 50]])->assertOk());
+        $this->assertLessThan(35, $wedge['bbox']['y']);                                        // low block
+        $this->postJson('/api/tools/param/preview', ['kind' => 'phone_stand', 'params' => ['style' => 'tripod']])->assertStatus(422);
+        $this->get('/tools/phone-stand')->assertOk()->assertSee('data-when="style=car"', false);
+
         $c3 = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'cable_holder', 'params' => ['count' => 3, 'cable' => 6, 'wall' => 7]])->assertOk());
         $c5 = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'cable_holder', 'params' => ['count' => 5, 'cable' => 6, 'wall' => 7]])->assertOk());
         $this->assertEqualsWithDelta(2 * (6.6 + 7), $c5['bbox']['x'] - $c3['bbox']['x'], 0.05);      // two more channels, each a seat plus a finger

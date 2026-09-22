@@ -363,7 +363,16 @@ export function bootParam(): void {
             refresh();
         };
     });
-    form.addEventListener('input', (e) => { if ((e.target as HTMLElement).closest('#holes')) return; soon(); renderPrice(); });
+    // fields and flags that belong to one choice only ("data-when=style=desk,wedge") hide for the other choices
+    const applyWhen = (): void => {
+        form.querySelectorAll<HTMLElement>('[data-when]').forEach((el) => {
+            const [key, list] = (el.dataset.when ?? '').split('=');
+            const current = form.querySelector<HTMLInputElement>(`[data-choice="${key}"]:checked`)?.value ?? '';
+            el.classList.toggle('hidden', !list.split(',').includes(current));
+        });
+    };
+    applyWhen();
+    form.addEventListener('input', (e) => { if ((e.target as HTMLElement).closest('#holes')) return; applyWhen(); soon(); renderPrice(); });
     form.addEventListener('submit', (e) => e.preventDefault());
 
     // the design is saved (our own geometry, free) and opens in the calculation; "download" opens the printer picker there
