@@ -192,7 +192,7 @@ class OrderController extends Controller
         $check = (array) $order->check;
         $colors = $order->status === FarmOrder::STATUS_SLICED
             ? $this->orders->availableColors($order)->map(fn ($r) => [
-                'slot' => $r['slot']->id, 'name' => $r['color']->name, 'hex' => $r['color']->hex, 'photo' => $r['color']->photoUrl(),
+                'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'photo' => $r['color']->photoUrl(),
                 'enough' => $r['enough'], 'total' => $this->orders->priceFor($order, $r['printer'], 'pickup')['total'],
                 'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
             ])->all()
@@ -223,7 +223,7 @@ class OrderController extends Controller
             'currency' => $order->currency,
             'shipping_price' => (float) $this->settings->get('shipping_price'),
             'colors' => $colors,
-            'color' => $order->color ? ['name' => $order->color->name, 'hex' => $order->color->hex] : null,
+            'color' => $order->color ? ['name' => $order->color->material->label().' '.$order->color->displayName(), 'hex' => $order->color->hex] : null,
             'delivery' => $order->delivery,
             'balance' => $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user),
             'model_url' => $order->print_stl_path || $order->modelFile?->stl_path ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,

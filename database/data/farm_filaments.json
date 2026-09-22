@@ -1,0 +1,1028 @@
+[
+ {
+  "drive_folder": "1vQmZpyuEzRwXbdZNa-nxK5j8BmAzoi7U",
+  "folder": "01_PLA+_cerny",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ },
+ {
+  "drive_folder": "1UMTqDlzjmqn5nMInJWuTNOlmYFRdfQ4p",
+  "folder": "02_PLA+_bily",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "bílá",
+  "hex": "#f4f4f2",
+  "color_en": "white"
+ },
+ {
+  "drive_folder": "1gwG-8Z65IY4yPH9xOrd-_fUG2LBaqsFx",
+  "folder": "03_PLA+_nefrit_bily_jade_White",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "nefritová bílá",
+  "hex": "#ecebe2",
+  "color_en": "jade white"
+ },
+ {
+  "drive_folder": "1gH12UuzcjgRHco9asddXc7qb1YZlHpC4",
+  "folder": "04_PLA+_ruzovy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "růžová",
+  "hex": "#f49ac1",
+  "color_en": "pink"
+ },
+ {
+  "drive_folder": "1KQYHnZWjdrvRFdZwrPPCkygLrtYldLPC",
+  "folder": "05_PLA+_cerveny",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "červená",
+  "hex": "#d1232a",
+  "color_en": "red"
+ },
+ {
+  "drive_folder": "1TpGZ3WK09kwnUFhJO1uP_mFvb_yc4iJA",
+  "folder": "06_PLA+_zeleny",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "zelená",
+  "hex": "#2f9e44",
+  "color_en": "green"
+ },
+ {
+  "drive_folder": "1_wIKNHP6XOIk5k2Uo2PXhip8KmFmXda0",
+  "folder": "07_PLA+_zlaty",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "zlatá",
+  "hex": "#d4a531",
+  "color_en": "gold"
+ },
+ {
+  "drive_folder": "1s1AWZKX2cbMgfRUt2OzfSi34aJqKHKYT",
+  "folder": "08_PLA+_oranzovy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "oranžová",
+  "hex": "#f47a20",
+  "color_en": "orange"
+ },
+ {
+  "drive_folder": "11igbX_ucHhtU9JE8mO2Clnt9ZrXAx57E",
+  "folder": "09_PLA+_hnedy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "hnědá",
+  "hex": "#7a4b2a",
+  "color_en": "brown"
+ },
+ {
+  "drive_folder": "1Ft4WDW4i9Im1LypYSo5YhCPFTIpLMd0H",
+  "folder": "10_PLA+_zluty",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "žlutá",
+  "hex": "#f6d000",
+  "color_en": "yellow"
+ },
+ {
+  "drive_folder": "1y1zx99p9j2mo59evScljCDmI5SzAcuIv",
+  "folder": "11_PLA+_modry",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "modrá",
+  "hex": "#1f5fbf",
+  "color_en": "blue"
+ },
+ {
+  "drive_folder": "1VQU1vLZyl91ueCAccE24v1Gi-LVwMbjw",
+  "folder": "12_PLA+_sedy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "šedá",
+  "hex": "#8a8d91",
+  "color_en": "grey"
+ },
+ {
+  "drive_folder": "1aF5xWVLvUKGhHYGHCKl0eidrgwzgknp_",
+  "folder": "13_PLA+_bezovy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "béžová",
+  "hex": "#d9c4a1",
+  "color_en": "beige"
+ },
+ {
+  "drive_folder": "1vcizLryKusUTp6wUglN1-alDN_dkrEXh",
+  "folder": "14_PLA+_svetle_modry",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "světle modrá",
+  "hex": "#8ec5f0",
+  "color_en": "light blue"
+ },
+ {
+  "drive_folder": "1lQ_-lB4e2O6Q65ZR-eBZe3r6t99aOF1D",
+  "folder": "15_PLA+_stribrny",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "stříbrná",
+  "hex": "#c0c2c5",
+  "color_en": "silver"
+ },
+ {
+  "drive_folder": "14t4VGJ4HwOjfXQ3YPZ1C6KaoUT2u3Orb",
+  "folder": "16_PLA+_transparentni_pruhledny",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "transparentní",
+  "hex": "#e8eef2",
+  "color_en": "transparent"
+ },
+ {
+  "drive_folder": "1YiawPaegBC9EzZ0toWIGTHsbMnoENf67",
+  "folder": "18_PLA+_dragon_fruit_syte_ruzovy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "dragon fruit (sytě růžová)",
+  "hex": "#e6007e",
+  "color_en": "dragon fruit (hot pink)"
+ },
+ {
+  "drive_folder": "1HnPr42e-h2d3V5umtouh3FR_VNueCY4x",
+  "folder": "20_PLA+_citronove_zluty",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "citronově žlutá",
+  "hex": "#e8f000",
+  "color_en": "lemon yellow"
+ },
+ {
+  "drive_folder": "1yZBNxnCwQkcpyQUh04e_ZTd4UBJmjHD3",
+  "folder": "22_PLA+_tyrkysovy_cyan",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "tyrkysová",
+  "hex": "#00b0c8",
+  "color_en": "cyan"
+ },
+ {
+  "drive_folder": "18bOrfYvn7n8NC-hdgsgB-tESTYo-efcb",
+  "folder": "23_PLA+_dynove_oranzovy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "dýňově oranžová",
+  "hex": "#e86a1a",
+  "color_en": "pumpkin orange"
+ },
+ {
+  "drive_folder": "1dTDTKg1s1vsc-eVAFYP3JasqXClta_Rn",
+  "folder": "24_PLA+_tmave_zeleny",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "tmavě zelená",
+  "hex": "#1d5c34",
+  "color_en": "dark green"
+ },
+ {
+  "drive_folder": "1zjvLjAaNvp9eCGny_HUFdr3EXXsO7fps",
+  "folder": "25_PLA+_svetle_fialovy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "světle fialová",
+  "hex": "#b8a1e0",
+  "color_en": "light purple"
+ },
+ {
+  "drive_folder": "1-yIYX1zD9Wg_bhexytwjlQWY5UJZxtW7",
+  "folder": "26_PLA+_svetle_ruzovy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "světle růžová",
+  "hex": "#f8c8d8",
+  "color_en": "light pink"
+ },
+ {
+  "drive_folder": "1kw98fhssQGs_51RCV_3lgAjTsmyJgc_a",
+  "folder": "27_PLA+_svetle_sedy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "světle šedá",
+  "hex": "#c9ccd0",
+  "color_en": "light grey"
+ },
+ {
+  "drive_folder": "19g4mLDot9nXWKu-SwLd0wsYtzsYmBUCJ",
+  "folder": "29_PLA+_modroruzovy",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "modrorůžová",
+  "hex": "#b06fc7",
+  "color_en": "blue-pink"
+ },
+ {
+  "drive_folder": "1JOFC6weRyFOCaF9DvwfKRayw-owte2ct",
+  "folder": "31_PLA_Luminous_fluorescencni_oranzovy_svitici",
+  "material": "PLA",
+  "finish": "luminous",
+  "color": "svítící oranžová",
+  "hex": "#ffb060",
+  "color_en": "glow orange"
+ },
+ {
+  "drive_folder": "1ORl8idzNwd7Svcik_gQpl9GkMplv6rqh",
+  "folder": "32_PLA_Luminous_fluorescencni_cerveny_svitici",
+  "material": "PLA",
+  "finish": "luminous",
+  "color": "svítící červená",
+  "hex": "#ff7a7a",
+  "color_en": "glow red"
+ },
+ {
+  "drive_folder": "1V4b919D3bVVsd9wd1I7x-BJPzmMLZqgp",
+  "folder": "33_PLA_Luminous_fluorescencni_zluty_svitici",
+  "material": "PLA",
+  "finish": "luminous",
+  "color": "svítící žlutá",
+  "hex": "#f0ff70",
+  "color_en": "glow yellow"
+ },
+ {
+  "drive_folder": "1c51JJKDssoJrMAw35M4XQ8kLdQv4TwVl",
+  "folder": "34_PLA_Luminous_fluorescencni_modry_svitici",
+  "material": "PLA",
+  "finish": "luminous",
+  "color": "svítící modrá",
+  "hex": "#7ac8ff",
+  "color_en": "glow blue"
+ },
+ {
+  "drive_folder": "1OhuTb-JeZnTBZch_no22_J_Qp_GOZHy5",
+  "folder": "35_PLA_Luminous_fluorescencni_zeleny_svitici",
+  "material": "PLA",
+  "finish": "luminous",
+  "color": "svítící zelená",
+  "hex": "#9bff8a",
+  "color_en": "glow green"
+ },
+ {
+  "drive_folder": "1A8MT5KZe83g5a8YqnQA1Gp9P9l71J2wB",
+  "folder": "37_PLA_Luminous_svitici_ruzovy",
+  "material": "PLA",
+  "finish": "luminous",
+  "color": "svítící růžová",
+  "hex": "#ffa7d8",
+  "color_en": "glow pink"
+ },
+ {
+  "drive_folder": "1a2aa6uIyaMgYMp40g2zu-ozHDyT6MMOm",
+  "folder": "39_PLA_Silk_zlata_Silk_Gold",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "zlatá",
+  "hex": "#d4a531",
+  "color_en": "gold"
+ },
+ {
+  "drive_folder": "1wi7be-tdDmaC6EGXpyL71XtQK6JZSNDL",
+  "folder": "40_PLA_Silk_medena_Silk_Copper",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "měděná",
+  "hex": "#b87333",
+  "color_en": "copper"
+ },
+ {
+  "drive_folder": "1cTbtl0GykoarcSj755scRoXel8JHpasg",
+  "folder": "41_PLA_Silk_cervena_med_Silk_Red_Copper",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "červená měď",
+  "hex": "#a83a2e",
+  "color_en": "red copper"
+ },
+ {
+  "drive_folder": "12ADVJmpLSAPDEl9JPxx8ANcjKU6qpV8Z",
+  "folder": "43_PLA_Silk_stribrna_Silk_Silver",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "stříbrná",
+  "hex": "#c0c2c5",
+  "color_en": "silver"
+ },
+ {
+  "drive_folder": "1te52_ouQOJO6GU0vCl9D7iMmSY_ldi4t",
+  "folder": "44_PLA_Silk_cervena_Silk_Red",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "červená",
+  "hex": "#d1232a",
+  "color_en": "red"
+ },
+ {
+  "drive_folder": "1oc-7FFdm_9G8XluD51ecdQQ0gP1sUqMA",
+  "folder": "45_PLA_Silk_seda_Silk_Grey",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "šedá",
+  "hex": "#8a8d91",
+  "color_en": "grey"
+ },
+ {
+  "drive_folder": "1Gf-aBjxoDbGtNGRvFtZPN8w57gLS0HQ_",
+  "folder": "47_PLA_Silk_oranzova_Silk_Orange",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "oranžová",
+  "hex": "#f47a20",
+  "color_en": "orange"
+ },
+ {
+  "drive_folder": "1up-gmVBfYciLRSDoWhuEZ1bh4h4IlKVg",
+  "folder": "48_PLA_Silk_zluta_Silk_Yellow",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "žlutá",
+  "hex": "#f6d000",
+  "color_en": "yellow"
+ },
+ {
+  "drive_folder": "1X7WAsmV-J5CXGly-bux5fTt6XeLQu7LZ",
+  "folder": "49_PLA_Silk_purpurova_Silk_Purple",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "purpurová",
+  "hex": "#7b2d8e",
+  "color_en": "purple"
+ },
+ {
+  "drive_folder": "13NuwGaPhh7S_hPfsyPG-ZnZu7PIHOzTJ",
+  "folder": "50_PLA_Silk_violet_fialova_Silk_Violet",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "fialová",
+  "hex": "#6a3fc0",
+  "color_en": "violet"
+ },
+ {
+  "drive_folder": "1usDmCC2KgrflH4rs_30hv6YFykztE2HB",
+  "folder": "51_PLA_Silk_modra_Silk_Blue",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "modrá",
+  "hex": "#1f5fbf",
+  "color_en": "blue"
+ },
+ {
+  "drive_folder": "1earXDjUy1eVdz9pb1oYsP1-6ocyG16rB",
+  "folder": "54_PLA_Silk_nebesky_modra_Silk_Sky_Blue",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "nebesky modrá",
+  "hex": "#69b3ff",
+  "color_en": "sky blue"
+ },
+ {
+  "drive_folder": "1DrFv0OZ2HyMBi48w5CQBYwGUTtHOIHcC",
+  "folder": "55_PLA_Silk_cerna_Silk_Black",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ },
+ {
+  "drive_folder": "1F2x86tJJ8M6lhwckkzkUC6oMYmxoLOik",
+  "folder": "56_PLA_Silk_bila_Silk_White",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "bílá",
+  "hex": "#f4f4f2",
+  "color_en": "white"
+ },
+ {
+  "drive_folder": "1_v9-1JPMgfroYUYL68W-sRQAANhdrYWz",
+  "folder": "57_PLA_Silk_dualni_zlata_cervena_Silk_Gold",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "duální zlatá/červená",
+  "hex": "#c8781e",
+  "color_en": "dual gold / red"
+ },
+ {
+  "drive_folder": "19mpRy1b4LIf7MKPVUzDu5gcQ_5E5m--R",
+  "folder": "61_PLA_Special_bily_mramor_Marble_White",
+  "material": "PLA",
+  "finish": "special",
+  "color": "bílý mramor",
+  "hex": "#e9e6df",
+  "color_en": "marble white"
+ },
+ {
+  "drive_folder": "1lC5zoykCEzUC-juBY4Pnork4N76uAk_N",
+  "folder": "62_PLA_Special_svetle_drevo_Light_Wood",
+  "material": "PLA",
+  "finish": "special",
+  "color": "světlé dřevo",
+  "hex": "#c9a97a",
+  "color_en": "light wood"
+ },
+ {
+  "drive_folder": "1kOMJcWdgsZ58xigZV8CVToOtnAS3QOW-",
+  "folder": "01_SILK_Green_Purple_Copper",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "zelená/fialová/měď",
+  "hex": "#6b7a4a",
+  "color_en": "green / purple / copper"
+ },
+ {
+  "drive_folder": "1ImoxsjQY5Svbd-FztwRrKChl3g0n5SlP",
+  "folder": "02_PLA+_ORANGE",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "oranžová",
+  "hex": "#f47a20",
+  "color_en": "orange"
+ },
+ {
+  "drive_folder": "1jq6cNWoCyMkT7rk1GN7fhgK_AweDe_3h",
+  "folder": "08_PLA+_2.0_DARK GREY",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "tmavě šedá",
+  "hex": "#4b4f54",
+  "color_en": "dark grey"
+ },
+ {
+  "drive_folder": "1l9F07WX-XvGz2D_3JOme6t0xNrF9lkzX",
+  "folder": "9_PLA+_2.0_Green",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "zelená",
+  "hex": "#2f9e44",
+  "color_en": "green"
+ },
+ {
+  "drive_folder": "1S5mQcqwpAEkrBQwOdV45pAhSDie0ICGy",
+  "folder": "9_PLA+_2.0_Red",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "červená",
+  "hex": "#d1232a",
+  "color_en": "red"
+ },
+ {
+  "drive_folder": "1_YqzI0hYp557Q9ixAVRExCpN1R5XpH1V",
+  "folder": "10_PLA+_2.0_MAGENTA",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "magenta",
+  "hex": "#d4267f",
+  "color_en": "magenta"
+ },
+ {
+  "drive_folder": "1w-giRaRihNm2G1-9vqcKwZvrPTSfp9dX",
+  "folder": "11_PLA+_2.0_ORANGE",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "oranžová",
+  "hex": "#f47a20",
+  "color_en": "orange"
+ },
+ {
+  "drive_folder": "1Z0sQwg3dZvXUcs5LJ-rRBNfq36WMaVaw",
+  "folder": "12_PLA+_2.0_PURPLE",
+  "material": "PLA+",
+  "finish": "solid",
+  "color": "fialová",
+  "hex": "#6a3fc0",
+  "color_en": "violet"
+ },
+ {
+  "drive_folder": "1WpeYdBe3DZfQC34Rmz7dxs4CLrKw3Twr",
+  "folder": "17_PLA_Lumious_Blue",
+  "material": "PLA",
+  "finish": "luminous",
+  "color": "modrá",
+  "hex": "#1f5fbf",
+  "color_en": "blue"
+ },
+ {
+  "drive_folder": "12gbL00txnF8Z3kcZfbL-DcjLmxgwOPu0",
+  "folder": "17_PLA_Lumious_Green",
+  "material": "PLA",
+  "finish": "luminous",
+  "color": "zelená",
+  "hex": "#2f9e44",
+  "color_en": "green"
+ },
+ {
+  "drive_folder": "1FHEg1qZ57JGatR1DOEUB27fVaDfRgM0O",
+  "folder": "17_PLA_Lumious_RED",
+  "material": "PLA",
+  "finish": "luminous",
+  "color": "červená",
+  "hex": "#d1232a",
+  "color_en": "red"
+ },
+ {
+  "drive_folder": "1WRDnrhgOQreI2FxalSfw145kE3NCJriX",
+  "folder": "17_PLA_LUMIOUS_RAINBOW",
+  "material": "PLA",
+  "finish": "luminous",
+  "color": "duhová",
+  "hex": "#9b59b6",
+  "color_en": "rainbow"
+ },
+ {
+  "drive_folder": "1FrVEMbjyKm4ni6S0DOYLzyzd65hV_deP",
+  "folder": "18_PLA_Silk_Rose_Gold",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "růžové zlato",
+  "hex": "#c98a7a",
+  "color_en": "rose gold"
+ },
+ {
+  "drive_folder": "1MYtY7RkJAUljZFxw8Zm_7U3U6fXFgFGv",
+  "folder": "20_PLA_Silk_Silver",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "stříbrná",
+  "hex": "#c0c2c5",
+  "color_en": "silver"
+ },
+ {
+  "drive_folder": "1nabnz9X64X6v1SUKW46he_1b4CfuG3Vu",
+  "folder": "21_PLA_SILK_BLUE",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "modrá",
+  "hex": "#1f5fbf",
+  "color_en": "blue"
+ },
+ {
+  "drive_folder": "1pOkGDUSQmqA8H1H9UB30u6TSIL0hNA_4",
+  "folder": "22_PLA_Silk_dual_purple_blue",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "fialová/modrá",
+  "hex": "#5a4fcf",
+  "color_en": "purple / blue"
+ },
+ {
+  "drive_folder": "12IBOZYDHKtLLqKQaNeKcc9llgzVGdJFE",
+  "folder": "23_PLA_SILKA_BLACK",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ },
+ {
+  "drive_folder": "1I9HvbAuPKwsOnD4CiFwnpjehtf3zHMhu",
+  "folder": "24_PLA_Silk_White",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "bílá",
+  "hex": "#f4f4f2",
+  "color_en": "white"
+ },
+ {
+  "drive_folder": "1lkTlE5OPJVLqf3oNpXsA2xz4lC1ldPMT",
+  "folder": "25_PLA_Silk_Pink",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "růžová",
+  "hex": "#f49ac1",
+  "color_en": "pink"
+ },
+ {
+  "drive_folder": "1rwEbHJ1jN2Y7ASRBhvPbfQE-3-pMFH4N",
+  "folder": "26_PLA_Silk_DUAL_GOLD&Purple",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "zlatá/fialová",
+  "hex": "#a8742e",
+  "color_en": "gold / purple"
+ },
+ {
+  "drive_folder": "1HUzogkK6MBRj-YIk-0HcXn47Jj2Kbl-L",
+  "folder": "26_PLA_Silk_DUAL_Gold&Red",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "zlatá/červená",
+  "hex": "#c8781e",
+  "color_en": "gold / red"
+ },
+ {
+  "drive_folder": "1LzS85R10_9pQvSSRPKdRm1y8O7sLd9OA",
+  "folder": "28_a_PLA_Silk_BLUE_PURPLE_ORANGE",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "modrá/fialová/oranžová",
+  "hex": "#7a5fbf",
+  "color_en": "blue / purple / orange"
+ },
+ {
+  "drive_folder": "1D_qJl3iW0QPJb4KXg3N812LXrPaMCtlb",
+  "folder": "28_PLA_Silk_Triplet_Green_Purple_Copper",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "zelená/fialová/měď",
+  "hex": "#6b7a4a",
+  "color_en": "green / purple / copper"
+ },
+ {
+  "drive_folder": "1aeTF5w8ebw3QAE5GgqLHQfejQte7gX77",
+  "folder": "29_PLA_Silka_Rainbow_Candy_Rainbow",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "duhová candy",
+  "hex": "#e57ab0",
+  "color_en": "candy rainbow"
+ },
+ {
+  "drive_folder": "17V8F1oO7cLR1PIyrCmvAVEdpCajGlEdL",
+  "folder": "29_PLA_Silk_Rainbow_Vibrant_Rainbow",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "duhová vibrant",
+  "hex": "#d94b8a",
+  "color_en": "vibrant rainbow"
+ },
+ {
+  "drive_folder": "1VqvbFSK10bvY3sE5R4pHLz0XLkmi-fmG",
+  "folder": "29_XX_PLA_SILK_RAINBOW_romantic_rainbow",
+  "material": "PLA",
+  "finish": "silk",
+  "color": "duhová romantic",
+  "hex": "#e8a0c0",
+  "color_en": "romantic rainbow"
+ },
+ {
+  "drive_folder": "1_SkzJY97hC1BQ_F4qut2J64teYNVsUOG",
+  "folder": "37_MATTE_PLA_MILITARY_GREEN",
+  "material": "PLA",
+  "finish": "matte",
+  "color": "vojenská zelená",
+  "hex": "#4b5b3a",
+  "color_en": "military green"
+ },
+ {
+  "drive_folder": "1-EYmPB2PawOPEIJy3f_cUI3KzJnLD8Uq",
+  "folder": "38_MATTE_PLA_FOSSIL_GRAY",
+  "material": "PLA",
+  "finish": "matte",
+  "color": "fosilní šedá",
+  "hex": "#a6a29a",
+  "color_en": "fossil gray"
+ },
+ {
+  "drive_folder": "1SRpy1mjohjveTnz3LsZzGjBuPclnSX8F",
+  "folder": "44_MATTE_PLA+_White",
+  "material": "PLA+",
+  "finish": "matte",
+  "color": "bílá",
+  "hex": "#f4f4f2",
+  "color_en": "white"
+ },
+ {
+  "drive_folder": "1_mToMgIudXQsqqEQ17c-Nl9NgLbFDG1R",
+  "folder": "44_MATTE_PLA+_Orange",
+  "material": "PLA+",
+  "finish": "matte",
+  "color": "oranžová",
+  "hex": "#f47a20",
+  "color_en": "orange"
+ },
+ {
+  "drive_folder": "1tcU86HBwYXV9VhbOuL8NEhRKuejiE3ON",
+  "folder": "44_a_MATTE_PLA+_Sky_blue",
+  "material": "PLA+",
+  "finish": "matte",
+  "color": "nebesky modrá",
+  "hex": "#69b3ff",
+  "color_en": "sky blue"
+ },
+ {
+  "drive_folder": "1hDB2SwI_K6xGZF3UfQhfXzYlH3NT7Su1",
+  "folder": "44_b_MATTE_PLA+_GRASS_GREEN",
+  "material": "PLA+",
+  "finish": "matte",
+  "color": "trávově zelená",
+  "hex": "#4caf30",
+  "color_en": "grass green"
+ },
+ {
+  "drive_folder": "1pO8BJslKpoOMIJVD7dyR1i9wF_cgwuq0",
+  "folder": "44_c_MATTE_PLA+_BLACK",
+  "material": "PLA+",
+  "finish": "matte",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ },
+ {
+  "drive_folder": "1ui3av4nI7ewmIh8-gr9BlCvxtQqBkGmM",
+  "folder": "44_PLA_Matte_Dark Blue",
+  "material": "PLA",
+  "finish": "matte",
+  "color": "tmavě modrá",
+  "hex": "#1c3f7a",
+  "color_en": "dark blue"
+ },
+ {
+  "drive_folder": "1PKbYDy5pKZbzYSbtochFlPkXNFVl49Q_",
+  "folder": "47_PLA_Twinkling_BLACK",
+  "material": "PLA",
+  "finish": "glitter",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ },
+ {
+  "drive_folder": "15huA8DDpsohAD8FuWDLyOZ8m363ZrX4G",
+  "folder": "47_a_PLA_TWINKLING_RED",
+  "material": "PLA",
+  "finish": "glitter",
+  "color": "červená",
+  "hex": "#d1232a",
+  "color_en": "red"
+ },
+ {
+  "drive_folder": "1Hjp1OD8Bo1rutGqLfd5JGKAYUto5jZOK",
+  "folder": "48_PETG_2.0_SOLID_BLACK",
+  "material": "PETG",
+  "finish": "solid",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ },
+ {
+  "drive_folder": "1BCd9QquJ_GGgYoC7UEDkp6cL4mBPw_K4",
+  "folder": "50_PETG_2.0_solid_grey",
+  "material": "PETG",
+  "finish": "solid",
+  "color": "šedá",
+  "hex": "#8a8d91",
+  "color_en": "grey"
+ },
+ {
+  "drive_folder": "1InPtLRtHhShvs242SY43nGW_YAp1IsmD",
+  "folder": "51_PETG_2.0_Solid_red",
+  "material": "PETG",
+  "finish": "solid",
+  "color": "červená",
+  "hex": "#d1232a",
+  "color_en": "red"
+ },
+ {
+  "drive_folder": "1rC9HT8VBuB7H5AEn-6JxIuViMYBOc5Lz",
+  "folder": "51_PETG_2.0_ Solid_purple",
+  "material": "PETG",
+  "finish": "solid",
+  "color": "fialová",
+  "hex": "#6a3fc0",
+  "color_en": "violet"
+ },
+ {
+  "drive_folder": "13GwPwCBnlItI3vaI-821K8Wx9V7GpvzJ",
+  "folder": "51_a_PETG_2.0_TRANSPARENT",
+  "material": "PETG",
+  "finish": "solid",
+  "color": "transparentní",
+  "hex": "#e8eef2",
+  "color_en": "transparent"
+ },
+ {
+  "drive_folder": "1dV_ue6OqWEMPZstHyAq2xHctNTOWMvCk",
+  "folder": "51_b_PETG_2.0_SOLID_ORANGE",
+  "material": "PETG",
+  "finish": "solid",
+  "color": "oranžová",
+  "hex": "#f47a20",
+  "color_en": "orange"
+ },
+ {
+  "drive_folder": "10KdNzAtPvr2oAUG7IFJYQGC7vuHiPCw_",
+  "folder": "51_c_petg_2.0_transparent_purple",
+  "material": "PETG",
+  "finish": "solid",
+  "color": "transparentní fialová",
+  "hex": "#a58bd6",
+  "color_en": "transparent purple"
+ },
+ {
+  "drive_folder": "1GGBVJtMrI81iWGk3ggzbYrl5OjBmHEVT",
+  "folder": "51_d_PETG_2.0_SOLID_BROWN",
+  "material": "PETG",
+  "finish": "solid",
+  "color": "hnědá",
+  "hex": "#7a4b2a",
+  "color_en": "brown"
+ },
+ {
+  "drive_folder": "1Q2xjZOudPhGSNzglrf__7M7YFrFuIjaP",
+  "folder": "52_ABS+_Purple",
+  "material": "ABS+",
+  "finish": "solid",
+  "color": "fialová",
+  "hex": "#6a3fc0",
+  "color_en": "violet"
+ },
+ {
+  "drive_folder": "1n1q6bsaP5GIhfuJ9dMvB0zfcNzY-1Q7D",
+  "folder": "52_ABS+_Pink",
+  "material": "ABS+",
+  "finish": "solid",
+  "color": "růžová",
+  "hex": "#f49ac1",
+  "color_en": "pink"
+ },
+ {
+  "drive_folder": "1c_Q4ikaNM6hbp1eTnoPb4mde0hicU6U6",
+  "folder": "52_ABS+_Yellow",
+  "material": "ABS+",
+  "finish": "solid",
+  "color": "žlutá",
+  "hex": "#f6d000",
+  "color_en": "yellow"
+ },
+ {
+  "drive_folder": "1-O7LU6hg9SKET1CWY-l0regnnPmwatry",
+  "folder": "52_a_ABS+_GOLD",
+  "material": "ABS+",
+  "finish": "solid",
+  "color": "zlatá",
+  "hex": "#d4a531",
+  "color_en": "gold"
+ },
+ {
+  "drive_folder": "1qpjeHeoPiTrhDe_7SWAtAaOcFE-lT0X6",
+  "folder": "52_b_ABS+_SILVER",
+  "material": "ABS+",
+  "finish": "solid",
+  "color": "stříbrná",
+  "hex": "#c0c2c5",
+  "color_en": "silver"
+ },
+ {
+  "drive_folder": "1vbAWxXqnhSRwrPx2jxtvMOEsTECB0Cqf",
+  "folder": "53_ABS_BROWN",
+  "material": "ABS",
+  "finish": "solid",
+  "color": "hnědá",
+  "hex": "#7a4b2a",
+  "color_en": "brown"
+ },
+ {
+  "drive_folder": "1p1WdQANMw2RL5QFULoqCCpJ6DTBqporX",
+  "folder": "55_TPU-95A_LAKE BLUE",
+  "material": "TPU",
+  "finish": "flex",
+  "color": "jezerní modrá",
+  "hex": "#2a7fc9",
+  "color_en": "lake blue"
+ },
+ {
+  "drive_folder": "1SBHUhO_EMnEvclr-zXcSF3uJYi-dRIgS",
+  "folder": "55_TPU_95A_Yellow",
+  "material": "TPU",
+  "finish": "flex",
+  "color": "žlutá",
+  "hex": "#f6d000",
+  "color_en": "yellow"
+ },
+ {
+  "drive_folder": "1fMp3pYzbelQ7qoqR07W6lEpsAzPSf0qZ",
+  "folder": "55_a_TPU_95A_GREY",
+  "material": "TPU",
+  "finish": "flex",
+  "color": "šedá",
+  "hex": "#8a8d91",
+  "color_en": "grey"
+ },
+ {
+  "drive_folder": "1bMbjWPKWO-ZDLAcu229QePbUfZQr9ouE",
+  "folder": "55_b_TPU_95A_ORANGE",
+  "material": "TPU",
+  "finish": "flex",
+  "color": "oranžová",
+  "hex": "#f47a20",
+  "color_en": "orange"
+ },
+ {
+  "drive_folder": "1UirNLXUNdX7JsGKTe32eBQvqzHx2uVXa",
+  "folder": "55_b_TPE_85A_BLACK",
+  "material": "TPU",
+  "finish": "flex",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ },
+ {
+  "drive_folder": "1quzgdEl24jwrhemnKtWBbLZ_fHtYccVZ",
+  "folder": "59_TPE_85A_YELLOW",
+  "material": "TPU",
+  "finish": "flex",
+  "color": "žlutá",
+  "hex": "#f6d000",
+  "color_en": "yellow"
+ },
+ {
+  "drive_folder": "1W2c2jbMk98xDxrdxNRQ7VGC7lDy2_GCu",
+  "folder": "60_TPE_85A_White",
+  "material": "TPU",
+  "finish": "flex",
+  "color": "bílá",
+  "hex": "#f4f4f2",
+  "color_en": "white"
+ },
+ {
+  "drive_folder": "1ke0gBt7qYDfn2zMfgGxWkm1GD85ABDus",
+  "folder": "60_TPE-85A_Orange",
+  "material": "TPU",
+  "finish": "flex",
+  "color": "oranžová",
+  "hex": "#f47a20",
+  "color_en": "orange"
+ },
+ {
+  "drive_folder": "1tc3dxDdn2fykY_v-XzCDyEHXXuv1Uv3U",
+  "folder": "60_TPE-85A_BLUE",
+  "material": "TPU",
+  "finish": "flex",
+  "color": "modrá",
+  "hex": "#1f5fbf",
+  "color_en": "blue"
+ },
+ {
+  "drive_folder": "1HENyc2Ft8iIlyORIdve5mWhzTiGyBaJF",
+  "folder": "60_a_TPU_85A_RED",
+  "material": "TPU",
+  "finish": "flex",
+  "color": "červená",
+  "hex": "#d1232a",
+  "color_en": "red"
+ },
+ {
+  "drive_folder": "1wX-gzmRxaEa7XD4Y6Ej6v4Yjb4hNyDmY",
+  "folder": "63_a_PETG_CF_BLACK",
+  "material": "PETG-CF",
+  "finish": "cf",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ },
+ {
+  "drive_folder": "1bhCMhta2DkkW7waAdZm2FSK_QjvQsZXg",
+  "folder": "66_PC_White",
+  "material": "PC",
+  "finish": "solid",
+  "color": "bílá",
+  "hex": "#f4f4f2",
+  "color_en": "white"
+ },
+ {
+  "drive_folder": "1Nsx3n2sIgbymXbI7EbhhmwBkIE-5LnzG",
+  "folder": "66_PC_Black",
+  "material": "PC",
+  "finish": "solid",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ },
+ {
+  "drive_folder": "1OmgVYqlKc2SsgmMVbsypGPVqRd5VaBHb",
+  "folder": "72_ASA_White",
+  "material": "ASA",
+  "finish": "solid",
+  "color": "bílá",
+  "hex": "#f4f4f2",
+  "color_en": "white"
+ },
+ {
+  "drive_folder": "1mrVPs4whQT9kSkUyP33Ab_L_VDBMsmrW",
+  "folder": "72_ASA_Black",
+  "material": "ASA",
+  "finish": "solid",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ },
+ {
+  "drive_folder": "1OvKK9kJGpaOM1-Tnj9dm3-qucLzQwqhp",
+  "folder": "73_ABS_Max_Black",
+  "material": "ABS",
+  "finish": "solid",
+  "color": "černá",
+  "hex": "#1b1b1d",
+  "color_en": "black"
+ }
+]

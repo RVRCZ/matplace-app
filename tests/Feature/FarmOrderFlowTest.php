@@ -232,7 +232,12 @@ class FarmOrderFlowTest extends TestCase
         $this->assertSame('sent', $job->status);
 
         $gcode = $this->get($cmd['payload']['gcode_url'], $auth)->assertOk();
-        $this->assertSame($order->refresh()->gcode_sha256, $gcode->headers->get('X-Content-Sha256'));
+        // the customer's colour sits in slot 3: the agent gets the copy that selects it, with its own checksum
+        $this->assertSame(2, $cmd['payload']['slot']);
+        $this->assertSame(hash('sha256', $gcode->streamedContent()), $gcode->headers->get('X-Content-Sha256'));
+        $this->assertStringContainsString("
+T2 ; slot chosen by matplace farm
+", $gcode->streamedContent());
         $this->postJson("/api/agent/commands/{$cmd['id']}/result", ['ok' => true], $auth)->assertOk();
 
         $this->sync($auth, 'printing', ['id' => $job->id, 'status' => 'printing', 'progress' => 42.5, 'print_duration' => 600, 'filament_used' => 1200])->assertOk();
@@ -246,7 +251,7 @@ class FarmOrderFlowTest extends TestCase
         $this->assertEqualsWithDelta(10.7, $order->actual_grams, 0.1);   // 3.6 m of 1.75 mm PLA
         $this->assertSame('agent', $order->actual_source);
         $this->assertDatabaseHas('credit_transactions', ['farm_order_id' => $order->id, 'type' => 'capture']);
-        $this->assertEqualsWithDelta(1000 - $order->actual_grams, $order->slot->refresh()->remaining_g, 0.01);
+        $this->assertEqualsWithDelta(900 - $order->actual_grams, $order->slot->refresh()->remaining_g, 0.01);   // the seeded spool holds 900 g
 
         // the plate is full now: the next order waits for a person
         $this->sync($auth)->assertJsonCount(0, 'commands');

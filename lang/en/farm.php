@@ -111,6 +111,7 @@ return [
     ],
 
     'refuse' => [
+        'closed' => 'The farm is not taking new orders right now. Please try again later.',
         'not_stl' => 'For now we only print STL files here.',
         'too_big' => 'The file is larger than :max MB.',
         'daily_limit' => 'You have already calculated :limit models today, which is the daily limit. It works again tomorrow.',
@@ -164,6 +165,8 @@ return [
             'Uploaded files are stored privately and used only to fulfil your order.',
         ],
     ],
+
+    'finish' => ['solid' => '', 'matte' => 'matte', 'silk' => 'Silk', 'luminous' => 'glow', 'glitter' => 'glitter', 'special' => 'special', 'flex' => 'flexible', 'cf' => 'CF'],
 
     'admin' => [
         'nav' => ['dashboard' => 'Printers and queue', 'orders' => 'Orders', 'printers' => 'Printers', 'materials' => 'Materials and colours', 'settings' => 'Prices and rules', 'agents' => 'Agents', 'credit' => 'Credit'],

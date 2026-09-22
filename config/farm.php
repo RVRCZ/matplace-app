@@ -55,6 +55,10 @@ return [
         'snapshot_keep' => 1,               // snapshots kept per order (the last one is what people see)
         'terms_version' => '2026-09',
         'admin_email' => env('FARM_ADMIN_EMAIL', env('MAIL_FROM_ADDRESS')),
+
+        // ── product switches (the admin's value wins over .env; see App\Providers\AppServiceProvider) ──
+        'marketplace' => (bool) env('FEATURE_MARKETPLACE', false),   // printers' marketplace: price lists, inquiries, quotes
+        'farm_open' => true,                                          // false: the farm takes no new orders (running ones finish)
     ],
 
     'payments' => [

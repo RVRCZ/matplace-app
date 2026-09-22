@@ -63,7 +63,9 @@
                 <div class="grid items-end gap-2 sm:grid-cols-[3rem_1fr_8rem_6rem]">
                     <span class="pb-2 text-sm font-bold">{{ $i + 1 }}</span>
                     <label class="{{ $lb }}">Barva
-                        <select name="slots[{{ $i }}][color]" class="{{ $in }}"><option value="">— prázdný —</option>@foreach($colors as $c)<option value="{{ $c->id }}" @selected($s?->farm_color_id === $c->id)>{{ $c->material->code }} · {{ $c->name }}</option>@endforeach</select>
+                        <select name="slots[{{ $i }}][color]" class="{{ $in }}"><option value="">— prázdný —</option>
+                            @foreach($colors->groupBy(fn ($c) => $c->material->label()) as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected($s?->farm_color_id === $c->id)>{{ $c->name }}@if($c->name_en) / {{ $c->name_en }}@endif</option>@endforeach</optgroup>@endforeach
+                        </select>
                     </label>
                     <label class="{{ $lb }}">Zbývá (g)<input type="number" step="1" min="0" name="slots[{{ $i }}][remaining_g]" value="{{ $s ? round($s->remaining_g) : 0 }}" class="{{ $in }}"></label>
                     <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="slots[{{ $i }}][enabled]" value="1" @checked($s?->enabled) class="h-4 w-4 accent-action"> nabízet</label>

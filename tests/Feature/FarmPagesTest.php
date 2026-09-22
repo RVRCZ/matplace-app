@@ -87,8 +87,9 @@ class FarmPagesTest extends TestCase
 
     public function test_admin_adds_petg_a_colour_a_second_printer_and_changes_prices_without_code(): void
     {
-        $this->actingAs($this->admin)->post('/admin/farm/materials/new', ['code' => 'petg', 'name' => 'PETG', 'filament_profile' => 'filament_petg.json', 'density' => 1.27, 'price_per_gram' => 1.5, 'enabled' => 1])->assertRedirect();
-        $petg = FarmMaterial::where('code', 'PETG')->firstOrFail();
+        $this->actingAs($this->admin)->post('/admin/farm/materials/new', ['code' => 'petg', 'finish' => 'silk', 'name' => 'PETG', 'filament_profile' => 'filament_petg.json', 'density' => 1.27, 'nozzle_temp' => 240, 'bed_temp' => 75, 'price_per_gram' => 1.5, 'enabled' => 1])->assertRedirect();
+        $petg = FarmMaterial::where('code', 'PETG')->where('finish', 'silk')->firstOrFail();
+        $this->assertSame(['240'], $petg->sliceOverrides()['nozzle_temperature']);
 
         $this->actingAs($this->admin)->post('/admin/farm/colors/new', ['farm_material_id' => $petg->id, 'name' => 'Transparent', 'hex' => '#DDEEFF', 'enabled' => 1, 'photo' => UploadedFile::fake()->image('print.jpg', 400, 400)])->assertRedirect();
         $color = FarmColor::where('name', 'Transparent')->firstOrFail();

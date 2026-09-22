@@ -96,7 +96,7 @@ class PrepareFarmOrder implements ShouldQueue
             $overrides = [
                 'machine' => (array) $printer->machine_overrides,
                 'process' => ['layer_height' => (string) $layer] + (array) $printer->process_overrides,
-                'filament' => (array) $order->material->filament_overrides,
+                'filament' => $order->material->sliceOverrides(),
             ];
             $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: null, treeSupports: true))
                 ->withFarmProfile($profiles, $overrides);

@@ -25,6 +25,9 @@ final class OrderService
      */
     public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null): FarmOrder
     {
+        if (! config('farm.open', true)) {
+            throw new FarmRefusal('closed');
+        }
         // our own generators always produce printable STL; a customer's upload must be .stl in this phase
         if ($file->origin === null || $file->origin === 'upload') {
             if ($file->ext !== 'stl') {
@@ -37,7 +40,8 @@ final class OrderService
         }
         $this->assertDailyLimit($user);
 
-        $material = FarmMaterial::where('enabled', true)->orderBy('id')->first();
+        // the kind the order is sliced for: one that is really loaded in a printer, the most common one first
+        $material = $this->loadedMaterials()->first();
         $printer = $material ? $this->printerFor($material) : null;
         if (! $material || ! $printer) {
             throw new FarmRefusal('no_printer');
@@ -134,6 +138,24 @@ final class OrderService
             'shipping' => $delivery === 'shipping' ? (float) $this->settings->get('shipping_price') : 0.0,
             'currency' => (string) $this->settings->get('currency'),
         ]);
+    }
+
+    /**
+     * Material kinds loaded in an enabled slot of an enabled printer right now, the one with most colours first.
+     *
+     * @return Collection<int, FarmMaterial>
+     */
+    public function loadedMaterials(): Collection
+    {
+        $counts = FarmPrinterSlot::query()->where('farm_printer_slots.enabled', true)
+            ->join('farm_colors', 'farm_colors.id', '=', 'farm_printer_slots.farm_color_id')
+            ->join('farm_printers', 'farm_printers.id', '=', 'farm_printer_slots.farm_printer_id')
+            ->where('farm_colors.enabled', true)->where('farm_printers.enabled', true)
+            ->groupBy('farm_colors.farm_material_id')
+            ->selectRaw('farm_colors.farm_material_id as id, count(*) as n')->pluck('n', 'id');
+
+        return FarmMaterial::where('enabled', true)->whereIn('id', $counts->keys())->get()
+            ->sortBy(fn (FarmMaterial $m) => [-$counts[$m->id], $m->sort])->values();
     }
 
     /** The printer an order is sliced for: one that has this material loaded, online ones first. */

@@ -30,6 +30,16 @@ class AppServiceProvider extends ServiceProvider
             Mail::alwaysTo($to);
         }
 
+        // product switches live in farm_settings so the admin flips them at /admin/farm/settings; .env is only the default
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('farm_settings')) {
+                $s = $this->app->make(\App\Domain\Farm\FarmSettings::class);
+                config(['features.marketplace' => (bool) $s->get('marketplace'), 'farm.open' => (bool) $s->get('farm_open')]);
+            }
+        } catch (\Throwable) {
+            // no database yet (first install, artisan key:generate…): the .env defaults stand
+        }
+
         RateLimiter::for('uploads', fn (Request $r) => Limit::perMinute(20)->by($r->ip()));
         RateLimiter::for('calculations', fn (Request $r) => Limit::perMinute(60)->by($r->ip()));
     }

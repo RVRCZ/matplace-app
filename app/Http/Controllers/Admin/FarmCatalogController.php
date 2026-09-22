@@ -36,7 +36,7 @@ class FarmCatalogController extends Controller
         return view('admin.farm.printer_edit', [
             'printer' => $printer ?? new FarmPrinter(['mode' => FarmPrinter::MODE_MANUAL, 'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.4, 'time_factor' => 1, 'weight_factor' => 1, 'enabled' => true, 'machine_profile' => 'machine.json', 'process_profiles' => ['draft' => 'process_draft.json', 'standard' => 'process_standard.json', 'fine' => 'process_fine.json']]),
             'agents' => FarmAgent::whereNull('revoked_at')->orderBy('name')->get(),
-            'colors' => FarmColor::with('material')->where('enabled', true)->orderBy('name')->get(),
+            'colors' => FarmColor::with('material')->where('enabled', true)->get()->sortBy(fn ($c) => [$c->material->sort, $c->sort])->values(),
             'calibration' => $printer ? ($this->calibration()[$printer->id] ?? null) : null,
         ]);
     }
@@ -113,18 +113,24 @@ class FarmCatalogController extends Controller
     // ── materials and colours ────────────────────────────────────────────────
     public function materials(): View
     {
-        return view('admin.farm.materials', ['materials' => FarmMaterial::with('colors')->orderBy('id')->get()]);
+        return view('admin.farm.materials', ['materials' => FarmMaterial::with(['colors' => fn ($q) => $q->orderBy('sort')])->orderBy('sort')->get()]);
     }
 
     public function saveMaterial(Request $request, ?FarmMaterial $material = null): RedirectResponse
     {
         $data = $request->validate([
-            'code' => ['required', 'alpha_dash', 'max:20', Rule::unique('farm_materials', 'code')->ignore($material?->id)],
+            'code' => ['required', 'regex:/^[A-Za-z0-9+\-]+$/', 'max:20', Rule::unique('farm_materials', 'code')->where('finish', $request->input('finish', 'solid'))->ignore($material?->id)],
+            'finish' => ['required', Rule::in(FarmMaterial::FINISHES)],
             'name' => ['required', 'string', 'max:80'],
             'filament_profile' => ['required', 'string', 'max:120'],
             'filament_overrides' => ['nullable', 'json'],
             'density' => ['required', 'numeric', 'min:0.5', 'max:5'],
+            'nozzle_temp' => ['nullable', 'integer', 'min:150', 'max:350'],
+            'nozzle_temp_first' => ['nullable', 'integer', 'min:150', 'max:350'],
+            'bed_temp' => ['nullable', 'integer', 'min:0', 'max:150'],
             'price_per_gram' => ['required', 'numeric', 'min:0', 'max:1000'],
+            'notes' => ['nullable', 'string', 'max:500'],
+            'sort' => ['nullable', 'integer', 'min:0', 'max:1000'],
         ]);
         $data['code'] = strtoupper($data['code']);
         $data['filament_overrides'] = ! empty($data['filament_overrides']) ? json_decode($data['filament_overrides'], true) : null;
@@ -139,11 +145,14 @@ class FarmCatalogController extends Controller
         $data = $request->validate([
             'farm_material_id' => ['required', 'exists:farm_materials,id'],
             'name' => ['required', 'string', 'max:80'],
+            'name_en' => ['nullable', 'string', 'max:80'],
+            'code' => ['nullable', 'string', 'max:80'],
             'hex' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
-            'photo' => ['nullable', 'image', 'max:4096'],
+            'photo' => ['nullable', 'image', 'max:8192'],
         ]);
         $color = $color ?? new FarmColor;
-        $color->fill(['farm_material_id' => $data['farm_material_id'], 'name' => $data['name'], 'hex' => strtolower($data['hex']), 'enabled' => $request->boolean('enabled')]);
+        $color->fill(['farm_material_id' => $data['farm_material_id'], 'name' => $data['name'], 'name_en' => $data['name_en'] ?? null, 'code' => $data['code'] ?? null,
+            'hex' => strtolower($data['hex']), 'enabled' => $request->boolean('enabled'), 'in_stock' => $request->boolean('in_stock', true)]);
         if ($request->hasFile('photo')) {
             $color->photo_path = $request->file('photo')->storeAs('farm/colors', Str::uuid().'.'.$request->file('photo')->extension(), 'public');
         }
@@ -185,6 +194,8 @@ class FarmCatalogController extends Controller
         $data['qualities'] = json_decode($data['qualities'], true);
         $data['strengths'] = json_decode($data['strengths'], true);
         $data['require_approval'] = $request->boolean('require_approval');
+        $data['marketplace'] = $request->boolean('marketplace');
+        $data['farm_open'] = $request->boolean('farm_open');
         $data['delivery_modes'] = array_values(array_intersect(['pickup', 'shipping'], (array) $request->input('delivery_modes', ['pickup']))) ?: ['pickup'];
         foreach ($data as $key => $value) {
             $settings->set($key, $value);

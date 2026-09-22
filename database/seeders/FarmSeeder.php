@@ -8,24 +8,60 @@ use App\Models\FarmPrinter;
 use Illuminate\Database\Seeder;
 
 /**
- * Farm, phase 1: one Anycubic Kobra S1 Combo (250³, 0.4 mm, four ACE slots) and PLA.
- * Safe to run again: existing rows are left as the admin changed them.
+ * Farm, phase 1: the filament catalogue (database/data/farm_filaments.json, built from the photo folders on the
+ * matplace Drive), one Anycubic Kobra S1 Combo (250³, 0.4 mm, four ACE slots). Safe to run again: rows the admin
+ * changed are kept, new catalogue entries are added.
  *
  *   php artisan db:seed --class=FarmSeeder
  */
 class FarmSeeder extends Seeder
 {
+    /**
+     * Material kinds. Temperatures are what the e-shop descriptions recommend (PLA+ 205–220 / 55–65) and what the first
+     * farm prints used; only kinds with a verified slicer profile are enabled for customers.
+     */
+    private const KINDS = [
+        // code, finish, name, profile, density, nozzle, first layer, bed, price/g, enabled, sort
+        ['PLA', 'solid', 'PLA', 'filament_pla.json', 1.24, 210, 215, 55, 1.20, true, 10],
+        ['PLA+', 'solid', 'PLA+', 'filament_pla.json', 1.24, 215, 225, 60, 1.30, true, 20],
+        ['PLA+', 'matte', 'PLA+', 'filament_pla.json', 1.24, 215, 225, 60, 1.40, true, 21],
+        ['PLA', 'silk', 'PLA', 'filament_pla.json', 1.24, 215, 220, 55, 1.50, true, 30],
+        ['PLA', 'matte', 'PLA', 'filament_pla.json', 1.24, 210, 215, 55, 1.40, true, 31],
+        ['PLA', 'luminous', 'PLA', 'filament_pla.json', 1.24, 215, 220, 55, 1.60, true, 32],
+        ['PLA', 'glitter', 'PLA', 'filament_pla.json', 1.24, 215, 220, 55, 1.60, true, 33],
+        ['PLA', 'special', 'PLA', 'filament_pla.json', 1.24, 210, 215, 55, 1.70, true, 34],
+        ['PETG', 'solid', 'PETG', 'filament_petg.json', 1.27, 240, 245, 75, 1.40, true, 40],
+        ['PETG-CF', 'cf', 'PETG CF', 'filament_petg.json', 1.30, 250, 255, 80, 2.50, false, 41],
+        ['ABS', 'solid', 'ABS', 'filament_asa.json', 1.04, 250, 255, 100, 1.40, false, 50],
+        ['ABS+', 'solid', 'ABS+', 'filament_asa.json', 1.04, 250, 255, 100, 1.50, false, 51],
+        ['ASA', 'solid', 'ASA', 'filament_asa.json', 1.07, 250, 255, 100, 1.60, false, 52],
+        ['TPU', 'flex', 'TPU', 'filament_tpu.json', 1.21, 225, 225, 50, 2.20, false, 60],
+        ['PC', 'solid', 'PC', 'filament_asa.json', 1.20, 270, 275, 100, 2.80, false, 70],
+    ];
+
     public function run(): void
     {
-        $pla = FarmMaterial::firstOrCreate(['code' => 'PLA'], [
-            'name' => 'PLA', 'filament_profile' => 'filament_pla.json', 'density' => 1.24, 'price_per_gram' => 1.20,
-        ]);
-
-        $colors = [];
-        foreach ([['Černá', '#1b1b1d'], ['Bílá', '#f4f4f2'], ['Šedá', '#75787b'], ['Oranžová', '#f47a20']] as [$name, $hex]) {
-            $colors[] = FarmColor::firstOrCreate(['farm_material_id' => $pla->id, 'name' => $name], ['hex' => $hex]);
+        $kinds = [];
+        foreach (self::KINDS as [$code, $finish, $name, $profile, $density, $nozzle, $first, $bed, $price, $enabled, $sort]) {
+            $kinds[$code.'|'.$finish] = FarmMaterial::firstOrCreate(['code' => $code, 'finish' => $finish], [
+                'name' => $name, 'filament_profile' => $profile, 'density' => $density, 'nozzle_temp' => $nozzle, 'nozzle_temp_first' => $first,
+                'bed_temp' => $bed, 'price_per_gram' => $price, 'enabled' => $enabled, 'sort' => $sort,
+            ]);
         }
 
+        $catalogue = json_decode((string) file_get_contents(database_path('data/farm_filaments.json')), true) ?: [];
+        foreach ($catalogue as $i => $f) {
+            $kind = $kinds[$f['material'].'|'.$f['finish']] ?? null;
+            if (! $kind) {
+                continue;
+            }
+            FarmColor::firstOrCreate(['drive_folder' => $f['drive_folder']], [
+                'farm_material_id' => $kind->id, 'code' => $f['folder'], 'name' => $f['color'], 'name_en' => $f['color_en'] ?? null,
+                'hex' => $f['hex'], 'enabled' => (bool) $kind->enabled, 'in_stock' => true, 'sort' => $i,
+            ]);
+        }
+
+        $plaPlus = $kinds['PLA+|solid'];
         $printer = FarmPrinter::firstOrCreate(['key' => 'kobra-s1-01'], [
             'name' => 'Kobra S1 #1',
             'model' => 'Anycubic Kobra S1 Combo',
@@ -44,8 +80,10 @@ class FarmSeeder extends Seeder
         ]);
 
         if ($printer->wasRecentlyCreated) {
-            foreach ($colors as $i => $color) {
-                $printer->slots()->create(['slot' => $i, 'farm_color_id' => $color->id, 'remaining_g' => 1000, 'enabled' => true]);
+            // what was in the ACE on 22 Sep 2026: slot 3 white PLA+; the rest is for the operator to fill in
+            $white = FarmColor::where('farm_material_id', $plaPlus->id)->where('name', 'bílá')->first();
+            foreach ([0, 1, 2, 3] as $i) {
+                $printer->slots()->create(['slot' => $i, 'farm_color_id' => $i === 2 ? $white?->id : null, 'remaining_g' => $i === 2 ? 900 : 0, 'enabled' => $i === 2 && $white !== null]);
             }
         }
     }

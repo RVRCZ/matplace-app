@@ -111,6 +111,7 @@ return [
     ],
 
     'refuse' => [
+        'closed' => 'Farma teď nepřijímá nové zakázky. Zkuste to prosím později.',
         'not_stl' => 'Tady zatím tiskneme jen soubory STL.',
         'too_big' => 'Soubor je větší než :max MB.',
         'daily_limit' => 'Dnes už jste spočítali :limit modelů, což je denní limit. Zítra to půjde znovu.',
@@ -164,6 +165,8 @@ return [
             'Nahrané soubory ukládáme neveřejně a používáme je jen k vyřízení vaší zakázky.',
         ],
     ],
+
+    'finish' => ['solid' => '', 'matte' => 'matný', 'silk' => 'Silk', 'luminous' => 'svítící', 'glitter' => 'třpytivý', 'special' => 'speciální', 'flex' => 'flexibilní', 'cf' => 'CF'],
 
     'admin' => [
         'nav' => ['dashboard' => 'Tiskárny a fronta', 'orders' => 'Zakázky', 'printers' => 'Tiskárny', 'materials' => 'Materiály a barvy', 'settings' => 'Ceny a pravidla', 'agents' => 'Agenti', 'credit' => 'Kredit'],

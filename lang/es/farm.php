@@ -111,6 +111,7 @@ return [
     ],
 
     'refuse' => [
+        'closed' => 'La granja no acepta pedidos nuevos ahora mismo. Inténtelo más tarde.',
         'not_stl' => 'Por ahora aquí solo imprimimos archivos STL.',
         'too_big' => 'El archivo supera los :max MB.',
         'daily_limit' => 'Hoy ya ha calculado :limit modelos, que es el límite diario. Mañana volverá a funcionar.',
@@ -164,6 +165,8 @@ return [
             'Los archivos subidos se guardan de forma privada y solo se usan para tramitar su pedido.',
         ],
     ],
+
+    'finish' => ['solid' => '', 'matte' => 'mate', 'silk' => 'Silk', 'luminous' => 'luminoso', 'glitter' => 'brillante', 'special' => 'especial', 'flex' => 'flexible', 'cf' => 'CF'],
 
     'admin' => [
         'nav' => ['dashboard' => 'Impresoras y cola', 'orders' => 'Pedidos', 'printers' => 'Impresoras', 'materials' => 'Materiales y colores', 'settings' => 'Precios y reglas', 'agents' => 'Agentes', 'credit' => 'Crédito'],
