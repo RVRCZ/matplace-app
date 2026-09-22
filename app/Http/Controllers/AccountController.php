@@ -27,7 +27,13 @@ class AccountController extends Controller
 
     public function profile(Request $request): View
     {
-        return view('account.profile', ['user' => $request->user()]);
+        $user = $request->user();
+
+        return view('account.profile', [
+            'user' => $user,
+            'balance' => config('farm.enabled') ? app(\App\Domain\Farm\Wallet::class)->balance($user) : null,
+            'orders' => config('farm.enabled') ? \App\Models\FarmOrder::with(['modelFile', 'color'])->where('user_id', $user->id)->latest('id')->limit(5)->get() : collect(),
+        ]);
     }
 
     public function updateProfile(Request $request): RedirectResponse
@@ -36,8 +42,10 @@ class AccountController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'phone' => ['nullable', 'string', 'max:30'],
+            'street' => ['nullable', 'string', 'max:160'],
             'zip' => ['nullable', 'string', 'max:10'],
             'city' => ['nullable', 'string', 'max:100'],
+            'country' => ['nullable', 'string', 'size:2'],
             'locale' => ['nullable', 'in:cs,en,es'],
             'notify_email' => ['nullable', 'boolean'],
             'password' => ['nullable', 'confirmed', PasswordRule::min(8)],
@@ -45,8 +53,10 @@ class AccountController extends Controller
         $user->fill([
             'name' => $data['name'],
             'phone' => $data['phone'] ?? null,
+            'street' => $data['street'] ?? null,
             'zip' => $data['zip'] ?? null,
             'city' => $data['city'] ?? null,
+            'country' => strtoupper($data['country'] ?? $user->country ?? 'CZ'),
             'locale' => $data['locale'] ?? $user->locale,
             'notify_email' => $request->boolean('notify_email'),
         ]);

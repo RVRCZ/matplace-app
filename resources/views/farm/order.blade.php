@@ -119,7 +119,7 @@
                 </div>
                 <div id="farm-address" class="mt-2 hidden gap-2 sm:grid-cols-2">
                     @foreach(['name', 'street', 'city', 'zip', 'phone'] as $f)
-                        <input name="address[{{ $f }}]" placeholder="{{ __('farm.order.address.'.$f) }}" aria-label="{{ __('farm.order.address.'.$f) }}" value="{{ $f === 'name' ? auth()->user()->name : ($f === 'phone' ? auth()->user()->phone : (auth()->user()->{$f} ?? '')) }}" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm {{ $f === 'street' ? 'sm:col-span-2' : '' }}">
+                        <input name="address[{{ $f }}]" placeholder="{{ __('farm.order.address.'.$f) }}" aria-label="{{ __('farm.order.address.'.$f) }}" value="{{ auth()->user()->{$f} ?? '' }}" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm {{ $f === 'street' ? 'sm:col-span-2' : '' }}">
                     @endforeach
                 </div>
                 <textarea name="note" rows="2" maxlength="500" placeholder="{{ __('farm.order.note') }}" aria-label="{{ __('farm.order.note') }}" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"></textarea>

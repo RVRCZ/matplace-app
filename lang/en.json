@@ -1124,5 +1124,8 @@
     "param.part.text": "Letters",
     "param.t.sign.line1": "First line",
     "param.t.sign.line2": "Second line (smaller)",
-    "param.o.logo.height": "Shaded relief from a picture"
+    "param.o.logo.height": "Shaded relief from a picture",
+    "account.street": "Street and number",
+    "account.country": "Country",
+    "account.address_hint": "We use the address to deliver farm prints and to estimate distance. It is never shown publicly."
 }

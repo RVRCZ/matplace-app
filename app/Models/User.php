@@ -22,7 +22,7 @@ class User extends Authenticatable
     public const ROLE_ADMIN = 'admin';
 
     protected $fillable = [
-        'name', 'email', 'password', 'phone', 'locale', 'country', 'zip', 'city', 'lat', 'lng', 'avatar_path',
+        'name', 'email', 'password', 'phone', 'locale', 'country', 'street', 'zip', 'city', 'lat', 'lng', 'avatar_path',
         'notify_email', 'notify_push', 'legacy_user_id', 'legacy_printer_id', 'legacy_designer_id', 'email_verified_at', 'phone_verified_at',
     ];
 

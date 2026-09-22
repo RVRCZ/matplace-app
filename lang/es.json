@@ -1124,5 +1124,8 @@
     "param.part.text": "Letras",
     "param.t.sign.line1": "Primera línea",
     "param.t.sign.line2": "Segunda línea (más pequeña)",
-    "param.o.logo.height": "Relieve modelado según la imagen"
+    "param.o.logo.height": "Relieve modelado según la imagen",
+    "account.street": "Calle y número",
+    "account.country": "País",
+    "account.address_hint": "Usamos la dirección para entregar las impresiones de la granja y estimar la distancia. Nunca se muestra públicamente."
 }

@@ -1,0 +1,17 @@
+{
+    "account.street": [
+        "Ulice a číslo popisné",
+        "Street and number",
+        "Calle y número"
+    ],
+    "account.country": [
+        "Země",
+        "Country",
+        "País"
+    ],
+    "account.address_hint": [
+        "Adresu použijeme pro doručení tisků z farmy a pro odhad vzdálenosti. Nikde ji nezveřejňujeme.",
+        "We use the address to deliver farm prints and to estimate distance. It is never shown publicly.",
+        "Usamos la dirección para entregar las impresiones de la granja y estimar la distancia. Nunca se muestra públicamente."
+    ]
+}
