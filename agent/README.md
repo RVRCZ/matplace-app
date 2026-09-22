@@ -126,19 +126,25 @@ Celý tok od zákazníka po „hotovo“ jde projít se simulovanou tiskárnou:
 | někdo na tiskárně pustí jiný soubor | sledovaná zakázka se po ~40 s ohlásí jako selhaná (nikdy ne jako hotová) |
 | příkaz `start` nikdo 10 minut nepřevezme | matplace ho stáhne; je potřeba znovu potvrdit volnou podložku |
 
-## Co je potřeba ověřit na skutečné Kobra S1 (zatím neověřeno!)
+## Ověřeno na skutečné Kobra S1 (22. 9. 2026, fw 2.7.2.7, Rinkhals 20260901_01)
 
 G‑code z matplace má stejný začátek a konec jako G‑code z Anycubic Slicer Next 2.0.0.3 (`G9111 bedTemp=… extruderTemp=…`,
-`M117`, `T0`, čistící linka na Y 255, stejný end G‑code) — porovnáno se skutečným souborem. Zbývá vyzkoušet na stroji:
+`M117`, `T0`, čistící linka na Y 255, stejný end G‑code) — porovnáno se skutečným souborem.
 
-1. **Start přes Moonraker = start z displeje?** Nahrajte G‑code přes Mainsail (`http://IP:4409`) a spusťte.
-   Musí proběhnout zahřátí, LeviQ a kalibrace stejně jako při tisku ze Sliceru Next.
-2. **Volba slotu ACE.** matplace mění řádek `T0` na `T<slot>`. Ověřte tisk ze slotu 2–4. Dokud to není potvrzené,
+| Co | Výsledek |
+|---|---|
+| Moonraker `:7125`, Mainsail `:4409`, Fluidd `:4408`, kamera `http://IP/webcam/?action=snapshot` (JPEG) | funguje |
+| Upload `POST /server/files/upload` + `POST /printer/print/start` | tisk se rozjel a proběhla celá startovní sekvence jako ze Sliceru Next: předehřev 170/55 °C, LeviQ (sondování), zahřátí na 220 °C, čisticí linka, tisk |
+| `print_stats` během startu | `progress` 0, po začátku první vrstvy se `print_duration` vynuluje → hlášený čas je čistý čas tisku (to chce kalibrace ceny) |
+| Navíc oproti čistému Klipperu | `print_stats.info.current_layer/total_layer`, `virtual_sdcard.remain_time` (agent je posílá v telemetrii) |
+| Uložený soubor je o pár desítek bajtů větší než originál | Rinkhals ho při uložení doplňuje; metadata (čas, filament) sedí |
+
+Zbývá vyzkoušet:
+
+1. **Volba slotu ACE.** matplace mění řádek `T0` na `T<slot>`. Ověřte tisk ze slotu 2–4. Dokud to není potvrzené,
    nechte v administraci zapnutý („nabízet“) **jen slot 1**.
-3. **Pauza / pokračování / zrušení** z administrace a chování po zrušení (hlava odjede, topení se vypne).
-4. **Hlášené hodnoty**: `print_duration` a `filament_used` po dotištění proti stopkám a váze — z nich se počítá
-   kalibrace korekcí ceny.
-5. **Kamera**: `http://IP/webcam/?action=snapshot` vrací JPEG.
+2. **Pauza / pokračování / zrušení** z administrace a chování po zrušení (hlava odjede, topení se vypne).
+3. **Hlášené hodnoty po dotištění** (`print_duration`, `filament_used`) proti stopkám a váze.
 
 ## Vývoj
 

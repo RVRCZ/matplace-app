@@ -75,8 +75,17 @@ class MoonrakerDriver(PrinterDriver):
             "bed_target": _num(s.get("heater_bed", {}).get("target")),
             "klipper_state": stats.get("state"),
         }
+        # Rinkhals (Kobra S1) adds layers and the remaining time; plain Klipper has neither, both are optional
+        info = stats.get("info") or {}
+        if info.get("total_layer"):
+            telemetry["layer"] = f"{info.get('current_layer', 0)}/{info['total_layer']}"
+        if sd.get("remain_time"):
+            telemetry["remain_min"] = round(float(sd["remain_time"]) / 60)
         job = None
         if job_state and stats.get("filename"):
+            # Verified on a Kobra S1 (Rinkhals 20260901_01): during the start macro (heating, LeviQ, purge line)
+            # progress stays 0 and print_duration is reset to 0 when the first layer begins, so print_duration is
+            # the pure printing time - the number the price calibration wants.
             progress = sd.get("progress")
             if progress is None:
                 progress = s.get("display_status", {}).get("progress") or 0
