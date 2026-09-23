@@ -16,16 +16,15 @@ final class GcodeSlot
     /** @param  array{nozzle?: int, nozzle_first?: int, bed?: int}  $temps  degrees of the chosen kind; empty = keep the sliced ones */
     public static function retarget(string $gcode, int $slot, array $temps = []): string
     {
-        $out = $gcode;
-        if ($slot !== 0) {
-            $line = 'T'.$slot.' ; slot chosen by matplace farm';
-            $out = preg_replace('/^T0[ \t]*(;.*)?$/m', $line, $out, 1, $n);
-            if ($n === 0) {
-                // OrcaSlicer writes no tool line at all for a single-filament print: put one right after the start macro
-                $out = preg_replace('/^(M117[ \t]*\r?\n)/m', '$1'.$line."\n", $out, 1, $n);
-            }
-            $out = $n > 0 ? (string) $out : $gcode;
+        // written for slot 1 (T0) as well: a file without any tool line is refused by the firmware of the S1 + ACE
+        // ("cannot parse the file", 23 Sep 2026, order F26-000002)
+        $line = 'T'.$slot.' ; slot chosen by matplace farm';
+        $out = preg_replace('/^T0[ \t]*(;.*)?$/m', $line, $gcode, 1, $n);
+        if ($n === 0) {
+            // OrcaSlicer writes no tool line at all for a single-filament print: put one right after the start macro
+            $out = preg_replace('/^(M117[ \t]*\r?\n)/m', '$1'.$line."\n", $out, 1, $n);
         }
+        $out = $n > 0 ? (string) $out : $gcode;
         if (! empty($temps['nozzle'])) {
             $first = (int) ($temps['nozzle_first'] ?: $temps['nozzle'] + 5);
             $bed = (int) ($temps['bed'] ?? 0);
@@ -54,9 +53,6 @@ final class GcodeSlot
     /** Writes the retargeted copy next to the original and returns its path (the original when nothing changes). */
     public static function fileFor(string $gcodePath, int $slot, array $temps = []): string
     {
-        if ($slot === 0 && ! $temps) {
-            return $gcodePath;
-        }
         $tag = '.slot'.$slot.(! empty($temps['nozzle']) ? '-'.$temps['nozzle'].'-'.(int) ($temps['bed'] ?? 0) : '');
         $target = preg_replace('/\.gcode$/', '', $gcodePath).$tag.'.gcode';
         if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {
