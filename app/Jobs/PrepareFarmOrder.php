@@ -6,11 +6,15 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\ModelValidator;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
+use App\Domain\Farm\PrintProfile;
+use App\Domain\Farm\TestPrintService;
+use App\Domain\Farm\TowerGcode;
 use App\Engines\Contracts\PrintPreparer;
 use App\Engines\Contracts\Slicer;
 use App\Engines\DTO\Dimensions;
-use App\Engines\Gcode\SupportLines;
 use App\Engines\DTO\SliceParams;
+use App\Engines\Farm\PhpPrintPreparer;
+use App\Engines\Gcode\SupportLines;
 use App\Models\FarmOrder;
 use App\Models\ModelFile;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -68,7 +72,9 @@ class PrepareFarmOrder implements ShouldQueue
             $order->update(['stage' => 'checking']);
             $stlRel = $order->dir().'/print.stl';
             File::ensureDirectoryExists(dirname($disk->path($stlRel)));
-            $mesh = $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale, $bed);
+            // a test object is built closed, on Z = 0, the way it must be printed: nothing to repair or turn
+            $mesh = $order->isTest() ? (new PhpPrintPreparer)->prepare($file->absoluteStlPath(), $disk->path($stlRel), 1.0, $bed)
+                : $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale, $bed);
             $verdict = ModelValidator::judge($mesh, $bed, [
                 'min_model_mm' => (float) $settings->get('min_model_mm'),
                 'bed_margin_mm' => (float) $settings->get('bed_margin_mm'),
@@ -89,17 +95,18 @@ class PrepareFarmOrder implements ShouldQueue
             $quality = $order->quality;
             $layer = $settings->layerFor($quality);
             $infill = $settings->infillFor($order->strength);
+            // the kind, then the kind on this machine, then the spool: the most specific layer wins (PrintProfile);
+            // temperatures are written into the G-code copy for the chosen spool later
+            $profile = PrintProfile::forOrder($order);
             $profiles = [
                 'machine' => $printer->machine_profile,
                 'process' => $printer->process_profiles[$quality] ?? null,
-                'filament' => $order->material->filament_profile,
+                'filament' => $profile->filamentProfile,
             ];
-            // a spool with its own slicer settings (speeds, cooling…) wins over its kind; temperatures are set later per spool
-            $spool = $order->color?->sliceOverrides() ?? [];
             $overrides = [
                 'machine' => (array) $printer->machine_overrides,
-                'process' => ['layer_height' => (string) $layer] + ($spool['process'] ?? []) + (array) $printer->process_overrides,
-                'filament' => ($spool['filament'] ?? []) + $order->material->sliceOverrides(),
+                'process' => ['layer_height' => (string) $layer] + $profile->process + (array) $printer->process_overrides,
+                'filament' => $profile->filament,
             ];
             $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: null, treeSupports: true))
                 ->withFarmProfile($profiles, $overrides);
@@ -109,6 +116,12 @@ class PrepareFarmOrder implements ShouldQueue
             }
             $gcodeRel = $order->dir().'/print.gcode';
             File::move($result->gcodePath, $disk->path($gcodeRel));
+            if ($order->isTest() && is_array($order->test_params['temps'] ?? null)) {
+                // temperature tower: one temperature per floor, written after the slice
+                $tower = TowerGcode::apply((string) File::get($disk->path($gcodeRel)), (float) ($order->test_params['floor_mm'] ?? TestPrintService::FLOOR_MM), $order->test_params['temps']);
+                File::put($disk->path($gcodeRel), $tower['gcode']);
+                $order->test_params = ['floors_set' => $tower['floors_set']] + $order->test_params;
+            }
             // the supports the slicer built, for the customer's preview (a re-slice without them drops the old file)
             $supportsBin = $disk->path($order->dir().'/supports.bin');
             if (! $result->supportsUsed || ! SupportLines::extract($disk->path($gcodeRel), $supportsBin)) {
@@ -122,7 +135,8 @@ class PrepareFarmOrder implements ShouldQueue
                     'engine' => $slicer->name(), 'printer' => ['id' => $printer->id, 'key' => $printer->key, 'model' => $printer->model],
                     'material' => $order->material->code, 'quality' => $quality, 'layer_mm' => $layer, 'strength' => $order->strength,
                     'infill_percent' => $infill, 'unit_scale' => $order->unit_scale, 'profiles' => $profiles, 'overrides' => $overrides,
-                    'profile_hashes' => $this->profileHashes($profiles), 'preparer' => $preparer->name(), 'sliced_at' => now()->toIso8601String(),
+                    'profile_layers' => $profile->layers, 'profile_fingerprint' => $profile->sliceFingerprint(),
+                    'profile_hashes' => $this->profileHashes($profiles), 'preparer' => $order->isTest() ? 'php-stl' : $preparer->name(), 'sliced_at' => now()->toIso8601String(),
                 ],
                 'slice_result' => $result->toArray(),
                 'est_minutes' => $result->minutes,
@@ -132,6 +146,14 @@ class PrepareFarmOrder implements ShouldQueue
             ])->save();
 
             // ── 3. price ───────────────────────────────────────────────────────
+            if ($order->isTest()) {
+                // the farm's own test print: nobody pays, it goes straight to the queue
+                $order->fill(['stage' => null])->save();
+                $flow->move($order, FarmOrder::STATUS_SLICED, 'system');
+                $flow->move($order, FarmOrder::STATUS_QUEUED, 'system');
+
+                return;
+            }
             if ($order->paid_at !== null) {
                 // re-sliced for the chosen spool after payment: the price stays what the customer paid
                 $order->fill(['stage' => null])->save();

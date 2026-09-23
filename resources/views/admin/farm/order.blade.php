@@ -56,6 +56,23 @@
     </div>
 
     <div class="space-y-4">
+        @if($order->isTest())
+            @php $tp = (array) $order->test_params; $cand = (array) ($tp['candidate'] ?? []); @endphp
+            <section class="rounded-2xl border border-action bg-action-soft/40 p-4 text-sm">
+                <h2 class="font-bold">Testovací tisk · {{ __('farm.test.object.'.($tp['object'] ?? 'quick')) }}</h2>
+                <p class="mt-1 text-xs text-slate-600">Ladění: @if($order->printerMaterial)<a class="underline" href="{{ route('admin.farm.tuning.edit', $order->printerMaterial) }}">{{ $order->printerMaterial->label() }} na {{ $order->printer?->name }}</a> (verze {{ $tp['row_version'] ?? '?' }})@else — @endif</p>
+                <p class="mt-1 text-xs text-slate-600">Zkoušeno: tryska {{ $cand['nozzle_temp'] ?? '—' }} / {{ $cand['nozzle_temp_first'] ?? '—' }} °C · podložka {{ $cand['bed_temp'] ?? '—' }} °C</p>
+                @if(! empty($tp['temps']))<p class="mt-1 text-xs text-slate-600">Patra zdola ({{ $tp['floor_mm'] ?? 10 }} mm): {{ implode(' · ', array_map(fn ($i, $v) => ($i + 1).': '.$v.' °C', array_keys($tp['temps']), $tp['temps'])) }}@if(isset($tp['floors_set'])) · do G-code zapsáno {{ $tp['floors_set'] }} přechodů @endif</p>@endif
+                @if(! empty($tp['features']))
+                    <details class="mt-1 text-xs"><summary class="cursor-pointer">Co na objektu sledovat</summary>
+                        <ul class="mt-1 list-disc pl-4 text-slate-600">@foreach($tp['features'] as $f)<li>{{ $f['name'] }}@isset($f['index']) {{ $f['index'] }}@endisset: {{ implode(', ', $f['checks'] ?? []) }}</li>@endforeach</ul>
+                    </details>
+                @endif
+                @if(in_array($order->status, ['done', 'handed_over']) && $order->printerMaterial)
+                    <a href="{{ route('admin.farm.tuning.edit', $order->printerMaterial) }}#tests" class="btn-primary mt-2 w-full text-sm">Vyhodnotit a převzít nastavení</a>
+                @endif
+            </section>
+        @endif
         <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
             <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
                 <dt class="text-slate-500">E-mail</dt><dd>{{ $order->user?->email }} <span class="text-xs text-slate-500">({{ number_format($balance, 0, ',', ' ') }} Kč)</span></dd>

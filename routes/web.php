@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Admin\FarmCatalogController;
 use App\Http\Controllers\Admin\FarmOrderController;
+use App\Http\Controllers\Admin\FarmTuningController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\GenerationController;
@@ -175,6 +176,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/agents/{agent}/revoke', [$catalog, 'revokeAgent'])->name('agents.revoke');
     Route::get('/credit', [$catalog, 'credit'])->name('credit');
     Route::post('/credit', [$catalog, 'adjustCredit'])->name('credit.adjust');
+
+    $tuning = FarmTuningController::class;
+    Route::get('/tuning', [$tuning, 'index'])->name('tuning');
+    Route::post('/tuning/spool', [$tuning, 'spoolRow'])->name('tuning.spool');
+    Route::get('/tuning/{row}', [$tuning, 'edit'])->name('tuning.edit');
+    Route::post('/tuning/{row}', [$tuning, 'save'])->name('tuning.save');
+    Route::post('/tuning/{row}/test', [$tuning, 'test'])->name('tuning.test');
+    Route::post('/tuning/{row}/adopt/{order}', [$tuning, 'adopt'])->name('tuning.adopt');
 });
 
 // ── Printer tools (role switch "I own a printer") ────────────────────────────

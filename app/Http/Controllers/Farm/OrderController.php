@@ -51,7 +51,7 @@ class OrderController extends Controller
     public function index(Request $request): View
     {
         return view('farm.orders', [
-            'orders' => FarmOrder::with(['modelFile', 'color'])->where('user_id', $request->user()->id)->latest('id')->paginate(20),
+            'orders' => FarmOrder::with(['modelFile', 'color'])->where('user_id', $request->user()->id)->where('kind', FarmOrder::KIND_PRINT)->latest('id')->paginate(20),
             'balance' => $this->wallet->balance($request->user()),
         ]);
     }

@@ -31,9 +31,13 @@ class FarmOrder extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
+    public const KIND_PRINT = 'print';            // a customer's order
+
+    public const KIND_TEST = 'test';              // a tuning test print of the farm itself: no price, sliced → queued
+
     public const TRANSITIONS = [
         self::STATUS_UPLOADED => [self::STATUS_SLICED, self::STATUS_FAILED, self::STATUS_CANCELLED],
-        self::STATUS_SLICED => [self::STATUS_UPLOADED, self::STATUS_PAID, self::STATUS_CANCELLED],
+        self::STATUS_SLICED => [self::STATUS_UPLOADED, self::STATUS_PAID, self::STATUS_CANCELLED, self::STATUS_QUEUED],   // → queued: tests only (OrderFlow)
         self::STATUS_PAID => [self::STATUS_QUEUED, self::STATUS_CANCELLED],
         self::STATUS_QUEUED => [self::STATUS_PRINTING, self::STATUS_FAILED, self::STATUS_CANCELLED],
         self::STATUS_PRINTING => [self::STATUS_DONE, self::STATUS_FAILED, self::STATUS_CANCELLED, self::STATUS_QUEUED],
@@ -46,10 +50,10 @@ class FarmOrder extends Model
     /** The customer's money is held or spent in these states. */
     public const STATUSES_COMMITTED = [self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING, self::STATUS_DONE, self::STATUS_HANDED_OVER];
 
-    protected $attributes = ['currency' => 'CZK', 'quality' => 'standard', 'strength' => 'standard', 'unit_scale' => 1, 'delivery' => 'pickup'];
+    protected $attributes = ['currency' => 'CZK', 'quality' => 'standard', 'strength' => 'standard', 'unit_scale' => 1, 'delivery' => 'pickup', 'kind' => 'print'];
 
     protected $fillable = [
-        'quality_rating', 'quality_note', 'timelapse_path',
+        'quality_rating', 'quality_note', 'timelapse_path', 'kind', 'farm_printer_material_id', 'test_params',
         'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'unit_scale',
         'farm_material_id', 'farm_color_id', 'farm_printer_id', 'farm_printer_slot_id', 'delivery', 'shipping_address', 'note',
         'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'slice_params', 'slice_result', 'est_minutes',
@@ -59,7 +63,7 @@ class FarmOrder extends Model
     ];
 
     protected $casts = [
-        'unit_scale' => 'float', 'shipping_address' => 'array', 'check' => 'array', 'orientation' => 'array',
+        'unit_scale' => 'float', 'shipping_address' => 'array', 'check' => 'array', 'orientation' => 'array', 'test_params' => 'array',
         'slice_params' => 'array', 'slice_result' => 'array', 'price' => 'array', 'est_minutes' => 'int', 'est_grams' => 'float',
         'est_meters' => 'float', 'supports_used' => 'bool', 'price_total' => 'float', 'actual_minutes' => 'int', 'actual_grams' => 'float',
         'terms_accepted_at' => 'datetime', 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'queued_at' => 'datetime',
@@ -99,6 +103,17 @@ class FarmOrder extends Model
     public function slot(): BelongsTo
     {
         return $this->belongsTo(FarmPrinterSlot::class, 'farm_printer_slot_id');
+    }
+
+    /** The tuning row (printer × kind, or printer × spool) a test print was made for. */
+    public function printerMaterial(): BelongsTo
+    {
+        return $this->belongsTo(FarmPrinterMaterial::class, 'farm_printer_material_id');
+    }
+
+    public function isTest(): bool
+    {
+        return $this->kind === self::KIND_TEST;
     }
 
     public function events(): HasMany

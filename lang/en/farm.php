@@ -129,6 +129,9 @@ return [
         'filament_low' => 'There is not enough filament left on this spool. Please pick another colour.',
         'price_changed' => 'The price has changed to :total CZK in the meantime. Please check it and confirm again.',
         'credit' => 'You are :missing CZK short of credit.',
+        'slot_kind' => 'This slot holds another kind of material than the one being tuned.',
+        'no_python' => 'The test object generator is not available on the server.',
+        'object' => 'The test object could not be built. :error',
     ],
 
     'credit' => [
@@ -172,11 +175,16 @@ return [
         ],
     ],
 
+    'test' => [
+        'object' => ['quick' => 'Quick test (cube, overhangs, bridge, stringing)', 'temp_tower' => 'Temperature tower'],
+    ],
+
     'finish' => ['solid' => '', 'matte' => 'matte', 'silk' => 'Silk', 'luminous' => 'glow', 'glitter' => 'glitter', 'special' => 'special', 'flex' => 'flexible', 'cf' => 'CF'],
 
     'admin' => [
-        'nav' => ['dashboard' => 'Printers and queue', 'orders' => 'Orders', 'printers' => 'Printers', 'materials' => 'Materials and colours', 'settings' => 'Prices and rules', 'agents' => 'Agents', 'credit' => 'Credit'],
+        'nav' => ['dashboard' => 'Printers and queue', 'orders' => 'Orders', 'printers' => 'Printers', 'materials' => 'Materials and colours', 'settings' => 'Prices and rules', 'agents' => 'Agents', 'credit' => 'Credit', 'tuning' => 'Material tuning'],
         'saved' => 'Saved.',
+        'test_started' => 'Test print :number is being prepared and goes to the printer queue.',
         'bad_transition' => 'This status change is not possible.',
         'refunded' => ':amount CZK returned.',
         'started' => 'The plate is clear, starting order :number.',

@@ -129,6 +129,9 @@ return [
         'filament_low' => 'Na téhle cívce už není dost materiálu. Vyberte prosím jinou barvu.',
         'price_changed' => 'Cena se mezitím změnila na :total Kč. Zkontrolujte ji prosím a potvrďte znovu.',
         'credit' => 'Chybí vám :missing Kč kreditu.',
+        'slot_kind' => 'V tomhle slotu je jiný druh materiálu, než který ladíte.',
+        'no_python' => 'Generátor testovacích objektů není na serveru k dispozici.',
+        'object' => 'Testovací objekt se nepodařilo vytvořit. :error',
     ],
 
     'credit' => [
@@ -172,11 +175,16 @@ return [
         ],
     ],
 
+    'test' => [
+        'object' => ['quick' => 'Rychlý test (kostka, převisy, most, stringing)', 'temp_tower' => 'Teplotní věž'],
+    ],
+
     'finish' => ['solid' => '', 'matte' => 'matný', 'silk' => 'Silk', 'luminous' => 'svítící', 'glitter' => 'třpytivý', 'special' => 'speciální', 'flex' => 'flexibilní', 'cf' => 'CF'],
 
     'admin' => [
-        'nav' => ['dashboard' => 'Tiskárny a fronta', 'orders' => 'Zakázky', 'printers' => 'Tiskárny', 'materials' => 'Materiály a barvy', 'settings' => 'Ceny a pravidla', 'agents' => 'Agenti', 'credit' => 'Kredit'],
+        'nav' => ['dashboard' => 'Tiskárny a fronta', 'orders' => 'Zakázky', 'printers' => 'Tiskárny', 'materials' => 'Materiály a barvy', 'settings' => 'Ceny a pravidla', 'agents' => 'Agenti', 'credit' => 'Kredit', 'tuning' => 'Ladění materiálů'],
         'saved' => 'Uloženo.',
+        'test_started' => 'Testovací tisk :number je připravený a jde do fronty tiskárny.',
         'bad_transition' => 'Tahle změna stavu není možná.',
         'refunded' => 'Vráceno :amount Kč.',
         'started' => 'Podložka je volná, spouštím zakázku :number.',

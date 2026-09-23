@@ -1,0 +1,352 @@
+{
+  "_about": "Best known starting values per printer model and filament kind. Keys: printer model substring (lower case) → kind code → finish (or '*'). Values have the shape of farm_printer_materials.overrides. Taken from Anycubic's OrcaSlicer presets for the Kobra S1 / Kobra 3 Max (0.4 mm nozzle) and the farm's own prints; a tuned row on the same printer model beats these.",
+  "kobra s1": {
+    "PLA": {
+      "*": {
+        "nozzle_temp": 215,
+        "nozzle_temp_first": 220,
+        "bed_temp": 55,
+        "filament": {
+          "fan_min_speed": [
+            "60"
+          ],
+          "fan_max_speed": [
+            "100"
+          ],
+          "overhang_fan_speed": [
+            "100"
+          ],
+          "slow_down_min_speed": [
+            "20"
+          ],
+          "filament_max_volumetric_speed": [
+            "18"
+          ],
+          "filament_retraction_length": [
+            "0.8"
+          ]
+        }
+      },
+      "silk": {
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
+        "bed_temp": 55,
+        "filament": {
+          "fan_min_speed": [
+            "50"
+          ],
+          "fan_max_speed": [
+            "90"
+          ],
+          "filament_max_volumetric_speed": [
+            "12"
+          ],
+          "filament_retraction_length": [
+            "0.8"
+          ]
+        },
+        "process": {
+          "outer_wall_speed": "80"
+        }
+      },
+      "matte": {
+        "nozzle_temp": 215,
+        "nozzle_temp_first": 220,
+        "bed_temp": 55,
+        "filament": {
+          "fan_min_speed": [
+            "60"
+          ],
+          "fan_max_speed": [
+            "100"
+          ],
+          "filament_max_volumetric_speed": [
+            "14"
+          ]
+        }
+      },
+      "luminous": {
+        "nozzle_temp": 215,
+        "nozzle_temp_first": 220,
+        "bed_temp": 55,
+        "filament": {
+          "filament_max_volumetric_speed": [
+            "12"
+          ]
+        },
+        "_note": "abrasive: hardened nozzle in the long run"
+      },
+      "glitter": {
+        "nozzle_temp": 215,
+        "nozzle_temp_first": 220,
+        "bed_temp": 55,
+        "filament": {
+          "filament_max_volumetric_speed": [
+            "12"
+          ]
+        }
+      }
+    },
+    "PLA+": {
+      "*": {
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
+        "bed_temp": 60,
+        "filament": {
+          "fan_min_speed": [
+            "50"
+          ],
+          "fan_max_speed": [
+            "100"
+          ],
+          "overhang_fan_speed": [
+            "100"
+          ],
+          "filament_max_volumetric_speed": [
+            "16"
+          ],
+          "filament_retraction_length": [
+            "0.8"
+          ]
+        }
+      },
+      "matte": {
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
+        "bed_temp": 60,
+        "filament": {
+          "fan_min_speed": [
+            "50"
+          ],
+          "fan_max_speed": [
+            "100"
+          ],
+          "filament_max_volumetric_speed": [
+            "14"
+          ]
+        }
+      }
+    },
+    "PETG": {
+      "*": {
+        "nozzle_temp": 240,
+        "nozzle_temp_first": 245,
+        "bed_temp": 75,
+        "filament": {
+          "fan_min_speed": [
+            "30"
+          ],
+          "fan_max_speed": [
+            "60"
+          ],
+          "overhang_fan_speed": [
+            "80"
+          ],
+          "slow_down_min_speed": [
+            "15"
+          ],
+          "filament_max_volumetric_speed": [
+            "10"
+          ],
+          "filament_retraction_length": [
+            "1.2"
+          ],
+          "filament_z_hop": [
+            "0.4"
+          ]
+        },
+        "process": {
+          "outer_wall_speed": "60",
+          "bridge_speed": "30"
+        }
+      }
+    },
+    "PETG-CF": {
+      "*": {
+        "nozzle_temp": 250,
+        "nozzle_temp_first": 255,
+        "bed_temp": 80,
+        "filament": {
+          "fan_min_speed": [
+            "20"
+          ],
+          "fan_max_speed": [
+            "50"
+          ],
+          "filament_max_volumetric_speed": [
+            "8"
+          ],
+          "filament_retraction_length": [
+            "1.0"
+          ]
+        }
+      }
+    },
+    "ABS": {
+      "*": {
+        "nozzle_temp": 250,
+        "nozzle_temp_first": 255,
+        "bed_temp": 100,
+        "filament": {
+          "fan_min_speed": [
+            "10"
+          ],
+          "fan_max_speed": [
+            "30"
+          ],
+          "overhang_fan_speed": [
+            "50"
+          ],
+          "close_fan_the_first_x_layers": [
+            "3"
+          ],
+          "filament_max_volumetric_speed": [
+            "12"
+          ]
+        },
+        "process": {
+          "brim_type": "outer_only",
+          "brim_width": "5"
+        }
+      }
+    },
+    "ABS+": {
+      "*": {
+        "nozzle_temp": 250,
+        "nozzle_temp_first": 255,
+        "bed_temp": 100,
+        "filament": {
+          "fan_min_speed": [
+            "10"
+          ],
+          "fan_max_speed": [
+            "30"
+          ],
+          "overhang_fan_speed": [
+            "50"
+          ],
+          "close_fan_the_first_x_layers": [
+            "3"
+          ],
+          "filament_max_volumetric_speed": [
+            "12"
+          ]
+        },
+        "process": {
+          "brim_type": "outer_only",
+          "brim_width": "5"
+        }
+      }
+    },
+    "ASA": {
+      "*": {
+        "nozzle_temp": 250,
+        "nozzle_temp_first": 255,
+        "bed_temp": 100,
+        "filament": {
+          "fan_min_speed": [
+            "10"
+          ],
+          "fan_max_speed": [
+            "30"
+          ],
+          "overhang_fan_speed": [
+            "50"
+          ],
+          "close_fan_the_first_x_layers": [
+            "3"
+          ],
+          "filament_max_volumetric_speed": [
+            "12"
+          ]
+        },
+        "process": {
+          "brim_type": "outer_only",
+          "brim_width": "5"
+        }
+      }
+    },
+    "TPU": {
+      "*": {
+        "nozzle_temp": 225,
+        "nozzle_temp_first": 225,
+        "bed_temp": 50,
+        "filament": {
+          "fan_min_speed": [
+            "30"
+          ],
+          "fan_max_speed": [
+            "60"
+          ],
+          "filament_max_volumetric_speed": [
+            "3.5"
+          ],
+          "filament_retraction_length": [
+            "1.5"
+          ],
+          "filament_retraction_speed": [
+            "20"
+          ]
+        },
+        "process": {
+          "outer_wall_speed": "25",
+          "inner_wall_speed": "30",
+          "sparse_infill_speed": "30",
+          "top_surface_speed": "25"
+        }
+      }
+    },
+    "PC": {
+      "*": {
+        "nozzle_temp": 270,
+        "nozzle_temp_first": 275,
+        "bed_temp": 100,
+        "filament": {
+          "fan_min_speed": [
+            "0"
+          ],
+          "fan_max_speed": [
+            "20"
+          ],
+          "filament_max_volumetric_speed": [
+            "8"
+          ]
+        },
+        "process": {
+          "brim_type": "outer_only",
+          "brim_width": "5"
+        }
+      }
+    }
+  },
+  "kobra 3 max": {
+    "_inherits": "kobra s1",
+    "PLA": {
+      "*": {
+        "process": {
+          "outer_wall_speed": "120"
+        }
+      }
+    },
+    "PLA+": {
+      "*": {
+        "process": {
+          "outer_wall_speed": "120"
+        }
+      }
+    },
+    "PETG": {
+      "*": {
+        "filament": {
+          "filament_z_hop": [
+            "0.4"
+          ]
+        },
+        "process": {
+          "outer_wall_speed": "60",
+          "bridge_speed": "30"
+        }
+      }
+    }
+  }
+}

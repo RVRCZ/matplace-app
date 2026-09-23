@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\ProfileLibrary;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
 use App\Models\CreditTransaction;
@@ -83,6 +84,7 @@ class FarmCatalogController extends Controller
                 'farm_color_id' => $s['color'] ?? null, 'remaining_g' => (float) ($s['remaining_g'] ?? 0), 'enabled' => ! empty($s['enabled']) && ! empty($s['color']),
             ]);
         }
+        app(ProfileLibrary::class)->sync();
 
         return redirect()->route('admin.farm.printers')->with('status', __('farm.admin.saved'));
     }
@@ -136,6 +138,8 @@ class FarmCatalogController extends Controller
         $data['filament_overrides'] = ! empty($data['filament_overrides']) ? json_decode($data['filament_overrides'], true) : null;
         $data['enabled'] = $request->boolean('enabled');
         ($material ?? new FarmMaterial)->fill($data)->save();
+        // a new kind (or a re-enabled one) gets its tuning row on every machine with the best known starting values
+        app(ProfileLibrary::class)->sync();
 
         return back()->with('status', __('farm.admin.saved'));
     }

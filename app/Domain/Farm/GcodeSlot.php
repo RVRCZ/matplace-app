@@ -31,7 +31,8 @@ final class GcodeSlot
             // the start macro heats to the first-layer values, then the slicer sets the printing values per layer
             $out = (string) preg_replace_callback('/^G9111 bedTemp=(\d+) extruderTemp=(\d+)/m',
                 fn ($m) => 'G9111 bedTemp='.($bed ?: $m[1]).' extruderTemp='.$first, $out, 1);
-            $out = (string) preg_replace('/^(M10[49]) S(?!0\b)\d+(?=\s*(?:;|$))/m', '$1 S'.(int) $temps['nozzle'], $out);
+            // every nozzle temperature except the per-floor lines of a temperature tower (TowerGcode)
+            $out = (string) preg_replace('/^(M10[49]) S(?!0\b)\d+(?=\s*(?:;(?! matplace tower)|$))/m', '$1 S'.(int) $temps['nozzle'], $out);
             if ($bed) {
                 $out = (string) preg_replace('/^(M1[49]0) S(?!0\b)\d+(?=\s*(?:;|$))/m', '$1 S'.$bed, $out);
             }

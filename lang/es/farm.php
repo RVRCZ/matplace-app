@@ -129,6 +129,9 @@ return [
         'filament_low' => 'No queda suficiente material en esta bobina. Elija otro color.',
         'price_changed' => 'Entretanto el precio ha cambiado a :total CZK. Revíselo y confirme de nuevo.',
         'credit' => 'Le faltan :missing CZK de crédito.',
+        'slot_kind' => 'Esta ranura contiene otro tipo de material que el que se está ajustando.',
+        'no_python' => 'El generador de objetos de prueba no está disponible en el servidor.',
+        'object' => 'No se pudo crear el objeto de prueba. :error',
     ],
 
     'credit' => [
@@ -172,11 +175,16 @@ return [
         ],
     ],
 
+    'test' => [
+        'object' => ['quick' => 'Prueba rápida (cubo, voladizos, puente, hilos)', 'temp_tower' => 'Torre de temperatura'],
+    ],
+
     'finish' => ['solid' => '', 'matte' => 'mate', 'silk' => 'Silk', 'luminous' => 'luminoso', 'glitter' => 'brillante', 'special' => 'especial', 'flex' => 'flexible', 'cf' => 'CF'],
 
     'admin' => [
-        'nav' => ['dashboard' => 'Impresoras y cola', 'orders' => 'Pedidos', 'printers' => 'Impresoras', 'materials' => 'Materiales y colores', 'settings' => 'Precios y reglas', 'agents' => 'Agentes', 'credit' => 'Crédito'],
+        'nav' => ['dashboard' => 'Impresoras y cola', 'orders' => 'Pedidos', 'printers' => 'Impresoras', 'materials' => 'Materiales y colores', 'settings' => 'Precios y reglas', 'agents' => 'Agentes', 'credit' => 'Crédito', 'tuning' => 'Ajuste de materiales'],
         'saved' => 'Guardado.',
+        'test_started' => 'La impresión de prueba :number se está preparando y pasa a la cola de la impresora.',
         'bad_transition' => 'Este cambio de estado no es posible.',
         'refunded' => 'Devueltos :amount CZK.',
         'started' => 'La base está libre, inicio el pedido :number.',

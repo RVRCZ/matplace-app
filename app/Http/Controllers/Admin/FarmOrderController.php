@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\GcodeSlot;
+use App\Domain\Farm\PrintProfile;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
@@ -59,7 +60,7 @@ class FarmOrderController extends Controller
 
     public function show(FarmOrder $order): View
     {
-        $order->load(['user', 'modelFile', 'color', 'printer', 'slot', 'material', 'events', 'printJobs']);
+        $order->load(['user', 'modelFile', 'color', 'printer', 'slot', 'material', 'events', 'printJobs', 'printerMaterial']);
 
         return view('admin.farm.order', [
             'order' => $order,
@@ -74,7 +75,7 @@ class FarmOrderController extends Controller
         $path = $order->absoluteGcodePath();
         abort_unless($path && is_file($path), 404);
         // the operator sends this file by hand: it must already select the customer's slot
-        $path = GcodeSlot::fileFor($path, (int) ($order->slot?->slot ?? 0), GcodeSlot::tempsOf($order->color ?? $order->material));
+        $path = GcodeSlot::fileFor($path, (int) ($order->slot?->slot ?? 0), PrintProfile::tempsFor($order));
 
         return response()->download($path, 'matplace-'.($order->number ?: $order->token).'.gcode', ['Content-Type' => 'text/x.gcode']);
     }

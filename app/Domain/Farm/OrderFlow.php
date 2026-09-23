@@ -2,6 +2,8 @@
 
 namespace App\Domain\Farm;
 
+use App\Jobs\BuildFarmTimelapse;
+use App\Jobs\PrepareFarmOrder;
 use App\Mail\FarmAdminAlert;
 use App\Mail\FarmOrderStatus;
 use App\Models\FarmCommand;
@@ -71,12 +73,13 @@ final class OrderFlow
             $this->move($order, FarmOrder::STATUS_PAID, 'user', $order->user_id);
         });
 
-        if ($offer['color']->sliceOverrides() || $offer['printer']->id !== $slicedFor) {
-            // this spool prints best with its own slicer settings, or sits in another machine than the order was sliced
-            // for: slice again, the paid order waits meanwhile (the price stays as quoted)
+        $wanted = PrintProfile::for($offer['printer'], $offer['color']->material, $offer['color'])->sliceFingerprint();
+        if ($wanted !== ($order->slice_params['profile_fingerprint'] ?? null) || $offer['printer']->id !== $slicedFor) {
+            // this spool (or this kind on this machine) prints with other slicer settings than the order was sliced with,
+            // or sits in another machine: slice again, the paid order waits meanwhile (the price stays as quoted)
             $order->forceFill(['status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'slicing'])->save();
-            $order->events()->create(['from' => FarmOrder::STATUS_PAID, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'system', 'note' => $offer['printer']->id !== $slicedFor ? 'reslice for '.$offer['printer']->key : 'reslice for the spool settings']);
-            \App\Jobs\PrepareFarmOrder::dispatch($order->id);
+            $order->events()->create(['from' => FarmOrder::STATUS_PAID, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'system', 'note' => $offer['printer']->id !== $slicedFor ? 'reslice for '.$offer['printer']->key : 'reslice for the tuned profile']);
+            PrepareFarmOrder::dispatch($order->id);
         } elseif ($this->settings->get('require_approval')) {
             $this->alertAdmin(__('farm.admin.mail.approve', ['number' => $order->number]), $order);
         } else {
@@ -97,7 +100,7 @@ final class OrderFlow
     /** @throws \DomainException when the move is not allowed from the current status */
     public function move(FarmOrder $order, string $to, string $actor, ?int $actorId = null, ?string $note = null): FarmOrder
     {
-        if (! $order->canMoveTo($to)) {
+        if (! $order->canMoveTo($to) || ($order->status === FarmOrder::STATUS_SLICED && $to === FarmOrder::STATUS_QUEUED && ! $order->isTest())) {
             throw new \DomainException("Farm order {$order->id}: {$order->status} → {$to} is not allowed.");
         }
         $from = $order->status;
@@ -162,7 +165,7 @@ final class OrderFlow
     private function onDone(FarmOrder $order): void
     {
         $this->wallet->capture($order);
-        \App\Jobs\BuildFarmTimelapse::dispatch($order->id);
+        BuildFarmTimelapse::dispatch($order->id);
         if ($slot = $order->slot) {
             // what really left the spool when we know it, else the estimate
             $used = (float) ($order->actual_grams ?? $order->est_grams ?? 0);

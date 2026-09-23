@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Farm\ProfileLibrary;
 use App\Models\FarmColor;
 use App\Models\FarmMaterial;
 use App\Models\FarmPrinter;
@@ -105,5 +106,8 @@ class FarmSeeder extends Seeder
                 $max->slots()->create(['slot' => $i, 'farm_color_id' => null, 'remaining_g' => 0, 'enabled' => false]);
             }
         }
+
+        // every enabled printer × kind gets its tuning row with the best known starting values
+        app(ProfileLibrary::class)->sync();
     }
 }

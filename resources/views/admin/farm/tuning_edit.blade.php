@@ -1,0 +1,135 @@
+@extends('layouts.app', ['title' => $row->label().' · '.$row->printer->name.' · admin', 'noindex' => true])
+
+@php
+    $json = fn ($v) => $v ? json_encode($v, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '';
+    $in = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal';
+    $lb = 'block text-xs font-semibold text-slate-600';
+    $o = (array) $row->overrides;
+    $m = $row->material;
+    $label = ['untested' => 'nevyzkoušeno', 'testing' => 'testuje se', 'tuned' => 'vyladěno'];
+@endphp
+
+@section('content')
+@include('admin.farm.nav')
+
+<div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-xl font-extrabold">{{ $row->label() }} <span class="text-base font-normal text-slate-500">na {{ $row->printer->name }}</span></h1>
+    <a href="{{ route('admin.farm.tuning') }}" class="text-sm underline">← {{ __('farm.admin.nav.tuning') }}</a>
+</div>
+@if(session('error'))<p class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{{ session('error') }}</p>@endif
+
+<div class="mt-4 grid gap-4 lg:grid-cols-[1.1fr_1fr]">
+    <div class="space-y-4">
+        <form method="post" action="{{ route('admin.farm.tuning.save', $row) }}" class="rounded-2xl border border-slate-200 bg-white p-4">
+            @csrf
+            <h2 class="font-bold">Co tenhle stroj k profilu druhu přidává <span class="text-xs font-normal text-slate-500">verze {{ $row->version }} · {{ $row->source }}</span></h2>
+            <p class="mt-1 text-xs text-slate-500">Druh {{ $m->label() }} sám říká: tryska {{ $m->nozzle_temp ?? '—' }} / {{ $m->nozzle_temp_first ?? '—' }} °C, podložka {{ $m->bed_temp ?? '—' }} °C, profil {{ $m->filament_profile }}. Prázdné pole = platí hodnota druhu.</p>
+            <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                <label class="{{ $lb }}">Tryska (°C)<input type="number" name="nozzle_temp" value="{{ old('nozzle_temp', $o['nozzle_temp'] ?? '') }}" placeholder="{{ $m->nozzle_temp }}" class="{{ $in }}"></label>
+                <label class="{{ $lb }}">Tryska 1. vrstva (°C)<input type="number" name="nozzle_temp_first" value="{{ old('nozzle_temp_first', $o['nozzle_temp_first'] ?? '') }}" placeholder="{{ $m->nozzle_temp_first }}" class="{{ $in }}"></label>
+                <label class="{{ $lb }}">Podložka (°C)<input type="number" name="bed_temp" value="{{ old('bed_temp', $o['bed_temp'] ?? '') }}" placeholder="{{ $m->bed_temp }}" class="{{ $in }}"></label>
+            </div>
+            <div class="mt-3 grid gap-3 lg:grid-cols-2">
+                <label class="{{ $lb }}">Přepisy filamentu (JSON, hodnoty jako pole: {"fan_max_speed": ["100"]})<textarea name="filament" rows="7" class="{{ $in }} font-mono text-xs">{{ old('filament', $json($o['filament'] ?? null)) }}</textarea></label>
+                <label class="{{ $lb }}">Přepisy procesu (JSON, hodnoty jako text: {"outer_wall_speed": "80"})<textarea name="process" rows="7" class="{{ $in }} font-mono text-xs">{{ old('process', $json($o['process'] ?? null)) }}</textarea></label>
+            </div>
+            <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                <label class="{{ $lb }}">Stav
+                    <select name="status" class="{{ $in }}">@foreach($label as $k => $v)<option value="{{ $k }}" @selected(old('status', $row->status) === $k)>{{ $v }}</option>@endforeach</select>
+                </label>
+                <label class="{{ $lb }}">Hodnocení (1–5)<input type="number" name="score" min="1" max="5" value="{{ old('score', $row->score) }}" class="{{ $in }}"></label>
+                <label class="{{ $lb }}">Poznámka ke změně<input name="change_note" maxlength="300" class="{{ $in }}"></label>
+            </div>
+            <label class="{{ $lb }} mt-3">Poznámky (co testy ukázaly)<textarea name="notes" rows="3" maxlength="2000" class="{{ $in }}">{{ old('notes', $row->notes) }}</textarea></label>
+            <button class="btn-primary mt-3 text-sm">Uložit jako novou verzi</button>
+        </form>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+            <h2 class="font-bold">Výsledné nastavení tisku <span class="text-xs font-normal text-slate-500">vrstvy: {{ implode(' → ', $effective->layers) }}</span></h2>
+            <p class="mt-1 text-xs text-slate-600">Teploty do G-code: tryska {{ $effective->temps['nozzle'] ?? '—' }} / {{ $effective->temps['nozzle_first'] ?? '—' }} °C, podložka {{ $effective->temps['bed'] ?? '—' }} °C</p>
+            <details class="mt-2 text-xs"><summary class="cursor-pointer">filament ({{ count($effective->filament) }} klíčů) · proces ({{ count($effective->process) }} klíčů)</summary>
+                <pre class="mt-2 overflow-x-auto whitespace-pre-wrap">{{ $json(['filament_profile' => $effective->filamentProfile, 'filament' => $effective->filament, 'process' => $effective->process]) }}</pre>
+            </details>
+        </section>
+
+        @if($row->history)
+            <details class="rounded-2xl border border-slate-200 bg-white p-4 text-xs">
+                <summary class="cursor-pointer text-sm font-bold">Historie verzí ({{ count($row->history) }})</summary>
+                <ul class="mt-2 space-y-2">
+                    @foreach(array_reverse($row->history) as $h)
+                        <li><strong>v{{ $h['version'] }}</strong> · {{ $h['source'] }} · {{ $h['at'] }}@if($h['note'] ?? null) · {{ $h['note'] }}@endif<pre class="mt-1 overflow-x-auto whitespace-pre-wrap text-slate-600">{{ $json($h['overrides']) ?: '(nic)' }}</pre></li>
+                    @endforeach
+                </ul>
+            </details>
+        @endif
+    </div>
+
+    <div class="space-y-4">
+        <form method="post" action="{{ route('admin.farm.tuning.test', $row) }}" class="rounded-2xl border border-action bg-white p-4">
+            @csrf
+            <h2 class="font-bold">Vytisknout test</h2>
+            @if($slots->isEmpty())
+                <p class="mt-1 text-sm text-slate-600">V {{ $row->printer->name }} teď není založená žádná cívka tohoto druhu. Založte ji ve slotu tiskárny a vraťte se sem.</p>
+            @elseif(! $generator)
+                <p class="mt-1 text-sm text-amber-900">Generátor testovacích objektů není k dispozici.</p>
+            @else
+                <p class="mt-1 text-xs text-slate-500">Tiskne se s výsledným nastavením výše; pole níže ho pro tenhle test přepíší. Zakázka jde rovnou do fronty tiskárny (podložka musí být potvrzená jako volná).</p>
+                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label class="{{ $lb }}">Cívka (slot)
+                        <select name="slot" class="{{ $in }}">@foreach($slots as $s)<option value="{{ $s->id }}">{{ $s->slot + 1 }}: {{ $s->color->name }} ({{ round($s->remaining_g) }} g)</option>@endforeach</select>
+                    </label>
+                    <label class="{{ $lb }}">Objekt
+                        <select name="object" id="test-object" class="{{ $in }}">@foreach($objects as $k => $spec)<option value="{{ $k }}" @selected(old('object') === $k)>{{ __('farm.test.object.'.$k) }} · ~{{ $spec['minutes'] }} min</option>@endforeach</select>
+                    </label>
+                    <label class="{{ $lb }}">Tryska (°C)<input type="number" name="nozzle_temp" value="{{ old('nozzle_temp') }}" placeholder="{{ $effective->temps['nozzle'] ?? '' }}" class="{{ $in }}"></label>
+                    <label class="{{ $lb }}">Podložka (°C)<input type="number" name="bed_temp" value="{{ old('bed_temp') }}" placeholder="{{ $effective->temps['bed'] ?? '' }}" class="{{ $in }}"></label>
+                </div>
+                <div id="tower-fields" class="mt-3 grid gap-3 sm:grid-cols-3">
+                    <label class="{{ $lb }}">Pater<input type="number" name="floors" min="3" max="10" value="{{ old('floors', 5) }}" class="{{ $in }}"></label>
+                    <label class="{{ $lb }}">Spodní patro (°C)<input type="number" name="start" value="{{ old('start') }}" placeholder="auto" class="{{ $in }}"></label>
+                    <label class="{{ $lb }}">Krok (°C)<input type="number" name="step" value="{{ old('step', -5) }}" class="{{ $in }}"></label>
+                    <p class="text-xs text-slate-500 sm:col-span-3">Auto: střed = tryska výše, patra jdou od nejteplejšího dole. Každé patro má 10 mm, most a převis 45°.</p>
+                </div>
+                <div class="mt-3 grid gap-3 lg:grid-cols-2">
+                    <label class="{{ $lb }}">Filament navíc (JSON)<textarea name="filament" rows="3" class="{{ $in }} font-mono text-xs">{{ old('filament') }}</textarea></label>
+                    <label class="{{ $lb }}">Proces navíc (JSON)<textarea name="process" rows="3" class="{{ $in }} font-mono text-xs">{{ old('process') }}</textarea></label>
+                </div>
+                <button class="btn-primary mt-3 w-full text-sm">Vytisknout test</button>
+                <script>
+                    (function () { const s = document.getElementById('test-object'), t = document.getElementById('tower-fields'); const f = () => { t.style.display = s.value === 'temp_tower' ? '' : 'none'; }; s.addEventListener('change', f); f(); })();
+                </script>
+            @endif
+        </form>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+            <h2 class="font-bold">Testy</h2>
+            @forelse($tests as $t)
+                @php $c = (array) ($t->test_params['candidate'] ?? []); $temps = $t->test_params['temps'] ?? null; @endphp
+                <div class="mt-2 rounded-xl border border-slate-200 p-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <a class="font-semibold underline" href="{{ route('admin.farm.orders.show', $t) }}">{{ $t->number }}</a>
+                        <span class="text-xs">{{ __('farm.test.object.'.($t->test_params['object'] ?? 'quick')) }} · {{ __('farm.status.'.$t->status) }} · {{ $t->created_at->format('j. n. H:i') }}</span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-600">tryska {{ $c['nozzle_temp'] ?? '—' }} °C · podložka {{ $c['bed_temp'] ?? '—' }} °C · verze řádku {{ $t->test_params['row_version'] ?? '?' }}@if($t->quality_rating) · {{ str_repeat('★', $t->quality_rating) }}@endif</p>
+                    @if($temps)<p class="mt-1 text-xs text-slate-600">patra zdola: {{ implode(' · ', array_map(fn ($i, $v) => ($i + 1).': '.$v.' °C', array_keys($temps), $temps)) }}</p>@endif
+                    @if(in_array($t->status, ['done', 'handed_over']))
+                        <form method="post" action="{{ route('admin.farm.tuning.adopt', [$row, $t]) }}" class="mt-2 flex flex-wrap items-end gap-2 text-xs">
+                            @csrf
+                            @if($temps)
+                                <label class="{{ $lb }}">Nejlepší patro
+                                    <select name="nozzle_temp" class="rounded-lg border border-slate-300 px-2 py-1">@foreach($temps as $i => $v)<option value="{{ $v }}">{{ $i + 1 }}: {{ $v }} °C</option>@endforeach</select>
+                                </label>
+                            @endif
+                            <label class="{{ $lb }}">Hodnocení<select name="score" class="rounded-lg border border-slate-300 px-2 py-1"><option value="">—</option>@foreach([5, 4, 3, 2, 1] as $q)<option value="{{ $q }}">{{ $q }}</option>@endforeach</select></label>
+                            <input name="note" maxlength="300" placeholder="co test ukázal" class="rounded-lg border border-slate-300 px-2 py-1">
+                            <button class="btn-quiet !min-h-0 !py-1 text-xs">Převzít nastavení testu → vyladěno</button>
+                        </form>
+                    @endif
+                </div>
+            @empty
+                <p class="mt-1 text-slate-500">Zatím žádný test.</p>
+            @endforelse
+        </section>
+    </div>
+</div>
+@endsection
