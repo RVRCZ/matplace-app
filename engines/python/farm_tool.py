@@ -86,6 +86,29 @@ def candidates(m, limit=24):
     return uniq
 
 
+def footprint(vertices, down):
+    """Area of the convex hull of the model's shadow on the plate (monotone chain, no scipy needed)."""
+    import numpy as np
+    a = np.cross(down, [1.0, 0.0, 0.0]) if abs(down[0]) < 0.9 else np.cross(down, [0.0, 1.0, 0.0])
+    a /= np.linalg.norm(a)
+    b = np.cross(down, a)
+    p = np.unique(np.round(vertices @ np.stack([a, b], 1), 3), axis=0)
+    if len(p) < 3:
+        return 0.0
+    def half(pts):
+        h = []
+        for q in pts:
+            while len(h) >= 2 and (h[-1][0] - h[-2][0]) * (q[1] - h[-2][1]) - (h[-1][1] - h[-2][1]) * (q[0] - h[-2][0]) <= 0:
+                h.pop()
+            h.append(q)
+        return h
+    order = np.lexsort((p[:, 1], p[:, 0]))
+    pts = [tuple(x) for x in p[order]]
+    hull = half(pts)[:-1] + half(pts[::-1])[:-1]
+    x, y = np.array(hull).T
+    return float(abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))) / 2)
+
+
 def rate(m, down, cos_limit, bed):
     """Lower is better. Areas are relative to the whole surface so small and large models score alike."""
     import numpy as np
@@ -100,7 +123,10 @@ def rate(m, down, cos_limit, bed):
     base = float(areas[on_bed].sum())
     overhang = float(areas[(facing > cos_limit) & ~on_bed].sum())
     diag = float(np.linalg.norm(m.extents)) or 1.0
-    score = overhang / total - 0.5 * min(base / total, 0.3) + 0.15 * height / diag
+    # how much of the footprint really touches the plate: a part standing on a small foot with supports beneath the
+    # rest prints badly and may topple (a cartridge clip, 23 Sep 2026, stood on 69 mm2 of a 1600 mm2 footprint)
+    contact = base / (footprint(m.vertices, down) or 1.0)
+    score = overhang / total - 0.5 * min(base / total, 0.3) + 0.15 * height / diag - 0.3 * min(contact, 0.5)
     if base / total < 0.002:
         score += 0.2                                         # nothing flat to stand on
     if height > bed[2]:
