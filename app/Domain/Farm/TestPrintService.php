@@ -107,7 +107,7 @@ final class TestPrintService
         $abs = Storage::disk(ModelFile::DISK)->path($rel);
         File::ensureDirectoryExists(dirname($abs));
         try {
-            $r = $this->python->runScript('calib_tool.py', [$object, $abs, json_encode($toolParams)], 60);
+            $r = $this->python->runScript('calib_tool.py', [$object, $abs, json_encode((object) $toolParams)], 60);
         } catch (EngineException $e) {
             throw new FarmRefusal('object', ['error' => $e->getMessage()]);
         }

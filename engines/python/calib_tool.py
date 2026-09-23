@@ -104,6 +104,8 @@ def main(argv):
         import manifold3d as M
         import numpy as np
         p = json.loads(argv[3] if len(argv) > 3 and argv[3] else "{}")
+        if isinstance(p, list) and not p:
+            p = {}                                   # PHP encodes an empty parameter array as []
         builders = {"quick": quick, "temp_tower": temp_tower}
         if kind not in builders or not isinstance(p, dict):
             raise ValueError("unknown_kind")

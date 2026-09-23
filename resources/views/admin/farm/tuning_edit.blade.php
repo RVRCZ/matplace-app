@@ -16,7 +16,6 @@
     <h1 class="text-xl font-extrabold">{{ $row->label() }} <span class="text-base font-normal text-slate-500">na {{ $row->printer->name }}</span></h1>
     <a href="{{ route('admin.farm.tuning') }}" class="text-sm underline">← {{ __('farm.admin.nav.tuning') }}</a>
 </div>
-@if(session('error'))<p class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{{ session('error') }}</p>@endif
 
 <div class="mt-4 grid gap-4 lg:grid-cols-[1.1fr_1fr]">
     <div class="space-y-4">
@@ -81,8 +80,8 @@
                     <label class="{{ $lb }}">Objekt
                         <select name="object" id="test-object" class="{{ $in }}">@foreach($objects as $k => $spec)<option value="{{ $k }}" @selected(old('object') === $k)>{{ __('farm.test.object.'.$k) }} · ~{{ $spec['minutes'] }} min</option>@endforeach</select>
                     </label>
-                    <label class="{{ $lb }}">Tryska (°C)<input type="number" name="nozzle_temp" value="{{ old('nozzle_temp') }}" placeholder="{{ $effective->temps['nozzle'] ?? '' }}" class="{{ $in }}"></label>
-                    <label class="{{ $lb }}">Podložka (°C)<input type="number" name="bed_temp" value="{{ old('bed_temp') }}" placeholder="{{ $effective->temps['bed'] ?? '' }}" class="{{ $in }}"></label>
+                    <label class="{{ $lb }}">Tryska (°C)<input type="number" name="t_nozzle_temp" value="{{ old('t_nozzle_temp') }}" placeholder="{{ $effective->temps['nozzle'] ?? '' }}" class="{{ $in }}"></label>
+                    <label class="{{ $lb }}">Podložka (°C)<input type="number" name="t_bed_temp" value="{{ old('t_bed_temp') }}" placeholder="{{ $effective->temps['bed'] ?? '' }}" class="{{ $in }}"></label>
                 </div>
                 <div id="tower-fields" class="mt-3 grid gap-3 sm:grid-cols-3">
                     <label class="{{ $lb }}">Pater<input type="number" name="floors" min="3" max="10" value="{{ old('floors', 5) }}" class="{{ $in }}"></label>
@@ -91,8 +90,8 @@
                     <p class="text-xs text-slate-500 sm:col-span-3">Auto: střed = tryska výše, patra jdou od nejteplejšího dole. Každé patro má 10 mm, most a převis 45°.</p>
                 </div>
                 <div class="mt-3 grid gap-3 lg:grid-cols-2">
-                    <label class="{{ $lb }}">Filament navíc (JSON)<textarea name="filament" rows="3" class="{{ $in }} font-mono text-xs">{{ old('filament') }}</textarea></label>
-                    <label class="{{ $lb }}">Proces navíc (JSON)<textarea name="process" rows="3" class="{{ $in }} font-mono text-xs">{{ old('process') }}</textarea></label>
+                    <label class="{{ $lb }}">Filament navíc (JSON)<textarea name="t_filament" rows="3" class="{{ $in }} font-mono text-xs">{{ old('t_filament') }}</textarea></label>
+                    <label class="{{ $lb }}">Proces navíc (JSON)<textarea name="t_process" rows="3" class="{{ $in }} font-mono text-xs">{{ old('t_process') }}</textarea></label>
                 </div>
                 <button class="btn-primary mt-3 w-full text-sm">Vytisknout test</button>
                 <script>

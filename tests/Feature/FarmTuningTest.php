@@ -172,13 +172,15 @@ class FarmTuningTest extends TestCase
         $this->actingAs($this->admin)->get('/admin/farm/tuning')->assertOk()->assertSee($row->label());
         $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk();
 
-        // a wrong slot (another kind) is refused
+        // the quick object takes no parameters at all (PHP sends [] for them); a wrong slot (another kind) is refused
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/test", ['slot' => $slot->id, 'object' => 'quick'])->assertRedirect()->assertSessionMissing('error');
+        $this->assertSame('quick', FarmOrder::where('kind', FarmOrder::KIND_TEST)->latest('id')->firstOrFail()->test_params['object']);
         $petg = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PETG'))->firstOrFail();
         $s1->slots()->where('slot', 0)->update(['farm_color_id' => $petg->id, 'remaining_g' => 500, 'enabled' => true]);
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/test", ['slot' => $s1->slots()->where('slot', 0)->value('id'), 'object' => 'quick'])->assertRedirect()->assertSessionHas('error');
 
         // temperature tower on the right spool, sync queue: built, sliced, queued
-        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/test", ['slot' => $slot->id, 'object' => 'temp_tower', 'floors' => 5, 'step' => -5, 'nozzle_temp' => 220])->assertRedirect()->assertSessionMissing('error');
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/test", ['slot' => $slot->id, 'object' => 'temp_tower', 'floors' => 5, 'step' => -5, 't_nozzle_temp' => 220])->assertRedirect()->assertSessionMissing('error');
         $order = FarmOrder::where('kind', FarmOrder::KIND_TEST)->latest('id')->firstOrFail();
         $this->assertSame(FarmOrder::STATUS_QUEUED, $order->status);
         $this->assertStringStartsWith('T', $order->number);

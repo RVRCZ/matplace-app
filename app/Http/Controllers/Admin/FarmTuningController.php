@@ -105,10 +105,11 @@ class FarmTuningController extends Controller
         $data = $request->validate([
             'slot' => ['required', 'integer', 'exists:farm_printer_slots,id'],
             'object' => ['required', Rule::in(array_keys(TestPrintService::OBJECTS))],
-            'nozzle_temp' => ['nullable', 'integer', 'min:150', 'max:350'],
-            'bed_temp' => ['nullable', 'integer', 'min:0', 'max:150'],
-            'process' => ['nullable', 'json'],
-            'filament' => ['nullable', 'json'],
+            // t_ prefix: the row's own form on the same page uses the plain names, old() must not mix them up
+            't_nozzle_temp' => ['nullable', 'integer', 'min:150', 'max:350'],
+            't_bed_temp' => ['nullable', 'integer', 'min:0', 'max:150'],
+            't_process' => ['nullable', 'json'],
+            't_filament' => ['nullable', 'json'],
             'floors' => ['nullable', 'integer', 'min:3', 'max:10'],
             'start' => ['nullable', 'integer', 'min:150', 'max:350'],
             'step' => ['nullable', 'integer', 'min:-20', 'max:20', 'not_in:0'],
@@ -116,9 +117,9 @@ class FarmTuningController extends Controller
         $slot = FarmPrinterSlot::findOrFail($data['slot']);
         abort_unless($slot->farm_printer_id === $row->farm_printer_id, 404);
         $candidate = [
-            'nozzle_temp' => $data['nozzle_temp'] ?? null, 'bed_temp' => $data['bed_temp'] ?? null,
-            'process' => ! empty($data['process']) ? json_decode($data['process'], true) : [],
-            'filament' => ! empty($data['filament']) ? json_decode($data['filament'], true) : [],
+            'nozzle_temp' => $data['t_nozzle_temp'] ?? null, 'bed_temp' => $data['t_bed_temp'] ?? null,
+            'process' => ! empty($data['t_process']) ? json_decode($data['t_process'], true) : [],
+            'filament' => ! empty($data['t_filament']) ? json_decode($data['t_filament'], true) : [],
         ];
         try {
             $order = $this->tests->create($row, $slot, $data['object'], $candidate, array_intersect_key($data, array_flip(['floors', 'start', 'step'])), $request->user());
