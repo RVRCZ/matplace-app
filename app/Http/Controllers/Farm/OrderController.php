@@ -179,6 +179,15 @@ class OrderController extends Controller
         return response()->file(Storage::disk(config('farm.disk'))->path($job->snapshot_path), ['Content-Type' => 'image/jpeg', 'Cache-Control' => 'private, no-store']);
     }
 
+    /** Time-lapse of the customer's own finished print. */
+    public function timelapse(Request $request, FarmOrder $order): BinaryFileResponse
+    {
+        $this->authorizeOrder($request, $order);
+        abort_unless($order->timelapse_path && Storage::disk(config('farm.disk'))->exists($order->timelapse_path), 404);
+
+        return response()->file(Storage::disk(config('farm.disk'))->path($order->timelapse_path), ['Content-Type' => 'video/mp4', 'Cache-Control' => 'private, max-age=3600']);
+    }
+
     public function terms(): View
     {
         return view('farm.terms', ['version' => $this->settings->get('terms_version')]);
@@ -228,6 +237,7 @@ class OrderController extends Controller
             'balance' => $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user),
             'model_url' => $order->print_stl_path || $order->modelFile?->stl_path ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
+            'timelapse_url' => $order->timelapse_path ? route('farm.orders.timelapse', $order) : null,
             'print' => $job ? [
                 'status' => $job->status, 'progress' => $job->progress,
                 'snapshot_url' => $job->snapshot_path ? route('farm.orders.snapshot', $order).'?t='.($job->snapshot_at?->timestamp ?? 0) : null,

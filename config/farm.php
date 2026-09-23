@@ -8,6 +8,8 @@
 return [
     'enabled' => (bool) env('FARM_ENABLED', true),
 
+    'ffmpeg' => env('FFMPEG_BIN', 'ffmpeg'),   // time-lapse of finished prints; missing = no video, frames stay
+
     // private disk for print files, G-code and camera snapshots (config/filesystems.php)
     'disk' => 'farm',
 

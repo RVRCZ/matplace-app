@@ -160,6 +160,7 @@ final class OrderFlow
     private function onDone(FarmOrder $order): void
     {
         $this->wallet->capture($order);
+        \App\Jobs\BuildFarmTimelapse::dispatch($order->id);
         if ($slot = $order->slot) {
             // what really left the spool when we know it, else the estimate
             $used = (float) ($order->actual_grams ?? $order->est_grams ?? 0);

@@ -74,6 +74,7 @@ return [
         'cancel_confirm' => 'Really cancel the order? Your credit comes back.',
         'number' => 'Order',
         'progress' => 'Print progress',
+        'timelapse' => 'Time-lapse of your print',
         'camera' => 'Latest picture from the printer',
         'queue_ahead' => 'Ahead of you: :n',
         'queue_start' => 'Estimated start: in :time',

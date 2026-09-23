@@ -18,9 +18,16 @@
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <canvas id="admin-farm-viewer" data-model="{{ route('farm.orders.model', $order) }}" class="block h-[45vh] w-full touch-none"></canvas>
         </div>
+        @if($order->timelapse_path)
+            <figure class="rounded-2xl border border-slate-200 bg-white p-3">
+                <video src="{{ route('admin.farm.orders.timelapse', $order) }}" controls muted playsinline loop class="w-full rounded-xl"></video>
+                <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.timelapse') }}</figcaption>
+            </figure>
+        @endif
         @if($job && $job->snapshot_path)
             <figure class="rounded-2xl border border-slate-200 bg-white p-3">
-                <img src="{{ route('admin.farm.orders.snapshot', $order) }}?t={{ $job->snapshot_at?->timestamp }}" alt="{{ __('farm.order.camera') }}" class="w-full rounded-xl">
+                <img src="{{ route('admin.farm.orders.snapshot', $order) }}?t={{ $job->snapshot_at?->timestamp }}" alt="{{ __('farm.order.camera') }}" class="w-full rounded-xl" id="admin-snapshot">
+                <script>if (@json($order->status === 'printing')) setInterval(() => { const i = document.getElementById('admin-snapshot'); i.src = i.src.split('?')[0] + '?t=' + Date.now(); }, 15000);</script>
                 <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.camera') }} · {{ $job->snapshot_at?->format('j. n. H:i:s') }}</figcaption>
             </figure>
         @endif

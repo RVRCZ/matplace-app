@@ -5,7 +5,7 @@ server: https://beta.matplace.com        # matplace address, https only
 token: mpa_PASTE_THE_TOKEN_FROM_ADMIN    # /admin/farm/agents -> "Vytvořit a zobrazit token" (or env FARM_AGENT_TOKEN)
 
 poll_seconds: 5          # how often the agent asks matplace for work and reports printer states
-snapshot_seconds: 180    # camera picture of a running print, every N seconds
+snapshot_seconds: 15     # camera picture of a running print, every N seconds (live view; the server keeps one a minute for the time-lapse)
 work_dir: ./work         # downloaded G-code and the state that survives a restart
 log_level: INFO          # DEBUG shows every request
 

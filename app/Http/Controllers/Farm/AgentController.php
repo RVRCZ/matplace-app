@@ -83,9 +83,14 @@ class AgentController extends Controller
 
         $job = $request->filled('job_id') ? FarmPrintJob::where('id', $request->integer('job_id'))->where('farm_printer_id', $printer->id)->first() : null;
         if ($job) {
-            // one picture per order: the customer and the admin see the last one, nothing piles up
+            // the last picture is what people see live; one frame a minute is kept for the time-lapse of the finished print
             $jobRel = $job->order->dir().'/snapshot.jpg';
             $disk->put($jobRel, $disk->get($rel));
+            $frames = $job->order->dir().'/frames';
+            $last = collect($disk->files($frames))->max();
+            if (! $last || now()->timestamp - (int) basename($last, '.jpg') >= 55) {
+                $disk->put($frames.'/'.now()->timestamp.'.jpg', $disk->get($rel));
+            }
             $job->update(['snapshot_path' => $jobRel, 'snapshot_at' => now()]);
         }
 

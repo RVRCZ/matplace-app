@@ -87,6 +87,13 @@ class FarmOrderController extends Controller
         return response()->file(Storage::disk(config('farm.disk'))->path($job->snapshot_path), ['Content-Type' => 'image/jpeg', 'Cache-Control' => 'no-store']);
     }
 
+    public function timelapse(FarmOrder $order): BinaryFileResponse
+    {
+        abort_unless($order->timelapse_path && Storage::disk(config('farm.disk'))->exists($order->timelapse_path), 404);
+
+        return response()->file(Storage::disk(config('farm.disk'))->path($order->timelapse_path), ['Content-Type' => 'video/mp4']);
+    }
+
     public function approve(Request $request, FarmOrder $order): RedirectResponse
     {
         $this->flow->approve($order, $request->user()->id);

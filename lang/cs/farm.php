@@ -74,6 +74,7 @@ return [
         'cancel_confirm' => 'Opravdu zakázku zrušit? Kredit se vám vrátí.',
         'number' => 'Zakázka',
         'progress' => 'Průběh tisku',
+        'timelapse' => 'Časosběr vašeho tisku',
         'camera' => 'Poslední snímek z tiskárny',
         'queue_ahead' => 'Před vámi: :n',
         'queue_start' => 'Odhad začátku tisku: za :time',

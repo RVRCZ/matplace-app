@@ -95,7 +95,7 @@ Viz `config.example.yaml`. Token lze místo souboru předat proměnnou prostřed
 | `server` | adresa matplace, jen `https://` |
 | `token` | token agenta z administrace |
 | `poll_seconds` | jak často se agent hlásí a ptá na práci (výchozí 5 s); změnu stavu tiskárny posílá hned (websocket) |
-| `snapshot_seconds` | jak často posílá snímek z kamery běžícího tisku (výchozí 180 s) |
+| `snapshot_seconds` | jak často posílá snímek z kamery běžícího tisku (výchozí 15 s; živý náhled, server si nechává jeden za minutu pro časosběr) |
 | `printers[].key` | klíč tiskárny v administraci |
 | `printers[].driver` | `moonraker` nebo `mock` |
 | `printers[].url` | Moonraker, `http://IP:7125` |

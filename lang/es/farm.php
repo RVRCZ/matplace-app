@@ -74,6 +74,7 @@ return [
         'cancel_confirm' => '¿Cancelar el pedido? El crédito se le devuelve.',
         'number' => 'Pedido',
         'progress' => 'Progreso de la impresión',
+        'timelapse' => 'Time-lapse de su impresión',
         'camera' => 'Última imagen de la impresora',
         'queue_ahead' => 'Delante de usted: :n',
         'queue_start' => 'Inicio estimado: en :time',

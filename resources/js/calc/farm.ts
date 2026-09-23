@@ -17,6 +17,7 @@ interface FarmState {
     colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null;
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null;
     print: { status: string; progress: number; snapshot_url: string | null; snapshot_at: string | null } | null;
+    timelapse_url?: string | null;
     can_cancel: boolean; final: boolean;
 }
 interface FarmCfg { state: FarmState; routes: Record<string, string>; csrf: string; i18n: Record<string, string> }
@@ -173,8 +174,13 @@ export function bootFarmOrder(): void {
             ($('farm-pay-btn') as HTMLButtonElement).disabled = picked === null || !($('farm-terms') as HTMLInputElement).checked;
         }
 
-        const print = s.print && ['sent', 'printing', 'paused', 'done', 'unknown'].includes(s.print.status) && ['queued', 'printing', 'done'].includes(s.status) ? s.print : null;
-        show($('farm-print'), !!print);
+        const print = s.print && ['sent', 'printing', 'paused', 'done', 'unknown'].includes(s.print.status) && ['queued', 'printing', 'done', 'handed_over'].includes(s.status) ? s.print : null;
+        show($('farm-print'), !!print || !!s.timelapse_url);
+        const video = $<HTMLVideoElement>('farm-timelapse');
+        if (video) {
+            show(video.parentElement, !!s.timelapse_url);
+            if (s.timelapse_url && video.getAttribute('src') !== s.timelapse_url) video.src = s.timelapse_url;
+        }
         if (print) {
             $('farm-progress-val')!.textContent = `${Math.round(print.progress)} %`;
             $('farm-progress-bar')!.style.width = `${Math.min(100, print.progress)}%`;
@@ -210,8 +216,9 @@ export function bootFarmOrder(): void {
             if (res.ok) { state = await res.json(); render(); }
         } catch { /* offline for a moment: try again */ }
         const fast = state.status === 'uploaded';
-        const live = ['paid', 'queued', 'printing', 'sliced'].includes(state.status);
-        if (fast || live) timer = window.setTimeout(poll, fast ? 2000 : state.status === 'sliced' ? 20000 : 8000);
+        const live = ['paid', 'queued', 'printing', 'sliced', 'done'].includes(state.status);
+        // while it prints the page follows the camera: a new picture every 15 s
+        if (fast || live) timer = window.setTimeout(poll, fast ? 2000 : state.status === 'printing' ? 15000 : state.status === 'sliced' ? 20000 : 8000);
     };
 
     document.querySelectorAll<HTMLElement>('#farm-presets [data-group] .seg').forEach((b) => b.addEventListener('click', () => {

@@ -77,6 +77,10 @@
                         <img id="farm-camera-img" alt="{{ __('farm.order.camera') }}" class="w-full rounded-xl border border-slate-200">
                         <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.camera') }} <span id="farm-camera-at"></span></figcaption>
                     </figure>
+                    <figure class="mt-3 hidden">
+                        <video id="farm-timelapse" controls muted playsinline loop class="w-full rounded-xl border border-slate-200"></video>
+                        <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.timelapse') }}</figcaption>
+                    </figure>
                 </div>
                 <p id="farm-queue" class="mt-3 hidden text-sm text-slate-600"></p>
             </div>

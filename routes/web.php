@@ -130,7 +130,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware('throttle:10,1')->name('farm.orders.pay');
     Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
     Route::get('/farm/orders/{order}/model.stl', [OrderController::class, 'model'])->name('farm.orders.model');
-    Route::get('/farm/orders/{order}/snapshot.jpg', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
+    Route::get('/farm/orders/{order}/snapshot', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
+    Route::get('/farm/orders/{order}/timelapse.mp4', [OrderController::class, 'timelapse'])->name('farm.orders.timelapse');
 
     Route::get('/account/credit', [CreditController::class, 'index'])->name('account.credit');
     Route::post('/account/credit', [CreditController::class, 'topUp'])->middleware('throttle:10,1')->name('account.credit.topup');
@@ -145,14 +146,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/orders', [$orders, 'index'])->name('orders');
     Route::get('/orders/{order}', [$orders, 'show'])->name('orders.show');
     Route::get('/orders/{order}/print.gcode', [$orders, 'gcode'])->name('orders.gcode');
-    Route::get('/orders/{order}/snapshot.jpg', [$orders, 'snapshot'])->name('orders.snapshot');
+    Route::get('/orders/{order}/snapshot', [$orders, 'snapshot'])->name('orders.snapshot');
+    Route::get('/orders/{order}/timelapse.mp4', [$orders, 'timelapse'])->name('orders.timelapse');
     Route::post('/orders/{order}/approve', [$orders, 'approve'])->name('orders.approve');
     Route::post('/orders/{order}/status', [$orders, 'status'])->name('orders.status');
     Route::post('/orders/{order}/actuals', [$orders, 'actuals'])->name('orders.actuals');
     Route::post('/orders/{order}/refund', [$orders, 'refund'])->name('orders.refund');
     Route::post('/printers/{printer}/bed', [$orders, 'bed'])->name('printers.bed');
     Route::post('/printers/{printer}/command', [$orders, 'command'])->name('printers.command');
-    Route::get('/printers/{printer}/snapshot.jpg', [$orders, 'printerSnapshot'])->name('printers.snapshot');
+    Route::get('/printers/{printer}/snapshot', [$orders, 'printerSnapshot'])->name('printers.snapshot');
 
     Route::get('/printers', [$catalog, 'printers'])->name('printers');
     Route::get('/printers/new', [$catalog, 'editPrinter'])->name('printers.new');

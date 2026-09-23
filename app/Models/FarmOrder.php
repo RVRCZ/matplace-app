@@ -49,7 +49,7 @@ class FarmOrder extends Model
     protected $attributes = ['currency' => 'CZK', 'quality' => 'standard', 'strength' => 'standard', 'unit_scale' => 1, 'delivery' => 'pickup'];
 
     protected $fillable = [
-        'quality_rating', 'quality_note',
+        'quality_rating', 'quality_note', 'timelapse_path',
         'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'unit_scale',
         'farm_material_id', 'farm_color_id', 'farm_printer_id', 'farm_printer_slot_id', 'delivery', 'shipping_address', 'note',
         'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'slice_params', 'slice_result', 'est_minutes',
