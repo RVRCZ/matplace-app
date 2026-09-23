@@ -149,6 +149,37 @@ class FarmModelValidatorTest extends TestCase
         $this->assertSame($orca, GcodeSlot::retarget($orca, 0));
     }
 
+    public function test_gcode_gets_the_temperatures_of_the_chosen_filament_kind(): void
+    {
+        // sliced as PLA (215 first layer / 205 / bed 55), printed from a PETG spool in slot 2
+        $g = "G9111 bedTemp=55 extruderTemp=215
+M117
+M106 P3 S153
+M104 S205 ; set nozzle temperature
+M140 S55 ; set bed temperature
+M109 S205
+M190 S55
+G1 X10
+M140 S0 ; turn off heatbed
+M104 S0 ; turn off temperature
+";
+        $out = GcodeSlot::retarget($g, 1, ['nozzle' => 240, 'nozzle_first' => 245, 'bed' => 75]);
+        $this->assertStringContainsString("G9111 bedTemp=75 extruderTemp=245
+M117
+T1 ; slot chosen by matplace farm
+", $out);
+        $this->assertStringContainsString('M104 S240 ; set nozzle temperature', $out);
+        $this->assertStringContainsString('M140 S75 ; set bed temperature', $out);
+        $this->assertStringContainsString("M109 S240
+M190 S75
+", $out);
+        $this->assertStringContainsString("M140 S0 ; turn off heatbed
+M104 S0 ; turn off temperature", $out, 'switching the heaters off stays');
+        $this->assertSame($g, GcodeSlot::retarget($g, 0), 'slot 0 and no temperatures: untouched');
+        // no first-layer value: nozzle + 5
+        $this->assertStringContainsString('extruderTemp=225', GcodeSlot::retarget($g, 0, ['nozzle' => 220]));
+    }
+
     public function test_gcode_header_gives_metres_for_multi_slot_machines_and_detects_supports(): void
     {
         $g = "; filament used [mm] = 3681.80, 0.00, 0.00, 0.00\n; total filament used [g] = 10.98\n;TYPE:Outer wall\n";

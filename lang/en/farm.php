@@ -199,6 +199,8 @@ return [
         'actuals' => 'Measured values after the print',
         'actual_minutes' => 'Real time (min)',
         'actual_grams' => 'Real weight (g)',
+        'quality' => 'Print quality (1–5)',
+        'quality_note' => 'Quality note (for tuning the material)',
         'actuals_hint' => 'Used to calibrate the printer\'s price corrections.',
         'refund' => 'Return the credit',
         'history' => 'History',

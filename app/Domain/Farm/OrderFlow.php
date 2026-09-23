@@ -52,7 +52,7 @@ final class OrderFlow
             throw new FarmRefusal('filament_low');
         }
 
-        $price = $this->orders->priceFor($order, $offer['printer'], $delivery);
+        $price = $this->orders->priceFor($order, $offer['printer'], $delivery, $offer['color']->material);
         if ($expectedTotal !== null && abs($expectedTotal - $price['total']) > 0.009) {
             throw new FarmRefusal('price_changed', ['total' => $price['total']]);
         }
@@ -60,6 +60,7 @@ final class OrderFlow
         DB::transaction(function () use ($order, $offer, $delivery, $address, $ip, $price, $note) {
             $order->fill([
                 'farm_printer_id' => $offer['printer']->id, 'farm_printer_slot_id' => $offer['slot']->id, 'farm_color_id' => $offer['color']->id,
+                'farm_material_id' => $offer['color']->farm_material_id,
                 'delivery' => $delivery, 'shipping_address' => $delivery === 'shipping' ? $address : null, 'note' => $note,
                 'price' => $price, 'price_total' => $price['total'],
                 'terms_version' => (string) $this->settings->get('terms_version'), 'terms_accepted_at' => now(), 'terms_ip' => $ip,
@@ -69,7 +70,12 @@ final class OrderFlow
             $this->move($order, FarmOrder::STATUS_PAID, 'user', $order->user_id);
         });
 
-        if ($this->settings->get('require_approval')) {
+        if ($offer['color']->sliceOverrides()) {
+            // this spool prints best with its own slicer settings: slice again for them, the paid order waits meanwhile
+            $order->forceFill(['status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'slicing'])->save();
+            $order->events()->create(['from' => FarmOrder::STATUS_PAID, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'system', 'note' => 'reslice for the spool settings']);
+            \App\Jobs\PrepareFarmOrder::dispatch($order->id);
+        } elseif ($this->settings->get('require_approval')) {
             $this->alertAdmin(__('farm.admin.mail.approve', ['number' => $order->number]), $order);
         } else {
             $this->move($order, FarmOrder::STATUS_QUEUED, 'system');

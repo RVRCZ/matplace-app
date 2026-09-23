@@ -199,6 +199,8 @@ return [
         'actuals' => 'Skutečné hodnoty po tisku',
         'actual_minutes' => 'Skutečný čas (min)',
         'actual_grams' => 'Skutečná hmotnost (g)',
+        'quality' => 'Kvalita výtisku (1–5)',
+        'quality_note' => 'Poznámka ke kvalitě (pro ladění materiálu)',
         'actuals_hint' => 'Slouží ke kalibraci korekcí ceny u tiskárny.',
         'refund' => 'Vrátit kredit',
         'history' => 'Historie',

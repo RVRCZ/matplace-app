@@ -92,6 +92,10 @@
             <div class="mt-2 grid grid-cols-2 gap-2">
                 <label class="text-xs font-semibold text-slate-600">{{ __('farm.admin.actual_minutes') }}<input type="number" name="actual_minutes" min="1" value="{{ $order->actual_minutes }}" placeholder="{{ $order->est_minutes }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal"></label>
                 <label class="text-xs font-semibold text-slate-600">{{ __('farm.admin.actual_grams') }}<input type="number" step="0.1" name="actual_grams" min="0.1" value="{{ $order->actual_grams }}" placeholder="{{ $order->est_grams }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal"></label>
+                <label class="text-xs font-semibold text-slate-600">{{ __('farm.admin.quality') }}
+                    <select name="quality_rating" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal"><option value="">—</option>@foreach([5, 4, 3, 2, 1] as $q)<option value="{{ $q }}" @selected($order->quality_rating === $q)>{{ $q }}</option>@endforeach</select>
+                </label>
+                <label class="text-xs font-semibold text-slate-600">{{ __('farm.admin.quality_note') }}<input name="quality_note" maxlength="500" value="{{ $order->quality_note }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal"></label>
             </div>
             <button class="btn-quiet mt-2 w-full text-sm">OK</button>
         </form>

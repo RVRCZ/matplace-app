@@ -74,7 +74,7 @@ class FarmOrderController extends Controller
         $path = $order->absoluteGcodePath();
         abort_unless($path && is_file($path), 404);
         // the operator sends this file by hand: it must already select the customer's slot
-        $path = GcodeSlot::fileFor($path, (int) ($order->slot?->slot ?? 0));
+        $path = GcodeSlot::fileFor($path, (int) ($order->slot?->slot ?? 0), GcodeSlot::tempsOf($order->color ?? $order->material));
 
         return response()->download($path, 'matplace-'.($order->number ?: $order->token).'.gcode', ['Content-Type' => 'text/x.gcode']);
     }
@@ -124,8 +124,12 @@ class FarmOrderController extends Controller
     /** Real time and weight after the print: the data the correction factors are calibrated from. */
     public function actuals(Request $request, FarmOrder $order): RedirectResponse
     {
-        $data = $request->validate(['actual_minutes' => ['nullable', 'integer', 'min:1', 'max:100000'], 'actual_grams' => ['nullable', 'numeric', 'min:0.1', 'max:100000']]);
+        $data = $request->validate(['actual_minutes' => ['nullable', 'integer', 'min:1', 'max:100000'], 'actual_grams' => ['nullable', 'numeric', 'min:0.1', 'max:100000'],
+            'quality_rating' => ['nullable', 'integer', 'min:1', 'max:5'], 'quality_note' => ['nullable', 'string', 'max:500']]);
         $this->flow->recordActuals($order, isset($data['actual_minutes']) ? (int) $data['actual_minutes'] : null, isset($data['actual_grams']) ? (float) $data['actual_grams'] : null, 'admin');
+        if (array_key_exists('quality_rating', $data) || array_key_exists('quality_note', $data)) {
+            $order->forceFill(['quality_rating' => $data['quality_rating'] ?? $order->quality_rating, 'quality_note' => $data['quality_note'] ?? $order->quality_note])->save();
+        }
 
         return back()->with('status', __('farm.admin.saved'));
     }

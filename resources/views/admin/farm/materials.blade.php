@@ -57,7 +57,14 @@
                                 <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="in_stock" value="1" @checked($c->in_stock) class="h-4 w-4 accent-action"> skladem</label>
                                 <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="enabled" value="1" @checked($c->enabled) class="h-4 w-4 accent-action"> nabízet</label>
                                 <button class="btn-quiet text-sm">Uložit</button>
-                                @if($c->code)<input type="hidden" name="code" value="{{ $c->code }}"><span class="text-[10px] text-slate-400 sm:col-span-8">{{ $c->code }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif</span>@endif
+                                @if($c->code)<input type="hidden" name="code" value="{{ $c->code }}">@endif
+                                <details class="sm:col-span-8 text-xs">
+                                    <summary class="cursor-pointer text-slate-500">{{ $c->code ?? 'nastavení' }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif · vlastní nastavení tisku {{ $c->print_overrides ? '✓' : '–' }}</summary>
+                                    <div class="mt-1 grid gap-2 sm:grid-cols-2">
+                                        <label class="{{ $lb }}">Vlastní nastavení tisku (JSON; nozzle_temp, nozzle_temp_first, bed_temp = do hotového G-code, "process"/"filament" = nové slicování)<input name="print_overrides" value="{{ $c->print_overrides ? json_encode($c->print_overrides, JSON_UNESCAPED_UNICODE) : '' }}" placeholder='{"nozzle_temp": 220, "bed_temp": 60}' class="{{ $in }} font-mono text-xs"></label>
+                                        <label class="{{ $lb }}">Výsledky testů (co ukázal testovací objekt)<input name="test_notes" value="{{ $c->test_notes }}" maxlength="2000" class="{{ $in }}"></label>
+                                    </div>
+                                </details>
                             </form>
                         @endforeach
                     </div>

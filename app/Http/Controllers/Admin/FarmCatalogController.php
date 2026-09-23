@@ -149,10 +149,13 @@ class FarmCatalogController extends Controller
             'code' => ['nullable', 'string', 'max:80'],
             'hex' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'photo' => ['nullable', 'image', 'max:8192'],
+            'print_overrides' => ['nullable', 'json'],
+            'test_notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $color = $color ?? new FarmColor;
         $color->fill(['farm_material_id' => $data['farm_material_id'], 'name' => $data['name'], 'name_en' => $data['name_en'] ?? null, 'code' => $data['code'] ?? null,
-            'hex' => strtolower($data['hex']), 'enabled' => $request->boolean('enabled'), 'in_stock' => $request->boolean('in_stock', true)]);
+            'hex' => strtolower($data['hex']), 'enabled' => $request->boolean('enabled'), 'in_stock' => $request->boolean('in_stock', true),
+            'print_overrides' => ! empty($data['print_overrides']) ? json_decode($data['print_overrides'], true) : null, 'test_notes' => $data['test_notes'] ?? null]);
         if ($request->hasFile('photo')) {
             $color->photo_path = $request->file('photo')->storeAs('farm/colors', Str::uuid().'.'.$request->file('photo')->extension(), 'public');
         }

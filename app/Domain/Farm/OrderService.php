@@ -40,7 +40,8 @@ final class OrderService
         }
         $this->assertDailyLimit($user);
 
-        // the kind the order is sliced for: one that is really loaded in a printer, the most common one first
+        // the kind the order is sliced and first priced for: the cheapest one really loaded in a printer; the price
+        // is recomputed for the kind of the colour the customer picks
         $material = $this->loadedMaterials()->first();
         $printer = $material ? $this->printerFor($material) : null;
         if (! $material || ! $printer) {
@@ -95,8 +96,9 @@ final class OrderService
     }
 
     /**
-     * Colours the customer can have right now: loaded in an enabled slot of an online printer that prints this
-     * order's G-code (same machine profile), with enough filament left after what is already promised.
+     * Colours the customer can have right now: every enabled kind loaded in an enabled slot of an online printer that
+     * prints this order's G-code (same machine profile), with enough filament left after what is already promised.
+     * The kind's temperatures go into the G-code when the print is sent (GcodeSlot), so PLA, PLA+ and PETG mix freely.
      *
      * @return Collection<int, array{slot: FarmPrinterSlot, color: FarmColor, printer: FarmPrinter, enough: bool}>
      */
@@ -111,7 +113,7 @@ final class OrderService
         return FarmPrinterSlot::with(['color.material', 'printer'])
             ->where('enabled', true)->whereNotNull('farm_color_id')
             ->whereHas('printer', fn ($q) => $q->where('enabled', true)->where('model', $base->model)->where('machine_profile', $base->machine_profile))
-            ->whereHas('color', fn ($q) => $q->where('enabled', true)->where('farm_material_id', $order->farm_material_id))
+            ->whereHas('color', fn ($q) => $q->where('enabled', true)->whereHas('material', fn ($m) => $m->where('enabled', true)))
             ->get()
             ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline())
             ->map(fn (FarmPrinterSlot $s) => ['slot' => $s, 'color' => $s->color, 'printer' => $s->printer, 'enough' => $s->availableGrams() >= $need])
@@ -121,14 +123,18 @@ final class OrderService
             ->values();
     }
 
-    /** @return array<string,mixed> price breakdown for this order on a given printer */
-    public function priceFor(FarmOrder $order, FarmPrinter $printer, ?string $delivery = null): array
+    /**
+     * @param  FarmMaterial|null  $material  the kind of the chosen colour; before a colour is chosen, the order's kind
+     * @return array<string,mixed> price breakdown for this order on a given printer
+     */
+    public function priceFor(FarmOrder $order, FarmPrinter $printer, ?string $delivery = null, ?FarmMaterial $material = null): array
     {
         $delivery ??= $order->delivery;
+        $material ??= $order->material;
 
         return $this->prices->price((int) $order->est_minutes, (float) $order->est_grams, [
             'hourly_rate' => $printer->hourly_rate ?? (float) $this->settings->get('hourly_rate'),
-            'price_per_gram' => (float) $order->material->price_per_gram,
+            'price_per_gram' => (float) $material->price_per_gram,
             'fixed_fee' => (float) $this->settings->get('fixed_fee'),
             'min_price' => (float) $this->settings->get('min_price'),
             'vat_percent' => (float) $this->settings->get('vat_percent'),
@@ -141,7 +147,7 @@ final class OrderService
     }
 
     /**
-     * Material kinds loaded in an enabled slot of an enabled printer right now, the one with most colours first.
+     * Material kinds loaded in an enabled slot of an enabled printer right now, the cheapest per gram first.
      *
      * @return Collection<int, FarmMaterial>
      */
@@ -155,7 +161,7 @@ final class OrderService
             ->selectRaw('farm_colors.farm_material_id as id, count(*) as n')->pluck('n', 'id');
 
         return FarmMaterial::where('enabled', true)->whereIn('id', $counts->keys())->get()
-            ->sortBy(fn (FarmMaterial $m) => [-$counts[$m->id], $m->sort])->values();
+            ->sortBy(fn (FarmMaterial $m) => [$m->price_per_gram, -$counts[$m->id], $m->sort])->values();
     }
 
     /** The printer an order is sliced for: one that has this material loaded, online ones first. */

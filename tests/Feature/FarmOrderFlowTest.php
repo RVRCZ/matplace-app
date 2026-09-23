@@ -83,6 +83,48 @@ class FarmOrderFlowTest extends TestCase
         return $this->postJson('/api/agent/sync', ['version' => 'test', 'printers' => [['key' => 'kobra-s1-01', 'state' => $state, 'telemetry' => ['extruder' => 215.2, 'bed' => 55], 'job' => $job]]], $headers);
     }
 
+    public function test_every_loaded_colour_of_every_kind_is_offered_and_the_chosen_kind_sets_the_price(): void
+    {
+        // the seeded printer: white PLA+ in slot 3; load a PETG colour into slot 1 too
+        $printer = FarmPrinter::firstOrFail();
+        $petg = \App\Models\FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PETG'))->firstOrFail();
+        $printer->slots()->where('slot', 0)->update(['farm_color_id' => $petg->id, 'remaining_g' => 700, 'enabled' => true]);
+
+        $order = $this->order();
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json();
+        $kinds = array_column($state['colors'], 'kind');
+        $this->assertCount(2, $state['colors']);
+        $this->assertContains('PLA+', $kinds);
+        $this->assertContains('PETG', $kinds);
+        $petgOffer = collect($state['colors'])->firstWhere('kind', 'PETG');
+        $plaOffer = collect($state['colors'])->firstWhere('kind', 'PLA+');
+        $this->assertGreaterThanOrEqual($plaOffer['total'], $petgOffer['total'], 'PETG costs more per gram');
+
+        $this->credit(1000);
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $petgOffer['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $petgOffer['total']])->assertOk();
+        $order->refresh();
+        $this->assertSame('PETG', $order->material->code, 'the order now belongs to the chosen kind');
+        $this->assertEqualsWithDelta($petgOffer['total'], $order->price_total, 0.001);
+    }
+
+    public function test_a_spool_with_its_own_slicer_settings_is_resliced_after_payment_at_the_paid_price(): void
+    {
+        $white = FarmPrinter::firstOrFail()->slots()->where('slot', 2)->firstOrFail()->color;
+        $white->update(['print_overrides' => ['nozzle_temp' => 222, 'process' => ['sparse_infill_density' => '25%']]]);
+
+        $order = $this->order();
+        $this->credit(1000);
+        $paid = $this->pay($order)->assertOk()->json();
+        $order->refresh();
+        // sync queue: the re-slice already ran; the order went uploaded → sliced → paid → queued again
+        $this->assertSame(FarmOrder::STATUS_QUEUED, $order->status);
+        $this->assertSame('25%', $order->slice_params['overrides']['process']['sparse_infill_density']);
+        $this->assertEqualsWithDelta($paid['total'], $order->price_total, 0.001, 'the customer pays what was shown');
+        $this->assertSame(['nozzle' => 222, 'nozzle_first' => 225, 'bed' => 60], $white->fresh()->temps(), 'own nozzle, first layer and bed inherited from PLA+');
+        $this->assertEqualsWithDelta(1000 - $paid['total'], app(Wallet::class)->balance($this->user), 0.001);
+        $this->assertStringContainsString('reslice', $order->events->pluck('note')->implode(' '));
+    }
+
     public function test_guests_cannot_rent_a_printer(): void
     {
         $this->get('/farm')->assertRedirect('/login');

@@ -199,6 +199,8 @@ return [
         'actuals' => 'Valores medidos tras la impresión',
         'actual_minutes' => 'Tiempo real (min)',
         'actual_grams' => 'Peso real (g)',
+        'quality' => 'Calidad de la impresión (1–5)',
+        'quality_note' => 'Nota de calidad (para ajustar el material)',
         'actuals_hint' => 'Sirve para calibrar las correcciones de precio de la impresora.',
         'refund' => 'Devolver el crédito',
         'history' => 'Historial',

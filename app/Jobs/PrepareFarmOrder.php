@@ -93,10 +93,12 @@ class PrepareFarmOrder implements ShouldQueue
                 'process' => $printer->process_profiles[$quality] ?? null,
                 'filament' => $order->material->filament_profile,
             ];
+            // a spool with its own slicer settings (speeds, cooling…) wins over its kind; temperatures are set later per spool
+            $spool = $order->color?->sliceOverrides() ?? [];
             $overrides = [
                 'machine' => (array) $printer->machine_overrides,
-                'process' => ['layer_height' => (string) $layer] + (array) $printer->process_overrides,
-                'filament' => $order->material->sliceOverrides(),
+                'process' => ['layer_height' => (string) $layer] + ($spool['process'] ?? []) + (array) $printer->process_overrides,
+                'filament' => ($spool['filament'] ?? []) + $order->material->sliceOverrides(),
             ];
             $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: null, treeSupports: true))
                 ->withFarmProfile($profiles, $overrides);
@@ -124,6 +126,17 @@ class PrepareFarmOrder implements ShouldQueue
             ])->save();
 
             // ── 3. price ───────────────────────────────────────────────────────
+            if ($order->paid_at !== null) {
+                // re-sliced for the chosen spool after payment: the price stays what the customer paid
+                $order->fill(['stage' => null])->save();
+                $flow->move($order, FarmOrder::STATUS_SLICED, 'system');
+                $flow->move($order, FarmOrder::STATUS_PAID, 'system');
+                if (! $settings->get('require_approval')) {
+                    $flow->move($order, FarmOrder::STATUS_QUEUED, 'system');
+                }
+
+                return;
+            }
             $price = $orders->priceFor($order, $printer);
             $order->fill(['price' => $price, 'price_total' => $price['total'], 'currency' => $price['currency'], 'stage' => null])->save();
             $flow->move($order, FarmOrder::STATUS_SLICED, 'system');
