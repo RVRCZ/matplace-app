@@ -17,6 +17,7 @@ return [
         'model' => 'Modelo',
         'upload' => 'Elija un archivo STL',
         'upload_hint' => 'Formato STL, hasta :max MB. El volumen de impresión es :x × :y × :z mm.',
+        'drop_hint' => 'o arrastre el archivo aquí',
         'uploading' => 'Subiendo…',
         'processing' => 'Procesando el modelo…',
         'upload_failed' => 'No se pudo subir el archivo. Inténtelo de nuevo.',

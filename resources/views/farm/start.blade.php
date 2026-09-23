@@ -41,7 +41,13 @@
         @if($file)
             <p class="mt-1 text-sm">{{ $file->original_name }}</p>
         @else
-            <input id="farm-upload" type="file" accept=".stl" class="mt-1 block w-full text-sm" aria-label="{{ __('farm.start.upload') }}">
+            {{-- a real drop zone: the bare file input looks like a line of text --}}
+            <label id="farm-dropzone" for="farm-upload" class="mt-2 flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center transition hover:border-action hover:bg-action-soft">
+                <span class="text-3xl" aria-hidden="true">📂</span>
+                <span class="btn-primary pointer-events-none text-sm">{{ __('farm.start.upload') }}</span>
+                <span class="text-xs text-slate-500">{{ __('farm.start.drop_hint') }}</span>
+            </label>
+            <input id="farm-upload" type="file" accept=".stl" class="sr-only" aria-label="{{ __('farm.start.upload') }}">
             <p class="mt-1 text-xs text-slate-500">{{ __('farm.start.upload_hint', ['max' => $settings['max_upload_mb'], 'x' => (int) ($bed?->x ?? 250), 'y' => (int) ($bed?->y ?? 250), 'z' => (int) ($bed?->z ?? 250)]) }}</p>
             <p id="farm-upload-status" class="mt-1 hidden text-sm text-slate-600" role="status"></p>
         @endif

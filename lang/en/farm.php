@@ -17,6 +17,7 @@ return [
         'model' => 'Model',
         'upload' => 'Choose an STL file',
         'upload_hint' => 'STL format, up to :max MB. The build volume is :x × :y × :z mm.',
+        'drop_hint' => 'or drop the file here',
         'uploading' => 'Uploading…',
         'processing' => 'Processing the model…',
         'upload_failed' => 'The file could not be uploaded. Please try again.',

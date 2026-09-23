@@ -66,6 +66,19 @@ export function bootFarmStart(): void {
     const go = $<HTMLButtonElement>('farm-continue')!;
     const say = (t: string) => { status.textContent = t; show(status, t !== ''); };
 
+    // drag & drop onto the zone hands the file to the input
+    const zone = $('farm-dropzone');
+    zone?.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('border-action', 'bg-action-soft'); });
+    zone?.addEventListener('dragleave', () => zone.classList.remove('border-action', 'bg-action-soft'));
+    zone?.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('border-action', 'bg-action-soft');
+        const file = e.dataTransfer?.files?.[0];
+        if (!file) return;
+        const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files;
+        input.dispatchEvent(new Event('change'));
+    });
+
     input.addEventListener('change', async () => {
         const file = input.files?.[0];
         go.disabled = true;
@@ -86,6 +99,7 @@ export function bootFarmStart(): void {
             if (info.status !== 'ready') throw new Error('processing');
             $<HTMLInputElement>('farm-file')!.value = info.uuid;
             say(file.name);
+            zone?.querySelector('.btn-primary')?.replaceChildren(document.createTextNode(file.name));
             showModel(`${cfg.files}/${info.uuid}/model.stl`);
             go.disabled = false;
         } catch {

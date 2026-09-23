@@ -17,6 +17,7 @@ return [
         'model' => 'Model',
         'upload' => 'Vyberte soubor STL',
         'upload_hint' => 'Formát STL, nejvýše :max MB. Tisková plocha je :x × :y × :z mm.',
+        'drop_hint' => 'nebo sem soubor přetáhněte',
         'uploading' => 'Nahrávám…',
         'processing' => 'Zpracovávám model…',
         'upload_failed' => 'Soubor se nepodařilo nahrát. Zkuste to prosím znovu.',
