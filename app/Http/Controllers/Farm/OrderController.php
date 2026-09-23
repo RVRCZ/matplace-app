@@ -151,8 +151,8 @@ class OrderController extends Controller
         if (! $order->cancellableByCustomer()) {
             return response()->json(['error' => 'locked', 'message' => __('farm.refuse.locked')], 422);
         }
-        // a start command may already be on its way to the printer: then only the operator can stop it
-        if ($order->printJobs()->whereIn('status', ['sent', 'printing', 'paused', 'unknown'])->exists()) {
+        // a start command on its way to the printer, or a print the agent lost sight of: only the operator can stop that
+        if ($order->status !== FarmOrder::STATUS_PRINTING && $order->printJobs()->whereIn('status', ['sent', 'printing', 'paused', 'unknown'])->exists()) {
             return response()->json(['error' => 'locked', 'message' => __('farm.refuse.locked')], 422);
         }
         $flow->move($order, FarmOrder::STATUS_CANCELLED, 'user', $request->user()->id);
@@ -250,6 +250,8 @@ class OrderController extends Controller
             'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
             'timelapse_url' => $order->timelapse_path ? route('farm.orders.timelapse', $order) : null,
+            // what stopping a running print would cost right now (the printed share)
+            'cancel_keep' => $order->status === FarmOrder::STATUS_PRINTING && $job ? app(OrderFlow::class)->shareOfPrice((array) $order->price, (float) $job->progress / 100) : null,
             'print' => $job ? [
                 'status' => $job->status, 'progress' => $job->progress,
                 'snapshot_url' => $job->snapshot_path ? route('farm.orders.snapshot', $order).'?t='.($job->snapshot_at?->timestamp ?? 0) : null,

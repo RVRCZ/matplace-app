@@ -15,7 +15,7 @@ interface FarmState {
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; shipping_price: number;
     colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
-    queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null;
+    queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; cancel_keep: number | null;
     print: { status: string; progress: number; snapshot_url: string | null; snapshot_at: string | null } | null;
     timelapse_url?: string | null;
     can_cancel: boolean; final: boolean;
@@ -307,7 +307,8 @@ export function bootFarmOrder(): void {
     });
 
     $('farm-cancel')?.addEventListener('click', async () => {
-        if (!window.confirm(tr('farm.order.cancel_confirm'))) return;
+        const keep = state.status === 'printing' ? state.cancel_keep : null;
+        if (!window.confirm(keep !== null ? tr('farm.order.cancel_running_confirm', { amount: money(keep) }) : tr('farm.order.cancel_confirm'))) return;
         const r = await post(cfg.routes.cancel, {});
         if (r.ok) { state = r.json as unknown as FarmState; render(); } else { const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); }
     });

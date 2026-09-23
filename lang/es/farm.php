@@ -74,6 +74,7 @@ return [
         'need_credit' => 'Le faltan :missing CZK de crédito.',
         'cancel' => 'Cancelar el pedido',
         'cancel_confirm' => '¿Cancelar el pedido? El crédito se le devuelve.',
+        'cancel_running_confirm' => 'La impresión ya está en marcha. La parte impresa cuesta :amount CZK, el resto del crédito se devuelve. ¿Cancelar de verdad?',
         'number' => 'Pedido',
         'progress' => 'Progreso de la impresión',
         'timelapse' => 'Time-lapse de su impresión',

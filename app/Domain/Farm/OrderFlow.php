@@ -192,7 +192,7 @@ final class OrderFlow
     }
 
     /** Fixed fee plus the printed share of time and material, with VAT, whole crowns; never above the print price. */
-    private function shareOfPrice(array $price, float $share): float
+    public function shareOfPrice(array $price, float $share): float
     {
         if (! isset($price['fixed'], $price['time'], $price['material'], $price['print_total'])) {
             return 0.0;

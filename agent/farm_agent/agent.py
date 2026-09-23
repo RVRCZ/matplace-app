@@ -3,7 +3,7 @@ The agent: one process, many printers.
 
   every poll_seconds (and at once when a driver hears a change)
       read every printer -> POST /api/agent/sync -> carry out the commands that came back
-  every snapshot_seconds, for printers with a running job
+  every snapshot_seconds, for printers with a running job (once a minute when idle, so the operator sees the plate)
       camera picture -> POST /api/agent/printers/{key}/snapshot
 
 The agent never starts anything by itself. A print starts only on a `start` command, which the server issues only
@@ -133,12 +133,18 @@ class Agent:
                 self._tasks.add(task)
                 task.add_done_callback(self._tasks.discard)
 
+    IDLE_SNAPSHOT_SECONDS = 60
+
     async def _snapshot_loop(self) -> None:
+        last_idle: dict[str, float] = {}
         while True:
             await asyncio.sleep(self.config.snapshot_seconds)
+            now = asyncio.get_event_loop().time()
             for w in self.workers.values():
                 if not w.tracked:
-                    continue
+                    if now - last_idle.get(w.key, 0.0) < self.IDLE_SNAPSHOT_SECONDS:
+                        continue
+                    last_idle[w.key] = now
                 try:
                     jpeg = await w.driver.snapshot()
                     if jpeg:

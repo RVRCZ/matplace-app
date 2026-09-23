@@ -127,9 +127,10 @@ class FarmOrder extends Model
     }
 
     /** The customer may still walk away and get the held credit back. */
+    /** Before it starts for free; a running print too, paid for as far as it got (OrderFlow::onStopped). */
     public function cancellableByCustomer(): bool
     {
-        return in_array($this->status, [self::STATUS_UPLOADED, self::STATUS_SLICED, self::STATUS_PAID, self::STATUS_QUEUED], true);
+        return in_array($this->status, [self::STATUS_UPLOADED, self::STATUS_SLICED, self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING], true);
     }
 
     /** Directory on the farm disk holding this order's print STL, G-code and snapshots. */

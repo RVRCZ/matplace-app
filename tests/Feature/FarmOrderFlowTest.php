@@ -345,11 +345,13 @@ T2 ; slot chosen by matplace farm
         $this->postJson("/api/agent/commands/{$cmd['id']}/result", ['ok' => true], $auth)->assertOk();
         $this->sync($auth, 'printing', ['id' => $cmd['job_id'], 'status' => 'printing', 'progress' => 40, 'print_duration' => 600, 'filament_used' => 1200])->assertOk();
 
-        // the operator stops it at 40 %: the handling fee stays, time and material count for the printed share
-        app(\App\Domain\Farm\OrderFlow::class)->move($order->refresh(), FarmOrder::STATUS_CANCELLED, 'admin', $admin->id);
+        // the customer stops it at 40 %: the page told them the price of the printed part first
+        $p = $order->refresh()->price;
+        $expected = min($p['print_total'], ceil(($p['fixed'] + 0.4 * ($p['time'] + $p['material'])) * (1 + $p['inputs']['vat_percent'] / 100)));
+        $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertJsonPath('cancel_keep', (int) $expected);
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/cancel")->assertOk()->assertJsonPath('status', 'cancelled');
         $order->refresh();
         $p = $order->price;
-        $expected = min($p['print_total'], ceil(($p['fixed'] + 0.4 * ($p['time'] + $p['material'])) * (1 + $p['inputs']['vat_percent'] / 100)));
         $this->assertGreaterThan(0, $expected);
         $this->assertLessThan($paid['total'], $expected);
         $this->assertEqualsWithDelta($expected, $p['charged_on_cancel'], 0.001);

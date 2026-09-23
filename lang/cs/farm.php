@@ -74,6 +74,7 @@ return [
         'need_credit' => 'Chybí vám :missing Kč kreditu.',
         'cancel' => 'Zrušit zakázku',
         'cancel_confirm' => 'Opravdu zakázku zrušit? Kredit se vám vrátí.',
+        'cancel_running_confirm' => 'Tisk už běží. Za vytištěnou část vám naúčtujeme :amount Kč, zbytek kreditu vrátíme. Opravdu zrušit?',
         'number' => 'Zakázka',
         'progress' => 'Průběh tisku',
         'timelapse' => 'Časosběr vašeho tisku',

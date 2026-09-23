@@ -74,6 +74,7 @@ return [
         'need_credit' => 'You are :missing CZK short of credit.',
         'cancel' => 'Cancel the order',
         'cancel_confirm' => 'Really cancel the order? Your credit comes back.',
+        'cancel_running_confirm' => 'The print is already running. The printed part costs :amount CZK, the rest of the credit comes back. Really cancel?',
         'number' => 'Order',
         'progress' => 'Print progress',
         'timelapse' => 'Time-lapse of your print',
