@@ -35,7 +35,7 @@
             <span class="font-semibold">🖨️ {{ __('farm.title') }}</span>
             <a href="{{ route('farm.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
             <a href="{{ route('account.credit') }}" class="text-action-dark underline">{{ __('farm.credit_balance') }}: {{ number_format(app(\App\Domain\Farm\Wallet::class)->balance($user), 0, ',', ' ') }} Kč</a>
-            <a href="{{ route('farm.start') }}" class="text-action-dark underline">{{ __('farm.order.new') }}</a>
+            <a href="{{ route('farm.start') }}" class="btn-primary text-sm">{{ __('farm.order.new') }}</a>
             @if($user->isAdmin())<a href="{{ route('admin.farm.dashboard') }}" class="ml-auto font-semibold text-action-dark">{{ __('farm.admin.nav.dashboard') }} →</a>@endif
         </div>
     @endif

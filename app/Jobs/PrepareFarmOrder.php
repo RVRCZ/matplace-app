@@ -9,6 +9,7 @@ use App\Domain\Farm\OrderService;
 use App\Engines\Contracts\PrintPreparer;
 use App\Engines\Contracts\Slicer;
 use App\Engines\DTO\Dimensions;
+use App\Engines\Gcode\SupportLines;
 use App\Engines\DTO\SliceParams;
 use App\Models\FarmOrder;
 use App\Models\ModelFile;
@@ -108,6 +109,11 @@ class PrepareFarmOrder implements ShouldQueue
             }
             $gcodeRel = $order->dir().'/print.gcode';
             File::move($result->gcodePath, $disk->path($gcodeRel));
+            // the supports the slicer built, for the customer's preview (a re-slice without them drops the old file)
+            $supportsBin = $disk->path($order->dir().'/supports.bin');
+            if (! $result->supportsUsed || ! SupportLines::extract($disk->path($gcodeRel), $supportsBin)) {
+                @unlink($supportsBin);
+            }
 
             $order->fill([
                 'gcode_path' => $gcodeRel,

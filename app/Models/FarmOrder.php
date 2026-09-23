@@ -147,4 +147,12 @@ class FarmOrder extends Model
     {
         return $this->print_stl_path ? Storage::disk(config('farm.disk'))->path($this->print_stl_path) : null;
     }
+
+    /** Support structures for the 3D preview (App\Engines\Gcode\SupportLines), when the slice built any. */
+    public function absoluteSupportsPath(): ?string
+    {
+        $path = Storage::disk(config('farm.disk'))->path($this->dir().'/supports.bin');
+
+        return is_file($path) ? $path : null;
+    }
 }

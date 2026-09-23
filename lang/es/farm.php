@@ -43,6 +43,7 @@ return [
         'supports' => 'Soportes',
         'supports_yes' => 'sí, de árbol, solo donde hacen falta',
         'supports_no' => 'no hacen falta',
+        'supports_hide' => 'Ocultar soportes', 'supports_show' => 'Mostrar soportes',
         'oriented' => 'Hemos orientado el modelo para la mejor impresión. La vista previa lo muestra tal como se imprimirá.',
         'price' => 'Precio',
         'with_vat' => 'IVA incluido',

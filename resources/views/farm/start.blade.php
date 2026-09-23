@@ -42,9 +42,12 @@
             <p class="mt-1 text-sm">{{ $file->original_name }}</p>
         @else
             <input id="farm-upload" type="file" accept=".stl" class="mt-1 block w-full text-sm" aria-label="{{ __('farm.start.upload') }}">
-            <p class="mt-1 text-xs text-slate-500">{{ __('farm.start.upload_hint', ['max' => $settings['max_upload_mb'], 'x' => (int) ($printer?->bed_x ?? 250), 'y' => (int) ($printer?->bed_y ?? 250), 'z' => (int) ($printer?->bed_z ?? 250)]) }}</p>
+            <p class="mt-1 text-xs text-slate-500">{{ __('farm.start.upload_hint', ['max' => $settings['max_upload_mb'], 'x' => (int) ($bed?->x ?? 250), 'y' => (int) ($bed?->y ?? 250), 'z' => (int) ($bed?->z ?? 250)]) }}</p>
             <p id="farm-upload-status" class="mt-1 hidden text-sm text-slate-600" role="status"></p>
         @endif
+        <div id="farm-preview-box" class="mt-3 {{ $file ? '' : 'hidden' }} overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <canvas id="farm-preview" class="block h-64 w-full touch-none" data-model="{{ $file ? route('api.files.stl', $file) : '' }}"></canvas>
+        </div>
 
         <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.quality.label') }}</div>
         <div class="mt-2 grid grid-cols-3 gap-2">

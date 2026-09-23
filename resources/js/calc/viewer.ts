@@ -1,6 +1,6 @@
 import {
-    AmbientLight, BufferGeometry, Color, DirectionalLight, GridHelper, HemisphereLight, Mesh, MeshStandardMaterial,
-    PerspectiveCamera, Scene, Vector3, WebGLRenderer, Box3, Float32BufferAttribute,
+    AmbientLight, BufferGeometry, Color, DirectionalLight, GridHelper, HemisphereLight, LineBasicMaterial, LineSegments, Mesh,
+    MeshStandardMaterial, PerspectiveCamera, Scene, Vector3, WebGLRenderer, Box3, Float32BufferAttribute,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -12,6 +12,7 @@ export class Viewer {
     private camera: PerspectiveCamera;
     private controls: OrbitControls;
     private mesh: Mesh | null = null;
+    private supports: LineSegments | null = null;
     private grid: GridHelper | null = null;
     private frontal = false;
     // light teal + flat shading: layer-like facets and embossed letters stay readable
@@ -70,6 +71,44 @@ export class Viewer {
         if (!this.mesh) return;
         this.mesh.scale.setScalar(scale);
     }
+
+    /** The plain model in a filament colour (CSS hex); null goes back to the default teal. */
+    setColor(hex: string | null): void {
+        this.material.color.set(hex && /^#?[0-9a-f]{6}$/i.test(hex) ? (hex.startsWith('#') ? hex : `#${hex}`) : 0x5eead4);
+    }
+
+    /**
+     * Support structures from the slicer (App\Engines\Gcode\SupportLines): float32 header of 8 (version, count,
+     * model footprint min x, min y, max x, max y) then count × two points, in printer coordinates. They are hung under
+     * the mesh and shifted so the footprint of the sliced part lands on the STL. null removes them.
+     */
+    setSupports(buffer: ArrayBuffer | null, visible = true): void {
+        if (this.supports) {
+            this.supports.parent?.remove(this.supports);
+            this.supports.geometry.dispose();
+            this.supports = null;
+        }
+        if (!buffer || !this.mesh || buffer.byteLength < 32) return;
+        const head = new Float32Array(buffer, 0, 8);
+        const n = Math.min(head[1], Math.floor((buffer.byteLength - 32) / 24));
+        if (head[0] !== 1 || n < 1) return;
+        const pts = new Float32Array(buffer, 32, n * 6);
+        this.mesh.geometry.computeBoundingBox();
+        const b = this.mesh.geometry.boundingBox!;
+        const dx = (b.min.x + b.max.x) / 2 - (head[2] + head[4]) / 2;
+        const dy = (b.min.y + b.max.y) / 2 - (head[3] + head[5]) / 2;
+        const geom = new BufferGeometry();
+        geom.setAttribute('position', new Float32BufferAttribute(pts, 3));
+        this.supports = new LineSegments(geom, new LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.55 }));
+        this.supports.position.set(dx, dy, b.min.z);
+        this.supports.visible = visible;
+        this.mesh.add(this.supports);
+    }
+
+    showSupports(on: boolean): void {
+        if (this.supports) this.supports.visible = on;
+    }
+
 
     private fit(): void {
         if (!this.mesh) return;

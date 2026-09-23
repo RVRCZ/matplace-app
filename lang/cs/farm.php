@@ -43,6 +43,7 @@ return [
         'supports' => 'Podpěry',
         'supports_yes' => 'ano, stromové, jen kde jsou potřeba',
         'supports_no' => 'nejsou potřeba',
+        'supports_hide' => 'Skrýt podpěry', 'supports_show' => 'Zobrazit podpěry',
         'oriented' => 'Model jsme natočili pro co nejlepší tisk. V náhledu je v poloze, ve které se bude tisknout.',
         'price' => 'Cena',
         'with_vat' => 'včetně DPH',

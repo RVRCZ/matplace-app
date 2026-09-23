@@ -43,6 +43,7 @@ return [
         'supports' => 'Supports',
         'supports_yes' => 'yes, tree supports, only where needed',
         'supports_no' => 'not needed',
+        'supports_hide' => 'Hide supports', 'supports_show' => 'Show supports',
         'oriented' => 'We turned the model for the best print. The preview shows it the way it will be printed.',
         'price' => 'Price',
         'with_vat' => 'VAT included',

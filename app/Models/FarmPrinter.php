@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Farm\FarmSettings;
+use App\Engines\DTO\Dimensions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -85,6 +86,20 @@ class FarmPrinter extends Model
         }
 
         return $this->isOnline() ? ($this->isAgentDriven() ? $this->state : 'manual') : 'offline';
+    }
+
+    /** Would a model of this size go on the plate (turned any way round), keeping the bed margin? */
+    public function fits(Dimensions $d): bool
+    {
+        $margin = 2 * (float) app(FarmSettings::class)->get('bed_margin_mm');
+
+        return $d->fits($this->bed_x - $margin, $this->bed_y - $margin, $this->bed_z);
+    }
+
+    /** Plate volume: the bigger machine wins a model the small one cannot take. */
+    public function bedVolume(): float
+    {
+        return (float) $this->bed_x * (float) $this->bed_y * (float) $this->bed_z;
     }
 
     /** May a queued job start right now without a person touching anything? */

@@ -14,7 +14,7 @@ interface FarmState {
     quality: string; strength: string; unit: string; unit_guess: { unit: string; confident: boolean } | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; shipping_price: number;
-    colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null;
+    colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null;
     print: { status: string; progress: number; snapshot_url: string | null; snapshot_at: string | null } | null;
     timelapse_url?: string | null;
@@ -49,6 +49,17 @@ export function bootFarmAdminViewer(): void {
 
 export function bootFarmStart(): void {
     const cfg = (window as unknown as { MP_FARM_START?: { upload: string; files: string; maxMb: number; text: Record<string, string> } }).MP_FARM_START;
+    // a look at the model: the one handed over from the calculator, or the one just uploaded
+    const preview = $<HTMLCanvasElement>('farm-preview');
+    let viewer: Viewer | null = null;
+    const showModel = (url: string): void => {
+        if (!preview) return;
+        viewer ??= new Viewer(preview);
+        show($('farm-preview-box'), true);
+        loadGeometryFromUrl(url).then((g) => viewer!.setGeometry(g, 1, null)).catch(() => show($('farm-preview-box'), false));
+    };
+    if (preview?.dataset.model) showModel(preview.dataset.model);
+
     const input = $<HTMLInputElement>('farm-upload');
     if (!cfg || !input) return;
     const status = $('farm-upload-status')!;
@@ -75,6 +86,7 @@ export function bootFarmStart(): void {
             if (info.status !== 'ready') throw new Error('processing');
             $<HTMLInputElement>('farm-file')!.value = info.uuid;
             say(file.name);
+            showModel(`${cfg.files}/${info.uuid}/model.stl`);
             go.disabled = false;
         } catch {
             say(cfg.text.failed);
@@ -91,6 +103,8 @@ export function bootFarmOrder(): void {
     const viewer = new Viewer(canvas);
     let state = cfg.state;
     let shownModel = '';
+    let shownSupports = '';
+    let supportsOn = true;
     let picked: number | null = null;
     let delivery = state.delivery || 'pickup';
     let timer = 0;
@@ -119,6 +133,7 @@ export function bootFarmOrder(): void {
         box.querySelectorAll<HTMLButtonElement>('button[data-slot]').forEach((b) => b.addEventListener('click', () => { picked = Number(b.dataset.slot); render(); }));
         const c = state.colors.find((x) => x.slot === picked);
         $('farm-start-note')!.textContent = c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '';
+        viewer.setColor(c?.hex ?? null);
     };
 
     const renderBreakdown = (): void => {
@@ -202,11 +217,33 @@ export function bootFarmOrder(): void {
         show(q, !!s.queue);
         show($('farm-cancel'), s.can_cancel);
 
+        // the model in the colour that will print it; once paid, the chosen colour
+        if (s.status !== 'sliced') viewer.setColor(s.color?.hex ?? null);
         if (s.model_url && s.model_url !== shownModel) {
             shownModel = s.model_url;
-            loadGeometryFromUrl(s.model_url).then((g) => viewer.setGeometry(g, 1, null)).catch(() => { shownModel = ''; });
+            shownSupports = '';
+            loadGeometryFromUrl(s.model_url).then((g) => { viewer.setGeometry(g, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); showSupports(); }).catch(() => { shownModel = ''; });
+        } else {
+            showSupports();
         }
     };
+
+    // the supports the slicer built, drawn as thin lines; the customer can hide them to see the piece alone
+    const toggle = $<HTMLButtonElement>('farm-supports-toggle');
+    const showSupports = (): void => {
+        const url = state.supports_url;
+        show(toggle, !!url);
+        if (!url) { if (shownSupports) { viewer.setSupports(null); shownSupports = ''; } return; }
+        if (url === shownSupports || !shownModel) return;
+        shownSupports = url;
+        fetch(url, { credentials: 'same-origin' }).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject())).then((buf) => { if (shownSupports === url) viewer.setSupports(buf, supportsOn); }).catch(() => { shownSupports = ''; });
+    };
+    toggle?.addEventListener('click', () => {
+        supportsOn = !supportsOn;
+        viewer.showSupports(supportsOn);
+        toggle.setAttribute('aria-pressed', String(supportsOn));
+        toggle.textContent = tr(supportsOn ? 'farm.order.supports_hide' : 'farm.order.supports_show');
+    });
 
     const poll = async (): Promise<void> => {
         window.clearTimeout(timer);

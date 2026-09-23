@@ -40,6 +40,7 @@ class OrderController extends Controller
 
         return view('farm.start', [
             'file' => $file,
+            'bed' => $this->orders->largestBed(),
             'quality' => $quality,
             'settings' => $this->settings->all(),
             'balance' => $this->wallet->balance($request->user()),
@@ -169,6 +170,16 @@ class OrderController extends Controller
         return response()->file($path, ['Content-Type' => 'model/stl', 'Cache-Control' => 'private, max-age=60']);
     }
 
+    /** Support structures of the slice, as line segments for the 3D preview. */
+    public function supports(Request $request, FarmOrder $order): BinaryFileResponse
+    {
+        $this->authorizeOrder($request, $order);
+        $path = $order->absoluteSupportsPath();
+        abort_unless($path, 404);
+
+        return response()->file($path, ['Content-Type' => 'application/octet-stream', 'Cache-Control' => 'private, max-age=60']);
+    }
+
     /** Last camera picture of the customer's own print. */
     public function snapshot(Request $request, FarmOrder $order): BinaryFileResponse
     {
@@ -236,6 +247,7 @@ class OrderController extends Controller
             'delivery' => $order->delivery,
             'balance' => $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user),
             'model_url' => $order->print_stl_path || $order->modelFile?->stl_path ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
+            'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
             'timelapse_url' => $order->timelapse_path ? route('farm.orders.timelapse', $order) : null,
             'print' => $job ? [

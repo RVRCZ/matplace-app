@@ -125,6 +125,38 @@ class FarmOrderFlowTest extends TestCase
         $this->assertStringContainsString('reslice', $order->events->pluck('note')->implode(' '));
     }
 
+    public function test_a_bigger_machine_takes_what_the_small_one_cannot_and_a_colour_there_means_slicing_again(): void
+    {
+        // the seeder's Kobra 3 Max (420 x 420 x 500) with light blue PLA+ in slot 1; both machines manual = online
+        $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
+        $blue = \App\Models\FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PLA+'))->where('name', 'světle modrá')->firstOrFail();
+        $max->slots()->where('slot', 0)->update(['farm_color_id' => $blue->id, 'remaining_g' => 1000, 'enabled' => true]);
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+
+        // a 300 mm cube fits only the Max: sliced for it from the start, the S1's white is not offered
+        $big = $this->order(300.0);
+        $this->assertSame($max->id, $big->farm_printer_id);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$big->token}/status")->json();
+        $this->assertSame(['light blue'], array_column($state['colors'], 'name'));   // test locale is en
+
+        // a small part goes to the cheapest kind's machine (the S1) but both machines' colours are on offer
+        $small = $this->order();
+        $this->assertSame($s1->id, $small->farm_printer_id);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$small->token}/status")->json();
+        $this->assertEqualsCanonicalizing(['white', 'light blue'], array_column($state['colors'], 'name'));
+        $offer = collect($state['colors'])->firstWhere('name', 'light blue');
+
+        // choosing the Max's blue: paid at the shown price, sliced again for the Max, queued there
+        $this->credit(1000);
+        $this->actingAs($this->user)->postJson("/farm/orders/{$small->token}/pay", ['slot' => $offer['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $offer['total']])->assertOk();
+        $small->refresh();
+        $this->assertSame($max->id, $small->farm_printer_id);
+        $this->assertSame(FarmOrder::STATUS_QUEUED, $small->status);
+        $this->assertSame('kobra-3-max-01', $small->slice_params['printer']['key']);
+        $this->assertEqualsWithDelta($offer['total'], $small->price_total, 0.001);
+        $this->assertStringContainsString('reslice for kobra-3-max-01', $small->events->pluck('note')->implode(' '));
+    }
+
     public function test_guests_cannot_rent_a_printer(): void
     {
         $this->get('/farm')->assertRedirect('/login');

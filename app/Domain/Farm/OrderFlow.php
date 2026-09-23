@@ -57,6 +57,7 @@ final class OrderFlow
             throw new FarmRefusal('price_changed', ['total' => $price['total']]);
         }
 
+        $slicedFor = $order->farm_printer_id;
         DB::transaction(function () use ($order, $offer, $delivery, $address, $ip, $price, $note) {
             $order->fill([
                 'farm_printer_id' => $offer['printer']->id, 'farm_printer_slot_id' => $offer['slot']->id, 'farm_color_id' => $offer['color']->id,
@@ -70,10 +71,11 @@ final class OrderFlow
             $this->move($order, FarmOrder::STATUS_PAID, 'user', $order->user_id);
         });
 
-        if ($offer['color']->sliceOverrides()) {
-            // this spool prints best with its own slicer settings: slice again for them, the paid order waits meanwhile
+        if ($offer['color']->sliceOverrides() || $offer['printer']->id !== $slicedFor) {
+            // this spool prints best with its own slicer settings, or sits in another machine than the order was sliced
+            // for: slice again, the paid order waits meanwhile (the price stays as quoted)
             $order->forceFill(['status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'slicing'])->save();
-            $order->events()->create(['from' => FarmOrder::STATUS_PAID, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'system', 'note' => 'reslice for the spool settings']);
+            $order->events()->create(['from' => FarmOrder::STATUS_PAID, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'system', 'note' => $offer['printer']->id !== $slicedFor ? 'reslice for '.$offer['printer']->key : 'reslice for the spool settings']);
             \App\Jobs\PrepareFarmOrder::dispatch($order->id);
         } elseif ($this->settings->get('require_approval')) {
             $this->alertAdmin(__('farm.admin.mail.approve', ['number' => $order->number]), $order);
