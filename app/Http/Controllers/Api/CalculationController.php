@@ -46,6 +46,21 @@ class CalculationController extends Controller
         return response()->json(['calculation' => self::describe($calculation->load('modelFile'))]);
     }
 
+    /**
+     * Stored prices, except when the marketplace is off: then a calculation shared from before shows the farm's
+     * current list, not the printers' lists it was computed with.
+     */
+    private static function currentPrices(Calculation $c): ?array
+    {
+        if (config('features.marketplace') || ! $c->prices || ! $c->slicer || ! empty($c->pricing_context['farm'])) {
+            return $c->prices;
+        }
+        $service = app(\App\Domain\Calculation\CalculationService::class);
+        $profiles = app(\App\Domain\Calculation\PricingSource::class)->fromContext(['farm' => true], (string) ($c->params['material'] ?? 'PLA'));
+
+        return $service->pricesFor((float) ($c->slicer['grams'] ?? 0), (int) ($c->slicer['minutes'] ?? 0), (int) ($c->params['quantity'] ?? 1), $profiles);
+    }
+
     public static function describe(Calculation $c): array
     {
         return [
@@ -56,7 +71,7 @@ class CalculationController extends Controller
             'params' => $c->params,
             'rough' => $c->rough,
             'slicer' => $c->slicer ? collect($c->slicer)->except(['gcode_path', 'raw'])->all() : null,
-            'prices' => $c->prices,
+            'prices' => self::currentPrices($c),
             'file' => $c->modelFile ? UploadController::describe($c->modelFile) : null,
             'created_at' => $c->created_at?->toIso8601String(),
         ];

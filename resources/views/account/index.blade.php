@@ -53,8 +53,8 @@
                         <div class="text-xs text-slate-500">{{ $c->params['material'] ?? '' }} · {{ $c->params['quantity'] ?? 1 }} ks · {{ $c->created_at->format('j. n. Y H:i') }}</div>
                     </div>
                     <div class="text-right text-sm font-semibold">
-                        @if(config('features.marketplace'))
-                            @php $tot = collect($c->prices ?? $c->rough['prices'] ?? [])->pluck('total'); @endphp
+                        @if(config('features.marketplace') || ($c->slicer && \App\Http\Controllers\Api\CalculationController::describe($c)['prices']))
+                            @php $tot = collect(\App\Http\Controllers\Api\CalculationController::describe($c)['prices'] ?? $c->rough['prices'] ?? [])->pluck('total'); @endphp
                             @if($tot->isNotEmpty()){{ number_format($tot->min(), 0, ',', ' ') }}@if($tot->count() > 1) – {{ number_format($tot->max(), 0, ',', ' ') }}@endif Kč@else —@endif
                         @else
                             @php $m = $c->slicer['minutes'] ?? $c->rough['minutes'] ?? null; @endphp
