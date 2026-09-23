@@ -16,6 +16,9 @@ class FarmCommand extends Model
 
     public const TYPE_CANCEL = 'cancel';
 
+    /** payload {on: bool} - chamber light for the camera; needs no running job */
+    public const TYPE_LIGHT = 'light';
+
     protected $fillable = ['farm_printer_id', 'farm_print_job_id', 'type', 'payload', 'status', 'result', 'created_by', 'sent_at', 'finished_at'];
 
     protected $casts = ['payload' => 'array', 'sent_at' => 'datetime', 'finished_at' => 'datetime'];

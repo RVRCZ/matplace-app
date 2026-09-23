@@ -8,7 +8,10 @@ Moonraker (Klipper) driver - Anycubic Kobra S1 with the Rinkhals firmware overla
   changes    websocket /websocket, printer.objects.subscribe -> notify_status_update (instant state changes)
   camera     GET  <snapshot_url>                  (Rinkhals: http://<ip>/webcam/?action=snapshot)
 
-Options (config.yaml): url, api_key (optional), snapshot_url (optional), timeout (seconds, default 15).
+  light      POST /machine/device_power/device?device=<light_device>&action=on|off   (Rinkhals: "chamber_light")
+
+Options (config.yaml): url, api_key (optional), snapshot_url (optional), light_device (optional, default chamber_light
+on Rinkhals; "" = the printer has no light), timeout (seconds, default 15).
 """
 from __future__ import annotations
 
@@ -45,6 +48,7 @@ class MoonrakerDriver(PrinterDriver):
         self.timeout = aiohttp.ClientTimeout(total=float(options.get("timeout", 15)))
         self.headers = {"X-Api-Key": options["api_key"]} if options.get("api_key") else {}
         self.snapshot_url = options.get("snapshot_url")
+        self.light_device = options.get("light_device", "chamber_light")
         self._session: Optional[aiohttp.ClientSession] = None
         self._ws_task: Optional[asyncio.Task] = None
 
@@ -113,6 +117,14 @@ class MoonrakerDriver(PrinterDriver):
         except Exception as e:  # noqa: BLE001 - a missing picture is never a reason to disturb a print
             log.debug("%s: snapshot failed: %s", self.key, e)
         return None
+
+    async def light(self, on: bool) -> None:
+        if not self.light_device or not self._session:
+            return
+        try:
+            await self._post("/machine/device_power/device", params={"device": self.light_device, "action": "on" if on else "off"})
+        except DriverError as e:
+            log.debug("%s: light %s failed: %s", self.key, "on" if on else "off", e)
 
     # -- acting ------------------------------------------------------------------------------------------------
     async def start(self, gcode_path: str, filename: str, slot: int) -> None:

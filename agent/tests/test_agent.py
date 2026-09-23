@@ -114,6 +114,23 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.server.jobs()[-1]["status"], "cancelled")
         self.assertEqual([r[:2] for r in self.server.results], [(1, True), (2, True), (3, True), (4, True)])
 
+    async def test_light_is_on_while_printing_and_switchable_by_command(self):
+        agent = self.agent(print_seconds=5)
+        driver = agent.workers["p1"].driver
+        self.server.queue.append({"id": 1, "printer": "p1", "type": "light", "job_id": None, "payload": {"on": True}})
+        await self.rounds(agent, 2)
+        self.assertTrue(driver.light_on)
+        self.server.queue.append({"id": 2, "printer": "p1", "type": "light", "job_id": None, "payload": {"on": False}})
+        await self.rounds(agent, 2)
+        self.assertFalse(driver.light_on)
+        self.server.queue.append(start_cmd(cmd_id=3))
+        await self.rounds(agent, 3)
+        self.assertTrue(driver.light_on, "the camera needs light during the print")
+        self.server.queue.append({"id": 4, "printer": "p1", "type": "cancel", "job_id": 7, "payload": {}})
+        await self.rounds(agent, 3)
+        self.assertFalse(driver.light_on, "switched off once the job left the printer")
+        self.assertEqual([r[:2] for r in self.server.results], [(1, True), (2, True), (3, True), (4, True)])
+
     async def test_failed_print_is_reported_with_the_printers_message(self):
         agent = self.agent(fail_at=30)
         self.server.queue.append(start_cmd())

@@ -192,6 +192,7 @@ return [
         'eta' => 'starts in :start, done in :finish',
         'running' => 'Running now',
         'pause' => 'Pause', 'resume' => 'Resume', 'cancel' => 'Cancel the print',
+        'light' => 'Light', 'light_on' => 'Turn on', 'light_off' => 'Turn off',
         'cancel_confirm' => 'Really cancel the running print?',
         'approve' => 'Approve for printing',
         'download_gcode' => 'Download G-code',

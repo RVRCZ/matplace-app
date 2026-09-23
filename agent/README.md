@@ -100,6 +100,7 @@ Viz `config.example.yaml`. Token lze místo souboru předat proměnnou prostřed
 | `printers[].driver` | `moonraker` nebo `mock` |
 | `printers[].url` | Moonraker, `http://IP:7125` |
 | `printers[].snapshot_url` | snímek z kamery, u Rinkhals `http://IP/webcam/?action=snapshot` |
+| `printers[].light_device` | světlo komory (Moonraker power device); výchozí `chamber_light` = Rinkhals. Agent ho rozsvítí před startem tisku a zhasne po jeho konci, v adminu jsou tlačítka Rozsvítit/Zhasnout. `""` = tiskárna světlo nemá |
 
 ## Zkouška bez tiskárny (mock)
 
@@ -134,6 +135,7 @@ G‑code z matplace má stejný začátek a konec jako G‑code z Anycubic Slice
 | Co | Výsledek |
 |---|---|
 | Moonraker `:7125`, Mainsail `:4409`, Fluidd `:4408`, kamera `http://IP/webcam/?action=snapshot` (JPEG) | funguje |
+| světlo: `POST /machine/device_power/device?device=chamber_light&action=on|off` | funguje (Rinkhals power device) |
 | Upload `POST /server/files/upload` + `POST /printer/print/start` | tisk se rozjel a proběhla celá startovní sekvence jako ze Sliceru Next: předehřev 170/55 °C, LeviQ (sondování), zahřátí na 220 °C, čisticí linka, tisk |
 | `print_stats` během startu | `progress` 0, po začátku první vrstvy se `print_duration` vynuluje → hlášený čas je čistý čas tisku (to chce kalibrace ceny) |
 | Navíc oproti čistému Klipperu | `print_stats.info.current_layer/total_layer`, `virtual_sdcard.remain_time` (agent je posílá v telemetrii) |

@@ -69,3 +69,6 @@ class PrinterDriver(abc.ABC):
     async def snapshot(self) -> Optional[bytes]:
         """JPEG from the printer's camera, or None when there is none."""
         return None
+
+    async def light(self, on: bool) -> None:
+        """Chamber light, when the printer has one: on for the camera during a print. Never raises."""

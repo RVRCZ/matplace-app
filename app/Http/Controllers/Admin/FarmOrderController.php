@@ -159,12 +159,20 @@ class FarmOrderController extends Controller
         return back()->with('status', $started ? __('farm.admin.started', ['number' => $started->order->number]) : __('farm.admin.saved'));
     }
 
-    /** Pause / resume / cancel of the running print, carried out by the agent. */
+    /** Pause / resume / cancel of the running print (and the chamber light), carried out by the agent. */
     public function command(Request $request, FarmPrinter $printer): RedirectResponse
     {
-        $data = $request->validate(['type' => ['required', 'in:pause,resume,cancel']]);
+        $data = $request->validate(['type' => ['required', 'in:pause,resume,cancel,light_on,light_off']]);
+        if (! $printer->isAgentDriven()) {
+            return back()->with('error', __('farm.admin.no_job'));
+        }
+        if (str_starts_with($data['type'], 'light_')) {
+            FarmCommand::create(['farm_printer_id' => $printer->id, 'type' => FarmCommand::TYPE_LIGHT, 'payload' => ['on' => $data['type'] === 'light_on'], 'created_by' => $request->user()->id]);
+
+            return back()->with('status', __('farm.admin.command_sent'));
+        }
         $job = $printer->activeJob();
-        if (! $job || ! $printer->isAgentDriven()) {
+        if (! $job) {
             return back()->with('error', __('farm.admin.no_job'));
         }
         FarmCommand::create(['farm_printer_id' => $printer->id, 'farm_print_job_id' => $job->id, 'type' => $data['type'], 'created_by' => $request->user()->id]);

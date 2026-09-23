@@ -192,6 +192,7 @@ return [
         'eta' => 'začne za :start, hotovo za :finish',
         'running' => 'Právě běží',
         'pause' => 'Pauza', 'resume' => 'Pokračovat', 'cancel' => 'Zrušit tisk',
+        'light' => 'Světlo', 'light_on' => 'Rozsvítit', 'light_off' => 'Zhasnout',
         'cancel_confirm' => 'Opravdu zrušit běžící tisk?',
         'approve' => 'Schválit k tisku',
         'download_gcode' => 'Stáhnout G-code',

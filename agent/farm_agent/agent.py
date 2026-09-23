@@ -160,6 +160,8 @@ class Agent:
                     await w.driver.resume()
                 elif kind == "cancel":
                     await w.driver.cancel()
+                elif kind == "light":
+                    await w.driver.light(bool((cmd.get("payload") or {}).get("on", True)))
                 else:
                     raise DriverError(f"unknown command '{kind}'")
                 log.info("%s: %s done", w.key, kind)
@@ -181,6 +183,7 @@ class Agent:
         filename = f"mp{job_id}-" + os.path.basename(str(payload.get("filename") or "print.gcode"))
         local = os.path.join(self.config.work_dir, w.key, filename)
         await self.server.download_gcode(str(payload["gcode_url"]), local)
+        await w.driver.light(True)     # the camera wants to see something
         await w.driver.start(local, filename, int(payload.get("slot", 0)))
         w.tracked = Tracked(job_id=job_id, filename=filename)
         self._save_state()
@@ -188,6 +191,7 @@ class Agent:
     # -- what survives a restart -----------------------------------------------------------------------------------
     def _forget(self, w: PrinterWorker) -> None:
         if w.tracked:
+            asyncio.get_event_loop().create_task(w.driver.light(False))
             try:
                 os.remove(os.path.join(self.config.work_dir, w.key, w.tracked.filename))
             except OSError:

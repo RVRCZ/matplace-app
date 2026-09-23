@@ -15,6 +15,7 @@ printers:
     driver: moonraker
     url: http://192.168.8.21:7125                          # Moonraker on the printer (Rinkhals), reserve this IP in the router
     snapshot_url: http://192.168.8.21/webcam/?action=snapshot
+    # light_device: chamber_light                          # switched on for the camera during a print (Rinkhals default); "" = no light
     # api_key: ...                                          # only when Moonraker is set up to require one
 
   # Second, third… printer: one more block. One agent serves them all.

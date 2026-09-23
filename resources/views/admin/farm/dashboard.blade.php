@@ -56,6 +56,14 @@
                 </div>
                 <p class="mt-1 text-xs text-slate-600">{{ __('farm.admin.bed_note') }}</p>
             </form>
+            @if($p->isAgentDriven())
+                <form method="post" action="{{ route('admin.farm.printers.command', $p) }}" class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                    @csrf
+                    <span class="text-slate-600">{{ __('farm.admin.light') }}:</span>
+                    <button name="type" value="light_on" class="btn-quiet text-sm">{{ __('farm.admin.light_on') }}</button>
+                    <button name="type" value="light_off" class="btn-quiet text-sm">{{ __('farm.admin.light_off') }}</button>
+                </form>
+            @endif
 
             @if($row['job'])
                 @php $job = $row['job']; @endphp

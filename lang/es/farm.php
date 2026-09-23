@@ -192,6 +192,7 @@ return [
         'eta' => 'empieza en :start, termina en :finish',
         'running' => 'En marcha ahora',
         'pause' => 'Pausa', 'resume' => 'Continuar', 'cancel' => 'Cancelar la impresión',
+        'light' => 'Luz', 'light_on' => 'Encender', 'light_off' => 'Apagar',
         'cancel_confirm' => '¿Cancelar la impresión en marcha?',
         'approve' => 'Aprobar para imprimir',
         'download_gcode' => 'Descargar G-code',

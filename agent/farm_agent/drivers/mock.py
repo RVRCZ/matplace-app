@@ -43,6 +43,7 @@ class MockDriver(PrinterDriver):
         self._printed = 0.0              # seconds of actual printing so far
         self._since: Optional[float] = None
         self._message = ""
+        self.light_on = False
 
     def _advance(self) -> None:
         if self._state == "printing" and self._since is not None:
@@ -70,6 +71,7 @@ class MockDriver(PrinterDriver):
             "bed_target": 55.0 if hot else 0.0,
             "klipper_state": "heating" if heating else self._state,
             "mock": True,
+            "light": "on" if self.light_on else "off",
         }
         job = None
         if self._file and self._state != "standby":
@@ -115,6 +117,9 @@ class MockDriver(PrinterDriver):
 
     async def snapshot(self) -> Optional[bytes]:
         return _JPEG
+
+    async def light(self, on: bool) -> None:
+        self.light_on = on
 
     async def _changed(self) -> None:
         if self.on_change:
