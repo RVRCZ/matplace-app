@@ -69,7 +69,7 @@ class CalculationController extends Controller
             'status' => $c->status,
             'error' => $c->error,
             'params' => $c->params,
-            'rough' => $c->rough,
+            'rough' => config('features.marketplace') || ! is_array($c->rough) ? $c->rough : collect($c->rough)->except(['prices'])->all(),   // printers' rough lists never leak past the switch
             'slicer' => $c->slicer ? collect($c->slicer)->except(['gcode_path', 'raw'])->all() : null,
             'prices' => self::currentPrices($c),
             'file' => $c->modelFile ? UploadController::describe($c->modelFile) : null,

@@ -50,7 +50,8 @@ class MarketplaceSwitchTest extends TestCase
         $token = $this->actingAs($user)->postJson('/api/calculations', ['file' => $uuid, 'material' => 'PLA', 'quality' => 'standard', 'infill' => 15])->json('calculation.token');
         // pretend it was computed with printers' lists before the switch was flipped
         $calc = \App\Models\Calculation::where('token', $token)->firstOrFail();
-        $calc->forceFill(['prices' => [['profile' => 'p39', 'label' => 'Print Fast', 'total' => 999, 'lead_time_days' => 3, 'unit' => ['material' => 1, 'time' => 1, 'royalty' => 0], 'setup' => 0, 'quantity' => 1, 'printer_profile_id' => 39]], 'pricing_context' => ['printer_profile_ids' => [39]]])->save();
+        $old = [['profile' => 'p39', 'label' => 'Print Fast', 'total' => 999, 'lead_time_days' => 3, 'unit' => ['material' => 1, 'time' => 1, 'royalty' => 0], 'setup' => 0, 'quantity' => 1, 'printer_profile_id' => 39]];
+        $calc->forceFill(['prices' => $old, 'rough' => ($calc->rough ?? []) + ['prices' => $old], 'pricing_context' => ['printer_profile_ids' => [39]]])->save();
 
         $r = $this->get('/c/'.$token)->assertOk();
         $this->assertStringNotContainsString('Print Fast', $r->getContent());
