@@ -188,6 +188,8 @@ class FarmTuningTest extends TestCase
         $this->assertSame([230, 225, 220, 215, 210], $order->test_params['temps']);
         $this->assertSame(230, $order->test_params['candidate']['nozzle_temp'], 'the object is sliced at the bottom floor');
         $this->assertSame(['test_candidate'], $order->slice_params['profile_layers']);
+        $this->assertSame('0', $order->slice_params['overrides']['process']['enable_support'], 'bridges and overhangs are the test: no supports');
+        $this->assertFalse($order->supports_used);
         $this->assertSame(FarmPrinterMaterial::STATUS_TESTING, $row->fresh()->status);
         $this->assertSame(['x' => 31.0, 'y' => 30.0, 'z' => 50.0], array_map(fn ($v) => round($v, 1), $order->check['dims']));
         Mail::assertNotQueued(FarmOrderStatus::class);   // no customer to tell; the operator's "send it by hand" alert for a manual printer is fine

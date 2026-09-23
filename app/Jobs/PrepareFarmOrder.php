@@ -108,7 +108,11 @@ class PrepareFarmOrder implements ShouldQueue
                 'process' => ['layer_height' => (string) $layer] + $profile->process + (array) $printer->process_overrides,
                 'filament' => $profile->filament,
             ];
-            $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: null, treeSupports: true))
+            if ($order->isTest()) {
+                // the bridges and overhangs of a test object are the test: never prop them up
+                $overrides['process']['enable_support'] = '0';
+            }
+            $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() ? false : null, treeSupports: true))
                 ->withFarmProfile($profiles, $overrides);
             $result = $slicer->slice($disk->path($stlRel), $params);
             if (! $result->gcodePath || ! is_file($result->gcodePath)) {
