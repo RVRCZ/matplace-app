@@ -122,7 +122,10 @@ class MoonrakerDriver(PrinterDriver):
         if not self.light_device or not self._session:
             return
         try:
-            await self._post("/machine/device_power/device", params={"device": self.light_device, "action": "on" if on else "off"})
+            # Moonraker's shell device does not learn about the printer's own light button: when it believes the light
+            # is on already, "on" does nothing, so switch off first (Kobra S1, 23 Sep 2026: status "on", camera black)
+            for action in (("off", "on") if on else ("off",)):
+                await self._post("/machine/device_power/device", params={"device": self.light_device, "action": action})
         except DriverError as e:
             log.debug("%s: light %s failed: %s", self.key, "on" if on else "off", e)
 
