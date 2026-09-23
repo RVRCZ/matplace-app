@@ -172,14 +172,35 @@ final class OrderFlow
 
     private function onStopped(FarmOrder $order, bool $cancelPrint): void
     {
-        $this->wallet->giveBack($order);
-        foreach ($order->printJobs()->whereIn('status', FarmPrintJob::ACTIVE)->get() as $job) {
+        $jobs = $order->printJobs()->whereIn('status', FarmPrintJob::ACTIVE)->get();
+        // a cancelled print that already ran is paid for as far as it got: the handling fee in full, time and material
+        // by the printed share (a failed print is the farm's problem and costs nothing)
+        $progress = $cancelPrint ? (float) $jobs->whereIn('status', [FarmPrintJob::STATUS_PRINTING, FarmPrintJob::STATUS_PAUSED])->max('progress') : 0.0;
+        $keep = $progress > 0 ? $this->shareOfPrice((array) $order->price, $progress / 100) : 0.0;
+        $this->wallet->giveBack($order, note: $keep > 0 ? __('farm.credit.partial', ['percent' => round($progress)]) : null, keep: $keep);
+        if ($keep > 0) {
+            $order->forceFill(['price' => ['charged_on_cancel' => $keep, 'printed_percent' => round($progress, 1)] + (array) $order->price])->save();
+            $order->events()->create(['from' => $order->status, 'to' => $order->status, 'actor' => 'system', 'note' => "kept {$keep} for {$progress} % printed"]);
+        }
+        foreach ($jobs as $job) {
             if ($cancelPrint && in_array($job->status, [FarmPrintJob::STATUS_PRINTING, FarmPrintJob::STATUS_PAUSED, FarmPrintJob::STATUS_SENT, FarmPrintJob::STATUS_UNKNOWN], true)) {
                 FarmCommand::create(['farm_printer_id' => $job->farm_printer_id, 'farm_print_job_id' => $job->id, 'type' => FarmCommand::TYPE_CANCEL]);
             }
             FarmCommand::where('farm_print_job_id', $job->id)->where('status', 'pending')->where('type', FarmCommand::TYPE_START)->update(['status' => 'failed', 'result' => 'order stopped']);
             $job->update(['status' => $cancelPrint ? FarmPrintJob::STATUS_CANCELLED : FarmPrintJob::STATUS_FAILED, 'finished_at' => now()]);
         }
+    }
+
+    /** Fixed fee plus the printed share of time and material, with VAT, whole crowns; never above the print price. */
+    private function shareOfPrice(array $price, float $share): float
+    {
+        if (! isset($price['fixed'], $price['time'], $price['material'], $price['print_total'])) {
+            return 0.0;
+        }
+        $net = (float) $price['fixed'] + $share * ((float) $price['time'] + (float) $price['material']);
+        $gross = $net * (1 + (float) ($price['inputs']['vat_percent'] ?? 0) / 100);
+
+        return min((float) $price['print_total'], ceil($gross));
     }
 
     private function notifyCustomer(FarmOrder $order): void

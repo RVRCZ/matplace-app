@@ -331,6 +331,43 @@ T2 ; slot chosen by matplace farm
         $this->sync($auth)->assertJsonCount(0, 'commands');
     }
 
+    public function test_a_print_cancelled_part_way_is_paid_for_as_far_as_it_got(): void
+    {
+        [$printer, $auth] = $this->agentPrinter();
+        $this->sync($auth)->assertOk();
+        $order = $this->order();
+        $this->credit(1000);
+        $paid = $this->pay($order)->assertOk()->json();
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($admin)->post("/admin/farm/printers/{$printer->id}/bed", ['clear' => 1])->assertRedirect();
+        $cmd = $this->sync($auth)->json('commands.0');
+        $this->postJson("/api/agent/commands/{$cmd['id']}/result", ['ok' => true], $auth)->assertOk();
+        $this->sync($auth, 'printing', ['id' => $cmd['job_id'], 'status' => 'printing', 'progress' => 40, 'print_duration' => 600, 'filament_used' => 1200])->assertOk();
+
+        // the operator stops it at 40 %: the handling fee stays, time and material count for the printed share
+        app(\App\Domain\Farm\OrderFlow::class)->move($order->refresh(), FarmOrder::STATUS_CANCELLED, 'admin', $admin->id);
+        $order->refresh();
+        $p = $order->price;
+        $expected = min($p['print_total'], ceil(($p['fixed'] + 0.4 * ($p['time'] + $p['material'])) * (1 + $p['inputs']['vat_percent'] / 100)));
+        $this->assertGreaterThan(0, $expected);
+        $this->assertLessThan($paid['total'], $expected);
+        $this->assertEqualsWithDelta($expected, $p['charged_on_cancel'], 0.001);
+        $this->assertEqualsWithDelta(1000 - $expected, app(Wallet::class)->balance($this->user), 0.001);
+        $this->assertDatabaseHas('credit_transactions', ['farm_order_id' => $order->id, 'type' => 'capture', 'note' => (string) $expected]);
+        $this->assertSame('cancel', \App\Models\FarmCommand::latest('id')->first()->type, 'the printer is told to stop');
+        // the admin's refund button can still hand the kept part back, on purpose
+        $this->assertEqualsWithDelta($expected, app(Wallet::class)->giveBack($order), 0.001);
+        $this->assertEqualsWithDelta(1000, app(Wallet::class)->balance($this->user), 0.001);
+        $this->assertSame(0.0, app(Wallet::class)->giveBack($order), 'and only once');
+
+        // an order cancelled before anything printed costs nothing
+        $other = $this->order();
+        $this->pay($other)->assertOk();
+        $this->actingAs($this->user)->postJson("/farm/orders/{$other->token}/cancel")->assertOk();
+        $this->assertEqualsWithDelta(1000, app(Wallet::class)->balance($this->user), 0.001);
+    }
+
     public function test_failed_print_returns_the_credit_and_alerts_the_admin(): void
     {
         [$printer, $auth] = $this->agentPrinter();

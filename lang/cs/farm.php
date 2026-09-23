@@ -144,6 +144,7 @@ return [
         'stripe_item' => 'Kredit matplace',
         'gateway_down' => 'Platební bránu se nepodařilo otevřít. Zkuste to prosím za chvíli.',
         'type' => ['topup' => 'Dobití', 'hold' => 'Zakázka', 'release' => 'Vrácení', 'refund' => 'Vrácení', 'charge' => 'Generování', 'adjust' => 'Úprava'],
+        'partial' => 'Vráceno po zrušení rozpracovaného tisku (vytištěno :percent %)',
     ],
 
     'mail' => [
@@ -154,7 +155,7 @@ return [
         'done' => ['subject' => 'Zakázka :number je vytištěná', 'body' => 'Tisk „:name“ je hotový a čeká na převzetí.'],
         'handed_over' => ['subject' => 'Zakázka :number je předaná', 'body' => 'Tisk „:name“ jsme vám předali nebo odeslali. Ať dobře slouží.'],
         'failed' => ['subject' => 'Zakázka :number se nepodařila', 'body' => 'Tisk „:name“ se bohužel nepovedl. Kredit jsme vám vrátili v plné výši.'],
-        'cancelled' => ['subject' => 'Zakázka :number je zrušená', 'body' => 'Zakázka „:name“ je zrušená a kredit je zpět na vašem účtu.'],
+        'cancelled' => ['subject' => 'Zakázka :number je zrušená', 'body' => 'Zakázka „:name“ je zrušená. Nevyužitý kredit je zpět na vašem účtu; z rozpracovaného tisku se účtuje jen vytištěná část.'],
     ],
 
     'terms' => [

@@ -144,6 +144,7 @@ return [
         'stripe_item' => 'Crédito matplace',
         'gateway_down' => 'No se pudo abrir la página de pago. Inténtelo dentro de un rato.',
         'type' => ['topup' => 'Recarga', 'hold' => 'Pedido', 'release' => 'Devolución', 'refund' => 'Reembolso', 'charge' => 'Generación', 'adjust' => 'Ajuste'],
+        'partial' => 'Devuelto tras cancelar una impresión a medias (:percent % impreso)',
     ],
 
     'mail' => [
@@ -154,7 +155,7 @@ return [
         'done' => ['subject' => 'El pedido :number está impreso', 'body' => 'La impresión «:name» está terminada y pendiente de entrega.'],
         'handed_over' => ['subject' => 'El pedido :number ha sido entregado', 'body' => 'Hemos entregado o enviado la impresión «:name». Que le sea útil.'],
         'failed' => ['subject' => 'El pedido :number ha fallado', 'body' => 'Lamentablemente la impresión «:name» no salió bien. Le hemos devuelto todo el crédito.'],
-        'cancelled' => ['subject' => 'El pedido :number está cancelado', 'body' => 'El pedido «:name» está cancelado y el crédito vuelve a estar en su cuenta.'],
+        'cancelled' => ['subject' => 'El pedido :number está cancelado', 'body' => 'El pedido «:name» está cancelado. El crédito no utilizado vuelve a su cuenta; una impresión detenida a medias se cobra solo por la parte impresa.'],
     ],
 
     'terms' => [

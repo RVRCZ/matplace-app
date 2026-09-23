@@ -144,6 +144,7 @@ return [
         'stripe_item' => 'matplace credit',
         'gateway_down' => 'The payment page could not be opened. Please try again in a while.',
         'type' => ['topup' => 'Top-up', 'hold' => 'Order', 'release' => 'Returned', 'refund' => 'Refund', 'charge' => 'Generation', 'adjust' => 'Adjustment'],
+        'partial' => 'Returned after a print was cancelled part-way (:percent % printed)',
     ],
 
     'mail' => [
@@ -154,7 +155,7 @@ return [
         'done' => ['subject' => 'Order :number is printed', 'body' => 'The print ":name" is finished and waiting for handover.'],
         'handed_over' => ['subject' => 'Order :number has been handed over', 'body' => 'We handed over or shipped the print ":name". May it serve you well.'],
         'failed' => ['subject' => 'Order :number failed', 'body' => 'Unfortunately the print ":name" did not succeed. Your credit has been returned in full.'],
-        'cancelled' => ['subject' => 'Order :number is cancelled', 'body' => 'The order ":name" is cancelled and the credit is back on your account.'],
+        'cancelled' => ['subject' => 'Order :number is cancelled', 'body' => 'The order ":name" is cancelled. Unused credit is back on your account; a print stopped part-way is charged only for the printed part.'],
     ],
 
     'terms' => [

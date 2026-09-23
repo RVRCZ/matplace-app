@@ -7,8 +7,8 @@
 import { Viewer } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
 
-interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; total: number; starts_now: boolean }
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; inputs: { vat_percent: number } }
+interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean }
 interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; error: string | null; error_text: string | null;
     quality: string; strength: string; unit: string; unit_guess: { unit: string; confident: boolean } | null;
@@ -151,7 +151,8 @@ export function bootFarmOrder(): void {
     };
 
     const renderBreakdown = (): void => {
-        const p = state.price;
+        // before payment the breakdown follows the picked colour (its kind's price per gram, its machine's rate)
+        const p = (state.status === 'sliced' && state.colors.find((x) => x.slot === picked)?.price) || state.price;
         const box = $('farm-breakdown')!;
         if (!p) { box.innerHTML = ''; return; }
         const ship = delivery === 'shipping' && state.status === 'sliced' ? state.shipping_price : p.shipping;

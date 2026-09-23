@@ -70,22 +70,37 @@ final class Wallet
         });
     }
 
-    /** Give the money back: a release while it was only held, a refund once it had been captured. Returns the amount. */
-    public function giveBack(FarmOrder $order, ?int $adminId = null, ?string $note = null): float
+    /**
+     * Give the money back: a release while it was only held, a refund once it had been captured. Returns the amount.
+     * $keep is the part that stays charged (a print stopped half-way): it is captured, the rest goes back.
+     */
+    public function giveBack(FarmOrder $order, ?int $adminId = null, ?string $note = null, float $keep = 0.0): float
     {
-        return DB::transaction(function () use ($order, $adminId, $note) {
+        return DB::transaction(function () use ($order, $adminId, $note, $keep) {
             User::whereKey($order->user_id)->lockForUpdate()->first();
             $net = round((float) CreditTransaction::where('farm_order_id', $order->id)->sum('amount'), 2);
             if ($net >= 0) {
                 return 0.0;   // nothing held or already returned
             }
             $captured = CreditTransaction::where('farm_order_id', $order->id)->where('type', CreditTransaction::TYPE_CAPTURE)->exists();
+            $keep = round(min(max($keep, 0.0), -$net), 2);
+            if ($keep > 0 && ! $captured) {
+                CreditTransaction::create([
+                    'user_id' => $order->user_id, 'type' => CreditTransaction::TYPE_CAPTURE, 'amount' => 0,
+                    'currency' => $order->currency, 'farm_order_id' => $order->id, 'note' => (string) $keep, 'created_by' => $adminId,
+                ]);
+                $captured = true;
+            }
+            $back = round(-$net - $keep, 2);
+            if ($back <= 0) {
+                return 0.0;
+            }
             CreditTransaction::create([
                 'user_id' => $order->user_id, 'type' => $captured ? CreditTransaction::TYPE_REFUND : CreditTransaction::TYPE_RELEASE,
-                'amount' => -$net, 'currency' => $order->currency, 'farm_order_id' => $order->id, 'note' => $note, 'created_by' => $adminId,
+                'amount' => $back, 'currency' => $order->currency, 'farm_order_id' => $order->id, 'note' => $note, 'created_by' => $adminId,
             ]);
 
-            return -$net;
+            return $back;
         });
     }
 

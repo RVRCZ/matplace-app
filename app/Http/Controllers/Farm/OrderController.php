@@ -213,7 +213,7 @@ class OrderController extends Controller
         $colors = $order->status === FarmOrder::STATUS_SLICED
             ? $this->orders->availableColors($order)->map(fn ($r) => [
                 'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'photo' => $r['color']->photoUrl(),
-                'enough' => $r['enough'], 'total' => $this->orders->priceFor($order, $r['printer'], 'pickup', $r['color']->material)['total'],
+                'enough' => $r['enough'], 'price' => $price = $this->orders->priceFor($order, $r['printer'], 'pickup', $r['color']->material), 'total' => $price['total'],
                 'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
             ])->all()
             : [];
