@@ -220,4 +220,5 @@ return [
             'offline_since' => 'Naposledy se ozvala: :time',
         ],
     ],
+    'timelapse' => ['thanks' => 'Děkujeme, že tisknete s námi'],
 ];

@@ -220,4 +220,5 @@ return [
             'offline_since' => 'Última señal: :time',
         ],
     ],
+    'timelapse' => ['thanks' => 'Gracias por imprimir con nosotros'],
 ];

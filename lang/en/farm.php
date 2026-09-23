@@ -220,4 +220,5 @@ return [
             'offline_since' => 'Last heard from: :time',
         ],
     ],
+    'timelapse' => ['thanks' => 'Thank you for printing with us'],
 ];
