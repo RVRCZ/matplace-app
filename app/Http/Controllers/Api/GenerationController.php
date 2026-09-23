@@ -61,7 +61,7 @@ class GenerationController extends Controller
                 $req = $service->fromText($data['prompt'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user);
             }
         } catch (QuotaExceeded $e) {
-            return response()->json(['error' => $e->reason, 'limit' => $e->limit, 'login_limit' => (int) config('ai.daily_limits.generate_user')], 429);
+            return response()->json(['error' => $e->reason, 'limit' => $e->limit, 'login_limit' => (int) config('ai.daily_limits.generate_user'), 'price' => $e->price, 'missing' => $e->missing, 'topup_url' => $request->user() ? route('account.credit', ['need' => (int) ceil($e->missing)]) : null], 429);
         }
 
         return response()->json(['generation' => self::describe($req)], 201);
@@ -80,7 +80,7 @@ class GenerationController extends Controller
         } catch (\InvalidArgumentException) {
             return response()->json(['error' => 'not_refinable'], 422);
         } catch (QuotaExceeded $e) {
-            return response()->json(['error' => $e->reason, 'limit' => $e->limit, 'login_limit' => (int) config('ai.daily_limits.generate_user')], 429);
+            return response()->json(['error' => $e->reason, 'limit' => $e->limit, 'login_limit' => (int) config('ai.daily_limits.generate_user'), 'price' => $e->price, 'missing' => $e->missing, 'topup_url' => $request->user() ? route('account.credit', ['need' => (int) ceil($e->missing)]) : null], 429);
         }
 
         return response()->json(['generation' => self::describe($req)], 201);

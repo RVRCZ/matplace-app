@@ -25,7 +25,7 @@ class ConfigController extends Controller
             'marketplace' => (bool) config('features.marketplace'),   // false: no prices in the calculator, only the slicer's facts
             'farm' => (bool) config('farm.enabled'),
             'rough' => config('pricing.rough'),
-            'orientation_profiles' => config('pricing.orientation_profiles'),
+            'orientation_profiles' => (! config('features.marketplace') && config('farm.enabled') && ($fp = app(\App\Domain\Farm\FarmPricingProfile::class)->toArray())) ? [$fp] : config('pricing.orientation_profiles'),
             'round_to' => config('pricing.round_to'),
             'currency' => config('pricing.currency'),
             'max_scale' => config('pricing.max_scale'),

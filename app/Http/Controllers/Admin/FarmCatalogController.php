@@ -186,6 +186,7 @@ class FarmCatalogController extends Controller
             'topup_amounts' => ['required', 'string', 'max:120'],
             'topup_min' => ['required', 'integer', 'min:1'],
             'topup_max' => ['required', 'integer', 'gte:topup_min'],
+            'generation_price' => ['required', 'numeric', 'min:0', 'max:10000'],
             'changeover_minutes' => ['required', 'integer', 'min:0', 'max:600'],
             'offline_after_seconds' => ['required', 'integer', 'min:30', 'max:3600'],
             'terms_version' => ['required', 'string', 'max:20'],

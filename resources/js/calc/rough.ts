@@ -24,6 +24,7 @@ export interface Profile {
     min_price: number;
     lead_time_days: number;
     qty_discounts?: { from: number; pct: number }[];
+    time_factor?: number;
 }
 
 export interface Params {
@@ -76,7 +77,7 @@ export function estimate(cfg: RoughConfig, density: number, g: Geometry, p: Para
 export function price(roundTo: number, prof: Profile, grams: number, minutes: number, quantity: number, royalty = 0): Breakdown {
     const qty = Math.max(1, quantity);
     const unitMaterial = grams * prof.price_per_gram;
-    const unitTime = (minutes / 60) * prof.hourly_rate;
+    const unitTime = ((minutes * (prof.time_factor ?? 1)) / 60) * prof.hourly_rate;
     const unit = unitMaterial + unitTime + Math.max(0, royalty);
     const subtotal = unit * qty + prof.setup_fee;
     let pct = 0;

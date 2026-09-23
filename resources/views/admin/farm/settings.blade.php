@@ -17,6 +17,7 @@
         'Provoz' => [
             $num('changeover_minutes', 'Výměna mezi tisky pro odhad fronty (min)'), $num('offline_after_seconds', 'Offline po (s) bez heartbeatu'),
             $num('topup_min', 'Nejmenší dobití (Kč)'), $num('topup_max', 'Největší dobití (Kč)'),
+            $num('generation_price', 'Generování modelu nad denní limit (Kč z kreditu, 0 = nelze)', '0.01'),
         ],
     ];
 @endphp

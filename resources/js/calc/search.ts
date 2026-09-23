@@ -128,7 +128,11 @@ function bindGenerate(payload: Record<string, unknown>): void {
         try {
             const res = await fetch(routes().generate, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ ...payload, target_mm: target }) });
             const body = await res.json();
-            if (res.status === 429) { txt.textContent = t(body.error === 'global_limit' ? 'search.gen_global_limit' : 'search.gen_daily_limit', { n: body.limit, m: body.login_limit }); btn.disabled = false; return; }
+            if (res.status === 429) {
+                if (body.error === 'credit' && body.topup_url) { txt.innerHTML = `${t('search.gen_credit', { n: body.price, m: body.missing })} <a class="underline" href="${body.topup_url}">${t('search.gen_topup')}</a>`; }
+                else txt.textContent = t(body.error === 'global_limit' ? 'search.gen_global_limit' : 'search.gen_daily_limit', { n: body.limit, m: body.login_limit });
+                btn.disabled = false; return;
+            }
             if (!res.ok) throw new Error(body.error ?? 'generate');
             let g = body.generation;
             while (g.status !== 'done' && g.status !== 'failed') {

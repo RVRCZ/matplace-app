@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'price_label' => 'Impreso por nosotros (:material)',
     'cta' => 'Alquilar una impresora',
     'cta_hint' => 'Lo imprimimos en nuestra impresora. Paga con crédito y la impresión empieza en cuanto la impresora esté libre.',
     'cta_wait' => 'Espere a que termine el cálculo preciso; después podrá alquilar una impresora.',
@@ -139,7 +140,7 @@ return [
         'empty' => 'Todavía no hay movimientos.',
         'stripe_item' => 'Crédito matplace',
         'gateway_down' => 'No se pudo abrir la página de pago. Inténtelo dentro de un rato.',
-        'type' => ['topup' => 'Recarga', 'hold' => 'Pedido', 'release' => 'Devolución', 'refund' => 'Reembolso', 'adjust' => 'Ajuste'],
+        'type' => ['topup' => 'Recarga', 'hold' => 'Pedido', 'release' => 'Devolución', 'refund' => 'Reembolso', 'charge' => 'Generación', 'adjust' => 'Ajuste'],
     ],
 
     'mail' => [

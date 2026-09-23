@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'price_label' => 'Tisk u nás (:material)',
     'cta' => 'Pronajmout tiskárnu',
     'cta_hint' => 'Vytiskneme to na naší tiskárně. Platíte kreditem, tisk se spustí hned, jak je tiskárna volná.',
     'cta_wait' => 'Počkejte na dokončení přesného výpočtu, pak půjde tiskárnu pronajmout.',
@@ -139,7 +140,7 @@ return [
         'empty' => 'Zatím žádné pohyby.',
         'stripe_item' => 'Kredit matplace',
         'gateway_down' => 'Platební bránu se nepodařilo otevřít. Zkuste to prosím za chvíli.',
-        'type' => ['topup' => 'Dobití', 'hold' => 'Zakázka', 'release' => 'Vrácení', 'refund' => 'Vrácení', 'adjust' => 'Úprava'],
+        'type' => ['topup' => 'Dobití', 'hold' => 'Zakázka', 'release' => 'Vrácení', 'refund' => 'Vrácení', 'charge' => 'Generování', 'adjust' => 'Úprava'],
     ],
 
     'mail' => [

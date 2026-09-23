@@ -1127,5 +1127,8 @@
     "param.o.logo.height": "Relieve modelado según la imagen",
     "account.street": "Calle y número",
     "account.country": "País",
-    "account.address_hint": "Usamos la dirección para entregar las impresiones de la granja y estimar la distancia. Nunca se muestra públicamente."
+    "account.address_hint": "Usamos la dirección para entregar las impresiones de la granja y estimar la distancia. Nunca se muestra públicamente.",
+    "search.gen_credit": "Las generaciones gratuitas de hoy se han agotado. Otra cuesta :n CZK de su crédito; le faltan :m CZK.",
+    "search.gen_topup": "Recargar crédito",
+    "search.gen_paid_hint": "Más allá del límite diario, una generación cuesta :n CZK de crédito."
 }

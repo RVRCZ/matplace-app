@@ -103,6 +103,31 @@ class GenerationTest extends TestCase
         $this->actingAs($printer)->postJson('/api/generate', ['prompt' => 'vase four'])->assertStatus(429)->assertJsonPath('limit', 3);
     }
 
+    public function test_beyond_the_free_quota_a_signed_in_customer_pays_a_generation_from_credit(): void
+    {
+        config(['ai.daily_limits.generate_user' => 1]);
+        app(\App\Domain\Farm\FarmSettings::class)->set('generation_price', 15);
+        $user = User::factory()->create();
+        $wallet = app(\App\Domain\Farm\Wallet::class);
+        $wallet->adjust($user, 20, 'test', $user->id);
+
+        $this->actingAs($user)->postJson('/api/generate', ['prompt' => 'vase one'])->assertCreated();      // free
+        $this->assertSame(20.0, $wallet->balance($user));
+        $this->actingAs($user)->postJson('/api/generate', ['prompt' => 'vase two'])->assertCreated();      // 15 from credit
+        $this->assertSame(5.0, $wallet->balance($user));
+        $this->assertSame(15.0, (float) GenerationRequest::latest('id')->first()->paid_credit);
+        $r = $this->actingAs($user)->postJson('/api/generate', ['prompt' => 'vase three'])->assertStatus(429); // 5 < 15
+        $r->assertJsonPath('error', 'credit')->assertJsonPath('missing', 10);
+        $this->assertStringContainsString('/account/credit', $r->json('topup_url'));
+    }
+
+    public function test_a_guest_never_pays_the_quota_stays_hard(): void
+    {
+        app(\App\Domain\Farm\FarmSettings::class)->set('generation_price', 15);
+        $this->postJson('/api/generate', ['prompt' => 'vase g1'])->assertCreated();
+        $this->postJson('/api/generate', ['prompt' => 'vase g2'])->assertStatus(429)->assertJsonPath('error', 'daily_limit');
+    }
+
     public function test_disabled_generator_returns_503(): void
     {
         config(['engines.generator' => 'null']);

@@ -71,7 +71,7 @@ function renderRough(): void {
     $('dims-badge').textContent = `${fmt.format(g.bbox.x * s)} × ${fmt.format(g.bbox.y * s)} × ${fmt.format(g.bbox.z * s)} mm`;
     $('stat-grams').textContent = `≈ ${fmt.format(est.grams * q)} g`;
     $('stat-time').textContent = `≈ ${minutesText(est.minutes * q)}`;
-    if (!marketplace()) {
+    if (!marketplace() && !farmPriced()) {
         renderFacts({ minutes: est.minutes * q, grams: est.grams * q, rough: true });
         return;
     }
@@ -85,6 +85,8 @@ function renderRough(): void {
 }
 
 const marketplace = () => cfg.marketplace !== false;
+// the farm's single price list: the calculator prices like the marketplace does, with one list
+const farmPriced = () => !marketplace() && cfg.orientation_profiles.length === 1 && cfg.orientation_profiles[0].key === 'farm';
 
 /**
  * Without the marketplace the result card is about the print, not about money: the headline is the print time,
@@ -134,7 +136,7 @@ function renderBreakdown(bds: { profile: string; label?: string | null; printer_
 function renderPrecise(c: CalcInfo): void {
     if (!c.slicer || !c.prices) return;
     const q = state.params.quantity;
-    if (!marketplace()) {
+    if (!marketplace() && !farmPriced()) {
         $('stat-grams').textContent = `${fmt.format(c.slicer.grams * q)} g`;
         $('stat-time').textContent = minutesText(c.slicer.minutes * q);
         $('dims-badge').textContent = `${fmt.format(c.slicer.dims.x)} × ${fmt.format(c.slicer.dims.y)} × ${fmt.format(c.slicer.dims.z)} mm`;

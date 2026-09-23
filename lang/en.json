@@ -1127,5 +1127,8 @@
     "param.o.logo.height": "Shaded relief from a picture",
     "account.street": "Street and number",
     "account.country": "Country",
-    "account.address_hint": "We use the address to deliver farm prints and to estimate distance. It is never shown publicly."
+    "account.address_hint": "We use the address to deliver farm prints and to estimate distance. It is never shown publicly.",
+    "search.gen_credit": "The free daily generations are used up. Another one costs :n CZK from your credit; you are :m CZK short.",
+    "search.gen_topup": "Top up credit",
+    "search.gen_paid_hint": "Beyond the daily limit a generation costs :n CZK from credit."
 }

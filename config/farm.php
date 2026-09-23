@@ -39,7 +39,7 @@ return [
         'fixed_fee' => 30.0,                // per order, without VAT
         'min_price' => 99.0,                // per order, without VAT
         'vat_percent' => 21.0,              // 0 = not a VAT payer
-        'rounding' => 1.0,                  // final price rounded up to a multiple of this (0 = no rounding)
+        'rounding' => 10.0,                 // final price rounded up to a multiple of this (0 = no rounding); 10 = like the calculator
         'shipping_price' => 99.0,           // with VAT; pickup is free
         'delivery_modes' => ['pickup', 'shipping'],
 
@@ -47,6 +47,7 @@ return [
         'topup_amounts' => [200, 500, 1000],
         'topup_min' => 100,
         'topup_max' => 20000,
+        'generation_price' => 15.0,         // with VAT; a generation beyond the free daily quota, paid from credit (0 = quota is hard)
 
         // ── operation ────────────────────────────────────────────────────────
         'require_approval' => false,        // true = every paid order waits for an admin before it may print

@@ -116,7 +116,7 @@ class FarmPagesTest extends TestCase
         $this->actingAs($this->admin)->post('/admin/farm/settings', [
             'hourly_rate' => 50, 'vat_percent' => 0, 'rounding' => 5, 'topup_amounts' => '300, 600', 'require_approval' => 1, 'delivery_modes' => ['pickup'],
             'qualities' => json_encode($settings['qualities']), 'strengths' => json_encode(['low' => ['infill' => 8], 'standard' => ['infill' => 15], 'high' => ['infill' => 40]]),
-        ] + array_intersect_key($settings, array_flip(['max_upload_mb', 'daily_slices_per_user', 'min_model_mm', 'bed_margin_mm', 'fixed_fee', 'min_price', 'shipping_price', 'topup_min', 'topup_max', 'changeover_minutes', 'offline_after_seconds', 'terms_version', 'admin_email'])))->assertRedirect()->assertSessionHasNoErrors();
+        ] + array_intersect_key($settings, array_flip(['max_upload_mb', 'daily_slices_per_user', 'min_model_mm', 'bed_margin_mm', 'fixed_fee', 'min_price', 'shipping_price', 'topup_min', 'topup_max', 'generation_price', 'changeover_minutes', 'offline_after_seconds', 'terms_version', 'admin_email'])))->assertRedirect()->assertSessionHasNoErrors();
 
         $this->app->forgetScopedInstances();
         $fresh = app(\App\Domain\Farm\FarmSettings::class);

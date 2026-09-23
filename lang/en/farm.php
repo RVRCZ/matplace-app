@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'price_label' => 'Printed by us (:material)',
     'cta' => 'Rent a printer',
     'cta_hint' => 'We print it on our own printer. You pay with credit and the print starts as soon as the printer is free.',
     'cta_wait' => 'Wait for the precise calculation to finish, then you can rent a printer.',
@@ -139,7 +140,7 @@ return [
         'empty' => 'No movements yet.',
         'stripe_item' => 'matplace credit',
         'gateway_down' => 'The payment page could not be opened. Please try again in a while.',
-        'type' => ['topup' => 'Top-up', 'hold' => 'Order', 'release' => 'Returned', 'refund' => 'Refund', 'adjust' => 'Adjustment'],
+        'type' => ['topup' => 'Top-up', 'hold' => 'Order', 'release' => 'Returned', 'refund' => 'Refund', 'charge' => 'Generation', 'adjust' => 'Adjustment'],
     ],
 
     'mail' => [

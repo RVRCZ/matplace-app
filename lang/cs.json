@@ -1127,5 +1127,8 @@
     "param.o.logo.height": "Plastický reliéf z obrázku",
     "account.street": "Ulice a číslo popisné",
     "account.country": "Země",
-    "account.address_hint": "Adresu použijeme pro doručení tisků z farmy a pro odhad vzdálenosti. Nikde ji nezveřejňujeme."
+    "account.address_hint": "Adresu použijeme pro doručení tisků z farmy a pro odhad vzdálenosti. Nikde ji nezveřejňujeme.",
+    "search.gen_credit": "Denní limit bezplatných generování je vyčerpán. Další stojí :n Kč z kreditu; chybí vám :m Kč.",
+    "search.gen_topup": "Dobít kredit",
+    "search.gen_paid_hint": "Nad denní limit stojí generování :n Kč z kreditu."
 }

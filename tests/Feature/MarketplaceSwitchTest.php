@@ -26,6 +26,8 @@ class MarketplaceSwitchTest extends TestCase
     {
         $r = $this->get('/');
         $r->assertOk()->assertSee('"marketplace":false', false)->assertDontSee('id="cta-make"', false)->assertDontSee('id="inquiry-panel"', false);
+        // no farm printer seeded here: no price list at all, the calculator shows the slicer's facts
+        $this->assertSame([], $r->viewData('config')['orientation_profiles'] === config('pricing.orientation_profiles') ? [] : ['unexpected']);
         $r->assertSee(__('calc.facts.layers'))->assertDontSee(route('register', ['role' => 'printer']), false);
 
         $path = sys_get_temp_dir().'/mp_switch_'.uniqid().'.stl';
@@ -54,11 +56,28 @@ class MarketplaceSwitchTest extends TestCase
         $this->actingAs($user)->get('/tools')->assertOk()->assertDontSee(route('tools.spare'));
     }
 
-    public function test_farm_still_works_without_the_marketplace(): void
+    public function test_farm_still_works_without_the_marketplace_and_is_the_only_price_list(): void
     {
         $this->seed(\Database\Seeders\FarmSeeder::class);
         $user = User::factory()->create();
         $this->actingAs($user)->get('/farm')->assertOk();
-        $this->get('/')->assertOk()->assertSee('id="cta-farm"', false);
+        $r = $this->get('/')->assertOk()->assertSee('id="cta-farm"', false);
+        $profiles = $r->viewData('config')['orientation_profiles'];
+        $this->assertCount(1, $profiles);
+        $this->assertSame('farm', $profiles[0]['key']);
+        $this->assertSame(1.07, $profiles[0]['time_factor'], 'the Kobra calibration is in the calculator price');
+
+        // a calculation prices with the farm list only, whoever looks, and the number equals what /farm charges
+        $path = sys_get_temp_dir().'/mp_switch_'.uniqid().'.stl';
+        MeshFixtures::cubeStl($path, 20);
+        $uuid = $this->actingAs($user)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'cube.stl', null, null, true)])->json('file.uuid');
+        $calc = $this->actingAs($user)->postJson('/api/calculations', ['file' => $uuid, 'material' => 'PLA', 'quality' => 'standard', 'infill' => 15])->assertCreated();
+        $this->assertCount(1, $calc->json('calculation.prices'));
+        $this->assertSame('farm', $calc->json('calculation.prices.0.profile'));
+        $calcPrice = $calc->json('calculation.prices.0.total');
+
+        $url = $this->actingAs($user)->postJson('/farm/orders', ['file' => $uuid])->json('url');
+        $order = \App\Models\FarmOrder::where('token', basename($url))->firstOrFail();
+        $this->assertEqualsWithDelta($calcPrice, $order->price_total, 0.001, 'calculator and farm agree');
     }
 }

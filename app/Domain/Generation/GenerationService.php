@@ -131,9 +131,20 @@ final class GenerationService
             return $req;
         }
         // only real (paid) generations are subject to the daily quota
-        $quota = $this->quota($req->ip, $req->anonymous_session_id ? AnonymousSession::find($req->anonymous_session_id) : null, $req->owner_user_id ? User::find($req->owner_user_id) : null);
+        $user = $req->owner_user_id ? User::find($req->owner_user_id) : null;
+        $quota = $this->quota($req->ip, $req->anonymous_session_id ? AnonymousSession::find($req->anonymous_session_id) : null, $user);
         if (! $quota['allowed']) {
-            throw new QuotaExceeded($quota['reason'] ?? 'daily_limit', $quota['limit']);
+            // beyond the free quota a signed-in customer may pay for the generation from the farm credit
+            $price = (float) app(\App\Domain\Farm\FarmSettings::class)->get('generation_price');
+            if ($quota['reason'] !== 'daily_limit' || ! $user || $price <= 0 || ! config('farm.enabled')) {
+                throw new QuotaExceeded($quota['reason'] ?? 'daily_limit', $quota['limit']);
+            }
+            try {
+                app(\App\Domain\Farm\Wallet::class)->charge($user, $price, 'generation '.$req->token);
+            } catch (\App\Domain\Farm\InsufficientCredit $e) {
+                throw new QuotaExceeded('credit', $quota['limit'], $price, $e->missing());
+            }
+            $req->paid_credit = $price;
         }
         $req->save();
         GenerateModel::dispatch($req->id);

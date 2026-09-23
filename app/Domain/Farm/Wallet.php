@@ -89,6 +89,27 @@ final class Wallet
         });
     }
 
+    /**
+     * Pay for something that is delivered at once (a generation beyond the free quota): one capture line, no hold.
+     *
+     * @throws InsufficientCredit
+     */
+    public function charge(User $user, float $amount, string $note): CreditTransaction
+    {
+        return DB::transaction(function () use ($user, $amount, $note) {
+            User::whereKey($user->id)->lockForUpdate()->first();
+            $balance = $this->balance($user);
+            if ($balance + 1e-6 < $amount) {
+                throw new InsufficientCredit($balance, $amount);
+            }
+
+            return CreditTransaction::create([
+                'user_id' => $user->id, 'type' => CreditTransaction::TYPE_CHARGE, 'amount' => -round($amount, 2),
+                'currency' => app(FarmSettings::class)->get('currency'), 'note' => $note,
+            ]);
+        });
+    }
+
     public function adjust(User $user, float $amount, string $note, int $adminId): CreditTransaction
     {
         return CreditTransaction::create([

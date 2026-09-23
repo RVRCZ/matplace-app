@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class GenerationRequest extends Model
 {
     protected $fillable = [
+        'paid_credit',
         'token', 'owner_user_id', 'anonymous_session_id', 'ip', 'type', 'prompt', 'image_path', 'description', 'engine',
         'external_id', 'status', 'cost_cents', 'result_model_file_id', 'error', 'image_sha256', 'target_mm', 'progress', 'source_request_id',
     ];
