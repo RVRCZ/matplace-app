@@ -39,11 +39,14 @@ final class OrcaSlicer implements Slicer
         $work = $this->workDir('job');
         try {
             $mesh = $this->prepareMesh($meshPath, $params, $work);
-            $filament = $this->patched($this->profileFile($params->profiles['filament'] ?? null) ?? $this->profile('filaments', $params->materialCode, 'material'), $params->overrides['filament'] ?? [], $work.'/filament.json');
-            $process = $this->profileFile($params->profiles['process'] ?? null) ?? $this->profile('processes', $params->quality, 'quality');
             $machine = $this->patched($this->profileFile($params->profiles['machine'] ?? null) ?? $this->config['profiles'].'/'.$this->config['machine'], $params->overrides['machine'] ?? [], $work.'/machine.json');
+            // a farm printer pairs its own machine profile with the shared process/filament profiles (written for the
+            // Kobra S1): the pairing is deliberate, so the presets are declared compatible or the CLI refuses them (-17)
+            $pairing = $params->profiles ? ['compatible_printers' => [(string) (json_decode((string) File::get($machine), true)['name'] ?? '')], 'compatible_printers_condition' => ''] : [];
+            $filament = $this->patched($this->profileFile($params->profiles['filament'] ?? null) ?? $this->profile('filaments', $params->materialCode, 'material'), ($params->overrides['filament'] ?? []) + $pairing, $work.'/filament.json');
+            $process = $this->profileFile($params->profiles['process'] ?? null) ?? $this->profile('processes', $params->quality, 'quality');
 
-            $attempt = function (bool $supports) use ($work, $mesh, $params, $filament, $process, $machine): array {
+            $attempt = function (bool $supports) use ($work, $mesh, $params, $filament, $process, $machine, $pairing): array {
                 $proc = json_decode((string) File::get($process), true) ?: [];
                 if ($params->vaseMode) {
                     $proc['spiral_mode'] = '1';
@@ -60,7 +63,7 @@ final class OrcaSlicer implements Slicer
                     $proc['support_style'] = 'default';
                 }
                 // the printer's own process settings win over everything above (farm: supports on auto, no prime tower…)
-                foreach ($params->overrides['process'] ?? [] as $k => $v) {
+                foreach (($params->overrides['process'] ?? []) + $pairing as $k => $v) {
                     $proc[$k] = $v;
                 }
                 $tag = $supports ? 'sup' : 'std';

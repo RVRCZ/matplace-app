@@ -86,5 +86,24 @@ class FarmSeeder extends Seeder
                 $printer->slots()->create(['slot' => $i, 'farm_color_id' => $i === 2 ? $white?->id : null, 'remaining_g' => $i === 2 ? 900 : 0, 'enabled' => $i === 2 && $white !== null]);
             }
         }
+
+        // second machine of the farm (23 Sep 2026): Kobra 3 Max Combo, bed slinger 420 x 420 x 500; same G9111 start
+        // macro and T<n> spool selection as the S1, so the shared process/filament profiles serve it as well
+        $max = FarmPrinter::firstOrCreate(['key' => 'kobra-3-max-01'], [
+            'name' => 'Kobra 3 Max #1',
+            'model' => 'Anycubic Kobra 3 Max Combo',
+            'mode' => FarmPrinter::MODE_MANUAL,
+            'bed_x' => 420, 'bed_y' => 420, 'bed_z' => 500, 'nozzle_mm' => 0.4,
+            'time_factor' => 1.07, 'weight_factor' => 1.0,      // copied from the S1 until its own calibration print
+            'machine_profile' => 'machine_kobra3max.json',
+            'process_profiles' => ['draft' => 'process_draft.json', 'standard' => 'process_standard.json', 'fine' => 'process_fine.json'],
+            'machine_overrides' => [],
+            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'Textured PEI Plate'],
+        ]);
+        if ($max->wasRecentlyCreated) {
+            foreach ([0, 1, 2, 3] as $i) {
+                $max->slots()->create(['slot' => $i, 'farm_color_id' => null, 'remaining_g' => 0, 'enabled' => false]);
+            }
+        }
     }
 }
