@@ -184,6 +184,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/tuning/{row}', [$tuning, 'save'])->name('tuning.save');
     Route::post('/tuning/{row}/test', [$tuning, 'test'])->name('tuning.test');
     Route::post('/tuning/{row}/adopt/{order}', [$tuning, 'adopt'])->name('tuning.adopt');
+    Route::post('/tuning/{row}/evaluate/{order}', [$tuning, 'evaluate'])->name('tuning.evaluate');
+    Route::post('/tuning/{row}/apply/{order}', [$tuning, 'apply'])->name('tuning.apply');
 });
 
 // ── Printer tools (role switch "I own a printer") ────────────────────────────

@@ -113,6 +113,47 @@
                     <p class="mt-1 text-xs text-slate-600">tryska {{ $c['nozzle_temp'] ?? '—' }} °C · podložka {{ $c['bed_temp'] ?? '—' }} °C · verze řádku {{ $t->test_params['row_version'] ?? '?' }}@if($t->quality_rating) · {{ str_repeat('★', $t->quality_rating) }}@endif</p>
                     @if($temps)<p class="mt-1 text-xs text-slate-600">patra zdola: {{ implode(' · ', array_map(fn ($i, $v) => ($i + 1).': '.$v.' °C', array_keys($temps), $temps)) }}</p>@endif
                     @if(in_array($t->status, ['done', 'handed_over']))
+                        @php $res = (array) ($t->test_params['result'] ?? []); $adv = $t->test_params['advice'] ?? null; $sel = 'rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs'; @endphp
+                        <details id="test-{{ $t->id }}" class="mt-2 rounded-lg bg-slate-50 p-2 text-xs" @if(! $adv) open @endif>
+                            <summary class="cursor-pointer font-semibold">Vyhodnocení {{ $res ? '✓' : '' }}</summary>
+                            <form method="post" action="{{ route('admin.farm.tuning.evaluate', [$row, $t]) }}" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                @csrf
+                                @if($temps)
+                                    <label class="{{ $lb }}">Nejlepší patro<select name="best_floor" class="{{ $sel }} w-full"><option value="">—</option>@foreach($temps as $i => $v)<option value="{{ $i + 1 }}" @selected(($res['best_floor'] ?? null) == $i + 1)>{{ $i + 1 }}: {{ $v }} °C</option>@endforeach</select></label>
+                                @else
+                                    <label class="{{ $lb }}">Rozměr X (mm)<input type="number" step="0.01" name="cube_x" value="{{ $res['cube_x'] ?? '' }}" placeholder="15" class="{{ $sel }} w-full"></label>
+                                    <label class="{{ $lb }}">Rozměr Y (mm)<input type="number" step="0.01" name="cube_y" value="{{ $res['cube_y'] ?? '' }}" placeholder="15" class="{{ $sel }} w-full"></label>
+                                    <label class="{{ $lb }}">Výška Z (mm)<input type="number" step="0.01" name="cube_z" value="{{ $res['cube_z'] ?? '' }}" placeholder="15" class="{{ $sel }} w-full"></label>
+                                    <label class="{{ $lb }}">Otvor (mm)<input type="number" step="0.01" name="hole" value="{{ $res['hole'] ?? '' }}" placeholder="8" class="{{ $sel }} w-full"></label>
+                                    <label class="{{ $lb }}">Převis čistý do<select name="overhang_ok" class="{{ $sel }} w-full"><option value="">—</option>@foreach([70, 60, 50, 40, 30, 0] as $v)<option value="{{ $v }}" @selected(($res['overhang_ok'] ?? null) == $v)>{{ $v ? $v.'°' : 'žádný' }}</option>@endforeach</select></label>
+                                    <label class="{{ $lb }}">Sloní noha<select name="elephant" class="{{ $sel }} w-full"><option value="">—</option>@foreach([0 => 'žádná', 1 => 'mírná', 2 => 'silná'] as $v => $l)<option value="{{ $v }}" @selected(($res['elephant'] ?? null) == $v)>{{ $l }}</option>@endforeach</select></label>
+                                    <label class="{{ $lb }}">Rohy<select name="corners" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'ostré', 'bulge' => 'vyboulené', 'gaps' => 'mezery ve stěně'] as $v => $l)<option value="{{ $v }}" @selected(($res['corners'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
+                                    <label class="{{ $lb }}">Vrchní plocha<select name="top" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'hladká', 'pillow' => 'zvlněná', 'gaps' => 'děravá'] as $v => $l)<option value="{{ $v }}" @selected(($res['top'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
+                                    <label class="{{ $lb }}">Tenká stěna<select name="wall" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'celistvá', 'gaps' => 'děravá', 'missing' => 'chybí'] as $v => $l)<option value="{{ $v }}" @selected(($res['wall'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
+                                @endif
+                                <label class="{{ $lb }}">Stringing<select name="stringing" class="{{ $sel }} w-full"><option value="">—</option>@foreach([0 => 'žádný', 1 => 'vlásky', 2 => 'zřetelný', 3 => 'silný'] as $v => $l)<option value="{{ $v }}" @selected(($res['stringing'] ?? null) == $v)>{{ $l }}</option>@endforeach</select></label>
+                                <label class="{{ $lb }}">Most<select name="bridge" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'rovný', 'sag' => 'prověšený', 'fail' => 'spadl'] as $v => $l)<option value="{{ $v }}" @selected(($res['bridge'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
+                                <label class="{{ $lb }}">Spojení vrstev<select name="bond" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'pevné', 'weak' => 'slabé, loupe se'] as $v => $l)<option value="{{ $v }}" @selected(($res['bond'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
+                                <label class="{{ $lb }}">Podložka<select name="warp" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'drží', 'lift' => 'rohy se zvedly'] as $v => $l)<option value="{{ $v }}" @selected(($res['warp'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
+                                <label class="{{ $lb }}">Celkem (1–5)<select name="score" class="{{ $sel }} w-full"><option value="">—</option>@foreach([5, 4, 3, 2, 1] as $q)<option value="{{ $q }}" @selected(($res['score'] ?? null) == $q)>{{ $q }}</option>@endforeach</select></label>
+                                <label class="{{ $lb }} col-span-2 sm:col-span-3">Poznámka<input name="note" maxlength="500" value="{{ $res['note'] ?? '' }}" class="{{ $sel }} w-full"></label>
+                                <button class="btn-quiet !min-h-0 !py-1 text-xs col-span-2 sm:col-span-3">Vyhodnotit a navrhnout úpravy</button>
+                            </form>
+                            @if(is_array($adv))
+                                <div class="mt-3 rounded-lg border border-slate-200 bg-white p-2">
+                                    <p class="font-semibold">Návrh úprav</p>
+                                    @forelse($adv['advice'] ?? [] as $x)
+                                        <p class="mt-1"><code>{{ $x['setting'] }}</code>: {{ $x['from'] ?? '—' }} → <strong>{{ $x['to'] }}</strong> <span class="text-slate-500">· {{ $x['reason'] }}</span></p>
+                                    @empty
+                                        <p class="mt-1 text-slate-500">Podle vyhodnocení není co měnit.</p>
+                                    @endforelse
+                                    @foreach($adv['notes'] ?? [] as $n)<p class="mt-1 text-amber-900">⚠ {{ $n }}</p>@endforeach
+                                    @if(! empty($adv['advice']))
+                                        <form method="post" action="{{ route('admin.farm.tuning.apply', [$row, $t]) }}" class="mt-2">@csrf<button class="btn-primary !min-h-0 !py-1 text-xs">Uložit návrh jako novou verzi a testovat znovu</button></form>
+                                    @endif
+                                </div>
+                            @endif
+                        </details>
                         <form method="post" action="{{ route('admin.farm.tuning.adopt', [$row, $t]) }}" class="mt-2 flex flex-wrap items-end gap-2 text-xs">
                             @csrf
                             @if($temps)

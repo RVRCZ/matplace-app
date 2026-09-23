@@ -198,15 +198,32 @@ class FarmTuningTest extends TestCase
         // it never shows up in the admin's own customer list
         $this->actingAs($this->admin)->get('/farm/orders')->assertOk()->assertDontSee($order->number);
 
-        // the test printed; floor 3 (220) was best → the row is tuned with it
+        // the test printed: the operator fills in what it showed, the advisor proposes, the proposal becomes a version
         $order->forceFill(['status' => FarmOrder::STATUS_DONE])->save();
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/evaluate/{$order->token}", ['best_floor' => 3, 'stringing' => 2, 'bridge' => 'sag', 'score' => 3])->assertRedirect();
+        $order->refresh();
+        $this->assertSame(3, $order->quality_rating);
+        $this->assertSame(2, $order->test_params['result']['stringing']);
+        $advice = $order->test_params['advice'];
+        $this->assertSame(215, $advice['overrides']['nozzle_temp'], 'floor 3 = 220, stringing −5');
+        $this->assertSame('40', $advice['overrides']['process']['bridge_speed']);
+        $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()->assertSee('Návrh úprav')->assertSee('bridge_speed');
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/apply/{$order->token}")->assertRedirect();
+        $row->refresh();
+        $this->assertSame(FarmPrinterMaterial::STATUS_TESTING, $row->status);
+        $this->assertSame(2, $row->version);
+        $this->assertSame('40', $row->overrides['process']['bridge_speed']);
+        $this->assertArrayNotHasKey('nozzle_temp', $row->overrides, '215 is what the PLA+ kind says anyway: the row keeps only what differs');
+        $this->assertSame(215, PrintProfile::for($s1, $row->material, $slot->color)->temps['nozzle']);
+
+        // floor 3 (220) was best after all → the row is tuned with it
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/adopt/{$order->token}", ['nozzle_temp' => 220, 'score' => 5, 'note' => 'patro 3'])->assertRedirect();
         $row->refresh();
         $this->assertSame(FarmPrinterMaterial::STATUS_TUNED, $row->status);
         $this->assertSame('test', $row->source);
         $this->assertSame(220, $row->overrides['nozzle_temp']);
         $this->assertSame(5, $row->score);
-        $this->assertSame(2, $row->version);
-        $this->assertCount(1, $row->history);
+        $this->assertSame(3, $row->version);
+        $this->assertCount(2, $row->history);
     }
 }

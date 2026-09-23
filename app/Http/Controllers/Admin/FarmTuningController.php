@@ -6,6 +6,7 @@ use App\Domain\Farm\FarmRefusal;
 use App\Domain\Farm\PrintProfile;
 use App\Domain\Farm\ProfileLibrary;
 use App\Domain\Farm\TestPrintService;
+use App\Domain\Farm\TuningAdvisor;
 use App\Http\Controllers\Controller;
 use App\Models\FarmColor;
 use App\Models\FarmOrder;
@@ -128,6 +129,69 @@ class FarmTuningController extends Controller
         return redirect()->route('admin.farm.orders.show', $order)->with('status', __('farm.admin.test_started', ['number' => $order->number]));
     }
 
+    /** What the operator saw on the test object → stored with the test, with the advisor's proposal next to it. */
+    public function evaluate(Request $request, FarmPrinterMaterial $row, FarmOrder $order): RedirectResponse
+    {
+        abort_unless($order->isTest() && $order->farm_printer_material_id === $row->id, 404);
+        $data = $request->validate([
+            'stringing' => ['nullable', 'integer', 'min:0', 'max:3'],
+            'overhang_ok' => ['nullable', 'integer', Rule::in([0, 30, 40, 50, 60, 70])],
+            'bridge' => ['nullable', Rule::in(['ok', 'sag', 'fail'])],
+            'elephant' => ['nullable', 'integer', 'min:0', 'max:2'],
+            'corners' => ['nullable', Rule::in(['ok', 'bulge', 'gaps'])],
+            'top' => ['nullable', Rule::in(['ok', 'pillow', 'gaps'])],
+            'wall' => ['nullable', Rule::in(['ok', 'gaps', 'missing'])],
+            'bond' => ['nullable', Rule::in(['ok', 'weak'])],
+            'warp' => ['nullable', Rule::in(['ok', 'lift'])],
+            'cube_x' => ['nullable', 'numeric', 'min:10', 'max:20'],
+            'cube_y' => ['nullable', 'numeric', 'min:10', 'max:20'],
+            'cube_z' => ['nullable', 'numeric', 'min:10', 'max:20'],
+            'hole' => ['nullable', 'numeric', 'min:5', 'max:10'],
+            'best_floor' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'score' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+        $result = array_filter($data, fn ($v) => $v !== null && $v !== '');
+        $tp = (array) $order->test_params;
+        $proposal = TuningAdvisor::advise($result, (array) ($tp['candidate'] ?? []), (string) ($tp['object'] ?? 'quick'), $tp['temps'] ?? null);
+        $order->forceFill([
+            'test_params' => ['result' => $result, 'advice' => $proposal, 'evaluated_at' => now()->toIso8601String()] + $tp,
+            'quality_rating' => $data['score'] ?? $order->quality_rating, 'quality_note' => $data['note'] ?? $order->quality_note,
+        ])->save();
+        if (! empty($data['score'])) {
+            $row->update(['score' => (int) $data['score'], 'tested_at' => now()]);
+        }
+
+        return redirect()->route('admin.farm.tuning.edit', $row)->withFragment('test-'.$order->id)->with('status', $proposal['advice'] ? 'Vyhodnoceno, návrh úprav je u testu.' : 'Vyhodnoceno, bez návrhu změn.');
+    }
+
+    /** The advisor's proposal becomes the row's next version (still "testing": the next test print says whether it helped). */
+    public function apply(FarmPrinterMaterial $row, FarmOrder $order): RedirectResponse
+    {
+        abort_unless($order->isTest() && $order->farm_printer_material_id === $row->id, 404);
+        $proposal = $order->test_params['advice'] ?? null;
+        if (! is_array($proposal) || empty($proposal['advice'])) {
+            return back()->with('error', 'Tenhle test nemá žádný návrh úprav.');
+        }
+        $row->revise($this->ownValues($row, (array) $proposal['overrides']), 'test', 'návrh z testu '.$order->number, FarmPrinterMaterial::STATUS_TESTING);
+
+        return redirect()->route('admin.farm.tuning.edit', $row)->with('status', 'Návrh je uložený jako verze '.$row->version.'. Vytiskněte další test.');
+    }
+
+    /** Values the kind already states stay the kind's: only what differs lives on the row. */
+    private function ownValues(FarmPrinterMaterial $row, array $candidate): array
+    {
+        $material = $row->material;
+        foreach (['nozzle_temp', 'nozzle_temp_first', 'bed_temp'] as $k) {
+            if (isset($candidate[$k]) && (int) $candidate[$k] === (int) $material->{$k}) {
+                unset($candidate[$k]);
+            }
+        }
+        $candidate['filament'] = array_diff_key((array) ($candidate['filament'] ?? []), $material->sliceOverrides());
+
+        return $candidate;
+    }
+
     /** "This test printed well": the row takes over what the test was printed with. */
     public function adopt(Request $request, FarmPrinterMaterial $row, FarmOrder $order): RedirectResponse
     {
@@ -139,16 +203,8 @@ class FarmTuningController extends Controller
             $candidate['nozzle_temp'] = (int) $data['nozzle_temp'];
             $candidate['nozzle_temp_first'] = (int) $data['nozzle_temp'] + 5;
         }
-        // values the kind already states stay the kind's: only what differs lives on the row
-        $material = $row->material;
-        foreach (['nozzle_temp' => 'nozzle_temp', 'nozzle_temp_first' => 'nozzle_temp_first', 'bed_temp' => 'bed_temp'] as $k => $m) {
-            if (isset($candidate[$k]) && (int) $candidate[$k] === (int) $material->{$m}) {
-                unset($candidate[$k]);
-            }
-        }
-        $candidate['filament'] = array_diff_key((array) ($candidate['filament'] ?? []), $material->sliceOverrides());
         $row->forceFill(['score' => $data['score'] ?? $row->score, 'tested_at' => now()]);
-        $row->revise($candidate, 'test', ($data['note'] ?? null) ?: 'z testu '.$order->number, FarmPrinterMaterial::STATUS_TUNED);
+        $row->revise($this->ownValues($row, $candidate), 'test', ($data['note'] ?? null) ?: 'z testu '.$order->number, FarmPrinterMaterial::STATUS_TUNED);
         if ($data['score'] ?? null) {
             $order->forceFill(['quality_rating' => (int) $data['score']])->save();
         }
