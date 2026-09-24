@@ -202,6 +202,7 @@ return [
         'request_failed' => 'The command could not be sent, try again.',
         'dryer_on' => 'drying :temp / :target °C, :left left',
         'dryer_off' => 'dryer off, ACE :temp °C',
+        'dryer_off_plain' => 'dryer off',
         'dryer_rh' => 'humidity :rh %',
         'state' => ['idle' => 'idle', 'printing' => 'printing', 'paused' => 'paused', 'error' => 'error', 'offline' => 'offline', 'unknown' => 'unknown state', 'manual' => 'manual mode', 'disabled' => 'disabled'],
         'mode' => ['manual' => 'Manual (the operator sends the G-code)', 'agent' => 'Automatic through an agent'],

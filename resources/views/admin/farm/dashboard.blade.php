@@ -79,8 +79,9 @@
                     @if(isset($t['dryer_state']))
                         @php
                             $off = $t['dryer_state'] === 'off';
+                            // a printer without an ACE (or one that does not report the box temperature) gets the plain "off"
                             $line = $off
-                                ? __('farm.admin.dryer_off', ['temp' => round((float) ($t['dryer_temp'] ?? 0))])
+                                ? ((float) ($t['dryer_temp'] ?? 0) > 0 ? __('farm.admin.dryer_off', ['temp' => round((float) $t['dryer_temp'])]) : __('farm.admin.dryer_off_plain'))
                                 : __('farm.admin.dryer_on', ['temp' => round((float) ($t['dryer_temp'] ?? 0)), 'target' => round((float) ($t['dryer_target'] ?? 0)), 'left' => $dur((int) ($t['dryer_remain_min'] ?? 0))]);
                             if ((float) ($t['dryer_rh'] ?? 0) > 0) {
                                 $line .= ', '.__('farm.admin.dryer_rh', ['rh' => round((float) $t['dryer_rh'])]);

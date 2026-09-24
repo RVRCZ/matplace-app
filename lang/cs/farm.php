@@ -202,6 +202,7 @@ return [
         'request_failed' => 'Příkaz se nepodařilo odeslat, zkuste to znovu.',
         'dryer_on' => 'suší :temp / :target °C, zbývá :left',
         'dryer_off' => 'sušička vypnutá, ACE :temp °C',
+        'dryer_off_plain' => 'sušička vypnutá',
         'dryer_rh' => 'vlhkost :rh %',
         'state' => ['idle' => 'volná', 'printing' => 'tiskne', 'paused' => 'pozastaveno', 'error' => 'chyba', 'offline' => 'offline', 'unknown' => 'neznámý stav', 'manual' => 'ruční režim', 'disabled' => 'vypnutá'],
         'mode' => ['manual' => 'Ruční (obsluha posílá G-code sama)', 'agent' => 'Automaticky přes agenta'],

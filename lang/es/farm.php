@@ -202,6 +202,7 @@ return [
         'request_failed' => 'No se pudo enviar la orden, inténtelo de nuevo.',
         'dryer_on' => 'secando :temp / :target °C, quedan :left',
         'dryer_off' => 'secadora apagada, ACE :temp °C',
+        'dryer_off_plain' => 'secadora apagada',
         'dryer_rh' => 'humedad :rh %',
         'state' => ['idle' => 'libre', 'printing' => 'imprimiendo', 'paused' => 'en pausa', 'error' => 'error', 'offline' => 'desconectada', 'unknown' => 'estado desconocido', 'manual' => 'modo manual', 'disabled' => 'desactivada'],
         'mode' => ['manual' => 'Manual (el operador envía el G-code)', 'agent' => 'Automático mediante un agente'],
