@@ -3,6 +3,7 @@
  *   bootFarmCta    calculator: the button takes the shared calculation (/c/{token} in the address) to /farm
  *   bootFarmStart  /farm: upload an STL when the customer did not come from the calculator
  *   bootFarmOrder  /farm/orders/{token}: preview of the print pose, presets, colours, pay, progress (polled)
+ *   bootFarmDashboard  /admin/farm: buttons post over fetch, the answer is a short toast, cards redraw in place
  */
 import { Viewer } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
@@ -315,4 +316,67 @@ export function bootFarmOrder(): void {
 
     render();
     poll();
+}
+
+/**
+ * Admin "Printers and queue". Every button used to post a form and come back through a redirect, which reloaded the
+ * page and threw the operator to the top. Now the form posts over fetch, the answer pops up as a toast for a moment
+ * and the cards are redrawn in place from a fresh copy of the page - the scroll position never moves. The same
+ * in-place redraw replaces the meta refresh (kept in <noscript>).
+ */
+export function bootFarmDashboard(): void {
+    const box = $('farm-dashboard');
+    if (!box) return;
+    const toast = $('farm-toast');
+    let hideAt: number | undefined;
+    const say = (text: string, ok: boolean): void => {
+        const pill = toast?.firstElementChild as HTMLElement | null;
+        if (!toast || !pill) return;
+        pill.textContent = text;
+        pill.classList.toggle('bg-red-700', !ok);
+        pill.classList.toggle('bg-slate-900', ok);
+        toast.classList.remove('opacity-0');
+        window.clearTimeout(hideAt);
+        hideAt = window.setTimeout(() => toast.classList.add('opacity-0'), 3500);
+    };
+
+    let posting = false;
+    const refresh = async (): Promise<void> => {
+        // not under the operator's hands: a request in flight, a menu being chosen, or a tab nobody looks at
+        const a = document.activeElement;
+        if (posting || document.hidden || (a && box.contains(a) && /^(SELECT|INPUT|TEXTAREA)$/.test(a.tagName))) return;
+        try {
+            const r = await fetch(box.dataset.refresh!, { headers: { 'X-Requested-With': 'fetch' }, credentials: 'same-origin' });
+            if (!r.ok) return;
+            const fresh = new DOMParser().parseFromString(await r.text(), 'text/html').getElementById('farm-dashboard');
+            if (fresh) box.innerHTML = fresh.innerHTML;
+        } catch {
+            // offline for a moment: the next tick tries again
+        }
+    };
+    window.setInterval(() => void refresh(), Number(box.dataset.every || '30') * 1000);
+
+    box.addEventListener('submit', async (e) => {
+        const form = e.target as HTMLFormElement;
+        if (!form.matches('form[data-ajax]')) return;
+        e.preventDefault();
+        const submitter = e.submitter as HTMLButtonElement | null;
+        const body = new FormData(form);
+        if (submitter?.name) body.append(submitter.name, submitter.value);
+        // only the buttons that were live get locked while the request runs (a server-disabled one stays disabled)
+        const live = Array.from(form.querySelectorAll<HTMLButtonElement>('button')).filter((b) => !b.disabled);
+        live.forEach((b) => { b.disabled = true; });
+        posting = true;
+        try {
+            const r = await fetch(form.action, { method: 'POST', body, headers: { Accept: 'application/json', 'X-Requested-With': 'fetch' }, credentials: 'same-origin' });
+            const data = (await r.json().catch(() => null)) as { ok?: boolean; message?: string } | null;
+            say(data?.message || box.dataset.error || '', r.ok && data?.ok === true);
+        } catch {
+            say(box.dataset.error || '', false);
+        } finally {
+            posting = false;
+            live.forEach((b) => { b.disabled = false; });
+        }
+        void refresh();
+    });
 }

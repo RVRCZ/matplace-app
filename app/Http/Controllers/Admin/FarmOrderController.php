@@ -13,6 +13,7 @@ use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrintJob;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -151,17 +152,21 @@ class FarmOrderController extends Controller
     }
 
     /** "The plate is empty" — the one confirmation without which nothing starts by itself. */
-    public function bed(Request $request, FarmPrinter $printer): RedirectResponse
+    public function bed(Request $request, FarmPrinter $printer): RedirectResponse|JsonResponse
     {
         $clear = $request->boolean('clear');
+        // a running print sits on the plate: "clear" would let the next job start onto it
+        if ($clear && $printer->isPrintingNow()) {
+            return $this->answer($request, false, __('farm.admin.bed_locked'));
+        }
         $printer->update(['bed_clear' => $clear, 'bed_cleared_at' => $clear ? now() : $printer->bed_cleared_at]);
         $started = $clear ? $this->dispatcher->kick($printer) : null;
 
-        return back()->with('status', $started ? __('farm.admin.started', ['number' => $started->order->number]) : __('farm.admin.saved'));
+        return $this->answer($request, true, $started ? __('farm.admin.started', ['number' => $started->order->number]) : __('farm.admin.saved'));
     }
 
     /** Pause / resume / cancel of the running print (and the chamber light, the spool dryer), carried out by the agent. */
-    public function command(Request $request, FarmPrinter $printer): RedirectResponse
+    public function command(Request $request, FarmPrinter $printer): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'type' => ['required', 'in:pause,resume,cancel,light_on,light_off,dry_on,dry_off'],
@@ -169,27 +174,37 @@ class FarmOrderController extends Controller
             'dry_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
         ]);
         if (! $printer->isAgentDriven()) {
-            return back()->with('error', __('farm.admin.no_job'));
+            return $this->answer($request, false, __('farm.admin.no_job'));
         }
         if (str_starts_with($data['type'], 'light_')) {
             FarmCommand::create(['farm_printer_id' => $printer->id, 'type' => FarmCommand::TYPE_LIGHT, 'payload' => ['on' => $data['type'] === 'light_on'], 'created_by' => $request->user()->id]);
 
-            return back()->with('status', __('farm.admin.command_sent'));
+            return $this->answer($request, true, __('farm.admin.command_sent'));
         }
         if (str_starts_with($data['type'], 'dry_')) {
             // the ACE dries every spool in the box at once; PLA 45–50 °C, PETG 55 °C (the ACE Pro stops at 55)
             $payload = ['on' => $data['type'] === 'dry_on', 'temp' => (int) ($data['dry_temp'] ?? 50), 'minutes' => 60 * (int) ($data['dry_hours'] ?? 4)];
             FarmCommand::create(['farm_printer_id' => $printer->id, 'type' => FarmCommand::TYPE_DRY, 'payload' => $payload, 'created_by' => $request->user()->id]);
 
-            return back()->with('status', __('farm.admin.command_sent'));
+            return $this->answer($request, true, __('farm.admin.command_sent'));
         }
         $job = $printer->activeJob();
         if (! $job) {
-            return back()->with('error', __('farm.admin.no_job'));
+            return $this->answer($request, false, __('farm.admin.no_job'));
         }
         FarmCommand::create(['farm_printer_id' => $printer->id, 'farm_print_job_id' => $job->id, 'type' => $data['type'], 'created_by' => $request->user()->id]);
 
-        return back()->with('status', __('farm.admin.command_sent'));
+        return $this->answer($request, true, __('farm.admin.command_sent'));
+    }
+
+    /** The dashboard buttons post over fetch and show the answer as a short toast; without JavaScript it is the redirect + flash. */
+    private function answer(Request $request, bool $ok, string $message): RedirectResponse|JsonResponse
+    {
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => $ok, 'message' => $message], $ok ? 200 : 422);
+        }
+
+        return back()->with($ok ? 'status' : 'error', $message);
     }
 
     public function printerSnapshot(FarmPrinter $printer): BinaryFileResponse

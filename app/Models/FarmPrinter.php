@@ -134,6 +134,16 @@ class FarmPrinter extends Model
             && ! $this->printJobs()->whereIn('status', FarmPrintJob::ACTIVE)->exists();
     }
 
+    /** Something is on the plate right now: a job of ours, or the machine itself says it prints (e.g. a test started on the touchscreen). */
+    public function isPrintingNow(): bool
+    {
+        if ($this->activeJob()) {
+            return true;
+        }
+
+        return $this->isAgentDriven() && $this->isOnline() && in_array($this->state, [self::STATE_PRINTING, self::STATE_PAUSED], true);
+    }
+
     public function activeJob(): ?FarmPrintJob
     {
         return $this->printJobs()->whereIn('status', FarmPrintJob::ACTIVE)->latest('id')->first();

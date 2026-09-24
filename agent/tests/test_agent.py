@@ -214,3 +214,41 @@ class ConfigTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MoonrakerDryerTelemetry(unittest.IsolatedAsyncioTestCase):
+    """The ACE dryer line comes from Rinkhals' filament_hub object; the mmu_machine mirror (zeros while drying on a Kobra S1) is the fallback."""
+
+    @staticmethod
+    def _driver(status: dict):
+        from farm_agent.drivers.moonraker import MoonrakerDriver
+
+        d = MoonrakerDriver("s1", {"url": "http://printer:7125"})
+
+        async def fake_get(path, **kw):
+            return {"result": {"status": status}}
+
+        d._get = fake_get  # type: ignore[method-assign]
+        return d
+
+    async def test_live_values_from_filament_hub_win_over_the_mirror(self):
+        st = await self._driver({
+            "print_stats": {"state": "standby"},
+            "filament_hub": {"filament_hubs": [{"temp": 50, "humidity": 0, "dryer_status": {"status": "drying", "target_temp": 50, "duration": 360, "remain_time": 10405}}]},
+            "mmu_machine": {"unit_0": {"dryer_status": "drying", "dryer_temp": 0, "dryer_target_temp": 50, "dryer_remaining": 0, "dryer_humidity": 0}},
+        }).status()
+        t = st.telemetry
+        self.assertEqual(("drying", 50.0, 50.0, 173, 0), (t["dryer_state"], t["dryer_temp"], t["dryer_target"], t["dryer_remain_min"], t["dryer_rh"]))
+        self.assertNotIn("dryer", t)
+
+    async def test_mirror_alone_and_a_stopped_dryer(self):
+        st = await self._driver({
+            "print_stats": {"state": "standby"},
+            "mmu_machine": {"unit_0": {"dryer_status": "stop", "dryer_temp": 27, "dryer_target_temp": 0, "dryer_remaining": 0, "dryer_humidity": 35}},
+        }).status()
+        t = st.telemetry
+        self.assertEqual(("off", 27.0, 0, 0, 35.0), (t["dryer_state"], t["dryer_temp"], t["dryer_target"], t["dryer_remain_min"], t["dryer_rh"]))
+
+    async def test_no_ace_no_dryer_keys(self):
+        st = await self._driver({"print_stats": {"state": "standby"}, "filament_hub": {"filament_hubs": []}}).status()
+        self.assertFalse([k for k in st.telemetry if k.startswith("dryer")])

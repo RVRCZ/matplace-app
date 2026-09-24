@@ -6,9 +6,11 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\Wallet;
 use App\Models\FarmAgent;
 use App\Models\FarmColor;
+use App\Models\FarmCommand;
 use App\Models\FarmMaterial;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
+use App\Models\FarmPrintJob;
 use App\Models\User;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -177,5 +179,43 @@ class FarmPagesTest extends TestCase
         $this->assertSame('PLA Silk', collect($state['colors'])->firstWhere('name', $color->name)['kind']);
         $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('id="mp-lightbox"', false);
         $this->actingAs($this->admin)->get('/admin/farm/materials')->assertOk()->assertSee('přeřazení');
+    }
+
+    public function test_the_plate_stays_occupied_while_a_print_runs_and_the_dashboard_buttons_answer_json(): void
+    {
+        $order = $this->order();
+        $agent = FarmAgent::create(['name' => 'Agent 1', 'token_hash' => hash('sha256', 'secret')]);
+        $printer = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $printer->update([
+            'mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $agent->id, 'state' => FarmPrinter::STATE_PRINTING, 'last_seen_at' => now(), 'bed_clear' => false,
+            'telemetry' => ['extruder' => 215.3, 'bed' => 55.0, 'dryer_state' => 'drying', 'dryer_temp' => 50.0, 'dryer_target' => 50.0, 'dryer_remain_min' => 173, 'dryer_rh' => 0],
+        ]);
+        $job = FarmPrintJob::create(['farm_order_id' => $order->id, 'farm_printer_id' => $printer->id, 'slot' => 0, 'status' => FarmPrintJob::STATUS_PRINTING, 'progress' => 40]);
+
+        // the card: "clear plate" is greyed out, the ACE dryer line shows the live temperature and the time left
+        $page = $this->actingAs($this->admin)->get('/admin/farm?lang=cs')->assertOk();
+        $page->assertSee(__('farm.admin.bed_locked_hint'));
+        $page->assertSee('name="clear" value="1" class="btn-primary text-sm" disabled', false);
+        $page->assertSee('suší 50 / 50 °C, zbývá 2 h 53 min');
+        $page->assertDontSee('dryer_remain_min');
+
+        // the request itself refuses too (the button can be re-enabled from the dev tools), and answers JSON for the toast
+        $this->actingAs($this->admin)->postJson(route('admin.farm.printers.bed', $printer), ['clear' => 1])
+            ->assertStatus(422)->assertJson(['ok' => false, 'message' => __('farm.admin.bed_locked')]);
+        $this->assertFalse($printer->fresh()->bed_clear);
+
+        // the light does not care about the print
+        $this->actingAs($this->admin)->postJson(route('admin.farm.printers.command', $printer), ['type' => 'light_on'])->assertOk()->assertJson(['ok' => true]);
+        $this->assertSame(1, FarmCommand::where('type', FarmCommand::TYPE_LIGHT)->count());
+
+        $job->update(['status' => FarmPrintJob::STATUS_DONE]);
+        $printer->update(['state' => FarmPrinter::STATE_IDLE]);
+        $this->actingAs($this->admin)->get('/admin/farm?lang=cs')->assertOk()->assertDontSee('class="btn-primary text-sm" disabled', false);
+        $this->actingAs($this->admin)->postJson(route('admin.farm.printers.bed', $printer), ['clear' => 1])->assertOk()->assertJson(['ok' => true]);
+        $this->assertTrue($printer->fresh()->bed_clear);
+
+        // without JavaScript the old redirect + flash message still works
+        $this->actingAs($this->admin)->post(route('admin.farm.printers.bed', $printer), ['clear' => 0])->assertRedirect()->assertSessionHas('status', __('farm.admin.saved'));
+        $this->assertFalse($printer->fresh()->bed_clear);
     }
 }

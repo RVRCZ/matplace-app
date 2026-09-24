@@ -10,7 +10,8 @@ Moonraker (Klipper) driver - Anycubic Kobra S1 with the Rinkhals firmware overla
 
   light      POST /machine/device_power/device?device=<light_device>&action=on|off   (Rinkhals: "chamber_light")
   dryer      POST /printer/gcode/script?script=MMU_DRYER_START UNIT=0 DURATION=<min> TEMP=<°C> | MMU_DRYER_STOP UNIT=0
-             (Rinkhals mmu_ace component; the dryer state comes back in the `mmu_machine` object)
+             (Rinkhals mmu_ace component; the live dryer values come back in the `filament_hub` object, `mmu_machine`
+             only mirrors the state and the target)
 
 Options (config.yaml): url, api_key (optional), snapshot_url (optional), light_device (optional, default chamber_light
 on Rinkhals; "" = the printer has no light), timeout (seconds, default 15).
@@ -30,7 +31,7 @@ from .base import (ERROR, IDLE, JOB_CANCELLED, JOB_DONE, JOB_FAILED, JOB_PAUSED,
 
 log = logging.getLogger("farm_agent.moonraker")
 
-OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status&ota_filament_hub&mmu_machine"
+OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status&ota_filament_hub&filament_hub&mmu_machine"
 
 # print_stats.state -> (printer state, job state)
 STATES = {
@@ -91,14 +92,26 @@ class MoonrakerDriver(PrinterDriver):
         hub = s.get("ota_filament_hub") or {}
         if hub.get("state"):
             telemetry["ace"] = hub["state"] if hub["state"] == "standby" else f"{hub['state']} {hub.get('progress', 0)}%"
-        # the ACE's built-in filament dryer (Rinkhals mmu_ace): what it does right now, so the operator sees it
+        # the ACE's built-in filament dryer, so the operator sees what it does. Rinkhals' `filament_hub` object carries
+        # the live values (box temperature, remaining seconds, humidity); its Happy-Hare mirror `mmu_machine` knows only
+        # the state and the target (a Kobra S1 on Rinkhals 20260901_01 reported 0/50 °C, 0 min there while drying),
+        # so it is the fallback. Structured keys: the dashboard words them in the operator's language.
+        hubs = (s.get("filament_hub") or {}).get("filament_hubs") or []
+        hub0 = hubs[0] if hubs and isinstance(hubs[0], dict) else {}
+        dry = hub0.get("dryer_status") if isinstance(hub0.get("dryer_status"), dict) else {}
         unit = ((s.get("mmu_machine") or {}).get("unit_0")) or {}
-        if unit.get("dryer_status"):
-            if unit["dryer_status"] == "stop":
-                telemetry["dryer"] = "off" + (f", {unit['dryer_humidity']}% RH" if unit.get("dryer_humidity") else "")
-            else:
-                telemetry["dryer"] = (f"{unit['dryer_status']} {unit.get('dryer_temp', 0)}/{unit.get('dryer_target_temp', 0)} °C, "
-                                      f"{unit.get('dryer_remaining', 0)} min left, {unit.get('dryer_humidity', 0)}% RH")
+        dryer_state = dry.get("status") or unit.get("dryer_status")
+        if dryer_state:
+            temp = _num(hub0.get("temp")) if hub0.get("temp") is not None else _num(unit.get("dryer_temp"))
+            target = _num(dry.get("target_temp")) if dry.get("target_temp") is not None else _num(unit.get("dryer_target_temp"))
+            remain = round(float(dry["remain_time"]) / 60) if dry.get("remain_time") else int(unit.get("dryer_remaining") or 0)
+            humidity = _num(hub0.get("humidity")) if hub0.get("humidity") is not None else _num(unit.get("dryer_humidity"))
+            off = dryer_state == "stop"
+            telemetry["dryer_state"] = "off" if off else str(dryer_state)
+            telemetry["dryer_temp"] = temp or 0
+            telemetry["dryer_target"] = 0 if off else (target or 0)
+            telemetry["dryer_remain_min"] = 0 if off else remain
+            telemetry["dryer_rh"] = humidity or 0
         job = None
         if job_state and stats.get("filename"):
             # Verified on a Kobra S1 (Rinkhals 20260901_01): during the start macro (heating, LeviQ, purge line)
