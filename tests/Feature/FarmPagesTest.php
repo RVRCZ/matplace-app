@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\Wallet;
 use App\Models\FarmAgent;
 use App\Models\FarmColor;
 use App\Models\FarmMaterial;
@@ -112,14 +114,14 @@ class FarmPagesTest extends TestCase
         // agent mode without an agent is refused
         $this->actingAs($this->admin)->post("/admin/farm/printers/{$second->id}", ['mode' => 'agent', 'farm_agent_id' => ''] + $second->only(['name', 'model', 'key', 'bed_x', 'bed_y', 'bed_z', 'nozzle_mm', 'machine_profile', 'time_factor', 'weight_factor']) + ['process_profiles' => '{}'])->assertSessionHasErrors('farm_agent_id');
 
-        $settings = app(\App\Domain\Farm\FarmSettings::class)->all();
+        $settings = app(FarmSettings::class)->all();
         $this->actingAs($this->admin)->post('/admin/farm/settings', [
             'hourly_rate' => 50, 'vat_percent' => 0, 'rounding' => 5, 'topup_amounts' => '300, 600', 'require_approval' => 1, 'delivery_modes' => ['pickup'],
             'qualities' => json_encode($settings['qualities']), 'strengths' => json_encode(['low' => ['infill' => 8], 'standard' => ['infill' => 15], 'high' => ['infill' => 40]]),
         ] + array_intersect_key($settings, array_flip(['max_upload_mb', 'daily_slices_per_user', 'min_model_mm', 'bed_margin_mm', 'fixed_fee', 'min_price', 'shipping_price', 'topup_min', 'topup_max', 'generation_price', 'changeover_minutes', 'offline_after_seconds', 'terms_version', 'admin_email'])))->assertRedirect()->assertSessionHasNoErrors();
 
         $this->app->forgetScopedInstances();
-        $fresh = app(\App\Domain\Farm\FarmSettings::class);
+        $fresh = app(FarmSettings::class);
         $this->assertSame(50, $fresh->get('hourly_rate') + 0);
         $this->assertSame([300, 600], $fresh->get('topup_amounts'));
         $this->assertTrue($fresh->get('require_approval'));
@@ -130,7 +132,7 @@ class FarmPagesTest extends TestCase
     public function test_manual_printer_operator_walks_an_order_to_handover_and_records_calibration(): void
     {
         $order = $this->order();
-        app(\App\Domain\Farm\Wallet::class)->adjust($this->user, 1000, 'test', $this->admin->id);
+        app(Wallet::class)->adjust($this->user, 1000, 'test', $this->admin->id);
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json();
         $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $state['colors'][0]['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $state['colors'][0]['total']])->assertOk();
 
@@ -148,5 +150,32 @@ class FarmPagesTest extends TestCase
         $this->actingAs($this->admin)->post("/admin/farm/orders/{$order->token}/status", ['to' => 'queued'])->assertSessionHas('error');
 
         $this->actingAs($this->admin)->get('/admin/farm/printers')->assertOk()->assertSee('1 ');
+    }
+
+    public function test_admin_moves_a_colour_to_another_kind_and_replaces_its_photo(): void
+    {
+        $printer = FarmPrinter::firstOrFail();
+        $color = $printer->slots()->where('slot', 2)->firstOrFail()->color;   // white PLA+
+        $silk = FarmMaterial::where('code', 'PLA')->where('finish', 'silk')->firstOrFail();
+        $this->actingAs($this->admin)->post("/admin/farm/colors/{$color->id}", ['farm_material_id' => $silk->id, 'name' => $color->name, 'hex' => $color->hex, 'enabled' => 1, 'in_stock' => 1, 'photo' => UploadedFile::fake()->image('a.jpg', 300, 300)])->assertRedirect();
+        $color->refresh();
+        $this->assertSame($silk->id, $color->farm_material_id, 'the spool now belongs to PLA Silk');
+        $first = $color->photo_path;
+        Storage::disk('public')->assertExists($first);
+
+        // a new photo replaces the old file, the checkbox removes it
+        $this->actingAs($this->admin)->post("/admin/farm/colors/{$color->id}", ['farm_material_id' => $silk->id, 'name' => $color->name, 'hex' => $color->hex, 'enabled' => 1, 'in_stock' => 1, 'photo' => UploadedFile::fake()->image('b.jpg', 300, 300)])->assertRedirect();
+        $color->refresh();
+        Storage::disk('public')->assertMissing($first);
+        Storage::disk('public')->assertExists($color->photo_path);
+        $this->actingAs($this->admin)->post("/admin/farm/colors/{$color->id}", ['farm_material_id' => $silk->id, 'name' => $color->name, 'hex' => $color->hex, 'enabled' => 1, 'in_stock' => 1, 'remove_photo' => 1])->assertRedirect();
+        $this->assertNull($color->fresh()->photo_path);
+
+        // the customer's colour list follows the kind, and every page carries the lightbox
+        $order = $this->order();
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json();
+        $this->assertSame('PLA Silk', collect($state['colors'])->firstWhere('name', $color->name)['kind']);
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('id="mp-lightbox"', false);
+        $this->actingAs($this->admin)->get('/admin/farm/materials')->assertOk()->assertSee('přeřazení');
     }
 }

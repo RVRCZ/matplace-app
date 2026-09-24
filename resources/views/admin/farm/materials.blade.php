@@ -48,8 +48,8 @@
                         @foreach($m->colors->concat([new \App\Models\FarmColor(['hex' => '#cccccc', 'enabled' => true, 'in_stock' => true])]) as $c)
                             <form method="post" enctype="multipart/form-data" action="{{ $c->exists ? route('admin.farm.colors.update', $c) : route('admin.farm.colors.create') }}" class="grid items-end gap-2 rounded-xl bg-slate-50 p-2 sm:grid-cols-[3rem_1fr_1fr_5rem_1fr_5rem_5rem_5rem]">
                                 @csrf
-                                <input type="hidden" name="farm_material_id" value="{{ $m->id }}">
-                                @if($c->photoUrl())<img src="{{ $c->photoUrl() }}" alt="" class="h-10 w-10 rounded-lg object-cover">@else<span class="h-10 w-10 rounded-lg border border-slate-300" style="background: {{ $c->hex }}"></span>@endif
+                                @if(! $c->exists)<input type="hidden" name="farm_material_id" value="{{ $m->id }}">@endif
+                                @if($c->photoUrl())<img src="{{ $c->photoUrl() }}" alt="{{ $c->name }} · {{ $m->label() }}" data-zoom="{{ $c->photoUrl() }}" title="{{ __('farm.order.photo') }}" class="h-10 w-10 cursor-zoom-in rounded-lg object-cover">@else<span class="h-10 w-10 rounded-lg border border-slate-300" style="background: {{ $c->hex }}"></span>@endif
                                 <label class="{{ $lb }}">{{ $c->exists ? 'Název' : '+ Nová barva' }}<input name="name" required value="{{ $c->name }}" class="{{ $in }}"></label>
                                 <label class="{{ $lb }}">Anglicky<input name="name_en" value="{{ $c->name_en }}" class="{{ $in }}"></label>
                                 <label class="{{ $lb }}">Hex<input type="color" name="hex" value="{{ $c->hex }}" class="mt-1 h-9 w-full rounded-lg border border-slate-300"></label>
@@ -59,7 +59,15 @@
                                 <button class="btn-quiet text-sm">Uložit</button>
                                 @if($c->code)<input type="hidden" name="code" value="{{ $c->code }}">@endif
                                 <details class="sm:col-span-8 text-xs">
-                                    <summary class="cursor-pointer text-slate-500">{{ $c->code ?? 'nastavení' }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif · vlastní nastavení tisku {{ $c->print_overrides ? '✓' : '–' }}</summary>
+                                    <summary class="cursor-pointer text-slate-500">{{ $c->code ?? 'nastavení' }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif · vlastní nastavení tisku {{ $c->print_overrides ? '✓' : '–' }}@if($c->exists) · přeřadit / fotka @endif</summary>
+                                    @if($c->exists)
+                                        <div class="mt-1 grid gap-2 sm:grid-cols-2">
+                                            <label class="{{ $lb }}">Druh materiálu (přeřazení špatně zařazené barvy)
+                                                <select name="farm_material_id" class="{{ $in }}">@foreach($materials as $mm)<option value="{{ $mm->id }}" @selected($mm->id === $c->farm_material_id)>{{ $mm->label() }}{{ $mm->enabled ? '' : ' (vypnuto)' }}</option>@endforeach</select>
+                                            </label>
+                                            <label class="flex items-center gap-2 pt-5 text-sm"><input type="checkbox" name="remove_photo" value="1" class="h-4 w-4 accent-action"> smazat současnou fotku (nová se nahraje polem „Fotka výtisku“)</label>
+                                        </div>
+                                    @endif
                                     <div class="mt-1 grid gap-2 sm:grid-cols-2">
                                         <label class="{{ $lb }}">Vlastní nastavení tisku (JSON; nozzle_temp, nozzle_temp_first, bed_temp = do hotového G-code, "process"/"filament" = nové slicování)<input name="print_overrides" value="{{ $c->print_overrides ? json_encode($c->print_overrides, JSON_UNESCAPED_UNICODE) : '' }}" placeholder='{"nozzle_temp": 220, "bed_temp": 60}' class="{{ $in }} font-mono text-xs"></label>
                                         <label class="{{ $lb }}">Výsledky testů (co ukázal testovací objekt)<input name="test_notes" value="{{ $c->test_notes }}" maxlength="2000" class="{{ $in }}"></label>

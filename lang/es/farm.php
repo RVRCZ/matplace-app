@@ -79,6 +79,7 @@ return [
         'progress' => 'Progreso de la impresión',
         'timelapse' => 'Time-lapse de su impresión',
         'camera' => 'Última imagen de la impresora',
+        'photo' => 'Foto de una impresión – clic para ampliar',
         'queue_ahead' => 'Delante de usted: :n',
         'queue_start' => 'Inicio estimado: en :time',
         'queue_finish' => 'Fin estimado: en :time',

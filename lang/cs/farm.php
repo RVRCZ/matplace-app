@@ -79,6 +79,7 @@ return [
         'progress' => 'Průběh tisku',
         'timelapse' => 'Časosběr vašeho tisku',
         'camera' => 'Poslední snímek z tiskárny',
+        'photo' => 'Fotka výtisku – klepnutím zvětšíte',
         'queue_ahead' => 'Před vámi: :n',
         'queue_start' => 'Odhad začátku tisku: za :time',
         'queue_finish' => 'Odhad dokončení: za :time',

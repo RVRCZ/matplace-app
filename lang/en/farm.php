@@ -79,6 +79,7 @@ return [
         'progress' => 'Print progress',
         'timelapse' => 'Time-lapse of your print',
         'camera' => 'Latest picture from the printer',
+        'photo' => 'Photo of a print – click to enlarge',
         'queue_ahead' => 'Ahead of you: :n',
         'queue_start' => 'Estimated start: in :time',
         'queue_finish' => 'Estimated finish: in :time',

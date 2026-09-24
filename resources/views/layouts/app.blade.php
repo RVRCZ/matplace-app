@@ -44,5 +44,6 @@
             {{ __('footer.promise') }}
         </div>
     </footer>
+    @include('partials.lightbox')
 </body>
 </html>
