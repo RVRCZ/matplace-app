@@ -86,4 +86,23 @@ class TuningAdvisorTest extends TestCase
         $this->assertSame('2.5', $s['filament.filament_retraction_length']);
         $this->assertSame(210, $s['nozzle_temp'], 'stringing −10; the overhang rule does not cool a second time when stringing already did');
     }
+
+    public function test_round_corners_weak_bond_and_ironing(): void
+    {
+        $s = $this->settings(TuningAdvisor::advise(['corners' => 'round', 'bond' => 'weak', 'ironing' => 'lines'], $this->candidate, 'detailed'));
+        $this->assertSame('120', $s['process.outer_wall_speed']);
+        $this->assertSame('3000', $s['process.outer_wall_acceleration'], '5000 − 40 %');
+        $this->assertSame('0.045', $s['filament.pressure_advance']);
+        $this->assertSame('9.6', $s['filament.filament_max_volumetric_speed'], '12 − 20 %');
+        $this->assertSame('0.1', $s['process.ironing_spacing']);
+        $this->assertSame('12%', $s['process.ironing_flow'], 'the percent unit survives');
+
+        $c = $this->candidate + ['process' => ['ironing_flow' => '15%', 'ironing_speed' => '30']];
+        $c['process'] = ['ironing_flow' => '15%', 'ironing_speed' => '30'] + $this->candidate['process'];
+        $s = $this->settings(TuningAdvisor::advise(['ironing' => 'bumps'], $c, 'detailed'));
+        $this->assertSame('12%', $s['process.ironing_flow']);
+        $s = $this->settings(TuningAdvisor::advise(['ironing' => 'rough'], $c, 'detailed'));
+        $this->assertSame('27', $s['process.ironing_speed']);
+        $this->assertSame(225, $s['nozzle_temp']);
+    }
 }

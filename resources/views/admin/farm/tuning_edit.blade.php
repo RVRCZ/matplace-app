@@ -83,6 +83,7 @@
                     <label class="{{ $lb }}">Tryska (°C)<input type="number" name="t_nozzle_temp" value="{{ old('t_nozzle_temp') }}" placeholder="{{ $effective->temps['nozzle'] ?? '' }}" class="{{ $in }}"></label>
                     <label class="{{ $lb }}">Podložka (°C)<input type="number" name="t_bed_temp" value="{{ old('t_bed_temp') }}" placeholder="{{ $effective->temps['bed'] ?? '' }}" class="{{ $in }}"></label>
                 </div>
+                <label id="ironing-field" class="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" name="t_ironing" value="1" @checked(old('t_ironing', true)) class="h-4 w-4 accent-action"> Žehlit vrchní plochy (ironing) – plošina 30 × 30 mm ukáže, jak žehlení s tímto filamentem dopadá</label>
                 <div id="tower-fields" class="mt-3 grid gap-3 sm:grid-cols-3">
                     <label class="{{ $lb }}">Pater<input type="number" name="floors" min="3" max="10" value="{{ old('floors', 5) }}" class="{{ $in }}"></label>
                     <label class="{{ $lb }}">Spodní patro (°C)<input type="number" name="start" value="{{ old('start') }}" placeholder="auto" class="{{ $in }}"></label>
@@ -95,7 +96,7 @@
                 </div>
                 <button class="btn-primary mt-3 w-full text-sm">Vytisknout test</button>
                 <script>
-                    (function () { const s = document.getElementById('test-object'), t = document.getElementById('tower-fields'); const f = () => { t.style.display = s.value === 'temp_tower' ? '' : 'none'; }; s.addEventListener('change', f); f(); })();
+                    (function () { const s = document.getElementById('test-object'), t = document.getElementById('tower-fields'); const i = document.getElementById('ironing-field'); const f = () => { t.style.display = s.value === 'temp_tower' ? '' : 'none'; i.style.display = s.value === 'detailed' ? '' : 'none'; }; s.addEventListener('change', f); f(); })();
                 </script>
             @endif
         </form>
@@ -109,7 +110,7 @@
                         <a class="font-semibold underline" href="{{ route('admin.farm.orders.show', $t) }}">{{ $t->number }}</a>
                         <span class="text-xs">{{ __('farm.test.object.'.($t->test_params['object'] ?? 'quick')) }} · {{ __('farm.status.'.$t->status) }} · {{ $t->created_at->format('j. n. H:i') }}</span>
                     </div>
-                    <p class="mt-1 text-xs text-slate-600">tryska {{ $c['nozzle_temp'] ?? '—' }} °C · podložka {{ $c['bed_temp'] ?? '—' }} °C · verze řádku {{ $t->test_params['row_version'] ?? '?' }}@if($t->quality_rating) · {{ str_repeat('★', $t->quality_rating) }}@endif</p>
+                    <p class="mt-1 text-xs text-slate-600">tryska {{ $c['nozzle_temp'] ?? '—' }} °C · podložka {{ $c['bed_temp'] ?? '—' }} °C · verze řádku {{ $t->test_params['row_version'] ?? '?' }}@if(! empty($t->test_params['ironing'])) · ironing {{ $c['process']['ironing_flow'] ?? '' }} / {{ $c['process']['ironing_speed'] ?? '' }} mm/s / {{ $c['process']['ironing_spacing'] ?? '' }} mm @endif @if($t->quality_rating) · {{ str_repeat('★', $t->quality_rating) }}@endif</p>
                     @if($temps)<p class="mt-1 text-xs text-slate-600">patra zdola: {{ implode(' · ', array_map(fn ($i, $v) => ($i + 1).': '.$v.' °C', array_keys($temps), $temps)) }}</p>@endif
                     @if(in_array($t->status, ['done', 'handed_over']))
                         @php $res = (array) ($t->test_params['result'] ?? []); $adv = $t->test_params['advice'] ?? null; $sel = 'rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs'; @endphp
@@ -126,8 +127,11 @@
                                     <label class="{{ $lb }}">Otvor (mm)<input type="number" step="0.01" name="hole" value="{{ $res['hole'] ?? '' }}" placeholder="8" class="{{ $sel }} w-full"></label>
                                     <label class="{{ $lb }}">Převis čistý do<select name="overhang_ok" class="{{ $sel }} w-full"><option value="">—</option>@foreach([70, 60, 50, 40, 30, 0] as $v)<option value="{{ $v }}" @selected(($res['overhang_ok'] ?? null) == $v)>{{ $v ? $v.'°' : 'žádný' }}</option>@endforeach</select></label>
                                     <label class="{{ $lb }}">Sloní noha<select name="elephant" class="{{ $sel }} w-full"><option value="">—</option>@foreach([0 => 'žádná', 1 => 'mírná', 2 => 'silná'] as $v => $l)<option value="{{ $v }}" @selected(($res['elephant'] ?? null) == $v)>{{ $l }}</option>@endforeach</select></label>
-                                    <label class="{{ $lb }}">Rohy<select name="corners" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'ostré', 'bulge' => 'vyboulené', 'gaps' => 'mezery ve stěně'] as $v => $l)<option value="{{ $v }}" @selected(($res['corners'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
+                                    <label class="{{ $lb }}">Rohy<select name="corners" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'ostré', 'bulge' => 'vyboulené', 'round' => 'zaoblené', 'gaps' => 'mezery ve stěně'] as $v => $l)<option value="{{ $v }}" @selected(($res['corners'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
                                     <label class="{{ $lb }}">Vrchní plocha<select name="top" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'hladká', 'pillow' => 'zvlněná', 'gaps' => 'děravá'] as $v => $l)<option value="{{ $v }}" @selected(($res['top'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
+                                    @if(($t->test_params['object'] ?? '') === 'detailed')
+                                        <label class="{{ $lb }}">Žehlená plocha{{ ! empty($t->test_params['ironing']) ? '' : ' (bez ironingu)' }}<select name="ironing" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'hladká, lesklá', 'lines' => 'viditelné čáry', 'bumps' => 'hrbolky, přebytek', 'rough' => 'hrubá, matná'] as $v => $l)<option value="{{ $v }}" @selected(($res['ironing'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
+                                    @endif
                                     <label class="{{ $lb }}">Tenká stěna<select name="wall" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'celistvá', 'gaps' => 'děravá', 'missing' => 'chybí'] as $v => $l)<option value="{{ $v }}" @selected(($res['wall'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
                                 @endif
                                 <label class="{{ $lb }}">Stringing<select name="stringing" class="{{ $sel }} w-full"><option value="">—</option>@foreach([0 => 'žádný', 1 => 'vlásky', 2 => 'zřetelný', 3 => 'silný'] as $v => $l)<option value="{{ $v }}" @selected(($res['stringing'] ?? null) == $v)>{{ $l }}</option>@endforeach</select></label>

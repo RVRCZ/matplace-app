@@ -110,6 +110,7 @@ class FarmTuningController extends Controller
             't_bed_temp' => ['nullable', 'integer', 'min:0', 'max:150'],
             't_process' => ['nullable', 'json'],
             't_filament' => ['nullable', 'json'],
+            't_ironing' => ['nullable', 'boolean'],
             'floors' => ['nullable', 'integer', 'min:3', 'max:10'],
             'start' => ['nullable', 'integer', 'min:150', 'max:350'],
             'step' => ['nullable', 'integer', 'min:-20', 'max:20', 'not_in:0'],
@@ -122,7 +123,7 @@ class FarmTuningController extends Controller
             'filament' => ! empty($data['t_filament']) ? json_decode($data['t_filament'], true) : [],
         ];
         try {
-            $order = $this->tests->create($row, $slot, $data['object'], $candidate, array_intersect_key($data, array_flip(['floors', 'start', 'step'])), $request->user());
+            $order = $this->tests->create($row, $slot, $data['object'], $candidate, array_intersect_key($data, array_flip(['floors', 'start', 'step'])), $request->user(), $request->boolean('t_ironing'));
         } catch (FarmRefusal $e) {
             return back()->withInput()->with('error', $e->text());
         }
@@ -139,7 +140,8 @@ class FarmTuningController extends Controller
             'overhang_ok' => ['nullable', 'integer', Rule::in([0, 30, 40, 50, 60, 70])],
             'bridge' => ['nullable', Rule::in(['ok', 'sag', 'fail'])],
             'elephant' => ['nullable', 'integer', 'min:0', 'max:2'],
-            'corners' => ['nullable', Rule::in(['ok', 'bulge', 'gaps'])],
+            'corners' => ['nullable', Rule::in(['ok', 'bulge', 'round', 'gaps'])],
+            'ironing' => ['nullable', Rule::in(['ok', 'lines', 'bumps', 'rough'])],
             'top' => ['nullable', Rule::in(['ok', 'pillow', 'gaps'])],
             'wall' => ['nullable', Rule::in(['ok', 'gaps', 'missing'])],
             'bond' => ['nullable', Rule::in(['ok', 'weak'])],

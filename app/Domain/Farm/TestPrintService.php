@@ -23,9 +23,13 @@ use Illuminate\Support\Str;
 final class TestPrintService
 {
     public const OBJECTS = [
-        'quick' => ['minutes' => 35, 'floors' => false],
-        'temp_tower' => ['minutes' => 60, 'floors' => true],
+        'quick' => ['minutes' => 35, 'floors' => false, 'ironing' => false],
+        'detailed' => ['minutes' => 70, 'floors' => false, 'ironing' => true],
+        'temp_tower' => ['minutes' => 60, 'floors' => true, 'ironing' => false],
     ];
+
+    /** Ironing switched on for a test, with Orca's defaults where the row says nothing else. */
+    public const IRONING = ['ironing_type' => 'top', 'ironing_flow' => '10%', 'ironing_speed' => '30', 'ironing_spacing' => '0.15'];
 
     public const FLOOR_MM = 10.0;
 
@@ -42,7 +46,7 @@ final class TestPrintService
      *
      * @throws FarmRefusal slot_kind (spool is another kind), no_python, object
      */
-    public function create(FarmPrinterMaterial $row, FarmPrinterSlot $slot, string $object, array $candidate, array $tower, User $admin): FarmOrder
+    public function create(FarmPrinterMaterial $row, FarmPrinterSlot $slot, string $object, array $candidate, array $tower, User $admin, bool $ironing = false): FarmOrder
     {
         if (! isset(self::OBJECTS[$object])) {
             throw new FarmRefusal('object');
@@ -65,8 +69,12 @@ final class TestPrintService
         $candidate['nozzle_temp'] = (int) ($candidate['nozzle_temp'] ?? $base->temps['nozzle'] ?? 0);
         $candidate['nozzle_temp_first'] = (int) ($candidate['nozzle_temp_first'] ?? $base->temps['nozzle_first'] ?? 0);
         $candidate['bed_temp'] = (int) ($candidate['bed_temp'] ?? $base->temps['bed'] ?? 0);
+        if ($ironing && self::OBJECTS[$object]['ironing']) {
+            // the plateau gets ironed; the row may already carry its own ironing flow / speed / spacing
+            $candidate['process'] = ['ironing_type' => self::IRONING['ironing_type']] + $candidate['process'] + self::IRONING;
+        }
 
-        $params = ['object' => $object, 'candidate' => $candidate, 'row_version' => $row->version];
+        $params = ['object' => $object, 'candidate' => $candidate, 'row_version' => $row->version, 'ironing' => $ironing && self::OBJECTS[$object]['ironing']];
         $toolParams = [];
         if (self::OBJECTS[$object]['floors']) {
             $floors = max(3, min(10, (int) ($tower['floors'] ?? 5)));

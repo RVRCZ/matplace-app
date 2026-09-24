@@ -12,15 +12,16 @@ use App\Models\FarmPrinterMaterial;
  *
  * Result keys (from the evaluation form; missing = not judged):
  *   stringing 0-3 · overhang_ok 0|30|40|50|60|70 (steepest clean angle) · bridge ok|sag|fail · elephant 0-2 ·
- *   corners ok|bulge|gaps · top ok|pillow|gaps · wall ok|gaps|missing · bond ok|weak · warp ok|lift ·
+ *   corners ok|bulge|round|gaps · top ok|pillow|gaps · wall ok|gaps|missing · bond ok|weak · warp ok|lift ·
+ *   ironing ok|lines|bumps|rough ·
  *   cube_x cube_y cube_z hole (measured mm) · best_floor (tower)
  */
 final class TuningAdvisor
 {
     /** What the shipped profiles say when the candidate does not: the base a delta is applied to. */
     private const BASE = [
-        'filament' => ['fan_max_speed' => 100, 'fan_min_speed' => 100, 'overhang_fan_speed' => 100, 'filament_retraction_length' => 0.8, 'filament_flow_ratio' => 0.98, 'pressure_advance' => 0.035, 'slow_down_layer_time' => 8],
-        'process' => ['bridge_speed' => 50, 'outer_wall_speed' => 200, 'top_shell_layers' => 5, 'elefant_foot_compensation' => 0.1, 'xy_contour_compensation' => 0, 'xy_hole_compensation' => 0, 'brim_width' => 5],
+        'filament' => ['fan_max_speed' => 100, 'fan_min_speed' => 100, 'overhang_fan_speed' => 100, 'filament_retraction_length' => 0.8, 'filament_flow_ratio' => 0.98, 'pressure_advance' => 0.035, 'slow_down_layer_time' => 8, 'filament_max_volumetric_speed' => 12],
+        'process' => ['bridge_speed' => 50, 'outer_wall_speed' => 200, 'top_shell_layers' => 5, 'elefant_foot_compensation' => 0.1, 'xy_contour_compensation' => 0, 'xy_hole_compensation' => 0, 'brim_width' => 5, 'outer_wall_acceleration' => 5000, 'ironing_flow' => '10%', 'ironing_speed' => 30, 'ironing_spacing' => 0.15],
     ];
 
     public const CUBE_MM = 15.0;
@@ -78,6 +79,11 @@ final class TuningAdvisor
         if ($corners === 'bulge') {
             $a->process('outer_wall_speed', -20, 30, 300, 'vyboulené rohy: pomalejší vnější stěna', percent: true);
             $a->filament('pressure_advance', 0.01, 0, 0.2, 'vyboulené rohy / blobky: vyšší pressure advance');
+        } elseif ($corners === 'round') {
+            // the nozzle sweeps through the corner: less speed and acceleration on the outer wall, more pressure advance
+            $a->process('outer_wall_speed', -20, 30, 300, 'zaoblené rohy: pomalejší vnější stěna', percent: true);
+            $a->process('outer_wall_acceleration', -40, 500, 20000, 'zaoblené rohy: nižší akcelerace vnější stěny', percent: true);
+            $a->filament('pressure_advance', 0.01, 0, 0.2, 'zaoblené rohy: vyšší pressure advance');
         } elseif ($corners === 'gaps') {
             $a->filament('filament_flow_ratio', 0.02, 0.85, 1.15, 'mezery ve stěnách: vyšší průtok');
         }
@@ -98,6 +104,18 @@ final class TuningAdvisor
         if ($r('bond') === 'weak') {
             $a->temp('nozzle_temp', 5, 'slabé spojení vrstev: teplejší tryska');
             $a->filament('fan_max_speed', -15, 0, 100, 'slabé spojení vrstev: méně chlazení');
+            $a->filament('filament_max_volumetric_speed', -20, 2, 40, 'slabé spojení vrstev: pomalejší tavení, plast se lépe prohřeje', percent: true);
+        }
+
+        $ironing = $r('ironing');
+        if ($ironing === 'lines') {
+            $a->process('ironing_spacing', -0.05, 0.05, 0.5, 'ironing: viditelné čáry, hustší tahy');
+            $a->process('ironing_flow', 2, 0, 40, 'ironing: viditelné čáry, o trochu více materiálu');
+        } elseif ($ironing === 'bumps') {
+            $a->process('ironing_flow', -3, 0, 40, 'ironing: hrbolky a přebytek, méně materiálu');
+        } elseif ($ironing === 'rough') {
+            $a->process('ironing_speed', -10, 10, 100, 'ironing: hrubý povrch, pomalejší žehlení', percent: true);
+            $a->temp('nozzle_temp', 5, 'ironing: hrubý povrch, teplejší tryska plast lépe uhladí');
         }
 
         if ($r('warp') === 'lift') {
@@ -168,9 +186,9 @@ final class TuningAdvisor
         $this->advice[] = ['setting' => $key, 'from' => $from ?: null, 'to' => $to, 'reason' => $reason];
     }
 
-    private function filament(string $key, float|int $delta, ?float $min, ?float $max, string $reason, bool $absolute = false): void
+    private function filament(string $key, float|int $delta, ?float $min, ?float $max, string $reason, bool $absolute = false, bool $percent = false): void
     {
-        $this->change('filament', $key, $delta, $min, $max, $reason, $absolute);
+        $this->change('filament', $key, $delta, $min, $max, $reason, $absolute, $percent);
     }
 
     private function process(string $key, float|int|string $delta, ?float $min, ?float $max, string $reason, bool $absolute = false, bool $percent = false): void
@@ -182,9 +200,11 @@ final class TuningAdvisor
     {
         $raw = $this->overrides[$group][$key] ?? self::BASE[$group][$key] ?? null;
         $from = is_array($raw) ? ($raw[0] ?? null) : $raw;
+        $unit = is_string($from) && str_ends_with($from, '%') ? '%' : '';   // ironing_flow is "10%"
         if (is_string($delta)) {
             $to = $delta;
         } else {
+            $from = $unit ? rtrim((string) $from, '%') : $from;
             $base = is_numeric($from) ? (float) $from : 0.0;
             $to = $absolute ? (float) $delta : ($percent ? $base * (1 + $delta / 100) : $base + $delta);
             if ($min !== null) {
@@ -197,7 +217,8 @@ final class TuningAdvisor
             if (is_numeric($from) && abs($to - (float) $from) < 0.0005) {
                 return;
             }
-            $to = (string) (fmod($to, 1.0) === 0.0 ? (int) $to : $to);
+            $to = (fmod($to, 1.0) === 0.0 ? (int) $to : $to).$unit;
+            $from = $from === null ? null : $from.$unit;
         }
         $this->overrides[$group][$key] = $group === 'filament' ? [$to] : $to;
         $this->advice[] = ['setting' => $group.'.'.$key, 'from' => $from, 'to' => $to, 'reason' => $reason];

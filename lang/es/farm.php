@@ -176,7 +176,7 @@ return [
     ],
 
     'test' => [
-        'object' => ['quick' => 'Prueba rápida (cubo, voladizos, puente, hilos)', 'temp_tower' => 'Torre de temperatura'],
+        'object' => ['quick' => 'Prueba rápida (cubo, voladizos, puente, hilos)', 'detailed' => 'Prueba detallada (cubo 20 mm, superficie planchada, voladizos hasta 80°, puentes 15/25 mm, hilos, paredes, agujeros, unión de capas)', 'temp_tower' => 'Torre de temperatura'],
     ],
 
     'finish' => ['solid' => '', 'matte' => 'mate', 'silk' => 'Silk', 'luminous' => 'luminoso', 'glitter' => 'brillante', 'special' => 'especial', 'flex' => 'flexible', 'cf' => 'CF'],

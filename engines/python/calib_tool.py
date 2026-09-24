@@ -7,6 +7,9 @@ Test objects for tuning a filament on a printer of the farm (manifold3d, exact s
 kind:
   quick        one plate, about 35 minutes: a 15 mm cube (dimensions, corners, top surface, elephant foot), overhang
                fan 30-70 degrees, a 20 mm bridge, three pillars for stringing, a single 0.8 mm wall, an 8 mm hole
+  detailed     one plate, about 70 minutes: a 20 mm cube, a 30 x 30 mm plateau for ironing, overhang fan 30-80 degrees,
+               bridges of 15 and 25 mm, stringing pillars with 10 and 20 mm gaps (40 mm tall), walls of 0.4 / 0.8 / 1.2 mm,
+               holes of 3 / 5 / 8 / 10 mm, a bar to snap by hand for the layer bond
   temp_tower   floors of 10 mm (params: floors 3-10); every floor carries a 14 mm bridge and a 45 degree overhang.
                The temperature per floor is written into the G-code by the web layer (App\\Domain\\Farm\\TowerGcode),
                floor 1 is the bottom one
@@ -78,6 +81,53 @@ def quick(M, p):
     return solid, features
 
 
+def detailed(M, p):
+    features = []
+    plate_w, plate_d = 110.0, 70.0
+    solid = box(M, 0, 0, 0, plate_w, plate_d, PLATE_T)
+    z0 = PLATE_T
+
+    # row A: cube, ironing plateau, two bridges, walls, holes
+    cube = 20.0
+    solid += box(M, 3, 3, z0, cube, cube, cube)
+    features.append({"name": "cube", "at": [3, 3], "size": [cube, cube, cube], "checks": ["dimensions", "corners", "top_surface", "elephant_foot"]})
+
+    solid += box(M, 28, 3, z0, 30, 30, 4)
+    features.append({"name": "ironing", "at": [28, 3], "size": [30, 30], "checks": ["ironing"]})
+
+    pw, ph = 4.0, 10.0
+    for y, span in ((3, 15.0), (12, 25.0)):
+        solid += box(M, 62, y, z0, pw, 6, ph) + box(M, 62 + pw + span, y, z0, pw, 6, ph)
+        solid += box(M, 62, y, z0 + ph, 2 * pw + span, 6, 2.0)
+        features.append({"name": "bridge", "at": [62, y], "span": span, "checks": ["bridge"]})
+
+    for i, t in enumerate((0.4, 0.8, 1.2)):
+        solid += box(M, 64 + i * 6, 22, z0, t, 14, 15)
+    features.append({"name": "thin_walls", "at": [64, 22], "thicknesses": [0.4, 0.8, 1.2], "checks": ["single_wall"]})
+
+    holes = ((84, 30, 3.0), (91, 30, 5.0), (100, 30, 8.0), (100, 44, 10.0))
+    for x, y, d in holes:
+        solid -= M.Manifold.cylinder(PLATE_T + 2, d / 2, -1.0, 64).translate([x, y, -1])
+    features.append({"name": "holes", "at": [[x, y] for x, y, _ in holes], "diameters": [d for _, _, d in holes], "checks": ["hole_size"]})
+
+    # row B: overhang fan, stringing pillars, bond bar
+    angles = [30, 40, 50, 60, 70, 80]
+    for i, a in enumerate(angles):
+        x = 3 + i * 8
+        solid += overhang_wedge(M, x, 38, z0, 6, 3, 10 if a < 80 else 5, a)
+    features.append({"name": "overhangs", "at": [3, 38], "angles": angles, "checks": ["overhang"]})
+
+    pillars = [58, 68, 88]
+    for x in pillars:
+        solid += M.Manifold.cylinder(40, 2.0, -1.0, 48).translate([x, 60, z0])
+    features.append({"name": "stringing", "at": [[x, 60] for x in pillars], "gaps": [10, 20], "height": 40, "checks": ["stringing"]})
+
+    solid += box(M, 100, 52, z0, 3, 12, 35)
+    features.append({"name": "bond_bar", "at": [100, 52], "size": [3, 12, 35], "checks": ["layer_bond"]})
+
+    return solid, features
+
+
 def temp_tower(M, p):
     floors = int(p.get("floors", 5))
     if floors < 3 or floors > 10:
@@ -106,7 +156,7 @@ def main(argv):
         p = json.loads(argv[3] if len(argv) > 3 and argv[3] else "{}")
         if isinstance(p, list) and not p:
             p = {}                                   # PHP encodes an empty parameter array as []
-        builders = {"quick": quick, "temp_tower": temp_tower}
+        builders = {"quick": quick, "detailed": detailed, "temp_tower": temp_tower}
         if kind not in builders or not isinstance(p, dict):
             raise ValueError("unknown_kind")
         solid, features = builders[kind](M, p)
