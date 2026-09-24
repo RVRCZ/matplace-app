@@ -72,3 +72,7 @@ class PrinterDriver(abc.ABC):
 
     async def light(self, on: bool) -> None:
         """Chamber light, when the printer has one: on for the camera during a print. Never raises."""
+
+    async def dry(self, on: bool, temp: int = 45, minutes: int = 240) -> None:
+        """Filament dryer of the spool unit (Anycubic ACE): start for `minutes` at `temp` °C, or stop. Raises DriverError."""
+        raise DriverError("this printer has no filament dryer")

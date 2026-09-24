@@ -205,6 +205,7 @@ return [
         'running' => 'Právě běží',
         'pause' => 'Pauza', 'resume' => 'Pokračovat', 'cancel' => 'Zrušit tisk',
         'light' => 'Světlo', 'light_on' => 'Rozsvítit', 'light_off' => 'Zhasnout',
+        'dry' => 'Sušení cívek v ACE', 'dry_start' => 'Sušit', 'dry_stop' => 'Zastavit sušení',
         'cancel_confirm' => 'Opravdu zrušit běžící tisk?',
         'approve' => 'Schválit k tisku',
         'download_gcode' => 'Stáhnout G-code',

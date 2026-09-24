@@ -19,6 +19,8 @@ class FarmCommand extends Model
     /** payload {on: bool} - chamber light for the camera; needs no running job */
     public const TYPE_LIGHT = 'light';
 
+    public const TYPE_DRY = 'dry';        // filament dryer of the spool unit (ACE): payload on, temp, minutes
+
     protected $fillable = ['farm_printer_id', 'farm_print_job_id', 'type', 'payload', 'status', 'result', 'created_by', 'sent_at', 'finished_at'];
 
     protected $casts = ['payload' => 'array', 'sent_at' => 'datetime', 'finished_at' => 'datetime'];

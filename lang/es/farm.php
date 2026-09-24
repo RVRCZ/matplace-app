@@ -205,6 +205,7 @@ return [
         'running' => 'En marcha ahora',
         'pause' => 'Pausa', 'resume' => 'Continuar', 'cancel' => 'Cancelar la impresión',
         'light' => 'Luz', 'light_on' => 'Encender', 'light_off' => 'Apagar',
+        'dry' => 'Secado de bobinas en el ACE', 'dry_start' => 'Secar', 'dry_stop' => 'Detener el secado',
         'cancel_confirm' => '¿Cancelar la impresión en marcha?',
         'approve' => 'Aprobar para imprimir',
         'download_gcode' => 'Descargar G-code',

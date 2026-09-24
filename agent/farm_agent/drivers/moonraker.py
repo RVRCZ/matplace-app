@@ -9,6 +9,8 @@ Moonraker (Klipper) driver - Anycubic Kobra S1 with the Rinkhals firmware overla
   camera     GET  <snapshot_url>                  (Rinkhals: http://<ip>/webcam/?action=snapshot)
 
   light      POST /machine/device_power/device?device=<light_device>&action=on|off   (Rinkhals: "chamber_light")
+  dryer      POST /printer/gcode/script?script=MMU_DRYER_START UNIT=0 DURATION=<min> TEMP=<°C> | MMU_DRYER_STOP UNIT=0
+             (Rinkhals mmu_ace component; the dryer state comes back in the `mmu_machine` object)
 
 Options (config.yaml): url, api_key (optional), snapshot_url (optional), light_device (optional, default chamber_light
 on Rinkhals; "" = the printer has no light), timeout (seconds, default 15).
@@ -28,7 +30,7 @@ from .base import (ERROR, IDLE, JOB_CANCELLED, JOB_DONE, JOB_FAILED, JOB_PAUSED,
 
 log = logging.getLogger("farm_agent.moonraker")
 
-OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status&ota_filament_hub"
+OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status&ota_filament_hub&mmu_machine"
 
 # print_stats.state -> (printer state, job state)
 STATES = {
@@ -89,6 +91,14 @@ class MoonrakerDriver(PrinterDriver):
         hub = s.get("ota_filament_hub") or {}
         if hub.get("state"):
             telemetry["ace"] = hub["state"] if hub["state"] == "standby" else f"{hub['state']} {hub.get('progress', 0)}%"
+        # the ACE's built-in filament dryer (Rinkhals mmu_ace): what it does right now, so the operator sees it
+        unit = ((s.get("mmu_machine") or {}).get("unit_0")) or {}
+        if unit.get("dryer_status"):
+            if unit["dryer_status"] == "stop":
+                telemetry["dryer"] = "off" + (f", {unit['dryer_humidity']}% RH" if unit.get("dryer_humidity") else "")
+            else:
+                telemetry["dryer"] = (f"{unit['dryer_status']} {unit.get('dryer_temp', 0)}/{unit.get('dryer_target_temp', 0)} °C, "
+                                      f"{unit.get('dryer_remaining', 0)} min left, {unit.get('dryer_humidity', 0)}% RH")
         job = None
         if job_state and stats.get("filename"):
             # Verified on a Kobra S1 (Rinkhals 20260901_01): during the start macro (heating, LeviQ, purge line)
@@ -128,6 +138,12 @@ class MoonrakerDriver(PrinterDriver):
                 await self._post("/machine/device_power/device", params={"device": self.light_device, "action": action})
         except DriverError as e:
             log.debug("%s: light %s failed: %s", self.key, "on" if on else "off", e)
+
+    async def dry(self, on: bool, temp: int = 45, minutes: int = 240) -> None:
+        # Rinkhals wraps the ACE dryer as Happy-Hare style macros (MMU_DRYER_START / MMU_DRYER_STOP); the ACE Pro
+        # goes up to 55 °C and dries all four spools in the box at once
+        script = f"MMU_DRYER_START UNIT=0 DURATION={int(minutes)} TEMP={int(temp)}" if on else "MMU_DRYER_STOP UNIT=0"
+        await self._post("/printer/gcode/script", params={"script": script}, timeout=60)
 
     # -- acting ------------------------------------------------------------------------------------------------
     async def start(self, gcode_path: str, filename: str, slot: int) -> None:

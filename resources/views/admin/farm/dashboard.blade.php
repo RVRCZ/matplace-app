@@ -63,6 +63,15 @@
                     <button name="type" value="light_on" class="btn-quiet text-sm">{{ __('farm.admin.light_on') }}</button>
                     <button name="type" value="light_off" class="btn-quiet text-sm">{{ __('farm.admin.light_off') }}</button>
                 </form>
+                <form method="post" action="{{ route('admin.farm.printers.command', $p) }}" class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                    @csrf
+                    <span class="text-slate-600">{{ __('farm.admin.dry') }}:</span>
+                    <select name="dry_temp" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm">@foreach([45, 50, 55] as $t)<option value="{{ $t }}" @selected($t === 50)>{{ $t }} °C</option>@endforeach</select>
+                    <select name="dry_hours" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm">@foreach([2, 4, 6, 8, 12] as $h)<option value="{{ $h }}" @selected($h === 6)>{{ $h }} h</option>@endforeach</select>
+                    <button name="type" value="dry_on" class="btn-quiet text-sm">{{ __('farm.admin.dry_start') }}</button>
+                    <button name="type" value="dry_off" class="btn-quiet text-sm">{{ __('farm.admin.dry_stop') }}</button>
+                    @if(isset($p->telemetry['dryer']))<span class="text-xs text-slate-500">{{ $p->telemetry['dryer'] }}</span>@endif
+                </form>
             @endif
 
             @if($row['job'])

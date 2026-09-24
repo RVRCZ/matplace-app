@@ -9,7 +9,9 @@ use App\Domain\Farm\TestPrintService;
 use App\Domain\Farm\TowerGcode;
 use App\Domain\Farm\Wallet;
 use App\Mail\FarmOrderStatus;
+use App\Models\FarmAgent;
 use App\Models\FarmColor;
+use App\Models\FarmCommand;
 use App\Models\FarmMaterial;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
@@ -238,5 +240,27 @@ class FarmTuningTest extends TestCase
         $this->assertSame(5, $row->score);
         $this->assertSame(3, $row->version);
         $this->assertCount(2, $row->history);
+    }
+
+    public function test_the_operator_can_dry_the_spools_in_the_ace_through_the_agent(): void
+    {
+        [$agent, $token] = FarmAgent::issue('test agent');
+        $printer = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $printer->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $agent->id]);
+
+        $this->actingAs($this->admin)->post("/admin/farm/printers/{$printer->id}/command", ['type' => 'dry_on', 'dry_temp' => 50, 'dry_hours' => 6])->assertRedirect()->assertSessionHas('status');
+        $cmd = FarmCommand::latest('id')->firstOrFail();
+        $this->assertSame('dry', $cmd->type);
+        $this->assertSame(['on' => true, 'temp' => 50, 'minutes' => 360], $cmd->payload);
+
+        // the agent takes the command with its payload on the next sync
+        $answer = $this->postJson('/api/agent/sync', ['version' => 'test', 'printers' => [['key' => 'kobra-s1-01', 'state' => 'idle', 'telemetry' => ['dryer' => 'off, 23% RH'], 'job' => null]]], ['Authorization' => 'Bearer '.$token])->assertOk()->json();
+        $this->assertSame('dry', $answer['commands'][0]['type']);
+        $this->assertSame(360, $answer['commands'][0]['payload']['minutes']);
+        $this->assertSame('off, 23% RH', $printer->fresh()->telemetry['dryer']);
+
+        $this->actingAs($this->admin)->post("/admin/farm/printers/{$printer->id}/command", ['type' => 'dry_off'])->assertRedirect();
+        $this->assertFalse(FarmCommand::latest('id')->firstOrFail()->payload['on']);
+        $this->actingAs($this->admin)->post("/admin/farm/printers/{$printer->id}/command", ['type' => 'dry_on', 'dry_temp' => 90])->assertSessionHasErrors('dry_temp');
     }
 }

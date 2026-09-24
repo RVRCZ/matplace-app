@@ -121,6 +121,9 @@ class MockDriver(PrinterDriver):
     async def light(self, on: bool) -> None:
         self.light_on = on
 
+    async def dry(self, on: bool, temp: int = 45, minutes: int = 240) -> None:
+        self.dryer = {"on": on, "temp": temp, "minutes": minutes}
+
     async def _changed(self) -> None:
         if self.on_change:
             await self.on_change()

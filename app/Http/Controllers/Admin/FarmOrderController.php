@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\GcodeSlot;
-use App\Domain\Farm\PrintProfile;
 use App\Domain\Farm\OrderFlow;
+use App\Domain\Farm\PrintProfile;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
 use App\Models\FarmCommand;
@@ -160,15 +160,26 @@ class FarmOrderController extends Controller
         return back()->with('status', $started ? __('farm.admin.started', ['number' => $started->order->number]) : __('farm.admin.saved'));
     }
 
-    /** Pause / resume / cancel of the running print (and the chamber light), carried out by the agent. */
+    /** Pause / resume / cancel of the running print (and the chamber light, the spool dryer), carried out by the agent. */
     public function command(Request $request, FarmPrinter $printer): RedirectResponse
     {
-        $data = $request->validate(['type' => ['required', 'in:pause,resume,cancel,light_on,light_off']]);
+        $data = $request->validate([
+            'type' => ['required', 'in:pause,resume,cancel,light_on,light_off,dry_on,dry_off'],
+            'dry_temp' => ['nullable', 'integer', 'min:35', 'max:70'],
+            'dry_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
+        ]);
         if (! $printer->isAgentDriven()) {
             return back()->with('error', __('farm.admin.no_job'));
         }
         if (str_starts_with($data['type'], 'light_')) {
             FarmCommand::create(['farm_printer_id' => $printer->id, 'type' => FarmCommand::TYPE_LIGHT, 'payload' => ['on' => $data['type'] === 'light_on'], 'created_by' => $request->user()->id]);
+
+            return back()->with('status', __('farm.admin.command_sent'));
+        }
+        if (str_starts_with($data['type'], 'dry_')) {
+            // the ACE dries every spool in the box at once; PLA 45–50 °C, PETG 55 °C (the ACE Pro stops at 55)
+            $payload = ['on' => $data['type'] === 'dry_on', 'temp' => (int) ($data['dry_temp'] ?? 50), 'minutes' => 60 * (int) ($data['dry_hours'] ?? 4)];
+            FarmCommand::create(['farm_printer_id' => $printer->id, 'type' => FarmCommand::TYPE_DRY, 'payload' => $payload, 'created_by' => $request->user()->id]);
 
             return back()->with('status', __('farm.admin.command_sent'));
         }

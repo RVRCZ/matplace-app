@@ -168,6 +168,9 @@ class Agent:
                     await w.driver.cancel()
                 elif kind == "light":
                     await w.driver.light(bool((cmd.get("payload") or {}).get("on", True)))
+                elif kind == "dry":
+                    p = cmd.get("payload") or {}
+                    await w.driver.dry(bool(p.get("on", True)), int(p.get("temp", 45)), int(p.get("minutes", 240)))
                 else:
                     raise DriverError(f"unknown command '{kind}'")
                 log.info("%s: %s done", w.key, kind)
