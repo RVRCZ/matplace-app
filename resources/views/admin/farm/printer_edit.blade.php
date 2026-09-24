@@ -36,6 +36,12 @@
             <label class="{{ $lb }}">Výška Z (mm)<input type="number" step="0.1" name="bed_z" required value="{{ old('bed_z', $printer->bed_z) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">Tryska (mm)<input type="number" step="0.05" name="nozzle_mm" required value="{{ old('nozzle_mm', $printer->nozzle_mm) }}" class="{{ $in }}"></label>
         </div>
+        <label class="{{ $lb }} mt-3">Podložka <span class="font-normal">(po výměně podložky změňte tady; zapisuje se do přepisů procesu jako curr_bed_type)</span>
+            <select name="bed_type" class="{{ $in }}">
+                <option value="">— podle profilu —</option>
+                @foreach(\App\Models\FarmPrinter::BED_TYPES as $v => $l)<option value="{{ $v }}" @selected(old('bed_type', $printer->bedType()) === $v)>{{ $l }}</option>@endforeach
+            </select>
+        </label>
         <label class="{{ $lb }} mt-3">Soubor profilu stroje <span class="font-normal">(engines/orca/profiles nebo storage/app/farm/profiles)</span><input name="machine_profile" required value="{{ old('machine_profile', $printer->machine_profile) }}" class="{{ $in }}"></label>
         <div class="mt-3 grid gap-3 lg:grid-cols-3">
             <label class="{{ $lb }}">Procesní profily podle kvality (JSON)<textarea name="process_profiles" rows="6" required class="{{ $in }} font-mono text-xs">{{ old('process_profiles', $json($printer->process_profiles)) }}</textarea></label>

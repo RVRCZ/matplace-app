@@ -25,6 +25,16 @@ class FarmPrinter extends Model
 
     public const STATE_UNKNOWN = 'unknown';
 
+    /** Build plates as OrcaSlicer names them (process setting curr_bed_type) → what the operator calls them. */
+    public const BED_TYPES = [
+        'Textured PEI Plate' => 'texturovaná PEI',
+        'High Temp Plate' => 'hladká PEI (High Temp)',
+        'Cool Plate' => 'Cool Plate (PLA)',
+        'Textured Cool Plate' => 'texturovaná Cool Plate',
+        'Engineering Plate' => 'Engineering Plate',
+        'Supertack Plate' => 'Supertack Plate',
+    ];
+
     protected $fillable = [
         'name', 'model', 'key', 'farm_agent_id', 'mode', 'enabled', 'bed_x', 'bed_y', 'bed_z', 'nozzle_mm',
         'machine_profile', 'process_profiles', 'machine_overrides', 'process_overrides', 'time_factor', 'weight_factor',
@@ -42,6 +52,21 @@ class FarmPrinter extends Model
     public function agent(): BelongsTo
     {
         return $this->belongsTo(FarmAgent::class, 'farm_agent_id');
+    }
+
+    /** The plate this machine prints on right now (slicer name), null when the profile does not say. */
+    public function bedType(): ?string
+    {
+        $t = $this->process_overrides['curr_bed_type'] ?? null;
+
+        return is_string($t) && $t !== '' ? $t : null;
+    }
+
+    public function bedTypeLabel(): string
+    {
+        $t = $this->bedType();
+
+        return $t ? (self::BED_TYPES[$t] ?? $t) : '—';
     }
 
     public function slots(): HasMany

@@ -263,4 +263,20 @@ class FarmTuningTest extends TestCase
         $this->assertFalse(FarmCommand::latest('id')->firstOrFail()->payload['on']);
         $this->actingAs($this->admin)->post("/admin/farm/printers/{$printer->id}/command", ['type' => 'dry_on', 'dry_temp' => 90])->assertSessionHasErrors('dry_temp');
     }
+
+    public function test_the_operator_records_a_plate_swap_on_the_printer(): void
+    {
+        $printer = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $this->assertSame('High Temp Plate', $printer->bedType());
+        $fields = $printer->only(['name', 'model', 'key', 'mode', 'bed_x', 'bed_y', 'bed_z', 'nozzle_mm', 'machine_profile', 'time_factor', 'weight_factor']);
+        $this->actingAs($this->admin)->post("/admin/farm/printers/{$printer->id}", $fields + [
+            'enabled' => 1, 'process_profiles' => json_encode($printer->process_profiles), 'process_overrides' => json_encode($printer->process_overrides),
+            'bed_type' => 'Textured PEI Plate',
+        ])->assertRedirect('/admin/farm/printers');
+        $printer->refresh();
+        $this->assertSame('Textured PEI Plate', $printer->bedType());
+        $this->assertSame('0', $printer->process_overrides['enable_prime_tower'], 'the other process overrides stay');
+        $this->actingAs($this->admin)->post("/admin/farm/printers/{$printer->id}", $fields + ['enabled' => 1, 'process_profiles' => '{}', 'bed_type' => 'Glass'])->assertSessionHasErrors('bed_type');
+        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertSee('texturovaná PEI');
+    }
 }

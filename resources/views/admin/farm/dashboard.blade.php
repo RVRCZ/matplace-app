@@ -30,7 +30,7 @@
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
                     <h2 class="text-lg font-bold">{{ $p->name }}</h2>
-                    <p class="text-xs text-slate-500">{{ $p->model }} · {{ __('farm.admin.mode.'.$p->mode) }}@if($p->agent) · {{ $p->agent->name }}@endif</p>
+                    <p class="text-xs text-slate-500">{{ $p->model }} · {{ __('farm.admin.mode.'.$p->mode) }}@if($p->agent) · {{ $p->agent->name }}@endif · {{ $p->bedTypeLabel() }}</p>
                 </div>
                 <span class="rounded-full px-3 py-1 text-xs font-bold {{ in_array($state, ['offline', 'error', 'unknown']) ? 'bg-red-100 text-red-800' : ($state === 'printing' ? 'bg-action-soft text-action-dark' : 'bg-ok-soft text-ok') }}">{{ __('farm.admin.state.'.$state) }}</span>
             </div>

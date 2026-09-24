@@ -59,6 +59,7 @@ class FarmCatalogController extends Controller
             'process_profiles' => ['required', 'json'],
             'machine_overrides' => ['nullable', 'json'],
             'process_overrides' => ['nullable', 'json'],
+            'bed_type' => ['nullable', Rule::in(array_keys(FarmPrinter::BED_TYPES))],
             'time_factor' => ['required', 'numeric', 'min:0.1', 'max:10'],
             'weight_factor' => ['required', 'numeric', 'min:0.1', 'max:10'],
             'hourly_rate' => ['nullable', 'numeric', 'min:0', 'max:100000'],
@@ -73,6 +74,11 @@ class FarmCatalogController extends Controller
         foreach (['process_profiles', 'machine_overrides', 'process_overrides'] as $json) {
             $data[$json] = isset($data[$json]) && $data[$json] !== '' ? json_decode($data[$json], true) : null;
         }
+        if (! empty($data['bed_type'])) {
+            // the plate is a process setting (curr_bed_type); the select is the easy way to change it after a swap
+            $data['process_overrides'] = ['curr_bed_type' => $data['bed_type']] + (array) $data['process_overrides'];
+        }
+        unset($data['bed_type']);
         $slots = $data['slots'] ?? [];
         unset($data['slots']);
         $data['enabled'] = $request->boolean('enabled');
