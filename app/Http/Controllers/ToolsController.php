@@ -8,8 +8,10 @@ use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Api\ConfigController;
+use App\Domain\Tools\MoldGenerator;
 use App\Domain\Tools\SignGenerator;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 /** "Tools" menu: everything that does not belong on the one main screen. */
 class ToolsController extends Controller
@@ -52,6 +54,19 @@ class ToolsController extends Controller
     public function spare(MaterialCatalog $materials): View
     {
         return view('tools.spare', ['materials' => $materials->all()]);
+    }
+
+    /** "Casting mold": upload a model (or come from the calculator with ?from=uuid), pick the wall and the split, get both halves. */
+    public function mold(Request $request, MoldGenerator $molds, MaterialCatalog $materials, ConverterChain $converters): View
+    {
+        $from = $request->query('from');
+
+        return view('tools.mold', [
+            'available' => $molds->available(),
+            'config' => ConfigController::payload($materials, $converters),
+            'from' => is_string($from) && preg_match('/^[0-9a-f-]{36}$/', $from) ? $from : null,
+            'walls' => MoldGenerator::WALLS, 'axes' => MoldGenerator::AXES, 'splits' => MoldGenerator::SPLITS,
+        ]);
     }
 
     /** "Check my model": the upload, the viewer and a plain-language report; the price is one click further. */

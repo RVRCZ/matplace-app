@@ -40,9 +40,12 @@ class GenerateModel implements ShouldQueue
         try {
             if (! $req->external_id) {
                 $options = new GenerationOptions(targetSizeMm: $req->target_mm ? (float) $req->target_mm : null);
-                $handle = $req->type === 'image'
-                    ? $generator->fromImage(Storage::disk('local')->path((string) $req->image_path), $req->prompt, $options)
-                    : $generator->fromText((string) $req->prompt, $options);
+                $views = array_map(fn ($rel) => Storage::disk('local')->path($rel), $req->photoPaths());
+                $handle = match (true) {
+                    $req->type !== 'image' => $generator->fromText((string) $req->prompt, $options),
+                    count($views) > 1 => $generator->fromImages($views, $req->prompt, $options),
+                    default => $generator->fromImage($views['front'] ?? Storage::disk('local')->path((string) $req->image_path), $req->prompt, $options),
+                };
                 $req->update(['external_id' => $handle->externalId, 'engine' => $handle->engine, 'status' => 'running', 'cost_cents' => (int) ($handle->meta['credits'] ?? $generator->estimatedCostCents())]);
             }
 
@@ -107,13 +110,12 @@ class GenerateModel implements ShouldQueue
         }
     }
 
-    /** Personal photos (figures, busts) are not kept: delete the file and the path once the run is over. */
+    /** Personal photos (figures, busts) are not kept: delete the files and the paths once the run is over. */
     private function forgetPhoto(GenerationRequest $req): void
     {
-        if (empty($req->description['delete_photo']) || ! $req->image_path) {
+        if (empty($req->description['delete_photo']) || ! $req->photoPaths()) {
             return;
         }
-        Storage::disk('local')->delete($req->image_path);
-        $req->update(['image_path' => null]);
+        $req->forgetPhotos();
     }
 }

@@ -10,6 +10,7 @@
 return [
     'calc' => ['route' => 'home', 'intent' => 'file', 'categories' => ['file'], 'available' => true],
     'check' => ['route' => 'tools.check', 'intent' => 'file', 'categories' => ['file'], 'available' => true],
+    'mold' => ['route' => 'tools.mold', 'intent' => 'file', 'categories' => ['file', 'craft'], 'available' => true],
     'personalize' => ['route' => 'tools.personalize', 'intent' => 'file', 'categories' => ['file', 'gifts'], 'available' => false],
 
     'organizer' => ['route' => 'tools.organizer', 'intent' => 'create', 'categories' => ['home'], 'available' => true],

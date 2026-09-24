@@ -469,6 +469,43 @@ function showPedestal(file: FileInfo | null): void {
     };
 }
 
+/** Any ready model: a two-part casting mold around it (free geometry, seconds). A mold file shows what the tool measured instead. */
+function showMold(file: FileInfo | null): void {
+    const box = document.getElementById('mold-box') as HTMLFormElement | null;
+    const report = document.getElementById('mold-report');
+    if (!box || !report) return;
+    const isMold = file?.kind === 'mold';
+    box.classList.toggle('hidden', !file || file.status !== 'ready' || isMold);
+    report.classList.toggle('hidden', !isMold || !file?.mold);
+    if (isMold && file?.mold) {
+        const m = file.mold;
+        const nf = new Intl.NumberFormat(document.documentElement.lang || 'cs', { maximumFractionDigits: 1 });
+        report.textContent = [
+            t('mold.report', { w: nf.format(m.box[0]), d: nf.format(m.box[1]), h: nf.format(m.box[2]), ml: nf.format(m.resin_ml), wall: m.wall }),
+            m.warnings.includes('undercuts') ? t('mold.report.undercuts', { pct: nf.format(m.undercut_pct) }) : '',
+            m.warnings.includes('large_mold') ? t('mold.report.large') : '',
+        ].filter(Boolean).join(' ');
+    }
+    if (!file || isMold) return;
+    const msg = $('mold-msg'); const btn = box.querySelector('button') as HTMLButtonElement;
+    const hint = msg.dataset.hint ?? (msg.dataset.hint = msg.textContent ?? '');
+    msg.textContent = hint; btn.disabled = false;
+    box.onsubmit = async (e) => {
+        e.preventDefault();
+        btn.disabled = true; msg.textContent = t('mold.working');
+        const split = ($('mold-split') as HTMLSelectElement).value;
+        try {
+            const res = await fetch(`${routes().files}/${file.uuid}/mold`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ wall: Number(($('mold-wall') as HTMLSelectElement).value), axis: ($('mold-axis') as HTMLSelectElement).value, split: split ? Number(split) : null }) });
+            const body = await res.json();
+            if (res.status === 503) { msg.textContent = t('mold.unavailable'); btn.disabled = false; return; }
+            if (!res.ok || !body.file) throw new Error(body.error ?? 'mold');
+            await openFile(body.file.uuid);
+        } catch {
+            msg.textContent = t('mold.failed'); btn.disabled = false;
+        }
+    };
+}
+
 /** Tool-specific line under the viewer: how this kind of model is meant to be printed. */
 function showKindTip(kind: string | undefined): void {
     const el = document.getElementById('kind-tip');
@@ -485,6 +522,7 @@ function showKindTip(kind: string | undefined): void {
     }
     showRefine(kind === 'generated' ? state.file : null);
     showPedestal(kind === 'generated' ? state.file : null);
+    showMold(state.file);
 }
 
 async function restore(c: CalcInfo): Promise<void> {

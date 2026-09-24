@@ -13,6 +13,7 @@ export interface FileInfo {
     hints?: { supports?: boolean; infill?: number; quality?: string };
     generation?: { token: string; refinable: boolean; pedestal?: { type: string; name: string; dedication: string; sink?: number; tidy?: boolean } | null } | null;
     parts?: string[];
+    mold?: { axis: string; undercut_pct: number; box: number[]; resin_ml: number; mold_cm3: number; wall: number; warnings: string[] } | null;
     tool?: { kind: string; params: Record<string, unknown>; url: string } | null;
     check?: { status: string; items: { level: 'error' | 'advice' | 'ok'; code: string; params: Record<string, string> }[] };
 }

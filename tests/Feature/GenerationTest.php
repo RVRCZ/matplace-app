@@ -136,6 +136,56 @@ class GenerationTest extends TestCase
         $this->postJson('/api/generate', ['prompt' => 'vase'])->assertStatus(503);
     }
 
+    public function test_more_sides_of_a_photo_are_moderated_stored_sent_together_and_deleted(): void
+    {
+        Http::fake(['api.anthropic.com/*' => Http::response(['content' => [['type' => 'text', 'text' => '{"ok":true,"subject":"person"}']]])]);
+        $r = $this->post('/api/generate', [
+            'image' => UploadedFile::fake()->image('front.jpg', 300, 400), 'image_back' => UploadedFile::fake()->image('back.jpg', 300, 400),
+            'kind' => 'bust', 'consent' => '1', 'target_mm' => 60,
+        ], ['Accept' => 'application/json']);
+        $r->assertCreated()->assertJsonPath('generation.status', 'done');
+        $req = GenerationRequest::where('token', $r->json('generation.token'))->firstOrFail();
+        // the fake generator charges 10 per view it was given; the photos are gone once the run is over
+        $this->assertSame(20, $req->cost_cents);
+        $this->assertNull($req->image_path);
+        $this->assertNull($req->views);
+        $this->assertCount(0, Storage::disk('local')->files('photos/figures'));
+    }
+
+    public function test_a_rejected_side_photo_rejects_the_request_and_names_the_view(): void
+    {
+        Http::fake(['api.anthropic.com/*' => Http::sequence()
+            ->push(['content' => [['type' => 'text', 'text' => '{"ok":true,"subject":"person"}']]])
+            ->push(['content' => [['type' => 'text', 'text' => '{"ok":false,"subject":"person","reason":"minor"}']]])]);
+        $this->post('/api/generate', [
+            'image' => UploadedFile::fake()->image('front.jpg', 300, 400), 'image_left' => UploadedFile::fake()->image('left.jpg', 300, 400),
+            'kind' => 'bust', 'consent' => '1',
+        ], ['Accept' => 'application/json'])->assertStatus(422)->assertJsonPath('error', 'photo_rejected')->assertJsonPath('view', 'left');
+        $this->assertCount(0, Storage::disk('local')->files('photos/figures'));
+        $this->assertSame(0, GenerationRequest::count());
+    }
+
+    public function test_tripo_v3_multiview_sends_the_four_slots_in_order_with_empty_ones_for_missing_sides(): void
+    {
+        Http::fake([
+            'openapi.tripo3d.ai/v3/files' => Http::sequence()->push(['code' => 0, 'data' => ['file_token' => 'tok_front']])->push(['code' => 0, 'data' => ['file_token' => 'tok_back']]),
+            'openapi.tripo3d.ai/v3/generation/multiview-to-model' => Http::response(['code' => 0, 'data' => ['task_id' => 'task-mv', 'status' => 'queued']]),
+        ]);
+        $front = sys_get_temp_dir().'/mp_mv_front_'.uniqid().'.jpg';
+        $back = sys_get_temp_dir().'/mp_mv_back_'.uniqid().'.png';
+        imagejpeg(imagecreatetruecolor(8, 8), $front);
+        imagepng(imagecreatetruecolor(8, 8), $back);
+
+        $g = new TripoGenerator(['api_key' => 'tsk_test', 'base_url' => 'https://openapi.tripo3d.ai', 'model' => 'v3.1-20260211', 'face_limit' => 0, 'geometry_quality' => 'detailed', 'work_dir' => sys_get_temp_dir().'/mp_tripo_out']);
+        $h = $g->fromImages(['back' => $back, 'front' => $front], null, new GenerationOptions);
+        $this->assertSame('task-mv', $h->externalId);
+        Http::assertSent(fn ($req) => str_ends_with($req->url(), '/v3/generation/multiview-to-model')
+            && json_encode($req['files']) === '[{"type":"jpg","file_token":"tok_front"},{},{"type":"png","file_token":"tok_back"},{}]'
+            && $req['texture'] === false && $req['geometry_quality'] === 'detailed');
+        @unlink($front);
+        @unlink($back);
+    }
+
     public function test_tripo_v3_adapter_requests_geometry_only_and_downloads_result(): void
     {
         Http::fake([

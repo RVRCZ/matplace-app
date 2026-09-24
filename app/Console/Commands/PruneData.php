@@ -27,11 +27,10 @@ class PruneData extends Command
         $photos = 0;
         $files = 0;
 
-        GenerationRequest::whereNotNull('image_path')->where('created_at', '<', now()->subDay())->each(function (GenerationRequest $r) use (&$photos, $dry) {
-            $photos++;
+        GenerationRequest::where(fn ($q) => $q->whereNotNull('image_path')->orWhereNotNull('views'))->where('created_at', '<', now()->subDay())->each(function (GenerationRequest $r) use (&$photos, $dry) {
+            $photos += count($r->photoPaths());
             if (! $dry) {
-                Storage::disk('local')->delete($r->image_path);
-                $r->update(['image_path' => null]);
+                $r->forgetPhotos();
             }
         });
 

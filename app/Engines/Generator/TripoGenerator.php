@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
  *   POST /v3/files                        multipart "file"            → data.file_token
  *   POST /v3/generation/image-to-model    {file:{type,file_token}, model, texture:false, pbr:false, face_limit}
  *   POST /v3/generation/text-to-model     {prompt, model, texture:false, pbr:false, face_limit}
+ *   POST /v3/generation/multiview-to-model {files:[front,left,back,right], …}  front required, min. 2 views; missing view = {}
  *   GET  /v3/tasks/{id}                   → data.status queued|running|success|failed|cancelled|banned, progress, output.model_url (GLB, link valid ~5 min)
  *
  * Geometry only (no textures): 20 credits per image, 10 per text (1 credit = $0.01).
@@ -39,6 +40,35 @@ final class TripoGenerator implements ModelGenerator
 
     public function fromImage(string $imagePath, ?string $hint, GenerationOptions $options): GenerationHandle
     {
+        return $this->create('/v3/generation/image-to-model', [
+            'file' => $this->upload($imagePath),
+        ] + $this->common(), 20 + $this->detailCredits());
+    }
+
+    /** Front + up to three more sides of the same subject: the "files" array is always [front, left, back, right]. */
+    public function fromImages(array $views, ?string $hint, GenerationOptions $options): GenerationHandle
+    {
+        if (empty($views['front'])) {
+            throw new GenerationException('The front view is required.');
+        }
+        $views = array_filter(array_intersect_key($views, array_flip(self::VIEWS)));
+        if (count($views) < 2) {
+            return $this->fromImage($views['front'], $hint, $options);
+        }
+        $files = [];
+        foreach (self::VIEWS as $view) {
+            // a missing side is an empty descriptor; Tripo fills it in from the others
+            $files[] = isset($views[$view]) ? $this->upload($views[$view]) : (object) [];
+        }
+
+        return $this->create('/v3/generation/multiview-to-model', ['files' => $files] + $this->common(), 20 + $this->detailCredits());
+    }
+
+    private const VIEWS = ['front', 'left', 'back', 'right'];
+
+    /** @return array{type: string, file_token: string} */
+    private function upload(string $imagePath): array
+    {
         if (! is_file($imagePath)) {
             throw new GenerationException('Image not found: '.$imagePath);
         }
@@ -54,9 +84,7 @@ final class TripoGenerator implements ModelGenerator
             throw new GenerationException('Tripo upload failed: '.$this->err($up->json(), $up->status()));
         }
 
-        return $this->create('/v3/generation/image-to-model', [
-            'file' => ['type' => $ext, 'file_token' => $token],
-        ] + $this->common(), 20 + $this->detailCredits());
+        return ['type' => $ext, 'file_token' => $token];
     }
 
     public function fromText(string $prompt, GenerationOptions $options): GenerationHandle

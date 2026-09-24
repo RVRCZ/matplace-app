@@ -54,7 +54,8 @@ final class ThreeMfConverter implements FormatConverter
         } finally {
             $zip->close();
             StlFile::endBinary($fh, $count);
-            ini_set('memory_limit', $oldMem);
+            // PHP refuses a limit below what is already allocated (a big 3MF leaves the worker at 256 MB+): then keep the raised one
+            @ini_set('memory_limit', $oldMem);
         }
 
         if ($count === 0) {

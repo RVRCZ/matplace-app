@@ -26,6 +26,11 @@ final class NullGenerator implements ModelGenerator
         throw new GenerationException('Model generation is not configured (ENGINE_GENERATOR=null).');
     }
 
+    public function fromImages(array $views, ?string $hint, GenerationOptions $options): GenerationHandle
+    {
+        throw new GenerationException('Model generation is not configured (ENGINE_GENERATOR=null).');
+    }
+
     public function poll(GenerationHandle $handle): GenerationStatus
     {
         return new GenerationStatus(GenerationStatus::FAILED, error: 'not configured');

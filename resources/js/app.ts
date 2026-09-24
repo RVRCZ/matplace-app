@@ -8,6 +8,7 @@ import { bootRelief } from './calc/relief';
 import { bootParam } from './calc/param';
 import { bootSpare } from './calc/spare';
 import { bootCheckPage } from './calc/check';
+import { bootMoldPage } from './calc/mold';
 import { bootFarmCta, bootFarmStart, bootFarmOrder, bootFarmAdminViewer } from './calc/farm';
 
-document.addEventListener('DOMContentLoaded', () => { boot(); bootSearch(); bootChat(); bootMiniViewers(); bootFigure(); bootSign(); bootRelief(); bootParam(); bootSpare(); bootCheckPage(); bootFarmCta(); bootFarmStart(); bootFarmOrder(); bootFarmAdminViewer(); });
+document.addEventListener('DOMContentLoaded', () => { boot(); bootSearch(); bootChat(); bootMiniViewers(); bootFigure(); bootSign(); bootRelief(); bootParam(); bootSpare(); bootCheckPage(); bootMoldPage(); bootFarmCta(); bootFarmStart(); bootFarmOrder(); bootFarmAdminViewer(); });

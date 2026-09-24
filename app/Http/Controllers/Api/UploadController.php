@@ -108,7 +108,10 @@ class UploadController extends Controller
             'area_mm2' => $f->area_mm2,
             'triangles' => $f->triangles,
             // a box with its lid is two bodies on one plate by design, not a defect
-            'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], self::partsOf($f) || in_array($f->kind(), ['logo', 'qr', 'stamp'], true) || ! empty($f->tool_params['stand']) ? ['multiple_shells'] : [])),
+            // a box with its lid, or the two halves of a mold, are two bodies on one plate by design, not a defect
+            'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], self::partsOf($f) || in_array($f->kind(), ['logo', 'qr', 'stamp', 'mold'], true) || ! empty($f->tool_params['stand']) ? ['multiple_shells'] : [])),
+            // casting mold: what the tool measured (box size, resin needed, undercuts)
+            'mold' => $f->kind() === 'mold' ? ($f->tool_params['report'] ?? null) : null,
             'parts' => self::partsOf($f),
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => self::toolOf($f),

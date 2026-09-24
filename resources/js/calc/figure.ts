@@ -20,6 +20,14 @@ export function bootFigure(): void {
         const img = $('figure-preview') as HTMLImageElement;
         if (f) { img.src = URL.createObjectURL(f); img.classList.remove('hidden'); }
     };
+    // optional extra sides (left/back/right) of the same subject
+    form.querySelectorAll<HTMLInputElement>('input[data-view]').forEach((input) => {
+        input.onchange = () => {
+            const f = input.files?.[0];
+            const img = form.querySelector(`img[data-view-preview="${input.dataset.view}"]`) as HTMLImageElement | null;
+            if (f && img) { img.src = URL.createObjectURL(f); img.classList.remove('hidden'); }
+        };
+    });
 
     form.onsubmit = async (e) => {
         e.preventDefault();
@@ -34,7 +42,7 @@ export function bootFigure(): void {
             const res = await fetch(cfg.generate, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: data });
             const body = await res.json();
             if (res.status === 429) { msg.textContent = t(body.error === 'global_limit' ? 'figure.global_limit' : 'figure.limit', { n: body.limit, m: body.login_limit }); btn.disabled = false; return; }
-            if (res.status === 422 && body.error === 'photo_rejected') { msg.textContent = t('figure.rejected'); btn.disabled = false; return; }
+            if (res.status === 422 && body.error === 'photo_rejected') { msg.textContent = t(body.view && body.view !== 'front' ? 'figure.rejected_view' : 'figure.rejected', { view: t(`figure.view.${body.view}`) }); btn.disabled = false; return; }
             if (!res.ok) throw new Error(body.message ?? 'generate');
             let g = body.generation;
             while (g.status !== 'done' && g.status !== 'failed') {

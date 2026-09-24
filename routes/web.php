@@ -54,6 +54,7 @@ Route::get('/tools/sign', [ToolsController::class, 'param'])->defaults('kind', '
 Route::get('/tools/relief', [ToolsController::class, 'relief'])->name('tools.relief');
 Route::get('/tools/spare-part', [ToolsController::class, 'spare'])->middleware('feature:marketplace')->name('tools.spare');
 Route::get('/tools/check', [ToolsController::class, 'check'])->name('tools.check');
+Route::get('/tools/mold', [ToolsController::class, 'mold'])->name('tools.mold');
 Route::get('/tools/organizer', [ToolsController::class, 'param'])->defaults('kind', 'organizer')->name('tools.organizer');
 Route::get('/tools/modular-organizer', [ToolsController::class, 'param'])->defaults('kind', 'modular')->name('tools.modular');
 Route::get('/tools/box', [ToolsController::class, 'param'])->defaults('kind', 'box')->name('tools.box');
@@ -74,6 +75,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('files/{modelFile}/model.stl', [ModelFileController::class, 'stl'])->name('files.stl');
     Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware('throttle:20,1')->name('files.project');
     Route::post('files/{modelFile}/pedestal', [ModelFileController::class, 'pedestal'])->middleware('throttle:20,1')->name('files.pedestal');
+    Route::post('files/{modelFile}/mold', [ModelFileController::class, 'mold'])->middleware('throttle:20,1')->name('files.mold');
     Route::get('printers', [ModelFileController::class, 'printers'])->name('printers');
     Route::post('calculations', [CalculationController::class, 'store'])->middleware('throttle:calculations')->name('calculations.store');
     Route::get('calculations/{calculation}', [CalculationController::class, 'show'])->name('calculations.show');

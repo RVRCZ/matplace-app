@@ -22,6 +22,10 @@ class GenerationController extends Controller
             'describe' => ['nullable', 'string', 'max:16', 'required_without_all:prompt,image'],
             'prompt' => ['nullable', 'string', 'min:3', 'max:500', 'required_without_all:describe,image'],
             'image' => ['nullable', 'image', 'max:12288'],
+            // more sides of the same subject (optional): the model then matches the likeness from all of them
+            'image_left' => ['nullable', 'image', 'max:12288'],
+            'image_back' => ['nullable', 'image', 'max:12288'],
+            'image_right' => ['nullable', 'image', 'max:12288'],
             'kind' => ['nullable', 'in:bust,figure', 'required_with:image'],
             'pedestal' => ['nullable', 'in:round,square,hexagon,column,plaque,none'],
             'pedestal_name' => ['nullable', 'string', 'max:24'],
@@ -34,22 +38,31 @@ class GenerationController extends Controller
 
         try {
             if ($request->hasFile('image')) {
-                $rel = 'photos/figures/'.\Illuminate\Support\Str::uuid().'.'.(strtolower($request->file('image')->getClientOriginalExtension()) ?: 'jpg');
-                \Illuminate\Support\Facades\Storage::disk('local')->put($rel, file_get_contents($request->file('image')->getRealPath()));
-                $check = app(\App\Engines\Vision\VisionDescriber::class)->moderate(\Illuminate\Support\Facades\Storage::disk('local')->path($rel));
-                if (! $check['ok']) {
-                    \Illuminate\Support\Facades\Storage::disk('local')->delete($rel);
+                // every photo is stored and moderated; one rejected side rejects the whole request
+                $disk = \Illuminate\Support\Facades\Storage::disk('local');
+                $stored = [];
+                foreach (['front' => 'image', 'left' => 'image_left', 'back' => 'image_back', 'right' => 'image_right'] as $view => $field) {
+                    if (! $request->hasFile($field)) {
+                        continue;
+                    }
+                    $rel = 'photos/figures/'.\Illuminate\Support\Str::uuid().'.'.(strtolower($request->file($field)->getClientOriginalExtension()) ?: 'jpg');
+                    $disk->put($rel, file_get_contents($request->file($field)->getRealPath()));
+                    $stored[$view] = $rel;
+                    $check = app(\App\Engines\Vision\VisionDescriber::class)->moderate($disk->path($rel));
+                    if (! $check['ok']) {
+                        $disk->delete(array_values($stored));
 
-                    return response()->json(['error' => 'photo_rejected', 'reason' => $check['reason']], 422);
+                        return response()->json(['error' => 'photo_rejected', 'reason' => $check['reason'], 'view' => $view], 422);
+                    }
                 }
                 try {
-                    $req = $service->fromPhoto($rel, $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user, [
+                    $req = $service->fromPhoto($stored['front'], $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user, [
                         'type' => $data['pedestal'] ?? 'round',
                         'name' => ($data['pedestal'] ?? '') === 'plaque' ? ($data['pedestal_name'] ?? null) : null,
                         'dedication' => ($data['pedestal'] ?? '') === 'plaque' ? ($data['pedestal_dedication'] ?? null) : null,
-                    ]);
+                    ], array_diff_key($stored, ['front' => 1]));
                 } catch (QuotaExceeded $e) {
-                    \Illuminate\Support\Facades\Storage::disk('local')->delete($rel);
+                    $disk->delete(array_values($stored));
                     throw $e;
                 }
             } elseif (! empty($data['describe'])) {

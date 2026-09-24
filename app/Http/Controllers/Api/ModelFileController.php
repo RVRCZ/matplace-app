@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Generation\PedestalChanger;
+use App\Domain\Tools\MoldGenerator;
 use App\Engines\Contracts\ProjectExporter;
 use App\Engines\DTO\SliceParams;
 use App\Engines\Exceptions\EngineException;
@@ -75,6 +76,27 @@ class ModelFileController extends Controller
             $new = $changer->change($modelFile, $data, $data['front'] ?? 'keep', (int) ($data['sink'] ?? 0), (bool) ($data['tidy'] ?? true));
         } catch (\RuntimeException) {
             return response()->json(['error' => 'pedestal_failed'], 422);
+        }
+
+        return response()->json(['file' => UploadController::describe($new)], 201);
+    }
+
+    /** POST /api/files/{uuid}/mold {wall?, axis?, split?} — two-part casting mold around this model; answers with the new file */
+    public function mold(Request $request, ModelFile $modelFile, MoldGenerator $molds): JsonResponse
+    {
+        abort_unless($modelFile->isReady() && $modelFile->kind() !== 'mold', 404);
+        if (! $molds->available()) {
+            return response()->json(['error' => 'mold_unavailable'], 503);
+        }
+        $data = $request->validate([
+            'wall' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::WALLS)],
+            'axis' => ['nullable', 'in:'.implode(',', MoldGenerator::AXES)],
+            'split' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::SPLITS)],
+        ]);
+        try {
+            $new = $molds->make($modelFile, $data);
+        } catch (EngineException $e) {
+            return response()->json(['error' => 'mold_failed', 'reason' => $e->getMessage()], $e->getMessage() === 'mold_unavailable' ? 503 : 422);
         }
 
         return response()->json(['file' => UploadController::describe($new)], 201);

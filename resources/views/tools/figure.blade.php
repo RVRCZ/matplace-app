@@ -1,7 +1,7 @@
 @extends('layouts.app', ['title' => __('tools.figure.title').' · matplace'])
 
 @php
-    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent'])
+    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.rejected_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent'])
         ->mapWithKeys(fn ($k) => [$k => __($k, ['n' => ':n', 'm' => ':m'])])->all();
 @endphp
 
@@ -36,6 +36,21 @@
             <span class="text-sm text-slate-500">{{ __('figure.photo_tips') }}</span>
             <input id="figure-photo" name="image" type="file" accept="image/*" class="sr-only">
         </label>
+
+        <details id="figure-views" class="rounded-xl border border-slate-200 p-3">
+            <summary class="cursor-pointer text-sm font-semibold">{{ __('figure.views') }} <span class="font-normal text-slate-500">{{ __('figure.views.hint') }}</span></summary>
+            <div class="mt-3 grid grid-cols-3 gap-2">
+                @foreach(['left' => '⬅', 'back' => '🔄', 'right' => '➡'] as $view => $ico)
+                    <label class="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 p-3 text-center text-sm hover:border-action hover:bg-action-soft">
+                        <img data-view-preview="{{ $view }}" src="" alt="" class="mb-1 hidden max-h-24 rounded">
+                        <span aria-hidden="true">{{ $ico }}</span>
+                        <span class="font-semibold">{{ __('figure.view.'.$view) }}</span>
+                        <input name="image_{{ $view }}" data-view="{{ $view }}" type="file" accept="image/*" class="sr-only">
+                    </label>
+                @endforeach
+            </div>
+            <p class="mt-2 text-xs text-slate-500">{{ __('figure.views.tips') }}</p>
+        </details>
 
         <label class="block text-sm font-semibold">{{ __('figure.size') }} <span id="figure-size-val" class="font-normal text-action-dark">80 mm</span>
             <input id="figure-size" name="target_mm" type="range" min="30" max="250" step="5" value="80" class="mt-1 w-full accent-action">

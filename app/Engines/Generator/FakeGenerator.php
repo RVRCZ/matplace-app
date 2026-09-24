@@ -32,6 +32,12 @@ final class FakeGenerator implements ModelGenerator
         return new GenerationHandle('fake', 'fake-'.Str::random(8));
     }
 
+    public function fromImages(array $views, ?string $hint, GenerationOptions $options): GenerationHandle
+    {
+        // "credits" = 10 per view, so a test can tell how many sides reached the engine
+        return new GenerationHandle('fake', 'fake-'.Str::random(8), ['views' => array_keys($views), 'credits' => 10 * count($views)]);
+    }
+
     public function poll(GenerationHandle $handle): GenerationStatus
     {
         $path = sys_get_temp_dir().'/mp_fakegen_'.Str::random(8).'.stl';
