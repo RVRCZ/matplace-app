@@ -105,4 +105,15 @@ class TuningAdvisorTest extends TestCase
         $this->assertSame('27', $s['process.ironing_speed']);
         $this->assertSame(225, $s['nozzle_temp']);
     }
+
+    public function test_stringing_with_a_weak_bond_means_a_wet_spool_and_leaves_the_temperature_alone(): void
+    {
+        $r = TuningAdvisor::advise(['stringing' => 3, 'bond' => 'weak'], $this->candidate, 'detailed');
+        $this->assertSame(220, $r['overrides']['nozzle_temp'], 'neither −10 nor +5');
+        $s = $this->settings($r);
+        $this->assertArrayNotHasKey('nozzle_temp', $s);
+        $this->assertSame('1.2', $s['filament.filament_retraction_length']);
+        $this->assertSame('65', $s['filament.fan_max_speed']);
+        $this->assertStringContainsString('mokrý filament', $r['notes'][0]);
+    }
 }

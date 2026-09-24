@@ -44,10 +44,17 @@ final class TuningAdvisor
         }
 
         $stringing = (int) $r('stringing');
+        // heavy stringing together with layers that do not bond is the signature of a wet spool: cooling the nozzle
+        // for the strings would make the bond worse and heating it for the bond would make the strings worse
+        $wet = $stringing >= 2 && $r('bond') === 'weak';
         if ($stringing >= 2) {
-            $a->temp('nozzle_temp', $stringing >= 3 ? -10 : -5, 'stringing '.$stringing.'/3: chladnější tryska méně teče');
+            if (! $wet) {
+                $a->temp('nozzle_temp', $stringing >= 3 ? -10 : -5, 'stringing '.$stringing.'/3: chladnější tryska méně teče');
+            }
             $a->filament('filament_retraction_length', $stringing >= 3 ? 0.4 : 0.2, 0.2, 2.5, 'stringing: delší retrakce');
-            $a->note('Silný stringing bývá i mokrý filament: před další změnou nastavení cívku vysušte.');
+            $a->note($wet
+                ? 'Silný stringing a zároveň slabé spojení vrstev = mokrý filament. Cívku vysušte (PLA 50–55 °C, 4–6 h) a test zopakujte beze změny teplot; teprve pak má smysl teploty ladit.'
+                : 'Silný stringing bývá i mokrý filament: před další změnou nastavení cívku vysušte.');
         } elseif ($stringing === 1) {
             $a->filament('filament_retraction_length', 0.1, 0.2, 2.5, 'lehký stringing: o kousek delší retrakce');
         }
@@ -102,7 +109,9 @@ final class TuningAdvisor
         }
 
         if ($r('bond') === 'weak') {
-            $a->temp('nozzle_temp', 5, 'slabé spojení vrstev: teplejší tryska');
+            if (! $wet) {
+                $a->temp('nozzle_temp', 5, 'slabé spojení vrstev: teplejší tryska');
+            }
             $a->filament('fan_max_speed', -15, 0, 100, 'slabé spojení vrstev: méně chlazení');
             $a->filament('filament_max_volumetric_speed', -20, 2, 40, 'slabé spojení vrstev: pomalejší tavení, plast se lépe prohřeje', percent: true);
         }
