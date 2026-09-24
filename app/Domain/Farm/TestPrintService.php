@@ -24,7 +24,7 @@ final class TestPrintService
 {
     public const OBJECTS = [
         'quick' => ['minutes' => 35, 'floors' => false, 'ironing' => false],
-        'detailed' => ['minutes' => 70, 'floors' => false, 'ironing' => true],
+        'detailed' => ['minutes' => 90, 'floors' => false, 'ironing' => true],
         'temp_tower' => ['minutes' => 60, 'floors' => true, 'ironing' => false],
     ];
 
