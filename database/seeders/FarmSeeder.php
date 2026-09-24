@@ -76,8 +76,10 @@ class FarmSeeder extends Seeder
             // the shared calculator profile is deliberately oversized for pricing big parts; a real print needs the real plate
             'machine_overrides' => ['printable_area' => ['0x0', '250x0', '250x250', '0x250'], 'printable_height' => '250'],
             // one colour per print: no prime tower; supports only where the slicer finds overhangs, as trees
-            // curr_bed_type: without it the Orca CLI slices for a "Cool Plate" (bed 35 °C); the S1 has a textured PEI plate (55 °C)
-            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'Textured PEI Plate'],
+            // curr_bed_type: without it the Orca CLI slices for a "Cool Plate" (bed 35 °C). The S1 printed on its textured
+            // PEI plate until 24 Sep 2026, since then on a smooth PEI plate = Orca's "High Temp Plate" (the bed temperature
+            // itself is rewritten per spool into the G-code anyway, GcodeSlot)
+            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'High Temp Plate'],
         ]);
 
         if ($printer->wasRecentlyCreated) {
