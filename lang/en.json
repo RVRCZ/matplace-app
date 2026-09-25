@@ -1168,5 +1168,12 @@
     "mold.page.building": "Building the mold, up to a minute for big models…",
     "mold.page.failed": "That did not work. Try again or another file.",
     "mold.page.model_failed": "The model could not be processed. It has to be a closed body between 5 and 400 mm.",
-    "mold.page.go": "Price and print the mold"
+    "mold.page.go": "Price and print the mold",
+    "param.f.flute": "Flute depth",
+    "param.o.vase.neck": "Narrow neck",
+    "param.preset.spiral": "Spiral",
+    "param.preset.pot": "Plant pot",
+    "param.error.vase_flutes_too_deep": "Flutes this deep with this many ribs would leave the wall thinner than a single extruded line. Make them shallower, use fewer ribs or a thicker wall.",
+    "param.warn.thin_flutes": "Between the flutes the wall is thin: it prints as a single line. The vase will be more fragile and hold water less well. Use a thicker wall or shallower flutes.",
+    "param.warn.steep_twist": "With a twist this strong the ribs lean far off vertical. A printer usually manages without supports, but the surface can come out rougher. Reduce the twist if you want it clean."
 }

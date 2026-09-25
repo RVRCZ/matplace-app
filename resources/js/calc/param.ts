@@ -84,7 +84,9 @@ export function bootParam(): void {
         const code = ($('param-material') as HTMLSelectElement).value;
         const qty = Math.max(1, Math.min(1000, Number(($('param-qty') as HTMLInputElement).value) || 1));
         const density = cfg.config.materials.find((m) => m.code === code)?.density ?? 1.24;
-        const est = estimate(cfg.config.rough, density, { volume_mm3: lastMeta.volume_mm3, area_mm2: lastMeta.area_mm2 }, { material: code, quality: 'standard', infill: 15, supports: false, scale: 1, quantity: qty });
+        // a plain vase is priced the way it will be printed: one spiralled wall, no infill (the calculator gets the same hint)
+        const vaseMode = cfg.kind === 'vase' && (params().purpose ?? 'vase') === 'vase';
+        const est = estimate(cfg.config.rough, density, { volume_mm3: lastMeta.volume_mm3, area_mm2: lastMeta.area_mm2 }, { material: code, quality: 'standard', infill: 15, supports: false, scale: 1, quantity: qty, vase: vaseMode });
         const totals = cfg.config.orientation_profiles.map((p) => price(cfg.config.round_to, p, est.grams, est.minutes, qty).total);
         const [lo, hi] = range(cfg.config.rough, cfg.config.round_to, totals, true);
         $('param-price').textContent = hi > 0 ? `≈ ${money.format(lo)} – ${money.format(hi)}` : '—';

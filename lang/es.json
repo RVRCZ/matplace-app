@@ -1168,5 +1168,12 @@
     "mold.page.building": "Construyendo el molde, hasta un minuto en modelos grandes…",
     "mold.page.failed": "No ha funcionado. Inténtalo de nuevo o con otro archivo.",
     "mold.page.model_failed": "No se pudo procesar el modelo. Debe ser un cuerpo cerrado de 5 a 400 mm.",
-    "mold.page.go": "Precio e impresión del molde"
+    "mold.page.go": "Precio e impresión del molde",
+    "param.f.flute": "Profundidad de las estrías",
+    "param.o.vase.neck": "Cuello estrecho",
+    "param.preset.spiral": "En espiral",
+    "param.preset.pot": "Maceta",
+    "param.error.vase_flutes_too_deep": "Unas estrías tan profundas con tantas nervaduras dejarían la pared más fina que una sola línea extruida. Redúzcalas, use menos nervaduras o una pared más gruesa.",
+    "param.warn.thin_flutes": "Entre las estrías la pared es fina: se imprime como una sola línea. El jarrón será más frágil y retendrá peor el agua. Use una pared más gruesa o estrías menos profundas.",
+    "param.warn.steep_twist": "Con un giro tan fuerte las nervaduras se inclinan mucho respecto a la vertical. La impresora suele arreglárselas sin soportes, pero la superficie puede quedar más rugosa. Reduzca el giro si la quiere limpia."
 }

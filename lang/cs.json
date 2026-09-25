@@ -1168,5 +1168,12 @@
     "mold.page.building": "Stavím formu, u velkých modelů to trvá až minutu…",
     "mold.page.failed": "Nepovedlo se. Zkus to znovu nebo jiný soubor.",
     "mold.page.model_failed": "Model se nepodařilo zpracovat. Musí to být uzavřené těleso od 5 do 400 mm.",
-    "mold.page.go": "Cena a tisk formy"
+    "mold.page.go": "Cena a tisk formy",
+    "param.f.flute": "Hloubka žlábků",
+    "param.o.vase.neck": "Úzké hrdlo",
+    "param.preset.spiral": "Spirálová",
+    "param.preset.pot": "Květináč",
+    "param.error.vase_flutes_too_deep": "Takhle hluboké žlábky by při tomhle počtu žeber nechaly stěnu tenčí než jedna vytlačená linka. Uberte hloubku, zmenšete počet žeber nebo zesilte stěnu.",
+    "param.warn.thin_flutes": "Mezi žlábky je stěna tenká: vytiskne se jedinou linkou. Váza bude křehčí a hůř drží vodu. Zesilte stěnu nebo zvolte mělčí žlábky.",
+    "param.warn.steep_twist": "Při takhle silném zkroucení se žebra naklánějí hodně od svislice. Tiskárna to většinou zvládne bez podpěr, ale povrch může být hrubší. Zmenšete zkroucení, pokud chcete čistý povrch."
 }

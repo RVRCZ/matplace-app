@@ -568,6 +568,7 @@ export async function openFile(uuid: string): Promise<void> {
         if (h.supports !== undefined) state.params.supports = h.supports;
         if (h.infill !== undefined) state.params.infill = h.infill;
         if (h.quality) state.params.quality = h.quality;
+        if (h.vase !== undefined) state.params.vase = h.vase;            // a vase prints as one spiralled wall: no infill, no seam
         syncControls();
     }
     showKindTip(state.file?.kind);

@@ -56,7 +56,7 @@ class CreativeToolsTest extends TestCase
         $this->assertLessThan($solid * 0.12, $v['volume_mm3']);
         $this->assertGreaterThan(M_PI * 40 * 40 * 1.6, $v['volume_mm3']);
 
-        $twist = $this->meta($this->preview('vase', ['style' => 'twist', 'profile' => 'belly', 'purpose' => 'vase'])->assertOk());
+        $twist = $this->meta($this->preview('vase', ['top_d' => 90, 'bottom_d' => 70, 'style' => 'twist', 'profile' => 'belly', 'purpose' => 'vase'])->assertOk());
         $this->assertGreaterThan(90, $twist['bbox']['x']);                        // the belly is wider than the rim
 
         $pot = $this->meta($this->preview('vase', ['purpose' => 'pot', 'bottom_d' => 80, 'drainage' => true, 'saucer' => true])->assertOk());
@@ -66,6 +66,31 @@ class CreativeToolsTest extends TestCase
         $this->assertGreaterThan(80 + 15, $saucer['bbox']['x']);                   // the pot fits in with room to spare
 
         $this->preview('vase', ['profile' => 'pyramid'])->assertStatus(422);
+    }
+
+    public function test_spiral_vase_has_a_necked_silhouette_with_flutes_that_stand_proud_of_it(): void
+    {
+        $shape = ['height' => 180, 'top_d' => 62, 'bottom_d' => 54, 'profile' => 'neck', 'purpose' => 'vase', 'ribs' => 20, 'twist' => 200];
+        $plain = $this->meta($this->preview('vase', $shape + ['style' => 'smooth'])->assertOk());
+        $spiral = $this->meta($this->preview('vase', $shape + ['style' => 'twist', 'flute' => 20])->assertOk());
+
+        $this->assertEqualsWithDelta(180, $spiral['bbox']['z'], 0.01);
+        $this->assertGreaterThan(62 * 1.25, $plain['bbox']['x']);                  // the belly swells well beyond the rim
+        $this->assertGreaterThan($plain['bbox']['x'] * 1.15, $spiral['bbox']['x']); // the flutes stand proud of that silhouette
+        $this->assertGreaterThan($plain['area_mm2'], $spiral['area_mm2']);          // and they lengthen every layer
+        $this->assertLessThan(M_PI * 50 * 50 * 180 * 0.12, $spiral['volume_mm3']);  // still a shell, not a block
+
+        // flutes so deep and so many that nothing would be left to print between them
+        $this->preview('vase', $shape + ['style' => 'twist', 'flute' => 45, 'ribs' => 48, 'wall' => 0.8])->assertStatus(422);
+    }
+
+    public function test_a_plain_vase_prints_in_vase_mode_but_a_plant_pot_does_not(): void
+    {
+        $vase = new ModelFile(['origin' => 'tool', 'origin_ref' => 'vase', 'tool_params' => ['purpose' => 'vase']]);
+        $pot = new ModelFile(['origin' => 'tool', 'origin_ref' => 'vase', 'tool_params' => ['purpose' => 'pot']]);
+
+        $this->assertTrue($vase->printHints()['vase'] ?? false);                    // one spiralled wall, no infill
+        $this->assertArrayNotHasKey('vase', $pot->printHints());                    // drainage holes and a saucer rule it out
     }
 
     public function test_logo_from_text_svg_and_picture_with_honest_refusals(): void

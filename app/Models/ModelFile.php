@@ -75,7 +75,8 @@ class ModelFile extends Model
         return match ($this->kind()) {
             'generated' => ['supports' => true],                                           // organic shapes: tree supports
             'lithophane' => ['infill' => 100, 'quality' => 'fine', 'supports' => false],   // must be solid, fine layers = smooth picture
-            'relief', 'sign', 'logo', 'stamp', 'qr', 'vase', 'stencil', 'lightbox', 'modular', 'organizer', 'box', 'phone_stand', 'cable_holder' => ['supports' => false],
+            'vase' => ['supports' => false] + (($this->tool_params['purpose'] ?? 'vase') === 'vase' ? ['vase' => true] : []),   // a plain vase is one closed contour: it prints best in vase mode, one wall and no infill
+            'relief', 'sign', 'logo', 'stamp', 'qr', 'stencil', 'lightbox', 'modular', 'organizer', 'box', 'phone_stand', 'cable_holder' => ['supports' => false],
             'mold' => ['supports' => false, 'infill' => 30],                                 // halves lie parting face up; supports would scar the cavity
             default => [],
         };

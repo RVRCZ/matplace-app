@@ -7,7 +7,7 @@ import math
 import shape2d as S
 
 LIMITS = {
-    "vase": {"height": (40, 300), "top_d": (30, 250), "bottom_d": (30, 250), "wall": (0.8, 4), "floor": (0.8, 5), "ribs": (6, 48), "twist": (0, 180)},
+    "vase": {"height": (40, 300), "top_d": (30, 250), "bottom_d": (30, 250), "wall": (0.8, 4), "floor": (0.8, 5), "ribs": (6, 48), "twist": (0, 360), "flute": (0, 45)},
     "logo": {"width": (20, 250), "thickness": (0.6, 10), "plate": (0.8, 6), "margin": (0, 20), "base_h": (8, 40)},
     "sign": {"text_height": (4, 80), "thickness": (1.2, 10), "relief": (0.4, 5), "margin": (2, 30), "radius": (0, 30)},
     "stamp": {"width": (15, 120), "relief": (0.8, 4), "plate": (2, 6), "text_height": (4, 40)},
@@ -16,7 +16,7 @@ LIMITS = {
     "lightbox": {"width": (80, 300), "depth": (25, 80), "wall": (1.6, 4), "face": (0.8, 2), "margin": (6, 40), "bridge": (0.8, 3), "cable": (3, 10), "clearance": (0.1, 0.6)},
 }
 CHOICES = {
-    "vase": {"profile": ("cone", "belly", "tulip"), "style": ("smooth", "ribs", "twist"), "purpose": ("vase", "pot")},
+    "vase": {"profile": ("neck", "belly", "cone", "tulip"), "style": ("twist", "ribs", "smooth"), "purpose": ("vase", "pot")},
     "logo": {"mode": ("relief", "height", "cutout", "standing"), "shape": ("rounded", "rect", "circle")},
     "sign": {"shape": ("rounded", "rect", "oval"), "style": ("emboss", "engrave", "outline"), "typeface": ("sans", "serif", "mono")},
     "stamp": {"mode": ("raised", "recessed"), "handle": ("knob", "none")},
@@ -52,21 +52,41 @@ def _art(M, Invalid, p, width, cap=None):
         raise Invalid(e.code, str(e).split(": ", 1)[1] if ": " in str(e) else "")
 
 
-# ── vase / plant pot ─────────────────────────────────────────────────────────
+# ── vase / plant pot ───────────────────────────────────────────────────
+
+def _through(np, ts, keys, values):
+    """Catmull-Rom through the control points: a smooth silhouette that hits every one of them."""
+    ts = np.asarray(ts, dtype=float)
+    keys, values = np.asarray(keys, dtype=float), np.asarray(values, dtype=float)
+    out = np.empty_like(ts)
+    seg = np.clip(np.searchsorted(keys, ts) - 1, 0, len(keys) - 2)
+    for i in range(len(keys) - 1):
+        m = seg == i
+        if not m.any():
+            continue
+        u = (ts[m] - keys[i]) / (keys[i + 1] - keys[i])
+        p0, p1, p2, p3 = values[max(i - 1, 0)], values[i], values[i + 1], values[min(i + 2, len(values) - 1)]
+        out[m] = 0.5 * (2 * p1 + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u ** 2 + (-p0 + 3 * p1 - 3 * p2 + p3) * u ** 3)
+    return out
+
 
 def vase(M, Invalid, p):
     import numpy as np
     k = "vase"
     n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
-    h, top, bottom = n("height", 140), n("top_d", 90) / 2, n("bottom_d", 70) / 2
+    h, top, bottom = n("height", 180), n("top_d", 62) / 2, n("bottom_d", 54) / 2
     wall, floor = n("wall", 1.6), n("floor", 1.6)
     profile, style, purpose = _pick(Invalid, p, k, "profile"), _pick(Invalid, p, k, "style"), _pick(Invalid, p, k, "purpose")
-    ribs = int(n("ribs", 16))
-    twist = n("twist", 90) if style == "twist" else 0.0
-    amp = 0.0 if style == "smooth" else 0.045
+    ribs = int(n("ribs", 20))
+    twist = n("twist", 200) if style == "twist" else 0.0
+    amp = 0.0 if style == "smooth" else n("flute", 20) / 100.0
+    belly = max(top, bottom) * 1.38                       # the widest point of the necked shape
 
     def radius(t):                                        # t = 0 bottom … 1 top
         base = bottom + (top - bottom) * t
+        if profile == "neck":                             # low belly, a waist under the rim, a flared mouth
+            return _through(np, t, [0, .10, .33, .62, .84, .93, 1.0],
+                            [bottom, bottom * 1.25, belly, belly * .80, top * .84, top * .82, top])
         if profile == "belly":
             return base + 0.22 * max(top, bottom) * np.sin(np.pi * t)
         if profile == "tulip":
@@ -74,29 +94,46 @@ def vase(M, Invalid, p):
         return base
 
     ts = np.linspace(0, 1, 50)
-    if float(np.min(radius(ts))) - wall * (1 + amp) < 6:
+    r_min = float(np.min(radius(ts)))
+    if r_min - wall < 6:
         raise Invalid("vase_too_narrow")
-    r0 = bottom
-    ang = np.linspace(0, 2 * np.pi, 120 if style == "smooth" else 144, endpoint=False)
-    ring = np.stack([r0 * (1 + amp * np.cos(ribs * ang)) * np.cos(ang), r0 * (1 + amp * np.cos(ribs * ang)) * np.sin(ang)], 1)
+    seg = int(min(216, max(96, 6 * ribs))) if amp else 120
+    ang = np.linspace(0, 2 * np.pi, seg, endpoint=False)
+    wave = 1 + amp * (0.5 * (1 + np.cos(ribs * ang))) ** 1.8      # sharp ridge, wide valley: the flutes of a spun vase
+    # across a flute the wall is thinner than its radial thickness; too steep a flank and the slicer has nothing to print
+    slope = np.max(np.abs(np.gradient(wave, ang)) / wave) if amp else 0.0
+    thin = wall * math.cos(math.atan(slope))
+    if thin < 0.42:
+        raise Invalid("vase_flutes_too_deep")
+    ring = np.stack([wave * np.cos(ang), wave * np.sin(ang)], 1)
     base = M.CrossSection([ring])
-    div = int(max(20, min(90, h / 2.5)))            # enough for a smooth profile, light enough for a live preview
+    div = int(max(24, min(110, h / 2.0)))           # enough for a smooth profile, light enough for a live preview
 
     def shaped(z0, z1, inset):
         solid = M.Manifold.extrude(base, z1 - z0, div, twist * (z1 - z0) / h).translate([0, 0, z0])
         if z0 > 0 and twist:
             solid = solid.rotate([0, 0, twist * z0 / h])
 
-        def warp(v):
+        def warp(v):                                # the straight tube becomes the silhouette; the inside follows it, wall thick
             v = np.array(v, dtype=np.float64)
-            s = (radius(np.clip(v[:, 2] / h, 0, 1)) - inset) / r0
+            s = radius(np.clip(v[:, 2] / h, 0, 1))
             v[:, 0] *= s
             v[:, 1] *= s
+            if inset:
+                rad = np.hypot(v[:, 0], v[:, 1])
+                keep = np.maximum(rad - inset, 0.5) / np.maximum(rad, 1e-9)
+                v[:, 0] *= keep
+                v[:, 1] *= keep
             return v
         return solid.warp_batch(warp)
 
     body = shaped(0, h, 0.0) - shaped(floor, h + 1.0, wall)
-    notes = {"outer": [round(2 * float(np.max(radius(ts))) * (1 + amp), 1), round(2 * float(np.max(radius(ts))) * (1 + amp), 1), round(h, 1)], "purpose": purpose}
+    widest = float(np.max(radius(ts))) * (1 + amp)
+    lean = math.degrees(math.atan(widest * math.radians(twist) / h))      # how far the flutes lean off vertical
+    notes = {"outer": [round(2 * widest, 1), round(2 * widest, 1), round(h, 1)], "purpose": purpose, "wall_min": round(thin, 2)}
+    warn = ([("thin_flutes")] if amp and thin < 0.8 else []) + (["steep_twist"] if lean > 55 else [])
+    if warn:
+        notes["warnings"] = warn
     parts = {"body": body}
     if purpose == "pot" and p.get("drainage", True):
         holes = [M.Manifold.cylinder(floor + 2, 4, 4, 32).translate([0, 0, -1])]
@@ -112,7 +149,7 @@ def vase(M, Invalid, p):
         saucer = M.Manifold.cylinder(14, sr, sr + 3, 96) - M.Manifold.cylinder(14, sr - sw, sr + 3 - sw, 96).translate([0, 0, max(floor, 1.6)])
         parts["saucer"] = saucer
         notes["saucer_d"] = round(2 * (sr + 3), 1)
-        parts["all"] = body + saucer.translate([float(np.max(radius(ts))) * (1 + amp) + sr + 3 + 8, 0, 0])
+        parts["all"] = body + saucer.translate([widest + sr + 3 + 8, 0, 0])
     else:
         parts["all"] = body
     return parts, notes

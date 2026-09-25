@@ -49,7 +49,7 @@ class ModelFileController extends Controller
         // "auto" supports become the tool's recommendation: a project file has to say yes or no
         $supports = $data['supports'] ?? 'auto';
         $data['supports'] = in_array($supports, ['auto', '', null], true) ? (int) ($hints['supports'] ?? false) : (int) (bool) $supports;
-        $params = SliceParams::fromArray(['tree' => $modelFile->wantsTreeSupports()] + $data);
+        $params = SliceParams::fromArray(['tree' => $modelFile->wantsTreeSupports(), 'vase' => (bool) ($hints['vase'] ?? false)] + $data);
         try {
             $path = $exporter->export($modelFile->absoluteStlPath(), $data['printer'], $params, ['kind' => $modelFile->kind()]);
         } catch (EngineException $e) {

@@ -10,7 +10,7 @@ export interface FileInfo {
     issues: string[];
     stl_url: string | null;
     kind?: string;
-    hints?: { supports?: boolean; infill?: number; quality?: string };
+    hints?: { supports?: boolean; infill?: number; quality?: string; vase?: boolean };
     generation?: { token: string; refinable: boolean; pedestal?: { type: string; name: string; dedication: string; sink?: number; tidy?: boolean } | null } | null;
     parts?: string[];
     mold?: { axis: string; undercut_pct: number; box: number[]; resin_ml: number; mold_cm3: number; wall: number; warnings: string[] } | null;

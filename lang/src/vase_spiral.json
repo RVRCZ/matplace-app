@@ -1,0 +1,9 @@
+{
+    "param.f.flute": ["Hloubka žlábků", "Flute depth", "Profundidad de las estrías"],
+    "param.o.vase.neck": ["Úzké hrdlo", "Narrow neck", "Cuello estrecho"],
+    "param.preset.spiral": ["Spirálová", "Spiral", "En espiral"],
+    "param.preset.pot": ["Květináč", "Plant pot", "Maceta"],
+    "param.error.vase_flutes_too_deep": ["Takhle hluboké žlábky by při tomhle počtu žeber nechaly stěnu tenčí než jedna vytlačená linka. Uberte hloubku, zmenšete počet žeber nebo zesilte stěnu.", "Flutes this deep with this many ribs would leave the wall thinner than a single extruded line. Make them shallower, use fewer ribs or a thicker wall.", "Unas estrías tan profundas con tantas nervaduras dejarían la pared más fina que una sola línea extruida. Redúzcalas, use menos nervaduras o una pared más gruesa."],
+    "param.warn.thin_flutes": ["Mezi žlábky je stěna tenká: vytiskne se jedinou linkou. Váza bude křehčí a hůř drží vodu. Zesilte stěnu nebo zvolte mělčí žlábky.", "Between the flutes the wall is thin: it prints as a single line. The vase will be more fragile and hold water less well. Use a thicker wall or shallower flutes.", "Entre las estrías la pared es fina: se imprime como una sola línea. El jarrón será más frágil y retendrá peor el agua. Use una pared más gruesa o estrías menos profundas."],
+    "param.warn.steep_twist": ["Při takhle silném zkroucení se žebra naklánějí hodně od svislice. Tiskárna to většinou zvládne bez podpěr, ale povrch může být hrubší. Zmenšete zkroucení, pokud chcete čistý povrch.", "With a twist this strong the ribs lean far off vertical. A printer usually manages without supports, but the surface can come out rougher. Reduce the twist if you want it clean.", "Con un giro tan fuerte las nervaduras se inclinan mucho respecto a la vertical. La impresora suele arreglárselas sin soportes, pero la superficie puede quedar más rugosa. Reduzca el giro si la quiere limpia."]
+}
