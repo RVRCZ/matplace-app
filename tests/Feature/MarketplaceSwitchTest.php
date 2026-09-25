@@ -80,6 +80,7 @@ class MarketplaceSwitchTest extends TestCase
         $this->seed(\Database\Seeders\FarmSeeder::class);
         $user = User::factory()->create();
         $this->actingAs($user)->get('/farm')->assertOk();
+        config(['farm.public' => true]);
         $r = $this->get('/')->assertOk()->assertSee('id="cta-farm"', false);
         $profiles = $r->viewData('config')['orientation_profiles'];
         $this->assertCount(1, $profiles);

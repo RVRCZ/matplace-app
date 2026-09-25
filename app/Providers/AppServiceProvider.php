@@ -34,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('farm_settings')) {
                 $s = $this->app->make(\App\Domain\Farm\FarmSettings::class);
-                config(['features.marketplace' => (bool) $s->get('marketplace'), 'farm.open' => (bool) $s->get('farm_open')]);
+                config(['features.marketplace' => (bool) $s->get('marketplace'), 'farm.open' => (bool) $s->get('farm_open'), 'farm.public' => (bool) $s->get('farm_public')]);
             }
         } catch (\Throwable) {
             // no database yet (first install, artisan key:generate…): the .env defaults stand

@@ -62,6 +62,7 @@ return [
         // ── product switches (the admin's value wins over .env; see App\Providers\AppServiceProvider) ──
         'marketplace' => (bool) env('FEATURE_MARKETPLACE', false),   // printers' marketplace: price lists, inquiries, quotes
         'farm_open' => true,                                          // false: the farm takes no new orders (running ones finish)
+        'farm_public' => false,                                       // false: only admins see "rent a printer" (the farm is still being tried out)
     ],
 
     'payments' => [

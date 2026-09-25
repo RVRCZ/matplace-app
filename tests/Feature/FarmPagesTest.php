@@ -67,11 +67,22 @@ class FarmPagesTest extends TestCase
 
     public function test_calculator_offers_the_farm_and_the_start_page_takes_a_shared_calculation(): void
     {
+        app(FarmSettings::class)->set('farm_public', true);
+        config(['farm.public' => true]);
         $this->get('/')->assertOk()->assertSee('cta-farm');
 
         $order = $this->order();
         $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $order->modelFile->uuid, 'material' => 'PLA', 'quality' => 'fine', 'infill' => 15])->json('calculation.token');
         $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()->assertSee('part.stl')->assertSee('value="fine" class="sr-only" checked', false);
+    }
+
+    public function test_until_the_farm_is_public_only_admins_see_the_button(): void
+    {
+        config(['farm.public' => false]);
+        $this->get('/')->assertOk()->assertDontSee('id="cta-farm"', false);
+        $this->actingAs($this->user)->get('/')->assertOk()->assertDontSee('id="cta-farm"', false);
+        $this->user->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($this->user->fresh())->get('/')->assertOk()->assertSee('id="cta-farm"', false);
     }
 
     public function test_admin_pages_render_and_are_closed_to_others(): void
