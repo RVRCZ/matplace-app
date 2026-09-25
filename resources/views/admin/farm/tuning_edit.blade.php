@@ -113,7 +113,7 @@
                     <p class="mt-1 text-xs text-slate-600">tryska {{ $c['nozzle_temp'] ?? '—' }} °C · podložka {{ $c['bed_temp'] ?? '—' }} °C · verze řádku {{ $t->test_params['row_version'] ?? '?' }}@if(! empty($t->test_params['ironing'])) · ironing {{ $c['process']['ironing_flow'] ?? '' }} / {{ $c['process']['ironing_speed'] ?? '' }} mm/s / {{ $c['process']['ironing_spacing'] ?? '' }} mm @endif @if($t->quality_rating) · {{ str_repeat('★', $t->quality_rating) }}@endif</p>
                     @if($temps)<p class="mt-1 text-xs text-slate-600">patra zdola: {{ implode(' · ', array_map(fn ($i, $v) => ($i + 1).': '.$v.' °C', array_keys($temps), $temps)) }}</p>@endif
                     @if(in_array($t->status, ['done', 'handed_over']))
-                        @php $res = (array) ($t->test_params['result'] ?? []); $adv = $t->test_params['advice'] ?? null; $sel = 'rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs'; @endphp
+                        @php $cubeMm = \App\Domain\Farm\TuningAdvisor::cubeMm((string) ($t->test_params['object'] ?? 'quick')); $res = (array) ($t->test_params['result'] ?? []); $adv = $t->test_params['advice'] ?? null; $sel = 'rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs'; @endphp
                         <details id="test-{{ $t->id }}" class="mt-2 rounded-lg bg-slate-50 p-2 text-xs" @if(! $adv) open @endif>
                             <summary class="cursor-pointer font-semibold">Vyhodnocení {{ $res ? '✓' : '' }}</summary>
                             <form method="post" action="{{ route('admin.farm.tuning.evaluate', [$row, $t]) }}" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -121,9 +121,9 @@
                                 @if($temps)
                                     <label class="{{ $lb }}">Nejlepší patro<select name="best_floor" class="{{ $sel }} w-full"><option value="">—</option>@foreach($temps as $i => $v)<option value="{{ $i + 1 }}" @selected(($res['best_floor'] ?? null) == $i + 1)>{{ $i + 1 }}: {{ $v }} °C</option>@endforeach</select></label>
                                 @else
-                                    <label class="{{ $lb }}">Rozměr X (mm)<input type="number" step="0.01" name="cube_x" value="{{ $res['cube_x'] ?? '' }}" placeholder="15" class="{{ $sel }} w-full"></label>
-                                    <label class="{{ $lb }}">Rozměr Y (mm)<input type="number" step="0.01" name="cube_y" value="{{ $res['cube_y'] ?? '' }}" placeholder="15" class="{{ $sel }} w-full"></label>
-                                    <label class="{{ $lb }}">Výška Z (mm)<input type="number" step="0.01" name="cube_z" value="{{ $res['cube_z'] ?? '' }}" placeholder="15" class="{{ $sel }} w-full"></label>
+                                    <label class="{{ $lb }}">Rozměr X (mm)<input type="number" step="0.01" name="cube_x" value="{{ $res['cube_x'] ?? '' }}" placeholder="{{ $cubeMm }}" class="{{ $sel }} w-full"></label>
+                                    <label class="{{ $lb }}">Rozměr Y (mm)<input type="number" step="0.01" name="cube_y" value="{{ $res['cube_y'] ?? '' }}" placeholder="{{ $cubeMm }}" class="{{ $sel }} w-full"></label>
+                                    <label class="{{ $lb }}">Výška Z (mm)<input type="number" step="0.01" name="cube_z" value="{{ $res['cube_z'] ?? '' }}" placeholder="{{ $cubeMm }}" class="{{ $sel }} w-full"></label>
                                     <label class="{{ $lb }}">Otvor (mm)<input type="number" step="0.01" name="hole" value="{{ $res['hole'] ?? '' }}" placeholder="8" class="{{ $sel }} w-full"></label>
                                     <label class="{{ $lb }}">Převis čistý do<select name="overhang_ok" class="{{ $sel }} w-full"><option value="">—</option>@foreach([70, 60, 50, 40, 30, 0] as $v)<option value="{{ $v }}" @selected(($res['overhang_ok'] ?? null) == $v)>{{ $v ? $v.'°' : 'žádný' }}</option>@endforeach</select></label>
                                     <label class="{{ $lb }}">Sloní noha<select name="elephant" class="{{ $sel }} w-full"><option value="">—</option>@foreach([0 => 'žádná', 1 => 'mírná', 2 => 'silná'] as $v => $l)<option value="{{ $v }}" @selected(($res['elephant'] ?? null) == $v)>{{ $l }}</option>@endforeach</select></label>

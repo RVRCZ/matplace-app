@@ -43,7 +43,8 @@ final class OrcaSlicer implements Slicer
             // a farm printer pairs its own machine profile with the shared process/filament profiles (written for the
             // Kobra S1): the pairing is deliberate, so the presets are declared compatible or the CLI refuses them (-17)
             $pairing = $params->profiles ? ['compatible_printers' => [(string) (json_decode((string) File::get($machine), true)['name'] ?? '')], 'compatible_printers_condition' => ''] : [];
-            $filament = $this->patched($this->profileFile($params->profiles['filament'] ?? null) ?? $this->profile('filaments', $params->materialCode, 'material'), ($params->overrides['filament'] ?? []) + $pairing, $work.'/filament.json');
+            $filamentName = $this->machineVariant($params->profiles['filament'] ?? null, $params->profiles['machine'] ?? null);
+            $filament = $this->patched($this->profileFile($filamentName) ?? $this->profile('filaments', $params->materialCode, 'material'), ($params->overrides['filament'] ?? []) + $pairing, $work.'/filament.json');
             $process = $this->profileFile($params->profiles['process'] ?? null) ?? $this->profile('processes', $params->quality, 'quality');
 
             $attempt = function (bool $supports) use ($work, $mesh, $params, $filament, $process, $machine, $pairing): array {
@@ -182,6 +183,26 @@ final class OrcaSlicer implements Slicer
             }
         }
         throw new SlicerException("Slicer profile missing: {$name}");
+    }
+
+    /**
+     * The machine's own flavour of a shared filament profile: machine_kobra3max.json + filament_pla.json →
+     * filament_pla_kobra3max.json when it exists (flow, pressure advance, cooling differ between machines),
+     * else the shared profile itself.
+     */
+    private function machineVariant(?string $filament, ?string $machine): ?string
+    {
+        if (! $filament || ! $machine || ! preg_match('/^machine_(\w+)\.json$/', basename($machine), $m)) {
+            return $filament;
+        }
+        $variant = preg_replace('/\.json$/', '_'.$m[1].'.json', basename($filament));
+        foreach ([config('farm.profiles_dir'), $this->config['profiles']] as $dir) {
+            if ($dir && is_file($dir.'/'.$variant)) {
+                return $variant;
+            }
+        }
+
+        return $filament;
     }
 
     /** Copy of a profile with settings replaced; the profile itself when there is nothing to replace. */

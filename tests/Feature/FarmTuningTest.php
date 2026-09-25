@@ -240,6 +240,16 @@ class FarmTuningTest extends TestCase
         $this->assertSame(5, $row->score);
         $this->assertSame(3, $row->version);
         $this->assertCount(2, $row->history);
+
+        // the ironed detailed test: its 20 mm cube is measured against 20 mm, and applying the proposal keeps the tuned
+        // ironing values on the row without switching ironing on for every print made with it
+        $detailed->forceFill(['status' => FarmOrder::STATUS_DONE])->save();
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/evaluate/{$detailed->token}", ['ironing' => 'lines', 'cube_x' => 20.2, 'cube_y' => 20.2])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame('-0.1', (string) $detailed->fresh()->test_params['advice']['overrides']['process']['xy_contour_compensation']);
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/apply/{$detailed->token}")->assertRedirect();
+        $row->refresh();
+        $this->assertSame('12%', $row->overrides['process']['ironing_flow']);
+        $this->assertArrayNotHasKey('ironing_type', $row->overrides['process']);
     }
 
     public function test_the_operator_can_dry_the_spools_in_the_ace_through_the_agent(): void

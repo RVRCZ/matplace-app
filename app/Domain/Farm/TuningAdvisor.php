@@ -14,7 +14,7 @@ use App\Models\FarmPrinterMaterial;
  *   stringing 0-3 · overhang_ok 0|30|40|50|60|70 (steepest clean angle) · bridge ok|sag|fail · elephant 0-2 ·
  *   corners ok|bulge|round|gaps · top ok|pillow|gaps · wall ok|gaps|missing · bond ok|weak · warp ok|lift ·
  *   ironing ok|lines|bumps|rough ·
- *   cube_x cube_y cube_z hole (measured mm) · best_floor (tower)
+ *   cube_x cube_y cube_z hole (measured mm; the cube's edge depends on the object, the hole is the 8 mm one) · best_floor (tower)
  */
 final class TuningAdvisor
 {
@@ -24,9 +24,16 @@ final class TuningAdvisor
         'process' => ['bridge_speed' => 50, 'outer_wall_speed' => 200, 'top_shell_layers' => 5, 'elefant_foot_compensation' => 0.1, 'xy_contour_compensation' => 0, 'xy_hole_compensation' => 0, 'brim_width' => 5, 'outer_wall_acceleration' => 5000, 'ironing_flow' => '10%', 'ironing_speed' => 30, 'ironing_spacing' => 0.15],
     ];
 
-    public const CUBE_MM = 15.0;
+    /** Edge of the dimension cube on each test object (calib_tool.py); the quick one when the object is not known. */
+    public const CUBE_MM = ['quick' => 15.0, 'detailed' => 20.0];
 
+    /** The measured hole: both objects carry an 8 mm one (the detailed plate has 3/5/8/10). */
     public const HOLE_MM = 8.0;
+
+    public static function cubeMm(string $object): float
+    {
+        return self::CUBE_MM[$object] ?? self::CUBE_MM['quick'];
+    }
 
     /**
      * @param  array  $candidate  what the test was printed with (FarmPrinterMaterial overrides shape, temperatures filled)
@@ -132,9 +139,10 @@ final class TuningAdvisor
             $a->process('brim_type', 'outer_only', null, null, 'odlepené rohy: límec', absolute: true);
         }
 
+        $cube = self::cubeMm($object);
         $xs = array_filter([(float) ($r('cube_x') ?? 0), (float) ($r('cube_y') ?? 0)]);
         if ($xs) {
-            $dev = round(array_sum($xs) / count($xs) - self::CUBE_MM, 3);   // negative = printed too small
+            $dev = round(array_sum($xs) / count($xs) - $cube, 3);   // negative = printed too small
             if (abs($dev) >= 0.08) {
                 $a->process('xy_contour_compensation', round(-$dev / 2, 3), -0.5, 0.5, sprintf('kostka %+.2f mm: kompenzace obrysu', $dev));
             }
@@ -146,7 +154,7 @@ final class TuningAdvisor
             }
         }
         if ($r('cube_z')) {
-            $dev = round((float) $r('cube_z') - self::CUBE_MM, 3);
+            $dev = round((float) $r('cube_z') - $cube, 3);
             if ($dev <= -0.15) {
                 $a->note(sprintf('Kostka je o %.2f mm nižší: první vrstva je moc přimáčknutá (Z-offset tiskárny).', -$dev));
             } elseif ($dev >= 0.15) {

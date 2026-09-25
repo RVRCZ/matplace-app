@@ -146,9 +146,9 @@ class FarmTuningController extends Controller
             'wall' => ['nullable', Rule::in(['ok', 'gaps', 'missing'])],
             'bond' => ['nullable', Rule::in(['ok', 'weak'])],
             'warp' => ['nullable', Rule::in(['ok', 'lift'])],
-            'cube_x' => ['nullable', 'numeric', 'min:10', 'max:20'],
-            'cube_y' => ['nullable', 'numeric', 'min:10', 'max:20'],
-            'cube_z' => ['nullable', 'numeric', 'min:10', 'max:20'],
+            'cube_x' => ['nullable', 'numeric', 'min:10', 'max:25'],
+            'cube_y' => ['nullable', 'numeric', 'min:10', 'max:25'],
+            'cube_z' => ['nullable', 'numeric', 'min:10', 'max:25'],
             'hole' => ['nullable', 'numeric', 'min:5', 'max:10'],
             'best_floor' => ['nullable', 'integer', 'min:1', 'max:10'],
             'score' => ['nullable', 'integer', 'min:1', 'max:5'],
@@ -191,6 +191,10 @@ class FarmTuningController extends Controller
             }
         }
         $candidate['filament'] = array_diff_key((array) ($candidate['filament'] ?? []), $material->sliceOverrides());
+        // a test switches ironing on to judge it; the row keeps the tuned ironing values but must not iron every print
+        if (! isset(((array) $row->overrides)['process']['ironing_type'])) {
+            unset($candidate['process']['ironing_type']);
+        }
 
         return $candidate;
     }

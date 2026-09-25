@@ -27,6 +27,14 @@ class TuningAdvisorTest extends TestCase
         $this->assertEquals($this->candidate, $r['overrides']);
     }
 
+    public function test_the_cube_is_measured_against_the_edge_of_its_own_test_object(): void
+    {
+        // 20.2 mm is 0.2 too big on the detailed plate (20 mm cube), but would read as 5 mm too big against the quick one
+        $s = $this->settings(TuningAdvisor::advise(['cube_x' => 20.2, 'cube_y' => 20.2, 'cube_z' => 20.0], $this->candidate, 'detailed'));
+        $this->assertSame('-0.1', (string) $s['process.xy_contour_compensation']);
+        $this->assertSame(15.0, TuningAdvisor::cubeMm('temp_tower'), 'unknown object: the quick cube');
+    }
+
     public function test_stringing_cools_the_nozzle_and_lengthens_the_retraction(): void
     {
         $s = $this->settings($r = TuningAdvisor::advise(['stringing' => 3], $this->candidate, 'quick'));
