@@ -101,7 +101,7 @@ final class ParametricGenerator
         'vase' => [
             'spiral' => ['style' => 'twist', 'profile' => 'neck', 'height' => 180, 'top_d' => 62, 'bottom_d' => 54, 'ribs' => 20, 'flute' => 20, 'twist' => 200],
             'ribs' => ['style' => 'ribs', 'profile' => 'neck', 'height' => 170, 'top_d' => 70, 'bottom_d' => 60, 'ribs' => 18, 'flute' => 16],
-            'smooth' => ['style' => 'smooth', 'profile' => 'belly', 'height' => 150, 'top_d' => 80, 'bottom_d' => 70],
+            'smooth' => ['style' => 'smooth', 'profile' => 'neck', 'height' => 160, 'top_d' => 70, 'bottom_d' => 58],
             'pot' => ['purpose' => 'pot', 'style' => 'ribs', 'profile' => 'cone', 'height' => 120, 'top_d' => 130, 'bottom_d' => 100, 'ribs' => 16, 'flute' => 10],
         ],
         'organizer' => [
