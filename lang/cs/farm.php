@@ -117,6 +117,9 @@ return [
     ],
 
     'refuse' => [
+        'photos_full' => 'U testu je už :max fotek. Nějakou smažte.',
+        'photo_heic' => 'Fotka ve formátu HEIC se na serveru nedá přečíst. Pošlete ji jako JPEG.',
+        'photo_unreadable' => 'Soubor se nedá přečíst jako fotka.',
         'closed' => 'Farma teď nepřijímá nové zakázky. Zkuste to prosím později.',
         'not_stl' => 'Tady zatím tiskneme jen soubory STL.',
         'too_big' => 'Soubor je větší než :max MB.',
@@ -183,7 +186,7 @@ return [
     'finish' => ['solid' => '', 'matte' => 'matný', 'silk' => 'Silk', 'luminous' => 'svítící', 'glitter' => 'třpytivý', 'special' => 'speciální', 'flex' => 'flexibilní', 'cf' => 'CF'],
 
     'admin' => [
-        'nav' => ['dashboard' => 'Tiskárny a fronta', 'orders' => 'Zakázky', 'printers' => 'Tiskárny', 'materials' => 'Materiály a barvy', 'settings' => 'Ceny a pravidla', 'agents' => 'Agenti', 'credit' => 'Kredit', 'tuning' => 'Ladění materiálů'],
+        'nav' => ['dashboard' => 'Tiskárny a fronta', 'orders' => 'Zakázky', 'printers' => 'Tiskárny', 'materials' => 'Materiály a barvy', 'settings' => 'Ceny a pravidla', 'agents' => 'Agenti', 'credit' => 'Kredit', 'tuning' => 'Ladění materiálů', 'photobox' => 'Foto-box'],
         'saved' => 'Uloženo.',
         'test_started' => 'Testovací tisk :number je připravený a jde do fronty tiskárny.',
         'bad_transition' => 'Tahle změna stavu není možná.',

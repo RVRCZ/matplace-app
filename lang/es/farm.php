@@ -117,6 +117,9 @@ return [
     ],
 
     'refuse' => [
+        'photos_full' => 'Esta prueba ya tiene :max fotos. Borre alguna.',
+        'photo_heic' => 'El servidor no puede leer fotos HEIC. Envíela como JPEG.',
+        'photo_unreadable' => 'El archivo no se puede leer como foto.',
         'closed' => 'La granja no acepta pedidos nuevos ahora mismo. Inténtelo más tarde.',
         'not_stl' => 'Por ahora aquí solo imprimimos archivos STL.',
         'too_big' => 'El archivo supera los :max MB.',
@@ -183,7 +186,7 @@ return [
     'finish' => ['solid' => '', 'matte' => 'mate', 'silk' => 'Silk', 'luminous' => 'luminoso', 'glitter' => 'brillante', 'special' => 'especial', 'flex' => 'flexible', 'cf' => 'CF'],
 
     'admin' => [
-        'nav' => ['dashboard' => 'Impresoras y cola', 'orders' => 'Pedidos', 'printers' => 'Impresoras', 'materials' => 'Materiales y colores', 'settings' => 'Precios y reglas', 'agents' => 'Agentes', 'credit' => 'Crédito', 'tuning' => 'Ajuste de materiales'],
+        'nav' => ['dashboard' => 'Impresoras y cola', 'orders' => 'Pedidos', 'printers' => 'Impresoras', 'materials' => 'Materiales y colores', 'settings' => 'Precios y reglas', 'agents' => 'Agentes', 'credit' => 'Crédito', 'tuning' => 'Ajuste de materiales', 'photobox' => 'Caja de fotos'],
         'saved' => 'Guardado.',
         'test_started' => 'La impresión de prueba :number se está preparando y pasa a la cola de la impresora.',
         'bad_transition' => 'Este cambio de estado no es posible.',

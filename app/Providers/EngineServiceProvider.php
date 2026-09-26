@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Domain\Calculation\RoughEstimator;
+use App\Domain\Farm\TestPhotoJudge;
+use App\Domain\Farm\TestPhotos;
 use App\Engines\Contracts\MeshRepair;
 use App\Engines\Contracts\ModelGenerator;
 use App\Engines\Contracts\PaymentGateway;
@@ -92,6 +94,9 @@ class EngineServiceProvider extends ServiceProvider
         $this->app->singleton(VisionDescriber::class, fn () => new VisionDescriber([
             'api_key' => config('ai.anthropic.api_key'), 'model' => config('ai.anthropic.vision_model'), 'timeout' => config('ai.anthropic.timeout'),
         ]));
+        $this->app->singleton(TestPhotoJudge::class, fn ($app) => new TestPhotoJudge(
+            (array) config('ai.anthropic'), $app->make(TestPhotos::class), $app->make(PythonTool::class),
+        ));
 
         $this->app->singleton(CompositeSearch::class, function ($app) {
             $map = ['local' => fn () => new LocalCatalogSearch, 'printables' => fn () => new PrintablesSearch, 'makerworld' => fn () => new MakerWorldSearch];

@@ -113,7 +113,12 @@
                     <p class="mt-1 text-xs text-slate-600">tryska {{ $c['nozzle_temp'] ?? '—' }} °C · podložka {{ $c['bed_temp'] ?? '—' }} °C · verze řádku {{ $t->test_params['row_version'] ?? '?' }}@if(! empty($t->test_params['ironing'])) · ironing {{ $c['process']['ironing_flow'] ?? '' }} / {{ $c['process']['ironing_speed'] ?? '' }} mm/s / {{ $c['process']['ironing_spacing'] ?? '' }} mm @endif @if($t->quality_rating) · {{ str_repeat('★', $t->quality_rating) }}@endif</p>
                     @if($temps)<p class="mt-1 text-xs text-slate-600">patra zdola: {{ implode(' · ', array_map(fn ($i, $v) => ($i + 1).': '.$v.' °C', array_keys($temps), $temps)) }}</p>@endif
                     @if(in_array($t->status, ['done', 'handed_over']))
-                        @php $cubeMm = \App\Domain\Farm\TuningAdvisor::cubeMm((string) ($t->test_params['object'] ?? 'quick')); $res = (array) ($t->test_params['result'] ?? []); $adv = $t->test_params['advice'] ?? null; $sel = 'rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs'; @endphp
+                        @php $cubeMm = \App\Domain\Farm\TuningAdvisor::cubeMm((string) ($t->test_params['object'] ?? 'quick')); $res = (array) ($t->test_params['result'] ?? []); $adv = $t->test_params['advice'] ?? null; $sel = 'rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs';
+                            // the judge's reading prefills whatever the operator has not answered yet; saved only when the form is sent
+                            $ai = (array) ($t->test_params['ai'] ?? []); $aiF = ($ai['status'] ?? null) === 'done' ? (array) ($ai['fields'] ?? []) : [];
+                            if ($aiF) { foreach ($aiF as $k => $f) { if (! array_key_exists($k, $res) && ($f['value'] ?? null) !== null) { $res[$k] = $f['value']; } } if (! isset($res['score']) && ! empty($ai['score'])) { $res['score'] = $ai['score']; } if (! isset($res['note']) && ! empty($ai['note'])) { $res['note'] = $ai['note']; } }
+                            $photoList = (array) ($t->test_params['photos'] ?? []); @endphp
+                        @include('admin.farm.partials.test_photos', ['t' => $t, 'photoList' => $photoList, 'ai' => $ai, 'evaluated' => ! empty($t->test_params['result'])])
                         <details id="test-{{ $t->id }}" class="mt-2 rounded-lg bg-slate-50 p-2 text-xs" @if(! $adv) open @endif>
                             <summary class="cursor-pointer font-semibold">Vyhodnocení {{ $res ? '✓' : '' }}</summary>
                             <form method="post" action="{{ route('admin.farm.tuning.evaluate', [$row, $t]) }}" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -140,6 +145,9 @@
                                 <label class="{{ $lb }}">Podložka<select name="warp" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'drží', 'lift' => 'rohy se zvedly'] as $v => $l)<option value="{{ $v }}" @selected(($res['warp'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
                                 <label class="{{ $lb }}">Celkem (1–5)<select name="score" class="{{ $sel }} w-full"><option value="">—</option>@foreach([5, 4, 3, 2, 1] as $q)<option value="{{ $q }}" @selected(($res['score'] ?? null) == $q)>{{ $q }}</option>@endforeach</select></label>
                                 <label class="{{ $lb }} col-span-2 sm:col-span-3">Poznámka<input name="note" maxlength="500" value="{{ $res['note'] ?? '' }}" class="{{ $sel }} w-full"></label>
+                                @if($aiF && empty($t->test_params['result']))
+                                    <p class="col-span-2 rounded-lg bg-amber-50 p-2 text-amber-900 sm:col-span-3">Předvyplněno podle AI z fotek. Zkontrolujte, opravte a teprve pak odešlete.</p>
+                                @endif
                                 <button class="btn-quiet !min-h-0 !py-1 text-xs col-span-2 sm:col-span-3">Vyhodnotit a navrhnout úpravy</button>
                             </form>
                             @if(is_array($adv))

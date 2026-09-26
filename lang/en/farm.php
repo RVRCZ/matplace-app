@@ -117,6 +117,9 @@ return [
     ],
 
     'refuse' => [
+        'photos_full' => 'This test already has :max photos. Delete one first.',
+        'photo_heic' => 'The server cannot read HEIC photos. Please send it as a JPEG.',
+        'photo_unreadable' => 'The file cannot be read as a photo.',
         'closed' => 'The farm is not taking new orders right now. Please try again later.',
         'not_stl' => 'For now we only print STL files here.',
         'too_big' => 'The file is larger than :max MB.',
@@ -183,7 +186,7 @@ return [
     'finish' => ['solid' => '', 'matte' => 'matte', 'silk' => 'Silk', 'luminous' => 'glow', 'glitter' => 'glitter', 'special' => 'special', 'flex' => 'flexible', 'cf' => 'CF'],
 
     'admin' => [
-        'nav' => ['dashboard' => 'Printers and queue', 'orders' => 'Orders', 'printers' => 'Printers', 'materials' => 'Materials and colours', 'settings' => 'Prices and rules', 'agents' => 'Agents', 'credit' => 'Credit', 'tuning' => 'Material tuning'],
+        'nav' => ['dashboard' => 'Printers and queue', 'orders' => 'Orders', 'printers' => 'Printers', 'materials' => 'Materials and colours', 'settings' => 'Prices and rules', 'agents' => 'Agents', 'credit' => 'Credit', 'tuning' => 'Material tuning', 'photobox' => 'Photo box'],
         'saved' => 'Saved.',
         'test_started' => 'Test print :number is being prepared and goes to the printer queue.',
         'bad_transition' => 'This status change is not possible.',

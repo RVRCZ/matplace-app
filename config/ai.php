@@ -8,6 +8,10 @@ return [
         'api_key' => env('ANTHROPIC_API_KEY', ''),
         'vision_model' => env('ANTHROPIC_VISION_MODEL', 'claude-haiku-4-5-20251001'),
         'timeout' => 45,
+        // farm: judging photos of printed test objects (few calls, accuracy matters more than price)
+        'inspect_model' => env('ANTHROPIC_INSPECT_MODEL', 'claude-opus-5'),
+        'inspect_effort' => env('ANTHROPIC_INSPECT_EFFORT', 'high'),
+        'inspect_timeout' => 300,
     ],
     'daily_limits' => [
         'describe' => (int) env('AI_LIMIT_DESCRIBE', 20),   // photo identifications per visitor per day

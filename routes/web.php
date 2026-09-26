@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Admin\FarmCatalogController;
 use App\Http\Controllers\Admin\FarmOrderController;
+use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
@@ -188,6 +189,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/tuning/{row}/adopt/{order}', [$tuning, 'adopt'])->name('tuning.adopt');
     Route::post('/tuning/{row}/evaluate/{order}', [$tuning, 'evaluate'])->name('tuning.evaluate');
     Route::post('/tuning/{row}/apply/{order}', [$tuning, 'apply'])->name('tuning.apply');
+
+    $photos = FarmTestPhotoController::class;
+    Route::get('/photobox', [$photos, 'box'])->name('photobox');
+    Route::post('/orders/{order}/photos', [$photos, 'store'])->name('photos.store');
+    Route::get('/orders/{order}/photos/{index}', [$photos, 'show'])->whereNumber('index')->name('photos.show');
+    Route::post('/orders/{order}/photos/{index}/delete', [$photos, 'destroy'])->whereNumber('index')->name('photos.destroy');
+    Route::post('/orders/{order}/judge', [$photos, 'judge'])->name('photos.judge');
 });
 
 // ── Printer tools (role switch "I own a printer") ────────────────────────────
