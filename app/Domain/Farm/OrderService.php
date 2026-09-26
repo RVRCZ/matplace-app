@@ -53,8 +53,11 @@ final class OrderService
             $unit = $guess['confident'] ? $guess['unit'] : null;
         }
         $dims = $raw?->scaled(ModelValidator::UNITS[$unit] ?? 1.0);
-        [$printer, $material] = $this->printerAndMaterialFor($dims) ?? [$largest, $this->loadedMaterials($largest)->first()];
-        if (! $material) {
+        $quality = $this->knownQuality($quality);
+        // the model may fit no plate at all: start on the biggest machine that takes this quality and let the check say so
+        $fallback = $this->printers()->filter(fn (FarmPrinter $p) => $p->takesQuality($quality))->sortByDesc(fn (FarmPrinter $p) => $p->bedVolume())->first();
+        [$printer, $material] = $this->printerAndMaterialFor($dims, $quality) ?? [$fallback, $fallback ? $this->loadedMaterials($fallback)->first() : null];
+        if (! $printer || ! $material) {
             throw new FarmRefusal('no_printer');
         }
 
@@ -85,12 +88,21 @@ final class OrderService
         }
         $this->assertDailyLimit($order->user);
         $from = $order->status;
+        $quality = $this->knownQuality($quality);
         $order->fill([
             'status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'checking', 'error' => null, 'error_detail' => null,
-            'quality' => $this->knownQuality($quality), 'strength' => $this->knownStrength($strength),
+            'quality' => $quality, 'strength' => $this->knownStrength($strength),
             'unit_scale' => ModelValidator::UNITS[$unit] ?? $order->unit_scale,
             'price' => null, 'price_total' => null,
-        ])->save();
+        ]);
+        // a machine kept for fine work hands the order back when the customer asks for a coarser quality
+        if ($order->printer && ! $order->printer->takesQuality($quality)) {
+            $dims = is_array($order->check['dims'] ?? null) ? Dimensions::fromArray($order->check['dims']) : null;
+            [$printer, $material] = $this->printerAndMaterialFor($dims, $quality) ?? throw new FarmRefusal('no_printer');
+            $order->farm_printer_id = $printer->id;
+            $order->farm_material_id = $material->id;
+        }
+        $order->save();
         $order->events()->create(['from' => $from, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'user', 'actor_id' => $order->user_id, 'note' => 'reslice']);
         Cache::add($this->sliceCounterKey($order->user), 0, now()->endOfDay());
         Cache::increment($this->sliceCounterKey($order->user));
@@ -119,8 +131,9 @@ final class OrderService
             ->whereHas('printer', fn ($q) => $q->where('enabled', true))
             ->whereHas('color', fn ($q) => $q->where('enabled', true)->whereHas('material', fn ($m) => $m->where('enabled', true)))
             ->get()
-            // any machine of the farm the model goes on: a colour on another machine means slicing again for it at payment
-            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->fits($dims))
+            // any machine of the farm the model goes on and that takes this quality: a colour on another machine means
+            // slicing again for it at payment
+            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->fits($dims) && $s->printer->takesQuality((string) $order->quality))
             ->map(fn (FarmPrinterSlot $s) => ['slot' => $s, 'color' => $s->color, 'printer' => $s->printer, 'enough' => $s->availableGrams() >= $need])
             // one entry per colour: prefer a slot with enough filament, the machine the order is sliced for, then the one
             // that can start soonest
@@ -199,13 +212,16 @@ final class OrderService
 
     /**
      * The machine and kind an order starts on: the cheapest loaded kind on a machine that takes the model (the raw
-     * size, before orientation, so a loose fit), online ones first; null when the model fits no machine at all.
+     * size, before orientation, so a loose fit) and this quality, online ones first; null when the model fits no
+     * machine at all.
      *
      * @return array{0: FarmPrinter, 1: FarmMaterial}|null
      */
-    private function printerAndMaterialFor(?Dimensions $dims): ?array
+    private function printerAndMaterialFor(?Dimensions $dims, string $quality): ?array
     {
-        $printers = $this->printers()->filter(fn (FarmPrinter $p) => $dims === null || $p->fits($dims));
+        $printers = $this->printers()
+            ->filter(fn (FarmPrinter $p) => $dims === null || $p->fits($dims))
+            ->filter(fn (FarmPrinter $p) => $p->takesQuality($quality));
         foreach ($this->loadedMaterials() as $material) {
             $printer = $printers
                 ->filter(fn (FarmPrinter $p) => $p->slots()->where('enabled', true)->whereHas('color', fn ($c) => $c->where('farm_material_id', $material->id))->exists())

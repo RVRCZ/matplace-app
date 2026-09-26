@@ -75,7 +75,8 @@ final class TestPrintService
         }
 
         $params = ['object' => $object, 'candidate' => $candidate, 'row_version' => $row->version, 'ironing' => $ironing && self::OBJECTS[$object]['ironing']];
-        $toolParams = [];
+        // walls, stringing pillars and the bond bar are counted in nozzle widths, so the test measures what this nozzle can do
+        $toolParams = ['nozzle' => (float) $printer->nozzle_mm];
         if (self::OBJECTS[$object]['floors']) {
             $floors = max(3, min(10, (int) ($tower['floors'] ?? 5)));
             $step = (int) ($tower['step'] ?? -5) ?: -5;

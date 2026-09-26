@@ -6,10 +6,14 @@ Test objects for tuning a filament on a printer of the farm (manifold3d, exact s
 
 kind:
   quick        one plate, about 35 minutes: a 15 mm cube (dimensions, corners, top surface, elephant foot), overhang
-               fan 30-70 degrees, a 20 mm bridge, three pillars for stringing, a single 0.8 mm wall, an 8 mm hole
+               fan 30-70 degrees, a 20 mm bridge, three pillars for stringing, a single two-line wall, an 8 mm hole
   detailed     one plate, about 70 minutes: a 20 mm cube, a 30 x 30 mm plateau for ironing, overhang fan 30-80 degrees,
-               bridges of 15 and 25 mm, stringing pillars with 10 and 20 mm gaps (40 mm tall), walls of 0.4 / 0.8 / 1.2 mm,
-               holes of 3 / 5 / 8 / 10 mm, a bar to snap by hand for the layer bond
+               bridges of 15 and 25 mm, stringing pillars with 10 and 20 mm gaps (40 mm tall), walls of one / two /
+               three lines, holes of 3 / 5 / 8 / 10 mm, a bar to snap by hand for the layer bond
+
+What a nozzle draws scales with it (param `nozzle`, 0.4 by default): the walls are counted in nozzle widths, the
+stringing pillars and the bond bar get thinner with it, and so does the raft-like base plate. The cube, the holes,
+the bridges and the overhang angles stay as they are: they measure the machine, not the nozzle.
   temp_tower   floors of 10 mm (params: floors 3-10); every floor carries a 14 mm bridge and a 45 degree overhang.
                The temperature per floor is written into the G-code by the web layer (App\\Domain\\Farm\\TowerGcode),
                floor 1 is the bottom one
@@ -22,7 +26,16 @@ import json
 import math
 import sys
 
-PLATE_T = 1.2
+NOZZLE = 0.4          # the nozzle the sizes below are written for
+PLATE_T = 1.2         # base plate of the quick/detailed object at that nozzle
+
+
+def nozzle_of(p):
+    """The nozzle this test prints with; 0.1-1.0 mm, the default is the farm's standard 0.4."""
+    n = float(p.get("nozzle") or NOZZLE)
+    if not 0.1 <= n <= 1.0:
+        raise ValueError("nozzle 0.1-1.0")
+    return n
 
 
 def out(obj):
@@ -44,9 +57,11 @@ def overhang_wedge(M, x, y, z, width, depth, height, angle_deg, along="y"):
 
 def quick(M, p):
     features = []
+    n = nozzle_of(p)
+    plate_t = round(3 * n, 2)
     plate_w, plate_d = 80.0, 50.0
-    solid = box(M, 0, 0, 0, plate_w, plate_d, PLATE_T)
-    z0 = PLATE_T
+    solid = box(M, 0, 0, 0, plate_w, plate_d, plate_t)
+    z0 = plate_t
 
     # row A: cube, bridge, single wall, hole
     cube = 15.0
@@ -59,11 +74,12 @@ def quick(M, p):
     solid += box(M, bx, 6, z0 + ph, 2 * pw + span, 8, 2.0)
     features.append({"name": "bridge", "at": [bx, 6], "span": span, "checks": ["bridge"]})
 
-    solid += box(M, 62, 4, z0, 0.8, 15, 15)
-    features.append({"name": "thin_wall", "at": [62, 4], "thickness": 0.8, "checks": ["single_wall"]})
+    wall_t = round(2 * n, 2)
+    solid += box(M, 62, 4, z0, wall_t, 15, 15)
+    features.append({"name": "thin_wall", "at": [62, 4], "thickness": wall_t, "lines": 2, "checks": ["single_wall"]})
 
     hole_d = 8.0
-    solid -= M.Manifold.cylinder(PLATE_T + 2, hole_d / 2, -1.0, 64).translate([72, 12, -1])
+    solid -= M.Manifold.cylinder(plate_t + 2, hole_d / 2, -1.0, 64).translate([72, 12, -1])
     features.append({"name": "hole", "at": [72, 12], "diameter": hole_d, "checks": ["hole_size"]})
 
     # row B: overhang fan and stringing pillars
@@ -73,19 +89,23 @@ def quick(M, p):
         solid += overhang_wedge(M, x, 27, z0, 6, 3, 10, a)
     features.append({"name": "overhangs", "at": [3, 27], "angles": angles, "checks": ["overhang"]})
 
+    # a thinner nozzle wants thinner pillars: the travel between them is what pulls the strings
     pillars = [48, 62, 76]
+    r = round(max(0.8, 5 * n), 2)
     for x in pillars:
-        solid += M.Manifold.cylinder(25, 2.0, -1.0, 48).translate([x, 38, z0])
-    features.append({"name": "stringing", "at": [[x, 38] for x in pillars], "height": 25, "checks": ["stringing"]})
+        solid += M.Manifold.cylinder(25, r, -1.0, 48).translate([x, 38, z0])
+    features.append({"name": "stringing", "at": [[x, 38] for x in pillars], "height": 25, "radius": r, "checks": ["stringing"]})
 
     return solid, features
 
 
 def detailed(M, p):
     features = []
+    n = nozzle_of(p)
+    plate_t = round(3 * n, 2)
     plate_w, plate_d = 110.0, 70.0
-    solid = box(M, 0, 0, 0, plate_w, plate_d, PLATE_T)
-    z0 = PLATE_T
+    solid = box(M, 0, 0, 0, plate_w, plate_d, plate_t)
+    z0 = plate_t
 
     # row A: cube, ironing plateau, two bridges, walls, holes
     cube = 20.0
@@ -101,13 +121,14 @@ def detailed(M, p):
         solid += box(M, 62, y, z0 + ph, 2 * pw + span, 6, 2.0)
         features.append({"name": "bridge", "at": [62, y], "span": span, "checks": ["bridge"]})
 
-    for i, t in enumerate((0.4, 0.8, 1.2)):
+    walls = [round(k * n, 2) for k in (1, 2, 3)]
+    for i, t in enumerate(walls):
         solid += box(M, 64 + i * 6, 22, z0, t, 14, 15)
-    features.append({"name": "thin_walls", "at": [64, 22], "thicknesses": [0.4, 0.8, 1.2], "checks": ["single_wall"]})
+    features.append({"name": "thin_walls", "at": [64, 22], "thicknesses": walls, "lines": [1, 2, 3], "checks": ["single_wall"]})
 
     holes = ((84, 30, 3.0), (91, 30, 5.0), (100, 30, 8.0), (100, 44, 10.0))
     for x, y, d in holes:
-        solid -= M.Manifold.cylinder(PLATE_T + 2, d / 2, -1.0, 64).translate([x, y, -1])
+        solid -= M.Manifold.cylinder(plate_t + 2, d / 2, -1.0, 64).translate([x, y, -1])
     features.append({"name": "holes", "at": [[x, y] for x, y, _ in holes], "diameters": [d for _, _, d in holes], "checks": ["hole_size"]})
 
     # row B: overhang fan, stringing pillars, bond bar
@@ -118,12 +139,15 @@ def detailed(M, p):
     features.append({"name": "overhangs", "at": [3, 38], "angles": angles, "checks": ["overhang"]})
 
     pillars = [58, 68, 88]
+    r = round(max(0.8, 5 * n), 2)
     for x in pillars:
-        solid += M.Manifold.cylinder(40, 2.0, -1.0, 48).translate([x, 60, z0])
-    features.append({"name": "stringing", "at": [[x, 60] for x in pillars], "gaps": [10, 20], "height": 40, "checks": ["stringing"]})
+        solid += M.Manifold.cylinder(40, r, -1.0, 48).translate([x, 60, z0])
+    features.append({"name": "stringing", "at": [[x, 60] for x in pillars], "gaps": [10, 20], "height": 40, "radius": r, "checks": ["stringing"]})
 
-    solid += box(M, 100, 52, z0, 3, 12, 35)
-    features.append({"name": "bond_bar", "at": [100, 52], "size": [3, 12, 35], "checks": ["layer_bond"]})
+    # snapped by hand: a bar of the same number of lines whatever the nozzle, or the bond cannot be compared
+    bar_t = round(max(0.8, 7.5 * n), 2)
+    solid += box(M, 100, 52, z0, bar_t, 12, 35)
+    features.append({"name": "bond_bar", "at": [100, 52], "size": [bar_t, 12, 35], "checks": ["layer_bond"]})
 
     return solid, features
 

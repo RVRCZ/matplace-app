@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\OrderService;
 use App\Domain\Farm\ProfileLibrary;
 use App\Engines\Contracts\Slicer;
 use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\SliceParams;
 use App\Engines\DTO\SliceResult;
+use App\Engines\Repair\PythonTool;
 use App\Engines\Slicer\FakeSlicer;
 use App\Models\FarmMaterial;
 use App\Models\FarmOrder;
@@ -141,13 +143,74 @@ class FarmNozzleTest extends TestCase
         $path = sys_get_temp_dir().'/mp_nozzle_'.uniqid().'.stl';
         MeshFixtures::cubeStl($path, 20.0);
         $uuid = $this->actingAs($user)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'part.stl', null, null, true)])->assertCreated()->json('file.uuid');
-        $this->actingAs($user)->postJson('/farm/orders', ['file' => $uuid, 'quality' => 'standard'])->assertCreated();
+        $this->actingAs($user)->postJson('/farm/orders', ['file' => $uuid, 'quality' => 'fine'])->assertCreated();
 
         $order = FarmOrder::latest('id')->firstOrFail();
         $this->assertSame($printer->id, $order->farm_printer_id, 'the order landed on the fine machine');
         $this->assertNotNull($spy->seen, 'the order went through the slicer: '.$order->status.' '.$order->error);
         $this->assertSame('machine_kobras1_n02.json', $spy->seen->profiles['machine']);
-        $this->assertSame('process_standard_n02.json', $spy->seen->profiles['process']);
-        $this->assertSame('0.1', $spy->seen->overrides['process']['layer_height'], 'the standard quality is 0.10 mm on a 0.2 nozzle');
+        $this->assertSame('process_fine_n02.json', $spy->seen->profiles['process']);
+        $this->assertSame('0.06', $spy->seen->overrides['process']['layer_height'], 'the fine quality is 0.06 mm on a 0.2 nozzle');
+    }
+
+    public function test_a_finer_nozzle_is_kept_for_fine_work(): void
+    {
+        $fine = new FarmPrinter(['nozzle_mm' => 0.2]);
+        $this->assertTrue($fine->takesQuality('fine'));
+        $this->assertFalse($fine->takesQuality('standard'));
+        $this->assertFalse($fine->takesQuality('draft'));
+
+        $standard = new FarmPrinter(['nozzle_mm' => 0.4]);
+        foreach (['draft', 'standard', 'fine'] as $quality) {
+            $this->assertTrue($standard->takesQuality($quality), $quality);
+        }
+    }
+
+    public function test_only_fine_orders_reach_the_fine_machine(): void
+    {
+        Storage::fake('models');
+        Storage::fake('farm');
+        Mail::fake();
+        $this->seed(FarmSeeder::class);
+
+        // the 0.2 machine is the only one with a spool: a standard order has nowhere to go, a fine one lands on it
+        $printer = FarmPrinter::where('key', 'kobra-s1-02')->firstOrFail();
+        $color = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail()->slots()->where('enabled', true)->firstOrFail()->farm_color_id;
+        FarmPrinter::where('key', '!=', 'kobra-s1-02')->update(['enabled' => false]);
+        $printer->update(['enabled' => true, 'mode' => FarmPrinter::MODE_MANUAL]);
+        $printer->slots()->where('slot', 0)->update(['farm_color_id' => $color, 'remaining_g' => 900, 'enabled' => true]);
+
+        $user = User::factory()->create();
+        $path = sys_get_temp_dir().'/mp_nozzle_'.uniqid().'.stl';
+        MeshFixtures::cubeStl($path, 20.0);
+        $uuid = $this->actingAs($user)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'part.stl', null, null, true)])->assertCreated()->json('file.uuid');
+
+        $this->actingAs($user)->postJson('/farm/orders', ['file' => $uuid, 'quality' => 'standard'])
+            ->assertStatus(422)->assertJsonPath('error', 'no_printer');
+
+        $this->actingAs($user)->postJson('/farm/orders', ['file' => $uuid, 'quality' => 'fine'])->assertCreated();
+        $order = FarmOrder::latest('id')->firstOrFail();
+        $this->assertSame($printer->id, $order->farm_printer_id);
+        // and the colours it offers are the fine machine's own
+        $this->assertNotEmpty(app(OrderService::class)->availableColors($order->fresh()));
+        $order->update(['quality' => 'standard']);
+        $this->assertEmpty(app(OrderService::class)->availableColors($order->fresh()), 'a coarser quality does not get this machine');
+    }
+
+    public function test_the_calibration_object_is_drawn_for_the_nozzle_of_its_machine(): void
+    {
+        $python = app(PythonTool::class);
+        if (! $python->available()) {
+            $this->markTestSkipped('python + manifold3d');
+        }
+        $out = sys_get_temp_dir().'/mp_calib_'.uniqid().'.stl';
+        $fine = $python->runScript('calib_tool.py', ['detailed', $out, json_encode(['nozzle' => 0.2])], 60);
+        $walls = collect($fine['features'])->firstWhere('name', 'thin_walls');
+        $this->assertSame([0.2, 0.4, 0.6], $walls['thicknesses'], 'one, two and three lines of a 0.2 nozzle');
+
+        $standard = $python->runScript('calib_tool.py', ['detailed', $out, json_encode([])], 60);
+        $walls = collect($standard['features'])->firstWhere('name', 'thin_walls');
+        $this->assertSame([0.4, 0.8, 1.2], $walls['thicknesses'], 'the 0.4 object is unchanged');
+        @unlink($out);
     }
 }
