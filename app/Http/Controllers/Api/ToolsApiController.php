@@ -7,8 +7,8 @@ use App\Domain\Tools\ReliefGenerator;
 use App\Domain\Tools\SignGenerator;
 use App\Engines\Exceptions\EngineException;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
 use App\Models\ModelFile;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -48,11 +48,27 @@ class ToolsApiController extends Controller
     {
         $kind = (string) $request->input('kind');
         $request->validate(['kind' => ['required', Rule::in(array_keys(ParametricGenerator::FIELDS))]]);
+        // the form shows these messages as they are: in the visitor's language, never "The params.line1 field is required."
+        $messages = [];
+        $required = match (true) {
+            $kind === 'qr' => __('param.error.qr_bad_text'),
+            in_array($kind, ParametricGenerator::ARTWORK, true) => __('param.error.no_text'),
+            default => __('param.text_required'),
+        };
+        foreach (array_keys(ParametricGenerator::TEXTS[$kind] ?? []) as $text) {
+            $messages['params.'.$text.'.required'] = $required;
+            $messages['params.'.$text.'.max'] = __('param.error.text_too_long', ['n' => ParametricGenerator::TEXTS[$kind][$text][0]]);
+        }
+        foreach (array_keys(ParametricGenerator::FIELDS[$kind]) as $field) {
+            foreach (['min', 'max', 'numeric', 'integer'] as $rule) {
+                $messages['params.'.$field.'.'.$rule] = __('param.error.out_of_range', ['n' => __('param.f.'.$field)]);
+            }
+        }
         $data = $request->validate(ParametricGenerator::rules($kind) + [
             'params' => ['nullable', 'array'],
             'part' => ['nullable', 'string', 'regex:/^('.implode('|', ParametricGenerator::PARTS).'|tray|bin_\d{1,2}x\d{1,2})$/'],
             'view' => ['nullable', 'in:print,use'],
-        ]);
+        ], $messages);
 
         return [$kind, (array) ($data['params'] ?? []), $data['part'] ?? 'all', $data['view'] ?? 'print'];
     }

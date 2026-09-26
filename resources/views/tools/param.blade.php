@@ -3,7 +3,7 @@
 @php
     $integer = fn (array $f) => $f[3] === 1;
     $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : ($k === 'flute' ? '%' : 'mm'));
-    $i18n = collect(['param.working', 'param.failed', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
+    $i18n = collect(['param.working', 'param.failed', 'param.too_fast', 'param.text_required', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
         'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
         'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
         'color.white', 'color.black', 'color.grey', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
@@ -38,7 +38,7 @@
     <ol class="steps mt-3" aria-label="{{ __('param.steps') }}">
         <li aria-current="step"><span class="step-no">1</span>{{ __('param.step.settings') }}</li>
         <li aria-current="step"><span class="step-no">2</span>{{ __('param.step.preview') }}</li>
-        <li><span class="step-no">3</span>{{ __('param.step.inquiry') }}</li>
+        <li><span class="step-no">3</span>{{ \App\Support\NextStep::text('param.step.inquiry') }}</li>
     </ol>
 
     @unless($available)
@@ -197,10 +197,10 @@
                 <div class="text-sm text-muted">{{ __('param.estimate.title') }}</div>
                 <div id="param-price" class="text-3xl font-extrabold text-ink" aria-live="polite">—</div>
                 <div id="param-price-sub" class="text-sm text-muted"></div>
-                <p class="mt-2 text-xs text-muted">{{ __('param.estimate.note') }}</p>
+                <p class="mt-2 text-xs text-muted">{{ \App\Support\NextStep::text('param.estimate.note') }}</p>
 
-                <button id="param-go" type="button" class="btn-primary mt-4 w-full">{{ __('param.go') }}</button>
-                <p class="mt-2 text-xs text-muted">{{ __('param.go.hint') }}</p>
+                <button id="param-go" type="button" class="btn-primary mt-4 w-full">{{ \App\Support\NextStep::text('param.go') }}</button>
+                <p class="mt-2 text-xs text-muted">{{ \App\Support\NextStep::text('param.go.hint') }}</p>
 
                 <div class="mt-4 border-t border-line pt-3">
                     <div class="text-sm font-semibold text-ink">{{ __('param.download') }}</div>
@@ -209,7 +209,7 @@
                     <p class="mt-1 text-xs text-muted">{{ __('param.download.project.hint') }}</p>
                 </div>
             </div>
-            <p class="text-xs text-muted">{{ __('param.'.$kind.'.tip') }}</p>
+            <p class="text-xs text-muted">{{ \App\Support\NextStep::text('param.'.$kind.'.tip') }}</p>
         </div>
     </div>
     @endunless

@@ -3,7 +3,7 @@
 @php
     $i18n = collect(['mold.page.bad_format', 'mold.page.too_big', 'mold.page.uploading', 'mold.page.processing', 'mold.page.building', 'mold.page.failed', 'mold.page.model_failed',
         'mold.unavailable', 'mold.report', 'mold.report.undercuts', 'mold.report.large', 'calc.tip.mold'])
-        ->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb']])])->all();
+        ->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k, ['max' => $config['max_upload_mb']])])->all();
 @endphp
 
 @push('head')
@@ -56,7 +56,7 @@
         <div class="card overflow-hidden"><canvas id="mold-viewer" class="block h-[40vh] w-full touch-none" role="img" aria-label="{{ __('param.viewer') }}"></canvas></div>
         <div>
             <div id="mold-report" class="card p-5 text-sm text-slate-700"></div>
-            <a id="mold-open" href="{{ route('home') }}" class="btn-primary mt-3 w-full">{{ __('mold.page.go') }}</a>
+            <a id="mold-open" href="{{ route('home') }}" class="btn-primary mt-3 w-full">{{ \App\Support\NextStep::text('mold.page.go') }}</a>
         </div>
     </div>
     @endunless
