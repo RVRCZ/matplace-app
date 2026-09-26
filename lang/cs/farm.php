@@ -180,7 +180,7 @@ return [
     ],
 
     'test' => [
-        'object' => ['quick' => 'Rychlý test (kostka, převisy, most, stringing)', 'detailed' => 'Podrobný test (kostka 20 mm, žehlená plocha, převisy do 80°, mosty 15/25 mm, stringing, stěny, otvory, spoj vrstev)', 'temp_tower' => 'Teplotní věž'],
+        'object' => ['quick' => 'Rychlý test (kostka, převisy, most, stringing)', 'detailed' => 'Podrobný test (kostka 20 mm, převisy do 80°, mosty 15/25 mm, stringing, stěny, otvory, spoj vrstev)', 'ironing' => 'Žehlení (plošina 30 × 30 mm)', 'temp_tower' => 'Teplotní věž'],
     ],
 
     'finish' => ['solid' => '', 'matte' => 'matný', 'silk' => 'Silk', 'luminous' => 'svítící', 'glitter' => 'třpytivý', 'special' => 'speciální', 'flex' => 'flexibilní', 'cf' => 'CF'],

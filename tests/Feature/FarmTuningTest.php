@@ -181,14 +181,21 @@ class FarmTuningTest extends TestCase
         $s1->slots()->where('slot', 0)->update(['farm_color_id' => $petg->id, 'remaining_g' => 500, 'enabled' => true]);
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/test", ['slot' => $s1->slots()->where('slot', 0)->value('id'), 'object' => 'quick'])->assertRedirect()->assertSessionHas('error');
 
-        // the detailed object with ironing: the plateau is ironed with Orca's defaults, no supports
+        // the ironing object: its plateau is ironed with Orca's defaults, no supports
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/test", ['slot' => $slot->id, 'object' => 'ironing', 't_ironing' => 1])->assertRedirect()->assertSessionMissing('error');
+        $ironing = FarmOrder::where('kind', FarmOrder::KIND_TEST)->latest('id')->firstOrFail();
+        $this->assertTrue($ironing->test_params['ironing']);
+        $this->assertSame('top', $ironing->slice_params['overrides']['process']['ironing_type']);
+        $this->assertSame('10%', $ironing->slice_params['overrides']['process']['ironing_flow']);
+        $this->assertSame(FarmOrder::STATUS_QUEUED, $ironing->status);
+        $this->assertContains('ironing', array_column($ironing->test_params['features'], 'name'));
+
+        // the big objects never iron: on a fine nozzle it would be most of the print, and their own base plate
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/test", ['slot' => $slot->id, 'object' => 'detailed', 't_ironing' => 1])->assertRedirect()->assertSessionMissing('error');
         $detailed = FarmOrder::where('kind', FarmOrder::KIND_TEST)->latest('id')->firstOrFail();
-        $this->assertTrue($detailed->test_params['ironing']);
-        $this->assertSame('top', $detailed->slice_params['overrides']['process']['ironing_type']);
-        $this->assertSame('10%', $detailed->slice_params['overrides']['process']['ironing_flow']);
-        $this->assertSame(FarmOrder::STATUS_QUEUED, $detailed->status);
-        $this->assertContains('ironing', array_column($detailed->test_params['features'], 'name'));
+        $this->assertSame(FarmOrder::STATUS_QUEUED, $detailed->status, (string) $detailed->error);
+        $this->assertFalse($detailed->test_params['ironing']);
+        $this->assertArrayNotHasKey('ironing_type', $detailed->test_params['candidate']['process']);
 
         // temperature tower on the right spool, sync queue: built, sliced, queued
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/test", ['slot' => $slot->id, 'object' => 'temp_tower', 'floors' => 5, 'step' => -5, 't_nozzle_temp' => 220])->assertRedirect()->assertSessionMissing('error');

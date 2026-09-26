@@ -180,7 +180,7 @@ return [
     ],
 
     'test' => [
-        'object' => ['quick' => 'Quick test (cube, overhangs, bridge, stringing)', 'detailed' => 'Detailed test (20 mm cube, ironed plateau, overhangs to 80°, 15/25 mm bridges, stringing, walls, holes, layer bond)', 'temp_tower' => 'Temperature tower'],
+        'object' => ['quick' => 'Quick test (cube, overhangs, bridge, stringing)', 'detailed' => 'Detailed test (20 mm cube, overhangs to 80°, 15/25 mm bridges, stringing, walls, holes, layer bond)', 'ironing' => 'Ironing (30 × 30 mm plateau)', 'temp_tower' => 'Temperature tower'],
     ],
 
     'finish' => ['solid' => '', 'matte' => 'matte', 'silk' => 'Silk', 'luminous' => 'glow', 'glitter' => 'glitter', 'special' => 'special', 'flex' => 'flexible', 'cf' => 'CF'],

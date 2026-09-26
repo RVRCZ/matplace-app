@@ -9,6 +9,7 @@ use App\Engines\Contracts\Slicer;
 use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\SliceParams;
 use App\Engines\DTO\SliceResult;
+use App\Engines\Mesh\StlTopology;
 use App\Engines\Repair\PythonTool;
 use App\Engines\Slicer\FakeSlicer;
 use App\Models\FarmMaterial;
@@ -205,6 +206,25 @@ class FarmNozzleTest extends TestCase
         // the rest of the ironing settings stay as they are
         $this->assertSame(TestPrintService::IRONING['ironing_flow'], TestPrintService::ironingFor(0.2)['ironing_flow']);
         $this->assertSame('top', TestPrintService::ironingFor(0.2)['ironing_type']);
+    }
+
+    public function test_every_calibration_object_is_a_closed_solid_whatever_the_nozzle(): void
+    {
+        $python = app(PythonTool::class);
+        if (! $python->available()) {
+            $this->markTestSkipped('python + manifold3d');
+        }
+        // the plate is a frame with ribs and a pad under every feature: built in 3D it grew non-manifold edges
+        // wherever a rounded pad touched a rib tangentially, and the order then failed its check as not_watertight
+        $out = sys_get_temp_dir().'/mp_calib_'.uniqid().'.stl';
+        foreach (['quick', 'detailed', 'ironing'] as $object) {
+            foreach ([0.4, 0.2] as $nozzle) {
+                $python->runScript('calib_tool.py', [$object, $out, json_encode(['nozzle' => $nozzle])], 60);
+                $t = StlTopology::check($out);
+                $this->assertTrue($t['watertight'], $object.' at '.$nozzle.': '.json_encode($t));
+            }
+        }
+        @unlink($out);
     }
 
     public function test_the_calibration_object_is_drawn_for_the_nozzle_of_its_machine(): void
