@@ -186,7 +186,8 @@ def analyze(src, folder, overhang_deg):
     foot0 = footprint(m.vertices, down)
     ext = m.extents
     best = (best_score, best_down) + tuple(rate(m, best_down, cos_limit, bed)[1:])
-    better = (over0 - best[2]) > 0.15 * max(over0, 1.0) and float(np.dot(best_down, down)) < 0.999
+    # only a turn that really stands on something is worth suggesting (a head-down bust "saves" overhang on 0 mm2)
+    better = (over0 - best[2]) > 0.15 * max(over0, 1.0) and float(np.dot(best_down, down)) < 0.999         and best[3] > 0 and best[3] >= 0.25 * base0
 
     try:
         bodies = len(m.split(only_watertight=False))
@@ -208,13 +209,16 @@ def analyze(src, folder, overhang_deg):
             "height_mm": round(height0, 1),
             "slenderness_height_to_narrowest_base": round(height0 / max(min(ext[0], ext[1]), 0.1), 2),
         },
-        "best_orientation": {
+        "best_orientation": None if not m.is_watertight else {
             "same_as_uploaded": not better,
             "rest_on": "bottom (as uploaded)" if not better else side_words(best[1]),
-            "overhang_mm2": round(best[2], 1),
-            "plate_contact_mm2": round(best[3], 1),
-            "height_mm": round(best[4], 1),
+            "overhang_mm2": round(best[2] if better else over0, 1),
+            "plate_contact_mm2": round(best[3] if better else base0, 1),
+            "height_mm": round(best[4] if better else height0, 1),
         },
+        "measurement_note": None if m.is_watertight else
+            "The mesh is open (not watertight, e.g. a scan with an open bottom): plate contact is measured on flat faces only "
+            "and may read 0 although the rim stands on the plate; no orientation was rated.",
         "wall_thickness": thickness(light),
         "overhang_limit_deg": overhang_deg,
     }

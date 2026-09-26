@@ -24,6 +24,9 @@ final class PrintAdvisor
 
     private const LANGS = ['cs' => 'Czech', 'en' => 'English', 'es' => 'Spanish'];
 
+    /** Bump when advise_tool.py measures differently: stored analyses of an older version are computed again. */
+    private const ANALYSIS_VERSION = 2;
+
     public function __construct(private readonly array $config, private readonly PythonTool $python) {}
 
     public function available(): bool
@@ -38,7 +41,7 @@ final class PrintAdvisor
         $dir = $file->dir().'/advice';
         if ($disk->exists($dir.'/facts.json')) {
             $cached = json_decode((string) $disk->get($dir.'/facts.json'), true);
-            if (is_array($cached) && ! empty($cached['facts'])) {
+            if (is_array($cached) && ! empty($cached['facts']) && ($cached['version'] ?? 1) === self::ANALYSIS_VERSION) {
                 return $cached;
             }
         }
@@ -51,7 +54,7 @@ final class PrintAdvisor
         if (empty($r['ok'])) {
             throw new EngineException('Analysis failed: '.($r['error'] ?? '?'));
         }
-        $result = ['facts' => $r['facts'], 'views' => array_map(fn ($v) => ['file' => $dir.'/'.basename($v['file']), 'label' => $v['label']], $r['views'])];
+        $result = ['version' => self::ANALYSIS_VERSION, 'facts' => $r['facts'], 'views' => array_map(fn ($v) => ['file' => $dir.'/'.basename($v['file']), 'label' => $v['label']], $r['views'])];
         $disk->put($dir.'/facts.json', json_encode($result));
 
         return $result;
@@ -133,6 +136,10 @@ What matters, most important first:
 - Thin walls and fine details: wall thickness under 0.8 mm may not print with a common 0.4 mm nozzle; under 1.2 mm is fragile.
 - Strength: layers are weakest when pulled apart along Z; for hooks, clips, handles or anything carrying load, say how to orient it or what infill and material help.
 - Several separate bodies, an open (not watertight) mesh, a vase printed in vase mode (one wall, not watertight), anything special about the kind of model.
+
+When best_orientation is null or same_as_uploaded, do not suggest turning the model; read measurement_note when it is set.
+
+Address the customer politely and without assuming their gender (in Czech avoid past-tense forms like "nahrál/nahrála": write "model, jak je nahraný"; in Spanish avoid gendered adjectives about the customer).
 
 Give at most six items, the most important first. If the model prints well as it is, say so and keep to two or three items; mark confirmations as "fine". "important" = the print may fail or disappoint without it; "tip" = it makes the print better. Titles are short (a few words); texts one to three sentences. The summary is one sentence.
 TXT;
