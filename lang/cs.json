@@ -1175,5 +1175,16 @@
     "param.preset.pot": "Květináč",
     "param.error.vase_flutes_too_deep": "Takhle hluboké žlábky by při tomhle počtu žeber nechaly stěnu tenčí než jedna vytlačená linka. Uberte hloubku, zmenšete počet žeber nebo zesilte stěnu.",
     "param.warn.thin_flutes": "Mezi žlábky je stěna tenká: vytiskne se jedinou linkou. Váza bude křehčí a hůř drží vodu. Zesilte stěnu nebo zvolte mělčí žlábky.",
-    "param.warn.steep_twist": "Při takhle silném zkroucení se žebra naklánějí hodně od svislice. Tiskárna to většinou zvládne bez podpěr, ale povrch může být hrubší. Zmenšete zkroucení, pokud chcete čistý povrch."
+    "param.warn.steep_twist": "Při takhle silném zkroucení se žebra naklánějí hodně od svislice. Tiskárna to většinou zvládne bez podpěr, ale povrch může být hrubší. Zmenšete zkroucení, pokud chcete čistý povrch.",
+    "advice.title": "Poradit s tiskem",
+    "advice.lead": "AI projde tvar modelu a poradí, jak ho natočit, jestli potřebuje podpěry a na co si dát pozor.",
+    "advice.button": "Poradit s tiskem",
+    "advice.working": "Procházím model, obvykle to trvá do minuty…",
+    "advice.failed": "Radu se nepodařilo připravit. Zkuste to prosím později.",
+    "advice.daily_limit": "Dnešní limit rad je vyčerpaný. Zkuste to prosím zítra.",
+    "advice.unavailable": "Rady teď nejsou k dispozici.",
+    "advice.level.important": "Důležité",
+    "advice.level.tip": "Tip",
+    "advice.level.fine": "V pořádku",
+    "advice.disclaimer": "Rady píše AI podle změřené geometrie modelu. Berte je jako doporučení, ne jako záruku."
 }

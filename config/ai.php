@@ -12,9 +12,14 @@ return [
         'inspect_model' => env('ANTHROPIC_INSPECT_MODEL', 'claude-opus-5'),
         'inspect_effort' => env('ANTHROPIC_INSPECT_EFFORT', 'high'),
         'inspect_timeout' => 300,
+        // "how do I print this?" for a model in the calculator
+        'advise_model' => env('ANTHROPIC_ADVISE_MODEL', 'claude-opus-5'),
+        'advise_effort' => env('ANTHROPIC_ADVISE_EFFORT', 'medium'),
     ],
     'daily_limits' => [
         'describe' => (int) env('AI_LIMIT_DESCRIBE', 20),   // photo identifications per visitor per day
+        'advise' => (int) env('AI_LIMIT_ADVISE', 10),        // print advice per visitor per day
+        'advise_global' => (int) env('AI_LIMIT_ADVISE_GLOBAL', 300), // … for the whole site per day
         'generate_guest' => (int) env('AI_LIMIT_GENERATE_GUEST', 1),     // 3D generations per anonymous visitor per day
         'generate_user' => (int) env('AI_LIMIT_GENERATE_USER', 3),       // … per signed-in account per day
         'generate_printer' => (int) env('AI_LIMIT_GENERATE_PRINTER', 15), // … per signed-in printer per day (they prepare models for customers)

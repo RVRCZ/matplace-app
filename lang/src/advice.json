@@ -1,0 +1,13 @@
+{
+    "advice.title": ["Poradit s tiskem", "Printing advice", "Consejos de impresión"],
+    "advice.lead": ["AI projde tvar modelu a poradí, jak ho natočit, jestli potřebuje podpěry a na co si dát pozor.", "AI looks at the shape of the model and tells you how to turn it, whether it needs supports and what to watch for.", "La IA revisa la forma del modelo y le dice cómo orientarlo, si necesita soportes y a qué prestar atención."],
+    "advice.button": ["Poradit s tiskem", "Get printing advice", "Obtener consejos"],
+    "advice.working": ["Procházím model, obvykle to trvá do minuty…", "Looking at the model, this usually takes under a minute…", "Revisando el modelo, suele tardar menos de un minuto…"],
+    "advice.failed": ["Radu se nepodařilo připravit. Zkuste to prosím později.", "The advice could not be prepared. Please try again later.", "No se pudo preparar el consejo. Inténtelo más tarde."],
+    "advice.daily_limit": ["Dnešní limit rad je vyčerpaný. Zkuste to prosím zítra.", "Today's limit for advice is used up. Please try again tomorrow.", "Se ha agotado el límite de consejos de hoy. Inténtelo mañana."],
+    "advice.unavailable": ["Rady teď nejsou k dispozici.", "Advice is not available right now.", "Los consejos no están disponibles ahora."],
+    "advice.level.important": ["Důležité", "Important", "Importante"],
+    "advice.level.tip": ["Tip", "Tip", "Consejo"],
+    "advice.level.fine": ["V pořádku", "Fine", "Bien"],
+    "advice.disclaimer": ["Rady píše AI podle změřené geometrie modelu. Berte je jako doporučení, ne jako záruku.", "The advice is written by AI from the measured geometry of the model. Take it as a recommendation, not a guarantee.", "Los consejos los escribe una IA a partir de la geometría medida del modelo. Tómelos como recomendación, no como garantía."]
+}

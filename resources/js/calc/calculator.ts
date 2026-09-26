@@ -6,6 +6,7 @@ import { estimate, price, range, RoughConfig, Profile, Params } from './rough';
 import { uploadFile, createCalculation, getCalculation, getFile, CalcInfo, FileInfo } from './api';
 import { bootInquiry } from './inquiry';
 import { renderCheck } from './check';
+import { renderAdvice } from './advice';
 import { bootDownload, setDownload, refresh as refreshDownload, openWhenReady as openDownloadWhenReady } from './download';
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
@@ -143,6 +144,7 @@ function renderPrecise(c: CalcInfo): void {
         renderFacts({ minutes: c.slicer.minutes * q, grams: c.slicer.grams * q, meters: (c.slicer.meters ?? 0) * q || null, modes: c.slicer.minutes_by_mode, layers: c.slicer.layers, supports: c.slicer.supports_used, rough: false });
         enableQuote(c);
         renderCheck(document.getElementById('model-check'), c.file?.check);
+        renderAdvice(document.getElementById('model-advice'), state.file?.uuid, c.token);
         $('warnings').innerHTML = [...new Set(c.slicer.warnings ?? [])].filter((w) => i18n[`calc.warn.${w}`]).map((w) => `<li>⚠️ ${t(`calc.warn.${w}`)}</li>`).join('');
         return;
     }
@@ -172,6 +174,7 @@ function renderPrecise(c: CalcInfo): void {
     $('dims-badge').textContent = `${fmt.format(c.slicer.dims.x)} × ${fmt.format(c.slicer.dims.y)} × ${fmt.format(c.slicer.dims.z)} mm`;
     renderBreakdown(c.prices.map((p) => ({ ...p, label: ownProfileId && (p as { printer_profile_id?: number | null }).printer_profile_id === ownProfileId ? t('calc.profile.mine') : (p.label ?? t(`calc.profile.${p.profile}`)) })), false);
     renderCheck(document.getElementById('model-check'), c.file?.check);
+    renderAdvice(document.getElementById('model-advice'), state.file?.uuid, c.token);
     const warns = [...(c.slicer.warnings ?? [])];
     $('warnings').innerHTML = [...new Set(warns)].filter((w) => i18n[`calc.warn.${w}`]).map((w) => `<li>⚠️ ${t(`calc.warn.${w}`)}</li>`).join('');
 }

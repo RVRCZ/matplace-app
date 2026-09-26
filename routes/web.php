@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
 use App\Http\Controllers\Admin\YouTubeController;
+use App\Http\Controllers\Api\AdviceController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\GenerationController;
@@ -78,6 +79,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware('throttle:20,1')->name('files.project');
     Route::post('files/{modelFile}/pedestal', [ModelFileController::class, 'pedestal'])->middleware('throttle:20,1')->name('files.pedestal');
     Route::post('files/{modelFile}/mold', [ModelFileController::class, 'mold'])->middleware('throttle:20,1')->name('files.mold');
+    Route::post('files/{modelFile}/advice', [AdviceController::class, 'store'])->middleware('throttle:20,1')->name('files.advice');
+    Route::get('advice/{token}', [AdviceController::class, 'show'])->name('advice.show');
     Route::get('printers', [ModelFileController::class, 'printers'])->name('printers');
     Route::post('calculations', [CalculationController::class, 'store'])->middleware('throttle:calculations')->name('calculations.store');
     Route::get('calculations/{calculation}', [CalculationController::class, 'show'])->name('calculations.show');
