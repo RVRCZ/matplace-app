@@ -112,6 +112,9 @@ class PrepareFarmOrder implements ShouldQueue
             if ($order->isTest()) {
                 // the bridges and overhangs of a test object are the test: never prop them up
                 $overrides['process']['enable_support'] = '0';
+                // a test object stands on its own base plate: a brim only glues it harder to the build plate, and a
+                // fine-nozzle test bent while it was prised off (Kobra S1 #2, 26 Sep 2026)
+                $overrides['process']['brim_type'] = 'no_brim';
             }
             $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() ? false : null, treeSupports: true))
                 ->withFarmProfile($profiles, $overrides);

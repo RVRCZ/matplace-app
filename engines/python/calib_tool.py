@@ -67,31 +67,36 @@ def overhang_wedge(M, x, y, z, width, depth, height, angle_deg, along="y"):
     return (foot + top).hull()
 
 
-def skeleton_plate(M, parts, w, d, t, tiles=(), ribs_y=(), border=4.0, rib=4.0, margin=1.5):
+def skeleton_plate(M, parts, t, tiles=(), ribs_y=(), rib=4.0, margin=1.5):
     """
-    The base the features stand on, as a frame with ribs and a pad under every feature instead of a solid slab.
+    The base the features stand on: a pad under every feature's foot, ribs along the rows and one spine across
+    them - no solid slab, and no frame around it.
 
-    A slab of 110 x 70 mm is six solid layers of surface nobody ever looks at. On a 0.2 mm nozzle that is nearly an
-    hour of printing, and with ironing switched on another hour of polishing it - while the plateau the ironing test
-    is actually about is one twentieth of that area. `tiles` are extra rectangles the object needs for itself (the
-    holes are drilled through one), `ribs_y` are bars across the plate that tie the rows of features to the frame.
+    A slab of 110 x 70 mm is six solid layers of surface nobody ever looks at: on a 0.2 mm nozzle nearly an hour of
+    printing, and with ironing on another hour of polishing it. A frame around the plate looked like a brim, stuck
+    out as thin arms and bent while the test was prised off (26 Sep 2026). `tiles` are rectangles the object needs
+    for itself (the holes are drilled through one); `ribs_y` put a bar under each row of features, and the spine
+    through the middle ties the rows into one piece.
     """
     def rect(x, y, rw, rd):
         return M.CrossSection.square([rw, rd]).translate([x, y])
 
-    # the whole plate is drawn flat and extruded once: unioning the boxes in 3D leaves non-manifold edges
-    # wherever a rounded pad happens to touch a rib exactly tangentially, and the STL then reads as not watertight
-    flat = rect(0, 0, w, d) - rect(border, border, w - 2 * border, d - 2 * border)
-    for y in ribs_y:
-        flat += rect(0, y, w, rib)
+    # a pad under each foot, not under each shadow: an overhang wedge touches the plate with a 6 x 3 mm foot
+    # but throws a 30 mm shadow, and padding the shadows made the plate half the print on a fine nozzle
+    z0 = parts.bounding_box()[2]
+    flat = parts.slice(z0 + 0.01).offset(margin, M.JoinType.Round, 2.0)
     for x, y, tw, td in tiles:
         flat += rect(x, y, tw, td)
-    if not parts.is_empty():
-        # a pad under each foot, not under each shadow: an overhang wedge touches the plate with a 6 x 3 mm foot
-        # but throws a 30 mm shadow, and padding the shadows made the plate half the print on a fine nozzle
-        z0 = parts.bounding_box()[2]
-        flat += parts.slice(z0 + 0.01).offset(margin, M.JoinType.Round, 2.0)
+    # ribs and spine stay inside what the features cover, so nothing sticks out of the object
+    x0, _, x1, _ = flat.bounds()
+    for y in ribs_y:
+        flat += rect(x0, y, x1 - x0, rib)
+    if len(ribs_y) > 1:
+        lo, hi = min(ribs_y), max(ribs_y)
+        flat += rect((x0 + x1 - rib) / 2, lo, rib, hi - lo + rib)
 
+    # the whole plate is drawn flat and extruded once: unioning boxes in 3D leaves non-manifold edges wherever a
+    # rounded pad touches a rib exactly tangentially, and the STL then reads as not watertight
     return flat.simplify(1e-3).extrude(t)
 
 
@@ -134,7 +139,7 @@ def quick(M, p):
         solid += M.Manifold.cylinder(25, r, -1.0, 48).translate([x, 38, z0])
     features.append({"name": "stringing", "at": [[x, 38] for x in pillars], "height": 25, "radius": r, "checks": ["stringing"]})
 
-    solid += skeleton_plate(M, solid, plate_w, plate_d, plate_t, tiles=[(66, 5, 14, 16)], ribs_y=(10.0, 36.0))
+    solid += skeleton_plate(M, solid, plate_t, tiles=[(66, 5, 14, 16)], ribs_y=(10.0, 36.0))
     solid -= M.Manifold.cylinder(plate_t + 2, hole_d / 2, -1.0, 64).translate([72, 12, -1])
 
     return solid, features
@@ -186,7 +191,7 @@ def detailed(M, p):
     solid += box(M, 100, 52, z0, bar_t, 12, 35)
     features.append({"name": "bond_bar", "at": [100, 52], "size": [bar_t, 12, 35], "checks": ["layer_bond"]})
 
-    solid += skeleton_plate(M, solid, plate_w, plate_d, plate_t, tiles=[(79, 22, 28, 29)], ribs_y=(24.0, 58.0))
+    solid += skeleton_plate(M, solid, plate_t, tiles=[(79, 22, 28, 29)], ribs_y=(5.0, 24.0, 38.0, 58.0))
     for x, y, dia in holes:
         solid -= M.Manifold.cylinder(plate_t + 2, dia / 2, -1.0, 64).translate([x, y, -1])
 

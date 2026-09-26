@@ -195,6 +195,9 @@ class FarmTuningTest extends TestCase
         $detailed = FarmOrder::where('kind', FarmOrder::KIND_TEST)->latest('id')->firstOrFail();
         $this->assertSame(FarmOrder::STATUS_QUEUED, $detailed->status, (string) $detailed->error);
         $this->assertFalse($detailed->test_params['ironing']);
+        // a test object stands on its own base plate: no brim, no supports
+        $this->assertSame('no_brim', $detailed->slice_params['overrides']['process']['brim_type']);
+        $this->assertSame('0', $detailed->slice_params['overrides']['process']['enable_support']);
         $this->assertArrayNotHasKey('ironing_type', $detailed->test_params['candidate']['process']);
 
         // temperature tower on the right spool, sync queue: built, sliced, queued
