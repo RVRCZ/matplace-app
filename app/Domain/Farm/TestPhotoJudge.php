@@ -19,8 +19,8 @@ use Illuminate\Support\Facades\Storage;
  */
 final class TestPhotoJudge
 {
-    /** Longest edge the model reads at full detail (high-resolution vision). */
-    private const SENT_PX = 2576;
+    /** Longest edge of each photo; a request with many images allows at most 2000 px per side (the crop tool gets the detail back). */
+    private const SENT_PX = 2000;
 
     private const CROP_PX = 1600;
 
