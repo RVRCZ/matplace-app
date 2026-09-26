@@ -93,7 +93,8 @@ class PrepareFarmOrder implements ShouldQueue
             // ── 2. slice ───────────────────────────────────────────────────────
             $order->update(['stage' => 'slicing']);
             $quality = $order->quality;
-            $layer = $settings->layerFor($quality);
+            // the quality settings are written for a 0.4 nozzle; a finer nozzle prints the whole ladder finer
+            $layer = $printer->layerFor($settings->layerFor($quality));
             $infill = $settings->infillFor($order->strength);
             // the kind, then the kind on this machine, then the spool: the most specific layer wins (PrintProfile);
             // temperatures are written into the G-code copy for the chosen spool later

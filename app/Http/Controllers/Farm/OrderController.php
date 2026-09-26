@@ -13,6 +13,7 @@ use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
 use App\Models\Calculation;
 use App\Models\FarmOrder;
+use App\Models\FarmPrinter;
 use App\Models\FarmPrinterSlot;
 use App\Models\ModelFile;
 use Illuminate\Http\JsonResponse;
@@ -84,10 +85,13 @@ class OrderController extends Controller
     {
         $this->authorizeOrder($request, $order);
 
+        $order->load(['modelFile', 'color', 'printer', 'material']);
+
         return view('farm.order', [
-            'order' => $order->load(['modelFile', 'color', 'printer', 'material']),
+            'order' => $order,
             'state' => $this->describe($order, $request),
-            'settings' => $this->settings->all(),
+            // the quality buttons name the layer this order's machine really prints (a finer nozzle, a finer ladder)
+            'settings' => $this->withPrinterLayers($this->settings->all(), $order->printer),
         ]);
     }
 
@@ -202,6 +206,19 @@ class OrderController extends Controller
     public function terms(): View
     {
         return view('farm.terms', ['version' => $this->settings->get('terms_version')]);
+    }
+
+    /** The quality ladder as the given machine prints it: the layers follow its nozzle. */
+    private function withPrinterLayers(array $settings, ?FarmPrinter $printer): array
+    {
+        if (! $printer) {
+            return $settings;
+        }
+        foreach ($settings['qualities'] as $key => $q) {
+            $settings['qualities'][$key]['layer_mm'] = $printer->layerFor((float) ($q['layer_mm'] ?? 0.2));
+        }
+
+        return $settings;
     }
 
     /** Everything the order page needs, in one JSON object. */

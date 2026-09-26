@@ -82,11 +82,11 @@ class FarmTuningTest extends TestCase
 
         // a second S1 joins the farm
         $this->actingAs($this->admin)->post('/admin/farm/printers/new', [
-            'name' => 'Kobra S1 #2', 'model' => $s1->model, 'key' => 'kobra-s1-02', 'mode' => 'manual', 'enabled' => 1,
+            'name' => 'Kobra S1 #3', 'model' => $s1->model, 'key' => 'kobra-s1-03', 'mode' => 'manual', 'enabled' => 1,
             'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.4, 'machine_profile' => 'machine.json',
             'process_profiles' => json_encode($s1->process_profiles), 'time_factor' => 1, 'weight_factor' => 1,
         ])->assertRedirect('/admin/farm/printers');
-        $second = FarmPrinter::where('key', 'kobra-s1-02')->firstOrFail();
+        $second = FarmPrinter::where('key', 'kobra-s1-03')->firstOrFail();
         $row = FarmPrinterMaterial::where('farm_printer_id', $second->id)->where('farm_material_id', $petg->id)->firstOrFail();
         $this->assertSame('inherited', $row->source);
         $this->assertSame(80, $row->overrides['bed_temp']);

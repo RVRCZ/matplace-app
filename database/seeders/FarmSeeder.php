@@ -109,6 +109,25 @@ class FarmSeeder extends Seeder
             }
         }
 
+        // third machine (24 Sep 2026): a second Kobra S1, since 25 Sep 2026 with a 0.2 mm nozzle for fine work.
+        // The nozzle has its own machine, process and filament profiles; the layer ladder follows it (FarmPrinter::layerFor)
+        $s1b = FarmPrinter::firstOrCreate(['key' => 'kobra-s1-02'], [
+            'name' => 'Kobra S1 #2',
+            'model' => 'Anycubic Kobra S1 Combo',
+            'mode' => FarmPrinter::MODE_AGENT,
+            'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.2,
+            'time_factor' => 1.07, 'weight_factor' => 1.0,      // the S1 #1 numbers until this machine prints its own test
+            'machine_profile' => 'machine_kobras1_n02.json',
+            'process_profiles' => ['draft' => 'process_draft_n02.json', 'standard' => 'process_standard_n02.json', 'fine' => 'process_fine_n02.json'],
+            'machine_overrides' => [],
+            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'Textured PEI Plate'],
+        ]);
+        if ($s1b->wasRecentlyCreated) {
+            foreach ([0, 1, 2, 3] as $i) {
+                $s1b->slots()->create(['slot' => $i, 'farm_color_id' => null, 'remaining_g' => 0, 'enabled' => false]);
+            }
+        }
+
         // every enabled printer × kind gets its tuning row with the best known starting values
         app(ProfileLibrary::class)->sync();
     }

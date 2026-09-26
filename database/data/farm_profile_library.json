@@ -1,5 +1,5 @@
 {
-  "_about": "Best known starting values per printer model and filament kind. Keys: printer model substring (lower case) → kind code → finish (or '*'). Values have the shape of farm_printer_materials.overrides. Taken from Anycubic's OrcaSlicer presets for the Kobra S1 / Kobra 3 Max (0.4 mm nozzle) and the farm's own prints; a tuned row on the same printer model beats these.",
+  "_about": "Best known starting values per printer model and filament kind. Keys: printer model substring (lower case) -> kind code -> finish (or '*'). Values have the shape of farm_printer_materials.overrides. Taken from Anycubic's OrcaSlicer presets for the Kobra S1 / Kobra 3 Max and the farm's own prints; a tuned row on the same printer model with the same nozzle beats these. Everything here is written for a 0.4 mm nozzle: a machine with another nozzle takes its flow rates and speeds from its own slicer profiles (engines/orca/profiles) instead.",
   "kobra s1": {
     "PLA": {
       "*": {

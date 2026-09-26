@@ -47,14 +47,16 @@ final class ProfileLibrary
     /** @return array{0: array, 1: string, 2: string|null} */
     public function startingValues(FarmPrinter $printer, FarmMaterial $material): array
     {
+        // the same machine with a different nozzle is a different machine as far as tuning goes
         $tuned = FarmPrinterMaterial::whereNull('farm_color_id')->where('farm_material_id', $material->id)
             ->where('status', FarmPrinterMaterial::STATUS_TUNED)->where('farm_printer_id', '!=', $printer->id)
-            ->whereHas('printer', fn ($q) => $q->where('model', $printer->model))->latest('tested_at')->first();
+            ->whereHas('printer', fn ($q) => $q->where('model', $printer->model)->where('nozzle_mm', $printer->nozzle_mm))
+            ->latest('tested_at')->first();
         if ($tuned) {
             return [(array) $tuned->overrides, 'inherited', 'Převzato z '.$tuned->printer->name.' (verze '.$tuned->version.').'];
         }
 
-        $lib = $this->lookup($printer->model, $material->code, $material->finish);
+        $lib = $this->lookup($printer->model, $material->code, $material->finish, (float) $printer->nozzle_mm);
         if ($lib !== null) {
             $lib = FarmPrinterMaterial::clean($lib);
             // the kind's own temperatures stay the kind's business
@@ -70,9 +72,17 @@ final class ProfileLibrary
         return [[], 'generic', null];
     }
 
-    /** Library entry for a printer model and kind: the model's block (with what it inherits), the kind, the finish over "*". */
-    public function lookup(string $printerModel, string $code, string $finish): ?array
+    /**
+     * Library entry for a printer model and kind: the model's block (with what it inherits), the kind, the finish
+     * over "*". Every value in the file is written for a 0.4 mm nozzle — flow rates and wall speeds above all — so
+     * a machine with another nozzle gets nothing from here: its own slicer profiles carry what the nozzle needs,
+     * and the rest is for a test print to find.
+     */
+    public function lookup(string $printerModel, string $code, string $finish, float $nozzle = FarmPrinter::REFERENCE_NOZZLE_MM): ?array
     {
+        if (abs($nozzle - FarmPrinter::REFERENCE_NOZZLE_MM) > 0.001) {
+            return null;
+        }
         $lib = $this->library();
         $model = strtolower($printerModel);
         $block = null;

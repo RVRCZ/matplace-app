@@ -112,13 +112,13 @@ class FarmPagesTest extends TestCase
 
         [$agent] = FarmAgent::issue('pi');
         $this->actingAs($this->admin)->post('/admin/farm/printers/new', [
-            'name' => 'Kobra S1 #2', 'model' => 'Anycubic Kobra S1 Combo', 'key' => 'kobra-s1-02', 'mode' => 'agent', 'farm_agent_id' => $agent->id, 'enabled' => 1,
+            'name' => 'Kobra S1 #3', 'model' => 'Anycubic Kobra S1 Combo', 'key' => 'kobra-s1-03', 'mode' => 'agent', 'farm_agent_id' => $agent->id, 'enabled' => 1,
             'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.4, 'machine_profile' => 'machine.json',
             'process_profiles' => '{"draft":"process_draft.json","standard":"process_standard.json","fine":"process_fine.json"}',
             'machine_overrides' => '{"printable_height":"250"}', 'process_overrides' => '', 'time_factor' => 1.15, 'weight_factor' => 1.02,
             'slots' => [['color' => $color->id, 'remaining_g' => 800, 'enabled' => 1], ['color' => '', 'remaining_g' => 0]],
         ])->assertRedirect('/admin/farm/printers');
-        $second = FarmPrinter::where('key', 'kobra-s1-02')->firstOrFail();
+        $second = FarmPrinter::where('key', 'kobra-s1-03')->firstOrFail();
         $this->assertSame(1.15, $second->time_factor);
         $this->assertSame(['printable_height' => '250'], $second->machine_overrides);
         $this->assertTrue($second->slots()->where('slot', 0)->firstOrFail()->enabled);

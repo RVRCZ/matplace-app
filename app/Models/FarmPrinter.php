@@ -25,6 +25,9 @@ class FarmPrinter extends Model
 
     public const STATE_UNKNOWN = 'unknown';
 
+    /** The nozzle the shared profiles and the quality settings are written for. */
+    public const REFERENCE_NOZZLE_MM = 0.4;
+
     /** Build plates as OrcaSlicer names them (process setting curr_bed_type) → what the operator calls them. */
     public const BED_TYPES = [
         'Textured PEI Plate' => 'texturovaná PEI',
@@ -111,6 +114,19 @@ class FarmPrinter extends Model
         }
 
         return $this->isOnline() ? ($this->isAgentDriven() ? $this->state : 'manual') : 'offline';
+    }
+
+    /**
+     * The layer this machine really prints when the customer asks for a quality worth `$layer` on a 0.4 nozzle.
+     * A nozzle can lay down roughly three quarters of its width per layer, so the whole ladder moves with it:
+     * on a 0.2 mm nozzle the qualities 0.28/0.20/0.12 become 0.14/0.10/0.06.
+     */
+    public function layerFor(float $layer): float
+    {
+        $nozzle = (float) ($this->nozzle_mm ?: self::REFERENCE_NOZZLE_MM);
+        $scaled = round($layer * $nozzle / self::REFERENCE_NOZZLE_MM, 2);
+
+        return max(0.04, min($scaled, round(0.75 * $nozzle, 2)));
     }
 
     /** Would a model of this size go on the plate (turned any way round), keeping the bed margin? */
