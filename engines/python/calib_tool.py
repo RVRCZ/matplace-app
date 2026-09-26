@@ -14,6 +14,9 @@ kind:
 What a nozzle draws scales with it (param `nozzle`, 0.4 by default): the walls are counted in nozzle widths, the
 stringing pillars and the bond bar get thinner with it, and so does the raft-like base plate. The cube, the holes,
 the bridges and the overhang angles stay as they are: they measure the machine, not the nozzle.
+  ironing      one plate, about 10 minutes: a 30 x 30 mm plateau on a base barely larger than itself, for the
+               ironing settings alone (ironing is a setting of the whole print, so a big object would spend most of
+               its time polishing its own base plate)
   temp_tower   floors of 10 mm (params: floors 3-10); every floor carries a 14 mm bridge and a 45 degree overhang.
                The temperature per floor is written into the G-code by the web layer (App\\Domain\\Farm\\TowerGcode),
                floor 1 is the bottom one
@@ -55,12 +58,37 @@ def overhang_wedge(M, x, y, z, width, depth, height, angle_deg, along="y"):
     return (foot + top).hull()
 
 
+def skeleton_plate(M, parts, w, d, t, tiles=(), ribs_y=(), border=4.0, rib=4.0, margin=1.5):
+    """
+    The base the features stand on, as a frame with ribs and a pad under every feature instead of a solid slab.
+
+    A slab of 110 x 70 mm is six solid layers of surface nobody ever looks at. On a 0.2 mm nozzle that is nearly an
+    hour of printing, and with ironing switched on another hour of polishing it - while the plateau the ironing test
+    is actually about is one twentieth of that area. `tiles` are extra rectangles the object needs for itself (the
+    holes are drilled through one), `ribs_y` are bars across the plate that tie the rows of features to the frame.
+    """
+    def rect(x, y, rw, rd):
+        return M.CrossSection.square([rw, rd]).translate([x, y])
+
+    # the whole plate is drawn flat and extruded once: unioning the boxes in 3D leaves non-manifold edges
+    # wherever a rounded pad happens to touch a rib exactly tangentially, and the STL then reads as not watertight
+    flat = rect(0, 0, w, d) - rect(border, border, w - 2 * border, d - 2 * border)
+    for y in ribs_y:
+        flat += rect(0, y, w, rib)
+    for x, y, tw, td in tiles:
+        flat += rect(x, y, tw, td)
+    if not parts.is_empty():
+        flat += parts.project().offset(margin, M.JoinType.Round, 2.0)
+
+    return flat.simplify(1e-3).extrude(t)
+
+
 def quick(M, p):
     features = []
     n = nozzle_of(p)
     plate_t = round(3 * n, 2)
     plate_w, plate_d = 80.0, 50.0
-    solid = box(M, 0, 0, 0, plate_w, plate_d, plate_t)
+    solid = M.Manifold()
     z0 = plate_t
 
     # row A: cube, bridge, single wall, hole
@@ -79,7 +107,6 @@ def quick(M, p):
     features.append({"name": "thin_wall", "at": [62, 4], "thickness": wall_t, "lines": 2, "checks": ["single_wall"]})
 
     hole_d = 8.0
-    solid -= M.Manifold.cylinder(plate_t + 2, hole_d / 2, -1.0, 64).translate([72, 12, -1])
     features.append({"name": "hole", "at": [72, 12], "diameter": hole_d, "checks": ["hole_size"]})
 
     # row B: overhang fan and stringing pillars
@@ -96,6 +123,9 @@ def quick(M, p):
         solid += M.Manifold.cylinder(25, r, -1.0, 48).translate([x, 38, z0])
     features.append({"name": "stringing", "at": [[x, 38] for x in pillars], "height": 25, "radius": r, "checks": ["stringing"]})
 
+    solid += skeleton_plate(M, solid, plate_w, plate_d, plate_t, tiles=[(66, 5, 14, 16)], ribs_y=(10.0, 36.0))
+    solid -= M.Manifold.cylinder(plate_t + 2, hole_d / 2, -1.0, 64).translate([72, 12, -1])
+
     return solid, features
 
 
@@ -104,7 +134,7 @@ def detailed(M, p):
     n = nozzle_of(p)
     plate_t = round(3 * n, 2)
     plate_w, plate_d = 110.0, 70.0
-    solid = box(M, 0, 0, 0, plate_w, plate_d, plate_t)
+    solid = M.Manifold()
     z0 = plate_t
 
     # row A: cube, ironing plateau, two bridges, walls, holes
@@ -127,8 +157,6 @@ def detailed(M, p):
     features.append({"name": "thin_walls", "at": [64, 22], "thicknesses": walls, "lines": [1, 2, 3], "checks": ["single_wall"]})
 
     holes = ((84, 30, 3.0), (91, 30, 5.0), (100, 30, 8.0), (100, 44, 10.0))
-    for x, y, d in holes:
-        solid -= M.Manifold.cylinder(plate_t + 2, d / 2, -1.0, 64).translate([x, y, -1])
     features.append({"name": "holes", "at": [[x, y] for x, y, _ in holes], "diameters": [d for _, _, d in holes], "checks": ["hole_size"]})
 
     # row B: overhang fan, stringing pillars, bond bar
@@ -148,6 +176,28 @@ def detailed(M, p):
     bar_t = round(max(0.8, 7.5 * n), 2)
     solid += box(M, 100, 52, z0, bar_t, 12, 35)
     features.append({"name": "bond_bar", "at": [100, 52], "size": [bar_t, 12, 35], "checks": ["layer_bond"]})
+
+    solid += skeleton_plate(M, solid, plate_w, plate_d, plate_t, tiles=[(79, 22, 28, 29)], ribs_y=(24.0, 58.0))
+    for x, y, dia in holes:
+        solid -= M.Manifold.cylinder(plate_t + 2, dia / 2, -1.0, 64).translate([x, y, -1])
+
+    return solid, features
+
+
+def ironing(M, p):
+    """
+    Only the ironed plateau, on a base barely larger than itself.
+
+    Ironing is a setting of the whole print: Orca smooths every horizontal top surface it finds, so asking the
+    detailed test to iron its 30 x 30 plateau also irons its base plate - on a 0.2 mm nozzle three quarters of an
+    hour of polishing something nobody reads. Its own small object answers the same question in ten minutes.
+    """
+    n = nozzle_of(p)
+    plate_t = round(3 * n, 2)
+    side, plateau, wall = 34.0, 30.0, 3.0
+    solid = box(M, 0, 0, 0, side, side, plate_t)
+    solid += box(M, 2, 2, plate_t, plateau, plateau, wall)
+    features = [{"name": "ironing", "at": [2, 2], "size": [plateau, plateau], "checks": ["ironing", "top_surface"]}]
 
     return solid, features
 
@@ -180,7 +230,7 @@ def main(argv):
         p = json.loads(argv[3] if len(argv) > 3 and argv[3] else "{}")
         if isinstance(p, list) and not p:
             p = {}                                   # PHP encodes an empty parameter array as []
-        builders = {"quick": quick, "detailed": detailed, "temp_tower": temp_tower}
+        builders = {"quick": quick, "detailed": detailed, "ironing": ironing, "temp_tower": temp_tower}
         if kind not in builders or not isinstance(p, dict):
             raise ValueError("unknown_kind")
         solid, features = builders[kind](M, p)

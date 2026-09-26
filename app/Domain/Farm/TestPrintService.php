@@ -24,7 +24,10 @@ final class TestPrintService
 {
     public const OBJECTS = [
         'quick' => ['minutes' => 35, 'floors' => false, 'ironing' => false],
-        'detailed' => ['minutes' => 90, 'floors' => false, 'ironing' => true],
+        'detailed' => ['minutes' => 90, 'floors' => false, 'ironing' => false],
+        // ironing is a setting of the whole print, never of one surface: its own object keeps the big tests from
+        // spending most of their time polishing their base plate (three quarters of an hour on a 0.2 nozzle)
+        'ironing' => ['minutes' => 15, 'floors' => false, 'ironing' => true],
         'temp_tower' => ['minutes' => 60, 'floors' => true, 'ironing' => false],
     ];
 

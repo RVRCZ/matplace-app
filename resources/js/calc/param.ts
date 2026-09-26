@@ -48,7 +48,7 @@ export function bootParam(): void {
         return p;
     };
 
-    /** Browser-side range check: marks the field, the server checks again. */
+    /** Browser-side range check: marks the field, the server checks again. A required text (the sign's first line) counts too. */
     const fieldsOk = (): boolean => {
         let ok = true;
         form.querySelectorAll<HTMLInputElement>('[data-param]').forEach((i) => {
@@ -58,6 +58,14 @@ export function bootParam(): void {
             i.classList.toggle('border-red-600', bad);
             if (bad) ok = false;
         });
+        let textMissing = false;
+        form.querySelectorAll<HTMLInputElement>('[data-text][required]').forEach((i) => {
+            const bad = i.value.trim() === '';
+            i.setAttribute('aria-invalid', bad ? 'true' : 'false');
+            i.classList.toggle('border-red-600', bad);
+            if (bad) { ok = false; textMissing = true; }
+        });
+        if (textMissing) showError(t('param.text_required')); else if ($('param-error').textContent === t('param.text_required')) showError(null);
         return ok;
     };
 
@@ -159,7 +167,9 @@ export function bootParam(): void {
     };
 
     const post = (body: Record<string, unknown>) => fetch(cfg.preview, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) });
-    const firstError = (b: { message?: string; errors?: Record<string, string[]> }) => Object.values(b.errors ?? {})[0]?.[0] ?? b.message ?? t('param.failed');
+    // the server's first validation message, or our own words for a rate limit (Laravel's "Too Many Attempts." is English only)
+    const firstError = (b: { message?: string; errors?: Record<string, string[]> }, status = 0) => (status === 429 ? t('param.too_fast') : Object.values(b.errors ?? {})[0]?.[0] ?? b.message ?? t('param.failed'));
+    const errorOf = async (res: Response): Promise<string> => { try { return firstError(await res.json(), res.status); } catch { return firstError({}, res.status); } };
 
     const refresh = async (): Promise<void> => {
         if (!fieldsOk()) { valid = false; ($('param-go') as HTMLButtonElement).disabled = true; return; }
@@ -169,7 +179,7 @@ export function bootParam(): void {
             renderViews();
             const res = await post({ kind: cfg.kind, params: params(), view: 'use', part: viewPart });
             if (mine !== seq) return;                       // a newer change is already on its way
-            if (!res.ok) { valid = false; showError(firstError(await res.json())); return; }
+            if (!res.ok) { valid = false; showError(await errorOf(res)); return; }
             lastMeta = JSON.parse(res.headers.get('X-Model-Meta') ?? 'null');
             const regions = viewPart === 'all' ? ((lastMeta?.notes as { regions?: Region[] } | undefined)?.regions ?? null) : null;
             viewer.setGeometry(new STLLoader().parse(await res.arrayBuffer()), 1, cfg.kind, regions);
@@ -197,7 +207,7 @@ export function bootParam(): void {
                 b.disabled = true;
                 try {
                     const res = await post({ kind: cfg.kind, params: params(), part, download: true });
-                    if (!res.ok) { showError(firstError(await res.json())); return; }
+                    if (!res.ok) { showError(await errorOf(res)); return; }
                     const url = URL.createObjectURL(await res.blob());
                     const a = document.createElement('a');
                     a.href = url; a.download = `${cfg.kind.replace('_', '-')}${part === 'all' ? '' : `-${part}`}.stl`;
@@ -275,7 +285,7 @@ export function bootParam(): void {
                 const fd = new FormData(); fd.append('file', f);
                 const res = await fetch(cfg.artworkUrl, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: fd });
                 const body = await res.json();
-                if (!res.ok) { artwork = null; artworkState(firstError(body)); return; }
+                if (!res.ok) { artwork = null; artworkState(firstError(body, res.status)); return; }
                 artwork = body.artwork; artworkState(t('param.artwork.remove'), true); refresh();
             } catch { artwork = null; artworkState(t('param.artwork.failed')); }
         };
@@ -384,8 +394,8 @@ export function bootParam(): void {
         go.disabled = true; go.textContent = t('param.creating');
         try {
             const res = await fetch(cfg.create, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ kind: cfg.kind, params: params() }) });
+            if (!res.ok) { showError(await errorOf(res)); go.disabled = false; go.textContent = label; return; }
             const body = await res.json();
-            if (!res.ok) { showError(firstError(body)); go.disabled = false; go.textContent = label; return; }
             const bomNote = lastMeta ? bomText(lastMeta).join('; ') : '';
             const q = new URLSearchParams({ ...(bomNote ? { note: bomNote.slice(0, 900) } : {}), open: body.file.uuid, material: ($('param-material') as HTMLSelectElement).value, quantity: ($('param-qty') as HTMLInputElement).value || '1', color: ($('param-color') as HTMLSelectElement).value, ...(download ? { download: '1' } : {}) });
             location.href = `${cfg.home}?${q}`;

@@ -41,7 +41,7 @@
 
     <footer class="border-t border-slate-200 bg-white">
         <div class="mx-auto max-w-6xl px-4 py-6 text-center text-sm text-slate-500">
-            {{ __('footer.promise') }}
+            {{ \App\Support\NextStep::text('footer.promise') }}
             <nav class="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label="{{ __('privacy.title') }}">
                 <a href="{{ route('privacy') }}" class="underline hover:text-slate-900">{{ __('privacy.footer.privacy') }}</a>
                 <a href="{{ route('farm.terms') }}" class="underline hover:text-slate-900">{{ __('privacy.footer.terms') }}</a>

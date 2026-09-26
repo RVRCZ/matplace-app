@@ -6,7 +6,7 @@
     foreach (['units_tiny', 'units_huge', 'very_small', 'exceeds_bed', 'size_ok', 'parts_fit', 'part_exceeds_bed', 'too_thin', 'watertight_ok', 'not_watertight', 'flipped_normals', 'multiple_shells', 'heavy_mesh', 'very_coarse'] as $c) {
         $keys[] = 'check.'.$c; $keys[] = 'check.'.$c.'.impact';
     }
-    $i18n = collect($keys)->mapWithKeys(fn ($k) => [$k => __($k)])->all();
+    $i18n = collect($keys)->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k)])->all();
 @endphp
 
 @push('head')
@@ -33,7 +33,7 @@
         <div class="card overflow-hidden"><canvas id="check-viewer" class="block h-[40vh] w-full touch-none" role="img" aria-label="{{ __('param.viewer') }}"></canvas></div>
         <div>
             <div id="check-report" class="card p-5"></div>
-            <a id="check-go" href="{{ route('home') }}" class="btn-primary mt-3 w-full">{{ __('check.page.go') }}</a>
+            <a id="check-go" href="{{ route('home') }}" class="btn-primary mt-3 w-full">{{ \App\Support\NextStep::text('check.page.go') }}</a>
         </div>
     </div>
 </div>

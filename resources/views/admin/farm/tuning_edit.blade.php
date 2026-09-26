@@ -83,7 +83,7 @@
                     <label class="{{ $lb }}">Tryska (°C)<input type="number" name="t_nozzle_temp" value="{{ old('t_nozzle_temp') }}" placeholder="{{ $effective->temps['nozzle'] ?? '' }}" class="{{ $in }}"></label>
                     <label class="{{ $lb }}">Podložka (°C)<input type="number" name="t_bed_temp" value="{{ old('t_bed_temp') }}" placeholder="{{ $effective->temps['bed'] ?? '' }}" class="{{ $in }}"></label>
                 </div>
-                <label id="ironing-field" class="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" name="t_ironing" value="1" @checked(old('t_ironing', true)) class="h-4 w-4 accent-action"> Žehlit vrchní plochy (ironing) – plošina 30 × 30 mm ukáže, jak žehlení s tímto filamentem dopadá</label>
+                <label id="ironing-field" class="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" name="t_ironing" value="1" @checked(old('t_ironing', true)) class="h-4 w-4 accent-action"> Žehlit plošinu (ironing) – 30 × 30 mm ukáže, jak žehlení s tímto filamentem dopadá</label>
                 <div id="tower-fields" class="mt-3 grid gap-3 sm:grid-cols-3">
                     <label class="{{ $lb }}">Pater<input type="number" name="floors" min="3" max="10" value="{{ old('floors', 5) }}" class="{{ $in }}"></label>
                     <label class="{{ $lb }}">Spodní patro (°C)<input type="number" name="start" value="{{ old('start') }}" placeholder="auto" class="{{ $in }}"></label>
@@ -96,7 +96,7 @@
                 </div>
                 <button class="btn-primary mt-3 w-full text-sm">Vytisknout test</button>
                 <script>
-                    (function () { const s = document.getElementById('test-object'), t = document.getElementById('tower-fields'); const i = document.getElementById('ironing-field'); const f = () => { t.style.display = s.value === 'temp_tower' ? '' : 'none'; i.style.display = s.value === 'detailed' ? '' : 'none'; }; s.addEventListener('change', f); f(); })();
+                    (function () { const s = document.getElementById('test-object'), t = document.getElementById('tower-fields'); const i = document.getElementById('ironing-field'); const f = () => { t.style.display = s.value === 'temp_tower' ? '' : 'none'; i.style.display = s.value === 'ironing' ? '' : 'none'; }; s.addEventListener('change', f); f(); })();
                 </script>
             @endif
         </form>

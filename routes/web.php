@@ -71,34 +71,36 @@ Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr
 Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('kind', 'cable_holder')->name('tools.cable_holder');
 
 // ── JSON API used by the calculator ──────────────────────────────────────────
+// Every "throttle:N,1" below carries its own prefix: without one Laravel counts all of them on ONE key per visitor,
+// so a minute of live previews (90/min) would lock the create button (20/min) with "Too Many Attempts".
 Route::prefix('api')->name('api.')->group(function () {
     Route::get('config', [ConfigController::class, 'show'])->name('config');
     Route::post('uploads', [UploadController::class, 'store'])->middleware('throttle:uploads')->name('uploads.store');
     Route::get('files/{modelFile}', [UploadController::class, 'show'])->name('files.show');
     Route::get('files/{modelFile}/model.stl', [ModelFileController::class, 'stl'])->name('files.stl');
-    Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware('throttle:20,1')->name('files.project');
-    Route::post('files/{modelFile}/pedestal', [ModelFileController::class, 'pedestal'])->middleware('throttle:20,1')->name('files.pedestal');
-    Route::post('files/{modelFile}/mold', [ModelFileController::class, 'mold'])->middleware('throttle:20,1')->name('files.mold');
-    Route::post('files/{modelFile}/advice', [AdviceController::class, 'store'])->middleware('throttle:20,1')->name('files.advice');
+    Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware('throttle:20,1,project')->name('files.project');
+    Route::post('files/{modelFile}/pedestal', [ModelFileController::class, 'pedestal'])->middleware('throttle:20,1,pedestal')->name('files.pedestal');
+    Route::post('files/{modelFile}/mold', [ModelFileController::class, 'mold'])->middleware('throttle:20,1,mold')->name('files.mold');
+    Route::post('files/{modelFile}/advice', [AdviceController::class, 'store'])->middleware('throttle:20,1,advice')->name('files.advice');
     Route::get('advice/{token}', [AdviceController::class, 'show'])->name('advice.show');
     Route::get('printers', [ModelFileController::class, 'printers'])->name('printers');
     Route::post('calculations', [CalculationController::class, 'store'])->middleware('throttle:calculations')->name('calculations.store');
     Route::get('calculations/{calculation}', [CalculationController::class, 'show'])->name('calculations.show');
-    Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1')->name('search');
-    Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1')->name('describe');
-    Route::post('generate', [GenerationController::class, 'store'])->middleware('throttle:10,1')->name('generate.store');
+    Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1,search')->name('search');
+    Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1,describe')->name('describe');
+    Route::post('generate', [GenerationController::class, 'store'])->middleware('throttle:10,1,generate')->name('generate.store');
     Route::get('generate/{generation}', [GenerationController::class, 'show'])->name('generate.show');
-    Route::post('generate/{generation}/refine', [GenerationController::class, 'refine'])->middleware('throttle:10,1')->name('generate.refine');
-    Route::post('tools/sign', [ToolsApiController::class, 'sign'])->middleware('throttle:20,1')->name('tools.sign');
-    Route::post('tools/artwork', [ToolsApiController::class, 'artwork'])->middleware('throttle:30,1')->name('tools.artwork');
-    Route::post('tools/param/preview', [ToolsApiController::class, 'paramPreview'])->middleware('throttle:90,1')->name('tools.param.preview');
-    Route::post('tools/param', [ToolsApiController::class, 'paramCreate'])->middleware('throttle:20,1')->name('tools.param');
-    Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware('throttle:30,1')->name('tools.param.part');
-    Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1')->name('tools.relief');
-    Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware(['feature:marketplace', 'throttle:10,1'])->name('inquiries.store');
-    Route::post('spare-parts', [ApiInquiryController::class, 'spare'])->middleware(['feature:marketplace', 'throttle:6,1'])->name('spare');
+    Route::post('generate/{generation}/refine', [GenerationController::class, 'refine'])->middleware('throttle:10,1,refine')->name('generate.refine');
+    Route::post('tools/sign', [ToolsApiController::class, 'sign'])->middleware('throttle:20,1,sign')->name('tools.sign');
+    Route::post('tools/artwork', [ToolsApiController::class, 'artwork'])->middleware('throttle:30,1,artwork')->name('tools.artwork');
+    Route::post('tools/param/preview', [ToolsApiController::class, 'paramPreview'])->middleware('throttle:90,1,preview')->name('tools.param.preview');
+    Route::post('tools/param', [ToolsApiController::class, 'paramCreate'])->middleware('throttle:20,1,create')->name('tools.param');
+    Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware('throttle:30,1,part')->name('tools.param.part');
+    Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1,relief')->name('tools.relief');
+    Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware(['feature:marketplace', 'throttle:10,1,inquiry'])->name('inquiries.store');
+    Route::post('spare-parts', [ApiInquiryController::class, 'spare'])->middleware(['feature:marketplace', 'throttle:6,1,spare'])->name('spare');
     Route::get('threads/{thread}/messages', [ThreadController::class, 'messages'])->name('threads.messages');
-    Route::post('threads/{thread}/messages', [ThreadController::class, 'post'])->middleware('throttle:30,1')->name('threads.post');
+    Route::post('threads/{thread}/messages', [ThreadController::class, 'post'])->middleware('throttle:30,1,thread')->name('threads.post');
     Route::get('threads/{thread}/attachments/{message}', [ThreadController::class, 'attachment'])->name('threads.attachment');
 });
 
@@ -132,11 +134,11 @@ Route::view('/privacy', 'pages.privacy')->name('privacy');
 Route::middleware('auth')->group(function () {
     Route::get('/farm', [OrderController::class, 'start'])->name('farm.start');
     Route::get('/farm/orders', [OrderController::class, 'index'])->name('farm.orders');
-    Route::post('/farm/orders', [OrderController::class, 'store'])->middleware('throttle:20,1')->name('farm.orders.store');
+    Route::post('/farm/orders', [OrderController::class, 'store'])->middleware('throttle:20,1,farm_order')->name('farm.orders.store');
     Route::get('/farm/orders/{order}', [OrderController::class, 'show'])->name('farm.orders.show');
     Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
-    Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1')->name('farm.orders.reslice');
-    Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware('throttle:10,1')->name('farm.orders.pay');
+    Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
+    Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware('throttle:10,1,farm_pay')->name('farm.orders.pay');
     Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
     Route::get('/farm/orders/{order}/model.stl', [OrderController::class, 'model'])->name('farm.orders.model');
     Route::get('/farm/orders/{order}/supports.bin', [OrderController::class, 'supports'])->name('farm.orders.supports');
@@ -145,7 +147,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1')->name('farm.orders.video_consent');
 
     Route::get('/account/credit', [CreditController::class, 'index'])->name('account.credit');
-    Route::post('/account/credit', [CreditController::class, 'topUp'])->middleware('throttle:10,1')->name('account.credit.topup');
+    Route::post('/account/credit', [CreditController::class, 'topUp'])->middleware('throttle:10,1,topup')->name('account.credit.topup');
 });
 
 // ── Admin: farm operation and data ───────────────────────────────────────────

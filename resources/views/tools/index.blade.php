@@ -1,7 +1,8 @@
 @extends('layouts.app', ['title' => __('tools.title').' · matplace'])
 
 @php
-    $all = collect(config('tools'))->filter(fn ($t, $k) => $t['available'] && \Illuminate\Support\Facades\Route::has($t['route']) && ($k !== 'figure' || $generator));
+    // the spare-part inquiry needs printers to answer it: marketplace only, by the live switch (the admin toggles it at runtime)
+    $all = collect(config('tools'))->filter(fn ($t, $k) => $t['available'] && \Illuminate\Support\Facades\Route::has($t['route']) && ($k !== 'figure' || $generator) && ($k !== 'spare' || config('features.marketplace')));
     $by = fn (string $intent) => $all->filter(fn ($t) => $t['intent'] === $intent);
     $cats = ['gifts', 'home', 'signs', 'craft'];
     $card = function (string $key, array $t) {
@@ -14,8 +15,9 @@
     <h1 class="text-3xl font-extrabold text-ink">{{ __('tools.title') }}</h1>
     <p class="hint">{{ __('tools.lead') }}</p>
 
-    <nav aria-label="{{ __('tools.intents') }}" class="mt-4 grid gap-2 sm:grid-cols-3">
-        @foreach(['file' => '#have-file', 'create' => '#create', 'spare' => '#spare'] as $intent => $href)
+    @php $entrances = collect(['file' => '#have-file', 'create' => '#create', 'spare' => '#spare'])->filter(fn ($href, $intent) => $by($intent)->isNotEmpty()); @endphp
+    <nav aria-label="{{ __('tools.intents') }}" class="mt-4 grid gap-2 {{ $entrances->count() === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2' }}">
+        @foreach($entrances as $intent => $href)
             <a href="{{ $href }}" class="card flex items-center gap-3 p-4 hover:border-action">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-action-soft text-lg font-bold text-action-dark" aria-hidden="true">{{ ['file' => '1', 'create' => '2', 'spare' => '3'][$intent] }}</span>
                 <span><span class="block font-bold text-ink">{{ __('tools.intent.'.$intent) }}</span><span class="block text-sm text-muted">{{ __('tools.intent.'.$intent.'.hint') }}</span></span>
@@ -32,7 +34,7 @@
 
     <section id="create" class="mt-8 scroll-mt-4" aria-labelledby="h-create">
         <h2 id="h-create" class="text-xl font-bold text-ink">{{ __('tools.intent.create') }}</h2>
-        <p class="hint">{{ __('tools.create.lead') }}</p>
+        <p class="hint">{{ \App\Support\NextStep::text('tools.create.lead') }}</p>
         <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="{{ __('tools.filter') }}">
             <button type="button" class="chip chip-on" data-filter="all" aria-pressed="true">{{ __('tools.cat.all') }}</button>
             @foreach($cats as $c)
