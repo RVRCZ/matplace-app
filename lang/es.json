@@ -1175,5 +1175,16 @@
     "param.preset.pot": "Maceta",
     "param.error.vase_flutes_too_deep": "Unas estrías tan profundas con tantas nervaduras dejarían la pared más fina que una sola línea extruida. Redúzcalas, use menos nervaduras o una pared más gruesa.",
     "param.warn.thin_flutes": "Entre las estrías la pared es fina: se imprime como una sola línea. El jarrón será más frágil y retendrá peor el agua. Use una pared más gruesa o estrías menos profundas.",
-    "param.warn.steep_twist": "Con un giro tan fuerte las nervaduras se inclinan mucho respecto a la vertical. La impresora suele arreglárselas sin soportes, pero la superficie puede quedar más rugosa. Reduzca el giro si la quiere limpia."
+    "param.warn.steep_twist": "Con un giro tan fuerte las nervaduras se inclinan mucho respecto a la vertical. La impresora suele arreglárselas sin soportes, pero la superficie puede quedar más rugosa. Reduzca el giro si la quiere limpia.",
+    "advice.title": "Consejos de impresión",
+    "advice.lead": "La IA revisa la forma del modelo y le dice cómo orientarlo, si necesita soportes y a qué prestar atención.",
+    "advice.button": "Obtener consejos",
+    "advice.working": "Revisando el modelo, suele tardar menos de un minuto…",
+    "advice.failed": "No se pudo preparar el consejo. Inténtelo más tarde.",
+    "advice.daily_limit": "Se ha agotado el límite de consejos de hoy. Inténtelo mañana.",
+    "advice.unavailable": "Los consejos no están disponibles ahora.",
+    "advice.level.important": "Importante",
+    "advice.level.tip": "Consejo",
+    "advice.level.fine": "Bien",
+    "advice.disclaimer": "Los consejos los escribe una IA a partir de la geometría medida del modelo. Tómelos como recomendación, no como garantía."
 }

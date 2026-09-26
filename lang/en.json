@@ -1175,5 +1175,16 @@
     "param.preset.pot": "Plant pot",
     "param.error.vase_flutes_too_deep": "Flutes this deep with this many ribs would leave the wall thinner than a single extruded line. Make them shallower, use fewer ribs or a thicker wall.",
     "param.warn.thin_flutes": "Between the flutes the wall is thin: it prints as a single line. The vase will be more fragile and hold water less well. Use a thicker wall or shallower flutes.",
-    "param.warn.steep_twist": "With a twist this strong the ribs lean far off vertical. A printer usually manages without supports, but the surface can come out rougher. Reduce the twist if you want it clean."
+    "param.warn.steep_twist": "With a twist this strong the ribs lean far off vertical. A printer usually manages without supports, but the surface can come out rougher. Reduce the twist if you want it clean.",
+    "advice.title": "Printing advice",
+    "advice.lead": "AI looks at the shape of the model and tells you how to turn it, whether it needs supports and what to watch for.",
+    "advice.button": "Get printing advice",
+    "advice.working": "Looking at the model, this usually takes under a minute…",
+    "advice.failed": "The advice could not be prepared. Please try again later.",
+    "advice.daily_limit": "Today's limit for advice is used up. Please try again tomorrow.",
+    "advice.unavailable": "Advice is not available right now.",
+    "advice.level.important": "Important",
+    "advice.level.tip": "Tip",
+    "advice.level.fine": "Fine",
+    "advice.disclaimer": "The advice is written by AI from the measured geometry of the model. Take it as a recommendation, not a guarantee."
 }
