@@ -31,6 +31,16 @@ final class TestPrintService
     /** Ironing switched on for a test, with Orca's defaults where the row says nothing else. */
     public const IRONING = ['ironing_type' => 'top', 'ironing_flow' => '10%', 'ironing_speed' => '30', 'ironing_spacing' => '0.15'];
 
+    /**
+     * The same ironing for a machine with another nozzle. Orca's 0.15 mm spacing is a bit over a third of a 0.4
+     * nozzle's line; kept as it is on a 0.2 nozzle the passes would overlap twice as much and lay down far too much
+     * plastic, so the spacing follows the nozzle instead.
+     */
+    public static function ironingFor(float $nozzle): array
+    {
+        return ['ironing_spacing' => (string) round(0.375 * $nozzle, 3)] + self::IRONING;
+    }
+
     public const FLOOR_MM = 10.0;
 
     public function __construct(private readonly PythonTool $python) {}
@@ -71,7 +81,8 @@ final class TestPrintService
         $candidate['bed_temp'] = (int) ($candidate['bed_temp'] ?? $base->temps['bed'] ?? 0);
         if ($ironing && self::OBJECTS[$object]['ironing']) {
             // the plateau gets ironed; the row may already carry its own ironing flow / speed / spacing
-            $candidate['process'] = ['ironing_type' => self::IRONING['ironing_type']] + $candidate['process'] + self::IRONING;
+            $ironingDefaults = self::ironingFor((float) $printer->nozzle_mm);
+            $candidate['process'] = ['ironing_type' => $ironingDefaults['ironing_type']] + $candidate['process'] + $ironingDefaults;
         }
 
         $params = ['object' => $object, 'candidate' => $candidate, 'row_version' => $row->version, 'ironing' => $ironing && self::OBJECTS[$object]['ironing']];

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Farm\OrderService;
 use App\Domain\Farm\ProfileLibrary;
+use App\Domain\Farm\TestPrintService;
 use App\Engines\Contracts\Slicer;
 use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\SliceParams;
@@ -195,6 +196,15 @@ class FarmNozzleTest extends TestCase
         $this->assertNotEmpty(app(OrderService::class)->availableColors($order->fresh()));
         $order->update(['quality' => 'standard']);
         $this->assertEmpty(app(OrderService::class)->availableColors($order->fresh()), 'a coarser quality does not get this machine');
+    }
+
+    public function test_ironing_passes_move_closer_together_on_a_finer_nozzle(): void
+    {
+        $this->assertSame('0.15', TestPrintService::ironingFor(0.4)['ironing_spacing'], 'Orca default for the farm nozzle');
+        $this->assertSame('0.075', TestPrintService::ironingFor(0.2)['ironing_spacing']);
+        // the rest of the ironing settings stay as they are
+        $this->assertSame(TestPrintService::IRONING['ironing_flow'], TestPrintService::ironingFor(0.2)['ironing_flow']);
+        $this->assertSame('top', TestPrintService::ironingFor(0.2)['ironing_type']);
     }
 
     public function test_the_calibration_object_is_drawn_for_the_nozzle_of_its_machine(): void
