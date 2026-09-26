@@ -103,7 +103,7 @@ TXT;
 
         $messages = [['role' => 'user', 'content' => $content]];
         $crops = 0;
-        $usage = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_input_tokens' => 0];
+        $usage = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_input_tokens' => 0, 'cache_creation_input_tokens' => 0];
         $model = (string) ($this->config['inspect_model'] ?? 'claude-opus-5');
 
         for ($turn = 0; $turn < self::MAX_TURNS; $turn++) {
