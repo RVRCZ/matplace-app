@@ -71,15 +71,44 @@
                         <span id="status" class="font-medium text-slate-600">{{ __('calc.status.reading') }}</span>
                         <span id="status-spinner" class="h-4 w-4 animate-spin rounded-full border-2 border-action border-t-transparent"></span>
                     </div>
+                    @php
+                        // a price is shown with the marketplace and also when the farm's single list prices the model (calculator.ts farmPriced())
+                        $priced = $config['marketplace'] || (count($config['orientation_profiles']) === 1 && ($config['orientation_profiles'][0]['key'] ?? '') === 'farm');
+                    @endphp
                     <div class="mt-2 flex items-end gap-2">
                         <span id="price-main" class="text-4xl font-extrabold tracking-tight">—</span>
-                        @if($config['marketplace'])<span class="pb-1 text-slate-500">{{ $config['currency'] === 'CZK' ? 'Kč' : $config['currency'] }}</span>@else<span class="pb-1 text-slate-500">{{ __('calc.time') }}</span>@endif
+                        @if($priced)<span class="pb-1 text-slate-500">{{ $config['currency'] === 'CZK' ? 'Kč' : $config['currency'] }}</span>@else<span class="pb-1 text-slate-500">{{ __('calc.time') }}</span>@endif
                     </div>
                     <div id="price-sub" class="mt-1 text-sm text-slate-500"></div>
+
+                    {{-- size and quantity first: what the customer decides, right under the price they decide it by --}}
+                    <div class="mt-3 rounded-xl bg-slate-50 p-3">
+                        <div class="flex items-baseline justify-between gap-2">
+                            <span class="text-sm font-semibold text-slate-700">{{ __('calc.size.title') }}</span>
+                            <span id="scale-val" class="text-sm font-semibold text-action-dark">100 %</span>
+                        </div>
+                        <p id="size-generated" class="mt-1 hidden text-xs text-action-dark">{{ __('calc.size.generated') }}</p>
+                        <div class="mt-2 grid grid-cols-3 gap-2">
+                            @foreach(['x', 'y', 'z'] as $axis)
+                                <label class="text-xs font-semibold text-slate-600">{{ __('calc.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
+                                    <input id="size-{{ $axis }}" type="number" inputmode="decimal" min="1" step="1" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-ink">
+                                </label>
+                            @endforeach
+                        </div>
+                        <input id="scale" type="range" min="25" max="{{ (int) ($config['max_scale'] * 100) }}" step="5" value="100" class="mt-2 w-full accent-action" aria-label="{{ __('calc.scale') }}">
+                        <p class="mt-1 text-xs text-slate-500">{{ __('calc.size.hint') }} <span id="size-limit" class="hidden text-amber-700">{{ __('calc.size.limit', ['n' => rtrim(rtrim(number_format($config['max_scale'], 1, ',', ''), '0'), ',')]) }}</span></p>
+                        <div class="mt-3 grid grid-cols-[6rem_1fr] items-end gap-3">
+                            <label class="text-sm font-semibold text-slate-700">{{ __('calc.quantity') }}
+                                <input id="quantity" type="number" min="1" max="1000" value="1" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
+                            </label>
+                            <p id="bed-fit" class="pb-2 text-xs text-slate-500" aria-live="polite"></p>
+                        </div>
+                    </div>
+
                     <dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
                         <div><dt class="text-slate-500">{{ __('calc.weight') }}</dt><dd id="stat-grams" class="font-semibold">—</dd></div>
-                        <div><dt class="text-slate-500">{{ $config['marketplace'] ? __('calc.time') : __('calc.facts.length') }}</dt><dd id="stat-time" class="font-semibold">—</dd></div>
-                        <div><dt class="text-slate-500">{{ $config['marketplace'] ? __('calc.lead') : __('calc.facts.layers') }}</dt><dd id="stat-lead" class="font-semibold">—</dd></div>
+                        <div><dt class="text-slate-500">{{ $priced ? __('calc.time') : __('calc.facts.length') }}</dt><dd id="stat-time" class="font-semibold">—</dd></div>
+                        <div><dt class="text-slate-500">{{ $priced ? __('calc.lead') : __('calc.facts.layers') }}</dt><dd id="stat-lead" class="font-semibold">—</dd></div>
                     </dl>
                     <ul id="warnings" class="mt-3 space-y-1 text-sm text-amber-700"></ul>
                     <details class="mt-3 text-sm"><summary class="cursor-pointer text-action-dark">{{ __('check.title') }}</summary><div id="model-check" class="mt-2 hidden rounded-xl bg-slate-50 p-3"></div><div id="model-advice"></div></details>
@@ -161,23 +190,7 @@
                 </div>
 
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                    {{-- size first: a generated model has no size of its own, and for every model this is what the customer checks first --}}
-                    <div class="text-sm font-semibold text-slate-700">{{ __('calc.size.title') }}</div>
-                    <p id="size-generated" class="mt-1 hidden text-xs text-action-dark">{{ __('calc.size.generated') }}</p>
-                    <div class="mt-2 grid grid-cols-3 gap-2">
-                        @foreach(['x', 'y', 'z'] as $axis)
-                            <label class="text-xs font-semibold text-slate-600">{{ __('calc.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
-                                <input id="size-{{ $axis }}" type="number" inputmode="decimal" min="1" step="1" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-semibold text-ink">
-                            </label>
-                        @endforeach
-                    </div>
-                    <div class="mt-2 flex items-center gap-3">
-                        <input id="scale" type="range" min="25" max="{{ (int) ($config['max_scale'] * 100) }}" step="5" value="100" class="w-full accent-action" aria-label="{{ __('calc.scale') }}">
-                        <span id="scale-val" class="w-14 shrink-0 text-right text-sm font-semibold text-action-dark">100 %</span>
-                    </div>
-                    <p class="mt-1 text-xs text-slate-500">{{ __('calc.size.hint') }} <span id="size-limit" class="hidden text-amber-700">{{ __('calc.size.limit', ['n' => rtrim(rtrim(number_format($config['max_scale'], 1, ',', ''), '0'), ',')]) }}</span></p>
-
-                    <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('calc.material') }}</div>
+                    <div class="text-sm font-semibold text-slate-700">{{ __('calc.material') }}</div>
                     <div id="materials" class="mt-2 flex flex-wrap gap-2"></div>
                     <p id="material-hint" class="mt-1 text-xs text-slate-500"></p>
 
@@ -193,12 +206,6 @@
                     </div>
                     <input id="infill" type="range" min="5" max="100" step="5" value="15" class="mt-1 w-full accent-action">
                     <div class="flex justify-between text-xs text-slate-500"><span>{{ __('calc.infill.light') }}</span><span>{{ __('calc.infill.solid') }}</span></div>
-
-                    <div class="mt-4 grid grid-cols-2 gap-3">
-                        <label class="text-sm font-semibold text-slate-700">{{ __('calc.quantity') }}
-                            <input id="quantity" type="number" min="1" max="1000" value="1" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal">
-                        </label>
-                    </div>
 
                     <details class="mt-3 text-sm">
                         <summary class="cursor-pointer text-action-dark">{{ __('calc.more') }}</summary>

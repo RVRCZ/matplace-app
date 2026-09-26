@@ -1236,5 +1236,7 @@
     "calc.size.y": "Depth",
     "calc.size.z": "Height",
     "calc.size.generated": "A generated model has no size of its own: set how big the print should be.",
-    "calc.size.limit": "Enlargement is limited to :n × the original size; reduction to 25 %."
+    "calc.size.limit": "Enlargement is limited to :n × the original size; reduction to 25 %.",
+    "calc.fit.bed": "Up to :n pieces fit on a :b plate at once.",
+    "calc.fit.none": "The model does not fit a :b plate; make it smaller."
 }

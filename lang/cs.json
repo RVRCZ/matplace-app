@@ -1236,5 +1236,7 @@
     "calc.size.y": "Hloubka",
     "calc.size.z": "Výška",
     "calc.size.generated": "Vygenerovaný model nemá vlastní měřítko: nastavte, jak velký má výtisk být.",
-    "calc.size.limit": "Zvětšení je omezeno na :n × původní velikosti; zmenšení na 25 %."
+    "calc.size.limit": "Zvětšení je omezeno na :n × původní velikosti; zmenšení na 25 %.",
+    "calc.fit.bed": "Na podložku :b se vejde až :n ks najednou.",
+    "calc.fit.none": "Model se na podložku :b nevejde, zmenšete ho."
 }

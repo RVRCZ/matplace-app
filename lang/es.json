@@ -1236,5 +1236,7 @@
     "calc.size.y": "Profundidad",
     "calc.size.z": "Alto",
     "calc.size.generated": "Un modelo generado no tiene tamaño propio: indique lo grande que debe ser la impresión.",
-    "calc.size.limit": "La ampliación se limita a :n × el tamaño original; la reducción al 25 %."
+    "calc.size.limit": "La ampliación se limita a :n × el tamaño original; la reducción al 25 %.",
+    "calc.fit.bed": "En una placa de :b caben hasta :n piezas a la vez.",
+    "calc.fit.none": "El modelo no cabe en una placa de :b; redúzcalo."
 }

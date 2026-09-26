@@ -85,6 +85,23 @@ function renderSize(): void {
     const val = document.getElementById('scale-val');
     if (val) val.textContent = `${Math.round(s * 100)} %`;
     document.getElementById('size-generated')?.classList.toggle('hidden', state.file?.kind !== 'generated');
+    const fit = document.getElementById('bed-fit');
+    if (fit) {
+        const n = b ? piecesOnBed({ x: b.x * s, y: b.y * s, z: b.z * s }) : null;
+        const bed = cfg.bed_mm ? `${fmt.format(cfg.bed_mm.x)} × ${fmt.format(cfg.bed_mm.y)} mm` : '';
+        fit.textContent = n === null ? '' : n > 0 ? t('calc.fit.bed', { n, b: bed }) : t('calc.fit.none', { b: bed });
+        fit.classList.toggle('text-amber-700', n === 0);
+    }
+}
+
+/** How many copies fit on the smaller farm printer's plate at once (5 mm apart, either way round); 0 when one does not fit. */
+function piecesOnBed(d: { x: number; y: number; z: number }): number | null {
+    const bed = cfg.bed_mm;
+    if (!bed || !(d.x > 0 && d.y > 0)) return null;
+    if (d.z > bed.z) return 0;
+    const gap = 5;
+    const along = (size: number, room: number) => Math.floor((room + gap) / (size + gap));
+    return Math.max(along(d.x, bed.x) * along(d.y, bed.y), along(d.y, bed.x) * along(d.x, bed.y));
 }
 
 /** One dimension typed in millimetres → the whole model scales to it (within the allowed range). */
