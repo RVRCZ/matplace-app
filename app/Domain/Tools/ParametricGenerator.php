@@ -8,6 +8,7 @@ use App\Jobs\ProcessModelFile;
 use App\Models\AnonymousSession;
 use App\Models\ModelFile;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -122,6 +123,26 @@ final class ParametricGenerator
     public function available(): bool
     {
         return $this->python->available();
+    }
+
+    /**
+     * Parts printed separately (the box and its lid, the four parts of an illuminated sign…); [] when the product is one body.
+     *
+     * @return list<string>
+     */
+    public static function partsOf(string $kind, array $p): array
+    {
+        return match ($kind) {
+            'box' => ! empty($p['lid']) ? ['body', 'lid'] : [],
+            'vase' => ($p['purpose'] ?? '') === 'pot' && ! empty($p['saucer']) ? ['body', 'saucer'] : [],
+            'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
+            'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
+            'sign' => ! empty($p['two_color']) && ($p['style'] ?? 'emboss') !== 'engrave' ? ['plate', 'text'] : [],
+            'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
+            'lightbox' => ['body', 'face', 'diffuser', 'back'],
+            'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
+            default => [],
+        };
     }
 
     /** Laravel rules for one kind (used by the API; the same numbers are printed into the form as min/max). */
@@ -259,7 +280,7 @@ final class ParametricGenerator
     }
 
     /** Uploaded SVG or picture → a reference the form sends along with the numbers. */
-    public static function storeArtwork(\Illuminate\Http\UploadedFile $file): string
+    public static function storeArtwork(UploadedFile $file): string
     {
         $id = (string) Str::uuid();
         $ext = strtolower($file->getClientOriginalExtension()) === 'svg' ? 'svg' : (['image/png' => 'png', 'image/webp' => 'webp'][$file->getMimeType()] ?? 'jpg');
@@ -290,6 +311,16 @@ final class ParametricGenerator
         if (! empty($clean['artwork']) && ($src = self::artworkPath($clean['artwork']))) {
             File::copy($src, dirname($abs).'/artwork.'.pathinfo($src, PATHINFO_EXTENSION));
             $clean['artwork'] = 'file:'.$uuid;
+        }
+
+        // what has to fit a printer is each part alone, not the plate they are laid out on: the check reads these sizes
+        $parts = array_diff(self::partsOf($kind, $clean), ['all']);
+        if ($parts && $kind !== 'modular') {
+            foreach ($parts as $part) {
+                $one = $this->build($kind, $clean, $part);
+                @unlink($one['path']);
+                $clean['parts_bbox'][$part] = [(float) $one['meta']['bbox']['x'], (float) $one['meta']['bbox']['y'], (float) $one['meta']['bbox']['z']];
+            }
         }
 
         $o = $built['meta']['notes']['outer'] ?? [$built['meta']['bbox']['x'], $built['meta']['bbox']['y'], $built['meta']['bbox']['z']];

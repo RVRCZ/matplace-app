@@ -291,36 +291,47 @@ def sign(M, Invalid, p):
     if shape == "oval":
         pw, ph = pw * 1.12, ph * 1.25
         plate2d = C.circle(1.0, 128).scale([pw / 2, ph / 2]).translate([pw / 2, ph / 2])
-        rim2d = plate2d - C.circle(1.0, 128).scale([pw / 2 - rim, ph / 2 - rim]).translate([pw / 2, ph / 2]) if rim else None
+        inner2d = C.circle(1.0, 128).scale([pw / 2 - rim, ph / 2 - rim]).translate([pw / 2, ph / 2]) if rim else None
     else:
         r = 0.0 if shape == "rect" else min(radius, min(pw, ph) / 2 - 0.5)
         plate2d = S.rounded_rect(M, pw, ph, r)
-        rim2d = plate2d - S.rounded_rect(M, pw - 2 * rim, ph - 2 * rim, max(0.0, r - rim)).translate([rim, rim]) if rim else None
+        inner2d = S.rounded_rect(M, pw - 2 * rim, ph - 2 * rim, max(0.0, r - rim)).translate([rim, rim]) if rim else None
+    rim2d = plate2d - inner2d if inner2d is not None else None
     motif = S.centre_on(art, pw, ph)
     plate = plate2d.extrude(t)
-    if bevel:
+    if rim2d is not None:
+        # the rim is the plate's own outline carried up and a pocket taken out of the top: never a second body glued onto the
+        # same outer wall (that union left slivers along the edge and the STL was not watertight). The rim is the edge treatment,
+        # so a bevel is not applied together with it.
+        body = plate2d.extrude(t + relief) - inner2d.extrude(relief + 1).translate([0, 0, t])
+    elif bevel:
         # a soft top edge in four 0.2 mm steps: printed in 0.2 mm layers that IS a chamfer
         c = min(0.8, t * 0.3)
         plate = plate2d.extrude(t - c)
         for i in range(4):
             plate = plate + plate2d.offset(-c * (i + 1) / 4, M.JoinType.Round, 2.0, 16).extrude(c / 4 + 0.01).translate([0, 0, t - c + c * i / 4])
+        body = plate
+    else:
+        body = plate
     tab_note = {}
     if keyring:
         r_out = max(5.0, ph * 0.28)
         r_in = max(2.0, r_out * 0.45)
         cx = -r_out * 0.35
-        plate = plate + C.circle(r_out, 64).translate([cx, ph / 2]).extrude(t)
-        plate = plate - M.Manifold.cylinder(t + 2, r_in, r_in, 48).translate([cx, ph / 2, -1])
+        tab = C.circle(r_out, 64).translate([cx, ph / 2]).extrude(t)
+        hole = M.Manifold.cylinder(t + 2, r_in, r_in, 48).translate([cx, ph / 2, -1])
+        plate = plate + tab - hole
+        body = body + tab - hole
         tab_note = {"tab": round(r_out * 0.65, 1)}
     if style == "engrave":
-        body = plate - motif.extrude(relief + 1).translate([0, 0, t - relief])
+        body = body - motif.extrude(relief + 1).translate([0, 0, t - relief])
         parts = {"all": body}
     else:
         raised = motif.extrude(relief).translate([0, 0, t - 0.01])
-        if rim2d is not None:
-            raised = raised + rim2d.extrude(relief).translate([0, 0, t - 0.01])
-        parts = {"all": plate + raised}
+        parts = {"all": body + raised}
         if two:
+            if rim2d is not None:
+                raised = raised + rim2d.extrude(relief).translate([0, 0, t - 0.01])
             parts["plate"] = plate
             parts["text"] = raised.translate([0, 0, -(t - 0.01)])
     x0 = -tab_note.get("tab", 0) * 0 - (max(5.0, ph * 0.28) * 1.35 if keyring else 0.0)

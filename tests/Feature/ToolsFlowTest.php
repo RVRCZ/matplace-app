@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Tools\ModelCheck;
+use App\Domain\Tools\ParametricGenerator;
+use App\Models\ModelFile;
 use App\Support\NextStep;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
@@ -40,7 +43,8 @@ class ToolsFlowTest extends TestCase
         // the visitor's language comes from the request (?lang, cookie, Accept-Language), so the expectation names it too
         $first = fn (array $body, string $field, string $lang = 'cs') => $this->postJson('/api/tools/param/preview?lang='.$lang, $body)->assertStatus(422)->json('errors')[$field][0] ?? null;
         $this->assertSame(__('param.text_required', [], 'cs'), $first(['kind' => 'sign', 'params' => ['line1' => '']], 'params.line1'));
-        $this->assertSame(__('param.error.qr_bad_text', [], 'es'), $first(['kind' => 'qr', 'params' => []], 'params.url', 'es'));        $this->assertSame(__('param.error.text_too_long', ['n' => 40], 'en'), $first(['kind' => 'sign', 'params' => ['line1' => str_repeat('x', 41)]], 'params.line1', 'en'));
+        $this->assertSame(__('param.error.qr_bad_text', [], 'es'), $first(['kind' => 'qr', 'params' => []], 'params.url', 'es'));
+        $this->assertSame(__('param.error.text_too_long', ['n' => 40], 'en'), $first(['kind' => 'sign', 'params' => ['line1' => str_repeat('x', 41)]], 'params.line1', 'en'));
         $this->assertSame(__('param.error.out_of_range', ['n' => __('param.f.width', [], 'cs')], 'cs'), $first(['kind' => 'organizer', 'params' => ['width' => 5000]], 'params.width'));
         $this->assertStringNotContainsString('field', (string) $first(['kind' => 'sign', 'params' => ['line1' => '']], 'params.line1', 'en'));
     }
@@ -83,6 +87,29 @@ class ToolsFlowTest extends TestCase
                 }
             }
         }
+    }
+
+    public function test_multi_part_products_are_judged_by_their_biggest_part(): void
+    {
+        // an illuminated sign 180 mm wide lays its four parts side by side on a 363 mm plate; each part fits a 250 mm printer
+        $set = new ModelFile([
+            'status' => ModelFile::STATUS_READY, 'stl_path' => 'x.stl', 'bbox' => ['x' => 363.5, 'y' => 135.7, 'z' => 35], 'mesh_report' => ['watertight' => true, 'shells' => 4],
+            'origin' => 'tool', 'origin_ref' => 'lightbox', 'tool_params' => ['width' => 180, 'parts_bbox' => ['body' => [184, 62.2, 35], 'face' => [184, 62.2, 1.2], 'diffuser' => [180, 58, 1], 'back' => [180, 58, 2]]],
+        ]);
+        $report = ModelCheck::report($set);
+        $this->assertSame('ok', $report['status']);
+        $this->assertSame('parts_fit', $report['items'][0]['code']);
+        $this->assertStringStartsWith('184 × 62.2 × 35', $report['items'][0]['params']['size']);
+
+        $set->tool_params = ['width' => 300, 'parts_bbox' => ['body' => [304, 62.2, 35], 'face' => [304, 62.2, 1.2]]];
+        $this->assertSame('part_exceeds_bed', ModelCheck::report($set)['items'][0]['code']);
+
+        // the same layout without stored part sizes (older designs) is still judged as one plate
+        $set->tool_params = ['width' => 180];
+        $this->assertSame('exceeds_bed', ModelCheck::report($set)['items'][0]['code']);
+        $this->assertSame(['body', 'face', 'diffuser', 'back'], ParametricGenerator::partsOf('lightbox', []));
+        $this->assertSame([], ParametricGenerator::partsOf('box', ['lid' => false]));
+        $this->assertSame(['body', 'lid'], ParametricGenerator::partsOf('box', ['lid' => true]));
     }
 
     public function test_tool_pages_address_the_visitor_formally(): void

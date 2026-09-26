@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Tools\ModelCheck;
+use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessModelFile;
 use App\Models\ModelFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -64,26 +67,14 @@ class UploadController extends Controller
     /** Products that consist of several printed parts offer each one as its own download. */
     private static function partsOf(ModelFile $f): array
     {
-        $p = (array) $f->tool_params;
-
-        return match ($f->kind()) {
-            'box' => ! empty($p['lid']) ? ['body', 'lid'] : [],
-            'vase' => ($p['purpose'] ?? '') === 'pot' && ! empty($p['saucer']) ? ['body', 'saucer'] : [],
-            'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
-            'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
-            'sign' => ! empty($p['two_color']) && ($p['style'] ?? 'emboss') !== 'engrave' ? ['plate', 'text'] : [],
-            'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
-            'lightbox' => ['body', 'face', 'diffuser', 'back'],
-            'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
-            default => [],
-        };
+        return $f->origin === 'tool' ? ParametricGenerator::partsOf((string) $f->origin_ref, (array) $f->tool_params) : [];
     }
 
     /** The tool page this design came from; the page reopens with the same settings. Our own geometry, so changing it costs nothing. */
     private static function toolOf(ModelFile $f): ?array
     {
         $route = 'tools.'.(in_array($f->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : $f->origin_ref);
-        if ($f->origin !== 'tool' || ! is_array($f->tool_params) || ! \Illuminate\Support\Facades\Route::has($route)) {
+        if ($f->origin !== 'tool' || ! is_array($f->tool_params) || ! Route::has($route)) {
             return null;
         }
         // older reliefs stored only the stand flag: nothing to reopen
@@ -117,7 +108,7 @@ class UploadController extends Controller
             'tool' => self::toolOf($f),
             'stl_url' => $f->stl_path ? route('api.files.stl', $f->uuid) : null,
             'kind' => $f->kind(),
-            'check' => \App\Domain\Tools\ModelCheck::report($f),
+            'check' => ModelCheck::report($f),
             'hints' => $f->printHints(),
             'generation' => $f->generationInfo(),
         ];

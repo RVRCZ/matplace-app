@@ -56,6 +56,7 @@
     </section>
     @endif
 
+    @if(config('features.marketplace'))
     <section class="mt-10 rounded-2xl border border-line bg-card p-5" aria-labelledby="h-printers">
         <div class="grid items-center gap-5 sm:grid-cols-[220px_1fr_auto]">
             <div class="overflow-hidden rounded-2xl">@include('tools.picture', ['key' => 'printer_tools', 'sizes' => '(min-width: 640px) 220px, 100vw'])</div>
@@ -71,6 +72,7 @@
             @endauth
         </div>
     </section>
+    @endif
 </div>
 
 <script>
