@@ -1229,5 +1229,12 @@
     "relief.step.model": "Model a cena",
     "figure.step.photo": "Fotka a podstavec",
     "figure.step.model": "Model a cena",
-    "figure.step.wait": "Model vzniká asi minutu, zůstaňte prosím na stránce."
+    "figure.step.wait": "Model vzniká asi minutu, zůstaňte prosím na stránce.",
+    "calc.size.title": "Velikost výtisku",
+    "calc.size.hint": "Přepište kterýkoli rozměr, ostatní se změní ve stejném poměru.",
+    "calc.size.x": "Šířka",
+    "calc.size.y": "Hloubka",
+    "calc.size.z": "Výška",
+    "calc.size.generated": "Vygenerovaný model nemá vlastní měřítko: nastavte, jak velký má výtisk být.",
+    "calc.size.limit": "Zvětšení je omezeno na :n × původní velikosti; zmenšení na 25 %."
 }

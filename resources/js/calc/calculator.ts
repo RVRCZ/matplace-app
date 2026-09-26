@@ -61,6 +61,44 @@ function setStatus(key: string, spinning: boolean): void {
     $('status-spinner').classList.toggle('hidden', !spinning);
 }
 
+/** The model as stored (scale 1): measured in the browser, or what the server measured. */
+function nativeBbox(): { x: number; y: number; z: number } | null {
+    return state.geo?.bbox ?? state.file?.bbox ?? null;
+}
+
+const SCALE_MIN = 0.25;
+
+/**
+ * Size block: the three dimensions in millimetres as they will print, the slider and the percentage behind them.
+ * A field the visitor is typing into is left alone.
+ */
+function renderSize(): void {
+    const b = nativeBbox();
+    const s = state.params.scale;
+    const mm = (v: number) => (v < 10 ? String(Math.round(v * 10) / 10) : String(Math.round(v)));
+    (['x', 'y', 'z'] as const).forEach((axis) => {
+        const el = document.getElementById(`size-${axis}`) as HTMLInputElement | null;
+        if (el && document.activeElement !== el) el.value = b ? mm(b[axis] * s) : '';
+    });
+    const slider = document.getElementById('scale') as HTMLInputElement | null;
+    if (slider && document.activeElement !== slider) slider.value = String(Math.round(s * 100));
+    const val = document.getElementById('scale-val');
+    if (val) val.textContent = `${Math.round(s * 100)} %`;
+    document.getElementById('size-generated')?.classList.toggle('hidden', state.file?.kind !== 'generated');
+}
+
+/** One dimension typed in millimetres → the whole model scales to it (within the allowed range). */
+function sizeTyped(axis: 'x' | 'y' | 'z', wanted: number): void {
+    const b = nativeBbox();
+    if (!b || !(b[axis] > 0) || !(wanted > 0)) { renderSize(); return; }
+    const raw = wanted / b[axis];
+    const max = cfg.max_scale || 4;
+    const clamped = Math.min(max, Math.max(SCALE_MIN, raw));
+    document.getElementById('size-limit')?.classList.toggle('hidden', clamped === raw);
+    state.params.scale = Math.round(clamped * 1000) / 1000;
+    onParamsChanged();
+}
+
 /** Rough numbers from browser geometry — under a second, on every slider move. */
 function renderRough(): void {
     const g = state.geo ?? (state.file && state.file.volume_mm3 != null ? { volume_mm3: state.file.volume_mm3, area_mm2: state.file.area_mm2, bbox: state.file.bbox!, triangles: 0 } : null);
@@ -70,6 +108,7 @@ function renderRough(): void {
     const q = state.params.quantity;
     const s = state.params.scale;
     $('dims-badge').textContent = `${fmt.format(g.bbox.x * s)} × ${fmt.format(g.bbox.y * s)} × ${fmt.format(g.bbox.z * s)} mm`;
+    renderSize();
     $('stat-grams').textContent = `≈ ${fmt.format(est.grams * q)} g`;
     $('stat-time').textContent = `≈ ${minutesText(est.minutes * q)}`;
     if (!marketplace() && !farmPriced()) {
@@ -376,7 +415,13 @@ function bindControls(): void {
     const qty = $('quantity') as HTMLInputElement;
     qty.onchange = () => { state.params.quantity = Math.max(1, Math.min(1000, Number(qty.value) || 1)); qty.value = String(state.params.quantity); onParamsChanged(); };
     const scale = $('scale') as HTMLInputElement;
-    scale.oninput = () => { state.params.scale = Number(scale.value) / 100; $('scale-val').textContent = `${scale.value} %`; onParamsChanged(); };
+    scale.oninput = () => { state.params.scale = Number(scale.value) / 100; $('scale-val').textContent = `${scale.value} %`; document.getElementById('size-limit')?.classList.add('hidden'); onParamsChanged(); };
+    (['x', 'y', 'z'] as const).forEach((axis) => {
+        const el = document.getElementById(`size-${axis}`) as HTMLInputElement | null;
+        if (!el) return;
+        el.onchange = () => sizeTyped(axis, Number(el.value));
+        el.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } };
+    });
 
     const input = $('file-input') as HTMLInputElement;
     input.onchange = () => { if (input.files?.[0]) handleFile(input.files[0]); input.value = ''; };
@@ -536,11 +581,11 @@ async function restore(c: CalcInfo): Promise<void> {
     };
     ($('infill') as HTMLInputElement).value = String(state.params.infill); $('infill-val').textContent = `${state.params.infill} %`;
     ($('quantity') as HTMLInputElement).value = String(state.params.quantity);
-    ($('scale') as HTMLInputElement).value = String(Math.round(state.params.scale * 100)); $('scale-val').textContent = `${Math.round(state.params.scale * 100)} %`;
     $('quality').querySelectorAll<HTMLElement>('.seg').forEach((s) => s.classList.toggle('seg-on', s.dataset.quality === state.params.quality));
     buildMaterials();
     state.calc = c; state.file = c.file;
     syncControls();
+    renderSize();
     showKindTip(c.file?.kind);
     showResult();
     $('file-badge').textContent = c.file?.name ?? '';

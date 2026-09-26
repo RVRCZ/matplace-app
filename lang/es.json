@@ -1229,5 +1229,12 @@
     "relief.step.model": "Modelo y precio",
     "figure.step.photo": "Foto y peana",
     "figure.step.model": "Modelo y precio",
-    "figure.step.wait": "El modelo tarda alrededor de un minuto; permanezca en la página."
+    "figure.step.wait": "El modelo tarda alrededor de un minuto; permanezca en la página.",
+    "calc.size.title": "Tamaño de la impresión",
+    "calc.size.hint": "Cambie cualquier medida; las demás siguen en la misma proporción.",
+    "calc.size.x": "Ancho",
+    "calc.size.y": "Profundidad",
+    "calc.size.z": "Alto",
+    "calc.size.generated": "Un modelo generado no tiene tamaño propio: indique lo grande que debe ser la impresión.",
+    "calc.size.limit": "La ampliación se limita a :n × el tamaño original; la reducción al 25 %."
 }

@@ -112,6 +112,17 @@ class ToolsFlowTest extends TestCase
         $this->assertSame(['body', 'lid'], ParametricGenerator::partsOf('box', ['lid' => true]));
     }
 
+    public function test_calculator_shows_the_print_size_in_millimetres_before_anything_else(): void
+    {
+        $page = $this->get('/?lang=cs')->assertOk();
+        $page->assertSee(__('calc.size.title', [], 'cs'))->assertSee('id="size-x"', false)->assertSee('id="size-z"', false)->assertSee('id="scale"', false);
+        $html = $page->getContent();
+        $this->assertLessThan(strpos($html, 'id="materials"'), strpos($html, 'id="size-x"'), 'the size block comes before the material');
+        foreach (['cs', 'en', 'es'] as $lang) {
+            $this->assertNotSame('calc.size.generated', __('calc.size.generated', [], $lang));
+        }
+    }
+
     public function test_tool_pages_address_the_visitor_formally(): void
     {
         $this->get('/tools/figure?lang=cs')->assertOk()->assertSee('Vyberte nebo vyfoťte fotku')->assertDontSee('Zkus ');

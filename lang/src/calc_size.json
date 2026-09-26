@@ -1,0 +1,9 @@
+{
+    "calc.size.title": ["Velikost výtisku", "Print size", "Tamaño de la impresión"],
+    "calc.size.hint": ["Přepište kterýkoli rozměr, ostatní se změní ve stejném poměru.", "Change any one dimension; the others follow in the same ratio.", "Cambie cualquier medida; las demás siguen en la misma proporción."],
+    "calc.size.x": ["Šířka", "Width", "Ancho"],
+    "calc.size.y": ["Hloubka", "Depth", "Profundidad"],
+    "calc.size.z": ["Výška", "Height", "Alto"],
+    "calc.size.generated": ["Vygenerovaný model nemá vlastní měřítko: nastavte, jak velký má výtisk být.", "A generated model has no size of its own: set how big the print should be.", "Un modelo generado no tiene tamaño propio: indique lo grande que debe ser la impresión."],
+    "calc.size.limit": ["Zvětšení je omezeno na :n × původní velikosti; zmenšení na 25 %.", "Enlargement is limited to :n × the original size; reduction to 25 %.", "La ampliación se limita a :n × el tamaño original; la reducción al 25 %."]
+}

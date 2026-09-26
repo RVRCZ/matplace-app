@@ -1229,5 +1229,12 @@
     "relief.step.model": "Model and price",
     "figure.step.photo": "Photo and pedestal",
     "figure.step.model": "Model and price",
-    "figure.step.wait": "The model takes about a minute; please stay on the page."
+    "figure.step.wait": "The model takes about a minute; please stay on the page.",
+    "calc.size.title": "Print size",
+    "calc.size.hint": "Change any one dimension; the others follow in the same ratio.",
+    "calc.size.x": "Width",
+    "calc.size.y": "Depth",
+    "calc.size.z": "Height",
+    "calc.size.generated": "A generated model has no size of its own: set how big the print should be.",
+    "calc.size.limit": "Enlargement is limited to :n × the original size; reduction to 25 %."
 }

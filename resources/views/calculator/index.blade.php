@@ -56,7 +56,7 @@
                 <div class="relative">
                 <canvas id="viewer" class="block h-[45vh] w-full touch-none lg:h-[70vh]"></canvas>
                 <div class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-slate-700 shadow" id="file-badge"></div>
-                <div class="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow" id="dims-badge"></div>
+                <div class="absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-1.5 text-sm font-semibold text-ink shadow" id="dims-badge" aria-live="polite"></div>
                 </div>
                 <p id="kind-tip" class="hidden border-t border-slate-100 bg-action-soft px-4 py-2 text-sm text-action-dark"></p>
                 <div id="edit-design" class="hidden flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-3">
@@ -158,7 +158,23 @@
                 </div>
 
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div class="text-sm font-semibold text-slate-700">{{ __('calc.material') }}</div>
+                    {{-- size first: a generated model has no size of its own, and for every model this is what the customer checks first --}}
+                    <div class="text-sm font-semibold text-slate-700">{{ __('calc.size.title') }}</div>
+                    <p id="size-generated" class="mt-1 hidden text-xs text-action-dark">{{ __('calc.size.generated') }}</p>
+                    <div class="mt-2 grid grid-cols-3 gap-2">
+                        @foreach(['x', 'y', 'z'] as $axis)
+                            <label class="text-xs font-semibold text-slate-600">{{ __('calc.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
+                                <input id="size-{{ $axis }}" type="number" inputmode="decimal" min="1" step="1" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-base font-semibold text-ink">
+                            </label>
+                        @endforeach
+                    </div>
+                    <div class="mt-2 flex items-center gap-3">
+                        <input id="scale" type="range" min="25" max="{{ (int) ($config['max_scale'] * 100) }}" step="5" value="100" class="w-full accent-action" aria-label="{{ __('calc.scale') }}">
+                        <span id="scale-val" class="w-14 shrink-0 text-right text-sm font-semibold text-action-dark">100 %</span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('calc.size.hint') }} <span id="size-limit" class="hidden text-amber-700">{{ __('calc.size.limit', ['n' => rtrim(rtrim(number_format($config['max_scale'], 1, ',', ''), '0'), ',')]) }}</span></p>
+
+                    <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('calc.material') }}</div>
                     <div id="materials" class="mt-2 flex flex-wrap gap-2"></div>
                     <p id="material-hint" class="mt-1 text-xs text-slate-500"></p>
 
@@ -178,9 +194,6 @@
                     <div class="mt-4 grid grid-cols-2 gap-3">
                         <label class="text-sm font-semibold text-slate-700">{{ __('calc.quantity') }}
                             <input id="quantity" type="number" min="1" max="1000" value="1" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal">
-                        </label>
-                        <label class="text-sm font-semibold text-slate-700">{{ __('calc.scale') }} <span id="scale-val" class="font-normal text-action-dark">100 %</span>
-                            <input id="scale" type="range" min="25" max="{{ (int) ($config['max_scale'] * 100) }}" step="5" value="100" class="mt-3 w-full accent-action">
                         </label>
                     </div>
 
