@@ -42,6 +42,15 @@
     <footer class="border-t border-slate-200 bg-white">
         <div class="mx-auto max-w-6xl px-4 py-6 text-center text-sm text-slate-500">
             {{ __('footer.promise') }}
+            <nav class="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label="{{ __('privacy.title') }}">
+                <a href="{{ route('privacy') }}" class="underline hover:text-slate-900">{{ __('privacy.footer.privacy') }}</a>
+                <a href="{{ route('farm.terms') }}" class="underline hover:text-slate-900">{{ __('privacy.footer.terms') }}</a>
+                <a href="{{ config('youtube.channel_url') }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 hover:text-slate-900">
+                    {{-- YouTube icon, as the brand guidelines allow for linking to a channel --}}
+                    <svg viewBox="0 0 28 20" class="h-4 w-auto" aria-hidden="true"><path fill="#FF0000" d="M27.4 3.1A3.5 3.5 0 0 0 24.9.6C22.7 0 14 0 14 0S5.3 0 3.1.6A3.5 3.5 0 0 0 .6 3.1C0 5.3 0 10 0 10s0 4.7.6 6.9a3.5 3.5 0 0 0 2.5 2.5C5.3 20 14 20 14 20s8.7 0 10.9-.6a3.5 3.5 0 0 0 2.5-2.5c.6-2.2.6-6.9.6-6.9s0-4.7-.6-6.9Z"/><path fill="#FFF" d="m11.2 14.3 7.3-4.3-7.3-4.3v8.6Z"/></svg>
+                    <span class="underline">{{ __('privacy.footer.youtube') }}</span>
+                </a>
+            </nav>
         </div>
     </footer>
     @include('partials.lightbox')

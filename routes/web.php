@@ -128,6 +128,7 @@ Route::middleware('auth')->prefix('account')->name('account')->group(function ()
 
 // ── Print farm: "Rent a printer" (logged-in users; credit from the payment gateway) ──
 Route::get('/farm/terms', [OrderController::class, 'terms'])->name('farm.terms');
+Route::view('/privacy', 'pages.privacy')->name('privacy');
 Route::middleware('auth')->group(function () {
     Route::get('/farm', [OrderController::class, 'start'])->name('farm.start');
     Route::get('/farm/orders', [OrderController::class, 'index'])->name('farm.orders');

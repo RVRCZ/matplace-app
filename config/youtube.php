@@ -9,6 +9,8 @@ return [
     'client_id' => env('YOUTUBE_CLIENT_ID'),
     'client_secret' => env('YOUTUBE_CLIENT_SECRET'),
 
+    'channel_url' => env('YOUTUBE_CHANNEL_URL', 'https://www.youtube.com/@Matplace3D'),   // linked from the footer
+
     'category_id' => env('YOUTUBE_CATEGORY_ID', '28'),   // 28 = Science & Technology
     'language' => env('YOUTUBE_LANGUAGE', 'cs'),          // titles and descriptions are written in the channel's language
     'tags' => ['3D tisk', '3D printing', 'timelapse', 'Matplace'],

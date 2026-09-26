@@ -222,6 +222,16 @@ class YouTubeVideosTest extends TestCase
         $this->assertStringNotContainsString('refresh-1', (string) DB::table('youtube_accounts')->value('refresh_token'));
     }
 
+    public function test_privacy_page_explains_the_youtube_use_and_every_page_links_it(): void
+    {
+        $this->get('/privacy')->assertOk()
+            ->assertSee('YouTube API Services')
+            ->assertSee('https://policies.google.com/privacy', false)
+            ->assertSee('https://www.youtube.com/t/terms', false)
+            ->assertSee('https://myaccount.google.com/permissions', false);
+        $this->get('/farm/terms')->assertOk()->assertSee(route('privacy'), false)->assertSee(config('youtube.channel_url'), false);
+    }
+
     public function test_only_admins_reach_the_video_page(): void
     {
         $this->actingAs($this->user)->get('/admin/youtube')->assertRedirect();
