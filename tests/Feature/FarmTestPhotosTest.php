@@ -35,7 +35,7 @@ class FarmTestPhotosTest extends TestCase
         $this->admin->setRole(User::ROLE_ADMIN, true);
     }
 
-    private function test_order(): FarmOrder
+    private function makeTestOrder(): FarmOrder
     {
         $row = FarmPrinterMaterial::whereNull('farm_color_id')->firstOrFail();
         $file = ModelFile::forceCreate(['uuid' => (string) Str::uuid(), 'original_name' => 'calib.stl', 'ext' => 'stl', 'size_bytes' => 1, 'sha256' => str_repeat('0', 64),
@@ -69,7 +69,7 @@ class FarmTestPhotosTest extends TestCase
 
     public function test_photos_are_stored_upright_with_a_thumbnail_and_can_be_removed(): void
     {
-        $order = $this->testOrder();
+        $order = $this->makeTestOrder();
         $this->actingAs($this->admin)->post("/admin/farm/orders/{$order->token}/photos", ['photos' => [$this->photo(), $this->photo(800, 1000)], 'views' => ['top', 'left']])
             ->assertRedirect()->assertSessionHas('status');
         $photos = $order->fresh()->test_params['photos'];
@@ -95,7 +95,7 @@ class FarmTestPhotosTest extends TestCase
     public function test_the_judge_zooms_in_and_prefills_the_form_until_the_operator_submits_it(): void
     {
         config(['ai.anthropic.api_key' => 'test-key']);
-        $order = $this->testOrder();
+        $order = $this->makeTestOrder();
         $this->actingAs($this->admin)->post("/admin/farm/orders/{$order->token}/photos", ['photos' => [$this->photo()], 'views' => ['top']]);
 
         $field = fn (string $v, string $why = 'vidět na fotce') => ['value' => $v, 'confidence' => 'high', 'reason' => $why];
@@ -141,7 +141,7 @@ class FarmTestPhotosTest extends TestCase
 
     public function test_without_photos_or_a_key_nothing_is_sent(): void
     {
-        $order = $this->testOrder();
+        $order = $this->makeTestOrder();
         Http::fake();
         config(['ai.anthropic.api_key' => '']);
         $this->actingAs($this->admin)->post("/admin/farm/orders/{$order->token}/judge")->assertSessionHas('error');
