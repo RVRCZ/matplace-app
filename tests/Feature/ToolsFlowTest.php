@@ -119,7 +119,7 @@ class ToolsFlowTest extends TestCase
         $html = $page->getContent();
         $this->assertLessThan(strpos($html, 'id="materials"'), strpos($html, 'id="size-x"'), 'the size block comes before the material');
         $this->assertLessThan(strpos($html, 'id="stat-grams"'), strpos($html, 'id="quantity"'), 'size and quantity sit in the price card, under the price');
-        $page->assertSee('id="bed-fit"', false);
+        $page->assertSee('id="bed-fit"', false)->assertSee('"calc.fit.bed"', false)->assertSee('"calc.fit.none"', false);   // the wording reaches the browser's dictionary
         $page->assertSee('Kč');                                                                   // the farm's list prices the model: the number is money, not minutes
         foreach (['cs', 'en', 'es'] as $lang) {
             $this->assertNotSame('calc.size.generated', __('calc.size.generated', [], $lang));
