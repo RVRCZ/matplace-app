@@ -296,6 +296,7 @@ export function bootFarmOrder(): void {
         btn.disabled = true; btn.textContent = tr('farm.order.paying'); show(errBox, false); show($('farm-topup'), false);
         const r = await post(cfg.routes.pay, {
             slot: picked, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
+            video_consent: ($('farm-video-consent') as HTMLInputElement | null)?.checked ?? false,
             note: (form.elements.namedItem('note') as HTMLTextAreaElement).value, address: delivery === 'shipping' ? address : null,
         });
         btn.textContent = tr('farm.order.pay');

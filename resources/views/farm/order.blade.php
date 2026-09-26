@@ -133,11 +133,34 @@
                     <input type="checkbox" id="farm-terms" class="mt-1 h-4 w-4 accent-action">
                     <span>{!! __('farm.order.terms', ['url' => route('farm.terms')]) !!}</span>
                 </label>
+                <label class="mt-2 flex items-start gap-2 text-sm text-slate-700">
+                    <input type="checkbox" id="farm-video-consent" class="mt-1 h-4 w-4 accent-action">
+                    <span>{{ __('youtube.consent.label') }}</span>
+                </label>
 
                 <p id="farm-pay-error" class="mt-2 hidden text-sm text-red-700" role="alert"></p>
                 <a id="farm-topup" href="#" class="btn-secondary mt-2 hidden w-full text-sm">{{ __('farm.top_up') }}</a>
                 <button id="farm-pay-btn" type="submit" class="mt-3 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" disabled>{{ __('farm.order.pay') }}</button>
             </form>
+
+            {{-- the customer's YouTube switch, once the order is paid --}}
+            @if($order->isCommitted() && ! $order->isTest() && $order->user_id === auth()->id())
+                @php($video = $order->video)
+                <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+                    <h2 class="font-semibold text-slate-700">{{ __('youtube.order.title') }}</h2>
+                    @include('partials.flash')
+                    <p class="mt-1 text-slate-600">{{ __($order->video_consent ? 'youtube.order.on' : 'youtube.order.off') }}</p>
+                    @if($order->video_consent && $video?->status === 'published' && $video->watchUrl())
+                        <p class="mt-1">{{ __('youtube.order.published') }} <a href="{{ $video->watchUrl() }}" target="_blank" rel="noopener" class="text-action-dark underline">{{ __('youtube.order.watch') }}</a></p>
+                    @endif
+                    <form method="post" action="{{ route('farm.orders.video_consent', $order) }}" class="mt-2"
+                          @if($order->video_consent) onsubmit="return confirm(@js(__('youtube.order.withdraw_confirm')))" @endif>
+                        @csrf
+                        <input type="hidden" name="consent" value="{{ $order->video_consent ? 0 : 1 }}">
+                        <button class="btn-quiet text-sm">{{ __($order->video_consent ? 'youtube.order.withdraw' : 'youtube.order.agree') }}</button>
+                    </form>
+                </section>
+            @endif
 
             <div class="flex flex-wrap gap-2">
                 <button id="farm-cancel" type="button" class="btn-quiet hidden text-sm">{{ __('farm.order.cancel') }}</button>

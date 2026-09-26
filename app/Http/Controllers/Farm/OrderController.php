@@ -10,6 +10,7 @@ use App\Domain\Farm\ModelValidator;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
 use App\Domain\Farm\Wallet;
+use App\Domain\YouTube\FarmVideos;
 use App\Http\Controllers\Controller;
 use App\Models\Calculation;
 use App\Models\FarmOrder;
@@ -120,7 +121,7 @@ class OrderController extends Controller
         return response()->json($this->describe($order->refresh(), $request));
     }
 
-    public function pay(Request $request, FarmOrder $order, OrderFlow $flow): JsonResponse
+    public function pay(Request $request, FarmOrder $order, OrderFlow $flow, FarmVideos $videos): JsonResponse
     {
         $this->authorizeOrder($request, $order);
         $data = $request->validate([
@@ -136,6 +137,7 @@ class OrderController extends Controller
             'address.zip' => ['required_if:delivery,shipping', 'nullable', 'string', 'max:12'],
             'address.country' => ['nullable', 'string', 'size:2'],
             'address.phone' => ['nullable', 'string', 'max:30'],
+            'video_consent' => ['nullable', 'boolean'],
         ], ['terms.accepted' => __('farm.refuse.terms')]);
 
         try {
@@ -145,8 +147,22 @@ class OrderController extends Controller
         } catch (FarmRefusal $e) {
             return response()->json(['error' => $e->reason, 'message' => $e->text()] + $e->data, 422);
         }
+        if ($request->boolean('video_consent')) {
+            $videos->setConsent($order, true);
+        }
 
         return response()->json($this->describe($order->refresh(), $request));
+    }
+
+    /** The customer's YouTube switch on the order page: allow the time-lapse on the channel, or take it back (deletes it there). */
+    public function videoConsent(Request $request, FarmOrder $order, FarmVideos $videos): RedirectResponse
+    {
+        $this->authorizeOrder($request, $order);
+        abort_unless($order->user_id === $request->user()->id && $order->kind === FarmOrder::KIND_PRINT, 403);
+        $consent = $request->boolean('consent');
+        $videos->setConsent($order, $consent);
+
+        return back()->with('status', __($consent ? 'youtube.order.saved_on' : 'youtube.order.saved_off'));
     }
 
     public function cancel(Request $request, FarmOrder $order, OrderFlow $flow): JsonResponse|RedirectResponse

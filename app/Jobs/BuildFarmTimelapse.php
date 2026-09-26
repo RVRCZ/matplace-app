@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Domain\YouTube\FarmVideos;
 use App\Models\FarmOrder;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -67,6 +68,8 @@ class BuildFarmTimelapse implements ShouldQueue
         $order->forceFill(['timelapse_path' => $order->dir().'/timelapse.mp4'])->save();
         // the frames did their job
         $disk->deleteDirectory($order->dir().'/frames');
+        // the customer agreed to share it: up to YouTube as a private video, an admin decides the rest
+        app(FarmVideos::class)->queueFor($order);
     }
 
     /** ffmpeg filter graph: intro, the print with the finished piece held, outro; all at the frame size, 8 fps. */

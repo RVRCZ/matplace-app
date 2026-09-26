@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\FarmCatalogController;
 use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
+use App\Http\Controllers\Admin\YouTubeController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\GenerationController;
@@ -137,6 +138,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/farm/orders/{order}/supports.bin', [OrderController::class, 'supports'])->name('farm.orders.supports');
     Route::get('/farm/orders/{order}/snapshot', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
     Route::get('/farm/orders/{order}/timelapse.mp4', [OrderController::class, 'timelapse'])->name('farm.orders.timelapse');
+    Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1')->name('farm.orders.video_consent');
 
     Route::get('/account/credit', [CreditController::class, 'index'])->name('account.credit');
     Route::post('/account/credit', [CreditController::class, 'topUp'])->middleware('throttle:10,1')->name('account.credit.topup');
@@ -196,6 +198,19 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/orders/{order}/photos/{index}', [$photos, 'show'])->whereNumber('index')->name('photos.show');
     Route::post('/orders/{order}/photos/{index}/delete', [$photos, 'destroy'])->whereNumber('index')->name('photos.destroy');
     Route::post('/orders/{order}/judge', [$photos, 'judge'])->name('photos.judge');
+});
+
+// ── Admin: print videos on the YouTube channel (the callback URI is registered in Google Cloud, keep it) ──
+Route::middleware(['auth', 'role:admin'])->prefix('admin/youtube')->name('admin.youtube.')->group(function () {
+    $yt = YouTubeController::class;
+    Route::get('/', [$yt, 'index'])->name('index');
+    Route::post('/connect', [$yt, 'connect'])->name('connect');
+    Route::get('/callback', [$yt, 'callback'])->name('callback');
+    Route::post('/disconnect', [$yt, 'disconnect'])->name('disconnect');
+    Route::post('/orders/{order}/queue', [$yt, 'queue'])->name('queue');
+    Route::post('/videos/{video}/publish', [$yt, 'publish'])->name('publish');
+    Route::post('/videos/{video}/reject', [$yt, 'reject'])->name('reject');
+    Route::post('/videos/{video}/retry', [$yt, 'retry'])->name('retry');
 });
 
 // ── Printer tools (role switch "I own a printer") ────────────────────────────

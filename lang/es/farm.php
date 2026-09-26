@@ -176,6 +176,7 @@ return [
             'El precio se conoce antes de pedir y se paga con crédito. El crédito se retiene al pedir y solo se cobra cuando la impresión termina. Si la impresión no empieza o falla por nuestra causa, se devuelve entero.',
             'Pequeñas marcas de soportes, capas visibles y desviaciones de décimas de milímetro son propias de la impresión 3D y no son defectos.',
             'Los archivos subidos se guardan de forma privada y solo se usan para tramitar su pedido.',
+            'Grabamos cada impresión con la cámara de la impresora. Publicamos el vídeo time-lapse en el canal de YouTube de Matplace solo si usted lo acepta y después de que nuestro equipo lo revise. Puede retirar el consentimiento en cualquier momento en la página del pedido; entonces borramos el vídeo de YouTube.',
         ],
     ],
 
@@ -186,7 +187,7 @@ return [
     'finish' => ['solid' => '', 'matte' => 'mate', 'silk' => 'Silk', 'luminous' => 'luminoso', 'glitter' => 'brillante', 'special' => 'especial', 'flex' => 'flexible', 'cf' => 'CF'],
 
     'admin' => [
-        'nav' => ['dashboard' => 'Impresoras y cola', 'orders' => 'Pedidos', 'printers' => 'Impresoras', 'materials' => 'Materiales y colores', 'settings' => 'Precios y reglas', 'agents' => 'Agentes', 'credit' => 'Crédito', 'tuning' => 'Ajuste de materiales', 'photobox' => 'Caja de fotos'],
+        'nav' => ['dashboard' => 'Impresoras y cola', 'orders' => 'Pedidos', 'printers' => 'Impresoras', 'materials' => 'Materiales y colores', 'settings' => 'Precios y reglas', 'agents' => 'Agentes', 'credit' => 'Crédito', 'tuning' => 'Ajuste de materiales', 'photobox' => 'Caja de fotos', 'videos' => 'Vídeos en YouTube'],
         'saved' => 'Guardado.',
         'test_started' => 'La impresión de prueba :number se está preparando y pasa a la cola de la impresora.',
         'bad_transition' => 'Este cambio de estado no es posible.',

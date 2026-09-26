@@ -176,6 +176,7 @@ return [
             'Cena je známá před objednáním a platí se z kreditu. Kredit se při objednání zablokuje a strhne až po dokončení tisku. Když tisk nezačne nebo se nepovede naší vinou, vrátí se celý.',
             'Drobné stopy po podpěrách, viditelné vrstvy a odchylky rozměrů v desetinách milimetru k 3D tisku patří a nejsou vadou.',
             'Nahrané soubory ukládáme neveřejně a používáme je jen k vyřízení vaší zakázky.',
+            'Každý tisk natáčíme kamerou v tiskárně. Časosběrné video zveřejníme na YouTube kanálu Matplace jen tehdy, když k tomu dáte souhlas, a jen po kontrole naším týmem. Souhlas můžete kdykoli odvolat na stránce zakázky; video pak z YouTube smažeme.',
         ],
     ],
 
@@ -186,7 +187,7 @@ return [
     'finish' => ['solid' => '', 'matte' => 'matný', 'silk' => 'Silk', 'luminous' => 'svítící', 'glitter' => 'třpytivý', 'special' => 'speciální', 'flex' => 'flexibilní', 'cf' => 'CF'],
 
     'admin' => [
-        'nav' => ['dashboard' => 'Tiskárny a fronta', 'orders' => 'Zakázky', 'printers' => 'Tiskárny', 'materials' => 'Materiály a barvy', 'settings' => 'Ceny a pravidla', 'agents' => 'Agenti', 'credit' => 'Kredit', 'tuning' => 'Ladění materiálů', 'photobox' => 'Foto-box'],
+        'nav' => ['dashboard' => 'Tiskárny a fronta', 'orders' => 'Zakázky', 'printers' => 'Tiskárny', 'materials' => 'Materiály a barvy', 'settings' => 'Ceny a pravidla', 'agents' => 'Agenti', 'credit' => 'Kredit', 'tuning' => 'Ladění materiálů', 'photobox' => 'Foto-box', 'videos' => 'Videa na YouTube'],
         'saved' => 'Uloženo.',
         'test_started' => 'Testovací tisk :number je připravený a jde do fronty tiskárny.',
         'bad_transition' => 'Tahle změna stavu není možná.',

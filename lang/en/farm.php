@@ -176,6 +176,7 @@ return [
             'The price is known before ordering and is paid from credit. The credit is held when you order and taken only when the print is finished. If the print does not start or fails through our fault, all of it comes back.',
             'Small support marks, visible layers and deviations of tenths of a millimetre belong to 3D printing and are not defects.',
             'Uploaded files are stored privately and used only to fulfil your order.',
+            'Every print is filmed by the camera in the printer. We publish the time-lapse on the Matplace YouTube channel only if you agree, and only after our team has checked it. You can take the consent back at any time on the order page; the video is then deleted from YouTube.',
         ],
     ],
 
@@ -186,7 +187,7 @@ return [
     'finish' => ['solid' => '', 'matte' => 'matte', 'silk' => 'Silk', 'luminous' => 'glow', 'glitter' => 'glitter', 'special' => 'special', 'flex' => 'flexible', 'cf' => 'CF'],
 
     'admin' => [
-        'nav' => ['dashboard' => 'Printers and queue', 'orders' => 'Orders', 'printers' => 'Printers', 'materials' => 'Materials and colours', 'settings' => 'Prices and rules', 'agents' => 'Agents', 'credit' => 'Credit', 'tuning' => 'Material tuning', 'photobox' => 'Photo box'],
+        'nav' => ['dashboard' => 'Printers and queue', 'orders' => 'Orders', 'printers' => 'Printers', 'materials' => 'Materials and colours', 'settings' => 'Prices and rules', 'agents' => 'Agents', 'credit' => 'Credit', 'tuning' => 'Material tuning', 'photobox' => 'Photo box', 'videos' => 'YouTube videos'],
         'saved' => 'Saved.',
         'test_started' => 'Test print :number is being prepared and goes to the printer queue.',
         'bad_transition' => 'This status change is not possible.',

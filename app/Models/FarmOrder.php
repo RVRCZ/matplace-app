@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -59,7 +60,7 @@ class FarmOrder extends Model
         'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'slice_params', 'slice_result', 'est_minutes',
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
         'terms_ip', 'paid_at', 'approved_at', 'approved_by', 'queued_at', 'started_at', 'finished_at', 'handed_at', 'tracking',
-        'actual_minutes', 'actual_grams', 'actual_source',
+        'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at',
     ];
 
     protected $casts = [
@@ -68,6 +69,7 @@ class FarmOrder extends Model
         'est_meters' => 'float', 'supports_used' => 'bool', 'price_total' => 'float', 'actual_minutes' => 'int', 'actual_grams' => 'float',
         'terms_accepted_at' => 'datetime', 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'queued_at' => 'datetime',
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime',
+        'video_consent' => 'bool', 'video_consent_at' => 'datetime',
     ];
 
     public function getRouteKeyName(): string
@@ -124,6 +126,12 @@ class FarmOrder extends Model
     public function printJobs(): HasMany
     {
         return $this->hasMany(FarmPrintJob::class)->orderBy('id');
+    }
+
+    /** The time-lapse on YouTube, when the customer agreed to share it. */
+    public function video(): HasOne
+    {
+        return $this->hasOne(FarmVideo::class);
     }
 
     public function latestJob(): ?FarmPrintJob
