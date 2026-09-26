@@ -125,7 +125,9 @@
                     </form>
                     {{-- any ready model: a two-part casting mold around it --}}
                     <form id="mold-box" class="mt-3 hidden rounded-xl bg-slate-50 p-3">
-                        <div class="text-sm font-semibold text-slate-700">{{ __('mold.title') }}</div>
+                        {{-- folded by default: a rare wish that otherwise pushes the size and material settings below the fold on a phone --}}
+                        <details>
+                        <summary class="cursor-pointer text-sm font-semibold text-slate-700">{{ __('mold.title') }}</summary>
                         <p class="mt-1 text-xs text-slate-500">{{ __('mold.lead') }}</p>
                         <div class="mt-2 grid gap-2 sm:grid-cols-3">
                             <label class="block text-xs font-semibold text-slate-600">{{ __('mold.wall') }}
@@ -149,6 +151,7 @@
                             <button class="rounded-lg bg-action px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{{ __('mold.apply') }}</button>
                             <p id="mold-msg" class="text-xs text-slate-500" role="status">{{ __('mold.hint') }}</p>
                         </div>
+                        </details>
                     </form>
                     <p id="mold-report" class="mt-3 hidden rounded-xl bg-slate-50 p-3 text-xs text-slate-700" role="status"></p>
                     <details class="mt-3 text-sm" @if($mode === 'printer') open @endif>

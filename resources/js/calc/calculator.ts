@@ -620,6 +620,7 @@ export async function openFile(uuid: string): Promise<void> {
         syncControls();
     }
     showKindTip(state.file?.kind);
+    renderSize();                                   // the server already measured the file: the size shows before the model has loaded
     if (state.file?.stl_url) await showServerStl(state.file.stl_url);
     renderRough();
     requestPrecise();
