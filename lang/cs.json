@@ -1237,7 +1237,7 @@
     "calc.size.z": "Výška",
     "calc.size.generated": "Vygenerovaný model nemá vlastní měřítko: nastavte, jak velký má výtisk být.",
     "calc.size.limit": "Zvětšení je omezeno na :n × původní velikosti; zmenšení na 25 %.",
-    "calc.fit.bed": "Na podložku :b se vejde až :n ks najednou.",
+    "calc.fit.bed": "Na podložku :b se vejde až :n ks najednou (v poloze jako v náhledu, 5 mm od sebe).",
     "calc.fit.none": "Model se na podložku :b nevejde, zmenšete ho.",
     "tools.cutter.title": "Vykrajovátko na cukroví",
     "tools.cutter.hint": "Jméno, písmeno nebo vlastní tvar z obrázku. Tenká stěna s obrubou, k tomu razítko s kresbou.",

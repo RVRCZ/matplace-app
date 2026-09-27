@@ -1237,7 +1237,7 @@
     "calc.size.z": "Alto",
     "calc.size.generated": "Un modelo generado no tiene tamaño propio: indique lo grande que debe ser la impresión.",
     "calc.size.limit": "La ampliación se limita a :n × el tamaño original; la reducción al 25 %.",
-    "calc.fit.bed": "En una placa de :b caben hasta :n piezas a la vez.",
+    "calc.fit.bed": "En una placa de :b caben hasta :n piezas a la vez (en la posición de la vista previa, a 5 mm entre sí).",
     "calc.fit.none": "El modelo no cabe en una placa de :b; redúzcalo.",
     "tools.cutter.title": "Cortador de galletas",
     "tools.cutter.hint": "Un nombre, una letra o su propia forma a partir de una imagen. Pared fina con pestaña, más un sello con el dibujo.",

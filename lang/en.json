@@ -1237,7 +1237,7 @@
     "calc.size.z": "Height",
     "calc.size.generated": "A generated model has no size of its own: set how big the print should be.",
     "calc.size.limit": "Enlargement is limited to :n × the original size; reduction to 25 %.",
-    "calc.fit.bed": "Up to :n pieces fit on a :b plate at once.",
+    "calc.fit.bed": "Up to :n pieces fit on a :b plate at once (as posed in the preview, 5 mm apart).",
     "calc.fit.none": "The model does not fit a :b plate; make it smaller.",
     "tools.cutter.title": "Cookie cutter",
     "tools.cutter.hint": "A name, a letter or your own shape from a picture. A thin wall with a flange, plus a stamp with the drawing.",
