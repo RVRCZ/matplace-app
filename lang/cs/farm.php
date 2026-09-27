@@ -30,6 +30,7 @@ return [
 
     'quality' => ['label' => 'Kvalita', 'draft' => 'Rychlý', 'standard' => 'Standard', 'fine' => 'Jemný'],
     'strength' => ['label' => 'Pevnost', 'low' => 'Nízká', 'standard' => 'Standard', 'high' => 'Vysoká', 'infill' => ':n % výplně'],
+    'supports' => ['label' => 'Podpěry', 'auto' => 'Automaticky', 'auto_hint' => 'jen kde jsou potřeba', 'off' => 'Bez podpěr', 'off_hint' => 'model je navržený pro tisk bez nich'],
     'units' => [
         'label' => 'Jednotky modelu', 'mm' => 'milimetry', 'cm' => 'centimetry', 'in' => 'palce', 'm' => 'metry',
         'guess' => 'Model vypadá, že je v jednotkách „:unit“. Použili jsme je; pokud to nesedí, změňte je.',
@@ -58,6 +59,7 @@ return [
         'supports' => 'Podpěry',
         'supports_yes' => 'ano, stromové, jen kde jsou potřeba',
         'supports_no' => 'nejsou potřeba',
+        'supports_off' => 'bez podpěr, na vaše přání',
         'supports_hide' => 'Skrýt podpěry', 'supports_show' => 'Zobrazit podpěry',
         'oriented' => 'Model jsme natočili pro co nejlepší tisk. V náhledu je v poloze, ve které se bude tisknout.',
         'price' => 'Cena',

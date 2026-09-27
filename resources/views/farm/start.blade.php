@@ -81,6 +81,13 @@
             @endforeach
         </div>
 
+        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.supports.label') }}</div>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+            @foreach(['auto', 'off'] as $key)
+                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="supports" value="{{ $key }}" class="sr-only" @checked($key === ($supports ?? 'auto'))>{{ __('farm.supports.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.supports.'.$key.'_hint') }}</span></label>
+            @endforeach
+        </div>
+
         <label class="mt-4 block text-sm font-semibold text-slate-700">{{ __('farm.copies.label') }}
             <input name="copies" type="number" inputmode="numeric" min="1" max="{{ $maxCopies }}" value="{{ $copies }}" class="mt-1 w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
         </label>

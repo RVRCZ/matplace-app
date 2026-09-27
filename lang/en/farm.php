@@ -30,6 +30,7 @@ return [
 
     'quality' => ['label' => 'Quality', 'draft' => 'Fast', 'standard' => 'Standard', 'fine' => 'Fine'],
     'strength' => ['label' => 'Strength', 'low' => 'Low', 'standard' => 'Standard', 'high' => 'High', 'infill' => ':n % infill'],
+    'supports' => ['label' => 'Supports', 'auto' => 'Automatic', 'auto_hint' => 'only where needed', 'off' => 'No supports', 'off_hint' => 'the model is made to print without them'],
     'units' => [
         'label' => 'Model units', 'mm' => 'millimetres', 'cm' => 'centimetres', 'in' => 'inches', 'm' => 'metres',
         'guess' => 'The model looks like it is in ":unit". We used that; change it if it is wrong.',
@@ -58,6 +59,7 @@ return [
         'supports' => 'Supports',
         'supports_yes' => 'yes, tree supports, only where needed',
         'supports_no' => 'not needed',
+        'supports_off' => 'none, as you asked',
         'supports_hide' => 'Hide supports', 'supports_show' => 'Show supports',
         'oriented' => 'We turned the model for the best print. The preview shows it the way it will be printed.',
         'price' => 'Price',

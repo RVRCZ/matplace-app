@@ -141,7 +141,12 @@ class PrepareFarmOrder implements ShouldQueue
                 // fine-nozzle test bent while it was prised off (Kobra S1 #2, 26 Sep 2026)
                 $overrides['process']['brim_type'] = 'no_brim';
             }
-            $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() ? false : null, treeSupports: true))
+            $noSupports = $order->supports === 'off';
+            if ($noSupports) {
+                // the customer knows the model: made to print in place, supports would only weld its joints together
+                $overrides['process']['enable_support'] = '0';
+            }
+            $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() || $noSupports ? false : null, treeSupports: true))
                 ->withFarmProfile($profiles, $overrides);
             $result = $slicer->slice($disk->path($stlRel), $params);
             if (! $result->gcodePath || ! is_file($result->gcodePath)) {

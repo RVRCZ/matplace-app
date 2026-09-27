@@ -35,6 +35,7 @@ class OrderController extends Controller
         $file = $request->query('file') ? ModelFile::where('uuid', $request->query('file'))->first() : null;
         $quality = (string) $request->query('quality', 'standard');
         $strength = (string) $request->query('strength', 'standard');
+        $supports = $request->query('supports') === 'off' ? 'off' : 'auto';
         // a repeated print hands its settings over in the address (OrderController::repeat)
         $copies = max(1, min(PlateLayout::MAX_COPIES, (int) $request->query('copies', 1)));
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) $request->query('scale', 1)));
@@ -61,6 +62,7 @@ class OrderController extends Controller
             'bed' => $this->orders->largestBed(),
             'quality' => $quality,
             'strength' => $strength,
+            'supports' => $supports,
             'preselect' => $preselect,
             'copies' => $copies,
             'maxCopies' => PlateLayout::MAX_COPIES,
@@ -80,6 +82,7 @@ class OrderController extends Controller
 
         return redirect()->route('farm.start', array_filter([
             'file' => $order->modelFile?->uuid, 'quality' => $order->quality, 'strength' => $order->strength, 'copies' => $order->copies,
+            'supports' => $order->supports === 'off' ? 'off' : null,
             'scale' => abs((float) $order->scale - 1) > 0.0005 ? (float) $order->scale : null, 'color' => $order->farm_color_id,
         ]));
     }
@@ -102,12 +105,13 @@ class OrderController extends Controller
             'copies' => ['nullable', 'integer', 'min:1', 'max:'.PlateLayout::MAX_COPIES],
             'scale' => ['nullable', 'numeric', 'min:0.25', 'max:'.config('pricing.max_scale', 4)],
             'color' => ['nullable', 'integer'],
+            'supports' => ['nullable', 'in:auto,off'],
         ]);
         $file = ModelFile::where('uuid', $data['file'])->firstOrFail();
         $this->claim($request, $file);
 
         try {
-            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null);
+            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto');
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
                 ? response()->json(['error' => $e->reason, 'message' => $e->text()], 422)
@@ -150,9 +154,10 @@ class OrderController extends Controller
             'unit' => ['nullable', 'in:'.implode(',', array_keys(ModelValidator::UNITS))],
             'copies' => ['nullable', 'integer', 'min:1', 'max:'.PlateLayout::MAX_COPIES],
             'scale' => ['nullable', 'numeric', 'min:0.25', 'max:'.config('pricing.max_scale', 4)],
+            'supports' => ['nullable', 'in:auto,off'],
         ]);
         try {
-            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null);
+            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null, $data['supports'] ?? null);
         } catch (FarmRefusal $e) {
             return response()->json(['error' => $e->reason, 'message' => $e->text()], 422);
         }
@@ -303,6 +308,7 @@ class OrderController extends Controller
             'warnings' => array_map(fn ($w) => __('farm.warn.'.$w['code'], $w['data'] ?? []), $check['warnings'] ?? []),
             'orientation_changed' => (bool) ($order->orientation['changed'] ?? false),
             'supports' => $order->supports_used,
+            'supports_mode' => $order->supports ?: 'auto',
             'minutes' => $order->est_minutes,
             'grams' => $order->est_grams,
             'meters' => $order->est_meters,

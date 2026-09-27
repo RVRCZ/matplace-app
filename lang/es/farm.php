@@ -30,6 +30,7 @@ return [
 
     'quality' => ['label' => 'Calidad', 'draft' => 'Rápida', 'standard' => 'Estándar', 'fine' => 'Fina'],
     'strength' => ['label' => 'Resistencia', 'low' => 'Baja', 'standard' => 'Estándar', 'high' => 'Alta', 'infill' => ':n % de relleno'],
+    'supports' => ['label' => 'Soportes', 'auto' => 'Automáticos', 'auto_hint' => 'solo donde hacen falta', 'off' => 'Sin soportes', 'off_hint' => 'el modelo está hecho para imprimirse sin ellos'],
     'units' => [
         'label' => 'Unidades del modelo', 'mm' => 'milímetros', 'cm' => 'centímetros', 'in' => 'pulgadas', 'm' => 'metros',
         'guess' => 'El modelo parece estar en «:unit». Las hemos usado; cámbielas si no es correcto.',
@@ -58,6 +59,7 @@ return [
         'supports' => 'Soportes',
         'supports_yes' => 'sí, de árbol, solo donde hacen falta',
         'supports_no' => 'no hacen falta',
+        'supports_off' => 'sin soportes, como pidió',
         'supports_hide' => 'Ocultar soportes', 'supports_show' => 'Mostrar soportes',
         'oriented' => 'Hemos orientado el modelo para la mejor impresión. La vista previa lo muestra tal como se imprimirá.',
         'price' => 'Precio',

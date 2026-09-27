@@ -23,7 +23,7 @@ final class OrderService
     /**
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null): FarmOrder
+    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto'): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! config('farm.open', true)) {
@@ -74,6 +74,7 @@ final class OrderService
             'stage' => 'checking',
             'quality' => $this->knownQuality($quality),
             'strength' => $this->knownStrength($strength),
+            'supports' => $supports === 'off' ? 'off' : 'auto',
             'copies' => max(1, min(PlateLayout::MAX_COPIES, $copies)),
             'unit_scale' => ModelValidator::UNITS[$unit] ?? 1.0,
             'scale' => round($scale, 3),
@@ -90,7 +91,7 @@ final class OrderService
     }
 
     /** Another quality, strength or unit: slice again (counts towards the daily limit, like a new order). */
-    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null): FarmOrder
+    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null): FarmOrder
     {
         if (! in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED], true) || $order->paid_at !== null) {
             throw new FarmRefusal('locked');
@@ -101,6 +102,7 @@ final class OrderService
         $order->fill([
             'status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'checking', 'error' => null, 'error_detail' => null,
             'quality' => $quality, 'strength' => $this->knownStrength($strength),
+            'supports' => $supports === null ? $order->supports : ($supports === 'off' ? 'off' : 'auto'),
             'copies' => $copies === null ? $order->copies : max(1, min(PlateLayout::MAX_COPIES, $copies)),
             'scale' => $scale === null ? $order->scale : round(max(0.25, min((float) config('pricing.max_scale', 4), $scale)), 3),
             'unit_scale' => ModelValidator::UNITS[$unit] ?? $order->unit_scale,

@@ -18,7 +18,7 @@ interface FarmState {
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
     unit: string; unit_guess: { unit: string; confident: boolean } | null;
-    dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean;
+    dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; shipping_price: number;
     colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; cancel_keep: number | null;
@@ -155,7 +155,7 @@ export function bootFarmOrder(): void {
     let picked: number | null = state.slot ?? null;                    // the colour chosen on the start page, if it is still on offer
     let delivery = state.delivery || 'pickup';
     let timer = 0;
-    const wanted = { quality: state.quality, strength: state.strength, unit: state.unit, copies: state.copies || 1, scale: state.scale || 1 };
+    const wanted = { quality: state.quality, strength: state.strength, supports: state.supports_mode || 'auto', unit: state.unit, copies: state.copies || 1, scale: state.scale || 1 };
     // the model's own millimetres (in the chosen unit) so a typed dimension gives a factor
     const nativeMm = (): { x: number; y: number; z: number } | null => state.raw_bbox ? { x: state.raw_bbox.x * (UNIT_MM[wanted.unit] ?? 1), y: state.raw_bbox.y * (UNIT_MM[wanted.unit] ?? 1), z: state.raw_bbox.z * (UNIT_MM[wanted.unit] ?? 1) } : null;
     const renderSizeInputs = (): void => {
@@ -238,14 +238,14 @@ export function bootFarmOrder(): void {
             }
             $('farm-time')!.textContent = duration(s.minutes!);
             $('farm-grams')!.textContent = `${s.grams} g${s.meters ? ` · ${s.meters} m` : ''}`;
-            $('farm-supports')!.textContent = tr(s.supports ? 'farm.order.supports_yes' : 'farm.order.supports_no');
+            $('farm-supports')!.textContent = tr(s.supports ? 'farm.order.supports_yes' : s.supports_mode === 'off' ? 'farm.order.supports_off' : 'farm.order.supports_no');
             renderBreakdown();
         }
 
         // presets stay editable until the order is paid; a failed check can be retried with other units
         const editable = s.status === 'sliced' || (s.status === 'failed' && !s.number);
         show($('farm-presets'), editable);
-        document.querySelectorAll<HTMLElement>('#farm-presets [data-group]').forEach((g) => g.querySelectorAll<HTMLElement>('.seg').forEach((b) => b.classList.toggle('seg-on', b.dataset.value === String(wanted[g.dataset.group as 'quality' | 'strength']))));
+        document.querySelectorAll<HTMLElement>('#farm-presets [data-group]').forEach((g) => g.querySelectorAll<HTMLElement>('.seg').forEach((b) => b.classList.toggle('seg-on', b.dataset.value === String(wanted[g.dataset.group as 'quality' | 'strength' | 'supports']))));
         ($('farm-unit') as HTMLSelectElement).value = wanted.unit;
         renderSizeInputs();
         const copiesInput = $<HTMLInputElement>('farm-copies');
@@ -260,7 +260,7 @@ export function bootFarmOrder(): void {
         const guess = s.unit_guess;
         note.textContent = guess && guess.unit !== 'mm' ? (guess.confident && s.unit === guess.unit ? tr('farm.units.guess', { unit: tr(`farm.units.${guess.unit}`) }) : (!guess.confident && s.unit === 'mm' ? tr('farm.units.ask') : '')) : '';
         show(note, note.textContent !== '');
-        show($('farm-reslice'), editable && (wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005));
+        show($('farm-reslice'), editable && (wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005));
 
         show($('farm-pay'), s.status === 'sliced');
         if (s.status === 'sliced') {
@@ -343,7 +343,7 @@ export function bootFarmOrder(): void {
     };
 
     document.querySelectorAll<HTMLElement>('#farm-presets [data-group] .seg').forEach((b) => b.addEventListener('click', () => {
-        wanted[(b.parentElement as HTMLElement).dataset.group as 'quality' | 'strength'] = b.dataset.value!; render();
+        wanted[(b.parentElement as HTMLElement).dataset.group as 'quality' | 'strength' | 'supports'] = b.dataset.value!; render();
     }));
     $('farm-unit')?.addEventListener('change', (e) => { wanted.unit = (e.target as HTMLSelectElement).value; render(); });
     $('farm-copies')?.addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); wanted.copies = Math.max(1, Math.min(64, Math.round(v) || 1)); render(); });

@@ -197,6 +197,20 @@ class FarmOrderFlowTest extends TestCase
         $this->assertSame(10, $order->slice_params['infill_percent']);
     }
 
+    /** A turtle with joints prints in place: the customer switches the supports off and the slicer is told so. */
+    public function test_the_customer_can_switch_supports_off_and_back(): void
+    {
+        $order = $this->order(20, ['supports' => 'off']);
+        $this->assertSame('off', $order->supports);
+        $this->assertSame('0', $order->slice_params['overrides']['process']['enable_support']);
+
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard'])->assertOk()->assertJsonPath('supports_mode', 'off');
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'supports' => 'auto'])->assertOk()->assertJsonPath('supports_mode', 'auto');
+        $this->assertNotSame('0', $order->refresh()->slice_params['overrides']['process']['enable_support'] ?? null);
+        $this->actingAs($this->user)->get('/farm/orders/'.$order->token.'/repeat')->assertRedirect();
+        $this->actingAs($this->user)->get('/farm?supports=off&lang=cs')->assertOk()->assertSee('Bez podpěr');
+    }
+
     public function test_several_copies_print_on_one_plate_and_more_than_a_plate_takes_prints_plate_after_plate(): void
     {
         // 4 cubes of 20 mm: a 2 × 2 grid 5 mm apart, one print, one price for all four
