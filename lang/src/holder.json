@@ -25,9 +25,9 @@
         "Medidas del objeto"
     ],
     "param.holder.tip": [
-        "Tiskne se naležato na boku, bez podpěr; vrstvy tak běží podél ramen, která nesou váhu. Na těžší věci a klip zvolte PETG. Šrouby do zdi: 4 mm s hmoždinkou.",
-        "Prints lying on its side without supports, so the layers run along the arms that carry the weight. For heavier things and the clip choose PETG. Wall screws: 4 mm with a plug.",
-        "Se imprime tumbado de lado y sin soportes; así las capas siguen los brazos que cargan el peso. Para objetos pesados y el clip elija PETG. Tornillos de pared: 4 mm con taco."
+        "Tiskne se bez podpěr: kolébka a kapsa nastojato, tak jak visí na zdi, hák a klip naležato na boku. Otvory pro šrouby mají tvar kapky, aby se vytiskly čistě. Na těžší věci a klip zvolte PETG. Šrouby do zdi: 4 mm s hmoždinkou.",
+        "Prints without supports: the cradle and the pocket standing the way they hang on the wall, the hook and the clip lying on their side. Screw holes are teardrop-shaped so they print cleanly. For heavier things and the clip choose PETG. Wall screws: 4 mm with a plug.",
+        "Se imprime sin soportes: la cuna y el bolsillo de pie, tal como cuelgan en la pared; el gancho y el clip tumbados de lado. Los agujeros para tornillos tienen forma de gota para imprimirse limpios. Para objetos pesados y el clip elija PETG. Tornillos de pared: 4 mm con taco."
     ],
     "param.c.holder.style": [
         "Jak má držet",
@@ -100,8 +100,8 @@
         "El clip es para mangos de hasta :n mm. Para algo más ancho elija la cuna o el bolsillo."
     ],
     "calc.tip.holder": [
-        "Držák se tiskne naležato na boku, bez podpěr. Na těžší věci a klip zvolte PETG.",
-        "The holder prints lying on its side without supports. For heavier things and the clip choose PETG.",
-        "El soporte se imprime tumbado de lado y sin soportes. Para objetos pesados y el clip elija PETG."
+        "Držák je v poloze, ve které se tiskne bez podpěr. Na těžší věci a klip zvolte PETG.",
+        "The holder is in the position in which it prints without supports. For heavier things and the clip choose PETG.",
+        "El soporte está en la posición en la que se imprime sin soportes. Para objetos pesados y el clip elija PETG."
     ]
 }

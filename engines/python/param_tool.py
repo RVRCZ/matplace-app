@@ -527,6 +527,10 @@ def cable_holder(M, p):
     return {"all": solid, "use": use}, {"outer": [round(length, 1), round(depth, 1), round(height, 1)], "slot": round(hole, 1)}
 
 
+def _signed(pts):
+    return sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1])) / 2
+
+
 def holder(M, p):
     """
     A holder for whatever the customer measured: a remote control, a bottle, a tool, a broom.
@@ -534,8 +538,10 @@ def holder(M, p):
       cradle  like the pocket with the front cut down to a low lip: the thing is seen and grabbed from the front
       hook    a J for anything with a handle, a strap or a loop
       clip    a springy C for round handles (broom, tool): the handle snaps in from the front
-    Pocket, cradle and hook are a side profile extruded across the width and print lying on that side: no supports,
-    and the layers run along the arms that carry the load. The clip prints with its C on the bed for the same reason.
+    Pocket and cradle print standing the way they hang on the wall: every wall rises straight from the bed, the
+    opening looks up, no supports (lying on a side or on the back plate a wall hangs over the cavity; 27 Sep 2026).
+    Hook and clip are a side profile lying on the bed: no supports, and the layers run along the arms that carry
+    the load. Screw holes are teardrops with the point up, so the slicer has nothing to support in them either.
     Solids are cut from one block or drawn as one 2D outline; nothing is glued onto a shared wall.
     """
     k = "holder"
@@ -549,8 +555,14 @@ def holder(M, p):
     note = {"style": style, "screws": 0, "warnings": []}
     hole_r = 2.3                                                     # a 4 mm wood screw with room to spare
 
-    def bore_x(solid, y, z, length):
-        return solid - M.Manifold.cylinder(length + 2.0, hole_r, hole_r, 32).rotate([0, 90, 0]).translate([-1.0, y, z])
+    def bore_x(solid, y, z, length, up="z"):
+        # a teardrop along X; `up` is the axis that points away from the bed while printing
+        a = hole_r * 0.7071
+        tip = [[-a, a], [a, a], [0.0, hole_r * 1.4142]] if up == "y" else [[-a, a], [-a, -a], [-hole_r * 1.4142, 0.0]]
+        if _signed(tip) < 0:
+            tip = tip[::-1]
+        drop = C.circle(hole_r, 48) + C([tip])
+        return solid - drop.extrude(length + 2.0).rotate([0, 90, 0]).translate([-1.0, y, z])
 
     if style == "clip":
         d = obj_w
@@ -602,7 +614,10 @@ def holder(M, p):
     total_w = inner_w + 2 * t
     plate_h = height + (22.0 if screws else 0.0)
     outline = C.square([t, plate_h]) + C.square([inner_d + 2 * t, height])
-    solid = _rnd(M, outline, min(r, t * 0.3)).extrude(total_w)
+    rad = min(r, t * 0.3)
+    # the bottom stands on the bed: its edges stay sharp, a rounded one would start in the air
+    outline = _rnd(M, outline, rad) + C.square([inner_d + 2 * t, max(rad, 0.5)])
+    solid = outline.extrude(total_w)
     solid = solid - M.Manifold.cube([inner_d, height + 2.0, inner_w]).translate([t, t, t])
     if style == "cradle":
         lip = max(8.0, min(height * 0.35, 25.0))
@@ -612,12 +627,12 @@ def holder(M, p):
     if screws:
         zs = (total_w / 2,) if total_w < 40 else (total_w * 0.25, total_w * 0.75)
         for z in zs:
-            solid = bore_x(solid, plate_h - 9.0, z, t)
+            solid = bore_x(solid, plate_h - 9.0, z, t, up="y")
         note["screws"] = len(zs)
-    use = _on_floor(solid.rotate([90, 0, 0]))
+    standing = _on_floor(solid.rotate([90, 0, 0]))
     note["outer"] = [round(inner_d + 2 * t, 1), round(total_w, 1), round(plate_h, 1)]
     note["inner"] = [round(inner_w, 1), round(inner_d, 1), round(height - t, 1)]
-    return {"all": _on_floor(solid), "use": use}, note
+    return {"all": standing, "use": standing}, note
 
 
 def cap(M, p):

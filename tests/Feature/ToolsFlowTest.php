@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Domain\Calculation\MaterialCatalog;
 use App\Domain\Tools\ModelCheck;
 use App\Domain\Tools\ParametricGenerator;
+use App\Engines\DTO\Dimensions;
+use App\Engines\Farm\PythonPrintPreparer;
 use App\Engines\Mesh\StlTopology;
 use App\Models\ModelFile;
 use App\Support\NextStep;
@@ -208,6 +210,18 @@ class ToolsFlowTest extends TestCase
             $stl = tempnam(sys_get_temp_dir(), 'hold').'.stl';
             file_put_contents($stl, $r->streamedContent());
             $this->assertTrue(StlTopology::check($stl)['watertight'], $style);
+            if ($style !== 'hook') {
+                // cradle and pocket stand the way they hang on the wall: walls straight up from the bed, no supports
+                $this->assertEqualsWithDelta(60 + 22, $m['bbox']['z'], 0.01, $style.' stands');
+                $bed = new Dimensions(250, 250, 250);
+                $out = $stl.'.out.stl';
+                foreach ([true, false] as $keep) {
+                    $mesh = app(PythonPrintPreparer::class)->prepare($stl, $out, 1.0, $bed, $keep);
+                    $this->assertFalse($mesh->orientation['changed'], $style.($keep ? ' kept' : ' not laid on its back plate'));
+                    $this->assertEqualsWithDelta(0.0, $mesh->orientation['overhang_mm2'], 1.0, $style);
+                }
+                @unlink($out);
+            }
             @unlink($stl);
         }
         $clip = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => ['style' => 'clip', 'obj_w' => 24, 'height' => 25]])->assertOk());
@@ -218,6 +232,7 @@ class ToolsFlowTest extends TestCase
         $created = $this->postJson('/api/tools/param', ['kind' => 'holder', 'params' => ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90]])->assertCreated();
         $this->assertSame('holder', $created->json('file.kind'));
         $this->assertFalse($created->json('file.hints.supports'));
+        $this->assertTrue(ModelFile::where('uuid', $created->json('file.uuid'))->firstOrFail()->builtForPrinting());
     }
 
     public function test_lid_plug_and_threaded_cap_fit_what_was_measured(): void

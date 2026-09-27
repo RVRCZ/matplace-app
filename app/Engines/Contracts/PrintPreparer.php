@@ -14,10 +14,11 @@ interface PrintPreparer
 {
     /**
      * @param  float  $unitScale  multiply coordinates by this to get millimetres (1, 10, 25.4, 1000)
+     * @param  bool  $keepPose  the model already lies the way it prints best (built by our tools): do not turn it
      *
      * @throws EngineException when the file is not a usable mesh at all
      */
-    public function prepare(string $stlPath, string $outPath, float $unitScale, Dimensions $bed): PreparedMesh;
+    public function prepare(string $stlPath, string $outPath, float $unitScale, Dimensions $bed, bool $keepPose = false): PreparedMesh;
 
     public function name(): string;
 }

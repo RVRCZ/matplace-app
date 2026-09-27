@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Generation\GenerationService;
 use App\Domain\Generation\PedestalChanger;
+use App\Domain\Tools\ParametricGenerator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -100,6 +101,12 @@ class ModelFile extends Model
             'refinable' => app(GenerationService::class)->basePrompt($req) !== null,
             'pedestal' => app(PedestalChanger::class)->state($this),
         ];
+    }
+
+    /** Made by one of our measured tools: the builder laid it the way it prints best, the farm must not turn it. */
+    public function builtForPrinting(): bool
+    {
+        return $this->origin === 'tool' && array_key_exists($this->kind(), ParametricGenerator::FIELDS);
     }
 
     /** Organic AI meshes print best with tree supports. */

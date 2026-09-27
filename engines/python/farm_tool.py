@@ -145,7 +145,7 @@ def rate(m, down, cos_limit, bed):
     return score, overhang, base, height
 
 
-def prepare(src, dst, unit_scale, bed, overhang_deg):
+def prepare(src, dst, unit_scale, bed, overhang_deg, keep_pose=False):
     import numpy as np
     import trimesh
     m = trimesh.load(src, force="mesh", process=False)
@@ -177,8 +177,14 @@ def prepare(src, dst, unit_scale, bed, overhang_deg):
     start = np.array([0.0, 0.0, -1.0])
     s0, over0, base0, _ = rate(m, start, cos_limit, bed)
     best, best_score, best_stats = start, s0 - 0.02, (over0, base0)   # the uploaded pose wins ties
-    for d in candidates(m):
+    total = float(m.area) or 1.0
+    stands = base0 / total >= 0.02 and s0 < 5.0              # a real flat foot on the plate, and it fits in height
+    # a model from our own tools is built in the pose it prints best in; the score below knows nothing about walls
+    # hanging over a cavity and would lay a wall holder on its back plate
+    for d in ([] if keep_pose else candidates(m)):
         s, over, base, _ = rate(m, d, cos_limit, bed)
+        if stands and over > over0 + 0.01 * total:
+            continue                                         # never trade a pose that stands well for more supports
         if s < best_score - 1e-9:
             best, best_score, best_stats = d, s, (over, base)
     rot = np.eye(4)
@@ -218,7 +224,7 @@ def prepare(src, dst, unit_scale, bed, overhang_deg):
         "triangles": int(len(m.faces)),
         "shells": int(shells),
         "orientation": {
-            "method": "hull-facets",
+            "method": "as-built" if keep_pose else "hull-facets",
             "matrix": [[round(float(v), 6) for v in row[:3]] for row in rot[:3]],
             "changed": bool(float(np.dot(best, start)) < 0.9999),
             "spun_to_fit": spun,
@@ -236,7 +242,8 @@ def main(argv):
     try:
         if argv[1] == "prepare":
             bed = (float(argv[5]), float(argv[6]), float(argv[7]))
-            prepare(argv[2], argv[3], float(argv[4]), bed, float(argv[8]) if len(argv) > 8 else 40.0)
+            prepare(argv[2], argv[3], float(argv[4]), bed, float(argv[8]) if len(argv) > 8 else 40.0,
+                    keep_pose=len(argv) > 9 and argv[9] == "keep")
         fail("unknown command " + argv[1])
     except SystemExit:
         raise
