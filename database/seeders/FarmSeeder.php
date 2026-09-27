@@ -109,18 +109,18 @@ class FarmSeeder extends Seeder
             }
         }
 
-        // third machine (24 Sep 2026): a second Kobra S1, since 25 Sep 2026 with a 0.2 mm nozzle for fine work and since
-        // 26 Sep 2026 on a smooth PEI plate (a 0.12 mm first layer is lost in the grain of a textured one).
-        // The nozzle has its own machine, process and filament profiles; the layer ladder follows it (FarmPrinter::layerFor)
+        // third machine (24 Sep 2026): a second Kobra S1 on a smooth PEI plate since 26 Sep 2026. It ran a 0.2 mm nozzle
+        // from 25 to 27 Sep 2026 (profiles machine_kobras1_n02 / process_*_n02 are kept for when one goes in again: set
+        // nozzle_mm, machine_profile and process_profiles on the row, FarmPrinter::layerFor moves the quality ladder)
         $s1b = FarmPrinter::firstOrCreate(['key' => 'kobra-s1-02'], [
             'name' => 'Kobra S1 #2',
             'model' => 'Anycubic Kobra S1 Combo',
             'mode' => FarmPrinter::MODE_AGENT,
-            'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.2,
-            'time_factor' => 1.07, 'weight_factor' => 1.0,      // the S1 #1 numbers until this machine prints its own test
-            'machine_profile' => 'machine_kobras1_n02.json',
-            'process_profiles' => ['draft' => 'process_draft_n02.json', 'standard' => 'process_standard_n02.json', 'fine' => 'process_fine_n02.json'],
-            'machine_overrides' => [],
+            'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.4,
+            'time_factor' => 1.07, 'weight_factor' => 1.0,      // same as S1 #1; the 0.2 nozzle tests came out at 1.05-1.07 too
+            'machine_profile' => 'machine.json',
+            'process_profiles' => ['draft' => 'process_draft.json', 'standard' => 'process_standard.json', 'fine' => 'process_fine.json'],
+            'machine_overrides' => ['printable_area' => ['0x0', '250x0', '250x250', '0x250'], 'printable_height' => '250'],
             'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'High Temp Plate'],
         ]);
         if ($s1b->wasRecentlyCreated) {

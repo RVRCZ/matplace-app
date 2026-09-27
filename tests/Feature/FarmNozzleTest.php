@@ -33,6 +33,23 @@ class FarmNozzleTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Kobra S1 #2 fitted with the 0.2 mm nozzle, as it ran from 25 to 27 Sep 2026. The seeder describes the farm as it is
+     * (0.4 again), so the fine-nozzle path is set up here and stays tested whichever nozzle the machine carries today.
+     */
+    private function fineMachine(): FarmPrinter
+    {
+        $printer = FarmPrinter::where('key', 'kobra-s1-02')->firstOrFail();
+        $printer->update([
+            'nozzle_mm' => 0.2,
+            'machine_profile' => 'machine_kobras1_n02.json',
+            'process_profiles' => ['draft' => 'process_draft_n02.json', 'standard' => 'process_standard_n02.json', 'fine' => 'process_fine_n02.json'],
+            'machine_overrides' => [],
+        ]);
+
+        return $printer->fresh();
+    }
+
     public function test_the_quality_ladder_follows_the_nozzle(): void
     {
         $fine = new FarmPrinter(['nozzle_mm' => 0.2]);
@@ -84,7 +101,7 @@ class FarmNozzleTest extends TestCase
         $this->assertNull($library->lookup('Anycubic Kobra S1 Combo', 'PLA', 'solid', 0.2));
 
         $this->seed(FarmSeeder::class);
-        $printer = FarmPrinter::where('key', 'kobra-s1-02')->firstOrFail();
+        $printer = $this->fineMachine();
         $this->assertSame(0.2, (float) $printer->nozzle_mm);
         // a tuned row of the 0.4 machine is not inherited by the 0.2 one, however alike the machines are
         $pla = FarmMaterial::where('code', 'PLA')->where('finish', 'solid')->firstOrFail();
@@ -105,7 +122,7 @@ class FarmNozzleTest extends TestCase
         $this->seed(FarmSeeder::class);
 
         // only the 0.2 machine takes work: load a spool and switch the others off
-        $printer = FarmPrinter::where('key', 'kobra-s1-02')->firstOrFail();
+        $printer = $this->fineMachine();
         $color = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail()->slots()->where('enabled', true)->firstOrFail()->farm_color_id;
         FarmPrinter::where('key', '!=', 'kobra-s1-02')->update(['enabled' => false]);
         $printer->update(['enabled' => true, 'mode' => FarmPrinter::MODE_MANUAL]);
@@ -176,7 +193,7 @@ class FarmNozzleTest extends TestCase
         $this->seed(FarmSeeder::class);
 
         // the 0.2 machine is the only one with a spool: a standard order has nowhere to go, a fine one lands on it
-        $printer = FarmPrinter::where('key', 'kobra-s1-02')->firstOrFail();
+        $printer = $this->fineMachine();
         $color = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail()->slots()->where('enabled', true)->firstOrFail()->farm_color_id;
         FarmPrinter::where('key', '!=', 'kobra-s1-02')->update(['enabled' => false]);
         $printer->update(['enabled' => true, 'mode' => FarmPrinter::MODE_MANUAL]);
