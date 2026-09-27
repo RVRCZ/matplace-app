@@ -35,6 +35,16 @@ def open_edges(m):
     return int((counts == 1).sum()), int((counts > 2).sum())
 
 
+def meshfix_arrays(mf):
+    """pymeshfix 0.18 renamed the result from .v/.f to .points/.faces; read whichever this version has."""
+    import numpy as np
+    v = getattr(mf, "points", None)
+    f = getattr(mf, "faces", None)
+    if v is None or f is None:
+        v, f = mf.v, mf.f
+    return np.asarray(v, dtype=float), np.asarray(f).reshape(-1, 3)
+
+
 def repair(m):
     import numpy as np
     import trimesh
@@ -51,7 +61,8 @@ def repair(m):
             import pymeshfix
             mf = pymeshfix.MeshFix(np.asarray(fixed.vertices, dtype=float), np.asarray(fixed.faces, dtype=np.int32))
             mf.repair(joincomp=True, remove_smallest_components=False)
-            cand = trimesh.Trimesh(vertices=mf.v, faces=mf.f, process=True)
+            vv, ff = meshfix_arrays(mf)
+            cand = trimesh.Trimesh(vertices=vv, faces=ff, process=True)
             if len(cand.faces) > 0:
                 fixed, method = cand, "pymeshfix"
         except Exception:  # noqa: BLE001 - pymeshfix is optional; without it the simple repair is all we have

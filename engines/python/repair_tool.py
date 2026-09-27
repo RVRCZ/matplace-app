@@ -44,6 +44,16 @@ def describe(m):
     }
 
 
+def meshfix_arrays(mf):
+    """pymeshfix 0.18 renamed the result from .v/.f to .points/.faces; read whichever this version has."""
+    import numpy as np
+    v = getattr(mf, "points", None)
+    f = getattr(mf, "faces", None)
+    if v is None or f is None:
+        v, f = mf.v, mf.f
+    return np.asarray(v, dtype=float), np.asarray(f).reshape(-1, 3)
+
+
 def fix_body(p):
     """One body: normals, holes, and pymeshfix when the simple means did not close it. Returns (mesh, used_meshfix)."""
     import numpy as np
@@ -58,7 +68,8 @@ def fix_body(p):
             import pymeshfix
             mf = pymeshfix.MeshFix(np.asarray(q.vertices, dtype=float), np.asarray(q.faces, dtype=np.int32))
             mf.repair(joincomp=False, remove_smallest_components=False)
-            cand = trimesh.Trimesh(vertices=mf.v, faces=mf.f, process=True)
+            vv, ff = meshfix_arrays(mf)
+            cand = trimesh.Trimesh(vertices=vv, faces=ff, process=True)
             same = len(cand.faces) > 0 and bool(np.all(np.abs(cand.extents - before) <= np.maximum(before * 0.02, 0.05)))
             if same and cand.is_watertight:
                 q, used = cand, True

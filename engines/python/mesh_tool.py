@@ -78,6 +78,16 @@ def report(m, extra=None):
     return r
 
 
+def meshfix_arrays(mf):
+    """pymeshfix 0.18 renamed the result from .v/.f to .points/.faces; read whichever this version has."""
+    import numpy as np
+    v = getattr(mf, "points", None)
+    f = getattr(mf, "faces", None)
+    if v is None or f is None:
+        v, f = mf.v, mf.f
+    return np.asarray(v, dtype=float), np.asarray(f).reshape(-1, 3)
+
+
 def fix_winding_fast(m):
     """
     Generated meshes arrive closed but with some faces turned inside out, and exact solids refuse such a mesh.
@@ -150,7 +160,7 @@ def solidify(m, target, extra=None):
                 vv = getattr(fx, "points", None)
                 ff = getattr(fx, "faces", None)
                 if vv is None or ff is None:
-                    vv, ff = fx.v, fx.f
+                    vv, ff = meshfix_arrays(fx)
                 c = trimesh.Trimesh(vv, ff, process=True)
                 # accept only a repair that kept the shape (pymeshfix may throw away a badly broken part)
                 if len(c.faces) and c.is_watertight and abs(float(max(c.extents)) - float(max(p.extents))) <= 0.03 * float(max(p.extents)):
@@ -802,7 +812,7 @@ def main(argv):
                     import pymeshfix
                     fx = pymeshfix.MeshFix(m.vertices, m.faces)
                     fx.repair()
-                    m = trimesh.Trimesh(fx.v, fx.f)
+                    m = trimesh.Trimesh(*meshfix_arrays(fx))
                 except Exception:
                     pass
             m.export(argv[3], file_type="stl")
