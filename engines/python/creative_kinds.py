@@ -14,6 +14,7 @@ LIMITS = {
     "qr": {"size": (30, 150), "plate": (1.6, 4), "relief": (0.6, 2)},
     "stencil": {"width": (30, 250), "thickness": (0.8, 3), "margin": (5, 40), "bridge": (0.8, 3)},
     "lightbox": {"width": (80, 300), "depth": (25, 80), "wall": (1.6, 4), "face": (0.8, 2), "margin": (6, 40), "bridge": (0.8, 3), "cable": (3, 10), "clearance": (0.1, 0.6)},
+    "cutter": {"width": (30, 150), "height": (10, 30), "wall": (0.8, 1.6), "flange": (3, 10), "flange_t": (1, 2.5)},
 }
 CHOICES = {
     "vase": {"profile": ("neck", "belly", "cone", "tulip"), "style": ("twist", "ribs", "smooth"), "purpose": ("vase", "pot")},
@@ -23,6 +24,7 @@ CHOICES = {
     "qr": {},
     "stencil": {},
     "lightbox": {"led": ("strip8", "strip10", "module")},
+    "cutter": {"edge": ("sharp", "straight"), "typeface": ("sans", "serif", "mono")},
 }
 
 
@@ -639,4 +641,104 @@ def lightbox(M, Invalid, p):
     return parts, notes
 
 
-BUILDERS = {"vase": vase, "logo": logo, "sign": sign, "stamp": stamp, "qr": qr, "stencil": stencil, "lightbox": lightbox}
+# ── cookie cutter ───────────────────────────────────────────────────────────
+
+def cutter(M, Invalid, p):
+    """
+    Cookie / dough cutter from an outline: a thin wall standing on the plate with a flange at its foot (the pressing side
+    when the cutter is turned over), the cutting edge thinned at the top. The outline is mirrored, so the biscuit reads the
+    right way round once the cutter is flipped for use. Holes in the outline (the counter of an "O") get their own wall,
+    tied to the rest by flat bars at flange level. A line drawing (a leaf with its veins) also yields a separate stamp plate
+    with the inner lines raised, pressed into the biscuit after cutting.
+    """
+    k = "cutter"
+    n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
+    width, height, wall = n("width", 70), n("height", 18), n("wall", 1.0)
+    flange, flange_t = n("flange", 5), n("flange_t", 1.6)
+    edge = _pick(Invalid, p, k, "edge")
+    _pick(Invalid, p, k, "typeface")
+    raster_in = bool(p.get("artwork_path")) and not str(p.get("artwork_path")).lower().endswith(".svg")
+    try:
+        sil, info = S.load(M, p, width, p.get("font"), None, fill_holes=raster_in)
+        art = S.load(M, p, width, p.get("font"), None)[0] if raster_in else sil
+    except S.ArtworkError as e:
+        raise Invalid(e.code, str(e).split(": ", 1)[1] if ": " in str(e) else "")
+    sil = S.fit(sil, width_mm=width)
+    if raster_in:
+        art = S.fit(art, width_mm=width)
+    w, hgt = S.size(sil)
+    if hgt > 200:
+        raise Invalid("artwork_too_tall")
+    # narrow passages would print as a double wall and the dough would stick: open them up to at least two walls
+    sil = sil.offset(-wall, M.JoinType.Round, 2.0, 8).offset(wall, M.JoinType.Round, 2.0, 8)
+    if sil.is_empty() or sil.area() < 25:
+        raise Invalid("empty_result")
+    margin = wall + flange
+    pw, ph = w + 2 * margin, hgt + 2 * margin
+    place = lambda cs: S.centre_on(cs.mirror([1, 0]), pw, ph)       # noqa: E731  mirrored: the biscuit reads right once the cutter is turned over
+    sil_p = place(sil).simplify(0.03)                                # a traced picture carries thousands of near-collinear points: fewer, cleaner offsets
+    art_p = place(art) if raster_in else None
+
+    off = lambda cs, d: cs.offset(d, M.JoinType.Round, 2.0, 8).simplify(0.02)       # noqa: E731  round offsets of a wavy outline breed near-coincident points
+    rim = off(sil_p, wall)
+    foot = off(sil_p, wall + flange)
+    taper = 2.0 if edge == "sharp" else 0.0
+    eps = 0.05                                       # no two stacked layers may share a vertical face: the union would leave slivers (see sign)
+
+    # inner islands (the counter of an "O"): a flat bar through each hole at flange level ties its wall to the rest
+    holes = [poly for poly in sil_p.to_polygons() if _signed_area(poly) < 0]
+    bars = None
+    for poly in holes:
+        cy = sum(y for _, y in poly) / len(poly)
+        bar = M.CrossSection.square([pw + 2, 2.5]).translate([-1, cy - 1.25]) ^ foot
+        if not bar.is_empty():
+            bars = bar if bars is None else bars + bar
+    bridges = 0 if bars is None else len([h for h in holes])
+
+    # three layers, each one flat 2D profile: flange with bars, the wall, the thinned cutting edge; 0.01 mm overlaps
+    cavity_low = off(sil_p, eps) - bars if bars is not None else off(sil_p, eps)
+    body = (foot - cavity_low).extrude(flange_t)
+    body = body + (rim - sil_p).extrude(height - taper - flange_t + 0.01).translate([0, 0, flange_t - 0.01])
+    if taper:
+        body = body + (off(sil_p, min(wall, 0.6)) - off(sil_p, -0.02)).extrude(taper + 0.01).translate([0, 0, height - taper - 0.01])
+    warn = []
+    if info.get("missing_chars"):
+        warn.append("missing_chars")
+    if info.get("ignored_outlines"):
+        warn.append("outlines_ignored")
+    parts = {"body": body, "all": body}
+    notes = {"outer": [round(pw, 1), round(ph, 1), round(height, 1)], "bridges": bridges, "warnings": warn, "missing_chars": info.get("missing_chars", []), "parts": []}
+
+    # the drawing's inner lines (veins, eyes, a smile) → a stamp that marks the biscuit; only when there is enough of them
+    if raster_in and bool(p.get("stamp", True)):
+        inner = sil_p.offset(-(wall + 1.5), M.JoinType.Round, 2.0, 8)
+        details = art_p ^ inner
+        if not details.is_empty() and details.area() > 0.015 * sil_p.area():
+            plate2d = sil_p.offset(-(wall + 0.6), M.JoinType.Round, 2.0, 8)
+            stamp = plate2d.extrude(1.6) + details.extrude(1.2).translate([0, 0, 1.59])
+            parts["stamp"] = stamp
+            parts["all"] = body + stamp.translate([pw + 8, 0, 0])
+            parts["body"] = body
+            notes["parts"] = ["body", "stamp"]
+            notes["outer"] = [round(pw * 2 + 8, 1), round(ph, 1), round(height, 1)]
+    # booleans of stacked profiles leave vertices nanometres apart; welded in the float32 STL they would open the mesh.
+    # 5 µm is nothing on a cutter, and it makes every part one closed body.
+    parts = {key: _welded(M, solid) for key, solid in parts.items()}
+    # in use the cutter is turned over: the flange on top, the edge on the dough, the outline reading as drawn
+    parts["use"] = parts["all"].rotate([180, 0, 0]).translate([0, ph, height])
+    return parts, notes
+
+
+def _welded(M, solid, tolerance=0.005):
+    try:
+        slim = solid.simplify(tolerance)
+    except AttributeError:                       # older manifold3d
+        return solid
+    return slim if not slim.is_empty() and slim.status() == M.Error.NoError else solid
+
+
+def _signed_area(poly):
+    return 0.5 * sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly)))
+
+
+BUILDERS = {"vase": vase, "logo": logo, "sign": sign, "stamp": stamp, "qr": qr, "stencil": stencil, "lightbox": lightbox, "cutter": cutter}

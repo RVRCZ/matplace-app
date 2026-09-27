@@ -111,6 +111,7 @@ export function bootParam(): void {
         if (cfg.kind === 'logo' && p.mode === 'standing') return ['body', 'stand'];
         if (cfg.kind === 'qr' && p.stand) return ['body', 'stand'];
         if (cfg.kind === 'lightbox') return ['body', 'face', 'diffuser', 'back'];
+        if (cfg.kind === 'cutter') return ((lastMeta?.notes as { parts?: string[] } | undefined)?.parts ?? []);   // a stamp only when the drawing had inner lines
         if (cfg.kind === 'modular') return [...(p.tray ? ['tray'] : []), ...new Set(bins.map((b) => `bin_${b.w}x${b.h}`))];
         return [];
     };

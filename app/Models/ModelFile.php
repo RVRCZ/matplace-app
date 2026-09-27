@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Domain\Generation\GenerationService;
+use App\Domain\Generation\PedestalChanger;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,7 +27,7 @@ class ModelFile extends Model
         'origin', 'origin_ref', 'tool_params', 'status', 'error',
     ];
 
-    protected $casts = ['tool_params' => 'array', 
+    protected $casts = ['tool_params' => 'array',
         'bbox' => 'array',
         'mesh_report' => 'array',
         'volume_mm3' => 'float',
@@ -76,7 +78,7 @@ class ModelFile extends Model
             'generated' => ['supports' => true],                                           // organic shapes: tree supports
             'lithophane' => ['infill' => 100, 'quality' => 'fine', 'supports' => false],   // must be solid, fine layers = smooth picture
             'vase' => ['supports' => false] + (($this->tool_params['purpose'] ?? 'vase') === 'vase' ? ['vase' => true] : []),   // a plain vase is one closed contour: it prints best in vase mode, one wall and no infill
-            'relief', 'sign', 'logo', 'stamp', 'qr', 'stencil', 'lightbox', 'modular', 'organizer', 'box', 'phone_stand', 'cable_holder' => ['supports' => false],
+            'relief', 'sign', 'logo', 'stamp', 'qr', 'stencil', 'lightbox', 'modular', 'organizer', 'box', 'phone_stand', 'cable_holder', 'cutter' => ['supports' => false],
             'mold' => ['supports' => false, 'infill' => 30],                                 // halves lie parting face up; supports would scar the cavity
             default => [],
         };
@@ -95,8 +97,8 @@ class ModelFile extends Model
 
         return [
             'token' => $req->token,
-            'refinable' => app(\App\Domain\Generation\GenerationService::class)->basePrompt($req) !== null,
-            'pedestal' => app(\App\Domain\Generation\PedestalChanger::class)->state($this),
+            'refinable' => app(GenerationService::class)->basePrompt($req) !== null,
+            'pedestal' => app(PedestalChanger::class)->state($this),
         ];
     }
 

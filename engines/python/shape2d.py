@@ -163,8 +163,11 @@ def svg(M, path, width_mm):
 
 # ── raster ───────────────────────────────────────────────────────────────────
 
-def raster(M, path, width_mm, threshold=None, invert=False):
-    """Dark-on-light picture → outline. Works for logos and silhouettes, not for photographs (that is what the relief tool is for)."""
+def raster(M, path, width_mm, threshold=None, invert=False, fill_holes=False):
+    """
+    Dark-on-light picture → outline. Works for logos and silhouettes, not for photographs (that is what the relief tool is for).
+    fill_holes: everything enclosed by the drawing counts as inside (a line drawing of a leaf becomes the leaf itself).
+    """
     import numpy as np
     from PIL import Image, ImageOps
     from scipy import ndimage
@@ -204,6 +207,15 @@ def raster(M, path, width_mm, threshold=None, invert=False):
     labels, count = ndimage.label(dark)
     if count > 400:
         raise ArtworkError("image_too_noisy", str(count))
+    if fill_holes:
+        # close small gaps in the drawn line first, then fill what it encloses; keep only the biggest region
+        closed = ndimage.binary_closing(dark, iterations=2)
+        filled = ndimage.binary_fill_holes(closed)
+        labels, count = ndimage.label(filled)
+        if count > 1:
+            sizes = ndimage.sum(filled, labels, range(1, count + 1))
+            filled = labels == (int(np.argmax(sizes)) + 1)
+        dark = filled
     rows, cols = dark.shape
     rects = []
     for r in range(rows):
@@ -257,14 +269,14 @@ def printability(M, cs, nozzle=0.4):
     return {"thin_pct": int(round(max(0.0, 1 - kept / area) * 100))}
 
 
-def load(M, p, width_mm, font_path=None, cap_height_mm=None):
+def load(M, p, width_mm, font_path=None, cap_height_mm=None, fill_holes=False):
     """One entry for every tool: params carry either text lines or an uploaded artwork file."""
     art = p.get("artwork_path")
     if art:
         ext = art.rsplit(".", 1)[-1].lower()
         if ext == "svg":
             return svg(M, art, width_mm)
-        return raster(M, art, width_mm, invert=bool(p.get("invert", False)))
+        return raster(M, art, width_mm, invert=bool(p.get("invert", False)), fill_holes=fill_holes)
     lines = p.get("lines") or [p.get("text", "")]
     cs, info = text(M, lines, font_path, cap_height_mm or 10)
     if width_mm and not cap_height_mm:

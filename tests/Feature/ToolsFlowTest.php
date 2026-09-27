@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Domain\Tools\ModelCheck;
 use App\Domain\Tools\ParametricGenerator;
+use App\Engines\Mesh\StlTopology;
 use App\Models\ModelFile;
 use App\Support\NextStep;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /** The flow of a tool: rate limits that do not trip each other, errors in the visitor's language, the next step named truthfully. */
@@ -124,6 +126,35 @@ class ToolsFlowTest extends TestCase
         foreach (['cs', 'en', 'es'] as $lang) {
             $this->assertNotSame('calc.size.generated', __('calc.size.generated', [], $lang));
         }
+    }
+
+    public function test_cookie_cutter_is_a_thin_closed_wall_with_a_flange_and_bridges_for_holes(): void
+    {
+        $this->get('/tools/cookie-cutter?lang=cs')->assertOk()->assertSee('Vykrajovátko')->assertSee('data-choice="edge"', false)->assertSee('data-flag="stamp"', false);
+        $this->get('/tools?lang=cs')->assertOk()->assertSee(__('tools.cutter.title', [], 'cs'));
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        Storage::fake('models');
+        $meta = fn ($r) => json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $r = $this->postJson('/api/tools/param/preview', ['kind' => 'cutter', 'params' => ['line1' => 'O8', 'width' => 70, 'height' => 18, 'wall' => 1.0, 'flange' => 5, 'flange_t' => 1.6]])->assertOk();
+        $m = $meta($r);
+        $this->assertEqualsWithDelta(18, $m['bbox']['z'], 0.05);                         // the wall height, exactly
+        $this->assertEqualsWithDelta(70 + 2 * (1.0 + 5), $m['bbox']['x'], 0.1);           // the text width plus wall and flange on both sides
+        $this->assertSame(3, $m['notes']['bridges']);                                     // O, 8 top, 8 bottom
+        $this->assertSame([], $m['notes']['parts']);                                      // text has no inner drawing: no stamp
+        $this->assertLessThan(70 * 49 * 18 * 0.15, $m['volume_mm3']);                      // a thin wall, not a block
+        $stl = tempnam(sys_get_temp_dir(), 'cut').'.stl';
+        file_put_contents($stl, $r->streamedContent());
+        $topo = StlTopology::check($stl);
+        @unlink($stl);
+        $this->assertTrue($topo['watertight'], 'open '.$topo['open_edges'].' non-manifold '.$topo['non_manifold_edges']);
+        $this->postJson('/api/tools/param/preview', ['kind' => 'cutter', 'params' => ['line1' => 'O8'], 'part' => 'stamp'])->assertOk()->assertHeader('X-Model-Meta');   // no stamp: falls back to the whole design
+
+        $created = $this->postJson('/api/tools/param', ['kind' => 'cutter', 'params' => ['line1' => 'Ela']])->assertCreated();
+        $this->assertSame([], $created->json('file.parts'));
+        $this->assertSame('cutter', $created->json('file.kind'));
+        $this->assertFalse($created->json('file.hints.supports'));
     }
 
     public function test_tool_pages_address_the_visitor_formally(): void
