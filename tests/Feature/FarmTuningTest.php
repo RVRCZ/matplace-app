@@ -241,6 +241,12 @@ class FarmTuningTest extends TestCase
         $this->assertArrayNotHasKey('nozzle_temp', $row->overrides, '215 is what the PLA+ kind says anyway: the row keeps only what differs');
         $this->assertSame(215, PrintProfile::for($s1, $row->material, $slot->color)->temps['nozzle']);
 
+        // a poor test cannot be adopted as tuned (the operator clicked that on a 2/5 test once)
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/adopt/{$order->token}", ['score' => 2])->assertRedirect()->assertSessionHas('error');
+        $this->assertSame(FarmPrinterMaterial::STATUS_TESTING, $row->fresh()->status);
+        $this->assertSame(2, $row->fresh()->version);
+        $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()->assertSee('převzít jako vyladěný nejde');
+
         // floor 3 (220) was best after all → the row is tuned with it
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/adopt/{$order->token}", ['nozzle_temp' => 220, 'score' => 5, 'note' => 'patro 3'])->assertRedirect();
         $row->refresh();

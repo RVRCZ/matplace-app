@@ -204,6 +204,12 @@ class FarmTuningController extends Controller
     {
         abort_unless($order->isTest() && $order->farm_printer_material_id === $row->id, 404);
         $data = $request->validate(['score' => ['nullable', 'integer', 'min:1', 'max:5'], 'nozzle_temp' => ['nullable', 'integer', 'min:150', 'max:350'], 'note' => ['nullable', 'string', 'max:300']]);
+        // only a test that printed well may become "tuned"; a poor one has a proposal of changes instead (one click
+        // adopted a 2/5 test on 27 Sep 2026)
+        $score = (int) ($data['score'] ?? $order->quality_rating ?? 0);
+        if ($score < 4) {
+            return back()->with('error', $score ? 'Test s hodnocením '.$score.'/5 nelze převzít jako vyladěný. Použijte návrh úprav a vytiskněte další test.' : 'Nejdřív test ohodnoťte (4 nebo 5), teprve pak jde převzít.');
+        }
         $candidate = (array) ($order->test_params['candidate'] ?? []);
         if (! empty($data['nozzle_temp'])) {
             // a tower: the operator picked the floor that printed best
