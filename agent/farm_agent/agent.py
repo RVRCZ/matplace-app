@@ -5,6 +5,8 @@ The agent: one process, many printers.
       read every printer -> POST /api/agent/sync -> carry out the commands that came back
   every snapshot_seconds, for printers with a running job (once a minute when idle, so the operator sees the plate)
       camera picture -> POST /api/agent/printers/{key}/snapshot
+  four times a second, for a job whose G-code parks the head after every layer (server's TimelapseGcode)
+      head standing at the park position -> camera picture -> the same endpoint with frame=layer
 
 The agent never starts anything by itself. A print starts only on a `start` command, which the server issues only
 after an operator confirmed in the admin that the plate is empty.
@@ -29,6 +31,26 @@ log = logging.getLogger("farm_agent")
 # a tracked file the printer does not talk about for this many polls in a row is given up as failed
 LOST_AFTER_POLLS = 8
 
+TIMELAPSE_HEADER = "; matplace timelapse "
+PARK_TOLERANCE_MM = 1.0
+HEAD_POLL_SECONDS = 0.25
+
+
+def read_park(path: str) -> Optional[list]:
+    """[x, y] from the first line the server writes into a layer-synced G-code, None for any other file."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            first = fh.readline()
+    except OSError:
+        return None
+    if not first.startswith(TIMELAPSE_HEADER):
+        return None
+    values = dict(p.split("=", 1) for p in first[len(TIMELAPSE_HEADER):].split() if "=" in p)
+    try:
+        return [float(values["park_x"]), float(values["park_y"])]
+    except (KeyError, ValueError):
+        return None
+
 
 @dataclass
 class Tracked:
@@ -37,6 +59,7 @@ class Tracked:
     seen_printing: bool = False     # terminal states are trusted only after we saw this very file printing
     misses: int = 0
     final: bool = False             # a terminal state was put into a report; forget the job once the server has it
+    park: Optional[list] = None     # [x, y] when the G-code parks the head after every layer for a picture
 
 
 class PrinterWorker:
@@ -46,6 +69,7 @@ class PrinterWorker:
         self.work_dir = work_dir
         self.tracked: Optional[Tracked] = None
         self.busy = asyncio.Lock()      # one command at a time per printer
+        self.parked = False             # the head is standing at the park position and its picture is taken
         self.dirty = False              # tracked state changed and is not on disk yet
 
     async def report(self) -> dict:
@@ -94,7 +118,7 @@ class Agent:
             await w.driver.connect()
         log.info("farm-agent %s: %d printer(s) -> %s", __version__, len(self.workers), self.config.server)
         try:
-            await asyncio.gather(self._sync_loop(), self._snapshot_loop())
+            await asyncio.gather(self._sync_loop(), self._snapshot_loop(), self._layer_loop())
         finally:
             for w in self.workers.values():
                 await w.driver.close()
@@ -152,6 +176,34 @@ class Agent:
                 except Exception as e:  # noqa: BLE001 - pictures are a courtesy
                     log.debug("%s: snapshot not sent: %s", w.key, e)
 
+    async def _layer_loop(self) -> None:
+        while True:
+            await asyncio.sleep(HEAD_POLL_SECONDS)
+            for w in self.workers.values():
+                if w.tracked and w.tracked.park and not w.tracked.final:
+                    await self.layer_frame(w)
+
+    async def layer_frame(self, w: PrinterWorker) -> bool:
+        """One look at the head: the first time it stands at the park position, one picture. True when one was sent."""
+        head = await w.driver.head()
+        park = w.tracked.park if w.tracked else None
+        at_park = bool(head and park and abs(head[0] - park[0]) <= PARK_TOLERANCE_MM and abs(head[1] - park[1]) <= PARK_TOLERANCE_MM
+                       and head[2] < 1.0)
+        if not at_park:
+            w.parked = False
+            return False
+        if w.parked:
+            return False
+        w.parked = True
+        try:
+            jpeg = await w.driver.snapshot()
+            if jpeg:
+                await self.server.snapshot(w.key, jpeg, w.tracked.job_id, frame="layer")
+                return True
+        except Exception as e:  # noqa: BLE001 - a missed layer is a missed frame, nothing more
+            log.debug("%s: layer frame not sent: %s", w.key, e)
+        return False
+
     # -- commands ------------------------------------------------------------------------------------------------
     async def _execute(self, w: PrinterWorker, cmd: dict) -> None:
         ok, message = True, ""
@@ -194,7 +246,8 @@ class Agent:
         await self.server.download_gcode(str(payload["gcode_url"]), local)
         await w.driver.light(True)     # the camera wants to see something
         await w.driver.start(local, filename, int(payload.get("slot", 0)))
-        w.tracked = Tracked(job_id=job_id, filename=filename)
+        w.tracked = Tracked(job_id=job_id, filename=filename, park=read_park(local))
+        w.parked = False
         self._save_state()
 
     # -- what survives a restart -----------------------------------------------------------------------------------
@@ -226,4 +279,5 @@ class Agent:
             return
         for key, t in data.items():
             if key in self.workers:
-                self.workers[key].tracked = Tracked(job_id=int(t["job_id"]), filename=str(t["filename"]), seen_printing=bool(t.get("seen_printing")))
+                self.workers[key].tracked = Tracked(job_id=int(t["job_id"]), filename=str(t["filename"]), seen_printing=bool(t.get("seen_printing")),
+                                                    park=t.get("park"))

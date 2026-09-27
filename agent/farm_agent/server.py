@@ -36,11 +36,13 @@ class Server:
     async def command_result(self, command_id: int, ok: bool, message: str = "") -> None:
         await self._json("POST", f"/api/agent/commands/{command_id}/result", json={"ok": ok, "message": message[:300]}, timeout=20)
 
-    async def snapshot(self, printer_key: str, jpeg: bytes, job_id: Optional[int]) -> None:
+    async def snapshot(self, printer_key: str, jpeg: bytes, job_id: Optional[int], frame: Optional[str] = None) -> None:
         form = aiohttp.FormData()
         form.add_field("image", jpeg, filename="snapshot.jpg", content_type="image/jpeg")
         if job_id:
             form.add_field("job_id", str(job_id))
+        if frame:
+            form.add_field("frame", frame)     # "layer": taken with the head parked after a layer
         await self._json("POST", f"/api/agent/printers/{printer_key}/snapshot", data=form, timeout=60)
 
     async def download_gcode(self, url: str, target: str) -> str:

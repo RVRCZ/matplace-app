@@ -60,7 +60,7 @@ class FarmOrder extends Model
         'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'slice_params', 'slice_result', 'est_minutes',
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
         'terms_ip', 'paid_at', 'approved_at', 'approved_by', 'queued_at', 'started_at', 'finished_at', 'handed_at', 'tracking',
-        'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at',
+        'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at', 'timelapse_short_path',
     ];
 
     protected $casts = [

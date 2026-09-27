@@ -70,6 +70,12 @@ class PrinterDriver(abc.ABC):
         """JPEG from the printer's camera, or None when there is none."""
         return None
 
+    async def head(self) -> Optional[tuple[float, float, float]]:
+        """Where the print head really is while printing (x, y, speed in mm/s), None when unknown or not printing.
+        Used for the layer-synced time-lapse: the G-code parks the head after every layer and the agent takes the
+        picture while it stands there."""
+        return None
+
     async def light(self, on: bool) -> None:
         """Chamber light, when the printer has one: on for the camera during a print. Never raises."""
 

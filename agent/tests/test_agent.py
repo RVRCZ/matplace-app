@@ -39,14 +39,15 @@ class FakeServer:
     async def command_result(self, command_id, ok, message=""):
         self.results.append((command_id, ok, message))
 
-    async def snapshot(self, key, jpeg, job_id):
-        self.snapshots.append((key, len(jpeg), job_id))
+    async def snapshot(self, key, jpeg, job_id, frame=None):
+        self.snapshots.append((key, len(jpeg), job_id) + ((frame,) if frame else ()))
 
     async def download_gcode(self, url, target):
         os.makedirs(os.path.dirname(target), exist_ok=True)
+        body = self.gcode if hasattr(self, "gcode") else GCODE
         with open(target, "wb") as fh:
-            fh.write(GCODE)
-        return hashlib.sha256(GCODE).hexdigest()
+            fh.write(body)
+        return hashlib.sha256(body).hexdigest()
 
     def jobs(self, key="p1"):
         return [p["job"] for round_ in self.reports for p in round_ if p["key"] == key and p["job"]]
@@ -177,6 +178,35 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         agent.workers["p1"].driver._file = "something-else.gcode"      # somebody started another file at the printer
         await self.rounds(agent, LOST_AFTER_POLLS + 1, pause=0.01)
         self.assertEqual(self.server.jobs()[-1]["status"], "failed")
+
+    async def test_layer_frames_are_taken_once_per_stop_at_the_park_position(self):
+        agent = self.agent(print_seconds=5)
+        self.server.gcode = b"; matplace timelapse park_x=250 park_y=250 dwell=1000 frames=3\n" + GCODE
+        self.server.queue.append(start_cmd())
+        await self.rounds(agent, 3)
+        w = agent.workers["p1"]
+        self.assertEqual(w.tracked.park, [250.0, 250.0])
+
+        driver = w.driver
+        driver.head_at = (120.0, 80.0, 150.0)       # printing somewhere on the plate
+        self.assertFalse(await agent.layer_frame(w))
+        driver.head_at = (250.2, 249.7, 180.0)      # arriving, still moving
+        self.assertFalse(await agent.layer_frame(w))
+        driver.head_at = (250.2, 249.7, 0.0)        # standing at the park position
+        self.assertTrue(await agent.layer_frame(w))
+        self.assertFalse(await agent.layer_frame(w), "one picture per stop")
+        driver.head_at = (100.0, 100.0, 200.0)      # back to printing, next layer
+        await agent.layer_frame(w)
+        driver.head_at = (250.0, 250.0, 0.0)
+        self.assertTrue(await agent.layer_frame(w))
+        frames = [s for s in self.server.snapshots if len(s) == 4]
+        self.assertEqual([(f[0], f[2], f[3]) for f in frames], [("p1", 7, "layer")] * 2)
+
+    async def test_an_ordinary_gcode_takes_no_layer_frames(self):
+        agent = self.agent(print_seconds=5)
+        self.server.queue.append(start_cmd())
+        await self.rounds(agent, 3)
+        self.assertIsNone(agent.workers["p1"].tracked.park)
 
     async def test_snapshot_is_a_jpeg(self):
         jpeg = await create("p", "mock", {}).snapshot()

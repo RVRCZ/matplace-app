@@ -30,7 +30,8 @@
     <section class="mt-3 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
         <div>
             @if($o?->timelapse_path)
-                <video src="{{ route('admin.farm.orders.timelapse', $o) }}" controls muted playsinline preload="metadata" class="w-full rounded-xl border border-slate-200"></video>
+                <video src="{{ route('admin.youtube.file', $o) }}" controls muted playsinline preload="metadata" class="w-full rounded-xl border border-slate-200 {{ $o->timelapse_short_path ? 'mx-auto max-w-sm' : '' }}"></video>
+                @if($o->timelapse_short_path)<p class="mt-1 text-xs text-slate-500">Čtvercový Short · <a href="{{ route('admin.farm.orders.timelapse', $o) }}" target="_blank" class="underline">širokoúhlá verze pro zákazníka</a></p>@endif
             @endif
             <p class="mt-2 text-xs text-slate-500">
                 <a href="{{ route('admin.farm.orders.show', $o) }}" class="underline">{{ $o->number }}</a>

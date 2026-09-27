@@ -115,6 +115,9 @@ class MockDriver(PrinterDriver):
         self._state, self._since = "cancelled", None
         await self._changed()
 
+    async def head(self) -> Optional[tuple[float, float, float]]:
+        return getattr(self, "head_at", None) if self._state == "printing" else None
+
     async def snapshot(self) -> Optional[bytes]:
         return _JPEG
 

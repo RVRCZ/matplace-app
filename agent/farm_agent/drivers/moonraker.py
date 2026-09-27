@@ -141,6 +141,20 @@ class MoonrakerDriver(PrinterDriver):
             log.debug("%s: snapshot failed: %s", self.key, e)
         return None
 
+    async def head(self) -> Optional[tuple[float, float, float]]:
+        if not self._session:
+            return None
+        try:
+            s = (await self._get("/printer/objects/query?motion_report=live_position,live_velocity&print_stats=state"))["result"]["status"]
+        except Exception:  # noqa: BLE001 - no position, no picture; the print goes on
+            return None
+        if s.get("print_stats", {}).get("state") != "printing":
+            return None
+        pos = s.get("motion_report", {}).get("live_position") or []
+        if len(pos) < 2:
+            return None
+        return float(pos[0]), float(pos[1]), float(s["motion_report"].get("live_velocity") or 0.0)
+
     async def light(self, on: bool) -> None:
         if not self.light_device or not self._session:
             return

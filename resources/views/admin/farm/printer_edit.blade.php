@@ -60,6 +60,27 @@
         <p class="mt-2 text-xs text-slate-500">{{ $calibration ? __('farm.admin.calibration', ['n' => $calibration['n'], 'time' => $calibration['time'] ?? '—', 'weight' => $calibration['weight'] ?? '—']) : __('farm.admin.calibration_none') }}</p>
     </section>
 
+    @php $tl = $printer->timelapseSettings(); @endphp
+    <section class="rounded-2xl border border-slate-200 bg-white p-4">
+        <h2 class="font-bold">Časosběr po vrstvách</h2>
+        <p class="text-xs text-slate-500">Po každé vrstvě hlava odjede na parkovací místo mimo záběr kamery a chvíli počká; agent v tu chvíli vyfotí snímek. Každá vrstva se tím prodlouží asi o 1,5–2,5 s. Funguje jen s agentem. Čtvercový výřez je pro YouTube Shorts (souřadnice v pixelech snímku kamery; prázdné = střed).</p>
+        <div class="mt-2 grid gap-3 sm:grid-cols-4">
+            <label class="{{ $lb }}">Kdy
+                <select name="timelapse[mode]" class="{{ $in }}">
+                    @foreach(['off' => 'vypnuto', 'consent' => 'jen se souhlasem se zveřejněním', 'always' => 'u každé zakázky'] as $v => $l)<option value="{{ $v }}" @selected(old('timelapse.mode', $tl['mode']) === $v)>{{ $l }}</option>@endforeach
+                </select>
+            </label>
+            <label class="{{ $lb }}">Parkování X (mm)<input type="number" step="0.1" name="timelapse[park_x]" value="{{ old('timelapse.park_x', $tl['park_x']) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Parkování Y (mm)<input type="number" step="0.1" name="timelapse[park_y]" value="{{ old('timelapse.park_y', $tl['park_y']) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Pauza na snímek (ms)<input type="number" step="50" min="300" max="5000" name="timelapse[dwell_ms]" value="{{ old('timelapse.dwell_ms', $tl['dwell_ms']) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Zvednutí trysky (mm)<input type="number" step="0.1" min="0.2" max="5" name="timelapse[lift_mm]" value="{{ old('timelapse.lift_mm', $tl['lift_mm']) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Rychlost přejezdu (mm/s)<input type="number" step="10" min="50" max="600" name="timelapse[travel_mm_s]" value="{{ old('timelapse.travel_mm_s', $tl['travel_mm_s']) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Short – výřez X, Y (px)
+                <span class="flex gap-2"><input type="number" min="0" name="timelapse[crop_x]" value="{{ old('timelapse.crop_x', $tl['crop_x']) }}" class="{{ $in }}"><input type="number" min="0" name="timelapse[crop_y]" value="{{ old('timelapse.crop_y', $tl['crop_y']) }}" class="{{ $in }}"></span></label>
+            <label class="{{ $lb }}">Short – strana čtverce (px)<input type="number" min="100" name="timelapse[crop_size]" value="{{ old('timelapse.crop_size', $tl['crop_size']) }}" class="{{ $in }}"></label>
+        </div>
+    </section>
+
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 class="font-bold">Sloty (cívky)</h2>
         <p class="text-xs text-slate-500">Zákazník vidí jen barvy v zapnutých slotech. Číslo slotu je číslo nástroje v G-code (slot 1 = T0).</p>

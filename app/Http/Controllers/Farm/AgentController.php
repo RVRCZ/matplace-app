@@ -6,6 +6,7 @@ use App\Domain\Farm\AgentService;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\GcodeSlot;
 use App\Domain\Farm\PrintProfile;
+use App\Domain\Farm\TimelapseGcode;
 use App\Http\Controllers\Controller;
 use App\Models\FarmAgent;
 use App\Models\FarmCommand;
@@ -65,6 +66,10 @@ class AgentController extends Controller
         $source = $job->order->absoluteGcodePath();
         abort_unless($source && is_file($source), 404);
         $path = GcodeSlot::fileFor($source, $job->slot, PrintProfile::tempsFor($job->order));
+        // the head steps out of the camera's way after every layer (only machines and orders set up for it)
+        if ($timelapse = $job->printer->timelapseFor($job->order)) {
+            $path = TimelapseGcode::fileFor($path, $timelapse);
+        }
 
         return response()->download($path, $job->remote_filename ?: 'print.gcode', [
             'Content-Type' => 'text/x.gcode', 'X-Content-Sha256' => hash_file('sha256', $path),
@@ -74,7 +79,7 @@ class AgentController extends Controller
     /** POST /api/agent/printers/{key}/snapshot — multipart "image" (JPEG). Kept on the printer and on its running job. */
     public function snapshot(Request $request, string $key, FarmSettings $settings): JsonResponse
     {
-        $request->validate(['image' => ['required', 'file', 'mimes:jpg,jpeg', 'max:4096'], 'job_id' => ['nullable', 'integer']]);
+        $request->validate(['image' => ['required', 'file', 'mimes:jpg,jpeg', 'max:4096'], 'job_id' => ['nullable', 'integer'], 'frame' => ['nullable', 'in:layer']]);
         $printer = FarmPrinter::where('key', $key)->where('farm_agent_id', $this->agent($request)->id)->firstOrFail();
         $disk = Storage::disk(config('farm.disk'));
 
@@ -88,9 +93,14 @@ class AgentController extends Controller
             $jobRel = $job->order->dir().'/snapshot.jpg';
             $disk->put($jobRel, $disk->get($rel));
             $frames = $job->order->dir().'/frames';
-            $last = collect($disk->files($frames))->max();
-            if (! $last || now()->timestamp - (int) basename($last, '.jpg') >= 55) {
-                $disk->put($frames.'/'.now()->timestamp.'.jpg', $disk->get($rel));
+            if ($request->input('frame') === 'layer') {
+                // the head stands in its park position after a layer: every one of these is a frame (TimelapseGcode)
+                $disk->put($job->order->dir().'/frames_layer/'.sprintf('%.3f', microtime(true)).'.jpg', $disk->get($rel));
+            } else {
+                $last = collect($disk->files($frames))->max();
+                if (! $last || now()->timestamp - (int) basename($last, '.jpg') >= 55) {
+                    $disk->put($frames.'/'.now()->timestamp.'.jpg', $disk->get($rel));
+                }
             }
             $job->update(['snapshot_path' => $jobRel, 'snapshot_at' => now()]);
         }

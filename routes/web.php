@@ -145,7 +145,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/farm/orders/{order}/supports.bin', [OrderController::class, 'supports'])->name('farm.orders.supports');
     Route::get('/farm/orders/{order}/snapshot', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
     Route::get('/farm/orders/{order}/timelapse.mp4', [OrderController::class, 'timelapse'])->name('farm.orders.timelapse');
-    Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1')->name('farm.orders.video_consent');
+    Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1,video-consent')->name('farm.orders.video_consent');
 
     Route::get('/account/credit', [CreditController::class, 'index'])->name('account.credit');
     Route::post('/account/credit', [CreditController::class, 'topUp'])->middleware('throttle:10,1,topup')->name('account.credit.topup');
@@ -215,6 +215,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/youtube')->name('admin.
     Route::get('/callback', [$yt, 'callback'])->name('callback');
     Route::post('/disconnect', [$yt, 'disconnect'])->name('disconnect');
     Route::post('/orders/{order}/queue', [$yt, 'queue'])->name('queue');
+    Route::get('/orders/{order}/video.mp4', [$yt, 'file'])->name('file');
     Route::post('/videos/{video}/publish', [$yt, 'publish'])->name('publish');
     Route::post('/videos/{video}/reject', [$yt, 'reject'])->name('reject');
     Route::post('/videos/{video}/retry', [$yt, 'retry'])->name('retry');

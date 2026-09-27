@@ -64,6 +64,16 @@ class FarmCatalogController extends Controller
             'time_factor' => ['required', 'numeric', 'min:0.1', 'max:10'],
             'weight_factor' => ['required', 'numeric', 'min:0.1', 'max:10'],
             'hourly_rate' => ['nullable', 'numeric', 'min:0', 'max:100000'],
+            'timelapse' => ['nullable', 'array'],
+            'timelapse.mode' => ['nullable', Rule::in(FarmPrinter::TIMELAPSE_MODES)],
+            'timelapse.park_x' => ['nullable', 'numeric', 'min:-50', 'max:1100'],
+            'timelapse.park_y' => ['nullable', 'numeric', 'min:-50', 'max:1100'],
+            'timelapse.dwell_ms' => ['nullable', 'integer', 'min:300', 'max:5000'],
+            'timelapse.lift_mm' => ['nullable', 'numeric', 'min:0.2', 'max:5'],
+            'timelapse.travel_mm_s' => ['nullable', 'numeric', 'min:50', 'max:600'],
+            'timelapse.crop_x' => ['nullable', 'integer', 'min:0', 'max:8000'],
+            'timelapse.crop_y' => ['nullable', 'integer', 'min:0', 'max:8000'],
+            'timelapse.crop_size' => ['nullable', 'integer', 'min:100', 'max:8000'],
             'slots' => ['nullable', 'array', 'max:16'],
             'slots.*.color' => ['nullable', 'exists:farm_colors,id'],
             'slots.*.remaining_g' => ['nullable', 'numeric', 'min:0', 'max:100000'],
@@ -83,6 +93,10 @@ class FarmCatalogController extends Controller
         $slots = $data['slots'] ?? [];
         unset($data['slots']);
         $data['enabled'] = $request->boolean('enabled');
+        if (array_key_exists('timelapse', $data)) {
+            // numbers as numbers; an empty field falls back to the default (FarmPrinter::timelapseSettings)
+            $data['timelapse'] = collect((array) $data['timelapse'])->map(fn ($v, $k) => $v === null || $v === '' ? null : ($k === 'mode' ? $v : $v + 0))->all();
+        }
 
         $printer = $printer ?? new FarmPrinter;
         $printer->fill($data)->save();

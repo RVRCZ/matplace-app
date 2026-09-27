@@ -45,7 +45,7 @@ class FarmPrinter extends Model
         'name', 'model', 'key', 'farm_agent_id', 'mode', 'enabled', 'bed_x', 'bed_y', 'bed_z', 'nozzle_mm',
         'machine_profile', 'process_profiles', 'machine_overrides', 'process_overrides', 'time_factor', 'weight_factor',
         'hourly_rate', 'bed_clear', 'bed_cleared_at', 'state', 'telemetry', 'last_seen_at', 'snapshot_path', 'snapshot_at',
-        'offline_notified_at',
+        'offline_notified_at', 'timelapse',
     ];
 
     protected $casts = [
@@ -53,7 +53,30 @@ class FarmPrinter extends Model
         'nozzle_mm' => 'float', 'time_factor' => 'float', 'weight_factor' => 'float', 'hourly_rate' => 'float',
         'process_profiles' => 'array', 'machine_overrides' => 'array', 'process_overrides' => 'array', 'telemetry' => 'array',
         'bed_cleared_at' => 'datetime', 'last_seen_at' => 'datetime', 'snapshot_at' => 'datetime', 'offline_notified_at' => 'datetime',
+        'timelapse' => 'array',
     ];
+
+    /** Layer-synced time-lapse: off | consent (only orders whose customer agreed to YouTube) | always. */
+    public const TIMELAPSE_MODES = ['off', 'consent', 'always'];
+
+    /** The time-lapse settings with defaults: park in the back corner, one second still, centred square for Shorts. */
+    public function timelapseSettings(): array
+    {
+        return array_merge([
+            'mode' => 'off', 'park_x' => (float) $this->bed_x, 'park_y' => (float) $this->bed_y, 'dwell_ms' => 1000, 'lift_mm' => 0.6,
+            'travel_mm_s' => 200, 'crop_x' => null, 'crop_y' => null, 'crop_size' => null,
+        ], array_filter((array) $this->timelapse, fn ($v) => $v !== null && $v !== ''));
+    }
+
+    /** G-code options for this order's print, or null when the head should not move away for pictures. */
+    public function timelapseFor(FarmOrder $order): ?array
+    {
+        $t = $this->timelapseSettings();
+        $on = $order->kind === FarmOrder::KIND_PRINT && $this->mode === self::MODE_AGENT
+            && ($t['mode'] === 'always' || ($t['mode'] === 'consent' && $order->video_consent));
+
+        return $on ? array_intersect_key($t, array_flip(['park_x', 'park_y', 'dwell_ms', 'lift_mm', 'travel_mm_s'])) : null;
+    }
 
     public function agent(): BelongsTo
     {

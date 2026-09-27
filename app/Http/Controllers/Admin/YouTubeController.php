@@ -11,8 +11,10 @@ use App\Models\FarmVideo;
 use App\Models\YouTubeAccount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /** /admin/youtube: connect the channel, approve (publish) or reject the print videos customers agreed to share. */
 class YouTubeController extends Controller
@@ -32,6 +34,15 @@ class YouTubeController extends Controller
             'missing' => FarmOrder::with(['color.material'])->where('kind', FarmOrder::KIND_PRINT)->where('video_consent', true)
                 ->whereNotNull('timelapse_path')->whereDoesntHave('video')->latest('id')->limit(50)->get(),
         ]);
+    }
+
+    /** The file that goes to YouTube for this order (the square Short when there is one). */
+    public function file(FarmOrder $order): BinaryFileResponse
+    {
+        $path = $this->videos->file($order);
+        abort_unless($path !== '' && Storage::disk(config('farm.disk'))->exists($path), 404);
+
+        return response()->file(Storage::disk(config('farm.disk'))->path($path), ['Content-Type' => 'video/mp4']);
     }
 
     public function connect(Request $request): RedirectResponse

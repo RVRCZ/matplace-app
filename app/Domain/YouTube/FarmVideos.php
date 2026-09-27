@@ -65,7 +65,7 @@ class FarmVideos
         $video->update(['status' => FarmVideo::STATUS_UPLOADING, 'error' => null]);
 
         try {
-            $id = $this->youtube->upload(Storage::disk(config('farm.disk'))->path($order->timelapse_path), $video->title, (string) $video->description);
+            $id = $this->youtube->upload(Storage::disk(config('farm.disk'))->path($this->file($order)), $video->title, (string) $video->description);
         } catch (YouTubeError $e) {
             if ($e->isQuota()) {
                 $video->update(['status' => FarmVideo::STATUS_QUEUED, 'error' => $e->getMessage()]);
@@ -154,6 +154,14 @@ class FarmVideos
         $video->update(['status' => FarmVideo::STATUS_WITHDRAWN, 'youtube_id' => null, 'published_at' => null]);
     }
 
+    /** The square Short when it was built (it grows the channel), else the landscape time-lapse. */
+    public function file(FarmOrder $order): string
+    {
+        $short = $order->timelapse_short_path;
+
+        return $short && Storage::disk(config('farm.disk'))->exists($short) ? $short : (string) $order->timelapse_path;
+    }
+
     public function defaultTitle(FarmOrder $order): string
     {
         return __('youtube.video.title', $this->facts($order), config('youtube.language'));
@@ -161,7 +169,9 @@ class FarmVideos
 
     public function defaultDescription(FarmOrder $order): string
     {
-        return __('youtube.video.description', $this->facts($order), config('youtube.language'));
+        $text = __('youtube.video.description', $this->facts($order), config('youtube.language'));
+
+        return $order->timelapse_short_path ? $text."\n\n#Shorts #3Dprinting #timelapse" : $text;
     }
 
     private function facts(FarmOrder $order): array
