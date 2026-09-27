@@ -34,6 +34,39 @@ LOST_AFTER_POLLS = 8
 TIMELAPSE_HEADER = "; matplace timelapse "
 PARK_TOLERANCE_MM = 1.0
 HEAD_POLL_SECONDS = 0.25
+# planned-position printers (GoKlipper on the Kobra S1) run their moves up to ~2 s behind what they report
+# (measured 27 Sep 2026: the head reached the park position 2.5-3 s after toolhead.position showed it)
+PLANNER_LEAD_SECONDS = 2.5
+BURST_INTERVAL_SECONDS = 0.3
+
+
+def pick_still(frames: list) -> Optional[bytes]:
+    """The picture taken while nothing moved: the head standing at the park position during the dwell.
+    Neighbouring pictures of a still scene are nearly the same; while printing the head changes the picture."""
+    if not frames:
+        return None
+    try:
+        from io import BytesIO
+
+        from PIL import Image, ImageChops, ImageStat
+    except ImportError:
+        return frames[len(frames) * 2 // 3]      # no Pillow: late in the burst, where the dwell usually is
+    small = []
+    for jpeg in frames:
+        try:
+            small.append(Image.open(BytesIO(jpeg)).convert("L").resize((96, 54)))
+        except Exception:  # noqa: BLE001 - a broken picture simply never wins
+            small.append(None)
+
+    def diff(a, b) -> float:
+        return ImageStat.Stat(ImageChops.difference(a, b)).mean[0] if a is not None and b is not None else 1e9
+
+    best, score = None, 1e18
+    for i in range(1, len(frames) - 1):
+        d = diff(small[i - 1], small[i]) + diff(small[i], small[i + 1])
+        if d < score:
+            best, score = i, d
+    return frames[best] if best is not None else frames[-1]
 
 
 def read_park(path: str) -> Optional[list]:
@@ -71,8 +104,8 @@ class PrinterWorker:
         self.tracked: Optional[Tracked] = None
         self.busy = asyncio.Lock()      # one command at a time per printer
         self.parked = False             # the picture of this stop at the park position is taken (or given up)
-        self.park_due = 0.0             # planned-position printers: when the head can have arrived
         self.last_head: Optional[tuple] = None   # last position away from the park position
+        self.burst: Optional[asyncio.Task] = None     # planned-position printers: pictures around one stop
         self.dirty = False              # tracked state changed and is not on disk yet
 
     async def report(self) -> dict:
@@ -186,33 +219,38 @@ class Agent:
                 if w.tracked and w.tracked.park and not w.tracked.final:
                     await self.layer_frame(w)
 
-    async def layer_frame(self, w: PrinterWorker, now: Optional[float] = None) -> bool:
-        """One look at the head: once per stop at the park position, one picture. True when one was sent.
+    async def layer_frame(self, w: PrinterWorker) -> bool:
+        """One look at the head: once per stop at the park position, one picture. True when one was sent (or,
+        for a planned-position printer, a burst of pictures started).
 
         A printer that reports its real position (motion_report): the picture when the head stands there.
-        A printer that reports only the planned target (GoKlipper on the Kobra S1): the target jumps to the park
-        position when the move is queued, so the picture waits for distance / travel speed (+ a little), well inside
-        the dwell."""
-        now = asyncio.get_event_loop().time() if now is None else now
+        A printer that reports only the planned target (GoKlipper on the Kobra S1): the target shows the park
+        position seconds before the head gets there, so a burst of pictures covers the next seconds and the
+        stillest one (the dwell) is sent."""
         head = await w.driver.head()
         park = w.tracked.park if w.tracked else None
         at = bool(head and park and abs(head[0] - park[0]) <= PARK_TOLERANCE_MM and abs(head[1] - park[1]) <= PARK_TOLERANCE_MM)
         if not at:
-            w.parked, w.park_due = False, 0.0
+            w.parked = False
             if head:
                 w.last_head = head
             return False
         if w.parked:
             return False
         if head[2] is None:
-            if not w.park_due:
-                travel = park[3] if len(park) > 3 else 200.0
-                came = w.last_head or head
-                distance = ((came[0] - park[0]) ** 2 + (came[1] - park[1]) ** 2) ** 0.5
-                w.park_due = now + distance / max(travel, 1.0) + 0.1
-            if now < w.park_due:
-                return False
-        elif head[2] >= 1.0:
+            w.parked = True
+            if w.burst and not w.burst.done():
+                return False        # the previous stop is still being photographed
+            travel = park[3] if len(park) > 3 else 200.0
+            dwell = park[2] if len(park) > 2 else 1.0
+            came = w.last_head or head
+            distance = ((came[0] - park[0]) ** 2 + (came[1] - park[1]) ** 2) ** 0.5
+            window = PLANNER_LEAD_SECONDS + distance / max(travel, 1.0) + dwell + 0.8
+            w.burst = asyncio.create_task(self.burst_frame(w, w.tracked.job_id, window))
+            self._tasks.add(w.burst)
+            w.burst.add_done_callback(self._tasks.discard)
+            return True
+        if head[2] >= 1.0:
             return False        # real position: still moving
         w.parked = True
         try:
@@ -223,6 +261,29 @@ class Agent:
         except Exception as e:  # noqa: BLE001 - a missed layer is a missed frame, nothing more
             log.debug("%s: layer frame not sent: %s", w.key, e)
         return False
+
+    async def burst_frame(self, w: PrinterWorker, job_id: int, window: float, interval: float = BURST_INTERVAL_SECONDS) -> bool:
+        """Pictures every `interval` seconds for `window` seconds, the stillest one goes to the server."""
+        frames: list = []
+        loop = asyncio.get_event_loop()
+        end = loop.time() + window
+        while loop.time() < end:
+            try:
+                jpeg = await w.driver.snapshot()
+                if jpeg:
+                    frames.append(jpeg)
+            except Exception:  # noqa: BLE001
+                pass
+            await asyncio.sleep(interval)
+        chosen = pick_still(frames)
+        if not chosen:
+            return False
+        try:
+            await self.server.snapshot(w.key, chosen, job_id, frame="layer")
+            return True
+        except Exception as e:  # noqa: BLE001 - a missed layer is a missed frame, nothing more
+            log.debug("%s: layer frame not sent: %s", w.key, e)
+            return False
 
     # -- commands ------------------------------------------------------------------------------------------------
     async def _execute(self, w: PrinterWorker, cmd: dict) -> None:

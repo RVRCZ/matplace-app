@@ -202,20 +202,39 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         frames = [s for s in self.server.snapshots if len(s) == 4]
         self.assertEqual([(f[0], f[2], f[3]) for f in frames], [("p1", 7, "layer")] * 2)
 
-    async def test_a_printer_reporting_only_the_planned_target_waits_until_the_head_can_have_arrived(self):
+    async def test_a_printer_reporting_only_the_planned_target_sends_the_stillest_picture_of_a_burst(self):
         agent = self.agent(print_seconds=5)
         self.server.gcode = b"; matplace timelapse park_x=250 park_y=250 dwell=1000 travel=200 frames=3\n" + GCODE
         self.server.queue.append(start_cmd())
         await self.rounds(agent, 3)
         w = agent.workers["p1"]
-        driver = w.driver
-        driver.head_at = (100.0, 150.0, None)        # GoKlipper: toolhead.position, no speed
-        self.assertFalse(await agent.layer_frame(w, now=10.0))
-        driver.head_at = (250.0, 250.0, None)        # the target jumped to the park position: 180 mm to go at 200 mm/s
-        self.assertFalse(await agent.layer_frame(w, now=10.2))
-        self.assertFalse(await agent.layer_frame(w, now=10.9), "the head is still on its way")
-        self.assertTrue(await agent.layer_frame(w, now=11.25))
-        self.assertFalse(await agent.layer_frame(w, now=11.5), "one picture per stop")
+        w.driver.head_at = (100.0, 150.0, None)        # GoKlipper: toolhead.position, no speed
+        self.assertFalse(await agent.layer_frame(w))
+        w.driver.head_at = (250.0, 250.0, None)        # the target jumped to the park position
+        self.assertTrue(await agent.layer_frame(w), "a burst starts")
+        self.assertFalse(await agent.layer_frame(w), "one burst per stop")
+        w.burst.cancel()
+
+        # the burst itself: moving head, moving head, still, still, still, moving again -> a still one is sent
+        pictures = [self.jpeg(10), self.jpeg(200), self.jpeg(90), self.jpeg(90), self.jpeg(90), self.jpeg(250)]
+        async def next_picture():
+            return pictures.pop(0) if pictures else None
+        w.driver.snapshot = next_picture
+        self.server.snapshots.clear()
+        self.assertTrue(await agent.burst_frame(w, 7, window=0.2, interval=0.01))
+        self.assertEqual(self.server.snapshots[-1][1:], (len(self.jpeg(90)), 7, "layer"))
+
+    @staticmethod
+    def jpeg(x: int) -> bytes:
+        """A small picture with a bright block at x: 'the head' somewhere."""
+        from io import BytesIO
+
+        from PIL import Image, ImageDraw
+        im = Image.new("RGB", (160, 90), (20, 20, 20))
+        ImageDraw.Draw(im).rectangle((x // 2, 10, x // 2 + 30, 60), fill=(240, 240, 240))
+        out = BytesIO()
+        im.save(out, "JPEG", quality=90)
+        return out.getvalue()
 
     async def test_an_ordinary_gcode_takes_no_layer_frames(self):
         agent = self.agent(print_seconds=5)
