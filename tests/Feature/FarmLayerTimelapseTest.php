@@ -148,7 +148,8 @@ GCODE;
         $order->refresh();
         $this->assertSame($order->dir().'/timelapse.mp4', $order->timelapse_path);
         $this->assertSame($order->dir().'/short.mp4', $order->timelapse_short_path);
-        $this->assertFalse($disk->exists($order->dir().'/frames_layer'), 'frames are gone once the videos exist');
+        $this->assertCount(30, $disk->files($order->dir().'/frames_layer'), 'frames stay for a rebuild (matplace:prune removes them later)');
+        $this->artisan('farm:timelapse', ['number' => $order->number])->assertSuccessful();
         $info = Process::run([$ffmpeg, '-hide_banner', '-i', $disk->path($order->timelapse_short_path)])->errorOutput();
         $this->assertMatchesRegularExpression('/Video: h264.*\b720x720\b/', $info, 'a square Short');
     }

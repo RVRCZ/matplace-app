@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\BuildFarmTimelapse;
 use App\Models\GenerationRequest;
 use App\Models\ModelFile;
 use Illuminate\Console\Command;
@@ -69,6 +70,19 @@ class PruneData extends Command
                 }
             }
         }
+
+        // farm time-lapse frames: kept a while after the videos are built, so they can be built again
+        $frameDirs = 0;
+        $farm = Storage::disk(config('farm.disk'));
+        foreach (array_merge(glob($farm->path('orders').'/*/frames') ?: [], glob($farm->path('orders').'/*/frames_layer') ?: []) as $dir) {
+            if (filemtime($dir) < time() - BuildFarmTimelapse::KEEP_FRAMES_DAYS * 86400) {
+                $frameDirs++;
+                if (! $dry) {
+                    $farm->deleteDirectory(substr($dir, strlen($farm->path(''))));
+                }
+            }
+        }
+        $this->line("farm frame folders removed: {$frameDirs}");
 
         // uploaded artwork and half-built tool previews live for a day (a created model keeps its own copy)
         $temp = 0;

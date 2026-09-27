@@ -38,16 +38,22 @@ class BuildFarmTimelapse implements ShouldQueue
 
     private const SHORT_MAX_FRAMES = 1000;
 
-    public function __construct(public readonly int $orderId) {}
+    private const GROWTH_SPEED = 1.25;      // the growing part runs 20 % faster than the pacing below (Roman, 27 Sep 2026)
+
+    public const KEEP_FRAMES_DAYS = 14;     // frames stay this long so a video can be built again (farm:timelapse)
+
+    /** @param  bool  $rebuild  build again although the order already has its videos (farm:timelapse) */
+    public function __construct(public readonly int $orderId, public readonly bool $rebuild = false) {}
 
     public function handle(): void
     {
         $order = FarmOrder::find($this->orderId);
         $disk = Storage::disk(config('farm.disk'));
-        if (! $order || $order->timelapse_path) {
+        if (! $order || ($order->timelapse_path && ! $this->rebuild)) {
             return;
         }
         [$frames, $frameSeconds] = $this->frames($order);
+        [$frames, $frameSeconds] = $this->pace($frames, $frameSeconds / self::GROWTH_SPEED);
         if ($frames->count() < 4) {
             return;   // a print shorter than a few minutes has no story to tell
         }
@@ -72,10 +78,8 @@ class BuildFarmTimelapse implements ShouldQueue
 
             return;
         }
-        $order->forceFill(['timelapse_path' => $order->dir().'/timelapse.mp4', 'timelapse_short_path' => $this->short($order, $frames)])->save();
-        // the frames did their job
-        $disk->deleteDirectory($order->dir().'/frames');
-        $disk->deleteDirectory($order->dir().'/frames_layer');
+        $order->forceFill(['timelapse_path' => $order->dir().'/timelapse.mp4', 'timelapse_short_path' => $this->short($order)])->save();
+        // the frames stay KEEP_FRAMES_DAYS (matplace:prune) so the videos can be built again after a change
         // the customer agreed to share it: up to YouTube as a private video, an admin decides the rest
         app(FarmVideos::class)->queueFor($order);
     }
@@ -108,12 +112,13 @@ class BuildFarmTimelapse implements ShouldQueue
      * The square Short for YouTube (and Reels): the finished piece first, then the layers growing, the finished
      * piece held at the end so the loop closes, a small logo in the corner. No intro: the first second decides.
      */
-    private function short(FarmOrder $order, Collection $frames): ?string
+    private function short(FarmOrder $order): ?string
     {
         $disk = Storage::disk(config('farm.disk'));
+        [$frames] = $this->frames($order);
         $step = (int) ceil($frames->count() / self::SHORT_MAX_FRAMES);
         $picked = $frames->filter(fn ($f, $i) => $i % $step === 0 || $i === $frames->count() - 1)->values();
-        $seconds = max(1 / self::FPS, min(0.2, self::SHORT_SECONDS / $picked->count()));
+        [$picked, $seconds] = $this->pace($picked, max(1 / self::FPS, min(0.2, self::SHORT_SECONDS / $picked->count())) / self::GROWTH_SPEED);
         $last = $disk->path((string) $picked->last());
         $lines = ["file '{$last}'\nduration 1.0"];
         foreach ($picked as $f) {
@@ -133,7 +138,7 @@ class BuildFarmTimelapse implements ShouldQueue
             '-f', 'concat', '-safe', '0', '-i', $list,
             '-i', public_path('img/logo.png'),
             '-filter_complex', sprintf(
-                '[0:v]crop=%d:%d:%d:%d,scale=%d:%d,fps=%d,format=yuv420p[print];[1:v]scale=%d:-2[logo];[print][logo]overlay=W-w-%d:H-h-%d,format=yuv420p[v]',
+                '[0:v]crop=%d:%d:%d:%d,scale=%d:%d,fps=%d,format=yuv420p[print];[1:v]scale=%d:-2[logo];[print][logo]overlay=%d:%d,format=yuv420p[v]',
                 $side, $side, $cx, $cy, $size, $size, self::FPS, (int) round($size * 0.22), (int) round($size * 0.03), (int) round($size * 0.03)
             ),
             '-map', '[v]', '-r', (string) self::FPS, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-movflags', '+faststart', $out,
@@ -157,6 +162,25 @@ class BuildFarmTimelapse implements ShouldQueue
         $y = $t['crop_y'] ?? intdiv($h - $side, 2);
 
         return [max(0, min($w - $side, (int) $x)), max(0, min($h - $side, (int) $y)), $side - $side % 2];
+    }
+
+    /**
+     * Frames shown shorter than one video frame would be dropped by ffmpeg at random: take every n-th one evenly
+     * instead (first and last kept), so each shown frame lasts at least 1/FPS and the total length stays.
+     *
+     * @return array{0: Collection<int,string>, 1: float}
+     */
+    private function pace(Collection $frames, float $seconds): array
+    {
+        $min = 1 / self::FPS;
+        if ($seconds >= $min || $frames->count() < 3) {
+            return [$frames->values(), max($seconds, $min)];
+        }
+        $keep = max(2, (int) round($frames->count() * $seconds / $min));
+        $last = $frames->count() - 1;
+        $picked = collect(range(0, $keep - 1))->map(fn ($i) => $frames[(int) round($i * $last / ($keep - 1))])->values();
+
+        return [$picked, $min];
     }
 
     private function ffmpeg(): string
