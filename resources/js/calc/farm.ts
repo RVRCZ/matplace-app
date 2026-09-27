@@ -10,9 +10,13 @@ import { loadGeometryFromUrl } from './loaders';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; inputs: { vat_percent: number } }
 interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean }
+const UNIT_MM: Record<string, number> = { mm: 1, cm: 10, in: 25.4, m: 1000 };
+const clampScale = (v: number, max: number) => Math.max(0.25, Math.min(max || 4, v));
+
 interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; error: string | null; error_text: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
+    scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
     unit: string; unit_guess: { unit: string; confident: boolean } | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; shipping_price: number;
@@ -58,8 +62,32 @@ export function bootFarmStart(): void {
         if (!preview) return;
         viewer ??= new Viewer(preview);
         show($('farm-preview-box'), true);
-        loadGeometryFromUrl(url).then((g) => viewer!.setGeometry(g, 1, null)).catch(() => show($('farm-preview-box'), false));
+        loadGeometryFromUrl(url).then((g) => viewer!.setGeometry(g, Number(($('farm-scale') as HTMLInputElement | null)?.value || 1) || 1, null)).catch(() => show($('farm-preview-box'), false));
     };
+    // the size: the file's own millimetres times the factor from the calculator; one dimension typed scales the whole model
+    const sizeBox = $('farm-size');
+    const scaleInput = $<HTMLInputElement>('farm-scale');
+    let native: { x: number; y: number; z: number } | null = null;
+    try { native = sizeBox?.dataset.bbox && sizeBox.dataset.bbox !== 'null' ? JSON.parse(sizeBox.dataset.bbox) : null; } catch { native = null; }
+    let scale = Number(sizeBox?.dataset.scale || 1) || 1;
+    const maxScale = Number(sizeBox?.dataset.max || 4) || 4;
+    const renderSize = (): void => {
+        if (!sizeBox) return;
+        sizeBox.querySelectorAll<HTMLInputElement>('input[data-axis]').forEach((i) => {
+            const axis = i.dataset.axis as 'x' | 'y' | 'z';
+            if (document.activeElement !== i) i.value = native ? String(Math.round(native[axis] * scale * 10) / 10) : '';
+        });
+        const pct = $('farm-size-pct'); if (pct) pct.textContent = native ? `${Math.round(scale * 100)} %` : '';
+        if (scaleInput) scaleInput.value = String(Math.round(scale * 1000) / 1000);
+        viewer?.setScale(scale);
+    };
+    sizeBox?.querySelectorAll<HTMLInputElement>('input[data-axis]').forEach((i) => i.addEventListener('change', () => {
+        const axis = i.dataset.axis as 'x' | 'y' | 'z';
+        const wanted = Number(i.value);
+        if (native && native[axis] > 0 && wanted > 0) scale = clampScale(wanted / native[axis], maxScale);
+        renderSize();
+    }));
+    renderSize();
     if (preview?.dataset.model) showModel(preview.dataset.model);
 
     const input = $<HTMLInputElement>('farm-upload');
@@ -100,6 +128,7 @@ export function bootFarmStart(): void {
             }
             if (info.status !== 'ready') throw new Error('processing');
             $<HTMLInputElement>('farm-file')!.value = info.uuid;
+            native = info.bbox ?? null; scale = 1; renderSize();
             say(file.name);
             zone?.querySelector('.btn-primary')?.replaceChildren(document.createTextNode(file.name));
             showModel(`${cfg.files}/${info.uuid}/model.stl`);
@@ -121,10 +150,25 @@ export function bootFarmOrder(): void {
     let shownModel = '';
     let shownSupports = '';
     let supportsOn = true;
-    let picked: number | null = null;
+    let picked: number | null = state.slot ?? null;                    // the colour chosen on the start page, if it is still on offer
     let delivery = state.delivery || 'pickup';
     let timer = 0;
-    const wanted = { quality: state.quality, strength: state.strength, unit: state.unit, copies: state.copies || 1 };
+    const wanted = { quality: state.quality, strength: state.strength, unit: state.unit, copies: state.copies || 1, scale: state.scale || 1 };
+    // the model's own millimetres (in the chosen unit) so a typed dimension gives a factor
+    const nativeMm = (): { x: number; y: number; z: number } | null => state.raw_bbox ? { x: state.raw_bbox.x * (UNIT_MM[wanted.unit] ?? 1), y: state.raw_bbox.y * (UNIT_MM[wanted.unit] ?? 1), z: state.raw_bbox.z * (UNIT_MM[wanted.unit] ?? 1) } : null;
+    const renderSizeInputs = (): void => {
+        const n = nativeMm();
+        (['x', 'y', 'z'] as const).forEach((axis) => {
+            const el = $<HTMLInputElement>(`farm-size-${axis}`);
+            if (el && document.activeElement !== el) el.value = n ? String(Math.round(n[axis] * wanted.scale * 10) / 10) : '';
+        });
+        const pct = $('farm-size-pct'); if (pct) pct.textContent = n ? `${Math.round(wanted.scale * 100)} %` : '';
+    };
+    (['x', 'y', 'z'] as const).forEach((axis) => $(`farm-size-${axis}`)?.addEventListener('change', (e) => {
+        const n = nativeMm(); const v = Number((e.target as HTMLInputElement).value);
+        if (n && n[axis] > 0 && v > 0) wanted.scale = Math.round(clampScale(v / n[axis], 4) * 1000) / 1000;
+        render();
+    }));
 
     const post = async (url: string, body: unknown): Promise<{ ok: boolean; status: number; json: Record<string, unknown> }> => {
         const res = await fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': cfg.csrf }, body: JSON.stringify(body) });
@@ -171,6 +215,7 @@ export function bootFarmOrder(): void {
         $('farm-status')!.textContent = working && s.stage ? tr(`farm.stage.${s.stage}`) : s.status_text;
         show($('farm-spinner'), working || s.status === 'printing');
         const num = $('farm-number')!; num.textContent = s.number ? `${s.number}${s.color ? ` · ${s.color.name}` : ''}` : ''; show(num, !!s.number);
+        const pr = $('farm-printer'); if (pr) { pr.textContent = s.printer ? tr('farm.order.printer', { name: s.printer.name, bed: s.printer.bed }) : ''; show(pr, !!s.printer); }
         const err = $('farm-error')!; err.textContent = s.error_text ?? ''; show(err, s.status === 'failed' && !!s.error_text);
         $('farm-warnings')!.innerHTML = s.warnings.map((w) => `<li>⚠ ${esc(w)}</li>`).join('');
         $('farm-dims')!.textContent = s.dims ? `${s.dims.x.toFixed(1)} × ${s.dims.y.toFixed(1)} × ${s.dims.z.toFixed(1)} mm` : '';
@@ -198,6 +243,7 @@ export function bootFarmOrder(): void {
         show($('farm-presets'), editable);
         document.querySelectorAll<HTMLElement>('#farm-presets [data-group]').forEach((g) => g.querySelectorAll<HTMLElement>('.seg').forEach((b) => b.classList.toggle('seg-on', b.dataset.value === String(wanted[g.dataset.group as 'quality' | 'strength']))));
         ($('farm-unit') as HTMLSelectElement).value = wanted.unit;
+        renderSizeInputs();
         const copiesInput = $<HTMLInputElement>('farm-copies');
         if (copiesInput && document.activeElement !== copiesInput) copiesInput.value = String(wanted.copies);
         const copiesNote = $('farm-copies-note');
@@ -210,7 +256,7 @@ export function bootFarmOrder(): void {
         const guess = s.unit_guess;
         note.textContent = guess && guess.unit !== 'mm' ? (guess.confident && s.unit === guess.unit ? tr('farm.units.guess', { unit: tr(`farm.units.${guess.unit}`) }) : (!guess.confident && s.unit === 'mm' ? tr('farm.units.ask') : '')) : '';
         show(note, note.textContent !== '');
-        show($('farm-reslice'), editable && (wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1)));
+        show($('farm-reslice'), editable && (wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005));
 
         show($('farm-pay'), s.status === 'sliced');
         if (s.status === 'sliced') {
@@ -298,7 +344,7 @@ export function bootFarmOrder(): void {
     $('farm-presets')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const r = await post(cfg.routes.reslice, wanted);
-        if (r.ok) { state = r.json as unknown as FarmState; picked = null; render(); poll(); } else { const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); }
+        if (r.ok) { state = r.json as unknown as FarmState; picked = state.slot ?? null; render(); poll(); } else { const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); }
     });
     document.querySelectorAll<HTMLElement>('#farm-delivery .seg').forEach((b) => b.addEventListener('click', () => { delivery = b.dataset.value!; render(); }));
     $('farm-terms')?.addEventListener('change', render);

@@ -1262,5 +1262,9 @@
     "param.part.body.cutter": "Jen vykrajovátko",
     "param.part.stamp": "Razítko",
     "calc.tip.cutter": "Vykrajovátko se tiskne obrubou dolů bez podpěr, razítko naležato. Tvar je zrcadlený, po otočení obrubou nahoru vykrajuje správně. PLA nebo PETG, mytí ručně.",
-    "calc.fit.plates": "Vašich :q ks se vytiskne na :p podložkách za sebou."
+    "calc.fit.plates": "Vašich :q ks se vytiskne na :p podložkách za sebou.",
+    "calc.status.stale": "Nastavení se změnilo. Klepněte na Přepočítat.",
+    "calc.recalc": "Přepočítat",
+    "calc.recalc.hint": "Velikost, kusy, materiál i kvalitu si nastavte, pak vše přepočítáme najednou.",
+    "calc.price.orient": "Orientační cena tisku u nás: :price. Přesná cena podle barvy a tiskárny až při objednávce."
 }

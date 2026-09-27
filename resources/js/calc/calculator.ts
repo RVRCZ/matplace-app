@@ -38,6 +38,7 @@ const state = {
     pollTimer: 0 as number,
     debounce: 0 as number,
     localFile: null as File | null,
+    stale: false,                        // settings changed since the last calculation: the visitor presses "Recalculate"
 };
 
 let viewer: Viewer | null = null;
@@ -135,8 +136,11 @@ function renderRough(): void {
     renderSize();
     $('stat-grams').textContent = `≈ ${fmt.format(est.grams * q)} g`;
     $('stat-time').textContent = `≈ ${minutesText(est.minutes * q)}`;
-    if (!marketplace() && !farmPriced()) {
+    if (!marketplace()) {
+        // the design page is about the print; the farm's list gives a price to orient by, the binding one comes with the order
         renderFacts({ minutes: est.minutes * q, grams: est.grams * q, rough: true });
+        const [olo, ohi] = range(cfg.rough, cfg.round_to, bds.map((b) => b.total), true);
+        orientPrice(farmPriced() ? [olo, ohi] : null, true);
         return;
     }
     const [lo, hi] = range(cfg.rough, cfg.round_to, bds.map((b) => b.total), true);
@@ -149,6 +153,18 @@ function renderRough(): void {
 }
 
 const marketplace = () => cfg.marketplace !== false;
+
+/** The farm's list price as a line to orient by; the binding price comes on the order page after colour and printer are chosen. */
+function orientPrice(r: [number, number] | null, rough: boolean): void {
+    const el = document.getElementById('price-orient');
+    if (!el) return;
+    if (!r) { el.classList.add('hidden'); return; }
+    const q = state.params.quantity;
+    const unit = cfg.currency === 'CZK' ? 'Kč' : cfg.currency;
+    const txt = r[0] === r[1] ? fmt.format(r[0]) : `${fmt.format(r[0])} – ${fmt.format(r[1])}`;
+    el.textContent = t('calc.price.orient', { price: `${rough ? '≈ ' : ''}${txt} ${unit}` }) + (q > 1 ? ` ${t('calc.price.per_piece')} ≈ ${fmt.format(Math.round(r[0] / q))} ${unit}.` : '');
+    el.classList.remove('hidden');
+}
 // the farm's single price list: the calculator prices like the marketplace does, with one list
 const farmPriced = () => !marketplace() && cfg.orientation_profiles.length === 1 && cfg.orientation_profiles[0].key === 'farm';
 
@@ -200,7 +216,8 @@ function renderBreakdown(bds: { profile: string; label?: string | null; printer_
 function renderPrecise(c: CalcInfo): void {
     if (!c.slicer || !c.prices) return;
     const q = state.params.quantity;
-    if (!marketplace() && !farmPriced()) {
+    if (!marketplace()) {
+        orientPrice(farmPriced() && c.prices.length ? [c.prices[0].total, c.prices[0].total] : null, false);
         $('stat-grams').textContent = `${fmt.format(c.slicer.grams * q)} g`;
         $('stat-time').textContent = minutesText(c.slicer.minutes * q);
         $('dims-badge').textContent = `${fmt.format(c.slicer.dims.x)} × ${fmt.format(c.slicer.dims.y)} × ${fmt.format(c.slicer.dims.z)} mm`;
@@ -331,9 +348,29 @@ function requestPrecise(): void {
     }, 700);
 }
 
+/** A setting changed: the model and its size follow at once, the numbers wait for "Recalculate" (a slice costs the server real work). */
 function onParamsChanged(): void {
-    renderRough();
+    renderSize();
     viewer?.setScale(state.params.scale);
+    const b = nativeBbox();
+    if (b) { const s = state.params.scale; $('dims-badge').textContent = `${fmt.format(b.x * s)} × ${fmt.format(b.y * s)} × ${fmt.format(b.z * s)} mm`; }
+    markStale();
+}
+
+function markStale(): void {
+    if (!state.file && !state.geo) return;
+    state.stale = true;
+    stopPolling();
+    setStatus('calc.status.stale', false);
+    const btn = document.getElementById('cta-recalc');
+    btn?.classList.add('ring-4', 'ring-action/40');
+}
+
+/** "Recalculate": the rough numbers at once, the precise slice from the server behind them. */
+function recalculate(): void {
+    state.stale = false;
+    document.getElementById('cta-recalc')?.classList.remove('ring-4', 'ring-action/40');
+    renderRough();
     refreshDownload();
     requestPrecise();
 }
@@ -439,6 +476,8 @@ function bindControls(): void {
     infill.oninput = () => { state.params.infill = Number(infill.value); $('infill-val').textContent = `${infill.value} %`; onParamsChanged(); };
     const qty = $('quantity') as HTMLInputElement;
     qty.onchange = () => { state.params.quantity = Math.max(1, Math.min(1000, Number(qty.value) || 1)); qty.value = String(state.params.quantity); onParamsChanged(); };
+    const recalc = document.getElementById('cta-recalc');
+    if (recalc) recalc.onclick = recalculate;
     const scale = $('scale') as HTMLInputElement;
     scale.oninput = () => { state.params.scale = Number(scale.value) / 100; $('scale-val').textContent = `${scale.value} %`; document.getElementById('size-limit')?.classList.add('hidden'); onParamsChanged(); };
     (['x', 'y', 'z'] as const).forEach((axis) => {

@@ -75,7 +75,7 @@ class PrepareFarmOrder implements ShouldQueue
             File::ensureDirectoryExists(dirname($disk->path($stlRel)));
             // a test object is built closed, on Z = 0, the way it must be printed: nothing to repair or turn
             $mesh = $order->isTest() ? (new PhpPrintPreparer)->prepare($file->absoluteStlPath(), $disk->path($stlRel), 1.0, $bed)
-                : $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale, $bed);
+                : $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale * (float) ($order->scale ?: 1), $bed);
             $piece = $mesh;
             $margin = 2 * (float) $settings->get('bed_margin_mm');
             $usable = new Dimensions($bed->x - $margin, $bed->y - $margin, $bed->z);
@@ -183,7 +183,7 @@ class PrepareFarmOrder implements ShouldQueue
                 'slice_params' => [
                     'engine' => $slicer->name(), 'printer' => ['id' => $printer->id, 'key' => $printer->key, 'model' => $printer->model],
                     'material' => $order->material->code, 'quality' => $quality, 'layer_mm' => $layer, 'strength' => $order->strength, 'copies' => $order->copies,
-                    'infill_percent' => $infill, 'unit_scale' => $order->unit_scale, 'profiles' => $profiles, 'overrides' => $overrides,
+                    'infill_percent' => $infill, 'unit_scale' => $order->unit_scale, 'scale' => (float) $order->scale, 'profiles' => $profiles, 'overrides' => $overrides,
                     'profile_layers' => $profile->layers, 'profile_fingerprint' => $profile->sliceFingerprint(),
                     'profile_hashes' => $this->profileHashes($profiles), 'preparer' => $order->isTest() ? 'php-stl' : $preparer->name(), 'sliced_at' => now()->toIso8601String(),
                 ],

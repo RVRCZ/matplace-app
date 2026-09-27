@@ -50,11 +50,11 @@ class FarmOrder extends Model
     /** The customer's money is held or spent in these states. */
     public const STATUSES_COMMITTED = [self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING, self::STATUS_DONE, self::STATUS_HANDED_OVER];
 
-    protected $attributes = ['currency' => 'CZK', 'quality' => 'standard', 'strength' => 'standard', 'copies' => 1, 'plates' => 1, 'plates_done' => 0, 'plate_copies' => 1, 'unit_scale' => 1, 'delivery' => 'pickup', 'kind' => 'print'];
+    protected $attributes = ['currency' => 'CZK', 'quality' => 'standard', 'strength' => 'standard', 'copies' => 1, 'plates' => 1, 'plates_done' => 0, 'plate_copies' => 1, 'unit_scale' => 1, 'scale' => 1, 'delivery' => 'pickup', 'kind' => 'print'];
 
     protected $fillable = [
         'quality_rating', 'quality_note', 'timelapse_path', 'kind', 'farm_printer_material_id', 'test_params',
-        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale',
+        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
         'farm_material_id', 'farm_color_id', 'farm_printer_id', 'farm_printer_slot_id', 'delivery', 'shipping_address', 'note',
         'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'rest_gcode_path', 'slice_params', 'slice_result', 'est_minutes',
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
@@ -63,7 +63,7 @@ class FarmOrder extends Model
     ];
 
     protected $casts = [
-        'unit_scale' => 'float', 'copies' => 'int', 'plates' => 'int', 'plates_done' => 'int', 'plate_copies' => 'int', 'rest_copies' => 'int', 'shipping_address' => 'array', 'check' => 'array', 'orientation' => 'array', 'test_params' => 'array',
+        'unit_scale' => 'float', 'scale' => 'float', 'copies' => 'int', 'plates' => 'int', 'plates_done' => 'int', 'plate_copies' => 'int', 'rest_copies' => 'int', 'shipping_address' => 'array', 'check' => 'array', 'orientation' => 'array', 'test_params' => 'array',
         'slice_params' => 'array', 'slice_result' => 'array', 'price' => 'array', 'est_minutes' => 'int', 'est_grams' => 'float',
         'est_meters' => 'float', 'supports_used' => 'bool', 'price_total' => 'float', 'actual_minutes' => 'int', 'actual_grams' => 'float',
         'terms_accepted_at' => 'datetime', 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'queued_at' => 'datetime',

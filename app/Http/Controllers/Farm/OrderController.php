@@ -35,12 +35,21 @@ class OrderController extends Controller
         $file = $request->query('file') ? ModelFile::where('uuid', $request->query('file'))->first() : null;
         $quality = (string) $request->query('quality', 'standard');
         $copies = 1;
+        $scale = 1.0;
+        $material = null;
         // from the calculator: the shared calculation knows the model, the quality and how many pieces the customer wanted
         if (! $file && $request->query('calc') && ($calc = Calculation::with('modelFile')->where('token', $request->query('calc'))->first())) {
             $file = $calc->modelFile;
             $quality = (string) ($calc->params['quality'] ?? $quality);
             $copies = max(1, min(PlateLayout::MAX_COPIES, (int) ($calc->params['quantity'] ?? 1)));
+            $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) ($calc->params['scale'] ?? 1)));
+            $material = $calc->params['material'] ?? null;
         }
+        // the colours loaded right now; those of the calculator's material kind come first
+        $colors = $this->orders->offeredColors($quality)->map(fn ($r) => [
+            'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex,
+            'photo' => $r['color']->photoUrl(), 'printer' => $r['printer']->name, 'bed' => (int) $r['printer']->bed_x.' × '.(int) $r['printer']->bed_y.' mm', 'enough' => $r['slot']->availableGrams() > 50,
+        ])->sortBy(fn ($c) => [$c['code'] === $material ? 0 : 1, $c['name']])->values()->all();
 
         return view('farm.start', [
             'file' => $file,
@@ -48,6 +57,9 @@ class OrderController extends Controller
             'quality' => $quality,
             'copies' => $copies,
             'maxCopies' => PlateLayout::MAX_COPIES,
+            'scale' => $scale,
+            'maxScale' => (float) config('pricing.max_scale', 4),
+            'colors' => $colors,
             'settings' => $this->settings->all(),
             'balance' => $this->wallet->balance($request->user()),
             'slicesLeft' => max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())),
@@ -70,12 +82,14 @@ class OrderController extends Controller
             'strength' => ['nullable', 'string', 'max:12'],
             'unit' => ['nullable', 'in:'.implode(',', array_keys(ModelValidator::UNITS))],
             'copies' => ['nullable', 'integer', 'min:1', 'max:'.PlateLayout::MAX_COPIES],
+            'scale' => ['nullable', 'numeric', 'min:0.25', 'max:'.config('pricing.max_scale', 4)],
+            'color' => ['nullable', 'integer'],
         ]);
         $file = ModelFile::where('uuid', $data['file'])->firstOrFail();
         $this->claim($request, $file);
 
         try {
-            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1));
+            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null);
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
                 ? response()->json(['error' => $e->reason, 'message' => $e->text()], 422)
@@ -117,9 +131,10 @@ class OrderController extends Controller
             'strength' => ['required', 'string', 'max:12'],
             'unit' => ['nullable', 'in:'.implode(',', array_keys(ModelValidator::UNITS))],
             'copies' => ['nullable', 'integer', 'min:1', 'max:'.PlateLayout::MAX_COPIES],
+            'scale' => ['nullable', 'numeric', 'min:0.25', 'max:'.config('pricing.max_scale', 4)],
         ]);
         try {
-            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null);
+            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null);
         } catch (FarmRefusal $e) {
             return response()->json(['error' => $e->reason, 'message' => $e->text()], 422);
         }
@@ -253,6 +268,10 @@ class OrderController extends Controller
             'quality' => $order->quality,
             'strength' => $order->strength,
             'copies' => $order->copies,
+            'scale' => (float) ($order->scale ?: 1),
+            'raw_bbox' => $order->modelFile?->bbox,
+            'slot' => $order->farm_printer_slot_id,
+            'printer' => $order->printer ? ['name' => $order->printer->name, 'bed' => (int) $order->printer->bed_x.' × '.(int) $order->printer->bed_y.' × '.(int) $order->printer->bed_z.' mm'] : null,
             'max_copies' => $check['max_copies'] ?? null,
             'plates' => $order->plates,
             'plates_done' => $order->plates_done,

@@ -258,6 +258,43 @@ class FarmOrderFlowTest extends TestCase
         $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()->assertSee('name="copies"', false)->assertSee('value="6"', false);
     }
 
+    public function test_the_size_and_the_colour_chosen_before_the_order_decide_the_piece_and_the_machine(): void
+    {
+        // the seeder's Kobra 3 Max with light blue PLA+ in slot 1; the S1 holds white
+        $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
+        $blue = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PLA+'))->where('name', 'světle modrá')->firstOrFail();
+        $max->slots()->where('slot', 0)->update(['farm_color_id' => $blue->id, 'remaining_g' => 1000, 'enabled' => true]);
+
+        // half size: a 20 mm cube prints as 10 mm, and the factor travels with the order
+        $half = $this->order(20.0, ['scale' => 0.5]);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $half->status);
+        $this->assertEqualsWithDelta(0.5, $half->scale, 0.001);
+        $this->assertEqualsWithDelta(10.0, $half->check['dims']['x'], 0.01);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$half->token}/status")->assertOk()->json();
+        $this->assertEqualsWithDelta(0.5, $state['scale'], 0.001);
+        $this->assertEqualsWithDelta(20.0, $state['raw_bbox']['x'], 0.01);
+        $this->assertSame('Kobra S1 #1', $state['printer']['name']);
+
+        // a colour chosen up front sends the order to the machine that holds it: blue lives only in the Max
+        $chosen = $this->order(20.0, ['color' => $blue->id]);
+        $this->assertSame($max->id, $chosen->farm_printer_id);
+        $this->assertSame($blue->id, $chosen->farm_color_id);
+        $this->assertNotNull($chosen->farm_printer_slot_id);
+        $this->assertSame('PLA+', $chosen->material->code);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$chosen->token}/status")->assertOk()->json();
+        $this->assertSame($chosen->farm_printer_slot_id, $state['slot']);
+
+        // the start page offers the loaded colours and carries size and copies over from the calculation
+        $file = $this->upload(20.0);
+        $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $file, 'material' => 'PLA', 'quantity' => 3, 'scale' => 1.5])->assertCreated()->json('calculation.token');
+        $page = $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk();
+        $page->assertSee('name="color"', false)->assertSee('name="scale"', false)->assertSee('value="1.5"', false)->assertSee('value="3"', false)->assertSee('light blue');   // test locale is en
+
+        // resizing on the order page is a preset like the others: sliced again at the new size
+        $this->actingAs($this->user)->postJson("/farm/orders/{$half->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'scale' => 2])->assertOk()->assertJsonPath('scale', 2);
+        $this->assertEqualsWithDelta(40.0, $half->refresh()->check['dims']['x'], 0.01);
+    }
+
     public function test_model_bigger_than_the_plate_is_refused_with_a_reason(): void
     {
         $order = $this->order(300);

@@ -1262,5 +1262,9 @@
     "param.part.body.cutter": "Cutter only",
     "param.part.stamp": "Stamp",
     "calc.tip.cutter": "The cutter prints flange down without supports, the stamp lying flat. The shape is mirrored; turned flange up it cuts the right way round. PLA or PETG, wash by hand.",
-    "calc.fit.plates": "Your :q pieces print on :p plates one after another."
+    "calc.fit.plates": "Your :q pieces print on :p plates one after another.",
+    "calc.status.stale": "Settings changed. Press Recalculate.",
+    "calc.recalc": "Recalculate",
+    "calc.recalc.hint": "Set the size, pieces, material and quality, then everything is recalculated at once.",
+    "calc.price.orient": "Print price with us, to orient by: :price. The exact price follows the colour and printer at ordering."
 }

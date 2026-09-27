@@ -55,6 +55,18 @@
             <canvas id="farm-preview" class="block h-64 w-full touch-none" data-model="{{ $file ? route('api.files.stl', $file) : '' }}"></canvas>
         </div>
 
+        {{-- the size as the calculator had it (or as uploaded); one dimension typed scales the whole model --}}
+        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span></div>
+        <div id="farm-size" class="mt-2 grid grid-cols-3 gap-2" data-bbox="{{ json_encode($file?->bbox) }}" data-scale="{{ $scale }}" data-max="{{ $maxScale }}">
+            @foreach(['x', 'y', 'z'] as $axis)
+                <label class="text-xs font-semibold text-slate-600">{{ __('farm.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
+                    <input data-axis="{{ $axis }}" type="number" inputmode="decimal" min="1" step="1" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
+                </label>
+            @endforeach
+        </div>
+        <p class="mt-1 text-xs text-slate-500">{{ __('farm.size.hint') }}</p>
+        <input type="hidden" name="scale" id="farm-scale" value="{{ $scale }}">
+
         <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.quality.label') }}</div>
         <div class="mt-2 grid grid-cols-3 gap-2">
             @foreach($settings['qualities'] as $key => $q)
@@ -73,6 +85,21 @@
             <input name="copies" type="number" inputmode="numeric" min="1" max="{{ $maxCopies }}" value="{{ $copies }}" class="mt-1 w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
         </label>
         <p class="mt-1 text-xs text-slate-500">{{ __('farm.copies.hint') }}</p>
+
+        {{-- the colour decides the machine: the order is sliced for the printer that holds this spool --}}
+        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.order.color') }}</div>
+        <p class="text-xs text-slate-500">{{ __('farm.start.color_hint') }}</p>
+        <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.color') }}">
+            @forelse($colors as $c)
+                <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action {{ $c['enough'] ? '' : 'opacity-50' }}">
+                    <input type="radio" name="color" value="{{ $c['id'] }}" class="sr-only" @checked($loop->first) @disabled(! $c['enough'])>
+                    @if($c['photo'])<img src="{{ $c['photo'] }}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">@else<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:{{ $c['hex'] }}"></span>@endif
+                    <span><span class="font-semibold">{{ $c['name'] }}</span><br><span class="text-xs text-slate-500">{{ $c['kind'] }} · {{ $c['printer'] }}</span></span>
+                </label>
+            @empty
+                <p class="col-span-full text-sm text-slate-600">{{ __('farm.order.no_colors') }}</p>
+            @endforelse
+        </div>
 
         <button id="farm-continue" type="submit" class="mt-4 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" @disabled(! $file)>{{ __('farm.start.continue') }}</button>
         <p class="mt-2 text-xs text-slate-500">{{ __('farm.slices_left', ['n' => $slicesLeft]) }}</p>

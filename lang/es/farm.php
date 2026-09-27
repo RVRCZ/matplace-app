@@ -23,7 +23,8 @@ return [
         'upload_failed' => 'No se pudo subir el archivo. Inténtelo de nuevo.',
         'bad_format' => 'Por ahora aquí solo imprimimos archivos STL.',
         'too_big' => 'El archivo supera los :max MB.',
-        'continue' => 'Calcular el precio',
+        'continue' => 'Calcular',
+        'color_hint' => 'Colores cargados en nuestras impresoras. El color decide la impresora y con ella el número de placas.',
         'steps' => ['Revisamos el modelo y lo reparamos si hace falta', 'Lo orientamos para que necesite los mínimos soportes', 'Calculamos tiempo, material y precio', 'Usted elige el color e inicia la impresión'],
     ],
 
@@ -34,6 +35,7 @@ return [
         'guess' => 'El modelo parece estar en «:unit». Las hemos usado; cámbielas si no es correcto.',
         'ask' => 'El modelo es muy pequeño. ¿Podría estar en pulgadas?',
     ],
+    'size' => ['label' => 'Tamaño de la impresión', 'x' => 'Ancho', 'y' => 'Profundidad', 'z' => 'Alto', 'hint' => 'Cambie cualquier medida; las demás siguen en la misma proporción.'],
     'recalculate' => 'Recalcular',
     'copies' => [
         'label' => 'Piezas en la placa',
@@ -46,6 +48,7 @@ return [
     ],
 
     'order' => [
+        'printer' => 'Impresora: :name, placa :bed',
         'title' => 'Impresión de :name',
         'dims' => 'Dimensiones',
         'time' => 'Tiempo de impresión',

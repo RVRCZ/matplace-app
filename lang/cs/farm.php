@@ -23,7 +23,8 @@ return [
         'upload_failed' => 'Soubor se nepodařilo nahrát. Zkuste to prosím znovu.',
         'bad_format' => 'Tady zatím tiskneme jen soubory STL.',
         'too_big' => 'Soubor je větší než :max MB.',
-        'continue' => 'Spočítat cenu',
+        'continue' => 'Spočítat',
+        'color_hint' => 'Barvy založené v našich tiskárnách. Podle barvy se zakázce přidělí tiskárna a spočítá počet podložek.',
         'steps' => ['Model zkontrolujeme a případně opravíme', 'Natočíme ho tak, aby potřeboval co nejméně podpěr', 'Spočítáme čas, spotřebu a cenu', 'Vyberete barvu a spustíte tisk'],
     ],
 
@@ -34,6 +35,7 @@ return [
         'guess' => 'Model vypadá, že je v jednotkách „:unit“. Použili jsme je; pokud to nesedí, změňte je.',
         'ask' => 'Model je velmi malý. Není náhodou v palcích?',
     ],
+    'size' => ['label' => 'Velikost výtisku', 'x' => 'Šířka', 'y' => 'Hloubka', 'z' => 'Výška', 'hint' => 'Přepište kterýkoli rozměr, ostatní se změní ve stejném poměru.'],
     'recalculate' => 'Přepočítat',
     'copies' => [
         'label' => 'Kusů na podložce',
@@ -46,6 +48,7 @@ return [
     ],
 
     'order' => [
+        'printer' => 'Tiskárna: :name, podložka :bed',
         'title' => 'Tisk :name',
         'dims' => 'Rozměry',
         'time' => 'Doba tisku',

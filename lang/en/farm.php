@@ -23,7 +23,8 @@ return [
         'upload_failed' => 'The file could not be uploaded. Please try again.',
         'bad_format' => 'For now we only print STL files here.',
         'too_big' => 'The file is larger than :max MB.',
-        'continue' => 'Calculate the price',
+        'continue' => 'Calculate',
+        'color_hint' => 'Colours loaded in our printers. The colour decides the printer and with it the number of plates.',
         'steps' => ['We check the model and repair it if needed', 'We turn it so it needs as little support as possible', 'We work out time, material and price', 'You pick a colour and start the print'],
     ],
 
@@ -34,6 +35,7 @@ return [
         'guess' => 'The model looks like it is in ":unit". We used that; change it if it is wrong.',
         'ask' => 'The model is very small. Could it be in inches?',
     ],
+    'size' => ['label' => 'Print size', 'x' => 'Width', 'y' => 'Depth', 'z' => 'Height', 'hint' => 'Change any one dimension; the others follow in the same ratio.'],
     'recalculate' => 'Recalculate',
     'copies' => [
         'label' => 'Pieces on the plate',
@@ -46,6 +48,7 @@ return [
     ],
 
     'order' => [
+        'printer' => 'Printer: :name, plate :bed',
         'title' => 'Print of :name',
         'dims' => 'Dimensions',
         'time' => 'Print time',
