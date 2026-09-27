@@ -12,7 +12,8 @@ interface Price { time: number; material: number; fixed: number; min_price_appli
 interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean }
 interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; error: string | null; error_text: string | null;
-    quality: string; strength: string; copies: number; max_copies: number | null; unit: string; unit_guess: { unit: string; confident: boolean } | null;
+    quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; shipping_price: number;
     colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
@@ -181,7 +182,11 @@ export function bootFarmOrder(): void {
         if (hasResult) {
             $('farm-price')!.textContent = total() !== null ? money(total()!) : '—';
             const copiesLine = $('farm-copies-line');
-            if (copiesLine) { copiesLine.textContent = s.copies > 1 ? tr('farm.copies.note', { n: s.copies }) : ''; show(copiesLine, s.copies > 1); }
+            if (copiesLine) {
+                // "9 pieces on 2 plates (5 + 4), printed one after another" when one plate is not enough
+                copiesLine.textContent = s.plates > 1 ? tr('farm.copies.plates', { n: s.copies, p: s.plates, layout: (s.plate_layout ?? []).join(' + ') }) : s.copies > 1 ? tr('farm.copies.note', { n: s.copies }) : '';
+                show(copiesLine, s.copies > 1);
+            }
             $('farm-time')!.textContent = duration(s.minutes!);
             $('farm-grams')!.textContent = `${s.grams} g${s.meters ? ` · ${s.meters} m` : ''}`;
             $('farm-supports')!.textContent = tr(s.supports ? 'farm.order.supports_yes' : 'farm.order.supports_no');
@@ -196,7 +201,11 @@ export function bootFarmOrder(): void {
         const copiesInput = $<HTMLInputElement>('farm-copies');
         if (copiesInput && document.activeElement !== copiesInput) copiesInput.value = String(wanted.copies);
         const copiesNote = $('farm-copies-note');
-        if (copiesNote) { copiesNote.textContent = s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) : ''; show(copiesNote, !!s.max_copies); }
+        if (copiesNote) {
+            const more = s.max_copies && wanted.copies > s.max_copies ? ` ${tr('farm.copies.more_plates', { p: Math.ceil(wanted.copies / s.max_copies) })}` : '';
+            copiesNote.textContent = s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) + more : '';
+            show(copiesNote, !!s.max_copies);
+        }
         const note = $('farm-unit-note')!;
         const guess = s.unit_guess;
         note.textContent = guess && guess.unit !== 'mm' ? (guess.confident && s.unit === guess.unit ? tr('farm.units.guess', { unit: tr(`farm.units.${guess.unit}`) }) : (!guess.confident && s.unit === 'mm' ? tr('farm.units.ask') : '')) : '';
@@ -219,7 +228,8 @@ export function bootFarmOrder(): void {
             if (s.timelapse_url && video.getAttribute('src') !== s.timelapse_url) video.src = s.timelapse_url;
         }
         if (print) {
-            $('farm-progress-val')!.textContent = `${Math.round(print.progress)} %`;
+            const plateNow = s.plates > 1 ? ` · ${tr('farm.copies.plate_of', { i: s.plate_now ?? Math.min(s.plates, s.plates_done + 1), p: s.plates })}` : '';
+            $('farm-progress-val')!.textContent = `${Math.round(print.progress)} %${plateNow}`;
             $('farm-progress-bar')!.style.width = `${Math.min(100, print.progress)}%`;
             show($('farm-camera'), !!print.snapshot_url);
             if (print.snapshot_url) {

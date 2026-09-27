@@ -197,7 +197,7 @@ class FarmOrderFlowTest extends TestCase
         $this->assertSame(10, $order->slice_params['infill_percent']);
     }
 
-    public function test_several_copies_print_on_one_plate_and_too_many_are_refused_with_the_number_that_fits(): void
+    public function test_several_copies_print_on_one_plate_and_more_than_a_plate_takes_prints_plate_after_plate(): void
     {
         // 4 cubes of 20 mm: a 2 × 2 grid 5 mm apart, one print, one price for all four
         $order = $this->order(20.0, ['copies' => 4]);
@@ -217,13 +217,40 @@ class FarmOrderFlowTest extends TestCase
         $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'copies' => 2])->assertOk()->assertJsonPath('copies', 2);
         $this->assertSame(24, iterator_count(StlFile::triangles($order->refresh()->absolutePrintStlPath())));
 
-        // more than the plate takes: refused with the number that does fit, the customer can lower it
+        // more than the plate takes: full plates one after another, the last one with what is left (4 + 4 + 1)
+        $one = $this->order(100.0);
         $many = $this->order(100.0, ['copies' => 9]);
-        $this->assertSame(FarmOrder::STATUS_FAILED, $many->status);
-        $this->assertSame('too_many_copies', $many->error);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $many->status);
+        $this->assertSame([3, 4, 1], [$many->plates, $many->plate_copies, $many->rest_copies]);
+        $this->assertNotNull($many->rest_gcode_path);
+        $this->assertFileExists($many->absoluteGcodePath(3));
+        $this->assertNotSame($many->absoluteGcodePath(1), $many->absoluteGcodePath(3));
+        $this->assertSame(48, iterator_count(StlFile::triangles($many->absolutePrintStlPath())));                 // the full plate: 4 cubes
+        $this->assertGreaterThan($one->est_minutes * 8, $many->est_minutes, 'two full plates and a single cube');
+        $this->assertLessThan($one->est_minutes * 9.5, $many->est_minutes);
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$many->token}/status")->assertOk()->json();
         $this->assertSame(4, $state['max_copies']);                                     // 250 mm plate minus margins: 2 × 2 cubes of 100 mm
-        $this->assertStringContainsString('4', $state['error_text']);
+        $this->assertSame([4, 4, 1], $state['plate_layout']);
+
+        // the operator finishes plate after plate on the manual printer: the order returns to the queue twice, then it is done
+        FarmPrinter::firstOrFail()->slots()->where('slot', 2)->update(['remaining_g' => 50000]);   // nine big cubes need more than one spool
+        foreach ([20000, 20000, 20000] as $amount) {
+            $this->credit($amount);
+        }
+        $this->pay($many)->assertOk();
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $many->refresh();
+        $this->assertSame(FarmOrder::STATUS_QUEUED, $many->status);
+        foreach ([1, 2, 3] as $plate) {
+            $this->actingAs($admin)->post("/admin/farm/orders/{$many->token}/status", ['to' => FarmOrder::STATUS_PRINTING])->assertRedirect();
+            $this->assertSame($plate, $many->refresh()->latestJob()->plate);                 // the job of this plate, not the first one
+            $this->actingAs($admin)->post("/admin/farm/orders/{$many->token}/status", ['to' => FarmOrder::STATUS_DONE])->assertRedirect();
+            $many->refresh();
+            $this->assertSame($plate, $many->plates_done);
+            $this->assertSame($plate < 3 ? FarmOrder::STATUS_QUEUED : FarmOrder::STATUS_DONE, $many->status, "after plate {$plate}");
+        }
+        $this->assertStringContainsString('plate 2/3', $many->events->pluck('note')->implode(' '));
 
         // the calculator hands its quantity over to the start page
         $file = $this->upload(20.0);

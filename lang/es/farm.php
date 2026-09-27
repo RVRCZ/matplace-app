@@ -39,7 +39,10 @@ return [
         'label' => 'Piezas en la placa',
         'hint' => 'Todas las piezas se imprimen a la vez en una placa, a 5 mm entre sí.',
         'max' => 'En la placa de esta impresora caben hasta :n piezas.',
+        'more_plates' => 'Más piezas se imprimen en :p placas, una tras otra.',
         'note' => ':n piezas en una placa',
+        'plates' => ':n piezas en :p placas (:layout), impresas una tras otra',
+        'plate_of' => 'placa :i de :p',
     ],
 
     'order' => [

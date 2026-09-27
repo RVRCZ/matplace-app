@@ -79,6 +79,7 @@
                 <dt class="text-slate-500">{{ __('farm.admin.nav.printers') }}</dt><dd>{{ $order->printer?->name ?? '—' }} · slot {{ ($order->slot?->slot ?? 0) + 1 }}</dd>
                 <dt class="text-slate-500">{{ __('farm.order.color') }}</dt><dd>{{ $order->material?->code }} {{ $order->color?->name ?? '—' }}</dd>
                 <dt class="text-slate-500">{{ __('farm.quality.label') }} / {{ __('farm.strength.label') }}</dt><dd>{{ $order->quality }} / {{ $order->strength }}</dd>
+                @if($order->copies > 1)<dt class="text-slate-500">{{ __('farm.copies.label') }}</dt><dd>{{ $order->plates > 1 ? __('farm.copies.plates', ['n' => $order->copies, 'p' => $order->plates, 'layout' => implode(' + ', $order->plateLayout())]) : __('farm.copies.note', ['n' => $order->copies]) }}@if($order->plates > 1) · {{ __('farm.copies.plate_of', ['i' => $order->plates_done, 'p' => $order->plates]) }}@endif</dd>@endif
                 <dt class="text-slate-500">{{ __('farm.order.dims') }}</dt><dd>@if($order->check){{ implode(' × ', array_map(fn ($v) => round($v, 1), $order->check['dims'] ?? [])) }} mm @endif</dd>
                 <dt class="text-slate-500">{{ __('farm.order.time') }}</dt><dd>{{ $order->est_minutes }} min</dd>
                 <dt class="text-slate-500">{{ __('farm.order.weight') }}</dt><dd>{{ $order->est_grams }} g · {{ $order->est_meters }} m</dd>

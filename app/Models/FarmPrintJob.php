@@ -27,12 +27,12 @@ class FarmPrintJob extends Model
     public const ACTIVE = [self::STATUS_PENDING, self::STATUS_SENT, self::STATUS_PRINTING, self::STATUS_PAUSED, self::STATUS_UNKNOWN];
 
     protected $fillable = [
-        'farm_order_id', 'farm_printer_id', 'slot', 'status', 'remote_filename', 'progress', 'telemetry', 'print_duration_s',
+        'farm_order_id', 'farm_printer_id', 'slot', 'plate', 'status', 'remote_filename', 'progress', 'telemetry', 'print_duration_s',
         'filament_used_mm', 'message', 'snapshot_path', 'snapshot_at', 'started_at', 'finished_at', 'reported_at',
     ];
 
     protected $casts = [
-        'slot' => 'int', 'progress' => 'float', 'telemetry' => 'array', 'print_duration_s' => 'int', 'filament_used_mm' => 'float',
+        'slot' => 'int', 'plate' => 'int', 'progress' => 'float', 'telemetry' => 'array', 'print_duration_s' => 'int', 'filament_used_mm' => 'float',
         'snapshot_at' => 'datetime', 'started_at' => 'datetime', 'finished_at' => 'datetime', 'reported_at' => 'datetime',
     ];
 

@@ -39,7 +39,10 @@ return [
         'label' => 'Pieces on the plate',
         'hint' => 'All pieces print at once on one plate, 5 mm apart.',
         'max' => 'Up to :n pieces fit this printer\'s plate.',
+        'more_plates' => 'More pieces print on :p plates one after another.',
         'note' => ':n pieces on one plate',
+        'plates' => ':n pieces on :p plates (:layout), printed one after another',
+        'plate_of' => 'plate :i of :p',
     ],
 
     'order' => [

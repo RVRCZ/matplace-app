@@ -89,12 +89,16 @@ final class AgentService
 
             case 'done':
                 $job->fill(['status' => FarmPrintJob::STATUS_DONE, 'progress' => 100, 'finished_at' => now()])->save();
-                $this->flow->recordActuals($order, $job->print_duration_s ? (int) ceil($job->print_duration_s / 60) : null, $this->grams($job, $order), 'agent');
+                // the whole order's actuals: every finished plate of it added up
+                $doneJobs = $order->printJobs()->where('status', FarmPrintJob::STATUS_DONE)->get();
+                $seconds = (int) $doneJobs->sum('print_duration_s');
+                $grams = $doneJobs->sum(fn (FarmPrintJob $j) => (float) ($this->grams($j, $order) ?? 0));
+                $this->flow->recordActuals($order, $seconds ? (int) ceil($seconds / 60) : null, $grams > 0 ? round($grams, 1) : null, 'agent');
                 if ($order->status === FarmOrder::STATUS_QUEUED) {
                     $this->flow->move($order, FarmOrder::STATUS_PRINTING, 'agent');
                 }
                 if ($order->status === FarmOrder::STATUS_PRINTING) {
-                    $this->flow->move($order, FarmOrder::STATUS_DONE, 'agent');
+                    $this->flow->plateFinished($order, 'agent');
                 }
                 break;
 

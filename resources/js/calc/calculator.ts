@@ -89,7 +89,10 @@ function renderSize(): void {
     if (fit) {
         const n = b ? piecesOnBed({ x: b.x * s, y: b.y * s, z: b.z * s }) : null;
         const bed = cfg.bed_mm ? `${fmt.format(cfg.bed_mm.x)} × ${fmt.format(cfg.bed_mm.y)} mm` : '';
-        fit.textContent = n === null ? '' : n > 0 ? t('calc.fit.bed', { n, b: bed }) : t('calc.fit.none', { b: bed });
+        const q = state.params.quantity;
+        // more pieces than one plate takes: the farm prints them on several plates one after another
+        const plates = n && q > n ? ` ${t('calc.fit.plates', { q, p: Math.ceil(q / n) })}` : '';
+        fit.textContent = n === null ? '' : n > 0 ? t('calc.fit.bed', { n, b: bed }) + plates : t('calc.fit.none', { b: bed });
         fit.classList.toggle('text-amber-700', n === 0);
     }
 }
@@ -406,7 +409,8 @@ function buildMaterials(): void {
         b.type = 'button';
         b.className = 'chip' + (m.code === state.params.material ? ' chip-on' : '');
         b.dataset.material = m.code;
-        b.innerHTML = `${m.label} <span class="opacity-70 text-xs">${m.lay.map((l) => cfg.lay[l] ?? l).join(' · ')}</span>`;
+        // the plain name, the filament code everyone knows from the spool, then what it is good for
+        b.innerHTML = `${m.label} <span class="font-normal">${m.code}</span> <span class="opacity-70 text-xs">${m.lay.map((l) => cfg.lay[l] ?? l).join(' · ')}</span>`;
         b.onclick = () => {
             state.params.material = m.code;
             box.querySelectorAll('.chip').forEach((c) => c.classList.toggle('chip-on', (c as HTMLElement).dataset.material === m.code));

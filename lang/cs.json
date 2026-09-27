@@ -1261,5 +1261,6 @@
     "param.flag.stamp.hint": "Jen u nahraného obrázku: čáry uvnitř obrysu (žilky, oči, úsměv) vystoupí na samostatné destičce, kterou po vykrojení otisknete.",
     "param.part.body.cutter": "Jen vykrajovátko",
     "param.part.stamp": "Razítko",
-    "calc.tip.cutter": "Vykrajovátko se tiskne obrubou dolů bez podpěr, razítko naležato. Tvar je zrcadlený, po otočení obrubou nahoru vykrajuje správně. PLA nebo PETG, mytí ručně."
+    "calc.tip.cutter": "Vykrajovátko se tiskne obrubou dolů bez podpěr, razítko naležato. Tvar je zrcadlený, po otočení obrubou nahoru vykrajuje správně. PLA nebo PETG, mytí ručně.",
+    "calc.fit.plates": "Vašich :q ks se vytiskne na :p podložkách za sebou."
 }

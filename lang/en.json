@@ -1261,5 +1261,6 @@
     "param.flag.stamp.hint": "Uploaded pictures only: lines inside the outline (veins, eyes, a smile) rise on a separate plate you press in after cutting.",
     "param.part.body.cutter": "Cutter only",
     "param.part.stamp": "Stamp",
-    "calc.tip.cutter": "The cutter prints flange down without supports, the stamp lying flat. The shape is mirrored; turned flange up it cuts the right way round. PLA or PETG, wash by hand."
+    "calc.tip.cutter": "The cutter prints flange down without supports, the stamp lying flat. The shape is mirrored; turned flange up it cuts the right way round. PLA or PETG, wash by hand.",
+    "calc.fit.plates": "Your :q pieces print on :p plates one after another."
 }

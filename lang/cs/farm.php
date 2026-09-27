@@ -39,7 +39,10 @@ return [
         'label' => 'Kusů na podložce',
         'hint' => 'Všechny kusy se vytisknou najednou na jedné podložce, 5 mm od sebe.',
         'max' => 'Na podložku této tiskárny se vejde až :n ks.',
+        'more_plates' => 'Víc kusů se tiskne na :p podložkách za sebou.',
         'note' => ':n ks na jedné podložce',
+        'plates' => ':n ks na :p podložkách (:layout), tisknou se jedna po druhé',
+        'plate_of' => 'podložka :i z :p',
     ],
 
     'order' => [

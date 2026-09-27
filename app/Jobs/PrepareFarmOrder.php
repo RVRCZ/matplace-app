@@ -80,22 +80,25 @@ class PrepareFarmOrder implements ShouldQueue
             $margin = 2 * (float) $settings->get('bed_margin_mm');
             $usable = new Dimensions($bed->x - $margin, $bed->y - $margin, $bed->z);
             $capacity = PlateLayout::capacity($piece->bbox, $usable);
-            if ($order->copies > 1 && ! $order->isTest()) {
-                // several copies on one plate: the oriented piece repeated in a grid, sliced and priced as one print
-                $plateRel = $order->dir().'/plate.stl';
-                $mesh = PlateLayout::replicate($piece, $disk->path($plateRel), $order->copies, $usable);
-                if (! $mesh) {
-                    $order->check = ['ok' => false, 'errors' => [['code' => 'too_many_copies', 'data' => ['max' => $capacity['max'], 'copies' => $order->copies]]], 'warnings' => [], 'dims' => $piece->bbox->toArray(),
-                        'piece_dims' => $piece->bbox->toArray(), 'max_copies' => $capacity['max'], 'mesh' => $piece->toArray(), 'raw_dims' => Dimensions::fromArray((array) $file->bbox)->toArray()];
-                    $order->orientation = $piece->orientation;
-                    $order->print_stl_path = $stlRel;
-                    $order->save();
-                    $flow->fail($order, 'too_many_copies', 'system');
-
-                    return;
+            $plates = 1;
+            $perPlate = $order->copies;
+            $rest = null;
+            if ($order->copies > 1 && ! $order->isTest() && $capacity['max'] >= 1) {
+                // several copies on one plate: the oriented piece repeated in a grid, sliced and priced as one print;
+                // more than a plate takes → full plates one after another, the last one holding what is left
+                if ($order->copies > $capacity['max']) {
+                    $plates = (int) ceil($order->copies / $capacity['max']);
+                    $perPlate = $capacity['max'];
+                    $rest = $order->copies - $perPlate * ($plates - 1);
+                    if ($rest === $perPlate) {
+                        $rest = null;
+                    }
                 }
+                $plateRel = $order->dir().'/plate.stl';
+                $mesh = PlateLayout::replicate($piece, $disk->path($plateRel), $perPlate, $usable) ?? throw new \RuntimeException('Plate layout failed although the capacity allowed it.');
                 $stlRel = $plateRel;
             }
+            $order->fill(['plates' => $plates, 'plates_done' => 0, 'plate_copies' => $perPlate, 'rest_copies' => $rest, 'rest_gcode_path' => null]);
             $verdict = ModelValidator::judge($mesh, $bed, [
                 'min_model_mm' => (float) $settings->get('min_model_mm'),
                 'bed_margin_mm' => (float) $settings->get('bed_margin_mm'),
@@ -157,10 +160,26 @@ class PrepareFarmOrder implements ShouldQueue
             if (! $result->supportsUsed || ! SupportLines::extract($disk->path($gcodeRel), $supportsBin)) {
                 @unlink($supportsBin);
             }
+            // the last plate of a multi-plate order holds fewer pieces: its own layout and G-code
+            $restRel = null;
+            $restResult = null;
+            if ($rest !== null) {
+                $restStl = $disk->path($order->dir().'/rest.stl');
+                PlateLayout::replicate($piece, $restStl, $rest, $usable) ?? throw new \RuntimeException('Rest plate layout failed.');
+                $restResult = $slicer->slice($restStl, $params);
+                if (! $restResult->gcodePath || ! is_file($restResult->gcodePath)) {
+                    throw new \RuntimeException('Slicer returned no G-code for the last plate.');
+                }
+                $restRel = $order->dir().'/rest.gcode';
+                File::move($restResult->gcodePath, $disk->path($restRel));
+            }
+            $fullPlates = $rest === null ? $plates : $plates - 1;
+            $sum = fn (float $full, ?float $last) => $full * $fullPlates + ($last ?? 0.0);
 
             $order->fill([
                 'gcode_path' => $gcodeRel,
                 'gcode_sha256' => hash_file('sha256', $disk->path($gcodeRel)),
+                'rest_gcode_path' => $restRel,
                 'slice_params' => [
                     'engine' => $slicer->name(), 'printer' => ['id' => $printer->id, 'key' => $printer->key, 'model' => $printer->model],
                     'material' => $order->material->code, 'quality' => $quality, 'layer_mm' => $layer, 'strength' => $order->strength, 'copies' => $order->copies,
@@ -168,10 +187,11 @@ class PrepareFarmOrder implements ShouldQueue
                     'profile_layers' => $profile->layers, 'profile_fingerprint' => $profile->sliceFingerprint(),
                     'profile_hashes' => $this->profileHashes($profiles), 'preparer' => $order->isTest() ? 'php-stl' : $preparer->name(), 'sliced_at' => now()->toIso8601String(),
                 ],
-                'slice_result' => $result->toArray(),
-                'est_minutes' => $result->minutes,
-                'est_grams' => $result->grams,
-                'est_meters' => $result->meters,
+                'slice_result' => $result->toArray() + ['plates' => $plates, 'plate_copies' => $perPlate, 'rest_copies' => $rest, 'rest' => $restResult?->toArray()],
+                // the whole order: every full plate, plus the last one when it differs
+                'est_minutes' => (int) round($sum($result->minutes, $restResult?->minutes)),
+                'est_grams' => round($sum($result->grams, $restResult?->grams), 1),
+                'est_meters' => round($sum((float) ($result->meters ?? 0), $restResult?->meters), 2),
                 'supports_used' => $result->supportsUsed,
             ])->save();
 

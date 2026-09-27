@@ -41,13 +41,16 @@ final class Dispatcher
     private function start(FarmPrinter $printer, FarmOrder $order): FarmPrintJob
     {
         $slot = (int) ($order->slot?->slot ?? 0);
+        // a multi-plate order: the next plate in line; the last one may have its own (smaller) G-code
+        $plate = $order->nextPlate();
+        $gcode = $order->absoluteGcodePath($plate);
         $job = FarmPrintJob::create([
-            'farm_order_id' => $order->id, 'farm_printer_id' => $printer->id, 'slot' => $slot,
-            'status' => FarmPrintJob::STATUS_PENDING, 'remote_filename' => 'matplace-'.$order->number.'.gcode',
+            'farm_order_id' => $order->id, 'farm_printer_id' => $printer->id, 'slot' => $slot, 'plate' => $plate,
+            'status' => FarmPrintJob::STATUS_PENDING, 'remote_filename' => 'matplace-'.$order->number.($order->plates > 1 ? '-p'.$plate : '').'.gcode',
         ]);
         FarmCommand::create([
             'farm_printer_id' => $printer->id, 'farm_print_job_id' => $job->id, 'type' => FarmCommand::TYPE_START,
-            'payload' => ['job_id' => $job->id, 'filename' => $job->remote_filename, 'slot' => $slot, 'sha256_slot0' => $order->gcode_sha256],
+            'payload' => ['job_id' => $job->id, 'filename' => $job->remote_filename, 'slot' => $slot, 'plate' => $plate, 'sha256_slot0' => $gcode && is_file($gcode) ? hash_file('sha256', $gcode) : $order->gcode_sha256],
         ]);
         $printer->update(['bed_clear' => false]);
 
@@ -66,13 +69,17 @@ final class Dispatcher
             return null;
         }
         $swap = (int) $settings->get('changeover_minutes');
-        $own = (int) ceil((int) $order->est_minutes * $printer->time_factor);
+        // several plates print one after another with a plate change between them
+        $plates = max(1, (int) $order->plates);
+        $perPlate = (int) ceil((int) $order->est_minutes / $plates * $printer->time_factor);
+        $own = $perPlate * $plates + ($plates - 1) * $swap;
         $job = $printer->activeJob();
 
         if ($order->status === FarmOrder::STATUS_PRINTING) {
-            $left = $job && $job->farm_order_id === $order->id ? (int) ceil($own * (1 - min(100, $job->progress) / 100)) : $own;
+            $platesLeft = max(0, $plates - (int) $order->plates_done - 1);
+            $thisPlate = $job && $job->farm_order_id === $order->id ? (int) ceil($perPlate * (1 - min(100, $job->progress) / 100)) : $perPlate;
 
-            return ['start_in' => 0, 'finish_in' => $left, 'ahead' => 0, 'blocked' => null];
+            return ['start_in' => 0, 'finish_in' => $thisPlate + $platesLeft * ($perPlate + $swap), 'ahead' => 0, 'blocked' => null];
         }
 
         $wait = 0;
