@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Calculation\MaterialCatalog;
 use App\Domain\Tools\ModelCheck;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Mesh\StlTopology;
@@ -261,6 +262,28 @@ class ToolsFlowTest extends TestCase
 
         $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'rect']])->assertStatus(422)->assertJsonFragment([__('param.error.cap_thread_round', [], 'cs')]);
         $this->assertSame('cap', $this->postJson('/api/tools/param', ['kind' => 'cap', 'params' => $base + ['style' => 'plug']])->assertCreated()->json('file.kind'));
+    }
+
+    public function test_calculator_compares_materials_for_the_model(): void
+    {
+        $page = $this->get('/?lang=cs')->assertOk();
+        $page->assertSee('id="mat-compare"', false)->assertSee('Porovnat materiály')->assertSee('"compare.col.heat"', false);
+        $materials = collect(app(MaterialCatalog::class)->all())->keyBy('code');
+        foreach (['PLA', 'PETG', 'ASA', 'TPU', 'PA'] as $code) {
+            $p = $materials[$code]['props'];
+            $this->assertIsArray($p, $code);
+            $this->assertGreaterThan(40, $p['heat']);
+            $this->assertContains($p['outdoor'], ['yes', 'limited', 'no']);
+            $this->assertContains($p['food'], ['liner', 'no']);
+            $this->assertGreaterThanOrEqual(1.0, $p['time']);
+        }
+        $this->assertNull($materials['RESIN']['props']);                                  // another technology: not in the table
+        $this->assertGreaterThan($materials['PLA']['props']['heat'], $materials['ASA']['props']['heat']);
+        foreach (['cs', 'en', 'es'] as $lang) {
+            foreach (['compare.title', 'compare.note', 'compare.outdoor.limited', 'compare.food.liner'] as $key) {
+                $this->assertNotSame($key, __($key, [], $lang));
+            }
+        }
     }
 
     public function test_tool_pages_address_the_visitor_formally(): void

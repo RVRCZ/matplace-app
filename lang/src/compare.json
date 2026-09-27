@@ -1,0 +1,92 @@
+{
+    "compare.title": [
+        "Porovnat materiály pro tento model",
+        "Compare materials for this model",
+        "Comparar materiales para este modelo"
+    ],
+    "compare.note": [
+        "Čas, hmotnost a cena ostatních materiálů jsou přepočtené z výpočtu pro zvolený materiál; přesná čísla dostanete po jeho výběru a přepočítání. Klepnutím na řádek materiál vyberete.",
+        "Time, weight and price of the other materials are converted from the calculation for the chosen one; pick a material and recalculate for exact numbers. A click on a row picks the material.",
+        "Tiempo, peso y precio de los demás materiales se convierten del cálculo del material elegido; elija un material y recalcule para cifras exactas. Un clic en la fila elige el material."
+    ],
+    "compare.col.material": [
+        "Materiál",
+        "Material",
+        "Material"
+    ],
+    "compare.col.price": [
+        "Cena",
+        "Price",
+        "Precio"
+    ],
+    "compare.col.time": [
+        "Doba tisku",
+        "Print time",
+        "Tiempo"
+    ],
+    "compare.col.weight": [
+        "Hmotnost",
+        "Weight",
+        "Peso"
+    ],
+    "compare.col.heat": [
+        "Snese teplotu",
+        "Stands heat up to",
+        "Aguanta hasta"
+    ],
+    "compare.col.strength": [
+        "Pevnost",
+        "Strength",
+        "Resistencia"
+    ],
+    "compare.col.outdoor": [
+        "Venku",
+        "Outdoors",
+        "Exterior"
+    ],
+    "compare.col.food": [
+        "Potraviny",
+        "Food",
+        "Alimentos"
+    ],
+    "compare.outdoor.yes": [
+        "ano, i na slunci",
+        "yes, in the sun too",
+        "sí, también al sol"
+    ],
+    "compare.outdoor.limited": [
+        "ve stínu",
+        "in the shade",
+        "a la sombra"
+    ],
+    "compare.outdoor.no": [
+        "ne",
+        "no",
+        "no"
+    ],
+    "compare.food.liner": [
+        "jen s vložkou",
+        "with a liner only",
+        "solo con forro"
+    ],
+    "compare.food.no": [
+        "ne",
+        "no",
+        "no"
+    ],
+    "compare.flexible": [
+        "pružný",
+        "flexible",
+        "flexible"
+    ],
+    "compare.pick": [
+        "Vybrat tento materiál",
+        "Pick this material",
+        "Elegir este material"
+    ],
+    "compare.chosen": [
+        "Zvolený materiál",
+        "The chosen material",
+        "Material elegido"
+    ]
+}

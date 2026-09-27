@@ -11,7 +11,8 @@ import { bootDownload, setDownload, refresh as refreshDownload, openWhenReady as
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
 
-interface MaterialCfg { code: string; density: number; lay: string[]; sliceable: boolean; label: string; hint: string }
+interface MaterialProps { heat: number; strength: number; flexible: boolean; outdoor: string; food: string; time: number; price: number }
+interface MaterialCfg { code: string; density: number; lay: string[]; sliceable: boolean; label: string; hint: string; props?: MaterialProps | null }
 interface Config {
     rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; currency: string; max_scale: number;
     bed_mm: { x: number; y: number; z: number }; bed_margin_mm?: number; materials: MaterialCfg[]; default_material: string;
@@ -137,6 +138,7 @@ function renderRough(): void {
     renderSize();
     $('stat-grams').textContent = `≈ ${fmt.format(est.grams * q)} g`;
     $('stat-time').textContent = `≈ ${minutesText(est.minutes * q)}`;
+    renderCompare({ grams: est.grams, minutes: est.minutes }, false);
     if (!marketplace()) {
         // the design page is about the print; the farm's list gives a price to orient by, the binding one comes with the order
         renderFacts({ minutes: est.minutes * q, grams: est.grams * q, rough: true });
@@ -154,6 +156,50 @@ function renderRough(): void {
 }
 
 const marketplace = () => cfg.marketplace !== false;
+
+/**
+ * Material comparison for THIS model: weight by density, time and price converted from the numbers of the chosen
+ * material (the precise ones once they exist), beside what each material stands up to. A row picks the material.
+ */
+function renderCompare(base: { grams: number; minutes: number } | null, precise: boolean): void {
+    const head = document.getElementById('mat-compare-head');
+    const body = document.getElementById('mat-compare-body');
+    if (!head || !body) return;
+    const rows = cfg.materials.filter((m) => m.props);
+    const cur = material(state.params.material);
+    if (!base || !rows.length || !cur.props) { body.innerHTML = ''; return; }
+    const q = state.params.quantity;
+    const priced = cfg.orientation_profiles.length > 0 && (marketplace() || farmPriced());
+    const unit = cfg.currency === 'CZK' ? 'Kč' : cfg.currency;
+    const th = (k: string) => `<th class="py-1 pr-2 font-normal">${t(k)}</th>`;
+    head.innerHTML = `<tr>${th('compare.col.material')}${priced ? th('compare.col.price') : ''}${th('compare.col.time')}${th('compare.col.weight')}${th('compare.col.heat')}${th('compare.col.strength')}${th('compare.col.outdoor')}${th('compare.col.food')}</tr>`;
+    const approx = precise ? '' : '≈ ';
+    body.innerHTML = rows.map((m) => {
+        const p = m.props!;
+        const same = m.code === cur.code;
+        const grams = base.grams * (m.density / cur.density);
+        const minutes = Math.max(1, Math.round(base.minutes * (p.time / cur.props!.time)));
+        let cost = '';
+        if (priced) {
+            const totals = cfg.orientation_profiles.map((prof) => price(cfg.round_to, { ...prof, price_per_gram: prof.price_per_gram * (p.price / cur.props!.price) }, grams, minutes, q).total);
+            cost = `<td class="py-1 pr-2 font-semibold">${same && precise ? '' : '≈ '}${fmt.format(Math.min(...totals))} ${unit}</td>`;
+        }
+        const dots = '●'.repeat(p.strength) + '○'.repeat(Math.max(0, 3 - p.strength));
+        return `<tr data-material="${m.code}" class="cursor-pointer border-t border-slate-100 ${same ? 'bg-action-soft' : 'hover:bg-slate-50'}" title="${same ? t('compare.chosen') : t('compare.pick')}">`
+            + `<td class="py-1 pr-2"><span class="font-semibold text-ink">${m.label}</span> <span class="text-slate-500">${m.code}</span></td>${cost}`
+            + `<td class="py-1 pr-2">${same ? approx : '≈ '}${minutesText(minutes * q)}</td><td class="py-1 pr-2">${same ? approx : '≈ '}${fmt.format(grams * q)} g</td>`
+            + `<td class="py-1 pr-2">${p.heat} °C</td><td class="py-1 pr-2" aria-label="${p.strength}/3">${dots}${p.flexible ? ` ${t('compare.flexible')}` : ''}</td>`
+            + `<td class="py-1 pr-2">${t(`compare.outdoor.${p.outdoor}`)}</td><td class="py-1">${t(`compare.food.${p.food}`)}</td></tr>`;
+    }).join('');
+    body.querySelectorAll<HTMLElement>('tr[data-material]').forEach((tr) => {
+        tr.onclick = () => {
+            if (tr.dataset.material === state.params.material) return;
+            state.params.material = tr.dataset.material!;
+            buildMaterials();
+            onParamsChanged();
+        };
+    });
+}
 
 /** The farm's list price as a line to orient by; the binding price comes on the order page after colour and printer are chosen. */
 function orientPrice(r: [number, number] | null, rough: boolean): void {
@@ -216,6 +262,7 @@ function renderBreakdown(bds: { profile: string; label?: string | null; printer_
 /** Precise numbers from the server slice. */
 function renderPrecise(c: CalcInfo): void {
     if (!c.slicer || !c.prices) return;
+    renderCompare({ grams: c.slicer.grams, minutes: c.slicer.minutes }, true);
     const q = state.params.quantity;
     if (!marketplace()) {
         orientPrice(farmPriced() && c.prices.length ? [c.prices[0].total, c.prices[0].total] : null, false);
