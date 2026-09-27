@@ -11,6 +11,7 @@ use App\Models\FarmMaterial;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrintJob;
+use App\Models\ModelFile;
 use App\Models\User;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,6 +64,20 @@ class FarmPagesTest extends TestCase
             }
         }
         $this->actingAs($this->user)->get("/farm/orders/{$order->token}/model.stl")->assertOk();
+    }
+
+    public function test_a_3mf_upload_is_printable_once_the_pipeline_made_an_stl_of_it(): void
+    {
+        $path = sys_get_temp_dir().'/mp_farm_'.uniqid().'.3mf';
+        MeshFixtures::cube3mf($path, 10);
+        $uuid = $this->actingAs($this->user)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'Mobile supporte A.3mf', null, null, true)])->json('file.uuid');
+        $this->assertNotNull(ModelFile::where('uuid', $uuid)->value('stl_path'), 'the upload pipeline converts 3MF to STL');
+        $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid])->assertCreated()->assertJsonStructure(['url']);
+
+        // a file whose conversion failed is refused with a reason, not with "STL only"
+        $broken = ModelFile::where('uuid', $uuid)->firstOrFail();
+        $broken->forceFill(['status' => 'failed', 'stl_path' => null])->save();
+        $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid])->assertStatus(422)->assertJsonPath('error', 'not_ready');
     }
 
     public function test_calculator_offers_the_farm_and_the_start_page_takes_a_shared_calculation(): void

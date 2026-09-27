@@ -121,7 +121,7 @@ return [
         'photo_heic' => 'Fotka ve formátu HEIC se na serveru nedá přečíst. Pošlete ji jako JPEG.',
         'photo_unreadable' => 'Soubor se nedá přečíst jako fotka.',
         'closed' => 'Farma teď nepřijímá nové zakázky. Zkuste to prosím později.',
-        'not_stl' => 'Tady zatím tiskneme jen soubory STL.',
+        'not_ready' => 'Model ještě není připravený k tisku: buď se zpracovává, nebo se ho nepodařilo převést. Zkuste to za chvíli, případně nahrajte STL.',
         'too_big' => 'Soubor je větší než :max MB.',
         'daily_limit' => 'Dnes už jste spočítali :limit modelů, což je denní limit. Zítra to půjde znovu.',
         'no_printer' => 'Teď není v provozu žádná tiskárna. Zkuste to prosím později.',

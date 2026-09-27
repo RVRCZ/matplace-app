@@ -21,18 +21,17 @@ final class OrderService
     public function __construct(private readonly FarmSettings $settings, private readonly PriceCalculator $prices) {}
 
     /**
-     * @throws FarmRefusal with a code the UI translates: not_stl, too_big, daily_limit, no_printer
+     * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
     public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null): FarmOrder
     {
         if (! config('farm.open', true)) {
             throw new FarmRefusal('closed');
         }
-        // our own generators always produce printable STL; a customer's upload must be .stl in this phase
-        if ($file->origin === null || $file->origin === 'upload') {
-            if ($file->ext !== 'stl') {
-                throw new FarmRefusal('not_stl');
-            }
+        // whatever came in (STL, 3MF, STEP, OBJ…), the upload pipeline normalised it to an STL; only a file that failed
+        // that or is still being processed cannot be printed
+        if (! $file->isReady()) {
+            throw new FarmRefusal('not_ready');
         }
         $maxMb = (int) $this->settings->get('max_upload_mb');
         if ($file->size_bytes > $maxMb * 1024 * 1024) {

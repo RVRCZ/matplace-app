@@ -121,7 +121,7 @@ return [
         'photo_heic' => 'El servidor no puede leer fotos HEIC. Envíela como JPEG.',
         'photo_unreadable' => 'El archivo no se puede leer como foto.',
         'closed' => 'La granja no acepta pedidos nuevos ahora mismo. Inténtelo más tarde.',
-        'not_stl' => 'Por ahora aquí solo imprimimos archivos STL.',
+        'not_ready' => 'El modelo aún no está listo para imprimir: se está procesando o no se pudo convertir. Inténtelo en un momento o suba un STL.',
         'too_big' => 'El archivo supera los :max MB.',
         'daily_limit' => 'Hoy ya ha calculado :limit modelos, que es el límite diario. Mañana volverá a funcionar.',
         'no_printer' => 'Ahora no hay ninguna impresora en servicio. Inténtelo más tarde.',
