@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Generation\GenerationService;
 use App\Domain\Calculation\MaterialCatalog;
+use App\Domain\Generation\GenerationService;
+use App\Domain\Tools\ModelRepair;
+use App\Domain\Tools\MoldGenerator;
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
+use App\Domain\Tools\SignGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Api\ConfigController;
-use App\Domain\Tools\MoldGenerator;
-use App\Domain\Tools\SignGenerator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -41,7 +42,7 @@ class ToolsController extends Controller
             'available' => $tools->available(),
             'fields' => ParametricGenerator::FIELDS[$kind],
             'flags' => ParametricGenerator::FLAGS[$kind] ?? [],
-            'when' => \App\Domain\Tools\ParametricGenerator::WHEN[$kind] ?? [], 'flagsOn' => ParametricGenerator::FLAGS_ON,
+            'when' => ParametricGenerator::WHEN[$kind] ?? [], 'flagsOn' => ParametricGenerator::FLAGS_ON,
             'choices' => ParametricGenerator::CHOICES[$kind] ?? [],
             'texts' => ParametricGenerator::TEXTS[$kind] ?? [],
             'artwork' => in_array($kind, ParametricGenerator::ARTWORK, true),
@@ -67,6 +68,12 @@ class ToolsController extends Controller
             'from' => is_string($from) && preg_match('/^[0-9a-f-]{36}$/', $from) ? $from : null,
             'walls' => MoldGenerator::WALLS, 'axes' => MoldGenerator::AXES, 'splits' => MoldGenerator::SPLITS,
         ]);
+    }
+
+    /** "Repair my model": upload, automatic repair, what was wrong and what was done, download and price. */
+    public function repair(ModelRepair $repairs, MaterialCatalog $materials, ConverterChain $converters): View
+    {
+        return view('tools.repair', ['available' => $repairs->available(), 'config' => ConfigController::payload($materials, $converters)]);
     }
 
     /** "Check my model": the upload, the viewer and a plain-language report; the price is one click further. */

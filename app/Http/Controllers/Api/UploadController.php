@@ -103,6 +103,8 @@ class UploadController extends Controller
             'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], self::partsOf($f) || in_array($f->kind(), ['logo', 'qr', 'stamp', 'mold'], true) || ! empty($f->tool_params['stand']) ? ['multiple_shells'] : [])),
             // casting mold: what the tool measured (box size, resin needed, undercuts)
             'mold' => $f->kind() === 'mold' ? ($f->tool_params['report'] ?? null) : null,
+            // repaired model: what was wrong, what was done, what is left
+            'repair' => $f->kind() === 'repaired' ? ($f->tool_params['report'] ?? null) : null,
             'parts' => self::partsOf($f),
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => self::toolOf($f),
