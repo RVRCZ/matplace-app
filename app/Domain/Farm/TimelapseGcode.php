@@ -85,17 +85,17 @@ final class TimelapseGcode
             return $gcode;
         }
 
-        return sprintf('%s park_x=%s park_y=%s dwell=%d frames=%d', self::HEADER, $px, $py, $dwell, $frames)."\n".implode("\n", $out);
+        return sprintf('%s park_x=%s park_y=%s dwell=%d travel=%d frames=%d', self::HEADER, $px, $py, $dwell, (int) round($travel / 60), $frames)."\n".implode("\n", $out);
     }
 
     /** Park position and dwell written by apply(), for the agent and the tests; null for an untouched file. */
     public static function header(string $gcode): ?array
     {
-        if (! preg_match('/^'.preg_quote(self::HEADER, '/').' park_x=(-?[\d.]+) park_y=(-?[\d.]+) dwell=(\d+) frames=(\d+)/', $gcode, $m)) {
+        if (! preg_match('/^'.preg_quote(self::HEADER, '/').' park_x=(-?[\d.]+) park_y=(-?[\d.]+) dwell=(\d+)(?: travel=(\d+))? frames=(\d+)/', $gcode, $m)) {
             return null;
         }
 
-        return ['park_x' => (float) $m[1], 'park_y' => (float) $m[2], 'dwell_ms' => (int) $m[3], 'frames' => (int) $m[4]];
+        return ['park_x' => (float) $m[1], 'park_y' => (float) $m[2], 'dwell_ms' => (int) $m[3], 'travel_mm_s' => (int) ($m[4] ?: 200), 'frames' => (int) $m[5]];
     }
 
     /** Writes the time-lapse copy next to the given file and returns its path. */

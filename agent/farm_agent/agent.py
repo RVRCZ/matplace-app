@@ -37,7 +37,7 @@ HEAD_POLL_SECONDS = 0.25
 
 
 def read_park(path: str) -> Optional[list]:
-    """[x, y] from the first line the server writes into a layer-synced G-code, None for any other file."""
+    """[x, y, dwell s, travel mm/s] from the first line the server writes into a layer-synced G-code, None otherwise."""
     try:
         with open(path, encoding="utf-8", errors="replace") as fh:
             first = fh.readline()
@@ -47,7 +47,8 @@ def read_park(path: str) -> Optional[list]:
         return None
     values = dict(p.split("=", 1) for p in first[len(TIMELAPSE_HEADER):].split() if "=" in p)
     try:
-        return [float(values["park_x"]), float(values["park_y"])]
+        return [float(values["park_x"]), float(values["park_y"]), float(values.get("dwell", 1000)) / 1000,
+                float(values.get("travel", 200))]
     except (KeyError, ValueError):
         return None
 
@@ -69,7 +70,9 @@ class PrinterWorker:
         self.work_dir = work_dir
         self.tracked: Optional[Tracked] = None
         self.busy = asyncio.Lock()      # one command at a time per printer
-        self.parked = False             # the head is standing at the park position and its picture is taken
+        self.parked = False             # the picture of this stop at the park position is taken (or given up)
+        self.park_due = 0.0             # planned-position printers: when the head can have arrived
+        self.last_head: Optional[tuple] = None   # last position away from the park position
         self.dirty = False              # tracked state changed and is not on disk yet
 
     async def report(self) -> dict:
@@ -183,17 +186,34 @@ class Agent:
                 if w.tracked and w.tracked.park and not w.tracked.final:
                     await self.layer_frame(w)
 
-    async def layer_frame(self, w: PrinterWorker) -> bool:
-        """One look at the head: the first time it stands at the park position, one picture. True when one was sent."""
+    async def layer_frame(self, w: PrinterWorker, now: Optional[float] = None) -> bool:
+        """One look at the head: once per stop at the park position, one picture. True when one was sent.
+
+        A printer that reports its real position (motion_report): the picture when the head stands there.
+        A printer that reports only the planned target (GoKlipper on the Kobra S1): the target jumps to the park
+        position when the move is queued, so the picture waits for distance / travel speed (+ a little), well inside
+        the dwell."""
+        now = asyncio.get_event_loop().time() if now is None else now
         head = await w.driver.head()
         park = w.tracked.park if w.tracked else None
-        at_park = bool(head and park and abs(head[0] - park[0]) <= PARK_TOLERANCE_MM and abs(head[1] - park[1]) <= PARK_TOLERANCE_MM
-                       and head[2] < 1.0)
-        if not at_park:
-            w.parked = False
+        at = bool(head and park and abs(head[0] - park[0]) <= PARK_TOLERANCE_MM and abs(head[1] - park[1]) <= PARK_TOLERANCE_MM)
+        if not at:
+            w.parked, w.park_due = False, 0.0
+            if head:
+                w.last_head = head
             return False
         if w.parked:
             return False
+        if head[2] is None:
+            if not w.park_due:
+                travel = park[3] if len(park) > 3 else 200.0
+                came = w.last_head or head
+                distance = ((came[0] - park[0]) ** 2 + (came[1] - park[1]) ** 2) ** 0.5
+                w.park_due = now + distance / max(travel, 1.0) + 0.1
+            if now < w.park_due:
+                return False
+        elif head[2] >= 1.0:
+            return False        # real position: still moving
         w.parked = True
         try:
             jpeg = await w.driver.snapshot()

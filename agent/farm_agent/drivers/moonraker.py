@@ -145,15 +145,18 @@ class MoonrakerDriver(PrinterDriver):
         if not self._session:
             return None
         try:
-            s = (await self._get("/printer/objects/query?motion_report=live_position,live_velocity&print_stats=state"))["result"]["status"]
+            s = (await self._get("/printer/objects/query?motion_report=live_position,live_velocity&toolhead=position&print_stats=state"))["result"]["status"]
         except Exception:  # noqa: BLE001 - no position, no picture; the print goes on
             return None
         if s.get("print_stats", {}).get("state") != "printing":
             return None
-        pos = s.get("motion_report", {}).get("live_position") or []
-        if len(pos) < 2:
-            return None
-        return float(pos[0]), float(pos[1]), float(s["motion_report"].get("live_velocity") or 0.0)
+        live = (s.get("motion_report") or {}).get("live_position") or []
+        if len(live) >= 2:
+            return float(live[0]), float(live[1]), float(s["motion_report"].get("live_velocity") or 0.0)
+        # GoKlipper (Rinkhals on the Kobra S1) has no motion_report: toolhead.position is where the head is GOING,
+        # speed unknown (None) - the agent then waits until the head can have arrived
+        planned = (s.get("toolhead") or {}).get("position") or []
+        return (float(planned[0]), float(planned[1]), None) if len(planned) >= 2 else None
 
     async def light(self, on: bool) -> None:
         if not self.light_device or not self._session:

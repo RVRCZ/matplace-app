@@ -61,7 +61,7 @@ GCODE;
     {
         $out = TimelapseGcode::apply(self::ORCA, ['park_x' => 240, 'park_y' => 250, 'dwell_ms' => 1200, 'lift_mm' => 0.6, 'travel_mm_s' => 200]);
 
-        $this->assertSame(['park_x' => 240.0, 'park_y' => 250.0, 'dwell_ms' => 1200, 'frames' => 2], TimelapseGcode::header($out));
+        $this->assertSame(['park_x' => 240.0, 'park_y' => 250.0, 'dwell_ms' => 1200, 'travel_mm_s' => 200, 'frames' => 2], TimelapseGcode::header($out));
         // not before the first layer: nothing is printed yet
         $this->assertStringContainsString("; AFTER_LAYER_CHANGE 1 @ 0.2mm\nG1 X95.44 Y96.49 Z.6 F18000", $out);
         // after layer 1 the slicer had retracted and wiped: straight up and away, its feed rate put back afterwards
