@@ -78,7 +78,7 @@ class ModelFile extends Model
             'generated' => ['supports' => true],                                           // organic shapes: tree supports
             'lithophane' => ['infill' => 100, 'quality' => 'fine', 'supports' => false],   // must be solid, fine layers = smooth picture
             'vase' => ['supports' => false] + (($this->tool_params['purpose'] ?? 'vase') === 'vase' ? ['vase' => true] : []),   // a plain vase is one closed contour: it prints best in vase mode, one wall and no infill
-            'relief', 'sign', 'logo', 'stamp', 'qr', 'stencil', 'lightbox', 'modular', 'organizer', 'box', 'phone_stand', 'cable_holder', 'cutter', 'holder' => ['supports' => false],
+            'relief', 'sign', 'logo', 'stamp', 'qr', 'stencil', 'lightbox', 'modular', 'organizer', 'box', 'phone_stand', 'cable_holder', 'cutter', 'holder', 'cap' => ['supports' => false],
             'mold' => ['supports' => false, 'infill' => 30],                                 // halves lie parting face up; supports would scar the cavity
             default => [],
         };

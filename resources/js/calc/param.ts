@@ -77,13 +77,14 @@ export function bootParam(): void {
     };
 
     const renderDims = (m: Meta): void => {
-        const n = m.notes as { outer?: number[]; inner?: number[]; cell?: number[]; slot?: number };
+        const n = m.notes as { outer?: number[]; inner?: number[]; cell?: number[]; slot?: number; fits?: number[] };
         const rows: [string, string][] = [];
         const dims = (a: number[]) => `${a.map((v) => nf.format(v)).join(' × ')} mm`;
         if (n.outer) rows.push([t('param.outer'), dims(n.outer)]);
         if (n.inner) rows.push([t('param.inner'), dims(n.inner)]);
         if (n.cell) rows.push([t('param.cell'), dims(n.cell)]);
         if (n.slot) rows.push([t('param.slot'), `${nf.format(n.slot)} mm`]);
+        if (n.fits) rows.push([t('param.fits'), dims(n.fits)]);
         $('param-dims').innerHTML = rows.map(([k, v]) => `<div class="flex justify-between gap-3"><dt class="text-muted">${k}</dt><dd class="font-semibold text-ink">${v}</dd></div>`).join('');
     };
 

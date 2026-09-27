@@ -71,6 +71,7 @@ Route::get('/tools/illuminated-sign', [ToolsController::class, 'param'])->defaul
 Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');
 Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('kind', 'cable_holder')->name('tools.cable_holder');
 Route::get('/tools/holder', [ToolsController::class, 'param'])->defaults('kind', 'holder')->name('tools.holder');
+Route::get('/tools/cap', [ToolsController::class, 'param'])->defaults('kind', 'cap')->name('tools.cap');
 Route::get('/tools/cookie-cutter', [ToolsController::class, 'param'])->defaults('kind', 'cutter')->name('tools.cutter');
 
 // ── JSON API used by the calculator ──────────────────────────────────────────

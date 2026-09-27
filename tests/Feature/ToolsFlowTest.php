@@ -219,6 +219,50 @@ class ToolsFlowTest extends TestCase
         $this->assertFalse($created->json('file.hints.supports'));
     }
 
+    public function test_lid_plug_and_threaded_cap_fit_what_was_measured(): void
+    {
+        $this->get('/tools/cap?lang=cs')->assertOk()->assertSee('Víčko, zátka, krytka')->assertSee('data-preset="pet"', false)->assertSee('data-param="pitch"', false);
+        $this->get('/tools/cap?lang=en')->assertOk()->assertSee('Lid, plug, cover');
+        $this->get('/tools/cap?lang=es')->assertOk();
+        foreach (ParametricGenerator::PRESETS['cap'] as $name => $values) {
+            $v = validator(['params' => $values], ParametricGenerator::rules('cap'));
+            $this->assertTrue($v->passes(), $name.': '.implode(' ', $v->errors()->all()));
+        }
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        Storage::fake('models');
+        $meta = fn ($r) => json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $closed = function ($r, string $what) {
+            $stl = tempnam(sys_get_temp_dir(), 'cap').'.stl';
+            file_put_contents($stl, $r->streamedContent());
+            $this->assertTrue(StlTopology::check($stl)['watertight'], $what);
+            @unlink($stl);
+        };
+        $base = ['size_a' => 40, 'size_b' => 30, 'height' => 12, 'wall' => 2, 'top' => 2, 'clearance' => 0.3, 'grip' => false];
+
+        // push-on: the cavity is the neck plus clearance on both sides, the wall comes on top of it
+        $push = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => $base + ['style' => 'push', 'shape' => 'round']])->assertOk();
+        $this->assertEqualsWithDelta(40 + 2 * 0.3 + 2 * 2, $meta($push)['bbox']['x'], 0.05);
+        $this->assertEqualsWithDelta(14.0, $meta($push)['bbox']['z'], 0.01);
+        $closed($push, 'push');
+
+        // plug: narrower than the opening by the clearance, stopped by a flange wider than the opening
+        $plug = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => $base + ['style' => 'plug', 'shape' => 'rect']])->assertOk();
+        $this->assertGreaterThan(40, $meta($plug)['bbox']['x']);
+        $this->assertSame([40, 30], array_map('intval', $meta($plug)['notes']['fits']));
+        $closed($plug, 'plug');
+
+        // threaded: whole turns of one helix, and an honest note to try it first
+        $thread = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'round', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7]])->assertOk();
+        $this->assertEqualsWithDelta(4.4, $meta($thread)['notes']['thread']['turns'], 0.05);
+        $this->assertContains('thread_try', $meta($thread)['notes']['warnings']);
+        $closed($thread, 'thread');
+
+        $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'rect']])->assertStatus(422)->assertJsonFragment([__('param.error.cap_thread_round', [], 'cs')]);
+        $this->assertSame('cap', $this->postJson('/api/tools/param', ['kind' => 'cap', 'params' => $base + ['style' => 'plug']])->assertCreated()->json('file.kind'));
+    }
+
     public function test_tool_pages_address_the_visitor_formally(): void
     {
         $this->get('/tools/figure?lang=cs')->assertOk()->assertSee('Vyberte nebo vyfoťte fotku')->assertDontSee('Zkus ');
