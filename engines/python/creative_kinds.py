@@ -724,8 +724,12 @@ def cutter(M, Invalid, p):
     # booleans of stacked profiles leave vertices nanometres apart; welded in the float32 STL they would open the mesh.
     # 5 µm is nothing on a cutter, and it makes every part one closed body.
     parts = {key: _welded(M, solid) for key, solid in parts.items()}
-    # in use the cutter is turned over: the flange on top, the edge on the dough, the outline reading as drawn
-    parts["use"] = parts["all"].rotate([180, 0, 0]).translate([0, ph, height])
+    # in use the cutter is turned over (about its Y axis, like flipping a page): the flange on top, the edge on the dough,
+    # the outline reading as typed; the stamp stays face up beside it
+    use = parts["body"].rotate([0, 180, 0]).translate([pw, 0, height])
+    if "stamp" in parts:
+        use = use + parts["stamp"].translate([pw + 8, 0, 0])
+    parts["use"] = use
     return parts, notes
 
 
