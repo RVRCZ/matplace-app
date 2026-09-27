@@ -35,7 +35,7 @@ return [
         'guess' => 'El modelo parece estar en «:unit». Las hemos usado; cámbielas si no es correcto.',
         'ask' => 'El modelo es muy pequeño. ¿Podría estar en pulgadas?',
     ],
-    'size' => ['label' => 'Tamaño de la impresión', 'x' => 'Ancho', 'y' => 'Profundidad', 'z' => 'Alto', 'hint' => 'Cambie cualquier medida; las demás siguen en la misma proporción.'],
+    'size' => ['label' => 'Tamaño de la impresión', 'x' => 'Ancho', 'y' => 'Profundidad', 'z' => 'Alto', 'hint' => 'Cambie cualquier medida; las demás siguen en la misma proporción.', 'reset' => 'Tamaño original'],
     'recalculate' => 'Recalcular',
     'copies' => [
         'label' => 'Piezas en la placa',

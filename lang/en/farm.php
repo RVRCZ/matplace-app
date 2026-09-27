@@ -35,7 +35,7 @@ return [
         'guess' => 'The model looks like it is in ":unit". We used that; change it if it is wrong.',
         'ask' => 'The model is very small. Could it be in inches?',
     ],
-    'size' => ['label' => 'Print size', 'x' => 'Width', 'y' => 'Depth', 'z' => 'Height', 'hint' => 'Change any one dimension; the others follow in the same ratio.'],
+    'size' => ['label' => 'Print size', 'x' => 'Width', 'y' => 'Depth', 'z' => 'Height', 'hint' => 'Change any one dimension; the others follow in the same ratio.', 'reset' => 'Original size'],
     'recalculate' => 'Recalculate',
     'copies' => [
         'label' => 'Pieces on the plate',

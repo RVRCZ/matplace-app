@@ -86,6 +86,7 @@ function renderSize(): void {
     const val = document.getElementById('scale-val');
     if (val) val.textContent = `${Math.round(s * 100)} %`;
     document.getElementById('size-generated')?.classList.toggle('hidden', state.file?.kind !== 'generated');
+    document.getElementById('size-reset')?.classList.toggle('hidden', Math.abs(s - 1) < 0.0005);   // back to the file's own size, once it was changed
     const fit = document.getElementById('bed-fit');
     if (fit) {
         const n = b ? piecesOnBed({ x: b.x * s, y: b.y * s, z: b.z * s }) : null;
@@ -478,6 +479,8 @@ function bindControls(): void {
     qty.onchange = () => { state.params.quantity = Math.max(1, Math.min(1000, Number(qty.value) || 1)); qty.value = String(state.params.quantity); onParamsChanged(); };
     const recalc = document.getElementById('cta-recalc');
     if (recalc) recalc.onclick = recalculate;
+    const reset = document.getElementById('size-reset');
+    if (reset) reset.onclick = () => { state.params.scale = 1; document.getElementById('size-limit')?.classList.add('hidden'); onParamsChanged(); };
     const scale = $('scale') as HTMLInputElement;
     scale.oninput = () => { state.params.scale = Number(scale.value) / 100; $('scale-val').textContent = `${scale.value} %`; document.getElementById('size-limit')?.classList.add('hidden'); onParamsChanged(); };
     (['x', 'y', 'z'] as const).forEach((axis) => {

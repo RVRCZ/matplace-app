@@ -56,11 +56,11 @@
         </div>
 
         {{-- the size as the calculator had it (or as uploaded); one dimension typed scales the whole model --}}
-        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span></div>
+        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span> <button id="farm-size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('farm.size.reset') }}</button></div>
         <div id="farm-size" class="mt-2 grid grid-cols-3 gap-2" data-bbox="{{ json_encode($file?->bbox) }}" data-scale="{{ $scale }}" data-max="{{ $maxScale }}">
             @foreach(['x', 'y', 'z'] as $axis)
                 <label class="text-xs font-semibold text-slate-600">{{ __('farm.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
-                    <input data-axis="{{ $axis }}" type="number" inputmode="decimal" min="1" step="1" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
+                    <input data-axis="{{ $axis }}" type="number" inputmode="decimal" min="1" step="any" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
                 </label>
             @endforeach
         </div>

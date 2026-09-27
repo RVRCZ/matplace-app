@@ -87,13 +87,13 @@
                     <div class="mt-3 rounded-xl bg-slate-50 p-3">
                         <div class="flex items-baseline justify-between gap-2">
                             <span class="text-sm font-semibold text-slate-700">{{ __('calc.size.title') }}</span>
-                            <span id="scale-val" class="text-sm font-semibold text-action-dark">100 %</span>
+                            <span class="flex items-center gap-2"><span id="scale-val" class="text-sm font-semibold text-action-dark">100 %</span><button id="size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('calc.size.reset') }}</button></span>
                         </div>
                         <p id="size-generated" class="mt-1 hidden text-xs text-action-dark">{{ __('calc.size.generated') }}</p>
                         <div class="mt-2 grid grid-cols-3 gap-2">
                             @foreach(['x', 'y', 'z'] as $axis)
                                 <label class="text-xs font-semibold text-slate-600">{{ __('calc.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
-                                    <input id="size-{{ $axis }}" type="number" inputmode="decimal" min="1" step="1" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-ink">
+                                    <input id="size-{{ $axis }}" type="number" inputmode="decimal" min="1" step="any" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-ink">
                                 </label>
                             @endforeach
                         </div>

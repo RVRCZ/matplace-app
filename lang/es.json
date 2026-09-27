@@ -1266,5 +1266,6 @@
     "calc.status.stale": "La configuración ha cambiado. Pulse Recalcular.",
     "calc.recalc": "Recalcular",
     "calc.recalc.hint": "Ajuste tamaño, piezas, material y calidad; después se recalcula todo de una vez.",
-    "calc.price.orient": "Precio orientativo de impresión con nosotros: :price. El precio exacto según color e impresora, al pedir."
+    "calc.price.orient": "Precio orientativo de impresión con nosotros: :price. El precio exacto según color e impresora, al pedir.",
+    "calc.size.reset": "Tamaño original"
 }

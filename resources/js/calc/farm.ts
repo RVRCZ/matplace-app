@@ -78,9 +78,11 @@ export function bootFarmStart(): void {
             if (document.activeElement !== i) i.value = native ? String(Math.round(native[axis] * scale * 10) / 10) : '';
         });
         const pct = $('farm-size-pct'); if (pct) pct.textContent = native ? `${Math.round(scale * 100)} %` : '';
+        show($('farm-size-reset'), !!native && Math.abs(scale - 1) > 0.0005);
         if (scaleInput) scaleInput.value = String(Math.round(scale * 1000) / 1000);
         viewer?.setScale(scale);
     };
+    $('farm-size-reset')?.addEventListener('click', () => { scale = 1; renderSize(); });
     sizeBox?.querySelectorAll<HTMLInputElement>('input[data-axis]').forEach((i) => i.addEventListener('change', () => {
         const axis = i.dataset.axis as 'x' | 'y' | 'z';
         const wanted = Number(i.value);
@@ -163,7 +165,9 @@ export function bootFarmOrder(): void {
             if (el && document.activeElement !== el) el.value = n ? String(Math.round(n[axis] * wanted.scale * 10) / 10) : '';
         });
         const pct = $('farm-size-pct'); if (pct) pct.textContent = n ? `${Math.round(wanted.scale * 100)} %` : '';
+        show($('farm-size-reset'), !!n && Math.abs(wanted.scale - 1) > 0.0005);
     };
+    $('farm-size-reset')?.addEventListener('click', () => { wanted.scale = 1; render(); });
     (['x', 'y', 'z'] as const).forEach((axis) => $(`farm-size-${axis}`)?.addEventListener('change', (e) => {
         const n = nativeMm(); const v = Number((e.target as HTMLInputElement).value);
         if (n && n[axis] > 0 && v > 0) wanted.scale = Math.round(clampScale(v / n[axis], 4) * 1000) / 1000;

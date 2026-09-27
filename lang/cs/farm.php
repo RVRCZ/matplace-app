@@ -35,7 +35,7 @@ return [
         'guess' => 'Model vypadá, že je v jednotkách „:unit“. Použili jsme je; pokud to nesedí, změňte je.',
         'ask' => 'Model je velmi malý. Není náhodou v palcích?',
     ],
-    'size' => ['label' => 'Velikost výtisku', 'x' => 'Šířka', 'y' => 'Hloubka', 'z' => 'Výška', 'hint' => 'Přepište kterýkoli rozměr, ostatní se změní ve stejném poměru.'],
+    'size' => ['label' => 'Velikost výtisku', 'x' => 'Šířka', 'y' => 'Hloubka', 'z' => 'Výška', 'hint' => 'Přepište kterýkoli rozměr, ostatní se změní ve stejném poměru.', 'reset' => 'Původní rozměry'],
     'recalculate' => 'Přepočítat',
     'copies' => [
         'label' => 'Kusů na podložce',
