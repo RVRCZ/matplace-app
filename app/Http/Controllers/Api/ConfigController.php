@@ -30,6 +30,8 @@ class ConfigController extends Controller
             'currency' => config('pricing.currency'),
             'max_scale' => config('pricing.max_scale'),
             'bed_mm' => config('pricing.bed_mm'),
+            // the farm keeps this much clear at every edge of the plate: "N pieces fit" must count with it, or the order page says fewer
+            'bed_margin_mm' => config('farm.enabled') ? (float) app(\App\Domain\Farm\FarmSettings::class)->get('bed_margin_mm') : 0.0,
             'materials' => $items,
             'default_material' => $materials->defaultCode(),
             'qualities' => SliceParams::QUALITIES,

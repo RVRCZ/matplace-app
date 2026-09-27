@@ -14,7 +14,7 @@ const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }
 interface MaterialCfg { code: string; density: number; lay: string[]; sliceable: boolean; label: string; hint: string }
 interface Config {
     rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; currency: string; max_scale: number;
-    bed_mm: { x: number; y: number; z: number }; materials: MaterialCfg[]; default_material: string;
+    bed_mm: { x: number; y: number; z: number }; bed_margin_mm?: number; materials: MaterialCfg[]; default_material: string;
     formats: string[]; max_upload_mb: number; lay: Record<string, string>;
     marketplace?: boolean;   // false: the calculator shows the slicer's facts and no prices (the farm has its own)
 }
@@ -94,13 +94,17 @@ function renderSize(): void {
     }
 }
 
-/** How many copies fit on the smaller farm printer's plate at once (5 mm apart, either way round); 0 when one does not fit. */
+/**
+ * How many copies fit on the smaller farm printer's plate at once: 5 mm apart, either way round, and inside the edge
+ * the farm keeps clear (the same rule as App\Domain\Farm\PlateLayout, so the order page never says fewer). 0 when one does not fit.
+ */
 function piecesOnBed(d: { x: number; y: number; z: number }): number | null {
     const bed = cfg.bed_mm;
     if (!bed || !(d.x > 0 && d.y > 0)) return null;
     if (d.z > bed.z) return 0;
     const gap = 5;
-    const along = (size: number, room: number) => Math.floor((room + gap) / (size + gap));
+    const margin = 2 * (cfg.bed_margin_mm ?? 0);
+    const along = (size: number, room: number) => Math.floor((room - margin + gap) / (size + gap));
     return Math.max(along(d.x, bed.x) * along(d.y, bed.y), along(d.y, bed.x) * along(d.x, bed.y));
 }
 
