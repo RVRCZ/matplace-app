@@ -35,6 +35,12 @@ return [
         'ask' => 'The model is very small. Could it be in inches?',
     ],
     'recalculate' => 'Recalculate',
+    'copies' => [
+        'label' => 'Pieces on the plate',
+        'hint' => 'All pieces print at once on one plate, 5 mm apart.',
+        'max' => 'Up to :n pieces fit this printer\'s plate.',
+        'note' => ':n pieces on one plate',
+    ],
 
     'order' => [
         'title' => 'Print of :name',
@@ -102,6 +108,7 @@ return [
         'invalid_mesh' => 'The file contains no body that could be printed.',
         'too_small' => 'The model is too small (:size mm). The smallest part we print is :min mm. Are the model units something other than millimetres?',
         'exceeds_bed' => 'The model (:x × :y × :z mm) does not fit the build volume of :bed_x × :bed_y × :bed_z mm.',
+        'too_many_copies' => 'At most :max pieces of this model fit the plate, not :copies. Lower the number of pieces and recalculate.',
         'not_watertight' => 'The model has holes in its surface (:open_edges open edges) and they could not be repaired automatically. Please fix it in your software and upload it again.',
         'slicing_failed' => 'The print could not be prepared. Try other settings or write to us.',
         'print_failed' => 'The print failed. Your credit has been returned.',

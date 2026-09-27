@@ -9,6 +9,7 @@ use App\Domain\Farm\InsufficientCredit;
 use App\Domain\Farm\ModelValidator;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
+use App\Domain\Farm\PlateLayout;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
 use App\Models\Calculation;
@@ -33,16 +34,20 @@ class OrderController extends Controller
     {
         $file = $request->query('file') ? ModelFile::where('uuid', $request->query('file'))->first() : null;
         $quality = (string) $request->query('quality', 'standard');
-        // from the calculator: the shared calculation knows the model and the quality the customer was looking at
+        $copies = 1;
+        // from the calculator: the shared calculation knows the model, the quality and how many pieces the customer wanted
         if (! $file && $request->query('calc') && ($calc = Calculation::with('modelFile')->where('token', $request->query('calc'))->first())) {
             $file = $calc->modelFile;
             $quality = (string) ($calc->params['quality'] ?? $quality);
+            $copies = max(1, min(PlateLayout::MAX_COPIES, (int) ($calc->params['quantity'] ?? 1)));
         }
 
         return view('farm.start', [
             'file' => $file,
             'bed' => $this->orders->largestBed(),
             'quality' => $quality,
+            'copies' => $copies,
+            'maxCopies' => PlateLayout::MAX_COPIES,
             'settings' => $this->settings->all(),
             'balance' => $this->wallet->balance($request->user()),
             'slicesLeft' => max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())),
@@ -64,12 +69,13 @@ class OrderController extends Controller
             'quality' => ['nullable', 'string', 'max:12'],
             'strength' => ['nullable', 'string', 'max:12'],
             'unit' => ['nullable', 'in:'.implode(',', array_keys(ModelValidator::UNITS))],
+            'copies' => ['nullable', 'integer', 'min:1', 'max:'.PlateLayout::MAX_COPIES],
         ]);
         $file = ModelFile::where('uuid', $data['file'])->firstOrFail();
         $this->claim($request, $file);
 
         try {
-            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null);
+            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1));
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
                 ? response()->json(['error' => $e->reason, 'message' => $e->text()], 422)
@@ -110,9 +116,10 @@ class OrderController extends Controller
             'quality' => ['required', 'string', 'max:12'],
             'strength' => ['required', 'string', 'max:12'],
             'unit' => ['nullable', 'in:'.implode(',', array_keys(ModelValidator::UNITS))],
+            'copies' => ['nullable', 'integer', 'min:1', 'max:'.PlateLayout::MAX_COPIES],
         ]);
         try {
-            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null);
+            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null);
         } catch (FarmRefusal $e) {
             return response()->json(['error' => $e->reason, 'message' => $e->text()], 422);
         }
@@ -245,6 +252,9 @@ class OrderController extends Controller
             'error_text' => $order->error ? __('farm.error.'.$order->error, $this->errorData($check, (string) $order->error)) : null,
             'quality' => $order->quality,
             'strength' => $order->strength,
+            'copies' => $order->copies,
+            'max_copies' => $check['max_copies'] ?? null,
+            'piece_dims' => $check['piece_dims'] ?? null,
             'unit' => array_search($order->unit_scale, ModelValidator::UNITS, false) ?: 'mm',
             'unit_guess' => $check['unit_guess'] ?? null,
             'dims' => $check['dims'] ?? null,

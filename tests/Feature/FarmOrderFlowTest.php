@@ -8,6 +8,8 @@ use App\Engines\Mesh\StlFile;
 use App\Mail\FarmAdminAlert;
 use App\Mail\FarmOrderStatus;
 use App\Models\FarmAgent;
+use App\Models\FarmColor;
+use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrintJob;
@@ -87,7 +89,7 @@ class FarmOrderFlowTest extends TestCase
     {
         // the seeded printer: white PLA+ in slot 3; load a PETG colour into slot 1 too
         $printer = FarmPrinter::firstOrFail();
-        $petg = \App\Models\FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PETG'))->firstOrFail();
+        $petg = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PETG'))->firstOrFail();
         $printer->slots()->where('slot', 0)->update(['farm_color_id' => $petg->id, 'remaining_g' => 700, 'enabled' => true]);
 
         $order = $this->order();
@@ -129,7 +131,7 @@ class FarmOrderFlowTest extends TestCase
     {
         // the seeder's Kobra 3 Max (420 x 420 x 500) with light blue PLA+ in slot 1; both machines manual = online
         $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
-        $blue = \App\Models\FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PLA+'))->where('name', 'světle modrá')->firstOrFail();
+        $blue = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PLA+'))->where('name', 'světle modrá')->firstOrFail();
         $max->slots()->where('slot', 0)->update(['farm_color_id' => $blue->id, 'remaining_g' => 1000, 'enabled' => true]);
         $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
 
@@ -193,6 +195,40 @@ class FarmOrderFlowTest extends TestCase
         $order->refresh();
         $this->assertSame(0.28, $order->slice_params['layer_mm']);
         $this->assertSame(10, $order->slice_params['infill_percent']);
+    }
+
+    public function test_several_copies_print_on_one_plate_and_too_many_are_refused_with_the_number_that_fits(): void
+    {
+        // 4 cubes of 20 mm: a 2 × 2 grid 5 mm apart, one print, one price for all four
+        $order = $this->order(20.0, ['copies' => 4]);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
+        $this->assertSame(4, $order->copies);
+        $this->assertSame(48, iterator_count(StlFile::triangles($order->absolutePrintStlPath())));
+        $this->assertEqualsWithDelta(45.0, $order->check['dims']['x'], 0.01);
+        $this->assertEqualsWithDelta(45.0, $order->check['dims']['y'], 0.01);
+        $this->assertEqualsWithDelta(20.0, $order->check['piece_dims']['x'], 0.01);
+        $this->assertSame(4, $order->slice_params['copies']);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $this->assertSame(4, $state['copies']);
+        $this->assertGreaterThanOrEqual(4, $state['max_copies']);
+        $this->assertNotEmpty($state['colors']);
+
+        // the customer changes the number of pieces like any other preset: sliced again
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'copies' => 2])->assertOk()->assertJsonPath('copies', 2);
+        $this->assertSame(24, iterator_count(StlFile::triangles($order->refresh()->absolutePrintStlPath())));
+
+        // more than the plate takes: refused with the number that does fit, the customer can lower it
+        $many = $this->order(100.0, ['copies' => 9]);
+        $this->assertSame(FarmOrder::STATUS_FAILED, $many->status);
+        $this->assertSame('too_many_copies', $many->error);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$many->token}/status")->assertOk()->json();
+        $this->assertSame(4, $state['max_copies']);                                     // 250 mm plate minus margins: 2 × 2 cubes of 100 mm
+        $this->assertStringContainsString('4', $state['error_text']);
+
+        // the calculator hands its quantity over to the start page
+        $file = $this->upload(20.0);
+        $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $file, 'material' => 'PLA', 'quantity' => 6])->assertCreated()->json('calculation.token');
+        $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()->assertSee('name="copies"', false)->assertSee('value="6"', false);
     }
 
     public function test_model_bigger_than_the_plate_is_refused_with_a_reason(): void
@@ -309,9 +345,9 @@ class FarmOrderFlowTest extends TestCase
         // the customer's colour sits in slot 3: the agent gets the copy that selects it, with its own checksum
         $this->assertSame(2, $cmd['payload']['slot']);
         $this->assertSame(hash('sha256', $gcode->streamedContent()), $gcode->headers->get('X-Content-Sha256'));
-        $this->assertStringContainsString("
+        $this->assertStringContainsString('
 T2 ; slot chosen by matplace farm
-", $gcode->streamedContent());
+', $gcode->streamedContent());
         $this->postJson("/api/agent/commands/{$cmd['id']}/result", ['ok' => true], $auth)->assertOk();
 
         $this->sync($auth, 'printing', ['id' => $job->id, 'status' => 'printing', 'progress' => 42.5, 'print_duration' => 600, 'filament_used' => 1200])->assertOk();
@@ -357,7 +393,7 @@ T2 ; slot chosen by matplace farm
         $this->assertEqualsWithDelta($expected, $p['charged_on_cancel'], 0.001);
         $this->assertEqualsWithDelta(1000 - $expected, app(Wallet::class)->balance($this->user), 0.001);
         $this->assertDatabaseHas('credit_transactions', ['farm_order_id' => $order->id, 'type' => 'capture', 'note' => (string) $expected]);
-        $this->assertSame('cancel', \App\Models\FarmCommand::latest('id')->first()->type, 'the printer is told to stop');
+        $this->assertSame('cancel', FarmCommand::latest('id')->first()->type, 'the printer is told to stop');
         // the admin's refund button can still hand the kept part back, on purpose
         $this->assertEqualsWithDelta($expected, app(Wallet::class)->giveBack($order), 0.001);
         $this->assertEqualsWithDelta(1000, app(Wallet::class)->balance($this->user), 0.001);

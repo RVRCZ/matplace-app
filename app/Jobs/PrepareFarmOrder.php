@@ -6,6 +6,7 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\ModelValidator;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
+use App\Domain\Farm\PlateLayout;
 use App\Domain\Farm\PrintProfile;
 use App\Domain\Farm\TestPrintService;
 use App\Domain\Farm\TowerGcode;
@@ -75,12 +76,33 @@ class PrepareFarmOrder implements ShouldQueue
             // a test object is built closed, on Z = 0, the way it must be printed: nothing to repair or turn
             $mesh = $order->isTest() ? (new PhpPrintPreparer)->prepare($file->absoluteStlPath(), $disk->path($stlRel), 1.0, $bed)
                 : $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale, $bed);
+            $piece = $mesh;
+            $margin = 2 * (float) $settings->get('bed_margin_mm');
+            $usable = new Dimensions($bed->x - $margin, $bed->y - $margin, $bed->z);
+            $capacity = PlateLayout::capacity($piece->bbox, $usable);
+            if ($order->copies > 1 && ! $order->isTest()) {
+                // several copies on one plate: the oriented piece repeated in a grid, sliced and priced as one print
+                $plateRel = $order->dir().'/plate.stl';
+                $mesh = PlateLayout::replicate($piece, $disk->path($plateRel), $order->copies, $usable);
+                if (! $mesh) {
+                    $order->check = ['ok' => false, 'errors' => [['code' => 'too_many_copies', 'data' => ['max' => $capacity['max'], 'copies' => $order->copies]]], 'warnings' => [], 'dims' => $piece->bbox->toArray(),
+                        'piece_dims' => $piece->bbox->toArray(), 'max_copies' => $capacity['max'], 'mesh' => $piece->toArray(), 'raw_dims' => Dimensions::fromArray((array) $file->bbox)->toArray()];
+                    $order->orientation = $piece->orientation;
+                    $order->print_stl_path = $stlRel;
+                    $order->save();
+                    $flow->fail($order, 'too_many_copies', 'system');
+
+                    return;
+                }
+                $stlRel = $plateRel;
+            }
             $verdict = ModelValidator::judge($mesh, $bed, [
                 'min_model_mm' => (float) $settings->get('min_model_mm'),
                 'bed_margin_mm' => (float) $settings->get('bed_margin_mm'),
             ]);
             $raw = Dimensions::fromArray((array) $file->bbox);
-            $order->check = $verdict + ['mesh' => $mesh->toArray(), 'unit_guess' => ModelValidator::guessUnit($raw, $bed), 'raw_dims' => $raw->toArray()];
+            $order->check = $verdict + ['mesh' => $mesh->toArray(), 'unit_guess' => ModelValidator::guessUnit($raw, $bed), 'raw_dims' => $raw->toArray(),
+                'piece_dims' => $piece->bbox->toArray(), 'max_copies' => $capacity['max']];
             $order->orientation = $mesh->orientation;
             $order->print_stl_path = $stlRel;
             $order->save();
@@ -141,7 +163,7 @@ class PrepareFarmOrder implements ShouldQueue
                 'gcode_sha256' => hash_file('sha256', $disk->path($gcodeRel)),
                 'slice_params' => [
                     'engine' => $slicer->name(), 'printer' => ['id' => $printer->id, 'key' => $printer->key, 'model' => $printer->model],
-                    'material' => $order->material->code, 'quality' => $quality, 'layer_mm' => $layer, 'strength' => $order->strength,
+                    'material' => $order->material->code, 'quality' => $quality, 'layer_mm' => $layer, 'strength' => $order->strength, 'copies' => $order->copies,
                     'infill_percent' => $infill, 'unit_scale' => $order->unit_scale, 'profiles' => $profiles, 'overrides' => $overrides,
                     'profile_layers' => $profile->layers, 'profile_fingerprint' => $profile->sliceFingerprint(),
                     'profile_hashes' => $this->profileHashes($profiles), 'preparer' => $order->isTest() ? 'php-stl' : $preparer->name(), 'sliced_at' => now()->toIso8601String(),

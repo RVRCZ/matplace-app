@@ -35,6 +35,12 @@ return [
         'ask' => 'El modelo es muy pequeño. ¿Podría estar en pulgadas?',
     ],
     'recalculate' => 'Recalcular',
+    'copies' => [
+        'label' => 'Piezas en la placa',
+        'hint' => 'Todas las piezas se imprimen a la vez en una placa, a 5 mm entre sí.',
+        'max' => 'En la placa de esta impresora caben hasta :n piezas.',
+        'note' => ':n piezas en una placa',
+    ],
 
     'order' => [
         'title' => 'Impresión de :name',
@@ -102,6 +108,7 @@ return [
         'invalid_mesh' => 'El archivo no contiene ningún cuerpo que se pueda imprimir.',
         'too_small' => 'El modelo es demasiado pequeño (:size mm). La pieza más pequeña que imprimimos mide :min mm. ¿Están las unidades del modelo en algo distinto de milímetros?',
         'exceeds_bed' => 'El modelo (:x × :y × :z mm) no cabe en el volumen de impresión de :bed_x × :bed_y × :bed_z mm.',
+        'too_many_copies' => 'En la placa caben como máximo :max piezas de este modelo, no :copies. Reduzca el número de piezas y recalcule.',
         'not_watertight' => 'El modelo tiene agujeros en la superficie (:open_edges aristas abiertas) y no se pudieron reparar automáticamente. Corríjalo en su programa y súbalo de nuevo.',
         'slicing_failed' => 'No se pudo preparar la impresión. Pruebe otros ajustes o escríbanos.',
         'print_failed' => 'La impresión falló. Le hemos devuelto el crédito.',
