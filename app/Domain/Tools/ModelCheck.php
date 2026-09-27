@@ -20,10 +20,23 @@ final class ModelCheck
         return implode(' × ', array_map(fn ($v) => rtrim(rtrim(number_format((float) $v, 1, '.', ''), '0'), '.'), $d)).' mm';
     }
 
-    /** @return array{0: float, 1: float, 2: float}|null biggest separately printed part of a modular set */
+    /** @return array{0: float, 1: float, 2: float}|null biggest separately printed part of a multi-part product (modular set, box + lid, illuminated sign…) */
     private static function largestPart(ModelFile $file): ?array
     {
         $p = (array) $file->tool_params;
+        if ($file->origin === 'tool' && ! empty($p['parts_bbox']) && is_array($p['parts_bbox'])) {
+            // sizes of the parts as the generator built them one by one (stored with the design)
+            $best = null;
+            foreach ($p['parts_bbox'] as $dims) {
+                $dims = array_map('floatval', array_values((array) $dims));
+                if (count($dims) === 3 && ($best === null || max($dims) > max($best))) {
+                    $best = $dims;
+                }
+            }
+            if ($best !== null) {
+                return $best;
+            }
+        }
         if ($file->kind() !== 'modular' || empty($p['bins'])) {
             return null;
         }

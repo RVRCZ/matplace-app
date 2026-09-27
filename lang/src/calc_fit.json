@@ -1,0 +1,4 @@
+{
+    "calc.fit.bed": ["Na podložku :b se vejde až :n ks najednou.", "Up to :n pieces fit on a :b plate at once.", "En una placa de :b caben hasta :n piezas a la vez."],
+    "calc.fit.none": ["Model se na podložku :b nevejde, zmenšete ho.", "The model does not fit a :b plate; make it smaller.", "El modelo no cabe en una placa de :b; redúzcalo."]
+}

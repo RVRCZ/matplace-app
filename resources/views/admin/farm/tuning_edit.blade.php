@@ -165,17 +165,21 @@
                                 </div>
                             @endif
                         </details>
-                        <form method="post" action="{{ route('admin.farm.tuning.adopt', [$row, $t]) }}" class="mt-2 flex flex-wrap items-end gap-2 text-xs">
+                        @if($t->quality_rating && $t->quality_rating < 4)
+                            <p class="mt-2 text-xs text-slate-500">Test má hodnocení {{ $t->quality_rating }}/5, převzít jako vyladěný nejde. Použijte návrh úprav výše.</p>
+                        @else
+                        <form method="post" action="{{ route('admin.farm.tuning.adopt', [$row, $t]) }}" class="mt-2 flex flex-wrap items-end gap-2 text-xs" onsubmit="return confirm('Opravdu je nastavení tohoto testu vyladěné? Řádek se označí jako hotový a tiskne se s ním.')">
                             @csrf
                             @if($temps)
                                 <label class="{{ $lb }}">Nejlepší patro
                                     <select name="nozzle_temp" class="rounded-lg border border-slate-300 px-2 py-1">@foreach($temps as $i => $v)<option value="{{ $v }}">{{ $i + 1 }}: {{ $v }} °C</option>@endforeach</select>
                                 </label>
                             @endif
-                            <label class="{{ $lb }}">Hodnocení<select name="score" class="rounded-lg border border-slate-300 px-2 py-1"><option value="">—</option>@foreach([5, 4, 3, 2, 1] as $q)<option value="{{ $q }}">{{ $q }}</option>@endforeach</select></label>
+                            <label class="{{ $lb }}">Hodnocení<select name="score" class="rounded-lg border border-slate-300 px-2 py-1"><option value="">—</option>@foreach([5, 4] as $q)<option value="{{ $q }}" @selected($t->quality_rating == $q)>{{ $q }}</option>@endforeach</select></label>
                             <input name="note" maxlength="300" placeholder="co test ukázal" class="rounded-lg border border-slate-300 px-2 py-1">
                             <button class="btn-quiet !min-h-0 !py-1 text-xs">Převzít nastavení testu → vyladěno</button>
                         </form>
+                        @endif
                     @endif
                 </div>
             @empty

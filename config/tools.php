@@ -24,6 +24,7 @@ return [
     'sign' => ['route' => 'tools.sign', 'intent' => 'create', 'categories' => ['signs', 'gifts'], 'available' => true],
     'qr' => ['route' => 'tools.qr', 'intent' => 'create', 'categories' => ['signs'], 'available' => true],
     'logo' => ['route' => 'tools.logo', 'intent' => 'create', 'categories' => ['signs', 'craft'], 'available' => true],
+    'cutter' => ['route' => 'tools.cutter', 'intent' => 'create', 'categories' => ['home', 'gifts', 'craft'], 'available' => true],
     'stamp' => ['route' => 'tools.stamp', 'intent' => 'create', 'categories' => ['craft'], 'available' => true],
     'stencil' => ['route' => 'tools.stencil', 'intent' => 'create', 'categories' => ['craft'], 'available' => true],
     'lightbox' => ['route' => 'tools.lightbox', 'intent' => 'create', 'categories' => ['signs', 'gifts'], 'available' => true],

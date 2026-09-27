@@ -5,7 +5,7 @@
         'farm.order.low_filament', 'farm.order.starts_now', 'farm.order.goes_to_queue', 'farm.order.no_colors', 'farm.order.paying', 'farm.order.pay',
         'farm.order.queue_ahead', 'farm.order.queue_start', 'farm.order.queue_finish', 'farm.order.blocked_plate', 'farm.order.blocked_offline',
         'farm.order.blocked_approval', 'farm.order.cancel_confirm', 'farm.order.b_time', 'farm.order.b_material', 'farm.order.b_fixed', 'farm.order.b_min',
-        'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'farm.units.guess', 'farm.units.ask', 'farm.top_up',
+        'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note',
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m'];
     $farmCfg = [
         'state' => $state,
@@ -59,6 +59,7 @@
                         <span id="farm-price" class="text-4xl font-extrabold tracking-tight">—</span>
                         <span class="pb-1 text-slate-500">Kč <span class="text-xs">{{ __('farm.order.with_vat') }}</span></span>
                     </div>
+                    <p id="farm-copies-line" class="mt-1 hidden text-sm font-semibold text-slate-700"></p>
                     <dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
                         <div><dt class="text-slate-500">{{ __('farm.order.time') }}</dt><dd id="farm-time" class="font-semibold">—</dd></div>
                         <div><dt class="text-slate-500">{{ __('farm.order.weight') }}</dt><dd id="farm-grams" class="font-semibold">—</dd></div>
@@ -100,6 +101,10 @@
                         <button type="button" data-value="{{ $key }}" class="seg">{{ __('farm.strength.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.strength.infill', ['n' => $s['infill']]) }}</span></button>
                     @endforeach
                 </div>
+                <label class="mt-4 block text-sm font-semibold text-slate-700">{{ __('farm.copies.label') }}
+                    <input id="farm-copies" type="number" inputmode="numeric" min="1" max="{{ \App\Domain\Farm\PlateLayout::MAX_COPIES }}" class="mt-1 w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
+                </label>
+                <p id="farm-copies-note" class="mt-1 hidden text-xs text-slate-500"></p>
                 <label class="mt-4 block text-sm font-semibold text-slate-700">{{ __('farm.units.label') }}
                     <select id="farm-unit" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
                         @foreach(array_keys(\App\Domain\Farm\ModelValidator::UNITS) as $u)<option value="{{ $u }}">{{ __('farm.units.'.$u) }}</option>@endforeach

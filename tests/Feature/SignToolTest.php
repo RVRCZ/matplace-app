@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\SignGenerator;
+use App\Engines\Mesh\StlTopology;
 use App\Models\ModelFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -66,6 +67,15 @@ class SignToolTest extends TestCase
         $this->assertEqualsWithDelta(1.2, $text['bbox']['z'], 0.05);
         $outline = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => ['line1' => 'Roman', 'style' => 'outline']])->assertOk());
         $this->assertLessThan($full['volume_mm3'], $outline['volume_mm3']);
+
+        // the default sign (raised text, rim) is one closed body: the rim used to be a second solid glued onto the same outer wall
+        foreach ([['line1' => 'Jana'], ['line1' => 'Jana', 'shape' => 'oval'], ['line1' => 'Jana', 'shape' => 'rect', 'keyring' => true], ['line1' => 'Jana', 'bevel' => true, 'border' => false]] as $params) {
+            $stl = tempnam(sys_get_temp_dir(), 'sign').'.stl';
+            file_put_contents($stl, $this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => $params])->assertOk()->streamedContent());
+            $topo = StlTopology::check($stl);
+            @unlink($stl);
+            $this->assertTrue($topo['watertight'], json_encode($params).' open '.$topo['open_edges'].' non-manifold '.$topo['non_manifold_edges']);
+        }
         $this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => ['line1' => '']])->assertStatus(422);
 
         $r = $this->postJson('/api/tools/param', ['kind' => 'sign', 'params' => ['line1' => 'Eva', 'two_color' => true]])->assertCreated();

@@ -35,6 +35,12 @@ return [
         'ask' => 'Model je velmi malý. Není náhodou v palcích?',
     ],
     'recalculate' => 'Přepočítat',
+    'copies' => [
+        'label' => 'Kusů na podložce',
+        'hint' => 'Všechny kusy se vytisknou najednou na jedné podložce, 5 mm od sebe.',
+        'max' => 'Na podložku této tiskárny se vejde až :n ks.',
+        'note' => ':n ks na jedné podložce',
+    ],
 
     'order' => [
         'title' => 'Tisk :name',
@@ -102,6 +108,7 @@ return [
         'invalid_mesh' => 'V souboru není žádné těleso, které by šlo vytisknout.',
         'too_small' => 'Model je příliš malý (:size mm). Nejmenší díl, který tiskneme, má :min mm. Nejsou jednotky modelu jiné než milimetry?',
         'exceeds_bed' => 'Model (:x × :y × :z mm) se nevejde na tiskovou plochu :bed_x × :bed_y × :bed_z mm.',
+        'too_many_copies' => 'Na podložku se vejde nejvýš :max ks tohoto modelu, ne :copies. Snižte počet kusů a přepočítejte.',
         'not_watertight' => 'Model má díry v povrchu (:open_edges otevřených hran) a nepodařilo se je automaticky opravit. Opravte ho prosím ve svém programu a nahrajte znovu.',
         'slicing_failed' => 'Tisk se nepodařilo připravit. Zkuste jiné nastavení, případně nám napište.',
         'print_failed' => 'Tisk se nezdařil. Kredit jsme vám vrátili.',
@@ -121,7 +128,7 @@ return [
         'photo_heic' => 'Fotka ve formátu HEIC se na serveru nedá přečíst. Pošlete ji jako JPEG.',
         'photo_unreadable' => 'Soubor se nedá přečíst jako fotka.',
         'closed' => 'Farma teď nepřijímá nové zakázky. Zkuste to prosím později.',
-        'not_stl' => 'Tady zatím tiskneme jen soubory STL.',
+        'not_ready' => 'Model ještě není připravený k tisku: buď se zpracovává, nebo se ho nepodařilo převést. Zkuste to za chvíli, případně nahrajte STL.',
         'too_big' => 'Soubor je větší než :max MB.',
         'daily_limit' => 'Dnes už jste spočítali :limit modelů, což je denní limit. Zítra to půjde znovu.',
         'no_printer' => 'Teď není v provozu žádná tiskárna. Zkuste to prosím později.',

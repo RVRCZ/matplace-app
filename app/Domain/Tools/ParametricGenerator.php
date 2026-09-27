@@ -8,6 +8,7 @@ use App\Jobs\ProcessModelFile;
 use App\Models\AnonymousSession;
 use App\Models\ModelFile;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -52,6 +53,7 @@ final class ParametricGenerator
             'width' => [80, 300, 180, 1], 'depth' => [25, 80, 35, 1], 'wall' => [1.6, 4, 2, 0.2], 'face' => [0.8, 2, 1.2, 0.2], 'margin' => [6, 40, 12, 1],
             'bridge' => [0.8, 3, 1.4, 0.2], 'cable' => [3, 10, 5, 0.5], 'clearance' => [0.1, 0.6, 0.25, 0.05],
         ],
+        'cutter' => ['width' => [30, 150, 70, 1], 'height' => [10, 30, 18, 1], 'wall' => [0.8, 1.6, 1.0, 0.2], 'flange' => [3, 10, 5, 1], 'flange_t' => [1, 2.5, 1.6, 0.1]],
     ];
 
     /** kind → choice → allowed values (the first one is the default) */
@@ -62,6 +64,7 @@ final class ParametricGenerator
         'logo' => ['mode' => ['relief', 'height', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
         'lightbox' => ['led' => ['strip8', 'strip10', 'module']],
+        'cutter' => ['edge' => ['sharp', 'straight'], 'typeface' => ['sans', 'serif', 'mono']],
     ];
 
     /** kind → text input → [max length, required, default] */
@@ -72,20 +75,21 @@ final class ParametricGenerator
         'qr' => ['url' => [300, true, 'https://matplace.com'], 'label' => [40, false, 'matplace.com']],
         'stencil' => ['line1' => [24, false, 'BOA 8'], 'line2' => [24, false, '']],
         'lightbox' => ['line1' => [16, false, 'OPEN'], 'line2' => [16, false, '']],
+        'cutter' => ['line1' => [20, false, 'Ela'], 'line2' => [20, false, '']],
     ];
 
     /** kinds that accept an uploaded SVG or picture instead of text */
-    public const ARTWORK = ['logo', 'stamp', 'stencil', 'lightbox'];
+    public const ARTWORK = ['logo', 'stamp', 'stencil', 'lightbox', 'cutter'];
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'],
     ];
 
-    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'face', 'diffuser', 'back', 'plate', 'text'];
+    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp'];
 
-    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole']];
+    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert']];
 
     /** kind → field or flag → [choice key, values it belongs to]; the form hides it for the other choices */
     public const WHEN = [
@@ -95,7 +99,7 @@ final class ParametricGenerator
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp'];
 
     public const PRESETS = [
         'vase' => [
@@ -122,6 +126,27 @@ final class ParametricGenerator
     public function available(): bool
     {
         return $this->python->available();
+    }
+
+    /**
+     * Parts printed separately (the box and its lid, the four parts of an illuminated sign…); [] when the product is one body.
+     *
+     * @return list<string>
+     */
+    public static function partsOf(string $kind, array $p): array
+    {
+        return match ($kind) {
+            'box' => ! empty($p['lid']) ? ['body', 'lid'] : [],
+            'vase' => ($p['purpose'] ?? '') === 'pot' && ! empty($p['saucer']) ? ['body', 'saucer'] : [],
+            'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
+            'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
+            'sign' => ! empty($p['two_color']) && ($p['style'] ?? 'emboss') !== 'engrave' ? ['plate', 'text'] : [],
+            'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
+            'lightbox' => ['body', 'face', 'diffuser', 'back'],
+            'cutter' => array_values(array_intersect((array) ($p['parts'] ?? []), ['body', 'stamp'])),   // the stamp exists only when the drawing had inner lines: the tool says so
+            'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
+            default => [],
+        };
     }
 
     /** Laravel rules for one kind (used by the API; the same numbers are printed into the form as min/max). */
@@ -259,7 +284,7 @@ final class ParametricGenerator
     }
 
     /** Uploaded SVG or picture → a reference the form sends along with the numbers. */
-    public static function storeArtwork(\Illuminate\Http\UploadedFile $file): string
+    public static function storeArtwork(UploadedFile $file): string
     {
         $id = (string) Str::uuid();
         $ext = strtolower($file->getClientOriginalExtension()) === 'svg' ? 'svg' : (['image/png' => 'png', 'image/webp' => 'webp'][$file->getMimeType()] ?? 'jpg');
@@ -290,6 +315,19 @@ final class ParametricGenerator
         if (! empty($clean['artwork']) && ($src = self::artworkPath($clean['artwork']))) {
             File::copy($src, dirname($abs).'/artwork.'.pathinfo($src, PATHINFO_EXTENSION));
             $clean['artwork'] = 'file:'.$uuid;
+        }
+
+        if (isset($built['meta']['notes']['parts'])) {
+            $clean['parts'] = array_values((array) $built['meta']['notes']['parts']);   // which separately printed parts this design really has
+        }
+        // what has to fit a printer is each part alone, not the plate they are laid out on: the check reads these sizes
+        $parts = array_diff(self::partsOf($kind, $clean), ['all']);
+        if ($parts && $kind !== 'modular') {
+            foreach ($parts as $part) {
+                $one = $this->build($kind, $clean, $part);
+                @unlink($one['path']);
+                $clean['parts_bbox'][$part] = [(float) $one['meta']['bbox']['x'], (float) $one['meta']['bbox']['y'], (float) $one['meta']['bbox']['z']];
+            }
         }
 
         $o = $built['meta']['notes']['outer'] ?? [$built['meta']['bbox']['x'], $built['meta']['bbox']['y'], $built['meta']['bbox']['z']];

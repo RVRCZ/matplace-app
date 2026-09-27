@@ -21,18 +21,17 @@ final class OrderService
     public function __construct(private readonly FarmSettings $settings, private readonly PriceCalculator $prices) {}
 
     /**
-     * @throws FarmRefusal with a code the UI translates: not_stl, too_big, daily_limit, no_printer
+     * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null): FarmOrder
+    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1): FarmOrder
     {
         if (! config('farm.open', true)) {
             throw new FarmRefusal('closed');
         }
-        // our own generators always produce printable STL; a customer's upload must be .stl in this phase
-        if ($file->origin === null || $file->origin === 'upload') {
-            if ($file->ext !== 'stl') {
-                throw new FarmRefusal('not_stl');
-            }
+        // whatever came in (STL, 3MF, STEP, OBJ…), the upload pipeline normalised it to an STL; only a file that failed
+        // that or is still being processed cannot be printed
+        if (! $file->isReady()) {
+            throw new FarmRefusal('not_ready');
         }
         $maxMb = (int) $this->settings->get('max_upload_mb');
         if ($file->size_bytes > $maxMb * 1024 * 1024) {
@@ -69,6 +68,7 @@ final class OrderService
             'stage' => 'checking',
             'quality' => $this->knownQuality($quality),
             'strength' => $this->knownStrength($strength),
+            'copies' => max(1, min(PlateLayout::MAX_COPIES, $copies)),
             'unit_scale' => ModelValidator::UNITS[$unit] ?? 1.0,
             'farm_material_id' => $material->id,
             'farm_printer_id' => $printer->id,
@@ -81,7 +81,7 @@ final class OrderService
     }
 
     /** Another quality, strength or unit: slice again (counts towards the daily limit, like a new order). */
-    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit): FarmOrder
+    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null): FarmOrder
     {
         if (! in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED], true) || $order->paid_at !== null) {
             throw new FarmRefusal('locked');
@@ -92,12 +92,13 @@ final class OrderService
         $order->fill([
             'status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'checking', 'error' => null, 'error_detail' => null,
             'quality' => $quality, 'strength' => $this->knownStrength($strength),
+            'copies' => $copies === null ? $order->copies : max(1, min(PlateLayout::MAX_COPIES, $copies)),
             'unit_scale' => ModelValidator::UNITS[$unit] ?? $order->unit_scale,
             'price' => null, 'price_total' => null,
         ]);
         // a machine kept for fine work hands the order back when the customer asks for a coarser quality
         if ($order->printer && ! $order->printer->takesQuality($quality)) {
-            $dims = is_array($order->check['dims'] ?? null) ? Dimensions::fromArray($order->check['dims']) : null;
+            $dims = is_array($order->check['piece_dims'] ?? $order->check['dims'] ?? null) ? Dimensions::fromArray($order->check['piece_dims'] ?? $order->check['dims']) : null;
             [$printer, $material] = $this->printerAndMaterialFor($dims, $quality) ?? throw new FarmRefusal('no_printer');
             $order->farm_printer_id = $printer->id;
             $order->farm_material_id = $material->id;

@@ -109,7 +109,8 @@ class FarmSeeder extends Seeder
             }
         }
 
-        // third machine (24 Sep 2026): a second Kobra S1, since 25 Sep 2026 with a 0.2 mm nozzle for fine work.
+        // third machine (24 Sep 2026): a second Kobra S1, since 25 Sep 2026 with a 0.2 mm nozzle for fine work and since
+        // 26 Sep 2026 on a smooth PEI plate (a 0.12 mm first layer is lost in the grain of a textured one).
         // The nozzle has its own machine, process and filament profiles; the layer ladder follows it (FarmPrinter::layerFor)
         $s1b = FarmPrinter::firstOrCreate(['key' => 'kobra-s1-02'], [
             'name' => 'Kobra S1 #2',
@@ -120,7 +121,7 @@ class FarmSeeder extends Seeder
             'machine_profile' => 'machine_kobras1_n02.json',
             'process_profiles' => ['draft' => 'process_draft_n02.json', 'standard' => 'process_standard_n02.json', 'fine' => 'process_fine_n02.json'],
             'machine_overrides' => [],
-            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'Textured PEI Plate'],
+            'process_overrides' => ['enable_prime_tower' => '0', 'enable_support' => '1', 'support_type' => 'tree(auto)', 'support_threshold_angle' => '30', 'curr_bed_type' => 'High Temp Plate'],
         ]);
         if ($s1b->wasRecentlyCreated) {
             foreach ([0, 1, 2, 3] as $i) {

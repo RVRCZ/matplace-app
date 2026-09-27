@@ -7,19 +7,22 @@ Test objects for tuning a filament on a printer of the farm (manifold3d, exact s
 kind:
   quick        one plate, about 35 minutes: a 15 mm cube (dimensions, corners, top surface, elephant foot), overhang
                fan 30-70 degrees, a 20 mm bridge, three pillars for stringing, a single two-line wall, an 8 mm hole
-  detailed     one plate, about 70 minutes: a 20 mm cube, a 30 x 30 mm plateau for ironing, overhang fan 30-80 degrees,
-               bridges of 15 and 25 mm, stringing pillars with 10 and 20 mm gaps (40 mm tall), walls of one / two /
-               three lines, holes of 3 / 5 / 8 / 10 mm, a bar to snap by hand for the layer bond
-
-What a nozzle draws scales with it (param `nozzle`, 0.4 by default): the walls are counted in nozzle widths, the
-stringing pillars and the bond bar get thinner with it, and so does the raft-like base plate. The cube, the holes,
-the bridges and the overhang angles stay as they are: they measure the machine, not the nozzle.
+  detailed     one plate, about 70 minutes: a 20 mm cube, overhang fan 30-80 degrees, bridges of 15 and 25 mm,
+               stringing pillars with 10 and 20 mm gaps (40 mm tall), walls of one / two / three lines,
+               holes of 3 / 5 / 8 / 10 mm, a bar to snap by hand for the layer bond
   ironing      one plate, about 10 minutes: a 30 x 30 mm plateau on a base barely larger than itself, for the
                ironing settings alone (ironing is a setting of the whole print, so a big object would spend most of
                its time polishing its own base plate)
   temp_tower   floors of 10 mm (params: floors 3-10); every floor carries a 14 mm bridge and a 45 degree overhang.
                The temperature per floor is written into the G-code by the web layer (App\\Domain\\Farm\\TowerGcode),
                floor 1 is the bottom one
+
+What a nozzle draws scales with it (param `nozzle`, 0.4 by default): the walls are counted in nozzle widths and the
+bond bar gets thinner with it. The base plate follows the nozzle but never goes below 1 mm, or a fine-nozzle test
+bends when it is prised off the plate. The stringing pillars stay 4 mm thick for every nozzle: the travel between
+them is what pulls the strings, and at 2 mm on a 0.2 nozzle each of their layers took two seconds - the top never
+set, the hot nozzle came back every three seconds and cooked it brown. The cube, the holes, the bridges and the
+overhang angles stay as they are: they measure the machine, not the nozzle.
 
 All lengths in millimetres, the object sits on Z = 0 at the origin. Prints one JSON object:
 {ok, kind, bbox, volume_mm3, area_mm2, triangles, features}. `features` says where each thing is on the plate, so
@@ -30,7 +33,13 @@ import math
 import sys
 
 NOZZLE = 0.4          # the nozzle the sizes below are written for
-PLATE_T = 1.2         # base plate of the quick/detailed object at that nozzle
+PLATE_MIN = 1.0       # thinnest base plate: below this a test bends when it is prised off the build plate
+PILLAR_R = 2.0        # stringing pillars, the same for every nozzle (see above)
+
+
+def plate_of(n):
+    """Base plate thickness: three nozzle widths, never below PLATE_MIN."""
+    return max(PLATE_MIN, round(3 * n, 2))
 
 
 def nozzle_of(p):
@@ -58,35 +67,43 @@ def overhang_wedge(M, x, y, z, width, depth, height, angle_deg, along="y"):
     return (foot + top).hull()
 
 
-def skeleton_plate(M, parts, w, d, t, tiles=(), ribs_y=(), border=4.0, rib=4.0, margin=1.5):
+def skeleton_plate(M, parts, t, tiles=(), ribs_y=(), rib=4.0, margin=1.5):
     """
-    The base the features stand on, as a frame with ribs and a pad under every feature instead of a solid slab.
+    The base the features stand on: a pad under every feature's foot, ribs along the rows and one spine across
+    them - no solid slab, and no frame around it.
 
-    A slab of 110 x 70 mm is six solid layers of surface nobody ever looks at. On a 0.2 mm nozzle that is nearly an
-    hour of printing, and with ironing switched on another hour of polishing it - while the plateau the ironing test
-    is actually about is one twentieth of that area. `tiles` are extra rectangles the object needs for itself (the
-    holes are drilled through one), `ribs_y` are bars across the plate that tie the rows of features to the frame.
+    A slab of 110 x 70 mm is six solid layers of surface nobody ever looks at: on a 0.2 mm nozzle nearly an hour of
+    printing, and with ironing on another hour of polishing it. A frame around the plate looked like a brim, stuck
+    out as thin arms and bent while the test was prised off (26 Sep 2026). `tiles` are rectangles the object needs
+    for itself (the holes are drilled through one); `ribs_y` put a bar under each row of features, and the spine
+    through the middle ties the rows into one piece.
     """
     def rect(x, y, rw, rd):
         return M.CrossSection.square([rw, rd]).translate([x, y])
 
-    # the whole plate is drawn flat and extruded once: unioning the boxes in 3D leaves non-manifold edges
-    # wherever a rounded pad happens to touch a rib exactly tangentially, and the STL then reads as not watertight
-    flat = rect(0, 0, w, d) - rect(border, border, w - 2 * border, d - 2 * border)
-    for y in ribs_y:
-        flat += rect(0, y, w, rib)
+    # a pad under each foot, not under each shadow: an overhang wedge touches the plate with a 6 x 3 mm foot
+    # but throws a 30 mm shadow, and padding the shadows made the plate half the print on a fine nozzle
+    z0 = parts.bounding_box()[2]
+    flat = parts.slice(z0 + 0.01).offset(margin, M.JoinType.Round, 2.0)
     for x, y, tw, td in tiles:
         flat += rect(x, y, tw, td)
-    if not parts.is_empty():
-        flat += parts.project().offset(margin, M.JoinType.Round, 2.0)
+    # ribs and spine stay inside what the features cover, so nothing sticks out of the object
+    x0, _, x1, _ = flat.bounds()
+    for y in ribs_y:
+        flat += rect(x0, y, x1 - x0, rib)
+    if len(ribs_y) > 1:
+        lo, hi = min(ribs_y), max(ribs_y)
+        flat += rect((x0 + x1 - rib) / 2, lo, rib, hi - lo + rib)
 
+    # the whole plate is drawn flat and extruded once: unioning boxes in 3D leaves non-manifold edges wherever a
+    # rounded pad touches a rib exactly tangentially, and the STL then reads as not watertight
     return flat.simplify(1e-3).extrude(t)
 
 
 def quick(M, p):
     features = []
     n = nozzle_of(p)
-    plate_t = round(3 * n, 2)
+    plate_t = plate_of(n)
     plate_w, plate_d = 80.0, 50.0
     solid = M.Manifold()
     z0 = plate_t
@@ -116,14 +133,13 @@ def quick(M, p):
         solid += overhang_wedge(M, x, 27, z0, 6, 3, 10, a)
     features.append({"name": "overhangs", "at": [3, 27], "angles": angles, "checks": ["overhang"]})
 
-    # a thinner nozzle wants thinner pillars: the travel between them is what pulls the strings
     pillars = [48, 62, 76]
-    r = round(max(0.8, 5 * n), 2)
+    r = PILLAR_R
     for x in pillars:
         solid += M.Manifold.cylinder(25, r, -1.0, 48).translate([x, 38, z0])
     features.append({"name": "stringing", "at": [[x, 38] for x in pillars], "height": 25, "radius": r, "checks": ["stringing"]})
 
-    solid += skeleton_plate(M, solid, plate_w, plate_d, plate_t, tiles=[(66, 5, 14, 16)], ribs_y=(10.0, 36.0))
+    solid += skeleton_plate(M, solid, plate_t, tiles=[(66, 5, 14, 16)], ribs_y=(10.0, 36.0))
     solid -= M.Manifold.cylinder(plate_t + 2, hole_d / 2, -1.0, 64).translate([72, 12, -1])
 
     return solid, features
@@ -132,18 +148,16 @@ def quick(M, p):
 def detailed(M, p):
     features = []
     n = nozzle_of(p)
-    plate_t = round(3 * n, 2)
+    plate_t = plate_of(n)
     plate_w, plate_d = 110.0, 70.0
     solid = M.Manifold()
     z0 = plate_t
 
-    # row A: cube, ironing plateau, two bridges, walls, holes
+    # row A: cube, two bridges, walls, holes
     cube = 20.0
     solid += box(M, 3, 3, z0, cube, cube, cube)
     features.append({"name": "cube", "at": [3, 3], "size": [cube, cube, cube], "checks": ["dimensions", "corners", "top_surface", "elephant_foot"]})
 
-    solid += box(M, 28, 3, z0, 30, 30, 4)
-    features.append({"name": "ironing", "at": [28, 3], "size": [30, 30], "checks": ["ironing"]})
 
     pw, ph = 4.0, 10.0
     for y, span in ((3, 15.0), (12, 25.0)):
@@ -167,7 +181,7 @@ def detailed(M, p):
     features.append({"name": "overhangs", "at": [3, 38], "angles": angles, "checks": ["overhang"]})
 
     pillars = [58, 68, 88]
-    r = round(max(0.8, 5 * n), 2)
+    r = PILLAR_R
     for x in pillars:
         solid += M.Manifold.cylinder(40, r, -1.0, 48).translate([x, 60, z0])
     features.append({"name": "stringing", "at": [[x, 60] for x in pillars], "gaps": [10, 20], "height": 40, "radius": r, "checks": ["stringing"]})
@@ -177,7 +191,7 @@ def detailed(M, p):
     solid += box(M, 100, 52, z0, bar_t, 12, 35)
     features.append({"name": "bond_bar", "at": [100, 52], "size": [bar_t, 12, 35], "checks": ["layer_bond"]})
 
-    solid += skeleton_plate(M, solid, plate_w, plate_d, plate_t, tiles=[(79, 22, 28, 29)], ribs_y=(24.0, 58.0))
+    solid += skeleton_plate(M, solid, plate_t, tiles=[(79, 22, 28, 29)], ribs_y=(5.0, 24.0, 38.0, 58.0))
     for x, y, dia in holes:
         solid -= M.Manifold.cylinder(plate_t + 2, dia / 2, -1.0, 64).translate([x, y, -1])
 
@@ -193,7 +207,7 @@ def ironing(M, p):
     hour of polishing something nobody reads. Its own small object answers the same question in ten minutes.
     """
     n = nozzle_of(p)
-    plate_t = round(3 * n, 2)
+    plate_t = plate_of(n)
     side, plateau, wall = 34.0, 30.0, 3.0
     solid = box(M, 0, 0, 0, side, side, plate_t)
     solid += box(M, 2, 2, plate_t, plateau, plateau, wall)

@@ -12,7 +12,7 @@ interface Price { time: number; material: number; fixed: number; min_price_appli
 interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean }
 interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; error: string | null; error_text: string | null;
-    quality: string; strength: string; unit: string; unit_guess: { unit: string; confident: boolean } | null;
+    quality: string; strength: string; copies: number; max_copies: number | null; unit: string; unit_guess: { unit: string; confident: boolean } | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; shipping_price: number;
     colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
@@ -123,7 +123,7 @@ export function bootFarmOrder(): void {
     let picked: number | null = null;
     let delivery = state.delivery || 'pickup';
     let timer = 0;
-    const wanted = { quality: state.quality, strength: state.strength, unit: state.unit };
+    const wanted = { quality: state.quality, strength: state.strength, unit: state.unit, copies: state.copies || 1 };
 
     const post = async (url: string, body: unknown): Promise<{ ok: boolean; status: number; json: Record<string, unknown> }> => {
         const res = await fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': cfg.csrf }, body: JSON.stringify(body) });
@@ -180,6 +180,8 @@ export function bootFarmOrder(): void {
         show($('farm-result'), hasResult);
         if (hasResult) {
             $('farm-price')!.textContent = total() !== null ? money(total()!) : '—';
+            const copiesLine = $('farm-copies-line');
+            if (copiesLine) { copiesLine.textContent = s.copies > 1 ? tr('farm.copies.note', { n: s.copies }) : ''; show(copiesLine, s.copies > 1); }
             $('farm-time')!.textContent = duration(s.minutes!);
             $('farm-grams')!.textContent = `${s.grams} g${s.meters ? ` · ${s.meters} m` : ''}`;
             $('farm-supports')!.textContent = tr(s.supports ? 'farm.order.supports_yes' : 'farm.order.supports_no');
@@ -189,13 +191,17 @@ export function bootFarmOrder(): void {
         // presets stay editable until the order is paid; a failed check can be retried with other units
         const editable = s.status === 'sliced' || (s.status === 'failed' && !s.number);
         show($('farm-presets'), editable);
-        document.querySelectorAll<HTMLElement>('#farm-presets [data-group]').forEach((g) => g.querySelectorAll<HTMLElement>('.seg').forEach((b) => b.classList.toggle('seg-on', b.dataset.value === wanted[g.dataset.group as 'quality' | 'strength'])));
+        document.querySelectorAll<HTMLElement>('#farm-presets [data-group]').forEach((g) => g.querySelectorAll<HTMLElement>('.seg').forEach((b) => b.classList.toggle('seg-on', b.dataset.value === String(wanted[g.dataset.group as 'quality' | 'strength']))));
         ($('farm-unit') as HTMLSelectElement).value = wanted.unit;
+        const copiesInput = $<HTMLInputElement>('farm-copies');
+        if (copiesInput && document.activeElement !== copiesInput) copiesInput.value = String(wanted.copies);
+        const copiesNote = $('farm-copies-note');
+        if (copiesNote) { copiesNote.textContent = s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) : ''; show(copiesNote, !!s.max_copies); }
         const note = $('farm-unit-note')!;
         const guess = s.unit_guess;
         note.textContent = guess && guess.unit !== 'mm' ? (guess.confident && s.unit === guess.unit ? tr('farm.units.guess', { unit: tr(`farm.units.${guess.unit}`) }) : (!guess.confident && s.unit === 'mm' ? tr('farm.units.ask') : '')) : '';
         show(note, note.textContent !== '');
-        show($('farm-reslice'), editable && (wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.unit !== s.unit));
+        show($('farm-reslice'), editable && (wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1)));
 
         show($('farm-pay'), s.status === 'sliced');
         if (s.status === 'sliced') {
@@ -278,6 +284,7 @@ export function bootFarmOrder(): void {
         wanted[(b.parentElement as HTMLElement).dataset.group as 'quality' | 'strength'] = b.dataset.value!; render();
     }));
     $('farm-unit')?.addEventListener('change', (e) => { wanted.unit = (e.target as HTMLSelectElement).value; render(); });
+    $('farm-copies')?.addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); wanted.copies = Math.max(1, Math.min(64, Math.round(v) || 1)); render(); });
     $('farm-presets')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const r = await post(cfg.routes.reslice, wanted);

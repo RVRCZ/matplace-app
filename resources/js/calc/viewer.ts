@@ -5,6 +5,9 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
+/** Default colour of a previewed model: a calm, slightly desaturated blue, like a light-blue PLA spool. */
+export const MODEL_COLOR = 0x83a6d4;
+
 /** Small three.js viewer: one mesh, orbit controls, auto-fit, resize aware, touch friendly. */
 export class Viewer {
     private renderer: WebGLRenderer;
@@ -15,8 +18,8 @@ export class Viewer {
     private supports: LineSegments | null = null;
     private grid: GridHelper | null = null;
     private frontal = false;
-    // light teal + flat shading: layer-like facets and embossed letters stay readable
-    private material = new MeshStandardMaterial({ color: 0x5eead4, roughness: 0.75, metalness: 0.0, flatShading: true });
+    // soft filament blue + flat shading: layer-like facets and embossed letters stay readable; sits well with the ink and orange of the site
+    private material = new MeshStandardMaterial({ color: MODEL_COLOR, roughness: 0.75, metalness: 0.0, flatShading: true });
     // generated busts and figures: light bronze and smooth shading, so the preview reads as a small sculpture, not as facets
     private sculptureMaterial = new MeshStandardMaterial({ color: 0xc98f5a, roughness: 0.42, metalness: 0.25, flatShading: false });
     // plates (signs, reliefs, lithophanes): colour follows the height, so letters and pictures read like a two-colour print
@@ -72,9 +75,9 @@ export class Viewer {
         this.mesh.scale.setScalar(scale);
     }
 
-    /** The plain model in a filament colour (CSS hex); null goes back to the default teal. */
+    /** The plain model in a filament colour (CSS hex); null goes back to the default blue. */
     setColor(hex: string | null): void {
-        this.material.color.set(hex && /^#?[0-9a-f]{6}$/i.test(hex) ? (hex.startsWith('#') ? hex : `#${hex}`) : 0x5eead4);
+        this.material.color.set(hex && /^#?[0-9a-f]{6}$/i.test(hex) ? (hex.startsWith('#') ? hex : `#${hex}`) : MODEL_COLOR);
     }
 
     /**

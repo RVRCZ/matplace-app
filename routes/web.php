@@ -69,6 +69,7 @@ Route::get('/tools/stencil', [ToolsController::class, 'param'])->defaults('kind'
 Route::get('/tools/illuminated-sign', [ToolsController::class, 'param'])->defaults('kind', 'lightbox')->name('tools.lightbox');
 Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');
 Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('kind', 'cable_holder')->name('tools.cable_holder');
+Route::get('/tools/cookie-cutter', [ToolsController::class, 'param'])->defaults('kind', 'cutter')->name('tools.cutter');
 
 // ── JSON API used by the calculator ──────────────────────────────────────────
 // Every "throttle:N,1" below carries its own prefix: without one Laravel counts all of them on ONE key per visitor,

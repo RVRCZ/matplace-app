@@ -69,6 +69,11 @@
             @endforeach
         </div>
 
+        <label class="mt-4 block text-sm font-semibold text-slate-700">{{ __('farm.copies.label') }}
+            <input name="copies" type="number" inputmode="numeric" min="1" max="{{ $maxCopies }}" value="{{ $copies }}" class="mt-1 w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
+        </label>
+        <p class="mt-1 text-xs text-slate-500">{{ __('farm.copies.hint') }}</p>
+
         <button id="farm-continue" type="submit" class="mt-4 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" @disabled(! $file)>{{ __('farm.start.continue') }}</button>
         <p class="mt-2 text-xs text-slate-500">{{ __('farm.slices_left', ['n' => $slicesLeft]) }}</p>
     </form>
