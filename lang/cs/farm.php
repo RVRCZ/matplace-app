@@ -48,6 +48,8 @@ return [
     ],
 
     'order' => [
+        'repeat' => 'Opakovat tisk',
+        'repeat_hint' => 'Stejný model a nastavení; barvu vyberete z těch, které jsou právě založené. Původní barva je předvybraná, pokud je k mání.',
         'printer' => 'Tiskárna: :name, podložka :bed',
         'title' => 'Tisk :name',
         'dims' => 'Rozměry',

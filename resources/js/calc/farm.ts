@@ -298,6 +298,8 @@ export function bootFarmOrder(): void {
         }
         show(q, !!s.queue);
         show($('farm-cancel'), s.can_cancel);
+        // once the print is over (or fell through) the same model can be ordered again with today's colours
+        show($('farm-repeat'), ['done', 'handed_over', 'cancelled', 'failed'].includes(s.status));
 
         // the model in the colour that will print it; once paid, the chosen colour
         if (s.status !== 'sliced') viewer.setColor(s.color?.hex ?? null);

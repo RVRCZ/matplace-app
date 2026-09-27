@@ -290,6 +290,15 @@ class FarmOrderFlowTest extends TestCase
         $page = $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk();
         $page->assertSee('name="color"', false)->assertSee('name="scale"', false)->assertSee('value="1.5"', false)->assertSee('value="3"', false)->assertSee('light blue');   // test locale is en
 
+        // "print again": the start page with the order's settings; the colour is preselected when it is still loaded
+        $again = $this->actingAs($this->user)->get("/farm/orders/{$chosen->token}/repeat")->assertRedirect();
+        $target = $again->headers->get('Location');
+        $this->assertStringContainsString('file='.$chosen->modelFile->uuid, $target);
+        $this->assertStringContainsString('color='.$blue->id, $target);
+        $this->actingAs($this->user)->get($target)->assertOk()->assertSee('value="'.$blue->id.'" class="sr-only" checked', false);
+        $max->slots()->where('slot', 0)->update(['enabled' => false]);                     // the spool is gone: another colour is offered first, nothing breaks
+        $this->actingAs($this->user)->get($target)->assertOk()->assertDontSee('value="'.$blue->id.'"', false);
+
         // resizing on the order page is a preset like the others: sliced again at the new size
         $this->actingAs($this->user)->postJson("/farm/orders/{$half->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'scale' => 2])->assertOk()->assertJsonPath('scale', 2);
         $this->assertEqualsWithDelta(40.0, $half->refresh()->check['dims']['x'], 0.01);

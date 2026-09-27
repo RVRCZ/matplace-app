@@ -48,6 +48,8 @@ return [
     ],
 
     'order' => [
+        'repeat' => 'Print again',
+        'repeat_hint' => 'The same model and settings; pick a colour from those loaded right now. The original colour is preselected when it is available.',
         'printer' => 'Printer: :name, plate :bed',
         'title' => 'Print of :name',
         'dims' => 'Dimensions',

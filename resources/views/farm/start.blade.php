@@ -77,7 +77,7 @@
         <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.strength.label') }}</div>
         <div class="mt-2 grid grid-cols-3 gap-2">
             @foreach($settings['strengths'] as $key => $s)
-                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="strength" value="{{ $key }}" class="sr-only" @checked($key === 'standard')>{{ __('farm.strength.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.strength.infill', ['n' => $s['infill']]) }}</span></label>
+                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="strength" value="{{ $key }}" class="sr-only" @checked($key === $strength || ($loop->first && ! array_key_exists($strength, $settings['strengths'])))>{{ __('farm.strength.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.strength.infill', ['n' => $s['infill']]) }}</span></label>
             @endforeach
         </div>
 
@@ -92,7 +92,7 @@
         <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.color') }}">
             @forelse($colors as $c)
                 <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action {{ $c['enough'] ? '' : 'opacity-50' }}">
-                    <input type="radio" name="color" value="{{ $c['id'] }}" class="sr-only" @checked($loop->first) @disabled(! $c['enough'])>
+                    <input type="radio" name="color" value="{{ $c['id'] }}" class="sr-only" @checked($c['id'] === $preselect) @disabled(! $c['enough'])>
                     @if($c['photo'])<img src="{{ $c['photo'] }}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">@else<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:{{ $c['hex'] }}"></span>@endif
                     <span><span class="font-semibold">{{ $c['name'] }}</span><br><span class="text-xs text-slate-500">{{ $c['kind'] }} · {{ $c['printer'] }}</span></span>
                 </label>

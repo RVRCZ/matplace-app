@@ -155,6 +155,7 @@
 
             <div class="flex flex-wrap gap-2">
                 <button id="farm-cancel" type="button" class="btn-quiet hidden text-sm">{{ __('farm.order.cancel') }}</button>
+                <a id="farm-repeat" href="{{ route('farm.orders.repeat', $order) }}" class="btn-secondary hidden text-sm" title="{{ __('farm.order.repeat_hint') }}">{{ __('farm.order.repeat') }}</a>
                 <a href="{{ route('farm.start') }}" class="btn-quiet text-sm">{{ __('farm.order.new') }}</a>
             </div>
         </div>

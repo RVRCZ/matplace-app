@@ -34,8 +34,11 @@ class OrderController extends Controller
     {
         $file = $request->query('file') ? ModelFile::where('uuid', $request->query('file'))->first() : null;
         $quality = (string) $request->query('quality', 'standard');
-        $copies = 1;
-        $scale = 1.0;
+        $strength = (string) $request->query('strength', 'standard');
+        // a repeated print hands its settings over in the address (OrderController::repeat)
+        $copies = max(1, min(PlateLayout::MAX_COPIES, (int) $request->query('copies', 1)));
+        $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) $request->query('scale', 1)));
+        $wantedColor = (int) $request->query('color', 0);
         $material = null;
         // from the calculator: the shared calculation knows the model, the quality and how many pieces the customer wanted
         if (! $file && $request->query('calc') && ($calc = Calculation::with('modelFile')->where('token', $request->query('calc'))->first())) {
@@ -50,11 +53,15 @@ class OrderController extends Controller
             'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex,
             'photo' => $r['color']->photoUrl(), 'printer' => $r['printer']->name, 'bed' => (int) $r['printer']->bed_x.' × '.(int) $r['printer']->bed_y.' mm', 'enough' => $r['slot']->availableGrams() > 50,
         ])->sortBy(fn ($c) => [$c['code'] === $material ? 0 : 1, $c['name']])->values()->all();
+        // the colour of the print being repeated when it is still loaded, else the first one on offer
+        $preselect = collect($colors)->firstWhere('id', $wantedColor)['id'] ?? ($colors[0]['id'] ?? null);
 
         return view('farm.start', [
             'file' => $file,
             'bed' => $this->orders->largestBed(),
             'quality' => $quality,
+            'strength' => $strength,
+            'preselect' => $preselect,
             'copies' => $copies,
             'maxCopies' => PlateLayout::MAX_COPIES,
             'scale' => $scale,
@@ -64,6 +71,17 @@ class OrderController extends Controller
             'balance' => $this->wallet->balance($request->user()),
             'slicesLeft' => max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())),
         ]);
+    }
+
+    /** "Print again": the start page with this order's model and settings; the colour is offered again when it is still loaded. */
+    public function repeat(Request $request, FarmOrder $order): RedirectResponse
+    {
+        $this->authorizeOrder($request, $order);
+
+        return redirect()->route('farm.start', array_filter([
+            'file' => $order->modelFile?->uuid, 'quality' => $order->quality, 'strength' => $order->strength, 'copies' => $order->copies,
+            'scale' => abs((float) $order->scale - 1) > 0.0005 ? (float) $order->scale : null, 'color' => $order->farm_color_id,
+        ]));
     }
 
     public function index(Request $request): View
