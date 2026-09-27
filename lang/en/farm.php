@@ -98,6 +98,7 @@ return [
         'photo' => 'Photo of a print – click to enlarge',
         'queue_ahead' => 'Ahead of you: :n',
         'queue_start' => 'Estimated start: in :time',
+        'queue_starting' => 'The printer is getting ready, the print starts any moment.',
         'queue_finish' => 'Estimated finish: in :time',
         'blocked_plate' => 'Waiting for the operator to clear the plate.',
         'blocked_offline' => 'The printer is disconnected right now; the operator knows.',

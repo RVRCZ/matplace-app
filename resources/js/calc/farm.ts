@@ -290,7 +290,7 @@ export function bootFarmOrder(): void {
         }
         const q = $('farm-queue')!;
         if (s.queue && s.status !== 'printing') {
-            const lines = [s.queue.ahead > 0 ? tr('farm.order.queue_ahead', { n: s.queue.ahead }) : '', tr('farm.order.queue_start', { time: duration(s.queue.start_in) }), tr('farm.order.queue_finish', { time: duration(s.queue.finish_in) })];
+            const lines = [s.queue.ahead > 0 ? tr('farm.order.queue_ahead', { n: s.queue.ahead }) : '', s.queue.start_in > 0 ? tr('farm.order.queue_start', { time: duration(s.queue.start_in) }) : tr('farm.order.queue_starting'), tr('farm.order.queue_finish', { time: duration(s.queue.finish_in) })];
             if (s.queue.blocked) lines.unshift(tr(`farm.order.blocked_${s.queue.blocked}`));
             q.innerHTML = lines.filter(Boolean).map(esc).join('<br>');
         } else if (s.queue) {

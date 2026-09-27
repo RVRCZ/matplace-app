@@ -82,6 +82,11 @@ final class Dispatcher
             return ['start_in' => 0, 'finish_in' => $thisPlate + $platesLeft * ($perPlate + $swap), 'ahead' => 0, 'blocked' => null];
         }
 
+        // the job on the machine is this very order (sent, the printer is heating up): nobody is ahead of it
+        if ($job && $job->farm_order_id === $order->id) {
+            return ['start_in' => 0, 'finish_in' => $own, 'ahead' => 0, 'blocked' => $printer->isOnline() ? null : 'offline'];
+        }
+
         $wait = 0;
         if ($job) {
             $running = (int) ceil((int) $job->order->est_minutes * $printer->time_factor);

@@ -98,6 +98,7 @@ return [
         'photo' => 'Fotka výtisku – klepnutím zvětšíte',
         'queue_ahead' => 'Před vámi: :n',
         'queue_start' => 'Odhad začátku tisku: za :time',
+        'queue_starting' => 'Tiskárna se připravuje, tisk začne každou chvíli.',
         'queue_finish' => 'Odhad dokončení: za :time',
         'blocked_plate' => 'Čeká se, až obsluha uvolní podložku.',
         'blocked_offline' => 'Tiskárna je teď odpojená, obsluha o tom ví.',

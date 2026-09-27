@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\Wallet;
 use App\Engines\Mesh\StlFile;
@@ -195,6 +196,20 @@ class FarmOrderFlowTest extends TestCase
         $order->refresh();
         $this->assertSame(0.28, $order->slice_params['layer_mm']);
         $this->assertSame(10, $order->slice_params['infill_percent']);
+    }
+
+    /** Louskacek, 28 Sep 2026: the job sent to the machine was counted as somebody else's print ahead of its own order. */
+    public function test_an_order_whose_job_is_on_the_printer_has_nobody_ahead(): void
+    {
+        $order = $this->order(20);
+        $order->forceFill(['status' => FarmOrder::STATUS_QUEUED, 'est_minutes' => 370])->save();
+        FarmPrintJob::create(['farm_order_id' => $order->id, 'farm_printer_id' => $order->farm_printer_id, 'status' => 'sent', 'plate' => 1, 'progress' => 0]);
+        $order->printer->forceFill(['last_seen_at' => now()])->save();
+
+        $q = app(Dispatcher::class)->estimate($order->refresh(), app(FarmSettings::class));
+        $this->assertSame(0, $q['ahead']);
+        $this->assertSame(0, $q['start_in']);
+        $this->assertGreaterThanOrEqual(370, $q['finish_in']);
     }
 
     /** A turtle with joints prints in place: the customer switches the supports off and the slicer is told so. */

@@ -98,6 +98,7 @@ return [
         'photo' => 'Foto de una impresión – clic para ampliar',
         'queue_ahead' => 'Delante de usted: :n',
         'queue_start' => 'Inicio estimado: en :time',
+        'queue_starting' => 'La impresora se está preparando, la impresión empieza enseguida.',
         'queue_finish' => 'Fin estimado: en :time',
         'blocked_plate' => 'Esperando a que el operador libere la base.',
         'blocked_offline' => 'La impresora está desconectada ahora; el operador lo sabe.',
