@@ -18,6 +18,7 @@ return [
     'modular' => ['route' => 'tools.modular', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'box' => ['route' => 'tools.box', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'phone_stand' => ['route' => 'tools.phone_stand', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
+    'holder' => ['route' => 'tools.holder', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'cable_holder' => ['route' => 'tools.cable_holder', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'vase' => ['route' => 'tools.vase', 'intent' => 'create', 'categories' => ['home', 'craft'], 'available' => true],
     'figure' => ['route' => 'tools.figure', 'intent' => 'create', 'categories' => ['gifts'], 'available' => true],

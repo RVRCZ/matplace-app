@@ -184,6 +184,41 @@ class ToolsFlowTest extends TestCase
         }
     }
 
+    public function test_holder_fits_the_measured_thing_in_four_ways(): void
+    {
+        $this->get('/tools/holder?lang=cs')->assertOk()->assertSee('Držák na cokoliv')->assertSee('data-choice="style"', false)->assertSee('data-preset="remote"', false);
+        $this->get('/tools/holder?lang=en')->assertOk()->assertSee('A holder for anything');
+        $this->get('/tools/holder?lang=es')->assertOk();
+        foreach (ParametricGenerator::PRESETS['holder'] as $name => $values) {
+            $v = validator(['params' => $values], ParametricGenerator::rules('holder'));
+            $this->assertTrue($v->passes(), $name.': '.implode(' ', $v->errors()->all()));
+        }
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        Storage::fake('models');
+        $meta = fn ($r) => json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        foreach (['cradle', 'pocket', 'hook'] as $style) {
+            $r = $this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => ['style' => $style, 'obj_w' => 50, 'obj_d' => 25, 'height' => 60, 'wall' => 3, 'clearance' => 0.8, 'mount' => true]])->assertOk();
+            $m = $meta($r);
+            $this->assertEqualsWithDelta(25.8, $m['notes']['inner'][1], 0.01, $style.': the thing plus the clearance');
+            $this->assertEqualsWithDelta(25.8 + 2 * 3, $m['bbox']['x'], 0.01, $style);
+            $this->assertSame(2, $m['notes']['screws']);
+            $stl = tempnam(sys_get_temp_dir(), 'hold').'.stl';
+            file_put_contents($stl, $r->streamedContent());
+            $this->assertTrue(StlTopology::check($stl)['watertight'], $style);
+            @unlink($stl);
+        }
+        $clip = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => ['style' => 'clip', 'obj_w' => 24, 'height' => 25]])->assertOk());
+        $this->assertSame([24], array_map('intval', $clip['notes']['inner']));
+        $wide = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'holder', 'params' => ['style' => 'clip', 'obj_w' => 80]])->assertStatus(422);
+        $this->assertStringContainsString('60', $wide->json('errors.params.0'));
+
+        $created = $this->postJson('/api/tools/param', ['kind' => 'holder', 'params' => ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90]])->assertCreated();
+        $this->assertSame('holder', $created->json('file.kind'));
+        $this->assertFalse($created->json('file.hints.supports'));
+    }
+
     public function test_tool_pages_address_the_visitor_formally(): void
     {
         $this->get('/tools/figure?lang=cs')->assertOk()->assertSee('Vyberte nebo vyfoťte fotku')->assertDontSee('Zkus ');

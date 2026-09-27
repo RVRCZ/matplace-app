@@ -53,6 +53,7 @@ final class ParametricGenerator
             'width' => [80, 300, 180, 1], 'depth' => [25, 80, 35, 1], 'wall' => [1.6, 4, 2, 0.2], 'face' => [0.8, 2, 1.2, 0.2], 'margin' => [6, 40, 12, 1],
             'bridge' => [0.8, 3, 1.4, 0.2], 'cable' => [3, 10, 5, 0.5], 'clearance' => [0.1, 0.6, 0.25, 0.05],
         ],
+        'holder' => ['obj_w' => [10, 300, 50, 1], 'obj_d' => [5, 150, 25, 1], 'height' => [15, 150, 60, 1], 'wall' => [2, 6, 3, 0.5], 'clearance' => [0.3, 2, 0.8, 0.1], 'radius' => [0, 4, 1.5, 0.1]],
         'cutter' => ['width' => [30, 150, 70, 1], 'height' => [10, 30, 18, 1], 'wall' => [0.8, 1.6, 1.0, 0.2], 'flange' => [3, 10, 5, 1], 'flange_t' => [1, 2.5, 1.6, 0.1]],
     ];
 
@@ -65,6 +66,7 @@ final class ParametricGenerator
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
         'lightbox' => ['led' => ['strip8', 'strip10', 'module']],
         'cutter' => ['edge' => ['sharp', 'straight'], 'typeface' => ['sans', 'serif', 'mono']],
+        'holder' => ['style' => ['cradle', 'pocket', 'hook', 'clip']],
     ];
 
     /** kind → text input → [max length, required, default] */
@@ -84,22 +86,23 @@ final class ParametricGenerator
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height'],
     ];
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp'];
 
-    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert']];
+    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount']];
 
     /** kind → field or flag → [choice key, values it belongs to]; the form hides it for the other choices */
     public const WHEN = [
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
         'sign' => ['radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline']]],
+        'holder' => ['obj_d' => ['style', ['cradle', 'pocket', 'hook']]],
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount'];
 
     public const PRESETS = [
         'vase' => [
@@ -114,6 +117,12 @@ final class ParametricGenerator
             'door' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 22, 'thickness' => 3, 'relief' => 1.4, 'margin' => 8, 'radius' => 8, 'keyring' => false, 'border' => true, 'bevel' => false, 'two_color' => true],
             'nametag' => ['style' => 'engrave', 'shape' => 'rect', 'text_height' => 10, 'thickness' => 2.4, 'relief' => 0.8, 'margin' => 4, 'keyring' => false, 'border' => false, 'bevel' => true, 'two_color' => false],
             'ornament' => ['style' => 'outline', 'shape' => 'oval', 'text_height' => 12, 'thickness' => 3, 'relief' => 1.2, 'margin' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
+        ],
+        'holder' => [
+            'remote' => ['style' => 'cradle', 'obj_w' => 50, 'obj_d' => 22, 'height' => 70],
+            'bottle' => ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90],
+            'headphones' => ['style' => 'hook', 'obj_w' => 35, 'obj_d' => 45, 'height' => 30],
+            'broom' => ['style' => 'clip', 'obj_w' => 24, 'height' => 25],
         ],
         'organizer' => [
             'drawer' => ['width' => 300, 'depth' => 200, 'height' => 45, 'rows' => 2, 'cols' => 4, 'radius' => 4, 'wall' => 1.6, 'floor' => 1.2],
