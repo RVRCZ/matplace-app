@@ -108,6 +108,13 @@ final class ParametricGenerator
             'smooth' => ['style' => 'smooth', 'profile' => 'neck', 'height' => 160, 'top_d' => 70, 'bottom_d' => 58],
             'pot' => ['purpose' => 'pot', 'style' => 'ribs', 'profile' => 'cone', 'height' => 120, 'top_d' => 130, 'bottom_d' => 100, 'ribs' => 16, 'flute' => 10],
         ],
+        // gifts with a text: the same sign tool, four starting points (the landing page /gifts links to them)
+        'sign' => [
+            'keyring' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 8, 'thickness' => 3, 'relief' => 1, 'margin' => 4, 'radius' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
+            'door' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 22, 'thickness' => 3, 'relief' => 1.4, 'margin' => 8, 'radius' => 8, 'keyring' => false, 'border' => true, 'bevel' => false, 'two_color' => true],
+            'nametag' => ['style' => 'engrave', 'shape' => 'rect', 'text_height' => 10, 'thickness' => 2.4, 'relief' => 0.8, 'margin' => 4, 'keyring' => false, 'border' => false, 'bevel' => true, 'two_color' => false],
+            'ornament' => ['style' => 'outline', 'shape' => 'oval', 'text_height' => 12, 'thickness' => 3, 'relief' => 1.2, 'margin' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
+        ],
         'organizer' => [
             'drawer' => ['width' => 300, 'depth' => 200, 'height' => 45, 'rows' => 2, 'cols' => 4, 'radius' => 4, 'wall' => 1.6, 'floor' => 1.2],
             'office' => ['width' => 200, 'depth' => 100, 'height' => 60, 'rows' => 1, 'cols' => 3, 'wall' => 1.6, 'floor' => 1.2],

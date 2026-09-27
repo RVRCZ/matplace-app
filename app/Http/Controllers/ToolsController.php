@@ -70,6 +70,12 @@ class ToolsController extends Controller
         ]);
     }
 
+    /** Gifts with a name: occasions and products, every one a link into the sign tool with a preset and a sample text. */
+    public function gifts(): View
+    {
+        return view('tools.gifts');
+    }
+
     /** "Repair my model": upload, automatic repair, what was wrong and what was done, download and price. */
     public function repair(ModelRepair $repairs, MaterialCatalog $materials, ConverterChain $converters): View
     {

@@ -22,6 +22,7 @@ return [
     'vase' => ['route' => 'tools.vase', 'intent' => 'create', 'categories' => ['home', 'craft'], 'available' => true],
     'figure' => ['route' => 'tools.figure', 'intent' => 'create', 'categories' => ['gifts'], 'available' => true],
     'relief' => ['route' => 'tools.relief', 'intent' => 'create', 'categories' => ['gifts'], 'available' => true],
+    'gifts' => ['route' => 'tools.gifts', 'intent' => 'create', 'categories' => ['gifts'], 'available' => true],
     'sign' => ['route' => 'tools.sign', 'intent' => 'create', 'categories' => ['signs', 'gifts'], 'available' => true],
     'qr' => ['route' => 'tools.qr', 'intent' => 'create', 'categories' => ['signs'], 'available' => true],
     'logo' => ['route' => 'tools.logo', 'intent' => 'create', 'categories' => ['signs', 'craft'], 'available' => true],

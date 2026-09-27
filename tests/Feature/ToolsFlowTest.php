@@ -159,6 +159,31 @@ class ToolsFlowTest extends TestCase
         $this->assertFalse($created->json('file.hints.supports'));
     }
 
+    public function test_gifts_page_leads_into_the_sign_tool_with_a_preset_and_a_sample_text(): void
+    {
+        $this->get('/gifts?lang=cs')->assertOk()->assertSee('Dárek se jménem')->assertSee('Vánoce')->assertSee('preset=keyring', false)->assertSee('preset=ornament', false);
+        $this->get('/gifts?lang=en')->assertOk()->assertSee('A gift with a name');
+        $this->get('/gifts?lang=es')->assertOk()->assertSee('Un regalo con nombre');
+        $this->get('/tools?lang=cs')->assertOk()->assertSee(route('tools.gifts'), false);
+        $this->get('/tools/sign?preset=keyring&line1=Jana')->assertOk()->assertSee('data-preset="keyring"', false)->assertSee('data-preset="door"', false);
+
+        // every preset is within the tool's own limits (the server would refuse it otherwise)
+        foreach (ParametricGenerator::PRESETS['sign'] as $name => $values) {
+            $rules = ParametricGenerator::rules('sign');
+            $v = validator(['params' => $values + ['line1' => 'Jana']], $rules);
+            $this->assertTrue($v->passes(), $name.': '.implode(' ', $v->errors()->all()));
+            foreach (['cs', 'en', 'es'] as $lang) {
+                $this->assertNotSame('param.preset.'.$name, __('param.preset.'.$name, [], $lang));
+                $this->assertNotSame('gifts.product.'.$name, __('gifts.product.'.$name, [], $lang));
+            }
+        }
+        if (app(ParametricGenerator::class)->available()) {
+            foreach (ParametricGenerator::PRESETS['sign'] as $name => $values) {
+                $this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => $values + ['line1' => 'Anička 2026']])->assertOk();
+            }
+        }
+    }
+
     public function test_tool_pages_address_the_visitor_formally(): void
     {
         $this->get('/tools/figure?lang=cs')->assertOk()->assertSee('Vyberte nebo vyfoťte fotku')->assertDontSee('Zkus ');

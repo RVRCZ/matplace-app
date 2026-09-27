@@ -51,6 +51,7 @@ Route::middleware('feature:marketplace')->group(function () {
 
 // Tools menu (everything that is not the one main screen)
 Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
+Route::get('/gifts', [ToolsController::class, 'gifts'])->name('tools.gifts');
 Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
 Route::get('/tools/sign', [ToolsController::class, 'param'])->defaults('kind', 'sign')->name('tools.sign');
 Route::get('/tools/relief', [ToolsController::class, 'relief'])->name('tools.relief');

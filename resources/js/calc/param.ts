@@ -417,6 +417,16 @@ export function bootParam(): void {
             .catch(() => undefined)
             .finally(refresh);
     } else {
+        const qs = new URLSearchParams(location.search);
+        const preset = qs.get('preset');
+        if (preset && cfg.presets[preset]) {
+            applyValues(cfg.presets[preset]);
+            form.querySelectorAll('[data-preset]').forEach((o) => o.classList.toggle('chip-on', (o as HTMLElement).dataset.preset === preset));
+            applyWhen();
+        }
+        const typed: Record<string, string> = {};
+        form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { const v = qs.get(i.dataset.text!); if (v) typed[i.dataset.text!] = v.slice(0, i.maxLength > 0 ? i.maxLength : 40); });
+        if (Object.keys(typed).length) applyValues(typed);
         refresh();
     }
 }
