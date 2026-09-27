@@ -46,27 +46,17 @@ def meshfix_arrays(mf):
 
 
 def repair(m):
+    """Body by body, the same way as the repair tool; one pass over the whole mesh glued separate parts together."""
     import numpy as np
-    import trimesh
+    import os
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from repair_tool import mend
     before = m.extents.copy()
-    fixed = m.copy()
-    fixed.merge_vertices()
-    fixed.update_faces(fixed.nondegenerate_faces())
-    fixed.update_faces(fixed.unique_faces())
-    trimesh.repair.fix_normals(fixed)
-    trimesh.repair.fill_holes(fixed)
-    method = "trimesh"
-    if not fixed.is_watertight:
-        try:
-            import pymeshfix
-            mf = pymeshfix.MeshFix(np.asarray(fixed.vertices, dtype=float), np.asarray(fixed.faces, dtype=np.int32))
-            mf.repair(joincomp=True, remove_smallest_components=False)
-            vv, ff = meshfix_arrays(mf)
-            cand = trimesh.Trimesh(vertices=vv, faces=ff, process=True)
-            if len(cand.faces) > 0:
-                fixed, method = cand, "pymeshfix"
-        except Exception:  # noqa: BLE001 - pymeshfix is optional; without it the simple repair is all we have
-            pass
+    welded = m.copy()
+    welded.merge_vertices()
+    fixed, actions = mend(welded)
+    method = "pymeshfix" if actions.get("rebuilt_bodies") else "trimesh"
     same_object = bool(np.all(np.abs(fixed.extents - before) <= np.maximum(before * 0.02, 0.05)))
     if fixed.is_watertight and same_object:
         if fixed.volume < 0:

@@ -80,6 +80,43 @@ def fix_body(p):
     return q, used
 
 
+def mend(welded):
+    """
+    The repair itself, shared with the print farm: doubled and flat faces out, dust out, every body closed on its
+    own. Bodies are never joined: a model of several closed parts (a turtle with separate legs) stays that way.
+    Returns (mesh, actions).
+    """
+    import trimesh
+    actions = {}
+    work = welded.copy()
+    keep = work.nondegenerate_faces()
+    actions["removed_degenerate"] = int((~keep).sum())
+    work.update_faces(keep)
+    keep = work.unique_faces()
+    actions["removed_duplicate"] = int((~keep).sum())
+    work.update_faces(keep)
+    work.remove_unreferenced_vertices()
+
+    parts = list(work.split(only_watertight=False)) if len(work.faces) else []
+    if not parts:
+        parts = [work]
+    biggest = max(float(max(p.extents)) for p in parts)
+    bodies, dust, meshfix = [], 0, 0
+    for p in parts:
+        # specks a thousand times smaller than the model are scanner or export noise, not a part of it
+        if len(parts) > 1 and (len(p.faces) < 4 or float(max(p.extents)) < biggest * 0.001):
+            dust += 1
+            continue
+        q, used = fix_body(p)
+        meshfix += 1 if used else 0
+        bodies.append(q)
+    if not bodies:
+        bodies = [work]
+    actions["removed_dust"] = dust
+    actions["rebuilt_bodies"] = meshfix
+    return (bodies[0] if len(bodies) == 1 else trimesh.util.concatenate(bodies)), actions
+
+
 def main(argv):
     if len(argv) < 3:
         out({"ok": False, "error": "usage"})
@@ -90,38 +127,12 @@ def main(argv):
         if loaded.is_empty or len(loaded.faces) == 0:
             out({"ok": False, "error": "empty"})
         m = trimesh.Trimesh(vertices=np.asarray(loaded.vertices), faces=np.asarray(loaded.faces), process=False)
-        actions = {}
-
         # an STL repeats every corner per triangle: weld first, or every edge looks open
         welded = m.copy()
         welded.merge_vertices()
         before = describe(welded)
 
-        work = welded
-        keep = work.nondegenerate_faces()
-        actions["removed_degenerate"] = int((~keep).sum())
-        work.update_faces(keep)
-        keep = work.unique_faces()
-        actions["removed_duplicate"] = int((~keep).sum())
-        work.update_faces(keep)
-        work.remove_unreferenced_vertices()
-
-        parts = list(work.split(only_watertight=False)) if len(work.faces) else []
-        if not parts:
-            parts = [work]
-        biggest = max(float(max(p.extents)) for p in parts)
-        bodies, dust, meshfix = [], 0, 0
-        for p in parts:
-            # specks a thousand times smaller than the model are scanner or export noise, not a part of it
-            if len(parts) > 1 and (len(p.faces) < 4 or float(max(p.extents)) < biggest * 0.001):
-                dust += 1
-                continue
-            q, used = fix_body(p)
-            meshfix += 1 if used else 0
-            bodies.append(q)
-        actions["removed_dust"] = dust
-        actions["rebuilt_bodies"] = meshfix
-        result = bodies[0] if len(bodies) == 1 else trimesh.util.concatenate(bodies)
+        result, actions = mend(welded)
         after = describe(result)
         actions["closed_edges"] = max(0, before["open_edges"] - after["open_edges"])
         actions["fixed_normals"] = bool(before["flipped_normals"] and not after["flipped_normals"])
