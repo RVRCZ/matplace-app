@@ -1,7 +1,7 @@
 @extends('layouts.app', ['title' => __('farm.order.title', ['name' => $order->modelFile?->original_name]).' · matplace', 'noindex' => true])
 
 @php
-    $keys = ['farm.stage.checking', 'farm.stage.orienting', 'farm.stage.slicing', 'farm.order.supports_yes', 'farm.order.supports_no',
+    $keys = ['farm.stage.checking', 'farm.stage.loading', 'farm.stage.repairing', 'farm.stage.orienting', 'farm.stage.placing', 'farm.stage.slicing', 'farm.stage_step', 'farm.order.supports_yes', 'farm.order.supports_no',
         'farm.order.low_filament', 'farm.order.starts_now', 'farm.order.goes_to_queue', 'farm.order.no_colors', 'farm.order.paying', 'farm.order.pay',
         'farm.order.queue_ahead', 'farm.order.queue_start', 'farm.order.queue_starting', 'farm.order.queue_finish', 'farm.order.blocked_plate', 'farm.order.blocked_offline',
         'farm.order.blocked_approval', 'farm.order.cancel_confirm', 'farm.order.b_time', 'farm.order.b_material', 'farm.order.b_fixed', 'farm.order.b_min',
@@ -49,6 +49,10 @@
                 <div class="flex items-center justify-between text-sm">
                     <span id="farm-status" class="font-semibold text-slate-700" role="status"></span>
                     <span id="farm-spinner" class="hidden h-4 w-4 animate-spin rounded-full border-2 border-action border-t-transparent"></span>
+                </div>
+                <div id="farm-progress" class="mt-2 hidden">
+                    <div class="h-1.5 overflow-hidden rounded-full bg-slate-100"><div id="farm-progress-bar" class="h-full rounded-full bg-action transition-all duration-500" style="width:0%"></div></div>
+                    <p id="farm-progress-step" class="mt-1 text-xs text-slate-500"></p>
                 </div>
                 <p id="farm-number" class="mt-1 hidden text-xs text-slate-500"></p>
                 <p id="farm-printer" class="mt-1 hidden text-xs text-slate-500"></p>

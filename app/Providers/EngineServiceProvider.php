@@ -17,6 +17,7 @@ use App\Engines\Converter\FreeCadConverter;
 use App\Engines\Converter\OcpCadConverter;
 use App\Engines\Converter\PythonMeshConverter;
 use App\Engines\Converter\ThreeMfConverter;
+use App\Engines\Farm\CachedPrintPreparer;
 use App\Engines\Farm\PhpPrintPreparer;
 use App\Engines\Farm\PythonPrintPreparer;
 use App\Engines\Generator\FakeGenerator;
@@ -38,6 +39,7 @@ use App\Engines\Search\PrintablesSearch;
 use App\Engines\Slicer\FakeSlicer;
 use App\Engines\Slicer\OrcaSlicer;
 use App\Engines\Vision\VisionDescriber;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 
 /** Binds engine contracts to implementations chosen in config/engines.php. */
@@ -75,7 +77,7 @@ class EngineServiceProvider extends ServiceProvider
         $this->app->singleton(PrintPreparer::class, function ($app) {
             $python = $app->make(PythonTool::class);
             if (config('engines.repair') === 'trimesh' && $python->available()) {
-                return new PythonPrintPreparer($python);
+                return new CachedPrintPreparer(new PythonPrintPreparer($python), Storage::disk(config('farm.disk'))->path('prepared'));
             }
 
             return new PhpPrintPreparer;

@@ -14,7 +14,7 @@ const UNIT_MM: Record<string, number> = { mm: 1, cm: 10, in: 25.4, m: 1000 };
 const clampScale = (v: number, max: number) => Math.max(0.25, Math.min(max || 4, v));
 
 interface FarmState {
-    token: string; number: string | null; status: string; status_text: string; stage: string | null; error: string | null; error_text: string | null;
+    token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
     unit: string; unit_guess: { unit: string; confident: boolean } | null;
@@ -217,6 +217,13 @@ export function bootFarmOrder(): void {
         const s = state;
         const working = s.status === 'uploaded';
         $('farm-status')!.textContent = working && s.stage ? tr(`farm.stage.${s.stage}`) : s.status_text;
+        // what is happening right now, as a step of the whole preparation
+        const step = working && s.stage_step ? s.stage_step : 0;
+        show($('farm-progress'), step > 0);
+        if (step > 0) {
+            ($('farm-progress-bar') as HTMLElement).style.width = `${Math.round(((step - 0.5) / (s.stage_total || 5)) * 100)}%`;
+            $('farm-progress-step')!.textContent = tr('farm.stage_step', { n: step, total: s.stage_total || 5 });
+        }
         show($('farm-spinner'), working || s.status === 'printing');
         const num = $('farm-number')!; num.textContent = s.number ? `${s.number}${s.color ? ` · ${s.color.name}` : ''}` : ''; show(num, !!s.number);
         const pr = $('farm-printer'); if (pr) { pr.textContent = s.printer ? tr('farm.order.printer', { name: s.printer.name, bed: s.printer.bed }) : ''; show(pr, !!s.printer); }

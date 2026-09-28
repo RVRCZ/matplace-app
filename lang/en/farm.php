@@ -108,7 +108,8 @@ return [
         'new' => 'New print',
     ],
 
-    'stage' => ['checking' => 'Checking and turning the model…', 'orienting' => 'Turning the model…', 'slicing' => 'Preparing the print and the price…'],
+    'stage' => ['checking' => 'Checking the model…', 'loading' => 'Loading the model…', 'repairing' => 'Repairing the mesh, large models take a few minutes…', 'orienting' => 'Looking for the best orientation…', 'placing' => 'Placing the model on the plate…', 'slicing' => 'Slicing into layers and working out the time and the price…'],
+    'stage_step' => 'step :n of :total',
 
     'status' => [
         'uploaded' => 'Being prepared', 'sliced' => 'Ready to order', 'paid' => 'Paid', 'queued' => 'In the queue',

@@ -108,7 +108,8 @@ return [
         'new' => 'Nueva impresión',
     ],
 
-    'stage' => ['checking' => 'Revisando y orientando el modelo…', 'orienting' => 'Orientando el modelo…', 'slicing' => 'Preparando la impresión y el precio…'],
+    'stage' => ['checking' => 'Revisando el modelo…', 'loading' => 'Cargando el modelo…', 'repairing' => 'Reparando la malla, en modelos grandes tarda unos minutos…', 'orienting' => 'Buscando la mejor orientación…', 'placing' => 'Colocando el modelo en la placa…', 'slicing' => 'Cortando en capas y calculando el tiempo y el precio…'],
+    'stage_step' => 'paso :n de :total',
 
     'status' => [
         'uploaded' => 'En preparación', 'sliced' => 'Listo para pedir', 'paid' => 'Pagado', 'queued' => 'En cola',

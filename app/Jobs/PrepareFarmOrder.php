@@ -20,6 +20,7 @@ use App\Models\FarmOrder;
 use App\Models\ModelFile;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -40,6 +41,12 @@ class PrepareFarmOrder implements ShouldQueue
     public int $timeout = 900;
 
     public function __construct(public readonly int $orderId) {}
+
+    /** Several workers: two recalculations of one order never write its files at the same time. */
+    public function middleware(): array
+    {
+        return [(new WithoutOverlapping('farm-order-'.$this->orderId))->releaseAfter(5)->expireAfter($this->timeout + 60)];
+    }
 
     public function handle(PrintPreparer $preparer, Slicer $slicer, FarmSettings $settings, OrderService $orders, OrderFlow $flow): void
     {
@@ -73,9 +80,11 @@ class PrepareFarmOrder implements ShouldQueue
             $order->update(['stage' => 'checking']);
             $stlRel = $order->dir().'/print.stl';
             File::ensureDirectoryExists(dirname($disk->path($stlRel)));
+            @unlink($disk->path($stlRel).'.stage');
             // a test object is built closed, on Z = 0, the way it must be printed: nothing to repair or turn
             $mesh = $order->isTest() ? (new PhpPrintPreparer)->prepare($file->absoluteStlPath(), $disk->path($stlRel), 1.0, $bed)
                 : $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale * (float) ($order->scale ?: 1), $bed, $file->builtForPrinting());
+            @unlink($disk->path($order->dir().'/print.stl.stage'));   // the tool's running commentary ends with it
             $piece = $mesh;
             $margin = 2 * (float) $settings->get('bed_margin_mm');
             $usable = new Dimensions($bed->x - $margin, $bed->y - $margin, $bed->z);

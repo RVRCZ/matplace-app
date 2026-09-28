@@ -27,6 +27,15 @@ def fail(msg):
     out({"ok": False, "error": str(msg)})
 
 
+def stage(dst, name):
+    """Tell the order page what is going on: one word in <dst>.stage, read while the customer waits."""
+    try:
+        with open(dst + ".stage", "w", encoding="utf-8") as f:
+            f.write(name)
+    except OSError:
+        pass
+
+
 def open_edges(m):
     """Edges that belong to one face only (hole rims) and edges shared by more than two faces."""
     import numpy as np
@@ -147,6 +156,7 @@ def rate(m, down, cos_limit, bed):
 def prepare(src, dst, unit_scale, bed, overhang_deg, keep_pose=False):
     import numpy as np
     import trimesh
+    stage(dst, "loading")
     m = trimesh.load(src, force="mesh", process=False)
     if isinstance(m, trimesh.Scene):
         geoms = list(m.geometry.values())
@@ -165,6 +175,7 @@ def prepare(src, dst, unit_scale, bed, overhang_deg, keep_pose=False):
     holes, joints = open_edges(m)
     repaired, method = False, None
     if not was_watertight:
+        stage(dst, "repairing")
         fixed, method = repair(m)
         if fixed is not None:
             m, repaired = fixed, True
@@ -172,6 +183,7 @@ def prepare(src, dst, unit_scale, bed, overhang_deg, keep_pose=False):
         m.invert()
 
     # orientation
+    stage(dst, "placing" if keep_pose else "orienting")
     cos_limit = math.cos(math.radians(overhang_deg))
     start = np.array([0.0, 0.0, -1.0])
     s0, over0, base0, _ = rate(m, start, cos_limit, bed)
@@ -198,6 +210,7 @@ def prepare(src, dst, unit_scale, bed, overhang_deg, keep_pose=False):
         m.apply_transform(spin)
         rot = spin @ rot
         spun = True
+    stage(dst, "placing")
     lo, hi = m.bounds
     m.apply_translation([-(lo[0] + hi[0]) / 2, -(lo[1] + hi[1]) / 2, -lo[2]])
     m.export(dst, file_type="stl")

@@ -108,7 +108,8 @@ return [
         'new' => 'Nový tisk',
     ],
 
-    'stage' => ['checking' => 'Kontroluji a natáčím model…', 'orienting' => 'Natáčím model…', 'slicing' => 'Připravuji tisk a počítám cenu…'],
+    'stage' => ['checking' => 'Kontroluji model…', 'loading' => 'Načítám model…', 'repairing' => 'Opravuji síť modelu, u velkých modelů to trvá i pár minut…', 'orienting' => 'Hledám nejlepší natočení…', 'placing' => 'Pokládám model na podložku…', 'slicing' => 'Řežu model na vrstvy a počítám čas a cenu…'],
+    'stage_step' => 'krok :n z :total',
 
     'status' => [
         'uploaded' => 'Připravuje se', 'sliced' => 'Připraveno k objednání', 'paid' => 'Zaplaceno', 'queued' => 'Ve frontě',

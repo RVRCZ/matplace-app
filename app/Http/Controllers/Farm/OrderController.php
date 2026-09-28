@@ -138,6 +138,21 @@ class OrderController extends Controller
     }
 
     /** Polled by the order page. */
+    /** What the customer watches while the order is being prepared, in the order it happens. */
+    private const STAGES = ['loading', 'repairing', 'orienting', 'placing', 'slicing'];
+
+    /** While the model is being checked, the preparing tool says what it is doing right now (farm_tool.py). */
+    private function stageOf(FarmOrder $order): ?string
+    {
+        if ($order->stage !== 'checking') {
+            return $order->stage;
+        }
+        $file = Storage::disk(config('farm.disk'))->path($order->dir().'/print.stl.stage');
+        $now = is_file($file) ? trim((string) @file_get_contents($file)) : '';
+
+        return in_array($now, self::STAGES, true) ? $now : 'loading';
+    }
+
     public function status(Request $request, FarmOrder $order): JsonResponse
     {
         $this->authorizeOrder($request, $order);
@@ -289,7 +304,9 @@ class OrderController extends Controller
             'number' => $order->number,
             'status' => $order->status,
             'status_text' => __('farm.status.'.$order->status),
-            'stage' => $order->stage,
+            'stage' => $stage = $this->stageOf($order),
+            'stage_step' => $stage ? (array_search($stage, self::STAGES, true) ?: 0) + 1 : null,
+            'stage_total' => count(self::STAGES),
             'error' => $order->error,
             'error_text' => $order->error ? __('farm.error.'.$order->error, $this->errorData($check, (string) $order->error)) : null,
             'quality' => $order->quality,
