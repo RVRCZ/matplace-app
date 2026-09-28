@@ -133,6 +133,34 @@ final class OrderService
         return $order;
     }
 
+    /** PLA, PLA+ and silk PLA hold together in one print; PLA and PETG do not. */
+    public static function family(?FarmMaterial $m): string
+    {
+        return preg_match('/^[A-Za-z]+/', (string) $m?->code, $x) ? strtoupper($x[0]) : '';
+    }
+
+    /**
+     * The colours a raised text can be printed in next to the colour of the plate: other spools of the same machine
+     * and of the same family of plastic, with something left on them.
+     *
+     * @return Collection<int, FarmPrinterSlot>
+     */
+    public function secondColors(FarmOrder $order, FarmPrinterSlot $main): Collection
+    {
+        if ($order->colorChangeMm() === null) {
+            return collect();
+        }
+        $main->loadMissing('color.material');
+
+        return FarmPrinterSlot::with('color.material')
+            ->where('farm_printer_id', $main->farm_printer_id)->where('id', '!=', $main->id)
+            ->where('enabled', true)->whereNotNull('farm_color_id')
+            ->whereHas('color', fn ($q) => $q->where('enabled', true))
+            ->get()
+            ->filter(fn (FarmPrinterSlot $s) => $s->color->id !== $main->color?->id && self::family($s->color->material) === self::family($main->color?->material) && $s->availableGrams() > 30)
+            ->values();
+    }
+
     /**
      * Colours on offer before an order exists: every enabled colour loaded in an enabled slot of an enabled, online
      * printer that takes this quality; one entry per colour (a machine ready to start first, then the smaller plate).

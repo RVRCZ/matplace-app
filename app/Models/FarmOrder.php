@@ -54,7 +54,7 @@ class FarmOrder extends Model
 
     protected $fillable = [
         'quality_rating', 'quality_note', 'timelapse_path', 'kind', 'farm_printer_material_id', 'test_params',
-        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'supports', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
+        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'supports', 'second_slot_id', 'second_color_id', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
         'farm_material_id', 'farm_color_id', 'farm_printer_id', 'farm_printer_slot_id', 'delivery', 'shipping_address', 'note',
         'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'rest_gcode_path', 'slice_params', 'slice_result', 'est_minutes',
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
@@ -103,6 +103,37 @@ class FarmOrder extends Model
     public function slot(): BelongsTo
     {
         return $this->belongsTo(FarmPrinterSlot::class, 'farm_printer_slot_id');
+    }
+
+    public function secondSlot(): BelongsTo
+    {
+        return $this->belongsTo(FarmPrinterSlot::class, 'second_slot_id');
+    }
+
+    public function secondColor(): BelongsTo
+    {
+        return $this->belongsTo(FarmColor::class, 'second_color_id');
+    }
+
+    /**
+     * The height (mm, as printed) where a raised text starts, for models of our tools that are a plate with a raised
+     * motif; null for everything else. Tool models are never turned by the farm, so the height only follows the size.
+     */
+    public function colorChangeMm(): ?float
+    {
+        $file = $this->modelFile;
+        $z = $file && $file->builtForPrinting() ? ($file->tool_params['color_change_mm'] ?? null) : null;
+
+        return $z ? round((float) $z * (float) ($this->unit_scale ?: 1) * (float) ($this->scale ?: 1), 3) : null;
+    }
+
+    /** @return array{slot:int, z:float}|null what the G-code copy for the printer has to switch to, and where */
+    public function colorChange(): ?array
+    {
+        $z = $this->colorChangeMm();
+        $second = $this->second_slot_id ? $this->secondSlot : null;
+
+        return $z && $second && $second->id !== $this->farm_printer_slot_id ? ['slot' => (int) $second->slot, 'z' => $z] : null;
     }
 
     /** The tuning row (printer × kind, or printer × spool) a test print was made for. */

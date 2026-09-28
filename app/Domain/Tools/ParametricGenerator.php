@@ -348,6 +348,10 @@ final class ParametricGenerator
             $clean['artwork'] = 'file:'.$uuid;
         }
 
+        if (isset($built['meta']['notes']['color_change_mm'])) {
+            // a plate with a raised text or motif: from this height up the print farm can switch to a second colour
+            $clean['color_change_mm'] = (float) $built['meta']['notes']['color_change_mm'];
+        }
         if (isset($built['meta']['notes']['parts'])) {
             $clean['parts'] = array_values((array) $built['meta']['notes']['parts']);   // which separately printed parts this design really has
         }

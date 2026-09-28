@@ -64,7 +64,7 @@ class AgentController extends Controller
         abort_unless($job->printer->farm_agent_id === $this->agent($request)->id && $job->isActive(), 404);
         $source = $job->order->absoluteGcodePath($job->plate);
         abort_unless($source && is_file($source), 404);
-        $path = GcodeSlot::fileFor($source, $job->slot, PrintProfile::tempsFor($job->order));
+        $path = GcodeSlot::fileFor($source, $job->slot, PrintProfile::tempsFor($job->order), $job->order->colorChange());
 
         return response()->download($path, $job->remote_filename ?: 'print.gcode', [
             'Content-Type' => 'text/x.gcode', 'X-Content-Sha256' => hash_file('sha256', $path),

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Domain\Farm\GcodeSlot;
 use App\Engines\Gcode\SupportLines;
 use App\Engines\Mesh\StlFile;
 use PHPUnit\Framework\TestCase;
@@ -71,5 +72,25 @@ class SupportLinesTest extends TestCase
         $this->assertEqualsWithDelta([140.0, 137.5, 11.5], $hi, 0.001);
         @unlink($in);
         @unlink($out);
+    }
+
+    /** A sign 3 mm thick with a raised text: the printer switches to the second spool at the first layer of the text. */
+    public function test_the_second_colour_starts_with_the_first_layer_above_the_plate(): void
+    {
+        $layer = fn (int $n, float $z, float $h = 0.2) => ";LAYER_CHANGE\n;Z:{$z}\n;HEIGHT:{$h}\n; BEFORE_LAYER_CHANGE\nG1 Z{$z}\n; AFTER_LAYER_CHANGE {$n} @ {$z}mm\n;TYPE:Outer wall\nG1 X10 Y10 E1\n";
+        $gcode = "G9111 bedTemp=55 extruderTemp=220\nM117\nT2 ; slot chosen by matplace farm\n";
+        foreach ([2.6, 2.8, 3.0, 3.2, 3.4] as $n => $z) {
+            $gcode .= $layer($n + 13, $z);
+        }
+        $out = GcodeSlot::secondColor($gcode, ['slot' => 1, 'z' => 3.0]);
+        $this->assertSame(1, substr_count($out, 'second colour by matplace farm'));
+        $this->assertStringContainsString("; AFTER_LAYER_CHANGE 16 @ 3.2mm\nT1 ; second colour by matplace farm\n;TYPE:Outer wall", $out);
+        $this->assertSame($gcode, str_replace("T1 ; second colour by matplace farm\n", '', $out), 'nothing else is touched');
+
+        // layers that do not end on the top of the plate: the layer cut above the plate is the first one of the text
+        $odd = "M117\n".$layer(10, 2.8, 0.28).$layer(11, 3.08, 0.28).$layer(12, 3.36, 0.28);
+        $this->assertStringContainsString("; AFTER_LAYER_CHANGE 12 @ 3.36mm\nT3 ;", GcodeSlot::secondColor($odd, ['slot' => 3, 'z' => 3.0]));
+        // a model lower than the change keeps its single colour
+        $this->assertSame($odd, GcodeSlot::secondColor($odd, ['slot' => 3, 'z' => 9.0]));
     }
 }

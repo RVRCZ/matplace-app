@@ -186,6 +186,7 @@ class OrderController extends Controller
         $this->authorizeOrder($request, $order);
         $data = $request->validate([
             'slot' => ['required', 'integer'],
+            'second_slot' => ['nullable', 'integer'],
             'delivery' => ['required', 'string', 'max:10'],
             'terms' => ['accepted'],
             'expected_total' => ['required', 'numeric'],
@@ -200,7 +201,7 @@ class OrderController extends Controller
         ], ['terms.accepted' => __('farm.refuse.terms')]);
 
         try {
-            $flow->pay($order, FarmPrinterSlot::findOrFail($data['slot']), $data['delivery'], $data['address'] ?? null, true, $request->ip(), (float) $data['expected_total'], $data['note'] ?? null);
+            $flow->pay($order, FarmPrinterSlot::findOrFail($data['slot']), $data['delivery'], $data['address'] ?? null, true, $request->ip(), (float) $data['expected_total'], $data['note'] ?? null, isset($data['second_slot']) ? (int) $data['second_slot'] : null);
         } catch (InsufficientCredit $e) {
             return response()->json(['error' => 'credit', 'message' => __('farm.refuse.credit', ['missing' => number_format($e->missing(), 0, ',', ' ')]), 'missing' => $e->missing(), 'topup_url' => route('account.credit', ['need' => ceil($e->missing()), 'back' => $order->token])], 402);
         } catch (FarmRefusal $e) {
@@ -293,6 +294,8 @@ class OrderController extends Controller
                 'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'photo' => $r['color']->photoUrl(),
                 'enough' => $r['enough'], 'price' => $price = $this->orders->priceFor($order, $r['printer'], 'pickup', $r['color']->material), 'total' => $price['total'],
                 'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
+                // a plate with a raised text: the colours the text can have next to this colour of the plate
+                'second' => $this->orders->secondColors($order, $r['slot'])->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'photo' => $s->color->photoUrl()])->all(),
                 // the time, the weight and the price on the page were computed for this colour's machine and kind
                 'sliced' => $r['printer']->id === $order->farm_printer_id && $r['color']->material->id === $order->farm_material_id
                     && ($order->farm_color_id === null || $order->farm_color_id === $r['color']->id),
@@ -330,6 +333,8 @@ class OrderController extends Controller
             'orientation_changed' => (bool) ($order->orientation['changed'] ?? false),
             'supports' => $order->supports_used,
             'supports_mode' => $order->supports ?: 'auto',
+            'color_change_mm' => $order->colorChangeMm(),
+            'second_color' => $order->second_color_id && $order->secondColor ? ['name' => $order->secondColor->displayName(), 'hex' => $order->secondColor->hex] : null,
             'minutes' => $order->est_minutes,
             'grams' => $order->est_grams,
             'meters' => $order->est_meters,
