@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\TimelapseFrames;
 use App\Domain\Farm\TimelapseGcode;
 use App\Jobs\BuildFarmTimelapse;
 use App\Models\FarmAgent;
@@ -154,12 +155,31 @@ GCODE;
         $this->assertMatchesRegularExpression('/Video: h264.*\b720x720\b/', $info, 'a square Short');
     }
 
+    public function test_pictures_that_caught_the_head_printing_are_left_out(): void
+    {
+        $dir = sys_get_temp_dir().'/mp_strays_'.uniqid();
+        mkdir($dir);
+        $paths = [];
+        for ($i = 0; $i < 30; $i++) {
+            $path = sprintf('%s/%03d.jpg', $dir, $i);
+            // the head over the object on three pictures, parked (outside this picture) on the rest
+            file_put_contents($path, $this->picture($i * 3, in_array($i, [5, 17, 18], true)));
+            $paths[] = $path;
+        }
+        $this->assertSame([5, 17, 18], TimelapseFrames::strays($paths));
+        array_map('unlink', $paths);
+        rmdir($dir);
+    }
+
     /** A 1280×720 camera picture with a bar of the given height: something that grows. */
-    private function picture(int $height): string
+    private function picture(int $height, bool $head = false): string
     {
         $im = imagecreatetruecolor(1280, 720);
         imagefill($im, 0, 0, imagecolorallocate($im, 40, 40, 40));
         imagefilledrectangle($im, 560, 600 - $height, 720, 600, imagecolorallocate($im, 201, 71, 20));
+        if ($head) {
+            imagefilledrectangle($im, 480, 0, 800, 380, imagecolorallocate($im, 235, 235, 235));
+        }
         ob_start();
         imagejpeg($im, null, 80);
 

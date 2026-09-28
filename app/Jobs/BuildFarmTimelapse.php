@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Domain\Farm\TimelapseFrames;
 use App\Domain\YouTube\FarmVideos;
 use App\Models\FarmOrder;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -99,6 +100,12 @@ class BuildFarmTimelapse implements ShouldQueue
         $layer = $jpgs('frames_layer');
         if ($layer->count() < 10) {
             return [$timed, self::FRAME_SECONDS];
+        }
+        // pictures where the agent caught the head printing instead of parked
+        $strays = TimelapseFrames::strays($layer->map(fn ($f) => $disk->path($f))->all());
+        if ($strays) {
+            Log::info('Farm time-lapse: stray layer pictures left out', ['order' => $order->id, 'count' => count($strays), 'of' => $layer->count()]);
+            $layer = $layer->forget($strays)->values();
         }
         $after = (float) basename((string) $layer->last(), '.jpg');
         $end = $timed->last(fn ($f) => (float) basename($f, '.jpg') > $after);
