@@ -47,7 +47,8 @@ CARDS = {
     "calc": ("Two copies of the same small boat side by side on a printer build plate, same size and pose. The left one is a computer wireframe: only thin glowing blue lines of a polygon mesh, see-through, no surface. The right one is the finished print in solid grey plastic.", []),
     "repair": ("A computer monitor showing a grey 3D model of a classical bust, with holes in the mesh and flipped patches highlighted in red. In front of the monitor the same bust printed flawlessly in grey plastic. The printed bust is intact, nothing is broken.", []),
     "check": ("A grey printed machine bracket with a round bore and four mounting holes. A digital caliper measures the bore. Clean, technical look.", []),
-    "mold": ("A casting mould printed in grey, made of two rectangular block halves standing open side by side. Each half has half of a lion head cavity in its flat inner face, three small ball-shaped alignment keys on that face, and a funnel opening at one end for pouring. A cream coloured cast lion head lies in front.", []),
+    "mold": ("The objects are the two halves of a printed casting mould lying open with their flat inner faces up, and the chess pawn that is cast in it. Each half holds one half of the pawn-shaped hollow and half of the pouring funnel at its end. One half carries three small half-ball keys that stand out of its face, the other half has three matching round dimples at the same places. Show the halves in grey plastic and the pawn as a cream coloured resin cast standing in front of them. The hollow in the mould has exactly the shape and the size of the pawn. Keep the viewpoint of the render, looking down from above, so that the hollows, the three keys and the three dimples are clearly seen. Count them in the render and keep them where they are: one half has three small half balls standing up from its face, the other half has three round holes, drawn dark in the render. The holes stay holes: dark, sunk into the face. The half with the half balls has no holes and no thin pins: only three low round domes, like halves of a marble. Add nothing of your own. The pawn stands to the right of the mould, not in front of it.",
+             [("@mold", {"wall": 8, "keys": True, "funnel": True}, "all", "print", "grey"), ("@pawn", {}, "all", "print", "white")]),
     "figure": ("A grey printed bust of a curly-haired man in a hoodie on a round pedestal. A short name is engraved on the front of the pedestal. A printed photograph of the same man stands beside it.", []),
     "relief": ("Two versions of the same portrait of a smiling child. Left: a thin white lithophane plate with a narrow frame, lit from behind, the picture glowing in warm tones. Right: the same portrait as a grey printed relief plate, unlit.", []),
     "organizer": ("The object is a grey printed drawer insert: one piece with a regular grid of equal compartments. Show it lying in an open desk drawer, holding pens, paper clips and a cable, seen from above at an angle.",
@@ -92,6 +93,8 @@ CARDS = {
                  [("lightbox", {"shape": "round", "width": 160, "depth": 35, "artwork_path": "@mountains", "font": DEJAVU}, "use", "use", "dark")]),
 }
 
+# how high the camera of the render stands (the default looks from the front above)
+HEIGHT = {"mold": 1.5}
 COLOURS = {"grey": (0.62, 0.64, 0.68), "black": (0.22, 0.22, 0.24), "white": (0.92, 0.92, 0.9), "green": (0.45, 0.62, 0.45), "pink": (0.93, 0.62, 0.68), "dark": (0.3, 0.31, 0.34)}
 
 
@@ -145,7 +148,65 @@ def drawings():
     return paths
 
 
+def pawn():
+    """A chess pawn, 60 mm tall: what the mould on the card is made for."""
+    import manifold3d as M
+    import numpy as np
+    stl = os.path.join(WORK, "model_pawn.stl")
+    profile = [(0, 0), (15, 0), (15, 3), (13, 5), (12, 8), (8, 12), (6, 22), (5.2, 34), (9, 36), (9, 38), (5.5, 40)]
+    import math
+    profile += [(9.5 * math.cos(t), 49 + 9.5 * math.sin(t)) for t in np.linspace(-1.1, math.pi / 2, 24)]
+    profile[-1] = (0, 58.5)
+    solid = M.Manifold.revolve(M.CrossSection([profile]), 96)
+    mesh = solid.to_mesh()
+    import trimesh
+    trimesh.Trimesh(vertices=np.asarray(mesh.vert_properties)[:, :3], faces=np.asarray(mesh.tri_verts), process=True).export(stl)
+    return stl
+
+
+def dimples(stl):
+    """
+    The sockets of the keys are taken out of the mould's STL into <stl>.dark.stl, which the render paints dark:
+    in a plain shaded picture a dimple and a bump look the same, and the picture must show which half has which.
+    """
+    import numpy as np
+    import trimesh
+    m = trimesh.load(stl, process=True)
+    up = m.face_normals[:, 2] > 0.999
+    zs = np.round(m.triangles_center[up][:, 2], 2)
+    levels, index = np.unique(zs, return_inverse=True)
+    face = float(levels[np.argmax(np.bincount(index, weights=m.area_faces[up]))])      # the parting face: the largest flat top
+    lo, hi = m.bounds
+    c = m.triangles_center
+    n = m.face_normals
+    outside = (np.abs(c[:, 0] - lo[0]) < 0.01) | (np.abs(c[:, 0] - hi[0]) < 0.01) | (np.abs(c[:, 1] - lo[1]) < 0.01) | (np.abs(c[:, 1] - hi[1]) < 0.01) | (c[:, 2] < 0.01)
+    flat = (n[:, 2] > 0.999) & (np.abs(c[:, 2] - face) < 0.01)
+    inner = np.where(~outside & ~flat)[0]
+    keep = np.zeros(len(m.faces), dtype=bool)
+    keep[inner] = True
+    adjacency = m.face_adjacency[keep[m.face_adjacency].all(axis=1)]
+    dark = np.zeros(len(m.faces), dtype=bool)
+    for group in trimesh.graph.connected_components(adjacency, nodes=inner):
+        top = m.vertices[m.faces[group]][:, :, 2].max()
+        if top <= face + 0.01 and m.area_faces[group].sum() < 400:              # below the face and small: a socket
+            dark[group] = True
+    if not dark.any():
+        raise RuntimeError("mold: no sockets found")
+    trimesh.Trimesh(vertices=m.vertices, faces=m.faces[dark], process=False).export(stl + ".dark.stl")
+    trimesh.Trimesh(vertices=m.vertices, faces=m.faces[~dark], process=False).export(stl)
+
+
 def build(kind, params, part, view, art):
+    if kind == "@pawn":
+        return pawn()
+    if kind == "@mold":
+        stl = os.path.join(WORK, "model_mold.stl")
+        r = subprocess.run([sys.executable, os.path.join(ENGINE, "mold_tool.py"), pawn(), stl, json.dumps(params)], capture_output=True, text=True, cwd=ENGINE)
+        out = json.loads((r.stdout.strip().splitlines() or ["{}"])[-1])
+        if not out.get("ok") or not out.get("keys"):
+            raise RuntimeError("mold: %s" % out)
+        dimples(stl)
+        return stl
     params = dict(params)
     if params.get("artwork_path") in art:
         params["artwork_path"] = art[params["artwork_path"]]
@@ -157,7 +218,7 @@ def build(kind, params, part, view, art):
     return stl
 
 
-def render(models, png, size=(1200, 800)):
+def render(models, png, size=(1200, 800), height=0.62):
     """All models side by side on a light floor, shaded, seen from the front above (VTK, off screen)."""
     import vtk
     ren = vtk.vtkRenderer()
@@ -188,6 +249,20 @@ def render(models, png, size=(1200, 800)):
         p.SetDiffuse(0.75)
         p.SetSpecular(0.08)
         ren.AddActor(actor)
+        if os.path.isfile(stl + ".dark.stl"):
+            extra = vtk.vtkSTLReader()
+            extra.SetFileName(stl + ".dark.stl")
+            shifted = vtk.vtkTransformPolyDataFilter()
+            shifted.SetTransform(move)
+            shifted.SetInputConnection(extra.GetOutputPort())
+            shade = vtk.vtkPolyDataMapper()
+            shade.SetInputConnection(shifted.GetOutputPort())
+            hollow = vtk.vtkActor()
+            hollow.SetMapper(shade)
+            hollow.GetProperty().SetColor(0.12, 0.12, 0.14)
+            hollow.GetProperty().SetAmbient(0.6)
+            hollow.GetProperty().SetDiffuse(0.3)
+            ren.AddActor(hollow)
         x += (b[1] - b[0]) * 1.18 + 6
         top = max(top, b[5] - b[4])
     win = vtk.vtkRenderWindow()
@@ -200,7 +275,7 @@ def render(models, png, size=(1200, 800)):
     fx, fy, fz = cam.GetFocalPoint()
     dist = cam.GetDistance()
     cam.SetViewUp(0, 0, 1)
-    cam.SetPosition(fx + dist * 0.35, fy - dist * 0.8, fz + dist * 0.62)
+    cam.SetPosition(fx + dist * 0.35, fy - dist * 0.8, fz + dist * height)
     ren.ResetCamera()
     cam.Zoom(1.25)
     ren.ResetCameraClippingRange()
@@ -284,7 +359,7 @@ def main(argv):
         try:
             if models:
                 png = os.path.join(WORK, key + "-render.png")
-                render([(build(kind, params, part, view, art), colour) for kind, params, part, view, colour in models], png)
+                render([(build(kind, params, part, view, art), colour) for kind, params, part, view, colour in models], png, height=HEIGHT.get(key, 0.62))
             if "--renders" in flags:
                 print(key, "render" if png else "scene only")
                 continue
