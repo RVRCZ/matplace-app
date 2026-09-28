@@ -111,6 +111,17 @@ class YouTubeController extends Controller
         return back()->with('status', 'Video je zamítnuté a smazané z YouTube.');
     }
 
+    public function replace(FarmVideo $video): RedirectResponse
+    {
+        try {
+            $this->videos->replace($video);
+        } catch (YouTubeError $e) {
+            return back()->with('error', 'Nahrazení se nepovedlo: '.$e->getMessage());
+        }
+
+        return back()->with('status', 'Stará verze je z YouTube smazaná, nová se nahrává.');
+    }
+
     public function retry(FarmVideo $video): RedirectResponse
     {
         $this->videos->retry($video);

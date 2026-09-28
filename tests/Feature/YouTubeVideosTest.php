@@ -124,6 +124,11 @@ class YouTubeVideosTest extends TestCase
         Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable') && $r['status']['privacyStatus'] === 'private');
         $this->assertStringContainsString('Časosběr 3D tisku', $video->title);
 
+        // built again before approval: the private copy is deleted and the new file uploaded
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/replace")->assertRedirect()->assertSessionHas('status');
+        Http::assertSent(fn (HttpRequest $r) => $r->method() === 'DELETE' && str_contains($r->url(), 'id=vid123'));
+        $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->refresh()->status);
+
         // the admin page lists it; publishing uses the edited title
         $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Zveřejnit na YouTube');
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza ve spirále', 'description' => 'Popis'])->assertRedirect();
@@ -131,6 +136,9 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->status);
         $this->assertSame('Váza ve spirále', $video->title);
         Http::assertSent(fn (HttpRequest $r) => $r->method() === 'PUT' && str_contains($r->url(), 'youtube/v3/videos?part=snippet,status') && $r['status']['privacyStatus'] === 'public');
+
+        // rebuilt videos replace the private copy (only before publishing)
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/replace")->assertRedirect()->assertSessionHas('error');
 
         // the customer sees the link, then takes the consent back → deleted on YouTube
         $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('watch?v=vid123', false);

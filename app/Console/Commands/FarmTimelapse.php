@@ -31,7 +31,7 @@ class FarmTimelapse extends Command
         }
         $this->info('time-lapse: '.$order->timelapse_path.' | Short: '.($order->timelapse_short_path ?: '-'));
         if ($order->video()->whereNotNull('youtube_id')->exists()) {
-            $this->warn('The video on YouTube is the old one: reject it in /admin/youtube and upload again if the new one should go there.');
+            $this->warn('The video on YouTube is the old one: /admin/youtube -> "Nahradit novou verzí" puts the new one there.');
         }
 
         return self::SUCCESS;

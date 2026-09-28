@@ -117,6 +117,19 @@ class FarmVideos
         $video->update(['status' => FarmVideo::STATUS_REJECTED, 'youtube_id' => null, 'published_at' => null, 'decided_by' => $adminId, 'decided_at' => now()]);
     }
 
+    /** The videos were built again (farm:timelapse): the private copy on YouTube goes, the new file goes up. */
+    public function replace(FarmVideo $video): void
+    {
+        if ($video->status !== FarmVideo::STATUS_UPLOADED) {
+            throw new YouTubeError('not_replaceable', 'Only a video waiting for approval can be replaced.');
+        }
+        if ($video->youtube_id) {
+            $this->youtube->delete($video->youtube_id);
+        }
+        $video->update(['status' => FarmVideo::STATUS_QUEUED, 'youtube_id' => null, 'uploaded_at' => null, 'error' => null]);
+        UploadFarmVideo::dispatch($video->id);
+    }
+
     /** Failed, or stuck in `uploading` after a crash: try again. */
     public function retry(FarmVideo $video): void
     {

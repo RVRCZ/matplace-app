@@ -56,6 +56,9 @@
                 </form>
             @endif
             <div class="mt-2 flex flex-wrap gap-2">
+                @if($v->status === 'uploaded')
+                    <form method="post" action="{{ route('admin.youtube.replace', $v) }}" onsubmit="return confirm('Smazat soukromou verzi z YouTube a nahrát aktuální video?')">@csrf<button class="btn-quiet text-sm" title="po přestavění videa (php artisan farm:timelapse)">Nahradit novou verzí</button></form>
+                @endif
                 @if(in_array($v->status, ['failed', 'uploading', 'queued'], true))
                     <form method="post" action="{{ route('admin.youtube.retry', $v) }}">@csrf<button class="btn-quiet text-sm">Nahrát znovu</button></form>
                 @endif
