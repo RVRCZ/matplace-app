@@ -4,10 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Domain\Generation\GenerationService;
 use App\Domain\Generation\QuotaExceeded;
+use App\Engines\Vision\VisionDescriber;
 use App\Http\Controllers\Controller;
 use App\Models\GenerationRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /** Rough 3D model from a photo (after /api/describe) or from text. Free, limited per day by count. */
 class GenerationController extends Controller
@@ -39,18 +43,20 @@ class GenerationController extends Controller
         try {
             if ($request->hasFile('image')) {
                 // every photo is stored and moderated; one rejected side rejects the whole request
-                $disk = \Illuminate\Support\Facades\Storage::disk('local');
+                $disk = Storage::disk('local');
                 $stored = [];
                 foreach (['front' => 'image', 'left' => 'image_left', 'back' => 'image_back', 'right' => 'image_right'] as $view => $field) {
                     if (! $request->hasFile($field)) {
                         continue;
                     }
-                    $rel = 'photos/figures/'.\Illuminate\Support\Str::uuid().'.'.(strtolower($request->file($field)->getClientOriginalExtension()) ?: 'jpg');
+                    $rel = 'photos/figures/'.Str::uuid().'.'.(strtolower($request->file($field)->getClientOriginalExtension()) ?: 'jpg');
                     $disk->put($rel, file_get_contents($request->file($field)->getRealPath()));
                     $stored[$view] = $rel;
-                    $check = app(\App\Engines\Vision\VisionDescriber::class)->moderate($disk->path($rel));
+                    $check = app(VisionDescriber::class)->moderate($disk->path($rel), $view);
                     if (! $check['ok']) {
                         $disk->delete(array_values($stored));
+                        // the reason is the only trace of why a visitor could not go on
+                        Log::info('figure photo rejected', ['view' => $view, 'subject' => $check['subject'], 'reason' => $check['reason'], 'kind' => $data['kind'] ?? null]);
 
                         return response()->json(['error' => 'photo_rejected', 'reason' => $check['reason'], 'view' => $view], 422);
                     }

@@ -381,7 +381,7 @@
     "figure.generating": "Creando el modelo, tarda un minuto…",
     "figure.done": "Listo, abriendo el cálculo…",
     "figure.failed": "No ha funcionado. Pruebe otra foto: un sujeto, fondo claro.",
-    "figure.rejected": "No podemos usar esta foto. Pruebe otra.",
+    "figure.rejected": "No podemos usar esta foto. La hemos quitado, elija otra.",
     "figure.limit": "El límite de hoy (:n) está agotado. Con cuenta tiene :m modelos al día.",
     "figure.global_limit": "Hoy ya hemos generado el máximo de modelos. Pruebe mañana.",
     "figure.need_photo": "Primero elija una foto.",
@@ -1137,7 +1137,7 @@
     "figure.view.left": "Izquierda",
     "figure.view.back": "Atrás",
     "figure.view.right": "Derecha",
-    "figure.rejected_view": "No podemos usar la foto «:view». Pruebe otra o déjela fuera.",
+    "figure.rejected_view": "No podemos usar la foto «:view», por eso la hemos quitado. Puede continuar sin ella o elegir otra.",
     "mold.title": "Molde para colar",
     "mold.lead": "Molde imprimible de dos piezas: el modelo se recorta de una caja, el orificio de colada atraviesa el fondo y unas bolas de guía alinean las mitades. Para cera, jabón, chocolate, yeso o resina.",
     "mold.wall": "Grosor de pared",
@@ -1444,5 +1444,6 @@
     "param.flag.cable_slot": "Con ranura para el cable",
     "param.flag.cable_slot.hint": "Una ranura desde el borde superior en la pared derecha. El cable entra con su conector y la tapa cierra encima.",
     "param.f.cable_d": "Ancho de la ranura del cable",
-    "param.error.box_cable_too_big": "La ranura del cable no cabe en la pared. Redúzcala o agrande la caja."
+    "param.error.box_cable_too_big": "La ranura del cable no cabe en la pared. Redúzcala o agrande la caja.",
+    "figure.remove": "Quitar la foto"
 }

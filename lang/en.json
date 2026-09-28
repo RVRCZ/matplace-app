@@ -381,7 +381,7 @@
     "figure.generating": "Creating the model, about a minute…",
     "figure.done": "Done, opening the calculation…",
     "figure.failed": "That did not work. Try another photo: one subject, plain background.",
-    "figure.rejected": "We cannot use this photo. Try another one.",
+    "figure.rejected": "We cannot use this photo. We removed it, please choose another one.",
     "figure.limit": "Today’s limit (:n) is used up. With an account you get :m models a day.",
     "figure.global_limit": "We have generated the maximum number of models today. Try tomorrow.",
     "figure.need_photo": "Choose a photo first.",
@@ -1137,7 +1137,7 @@
     "figure.view.left": "Left",
     "figure.view.back": "Back",
     "figure.view.right": "Right",
-    "figure.rejected_view": "We cannot use the \":view\" photo. Try another one or leave it out.",
+    "figure.rejected_view": "We cannot use the \":view\" photo, so we removed it. You can go on without it or choose another one.",
     "mold.title": "Casting mold",
     "mold.lead": "A two-part printable mold: the model is cut out of a box, the pouring hole goes through the bottom, ball keys keep the halves aligned. For wax, soap, chocolate, plaster or resin.",
     "mold.wall": "Wall thickness",
@@ -1444,5 +1444,6 @@
     "param.flag.cable_slot": "With a slot for the cable",
     "param.flag.cable_slot.hint": "A slot from the top rim in the right wall. The cable goes in with its plug on and the lid closes over it.",
     "param.f.cable_d": "Width of the cable slot",
-    "param.error.box_cable_too_big": "The cable slot does not fit in the wall. Make it smaller or the box bigger."
+    "param.error.box_cable_too_big": "The cable slot does not fit in the wall. Make it smaller or the box bigger.",
+    "figure.remove": "Remove the photo"
 }

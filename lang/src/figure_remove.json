@@ -1,0 +1,17 @@
+{
+    "figure.remove": [
+        "Odebrat fotku",
+        "Remove the photo",
+        "Quitar la foto"
+    ],
+    "figure.rejected": [
+        "Tuto fotku použít nemůžeme. Odebrali jsme ji, vyberte prosím jinou.",
+        "We cannot use this photo. We removed it, please choose another one.",
+        "No podemos usar esta foto. La hemos quitado, elija otra."
+    ],
+    "figure.rejected_view": [
+        "Fotku „:view“ použít nemůžeme, proto jsme ji odebrali. Můžete pokračovat bez ní, nebo vybrat jinou.",
+        "We cannot use the \":view\" photo, so we removed it. You can go on without it or choose another one.",
+        "No podemos usar la foto «:view», por eso la hemos quitado. Puede continuar sin ella o elegir otra."
+    ]
+}
