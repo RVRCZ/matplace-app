@@ -87,6 +87,15 @@ def candidates(m, limit=24):
     return uniq
 
 
+def shadow_points(m):
+    """Points that decide the model's shadow: the corners of its convex hull (the shadow of the hull is the shadow of
+    the model). A scan has half a million vertices, its hull a few thousand; trimesh caches the hull."""
+    try:
+        return m.convex_hull.vertices
+    except Exception:  # noqa: BLE001 - degenerate hull (flat sheet)
+        return m.vertices
+
+
 def footprint(vertices, down):
     """Area of the convex hull of the model's shadow on the plate (monotone chain, no scipy needed)."""
     import numpy as np
@@ -126,7 +135,7 @@ def rate(m, down, cos_limit, bed):
     diag = float(np.linalg.norm(m.extents)) or 1.0
     # how much of the footprint really touches the plate: a part standing on a small foot with supports beneath the
     # rest prints badly and may topple (a cartridge clip, 23 Sep 2026, stood on 69 mm2 of a 1600 mm2 footprint)
-    contact = base / (footprint(m.vertices, down) or 1.0)
+    contact = base / (footprint(shadow_points(m), down) or 1.0)
     score = overhang / total - 0.5 * min(base / total, 0.3) + 0.15 * height / diag - 0.3 * min(contact, 0.5)
     if base / total < 0.002:
         score += 0.2                                         # nothing flat to stand on
