@@ -48,11 +48,20 @@ export function bootFigure(): void {
         input.onchange = () => { mark(view, false); calm(); msg.textContent = ''; show(input); };
         const remove = part<HTMLButtonElement>('data-view-remove', view);
         if (remove) remove.onclick = () => { clear(view); mark(view, false); calm(); msg.textContent = ''; };
-        show(input); // the browser may keep the chosen files over a reload
     });
+    // The browser may keep the chosen files over a reload or a step back (photos taken straight by the camera
+    // exist nowhere else). What the form would send must be on the screen, with its remove button.
+    const sync = () => {
+        inputs.forEach(show);
+        if (inputs.some((i) => i.dataset.view !== 'front' && i.files?.length)) ($('figure-views') as HTMLDetailsElement).open = true;
+    };
+    sync();
+    window.addEventListener('pageshow', sync);
+    window.addEventListener('load', sync);
 
     form.onsubmit = async (e) => {
         e.preventDefault();
+        sync();
         const file = photo.files?.[0];
         if (!file) { msg.textContent = t('figure.need_photo'); return; }
         if (!($('figure-consent') as HTMLInputElement).checked) { msg.textContent = t('figure.need_consent'); return; }
