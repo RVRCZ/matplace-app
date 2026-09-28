@@ -47,12 +47,13 @@
     @include('calculator.search_results')
 
     {{-- three ways in, each one a real action --}}
-    <nav aria-label="{{ __('tools.intents') }}" class="mt-10 grid divide-y divide-line border-y border-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-        @foreach([
+    {{-- a spare part is an inquiry to printers: only with the marketplace --}}
+    <nav aria-label="{{ __('tools.intents') }}" class="mt-10 grid divide-y divide-line border-y border-line {{ $mp ? 'sm:grid-cols-3' : 'sm:grid-cols-2' }} sm:divide-x sm:divide-y-0">
+        @foreach(array_filter([
             ['file', 'M7 3h7l5 5v13H7zM14 3v5h5', '#', 'file'],
             ['idea', 'M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z', '#', 'idea'],
-            ['spare', 'M14.7 6.3a4 4 0 00-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z', route('tools.spare'), null],
-        ] as [$k, $path, $href, $tile])
+            $mp ? ['spare', 'M14.7 6.3a4 4 0 00-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z', route('tools.spare'), null] : null,
+        ]) as [$k, $path, $href, $tile])
             <a href="{{ $href }}" @if($tile) data-tile="{{ $tile }}" @endif @if($k === 'file') onclick="document.getElementById('file-input').click();return false;" @endif
                class="group flex items-start gap-3 px-1 py-5 sm:px-5 sm:first:pl-0 sm:last:pr-0">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-action-soft text-action-dark" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $path }}"/></svg></span>

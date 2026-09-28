@@ -44,6 +44,12 @@ FROM_RENDER = (
 
 # key → (scene, [(kind, params, part, view, colour)…] models to render; empty = a scene without a model)
 CARDS = {
+    # the picture of the homepage (public/img/home/hero-*): what the tools make, together on one desk
+    "hero": ("The render shows exactly four things made with a 3D printer, from left to right: a vase with a spiral twist, a drawer organizer with six compartments, a phone stand, a pendant in the shape of a handwritten name with a heart. Show exactly these four, each one once, nothing repeated and nothing added, standing close together as one group in the front of the desk, photographed from close by so that the group fills the whole width of the picture. The vase is warm orange and holds a few dried flowers. The organizer is dark navy blue and holds pens and paper clips. The phone stand is light grey and stands empty: there is no phone and no second stand anywhere in the picture. The pendant is pink, lies flat in front with a metal key ring in its eyelet, and reads Emma in joined handwriting followed by a heart, exactly as rendered. Keep the viewpoint of the render, looking slightly down on the desk.",
+             [("vase", {"style": "twist", "profile": "neck", "height": 170, "top_d": 62, "bottom_d": 54, "ribs": 20, "flute": 20, "twist": 200}, "all", "use", "orange"),
+              ("organizer", {"width": 150, "depth": 100, "height": 40, "rows": 2, "cols": 3}, "all", "use", "navy"),
+              ("phone_stand", {"style": "desk"}, "all", "use", "grey"),
+              ("sign", {"style": "name", "typeface": "script", "text_height": 28, "thickness": 5, "relief": 2, "keyring": True, "font": SCRIPT, "lines": ["Emma ♥"]}, "all", "use", "pink")]),
     "calc": ("Two copies of the same small boat side by side on a printer build plate, same size and pose. The left one is a computer wireframe: only thin glowing blue lines of a polygon mesh, see-through, no surface. The right one is the finished print in solid grey plastic.", []),
     "repair": ("A computer monitor showing a grey 3D model of a classical bust, with holes in the mesh and flipped patches highlighted in red. In front of the monitor the same bust printed flawlessly in grey plastic. The printed bust is intact, nothing is broken.", []),
     "check": ("A grey printed machine bracket with a round bore and four mounting holes. A digital caliper measures the bore. Clean, technical look.", []),
@@ -94,8 +100,8 @@ CARDS = {
 }
 
 # how high the camera of the render stands (the default looks from the front above)
-HEIGHT = {"mold": 1.5}
-COLOURS = {"grey": (0.62, 0.64, 0.68), "black": (0.22, 0.22, 0.24), "white": (0.92, 0.92, 0.9), "green": (0.45, 0.62, 0.45), "pink": (0.93, 0.62, 0.68), "dark": (0.3, 0.31, 0.34)}
+HEIGHT = {"mold": 1.5, "hero": 0.7}
+COLOURS = {"orange": (0.85, 0.42, 0.2), "navy": (0.16, 0.2, 0.36), "grey": (0.62, 0.64, 0.68), "black": (0.22, 0.22, 0.24), "white": (0.92, 0.92, 0.9), "green": (0.45, 0.62, 0.45), "pink": (0.93, 0.62, 0.68), "dark": (0.3, 0.31, 0.34)}
 
 
 def env_key():
@@ -317,6 +323,13 @@ def generate(key, prompt, image):
     raise RuntimeError(last)
 
 
+def files_of(key):
+    """What a picture is saved as, and where it is published."""
+    if key == "hero":
+        return ["hero-640.webp", "hero-1024.webp", "hero-1536.webp", "hero-1024.jpg"], os.path.join(ROOT, "public", "img", "home")
+    return [key + "-800.jpg", key + "-800.webp", key + "-480.webp"], PUBLIC
+
+
 def save_sizes(raw, folder, key):
     """3:2, cut from the middle when the model answered in another shape; 800 px jpg + webp and 480 px webp."""
     from PIL import Image
@@ -328,6 +341,11 @@ def save_sizes(raw, folder, key):
     else:
         nh = int(w / 1.5)
         im = im.crop((0, (h - nh) // 2, w, (h - nh) // 2 + nh))
+    if key == "hero":
+        for width in (640, 1024, 1536):
+            im.resize((width, width * 2 // 3), Image.LANCZOS).save(os.path.join(folder, "hero-%d.webp" % width), quality=84, method=6)
+        im.resize((1024, 683), Image.LANCZOS).save(os.path.join(folder, "hero-1024.jpg"), quality=86, optimize=True, progressive=True)
+        return
     big = im.resize((800, 533), Image.LANCZOS)
     big.save(os.path.join(folder, key + "-800.jpg"), quality=86, optimize=True, progressive=True)
     big.save(os.path.join(folder, key + "-800.webp"), quality=82, method=6)
@@ -341,11 +359,12 @@ def main(argv):
     if "--publish" in flags:
         import shutil
         for key in args:
-            for suffix in ("-800.jpg", "-800.webp", "-480.webp"):
-                shutil.copyfile(os.path.join(WORK, key + suffix), os.path.join(PUBLIC, key + suffix))
+            names, target = files_of(key)
+            for name in names:
+                shutil.copyfile(os.path.join(WORK, name), os.path.join(target, name))
             print("published", key)
         return
-    keys = args or [k for k in CARDS if not os.path.isfile(os.path.join(WORK, k + "-800.jpg"))]
+    keys = args or [k for k in CARDS if not os.path.isfile(os.path.join(WORK, files_of(k)[0][0]))]
     unknown = [k for k in keys if k not in CARDS]
     if unknown:
         sys.exit("unknown: " + ", ".join(unknown))
