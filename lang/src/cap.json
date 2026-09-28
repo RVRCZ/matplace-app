@@ -1,0 +1,147 @@
+{
+    "tools.cap.title": [
+        "Víčko, zátka, krytka",
+        "Lid, plug, cover",
+        "Tapa, tapón, cubierta"
+    ],
+    "tools.cap.hint": [
+        "Chybí víčko od lahve, zátka do trubky nebo krytka profilu? Změříte otvor a je na míru.",
+        "A bottle cap, a pipe plug or a profile cover gone missing? Measure the opening and it fits.",
+        "¿Falta la tapa de una botella, el tapón de un tubo o la cubierta de un perfil? Mida la abertura y encaja."
+    ],
+    "tools.cap.action": [
+        "Navrhnout víčko",
+        "Design a lid",
+        "Diseñar una tapa"
+    ],
+    "param.cap.lead": [
+        "Vyberte, jak má díl držet, a zadejte, co jste naměřili. Vůli přidáme sami, takže zadávejte skutečný rozměr hrdla nebo otvoru.",
+        "Choose how the part should hold and type what you measured. We add the clearance, so give the real size of the neck or the opening.",
+        "Elija cómo debe sujetar la pieza y escriba lo que midió. La holgura la añadimos nosotros; indique la medida real del cuello o la abertura."
+    ],
+    "param.cap.size": [
+        "Naměřené rozměry",
+        "What you measured",
+        "Lo que midió"
+    ],
+    "param.cap.tip": [
+        "Tiskne se rovnou stranou na podložce, otvorem nahoru, bez podpěr. Zátky a víčka na pružení tiskněte z PETG. Výtisk není určen pro styk s potravinami bez vložky; závit si nejdřív vyzkoušejte na jednom kusu.",
+        "Prints with the flat side on the bed, opening up, without supports. Print plugs and springy caps in PETG. The print is not meant to touch food without a liner; try a thread on one piece first.",
+        "Se imprime con el lado plano sobre la placa, la abertura hacia arriba y sin soportes. Imprima tapones y tapas elásticas en PETG. No es apta para alimentos sin forro; pruebe la rosca primero con una pieza."
+    ],
+    "param.c.cap.style": [
+        "Jak má držet",
+        "How it holds",
+        "Cómo sujeta"
+    ],
+    "param.o.cap.push": [
+        "Nasadí se na hrdlo",
+        "Pushes over the rim",
+        "Se encaja sobre el borde"
+    ],
+    "param.o.cap.plug": [
+        "Zasune se do otvoru",
+        "Plugs into the opening",
+        "Se introduce en la abertura"
+    ],
+    "param.o.cap.thread": [
+        "Našroubuje se na závit",
+        "Screws onto a thread",
+        "Se enrosca"
+    ],
+    "param.c.cap.shape": [
+        "Tvar",
+        "Shape",
+        "Forma"
+    ],
+    "param.o.cap.round": [
+        "Kulatý",
+        "Round",
+        "Redonda"
+    ],
+    "param.o.cap.rect": [
+        "Obdélníkový",
+        "Rectangular",
+        "Rectangular"
+    ],
+    "param.f.size_a": [
+        "Průměr / šířka",
+        "Diameter / width",
+        "Diámetro / ancho"
+    ],
+    "param.f.size_b": [
+        "Druhý rozměr",
+        "Second dimension",
+        "Segunda medida"
+    ],
+    "param.f.top": [
+        "Tloušťka dna víčka",
+        "Top thickness",
+        "Grosor de la tapa"
+    ],
+    "param.f.pitch": [
+        "Stoupání závitu",
+        "Thread pitch",
+        "Paso de rosca"
+    ],
+    "param.flag.grip": [
+        "Vroubkování po obvodu",
+        "Knurled rim",
+        "Borde moleteado"
+    ],
+    "param.flag.grip.hint": [
+        "Drobné výstupky, za které víčko lépe uchopíte.",
+        "Small bumps that make the cap easier to hold.",
+        "Pequeños salientes para agarrar mejor la tapa."
+    ],
+    "param.preset.pet": [
+        "PET lahev (28 mm)",
+        "PET bottle (28 mm)",
+        "Botella PET (28 mm)"
+    ],
+    "param.preset.pipe": [
+        "Zátka do trubky",
+        "Pipe plug",
+        "Tapón de tubo"
+    ],
+    "param.preset.profile": [
+        "Krytka profilu",
+        "Profile end cap",
+        "Tapa de perfil"
+    ],
+    "param.preset.jar": [
+        "Víčko na sklenici",
+        "Jar lid",
+        "Tapa de tarro"
+    ],
+    "param.fits": [
+        "Pasuje na rozměr",
+        "Fits the size",
+        "Encaja en la medida"
+    ],
+    "param.warn.thread_try": [
+        "Závit je hladká šroubovice s vůlí; u neznámého závitu vytiskněte nejdřív jeden kus na zkoušku.",
+        "The thread is a smooth helix with clearance; for an unknown thread print one piece to try first.",
+        "La rosca es una hélice suave con holgura; con una rosca desconocida imprima primero una pieza de prueba."
+    ],
+    "param.error.cap_thread_round": [
+        "Závit umíme jen na kulatém víčku. Zvolte kulatý tvar.",
+        "A thread works on a round cap only. Choose the round shape.",
+        "La rosca solo funciona en una tapa redonda. Elija la forma redonda."
+    ],
+    "param.error.cap_too_small": [
+        "Tak malý díl by se nedal vytisknout pevně. Zvětšete rozměr.",
+        "A part this small would not print sturdy. Make it bigger.",
+        "Una pieza tan pequeña no saldría resistente. Auméntela."
+    ],
+    "param.error.cap_thread_short": [
+        "Závit potřebuje aspoň jednu otáčku: výška aspoň :n mm.",
+        "A thread needs at least one turn: height at least :n mm.",
+        "La rosca necesita al menos una vuelta: altura mínima :n mm."
+    ],
+    "calc.tip.cap": [
+        "Tiskne se rovnou stranou na podložce, otvorem nahoru, bez podpěr. Na pružné zátky zvolte PETG.",
+        "Prints with the flat side on the bed, opening up, without supports. For springy plugs choose PETG.",
+        "Se imprime con el lado plano sobre la placa, la abertura hacia arriba y sin soportes. Para tapones elásticos elija PETG."
+    ]
+}

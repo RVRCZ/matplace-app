@@ -7,7 +7,7 @@
         'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
         'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
         'color.white', 'color.black', 'color.grey', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
-        'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
+        'param.warn.thread_try', 'param.fits', 'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
     $colors = ['white', 'black', 'grey', 'brown', 'red', 'blue', 'green', 'yellow', 'orange', 'any'];
 @endphp
 
@@ -68,6 +68,15 @@
                             </label>
                         @endforeach
                     </div>
+                    @if($kind !== 'qr' && $texts)
+                        {{-- symbols the typefaces can draw: a click writes one where the cursor is --}}
+                        <div id="param-symbols" class="mt-2 flex flex-wrap items-center gap-1" role="group" aria-label="{{ __('param.symbols') }}">
+                            <span class="mr-1 text-xs text-muted">{{ __('param.symbols') }}</span>
+                            @foreach(['♥', '★', '☺', '♪', '✿', '☀', '☾', '✓', '🐾', '🎂', '🎄', '🎁', '👑', '⚽', '🚀', '🦋', '🐱', '🐶', '🌸'] as $symbol)
+                                <button type="button" data-symbol="{{ $symbol }}" class="h-9 w-9 rounded-lg border border-slate-300 bg-white text-lg leading-none hover:border-action">{{ $symbol }}</button>
+                            @endforeach
+                        </div>
+                    @endif
                     @if($artwork)
                         <div class="mt-3 rounded-xl border border-dashed border-line p-3">
                             <label class="text-sm font-medium text-ink">{{ __('param.artwork') }} <span class="font-normal text-muted">{{ __('param.artwork.hint') }}</span>
@@ -80,7 +89,7 @@
             @endif
 
             @foreach($choices as $key => $options)
-                <fieldset>
+                <fieldset @if(isset($when[$key])) data-when="{{ $when[$key][0] }}={{ implode(',', $when[$key][1]) }}" @endif>
                     <legend class="lbl">{{ __('param.c.'.$kind.'.'.$key) }}</legend>
                     <div class="mt-2 flex flex-wrap gap-2" role="radiogroup">
                         @foreach($options as $i => $o)

@@ -29,6 +29,7 @@ final class ParametricGenerator
         'box' => [
             'inner_w' => [10, 300, 80, 1], 'inner_d' => [10, 300, 50, 1], 'inner_h' => [8, 200, 30, 1],
             'wall' => [1.2, 5, 2, 0.2], 'floor' => [1, 5, 1.6, 0.2], 'clearance' => [0.1, 0.6, 0.25, 0.05], 'radius' => [0, 30, 2.5, 0.5],
+            'cable_d' => [3, 30, 8, 1],
         ],
         'phone_stand' => [
             'width' => [50, 260, 70, 1], 'device' => [7, 20, 12, 1], 'angle' => [35, 80, 65, 1], 'back' => [60, 200, 100, 1], 'thickness' => [3, 8, 5, 0.5], 'radius' => [0, 4, 2, 0.1], 'depth' => [40, 120, 60, 1], 'vent' => [1, 4, 1.5, 0.1],
@@ -53,6 +54,8 @@ final class ParametricGenerator
             'width' => [80, 300, 180, 1], 'depth' => [25, 80, 35, 1], 'wall' => [1.6, 4, 2, 0.2], 'face' => [0.8, 2, 1.2, 0.2], 'margin' => [6, 40, 12, 1],
             'bridge' => [0.8, 3, 1.4, 0.2], 'cable' => [3, 10, 5, 0.5], 'clearance' => [0.1, 0.6, 0.25, 0.05],
         ],
+        'holder' => ['obj_w' => [10, 300, 50, 1], 'obj_d' => [5, 150, 25, 1], 'height' => [15, 150, 60, 1], 'wall' => [2, 6, 3, 0.5], 'clearance' => [0.3, 2, 0.8, 0.1], 'radius' => [0, 4, 1.5, 0.1]],
+        'cap' => ['size_a' => [8, 200, 40, 0.1], 'size_b' => [8, 200, 30, 0.1], 'height' => [4, 60, 12, 1], 'wall' => [1.2, 4, 2, 0.2], 'top' => [1.2, 5, 2, 0.2], 'clearance' => [0.1, 1, 0.3, 0.05], 'pitch' => [1, 6, 3, 0.05]],
         'cutter' => ['width' => [30, 150, 70, 1], 'height' => [10, 30, 18, 1], 'wall' => [0.8, 1.6, 1.0, 0.2], 'flange' => [3, 10, 5, 1], 'flange_t' => [1, 2.5, 1.6, 0.1]],
     ];
 
@@ -60,11 +63,13 @@ final class ParametricGenerator
     public const CHOICES = [
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
-        'sign' => ['style' => ['emboss', 'engrave', 'outline'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono']],
+        'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'logo' => ['mode' => ['relief', 'height', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
-        'lightbox' => ['led' => ['strip8', 'strip10', 'module']],
-        'cutter' => ['edge' => ['sharp', 'straight'], 'typeface' => ['sans', 'serif', 'mono']],
+        'lightbox' => ['shape' => ['rect', 'round'], 'led' => ['strip8', 'strip10', 'module']],
+        'cutter' => ['edge' => ['sharp', 'straight'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'holder' => ['style' => ['cradle', 'pocket', 'hook', 'clip']],
+        'cap' => ['style' => ['push', 'plug', 'thread'], 'shape' => ['round', 'rect', 'hex'], 'head' => ['flat', 'dome']],
     ];
 
     /** kind → text input → [max length, required, default] */
@@ -84,22 +89,25 @@ final class ParametricGenerator
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height'], 'cap' => ['size_a', 'size_b', 'height', 'pitch'],
     ];
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp'];
 
-    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert']];
+    public const FLAGS = ['box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field or flag → [choice key, values it belongs to]; the form hides it for the other choices */
     public const WHEN = [
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
-        'sign' => ['radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline']]],
+        'sign' => ['radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']],
+            'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']]],
+        'holder' => ['obj_d' => ['style', ['cradle', 'pocket', 'hook']]],
+        'cap' => ['size_b' => ['shape', ['rect']], 'pitch' => ['style', ['thread']], 'grip' => ['style', ['push', 'thread']], 'head' => ['style', ['push']]],
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip'];
 
     public const PRESETS = [
         'vase' => [
@@ -107,6 +115,26 @@ final class ParametricGenerator
             'ribs' => ['style' => 'ribs', 'profile' => 'neck', 'height' => 170, 'top_d' => 70, 'bottom_d' => 60, 'ribs' => 18, 'flute' => 16],
             'smooth' => ['style' => 'smooth', 'profile' => 'neck', 'height' => 160, 'top_d' => 70, 'bottom_d' => 58],
             'pot' => ['purpose' => 'pot', 'style' => 'ribs', 'profile' => 'cone', 'height' => 120, 'top_d' => 130, 'bottom_d' => 100, 'ribs' => 16, 'flute' => 10],
+        ],
+        // gifts with a text: the same sign tool, four starting points (the landing page /gifts links to them)
+        'sign' => [
+            'name' => ['style' => 'name', 'typeface' => 'script', 'text_height' => 14, 'thickness' => 3, 'relief' => 1, 'keyring' => true, 'border' => false, 'bevel' => false, 'two_color' => false],
+            'keyring' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 8, 'thickness' => 3, 'relief' => 1, 'margin' => 4, 'radius' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
+            'door' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 22, 'thickness' => 3, 'relief' => 1.4, 'margin' => 8, 'radius' => 8, 'keyring' => false, 'border' => true, 'bevel' => false, 'two_color' => true],
+            'nametag' => ['style' => 'engrave', 'shape' => 'rect', 'text_height' => 10, 'thickness' => 2.4, 'relief' => 0.8, 'margin' => 4, 'keyring' => false, 'border' => false, 'bevel' => true, 'two_color' => false],
+            'ornament' => ['style' => 'outline', 'shape' => 'oval', 'text_height' => 12, 'thickness' => 3, 'relief' => 1.2, 'margin' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
+        ],
+        'cap' => [
+            'pet' => ['style' => 'thread', 'shape' => 'round', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7, 'wall' => 2, 'top' => 2, 'clearance' => 0.3],
+            'pipe' => ['style' => 'plug', 'shape' => 'round', 'size_a' => 40, 'height' => 15, 'wall' => 2, 'top' => 2, 'clearance' => 0.2],
+            'profile' => ['style' => 'plug', 'shape' => 'rect', 'size_a' => 36, 'size_b' => 16, 'height' => 15, 'wall' => 2, 'top' => 2, 'clearance' => 0.2],
+            'jar' => ['style' => 'push', 'shape' => 'round', 'size_a' => 70, 'height' => 14, 'wall' => 2, 'top' => 2, 'clearance' => 0.3],
+        ],
+        'holder' => [
+            'remote' => ['style' => 'cradle', 'obj_w' => 50, 'obj_d' => 22, 'height' => 70],
+            'bottle' => ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90],
+            'headphones' => ['style' => 'hook', 'obj_w' => 35, 'obj_d' => 45, 'height' => 30],
+            'broom' => ['style' => 'clip', 'obj_w' => 24, 'height' => 25],
         ],
         'organizer' => [
             'drawer' => ['width' => 300, 'depth' => 200, 'height' => 45, 'rows' => 2, 'cols' => 4, 'radius' => 4, 'wall' => 1.6, 'floor' => 1.2],
@@ -258,6 +286,9 @@ final class ParametricGenerator
         if (isset(self::TEXTS[$kind]) || in_array($kind, self::ARTWORK, true)) {
             $face = ['serif' => 'DejaVuSerif-Bold.ttf', 'mono' => 'DejaVuSansMono-Bold.ttf'][$clean['typeface'] ?? ''] ?? 'DejaVuSans-Bold.ttf';
             $clean['font'] = base_path('vendor/dompdf/dompdf/lib/fonts/'.$face);
+            if (($clean['typeface'] ?? '') === 'script') {
+                $clean['font'] = base_path('engines/fonts/Pacifico-Regular.ttf');   // handwritten, letters joined (OFL)
+            }
             $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? ''], fn ($l) => $l !== ''));
         }
         if (! empty($clean['artwork'])) {

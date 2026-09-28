@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\Wallet;
 use App\Engines\Mesh\StlFile;
@@ -197,7 +198,60 @@ class FarmOrderFlowTest extends TestCase
         $this->assertSame(10, $order->slice_params['infill_percent']);
     }
 
-    public function test_several_copies_print_on_one_plate_and_too_many_are_refused_with_the_number_that_fits(): void
+    /** Louskacek, 28 Sep 2026: the job sent to the machine was counted as somebody else's print ahead of its own order. */
+    public function test_an_order_whose_job_is_on_the_printer_has_nobody_ahead(): void
+    {
+        $order = $this->order(20);
+        $order->forceFill(['status' => FarmOrder::STATUS_QUEUED, 'est_minutes' => 370])->save();
+        FarmPrintJob::create(['farm_order_id' => $order->id, 'farm_printer_id' => $order->farm_printer_id, 'status' => 'sent', 'plate' => 1, 'progress' => 0]);
+        $order->printer->forceFill(['last_seen_at' => now()])->save();
+
+        $q = app(Dispatcher::class)->estimate($order->refresh(), app(FarmSettings::class));
+        $this->assertSame(0, $q['ahead']);
+        $this->assertSame(0, $q['start_in']);
+        $this->assertGreaterThanOrEqual(370, $q['finish_in']);
+    }
+
+    /** top-single.stl, 28 Sep 2026: a colour changed on the order page was paid for without computing the order again. */
+    public function test_another_colour_on_the_order_page_asks_for_a_recalculation(): void
+    {
+        // the seeder's Kobra 3 Max gets light blue PLA+; the order starts in white on the S1
+        $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
+        $blue = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PLA+'))->where('name', 'světle modrá')->firstOrFail();
+        $max->slots()->where('slot', 0)->update(['farm_color_id' => $blue->id, 'remaining_g' => 1000, 'enabled' => true]);
+        $order = $this->order(20);
+        $this->assertNotSame($max->id, $order->farm_printer_id);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $other = collect($state['colors'])->first(fn ($c) => ! $c['sliced'] && $c['enough']);
+        $this->assertNotNull($other, 'the farm of the test offers more than one colour');
+
+        $after = $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'slot' => $other['slot']])->assertOk()->json();
+        $this->assertSame($other['slot'], $after['slot']);
+        $order->refresh();
+        $this->assertSame($other['slot'], $order->farm_printer_slot_id);
+        $this->assertSame($max->id, $order->farm_printer_id, 'the order moved to the machine that holds the colour');
+        $this->assertSame('PLA+', $order->material->code);
+        $this->assertSame('kobra-3-max-01', $order->slice_params['printer']['key']);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json();
+        $this->assertSame([$other['slot']], collect($state['colors'])->where('sliced', true)->pluck('slot')->all());
+    }
+
+    /** A turtle with joints prints in place: the customer switches the supports off and the slicer is told so. */
+    public function test_the_customer_can_switch_supports_off_and_back(): void
+    {
+        $order = $this->order(20, ['supports' => 'off']);
+        $this->assertSame('off', $order->supports);
+        $this->assertSame('0', $order->slice_params['overrides']['process']['enable_support']);
+
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard'])->assertOk()->assertJsonPath('supports_mode', 'off');
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'supports' => 'auto'])->assertOk()->assertJsonPath('supports_mode', 'auto');
+        $this->assertNotSame('0', $order->refresh()->slice_params['overrides']['process']['enable_support'] ?? null);
+        $this->actingAs($this->user)->get('/farm/orders/'.$order->token.'/repeat')->assertRedirect();
+        $this->actingAs($this->user)->get('/farm?supports=off&lang=cs')->assertOk()->assertSee('Bez podpěr');
+    }
+
+    public function test_several_copies_print_on_one_plate_and_more_than_a_plate_takes_prints_plate_after_plate(): void
     {
         // 4 cubes of 20 mm: a 2 × 2 grid 5 mm apart, one print, one price for all four
         $order = $this->order(20.0, ['copies' => 4]);
@@ -217,18 +271,91 @@ class FarmOrderFlowTest extends TestCase
         $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'copies' => 2])->assertOk()->assertJsonPath('copies', 2);
         $this->assertSame(24, iterator_count(StlFile::triangles($order->refresh()->absolutePrintStlPath())));
 
-        // more than the plate takes: refused with the number that does fit, the customer can lower it
+        // more than the plate takes: full plates one after another, the last one with what is left (4 + 4 + 1)
+        $one = $this->order(100.0);
         $many = $this->order(100.0, ['copies' => 9]);
-        $this->assertSame(FarmOrder::STATUS_FAILED, $many->status);
-        $this->assertSame('too_many_copies', $many->error);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $many->status);
+        $this->assertSame([3, 4, 1], [$many->plates, $many->plate_copies, $many->rest_copies]);
+        $this->assertNotNull($many->rest_gcode_path);
+        $this->assertFileExists($many->absoluteGcodePath(3));
+        $this->assertNotSame($many->absoluteGcodePath(1), $many->absoluteGcodePath(3));
+        $this->assertSame(48, iterator_count(StlFile::triangles($many->absolutePrintStlPath())));                 // the full plate: 4 cubes
+        $this->assertGreaterThan($one->est_minutes * 8, $many->est_minutes, 'two full plates and a single cube');
+        $this->assertLessThan($one->est_minutes * 9.5, $many->est_minutes);
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$many->token}/status")->assertOk()->json();
         $this->assertSame(4, $state['max_copies']);                                     // 250 mm plate minus margins: 2 × 2 cubes of 100 mm
-        $this->assertStringContainsString('4', $state['error_text']);
+        $this->assertSame([4, 4, 1], $state['plate_layout']);
+
+        // the operator finishes plate after plate on the manual printer: the order returns to the queue twice, then it is done
+        FarmPrinter::firstOrFail()->slots()->where('slot', 2)->update(['remaining_g' => 50000]);   // nine big cubes need more than one spool
+        foreach ([20000, 20000, 20000] as $amount) {
+            $this->credit($amount);
+        }
+        $this->pay($many)->assertOk();
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $many->refresh();
+        $this->assertSame(FarmOrder::STATUS_QUEUED, $many->status);
+        foreach ([1, 2, 3] as $plate) {
+            $this->actingAs($admin)->post("/admin/farm/orders/{$many->token}/status", ['to' => FarmOrder::STATUS_PRINTING])->assertRedirect();
+            $this->assertSame($plate, $many->refresh()->latestJob()->plate);                 // the job of this plate, not the first one
+            $this->actingAs($admin)->post("/admin/farm/orders/{$many->token}/status", ['to' => FarmOrder::STATUS_DONE])->assertRedirect();
+            $many->refresh();
+            $this->assertSame($plate, $many->plates_done);
+            $this->assertSame($plate < 3 ? FarmOrder::STATUS_QUEUED : FarmOrder::STATUS_DONE, $many->status, "after plate {$plate}");
+        }
+        $this->assertStringContainsString('plate 2/3', $many->events->pluck('note')->implode(' '));
 
         // the calculator hands its quantity over to the start page
         $file = $this->upload(20.0);
         $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $file, 'material' => 'PLA', 'quantity' => 6])->assertCreated()->json('calculation.token');
         $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()->assertSee('name="copies"', false)->assertSee('value="6"', false);
+    }
+
+    public function test_the_size_and_the_colour_chosen_before_the_order_decide_the_piece_and_the_machine(): void
+    {
+        // the seeder's Kobra 3 Max with light blue PLA+ in slot 1; the S1 holds white
+        $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
+        $blue = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PLA+'))->where('name', 'světle modrá')->firstOrFail();
+        $max->slots()->where('slot', 0)->update(['farm_color_id' => $blue->id, 'remaining_g' => 1000, 'enabled' => true]);
+
+        // half size: a 20 mm cube prints as 10 mm, and the factor travels with the order
+        $half = $this->order(20.0, ['scale' => 0.5]);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $half->status);
+        $this->assertEqualsWithDelta(0.5, $half->scale, 0.001);
+        $this->assertEqualsWithDelta(10.0, $half->check['dims']['x'], 0.01);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$half->token}/status")->assertOk()->json();
+        $this->assertEqualsWithDelta(0.5, $state['scale'], 0.001);
+        $this->assertEqualsWithDelta(20.0, $state['raw_bbox']['x'], 0.01);
+        $this->assertSame('Kobra S1 #1', $state['printer']['name']);
+
+        // a colour chosen up front sends the order to the machine that holds it: blue lives only in the Max
+        $chosen = $this->order(20.0, ['color' => $blue->id]);
+        $this->assertSame($max->id, $chosen->farm_printer_id);
+        $this->assertSame($blue->id, $chosen->farm_color_id);
+        $this->assertNotNull($chosen->farm_printer_slot_id);
+        $this->assertSame('PLA+', $chosen->material->code);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$chosen->token}/status")->assertOk()->json();
+        $this->assertSame($chosen->farm_printer_slot_id, $state['slot']);
+
+        // the start page offers the loaded colours and carries size and copies over from the calculation
+        $file = $this->upload(20.0);
+        $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $file, 'material' => 'PLA', 'quantity' => 3, 'scale' => 1.5])->assertCreated()->json('calculation.token');
+        $page = $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk();
+        $page->assertSee('name="color"', false)->assertSee('name="scale"', false)->assertSee('value="1.5"', false)->assertSee('value="3"', false)->assertSee('light blue');   // test locale is en
+
+        // "print again": the start page with the order's settings; the colour is preselected when it is still loaded
+        $again = $this->actingAs($this->user)->get("/farm/orders/{$chosen->token}/repeat")->assertRedirect();
+        $target = $again->headers->get('Location');
+        $this->assertStringContainsString('file='.$chosen->modelFile->uuid, $target);
+        $this->assertStringContainsString('color='.$blue->id, $target);
+        $this->actingAs($this->user)->get($target)->assertOk()->assertSee('value="'.$blue->id.'" class="sr-only" checked', false);
+        $max->slots()->where('slot', 0)->update(['enabled' => false]);                     // the spool is gone: another colour is offered first, nothing breaks
+        $this->actingAs($this->user)->get($target)->assertOk()->assertDontSee('value="'.$blue->id.'"', false);
+
+        // resizing on the order page is a preset like the others: sliced again at the new size
+        $this->actingAs($this->user)->postJson("/farm/orders/{$half->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'scale' => 2])->assertOk()->assertJsonPath('scale', 2);
+        $this->assertEqualsWithDelta(40.0, $half->refresh()->check['dims']['x'], 0.01);
     }
 
     public function test_model_bigger_than_the_plate_is_refused_with_a_reason(): void

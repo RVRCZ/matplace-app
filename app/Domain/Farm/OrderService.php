@@ -23,8 +23,9 @@ final class OrderService
     /**
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1): FarmOrder
+    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto'): FarmOrder
     {
+        $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! config('farm.open', true)) {
             throw new FarmRefusal('closed');
         }
@@ -51,11 +52,16 @@ final class OrderService
             $guess = ModelValidator::guessUnit($raw, new Dimensions($largest->bed_x, $largest->bed_y, $largest->bed_z));
             $unit = $guess['confident'] ? $guess['unit'] : null;
         }
-        $dims = $raw?->scaled(ModelValidator::UNITS[$unit] ?? 1.0);
+        $dims = $raw?->scaled((ModelValidator::UNITS[$unit] ?? 1.0) * $scale);
         $quality = $this->knownQuality($quality);
         // the model may fit no plate at all: start on the biggest machine that takes this quality and let the check say so
         $fallback = $this->printers()->filter(fn (FarmPrinter $p) => $p->takesQuality($quality))->sortByDesc(fn (FarmPrinter $p) => $p->bedVolume())->first();
         [$printer, $material] = $this->printerAndMaterialFor($dims, $quality) ?? [$fallback, $fallback ? $this->loadedMaterials($fallback)->first() : null];
+        // the customer already chose a colour: the order goes to the machine that holds that spool and takes the model
+        $chosen = $colorId ? $this->offeredColors($quality)->first(fn ($r) => $r['color']->id === $colorId && ($dims === null || $r['printer']->fits($dims))) : null;
+        if ($chosen) {
+            [$printer, $material] = [$chosen['printer'], $chosen['color']->material];
+        }
         if (! $printer || ! $material) {
             throw new FarmRefusal('no_printer');
         }
@@ -68,10 +74,14 @@ final class OrderService
             'stage' => 'checking',
             'quality' => $this->knownQuality($quality),
             'strength' => $this->knownStrength($strength),
+            'supports' => $supports === 'off' ? 'off' : 'auto',
             'copies' => max(1, min(PlateLayout::MAX_COPIES, $copies)),
             'unit_scale' => ModelValidator::UNITS[$unit] ?? 1.0,
+            'scale' => round($scale, 3),
             'farm_material_id' => $material->id,
             'farm_printer_id' => $printer->id,
+            'farm_color_id' => $chosen['color']->id ?? null,
+            'farm_printer_slot_id' => $chosen['slot']->id ?? null,
             'currency' => $this->settings->get('currency'),
         ]);
         $order->events()->create(['to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'user', 'actor_id' => $user->id]);
@@ -81,7 +91,7 @@ final class OrderService
     }
 
     /** Another quality, strength or unit: slice again (counts towards the daily limit, like a new order). */
-    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null): FarmOrder
+    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null, ?int $slotId = null): FarmOrder
     {
         if (! in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED], true) || $order->paid_at !== null) {
             throw new FarmRefusal('locked');
@@ -92,10 +102,21 @@ final class OrderService
         $order->fill([
             'status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'checking', 'error' => null, 'error_detail' => null,
             'quality' => $quality, 'strength' => $this->knownStrength($strength),
+            'supports' => $supports === null ? $order->supports : ($supports === 'off' ? 'off' : 'auto'),
             'copies' => $copies === null ? $order->copies : max(1, min(PlateLayout::MAX_COPIES, $copies)),
+            'scale' => $scale === null ? $order->scale : round(max(0.25, min((float) config('pricing.max_scale', 4), $scale)), 3),
             'unit_scale' => ModelValidator::UNITS[$unit] ?? $order->unit_scale,
             'price' => null, 'price_total' => null,
         ]);
+        // another colour: the order moves to the machine that holds that spool and is sliced and priced for it
+        $chosen = $slotId ? $this->availableColors($order)->first(fn ($r) => $r['slot']->id === $slotId) : null;
+        if ($chosen) {
+            $order->fill([
+                'farm_printer_id' => $chosen['printer']->id, 'farm_material_id' => $chosen['color']->material->id,
+                'farm_color_id' => $chosen['color']->id, 'farm_printer_slot_id' => $chosen['slot']->id,
+            ]);
+            $order->unsetRelation('printer')->unsetRelation('material')->unsetRelation('color');
+        }
         // a machine kept for fine work hands the order back when the customer asks for a coarser quality
         if ($order->printer && ! $order->printer->takesQuality($quality)) {
             $dims = is_array($order->check['piece_dims'] ?? $order->check['dims'] ?? null) ? Dimensions::fromArray($order->check['piece_dims'] ?? $order->check['dims']) : null;
@@ -110,6 +131,28 @@ final class OrderService
         PrepareFarmOrder::dispatch($order->id);
 
         return $order;
+    }
+
+    /**
+     * Colours on offer before an order exists: every enabled colour loaded in an enabled slot of an enabled, online
+     * printer that takes this quality; one entry per colour (a machine ready to start first, then the smaller plate).
+     *
+     * @return Collection<int, array{slot: FarmPrinterSlot, color: FarmColor, printer: FarmPrinter}>
+     */
+    public function offeredColors(string $quality = 'standard'): Collection
+    {
+        $quality = $this->knownQuality($quality);
+
+        return FarmPrinterSlot::with(['color.material', 'printer'])
+            ->where('enabled', true)->whereNotNull('farm_color_id')
+            ->whereHas('printer', fn ($q) => $q->where('enabled', true))
+            ->whereHas('color', fn ($q) => $q->where('enabled', true)->whereHas('material', fn ($m) => $m->where('enabled', true)))
+            ->get()
+            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->takesQuality($quality))
+            ->sortBy(fn (FarmPrinterSlot $s) => [$s->printer->readyForAutoStart() ? 0 : 1, $s->printer->bedVolume(), $s->id])
+            ->unique('farm_color_id')
+            ->map(fn (FarmPrinterSlot $s) => ['slot' => $s, 'color' => $s->color, 'printer' => $s->printer])
+            ->values();
     }
 
     /**

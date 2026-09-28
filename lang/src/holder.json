@@ -1,0 +1,107 @@
+{
+    "tools.holder.title": [
+        "Držák na cokoliv",
+        "A holder for anything",
+        "Un soporte para cualquier cosa"
+    ],
+    "tools.holder.hint": [
+        "Ovladač, lahev, nářadí, koště, sluchátka. Změříte věc, vyberete typ, držák je na míru.",
+        "A remote, a bottle, tools, a broom, headphones. Measure the thing, pick the type, the holder fits.",
+        "Mando, botella, herramientas, escoba, auriculares. Mida el objeto, elija el tipo y el soporte encaja."
+    ],
+    "tools.holder.action": [
+        "Navrhnout držák",
+        "Design a holder",
+        "Diseñar un soporte"
+    ],
+    "param.holder.lead": [
+        "Změřte věc, kterou chcete uklidit, a vyberte, jak ji má držák držet. Vůli kolem věci přidáme sami.",
+        "Measure the thing you want to put away and choose how the holder should hold it. We add the clearance around it.",
+        "Mida el objeto que quiere guardar y elija cómo debe sujetarlo el soporte. La holgura la añadimos nosotros."
+    ],
+    "param.holder.size": [
+        "Rozměry věci",
+        "Size of the thing",
+        "Medidas del objeto"
+    ],
+    "param.holder.tip": [
+        "Tiskne se bez podpěr: kolébka a kapsa nastojato, tak jak visí na zdi, hák a klip naležato na boku. Otvory pro šrouby mají tvar kapky, aby se vytiskly čistě. Na těžší věci a klip zvolte PETG. Šrouby do zdi: 4 mm s hmoždinkou.",
+        "Prints without supports: the cradle and the pocket standing the way they hang on the wall, the hook and the clip lying on their side. Screw holes are teardrop-shaped so they print cleanly. For heavier things and the clip choose PETG. Wall screws: 4 mm with a plug.",
+        "Se imprime sin soportes: la cuna y el bolsillo de pie, tal como cuelgan en la pared; el gancho y el clip tumbados de lado. Los agujeros para tornillos tienen forma de gota para imprimirse limpios. Para objetos pesados y el clip elija PETG. Tornillos de pared: 4 mm con taco."
+    ],
+    "param.c.holder.style": [
+        "Jak má držet",
+        "How it holds",
+        "Cómo sujeta"
+    ],
+    "param.o.holder.cradle": [
+        "Kolébka (vpředu nízká)",
+        "Cradle (low front)",
+        "Cuna (frente bajo)"
+    ],
+    "param.o.holder.pocket": [
+        "Kapsa (uzavřená)",
+        "Pocket (closed)",
+        "Bolsillo (cerrado)"
+    ],
+    "param.o.holder.hook": [
+        "Hák",
+        "Hook",
+        "Gancho"
+    ],
+    "param.o.holder.clip": [
+        "Klip na kulatou násadu",
+        "Clip for a round handle",
+        "Clip para mango redondo"
+    ],
+    "param.f.obj_w": [
+        "Šířka věci (u klipu průměr)",
+        "Width of the thing (diameter for the clip)",
+        "Ancho del objeto (diámetro para el clip)"
+    ],
+    "param.f.obj_d": [
+        "Tloušťka věci",
+        "Thickness of the thing",
+        "Grosor del objeto"
+    ],
+    "param.flag.mount": [
+        "Otvory na šrouby do zdi",
+        "Holes for wall screws",
+        "Agujeros para tornillos de pared"
+    ],
+    "param.flag.mount.hint": [
+        "Bez otvorů se držák lepí oboustrannou páskou; ta unese jen lehké věci.",
+        "Without holes the holder sticks with double-sided tape, which carries light things only.",
+        "Sin agujeros el soporte se pega con cinta de doble cara, que solo aguanta objetos ligeros."
+    ],
+    "param.preset.remote": [
+        "Dálkový ovladač",
+        "Remote control",
+        "Mando a distancia"
+    ],
+    "param.preset.bottle": [
+        "Lahev",
+        "Bottle",
+        "Botella"
+    ],
+    "param.preset.headphones": [
+        "Sluchátka",
+        "Headphones",
+        "Auriculares"
+    ],
+    "param.preset.broom": [
+        "Koště, násada",
+        "Broom, handle",
+        "Escoba, mango"
+    ],
+    "param.error.holder_clip_too_wide": [
+        "Klip je pro násady do :n mm. Na širší věc zvolte kolébku nebo kapsu.",
+        "The clip is for handles up to :n mm. For a wider thing choose the cradle or the pocket.",
+        "El clip es para mangos de hasta :n mm. Para algo más ancho elija la cuna o el bolsillo."
+    ],
+    "calc.tip.holder": [
+        "Držák je v poloze, ve které se tiskne bez podpěr. Na těžší věci a klip zvolte PETG.",
+        "The holder is in the position in which it prints without supports. For heavier things and the clip choose PETG.",
+        "El soporte está en la posición en la que se imprime sin soportes. Para objetos pesados y el clip elija PETG."
+    ]
+}

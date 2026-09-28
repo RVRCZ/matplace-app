@@ -146,6 +146,21 @@ final class OrderFlow
         }
     }
 
+    /**
+     * A plate came off the printer finished. The last plate finishes the order; any other sends it back to the queue
+     * for the next plate (the printer's plate is not clear until an operator says so, as after any print).
+     */
+    public function plateFinished(FarmOrder $order, string $actor, ?int $actorId = null): FarmOrder
+    {
+        $done = min((int) $order->plates, (int) $order->plates_done + 1);
+        $order->forceFill(['plates_done' => $done])->save();
+        if ($done < (int) $order->plates) {
+            return $this->move($order, FarmOrder::STATUS_QUEUED, $actor, $actorId, "plate {$done}/{$order->plates} printed");
+        }
+
+        return $this->move($order, FarmOrder::STATUS_DONE, $actor, $actorId, $order->plates > 1 ? "plate {$done}/{$order->plates} printed" : null);
+    }
+
     /** Measured values after a print (from the agent or typed in by the operator): the calibration data. */
     public function recordActuals(FarmOrder $order, ?int $minutes, ?float $grams, string $source): void
     {

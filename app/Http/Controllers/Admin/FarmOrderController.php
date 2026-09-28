@@ -73,12 +73,14 @@ class FarmOrderController extends Controller
 
     public function gcode(FarmOrder $order): BinaryFileResponse
     {
-        $path = $order->absoluteGcodePath();
+        // the plate that prints next (the last one of several may be a smaller file)
+        $plate = $order->nextPlate();
+        $path = $order->absoluteGcodePath($plate);
         abort_unless($path && is_file($path), 404);
         // the operator sends this file by hand: it must already select the customer's slot
         $path = GcodeSlot::fileFor($path, (int) ($order->slot?->slot ?? 0), PrintProfile::tempsFor($order));
 
-        return response()->download($path, 'matplace-'.($order->number ?: $order->token).'.gcode', ['Content-Type' => 'text/x.gcode']);
+        return response()->download($path, 'matplace-'.($order->number ?: $order->token).($order->plates > 1 ? '-p'.$plate : '').'.gcode', ['Content-Type' => 'text/x.gcode']);
     }
 
     public function snapshot(FarmOrder $order): BinaryFileResponse
@@ -115,7 +117,7 @@ class FarmOrderController extends Controller
         } else {
             if ($data['to'] === FarmOrder::STATUS_PRINTING && ! $order->printJobs()->whereIn('status', FarmPrintJob::ACTIVE)->exists()) {
                 // started by hand: keep a job row so the history and the calibration look the same as with an agent
-                FarmPrintJob::create(['farm_order_id' => $order->id, 'farm_printer_id' => $order->farm_printer_id, 'slot' => (int) ($order->slot?->slot ?? 0), 'status' => FarmPrintJob::STATUS_PRINTING, 'started_at' => now()]);
+                FarmPrintJob::create(['farm_order_id' => $order->id, 'farm_printer_id' => $order->farm_printer_id, 'slot' => (int) ($order->slot?->slot ?? 0), 'plate' => $order->nextPlate(), 'status' => FarmPrintJob::STATUS_PRINTING, 'started_at' => now()]);
                 $order->printer?->update(['bed_clear' => false]);
             }
             if ($data['to'] === FarmOrder::STATUS_DONE) {
@@ -124,7 +126,12 @@ class FarmOrderController extends Controller
             if (! empty($data['tracking'])) {
                 $order->forceFill(['tracking' => $data['tracking']])->save();
             }
-            $this->flow->move($order, $data['to'], 'admin', $request->user()->id, $data['note'] ?? null);
+            if ($data['to'] === FarmOrder::STATUS_DONE && $order->status === FarmOrder::STATUS_PRINTING && $order->plates > 1) {
+                // one plate of several came off: back to the queue for the next one, done only after the last
+                $this->flow->plateFinished($order, 'admin', $request->user()->id);
+            } else {
+                $this->flow->move($order, $data['to'], 'admin', $request->user()->id, $data['note'] ?? null);
+            }
         }
 
         return back()->with('status', __('farm.admin.saved'));

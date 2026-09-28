@@ -21,6 +21,7 @@ use App\Models\FarmOrder;
 use App\Models\ModelFile;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -41,6 +42,12 @@ class PrepareFarmOrder implements ShouldQueue
     public int $timeout = 900;
 
     public function __construct(public readonly int $orderId) {}
+
+    /** Several workers: two recalculations of one order never write its files at the same time. */
+    public function middleware(): array
+    {
+        return [(new WithoutOverlapping('farm-order-'.$this->orderId))->releaseAfter(5)->expireAfter($this->timeout + 60)];
+    }
 
     public function handle(PrintPreparer $preparer, Slicer $slicer, FarmSettings $settings, OrderService $orders, OrderFlow $flow): void
     {
@@ -74,29 +81,34 @@ class PrepareFarmOrder implements ShouldQueue
             $order->update(['stage' => 'checking']);
             $stlRel = $order->dir().'/print.stl';
             File::ensureDirectoryExists(dirname($disk->path($stlRel)));
+            @unlink($disk->path($stlRel).'.stage');
             // a test object is built closed, on Z = 0, the way it must be printed: nothing to repair or turn
             $mesh = $order->isTest() ? (new PhpPrintPreparer)->prepare($file->absoluteStlPath(), $disk->path($stlRel), 1.0, $bed)
-                : $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale, $bed);
+                : $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale * (float) ($order->scale ?: 1), $bed, $file->builtForPrinting());
+            @unlink($disk->path($order->dir().'/print.stl.stage'));   // the tool's running commentary ends with it
             $piece = $mesh;
             $margin = 2 * (float) $settings->get('bed_margin_mm');
             $usable = new Dimensions($bed->x - $margin, $bed->y - $margin, $bed->z);
             $capacity = PlateLayout::capacity($piece->bbox, $usable);
-            if ($order->copies > 1 && ! $order->isTest()) {
-                // several copies on one plate: the oriented piece repeated in a grid, sliced and priced as one print
-                $plateRel = $order->dir().'/plate.stl';
-                $mesh = PlateLayout::replicate($piece, $disk->path($plateRel), $order->copies, $usable);
-                if (! $mesh) {
-                    $order->check = ['ok' => false, 'errors' => [['code' => 'too_many_copies', 'data' => ['max' => $capacity['max'], 'copies' => $order->copies]]], 'warnings' => [], 'dims' => $piece->bbox->toArray(),
-                        'piece_dims' => $piece->bbox->toArray(), 'max_copies' => $capacity['max'], 'mesh' => $piece->toArray(), 'raw_dims' => Dimensions::fromArray((array) $file->bbox)->toArray()];
-                    $order->orientation = $piece->orientation;
-                    $order->print_stl_path = $stlRel;
-                    $order->save();
-                    $flow->fail($order, 'too_many_copies', 'system');
-
-                    return;
+            $plates = 1;
+            $perPlate = $order->copies;
+            $rest = null;
+            if ($order->copies > 1 && ! $order->isTest() && $capacity['max'] >= 1) {
+                // several copies on one plate: the oriented piece repeated in a grid, sliced and priced as one print;
+                // more than a plate takes → full plates one after another, the last one holding what is left
+                if ($order->copies > $capacity['max']) {
+                    $plates = (int) ceil($order->copies / $capacity['max']);
+                    $perPlate = $capacity['max'];
+                    $rest = $order->copies - $perPlate * ($plates - 1);
+                    if ($rest === $perPlate) {
+                        $rest = null;
+                    }
                 }
+                $plateRel = $order->dir().'/plate.stl';
+                $mesh = PlateLayout::replicate($piece, $disk->path($plateRel), $perPlate, $usable) ?? throw new \RuntimeException('Plate layout failed although the capacity allowed it.');
                 $stlRel = $plateRel;
             }
+            $order->fill(['plates' => $plates, 'plates_done' => 0, 'plate_copies' => $perPlate, 'rest_copies' => $rest, 'rest_gcode_path' => null]);
             $verdict = ModelValidator::judge($mesh, $bed, [
                 'min_model_mm' => (float) $settings->get('min_model_mm'),
                 'bed_margin_mm' => (float) $settings->get('bed_margin_mm'),
@@ -139,7 +151,12 @@ class PrepareFarmOrder implements ShouldQueue
                 // fine-nozzle test bent while it was prised off (Kobra S1 #2, 26 Sep 2026)
                 $overrides['process']['brim_type'] = 'no_brim';
             }
-            $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() ? false : null, treeSupports: true))
+            $noSupports = $order->supports === 'off';
+            if ($noSupports) {
+                // the customer knows the model: made to print in place, supports would only weld its joints together
+                $overrides['process']['enable_support'] = '0';
+            }
+            $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() || $noSupports ? false : null, treeSupports: true))
                 ->withFarmProfile($profiles, $overrides);
             $result = $slicer->slice($disk->path($stlRel), $params);
             if (! $result->gcodePath || ! is_file($result->gcodePath)) {
@@ -158,26 +175,44 @@ class PrepareFarmOrder implements ShouldQueue
             if (! $result->supportsUsed || ! SupportLines::extract($disk->path($gcodeRel), $supportsBin)) {
                 @unlink($supportsBin);
             }
+            // the last plate of a multi-plate order holds fewer pieces: its own layout and G-code
+            $restRel = null;
+            $restResult = null;
+            if ($rest !== null) {
+                $restStl = $disk->path($order->dir().'/rest.stl');
+                PlateLayout::replicate($piece, $restStl, $rest, $usable) ?? throw new \RuntimeException('Rest plate layout failed.');
+                $restResult = $slicer->slice($restStl, $params);
+                if (! $restResult->gcodePath || ! is_file($restResult->gcodePath)) {
+                    throw new \RuntimeException('Slicer returned no G-code for the last plate.');
+                }
+                $restRel = $order->dir().'/rest.gcode';
+                File::move($restResult->gcodePath, $disk->path($restRel));
+            }
+            $fullPlates = $rest === null ? $plates : $plates - 1;
+            $sum = fn (float $full, ?float $last) => $full * $fullPlates + ($last ?? 0.0);
 
             // the head parks for the time-lapse after every layer on this machine: that time is printing time too
             $timelapse = $printer->timelapseFor($order);
-            $parking = $timelapse ? TimelapseGcode::extraMinutes((string) File::get($disk->path($gcodeRel)), $timelapse, (float) $printer->bed_x, (float) $printer->bed_y) : 0;
+            $parkingOf = fn (?string $rel) => $timelapse && $rel ? TimelapseGcode::extraMinutes((string) File::get($disk->path($rel)), $timelapse, (float) $printer->bed_x, (float) $printer->bed_y) : 0;
+            $parking = (int) round($sum($parkingOf($gcodeRel), $restRel ? $parkingOf($restRel) : null));
 
             $order->fill([
                 'gcode_path' => $gcodeRel,
                 'gcode_sha256' => hash_file('sha256', $disk->path($gcodeRel)),
+                'rest_gcode_path' => $restRel,
                 'slice_params' => [
                     'engine' => $slicer->name(), 'printer' => ['id' => $printer->id, 'key' => $printer->key, 'model' => $printer->model],
                     'material' => $order->material->code, 'quality' => $quality, 'layer_mm' => $layer, 'strength' => $order->strength, 'copies' => $order->copies,
-                    'infill_percent' => $infill, 'unit_scale' => $order->unit_scale, 'profiles' => $profiles, 'overrides' => $overrides,
+                    'infill_percent' => $infill, 'unit_scale' => $order->unit_scale, 'scale' => (float) $order->scale, 'profiles' => $profiles, 'overrides' => $overrides,
                     'profile_layers' => $profile->layers, 'profile_fingerprint' => $profile->sliceFingerprint(),
                     'profile_hashes' => $this->profileHashes($profiles), 'preparer' => $order->isTest() ? 'php-stl' : $preparer->name(), 'sliced_at' => now()->toIso8601String(),
                     'timelapse_minutes' => $parking,
                 ],
-                'slice_result' => $result->toArray(),
-                'est_minutes' => $result->minutes + $parking,
-                'est_grams' => $result->grams,
-                'est_meters' => $result->meters,
+                'slice_result' => $result->toArray() + ['plates' => $plates, 'plate_copies' => $perPlate, 'rest_copies' => $rest, 'rest' => $restResult?->toArray()],
+                // the whole order: every full plate, plus the last one when it differs
+                'est_minutes' => (int) round($sum($result->minutes, $restResult?->minutes)) + $parking,
+                'est_grams' => round($sum($result->grams, $restResult?->grams), 1),
+                'est_meters' => round($sum((float) ($result->meters ?? 0), $restResult?->meters), 2),
                 'supports_used' => $result->supportsUsed,
             ])->save();
 

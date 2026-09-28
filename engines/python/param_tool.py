@@ -4,7 +4,7 @@ Parametric everyday products as exact watertight solids (manifold3d): no AI, no 
 
   param_tool.py <kind> <out.stl> <params-json> [part] [view]
 
-kind:  organizer | box | phone_stand | cable_holder | vase | logo | stamp | qr   (the last four live in creative_kinds.py)
+kind:  organizer | box | phone_stand | cable_holder | holder | cap | vase | logo | stamp | qr   (the last four live in creative_kinds.py)
 part:  all (default) | body | lid | saucer | handle | stand | imprint   (separate exports of multi-part products)
 view:  print (default, the orientation it should be printed in) | use (how it stands on the desk; for previews)
 
@@ -20,9 +20,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 LIMITS = {
     "organizer": {"width": (30, 400), "depth": (30, 400), "height": (10, 150), "rows": (1, 8), "cols": (1, 8), "wall": (0.8, 4), "floor": (0.8, 4), "radius": (0, 20)},
-    "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6), "radius": (0, 30)},
+    "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6), "radius": (0, 30), "cable_d": (3, 30)},
     "phone_stand": {"width": (50, 260), "device": (7, 20), "angle": (35, 80), "back": (60, 200), "thickness": (3, 8), "radius": (0, 4), "depth": (40, 120), "vent": (1, 4)},
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
+    "holder": {"obj_w": (10, 300), "obj_d": (5, 150), "height": (15, 150), "wall": (2, 6), "clearance": (0.3, 2), "radius": (0, 4)},
+    "cap": {"size_a": (8, 200), "size_b": (8, 200), "height": (4, 60), "wall": (1.2, 4), "top": (1.2, 5), "clearance": (0.1, 1), "pitch": (1, 6)},
     "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
 }
 MIN_CELL = 8.0
@@ -232,6 +234,20 @@ def box(M, p):
         else:
             nx = -wall / 2
         body = body - cutter.translate([cx + nx, cy + ny, floor + hz])
+
+    if bool(p.get("cable_slot", False)):
+        # a slot open to the rim in the right wall: the cable is laid in with its plug on, nothing is threaded through;
+        # it reaches below the lip of the lid, so the lid closes over the cable
+        cd = num(p, k, "cable_d", 8)
+        deep = lip_h + cd + (1.0 if lid else 0.0)
+        if cd > idp - 2 * (inner_r + 2.0) or deep > ih - 3.0:
+            raise Invalid("box_cable_too_big")
+        round_end = M.Manifold.cylinder(wall + 2.0, cd / 2, cd / 2, 48).rotate([0, 90, 0]).translate([ow - wall - 1.0, od / 2, oh - deep + cd / 2])
+        shaft = M.Manifold.cube([wall + 2.0, cd, deep]).translate([ow - wall - 1.0, od / 2 - cd / 2, oh - deep + cd / 2])
+        body = body - round_end - shaft
+        for (px, pz, pw, ph, pi) in placed.get("right", []):
+            if abs(px - idp / 2) < (pw + cd) / 2 + 1.5 and floor + pz + ph / 2 > oh - deep - 1.5:
+                raise Invalid("holes_overlap", "%d" % pi)
 
     parts = {"body": body}
     notes = {"outer": [round(ow, 2), round(od, 2), round(oh + (floor if lid else 0), 2)], "inner": [iw, idp, ih], "lid": lid}
@@ -525,6 +541,226 @@ def cable_holder(M, p):
     return {"all": solid, "use": use}, {"outer": [round(length, 1), round(depth, 1), round(height, 1)], "slot": round(hole, 1)}
 
 
+def _signed(pts):
+    return sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1])) / 2
+
+
+def holder(M, p):
+    """
+    A holder for whatever the customer measured: a remote control, a bottle, a tool, a broom.
+      pocket  closed on four sides, open on top (things that may fall out sideways)
+      cradle  like the pocket with the front cut down to a low lip: the thing is seen and grabbed from the front
+      hook    a J for anything with a handle, a strap or a loop
+      clip    a springy C for round handles (broom, tool): the handle snaps in from the front
+    Pocket and cradle print standing the way they hang on the wall: every wall rises straight from the bed, the
+    opening looks up, no supports (lying on a side or on the back plate a wall hangs over the cavity; 27 Sep 2026).
+    Hook and clip are a side profile lying on the bed: no supports, and the layers run along the arms that carry
+    the load. Screw holes are teardrops with the point up, so the slicer has nothing to support in them either.
+    Solids are cut from one block or drawn as one 2D outline; nothing is glued onto a shared wall.
+    """
+    k = "holder"
+    style = p.get("style", "cradle")
+    if style not in ("cradle", "pocket", "hook", "clip"):
+        raise Invalid("bad_choice", "style")
+    obj_w, obj_d, height = num(p, k, "obj_w", 50), num(p, k, "obj_d", 25), num(p, k, "height", 60)
+    t, gap, r = num(p, k, "wall", 3), num(p, k, "clearance", 0.8), num(p, k, "radius", 1.5)
+    screws = bool(p.get("mount", True))
+    C = M.CrossSection
+    note = {"style": style, "screws": 0, "warnings": []}
+    hole_r = 2.3                                                     # a 4 mm wood screw with room to spare
+
+    def bore_x(solid, y, z, length, up="z"):
+        # a teardrop along X; `up` is the axis that points away from the bed while printing
+        a = hole_r * 0.7071
+        tip = [[-a, a], [a, a], [0.0, hole_r * 1.4142]] if up == "y" else [[-a, a], [-a, -a], [-hole_r * 1.4142, 0.0]]
+        if _signed(tip) < 0:
+            tip = tip[::-1]
+        drop = C.circle(hole_r, 48) + C([tip])
+        return solid - drop.extrude(length + 2.0).rotate([0, 90, 0]).translate([-1.0, y, z])
+
+    if style == "clip":
+        d = obj_w
+        if d > 60:
+            raise Invalid("holder_clip_too_wide", "60")
+        length = max(12.0, min(height, 60.0))                        # how much of the handle the clip holds
+        rin = d / 2 - 0.2                                            # a touch smaller: the handle is gripped
+        rout = rin + t
+        ear = 14.0 if screws else 3.0
+        cx = t + rout - 1.0                                          # the ring sinks 1 mm into the plate
+        plate = C.square([t, 2 * rout + 2 * ear]).translate([0, -rout - ear])
+        ring = C.circle(rout, 96).translate([cx, 0]) - C.circle(rin, 96).translate([cx, 0])
+        mouth = d * 0.72                                             # narrower than the handle: it snaps in and stays
+        ring = ring - C.square([rout + 2.0, mouth]).translate([cx, -mouth / 2])
+        profile = _rnd(M, plate + ring, min(r, t * 0.3))
+        solid = profile.extrude(length)
+        if screws:
+            for y in (-rout - ear / 2, rout + ear / 2):
+                solid = bore_x(solid, y, length / 2, t)
+            note["screws"] = 2
+        solid = _on_floor(solid)
+        note["outer"] = [round(cx + rout, 1), round(2 * rout + 2 * ear, 1), round(length, 1)]
+        note["inner"] = [round(d, 1)]
+        note["material_hint"] = "petg"
+        return {"all": solid, "use": solid}, note
+
+    inner_w, inner_d = obj_w + gap, obj_d + gap
+    if style == "hook":
+        tip = max(12.0, min(height, inner_d * 0.9 + 8.0))            # the upturned end that keeps the strap on
+        plate_h = max(tip + 32.0, 50.0)
+        prof = C.square([t, plate_h]) + C.square([inner_d + 2 * t, t]) + C.square([t, tip]).translate([t + inner_d, 0])
+        prof = _soft(M, prof, min(r, t * 0.45))
+        width = max(10.0, obj_w)
+        solid = prof.extrude(width)
+        if screws:
+            if width < 40:
+                for y in (plate_h - 9.0, plate_h - 27.0):
+                    solid = bore_x(solid, y, width / 2, t)
+            else:
+                for z in (width * 0.25, width * 0.75):
+                    solid = bore_x(solid, plate_h - 9.0, z, t)
+            note["screws"] = 2
+        use = _on_floor(solid.rotate([90, 0, 0]))
+        note["outer"] = [round(inner_d + 2 * t, 1), round(width, 1), round(plate_h, 1)]
+        note["inner"] = [round(width, 1), round(inner_d, 1), round(tip, 1)]
+        return {"all": _on_floor(solid), "use": use}, note
+
+    # pocket and cradle: one block, the cavity taken out of it, the front cut down for the cradle
+    total_w = inner_w + 2 * t
+    plate_h = height + (22.0 if screws else 0.0)
+    outline = C.square([t, plate_h]) + C.square([inner_d + 2 * t, height])
+    rad = min(r, t * 0.3)
+    # the bottom stands on the bed: its edges stay sharp, a rounded one would start in the air
+    outline = _rnd(M, outline, rad) + C.square([inner_d + 2 * t, max(rad, 0.5)])
+    solid = outline.extrude(total_w)
+    solid = solid - M.Manifold.cube([inner_d, height + 2.0, inner_w]).translate([t, t, t])
+    if style == "cradle":
+        lip = max(8.0, min(height * 0.35, 25.0))
+        if lip < height - 1:
+            solid = solid - M.Manifold.cube([t + 2.0, height + 2.0, inner_w]).translate([t + inner_d - 1.0, lip, t])
+        note["lip"] = round(lip, 1)
+    if screws:
+        zs = (total_w / 2,) if total_w < 40 else (total_w * 0.25, total_w * 0.75)
+        for z in zs:
+            solid = bore_x(solid, plate_h - 9.0, z, t, up="y")
+        note["screws"] = len(zs)
+    standing = _on_floor(solid.rotate([90, 0, 0]))
+    note["outer"] = [round(inner_d + 2 * t, 1), round(total_w, 1), round(plate_h, 1)]
+    note["inner"] = [round(inner_w, 1), round(inner_d, 1), round(height - t, 1)]
+    return {"all": standing, "use": standing}, note
+
+
+def cap(M, p):
+    """
+    The missing lid, plug or cover, from what the customer measured on the opening.
+      push    goes OVER the rim: measure the outside of the neck or box
+      plug    goes INTO the opening: measure the inside; a flange stops it, low ribs hold it
+      thread  screws ONTO an outer thread: measure across the thread crests and the distance between two turns
+    Round, rectangular or hexagonal (size_a is then the distance across the flats); the thread is round only.
+    Everything prints with its flat top on the bed, opening up: no supports, and the thread is cut as one smooth helix.
+    The domed cap (round, push-on) prints the other way up, standing on its rim: the hollow under the dome is a cone
+    of 45 degrees, which a printer builds in the air without help.
+    """
+    k = "cap"
+    style = p.get("style", "push")
+    shape = p.get("shape", "round")
+    head = p.get("head", "flat")
+    if style not in ("push", "plug", "thread") or shape not in ("round", "rect", "hex") or head not in ("flat", "dome"):
+        raise Invalid("bad_choice", "style")
+    if head == "dome" and (style != "push" or shape != "round"):
+        raise Invalid("cap_dome_round")
+    a, b = num(p, k, "size_a", 40), num(p, k, "size_b", 30)
+    height, wall, top, gap = num(p, k, "height", 12), num(p, k, "wall", 2), num(p, k, "top", 2), num(p, k, "clearance", 0.3)
+    pitch = num(p, k, "pitch", 3)
+    grip = bool(p.get("grip", True))
+    C = M.CrossSection
+    note = {"style": style, "shape": shape, "warnings": []}
+    if style == "thread" and shape != "round":
+        raise Invalid("cap_thread_round")
+
+    def outline(w, d, rad=None):
+        if shape == "round":
+            return C.circle(w / 2, 128)
+        if shape == "hex":                                           # w is measured across the flats, as a spanner does
+            return C.circle(w / math.sqrt(3), 6).rotate(30)
+        return rounded_rect(M, w, d, min(3.0, min(w, d) * 0.15) if rad is None else rad).translate([-w / 2, -d / 2])
+
+    def knurled(cs, radius):
+        """Low round bumps all the way round: fingers hold the cap, the printer needs no supports for them."""
+        count = max(12, int(round(2 * math.pi * radius / 6.0)))
+        bumps = [C.circle(1.0, 16).translate([(radius + 0.2) * math.cos(2 * math.pi * i / count), (radius + 0.2) * math.sin(2 * math.pi * i / count)]) for i in range(count)]
+        return cs + C.batch_boolean(bumps, M.OpType.Add)
+
+    if style == "plug":
+        if min(a, b if shape == "rect" else a) - 2 * gap < 6:
+            raise Invalid("cap_too_small")
+        pw, pd = a - 2 * gap, (b if shape == "rect" else a) - 2 * gap
+        flange = max(3.0, wall * 1.5)
+        body = outline(pw + 2 * flange, pd + 2 * flange).extrude(top)
+        # the plug narrows a little towards its end: it starts easily and tightens as it goes in
+        core = outline(pw, pd).extrude(height + 0.01, 0, 0.0, [0.965, 0.965]).translate([0, 0, top - 0.01])
+        solid = body + core
+        if min(pw, pd) > 16:                                         # hollow from the open end: less plastic, a little give
+            hollow = outline(pw - 2 * wall, pd - 2 * wall, 1.0).extrude(height + 1.0).translate([0, 0, top + 1.2])
+            solid = solid - hollow
+        ribs = 0
+        for i in range(3):
+            z = top + height * (0.3 + 0.22 * i)
+            if z + 1.0 < top + height - 1.0:
+                k_s = 1 - 0.035 * (z - top) / max(height, 1e-6)
+                ring = (outline((pw + 0.5) * k_s, (pd + 0.5) * k_s) - outline((pw - 1.2) * k_s, (pd - 1.2) * k_s)).extrude(0.8)
+                solid = solid + ring.translate([0, 0, z])
+                ribs += 1
+        note["outer"] = [round(pw + 2 * flange, 1), round(pd + 2 * flange, 1), round(top + height, 1)]
+        note["fits"] = [round(a, 1)] if shape != "rect" else [round(a, 1), round(b, 1)]
+        note["ribs"] = ribs
+        note["material_hint"] = "petg"
+        return {"all": _on_floor(solid), "use": _on_floor(solid.rotate([180, 0, 0]))}, note
+
+    if style == "thread":
+        if a < 12:
+            raise Invalid("cap_too_small")
+        depth = max(0.6, min(1.4, pitch * 0.4))                      # how far the thread stands out of the neck
+        if pitch > height:
+            raise Invalid("cap_thread_short", "%d" % math.ceil(pitch))
+        # one smooth helix: a circle set off the axis and turned once per pitch spans from the root to the crest
+        rc = a / 2 - depth / 2 + gap
+        turns = height / pitch
+        cavity = C.circle(rc, 96).translate([depth / 2, 0]).extrude(height + 0.02, max(8, int(math.ceil(height / 0.25))), 360.0 * turns)
+        outer_r = a / 2 + gap + wall
+        skin = C.circle(outer_r, 128)
+        if grip:
+            skin = knurled(skin, outer_r)
+        solid = skin.extrude(top + height) - cavity.translate([0, 0, top])
+        note["outer"] = [round(2 * outer_r, 1), round(2 * outer_r, 1), round(top + height, 1)]
+        note["fits"] = [round(a, 1)]
+        note["thread"] = {"pitch": round(pitch, 2), "turns": round(turns, 1), "depth": round(depth, 2)}
+        note["warnings"].append("thread_try")
+        return {"all": _on_floor(solid), "use": _on_floor(solid.rotate([180, 0, 0]))}, note
+
+    # push-on cap
+    iw, idp = a + 2 * gap, (b if shape == "rect" else a) + 2 * gap
+    if head == "dome":
+        ri, ro = iw / 2, iw / 2 + wall
+        # half of the section, turned round the axis: the rim on the bed, a straight skirt, a half ball on top;
+        # inside a straight bore and a cone of 45 degrees
+        steps = 48
+        arc = [(ro * math.cos(math.pi / 2 * i / steps), height + ro * math.sin(math.pi / 2 * i / steps)) for i in range(steps + 1)]
+        profile = [(ri, 0.0), (ro, 0.0)] + arc + [(0.0, height + ri), (ri, height)]
+        solid = M.Manifold.revolve(C([profile]), 128)
+        note["outer"] = [round(2 * ro, 1), round(2 * ro, 1), round(height + ro, 1)]
+        note["fits"] = [round(a, 1)]
+        note["head"] = "dome"
+        solid = _on_floor(solid)
+        return {"all": solid, "use": solid}, note
+    skin = outline(iw + 2 * wall, idp + 2 * wall)
+    if grip and shape == "round":
+        skin = knurled(skin, iw / 2 + wall)
+    solid = skin.extrude(top + height) - outline(iw, idp, 1.0 if shape == "rect" else None).extrude(height + 1.0).translate([0, 0, top])
+    note["outer"] = [round(iw + 2 * wall, 1), round(idp + 2 * wall, 1), round(top + height, 1)]
+    note["fits"] = [round(a, 1)] if shape != "rect" else [round(a, 1), round(b, 1)]
+    return {"all": _on_floor(solid), "use": _on_floor(solid.rotate([180, 0, 0]))}, note
+
+
 def main(argv):
     if len(argv) < 4:
         out({"ok": False, "error": "usage", "code": "usage"})
@@ -535,7 +771,7 @@ def main(argv):
         import manifold3d as M
         import numpy as np
         p = json.loads(argv[3] or "{}")
-        builders = {"organizer": organizer, "box": box, "phone_stand": phone_stand, "cable_holder": cable_holder, "modular": modular}
+        builders = {"organizer": organizer, "box": box, "phone_stand": phone_stand, "cable_holder": cable_holder, "modular": modular, "holder": holder, "cap": cap}
         if not isinstance(p, dict):
             raise Invalid("unknown_kind")
         if kind in builders:

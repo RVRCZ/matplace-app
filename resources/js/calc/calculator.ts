@@ -11,7 +11,8 @@ import { bootDownload, setDownload, refresh as refreshDownload, openWhenReady as
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
 
-interface MaterialCfg { code: string; density: number; lay: string[]; sliceable: boolean; label: string; hint: string }
+interface MaterialProps { heat: number; strength: number; flexible: boolean; outdoor: string; food: string; time: number; price: number }
+interface MaterialCfg { code: string; density: number; lay: string[]; sliceable: boolean; label: string; hint: string; props?: MaterialProps | null }
 interface Config {
     rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; currency: string; max_scale: number;
     bed_mm: { x: number; y: number; z: number }; bed_margin_mm?: number; materials: MaterialCfg[]; default_material: string;
@@ -38,6 +39,7 @@ const state = {
     pollTimer: 0 as number,
     debounce: 0 as number,
     localFile: null as File | null,
+    stale: false,                        // settings changed since the last calculation: the visitor presses "Recalculate"
 };
 
 let viewer: Viewer | null = null;
@@ -85,11 +87,15 @@ function renderSize(): void {
     const val = document.getElementById('scale-val');
     if (val) val.textContent = `${Math.round(s * 100)} %`;
     document.getElementById('size-generated')?.classList.toggle('hidden', state.file?.kind !== 'generated');
+    document.getElementById('size-reset')?.classList.toggle('hidden', Math.abs(s - 1) < 0.0005);   // back to the file's own size, once it was changed
     const fit = document.getElementById('bed-fit');
     if (fit) {
         const n = b ? piecesOnBed({ x: b.x * s, y: b.y * s, z: b.z * s }) : null;
         const bed = cfg.bed_mm ? `${fmt.format(cfg.bed_mm.x)} × ${fmt.format(cfg.bed_mm.y)} mm` : '';
-        fit.textContent = n === null ? '' : n > 0 ? t('calc.fit.bed', { n, b: bed }) : t('calc.fit.none', { b: bed });
+        const q = state.params.quantity;
+        // more pieces than one plate takes: the farm prints them on several plates one after another
+        const plates = n && q > n ? ` ${t('calc.fit.plates', { q, p: Math.ceil(q / n) })}` : '';
+        fit.textContent = n === null ? '' : n > 0 ? t('calc.fit.bed', { n, b: bed }) + plates : t('calc.fit.none', { b: bed });
         fit.classList.toggle('text-amber-700', n === 0);
     }
 }
@@ -132,8 +138,12 @@ function renderRough(): void {
     renderSize();
     $('stat-grams').textContent = `≈ ${fmt.format(est.grams * q)} g`;
     $('stat-time').textContent = `≈ ${minutesText(est.minutes * q)}`;
-    if (!marketplace() && !farmPriced()) {
+    renderCompare({ grams: est.grams, minutes: est.minutes }, false);
+    if (!marketplace()) {
+        // the design page is about the print; the farm's list gives a price to orient by, the binding one comes with the order
         renderFacts({ minutes: est.minutes * q, grams: est.grams * q, rough: true });
+        const [olo, ohi] = range(cfg.rough, cfg.round_to, bds.map((b) => b.total), true);
+        orientPrice(farmPriced() ? [olo, ohi] : null, true);
         return;
     }
     const [lo, hi] = range(cfg.rough, cfg.round_to, bds.map((b) => b.total), true);
@@ -146,6 +156,62 @@ function renderRough(): void {
 }
 
 const marketplace = () => cfg.marketplace !== false;
+
+/**
+ * Material comparison for THIS model: weight by density, time and price converted from the numbers of the chosen
+ * material (the precise ones once they exist), beside what each material stands up to. A row picks the material.
+ */
+function renderCompare(base: { grams: number; minutes: number } | null, precise: boolean): void {
+    const head = document.getElementById('mat-compare-head');
+    const body = document.getElementById('mat-compare-body');
+    if (!head || !body) return;
+    const rows = cfg.materials.filter((m) => m.props);
+    const cur = material(state.params.material);
+    if (!base || !rows.length || !cur.props) { body.innerHTML = ''; return; }
+    const q = state.params.quantity;
+    const priced = cfg.orientation_profiles.length > 0 && (marketplace() || farmPriced());
+    const unit = cfg.currency === 'CZK' ? 'Kč' : cfg.currency;
+    const th = (k: string) => `<th class="py-1 pr-2 font-normal">${t(k)}</th>`;
+    head.innerHTML = `<tr>${th('compare.col.material')}${priced ? th('compare.col.price') : ''}${th('compare.col.time')}${th('compare.col.weight')}${th('compare.col.heat')}${th('compare.col.strength')}${th('compare.col.outdoor')}${th('compare.col.food')}</tr>`;
+    const approx = precise ? '' : '≈ ';
+    body.innerHTML = rows.map((m) => {
+        const p = m.props!;
+        const same = m.code === cur.code;
+        const grams = base.grams * (m.density / cur.density);
+        const minutes = Math.max(1, Math.round(base.minutes * (p.time / cur.props!.time)));
+        let cost = '';
+        if (priced) {
+            const totals = cfg.orientation_profiles.map((prof) => price(cfg.round_to, { ...prof, price_per_gram: prof.price_per_gram * (p.price / cur.props!.price) }, grams, minutes, q).total);
+            cost = `<td class="py-1 pr-2 font-semibold">${same && precise ? '' : '≈ '}${fmt.format(Math.min(...totals))} ${unit}</td>`;
+        }
+        const dots = '●'.repeat(p.strength) + '○'.repeat(Math.max(0, 3 - p.strength));
+        return `<tr data-material="${m.code}" class="cursor-pointer border-t border-slate-100 ${same ? 'bg-action-soft' : 'hover:bg-slate-50'}" title="${same ? t('compare.chosen') : t('compare.pick')}">`
+            + `<td class="py-1 pr-2"><span class="font-semibold text-ink">${m.label}</span> <span class="text-slate-500">${m.code}</span></td>${cost}`
+            + `<td class="py-1 pr-2">${same ? approx : '≈ '}${minutesText(minutes * q)}</td><td class="py-1 pr-2">${same ? approx : '≈ '}${fmt.format(grams * q)} g</td>`
+            + `<td class="py-1 pr-2">${p.heat} °C</td><td class="py-1 pr-2" aria-label="${p.strength}/3">${dots}${p.flexible ? ` ${t('compare.flexible')}` : ''}</td>`
+            + `<td class="py-1 pr-2">${t(`compare.outdoor.${p.outdoor}`)}</td><td class="py-1">${t(`compare.food.${p.food}`)}</td></tr>`;
+    }).join('');
+    body.querySelectorAll<HTMLElement>('tr[data-material]').forEach((tr) => {
+        tr.onclick = () => {
+            if (tr.dataset.material === state.params.material) return;
+            state.params.material = tr.dataset.material!;
+            buildMaterials();
+            onParamsChanged();
+        };
+    });
+}
+
+/** The farm's list price as a line to orient by; the binding price comes on the order page after colour and printer are chosen. */
+function orientPrice(r: [number, number] | null, rough: boolean): void {
+    const el = document.getElementById('price-orient');
+    if (!el) return;
+    if (!r) { el.classList.add('hidden'); return; }
+    const q = state.params.quantity;
+    const unit = cfg.currency === 'CZK' ? 'Kč' : cfg.currency;
+    const txt = r[0] === r[1] ? fmt.format(r[0]) : `${fmt.format(r[0])} – ${fmt.format(r[1])}`;
+    el.textContent = t('calc.price.orient', { price: `${rough ? '≈ ' : ''}${txt} ${unit}` }) + (q > 1 ? ` ${t('calc.price.per_piece')} ≈ ${fmt.format(Math.round(r[0] / q))} ${unit}.` : '');
+    el.classList.remove('hidden');
+}
 // the farm's single price list: the calculator prices like the marketplace does, with one list
 const farmPriced = () => !marketplace() && cfg.orientation_profiles.length === 1 && cfg.orientation_profiles[0].key === 'farm';
 
@@ -196,8 +262,10 @@ function renderBreakdown(bds: { profile: string; label?: string | null; printer_
 /** Precise numbers from the server slice. */
 function renderPrecise(c: CalcInfo): void {
     if (!c.slicer || !c.prices) return;
+    renderCompare({ grams: c.slicer.grams, minutes: c.slicer.minutes }, true);
     const q = state.params.quantity;
-    if (!marketplace() && !farmPriced()) {
+    if (!marketplace()) {
+        orientPrice(farmPriced() && c.prices.length ? [c.prices[0].total, c.prices[0].total] : null, false);
         $('stat-grams').textContent = `${fmt.format(c.slicer.grams * q)} g`;
         $('stat-time').textContent = minutesText(c.slicer.minutes * q);
         $('dims-badge').textContent = `${fmt.format(c.slicer.dims.x)} × ${fmt.format(c.slicer.dims.y)} × ${fmt.format(c.slicer.dims.z)} mm`;
@@ -328,9 +396,29 @@ function requestPrecise(): void {
     }, 700);
 }
 
+/** A setting changed: the model and its size follow at once, the numbers wait for "Recalculate" (a slice costs the server real work). */
 function onParamsChanged(): void {
-    renderRough();
+    renderSize();
     viewer?.setScale(state.params.scale);
+    const b = nativeBbox();
+    if (b) { const s = state.params.scale; $('dims-badge').textContent = `${fmt.format(b.x * s)} × ${fmt.format(b.y * s)} × ${fmt.format(b.z * s)} mm`; }
+    markStale();
+}
+
+function markStale(): void {
+    if (!state.file && !state.geo) return;
+    state.stale = true;
+    stopPolling();
+    setStatus('calc.status.stale', false);
+    const btn = document.getElementById('cta-recalc');
+    btn?.classList.add('ring-4', 'ring-action/40');
+}
+
+/** "Recalculate": the rough numbers at once, the precise slice from the server behind them. */
+function recalculate(): void {
+    state.stale = false;
+    document.getElementById('cta-recalc')?.classList.remove('ring-4', 'ring-action/40');
+    renderRough();
     refreshDownload();
     requestPrecise();
 }
@@ -406,7 +494,8 @@ function buildMaterials(): void {
         b.type = 'button';
         b.className = 'chip' + (m.code === state.params.material ? ' chip-on' : '');
         b.dataset.material = m.code;
-        b.innerHTML = `${m.label} <span class="opacity-70 text-xs">${m.lay.map((l) => cfg.lay[l] ?? l).join(' · ')}</span>`;
+        // the plain name, the filament code everyone knows from the spool, then what it is good for
+        b.innerHTML = `${m.label} <span class="font-normal">${m.code}</span> <span class="opacity-70 text-xs">${m.lay.map((l) => cfg.lay[l] ?? l).join(' · ')}</span>`;
         b.onclick = () => {
             state.params.material = m.code;
             box.querySelectorAll('.chip').forEach((c) => c.classList.toggle('chip-on', (c as HTMLElement).dataset.material === m.code));
@@ -435,6 +524,10 @@ function bindControls(): void {
     infill.oninput = () => { state.params.infill = Number(infill.value); $('infill-val').textContent = `${infill.value} %`; onParamsChanged(); };
     const qty = $('quantity') as HTMLInputElement;
     qty.onchange = () => { state.params.quantity = Math.max(1, Math.min(1000, Number(qty.value) || 1)); qty.value = String(state.params.quantity); onParamsChanged(); };
+    const recalc = document.getElementById('cta-recalc');
+    if (recalc) recalc.onclick = recalculate;
+    const reset = document.getElementById('size-reset');
+    if (reset) reset.onclick = () => { state.params.scale = 1; document.getElementById('size-limit')?.classList.add('hidden'); onParamsChanged(); };
     const scale = $('scale') as HTMLInputElement;
     scale.oninput = () => { state.params.scale = Number(scale.value) / 100; $('scale-val').textContent = `${scale.value} %`; document.getElementById('size-limit')?.classList.add('hidden'); onParamsChanged(); };
     (['x', 'y', 'z'] as const).forEach((axis) => {

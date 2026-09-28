@@ -18,10 +18,10 @@ final class PythonPrintPreparer implements PrintPreparer
         return 'farm_tool';
     }
 
-    public function prepare(string $stlPath, string $outPath, float $unitScale, Dimensions $bed): PreparedMesh
+    public function prepare(string $stlPath, string $outPath, float $unitScale, Dimensions $bed, bool $keepPose = false): PreparedMesh
     {
         $r = $this->python->runScript('farm_tool.py', [
-            'prepare', $stlPath, $outPath, (string) $unitScale, (string) $bed->x, (string) $bed->y, (string) $bed->z, (string) $this->overhangDeg,
+            'prepare', $stlPath, $outPath, (string) $unitScale, (string) $bed->x, (string) $bed->y, (string) $bed->z, (string) $this->overhangDeg, $keepPose ? 'keep' : 'turn',
         ], 300);
         if (empty($r['ok'])) {
             throw new EngineException('farm_tool prepare failed: '.($r['error'] ?? 'unknown'));

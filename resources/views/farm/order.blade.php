@@ -1,11 +1,11 @@
 @extends('layouts.app', ['title' => __('farm.order.title', ['name' => $order->modelFile?->original_name]).' · matplace', 'noindex' => true])
 
 @php
-    $keys = ['farm.stage.checking', 'farm.stage.orienting', 'farm.stage.slicing', 'farm.order.supports_yes', 'farm.order.supports_no',
+    $keys = ['farm.stage.checking', 'farm.stage.loading', 'farm.stage.repairing', 'farm.stage.orienting', 'farm.stage.placing', 'farm.stage.slicing', 'farm.stage_step', 'farm.order.supports_yes', 'farm.order.supports_no',
         'farm.order.low_filament', 'farm.order.starts_now', 'farm.order.goes_to_queue', 'farm.order.no_colors', 'farm.order.paying', 'farm.order.pay',
-        'farm.order.queue_ahead', 'farm.order.queue_start', 'farm.order.queue_finish', 'farm.order.blocked_plate', 'farm.order.blocked_offline',
+        'farm.order.queue_ahead', 'farm.order.queue_start', 'farm.order.queue_starting', 'farm.order.queue_finish', 'farm.order.blocked_plate', 'farm.order.blocked_offline',
         'farm.order.blocked_approval', 'farm.order.cancel_confirm', 'farm.order.b_time', 'farm.order.b_material', 'farm.order.b_fixed', 'farm.order.b_min',
-        'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note',
+        'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off',
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m'];
     $farmCfg = [
         'state' => $state,
@@ -50,7 +50,12 @@
                     <span id="farm-status" class="font-semibold text-slate-700" role="status"></span>
                     <span id="farm-spinner" class="hidden h-4 w-4 animate-spin rounded-full border-2 border-action border-t-transparent"></span>
                 </div>
+                <div id="farm-progress" class="mt-2 hidden">
+                    <div class="h-1.5 overflow-hidden rounded-full bg-slate-100"><div id="farm-progress-bar" class="h-full rounded-full bg-action transition-all duration-500" style="width:0%"></div></div>
+                    <p id="farm-progress-step" class="mt-1 text-xs text-slate-500"></p>
+                </div>
                 <p id="farm-number" class="mt-1 hidden text-xs text-slate-500"></p>
+                <p id="farm-printer" class="mt-1 hidden text-xs text-slate-500"></p>
                 <p id="farm-error" class="mt-2 hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"></p>
                 <ul id="farm-warnings" class="mt-2 space-y-1 text-sm text-amber-700"></ul>
 
@@ -102,6 +107,20 @@
                         <button type="button" data-value="{{ $key }}" class="seg">{{ __('farm.strength.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.strength.infill', ['n' => $s['infill']]) }}</span></button>
                     @endforeach
                 </div>
+                <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.supports.label') }}</div>
+                <div class="mt-2 grid grid-cols-2 gap-2" data-group="supports">
+                    @foreach(['auto', 'off'] as $key)
+                        <button type="button" data-value="{{ $key }}" class="seg">{{ __('farm.supports.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.supports.'.$key.'_hint') }}</span></button>
+                    @endforeach
+                </div>
+                <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span> <button id="farm-size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('farm.size.reset') }}</button></div>
+                <div class="mt-2 grid grid-cols-3 gap-2">
+                    @foreach(['x', 'y', 'z'] as $axis)
+                        <label class="text-xs font-semibold text-slate-600">{{ __('farm.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
+                            <input id="farm-size-{{ $axis }}" type="number" inputmode="decimal" min="1" step="any" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
+                        </label>
+                    @endforeach
+                </div>
                 <label class="mt-4 block text-sm font-semibold text-slate-700">{{ __('farm.copies.label') }}
                     <input id="farm-copies" type="number" inputmode="numeric" min="1" max="{{ \App\Domain\Farm\PlateLayout::MAX_COPIES }}" class="mt-1 w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
                 </label>
@@ -146,6 +165,8 @@
 
                 <p id="farm-pay-error" class="mt-2 hidden text-sm text-red-700" role="alert"></p>
                 <a id="farm-topup" href="#" class="btn-secondary mt-2 hidden w-full text-sm">{{ __('farm.top_up') }}</a>
+                <p id="farm-recolor-note" class="mt-3 hidden rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{{ __('farm.order.recolor_note') }}</p>
+                <button id="farm-recolor" type="button" class="mt-3 hidden w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('farm.order.recolor') }}</button>
                 <button id="farm-pay-btn" type="submit" class="mt-3 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" disabled>{{ __('farm.order.pay') }}</button>
             </form>
 
@@ -170,6 +191,7 @@
 
             <div class="flex flex-wrap gap-2">
                 <button id="farm-cancel" type="button" class="btn-quiet hidden text-sm">{{ __('farm.order.cancel') }}</button>
+                <a id="farm-repeat" href="{{ route('farm.orders.repeat', $order) }}" class="btn-secondary hidden text-sm" title="{{ __('farm.order.repeat_hint') }}">{{ __('farm.order.repeat') }}</a>
                 <a href="{{ route('farm.start') }}" class="btn-quiet text-sm">{{ __('farm.order.new') }}</a>
             </div>
         </div>

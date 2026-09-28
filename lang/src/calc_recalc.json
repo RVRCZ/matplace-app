@@ -1,0 +1,22 @@
+{
+    "calc.status.stale": [
+        "Nastavení se změnilo. Klepněte na Přepočítat.",
+        "Settings changed. Press Recalculate.",
+        "La configuración ha cambiado. Pulse Recalcular."
+    ],
+    "calc.recalc": [
+        "Přepočítat",
+        "Recalculate",
+        "Recalcular"
+    ],
+    "calc.recalc.hint": [
+        "Velikost, kusy, materiál i kvalitu si nastavte, pak vše přepočítáme najednou.",
+        "Set the size, pieces, material and quality, then everything is recalculated at once.",
+        "Ajuste tamaño, piezas, material y calidad; después se recalcula todo de una vez."
+    ],
+    "calc.price.orient": [
+        "Orientační cena tisku u nás: :price. Přesná cena podle barvy a tiskárny až při objednávce.",
+        "Print price with us, to orient by: :price. The exact price follows the colour and printer at ordering.",
+        "Precio orientativo de impresión con nosotros: :price. El precio exacto según color e impresora, al pedir."
+    ]
+}

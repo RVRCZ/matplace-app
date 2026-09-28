@@ -27,6 +27,15 @@ def fail(msg):
     out({"ok": False, "error": str(msg)})
 
 
+def stage(dst, name):
+    """Tell the order page what is going on: one word in <dst>.stage, read while the customer waits."""
+    try:
+        with open(dst + ".stage", "w", encoding="utf-8") as f:
+            f.write(name)
+    except OSError:
+        pass
+
+
 def open_edges(m):
     """Edges that belong to one face only (hole rims) and edges shared by more than two faces."""
     import numpy as np
@@ -35,27 +44,28 @@ def open_edges(m):
     return int((counts == 1).sum()), int((counts > 2).sum())
 
 
-def repair(m):
+def meshfix_arrays(mf):
+    """pymeshfix 0.18 renamed the result from .v/.f to .points/.faces; read whichever this version has."""
     import numpy as np
-    import trimesh
+    v = getattr(mf, "points", None)
+    f = getattr(mf, "faces", None)
+    if v is None or f is None:
+        v, f = mf.v, mf.f
+    return np.asarray(v, dtype=float), np.asarray(f).reshape(-1, 3)
+
+
+def repair(m):
+    """Body by body, the same way as the repair tool; one pass over the whole mesh glued separate parts together."""
+    import numpy as np
+    import os
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from repair_tool import mend
     before = m.extents.copy()
-    fixed = m.copy()
-    fixed.merge_vertices()
-    fixed.update_faces(fixed.nondegenerate_faces())
-    fixed.update_faces(fixed.unique_faces())
-    trimesh.repair.fix_normals(fixed)
-    trimesh.repair.fill_holes(fixed)
-    method = "trimesh"
-    if not fixed.is_watertight:
-        try:
-            import pymeshfix
-            mf = pymeshfix.MeshFix(np.asarray(fixed.vertices, dtype=float), np.asarray(fixed.faces, dtype=np.int32))
-            mf.repair(joincomp=True, remove_smallest_components=False)
-            cand = trimesh.Trimesh(vertices=mf.v, faces=mf.f, process=True)
-            if len(cand.faces) > 0:
-                fixed, method = cand, "pymeshfix"
-        except Exception:  # noqa: BLE001 - pymeshfix is optional; without it the simple repair is all we have
-            pass
+    welded = m.copy()
+    welded.merge_vertices()
+    fixed, actions = mend(welded)
+    method = "pymeshfix" if actions.get("rebuilt_bodies") else "trimesh"
     same_object = bool(np.all(np.abs(fixed.extents - before) <= np.maximum(before * 0.02, 0.05)))
     if fixed.is_watertight and same_object:
         if fixed.volume < 0:
@@ -84,6 +94,15 @@ def candidates(m, limit=24):
         if not any(float(np.dot(d, u)) > 0.9995 for u in uniq):
             uniq.append(d)
     return uniq
+
+
+def shadow_points(m):
+    """Points that decide the model's shadow: the corners of its convex hull (the shadow of the hull is the shadow of
+    the model). A scan has half a million vertices, its hull a few thousand; trimesh caches the hull."""
+    try:
+        return m.convex_hull.vertices
+    except Exception:  # noqa: BLE001 - degenerate hull (flat sheet)
+        return m.vertices
 
 
 def footprint(vertices, down):
@@ -125,7 +144,7 @@ def rate(m, down, cos_limit, bed):
     diag = float(np.linalg.norm(m.extents)) or 1.0
     # how much of the footprint really touches the plate: a part standing on a small foot with supports beneath the
     # rest prints badly and may topple (a cartridge clip, 23 Sep 2026, stood on 69 mm2 of a 1600 mm2 footprint)
-    contact = base / (footprint(m.vertices, down) or 1.0)
+    contact = base / (footprint(shadow_points(m), down) or 1.0)
     score = overhang / total - 0.5 * min(base / total, 0.3) + 0.15 * height / diag - 0.3 * min(contact, 0.5)
     if base / total < 0.002:
         score += 0.2                                         # nothing flat to stand on
@@ -134,9 +153,10 @@ def rate(m, down, cos_limit, bed):
     return score, overhang, base, height
 
 
-def prepare(src, dst, unit_scale, bed, overhang_deg):
+def prepare(src, dst, unit_scale, bed, overhang_deg, keep_pose=False):
     import numpy as np
     import trimesh
+    stage(dst, "loading")
     m = trimesh.load(src, force="mesh", process=False)
     if isinstance(m, trimesh.Scene):
         geoms = list(m.geometry.values())
@@ -155,6 +175,7 @@ def prepare(src, dst, unit_scale, bed, overhang_deg):
     holes, joints = open_edges(m)
     repaired, method = False, None
     if not was_watertight:
+        stage(dst, "repairing")
         fixed, method = repair(m)
         if fixed is not None:
             m, repaired = fixed, True
@@ -162,12 +183,19 @@ def prepare(src, dst, unit_scale, bed, overhang_deg):
         m.invert()
 
     # orientation
+    stage(dst, "placing" if keep_pose else "orienting")
     cos_limit = math.cos(math.radians(overhang_deg))
     start = np.array([0.0, 0.0, -1.0])
     s0, over0, base0, _ = rate(m, start, cos_limit, bed)
     best, best_score, best_stats = start, s0 - 0.02, (over0, base0)   # the uploaded pose wins ties
-    for d in candidates(m):
+    total = float(m.area) or 1.0
+    stands = base0 / total >= 0.02 and s0 < 5.0              # a real flat foot on the plate, and it fits in height
+    # a model from our own tools is built in the pose it prints best in; the score below knows nothing about walls
+    # hanging over a cavity and would lay a wall holder on its back plate
+    for d in ([] if keep_pose else candidates(m)):
         s, over, base, _ = rate(m, d, cos_limit, bed)
+        if stands and over > over0 + 0.01 * total:
+            continue                                         # never trade a pose that stands well for more supports
         if s < best_score - 1e-9:
             best, best_score, best_stats = d, s, (over, base)
     rot = np.eye(4)
@@ -182,6 +210,7 @@ def prepare(src, dst, unit_scale, bed, overhang_deg):
         m.apply_transform(spin)
         rot = spin @ rot
         spun = True
+    stage(dst, "placing")
     lo, hi = m.bounds
     m.apply_translation([-(lo[0] + hi[0]) / 2, -(lo[1] + hi[1]) / 2, -lo[2]])
     m.export(dst, file_type="stl")
@@ -207,7 +236,7 @@ def prepare(src, dst, unit_scale, bed, overhang_deg):
         "triangles": int(len(m.faces)),
         "shells": int(shells),
         "orientation": {
-            "method": "hull-facets",
+            "method": "as-built" if keep_pose else "hull-facets",
             "matrix": [[round(float(v), 6) for v in row[:3]] for row in rot[:3]],
             "changed": bool(float(np.dot(best, start)) < 0.9999),
             "spun_to_fit": spun,
@@ -225,7 +254,8 @@ def main(argv):
     try:
         if argv[1] == "prepare":
             bed = (float(argv[5]), float(argv[6]), float(argv[7]))
-            prepare(argv[2], argv[3], float(argv[4]), bed, float(argv[8]) if len(argv) > 8 else 40.0)
+            prepare(argv[2], argv[3], float(argv[4]), bed, float(argv[8]) if len(argv) > 8 else 40.0,
+                    keep_pose=len(argv) > 9 and argv[9] == "keep")
         fail("unknown command " + argv[1])
     except SystemExit:
         raise

@@ -9,6 +9,7 @@
  */
 return [
     'calc' => ['route' => 'home', 'intent' => 'file', 'categories' => ['file'], 'available' => true],
+    'repair' => ['route' => 'tools.repair', 'intent' => 'file', 'categories' => ['file'], 'available' => true],
     'check' => ['route' => 'tools.check', 'intent' => 'file', 'categories' => ['file'], 'available' => true],
     'mold' => ['route' => 'tools.mold', 'intent' => 'file', 'categories' => ['file', 'craft'], 'available' => true],
     'personalize' => ['route' => 'tools.personalize', 'intent' => 'file', 'categories' => ['file', 'gifts'], 'available' => false],
@@ -17,10 +18,13 @@ return [
     'modular' => ['route' => 'tools.modular', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'box' => ['route' => 'tools.box', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'phone_stand' => ['route' => 'tools.phone_stand', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
+    'holder' => ['route' => 'tools.holder', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
+    'cap' => ['route' => 'tools.cap', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'cable_holder' => ['route' => 'tools.cable_holder', 'intent' => 'create', 'categories' => ['home'], 'available' => true],
     'vase' => ['route' => 'tools.vase', 'intent' => 'create', 'categories' => ['home', 'craft'], 'available' => true],
     'figure' => ['route' => 'tools.figure', 'intent' => 'create', 'categories' => ['gifts'], 'available' => true],
     'relief' => ['route' => 'tools.relief', 'intent' => 'create', 'categories' => ['gifts'], 'available' => true],
+    'gifts' => ['route' => 'tools.gifts', 'intent' => 'create', 'categories' => ['gifts'], 'available' => true],
     'sign' => ['route' => 'tools.sign', 'intent' => 'create', 'categories' => ['signs', 'gifts'], 'available' => true],
     'qr' => ['route' => 'tools.qr', 'intent' => 'create', 'categories' => ['signs'], 'available' => true],
     'logo' => ['route' => 'tools.logo', 'intent' => 'create', 'categories' => ['signs', 'craft'], 'available' => true],

@@ -52,12 +52,14 @@ Route::middleware('feature:marketplace')->group(function () {
 
 // Tools menu (everything that is not the one main screen)
 Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
+Route::get('/gifts', [ToolsController::class, 'gifts'])->name('tools.gifts');
 Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
 Route::get('/tools/sign', [ToolsController::class, 'param'])->defaults('kind', 'sign')->name('tools.sign');
 Route::get('/tools/relief', [ToolsController::class, 'relief'])->name('tools.relief');
 Route::get('/tools/spare-part', [ToolsController::class, 'spare'])->middleware('feature:marketplace')->name('tools.spare');
 Route::get('/tools/check', [ToolsController::class, 'check'])->name('tools.check');
 Route::get('/tools/mold', [ToolsController::class, 'mold'])->name('tools.mold');
+Route::get('/tools/repair', [ToolsController::class, 'repair'])->name('tools.repair');
 Route::get('/tools/organizer', [ToolsController::class, 'param'])->defaults('kind', 'organizer')->name('tools.organizer');
 Route::get('/tools/modular-organizer', [ToolsController::class, 'param'])->defaults('kind', 'modular')->name('tools.modular');
 Route::get('/tools/box', [ToolsController::class, 'param'])->defaults('kind', 'box')->name('tools.box');
@@ -69,6 +71,8 @@ Route::get('/tools/stencil', [ToolsController::class, 'param'])->defaults('kind'
 Route::get('/tools/illuminated-sign', [ToolsController::class, 'param'])->defaults('kind', 'lightbox')->name('tools.lightbox');
 Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');
 Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('kind', 'cable_holder')->name('tools.cable_holder');
+Route::get('/tools/holder', [ToolsController::class, 'param'])->defaults('kind', 'holder')->name('tools.holder');
+Route::get('/tools/cap', [ToolsController::class, 'param'])->defaults('kind', 'cap')->name('tools.cap');
 Route::get('/tools/cookie-cutter', [ToolsController::class, 'param'])->defaults('kind', 'cutter')->name('tools.cutter');
 
 // ── JSON API used by the calculator ──────────────────────────────────────────
@@ -82,6 +86,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware('throttle:20,1,project')->name('files.project');
     Route::post('files/{modelFile}/pedestal', [ModelFileController::class, 'pedestal'])->middleware('throttle:20,1,pedestal')->name('files.pedestal');
     Route::post('files/{modelFile}/mold', [ModelFileController::class, 'mold'])->middleware('throttle:20,1,mold')->name('files.mold');
+    Route::post('files/{modelFile}/repair', [ModelFileController::class, 'repair'])->middleware('throttle:12,1,repair')->name('files.repair');
     Route::post('files/{modelFile}/advice', [AdviceController::class, 'store'])->middleware('throttle:20,1,advice')->name('files.advice');
     Route::get('advice/{token}', [AdviceController::class, 'show'])->name('advice.show');
     Route::get('printers', [ModelFileController::class, 'printers'])->name('printers');
@@ -137,6 +142,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/farm/orders', [OrderController::class, 'index'])->name('farm.orders');
     Route::post('/farm/orders', [OrderController::class, 'store'])->middleware('throttle:20,1,farm_order')->name('farm.orders.store');
     Route::get('/farm/orders/{order}', [OrderController::class, 'show'])->name('farm.orders.show');
+    Route::get('/farm/orders/{order}/repeat', [OrderController::class, 'repeat'])->name('farm.orders.repeat');
     Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
     Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
     Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware('throttle:10,1,farm_pay')->name('farm.orders.pay');

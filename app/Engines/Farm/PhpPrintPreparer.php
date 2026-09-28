@@ -19,7 +19,7 @@ final class PhpPrintPreparer implements PrintPreparer
         return 'php-stl';
     }
 
-    public function prepare(string $stlPath, string $outPath, float $unitScale, Dimensions $bed): PreparedMesh
+    public function prepare(string $stlPath, string $outPath, float $unitScale, Dimensions $bed, bool $keepPose = false): PreparedMesh
     {
         StlFile::scale($stlPath, $outPath, $unitScale);
         $stats = StlFile::stats($outPath);

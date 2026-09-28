@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Engines\Gcode\SupportLines;
+use App\Engines\Mesh\StlFile;
 use PHPUnit\Framework\TestCase;
 
 class SupportLinesTest extends TestCase
@@ -46,5 +47,29 @@ class SupportLinesTest extends TestCase
         $this->assertNull(SupportLines::extract($in, $out));
         unlink($in);
         unlink($out);
+    }
+
+    /** The slicer no longer arranges (and turns) the model: we put it on the middle of the bed ourselves. */
+    public function test_a_model_is_placed_on_the_middle_of_the_bed_without_turning(): void
+    {
+        $in = sys_get_temp_dir().'/mp_place_'.uniqid().'.stl';
+        $out = $in.'.placed.stl';
+        StlFile::writeBox($in, 60, 50, 23);
+        $size = StlFile::place($in, $out, 0.5, 125, 125);
+        $this->assertEqualsWithDelta([30.0, 25.0, 11.5], $size, 0.001);
+        $lo = [INF, INF, INF];
+        $hi = [-INF, -INF, -INF];
+        foreach (StlFile::triangles($out) as $tri) {
+            foreach ($tri as $v) {
+                for ($i = 0; $i < 3; $i++) {
+                    $lo[$i] = min($lo[$i], $v[$i]);
+                    $hi[$i] = max($hi[$i], $v[$i]);
+                }
+            }
+        }
+        $this->assertEqualsWithDelta([110.0, 112.5, 0.0], $lo, 0.001);
+        $this->assertEqualsWithDelta([140.0, 137.5, 11.5], $hi, 0.001);
+        @unlink($in);
+        @unlink($out);
     }
 }

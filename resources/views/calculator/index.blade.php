@@ -14,9 +14,9 @@
         'search.searching','search.identifying','search.none','search.error','search.not_image','search.daily_limit','search.open_source',
         'search.size_guess','search.price_range','search.range_hint','search.have_file','search.generate','search.designer_soon','hero.soon','calc.size','calc.material','inquiry.error',
         'search.gen_size','search.generating','search.gen_done','search.gen_failed','search.gen_daily_limit','search.gen_global_limit','search.gen_text_hint',
-        'refine.working','refine.failed','pedestal.working','pedestal.failed','mold.working','mold.failed','mold.unavailable','mold.report','mold.report.undercuts','mold.report.large','calc.tip.mold','refine.photo_only','advice.title','advice.lead','advice.button','advice.working','advice.failed','advice.daily_limit','advice.unavailable','advice.level.important','advice.level.tip','advice.level.fine','advice.disclaimer','check.head.error','check.head.advice','check.head.ok','check.group.error','check.group.advice','check.group.ok','check.disclaimer','check.units_tiny','check.units_tiny.impact','check.units_huge','check.units_huge.impact','check.very_small','check.very_small.impact','check.exceeds_bed','check.exceeds_bed.impact','check.parts_fit','check.parts_fit.impact','check.part_exceeds_bed','check.part_exceeds_bed.impact','check.size_ok','check.size_ok.impact','check.too_thin','check.too_thin.impact','check.watertight_ok','check.watertight_ok.impact','check.not_watertight','check.not_watertight.impact','check.flipped_normals','check.flipped_normals.impact','check.multiple_shells','check.multiple_shells.impact','check.heavy_mesh','check.heavy_mesh.impact','check.very_coarse','check.very_coarse.impact',
+        'refine.working','refine.failed','pedestal.working','pedestal.failed','mold.working','mold.failed','mold.unavailable','mold.report','mold.report.undercuts','mold.report.large','calc.tip.mold','calc.tip.repaired','refine.photo_only','advice.title','advice.lead','advice.button','advice.working','advice.failed','advice.daily_limit','advice.unavailable','advice.level.important','advice.level.tip','advice.level.fine','advice.disclaimer','check.head.error','check.head.advice','check.head.ok','check.group.error','check.group.advice','check.group.ok','check.disclaimer','check.units_tiny','check.units_tiny.impact','check.units_huge','check.units_huge.impact','check.very_small','check.very_small.impact','check.exceeds_bed','check.exceeds_bed.impact','check.parts_fit','check.parts_fit.impact','check.part_exceeds_bed','check.part_exceeds_bed.impact','check.size_ok','check.size_ok.impact','check.too_thin','check.too_thin.impact','check.watertight_ok','check.watertight_ok.impact','check.not_watertight','check.not_watertight.impact','check.flipped_normals','check.flipped_normals.impact','check.multiple_shells','check.multiple_shells.impact','check.heavy_mesh','check.heavy_mesh.impact','check.very_coarse','check.very_coarse.impact',
         'calc.tip.organizer','calc.tip.modular','param.part.tray','param.part.bin','param.part.body.logo','param.part.stand.logo','param.part.body.vase','param.part.body.stamp','param.part.body.qr','param.part.body.lightbox','calc.tip.stencil','calc.tip.lightbox','param.part.face','param.part.diffuser','param.part.back','calc.tip.vase','calc.tip.logo','calc.tip.stamp','calc.tip.qr','calc.edit_design','param.part.saucer','param.part.handle','param.part.stand','calc.tip.box','calc.tip.phone_stand','calc.tip.cable_holder','download.parts','param.part.body','param.part.lid','calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
-        'calc.fit.bed','calc.fit.none','calc.size.limit','calc.mode.normal','calc.mode.silent','calc.mode.sport','calc.facts.rough','calc.facts.material','calc.facts.layers','calc.facts.supports','calc.facts.supports_yes','calc.facts.supports_no','calc.facts.infill','calc.facts.length','calc.status.done_facts',
+        'calc.fit.bed','calc.fit.none','calc.fit.plates','calc.size.limit','calc.status.stale','calc.recalc','calc.price.orient','compare.col.material','compare.col.price','compare.col.time','compare.col.weight','compare.col.heat','compare.col.strength','compare.col.outdoor','compare.col.food','compare.outdoor.yes','compare.outdoor.limited','compare.outdoor.no','compare.food.liner','compare.food.no','compare.flexible','compare.pick','compare.chosen','calc.mode.normal','calc.mode.silent','calc.mode.sport','calc.facts.rough','calc.facts.material','calc.facts.layers','calc.facts.supports','calc.facts.supports_yes','calc.facts.supports_no','calc.facts.infill','calc.facts.length','calc.status.done_facts',
     ])->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();   // tips and warnings in the wording of the step that follows (inquiry, farm or download)
 @endphp
 
@@ -73,25 +73,27 @@
                     </div>
                     @php
                         // a price is shown with the marketplace and also when the farm's single list prices the model (calculator.ts farmPriced())
-                        $priced = $config['marketplace'] || (count($config['orientation_profiles']) === 1 && ($config['orientation_profiles'][0]['key'] ?? '') === 'farm');
+                        // only the marketplace headlines a price; the farm's list is an orientation line under the print time (calculator.ts orientPrice)
+        $priced = (bool) $config['marketplace'];
                     @endphp
                     <div class="mt-2 flex items-end gap-2">
                         <span id="price-main" class="text-4xl font-extrabold tracking-tight">—</span>
                         @if($priced)<span class="pb-1 text-slate-500">{{ $config['currency'] === 'CZK' ? 'Kč' : $config['currency'] }}</span>@else<span class="pb-1 text-slate-500">{{ __('calc.time') }}</span>@endif
                     </div>
                     <div id="price-sub" class="mt-1 text-sm text-slate-500"></div>
+                    <p id="price-orient" class="mt-1 hidden text-sm text-slate-600"></p>
 
                     {{-- size and quantity first: what the customer decides, right under the price they decide it by --}}
                     <div class="mt-3 rounded-xl bg-slate-50 p-3">
                         <div class="flex items-baseline justify-between gap-2">
                             <span class="text-sm font-semibold text-slate-700">{{ __('calc.size.title') }}</span>
-                            <span id="scale-val" class="text-sm font-semibold text-action-dark">100 %</span>
+                            <span class="flex items-center gap-2"><span id="scale-val" class="text-sm font-semibold text-action-dark">100 %</span><button id="size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('calc.size.reset') }}</button></span>
                         </div>
                         <p id="size-generated" class="mt-1 hidden text-xs text-action-dark">{{ __('calc.size.generated') }}</p>
                         <div class="mt-2 grid grid-cols-3 gap-2">
                             @foreach(['x', 'y', 'z'] as $axis)
                                 <label class="text-xs font-semibold text-slate-600">{{ __('calc.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
-                                    <input id="size-{{ $axis }}" type="number" inputmode="decimal" min="1" step="1" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-ink">
+                                    <input id="size-{{ $axis }}" type="number" inputmode="decimal" min="1" step="any" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-ink">
                                 </label>
                             @endforeach
                         </div>
@@ -103,6 +105,9 @@
                             </label>
                             <p id="bed-fit" class="pb-2 text-xs text-slate-500" aria-live="polite"></p>
                         </div>
+                        {{-- settings change the model at once, the numbers on request: a slice is real work for the server --}}
+                        <button id="cta-recalc" type="button" class="btn-primary mt-3 w-full">{{ __('calc.recalc') }}</button>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('calc.recalc.hint') }}</p>
                     </div>
 
                     <dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
@@ -193,6 +198,12 @@
                     <div class="text-sm font-semibold text-slate-700">{{ __('calc.material') }}</div>
                     <div id="materials" class="mt-2 flex flex-wrap gap-2"></div>
                     <p id="material-hint" class="mt-1 text-xs text-slate-500"></p>
+                    {{-- the question customers ask most: which material, and what does it change --}}
+                    <details id="mat-compare" class="mt-2 text-sm">
+                        <summary class="cursor-pointer text-action-dark">{{ __('compare.title') }}</summary>
+                        <div class="mt-2 overflow-x-auto"><table class="w-full min-w-[30rem] text-left text-xs"><thead id="mat-compare-head" class="text-slate-500"></thead><tbody id="mat-compare-body"></tbody></table></div>
+                        <p class="mt-2 text-xs text-slate-500">{{ __('compare.note') }}</p>
+                    </details>
 
                     <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('calc.quality') }}</div>
                     <div id="quality" class="mt-2 grid grid-cols-3 gap-2">

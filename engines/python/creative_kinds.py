@@ -19,12 +19,12 @@ LIMITS = {
 CHOICES = {
     "vase": {"profile": ("neck", "belly", "cone", "tulip"), "style": ("twist", "ribs", "smooth"), "purpose": ("vase", "pot")},
     "logo": {"mode": ("relief", "height", "cutout", "standing"), "shape": ("rounded", "rect", "circle")},
-    "sign": {"shape": ("rounded", "rect", "oval"), "style": ("emboss", "engrave", "outline"), "typeface": ("sans", "serif", "mono")},
+    "sign": {"shape": ("rounded", "rect", "oval"), "style": ("emboss", "engrave", "outline", "name"), "typeface": ("sans", "serif", "mono", "script")},
     "stamp": {"mode": ("raised", "recessed"), "handle": ("knob", "none")},
     "qr": {},
     "stencil": {},
-    "lightbox": {"led": ("strip8", "strip10", "module")},
-    "cutter": {"edge": ("sharp", "straight"), "typeface": ("sans", "serif", "mono")},
+    "lightbox": {"led": ("strip8", "strip10", "module"), "shape": ("rect", "round")},
+    "cutter": {"edge": ("sharp", "straight"), "typeface": ("sans", "serif", "mono", "script")},
 }
 
 
@@ -280,6 +280,8 @@ def sign(M, Invalid, p):
     warn = []
     if info.get("missing_chars"):
         warn.append("missing_chars")
+    if style == "name":
+        return _sign_name(M, p, art, info, cap, t, relief, keyring, two, warn)
     if style == "outline":
         line = max(0.6, min(1.2, cap * 0.07))
         inner = art.offset(-line, M.JoinType.Round, 2.0, 16)
@@ -340,6 +342,76 @@ def sign(M, Invalid, p):
     notes = {"outer": [round(pw - x0, 1), round(ph, 1), round(t + (0 if style == "engrave" else relief), 1)], "warnings": warn, "thin_pct": thin,
              "missing_chars": info.get("missing_chars", []), "two_color": two and style != "engrave"}
     if two and style != "engrave":
+        notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(t + 0.05, 2), "color": "orange"},
+                            {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white"}]
+        notes["color_change_mm"] = round(t, 1)
+    return parts, notes
+
+
+def _sign_name(M, p, art, info, cap, t, relief, keyring, two, warn):
+    """
+    The name itself is the pendant: no plate, the letters a little fattened make the body and the letters as written
+    stand raised on it. What would fall apart (separate letters, a heart after a space, the dot of an i) is tied to
+    its nearest neighbour by a short link, so the piece is always one.
+    """
+    import numpy as np
+    C = M.CrossSection
+    J = M.JoinType.Round
+    grow = max(1.0, cap * 0.1)
+    link_w = max(2.0, cap * 0.2)
+    base = art.offset(grow, J, 2.0, 24).simplify(0.02)
+    links = 0
+    for _ in range(60):
+        pieces = base.decompose()
+        if len(pieces) <= 1:
+            break
+        pieces.sort(key=lambda c: c.area(), reverse=True)
+        small = pieces[-1]
+        a = np.vstack([np.asarray(poly) for poly in small.to_polygons()])
+        best = None
+        for other in pieces[:-1]:
+            b = np.vstack([np.asarray(poly) for poly in other.to_polygons()])
+            if len(b) > 1500:
+                b = b[:: len(b) // 1500 + 1]
+            d = np.linalg.norm(a[:, None, :] - b[None, :, :], axis=2)
+            i, j = np.unravel_index(int(np.argmin(d)), d.shape)
+            if best is None or d[i, j] < best[0]:
+                best = (float(d[i, j]), a[i], b[j])
+        _, pa, pb = best
+        # the link reaches a little into both pieces, so it is a real joint and not a touching edge
+        way = (pb - pa) / (np.linalg.norm(pb - pa) or 1.0)
+        pa, pb = pa - way * grow, pb + way * grow
+        dot = C.circle(link_w / 2, 24)
+        base = base + (dot.translate([float(pa[0]), float(pa[1])]) + dot.translate([float(pb[0]), float(pb[1])])).hull()
+        links += 1
+    tab_note = {}
+    if keyring:
+        r_out = max(4.0, cap * 0.36)
+        r_in = max(1.8, r_out * 0.5)
+        pts = np.vstack([np.asarray(poly) for poly in base.to_polygons()])
+        x0, y0, x1, y1 = base.bounds()
+        # the eyelet sits on the leftmost part of the name, at the height where the name really is
+        near = pts[pts[:, 0] < x0 + max(1.0, cap * 0.15)]
+        cy = float(near[:, 1].mean())
+        cx = x0 - r_in - 0.4
+        base = base + C.circle(r_out, 64).translate([cx, cy]) + (C.circle(link_w / 2, 24).translate([cx, cy]) + C.circle(link_w / 2, 24).translate([x0 + grow, cy])).hull()
+        base = base - C.circle(r_in, 48).translate([cx, cy])
+        tab_note = {"eyelet_mm": round(2 * r_in, 1)}
+    x0, y0, x1, y1 = base.bounds()
+    base, art = base.translate([-x0, -y0]), art.translate([-x0, -y0])
+    plate = base.extrude(t)
+    raised = (art ^ base).extrude(relief).translate([0, 0, t - 0.01])
+    parts = {"all": plate + raised}
+    if two:
+        parts["plate"] = plate
+        parts["text"] = raised.translate([0, 0, -(t - 0.01)])
+    thin = S.printability(M, art, 0.45)["thin_pct"]
+    if thin > 35:
+        warn.append("thin_lines")
+    notes = {"outer": [round(x1 - x0, 1), round(y1 - y0, 1), round(t + relief, 1)], "warnings": warn, "thin_pct": thin, "links": links,
+             "missing_chars": info.get("missing_chars", []), "two_color": two}
+    notes.update(tab_note)
+    if two:
         notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(t + 0.05, 2), "color": "orange"},
                             {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white"}]
         notes["color_change_mm"] = round(t, 1)
@@ -593,6 +665,8 @@ def lightbox(M, Invalid, p):
     width, depth, wall, face_t = n("width", 160), n("depth", 35), n("wall", 2.0), n("face", 1.2)
     margin, bridge, cable, clearance = n("margin", 12), n("bridge", 1.4), n("cable", 5), n("clearance", 0.25)
     led = _pick(Invalid, p, k, "led")
+    if _pick(Invalid, p, k, "shape") == "round":
+        return _lightbox_round(M, Invalid, p, width, depth, wall, face_t, margin, bridge, cable, clearance, led)
     art, info = _art(M, Invalid, p, width - 2 * margin, None)
     art = S.fit(art, width_mm=width - 2 * margin)
     w, hgt = S.size(art)
@@ -637,6 +711,73 @@ def lightbox(M, Invalid, p):
         warn.append("outlines_ignored")
     notes = {"outer": [round(width, 1), round(height, 1), round(depth + wall, 1)], "bridges": bridges, "warnings": warn, "thin_pct": thin,
              "missing_chars": info.get("missing_chars", []), "needs": ["led_" + led, "usb_power", "tape"], "led_m": round(strip, 2), "cable_mm": cable,
+             "colors": {"body": "dark", "face": "dark", "diffuser": "white", "back": "dark"}}
+    return parts, notes
+
+
+def _lightbox_round(M, Invalid, p, width, depth, wall, face_t, margin, bridge, cable, clearance, led):
+    """
+    The round light box: a circle with its bottom cut flat, so it stands on a shelf by itself. Same four parts and the
+    same fits as the rectangular one; every outline is the outer one moved inwards, so the walls are even all round.
+    """
+    C = M.CrossSection
+    R = width / 2
+    foot = 0.2 * R                                         # how much of the circle is cut away: a foot 1.2 R wide
+    cy = R - foot
+    height = 2 * R - foot
+    led_w, led_h = LED[led]
+    if depth < led_w + 12:
+        raise Invalid("lightbox_too_shallow", "%d" % math.ceil(led_w + 12))
+
+    def outline(inset):
+        return C.circle(R - inset, 160).translate([R, cy]) ^ C.square([2 * R, 2 * R]).translate([0, inset])
+
+    art, info = _art(M, Invalid, p, width - 2 * margin, None)
+    aw, ah = S.size(art)
+    room = R - wall - 1.6 - margin                         # the motif stays clear of the ledge that holds the face
+    low = wall + 1.6 + margin
+    k = 2 * room / math.hypot(aw, ah)
+    for _ in range(40):
+        w, h = aw * k, ah * k
+        ay = max(cy, low + h / 2)                          # a tall motif moves up, away from the flat foot
+        if math.hypot(w / 2, ay - cy + h / 2) <= room + 1e-6:
+            break
+        k *= 0.97
+    art = S.fit(art, width_mm=aw * k)
+    w, h = S.size(art)
+    art = art.translate([R - w / 2, ay - h / 2])
+
+    outer, inner = outline(0), outline(wall)
+    body = (outer - inner).extrude(depth) + (inner - outline(wall + 1.6)).extrude(1.6).translate([0, 0, depth - face_t - 1.0 - 1.6])
+    # the cable leaves low at the back of the side, above the foot, so the box still stands flat
+    angle = -40.0
+    hole = M.Manifold.cylinder(wall + 6, cable / 2, cable / 2, 32).translate([0, 0, -(wall + 6) / 2]).rotate([0, 90, 0]).translate([R - wall / 2, 0, 0]).rotate([0, 0, angle])
+    body = body - hole.translate([R, cy, 6 + cable / 2])
+
+    seat = outline(wall + clearance)
+    mask, bridges, _ = _bridged_mask(M, seat, art, bridge)
+    face = mask.extrude(face_t)
+    diffuser = seat.extrude(1.0)
+    back = outer.extrude(wall) + (seat - outline(wall + clearance + 1.6)).extrude(5).translate([0, 0, wall])
+
+    gap = 8.0
+    parts = {
+        "body": body, "face": face, "diffuser": diffuser, "back": back,
+        "all": body + face.translate([width + gap, 0, 0]) + diffuser.translate([width + gap, height + gap, 0]) + back.translate([0, height + gap, 0]),
+        "use": (back + body.translate([0, 0, wall + 6]) + diffuser.translate([0, 0, wall + depth + 14]) + face.translate([0, 0, wall + depth + 24])).rotate([90, 0, 0]),
+    }
+    warn = []
+    thin = S.printability(M, art, 0.6)["thin_pct"]
+    if thin > 30:
+        warn.append("thin_lines")
+    if info.get("missing_chars"):
+        warn.append("missing_chars")
+    if info.get("ignored_outlines"):
+        warn.append("outlines_ignored")
+    strip = (2 * math.pi * (R - wall)) / 1000.0
+    notes = {"outer": [round(width, 1), round(height, 1), round(depth + wall, 1)], "bridges": bridges, "warnings": warn, "thin_pct": thin,
+             "missing_chars": info.get("missing_chars", []), "needs": ["led_" + led, "usb_power", "tape"], "led_m": round(strip, 2), "cable_mm": cable,
+             "foot_mm": round(2 * math.sqrt(R * R - cy * cy), 1),
              "colors": {"body": "dark", "face": "dark", "diffuser": "white", "back": "dark"}}
     return parts, notes
 
@@ -713,6 +854,10 @@ def cutter(M, Invalid, p):
     if raster_in and bool(p.get("stamp", True)):
         inner = sil_p.offset(-(wall + 1.5), M.JoinType.Round, 2.0, 8)
         details = art_p ^ inner
+        # a drawing filled with colour (a black bear with white eyes): the marks are what was left white
+        if details.area() > 0.6 * inner.area():
+            details = (inner - art_p).offset(-0.2, M.JoinType.Round, 2.0, 8).offset(0.2, M.JoinType.Round, 2.0, 8)
+            notes["stamp_from"] = "white"
         if not details.is_empty() and details.area() > 0.015 * sil_p.area():
             plate2d = sil_p.offset(-(wall + 0.6), M.JoinType.Round, 2.0, 8)
             stamp = plate2d.extrude(1.6) + details.extrude(1.2).translate([0, 0, 1.59])

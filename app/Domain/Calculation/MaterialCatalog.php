@@ -41,6 +41,7 @@ final class MaterialCatalog
                 'lay' => $m['lay'] ?? [],
                 'technology' => $m['technology'] ?? 'fdm',
                 'sliceable' => $m['slice'] ?? true,
+                'props' => $m['props'] ?? null,
             ];
         }
 

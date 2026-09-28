@@ -35,24 +35,57 @@ class OrderController extends Controller
     {
         $file = $request->query('file') ? ModelFile::where('uuid', $request->query('file'))->first() : null;
         $quality = (string) $request->query('quality', 'standard');
-        $copies = 1;
+        $strength = (string) $request->query('strength', 'standard');
+        $supports = $request->query('supports') === 'off' ? 'off' : 'auto';
+        // a repeated print hands its settings over in the address (OrderController::repeat)
+        $copies = max(1, min(PlateLayout::MAX_COPIES, (int) $request->query('copies', 1)));
+        $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) $request->query('scale', 1)));
+        $wantedColor = (int) $request->query('color', 0);
+        $material = null;
         // from the calculator: the shared calculation knows the model, the quality and how many pieces the customer wanted
         if (! $file && $request->query('calc') && ($calc = Calculation::with('modelFile')->where('token', $request->query('calc'))->first())) {
             $file = $calc->modelFile;
             $quality = (string) ($calc->params['quality'] ?? $quality);
             $copies = max(1, min(PlateLayout::MAX_COPIES, (int) ($calc->params['quantity'] ?? 1)));
+            $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) ($calc->params['scale'] ?? 1)));
+            $material = $calc->params['material'] ?? null;
         }
+        // the colours loaded right now; those of the calculator's material kind come first
+        $colors = $this->orders->offeredColors($quality)->map(fn ($r) => [
+            'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex,
+            'photo' => $r['color']->photoUrl(), 'printer' => $r['printer']->name, 'bed' => (int) $r['printer']->bed_x.' × '.(int) $r['printer']->bed_y.' mm', 'enough' => $r['slot']->availableGrams() > 50,
+        ])->sortBy(fn ($c) => [$c['code'] === $material ? 0 : 1, $c['name']])->values()->all();
+        // the colour of the print being repeated when it is still loaded, else the first one on offer
+        $preselect = collect($colors)->firstWhere('id', $wantedColor)['id'] ?? ($colors[0]['id'] ?? null);
 
         return view('farm.start', [
             'file' => $file,
             'bed' => $this->orders->largestBed(),
             'quality' => $quality,
+            'strength' => $strength,
+            'supports' => $supports,
+            'preselect' => $preselect,
             'copies' => $copies,
             'maxCopies' => PlateLayout::MAX_COPIES,
+            'scale' => $scale,
+            'maxScale' => (float) config('pricing.max_scale', 4),
+            'colors' => $colors,
             'settings' => $this->settings->all(),
             'balance' => $this->wallet->balance($request->user()),
             'slicesLeft' => max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())),
         ]);
+    }
+
+    /** "Print again": the start page with this order's model and settings; the colour is offered again when it is still loaded. */
+    public function repeat(Request $request, FarmOrder $order): RedirectResponse
+    {
+        $this->authorizeOrder($request, $order);
+
+        return redirect()->route('farm.start', array_filter([
+            'file' => $order->modelFile?->uuid, 'quality' => $order->quality, 'strength' => $order->strength, 'copies' => $order->copies,
+            'supports' => $order->supports === 'off' ? 'off' : null,
+            'scale' => abs((float) $order->scale - 1) > 0.0005 ? (float) $order->scale : null, 'color' => $order->farm_color_id,
+        ]));
     }
 
     public function index(Request $request): View
@@ -71,12 +104,15 @@ class OrderController extends Controller
             'strength' => ['nullable', 'string', 'max:12'],
             'unit' => ['nullable', 'in:'.implode(',', array_keys(ModelValidator::UNITS))],
             'copies' => ['nullable', 'integer', 'min:1', 'max:'.PlateLayout::MAX_COPIES],
+            'scale' => ['nullable', 'numeric', 'min:0.25', 'max:'.config('pricing.max_scale', 4)],
+            'color' => ['nullable', 'integer'],
+            'supports' => ['nullable', 'in:auto,off'],
         ]);
         $file = ModelFile::where('uuid', $data['file'])->firstOrFail();
         $this->claim($request, $file);
 
         try {
-            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1));
+            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto');
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
                 ? response()->json(['error' => $e->reason, 'message' => $e->text()], 422)
@@ -103,6 +139,21 @@ class OrderController extends Controller
     }
 
     /** Polled by the order page. */
+    /** What the customer watches while the order is being prepared, in the order it happens. */
+    private const STAGES = ['loading', 'repairing', 'orienting', 'placing', 'slicing'];
+
+    /** While the model is being checked, the preparing tool says what it is doing right now (farm_tool.py). */
+    private function stageOf(FarmOrder $order): ?string
+    {
+        if ($order->stage !== 'checking') {
+            return $order->stage;
+        }
+        $file = Storage::disk(config('farm.disk'))->path($order->dir().'/print.stl.stage');
+        $now = is_file($file) ? trim((string) @file_get_contents($file)) : '';
+
+        return in_array($now, self::STAGES, true) ? $now : 'loading';
+    }
+
     public function status(Request $request, FarmOrder $order): JsonResponse
     {
         $this->authorizeOrder($request, $order);
@@ -118,9 +169,12 @@ class OrderController extends Controller
             'strength' => ['required', 'string', 'max:12'],
             'unit' => ['nullable', 'in:'.implode(',', array_keys(ModelValidator::UNITS))],
             'copies' => ['nullable', 'integer', 'min:1', 'max:'.PlateLayout::MAX_COPIES],
+            'scale' => ['nullable', 'numeric', 'min:0.25', 'max:'.config('pricing.max_scale', 4)],
+            'supports' => ['nullable', 'in:auto,off'],
+            'slot' => ['nullable', 'integer'],
         ]);
         try {
-            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null);
+            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null, $data['supports'] ?? null, isset($data['slot']) ? (int) $data['slot'] : null);
         } catch (FarmRefusal $e) {
             return response()->json(['error' => $e->reason, 'message' => $e->text()], 422);
         }
@@ -266,6 +320,9 @@ class OrderController extends Controller
                 'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'photo' => $r['color']->photoUrl(),
                 'enough' => $r['enough'], 'price' => $price = $this->orders->priceFor($order, $r['printer'], 'pickup', $r['color']->material), 'total' => $price['total'],
                 'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
+                // the time, the weight and the price on the page were computed for this colour's machine and kind
+                'sliced' => $r['printer']->id === $order->farm_printer_id && $r['color']->material->id === $order->farm_material_id
+                    && ($order->farm_color_id === null || $order->farm_color_id === $r['color']->id),
             ])->all()
             : [];
 
@@ -274,13 +331,23 @@ class OrderController extends Controller
             'number' => $order->number,
             'status' => $order->status,
             'status_text' => __('farm.status.'.$order->status),
-            'stage' => $order->stage,
+            'stage' => $stage = $this->stageOf($order),
+            'stage_step' => $stage ? (array_search($stage, self::STAGES, true) ?: 0) + 1 : null,
+            'stage_total' => count(self::STAGES),
             'error' => $order->error,
             'error_text' => $order->error ? __('farm.error.'.$order->error, $this->errorData($check, (string) $order->error)) : null,
             'quality' => $order->quality,
             'strength' => $order->strength,
             'copies' => $order->copies,
+            'scale' => (float) ($order->scale ?: 1),
+            'raw_bbox' => $order->modelFile?->bbox,
+            'slot' => $order->farm_printer_slot_id,
+            'printer' => $order->printer ? ['name' => $order->printer->name, 'bed' => (int) $order->printer->bed_x.' × '.(int) $order->printer->bed_y.' × '.(int) $order->printer->bed_z.' mm'] : null,
             'max_copies' => $check['max_copies'] ?? null,
+            'plates' => $order->plates,
+            'plates_done' => $order->plates_done,
+            'plate_layout' => $order->plateLayout(),
+            'plate_now' => $job && $job->isActive() ? $job->plate : null,
             'piece_dims' => $check['piece_dims'] ?? null,
             'unit' => array_search($order->unit_scale, ModelValidator::UNITS, false) ?: 'mm',
             'unit_guess' => $check['unit_guess'] ?? null,
@@ -289,6 +356,7 @@ class OrderController extends Controller
             'warnings' => array_map(fn ($w) => __('farm.warn.'.$w['code'], $w['data'] ?? []), $check['warnings'] ?? []),
             'orientation_changed' => (bool) ($order->orientation['changed'] ?? false),
             'supports' => $order->supports_used,
+            'supports_mode' => $order->supports ?: 'auto',
             'minutes' => $order->est_minutes,
             'grams' => $order->est_grams,
             'meters' => $order->est_meters,

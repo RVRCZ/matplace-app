@@ -85,6 +85,39 @@ final class StlFile
         );
     }
 
+    /**
+     * Writes a binary STL copy scaled and moved so that the middle of its footprint lies at ($cx, $cy) and it stands
+     * on Z = 0. Returns the size of the copy [x, y, z].
+     *
+     * @return array{0:float,1:float,2:float}
+     */
+    public static function place(string $inPath, string $outPath, float $factor, float $cx, float $cy): array
+    {
+        $lo = [INF, INF, INF];
+        $hi = [-INF, -INF, -INF];
+        foreach (self::triangles($inPath) as $tri) {
+            foreach ($tri as $v) {
+                for ($i = 0; $i < 3; $i++) {
+                    $lo[$i] = min($lo[$i], $v[$i]);
+                    $hi[$i] = max($hi[$i], $v[$i]);
+                }
+            }
+        }
+        if (! is_finite($lo[0])) {
+            throw new EngineException('No triangles in '.$inPath);
+        }
+        $move = [$cx - ($lo[0] + $hi[0]) / 2 * $factor, $cy - ($lo[1] + $hi[1]) / 2 * $factor, -$lo[2] * $factor];
+        $fh = self::beginBinary($outPath);
+        $n = 0;
+        foreach (self::triangles($inPath) as $tri) {
+            self::writeTriangle($fh, ...array_map(fn ($v) => [$v[0] * $factor + $move[0], $v[1] * $factor + $move[1], $v[2] * $factor + $move[2]], $tri));
+            $n++;
+        }
+        self::endBinary($fh, $n);
+
+        return [($hi[0] - $lo[0]) * $factor, ($hi[1] - $lo[1]) * $factor, ($hi[2] - $lo[2]) * $factor];
+    }
+
     /** Writes a uniformly scaled binary STL copy. */
     public static function scale(string $inPath, string $outPath, float $factor): int
     {

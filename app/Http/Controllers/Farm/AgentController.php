@@ -63,7 +63,7 @@ class AgentController extends Controller
     public function gcode(Request $request, FarmPrintJob $job): BinaryFileResponse
     {
         abort_unless($job->printer->farm_agent_id === $this->agent($request)->id && $job->isActive(), 404);
-        $source = $job->order->absoluteGcodePath();
+        $source = $job->order->absoluteGcodePath($job->plate);
         abort_unless($source && is_file($source), 404);
         $path = GcodeSlot::fileFor($source, $job->slot, PrintProfile::tempsFor($job->order));
         // the head steps out of the camera's way after every layer (only machines and orders set up for it)

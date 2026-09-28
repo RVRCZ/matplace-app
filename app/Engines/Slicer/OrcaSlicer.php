@@ -39,6 +39,7 @@ final class OrcaSlicer implements Slicer
         $work = $this->workDir('job');
         try {
             $mesh = $this->prepareMesh($meshPath, $params, $work);
+            $placed = null;
             $machine = $this->patched($this->profileFile($params->profiles['machine'] ?? null) ?? $this->config['profiles'].'/'.$this->config['machine'], $params->overrides['machine'] ?? [], $work.'/machine.json');
             // a farm printer pairs its own machine profile with the shared process/filament profiles (written for the
             // Kobra S1): the pairing is deliberate, so the presets are declared compatible or the CLI refuses them (-17)
@@ -46,8 +47,16 @@ final class OrcaSlicer implements Slicer
             $filamentName = $this->machineVariant($params->profiles['filament'] ?? null, $params->profiles['machine'] ?? null);
             $filament = $this->patched($this->profileFile($filamentName) ?? $this->profile('filaments', $params->materialCode, 'material'), ($params->overrides['filament'] ?? []) + $pairing, $work.'/filament.json');
             $process = $this->profileFile($params->profiles['process'] ?? null) ?? $this->profile('processes', $params->quality, 'quality');
+            // we put the model in the middle of the bed ourselves: the slicer's own arranging turns it as it likes
+            // (Baby Turtle, 27 Sep 2026: by 90°), and then neither the preview of supports nor our plate layout fits
+            if ($bed = $this->bedOf($machine)) {
+                $size = StlFile::place($mesh, $work.'/placed.stl', 1.0, $bed['cx'], $bed['cy']);
+                if ($size[0] <= $bed['x'] && $size[1] <= $bed['y']) {
+                    $placed = $work.'/placed.stl';
+                }
+            }
 
-            $attempt = function (bool $supports) use ($work, $mesh, $params, $filament, $process, $machine, $pairing): array {
+            $attempt = function (bool $supports) use ($work, $mesh, $placed, $params, $filament, $process, $machine, $pairing): array {
                 $proc = json_decode((string) File::get($process), true) ?: [];
                 if ($params->vaseMode) {
                     $proc['spiral_mode'] = '1';
@@ -76,12 +85,12 @@ final class OrcaSlicer implements Slicer
                 $cmd = array_merge($this->prefix(), [
                     $this->config['bin'],
                     '--datadir', $work.'/data',
-                    '--arrange', '1',
+                    '--arrange', $placed ? '0' : '1',
                     '--load-settings', $machine.';'.$procFile,
                     '--load-filaments', $filament,
                     '--slice', '0',
                     '--outputdir', $out,
-                    $mesh,
+                    $placed ?? $mesh,
                 ]);
                 $result = Process::path($work)->env(['HOME' => $work, 'TMPDIR' => $work])
                     ->timeout($this->config['timeout'])->run($cmd);
@@ -215,6 +224,31 @@ final class OrcaSlicer implements Slicer
         File::put($target, json_encode(array_merge($json, $overrides)));
 
         return $target;
+    }
+
+    /**
+     * The printable rectangle of a machine profile: its size and its middle in printer coordinates.
+     *
+     * @return array{x:float,y:float,cx:float,cy:float}|null null when the profile does not say (inherited presets)
+     */
+    private function bedOf(string $machineFile): ?array
+    {
+        $area = json_decode((string) File::get($machineFile), true)['printable_area'] ?? null;
+        if (! is_array($area) || count($area) < 3) {
+            return null;
+        }
+        $xs = $ys = [];
+        foreach ($area as $point) {
+            if (! preg_match('/^\s*(-?[\d.]+)\s*x\s*(-?[\d.]+)\s*$/', (string) $point, $m)) {
+                return null;
+            }
+            $xs[] = (float) $m[1];
+            $ys[] = (float) $m[2];
+        }
+        $x = max($xs) - min($xs);
+        $y = max($ys) - min($ys);
+
+        return $x > 0 && $y > 0 ? ['x' => $x, 'y' => $y, 'cx' => (min($xs) + max($xs)) / 2, 'cy' => (min($ys) + max($ys)) / 2] : null;
     }
 
     private function prefix(): array

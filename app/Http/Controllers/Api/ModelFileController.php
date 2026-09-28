@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Generation\PedestalChanger;
+use App\Domain\Tools\ModelRepair;
 use App\Domain\Tools\MoldGenerator;
 use App\Engines\Contracts\ProjectExporter;
 use App\Engines\DTO\SliceParams;
@@ -97,6 +98,22 @@ class ModelFileController extends Controller
             $new = $molds->make($modelFile, $data);
         } catch (EngineException $e) {
             return response()->json(['error' => 'mold_failed', 'reason' => $e->getMessage()], $e->getMessage() === 'mold_unavailable' ? 503 : 422);
+        }
+
+        return response()->json(['file' => UploadController::describe($new)], 201);
+    }
+
+    /** POST /api/files/{uuid}/repair → a new model file of kind "repaired" with the report of what was done. */
+    public function repair(ModelFile $modelFile, ModelRepair $repairs): JsonResponse
+    {
+        abort_unless($modelFile->isReady(), 404);
+        if (! $repairs->available()) {
+            return response()->json(['error' => 'repair_unavailable'], 503);
+        }
+        try {
+            $new = $repairs->make($modelFile);
+        } catch (EngineException $e) {
+            return response()->json(['error' => 'repair_failed', 'reason' => $e->getMessage()], $e->getMessage() === 'repair_unavailable' ? 503 : 422);
         }
 
         return response()->json(['file' => UploadController::describe($new)], 201);

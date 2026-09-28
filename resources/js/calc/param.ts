@@ -77,13 +77,14 @@ export function bootParam(): void {
     };
 
     const renderDims = (m: Meta): void => {
-        const n = m.notes as { outer?: number[]; inner?: number[]; cell?: number[]; slot?: number };
+        const n = m.notes as { outer?: number[]; inner?: number[]; cell?: number[]; slot?: number; fits?: number[] };
         const rows: [string, string][] = [];
         const dims = (a: number[]) => `${a.map((v) => nf.format(v)).join(' × ')} mm`;
         if (n.outer) rows.push([t('param.outer'), dims(n.outer)]);
         if (n.inner) rows.push([t('param.inner'), dims(n.inner)]);
         if (n.cell) rows.push([t('param.cell'), dims(n.cell)]);
         if (n.slot) rows.push([t('param.slot'), `${nf.format(n.slot)} mm`]);
+        if (n.fits) rows.push([t('param.fits'), dims(n.fits)]);
         $('param-dims').innerHTML = rows.map(([k, v]) => `<div class="flex justify-between gap-3"><dt class="text-muted">${k}</dt><dd class="font-semibold text-ink">${v}</dd></div>`).join('');
     };
 
@@ -376,6 +377,22 @@ export function bootParam(): void {
             refresh();
         };
     });
+    // a symbol goes where the cursor was in the text field used last
+    let lastText = form.querySelector<HTMLInputElement>('[data-text]');
+    form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => i.addEventListener('focus', () => { lastText = i; }));
+    form.querySelectorAll<HTMLButtonElement>('[data-symbol]').forEach((b) => b.addEventListener('click', () => {
+        const input = lastText;
+        if (!input) return;
+        const at = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? at;
+        const next = input.value.slice(0, at) + b.dataset.symbol! + input.value.slice(end);
+        if (input.maxLength > 0 && next.length > input.maxLength) return;
+        input.value = next;
+        input.focus();
+        const caret = at + b.dataset.symbol!.length;
+        input.setSelectionRange(caret, caret);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }));
     // fields and flags that belong to one choice only ("data-when=style=desk,wedge") hide for the other choices
     const applyWhen = (): void => {
         form.querySelectorAll<HTMLElement>('[data-when]').forEach((el) => {
@@ -417,6 +434,16 @@ export function bootParam(): void {
             .catch(() => undefined)
             .finally(refresh);
     } else {
+        const qs = new URLSearchParams(location.search);
+        const preset = qs.get('preset');
+        if (preset && cfg.presets[preset]) {
+            applyValues(cfg.presets[preset]);
+            form.querySelectorAll('[data-preset]').forEach((o) => o.classList.toggle('chip-on', (o as HTMLElement).dataset.preset === preset));
+            applyWhen();
+        }
+        const typed: Record<string, string> = {};
+        form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { const v = qs.get(i.dataset.text!); if (v) typed[i.dataset.text!] = v.slice(0, i.maxLength > 0 ? i.maxLength : 40); });
+        if (Object.keys(typed).length) applyValues(typed);
         refresh();
     }
 }
