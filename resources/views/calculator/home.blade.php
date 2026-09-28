@@ -18,8 +18,14 @@
     <div class="grid items-center gap-8 pt-2 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:pt-8">
         <div class="min-w-0">
             <p class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-action"><span class="h-1.5 w-1.5 rounded-full bg-action" aria-hidden="true"></span>{{ __('home.eyebrow') }}</p>
-            <h1 class="mt-4 text-[2.6rem] font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">{{ __('home.title.a') }}<br>{{ __('home.title.b') }} <span class="text-action">{{ __('home.title.c') }}</span></h1>
+            <h1 class="mt-4 text-[2.6rem] font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">{{ __('home.title.a') }}<br><span class="text-action">{{ __('home.title.c') }}</span></h1>
             <p class="mt-4 max-w-md text-base leading-relaxed text-muted sm:text-lg">{{ $tx('home.lead') }}</p>
+            <ol class="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-ink" aria-label="{{ __('home.path') }}">
+                @foreach(['idea', 'design', 'product'] as $i => $stage)
+                    @if($i)<li class="text-action" aria-hidden="true">→</li>@endif
+                    <li class="rounded-full border border-line bg-card px-3 py-1">{{ __('home.path.'.$stage) }}</li>
+                @endforeach
+            </ol>
 
             <div class="mt-5">
                 @include('calculator.inputs')
@@ -56,30 +62,25 @@
         @endforeach
     </nav>
 
-    {{-- what the tools make --}}
+    {{-- the tools people use most: config/home.php --}}
+    @php
+        $homeTools = collect(config('home.tools'))
+            ->mapWithKeys(fn ($key) => [$key => config('tools.'.$key)])
+            ->filter(fn ($t, $key) => $t && $t['available'] && \Illuminate\Support\Facades\Route::has($t['route']) && ($key !== 'figure' || ($config['generator'] ?? false)))
+            ->take((int) config('home.tools_shown', 8));
+    @endphp
     <section class="mt-14" aria-labelledby="home-tools">
         <p class="text-xs font-bold uppercase tracking-[0.14em] text-action">{{ __('home.tools.kicker') }}</p>
         <div class="mt-2 flex flex-wrap items-end justify-between gap-3">
             <div><h2 id="home-tools" class="text-3xl font-extrabold tracking-tight text-ink">{{ __('home.tools.title') }}</h2><p class="mt-1 text-muted">{{ __('home.tools.lead') }}</p></div>
             <a href="{{ route('tools') }}" class="font-semibold text-ink underline-offset-4 hover:underline">{{ __('home.tools.all') }} →</a>
         </div>
-        <div class="mt-6 grid gap-5 md:grid-cols-2">
-            @foreach([['modular', 'organizer', 'home'], ['vase', 'vases', 'craft']] as [$tool, $img, $cat])
-                <a href="{{ route('tools.'.$tool) }}" class="group block rounded-3xl border border-line bg-card p-2 transition hover:border-action">
-                    <div class="overflow-hidden rounded-2xl bg-[#F3EEE6]">{!! $pic($img, __('tools.'.$tool.'.title'), '(min-width: 768px) 540px, 100vw') !!}</div>
-                    <div class="flex items-start justify-between gap-4 px-3 pb-3 pt-5">
-                        <div><p class="text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-muted">{{ __('tools.cat.'.$cat) }}</p><h3 class="mt-1 text-2xl font-bold tracking-tight text-ink">{{ __('home.card.'.$tool) }}</h3><p class="mt-1 text-sm text-muted">{{ __('home.card.'.$tool.'.hint') }}</p></div>
-                        <span class="mt-5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-ink transition group-hover:border-action group-hover:bg-action group-hover:text-white" aria-hidden="true">→</span>
-                    </div>
-                </a>
+        <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            @foreach($homeTools as $key => $tool)
+                @include('tools.card', ['key' => $key, 'tool' => $tool])
             @endforeach
         </div>
-        <div class="mt-5 flex flex-wrap items-center gap-2 text-sm">
-            <span class="text-muted">{{ __('home.tools.more') }}</span>
-            @foreach(array_filter(['figure' => $config['generator'] ?? false, 'lightbox' => true, 'box' => true, 'qr' => true, 'relief' => true]) as $tool => $on)
-                <a href="{{ route('tools.'.$tool) }}" class="rounded-lg border border-line bg-card px-3 py-2 font-medium text-ink hover:border-action">{{ __('tools.'.$tool.'.title') }} →</a>
-            @endforeach
-        </div>
+        <p class="mt-6 text-center"><a href="{{ route('tools') }}" class="btn-secondary">{{ __('home.tools.all_count', ['n' => collect(config('tools'))->filter(fn ($t) => $t['available'])->count()]) }} →</a></p>
     </section>
 
     {{-- how it goes --}}
