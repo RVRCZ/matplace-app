@@ -42,7 +42,8 @@ class YouTubeController extends Controller
         $path = $this->videos->file($order);
         abort_unless($path !== '' && Storage::disk(config('farm.disk'))->exists($path), 404);
 
-        return response()->file(Storage::disk(config('farm.disk'))->path($path), ['Content-Type' => 'video/mp4']);
+        // a rebuilt video keeps its name: the browser has to ask every time (farm:timelapse)
+        return response()->file(Storage::disk(config('farm.disk'))->path($path), ['Content-Type' => 'video/mp4', 'Cache-Control' => 'no-cache']);
     }
 
     public function connect(Request $request): RedirectResponse
