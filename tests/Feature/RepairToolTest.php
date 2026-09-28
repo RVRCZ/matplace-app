@@ -53,10 +53,10 @@ class RepairToolTest extends TestCase
 
     public function test_page_renders_in_three_languages_and_is_listed(): void
     {
-        $this->get('/tools/repair?lang=cs')->assertOk()->assertSee('Oprava 3D modelu')->assertSee('id="repair-file"', false);
-        $this->get('/tools/repair?lang=en')->assertOk()->assertSee('Repair a 3D model');
-        $this->get('/tools/repair?lang=es')->assertOk()->assertSee('Reparar un modelo 3D');
-        $this->get('/tools?lang=cs')->assertOk()->assertSee('Oprava 3D modelu');
+        $this->get('/tools/repair?lang=cs')->assertOk()->assertSee('Opravíme váš rozbitý soubor')->assertSee('id="repair-file"', false);
+        $this->get('/tools/repair?lang=en')->assertOk()->assertSee('We repair your broken file');
+        $this->get('/tools/repair?lang=es')->assertOk()->assertSee('Reparamos su archivo dañado');
+        $this->get('/tools?lang=cs')->assertOk()->assertSee('Opravíme váš rozbitý soubor');
     }
 
     public function test_a_cube_with_a_hole_comes_back_closed_and_the_original_stays(): void

@@ -29,6 +29,7 @@ final class ParametricGenerator
         'box' => [
             'inner_w' => [10, 300, 80, 1], 'inner_d' => [10, 300, 50, 1], 'inner_h' => [8, 200, 30, 1],
             'wall' => [1.2, 5, 2, 0.2], 'floor' => [1, 5, 1.6, 0.2], 'clearance' => [0.1, 0.6, 0.25, 0.05], 'radius' => [0, 30, 2.5, 0.5],
+            'cable_d' => [3, 30, 8, 1],
         ],
         'phone_stand' => [
             'width' => [50, 260, 70, 1], 'device' => [7, 20, 12, 1], 'angle' => [35, 80, 65, 1], 'back' => [60, 200, 100, 1], 'thickness' => [3, 8, 5, 0.5], 'radius' => [0, 4, 2, 0.1], 'depth' => [40, 120, 60, 1], 'vent' => [1, 4, 1.5, 0.1],
@@ -62,13 +63,13 @@ final class ParametricGenerator
     public const CHOICES = [
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
-        'sign' => ['style' => ['emboss', 'engrave', 'outline'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono']],
+        'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'logo' => ['mode' => ['relief', 'height', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
-        'lightbox' => ['led' => ['strip8', 'strip10', 'module']],
-        'cutter' => ['edge' => ['sharp', 'straight'], 'typeface' => ['sans', 'serif', 'mono']],
+        'lightbox' => ['shape' => ['rect', 'round'], 'led' => ['strip8', 'strip10', 'module']],
+        'cutter' => ['edge' => ['sharp', 'straight'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'holder' => ['style' => ['cradle', 'pocket', 'hook', 'clip']],
-        'cap' => ['style' => ['push', 'plug', 'thread'], 'shape' => ['round', 'rect']],
+        'cap' => ['style' => ['push', 'plug', 'thread'], 'shape' => ['round', 'rect', 'hex'], 'head' => ['flat', 'dome']],
     ];
 
     /** kind → text input → [max length, required, default] */
@@ -93,15 +94,16 @@ final class ParametricGenerator
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp'];
 
-    public const FLAGS = ['box' => ['lid'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
+    public const FLAGS = ['box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field or flag → [choice key, values it belongs to]; the form hides it for the other choices */
     public const WHEN = [
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
-        'sign' => ['radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline']]],
+        'sign' => ['radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']],
+            'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']]],
         'holder' => ['obj_d' => ['style', ['cradle', 'pocket', 'hook']]],
-        'cap' => ['size_b' => ['shape', ['rect']], 'pitch' => ['style', ['thread']], 'grip' => ['style', ['push', 'thread']]],
+        'cap' => ['size_b' => ['shape', ['rect']], 'pitch' => ['style', ['thread']], 'grip' => ['style', ['push', 'thread']], 'head' => ['style', ['push']]],
     ];
 
     /** flags that start switched on */
@@ -116,6 +118,7 @@ final class ParametricGenerator
         ],
         // gifts with a text: the same sign tool, four starting points (the landing page /gifts links to them)
         'sign' => [
+            'name' => ['style' => 'name', 'typeface' => 'script', 'text_height' => 14, 'thickness' => 3, 'relief' => 1, 'keyring' => true, 'border' => false, 'bevel' => false, 'two_color' => false],
             'keyring' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 8, 'thickness' => 3, 'relief' => 1, 'margin' => 4, 'radius' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
             'door' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 22, 'thickness' => 3, 'relief' => 1.4, 'margin' => 8, 'radius' => 8, 'keyring' => false, 'border' => true, 'bevel' => false, 'two_color' => true],
             'nametag' => ['style' => 'engrave', 'shape' => 'rect', 'text_height' => 10, 'thickness' => 2.4, 'relief' => 0.8, 'margin' => 4, 'keyring' => false, 'border' => false, 'bevel' => true, 'two_color' => false],
@@ -283,6 +286,9 @@ final class ParametricGenerator
         if (isset(self::TEXTS[$kind]) || in_array($kind, self::ARTWORK, true)) {
             $face = ['serif' => 'DejaVuSerif-Bold.ttf', 'mono' => 'DejaVuSansMono-Bold.ttf'][$clean['typeface'] ?? ''] ?? 'DejaVuSans-Bold.ttf';
             $clean['font'] = base_path('vendor/dompdf/dompdf/lib/fonts/'.$face);
+            if (($clean['typeface'] ?? '') === 'script') {
+                $clean['font'] = base_path('engines/fonts/Pacifico-Regular.ttf');   // handwritten, letters joined (OFL)
+            }
             $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? ''], fn ($l) => $l !== ''));
         }
         if (! empty($clean['artwork'])) {

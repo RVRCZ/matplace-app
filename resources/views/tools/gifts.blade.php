@@ -3,10 +3,10 @@
 @php
     // occasion → the products that suit it; every link opens the sign tool with a preset and a sample text
     $occasions = [
-        'christmas' => ['ornament', 'keyring', 'door'],
-        'valentine' => ['keyring', 'ornament'],
-        'school' => ['nametag', 'keyring'],
-        'birthday' => ['door', 'keyring', 'nametag'],
+        'christmas' => ['name', 'ornament', 'keyring', 'door'],
+        'valentine' => ['name', 'keyring', 'ornament'],
+        'school' => ['name', 'nametag', 'keyring'],
+        'birthday' => ['name', 'door', 'keyring', 'nametag'],
     ];
 @endphp
 

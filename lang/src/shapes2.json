@@ -1,0 +1,127 @@
+{
+    "param.symbols": [
+        "Symboly",
+        "Symbols",
+        "Símbolos"
+    ],
+    "param.o.sign.script": [
+        "Psací",
+        "Handwritten",
+        "Manuscrita"
+    ],
+    "param.o.cutter.script": [
+        "Psací",
+        "Handwritten",
+        "Manuscrita"
+    ],
+    "param.o.sign.name": [
+        "Jen jméno, bez destičky",
+        "The name alone, no plate",
+        "Solo el nombre, sin placa"
+    ],
+    "param.preset.name": [
+        "Jméno psacím písmem",
+        "A handwritten name",
+        "Nombre en letra manuscrita"
+    ],
+    "gifts.product.name": [
+        "Přívěsek ve tvaru jména psacím písmem, s očkem. Za jméno můžete přidat srdíčko nebo hvězdu.",
+        "A pendant in the shape of the name in handwriting, with an eyelet. Add a heart or a star after the name.",
+        "Un colgante con la forma del nombre en letra manuscrita, con ojal. Añada un corazón o una estrella tras el nombre."
+    ],
+    "gifts.sample.christmas.name": [
+        "Anička ★",
+        "Annie ★",
+        "Ana ★"
+    ],
+    "gifts.sample.valentine.name": [
+        "Eva ♥",
+        "Eve ♥",
+        "Eva ♥"
+    ],
+    "gifts.sample.school.name": [
+        "Matěj",
+        "Matthew",
+        "Mateo"
+    ],
+    "gifts.sample.birthday.name": [
+        "Emma ♥",
+        "Emma ♥",
+        "Emma ♥"
+    ],
+    "tools.gifts.hint": [
+        "Jméno psacím písmem, klíčenka, jmenovka nebo cedulka na dveře. Se srdíčkem, hvězdou i tlapkou. Náhled a cena hned.",
+        "A handwritten name, a keyring, a name tag or a door sign. With a heart, a star or a paw. Preview and price at once.",
+        "Un nombre manuscrito, un llavero, una etiqueta o un cartel de puerta. Con corazón, estrella o huella. Vista previa y precio al instante."
+    ],
+    "param.c.lightbox.shape": [
+        "Tvar",
+        "Shape",
+        "Forma"
+    ],
+    "param.o.lightbox.rect": [
+        "Obdélníkový",
+        "Rectangular",
+        "Rectangular"
+    ],
+    "param.o.lightbox.round": [
+        "Kulatý s rovnou patou",
+        "Round with a flat foot",
+        "Redondo con base plana"
+    ],
+    "param.o.cap.hex": [
+        "Šestihranný",
+        "Hexagonal",
+        "Hexagonal"
+    ],
+    "param.c.cap.head": [
+        "Vršek",
+        "Top",
+        "Parte superior"
+    ],
+    "param.o.cap.flat": [
+        "Rovný",
+        "Flat",
+        "Plana"
+    ],
+    "param.o.cap.dome": [
+        "Kulový",
+        "Domed",
+        "Abovedada"
+    ],
+    "param.error.cap_dome_round": [
+        "Kulový vršek umíme jen na kulatém nasazovacím víčku. Zvolte kulatý tvar a nasazení na hrdlo.",
+        "The domed top is made only on a round push-on cap. Choose the round shape and the push-on fit.",
+        "La parte abovedada solo se hace en una tapa redonda a presión. Elija la forma redonda y el ajuste a presión."
+    ],
+    "param.flag.cable_slot": [
+        "S výřezem na kabel",
+        "With a slot for the cable",
+        "Con ranura para el cable"
+    ],
+    "param.flag.cable_slot.hint": [
+        "Výřez od horního okraje v pravé stěně. Kabel do něj položíte i s koncovkou a víčko se nad ním zavře.",
+        "A slot from the top rim in the right wall. The cable goes in with its plug on and the lid closes over it.",
+        "Una ranura desde el borde superior en la pared derecha. El cable entra con su conector y la tapa cierra encima."
+    ],
+    "param.f.cable_d": [
+        "Šířka výřezu na kabel",
+        "Width of the cable slot",
+        "Ancho de la ranura del cable"
+    ],
+    "param.error.box_cable_too_big": [
+        "Výřez na kabel se do stěny nevejde. Zmenšete ho, nebo zvětšete krabičku.",
+        "The cable slot does not fit in the wall. Make it smaller or the box bigger.",
+        "La ranura del cable no cabe en la pared. Redúzcala o agrande la caja."
+    ],
+    "tools.repair.title": [
+        "Opravíme váš rozbitý soubor",
+        "We repair your broken file",
+        "Reparamos su archivo dañado"
+    ],
+    "tools.repair.hint": [
+        "Slicer model odmítá nebo ho tiskne špatně? Opravíme díry, převrácené plochy a zdvojené stěny a řekneme, co bylo špatně.",
+        "Your slicer refuses the model or prints it badly? We close holes, turn flipped faces, remove doubled walls and say what was wrong.",
+        "¿Su programa de corte rechaza el modelo o lo imprime mal? Cerramos agujeros, corregimos caras invertidas y paredes dobles y decimos qué fallaba."
+    ]
+}

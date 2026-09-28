@@ -65,6 +65,25 @@ def _glyph_polys(font, glyph_set, name, steps=8):
     return pen.polys
 
 
+def _spare_fonts(font_path):
+    """
+    Where a character is looked for when the chosen typeface does not have it: DejaVu Sans (hearts, stars, notes,
+    arrows) and Noto Emoji (faces, animals, cakes). A handwritten face has letters only; "Emma ♥" must still work.
+    """
+    import os
+    here = os.path.dirname(os.path.abspath(__file__))
+    found = []
+    for path in (os.path.join(here, "..", "..", "vendor", "dompdf", "dompdf", "lib", "fonts", "DejaVuSans-Bold.ttf"),
+                 os.path.join(here, "..", "fonts", "NotoEmoji.ttf")):
+        if os.path.isfile(path) and os.path.abspath(path) != os.path.abspath(str(font_path)):
+            found.append(path)
+    return found
+
+
+# joiners and modifiers of emoji: they draw nothing themselves
+SILENT = {0xFE0E, 0xFE0F, 0x200D, 0x20E3} | set(range(0x1F3FB, 0x1F400))
+
+
 def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center"):
     """Lines of text → outline. cap_height_mm is the height of a capital letter, so "12 mm text" means what people expect."""
     import numpy as np
@@ -77,13 +96,54 @@ def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center"):
     units = font["head"].unitsPerEm
     cap = getattr(font["OS/2"], "sCapHeight", 0) or units * 0.72
     k = cap_height_mm / cap
+    spare = []                                              # opened only when a character is missing
+
+    def borrowed(code):
+        """The glyph from a spare font, in the units of the main font and as tall as its capitals: (polys, advance)."""
+        if not spare:
+            for path in _spare_fonts(font_path):
+                try:
+                    f = TTFont(path)
+                    spare.append((f, f.getGlyphSet(), f.getBestCmap(), f["hmtx"]))
+                except Exception:  # noqa: BLE001 - a broken spare font only means the character stays missing
+                    pass
+            spare.append(None)                              # marks "already looked"
+        for entry in spare:
+            if entry is None:
+                continue
+            f, fgs, fcmap, fhmtx = entry
+            name = fcmap.get(code)
+            if name is None:
+                continue
+            polys = _glyph_polys(f, fgs, name)
+            if not polys:
+                continue
+            ys = [py for poly in polys for _, py in poly]
+            xs = [px for poly in polys for px, _ in poly]
+            tall = max(ys) - min(ys)
+            if tall <= 0:
+                continue
+            # a symbol is as tall as a capital letter and stands on the baseline, whatever its own font thinks
+            s = cap * 1.05 / tall
+            x0, y0 = min(xs), min(ys)
+            pad = units * 0.06
+            return [[((px - x0) * s + pad, (py - y0) * s - cap * 0.025) for px, py in poly] for poly in polys], (max(xs) - x0) * s + 2 * pad
+        return None, 0
     polys, missing, widths, total = [], set(), [], 0
     rows = []
     for line in lines:
         x, row = 0.0, []
         for ch in line:
+            if ord(ch) in SILENT:
+                continue
             g = cmap.get(ord(ch))
             if g is None:
+                got, advance = (None, 0) if ch.isspace() else borrowed(ord(ch))
+                if got:
+                    for poly in got:
+                        row.append([(px + x, py) for px, py in poly])
+                    x += advance
+                    continue
                 if not ch.isspace():
                     missing.add(ch)
                 x += units * 0.3

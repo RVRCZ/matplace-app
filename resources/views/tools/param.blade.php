@@ -68,6 +68,15 @@
                             </label>
                         @endforeach
                     </div>
+                    @if($kind !== 'qr' && $texts)
+                        {{-- symbols the typefaces can draw: a click writes one where the cursor is --}}
+                        <div id="param-symbols" class="mt-2 flex flex-wrap items-center gap-1" role="group" aria-label="{{ __('param.symbols') }}">
+                            <span class="mr-1 text-xs text-muted">{{ __('param.symbols') }}</span>
+                            @foreach(['♥', '★', '☺', '♪', '✿', '☀', '☾', '✓', '🐾', '🎂', '🎄', '🎁', '👑', '⚽', '🚀', '🦋', '🐱', '🐶', '🌸'] as $symbol)
+                                <button type="button" data-symbol="{{ $symbol }}" class="h-9 w-9 rounded-lg border border-slate-300 bg-white text-lg leading-none hover:border-action">{{ $symbol }}</button>
+                            @endforeach
+                        </div>
+                    @endif
                     @if($artwork)
                         <div class="mt-3 rounded-xl border border-dashed border-line p-3">
                             <label class="text-sm font-medium text-ink">{{ __('param.artwork') }} <span class="font-normal text-muted">{{ __('param.artwork.hint') }}</span>
@@ -80,7 +89,7 @@
             @endif
 
             @foreach($choices as $key => $options)
-                <fieldset>
+                <fieldset @if(isset($when[$key])) data-when="{{ $when[$key][0] }}={{ implode(',', $when[$key][1]) }}" @endif>
                     <legend class="lbl">{{ __('param.c.'.$kind.'.'.$key) }}</legend>
                     <div class="mt-2 flex flex-wrap gap-2" role="radiogroup">
                         @foreach($options as $i => $o)

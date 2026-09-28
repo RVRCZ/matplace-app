@@ -11,6 +11,7 @@ use App\Engines\Mesh\StlTopology;
 use App\Models\ModelFile;
 use App\Support\NextStep;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -233,6 +234,102 @@ class ToolsFlowTest extends TestCase
         $this->assertSame('holder', $created->json('file.kind'));
         $this->assertFalse($created->json('file.hints.supports'));
         $this->assertTrue(ModelFile::where('uuid', $created->json('file.uuid'))->firstOrFail()->builtForPrinting());
+    }
+
+    /** The pictures on the tool cards promise these: a handwritten name with a heart, a round light box, a hexagonal and a domed cap, a box with a cable slot. */
+    public function test_the_shapes_shown_on_the_tool_cards_can_be_made(): void
+    {
+        $this->get('/tools/sign?lang=cs')->assertOk()->assertSee('Psací')->assertSee('Jen jméno, bez destičky')->assertSee('data-symbol="♥"', false)->assertSee('data-preset="name"', false);
+        $this->get('/tools/qr?lang=cs')->assertOk()->assertDontSee('data-symbol', false);
+        $this->get('/tools/illuminated-sign?lang=cs')->assertOk()->assertSee('Kulatý s rovnou patou');
+        $this->get('/tools/cap?lang=cs')->assertOk()->assertSee('Šestihranný')->assertSee('Kulový')->assertSee('data-when="style=push"', false);
+        $this->get('/tools/box?lang=cs')->assertOk()->assertSee('S výřezem na kabel');
+        $this->get('/gifts?lang=cs')->assertOk()->assertSee('Jméno psacím písmem')->assertSee('preset=name', false);
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        $meta = fn ($r) => json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $closed = function ($r, string $what): void {
+            $stl = tempnam(sys_get_temp_dir(), 'shape').'.stl';
+            file_put_contents($stl, $r->streamedContent());
+            $t = StlTopology::check($stl);
+            @unlink($stl);
+            $this->assertTrue($t['watertight'], $what);
+        };
+
+        // the name is the pendant: one piece although the heart stands apart, no character missing
+        $name = ['style' => 'name', 'typeface' => 'script', 'text_height' => 14, 'thickness' => 3, 'relief' => 1, 'keyring' => true, 'line1' => 'Emma ♥'];
+        $r = $this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => $name])->assertOk();
+        $m = $meta($r);
+        $this->assertSame([], $m['notes']['missing_chars']);
+        $this->assertGreaterThanOrEqual(1, $m['notes']['links']);
+        $this->assertLessThan(30, $m['bbox']['y'], 'no plate round the name');
+        $closed($r, 'name');
+        // an emoji from the spare font on an ordinary plate
+        $m = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => ['style' => 'emboss', 'typeface' => 'sans', 'line1' => 'Rex 🐾']])->assertOk());
+        $this->assertSame([], $m['notes']['missing_chars']);
+
+        $r = $this->postJson('/api/tools/param/preview', ['kind' => 'lightbox', 'params' => ['shape' => 'round', 'width' => 160, 'depth' => 35, 'line1' => 'OPEN'], 'part' => 'body'])->assertOk();
+        $m = $meta($r);
+        $this->assertEqualsWithDelta(160.0, $m['bbox']['x'], 0.1);
+        $this->assertEqualsWithDelta(144.0, $m['bbox']['y'], 0.1, 'a circle with a fifth of its radius cut off for the foot');
+        $this->assertEqualsWithDelta(96.0, $m['notes']['foot_mm'], 0.1);
+        $closed($r, 'round light box');
+
+        $r = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'plug', 'shape' => 'hex', 'size_a' => 30, 'height' => 12]])->assertOk();
+        $this->assertSame([30], array_map('intval', $meta($r)['notes']['fits']));
+        $closed($r, 'hexagonal plug');
+        $r = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'push', 'shape' => 'round', 'head' => 'dome', 'size_a' => 30, 'height' => 12, 'wall' => 2, 'clearance' => 0.3]])->assertOk();
+        $this->assertEqualsWithDelta(12 + 30 / 2 + 0.3 + 2, $meta($r)['bbox']['z'], 0.05, 'the skirt and a half ball');
+        $closed($r, 'domed cap');
+        $bad = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'cap', 'params' => ['style' => 'push', 'shape' => 'hex', 'head' => 'dome', 'size_a' => 30]])->assertStatus(422);
+        $this->assertStringContainsString('Kulový vršek', $bad->json('errors.params.0'));
+
+        $plain = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['inner_w' => 120, 'inner_d' => 70, 'inner_h' => 50, 'lid' => true], 'part' => 'body'])->assertOk());
+        $r = $this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['inner_w' => 120, 'inner_d' => 70, 'inner_h' => 50, 'lid' => true, 'cable_slot' => true, 'cable_d' => 10], 'part' => 'body'])->assertOk();
+        $this->assertLessThan($plain['volume_mm3'] - 200, $meta($r)['volume_mm3'], 'the slot took plastic out of the wall');
+        $closed($r, 'box with a cable slot');
+        $small = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'box', 'params' => ['inner_w' => 30, 'inner_d' => 20, 'inner_h' => 10, 'lid' => true, 'cable_slot' => true, 'cable_d' => 20]])->assertStatus(422);
+        $this->assertStringContainsString('Výřez na kabel', $small->json('errors.params.0'));
+    }
+
+    /** A bear drawn in black with white eyes or as a line drawing: the cutter cuts the head, the stamp marks the face. */
+    public function test_a_bear_gets_its_outline_cut_and_its_face_stamped(): void
+    {
+        if (! app(ParametricGenerator::class)->available() || ! function_exists('imagecreatetruecolor')) {
+            $this->markTestSkipped('Python with manifold3d or GD is not installed.');
+        }
+        Storage::fake('local');
+        $meta = fn ($r) => json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        foreach (['filled', 'lines'] as $how) {
+            $im = imagecreatetruecolor(400, 400);
+            $white = imagecolorallocate($im, 255, 255, 255);
+            $black = imagecolorallocate($im, 0, 0, 0);
+            imagefill($im, 0, 0, $white);
+            imagesetthickness($im, 7);
+            foreach ([[100, 85, 110], [300, 85, 110], [200, 215, 280]] as [$x, $y, $d]) {
+                if ($how === 'filled') {
+                    imagefilledellipse($im, $x, $y, $d, $d, $black);
+                } else {
+                    imagefilledellipse($im, $x, $y, $d, $d, $black);
+                    imagefilledellipse($im, $x, $y, $d - 14, $d - 14, $white);
+                }
+            }
+            $ink = $how === 'filled' ? $white : $black;
+            imagefilledellipse($im, 152, 178, 26, 26, $ink);
+            imagefilledellipse($im, 248, 178, 26, 26, $ink);
+            imagefilledellipse($im, 200, 236, 32, 24, $ink);
+            $png = sys_get_temp_dir().'/mp_bear_'.$how.'_'.uniqid().'.png';
+            imagepng($im, $png);
+            $ref = $this->post('/api/tools/artwork', ['file' => new UploadedFile($png, 'bear.png', 'image/png', null, true)], ['Accept' => 'application/json'])->assertSuccessful()->json('artwork');
+            $m = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cutter', 'params' => ['width' => 80, 'stamp' => true, 'artwork' => $ref]])->assertOk());
+            $this->assertSame(['body', 'stamp'], $m['notes']['parts'], $how);
+            $stamp = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cutter', 'params' => ['width' => 80, 'stamp' => true, 'artwork' => $ref], 'part' => 'stamp'])->assertOk());
+            // the marks are the eyes and the nose, not the whole head: the raised part is a small share of the plate
+            $plate = $stamp['bbox']['x'] * $stamp['bbox']['y'] * 1.6;
+            $this->assertLessThan($plate * 0.9, $stamp['volume_mm3'], $how);
+            @unlink($png);
+        }
     }
 
     public function test_lid_plug_and_threaded_cap_fit_what_was_measured(): void

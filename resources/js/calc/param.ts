@@ -377,6 +377,22 @@ export function bootParam(): void {
             refresh();
         };
     });
+    // a symbol goes where the cursor was in the text field used last
+    let lastText = form.querySelector<HTMLInputElement>('[data-text]');
+    form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => i.addEventListener('focus', () => { lastText = i; }));
+    form.querySelectorAll<HTMLButtonElement>('[data-symbol]').forEach((b) => b.addEventListener('click', () => {
+        const input = lastText;
+        if (!input) return;
+        const at = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? at;
+        const next = input.value.slice(0, at) + b.dataset.symbol! + input.value.slice(end);
+        if (input.maxLength > 0 && next.length > input.maxLength) return;
+        input.value = next;
+        input.focus();
+        const caret = at + b.dataset.symbol!.length;
+        input.setSelectionRange(caret, caret);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }));
     // fields and flags that belong to one choice only ("data-when=style=desk,wedge") hide for the other choices
     const applyWhen = (): void => {
         form.querySelectorAll<HTMLElement>('[data-when]').forEach((el) => {
