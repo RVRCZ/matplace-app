@@ -87,11 +87,18 @@ class BuildFarmTimelapse implements ShouldQueue
 
     /**
      * Pictures taken after every layer with the head parked (TimelapseGcode) when there are enough of them, else the
-     * one-a-minute pictures. Layer pictures end with the last timed picture taken after them: the finished piece.
+     * one-a-minute pictures. Pictures that caught the head printing are left out (TimelapseFrames).
      *
      * @return array{0: Collection<int,string>, 1: float} frames and seconds per frame
      */
     private function frames(FarmOrder $order): array
+    {
+        return $this->frames ??= $this->collectFrames($order);    // the Short asks again; the stray check takes seconds
+    }
+
+    private ?array $frames = null;
+
+    private function collectFrames(FarmOrder $order): array
     {
         $disk = Storage::disk(config('farm.disk'));
         $jpgs = fn (string $dir) => collect($disk->files($order->dir().'/'.$dir))->filter(fn ($f) => str_ends_with($f, '.jpg'))
@@ -107,9 +114,8 @@ class BuildFarmTimelapse implements ShouldQueue
             Log::info('Farm time-lapse: stray layer pictures left out', ['order' => $order->id, 'count' => count($strays), 'of' => $layer->count()]);
             $layer = $layer->forget($strays)->values();
         }
-        $after = (float) basename((string) $layer->last(), '.jpg');
-        $end = $timed->last(fn ($f) => (float) basename($f, '.jpg') > $after);
-        $frames = $end ? $layer->push($end) : $layer;
+        // the last layer picture is the finished piece: the printer's own end position may be in the picture
+        $frames = $layer;
 
         // 10 to 60 seconds of growing, one layer at least 1/24 s
         return [$frames, max(1 / self::FPS, min(self::FRAME_SECONDS, 30 / $frames->count()))];
