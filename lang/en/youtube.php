@@ -6,6 +6,7 @@ return [
     ],
 
     'order' => [
+        'short_download' => 'Download the square video (Instagram, TikTok, Shorts)',
         'title' => 'Video on YouTube',
         'on' => 'You agree that the time-lapse of this print may be published on the Matplace YouTube channel. We check every video before publishing it.',
         'off' => 'We will not publish the video of this print. If you would like it to appear on the Matplace YouTube channel, you can allow it.',

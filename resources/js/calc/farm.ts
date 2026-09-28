@@ -19,6 +19,7 @@ interface FarmState {
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; cancel_keep: number | null;
     print: { status: string; progress: number; snapshot_url: string | null; snapshot_at: string | null } | null;
     timelapse_url?: string | null;
+    short_url?: string | null;
     can_cancel: boolean; final: boolean;
 }
 interface FarmCfg { state: FarmState; routes: Record<string, string>; csrf: string; i18n: Record<string, string> }
@@ -217,6 +218,11 @@ export function bootFarmOrder(): void {
         if (video) {
             show(video.parentElement, !!s.timelapse_url);
             if (s.timelapse_url && video.getAttribute('src') !== s.timelapse_url) video.src = s.timelapse_url;
+        }
+        const short = $<HTMLAnchorElement>('farm-short');
+        if (short) {
+            show(short, !!s.short_url);
+            if (s.short_url) short.href = s.short_url;
         }
         if (print) {
             $('farm-progress-val')!.textContent = `${Math.round(print.progress)} %`;

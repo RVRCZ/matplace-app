@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\FarmSettings;
 use App\Domain\YouTube\FarmVideos;
 use App\Jobs\UploadFarmVideo;
+use App\Mail\FarmAdminAlert;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
 use App\Models\Payment;
@@ -41,6 +43,7 @@ class YouTubeVideosTest extends TestCase
         $this->user = User::factory()->create(['email' => 'customer@example.com']);
         $this->admin = User::factory()->create(['email' => 'admin@example.com']);
         $this->admin->setRole(User::ROLE_ADMIN, true);
+        app(FarmSettings::class)->set('admin_email', 'farm@example.com');
     }
 
     /** A paid customer order (fake slicer, fake gateway), optionally with the YouTube checkbox ticked. */
@@ -123,6 +126,15 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame('vid123', $video->youtube_id);
         Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable') && $r['status']['privacyStatus'] === 'private');
         $this->assertStringContainsString('Časosběr 3D tisku', $video->title);
+        Mail::assertQueued(FarmAdminAlert::class, fn ($m) => str_contains($m->subjectLine, 'Video ke schválení') && $m->url === route('admin.youtube.index'));
+
+        // the customer can download the square Short once it exists
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}/short.mp4")->assertNotFound();
+        Storage::disk('farm')->put($order->dir().'/short.mp4', 'mp4');
+        $order->forceFill(['timelapse_short_path' => $order->dir().'/short.mp4'])->save();
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}/short.mp4")->assertOk()->assertDownload('matplace-'.$order->number.'-short.mp4');
+        $this->assertStringContainsString('short.mp4', (string) $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json('short_url'));
+        $this->actingAs(User::factory()->create())->get("/farm/orders/{$order->token}/short.mp4")->assertNotFound();
 
         // built again before approval: the private copy is deleted and the new file uploaded
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/replace")->assertRedirect()->assertSessionHas('status');

@@ -6,6 +6,7 @@ return [
     ],
 
     'order' => [
+        'short_download' => 'Stáhnout čtvercové video (Instagram, TikTok, Shorts)',
         'title' => 'Video na YouTube',
         'on' => 'Souhlasíte se zveřejněním časosběrného videa tohoto tisku na YouTube kanálu Matplace. Video před zveřejněním kontrolujeme.',
         'off' => 'Video tohoto tisku nezveřejníme. Pokud chcete, aby se objevilo na YouTube kanálu Matplace, můžete to povolit.',

@@ -226,6 +226,17 @@ class OrderController extends Controller
         return response()->file(Storage::disk(config('farm.disk'))->path($order->timelapse_path), ['Content-Type' => 'video/mp4', 'Cache-Control' => 'private, max-age=3600']);
     }
 
+    /** The square Short of the customer's own print, to share (Instagram, TikTok, Shorts). */
+    public function short(Request $request, FarmOrder $order): BinaryFileResponse
+    {
+        $this->authorizeOrder($request, $order);
+        abort_unless($order->timelapse_short_path && Storage::disk(config('farm.disk'))->exists($order->timelapse_short_path), 404);
+
+        return response()->download(Storage::disk(config('farm.disk'))->path($order->timelapse_short_path), 'matplace-'.$order->number.'-short.mp4', [
+            'Content-Type' => 'video/mp4', 'Cache-Control' => 'private, no-cache',
+        ]);
+    }
+
     public function terms(): View
     {
         return view('farm.terms', ['version' => $this->settings->get('terms_version')]);
@@ -293,6 +304,7 @@ class OrderController extends Controller
             'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
             'timelapse_url' => $order->timelapse_path ? route('farm.orders.timelapse', $order) : null,
+            'short_url' => $order->timelapse_short_path ? route('farm.orders.short', $order) : null,
             // what stopping a running print would cost right now (the printed share)
             'cancel_keep' => $order->status === FarmOrder::STATUS_PRINTING && $job ? app(OrderFlow::class)->shareOfPrice((array) $order->price, (float) $job->progress / 100) : null,
             'print' => $job ? [

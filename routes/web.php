@@ -145,6 +145,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/farm/orders/{order}/supports.bin', [OrderController::class, 'supports'])->name('farm.orders.supports');
     Route::get('/farm/orders/{order}/snapshot', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
     Route::get('/farm/orders/{order}/timelapse.mp4', [OrderController::class, 'timelapse'])->name('farm.orders.timelapse');
+    Route::get('/farm/orders/{order}/short.mp4', [OrderController::class, 'short'])->name('farm.orders.short');
     Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1,video-consent')->name('farm.orders.video_consent');
 
     Route::get('/account/credit', [CreditController::class, 'index'])->name('account.credit');

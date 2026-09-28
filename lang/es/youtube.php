@@ -6,6 +6,7 @@ return [
     ],
 
     'order' => [
+        'short_download' => 'Descargar el vídeo cuadrado (Instagram, TikTok, Shorts)',
         'title' => 'Vídeo en YouTube',
         'on' => 'Acepta que el time-lapse de esta impresión se publique en el canal de YouTube de Matplace. Revisamos cada vídeo antes de publicarlo.',
         'off' => 'No publicaremos el vídeo de esta impresión. Si quiere que aparezca en el canal de YouTube de Matplace, puede permitirlo.',

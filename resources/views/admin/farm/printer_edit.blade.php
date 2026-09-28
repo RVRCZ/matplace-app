@@ -79,6 +79,36 @@
                 <span class="flex gap-2"><input type="number" min="0" name="timelapse[crop_x]" value="{{ old('timelapse.crop_x', $tl['crop_x']) }}" class="{{ $in }}"><input type="number" min="0" name="timelapse[crop_y]" value="{{ old('timelapse.crop_y', $tl['crop_y']) }}" class="{{ $in }}"></span></label>
             <label class="{{ $lb }}">Short – strana čtverce (px)<input type="number" min="100" name="timelapse[crop_size]" value="{{ old('timelapse.crop_size', $tl['crop_size']) }}" class="{{ $in }}"></label>
         </div>
+        @if($printer->exists && $printer->snapshot_path)
+            {{-- the Short's square over the last camera picture; follows the fields while typing --}}
+            <figure class="mt-3 max-w-xl">
+                <div class="relative overflow-hidden rounded-lg">
+                    <img id="tl-snap" src="{{ route('admin.farm.printers.snapshot', $printer) }}?t={{ $printer->snapshot_at?->timestamp }}" alt="Poslední snímek kamery" class="block w-full rounded-lg border border-slate-200">
+                    <div id="tl-crop" class="pointer-events-none absolute hidden border-2 border-action" style="box-shadow: 0 0 0 9999px rgba(0,0,0,.45)"></div>
+                </div>
+                <figcaption class="mt-1 text-xs text-slate-500">Poslední snímek kamery ({{ $printer->snapshot_at?->format('j. n. H:i') }}); světlý čtverec = výřez Shortu. Pro aktuální snímek rozsviťte v přehledu tiskáren světlo.</figcaption>
+            </figure>
+            <script>
+                (() => {
+                    const img = document.getElementById('tl-snap'), box = document.getElementById('tl-crop');
+                    const field = (k) => document.querySelector(`[name="timelapse[${k}]"]`);
+                    const draw = () => {
+                        const w = img.naturalWidth, h = img.naturalHeight;
+                        if (!w || !h) return;
+                        const side = Math.min(w, h, parseInt(field('crop_size').value, 10) || Math.min(w, h));
+                        const x = Math.max(0, Math.min(w - side, field('crop_x').value === '' ? (w - side) / 2 : parseInt(field('crop_x').value, 10)));
+                        const y = Math.max(0, Math.min(h - side, field('crop_y').value === '' ? (h - side) / 2 : parseInt(field('crop_y').value, 10)));
+                        const k = img.clientWidth / w;
+                        Object.assign(box.style, { left: `${x * k}px`, top: `${y * k}px`, width: `${side * k}px`, height: `${side * k}px` });
+                        box.classList.remove('hidden');
+                    };
+                    img.addEventListener('load', draw);
+                    window.addEventListener('resize', draw);
+                    ['crop_x', 'crop_y', 'crop_size'].forEach((k) => field(k).addEventListener('input', draw));
+                    if (img.complete) draw();
+                })();
+            </script>
+        @endif
     </section>
 
     <section class="rounded-2xl border border-slate-200 bg-white p-4">

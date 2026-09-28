@@ -2,11 +2,14 @@
 
 namespace App\Domain\YouTube;
 
+use App\Domain\Farm\FarmSettings;
 use App\Jobs\UploadFarmVideo;
+use App\Mail\FarmAdminAlert;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
 use App\Models\YouTubeAccount;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -82,7 +85,10 @@ class FarmVideos
         // the customer changed their mind while the upload ran
         if (! $order->refresh()->video_consent) {
             $this->withdraw($order);
+
+            return;
         }
+        $this->tellAdmin($video, $order);
     }
 
     /** Make an uploaded video public, with the title and description the admin settled on. */
@@ -165,6 +171,23 @@ class FarmVideos
             }
         }
         $video->update(['status' => FarmVideo::STATUS_WITHDRAWN, 'youtube_id' => null, 'published_at' => null]);
+    }
+
+    /** The farm admin hears that a video waits in /admin/youtube (farm setting admin_email; empty = nobody). */
+    private function tellAdmin(FarmVideo $video, FarmOrder $order): void
+    {
+        $to = (string) app(FarmSettings::class)->get('admin_email');
+        if ($to === '') {
+            return;
+        }
+        try {
+            Mail::to($to)->queue(new FarmAdminAlert('Video ke schválení: '.$order->number, [
+                'Časosběr zakázky '.$order->number.' je na YouTube jako soukromé video a čeká na schválení.',
+                'Název: '.$video->title,
+            ], route('admin.youtube.index')));
+        } catch (\Throwable $e) {
+            Log::warning('YouTube approval mail failed', ['video' => $video->id, 'error' => $e->getMessage()]);
+        }
     }
 
     /** The square Short when it was built (it grows the channel), else the landscape time-lapse. */

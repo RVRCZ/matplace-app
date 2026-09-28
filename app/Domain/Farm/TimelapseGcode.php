@@ -98,6 +98,24 @@ final class TimelapseGcode
         return ['park_x' => (float) $m[1], 'park_y' => (float) $m[2], 'dwell_ms' => (int) $m[3], 'travel_mm_s' => (int) ($m[4] ?: 200), 'frames' => (int) $m[5]];
     }
 
+    /**
+     * Minutes the parking adds to a print: one stop per layer after the first, each = lift and lower + the way
+     * from the middle of the plate to the park position and back + the dwell (+ a little for accelerating).
+     */
+    public static function extraMinutes(string $gcode, array $o, float $bedX, float $bedY): int
+    {
+        $stops = max(0, substr_count($gcode, "\n".self::MARKER) - 1);
+        if ($stops === 0 || preg_match('/^M82\b/m', $gcode)) {
+            return 0;
+        }
+        $travel = max(50.0, min(600.0, (float) ($o['travel_mm_s'] ?? 200)));
+        $distance = hypot((float) $o['park_x'] - $bedX / 2, (float) $o['park_y'] - $bedY / 2);
+        $perStop = max(300, min(5000, (int) ($o['dwell_ms'] ?? 1000))) / 1000 + 2 * $distance / $travel
+            + 2 * max(0.2, min(5.0, (float) ($o['lift_mm'] ?? 0.6))) / 15 + 0.3;
+
+        return (int) ceil($stops * $perStop / 60);
+    }
+
     /** Writes the time-lapse copy next to the given file and returns its path. */
     public static function fileFor(string $gcodePath, array $options): string
     {

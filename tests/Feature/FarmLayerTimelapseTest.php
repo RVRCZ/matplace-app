@@ -72,6 +72,20 @@ GCODE;
         $this->assertSame($out, TimelapseGcode::apply($out, ['park_x' => 1, 'park_y' => 1]), 'applied once only');
     }
 
+    public function test_parking_time_is_counted_per_stop(): void
+    {
+        // 2 stops, 170 mm from the middle of a 250 mm plate to (240, 250): 1.2 s dwell + 1.7 s there and back + lift ≈ 3.3 s each
+        $this->assertSame(1, TimelapseGcode::extraMinutes(self::ORCA, ['park_x' => 240, 'park_y' => 250, 'dwell_ms' => 1200, 'lift_mm' => 0.6, 'travel_mm_s' => 200], 250, 250));
+        $many = str_repeat('; AFTER_LAYER_CHANGE
+G1 X1 Y1 E.1
+', 301);    // 300 stops ≈ 16.4 min
+        $this->assertSame(17, TimelapseGcode::extraMinutes('G90
+M83
+'.$many, ['park_x' => 240, 'park_y' => 250, 'dwell_ms' => 1200], 250, 250));
+        $this->assertSame(0, TimelapseGcode::extraMinutes('M82
+'.$many, ['park_x' => 240, 'park_y' => 250], 250, 250));
+    }
+
     public function test_absolute_extrusion_or_a_file_without_markers_is_left_alone(): void
     {
         $this->assertSame("M82\n".self::ORCA, TimelapseGcode::apply("M82\n".self::ORCA, ['park_x' => 1, 'park_y' => 1]));

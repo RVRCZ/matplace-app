@@ -9,6 +9,7 @@ use App\Domain\Farm\OrderService;
 use App\Domain\Farm\PlateLayout;
 use App\Domain\Farm\PrintProfile;
 use App\Domain\Farm\TestPrintService;
+use App\Domain\Farm\TimelapseGcode;
 use App\Domain\Farm\TowerGcode;
 use App\Engines\Contracts\PrintPreparer;
 use App\Engines\Contracts\Slicer;
@@ -158,6 +159,10 @@ class PrepareFarmOrder implements ShouldQueue
                 @unlink($supportsBin);
             }
 
+            // the head parks for the time-lapse after every layer on this machine: that time is printing time too
+            $timelapse = $printer->timelapseFor($order);
+            $parking = $timelapse ? TimelapseGcode::extraMinutes((string) File::get($disk->path($gcodeRel)), $timelapse, (float) $printer->bed_x, (float) $printer->bed_y) : 0;
+
             $order->fill([
                 'gcode_path' => $gcodeRel,
                 'gcode_sha256' => hash_file('sha256', $disk->path($gcodeRel)),
@@ -167,9 +172,10 @@ class PrepareFarmOrder implements ShouldQueue
                     'infill_percent' => $infill, 'unit_scale' => $order->unit_scale, 'profiles' => $profiles, 'overrides' => $overrides,
                     'profile_layers' => $profile->layers, 'profile_fingerprint' => $profile->sliceFingerprint(),
                     'profile_hashes' => $this->profileHashes($profiles), 'preparer' => $order->isTest() ? 'php-stl' : $preparer->name(), 'sliced_at' => now()->toIso8601String(),
+                    'timelapse_minutes' => $parking,
                 ],
                 'slice_result' => $result->toArray(),
-                'est_minutes' => $result->minutes,
+                'est_minutes' => $result->minutes + $parking,
                 'est_grams' => $result->grams,
                 'est_meters' => $result->meters,
                 'supports_used' => $result->supportsUsed,
