@@ -59,6 +59,8 @@ return [
         'supports' => 'Podpěry',
         'supports_yes' => 'ano, stromové, jen kde jsou potřeba',
         'supports_no' => 'nejsou potřeba',
+        'recolor' => 'Přepočítat pro zvolenou barvu',
+        'recolor_note' => 'Změnili jste barvu. Může být v jiné tiskárně a z jiného materiálu, proto je potřeba cenu a čas spočítat znovu.',
         'supports_off' => 'bez podpěr, na vaše přání',
         'supports_hide' => 'Skrýt podpěry', 'supports_show' => 'Zobrazit podpěry',
         'oriented' => 'Model jsme natočili pro co nejlepší tisk. V náhledu je v poloze, ve které se bude tisknout.',

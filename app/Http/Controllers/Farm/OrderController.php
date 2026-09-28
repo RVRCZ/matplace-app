@@ -155,9 +155,10 @@ class OrderController extends Controller
             'copies' => ['nullable', 'integer', 'min:1', 'max:'.PlateLayout::MAX_COPIES],
             'scale' => ['nullable', 'numeric', 'min:0.25', 'max:'.config('pricing.max_scale', 4)],
             'supports' => ['nullable', 'in:auto,off'],
+            'slot' => ['nullable', 'integer'],
         ]);
         try {
-            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null, $data['supports'] ?? null);
+            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null, $data['supports'] ?? null, isset($data['slot']) ? (int) $data['slot'] : null);
         } catch (FarmRefusal $e) {
             return response()->json(['error' => $e->reason, 'message' => $e->text()], 422);
         }
@@ -277,6 +278,9 @@ class OrderController extends Controller
                 'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'photo' => $r['color']->photoUrl(),
                 'enough' => $r['enough'], 'price' => $price = $this->orders->priceFor($order, $r['printer'], 'pickup', $r['color']->material), 'total' => $price['total'],
                 'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
+                // the time, the weight and the price on the page were computed for this colour's machine and kind
+                'sliced' => $r['printer']->id === $order->farm_printer_id && $r['color']->material->id === $order->farm_material_id
+                    && ($order->farm_color_id === null || $order->farm_color_id === $r['color']->id),
             ])->all()
             : [];
 

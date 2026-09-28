@@ -156,6 +156,8 @@
 
                 <p id="farm-pay-error" class="mt-2 hidden text-sm text-red-700" role="alert"></p>
                 <a id="farm-topup" href="#" class="btn-secondary mt-2 hidden w-full text-sm">{{ __('farm.top_up') }}</a>
+                <p id="farm-recolor-note" class="mt-3 hidden rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{{ __('farm.order.recolor_note') }}</p>
+                <button id="farm-recolor" type="button" class="mt-3 hidden w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('farm.order.recolor') }}</button>
                 <button id="farm-pay-btn" type="submit" class="mt-3 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" disabled>{{ __('farm.order.pay') }}</button>
             </form>
 

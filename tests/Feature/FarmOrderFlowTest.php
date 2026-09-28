@@ -212,6 +212,31 @@ class FarmOrderFlowTest extends TestCase
         $this->assertGreaterThanOrEqual(370, $q['finish_in']);
     }
 
+    /** top-single.stl, 28 Sep 2026: a colour changed on the order page was paid for without computing the order again. */
+    public function test_another_colour_on_the_order_page_asks_for_a_recalculation(): void
+    {
+        // the seeder's Kobra 3 Max gets light blue PLA+; the order starts in white on the S1
+        $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
+        $blue = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'PLA+'))->where('name', 'světle modrá')->firstOrFail();
+        $max->slots()->where('slot', 0)->update(['farm_color_id' => $blue->id, 'remaining_g' => 1000, 'enabled' => true]);
+        $order = $this->order(20);
+        $this->assertNotSame($max->id, $order->farm_printer_id);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $other = collect($state['colors'])->first(fn ($c) => ! $c['sliced'] && $c['enough']);
+        $this->assertNotNull($other, 'the farm of the test offers more than one colour');
+
+        $after = $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'slot' => $other['slot']])->assertOk()->json();
+        $this->assertSame($other['slot'], $after['slot']);
+        $order->refresh();
+        $this->assertSame($other['slot'], $order->farm_printer_slot_id);
+        $this->assertSame($max->id, $order->farm_printer_id, 'the order moved to the machine that holds the colour');
+        $this->assertSame('PLA+', $order->material->code);
+        $this->assertSame('kobra-3-max-01', $order->slice_params['printer']['key']);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json();
+        $this->assertSame([$other['slot']], collect($state['colors'])->where('sliced', true)->pluck('slot')->all());
+    }
+
     /** A turtle with joints prints in place: the customer switches the supports off and the slicer is told so. */
     public function test_the_customer_can_switch_supports_off_and_back(): void
     {

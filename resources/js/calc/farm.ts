@@ -9,7 +9,7 @@ import { Viewer } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; inputs: { vat_percent: number } }
-interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean }
+interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean; sliced: boolean }
 const UNIT_MM: Record<string, number> = { mm: 1, cm: 10, in: 25.4, m: 1000 };
 const clampScale = (v: number, max: number) => Math.max(0.25, Math.min(max || 4, v));
 
@@ -187,7 +187,7 @@ export function bootFarmOrder(): void {
     const renderColors = (): void => {
         const box = $('farm-colors')!;
         if (!state.colors.length) { box.innerHTML = `<p class="col-span-full text-sm text-slate-600">${esc(tr('farm.order.no_colors'))}</p>`; picked = null; return; }
-        if (picked === null || !state.colors.some((c) => c.slot === picked && c.enough)) picked = state.colors.find((c) => c.enough)?.slot ?? null;
+        if (picked === null || !state.colors.some((c) => c.slot === picked && c.enough)) picked = (state.colors.find((c) => c.enough && c.sliced) ?? state.colors.find((c) => c.enough))?.slot ?? null;
         box.innerHTML = state.colors.map((c) => `
             <button type="button" role="radio" aria-checked="${c.slot === picked}" data-slot="${c.slot}" ${c.enough ? '' : 'disabled'}
                 class="flex items-center gap-2 rounded-xl border bg-white p-2 text-left text-sm disabled:opacity-50 ${c.slot === picked ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
@@ -268,6 +268,9 @@ export function bootFarmOrder(): void {
             document.querySelectorAll<HTMLElement>('#farm-delivery .seg').forEach((b) => b.classList.toggle('seg-on', b.dataset.value === delivery));
             const addr = $('farm-address')!; addr.classList.toggle('hidden', delivery !== 'shipping'); addr.classList.toggle('grid', delivery === 'shipping');
             ($('farm-pay-btn') as HTMLButtonElement).disabled = picked === null || !($('farm-terms') as HTMLInputElement).checked;
+            // another colour may mean another machine and another kind of filament: the numbers above must be computed again first
+            const recolor = picked !== null && state.colors.find((c) => c.slot === picked)?.sliced === false;
+            show($('farm-recolor'), recolor); show($('farm-recolor-note'), recolor); show($('farm-pay-btn'), !recolor);
         }
 
         const print = s.print && ['sent', 'printing', 'paused', 'done', 'unknown'].includes(s.print.status) && ['queued', 'printing', 'done', 'handed_over'].includes(s.status) ? s.print : null;
@@ -349,10 +352,11 @@ export function bootFarmOrder(): void {
     $('farm-copies')?.addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); wanted.copies = Math.max(1, Math.min(64, Math.round(v) || 1)); render(); });
     $('farm-presets')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const r = await post(cfg.routes.reslice, wanted);
+        const r = await post(cfg.routes.reslice, { ...wanted, slot: picked });
         if (r.ok) { state = r.json as unknown as FarmState; picked = state.slot ?? null; render(); poll(); } else { const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); }
     });
     document.querySelectorAll<HTMLElement>('#farm-delivery .seg').forEach((b) => b.addEventListener('click', () => { delivery = b.dataset.value!; render(); }));
+    $('farm-recolor')?.addEventListener('click', () => ($('farm-presets') as HTMLFormElement | null)?.requestSubmit());
     $('farm-terms')?.addEventListener('change', render);
 
     $('farm-pay')?.addEventListener('submit', async (e) => {

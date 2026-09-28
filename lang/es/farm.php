@@ -59,6 +59,8 @@ return [
         'supports' => 'Soportes',
         'supports_yes' => 'sí, de árbol, solo donde hacen falta',
         'supports_no' => 'no hacen falta',
+        'recolor' => 'Recalcular para el color elegido',
+        'recolor_note' => 'Ha cambiado el color. Puede estar en otra impresora y ser de otro material, por eso hay que calcular de nuevo el precio y el tiempo.',
         'supports_off' => 'sin soportes, como pidió',
         'supports_hide' => 'Ocultar soportes', 'supports_show' => 'Mostrar soportes',
         'oriented' => 'Hemos orientado el modelo para la mejor impresión. La vista previa lo muestra tal como se imprimirá.',

@@ -91,7 +91,7 @@ final class OrderService
     }
 
     /** Another quality, strength or unit: slice again (counts towards the daily limit, like a new order). */
-    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null): FarmOrder
+    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null, ?int $slotId = null): FarmOrder
     {
         if (! in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED], true) || $order->paid_at !== null) {
             throw new FarmRefusal('locked');
@@ -108,6 +108,15 @@ final class OrderService
             'unit_scale' => ModelValidator::UNITS[$unit] ?? $order->unit_scale,
             'price' => null, 'price_total' => null,
         ]);
+        // another colour: the order moves to the machine that holds that spool and is sliced and priced for it
+        $chosen = $slotId ? $this->availableColors($order)->first(fn ($r) => $r['slot']->id === $slotId) : null;
+        if ($chosen) {
+            $order->fill([
+                'farm_printer_id' => $chosen['printer']->id, 'farm_material_id' => $chosen['color']->material->id,
+                'farm_color_id' => $chosen['color']->id, 'farm_printer_slot_id' => $chosen['slot']->id,
+            ]);
+            $order->unsetRelation('printer')->unsetRelation('material')->unsetRelation('color');
+        }
         // a machine kept for fine work hands the order back when the customer asks for a coarser quality
         if ($order->printer && ! $order->printer->takesQuality($quality)) {
             $dims = is_array($order->check['piece_dims'] ?? $order->check['dims'] ?? null) ? Dimensions::fromArray($order->check['piece_dims'] ?? $order->check['dims']) : null;

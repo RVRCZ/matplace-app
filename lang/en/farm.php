@@ -59,6 +59,8 @@ return [
         'supports' => 'Supports',
         'supports_yes' => 'yes, tree supports, only where needed',
         'supports_no' => 'not needed',
+        'recolor' => 'Recalculate for the chosen colour',
+        'recolor_note' => 'You changed the colour. It may be in another printer and of another material, so the price and the time have to be computed again.',
         'supports_off' => 'none, as you asked',
         'supports_hide' => 'Hide supports', 'supports_show' => 'Show supports',
         'oriented' => 'We turned the model for the best print. The preview shows it the way it will be printed.',
