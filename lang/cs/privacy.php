@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Zásady ochrany osobních údajů',
-    'effective' => 'Platné od 26. září 2026 · matplace s.r.o.',
+    'effective' => 'Platné od 29. září 2026 · matplace s.r.o.',
     'footer' => ['privacy' => 'Ochrana osobních údajů', 'terms' => 'Podmínky tiskové farmy', 'youtube' => 'Náš YouTube kanál'],
 
     'sections' => [
@@ -27,7 +27,7 @@ return [
                 'Výpočet ceny, tisk a předání zakázky, správa účtu a kreditu – plnění smlouvy (čl. 6 odst. 1 písm. b) GDPR).',
                 'Účetní a daňové povinnosti – zákonná povinnost (čl. 6 odst. 1 písm. c) GDPR).',
                 'Zabezpečení služby a ochrana před zneužitím – oprávněný zájem (čl. 6 odst. 1 písm. f) GDPR).',
-                'Zveřejnění časosběrného videa na YouTube – jen s vaším souhlasem (čl. 6 odst. 1 písm. a) GDPR), viz bod 5.',
+                'Zveřejnění časosběrného videa na YouTube – oprávněný zájem na představení naší výroby (čl. 6 odst. 1 písm. f) GDPR), proti kterému můžete kdykoli vznést námitku odškrtnutím souhlasu; výtisky podle fotografií jen s vaším výslovným souhlasem (čl. 6 odst. 1 písm. a) GDPR), viz bod 5.',
             ],
         ],
         [
@@ -37,7 +37,7 @@ return [
                 'Stripe, Inc. – platby kartou při dobití kreditu (stripe.com/privacy).',
                 'Anthropic, PBC – rozpoznání předmětu na fotce a kontrola nahraných fotek (anthropic.com/privacy).',
                 'Tripo (VAST) – generování 3D modelu z fotky nebo textu, jen když tuto funkci použijete.',
-                'Google LLC (YouTube) – časosběrná videa, u kterých jste dali souhlas se zveřejněním.',
+                'Google LLC (YouTube) – časosběrná videa, jejichž zveřejnění jste neodmítli.',
                 'Hetzner Online GmbH – hosting, servery v EU.',
                 'Dopravci – jen jméno, adresa a telefon pro doručení zásilky.',
             ],
@@ -46,8 +46,8 @@ return [
             'h' => '5. Videa z tisku a YouTube API Services',
             'p' => [
                 'Každý tisk na naší farmě natáčí kamera v tiskárně a z jejích snímků sestavíme krátké časosběrné video. Video vidíte na stránce své zakázky.',
-                'Pokud k tomu dáte souhlas (nepovinné zaškrtávátko při objednání nebo tlačítko na stránce zakázky), nahraje náš server video na náš vlastní YouTube kanál „Matplace – 3D“ jako soukromé. Veřejné bude až po kontrole naším týmem. K nahrávání používáme YouTube API Services. Na YouTube posíláme jen samotné video a jeho název a popis (materiál, barva, typ tiskárny, doba tisku); vaše jméno, e-mail ani nahrané soubory ne. U zakázky si ukládáme jen identifikátor videa na YouTube a jeho stav.',
-                'Souhlas můžete kdykoli odvolat na stránce zakázky. Video pak z YouTube automaticky smažeme. O smazání můžete požádat i e-mailem na info@matplace.com.',
+                'Pokud zveřejnění neodmítnete, nahraje náš server video na náš vlastní YouTube kanál „Matplace – 3D“ jako soukromé; veřejné bude až po kontrole naším týmem. Políčko se souhlasem se zveřejněním je při objednání předvyplněné – když ho odškrtnete, video na YouTube nepůjde. U výtisků podle fotografií (busty, figurky, litofanie, reliéfy), které mohou zachycovat podobu osoby nebo soukromou fotku, je políčko prázdné a video zveřejníme jen tehdy, když ho sami zaškrtnete. K nahrávání používáme YouTube API Services. Na YouTube posíláme jen samotné video a jeho název a popis (materiál, barva, typ tiskárny, doba tisku); vaše jméno, e-mail ani nahrané soubory ne. U zakázky si ukládáme jen identifikátor videa na YouTube a jeho stav.',
+                'Zveřejnění můžete kdykoli odmítnout nebo souhlas odvolat na stránce zakázky, i když už je video na YouTube. Video pak z YouTube automaticky smažeme. O smazání můžete požádat i e-mailem na info@matplace.com.',
                 'Naše aplikace nepřistupuje k vašemu účtu Google ani YouTube a nečte žádné vaše údaje z YouTube. Přístup k YouTube API používá jen náš tým pro náš vlastní kanál.',
                 'Sledováním videí na YouTube souhlasíte s podmínkami služby YouTube (https://www.youtube.com/t/terms). Na zpracování údajů společností Google se vztahují Zásady ochrany soukromí Google (https://policies.google.com/privacy). Přístup aplikací ke svému účtu Google můžete kdykoli zkontrolovat a odebrat na https://myaccount.google.com/permissions.',
             ],
@@ -62,7 +62,7 @@ return [
                 'Účet – po dobu jeho trvání; po zrušení do 30 dnů smažeme nebo anonymizujeme.',
                 'Zakázky a platby – 5 let od dokončení (účetní a daňové předpisy), doklady podle zákona až 10 let.',
                 'Fotky pro rozpoznání a generování – nejdéle 1 den; anonymně nahrané soubory 30 dní.',
-                'Časosběrná videa – u zakázky po dobu trvání účtu; na YouTube do odvolání souhlasu nebo do našeho smazání.',
+                'Časosběrná videa – u zakázky po dobu trvání účtu; na YouTube do odmítnutí zveřejnění, odvolání souhlasu nebo do našeho smazání.',
                 'Technické záznamy – nejvýše 12 měsíců.',
             ],
         ],

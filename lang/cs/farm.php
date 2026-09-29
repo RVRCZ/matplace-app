@@ -202,7 +202,7 @@ return [
             'Cena je známá před objednáním a platí se z kreditu. Kredit se při objednání zablokuje a strhne až po dokončení tisku. Když tisk nezačne nebo se nepovede naší vinou, vrátí se celý.',
             'Drobné stopy po podpěrách, viditelné vrstvy a odchylky rozměrů v desetinách milimetru k 3D tisku patří a nejsou vadou.',
             'Nahrané soubory ukládáme neveřejně a používáme je jen k vyřízení vaší zakázky.',
-            'Každý tisk natáčíme kamerou v tiskárně. Časosběrné video zveřejníme na YouTube kanálu Matplace jen tehdy, když k tomu dáte souhlas, a jen po kontrole naším týmem. Souhlas můžete kdykoli odvolat na stránce zakázky; video pak z YouTube smažeme.',
+            'Každý tisk natáčíme kamerou v tiskárně; video zachycuje jen tiskovou podložku a výtisk. Po kontrole naším týmem můžeme časosběrné video zveřejnit na YouTube kanálu Matplace, pokud při objednávce neodškrtnete políčko se souhlasem se zveřejněním. Zveřejnění můžete kdykoli odmítnout i později na stránce zakázky; video pak z YouTube smažeme. Výtisky podle fotografií (busty, figurky, litofanie, reliéfy) zveřejníme jen tehdy, když políčko sami zaškrtnete.',
         ],
     ],
 

@@ -202,7 +202,7 @@ return [
             'The price is known before ordering and is paid from credit. The credit is held when you order and taken only when the print is finished. If the print does not start or fails through our fault, all of it comes back.',
             'Small support marks, visible layers and deviations of tenths of a millimetre belong to 3D printing and are not defects.',
             'Uploaded files are stored privately and used only to fulfil your order.',
-            'Every print is filmed by the camera in the printer. We publish the time-lapse on the Matplace YouTube channel only if you agree, and only after our team has checked it. You can take the consent back at any time on the order page; the video is then deleted from YouTube.',
+            'Every print is filmed by the camera in the printer; the video shows only the print bed and the printed object. After our team has checked it, we may publish the time-lapse on the Matplace YouTube channel unless you untick the publishing consent box when ordering. You can refuse publishing at any time later on the order page; the video is then deleted from YouTube. Prints made from photos (busts, figures, lithophanes, reliefs) are published only if you tick the box yourself.',
         ],
     ],
 

@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Política de privacidad',
-    'effective' => 'Vigente desde el 26 de septiembre de 2026 · matplace s.r.o.',
+    'effective' => 'Vigente desde el 29 de septiembre de 2026 · matplace s.r.o.',
     'footer' => ['privacy' => 'Política de privacidad', 'terms' => 'Condiciones de la granja de impresión', 'youtube' => 'Nuestro canal de YouTube'],
 
     'sections' => [
@@ -27,7 +27,7 @@ return [
                 'Calcular el precio, imprimir y entregar los pedidos, gestionar su cuenta y su crédito – ejecución de un contrato (art. 6.1.b RGPD).',
                 'Obligaciones contables y fiscales – obligación legal (art. 6.1.c RGPD).',
                 'Seguridad del servicio y prevención de abusos – interés legítimo (art. 6.1.f RGPD).',
-                'Publicar el vídeo time-lapse en YouTube – solo con su consentimiento (art. 6.1.a RGPD), véase el punto 5.',
+                'Publicar el vídeo time-lapse en YouTube – nuestro interés legítimo en mostrar nuestra producción (art. 6.1.f RGPD), al que puede oponerse en cualquier momento desmarcando la casilla de consentimiento; las impresiones hechas a partir de fotos solo con su consentimiento expreso (art. 6.1.a RGPD), véase el punto 5.',
             ],
         ],
         [
@@ -37,7 +37,7 @@ return [
                 'Stripe, Inc. – pagos con tarjeta al recargar crédito (stripe.com/privacy).',
                 'Anthropic, PBC – reconocer el objeto de una foto y revisar las fotos subidas (anthropic.com/privacy).',
                 'Tripo (VAST) – generar un modelo 3D a partir de una foto o un texto, solo si usa esta función.',
-                'Google LLC (YouTube) – vídeos time-lapse cuya publicación ha aceptado.',
+                'Google LLC (YouTube) – vídeos time-lapse cuya publicación no ha rechazado.',
                 'Hetzner Online GmbH – alojamiento, servidores en la UE.',
                 'Transportistas – solo nombre, dirección y teléfono para entregar el paquete.',
             ],
@@ -46,8 +46,8 @@ return [
             'h' => '5. Vídeos de impresión y YouTube API Services',
             'p' => [
                 'La cámara de la impresora graba cada impresión de nuestra granja y con sus imágenes hacemos un breve vídeo time-lapse. Puede verlo en la página de su pedido.',
-                'Si lo acepta (una casilla opcional al pedir o un botón en la página del pedido), nuestro servidor sube el vídeo a nuestro propio canal de YouTube «Matplace – 3D» como privado. Solo se hace público después de que nuestro equipo lo revise. Para subirlo usamos YouTube API Services. A YouTube enviamos solo el vídeo con su título y descripción (material, color, tipo de impresora, tiempo de impresión); nunca su nombre, correo ni archivos subidos. En el pedido guardamos solo el identificador del vídeo en YouTube y su estado.',
-                'Puede retirar el consentimiento en cualquier momento en la página del pedido. Entonces borramos el vídeo de YouTube automáticamente. También puede pedir el borrado en info@matplace.com.',
+                'Salvo que lo rechace, nuestro servidor sube el vídeo a nuestro propio canal de YouTube «Matplace – 3D» como privado; solo se hace público después de que nuestro equipo lo revise. La casilla de consentimiento de publicación viene marcada al pedir: si la desmarca, el vídeo no va a YouTube. En las impresiones hechas a partir de fotos (bustos, figuras, litofanías, relieves), que pueden mostrar el aspecto de una persona o una foto privada, la casilla viene vacía y el vídeo solo se publica si la marca usted mismo. Para subirlo usamos YouTube API Services. A YouTube enviamos solo el vídeo con su título y descripción (material, color, tipo de impresora, tiempo de impresión); nunca su nombre, correo ni archivos subidos. En el pedido guardamos solo el identificador del vídeo en YouTube y su estado.',
+                'Puede rechazar la publicación o retirar el consentimiento en cualquier momento en la página del pedido, aunque el vídeo ya esté en YouTube. Entonces borramos el vídeo de YouTube automáticamente. También puede pedir el borrado en info@matplace.com.',
                 'Nuestra aplicación no accede a su cuenta de Google ni de YouTube y no lee ninguno de sus datos de YouTube. El acceso a la API de YouTube lo usa solo nuestro equipo para nuestro propio canal.',
                 'Al ver vídeos en YouTube acepta las Condiciones de servicio de YouTube (https://www.youtube.com/t/terms). El tratamiento de datos por parte de Google se rige por la Política de privacidad de Google (https://policies.google.com/privacy). Puede revisar y retirar el acceso de cualquier aplicación a su cuenta de Google en https://myaccount.google.com/permissions.',
             ],
@@ -62,7 +62,7 @@ return [
                 'Cuenta – mientras exista; se borra o anonimiza en 30 días tras cerrarla.',
                 'Pedidos y pagos – 5 años desde su finalización (normas contables y fiscales), facturas hasta 10 años según la ley.',
                 'Fotos para reconocimiento y generación – como máximo 1 día; archivos subidos de forma anónima 30 días.',
-                'Vídeos time-lapse – con el pedido mientras exista su cuenta; en YouTube hasta que retire el consentimiento o los borremos.',
+                'Vídeos time-lapse – con el pedido mientras exista su cuenta; en YouTube hasta que rechace la publicación, retire el consentimiento o los borremos.',
                 'Registros técnicos – como máximo 12 meses.',
             ],
         ],

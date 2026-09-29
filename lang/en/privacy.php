@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Privacy Policy',
-    'effective' => 'Effective 26 September 2026 · matplace s.r.o.',
+    'effective' => 'Effective 29 September 2026 · matplace s.r.o.',
     'footer' => ['privacy' => 'Privacy Policy', 'terms' => 'Print farm terms', 'youtube' => 'Our YouTube channel'],
 
     'sections' => [
@@ -27,7 +27,7 @@ return [
                 'Pricing, printing and handing over orders, managing your account and credit – performance of a contract (Art. 6(1)(b) GDPR).',
                 'Accounting and tax duties – legal obligation (Art. 6(1)(c) GDPR).',
                 'Security of the service and prevention of abuse – legitimate interest (Art. 6(1)(f) GDPR).',
-                'Publishing the time-lapse video on YouTube – only with your consent (Art. 6(1)(a) GDPR), see section 5.',
+                'Publishing the time-lapse video on YouTube – our legitimate interest in showing our production (Art. 6(1)(f) GDPR), which you can object to at any time by unticking the consent box; prints made from photos only with your explicit consent (Art. 6(1)(a) GDPR), see section 5.',
             ],
         ],
         [
@@ -37,7 +37,7 @@ return [
                 'Stripe, Inc. – card payments when you top up credit (stripe.com/privacy).',
                 'Anthropic, PBC – recognising the object in a photo and checking uploaded photos (anthropic.com/privacy).',
                 'Tripo (VAST) – generating a 3D model from a photo or text, only when you use this feature.',
-                'Google LLC (YouTube) – time-lapse videos you agreed to publish.',
+                'Google LLC (YouTube) – time-lapse videos whose publishing you did not refuse.',
                 'Hetzner Online GmbH – hosting, servers in the EU.',
                 'Carriers – only name, address and phone to deliver a parcel.',
             ],
@@ -46,8 +46,8 @@ return [
             'h' => '5. Print videos and YouTube API Services',
             'p' => [
                 'Every print on our farm is filmed by the camera inside the printer, and we make a short time-lapse video from the pictures. You can watch it on your order page.',
-                'If you agree (an optional checkbox when ordering, or a button on the order page), our server uploads the video to our own YouTube channel "Matplace – 3D" as a private video. It becomes public only after our team has checked it. For the upload we use YouTube API Services. We send YouTube only the video itself and its title and description (material, colour, printer type, print time); never your name, email or uploaded files. With the order we store only the YouTube video ID and its status.',
-                'You can take the consent back at any time on the order page. The video is then deleted from YouTube automatically. You can also ask for deletion at info@matplace.com.',
+                'Unless you refuse, our server uploads the video to our own YouTube channel "Matplace – 3D" as a private video; it becomes public only after our team has checked it. The publishing consent box is ticked in advance when you order – untick it and the video does not go to YouTube. For prints made from photos (busts, figures, lithophanes, reliefs), which may show a person\'s likeness or a private photo, the box starts empty and the video is published only if you tick it yourself. For the upload we use YouTube API Services. We send YouTube only the video itself and its title and description (material, colour, printer type, print time); never your name, email or uploaded files. With the order we store only the YouTube video ID and its status.',
+                'You can refuse publishing or take the consent back at any time on the order page, even when the video is already on YouTube. The video is then deleted from YouTube automatically. You can also ask for deletion at info@matplace.com.',
                 'Our application does not access your Google or YouTube account and does not read any of your YouTube data. Access to the YouTube API is used only by our team for our own channel.',
                 'By watching videos on YouTube you agree to the YouTube Terms of Service (https://www.youtube.com/t/terms). Google\'s processing of data is governed by the Google Privacy Policy (https://policies.google.com/privacy). You can review and revoke any application\'s access to your Google account at https://myaccount.google.com/permissions.',
             ],
@@ -62,7 +62,7 @@ return [
                 'Account – while it exists; deleted or anonymised within 30 days after closing it.',
                 'Orders and payments – 5 years after completion (accounting and tax rules), invoices up to 10 years as the law requires.',
                 'Photos for recognition and generation – at most 1 day; anonymously uploaded files 30 days.',
-                'Time-lapse videos – with the order while your account exists; on YouTube until you take the consent back or we delete them.',
+                'Time-lapse videos – with the order while your account exists; on YouTube until you refuse publishing, take the consent back or we delete them.',
                 'Technical logs – at most 12 months.',
             ],
         ],

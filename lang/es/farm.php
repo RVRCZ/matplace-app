@@ -202,7 +202,7 @@ return [
             'El precio se conoce antes de pedir y se paga con crédito. El crédito se retiene al pedir y solo se cobra cuando la impresión termina. Si la impresión no empieza o falla por nuestra causa, se devuelve entero.',
             'Pequeñas marcas de soportes, capas visibles y desviaciones de décimas de milímetro son propias de la impresión 3D y no son defectos.',
             'Los archivos subidos se guardan de forma privada y solo se usan para tramitar su pedido.',
-            'Grabamos cada impresión con la cámara de la impresora. Publicamos el vídeo time-lapse en el canal de YouTube de Matplace solo si usted lo acepta y después de que nuestro equipo lo revise. Puede retirar el consentimiento en cualquier momento en la página del pedido; entonces borramos el vídeo de YouTube.',
+            'Grabamos cada impresión con la cámara de la impresora; el vídeo solo muestra la base de impresión y el objeto impreso. Tras revisarlo nuestro equipo, podemos publicar el vídeo time-lapse en el canal de YouTube de Matplace si al pedir no desmarca la casilla de consentimiento de publicación. Puede rechazar la publicación en cualquier momento más tarde en la página del pedido; entonces borramos el vídeo de YouTube. Las impresiones hechas a partir de fotos (bustos, figuras, litofanías, relieves) solo se publican si marca la casilla usted mismo.',
         ],
     ],
 
