@@ -10,6 +10,7 @@ use App\Models\FarmVideo;
 use App\Models\YouTubeAccount;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -231,9 +232,63 @@ class FarmVideos
         return $short && Storage::disk(config('farm.disk'))->exists($short) ? $short : (string) $order->timelapse_path;
     }
 
+    /** "Louskáček – 6 h 10 min tisku za 25 s": what was printed, how long it took, how short the video is. */
     public function defaultTitle(FarmOrder $order): string
     {
-        return __('youtube.video.title', $this->facts($order), config('youtube.language'));
+        $locale = config('youtube.language');
+        $facts = $this->facts($order);
+        $what = $this->modelName($order, $locale) ?? trim($facts['material'].' '.$facts['color']);
+        $seconds = $this->videoSeconds($order);
+        $tail = $seconds
+            ? __('youtube.video.tail', ['time' => $facts['time'], 'seconds' => $seconds], $locale)
+            : __('youtube.video.tail_plain', ['time' => $facts['time']], $locale);
+
+        return mb_substr(($what !== '' ? $what.' – ' : '').$tail, 0, 100);
+    }
+
+    /** What the customer printed, in words: the tool's name, or the uploaded file's name tidied up. Null when nothing readable is left. */
+    public function modelName(FarmOrder $order, ?string $locale = null): ?string
+    {
+        $file = $order->modelFile;
+        if (! $file) {
+            return null;
+        }
+        $kind = $file->kind();
+        $tool = $kind === 'generated' ? 'figure' : ($file->origin === 'tool' ? $kind : null);
+        if ($tool && ($title = __('tools.'.$tool.'.title', [], $locale)) !== 'tools.'.$tool.'.title') {
+            return $title;
+        }
+        $name = pathinfo((string) $file->original_name, PATHINFO_FILENAME);
+        $name = preg_replace('/\(\d+\)|\bcopy\b/i', ' ', $name);             // "louskacek (1)", "part copy"
+        $name = preg_replace('/\d+(?:[.,]\d+)?\s*(?:mm|cm)\b/i', ' ', (string) $name);   // "felpa100mm"
+        $words = [];
+        foreach (preg_split('/[\s_\-.]+/u', (string) $name, -1, PREG_SPLIT_NO_EMPTY) as $w) {
+            // sizes, versions, numbers and body parts of an export say nothing to a viewer
+            if (preg_match('/^(\d+([.,]\d+)?(mm|cm|m)?|\d+x\d+(x\d+)?|v\d+|body\d*|part\d*|[0-9a-f]{12,})$/i', $w)) {
+                continue;
+            }
+            if (! in_array(mb_strtolower($w), array_map('mb_strtolower', $words), true)) {
+                $words[] = $w;
+            }
+        }
+        $clean = trim(implode(' ', $words));
+
+        return mb_strlen($clean) >= 3 ? mb_strtoupper(mb_substr($clean, 0, 1)).mb_substr($clean, 1, 60) : null;
+    }
+
+    /** Length of the video that goes to YouTube, in whole seconds (ffmpeg reads it), null when unknown. */
+    private function videoSeconds(FarmOrder $order): ?int
+    {
+        $path = $this->file($order);
+        if ($path === '' || ! Storage::disk(config('farm.disk'))->exists($path)) {
+            return null;
+        }
+        $r = Process::timeout(20)->run([(string) config('farm.ffmpeg', 'ffmpeg'), '-hide_banner', '-i', Storage::disk(config('farm.disk'))->path($path)]);
+        if (! preg_match('/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/', $r->errorOutput().$r->output(), $m)) {
+            return null;
+        }
+
+        return (int) round($m[1] * 3600 + $m[2] * 60 + (float) $m[3]);
     }
 
     public function defaultDescription(FarmOrder $order): string

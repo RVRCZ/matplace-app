@@ -128,7 +128,7 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->status);
         $this->assertSame('vid123', $video->youtube_id);
         Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable') && $r['status']['privacyStatus'] === 'private');
-        $this->assertStringContainsString('Časosběr 3D tisku', $video->title);
+        $this->assertStringContainsString('3D tisku', $video->title);      // no readable name in "part.stl": material and colour, then the print time
         Mail::assertQueued(FarmAdminAlert::class, fn ($m) => str_contains($m->subjectLine, 'Video ke schválení') && $m->url === route('admin.youtube.index'));
 
         // the customer can download the square Short once it exists
@@ -208,6 +208,29 @@ class YouTubeVideosTest extends TestCase
 
         $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('1 520')->assertSee('Nejsledovanější');
         $this->actingAs($this->admin)->post('/admin/youtube/stats')->assertRedirect()->assertSessionHas('status');
+    }
+
+    public function test_the_title_names_what_was_printed(): void
+    {
+        $order = $this->paidOrder(consent: true);
+        $videos = app(FarmVideos::class);
+        $name = function (string $file, string $origin = 'upload', ?string $ref = null) use ($order, $videos) {
+            $order->modelFile->forceFill(['original_name' => $file, 'origin' => $origin, 'origin_ref' => $ref])->save();
+
+            return $videos->modelName($order->refresh(), 'cs');
+        };
+        $this->assertSame('Louskacek', $name('louskacek (1).stl'));
+        $this->assertSame('Greek godess statue', $name('greek-godess-statue_0.16.3mf'));
+        $this->assertSame('Felpa', $name('felpa100mm.stl'));
+        $this->assertSame('Desk organizer', $name('desk-organizer-v3_desk-organizer-v3_body1.stl'));
+        $this->assertSame(__('tools.holder.title', [], 'cs'), $name('holder-52x35x84.stl', 'tool', 'holder'));
+        $this->assertSame(__('tools.figure.title', [], 'cs'), $name('bust.stl', 'generated', 'abc'));
+        $this->assertNull($name('part.stl'));
+        $this->assertStringStartsWith('Louskacek – ', (function () use ($name, $order, $videos) {
+            $name('louskacek.stl');
+
+            return $videos->defaultTitle($order->refresh());
+        })());
     }
 
     public function test_somebody_else_cannot_change_the_consent(): void

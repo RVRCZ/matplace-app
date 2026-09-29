@@ -20,6 +20,8 @@ return [
     ],
 
     'video' => [
+        'tail' => ':time tisku za :seconds s',
+        'tail_plain' => ':time 3D tisku',
         'title' => 'Časosběr 3D tisku – :material :color',
         'description' => "Časosběrné video tisku z naší 3D tiskové farmy.\n\nMateriál: :material :color\nTiskárna: :printer\nDoba tisku: :time\n\nChcete si také nechat něco vytisknout? Nahrajte model, vyfoťte předmět nebo ho popište slovy a hned uvidíte cenu: :url\n\nVideo zveřejňujeme se souhlasem zákazníka.",
     ],

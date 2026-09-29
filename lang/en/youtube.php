@@ -20,6 +20,8 @@ return [
     ],
 
     'video' => [
+        'tail' => ':time of printing in :seconds s',
+        'tail_plain' => ':time of 3D printing',
         'title' => '3D print time-lapse – :material :color',
         'description' => "Time-lapse of a print from our 3D print farm.\n\nMaterial: :material :color\nPrinter: :printer\nPrint time: :time\n\nWant something printed too? Upload a model, take a photo or describe it in words and see the price right away: :url\n\nPublished with the customer's consent.",
     ],

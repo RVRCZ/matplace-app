@@ -20,6 +20,8 @@ return [
     ],
 
     'video' => [
+        'tail' => ':time de impresión en :seconds s',
+        'tail_plain' => ':time de impresión 3D',
         'title' => 'Time-lapse de impresión 3D – :material :color',
         'description' => "Time-lapse de una impresión de nuestra granja de impresión 3D.\n\nMaterial: :material :color\nImpresora: :printer\nTiempo de impresión: :time\n\n¿Quiere imprimir algo también? Suba un modelo, haga una foto o descríbalo con palabras y verá el precio al instante: :url\n\nPublicado con el consentimiento del cliente.",
     ],
