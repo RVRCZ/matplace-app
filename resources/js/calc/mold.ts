@@ -18,9 +18,10 @@ const dict = () => (window as unknown as { MP_I18N?: Record<string, string> }).M
 const tr: Words = (k, p = {}) => Object.entries(p).reduce((s, [a, b]) => s.replace(`:${a}`, String(b)), dict()[k] ?? k);
 
 // the pieces of the mold in calm colours, what no piece lets go of in red, material added to the casting in orange
-const PIECES: Rgb[] = [[0.51, 0.65, 0.83], [0.89, 0.79, 0.54], [0.62, 0.8, 0.62], [0.76, 0.66, 0.84]];
-const HIDDEN: Rgb = [0.84, 0.16, 0.16];
-const ADDED: Rgb = [0.9, 0.55, 0.16];
+// (the viewer's lights are strong and multiply these: they are kept deep, as the colours of plates are)
+const PIECES: Rgb[] = [[0.27, 0.4, 0.6], [0.6, 0.47, 0.2], [0.25, 0.5, 0.3], [0.46, 0.33, 0.58]];
+const HIDDEN: Rgb = [0.72, 0.03, 0.03];
+const ADDED: Rgb = [0.8, 0.36, 0.02];
 
 const bytes = (base64: string): Uint8Array => Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 

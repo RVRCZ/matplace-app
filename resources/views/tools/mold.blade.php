@@ -39,7 +39,7 @@
                     <p id="mold-analysis-text"></p>
                     <p class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
                         <span><span class="mr-1 inline-block h-3 w-3 rounded-sm align-middle" style="background:#d72828"></span>{{ __('mold.page.legend.hidden') }}</span>
-                        <span><span class="mr-1 inline-block h-3 w-3 rounded-sm align-middle" style="background:#83a6d4"></span><span class="mr-1 inline-block h-3 w-3 rounded-sm align-middle" style="background:#e3c98a"></span>{{ __('mold.page.legend.parts') }}</span>
+                        <span><span class="mr-1 inline-block h-3 w-3 rounded-sm align-middle" style="background:#6f93c4"></span><span class="mr-1 inline-block h-3 w-3 rounded-sm align-middle" style="background:#c9a662"></span>{{ __('mold.page.legend.parts') }}</span>
                     </p>
                     <p id="mold-options" class="mt-1 text-xs text-muted"></p>
                 </div>
