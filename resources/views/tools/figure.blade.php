@@ -38,6 +38,17 @@
             </div>
         </fieldset>
 
+        {{-- how to take the photos: the length of the chest and the likeness stand on it --}}
+        <div class="rounded-xl border border-line p-3">
+            <div class="text-sm font-semibold text-ink">{{ __('figure.howto') }}</div>
+            <ol class="mt-2 list-decimal space-y-1 pl-5 text-sm text-ink">
+                @foreach(['distance', 'frame', 'height', 'arms', 'wall', 'sides'] as $step)
+                    <li>{{ __('figure.howto.'.$step) }}</li>
+                @endforeach
+            </ol>
+            <p class="mt-2 text-xs text-muted">{{ __('figure.howto.note') }}</p>
+        </div>
+
         <div class="relative">
             <label data-view-box="front" class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 px-4 py-8 text-center hover:border-action hover:bg-action-soft">
                 <img id="figure-preview" data-view-preview="front" src="" alt="" class="mb-2 hidden max-h-48 rounded-lg">
@@ -75,20 +86,40 @@
 
         <fieldset>
             <legend class="lbl">{{ __('figure.pedestal') }}</legend>
-            <div class="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-6" role="radiogroup">
-                @foreach(['round' => '⬤', 'square' => '◼', 'hexagon' => '⬢', 'column' => '▂', 'plaque' => '▭', 'none' => '∅'] as $pk => $ico)
+            <p class="mt-1 text-xs text-muted">{{ __('figure.pedestal.styles') }}</p>
+            <div class="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-5" role="radiogroup">
+                @foreach(['socle' => '♙', 'antique' => '🏛', 'cut' => '⏢', 'round' => '⬤', 'square' => '◼', 'hexagon' => '⬢', 'column' => '▂', 'plaque' => '▭', 'none' => '∅'] as $pk => $ico)
                     <label class="cursor-pointer rounded-xl border border-slate-300 bg-white p-2 text-center text-ink has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action">
-                        <input type="radio" name="pedestal" value="{{ $pk }}" class="sr-only" @checked($pk === 'round')><div class="text-lg" aria-hidden="true">{{ $ico }}</div>{{ __('figure.pedestal.'.$pk) }}
+                        <input type="radio" name="pedestal" value="{{ $pk }}" class="sr-only" @checked($pk === 'socle')><div class="text-lg" aria-hidden="true">{{ $ico }}</div>{{ __('figure.pedestal.'.$pk) }}
                     </label>
                 @endforeach
             </div>
-            <div id="figure-plaque" class="mt-3 hidden grid gap-3 sm:grid-cols-2">
+            <div id="figure-plaque" class="mt-3 grid gap-3 sm:grid-cols-2">
                 <label class="lbl">{{ __('figure.pedestal.name') }}<input name="pedestal_name" maxlength="24" class="field" placeholder="{{ __('figure.pedestal.name_ph') }}"></label>
-                <label class="lbl">{{ __('figure.pedestal.dedication') }}<input name="pedestal_dedication" maxlength="40" class="field" placeholder="{{ __('figure.pedestal.dedication_ph') }}"></label>
+                <label id="figure-dedication" class="lbl hidden">{{ __('figure.pedestal.dedication') }}<input name="pedestal_dedication" maxlength="40" class="field" placeholder="{{ __('figure.pedestal.dedication_ph') }}"></label>
                 <p class="text-xs text-muted sm:col-span-2">{{ __('figure.pedestal.hint') }}</p>
             </div>
         </fieldset>
-        <script>document.querySelectorAll('input[name=pedestal]').forEach((r) => r.addEventListener('change', () => document.getElementById('figure-plaque').classList.toggle('hidden', !(r.checked && r.value === 'plaque'))));</script>
+        <script>
+            (() => {
+                const named = {{ \Illuminate\Support\Js::from(\App\Domain\Generation\PedestalChanger::NAMED) }}, dedicated = {{ \Illuminate\Support\Js::from(\App\Domain\Generation\PedestalChanger::DEDICATED) }};
+                const picked = (name) => document.querySelector('input[name=' + name + ']:checked')?.value;
+                const fields = () => {
+                    document.getElementById('figure-plaque').classList.toggle('hidden', !named.includes(picked('pedestal')));
+                    document.getElementById('figure-dedication').classList.toggle('hidden', !dedicated.includes(picked('pedestal')));
+                };
+                document.querySelectorAll('input[name=pedestal]').forEach((r) => r.addEventListener('change', fields));
+                // the turned foot belongs under a bust; a standing figure starts on the plain round base
+                document.querySelectorAll('input[name=kind]').forEach((r) => r.addEventListener('change', () => {
+                    const styles = {{ \Illuminate\Support\Js::from(\App\Domain\Generation\PedestalChanger::BUST_STYLES) }};
+                    const now = picked('pedestal');
+                    const to = picked('kind') === 'figure' ? (styles.includes(now) ? 'round' : now) : (now === 'round' ? 'socle' : now);
+                    document.querySelector('input[name=pedestal][value=' + to + ']').checked = true;
+                    fields();
+                }));
+                fields();
+            })();
+        </script>
 
         <label class="flex items-start gap-3 text-sm text-ink"><input id="figure-consent" type="checkbox" name="consent" value="1" class="mt-0.5 h-5 w-5 accent-action"> <span>{{ __('figure.consent') }}</span></label>
         <p class="text-xs text-muted">{{ __('figure.privacy') }}</p>

@@ -13,7 +13,7 @@ export interface FileInfo {
     hints?: { supports?: boolean; infill?: number; quality?: string; vase?: boolean };
     generation?: { token: string; refinable: boolean; pedestal?: { type: string; name: string; dedication: string; sink?: number; tidy?: boolean } | null } | null;
     parts?: string[];
-    mold?: { type?: string; axis: string; angle_deg?: number | null; undercut_pct: number; verdict?: string; box: number[]; resin_ml: number; silicone_ml?: number; mold_cm3: number; wall: number; warnings: string[] } | null;
+    mold?: { parts?: number; pieces?: number; fill?: boolean; added_ml?: number; undercut_before_pct?: number; cast_url?: string; cast_flags_url?: string; type?: string; axis: string; angle_deg?: number | null; undercut_pct: number; verdict?: string; box: number[]; resin_ml: number; silicone_ml?: number; mold_cm3: number; wall: number; warnings: string[] } | null;
     tool?: { kind: string; params: Record<string, unknown>; url: string } | null;
     check?: { status: string; items: { level: 'error' | 'advice' | 'ok'; code: string; params: Record<string, string> }[] };
 }

@@ -45,14 +45,18 @@ export class Viewer {
         this.loop();
     }
 
-    /** kind: what the model is ('lithophane' previews as if lit from behind: thin = bright) */
-    setGeometry(geom: BufferGeometry, scale = 1, kind: string | null = null, regions: Region[] | null = null): void {
+    /**
+     * kind: what the model is ('lithophane' previews as if lit from behind: thin = bright)
+     * faces: one number per triangle of the file and the colours they stand for; the triangles keep their order
+     */
+    setGeometry(geom: BufferGeometry, scale = 1, kind: string | null = null, regions: Region[] | null = null, faces: FacePaint | null = null): void {
         if (this.mesh) {
             this.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
         }
         if (this.grid) this.scene.remove(this.grid);
-        const sculpture = kind === 'generated' && !regions?.length;
+        const painted = !!faces && paintByFaces(geom, faces);
+        const sculpture = kind === 'generated' && !regions?.length && !painted;
         if (sculpture) {
             // STL has no shared vertices; weld them so the normals blend across faces
             geom.deleteAttribute('normal');
@@ -61,7 +65,7 @@ export class Viewer {
         }
         if (!geom.getAttribute('normal')) geom.computeVertexNormals();
         // Z-up files (all print formats) → three.js Y-up
-        const plate = regions?.length ? paintByRegion(geom, regions) : paintByHeight(geom, kind === 'lithophane', kind === 'qr');
+        const plate = painted ? true : regions?.length ? paintByRegion(geom, regions) : paintByHeight(geom, kind === 'lithophane', kind === 'qr');
         this.mesh = new Mesh(geom, plate ? this.plateMaterial : sculpture ? this.sculptureMaterial : this.material);
         this.frontal = sculpture;
         this.mesh.rotation.x = -Math.PI / 2;
@@ -106,6 +110,14 @@ export class Viewer {
         this.supports.position.set(dx, dy, b.min.z);
         this.supports.visible = visible;
         this.mesh.add(this.supports);
+    }
+
+    /** Paints the shown model triangle by triangle, or (null) gives it its plain colour back; the view stays as it is. */
+    paint(faces: FacePaint | null): boolean {
+        if (!this.mesh) return false;
+        const painted = !!faces && paintByFaces(this.mesh.geometry, faces);
+        this.mesh.material = painted ? this.plateMaterial : this.material;
+        return painted;
     }
 
     showSupports(on: boolean): void {
@@ -153,6 +165,21 @@ export class Viewer {
         this.renderer.render(this.scene, this.camera);
         requestAnimationFrame(this.loop);
     };
+}
+
+/** One number per triangle (in the order of the file) and the colour each number stands for, as [r, g, b] 0..1. */
+export interface FacePaint { flags: Uint8Array; color: (flag: number) => [number, number, number] }
+
+function paintByFaces(geom: BufferGeometry, paint: FacePaint): boolean {
+    const pos = geom.getAttribute('position');
+    if (!pos || geom.index || paint.flags.length * 3 !== pos.count) return false;
+    const colors = new Float32Array(pos.count * 3);
+    for (let t = 0; t < paint.flags.length; t++) {
+        const c = paint.color(paint.flags[t]);
+        for (let k = 0; k < 3; k++) { colors[(t * 3 + k) * 3] = c[0]; colors[(t * 3 + k) * 3 + 1] = c[1]; colors[(t * 3 + k) * 3 + 2] = c[2]; }
+    }
+    geom.setAttribute('color', new Float32BufferAttribute(colors, 3));
+    return true;
 }
 
 export interface Region { x0: number; y0: number; x1: number; y1: number; z0: number; color: string }

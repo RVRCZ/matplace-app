@@ -91,6 +91,8 @@ class ModelFileController extends Controller
         }
         $data = $request->validate([
             'type' => ['nullable', 'in:'.implode(',', MoldGenerator::TYPES)],
+            'parts' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::PARTS)],
+            'fill' => ['nullable', 'boolean'],
             'wall' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::WALLS)],
             'axis' => ['nullable', 'in:'.implode(',', MoldGenerator::AXES)],
             'split' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::SPLITS)],
@@ -102,6 +104,31 @@ class ModelFileController extends Controller
         }
 
         return response()->json(['file' => UploadController::describe($new)], 201);
+    }
+
+    /** POST /api/files/{uuid}/mold/analysis {parts?, axis?, split?} — what a printed mold would hold on to, and which triangles */
+    public function moldAnalysis(Request $request, ModelFile $modelFile, MoldGenerator $molds): JsonResponse
+    {
+        abort_unless($modelFile->isReady() && $modelFile->kind() !== 'mold', 404);
+        $data = $request->validate([
+            'parts' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::PARTS)],
+            'axis' => ['nullable', 'in:'.implode(',', MoldGenerator::AXES)],
+            'split' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::SPLITS)],
+        ]);
+        try {
+            return response()->json(['analysis' => $molds->analyse($modelFile, $data)]);
+        } catch (EngineException $e) {
+            return response()->json(['error' => 'mold_failed', 'reason' => $e->getMessage()], $e->getMessage() === 'mold_unavailable' ? 503 : 422);
+        }
+    }
+
+    /** GET /api/files/{uuid}/mold/cast.stl | cast.bin — the casting of a mold with filled undercuts, and its added triangles */
+    public function moldCast(ModelFile $modelFile, string $name): BinaryFileResponse
+    {
+        $path = MoldGenerator::castPath($modelFile, $name);
+        abort_unless($modelFile->isReady() && $path, 404);
+
+        return response()->file($path, ['Content-Type' => $name === 'cast.stl' ? 'model/stl' : 'application/octet-stream', 'Cache-Control' => 'private, max-age=3600']);
     }
 
     /** POST /api/files/{uuid}/repair → a new model file of kind "repaired" with the report of what was done. */
