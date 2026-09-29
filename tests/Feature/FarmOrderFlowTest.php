@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\Wallet;
+use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Mesh\StlFile;
 use App\Mail\FarmAdminAlert;
 use App\Mail\FarmOrderStatus;
@@ -14,6 +15,7 @@ use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrintJob;
+use App\Models\ModelFile;
 use App\Models\Payment;
 use App\Models\User;
 use Database\Seeders\FarmSeeder;
@@ -235,6 +237,48 @@ class FarmOrderFlowTest extends TestCase
         $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json();
         $this->assertSame([$other['slot']], collect($state['colors'])->where('sliced', true)->pluck('slot')->all());
+    }
+
+    /** A sign with a raised name: the customer picks a second colour for the text, from the same machine. */
+    public function test_a_raised_text_can_be_ordered_in_a_second_colour(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        // the machine of the order holds a second spool of the same family and one of another family
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $used = $s1->slots()->whereNotNull('farm_color_id')->pluck('farm_color_id');
+        $same = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->whereNotIn('id', $used)->firstOrFail();
+        $free = $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->get();
+        $this->assertGreaterThanOrEqual(1, $free->count(), 'the seeded S1 has an empty position');
+        $free[0]->update(['farm_color_id' => $same->id, 'remaining_g' => 800, 'enabled' => true]);
+
+        $created = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'sign', 'params' => ['style' => 'emboss', 'thickness' => 3, 'relief' => 1.2, 'line1' => 'Emma']])->assertCreated();
+        $uuid = $created->json('file.uuid');
+        $this->assertEqualsWithDelta(3.0, ModelFile::where('uuid', $uuid)->firstOrFail()->tool_params['color_change_mm'], 0.001);
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'scale' => 2])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
+        $this->assertEqualsWithDelta(6.0, $order->colorChangeMm(), 0.001, 'twice the size, twice the plate');
+
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $this->assertEqualsWithDelta(6.0, $state['color_change_mm'], 0.001);
+        $main = collect($state['colors'])->first(fn ($c) => $c['sliced'] && $c['enough'] && $c['second'] && $c['slot'] !== $free[0]->id);
+        $this->assertNotNull($main);
+        $this->assertContains($free[0]->id, array_column($main['second'], 'slot'));
+        $this->assertNotContains($main['slot'], array_column($main['second'], 'slot'));
+
+        $this->credit(20000);
+        $this->pay($order, ['slot' => $main['slot'], 'second_slot' => $free[0]->id])->assertOk();
+        $order->refresh();
+        $this->assertSame($free[0]->id, $order->second_slot_id);
+        $this->assertSame($same->id, $order->second_color_id);
+        $this->assertSame(['slot' => (int) $free[0]->slot, 'z' => 6.0], $order->colorChange());
+
+        // an uploaded model has no plate and no text: no second colour on offer, and a foreign slot is refused
+        $plain = $this->order(20);
+        $this->assertNull($plain->colorChangeMm());
+        $this->pay($plain, ['second_slot' => $free[0]->id])->assertStatus(422);
     }
 
     /** A turtle with joints prints in place: the customer switches the supports off and the slicer is told so. */

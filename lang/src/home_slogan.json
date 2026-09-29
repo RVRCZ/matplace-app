@@ -1,0 +1,67 @@
+{
+    "home.title.a": [
+        "Od myšlenky",
+        "From an idea",
+        "De la idea"
+    ],
+    "home.title.c": [
+        "k výrobku.",
+        "to a product.",
+        "al producto."
+    ],
+    "home.eyebrow": [
+        "3D tisk pro každý nápad",
+        "3D printing for every idea",
+        "Impresión 3D para cada idea"
+    ],
+    "home.path": [
+        "Cesta od myšlenky k výrobku",
+        "The way from an idea to a product",
+        "El camino de la idea al producto"
+    ],
+    "home.path.idea": [
+        "Myšlenka",
+        "Idea",
+        "Idea"
+    ],
+    "home.path.design": [
+        "Návrh ve 3D",
+        "Design in 3D",
+        "Diseño en 3D"
+    ],
+    "home.path.product": [
+        "Výrobek v ruce",
+        "Product in your hand",
+        "Producto en la mano"
+    ],
+    "home.tools.kicker": [
+        "Nejpoužívanější nástroje",
+        "The most used tools",
+        "Las herramientas más usadas"
+    ],
+    "home.tools.title": [
+        "Co lidé tisknou nejčastěji",
+        "What people print most often",
+        "Lo que más se imprime"
+    ],
+    "home.tools.lead": [
+        "Vyberte si nástroj, zadejte své rozměry nebo text a za chvíli máte hotový návrh.",
+        "Pick a tool, enter your sizes or your text and the design is ready in a moment.",
+        "Elija una herramienta, introduzca sus medidas o su texto y el diseño está listo en un momento."
+    ],
+    "home.tools.all_count": [
+        "Zobrazit všech :n nástrojů",
+        "Show all :n tools",
+        "Ver las :n herramientas"
+    ],
+    "home.steps.kicker": [
+        "Jak to funguje",
+        "How it works",
+        "Cómo funciona"
+    ],
+    "home.steps.title": [
+        "Tři kroky od myšlenky k výrobku.",
+        "Three steps from an idea to a product.",
+        "Tres pasos de la idea al producto."
+    ]
+}

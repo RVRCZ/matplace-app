@@ -106,15 +106,18 @@ class CalculationFlowTest extends TestCase
 
     public function test_homepage_keeps_the_working_entrance_on_top_of_the_new_look(): void
     {
-        foreach (['cs' => 'Z nápadu', 'en' => 'From an idea', 'es' => 'De la idea'] as $lang => $title) {
+        foreach (['cs' => 'Od myšlenky', 'en' => 'From an idea', 'es' => 'De la idea'] as $lang => $title) {
             $page = $this->get('/?lang='.$lang)->assertOk()->assertSee($title);
+            // the tools people use most, with their pictures, and the way to all of them
+            $this->assertSame((int) config('home.tools_shown'), substr_count($page->getContent(), 'data-cats='));
+            $page->assertSee('img/tools/gifts-800', false)->assertSee(route('tools'), false);
             // the inputs the scripts bind to are all there, before any marketing section
             $html = $page->getContent();
             foreach (['id="dropzone"', 'id="file-input"', 'id="hero-text-btn"', 'id="search-form"', 'id="result"', 'data-tile="idea"'] as $needle) {
                 $this->assertStringContainsString($needle, $html);
             }
             $this->assertLessThan(strpos($html, 'id="home-tools"'), strpos($html, 'id="dropzone"'));
-            $page->assertSee(__('home.benefit.real_prices'))->assertSee(route('tools.modular'), false)->assertSee(route('tools.spare'), false);
+            $page->assertSee(__('home.benefit.real_prices'))->assertSee(route('tools.organizer'), false)->assertSee(route('tools.spare'), false);
         }
         foreach (['hero', 'organizer', 'vases'] as $img) {
             foreach (['-640.webp', '-1024.webp', '-1536.webp', '-1024.jpg'] as $suffix) {

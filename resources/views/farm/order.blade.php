@@ -5,7 +5,7 @@
         'farm.order.low_filament', 'farm.order.starts_now', 'farm.order.goes_to_queue', 'farm.order.no_colors', 'farm.order.paying', 'farm.order.pay',
         'farm.order.queue_ahead', 'farm.order.queue_start', 'farm.order.queue_starting', 'farm.order.queue_finish', 'farm.order.blocked_plate', 'farm.order.blocked_offline',
         'farm.order.blocked_approval', 'farm.order.cancel_confirm', 'farm.order.b_time', 'farm.order.b_material', 'farm.order.b_fixed', 'farm.order.b_min',
-        'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off',
+        'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line',
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m'];
     $farmCfg = [
         'state' => $state,
@@ -139,6 +139,11 @@
                 <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.color') }}</div>
                 <p class="text-xs text-slate-600">{{ __('farm.order.colors_now') }}</p>
                 <div id="farm-colors" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.color') }}"></div>
+                <div id="farm-second" class="mt-3 hidden">
+                    <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.second_color') }}</div>
+                    <p class="text-xs text-slate-600">{{ __('farm.order.second_color_hint') }}</p>
+                    <div id="farm-second-colors" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.second_color') }}"></div>
+                </div>
                 <p id="farm-start-note" class="mt-2 text-xs text-slate-600"></p>
 
                 <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.order.delivery') }}</div>

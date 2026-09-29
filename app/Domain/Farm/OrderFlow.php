@@ -35,7 +35,7 @@ final class OrderFlow
      *
      * @throws FarmRefusal|InsufficientCredit
      */
-    public function pay(FarmOrder $order, FarmPrinterSlot $slot, string $delivery, ?array $address, bool $termsAccepted, ?string $ip, ?float $expectedTotal = null, ?string $note = null): FarmOrder
+    public function pay(FarmOrder $order, FarmPrinterSlot $slot, string $delivery, ?array $address, bool $termsAccepted, ?string $ip, ?float $expectedTotal = null, ?string $note = null, ?int $secondSlotId = null): FarmOrder
     {
         if ($order->status !== FarmOrder::STATUS_SLICED) {
             throw new FarmRefusal('not_ready');
@@ -54,16 +54,22 @@ final class OrderFlow
             throw new FarmRefusal('filament_low');
         }
 
+        $second = null;
+        if ($secondSlotId) {
+            $second = $this->orders->secondColors($order, $offer['slot'])->firstWhere('id', $secondSlotId) ?? throw new FarmRefusal('color_gone');
+        }
+
         $price = $this->orders->priceFor($order, $offer['printer'], $delivery, $offer['color']->material);
         if ($expectedTotal !== null && abs($expectedTotal - $price['total']) > 0.009) {
             throw new FarmRefusal('price_changed', ['total' => $price['total']]);
         }
 
         $slicedFor = $order->farm_printer_id;
-        DB::transaction(function () use ($order, $offer, $delivery, $address, $ip, $price, $note) {
+        DB::transaction(function () use ($order, $offer, $delivery, $address, $ip, $price, $note, $second) {
             $order->fill([
                 'farm_printer_id' => $offer['printer']->id, 'farm_printer_slot_id' => $offer['slot']->id, 'farm_color_id' => $offer['color']->id,
                 'farm_material_id' => $offer['color']->farm_material_id,
+                'second_slot_id' => $second?->id, 'second_color_id' => $second?->farm_color_id,
                 'delivery' => $delivery, 'shipping_address' => $delivery === 'shipping' ? $address : null, 'note' => $note,
                 'price' => $price, 'price_total' => $price['total'],
                 'terms_version' => (string) $this->settings->get('terms_version'), 'terms_accepted_at' => now(), 'terms_ip' => $ip,

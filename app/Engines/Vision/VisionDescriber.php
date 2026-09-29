@@ -22,9 +22,12 @@ final class VisionDescriber
     /**
      * Safety check before a photo of a person is turned into a figure: what is on it and whether it is acceptable.
      *
+     * A further side (left, back, right) is judged for its content only: the back of a head shows no face and
+     * no "clear subject", and that is exactly what such a photo should look like.
+     *
      * @return array{ok: bool, subject: string, reason: string}
      */
-    public function moderate(string $imagePath): array
+    public function moderate(string $imagePath, string $view = 'front'): array
     {
         if (! $this->available()) {
             return ['ok' => true, 'subject' => 'unknown', 'reason' => 'moderation_unavailable'];
@@ -36,6 +39,12 @@ final class VisionDescriber
             .'Answer ONLY with JSON: {"ok": <bool>, "subject": "person|pet|object|character|other", "reason": "<short English reason when ok=false, else empty>"}. '
             .'Set ok=false for nudity or sexual content, violence or gore, hate symbols, weapons presented as the main subject, '
             .'or when no clear single subject is visible. Ordinary portraits, pets, toys and objects are ok.';
+        if ($view !== 'front') {
+            $system .= ' This photo is an additional view of a subject whose front photo was already accepted: it shows the subject from the '
+                .$view.'. The face may be hidden or turned away, and a back view shows only hair, the back of a head or the back of an object. '
+                .'That is expected and ok. Do NOT set ok=false because the face or the subject is unclear, cropped or unrecognisable; '
+                .'set ok=false only for the content reasons listed above.';
+        }
         $res = Http::timeout((int) ($this->config['timeout'] ?? 45))
             ->withHeaders(['x-api-key' => $this->config['api_key'], 'anthropic-version' => '2023-06-01'])
             ->post('https://api.anthropic.com/v1/messages', [
@@ -44,7 +53,7 @@ final class VisionDescriber
                 'system' => $system,
                 'messages' => [['role' => 'user', 'content' => [
                     ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $mime, 'data' => base64_encode($bytes)]],
-                    ['type' => 'text', 'text' => 'Screen this photo.'],
+                    ['type' => 'text', 'text' => $view === 'front' ? 'Screen this photo.' : 'Screen this photo (view from the '.$view.').'],
                 ]]],
             ]);
         if (! $res->ok()) {

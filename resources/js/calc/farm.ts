@@ -9,7 +9,8 @@ import { Viewer } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; inputs: { vat_percent: number } }
-interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean; sliced: boolean }
+interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean; sliced: boolean; second?: Second[] }
+interface Second { slot: number; name: string; kind?: string; hex: string; photo: string | null }
 const UNIT_MM: Record<string, number> = { mm: 1, cm: 10, in: 25.4, m: 1000 };
 const clampScale = (v: number, max: number) => Math.max(0.25, Math.min(max || 4, v));
 
@@ -18,7 +19,7 @@ interface FarmState {
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
     unit: string; unit_guess: { unit: string; confident: boolean } | null;
-    dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string;
+    dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; shipping_price: number;
     colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; cancel_keep: number | null;
@@ -155,6 +156,7 @@ export function bootFarmOrder(): void {
     let supportsOn = true;
     let picked: number | null = state.slot ?? null;                    // the colour chosen on the start page, if it is still on offer
     let delivery = state.delivery || 'pickup';
+    let second: number | null = null;                                  // the spool of the raised text; null = the colour of the plate
     let timer = 0;
     const wanted = { quality: state.quality, strength: state.strength, supports: state.supports_mode || 'auto', unit: state.unit, copies: state.copies || 1, scale: state.scale || 1 };
     // the model's own millimetres (in the chosen unit) so a typed dimension gives a factor
@@ -199,6 +201,22 @@ export function bootFarmOrder(): void {
         const c = state.colors.find((x) => x.slot === picked);
         $('farm-start-note')!.textContent = c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '';
         viewer.setColor(c?.hex ?? null);
+        // a plate with a raised text: the text may have its own colour from the same machine
+        const offer = state.color_change_mm && c?.second?.length ? c.second : [];
+        if (second !== null && !offer.some((o) => o.slot === second)) second = null;
+        show($('farm-second'), offer.length > 0);
+        const list = $('farm-second-colors');
+        if (list && offer.length) {
+            const tile = (slot: number | null, name: string, kind: string, swatch: string): string => `
+                <button type="button" role="radio" aria-checked="${slot === second}" data-second="${slot ?? ''}"
+                    class="flex items-center gap-2 rounded-xl border bg-white p-2 text-left text-sm ${slot === second ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
+                    ${swatch}<span><span class="font-semibold">${esc(name)}</span>${kind ? `<br><span class="text-xs text-slate-500">${esc(kind)}</span>` : ''}</span>
+                </button>`;
+            const dot = (hex: string): string => `<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:${esc(hex)}"></span>`;
+            list.innerHTML = tile(null, tr('farm.order.second_same'), tr('farm.order.second_same_hint'), dot(c?.hex ?? '#ffffff'))
+                + offer.map((o) => tile(o.slot, o.name, o.kind ?? '', o.photo ? `<img src="${esc(o.photo)}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">` : dot(o.hex))).join('');
+            list.querySelectorAll<HTMLButtonElement>('button[data-second]').forEach((b) => b.addEventListener('click', () => { second = b.dataset.second ? Number(b.dataset.second) : null; render(); }));
+        }
     };
 
     const renderBreakdown = (): void => {
@@ -226,7 +244,7 @@ export function bootFarmOrder(): void {
             $('farm-progress-step')!.textContent = tr('farm.stage_step', { n: step, total: s.stage_total || 5 });
         }
         show($('farm-spinner'), working || s.status === 'printing');
-        const num = $('farm-number')!; num.textContent = s.number ? `${s.number}${s.color ? ` · ${s.color.name}` : ''}` : ''; show(num, !!s.number);
+        const num = $('farm-number')!; num.textContent = s.number ? `${s.number}${s.color ? ` · ${s.color.name}` : ''}${s.second_color ? `, ${tr('farm.order.second_line', { name: s.second_color.name })}` : ''}` : ''; show(num, !!s.number);
         const pr = $('farm-printer'); if (pr) { pr.textContent = s.printer ? tr('farm.order.printer', { name: s.printer.name, bed: s.printer.bed }) : ''; show(pr, !!s.printer); }
         const err = $('farm-error')!; err.textContent = s.error_text ?? ''; show(err, s.status === 'failed' && !!s.error_text);
         $('farm-warnings')!.innerHTML = s.warnings.map((w) => `<li>⚠ ${esc(w)}</li>`).join('');
@@ -381,7 +399,7 @@ export function bootFarmOrder(): void {
         new FormData(form).forEach((v, k) => { const m = k.match(/^address\[(\w+)\]$/); if (m) address[m[1]] = String(v); });
         btn.disabled = true; btn.textContent = tr('farm.order.paying'); show(errBox, false); show($('farm-topup'), false);
         const r = await post(cfg.routes.pay, {
-            slot: picked, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
+            slot: picked, second_slot: second, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
             video_consent: ($('farm-video-consent') as HTMLInputElement | null)?.checked ?? false,
             note: (form.elements.namedItem('note') as HTMLTextAreaElement).value, address: delivery === 'shipping' ? address : null,
         });

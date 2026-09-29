@@ -78,7 +78,7 @@ class FarmOrderController extends Controller
         $path = $order->absoluteGcodePath($plate);
         abort_unless($path && is_file($path), 404);
         // the operator sends this file by hand: it must already select the customer's slot
-        $path = GcodeSlot::fileFor($path, (int) ($order->slot?->slot ?? 0), PrintProfile::tempsFor($order));
+        $path = GcodeSlot::fileFor($path, (int) ($order->slot?->slot ?? 0), PrintProfile::tempsFor($order), $order->colorChange());
 
         return response()->download($path, 'matplace-'.($order->number ?: $order->token).($order->plates > 1 ? '-p'.$plate : '').'.gcode', ['Content-Type' => 'text/x.gcode']);
     }

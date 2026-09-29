@@ -248,7 +248,7 @@ def logo(M, Invalid, p):
         else:
             plate = S.rounded_rect(M, pw, ph, 0 if shape == "rect" else min(6, pw / 8))
         solid = plate.extrude(plate_t) + S.centre_on(art, pw, ph).extrude(t).translate([0, 0, plate_t - 0.01])
-        notes = {"outer": [round(pw, 1), round(ph, 1), round(plate_t + t, 1)]}
+        notes = {"outer": [round(pw, 1), round(ph, 1), round(plate_t + t, 1)], "color_change_mm": round(plate_t, 2)}
     notes.update({"warnings": warn, "thin_pct": thin, "missing_chars": info.get("missing_chars", [])})
     return {"all": solid}, notes
 
@@ -341,6 +341,8 @@ def sign(M, Invalid, p):
     x0 = -tab_note.get("tab", 0) * 0 - (max(5.0, ph * 0.28) * 1.35 if keyring else 0.0)
     notes = {"outer": [round(pw - x0, 1), round(ph, 1), round(t + (0 if style == "engrave" else relief), 1)], "warnings": warn, "thin_pct": thin,
              "missing_chars": info.get("missing_chars", []), "two_color": two and style != "engrave"}
+    if style != "engrave":
+        notes["color_change_mm"] = round(t, 2)             # above the plate everything is the text (and the rim)
     if two and style != "engrave":
         notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(t + 0.05, 2), "color": "orange"},
                             {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white"}]
@@ -409,7 +411,7 @@ def _sign_name(M, p, art, info, cap, t, relief, keyring, two, warn):
     if thin > 35:
         warn.append("thin_lines")
     notes = {"outer": [round(x1 - x0, 1), round(y1 - y0, 1), round(t + relief, 1)], "warnings": warn, "thin_pct": thin, "links": links,
-             "missing_chars": info.get("missing_chars", []), "two_color": two}
+             "missing_chars": info.get("missing_chars", []), "two_color": two, "color_change_mm": round(t, 2)}
     notes.update(tab_note)
     if two:
         notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(t + 0.05, 2), "color": "orange"},
@@ -585,6 +587,8 @@ def qr(M, Invalid, p):
     body = plate.extrude(plate_t) + raised.extrude(relief).translate([0, 0, plate_t - 0.01])
     parts = {"body": body}
     notes = {"outer": [round(size, 1), round(total_h, 1), round(plate_t + relief, 1)], "module_mm": round(module, 2), "modules": int(cells), "quiet_zone_mm": round(4 * module, 1), "verified": True, "needs": []}
+    if not stand:
+        notes["color_change_mm"] = round(plate_t, 2)       # with the stand on the same plate the change would stripe the stand
     if stand:
         slot = plate_t + 0.5
         sw, sd, sh = size * 0.7, 34.0, 12.0

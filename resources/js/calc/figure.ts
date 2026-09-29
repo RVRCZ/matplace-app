@@ -12,37 +12,80 @@ export function bootFigure(): void {
     const size = $('figure-size') as HTMLInputElement;
     const msg = $('figure-msg');
     const bar = $('figure-bar');
-    const btn = form.querySelector('button') as HTMLButtonElement;
+    const btn = $('figure-submit') as HTMLButtonElement;
+    const viewsMsg = $('figure-views-msg');
 
     size.oninput = () => { $('figure-size-val').textContent = `${size.value} mm`; };
-    photo.onchange = () => {
-        const f = photo.files?.[0];
-        const img = $('figure-preview') as HTMLImageElement;
-        if (f) { img.src = URL.createObjectURL(f); img.classList.remove('hidden'); }
+
+    // every photo (front and the optional sides) can be picked, replaced and taken away again
+    const inputs = Array.from(form.querySelectorAll<HTMLInputElement>('input[data-view]'));
+    const part = <T extends HTMLElement>(attr: string, view: string) => form.querySelector(`[${attr}="${view}"]`) as T | null;
+    const show = (input: HTMLInputElement) => {
+        const view = input.dataset.view ?? '';
+        const f = input.files?.[0];
+        const img = part<HTMLImageElement>('data-view-preview', view);
+        if (img) {
+            if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+            if (f) img.src = URL.createObjectURL(f); else img.removeAttribute('src');
+            img.classList.toggle('hidden', !f);
+        }
+        part('data-view-remove', view)?.classList.toggle('hidden', !f);
     };
-    // optional extra sides (left/back/right) of the same subject
-    form.querySelectorAll<HTMLInputElement>('input[data-view]').forEach((input) => {
-        input.onchange = () => {
-            const f = input.files?.[0];
-            const img = form.querySelector(`img[data-view-preview="${input.dataset.view}"]`) as HTMLImageElement | null;
-            if (f && img) { img.src = URL.createObjectURL(f); img.classList.remove('hidden'); }
-        };
+    const mark = (view: string, bad: boolean) => {
+        const box = part('data-view-box', view);
+        box?.classList.toggle('border-red-600', bad);
+        box?.classList.toggle('bg-red-50', bad);
+    };
+    const clear = (view: string) => {
+        const input = inputs.find((i) => i.dataset.view === view);
+        if (!input) return;
+        input.value = '';
+        show(input);
+    };
+    const calm = () => { viewsMsg.textContent = ''; viewsMsg.classList.add('hidden'); };
+    inputs.forEach((input) => {
+        const view = input.dataset.view ?? '';
+        input.onchange = () => { mark(view, false); calm(); msg.textContent = ''; show(input); };
+        const remove = part<HTMLButtonElement>('data-view-remove', view);
+        if (remove) remove.onclick = () => { clear(view); mark(view, false); calm(); msg.textContent = ''; };
     });
+    // The browser may keep the chosen files over a reload or a step back (photos taken straight by the camera
+    // exist nowhere else). What the form would send must be on the screen, with its remove button.
+    const sync = () => {
+        inputs.forEach(show);
+        if (inputs.some((i) => i.dataset.view !== 'front' && i.files?.length)) ($('figure-views') as HTMLDetailsElement).open = true;
+    };
+    sync();
+    window.addEventListener('pageshow', sync);
+    window.addEventListener('load', sync);
 
     form.onsubmit = async (e) => {
         e.preventDefault();
+        sync();
         const file = photo.files?.[0];
         if (!file) { msg.textContent = t('figure.need_photo'); return; }
         if (!($('figure-consent') as HTMLInputElement).checked) { msg.textContent = t('figure.need_consent'); return; }
+        const idle = (text: string) => { msg.textContent = text; btn.disabled = false; $('figure-progress').classList.add('hidden'); bar.style.width = '0'; };
         btn.disabled = true;
+        calm();
+        inputs.forEach((i) => mark(i.dataset.view ?? '', false));
         $('figure-progress').classList.remove('hidden');
         msg.textContent = t('figure.generating');
         const data = new FormData(form);
         try {
             const res = await fetch(cfg.generate, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: data });
             const body = await res.json();
-            if (res.status === 429) { msg.textContent = t(body.error === 'global_limit' ? 'figure.global_limit' : 'figure.limit', { n: body.limit, m: body.login_limit }); btn.disabled = false; return; }
-            if (res.status === 422 && body.error === 'photo_rejected') { msg.textContent = t(body.view && body.view !== 'front' ? 'figure.rejected_view' : 'figure.rejected', { view: t(`figure.view.${body.view}`) }); btn.disabled = false; return; }
+            if (res.status === 429) return idle(t(body.error === 'global_limit' ? 'figure.global_limit' : 'figure.limit', { n: body.limit, m: body.login_limit }));
+            if (res.status === 422 && body.error === 'photo_rejected') {
+                // the refused photo leaves the form, so the next try does not send it again
+                const view = String(body.view ?? 'front');
+                const side = view !== 'front';
+                const text = t(side ? 'figure.rejected_view' : 'figure.rejected', { view: t(`figure.view.${view}`) });
+                clear(view);
+                mark(view, true);
+                if (side) { viewsMsg.textContent = text; viewsMsg.classList.remove('hidden'); ($('figure-views') as HTMLDetailsElement).open = true; }
+                return idle(text);
+            }
             if (!res.ok) throw new Error(body.message ?? 'generate');
             let g = body.generation;
             while (g.status !== 'done' && g.status !== 'failed') {
@@ -50,13 +93,12 @@ export function bootFigure(): void {
                 await new Promise((r) => setTimeout(r, 3000));
                 g = (await (await fetch(`${cfg.show}/${g.token}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } })).json()).generation;
             }
-            if (g.status === 'failed' || !g.file) { msg.textContent = t('figure.failed'); btn.disabled = false; return; }
+            if (g.status === 'failed' || !g.file) return idle(t('figure.failed'));
             bar.style.width = '100%';
             msg.textContent = t('figure.done');
             location.href = `${cfg.home}?open=${g.file.uuid}`;
         } catch {
-            msg.textContent = t('figure.failed');
-            btn.disabled = false;
+            idle(t('figure.failed'));
         }
     };
 }
