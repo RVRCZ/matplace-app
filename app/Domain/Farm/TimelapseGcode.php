@@ -26,8 +26,37 @@ final class TimelapseGcode
      */
     public static function apply(string $gcode, array $o): string
     {
-        if (str_starts_with($gcode, self::HEADER) || ! str_contains($gcode, self::MARKER) || preg_match('/^M82\b/m', $gcode)) {
+        $in = fopen('php://temp', 'r+b');
+        fwrite($in, $gcode);
+        rewind($in);
+        $out = fopen('php://temp', 'r+b');
+        $header = self::transform($in, $out, $o);
+        fclose($in);
+        if ($header === null) {
+            fclose($out);
+
             return $gcode;
+        }
+        rewind($out);
+        $body = (string) stream_get_contents($out);
+        fclose($out);
+
+        return $header."\n".$body;
+    }
+
+    /**
+     * Line by line from $in to $out, so a G-code of any size (a 90 MB dragon slices to 123 MB) needs no more memory
+     * than one line. Returns the header line, or null when the file is left as it is (already done, absolute
+     * extrusion, no layer markers).
+     *
+     * @param  resource  $in
+     * @param  resource  $out
+     */
+    private static function transform($in, $out, array $o): ?string
+    {
+        $first = fgets($in);
+        if ($first === false || str_starts_with($first, self::HEADER)) {
+            return null;
         }
         $px = round((float) $o['park_x'], 2);
         $py = round((float) $o['park_y'], 2);
@@ -40,9 +69,10 @@ final class TimelapseGcode
         $retracted = false;
         $seen = 0;
         $frames = 0;
-        $out = [];
-        foreach (preg_split('/\r?\n/', $gcode) as $line) {
-            $out[] = $line;
+        $absoluteE = false;
+        for ($raw = $first; $raw !== false; $raw = fgets($in)) {
+            fwrite($out, $raw);
+            $line = rtrim($raw, "\r\n");
             if (str_starts_with($line, 'G1 ') || str_starts_with($line, 'G0 ')) {
                 $code = strstr($line, ';', true);
                 $code = $code === false ? $line : $code;
@@ -55,6 +85,11 @@ final class TimelapseGcode
                 if (preg_match('/\bE(-?[\d.]+)/', $code, $m) && (float) $m[1] != 0.0) {
                     $retracted = (float) $m[1] < 0;
                 }
+
+                continue;
+            }
+            if (preg_match('/^M82\b/', $line)) {
+                $absoluteE = true;
 
                 continue;
             }
@@ -78,14 +113,15 @@ final class TimelapseGcode
             if ($f !== null) {
                 $block[] = 'G1 F'.$f;     // the slicer's next move may rely on the last feed rate
             }
-            array_push($out, ...$block);
+            // a marker on the very last line has no line break of its own
+            fwrite($out, (str_ends_with($raw, "\n") ? '' : "\n").implode("\n", $block)."\n");
             $frames++;
         }
-        if ($frames === 0) {
-            return $gcode;
+        if ($frames === 0 || $absoluteE) {
+            return null;
         }
 
-        return sprintf('%s park_x=%s park_y=%s dwell=%d travel=%d frames=%d', self::HEADER, $px, $py, $dwell, (int) round($travel / 60), $frames)."\n".implode("\n", $out);
+        return sprintf('%s park_x=%s park_y=%s dwell=%d travel=%d frames=%d', self::HEADER, $px, $py, $dwell, (int) round($travel / 60), $frames);
     }
 
     /** Park position and dwell written by apply(), for the agent and the tests; null for an untouched file. */
@@ -104,8 +140,36 @@ final class TimelapseGcode
      */
     public static function extraMinutes(string $gcode, array $o, float $bedX, float $bedY): int
     {
-        $stops = max(0, substr_count($gcode, "\n".self::MARKER) - 1);
-        if ($stops === 0 || preg_match('/^M82\b/m', $gcode)) {
+        $stops = max(0, substr_count("\n".$gcode, "\n".self::MARKER) - 1);
+
+        return preg_match('/^M82\b/m', $gcode) ? 0 : self::minutesFor($stops, $o, $bedX, $bedY);
+    }
+
+    /** extraMinutes() for a G-code file, read line by line. */
+    public static function extraMinutesForFile(string $path, array $o, float $bedX, float $bedY): int
+    {
+        $fh = @fopen($path, 'rb');
+        if (! $fh) {
+            return 0;
+        }
+        $markers = 0;
+        while (($line = fgets($fh)) !== false) {
+            if (str_starts_with($line, self::MARKER)) {
+                $markers++;
+            } elseif (str_starts_with($line, 'M82') && preg_match('/^M82\b/', $line)) {
+                fclose($fh);
+
+                return 0;
+            }
+        }
+        fclose($fh);
+
+        return self::minutesFor(max(0, $markers - 1), $o, $bedX, $bedY);
+    }
+
+    private static function minutesFor(int $stops, array $o, float $bedX, float $bedY): int
+    {
+        if ($stops === 0) {
             return 0;
         }
         $travel = max(50.0, min(600.0, (float) ($o['travel_mm_s'] ?? 200)));
@@ -116,13 +180,31 @@ final class TimelapseGcode
         return (int) ceil($stops * $perStop / 60);
     }
 
-    /** Writes the time-lapse copy next to the given file and returns its path. */
+    /** Writes the time-lapse copy next to the given file and returns its path (the given one when nothing changes). */
     public static function fileFor(string $gcodePath, array $options): string
     {
         $target = preg_replace('/\.gcode$/', '', $gcodePath).'.tl-'.substr(md5(json_encode($options)), 0, 8).'.gcode';
-        if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {
-            file_put_contents($target, self::apply((string) file_get_contents($gcodePath), $options));
+        if (is_file($target) && filemtime($target) >= filemtime($gcodePath)) {
+            return $target;
         }
+        $in = fopen($gcodePath, 'rb');
+        $body = fopen($target.'.part', 'w+b');
+        $header = self::transform($in, $body, $options);
+        fclose($in);
+        if ($header === null) {
+            fclose($body);
+            @unlink($target.'.part');
+
+            return $gcodePath;
+        }
+        rewind($body);
+        $out = fopen($target.'.tmp', 'wb');
+        fwrite($out, $header."\n");
+        stream_copy_to_stream($body, $out);
+        fclose($out);
+        fclose($body);
+        @unlink($target.'.part');
+        rename($target.'.tmp', $target);
 
         return $target;
     }

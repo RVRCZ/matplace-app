@@ -193,7 +193,7 @@ class PrepareFarmOrder implements ShouldQueue
 
             // the head parks for the time-lapse after every layer on this machine: that time is printing time too
             $timelapse = $printer->timelapseFor($order);
-            $parkingOf = fn (?string $rel) => $timelapse && $rel ? TimelapseGcode::extraMinutes((string) File::get($disk->path($rel)), $timelapse, (float) $printer->bed_x, (float) $printer->bed_y) : 0;
+            $parkingOf = fn (?string $rel) => $timelapse && $rel ? TimelapseGcode::extraMinutesForFile($disk->path($rel), $timelapse, (float) $printer->bed_x, (float) $printer->bed_y) : 0;
             $parking = (int) round($sum($parkingOf($gcodeRel), $restRel ? $parkingOf($restRel) : null));
 
             $order->fill([

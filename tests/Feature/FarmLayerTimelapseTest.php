@@ -94,6 +94,34 @@ M83
         $this->assertSame('off', $saved->timelapseSettings()['mode']);
     }
 
+    public function test_a_huge_gcode_is_rewritten_line_by_line_without_loading_it(): void
+    {
+        $path = sys_get_temp_dir().'/mp_big_'.uniqid().'.gcode';
+        $fh = fopen($path, 'wb');
+        fwrite($fh, 'G90
+M83
+');
+        $layer = '; AFTER_LAYER_CHANGE
+'.str_repeat('G1 X10.123 Y20.456 E.01234 ; a move with a comment
+', 2000);
+        for ($i = 0; $i < 400; $i++) {     // ~40 MB
+            fwrite($fh, $layer);
+        }
+        fclose($fh);
+        $before = memory_get_usage();
+        $out = TimelapseGcode::fileFor($path, ['park_x' => 250, 'park_y' => 250]);
+        $this->assertLessThan(8 * 1024 * 1024, memory_get_peak_usage() - $before, 'memory does not grow with the file');
+        $head = fopen($out, 'rb');
+        $this->assertSame(399, TimelapseGcode::header((string) fgets($head))['frames']);
+        fclose($head);
+        $this->assertSame(399, TimelapseGcode::header('; matplace timelapse park_x=250 park_y=250 dwell=1000 travel=200 frames=399')['frames']);
+        $this->assertGreaterThan(filesize($path), filesize($out));
+        $this->assertSame(TimelapseGcode::extraMinutesForFile($path, ['park_x' => 250, 'park_y' => 250], 250, 250),
+            TimelapseGcode::extraMinutes((string) file_get_contents($path), ['park_x' => 250, 'park_y' => 250], 250, 250));
+        @unlink($path);
+        @unlink($out);
+    }
+
     public function test_absolute_extrusion_or_a_file_without_markers_is_left_alone(): void
     {
         $this->assertSame("M82\n".self::ORCA, TimelapseGcode::apply("M82\n".self::ORCA, ['park_x' => 1, 'park_y' => 1]));
