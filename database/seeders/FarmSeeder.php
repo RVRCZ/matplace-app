@@ -65,7 +65,7 @@ class FarmSeeder extends Seeder
         $plaPlus = $kinds['PLA+|solid'];
         $printer = FarmPrinter::firstOrCreate(['key' => 'kobra-s1-01'], [
             // layer time-lapse as tried on the S1 (camera front-low looking back: the parked head stays top right)
-            'timelapse' => ['mode' => 'always', 'park_x' => 250, 'park_y' => 250, 'dwell_ms' => 1000, 'lift_mm' => 0.6, 'travel_mm_s' => 200],
+            'timelapse' => ['mode' => 'consent', 'park_x' => 250, 'park_y' => 250, 'dwell_ms' => 1000, 'lift_mm' => 0.6, 'travel_mm_s' => 200],
             'name' => 'Kobra S1 #1',
             'model' => 'Anycubic Kobra S1 Combo',
             'mode' => FarmPrinter::MODE_MANUAL,
@@ -116,7 +116,7 @@ class FarmSeeder extends Seeder
         // nozzle_mm, machine_profile and process_profiles on the row, FarmPrinter::layerFor moves the quality ladder)
         $s1b = FarmPrinter::firstOrCreate(['key' => 'kobra-s1-02'], [
             // layer time-lapse as tried on the S1 (camera front-low looking back: the parked head stays top right)
-            'timelapse' => ['mode' => 'always', 'park_x' => 250, 'park_y' => 250, 'dwell_ms' => 1000, 'lift_mm' => 0.6, 'travel_mm_s' => 200],
+            'timelapse' => ['mode' => 'consent', 'park_x' => 250, 'park_y' => 250, 'dwell_ms' => 1000, 'lift_mm' => 0.6, 'travel_mm_s' => 200],
             'name' => 'Kobra S1 #2',
             'model' => 'Anycubic Kobra S1 Combo',
             'mode' => FarmPrinter::MODE_AGENT,

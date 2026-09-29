@@ -88,7 +88,7 @@ M83
 
     public function test_a_new_printer_starts_with_the_time_lapse_on_an_existing_one_without_a_setting_stays_off(): void
     {
-        $this->assertSame('always', (new FarmPrinter(['bed_x' => 250, 'bed_y' => 250]))->timelapseSettings()['mode']);
+        $this->assertSame('consent', (new FarmPrinter(['bed_x' => 250, 'bed_y' => 250]))->timelapseSettings()['mode']);
         $saved = new FarmPrinter(['bed_x' => 250, 'bed_y' => 250]);
         $saved->exists = true;
         $this->assertSame('off', $saved->timelapseSettings()['mode']);
