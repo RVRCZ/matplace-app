@@ -16,12 +16,14 @@ use App\Models\FarmMaterial;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrinterMaterial;
+use App\Models\ModelFile;
 use App\Models\User;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\Support\MeshFixtures;
 use Tests\TestCase;
 
@@ -245,7 +247,7 @@ class FarmTuningTest extends TestCase
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/adopt/{$order->token}", ['score' => 2])->assertRedirect()->assertSessionHas('error');
         $this->assertSame(FarmPrinterMaterial::STATUS_TESTING, $row->fresh()->status);
         $this->assertSame(2, $row->fresh()->version);
-        $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()->assertSee('převzít jako vyladěný nejde');
+        $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()->assertSee('jako vyladěné ho označit nejde');
 
         // floor 3 (220) was best after all → the row is tuned with it
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/adopt/{$order->token}", ['nozzle_temp' => 220, 'score' => 5, 'note' => 'patro 3'])->assertRedirect();
@@ -266,6 +268,66 @@ class FarmTuningTest extends TestCase
         $row->refresh();
         $this->assertSame('12%', $row->overrides['process']['ironing_flow']);
         $this->assertArrayNotHasKey('ironing_type', $row->overrides['process']);
+    }
+
+    /** A finished test of a row, printed with exactly what the row holds now. */
+    private function finishedTest(FarmPrinterMaterial $row, string $number, string $status = FarmOrder::STATUS_DONE, ?int $rating = null): FarmOrder
+    {
+        $file = ModelFile::forceCreate(['uuid' => (string) Str::uuid(), 'original_name' => 'calib.stl', 'ext' => 'stl', 'size_bytes' => 1, 'sha256' => str_repeat('0', 64),
+            'storage_path' => 'x/calib.stl', 'origin' => 'tool', 'origin_ref' => 'calib', 'status' => 'ready']);
+
+        return FarmOrder::forceCreate([
+            'token' => Str::random(32), 'number' => $number, 'user_id' => $this->admin->id, 'kind' => FarmOrder::KIND_TEST, 'model_file_id' => $file->id,
+            'status' => $status, 'farm_printer_id' => $row->farm_printer_id, 'farm_material_id' => $row->farm_material_id, 'farm_printer_material_id' => $row->id,
+            'quality_rating' => $rating, 'test_params' => ['object' => 'quick', 'row_version' => $row->version, 'candidate' => (array) $row->overrides],
+        ]);
+    }
+
+    public function test_a_test_that_confirms_the_row_says_so_and_the_page_returns_to_that_test(): void
+    {
+        $row = FarmPrinterMaterial::whereNull('farm_color_id')->whereNotNull('overrides')->firstOrFail();
+        $older = $this->finishedTest($row, 'T26-000020', rating: 3);
+        $test = $this->finishedTest($row, 'T26-000021', rating: 4);
+        $version = $row->version;
+
+        $page = $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk();
+        $page->assertSee('id="test-'.$test->id.'"', false)->assertSee('3 · Test je dobrý – označit jako vyladěné')->assertSee('1 · Uložit hodnocení');
+
+        // the test printed with the row's own values: no new version, but the row now says which test confirmed it,
+        // and the page goes back to that very test (it used to land on another one - 29 Sep 2026)
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/adopt/{$test->token}", ['score' => 4])
+            ->assertRedirect("/admin/farm/tuning/{$row->id}#test-{$test->id}")
+            ->assertSessionHas('status', fn ($m) => str_contains($m, 'T26-000021') && str_contains($m, 'beze změny') && str_contains($m, $row->printer->name));
+        $row->refresh();
+        $this->assertSame(FarmPrinterMaterial::STATUS_TUNED, $row->status);
+        $this->assertSame($version, $row->version);
+        $this->assertStringContainsString('Potvrzeno testem T26-000021 (4/5)', (string) $row->notes);
+        $this->assertSame(4, $row->score);
+    }
+
+    public function test_an_old_test_can_be_hidden_and_shown_again_without_losing_anything(): void
+    {
+        $row = FarmPrinterMaterial::whereNull('farm_color_id')->firstOrFail();
+        $old = $this->finishedTest($row, 'T26-000030', rating: 2);
+        $running = $this->finishedTest($row, 'T26-000031', FarmOrder::STATUS_PRINTING);
+        $keep = $this->finishedTest($row, 'T26-000032', rating: 5);
+
+        // a running test stays in the list
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/hide/{$running->token}")->assertRedirect()->assertSessionHas('error');
+
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/hide/{$old->token}")
+            ->assertRedirect("/admin/farm/tuning/{$row->id}#testy")->assertSessionMissing('error');
+        $this->assertTrue($old->fresh()->test_params['hidden']);
+        $this->assertSame(2, $old->fresh()->quality_rating, 'nothing is deleted');
+
+        $page = $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk();
+        // the flash names the hidden test; the list must not show its card
+        $page->assertSee('T26-000030 je skrytý')->assertDontSee('id="test-'.$old->id.'"', false)->assertSee('id="test-'.$keep->id.'"', false)->assertSee('Zobrazit skryté testy (1)');
+
+        $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}?skryte=1")->assertOk()->assertSee('id="test-'.$old->id.'"', false)->assertSee('vrátit do seznamu');
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/hide/{$old->token}", ['show' => 1])->assertRedirect();
+        $this->assertFalse($old->fresh()->test_params['hidden']);
+        $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()->assertSee('id="test-'.$old->id.'"', false);
     }
 
     public function test_the_operator_can_dry_the_spools_in_the_ace_through_the_agent(): void
