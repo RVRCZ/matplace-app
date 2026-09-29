@@ -36,6 +36,8 @@ class FarmOrder extends Model
 
     public const KIND_TEST = 'test';              // a tuning test print of the farm itself: no price, sliced → queued
 
+    public const KIND_SHOWCASE = 'showcase';      // a print for the YouTube channel (App\Domain\YouTube\ShowcasePrints): no price, sliced → queued
+
     public const TRANSITIONS = [
         self::STATUS_UPLOADED => [self::STATUS_SLICED, self::STATUS_FAILED, self::STATUS_CANCELLED],
         self::STATUS_SLICED => [self::STATUS_UPLOADED, self::STATUS_PAID, self::STATUS_CANCELLED, self::STATUS_QUEUED],   // → queued: tests only (OrderFlow)
@@ -147,6 +149,12 @@ class FarmOrder extends Model
     public function isTest(): bool
     {
         return $this->kind === self::KIND_TEST;
+    }
+
+    /** The farm's own print (a tuning test or a showcase for YouTube): nobody pays, it is queued once sliced. */
+    public function isFree(): bool
+    {
+        return in_array($this->kind, [self::KIND_TEST, self::KIND_SHOWCASE], true);
     }
 
     public function events(): HasMany

@@ -29,7 +29,7 @@ class FarmVideos
     /** A finished customer print with a time-lapse whose owner agreed to share it. */
     public function eligible(FarmOrder $order): bool
     {
-        return $order->kind === FarmOrder::KIND_PRINT
+        return in_array($order->kind, [FarmOrder::KIND_PRINT, FarmOrder::KIND_SHOWCASE], true)
             && $order->video_consent
             && $order->timelapse_path
             && Storage::disk(config('farm.disk'))->exists($order->timelapse_path);
@@ -49,6 +49,7 @@ class FarmVideos
         $video->fill([
             'status' => FarmVideo::STATUS_QUEUED, 'youtube_id' => null, 'error' => null,
             'title' => $video->title ?: $this->defaultTitle($order),
+            'score' => $video->score ?? $this->score($order),
             'description' => $video->description ?: $this->defaultDescription($order),
         ])->save();
         UploadFarmVideo::dispatch($video->id);
@@ -214,6 +215,9 @@ class FarmVideos
                 continue;       // deleted in Studio: an admin sees it has no numbers
             }
             $fill = ['views' => $s['views'], 'likes' => $s['likes'], 'comments' => $s['comments'], 'stats_at' => now()];
+            if ($video->score === null && $video->order) {
+                $fill['score'] = $this->score($video->order);
+            }
             if ($s['privacy'] === 'public' && $video->status === FarmVideo::STATUS_UPLOADED && $video->order?->video_consent) {
                 $fill += ['status' => FarmVideo::STATUS_PUBLISHED, 'published_at' => now(), 'error' => null];
             }
@@ -222,6 +226,38 @@ class FarmVideos
         }
 
         return $n;
+    }
+
+    /**
+     * How interesting the time-lapse is likely to be, 0-100. The channel's numbers say: complex prints get the views
+     * (F26-000018, a gear with ~370 layers and dense detail, 1 100 views against a handful for simple parts).
+     *   time    up to 35: long prints grow a lot (log scale, 10 h and more = full)
+     *   layers  up to 35: every layer is a frame (350 and more = full)
+     *   detail  up to 30: moves per layer, a busy layer looks alive (1 200 and more = full)
+     */
+    public function score(FarmOrder $order): ?int
+    {
+        $gcode = $order->absoluteGcodePath();
+        if (! $gcode || ! is_file($gcode)) {
+            return null;
+        }
+        $layers = 0;
+        $moves = 0;
+        $fh = fopen($gcode, 'rb');
+        while (($line = fgets($fh)) !== false) {
+            if ($line[0] === ';') {
+                $layers += str_starts_with($line, ';LAYER_CHANGE') ? 1 : 0;
+            } elseif (str_starts_with($line, 'G1 ') || str_starts_with($line, 'G2 ') || str_starts_with($line, 'G3 ')) {
+                $moves++;
+            }
+        }
+        fclose($fh);
+        $minutes = (int) ($order->actual_minutes ?: $order->est_minutes);
+        $time = 35 * min(1.0, log(1 + $minutes / 30, 2) / log(1 + 600 / 30, 2));
+        $layerPart = 35 * min(1.0, $layers / 350);
+        $detail = 30 * min(1.0, ($layers ? $moves / $layers : 0) / 1200);
+
+        return (int) round($time + $layerPart + $detail);
     }
 
     /** The square Short when it was built (it grows the channel), else the landscape time-lapse. */

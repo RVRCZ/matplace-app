@@ -106,7 +106,7 @@ final class OrderFlow
     /** @throws \DomainException when the move is not allowed from the current status */
     public function move(FarmOrder $order, string $to, string $actor, ?int $actorId = null, ?string $note = null): FarmOrder
     {
-        if (! $order->canMoveTo($to) || ($order->status === FarmOrder::STATUS_SLICED && $to === FarmOrder::STATUS_QUEUED && ! $order->isTest())) {
+        if (! $order->canMoveTo($to) || ($order->status === FarmOrder::STATUS_SLICED && $to === FarmOrder::STATUS_QUEUED && ! $order->isFree())) {
             throw new \DomainException("Farm order {$order->id}: {$order->status} → {$to} is not allowed.");
         }
         $from = $order->status;

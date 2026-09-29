@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Farm\FarmRefusal;
+use App\Domain\Farm\FarmSettings;
 use App\Domain\YouTube\FarmVideos;
+use App\Domain\YouTube\ShowcasePrints;
 use App\Domain\YouTube\YouTubeClient;
 use App\Domain\YouTube\YouTubeError;
 use App\Http\Controllers\Controller;
 use App\Models\FarmOrder;
+use App\Models\FarmPrinter;
+use App\Models\FarmPrinterSlot;
 use App\Models\FarmVideo;
 use App\Models\YouTubeAccount;
 use Illuminate\Http\RedirectResponse;
@@ -28,8 +33,13 @@ class YouTubeController extends Controller
         return view('admin.youtube.index', [
             'configured' => $this->youtube->configured(),
             'account' => YouTubeAccount::current(),
-            'waiting' => $videos->whereIn('status', [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED]),
+            // the likely hits first (FarmVideos::score)
+            'waiting' => $videos->whereIn('status', [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED])->sortByDesc(fn ($v) => $v->score ?? -1)->values(),
             'done' => $videos->whereIn('status', [FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN]),
+            'showcases' => FarmOrder::with(['color.material', 'printer', 'video'])->where('kind', FarmOrder::KIND_SHOWCASE)->latest('id')->limit(10)->get(),
+            'slots' => FarmPrinterSlot::with(['color.material', 'printer'])->whereNotNull('farm_color_id')
+                ->whereHas('printer', fn ($q) => $q->where('enabled', true)->where('mode', FarmPrinter::MODE_AGENT))->orderBy('farm_printer_id')->orderBy('slot')->get(),
+            'qualities' => array_keys((array) app(FarmSettings::class)->get('qualities')),
             'top' => $videos->where('status', FarmVideo::STATUS_PUBLISHED)->whereNotNull('views')->sortByDesc('views')->take(5)->values(),
             'totals' => ['views' => (int) $videos->sum('views'), 'likes' => (int) $videos->sum('likes'), 'comments' => (int) $videos->sum('comments'),
                 'published' => $videos->where('status', FarmVideo::STATUS_PUBLISHED)->count(), 'at' => $videos->max('stats_at')],
@@ -124,6 +134,25 @@ class YouTubeController extends Controller
         }
 
         return back()->with('status', 'Stará verze je z YouTube smazaná, nová se nahrává.');
+    }
+
+    /** A print for the channel on a free machine (ShowcasePrints). */
+    public function showcase(Request $request, ShowcasePrints $showcases): RedirectResponse
+    {
+        $data = $request->validate([
+            'model' => ['required', 'string', 'max:300'],
+            'slot' => ['required', 'integer', 'exists:farm_printer_slots,id'],
+            'quality' => ['required', 'in:'.implode(',', array_keys((array) app(FarmSettings::class)->get('qualities')))],
+        ]);
+        try {
+            $order = $showcases->create($data['model'], FarmPrinterSlot::findOrFail($data['slot']), $data['quality'], $request->user());
+        } catch (FarmRefusal $e) {
+            return back()->withInput()->with('error', $e->reason === 'model'
+                ? 'Model nenalezen nebo ještě není zpracovaný. Vložte odkaz na kalkulaci (…/c/…) nebo UUID souboru.'
+                : 'Ve zvoleném slotu není cívka, nebo tiskárna není zapnutá s agentem.');
+        }
+
+        return back()->with('status', 'Ukázka '.$order->number.' se připravuje a půjde do fronty. Spustí se, až potvrdíte volnou podložku.');
     }
 
     public function stats(): RedirectResponse

@@ -6,7 +6,9 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\YouTube\FarmVideos;
 use App\Jobs\UploadFarmVideo;
 use App\Mail\FarmAdminAlert;
+use App\Models\FarmAgent;
 use App\Models\FarmOrder;
+use App\Models\FarmPrinter;
 use App\Models\FarmVideo;
 use App\Models\Payment;
 use App\Models\User;
@@ -231,6 +233,49 @@ class YouTubeVideosTest extends TestCase
 
             return $videos->defaultTitle($order->refresh());
         })());
+    }
+
+    public function test_a_showcase_print_costs_nothing_goes_to_the_queue_and_counts_for_youtube(): void
+    {
+        $printer = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        [$agent] = FarmAgent::issue('test agent');
+        $printer->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $agent->id, 'enabled' => true, 'timelapse' => ['mode' => 'consent', 'park_x' => 250, 'park_y' => 250]]);
+        $slot = $printer->slots()->whereNotNull('farm_color_id')->firstOrFail();
+
+        $path = sys_get_temp_dir().'/mp_show_'.uniqid().'.stl';
+        MeshFixtures::cubeStl($path, 30.0);
+        $uuid = $this->actingAs($this->admin)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'gear-reducer_v2.stl', null, null, true)])->assertCreated()->json('file.uuid');
+
+        $this->actingAs($this->admin)->post('/admin/youtube/showcase', ['model' => 'nonsense', 'slot' => $slot->id, 'quality' => 'fine'])->assertSessionHas('error');
+        $this->actingAs($this->admin)->post('/admin/youtube/showcase', ['model' => $uuid, 'slot' => $slot->id, 'quality' => 'fine'])->assertSessionHas('status');
+
+        $order = FarmOrder::where('kind', FarmOrder::KIND_SHOWCASE)->firstOrFail();
+        $this->assertSame('U'.now()->format('y').'-000001', $order->number);
+        $this->assertSame(FarmOrder::STATUS_QUEUED, $order->status, 'no payment: straight to the queue');
+        $this->assertNull($order->price_total);
+        $this->assertTrue($order->video_consent);
+        $this->assertNotNull($printer->refresh()->timelapseFor($order), 'the head parks for the showcase');
+        $this->assertSame('Gear reducer', app(FarmVideos::class)->modelName($order, 'cs'));
+        $this->actingAs($this->user)->post('/admin/youtube/showcase', ['model' => $uuid, 'slot' => $slot->id, 'quality' => 'fine'])->assertRedirect();
+        $this->assertSame(1, FarmOrder::where('kind', FarmOrder::KIND_SHOWCASE)->count(), 'admins only');
+    }
+
+    public function test_the_score_ranks_long_detailed_prints_above_simple_ones(): void
+    {
+        $order = $this->paidOrder(consent: true);
+        $videos = app(FarmVideos::class);
+        $layer = fn (int $moves) => ';LAYER_CHANGE
+'.str_repeat('G1 X1 Y1 E.01
+', $moves);
+        Storage::disk('farm')->put($order->gcode_path, str_repeat($layer(40), 30));        // a flat simple part
+        $order->forceFill(['est_minutes' => 25])->save();
+        $simple = $videos->score($order);
+        Storage::disk('farm')->put($order->gcode_path, str_repeat($layer(1500), 400));     // a tall busy one
+        $order->forceFill(['est_minutes' => 480])->save();
+        $complex = $videos->score($order);
+        $this->assertLessThan(20, $simple);
+        $this->assertGreaterThan(90, $complex);
+        $this->assertLessThanOrEqual(100, $complex);
     }
 
     public function test_somebody_else_cannot_change_the_consent(): void

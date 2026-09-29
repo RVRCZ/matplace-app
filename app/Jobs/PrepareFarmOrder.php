@@ -217,8 +217,8 @@ class PrepareFarmOrder implements ShouldQueue
             ])->save();
 
             // ── 3. price ───────────────────────────────────────────────────────
-            if ($order->isTest()) {
-                // the farm's own test print: nobody pays, it goes straight to the queue
+            if ($order->isFree()) {
+                // the farm's own print (test or YouTube showcase): nobody pays, it goes straight to the queue
                 $order->fill(['stage' => null])->save();
                 $flow->move($order, FarmOrder::STATUS_SLICED, 'system');
                 $flow->move($order, FarmOrder::STATUS_QUEUED, 'system');

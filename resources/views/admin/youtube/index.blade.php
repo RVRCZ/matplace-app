@@ -52,6 +52,36 @@
     </section>
 @endif
 
+{{-- a print made for the channel --}}
+@if($account)
+    <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+        <h2 class="font-bold">Ukázkový tisk pro YouTube</h2>
+        <p class="text-xs text-slate-500">Na volnou tiskárnu vytiskne efektní model jen kvůli videu: nic se neplatí, po přípravě jde rovnou do fronty (start po potvrzení volné podložky), hlava parkuje po každé vrstvě a video se nahraje ke schválení. Nejvíc zhlédnutí mají složité tisky s mnoha vrstvami a detaily. Model nahrajte v kalkulačce a vložte sem odkaz na ni.</p>
+        <form method="post" action="{{ route('admin.youtube.showcase') }}" class="mt-2 grid gap-2 sm:grid-cols-[2fr_2fr_1fr_auto] sm:items-end">
+            @csrf
+            <label class="block text-xs font-semibold text-slate-600">Odkaz na kalkulaci nebo UUID modelu
+                <input name="model" value="{{ old('model') }}" required placeholder="https://beta.matplace.com/c/…" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal"></label>
+            <label class="block text-xs font-semibold text-slate-600">Tiskárna a cívka
+                <select name="slot" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal">
+                    @foreach($slots as $s)<option value="{{ $s->id }}" @selected((int) old('slot') === $s->id)>{{ $s->printer->name }} · slot {{ $s->slot }} · {{ $s->color?->material?->label() }} {{ $s->color?->displayName() }}</option>@endforeach
+                </select></label>
+            <label class="block text-xs font-semibold text-slate-600">Kvalita
+                <select name="quality" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal">
+                    @foreach($qualities as $q)<option value="{{ $q }}" @selected(old('quality', 'fine') === $q)>{{ __('farm.quality.'.$q) }}</option>@endforeach
+                </select></label>
+            <button class="btn-primary text-sm">Vytisknout ukázku</button>
+        </form>
+        @if($showcases->isNotEmpty())
+            <ul class="mt-3 space-y-1 text-sm">
+                @foreach($showcases as $o)
+                    <li><a href="{{ route('admin.farm.orders.show', $o) }}" class="underline">{{ $o->number }}</a> · {{ $o->printer?->name }} · {{ $o->color?->material?->label() }} {{ $o->color?->displayName() }}
+                        <span class="text-xs text-slate-500">· {{ __('farm.status.'.$o->status) }}{{ $o->video?->views !== null ? ' · '.number_format($o->video->views, 0, ',', ' ').' zhlédnutí' : '' }}</span></li>
+                @endforeach
+            </ul>
+        @endif
+    </section>
+@endif
+
 {{-- waiting for a decision --}}
 <h2 class="mt-6 text-lg font-bold">Ke schválení</h2>
 @forelse($waiting as $v)
@@ -69,6 +99,10 @@
             </p>
         </div>
         <div>
+            @if($v->score !== null)
+                <span class="float-right rounded-full px-2 py-0.5 text-xs font-bold {{ $v->score >= 60 ? 'bg-ok-soft text-ok' : ($v->score >= 35 ? 'bg-action-soft text-action-dark' : 'bg-slate-100 text-slate-500') }}"
+                      title="Odhad zajímavosti z délky tisku, počtu vrstev a detailu (0–100)">zajímavost {{ $v->score }}</span>
+            @endif
             <p class="text-sm font-semibold">{{ $label[$v->status] ?? $v->status }}
                 @if($v->studioUrl())<a href="{{ $v->studioUrl() }}" target="_blank" rel="noopener" class="ml-2 text-xs font-normal underline">otevřít v YouTube Studiu</a>@endif
             </p>
@@ -119,6 +153,7 @@
             <span>
                 <a href="{{ route('admin.farm.orders.show', $v->order) }}" class="underline">{{ $v->order?->number }}</a> · {{ $v->title }}
                 <span class="text-xs text-slate-500">· {{ $label[$v->status] ?? $v->status }} {{ ($v->published_at ?? $v->decided_at ?? $v->updated_at)?->format('j. n. Y') }}</span>
+                @if($v->score !== null)<span class="text-xs text-slate-500">· zajímavost {{ $v->score }}</span>@endif
                 @if($v->views !== null)<span class="text-xs text-slate-600">· {{ number_format($v->views, 0, ',', ' ') }} zhlédnutí · {{ $v->likes === null ? '–' : number_format($v->likes, 0, ',', ' ') }} lajků</span>@endif
                 @if($v->error)<span class="block text-xs text-red-700">{{ $v->error }}</span>@endif
             </span>
