@@ -1466,7 +1466,7 @@
     "figure.pedestal.cut": "Sochařský řez",
     "figure.pedestal.styles": "Moderní busta má zaoblenou hruď na soustruženém soklu se jménem po obvodu. Antická busta stojí na tabulce se jménem a soklu se širokou patou. Sochařský řez je bez podstavce, busta stojí na vlastním rovném řezu se šikmo seříznutými rameny.",
     "mold.type": "Typ formy",
-    "mold.type.rigid": "Tištěná dvoudílná forma",
+    "mold.type.rigid": "Tištěná forma (2 až 4 díly)",
     "mold.type.silicone": "Forma na silikon (tvary s podřezy)",
     "mold.axis.z": "Horní a spodní polovina",
     "mold.verdict.rigid": "Tento tvar jde z tištěné formy vyndat.",

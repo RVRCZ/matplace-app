@@ -1466,7 +1466,7 @@
     "figure.pedestal.cut": "Sculptor's cut",
     "figure.pedestal.styles": "The modern bust has a rounded chest on a turned foot with the name round its band. The antique bust stands on a tablet with the name and a socle with a wide foot. The sculptor's cut has no base, the bust stands on its own flat cut with the shoulders cut at a slant.",
     "mold.type": "Kind of mold",
-    "mold.type.rigid": "Printed two-part mold",
+    "mold.type.rigid": "Printed mold (2 to 4 parts)",
     "mold.type.silicone": "Mold for silicone (shapes with undercuts)",
     "mold.axis.z": "Top and bottom half",
     "mold.verdict.rigid": "This shape comes out of a printed mold.",

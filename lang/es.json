@@ -1466,7 +1466,7 @@
     "figure.pedestal.cut": "Corte de escultor",
     "figure.pedestal.styles": "El busto moderno tiene el pecho redondeado sobre un pie torneado con el nombre alrededor. El busto clásico descansa sobre una tablilla con el nombre y una peana de pie ancho. El corte de escultor no lleva base, el busto se apoya en su propio corte plano con los hombros cortados en diagonal.",
     "mold.type": "Tipo de molde",
-    "mold.type.rigid": "Molde impreso de dos partes",
+    "mold.type.rigid": "Molde impreso (2 a 4 partes)",
     "mold.type.silicone": "Molde para silicona (formas con contrasalidas)",
     "mold.axis.z": "Mitad superior e inferior",
     "mold.verdict.rigid": "Esta forma sale de un molde impreso.",
