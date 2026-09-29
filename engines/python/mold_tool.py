@@ -190,7 +190,11 @@ def silicone(M, man, ex, ey, h, wall):
     x0, y0, z0, x1, y1, _ = master.bounding_box()
     master = master.translate([-x0, -y0, -z0])
     sx0, sy0, _, sx1, sy1, _ = sleeve.bounding_box()
-    sleeve = sleeve.translate([-sx0 + (x1 - x0) + 10.0, -sy0 + rim, 0.0])
+    if (x1 - x0) + 10.0 + (sx1 - sx0) > 240.0 and (y1 - y0) + 10.0 + (sy1 - sy0) < (x1 - x0) + 10.0 + (sx1 - sx0):
+        # side by side they would not fit a common bed: the sleeve goes behind the base
+        sleeve = sleeve.translate([-sx0 + rim, -sy0 + (y1 - y0) + 10.0, 0.0])
+    else:
+        sleeve = sleeve.translate([-sx0 + (x1 - x0) + 10.0, -sy0 + rim, 0.0])
     report = {
         "box": [round(x1 - x0, 1), round(y1 - y0, 1), round(ih + BASE, 1)],
         "sleeve": [round(sx1 - sx0, 1), round(sy1 - sy0, 1), round(ih + GROOVE, 1)],
