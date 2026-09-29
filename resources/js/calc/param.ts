@@ -393,11 +393,13 @@ export function bootParam(): void {
         input.setSelectionRange(caret, caret);
         input.dispatchEvent(new Event('input', { bubbles: true }));
     }));
-    // fields and flags that belong to one choice only ("data-when=style=desk,wedge") hide for the other choices
+    // fields and flags that belong to one choice only ("data-when=style=desk,wedge") hide for the other choices;
+    // the key may be a flag too ("data-when=mount=on")
     const applyWhen = (): void => {
         form.querySelectorAll<HTMLElement>('[data-when]').forEach((el) => {
             const [key, list] = (el.dataset.when ?? '').split('=');
-            const current = form.querySelector<HTMLInputElement>(`[data-choice="${key}"]:checked`)?.value ?? '';
+            const flag = form.querySelector<HTMLInputElement>(`[data-flag="${key}"]`);
+            const current = form.querySelector<HTMLInputElement>(`[data-choice="${key}"]:checked`)?.value ?? (flag ? (flag.checked ? 'on' : 'off') : '');
             el.classList.toggle('hidden', !list.split(',').includes(current));
         });
     };

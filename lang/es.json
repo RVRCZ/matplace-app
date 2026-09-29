@@ -1358,7 +1358,7 @@
     "tools.holder.action": "Diseñar un soporte",
     "param.holder.lead": "Mida el objeto que quiere guardar y elija cómo debe sujetarlo el soporte. La holgura la añadimos nosotros.",
     "param.holder.size": "Medidas del objeto",
-    "param.holder.tip": "Se imprime sin soportes: la cuna y el bolsillo de pie, tal como cuelgan en la pared; el gancho y el clip tumbados de lado. Los agujeros para tornillos tienen forma de gota para imprimirse limpios. Para objetos pesados y el clip elija PETG. Tornillos de pared: 4 mm con taco.",
+    "param.holder.tip": "Se imprime sin soportes: la cuna y el bolsillo de pie, tal como cuelgan en la pared; el gancho y el clip tumbados de lado. Los agujeros tienen forma de gota para imprimirse limpios. Ojo de cerradura: la cabeza del tornillo de la pared pasa por el agujero ancho, el soporte baja y queda colgado en la ranura estrecha. Los cantos redondeados llevan un chaflán en el lado que apoya en la cama. Para objetos pesados y el clip elija PETG. Tornillos de pared: 4 mm con taco.",
     "param.c.holder.style": "Cómo sujeta",
     "param.o.holder.cradle": "Cuna (frente bajo)",
     "param.o.holder.pocket": "Bolsillo (cerrado)",
@@ -1451,5 +1451,12 @@
     "home.path.product": "Producto en la mano",
     "home.tools.all_count": "Ver las :n herramientas",
     "figure.views.better": "Más fotos dan un resultado mejor.",
-    "figure.views.better_hint": "Añada una foto de lado y otra de atrás, así el modelo refleja mejor el parecido y el peinado. Es opcional."
+    "figure.views.better_hint": "Añada una foto de lado y otra de atrás, así el modelo refleja mejor el parecido y el peinado. Es opcional.",
+    "param.f.hook_h": "Altura del gancho",
+    "param.f.bend": "Redondeo del gancho",
+    "param.f.edge": "Redondeo de los cantos",
+    "param.c.holder.holes": "Agujeros para colgar",
+    "param.o.holder.round": "Redondos, para tornillo",
+    "param.o.holder.keyhole": "Ojo de cerradura, se cuelga de un tornillo en la pared",
+    "param.error.holder_keyhole_narrow": "Para colgarlo de un tornillo el gancho debe tener al menos :n mm de ancho. Aumente el ancho o elija agujeros redondos."
 }

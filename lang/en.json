@@ -1358,7 +1358,7 @@
     "tools.holder.action": "Design a holder",
     "param.holder.lead": "Measure the thing you want to put away and choose how the holder should hold it. We add the clearance around it.",
     "param.holder.size": "Size of the thing",
-    "param.holder.tip": "Prints without supports: the cradle and the pocket standing the way they hang on the wall, the hook and the clip lying on their side. Screw holes are teardrop-shaped so they print cleanly. For heavier things and the clip choose PETG. Wall screws: 4 mm with a plug.",
+    "param.holder.tip": "Prints without supports: the cradle and the pocket standing the way they hang on the wall, the hook and the clip lying on their side. Holes are teardrop-shaped so they print cleanly. Keyhole: the head of the screw in the wall goes through the wide hole, the holder slides down and hangs in the narrow slot. Rounded edges are bevelled on the side that lies on the bed. For heavier things and the clip choose PETG. Wall screws: 4 mm with a plug.",
     "param.c.holder.style": "How it holds",
     "param.o.holder.cradle": "Cradle (low front)",
     "param.o.holder.pocket": "Pocket (closed)",
@@ -1451,5 +1451,12 @@
     "home.path.product": "Product in your hand",
     "home.tools.all_count": "Show all :n tools",
     "figure.views.better": "More photos give a better result.",
-    "figure.views.better_hint": "Add a photo from the side and from the back, the model then matches the likeness and the hair better. It is optional."
+    "figure.views.better_hint": "Add a photo from the side and from the back, the model then matches the likeness and the hair better. It is optional.",
+    "param.f.hook_h": "Height of the hook",
+    "param.f.bend": "Rounding of the hook",
+    "param.f.edge": "Rounding of the edges",
+    "param.c.holder.holes": "Holes for hanging",
+    "param.o.holder.round": "Round, for a screw",
+    "param.o.holder.keyhole": "Keyhole, hangs on a screw in the wall",
+    "param.error.holder_keyhole_narrow": "To hang on a screw the hook has to be at least :n mm wide. Make the thing wider or choose round holes."
 }

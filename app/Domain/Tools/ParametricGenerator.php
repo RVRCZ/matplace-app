@@ -54,7 +54,8 @@ final class ParametricGenerator
             'width' => [80, 300, 180, 1], 'depth' => [25, 80, 35, 1], 'wall' => [1.6, 4, 2, 0.2], 'face' => [0.8, 2, 1.2, 0.2], 'margin' => [6, 40, 12, 1],
             'bridge' => [0.8, 3, 1.4, 0.2], 'cable' => [3, 10, 5, 0.5], 'clearance' => [0.1, 0.6, 0.25, 0.05],
         ],
-        'holder' => ['obj_w' => [10, 300, 50, 1], 'obj_d' => [5, 150, 25, 1], 'height' => [15, 150, 60, 1], 'wall' => [2, 6, 3, 0.5], 'clearance' => [0.3, 2, 0.8, 0.1], 'radius' => [0, 4, 1.5, 0.1]],
+        'holder' => ['obj_w' => [10, 300, 50, 1], 'obj_d' => [5, 150, 25, 1], 'height' => [15, 150, 60, 1], 'hook_h' => [10, 150, 30, 1], 'bend' => [0, 40, 6, 0.5], 'edge' => [0, 2, 1, 0.1],
+            'wall' => [2, 6, 3, 0.5], 'clearance' => [0.3, 2, 0.8, 0.1], 'radius' => [0, 4, 1.5, 0.1]],
         'cap' => ['size_a' => [8, 200, 40, 0.1], 'size_b' => [8, 200, 30, 0.1], 'height' => [4, 60, 12, 1], 'wall' => [1.2, 4, 2, 0.2], 'top' => [1.2, 5, 2, 0.2], 'clearance' => [0.1, 1, 0.3, 0.05], 'pitch' => [1, 6, 3, 0.05]],
         'cutter' => ['width' => [30, 150, 70, 1], 'height' => [10, 30, 18, 1], 'wall' => [0.8, 1.6, 1.0, 0.2], 'flange' => [3, 10, 5, 1], 'flange_t' => [1, 2.5, 1.6, 0.1]],
     ];
@@ -68,7 +69,7 @@ final class ParametricGenerator
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
         'lightbox' => ['shape' => ['rect', 'round'], 'led' => ['strip8', 'strip10', 'module']],
         'cutter' => ['edge' => ['sharp', 'straight'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
-        'holder' => ['style' => ['cradle', 'pocket', 'hook', 'clip']],
+        'holder' => ['style' => ['cradle', 'pocket', 'hook', 'clip'], 'holes' => ['round', 'keyhole']],
         'cap' => ['style' => ['push', 'plug', 'thread'], 'shape' => ['round', 'rect', 'hex'], 'head' => ['flat', 'dome']],
     ];
 
@@ -89,20 +90,21 @@ final class ParametricGenerator
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height'], 'cap' => ['size_a', 'size_b', 'height', 'pitch'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'height', 'pitch'],
     ];
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp'];
 
     public const FLAGS = ['box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
-    /** kind → field or flag → [choice key, values it belongs to]; the form hides it for the other choices */
+    /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
         'sign' => ['radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']],
             'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']]],
-        'holder' => ['obj_d' => ['style', ['cradle', 'pocket', 'hook']]],
+        'holder' => ['obj_d' => ['style', ['cradle', 'pocket', 'hook']], 'height' => ['style', ['cradle', 'pocket', 'clip']], 'hook_h' => ['style', ['hook']], 'bend' => ['style', ['hook']],
+            'edge' => ['style', ['hook', 'clip']], 'holes' => ['mount', ['on']]],
         'cap' => ['size_b' => ['shape', ['rect']], 'pitch' => ['style', ['thread']], 'grip' => ['style', ['push', 'thread']], 'head' => ['style', ['push']]],
     ];
 
@@ -133,7 +135,7 @@ final class ParametricGenerator
         'holder' => [
             'remote' => ['style' => 'cradle', 'obj_w' => 50, 'obj_d' => 22, 'height' => 70],
             'bottle' => ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90],
-            'headphones' => ['style' => 'hook', 'obj_w' => 35, 'obj_d' => 45, 'height' => 30],
+            'headphones' => ['style' => 'hook', 'obj_w' => 35, 'obj_d' => 45, 'hook_h' => 25, 'bend' => 15],
             'broom' => ['style' => 'clip', 'obj_w' => 24, 'height' => 25],
         ],
         'organizer' => [

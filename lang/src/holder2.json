@@ -1,0 +1,42 @@
+{
+    "param.f.hook_h": [
+        "Výška háku",
+        "Height of the hook",
+        "Altura del gancho"
+    ],
+    "param.f.bend": [
+        "Zaoblení háku",
+        "Rounding of the hook",
+        "Redondeo del gancho"
+    ],
+    "param.f.edge": [
+        "Zaoblení hran",
+        "Rounding of the edges",
+        "Redondeo de los cantos"
+    ],
+    "param.c.holder.holes": [
+        "Otvory pro zavěšení",
+        "Holes for hanging",
+        "Agujeros para colgar"
+    ],
+    "param.o.holder.round": [
+        "Kulaté na šroub",
+        "Round, for a screw",
+        "Redondos, para tornillo"
+    ],
+    "param.o.holder.keyhole": [
+        "Zavěšení na šroub ve zdi",
+        "Keyhole, hangs on a screw in the wall",
+        "Ojo de cerradura, se cuelga de un tornillo en la pared"
+    ],
+    "param.error.holder_keyhole_narrow": [
+        "Pro zavěšení na šroub musí být hák široký aspoň :n mm. Zvětšete šířku věci, nebo zvolte kulaté otvory.",
+        "To hang on a screw the hook has to be at least :n mm wide. Make the thing wider or choose round holes.",
+        "Para colgarlo de un tornillo el gancho debe tener al menos :n mm de ancho. Aumente el ancho o elija agujeros redondos."
+    ],
+    "param.holder.tip": [
+        "Tiskne se bez podpěr: kolébka a kapsa nastojato, tak jak visí na zdi, hák a klip naležato na boku. Otvory mají tvar kapky, aby se vytiskly čistě. Zavěšení na šroub: hlava šroubu ve zdi projde širokým otvorem, držák sjede dolů a drží v úzké drážce. Zaoblené hrany mají na straně u podložky zkosení. Na těžší věci a klip zvolte PETG. Šrouby do zdi: 4 mm s hmoždinkou.",
+        "Prints without supports: the cradle and the pocket standing the way they hang on the wall, the hook and the clip lying on their side. Holes are teardrop-shaped so they print cleanly. Keyhole: the head of the screw in the wall goes through the wide hole, the holder slides down and hangs in the narrow slot. Rounded edges are bevelled on the side that lies on the bed. For heavier things and the clip choose PETG. Wall screws: 4 mm with a plug.",
+        "Se imprime sin soportes: la cuna y el bolsillo de pie, tal como cuelgan en la pared; el gancho y el clip tumbados de lado. Los agujeros tienen forma de gota para imprimirse limpios. Ojo de cerradura: la cabeza del tornillo de la pared pasa por el agujero ancho, el soporte baja y queda colgado en la ranura estrecha. Los cantos redondeados llevan un chaflán en el lado que apoya en la cama. Para objetos pesados y el clip elija PETG. Tornillos de pared: 4 mm con taco."
+    ]
+}
