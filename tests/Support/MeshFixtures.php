@@ -2,6 +2,8 @@
 
 namespace Tests\Support;
 
+use App\Engines\Mesh\StlFile;
+
 /** Builds small meshes on the fly so tests do not depend on binary fixtures. */
 final class MeshFixtures
 {
@@ -29,13 +31,42 @@ final class MeshFixtures
         fclose($fh);
     }
 
+    /**
+     * A spool standing on one flange (core 20 mm, flanges 36 mm, 40 mm high), turned from its profile: a closed body
+     * that two halves pulled apart sideways let go, and halves pulled up and down do not.
+     */
+    public static function spoolStl(string $path, int $segments = 64): void
+    {
+        $profile = [[0, 0], [18, 0], [18, 6], [10, 6], [10, 34], [18, 34], [18, 40], [0, 40]];
+        $at = fn (array $p, int $j) => [$p[0] * cos(2 * M_PI * $j / $segments), $p[0] * sin(2 * M_PI * $j / $segments), $p[1]];
+        $tris = [];
+        for ($i = 0; $i < count($profile) - 1; $i++) {
+            [$p, $q] = [$profile[$i], $profile[$i + 1]];
+            for ($j = 0; $j < $segments; $j++) {
+                $k = ($j + 1) % $segments;
+                if ($p[0] > 0) {
+                    $tris[] = [$at($p, $j), $at($p, $k), $at($q, $k)];
+                }
+                if ($q[0] > 0) {
+                    $tris[] = [$at($p, $j), $at($q, $k), $at($q, $j)];
+                }
+            }
+        }
+        $fh = fopen($path, 'wb');
+        fwrite($fh, str_pad('spool', 80, "\0").pack('V', count($tris)));
+        foreach ($tris as [$a, $b, $c]) {
+            fwrite($fh, pack('f3', 0, 0, 0).pack('f3', ...$a).pack('f3', ...$b).pack('f3', ...$c).pack('v', 0));
+        }
+        fclose($fh);
+    }
+
     /** Same cube as ASCII STL. */
     public static function cubeStlAscii(string $path, float $size = 20.0): void
     {
         $bin = $path.'.tmp.stl';
         self::cubeStl($bin, $size);
         $out = "solid cube\n";
-        foreach (\App\Engines\Mesh\StlFile::triangles($bin) as [$a, $b, $c]) {
+        foreach (StlFile::triangles($bin) as [$a, $b, $c]) {
             $out .= "facet normal 0 0 0\n outer loop\n";
             foreach ([$a, $b, $c] as $p) {
                 $out .= sprintf("  vertex %s %s %s\n", $p[0], $p[1], $p[2]);

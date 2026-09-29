@@ -1,0 +1,92 @@
+{
+    "mold.lead": [
+        "Z vašeho modelu připravíme formu k tisku. Jednoduché tvary jdou odlévat přímo do dvoudílné tištěné formy. Sošky a jiné tvary s podřezy z tuhé formy vyndat nejdou, pro ně je forma na silikon. Nástroj sám změří, která je pro váš model vhodná.",
+        "We prepare a printable mold from your model. Simple shapes can be cast straight in a two-part printed mold. Figures and other shapes with undercuts do not come out of a hard mold; for them there is the mold for silicone. The tool measures which one suits your model.",
+        "Preparamos un molde imprimible a partir de su modelo. Las formas sencillas se pueden colar directamente en un molde impreso de dos partes. Las figuras y otras formas con contrasalidas no salen de un molde rígido; para ellas está el molde para silicona. La herramienta mide cuál conviene a su modelo."
+    ],
+    "mold.type": [
+        "Typ formy",
+        "Kind of mold",
+        "Tipo de molde"
+    ],
+    "mold.type.rigid": [
+        "Tištěná dvoudílná forma",
+        "Printed two-part mold",
+        "Molde impreso de dos partes"
+    ],
+    "mold.type.silicone": [
+        "Forma na silikon (tvary s podřezy)",
+        "Mold for silicone (shapes with undercuts)",
+        "Molde para silicona (formas con contrasalidas)"
+    ],
+    "mold.wall": [
+        "Tloušťka stěny formy",
+        "Wall of the mold",
+        "Pared del molde"
+    ],
+    "mold.axis.auto": [
+        "Automaticky (nejméně podřezů)",
+        "Automatic (fewest undercuts)",
+        "Automático (menos contrasalidas)"
+    ],
+    "mold.axis.z": [
+        "Horní a spodní polovina",
+        "Top and bottom half",
+        "Mitad superior e inferior"
+    ],
+    "mold.verdict.rigid": [
+        "Tento tvar jde z tištěné formy vyndat.",
+        "This shape comes out of a printed mold.",
+        "Esta forma sale de un molde impreso."
+    ],
+    "mold.verdict.flexible": [
+        "Model má malé podřezy (:pct % povrchu). Formu vytiskněte z pružného TPU; z tuhé formy by se odlitek vylamoval.",
+        "The model has small undercuts (:pct % of the surface). Print the mold from flexible TPU; a hard mold would break the casting.",
+        "El modelo tiene pequeñas contrasalidas (:pct % de la superficie). Imprima el molde en TPU flexible; un molde rígido rompería la pieza."
+    ],
+    "mold.verdict.silicone": [
+        "Tento tvar z tištěné formy nepůjde vyndat bez poškození: i při nejlepším dělení zůstává :pct % povrchu za podřezy. Použijte formu na silikon.",
+        "This shape will not come out of a printed mold undamaged: even with the best split :pct % of the surface stays behind undercuts. Use the mold for silicone.",
+        "Esta forma no saldrá de un molde impreso sin dañarse: incluso con la mejor división, el :pct % de la superficie queda tras contrasalidas. Use el molde para silicona."
+    ],
+    "mold.report.undercuts": [
+        "Pozor: :pct % povrchu je za podřezy, tuhá tištěná forma odlitek nepustí. Vytiskněte ji z pružného TPU, nebo zvolte formu na silikon.",
+        "Mind: :pct % of the surface is behind undercuts, a hard printed mold will not let the casting go. Print it from flexible TPU or choose the mold for silicone.",
+        "Atención: el :pct % de la superficie queda tras contrasalidas, un molde impreso rígido no soltará la pieza. Imprímalo en TPU flexible o elija el molde para silicona."
+    ],
+    "mold.report.angle": [
+        "Forma je dělená šikmo (:deg° od boční strany modelu), tak má nejméně podřezů.",
+        "The mold is split at an angle (:deg° from the side of the model), that way it has the fewest undercuts.",
+        "El molde se divide en ángulo (:deg° desde el lado del modelo), así tiene menos contrasalidas."
+    ],
+    "mold.report.silicone": [
+        "Podstavec s modelem :w × :d × :h mm a objímka. Vrstva silikonu kolem modelu :wall mm. Silikonu je potřeba asi :sil ml, na jeden odlitek asi :ml ml hmoty.",
+        "Base with the model :w × :d × :h mm and a sleeve. Silicone layer round the model :wall mm. About :sil ml of silicone is needed, and about :ml ml of material per casting.",
+        "Base con el modelo :w × :d × :h mm y un manguito. Capa de silicona alrededor del modelo :wall mm. Se necesitan unos :sil ml de silicona y unos :ml ml de material por pieza."
+    ],
+    "mold.report.silicone.how": [
+        "Postup: objímku nasaďte do drážky podstavce a spáru zvenku utěsněte tavnou pistolí nebo plastelínou. Model natřete separátorem a zalijte silikonem po okraj objímky. Po vytvrzení objímku sundejte a silikon z modelu stáhněte; u složitých tvarů ho na jedné straně nařízněte. Odlévá se otvorem, který zůstal po patě modelu.",
+        "How: put the sleeve into the groove of the base and seal the joint from outside with hot glue or plasticine. Coat the model with a release agent and pour silicone up to the rim of the sleeve. When it has set, lift the sleeve off and peel the silicone from the model; with complex shapes cut it open along one side. The casting is poured through the opening left by the foot of the model.",
+        "Cómo: coloque el manguito en la ranura de la base y selle la junta por fuera con pegamento caliente o plastilina. Aplique desmoldeante al modelo y vierta silicona hasta el borde del manguito. Cuando haya curado, retire el manguito y despegue la silicona del modelo; en formas complejas, córtela por un lado. La pieza se cuela por la abertura que deja el pie del modelo."
+    ],
+    "mold.page.to_silicone": [
+        "Vytvořit formu na silikon",
+        "Make the mold for silicone",
+        "Crear el molde para silicona"
+    ],
+    "mold.page.model": [
+        "Náhled nahraného modelu",
+        "Preview of the uploaded model",
+        "Vista previa del modelo subido"
+    ],
+    "calc.tip.mold.silicone": [
+        "Podstavec s modelem tiskněte s podpěrami podle tvaru modelu, objímku bez podpěr. Povrch modelu vyhlaďte, každá vrstva tisku se do silikonu otiskne.",
+        "Print the base with the model with supports as the model needs them, the sleeve without. Smooth the surface of the model: every print layer shows in the silicone.",
+        "Imprima la base con el modelo con los soportes que el modelo necesite, el manguito sin soportes. Alise la superficie del modelo: cada capa de impresión se marca en la silicona."
+    ],
+    "tools.mold.hint": [
+        "Z vlastního modelu forma k tisku: dvoudílná na jednoduché tvary, nebo na silikon pro sošky a tvary s podřezy.",
+        "A printable mold from your own model: two-part for simple shapes, or for silicone for figures and shapes with undercuts.",
+        "Un molde imprimible a partir de su modelo: de dos partes para formas sencillas, o para silicona para figuras y formas con contrasalidas."
+    ]
+}
