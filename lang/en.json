@@ -1458,5 +1458,7 @@
     "param.c.holder.holes": "Holes for hanging",
     "param.o.holder.round": "Round, for a screw",
     "param.o.holder.keyhole": "Keyhole, hangs on a screw in the wall",
-    "param.error.holder_keyhole_narrow": "To hang on a screw the hook has to be at least :n mm wide. Make the thing wider or choose round holes."
+    "param.error.holder_keyhole_narrow": "To hang on a screw the hook has to be at least :n mm wide. Make the thing wider or choose round holes.",
+    "param.f.holder.clearance": "Clearance around the thing",
+    "param.f.holder.radius": "Rounding of the front corners"
 }

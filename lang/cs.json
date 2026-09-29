@@ -1458,5 +1458,7 @@
     "param.c.holder.holes": "Otvory pro zavěšení",
     "param.o.holder.round": "Kulaté na šroub",
     "param.o.holder.keyhole": "Zavěšení na šroub ve zdi",
-    "param.error.holder_keyhole_narrow": "Pro zavěšení na šroub musí být hák široký aspoň :n mm. Zvětšete šířku věci, nebo zvolte kulaté otvory."
+    "param.error.holder_keyhole_narrow": "Pro zavěšení na šroub musí být hák široký aspoň :n mm. Zvětšete šířku věci, nebo zvolte kulaté otvory.",
+    "param.f.holder.clearance": "Vůle kolem věci",
+    "param.f.holder.radius": "Zaoblení předních rohů"
 }

@@ -8,6 +8,8 @@
         'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
         'color.white', 'color.black', 'color.grey', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
         'param.warn.thread_try', 'param.fits', 'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
+    // a field may be called differently in one tool ("param.f.holder.clearance"), else the common name
+    $label = fn (string $k) => \Illuminate\Support\Facades\Lang::has('param.f.'.$kind.'.'.$k) ? __('param.f.'.$kind.'.'.$k) : __('param.f.'.$k);
     $colors = ['white', 'black', 'grey', 'brown', 'red', 'blue', 'green', 'yellow', 'orange', 'any'];
 @endphp
 
@@ -106,7 +108,7 @@
                 <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
                     @foreach($main as $key)
                         @php $f = $fields[$key]; @endphp
-                        <label class="text-sm font-medium text-ink" @if(isset($when[$key])) data-when="{{ $when[$key][0] }}={{ implode(',', $when[$key][1]) }}" @endif>{{ __('param.f.'.$key) }} @if($unit($key))<span class="font-normal text-muted">{{ $unit($key) }}</span>@endif
+                        <label class="text-sm font-medium text-ink" @if(isset($when[$key])) data-when="{{ $when[$key][0] }}={{ implode(',', $when[$key][1]) }}" @endif>{{ $label($key) }} @if($unit($key))<span class="font-normal text-muted">{{ $unit($key) }}</span>@endif
                             <input data-param="{{ $key }}" type="number" inputmode="decimal" min="{{ $f[0] }}" max="{{ $f[1] }}" step="{{ $f[3] }}" value="{{ $f[2] }}" class="field" aria-describedby="range-{{ $key }}">
                             <span id="range-{{ $key }}" class="text-xs text-muted">{{ $f[0] }}–{{ $f[1] }}</span>
                         </label>
@@ -153,7 +155,7 @@
                 <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                     @foreach($fields as $key => $f)
                         @continue(in_array($key, $main, true))
-                        <label class="text-sm font-medium text-ink">{{ __('param.f.'.$key) }} <span class="font-normal text-muted">{{ $unit($key) }}</span>
+                        <label class="text-sm font-medium text-ink" @if(isset($when[$key])) data-when="{{ $when[$key][0] }}={{ implode(',', $when[$key][1]) }}" @endif>{{ $label($key) }} <span class="font-normal text-muted">{{ $unit($key) }}</span>
                             <input data-param="{{ $key }}" type="number" inputmode="decimal" min="{{ $f[0] }}" max="{{ $f[1] }}" step="{{ $f[3] }}" value="{{ $f[2] }}" class="field">
                             <span class="text-xs text-muted">{{ $f[0] }}–{{ $f[1] }}</span>
                         </label>

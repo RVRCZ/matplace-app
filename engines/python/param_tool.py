@@ -23,7 +23,7 @@ LIMITS = {
     "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6), "radius": (0, 30), "cable_d": (3, 30)},
     "phone_stand": {"width": (50, 260), "device": (7, 20), "angle": (35, 80), "back": (60, 200), "thickness": (3, 8), "radius": (0, 4), "depth": (40, 120), "vent": (1, 4)},
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
-    "holder": {"obj_w": (10, 300), "obj_d": (5, 150), "height": (15, 150), "wall": (2, 6), "clearance": (0.3, 2), "radius": (0, 4),
+    "holder": {"obj_w": (10, 300), "obj_d": (5, 150), "height": (15, 150), "wall": (2, 6), "clearance": (0.3, 2), "radius": (0, 12),
                "hook_h": (10, 150), "bend": (0, 40), "edge": (0, 2)},
     "cap": {"size_a": (8, 200), "size_b": (8, 200), "height": (4, 60), "wall": (1.2, 4), "top": (1.2, 5), "clearance": (0.1, 1), "pitch": (1, 6)},
     "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
@@ -696,11 +696,31 @@ def holder(M, p):
     # the bottom stands on the bed: its edges stay sharp, a rounded one would start in the air
     outline = _rnd(M, outline, rad) + C.square([inner_d + 2 * t, max(rad, 0.5)])
     solid = outline.extrude(total_w)
-    solid = solid - M.Manifold.cube([inner_d, height + 2.0, inner_w]).translate([t, t, t])
+    # seen from above: the two front corners are round (upright edges, nothing hangs), the back stays flat on the wall;
+    # the cavity follows with a radius smaller by the wall
+    depth = inner_d + 2 * t
+    corner = max(0.0, min(r, depth - t - 0.5, total_w / 2 - 0.5))
+    if corner > 0.05:
+        sliver = C.square([corner + 1.0, corner + 1.0]) - C.circle(corner, 96).translate([0.0, corner + 1.0])
+        for z0, flip in ((-1.0, False), (total_w + 1.0, True)):
+            cut = sliver.mirror([0, 1]) if flip else sliver
+            cut = cut.translate([depth - corner, z0])
+            solid = solid - cut.extrude(plate_h + 2.0).rotate([-90, 0, 0]).scale([1, 1, -1]).translate([0, -1.0, 0])
+    inside = max(0.0, corner - t)
+    hollow = C.square([inner_d, inner_w])
+    if inside > 0.05:                                                # only the front corners, the back ones stay square
+        hollow = rounded_rect(M, inner_d + inside + 1.0, inner_w, inside).translate([-inside - 1.0, 0]) ^ C.square([inner_d + 1.0, inner_w + 2.0]).translate([0, -1.0])
+    solid = solid - hollow.extrude(height + 2.0).rotate([-90, 0, 0]).scale([1, 1, -1]).translate([t, t, t])
+    note["corner"] = round(corner, 1)
     if style == "cradle":
         lip = max(8.0, min(height * 0.35, 25.0))
         if lip < height - 1:
-            solid = solid - M.Manifold.cube([t + 2.0, height + 2.0, inner_w]).translate([t + inner_d - 1.0, lip, t])
+            if inside <= 0.05:
+                # a hair wider than the cavity: its sides and the sides of this cut never lie in one plane
+                solid = solid - M.Manifold.cube([t + 2.0, height + 2.0, inner_w + 0.02]).translate([t + inner_d - 1.0, lip, t - 0.01])
+            if corner > 0.05:
+                # the round corners go with the front: the side walls end where the curve would begin
+                solid = solid - M.Manifold.cube([corner + 1.1, height + 2.0, total_w + 2.0]).translate([depth - corner - 0.1, lip, -1.0])
         note["lip"] = round(lip, 1)
     if screws:
         zs = (total_w / 2,) if total_w < 40 else (total_w * 0.25, total_w * 0.75)

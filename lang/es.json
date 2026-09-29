@@ -1458,5 +1458,7 @@
     "param.c.holder.holes": "Agujeros para colgar",
     "param.o.holder.round": "Redondos, para tornillo",
     "param.o.holder.keyhole": "Ojo de cerradura, se cuelga de un tornillo en la pared",
-    "param.error.holder_keyhole_narrow": "Para colgarlo de un tornillo el gancho debe tener al menos :n mm de ancho. Aumente el ancho o elija agujeros redondos."
+    "param.error.holder_keyhole_narrow": "Para colgarlo de un tornillo el gancho debe tener al menos :n mm de ancho. Aumente el ancho o elija agujeros redondos.",
+    "param.f.holder.clearance": "Holgura alrededor del objeto",
+    "param.f.holder.radius": "Redondeo de las esquinas delanteras"
 }
