@@ -85,6 +85,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware('throttle:20,1,project')->name('files.project');
     Route::post('files/{modelFile}/pedestal', [ModelFileController::class, 'pedestal'])->middleware('throttle:20,1,pedestal')->name('files.pedestal');
     Route::post('files/{modelFile}/mold', [ModelFileController::class, 'mold'])->middleware('throttle:20,1,mold')->name('files.mold');
+    Route::post('files/{modelFile}/mold/analysis', [ModelFileController::class, 'moldAnalysis'])->middleware('throttle:30,1,moldanalysis')->name('files.mold.analysis');
+    Route::get('files/{modelFile}/mold/{name}', [ModelFileController::class, 'moldCast'])->where('name', 'cast\\.(stl|bin)')->name('files.mold.cast');
     Route::post('files/{modelFile}/repair', [ModelFileController::class, 'repair'])->middleware('throttle:12,1,repair')->name('files.repair');
     Route::post('files/{modelFile}/advice', [AdviceController::class, 'store'])->middleware('throttle:20,1,advice')->name('files.advice');
     Route::get('advice/{token}', [AdviceController::class, 'show'])->name('advice.show');

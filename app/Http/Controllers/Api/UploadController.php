@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Tools\ModelCheck;
+use App\Domain\Tools\MoldGenerator;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Controller;
@@ -102,7 +103,10 @@ class UploadController extends Controller
             // a box with its lid, or the two halves of a mold, are two bodies on one plate by design, not a defect
             'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], self::partsOf($f) || in_array($f->kind(), ['logo', 'qr', 'stamp', 'mold'], true) || ! empty($f->tool_params['stand']) ? ['multiple_shells'] : [])),
             // casting mold: what the tool measured (box size, resin needed, undercuts)
-            'mold' => $f->kind() === 'mold' ? ($f->tool_params['report'] ?? null) : null,
+            'mold' => $f->kind() === 'mold' && isset($f->tool_params['report']) ? $f->tool_params['report'] + (MoldGenerator::castPath($f, 'cast.stl') ? [
+                // undercuts were filled: the shape that will really be cast, to look at
+                'cast_url' => route('api.files.mold.cast', [$f->uuid, 'cast.stl']), 'cast_flags_url' => route('api.files.mold.cast', [$f->uuid, 'cast.bin']),
+            ] : []) : null,
             // repaired model: what was wrong, what was done, what is left
             'repair' => $f->kind() === 'repaired' ? ($f->tool_params['report'] ?? null) : null,
             'parts' => self::partsOf($f),

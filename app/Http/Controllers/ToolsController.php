@@ -66,7 +66,7 @@ class ToolsController extends Controller
             'available' => $molds->available(),
             'config' => ConfigController::payload($materials, $converters),
             'from' => is_string($from) && preg_match('/^[0-9a-f-]{36}$/', $from) ? $from : null,
-            'types' => MoldGenerator::TYPES, 'walls' => MoldGenerator::WALLS, 'axes' => MoldGenerator::AXES, 'splits' => MoldGenerator::SPLITS,
+            'types' => MoldGenerator::TYPES, 'parts' => MoldGenerator::PARTS, 'walls' => MoldGenerator::WALLS, 'axes' => MoldGenerator::AXES, 'splits' => MoldGenerator::SPLITS,
         ]);
     }
 

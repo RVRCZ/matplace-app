@@ -1,0 +1,107 @@
+{
+    "mold.parts": [
+        "Počet dílů formy",
+        "Parts of the mold",
+        "Partes del molde"
+    ],
+    "mold.parts.2": [
+        "2 díly (poloviny)",
+        "2 parts (halves)",
+        "2 partes (mitades)"
+    ],
+    "mold.parts.3": [
+        "3 díly",
+        "3 parts",
+        "3 partes"
+    ],
+    "mold.parts.4": [
+        "4 díly",
+        "4 parts",
+        "4 partes"
+    ],
+    "mold.fill": [
+        "Vyplnit podřezy",
+        "Fill the undercuts",
+        "Rellenar las contrasalidas"
+    ],
+    "mold.fill.hint": [
+        "Místa, která by formu držela, se v odlitku zaplní hmotou. Forma pak půjde rozebrat, odlitek se ale v těch místech liší od modelu. Výsledek uvidíte v náhledu.",
+        "The places that would hold the mold are filled with material in the casting. The mold then comes apart, but the casting differs from the model there. You will see the result in a preview.",
+        "Los puntos que retendrían el molde se rellenan de material en la pieza. El molde se podrá desmontar, pero la pieza difiere del modelo en esos puntos. Verá el resultado en una vista previa."
+    ],
+    "mold.page.analysing": [
+        "Měřím, co by forma nepustila…",
+        "Measuring what the mold would hold on to…",
+        "Midiendo lo que el molde retendría…"
+    ],
+    "mold.page.analysis.none": [
+        "Tištěná forma tento tvar pustí celý.",
+        "A printed mold lets go of this whole shape.",
+        "Un molde impreso suelta toda esta forma."
+    ],
+    "mold.page.analysis.rigid": [
+        "Tištěná forma tento tvar pustí. Za podřezy je jen :pct % povrchu.",
+        "A printed mold lets go of this shape. Only :pct % of the surface is behind undercuts.",
+        "Un molde impreso suelta esta forma. Solo el :pct % de la superficie queda tras contrasalidas."
+    ],
+    "mold.page.analysis.flexible": [
+        "Červeně označených :pct % povrchu by tuhá forma nepustila. Pomůže pružné TPU, víc dílů, nebo vyplnění podřezů.",
+        "A hard mold would not let go of the :pct % of the surface marked red. Flexible TPU, more parts or filling the undercuts help.",
+        "Un molde rígido no soltaría el :pct % de la superficie marcado en rojo. Ayudan el TPU flexible, más partes o rellenar las contrasalidas."
+    ],
+    "mold.page.analysis.silicone": [
+        "Červeně označených :pct % povrchu by tištěná forma nepustila. Zkuste víc dílů, vyplnění podřezů, nebo formu na silikon.",
+        "A printed mold would not let go of the :pct % of the surface marked red. Try more parts, filling the undercuts, or the mold for silicone.",
+        "Un molde impreso no soltaría el :pct % de la superficie marcado en rojo. Pruebe más partes, rellenar las contrasalidas o el molde para silicona."
+    ],
+    "mold.page.options": [
+        "Podíl povrchu za podřezy: 2 díly :a % · 3 díly :b % · 4 díly :c %",
+        "Surface behind undercuts: 2 parts :a % · 3 parts :b % · 4 parts :c %",
+        "Superficie tras contrasalidas: 2 partes :a % · 3 partes :b % · 4 partes :c %"
+    ],
+    "mold.page.legend.hidden": [
+        "forma nepustí",
+        "the mold holds on",
+        "el molde retiene"
+    ],
+    "mold.page.legend.parts": [
+        "díly formy",
+        "parts of the mold",
+        "partes del molde"
+    ],
+    "mold.page.cast.title": [
+        "Takto bude vypadat odlitek",
+        "This is how the casting will look",
+        "Así quedará la pieza colada"
+    ],
+    "mold.page.cast": [
+        "Oranžově je hmota přidaná místo podřezů, celkem asi :ml ml. Prohlédněte si model ze všech stran, než formu vytisknete.",
+        "Orange is the material added in place of the undercuts, about :ml ml in all. Look at the model from all sides before you print the mold.",
+        "En naranja, el material añadido en lugar de las contrasalidas, unos :ml ml en total. Revise el modelo por todos los lados antes de imprimir el molde."
+    ],
+    "mold.page.building.fill": [
+        "Stavím formu a vyplňuji podřezy, trvá to až dvě minuty…",
+        "Building the mold and filling the undercuts, it takes up to two minutes…",
+        "Construyendo el molde y rellenando las contrasalidas, tarda hasta dos minutos…"
+    ],
+    "mold.report.parts": [
+        "Forma má :n díly kolem svislé osy, každý se sundává směrem ven. Na dělicích plochách jsou nízké kuželové zámky.",
+        "The mold has :n parts round an upright axis, each comes off outwards. Low cone keys sit on the parting faces.",
+        "El molde tiene :n partes alrededor de un eje vertical, cada una sale hacia fuera. En las caras de unión hay llaves cónicas bajas."
+    ],
+    "mold.report.filled": [
+        "Podřezy jsou vyplněné: do odlitku přibylo asi :ml ml hmoty. Za podřezy bylo :before % povrchu, zbývá :after %.",
+        "The undercuts are filled: about :ml ml of material was added to the casting. :before % of the surface was behind undercuts, :after % is left.",
+        "Las contrasalidas están rellenas: se añadieron unos :ml ml de material a la pieza. El :before % de la superficie quedaba tras contrasalidas, queda el :after %."
+    ],
+    "calc.tip.mold.parts": [
+        "Díly formy leží dutinou nahoru, tak je i tiskněte: 3–4 obvodové stěny, bez podpěr. Složené díly stáhněte gumičkami nebo páskou dokola, hmotu nalijte otvorem ve dně.",
+        "The parts of the mold lie cavity up, print them that way: 3–4 perimeters, no supports. Hold the assembled parts with rubber bands or tape all round, pour the material through the opening in the bottom.",
+        "Las partes del molde están con la cavidad hacia arriba, imprímalas así: 3–4 perímetros, sin soportes. Sujete las partes montadas con gomas o cinta alrededor y vierta el material por la abertura del fondo."
+    ],
+    "mold.verdict.silicone": [
+        "Tento tvar z tištěné formy nepůjde vyndat bez poškození: i při nejlepším dělení zůstává :pct % povrchu za podřezy. Zkuste víc dílů, vyplnění podřezů, nebo formu na silikon.",
+        "This shape will not come out of a printed mold undamaged: even with the best division :pct % of the surface stays behind undercuts. Try more parts, filling the undercuts, or the mold for silicone.",
+        "Esta forma no saldrá de un molde impreso sin dañarse: incluso con la mejor división, el :pct % de la superficie queda tras contrasalidas. Pruebe más partes, rellenar las contrasalidas o el molde para silicona."
+    ]
+}
