@@ -1,0 +1,5 @@
+{
+    "figure.lead": ["Portrét, mazlíček nebo oblíbená hračka jako 3D výtisk. Stačí jedna fotka zepředu, s fotkami z dalších stran je podoba věrnější. Tvar je umělecký dojem, ne přesná kopie.", "A portrait, a pet or a favourite toy as a 3D print. One front photo is enough, photos from more sides make the likeness closer. The shape is an artistic impression, not an exact copy.", "Un retrato, una mascota o un juguete como impresión 3D. Basta una foto de frente, con fotos de más lados el parecido es mayor. La forma es una impresión artística, no una copia exacta."],
+    "figure.kind.bust.hint": ["hlava a ramena", "head and shoulders", "cabeza y hombros"],
+    "figure.pick_photo": ["Vyberte nebo vyfoťte fotku zepředu", "Choose or take a photo from the front", "Elija o haga una foto de frente"]
+}

@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\Wallet;
+use App\Domain\Generation\GenerationService;
+use App\Engines\Contracts\ModelGenerator;
 use App\Engines\DTO\GenerationOptions;
 use App\Engines\DTO\GenerationStatus;
 use App\Engines\Generator\TripoGenerator;
@@ -106,9 +110,9 @@ class GenerationTest extends TestCase
     public function test_beyond_the_free_quota_a_signed_in_customer_pays_a_generation_from_credit(): void
     {
         config(['ai.daily_limits.generate_user' => 1]);
-        app(\App\Domain\Farm\FarmSettings::class)->set('generation_price', 15);
+        app(FarmSettings::class)->set('generation_price', 15);
         $user = User::factory()->create();
-        $wallet = app(\App\Domain\Farm\Wallet::class);
+        $wallet = app(Wallet::class);
         $wallet->adjust($user, 20, 'test', $user->id);
 
         $this->actingAs($user)->postJson('/api/generate', ['prompt' => 'vase one'])->assertCreated();      // free
@@ -123,7 +127,7 @@ class GenerationTest extends TestCase
 
     public function test_a_guest_never_pays_the_quota_stays_hard(): void
     {
-        app(\App\Domain\Farm\FarmSettings::class)->set('generation_price', 15);
+        app(FarmSettings::class)->set('generation_price', 15);
         $this->postJson('/api/generate', ['prompt' => 'vase g1'])->assertCreated();
         $this->postJson('/api/generate', ['prompt' => 'vase g2'])->assertStatus(429)->assertJsonPath('error', 'daily_limit');
     }
@@ -131,8 +135,8 @@ class GenerationTest extends TestCase
     public function test_disabled_generator_returns_503(): void
     {
         config(['engines.generator' => 'null']);
-        $this->app->forgetInstance(\App\Engines\Contracts\ModelGenerator::class);
-        $this->app->forgetInstance(\App\Domain\Generation\GenerationService::class);
+        $this->app->forgetInstance(ModelGenerator::class);
+        $this->app->forgetInstance(GenerationService::class);
         $this->postJson('/api/generate', ['prompt' => 'vase'])->assertStatus(503);
     }
 
@@ -152,15 +156,30 @@ class GenerationTest extends TestCase
         $this->assertCount(0, Storage::disk('local')->files('photos/figures'));
     }
 
-    public function test_a_rejected_side_photo_rejects_the_request_and_names_the_view(): void
+    public function test_a_rejected_side_photo_is_left_out_and_the_model_is_made_from_the_rest(): void
     {
         Http::fake(['api.anthropic.com/*' => Http::sequence()
             ->push(['content' => [['type' => 'text', 'text' => '{"ok":true,"subject":"person"}']]])
-            ->push(['content' => [['type' => 'text', 'text' => '{"ok":false,"subject":"person","reason":"minor"}']]])]);
+            ->push(['content' => [['type' => 'text', 'text' => '{"ok":false,"subject":"person","reason":"minor"}']]])
+            ->push(['content' => [['type' => 'text', 'text' => '{"ok":true,"subject":"person"}']]])]);
+        $r = $this->post('/api/generate', [
+            'image' => UploadedFile::fake()->image('front.jpg', 300, 400), 'image_left' => UploadedFile::fake()->image('left.jpg', 300, 400),
+            'image_back' => UploadedFile::fake()->image('back.jpg', 300, 400),
+            'kind' => 'bust', 'consent' => '1',
+        ], ['Accept' => 'application/json']);
+        $r->assertCreated()->assertJsonPath('generation.status', 'done')->assertJsonPath('skipped_views', ['left']);
+        // the fake generator charges 10 per view it was given: front and back, not the refused left
+        $this->assertSame(20, GenerationRequest::where('token', $r->json('generation.token'))->firstOrFail()->cost_cents);
+        $this->assertCount(0, Storage::disk('local')->files('photos/figures'));
+    }
+
+    public function test_a_rejected_front_photo_stops_the_request_even_with_good_sides(): void
+    {
+        Http::fake(['api.anthropic.com/*' => Http::response(['content' => [['type' => 'text', 'text' => '{"ok":false,"subject":"other","reason":"no subject"}']]])]);
         $this->post('/api/generate', [
             'image' => UploadedFile::fake()->image('front.jpg', 300, 400), 'image_left' => UploadedFile::fake()->image('left.jpg', 300, 400),
             'kind' => 'bust', 'consent' => '1',
-        ], ['Accept' => 'application/json'])->assertStatus(422)->assertJsonPath('error', 'photo_rejected')->assertJsonPath('view', 'left');
+        ], ['Accept' => 'application/json'])->assertStatus(422)->assertJsonPath('error', 'photo_rejected')->assertJsonPath('view', 'front');
         $this->assertCount(0, Storage::disk('local')->files('photos/figures'));
         $this->assertSame(0, GenerationRequest::count());
     }

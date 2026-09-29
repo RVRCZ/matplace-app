@@ -1,0 +1,17 @@
+{
+    "figure.views": [
+        "Fotky z dalších stran",
+        "Photos from more sides",
+        "Fotos de más lados"
+    ],
+    "figure.views.better": [
+        "Více fotek dává lepší výsledek.",
+        "More photos give a better result.",
+        "Más fotos dan un resultado mejor."
+    ],
+    "figure.views.better_hint": [
+        "Přidejte fotku z boku a zezadu, model pak lépe vystihne podobu i účes. Není to povinné.",
+        "Add a photo from the side and from the back, the model then matches the likeness and the hair better. It is optional.",
+        "Añada una foto de lado y otra de atrás, así el modelo refleja mejor el parecido y el peinado. Es opcional."
+    ]
+}

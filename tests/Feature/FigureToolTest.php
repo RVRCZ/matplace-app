@@ -58,7 +58,7 @@ class FigureToolTest extends TestCase
         $this->assertSame([], Storage::disk('local')->allFiles('photos/figures'));
     }
 
-    public function test_refused_side_photo_is_named_so_the_form_can_drop_it(): void
+    public function test_refused_side_photo_is_not_used_and_the_bust_is_still_made(): void
     {
         // the front passes, the back does not
         Http::fake(['api.anthropic.com/*' => Http::sequence()
@@ -69,8 +69,8 @@ class FigureToolTest extends TestCase
             'image' => UploadedFile::fake()->image('front.jpg'), 'image_back' => UploadedFile::fake()->image('back.jpg'),
             'kind' => 'bust', 'consent' => 1,
         ], ['Accept' => 'application/json']);
-        $r->assertStatus(422)->assertJsonPath('error', 'photo_rejected')->assertJsonPath('view', 'back');
-        $this->assertSame(0, GenerationRequest::count());
+        $r->assertCreated()->assertJsonPath('generation.status', 'done')->assertJsonPath('skipped_views', ['back']);
+        $this->assertSame(1, GenerationRequest::count());
         $this->assertSame([], Storage::disk('local')->allFiles('photos/figures'));
         Log::shouldHaveReceived('info')->withArgs(fn ($m, $c) => $m === 'figure photo rejected' && $c['view'] === 'back' && $c['reason'] === 'nudity')->once();
     }
@@ -96,6 +96,9 @@ class FigureToolTest extends TestCase
             $this->assertStringContainsString('data-view-remove="'.$view.'"', $html);
         }
         $this->assertStringContainsString('id="figure-submit"', $html);
+        // more sides are on the screen at once, with the word that they help
+        $this->assertStringNotContainsString('<details id="figure-views"', $html);
+        $this->assertStringContainsString(__('figure.views.better'), $html);
     }
 
     public function test_bust_is_generated_photo_forgotten_and_results_not_shared(): void

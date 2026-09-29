@@ -42,24 +42,30 @@ class GenerationController extends Controller
 
         try {
             if ($request->hasFile('image')) {
-                // every photo is stored and moderated; one rejected side rejects the whole request
+                // every photo is stored and moderated; a refused front photo stops the request,
+                // a refused side is left out and the model is made from the rest
                 $disk = Storage::disk('local');
                 $stored = [];
+                $skipped = [];
                 foreach (['front' => 'image', 'left' => 'image_left', 'back' => 'image_back', 'right' => 'image_right'] as $view => $field) {
                     if (! $request->hasFile($field)) {
                         continue;
                     }
                     $rel = 'photos/figures/'.Str::uuid().'.'.(strtolower($request->file($field)->getClientOriginalExtension()) ?: 'jpg');
                     $disk->put($rel, file_get_contents($request->file($field)->getRealPath()));
-                    $stored[$view] = $rel;
                     $check = app(VisionDescriber::class)->moderate($disk->path($rel), $view);
-                    if (! $check['ok']) {
-                        $disk->delete(array_values($stored));
-                        // the reason is the only trace of why a visitor could not go on
-                        Log::info('figure photo rejected', ['view' => $view, 'subject' => $check['subject'], 'reason' => $check['reason'], 'kind' => $data['kind'] ?? null]);
+                    if ($check['ok']) {
+                        $stored[$view] = $rel;
 
+                        continue;
+                    }
+                    $disk->delete($rel);
+                    // the reason is the only trace of why a photo was not used
+                    Log::info('figure photo rejected', ['view' => $view, 'subject' => $check['subject'], 'reason' => $check['reason'], 'kind' => $data['kind'] ?? null]);
+                    if ($view === 'front') {
                         return response()->json(['error' => 'photo_rejected', 'reason' => $check['reason'], 'view' => $view], 422);
                     }
+                    $skipped[] = $view;
                 }
                 try {
                     $req = $service->fromPhoto($stored['front'], $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user, [
@@ -83,7 +89,7 @@ class GenerationController extends Controller
             return response()->json(['error' => $e->reason, 'limit' => $e->limit, 'login_limit' => (int) config('ai.daily_limits.generate_user'), 'price' => $e->price, 'missing' => $e->missing, 'topup_url' => $request->user() ? route('account.credit', ['need' => (int) ceil($e->missing)]) : null], 429);
         }
 
-        return response()->json(['generation' => self::describe($req)], 201);
+        return response()->json(['generation' => self::describe($req), 'skipped_views' => $skipped ?? []], 201);
     }
 
     /** POST /api/generate/{token}/refine {instruction} → a new generation: the same subject changed in words */
