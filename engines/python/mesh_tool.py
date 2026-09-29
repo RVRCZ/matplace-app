@@ -768,24 +768,24 @@ def rings_solid(M, rings):
 
 def longer_chest(body, m, z_cut, share, limit, least=0.0):
     """
-    Generated busts end at the shoulders; a sculptor's bust carries about as much chest below the neck as there
-    is head above it. The missing part is drawn straight down from the cut, the way the chest already falls there.
-    Returns (body, new bottom).
+    Generated busts mostly end at the shoulders; a sculptor's bust carries about as much chest below the neck as
+    there is head above it. A chest that is long enough is left as it is. A short one is drawn straight down from
+    the cut, the way the chest already falls there, by at least `least` of its height (room for the rounding).
+    Returns (body, new bottom, height of the chest below the neck when it was long enough, else None).
     """
     neck = neck_level(m, z_cut)
     top = float(m.bounds[1][2])
-    if neck is None:
-        more = 0.12 * (top - z_cut)
-    else:
-        more = share * (top - neck) - (neck - z_cut)
-    # `least`: the rounded underside needs room of its own, it must not eat the chest the model came with
-    more = min(max(least * (top - z_cut), more), limit * (top - z_cut))
+    tall = top - z_cut
+    if neck is not None and share * (top - neck) - (neck - z_cut) <= 0.03 * tall:
+        return body, float(z_cut), float(neck - z_cut)
+    more = 0.12 * tall if neck is None else share * (top - neck) - (neck - z_cut)
+    more = min(max(least * tall, more), limit * tall)
     if more < 0.5:
-        return body, float(z_cut)
+        return body, float(z_cut), None
     section = body.slice(float(z_cut + 0.3))
     if section.area() <= 0:
-        return body, float(z_cut)
-    return body + section.extrude(more + 0.6).translate([0, 0, z_cut - more]), float(z_cut - more)
+        return body, float(z_cut), None
+    return body + section.extrude(more + 0.6).translate([0, 0, z_cut - more]), float(z_cut - more), None
 
 
 def round_under(body, cx, cy, z_bottom, high, flat, power):
@@ -834,13 +834,19 @@ def bust_shape(kind, body, m, cx, cy, z_cut, r):
     """The chest of the bust the way the style wants it. Returns (body, bottom of the chest, sizes of the foot)."""
     style = BUST_STYLES[kind]
     before = float(m.bounds[1][2]) - float(z_cut)
-    body, bottom = longer_chest(body, m, float(z_cut), style["chest"], style["more"], style.get("round", 0.0) * 0.8)
+    body, bottom, chest = longer_chest(body, m, float(z_cut), style["chest"], style["more"], style.get("round", 0.0) * 0.8)
     sizes = socle_sizes(float(m.bounds[1][2]) - bottom, r, kind)
     sizes["added"] = round((float(m.bounds[1][2]) - bottom) - before, 1)
+    sizes["chest_enough"] = chest is not None
     if kind == "cut":
         return slant_cut(body, bottom, style["lean"], style["keep"]), bottom, sizes
-    # the sweep never eats the chest the model came with: it lives in the part that was added, and a little above
-    high = min(sizes["round"], sizes["added"] + 0.05 * sizes["bust_h"])
+    # a long chest is rounded itself, its folds run down to the rounded edge, but never more than a third of it
+    # (a deeper sweep turns the chest into a ring); on a short chest the sweep lives in the part that was added
+    # and a little above, so it never eats the chest the model came with
+    if chest is not None:
+        high = min(sizes["round"], 0.35 * chest)
+    else:
+        high = min(sizes["round"], sizes["added"] + 0.05 * sizes["bust_h"])
     if high > 1.0:
         body = round_under(body, cx, cy, bottom, high, sizes["flat"], style["power"])
     return body, bottom, sizes
@@ -1112,6 +1118,7 @@ def main(argv):
                                 raise ValueError("shape_failed")
                             m = shaped
                             ped_note["chest_added"] = sizes["added"]
+                            ped_note["chest_enough"] = bool(sizes.get("chest_enough", False))
                         if kind == "cut":
                             note = {"pedestal": "cut", "pedestal_height": 0.0}
                         else:
@@ -1120,7 +1127,7 @@ def main(argv):
                         if kind == "cut":
                             m, ped, note = whole, None, {"pedestal": "none", "pedestal_error": str(e)[:120]}
                         elif kind in shaped_kinds:
-                            ped_note = {k: v for k, v in ped_note.items() if k not in ("engraved_lines", "small_text_mm", "chest_added")}
+                            ped_note = {k: v for k, v in ped_note.items() if k not in ("engraved_lines", "small_text_mm", "chest_added", "chest_enough")}
                             ped_note["socle_fallback"] = str(e)[:120]
                             continue
                         else:
@@ -1148,7 +1155,7 @@ def main(argv):
                     if joined is not None or kind not in shaped_kinds:
                         break
                     # a foot narrower than the chest must be one body with it, otherwise the bust floats over it
-                    ped_note = {k: v for k, v in ped_note.items() if k not in ("engraved_lines", "small_text_mm", "chest_added")}
+                    ped_note = {k: v for k, v in ped_note.items() if k not in ("engraved_lines", "small_text_mm", "chest_added", "chest_enough")}
                     ped_note["socle_fallback"] = "not_joined"
                 m = joined if joined is not None else trimesh.util.concatenate([m, ped])
                 m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
