@@ -267,6 +267,7 @@ export function bootParam(): void {
         if (Array.isArray(set.holes)) { holes.splice(0, holes.length, ...(set.holes as Hole[])); renderHoles(); }
         if (Array.isArray(set.bins)) { bins.splice(0, bins.length, ...(set.bins as Bin[])); renderGrid(); }
         if (typeof set.artwork === 'string') { artwork = set.artwork; artworkState(t('param.artwork.remove'), true); }
+        applyWhen();   // a preset or a reopened design may have changed the choice the visible fields depend on
     };
 
     // ── uploaded artwork (SVG or a simple picture) ─────────────────────────
