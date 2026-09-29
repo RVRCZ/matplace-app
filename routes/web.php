@@ -227,6 +227,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/youtube')->name('admin.
     Route::post('/videos/{video}/reject', [$yt, 'reject'])->name('reject');
     Route::post('/videos/{video}/retry', [$yt, 'retry'])->name('retry');
     Route::post('/videos/{video}/replace', [$yt, 'replace'])->name('replace');
+    Route::post('/stats', [$yt, 'stats'])->name('stats');
 });
 
 // ── Printer tools (role switch "I own a printer") ────────────────────────────

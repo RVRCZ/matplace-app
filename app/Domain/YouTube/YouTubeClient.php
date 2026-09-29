@@ -126,6 +126,34 @@ class YouTubeClient
         return (string) $r->json('status.privacyStatus', 'public');
     }
 
+    /**
+     * Numbers and privacy of up to 50 videos per request (1 quota unit each request).
+     *
+     * @param  list<string>  $ids
+     * @return array<string, array{views: int, likes: int|null, comments: int|null, privacy: string}> missing ids are gone
+     */
+    public function statistics(array $ids): array
+    {
+        $out = [];
+        foreach (array_chunk(array_values(array_unique($ids)), 50) as $chunk) {
+            $r = $this->api()->get(self::API.'/videos', ['part' => 'statistics,status', 'id' => implode(',', $chunk), 'maxResults' => 50]);
+            if (! $r->successful()) {
+                throw YouTubeError::from($r, 'Statistics');
+            }
+            foreach ((array) $r->json('items') as $item) {
+                $s = (array) ($item['statistics'] ?? []);
+                $out[(string) $item['id']] = [
+                    'views' => (int) ($s['viewCount'] ?? 0),
+                    'likes' => isset($s['likeCount']) ? (int) $s['likeCount'] : null,       // hidden likes are missing
+                    'comments' => isset($s['commentCount']) ? (int) $s['commentCount'] : null,
+                    'privacy' => (string) ($item['status']['privacyStatus'] ?? ''),
+                ];
+            }
+        }
+
+        return $out;
+    }
+
     /** Remove the video from YouTube; a video that is already gone counts as removed. */
     public function delete(string $id): void
     {

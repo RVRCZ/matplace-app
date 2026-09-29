@@ -193,6 +193,36 @@ class FarmVideos
         }
     }
 
+    /**
+     * Views, likes and comments from YouTube for every video that is there. A video made public by hand in
+     * YouTube Studio (while the API project is not audited) becomes "published" here too.
+     *
+     * @return int videos updated
+     */
+    public function refreshStats(): int
+    {
+        $videos = FarmVideo::whereNotNull('youtube_id')->whereIn('status', [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_PUBLISHED])->get();
+        if ($videos->isEmpty() || ! YouTubeAccount::current()) {
+            return 0;
+        }
+        $stats = $this->youtube->statistics($videos->pluck('youtube_id')->all());
+        $n = 0;
+        foreach ($videos as $video) {
+            $s = $stats[$video->youtube_id] ?? null;
+            if (! $s) {
+                continue;       // deleted in Studio: an admin sees it has no numbers
+            }
+            $fill = ['views' => $s['views'], 'likes' => $s['likes'], 'comments' => $s['comments'], 'stats_at' => now()];
+            if ($s['privacy'] === 'public' && $video->status === FarmVideo::STATUS_UPLOADED && $video->order?->video_consent) {
+                $fill += ['status' => FarmVideo::STATUS_PUBLISHED, 'published_at' => now(), 'error' => null];
+            }
+            $video->update($fill);
+            $n++;
+        }
+
+        return $n;
+    }
+
     /** The square Short when it was built (it grows the channel), else the landscape time-lapse. */
     public function file(FarmOrder $order): string
     {

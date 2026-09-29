@@ -23,6 +23,35 @@
     <p class="mt-2 text-xs text-slate-500">Videa se nahrávají jako soukromá, jen u zakázek, kde zákazník dal souhlas. Veřejná jsou až po schválení tady.</p>
 </section>
 
+{{-- how the channel does --}}
+@if($account)
+    @php $n = fn ($v) => $v === null ? '–' : number_format($v, 0, ',', ' '); @endphp
+    <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="font-bold">Statistiky</h2>
+            <form method="post" action="{{ route('admin.youtube.stats') }}">@csrf<button class="btn-quiet text-sm">Načíst z YouTube</button></form>
+        </div>
+        <dl class="mt-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <div><dt class="text-xs text-slate-500">Zhlédnutí</dt><dd class="text-2xl font-extrabold">{{ $n($totals['views']) }}</dd></div>
+            <div><dt class="text-xs text-slate-500">Lajky</dt><dd class="text-2xl font-extrabold">{{ $n($totals['likes']) }}</dd></div>
+            <div><dt class="text-xs text-slate-500">Komentáře</dt><dd class="text-2xl font-extrabold">{{ $n($totals['comments']) }}</dd></div>
+            <div><dt class="text-xs text-slate-500">Zveřejněná videa</dt><dd class="text-2xl font-extrabold">{{ $totals['published'] }}</dd></div>
+        </dl>
+        @if($top->isNotEmpty())
+            <h3 class="mt-4 text-sm font-semibold">Nejsledovanější</h3>
+            <ol class="mt-1 space-y-1 text-sm">
+                @foreach($top as $v)
+                    <li class="flex flex-wrap justify-between gap-2">
+                        <span><a href="{{ $v->watchUrl() }}" target="_blank" rel="noopener" class="underline">{{ $v->title }}</a> <span class="text-xs text-slate-500">· {{ $v->order?->number }}</span></span>
+                        <span class="text-slate-600">{{ $n($v->views) }} zhlédnutí · {{ $n($v->likes) }} lajků</span>
+                    </li>
+                @endforeach
+            </ol>
+        @endif
+        <p class="mt-2 text-xs text-slate-500">Načítá se každý den v 6:10{{ $totals['at'] ? ', naposledy '.\Illuminate\Support\Carbon::parse($totals['at'])->format('j. n. H:i') : '' }}. Videa zveřejněná ručně v YouTube Studiu se tu tím označí jako zveřejněná.</p>
+    </section>
+@endif
+
 {{-- waiting for a decision --}}
 <h2 class="mt-6 text-lg font-bold">Ke schválení</h2>
 @forelse($waiting as $v)
@@ -90,6 +119,7 @@
             <span>
                 <a href="{{ route('admin.farm.orders.show', $v->order) }}" class="underline">{{ $v->order?->number }}</a> · {{ $v->title }}
                 <span class="text-xs text-slate-500">· {{ $label[$v->status] ?? $v->status }} {{ ($v->published_at ?? $v->decided_at ?? $v->updated_at)?->format('j. n. Y') }}</span>
+                @if($v->views !== null)<span class="text-xs text-slate-600">· {{ number_format($v->views, 0, ',', ' ') }} zhlédnutí · {{ $v->likes === null ? '–' : number_format($v->likes, 0, ',', ' ') }} lajků</span>@endif
                 @if($v->error)<span class="block text-xs text-red-700">{{ $v->error }}</span>@endif
             </span>
             <span class="flex gap-2">

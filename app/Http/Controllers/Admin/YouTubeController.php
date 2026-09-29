@@ -30,6 +30,9 @@ class YouTubeController extends Controller
             'account' => YouTubeAccount::current(),
             'waiting' => $videos->whereIn('status', [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED]),
             'done' => $videos->whereIn('status', [FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN]),
+            'top' => $videos->where('status', FarmVideo::STATUS_PUBLISHED)->whereNotNull('views')->sortByDesc('views')->take(5)->values(),
+            'totals' => ['views' => (int) $videos->sum('views'), 'likes' => (int) $videos->sum('likes'), 'comments' => (int) $videos->sum('comments'),
+                'published' => $videos->where('status', FarmVideo::STATUS_PUBLISHED)->count(), 'at' => $videos->max('stats_at')],
             // agreed and filmed, but never queued (e.g. finished before the channel was connected)
             'missing' => FarmOrder::with(['color.material'])->where('kind', FarmOrder::KIND_PRINT)->where('video_consent', true)
                 ->whereNotNull('timelapse_path')->whereDoesntHave('video')->latest('id')->limit(50)->get(),
@@ -121,6 +124,17 @@ class YouTubeController extends Controller
         }
 
         return back()->with('status', 'Stará verze je z YouTube smazaná, nová se nahrává.');
+    }
+
+    public function stats(): RedirectResponse
+    {
+        try {
+            $n = $this->videos->refreshStats();
+        } catch (YouTubeError $e) {
+            return back()->with('error', 'Statistiky se nepodařilo načíst: '.$e->getMessage());
+        }
+
+        return back()->with('status', 'Statistiky načtené ('.$n.' videí).');
     }
 
     public function retry(FarmVideo $video): RedirectResponse

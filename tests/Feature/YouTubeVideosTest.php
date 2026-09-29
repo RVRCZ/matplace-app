@@ -100,6 +100,9 @@ class YouTubeVideosTest extends TestCase
             if (str_contains($url, '/youtube/v3/videos') && $r->method() === 'PUT') {
                 return Http::response(['id' => 'vid123', 'status' => ['privacyStatus' => $privacy]]);
             }
+            if (str_contains($url, '/youtube/v3/videos') && $r->method() === 'GET') {
+                return Http::response(['items' => [['id' => 'vid123', 'statistics' => ['viewCount' => '1520', 'likeCount' => '87', 'commentCount' => '4'], 'status' => ['privacyStatus' => 'public']]]]);
+            }
             if (str_contains($url, '/youtube/v3/videos') && $r->method() === 'DELETE') {
                 return Http::response('', 204);
             }
@@ -186,6 +189,25 @@ class YouTubeVideosTest extends TestCase
         $this->assertMatchesRegularExpression('/id="farm-video-consent"[^>]*checked/', $page());
         $order->modelFile->forceFill(['origin' => 'generated'])->save();
         $this->assertDoesNotMatchRegularExpression('/id="farm-video-consent"[^>]*checked/', $page());
+    }
+
+    public function test_statistics_come_from_youtube_and_a_video_made_public_in_studio_counts_as_published(): void
+    {
+        $this->connectedChannel();
+        $this->fakeGoogle();
+        $order = $this->paidOrder(consent: true);
+        $this->filmed($order);
+        $video = app(FarmVideos::class)->queueFor($order)->refresh();
+        $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->status);
+
+        $this->artisan('youtube:stats')->assertSuccessful();
+        $video->refresh();
+        $this->assertSame([1520, 87, 4], [$video->views, $video->likes, $video->comments]);
+        $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->status, 'made public by hand in YouTube Studio');
+        Http::assertSent(fn (HttpRequest $r) => $r->method() === 'GET' && str_contains($r->url(), 'part=statistics%2Cstatus') && str_contains($r->url(), 'vid123'));
+
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('1 520')->assertSee('Nejsledovanější');
+        $this->actingAs($this->admin)->post('/admin/youtube/stats')->assertRedirect()->assertSessionHas('status');
     }
 
     public function test_somebody_else_cannot_change_the_consent(): void
