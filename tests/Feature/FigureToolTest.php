@@ -99,6 +99,8 @@ class FigureToolTest extends TestCase
         // more sides are on the screen at once, with the word that they help
         $this->assertStringNotContainsString('<details id="figure-views"', $html);
         $this->assertStringContainsString(__('figure.views.better'), $html);
+        // and the visitor is told how to take the photos
+        $this->assertStringContainsString(__('figure.howto.frame'), $html);
     }
 
     public function test_bust_is_generated_photo_forgotten_and_results_not_shared(): void
@@ -159,6 +161,31 @@ class FigureToolTest extends TestCase
         $this->assertSame(1, $plaque->shells);
         $this->assertGreaterThan($round->triangles + 500, $plaque->triangles);      // the letters are in the mesh, not just in a picture
         $this->assertEqualsWithDelta(80, $plaque->bbox->max(), 0.1);               // still the size the customer asked for
+
+        // the turned foot of a classic bust: one closed body, the name bent round its band, narrower than it is tall
+        $this->get('/tools/figure')->assertSee(__('figure.pedestal.socle'));
+        $n->toPrintableStl($dir.'/in.stl', $dir.'/socle.stl', 80, false, ['clean', 'pedestal', 'solid'], ['pedestal' => 'socle']);
+        $n->toPrintableStl($dir.'/in.stl', $dir.'/socle_name.stl', 80, false, ['clean', 'pedestal', 'solid'], ['pedestal' => 'socle', 'name' => 'Lucian']);
+        $socle = $check->check($dir.'/socle.stl');
+        $named = $check->check($dir.'/socle_name.stl');
+        foreach ([$socle, $named] as $s) {
+            $this->assertTrue($s->watertight);
+            $this->assertSame(1, $s->shells);
+            $this->assertEqualsWithDelta(80, $s->bbox->z, 0.1);
+        }
+        $this->assertGreaterThan($socle->triangles + 500, $named->triangles);
+
+        // the antique bust stands on a tablet with the name; the sculptor's cut has no base and carries no name
+        $this->get('/tools/figure')->assertSee(__('figure.pedestal.antique'))->assertSee(__('figure.pedestal.cut'));
+        $n->toPrintableStl($dir.'/in.stl', $dir.'/antique.stl', 80, false, ['clean', 'pedestal', 'solid'], ['pedestal' => 'antique', 'name' => 'Hadrianus']);
+        $n->toPrintableStl($dir.'/in.stl', $dir.'/cut.stl', 80, false, ['clean', 'pedestal', 'solid'], ['pedestal' => 'cut']);
+        foreach (['antique', 'cut'] as $style) {
+            $made = $check->check($dir.'/'.$style.'.stl');
+            $this->assertTrue($made->watertight, $style);
+            $this->assertSame(1, $made->shells, $style);
+            $this->assertEqualsWithDelta(80, $made->bbox->max(), 0.1, $style);
+        }
+        $this->assertGreaterThan($socle->triangles, $check->check($dir.'/antique.stl')->triangles);
         File::deleteDirectory($dir);
     }
 
@@ -179,6 +206,9 @@ class FigureToolTest extends TestCase
         $this->postJson('/api/files/'.$uuid.'/pedestal', ['type' => 'round', 'sink' => 55])->assertStatus(422);
         $p->assertJsonPath('file.generation.pedestal.type', 'plaque')->assertJsonPath('file.generation.pedestal.name', 'Věra');
         $this->assertNotSame($uuid, $p->json('file.uuid'));
+        // the classic socle keeps the name and has no room for a dedication
+        $this->postJson('/api/files/'.$uuid.'/pedestal', ['type' => 'socle', 'name' => 'Lucian', 'dedication' => 'x'])->assertCreated()
+            ->assertJsonPath('file.generation.pedestal.type', 'socle')->assertJsonPath('file.generation.pedestal.name', 'Lucian')->assertJsonPath('file.generation.pedestal.dedication', '');
         $this->assertSame(1, GenerationRequest::count());                         // no new generation, no credits
         $new = ModelFile::where('uuid', $p->json('file.uuid'))->firstOrFail();
         $this->assertTrue($new->isReady());

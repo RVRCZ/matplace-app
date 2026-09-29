@@ -1,0 +1,47 @@
+{
+    "figure.howto": [
+        "Jak fotit, aby busta vyšla dobře",
+        "How to take the photos for a good bust",
+        "Cómo hacer las fotos para un buen busto"
+    ],
+    "figure.howto.distance": [
+        "Odstupte na 1,5 až 2 metry. Fotka zblízka zkresluje obličej.",
+        "Step back 1.5 to 2 metres. A close-up distorts the face.",
+        "Aléjese de 1,5 a 2 metros. Una foto de cerca deforma la cara."
+    ],
+    "figure.howto.frame": [
+        "Zaberte postavu od temene po pas, s volným místem kolem obou ramen.",
+        "Frame the person from the top of the head to the waist, with free space around both shoulders.",
+        "Encuadre a la persona desde la coronilla hasta la cintura, con espacio libre alrededor de los dos hombros."
+    ],
+    "figure.howto.height": [
+        "Držte telefon ve výšce obličeje, ne shora ani zdola.",
+        "Hold the phone at the height of the face, not from above or below.",
+        "Sostenga el teléfono a la altura de la cara, ni desde arriba ni desde abajo."
+    ],
+    "figure.howto.arms": [
+        "Ruce nechte volně podél těla, ne v bok ani založené.",
+        "Keep the arms loose along the body, not on the hips or crossed.",
+        "Deje los brazos sueltos a lo largo del cuerpo, no en jarras ni cruzados."
+    ],
+    "figure.howto.wall": [
+        "Foťte před jednobarevnou zdí, bez předmětů v pozadí, při rovnoměrném světle.",
+        "Shoot in front of a plain wall, with nothing in the background, in even light.",
+        "Haga la foto delante de una pared lisa, sin objetos al fondo y con luz uniforme."
+    ],
+    "figure.howto.sides": [
+        "Fotky z boku a zezadu pořiďte ze stejné vzdálenosti a výšky.",
+        "Take the side and back photos from the same distance and height.",
+        "Haga las fotos de lado y de atrás desde la misma distancia y altura."
+    ],
+    "figure.howto.note": [
+        "Tenké obroučky brýlí a jednotlivé prameny vlasů se tisknou špatně. Vlasy stažené nebo učesané k hlavě vyjdou lépe.",
+        "Thin spectacle frames and single strands of hair print badly. Hair tied back or combed close to the head comes out better.",
+        "Las monturas finas de las gafas y los mechones sueltos se imprimen mal. El pelo recogido o peinado pegado a la cabeza sale mejor."
+    ],
+    "figure.photo_tips": [
+        "Jedna osoba nebo předmět, od temene po pas, světlé pozadí, ostrá fotka.",
+        "One person or object, from the top of the head to the waist, plain background, sharp photo.",
+        "Una persona u objeto, desde la coronilla hasta la cintura, fondo claro, foto nítida."
+    ]
+}

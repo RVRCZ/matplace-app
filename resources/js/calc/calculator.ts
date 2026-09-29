@@ -614,7 +614,9 @@ function showPedestal(file: FileInfo | null): void {
     const name = $('pedestal-name') as HTMLInputElement; const dedication = $('pedestal-dedication') as HTMLInputElement;
     const msg = $('pedestal-msg'); const btn = box.querySelector('button') as HTMLButtonElement;
     const hint = msg.dataset.hint ?? (msg.dataset.hint = msg.textContent ?? '');
-    const plaque = () => box.querySelectorAll<HTMLElement>('[data-plaque]').forEach((e) => { e.classList.toggle('hidden', type.value !== 'plaque'); e.classList.toggle('block', type.value === 'plaque'); });
+    // the turned foot and the plinth carry a name, only the plinth has room for a dedication
+    const field = (sel: string, on: boolean) => box.querySelectorAll<HTMLElement>(sel).forEach((e) => { e.classList.toggle('hidden', !on); e.classList.toggle('block', on); });
+    const plaque = () => { field('[data-pedestal-name]', ['socle', 'antique', 'plaque'].includes(type.value)); field('[data-pedestal-dedication]', type.value === 'plaque'); };
     type.value = ped.type; front.value = 'keep'; sink.value = String(ped.sink ?? 0); tidy.checked = ped.tidy ?? true; name.value = ped.name; dedication.value = ped.dedication;
     msg.textContent = hint; btn.disabled = false;
     plaque(); type.onchange = plaque;

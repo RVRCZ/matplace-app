@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Generation\GenerationService;
+use App\Domain\Generation\PedestalChanger;
 use App\Domain\Generation\QuotaExceeded;
 use App\Engines\Vision\VisionDescriber;
 use App\Http\Controllers\Controller;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /** Rough 3D model from a photo (after /api/describe) or from text. Free, limited per day by count. */
 class GenerationController extends Controller
@@ -31,7 +33,7 @@ class GenerationController extends Controller
             'image_back' => ['nullable', 'image', 'max:12288'],
             'image_right' => ['nullable', 'image', 'max:12288'],
             'kind' => ['nullable', 'in:bust,figure', 'required_with:image'],
-            'pedestal' => ['nullable', 'in:round,square,hexagon,column,plaque,none'],
+            'pedestal' => ['nullable', Rule::in(PedestalChanger::TYPES)],
             'pedestal_name' => ['nullable', 'string', 'max:24'],
             'pedestal_dedication' => ['nullable', 'string', 'max:40'],
             'target_mm' => ['nullable', 'integer', 'min:5', 'max:1000'],
@@ -70,8 +72,8 @@ class GenerationController extends Controller
                 try {
                     $req = $service->fromPhoto($stored['front'], $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user, [
                         'type' => $data['pedestal'] ?? 'round',
-                        'name' => ($data['pedestal'] ?? '') === 'plaque' ? ($data['pedestal_name'] ?? null) : null,
-                        'dedication' => ($data['pedestal'] ?? '') === 'plaque' ? ($data['pedestal_dedication'] ?? null) : null,
+                        'name' => in_array($data['pedestal'] ?? '', PedestalChanger::NAMED, true) ? ($data['pedestal_name'] ?? null) : null,
+                        'dedication' => in_array($data['pedestal'] ?? '', PedestalChanger::DEDICATED, true) ? ($data['pedestal_dedication'] ?? null) : null,
                     ], array_diff_key($stored, ['front' => 1]));
                 } catch (QuotaExceeded $e) {
                     $disk->delete(array_values($stored));

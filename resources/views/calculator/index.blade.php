@@ -145,10 +145,10 @@
                                 </select>
                             </label>
                             <label class="flex items-center gap-2 text-xs text-slate-700 sm:col-span-2"><input id="pedestal-tidy" type="checkbox" class="accent-action"> {{ __('pedestal.tidy') }}</label>
-                            <label data-plaque class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.name') }}
+                            <label data-pedestal-name class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.name') }}
                                 <input id="pedestal-name" maxlength="24" placeholder="{{ __('figure.pedestal.name_ph') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-normal">
                             </label>
-                            <label data-plaque class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.dedication') }}
+                            <label data-pedestal-dedication class="hidden text-xs font-semibold text-slate-600">{{ __('figure.pedestal.dedication') }}
                                 <input id="pedestal-dedication" maxlength="40" placeholder="{{ __('figure.pedestal.dedication_ph') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm font-normal">
                             </label>
                         </div>

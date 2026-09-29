@@ -7,7 +7,7 @@ Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquer
   mesh_tool.py repair <in> <out.stl>                  -> repaired binary STL + report
   mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
   mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal,solid] [extras-json]
-                                                          extras: {"pedestal": round|square|hexagon|column|plaque|none, "name": "…", "dedication": "…", "font": path,
+                                                          extras: {"pedestal": socle|antique|cut|round|square|hexagon|column|plaque|none, "name": "…", "dedication": "…", "font": path,
                                                                    "front": auto|keep|left|right|back, "cut": "bust", "tidy": true (cut off loose strands), "sink": 0-0.4, "source_out": path of the figure without a base,
                                                                    "strip_pedestal": true}
                                                        -> millimetres (largest side = max_mm), Z-up, on the bed;
@@ -410,11 +410,11 @@ def bust_cut(m):
     if head is not None and neck is not None:
         span = float(width[:neck + 1].max()) if neck > 0 else 0.0
         if width[neck] <= 0.9 * width[head] and span >= 1.5 * width[neck]:
-            cuts.append(float(levels[neck]) - 1.05 * (z1 - float(levels[neck])))
+            cuts.append(float(levels[neck]) - 0.92 * (z1 - float(levels[neck])))
     broad = np.nonzero(width >= 0.8 * width.max())[0]
     if len(broad) and width.max() >= 1.3 * width[-8:].max():               # clearly broader than the top of the head
         line = float(levels[int(broad.max())])
-        cuts.append(line - 0.36 * (z1 - line))
+        cuts.append(line - 0.43 * (z1 - line))
     if not cuts:
         return m
     cut = float(np.mean(cuts))
@@ -525,11 +525,47 @@ def face_front(m):
     depth_axis = 0 if spread[1] > spread[0] else 1
     chest = np.average(c[low][:, depth_axis], weights=a[low])
     head = np.average(c[top][:, depth_axis], weights=a[top])
-    if abs(head - chest) < 0.03 * h:
-        return 0
-    forward = 1 if head > chest else -1
+    if abs(head - chest) >= 0.05 * h:
+        forward = 1 if head > chest else -1
+    else:
+        # an upright head stands right above the chest; then the face gives itself away by its relief:
+        # brows, nose, lips and chin make surfaces that look up and down, the back of a head falls straight
+        forward = face_side(c, a, m.face_normals, z0, h, depth_axis)
+        if forward == 0:
+            return 0
     # quarter turns counter-clockwise: +X -> 3 (to -Y), +Y -> 2, -X -> 1, -Y -> 0
     return {(0, 1): 3, (1, 1): 2, (0, -1): 1, (1, -1): 0}[(depth_axis, forward)]
+
+
+def face_side(c, a, n, z0, h, axis):
+    """+1 / -1: the side of the depth axis the face is on, judged by the relief of the middle strip of the head; 0 = unclear."""
+    import numpy as np
+    other = 1 - axis
+    z1 = z0 + h
+    levels = np.linspace(z0 + 0.3 * h, z0 + 0.97 * h, 60)
+    width = np.zeros(len(levels) - 1)
+    for i, (lo, hi) in enumerate(zip(levels[:-1], levels[1:])):
+        row = c[(c[:, 2] >= lo) & (c[:, 2] < hi)]
+        width[i] = float(np.ptp(row[:, other])) if len(row) > 20 else 0.0
+    if (width <= 0).any():
+        return 0
+    head = len(width) - 25 + int(np.argmax(width[-25:]))
+    first = max(0, head - 30)
+    if head <= first:
+        return 0
+    neck = float(levels[first + int(np.argmin(width[first:head]))])
+    tall = z1 - neck
+    mid = float(c[:, other].min() + c[:, other].max()) / 2
+    strip = (c[:, 2] > neck + 0.15 * tall) & (c[:, 2] < neck + 0.7 * tall) & (np.abs(c[:, other] - mid) < 0.22 * width[head])
+    relief = []
+    for sign in (1, -1):
+        side = strip & (n[:, axis] * sign > 0.3)
+        if side.sum() < 50:
+            return 0
+        relief.append(float(np.average(np.abs(n[side][:, 2]), weights=a[side])))
+    if abs(relief[0] - relief[1]) < 0.02:
+        return 0
+    return 1 if relief[0] > relief[1] else -1
 
 
 def seat_of(m):
@@ -569,9 +605,10 @@ def without_pedestal(m):
     return trimesh.util.concatenate(rest)
 
 
-def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None):
+def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None, sizes=None):
     """
     Base under a figure or bust, built as one exact solid (manifold3d) and handed back as a trimesh.
+    "socle" and "antique" are the feet of a sculptor's bust (see BUST_STYLES, socle_mesh, antique_mesh).
     "plaque" is a taller plinth with a flat front that carries a name and an optional dedication, raised 1 mm.
     The front of a generated model looks towards -Y.
     """
@@ -586,6 +623,9 @@ def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None):
         return S.rounded_rect(M, w, d, rad).translate([-w / 2, -d / 2])
 
     note = {"pedestal": kind}
+    if kind in ("socle", "antique"):
+        build = socle_mesh if kind == "socle" else antique_mesh
+        return build(M, S, cx, cy, extras, overlap if z_top is None else z_top, overlap, sizes or socle_sizes(ped_h / 0.05, r, kind), note)
     if kind == "square":
         solid = rounded(2 * r, 2 * r, r * 0.12).extrude(ped_h + overlap)
     elif kind == "hexagon":
@@ -628,6 +668,296 @@ def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None):
     mesh = solid.translate([cx, cy, (overlap if z_top is None else z_top) - (ped_h + overlap)]).to_mesh()
     note["pedestal"] = kind
     note["pedestal_height"] = round(float(ped_h), 1)
+    return trimesh.Trimesh(vertices=np.asarray(mesh.vert_properties)[:, :3], faces=np.asarray(mesh.tri_verts), process=True), note
+
+
+# Three ways a sculptor finishes a bust. Sizes are shares of the height of the bust itself (crown to the end of
+# the chest), measured on the reference pictures the owner chose:
+#   socle   - modern studio bust: chest with a rounded underside on a turned foot, the name round its band
+#   antique - Roman bust: deeply rounded chest, a small tablet with the name, a turned socle with a wide foot
+#   cut     - sculptor's cut: no foot, the bust stands on its own flat cut, the shoulders are cut off at a slant
+BUST_STYLES = {
+    "socle": {"chest": 0.88, "more": 0.22, "round": 0.13, "power": 2.0, "flat": 0.17,
+              "foot": 0.35, "band": 0.135, "r_foot": 0.216, "r_top": 0.128},
+    "antique": {"chest": 0.95, "more": 0.26, "round": 0.24, "power": 1.7, "flat": 0.19,
+                "foot": 0.25, "r_foot": 0.20, "r_drum": 0.15, "r_waist": 0.115,
+                "tablet_h": 0.085, "tablet_w": 0.27, "tablet_d": 0.17},
+    # the added chest is a plain wall: under a slanted cut only a low one looks like the work of a sculptor
+    "cut": {"chest": 0.8, "more": 0.10, "lean": 24.0, "keep": 0.6},
+}
+
+
+def socle_sizes(bust_h, r, kind="socle"):
+    """Sizes in millimetres for a bust `bust_h` tall whose chest has the radius `r` at the cut."""
+    k = BUST_STYLES[kind]
+    out = {"kind": kind, "bust_h": float(bust_h)}
+    for key, share in k.items():
+        out[key] = share if key in ("chest", "more", "power", "lean", "keep") else share * bust_h
+    if kind == "socle":
+        out["r_foot"] = min(out["r_foot"], max(r * 0.9, out["r_top"] * 1.3))
+        out["r_top"] = min(out["r_top"], out["r_foot"] * 0.62)
+        out["band"] = max(5.0, out["band"])
+    return out
+
+
+def neck_level(m, z_from):
+    """Height of the narrowest place between the shoulders and the head, or None when the shape shows no neck."""
+    import numpy as np
+    v = m.vertices
+    z0, z1 = float(z_from), float(m.bounds[1][2])
+    h = z1 - z0
+    low = v[(v[:, 2] >= z0) & (v[:, 2] < z0 + 0.4 * h)]
+    if len(low) < 50:
+        return None
+    axis = int(np.argmax(np.ptp(low[:, :2], axis=0)))
+    levels = np.linspace(z0 + 0.15 * h, z0 + 0.97 * h, 70)
+    width = np.zeros(len(levels) - 1)
+    for i, (lo, hi) in enumerate(zip(levels[:-1], levels[1:])):
+        row = v[(v[:, 2] >= lo) & (v[:, 2] < hi)]
+        width[i] = float(np.ptp(row[:, axis])) if len(row) > 20 else 0.0
+    if (width <= 0).any():
+        return None
+    head = len(width) - 28 + int(np.argmax(width[-28:]))
+    first = max(0, head - 34)
+    if head <= first:
+        return None
+    neck = first + int(np.argmin(width[first:head]))
+    if width[neck] > 0.92 * width[head]:
+        return None
+    return float(levels[neck])
+
+
+def polar_reach(M, outline, floor, count=180):
+    """How far the (convex) outline reaches from the centre in `count` directions; never less than `floor`."""
+    import numpy as np
+    ang = np.linspace(0, 2 * np.pi, count, endpoint=False)
+    dirs = np.stack([np.cos(ang), np.sin(ang)], 1)
+    reach = np.full(count, float(floor))
+    for poly in outline.to_polygons():
+        pts = np.asarray(poly, dtype=np.float64)
+        e = np.roll(pts, -1, axis=0) - pts
+        den = dirs[:, None, 0] * e[None, :, 1] - dirs[:, None, 1] * e[None, :, 0]
+        den = np.where(np.abs(den) < 1e-12, np.nan, den)
+        t = (pts[None, :, 0] * e[None, :, 1] - pts[None, :, 1] * e[None, :, 0]) / den
+        u = (pts[None, :, 0] * dirs[:, None, 1] - pts[None, :, 1] * dirs[:, None, 0]) / den
+        hit = np.where((u >= 0) & (u <= 1) & (t > 0), t, np.nan)
+        with np.errstate(all="ignore"):
+            reach = np.fmax(reach, np.nan_to_num(np.nanmax(hit, axis=1), nan=0.0))
+    return dirs, reach
+
+
+def rings_solid(M, rings):
+    """Closed solid from rings of points stacked bottom to top (the same count in every ring)."""
+    import numpy as np
+    n = len(rings[0])
+    verts = np.vstack(list(rings) + [np.array([[0, 0, rings[0][0][2]], [0, 0, rings[-1][0][2]]])])
+    faces = []
+    for i in range(len(rings) - 1):
+        for j in range(n):
+            a0, a1, b0, b1 = i * n + j, i * n + (j + 1) % n, (i + 1) * n + j, (i + 1) * n + (j + 1) % n
+            faces += [[a0, a1, b1], [a0, b1, b0]]
+    low, high = len(rings) * n, len(rings) * n + 1
+    for j in range(n):
+        faces.append([low, (j + 1) % n, j])
+        faces.append([high, (len(rings) - 1) * n + j, (len(rings) - 1) * n + (j + 1) % n])
+    solid = M.Manifold(M.Mesh(vert_properties=verts.astype(np.float32), tri_verts=np.asarray(faces, dtype=np.uint32)))
+    if solid.status() != M.Error.NoError or solid.volume() <= 0:
+        raise ValueError("rings_solid")
+    return solid
+
+
+def longer_chest(body, m, z_cut, share, limit, least=0.0):
+    """
+    Generated busts end at the shoulders; a sculptor's bust carries about as much chest below the neck as there
+    is head above it. The missing part is drawn straight down from the cut, the way the chest already falls there.
+    Returns (body, new bottom).
+    """
+    neck = neck_level(m, z_cut)
+    top = float(m.bounds[1][2])
+    if neck is None:
+        more = 0.12 * (top - z_cut)
+    else:
+        more = share * (top - neck) - (neck - z_cut)
+    # `least`: the rounded underside needs room of its own, it must not eat the chest the model came with
+    more = min(max(least * (top - z_cut), more), limit * (top - z_cut))
+    if more < 0.5:
+        return body, float(z_cut)
+    section = body.slice(float(z_cut + 0.3))
+    if section.area() <= 0:
+        return body, float(z_cut)
+    return body + section.extrude(more + 0.6).translate([0, 0, z_cut - more]), float(z_cut - more)
+
+
+def round_under(body, cx, cy, z_bottom, high, flat, power):
+    """
+    Underside of the chest: flat over the foot (radius `flat`), then up to the chest in a rounded sweep `high` tall.
+    Material is only taken away, so the chest above keeps every fold it has.
+    """
+    import numpy as np
+    import manifold3d as M
+    outline = body.slice(float(z_bottom + high)).translate([-cx, -cy]).hull()
+    if outline.area() < 3.2 * flat ** 2:
+        return body                                             # a chest hardly wider than the foot needs no shaping
+    dirs, reach = polar_reach(M, outline, flat)
+    reach = reach + 0.3
+    inner = np.minimum(reach, flat)
+    rings = []
+    for k in np.linspace(0.0, 1.0, 33):
+        grow = (1 - (1 - k) ** power) ** (1 / power)
+        rho = inner + (reach - inner) * grow
+        rings.append(np.column_stack([dirs * rho[:, None], np.full(len(rho), z_bottom - 0.5 + (high + 0.5) * k)]))
+    # past the slab: two lids in one plane would leave a skin inside the body
+    rings.append(np.column_stack([dirs * reach[:, None], np.full(len(reach), z_bottom + high + 1.0)]))
+    bowl = rings_solid(M, rings).translate([cx, cy, 0])
+    x0, y0, _, x1, y1, _ = body.bounding_box()
+    slab = M.Manifold.cube([x1 - x0 + 4, y1 - y0 + 4, high + 1.0]).translate([x0 - 2, y0 - 2, z_bottom - 1.0])
+    shaped = body - (slab - bowl)
+    return shaped if shaped.volume() > 0.5 * body.volume() else body
+
+
+def slant_cut(body, z_bottom, lean_deg, keep):
+    """Sculptor's cut: both shoulders are cut off by planes that lean outwards, the bust stands on its own flat cut."""
+    import numpy as np
+    x0, _, _, x1, _, z1 = body.bounding_box()
+    mid, half = (x0 + x1) / 2, (x1 - x0) / 2
+    a = np.radians(lean_deg)
+    # never cut into the neck: at the top of the chest the planes are still outside two thirds of the width
+    foot = min(keep * half, half - np.tan(a) * 0.0)
+    for side in (1, -1):
+        normal = [-side * np.cos(a), 0.0, np.sin(a)]
+        point = np.array([mid + side * foot, 0.0, z_bottom])
+        body = body.trim_by_plane(normal, float(np.dot(normal, point)))
+    return body
+
+
+def bust_shape(kind, body, m, cx, cy, z_cut, r):
+    """The chest of the bust the way the style wants it. Returns (body, bottom of the chest, sizes of the foot)."""
+    style = BUST_STYLES[kind]
+    before = float(m.bounds[1][2]) - float(z_cut)
+    body, bottom = longer_chest(body, m, float(z_cut), style["chest"], style["more"], style.get("round", 0.0) * 0.8)
+    sizes = socle_sizes(float(m.bounds[1][2]) - bottom, r, kind)
+    sizes["added"] = round((float(m.bounds[1][2]) - bottom) - before, 1)
+    if kind == "cut":
+        return slant_cut(body, bottom, style["lean"], style["keep"]), bottom, sizes
+    # the sweep never eats the chest the model came with: it lives in the part that was added, and a little above
+    high = min(sizes["round"], sizes["added"] + 0.05 * sizes["bust_h"])
+    if high > 1.0:
+        body = round_under(body, cx, cy, bottom, high, sizes["flat"], style["power"])
+    return body, bottom, sizes
+
+
+def raised_name(M, S, extras, cap, width, note):
+    """The name in capitals as a flat outline `cap` tall, no wider than `width`, centred on x, standing on y = 0."""
+    import os
+    name = str(extras.get("name", "")).strip()[:24]
+    font = extras.get("font")
+    if not name or not font or not os.path.isfile(font):
+        return None
+    cs, info = S.text(M, [name.upper()], font, cap)
+    tw, th = S.size(cs)
+    if tw > width:
+        cs = S.fit(cs, width_mm=width)
+        tw, th = S.size(cs)
+    bx, by, _, _ = cs.bounds()
+    note["engraved_lines"] = 1
+    if th < 3.0:
+        note["small_text_mm"] = round(float(th), 1)
+    if info.get("missing_chars"):
+        note["missing_chars"] = info["missing_chars"]
+    return cs.translate([-bx - tw / 2, -by]), th
+
+
+def socle_mesh(M, S, cx, cy, extras, z_top, overlap, sizes, note):
+    """
+    Turned foot of a modern bust, from the bed up: a round band that carries the name (capitals, bent round the
+    band, facing the viewer at -Y), a bead, a hollow waist and a collar under the chest.
+    """
+    import numpy as np
+    import trimesh
+
+    height, band, r_foot, r_top = sizes["foot"], sizes["band"], sizes["r_foot"], sizes["r_top"]
+    edge = min(1.2, band * 0.15)
+    bead = max(0.8, band * 0.12)
+    collar = max(1.2, height * 0.06)
+    r_collar = r_top * 1.22
+    flare = r_collar - r_top                                  # 45 degrees, prints without supports
+    x0, y0 = r_foot * 0.95, band + bead
+    y1 = height - collar - flare                              # the waist is narrowest here
+    prof = [(0.0, 0.0), (r_foot - edge, 0.0), (r_foot, edge), (r_foot, band), (x0, y0)]
+    for t in np.linspace(0.0, 1.0, 28)[1:]:
+        # a hollow: it leaves the band flat and arrives upright at the waist
+        prof.append((r_top + (x0 - r_top) * (1 - np.sin(t * np.pi / 2)), y0 + (y1 - y0) * (1 - np.cos(t * np.pi / 2))))
+    prof += [(r_collar, y1 + flare), (r_collar, height + overlap), (0.0, height + overlap)]
+    solid = M.CrossSection([np.array(prof, dtype=np.float64)]).revolve(144)
+
+    try:
+        made = raised_name(M, S, extras, band * 0.46, r_foot * np.radians(140), note)
+        if made:
+            cs, th = made
+            raised = max(0.7, band * 0.09)
+            flat = cs.translate([0, edge + (band - edge - th) / 2]).extrude(raised + 0.4).refine_to_length(0.5)
+
+            def bend(v):
+                # x runs round the band, y is the height, the extrusion points out of the band; 0.4 mm sits inside it
+                a, rho = v[0] / r_foot, r_foot - 0.4 + v[2]
+                return [rho * np.sin(a), -rho * np.cos(a), v[1]]
+
+            solid = solid + flat.warp(bend)
+    except Exception as e:  # noqa: BLE001 - a name that cannot be set must never lose the customer their model
+        note["text_error"] = str(e)[:120]
+
+    mesh = solid.translate([cx, cy, z_top - overlap - height]).to_mesh()
+    note["pedestal"] = "socle"
+    note["pedestal_height"] = round(float(height), 1)
+    return trimesh.Trimesh(vertices=np.asarray(mesh.vert_properties)[:, :3], faces=np.asarray(mesh.tri_verts), process=True), note
+
+
+def antique_mesh(M, S, cx, cy, extras, z_top, overlap, sizes, note):
+    """
+    Socle of a Roman bust, from the bed up: a wide foot with a rounded edge, a deep hollow, a drum with a rounded
+    shoulder, and on it the small tablet that carries the name and the bust.
+    """
+    import numpy as np
+    import trimesh
+
+    height, r_foot, r_drum, r_waist = sizes["foot"], sizes["r_foot"], sizes["r_drum"], sizes["r_waist"]
+    tab_h, tab_w, tab_d = sizes["tablet_h"], sizes["tablet_w"], sizes["tablet_d"]
+    turned = height - tab_h
+    foot_h, drum_h = turned * 0.26, turned * 0.34
+    hollow = turned - foot_h - drum_h
+
+    def arc(xc, yc, rad, a0, a1, n=10):
+        t = np.radians(np.linspace(a0, a1, n))
+        return [(xc + rad * np.cos(k), yc + rad * np.sin(k)) for k in t]
+
+    rf = foot_h / 2                                           # the edge of the foot is half a circle
+    prof = [(0.0, 0.0), (r_foot - rf, 0.0)] + arc(r_foot - rf, rf, rf, -90, 90)
+    x0, y0, y1 = r_foot - rf - 0.2, foot_h, foot_h + hollow
+    for t in np.linspace(0.0, 1.0, 26)[1:-1]:
+        # the hollow: in from the foot, narrowest a little above the middle, out again to the drum
+        bulge = np.sin(t * np.pi) ** 0.8
+        line = x0 + (r_drum - x0) * t
+        prof.append((line - (line - r_waist) * bulge, y0 + (y1 - y0) * t))
+    rd = drum_h * 0.3
+    prof += [(r_drum, y1)] + arc(r_drum - rd, turned - rd, rd, 0, 90)[1:] + [(0.0, turned)]
+    solid = M.CrossSection([np.array(prof, dtype=np.float64)]).revolve(144)
+
+    tablet = S.rounded_rect(M, tab_w, tab_d, min(1.0, tab_h * 0.1)).translate([-tab_w / 2, -tab_d / 2]).extrude(tab_h + overlap + 0.3).translate([0, 0, turned - 0.3])
+    solid = solid + tablet
+    try:
+        made = raised_name(M, S, extras, tab_h * 0.5, tab_w * 0.86, note)
+        if made:
+            cs, th = made
+            raised = max(0.7, tab_h * 0.1)
+            flat = cs.extrude(raised + 0.3)
+            # up stays up, the extrusion points at the viewer (-Y); 0.3 mm sits inside the tablet
+            solid = solid + flat.rotate([90, 0, 0]).translate([0, -tab_d / 2 + 0.3, turned + (tab_h - th) / 2])
+    except Exception as e:  # noqa: BLE001
+        note["text_error"] = str(e)[:120]
+
+    mesh = solid.translate([cx, cy, z_top - overlap - height]).to_mesh()
+    note["pedestal"] = "antique"
+    note["pedestal_height"] = round(float(height), 1)
     return trimesh.Trimesh(vertices=np.asarray(mesh.vert_properties)[:, :3], faces=np.asarray(mesh.tri_verts), process=True), note
 
 
@@ -765,28 +1095,61 @@ def main(argv):
                 r = min(r, float(max(m.extents[0], m.extents[1])) * 0.55)   # never much wider than the figure itself
                 ped_h = max(3.0, target * 0.05)
                 overlap = max(2.0, target * 0.035)
-                try:
-                    ped, note = pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_seat + overlap)
-                except Exception as e:  # noqa: BLE001 - fall back to the plain round base
-                    ped = trimesh.creation.cylinder(radius=r, height=ped_h + overlap, sections=96)
-                    ped.apply_translation([cx, cy, z_seat + overlap - (ped_h + overlap) / 2.0])
-                    note = {"pedestal": "round", "pedestal_error": str(e)[:120]}
-                ped_note.update(note)
-                floor = float(ped.bounds[0][2])
-                if float(m.bounds[0][2]) < floor - 0.01:
-                    # whatever hangs below the base (a hand, a strand of hair) would lift the print off the bed
+                whole = m
+                shaped_kinds = tuple(BUST_STYLES)
+                for kind in ([kind, "round"] if kind in ("socle", "antique") else [kind]):
+                    m, ped, joined = whole, None, None
                     try:
-                        cut = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], floor))
-                        m = cut if len(cut.faces) and cut.is_watertight else m
-                    except Exception:
-                        pass
-                joined = None
-                if "solid" in opts and m.is_watertight:
-                    try:
-                        u = from_manifold(as_manifold(m) + as_manifold(ped))
-                        joined = u if len(u.faces) and u.is_watertight else None
-                    except Exception:
-                        joined = None
+                        sizes = None
+                        z_base = float(z_seat)
+                        if kind in shaped_kinds:
+                            if not m.is_watertight:
+                                raise ValueError("open_body")
+                            # nothing of the figure may hang below the cut; then the chest gets the end the style asks for
+                            body, z_base, sizes = bust_shape(kind, as_manifold(m).trim_by_plane([0, 0, 1], float(z_seat)), m, cx, cy, z_seat, r)
+                            shaped = from_manifold(body)
+                            if not (len(shaped.faces) and shaped.is_watertight):
+                                raise ValueError("shape_failed")
+                            m = shaped
+                            ped_note["chest_added"] = sizes["added"]
+                        if kind == "cut":
+                            note = {"pedestal": "cut", "pedestal_height": 0.0}
+                        else:
+                            ped, note = pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_base + overlap, sizes)
+                    except Exception as e:  # noqa: BLE001 - fall back to the plain round base
+                        if kind == "cut":
+                            m, ped, note = whole, None, {"pedestal": "none", "pedestal_error": str(e)[:120]}
+                        elif kind in shaped_kinds:
+                            ped_note = {k: v for k, v in ped_note.items() if k not in ("engraved_lines", "small_text_mm", "chest_added")}
+                            ped_note["socle_fallback"] = str(e)[:120]
+                            continue
+                        else:
+                            ped = trimesh.creation.cylinder(radius=r, height=ped_h + overlap, sections=96)
+                            ped.apply_translation([cx, cy, z_seat + overlap - (ped_h + overlap) / 2.0])
+                            note = {"pedestal": "round", "pedestal_error": str(e)[:120]}
+                    ped_note.update(note)
+                    if ped is None:
+                        joined = m
+                        break
+                    floor = float(ped.bounds[0][2])
+                    if float(m.bounds[0][2]) < floor - 0.01:
+                        # whatever hangs below the base (a hand, a strand of hair) would lift the print off the bed
+                        try:
+                            cut = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], floor))
+                            m = cut if len(cut.faces) and cut.is_watertight else m
+                        except Exception:
+                            pass
+                    if "solid" in opts and m.is_watertight:
+                        try:
+                            u = from_manifold(as_manifold(m) + as_manifold(ped))
+                            joined = u if len(u.faces) and u.is_watertight else None
+                        except Exception:
+                            joined = None
+                    if joined is not None or kind not in shaped_kinds:
+                        break
+                    # a foot narrower than the chest must be one body with it, otherwise the bust floats over it
+                    ped_note = {k: v for k, v in ped_note.items() if k not in ("engraved_lines", "small_text_mm", "chest_added")}
+                    ped_note["socle_fallback"] = "not_joined"
                 m = joined if joined is not None else trimesh.util.concatenate([m, ped])
                 m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
                 m.apply_scale(target / float(max(m.extents)))

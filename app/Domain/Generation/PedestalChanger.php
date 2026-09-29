@@ -15,7 +15,15 @@ use Illuminate\Support\Str;
  */
 final class PedestalChanger
 {
-    public const TYPES = ['round', 'square', 'hexagon', 'column', 'plaque', 'none'];
+    public const TYPES = ['socle', 'antique', 'cut', 'round', 'square', 'hexagon', 'column', 'plaque', 'none'];
+
+    /** Finishes of a sculptor's bust: they shape the chest too, so they are offered for busts first. */
+    public const BUST_STYLES = ['socle', 'antique', 'cut'];
+
+    /** Bases that carry a name; only the plinth has room for a dedication below it. */
+    public const NAMED = ['socle', 'antique', 'plaque'];
+
+    public const DEDICATED = ['plaque'];
 
     public const FRONTS = ['keep', 'left', 'right', 'back'];
 
@@ -62,10 +70,11 @@ final class PedestalChanger
 
         $oldSource = dirname($disk->path($f->storage_path)).'/source.stl';
         $hasSource = is_file($oldSource);
-        $plaque = $pedestal['type'] === 'plaque';
+        $named = in_array($pedestal['type'], self::NAMED, true);
+        $plaque = in_array($pedestal['type'], self::DEDICATED, true);
         $extras = array_filter([
             'pedestal' => $pedestal['type'],
-            'name' => $plaque ? ($pedestal['name'] ?? null) : null,
+            'name' => $named ? ($pedestal['name'] ?? null) : null,
             'dedication' => $plaque ? ($pedestal['dedication'] ?? null) : null,
             'front' => $front,
             'sink' => $sink > 0 ? $sink / 100 : null,
@@ -90,7 +99,7 @@ final class PedestalChanger
             'uuid' => $uuid, 'owner_user_id' => $f->owner_user_id, 'anonymous_session_id' => $f->anonymous_session_id,
             'original_name' => $f->original_name, 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
             'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $f->origin_ref, 'status' => ModelFile::STATUS_UPLOADED,
-            'tool_params' => ['pedestal' => $pedestal['type'], 'name' => $plaque ? (string) ($pedestal['name'] ?? '') : '', 'dedication' => $plaque ? (string) ($pedestal['dedication'] ?? '') : '', 'sink' => $sink, 'tidy' => $tidy],
+            'tool_params' => ['pedestal' => $pedestal['type'], 'name' => $named ? (string) ($pedestal['name'] ?? '') : '', 'dedication' => $plaque ? (string) ($pedestal['dedication'] ?? '') : '', 'sink' => $sink, 'tidy' => $tidy],
         ]);
         ProcessModelFile::dispatch($new->id);
 
