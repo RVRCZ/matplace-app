@@ -14,12 +14,16 @@ use Illuminate\Support\Str;
  * Two-part casting mold around any ready model (engines/python/mold_tool.py): the model is cut out of a box, a pouring
  * funnel goes through the bottom, ball keys align the halves. Both halves come as one STL, parting face up, ready to
  * print. Pure geometry, seconds, nothing paid per piece. The result is a normal ModelFile of kind "mold".
+ * The tool measures how much of the surface a hard mold cannot let go of (report.undercut_pct, report.verdict).
+ * Type "silicone" is for such shapes: a base with the model on it and a sleeve, silicone is poured over the model.
  */
 final class MoldGenerator
 {
     public const WALLS = [6, 8, 10, 12];
 
-    public const AXES = ['auto', 'x', 'y'];
+    public const TYPES = ['rigid', 'silicone'];
+
+    public const AXES = ['auto', 'x', 'y', 'z'];
 
     /** Parting plane position in percent of the model's width along the chosen axis; "auto" = least undercut. */
     public const SPLITS = [30, 40, 50, 60, 70];
@@ -32,7 +36,7 @@ final class MoldGenerator
     }
 
     /**
-     * @param  array{wall?: int, axis?: string, split?: int|string|null}  $p
+     * @param  array{type?: string, wall?: int, axis?: string, split?: int|string|null}  $p
      *
      * @throws EngineException with a short reason code (mold_unavailable, too_small, too_big, not_watertight, mold_failed)
      */
@@ -46,8 +50,9 @@ final class MoldGenerator
             throw new EngineException('mold_failed');
         }
         $params = [
-            'wall' => in_array((int) ($p['wall'] ?? 8), self::WALLS, true) ? (int) $p['wall'] : 8,
-            'axis' => in_array($p['axis'] ?? 'auto', self::AXES, true) ? $p['axis'] : 'auto',
+            'type' => in_array($p['type'] ?? null, self::TYPES, true) ? $p['type'] : 'rigid',
+            'wall' => in_array((int) ($p['wall'] ?? 0), self::WALLS, true) ? (int) $p['wall'] : 8,
+            'axis' => in_array($p['axis'] ?? null, self::AXES, true) ? $p['axis'] : 'auto',
             'split' => in_array((int) ($p['split'] ?? 0), self::SPLITS, true) ? (int) $p['split'] : 'auto',
         ];
 
@@ -57,7 +62,7 @@ final class MoldGenerator
         File::ensureDirectoryExists(dirname($abs));
 
         $r = $this->python->runScript('mold_tool.py', [$stl, $abs, json_encode([
-            'wall' => $params['wall'], 'axis' => $params['axis'], 'split' => $params['split'] === 'auto' ? 'auto' : $params['split'] / 100,
+            'type' => $params['type'], 'wall' => $params['wall'], 'axis' => $params['axis'], 'split' => $params['split'] === 'auto' ? 'auto' : $params['split'] / 100,
         ])], 180);
         if (empty($r['ok']) || ! is_file($abs)) {
             File::deleteDirectory(dirname($abs));
@@ -68,9 +73,9 @@ final class MoldGenerator
         $name = Str::slug(pathinfo($src->original_name, PATHINFO_FILENAME)) ?: 'model';
         $file = ModelFile::create([
             'uuid' => $uuid, 'owner_user_id' => $src->owner_user_id, 'anonymous_session_id' => $src->anonymous_session_id,
-            'original_name' => $name.'-mold.stl', 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
+            'original_name' => $name.($params['type'] === 'silicone' ? '-silicone-mold.stl' : '-mold.stl'), 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => filesize($abs), 'sha256' => hash_file('sha256', $abs),
             'storage_path' => $rel, 'origin' => 'tool', 'origin_ref' => 'mold', 'status' => ModelFile::STATUS_UPLOADED,
-            'tool_params' => $params + ['source' => $src->uuid, 'report' => array_intersect_key($r, array_flip(['axis', 'split_mm', 'undercut_pct', 'box', 'plate', 'resin_ml', 'mold_cm3', 'keys', 'wall', 'warnings']))],
+            'tool_params' => $params + ['source' => $src->uuid, 'report' => array_intersect_key($r, array_flip(['type', 'axis', 'angle_deg', 'split_mm', 'undercut_pct', 'verdict', 'box', 'sleeve', 'plate', 'resin_ml', 'silicone_ml', 'mold_cm3', 'keys', 'wall', 'warnings']))],
         ]);
         ProcessModelFile::dispatch($file->id);
 

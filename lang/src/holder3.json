@@ -1,0 +1,12 @@
+{
+    "param.f.holder.clearance": [
+        "Vůle kolem věci",
+        "Clearance around the thing",
+        "Holgura alrededor del objeto"
+    ],
+    "param.f.holder.radius": [
+        "Zaoblení předních rohů",
+        "Rounding of the front corners",
+        "Redondeo de las esquinas delanteras"
+    ]
+}

@@ -226,6 +226,14 @@ class ToolsFlowTest extends TestCase
             @unlink($stl);
         }
         $this->get('/tools/holder?lang=cs')->assertSee('data-when="style=hook"', false)->assertSee('data-when="mount=on"', false)->assertSee('Výška háku')->assertSee('Zavěšení na šroub');
+        $this->get('/tools/holder?lang=cs')->assertSee('Vůle kolem věci')->assertDontSee('Vůle víčka')->assertSee('data-when="style=cradle,pocket"', false);
+        $this->get('/tools/box?lang=cs')->assertSee('Vůle víčka');
+        // the pocket seen from above: round front corners take plastic away, the size stays
+        $pocket = ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90];
+        $square = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $pocket + ['radius' => 0]])->assertOk());
+        $rounded = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $pocket + ['radius' => 12]])->assertOk());
+        $this->assertLessThan($square['volume_mm3'] - 500, $rounded['volume_mm3']);
+        $this->assertSame($square['bbox'], $rounded['bbox']);
         // the hook: its own height, bends of a chosen radius, softened edges, keyholes; every one of them a closed body
         $hook = ['style' => 'hook', 'obj_w' => 30, 'obj_d' => 25, 'wall' => 3, 'clearance' => 0.8, 'mount' => true];
         $low = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $hook + ['hook_h' => 20, 'bend' => 0, 'edge' => 0, 'radius' => 0]])->assertOk());
@@ -237,8 +245,8 @@ class ToolsFlowTest extends TestCase
         $this->assertLessThan($low['volume_mm3'] - 100, $bent['volume_mm3'], 'round bends take the corners away');
         $this->assertEqualsWithDelta($low['bbox']['x'], $bent['bbox']['x'], 0.01);
         foreach ([['holes' => 'round', 'edge' => 0.8], ['holes' => 'keyhole', 'edge' => 1.2], ['holes' => 'keyhole', 'edge' => 0, 'bend' => 12]] as $extra) {
-            foreach (['hook', 'clip', 'pocket'] as $style) {
-                $r = $this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $extra + ['style' => $style] + $hook])->assertOk();
+            foreach (['hook', 'clip', 'pocket', 'cradle'] as $style) {
+                $r = $this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $extra + ['style' => $style, 'radius' => 8] + $hook])->assertOk();
                 $m = $meta($r);
                 $this->assertSame($extra['holes'], $m['notes']['holes']);
                 $stl = tempnam(sys_get_temp_dir(), 'hold').'.stl';

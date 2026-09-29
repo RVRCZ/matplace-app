@@ -55,7 +55,7 @@ final class ParametricGenerator
             'bridge' => [0.8, 3, 1.4, 0.2], 'cable' => [3, 10, 5, 0.5], 'clearance' => [0.1, 0.6, 0.25, 0.05],
         ],
         'holder' => ['obj_w' => [10, 300, 50, 1], 'obj_d' => [5, 150, 25, 1], 'height' => [15, 150, 60, 1], 'hook_h' => [10, 150, 30, 1], 'bend' => [0, 40, 6, 0.5], 'edge' => [0, 2, 1, 0.1],
-            'wall' => [2, 6, 3, 0.5], 'clearance' => [0.3, 2, 0.8, 0.1], 'radius' => [0, 4, 1.5, 0.1]],
+            'wall' => [2, 6, 3, 0.5], 'clearance' => [0.3, 2, 0.8, 0.1], 'radius' => [0, 12, 1.5, 0.5]],
         'cap' => ['size_a' => [8, 200, 40, 0.1], 'size_b' => [8, 200, 30, 0.1], 'height' => [4, 60, 12, 1], 'wall' => [1.2, 4, 2, 0.2], 'top' => [1.2, 5, 2, 0.2], 'clearance' => [0.1, 1, 0.3, 0.05], 'pitch' => [1, 6, 3, 0.05]],
         'cutter' => ['width' => [30, 150, 70, 1], 'height' => [10, 30, 18, 1], 'wall' => [0.8, 1.6, 1.0, 0.2], 'flange' => [3, 10, 5, 1], 'flange_t' => [1, 2.5, 1.6, 0.1]],
     ];
@@ -104,7 +104,7 @@ final class ParametricGenerator
         'sign' => ['radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']],
             'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']]],
         'holder' => ['obj_d' => ['style', ['cradle', 'pocket', 'hook']], 'height' => ['style', ['cradle', 'pocket', 'clip']], 'hook_h' => ['style', ['hook']], 'bend' => ['style', ['hook']],
-            'edge' => ['style', ['hook', 'clip']], 'holes' => ['mount', ['on']]],
+            'edge' => ['style', ['hook', 'clip']], 'holes' => ['mount', ['on']], 'radius' => ['style', ['cradle', 'pocket']], 'clearance' => ['style', ['cradle', 'pocket', 'hook']]],
         'cap' => ['size_b' => ['shape', ['rect']], 'pitch' => ['style', ['thread']], 'grip' => ['style', ['push', 'thread']], 'head' => ['style', ['push']]],
     ];
 
@@ -134,7 +134,7 @@ final class ParametricGenerator
         ],
         'holder' => [
             'remote' => ['style' => 'cradle', 'obj_w' => 50, 'obj_d' => 22, 'height' => 70],
-            'bottle' => ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90],
+            'bottle' => ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90, 'radius' => 12],
             'headphones' => ['style' => 'hook', 'obj_w' => 35, 'obj_d' => 45, 'hook_h' => 25, 'bend' => 15],
             'broom' => ['style' => 'clip', 'obj_w' => 24, 'height' => 25],
         ],

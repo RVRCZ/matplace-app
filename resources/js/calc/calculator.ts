@@ -1,4 +1,5 @@
 import { BufferGeometry } from 'three';
+import { moldReport } from './mold';
 import { Viewer } from './viewer';
 import { loadGeometry, loadGeometryFromUrl, extensionOf, BROWSER_FORMATS } from './loaders';
 import { stats, normaliseUnits, GeoStats } from './geometry';
@@ -640,13 +641,7 @@ function showMold(file: FileInfo | null): void {
     box.classList.toggle('hidden', !file || file.status !== 'ready' || isMold);
     report.classList.toggle('hidden', !isMold || !file?.mold);
     if (isMold && file?.mold) {
-        const m = file.mold;
-        const nf = new Intl.NumberFormat(document.documentElement.lang || 'cs', { maximumFractionDigits: 1 });
-        report.textContent = [
-            t('mold.report', { w: nf.format(m.box[0]), d: nf.format(m.box[1]), h: nf.format(m.box[2]), ml: nf.format(m.resin_ml), wall: m.wall }),
-            m.warnings.includes('undercuts') ? t('mold.report.undercuts', { pct: nf.format(m.undercut_pct) }) : '',
-            m.warnings.includes('large_mold') ? t('mold.report.large') : '',
-        ].filter(Boolean).join(' ');
+        report.textContent = moldReport(file.mold, t).map((l) => l.text).join(' ');
     }
     if (!file || isMold) return;
     const msg = $('mold-msg'); const btn = box.querySelector('button') as HTMLButtonElement;

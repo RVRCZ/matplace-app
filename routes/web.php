@@ -205,6 +205,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/tuning/{row}/adopt/{order}', [$tuning, 'adopt'])->name('tuning.adopt');
     Route::post('/tuning/{row}/evaluate/{order}', [$tuning, 'evaluate'])->name('tuning.evaluate');
     Route::post('/tuning/{row}/apply/{order}', [$tuning, 'apply'])->name('tuning.apply');
+    Route::post('/tuning/{row}/hide/{order}', [$tuning, 'hide'])->name('tuning.hide');
 
     $photos = FarmTestPhotoController::class;
     Route::get('/photobox', [$photos, 'box'])->name('photobox');

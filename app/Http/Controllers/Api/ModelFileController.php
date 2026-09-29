@@ -82,7 +82,7 @@ class ModelFileController extends Controller
         return response()->json(['file' => UploadController::describe($new)], 201);
     }
 
-    /** POST /api/files/{uuid}/mold {wall?, axis?, split?} — two-part casting mold around this model; answers with the new file */
+    /** POST /api/files/{uuid}/mold {type?, wall?, axis?, split?} — casting mold around this model (printed two-part, or for silicone); answers with the new file */
     public function mold(Request $request, ModelFile $modelFile, MoldGenerator $molds): JsonResponse
     {
         abort_unless($modelFile->isReady() && $modelFile->kind() !== 'mold', 404);
@@ -90,6 +90,7 @@ class ModelFileController extends Controller
             return response()->json(['error' => 'mold_unavailable'], 503);
         }
         $data = $request->validate([
+            'type' => ['nullable', 'in:'.implode(',', MoldGenerator::TYPES)],
             'wall' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::WALLS)],
             'axis' => ['nullable', 'in:'.implode(',', MoldGenerator::AXES)],
             'split' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::SPLITS)],

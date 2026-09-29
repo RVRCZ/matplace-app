@@ -42,9 +42,12 @@ class FarmTuningController extends Controller
         ]);
     }
 
-    public function edit(FarmPrinterMaterial $row): View
+    public function edit(Request $request, FarmPrinterMaterial $row): View
     {
         $row->load(['printer.slots.color.material', 'material', 'color']);
+        // a hidden test is out of the way, not gone: its photos, evaluation and number stay (notes and history cite them)
+        $showHidden = $request->boolean('skryte');
+        $hidden = $row->testOrders()->where('test_params->hidden', true)->count();
         $effective = PrintProfile::for($row->printer, $row->material, $row->color);
         $slots = $row->printer->slots->filter(fn (FarmPrinterSlot $s) => $s->color && $s->color->farm_material_id === $row->farm_material_id
             && (! $row->farm_color_id || $s->farm_color_id === $row->farm_color_id));
@@ -53,7 +56,11 @@ class FarmTuningController extends Controller
             'row' => $row,
             'effective' => $effective,
             'slots' => $slots->values(),
-            'tests' => $row->testOrders()->with(['printJobs', 'modelFile'])->limit(20)->get(),
+            'tests' => $row->testOrders()->with(['printJobs', 'modelFile'])
+                ->when(! $showHidden, fn ($q) => $q->where(fn ($q) => $q->whereNull('test_params->hidden')->orWhere('test_params->hidden', false)))
+                ->limit(20)->get(),
+            'hiddenTests' => $hidden,
+            'showHidden' => $showHidden,
             'objects' => TestPrintService::OBJECTS,
             'generator' => $this->tests->available(),
         ]);
@@ -178,7 +185,9 @@ class FarmTuningController extends Controller
         }
         $row->revise($this->ownValues($row, (array) $proposal['overrides']), 'test', 'návrh z testu '.$order->number, FarmPrinterMaterial::STATUS_TESTING);
 
-        return redirect()->route('admin.farm.tuning.edit', $row)->with('status', 'Návrh je uložený jako verze '.$row->version.'. Vytiskněte další test.');
+        return redirect()->route('admin.farm.tuning.edit', $row)->withFragment('test-'.$order->id)
+            ->with('status', $order->number.': navržené úpravy jsou v řádku jako verze '.$row->version.' (stav Testuje se). Tisky '
+                .$row->label().' na '.$row->printer->name.' už pojedou s nimi – vytiskněte další test, ať víte, jestli pomohly.');
     }
 
     /** Values the kind already states stay the kind's: only what differs lives on the row. */
@@ -199,6 +208,20 @@ class FarmTuningController extends Controller
         return $candidate;
     }
 
+    /** A test out of the list (or back in): nothing is deleted, the number keeps its photos, evaluation and history. */
+    public function hide(Request $request, FarmPrinterMaterial $row, FarmOrder $order): RedirectResponse
+    {
+        abort_unless($order->isTest() && $order->farm_printer_material_id === $row->id, 404);
+        $hide = ! $request->boolean('show');
+        if ($hide && in_array($order->status, [FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_SLICED, FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING], true)) {
+            return back()->with('error', $order->number.' ještě běží, skrýt jde až hotový nebo zrušený test.');
+        }
+        $order->forceFill(['test_params' => ['hidden' => $hide] + (array) $order->test_params])->save();
+
+        return redirect()->route('admin.farm.tuning.edit', $hide ? $row : [$row, 'skryte' => 1])->withFragment($hide ? 'testy' : 'test-'.$order->id)
+            ->with('status', $hide ? $order->number.' je skrytý. Najdete ho pod „Zobrazit skryté testy“.' : $order->number.' je zase v seznamu.');
+    }
+
     /** "This test printed well": the row takes over what the test was printed with. */
     public function adopt(Request $request, FarmPrinterMaterial $row, FarmOrder $order): RedirectResponse
     {
@@ -217,11 +240,20 @@ class FarmTuningController extends Controller
             $candidate['nozzle_temp_first'] = (int) $data['nozzle_temp'] + 5;
         }
         $row->forceFill(['score' => $data['score'] ?? $row->score, 'tested_at' => now()]);
+        $before = $row->version;
         $row->revise($this->ownValues($row, $candidate), 'test', ($data['note'] ?? null) ?: 'z testu '.$order->number, FarmPrinterMaterial::STATUS_TUNED);
+        if ($row->version === $before) {
+            // the test printed with exactly what the row holds: no new version, so the confirmation goes to the notes
+            // (T26-000021 on 29 Sep 2026 changed only the state, and nothing showed which test had confirmed it)
+            $line = 'Potvrzeno testem '.$order->number.' ('.$score.'/5), '.now()->format('j. n. Y').(! empty($data['note']) ? ': '.$data['note'] : '').'.';
+            $row->forceFill(['notes' => mb_substr(trim(($row->notes ? $row->notes."\n" : '').$line), -2000)])->save();
+        }
         if ($data['score'] ?? null) {
             $order->forceFill(['quality_rating' => (int) $data['score']])->save();
         }
 
-        return redirect()->route('admin.farm.tuning.edit', $row)->with('status', __('farm.admin.saved'));
+        return redirect()->route('admin.farm.tuning.edit', $row)->withFragment('test-'.$order->id)
+            ->with('status', $order->number.': '.($row->version === $before ? 'nastavení se shoduje s řádkem, hodnoty beze změny' : 'nastavení testu je v řádku jako verze '.$row->version)
+                .'; řádek je Vyladěný. Tisky '.$row->label().' na '.$row->printer->name.' s ním pojedou. Jiné tiskárny se nemění.');
     }
 }

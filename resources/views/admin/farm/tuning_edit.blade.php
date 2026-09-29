@@ -101,14 +101,34 @@
             @endif
         </form>
 
-        <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
-            <h2 class="font-bold">Testy</h2>
+        <section id="testy" class="scroll-mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 class="font-bold">Testy</h2>
+                @if($showHidden)
+                    <a class="text-xs underline" href="{{ route('admin.farm.tuning.edit', $row) }}#testy">Schovat skryté testy</a>
+                @elseif($hiddenTests)
+                    <a class="text-xs underline" href="{{ route('admin.farm.tuning.edit', [$row, 'skryte' => 1]) }}#testy">Zobrazit skryté testy ({{ $hiddenTests }})</a>
+                @endif
+            </div>
+            <ol class="mt-2 list-decimal space-y-1 rounded-lg bg-slate-50 p-2 pl-6 text-xs text-slate-600">
+                <li><strong>Uložit hodnocení</strong> – zapíšete, co jste na výtisku viděli, a poradce z toho navrhne úpravy. Tisky se tím nemění.</li>
+                <li><strong>Zkusit navržené úpravy</strong> – úpravy se zapíšou do řádku jako nová verze (stav Testuje se) a <em>tisky už pojedou s nimi</em>. Potom vytiskněte další test.</li>
+                <li><strong>Test je dobrý – označit jako vyladěné</strong> – řádek dostane přesně to nastavení, se kterým se test tiskl, a stav Vyladěno. Platí jen pro tento materiál na této tiskárně; doporučené úpravy se nepřevezmou.</li>
+            </ol>
             @forelse($tests as $t)
                 @php $c = (array) ($t->test_params['candidate'] ?? []); $temps = $t->test_params['temps'] ?? null; @endphp
-                <div class="mt-2 rounded-xl border border-slate-200 p-3">
+                @php $isHidden = ! empty($t->test_params['hidden']); $running = in_array($t->status, ['uploaded', 'sliced', 'queued', 'printing'], true); @endphp
+                <div id="test-{{ $t->id }}" class="mt-2 scroll-mt-4 rounded-xl border border-slate-200 p-3 target:border-action target:ring-2 target:ring-action/40 {{ $isHidden ? 'opacity-60' : '' }}">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <a class="font-semibold underline" href="{{ route('admin.farm.orders.show', $t) }}">{{ $t->number }}</a>
-                        <span class="text-xs">{{ __('farm.test.object.'.($t->test_params['object'] ?? 'quick')) }} · {{ __('farm.status.'.$t->status) }} · {{ $t->created_at->format('j. n. H:i') }}</span>
+                        <span class="flex flex-wrap items-center gap-2 text-xs">
+                            {{ __('farm.test.object.'.($t->test_params['object'] ?? 'quick')) }} · {{ __('farm.status.'.$t->status) }} · {{ $t->created_at->format('j. n. H:i') }}
+                            @if($isHidden)
+                                <form method="post" action="{{ route('admin.farm.tuning.hide', [$row, $t]) }}">@csrf<input type="hidden" name="show" value="1"><button class="underline" title="Test se vrátí do seznamu">vrátit do seznamu</button></form>
+                            @elseif(! $running)
+                                <form method="post" action="{{ route('admin.farm.tuning.hide', [$row, $t]) }}" data-confirm="Skrýt {{ $t->number }} ze seznamu? Nic se nemaže – fotky i hodnocení zůstanou a test jde kdykoli vrátit.">@csrf<button class="rounded border border-slate-300 px-1.5 text-slate-600 hover:bg-slate-100" title="Zmizí ze seznamu, nic se nemaže">skrýt</button></form>
+                            @endif
+                        </span>
                     </div>
                     <p class="mt-1 text-xs text-slate-600">tryska {{ $c['nozzle_temp'] ?? '—' }} °C · podložka {{ $c['bed_temp'] ?? '—' }} °C · verze řádku {{ $t->test_params['row_version'] ?? '?' }}@if(! empty($t->test_params['ironing'])) · ironing {{ $c['process']['ironing_flow'] ?? '' }} / {{ $c['process']['ironing_speed'] ?? '' }} mm/s / {{ $c['process']['ironing_spacing'] ?? '' }} mm @endif @if($t->quality_rating) · {{ str_repeat('★', $t->quality_rating) }}@endif</p>
                     @if($temps)<p class="mt-1 text-xs text-slate-600">patra zdola: {{ implode(' · ', array_map(fn ($i, $v) => ($i + 1).': '.$v.' °C', array_keys($temps), $temps)) }}</p>@endif
@@ -119,7 +139,7 @@
                             if ($aiF) { foreach ($aiF as $k => $f) { if (! array_key_exists($k, $res) && ($f['value'] ?? null) !== null) { $res[$k] = $f['value']; } } if (! isset($res['score']) && ! empty($ai['score'])) { $res['score'] = $ai['score']; } if (! isset($res['note']) && ! empty($ai['note'])) { $res['note'] = $ai['note']; } }
                             $photoList = (array) ($t->test_params['photos'] ?? []); @endphp
                         @include('admin.farm.partials.test_photos', ['t' => $t, 'photoList' => $photoList, 'ai' => $ai, 'evaluated' => ! empty($t->test_params['result'])])
-                        <details id="test-{{ $t->id }}" class="mt-2 rounded-lg bg-slate-50 p-2 text-xs" @if(! $adv) open @endif>
+                        <details class="mt-2 rounded-lg bg-slate-50 p-2 text-xs" @if(! $adv) open @endif>
                             <summary class="cursor-pointer font-semibold">Vyhodnocení {{ $res ? '✓' : '' }}</summary>
                             <form method="post" action="{{ route('admin.farm.tuning.evaluate', [$row, $t]) }}" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                                 @csrf
@@ -148,7 +168,10 @@
                                 @if($aiF && empty($t->test_params['result']))
                                     <p class="col-span-2 rounded-lg bg-amber-50 p-2 text-amber-900 sm:col-span-3">Předvyplněno podle AI z fotek. Zkontrolujte, opravte a teprve pak odešlete.</p>
                                 @endif
-                                <button class="btn-quiet !min-h-0 !py-1 text-xs col-span-2 sm:col-span-3">Vyhodnotit a navrhnout úpravy</button>
+                                <div class="col-span-2 sm:col-span-3">
+                                    <button class="btn-quiet !min-h-0 !py-1 text-xs">1 · Uložit hodnocení</button>
+                                    <p class="mt-1 text-slate-500">Zapíše hodnocení k testu a poradce navrhne úpravy. Na tisky zatím nic nemění.</p>
+                                </div>
                             </form>
                             @if(is_array($adv))
                                 <div class="mt-3 rounded-lg border border-slate-200 bg-white p-2">
@@ -160,15 +183,18 @@
                                     @endforelse
                                     @foreach($adv['notes'] ?? [] as $n)<p class="mt-1 text-amber-900">⚠ {{ $n }}</p>@endforeach
                                     @if(! empty($adv['advice']))
-                                        <form method="post" action="{{ route('admin.farm.tuning.apply', [$row, $t]) }}" class="mt-2">@csrf<button class="btn-primary !min-h-0 !py-1 text-xs">Uložit návrh jako novou verzi a testovat znovu</button></form>
+                                        <form method="post" action="{{ route('admin.farm.tuning.apply', [$row, $t]) }}" class="mt-2" data-confirm="Zapsat navržené úpravy do řádku? Tisky {{ $row->label() }} na {{ $row->printer->name }} s nimi hned pojedou.">@csrf
+                                            <button class="btn-primary !min-h-0 !py-1 text-xs">2 · Zkusit navržené úpravy</button>
+                                            <p class="mt-1 text-slate-500">Úpravy se zapíšou do řádku jako nová verze (stav Testuje se) a tisky tohoto materiálu na této tiskárně už pojedou s nimi. Potom vytiskněte další test.</p>
+                                        </form>
                                     @endif
                                 </div>
                             @endif
                         </details>
                         @if($t->quality_rating && $t->quality_rating < 4)
-                            <p class="mt-2 text-xs text-slate-500">Test má hodnocení {{ $t->quality_rating }}/5, převzít jako vyladěný nejde. Použijte návrh úprav výše.</p>
+                            <p class="mt-2 text-xs text-slate-500">Test má hodnocení {{ $t->quality_rating }}/5, jako vyladěné ho označit nejde. Použijte krok 2 · Zkusit navržené úpravy.</p>
                         @else
-                        <form method="post" action="{{ route('admin.farm.tuning.adopt', [$row, $t]) }}" class="mt-2 flex flex-wrap items-end gap-2 text-xs" onsubmit="return confirm('Opravdu je nastavení tohoto testu vyladěné? Řádek se označí jako hotový a tiskne se s ním.')">
+                        <form method="post" action="{{ route('admin.farm.tuning.adopt', [$row, $t]) }}" class="mt-2 flex flex-wrap items-end gap-2 text-xs" data-confirm="{{ $t->number }} tiskl dobře? Řádek {{ $row->label() }} na {{ $row->printer->name }} dostane nastavení tohoto testu a stav Vyladěno.">
                             @csrf
                             @if($temps)
                                 <label class="{{ $lb }}">Nejlepší patro
@@ -177,7 +203,8 @@
                             @endif
                             <label class="{{ $lb }}">Hodnocení<select name="score" class="rounded-lg border border-slate-300 px-2 py-1"><option value="">—</option>@foreach([5, 4] as $q)<option value="{{ $q }}" @selected($t->quality_rating == $q)>{{ $q }}</option>@endforeach</select></label>
                             <input name="note" maxlength="300" placeholder="co test ukázal" class="rounded-lg border border-slate-300 px-2 py-1">
-                            <button class="btn-quiet !min-h-0 !py-1 text-xs">Převzít nastavení testu → vyladěno</button>
+                            <button class="btn-quiet !min-h-0 !py-1 text-xs">3 · Test je dobrý – označit jako vyladěné</button>
+                            <p class="w-full text-slate-500">Řádek dostane přesně to nastavení, se kterým se {{ $t->number }} tiskl, a stav Vyladěno. Platí pro {{ $row->label() }} na {{ $row->printer->name }}; jiné tiskárny se nemění a doporučené úpravy se nepřevezmou.</p>
                         </form>
                         @endif
                     @endif
@@ -186,6 +213,12 @@
                 <p class="mt-1 text-slate-500">Zatím žádný test.</p>
             @endforelse
         </section>
+        <script>
+            document.querySelectorAll('form[data-confirm]').forEach((f) => f.addEventListener('submit', (e) => { if (! confirm(f.dataset.confirm)) e.preventDefault(); }));
+            // the anchor jump happens before the test photos have loaded; they push the card down and the screen ended
+            // up on another test (29 Sep 2026) - once everything is in, go to the card again
+            window.addEventListener('load', () => { const t = location.hash && document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView({ block: 'start' }); });
+        </script>
     </div>
 </div>
 @endsection
