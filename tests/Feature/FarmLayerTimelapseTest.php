@@ -86,6 +86,14 @@ M83
 '.$many, ['park_x' => 240, 'park_y' => 250], 250, 250));
     }
 
+    public function test_a_new_printer_starts_with_the_time_lapse_on_an_existing_one_without_a_setting_stays_off(): void
+    {
+        $this->assertSame('always', (new FarmPrinter(['bed_x' => 250, 'bed_y' => 250]))->timelapseSettings()['mode']);
+        $saved = new FarmPrinter(['bed_x' => 250, 'bed_y' => 250]);
+        $saved->exists = true;
+        $this->assertSame('off', $saved->timelapseSettings()['mode']);
+    }
+
     public function test_absolute_extrusion_or_a_file_without_markers_is_left_alone(): void
     {
         $this->assertSame("M82\n".self::ORCA, TimelapseGcode::apply("M82\n".self::ORCA, ['park_x' => 1, 'park_y' => 1]));

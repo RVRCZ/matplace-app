@@ -59,11 +59,15 @@ class FarmPrinter extends Model
     /** Layer-synced time-lapse: off | consent (only orders whose customer agreed to YouTube) | always. */
     public const TIMELAPSE_MODES = ['off', 'consent', 'always'];
 
-    /** The time-lapse settings with defaults: park in the back corner, one second still, centred square for Shorts. */
+    /**
+     * The time-lapse settings with defaults: park in the back corner, one second still, centred square for Shorts.
+     * A new printer starts with it on (Roman, 30 Sep 2026: the layer time-lapse Shorts get the views); a machine
+     * saved before without a setting stays off.
+     */
     public function timelapseSettings(): array
     {
         return array_merge([
-            'mode' => 'off', 'park_x' => (float) $this->bed_x, 'park_y' => (float) $this->bed_y, 'dwell_ms' => 1000, 'lift_mm' => 0.6,
+            'mode' => $this->exists ? 'off' : 'always', 'park_x' => (float) $this->bed_x, 'park_y' => (float) $this->bed_y, 'dwell_ms' => 1000, 'lift_mm' => 0.6,
             'travel_mm_s' => 200, 'crop_x' => null, 'crop_y' => null, 'crop_size' => null,
         ], array_filter((array) $this->timelapse, fn ($v) => $v !== null && $v !== ''));
     }
