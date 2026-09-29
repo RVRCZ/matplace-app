@@ -164,7 +164,8 @@
                     <span>{!! __('farm.order.terms', ['url' => route('farm.terms')]) !!}</span>
                 </label>
                 <label class="mt-2 flex items-start gap-2 text-sm text-slate-700">
-                    <input type="checkbox" id="farm-video-consent" class="mt-1 h-4 w-4 accent-action">
+                    {{-- ticked in advance (the customer unticks it); never for models that may show a person or a private photo --}}
+                    <input type="checkbox" id="farm-video-consent" class="mt-1 h-4 w-4 accent-action" @checked(! in_array($order->modelFile?->kind(), \App\Domain\YouTube\FarmVideos::PRIVATE_KINDS, true))>
                     <span>{{ __('youtube.consent.label') }}</span>
                 </label>
 

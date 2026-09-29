@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\Storage;
  */
 class FarmVideos
 {
+    /** Models made from photos (busts and figures, lithophanes, reliefs): may show a person, so the consent box starts empty. */
+    public const PRIVATE_KINDS = ['generated', 'lithophane', 'relief'];
+
     public function __construct(private readonly YouTubeClient $youtube) {}
 
     /** A finished customer print with a time-lapse whose owner agreed to share it. */

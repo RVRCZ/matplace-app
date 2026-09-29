@@ -178,6 +178,16 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(FarmVideo::STATUS_UPLOADED, $order->video()->first()->status);
     }
 
+    public function test_the_consent_box_starts_ticked_except_for_models_from_photos(): void
+    {
+        $order = $this->paidOrder(consent: false);
+        $order->forceFill(['status' => FarmOrder::STATUS_SLICED])->save();
+        $page = fn () => $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/id="farm-video-consent"[^>]*checked/', $page());
+        $order->modelFile->forceFill(['origin' => 'generated'])->save();
+        $this->assertDoesNotMatchRegularExpression('/id="farm-video-consent"[^>]*checked/', $page());
+    }
+
     public function test_somebody_else_cannot_change_the_consent(): void
     {
         $order = $this->paidOrder(consent: false);
