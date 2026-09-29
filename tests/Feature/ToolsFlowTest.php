@@ -225,6 +225,35 @@ class ToolsFlowTest extends TestCase
             }
             @unlink($stl);
         }
+        $this->get('/tools/holder?lang=cs')->assertSee('data-when="style=hook"', false)->assertSee('data-when="mount=on"', false)->assertSee('Výška háku')->assertSee('Zavěšení na šroub');
+        // the hook: its own height, bends of a chosen radius, softened edges, keyholes; every one of them a closed body
+        $hook = ['style' => 'hook', 'obj_w' => 30, 'obj_d' => 25, 'wall' => 3, 'clearance' => 0.8, 'mount' => true];
+        $low = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $hook + ['hook_h' => 20, 'bend' => 0, 'edge' => 0, 'radius' => 0]])->assertOk());
+        $high = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $hook + ['hook_h' => 70, 'bend' => 0, 'edge' => 0, 'radius' => 0]])->assertOk());
+        $this->assertEqualsWithDelta(20, $low['notes']['inner'][2], 0.01);
+        $this->assertEqualsWithDelta(70, $high['notes']['inner'][2], 0.01);
+        $this->assertEqualsWithDelta(50, $high['bbox']['y'] - $low['bbox']['y'], 0.01, 'the plate behind the hook grows with it');
+        $bent = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $hook + ['hook_h' => 20, 'bend' => 10, 'edge' => 0, 'radius' => 0]])->assertOk());
+        $this->assertLessThan($low['volume_mm3'] - 100, $bent['volume_mm3'], 'round bends take the corners away');
+        $this->assertEqualsWithDelta($low['bbox']['x'], $bent['bbox']['x'], 0.01);
+        foreach ([['holes' => 'round', 'edge' => 0.8], ['holes' => 'keyhole', 'edge' => 1.2], ['holes' => 'keyhole', 'edge' => 0, 'bend' => 12]] as $extra) {
+            foreach (['hook', 'clip', 'pocket'] as $style) {
+                $r = $this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $extra + ['style' => $style] + $hook])->assertOk();
+                $m = $meta($r);
+                $this->assertSame($extra['holes'], $m['notes']['holes']);
+                $stl = tempnam(sys_get_temp_dir(), 'hold').'.stl';
+                file_put_contents($stl, $r->streamedContent());
+                $this->assertTrue(StlTopology::check($stl)['watertight'], $style.' '.json_encode($extra));
+                @unlink($stl);
+            }
+        }
+        $sharp = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $hook + ['edge' => 0]])->assertOk());
+        $soft = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $hook + ['edge' => 1.2]])->assertOk());
+        $this->assertLessThan($sharp['volume_mm3'], $soft['volume_mm3']);
+        $this->assertEqualsWithDelta($sharp['bbox']['z'], $soft['bbox']['z'], 0.01, 'softened edges keep the width');
+        $narrow = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'holder', 'params' => ['style' => 'hook', 'obj_w' => 10, 'holes' => 'keyhole']])->assertStatus(422);
+        $this->assertStringContainsString('15', $narrow->json('errors.params.0'));
+
         $clip = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => ['style' => 'clip', 'obj_w' => 24, 'height' => 25]])->assertOk());
         $this->assertSame([24], array_map('intval', $clip['notes']['inner']));
         $wide = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'holder', 'params' => ['style' => 'clip', 'obj_w' => 80]])->assertStatus(422);

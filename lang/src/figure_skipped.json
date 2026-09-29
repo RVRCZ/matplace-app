@@ -1,0 +1,12 @@
+{
+    "figure.skipped_view": [
+        "Fotka „:view“ se nepoužila.",
+        "The \":view\" photo was not used.",
+        "La foto «:view» no se ha usado."
+    ],
+    "figure.views.tips": [
+        "Stejná vzdálenost a světlo jako u přední fotky, otočte se o 90° (zleva, zezadu, zprava). Stačí i jedna další strana. Fotku, kterou nepůjde použít, vynecháme a model vytvoříme z ostatních.",
+        "Same distance and light as the front photo, turn 90° each time (left, back, right). Even one extra side helps. A photo we cannot use is left out and the model is made from the others.",
+        "Misma distancia y luz que la foto frontal, gire 90° cada vez (izquierda, atrás, derecha). Con un lado más ya ayuda. Si una foto no se puede usar, la omitimos y creamos el modelo con las demás."
+    ]
+}

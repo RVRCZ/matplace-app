@@ -23,7 +23,8 @@ LIMITS = {
     "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6), "radius": (0, 30), "cable_d": (3, 30)},
     "phone_stand": {"width": (50, 260), "device": (7, 20), "angle": (35, 80), "back": (60, 200), "thickness": (3, 8), "radius": (0, 4), "depth": (40, 120), "vent": (1, 4)},
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
-    "holder": {"obj_w": (10, 300), "obj_d": (5, 150), "height": (15, 150), "wall": (2, 6), "clearance": (0.3, 2), "radius": (0, 4)},
+    "holder": {"obj_w": (10, 300), "obj_d": (5, 150), "height": (15, 150), "wall": (2, 6), "clearance": (0.3, 2), "radius": (0, 4),
+               "hook_h": (10, 150), "bend": (0, 40), "edge": (0, 2)},
     "cap": {"size_a": (8, 200), "size_b": (8, 200), "height": (4, 60), "wall": (1.2, 4), "top": (1.2, 5), "clearance": (0.1, 1), "pitch": (1, 6)},
     "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
 }
@@ -325,6 +326,40 @@ def _wedge_profile(M, device, angle, depth, r):
     return block - slot, front, height, depth
 
 
+def _bowl(M, w, h, rad):
+    """A rectangle whose two bottom corners are round."""
+    C = M.CrossSection
+    if rad < 0.05:
+        return C.square([w, h])
+    return rounded_rect(M, w, h + rad + 1.0, rad) ^ C.square([w, h])
+
+
+def _edged(M, prof, height, e):
+    """
+    An outline pulled up from the bed with its edges softened: a 45 degree bevel on the bed (a round edge would start
+    in the air), a round edge on top. Thin slabs, each the outline drawn a little smaller, laid over each other by
+    0.01 mm; no two of them share a wall.
+    """
+    if e < 0.05 or height < 2 * e + 1.0:
+        return prof.extrude(height)
+    n = 10
+    while n > 2 and e * (1 - math.cos(math.pi / (2 * n))) < 0.03:
+        n -= 1
+    lap = 0.01
+
+    def slab(inset, z0, z1):
+        cs = prof.offset(-inset, M.JoinType.Round, 2.0, 24).simplify(0.02)
+        return cs.extrude(z1 - z0).translate([0, 0, z0])
+
+    low = [e * i / n for i in range(n + 1)]
+    deep = [e * (1 - math.cos(math.pi / 2 * j / n)) for j in range(n + 1)]
+    parts = [prof.extrude(height - deep[n - 1] - low[n - 1]).translate([0, 0, low[n - 1]])]
+    for i in range(n - 1):
+        parts.append(slab(e - low[i + 1], low[i], low[i + 1] + lap))
+        parts.append(slab(e * (1 - math.sin(math.pi / 2 * (i + 1) / n)), height - deep[i + 1] - lap, height - deep[i]))
+    return M.Manifold.batch_boolean(parts, M.OpType.Add)
+
+
 def _on_floor(solid):
     """Move a solid so its bounding box starts at the origin."""
     b = solid.bounding_box()
@@ -556,6 +591,10 @@ def holder(M, p):
     opening looks up, no supports (lying on a side or on the back plate a wall hangs over the cavity; 27 Sep 2026).
     Hook and clip are a side profile lying on the bed: no supports, and the layers run along the arms that carry
     the load. Screw holes are teardrops with the point up, so the slicer has nothing to support in them either.
+    holes = keyhole: the head of a screw that is already in the wall goes through the wide hole, the holder slides
+    down and hangs in the narrow slot above it.
+    The hook has its own height (hook_h, measured inside) and bends of a chosen radius (bend) with the wall kept
+    constant round them; hook and clip can have their long edges softened (edge).
     Solids are cut from one block or drawn as one 2D outline; nothing is glued onto a shared wall.
     """
     k = "holder"
@@ -565,37 +604,53 @@ def holder(M, p):
     obj_w, obj_d, height = num(p, k, "obj_w", 50), num(p, k, "obj_d", 25), num(p, k, "height", 60)
     t, gap, r = num(p, k, "wall", 3), num(p, k, "clearance", 0.8), num(p, k, "radius", 1.5)
     screws = bool(p.get("mount", True))
+    holes = p.get("holes", "round")
+    if holes not in ("round", "keyhole"):
+        raise Invalid("bad_choice", "holes")
+    keyhole = screws and holes == "keyhole"
+    edge = min(num(p, k, "edge", 1), t * 0.4)                        # the wall must survive being drawn smaller
     C = M.CrossSection
-    note = {"style": style, "screws": 0, "warnings": []}
+    note = {"style": style, "screws": 0, "holes": holes if screws else "none", "warnings": []}
     hole_r = 2.3                                                     # a 4 mm wood screw with room to spare
+    head_r = 4.8                                                     # its head goes through this one
+    slide = 8.0                                                      # how far the holder slides down onto the screw
 
-    def bore_x(solid, y, z, length, up="z"):
-        # a teardrop along X; `up` is the axis that points away from the bed while printing
-        a = hole_r * 0.7071
-        tip = [[-a, a], [a, a], [0.0, hole_r * 1.4142]] if up == "y" else [[-a, a], [-a, -a], [-hole_r * 1.4142, 0.0]]
+    def drop(rad, up):
+        a = rad * 0.7071
+        tip = [[-a, a], [a, a], [0.0, rad * 1.4142]] if up == "y" else [[-a, a], [-a, -a], [-rad * 1.4142, 0.0]]
         if _signed(tip) < 0:
             tip = tip[::-1]
-        drop = C.circle(hole_r, 48) + C([tip])
-        return solid - drop.extrude(length + 2.0).rotate([0, 90, 0]).translate([-1.0, y, z])
+        return C.circle(rad, 48) + C([tip])
+
+    def bore_x(solid, y, z, length, up="z", hang="y"):
+        # a teardrop along X; `up` is the axis that points away from the bed while printing, `hang` the one that
+        # points up the wall. (y, z) is where the screw sits in the end. Drawn in 2D as (-Z, Y).
+        cut = drop(hole_r, up)
+        if keyhole:
+            down = [0.0, -slide] if hang == "y" else [slide, 0.0]
+            cut = (cut + drop(hole_r, up).translate(down)).hull() + drop(head_r, up).translate(down)
+        return solid - cut.extrude(length + 2.0).rotate([0, 90, 0]).translate([-1.0, y, z])
 
     if style == "clip":
         d = obj_w
         if d > 60:
             raise Invalid("holder_clip_too_wide", "60")
         length = max(12.0, min(height, 60.0))                        # how much of the handle the clip holds
+        if keyhole:
+            length = max(length, 24.0)                               # room for the wide hole and the slot above it
         rin = d / 2 - 0.2                                            # a touch smaller: the handle is gripped
         rout = rin + t
-        ear = 14.0 if screws else 3.0
+        ear = 16.0 if keyhole else (14.0 if screws else 3.0)
         cx = t + rout - 1.0                                          # the ring sinks 1 mm into the plate
         plate = C.square([t, 2 * rout + 2 * ear]).translate([0, -rout - ear])
         ring = C.circle(rout, 96).translate([cx, 0]) - C.circle(rin, 96).translate([cx, 0])
         mouth = d * 0.72                                             # narrower than the handle: it snaps in and stays
         ring = ring - C.square([rout + 2.0, mouth]).translate([cx, -mouth / 2])
         profile = _rnd(M, plate + ring, min(r, t * 0.3))
-        solid = profile.extrude(length)
+        solid = _edged(M, profile, length, edge)
         if screws:
             for y in (-rout - ear / 2, rout + ear / 2):
-                solid = bore_x(solid, y, length / 2, t)
+                solid = bore_x(solid, y, length / 2 + (slide / 2 if keyhole else 0.0), t, hang="z")
             note["screws"] = 2
         solid = _on_floor(solid)
         note["outer"] = [round(cx + rout, 1), round(2 * rout + 2 * ear, 1), round(length, 1)]
@@ -605,15 +660,23 @@ def holder(M, p):
 
     inner_w, inner_d = obj_w + gap, obj_d + gap
     if style == "hook":
-        tip = max(12.0, min(height, inner_d * 0.9 + 8.0))            # the upturned end that keeps the strap on
-        plate_h = max(tip + 32.0, 50.0)
-        prof = C.square([t, plate_h]) + C.square([inner_d + 2 * t, t]) + C.square([t, tip]).translate([t + inner_d, 0])
-        prof = _soft(M, prof, min(r, t * 0.45))
+        hook_h = num(p, k, "hook_h", 30)                             # inside, from the floor of the hook to its tip
+        tip = hook_h + t                                             # the upturned end that keeps the strap on
+        bend = max(0.0, min(num(p, k, "bend", 6), inner_d / 2 - 0.01, hook_h))
         width = max(10.0, obj_w)
-        solid = prof.extrude(width)
+        if keyhole and width < 15:
+            raise Invalid("holder_keyhole_narrow", "15")
+        step = 30.0 if keyhole else 18.0                             # two holes above each other on a narrow hook
+        plate_h = max(tip + (26.0 + step if keyhole and width < 40 else 32.0), 50.0)
+        # one outline: a block with round bottom corners, the inside taken out with corners smaller by the wall
+        prof = _bowl(M, inner_d + 2 * t, plate_h, bend + t if bend > 0.05 else 0.0)
+        prof = prof - _bowl(M, inner_d, plate_h, bend).translate([t, t])
+        prof = prof - C.square([t + 1.5, plate_h]).translate([t + inner_d - 0.5, tip])
+        prof = _soft(M, prof, min(r, t * 0.45))
+        solid = _edged(M, prof, width, edge)
         if screws:
             if width < 40:
-                for y in (plate_h - 9.0, plate_h - 27.0):
+                for y in (plate_h - 9.0, plate_h - 9.0 - step):
                     solid = bore_x(solid, y, width / 2, t)
             else:
                 for z in (width * 0.25, width * 0.75):
@@ -621,12 +684,13 @@ def holder(M, p):
             note["screws"] = 2
         use = _on_floor(solid.rotate([90, 0, 0]))
         note["outer"] = [round(inner_d + 2 * t, 1), round(width, 1), round(plate_h, 1)]
-        note["inner"] = [round(width, 1), round(inner_d, 1), round(tip, 1)]
+        note["inner"] = [round(width, 1), round(inner_d, 1), round(hook_h, 1)]
+        note["bend"] = round(bend, 1)
         return {"all": _on_floor(solid), "use": use}, note
 
     # pocket and cradle: one block, the cavity taken out of it, the front cut down for the cradle
     total_w = inner_w + 2 * t
-    plate_h = height + (22.0 if screws else 0.0)
+    plate_h = height + ((30.0 if keyhole else 22.0) if screws else 0.0)
     outline = C.square([t, plate_h]) + C.square([inner_d + 2 * t, height])
     rad = min(r, t * 0.3)
     # the bottom stands on the bed: its edges stay sharp, a rounded one would start in the air

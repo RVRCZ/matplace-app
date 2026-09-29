@@ -1,7 +1,7 @@
 @extends('layouts.app', ['title' => __('tools.figure.title').' · matplace'])
 
 @php
-    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.rejected_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent'])
+    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent'])
         ->mapWithKeys(fn ($k) => [$k => __($k, ['n' => ':n', 'm' => ':m'])])->all();
 @endphp
 
@@ -48,8 +48,10 @@
             <button type="button" data-view-remove="front" class="absolute right-2 top-2 hidden h-9 w-9 rounded-full border border-slate-300 bg-white text-lg leading-none text-ink shadow hover:border-red-600 hover:text-red-700" aria-label="{{ __('figure.remove') }}" title="{{ __('figure.remove') }}">&times;</button>
         </div>
 
-        <details id="figure-views" class="rounded-xl border border-line p-3">
-            <summary class="cursor-pointer text-sm font-semibold text-ink">{{ __('figure.views') }} <span class="font-normal text-muted">{{ __('figure.views.hint') }}</span></summary>
+        {{-- more sides are always on the screen: the likeness is clearly better with them --}}
+        <fieldset id="figure-views" class="rounded-xl border border-line p-3">
+            <legend class="px-1 text-sm font-semibold text-ink">{{ __('figure.views') }}</legend>
+            <p class="rounded-lg bg-action-soft px-3 py-2 text-sm text-ink"><strong>{{ __('figure.views.better') }}</strong> {{ __('figure.views.better_hint') }}</p>
             <div class="mt-3 grid grid-cols-3 gap-2">
                 @foreach(['left' => '⬅', 'back' => '🔄', 'right' => '➡'] as $view => $ico)
                     <div class="relative">
@@ -63,9 +65,9 @@
                     </div>
                 @endforeach
             </div>
-            <p id="figure-views-msg" class="mt-2 hidden text-sm text-red-700" aria-live="polite"></p>
+            <p id="figure-views-msg" class="mt-2 hidden text-sm text-amber-900" aria-live="polite"></p>
             <p class="mt-2 text-xs text-muted">{{ __('figure.views.tips') }}</p>
-        </details>
+        </fieldset>
 
         <label class="lbl">{{ __('figure.size') }} <span id="figure-size-val" class="font-normal text-action-dark">80 mm</span>
             <input id="figure-size" name="target_mm" type="range" min="30" max="250" step="5" value="80" class="mt-1 w-full accent-action">

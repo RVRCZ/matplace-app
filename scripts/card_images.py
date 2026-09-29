@@ -68,7 +68,7 @@ CARDS = {
     "phone_stand": ("The object is a grey printed phone stand. Show a smartphone resting on it on a desk, a charging cable leaving downwards.",
                     [("phone_stand", {"style": "desk"}, "all", "use", "grey")]),
     "holder": ("The object is a grey printed wall hook with two screw holes in its back plate. Show it screwed to a vertical wooden post with black headphones hanging on it.",
-               [("holder", {"style": "hook", "obj_w": 40, "obj_d": 45, "height": 25, "wall": 4, "mount": True}, "all", "use", "grey")]),
+               [("holder", {"style": "hook", "obj_w": 40, "obj_d": 45, "hook_h": 21, "bend": 0, "edge": 0, "wall": 4, "mount": True}, "all", "use", "grey")]),
     "cap": ("The objects are printed plugs and caps: a round push-on cap, a rectangular plug with ribs, a hexagonal plug with ribs, a round cap with a dome top, a round screw cap. Show them in grey and black on a desk, with a square aluminium profile behind them.",
             [("cap", {"style": "push", "shape": "round", "size_a": 40, "height": 14, "grip": True}, "all", "use", "grey"),
              ("cap", {"style": "plug", "shape": "rect", "size_a": 40, "size_b": 30, "height": 14}, "all", "print", "black"),

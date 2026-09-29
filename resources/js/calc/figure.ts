@@ -51,10 +51,7 @@ export function bootFigure(): void {
     });
     // The browser may keep the chosen files over a reload or a step back (photos taken straight by the camera
     // exist nowhere else). What the form would send must be on the screen, with its remove button.
-    const sync = () => {
-        inputs.forEach(show);
-        if (inputs.some((i) => i.dataset.view !== 'front' && i.files?.length)) ($('figure-views') as HTMLDetailsElement).open = true;
-    };
+    const sync = () => inputs.forEach(show);
     sync();
     window.addEventListener('pageshow', sync);
     window.addEventListener('load', sync);
@@ -77,16 +74,17 @@ export function bootFigure(): void {
             const body = await res.json();
             if (res.status === 429) return idle(t(body.error === 'global_limit' ? 'figure.global_limit' : 'figure.limit', { n: body.limit, m: body.login_limit }));
             if (res.status === 422 && body.error === 'photo_rejected') {
-                // the refused photo leaves the form, so the next try does not send it again
-                const view = String(body.view ?? 'front');
-                const side = view !== 'front';
-                const text = t(side ? 'figure.rejected_view' : 'figure.rejected', { view: t(`figure.view.${view}`) });
-                clear(view);
-                mark(view, true);
-                if (side) { viewsMsg.textContent = text; viewsMsg.classList.remove('hidden'); ($('figure-views') as HTMLDetailsElement).open = true; }
-                return idle(text);
+                // only the front photo stops the work; it leaves the form, so the next try does not send it again
+                clear('front');
+                mark('front', true);
+                return idle(t('figure.rejected'));
             }
             if (!res.ok) throw new Error(body.message ?? 'generate');
+            // refused sides were left out: the model is made from the rest, and the visitor is told which ones
+            const skipped: string[] = Array.isArray(body.skipped_views) ? body.skipped_views.map(String) : [];
+            const note = skipped.map((view) => t('figure.skipped_view', { view: t(`figure.view.${view}`) })).join(' ');
+            skipped.forEach((view) => { clear(view); mark(view, true); });
+            if (note) { viewsMsg.textContent = note; viewsMsg.classList.remove('hidden'); msg.textContent = `${note} ${t('figure.generating')}`; }
             let g = body.generation;
             while (g.status !== 'done' && g.status !== 'failed') {
                 bar.style.width = `${Math.max(5, g.progress)}%`;
@@ -95,7 +93,8 @@ export function bootFigure(): void {
             }
             if (g.status === 'failed' || !g.file) return idle(t('figure.failed'));
             bar.style.width = '100%';
-            msg.textContent = t('figure.done');
+            msg.textContent = note ? `${note} ${t('figure.done')}` : t('figure.done');
+            if (note) await new Promise((r) => setTimeout(r, 2500)); // time to read it before the model opens
             location.href = `${cfg.home}?open=${g.file.uuid}`;
         } catch {
             idle(t('figure.failed'));
