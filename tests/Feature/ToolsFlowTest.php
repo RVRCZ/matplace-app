@@ -409,7 +409,22 @@ class ToolsFlowTest extends TestCase
         $this->assertContains('thread_try', $meta($thread)['notes']['warnings']);
         $closed($thread, 'thread');
 
-        $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'rect']])->assertStatus(422)->assertJsonFragment([__('param.error.cap_thread_round', [], 'cs')]);
+        // the PET thread is round inside every shape; the cut view shows it; the top edge can be round
+        foreach (['rect', 'hex'] as $shape) {
+            $r = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => $shape, 'size_a' => 27.4, 'size_b' => 40, 'height' => 12, 'pitch' => 2.7, 'edge' => 2]])->assertOk();
+            $m = $meta($r);
+            $this->assertEqualsWithDelta(4.4, $m['notes']['thread']['turns'], 0.05, $shape);
+            $this->assertEqualsWithDelta($shape === 'rect' ? 40 : 2 * (27.4 / 2 + 0.3 + 2), $m['bbox'][$shape === 'rect' ? 'y' : 'x'], 0.05, $shape);   // rect: as deep as asked; hex: the wall at the flats
+            $closed($r, 'threaded '.$shape);
+        }
+        $cut = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'round', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7], 'view' => 'use', 'part' => 'cut'])->assertOk());
+        $this->assertEqualsWithDelta($meta($thread)['volume_mm3'] / 2, $cut['volume_mm3'], $meta($thread)['volume_mm3'] * 0.06);
+        $sharp = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => $base + ['style' => 'push', 'shape' => 'hex', 'edge' => 0]])->assertOk());
+        $round = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => $base + ['style' => 'push', 'shape' => 'hex', 'edge' => 3]])->assertOk();
+        $this->assertLessThan($sharp['volume_mm3'] - 50, $meta($round)['volume_mm3'], 'a round top edge takes material off');
+        $this->assertEqualsWithDelta($sharp['bbox']['z'], $meta($round)['bbox']['z'], 0.01);
+        $closed($round, 'round edge');
+        $this->get('/tools/cap?lang=cs')->assertSee('Zaoblení horní hrany')->assertSee('data-when="head=flat"', false);
         $this->assertSame('cap', $this->postJson('/api/tools/param', ['kind' => 'cap', 'params' => $base + ['style' => 'plug']])->assertCreated()->json('file.kind'));
     }
 

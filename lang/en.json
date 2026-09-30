@@ -1379,7 +1379,7 @@
     "tools.cap.action": "Design a lid",
     "param.cap.lead": "Choose how the part should hold and type what you measured. We add the clearance, so give the real size of the neck or the opening.",
     "param.cap.size": "What you measured",
-    "param.cap.tip": "Prints with the flat side on the bed, opening up, without supports. Print plugs and springy caps in PETG. The print is not meant to touch food without a liner; try a thread on one piece first.",
+    "param.cap.tip": "Prints with the flat side on the bed, opening up, without supports; a round top edge makes a slight overhang at the bed, a printer manages up to 3 mm. The thread is always round, even in an angular cap. Print plugs and springy caps in PETG. The print is not meant to touch food without a liner; try a thread on one piece first.",
     "param.c.cap.style": "How it holds",
     "param.o.cap.push": "Pushes over the rim",
     "param.o.cap.plug": "Plugs into the opening",
@@ -1505,5 +1505,7 @@
     "mold.page.building.fill": "Building the mold and filling the undercuts, it takes up to two minutes…",
     "mold.report.parts": "The mold has :n parts round an upright axis, each comes off outwards. Low cone keys sit on the parting faces.",
     "mold.report.filled": "The undercuts are filled: about :ml ml of material was added to the casting. :before % of the surface was behind undercuts, :after % is left.",
-    "calc.tip.mold.parts": "The parts of the mold lie cavity up, print them that way: 3–4 perimeters, no supports. Hold the assembled parts with rubber bands or tape all round, pour the material through the opening in the bottom."
+    "calc.tip.mold.parts": "The parts of the mold lie cavity up, print them that way: 3–4 perimeters, no supports. Hold the assembled parts with rubber bands or tape all round, pour the material through the opening in the bottom.",
+    "param.f.cap.edge": "Rounding of the top edge",
+    "param.part.cut": "Cut: a look inside"
 }

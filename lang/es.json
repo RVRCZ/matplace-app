@@ -1379,7 +1379,7 @@
     "tools.cap.action": "Diseñar una tapa",
     "param.cap.lead": "Elija cómo debe sujetar la pieza y escriba lo que midió. La holgura la añadimos nosotros; indique la medida real del cuello o la abertura.",
     "param.cap.size": "Lo que midió",
-    "param.cap.tip": "Se imprime con el lado plano sobre la placa, la abertura hacia arriba y sin soportes. Imprima tapones y tapas elásticas en PETG. No es apta para alimentos sin forro; pruebe la rosca primero con una pieza.",
+    "param.cap.tip": "Se imprime con el lado plano sobre la placa, la abertura hacia arriba y sin soportes; un borde superior redondeado forma un ligero voladizo junto a la placa, la impresora lo maneja hasta 3 mm. La rosca es siempre redonda, también en una tapa angular. Imprima tapones y tapas elásticas en PETG. No es apta para alimentos sin forro; pruebe la rosca primero con una pieza.",
     "param.c.cap.style": "Cómo sujeta",
     "param.o.cap.push": "Se encaja sobre el borde",
     "param.o.cap.plug": "Se introduce en la abertura",
@@ -1505,5 +1505,7 @@
     "mold.page.building.fill": "Construyendo el molde y rellenando las contrasalidas, tarda hasta dos minutos…",
     "mold.report.parts": "El molde tiene :n partes alrededor de un eje vertical, cada una sale hacia fuera. En las caras de unión hay llaves cónicas bajas.",
     "mold.report.filled": "Las contrasalidas están rellenas: se añadieron unos :ml ml de material a la pieza. El :before % de la superficie quedaba tras contrasalidas, queda el :after %.",
-    "calc.tip.mold.parts": "Las partes del molde están con la cavidad hacia arriba, imprímalas así: 3–4 perímetros, sin soportes. Sujete las partes montadas con gomas o cinta alrededor y vierta el material por la abertura del fondo."
+    "calc.tip.mold.parts": "Las partes del molde están con la cavidad hacia arriba, imprímalas así: 3–4 perímetros, sin soportes. Sujete las partes montadas con gomas o cinta alrededor y vierta el material por la abertura del fondo.",
+    "param.f.cap.edge": "Redondeo del borde superior",
+    "param.part.cut": "Corte: vista interior"
 }

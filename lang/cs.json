@@ -1379,7 +1379,7 @@
     "tools.cap.action": "Navrhnout víčko",
     "param.cap.lead": "Vyberte, jak má díl držet, a zadejte, co jste naměřili. Vůli přidáme sami, takže zadávejte skutečný rozměr hrdla nebo otvoru.",
     "param.cap.size": "Naměřené rozměry",
-    "param.cap.tip": "Tiskne se rovnou stranou na podložce, otvorem nahoru, bez podpěr. Zátky a víčka na pružení tiskněte z PETG. Výtisk není určen pro styk s potravinami bez vložky; závit si nejdřív vyzkoušejte na jednom kusu.",
+    "param.cap.tip": "Tiskne se rovnou stranou na podložce, otvorem nahoru, bez podpěr; zaoblená horní hrana tvoří u podložky mírný převis, do 3 mm ho tiskárna zvládne. Závit je vždy kulatý, i u hranatého víčka. Zátky a víčka na pružení tiskněte z PETG. Výtisk není určen pro styk s potravinami bez vložky; závit si nejdřív vyzkoušejte na jednom kusu.",
     "param.c.cap.style": "Jak má držet",
     "param.o.cap.push": "Nasadí se na hrdlo",
     "param.o.cap.plug": "Zasune se do otvoru",
@@ -1505,5 +1505,7 @@
     "mold.page.building.fill": "Stavím formu a vyplňuji podřezy, trvá to až dvě minuty…",
     "mold.report.parts": "Forma má :n díly kolem svislé osy, každý se sundává směrem ven. Na dělicích plochách jsou nízké kuželové zámky.",
     "mold.report.filled": "Podřezy jsou vyplněné: do odlitku přibylo asi :ml ml hmoty. Za podřezy bylo :before % povrchu, zbývá :after %.",
-    "calc.tip.mold.parts": "Díly formy leží dutinou nahoru, tak je i tiskněte: 3–4 obvodové stěny, bez podpěr. Složené díly stáhněte gumičkami nebo páskou dokola, hmotu nalijte otvorem ve dně."
+    "calc.tip.mold.parts": "Díly formy leží dutinou nahoru, tak je i tiskněte: 3–4 obvodové stěny, bez podpěr. Složené díly stáhněte gumičkami nebo páskou dokola, hmotu nalijte otvorem ve dně.",
+    "param.f.cap.edge": "Zaoblení horní hrany",
+    "param.part.cut": "Řez: pohled dovnitř"
 }

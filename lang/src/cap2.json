@@ -1,0 +1,17 @@
+{
+    "param.f.cap.edge": [
+        "Zaoblení horní hrany",
+        "Rounding of the top edge",
+        "Redondeo del borde superior"
+    ],
+    "param.part.cut": [
+        "Řez: pohled dovnitř",
+        "Cut: a look inside",
+        "Corte: vista interior"
+    ],
+    "param.cap.tip": [
+        "Tiskne se rovnou stranou na podložce, otvorem nahoru, bez podpěr; zaoblená horní hrana tvoří u podložky mírný převis, do 3 mm ho tiskárna zvládne. Závit je vždy kulatý, i u hranatého víčka. Zátky a víčka na pružení tiskněte z PETG. Výtisk není určen pro styk s potravinami bez vložky; závit si nejdřív vyzkoušejte na jednom kusu.",
+        "Prints with the flat side on the bed, opening up, without supports; a round top edge makes a slight overhang at the bed, a printer manages up to 3 mm. The thread is always round, even in an angular cap. Print plugs and springy caps in PETG. The print is not meant to touch food without a liner; try a thread on one piece first.",
+        "Se imprime con el lado plano sobre la placa, la abertura hacia arriba y sin soportes; un borde superior redondeado forma un ligero voladizo junto a la placa, la impresora lo maneja hasta 3 mm. La rosca es siempre redonda, también en una tapa angular. Imprima tapones y tapas elásticas en PETG. No es apta para alimentos sin forro; pruebe la rosca primero con una pieza."
+    ]
+}

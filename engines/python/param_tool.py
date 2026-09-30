@@ -25,7 +25,7 @@ LIMITS = {
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
     "holder": {"obj_w": (10, 300), "obj_d": (5, 150), "height": (15, 150), "wall": (2, 6), "clearance": (0.3, 2), "radius": (0, 12),
                "hook_h": (10, 150), "bend": (0, 40), "edge": (0, 2)},
-    "cap": {"size_a": (8, 200), "size_b": (8, 200), "height": (4, 60), "wall": (1.2, 4), "top": (1.2, 5), "clearance": (0.1, 1), "pitch": (1, 6)},
+    "cap": {"size_a": (8, 200), "size_b": (8, 200), "height": (4, 60), "wall": (1.2, 4), "top": (1.2, 5), "clearance": (0.1, 1), "pitch": (1, 6), "edge": (0, 3)},
     "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
 }
 MIN_CELL = 8.0
@@ -358,6 +358,31 @@ def _edged(M, prof, height, e):
         parts.append(slab(e - low[i + 1], low[i], low[i + 1] + lap))
         parts.append(slab(e * (1 - math.sin(math.pi / 2 * (i + 1) / n)), height - deep[i + 1] - lap, height - deep[i]))
     return M.Manifold.batch_boolean(parts, M.OpType.Add)
+
+
+def _rounded_foot(M, cs, height, e):
+    """
+    An outline pulled up from the bed with its bottom edge round (the first layers are drawn a little smaller; a
+    printer manages that up to a few millimetres). Thin slabs laid over each other by 0.01 mm, as in _edged.
+    """
+    if e < 0.05 or height < e + 1.0:
+        return cs.extrude(height)
+    n = 10
+    while n > 2 and e * (1 - math.cos(math.pi / (2 * n))) < 0.03:
+        n -= 1
+    deep = [e * (1 - math.cos(math.pi / 2 * j / n)) for j in range(n + 1)]
+    parts = [cs.extrude(height - deep[n - 1]).translate([0, 0, deep[n - 1]])]
+    for i in range(n - 1):
+        inset = e * (1 - math.sin(math.pi / 2 * (i + 1) / n))
+        slab = cs.offset(-inset, M.JoinType.Round, 2.0, 24).simplify(0.02)
+        parts.append(slab.extrude(deep[i + 1] - deep[i] + 0.01).translate([0, 0, deep[i]]))
+    return M.Manifold.batch_boolean(parts, M.OpType.Add)
+
+
+def _half(M, solid):
+    """The solid with its front half taken away: a look inside, for previews."""
+    x0, y0, z0, x1, y1, z1 = solid.bounding_box()
+    return solid - M.Manifold.cube([x1 - x0 + 2.0, (y1 - y0) / 2 + 1.0, z1 - z0 + 2.0]).translate([x0 - 1.0, y0 - 1.0, z0 - 1.0])
 
 
 def _on_floor(solid):
@@ -739,7 +764,9 @@ def cap(M, p):
       push    goes OVER the rim: measure the outside of the neck or box
       plug    goes INTO the opening: measure the inside; a flange stops it, low ribs hold it
       thread  screws ONTO an outer thread: measure across the thread crests and the distance between two turns
-    Round, rectangular or hexagonal (size_a is then the distance across the flats); the thread is round only.
+    Round, rectangular or hexagonal (size_a is then the distance across the flats). The thread is always round (a PET
+    bottle's is); a rectangular or hexagonal threaded cap has the round thread inside and the shape outside.
+    `edge` rounds the top edge (the edge on the bed) of every cap; the cut view shows the inside, thread included.
     Everything prints with its flat top on the bed, opening up: no supports, and the thread is cut as one smooth helix.
     The domed cap (round, push-on) prints the other way up, standing on its rim: the hollow under the dome is a cone
     of 45 degrees, which a printer builds in the air without help.
@@ -755,11 +782,15 @@ def cap(M, p):
     a, b = num(p, k, "size_a", 40), num(p, k, "size_b", 30)
     height, wall, top, gap = num(p, k, "height", 12), num(p, k, "wall", 2), num(p, k, "top", 2), num(p, k, "clearance", 0.3)
     pitch = num(p, k, "pitch", 3)
+    edge = num(p, k, "edge", 1)
     grip = bool(p.get("grip", True))
     C = M.CrossSection
     note = {"style": style, "shape": shape, "warnings": []}
-    if style == "thread" and shape != "round":
-        raise Invalid("cap_thread_round")
+
+    def views(solid, turned=True):
+        """print pose, the pose in use, and the inside for the preview."""
+        use = _on_floor(solid.rotate([180, 0, 0])) if turned else _on_floor(solid)
+        return {"all": _on_floor(solid), "use": use, "cut": _on_floor(_half(M, use))}
 
     def outline(w, d, rad=None):
         if shape == "round":
@@ -772,14 +803,21 @@ def cap(M, p):
         """Low round bumps all the way round: fingers hold the cap, the printer needs no supports for them."""
         count = max(12, int(round(2 * math.pi * radius / 6.0)))
         bumps = [C.circle(1.0, 16).translate([(radius + 0.2) * math.cos(2 * math.pi * i / count), (radius + 0.2) * math.sin(2 * math.pi * i / count)]) for i in range(count)]
-        return cs + C.batch_boolean(bumps, M.OpType.Add)
+        return C.batch_boolean(bumps, M.OpType.Add)
+
+    def body_of(skin, radius, total, e):
+        """The skin with a round top edge; the bumps start above the rounding, so it stays a clean curve."""
+        solid = _rounded_foot(M, skin, total, e)
+        if grip and shape == "round" and radius is not None:
+            solid = solid + knurled(skin, radius).extrude(total - e).translate([0, 0, e])
+        return solid
 
     if style == "plug":
         if min(a, b if shape == "rect" else a) - 2 * gap < 6:
             raise Invalid("cap_too_small")
         pw, pd = a - 2 * gap, (b if shape == "rect" else a) - 2 * gap
         flange = max(3.0, wall * 1.5)
-        body = outline(pw + 2 * flange, pd + 2 * flange).extrude(top)
+        body = _rounded_foot(M, outline(pw + 2 * flange, pd + 2 * flange), top, min(edge, top - 0.4, flange - 0.5))
         # the plug narrows a little towards its end: it starts easily and tightens as it goes in
         core = outline(pw, pd).extrude(height + 0.01, 0, 0.0, [0.965, 0.965]).translate([0, 0, top - 0.01])
         solid = body + core
@@ -798,7 +836,7 @@ def cap(M, p):
         note["fits"] = [round(a, 1)] if shape != "rect" else [round(a, 1), round(b, 1)]
         note["ribs"] = ribs
         note["material_hint"] = "petg"
-        return {"all": _on_floor(solid), "use": _on_floor(solid.rotate([180, 0, 0]))}, note
+        return views(solid), note
 
     if style == "thread":
         if a < 12:
@@ -811,15 +849,14 @@ def cap(M, p):
         turns = height / pitch
         cavity = C.circle(rc, 96).translate([depth / 2, 0]).extrude(height + 0.02, max(8, int(math.ceil(height / 0.25))), 360.0 * turns)
         outer_r = a / 2 + gap + wall
-        skin = C.circle(outer_r, 128)
-        if grip:
-            skin = knurled(skin, outer_r)
-        solid = skin.extrude(top + height) - cavity.translate([0, 0, top])
-        note["outer"] = [round(2 * outer_r, 1), round(2 * outer_r, 1), round(top + height, 1)]
+        # the shape outside: round, hexagonal (the wall is measured at the flats) or rectangular (at least as deep as wide)
+        ow, od = 2 * outer_r, (max(b, 2 * outer_r) if shape == "rect" else 2 * outer_r)
+        solid = body_of(outline(ow, od), outer_r, top + height, min(edge, top + 0.6 * wall)) - cavity.translate([0, 0, top])
+        note["outer"] = [round(ow, 1), round(od, 1), round(top + height, 1)]
         note["fits"] = [round(a, 1)]
         note["thread"] = {"pitch": round(pitch, 2), "turns": round(turns, 1), "depth": round(depth, 2)}
         note["warnings"].append("thread_try")
-        return {"all": _on_floor(solid), "use": _on_floor(solid.rotate([180, 0, 0]))}, note
+        return views(solid), note
 
     # push-on cap
     iw, idp = a + 2 * gap, (b if shape == "rect" else a) + 2 * gap
@@ -834,15 +871,11 @@ def cap(M, p):
         note["outer"] = [round(2 * ro, 1), round(2 * ro, 1), round(height + ro, 1)]
         note["fits"] = [round(a, 1)]
         note["head"] = "dome"
-        solid = _on_floor(solid)
-        return {"all": solid, "use": solid}, note
-    skin = outline(iw + 2 * wall, idp + 2 * wall)
-    if grip and shape == "round":
-        skin = knurled(skin, iw / 2 + wall)
-    solid = skin.extrude(top + height) - outline(iw, idp, 1.0 if shape == "rect" else None).extrude(height + 1.0).translate([0, 0, top])
+        return views(solid, False), note
+    solid = body_of(outline(iw + 2 * wall, idp + 2 * wall), iw / 2 + wall, top + height, min(edge, top + 0.6 * wall)) - outline(iw, idp, 1.0 if shape == "rect" else None).extrude(height + 1.0).translate([0, 0, top])
     note["outer"] = [round(iw + 2 * wall, 1), round(idp + 2 * wall, 1), round(top + height, 1)]
     note["fits"] = [round(a, 1)] if shape != "rect" else [round(a, 1), round(b, 1)]
-    return {"all": _on_floor(solid), "use": _on_floor(solid.rotate([180, 0, 0]))}, note
+    return views(solid), note
 
 
 def main(argv):
