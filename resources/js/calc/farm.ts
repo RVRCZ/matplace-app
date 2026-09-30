@@ -5,7 +5,8 @@
  *   bootFarmOrder  /farm/orders/{token}: preview of the print pose, presets, colours, pay, progress (polled)
  *   bootFarmDashboard  /admin/farm: buttons post over fetch, the answer is a short toast, cards redraw in place
  */
-import { Viewer } from './viewer';
+import { BufferGeometry } from 'three';
+import { Viewer, FacePaint } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; inputs: { vat_percent: number } }
@@ -18,7 +19,7 @@ interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; shipping_price: number;
     colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
@@ -54,17 +55,58 @@ export function bootFarmAdminViewer(): void {
     loadGeometryFromUrl(canvas.dataset.model).then((g) => viewer.setGeometry(g, 1, null)).catch(() => undefined);
 }
 
+/** A plate with a code or a text: the triangles above the plate in the second colour, the rest in the first. */
+function twoTone(geom: BufferGeometry, changeZ: number, first: string, second: string): FacePaint | null {
+    const pos = geom.getAttribute('position');
+    if (!pos || geom.index) return null;
+    const flags = new Uint8Array(pos.count / 3);
+    for (let t = 0; t < flags.length; t++) flags[t] = (pos.getZ(t * 3) + pos.getZ(t * 3 + 1) + pos.getZ(t * 3 + 2)) / 3 > changeZ ? 1 : 0;
+    // vertex colours are multiplied by the viewer's lights: kept a little deeper than the swatch
+    const rgb = (hex: string): [number, number, number] => {
+        const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+        const n = m ? parseInt(m[1], 16) : 0x83a6d4;
+        return [((n >> 16) & 255) / 255 * 0.85, ((n >> 8) & 255) / 255 * 0.85, (n & 255) / 255 * 0.85];
+    };
+    const a = rgb(first); const b = rgb(second);
+    return { flags, color: (f) => (f ? b : a) };
+}
+
 export function bootFarmStart(): void {
     const cfg = (window as unknown as { MP_FARM_START?: { upload: string; files: string; maxMb: number; text: Record<string, string> } }).MP_FARM_START;
     // a look at the model: the one handed over from the calculator, or the one just uploaded
     const preview = $<HTMLCanvasElement>('farm-preview');
     let viewer: Viewer | null = null;
+    let geom: BufferGeometry | null = null;
+    const form = preview?.closest('form') ?? document;
+    const checkedHex = (name: string): string | null => (form.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.dataset.hex ?? '') || null;
+    // the second colour has to come from the machine of the first: only its spools are offered, the rest stay hidden
+    const paint = (): void => {
+        const first = checkedHex('color');
+        const changeZ = Number(preview?.dataset.change || 0);
+        const chosen = form.querySelector<HTMLInputElement>('input[name="color"]:checked')?.value ?? '';
+        let visible = 0;
+        form.querySelectorAll<HTMLElement>('[data-second-for]').forEach((el) => {
+            const on = el.dataset.secondFor === '*' || el.dataset.secondFor === chosen;
+            el.classList.toggle('hidden', !on); el.classList.toggle('flex', on);
+            const radio = el.querySelector<HTMLInputElement>('input');
+            if (radio && !on && radio.checked) { radio.checked = false; form.querySelector<HTMLInputElement>('input[name="second_color"][value=""]')!.checked = true; }
+            if (on && el.dataset.secondFor !== '*') visible++;
+        });
+        const none = $('farm-second-none'); if (none) show(none, !!preview?.dataset.change && visible === 0 && !!chosen);
+        if (!viewer) return;
+        viewer.setColor(first);
+        const second = checkedHex('second_color');
+        const painted = geom && changeZ > 0 && second ? twoTone(geom, changeZ, first ?? '#83a6d4', second) : null;
+        viewer.paint(painted);
+    };
+    form.querySelectorAll<HTMLInputElement>('input[name="color"], input[name="second_color"]').forEach((r) => r.addEventListener('change', paint));
     const showModel = (url: string): void => {
         if (!preview) return;
         viewer ??= new Viewer(preview);
         show($('farm-preview-box'), true);
-        loadGeometryFromUrl(url).then((g) => viewer!.setGeometry(g, Number(($('farm-scale') as HTMLInputElement | null)?.value || 1) || 1, null)).catch(() => show($('farm-preview-box'), false));
+        loadGeometryFromUrl(url).then((g) => { geom = g; viewer!.setGeometry(g, Number(($('farm-scale') as HTMLInputElement | null)?.value || 1) || 1, null); paint(); }).catch(() => show($('farm-preview-box'), false));
     };
+    paint();
     // the size: the file's own millimetres times the factor from the calculator; one dimension typed scales the whole model
     const sizeBox = $('farm-size');
     const scaleInput = $<HTMLInputElement>('farm-scale');
@@ -155,7 +197,16 @@ export function bootFarmOrder(): void {
     let supportsOn = true;
     let picked: number | null = state.slot ?? null;                    // the colour chosen on the start page, if it is still on offer
     let delivery = state.delivery || 'pickup';
-    let second: number | null = null;                                  // the spool of the raised text; null = the colour of the plate
+    let second: number | null = state.second_slot ?? null;             // the spool of the code or text; null = the colour of the plate
+    let geom: BufferGeometry | null = null;
+    // the plate in the first colour, the code or text in the second, as the machine will print it
+    const paintTwo = (): void => {
+        const c = state.colors.find((x) => x.slot === picked);
+        const o = c?.second?.find((x) => x.slot === second);
+        const first = (state.status === 'sliced' ? c?.hex : state.color?.hex) ?? null;
+        const other = state.status === 'sliced' ? o?.hex : state.second_color?.hex;
+        viewer.paint(geom && state.color_change_mm && first && other ? twoTone(geom, state.color_change_mm, first, other) : null);
+    };
     let timer = 0;
     const wanted = { quality: state.quality, strength: state.strength, supports: state.supports_mode || 'auto', unit: state.unit, copies: state.copies || 1, scale: state.scale || 1 };
     // the model's own millimetres (in the chosen unit) so a typed dimension gives a factor
@@ -200,7 +251,7 @@ export function bootFarmOrder(): void {
         const c = state.colors.find((x) => x.slot === picked);
         $('farm-start-note')!.textContent = c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '';
         viewer.setColor(c?.hex ?? null);
-        // a plate with a raised text: the text may have its own colour from the same machine
+        // a plate with a raised text or a code: the raised part may have its own colour from the same machine
         const offer = state.color_change_mm && c?.second?.length ? c.second : [];
         if (second !== null && !offer.some((o) => o.slot === second)) second = null;
         show($('farm-second'), offer.length > 0);
@@ -216,6 +267,7 @@ export function bootFarmOrder(): void {
                 + offer.map((o) => tile(o.slot, o.name, o.kind ?? '', o.photo ? `<img src="${esc(o.photo)}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">` : dot(o.hex))).join('');
             list.querySelectorAll<HTMLButtonElement>('button[data-second]').forEach((b) => b.addEventListener('click', () => { second = b.dataset.second ? Number(b.dataset.second) : null; render(); }));
         }
+        paintTwo();
     };
 
     const renderBreakdown = (): void => {
@@ -334,7 +386,7 @@ export function bootFarmOrder(): void {
         if (s.model_url && s.model_url !== shownModel) {
             shownModel = s.model_url;
             shownSupports = '';
-            loadGeometryFromUrl(s.model_url).then((g) => { viewer.setGeometry(g, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); showSupports(); }).catch(() => { shownModel = ''; });
+            loadGeometryFromUrl(s.model_url).then((g) => { geom = g; viewer.setGeometry(g, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTwo(); showSupports(); }).catch(() => { shownModel = ''; });
         } else {
             showSupports();
         }

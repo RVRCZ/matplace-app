@@ -50,9 +50,14 @@ class OrderController extends Controller
             $material = $calc->params['material'] ?? null;
         }
         // the colours loaded right now; those of the calculator's material kind come first
-        $colors = $this->orders->offeredColors($quality)->map(fn ($r) => [
+        $offered = $this->orders->offeredColors($quality);
+        // a plate with a code or a text prints in two colours: the second one has to sit in the same machine (its ACE
+        // changes the spool), so every colour lists the other spools of its machine that go with it
+        $twoColor = $file?->colorChangeMm();
+        $colors = $offered->map(fn ($r) => [
             'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex,
             'photo' => $r['color']->photoUrl(), 'printer' => $r['printer']->name, 'bed' => (int) $r['printer']->bed_x.' × '.(int) $r['printer']->bed_y.' mm', 'enough' => $r['slot']->availableGrams() > 50,
+            'seconds' => $twoColor ? $this->orders->secondSpools($r['slot'])->map(fn ($s) => ['id' => $s->color->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'photo' => $s->color->photoUrl()])->values()->all() : [],
         ])->sortBy(fn ($c) => [$c['code'] === $material ? 0 : 1, $c['name']])->values()->all();
         // the colour of the print being repeated when it is still loaded, else the first one on offer
         $preselect = collect($colors)->firstWhere('id', $wantedColor)['id'] ?? ($colors[0]['id'] ?? null);
@@ -69,6 +74,8 @@ class OrderController extends Controller
             'scale' => $scale,
             'maxScale' => (float) config('pricing.max_scale', 4),
             'colors' => $colors,
+            'twoColor' => $twoColor,
+            'secondPreselect' => (int) $request->query('second'),
             'settings' => $this->settings->all(),
             'balance' => $this->wallet->balance($request->user()),
             'slicesLeft' => max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())),
@@ -105,13 +112,14 @@ class OrderController extends Controller
             'copies' => ['nullable', 'integer', 'min:1', 'max:'.PlateLayout::MAX_COPIES],
             'scale' => ['nullable', 'numeric', 'min:0.25', 'max:'.config('pricing.max_scale', 4)],
             'color' => ['nullable', 'integer'],
+            'second_color' => ['nullable', 'integer'],
             'supports' => ['nullable', 'in:auto,off'],
         ]);
         $file = ModelFile::where('uuid', $data['file'])->firstOrFail();
         $this->claim($request, $file);
 
         try {
-            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto');
+            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto', isset($data['second_color']) ? (int) $data['second_color'] : null);
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
                 ? response()->json(['error' => $e->reason, 'message' => $e->text()], 422)
@@ -334,6 +342,7 @@ class OrderController extends Controller
             'supports' => $order->supports_used,
             'supports_mode' => $order->supports ?: 'auto',
             'color_change_mm' => $order->colorChangeMm(),
+            'second_slot' => $order->second_slot_id,
             'second_color' => $order->second_color_id && $order->secondColor ? ['name' => $order->secondColor->displayName(), 'hex' => $order->secondColor->hex] : null,
             'minutes' => $order->est_minutes,
             'grams' => $order->est_grams,

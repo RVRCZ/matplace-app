@@ -52,7 +52,7 @@
             <p id="farm-upload-status" class="mt-1 hidden text-sm text-slate-600" role="status"></p>
         @endif
         <div id="farm-preview-box" class="mt-3 {{ $file ? '' : 'hidden' }} overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-            <canvas id="farm-preview" class="block h-64 w-full touch-none" data-model="{{ $file ? route('api.files.stl', $file) : '' }}"></canvas>
+            <canvas id="farm-preview" class="block h-64 w-full touch-none" data-model="{{ $file ? route('api.files.stl', $file) : '' }}" data-change="{{ $twoColor ?? '' }}"></canvas>
         </div>
 
         {{-- the size as the calculator had it (or as uploaded); one dimension typed scales the whole model --}}
@@ -99,7 +99,7 @@
         <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.color') }}">
             @forelse($colors as $c)
                 <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action {{ $c['enough'] ? '' : 'opacity-50' }}">
-                    <input type="radio" name="color" value="{{ $c['id'] }}" class="sr-only" @checked($c['id'] === $preselect) @disabled(! $c['enough'])>
+                    <input type="radio" name="color" value="{{ $c['id'] }}" class="sr-only" @checked($c['id'] === $preselect) @disabled(! $c['enough']) data-hex="{{ $c['hex'] }}">
                     @if($c['photo'])<img src="{{ $c['photo'] }}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">@else<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:{{ $c['hex'] }}"></span>@endif
                     <span><span class="font-semibold">{{ $c['name'] }}</span><br><span class="text-xs text-slate-500">{{ $c['kind'] }} · {{ $c['printer'] }}</span></span>
                 </label>
@@ -107,6 +107,31 @@
                 <p class="col-span-full text-sm text-slate-600">{{ __('farm.order.no_colors') }}</p>
             @endforelse
         </div>
+
+        @if($twoColor)
+            {{-- a plate with a code or a text: the second colour, from the machine of the first one (its ACE changes the spool) --}}
+            <div id="farm-second-start" class="mt-4">
+                <div class="text-sm font-semibold text-slate-700">{{ __('farm.start.second_title') }}</div>
+                <p class="text-xs text-slate-500">{{ __('farm.start.second_hint') }}</p>
+                <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.start.second_title') }}">
+                    <label data-second-for="*" class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
+                        <input type="radio" name="second_color" value="" class="sr-only" data-hex="" checked>
+                        <span class="h-10 w-10 shrink-0 rounded-lg border border-dashed border-slate-300"></span>
+                        <span><span class="font-semibold">{{ __('farm.order.second_same') }}</span><br><span class="text-xs text-slate-500">{{ __('farm.start.second_same_hint') }}</span></span>
+                    </label>
+                    @foreach($colors as $c)
+                        @foreach($c['seconds'] as $s)
+                            <label data-second-for="{{ $c['id'] }}" class="hidden cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
+                                <input type="radio" name="second_color" value="{{ $s['id'] }}" class="sr-only" data-hex="{{ $s['hex'] }}" @checked($s['id'] === $secondPreselect && $c['id'] === $preselect)>
+                                @if($s['photo'])<img src="{{ $s['photo'] }}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">@else<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:{{ $s['hex'] }}"></span>@endif
+                                <span><span class="font-semibold">{{ $s['name'] }}</span><br><span class="text-xs text-slate-500">{{ $s['kind'] }}</span></span>
+                            </label>
+                        @endforeach
+                    @endforeach
+                </div>
+                <p id="farm-second-none" class="mt-2 hidden text-xs text-amber-800">{{ __('farm.start.second_none') }}</p>
+            </div>
+        @endif
 
         <button id="farm-continue" type="submit" class="mt-4 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" @disabled(! $file)>{{ __('farm.start.continue') }}</button>
         <p class="mt-2 text-xs text-slate-500">{{ __('farm.slices_left', ['n' => $slicesLeft]) }}</p>

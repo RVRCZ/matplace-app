@@ -23,7 +23,7 @@ final class OrderService
     /**
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto'): FarmOrder
+    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! config('farm.open', true)) {
@@ -65,6 +65,8 @@ final class OrderService
         if (! $printer || ! $material) {
             throw new FarmRefusal('no_printer');
         }
+        // the second colour of a plate with a code or a text, chosen on the start page: a spool of the same machine
+        $second = $chosen && $secondColorId && $file->colorChangeMm() ? $this->secondSpools($chosen['slot'])->first(fn (FarmPrinterSlot $s) => $s->color->id === $secondColorId) : null;
 
         $order = FarmOrder::create([
             'token' => Str::random(32),
@@ -82,6 +84,8 @@ final class OrderService
             'farm_printer_id' => $printer->id,
             'farm_color_id' => $chosen['color']->id ?? null,
             'farm_printer_slot_id' => $chosen['slot']->id ?? null,
+            'second_slot_id' => $second?->id,
+            'second_color_id' => $second?->color->id,
             'currency' => $this->settings->get('currency'),
         ]);
         $order->events()->create(['to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'user', 'actor_id' => $user->id]);
@@ -150,6 +154,13 @@ final class OrderService
         if ($order->colorChangeMm() === null) {
             return collect();
         }
+
+        return $this->secondSpools($main);
+    }
+
+    /** The other spools of the same machine a second colour can come from: same plastic family, enough left. */
+    public function secondSpools(FarmPrinterSlot $main): Collection
+    {
         $main->loadMissing('color.material');
 
         return FarmPrinterSlot::with('color.material')
