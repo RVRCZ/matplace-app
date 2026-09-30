@@ -1,0 +1,47 @@
+{
+    "param.c.cap.seal": [
+        "Těsnění",
+        "Seal",
+        "Junta"
+    ],
+    "param.o.cap.none": [
+        "Bez těsnění",
+        "No seal",
+        "Sin junta"
+    ],
+    "param.o.cap.lip": [
+        "Těsnicí kroužek do hrdla",
+        "Sealing lip into the mouth",
+        "Anillo de cierre en la boca"
+    ],
+    "param.o.cap.liner": [
+        "Lůžko pro vložku (pěnová guma, silikon)",
+        "Bed for a liner (foam rubber, silicone)",
+        "Alojamiento para junta (goma espuma, silicona)"
+    ],
+    "param.f.cap.mouth": [
+        "Vnitřní průměr hrdla",
+        "Inside diameter of the mouth",
+        "Diámetro interior de la boca"
+    ],
+    "param.warn.seal_try": [
+        "Těsnicí kroužek je o 0,3 mm širší než hrdlo a při prvním utažení se do něj vmáčkne. Když víčko netěsní, zadejte vnitřní průměr hrdla o 0,2 mm větší; když nejde dotáhnout, o 0,2 mm menší.",
+        "The sealing lip is 0.3 mm wider than the mouth and is pressed in the first time the cap is tightened. If the cap leaks, enter the inside diameter 0.2 mm larger; if it will not tighten, 0.2 mm smaller.",
+        "El anillo de cierre es 0,3 mm más ancho que la boca y se ajusta al apretar la primera vez. Si la tapa gotea, indique el diámetro interior 0,2 mm mayor; si no se puede apretar, 0,2 mm menor."
+    ],
+    "param.need.liner": [
+        "kolečko pěnové gumy nebo silikonu 2 mm silné, průměr jako hrdlo",
+        "a disc of foam rubber or silicone 2 mm thick, as wide as the neck",
+        "un disco de goma espuma o silicona de 2 mm, tan ancho como el cuello"
+    ],
+    "param.error.cap_seal_wide": [
+        "Těsnicí kroužek by narazil do závitu nebo stěny: vnitřní průměr hrdla může být nejvýš :n mm. Změřte hrdlo uvnitř, ne přes závit.",
+        "The sealing lip would hit the thread or the wall: the inside diameter of the mouth can be at most :n mm. Measure inside the mouth, not over the thread.",
+        "El anillo de cierre chocaría con la rosca o la pared: el diámetro interior de la boca puede ser como máximo :n mm. Mida el interior de la boca, no sobre la rosca."
+    ],
+    "param.cap.tip": [
+        "Tiskne se rovnou stranou na podložce, otvorem nahoru, bez podpěr; zaoblená horní hrana tvoří u podložky mírný převis, do 3 mm ho tiskárna zvládne. Závit je vždy kulatý, i u hranatého víčka, a sám netěsní: na tekutiny zvolte těsnicí kroužek nebo vložku. Zátky a víčka na pružení tiskněte z PETG. Výtisk není určen pro styk s potravinami bez vložky; závit si nejdřív vyzkoušejte na jednom kusu.",
+        "Prints with the flat side on the bed, opening up, without supports; a round top edge makes a slight overhang at the bed, a printer manages up to 3 mm. The thread is always round, even in an angular cap, and does not seal by itself: for liquids choose the sealing lip or a liner. Print plugs and springy caps in PETG. The print is not meant to touch food without a liner; try a thread on one piece first.",
+        "Se imprime con el lado plano sobre la placa, la abertura hacia arriba y sin soportes; un borde superior redondeado forma un ligero voladizo junto a la placa, la impresora lo maneja hasta 3 mm. La rosca es siempre redonda, también en una tapa angular, y por sí sola no sella: para líquidos elija el anillo de cierre o una junta. Imprima tapones y tapas elásticas en PETG. No es apta para alimentos sin forro; pruebe la rosca primero con una pieza."
+    ]
+}

@@ -1379,7 +1379,7 @@
     "tools.cap.action": "Diseñar una tapa",
     "param.cap.lead": "Elija cómo debe sujetar la pieza y escriba lo que midió. La holgura la añadimos nosotros; indique la medida real del cuello o la abertura.",
     "param.cap.size": "Lo que midió",
-    "param.cap.tip": "Se imprime con el lado plano sobre la placa, la abertura hacia arriba y sin soportes; un borde superior redondeado forma un ligero voladizo junto a la placa, la impresora lo maneja hasta 3 mm. La rosca es siempre redonda, también en una tapa angular. Imprima tapones y tapas elásticas en PETG. No es apta para alimentos sin forro; pruebe la rosca primero con una pieza.",
+    "param.cap.tip": "Se imprime con el lado plano sobre la placa, la abertura hacia arriba y sin soportes; un borde superior redondeado forma un ligero voladizo junto a la placa, la impresora lo maneja hasta 3 mm. La rosca es siempre redonda, también en una tapa angular, y por sí sola no sella: para líquidos elija el anillo de cierre o una junta. Imprima tapones y tapas elásticas en PETG. No es apta para alimentos sin forro; pruebe la rosca primero con una pieza.",
     "param.c.cap.style": "Cómo sujeta",
     "param.o.cap.push": "Se encaja sobre el borde",
     "param.o.cap.plug": "Se introduce en la abertura",
@@ -1507,5 +1507,13 @@
     "mold.report.filled": "Las contrasalidas están rellenas: se añadieron unos :ml ml de material a la pieza. El :before % de la superficie quedaba tras contrasalidas, queda el :after %.",
     "calc.tip.mold.parts": "Las partes del molde están con la cavidad hacia arriba, imprímalas así: 3–4 perímetros, sin soportes. Sujete las partes montadas con gomas o cinta alrededor y vierta el material por la abertura del fondo.",
     "param.f.cap.edge": "Redondeo del borde superior",
-    "param.part.cut": "Corte: vista interior"
+    "param.part.cut": "Corte: vista interior",
+    "param.c.cap.seal": "Junta",
+    "param.o.cap.none": "Sin junta",
+    "param.o.cap.lip": "Anillo de cierre en la boca",
+    "param.o.cap.liner": "Alojamiento para junta (goma espuma, silicona)",
+    "param.f.cap.mouth": "Diámetro interior de la boca",
+    "param.warn.seal_try": "El anillo de cierre es 0,3 mm más ancho que la boca y se ajusta al apretar la primera vez. Si la tapa gotea, indique el diámetro interior 0,2 mm mayor; si no se puede apretar, 0,2 mm menor.",
+    "param.need.liner": "un disco de goma espuma o silicona de 2 mm, tan ancho como el cuello",
+    "param.error.cap_seal_wide": "El anillo de cierre chocaría con la rosca o la pared: el diámetro interior de la boca puede ser como máximo :n mm. Mida el interior de la boca, no sobre la rosca."
 }

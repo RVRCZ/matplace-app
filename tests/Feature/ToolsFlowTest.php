@@ -417,6 +417,21 @@ class ToolsFlowTest extends TestCase
             $this->assertEqualsWithDelta($shape === 'rect' ? 40 : 2 * (27.4 / 2 + 0.3 + 2), $m['bbox'][$shape === 'rect' ? 'y' : 'x'], 0.05, $shape);   // rect: as deep as asked; hex: the wall at the flats
             $closed($r, 'threaded '.$shape);
         }
+        // a printed thread holds but does not seal (the first PET cap leaked): a lip pressed into the mouth, or a bed for a liner
+        $pet = ParametricGenerator::PRESETS['cap']['pet'];
+        $this->assertSame('lip', $pet['seal']);
+        $lip = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => $pet])->assertOk();
+        $this->assertEqualsWithDelta(22.0, $meta($lip)['notes']['seal']['ring'], 0.01, '0.3 mm over the 21.7 mm mouth');
+        $this->assertContains('seal_try', $meta($lip)['notes']['warnings']);
+        $this->assertGreaterThan($meta($thread)['volume_mm3'] + 80, $meta($lip)['volume_mm3'], 'the ring is material added under the top');
+        $closed($lip, 'lip seal');
+        $liner = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['seal' => 'liner'] + $pet])->assertOk();
+        $this->assertLessThan($meta($thread)['volume_mm3'] - 100, $meta($liner)['volume_mm3'], 'the bed for the liner is taken out of the top');
+        $this->assertSame(['liner'], $meta($liner)['notes']['needs']);
+        $closed($liner, 'liner bed');
+        $wide = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'cap', 'params' => ['mouth' => 26] + $pet])->assertStatus(422);
+        $this->assertStringContainsString('hrdl', $wide->json('errors.params.0'));
+        $this->get('/tools/cap?lang=cs')->assertSee('Těsnění')->assertSee('data-when="seal=lip"', false);
         $cut = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'round', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7], 'view' => 'use', 'part' => 'cut'])->assertOk());
         $this->assertEqualsWithDelta($meta($thread)['volume_mm3'] / 2, $cut['volume_mm3'], $meta($thread)['volume_mm3'] * 0.06);
         $sharp = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => $base + ['style' => 'push', 'shape' => 'hex', 'edge' => 0]])->assertOk());

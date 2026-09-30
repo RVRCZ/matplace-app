@@ -25,7 +25,7 @@ LIMITS = {
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
     "holder": {"obj_w": (10, 300), "obj_d": (5, 150), "height": (15, 150), "wall": (2, 6), "clearance": (0.3, 2), "radius": (0, 12),
                "hook_h": (10, 150), "bend": (0, 40), "edge": (0, 2)},
-    "cap": {"size_a": (8, 200), "size_b": (8, 200), "height": (4, 60), "wall": (1.2, 4), "top": (1.2, 5), "clearance": (0.1, 1), "pitch": (1, 6), "edge": (0, 3)},
+    "cap": {"size_a": (8, 200), "size_b": (8, 200), "height": (4, 60), "wall": (1.2, 4), "top": (1.2, 5), "clearance": (0.1, 1), "pitch": (1, 6), "edge": (0, 3), "mouth": (4, 195)},
     "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
 }
 MIN_CELL = 8.0
@@ -767,6 +767,10 @@ def cap(M, p):
     Round, rectangular or hexagonal (size_a is then the distance across the flats). The thread is always round (a PET
     bottle's is); a rectangular or hexagonal threaded cap has the round thread inside and the shape outside.
     `edge` rounds the top edge (the edge on the bed) of every cap; the cut view shows the inside, thread included.
+    A cap that is to hold liquid needs a seal (a printed thread alone does not, as the first PET cap showed):
+      seal = lip    a thin ring under the top, 0.3 mm wider than the mouth of the neck (`mouth`): it is pressed into
+                    the opening and seals on its inside, the way a bottle cap's plug seal does
+      seal = liner  a shallow bed under the top for a disc of foam rubber or silicone, 2 mm thick
     Everything prints with its flat top on the bed, opening up: no supports, and the thread is cut as one smooth helix.
     The domed cap (round, push-on) prints the other way up, standing on its rim: the hollow under the dome is a cone
     of 45 degrees, which a printer builds in the air without help.
@@ -783,9 +787,35 @@ def cap(M, p):
     height, wall, top, gap = num(p, k, "height", 12), num(p, k, "wall", 2), num(p, k, "top", 2), num(p, k, "clearance", 0.3)
     pitch = num(p, k, "pitch", 3)
     edge = num(p, k, "edge", 1)
+    seal = p.get("seal", "none")
+    if seal not in ("none", "lip", "liner"):
+        raise Invalid("bad_choice", "seal")
     grip = bool(p.get("grip", True))
     C = M.CrossSection
     note = {"style": style, "shape": shape, "warnings": []}
+
+    def sealed(solid, narrowest, bed):
+        """The seal under the top: `narrowest` is the cavity's smallest radius, `bed` the outline the liner lies in."""
+        if seal == "lip":
+            mouth = num(p, k, "mouth", 21.7)
+            lip_out = mouth / 2 + 0.15                                   # 0.3 mm over the mouth: it has to be pressed in
+            lip_in = lip_out - 0.9
+            if lip_out > narrowest - 0.8:
+                raise Invalid("cap_seal_wide", "%.1f" % (2 * (narrowest - 0.8)))
+            if lip_in < 1.5:
+                raise Invalid("cap_too_small")
+            tall = min(2.5, height - 1.0)
+            # the ring narrows a little towards its end: it finds the opening and tightens as it goes in
+            ring = (C.circle(lip_out, 96) - C.circle(lip_in, 96)).extrude(tall + 0.01, 1, 0.0, [0.95, 0.95]).translate([0, 0, top - 0.01])
+            note["seal"] = {"type": "lip", "mouth": round(mouth, 1), "ring": round(2 * lip_out, 1)}
+            note["warnings"].append("seal_try")
+            return solid + ring
+        if seal == "liner":
+            deep = min(0.6, max(0.3, top - 1.2))
+            note["seal"] = {"type": "liner", "deep": round(deep, 1)}
+            note["needs"] = ["liner"]
+            return solid - bed.extrude(deep + 1.0).translate([0, 0, top - deep])
+        return solid
 
     def views(solid, turned=True):
         """print pose, the pose in use, and the inside for the preview."""
@@ -852,6 +882,7 @@ def cap(M, p):
         # the shape outside: round, hexagonal (the wall is measured at the flats) or rectangular (at least as deep as wide)
         ow, od = 2 * outer_r, (max(b, 2 * outer_r) if shape == "rect" else 2 * outer_r)
         solid = body_of(outline(ow, od), outer_r, top + height, min(edge, top + 0.6 * wall)) - cavity.translate([0, 0, top])
+        solid = sealed(solid, a / 2 - depth + gap, C.circle(a / 2 + gap, 96))
         note["outer"] = [round(ow, 1), round(od, 1), round(top + height, 1)]
         note["fits"] = [round(a, 1)]
         note["thread"] = {"pitch": round(pitch, 2), "turns": round(turns, 1), "depth": round(depth, 2)}
@@ -873,6 +904,7 @@ def cap(M, p):
         note["head"] = "dome"
         return views(solid, False), note
     solid = body_of(outline(iw + 2 * wall, idp + 2 * wall), iw / 2 + wall, top + height, min(edge, top + 0.6 * wall)) - outline(iw, idp, 1.0 if shape == "rect" else None).extrude(height + 1.0).translate([0, 0, top])
+    solid = sealed(solid, min(iw, idp) / 2, outline(iw, idp, 1.0 if shape == "rect" else None))
     note["outer"] = [round(iw + 2 * wall, 1), round(idp + 2 * wall, 1), round(top + height, 1)]
     note["fits"] = [round(a, 1)] if shape != "rect" else [round(a, 1), round(b, 1)]
     return views(solid), note

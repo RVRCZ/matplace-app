@@ -1379,7 +1379,7 @@
     "tools.cap.action": "Navrhnout víčko",
     "param.cap.lead": "Vyberte, jak má díl držet, a zadejte, co jste naměřili. Vůli přidáme sami, takže zadávejte skutečný rozměr hrdla nebo otvoru.",
     "param.cap.size": "Naměřené rozměry",
-    "param.cap.tip": "Tiskne se rovnou stranou na podložce, otvorem nahoru, bez podpěr; zaoblená horní hrana tvoří u podložky mírný převis, do 3 mm ho tiskárna zvládne. Závit je vždy kulatý, i u hranatého víčka. Zátky a víčka na pružení tiskněte z PETG. Výtisk není určen pro styk s potravinami bez vložky; závit si nejdřív vyzkoušejte na jednom kusu.",
+    "param.cap.tip": "Tiskne se rovnou stranou na podložce, otvorem nahoru, bez podpěr; zaoblená horní hrana tvoří u podložky mírný převis, do 3 mm ho tiskárna zvládne. Závit je vždy kulatý, i u hranatého víčka, a sám netěsní: na tekutiny zvolte těsnicí kroužek nebo vložku. Zátky a víčka na pružení tiskněte z PETG. Výtisk není určen pro styk s potravinami bez vložky; závit si nejdřív vyzkoušejte na jednom kusu.",
     "param.c.cap.style": "Jak má držet",
     "param.o.cap.push": "Nasadí se na hrdlo",
     "param.o.cap.plug": "Zasune se do otvoru",
@@ -1507,5 +1507,13 @@
     "mold.report.filled": "Podřezy jsou vyplněné: do odlitku přibylo asi :ml ml hmoty. Za podřezy bylo :before % povrchu, zbývá :after %.",
     "calc.tip.mold.parts": "Díly formy leží dutinou nahoru, tak je i tiskněte: 3–4 obvodové stěny, bez podpěr. Složené díly stáhněte gumičkami nebo páskou dokola, hmotu nalijte otvorem ve dně.",
     "param.f.cap.edge": "Zaoblení horní hrany",
-    "param.part.cut": "Řez: pohled dovnitř"
+    "param.part.cut": "Řez: pohled dovnitř",
+    "param.c.cap.seal": "Těsnění",
+    "param.o.cap.none": "Bez těsnění",
+    "param.o.cap.lip": "Těsnicí kroužek do hrdla",
+    "param.o.cap.liner": "Lůžko pro vložku (pěnová guma, silikon)",
+    "param.f.cap.mouth": "Vnitřní průměr hrdla",
+    "param.warn.seal_try": "Těsnicí kroužek je o 0,3 mm širší než hrdlo a při prvním utažení se do něj vmáčkne. Když víčko netěsní, zadejte vnitřní průměr hrdla o 0,2 mm větší; když nejde dotáhnout, o 0,2 mm menší.",
+    "param.need.liner": "kolečko pěnové gumy nebo silikonu 2 mm silné, průměr jako hrdlo",
+    "param.error.cap_seal_wide": "Těsnicí kroužek by narazil do závitu nebo stěny: vnitřní průměr hrdla může být nejvýš :n mm. Změřte hrdlo uvnitř, ne přes závit."
 }
