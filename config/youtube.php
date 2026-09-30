@@ -15,6 +15,12 @@ return [
     'language' => env('YOUTUBE_LANGUAGE', 'cs'),          // titles and descriptions are written in the channel's language
     'tags' => ['3D tisk', '3D printing', 'timelapse', 'Matplace'],
 
+    // background music for the YouTube version (the customer's download stays silent): MP3s from the YouTube Audio
+    // Library, "Title - Artist.mp3" (the name goes into the description as the credit); one per video, taken in
+    // turn by order id; empty folder = silent videos
+    'music_dir' => env('YOUTUBE_MUSIC_DIR', storage_path('app/music')),
+    'music_volume' => 0.8,
+
     // quota ran out (about 6 uploads a day by default): try again after this many minutes
     'retry_after_minutes' => 360,
 ];

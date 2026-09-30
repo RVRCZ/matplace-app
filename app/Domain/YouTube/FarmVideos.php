@@ -50,7 +50,8 @@ class FarmVideos
             'status' => FarmVideo::STATUS_QUEUED, 'youtube_id' => null, 'error' => null,
             'title' => $video->title ?: $this->defaultTitle($order),
             'score' => $video->score ?? $this->score($order),
-            'description' => $video->description ?: $this->defaultDescription($order),
+            'music' => $music = $video->music ?? $this->pickMusic($order),
+            'description' => $video->description ?: $this->defaultDescription($order, $music),
         ])->save();
         UploadFarmVideo::dispatch($video->id);
 
@@ -73,7 +74,8 @@ class FarmVideos
         $video->update(['status' => FarmVideo::STATUS_UPLOADING, 'error' => null]);
 
         try {
-            $id = $this->youtube->upload(Storage::disk(config('farm.disk'))->path($this->file($order)), $video->title, (string) $video->description);
+            $withMusic = $this->withMusic($order, $video->music);
+            $id = $this->youtube->upload($withMusic ?? Storage::disk(config('farm.disk'))->path($this->file($order)), $video->title, (string) $video->description);
         } catch (YouTubeError $e) {
             if ($e->isQuota()) {
                 $video->update(['status' => FarmVideo::STATUS_QUEUED, 'error' => $e->getMessage()]);
@@ -84,6 +86,9 @@ class FarmVideos
             }
 
             return;
+        }
+        if ($withMusic) {
+            @unlink($withMusic);
         }
         $video->update(['status' => FarmVideo::STATUS_UPLOADED, 'youtube_id' => $id, 'uploaded_at' => now()]);
 
@@ -260,6 +265,54 @@ class FarmVideos
         return (int) round($time + $layerPart + $detail);
     }
 
+    /** @return list<string> the background tracks on this server (file names), sorted */
+    public function tracks(): array
+    {
+        $files = glob(rtrim((string) config('youtube.music_dir'), '/\\').'/*.mp3') ?: [];
+        $names = array_map('basename', $files);
+        sort($names);
+
+        return $names;
+    }
+
+    /** One track per video, in turn by order id: the channel does not sound the same every time. */
+    public function pickMusic(FarmOrder $order): ?string
+    {
+        $tracks = $this->tracks();
+
+        return $tracks ? $tracks[$order->id % count($tracks)] : null;
+    }
+
+    /**
+     * The YouTube copy with the track under it: the picture copied as it is, the track cut to the video, faded in and
+     * out. Returns a temporary file (deleted after the upload), null when there is no music or ffmpeg fails.
+     */
+    public function withMusic(FarmOrder $order, ?string $track): ?string
+    {
+        $mp3 = $track ? rtrim((string) config('youtube.music_dir'), '/\\').'/'.$track : null;
+        $seconds = $this->videoSeconds($order);
+        if (! $mp3 || ! is_file($mp3) || ! $seconds) {
+            return null;
+        }
+        $disk = Storage::disk(config('farm.disk'));
+        $out = $disk->path($order->dir().'/youtube-music.mp4');
+        $fadeOut = max(0, $seconds - 1.5);
+        $r = Process::timeout(120)->run([
+            (string) config('farm.ffmpeg', 'ffmpeg'), '-y', '-loglevel', 'error',
+            '-i', $disk->path($this->file($order)), '-i', $mp3,
+            '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k',
+            '-af', sprintf('volume=%s,afade=t=in:st=0:d=0.5,afade=t=out:st=%s:d=1.5', (float) config('youtube.music_volume', 0.8), $fadeOut),
+            '-t', (string) $seconds, '-movflags', '+faststart', $out,
+        ]);
+        if (! $r->successful() || ! is_file($out)) {
+            Log::warning('YouTube music mix failed', ['order' => $order->id, 'error' => mb_substr($r->errorOutput(), 0, 300)]);
+
+            return null;
+        }
+
+        return $out;
+    }
+
     /** The square Short when it was built (it grows the channel), else the landscape time-lapse. */
     public function file(FarmOrder $order): string
     {
@@ -327,9 +380,12 @@ class FarmVideos
         return (int) round($m[1] * 3600 + $m[2] * 60 + (float) $m[3]);
     }
 
-    public function defaultDescription(FarmOrder $order): string
+    public function defaultDescription(FarmOrder $order, ?string $music = null): string
     {
         $text = __('youtube.video.description', $this->facts($order), config('youtube.language'));
+        if ($music) {
+            $text .= "\n\n".__('youtube.video.music', ['track' => pathinfo($music, PATHINFO_FILENAME)], config('youtube.language'));
+        }
 
         return $order->timelapse_short_path ? $text."\n\n#Shorts #3Dprinting #timelapse" : $text;
     }

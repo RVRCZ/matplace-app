@@ -20,6 +20,7 @@ return [
     ],
 
     'video' => [
+        'music' => 'Music: :track (YouTube Audio Library)',
         'tail' => ':time of printing in :seconds s',
         'tail_plain' => ':time of 3D printing',
         'title' => '3D print time-lapse – :material :color',

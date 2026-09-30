@@ -20,6 +20,7 @@ return [
     ],
 
     'video' => [
+        'music' => 'Música: :track (YouTube Audio Library)',
         'tail' => ':time de impresión en :seconds s',
         'tail_plain' => ':time de impresión 3D',
         'title' => 'Time-lapse de impresión 3D – :material :color',

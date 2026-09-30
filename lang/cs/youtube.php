@@ -20,6 +20,7 @@ return [
     ],
 
     'video' => [
+        'music' => 'Hudba: :track (YouTube Audio Library)',
         'tail' => ':time tisku za :seconds s',
         'tail_plain' => ':time 3D tisku',
         'title' => 'Časosběr 3D tisku – :material :color',

@@ -27,7 +27,7 @@ class FarmVideo extends Model
 
     public const STATUS_FAILED = 'failed';
 
-    protected $fillable = ['farm_order_id', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'views', 'likes', 'comments', 'stats_at', 'score'];
+    protected $fillable = ['farm_order_id', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'views', 'likes', 'comments', 'stats_at', 'score', 'music'];
 
     protected $casts = ['uploaded_at' => 'datetime', 'published_at' => 'datetime', 'decided_at' => 'datetime', 'stats_at' => 'datetime',
         'views' => 'int', 'likes' => 'int', 'comments' => 'int', 'score' => 'int'];

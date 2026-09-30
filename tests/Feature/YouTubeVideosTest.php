@@ -20,6 +20,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\MeshFixtures;
@@ -276,6 +277,37 @@ class YouTubeVideosTest extends TestCase
         $this->assertLessThan(20, $simple);
         $this->assertGreaterThan(90, $complex);
         $this->assertLessThanOrEqual(100, $complex);
+    }
+
+    public function test_the_youtube_copy_gets_a_track_the_customer_copy_stays_silent(): void
+    {
+        $ffmpeg = (string) env('FFMPEG_BIN', '');
+        if ($ffmpeg === '' || ! is_file($ffmpeg)) {
+            $this->markTestSkipped('FFMPEG_BIN not set: mixing needs a real ffmpeg');
+        }
+        config(['farm.ffmpeg' => $ffmpeg]);
+        $dir = sys_get_temp_dir().'/mp_music_'.uniqid();
+        mkdir($dir);
+        Process::run([$ffmpeg, '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=20', $dir.'/Artist - Song.mp3'])->throw();
+        config(['youtube.music_dir' => $dir]);
+
+        $order = $this->paidOrder(consent: true);
+        Storage::disk('farm')->makeDirectory($order->dir());
+        $short = Storage::disk('farm')->path($order->dir().'/short.mp4');
+        Process::run([$ffmpeg, '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc=size=320x320:rate=24:duration=4', '-pix_fmt', 'yuv420p', $short])->throw();
+        $order->forceFill(['status' => FarmOrder::STATUS_DONE, 'timelapse_path' => $order->dir().'/short.mp4', 'timelapse_short_path' => $order->dir().'/short.mp4'])->save();
+
+        $videos = app(FarmVideos::class);
+        $this->assertSame('Artist - Song.mp3', $videos->pickMusic($order));
+        $this->assertStringContainsString('Hudba: Artist - Song', $videos->defaultDescription($order, 'Artist - Song.mp3'));
+        $mixed = $videos->withMusic($order, 'Artist - Song.mp3');
+        $info = Process::run([$ffmpeg, '-hide_banner', '-i', $mixed])->errorOutput();
+        $this->assertStringContainsString('Audio: aac', $info);
+        $this->assertMatchesRegularExpression('/Duration: 00:00:0[34]/', $info, 'cut to the video');
+        $this->assertStringNotContainsString('Audio:', Process::run([$ffmpeg, '-hide_banner', '-i', $short])->errorOutput(), 'the customer copy stays silent');
+        @unlink($mixed);
+        array_map('unlink', glob($dir.'/*'));
+        rmdir($dir);
     }
 
     public function test_somebody_else_cannot_change_the_consent(): void

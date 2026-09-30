@@ -107,6 +107,7 @@
                 @if($v->studioUrl())<a href="{{ $v->studioUrl() }}" target="_blank" rel="noopener" class="ml-2 text-xs font-normal underline">otevřít v YouTube Studiu</a>@endif
             </p>
             @if($v->error)<p class="mt-1 text-xs text-red-700">{{ $v->error }}</p>@endif
+            @if($v->music)<p class="mt-1 text-xs text-slate-500">♪ {{ pathinfo($v->music, PATHINFO_FILENAME) }} (jen na YouTube; zákazník má video bez hudby)</p>@endif
 
             @if($v->status === 'uploaded')
                 <form method="post" action="{{ route('admin.youtube.publish', $v) }}" class="mt-2 space-y-2">
