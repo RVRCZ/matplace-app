@@ -45,7 +45,8 @@ class ColorChangeTest extends TestCase
         $p = $this->project(['Metadata/project_settings.config' => json_encode(['layer_height' => '0.2', 'initial_layer_print_height' => '0.2'])]);
         $this->assertSame(2.6, ColorChange::add($p, 2.4, '#222222'));
         $xml = $this->read($p, 'Metadata/custom_gcode_per_layer.xml');
-        $this->assertStringContainsString('<layer top_z="2.60" type="0" extruder="1" color="#222222" extra="" gcode="M600"/>', $xml);
+        // a custom entry with the text in `extra`: the only one OrcaSlicer turns into M600 on a single-nozzle machine
+        $this->assertStringContainsString('<layer top_z="2.60" type="4" extruder="1" color="#222222" extra="M600" gcode="M600"/>', $xml);
         $this->assertStringContainsString('<mode value="SingleExtruder"/>', $xml);
         $this->assertNull($this->read($p, 'Metadata/Prusa_Slicer_custom_gcode_per_print_z.xml'));
     }
