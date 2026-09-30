@@ -805,7 +805,7 @@
     "param.warn.outlines_ignored": "Part of the SVG is outlines without a fill and was left out. Convert them to fills in your drawing program (Object → Stroke to path).",
     "param.warn.missing_chars": "The font does not have these characters, they are missing: :c",
     "param.warn.separate_pieces": "The cut-out consists of :p separate pieces (single letters, for example). If they should hold together, choose the relief on a plate.",
-    "param.qr.facts": "The code has :c × :c modules, one module measures :m mm and the quiet zone :q mm. We verified the design is readable at this size. Print a light plate and a dark code (filament swap); some phones cannot read inverted colours.",
+    "param.qr.facts": "The code has :c × :c modules, one module is :m mm and the quiet zone :q mm. We verified that the design reads at this size. The code has to be two colours: a light plate, a dark code. The downloaded project carries the filament change above the plate, a print with us does it by itself.",
     "param.saucer": "The saucer is :d mm across, the pot floor has :h drainage holes.",
     "param.vase.lead": "Pick the purpose, shape and size. The preview changes at once.",
     "param.vase.size": "Dimensions",
@@ -895,7 +895,7 @@
     "calc.tip.vase": "It prints floor down without supports. The print may not be watertight; put a glass inside or ask the printer to seal it.",
     "calc.tip.logo": "It prints lying flat without supports. A motif in another colour comes from a filament swap.",
     "calc.tip.stamp": "The stamp and the handle print side by side; the handle is glued on with superglue (not included).",
-    "calc.tip.qr": "Print a light plate and a dark code (filament swap after the last plate layer). Test the code with a phone before printing more pieces.",
+    "calc.tip.qr": "The code reads only in two colours: a light plate, a dark code. The downloaded project already carries the filament change above the plate, a print with us offers the second colour at the order. Try the code with a phone before printing more.",
     "tools.stencil.title": "Painting stencil",
     "tools.stencil.hint": "A text or a motif cut into a plate. The insides of letters are held by bridges, so nothing falls out.",
     "tools.stencil.action": "Design a stencil",
@@ -1515,5 +1515,6 @@
     "param.f.cap.mouth": "Inside diameter of the mouth",
     "param.warn.seal_try": "The sealing lip is 0.3 mm wider than the mouth and is pressed in the first time the cap is tightened. If the cap leaks, enter the inside diameter 0.2 mm larger; if it will not tighten, 0.2 mm smaller.",
     "param.need.liner": "a disc of foam rubber or silicone 2 mm thick, as wide as the neck",
-    "param.error.cap_seal_wide": "The sealing lip would hit the thread or the wall: the inside diameter of the mouth can be at most :n mm. Measure inside the mouth, not over the thread."
+    "param.error.cap_seal_wide": "The sealing lip would hit the thread or the wall: the inside diameter of the mouth can be at most :n mm. Measure inside the mouth, not over the thread.",
+    "download.color_change": "The project carries a filament change (M600) at :z mm: the printer stops there, you swap the spool for the second colour and the print goes on. Print the plate light and the code or text dark, otherwise it cannot be read."
 }

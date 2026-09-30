@@ -253,6 +253,7 @@
                         <a id="dl-project" aria-disabled="true" class="mt-3 block rounded-xl bg-action px-4 py-3 text-center font-semibold text-white aria-disabled:opacity-50">{{ __('download.project') }}</a>
                         <p id="dl-how" class="mt-2 text-xs text-slate-500" data-orca="{{ __('download.how') }}" data-prusa="{{ __('download.how_prusa') }}">{{ __('download.how') }}</p>
                         <p class="mt-1 text-xs text-slate-500">{{ __('download.check') }}</p>
+                        <p id="dl-color" class="mt-2 hidden rounded-lg bg-action-soft px-3 py-2 text-sm text-ink" data-text="{{ __('download.color_change') }}"></p>
                     </div>
                     <a id="dl-stl" href="#" class="mt-3 block text-center text-sm text-action-dark underline">{{ __('download.stl') }}</a>
                     <div id="dl-parts" class="mt-2 hidden text-center text-sm"></div>

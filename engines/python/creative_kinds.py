@@ -587,8 +587,9 @@ def qr(M, Invalid, p):
     body = plate.extrude(plate_t) + raised.extrude(relief).translate([0, 0, plate_t - 0.01])
     parts = {"body": body}
     notes = {"outer": [round(size, 1), round(total_h, 1), round(plate_t + relief, 1)], "module_mm": round(module, 2), "modules": int(cells), "quiet_zone_mm": round(4 * module, 1), "verified": True, "needs": []}
-    if not stand:
-        notes["color_change_mm"] = round(plate_t, 2)       # with the stand on the same plate the change would stripe the stand
+    # the code is only readable in a second colour; the stand on the same plate gets a light foot and a dark body, which
+    # looks meant (before 30 Sep 2026 a sign with a stand stayed one colour, and a one-colour code is useless)
+    notes["color_change_mm"] = round(plate_t, 2)
     if stand:
         slot = plate_t + 0.5
         sw, sd, sh = size * 0.7, 34.0, 12.0

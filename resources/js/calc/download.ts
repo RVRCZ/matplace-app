@@ -61,6 +61,13 @@ export function refresh(): void {
         note.textContent = msgs.join(' ');
         note.classList.toggle('hidden', msgs.length === 0);
     }
+    // a plate with a code or a text: the project carries a filament change above the plate, the visitor should know
+    const color = el('dl-color');
+    const change = Number((current.file.tool?.params as { color_change_mm?: number } | undefined)?.color_change_mm ?? 0);
+    if (color) {
+        color.textContent = change > 0 ? (color.dataset.text ?? '').replace(':z', new Intl.NumberFormat(document.documentElement.lang || 'cs', { maximumFractionDigits: 1 }).format(change * q.scale)) : '';
+        color.classList.toggle('hidden', !(change > 0));
+    }
 }
 
 export function bootDownload(): void {

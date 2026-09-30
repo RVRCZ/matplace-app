@@ -104,6 +104,17 @@ class ModelFile extends Model
         ];
     }
 
+    /**
+     * Height (mm) above which a tool model is meant to print in a second colour: the plate under a QR code, a raised
+     * text or a logo; null for everything else. The model is never turned by the farm, so it only follows the size.
+     */
+    public function colorChangeMm(float $scale = 1.0): ?float
+    {
+        $z = $this->builtForPrinting() ? ($this->tool_params['color_change_mm'] ?? null) : null;
+
+        return $z ? round((float) $z * $scale, 3) : null;
+    }
+
     /** Made by one of our measured tools: the builder laid it the way it prints best, the farm must not turn it. */
     public function builtForPrinting(): bool
     {

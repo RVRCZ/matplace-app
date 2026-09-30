@@ -1,0 +1,17 @@
+{
+    "download.color_change": [
+        "Projekt má vloženou výměnu filamentu (M600) ve výšce :z mm: tiskárna se tam zastaví, vyměníte cívku za druhou barvu a tisk pokračuje. Destičku tiskněte světlou, kód nebo text tmavý, jinak nejde přečíst.",
+        "The project carries a filament change (M600) at :z mm: the printer stops there, you swap the spool for the second colour and the print goes on. Print the plate light and the code or text dark, otherwise it cannot be read.",
+        "El proyecto lleva un cambio de filamento (M600) a :z mm: la impresora se detiene ahí, cambia la bobina por el segundo color y la impresión continúa. Imprima la placa clara y el código o el texto oscuro; de lo contrario no se puede leer."
+    ],
+    "param.qr.facts": [
+        "Kód má :c × :c polí, jedno pole měří :m mm a volný okraj :q mm. Čitelnost návrhu v této velikosti jsme ověřili. Kód musí být dvoubarevný: světlá destička, tmavý kód. Stažený projekt má výměnu filamentu nad destičkou vloženou, tisk u nás ji provede sám.",
+        "The code has :c × :c modules, one module is :m mm and the quiet zone :q mm. We verified that the design reads at this size. The code has to be two colours: a light plate, a dark code. The downloaded project carries the filament change above the plate, a print with us does it by itself.",
+        "El código tiene :c × :c módulos, cada uno de :m mm y un margen libre de :q mm. Hemos comprobado que el diseño se lee a este tamaño. El código debe ser de dos colores: placa clara, código oscuro. El proyecto descargado lleva el cambio de filamento sobre la placa; una impresión con nosotros lo hace sola."
+    ],
+    "calc.tip.qr": [
+        "Kód je čitelný jen dvoubarevně: světlá destička, tmavý kód. Stažený projekt má výměnu filamentu nad destičkou už vloženou, tisk u nás druhou barvu nabídne při objednávce. Před tiskem více kusů kód vyzkoušejte telefonem.",
+        "The code reads only in two colours: a light plate, a dark code. The downloaded project already carries the filament change above the plate, a print with us offers the second colour at the order. Try the code with a phone before printing more.",
+        "El código solo se lee en dos colores: placa clara, código oscuro. El proyecto descargado ya lleva el cambio de filamento sobre la placa; una impresión con nosotros ofrece el segundo color al pedir. Pruebe el código con el móvil antes de imprimir más."
+    ]
+}

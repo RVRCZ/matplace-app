@@ -805,7 +805,7 @@
     "param.warn.outlines_ignored": "Parte del SVG son contornos sin relleno y se han omitido. Conviértalos en rellenos en su programa de dibujo (Objeto → Trazo a trayecto).",
     "param.warn.missing_chars": "La fuente no tiene estos caracteres, faltan: :c",
     "param.warn.separate_pieces": "La forma recortada consta de :p piezas sueltas (por ejemplo letras). Si deben mantenerse unidas, elija el relieve sobre placa.",
-    "param.qr.facts": "El código tiene :c × :c módulos, cada uno mide :m mm y el margen libre :q mm. Hemos verificado que el diseño se lee a este tamaño. Imprima placa clara y código oscuro (cambio de filamento); algunos móviles no leen colores invertidos.",
+    "param.qr.facts": "El código tiene :c × :c módulos, cada uno de :m mm y un margen libre de :q mm. Hemos comprobado que el diseño se lee a este tamaño. El código debe ser de dos colores: placa clara, código oscuro. El proyecto descargado lleva el cambio de filamento sobre la placa; una impresión con nosotros lo hace sola.",
     "param.saucer": "El plato mide :d mm de diámetro, el fondo de la maceta tiene :h orificios de drenaje.",
     "param.vase.lead": "Elija el uso, la forma y las medidas. La vista previa cambia al instante.",
     "param.vase.size": "Medidas",
@@ -895,7 +895,7 @@
     "calc.tip.vase": "Se imprime con el fondo hacia abajo y sin soportes. Puede no ser estanco; ponga un vaso dentro o pida al impresor que lo selle.",
     "calc.tip.logo": "Se imprime tumbado sin soportes. El motivo en otro color se hace cambiando el filamento.",
     "calc.tip.stamp": "El sello y el mango se imprimen juntos; el mango se pega con pegamento instantáneo (no incluido).",
-    "calc.tip.qr": "Imprima placa clara y código oscuro (cambio de filamento tras la última capa de la placa). Pruebe el código con el móvil antes de imprimir más piezas.",
+    "calc.tip.qr": "El código solo se lee en dos colores: placa clara, código oscuro. El proyecto descargado ya lleva el cambio de filamento sobre la placa; una impresión con nosotros ofrece el segundo color al pedir. Pruebe el código con el móvil antes de imprimir más.",
     "tools.stencil.title": "Plantilla para pintar",
     "tools.stencil.hint": "Un texto o motivo recortado en una placa. El interior de las letras se sujeta con puentes, así que nada se cae.",
     "tools.stencil.action": "Diseñar una plantilla",
@@ -1515,5 +1515,6 @@
     "param.f.cap.mouth": "Diámetro interior de la boca",
     "param.warn.seal_try": "El anillo de cierre es 0,3 mm más ancho que la boca y se ajusta al apretar la primera vez. Si la tapa gotea, indique el diámetro interior 0,2 mm mayor; si no se puede apretar, 0,2 mm menor.",
     "param.need.liner": "un disco de goma espuma o silicona de 2 mm, tan ancho como el cuello",
-    "param.error.cap_seal_wide": "El anillo de cierre chocaría con la rosca o la pared: el diámetro interior de la boca puede ser como máximo :n mm. Mida el interior de la boca, no sobre la rosca."
+    "param.error.cap_seal_wide": "El anillo de cierre chocaría con la rosca o la pared: el diámetro interior de la boca puede ser como máximo :n mm. Mida el interior de la boca, no sobre la rosca.",
+    "download.color_change": "El proyecto lleva un cambio de filamento (M600) a :z mm: la impresora se detiene ahí, cambia la bobina por el segundo color y la impresión continúa. Imprima la placa clara y el código o el texto oscuro; de lo contrario no se puede leer."
 }
