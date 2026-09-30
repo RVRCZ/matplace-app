@@ -677,7 +677,9 @@ def pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_top=None, sizes=Non
 #   antique - Roman bust: deeply rounded chest, a small tablet with the name, a turned socle with a wide foot
 #   cut     - sculptor's cut: no foot, the bust stands on its own flat cut, the shoulders are cut off at a slant
 BUST_STYLES = {
-    "socle": {"chest": 0.88, "more": 0.22, "round": 0.13, "power": 2.0, "flat": 0.17,
+    # the chest of the modern bust is cut in an arc from shoulder to shoulder, lowest in the middle, and the cut
+    # climbs to the back; nothing is added, the bust lies on its foot ("arc" = how high the cut ends at the sides)
+    "socle": {"arc": 0.30, "tilt": 8.0,
               "foot": 0.35, "band": 0.135, "r_foot": 0.216, "r_top": 0.128},
     "antique": {"chest": 0.95, "more": 0.26, "round": 0.24, "power": 1.7, "flat": 0.19,
                 "foot": 0.25, "r_foot": 0.20, "r_drum": 0.15, "r_waist": 0.115,
@@ -692,7 +694,7 @@ def socle_sizes(bust_h, r, kind="socle"):
     k = BUST_STYLES[kind]
     out = {"kind": kind, "bust_h": float(bust_h)}
     for key, share in k.items():
-        out[key] = share if key in ("chest", "more", "power", "lean", "keep") else share * bust_h
+        out[key] = share if key in ("chest", "more", "power", "lean", "keep", "tilt") else share * bust_h
     if kind == "socle":
         out["r_foot"] = min(out["r_foot"], max(r * 0.9, out["r_top"] * 1.3))
         out["r_top"] = min(out["r_top"], out["r_foot"] * 0.62)
@@ -830,9 +832,64 @@ def slant_cut(body, z_bottom, lean_deg, keep):
     return body
 
 
+def arc_cut(body, m, cx, z_cut, rise, tilt_deg):
+    """
+    The cut of a modern studio bust. Seen from the front the chest ends in an arc: lowest in the middle, up at
+    the shoulders by `rise`. Seen from the side the cut climbs to the back by `tilt_deg`. Only material is taken
+    away. Returns (body, y of the front of the chest, the tangent of the tilt).
+    """
+    import numpy as np
+    import manifold3d as M
+    x0, y0, _, x1, y1, z1 = body.bounding_box()
+    # the cut turns round the front edge of the chest (the nose and the chin reach further out than the chest)
+    base = body.slice(float(z_cut + 0.5))
+    if base.area() > 0:
+        y0 = float(base.bounds()[1])
+    neck = neck_level(m, z_cut)
+    if neck is not None:
+        rise = min(rise, 0.62 * (neck - z_cut))                 # the arc ends below the shoulders, never at the neck
+    # the width of the chest where the arc ends, not of a strand of hair or a hand further out
+    row = body.slice(float(z_cut + rise)).hull()
+    rx0, _, rx1, _ = row.bounds()
+    half = max(abs(rx1 - cx), abs(cx - rx0)) * 1.03
+    if rise < 1.0 or half < 1.0:
+        return body, float(y0), 0.0
+    xs = np.linspace(-half, half, 97)
+    arc = rise * (1 - np.sqrt(np.clip(1 - (xs / half) ** 2, 0, 1)))
+    deep = (z1 - z_cut) + 10.0
+    pts = [(-half - 60.0, rise), (-half - 60.0, -deep), (half + 60.0, -deep), (half + 60.0, rise)]
+    pts += [(float(x), float(h)) for x, h in zip(xs[::-1], arc[::-1])]
+    long = (y1 - y0) + 40.0
+    # drawn in x and height, pushed through the depth of the bust, then tipped up to the back round the front edge
+    tool = M.CrossSection([np.array(pts, dtype=np.float64)]).extrude(float(long)).rotate([90.0, 0.0, 0.0]).translate([0, long - 20.0, 0])
+    tool = tool.rotate([float(tilt_deg), 0.0, 0.0]).translate([cx, y0, z_cut])
+    cut = body - tool
+    if cut.volume() < 0.5 * body.volume():
+        return body, float(y0), 0.0
+    return cut, float(y0), float(np.tan(np.radians(tilt_deg)))
+
+
 def bust_shape(kind, body, m, cx, cy, z_cut, r):
     """The chest of the bust the way the style wants it. Returns (body, bottom of the chest, sizes of the foot)."""
     style = BUST_STYLES[kind]
+    if kind == "socle":
+        sizes = socle_sizes(float(m.bounds[1][2]) - float(z_cut), r, kind)
+        sizes["added"], sizes["chest_enough"] = 0.0, True
+        body, front, climb = arc_cut(body, m, cx, float(z_cut), sizes["arc"], style["tilt"])
+        # the foot stands under the middle of the chest; its collar goes into the body as far as the cut climbs
+        # over it, so the bust lies on the foot and no gap shows behind the collar
+        collar = sizes["r_top"] * 1.22
+        # the foot moves forward under the front of the chest, so the chest lies on it as on the reference,
+        # but the weight of the bust stays well inside the foot
+        try:
+            weight_y = float(m.center_mass[1])
+        except Exception:  # noqa: BLE001
+            weight_y = float(cy)
+        at = max(front + collar + 0.04 * sizes["bust_h"], weight_y - 0.45 * sizes["r_foot"])
+        at = min(at, float(cy))
+        sizes["cy"] = at
+        seat = float(z_cut) + climb * max(0.0, at - front) + climb * collar + sizes["arc"] * (1 - (1 - min(1.0, collar / max(r, collar)) ** 2) ** 0.5)
+        return body, seat, sizes
     before = float(m.bounds[1][2]) - float(z_cut)
     body, bottom, chest = longer_chest(body, m, float(z_cut), style["chest"], style["more"], style.get("round", 0.0) * 0.8)
     sizes = socle_sizes(float(m.bounds[1][2]) - bottom, r, kind)
@@ -1122,7 +1179,7 @@ def main(argv):
                         if kind == "cut":
                             note = {"pedestal": "cut", "pedestal_height": 0.0}
                         else:
-                            ped, note = pedestal_mesh(kind, cx, cy, r, ped_h, overlap, extras, z_base + overlap, sizes)
+                            ped, note = pedestal_mesh(kind, cx, float((sizes or {}).get("cy", cy)), r, ped_h, overlap, extras, z_base + overlap, sizes)
                     except Exception as e:  # noqa: BLE001 - fall back to the plain round base
                         if kind == "cut":
                             m, ped, note = whole, None, {"pedestal": "none", "pedestal_error": str(e)[:120]}
