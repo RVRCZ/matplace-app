@@ -295,6 +295,18 @@ class FarmOrderFlowTest extends TestCase
         $this->actingAs($this->user)->get('/farm?supports=off&lang=cs')->assertOk()->assertSee('Bez podpěr');
     }
 
+    /** A model from one of our tools built to print without supports (a cap) is sliced without them unless the customer asks. */
+    public function test_a_tool_model_built_without_supports_is_sliced_without_them(): void
+    {
+        $uuid = $this->upload(20);
+        ModelFile::where('uuid', $uuid)->update(['origin' => 'tool', 'origin_ref' => 'cap', 'tool_params' => json_encode(['style' => 'push'])]);
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertSame('auto', $order->supports);
+        $this->assertSame('0', $order->slice_params['overrides']['process']['enable_support']);
+        $this->assertFalse($order->supports_used);
+    }
+
     public function test_several_copies_print_on_one_plate_and_more_than_a_plate_takes_prints_plate_after_plate(): void
     {
         // 4 cubes of 20 mm: a 2 × 2 grid 5 mm apart, one print, one price for all four

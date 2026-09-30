@@ -234,6 +234,9 @@ class FarmTuningController extends Controller
             return back()->with('error', $score ? 'Test s hodnocením '.$score.'/5 nelze převzít jako vyladěný. Použijte návrh úprav a vytiskněte další test.' : 'Nejdřív test ohodnoťte (4 nebo 5), teprve pak jde převzít.');
         }
         $candidate = (array) ($order->test_params['candidate'] ?? []);
+        // a good test also says what the machine manages without supports: the row prints with that from now on
+        $tp = (array) $order->test_params;
+        $candidate['process'] = TuningAdvisor::supportSettings((array) ($tp['result'] ?? []), (string) ($tp['object'] ?? 'quick')) + (array) ($candidate['process'] ?? []);
         if (! empty($data['nozzle_temp'])) {
             // a tower: the operator picked the floor that printed best
             $candidate['nozzle_temp'] = (int) $data['nozzle_temp'];
