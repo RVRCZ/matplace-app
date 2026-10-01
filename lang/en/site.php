@@ -82,4 +82,18 @@ return [
         'cta' => 'Get the price for your model',
         'compare_hint' => 'The calculator compares the materials for your own model: time, weight and price.',
     ],
+
+    // ── step F: collections and banners ──
+    'collections' => [
+        'title' => 'Collections',
+        'description' => 'Hand-picked sets of models on one theme: what we print for you and what is worth a look for inspiration.',
+        'description_one' => 'The collection ":title": selected models for 3D printing in one place.',
+        'count' => '{0} no models yet|{1} :n model|[2,*] :n models',
+        'printable' => 'we print it',
+        'inspiration' => 'inspiration',
+        'empty' => 'No collections here yet.',
+        'empty_one' => 'This collection has no model that can be shown in this language right now.',
+        'preview' => 'Preview: the collection is not public yet, only you can see it.',
+    ],
+    'banners' => 'News',
 ];

@@ -2,10 +2,16 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AccountSecurityController;
+use App\Http\Controllers\Admin\CatalogController as AdminCatalogController;
+use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
+use App\Http\Controllers\Admin\ContentController as AdminContentController;
+use App\Http\Controllers\Admin\EmailController as AdminEmailController;
 use App\Http\Controllers\Admin\FarmCatalogController;
 use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
+use App\Http\Controllers\Admin\MetaController as AdminMetaController;
+use App\Http\Controllers\Admin\StatsController as AdminStatsController;
 use App\Http\Controllers\Admin\YouTubeController;
 use App\Http\Controllers\Api\AdviceController;
 use App\Http\Controllers\Api\CalculationController;
@@ -23,6 +29,7 @@ use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CalculatorController;
+use App\Http\Controllers\CollectionPageController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\Designer\BulkUploadController as DesignerBulkController;
 use App\Http\Controllers\Designer\CardController as DesignerCardController;
@@ -77,6 +84,10 @@ $pages = function () {
     Route::get('/d/{designer}', [DesignerPageController::class, 'show'])->name('designers.show');
 
     // Models the farm prints (designers' cards with a file)
+    // Collections: hand-picked sets of models from both catalogues
+    Route::get('/collections', [CollectionPageController::class, 'index'])->name('collections.index');
+    Route::get('/collections/{collection}', [CollectionPageController::class, 'show'])->name('collections.show');
+
     // The blog (old addresses kept) and the static pages
     Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
     Route::get('/blog/{post}', [BlogController::class, 'show'])->name('blog.show');
@@ -362,6 +373,65 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/orders/{order}/photos/{index}', [$photos, 'show'])->whereNumber('index')->name('photos.show');
     Route::post('/orders/{order}/photos/{index}/delete', [$photos, 'destroy'])->whereNumber('index')->name('photos.destroy');
     Route::post('/orders/{order}/judge', [$photos, 'judge'])->name('photos.judge');
+});
+
+// ── Admin: catalogues, collections, content, Meta, statistics, AI, e-mails (step F) ──
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', fn () => redirect()->route('admin.stats.funnel'))->name('home');
+
+    $catalog = AdminCatalogController::class;
+    Route::get('/catalog', [$catalog, 'index'])->name('catalog.index');
+    Route::get('/catalog/search', [$catalog, 'search'])->name('catalog.search');
+    Route::post('/catalog/import', [$catalog, 'import'])->name('catalog.import');
+    Route::get('/catalog/imports/{import}', [$catalog, 'showImport'])->whereNumber('import')->name('catalog.imports.show');
+    Route::get('/catalog/review', [$catalog, 'review'])->name('catalog.review');
+    Route::post('/catalog/review', [$catalog, 'resolve'])->name('catalog.resolve');
+    Route::post('/catalog/classify', [$catalog, 'classifyBatch'])->name('catalog.classify');
+    Route::get('/catalog/cards', [$catalog, 'cards'])->name('catalog.cards');
+    Route::post('/catalog/cards/{card:id}', [$catalog, 'updateCard'])->whereNumber('card')->name('catalog.cards.update');
+    Route::post('/catalog/cards/{card:id}/reslice', [$catalog, 'reslice'])->whereNumber('card')->name('catalog.cards.reslice');
+    Route::get('/catalog/models/{model:id}', [$catalog, 'edit'])->whereNumber('model')->name('catalog.edit');
+    Route::post('/catalog/models/{model:id}', [$catalog, 'update'])->whereNumber('model')->name('catalog.update');
+    Route::post('/catalog/models/{model:id}/toggle', [$catalog, 'toggle'])->whereNumber('model')->name('catalog.toggle');
+    Route::post('/catalog/models/{model:id}/text', [$catalog, 'text'])->whereNumber('model')->middleware('throttle:30,1,admin-ai')->name('catalog.text');
+    Route::post('/catalog/models/{model:id}/classify', [$catalog, 'classify'])->whereNumber('model')->middleware('throttle:60,1,admin-ai')->name('catalog.classify.one');
+
+    $collections = AdminCollectionController::class;
+    Route::get('/collections', [$collections, 'index'])->name('collections.index');
+    Route::post('/collections', [$collections, 'store'])->name('collections.store');
+    Route::get('/collections/suggestions', [$collections, 'suggestions'])->name('collections.suggestions');
+    Route::post('/collections/suggestions', [$collections, 'suggest'])->middleware('throttle:10,1,admin-ai')->name('collections.suggest');
+    Route::post('/collections/from-suggestion', [$collections, 'fromSuggestion'])->name('collections.from_suggestion');
+    Route::get('/collections/{collection}', [$collections, 'edit'])->whereNumber('collection')->name('collections.edit');
+    Route::post('/collections/{collection}', [$collections, 'update'])->whereNumber('collection')->name('collections.update');
+    Route::post('/collections/{collection}/delete', [$collections, 'destroy'])->whereNumber('collection')->name('collections.delete');
+
+    $content = AdminContentController::class;
+    Route::get('/content', fn () => redirect()->route('admin.content.posts'))->name('content');
+    Route::get('/content/posts', [$content, 'posts'])->name('content.posts');
+    Route::get('/content/posts/new', [$content, 'editPost'])->name('content.posts.new');
+    Route::post('/content/posts/new', [$content, 'savePost'])->name('content.posts.create');
+    Route::post('/content/posts/image', [$content, 'uploadImage'])->name('content.posts.image');
+    Route::get('/content/posts/{post}', [$content, 'editPost'])->whereNumber('post')->name('content.posts.edit');
+    Route::post('/content/posts/{post}', [$content, 'savePost'])->whereNumber('post')->name('content.posts.update');
+    Route::post('/content/posts/{post}/delete', [$content, 'deletePost'])->whereNumber('post')->name('content.posts.delete');
+    Route::get('/content/banners', [$content, 'banners'])->name('content.banners');
+    Route::post('/content/banners/new', [$content, 'saveBanner'])->name('content.banners.create');
+    Route::post('/content/banners/{banner}', [$content, 'saveBanner'])->whereNumber('banner')->name('content.banners.update');
+    Route::post('/content/banners/{banner}/delete', [$content, 'deleteBanner'])->whereNumber('banner')->name('content.banners.delete');
+
+    Route::get('/content/meta', [AdminMetaController::class, 'index'])->name('meta.index');
+    Route::get('/content/meta/compose', [AdminMetaController::class, 'compose'])->middleware('throttle:30,1,admin-ai')->name('meta.compose');
+    Route::post('/content/meta/publish', [AdminMetaController::class, 'publish'])->name('meta.publish');
+
+    Route::get('/stats', [AdminStatsController::class, 'funnel'])->name('stats.funnel');
+    Route::get('/stats/search', [AdminStatsController::class, 'search'])->name('stats.search');
+    Route::get('/ai', [AdminStatsController::class, 'ai'])->name('ai.index');
+
+    Route::get('/emails', [AdminEmailController::class, 'index'])->name('emails.index');
+    Route::post('/emails/write', [AdminEmailController::class, 'write'])->middleware('throttle:30,1,admin-ai')->name('emails.write');
+    Route::get('/emails/{email}', [AdminEmailController::class, 'show'])->whereNumber('email')->name('emails.show');
+    Route::post('/emails/{email}', [AdminEmailController::class, 'update'])->whereNumber('email')->name('emails.update');
 });
 
 // ── Admin: print videos on the YouTube channel (the callback URI is registered in Google Cloud, keep it) ──

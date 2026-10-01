@@ -7,6 +7,7 @@ use App\Engines\DTO\GenerationHandle;
 use App\Engines\DTO\GenerationOptions;
 use App\Engines\DTO\GenerationStatus;
 use App\Engines\Exceptions\GenerationException;
+use App\Support\AiUsage;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -141,6 +142,8 @@ final class TripoGenerator implements ModelGenerator
         if (! $res->ok() || ! $id) {
             throw new GenerationException('Tripo task failed: '.$this->err($res->json(), $res->status()));
         }
+        // one generation = one flat price (config/ai.php prices.models.tripo)
+        AiUsage::record('generate', 'tripo', []);
 
         return new GenerationHandle($this->name(), (string) $id, ['credits' => $credits, 'model' => $body['model'] ?? null]);
     }

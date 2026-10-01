@@ -33,6 +33,8 @@
         <env name="ENGINE_IMPORT" value="fake"/>
         <env name="ENGINE_TRANSLATOR" value="fake"/>
         <env name="ENGINE_SHIPPING" value="fake"/>
+        <env name="ENGINE_ASSISTANT" value="fake"/>
+        <env name="ENGINE_SOCIAL" value="fake"/>
         <env name="PACKETA_CARRIERS_FILE" value="storage/framework/testing/packeta_carriers.json"/>
         <env name="FARM_PAYMENT_GATEWAY" value="fake"/>
         <env name="FEATURE_MARKETPLACE" value="true"/>

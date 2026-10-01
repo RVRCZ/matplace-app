@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Social\SocialPublisher;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Locales;
@@ -75,7 +76,9 @@ class AuthController extends Controller
         $this->claim($request);
         // sends the verification e-mail (User::sendEmailVerificationNotification) in the language of the page
         event(new Registered($user));
-        Track::event('register', $user, ['kind' => 'email']);
+        // the same id goes to the pixel in the browser and to the Conversions API, so Meta counts the registration once
+        Track::event('register', $user, ['kind' => 'email', 'event_id' => 'register-'.$user->id]);
+        app(SocialPublisher::class)->conversion('register', 'register-'.$user->id, $request, $user->email);
 
         return redirect()->intended(route('account'))->with('status', __('user.verify.registered', ['email' => $user->email]));
     }

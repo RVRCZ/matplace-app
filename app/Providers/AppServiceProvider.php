@@ -7,11 +7,13 @@ use App\Domain\Calculation\PriceEngine;
 use App\Domain\Calculation\RoughEstimator;
 use App\Domain\Designer\DesignerProfiles;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Mail\Outbox;
 use App\Events\AccountErasing;
 use App\Models\Event as Visit;
 use App\Routing\LocalizedUrlGenerator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
@@ -67,6 +69,15 @@ class AppServiceProvider extends ServiceProvider
         // @money($order->total()) prints a Money as it is; @money(149) a price defined in crowns, in the visitor's
         // currency; @money(12.5, 'EUR') an amount in a named currency. No template writes "Kč" by itself.
         Blade::directive('money', fn (string $expression) => "<?php echo e(\\App\\Support\\Money::show({$expression})); ?>");
+
+        // every mail that leaves is listed in /admin/emails as sent; one an admin approved there is in the list already
+        Event::listen(function (MessageSent $sent) {
+            if ($sent->message->getHeaders()->has('X-Matplace-Outgoing')) {
+                return;
+            }
+            $to = implode(', ', array_map(fn ($a) => $a->getAddress(), $sent->message->getTo()));
+            Outbox::logSent($to, (string) $sent->message->getSubject(), (string) ($sent->message->getTextBody() ?? strip_tags((string) $sent->message->getHtmlBody())), app()->getLocale());
+        });
 
         RateLimiter::for('uploads', fn (Request $r) => Limit::perMinute(20)->by($r->ip()));
         RateLimiter::for('calculations', fn (Request $r) => Limit::perMinute(60)->by($r->ip()));

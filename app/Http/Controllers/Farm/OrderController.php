@@ -12,6 +12,7 @@ use App\Domain\Farm\OrderService;
 use App\Domain\Farm\PlateLayout;
 use App\Domain\Farm\Shipping;
 use App\Domain\Farm\Wallet;
+use App\Domain\Social\SocialPublisher;
 use App\Domain\YouTube\FarmVideos;
 use App\Http\Controllers\Controller;
 use App\Models\Calculation;
@@ -159,7 +160,7 @@ class OrderController extends Controller
 
         try {
             $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto', isset($data['second_color']) ? (int) $data['second_color'] : null, $card, $inspiration);
-            Track::event('order_created', $card ?? $order->modelFile, ['order' => $order->id]);
+            Track::event('order_created', $card ?? $order->modelFile, array_filter(['order' => $order->id, 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null]));
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
                 ? response()->json(['error' => $e->reason, 'message' => $e->text()], 422)
@@ -299,7 +300,8 @@ class OrderController extends Controller
             $videos->setConsent($order, true);
         }
         $order->refresh();
-        Track::event('order_paid', $order->designer_model_id ? $order->designerModel : $order->modelFile, ['order' => $order->id, 'value' => (float) $order->price_total, 'currency' => (string) $order->currency]);
+        Track::event('order_paid', $order->designer_model_id ? $order->designerModel : $order->modelFile, array_filter(['order' => $order->id, 'value' => (float) $order->price_total, 'currency' => (string) $order->currency, 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null, 'event_id' => 'order-'.$order->id]));
+        app(SocialPublisher::class)->conversion('order_paid', 'order-'.$order->id, $request, $request->user()->email, ['value' => (float) $order->price_total, 'currency' => (string) $order->currency]);
 
         return response()->json($this->describe($order->refresh(), $request));
     }

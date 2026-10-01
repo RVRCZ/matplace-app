@@ -49,7 +49,18 @@ return [
 
     // Measurement, loaded in the browser only after the visitor agreed in the cookie bar (App\Support\Consent)
     'ga4' => ['id' => env('GA_MEASUREMENT_ID')],
-    'meta' => ['pixel_id' => env('META_PIXEL_ID')],
+    'meta' => [
+        'pixel_id' => env('META_PIXEL_ID'),
+        // Graph API: a System User token of the business, the Facebook page, the Instagram account, the ad account
+        'token' => env('META_SYSTEM_TOKEN'),
+        'page_id' => env('META_PAGE_ID'),
+        'ig_id' => env('META_IG_ID'),
+        'ad_account_id' => env('META_AD_ACCOUNT_ID'),
+        // Conversions API (server to Meta), sent only for visitors who allowed marketing cookies
+        'capi_token' => env('META_CAPI_TOKEN'),
+        'capi_test_code' => env('META_CAPI_TEST_CODE'),
+        'version' => 'v21.0',
+    ],
 
     // Packeta (Zásilkovna): the API key also opens the pickup point picker in the browser, the password is server-side only
     'packeta' => [

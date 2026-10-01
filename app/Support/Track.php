@@ -33,7 +33,7 @@ final class Track
     public const SHARED = ['upload', 'generate', 'calculation', 'download', 'order_created', 'order_paid', 'register', 'designer_enabled', 'designer_file_uploaded', 'ref_visit', 'search'];
 
     /** What of an event's details may leave the server: numbers and codes, never a text somebody typed. */
-    private const SHARED_META = ['kind', 'tool', 'value', 'currency', 'order', 'results'];
+    private const SHARED_META = ['kind', 'tool', 'value', 'currency', 'order', 'results', 'event_id'];
 
     public const REF_DAYS = 30;
 
@@ -71,6 +71,37 @@ final class Track
 
             return null;
         }
+    }
+
+    /**
+     * The first page of a browser session: one `visit` with where it landed. The funnels of the admin start here.
+     * Robots, scripts and requests without a session are not visits.
+     */
+    public static function visit(Request $request, ?string $tool = null): ?Event
+    {
+        if (! $request->isMethod('GET') || $request->expectsJson() || Locales::isBot($request) || ! $request->hasSession() || $request->session()->has('visited')) {
+            return null;
+        }
+        $request->session()->put('visited', now()->timestamp);
+
+        return self::event(Event::VISIT, null, array_filter(['path' => '/'.ltrim($request->path(), '/'), 'tool' => $tool]));
+    }
+
+    /**
+     * Somebody opened a tool's page: at most once per visitor, tool and half hour (like a page view of a model).
+     */
+    public static function tool(string $tool): ?Event
+    {
+        $request = request();
+        if (Locales::isBot($request)) {
+            return null;
+        }
+        $session = $request->attributes->get('anon_session')?->id;
+        if ($session && Event::where('session_id', $session)->where('type', Event::VIEW)->where('subject_type', 'tool')->where('meta->tool', $tool)->where('created_at', '>', now()->subMinutes(30))->exists()) {
+            return null;
+        }
+
+        return self::event(Event::VIEW, null, ['tool' => $tool], 'tool');
     }
 
     /**

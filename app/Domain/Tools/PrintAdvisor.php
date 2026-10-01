@@ -5,6 +5,7 @@ namespace App\Domain\Tools;
 use App\Engines\Exceptions\EngineException;
 use App\Engines\Repair\PythonTool;
 use App\Models\ModelFile;
+use App\Support\AiUsage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -95,6 +96,7 @@ final class PrintAdvisor
         if (! $res->ok()) {
             throw new EngineException('Advice API HTTP '.$res->status().': '.mb_substr($res->body(), 0, 300));
         }
+        AiUsage::record('advise', (string) ($res->json('model') ?? $model), (array) $res->json('usage'));
         if ($res->json('stop_reason') === 'refusal') {
             throw new EngineException('The model declined.');
         }

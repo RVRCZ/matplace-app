@@ -18,6 +18,9 @@ return [
         // descriptions of models in cs / en / es (designer cards, the inspiration catalogue)
         'translate_model' => env('ANTHROPIC_TRANSLATE_MODEL', 'claude-opus-5-5'),
         'translate_effort' => env('ANTHROPIC_TRANSLATE_EFFORT', 'low'),
+        // the admin's helper: categories of models, texts for posts and descriptions, drafts of e-mails, themes of collections
+        'assistant_model' => env('ANTHROPIC_ASSISTANT_MODEL', 'claude-opus-5-5'),
+        'assistant_effort' => env('ANTHROPIC_ASSISTANT_EFFORT', 'low'),
     ],
 
     /*

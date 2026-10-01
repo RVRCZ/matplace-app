@@ -84,7 +84,8 @@ export function send(event: Fired): void {
     }
     if (pixelReady && w.fbq) {
         const params = event.type === 'order_paid' ? { value: meta.value, currency: meta.currency } : meta;
-        w.fbq(names[2] ? 'track' : 'trackCustom', names[1], params);
+        // the server reports the same conversion through the Conversions API: one id, counted once
+        w.fbq(names[2] ? 'track' : 'trackCustom', names[1], params, meta.event_id ? { eventID: String(meta.event_id) } : undefined);
     }
 }
 

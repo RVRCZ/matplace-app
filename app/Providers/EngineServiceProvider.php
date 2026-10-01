@@ -6,6 +6,9 @@ use App\Domain\Calculation\RoughEstimator;
 use App\Domain\Farm\TestPhotoJudge;
 use App\Domain\Farm\TestPhotos;
 use App\Domain\Tools\PrintAdvisor;
+use App\Engines\Ai\Assistant;
+use App\Engines\Ai\ClaudeAssistant;
+use App\Engines\Ai\FakeAssistant;
 use App\Engines\Contracts\MeshRepair;
 use App\Engines\Contracts\ModelGenerator;
 use App\Engines\Contracts\PaymentGateway;
@@ -46,6 +49,9 @@ use App\Engines\Shipping\PacketaClient;
 use App\Engines\Shipping\ShippingCarrier;
 use App\Engines\Slicer\FakeSlicer;
 use App\Engines\Slicer\OrcaSlicer;
+use App\Engines\Social\FakeMetaClient;
+use App\Engines\Social\GraphMetaClient;
+use App\Engines\Social\MetaClient;
 use App\Engines\Translate\ClaudeTranslator;
 use App\Engines\Translate\FakeTranslator;
 use App\Engines\Translate\Translator;
@@ -117,6 +123,14 @@ class EngineServiceProvider extends ServiceProvider
         $this->app->singleton(Translator::class, fn () => config('engines.translator') === 'fake'
             ? new FakeTranslator
             : new ClaudeTranslator((array) config('ai.anthropic')));
+
+        $this->app->singleton(Assistant::class, fn () => config('engines.assistant') === 'fake'
+            ? new FakeAssistant
+            : new ClaudeAssistant((array) config('ai.anthropic')));
+        // posts on Facebook and Instagram; the fake "publishes" nothing, so it must never answer in production
+        $this->app->singleton(MetaClient::class, fn ($app) => config('engines.social') === 'fake' && ! $app->environment('production')
+            ? new FakeMetaClient
+            : new GraphMetaClient((array) config('services.meta')));
 
         // parcels; the fake hands every order over without a parcel existing, so it must never answer in production
         $this->app->singleton(ShippingCarrier::class, fn ($app) => config('engines.shipping') === 'fake' && ! $app->environment('production')

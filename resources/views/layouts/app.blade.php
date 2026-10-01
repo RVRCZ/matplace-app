@@ -81,6 +81,9 @@
 
     <main class="mx-auto max-w-6xl px-4 pb-16 pt-6">
         @yield('content')
+        @if(($tool ?? null) === 'calc')
+            @include('partials.banners')
+        @endif
         @if($toolSeo)
             @include('tools._content', ['tool' => $tool, 'seo' => $toolSeo])
         @endif
@@ -95,6 +98,7 @@
                 @endforeach
                 <a href="{{ route('materials') }}" class="underline hover:text-slate-900">{{ __('site.materials.title') }}</a>
                 <a href="{{ route('catalog.index') }}" class="underline hover:text-slate-900">{{ __('models.inspiration.title') }}</a>
+                @if(\App\Http\Controllers\CollectionPageController::has(app()->getLocale()))<a href="{{ route('collections.index') }}" class="underline hover:text-slate-900">{{ __('site.collections.title') }}</a>@endif
                 @if(in_array(app()->getLocale(), \App\Http\Controllers\BlogController::languages(), true))<a href="{{ route('blog.index') }}" class="underline hover:text-slate-900">{{ __('site.blog.title') }}</a>@endif
                 <a href="{{ config('youtube.channel_url') }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 hover:text-slate-900">
                     {{-- YouTube icon, as the brand guidelines allow for linking to a channel --}}

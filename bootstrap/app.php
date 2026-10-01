@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\ForwardEvents;
 use App\Http\Middleware\GuardModelFile;
 use App\Http\Middleware\LegacyRedirects;
+use App\Http\Middleware\RecordVisit;
 use App\Http\Middleware\RememberReferral;
 use App\Http\Middleware\SetLocale;
 use App\Models\AnonymousSession;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             SetLocale::class,
             EnsureAnonymousSession::class,
             RememberReferral::class,
+            RecordVisit::class,
             ForwardEvents::class,
         ]);
         // addresses of the old site are answered before routing (config/legacy.php)

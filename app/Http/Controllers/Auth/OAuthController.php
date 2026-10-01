@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Social\SocialPublisher;
 use App\Http\Controllers\Controller;
 use App\Models\OauthIdentity;
 use App\Models\User;
@@ -72,7 +73,8 @@ class OAuthController extends Controller
                     'avatar_path' => null,
                 ]);
                 $user->setRole(User::ROLE_CUSTOMER, true);
-                Track::event('register', $user, ['kind' => $provider]);
+                Track::event('register', $user, ['kind' => $provider, 'event_id' => 'register-'.$user->id]);
+                app(SocialPublisher::class)->conversion('register', 'register-'.$user->id, $request, $user->email);
             } elseif (! $user->email_verified_at) {
                 // Somebody registered this address with a password and never proved it was theirs. Its real owner has
                 // just arrived through Google: the unproven password must not open the account any more.

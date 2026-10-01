@@ -82,4 +82,18 @@ return [
         'cta' => 'Calcular el precio de su modelo',
         'compare_hint' => 'La calculadora compara los materiales para su propio modelo: tiempo, peso y precio.',
     ],
+
+    // ── step F: collections and banners ──
+    'collections' => [
+        'title' => 'Colecciones',
+        'description' => 'Conjuntos de modelos elegidos a mano sobre un tema: lo que imprimimos para usted y lo que merece la pena como inspiración.',
+        'description_one' => 'La colección «:title»: modelos seleccionados para impresión 3D en un solo lugar.',
+        'count' => '{0} aún sin modelos|{1} :n modelo|[2,*] :n modelos',
+        'printable' => 'lo imprimimos',
+        'inspiration' => 'inspiración',
+        'empty' => 'Aún no hay colecciones.',
+        'empty_one' => 'Esta colección no tiene ahora ningún modelo que se pueda mostrar en este idioma.',
+        'preview' => 'Vista previa: la colección aún no es pública, solo la ve usted.',
+    ],
+    'banners' => 'Novedades',
 ];

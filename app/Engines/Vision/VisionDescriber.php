@@ -3,6 +3,7 @@
 namespace App\Engines\Vision;
 
 use App\Engines\Exceptions\EngineException;
+use App\Support\AiUsage;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -59,6 +60,7 @@ final class VisionDescriber
         if (! $res->ok()) {
             return ['ok' => true, 'subject' => 'unknown', 'reason' => 'moderation_unavailable']; // fail open: the provider filters too
         }
+        AiUsage::record('moderate', (string) ($res->json('model') ?? ($this->config['model'] ?? 'claude-haiku')), (array) $res->json('usage'));
         $text = (string) ($res->json('content.0.text') ?? '');
         if (preg_match('/\{[\s\S]*\}/', $text, $m)) {
             $text = $m[0];
@@ -124,6 +126,7 @@ TXT;
         if (! $res->ok()) {
             throw new EngineException('Vision API HTTP '.$res->status().': '.mb_substr($res->body(), 0, 300));
         }
+        AiUsage::record('describe', (string) ($res->json('model') ?? ($this->config['model'] ?? 'claude-haiku')), (array) $res->json('usage'));
         $text = (string) ($res->json('content.0.text') ?? '');
         if (preg_match('/\{[\s\S]*\}/', $text, $m)) {
             $text = $m[0];

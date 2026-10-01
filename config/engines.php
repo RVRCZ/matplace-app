@@ -11,6 +11,10 @@ return [
     'settlement' => env('ENGINE_SETTLEMENT', 'qr-manual'),
     'translator' => env('ENGINE_TRANSLATOR', 'claude'),   // claude | fake
     'shipping' => env('ENGINE_SHIPPING', 'packeta'),      // packeta | fake
+    'assistant' => env('ENGINE_ASSISTANT', 'claude'),     // claude | fake
+    'social' => env('ENGINE_SOCIAL', 'meta'),             // meta | fake
+    // where the admin looks for models to add to the inspiration catalogue (the home page searches `search` below)
+    'admin_search' => ['printables', 'makerworld', 'makeronline'],
 
     // Portfolio import (Printables, MakerWorld): metadata and pictures only, never files.
     'import' => [

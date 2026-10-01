@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Calculation\CalculationService;
+use App\Domain\Stats\SearchLog;
 use App\Engines\Contracts\ModelGenerator;
 use App\Engines\DTO\SearchOptions;
 use App\Engines\DTO\SearchResultSet;
@@ -28,8 +29,11 @@ class SearchController extends Controller
     {
         $data = $request->validate(['q' => ['required', 'string', 'min:2', 'max:200']]);
         $set = $search->byText($data['q'], new SearchOptions(limit: 12, locale: app()->getLocale()));
-        // the words themselves are not kept here (no personal data in the statistics): only that somebody searched and what came back
+        // the words themselves are not kept with the visitor's events: only that somebody searched and what came back
         Track::event('search', null, ['results' => count($set->items)]);
+        // what was searched for is kept apart, without the person (the admin's overview of searches)
+        $local = count(array_filter($set->items, fn ($c) => $c->source === 'local'));
+        SearchLog::record($data['q'], app()->getLocale(), $local, count($set->items) - $local, $request->attributes->get('anon_session')?->id);
 
         return response()->json([
             'query' => $set->query,

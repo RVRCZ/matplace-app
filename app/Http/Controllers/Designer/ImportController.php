@@ -8,6 +8,7 @@ use App\Engines\Import\Sources;
 use App\Http\Controllers\Controller;
 use App\Models\DesignerImport;
 use App\Models\DesignerProfile;
+use App\Support\Track;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -67,6 +68,8 @@ class ImportController extends Controller
         if (count($refs) > DesignerImport::MAX_ITEMS) {
             return back()->withInput()->with('error', __('designer.import.too_many', ['max' => DesignerImport::MAX_ITEMS]));
         }
+
+        Track::event('designer_import', $profile, ['kind' => $source]);
 
         return redirect()->route('designer.imports.show', $importer->start($profile, $source, $refs)->id);
     }

@@ -82,4 +82,18 @@ return [
         'cta' => 'Spočítat cenu pro svůj model',
         'compare_hint' => 'Kalkulačka umí porovnat materiály přímo pro váš model: čas, hmotnost i cenu.',
     ],
+
+    // ── step F: collections and banners ──
+    'collections' => [
+        'title' => 'Kolekce',
+        'description' => 'Ručně vybrané sady modelů k jednomu tématu: co vám vytiskneme i co stojí za inspiraci.',
+        'description_one' => 'Kolekce „:title“: vybrané modely k 3D tisku na jednom místě.',
+        'count' => '{0} zatím bez modelů|{1} :n model|[2,4] :n modely|[5,*] :n modelů',
+        'printable' => 'vytiskneme',
+        'inspiration' => 'inspirace',
+        'empty' => 'Zatím tu žádná kolekce není.',
+        'empty_one' => 'V téhle kolekci teď není žádný model, který lze zobrazit v tomto jazyce.',
+        'preview' => 'Náhled: kolekce ještě není veřejná, vidíte ji jen vy.',
+    ],
+    'banners' => 'Novinky',
 ];

@@ -5,6 +5,7 @@ namespace App\Domain\Farm;
 use App\Engines\Exceptions\EngineException;
 use App\Engines\Repair\PythonTool;
 use App\Models\FarmOrder;
+use App\Support\AiUsage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -162,6 +163,7 @@ TXT;
         if (! $res->ok()) {
             throw new EngineException('Vision API HTTP '.$res->status().': '.mb_substr($res->body(), 0, 300));
         }
+        AiUsage::record('inspect', (string) ($res->json('model') ?? $model), (array) $res->json('usage'));
 
         return (array) $res->json();
     }
