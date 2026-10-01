@@ -67,6 +67,8 @@ final class ParametricGenerator
         'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'logo' => ['mode' => ['relief', 'height', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
+        // a code is read only in two colours: the plate (light ones first) and the code with its caption (dark ones first)
+        'qr' => ['plate_color' => ['white', 'yellow', 'grey', 'brown', 'orange', 'red', 'green', 'blue', 'black'], 'code_color' => ['black', 'blue', 'green', 'red', 'brown', 'orange', 'grey', 'yellow', 'white']],
         'lightbox' => ['shape' => ['rect', 'round'], 'led' => ['strip8', 'strip10', 'module']],
         'cutter' => ['edge' => ['sharp', 'straight'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'holder' => ['style' => ['cradle', 'pocket', 'hook', 'clip'], 'holes' => ['round', 'keyhole']],
@@ -166,6 +168,9 @@ final class ParametricGenerator
     public const MAX_BINS = 24;
 
     public const COLORS = ['white', 'black', 'grey', 'brown', 'red', 'blue', 'green', 'yellow', 'orange'];
+
+    /** The same colours as the preview paints them (FILAMENT in resources/js/calc/viewer.ts): swatches in forms, the nearest spool of the farm. */
+    public const COLOR_HEX = ['white' => '#EDE6D6', 'black' => '#17171A', 'grey' => '#8C9199', 'brown' => '#C2996B', 'red' => '#B8211F', 'blue' => '#213D78', 'green' => '#297345', 'yellow' => '#EBBD29', 'orange' => '#D1521F'];
 
     public function __construct(private readonly PythonTool $python) {}
 

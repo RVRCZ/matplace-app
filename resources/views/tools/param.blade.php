@@ -7,7 +7,7 @@
         'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
         'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.cut', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
         'color.white', 'color.black', 'color.grey', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
-        'param.warn.thread_try', 'param.warn.seal_try', 'param.need.liner', 'param.fits', 'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
+        'param.warn.thread_try', 'param.warn.seal_try', 'param.need.liner', 'param.fits', 'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.warn.qr_one_color', 'param.warn.qr_low_contrast', 'param.warn.qr_inverted', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
     // a field may be called differently in one tool ("param.f.holder.clearance"), else the common name
     $label = fn (string $k) => \Illuminate\Support\Facades\Lang::has('param.f.'.$kind.'.'.$k) ? __('param.f.'.$kind.'.'.$k) : __('param.f.'.$k);
     $colors = ['white', 'black', 'grey', 'brown', 'red', 'blue', 'green', 'yellow', 'orange', 'any'];
@@ -92,6 +92,22 @@
             @endif
 
             @foreach($choices as $key => $options)
+                @if(str_ends_with($key, '_color'))
+                    {{-- a filament colour: swatches in the colours the preview paints with --}}
+                    <fieldset>
+                        <legend class="lbl">{{ __('param.c.'.$kind.'.'.$key) }}: <span class="font-normal text-muted" data-color-name="{{ $key }}">{{ __('color.'.$options[0]) }}</span></legend>
+                        <div class="mt-2 flex flex-wrap gap-1" role="radiogroup">
+                            @foreach($options as $i => $o)
+                                <label class="cursor-pointer rounded-full border-2 border-transparent p-0.5 has-[:checked]:border-action has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action" title="{{ __('color.'.$o) }}">
+                                    <input type="radio" name="c-{{ $key }}" data-choice="{{ $key }}" value="{{ $o }}" class="sr-only" aria-label="{{ __('color.'.$o) }}" data-name="{{ __('color.'.$o) }}" @checked($i === 0)>
+                                    <span class="block h-9 w-9 rounded-full border border-slate-300" style="background:{{ \App\Domain\Tools\ParametricGenerator::COLOR_HEX[$o] }}" aria-hidden="true"></span>
+                                </label>
+                            @endforeach
+                        </div>
+                        @if(\Illuminate\Support\Facades\Lang::has('param.c.'.$kind.'.'.$key.'.hint'))<p class="hint">{{ \App\Support\NextStep::text('param.c.'.$kind.'.'.$key.'.hint') }}</p>@endif
+                    </fieldset>
+                    @continue
+                @endif
                 <fieldset @if(isset($when[$key])) data-when="{{ $when[$key][0] }}={{ implode(',', $when[$key][1]) }}" @endif>
                     <legend class="lbl">{{ __('param.c.'.$kind.'.'.$key) }}</legend>
                     <div class="mt-2 flex flex-wrap gap-2" role="radiogroup">
@@ -173,8 +189,8 @@
                             @foreach($config['materials'] as $m)<option value="{{ $m['code'] }}" @selected($m['code'] === $config['default_material'])>{{ $m['label'] }} ({{ $m['code'] }})</option>@endforeach
                         </select>
                     </label>
-                    @if($kind === 'modular')
-                        {{-- every bin has its own colour: they travel to the inquiry as a bill of parts --}}
+                    @if($kind === 'modular' || isset($choices['plate_color']))
+                        {{-- every bin has its own colour: they travel to the inquiry as a bill of parts; a two-colour sign has its colours above --}}
                         <input type="hidden" id="param-color" value="">
                     @else
                     <label class="lbl">{{ __('param.color') }}

@@ -21,7 +21,8 @@ CHOICES = {
     "logo": {"mode": ("relief", "height", "cutout", "standing"), "shape": ("rounded", "rect", "circle")},
     "sign": {"shape": ("rounded", "rect", "oval"), "style": ("emboss", "engrave", "outline", "name"), "typeface": ("sans", "serif", "mono", "script")},
     "stamp": {"mode": ("raised", "recessed"), "handle": ("knob", "none")},
-    "qr": {},
+    "qr": {"plate_color": ("white", "yellow", "grey", "brown", "orange", "red", "green", "blue", "black"),
+           "code_color": ("black", "blue", "green", "red", "brown", "orange", "grey", "yellow", "white")},
     "stencil": {},
     "lightbox": {"led": ("strip8", "strip10", "module"), "shape": ("rect", "round")},
     "cutter": {"edge": ("sharp", "straight"), "typeface": ("sans", "serif", "mono", "script")},
@@ -525,6 +526,17 @@ def stamp(M, Invalid, p):
 
 # ── QR sign ──────────────────────────────────────────────────────────────────
 
+# the filament colours of the preview (FILAMENT in resources/js/calc/viewer.ts), as r, g, b
+_FILAMENT = {"white": (0.93, 0.9, 0.84), "black": (0.09, 0.09, 0.1), "grey": (0.55, 0.57, 0.6), "brown": (0.76, 0.6, 0.42), "red": (0.72, 0.13, 0.12),
+             "blue": (0.13, 0.24, 0.47), "green": (0.16, 0.45, 0.27), "yellow": (0.92, 0.74, 0.16), "orange": (0.82, 0.32, 0.12)}
+
+
+def _lightness(name):
+    """Relative luminance of a filament colour, 0 black … 1 white (the sRGB formula contrast is measured with)."""
+    lin = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in _FILAMENT[name]]
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+
+
 def qr(M, Invalid, p):
     import numpy as np
     import segno
@@ -590,6 +602,22 @@ def qr(M, Invalid, p):
     # the code is only readable in a second colour; the stand on the same plate gets a light foot and a dark body, which
     # looks meant (before 30 Sep 2026 a sign with a stand stayed one colour, and a one-colour code is useless)
     notes["color_change_mm"] = round(plate_t, 2)
+    # the two colours the customer picked: the preview paints them, the order of a print starts from them
+    plate_color, code_color = _pick(Invalid, p, k, "plate_color"), _pick(Invalid, p, k, "code_color")
+    notes["colors"] = {"plate": plate_color, "code": code_color}
+    # "exact": the preview cuts the model at that height and paints the colours as their swatches show them
+    notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(plate_t + 0.05, 2), "color": code_color, "exact": True},
+                        {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": plate_color, "exact": True}]
+    light, dark = _lightness(plate_color), _lightness(code_color)
+    contrast = (max(light, dark) + 0.05) / (min(light, dark) + 0.05)
+    notes["contrast"] = round(contrast, 1)
+    notes["warnings"] = []
+    if plate_color == code_color:
+        notes["warnings"].append("qr_one_color")
+    elif contrast < 3:
+        notes["warnings"].append("qr_low_contrast")
+    elif dark > light:
+        notes["warnings"].append("qr_inverted")                          # a light code on a dark plate: not every reader takes it
     if stand:
         slot = plate_t + 0.5
         sw, sd, sh = size * 0.7, 34.0, 12.0

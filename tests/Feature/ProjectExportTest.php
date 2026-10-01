@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Tools\ParametricGenerator;
 use App\Engines\DTO\SliceParams;
 use App\Engines\Project\OrcaProjectExporter;
 use App\Engines\Project\PrusaProjectExporter;
@@ -53,7 +54,11 @@ class ProjectExportTest extends TestCase
         $xml = $this->entry($r->baseResponse->getFile()->getPathname(), 'Metadata/custom_gcode_per_layer.xml');
         $this->assertStringContainsString('top_z="2.60"', $xml, 'the first 0.2 mm layer above a 2.4 mm plate');
         $this->assertStringContainsString('gcode="M600"', $xml);
-        $this->assertStringContainsString('color="#222222"', $xml);
+        $this->assertStringContainsString('color="'.ParametricGenerator::COLOR_HEX['black'].'"', $xml, 'a design without colours of its own: a black code');
+        // the slicer shows the change in the colour the code was designed in
+        $file->forceFill(['tool_params' => ['code_color' => 'blue'] + $file->tool_params])->save();
+        $r = $this->get("/api/files/{$uuid}/project.3mf?printer=prusa-mk4s&quality=standard")->assertOk();
+        $this->assertStringContainsString('color="'.ParametricGenerator::COLOR_HEX['blue'].'"', $this->entry($r->baseResponse->getFile()->getPathname(), 'Metadata/custom_gcode_per_layer.xml'));
         $r = $this->get("/api/files/{$uuid}/project.3mf?printer=prusa-mk4s&quality=standard&scale=2")->assertOk();
         $this->assertStringContainsString('top_z="5.00"', $this->entry($r->baseResponse->getFile()->getPathname(), 'Metadata/custom_gcode_per_layer.xml'), 'twice the size: the plate is 4.8 mm');
         $this->get('/?lang=cs')->assertOk()->assertSee('dl-color', false);

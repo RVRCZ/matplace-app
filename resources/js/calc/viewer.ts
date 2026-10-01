@@ -64,6 +64,9 @@ export class Viewer {
             geom.computeVertexNormals();
         }
         if (!geom.getAttribute('normal')) geom.computeVertexNormals();
+        // a real two-colour print changes colour at one height: no triangle may reach across it
+        const change = regions?.find((r) => r.exact);
+        if (change && !painted) geom = cutAtHeight(geom, change.z0);
         // Z-up files (all print formats) → three.js Y-up
         const plate = painted ? true : regions?.length ? paintByRegion(geom, regions) : paintByHeight(geom, kind === 'lithophane', kind === 'qr');
         this.mesh = new Mesh(geom, plate ? this.plateMaterial : sculpture ? this.sculptureMaterial : this.material);
@@ -182,13 +185,57 @@ function paintByFaces(geom: BufferGeometry, paint: FacePaint): boolean {
     return true;
 }
 
-export interface Region { x0: number; y0: number; x1: number; y1: number; z0: number; color: string }
+/** exact: a real two-colour print — the colour as its swatch shows it, and a sharp change at z0 (see cutAtHeight) */
+export interface Region { x0: number; y0: number; x1: number; y1: number; z0: number; color: string; exact?: boolean }
+
+/**
+ * A stored design with a plate and a code in two chosen filament colours (the QR sign): everything above the plate
+ * in the colour of the code, the rest in the colour of the plate. null for every other model.
+ */
+export function twoColorRegions(params: Record<string, unknown> | null | undefined): Region[] | null {
+    const p = (params ?? {}) as { color_change_mm?: number; plate_color?: string; code_color?: string };
+    if (!p.color_change_mm || !p.plate_color || !p.code_color) return null;
+    const everywhere = { x0: -1e6, y0: -1e6, x1: 1e6, y1: 1e6, exact: true };
+    return [{ ...everywhere, z0: p.color_change_mm + 0.05, color: p.code_color }, { ...everywhere, z0: -1e6, color: p.plate_color }];
+}
+
+/**
+ * The same model with every triangle that crosses the height z cut along it (file coordinates, Z up), so each
+ * triangle lies wholly below or wholly above: the foot of a stand comes out in the first colour, its body in the second.
+ */
+function cutAtHeight(geom: BufferGeometry, z: number): BufferGeometry {
+    const pos = geom.getAttribute('position');
+    if (!pos || geom.index) return geom;
+    const out: number[] = [];
+    const v = (i: number): [number, number, number] => [pos.getX(i), pos.getY(i), pos.getZ(i)];
+    const mix = (a: number[], b: number[]): number[] => { const t = (z - a[2]) / (b[2] - a[2]); return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, z]; };
+    for (let t = 0; t < pos.count; t += 3) {
+        const tri = [v(t), v(t + 1), v(t + 2)];
+        const up = tri.map((p) => p[2] >= z);
+        if (up[0] === up[1] && up[1] === up[2]) { out.push(...tri[0], ...tri[1], ...tri[2]); continue; }
+        // the corner that is alone on its side comes first; the order round the triangle stays, so it keeps facing the same way
+        const lone = up[0] !== up[1] && up[0] !== up[2] ? 0 : up[1] !== up[0] && up[1] !== up[2] ? 1 : 2;
+        const a = tri[lone]; const b = tri[(lone + 1) % 3]; const c = tri[(lone + 2) % 3];
+        const p = mix(a, b); const q = mix(a, c);
+        out.push(...a, ...p, ...q, ...p, ...b, ...c, ...p, ...c, ...q);
+    }
+    const cut = new BufferGeometry();
+    cut.setAttribute('position', new Float32BufferAttribute(out, 3));
+    cut.computeVertexNormals();
+    return cut;
+}
 
 /** Filament colours as they look printed (slightly muted), keyed by the colour names used across the app. */
 export const FILAMENT: Record<string, [number, number, number]> = {
     white: [0.93, 0.9, 0.84], black: [0.09, 0.09, 0.1], grey: [0.55, 0.57, 0.6], brown: [0.76, 0.6, 0.42], red: [0.72, 0.13, 0.12], blue: [0.13, 0.24, 0.47],
     green: [0.16, 0.45, 0.27], yellow: [0.92, 0.74, 0.16], orange: [0.82, 0.32, 0.12],
 };
+
+/** A swatch colour (sRGB) as the linear value the renderer needs to show that very colour. */
+function deep(c: [number, number, number]): [number, number, number] {
+    const lin = (x: number): number => (x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4);
+    return [lin(c[0]), lin(c[1]), lin(c[2])];
+}
 
 /** Multi-part sets: each part gets the colour of the filament it will be printed from; the rest (a tray) stays neutral. */
 function paintByRegion(geom: BufferGeometry, regions: Region[]): boolean {
@@ -201,7 +248,9 @@ function paintByRegion(geom: BufferGeometry, regions: Region[]): boolean {
         const cx = (pos.getX(t) + pos.getX(t + 1) + pos.getX(t + 2)) / 3; const cy = (pos.getY(t) + pos.getY(t + 1) + pos.getY(t + 2)) / 3;
         const cz = (pos.getZ(t) + pos.getZ(t + 1) + pos.getZ(t + 2)) / 3;
         const r = regions.find((g) => cx >= g.x0 - 0.01 && cx <= g.x1 + 0.01 && cy >= g.y0 - 0.01 && cy <= g.y1 + 0.01 && cz >= g.z0);
-        const c = r ? (FILAMENT[r.color] ?? base) : base;
+        // vertex colours are taken as linear light and come out paler than the swatch (the look of the organizer bins);
+        // a two-colour print is shown as the swatches are, black really black: the code has to stand out the way it will when printed
+        const c = r ? (r.exact ? deep(FILAMENT[r.color] ?? base) : FILAMENT[r.color] ?? base) : base;
         for (let k = 0; k < 3; k++) { colors[(t + k) * 3] = c[0]; colors[(t + k) * 3 + 1] = c[1]; colors[(t + k) * 3 + 2] = c[2]; }
     }
     geom.setAttribute('color', new Float32BufferAttribute(colors, 3));

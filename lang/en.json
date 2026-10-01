@@ -805,7 +805,7 @@
     "param.warn.outlines_ignored": "Part of the SVG is outlines without a fill and was left out. Convert them to fills in your drawing program (Object → Stroke to path).",
     "param.warn.missing_chars": "The font does not have these characters, they are missing: :c",
     "param.warn.separate_pieces": "The cut-out consists of :p separate pieces (single letters, for example). If they should hold together, choose the relief on a plate.",
-    "param.qr.facts": "The code has :c × :c modules, one module is :m mm and the quiet zone :q mm. We verified that the design reads at this size. The code has to be two colours: a light plate, a dark code. The downloaded project carries the filament change above the plate, a print with us does it by itself.",
+    "param.qr.facts": "The code has :c × :c modules, one module is :m mm and the quiet zone :q mm. We verified that the design reads at this size. It prints in two colours: the downloaded project carries the filament change above the plate, a print with us does it by itself.",
     "param.saucer": "The saucer is :d mm across, the pot floor has :h drainage holes.",
     "param.vase.lead": "Pick the purpose, shape and size. The preview changes at once.",
     "param.vase.size": "Dimensions",
@@ -1529,5 +1529,13 @@
     "param.o.cap.m20": "M20 × 2.5",
     "param.o.cap.m24": "M24 × 3",
     "param.o.cap.m30": "M30 × 3.5",
-    "param.f.cap.outer": "Outer size of the cap (0 = just the wall round the neck)"
+    "param.f.cap.outer": "Outer size of the cap (0 = just the wall round the neck)",
+    "param.c.qr.plate_color": "Plate colour",
+    "param.c.qr.code_color": "Colour of the code and the caption",
+    "param.c.qr.code_color.hint": "A dark code on a light plate reads most reliably. The preview shows both colours.",
+    "param.c.qr.code_color.hint.farm": "A dark code on a light plate reads most reliably. When you order the print, we tick the pair of spools nearest to these colours; the printer changes the colour above the plate by itself.",
+    "param.c.qr.code_color.hint.download": "A dark code on a light plate reads most reliably. The downloaded project stops the printer above the plate, where you swap the spool for the colour of the code.",
+    "param.warn.qr_one_color": "The plate and the code are the same colour. Such a code cannot be read, pick two different colours.",
+    "param.warn.qr_low_contrast": "These two colours are too close in brightness and a reader may not tell them apart. Pick a light plate and a dark code, or try the code with a phone before a bigger order.",
+    "param.warn.qr_inverted": "Some readers do not take a light code on a dark plate. A light plate with a dark code is the safe choice."
 }

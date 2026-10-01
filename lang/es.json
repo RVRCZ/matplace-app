@@ -805,7 +805,7 @@
     "param.warn.outlines_ignored": "Parte del SVG son contornos sin relleno y se han omitido. Conviértalos en rellenos en su programa de dibujo (Objeto → Trazo a trayecto).",
     "param.warn.missing_chars": "La fuente no tiene estos caracteres, faltan: :c",
     "param.warn.separate_pieces": "La forma recortada consta de :p piezas sueltas (por ejemplo letras). Si deben mantenerse unidas, elija el relieve sobre placa.",
-    "param.qr.facts": "El código tiene :c × :c módulos, cada uno de :m mm y un margen libre de :q mm. Hemos comprobado que el diseño se lee a este tamaño. El código debe ser de dos colores: placa clara, código oscuro. El proyecto descargado lleva el cambio de filamento sobre la placa; una impresión con nosotros lo hace sola.",
+    "param.qr.facts": "El código tiene :c × :c módulos, cada uno de :m mm y un margen libre de :q mm. Hemos comprobado que el diseño se lee a este tamaño. Se imprime en dos colores: el proyecto descargado lleva el cambio de filamento sobre la placa; una impresión con nosotros lo hace sola.",
     "param.saucer": "El plato mide :d mm de diámetro, el fondo de la maceta tiene :h orificios de drenaje.",
     "param.vase.lead": "Elija el uso, la forma y las medidas. La vista previa cambia al instante.",
     "param.vase.size": "Medidas",
@@ -1529,5 +1529,13 @@
     "param.o.cap.m20": "M20 × 2,5",
     "param.o.cap.m24": "M24 × 3",
     "param.o.cap.m30": "M30 × 3,5",
-    "param.f.cap.outer": "Tamaño exterior de la tapa (0 = solo la pared alrededor del cuello)"
+    "param.f.cap.outer": "Tamaño exterior de la tapa (0 = solo la pared alrededor del cuello)",
+    "param.c.qr.plate_color": "Color de la placa",
+    "param.c.qr.code_color": "Color del código y del texto",
+    "param.c.qr.code_color.hint": "Un código oscuro sobre una placa clara es lo que mejor se lee. La vista previa muestra los dos colores.",
+    "param.c.qr.code_color.hint.farm": "Un código oscuro sobre una placa clara es lo que mejor se lee. Al pedir la impresión marcamos el par de bobinas más cercano a estos colores; la impresora cambia el color sobre la placa por sí sola.",
+    "param.c.qr.code_color.hint.download": "Un código oscuro sobre una placa clara es lo que mejor se lee. El proyecto descargado detiene la impresora sobre la placa; ahí cambia la bobina por el color del código.",
+    "param.warn.qr_one_color": "La placa y el código tienen el mismo color. Un código así no se puede leer; elija dos colores distintos.",
+    "param.warn.qr_low_contrast": "Estos dos colores tienen un brillo demasiado parecido y el lector puede no distinguirlos. Elija una placa clara y un código oscuro, o pruebe el código con el móvil antes de un pedido grande.",
+    "param.warn.qr_inverted": "Algunos lectores no leen un código claro sobre una placa oscura. Lo seguro es una placa clara con un código oscuro."
 }
