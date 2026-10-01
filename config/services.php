@@ -47,4 +47,11 @@ return [
         'redirect' => env('FACEBOOK_REDIRECT_URI', '/auth/facebook/callback'),
     ],
 
+    // Packeta (Zásilkovna): the API key also opens the pickup point picker in the browser, the password is server-side only
+    'packeta' => [
+        'api_key' => env('PACKETA_API_KEY'),
+        'api_password' => env('PACKETA_API_PASS'),
+        'eshop' => env('PACKETA_ESHOP'),
+    ],
+
 ];

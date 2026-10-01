@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Mail\QuoteAccepted;
+use App\Mail\QuoteChangeRequested;
 use App\Mail\QuoteSent;
 use App\Models\PricingProfile;
 use App\Models\PrinterMaterial;
@@ -43,7 +45,9 @@ class PrinterQuoteFlowTest extends TestCase
     public function test_profile_form_saves_five_fields_and_materials(): void
     {
         $user = User::factory()->create();
-        $this->actingAs($user)->post(route('account.roles.enable', 'printer'));
+        $user->setRole(User::ROLE_PRINTER, true);
+        $created = PrinterProfile::create(['user_id' => $user->id, 'display_name' => $user->name, 'slug' => PrinterProfile::makeSlug($user->name), 'contact_email' => $user->email, 'visible' => false]);
+        PricingProfile::create(['printer_profile_id' => $created->id, 'name' => 'Standard', 'is_default' => true]);
         $this->actingAs($user)->post(route('printer.profile.update'), [
             'hourly_rate' => 80, 'price_per_gram' => 3.5, 'setup_fee' => 40, 'margin_pct' => 10, 'lead_time_days' => 4,
             'materials' => ['PLA', 'PETG'], 'material_price' => ['PETG' => 4.2], 'display_name' => 'Moje tiskárna', 'capacity' => 'open',
@@ -153,7 +157,7 @@ class PrinterQuoteFlowTest extends TestCase
         // the customer asks for a change → printer edits and re-sends → version 2; the old version can no longer be accepted
         $this->post(route('quote.change', $quote), ['version' => 1, 'message' => 'Šlo by to v bílé?'])->assertRedirect();
         $this->assertSame('change', $quote->fresh()->status);
-        Mail::assertSent(\App\Mail\QuoteChangeRequested::class);
+        Mail::assertSent(QuoteChangeRequested::class);
         $this->post(route('quote.accept', $quote), ['version' => 1])->assertNotFound();      // not open while a change is pending
 
         $this->actingAs($printer)->post(route('printer.quotes.update', $quote), $this->form([], ['color' => 'bílá']))->assertRedirect();
@@ -170,7 +174,7 @@ class PrinterQuoteFlowTest extends TestCase
         $this->assertSame(2, $quote->accepted_version);
         $this->assertNotNull($quote->versions()->where('version', 2)->first()->accepted_at);
         $this->assertNull($quote->versions()->where('version', 1)->first()->accepted_at);
-        Mail::assertSent(\App\Mail\QuoteAccepted::class);
+        Mail::assertSent(QuoteAccepted::class);
 
         // an accepted quote is frozen; "repeat" makes a new draft with a new link
         $this->actingAs($printer)->post(route('printer.quotes.update', $quote), $this->form())->assertStatus(409);

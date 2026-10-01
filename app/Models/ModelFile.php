@@ -8,6 +8,7 @@ use App\Domain\Tools\ParametricGenerator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 class ModelFile extends Model
@@ -22,6 +23,8 @@ class ModelFile extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const STATUS_DELETED = 'deleted';   // files removed by the owner; the row stays only because an old order points to it
+
     protected $fillable = [
         'uuid', 'owner_user_id', 'anonymous_session_id', 'original_name', 'ext', 'mime', 'size_bytes', 'sha256',
         'storage_path', 'stl_path', 'preview_path', 'bbox', 'volume_mm3', 'area_mm2', 'triangles', 'mesh_report',
@@ -31,6 +34,7 @@ class ModelFile extends Model
     protected $casts = ['tool_params' => 'array',
         'bbox' => 'array',
         'mesh_report' => 'array',
+        'deleted_at' => 'datetime',
         'volume_mm3' => 'float',
         'area_mm2' => 'float',
         'triangles' => 'int',
@@ -125,6 +129,32 @@ class ModelFile extends Model
     public function wantsTreeSupports(): bool
     {
         return $this->origin === 'generated';
+    }
+
+    /** Address of the tool page that opens this design again; null when a tool did not make it or cannot reopen it. */
+    public function toolUrl(): ?string
+    {
+        $route = 'tools.'.(in_array($this->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : $this->origin_ref);
+        if ($this->origin !== 'tool' || ! is_array($this->tool_params) || ! Route::has($route)) {
+            return null;
+        }
+        // older reliefs stored only the stand flag: nothing to reopen
+        if ($route === 'tools.relief' && ! isset($this->tool_params['mode'])) {
+            return null;
+        }
+
+        return route($route, ['from' => $this->uuid]);
+    }
+
+    /** A small picture for lists: the stored one, else the card picture of the tool that made the model, else none. */
+    public function previewUrl(): ?string
+    {
+        if ($this->preview_path && Storage::disk(self::DISK)->exists($this->preview_path)) {
+            return route('api.files.preview', $this).'?v='.$this->updated_at?->timestamp;
+        }
+        $picture = 'img/tools/'.$this->kind().'-480.webp';
+
+        return $this->origin === 'tool' && is_file(public_path($picture)) ? asset($picture) : null;
     }
 
     public function isReady(): bool

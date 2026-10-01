@@ -33,6 +33,7 @@
 
 @section('content')
 <div id="calculator" data-state="idle" data-mode="{{ $mode }}">
+    @if(session('status') || session('error'))<div class="mx-auto mb-4 max-w-3xl">@include('partials.flash')</div>@endif
     @if($mode === 'printer')
         <div class="mb-4">@include('printer.nav')</div>
     @endif

@@ -24,6 +24,8 @@ class CreditTransaction extends Model
 
     public const TYPE_CHARGE = 'charge';     // − paid at once for something delivered at once (a generation beyond the quota)
 
+    public const TYPE_FORFEIT = 'forfeit';   // − unused credit given up when the owner deleted the account
+
     protected $fillable = ['user_id', 'type', 'amount', 'currency', 'farm_order_id', 'payment_id', 'note', 'created_by'];
 
     protected $casts = ['amount' => 'float', 'created_at' => 'datetime'];

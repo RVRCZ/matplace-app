@@ -125,6 +125,15 @@ final class Wallet
         });
     }
 
+    /** The owner deletes the account and gives up what is left: one line, so the ledger still explains the zero. */
+    public function forfeit(User $user, float $amount, string $note): CreditTransaction
+    {
+        return CreditTransaction::create([
+            'user_id' => $user->id, 'type' => CreditTransaction::TYPE_FORFEIT, 'amount' => -round($amount, 2),
+            'currency' => app(FarmSettings::class)->get('currency'), 'note' => $note,
+        ]);
+    }
+
     public function adjust(User $user, float $amount, string $note, int $adminId): CreditTransaction
     {
         return CreditTransaction::create([

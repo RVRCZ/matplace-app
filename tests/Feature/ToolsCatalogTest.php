@@ -26,7 +26,7 @@ class ToolsCatalogTest extends TestCase
     public function test_catalogue_lists_only_tools_that_really_exist(): void
     {
         $page = $this->get('/tools')->assertOk();
-        foreach (['tools.intent.file', 'tools.intent.create', 'tools.intent.spare', 'tools.printers.title', 'tools.organizer.title', 'tools.box.title', 'tools.spare.title', 'tools.check.title'] as $k) {
+        foreach (['tools.intent.file', 'tools.intent.create', 'tools.intent.spare', 'tools.organizer.title', 'tools.box.title', 'tools.spare.title', 'tools.check.title'] as $k) {
             $page->assertSee(__($k));
         }
         foreach (config('tools') as $key => $tool) {
@@ -45,7 +45,7 @@ class ToolsCatalogTest extends TestCase
             }
             $this->assertLessThan(60 * 1024, filesize(public_path('img/tools/'.$key.'-800.webp')), $key);
         }
-        $page->assertSee('img/tools/modular-800.jpg', false)->assertSee('img/tools/printer_tools-800.jpg', false);
+        $page->assertSee('img/tools/modular-800.jpg', false)->assertDontSee('img/tools/printer_tools-800.jpg', false);   // the banner for printers is gone with the role
         $this->get('/en/tools')->assertOk()->assertSee('I have a file');
         $this->get('/es/tools')->assertOk()->assertSee('Tengo un archivo');
     }

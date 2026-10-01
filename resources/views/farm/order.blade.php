@@ -27,7 +27,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h1 class="text-xl font-extrabold sm:text-2xl">{{ __('farm.order.title', ['name' => $order->modelFile?->original_name]) }}</h1>
         <div class="flex items-center gap-3 text-sm">
-            <a href="{{ route('farm.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
+            <a href="{{ route('account.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
             <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: <span id="farm-balance">{{ number_format($state['balance'], 0, ',', ' ') }}</span> Kč</a>
         </div>
     </div>
@@ -182,6 +182,7 @@
                 <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
                     <h2 class="font-semibold text-slate-700">{{ __('youtube.order.title') }}</h2>
                     @include('partials.flash')
+                    @include('partials.verify_banner')
                     <p class="mt-1 text-slate-600">{{ __($order->video_consent ? 'youtube.order.on' : 'youtube.order.off') }}</p>
                     @if($order->video_consent && $video?->status === 'published' && $video->watchUrl())
                         <p class="mt-1">{{ __('youtube.order.published') }} <a href="{{ $video->watchUrl() }}" target="_blank" rel="noopener" class="text-action-dark underline">{{ __('youtube.order.watch') }}</a></p>

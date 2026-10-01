@@ -5,6 +5,7 @@
     <h1 class="text-2xl font-extrabold">{{ __('farm.credit.title') }}</h1>
     <p class="mt-1 text-slate-600">{{ __('farm.credit.lead') }}</p>
     @include('partials.flash')
+    @include('partials.verify_banner')
 
     @if($pending && $pending->status === 'pending')
         <p class="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">{{ __('farm.credit.processing') }}</p>

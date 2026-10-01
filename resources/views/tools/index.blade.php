@@ -55,24 +55,6 @@
         </div>
     </section>
     @endif
-
-    @if(config('features.marketplace'))
-    <section class="mt-10 rounded-2xl border border-line bg-card p-5" aria-labelledby="h-printers">
-        <div class="grid items-center gap-5 sm:grid-cols-[220px_1fr_auto]">
-            <div class="overflow-hidden rounded-2xl">@include('tools.picture', ['key' => 'printer_tools', 'sizes' => '(min-width: 640px) 220px, 100vw'])</div>
-            <div>
-                <h2 id="h-printers" class="text-xl font-bold text-ink">{{ __('tools.printers.title') }}</h2>
-                <p class="hint">{{ __('tools.printers.lead') }}</p>
-            </div>
-            @auth
-                @if(auth()->user()->isPrinter())<a href="{{ route('printer.dashboard') }}" class="btn-secondary">{{ __('tools.printers.open') }}</a>
-                @else<a href="{{ route('account') }}" class="btn-secondary">{{ __('tools.printers.enable') }}</a>@endif
-            @else
-                <a href="{{ route('register') }}" class="btn-secondary">{{ __('tools.printers.join') }}</a>
-            @endauth
-        </div>
-    </section>
-    @endif
 </div>
 
 <script>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AccountSecurityController;
 use App\Http\Controllers\Admin\FarmCatalogController;
 use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Admin\FarmTestPhotoController;
@@ -12,12 +13,14 @@ use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
 use App\Http\Controllers\Api\ModelFileController;
+use App\Http\Controllers\Api\ModelPreviewController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\ThreadController;
 use App\Http\Controllers\Api\ToolsApiController;
 use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OAuthController;
+use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\Farm\CreditController;
 use App\Http\Controllers\Farm\OrderController;
@@ -95,13 +98,28 @@ $pages = function () {
     });
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
+    // E-mail verification: the link is the proof, so it works in any browser; "send again" three times an hour
+    Route::get('/email/verify/{id}/{hash}', [VerificationController::class, 'verify'])->whereNumber('id')->middleware('throttle:12,1,verify')->name('verification.verify');
+    Route::post('/email/verification-notification', [VerificationController::class, 'send'])->middleware(['auth', 'throttle:3,60,verify-send'])->name('verification.send');
+    // links from e-mails about the account (new address, deletion without a password)
+    Route::get('/account/email/confirm/{token}', [AccountSecurityController::class, 'confirmEmail'])->middleware('throttle:12,1,email-confirm')->name('account.email.confirm');
+    Route::get('/account/delete/confirm/{user}', [AccountSecurityController::class, 'confirmDelete'])->whereNumber('user')->name('account.delete.confirm');
+    Route::post('/account/delete/confirm/{user}', [AccountSecurityController::class, 'confirmedDelete'])->whereNumber('user')->name('account.delete.confirmed');
+
     // ── Account (any role) ───────────────────────────────────────────────────────
     Route::middleware('auth')->prefix('account')->name('account')->group(function () {
         Route::get('/', [AccountController::class, 'index']);
         Route::get('/profile', [AccountController::class, 'profile'])->name('.profile');
         Route::post('/profile', [AccountController::class, 'updateProfile'])->name('.profile.update');
-        Route::post('/roles/{role}/enable', [AccountController::class, 'enableRole'])->middleware('feature:marketplace')->name('.roles.enable');
-        Route::post('/roles/{role}/disable', [AccountController::class, 'disableRole'])->middleware('feature:marketplace')->name('.roles.disable');
+        Route::get('/orders', [OrderController::class, 'index'])->name('.orders');
+        Route::get('/models', [AccountController::class, 'models'])->name('.models');
+        Route::post('/models/{modelFile}/delete', [AccountController::class, 'deleteModel'])->name('.models.delete');
+        Route::get('/calculations', [AccountController::class, 'calculations'])->name('.calculations');
+        Route::post('/email', [AccountSecurityController::class, 'changeEmail'])->middleware('throttle:5,60,email-change')->name('.email.change');
+        Route::post('/email/cancel', [AccountSecurityController::class, 'cancelEmail'])->name('.email.cancel');
+        Route::post('/password', [AccountSecurityController::class, 'password'])->middleware('throttle:10,60,password-change')->name('.password');
+        Route::post('/logins/{identity}/disconnect', [AccountSecurityController::class, 'disconnect'])->whereNumber('identity')->name('.logins.disconnect');
+        Route::post('/delete', [AccountSecurityController::class, 'delete'])->middleware('throttle:5,60,account-delete')->name('.delete');
     });
 
     // ── Print farm: "Rent a printer" (logged-in users; credit from the payment gateway) ──
@@ -109,18 +127,18 @@ $pages = function () {
     Route::view('/privacy', 'pages.privacy')->name('privacy');
     Route::middleware('auth')->group(function () {
         Route::get('/farm', [OrderController::class, 'start'])->name('farm.start');
-        Route::get('/farm/orders', [OrderController::class, 'index'])->name('farm.orders');
-        Route::post('/farm/orders', [OrderController::class, 'store'])->middleware('throttle:20,1,farm_order')->name('farm.orders.store');
+        Route::get('/farm/orders', fn () => redirect()->route('account.orders', [], 301))->name('farm.orders');
+        Route::post('/farm/orders', [OrderController::class, 'store'])->middleware(['verified.email', 'throttle:20,1,farm_order'])->name('farm.orders.store');
         Route::get('/farm/orders/{order}', [OrderController::class, 'show'])->name('farm.orders.show');
         Route::get('/farm/orders/{order}/repeat', [OrderController::class, 'repeat'])->name('farm.orders.repeat');
         Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
         Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
-        Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware('throttle:10,1,farm_pay')->name('farm.orders.pay');
+        Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware(['verified.email', 'throttle:10,1,farm_pay'])->name('farm.orders.pay');
         Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
         Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1,video-consent')->name('farm.orders.video_consent');
 
         Route::get('/account/credit', [CreditController::class, 'index'])->name('account.credit');
-        Route::post('/account/credit', [CreditController::class, 'topUp'])->middleware('throttle:10,1,topup')->name('account.credit.topup');
+        Route::post('/account/credit', [CreditController::class, 'topUp'])->middleware(['verified.email', 'throttle:10,1,topup'])->name('account.credit.topup');
     });
 
     // ── Printer tools (role switch "I own a printer") ────────────────────────────
@@ -154,10 +172,9 @@ Route::prefix('{locale}')->where(['locale' => Locales::pattern()])->name(Locales
 Route::get('/cs/{path?}', LocaleRedirectController::class)->where('path', '.*')->name('locale.cs');
 
 // ── Sign-in through Google and Facebook (the callback address is registered there, keep it) ──
-Route::middleware('guest')->group(function () {
-    Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])->name('oauth.redirect');
-    Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
-});
+// Open to logged-in people too: "link Google" in the profile goes the same way with ?link=1.
+Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])->name('oauth.redirect');
+Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
 
 // ── Files of a farm order (not pages: one address for every language) ────────
 Route::middleware('auth')->group(function () {
@@ -176,6 +193,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('uploads', [UploadController::class, 'store'])->middleware('throttle:uploads')->name('uploads.store');
     Route::get('files/{modelFile}', [UploadController::class, 'show'])->name('files.show');
     Route::get('files/{modelFile}/model.stl', [ModelFileController::class, 'stl'])->name('files.stl');
+    Route::get('files/{modelFile}/preview.webp', [ModelPreviewController::class, 'show'])->name('files.preview');
+    Route::post('files/{modelFile}/preview', [ModelPreviewController::class, 'store'])->middleware('throttle:60,1,preview-store')->name('files.preview.store');
     Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware('throttle:20,1,project')->name('files.project');
     Route::post('files/{modelFile}/pedestal', [ModelFileController::class, 'pedestal'])->middleware('throttle:20,1,pedestal')->name('files.pedestal');
     Route::post('files/{modelFile}/mold', [ModelFileController::class, 'mold'])->middleware('throttle:20,1,mold')->name('files.mold');

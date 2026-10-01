@@ -20,12 +20,13 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h1 class="text-2xl font-extrabold">{{ __('farm.title') }}</h1>
         <div class="flex items-center gap-3 text-sm">
-            <a href="{{ route('farm.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
+            <a href="{{ route('account.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
             <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: {{ number_format($balance, 0, ',', ' ') }} Kč</a>
         </div>
     </div>
     <p class="mt-2 text-slate-600">{{ __('farm.lead') }}</p>
     @include('partials.flash')
+    @include('partials.verify_banner')
 
     <ol class="mt-4 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
         @foreach(__('farm.start.steps') as $i => $step)

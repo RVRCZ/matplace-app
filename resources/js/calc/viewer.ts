@@ -74,6 +74,15 @@ export class Viewer {
         this.fit();
     }
 
+    /** A picture of the model as it is framed now (drawn in this very call, so no kept drawing buffer is needed). */
+    async snapshot(type = 'image/webp', quality = 0.85): Promise<Blob | null> {
+        this.resize();
+        this.controls.update();
+        this.renderer.render(this.scene, this.camera);
+        const data = this.canvas.toDataURL(type, quality);
+        return data.startsWith('data:image/') ? (await fetch(data)).blob() : null;
+    }
+
     setScale(scale: number): void {
         if (!this.mesh) return;
         this.mesh.scale.setScalar(scale);

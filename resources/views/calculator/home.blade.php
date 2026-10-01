@@ -8,7 +8,6 @@
         return '<picture><source type="image/webp" srcset="'.$base.'-640.webp 640w, '.$base.'-1024.webp 1024w, '.$base.'-1536.webp 1536w" sizes="'.$sizes.'">'
             .'<img src="'.$base.'-1024.jpg" alt="'.e($alt).'" width="1536" height="1024" '.($eager ? 'fetchpriority="high"' : 'loading="lazy"').' decoding="async" class="h-auto w-full"></picture>';
     };
-    $printerUrl = auth()->check() ? (auth()->user()->isPrinter() ? route('printer.dashboard') : route('account')) : route('register', ['role' => 'printer']);
     // without the marketplace the copy speaks about downloading or printing on the farm, never about other printers
     $mp = (bool) config('features.marketplace');
     $tx = fn (string $key) => __($mp ? $key : 'home.farm.'.$key);
@@ -94,21 +93,4 @@
             @endforeach
         </ol>
     </section>
-
-    {{-- printers (marketplace only) --}}
-    @if($mp)
-    <section class="mt-12 grid gap-8 rounded-3xl bg-ink p-8 text-white md:grid-cols-2 md:p-12" aria-labelledby="home-printers">
-        <div>
-            <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#F2B79F]">{{ __('tools.printers.title') }}</p>
-            <h2 id="home-printers" class="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">{{ __('home.printers.title.a') }}<br>{{ __('home.printers.title.b') }}</h2>
-            <p class="mt-3 max-w-md text-sm leading-relaxed text-white/80">{{ __('home.printers.lead') }}</p>
-            <a href="{{ $printerUrl }}" class="mt-6 inline-flex min-h-11 items-center gap-3 rounded-xl bg-white px-5 py-3 font-semibold text-ink hover:bg-action-soft">{{ __('home.printers.cta') }} →</a>
-        </div>
-        <ul class="self-center divide-y divide-white/15 text-sm">
-            @foreach(['cost', 'quote', 'direct'] as $f)
-                <li class="flex items-center gap-3 py-4"><svg class="h-5 w-5 shrink-0 text-[#F2B79F]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></svg>{{ __('home.printers.'.$f) }}</li>
-            @endforeach
-        </ul>
-    </section>
-    @endif
 </section>

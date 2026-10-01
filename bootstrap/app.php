@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuthenticateFarmAgent;
 use App\Http\Middleware\EnsureAnonymousSession;
+use App\Http\Middleware\EnsureEmailVerified;
 use App\Http\Middleware\EnsureFeature;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\SetLocale;
@@ -35,7 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(AuthenticatesRequests::class, SetLocale::class);
         // lang_seen only says "this browser has been here": a plain value, readable without the app key
         $middleware->encryptCookies(except: [Locales::SEEN_COOKIE]);
-        $middleware->alias(['role' => EnsureRole::class, 'farm.agent' => AuthenticateFarmAgent::class, 'feature' => EnsureFeature::class]);
+        $middleware->alias(['role' => EnsureRole::class, 'farm.agent' => AuthenticateFarmAgent::class, 'feature' => EnsureFeature::class, 'verified.email' => EnsureEmailVerified::class]);
         $middleware->redirectGuestsTo(fn () => route('login'));
         // JSON API used by the calculator page (same-origin, cookie session); CSRF is enforced by SameSite cookies.
         $middleware->validateCsrfTokens(except: ['api/*']);

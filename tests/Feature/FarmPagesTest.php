@@ -57,7 +57,7 @@ class FarmPagesTest extends TestCase
     {
         $order = $this->order();
         foreach (['cs', 'en', 'es'] as $lang) {
-            foreach (['/farm', '/farm/orders', "/farm/orders/{$order->token}", '/account/credit', '/farm/terms', '/account'] as $url) {
+            foreach (['/farm', '/account/orders', "/farm/orders/{$order->token}", '/account/credit', '/farm/terms', '/account'] as $url) {
                 $r = $this->actingAs($this->user)->get($this->localized($url, $lang));
                 $r->assertOk();
                 $this->assertDoesNotMatchRegularExpression('/\bfarm\.[a-z_]+\.[a-z_.]+/', strip_tags(preg_replace('#<script.*?</script>#s', '', $r->getContent())), "untranslated key on {$url} ({$lang})");

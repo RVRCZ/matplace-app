@@ -223,7 +223,7 @@ class FarmTuningTest extends TestCase
         $this->actingAs($this->admin)->get("/admin/farm/orders/{$order->token}")->assertOk()->assertSee('Testovací tisk');
         $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()->assertSee($order->number);
         // it never shows up in the admin's own customer list
-        $this->actingAs($this->admin)->get('/farm/orders')->assertOk()->assertDontSee($order->number);
+        $this->actingAs($this->admin)->get('/account/orders')->assertOk()->assertDontSee($order->number);
 
         // the test printed: the operator fills in what it showed, the advisor proposes, the proposal becomes a version
         $order->forceFill(['status' => FarmOrder::STATUS_DONE])->save();

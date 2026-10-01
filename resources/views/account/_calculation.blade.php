@@ -1,0 +1,16 @@
+{{-- One saved calculation: the model, the settings and the price (or time and material while there is no price list). --}}
+<a href="{{ route('calc.share', $c) }}" class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50">
+    <div class="min-w-0">
+        <div class="truncate font-medium">{{ $c->modelFile?->original_name ?? '—' }}</div>
+        <div class="text-xs text-slate-500">{{ $c->params['material'] ?? '' }} · {{ __('user.dash.pieces', ['n' => $c->params['quantity'] ?? 1]) }} · {{ $c->created_at->format('j. n. Y H:i') }}</div>
+    </div>
+    <div class="shrink-0 text-right text-sm font-semibold">
+        @if(config('features.marketplace') || ($c->slicer && \App\Http\Controllers\Api\CalculationController::describe($c)['prices']))
+            @php $tot = collect(\App\Http\Controllers\Api\CalculationController::describe($c)['prices'] ?? $c->rough['prices'] ?? [])->pluck('total'); @endphp
+            @if($tot->isNotEmpty()){{ number_format($tot->min(), 0, ',', ' ') }}@if($tot->count() > 1) – {{ number_format($tot->max(), 0, ',', ' ') }}@endif Kč@else —@endif
+        @else
+            @php $min = $c->slicer['minutes'] ?? $c->rough['minutes'] ?? null; @endphp
+            @if($min){{ $min >= 60 ? intdiv($min, 60).' h '.($min % 60).' min' : $min.' min' }} · {{ round($c->slicer['grams'] ?? $c->rough['grams'] ?? 0) }} g@else —@endif
+        @endif
+    </div>
+</a>

@@ -95,11 +95,20 @@ class OrderController extends Controller
         ]));
     }
 
+    /** "My prints" (/account/orders): every order of the account, optionally only those in one state. */
     public function index(Request $request): View
     {
+        $filters = ['open', FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_CANCELLED, FarmOrder::STATUS_FAILED];
+        $filter = in_array($request->query('status'), $filters, true) ? (string) $request->query('status') : null;
+        $open = [FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_SLICED, FarmOrder::STATUS_PAID, FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING];
+
         return view('farm.orders', [
-            'orders' => FarmOrder::with(['modelFile', 'color'])->where('user_id', $request->user()->id)->where('kind', FarmOrder::KIND_PRINT)->latest('id')->paginate(20),
+            'orders' => FarmOrder::with(['modelFile', 'color'])->where('user_id', $request->user()->id)->where('kind', FarmOrder::KIND_PRINT)
+                ->when($filter, fn ($q) => $filter === 'open' ? $q->whereIn('status', $open) : $q->where('status', $filter))
+                ->latest('id')->paginate(20)->withQueryString(),
             'balance' => $this->wallet->balance($request->user()),
+            'filter' => $filter,
+            'filters' => $filters,
         ]);
     }
 
