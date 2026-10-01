@@ -48,6 +48,7 @@ class ToolsController extends Controller
             'artwork' => in_array($kind, ParametricGenerator::ARTWORK, true),
             'main' => ParametricGenerator::MAIN[$kind],
             'presets' => ParametricGenerator::PRESETS[$kind] ?? [],
+            'fills' => ParametricGenerator::FILLS[$kind] ?? [],
             'config' => ConfigController::payload($materials, $converters),
         ]);
     }

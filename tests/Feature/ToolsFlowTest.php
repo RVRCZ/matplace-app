@@ -431,7 +431,22 @@ class ToolsFlowTest extends TestCase
         $closed($liner, 'liner bed');
         $wide = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'cap', 'params' => ['mouth' => 26] + $pet])->assertStatus(422);
         $this->assertStringContainsString('hrdl', $wide->json('errors.params.0'));
-        $this->get('/tools/cap?lang=cs')->assertSee('Těsnění')->assertSee('data-when="seal=lip"', false);
+        $this->get('/tools/cap?lang=cs')->assertSee('Těsnění')->assertSee('data-when="seal=lip"', false)->assertSee('M10 × 1,5')->assertSee('data-when="style=push,thread"', false);
+        // a bigger cap round the same thread: the thread keeps its size, the wall grows; a named thread brings its numbers
+        $small = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'hex', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7]])->assertOk());
+        $big = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'hex', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7, 'outer' => 44]])->assertOk());
+        $this->assertSame($small['notes']['fits'], $big['notes']['fits']);
+        $this->assertSame($small['notes']['thread'], $big['notes']['thread']);
+        $this->assertEqualsWithDelta(44, $big['notes']['outer'][0], 0.01, 'across the flats');
+        $this->assertGreaterThan($small['volume_mm3'] + 1000, $big['volume_mm3']);
+        $m10 = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'thread' => 'm10', 'shape' => 'round', 'size_a' => 99, 'pitch' => 5, 'height' => 10, 'outer' => 20]])->assertOk());
+        $this->assertSame([10.0], array_map('floatval', $m10['notes']['fits']), 'the named thread wins over the numbers sent');
+        $this->assertEqualsWithDelta(1.5, $m10['notes']['thread']['pitch'], 0.001);
+        $this->assertEqualsWithDelta(0.75, $m10['notes']['thread']['depth'], 0.001, 'half the pitch');
+        $this->assertEqualsWithDelta(20, $m10['notes']['outer'][0], 0.01);
+        $this->assertSame(10, ParametricGenerator::clean('cap', ['thread' => 'm10', 'size_a' => 99])['size_a']);
+        $this->assertSame(1.5, ParametricGenerator::clean('cap', ['thread' => 'm10', 'pitch' => 5])['pitch']);
+        $this->assertSame(99.0, ParametricGenerator::clean('cap', ['thread' => 'custom', 'size_a' => 99])['size_a']);
         $cut = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'round', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7], 'view' => 'use', 'part' => 'cut'])->assertOk());
         $this->assertEqualsWithDelta($meta($thread)['volume_mm3'] / 2, $cut['volume_mm3'], $meta($thread)['volume_mm3'] * 0.06);
         $sharp = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => $base + ['style' => 'push', 'shape' => 'hex', 'edge' => 0]])->assertOk());

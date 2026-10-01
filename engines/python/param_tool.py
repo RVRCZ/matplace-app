@@ -25,7 +25,7 @@ LIMITS = {
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
     "holder": {"obj_w": (10, 300), "obj_d": (5, 150), "height": (15, 150), "wall": (2, 6), "clearance": (0.3, 2), "radius": (0, 12),
                "hook_h": (10, 150), "bend": (0, 40), "edge": (0, 2)},
-    "cap": {"size_a": (8, 200), "size_b": (8, 200), "height": (4, 60), "wall": (1.2, 4), "top": (1.2, 5), "clearance": (0.1, 1), "pitch": (1, 6), "edge": (0, 3), "mouth": (4, 195)},
+    "cap": {"size_a": (5, 200), "size_b": (8, 200), "height": (4, 60), "wall": (1.2, 4), "top": (1.2, 5), "clearance": (0.1, 1), "pitch": (0.5, 6), "edge": (0, 3), "mouth": (4, 195), "outer": (0, 220)},
     "modular": {"inner_w": (60, 600), "inner_d": (60, 600), "height": (15, 120), "cols": (1, 12), "rows": (1, 12), "wall": (0.8, 3), "floor": (0.8, 3), "radius": (0, 15), "gap": (0.3, 1.5)},
 }
 MIN_CELL = 8.0
@@ -767,6 +767,9 @@ def cap(M, p):
     Round, rectangular or hexagonal (size_a is then the distance across the flats). The thread is always round (a PET
     bottle's is); a rectangular or hexagonal threaded cap has the round thread inside and the shape outside.
     `edge` rounds the top edge (the edge on the bed) of every cap; the cut view shows the inside, thread included.
+    `outer` makes a push-on or threaded cap bigger outside than the neck asks for (0 = just the wall round the neck):
+    the thread or the neck keeps its measured size, the wall grows. Metric threads (M6 to M30) are the same helix
+    with a depth of half the pitch, which is close to the ISO form and forgiving when printed.
     A cap that is to hold liquid needs a seal (a printed thread alone does not, as the first PET cap showed):
       seal = lip    a thin ring under the top, 0.3 mm wider than the mouth of the neck (`mouth`): it is pressed into
                     the opening and seals on its inside, the way a bottle cap's plug seal does
@@ -787,6 +790,7 @@ def cap(M, p):
     height, wall, top, gap = num(p, k, "height", 12), num(p, k, "wall", 2), num(p, k, "top", 2), num(p, k, "clearance", 0.3)
     pitch = num(p, k, "pitch", 3)
     edge = num(p, k, "edge", 1)
+    outer = num(p, k, "outer", 0)
     seal = p.get("seal", "none")
     if seal not in ("none", "lip", "liner"):
         raise Invalid("bad_choice", "seal")
@@ -869,16 +873,16 @@ def cap(M, p):
         return views(solid), note
 
     if style == "thread":
-        if a < 12:
+        if a < 5:
             raise Invalid("cap_too_small")
-        depth = max(0.6, min(1.4, pitch * 0.4))                      # how far the thread stands out of the neck
+        depth = max(0.5, min(1.5, pitch * 0.5))                      # how far the thread stands out of the neck (ISO: 0.54 of the pitch)
         if pitch > height:
             raise Invalid("cap_thread_short", "%d" % math.ceil(pitch))
         # one smooth helix: a circle set off the axis and turned once per pitch spans from the root to the crest
         rc = a / 2 - depth / 2 + gap
         turns = height / pitch
         cavity = C.circle(rc, 96).translate([depth / 2, 0]).extrude(height + 0.02, max(8, int(math.ceil(height / 0.25))), 360.0 * turns)
-        outer_r = a / 2 + gap + wall
+        outer_r = max(a / 2 + gap + wall, outer / 2)                   # a bigger cap round a small thread: the wall grows
         # the shape outside: round, hexagonal (the wall is measured at the flats) or rectangular (at least as deep as wide)
         ow, od = 2 * outer_r, (max(b, 2 * outer_r) if shape == "rect" else 2 * outer_r)
         solid = body_of(outline(ow, od), outer_r, top + height, min(edge, top + 0.6 * wall)) - cavity.translate([0, 0, top])
@@ -903,9 +907,10 @@ def cap(M, p):
         note["fits"] = [round(a, 1)]
         note["head"] = "dome"
         return views(solid, False), note
-    solid = body_of(outline(iw + 2 * wall, idp + 2 * wall), iw / 2 + wall, top + height, min(edge, top + 0.6 * wall)) - outline(iw, idp, 1.0 if shape == "rect" else None).extrude(height + 1.0).translate([0, 0, top])
+    ow, od = max(iw + 2 * wall, outer), (idp + 2 * wall if shape == "rect" else max(iw + 2 * wall, outer))
+    solid = body_of(outline(ow, od), ow / 2, top + height, min(edge, top + 0.6 * wall)) - outline(iw, idp, 1.0 if shape == "rect" else None).extrude(height + 1.0).translate([0, 0, top])
     solid = sealed(solid, min(iw, idp) / 2, outline(iw, idp, 1.0 if shape == "rect" else None))
-    note["outer"] = [round(iw + 2 * wall, 1), round(idp + 2 * wall, 1), round(top + height, 1)]
+    note["outer"] = [round(ow, 1), round(od, 1), round(top + height, 1)]
     note["fits"] = [round(a, 1)] if shape != "rect" else [round(a, 1), round(b, 1)]
     return views(solid), note
 
