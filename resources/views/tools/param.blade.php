@@ -21,6 +21,7 @@
         create: @json(route('api.tools.param')),
         home: @json(route('home')),
         presets: {{ \Illuminate\Support\Js::from($presets) }},
+        fills: {{ \Illuminate\Support\Js::from($fills) }},
         artworkUrl: @json(route('api.tools.artwork')),
         files: @json(url('/api/files')),
         from: @json(request('from')),

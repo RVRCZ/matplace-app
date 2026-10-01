@@ -1,0 +1,41 @@
+{
+    "param.c.cap.thread": [
+        "Závit",
+        "Thread",
+        "Rosca"
+    ],
+    "param.o.cap.custom": [
+        "Vlastní (změřený)",
+        "Custom (measured)",
+        "Propia (medida)"
+    ],
+    "param.o.cap.pet28": [
+        "PET lahev 28 mm",
+        "PET bottle 28 mm",
+        "Botella PET 28 mm"
+    ],
+    "param.o.cap.m6": ["M6 × 1", "M6 × 1", "M6 × 1"],
+    "param.o.cap.m8": ["M8 × 1,25", "M8 × 1.25", "M8 × 1,25"],
+    "param.o.cap.m10": ["M10 × 1,5", "M10 × 1.5", "M10 × 1,5"],
+    "param.o.cap.m12": ["M12 × 1,75", "M12 × 1.75", "M12 × 1,75"],
+    "param.o.cap.m14": ["M14 × 2", "M14 × 2", "M14 × 2"],
+    "param.o.cap.m16": ["M16 × 2", "M16 × 2", "M16 × 2"],
+    "param.o.cap.m20": ["M20 × 2,5", "M20 × 2.5", "M20 × 2,5"],
+    "param.o.cap.m24": ["M24 × 3", "M24 × 3", "M24 × 3"],
+    "param.o.cap.m30": ["M30 × 3,5", "M30 × 3.5", "M30 × 3,5"],
+    "param.f.cap.outer": [
+        "Vnější rozměr víčka (0 = jen stěna kolem hrdla)",
+        "Outer size of the cap (0 = just the wall round the neck)",
+        "Tamaño exterior de la tapa (0 = solo la pared alrededor del cuello)"
+    ],
+    "param.f.size_a": [
+        "Průměr / šířka hrdla (u závitu přes závit)",
+        "Diameter / width of the neck (over the thread for a thread)",
+        "Diámetro / ancho del cuello (sobre la rosca si hay rosca)"
+    ],
+    "param.cap.tip": [
+        "Tiskne se rovnou stranou na podložce, otvorem nahoru, bez podpěr; zaoblená horní hrana tvoří u podložky mírný převis, do 3 mm ho tiskárna zvládne. Závit je vždy kulatý, i u hranatého víčka, a sám netěsní: na tekutiny zvolte těsnicí kroužek nebo vložku. Metrické závity jsou hrubé řady (M10 × 1,5…); šroub tiskněte jinde, zde vzniká matice nebo víčko na něj. Zátky a víčka na pružení tiskněte z PETG. Výtisk není určen pro styk s potravinami bez vložky; závit si nejdřív vyzkoušejte na jednom kusu.",
+        "Prints with the flat side on the bed, opening up, without supports; a round top edge makes a slight overhang at the bed, a printer manages up to 3 mm. The thread is always round, even in an angular cap, and does not seal by itself: for liquids choose the sealing lip or a liner. Metric threads are the coarse series (M10 × 1.5…); this makes a nut or a cap for a bolt, not the bolt. Print plugs and springy caps in PETG. The print is not meant to touch food without a liner; try a thread on one piece first.",
+        "Se imprime con el lado plano sobre la placa, la abertura hacia arriba y sin soportes; un borde superior redondeado forma un ligero voladizo junto a la placa, la impresora lo maneja hasta 3 mm. La rosca es siempre redonda, también en una tapa angular, y por sí sola no sella: para líquidos elija el anillo de cierre o una junta. Las roscas métricas son de paso grueso (M10 × 1,5…); aquí se hace una tuerca o una tapa para el tornillo, no el tornillo. Imprima tapones y tapas elásticas en PETG. No es apta para alimentos sin forro; pruebe la rosca primero con una pieza."
+    ]
+}

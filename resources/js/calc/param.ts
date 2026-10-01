@@ -10,6 +10,7 @@ interface Material { code: string; density: number }
 interface Cfg {
     kind: string; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
     presets: Record<string, Record<string, number | string>>;
+    fills: Record<string, Record<string, Record<string, number | string>>>;
     config: { rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; currency: string; materials: Material[] };
     i18n: Record<string, string>;
 }
@@ -406,6 +407,19 @@ export function bootParam(): void {
         });
     };
     applyWhen();
+    // a standard picked by name (an M10 thread) writes its numbers into the fields; a number edited by hand means "custom"
+    const fills = cfg.fills ?? {};
+    form.addEventListener('input', (e) => {
+        const t = e.target as HTMLInputElement;
+        if (t.dataset.choice && fills[t.dataset.choice]?.[t.value]) applyValues(fills[t.dataset.choice][t.value]);
+        if (t.dataset.param) {
+            Object.entries(fills).forEach(([choice, table]) => {
+                if (!Object.values(table).some((v) => t.dataset.param! in v)) return;
+                const radios = form.querySelectorAll<HTMLInputElement>(`[data-choice="${choice}"]`);
+                if (radios.length && !radios[0].checked) radios[0].checked = true;
+            });
+        }
+    });
     form.addEventListener('input', (e) => { if ((e.target as HTMLElement).closest('#holes')) return; applyWhen(); soon(); renderPrice(); });
     form.addEventListener('submit', (e) => e.preventDefault());
 

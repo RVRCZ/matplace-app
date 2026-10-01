@@ -56,7 +56,7 @@ final class ParametricGenerator
         ],
         'holder' => ['obj_w' => [10, 300, 50, 1], 'obj_d' => [5, 150, 25, 1], 'height' => [15, 150, 60, 1], 'hook_h' => [10, 150, 30, 1], 'bend' => [0, 40, 6, 0.5], 'edge' => [0, 2, 1, 0.1],
             'wall' => [2, 6, 3, 0.5], 'clearance' => [0.3, 2, 0.8, 0.1], 'radius' => [0, 12, 1.5, 0.5]],
-        'cap' => ['size_a' => [8, 200, 40, 0.1], 'size_b' => [8, 200, 30, 0.1], 'height' => [4, 60, 12, 1], 'wall' => [1.2, 4, 2, 0.2], 'top' => [1.2, 5, 2, 0.2], 'clearance' => [0.1, 1, 0.3, 0.05], 'pitch' => [1, 6, 3, 0.05], 'edge' => [0, 3, 1, 0.5], 'mouth' => [4, 195, 21.7, 0.1]],
+        'cap' => ['size_a' => [5, 200, 40, 0.1], 'size_b' => [8, 200, 30, 0.1], 'height' => [4, 60, 12, 1], 'wall' => [1.2, 4, 2, 0.2], 'top' => [1.2, 5, 2, 0.2], 'clearance' => [0.1, 1, 0.3, 0.05], 'pitch' => [0.5, 6, 3, 0.05], 'edge' => [0, 3, 1, 0.5], 'mouth' => [4, 195, 21.7, 0.1], 'outer' => [0, 220, 0, 1]],
         'cutter' => ['width' => [30, 150, 70, 1], 'height' => [10, 30, 18, 1], 'wall' => [0.8, 1.6, 1.0, 0.2], 'flange' => [3, 10, 5, 1], 'flange_t' => [1, 2.5, 1.6, 0.1]],
     ];
 
@@ -70,7 +70,8 @@ final class ParametricGenerator
         'lightbox' => ['shape' => ['rect', 'round'], 'led' => ['strip8', 'strip10', 'module']],
         'cutter' => ['edge' => ['sharp', 'straight'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'holder' => ['style' => ['cradle', 'pocket', 'hook', 'clip'], 'holes' => ['round', 'keyhole']],
-        'cap' => ['style' => ['push', 'plug', 'thread'], 'shape' => ['round', 'rect', 'hex'], 'head' => ['flat', 'dome'], 'seal' => ['none', 'lip', 'liner']],
+        'cap' => ['style' => ['push', 'plug', 'thread'], 'shape' => ['round', 'rect', 'hex'], 'head' => ['flat', 'dome'], 'seal' => ['none', 'lip', 'liner'],
+            'thread' => ['custom', 'pet28', 'm6', 'm8', 'm10', 'm12', 'm14', 'm16', 'm20', 'm24', 'm30']],
     ];
 
     /** kind → text input → [max length, required, default] */
@@ -90,7 +91,7 @@ final class ParametricGenerator
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'height', 'pitch', 'mouth', 'edge'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp'];
@@ -105,7 +106,21 @@ final class ParametricGenerator
             'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']]],
         'holder' => ['obj_d' => ['style', ['cradle', 'pocket', 'hook']], 'height' => ['style', ['cradle', 'pocket', 'clip']], 'hook_h' => ['style', ['hook']], 'bend' => ['style', ['hook']],
             'edge' => ['style', ['hook', 'clip']], 'holes' => ['mount', ['on']], 'radius' => ['style', ['cradle', 'pocket']], 'clearance' => ['style', ['cradle', 'pocket', 'hook']]],
-        'cap' => ['size_b' => ['shape', ['rect']], 'pitch' => ['style', ['thread']], 'grip' => ['style', ['push', 'thread']], 'head' => ['style', ['push']], 'edge' => ['head', ['flat']], 'seal' => ['style', ['push', 'thread']], 'mouth' => ['seal', ['lip']]],
+        'cap' => ['size_b' => ['shape', ['rect']], 'pitch' => ['style', ['thread']], 'grip' => ['style', ['push', 'thread']], 'head' => ['style', ['push']], 'edge' => ['head', ['flat']], 'seal' => ['style', ['push', 'thread']], 'mouth' => ['seal', ['lip']],
+            'thread' => ['style', ['thread']], 'outer' => ['style', ['push', 'thread']]],
+    ];
+
+    /**
+     * kind → choice → value → the fields it stands for. Choosing a value writes them into the form; a field edited by
+     * hand puts the choice back to its first value. The server writes them too, so a saved design is consistent.
+     * Threads: PET PCO 1881 (27.43 over the thread, pitch 2.7) and ISO metric coarse (major diameter, pitch).
+     */
+    public const FILLS = [
+        'cap' => ['thread' => [
+            'pet28' => ['size_a' => 27.4, 'pitch' => 2.7],
+            'm6' => ['size_a' => 6, 'pitch' => 1], 'm8' => ['size_a' => 8, 'pitch' => 1.25], 'm10' => ['size_a' => 10, 'pitch' => 1.5], 'm12' => ['size_a' => 12, 'pitch' => 1.75],
+            'm14' => ['size_a' => 14, 'pitch' => 2], 'm16' => ['size_a' => 16, 'pitch' => 2], 'm20' => ['size_a' => 20, 'pitch' => 2.5], 'm24' => ['size_a' => 24, 'pitch' => 3], 'm30' => ['size_a' => 30, 'pitch' => 3.5],
+        ]],
     ];
 
     /** flags that start switched on */
@@ -128,7 +143,7 @@ final class ParametricGenerator
         ],
         'cap' => [
             // PCO 1881: 27.4 over the thread, 21.7 inside the mouth; the lip seals, the thread only holds
-            'pet' => ['style' => 'thread', 'shape' => 'round', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7, 'wall' => 2, 'top' => 2, 'clearance' => 0.3, 'seal' => 'lip', 'mouth' => 21.7],
+            'pet' => ['style' => 'thread', 'thread' => 'pet28', 'shape' => 'round', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7, 'wall' => 2, 'top' => 2, 'clearance' => 0.3, 'seal' => 'lip', 'mouth' => 21.7, 'outer' => 0],
             'pipe' => ['style' => 'plug', 'shape' => 'round', 'size_a' => 40, 'height' => 15, 'wall' => 2, 'top' => 2, 'clearance' => 0.2],
             'profile' => ['style' => 'plug', 'shape' => 'rect', 'size_a' => 36, 'size_b' => 16, 'height' => 15, 'wall' => 2, 'top' => 2, 'clearance' => 0.2],
             'jar' => ['style' => 'push', 'shape' => 'round', 'size_a' => 70, 'height' => 14, 'wall' => 2, 'top' => 2, 'clearance' => 0.3],
@@ -237,6 +252,10 @@ final class ParametricGenerator
         }
         foreach (self::CHOICES[$kind] ?? [] as $key => $options) {
             $out[$key] = in_array($p[$key] ?? null, $options, true) ? $p[$key] : $options[0];
+            // a standard picked by name (an M10 thread) brings its own numbers, whatever the form sent
+            foreach (self::FILLS[$kind][$key][$out[$key]] ?? [] as $field => $value) {
+                $out[$field] = $value;
+            }
         }
         foreach (self::TEXTS[$kind] ?? [] as $key => [$max, , $default]) {
             // an emptied field stays empty (the framework turns '' into null); the default is only for a field that was never sent
