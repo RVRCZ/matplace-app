@@ -151,9 +151,11 @@ class PrepareFarmOrder implements ShouldQueue
                 // fine-nozzle test bent while it was prised off (Kobra S1 #2, 26 Sep 2026)
                 $overrides['process']['brim_type'] = 'no_brim';
             }
-            $noSupports = $order->supports === 'off';
+            // the customer knows the model (made to print in place, supports would only weld its joints together), or
+            // the model comes from one of our tools and was built to print without them (a cap, a holder, a box)
+            $builtWithout = ($order->modelFile?->printHints()['supports'] ?? null) === false;
+            $noSupports = $order->supports === 'off' || ($order->supports !== 'on' && $builtWithout);
             if ($noSupports) {
-                // the customer knows the model: made to print in place, supports would only weld its joints together
                 $overrides['process']['enable_support'] = '0';
             }
             $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() || $noSupports ? false : null, treeSupports: true))

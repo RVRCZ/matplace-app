@@ -8,6 +8,7 @@ use App\Domain\Tools\MoldGenerator;
 use App\Engines\Contracts\ProjectExporter;
 use App\Engines\DTO\SliceParams;
 use App\Engines\Exceptions\EngineException;
+use App\Engines\Project\ColorChange;
 use App\Http\Controllers\Controller;
 use App\Models\ModelFile;
 use Illuminate\Http\JsonResponse;
@@ -53,6 +54,10 @@ class ModelFileController extends Controller
         $params = SliceParams::fromArray(['tree' => $modelFile->wantsTreeSupports(), 'vase' => (bool) ($hints['vase'] ?? false)] + $data);
         try {
             $path = $exporter->export($modelFile->absoluteStlPath(), $data['printer'], $params, ['kind' => $modelFile->kind()]);
+            // a plate with a code or a text on it: the project stops the printer for the second colour above the plate
+            if ($z = $modelFile->colorChangeMm((float) $params->scale)) {
+                ColorChange::add($path, $z, $modelFile->kind() === 'qr' ? '#222222' : '#D97706');
+            }
         } catch (EngineException $e) {
             return response()->json(['error' => 'export_failed', 'message' => $e->getMessage()], 422);
         }

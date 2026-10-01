@@ -46,6 +46,9 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
             <h2 class="font-bold">Výsledné nastavení tisku <span class="text-xs font-normal text-slate-500">vrstvy: {{ implode(' → ', $effective->layers) }}</span></h2>
             <p class="mt-1 text-xs text-slate-600">Teploty do G-code: tryska {{ $effective->temps['nozzle'] ?? '—' }} / {{ $effective->temps['nozzle_first'] ?? '—' }} °C, podložka {{ $effective->temps['bed'] ?? '—' }} °C</p>
+            @php $printerProcess = (array) $row->printer->process_overrides; @endphp
+            <p class="mt-1 text-xs text-slate-600">Podpěry: pod plochy plošší než {{ $effective->process['support_threshold_angle'] ?? $printerProcess['support_threshold_angle'] ?? 30 }}° od vodorovné roviny, mosty bez podpěr do {{ $effective->process['max_bridge_length'] ?? $printerProcess['max_bridge_length'] ?? 10 }} mm
+                <span class="text-slate-400">— přebírá se z vyhodnocení testu (převis čistý do, most)</span></p>
             <details class="mt-2 text-xs"><summary class="cursor-pointer">filament ({{ count($effective->filament) }} klíčů) · proces ({{ count($effective->process) }} klíčů)</summary>
                 <pre class="mt-2 overflow-x-auto whitespace-pre-wrap">{{ $json(['filament_profile' => $effective->filamentProfile, 'filament' => $effective->filament, 'process' => $effective->process]) }}</pre>
             </details>

@@ -409,7 +409,37 @@ class ToolsFlowTest extends TestCase
         $this->assertContains('thread_try', $meta($thread)['notes']['warnings']);
         $closed($thread, 'thread');
 
-        $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'rect']])->assertStatus(422)->assertJsonFragment([__('param.error.cap_thread_round', [], 'cs')]);
+        // the PET thread is round inside every shape; the cut view shows it; the top edge can be round
+        foreach (['rect', 'hex'] as $shape) {
+            $r = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => $shape, 'size_a' => 27.4, 'size_b' => 40, 'height' => 12, 'pitch' => 2.7, 'edge' => 2]])->assertOk();
+            $m = $meta($r);
+            $this->assertEqualsWithDelta(4.4, $m['notes']['thread']['turns'], 0.05, $shape);
+            $this->assertEqualsWithDelta($shape === 'rect' ? 40 : 2 * (27.4 / 2 + 0.3 + 2), $m['bbox'][$shape === 'rect' ? 'y' : 'x'], 0.05, $shape);   // rect: as deep as asked; hex: the wall at the flats
+            $closed($r, 'threaded '.$shape);
+        }
+        // a printed thread holds but does not seal (the first PET cap leaked): a lip pressed into the mouth, or a bed for a liner
+        $pet = ParametricGenerator::PRESETS['cap']['pet'];
+        $this->assertSame('lip', $pet['seal']);
+        $lip = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => $pet])->assertOk();
+        $this->assertEqualsWithDelta(22.0, $meta($lip)['notes']['seal']['ring'], 0.01, '0.3 mm over the 21.7 mm mouth');
+        $this->assertContains('seal_try', $meta($lip)['notes']['warnings']);
+        $this->assertGreaterThan($meta($thread)['volume_mm3'] + 80, $meta($lip)['volume_mm3'], 'the ring is material added under the top');
+        $closed($lip, 'lip seal');
+        $liner = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['seal' => 'liner'] + $pet])->assertOk();
+        $this->assertLessThan($meta($thread)['volume_mm3'] - 100, $meta($liner)['volume_mm3'], 'the bed for the liner is taken out of the top');
+        $this->assertSame(['liner'], $meta($liner)['notes']['needs']);
+        $closed($liner, 'liner bed');
+        $wide = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'cap', 'params' => ['mouth' => 26] + $pet])->assertStatus(422);
+        $this->assertStringContainsString('hrdl', $wide->json('errors.params.0'));
+        $this->get('/tools/cap?lang=cs')->assertSee('Těsnění')->assertSee('data-when="seal=lip"', false);
+        $cut = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'round', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7], 'view' => 'use', 'part' => 'cut'])->assertOk());
+        $this->assertEqualsWithDelta($meta($thread)['volume_mm3'] / 2, $cut['volume_mm3'], $meta($thread)['volume_mm3'] * 0.06);
+        $sharp = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => $base + ['style' => 'push', 'shape' => 'hex', 'edge' => 0]])->assertOk());
+        $round = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => $base + ['style' => 'push', 'shape' => 'hex', 'edge' => 3]])->assertOk();
+        $this->assertLessThan($sharp['volume_mm3'] - 50, $meta($round)['volume_mm3'], 'a round top edge takes material off');
+        $this->assertEqualsWithDelta($sharp['bbox']['z'], $meta($round)['bbox']['z'], 0.01);
+        $closed($round, 'round edge');
+        $this->get('/tools/cap?lang=cs')->assertSee('Zaoblení horní hrany')->assertSee('data-when="head=flat"', false);
         $this->assertSame('cap', $this->postJson('/api/tools/param', ['kind' => 'cap', 'params' => $base + ['style' => 'plug']])->assertCreated()->json('file.kind'));
     }
 

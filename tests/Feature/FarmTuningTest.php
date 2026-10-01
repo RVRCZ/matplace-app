@@ -227,19 +227,25 @@ class FarmTuningTest extends TestCase
 
         // the test printed: the operator fills in what it showed, the advisor proposes, the proposal becomes a version
         $order->forceFill(['status' => FarmOrder::STATUS_DONE])->save();
-        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/evaluate/{$order->token}", ['best_floor' => 3, 'stringing' => 2, 'bridge' => 'sag', 'score' => 3])->assertRedirect();
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/evaluate/{$order->token}", ['best_floor' => 3, 'stringing' => 2, 'bridge' => 'sag', 'overhang_ok' => 70, 'score' => 3])->assertRedirect();
         $order->refresh();
         $this->assertSame(3, $order->quality_rating);
         $this->assertSame(2, $order->test_params['result']['stringing']);
         $advice = $order->test_params['advice'];
         $this->assertSame(215, $advice['overrides']['nozzle_temp'], 'floor 3 = 220, stringing −5');
         $this->assertSame('40', $advice['overrides']['process']['bridge_speed']);
+        // what the test showed the machine manages becomes support settings: overhangs clean to 70° from the vertical
+        // = faces flatter than 25° from the horizontal get supports; a sagging bridge keeps bridges over 10 mm supported
+        $this->assertSame('25', $advice['overrides']['process']['support_threshold_angle']);
+        $this->assertSame('10', $advice['overrides']['process']['max_bridge_length']);
         $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()->assertSee('Návrh úprav')->assertSee('bridge_speed');
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/apply/{$order->token}")->assertRedirect();
         $row->refresh();
         $this->assertSame(FarmPrinterMaterial::STATUS_TESTING, $row->status);
         $this->assertSame(2, $row->version);
         $this->assertSame('40', $row->overrides['process']['bridge_speed']);
+        $this->assertSame('25', $row->overrides['process']['support_threshold_angle']);
+        $this->assertSame('25', PrintProfile::for($s1, $row->material, $slot->color)->process['support_threshold_angle'], 'the farm slices with it');
         $this->assertArrayNotHasKey('nozzle_temp', $row->overrides, '215 is what the PLA+ kind says anyway: the row keeps only what differs');
         $this->assertSame(215, PrintProfile::for($s1, $row->material, $slot->color)->temps['nozzle']);
 
@@ -262,10 +268,12 @@ class FarmTuningTest extends TestCase
         // the ironed detailed test: its 20 mm cube is measured against 20 mm, and applying the proposal keeps the tuned
         // ironing values on the row without switching ironing on for every print made with it
         $detailed->forceFill(['status' => FarmOrder::STATUS_DONE])->save();
-        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/evaluate/{$detailed->token}", ['ironing' => 'lines', 'cube_x' => 20.2, 'cube_y' => 20.2])->assertRedirect()->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/evaluate/{$detailed->token}", ['ironing' => 'lines', 'cube_x' => 20.2, 'cube_y' => 20.2, 'bridge' => 'ok'])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertSame('-0.1', (string) $detailed->fresh()->test_params['advice']['overrides']['process']['xy_contour_compensation']);
+        $this->assertSame('25', $detailed->fresh()->test_params['advice']['overrides']['process']['max_bridge_length'], 'the detailed object bridges 25 mm');
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/apply/{$detailed->token}")->assertRedirect();
         $row->refresh();
+        $this->assertSame('25', $row->overrides['process']['max_bridge_length']);
         $this->assertSame('12%', $row->overrides['process']['ironing_flow']);
         $this->assertArrayNotHasKey('ironing_type', $row->overrides['process']);
     }

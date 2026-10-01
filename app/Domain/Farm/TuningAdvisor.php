@@ -21,7 +21,7 @@ final class TuningAdvisor
     /** What the shipped profiles say when the candidate does not: the base a delta is applied to. */
     private const BASE = [
         'filament' => ['fan_max_speed' => 100, 'fan_min_speed' => 100, 'overhang_fan_speed' => 100, 'filament_retraction_length' => 0.8, 'filament_flow_ratio' => 0.98, 'pressure_advance' => 0.035, 'slow_down_layer_time' => 8, 'filament_max_volumetric_speed' => 12],
-        'process' => ['bridge_speed' => 50, 'outer_wall_speed' => 200, 'top_shell_layers' => 5, 'elefant_foot_compensation' => 0.1, 'xy_contour_compensation' => 0, 'xy_hole_compensation' => 0, 'brim_width' => 5, 'outer_wall_acceleration' => 5000, 'ironing_flow' => '10%', 'ironing_speed' => 30, 'ironing_spacing' => 0.15],
+        'process' => ['support_threshold_angle' => 30, 'max_bridge_length' => 10, 'bridge_speed' => 50, 'outer_wall_speed' => 200, 'top_shell_layers' => 5, 'elefant_foot_compensation' => 0.1, 'xy_contour_compensation' => 0, 'xy_hole_compensation' => 0, 'brim_width' => 5, 'outer_wall_acceleration' => 5000, 'ironing_flow' => '10%', 'ironing_speed' => 30, 'ironing_spacing' => 0.15],
     ];
 
     /** Edge of the dimension cube on each test object (calib_tool.py); the quick one when the object is not known. */
@@ -33,6 +33,31 @@ final class TuningAdvisor
     public static function cubeMm(string $object): float
     {
         return self::CUBE_MM[$object] ?? self::CUBE_MM['quick'];
+    }
+
+    /** The longest bridge on each test object (calib_tool.py): a clean one means bridges up to that go without supports. */
+    public const BRIDGE_MM = ['quick' => 20, 'detailed' => 25];
+
+    /**
+     * What the test says the machine manages without supports, as slicer settings: the overhang fan gives the
+     * steepest clean angle (from the vertical), and Orca supports every face flatter than `support_threshold_angle`
+     * (from the horizontal), so the threshold is the complement with 5 degrees to spare; a clean bridge lifts
+     * `max_bridge_length` to the span the object had. Empty when the test did not judge them.
+     *
+     * @return array<string, string>
+     */
+    public static function supportSettings(array $result, string $object): array
+    {
+        $out = [];
+        if (isset($result['overhang_ok']) && $result['overhang_ok'] !== '') {
+            $clean = (int) $result['overhang_ok'];
+            $out['support_threshold_angle'] = (string) ($clean >= 30 ? max(15, min(60, 95 - $clean)) : 60);
+        }
+        if (in_array($result['bridge'] ?? null, ['ok', 'sag', 'fail'], true)) {
+            $out['max_bridge_length'] = (string) ($result['bridge'] === 'ok' ? (self::BRIDGE_MM[$object] ?? self::BRIDGE_MM['quick']) : 10);
+        }
+
+        return $out;
     }
 
     /**
@@ -73,6 +98,14 @@ final class TuningAdvisor
             if ((int) $overhang < 40 && $stringing < 2) {
                 $a->temp('nozzle_temp', -5, 'převisy pod 40°: chladnější tryska tuhne rychleji');
             }
+        }
+
+        // what the machine manages without supports becomes the row's support settings (the farm prints with them)
+        foreach (self::supportSettings($result, $object) as $key => $value) {
+            $why = $key === 'support_threshold_angle'
+                ? ($overhang >= 30 ? 'převis čistý do '.(int) $overhang.'°: podpěry až pod plochy plošší než '.$value.'°' : 'žádný převis čistý: podpěry pod vším plošším než 60°')
+                : ($r('bridge') === 'ok' ? 'most '.$value.' mm rovný: mosty do '.$value.' mm bez podpěr' : 'most neprošel: mosty nad 10 mm s podpěrou');
+            $a->process($key, $value, null, null, $why, absolute: true);
         }
 
         $bridge = $r('bridge');

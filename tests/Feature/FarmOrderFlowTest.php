@@ -256,6 +256,19 @@ class FarmOrderFlowTest extends TestCase
         $created = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'sign', 'params' => ['style' => 'emboss', 'thickness' => 3, 'relief' => 1.2, 'line1' => 'Emma']])->assertCreated();
         $uuid = $created->json('file.uuid');
         $this->assertEqualsWithDelta(3.0, ModelFile::where('uuid', $uuid)->firstOrFail()->tool_params['color_change_mm'], 0.001);
+
+        // the start page already offers the second colour, only from the machine of the first one
+        $start = $this->actingAs($this->user)->get('/farm?file='.$uuid.'&lang=cs')->assertOk();
+        $start->assertSee('farm-second-start', false)->assertSee('Druhá barva: kód nebo písmo')->assertSee('data-second-for="'.$same->id.'"', false)->assertSee('data-change="3"', false);
+        $this->actingAs($this->user)->get('/farm?lang=cs')->assertOk()->assertDontSee('farm-second-start', false);
+        // chosen there, the second spool is on the order from the start and the order page shows it preselected
+        $firstColor = $s1->slots()->whereNotNull('farm_color_id')->where('id', '!=', $free[0]->id)->whereHas('color.material', fn ($q) => $q->where('code', 'like', 'PLA%'))->firstOrFail()->farm_color_id;
+        $early = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $firstColor, 'second_color' => $same->id])->assertCreated();
+        $earlyOrder = FarmOrder::where('token', basename($early->json('url')))->firstOrFail();
+        $this->assertSame($free[0]->id, $earlyOrder->second_slot_id);
+        $this->assertSame($same->id, $earlyOrder->second_color_id);
+        $this->assertSame($free[0]->id, $this->actingAs($this->user)->getJson("/farm/orders/{$earlyOrder->token}/status")->json('second_slot'));
+        $this->assertNull(FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $firstColor, 'second_color' => $firstColor])->json('url')))->firstOrFail()->second_slot_id, 'the same colour twice is no second colour');
         $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'scale' => 2])->assertCreated();
         $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
         $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
@@ -293,6 +306,18 @@ class FarmOrderFlowTest extends TestCase
         $this->assertNotSame('0', $order->refresh()->slice_params['overrides']['process']['enable_support'] ?? null);
         $this->actingAs($this->user)->get('/farm/orders/'.$order->token.'/repeat')->assertRedirect();
         $this->actingAs($this->user)->get('/farm?supports=off&lang=cs')->assertOk()->assertSee('Bez podpěr');
+    }
+
+    /** A model from one of our tools built to print without supports (a cap) is sliced without them unless the customer asks. */
+    public function test_a_tool_model_built_without_supports_is_sliced_without_them(): void
+    {
+        $uuid = $this->upload(20);
+        ModelFile::where('uuid', $uuid)->update(['origin' => 'tool', 'origin_ref' => 'cap', 'tool_params' => json_encode(['style' => 'push'])]);
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertSame('auto', $order->supports);
+        $this->assertSame('0', $order->slice_params['overrides']['process']['enable_support']);
+        $this->assertFalse($order->supports_used);
     }
 
     public function test_several_copies_print_on_one_plate_and_more_than_a_plate_takes_prints_plate_after_plate(): void

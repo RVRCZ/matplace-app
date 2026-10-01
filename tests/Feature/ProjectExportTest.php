@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Engines\DTO\SliceParams;
 use App\Engines\Project\OrcaProjectExporter;
+use App\Engines\Project\PrusaProjectExporter;
 use App\Engines\Repair\PythonTool;
 use App\Models\ModelFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -35,6 +36,37 @@ class ProjectExportTest extends TestCase
         $zip->close();
 
         return $cfg;
+    }
+
+    /** A QR sign: the project stops the printer above the plate for the dark filament; a plain upload gets no such stop. */
+    public function test_a_plate_with_a_code_gets_a_filament_change_above_the_plate(): void
+    {
+        $uuid = $this->uploadCube();
+        $file = ModelFile::where('uuid', $uuid)->firstOrFail();
+        $plain = $this->get("/api/files/{$uuid}/project.3mf?printer=prusa-mk4s")->assertOk();
+        $this->assertNull($this->entry($plain->baseResponse->getFile()->getPathname(), 'Metadata/custom_gcode_per_layer.xml'));
+
+        $file->forceFill(['origin' => 'tool', 'origin_ref' => 'qr', 'tool_params' => ['url' => 'https://matplace.com', 'color_change_mm' => 2.4]])->save();
+        $this->assertSame(2.4, $file->colorChangeMm());
+        $this->assertSame(3.6, $file->colorChangeMm(1.5));
+        $r = $this->get("/api/files/{$uuid}/project.3mf?printer=prusa-mk4s&quality=standard")->assertOk();
+        $xml = $this->entry($r->baseResponse->getFile()->getPathname(), 'Metadata/custom_gcode_per_layer.xml');
+        $this->assertStringContainsString('top_z="2.60"', $xml, 'the first 0.2 mm layer above a 2.4 mm plate');
+        $this->assertStringContainsString('gcode="M600"', $xml);
+        $this->assertStringContainsString('color="#222222"', $xml);
+        $r = $this->get("/api/files/{$uuid}/project.3mf?printer=prusa-mk4s&quality=standard&scale=2")->assertOk();
+        $this->assertStringContainsString('top_z="5.00"', $this->entry($r->baseResponse->getFile()->getPathname(), 'Metadata/custom_gcode_per_layer.xml'), 'twice the size: the plate is 4.8 mm');
+        $this->get('/?lang=cs')->assertOk()->assertSee('dl-color', false);
+    }
+
+    private function entry(string $file, string $name): ?string
+    {
+        $zip = new \ZipArchive;
+        $zip->open($file);
+        $s = $zip->getFromName($name);
+        $zip->close();
+
+        return $s === false ? null : $s;
     }
 
     public function test_printer_list_is_grouped_by_brand(): void
@@ -107,7 +139,7 @@ class ProjectExportTest extends TestCase
         $this->assertSame(['PLA' => 'Generic PLA @ONE HF0.4'], $p['filaments']);      // the high-flow condition decides
 
         MeshFixtures::cubeStl($dir.'/cube.stl', 20);
-        $over = \App\Engines\Project\PrusaProjectExporter::overrides(new SliceParams('PLA', 'fine', 15, null), ['kind' => 'lithophane']);
+        $over = PrusaProjectExporter::overrides(new SliceParams('PLA', 'fine', 15, null), ['kind' => 'lithophane']);
         $r = $python->runScript('prusa_profiles.py', ['project', $dir.'/bundle.ini', $p['machine'], $p['processes']['fine'], $p['filaments']['PLA'], $dir.'/cube.stl', $dir.'/out.3mf', json_encode($over)]);
         $this->assertTrue($r['ok'], json_encode($r));
         $zip = new \ZipArchive;

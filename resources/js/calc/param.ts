@@ -128,7 +128,8 @@ export function bootParam(): void {
     const renderViews = (): void => {
         const box = document.getElementById('param-views');
         if (!box) return;
-        const views = ['all', ...partsNow(), ...(cfg.kind === 'stamp' ? ['imprint'] : [])];
+        // a threaded cap: the thread is inside, a look at the cut model shows it
+        const views = ['all', ...partsNow(), ...(cfg.kind === 'stamp' ? ['imprint'] : []), ...(cfg.kind === 'cap' && params().style === 'thread' ? ['cut'] : [])];
         if (!views.includes(viewPart)) viewPart = 'all';
         box.innerHTML = '';
         if (views.length < 2) return;
