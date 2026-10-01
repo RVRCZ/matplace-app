@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\OauthIdentity;
 use App\Models\User;
+use App\Support\Locales;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +19,8 @@ class OAuthController extends Controller
     public function redirect(string $provider): RedirectResponse
     {
         abort_unless(in_array($provider, self::PROVIDERS, true) && config("services.$provider.client_id"), 404);
+        // the callback address has no language in it: remember the one of the page the visitor came from
+        session(['locale_once' => Locales::forApi(request())]);
 
         return Socialite::driver($provider)->redirect();
     }

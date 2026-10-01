@@ -22,58 +22,151 @@ use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\Farm\CreditController;
 use App\Http\Controllers\Farm\OrderController;
 use App\Http\Controllers\InquiryController;
+use App\Http\Controllers\LocaleRedirectController;
 use App\Http\Controllers\Printer\InquiryController as PrinterInquiryController;
 use App\Http\Controllers\Printer\PrinterController;
 use App\Http\Controllers\Printer\QuoteController;
 use App\Http\Controllers\PrinterPageController;
 use App\Http\Controllers\ToolsController;
+use App\Support\Locales;
 use Illuminate\Support\Facades\Route;
 
-// ── Public: the one screen ───────────────────────────────────────────────────
-Route::get('/', [CalculatorController::class, 'index'])->name('home');
-Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share');
+// ── Pages ────────────────────────────────────────────────────────────────────
+// Everything a person opens in a browser exists in every language: Czech without a prefix, /en/… and /es/…
+// (App\Support\Locales). The group below is registered twice; route() picks the twin of the language being rendered.
+// Outside stay: /api/*, /admin/*, webhooks, OAuth and files of an order.
+$pages = function () {
+    // ── Public: the one screen ───────────────────────────────────────────────────
+    Route::get('/', [CalculatorController::class, 'index'])->name('home');
+    Route::get('/c/{calculation}', [CalculatorController::class, 'share'])->name('calc.share');
 
-// Marketplace (config/features.php): public printer pages, quotes, customer inquiries — 404 while switched off
-Route::middleware('feature:marketplace')->group(function () {
-    Route::get('/printers/id/{id}', [PrinterPageController::class, 'byId'])->whereNumber('id')->name('printers.by_id');
-    Route::get('/printers/{printerProfile:slug}', [PrinterPageController::class, 'show'])->name('printers.show');
-    Route::get('/q/{quote}', [QuoteController::class, 'publicShow'])->name('quote.public');
-    Route::get('/q/{quote}/pdf', [QuoteController::class, 'publicPdf'])->name('quote.public.pdf');
-    Route::post('/q/{quote}/accept', [QuoteController::class, 'accept'])->name('quote.accept');
-    Route::post('/q/{quote}/decline', [QuoteController::class, 'decline'])->middleware('throttle:20,1')->name('quote.decline');
-    Route::post('/q/{quote}/change', [QuoteController::class, 'requestChange'])->middleware('throttle:10,1')->name('quote.change');
-    Route::get('/i/{inquiry}', [InquiryController::class, 'show'])->name('inquiry.show');
-    Route::get('/i/{inquiry}/verify/{code}', [InquiryController::class, 'verify'])->name('inquiry.verify');
-    Route::post('/i/{inquiry}/accept/{quote}', [InquiryController::class, 'accept'])->name('inquiry.accept');
-    Route::post('/i/{inquiry}/done', [InquiryController::class, 'done'])->name('inquiry.done');
-    Route::post('/i/{inquiry}/cancel', [InquiryController::class, 'cancel'])->name('inquiry.cancel');
-    Route::post('/i/{inquiry}/rate', [InquiryController::class, 'rate'])->name('inquiry.rate');
+    // Marketplace (config/features.php): public printer pages, quotes, customer inquiries — 404 while switched off
+    Route::middleware('feature:marketplace')->group(function () {
+        Route::get('/printers/id/{id}', [PrinterPageController::class, 'byId'])->whereNumber('id')->name('printers.by_id');
+        Route::get('/printers/{printerProfile:slug}', [PrinterPageController::class, 'show'])->name('printers.show');
+        Route::get('/q/{quote}', [QuoteController::class, 'publicShow'])->name('quote.public');
+        Route::get('/q/{quote}/pdf', [QuoteController::class, 'publicPdf'])->name('quote.public.pdf');
+        Route::post('/q/{quote}/accept', [QuoteController::class, 'accept'])->name('quote.accept');
+        Route::post('/q/{quote}/decline', [QuoteController::class, 'decline'])->middleware('throttle:20,1')->name('quote.decline');
+        Route::post('/q/{quote}/change', [QuoteController::class, 'requestChange'])->middleware('throttle:10,1')->name('quote.change');
+        Route::get('/i/{inquiry}', [InquiryController::class, 'show'])->name('inquiry.show');
+        Route::get('/i/{inquiry}/verify/{code}', [InquiryController::class, 'verify'])->name('inquiry.verify');
+        Route::post('/i/{inquiry}/accept/{quote}', [InquiryController::class, 'accept'])->name('inquiry.accept');
+        Route::post('/i/{inquiry}/done', [InquiryController::class, 'done'])->name('inquiry.done');
+        Route::post('/i/{inquiry}/cancel', [InquiryController::class, 'cancel'])->name('inquiry.cancel');
+        Route::post('/i/{inquiry}/rate', [InquiryController::class, 'rate'])->name('inquiry.rate');
+    });
+
+    // Tools menu (everything that is not the one main screen)
+    Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
+    Route::get('/gifts', [ToolsController::class, 'gifts'])->name('tools.gifts');
+    Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
+    Route::get('/tools/sign', [ToolsController::class, 'param'])->defaults('kind', 'sign')->name('tools.sign');
+    Route::get('/tools/relief', [ToolsController::class, 'relief'])->name('tools.relief');
+    Route::get('/tools/spare-part', [ToolsController::class, 'spare'])->middleware('feature:marketplace')->name('tools.spare');
+    Route::get('/tools/check', [ToolsController::class, 'check'])->name('tools.check');
+    Route::get('/tools/mold', [ToolsController::class, 'mold'])->name('tools.mold');
+    Route::get('/tools/repair', [ToolsController::class, 'repair'])->name('tools.repair');
+    Route::get('/tools/organizer', [ToolsController::class, 'param'])->defaults('kind', 'organizer')->name('tools.organizer');
+    Route::get('/tools/modular-organizer', [ToolsController::class, 'param'])->defaults('kind', 'modular')->name('tools.modular');
+    Route::get('/tools/box', [ToolsController::class, 'param'])->defaults('kind', 'box')->name('tools.box');
+    Route::get('/tools/phone-stand', [ToolsController::class, 'param'])->defaults('kind', 'phone_stand')->name('tools.phone_stand');
+    Route::get('/tools/vase', [ToolsController::class, 'param'])->defaults('kind', 'vase')->name('tools.vase');
+    Route::get('/tools/logo', [ToolsController::class, 'param'])->defaults('kind', 'logo')->name('tools.logo');
+    Route::get('/tools/stamp', [ToolsController::class, 'param'])->defaults('kind', 'stamp')->name('tools.stamp');
+    Route::get('/tools/stencil', [ToolsController::class, 'param'])->defaults('kind', 'stencil')->name('tools.stencil');
+    Route::get('/tools/illuminated-sign', [ToolsController::class, 'param'])->defaults('kind', 'lightbox')->name('tools.lightbox');
+    Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');
+    Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('kind', 'cable_holder')->name('tools.cable_holder');
+    Route::get('/tools/holder', [ToolsController::class, 'param'])->defaults('kind', 'holder')->name('tools.holder');
+    Route::get('/tools/cap', [ToolsController::class, 'param'])->defaults('kind', 'cap')->name('tools.cap');
+    Route::get('/tools/cookie-cutter', [ToolsController::class, 'param'])->defaults('kind', 'cutter')->name('tools.cutter');
+
+    // ── Auth ─────────────────────────────────────────────────────────────────────
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+        Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1')->name('login.attempt');
+        Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:6,1')->name('register.store');
+        Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
+        Route::post('/forgot-password', [AuthController::class, 'sendReset'])->middleware('throttle:6,1')->name('password.email');
+        Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
+        Route::post('/reset-password', [AuthController::class, 'reset'])->middleware('throttle:6,1')->name('password.update');
+    });
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+    // ── Account (any role) ───────────────────────────────────────────────────────
+    Route::middleware('auth')->prefix('account')->name('account')->group(function () {
+        Route::get('/', [AccountController::class, 'index']);
+        Route::get('/profile', [AccountController::class, 'profile'])->name('.profile');
+        Route::post('/profile', [AccountController::class, 'updateProfile'])->name('.profile.update');
+        Route::post('/roles/{role}/enable', [AccountController::class, 'enableRole'])->middleware('feature:marketplace')->name('.roles.enable');
+        Route::post('/roles/{role}/disable', [AccountController::class, 'disableRole'])->middleware('feature:marketplace')->name('.roles.disable');
+    });
+
+    // ── Print farm: "Rent a printer" (logged-in users; credit from the payment gateway) ──
+    Route::get('/farm/terms', [OrderController::class, 'terms'])->name('farm.terms');
+    Route::view('/privacy', 'pages.privacy')->name('privacy');
+    Route::middleware('auth')->group(function () {
+        Route::get('/farm', [OrderController::class, 'start'])->name('farm.start');
+        Route::get('/farm/orders', [OrderController::class, 'index'])->name('farm.orders');
+        Route::post('/farm/orders', [OrderController::class, 'store'])->middleware('throttle:20,1,farm_order')->name('farm.orders.store');
+        Route::get('/farm/orders/{order}', [OrderController::class, 'show'])->name('farm.orders.show');
+        Route::get('/farm/orders/{order}/repeat', [OrderController::class, 'repeat'])->name('farm.orders.repeat');
+        Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
+        Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
+        Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware('throttle:10,1,farm_pay')->name('farm.orders.pay');
+        Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
+        Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1,video-consent')->name('farm.orders.video_consent');
+
+        Route::get('/account/credit', [CreditController::class, 'index'])->name('account.credit');
+        Route::post('/account/credit', [CreditController::class, 'topUp'])->middleware('throttle:10,1,topup')->name('account.credit.topup');
+    });
+
+    // ── Printer tools (role switch "I own a printer") ────────────────────────────
+    Route::middleware(['feature:marketplace', 'auth', 'role:printer'])->prefix('printer')->name('printer.')->group(function () {
+        Route::get('/', [PrinterController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [PrinterController::class, 'profile'])->name('profile');
+        Route::post('/profile', [PrinterController::class, 'updateProfile'])->name('profile.update');
+        Route::get('/calculator', [PrinterController::class, 'calculator'])->name('calculator');
+        Route::get('/calculator/{calculation}', [PrinterController::class, 'calculator'])->name('calculator.open');
+
+        Route::get('/quotes', [QuoteController::class, 'index'])->name('quotes');
+        Route::post('/quotes', [QuoteController::class, 'store'])->name('quotes.store');
+        Route::get('/quotes/{quote}', [QuoteController::class, 'edit'])->name('quotes.edit');
+        Route::post('/quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
+        Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
+        Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
+        Route::post('/quotes/{quote}/revoke', [QuoteController::class, 'revoke'])->name('quotes.revoke');
+        Route::post('/quotes/{quote}/relink', [QuoteController::class, 'relink'])->name('quotes.relink');
+        Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
+
+        Route::get('/inquiries', [PrinterInquiryController::class, 'index'])->name('inquiries');
+        Route::get('/inquiries/{inquiry}', [PrinterInquiryController::class, 'show'])->name('inquiries.show');
+        Route::post('/inquiries/{inquiry}/offer', [PrinterInquiryController::class, 'offer'])->name('inquiries.offer');
+        Route::post('/inquiries/{inquiry}/decline', [PrinterInquiryController::class, 'decline'])->name('inquiries.decline');
+    });
+};
+
+Route::group([], $pages);
+Route::prefix('{locale}')->where(['locale' => Locales::pattern()])->name(Locales::NAME_PREFIX)->group($pages);
+// Czech has no prefix: /cs/tools is the same page as /tools
+Route::get('/cs/{path?}', LocaleRedirectController::class)->where('path', '.*')->name('locale.cs');
+
+// ── Sign-in through Google and Facebook (the callback address is registered there, keep it) ──
+Route::middleware('guest')->group(function () {
+    Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])->name('oauth.redirect');
+    Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
 });
 
-// Tools menu (everything that is not the one main screen)
-Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
-Route::get('/gifts', [ToolsController::class, 'gifts'])->name('tools.gifts');
-Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
-Route::get('/tools/sign', [ToolsController::class, 'param'])->defaults('kind', 'sign')->name('tools.sign');
-Route::get('/tools/relief', [ToolsController::class, 'relief'])->name('tools.relief');
-Route::get('/tools/spare-part', [ToolsController::class, 'spare'])->middleware('feature:marketplace')->name('tools.spare');
-Route::get('/tools/check', [ToolsController::class, 'check'])->name('tools.check');
-Route::get('/tools/mold', [ToolsController::class, 'mold'])->name('tools.mold');
-Route::get('/tools/repair', [ToolsController::class, 'repair'])->name('tools.repair');
-Route::get('/tools/organizer', [ToolsController::class, 'param'])->defaults('kind', 'organizer')->name('tools.organizer');
-Route::get('/tools/modular-organizer', [ToolsController::class, 'param'])->defaults('kind', 'modular')->name('tools.modular');
-Route::get('/tools/box', [ToolsController::class, 'param'])->defaults('kind', 'box')->name('tools.box');
-Route::get('/tools/phone-stand', [ToolsController::class, 'param'])->defaults('kind', 'phone_stand')->name('tools.phone_stand');
-Route::get('/tools/vase', [ToolsController::class, 'param'])->defaults('kind', 'vase')->name('tools.vase');
-Route::get('/tools/logo', [ToolsController::class, 'param'])->defaults('kind', 'logo')->name('tools.logo');
-Route::get('/tools/stamp', [ToolsController::class, 'param'])->defaults('kind', 'stamp')->name('tools.stamp');
-Route::get('/tools/stencil', [ToolsController::class, 'param'])->defaults('kind', 'stencil')->name('tools.stencil');
-Route::get('/tools/illuminated-sign', [ToolsController::class, 'param'])->defaults('kind', 'lightbox')->name('tools.lightbox');
-Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');
-Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('kind', 'cable_holder')->name('tools.cable_holder');
-Route::get('/tools/holder', [ToolsController::class, 'param'])->defaults('kind', 'holder')->name('tools.holder');
-Route::get('/tools/cap', [ToolsController::class, 'param'])->defaults('kind', 'cap')->name('tools.cap');
-Route::get('/tools/cookie-cutter', [ToolsController::class, 'param'])->defaults('kind', 'cutter')->name('tools.cutter');
+// ── Files of a farm order (not pages: one address for every language) ────────
+Route::middleware('auth')->group(function () {
+    Route::get('/farm/orders/{order}/model.stl', [OrderController::class, 'model'])->name('farm.orders.model');
+    Route::get('/farm/orders/{order}/supports.bin', [OrderController::class, 'supports'])->name('farm.orders.supports');
+    Route::get('/farm/orders/{order}/snapshot', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
+    Route::get('/farm/orders/{order}/timelapse.mp4', [OrderController::class, 'timelapse'])->name('farm.orders.timelapse');
+    Route::get('/farm/orders/{order}/short.mp4', [OrderController::class, 'short'])->name('farm.orders.short');
+});
 
 // ── JSON API used by the calculator ──────────────────────────────────────────
 // Every "throttle:N,1" below carries its own prefix: without one Laravel counts all of them on ONE key per visitor,
@@ -110,54 +203,6 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('threads/{thread}/messages', [ThreadController::class, 'messages'])->name('threads.messages');
     Route::post('threads/{thread}/messages', [ThreadController::class, 'post'])->middleware('throttle:30,1,thread')->name('threads.post');
     Route::get('threads/{thread}/attachments/{message}', [ThreadController::class, 'attachment'])->name('threads.attachment');
-});
-
-// ── Auth ─────────────────────────────────────────────────────────────────────
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
-    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:6,1');
-    Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
-    Route::post('/forgot-password', [AuthController::class, 'sendReset'])->middleware('throttle:6,1')->name('password.email');
-    Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
-    Route::post('/reset-password', [AuthController::class, 'reset'])->middleware('throttle:6,1')->name('password.update');
-    Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])->name('oauth.redirect');
-    Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
-});
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
-
-// ── Account (any role) ───────────────────────────────────────────────────────
-Route::middleware('auth')->prefix('account')->name('account')->group(function () {
-    Route::get('/', [AccountController::class, 'index']);
-    Route::get('/profile', [AccountController::class, 'profile'])->name('.profile');
-    Route::post('/profile', [AccountController::class, 'updateProfile'])->name('.profile.update');
-    Route::post('/roles/{role}/enable', [AccountController::class, 'enableRole'])->middleware('feature:marketplace')->name('.roles.enable');
-    Route::post('/roles/{role}/disable', [AccountController::class, 'disableRole'])->middleware('feature:marketplace')->name('.roles.disable');
-});
-
-// ── Print farm: "Rent a printer" (logged-in users; credit from the payment gateway) ──
-Route::get('/farm/terms', [OrderController::class, 'terms'])->name('farm.terms');
-Route::view('/privacy', 'pages.privacy')->name('privacy');
-Route::middleware('auth')->group(function () {
-    Route::get('/farm', [OrderController::class, 'start'])->name('farm.start');
-    Route::get('/farm/orders', [OrderController::class, 'index'])->name('farm.orders');
-    Route::post('/farm/orders', [OrderController::class, 'store'])->middleware('throttle:20,1,farm_order')->name('farm.orders.store');
-    Route::get('/farm/orders/{order}', [OrderController::class, 'show'])->name('farm.orders.show');
-    Route::get('/farm/orders/{order}/repeat', [OrderController::class, 'repeat'])->name('farm.orders.repeat');
-    Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
-    Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
-    Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware('throttle:10,1,farm_pay')->name('farm.orders.pay');
-    Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
-    Route::get('/farm/orders/{order}/model.stl', [OrderController::class, 'model'])->name('farm.orders.model');
-    Route::get('/farm/orders/{order}/supports.bin', [OrderController::class, 'supports'])->name('farm.orders.supports');
-    Route::get('/farm/orders/{order}/snapshot', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
-    Route::get('/farm/orders/{order}/timelapse.mp4', [OrderController::class, 'timelapse'])->name('farm.orders.timelapse');
-    Route::get('/farm/orders/{order}/short.mp4', [OrderController::class, 'short'])->name('farm.orders.short');
-    Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1,video-consent')->name('farm.orders.video_consent');
-
-    Route::get('/account/credit', [CreditController::class, 'index'])->name('account.credit');
-    Route::post('/account/credit', [CreditController::class, 'topUp'])->middleware('throttle:10,1,topup')->name('account.credit.topup');
 });
 
 // ── Admin: farm operation and data ───────────────────────────────────────────
@@ -232,28 +277,4 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/youtube')->name('admin.
     Route::post('/videos/{video}/replace', [$yt, 'replace'])->name('replace');
     Route::post('/stats', [$yt, 'stats'])->name('stats');
     Route::post('/showcase', [$yt, 'showcase'])->name('showcase');
-});
-
-// ── Printer tools (role switch "I own a printer") ────────────────────────────
-Route::middleware(['feature:marketplace', 'auth', 'role:printer'])->prefix('printer')->name('printer.')->group(function () {
-    Route::get('/', [PrinterController::class, 'dashboard'])->name('dashboard');
-    Route::get('/profile', [PrinterController::class, 'profile'])->name('profile');
-    Route::post('/profile', [PrinterController::class, 'updateProfile'])->name('profile.update');
-    Route::get('/calculator', [PrinterController::class, 'calculator'])->name('calculator');
-    Route::get('/calculator/{calculation}', [PrinterController::class, 'calculator'])->name('calculator.open');
-
-    Route::get('/quotes', [QuoteController::class, 'index'])->name('quotes');
-    Route::post('/quotes', [QuoteController::class, 'store'])->name('quotes.store');
-    Route::get('/quotes/{quote}', [QuoteController::class, 'edit'])->name('quotes.edit');
-    Route::post('/quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
-    Route::post('/quotes/{quote}/send', [QuoteController::class, 'send'])->name('quotes.send');
-    Route::post('/quotes/{quote}/duplicate', [QuoteController::class, 'duplicate'])->name('quotes.duplicate');
-    Route::post('/quotes/{quote}/revoke', [QuoteController::class, 'revoke'])->name('quotes.revoke');
-    Route::post('/quotes/{quote}/relink', [QuoteController::class, 'relink'])->name('quotes.relink');
-    Route::get('/quotes/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
-
-    Route::get('/inquiries', [PrinterInquiryController::class, 'index'])->name('inquiries');
-    Route::get('/inquiries/{inquiry}', [PrinterInquiryController::class, 'show'])->name('inquiries.show');
-    Route::post('/inquiries/{inquiry}/offer', [PrinterInquiryController::class, 'offer'])->name('inquiries.offer');
-    Route::post('/inquiries/{inquiry}/decline', [PrinterInquiryController::class, 'decline'])->name('inquiries.decline');
 });

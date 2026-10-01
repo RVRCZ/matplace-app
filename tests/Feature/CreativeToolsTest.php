@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Engines\Contracts\MeshRepair;
+use App\Engines\Mesh\StlFile;
 use App\Models\ModelFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -41,7 +43,7 @@ class CreativeToolsTest extends TestCase
     {
         foreach (['vase', 'logo', 'stamp', 'qr'] as $slug) {
             foreach (['cs', 'en', 'es'] as $lang) {
-                $this->get('/tools/'.$slug.'?lang='.$lang)->assertOk();
+                $this->get($this->localized('/tools/'.$slug, $lang))->assertOk();
             }
         }
     }
@@ -142,8 +144,12 @@ class CreativeToolsTest extends TestCase
         // a blank picture is refused with an explanation; wrong file types never get in
         // a shaded picture becomes a plastic relief: every grey level a height, exact thickness on top of the plate
         $img = imagecreatetruecolor(120, 80);
-        for ($x = 0; $x < 120; $x++) { $c = imagecolorallocate($img, 255 - $x * 2, 255 - $x * 2, 255 - $x * 2); imageline($img, $x, 0, $x, 79, $c); }
-        $tmp = tempnam(sys_get_temp_dir(), 'grad').'.png'; imagepng($img, $tmp);
+        for ($x = 0; $x < 120; $x++) {
+            $c = imagecolorallocate($img, 255 - $x * 2, 255 - $x * 2, 255 - $x * 2);
+            imageline($img, $x, 0, $x, 79, $c);
+        }
+        $tmp = tempnam(sys_get_temp_dir(), 'grad').'.png';
+        imagepng($img, $tmp);
         $shaded = $this->post('/api/tools/artwork', ['file' => new UploadedFile($tmp, 'grad.png', 'image/png', null, true)], ['Accept' => 'application/json'])->assertCreated()->json('artwork');
         $relief = $this->meta($this->preview('logo', ['artwork' => $shaded, 'mode' => 'height', 'width' => 60, 'thickness' => 2, 'plate' => 2, 'margin' => 4])->assertOk());
         $this->assertEqualsWithDelta(4.0, $relief['bbox']['z'], 0.05);
@@ -169,13 +175,16 @@ class CreativeToolsTest extends TestCase
 
         // the letter L has its stem on the left; on the stamp it must be on the right
         $side = function ($response, float $zMin): float {
-            $m = \App\Engines\Mesh\StlFile::triangles($response->baseResponse->getFile()->getPathname());
-            $sum = 0; $n = 0; $xs = [];
+            $m = StlFile::triangles($response->baseResponse->getFile()->getPathname());
+            $sum = 0;
+            $n = 0;
+            $xs = [];
             foreach ($m as [$a, $b, $c]) {
                 foreach ([$a, $b, $c] as $v) {
                     $xs[] = $v[0];
                     if ($v[2] > $zMin && $v[1] > 20) {           // raised motif, upper part of the letter (only the stem)
-                        $sum += $v[0]; $n++;
+                        $sum += $v[0];
+                        $n++;
                     }
                 }
             }
@@ -217,7 +226,7 @@ class CreativeToolsTest extends TestCase
         $this->assertEqualsWithDelta(144, $m['bbox']['x'], 0.1);
         $this->assertEqualsWithDelta(1.2, $m['bbox']['z'], 0.01);
         // one connected plate: nothing can fall out
-        $report = app(\App\Engines\Contracts\MeshRepair::class)->check($r->baseResponse->getFile()->getPathname());
+        $report = app(MeshRepair::class)->check($r->baseResponse->getFile()->getPathname());
         $this->assertTrue($report->watertight);
         $this->assertSame(1, $report->shells);
 
@@ -248,7 +257,7 @@ class CreativeToolsTest extends TestCase
         $shallow = $this->preview('lightbox', ['led' => 'module', 'depth' => 25] + $p)->assertStatus(422);
         $this->assertStringContainsString('30', $shallow->json('errors.params.0'));
         foreach (['cs', 'en', 'es'] as $lang) {
-            $this->get('/tools/illuminated-sign?lang='.$lang)->assertOk();
+            $this->get($this->localized('/tools/illuminated-sign', $lang))->assertOk();
         }
     }
 

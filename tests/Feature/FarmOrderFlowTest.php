@@ -141,13 +141,13 @@ class FarmOrderFlowTest extends TestCase
         // a 300 mm cube fits only the Max: sliced for it from the start, the S1's white is not offered
         $big = $this->order(300.0);
         $this->assertSame($max->id, $big->farm_printer_id);
-        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$big->token}/status")->json();
-        $this->assertSame(['light blue'], array_column($state['colors'], 'name'));   // test locale is en
+        $state = $this->actingAs($this->user)->getJson("/en/farm/orders/{$big->token}/status")->json();
+        $this->assertSame(['light blue'], array_column($state['colors'], 'name'));   // the English address gives the English colour name
 
         // a small part goes to the cheapest kind's machine (the S1) but both machines' colours are on offer
         $small = $this->order();
         $this->assertSame($s1->id, $small->farm_printer_id);
-        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$small->token}/status")->json();
+        $state = $this->actingAs($this->user)->getJson("/en/farm/orders/{$small->token}/status")->json();
         $this->assertEqualsCanonicalizing(['white', 'light blue'], array_column($state['colors'], 'name'));
         $offer = collect($state['colors'])->firstWhere('name', 'light blue');
 
@@ -258,9 +258,9 @@ class FarmOrderFlowTest extends TestCase
         $this->assertEqualsWithDelta(3.0, ModelFile::where('uuid', $uuid)->firstOrFail()->tool_params['color_change_mm'], 0.001);
 
         // the start page already offers the second colour, only from the machine of the first one
-        $start = $this->actingAs($this->user)->get('/farm?file='.$uuid.'&lang=cs')->assertOk();
+        $start = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk();
         $start->assertSee('farm-second-start', false)->assertSee('Druhá barva: kód nebo písmo')->assertSee('data-second-for="'.$same->id.'"', false)->assertSee('data-change="3"', false);
-        $this->actingAs($this->user)->get('/farm?lang=cs')->assertOk()->assertDontSee('farm-second-start', false);
+        $this->actingAs($this->user)->get('/farm')->assertOk()->assertDontSee('farm-second-start', false);
         // chosen there, the second spool is on the order from the start and the order page shows it preselected
         $firstColor = $s1->slots()->whereNotNull('farm_color_id')->where('id', '!=', $free[0]->id)->whereHas('color.material', fn ($q) => $q->where('code', 'like', 'PLA%'))->firstOrFail()->farm_color_id;
         $early = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $firstColor, 'second_color' => $same->id])->assertCreated();
@@ -305,7 +305,7 @@ class FarmOrderFlowTest extends TestCase
         $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'supports' => 'auto'])->assertOk()->assertJsonPath('supports_mode', 'auto');
         $this->assertNotSame('0', $order->refresh()->slice_params['overrides']['process']['enable_support'] ?? null);
         $this->actingAs($this->user)->get('/farm/orders/'.$order->token.'/repeat')->assertRedirect();
-        $this->actingAs($this->user)->get('/farm?supports=off&lang=cs')->assertOk()->assertSee('Bez podpěr');
+        $this->actingAs($this->user)->get('/farm?supports=off')->assertOk()->assertSee('Bez podpěr');
     }
 
     /** A model from one of our tools built to print without supports (a cap) is sliced without them unless the customer asks. */
@@ -410,8 +410,8 @@ class FarmOrderFlowTest extends TestCase
         // the start page offers the loaded colours and carries size and copies over from the calculation
         $file = $this->upload(20.0);
         $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $file, 'material' => 'PLA', 'quantity' => 3, 'scale' => 1.5])->assertCreated()->json('calculation.token');
-        $page = $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk();
-        $page->assertSee('name="color"', false)->assertSee('name="scale"', false)->assertSee('value="1.5"', false)->assertSee('value="3"', false)->assertSee('light blue');   // test locale is en
+        $page = $this->actingAs($this->user)->get('/en/farm?calc='.$calc)->assertOk();
+        $page->assertSee('name="color"', false)->assertSee('name="scale"', false)->assertSee('value="1.5"', false)->assertSee('value="3"', false)->assertSee('light blue');   // the English page
 
         // "print again": the start page with the order's settings; the colour is preselected when it is still loaded
         $again = $this->actingAs($this->user)->get("/farm/orders/{$chosen->token}/repeat")->assertRedirect();

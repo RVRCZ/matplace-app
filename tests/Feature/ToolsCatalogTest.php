@@ -46,8 +46,8 @@ class ToolsCatalogTest extends TestCase
             $this->assertLessThan(60 * 1024, filesize(public_path('img/tools/'.$key.'-800.webp')), $key);
         }
         $page->assertSee('img/tools/modular-800.jpg', false)->assertSee('img/tools/printer_tools-800.jpg', false);
-        $this->get('/tools?lang=en')->assertOk()->assertSee('I have a file');
-        $this->get('/tools?lang=es')->assertOk()->assertSee('Tengo un archivo');
+        $this->get('/en/tools')->assertOk()->assertSee('I have a file');
+        $this->get('/es/tools')->assertOk()->assertSee('Tengo un archivo');
     }
 
     public function test_every_new_text_exists_in_all_three_languages(): void

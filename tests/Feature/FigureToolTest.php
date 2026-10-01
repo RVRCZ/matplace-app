@@ -38,8 +38,8 @@ class FigureToolTest extends TestCase
     public function test_pages_render_in_three_languages(): void
     {
         $this->get('/tools')->assertOk()->assertSee('figure');
-        $this->get('/tools/figure?lang=es')->assertOk()->assertSee('Busto');
-        $this->get('/tools/figure?lang=en')->assertOk()->assertSee('Bust');
+        $this->get('/es/tools/figure')->assertOk()->assertSee('Busto');
+        $this->get('/en/tools/figure')->assertOk()->assertSee('Bust');
     }
 
     public function test_consent_is_required(): void

@@ -107,7 +107,7 @@ class CalculationFlowTest extends TestCase
     public function test_homepage_keeps_the_working_entrance_on_top_of_the_new_look(): void
     {
         foreach (['cs' => 'Od myšlenky', 'en' => 'From an idea', 'es' => 'De la idea'] as $lang => $title) {
-            $page = $this->get('/?lang='.$lang)->assertOk()->assertSee($title);
+            $page = $this->get($this->localized('/', $lang))->assertOk()->assertSee($title);
             // the tools people use most, with their pictures, and the way to all of them
             $this->assertSame((int) config('home.tools_shown'), substr_count($page->getContent(), 'data-cats='));
             $page->assertSee('img/tools/gifts-800', false)->assertSee(route('tools'), false);

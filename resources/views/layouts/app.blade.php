@@ -7,7 +7,22 @@
     <meta name="description" content="{{ $description ?? __('app.subline') }}">
     @if(!empty($ogImage))<meta property="og:image" content="{{ $ogImage }}">@endif
     <meta property="og:title" content="{{ $title ?? 'matplace' }}">
-    @if(!empty($noindex))<meta name="robots" content="noindex, nofollow">@endif
+    @php
+        $noindex = ! empty($noindex) || \App\Support\Locales::noindex();
+        $canonical = $canonical ?? \App\Support\Locales::canonical();
+        $alternates = $noindex ? [] : \App\Support\Locales::alternates();
+    @endphp
+    @if($noindex)
+        <meta name="robots" content="noindex, nofollow">
+    @elseif($canonical)
+        <link rel="canonical" href="{{ $canonical }}">
+    @endif
+    @foreach($alternates as $l => $href)
+        <link rel="alternate" hreflang="{{ $l }}" href="{{ $href }}">
+    @endforeach
+    @if($alternates)
+        <link rel="alternate" hreflang="x-default" href="{{ $alternates[\App\Support\Locales::DEFAULT] }}">
+    @endif
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" href="/favicon.ico">
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
@@ -26,11 +41,13 @@
                     @if(config('features.marketplace'))<a href="{{ route('register', ['role' => 'printer']) }}" class="hidden sm:inline hover:text-slate-900">{{ __('nav.for_printers') }}</a>@endif
                     <a href="{{ route('login') }}" class="font-medium hover:text-slate-900">{{ __('nav.login') }}</a>
                 @endauth
-                <span class="flex items-center gap-0.5 text-xs sm:gap-1">
-                    @foreach(\App\Http\Middleware\SetLocale::SUPPORTED as $l)
-                        <a href="{{ request()->fullUrlWithQuery(['lang' => $l]) }}" class="rounded px-1.5 py-0.5 uppercase {{ app()->getLocale() === $l ? 'bg-slate-800 text-white' : 'hover:text-slate-900' }}">{{ $l }}</a>
-                    @endforeach
-                </span>
+                @if($languages = \App\Support\Locales::switcher())
+                    <span class="flex items-center gap-0.5 text-xs sm:gap-1" aria-label="{{ __('site.language') }}">
+                        @foreach($languages as $l => $href)
+                            <a href="{{ $href }}" hreflang="{{ $l }}" lang="{{ $l }}" title="{{ __('site.languages.'.$l) }}" @if(app()->getLocale() === $l) aria-current="true" @endif class="rounded px-1.5 py-0.5 uppercase {{ app()->getLocale() === $l ? 'bg-slate-800 text-white' : 'hover:text-slate-900' }}">{{ $l }}</a>
+                        @endforeach
+                    </span>
+                @endif
             </nav>
         </div>
     </header>

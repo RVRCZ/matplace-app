@@ -17,7 +17,7 @@ class SignToolTest extends TestCase
     public function test_page_renders(): void
     {
         $this->get('/tools/sign')->assertOk();
-        $this->get('/tools/sign?lang=es')->assertOk();
+        $this->get('/es/tools/sign')->assertOk();
     }
 
     public function test_validation(): void

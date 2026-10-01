@@ -40,7 +40,7 @@ class PrinterPublicPageTest extends TestCase
     {
         $user = $this->printer();
         $this->get('/printers/dilna-u-draka')->assertOk()->assertSee('Dílna U Draka')->assertSee('Brno')->assertSee('Tiskneme od roku 2018.')->assertDontSee('Kč/h');
-        $this->get('/printers/dilna-u-draka?lang=es')->assertOk();
+        $this->get('/es/printers/dilna-u-draka')->assertOk();
         $this->get('/printers/id/'.$user->printerProfile->id)->assertRedirect('/printers/dilna-u-draka');
 
         $user->printerProfile->update(['visible' => false]);

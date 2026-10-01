@@ -58,7 +58,7 @@ class FarmPagesTest extends TestCase
         $order = $this->order();
         foreach (['cs', 'en', 'es'] as $lang) {
             foreach (['/farm', '/farm/orders', "/farm/orders/{$order->token}", '/account/credit', '/farm/terms', '/account'] as $url) {
-                $r = $this->actingAs($this->user)->get($url.'?lang='.$lang);
+                $r = $this->actingAs($this->user)->get($this->localized($url, $lang));
                 $r->assertOk();
                 $this->assertDoesNotMatchRegularExpression('/\bfarm\.[a-z_]+\.[a-z_.]+/', strip_tags(preg_replace('#<script.*?</script>#s', '', $r->getContent())), "untranslated key on {$url} ({$lang})");
             }
@@ -219,7 +219,7 @@ class FarmPagesTest extends TestCase
         $job = FarmPrintJob::create(['farm_order_id' => $order->id, 'farm_printer_id' => $printer->id, 'slot' => 0, 'status' => FarmPrintJob::STATUS_PRINTING, 'progress' => 40]);
 
         // the card: "clear plate" is greyed out, the ACE dryer line shows the live temperature and the time left
-        $page = $this->actingAs($this->admin)->get('/admin/farm?lang=cs')->assertOk();
+        $page = $this->actingAs($this->admin)->get('/admin/farm')->assertOk();
         $page->assertSee(__('farm.admin.bed_locked_hint'));
         $page->assertSee('name="clear" value="1" class="btn-primary text-sm" disabled', false);
         $page->assertSee('suší 50 / 50 °C, zbývá 2 h 53 min');
@@ -236,7 +236,7 @@ class FarmPagesTest extends TestCase
 
         $job->update(['status' => FarmPrintJob::STATUS_DONE]);
         $printer->update(['state' => FarmPrinter::STATE_IDLE]);
-        $this->actingAs($this->admin)->get('/admin/farm?lang=cs')->assertOk()->assertDontSee('class="btn-primary text-sm" disabled', false);
+        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertDontSee('class="btn-primary text-sm" disabled', false);
         $this->actingAs($this->admin)->postJson(route('admin.farm.printers.bed', $printer), ['clear' => 1])->assertOk()->assertJson(['ok' => true]);
         $this->assertTrue($printer->fresh()->bed_clear);
 

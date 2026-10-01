@@ -18,7 +18,7 @@ class ReliefToolTest extends TestCase
     public function test_page_renders(): void
     {
         $this->get('/tools/relief')->assertOk();
-        $this->get('/tools/relief?lang=es')->assertOk();
+        $this->get('/es/tools/relief')->assertOk();
     }
 
     public function test_validation(): void

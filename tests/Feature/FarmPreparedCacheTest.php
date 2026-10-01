@@ -94,7 +94,7 @@ class FarmPreparedCacheTest extends TestCase
         $order->forceFill(['stage' => 'slicing'])->save();
         $this->actingAs($user)->getJson("/farm/orders/{$order->token}/status")->assertJsonPath('stage', 'slicing')->assertJsonPath('stage_step', 5);
         foreach (['cs', 'en', 'es'] as $lang) {
-            $this->actingAs($user)->get("/farm/orders/{$order->token}?lang={$lang}")->assertOk()->assertSee('farm-progress-bar')->assertDontSee('farm.stage.repairing":"farm.stage', false);
+            $this->actingAs($user)->get($this->localized("/farm/orders/{$order->token}", $lang))->assertOk()->assertSee('farm-progress-bar')->assertDontSee('farm.stage.repairing":"farm.stage', false);
         }
     }
 }

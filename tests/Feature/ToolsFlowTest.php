@@ -47,7 +47,7 @@ class ToolsFlowTest extends TestCase
     public function test_missing_text_is_explained_in_the_visitors_language(): void
     {
         // the visitor's language comes from the request (?lang, cookie, Accept-Language), so the expectation names it too
-        $first = fn (array $body, string $field, string $lang = 'cs') => $this->postJson('/api/tools/param/preview?lang='.$lang, $body)->assertStatus(422)->json('errors')[$field][0] ?? null;
+        $first = fn (array $body, string $field, string $lang = 'cs') => $this->postJson('/api/tools/param/preview', $body, ['X-Locale' => $lang])->assertStatus(422)->json('errors')[$field][0] ?? null;
         $this->assertSame(__('param.text_required', [], 'cs'), $first(['kind' => 'sign', 'params' => ['line1' => '']], 'params.line1'));
         $this->assertSame(__('param.error.qr_bad_text', [], 'es'), $first(['kind' => 'qr', 'params' => []], 'params.url', 'es'));
         $this->assertSame(__('param.error.text_too_long', ['n' => 40], 'en'), $first(['kind' => 'sign', 'params' => ['line1' => str_repeat('x', 41)]], 'params.line1', 'en'));
@@ -120,7 +120,7 @@ class ToolsFlowTest extends TestCase
 
     public function test_calculator_shows_the_print_size_in_millimetres_before_anything_else(): void
     {
-        $page = $this->get('/?lang=cs')->assertOk();
+        $page = $this->get('/')->assertOk();
         $page->assertSee(__('calc.size.title', [], 'cs'))->assertSee('id="size-x"', false)->assertSee('id="size-z"', false)->assertSee('id="scale"', false);
         $html = $page->getContent();
         $this->assertLessThan(strpos($html, 'id="materials"'), strpos($html, 'id="size-x"'), 'the size block comes before the material');
@@ -136,8 +136,8 @@ class ToolsFlowTest extends TestCase
 
     public function test_cookie_cutter_is_a_thin_closed_wall_with_a_flange_and_bridges_for_holes(): void
     {
-        $this->get('/tools/cookie-cutter?lang=cs')->assertOk()->assertSee('Vykrajovátko')->assertSee('data-choice="edge"', false)->assertSee('data-flag="stamp"', false);
-        $this->get('/tools?lang=cs')->assertOk()->assertSee(__('tools.cutter.title', [], 'cs'));
+        $this->get('/tools/cookie-cutter')->assertOk()->assertSee('Vykrajovátko')->assertSee('data-choice="edge"', false)->assertSee('data-flag="stamp"', false);
+        $this->get('/tools')->assertOk()->assertSee(__('tools.cutter.title', [], 'cs'));
         if (! app(ParametricGenerator::class)->available()) {
             $this->markTestSkipped('Python with manifold3d is not installed.');
         }
@@ -165,10 +165,10 @@ class ToolsFlowTest extends TestCase
 
     public function test_gifts_page_leads_into_the_sign_tool_with_a_preset_and_a_sample_text(): void
     {
-        $this->get('/gifts?lang=cs')->assertOk()->assertSee('Dárek se jménem')->assertSee('Vánoce')->assertSee('preset=keyring', false)->assertSee('preset=ornament', false);
-        $this->get('/gifts?lang=en')->assertOk()->assertSee('A gift with a name');
-        $this->get('/gifts?lang=es')->assertOk()->assertSee('Un regalo con nombre');
-        $this->get('/tools?lang=cs')->assertOk()->assertSee(route('tools.gifts'), false);
+        $this->get('/gifts')->assertOk()->assertSee('Dárek se jménem')->assertSee('Vánoce')->assertSee('preset=keyring', false)->assertSee('preset=ornament', false);
+        $this->get('/en/gifts')->assertOk()->assertSee('A gift with a name');
+        $this->get('/es/gifts')->assertOk()->assertSee('Un regalo con nombre');
+        $this->get('/tools')->assertOk()->assertSee(route('tools.gifts'), false);
         $this->get('/tools/sign?preset=keyring&line1=Jana')->assertOk()->assertSee('data-preset="keyring"', false)->assertSee('data-preset="door"', false);
 
         // every preset is within the tool's own limits (the server would refuse it otherwise)
@@ -190,9 +190,9 @@ class ToolsFlowTest extends TestCase
 
     public function test_holder_fits_the_measured_thing_in_four_ways(): void
     {
-        $this->get('/tools/holder?lang=cs')->assertOk()->assertSee('Držák na cokoliv')->assertSee('data-choice="style"', false)->assertSee('data-preset="remote"', false);
-        $this->get('/tools/holder?lang=en')->assertOk()->assertSee('A holder for anything');
-        $this->get('/tools/holder?lang=es')->assertOk();
+        $this->get('/tools/holder')->assertOk()->assertSee('Držák na cokoliv')->assertSee('data-choice="style"', false)->assertSee('data-preset="remote"', false);
+        $this->get('/en/tools/holder')->assertOk()->assertSee('A holder for anything');
+        $this->get('/es/tools/holder')->assertOk();
         foreach (ParametricGenerator::PRESETS['holder'] as $name => $values) {
             $v = validator(['params' => $values], ParametricGenerator::rules('holder'));
             $this->assertTrue($v->passes(), $name.': '.implode(' ', $v->errors()->all()));
@@ -225,9 +225,9 @@ class ToolsFlowTest extends TestCase
             }
             @unlink($stl);
         }
-        $this->get('/tools/holder?lang=cs')->assertSee('data-when="style=hook"', false)->assertSee('data-when="mount=on"', false)->assertSee('Výška háku')->assertSee('Zavěšení na šroub');
-        $this->get('/tools/holder?lang=cs')->assertSee('Vůle kolem věci')->assertDontSee('Vůle víčka')->assertSee('data-when="style=cradle,pocket"', false);
-        $this->get('/tools/box?lang=cs')->assertSee('Vůle víčka');
+        $this->get('/tools/holder')->assertSee('data-when="style=hook"', false)->assertSee('data-when="mount=on"', false)->assertSee('Výška háku')->assertSee('Zavěšení na šroub');
+        $this->get('/tools/holder')->assertSee('Vůle kolem věci')->assertDontSee('Vůle víčka')->assertSee('data-when="style=cradle,pocket"', false);
+        $this->get('/tools/box')->assertSee('Vůle víčka');
         // the pocket seen from above: round front corners take plastic away, the size stays
         $pocket = ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90];
         $square = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $pocket + ['radius' => 0]])->assertOk());
@@ -259,12 +259,12 @@ class ToolsFlowTest extends TestCase
         $soft = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => $hook + ['edge' => 1.2]])->assertOk());
         $this->assertLessThan($sharp['volume_mm3'], $soft['volume_mm3']);
         $this->assertEqualsWithDelta($sharp['bbox']['z'], $soft['bbox']['z'], 0.01, 'softened edges keep the width');
-        $narrow = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'holder', 'params' => ['style' => 'hook', 'obj_w' => 10, 'holes' => 'keyhole']])->assertStatus(422);
+        $narrow = $this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => ['style' => 'hook', 'obj_w' => 10, 'holes' => 'keyhole']])->assertStatus(422);
         $this->assertStringContainsString('15', $narrow->json('errors.params.0'));
 
         $clip = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => ['style' => 'clip', 'obj_w' => 24, 'height' => 25]])->assertOk());
         $this->assertSame([24], array_map('intval', $clip['notes']['inner']));
-        $wide = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'holder', 'params' => ['style' => 'clip', 'obj_w' => 80]])->assertStatus(422);
+        $wide = $this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => ['style' => 'clip', 'obj_w' => 80]])->assertStatus(422);
         $this->assertStringContainsString('60', $wide->json('errors.params.0'));
 
         $created = $this->postJson('/api/tools/param', ['kind' => 'holder', 'params' => ['style' => 'pocket', 'obj_w' => 75, 'obj_d' => 75, 'height' => 90]])->assertCreated();
@@ -276,12 +276,12 @@ class ToolsFlowTest extends TestCase
     /** The pictures on the tool cards promise these: a handwritten name with a heart, a round light box, a hexagonal and a domed cap, a box with a cable slot. */
     public function test_the_shapes_shown_on_the_tool_cards_can_be_made(): void
     {
-        $this->get('/tools/sign?lang=cs')->assertOk()->assertSee('Psací')->assertSee('Jen jméno, bez destičky')->assertSee('data-symbol="♥"', false)->assertSee('data-preset="name"', false);
-        $this->get('/tools/qr?lang=cs')->assertOk()->assertDontSee('data-symbol', false);
-        $this->get('/tools/illuminated-sign?lang=cs')->assertOk()->assertSee('Kulatý s rovnou patou');
-        $this->get('/tools/cap?lang=cs')->assertOk()->assertSee('Šestihranný')->assertSee('Kulový')->assertSee('data-when="style=push"', false);
-        $this->get('/tools/box?lang=cs')->assertOk()->assertSee('S výřezem na kabel');
-        $this->get('/gifts?lang=cs')->assertOk()->assertSee('Jméno psacím písmem')->assertSee('preset=name', false);
+        $this->get('/tools/sign')->assertOk()->assertSee('Psací')->assertSee('Jen jméno, bez destičky')->assertSee('data-symbol="♥"', false)->assertSee('data-preset="name"', false);
+        $this->get('/tools/qr')->assertOk()->assertDontSee('data-symbol', false);
+        $this->get('/tools/illuminated-sign')->assertOk()->assertSee('Kulatý s rovnou patou');
+        $this->get('/tools/cap')->assertOk()->assertSee('Šestihranný')->assertSee('Kulový')->assertSee('data-when="style=push"', false);
+        $this->get('/tools/box')->assertOk()->assertSee('S výřezem na kabel');
+        $this->get('/gifts')->assertOk()->assertSee('Jméno psacím písmem')->assertSee('preset=name', false);
         if (! app(ParametricGenerator::class)->available()) {
             $this->markTestSkipped('Python with manifold3d is not installed.');
         }
@@ -319,14 +319,14 @@ class ToolsFlowTest extends TestCase
         $r = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'push', 'shape' => 'round', 'head' => 'dome', 'size_a' => 30, 'height' => 12, 'wall' => 2, 'clearance' => 0.3]])->assertOk();
         $this->assertEqualsWithDelta(12 + 30 / 2 + 0.3 + 2, $meta($r)['bbox']['z'], 0.05, 'the skirt and a half ball');
         $closed($r, 'domed cap');
-        $bad = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'cap', 'params' => ['style' => 'push', 'shape' => 'hex', 'head' => 'dome', 'size_a' => 30]])->assertStatus(422);
+        $bad = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'push', 'shape' => 'hex', 'head' => 'dome', 'size_a' => 30]])->assertStatus(422);
         $this->assertStringContainsString('Kulový vršek', $bad->json('errors.params.0'));
 
         $plain = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['inner_w' => 120, 'inner_d' => 70, 'inner_h' => 50, 'lid' => true], 'part' => 'body'])->assertOk());
         $r = $this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['inner_w' => 120, 'inner_d' => 70, 'inner_h' => 50, 'lid' => true, 'cable_slot' => true, 'cable_d' => 10], 'part' => 'body'])->assertOk();
         $this->assertLessThan($plain['volume_mm3'] - 200, $meta($r)['volume_mm3'], 'the slot took plastic out of the wall');
         $closed($r, 'box with a cable slot');
-        $small = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'box', 'params' => ['inner_w' => 30, 'inner_d' => 20, 'inner_h' => 10, 'lid' => true, 'cable_slot' => true, 'cable_d' => 20]])->assertStatus(422);
+        $small = $this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['inner_w' => 30, 'inner_d' => 20, 'inner_h' => 10, 'lid' => true, 'cable_slot' => true, 'cable_d' => 20]])->assertStatus(422);
         $this->assertStringContainsString('Výřez na kabel', $small->json('errors.params.0'));
     }
 
@@ -371,9 +371,9 @@ class ToolsFlowTest extends TestCase
 
     public function test_lid_plug_and_threaded_cap_fit_what_was_measured(): void
     {
-        $this->get('/tools/cap?lang=cs')->assertOk()->assertSee('Víčko, zátka, krytka')->assertSee('data-preset="pet"', false)->assertSee('data-param="pitch"', false);
-        $this->get('/tools/cap?lang=en')->assertOk()->assertSee('Lid, plug, cover');
-        $this->get('/tools/cap?lang=es')->assertOk();
+        $this->get('/tools/cap')->assertOk()->assertSee('Víčko, zátka, krytka')->assertSee('data-preset="pet"', false)->assertSee('data-param="pitch"', false);
+        $this->get('/en/tools/cap')->assertOk()->assertSee('Lid, plug, cover');
+        $this->get('/es/tools/cap')->assertOk();
         foreach (ParametricGenerator::PRESETS['cap'] as $name => $values) {
             $v = validator(['params' => $values], ParametricGenerator::rules('cap'));
             $this->assertTrue($v->passes(), $name.': '.implode(' ', $v->errors()->all()));
@@ -429,9 +429,9 @@ class ToolsFlowTest extends TestCase
         $this->assertLessThan($meta($thread)['volume_mm3'] - 100, $meta($liner)['volume_mm3'], 'the bed for the liner is taken out of the top');
         $this->assertSame(['liner'], $meta($liner)['notes']['needs']);
         $closed($liner, 'liner bed');
-        $wide = $this->postJson('/api/tools/param/preview?lang=cs', ['kind' => 'cap', 'params' => ['mouth' => 26] + $pet])->assertStatus(422);
+        $wide = $this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['mouth' => 26] + $pet])->assertStatus(422);
         $this->assertStringContainsString('hrdl', $wide->json('errors.params.0'));
-        $this->get('/tools/cap?lang=cs')->assertSee('Těsnění')->assertSee('data-when="seal=lip"', false)->assertSee('M10 × 1,5')->assertSee('data-when="style=push,thread"', false);
+        $this->get('/tools/cap')->assertSee('Těsnění')->assertSee('data-when="seal=lip"', false)->assertSee('M10 × 1,5')->assertSee('data-when="style=push,thread"', false);
         // a bigger cap round the same thread: the thread keeps its size, the wall grows; a named thread brings its numbers
         $small = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'hex', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7]])->assertOk());
         $big = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'cap', 'params' => ['style' => 'thread', 'shape' => 'hex', 'size_a' => 27.4, 'height' => 12, 'pitch' => 2.7, 'outer' => 44]])->assertOk());
@@ -454,13 +454,13 @@ class ToolsFlowTest extends TestCase
         $this->assertLessThan($sharp['volume_mm3'] - 50, $meta($round)['volume_mm3'], 'a round top edge takes material off');
         $this->assertEqualsWithDelta($sharp['bbox']['z'], $meta($round)['bbox']['z'], 0.01);
         $closed($round, 'round edge');
-        $this->get('/tools/cap?lang=cs')->assertSee('Zaoblení horní hrany')->assertSee('data-when="head=flat"', false);
+        $this->get('/tools/cap')->assertSee('Zaoblení horní hrany')->assertSee('data-when="head=flat"', false);
         $this->assertSame('cap', $this->postJson('/api/tools/param', ['kind' => 'cap', 'params' => $base + ['style' => 'plug']])->assertCreated()->json('file.kind'));
     }
 
     public function test_calculator_compares_materials_for_the_model(): void
     {
-        $page = $this->get('/?lang=cs')->assertOk();
+        $page = $this->get('/')->assertOk();
         $page->assertSee('id="mat-compare"', false)->assertSee('Porovnat materiály')->assertSee('"compare.col.heat"', false);
         $materials = collect(app(MaterialCatalog::class)->all())->keyBy('code');
         foreach (['PLA', 'PETG', 'ASA', 'TPU', 'PA'] as $code) {
@@ -482,9 +482,9 @@ class ToolsFlowTest extends TestCase
 
     public function test_tool_pages_address_the_visitor_formally(): void
     {
-        $this->get('/tools/figure?lang=cs')->assertOk()->assertSee('Vyberte nebo vyfoťte fotku')->assertDontSee('Zkus ');
-        $this->get('/tools/mold?lang=cs')->assertOk()->assertSee('Přetáhněte sem model')->assertDontSee('Přetáhni');
-        $this->get('/tools?lang=cs')->assertOk()->assertSee('Nahrajte fotku, za minutu máte 3D model');
-        $this->get('/tools/figure?lang=es')->assertOk()->assertSee('Elija o haga una foto');
+        $this->get('/tools/figure')->assertOk()->assertSee('Vyberte nebo vyfoťte fotku')->assertDontSee('Zkus ');
+        $this->get('/tools/mold')->assertOk()->assertSee('Přetáhněte sem model')->assertDontSee('Přetáhni');
+        $this->get('/tools')->assertOk()->assertSee('Nahrajte fotku, za minutu máte 3D model');
+        $this->get('/es/tools/figure')->assertOk()->assertSee('Elija o haga una foto');
     }
 }

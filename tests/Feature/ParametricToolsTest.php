@@ -30,8 +30,8 @@ class ParametricToolsTest extends TestCase
     {
         foreach (['organizer', 'box', 'phone-stand', 'cable-holder'] as $slug) {
             $this->get('/tools/'.$slug)->assertOk()->assertSee('param-3mf', false);   // every generator offers the slicer project
-            $this->get('/tools/'.$slug.'?lang=en')->assertOk();
-            $this->get('/tools/'.$slug.'?lang=es')->assertOk();
+            $this->get('/en/tools/'.$slug)->assertOk();
+            $this->get('/es/tools/'.$slug)->assertOk();
         }
     }
 
@@ -166,7 +166,7 @@ class ParametricToolsTest extends TestCase
         $this->getJson('/api/tools/param/'.$file->uuid.'/bin_9x9.stl')->assertNotFound();    // no such bin in this layout
         $this->postJson('/api/calculations', ['file' => $file->uuid, 'material' => 'PLA'])->assertCreated()->assertJsonPath('calculation.status', 'done');
         foreach (['cs', 'en', 'es'] as $lang) {
-            $this->get('/tools/modular-organizer?lang='.$lang)->assertOk();
+            $this->get($this->localized('/tools/modular-organizer', $lang))->assertOk();
         }
     }
 
@@ -207,7 +207,7 @@ class ParametricToolsTest extends TestCase
         $this->assertSame($sharpBox['bbox'], $roundBox['bbox']);                                    // rounding takes corners away, never size
         $this->assertLessThan($sharpBox['volume_mm3'], $roundBox['volume_mm3']);
         $this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['radius' => 12, 'holes' => [['wall' => 'front', 'shape' => 'circle', 'w' => 8, 'x' => 8, 'z' => 12]]]])->assertStatus(422);   // a hole in a rounded corner
-        $this->get('/tools/box?lang=cs')->assertOk()->assertSee('světle hnědá');
+        $this->get('/tools/box')->assertOk()->assertSee('světle hnědá');
         $square = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'organizer', 'params' => ['radius' => 0]])->assertOk());
         $round = $this->meta($this->postJson('/api/tools/param/preview', ['kind' => 'organizer', 'params' => ['radius' => 16]])->assertOk());
         $this->assertSame($square['bbox'], $round['bbox']);

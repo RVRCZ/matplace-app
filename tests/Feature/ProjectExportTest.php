@@ -56,7 +56,7 @@ class ProjectExportTest extends TestCase
         $this->assertStringContainsString('color="#222222"', $xml);
         $r = $this->get("/api/files/{$uuid}/project.3mf?printer=prusa-mk4s&quality=standard&scale=2")->assertOk();
         $this->assertStringContainsString('top_z="5.00"', $this->entry($r->baseResponse->getFile()->getPathname(), 'Metadata/custom_gcode_per_layer.xml'), 'twice the size: the plate is 4.8 mm');
-        $this->get('/?lang=cs')->assertOk()->assertSee('dl-color', false);
+        $this->get('/')->assertOk()->assertSee('dl-color', false);
     }
 
     private function entry(string $file, string $name): ?string
