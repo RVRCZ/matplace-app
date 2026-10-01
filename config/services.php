@@ -47,6 +47,10 @@ return [
         'redirect' => env('FACEBOOK_REDIRECT_URI', '/auth/facebook/callback'),
     ],
 
+    // Measurement, loaded in the browser only after the visitor agreed in the cookie bar (App\Support\Consent)
+    'ga4' => ['id' => env('GA_MEASUREMENT_ID')],
+    'meta' => ['pixel_id' => env('META_PIXEL_ID')],
+
     // Packeta (Zásilkovna): the API key also opens the pickup point picker in the browser, the password is server-side only
     'packeta' => [
         'api_key' => env('PACKETA_API_KEY'),

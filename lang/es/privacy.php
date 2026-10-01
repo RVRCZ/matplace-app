@@ -37,6 +37,8 @@ return [
                 'Stripe, Inc. – pagos con tarjeta al recargar crédito (stripe.com/privacy).',
                 'Anthropic, PBC – reconocer el objeto de una foto y revisar las fotos subidas (anthropic.com/privacy).',
                 'Tripo (VAST) – generar un modelo 3D a partir de una foto o un texto, solo si usa esta función.',
+                'Google Ireland Ltd. (Google Analytics) y Meta Platforms Ireland Ltd. (píxel de Meta): medición de visitas y de publicidad, solo si usted lo permitió en la barra de cookies.',
+                'Packeta s.r.o.: nombre, dirección o punto de recogida, correo y teléfono para entregar un paquete.',
                 'Google LLC (YouTube) – vídeos time-lapse cuya publicación no ha rechazado.',
                 'Hetzner Online GmbH – alojamiento, servidores en la UE.',
                 'Transportistas – solo nombre, dirección y teléfono para entregar el paquete.',
@@ -72,11 +74,11 @@ return [
         ],
         [
             'h' => '9. Borrar la cuenta y los datos',
-            'p' => ['Escriba desde el correo de su cuenta a info@matplace.com con el asunto «Borrar cuenta». En 30 días borramos o anonimizamos su perfil, datos de contacto, archivos subidos y vínculos con Google/Facebook, y borramos sus vídeos de YouTube. Los documentos que la ley nos obliga a conservar quedan en la contabilidad, anonimizados respecto a su perfil.'],
+            'p' => ['Puede borrar la cuenta usted mismo en su perfil (Mi cuenta → Perfil → Borrar la cuenta). O escriba desde el correo de su cuenta a info@matplace.com con el asunto «Borrar cuenta». En 30 días borramos o anonimizamos su perfil, datos de contacto, archivos subidos y vínculos con Google/Facebook, y borramos sus vídeos de YouTube. Los documentos que la ley nos obliga a conservar quedan en la contabilidad, anonimizados respecto a su perfil.'],
         ],
         [
             'h' => '10. Cookies y seguridad',
-            'p' => ['Usamos solo cookies necesarias para iniciar sesión, proteger formularios y recordar sus opciones. No usamos cookies publicitarias ni de seguimiento de terceros. La comunicación está cifrada (TLS), las contraseñas se guardan como hash unidireccional y nunca vemos los números de tarjeta.'],
+            'p' => ['Sin su consentimiento usamos solo cookies necesarias para iniciar sesión, proteger formularios y recordar sus opciones. Google Analytics y el píxel de Meta se cargan solo después de que los permita en la barra de cookies; puede cambiar su elección en cualquier momento con el enlace «Configuración de cookies» al pie de página. Nuestras propias estadísticas de visitas se llevan en nuestro servidor sin más cookies. La comunicación está cifrada (TLS), las contraseñas se guardan como hash unidireccional y nunca vemos los números de tarjeta.'],
         ],
         [
             'h' => '11. Cambios',

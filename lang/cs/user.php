@@ -47,7 +47,7 @@ return [
         'email_changed' => [
             'subject' => 'E‑mail účtu byl změněn',
             'lines' => ['přihlašovací e‑mail vašeho účtu na matplace je nově :new. Na tuto adresu už zprávy posílat nebudeme.'],
-            'after' => ['Pokud jste změnu neudělali vy, napište nám hned na info@matplace.cz.'],
+            'after' => ['Pokud jste změnu neudělali vy, napište nám hned na info@matplace.com.'],
         ],
         'delete' => [
             'subject' => 'Potvrďte smazání účtu',

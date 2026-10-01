@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('tools.repair.title').' · matplace', 'description' => __('repair.lead')])
+@extends('layouts.app', ['title' => __('tools.repair.title').' · matplace', 'description' => __('repair.lead'), 'tool' => 'repair'])
 
 @php
     $keys = ['repair.uploading', 'repair.checking', 'repair.repairing', 'repair.failed', 'repair.bad_format', 'repair.too_big', 'repair.unavailable',

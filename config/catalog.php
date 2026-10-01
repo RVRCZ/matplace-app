@@ -7,6 +7,8 @@
 return [
     // where the old site keeps its thumbnails on this machine (matplace:import-catalog copies them into our storage)
     'legacy_thumbs' => env('LEGACY_THUMBS_DIR', '/var/www/matplace/public/assets/thumbs'),
+    // where the old site keeps the pictures of its blog articles (matplace:import-blog copies them into our storage)
+    'legacy_blog_images' => env('LEGACY_BLOG_IMAGES_DIR', '/var/www/matplace/storage/blog-images'),
     // pictures that could not be copied are shown from here
     'legacy_assets_url' => env('LEGACY_ASSETS_URL', 'https://legacy.matplace.com'),
 

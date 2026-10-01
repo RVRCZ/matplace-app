@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('tools.figure.title').' · matplace'])
+@extends('layouts.app', ['title' => __('tools.figure.title').' · matplace', 'tool' => 'figure'])
 
 @php
     $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent'])

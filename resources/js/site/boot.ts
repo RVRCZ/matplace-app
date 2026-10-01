@@ -4,6 +4,7 @@ import { bootPrinterPick } from './printer_pick';
 import { bootPickup } from './pickup';
 import { bootDesigner } from './designer';
 import { bootModelPage } from './model_page';
+import { bootMeasure } from './measure';
 
 export function bootSite(): void {
     bootThumbs();
@@ -11,4 +12,5 @@ export function bootSite(): void {
     bootPickup();
     bootDesigner();
     bootModelPage();
+    bootMeasure();
 }

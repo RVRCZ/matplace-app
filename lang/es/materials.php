@@ -5,6 +5,6 @@ return [
     'PETG' => ['label' => 'Plástico resistente', 'hint' => 'Más duro, aguanta humedad y algo de calor.'],
     'ASA' => ['label' => 'Para exterior', 'hint' => 'Resiste el sol y las heladas. Jardín, coche.'],
     'TPU' => ['label' => 'Flexible', 'hint' => 'Como goma. Fundas, juntas, correas.'],
-    'PA' => ['label' => 'Técnico', 'hint' => 'Nailon para piezas sometidas a esfuerzo. Solo estimación, el impresor confirma.'],
+    'PA' => ['label' => 'Técnico', 'hint' => 'Nailon para piezas sometidas a esfuerzo. Por ahora solo una estimación de precio, la granja no lo imprime.'],
     'RESIN' => ['label' => 'Detalle fino', 'hint' => 'Resina para figuras y joyería. Solo estimación.'],
 ];

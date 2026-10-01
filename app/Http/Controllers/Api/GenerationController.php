@@ -9,6 +9,7 @@ use App\Engines\Vision\VisionDescriber;
 use App\Http\Controllers\Controller;
 use App\Models\GenerationRequest;
 use App\Support\Money;
+use App\Support\Track;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -92,6 +93,8 @@ class GenerationController extends Controller
             return response()->json(self::quotaAnswer($e, $request), 429);
         }
 
+        Track::event('generate', null, ['kind' => $req->type]);
+
         return response()->json(['generation' => self::describe($req), 'skipped_views' => $skipped ?? []], 201);
     }
 
@@ -120,6 +123,8 @@ class GenerationController extends Controller
         } catch (QuotaExceeded $e) {
             return response()->json(self::quotaAnswer($e, $request), 429);
         }
+
+        Track::event('generate', null, ['kind' => 'refine']);
 
         return response()->json(['generation' => self::describe($req)], 201);
     }

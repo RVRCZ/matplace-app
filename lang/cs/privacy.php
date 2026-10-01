@@ -38,6 +38,8 @@ return [
                 'Anthropic, PBC – rozpoznání předmětu na fotce a kontrola nahraných fotek (anthropic.com/privacy).',
                 'Tripo (VAST) – generování 3D modelu z fotky nebo textu, jen když tuto funkci použijete.',
                 'Google LLC (YouTube) – časosběrná videa, jejichž zveřejnění jste neodmítli.',
+                'Google Ireland Ltd. (Google Analytics) a Meta Platforms Ireland Ltd. (Meta pixel) – měření návštěvnosti a reklamy, jen pokud jste to povolili v cookie liště.',
+                'Packeta s.r.o. (Zásilkovna) – jméno, adresa nebo výdejní místo, e-mail a telefon pro doručení zásilky.',
                 'Hetzner Online GmbH – hosting, servery v EU.',
                 'Dopravci – jen jméno, adresa a telefon pro doručení zásilky.',
             ],
@@ -72,11 +74,11 @@ return [
         ],
         [
             'h' => '9. Smazání účtu a údajů',
-            'p' => ['Napište z e-mailu svého účtu na info@matplace.com s předmětem „Smazání účtu“. Do 30 dnů smažeme nebo anonymizujeme profil, kontaktní údaje, nahrané soubory, propojení s Google/Facebook a smažeme i vaše videa z YouTube. Doklady, které musíme ze zákona uchovat, zůstanou v účetnictví anonymizované vůči vašemu profilu.'],
+            'p' => ['Účet smažete sami v profilu (Můj účet → Profil → Smazání účtu). Nebo napište z e-mailu svého účtu na info@matplace.com s předmětem „Smazání účtu“. Do 30 dnů smažeme nebo anonymizujeme profil, kontaktní údaje, nahrané soubory, propojení s Google/Facebook a smažeme i vaše videa z YouTube. Doklady, které musíme ze zákona uchovat, zůstanou v účetnictví anonymizované vůči vašemu profilu.'],
         ],
         [
             'h' => '10. Cookies a zabezpečení',
-            'p' => ['Používáme jen nezbytné cookies pro přihlášení, ochranu formulářů a zapamatování voleb. Reklamní ani sledovací cookies třetích stran nepoužíváme. Přenos je šifrovaný (TLS), hesla ukládáme jako jednosměrný hash, čísla karet nikdy nevidíme.'],
+            'p' => ['Bez vašeho souhlasu používáme jen nezbytné cookies pro přihlášení, ochranu formulářů a zapamatování voleb. Google Analytics a Meta pixel načteme až poté, co je povolíte v cookie liště; volbu můžete kdykoli změnit odkazem „Nastavení cookies“ v patičce. Vlastní statistiku návštěvnosti vedeme na svém serveru bez dalších cookies. Přenos je šifrovaný (TLS), hesla ukládáme jako jednosměrný hash, čísla karet nikdy nevidíme.'],
         ],
         [
             'h' => '11. Změny zásad',

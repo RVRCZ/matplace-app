@@ -44,6 +44,8 @@ export function bootPrinterPick(): void {
         const query = new URLSearchParams(extra);
         query.set('printer', printer.id);
         go.href = `${dialog.dataset.files}/${uuid}/project.3mf?${query}`;
+        go.dataset.track = 'download';      // a link, not a fetch: the click itself tells the measuring script
+        go.dataset.trackKind = '3mf';
         go.setAttribute('aria-disabled', 'false');
         if (how) how.textContent = (printer.slicer === 'prusaslicer' ? how.dataset.prusa : how.dataset.orca) ?? '';
     };

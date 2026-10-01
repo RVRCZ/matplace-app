@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\OauthIdentity;
 use App\Models\User;
 use App\Support\Locales;
+use App\Support\Track;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -71,6 +72,7 @@ class OAuthController extends Controller
                     'avatar_path' => null,
                 ]);
                 $user->setRole(User::ROLE_CUSTOMER, true);
+                Track::event('register', $user, ['kind' => $provider]);
             } elseif (! $user->email_verified_at) {
                 // Somebody registered this address with a password and never proved it was theirs. Its real owner has
                 // just arrived through Google: the unproven password must not open the account any more.

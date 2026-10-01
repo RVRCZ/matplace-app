@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => $initial ? ($initial['file']['name'] ?? 'matplace') . ' · matplace' : 'matplace'])
+@extends('layouts.app', ['title' => $initial ? ($initial['file']['name'] ?? 'matplace') . ' · matplace' : 'matplace', 'tool' => $initial ? null : 'calc'])
 
 @php
     $mode = $mode ?? 'public';
@@ -30,6 +30,12 @@
     window.MP_OWN_PROFILE_ID = @json($ownProfileId ?? null);
     window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), inquiries: @json(route('api.inquiries.store')), generate: @json(route('api.generate.store')), generateShow: @json(url('/api/generate')), paramPart: @json(url('/api/tools/param')), printers: @json(route('api.printers')), printerShow: @json(url('/printers/id')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
 </script>
+@endpush
+
+@push('head')
+{{-- who we are and where the site's search box leads: once, on the home page --}}
+<x-jsonld :data="\App\Support\Schema::organization()" />
+<x-jsonld :data="\App\Support\Schema::website()" />
 @endpush
 
 @section('content')

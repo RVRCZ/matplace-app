@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Domain\Calculation\CalculationService;
 use App\Engines\Contracts\ModelGenerator;
 use App\Engines\DTO\SearchOptions;
+use App\Engines\DTO\SearchResultSet;
 use App\Engines\DTO\SliceParams;
 use App\Engines\Search\CompositeSearch;
 use App\Engines\Vision\VisionDescriber;
 use App\Http\Controllers\Controller;
 use App\Models\GenerationRequest;
+use App\Support\Track;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -26,6 +28,8 @@ class SearchController extends Controller
     {
         $data = $request->validate(['q' => ['required', 'string', 'min:2', 'max:200']]);
         $set = $search->byText($data['q'], new SearchOptions(limit: 12, locale: app()->getLocale()));
+        // the words themselves are not kept here (no personal data in the statistics): only that somebody searched and what came back
+        Track::event('search', null, ['results' => count($set->items)]);
 
         return response()->json([
             'query' => $set->query,
@@ -79,7 +83,7 @@ class SearchController extends Controller
             $range = ['grams' => $rough['grams'], 'minutes' => $rough['minutes'], 'price_min' => $rough['price_min'], 'price_max' => $rough['price_max']];
         }
 
-        $set = new \App\Engines\DTO\SearchResultSet([], $d['query'], []);
+        $set = new SearchResultSet([], $d['query'], []);
         foreach (array_slice($d['queries'], 0, 3) as $q) {
             $set = $set->merge($search->byText($q, new SearchOptions(limit: 6, locale: app()->getLocale())));
         }

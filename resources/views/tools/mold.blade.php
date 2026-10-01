@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('tools.mold.title').' · matplace'])
+@extends('layouts.app', ['title' => __('tools.mold.title').' · matplace', 'tool' => 'mold'])
 
 @php
     $i18n = collect(['mold.page.bad_format', 'mold.page.too_big', 'mold.page.uploading', 'mold.page.processing', 'mold.page.building', 'mold.page.failed', 'mold.page.model_failed',

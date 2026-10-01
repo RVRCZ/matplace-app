@@ -298,6 +298,8 @@ class OrderController extends Controller
         if ($request->boolean('video_consent')) {
             $videos->setConsent($order, true);
         }
+        $order->refresh();
+        Track::event('order_paid', $order->designer_model_id ? $order->designerModel : $order->modelFile, ['order' => $order->id, 'value' => (float) $order->price_total, 'currency' => (string) $order->currency]);
 
         return response()->json($this->describe($order->refresh(), $request));
     }

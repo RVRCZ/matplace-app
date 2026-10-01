@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\UploadController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\Auth\VerificationController;
+use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\Designer\BulkUploadController as DesignerBulkController;
@@ -36,10 +37,12 @@ use App\Http\Controllers\InspirationController;
 use App\Http\Controllers\LocaleRedirectController;
 use App\Http\Controllers\ModelCatalogController;
 use App\Http\Controllers\OgController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\Printer\InquiryController as PrinterInquiryController;
 use App\Http\Controllers\Printer\PrinterController;
 use App\Http\Controllers\Printer\QuoteController;
 use App\Http\Controllers\PrinterPageController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\ToolsController;
 use App\Support\Locales;
 use Illuminate\Support\Facades\Route;
@@ -74,6 +77,14 @@ $pages = function () {
     Route::get('/d/{designer}', [DesignerPageController::class, 'show'])->name('designers.show');
 
     // Models the farm prints (designers' cards with a file)
+    // The blog (old addresses kept) and the static pages
+    Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+    Route::get('/blog/{post}', [BlogController::class, 'show'])->name('blog.show');
+    Route::get('/materials', [PageController::class, 'materials'])->name('materials');
+    foreach (PageController::PAGES as $page => $path) {
+        Route::get('/'.$path, PageController::class)->defaults('page', $page)->name('pages.'.$page);
+    }
+
     Route::get('/models', [ModelCatalogController::class, 'index'])->name('models.index');
     Route::get('/models/{designerModel}', [ModelCatalogController::class, 'show'])->name('models.show');
     // The inspiration catalogue of the old site, at its old addresses: models that live elsewhere
@@ -236,8 +247,13 @@ Route::permanentRedirect('/katalog', '/model');
 Route::post('/currency', CurrencyController::class)->middleware('throttle:30,1,currency')->name('currency');
 
 // ── Pictures for link previews (drawn on demand, one address for every language unless the text differs) ──
-Route::get('/og/designer/{slug}.png', [OgController::class, 'designer'])->where('slug', '[a-z0-9-]+')->name('og.designer');
-Route::get('/og/{locale}/designer/{slug}.png', [OgController::class, 'designerIn'])->where(['slug' => '[a-z0-9-]+', 'locale' => 'en|es'])->name('og.designer.localized');
+Route::get('/og/{type}/{id}.png', [OgController::class, 'show'])->where(['type' => implode('|', OgController::TYPES), 'id' => '[a-z0-9_-]+'])->name('og');
+Route::get('/og/{locale}/{type}/{id}.png', [OgController::class, 'showIn'])->where(['locale' => 'en|es', 'type' => implode('|', OgController::TYPES), 'id' => '[a-z0-9_-]+'])->name('og.localized');
+
+// ── For search engines: sitemaps written by `matplace:sitemap`, robots.txt that points to them ──
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/sitemap-{name}.xml', [SitemapController::class, 'show'])->where('name', '[a-z0-9-]+')->name('sitemap.file');
+Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 // ── Files of a farm order (not pages: one address for every language) ────────
 Route::middleware('auth')->group(function () {

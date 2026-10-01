@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('tools.check.title').' · matplace'])
+@extends('layouts.app', ['title' => __('tools.check.title').' · matplace', 'tool' => 'check'])
 
 @php
     $keys = ['check.head.error', 'check.head.advice', 'check.head.ok', 'check.group.error', 'check.group.advice', 'check.group.ok', 'check.disclaimer',

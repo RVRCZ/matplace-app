@@ -49,6 +49,24 @@
     .note-warn { @apply rounded-xl bg-amber-50 px-4 py-3 text-amber-900; }
     .note-error { @apply rounded-xl bg-red-50 px-4 py-3 text-red-800; }
 
+    /* the text of a blog article (Markdown or cleaned HTML of the old site): plain tags, styled here */
+    .article { @apply text-base leading-relaxed text-slate-700; }
+    .article > * + * { @apply mt-4; }
+    .article h2 { @apply mt-8 text-2xl font-extrabold leading-snug text-ink; }
+    .article h3 { @apply mt-6 text-xl font-bold text-ink; }
+    .article h4 { @apply mt-5 font-bold text-ink; }
+    .article a { @apply text-action-dark underline; }
+    .article ul { @apply list-disc space-y-1 pl-6; }
+    .article ol { @apply list-decimal space-y-1 pl-6; }
+    .article img { @apply h-auto max-w-full rounded-xl; }
+    .article blockquote { @apply border-l-4 border-line pl-4 italic text-muted; }
+    .article table { @apply block w-full overflow-x-auto text-left text-sm; }
+    .article th { @apply border-b border-line bg-slate-50 px-3 py-2 font-semibold text-ink; }
+    .article td { @apply border-b border-line px-3 py-2 align-top; }
+    .article code { @apply rounded bg-slate-100 px-1 py-0.5 text-sm; }
+    .article pre { @apply overflow-x-auto rounded-xl bg-slate-100 p-3 text-sm; }
+    .article hr { @apply my-8 border-line; }
+
     /* three steps: settings → preview and price → inquiry */
     .steps { @apply flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted; }
     .steps li { @apply flex items-center gap-2; }

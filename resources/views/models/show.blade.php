@@ -19,13 +19,16 @@
 @extends('layouts.app', [
     'title' => $card->title.' · '.__('models.title_suffix').' · matplace',
     'description' => $text !== '' ? \Illuminate\Support\Str::limit(preg_replace('/\s+/', ' ', $text), 155) : __('models.description_one', ['title' => $card->title, 'name' => $designer->display_name]),
-    'ogImage' => $cover?->url(),
+    // the link preview: the cover with the name and "we print it from X" (the plain cover while the card cannot be printed yet)
+    'ogImage' => $card->isPrintable() ? \App\Http\Controllers\OgController::url('model', $card->slug) : $cover?->url(),
+    'ogType' => 'product',
     'noindex' => $preview,
 ])
 
 @push('head')
-<script type="application/ld+json">{!! json_encode($product, $flags) !!}</script>
-<script type="application/ld+json">{!! json_encode($person, $flags) !!}</script>
+<x-jsonld :data="$product" />
+<x-jsonld :data="$person" />
+<x-jsonld :data="\App\Support\Schema::breadcrumbs([['matplace', route('home')], [__('models.title'), route('models.index')], [$card->title, $card->publicUrl()]])" />
 @endpush
 
 @section('content')

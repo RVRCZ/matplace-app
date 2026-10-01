@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Calculation\CalculationService;
+use App\Domain\Calculation\PricingSource;
 use App\Http\Controllers\Controller;
 use App\Models\Calculation;
 use App\Models\ModelFile;
+use App\Support\Track;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -36,6 +38,7 @@ class CalculationController extends Controller
             $request->user(),
             $data['geometry'] ?? null,
         );
+        Track::event('calculation', $file, array_filter(['tool' => $file->origin === 'tool' ? $file->kind() : null]));
 
         return response()->json(['calculation' => self::describe($calc->load('modelFile'))], 201);
     }
@@ -55,8 +58,8 @@ class CalculationController extends Controller
         if (config('features.marketplace') || ! $c->prices || ! $c->slicer || ! empty($c->pricing_context['farm'])) {
             return $c->prices;
         }
-        $service = app(\App\Domain\Calculation\CalculationService::class);
-        $profiles = app(\App\Domain\Calculation\PricingSource::class)->fromContext(['farm' => true], (string) ($c->params['material'] ?? 'PLA'));
+        $service = app(CalculationService::class);
+        $profiles = app(PricingSource::class)->fromContext(['farm' => true], (string) ($c->params['material'] ?? 'PLA'));
 
         return $service->pricesFor((float) ($c->slicer['grams'] ?? 0), (int) ($c->slicer['minutes'] ?? 0), (int) ($c->params['quantity'] ?? 1), $profiles);
     }

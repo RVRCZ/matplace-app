@@ -533,7 +533,7 @@
     "param.flag.cable.hint": "Drážka v poličce, kabel odchází volně pod stojánkem.",
     "param.flag.screws": "S oušky na šrouby",
     "param.flag.screws.hint": "Jinak se lepí oboustrannou páskou.",
-    "param.clearance.hint": "Vůle je mezera mezi lemem víčka a stěnou krabičky. 0,25 mm sedí většině tiskáren na plast; u pryskyřice nebo jiného materiálu může víčko jít ztuha nebo volně. Tiskař ji umí doladit.",
+    "param.clearance.hint": "Vůle je mezera mezi lemem víčka a stěnou krabičky. 0,25 mm sedí většině tiskáren na plast; u jiného materiálu může víčko jít ztuha nebo volně, pak vůli o pár setin upravte.",
     "param.holes": "Otvory ve stěnách",
     "param.holes.hint": "Na kabel, vypínač nebo větrání. Poloha se měří od levého dolního rohu stěny při pohledu zvenku.",
     "param.holes.add": "Přidat otvor",

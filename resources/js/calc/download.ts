@@ -50,6 +50,8 @@ export function refresh(): void {
     const q = current.params();
     const qs = new URLSearchParams({ printer: p.id, material: q.material, quality: q.quality, infill: String(q.infill), supports: q.supports === null ? 'auto' : q.supports ? '1' : '0', scale: String(q.scale) });
     a.href = `${routes().files}/${current.file.uuid}/project.3mf?${qs}`;
+    a.dataset.track = 'download';
+    a.dataset.trackKind = '3mf';
     a.setAttribute('aria-disabled', 'false');
     const how = el('dl-how');
     if (how) how.textContent = (p.slicer === 'prusaslicer' ? how.dataset.prusa : how.dataset.orca) ?? '';

@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('gifts.title').' · matplace', 'description' => __('gifts.lead')])
+@extends('layouts.app', ['title' => __('gifts.title').' · matplace', 'description' => __('gifts.lead'), 'tool' => 'gifts'])
 
 @php
     // occasion → the products that suit it; every link opens the sign tool with a preset and a sample text

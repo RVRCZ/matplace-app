@@ -23,6 +23,18 @@ final class Track
 {
     public const REF_COOKIE = 'ref';
 
+    /** Session key: events of a request that ended in a redirect, waiting for the next page. */
+    public const OUTBOX = 'track.outbox';
+
+    /**
+     * Events the browser hears about as well, to pass them on to Google Analytics and the Meta pixel when the
+     * visitor allowed it (resources/js/site/measure.ts). Page views are not among them: those tools count their own.
+     */
+    public const SHARED = ['upload', 'generate', 'calculation', 'download', 'order_created', 'order_paid', 'register', 'designer_enabled', 'designer_file_uploaded', 'ref_visit', 'search'];
+
+    /** What of an event's details may leave the server: numbers and codes, never a text somebody typed. */
+    private const SHARED_META = ['kind', 'tool', 'value', 'currency', 'order', 'results'];
+
     public const REF_DAYS = 30;
 
     private const SITES = [
@@ -36,6 +48,11 @@ final class Track
         try {
             $request = request();
             $origin = self::origin($request);
+            if (in_array($type, self::SHARED, true)) {
+                $request->attributes->set('track.fired', array_merge((array) $request->attributes->get('track.fired', []), [
+                    ['type' => $type, 'meta' => array_intersect_key($meta, array_flip(self::SHARED_META))],
+                ]));
+            }
 
             return Event::create([
                 'session_id' => $request->attributes->get('anon_session')?->id,
@@ -53,6 +70,36 @@ final class Track
             Log::warning('Event was not recorded', ['type' => $type, 'error' => $e->getMessage()]);
 
             return null;
+        }
+    }
+
+    /**
+     * Shared events recorded during this request so far.
+     *
+     * @return list<array{type: string, meta: array<string, mixed>}>
+     */
+    public static function fired(?Request $request = null): array
+    {
+        return array_values((array) ($request ?? request())->attributes->get('track.fired', []));
+    }
+
+    /**
+     * What the page being rendered tells its scripts: the events of this request and those a redirect left behind.
+     * Handing them over empties both, so nothing is reported twice.
+     *
+     * @return list<array{type: string, meta: array<string, mixed>}>
+     */
+    public static function forBrowser(): array
+    {
+        try {
+            $request = request();
+            $waiting = $request->hasSession() ? (array) $request->session()->pull(self::OUTBOX, []) : [];
+            $now = self::fired($request);
+            $request->attributes->set('track.fired', []);
+
+            return array_values(array_merge($waiting, $now));
+        } catch (\Throwable) {
+            return [];
         }
     }
 

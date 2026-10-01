@@ -533,7 +533,7 @@
     "param.flag.cable.hint": "A slot in the shelf; the cable runs out freely under the stand.",
     "param.flag.screws": "With screw tabs",
     "param.flag.screws.hint": "Otherwise it is fixed with double-sided tape.",
-    "param.clearance.hint": "Clearance is the gap between the lid lip and the box wall. 0.25 mm suits most filament printers; with resin or another material the lid may be tight or loose. A printer can fine-tune it.",
+    "param.clearance.hint": "Clearance is the gap between the lid lip and the box wall. 0.25 mm suits most filament printers; with another material the lid may be tight or loose; then change the clearance by a few hundredths.",
     "param.holes": "Openings in the walls",
     "param.holes.hint": "For a cable, a switch or ventilation. Position is measured from the wall's bottom-left corner seen from outside.",
     "param.holes.add": "Add an opening",

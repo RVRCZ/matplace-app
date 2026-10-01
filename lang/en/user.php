@@ -47,7 +47,7 @@ return [
         'email_changed' => [
             'subject' => 'Your account e-mail was changed',
             'lines' => ['the login e-mail of your matplace account is now :new. We will no longer write to this address.'],
-            'after' => ['If you did not make this change, write to us at once at info@matplace.cz.'],
+            'after' => ['If you did not make this change, write to us at once at info@matplace.com.'],
         ],
         'delete' => [
             'subject' => 'Confirm deleting your account',

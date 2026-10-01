@@ -67,10 +67,61 @@ final class OgImage
         });
     }
 
+    /**
+     * A model the farm prints: its picture, its name, and what it costs to have it printed.
+     */
+    public static function model(string $title, string $line, ?string $cover, ?string $author = null): string
+    {
+        return self::card('model', $title, $line, $cover, $author);
+    }
+
+    /** A tool: its product picture and what it does. */
+    public static function tool(string $title, string $line, ?string $picture): string
+    {
+        return self::card('tool', $title, $line, $picture);
+    }
+
+    /** An article: its cover and its headline. */
+    public static function article(string $title, string $line, ?string $cover): string
+    {
+        return self::card('article', $title, $line, $cover);
+    }
+
+    /** Any other page: the name of the site and one line about it. */
+    public static function site(string $title, string $line): string
+    {
+        return self::card('site', $title, $line, null);
+    }
+
+    /**
+     * The common layout: words on the left, one picture on the right (when there is one, else the words get the
+     * whole width), a small line above the brand for the author.
+     */
+    private static function card(string $kind, string $title, string $line, ?string $picture, ?string $small = null): string
+    {
+        return self::cached($kind, [$title, $line, self::stamp($picture), $small], function (self $c) use ($title, $line, $picture, $small) {
+            $has = $picture && is_file($picture);
+            $width = $has ? 540 : self::W - 160;
+            // an accent bar the colour of the buttons, so the card is recognisable among others
+            $c->rectangle(80, 96, 64, 8, self::ACTION);
+            // a long headline gets smaller letters rather than an ellipsis
+            $size = $has ? (mb_strlen($title) > 34 ? 42 : 54) : (mb_strlen($title) > 48 ? 54 : 66);
+            $y = $c->text($title, 80, 130, $width, $size, self::INK, 3);
+            $y = $c->text($line, 80, $y + 22, $width, 28, self::MUTED, $small ? 2 : 4);
+            if ($small) {
+                $c->text($small, 80, min($y + 18, self::H - 150), $width, 24, self::MUTED, 1);
+            }
+            if ($has) {
+                $c->picture($picture, 680, 85, 440, 440, 28);
+            }
+            $c->brand();
+        });
+    }
+
     /** Path of a stored picture; drawn by $draw when it is not there yet. */
     public static function cached(string $kind, array $inputs, \Closure $draw): string
     {
-        $path = storage_path('app/og/'.$kind.'-'.sha1(json_encode([$kind, $inputs, 4])).'.png');
+        $path = storage_path('app/og/'.$kind.'-'.sha1(json_encode([$kind, $inputs, 5])).'.png');
         if (! is_file($path)) {
             $canvas = new self;
             $draw($canvas);

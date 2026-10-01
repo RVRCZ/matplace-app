@@ -38,6 +38,8 @@ return [
                 'Anthropic, PBC – recognising the object in a photo and checking uploaded photos (anthropic.com/privacy).',
                 'Tripo (VAST) – generating a 3D model from a photo or text, only when you use this feature.',
                 'Google LLC (YouTube) – time-lapse videos whose publishing you did not refuse.',
+                'Google Ireland Ltd. (Google Analytics) and Meta Platforms Ireland Ltd. (Meta pixel) – measuring visits and advertising, only if you allowed it in the cookie bar.',
+                'Packeta s.r.o. – name, address or pickup point, email and phone to deliver a parcel.',
                 'Hetzner Online GmbH – hosting, servers in the EU.',
                 'Carriers – only name, address and phone to deliver a parcel.',
             ],
@@ -72,11 +74,11 @@ return [
         ],
         [
             'h' => '9. Deleting your account and data',
-            'p' => ['Write from your account\'s email to info@matplace.com with the subject "Delete account". Within 30 days we delete or anonymise your profile, contact data, uploaded files and Google/Facebook links, and delete your videos from YouTube. Documents we must keep by law stay in our accounts, anonymised from your profile.'],
+            'p' => ['You can delete the account yourself in your profile (My account → Profile → Delete account). Or write from your account\'s email to info@matplace.com with the subject "Delete account". Within 30 days we delete or anonymise your profile, contact data, uploaded files and Google/Facebook links, and delete your videos from YouTube. Documents we must keep by law stay in our accounts, anonymised from your profile.'],
         ],
         [
             'h' => '10. Cookies and security',
-            'p' => ['We use only necessary cookies for signing in, protecting forms and remembering your choices. We use no third-party advertising or tracking cookies. Traffic is encrypted (TLS), passwords are stored as one-way hashes, and we never see card numbers.'],
+            'p' => ['Without your consent we use only necessary cookies for signing in, protecting forms and remembering your choices. Google Analytics and the Meta pixel are loaded only after you allow them in the cookie bar; you can change the choice at any time with the "Cookie settings" link in the footer. Our own visit statistics are kept on our server without further cookies. Traffic is encrypted (TLS), passwords are stored as one-way hashes, and we never see card numbers.'],
         ],
         [
             'h' => '11. Changes',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Locales;
+use App\Support\Track;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -74,6 +75,7 @@ class AuthController extends Controller
         $this->claim($request);
         // sends the verification e-mail (User::sendEmailVerificationNotification) in the language of the page
         event(new Registered($user));
+        Track::event('register', $user, ['kind' => 'email']);
 
         return redirect()->intended(route('account'))->with('status', __('user.verify.registered', ['email' => $user->email]));
     }

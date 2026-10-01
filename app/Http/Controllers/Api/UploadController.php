@@ -9,6 +9,7 @@ use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessModelFile;
 use App\Models\ModelFile;
+use App\Support\Track;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -56,6 +57,7 @@ class UploadController extends Controller
         ]);
 
         ProcessModelFile::dispatch($file->id);
+        Track::event('upload', $file, ['kind' => $ext]);
 
         return response()->json(['file' => self::describe($file)], 201);
     }

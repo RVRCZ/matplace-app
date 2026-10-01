@@ -1,6 +1,6 @@
 @php
     $bio = trim((string) $designer->bio);
-    $ogPath = app()->getLocale() === 'cs' ? route('og.designer', $designer->slug) : route('og.designer.localized', ['locale' => app()->getLocale(), 'slug' => $designer->slug]);
+    $ogPath = \App\Http\Controllers\OgController::url('designer', $designer->slug);
     $person = array_filter([
         '@context' => 'https://schema.org', '@type' => 'Person', 'name' => $designer->display_name,
         'url' => $designer->publicUrl(), 'image' => $designer->avatarUrl(), 'description' => $bio !== '' ? \Illuminate\Support\Str::limit($bio, 300) : null,
@@ -15,7 +15,7 @@
 ])
 
 @push('head')
-<script type="application/ld+json">{!! json_encode($person, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
+<x-jsonld :data="$person" />
 @endpush
 
 @section('content')

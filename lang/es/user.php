@@ -47,7 +47,7 @@ return [
         'email_changed' => [
             'subject' => 'Se ha cambiado el correo de su cuenta',
             'lines' => ['el correo de acceso de su cuenta de matplace es ahora :new. Ya no escribiremos a esta dirección.'],
-            'after' => ['Si no ha hecho este cambio, escríbanos enseguida a info@matplace.cz.'],
+            'after' => ['Si no ha hecho este cambio, escríbanos enseguida a info@matplace.com.'],
         ],
         'delete' => [
             'subject' => 'Confirme la eliminación de su cuenta',

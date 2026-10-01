@@ -1,4 +1,4 @@
-@extends('layouts.app', ['title' => __('tools.relief.title').' · matplace'])
+@extends('layouts.app', ['title' => __('tools.relief.title').' · matplace', 'tool' => 'relief'])
 
 @push('head')
 <script>

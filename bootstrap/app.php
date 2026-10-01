@@ -5,10 +5,13 @@ use App\Http\Middleware\EnsureAnonymousSession;
 use App\Http\Middleware\EnsureEmailVerified;
 use App\Http\Middleware\EnsureFeature;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\ForwardEvents;
 use App\Http\Middleware\GuardModelFile;
+use App\Http\Middleware\LegacyRedirects;
 use App\Http\Middleware\RememberReferral;
 use App\Http\Middleware\SetLocale;
 use App\Models\AnonymousSession;
+use App\Support\Consent;
 use App\Support\Locales;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
@@ -32,7 +35,12 @@ return Application::configure(basePath: dirname(__DIR__))
             SetLocale::class,
             EnsureAnonymousSession::class,
             RememberReferral::class,
+            ForwardEvents::class,
         ]);
+        // addresses of the old site are answered before routing (config/legacy.php)
+        $middleware->prepend(LegacyRedirects::class);
+        // written by the cookie bar in the browser: a plain value
+        $middleware->encryptCookies(except: [Consent::COOKIE]);
         // mp_sid is a plain random token (never encrypted) so the value survives across app-key rotations and tests
         $middleware->encryptCookies(except: [AnonymousSession::COOKIE]);
         // the language must be known before "auth" sends a guest to the login page of that language

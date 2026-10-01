@@ -533,7 +533,7 @@
     "param.flag.cable.hint": "Ranura en la repisa; el cable sale libremente por debajo del soporte.",
     "param.flag.screws": "Con orejetas para tornillos",
     "param.flag.screws.hint": "Si no, se fija con cinta de doble cara.",
-    "param.clearance.hint": "La holgura es el hueco entre el reborde de la tapa y la pared. 0,25 mm sirve para la mayoría de impresoras de filamento; con resina u otro material la tapa puede quedar dura o floja. El impresor puede ajustarla.",
+    "param.clearance.hint": "La holgura es el hueco entre el reborde de la tapa y la pared. 0,25 mm sirve para la mayoría de impresoras de filamento; con otro material la tapa puede quedar dura o floja; entonces cambie la holgura unas centésimas.",
     "param.holes": "Aberturas en las paredes",
     "param.holes.hint": "Para un cable, un interruptor o ventilación. La posición se mide desde la esquina inferior izquierda de la pared vista desde fuera.",
     "param.holes.add": "Añadir abertura",

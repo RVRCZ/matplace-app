@@ -19,7 +19,8 @@
 ])
 
 @push('head')
-<script type="application/ld+json">{!! json_encode($thing, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
+<x-jsonld :data="$thing" />
+<x-jsonld :data="\App\Support\Schema::breadcrumbs(array_values(array_filter([['matplace', route('home')], [__('models.inspiration.title'), route('catalog.index')], $category ? [$category->label(), route('catalog.category', $category->slug)] : null, [$model->title, route('catalog.show', $model->slug)]])))" />
 @endpush
 
 @section('content')
