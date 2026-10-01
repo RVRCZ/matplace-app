@@ -6,7 +6,7 @@ return [
     'h1' => 'Organizér s přihrádkami přesně podle vaší zásuvky',
     'intro' => [
         'Nástroj vytvoří organizér s přihrádkami podle rozměrů, které zadáte v milimetrech. Hodí se do zásuvky v kuchyni, v dílně nebo v koupelně a také na stůl na kancelářské potřeby. Nastavíte šířku, hloubku a výšku, počet řad a sloupců a zaoblení rohů. Všechny přihrádky jsou stejně velké a organizér je jeden kus bez víka.',
-        'Náhled se po každé změně překreslí a ukáže vnější rozměry i velikost jedné přihrádky. Vedle něj vidíte orientační cenu. Organizér vám vytiskneme na naší tiskové farmě v Česku: vyzvednete ho osobně, nebo ho pošleme Zásilkovnou. Kdo má vlastní tiskárnu, stáhne si model zdarma jako hotový projekt pro svou tiskárnu nebo jako soubor STL.',
+        'Náhled se po každé změně překreslí a ukáže vnější rozměry i velikost jedné přihrádky. Vedle něj vidíte orientační cenu. Organizér vám vytiskneme na naší tiskové farmě v Česku: pošleme vám ho Zásilkovnou na výdejní místo nebo až domů. Kdo má vlastní tiskárnu, stáhne si model zdarma jako hotový projekt pro svou tiskárnu nebo jako soubor STL.',
     ],
     'steps' => [
         ['name' => 'Změřte zásuvku', 'text' => 'Změřte vnitřní šířku, hloubku a výšku zásuvky. Na každé straně si nechte 1 až 2 mm vůle, zásuvky nebývají přesně pravoúhlé.'],

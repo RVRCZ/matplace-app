@@ -90,7 +90,7 @@ return [
         'low_filament' => 'not enough filament on the spool',
         'starts_now' => 'The printer is free, the print starts right away.',
         'goes_to_queue' => 'The order will join the queue.',
-        'delivery' => 'Handover',
+        'delivery' => 'Delivery',
         'pickup' => 'Pick up in person',
         'address' => ['name' => 'Full name', 'street' => 'Street and number', 'city' => 'City', 'zip' => 'Postcode', 'phone' => 'Phone'],
         'note' => 'Note for the operator',
@@ -121,7 +121,7 @@ return [
 
     'status' => [
         'uploaded' => 'Being prepared', 'sliced' => 'Ready to order', 'paid' => 'Paid', 'queued' => 'In the queue',
-        'printing' => 'Printing', 'done' => 'Done, waiting for handover', 'handed_over' => 'Handed over', 'failed' => 'Failed', 'cancelled' => 'Cancelled',
+        'printing' => 'Printing', 'done' => 'Done, waiting for handover', 'done_parcel' => 'Done, getting ready to ship', 'handed_over' => 'Handed over', 'failed' => 'Failed', 'cancelled' => 'Cancelled',
     ],
 
     'error' => [
@@ -157,7 +157,8 @@ return [
         'locked' => 'The order can no longer be changed.',
         'not_ready' => 'The order is not ready to be paid yet.',
         'terms' => 'We cannot start a print without your agreement to the terms.',
-        'delivery' => 'This handover option is not available right now.',
+        'delivery' => 'This delivery option is not available right now.',
+        'delivery_too_big' => 'This print is too big for a parcel, so we cannot send it. Make it smaller or split it into parts.',
         'delivery_country' => 'We do not offer this kind of delivery to that country (or the parcel is too heavy).',
         'delivery_point' => 'The pickup point does not match the chosen country or no longer exists. Please choose another one.',
         'delivery_address' => 'Please fill in the name, the phone and the whole address.',
@@ -199,7 +200,9 @@ return [
         'point_choose' => 'Choose a pickup point',
         'point_unavailable' => 'The pickup point picker is not available right now.',
         'phone_hint' => 'The parcel travels with Packeta. The courier needs your phone for home delivery; for a pickup point it gets the message that the parcel is ready.',
-        'too_big' => 'This print is too big for a parcel. Pickup in person is the only way.',
+        'too_big' => 'This print is too big for a parcel, so we cannot send it. Make it smaller or split it into parts.',
+        'too_big_pickup' => 'This print is too big for a parcel. Pickup in person is the only way.',
+        'none' => 'Choose how the print gets to you.',
         'pick_point' => 'Choose a pickup point and fill in the recipient\'s name.',
         'fill_address' => 'Fill in the name, the phone and the whole address.',
         'to' => 'Delivery:',
@@ -212,6 +215,7 @@ return [
         'queued' => ['subject' => 'Order :number is in the queue', 'body' => 'Your print ":name" (:color) is paid and waiting in the queue. We will tell you when it starts printing.'],
         'printing' => ['subject' => 'Order :number is printing', 'body' => 'The printer has just started printing ":name". You can follow the progress on the order page.'],
         'done' => ['subject' => 'Order :number is printed', 'body' => 'The print ":name" is finished and waiting for handover.'],
+        'done_parcel' => ['subject' => 'Order :number is printed', 'body' => 'The print ":name" is finished. We will pack it and hand it to the carrier; once it is on its way, we will send you a link to track the parcel.'],
         'handed_over' => ['subject' => 'Order :number has been handed over', 'body' => 'We handed over or shipped the print ":name". May it serve you well.'],
         'shipped' => ['subject' => 'Order :number is on its way', 'body' => 'We handed the print ":name" over to the carrier. The link below shows where the parcel is right now.', 'track' => 'Track the parcel', 'barcode' => 'Parcel number: :barcode'],
         'failed' => ['subject' => 'Order :number failed', 'body' => 'Unfortunately the print ":name" did not succeed. Your credit has been returned in full.'],

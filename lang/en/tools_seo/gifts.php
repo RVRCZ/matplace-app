@@ -19,7 +19,7 @@ return [
         ['q' => 'How long can the text on the gift be?', 'a' => 'Two lines of up to 40 characters each. For small things such as a keyring keep the text short, so the letters stay legible.'],
         ['q' => 'Can the letters be a different colour from the plate?', 'a' => 'Yes, except for engraved letters. When we print it, you choose the second colour while ordering, from those loaded in the printer at that moment. On your own printer you change the filament at the height of the plate.'],
         ['q' => 'Can I print the gift on my own printer?', 'a' => 'Yes. You download the model for free as an STL or as a ready project for your printer.'],
-        ['q' => 'How do I get the gift if you print it?', 'a' => 'You pick it up in person, or we send it by Packeta to a pickup point or to your door in most EU countries. You follow the order on its page and get an e-mail when its state changes.'],
+        ['q' => 'How do I get the gift if you print it?', 'a' => 'We send it by Packeta to a pickup point or to your door in most EU countries. You follow the order on its page and get an e-mail when its state changes.'],
     ],
     'examples' => [],
 ];

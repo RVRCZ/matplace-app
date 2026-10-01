@@ -201,7 +201,8 @@ export function bootFarmOrder(): void {
     let shownSupports = '';
     let supportsOn = true;
     let picked: number | null = state.slot ?? null;                    // the colour chosen on the start page, if it is still on offer
-    let delivery = state.delivery || 'pickup';
+    // what the order holds; a kind the farm does not offer (any more) is replaced once the offer is drawn
+    let delivery = state.delivery || '';
     // amounts of this order, in the currency it is priced in
     const money = (n: number): string => moneyText(n, state.currency);
     // where a parcel would go: the country of the profile when we send there, else the first one on offer
@@ -263,8 +264,8 @@ export function bootFarmOrder(): void {
     const total = (): number | null => {
         const c = state.colors.find((x) => x.slot === picked);
         if (!c) return state.total;
-        if (!kind()) return c.total;
-        return quoted?.key === quoteKey() ? quoted.total : null;
+        if (delivery === 'pickup') return c.total;
+        return kind() && quoted?.key === quoteKey() ? quoted.total : null;
     };
 
     // delivery: the kinds on offer with their price for the chosen country, the country, the pickup point or the address
@@ -279,12 +280,15 @@ export function bootFarmOrder(): void {
             select.innerHTML = codes.map((c) => `<option value="${esc(c)}">${esc(countries[c].name)}</option>`).join('');
         }
         if (select) select.value = country;
-        // a kind that is not offered in the chosen country (or at all) cannot stay chosen
-        if (kind() && (here?.[kind()!] ?? null) === null) delivery = 'pickup';
+        const pickup = (ship?.modes ?? []).includes('pickup');
+        const kindOf = (mode: string): 'point' | 'home' | null => (mode === 'packeta_point' ? 'point' : mode === 'packeta_home' ? 'home' : null);
+        const offered = (mode: string): boolean => { const k = kindOf(mode); return k === null ? mode === 'pickup' && pickup : (here?.[k] ?? null) !== null; };
+        // a kind that is not offered in the chosen country (or at all) cannot stay chosen: the next one on offer takes its place
+        if (ship && !offered(delivery)) delivery = ['packeta_point', 'packeta_home', 'pickup'].find(offered) ?? '';
         document.querySelectorAll<HTMLButtonElement>('#farm-delivery .seg').forEach((b) => {
             const mode = b.dataset.value!;
-            const k = mode === 'packeta_point' ? 'point' : mode === 'packeta_home' ? 'home' : null;
-            const anywhere = k === null ? (ship?.modes ?? ['pickup']).includes('pickup') : codes.some((c) => countries[c][k] !== null);
+            const k = kindOf(mode);
+            const anywhere = k === null ? pickup : codes.some((c) => countries[c][k] !== null);
             const amount = k === null ? 0 : here?.[k] ?? null;
             b.classList.toggle('hidden', !anywhere);
             b.classList.toggle('seg-on', mode === delivery);
@@ -293,7 +297,7 @@ export function bootFarmOrder(): void {
             if (label) label.textContent = amount === null ? tr('farm.delivery.not_here') : amount > 0 ? money(amount) : tr('farm.delivery.free');
         });
         const note = $('farm-delivery-note');
-        if (note) { note.textContent = ship?.too_big ? tr('farm.delivery.too_big') : ''; show(note, !!ship?.too_big); }
+        if (note) { note.textContent = ship?.too_big ? tr(pickup ? 'farm.delivery.too_big_pickup' : 'farm.delivery.too_big') : ''; show(note, !!ship?.too_big); }
         show($('farm-parcel'), kind() !== null);
         show(pointBox, kind() === 'point');
         document.querySelectorAll<HTMLElement>('#farm-address [data-home]').forEach((el) => show(el, kind() === 'home'));
@@ -309,7 +313,9 @@ export function bootFarmOrder(): void {
 
     /** What is still missing before a parcel can be paid for: null = nothing. */
     const deliveryMissing = (): string | null => {
-        if (!kind()) return null;
+        if (delivery === 'pickup') return null;
+        // nothing on offer for this print (too big for a parcel and nobody hands prints over), or nothing chosen yet
+        if (!kind()) return tr(state.shipping?.too_big ? 'farm.delivery.too_big' : 'farm.delivery.none');
         const val = (f: string) => (document.querySelector<HTMLInputElement>(`#farm-address [name="address[${f}]"]`)?.value ?? '').trim();
         if (kind() === 'point') return pointOf().id && val('name') ? null : tr('farm.delivery.pick_point');
         return ['name', 'phone', 'street', 'city', 'zip'].every((f) => val(f) !== '') ? null : tr('farm.delivery.fill_address');

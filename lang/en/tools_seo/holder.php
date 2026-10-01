@@ -6,7 +6,7 @@ return [
     'h1' => 'A holder for a remote, a bottle, headphones or a broom',
     'intro' => [
         'The tool builds a holder from the size of the thing you want to put away. You choose one of four types: a cradle with a low front, a closed pocket, a hook or a clip for a round handle. It suits a remote control, a bottle, tools, headphones or a broom. You enter the real size of the thing, and the tool adds the clearance around it.',
-        'The holder is fixed with wall screws or double-sided tape. The preview shows the shape with its holes, next to a rough price. We print the holder on our print farm in Czechia: you pick it up in person, or it comes by Packeta. For your own printer you download the model free; it prints without supports. Screws, wall plugs and tape are not part of the print.',
+        'The holder is fixed with wall screws or double-sided tape. The preview shows the shape with its holes, next to a rough price. We print the holder on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. For your own printer you download the model free; it prints without supports. Screws, wall plugs and tape are not part of the print.',
     ],
     'steps' => [
         ['name' => 'Measure the thing', 'text' => 'Measure the width and thickness of the thing, or the diameter of a handle. Enter the real size with no extra room.'],

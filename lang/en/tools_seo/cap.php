@@ -6,7 +6,7 @@ return [
     'h1' => 'A replacement lid, a pipe plug or a profile end cap',
     'intro' => [
         'The tool builds a missing lid, plug or cover from what you measure. The part pushes over a rim, plugs into an opening or screws onto a thread. It can be round, rectangular or hexagonal. For a thread you pick the 28 mm PET bottle, a metric thread from M6 to M30, or enter your own diameter and pitch. The tool adds the clearance, so you enter the real size.',
-        'The preview shows the part from outside and in a cut view, and states which size it fits. The rough price shows at once. We print the part on our print farm in Czechia: you pick it up in person, or it comes by Packeta. With your own printer you download the model free; it prints without supports. For an unknown thread, try one piece before ordering more.',
+        'The preview shows the part from outside and in a cut view, and states which size it fits. The rough price shows at once. We print the part on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. With your own printer you download the model free; it prints without supports. For an unknown thread, try one piece before ordering more.',
     ],
     'steps' => [
         ['name' => 'Choose how it holds', 'text' => 'Pushed over the rim, plugged into the opening or screwed onto a thread. You can start from a preset such as "PET bottle (28 mm)" or "Pipe plug".'],

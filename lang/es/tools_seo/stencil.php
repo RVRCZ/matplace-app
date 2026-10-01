@@ -20,7 +20,7 @@ return [
         ['q' => '¿Con qué material conviene imprimir la plantilla?', 'a' => 'Para uso repetido recomendamos PETG: es más flexible que el plástico corriente PLA y la pintura se lava mejor. La plantilla se imprime tumbada y sin soportes.'],
         ['q' => '¿Qué motivo puedo subir?', 'a' => 'Un SVG con formas rellenas de hasta 400 kB, o una imagen PNG, JPG o WebP con un motivo oscuro sobre fondo claro. Se recorta lo que es oscuro en la imagen; la opción «Invertir claro y oscuro» lo cambia. La herramienta no acepta una fotografía con tonos continuos.'],
         ['q' => '¿Se puede cambiar la tipografía de la plantilla?', 'a' => 'No, la plantilla usa una sola tipografía sin serifa en negrita. Para otra letra, prepare el texto en un programa de dibujo, conviértalo en trazados con relleno y súbalo como SVG.'],
-        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. La impresión se recoge en persona o la enviamos con Packeta a un punto de recogida o a domicilio en toda la UE.'],
+        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la impresión con Packeta a un punto de recogida o a domicilio en toda la UE.'],
     ],
     'examples' => [
         'Plantilla BOA 8 para marcar cajas, 144 × 52 mm, con puentes en las letras.',

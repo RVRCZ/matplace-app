@@ -84,6 +84,12 @@ class FarmOrder extends Model
         return $this->price_total === null ? null : new Money((float) $this->price_total, (string) ($this->currency ?: Money::CZK));
     }
 
+    /** The status in words, as the customer reads it: a finished print that leaves as a parcel is not "waiting for handover". */
+    public function statusText(): string
+    {
+        return __('farm.status.'.($this->status === self::STATUS_DONE && $this->isParcel() ? 'done_parcel' : $this->status));
+    }
+
     /** The order leaves as a parcel (not picked up in person). */
     public function isParcel(): bool
     {

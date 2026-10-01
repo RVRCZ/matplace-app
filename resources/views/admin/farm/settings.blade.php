@@ -57,10 +57,10 @@
         </div>
         <div class="mt-3 flex flex-wrap gap-4 text-sm">
             <label class="flex items-center gap-2"><input type="checkbox" name="require_approval" value="1" @checked($settings['require_approval']) class="h-4 w-4 accent-action"> Každou zaplacenou zakázku před tiskem ručně schválit</label>
-            @foreach(['pickup', 'packeta_point', 'packeta_home'] as $mode)
+            @foreach(['packeta_point', 'packeta_home', 'pickup'] as $mode)
                 <label class="flex items-center gap-2"><input type="checkbox" name="delivery_modes[]" value="{{ $mode }}" @checked(in_array($mode, $settings['delivery_modes'])) class="h-4 w-4 accent-action"> {{ __('farm.delivery.'.$mode) }}</label>
             @endforeach
-            <span class="text-xs text-slate-500">Ceny zásilek podle zemí jsou v config/farm.php (shipping).</span>
+            <span class="text-xs text-slate-500">Osobní odběr zapněte, až bude kde výtisky vydávat. Ceny zásilek podle zemí jsou v config/farm.php (shipping).</span>
         </div>
         <div class="mt-3 grid gap-3 sm:grid-cols-2">
             <label class="{{ $lb }}">Předvolby kvality (JSON: klíč → layer_mm; klíč = procesní profil tiskárny)<textarea name="qualities" rows="6" required class="{{ $in }} font-mono text-xs">{{ old('qualities', $json($settings['qualities'])) }}</textarea></label>

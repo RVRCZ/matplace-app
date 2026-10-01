@@ -6,7 +6,7 @@ return [
     'h1' => 'A stand sized to your phone with its case',
     'intro' => [
         'The tool offers six types of holder: a plate with hooks, a wave, an A-frame with a shelf, a low wedge, a wall pocket and a car vent clip. The stand is sized to the thickness of your phone with its case, entered in millimetres. For the desk types you set the width, rest angle and rest height. The wedge and the wide desk types suit a tablet too.',
-        'Every change redraws the preview and recalculates the rough price. We print the stand on our print farm in Czechia: you pick it up in person, or it comes by Packeta. With your own printer you download the model free as a project or as an STL file. The angle is fixed by the design and cannot be changed later. The stand only holds the phone, it has no charger.',
+        'Every change redraws the preview and recalculates the rough price. We print the stand on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. With your own printer you download the model free as a project or as an STL file. The angle is fixed by the design and cannot be changed later. The stand only holds the phone, it has no charger.',
     ],
     'steps' => [
         ['name' => 'Pick the type of holder', 'text' => 'For a desk choose the plate with hooks, the wave, the A-frame with a shelf or the low wedge. The pocket goes on a wall and the clip on a car vent.'],

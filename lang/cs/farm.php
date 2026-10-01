@@ -90,7 +90,7 @@ return [
         'low_filament' => 'na cívce je málo materiálu',
         'starts_now' => 'Tiskárna je volná, tisk začne hned.',
         'goes_to_queue' => 'Zakázka se zařadí do fronty.',
-        'delivery' => 'Převzetí',
+        'delivery' => 'Doručení',
         'pickup' => 'Osobní odběr',
         'address' => ['name' => 'Jméno a příjmení', 'street' => 'Ulice a číslo', 'city' => 'Město', 'zip' => 'PSČ', 'phone' => 'Telefon'],
         'note' => 'Poznámka pro obsluhu',
@@ -121,7 +121,7 @@ return [
 
     'status' => [
         'uploaded' => 'Připravuje se', 'sliced' => 'Připraveno k objednání', 'paid' => 'Zaplaceno', 'queued' => 'Ve frontě',
-        'printing' => 'Tiskne se', 'done' => 'Hotovo, čeká na převzetí', 'handed_over' => 'Vydáno', 'failed' => 'Nepodařilo se', 'cancelled' => 'Zrušeno',
+        'printing' => 'Tiskne se', 'done' => 'Hotovo, čeká na převzetí', 'done_parcel' => 'Hotovo, chystáme k odeslání', 'handed_over' => 'Vydáno', 'failed' => 'Nepodařilo se', 'cancelled' => 'Zrušeno',
     ],
 
     'error' => [
@@ -157,7 +157,8 @@ return [
         'locked' => 'Zakázku už nejde změnit.',
         'not_ready' => 'Zakázka ještě není připravená k zaplacení.',
         'terms' => 'Bez souhlasu s podmínkami nemůžeme tisk spustit.',
-        'delivery' => 'Tento způsob převzetí teď nenabízíme.',
+        'delivery' => 'Tento způsob doručení teď nenabízíme.',
+        'delivery_too_big' => 'Tenhle výtisk je na balík příliš velký a poslat ho neumíme. Zmenšete ho, nebo ho rozdělte na díly.',
         'delivery_country' => 'Do této země tenhle způsob doručení nenabízíme (nebo je zásilka příliš těžká).',
         'delivery_point' => 'Výdejní místo neodpovídá zvolené zemi nebo už neexistuje. Vyberte prosím jiné.',
         'delivery_address' => 'Doplňte prosím jméno, telefon a celou adresu.',
@@ -199,7 +200,9 @@ return [
         'point_choose' => 'Vybrat výdejní místo',
         'point_unavailable' => 'Výběr výdejního místa teď není k dispozici.',
         'phone_hint' => 'Zásilku veze Packeta (Zásilkovna). Telefon potřebuje kurýr při doručení domů; u výdejního místa na něj přijde zpráva, že je balík připravený.',
-        'too_big' => 'Tenhle výtisk je na balík příliš velký. Zbývá osobní odběr.',
+        'too_big' => 'Tenhle výtisk je na balík příliš velký a poslat ho neumíme. Zmenšete ho, nebo ho rozdělte na díly.',
+        'too_big_pickup' => 'Tenhle výtisk je na balík příliš velký. Zbývá osobní odběr.',
+        'none' => 'Vyberte způsob doručení.',
         'pick_point' => 'Vyberte výdejní místo a doplňte jméno příjemce.',
         'fill_address' => 'Doplňte jméno, telefon a celou adresu.',
         'to' => 'Doručení:',
@@ -212,6 +215,7 @@ return [
         'queued' => ['subject' => 'Zakázka :number je ve frontě', 'body' => 'Váš tisk „:name“ (:color) je zaplacený a čeká ve frontě. Dáme vědět, až se začne tisknout.'],
         'printing' => ['subject' => 'Zakázka :number se tiskne', 'body' => 'Tiskárna právě začala tisknout „:name“. Průběh můžete sledovat na stránce zakázky.'],
         'done' => ['subject' => 'Zakázka :number je vytištěná', 'body' => 'Tisk „:name“ je hotový a čeká na převzetí.'],
+        'done_parcel' => ['subject' => 'Zakázka :number je vytištěná', 'body' => 'Tisk „:name“ je hotový. Zabalíme ho a předáme dopravci; jakmile bude na cestě, pošleme vám odkaz na sledování zásilky.'],
         'handed_over' => ['subject' => 'Zakázka :number je předaná', 'body' => 'Tisk „:name“ jsme vám předali nebo odeslali. Ať dobře slouží.'],
         'shipped' => ['subject' => 'Zakázka :number je na cestě', 'body' => 'Tisk „:name“ jsme předali dopravci. Kde zásilka právě je, uvidíte na odkazu níže.', 'track' => 'Sledovat zásilku', 'barcode' => 'Číslo zásilky: :barcode'],
         'failed' => ['subject' => 'Zakázka :number se nepodařila', 'body' => 'Tisk „:name“ se bohužel nepovedl. Kredit jsme vám vrátili v plné výši.'],

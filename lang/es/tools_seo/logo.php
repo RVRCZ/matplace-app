@@ -21,7 +21,7 @@ return [
         ['q' => '¿Por qué un logo recortado se separa en piezas?', 'a' => 'La forma recortada no tiene placa, así que nada une las letras sueltas ni las partes separadas del logo. La herramienta indica de cuántas piezas consta la forma. Si deben mantenerse unidas, elija el relieve sobre placa.'],
         ['q' => '¿Cómo funciona el logo de pie?', 'a' => 'El logo y la base se imprimen como dos piezas y el logo encaja en una ranura de la base. Para que resista, el logo de pie tiene un grosor mínimo de 2,4 mm. Las partes que no llegan a la base, como puntos y tildes, no se sostendrían, y la herramienta avisa de ellas.'],
         ['q' => '¿Se puede imprimir el logo en dos colores?', 'a' => 'En el relieve sobre placa, sí: en una impresión con nosotros usted elige un segundo color y la impresora lo cambia a la altura donde empieza el motivo. Los colores disponibles son los cargados en las impresoras en ese momento, por lo que no podemos garantizar un tono corporativo exacto.'],
-        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. La impresión se recoge en persona o la enviamos con Packeta a un punto de recogida o a domicilio en toda la UE.'],
+        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la impresión con Packeta a un punto de recogida o a domicilio en toda la UE.'],
     ],
     'examples' => [
         'Texto ATELIER en relieve sobre placa redondeada de 110 × 26 mm, para una puerta.',

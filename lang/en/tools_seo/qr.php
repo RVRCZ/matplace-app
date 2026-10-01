@@ -20,7 +20,7 @@ return [
         ['q' => 'Why must the sign be in two colours?', 'a' => 'A phone needs contrast between the code and the background. It cannot read a raised code printed in one colour. We recommend a light plate and a dark code.'],
         ['q' => 'How does the sign sit in the stand?', 'a' => 'The stand is a separate part with a slot. The sign gets a blank strip of 10 mm at the bottom that slides into the slot, and it leans back by about 12 degrees.'],
         ['q' => 'What if I have my own printer?', 'a' => 'You download the model free as an STL file or as a project for your printer. The project carries a filament change at the plate height: the printer stops, you swap the spool and the print goes on in the second colour.'],
-        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. You pick the print up in person, or we send it by Packeta to a pickup point or to your door across the EU.'],
+        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. We send the print by Packeta to a pickup point or to your door across the EU.'],
     ],
     'examples' => [
         'QR sign 70 × 83 mm with a website link and the caption matplace.com.',

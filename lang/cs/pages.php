@@ -8,7 +8,7 @@ return [
     'about' => [
         'title' => 'O nás: 3D tisk na vlastní tiskové farmě',
         'description' => 'matplace je česká služba 3D tisku na zakázku. Nahrajete model, hned znáte cenu a tiskneme na vlastní tiskové farmě v Česku. Posíláme do zemí EU.',
-        'lead' => 'matplace je online služba 3D tisku. Tiskneme na vlastních tiskárnách v Česku, cenu znáte před objednáním a hotový výtisk si vyzvednete, nebo vám ho pošleme Packetou.',
+        'lead' => 'matplace je online služba 3D tisku. Tiskneme na vlastních tiskárnách v Česku, cenu znáte před objednáním a hotový výtisk vám pošleme Packetou na výdejní místo nebo až domů.',
         'sections' => [
             [
                 'h' => 'Co děláme',
@@ -23,7 +23,7 @@ return [
                     'Nahrajte soubor, vyberte model z katalogu nebo si ho vytvořte v nástroji.',
                     'Prohlédněte si náhled, dobu tisku, spotřebu materiálu a cenu včetně DPH.',
                     'Vyberte barvu, kvalitu a doručení a zaplaťte z kreditu.',
-                    'Sledujte průběh tisku na stránce zakázky. Hotový výtisk si vyzvednete osobně, nebo ho pošleme Packetou.',
+                    'Sledujte průběh tisku na stránce zakázky. Hotový výtisk vám pošleme Packetou na výdejní místo nebo až domů.',
                 ],
             ],
             [
@@ -77,12 +77,6 @@ return [
                 ],
             ],
             [
-                'h' => 'Osobní odběr',
-                'p' => [
-                    'Osobní odběr hotového výtisku je zdarma. Až bude tisk hotový, dáme vám vědět e-mailem. Místo a čas převzetí si s námi prosím předem domluvte na info@matplace.com.',
-                ],
-            ],
-            [
                 'h' => 'Reklamace a osobní údaje',
                 'p' => [
                     'Reklamaci uplatníte e-mailem na info@matplace.com. Postup popisuje stránka Reklamace.',
@@ -115,7 +109,7 @@ return [
             ],
             [
                 'q' => 'Jak výtisk dostanu a do kterých zemí posíláte?',
-                'a' => 'Osobní odběr je zdarma. Jinak posíláme Packetou (Zásilkovnou) na výdejní místo nebo na adresu, a to jen do zemí Evropské unie. V Česku stojí výdejní místo 99 Kč a doručení na adresu 149 Kč; země, kam posíláme, a cenu dopravy vidíte v objednávce před zaplacením. Výtisk delší než 70 cm poslat nelze, zbývá osobní odběr.',
+                'a' => 'Posíláme Packetou (Zásilkovnou) na výdejní místo nebo na adresu, a to jen do zemí Evropské unie. V Česku stojí výdejní místo 99 Kč a doručení na adresu 149 Kč; země, kam posíláme, a cenu dopravy vidíte v objednávce před zaplacením. Výtisk delší než 70 cm poslat nelze a takovou zakázku nepřijímáme. Osobní odběr zatím nenabízíme.',
             ],
             [
                 'q' => 'Jak se platí a co je kredit?',
@@ -380,7 +374,7 @@ return [
             [
                 'h' => '7. Doručení',
                 'p' => [
-                    'Hotový výtisk si vyzvednete osobně, nebo ho pošleme Packetou (Zásilkovnou) na výdejní místo či na adresu. Posíláme jen do zemí Evropské unie, které nabízí objednávka. Osobní odběr je zdarma.',
+                    'Hotový výtisk pošleme Packetou (Zásilkovnou) na výdejní místo či na adresu. Posíláme jen do zemí Evropské unie, které nabízí objednávka. Osobní odběr nenabízíme.',
                     'Dobu tisku a odhad dokončení vidíte u zakázky. O odeslání vám pošleme e-mail s odkazem na sledování zásilky.',
                     'Ceny dopravy včetně DPH za zásilku do 2 kg, vždy na výdejní místo a na adresu. Účet v korunách platí cenu v korunách, účet v eurech cenu v eurech:',
                 ],
@@ -392,7 +386,7 @@ return [
                     'Nizozemsko, Belgie, Lucembursko, Irsko, Dánsko, Švédsko, Finsko, Estonsko, Kypr: 399 Kč a 575 Kč, v eurech 15,90 € a 22,90 €.',
                     'Zásilka od 2 do 5 kg: příplatek 50 Kč nebo 2 €. Zásilka od 5 do 15 kg jen po Česku: příplatek 100 Kč nebo 4 €.',
                     'Do Rakouska, Lucemburska a Irska posíláme jen na adresu, na Kypr jen na výdejní místo.',
-                    'Výtisk delší než 70 cm nebo se součtem stran nad 120 cm poslat nelze, zbývá osobní odběr.',
+                    'Výtisk delší než 70 cm nebo se součtem stran nad 120 cm poslat nelze a takovou zakázku nepřijímáme.',
                 ],
             ],
             [

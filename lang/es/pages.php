@@ -8,7 +8,7 @@ return [
     'about' => [
         'title' => 'Quiénes somos: impresión 3D en nuestra propia granja',
         'description' => 'matplace es un servicio checo de impresión 3D por encargo. Suba un modelo, vea el precio al momento y lo imprimimos en nuestra granja. Enviamos a la UE.',
-        'lead' => 'matplace es un servicio de impresión 3D en línea. Imprimimos en nuestras propias impresoras en Chequia, usted conoce el precio antes de pedir y recoge la pieza terminada o se la enviamos con Packeta.',
+        'lead' => 'matplace es un servicio de impresión 3D en línea. Imprimimos en nuestras propias impresoras en Chequia, usted conoce el precio antes de pedir y le enviamos la pieza terminada con Packeta a un punto de recogida o a domicilio.',
         'sections' => [
             [
                 'h' => 'Qué hacemos',
@@ -23,7 +23,7 @@ return [
                     'Suba un archivo, elija un modelo del catálogo o créelo con una herramienta.',
                     'Vea la vista previa, el tiempo de impresión, el material necesario y el precio con IVA.',
                     'Elija el color, la calidad y la entrega, y pague con su crédito.',
-                    'Siga la impresión en la página del pedido. Recoge la pieza terminada en persona o se la enviamos con Packeta.',
+                    'Siga la impresión en la página del pedido. Le enviamos la pieza terminada con Packeta a un punto de recogida o a domicilio.',
                 ],
             ],
             [
@@ -77,12 +77,6 @@ return [
                 ],
             ],
             [
-                'h' => 'Recogida en persona',
-                'p' => [
-                    'La recogida en persona de la pieza terminada es gratuita. Le avisamos por correo cuando la impresión está lista. Acuerde antes con nosotros el lugar y la hora de la entrega en info@matplace.com.',
-                ],
-            ],
-            [
                 'h' => 'Reclamaciones y datos personales',
                 'p' => [
                     'Las reclamaciones se presentan por correo a info@matplace.com. La página Reclamaciones describe el procedimiento.',
@@ -115,7 +109,7 @@ return [
             ],
             [
                 'q' => '¿Cómo recibo la pieza y a qué países envían?',
-                'a' => 'La recogida en persona es gratuita. Si no, enviamos con Packeta a un punto de recogida o a domicilio, solo a países de la Unión Europea. En Chequia el punto de recogida cuesta 99 Kč y la entrega a domicilio 149 Kč; los países a los que enviamos y el precio del envío se muestran en el pedido antes de pagar. Una pieza de más de 70 cm de largo no se puede enviar y hay que recogerla en persona.',
+                'a' => 'Enviamos con Packeta a un punto de recogida o a domicilio, solo a países de la Unión Europea. En Chequia el punto de recogida cuesta 99 Kč y la entrega a domicilio 149 Kč; los países a los que enviamos y el precio del envío se muestran en el pedido antes de pagar. Una pieza de más de 70 cm de largo no se puede enviar y no aceptamos ese pedido. Por ahora no ofrecemos recogida en persona.',
             ],
             [
                 'q' => '¿Cómo se paga y qué es el crédito?',
@@ -380,7 +374,7 @@ return [
             [
                 'h' => '7. Entrega',
                 'p' => [
-                    'Usted recoge la pieza terminada en persona o se la enviamos con Packeta a un punto de recogida o a domicilio. Solo enviamos a los países de la Unión Europea que ofrece el pedido. La recogida en persona es gratuita.',
+                    'Le enviamos la pieza terminada con Packeta a un punto de recogida o a domicilio. Solo enviamos a los países de la Unión Europea que ofrece el pedido. No ofrecemos recogida en persona.',
                     'El tiempo de impresión y la estimación de fin se ven en el pedido. Al enviar el paquete le mandamos por correo un enlace de seguimiento.',
                     'Precios de envío con IVA para un paquete de hasta 2 kg, a un punto de recogida y a domicilio respectivamente. Una cuenta en coronas paga el precio en coronas y una cuenta en euros el precio en euros:',
                 ],
@@ -392,7 +386,7 @@ return [
                     'Países Bajos, Bélgica, Luxemburgo, Irlanda, Dinamarca, Suecia, Finlandia, Estonia, Chipre: 399 Kč y 575 Kč, o 15,90 € y 22,90 €.',
                     'Paquete de 2 a 5 kg: recargo de 50 Kč o 2 €. Paquete de 5 a 15 kg, solo dentro de Chequia: recargo de 100 Kč o 4 €.',
                     'A Austria, Luxemburgo e Irlanda solo enviamos a domicilio; a Chipre, solo a un punto de recogida.',
-                    'Una pieza de más de 70 cm de largo, o cuyos lados sumen más de 120 cm, no se puede enviar y hay que recogerla en persona.',
+                    'Una pieza de más de 70 cm de largo, o cuyos lados sumen más de 120 cm, no se puede enviar y no aceptamos ese pedido.',
                 ],
             ],
             [

@@ -7,9 +7,10 @@ use App\Support\Countries;
 use App\Support\Money;
 
 /**
- * How a finished print gets to the customer and what that costs. Pickup in person is free; a parcel goes by
- * Packeta to a pickup point or to the door, inside the EU only. The prices are the table in config/farm.php
- * (`shipping`): zone × kind × weight band, in both currencies.
+ * How a finished print gets to the customer and what that costs. A parcel goes by Packeta to a pickup point or
+ * to the door, inside the EU only; the prices are the table in config/farm.php (`shipping`): zone × kind × weight
+ * band, in both currencies. Pickup in person is free, and offered only while the admin has it switched on
+ * (`delivery_modes`): the farm needs a place to hand prints over for that.
  */
 final class Shipping
 {
@@ -27,7 +28,13 @@ final class Shipping
     /** @return list<string> the kinds of delivery the farm offers right now (admin's setting) */
     public function modes(): array
     {
-        return array_values(array_intersect([self::PICKUP, self::POINT, self::HOME], (array) $this->settings->get('delivery_modes'))) ?: [self::PICKUP];
+        return array_values(array_intersect([self::POINT, self::HOME, self::PICKUP], (array) $this->settings->get('delivery_modes'))) ?: [self::POINT, self::HOME];
+    }
+
+    /** The customer can come for the print. */
+    public function pickup(): bool
+    {
+        return in_array(self::PICKUP, $this->modes(), true);
     }
 
     public function zoneOf(?string $country): ?string
@@ -51,7 +58,7 @@ final class Shipping
         return (int) (ceil($grams / $step) * $step);
     }
 
-    /** One piece is longer than a parcel may be: only pickup in person is left. */
+    /** One piece is longer than a parcel may be: it cannot be sent (only picked up in person, when that is offered). */
     public function tooBig(FarmOrder $order): bool
     {
         $dims = (array) ($order->check['piece_dims'] ?? $order->check['dims'] ?? []);
@@ -65,7 +72,7 @@ final class Shipping
 
     /**
      * The price of delivery with VAT; null = this kind is not offered for that country or weight.
-     * Pickup in person is always there and free.
+     * Pickup in person costs nothing (whether it is offered at all is modes()).
      */
     public function price(string $delivery, ?string $country, int $grams, string $currency): ?Money
     {
@@ -157,18 +164,21 @@ final class Shipping
      * @param  array<string, mixed>  $input  the customer's form: name, phone, country, street, city, zip, point{id, name, country, carrier_id}
      * @return array<string, mixed>|null null for pickup in person
      *
-     * @throws FarmRefusal delivery | delivery_country | delivery_point | delivery_address
+     * @throws FarmRefusal delivery | delivery_too_big | delivery_country | delivery_point | delivery_address
      */
     public function destination(string $delivery, array $input, FarmOrder $order, string $currency): ?array
     {
+        if (! in_array($delivery, $this->modes(), true)) {
+            throw new FarmRefusal('delivery');
+        }
         if ($delivery === self::PICKUP) {
             return null;
         }
-        if (! in_array($delivery, $this->modes(), true) || ! isset(self::KINDS[$delivery])) {
-            throw new FarmRefusal('delivery');
+        if ($this->tooBig($order)) {
+            throw new FarmRefusal('delivery_too_big');
         }
         $country = strtoupper(trim((string) ($input['country'] ?? '')));
-        if ($this->tooBig($order) || $this->price($delivery, $country, $this->parcelGrams($order), $currency) === null) {
+        if ($this->price($delivery, $country, $this->parcelGrams($order), $currency) === null) {
             throw new FarmRefusal('delivery_country');
         }
         $name = trim((string) ($input['name'] ?? ''));

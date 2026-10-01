@@ -21,7 +21,7 @@ return [
         ['q' => 'Why does a cut-out logo fall into pieces?', 'a' => 'A cut-out shape has no plate, so nothing joins single letters or separate parts of a logo. The tool tells you how many pieces the shape consists of. If they should hold together, choose the relief on a plate.'],
         ['q' => 'How does the standing logo work?', 'a' => 'The logo and the base print as two parts and the logo slides into a slot in the base. To be strong enough, a standing logo is at least 2.4 mm thick. Parts that do not reach the base, such as dots and accents, would not hold, and the tool warns about them.'],
         ['q' => 'Can the logo be printed in two colours?', 'a' => 'With the relief on a plate, yes: for a print with us you pick a second colour and the printer swaps it at the height where the motif begins. You choose from the colours loaded in the printers at that moment, so we cannot guarantee an exact brand shade.'],
-        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. You pick the print up in person, or we send it by Packeta to a pickup point or to your door across the EU.'],
+        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. We send the print by Packeta to a pickup point or to your door across the EU.'],
     ],
     'examples' => [
         'Lettering ATELIER, a relief on a rounded plate 110 × 26 mm, for a door.',

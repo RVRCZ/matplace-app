@@ -20,7 +20,7 @@ return [
         ['q' => 'Jak se připevní držadlo?', 'a' => 'Držadlo se tiskne jako samostatný díl a na destičku se přilepí vteřinovým lepidlem. Lepidlo není součástí výtisku.'],
         ['q' => 'Jaký je rozdíl mezi vystouplým a zahloubeným motivem?', 'a' => 'Vystouplý motiv se do hmoty vtlačí a zanechá prohloubený otisk. Zahloubený motiv je vybraný v destičce, takže otisk z hmoty vystoupí.'],
         ['q' => 'Jak jemné detaily razítko zvládne?', 'a' => 'Čáry tenčí než 0,8 mm se nevytisknou čistě nebo vůbec a nástroj na ně upozorní. Pomůže zvětšit šířku razítka nebo čáry v předloze zesílit.'],
-        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk si vyzvednete osobně, nebo ho pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
+        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
     ],
     'examples' => [
         'Razítko EVA s držadlem, destička 56 × 23 mm, vystouplý motiv do hlíny.',

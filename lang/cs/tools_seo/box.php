@@ -6,7 +6,7 @@ return [
     'h1' => 'Krabička přesně na to, co se má vejít dovnitř',
     'intro' => [
         'Nástroj vytvoří krabičku podle vnitřních rozměrů, tedy podle věci, která se do ní má vejít. Vnější rozměry dopočítá sám. Krabička poslouží na elektroniku, drobné součástky nebo jako obal na dárek. Můžete přidat nasazovací víčko s lemem, až osm kruhových nebo obdélníkových otvorů ve stěnách a výřez na kabel od horního okraje.',
-        'V otočném náhledu vidíte krabičku i víčko a pod ním vnitřní a vnější rozměry. Orientační cena se přepočítá po každé změně. Krabičku vám vytiskneme na naší tiskové farmě v Česku: vyzvednete ji osobně, nebo přijde Zásilkovnou. Na vlastní tiskárně ji vytisknete také, model je ke stažení zdarma. Krabička i víčko se tisknou vedle sebe bez podpěr.',
+        'V otočném náhledu vidíte krabičku i víčko a pod ním vnitřní a vnější rozměry. Orientační cena se přepočítá po každé změně. Krabičku vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. Na vlastní tiskárně ji vytisknete také, model je ke stažení zdarma. Krabička i víčko se tisknou vedle sebe bez podpěr.',
     ],
     'steps' => [
         ['name' => 'Změřte, co se má vejít', 'text' => 'Zadejte šířku, hloubku a výšku uvnitř krabičky. Kolem věci si nechte pár milimetrů rezervy.'],

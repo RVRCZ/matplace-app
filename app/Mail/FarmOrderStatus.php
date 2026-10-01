@@ -17,9 +17,16 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
 
     public function __construct(public FarmOrder $order, public string $status) {}
 
-    /** A print that left as a parcel has its own text: "on its way", with the link to follow it. */
+    /**
+     * A print that leaves as a parcel has its own texts: finished = "we are packing it" (nobody comes for it),
+     * handed to the carrier = "on its way", with the link to follow it.
+     */
     private function key(): string
     {
+        if ($this->status === FarmOrder::STATUS_DONE && $this->order->isParcel()) {
+            return 'done_parcel';
+        }
+
         return $this->status === FarmOrder::STATUS_HANDED_OVER && $this->order->tracking_url ? 'shipped' : $this->status;
     }
 
@@ -32,7 +39,8 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
     {
         return new Content(markdown: 'mail.farm_order_status', with: [
             'order' => $this->order,
-            'status' => $this->key(),
+            // not `status`: a public property of the mail wins over a value of the same name given here
+            'text' => $this->key(),
             'url' => route('farm.orders.show', $this->order),
             'trackingUrl' => $this->key() === 'shipped' ? $this->order->tracking_url : null,
             'reason' => $this->order->error ? __('farm.error.'.$this->order->error) : null,

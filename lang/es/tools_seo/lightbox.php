@@ -21,7 +21,7 @@ return [
         ['q' => '¿En qué colores conviene imprimir las piezas?', 'a' => 'El cuerpo, la máscara frontal y la tapa trasera deben ser oscuros, para que la luz pase solo por el motivo, y el difusor blanco o translúcido. Un pedido con nosotros se imprime en un solo color. Por eso descargue el difusor como pieza aparte y súbalo como modelo propio en un segundo pedido.'],
         ['q' => '¿Cómo se monta el rótulo?', 'a' => 'Pegue la tira LED por el perímetro interior del cuerpo y pase el cable por el orificio. El difusor y la máscara frontal entran por delante sobre un reborde del cuerpo, y la tapa trasera se encaja por detrás.'],
         ['q' => '¿Qué tamaño puede tener el rótulo?', 'a' => 'El ancho va de 80 a 300 mm, y el alto del rótulo rectangular depende del motivo, hasta 300 mm. La forma redonda mide de alto nueve décimas partes de su ancho. Cada pieza debe caber en la placa de impresión; el cálculo del paso siguiente avisa si alguna no cabe.'],
-        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. La impresión se recoge en persona o la enviamos con Packeta a un punto de recogida o a domicilio en toda la UE.'],
+        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la impresión con Packeta a un punto de recogida o a domicilio en toda la UE.'],
     ],
     'examples' => [
         'Rótulo luminoso rectangular OPEN, 180 × 64 mm, 37 mm de fondo, para tira LED.',

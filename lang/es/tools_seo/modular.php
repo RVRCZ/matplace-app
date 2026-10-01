@@ -6,7 +6,7 @@ return [
     'h1' => 'Un juego de cubetas sueltas que llena su cajón',
     'intro' => [
         'El organizador modular es un juego de cubetas sueltas que llenan el cajón con exactitud. Usted indica las medidas interiores del cajón, las divide en una cuadrícula y coloca en las celdas cubetas de distintos tamaños. Cada cubeta se imprime aparte, así que puede sacarla, recolocarla o lavarla cuando quiera. Si las cubetas van sobre la mesa y no en un cajón, se añade una bandeja exterior.',
-        'La herramienta muestra la distribución en la vista previa, enumera qué se imprime y calcula un precio orientativo de todo el juego. Imprimimos el juego en nuestra granja de impresión en Chequia: lo recoge en persona o se lo enviamos con Packeta. Si tiene impresora, descarga gratis las piezas sueltas o un proyecto listo para su impresora. Las cubetas se imprimen con el fondo hacia abajo y sin soportes.',
+        'La herramienta muestra la distribución en la vista previa, enumera qué se imprime y calcula un precio orientativo de todo el juego. Imprimimos el juego en nuestra granja de impresión en Chequia: se lo enviamos con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga gratis las piezas sueltas o un proyecto listo para su impresora. Las cubetas se imprimen con el fondo hacia abajo y sin soportes.',
     ],
     'steps' => [
         ['name' => 'Mida el interior del cajón', 'text' => 'Indique el ancho y el fondo interiores del cajón y el alto de las cubetas. Reste de 1 a 2 mm a la medida tomada, las paredes del cajón rara vez son rectas.'],

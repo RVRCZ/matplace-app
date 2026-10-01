@@ -20,7 +20,7 @@ return [
         ['q' => 'Proč musí být cedulka dvoubarevná?', 'a' => 'Telefon potřebuje kontrast mezi kódem a pozadím. Vystouplý kód vytištěný jednou barvou nepřečte. Doporučujeme světlou destičku a tmavý kód.'],
         ['q' => 'Jak drží cedulka ve stojánku?', 'a' => 'Stojánek je samostatný díl s drážkou. Cedulka dostane dole prázdný pruh 10 mm, kterým se do drážky zasune, a stojí zakloněná asi o 12 stupňů.'],
         ['q' => 'Co když mám vlastní tiskárnu?', 'a' => 'Model si zdarma stáhnete jako soubor STL, nebo jako projekt pro svou tiskárnu. Projekt má ve výšce destičky vloženou výměnu filamentu: tiskárna se zastaví, vyměníte cívku a tisk pokračuje druhou barvou.'],
-        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk si vyzvednete osobně, nebo ho pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
+        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
     ],
     'examples' => [
         'QR cedulka 70 × 83 mm s odkazem na web a popiskem matplace.com.',

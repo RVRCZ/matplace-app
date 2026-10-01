@@ -6,7 +6,7 @@ return [
     'h1' => 'A set of loose bins that fills your drawer',
     'intro' => [
         'A modular organizer is a set of separate bins that fill a drawer exactly. You enter the inside size of the drawer, divide it into a grid and lay out bins of different sizes on the cells. Every bin prints separately, so you can lift it out, rearrange it or wash it. When the bins go on a desk, not into a drawer, you add an outer tray.',
-        'The tool shows the layout in the preview, lists what gets printed and works out a rough price for the whole set. We print the set on our print farm in Czechia: you pick it up in person, or we send it by Packeta. If you have a printer, you download the single parts or a ready project for your printer free. The bins print floor down and without supports.',
+        'The tool shows the layout in the preview, lists what gets printed and works out a rough price for the whole set. We print the set on our print farm in Czechia: we send it by Packeta to a pickup point or to your door. If you have a printer, you download the single parts or a ready project for your printer free. The bins print floor down and without supports.',
     ],
     'steps' => [
         ['name' => 'Measure inside the drawer', 'text' => 'Enter the width and depth inside the drawer and the height of the bins. Take 1 to 2 mm off the measured size, drawer walls are rarely perfectly straight.'],

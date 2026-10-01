@@ -121,7 +121,7 @@ final class OgImage
     /** Path of a stored picture; drawn by $draw when it is not there yet. */
     public static function cached(string $kind, array $inputs, \Closure $draw): string
     {
-        $path = storage_path('app/og/'.$kind.'-'.sha1(json_encode([$kind, $inputs, 5])).'.png');
+        $path = storage_path('app/og/'.$kind.'-'.sha1(json_encode([$kind, $inputs, 6])).'.png');
         if (! is_file($path)) {
             $canvas = new self;
             $draw($canvas);
@@ -133,13 +133,21 @@ final class OgImage
         return $path;
     }
 
-    /** "matplace." in the corner, the way the header writes it. */
+    /** The logo in the corner, the one the header shows. */
     public function brand(): void
     {
-        $font = self::font();
-        $box = imagettfbbox(34, 0, $font, 'matplace');
-        imagettftext($this->im, 34, 0, 80, self::H - 62, $this->color(self::INK), $font, 'matplace');
-        imagettftext($this->im, 34, 0, 80 + ($box[2] - $box[0]) + 2, self::H - 62, $this->color(self::ACTION), $font, '.');
+        $logo = @imagecreatefrompng(public_path('img/logo.png'));
+        if (! $logo) {
+            // no logo file: the name in letters
+            imagettftext($this->im, 34, 0, 80, self::H - 62, $this->color(self::INK), self::font(), 'matplace');
+
+            return;
+        }
+        $height = 88;
+        $width = (int) round(imagesx($logo) * $height / imagesy($logo));
+        imagealphablending($this->im, true);
+        imagecopyresampled($this->im, $logo, 80, self::H - 36 - $height, 0, 0, $width, $height, imagesx($logo), imagesy($logo));
+        imagedestroy($logo);
     }
 
     /**

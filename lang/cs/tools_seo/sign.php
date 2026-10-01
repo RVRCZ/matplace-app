@@ -20,7 +20,7 @@ return [
         ['q' => 'Jak cedulku připevním na dveře?', 'a' => 'Cedulka nemá otvory na šrouby. Zadní strana je rovná, takže ji přilepíte, například oboustrannou lepicí páskou. Otvor má jen varianta s očkem na klíče.'],
         ['q' => 'Která písmena a znaky nástroj umí?', 'a' => 'Čtyři písma (bezpatkové, patkové, strojové a psací) včetně české diakritiky a řadu symbolů pod textovými poli. Když některý znak ve zvoleném písmu chybí, nástroj vypíše, který to je. Vlastní písmo nahrát nejde.'],
         ['q' => 'Mohu si model vytisknout sám?', 'a' => 'Ano. Model si zdarma stáhnete jako soubor STL, nebo jako hotový projekt pro zhruba 270 tiskáren. U dvoubarevné varianty stáhnete desku a písmo i jako samostatné díly.'],
-        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk si vyzvednete osobně, nebo ho pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
+        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
     ],
     'examples' => [
         'Klíčenka Jana s očkem a rámečkem, 46 × 22 mm, písmo druhou barvou.',

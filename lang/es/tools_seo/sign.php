@@ -20,7 +20,7 @@ return [
         ['q' => '¿Cómo se fija la placa a una puerta?', 'a' => 'La placa no tiene orificios para tornillos. El dorso es plano, así que se pega, por ejemplo con cinta de doble cara. Solo la versión con anilla para llaves lleva un orificio.'],
         ['q' => '¿Qué letras y caracteres admite la herramienta?', 'a' => 'Cuatro tipografías (sin serifa, con serifa, monoespaciada y manuscrita) con letras acentuadas y una fila de símbolos bajo los campos de texto. Si a la tipografía elegida le falta un carácter, la herramienta indica cuál es. No se puede subir una fuente propia.'],
         ['q' => '¿Puedo imprimir el modelo yo mismo?', 'a' => 'Sí. El modelo se descarga gratis como archivo STL o como proyecto listo para unas 270 impresoras. Con la opción de dos colores, la placa y las letras se descargan también como piezas separadas.'],
-        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. La impresión se recoge en persona o la enviamos con Packeta a un punto de recogida o a domicilio en toda la UE.'],
+        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la impresión con Packeta a un punto de recogida o a domicilio en toda la UE.'],
     ],
     'examples' => [
         'Llavero Jana con anilla y marco, 46 × 22 mm, letras en un segundo color.',

@@ -42,8 +42,10 @@ return [
         'min_price' => 99.0,                // per order, without VAT
         'vat_percent' => 21.0,              // 0 = not a VAT payer
         'rounding' => 10.0,                 // final price rounded up to a multiple of this (0 = no rounding); 10 = like the calculator
-        // pickup in person is free; the parcel prices are the table `shipping` below
-        'delivery_modes' => ['pickup', 'packeta_point', 'packeta_home'],
+        // what the order page offers: packeta_point | packeta_home | pickup (in person, free). The farm has no place
+        // to hand prints over yet, so pickup is off; the admin ticks it in the farm's settings once there is one.
+        // The parcel prices are the table `shipping` below.
+        'delivery_modes' => ['packeta_point', 'packeta_home'],
 
         // ── credit (accounts in crowns; accounts in euros use `topup_eur` below) ──
         'topup_amounts' => [200, 500, 1000],
@@ -97,7 +99,7 @@ return [
             ['up_to_g' => 5000, 'CZK' => 50, 'EUR' => 2],
             ['up_to_g' => 15000, 'CZK' => 100, 'EUR' => 4, 'zones' => ['CZ']],   // heavier than 5 kg: Czechia only
         ],
-        // a piece bigger than this cannot be sent at all (pickup in person only)
+        // a piece bigger than this cannot be sent at all (it can only be picked up in person, when the farm offers that)
         'limits' => ['longest_mm' => 700, 'sum_mm' => 1200],
         // the parcel weighs what the print weighs plus the box, rounded up to this step
         'packaging_g' => 60,

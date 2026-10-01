@@ -6,7 +6,7 @@ return [
     'h1' => 'Stojánek podle vašeho telefonu i s obalem',
     'intro' => [
         'Nástroj nabízí šest typů držáku: desku s háčky, vlnku, A-rám s poličkou, nízký klín, kapsu na zeď a klip do auta na mřížku ventilace. Stojánek se počítá podle tloušťky telefonu i s obalem, kterou zadáte v milimetrech. U stolních typů nastavíte šířku, sklon a výšku opěrky. Klín a široké stolní typy poslouží i tabletu.',
-        'Po každé změně se překreslí náhled a přepočítá orientační cena. Stojánek vám vytiskneme na naší tiskové farmě v Česku: vyzvednete ho osobně, nebo přijde Zásilkovnou. S vlastní tiskárnou si model stáhnete zdarma jako projekt pro svou tiskárnu nebo jako soubor STL. Sklon je daný návrhem, po vytištění se nedá měnit. Stojánek telefon jen drží, nabíječku v sobě nemá.',
+        'Po každé změně se překreslí náhled a přepočítá orientační cena. Stojánek vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. S vlastní tiskárnou si model stáhnete zdarma jako projekt pro svou tiskárnu nebo jako soubor STL. Sklon je daný návrhem, po vytištění se nedá měnit. Stojánek telefon jen drží, nabíječku v sobě nemá.',
     ],
     'steps' => [
         ['name' => 'Vyberte typ držáku', 'text' => 'Na stůl se hodí deska s háčky, vlnka, A-rám s poličkou nebo nízký klín. Kapsa patří na zeď a klip na mřížku ventilace v autě.'],

@@ -39,7 +39,9 @@
     {{-- amounts are printed by scripts the same way the server prints them (resources/js/site/money.ts) --}}
     <script>window.MP_MONEY = {{ \Illuminate\Support\Js::from(\App\Support\Currency::forScripts()) }};</script>
     @include('partials.measure')
-    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="alternate icon" href="/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
     @if($toolSeo)
         @if($toolSeo['steps'])<x-jsonld :data="\App\Support\Schema::howTo($toolSeo['h1'], $toolSeo['description'], $toolSeo['steps'], \App\Support\ToolSeo::url($tool), array_column(\App\Support\ToolSeo::examples($tool), 'url'))" />@endif
@@ -49,8 +51,8 @@
 </head>
 <body class="min-h-full bg-page text-ink antialiased">
     <header class="border-b border-slate-200 bg-white">
-        <div class="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3">
-            <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2 text-xl font-extrabold tracking-tight text-ink sm:text-2xl" aria-label="matplace">matplace<span class="-ml-1.5 text-action" aria-hidden="true">.</span><span class="hidden rounded border border-line px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-muted sm:inline">beta</span></a>
+        <div class="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2">
+            <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2" aria-label="matplace"><img src="/img/logo-header.webp" alt="matplace" width="299" height="180" class="h-10 w-auto sm:h-12" fetchpriority="high"><span class="hidden rounded border border-line px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-muted sm:inline">beta</span></a>
             <nav class="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm text-slate-600 sm:gap-x-4">
                 <a href="{{ route('models.index') }}" class="hover:text-slate-900">{{ __('models.nav') }}</a>
                 <a href="{{ route('tools') }}" class="hover:text-slate-900">{{ __('footer.tools') }}</a>

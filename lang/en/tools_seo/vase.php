@@ -6,7 +6,7 @@ return [
     'h1' => 'A vase or a plant pot cover in your own size',
     'intro' => [
         'The tool builds a vase or a plant pot cover from the height and the diameters you enter. You pick one of four shapes: narrow neck, bellied, straight cone or tulip. The surface can be smooth, ribbed or spiral. For ribbed and spiral surfaces you set the number of ribs, the flute depth and the twist. A pot cover can have drainage holes in the floor and a separate saucer.',
-        'The preview changes at once and shows the real outer size, because some shapes are wider than the diameters you entered. A rough price is next to it. We print the vase on our print farm in Czechia: you pick it up in person, or it comes by Packeta. You can also download the model free for your own printer. Note that a printed vase may not be watertight.',
+        'The preview changes at once and shows the real outer size, because some shapes are wider than the diameters you entered. A rough price is next to it. We print the vase on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. You can also download the model free for your own printer. Note that a printed vase may not be watertight.',
     ],
     'steps' => [
         ['name' => 'Choose purpose and shape', 'text' => 'Pick a vase or a plant pot cover and one of the four shapes. You can start from the preset "Spiral", "Ribbed", "Smooth" or "Plant pot".'],

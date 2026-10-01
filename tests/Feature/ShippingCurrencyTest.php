@@ -285,7 +285,7 @@ class ShippingCurrencyTest extends TestCase
 
         // the page is told what is on offer: the weight of the parcel and, per country, the price of each kind
         $this->assertSame('CZK', $state['currency']);
-        $this->assertSame(['pickup', 'packeta_point', 'packeta_home'], $state['shipping']['modes']);
+        $this->assertSame(['packeta_point', 'packeta_home', 'pickup'], $state['shipping']['modes']);
         $this->assertSame(0, $state['shipping']['weight_g'] % 50);
         $this->assertGreaterThanOrEqual(100, $state['shipping']['weight_g'], 'the print plus the box');
         $this->assertSame(['name' => 'Česko', 'point' => 99, 'home' => 149], array_intersect_key($state['shipping']['countries']['CZ'], array_flip(['name', 'point', 'home'])));
@@ -331,6 +331,78 @@ class ShippingCurrencyTest extends TestCase
         $this->assertSame([], $state['shipping']['countries']);
         $this->actingAs($user)->postJson("/farm/orders/{$second->token}/pay", ['slot' => $slot, 'terms' => true, 'delivery' => 'packeta_point', 'address' => ['name' => 'Roman Vzor', 'country' => 'CZ', 'point' => $point], 'expected_total' => $print + 99])
             ->assertStatus(422)->assertJsonPath('error', 'delivery');
+    }
+
+    public function test_pickup_in_person_is_not_offered_unless_the_admin_switches_it_on(): void
+    {
+        // the site as it starts (the test suite itself runs with pickup switched on, see Tests\TestCase)
+        $default = (require config_path('farm.php'))['settings']['delivery_modes'];
+        $this->assertSame(['packeta_point', 'packeta_home'], $default);
+        config(['farm.settings.delivery_modes' => $default]);
+
+        $user = $this->customer(['country' => 'CZ', 'phone' => '+420 777 000 111']);
+        $this->topUp($user, 1000);
+        $order = $this->order($user);
+        $state = $this->actingAs($user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $slot = $state['colors'][0]['slot'];
+        $print = (float) $state['colors'][0]['total'];
+        $this->assertSame(['packeta_point', 'packeta_home'], $state['shipping']['modes']);
+        $this->assertFalse(app(Shipping::class)->pickup());
+
+        // neither a price nor an order with pickup: the server says so, whatever the page sent
+        $this->actingAs($user)->postJson("/farm/orders/{$order->token}/quote", ['slot' => $slot, 'delivery' => 'pickup'])->assertStatus(422);
+        $this->actingAs($user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $slot, 'terms' => true, 'delivery' => 'pickup', 'expected_total' => $print])
+            ->assertStatus(422)->assertJsonPath('error', 'delivery')->assertJsonPath('message', __('farm.refuse.delivery'));
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->fresh()->status);
+        $this->assertSame(1000.0, app(Wallet::class)->balance($user)->amount);
+
+        // a parcel goes through, and its finished print is "being packed", not "waiting for handover"
+        $point = ['id' => '95', 'name' => 'Z-BOX Plzeň, Dlouhá 1', 'carrier_id' => null, 'country' => 'CZ'];
+        $this->actingAs($user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $slot, 'terms' => true, 'delivery' => 'packeta_point',
+            'address' => ['name' => 'Roman Vzor', 'country' => 'CZ', 'point' => $point], 'expected_total' => $print + 99])->assertOk();
+        $done = $this->finish($order);
+        $this->assertSame(__('farm.status.done_parcel'), $done->statusText());
+        $this->assertSame('Hotovo, chystáme k odeslání', $this->actingAs($user)->getJson("/farm/orders/{$order->token}/status")->json('status_text'));
+        $mail = new FarmOrderStatus($done, FarmOrder::STATUS_DONE);
+        $mail->assertSeeInText('Zabalíme ho a předáme dopravci');
+        $mail->assertDontSeeInText('čeká na převzetí');
+        // … and once the carrier has it, the mail says so in its text, not only in its subject
+        $done->forceFill(['tracking_url' => 'https://tracking.packeta.com/cs/?id=Z123', 'packeta_barcode' => 'Z123']);
+        (new FarmOrderStatus($done, FarmOrder::STATUS_HANDED_OVER))->assertSeeInText('jsme předali dopravci')->assertSeeInText('Z123');
+        $done->refresh();
+
+        // a print too big for a parcel cannot be ordered at all, and the refusal says why
+        $big = $this->order($user);
+        $big->forceFill(['check' => ['piece_dims' => ['x' => 800, 'y' => 100, 'z' => 100]] + (array) $big->check])->save();
+        $state = $this->actingAs($user)->getJson("/farm/orders/{$big->token}/status")->json();
+        $this->assertSame([true, []], [$state['shipping']['too_big'], $state['shipping']['countries']]);
+        $this->actingAs($user)->postJson("/farm/orders/{$big->token}/pay", ['slot' => $state['colors'][0]['slot'], 'terms' => true, 'delivery' => 'packeta_home',
+            'address' => ['name' => 'Roman Vzor', 'phone' => '777', 'country' => 'CZ', 'street' => 'Dlouhá 1', 'city' => 'Plzeň', 'zip' => '30100'], 'expected_total' => 1])
+            ->assertStatus(422)->assertJsonPath('error', 'delivery_too_big')->assertJsonPath('message', __('farm.refuse.delivery_too_big'));
+
+        // the admin ticks pickup in the farm's settings once there is a place: it is offered again and free
+        app(FarmSettings::class)->set('delivery_modes', ['packeta_point', 'pickup']);
+        $state = $this->actingAs($user)->getJson("/farm/orders/{$big->token}/status")->json();
+        $this->assertSame(['packeta_point', 'pickup'], $state['shipping']['modes']);
+        $this->actingAs($user->fresh())->postJson("/farm/orders/{$big->token}/pay", ['slot' => $state['colors'][0]['slot'], 'terms' => true, 'delivery' => 'pickup', 'expected_total' => $state['colors'][0]['total']])->assertOk();
+        $this->assertSame(__('farm.status.done'), $this->finish($big)->statusText());
+
+        // the stored choice of an admin from before loses pickup with the migration, and never ends up empty
+        $migration = require database_path('migrations/2026_10_08_100000_no_pickup_in_person.php');
+        app(FarmSettings::class)->set('delivery_modes', ['pickup', 'packeta_home']);
+        $migration->up();
+        $this->assertSame(['packeta_home'], (new FarmSettings)->get('delivery_modes'));
+        app(FarmSettings::class)->set('delivery_modes', ['pickup']);
+        $migration->up();
+        $this->assertSame(['packeta_point', 'packeta_home'], (new FarmSettings)->get('delivery_modes'));
+
+        // the public pages do not promise what the farm does not do
+        foreach (['', '/en', '/es'] as $prefix) {
+            foreach (['/about', '/contact', '/faq', '/business-terms', '/tools/box'] as $page) {
+                $html = $this->get($prefix.$page)->assertOk()->getContent();
+                $this->assertDoesNotMatchRegularExpression('/vyzvednete|osobní odběr je zdarma|pick it up in person|collect the finished|recoge en persona|recogida en persona es gratuita/iu', $html, $prefix.$page);
+            }
+        }
     }
 
     public function test_a_spanish_account_pays_in_euros_and_gets_the_parcel_to_a_pickup_point_in_spain(): void

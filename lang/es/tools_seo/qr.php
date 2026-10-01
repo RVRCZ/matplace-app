@@ -20,7 +20,7 @@ return [
         ['q' => '¿Por qué el cartel debe ser de dos colores?', 'a' => 'El móvil necesita contraste entre el código y el fondo. No puede leer un código en relieve impreso en un solo color. Recomendamos una placa clara y un código oscuro.'],
         ['q' => '¿Cómo se sujeta el cartel en el soporte?', 'a' => 'El soporte es una pieza aparte con una ranura. El cartel recibe abajo una franja lisa de 10 mm que entra en la ranura, y queda inclinado hacia atrás unos 12 grados.'],
         ['q' => '¿Y si tengo mi propia impresora?', 'a' => 'El modelo se descarga gratis como archivo STL o como proyecto para su impresora. El proyecto lleva un cambio de filamento a la altura de la placa: la impresora se detiene, usted cambia la bobina y la impresión sigue en el segundo color.'],
-        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. La impresión se recoge en persona o la enviamos con Packeta a un punto de recogida o a domicilio en toda la UE.'],
+        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la impresión con Packeta a un punto de recogida o a domicilio en toda la UE.'],
     ],
     'examples' => [
         'Cartel QR de 70 × 83 mm con enlace a una web y texto matplace.com.',

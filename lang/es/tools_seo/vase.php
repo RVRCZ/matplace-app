@@ -6,7 +6,7 @@ return [
     'h1' => 'Un jarrón o un cubremacetas con sus medidas',
     'intro' => [
         'La herramienta crea un jarrón o un cubremacetas según la altura y los diámetros que indique. Se elige una de cuatro formas: cuello estrecho, abombado, cono recto o tulipán. La superficie puede ser lisa, acanalada o en espiral. En las dos últimas se ajustan el número de nervios, la profundidad de las estrías y la torsión. El cubremacetas puede llevar orificios de drenaje en el fondo y un plato aparte.',
-        'La vista previa cambia al instante y muestra las medidas exteriores reales, porque algunas formas son más anchas que los diámetros indicados. Al lado aparece un precio orientativo. Imprimimos el jarrón en nuestra granja de impresión en Chequia: lo recoge en persona o le llega con Packeta. También puede descargar el modelo gratis para su impresora. Tenga en cuenta que un jarrón impreso puede no ser estanco.',
+        'La vista previa cambia al instante y muestra las medidas exteriores reales, porque algunas formas son más anchas que los diámetros indicados. Al lado aparece un precio orientativo. Imprimimos el jarrón en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. También puede descargar el modelo gratis para su impresora. Tenga en cuenta que un jarrón impreso puede no ser estanco.',
     ],
     'steps' => [
         ['name' => 'Elija uso y forma', 'text' => 'Elija jarrón o cubremacetas y una de las cuatro formas. Puede empezar con el ajuste «En espiral», «Acanalada», «Lisa» o «Maceta».'],

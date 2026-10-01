@@ -20,7 +20,7 @@ return [
         ['q' => '¿Cómo se fija el mango?', 'a' => 'El mango se imprime como pieza aparte y se pega a la placa con pegamento instantáneo. El pegamento no está incluido en la impresión.'],
         ['q' => '¿Qué diferencia hay entre un motivo en relieve y uno hundido?', 'a' => 'El motivo en relieve se hunde en la masa y deja una huella hundida. El motivo hundido está vaciado en la placa, así que la huella sobresale de la masa.'],
         ['q' => '¿Qué nivel de detalle admite el sello?', 'a' => 'Las líneas de menos de 0,8 mm no se imprimen bien o no se imprimen, y la herramienta avisa de ellas. Ayuda ampliar el ancho del sello o engrosar las líneas del diseño.'],
-        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. La impresión se recoge en persona o la enviamos con Packeta a un punto de recogida o a domicilio en toda la UE.'],
+        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la impresión con Packeta a un punto de recogida o a domicilio en toda la UE.'],
     ],
     'examples' => [
         'Sello EVA con mango, placa de 56 × 23 mm, motivo en relieve para arcilla.',

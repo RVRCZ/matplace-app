@@ -21,7 +21,7 @@ return [
         ['q' => 'Which colours should the parts be printed in?', 'a' => 'The body, the front mask and the back cover should be dark, so that light passes only through the motif, and the diffuser white or translucent. One order with us prints in one colour. So download the diffuser as a separate part and upload it as your own model in a second order.'],
         ['q' => 'How do I assemble the sign?', 'a' => 'Stick the LED strip around the inside of the body and pass the cable through the hole. The diffuser and the front mask go in from the front onto a ledge in the body, and the back cover fits on from behind.'],
         ['q' => 'How big can the sign be?', 'a' => 'The width is 80 to 300 mm, and the height of a rectangular sign follows from the motif, up to 300 mm. The round shape is nine tenths as high as it is wide. Every part has to fit the print bed; the calculation in the next step says if one does not.'],
-        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. You pick the print up in person, or we send it by Packeta to a pickup point or to your door across the EU.'],
+        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. We send the print by Packeta to a pickup point or to your door across the EU.'],
     ],
     'examples' => [
         'Rectangular illuminated sign OPEN, 180 × 64 mm, 37 mm deep, for an LED strip.',

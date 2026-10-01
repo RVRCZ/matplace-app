@@ -20,7 +20,7 @@ return [
         ['q' => '¿Con qué material se imprime el cortador y cómo se lava?', 'a' => 'Recomendamos el plástico corriente PLA o el PETG, más resistente. Lávelo a mano con agua tibia y nunca en el lavavajillas: el PLA empieza a ablandarse hacia los 55 °C.'],
         ['q' => '¿Es apta la pieza para el contacto con alimentos?', 'a' => 'El cortador está pensado para un contacto breve con masa cruda que después se hornea. No recomendamos piezas impresas sin forro para un contacto prolongado con alimentos.'],
         ['q' => '¿Qué nivel de detalle admite la forma?', 'a' => 'La herramienta elimina las partes de la forma más estrechas que el doble del grosor de la pared, porque la masa se quedaría atascada en ellas. Por eso conviene ampliar los textos pequeños o elegir un texto más corto.'],
-        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. La impresión se recoge en persona o la enviamos con Packeta a un punto de recogida o a domicilio en toda la UE.'],
+        ['q' => '¿Cómo se paga y cómo se recibe la impresión?', 'a' => 'Se paga con crédito prepagado que usted recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la impresión con Packeta a un punto de recogida o a domicilio en toda la UE.'],
     ],
     'examples' => [
         'Cortador del nombre Ela, letra manuscrita, 82 × 54 mm con pestaña, alto 18 mm.',

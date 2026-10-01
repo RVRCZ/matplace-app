@@ -6,7 +6,7 @@ return [
     'h1' => 'Un soporte para el mando, la botella, los auriculares o la escoba',
     'intro' => [
         'La herramienta crea un soporte a partir de las medidas del objeto que quiere guardar. Usted elige uno de cuatro tipos: cuna con el frente bajo, bolsillo cerrado, gancho o clip para mango redondo. Sirve para un mando a distancia, una botella, herramientas, auriculares o una escoba. Se indican las medidas reales del objeto y la holgura la añade la herramienta.',
-        'El soporte se fija con tornillos a la pared o con cinta de doble cara. La vista previa muestra la forma con sus agujeros, junto a un precio orientativo. Imprimimos el soporte en nuestra granja de impresión en Chequia: lo recoge en persona o le llega con Packeta. El modelo se descarga gratis y se imprime sin soportes de impresión. Tornillos, tacos y cinta no forman parte de la impresión.',
+        'El soporte se fija con tornillos a la pared o con cinta de doble cara. La vista previa muestra la forma con sus agujeros, junto a un precio orientativo. Imprimimos el soporte en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. El modelo se descarga gratis y se imprime sin soportes de impresión. Tornillos, tacos y cinta no forman parte de la impresión.',
     ],
     'steps' => [
         ['name' => 'Mida el objeto', 'text' => 'Mida el ancho y el grosor del objeto o, si es un mango, su diámetro. Indique las medidas reales, sin margen.'],

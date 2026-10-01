@@ -19,7 +19,7 @@ return [
         ['q' => 'Jak dlouhý text se na dárek vejde?', 'a' => 'Dva řádky, každý nejvýše 40 znaků. U malých věcí, jako je klíčenka, volte krátký text, aby písmo zůstalo čitelné.'],
         ['q' => 'Může být písmo jinou barvou než destička?', 'a' => 'Ano, kromě vyrytého písma. Při tisku u nás vyberete druhou barvu při objednávce z těch, které jsou právě založené v tiskárně. Na vlastní tiskárně vyměníte filament ve výšce desky.'],
         ['q' => 'Mohu si dárek vytisknout na vlastní tiskárně?', 'a' => 'Ano. Model si zdarma stáhnete jako STL nebo jako připravený projekt pro svou tiskárnu.'],
-        ['q' => 'Jak dárek dostanu, když ho vytisknete vy?', 'a' => 'Vyzvednete si ho osobně, nebo ho pošleme Zásilkovnou na výdejní místo či domů do většiny zemí EU. Průběh zakázky vidíte na její stránce a o změnách vám přijde e-mail.'],
+        ['q' => 'Jak dárek dostanu, když ho vytisknete vy?', 'a' => 'Pošleme ho Zásilkovnou na výdejní místo či domů do většiny zemí EU. Průběh zakázky vidíte na její stránce a o změnách vám přijde e-mail.'],
     ],
     'examples' => [],
 ];

@@ -20,7 +20,7 @@ return [
         ['q' => 'What is the cutter printed from and how is it washed?', 'a' => 'We recommend the ordinary plastic PLA or the stronger PETG. Wash it by hand in lukewarm water and never in a dishwasher: PLA starts to soften at about 55 °C.'],
         ['q' => 'Is the print suitable for contact with food?', 'a' => 'The cutter is meant for brief contact with raw dough that is baked afterwards. We do not recommend printed parts without a liner for lasting contact with food.'],
         ['q' => 'How fine can the shape be?', 'a' => 'The tool leaves out any part of the shape that is narrower than twice the wall thickness, because dough would get stuck there. So make small lettering bigger or choose a shorter text.'],
-        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. You pick the print up in person, or we send it by Packeta to a pickup point or to your door across the EU.'],
+        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. We send the print by Packeta to a pickup point or to your door across the EU.'],
     ],
     'examples' => [
         'Cutter for the name Ela, handwritten, 82 × 54 mm with flange, 18 mm high.',

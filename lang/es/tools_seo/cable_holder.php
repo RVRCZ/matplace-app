@@ -6,7 +6,7 @@ return [
     'h1' => 'Un sujetacables que mantiene los cables a mano',
     'intro' => [
         'El sujetacables es un bloque pequeño con ranuras que se pega o atornilla a la mesa. El cable encaja en la ranura desde arriba y queda en su sitio aunque lo desconecte del aparato. Usted indica el número de cables y su diámetro en milímetros. La hendidura superior es algo más estrecha que el cable, por eso este no se sale. Sirve para cargadores, cables de monitor o de auriculares.',
-        'La vista previa muestra el sujetacables con sus medidas exteriores y el ancho de la ranura, junto a un precio orientativo. Lo imprimimos en nuestra granja de impresión en Chequia: lo recoge en persona o le llega con Packeta. Si tiene impresora, descarga el modelo gratis como proyecto listo o como archivo STL. Se imprime sin soportes. La cinta y los tornillos no forman parte de la impresión.',
+        'La vista previa muestra el sujetacables con sus medidas exteriores y el ancho de la ranura, junto a un precio orientativo. Lo imprimimos en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga el modelo gratis como proyecto listo o como archivo STL. Se imprime sin soportes. La cinta y los tornillos no forman parte de la impresión.',
     ],
     'steps' => [
         ['name' => 'Mida el diámetro del cable', 'text' => 'Mida el diámetro del cable, no el del conector. Se puede indicar un diámetro de 3 a 14 mm.'],

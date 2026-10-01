@@ -9,6 +9,6 @@
     </span>
     <span class="flex shrink-0 items-center gap-3 text-sm">
         @if($o->price_total)<span class="font-semibold">@money($o->total())</span>@endif
-        <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $tone }}">{{ __('farm.status.'.$o->status) }}</span>
+        <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $tone }}">{{ $o->statusText() }}</span>
     </span>
 </a>

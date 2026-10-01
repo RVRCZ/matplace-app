@@ -20,7 +20,7 @@ return [
         ['q' => 'Which material should the stencil be printed from?', 'a' => 'For repeated use we recommend PETG: it is more flexible than the ordinary plastic PLA and paint washes off it better. The stencil prints lying flat, without supports.'],
         ['q' => 'What kind of motif can I upload?', 'a' => 'An SVG with filled shapes of up to 400 kB, or a PNG, JPG or WebP picture with a dark motif on a light background. What is dark in the picture is cut out; the option "Swap light and dark" turns that round. The tool does not accept a photograph with smooth shades.'],
         ['q' => 'Can I change the typeface of the stencil?', 'a' => 'No, the stencil uses one bold sans typeface. Set other lettering in a drawing program, convert it to filled paths and upload it as an SVG.'],
-        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. You pick the print up in person, or we send it by Packeta to a pickup point or to your door across the EU.'],
+        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. We send the print by Packeta to a pickup point or to your door across the EU.'],
     ],
     'examples' => [
         'Stencil BOA 8 for marking crates, 144 × 52 mm, bridges hold the letter insides.',

@@ -6,7 +6,7 @@ return [
     'h1' => 'Calculadora de impresión 3D: de su modelo al precio',
     'intro' => [
         'La calculadora es para quien tiene un modelo 3D terminado y quiere saber cuánto costará imprimirlo. Suba un archivo STL, 3MF, OBJ o STEP y el modelo aparecerá en una vista giratoria. Verá al instante las dimensiones, el tiempo de impresión, el peso del material y un precio orientativo de impresión con nosotros. Para calcular no hace falta registrarse.',
-        'Usted ajusta el tamaño, las unidades, el material, la calidad y el relleno y pide recalcular. La pieza se imprime en nuestra granja de impresión en Chequia y se paga con crédito prepago. Puede recogerla en persona o recibirla con Packeta en un punto de recogida o a domicilio en casi toda la UE. Si tiene impresora, descargue gratis el STL o un proyecto listo.',
+        'Usted ajusta el tamaño, las unidades, el material, la calidad y el relleno y pide recalcular. La pieza se imprime en nuestra granja de impresión en Chequia y se paga con crédito prepago. La recibe con Packeta en un punto de recogida o a domicilio en casi toda la UE. Si tiene impresora, descargue gratis el STL o un proyecto listo.',
     ],
     'steps' => [
         ['name' => 'Suba un archivo', 'text' => 'Arrastre el modelo al recuadro de la página de inicio o toque «Subir archivo». Leemos STL, 3MF, OBJ y STEP de hasta 100 MB.'],

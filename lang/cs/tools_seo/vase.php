@@ -6,7 +6,7 @@ return [
     'h1' => 'Váza a obal na květináč podle vašich rozměrů',
     'intro' => [
         'Nástroj vytvoří vázu nebo obal na květináč podle výšky a průměrů, které zadáte. Vyberete jeden ze čtyř tvarů: úzké hrdlo, vypouklý, rovný kužel nebo tulipán. Povrch může být hladký, žebrovaný nebo spirálový. U žebrovaného a spirálového nastavíte počet žeber, hloubku žlábků a zkroucení. Obal na květináč může mít drenážní otvory ve dně a samostatnou podmisku.',
-        'Náhled se mění hned a ukazuje skutečné vnější rozměry, protože některé tvary jsou širší než zadané průměry. Vedle vidíte orientační cenu. Vázu vám vytiskneme na naší tiskové farmě v Česku: vyzvednete ji osobně, nebo přijde Zásilkovnou. Model si také můžete zdarma stáhnout pro vlastní tiskárnu. Počítejte s tím, že vytištěná váza nemusí být vodotěsná.',
+        'Náhled se mění hned a ukazuje skutečné vnější rozměry, protože některé tvary jsou širší než zadané průměry. Vedle vidíte orientační cenu. Vázu vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. Model si také můžete zdarma stáhnout pro vlastní tiskárnu. Počítejte s tím, že vytištěná váza nemusí být vodotěsná.',
     ],
     'steps' => [
         ['name' => 'Zvolte účel a tvar', 'text' => 'Vyberte vázu, nebo obal na květináč, a jeden ze čtyř tvarů. Můžete začít od předvolby „Spirálová“, „Žebrovaná“, „Hladká“ nebo „Květináč“.'],

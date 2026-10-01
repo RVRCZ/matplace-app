@@ -6,7 +6,7 @@ return [
     'h1' => 'Držák, ve kterém kabely zůstanou po ruce',
     'intro' => [
         'Držák kabelů je malý blok s drážkami, který přilepíte nebo přišroubujete na stůl. Kabel do drážky zacvaknete shora a zůstane na místě, i když ho odpojíte od zařízení. Zadáte počet kabelů a průměr kabelu v milimetrech. Štěrbina nad drážkou je o něco užší než kabel, proto kabel nevypadne. Hodí se na nabíječky, kabely k monitoru nebo ke sluchátkům.',
-        'Náhled ukáže držák s vnějšími rozměry a šířkou drážky, vedle je orientační cena. Držák vám vytiskneme na naší tiskové farmě v Česku: vyzvednete ho osobně, nebo přijde Zásilkovnou. Kdo má tiskárnu, stáhne si model zdarma jako projekt pro svou tiskárnu nebo jako soubor STL. Tiskne se bez podpěr. Páska ani šrouby nejsou součástí výtisku.',
+        'Náhled ukáže držák s vnějšími rozměry a šířkou drážky, vedle je orientační cena. Držák vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. Kdo má tiskárnu, stáhne si model zdarma jako projekt pro svou tiskárnu nebo jako soubor STL. Tiskne se bez podpěr. Páska ani šrouby nejsou součástí výtisku.',
     ],
     'steps' => [
         ['name' => 'Změřte průměr kabelu', 'text' => 'Změřte průměr kabelu, ne koncovky. Zadat lze průměr od 3 do 14 mm.'],

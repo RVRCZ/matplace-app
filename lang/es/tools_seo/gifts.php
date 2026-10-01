@@ -19,7 +19,7 @@ return [
         ['q' => '¿Qué longitud puede tener el texto del regalo?', 'a' => 'Dos líneas de hasta 40 caracteres cada una. En objetos pequeños, como un llavero, use un texto corto para que las letras se lean bien.'],
         ['q' => '¿Pueden ir las letras en un color distinto al de la placa?', 'a' => 'Sí, salvo con letras grabadas. Si lo imprimimos nosotros, usted elige el segundo color al hacer el pedido, entre los cargados en la impresora en ese momento. En su propia impresora se cambia el filamento a la altura de la placa.'],
         ['q' => '¿Puedo imprimir el regalo en mi propia impresora?', 'a' => 'Sí. Descargue gratis el modelo en STL o como proyecto listo para su impresora.'],
-        ['q' => '¿Cómo recibo el regalo si lo imprimen ustedes?', 'a' => 'Puede recogerlo en persona o se lo enviamos con Packeta a un punto de recogida o a domicilio en la mayoría de los países de la UE. Puede seguir el pedido en su página y recibirá un correo cuando cambie de estado.'],
+        ['q' => '¿Cómo recibo el regalo si lo imprimen ustedes?', 'a' => 'Se lo enviamos con Packeta a un punto de recogida o a domicilio en la mayoría de los países de la UE. Puede seguir el pedido en su página y recibirá un correo cuando cambie de estado.'],
     ],
     'examples' => [],
 ];

@@ -121,7 +121,7 @@ return [
 
     'status' => [
         'uploaded' => 'En preparación', 'sliced' => 'Listo para pedir', 'paid' => 'Pagado', 'queued' => 'En cola',
-        'printing' => 'Imprimiendo', 'done' => 'Terminado, pendiente de entrega', 'handed_over' => 'Entregado', 'failed' => 'Fallido', 'cancelled' => 'Cancelado',
+        'printing' => 'Imprimiendo', 'done' => 'Terminado, pendiente de entrega', 'done_parcel' => 'Terminado, preparando el envío', 'handed_over' => 'Entregado', 'failed' => 'Fallido', 'cancelled' => 'Cancelado',
     ],
 
     'error' => [
@@ -158,6 +158,7 @@ return [
         'not_ready' => 'El pedido todavía no está listo para pagarse.',
         'terms' => 'Sin su aceptación de las condiciones no podemos iniciar la impresión.',
         'delivery' => 'Esta forma de entrega no está disponible ahora.',
+        'delivery_too_big' => 'Esta impresión es demasiado grande para un paquete y no podemos enviarla. Redúzcala o divídala en piezas.',
         'delivery_country' => 'No ofrecemos este tipo de entrega a ese país (o el paquete pesa demasiado).',
         'delivery_point' => 'El punto de recogida no corresponde al país elegido o ya no existe. Elija otro, por favor.',
         'delivery_address' => 'Indique, por favor, el nombre, el teléfono y la dirección completa.',
@@ -199,7 +200,9 @@ return [
         'point_choose' => 'Elegir punto de recogida',
         'point_unavailable' => 'El selector de puntos de recogida no está disponible ahora.',
         'phone_hint' => 'El paquete viaja con Packeta. El mensajero necesita su teléfono para la entrega a domicilio; en un punto de recogida recibirá el aviso de que el paquete está listo.',
-        'too_big' => 'Esta impresión es demasiado grande para un paquete. Solo queda la recogida en persona.',
+        'too_big' => 'Esta impresión es demasiado grande para un paquete y no podemos enviarla. Redúzcala o divídala en piezas.',
+        'too_big_pickup' => 'Esta impresión es demasiado grande para un paquete. Solo queda la recogida en persona.',
+        'none' => 'Elija cómo le llega la impresión.',
         'pick_point' => 'Elija un punto de recogida e indique el nombre del destinatario.',
         'fill_address' => 'Indique el nombre, el teléfono y la dirección completa.',
         'to' => 'Entrega:',
@@ -212,6 +215,7 @@ return [
         'queued' => ['subject' => 'El pedido :number está en cola', 'body' => 'Su impresión «:name» (:color) está pagada y espera en la cola. Le avisaremos cuando empiece a imprimirse.'],
         'printing' => ['subject' => 'El pedido :number se está imprimiendo', 'body' => 'La impresora acaba de empezar a imprimir «:name». Puede seguir el progreso en la página del pedido.'],
         'done' => ['subject' => 'El pedido :number está impreso', 'body' => 'La impresión «:name» está terminada y pendiente de entrega.'],
+        'done_parcel' => ['subject' => 'El pedido :number está impreso', 'body' => 'La impresión «:name» está terminada. La embalamos y la entregamos al transportista; cuando esté en camino, le enviaremos un enlace para seguir el paquete.'],
         'handed_over' => ['subject' => 'El pedido :number ha sido entregado', 'body' => 'Hemos entregado o enviado la impresión «:name». Que le sea útil.'],
         'shipped' => ['subject' => 'El pedido :number está en camino', 'body' => 'Hemos entregado la impresión «:name» al transportista. El enlace de abajo muestra dónde está el paquete ahora.', 'track' => 'Seguir el paquete', 'barcode' => 'Número de envío: :barcode'],
         'failed' => ['subject' => 'El pedido :number ha fallado', 'body' => 'Lamentablemente la impresión «:name» no salió bien. Le hemos devuelto todo el crédito.'],

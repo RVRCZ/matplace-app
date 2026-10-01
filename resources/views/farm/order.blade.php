@@ -7,7 +7,7 @@
         'farm.order.blocked_approval', 'farm.order.cancel_confirm', 'farm.order.b_time', 'farm.order.b_material', 'farm.order.b_fixed', 'farm.order.b_min',
         'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'models.price.to_author', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line',
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m', 'farm.order.cancel_running_confirm', 'farm.order.supports_hide', 'farm.order.supports_show',
-        'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track'];
+        'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.too_big_pickup', 'farm.delivery.none', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track'];
     $farmCfg = [
         'state' => $state,
         'prefill' => $prefill,
@@ -158,8 +158,8 @@
                 {{-- delivery is chosen before the payment: it changes the price (resources/js/calc/farm.ts asks the server for it) --}}
                 <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.order.delivery') }}</div>
                 <div class="mt-2 grid gap-2 sm:grid-cols-3" id="farm-delivery">
-                    @foreach(['pickup', 'packeta_point', 'packeta_home'] as $mode)
-                        <button type="button" data-value="{{ $mode }}" class="seg hidden {{ $loop->first ? 'seg-on' : '' }}">{{ __('farm.delivery.'.$mode) }}<span class="block text-xs font-normal text-slate-500" data-price></span></button>
+                    @foreach(['packeta_point', 'packeta_home', 'pickup'] as $mode)
+                        <button type="button" data-value="{{ $mode }}" class="seg hidden">{{ __('farm.delivery.'.$mode) }}<span class="block text-xs font-normal text-slate-500" data-price></span></button>
                     @endforeach
                 </div>
                 <p id="farm-delivery-note" class="mt-2 hidden text-xs text-amber-800"></p>

@@ -20,7 +20,7 @@ return [
         ['q' => 'How do I fix the sign to a door?', 'a' => 'The sign has no screw holes. Its back is flat, so you can stick it on, for example with double-sided tape. Only the version with a keyring tab has a hole.'],
         ['q' => 'Which letters and characters does the tool know?', 'a' => 'Four typefaces (sans, serif, monospace and handwritten) with accented letters, plus a row of symbols below the text fields. When the chosen typeface lacks a character, the tool tells you which one is missing. You cannot upload your own font.'],
         ['q' => 'Can I print the model myself?', 'a' => 'Yes. You download the model free as an STL file or as a ready project for about 270 printers. With the two-colour option the plate and the letters also download as separate parts.'],
-        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. You pick the print up in person, or we send it by Packeta to a pickup point or to your door across the EU.'],
+        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. We send the print by Packeta to a pickup point or to your door across the EU.'],
     ],
     'examples' => [
         'Keyring Jana with tab and rim, 46 × 22 mm, letters in a second colour.',

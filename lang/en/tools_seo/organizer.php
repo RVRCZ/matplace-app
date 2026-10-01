@@ -6,7 +6,7 @@ return [
     'h1' => 'An organizer with compartments that fits your drawer',
     'intro' => [
         'The tool builds an organizer with compartments from the sizes you enter in millimetres. It suits a drawer in the kitchen, the workshop or the bathroom, and also a desk with office supplies. You set the width, depth and height, the number of rows and columns and the corner rounding. All compartments are the same size, and the organizer is one piece without a lid.',
-        'The preview redraws after every change and shows the outer size and the size of one compartment, with a rough price next to it. We print the organizer on our print farm in Czechia: you pick it up in person, or we send it by Packeta. With your own printer, you download the model free as a ready project for your printer or as an STL file.',
+        'The preview redraws after every change and shows the outer size and the size of one compartment, with a rough price next to it. We print the organizer on our print farm in Czechia: we send it by Packeta to a pickup point or to your door. With your own printer, you download the model free as a ready project for your printer or as an STL file.',
     ],
     'steps' => [
         ['name' => 'Measure the drawer', 'text' => 'Measure the inside width, depth and height of the drawer. Leave 1 to 2 mm of play on each side, drawers are rarely perfectly square.'],

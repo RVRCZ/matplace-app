@@ -253,8 +253,8 @@ class OrderController extends Controller
         }
         $currency = $this->currencyFor($order, $request);
         $country = strtoupper((string) ($data['country'] ?? 'CZ'));
-        if ($data['delivery'] !== Shipping::PICKUP && (! in_array($data['delivery'], $this->shipping->modes(), true) || $this->shipping->tooBig($order)
-            || $this->shipping->price($data['delivery'], $country, $this->shipping->parcelGrams($order), $currency) === null)) {
+        if (! in_array($data['delivery'], $this->shipping->modes(), true) || ($data['delivery'] !== Shipping::PICKUP && ($this->shipping->tooBig($order)
+            || $this->shipping->price($data['delivery'], $country, $this->shipping->parcelGrams($order), $currency) === null))) {
             return response()->json(['error' => 'delivery_country', 'message' => __('farm.refuse.delivery_country')], 422);
         }
         $price = $this->orders->priceFor($order, $offer['printer'], $data['delivery'], $offer['color']->material, $country, $currency);
@@ -441,7 +441,7 @@ class OrderController extends Controller
             'token' => $order->token,
             'number' => $order->number,
             'status' => $order->status,
-            'status_text' => __('farm.status.'.$order->status),
+            'status_text' => $order->statusText(),
             'stage' => $stage = $this->stageOf($order),
             'stage_step' => $stage ? (array_search($stage, self::STAGES, true) ?: 0) + 1 : null,
             'stage_total' => count(self::STAGES),

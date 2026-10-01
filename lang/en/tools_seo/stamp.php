@@ -20,7 +20,7 @@ return [
         ['q' => 'How is the handle attached?', 'a' => 'The handle prints as a separate part and is glued to the plate with superglue. The glue is not part of the print.'],
         ['q' => 'What is the difference between a raised and a recessed motif?', 'a' => 'A raised motif presses into the material and leaves a sunken imprint. A recessed motif is cut into the plate, so the imprint stands out of the material.'],
         ['q' => 'How fine can the details be?', 'a' => 'Lines thinner than 0.8 mm do not print cleanly or at all, and the tool warns about them. It helps to make the stamp wider or to thicken the lines in the artwork.'],
-        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. You pick the print up in person, or we send it by Packeta to a pickup point or to your door across the EU.'],
+        ['q' => 'How do I pay and how do I get the print?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or euros. We send the print by Packeta to a pickup point or to your door across the EU.'],
     ],
     'examples' => [
         'Stamp EVA with a handle, plate 56 × 23 mm, raised motif for clay.',

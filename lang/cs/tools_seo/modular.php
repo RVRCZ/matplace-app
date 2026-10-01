@@ -6,7 +6,7 @@ return [
     'h1' => 'Sada volných misek, která vyplní vaši zásuvku',
     'intro' => [
         'Modulární organizér se skládá ze samostatných misek, které vedle sebe přesně vyplní zásuvku. Zadáte vnitřní rozměry zásuvky, rozdělíte je na mřížku a do polí naskládáte misky různých velikostí. Každá miska se tiskne zvlášť, takže ji můžete kdykoli vyndat, přeskládat nebo umýt. Když misky nepatří do zásuvky, ale na stůl, přidáte k nim vnější tác.',
-        'Nástroj ukáže rozložení v náhledu, vypíše, co se vytiskne, a spočítá orientační cenu celé sady. Sadu vám vytiskneme na naší tiskové farmě v Česku: vyzvednete ji osobně, nebo ji pošleme Zásilkovnou. Máte-li tiskárnu, stáhnete si zdarma jednotlivé díly nebo hotový projekt pro svou tiskárnu. Misky se tisknou dnem dolů a bez podpěr.',
+        'Nástroj ukáže rozložení v náhledu, vypíše, co se vytiskne, a spočítá orientační cenu celé sady. Sadu vám vytiskneme na naší tiskové farmě v Česku: pošleme vám ji Zásilkovnou na výdejní místo nebo až domů. Máte-li tiskárnu, stáhnete si zdarma jednotlivé díly nebo hotový projekt pro svou tiskárnu. Misky se tisknou dnem dolů a bez podpěr.',
     ],
     'steps' => [
         ['name' => 'Změřte vnitřek zásuvky', 'text' => 'Zadejte šířku a hloubku uvnitř zásuvky a výšku misek. Od změřených rozměrů odečtěte 1 až 2 mm, stěny zásuvky nebývají přesně rovné.'],

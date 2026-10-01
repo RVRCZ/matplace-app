@@ -230,7 +230,7 @@ class FarmCatalogController extends Controller
         $data['marketplace'] = $request->boolean('marketplace');
         $data['farm_open'] = $request->boolean('farm_open');
         $data['farm_public'] = $request->boolean('farm_public');
-        $data['delivery_modes'] = array_values(array_intersect(['pickup', 'packeta_point', 'packeta_home'], (array) $request->input('delivery_modes', ['pickup']))) ?: ['pickup'];
+        $data['delivery_modes'] = array_values(array_intersect(['packeta_point', 'packeta_home', 'pickup'], (array) $request->input('delivery_modes', []))) ?: ['packeta_point', 'packeta_home'];
         foreach ($data as $key => $value) {
             $settings->set($key, $value);
         }

@@ -20,7 +20,7 @@ return [
         ['q' => 'Z jakého materiálu šablonu tisknout?', 'a' => 'Na opakované použití doporučujeme PETG: je pružnější než běžný plast PLA a barva se z něj lépe omývá. Šablona se tiskne naležato a bez podpěr.'],
         ['q' => 'Jaký motiv mohu nahrát?', 'a' => 'SVG s vyplněnými tvary do 400 kB, nebo obrázek PNG, JPG či WebP s tmavým motivem na světlém pozadí. Vyřízne se to, co je v obrázku tmavé; volbou „Obrátit světlé a tmavé“ to otočíte. Fotografii s plynulými odstíny nástroj nepřijme.'],
         ['q' => 'Lze změnit písmo šablony?', 'a' => 'Ne, šablona používá jedno tučné bezpatkové písmo. Jiné písmo připravte v grafickém programu, převeďte ho na křivky s výplní a nahrajte jako SVG.'],
-        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk si vyzvednete osobně, nebo ho pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
+        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
     ],
     'examples' => [
         'Šablona BOA 8 na označení beden, 144 × 52 mm, vnitřky písmen drží můstky.',

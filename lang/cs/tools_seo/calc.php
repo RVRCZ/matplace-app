@@ -6,7 +6,7 @@ return [
     'h1' => 'Kalkulačka 3D tisku: z modelu rovnou k ceně',
     'intro' => [
         'Kalkulačka je pro každého, kdo má hotový 3D model a chce vědět, kolik bude stát jeho tisk. Nahrajete soubor STL, 3MF, OBJ nebo STEP a model se zobrazí v otočném náhledu. Hned vidíte rozměry, dobu tisku, hmotnost materiálu a orientační cenu tisku u nás. K výpočtu se nemusíte registrovat.',
-        'Velikost, počet kusů, materiál, kvalitu a výplň nastavíte sami a čísla necháte přepočítat. Tisk objednáte na naší tiskové farmě v Česku a zaplatíte z předplaceného kreditu. Výtisk si vyzvednete osobně, nebo ho pošleme Zásilkovnou na výdejní místo či domů do většiny zemí EU. Kdo má vlastní tiskárnu, stáhne si zdarma STL nebo připravený projekt.',
+        'Velikost, počet kusů, materiál, kvalitu a výplň nastavíte sami a čísla necháte přepočítat. Tisk objednáte na naší tiskové farmě v Česku a zaplatíte z předplaceného kreditu. Výtisk pošleme Zásilkovnou na výdejní místo či domů do většiny zemí EU. Kdo má vlastní tiskárnu, stáhne si zdarma STL nebo připravený projekt.',
     ],
     'steps' => [
         ['name' => 'Nahrajte soubor', 'text' => 'Přetáhněte model do pole na úvodní stránce nebo klepněte na „Nahrát soubor“. Umíme STL, 3MF, OBJ a STEP do 100 MB.'],

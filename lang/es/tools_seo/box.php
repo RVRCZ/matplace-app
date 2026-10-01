@@ -6,7 +6,7 @@ return [
     'h1' => 'Una caja a la medida de lo que debe caber dentro',
     'intro' => [
         'La herramienta crea una caja a partir de sus medidas interiores, es decir, del objeto que debe caber dentro. Las medidas exteriores las calcula ella. La caja sirve para electrónica, piezas pequeñas o un regalo. Puede añadir una tapa encajable con reborde, hasta ocho aberturas redondas o rectangulares en las paredes y una ranura para el cable que parte del borde superior.',
-        'La vista previa giratoria muestra la caja y la tapa, y debajo las medidas interiores y exteriores. El precio orientativo se recalcula con cada cambio. Imprimimos la caja en nuestra granja de impresión en Chequia: la recoge en persona o le llega con Packeta. También puede imprimirla usted, el modelo se descarga gratis. La caja y la tapa se imprimen una al lado de la otra sin soportes.',
+        'La vista previa giratoria muestra la caja y la tapa, y debajo las medidas interiores y exteriores. El precio orientativo se recalcula con cada cambio. Imprimimos la caja en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. También puede imprimirla usted, el modelo se descarga gratis. La caja y la tapa se imprimen una al lado de la otra sin soportes.',
     ],
     'steps' => [
         ['name' => 'Mida lo que debe caber', 'text' => 'Indique el ancho, el fondo y el alto interiores de la caja. Deje unos milímetros de margen alrededor del objeto.'],

@@ -6,7 +6,7 @@ return [
     'h1' => 'Držák na ovladač, lahev, sluchátka nebo koště',
     'intro' => [
         'Nástroj vytvoří držák podle rozměrů věci, kterou chcete uklidit. Vyberete jeden ze čtyř typů: kolébku s nízkou přední stranou, uzavřenou kapsu, hák nebo klip na kulatou násadu. Hodí se na dálkový ovladač, lahev, nářadí, sluchátka nebo koště. Zadáváte skutečné rozměry věci, vůli kolem ní přidá nástroj sám.',
-        'Držák se připevní šrouby do zdi nebo oboustrannou páskou. Náhled ukáže tvar i s otvory a vedle něj je orientační cena. Držák vám vytiskneme na naší tiskové farmě v Česku: vyzvednete ho osobně, nebo přijde Zásilkovnou. Pro vlastní tiskárnu si model stáhnete zdarma, tiskne se bez podpěr. Šrouby, hmoždinky ani páska nejsou součástí výtisku.',
+        'Držák se připevní šrouby do zdi nebo oboustrannou páskou. Náhled ukáže tvar i s otvory a vedle něj je orientační cena. Držák vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. Pro vlastní tiskárnu si model stáhnete zdarma, tiskne se bez podpěr. Šrouby, hmoždinky ani páska nejsou součástí výtisku.',
     ],
     'steps' => [
         ['name' => 'Změřte věc', 'text' => 'Změřte šířku a tloušťku věci, u násady její průměr. Zadávejte skutečné rozměry bez rezervy.'],

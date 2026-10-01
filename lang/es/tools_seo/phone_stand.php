@@ -6,7 +6,7 @@ return [
     'h1' => 'Un soporte a la medida de su móvil con funda',
     'intro' => [
         'La herramienta ofrece seis tipos de soporte: placa con ganchos, onda, marco en A con repisa, cuña baja, bolsillo de pared y clip para la rejilla del coche. El soporte se calcula según el grosor del móvil con funda, indicado en milímetros. En los tipos de mesa se ajustan el ancho, el ángulo y la altura del respaldo. La cuña y los tipos de mesa anchos sirven también para tabletas.',
-        'Con cada cambio se redibuja la vista previa y se recalcula el precio orientativo. Imprimimos el soporte en nuestra granja de impresión en Chequia: lo recoge en persona o le llega con Packeta. Si tiene impresora, descarga el modelo gratis como proyecto listo o como archivo STL. El ángulo queda fijado por el diseño y no se puede cambiar después. El soporte solo sujeta el móvil, no lleva cargador.',
+        'Con cada cambio se redibuja la vista previa y se recalcula el precio orientativo. Imprimimos el soporte en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga el modelo gratis como proyecto listo o como archivo STL. El ángulo queda fijado por el diseño y no se puede cambiar después. El soporte solo sujeta el móvil, no lleva cargador.',
     ],
     'steps' => [
         ['name' => 'Elija el tipo de soporte', 'text' => 'Para la mesa sirven la placa con ganchos, la onda, el marco en A con repisa o la cuña baja. El bolsillo va en la pared y el clip en la rejilla de ventilación del coche.'],

@@ -21,7 +21,7 @@ return [
         ['q' => 'Proč se vyříznuté logo rozpadá na kousky?', 'a' => 'Vyříznutý tvar nemá destičku, takže jednotlivá písmena nebo oddělené části loga nic nespojuje. Nástroj napíše, z kolika kousků se tvar skládá. Mají-li držet pohromadě, zvolte reliéf na destičce.'],
         ['q' => 'Jak funguje stojící logo?', 'a' => 'Logo a podstavec se tisknou jako dva díly a logo se zasune do drážky v podstavci. Kvůli pevnosti má stojící logo tloušťku nejméně 2,4 mm. Části, které nedosáhnou do podstavce, například tečky a háčky, by nedržely a nástroj na ně upozorní.'],
         ['q' => 'Lze logo vytisknout ve dvou barvách?', 'a' => 'U reliéfu na destičce ano: při tisku u nás vyberete druhou barvu a tiskárna ji vymění ve výšce, kde motiv začíná. Barvy vybíráte z těch, které jsou právě založené v tiskárnách, přesný firemní odstín proto zaručit neumíme.'],
-        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk si vyzvednete osobně, nebo ho pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
+        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
     ],
     'examples' => [
         'Nápis ATELIER jako reliéf na zaoblené destičce 110 × 26 mm, třeba na dveře.',

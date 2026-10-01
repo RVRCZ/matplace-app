@@ -20,7 +20,7 @@ return [
         ['q' => 'Z čeho se vykrajovátko tiskne a jak se myje?', 'a' => 'Doporučujeme běžný plast PLA nebo pevnější PETG. Myjte ho ručně ve vlažné vodě, do myčky nepatří: PLA měkne už kolem 55 °C.'],
         ['q' => 'Je výtisk vhodný pro styk s potravinami?', 'a' => 'Vykrajovátko je určené pro krátký dotyk se syrovým těstem, které se potom peče. Pro trvalý styk s potravinami tištěné díly bez vložky nedoporučujeme.'],
         ['q' => 'Jak jemný může tvar být?', 'a' => 'Výběžky užší než dvojnásobek tloušťky stěny nástroj z tvaru vypustí, protože by se v nich těsto zasekávalo. Drobný text proto zvětšete, nebo zvolte kratší nápis.'],
-        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk si vyzvednete osobně, nebo ho pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
+        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
     ],
     'examples' => [
         'Vykrajovátko jména Ela psacím písmem, 82 × 54 mm včetně obruby, výška 18 mm.',

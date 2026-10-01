@@ -8,7 +8,7 @@ return [
     'about' => [
         'title' => 'About us: 3D printing on our own print farm',
         'description' => 'matplace is a Czech 3D printing service. Upload a model, see the price at once and we print it on our own print farm in Czechia. We ship to EU countries.',
-        'lead' => 'matplace is an online 3D printing service. We print on our own printers in Czechia, you know the price before you order, and you collect the finished print or we send it by Packeta.',
+        'lead' => 'matplace is an online 3D printing service. We print on our own printers in Czechia, you know the price before you order, and we send the finished print by Packeta to a pickup point or to your door.',
         'sections' => [
             [
                 'h' => 'What we do',
@@ -23,7 +23,7 @@ return [
                     'Upload a file, pick a model from the catalogue or make one in a tool.',
                     'Look at the preview, the print time, the material used and the price including VAT.',
                     'Choose the colour, quality and delivery, and pay from your credit.',
-                    'Follow the print on the order page. You collect the finished print in person, or we send it by Packeta.',
+                    'Follow the print on the order page. We send the finished print by Packeta to a pickup point or to your door.',
                 ],
             ],
             [
@@ -77,12 +77,6 @@ return [
                 ],
             ],
             [
-                'h' => 'Pickup in person',
-                'p' => [
-                    'Collecting a finished print in person is free. We let you know by e-mail when the print is ready. Please agree the place and time of the handover with us beforehand at info@matplace.com.',
-                ],
-            ],
-            [
                 'h' => 'Complaints and personal data',
                 'p' => [
                     'Complaints are made by e-mail to info@matplace.com. The Complaints page describes the procedure.',
@@ -115,7 +109,7 @@ return [
             ],
             [
                 'q' => 'How do I get my print, and which countries do you ship to?',
-                'a' => 'Pickup in person is free. Otherwise we ship by Packeta to a pickup point or to your door, to countries of the European Union only. In Czechia a pickup point costs 99 Kč and home delivery 149 Kč; the countries we ship to and the delivery price are shown in the order before you pay. A print longer than 70 cm cannot be shipped and has to be collected in person.',
+                'a' => 'We ship by Packeta to a pickup point or to your door, to countries of the European Union only. In Czechia a pickup point costs 99 Kč and home delivery 149 Kč; the countries we ship to and the delivery price are shown in the order before you pay. A print longer than 70 cm cannot be shipped, and we do not take such an order. We do not offer pickup in person for now.',
             ],
             [
                 'q' => 'How do I pay, and what is credit?',
@@ -380,7 +374,7 @@ return [
             [
                 'h' => '7. Delivery',
                 'p' => [
-                    'You collect the finished print in person, or we send it by Packeta to a pickup point or to your door. We ship only to the countries of the European Union offered in the order. Pickup in person is free.',
+                    'We send the finished print by Packeta to a pickup point or to your door. We ship only to the countries of the European Union offered in the order. We do not offer pickup in person.',
                     'The print time and the estimated finish are shown with the order. When we ship, we e-mail you a link for tracking the parcel.',
                     'Delivery prices including VAT for a parcel up to 2 kg, to a pickup point and to the door respectively. An account in crowns pays the price in crowns, an account in euros the price in euros:',
                 ],
@@ -392,7 +386,7 @@ return [
                     'Netherlands, Belgium, Luxembourg, Ireland, Denmark, Sweden, Finland, Estonia, Cyprus: 399 Kč and 575 Kč, or €15.90 and €22.90.',
                     'A parcel of 2 to 5 kg: a surcharge of 50 Kč or €2. A parcel of 5 to 15 kg, within Czechia only: a surcharge of 100 Kč or €4.',
                     'To Austria, Luxembourg and Ireland we deliver to the door only, to Cyprus to a pickup point only.',
-                    'A print longer than 70 cm, or with sides adding up to more than 120 cm, cannot be shipped and has to be collected in person.',
+                    'A print longer than 70 cm, or with sides adding up to more than 120 cm, cannot be shipped, and we do not take such an order.',
                 ],
             ],
             [

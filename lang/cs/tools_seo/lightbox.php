@@ -21,7 +21,7 @@ return [
         ['q' => 'V jakých barvách díly tisknout?', 'a' => 'Tělo, čelní maska a zadní kryt mají být tmavé, aby světlo procházelo jen motivem, a difuzor bílý nebo průsvitný. Jedna zakázka se u nás tiskne jednou barvou. Difuzor si proto stáhněte jako samostatný díl a nahrajte ho jako vlastní model do druhé zakázky.'],
         ['q' => 'Jak nápis sestavím?', 'a' => 'LED pásek nalepíte po vnitřním obvodu těla a kabel protáhnete otvorem. Difuzor a čelní maska se zepředu vloží na osazení v těle, zadní kryt se nasadí zezadu.'],
         ['q' => 'Jak velký může nápis být?', 'a' => 'Šířka je 80 až 300 mm a výška obdélníkového nápisu vychází z motivu, nejvýše 300 mm. Kulatý tvar je vysoký devět desetin šířky. Každý díl se musí vejít na tiskovou podložku, na což upozorní kalkulace v dalším kroku.'],
-        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk si vyzvednete osobně, nebo ho pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
+        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
     ],
     'examples' => [
         'Obdélníkový světelný nápis OPEN, 180 × 64 mm, hloubka 37 mm, pro LED pásek.',

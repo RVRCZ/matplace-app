@@ -6,7 +6,7 @@ return [
     'h1' => 'Un organizador con compartimentos a la medida de su cajón',
     'intro' => [
         'La herramienta crea un organizador con compartimentos según las medidas que indique en milímetros. Sirve para un cajón de la cocina, del taller o del baño, y también para la mesa con material de oficina. Se ajustan el ancho, el fondo y el alto, el número de filas y columnas y el redondeo de esquinas. Todos los compartimentos son iguales y el organizador es una sola pieza sin tapa.',
-        'La vista previa se redibuja con cada cambio y muestra las medidas exteriores y el tamaño de un compartimento, con un precio orientativo al lado. Imprimimos el organizador en nuestra granja de impresión en Chequia: lo recoge en persona o se lo enviamos con Packeta. Si tiene impresora, descarga el modelo gratis como proyecto listo para su impresora o como archivo STL.',
+        'La vista previa se redibuja con cada cambio y muestra las medidas exteriores y el tamaño de un compartimento, con un precio orientativo al lado. Imprimimos el organizador en nuestra granja de impresión en Chequia: se lo enviamos con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga el modelo gratis como proyecto listo para su impresora o como archivo STL.',
     ],
     'steps' => [
         ['name' => 'Mida el cajón', 'text' => 'Mida el ancho, el fondo y el alto interiores del cajón. Deje de 1 a 2 mm de holgura por lado, los cajones rara vez son perfectamente rectos.'],

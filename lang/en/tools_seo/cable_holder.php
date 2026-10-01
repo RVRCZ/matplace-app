@@ -6,7 +6,7 @@ return [
     'h1' => 'A holder that keeps your cables within reach',
     'intro' => [
         'A cable holder is a small block with slots that you stick or screw onto a desk. The cable clicks into a slot from above and stays in place, even when unplugged from the device. You enter the number of cables and the cable diameter in millimetres. The slit above the slot is slightly narrower than the cable, so the cable stays in. It suits chargers, monitor and headphone cables.',
-        'The preview shows the holder with its outer size and the slot width, next to a rough price. We print the holder on our print farm in Czechia: you pick it up in person, or it comes by Packeta. If you have a printer, you download the model free as a project or as an STL file. It prints without supports. Tape and screws are not part of the print.',
+        'The preview shows the holder with its outer size and the slot width, next to a rough price. We print the holder on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. If you have a printer, you download the model free as a project or as an STL file. It prints without supports. Tape and screws are not part of the print.',
     ],
     'steps' => [
         ['name' => 'Measure the cable diameter', 'text' => 'Measure the diameter of the cable, not of the plug. You can enter a diameter from 3 to 14 mm.'],
