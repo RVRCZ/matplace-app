@@ -6,18 +6,23 @@ use App\Models\CreditTransaction;
 use App\Models\FarmOrder;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\Currency;
+use App\Support\Money;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Prepaid credit. The ledger is append-only and the balance is its sum, so every crown can be traced.
  * Spending locks the user row first: two simultaneous orders can never both pass the balance check.
+ *
+ * An account has one currency. The first line written to its ledger fixes it (a top-up paid in that currency, a
+ * designer's first reward); a line in any other currency is refused (CreditTransaction, CurrencyMismatch).
  */
 final class Wallet
 {
-    public function balance(User $user): float
+    public function balance(User $user): Money
     {
-        return round((float) CreditTransaction::where('user_id', $user->id)->sum('amount'), 2);
+        return new Money((float) CreditTransaction::where('user_id', $user->id)->sum('amount'), $user->currency ?: Currency::current($user));
     }
 
     /** Credit a paid top-up. Safe to call twice for the same payment (webhook retries): the second call does nothing. */
@@ -43,15 +48,16 @@ final class Wallet
             if ($this->openHold($order) !== null) {
                 throw new \LogicException('Order already holds credit.');
             }
-            $price = (float) $order->price_total;
-            $balance = $this->balance($user);
-            if ($balance + 1e-6 < $price) {
-                throw new InsufficientCredit($balance, $price);
+            $price = new Money((float) $order->price_total, (string) $order->currency);
+            // an account nothing has moved on yet has nothing to pay with, in whatever currency the order is
+            $balance = $user->currency ? $this->balance($user) : new Money(0, $price->currency);
+            if (! $balance->covers($price)) {
+                throw new InsufficientCredit($balance->amount, $price->amount, $price->currency);
             }
 
             return CreditTransaction::create([
-                'user_id' => $user->id, 'type' => CreditTransaction::TYPE_HOLD, 'amount' => -$price,
-                'currency' => $order->currency, 'farm_order_id' => $order->id,
+                'user_id' => $user->id, 'type' => CreditTransaction::TYPE_HOLD, 'amount' => -$price->amount,
+                'currency' => $price->currency, 'farm_order_id' => $order->id,
             ]);
         });
     }
@@ -112,20 +118,23 @@ final class Wallet
     /**
      * Pay for something that is delivered at once (a generation beyond the free quota): one capture line, no hold.
      *
+     * @param  float  $czk  the price as it is defined, in crowns; an account in euros pays its euro price
+     *
      * @throws InsufficientCredit
      */
-    public function charge(User $user, float $amount, string $note): CreditTransaction
+    public function charge(User $user, float $czk, string $note): CreditTransaction
     {
-        return DB::transaction(function () use ($user, $amount, $note) {
-            User::whereKey($user->id)->lockForUpdate()->first();
+        return DB::transaction(function () use ($user, $czk, $note) {
+            $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
             $balance = $this->balance($user);
-            if ($balance + 1e-6 < $amount) {
-                throw new InsufficientCredit($balance, $amount);
+            $price = Money::czk($czk)->to($balance->currency);
+            if (! $balance->covers($price)) {
+                throw new InsufficientCredit($balance->amount, $price->amount, $price->currency);
             }
 
             return CreditTransaction::create([
-                'user_id' => $user->id, 'type' => CreditTransaction::TYPE_CHARGE, 'amount' => -round($amount, 2),
-                'currency' => app(FarmSettings::class)->get('currency'), 'note' => $note,
+                'user_id' => $user->id, 'type' => CreditTransaction::TYPE_CHARGE, 'amount' => -$price->amount,
+                'currency' => $price->currency, 'note' => $note,
             ]);
         });
     }
@@ -154,7 +163,8 @@ final class Wallet
 
             return CreditTransaction::create([
                 'user_id' => $designer->id, 'type' => CreditTransaction::TYPE_ROYALTY,
-                'amount' => $currency === 'EUR' ? round($czk / max(1.0, (float) config('farm.eur_rate', 25)), 2) : $czk,
+                // all of it, to the cent: nothing is rounded away from the designer
+                'amount' => Money::czk($czk)->exactly($currency)->amount,
                 'currency' => $currency, 'farm_order_id' => $order->id, 'designer_model_id' => $card->id, 'note' => $order->number,
             ]);
         });
@@ -183,10 +193,29 @@ final class Wallet
     {
         if (! $user->currency) {
             $used = CreditTransaction::where('user_id', $user->id)->latest('id')->value('currency');
-            $user->forceFill(['currency' => $used ?: (strtoupper((string) ($user->country ?: 'CZ')) === 'CZ' ? 'CZK' : 'EUR')])->save();
+            $user->forceFill(['currency' => $used ?: Currency::forCountry($user->country)])->save();
         }
 
         return (string) $user->currency;
+    }
+
+    /**
+     * Another currency for an account, by an admin, and only while the account holds nothing: with money on it the
+     * amount would have to be exchanged, and that is not ours to decide.
+     *
+     * @throws \DomainException when credit is left or an order holds some
+     */
+    public function changeCurrency(User $user, string $currency): void
+    {
+        $currency = (new Money(0, $currency))->currency;
+        DB::transaction(function () use ($user, $currency) {
+            $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            $open = FarmOrder::where('user_id', $user->id)->whereIn('status', [FarmOrder::STATUS_PAID, FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING])->exists();
+            if (! $this->balance($user)->isZero() || $open) {
+                throw new \DomainException('The account still holds credit or a running order.');
+            }
+            $user->forceFill(['currency' => $currency])->save();
+        });
     }
 
     /** The owner deletes the account and gives up what is left: one line, so the ledger still explains the zero. */
@@ -194,15 +223,16 @@ final class Wallet
     {
         return CreditTransaction::create([
             'user_id' => $user->id, 'type' => CreditTransaction::TYPE_FORFEIT, 'amount' => -round($amount, 2),
-            'currency' => app(FarmSettings::class)->get('currency'), 'note' => $note,
+            'currency' => $this->currencyOf($user), 'note' => $note,
         ]);
     }
 
+    /** By an admin, in the currency of the account. */
     public function adjust(User $user, float $amount, string $note, int $adminId): CreditTransaction
     {
         return CreditTransaction::create([
             'user_id' => $user->id, 'type' => CreditTransaction::TYPE_ADJUST, 'amount' => round($amount, 2),
-            'currency' => app(FarmSettings::class)->get('currency'), 'note' => $note, 'created_by' => $adminId,
+            'currency' => $this->currencyOf($user), 'note' => $note, 'created_by' => $adminId,
         ]);
     }
 

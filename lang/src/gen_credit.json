@@ -1,8 +1,8 @@
 {
     "search.gen_credit": [
-        "Denní limit bezplatných generování je vyčerpán. Další stojí :n Kč z kreditu; chybí vám :m Kč.",
-        "The free daily generations are used up. Another one costs :n CZK from your credit; you are :m CZK short.",
-        "Las generaciones gratuitas de hoy se han agotado. Otra cuesta :n CZK de su crédito; le faltan :m CZK."
+        "Denní limit bezplatných generování je vyčerpán. Další stojí :n z kreditu; chybí vám :m.",
+        "The free daily generations are used up. Another one costs :n from your credit; you are :m short.",
+        "Las generaciones gratuitas de hoy se han agotado. Otra cuesta :n de su crédito; le faltan :m."
     ],
     "search.gen_topup": [
         "Dobít kredit",
@@ -10,8 +10,8 @@
         "Recargar crédito"
     ],
     "search.gen_paid_hint": [
-        "Nad denní limit stojí generování :n Kč z kreditu.",
-        "Beyond the daily limit a generation costs :n CZK from credit.",
-        "Más allá del límite diario, una generación cuesta :n CZK de crédito."
+        "Nad denní limit stojí generování :n z kreditu.",
+        "Beyond the daily limit a generation costs :n from credit.",
+        "Más allá del límite diario, una generación cuesta :n de crédito."
     ]
 }

@@ -78,7 +78,7 @@ class AccountController extends Controller
         return view('account.profile', [
             'user' => $user,
             'countries' => Countries::names(),
-            'balance' => config('farm.enabled') ? $wallet->balance($user) : 0.0,
+            'balance' => $wallet->balance($user),
             'providers' => array_keys(array_filter(['google' => config('services.google.client_id'), 'facebook' => config('services.facebook.client_id')])),
             'packetaKey' => (string) config('services.packeta.api_key'),
         ]);

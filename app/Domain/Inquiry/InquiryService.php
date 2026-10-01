@@ -16,6 +16,8 @@ use App\Models\PrinterProfile;
 use App\Models\Quote;
 use App\Models\Thread;
 use App\Models\User;
+use App\Support\Money;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -85,7 +87,7 @@ final class InquiryService
      * Spare part: no model yet, only photos, measurements and what the part has to withstand. The request goes to
      * printers who also design; they answer with a quote for modelling + printing. Nothing is promised automatically.
      *
-     * @param  \Illuminate\Http\UploadedFile[]  $photos
+     * @param  UploadedFile[]  $photos
      */
     public function createSparePart(array $data, array $photos, ?User $user): Inquiry
     {
@@ -191,7 +193,7 @@ final class InquiryService
         ]);
 
         $thread = Thread::open($inquiry, $printer, $quote);
-        $thread->post('system', __('inquiry.sys.offer', ['price' => number_format($quote->total, 0, ',', ' ')]));
+        $thread->post('system', __('inquiry.sys.offer', ['price' => Money::of($quote->total, $quote->currency)->format()]));
         if ($note) {
             $thread->post('printer', $note, $printer->user);
         }

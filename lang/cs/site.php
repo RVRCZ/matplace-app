@@ -3,6 +3,8 @@
 return [
     'language' => 'Jazyk',
     'languages' => ['cs' => 'Čeština', 'en' => 'English', 'es' => 'Español'],
+    'currency' => 'Měna',
+    'currencies' => ['CZK' => 'Ceny v korunách', 'EUR' => 'Ceny v eurech'],
     'not_found' => [
         'title' => 'Stránka nenalezena',
         'text' => 'Tahle adresa nikam nevede. Možná se stránka přestěhovala, nebo je v odkazu překlep.',

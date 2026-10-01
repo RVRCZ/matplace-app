@@ -8,14 +8,19 @@ use App\Domain\Farm\GcodeSlot;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\PrintProfile;
 use App\Domain\Farm\Wallet;
+use App\Engines\Shipping\Parcel;
+use App\Engines\Shipping\ShippingCarrier;
+use App\Engines\Shipping\ShippingFailed;
 use App\Http\Controllers\Controller;
 use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrintJob;
+use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -155,7 +160,35 @@ class FarmOrderController extends Controller
         $data = $request->validate(['note' => ['required', 'string', 'max:300']]);
         $amount = $wallet->giveBack($order, $request->user()->id, $data['note']);
 
-        return back()->with('status', __('farm.admin.refunded', ['amount' => number_format($amount, 0, ',', ' ')]));
+        return back()->with('status', __('farm.admin.refunded', ['amount' => Money::of($amount, $order->currency)->format()]));
+    }
+
+    /** "Create the parcel": the finished print is announced to Packeta, handed over, and the customer gets the tracking link. */
+    public function ship(Request $request, FarmOrder $order): RedirectResponse
+    {
+        try {
+            $this->flow->ship($order, $request->user()->id);
+        } catch (ShippingFailed $e) {
+            // the carrier's own words; the order stays "done" so the operator can fix the address and try again
+            return back()->with('error', __('farm.admin.ship_failed', ['reason' => $e->getMessage()]));
+        } catch (\DomainException) {
+            return back()->with('error', __('farm.admin.bad_transition'));
+        }
+
+        return back()->with('status', __('farm.admin.shipped', ['barcode' => $order->packeta_barcode]));
+    }
+
+    /** The label to stick on the box. */
+    public function label(FarmOrder $order, ShippingCarrier $carrier): Response|RedirectResponse
+    {
+        abort_unless($order->packeta_packet_id, 404);
+        try {
+            $pdf = $carrier->labelPdf((string) $order->packeta_packet_id, Parcel::forOrder($order)->external);
+        } catch (ShippingFailed $e) {
+            return back()->with('error', __('farm.admin.ship_failed', ['reason' => $e->getMessage()]));
+        }
+
+        return response($pdf, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="matplace-'.$order->number.'-label.pdf"', 'Cache-Control' => 'private, no-store']);
     }
 
     /** "The plate is empty" — the one confirmation without which nothing starts by itself. */

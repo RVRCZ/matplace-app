@@ -4,6 +4,7 @@
  */
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { Viewer, Region, FILAMENT } from './viewer';
+import { price as priceText } from '../site/money';
 import { estimate, price, range, RoughConfig, Profile } from './rough';
 
 interface Material { code: string; density: number }
@@ -28,7 +29,6 @@ export function bootParam(): void {
     const t = (k: string, r: Record<string, string | number> = {}) => Object.entries(r).reduce((s, [a, b]) => s.split(`:${a}`).join(String(b)), cfg.i18n[k] ?? k);
     const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const nf = new Intl.NumberFormat(cfg.locale, { maximumFractionDigits: 1 });
-    const money = new Intl.NumberFormat(cfg.locale, { style: 'currency', currency: cfg.config.currency || 'CZK', maximumFractionDigits: 0 });
     const viewer = new Viewer(canvas);
     const holes: Hole[] = [];
     const bins: Bin[] = [];
@@ -99,7 +99,7 @@ export function bootParam(): void {
         const est = estimate(cfg.config.rough, density, { volume_mm3: lastMeta.volume_mm3, area_mm2: lastMeta.area_mm2 }, { material: code, quality: 'standard', infill: 15, supports: false, scale: 1, quantity: qty, vase: vaseMode });
         const totals = cfg.config.orientation_profiles.map((p) => price(cfg.config.round_to, p, est.grams, est.minutes, qty).total);
         const [lo, hi] = range(cfg.config.rough, cfg.config.round_to, totals, true);
-        $('param-price').textContent = hi > 0 ? `≈ ${money.format(lo)} – ${money.format(hi)}` : '—';
+        $('param-price').textContent = hi > 0 ? `≈ ${priceText(lo)} – ${priceText(hi)}` : '—';
         const h = Math.floor((est.minutes * qty) / 60); const min = Math.round((est.minutes * qty) % 60);
         $('param-price-sub').textContent = t('param.estimate', { g: nf.format(est.grams * qty), t: h ? `${h} h ${min} min` : `${min} min`, q: qty });
     };

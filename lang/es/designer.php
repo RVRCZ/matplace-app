@@ -87,7 +87,7 @@ return [
         'empty' => 'Todavía no hay nada. Importe sus modelos desde Printables o MakerWorld, o añada el primero a mano.',
         'state' => ['printable' => 'se puede imprimir', 'checking' => 'comprobando el archivo', 'failed' => 'archivo rechazado', 'hidden' => 'oculta', 'link' => 'solo enlace'],
         'remix' => 'remix',
-        'reward' => 'recompensa :amount CZK',
+        'reward' => 'recompensa :amount',
         'views_orders' => 'vistas · impresiones',
     ],
 

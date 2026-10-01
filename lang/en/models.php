@@ -8,7 +8,7 @@ return [
     'description' => 'Models by designers that we print and ship to you. Pick a material and a number of pieces and see the price at once.',
     'description_one' => 'The model “:title” by the designer :name. We print and ship it.',
     'lead' => 'Models by designers that we print on our farm. A part of the price always goes to the author.',
-    'from' => 'from :price CZK',
+    'from' => 'from :price',
     'sort' => ['label' => 'Sort', 'new' => 'New', 'printed' => 'Most printed'],
     'size' => [
         'label' => 'Size',
@@ -107,7 +107,7 @@ return [
 
     'farm' => [
         'card' => 'The model “:title” by the designer :name',
-        'reward' => 'The price includes the author\'s reward (at most :amount CZK per piece).',
+        'reward' => 'The price includes the author\'s reward (at most :amount per piece).',
         'no_preview' => 'The author does not offer the file of this model for download, so there is no 3D preview here.',
         'source_title' => 'A model from the inspiration catalogue',
         'source_text' => 'We note on the order: :line',

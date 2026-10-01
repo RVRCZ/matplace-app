@@ -137,8 +137,8 @@
                 @foreach($errors->delete->all() as $e)<p class="note-error mt-3 text-sm">{{ $e }}</p>@endforeach
                 <form method="post" action="{{ route('account.delete') }}" class="mt-3 space-y-3">
                     @csrf
-                    @if($balance > 0)
-                        <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="credit" value="1" required class="mt-1"> <span>{{ __('user.delete.credit', ['amount' => number_format($balance, 0, ',', ' ').' Kč']) }}</span></label>
+                    @if($balance->isPositive())
+                        <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="credit" value="1" required class="mt-1"> <span>{{ __('user.delete.credit', ['amount' => $balance->format()]) }}</span></label>
                     @endif
                     <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="understand" value="1" required class="mt-1"> <span>{{ __('user.delete.understand') }}</span></label>
                     @if($user->hasPassword())

@@ -1,5 +1,6 @@
 /** "Describe it" / "Take a photo": text or image → what it is, size + price range, ready-made models, rough generated model. */
 import { openFile } from './calculator';
+import { price as priceText } from '../site/money';
 
 interface Candidate {
     source: string; externalId: string; title: string; previewUrl: string | null; externalUrl: string | null;
@@ -88,7 +89,7 @@ function renderDescription(d: DescribeResponse): void {
     const box = $('describe-box');
     const desc = d.description;
     const size = desc.bbox_mm ? `${desc.bbox_mm.x} × ${desc.bbox_mm.y} × ${desc.bbox_mm.z} mm${desc.size_known ? '' : ' (' + t('search.size_guess') + ')'}` : '—';
-    const price = d.range ? `${fmt.format(d.range.price_min)} – ${fmt.format(d.range.price_max)} Kč` : '—';
+    const price = d.range ? `${priceText(d.range.price_min)} – ${priceText(d.range.price_max)}` : '—';
     box.innerHTML = `
         <div class="grid gap-3 sm:grid-cols-[120px_1fr]">
             <img id="describe-photo" src="" alt="" class="hidden h-28 w-28 rounded-lg object-cover">

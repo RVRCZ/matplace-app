@@ -75,7 +75,7 @@
         @endif
         <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
             <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
-                <dt class="text-slate-500">E-mail</dt><dd>{{ $order->user?->email }} <span class="text-xs text-slate-500">({{ number_format($balance, 0, ',', ' ') }} Kč)</span></dd>
+                <dt class="text-slate-500">E-mail</dt><dd>{{ $order->user?->email }} <span class="text-xs text-slate-500">(@money($balance))</span></dd>
                 <dt class="text-slate-500">{{ __('farm.admin.nav.printers') }}</dt><dd>{{ $order->printer?->name ?? '—' }} · slot {{ ($order->slot?->slot ?? 0) + 1 }}</dd>
                 <dt class="text-slate-500">{{ __('farm.order.color') }}</dt><dd>{{ $order->material?->code }} {{ $order->color?->name ?? '—' }}</dd>
                 <dt class="text-slate-500">{{ __('farm.quality.label') }} / {{ __('farm.strength.label') }}</dt><dd>{{ $order->quality }} / {{ $order->strength }}</dd>
@@ -84,8 +84,10 @@
                 <dt class="text-slate-500">{{ __('farm.order.time') }}</dt><dd>{{ $order->est_minutes }} min</dd>
                 <dt class="text-slate-500">{{ __('farm.order.weight') }}</dt><dd>{{ $order->est_grams }} g · {{ $order->est_meters }} m</dd>
                 <dt class="text-slate-500">{{ __('farm.order.supports') }}</dt><dd>{{ $order->supports_used ? '✓' : '—' }}</dd>
-                <dt class="text-slate-500">{{ __('farm.order.price') }}</dt><dd class="font-semibold">{{ $order->price_total ? number_format($order->price_total, 2, ',', ' ') : '—' }} {{ $order->currency }}</dd>
-                <dt class="text-slate-500">{{ __('farm.order.delivery') }}</dt><dd>{{ $order->delivery }}@if($order->shipping_address) · {{ implode(', ', array_filter($order->shipping_address)) }}@endif</dd>
+                <dt class="text-slate-500">{{ __('farm.order.price') }}</dt><dd class="font-semibold">@if($order->price_total)@money($order->total())@if($order->shipping_price > 0) <span class="font-normal text-slate-500">({{ __('farm.order.b_shipping') }} @money($order->shipping_price, $order->currency))</span>@endif @else — @endif</dd>
+                <dt class="text-slate-500">{{ __('farm.order.delivery') }}</dt><dd>{{ __('farm.delivery.'.$order->delivery) }}@if($order->shipping_address) · {{ implode(', ', array_filter(\Illuminate\Support\Arr::only($order->shipping_address, ['name', 'phone', 'pickup_point_name', 'street', 'zip', 'city', 'country']))) }}@endif
+                    @if($order->isParcel())<span class="block text-xs text-slate-500">{{ app(\App\Domain\Farm\Shipping::class)->parcelGrams($order) }} g @if($order->shipping_address['carrier_id'] ?? null)· carrier {{ $order->shipping_address['carrier_id'] }}@endif @if($order->shipping_address['pickup_point_id'] ?? null)· {{ $order->shipping_address['pickup_point_id'] }}@endif</span>@endif
+                    @if($order->packeta_barcode)<span class="block text-xs"><a href="{{ $order->tracking_url }}" target="_blank" rel="noopener" class="text-action-dark underline">{{ $order->packeta_barcode }}</a> · {{ $order->shipped_at?->format('j. n. Y H:i') }} · <a href="{{ route('admin.farm.orders.label', $order) }}" target="_blank" class="text-action-dark underline">{{ __('farm.admin.label') }}</a></span>@endif</dd>
                 @if($order->note)<dt class="text-slate-500">{{ __('farm.admin.note') }}</dt><dd>{{ $order->note }}</dd>@endif
                 @if($order->terms_accepted_at)<dt class="text-slate-500">Terms</dt><dd>{{ $order->terms_version }} · {{ $order->terms_accepted_at->format('j. n. Y H:i') }} · {{ $order->terms_ip }}</dd>@endif
             </dl>
@@ -99,6 +101,14 @@
             </form>
         @endif
 
+        {{-- a finished print that leaves as a parcel: one button announces it to Packeta, hands the order over and mails the tracking link --}}
+        @if($order->status === 'done' && $order->isParcel())
+            <form method="post" action="{{ route('admin.farm.orders.ship', $order) }}" class="rounded-2xl border border-line bg-action-soft p-4 text-sm">@csrf
+                <button class="btn-primary w-full">{{ __('farm.admin.ship') }}</button>
+                <p class="mt-2 text-xs text-slate-600">{{ __('farm.admin.ship_hint') }}</p>
+            </form>
+        @endif
+
         @if($targets)
             <form method="post" action="{{ route('admin.farm.orders.status', $order) }}" class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">@csrf
                 <h2 class="font-bold">{{ __('farm.admin.change_status') }}</h2>
@@ -106,7 +116,7 @@
                     @foreach($targets as $t)<option value="{{ $t }}">{{ __('farm.status.'.$t) }}</option>@endforeach
                 </select>
                 <input name="note" maxlength="500" placeholder="{{ __('farm.admin.note') }}" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2">
-                @if($order->delivery === 'shipping')<input name="tracking" maxlength="80" value="{{ $order->tracking }}" placeholder="{{ __('farm.admin.tracking') }}" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2">@endif
+                @if($order->isParcel())<input name="tracking" maxlength="80" value="{{ $order->tracking }}" placeholder="{{ __('farm.admin.tracking') }}" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2">@endif
                 <button class="btn-primary mt-2 w-full text-sm">{{ __('farm.admin.change_status') }}</button>
             </form>
         @endif

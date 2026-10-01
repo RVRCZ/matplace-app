@@ -41,6 +41,9 @@ use App\Engines\Search\CompositeSearch;
 use App\Engines\Search\LocalCatalogSearch;
 use App\Engines\Search\MakerWorldSearch;
 use App\Engines\Search\PrintablesSearch;
+use App\Engines\Shipping\FakeCarrier;
+use App\Engines\Shipping\PacketaClient;
+use App\Engines\Shipping\ShippingCarrier;
 use App\Engines\Slicer\FakeSlicer;
 use App\Engines\Slicer\OrcaSlicer;
 use App\Engines\Translate\ClaudeTranslator;
@@ -114,6 +117,11 @@ class EngineServiceProvider extends ServiceProvider
         $this->app->singleton(Translator::class, fn () => config('engines.translator') === 'fake'
             ? new FakeTranslator
             : new ClaudeTranslator((array) config('ai.anthropic')));
+
+        // parcels; the fake hands every order over without a parcel existing, so it must never answer in production
+        $this->app->singleton(ShippingCarrier::class, fn ($app) => config('engines.shipping') === 'fake' && ! $app->environment('production')
+            ? new FakeCarrier
+            : new PacketaClient((array) config('services.packeta')));
 
         $this->app->singleton(VisionDescriber::class, fn () => new VisionDescriber([
             'api_key' => config('ai.anthropic.api_key'), 'model' => config('ai.anthropic.vision_model'), 'timeout' => config('ai.anthropic.timeout'),

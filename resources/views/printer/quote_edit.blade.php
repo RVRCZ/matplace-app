@@ -4,7 +4,8 @@
     $locked = $quote->status === 'accepted';
     $c = fn (string $k, $d = 0) => old('cost.'.$k, $sheet[$k] ?? $d);
     $L = ['cost' => __('quote.sheet.cost'), 'reserve' => __('quote.sheet.reserve'), 'labour' => __('quote.sheet.labour'), 'machine' => __('quote.sheet.machine'), 'suggested' => __('quote.sheet.suggested'), 'profit' => __('quote.sheet.profit'), 'markup' => __('quote.cost.markup'), 'margin' => __('quote.cost.margin'), 'min' => __('quote.sheet.min_applied'), 'unit' => __('quote.sheet.unit')];
-    $money = ['material_cost' => 'Kč', 'machine_hours' => 'h', 'machine_rate' => 'Kč/h', 'setup_cost' => 'Kč', 'labour_minutes' => 'min', 'labour_rate' => 'Kč/h', 'failure_pct' => '%'];
+    $czk = \App\Support\Money::symbol('CZK');   // a printer's price list is kept in crowns
+    $money = ['material_cost' => $czk, 'machine_hours' => 'h', 'machine_rate' => $czk.'/h', 'setup_cost' => $czk, 'labour_minutes' => 'min', 'labour_rate' => $czk.'/h', 'failure_pct' => '%'];
 @endphp
 
 @section('content')
@@ -46,7 +47,7 @@
                         <select name="scope" class="field">@foreach(['prints', 'parts', 'assembled'] as $sc)<option value="{{ $sc }}" @selected(old('scope', $quote->params['scope'] ?? 'prints') === $sc)>{{ __('quote.scope.'.$sc) }}</option>@endforeach</select>
                     </label>
                     <label class="lbl">{{ __('quote.shipping_label') }}<input name="shipping_label" value="{{ old('shipping_label', $quote->shipping_label) }}" class="field" placeholder="{{ __('quote.shipping_ph') }}"></label>
-                    <label class="lbl">{{ __('quote.shipping_price') }} <span class="font-normal text-muted">Kč</span><input name="shipping_price" id="shipping-price" type="number" inputmode="decimal" min="0" step="1" value="{{ old('shipping_price', (float) $quote->shipping_price) }}" class="field"></label>
+                    <label class="lbl">{{ __('quote.shipping_price') }} <span class="font-normal text-muted">{{ \App\Support\Money::symbol('CZK') }}</span><input name="shipping_price" id="shipping-price" type="number" inputmode="decimal" min="0" step="1" value="{{ old('shipping_price', (float) $quote->shipping_price) }}" class="field"></label>
                 </div>
                 <label class="lbl mt-3">{{ __('quote.note') }} <span class="font-normal text-muted">{{ __('quote.note_hint') }}</span><textarea name="note" rows="3" class="field">{{ old('note', $quote->note) }}</textarea></label>
 
@@ -85,8 +86,8 @@
                         <label class="lbl mt-2">{{ __('quote.cost.pct') }} <span class="font-normal text-muted">%</span><input name="cost[pct]" data-cost="pct" type="number" inputmode="decimal" min="0" max="1000" step="0.5" value="{{ $c('pct') }}" class="field"></label>
                     </fieldset>
                     <div class="space-y-3">
-                        <label class="lbl">{{ __('quote.cost.min_price') }} <span class="font-normal text-muted">Kč</span><input name="cost[min_price]" data-cost="min_price" type="number" inputmode="decimal" min="0" step="1" value="{{ $c('min_price') }}" class="field"></label>
-                        <label class="lbl">{{ __('quote.cost.final_price') }} <span class="font-normal text-muted">Kč · {{ __('quote.cost.final_hint') }}</span><input name="cost[final_price]" data-cost="final_price" type="number" inputmode="decimal" min="0" step="1" value="{{ old('cost.final_price', ($sheet['overridden'] ?? false) ? $sheet['final_price'] : '') }}" class="field" placeholder="{{ __('quote.cost.final_ph') }}"></label>
+                        <label class="lbl">{{ __('quote.cost.min_price') }} <span class="font-normal text-muted">{{ \App\Support\Money::symbol('CZK') }}</span><input name="cost[min_price]" data-cost="min_price" type="number" inputmode="decimal" min="0" step="1" value="{{ $c('min_price') }}" class="field"></label>
+                        <label class="lbl">{{ __('quote.cost.final_price') }} <span class="font-normal text-muted">{{ \App\Support\Money::symbol('CZK') }} · {{ __('quote.cost.final_hint') }}</span><input name="cost[final_price]" data-cost="final_price" type="number" inputmode="decimal" min="0" step="1" value="{{ old('cost.final_price', ($sheet['overridden'] ?? false) ? $sheet['final_price'] : '') }}" class="field" placeholder="{{ __('quote.cost.final_ph') }}"></label>
                     </div>
                 </div>
 
@@ -97,7 +98,7 @@
         <aside class="space-y-3">
             <div class="card p-4">
                 <div class="text-sm text-muted">{{ __('quote.customer_total') }}</div>
-                <div id="grand" class="text-3xl font-extrabold text-ink">{{ number_format($quote->total, 0, ',', ' ') }} Kč</div>
+                <div id="grand" class="text-3xl font-extrabold text-ink">@money($quote->total, 'CZK')</div>
                 <label class="lbl mt-3">{{ __('quote.valid_until') }}<input name="valid_until" form="quote-form" type="date" value="{{ old('valid_until', $quote->valid_until?->format('Y-m-d')) }}" class="field" @disabled($locked)></label>
                 <label class="lbl mt-3">{{ __('quote.lead_time') }} ({{ __('quote.days_short') }})<input name="lead_time_days" form="quote-form" type="number" min="0" value="{{ old('lead_time_days', $quote->lead_time_days) }}" class="field" @disabled($locked)></label>
                 @if($quote->calculation)
@@ -135,7 +136,7 @@
                     <div class="font-semibold text-ink">{{ __('quote.history') }}</div>
                     <ul class="mt-1 space-y-1 text-muted">
                         @foreach($quote->versions->sortByDesc('version') as $v)
-                            <li>{{ __('quote.version', ['n' => $v->version]) }} · {{ number_format($v->snapshot['total'] ?? 0, 0, ',', ' ') }} Kč · {{ $v->sent_at?->format('j. n. H:i') }}@if($v->accepted_at) · <span class="text-ok">✓ {{ __('quote.status.accepted') }}</span>@elseif($v->change_request) · {{ __('quote.status.change') }}@endif</li>
+                            <li>{{ __('quote.version', ['n' => $v->version]) }} · @money($v->snapshot['total'] ?? 0, 'CZK') · {{ $v->sent_at?->format('j. n. H:i') }}@if($v->accepted_at) · <span class="text-ok">✓ {{ __('quote.status.accepted') }}</span>@elseif($v->change_request) · {{ __('quote.status.change') }}@endif</li>
                         @endforeach
                     </ul>
                 </div>
@@ -184,7 +185,7 @@
             extras += Math.round((parseFloat(tr.querySelector('.qty').value) || 0) * (parseFloat(tr.querySelector('.unit').value) || 0) * 100) / 100;
         });
         const shipping = Math.max(0, parseFloat(document.getElementById('shipping-price').value) || 0);
-        document.getElementById('grand').textContent = `${fmt.format(Math.round(final + extras) + Math.round(shipping))} Kč`;
+        document.getElementById('grand').textContent = `${fmt.format(Math.round(final + extras) + Math.round(shipping))} {{ \App\Support\Money::symbol('CZK') }}`;
     };
     form.addEventListener('input', recalc);
     form.addEventListener('change', recalc);

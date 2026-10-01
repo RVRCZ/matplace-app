@@ -17,17 +17,24 @@ class FarmOrderStatus extends Mailable implements ShouldQueue
 
     public function __construct(public FarmOrder $order, public string $status) {}
 
+    /** A print that left as a parcel has its own text: "on its way", with the link to follow it. */
+    private function key(): string
+    {
+        return $this->status === FarmOrder::STATUS_HANDED_OVER && $this->order->tracking_url ? 'shipped' : $this->status;
+    }
+
     public function envelope(): Envelope
     {
-        return new Envelope(subject: __('farm.mail.'.$this->status.'.subject', ['number' => $this->order->number]));
+        return new Envelope(subject: __('farm.mail.'.$this->key().'.subject', ['number' => $this->order->number]));
     }
 
     public function content(): Content
     {
         return new Content(markdown: 'mail.farm_order_status', with: [
             'order' => $this->order,
-            'status' => $this->status,
+            'status' => $this->key(),
             'url' => route('farm.orders.show', $this->order),
+            'trackingUrl' => $this->key() === 'shipped' ? $this->order->tracking_url : null,
             'reason' => $this->order->error ? __('farm.error.'.$this->order->error) : null,
         ]);
     }

@@ -7,3 +7,5 @@ Schedule::command('queue:prune-failed --hours=168')->daily();
 Schedule::command('matplace:prune')->dailyAt('03:30');
 Schedule::command('farm:watch')->everyMinute()->withoutOverlapping();
 Schedule::command('youtube:stats')->dailyAt('06:10');
+// who carries parcels where changes rarely; a failed download keeps last week's list
+Schedule::command('matplace:packeta-carriers')->weeklyOn(1, '04:20');

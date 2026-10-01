@@ -3,6 +3,8 @@
 return [
     'language' => 'Idioma',
     'languages' => ['cs' => 'Čeština', 'en' => 'English', 'es' => 'Español'],
+    'currency' => 'Moneda',
+    'currencies' => ['CZK' => 'Precios en coronas checas', 'EUR' => 'Precios en euros'],
     'not_found' => [
         'title' => 'Página no encontrada',
         'text' => 'Esta dirección no lleva a ninguna parte. Puede que la página se haya movido o que el enlace tenga un error.',

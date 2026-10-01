@@ -72,7 +72,7 @@
     @foreach($quote->customerLines() as $l)
         <tr><td>{{ $l['label'] }}</td><td class="num">{{ rtrim(rtrim(number_format($l['qty'], 2, ',', ' '), '0'), ',') }}</td><td class="num">{{ number_format($l['unit_price'], 2, ',', ' ') }}</td><td class="num">{{ number_format($l['total'], 2, ',', ' ') }}</td></tr>
     @endforeach
-    <tr class="total"><td colspan="3">{{ __('quote.pdf.sum') }}</td><td class="num">{{ number_format($quote->total, 0, ',', ' ') }} {{ $quote->currency === 'CZK' ? 'Kč' : $quote->currency }}</td></tr>
+    <tr class="total"><td colspan="3">{{ __('quote.pdf.sum') }}</td><td class="num">@money($quote->total, $quote->currency)</td></tr>
     </tbody>
 </table>
 

@@ -8,7 +8,7 @@ return [
     'description' => 'Modelos de diseñadores que imprimimos y le enviamos. Elija el material y el número de piezas y vea el precio al momento.',
     'description_one' => 'El modelo «:title» del diseñador :name. Lo imprimimos y se lo enviamos.',
     'lead' => 'Modelos de diseñadores que imprimimos en nuestra granja. Una parte del precio va siempre al autor.',
-    'from' => 'desde :price CZK',
+    'from' => 'desde :price',
     'sort' => ['label' => 'Orden', 'new' => 'Nuevos', 'printed' => 'Más impresos'],
     'size' => [
         'label' => 'Tamaño',
@@ -107,7 +107,7 @@ return [
 
     'farm' => [
         'card' => 'El modelo «:title» del diseñador :name',
-        'reward' => 'El precio incluye la recompensa del autor (como máximo :amount CZK por pieza).',
+        'reward' => 'El precio incluye la recompensa del autor (como máximo :amount por pieza).',
         'no_preview' => 'El autor no ofrece el archivo de este modelo para descargar, por eso aquí no hay vista previa en 3D.',
         'source_title' => 'Un modelo del catálogo de inspiración',
         'source_text' => 'Anotamos en el pedido: :line',

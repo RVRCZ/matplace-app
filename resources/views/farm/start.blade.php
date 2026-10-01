@@ -21,7 +21,7 @@
         <h1 class="text-2xl font-extrabold">{{ __('farm.title') }}</h1>
         <div class="flex items-center gap-3 text-sm">
             <a href="{{ route('account.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
-            <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: {{ number_format($balance, 0, ',', ' ') }} Kč</a>
+            <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: @money($balance)</a>
         </div>
     </div>
     <p class="mt-2 text-slate-600">{{ __('farm.lead') }}</p>
@@ -44,7 +44,7 @@
         @if($card)
             {{-- a designer's model: its name and author instead of a file name; the reward is part of the price --}}
             <p class="mt-1 text-sm font-semibold">{{ __('models.farm.card', ['title' => $card->title, 'name' => $card->profile->display_name]) }}</p>
-            @if($card->royalty_czk > 0 && $card->profile->user_id !== auth()->id())<p class="text-xs text-slate-500">{{ __('models.farm.reward', ['amount' => number_format($card->royalty_czk, 0, ',', ' ')]) }}</p>@endif
+            @if($card->royalty_czk > 0 && $card->profile->user_id !== auth()->id())<p class="text-xs text-slate-500">{{ __('models.farm.reward', ['amount' => \App\Support\Money::price((float) $card->royalty_czk)->format()]) }}</p>@endif
             @unless($previewUrl)
                 @if($card->coverUrl(false))<img src="{{ $card->coverUrl(false) }}" alt="" class="mt-2 max-h-64 w-full rounded-xl border border-slate-200 bg-slate-50 object-contain">@endif
                 <p class="mt-1 text-xs text-slate-500">{{ __('models.farm.no_preview') }}</p>

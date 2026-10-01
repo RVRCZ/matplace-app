@@ -26,7 +26,7 @@
             @if($manage)
                 <span class="rounded-full px-2 py-0.5 font-semibold {{ ['printable' => 'bg-ok-soft text-ok', 'checking' => 'bg-action-soft text-action-dark', 'failed' => 'bg-red-50 text-red-800', 'hidden' => 'bg-slate-100 text-slate-600', 'link' => 'bg-slate-100 text-slate-700'][$state] }}">{{ __('designer.cards.state.'.$state) }}</span>
                 @if($card->needsRemixConfirmation())<span class="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-900">{{ __('designer.cards.remix') }}</span>@endif
-                <span class="text-muted">{{ __('designer.cards.reward', ['amount' => number_format($card->royalty_czk, 0, ',', ' ')]) }}</span>
+                <span class="text-muted">{{ __('designer.cards.reward', ['amount' => \App\Support\Money::price((float) $card->royalty_czk)->format()]) }}</span>
                 <span class="ml-auto text-muted" title="{{ __('designer.cards.views_orders') }}">{{ $card->view_count }} · {{ $card->order_count }}</span>
             @else
                 @if($canPrint)<span class="rounded-full bg-ok-soft px-2 py-0.5 font-semibold text-ok">{{ __('designer.badge.printable') }}</span>@endif

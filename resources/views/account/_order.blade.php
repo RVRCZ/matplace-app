@@ -8,7 +8,7 @@
         <span class="block text-xs text-slate-500">{{ $o->number ? $o->number.' · ' : '' }}{{ $o->created_at->format('j. n. Y') }}@if($o->color) · {{ $o->color->displayName() }}@endif</span>
     </span>
     <span class="flex shrink-0 items-center gap-3 text-sm">
-        @if($o->price_total)<span class="font-semibold">{{ number_format($o->price_total, 0, ',', ' ') }} Kč</span>@endif
+        @if($o->price_total)<span class="font-semibold">@money($o->total())</span>@endif
         <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $tone }}">{{ __('farm.status.'.$o->status) }}</span>
     </span>
 </a>

@@ -24,6 +24,8 @@
         <link rel="alternate" hreflang="x-default" href="{{ $alternates[\App\Support\Locales::DEFAULT] }}">
     @endif
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- amounts are printed by scripts the same way the server prints them (resources/js/site/money.ts) --}}
+    <script>window.MP_MONEY = {{ \Illuminate\Support\Js::from(\App\Support\Currency::forScripts()) }};</script>
     <link rel="icon" href="/favicon.ico">
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
     @stack('head')
@@ -47,6 +49,15 @@
                         @endforeach
                     </span>
                 @endif
+                {{-- prices in crowns or euros; gone once the account has a currency of its own (the first payment fixes it) --}}
+                @unless(\App\Support\Currency::locked())
+                    <form method="post" action="{{ route('currency') }}" class="flex items-center gap-0.5 text-xs sm:gap-1" aria-label="{{ __('site.currency') }}">
+                        @csrf
+                        @foreach(\App\Support\Money::CURRENCIES as $code)
+                            <button type="submit" name="currency" value="{{ $code }}" title="{{ __('site.currencies.'.$code) }}" @if(\App\Support\Currency::current() === $code) aria-current="true" @endif class="rounded px-1.5 py-0.5 {{ \App\Support\Currency::current() === $code ? 'bg-slate-800 text-white' : 'hover:text-slate-900' }}">{{ \App\Support\Money::symbol($code) }}</button>
+                        @endforeach
+                    </form>
+                @endunless
             </nav>
         </div>
     </header>

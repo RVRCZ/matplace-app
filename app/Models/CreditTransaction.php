@@ -2,10 +2,17 @@
 
 namespace App\Models;
 
+use App\Support\CurrencyMismatch;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** One line of the credit ledger. Append-only: corrections are new lines. */
+/**
+ * One line of the credit ledger. Append-only: corrections are new lines.
+ *
+ * An account keeps one currency. Its first line fixes it (users.currency); a later line in another currency is a
+ * bug somewhere above and is refused here, before it can spoil the balance.
+ */
 class CreditTransaction extends Model
 {
     public const UPDATED_AT = null;
@@ -33,6 +40,27 @@ class CreditTransaction extends Model
     protected $fillable = ['user_id', 'type', 'amount', 'currency', 'farm_order_id', 'payment_id', 'note', 'created_by', 'designer_model_id'];
 
     protected $casts = ['amount' => 'float', 'created_at' => 'datetime'];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $line) {
+            $user = User::find($line->user_id);
+            $line->currency = strtoupper((string) ($line->currency ?: $user?->currency ?: Money::CZK));
+            if (! $user) {
+                return;
+            }
+            if (! $user->currency) {
+                $user->forceFill(['currency' => $line->currency])->save();
+            } elseif ($user->currency !== $line->currency) {
+                throw new CurrencyMismatch((string) $user->currency, $line->currency, "Ledger of user {$user->id}.");
+            }
+        });
+    }
+
+    public function money(): Money
+    {
+        return new Money((float) $this->amount, (string) $this->currency);
+    }
 
     public function user(): BelongsTo
     {

@@ -52,6 +52,12 @@ return [
         'api_key' => env('PACKETA_API_KEY'),
         'api_password' => env('PACKETA_API_PASS'),
         'eshop' => env('PACKETA_ESHOP'),
+        'endpoint' => env('PACKETA_API_URL', 'https://www.zasilkovna.cz/api/rest'),
+        // list of carriers (home delivery and partners' pickup points); {key} = the API key
+        'carriers_url' => env('PACKETA_CARRIERS_URL', 'https://pickup-point.api.packeta.com/v5/{key}/carrier/json?lang=en'),
+        'validate_url' => env('PACKETA_VALIDATE_URL', 'https://widget.packeta.com/v6/pps/api/widget/v1/validate'),
+        'tracking_url' => 'https://tracking.packeta.com/{locale}/?id={barcode}',
+        'timeout' => 20,
     ],
 
 ];

@@ -114,7 +114,7 @@ class CatalogTest extends TestCase
         $page = $this->get('/models')->assertOk();
         $page->assertSee('Stojánek na telefon')->assertSee('Velká váza')->assertDontSee('Jen odkaz')->assertSee('Jana Nováková')
             ->assertSee(route('models.show', 'stojanek-na-telefon'), false)->assertSee('Domácnost');
-        $this->assertMatchesRegularExpression('/od \d[\d\s ]* Kč/u', $page->getContent(), 'a price "from" on the tiles');
+        $this->assertMatchesRegularExpression('/od \d[\d\s]*\sKč/u', $page->getContent(), 'a price "from" on the tiles');
 
         // filters: size by the longest side, category, what can be downloaded
         $this->get('/models?size=s')->assertOk()->assertSee('Stojánek na telefon')->assertDontSee('Velká váza');
@@ -136,7 +136,7 @@ class CatalogTest extends TestCase
 
         $page = $this->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0) Chrome/140')->get('/models/stojanek-na-telefon')->assertOk();
         $page->assertSee('Stojánek na telefon')->assertSee('Stojánek, který drží.')->assertSee('Jana Nováková')
-            ->assertSee(__('models.price.to_author'))->assertSee('data-quote-royalty>25<', false)
+            ->assertSee(__('models.price.to_author'))->assertSee("data-quote-royalty>25\u{00A0}Kč<", false)
             ->assertSee(route('farm.start', ['designer_model' => $card->id]), false)
             ->assertSee('"@type":"Product"', false)->assertSee('"priceCurrency":"CZK"', false)->assertSee('"@type":"Person"', false)
             ->assertSee(__('models.facts.print_only'))->assertDontSee(__('models.download.for_printer'));
@@ -215,16 +215,16 @@ class CatalogTest extends TestCase
         $this->assertSame(25.0, (float) $price['royalty']);
         $this->assertSame((float) $price['print_total'] + 25.0, (float) $price['total']);
         $this->assertSame([25.0, (float) $price['total']], [$order->royalty_czk, $order->price_total]);
-        $this->assertSame(2000.0 - $order->price_total, app(Wallet::class)->balance($this->customer));
+        $this->assertSame(2000.0 - $order->price_total, app(Wallet::class)->balance($this->customer)->amount);
         // nothing for the designer before the print is done
-        $this->assertSame(0.0, app(Wallet::class)->balance($this->designerUser));
+        $this->assertSame(0.0, app(Wallet::class)->balance($this->designerUser)->amount);
 
         // a later change of the card's reward does not touch an order already made
         $card->update(['royalty_czk' => 5]);
         $this->finish($order);
         $royalty = CreditTransaction::where('type', CreditTransaction::TYPE_ROYALTY)->sole();
         $this->assertSame([$this->designerUser->id, 25.0, 'CZK', $order->id, $card->id], [$royalty->user_id, $royalty->amount, $royalty->currency, $royalty->farm_order_id, $royalty->designer_model_id]);
-        $this->assertSame(25.0, app(Wallet::class)->balance($this->designerUser));
+        $this->assertSame(25.0, app(Wallet::class)->balance($this->designerUser)->amount);
         $this->assertSame('CZK', $this->designerUser->refresh()->currency, 'the first reward fixes the currency of the account');
         $this->assertSame(1, $card->refresh()->order_count);
         // done twice (a repeated report) credits once
@@ -240,8 +240,8 @@ class CatalogTest extends TestCase
         $this->actingAs($admin)->post("/admin/farm/orders/{$order->token}/refund", ['note' => 'reklamace'])->assertRedirect();
         $reversal = CreditTransaction::where('type', CreditTransaction::TYPE_ROYALTY_REVERSAL)->sole();
         $this->assertSame([-25.0, $this->designerUser->id, $admin->id], [$reversal->amount, $reversal->user_id, $reversal->created_by]);
-        $this->assertSame(0.0, app(Wallet::class)->balance($this->designerUser));
-        $this->assertSame(2000.0, app(Wallet::class)->balance($this->customer));
+        $this->assertSame(0.0, app(Wallet::class)->balance($this->designerUser)->amount);
+        $this->assertSame(2000.0, app(Wallet::class)->balance($this->customer)->amount);
         app(Wallet::class)->giveBack($order, $admin->id, 'again');
         $this->assertSame(1, CreditTransaction::where('type', CreditTransaction::TYPE_ROYALTY_REVERSAL)->count());
     }
@@ -258,7 +258,7 @@ class CatalogTest extends TestCase
         $this->assertSame((float) $price['royalty_unit'], (float) $order->refresh()->royalty_czk);
         // a cancelled order gives everything back and no reward ever appears
         $this->actingAs($this->customer)->postJson("/farm/orders/{$order->token}/cancel")->assertOk();
-        $this->assertSame(2000.0, app(Wallet::class)->balance($this->customer));
+        $this->assertSame(2000.0, app(Wallet::class)->balance($this->customer)->amount);
         $this->assertSame(0, CreditTransaction::whereIn('type', [CreditTransaction::TYPE_ROYALTY, CreditTransaction::TYPE_ROYALTY_REVERSAL])->count());
     }
 

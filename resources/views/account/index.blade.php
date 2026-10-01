@@ -21,7 +21,7 @@
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="text-lg font-bold">{{ __('user.dash.prints') }}</h2>
                 <div class="flex items-center gap-3 text-sm">
-                    <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('user.dash.credit') }}: {{ number_format($balance, 0, ',', ' ') }} Kč</a>
+                    <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('user.dash.credit') }}: @money($balance)</a>
                     <a href="{{ route('farm.start') }}" class="btn-primary min-h-0 px-3 py-1.5 text-sm">{{ __('user.dash.new_print') }}</a>
                 </div>
             </div>

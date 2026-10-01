@@ -38,7 +38,7 @@
         </fieldset>
 
         <label class="lbl">{{ __('designer.profile.default_royalty') }}
-            <span class="mt-1 flex items-center gap-2 font-normal"><input name="default_royalty_czk" type="number" min="0" max="{{ \App\Models\DesignerProfile::MAX_ROYALTY_CZK }}" step="1" required value="{{ old('default_royalty_czk', (int) $profile->default_royalty_czk) }}" class="field mt-0 w-32"> Kč</span>
+            <span class="mt-1 flex items-center gap-2 font-normal"><input name="default_royalty_czk" type="number" min="0" max="{{ \App\Models\DesignerProfile::MAX_ROYALTY_CZK }}" step="1" required value="{{ old('default_royalty_czk', (int) $profile->default_royalty_czk) }}" class="field mt-0 w-32"> {{ \App\Support\Money::symbol('CZK') }}@if(\App\Support\Currency::current() !== 'CZK') <span class="text-xs text-muted">≈ @money((float) $profile->default_royalty_czk)</span>@endif</span>
             <span class="hint mt-1 block font-normal">{{ __('designer.royalty.hint') }}</span>
         </label>
 

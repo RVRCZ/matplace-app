@@ -22,6 +22,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\CalculatorController;
+use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\Designer\BulkUploadController as DesignerBulkController;
 use App\Http\Controllers\Designer\CardController as DesignerCardController;
 use App\Http\Controllers\Designer\ImportController as DesignerImportController;
@@ -184,6 +185,7 @@ $pages = function () {
         Route::get('/farm/orders/{order}/repeat', [OrderController::class, 'repeat'])->name('farm.orders.repeat');
         Route::get('/farm/orders/{order}/status', [OrderController::class, 'status'])->name('farm.orders.status');
         Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
+        Route::post('/farm/orders/{order}/quote', [OrderController::class, 'quote'])->middleware('throttle:120,1,farm_quote')->name('farm.orders.quote');
         Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware(['verified.email', 'throttle:10,1,farm_pay'])->name('farm.orders.pay');
         Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
         Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1,video-consent')->name('farm.orders.video_consent');
@@ -229,6 +231,9 @@ Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->n
 
 // the old site's list of models lived at /katalog
 Route::permanentRedirect('/katalog', '/model');
+
+// ── The Kč / € switch in the header (not a page: one address for every language) ──
+Route::post('/currency', CurrencyController::class)->middleware('throttle:30,1,currency')->name('currency');
 
 // ── Pictures for link previews (drawn on demand, one address for every language unless the text differs) ──
 Route::get('/og/designer/{slug}.png', [OgController::class, 'designer'])->where('slug', '[a-z0-9-]+')->name('og.designer');
@@ -298,6 +303,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/orders/{order}/status', [$orders, 'status'])->name('orders.status');
     Route::post('/orders/{order}/actuals', [$orders, 'actuals'])->name('orders.actuals');
     Route::post('/orders/{order}/refund', [$orders, 'refund'])->name('orders.refund');
+    Route::post('/orders/{order}/ship', [$orders, 'ship'])->name('orders.ship');
+    Route::get('/orders/{order}/label.pdf', [$orders, 'label'])->name('orders.label');
     Route::post('/printers/{printer}/bed', [$orders, 'bed'])->name('printers.bed');
     Route::post('/printers/{printer}/command', [$orders, 'command'])->name('printers.command');
     Route::get('/printers/{printer}/snapshot', [$orders, 'printerSnapshot'])->name('printers.snapshot');
@@ -320,6 +327,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/agents/{agent}/revoke', [$catalog, 'revokeAgent'])->name('agents.revoke');
     Route::get('/credit', [$catalog, 'credit'])->name('credit');
     Route::post('/credit', [$catalog, 'adjustCredit'])->name('credit.adjust');
+    Route::post('/credit/currency', [$catalog, 'accountCurrency'])->name('credit.currency');
 
     $tuning = FarmTuningController::class;
     Route::get('/tuning', [$tuning, 'index'])->name('tuning');

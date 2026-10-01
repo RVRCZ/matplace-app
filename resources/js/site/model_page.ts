@@ -2,7 +2,7 @@
  * A model's page: the price follows the material and the number of pieces (asked from the server, the same
  * formula an order uses), the order link carries them on, and the small pictures switch the big one.
  */
-interface Quote { available: boolean; total?: number; royalty?: number; copies?: number; material?: string }
+interface Quote { available: boolean; total?: number; royalty?: number; copies?: number; material?: string; total_text?: string; royalty_text?: string }
 
 function gallery(): void {
     document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((box) => {
@@ -19,7 +19,6 @@ function quote(): void {
     const material = box?.querySelector<HTMLSelectElement>('[data-quote-material]');
     const copies = box?.querySelector<HTMLInputElement>('[data-quote-copies]');
     if (!box || !material || !copies) return;
-    const money = new Intl.NumberFormat({ en: 'en-GB', es: 'es-ES' }[document.documentElement.lang] ?? 'cs-CZ', { maximumFractionDigits: 0 });
     let request = 0;
     const refresh = async (): Promise<void> => {
         const n = Math.max(1, Math.min(64, Math.round(Number(copies.value) || 1)));
@@ -37,9 +36,9 @@ function quote(): void {
             const q = (await res.json()) as Quote;
             if (!q.available) return;
             const total = box.querySelector('[data-quote-total]');
-            if (total) total.textContent = money.format(q.total ?? 0);
+            if (total) total.textContent = q.total_text ?? '';
             const royalty = box.querySelector('[data-quote-royalty]');
-            if (royalty) royalty.textContent = money.format(q.royalty ?? 0);
+            if (royalty) royalty.textContent = q.royalty_text ?? '';
             box.querySelector('[data-quote-royalty-line]')?.classList.toggle('hidden', !(q.royalty && q.royalty > 0));
         } catch { /* the price shown stays */ }
     };

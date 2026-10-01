@@ -15,7 +15,7 @@
         <h3 class="text-sm font-semibold leading-snug"><a href="{{ $card->publicUrl() }}" class="hover:text-action-dark">{{ $card->title }}</a></h3>
         <p class="truncate text-xs text-muted">{{ $card->profile->display_name }}</p>
         <div class="mt-auto flex flex-wrap items-center justify-between gap-1.5 pt-2 text-xs">
-            @if($from['available'])<span class="text-sm font-bold text-ink">{{ __('models.from', ['price' => number_format($from['total'], 0, ',', ' ')]) }}</span>@endif
+            @if($from['available'])<span class="text-sm font-bold text-ink">{{ __('models.from', ['price' => $from['total_text']]) }}</span>@endif
             @if($card->download_allowed)<span class="rounded-full bg-action-soft px-2 py-0.5 font-semibold text-action-dark">{{ __('designer.badge.download') }}</span>@endif
         </div>
     </div>

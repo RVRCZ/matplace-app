@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -64,6 +65,7 @@ class FarmOrder extends Model
         'terms_ip', 'paid_at', 'approved_at', 'approved_by', 'queued_at', 'started_at', 'finished_at', 'handed_at', 'tracking',
         'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at', 'timelapse_short_path',
         'designer_model_id', 'royalty_czk', 'catalog_model_id',
+        'shipping_price', 'packeta_packet_id', 'packeta_barcode', 'tracking_url', 'shipped_at',
     ];
 
     protected $casts = [
@@ -73,7 +75,20 @@ class FarmOrder extends Model
         'terms_accepted_at' => 'datetime', 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'queued_at' => 'datetime',
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime',
         'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',
+        'shipping_price' => 'float', 'shipped_at' => 'datetime',
     ];
+
+    /** What the customer pays (or paid), in the order's own currency. */
+    public function total(): ?Money
+    {
+        return $this->price_total === null ? null : new Money((float) $this->price_total, (string) ($this->currency ?: Money::CZK));
+    }
+
+    /** The order leaves as a parcel (not picked up in person). */
+    public function isParcel(): bool
+    {
+        return in_array($this->delivery, ['packeta_point', 'packeta_home'], true);
+    }
 
     public function getRouteKeyName(): string
     {

@@ -70,9 +70,9 @@
                 @if($quote['available'])
                     <div class="flex items-baseline justify-between gap-3">
                         <span class="text-sm text-muted">{{ __('models.price.label') }}</span>
-                        <span class="text-3xl font-extrabold tracking-tight"><span data-quote-total>{{ number_format($quote['total'], 0, ',', ' ') }}</span> Kč</span>
+                        <span class="text-3xl font-extrabold tracking-tight" data-quote-total>{{ $quote['total_text'] }}</span>
                     </div>
-                    <p class="text-right text-sm text-muted {{ $quote['royalty'] > 0 ? '' : 'hidden' }}" data-quote-royalty-line>{{ __('models.price.to_author') }} <span data-quote-royalty>{{ number_format($quote['royalty'], 0, ',', ' ') }}</span> Kč</p>
+                    <p class="text-right text-sm text-muted {{ $quote['royalty'] > 0 ? '' : 'hidden' }}" data-quote-royalty-line>{{ __('models.price.to_author') }} <span data-quote-royalty>{{ $quote['royalty_text'] }}</span></p>
                     <div class="mt-3 grid grid-cols-2 gap-3">
                         <label class="lbl">{{ __('models.price.material') }}
                             <select data-quote-material class="field">

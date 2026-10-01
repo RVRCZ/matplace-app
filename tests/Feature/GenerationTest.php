@@ -116,12 +116,12 @@ class GenerationTest extends TestCase
         $wallet->adjust($user, 20, 'test', $user->id);
 
         $this->actingAs($user)->postJson('/api/generate', ['prompt' => 'vase one'])->assertCreated();      // free
-        $this->assertSame(20.0, $wallet->balance($user));
+        $this->assertSame(20.0, $wallet->balance($user)->amount);
         $this->actingAs($user)->postJson('/api/generate', ['prompt' => 'vase two'])->assertCreated();      // 15 from credit
-        $this->assertSame(5.0, $wallet->balance($user));
+        $this->assertSame(5.0, $wallet->balance($user)->amount);
         $this->assertSame(15.0, (float) GenerationRequest::latest('id')->first()->paid_credit);
         $r = $this->actingAs($user)->postJson('/api/generate', ['prompt' => 'vase three'])->assertStatus(429); // 5 < 15
-        $r->assertJsonPath('error', 'credit')->assertJsonPath('missing', 10);
+        $r->assertJsonPath('error', 'credit')->assertJsonPath('missing', "10\u{00A0}Kč")->assertJsonPath('price', "15\u{00A0}Kč");
         $this->assertStringContainsString('/account/credit', $r->json('topup_url'));
     }
 

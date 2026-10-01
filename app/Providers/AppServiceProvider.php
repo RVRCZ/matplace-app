@@ -13,6 +13,7 @@ use App\Routing\LocalizedUrlGenerator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Routing\UrlGenerator;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -62,6 +63,10 @@ class AppServiceProvider extends ServiceProvider
             $this->app->make(DesignerProfiles::class)->eraseFor($erasing->user);
             Visit::where('user_id', $erasing->user->id)->update(['user_id' => null]);
         });
+
+        // @money($order->total()) prints a Money as it is; @money(149) a price defined in crowns, in the visitor's
+        // currency; @money(12.5, 'EUR') an amount in a named currency. No template writes "Kč" by itself.
+        Blade::directive('money', fn (string $expression) => "<?php echo e(\\App\\Support\\Money::show({$expression})); ?>");
 
         RateLimiter::for('uploads', fn (Request $r) => Limit::perMinute(20)->by($r->ip()));
         RateLimiter::for('calculations', fn (Request $r) => Limit::perMinute(60)->by($r->ip()));

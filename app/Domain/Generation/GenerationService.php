@@ -2,6 +2,9 @@
 
 namespace App\Domain\Generation;
 
+use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\InsufficientCredit;
+use App\Domain\Farm\Wallet;
 use App\Engines\Contracts\ModelGenerator;
 use App\Jobs\GenerateModel;
 use App\Models\AnonymousSession;
@@ -138,16 +141,17 @@ final class GenerationService
         $quota = $this->quota($req->ip, $req->anonymous_session_id ? AnonymousSession::find($req->anonymous_session_id) : null, $user);
         if (! $quota['allowed']) {
             // beyond the free quota a signed-in customer may pay for the generation from the farm credit
-            $price = (float) app(\App\Domain\Farm\FarmSettings::class)->get('generation_price');
+            $price = (float) app(FarmSettings::class)->get('generation_price');
             if ($quota['reason'] !== 'daily_limit' || ! $user || $price <= 0 || ! config('farm.enabled')) {
                 throw new QuotaExceeded($quota['reason'] ?? 'daily_limit', $quota['limit']);
             }
             try {
-                app(\App\Domain\Farm\Wallet::class)->charge($user, $price, 'generation '.$req->token);
-            } catch (\App\Domain\Farm\InsufficientCredit $e) {
-                throw new QuotaExceeded('credit', $quota['limit'], $price, $e->missing());
+                // the price is defined in crowns; the account pays it in its own currency
+                $paid = app(Wallet::class)->charge($user, $price, 'generation '.$req->token);
+            } catch (InsufficientCredit $e) {
+                throw new QuotaExceeded('credit', $quota['limit'], $e->needed, $e->missing(), $e->currency);
             }
-            $req->paid_credit = $price;
+            $req->paid_credit = abs((float) $paid->amount);
         }
         $req->save();
         GenerateModel::dispatch($req->id);

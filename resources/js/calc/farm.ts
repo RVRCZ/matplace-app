@@ -8,6 +8,7 @@
 import { BufferGeometry } from 'three';
 import { Viewer, FacePaint } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
+import { money as moneyText } from '../site/money';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
 interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean; sliced: boolean; second?: Second[] }
@@ -21,7 +22,8 @@ interface FarmState {
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
     unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
-    minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; shipping_price: number;
+    minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
+    shipping: Shipping | null; destination: string | null; tracking_url: string | null;
     colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; cancel_keep: number | null;
     print: { status: string; progress: number; snapshot_url: string | null; snapshot_at: string | null } | null;
@@ -29,12 +31,14 @@ interface FarmState {
     short_url?: string | null;
     can_cancel: boolean; final: boolean;
 }
-interface FarmCfg { state: FarmState; routes: Record<string, string>; csrf: string; i18n: Record<string, string> }
+/** What delivery is on offer: per country the price of a parcel to a pickup point and to the door (null = not offered there). */
+interface Shipping { weight_g: number; too_big: boolean; modes: string[]; countries: Record<string, { name: string; point: number | null; home: number | null; vendors: Record<string, string>[] }> }
+interface Prefill { name: string; phone: string; street: string; city: string; zip: string; country: string; point: { id: string; name: string; carrier_id: string; country: string } | null }
+interface FarmCfg { state: FarmState; prefill?: Prefill; routes: Record<string, string>; csrf: string; i18n: Record<string, string> }
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;
 const show = (el: HTMLElement | null, on: boolean) => el?.classList.toggle('hidden', !on);
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
-const money = (n: number) => Math.round(n).toLocaleString('cs-CZ');
 const duration = (min: number) => (min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`);
 
 export function bootFarmCta(): void {
@@ -198,6 +202,29 @@ export function bootFarmOrder(): void {
     let supportsOn = true;
     let picked: number | null = state.slot ?? null;                    // the colour chosen on the start page, if it is still on offer
     let delivery = state.delivery || 'pickup';
+    // amounts of this order, in the currency it is priced in
+    const money = (n: number): string => moneyText(n, state.currency);
+    // where a parcel would go: the country of the profile when we send there, else the first one on offer
+    let country = cfg.prefill?.country ?? 'CZ';
+    const kind = (): 'point' | 'home' | null => (delivery === 'packeta_point' ? 'point' : delivery === 'packeta_home' ? 'home' : null);
+    const pointBox = $('farm-point');
+    const pointOf = (): { id: string; name: string; carrier_id: string; country: string } => {
+        const v = (f: string) => pointBox?.querySelector<HTMLInputElement>(`[data-pickup="${f}"]`)?.value ?? '';
+        return { id: v('id'), name: v('name'), carrier_id: v('carrier_id'), country: v('country') };
+    };
+    // the price with a parcel comes from the server (the country may change the VAT, the weight the band): asked
+    // whenever colour, kind of delivery or country change; until the answer is here there is nothing to pay
+    let quoted: { key: string; price: Price; total: number } | null = null;
+    let quoting = '';
+    const quoteKey = (): string => `${picked}|${delivery}|${country}`;
+    const askQuote = async (): Promise<void> => {
+        const key = quoteKey();
+        if (!kind() || picked === null || quoted?.key === key || quoting === key) return;
+        quoting = key;
+        const r = await post(cfg.routes.quote, { slot: picked, delivery, country });
+        if (quoting === key) quoting = '';
+        if (r.ok && key === quoteKey()) { quoted = { key, price: r.json.price as unknown as Price, total: Number(r.json.total) }; render(); }
+    };
     let second: number | null = state.second_slot ?? null;             // the spool of the code or text; null = the colour of the plate
     let geom: BufferGeometry | null = null;
     // the plate in the first colour, the code or text in the second, as the machine will print it
@@ -235,7 +262,57 @@ export function bootFarmOrder(): void {
 
     const total = (): number | null => {
         const c = state.colors.find((x) => x.slot === picked);
-        return c ? c.total + (delivery === 'shipping' ? state.shipping_price : 0) : state.total;
+        if (!c) return state.total;
+        if (!kind()) return c.total;
+        return quoted?.key === quoteKey() ? quoted.total : null;
+    };
+
+    // delivery: the kinds on offer with their price for the chosen country, the country, the pickup point or the address
+    const renderDelivery = (): void => {
+        const ship = state.shipping;
+        const countries = ship?.countries ?? {};
+        const codes = Object.keys(countries);
+        if (!countries[country]) country = codes[0] ?? 'CZ';
+        const here = countries[country];
+        const select = $<HTMLSelectElement>('farm-country');
+        if (select && select.options.length !== codes.length) {
+            select.innerHTML = codes.map((c) => `<option value="${esc(c)}">${esc(countries[c].name)}</option>`).join('');
+        }
+        if (select) select.value = country;
+        // a kind that is not offered in the chosen country (or at all) cannot stay chosen
+        if (kind() && (here?.[kind()!] ?? null) === null) delivery = 'pickup';
+        document.querySelectorAll<HTMLButtonElement>('#farm-delivery .seg').forEach((b) => {
+            const mode = b.dataset.value!;
+            const k = mode === 'packeta_point' ? 'point' : mode === 'packeta_home' ? 'home' : null;
+            const anywhere = k === null ? (ship?.modes ?? ['pickup']).includes('pickup') : codes.some((c) => countries[c][k] !== null);
+            const amount = k === null ? 0 : here?.[k] ?? null;
+            b.classList.toggle('hidden', !anywhere);
+            b.classList.toggle('seg-on', mode === delivery);
+            b.disabled = amount === null;
+            const label = b.querySelector<HTMLElement>('[data-price]');
+            if (label) label.textContent = amount === null ? tr('farm.delivery.not_here') : amount > 0 ? money(amount) : tr('farm.delivery.free');
+        });
+        const note = $('farm-delivery-note');
+        if (note) { note.textContent = ship?.too_big ? tr('farm.delivery.too_big') : ''; show(note, !!ship?.too_big); }
+        show($('farm-parcel'), kind() !== null);
+        show(pointBox, kind() === 'point');
+        document.querySelectorAll<HTMLElement>('#farm-address [data-home]').forEach((el) => show(el, kind() === 'home'));
+        if (pointBox && ship) {
+            pointBox.dataset.vendors = JSON.stringify(Object.fromEntries(codes.map((c) => [c, countries[c].vendors])));
+            pointBox.dataset.weight = String(ship.weight_g / 1000);
+            // the favourite point of another country does not apply here
+            const p = pointOf();
+            if (p.id && p.country && p.country !== country) pointBox.dispatchEvent(new CustomEvent('pickup:clear'));
+        }
+        void askQuote();
+    };
+
+    /** What is still missing before a parcel can be paid for: null = nothing. */
+    const deliveryMissing = (): string | null => {
+        if (!kind()) return null;
+        const val = (f: string) => (document.querySelector<HTMLInputElement>(`#farm-address [name="address[${f}]"]`)?.value ?? '').trim();
+        if (kind() === 'point') return pointOf().id && val('name') ? null : tr('farm.delivery.pick_point');
+        return ['name', 'phone', 'street', 'city', 'zip'].every((f) => val(f) !== '') ? null : tr('farm.delivery.fill_address');
     };
 
     const renderColors = (): void => {
@@ -273,11 +350,11 @@ export function bootFarmOrder(): void {
 
     const renderBreakdown = (): void => {
         // before payment the breakdown follows the picked colour (its kind's price per gram, its machine's rate)
-        const p = (state.status === 'sliced' && state.colors.find((x) => x.slot === picked)?.price) || state.price;
+        const p = (state.status === 'sliced' && ((kind() && quoted?.key === quoteKey() ? quoted.price : null) ?? state.colors.find((x) => x.slot === picked)?.price)) || state.price;
         const box = $('farm-breakdown')!;
         if (!p) { box.innerHTML = ''; return; }
-        const ship = delivery === 'shipping' && state.status === 'sliced' ? state.shipping_price : p.shipping;
-        const row = (k: string, v: number, strong = false) => `<div class="flex justify-between ${strong ? 'font-semibold' : ''}"><dt>${esc(k)}</dt><dd>${money(v)} Kč</dd></div>`;
+        const ship = p.shipping;
+        const row = (k: string, v: number, strong = false) => `<div class="flex justify-between ${strong ? 'font-semibold' : ''}"><dt>${esc(k)}</dt><dd>${esc(money(v))}</dd></div>`;
         box.innerHTML = row(tr('farm.order.b_time'), p.time) + row(tr('farm.order.b_material'), p.material) + row(tr('farm.order.b_fixed'), p.fixed)
             + (p.min_price_applied ? `<div class="text-xs text-slate-500">${esc(tr('farm.order.b_min'))}</div>` : '')
             + row(tr('farm.order.b_net'), p.net) + row(tr('farm.order.b_vat', { p: p.inputs.vat_percent }), p.vat)
@@ -344,9 +421,8 @@ export function bootFarmOrder(): void {
         show($('farm-pay'), s.status === 'sliced');
         if (s.status === 'sliced') {
             renderColors();
-            document.querySelectorAll<HTMLElement>('#farm-delivery .seg').forEach((b) => b.classList.toggle('seg-on', b.dataset.value === delivery));
-            const addr = $('farm-address')!; addr.classList.toggle('hidden', delivery !== 'shipping'); addr.classList.toggle('grid', delivery === 'shipping');
-            ($('farm-pay-btn') as HTMLButtonElement).disabled = picked === null || !($('farm-terms') as HTMLInputElement).checked;
+            renderDelivery();
+            ($('farm-pay-btn') as HTMLButtonElement).disabled = picked === null || total() === null || deliveryMissing() !== null || !($('farm-terms') as HTMLInputElement).checked;
             // another colour may mean another machine and another kind of filament: the numbers above must be computed again first
             const recolor = picked !== null && state.colors.find((c) => c.slot === picked)?.sliced === false;
             show($('farm-recolor'), recolor); show($('farm-recolor-note'), recolor); show($('farm-pay-btn'), !recolor);
@@ -384,6 +460,14 @@ export function bootFarmOrder(): void {
             q.textContent = tr('farm.order.queue_finish', { time: duration(s.queue.finish_in) });
         }
         show(q, !!s.queue);
+        // a paid parcel: where it goes, and the link to follow it once it has left
+        const dest = $('farm-destination');
+        if (dest) {
+            dest.innerHTML = s.destination && s.status !== 'sliced'
+                ? `${esc(tr('farm.delivery.to'))} ${esc(s.destination)}${s.tracking_url ? ` · <a class="font-semibold text-action-dark underline" target="_blank" rel="noopener" href="${esc(s.tracking_url)}">${esc(tr('farm.delivery.track'))}</a>` : ''}`
+                : '';
+            show(dest, dest.innerHTML !== '');
+        }
         show($('farm-cancel'), s.can_cancel);
         // once the print is over (or fell through) the same model can be ordered again with today's colours
         show($('farm-repeat'), ['done', 'handed_over', 'cancelled', 'failed'].includes(s.status));
@@ -440,6 +524,9 @@ export function bootFarmOrder(): void {
         if (r.ok) { state = r.json as unknown as FarmState; picked = state.slot ?? null; render(); poll(); } else { const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); }
     });
     document.querySelectorAll<HTMLElement>('#farm-delivery .seg').forEach((b) => b.addEventListener('click', () => { delivery = b.dataset.value!; render(); }));
+    $('farm-country')?.addEventListener('change', (e) => { country = (e.target as HTMLSelectElement).value; render(); });
+    pointBox?.addEventListener('pickup:change', () => render());
+    $('farm-address')?.addEventListener('input', () => render());
     $('farm-recolor')?.addEventListener('click', () => ($('farm-presets') as HTMLFormElement | null)?.requestSubmit());
     $('farm-terms')?.addEventListener('change', render);
 
@@ -448,19 +535,23 @@ export function bootFarmOrder(): void {
         const btn = $<HTMLButtonElement>('farm-pay-btn')!;
         const errBox = $('farm-pay-error')!;
         const form = e.target as HTMLFormElement;
-        const address: Record<string, string> = {};
+        const missing = deliveryMissing();
+        if (missing) { errBox.textContent = missing; show(errBox, true); return; }
+        const address: Record<string, unknown> = { country };
         new FormData(form).forEach((v, k) => { const m = k.match(/^address\[(\w+)\]$/); if (m) address[m[1]] = String(v); });
+        if (kind() === 'point') address.point = pointOf();
         btn.disabled = true; btn.textContent = tr('farm.order.paying'); show(errBox, false); show($('farm-topup'), false);
         const r = await post(cfg.routes.pay, {
             slot: picked, second_slot: second, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
             video_consent: ($('farm-video-consent') as HTMLInputElement | null)?.checked ?? false,
-            note: (form.elements.namedItem('note') as HTMLTextAreaElement).value, address: delivery === 'shipping' ? address : null,
+            note: (form.elements.namedItem('note') as HTMLTextAreaElement).value, address: kind() ? address : null,
         });
         btn.textContent = tr('farm.order.pay');
         if (r.ok) { state = r.json as unknown as FarmState; render(); poll(); return; }
         errBox.textContent = String(r.json.message ?? (r.json.errors ? Object.values(r.json.errors as Record<string, string[]>)[0][0] : ''));
         show(errBox, true);
         if (r.status === 402 && r.json.topup_url) { const a = $<HTMLAnchorElement>('farm-topup')!; a.href = String(r.json.topup_url); show(a, true); }
+        quoted = null;   // whatever went wrong, the price is asked again
         if (r.json.error === 'price_changed' || r.json.error === 'color_gone' || r.json.error === 'filament_low') await poll();
         render();
     });

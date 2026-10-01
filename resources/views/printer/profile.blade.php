@@ -13,9 +13,9 @@
             <h1 class="text-xl font-extrabold">{{ __('printer.profile.pricing') }}</h1>
             <p class="text-sm text-slate-500">{{ __('printer.profile.pricing_hint') }}</p>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                <label class="text-sm font-semibold">{{ __('printer.f.hourly_rate') }} <span class="font-normal text-slate-500">Kč/h</span><input name="hourly_rate" type="number" step="1" min="0" required value="{{ old('hourly_rate', $pricing->hourly_rate) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
-                <label class="text-sm font-semibold">{{ __('printer.f.price_per_gram') }} <span class="font-normal text-slate-500">Kč/g</span><input name="price_per_gram" type="number" step="0.1" min="0" required value="{{ old('price_per_gram', $pricing->price_per_gram) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
-                <label class="text-sm font-semibold">{{ __('printer.f.setup_fee') }} <span class="font-normal text-slate-500">Kč</span><input name="setup_fee" type="number" step="1" min="0" value="{{ old('setup_fee', $pricing->setup_fee) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+                <label class="text-sm font-semibold">{{ __('printer.f.hourly_rate') }} <span class="font-normal text-slate-500">{{ \App\Support\Money::symbol('CZK') }}/h</span><input name="hourly_rate" type="number" step="1" min="0" required value="{{ old('hourly_rate', $pricing->hourly_rate) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+                <label class="text-sm font-semibold">{{ __('printer.f.price_per_gram') }} <span class="font-normal text-slate-500">{{ \App\Support\Money::symbol('CZK') }}/g</span><input name="price_per_gram" type="number" step="0.1" min="0" required value="{{ old('price_per_gram', $pricing->price_per_gram) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+                <label class="text-sm font-semibold">{{ __('printer.f.setup_fee') }} <span class="font-normal text-slate-500">{{ \App\Support\Money::symbol('CZK') }}</span><input name="setup_fee" type="number" step="1" min="0" value="{{ old('setup_fee', $pricing->setup_fee) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.margin_pct') }} <span class="font-normal text-slate-500">%</span><input name="margin_pct" type="number" step="1" min="0" value="{{ old('margin_pct', $pricing->margin_pct) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.lead_time_days') }} <span class="font-normal text-slate-500">{{ __('quote.days_short') }}</span><input name="lead_time_days" type="number" min="0" required value="{{ old('lead_time_days', $pricing->lead_time_days ?: $profile->lead_time_days) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
             </div>
@@ -28,7 +28,7 @@
                     <label class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
                         <input type="checkbox" name="materials[]" value="{{ $m['code'] }}" @checked(in_array($m['code'], old('materials', $profile->materials->pluck('material_code')->all())))>
                         <span class="flex-1"><strong>{{ $m['code'] }}</strong> <span class="text-slate-500">{{ __('materials.'.$m['code'].'.label') }}</span></span>
-                        <input name="material_price[{{ $m['code'] }}]" type="number" step="0.1" min="0" placeholder="Kč/g" value="{{ old('material_price.'.$m['code'], $pm?->price_per_gram) }}" class="w-20 rounded border border-slate-200 px-2 py-1 text-right text-xs">
+                        <input name="material_price[{{ $m['code'] }}]" type="number" step="0.1" min="0" placeholder="{{ \App\Support\Money::symbol('CZK') }}/g" value="{{ old('material_price.'.$m['code'], $pm?->price_per_gram) }}" class="w-20 rounded border border-slate-200 px-2 py-1 text-right text-xs">
                     </label>
                 @endforeach
             </div>
@@ -38,7 +38,7 @@
         <details class="rounded-2xl border border-slate-200 bg-white p-5" @if($errors->any()) open @endif>
             <summary class="cursor-pointer text-lg font-bold">{{ __('printer.profile.more') }}</summary>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                <label class="text-sm font-semibold">{{ __('printer.f.min_price') }} <span class="font-normal text-slate-500">Kč</span><input name="min_price" type="number" step="1" min="0" value="{{ old('min_price', $pricing->min_price) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+                <label class="text-sm font-semibold">{{ __('printer.f.min_price') }} <span class="font-normal text-slate-500">{{ \App\Support\Money::symbol('CZK') }}</span><input name="min_price" type="number" step="1" min="0" value="{{ old('min_price', $pricing->min_price) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold">{{ __('printer.f.express_pct') }} <span class="font-normal text-slate-500">%</span><input name="express_pct" type="number" step="1" min="0" value="{{ old('express_pct', $pricing->express_pct) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
                 <label class="text-sm font-semibold sm:col-span-2">{{ __('printer.f.speed') }} <span class="font-normal text-slate-500">{{ __('printer.f.speed_hint') }}</span>
                     <select name="time_factor" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal">

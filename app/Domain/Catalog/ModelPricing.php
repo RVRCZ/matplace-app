@@ -7,6 +7,8 @@ use App\Domain\Farm\OrderService;
 use App\Domain\Farm\PriceCalculator;
 use App\Models\DesignerModel;
 use App\Models\FarmMaterial;
+use App\Support\Currency;
+use App\Support\Money;
 use Illuminate\Support\Collection;
 
 /**
@@ -32,10 +34,14 @@ final class ModelPricing
     }
 
     /**
-     * @return array{available: bool, material?: string, copies?: int, print?: float, royalty_unit?: float, royalty?: float, total?: float, unit?: float, currency?: string, minutes?: int, grams?: float}
+     * The amounts are in the currency the visitor sees prices in (print and reward converted the way an order
+     * converts them); `royalty_unit` stays in crowns, as the designer set it.
+     *
+     * @return array{available: bool, material?: string, copies?: int, print?: float, royalty_unit?: float, royalty?: float, total?: float, unit?: float, currency?: string, total_text?: string, royalty_text?: string, minutes?: int, grams?: float}
      */
-    public function quote(DesignerModel $card, int $copies = 1, ?string $materialCode = null, ?int $customerId = null): array
+    public function quote(DesignerModel $card, int $copies = 1, ?string $materialCode = null, ?int $customerId = null, ?string $currency = null): array
     {
+        $currency ??= Currency::current();
         $summary = (array) $card->slice_summary;
         $materials = $this->materials();
         $material = $materials->firstWhere('code', $materialCode) ?? $materials->first();
@@ -50,21 +56,25 @@ final class ModelPricing
             'min_price' => (float) $this->settings->get('min_price'),
             'vat_percent' => (float) $this->settings->get('vat_percent'),
             'rounding' => (float) $this->settings->get('rounding'),
-            'currency' => (string) $this->settings->get('currency'),
+            'currency' => Money::CZK,
         ]);
         $unit = OrderService::royaltyPerPiece($card, $customerId, (float) $price['print_total'], $copies);
-        $royalty = round($unit * $copies, 2);
+        $print = Money::czk((float) $price['print_total'])->to($currency);
+        $royalty = Money::czk($unit * $copies)->to($currency);
+        $total = $print->plus($royalty);
 
         return [
             'available' => true,
             'material' => $material->code,
             'copies' => $copies,
-            'print' => (float) $price['print_total'],
+            'print' => $print->amount,
             'royalty_unit' => $unit,
-            'royalty' => $royalty,
-            'total' => round((float) $price['print_total'] + $royalty, 2),
-            'unit' => round(((float) $price['print_total'] + $royalty) / $copies, 2),
-            'currency' => (string) $price['currency'],
+            'royalty' => $royalty->amount,
+            'total' => $total->amount,
+            'unit' => round($total->amount / $copies, 2),
+            'currency' => $currency,
+            'total_text' => $total->format(),
+            'royalty_text' => $royalty->format(),
             'minutes' => (int) $summary['minutes'] * $copies,
             'grams' => round((float) $summary['grams'] * $copies, 1),
         ];

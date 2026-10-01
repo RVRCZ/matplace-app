@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\Inquiry;
 use App\Models\PrinterProfile;
 use App\Models\Quote;
+use App\Support\Money;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -40,7 +41,7 @@ abstract class InquiryMail extends Mailable
             'quantity' => $this->inquiry->quantity,
             'city' => $this->inquiry->city ?: ($this->inquiry->zip ?: '—'),
             'printer' => $this->printer?->display_name ?? $this->quote?->printerProfile?->display_name ?? '',
-            'price' => $this->quote ? number_format($this->quote->total, 0, ',', ' ') : ($this->extra['price'] ?? ''),
+            'price' => $this->quote ? Money::of($this->quote->total, $this->quote->currency)->format() : ($this->extra['price'] ?? ''),
             'lead' => $this->quote?->lead_time_days ?? '',
             'client' => $this->inquiry->contact_name ?: $this->inquiry->contact_email,
         ] + $this->extra;

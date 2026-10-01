@@ -2,6 +2,8 @@
 
 namespace App\Domain\Farm;
 
+use App\Engines\Shipping\ShippingCarrier;
+use App\Engines\Shipping\ShippingFailed;
 use App\Jobs\BuildFarmTimelapse;
 use App\Jobs\PrepareFarmOrder;
 use App\Mail\FarmAdminAlert;
@@ -10,6 +12,7 @@ use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinterSlot;
 use App\Models\FarmPrintJob;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -26,16 +29,18 @@ final class OrderFlow
         FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_FAILED, FarmOrder::STATUS_CANCELLED,
     ];
 
-    public function __construct(private readonly Wallet $wallet, private readonly FarmSettings $settings, private readonly OrderService $orders) {}
+    public function __construct(private readonly Wallet $wallet, private readonly FarmSettings $settings, private readonly OrderService $orders, private readonly Shipping $shipping, private readonly ShippingCarrier $carrier) {}
 
     /**
-     * Pay from credit and send to the queue.
+     * Pay from credit and send to the queue. Delivery is chosen here, before the payment, because it changes the price.
      *
+     * @param  array<string,mixed>|null  $address  where it goes: name, phone, country and either street/city/zip or point{id, name, country, carrier_id}
      * @param  float|null  $expectedTotal  what the customer saw; a different price (other printer, changed rates) is refused, never charged silently
+     * @param  string|null  $currency  the currency the customer saw the price in; the account's own always wins
      *
      * @throws FarmRefusal|InsufficientCredit
      */
-    public function pay(FarmOrder $order, FarmPrinterSlot $slot, string $delivery, ?array $address, bool $termsAccepted, ?string $ip, ?float $expectedTotal = null, ?string $note = null, ?int $secondSlotId = null): FarmOrder
+    public function pay(FarmOrder $order, FarmPrinterSlot $slot, string $delivery, ?array $address, bool $termsAccepted, ?string $ip, ?float $expectedTotal = null, ?string $note = null, ?int $secondSlotId = null, ?string $currency = null): FarmOrder
     {
         if ($order->status !== FarmOrder::STATUS_SLICED) {
             throw new FarmRefusal('not_ready');
@@ -43,8 +48,14 @@ final class OrderFlow
         if (! $termsAccepted) {
             throw new FarmRefusal('terms');
         }
-        if (! in_array($delivery, (array) $this->settings->get('delivery_modes'), true)) {
+        if (! in_array($delivery, $this->shipping->modes(), true)) {
             throw new FarmRefusal('delivery');
+        }
+        $currency = (string) ($order->user?->currency ?: $currency ?: $order->currency);
+        // a country we send to, a pickup point that lies in it, an address a courier can find
+        $destination = $this->shipping->destination($delivery, (array) $address, $order, $currency);
+        if ($delivery === Shipping::POINT && $this->carrier->refusePoint(['id' => $destination['pickup_point_id'], 'carrier_id' => $destination['carrier_id']], $destination['country'], $this->shipping->parcelGrams($order) / 1000) !== null) {
+            throw new FarmRefusal('delivery_point');
         }
         $offer = $this->orders->availableColors($order)->first(fn ($r) => $r['slot']->id === $slot->id);
         if (! $offer) {
@@ -59,18 +70,18 @@ final class OrderFlow
             $second = $this->orders->secondColors($order, $offer['slot'])->firstWhere('id', $secondSlotId) ?? throw new FarmRefusal('color_gone');
         }
 
-        $price = $this->orders->priceFor($order, $offer['printer'], $delivery, $offer['color']->material);
+        $price = $this->orders->priceFor($order, $offer['printer'], $delivery, $offer['color']->material, $destination['country'] ?? null, $currency);
         if ($expectedTotal !== null && abs($expectedTotal - $price['total']) > 0.009) {
-            throw new FarmRefusal('price_changed', ['total' => $price['total']]);
+            throw new FarmRefusal('price_changed', ['total' => Money::of($price['total'], $currency)->format()]);
         }
 
         $slicedFor = $order->farm_printer_id;
-        DB::transaction(function () use ($order, $offer, $delivery, $address, $ip, $price, $note, $second) {
+        DB::transaction(function () use ($order, $offer, $delivery, $destination, $ip, $price, $note, $second, $currency) {
             $order->fill([
                 'farm_printer_id' => $offer['printer']->id, 'farm_printer_slot_id' => $offer['slot']->id, 'farm_color_id' => $offer['color']->id,
                 'farm_material_id' => $offer['color']->farm_material_id,
                 'second_slot_id' => $second?->id, 'second_color_id' => $second?->farm_color_id,
-                'delivery' => $delivery, 'shipping_address' => $delivery === 'shipping' ? $address : null,
+                'delivery' => $delivery, 'shipping_address' => $destination, 'shipping_price' => $price['shipping'], 'currency' => $currency,
                 // an order made from an inspiration page keeps the line that names the model and its author
                 'note' => trim(implode("\n", array_filter([$order->catalog_model_id ? $order->catalogModel?->attribution() : null, $note]))) ?: null,
                 'price' => $price, 'price_total' => $price['total'], 'royalty_czk' => $price['royalty_unit'] ?? null,
@@ -219,7 +230,7 @@ final class OrderFlow
         }
     }
 
-    /** Fixed fee plus the printed share of time and material, with VAT, whole crowns; never above the print price. */
+    /** Fixed fee plus the printed share of time and material, with VAT, whole crowns (ten cents in euros); never above the print price. */
     public function shareOfPrice(array $price, float $share): float
     {
         if (! isset($price['fixed'], $price['time'], $price['material'], $price['print_total'])) {
@@ -227,8 +238,32 @@ final class OrderFlow
         }
         $net = (float) $price['fixed'] + $share * ((float) $price['time'] + (float) $price['material']);
         $gross = $net * (1 + (float) ($price['inputs']['vat_percent'] ?? 0) / 100);
+        $step = ($price['currency'] ?? Money::CZK) === Money::EUR ? 0.1 : 1.0;
 
-        return min((float) $price['print_total'], ceil($gross));
+        return min((float) $price['print_total'], PriceCalculator::roundUp($gross, $step));
+    }
+
+    /**
+     * The finished print leaves as a parcel: announce it to the carrier, keep what it gave us, hand the order over
+     * and tell the customer where to follow it. When the carrier refuses, nothing changes and the operator reads why.
+     *
+     * @throws ShippingFailed|\DomainException
+     */
+    public function ship(FarmOrder $order, int $adminId): FarmOrder
+    {
+        if ($order->status !== FarmOrder::STATUS_DONE || ! isset(Shipping::KINDS[$order->delivery])) {
+            throw new \DomainException("Farm order {$order->id} is not a finished print waiting for a parcel.");
+        }
+        // asked twice (a double click, a retry after a timeout): the parcel that exists is the parcel
+        if (! $order->packeta_packet_id) {
+            $packet = $this->carrier->createPacket($order);
+            $order->forceFill([
+                'packeta_packet_id' => $packet->id, 'packeta_barcode' => $packet->barcode, 'tracking' => $packet->barcode,
+                'tracking_url' => $this->carrier->trackingUrl($packet->barcode, $order->user?->locale), 'shipped_at' => now(),
+            ])->save();
+        }
+
+        return $this->move($order, FarmOrder::STATUS_HANDED_OVER, 'admin', $adminId, 'parcel '.$order->packeta_barcode);
     }
 
     private function notifyCustomer(FarmOrder $order): void

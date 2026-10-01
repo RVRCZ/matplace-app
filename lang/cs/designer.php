@@ -87,7 +87,7 @@ return [
         'empty' => 'Zatím tu nic není. Importujte své modely z Printables nebo MakerWorldu, nebo přidejte první ručně.',
         'state' => ['printable' => 'lze vytisknout', 'checking' => 'kontrolujeme soubor', 'failed' => 'soubor neprošel', 'hidden' => 'skrytá', 'link' => 'jen odkaz'],
         'remix' => 'remix',
-        'reward' => 'odměna :amount Kč',
+        'reward' => 'odměna :amount',
         'views_orders' => 'zobrazení · tisky',
     ],
 

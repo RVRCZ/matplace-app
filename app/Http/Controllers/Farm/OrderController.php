@@ -10,6 +10,7 @@ use App\Domain\Farm\ModelValidator;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
 use App\Domain\Farm\PlateLayout;
+use App\Domain\Farm\Shipping;
 use App\Domain\Farm\Wallet;
 use App\Domain\YouTube\FarmVideos;
 use App\Http\Controllers\Controller;
@@ -20,6 +21,9 @@ use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrinterSlot;
 use App\Models\ModelFile;
+use App\Support\Countries;
+use App\Support\Currency;
+use App\Support\Money;
 use App\Support\Track;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +35,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 /** "Rent a printer": the customer's side of a farm order. Logged-in users only; an order is visible to its owner and admins. */
 class OrderController extends Controller
 {
-    public function __construct(private readonly OrderService $orders, private readonly FarmSettings $settings, private readonly Wallet $wallet) {}
+    public function __construct(private readonly OrderService $orders, private readonly FarmSettings $settings, private readonly Wallet $wallet, private readonly Shipping $shipping) {}
 
     /** Entrance: from the calculator with ?file=<uuid>, or empty with an upload field. */
     public function start(Request $request): View
@@ -173,8 +177,18 @@ class OrderController extends Controller
 
         $order->load(['modelFile', 'color', 'printer', 'material']);
 
+        $user = $request->user();
+        $point = (array) $user->pickup_point;
+
         return view('farm.order', [
             'order' => $order,
+            'packetaKey' => (string) config('services.packeta.api_key'),
+            // what the delivery form starts with: the address and the favourite pickup point of the profile
+            'prefill' => [
+                'name' => $user->recipientName(), 'phone' => (string) $user->phone, 'street' => (string) $user->street, 'city' => (string) $user->city,
+                'zip' => (string) $user->zip, 'country' => strtoupper((string) ($user->country ?: 'CZ')),
+                'point' => ! empty($point['id']) ? ['id' => (string) $point['id'], 'name' => (string) ($point['name'] ?? ''), 'carrier_id' => (string) ($point['carrier_id'] ?? ''), 'country' => strtoupper((string) ($point['country'] ?? ''))] : null,
+            ],
             'card' => $order->designer_model_id ? $order->designerModel?->load(['profile', 'images']) : null,
             'modelHidden' => $order->hidesModelFrom($request->user()),
             'state' => $this->describe($order, $request),
@@ -227,30 +241,57 @@ class OrderController extends Controller
         return response()->json($this->describe($order->refresh(), $request));
     }
 
+    /** What the order would cost with this colour, this kind of delivery and this country. The page asks; it never adds up itself. */
+    public function quote(Request $request, FarmOrder $order): JsonResponse
+    {
+        $this->authorizeOrder($request, $order);
+        $data = $request->validate(['slot' => ['required', 'integer'], 'delivery' => ['required', 'string', 'max:20'], 'country' => ['nullable', 'string', 'size:2']]);
+        $offer = $order->status === FarmOrder::STATUS_SLICED ? $this->orders->availableColors($order)->first(fn ($r) => $r['slot']->id === (int) $data['slot']) : null;
+        if (! $offer) {
+            return response()->json(['error' => 'color_gone', 'message' => __('farm.refuse.color_gone')], 422);
+        }
+        $currency = $this->currencyFor($order, $request);
+        $country = strtoupper((string) ($data['country'] ?? 'CZ'));
+        if ($data['delivery'] !== Shipping::PICKUP && (! in_array($data['delivery'], $this->shipping->modes(), true) || $this->shipping->tooBig($order)
+            || $this->shipping->price($data['delivery'], $country, $this->shipping->parcelGrams($order), $currency) === null)) {
+            return response()->json(['error' => 'delivery_country', 'message' => __('farm.refuse.delivery_country')], 422);
+        }
+        $price = $this->orders->priceFor($order, $offer['printer'], $data['delivery'], $offer['color']->material, $country, $currency);
+
+        return response()->json(['price' => $price, 'total' => $price['total'], 'currency' => $currency]);
+    }
+
     public function pay(Request $request, FarmOrder $order, OrderFlow $flow, FarmVideos $videos): JsonResponse
     {
         $this->authorizeOrder($request, $order);
         $data = $request->validate([
             'slot' => ['required', 'integer'],
             'second_slot' => ['nullable', 'integer'],
-            'delivery' => ['required', 'string', 'max:10'],
+            'delivery' => ['required', 'string', 'max:20'],
             'terms' => ['accepted'],
             'expected_total' => ['required', 'numeric'],
             'note' => ['nullable', 'string', 'max:500'],
-            'address' => ['required_if:delivery,shipping', 'nullable', 'array'],
-            'address.name' => ['required_if:delivery,shipping', 'nullable', 'string', 'max:120'],
-            'address.street' => ['required_if:delivery,shipping', 'nullable', 'string', 'max:160'],
-            'address.city' => ['required_if:delivery,shipping', 'nullable', 'string', 'max:120'],
-            'address.zip' => ['required_if:delivery,shipping', 'nullable', 'string', 'max:12'],
+            // the recipient, for a parcel: checked against the kind of delivery in App\Domain\Farm\Shipping
+            'address' => ['nullable', 'array'],
+            'address.name' => ['nullable', 'string', 'max:120'],
+            'address.street' => ['nullable', 'string', 'max:160'],
+            'address.city' => ['nullable', 'string', 'max:120'],
+            'address.zip' => ['nullable', 'string', 'max:12'],
             'address.country' => ['nullable', 'string', 'size:2'],
             'address.phone' => ['nullable', 'string', 'max:30'],
+            'address.point' => ['nullable', 'array'],
+            'address.point.id' => ['nullable', 'string', 'max:40'],
+            'address.point.name' => ['nullable', 'string', 'max:200'],
+            'address.point.carrier_id' => ['nullable', 'string', 'max:40'],
+            'address.point.country' => ['nullable', 'string', 'size:2'],
             'video_consent' => ['nullable', 'boolean'],
         ], ['terms.accepted' => __('farm.refuse.terms')]);
 
         try {
-            $flow->pay($order, FarmPrinterSlot::findOrFail($data['slot']), $data['delivery'], $data['address'] ?? null, true, $request->ip(), (float) $data['expected_total'], $data['note'] ?? null, isset($data['second_slot']) ? (int) $data['second_slot'] : null);
+            $flow->pay($order, FarmPrinterSlot::findOrFail($data['slot']), $data['delivery'], $data['address'] ?? null, true, $request->ip(), (float) $data['expected_total'], $data['note'] ?? null, isset($data['second_slot']) ? (int) $data['second_slot'] : null, $this->currencyFor($order, $request));
         } catch (InsufficientCredit $e) {
-            return response()->json(['error' => 'credit', 'message' => __('farm.refuse.credit', ['missing' => number_format($e->missing(), 0, ',', ' ')]), 'missing' => $e->missing(), 'topup_url' => route('account.credit', ['need' => ceil($e->missing()), 'back' => $order->token])], 402);
+            // the top-up page asks for what is missing, in the currency the order is priced in
+            return response()->json(['error' => 'credit', 'message' => __('farm.refuse.credit', ['missing' => $e->missingMoney()->format()]), 'missing' => $e->missing(), 'topup_url' => route('account.credit', ['need' => $e->missing(), 'back' => $order->token])], 402);
         } catch (FarmRefusal $e) {
             return response()->json(['error' => $e->reason, 'message' => $e->text()] + $e->data, 422);
         }
@@ -356,16 +397,33 @@ class OrderController extends Controller
         return $settings;
     }
 
+    /**
+     * The currency the order is shown and paid in. Paid: its own, for good. Not paid yet: the account's, or (no money
+     * has moved on the account) the one its owner sees prices in right now.
+     */
+    private function currencyFor(FarmOrder $order, Request $request): string
+    {
+        if ($order->paid_at !== null) {
+            return (string) $order->currency;
+        }
+        $mine = $request->user()->id === $order->user_id;
+        $owner = $mine ? $request->user() : $order->user;
+
+        return (string) ($owner?->currency ?: ($mine ? Currency::current($owner) : $order->currency));
+    }
+
     /** Everything the order page needs, in one JSON object. */
     private function describe(FarmOrder $order, Request $request): array
     {
         $order->loadMissing(['color', 'printer', 'material', 'modelFile']);
+        $currency = $this->currencyFor($order, $request);
+        $this->orders->alignCurrency($order, $currency);
         $job = $order->latestJob();
         $check = (array) $order->check;
         $colors = $order->status === FarmOrder::STATUS_SLICED
             ? $this->orders->availableColors($order)->map(fn ($r) => [
                 'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'photo' => $r['color']->photoUrl(),
-                'enough' => $r['enough'], 'price' => $price = $this->orders->priceFor($order, $r['printer'], 'pickup', $r['color']->material), 'total' => $price['total'],
+                'enough' => $r['enough'], 'price' => $price = $this->orders->priceFor($order, $r['printer'], Shipping::PICKUP, $r['color']->material, null, $currency), 'total' => $price['total'],
                 'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
                 // a plate with a raised text: the colours the text can have next to this colour of the plate
                 'second' => $this->orders->secondColors($order, $r['slot'])->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'photo' => $s->color->photoUrl()])->all(),
@@ -414,12 +472,15 @@ class OrderController extends Controller
             'meters' => $order->est_meters,
             'price' => $order->price,
             'total' => $order->price_total,
-            'currency' => $order->currency,
-            'shipping_price' => (float) $this->settings->get('shipping_price'),
+            'currency' => $currency,
+            // what delivery is on offer and for how much, while it can still be chosen
+            'shipping' => $order->status === FarmOrder::STATUS_SLICED ? $this->shipping->offer($order, $currency) : null,
+            'destination' => $order->isParcel() ? $this->destinationText($order) : null,
+            'tracking_url' => $order->tracking_url,
             'colors' => $colors,
             'color' => $order->color ? ['name' => $order->color->material->label().' '.$order->color->displayName(), 'hex' => $order->color->hex] : null,
             'delivery' => $order->delivery,
-            'balance' => $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user),
+            'balance' => $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user)->amount,
             'model_url' => ($order->print_stl_path || $order->modelFile?->stl_path) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
@@ -435,6 +496,17 @@ class OrderController extends Controller
             'can_cancel' => $order->cancellableByCustomer(),
             'final' => in_array($order->status, [FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_CANCELLED], true),
         ];
+    }
+
+    /** "Z-BOX Praha 9, Českomoravská 12" or "Roman Vzor, Dlouhá 1, 301 00 Plzeň, Česko": where the parcel goes, for the paid order. */
+    private function destinationText(FarmOrder $order): string
+    {
+        $to = (array) $order->shipping_address;
+        $country = Countries::name($to['country'] ?? null);
+
+        return $order->delivery === Shipping::POINT
+            ? implode(', ', array_filter([(string) ($to['pickup_point_name'] ?? ''), $country]))
+            : implode(', ', array_filter([(string) ($to['name'] ?? ''), (string) ($to['street'] ?? ''), trim(($to['zip'] ?? '').' '.($to['city'] ?? '')), $country]));
     }
 
     private function errorData(array $check, string $code): array

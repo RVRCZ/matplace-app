@@ -80,7 +80,7 @@
                     @endphp
                     <div class="mt-2 flex items-end gap-2">
                         <span id="price-main" class="text-4xl font-extrabold tracking-tight">—</span>
-                        @if($priced)<span class="pb-1 text-slate-500">{{ $config['currency'] === 'CZK' ? 'Kč' : $config['currency'] }}</span>@else<span class="pb-1 text-slate-500">{{ __('calc.time') }}</span>@endif
+                        @if($priced)<span class="pb-1 text-slate-500">{{ \App\Support\Money::symbol($config['currency']) }}</span>@else<span class="pb-1 text-slate-500">{{ __('calc.time') }}</span>@endif
                     </div>
                     <div id="price-sub" class="mt-1 text-sm text-slate-500"></div>
                     <p id="price-orient" class="mt-1 hidden text-sm text-slate-600"></p>

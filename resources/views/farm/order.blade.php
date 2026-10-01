@@ -6,11 +6,14 @@
         'farm.order.queue_ahead', 'farm.order.queue_start', 'farm.order.queue_starting', 'farm.order.queue_finish', 'farm.order.blocked_plate', 'farm.order.blocked_offline',
         'farm.order.blocked_approval', 'farm.order.cancel_confirm', 'farm.order.b_time', 'farm.order.b_material', 'farm.order.b_fixed', 'farm.order.b_min',
         'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'models.price.to_author', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line',
-        'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m'];
+        'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m', 'farm.order.cancel_running_confirm', 'farm.order.supports_hide', 'farm.order.supports_show',
+        'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track'];
     $farmCfg = [
         'state' => $state,
+        'prefill' => $prefill,
         'routes' => [
             'status' => route('farm.orders.status', $order), 'reslice' => route('farm.orders.reslice', $order), 'pay' => route('farm.orders.pay', $order),
+            'quote' => route('farm.orders.quote', $order),
             'cancel' => route('farm.orders.cancel', $order), 'credit' => route('account.credit'),
         ],
         'csrf' => csrf_token(),
@@ -28,7 +31,7 @@
         <h1 class="text-xl font-extrabold sm:text-2xl">{{ __('farm.order.title', ['name' => $order->modelFile?->original_name]) }}</h1>
         <div class="flex items-center gap-3 text-sm">
             <a href="{{ route('account.orders') }}" class="text-action-dark underline">{{ __('farm.my_orders') }}</a>
-            <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: <span id="farm-balance">{{ number_format($state['balance'], 0, ',', ' ') }}</span> Kč</a>
+            <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: <span id="farm-balance">@money($state['balance'], $state['currency'])</span></a>
         </div>
     </div>
 
@@ -66,7 +69,7 @@
                 <div id="farm-result" class="hidden">
                     <div class="mt-2 flex items-end gap-2">
                         <span id="farm-price" class="text-4xl font-extrabold tracking-tight">—</span>
-                        <span class="pb-1 text-slate-500">Kč <span class="text-xs">{{ __('farm.order.with_vat') }}</span></span>
+                        <span class="pb-1 text-xs text-slate-500">{{ __('farm.order.with_vat') }}</span>
                     </div>
                     <p id="farm-copies-line" class="mt-1 hidden text-sm font-semibold text-slate-700"></p>
                     <dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
@@ -95,6 +98,8 @@
                     </figure>
                 </div>
                 <p id="farm-queue" class="mt-3 hidden text-sm text-slate-600"></p>
+                {{-- a paid order that leaves as a parcel: where it goes and, once sent, where to follow it --}}
+                <p id="farm-destination" class="mt-3 hidden text-sm text-slate-600"></p>
             </div>
 
             {{-- presets (until paid) --}}
@@ -150,16 +155,39 @@
                 </div>
                 <p id="farm-start-note" class="mt-2 text-xs text-slate-600"></p>
 
+                {{-- delivery is chosen before the payment: it changes the price (resources/js/calc/farm.ts asks the server for it) --}}
                 <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.order.delivery') }}</div>
-                <div class="mt-2 grid grid-cols-2 gap-2" id="farm-delivery">
-                    @foreach($settings['delivery_modes'] as $mode)
-                        <button type="button" data-value="{{ $mode }}" class="seg {{ $loop->first ? 'seg-on' : '' }}">{{ __('farm.order.'.$mode, ['price' => number_format($settings['shipping_price'], 0, ',', ' ')]) }}</button>
+                <div class="mt-2 grid gap-2 sm:grid-cols-3" id="farm-delivery">
+                    @foreach(['pickup', 'packeta_point', 'packeta_home'] as $mode)
+                        <button type="button" data-value="{{ $mode }}" class="seg hidden {{ $loop->first ? 'seg-on' : '' }}">{{ __('farm.delivery.'.$mode) }}<span class="block text-xs font-normal text-slate-500" data-price></span></button>
                     @endforeach
                 </div>
-                <div id="farm-address" class="mt-2 hidden gap-2 sm:grid-cols-2">
-                    @foreach(['name', 'street', 'city', 'zip', 'phone'] as $f)
-                        <input name="address[{{ $f }}]" placeholder="{{ __('farm.order.address.'.$f) }}" aria-label="{{ __('farm.order.address.'.$f) }}" value="{{ auth()->user()->{$f} ?? '' }}" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm {{ $f === 'street' ? 'sm:col-span-2' : '' }}">
-                    @endforeach
+                <p id="farm-delivery-note" class="mt-2 hidden text-xs text-amber-800"></p>
+                <div id="farm-parcel" class="mt-2 hidden">
+                    <label class="block text-xs font-semibold text-slate-600">{{ __('farm.delivery.country') }}
+                        <select id="farm-country" autocomplete="country" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal"></select>
+                    </label>
+                    {{-- the Packeta picker fills the hidden fields (resources/js/site/pickup.ts); the favourite point of the profile comes prefilled --}}
+                    <div id="farm-point" class="mt-2 hidden rounded-lg border border-slate-300 bg-white p-3 text-sm" data-pickup-box data-key="{{ $packetaKey }}" data-language="{{ app()->getLocale() }}" data-country-field="farm-country" data-none="{{ __('farm.delivery.point_none') }}">
+                        @foreach(['id', 'name', 'carrier_id', 'country'] as $f)
+                            <input type="hidden" data-pickup="{{ $f }}" value="{{ $prefill['point'][$f] ?? '' }}">
+                        @endforeach
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span data-pickup="label" class="font-semibold">{{ ($prefill['point']['name'] ?? '') ?: __('farm.delivery.point_none') }}</span>
+                            @if($packetaKey !== '')
+                                <button type="button" data-pickup="choose" class="btn-quiet min-h-0 px-3 py-1.5 text-sm">{{ __('farm.delivery.point_choose') }}</button>
+                            @else
+                                <span class="text-xs text-amber-800">{{ __('farm.delivery.point_unavailable') }}</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div id="farm-address" class="mt-2 grid gap-2 sm:grid-cols-2">
+                        @foreach(['name' => 'name', 'phone' => 'tel', 'street' => 'street-address', 'city' => 'address-level2', 'zip' => 'postal-code'] as $f => $autocomplete)
+                            <input name="address[{{ $f }}]" placeholder="{{ __('farm.order.address.'.$f) }}" aria-label="{{ __('farm.order.address.'.$f) }}" value="{{ $prefill[$f] ?? '' }}" autocomplete="{{ $autocomplete }}" @if($f === 'phone') type="tel" @endif
+                                   @if(in_array($f, ['street', 'city', 'zip'])) data-home @endif class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm {{ $f === 'street' ? 'sm:col-span-2' : '' }}">
+                        @endforeach
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('farm.delivery.phone_hint') }}</p>
                 </div>
                 <textarea name="note" rows="2" maxlength="500" placeholder="{{ __('farm.order.note') }}" aria-label="{{ __('farm.order.note') }}" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"></textarea>
 

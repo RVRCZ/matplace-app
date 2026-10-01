@@ -13,8 +13,8 @@
 
     <div class="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
         <div class="text-sm text-slate-500">{{ __('farm.credit_balance') }}</div>
-        <div class="text-4xl font-extrabold tracking-tight">{{ number_format($balance, 0, ',', ' ') }} <span class="text-lg font-semibold text-slate-500">Kč</span></div>
-        @if($need > 0)<p class="mt-2 text-sm text-amber-800">{{ __('farm.credit.need', ['n' => number_format($need, 0, ',', ' ')]) }}</p>@endif
+        <div class="text-4xl font-extrabold tracking-tight">@money($balance)</div>
+        @if($need > 0)<p class="mt-2 text-sm text-amber-800">{{ __('farm.credit.need', ['n' => \App\Support\Money::of($need, $currency)->format()]) }}</p>@endif
         @if($back)<a href="{{ route('farm.orders.show', $back) }}" class="mt-2 inline-block text-sm text-action-dark underline">{{ __('farm.credit.back_to_order') }}</a>@endif
     </div>
 
@@ -24,16 +24,18 @@
         <div class="text-sm font-semibold text-slate-700">{{ __('farm.credit.amount') }}</div>
         <div class="mt-2 flex flex-wrap gap-2">
             @foreach($amounts as $a)
-                <button type="submit" name="preset" value="{{ $a }}" formnovalidate class="chip">{{ number_format($a, 0, ',', ' ') }} Kč</button>
+                <button type="submit" name="preset" value="{{ $a }}" formnovalidate class="chip">@money($a, $currency)</button>
             @endforeach
         </div>
-        <label class="mt-4 block text-sm font-semibold text-slate-700">{{ __('farm.credit.other') }}
+        <label class="mt-4 block text-sm font-semibold text-slate-700">{{ __('farm.credit.other') }} ({{ \App\Support\Money::symbol($currency) }})
             <span class="mt-1 flex gap-2">
                 <input type="number" name="amount" min="{{ $min }}" max="{{ $max }}" step="1" value="{{ max($min, $need) ?: '' }}" class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 font-normal" inputmode="numeric">
                 <button type="submit" class="btn-primary text-sm">{{ __('farm.credit.pay') }}</button>
             </span>
         </label>
         @error('amount')<p class="mt-1 text-sm text-red-700">{{ $message }}</p>@enderror
+        {{-- the first payment decides which currency the account is kept in; say so while it can still be changed in the header --}}
+        @unless($locked)<p class="mt-2 text-xs text-slate-500">{{ __('farm.credit.currency_note', ['currency' => \App\Support\Money::symbol($currency)]) }}</p>@endunless
     </form>
 
     <h2 class="mt-6 font-bold">{{ __('farm.credit.history') }}</h2>
@@ -45,7 +47,7 @@
                     @if($t->order)<a href="{{ route('farm.orders.show', $t->order) }}" class="text-action-dark underline">{{ $t->order->number ?? '' }}</a>@endif
                     <span class="block text-xs text-slate-500">{{ $t->created_at->format('j. n. Y H:i') }}</span>
                 </span>
-                <span class="font-semibold {{ $t->amount < 0 ? 'text-slate-700' : 'text-ok' }}">{{ $t->amount > 0 ? '+' : '' }}{{ number_format($t->amount, 0, ',', ' ') }} Kč</span>
+                <span class="font-semibold {{ $t->amount < 0 ? 'text-slate-700' : 'text-ok' }}">{{ $t->money()->format(null, true) }}</span>
             </div>
         @empty
             <p class="px-4 py-6 text-center text-sm text-slate-500">{{ __('farm.credit.empty') }}</p>

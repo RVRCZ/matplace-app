@@ -5,7 +5,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h1 class="text-2xl font-extrabold">{{ __('user.orders.title') }}</h1>
         <div class="flex items-center gap-3 text-sm">
-            <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: {{ number_format($balance, 0, ',', ' ') }} Kč</a>
+            <a href="{{ route('account.credit') }}" class="rounded-full border border-line bg-white px-3 py-1 font-semibold">{{ __('farm.credit_balance') }}: @money($balance)</a>
             <a href="{{ route('farm.start') }}" class="btn-primary text-sm">{{ __('farm.order.new') }}</a>
         </div>
     </div>

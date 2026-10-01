@@ -38,7 +38,7 @@ class FarmWalletTest extends TestCase
 
         $this->assertTrue($wallet->topUp($payment));
         $this->assertFalse($wallet->topUp($payment));
-        $this->assertSame(500.0, $wallet->balance($user));
+        $this->assertSame(500.0, $wallet->balance($user)->amount);
     }
 
     public function test_hold_needs_enough_credit_and_says_how_much_is_missing(): void
@@ -53,7 +53,7 @@ class FarmWalletTest extends TestCase
         } catch (InsufficientCredit $e) {
             $this->assertSame(49.0, $e->missing());
         }
-        $this->assertSame(100.0, $wallet->balance($user));
+        $this->assertSame(100.0, $wallet->balance($user)->amount);
     }
 
     public function test_hold_then_cancel_returns_everything(): void
@@ -64,12 +64,12 @@ class FarmWalletTest extends TestCase
         $order = $this->order($user, 149);
 
         $wallet->hold($order);
-        $this->assertSame(351.0, $wallet->balance($user));
+        $this->assertSame(351.0, $wallet->balance($user)->amount);
 
         $this->assertSame(149.0, $wallet->giveBack($order));
-        $this->assertSame(500.0, $wallet->balance($user));
+        $this->assertSame(500.0, $wallet->balance($user)->amount);
         $this->assertSame(0.0, $wallet->giveBack($order), 'a second return must give nothing');
-        $this->assertSame(500.0, $wallet->balance($user));
+        $this->assertSame(500.0, $wallet->balance($user)->amount);
     }
 
     public function test_captured_credit_stays_spent_and_can_still_be_refunded_by_an_admin(): void
@@ -81,10 +81,10 @@ class FarmWalletTest extends TestCase
 
         $wallet->hold($order);
         $wallet->capture($order);
-        $this->assertSame(351.0, $wallet->balance($user));
+        $this->assertSame(351.0, $wallet->balance($user)->amount);
 
         $wallet->giveBack($order, note: 'warped print');
-        $this->assertSame(500.0, $wallet->balance($user));
+        $this->assertSame(500.0, $wallet->balance($user)->amount);
         $this->assertDatabaseHas('credit_transactions', ['farm_order_id' => $order->id, 'type' => 'refund', 'amount' => 149]);
     }
 

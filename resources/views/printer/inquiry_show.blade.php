@@ -43,7 +43,7 @@
             @if($offer)
                 <div class="rounded-2xl border {{ $accepted ? 'border-action' : 'border-slate-200' }} bg-white p-4">
                     <div class="flex items-center justify-between"><div class="font-bold">{{ __('inquiry.your_offer') }}</div><span class="text-xs text-slate-500">{{ __('quote.status.'.$offer->status) }}</span></div>
-                    <div class="text-2xl font-extrabold">{{ number_format($offer->total, 0, ',', ' ') }} Kč</div>
+                    <div class="text-2xl font-extrabold">@money($offer->total, 'CZK')</div>
                     @if($offer->lead_time_days !== null)<div class="text-sm text-slate-500">{{ __('calc.days', ['n' => $offer->lead_time_days]) }}</div>@endif
                     @if($accepted)<div class="mt-2 rounded-lg bg-action-soft px-3 py-2 text-sm text-action-dark">✅ {{ __('inquiry.accepted_printer', ['name' => $inquiry->contact_name ?: $inquiry->contact_email, 'email' => $inquiry->contact_email, 'phone' => $inquiry->contact_phone ?: '—']) }}</div>@endif
                 </div>
@@ -56,7 +56,7 @@
                         <div class="mt-1 text-xs text-slate-500">{{ __('inquiry.auto_price_hint') }}: {{ __('calc.breakdown.material') }} {{ number_format($dispatch->auto_breakdown['unit']['material'] * $inquiry->quantity, 0, ',', ' ') }} · {{ __('calc.breakdown.time') }} {{ number_format($dispatch->auto_breakdown['unit']['time'] * $inquiry->quantity, 0, ',', ' ') }} · {{ __('calc.breakdown.setup') }} {{ number_format($dispatch->auto_breakdown['setup'], 0, ',', ' ') }}</div>
                     @endif
                     <div class="mt-3 grid grid-cols-2 gap-3">
-                        <label class="text-sm font-semibold">{{ __('inquiry.price_total') }} <span class="font-normal text-slate-500">Kč</span><input name="total" type="number" min="1" step="1" required value="{{ old('total', $dispatch->auto_price ? (int) $dispatch->auto_price : '') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-lg font-bold"></label>
+                        <label class="text-sm font-semibold">{{ __('inquiry.price_total') }} <span class="font-normal text-slate-500">{{ \App\Support\Money::symbol('CZK') }}</span><input name="total" type="number" min="1" step="1" required value="{{ old('total', $dispatch->auto_price ? (int) $dispatch->auto_price : '') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-lg font-bold"></label>
                         <label class="text-sm font-semibold">{{ __('quote.lead_time') }} <span class="font-normal text-slate-500">{{ __('quote.days_short') }}</span><input name="lead_time_days" type="number" min="0" value="{{ old('lead_time_days', $profile->defaultPricing()?->lead_time_days ?? $profile->lead_time_days) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
                     </div>
                     <textarea name="note" rows="2" maxlength="2000" placeholder="{{ __('inquiry.offer_note') }}" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">{{ old('note') }}</textarea>

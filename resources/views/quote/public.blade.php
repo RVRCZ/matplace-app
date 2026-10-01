@@ -47,7 +47,7 @@
                 @foreach($lines as $l)
                     <tr class="border-b border-line"><td class="py-1.5 text-ink">{{ $l['label'] }}</td><td class="py-1.5 text-right text-muted">{{ rtrim(rtrim($nf($l['qty'], 2), '0'), ',.') }} × {{ $nf($l['unit_price']) }}</td><td class="py-1.5 text-right font-medium text-ink">{{ $nf($l['total']) }}</td></tr>
                 @endforeach
-                <tr><td class="pt-3 text-lg font-bold text-ink" colspan="2">{{ __('quote.pdf.sum') }}</td><td class="pt-3 text-right text-2xl font-extrabold text-ink">{{ $nf($quote->total) }} Kč</td></tr>
+                <tr><td class="pt-3 text-lg font-bold text-ink" colspan="2">{{ __('quote.pdf.sum') }}</td><td class="pt-3 text-right text-2xl font-extrabold text-ink">@money($quote->total, $quote->currency)</td></tr>
             </table>
 
             @if($quote->note)<div class="mt-3 whitespace-pre-line rounded-lg bg-page p-3 text-sm text-ink">{{ $quote->note }}</div>@endif

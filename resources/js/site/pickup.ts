@@ -6,6 +6,9 @@
  * data-key           Packeta API key (the picker's public key)
  * data-language      language of the picker
  * data-country       country the points are offered in, or data-country-field = id of a <select> with the country
+ * data-vendors       optional JSON {country: [vendor, …]}: what the picker may show there (Packeta's own points and
+ *                    boxes, or the points of the partner carrier we send with); without it, every point of the country
+ * data-weight        optional weight of the parcel in kg: points that do not take it are left out
  *
  * A point of Packeta's own network is sent as its id; a point of a partner carrier (abroad) as the carrier's id
  * plus the carrier's own code of the point, which is what the Packeta API wants for such parcels.
@@ -63,10 +66,18 @@ export function bootPickup(): void {
             return (field?.value || box.dataset.country || 'CZ').toLowerCase();
         };
         part('remove')?.addEventListener('click', () => set(null));
+        // somebody else changed the country: a point of another country no longer applies
+        box.addEventListener('pickup:clear', () => set(null));
         part('choose')?.addEventListener('click', async () => {
             const widget = await library();
             if (!widget || !box.dataset.key) return;
-            widget.pick(box.dataset.key, (point) => { if (point) set(describePoint(point)); }, { language: box.dataset.language ?? 'cs', country: country() });
+            const options: Record<string, unknown> = { language: box.dataset.language ?? 'cs', country: country(), webUrl: location.origin, appIdentity: 'matplace' };
+            try {
+                const vendors = (JSON.parse(box.dataset.vendors || '{}') as Record<string, unknown[]>)[country().toUpperCase()];
+                if (vendors?.length) options.vendors = vendors;
+            } catch { /* no list: every point of the country */ }
+            if (Number(box.dataset.weight) > 0) options.weight = Number(box.dataset.weight);
+            widget.pick(box.dataset.key, (point) => { if (point) set(describePoint(point)); }, options);
         });
     });
 }

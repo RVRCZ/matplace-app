@@ -7,6 +7,7 @@ import { estimate, price, range, RoughConfig, Profile, Params } from './rough';
 import { uploadFile, createCalculation, getCalculation, getFile, CalcInfo, FileInfo } from './api';
 import { bootInquiry } from './inquiry';
 import { renderCheck } from './check';
+import { price as priceText } from '../site/money';
 import { renderAdvice } from './advice';
 import { bootDownload, setDownload, refresh as refreshDownload, openWhenReady as openDownloadWhenReady } from './download';
 
@@ -171,7 +172,6 @@ function renderCompare(base: { grams: number; minutes: number } | null, precise:
     if (!base || !rows.length || !cur.props) { body.innerHTML = ''; return; }
     const q = state.params.quantity;
     const priced = cfg.orientation_profiles.length > 0 && (marketplace() || farmPriced());
-    const unit = cfg.currency === 'CZK' ? 'Kč' : cfg.currency;
     const th = (k: string) => `<th class="py-1 pr-2 font-normal">${t(k)}</th>`;
     head.innerHTML = `<tr>${th('compare.col.material')}${priced ? th('compare.col.price') : ''}${th('compare.col.time')}${th('compare.col.weight')}${th('compare.col.heat')}${th('compare.col.strength')}${th('compare.col.outdoor')}${th('compare.col.food')}</tr>`;
     const approx = precise ? '' : '≈ ';
@@ -183,7 +183,7 @@ function renderCompare(base: { grams: number; minutes: number } | null, precise:
         let cost = '';
         if (priced) {
             const totals = cfg.orientation_profiles.map((prof) => price(cfg.round_to, { ...prof, price_per_gram: prof.price_per_gram * (p.price / cur.props!.price) }, grams, minutes, q).total);
-            cost = `<td class="py-1 pr-2 font-semibold">${same && precise ? '' : '≈ '}${fmt.format(Math.min(...totals))} ${unit}</td>`;
+            cost = `<td class="py-1 pr-2 font-semibold">${same && precise ? '' : '≈ '}${priceText(Math.min(...totals))}</td>`;
         }
         const dots = '●'.repeat(p.strength) + '○'.repeat(Math.max(0, 3 - p.strength));
         return `<tr data-material="${m.code}" class="cursor-pointer border-t border-slate-100 ${same ? 'bg-action-soft' : 'hover:bg-slate-50'}" title="${same ? t('compare.chosen') : t('compare.pick')}">`
@@ -208,9 +208,9 @@ function orientPrice(r: [number, number] | null, rough: boolean): void {
     if (!el) return;
     if (!r) { el.classList.add('hidden'); return; }
     const q = state.params.quantity;
-    const unit = cfg.currency === 'CZK' ? 'Kč' : cfg.currency;
-    const txt = r[0] === r[1] ? fmt.format(r[0]) : `${fmt.format(r[0])} – ${fmt.format(r[1])}`;
-    el.textContent = t('calc.price.orient', { price: `${rough ? '≈ ' : ''}${txt} ${unit}` }) + (q > 1 ? ` ${t('calc.price.per_piece')} ≈ ${fmt.format(Math.round(r[0] / q))} ${unit}.` : '');
+    // the farm's list is in crowns; the visitor reads it in their own currency
+    const txt = r[0] === r[1] ? priceText(r[0]) : `${priceText(r[0])} – ${priceText(r[1])}`;
+    el.textContent = t('calc.price.orient', { price: `${rough ? '≈ ' : ''}${txt}` }) + (q > 1 ? ` ${t('calc.price.per_piece')} ≈ ${priceText(Math.round(r[0] / q))}.` : '');
     el.classList.remove('hidden');
 }
 // the farm's single price list: the calculator prices like the marketplace does, with one list

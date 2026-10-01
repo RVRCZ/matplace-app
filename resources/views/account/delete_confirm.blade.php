@@ -8,8 +8,8 @@
     @include('partials.flash')
     <form method="post" action="{{ $action }}" class="mt-4 space-y-3">
         @csrf
-        @if($balance > 0)
-            <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="credit" value="1" required class="mt-1"> <span>{{ __('user.delete.credit', ['amount' => number_format($balance, 0, ',', ' ').' Kč']) }}</span></label>
+        @if($balance->isPositive())
+            <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="credit" value="1" required class="mt-1"> <span>{{ __('user.delete.credit', ['amount' => $balance->format()]) }}</span></label>
         @endif
         <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="understand" value="1" required class="mt-1"> <span>{{ __('user.delete.understand') }}</span></label>
         <button class="w-full rounded-xl border border-red-300 bg-white px-4 py-3 font-semibold text-red-800 hover:bg-red-50">{{ __('user.delete.confirm_button') }}</button>

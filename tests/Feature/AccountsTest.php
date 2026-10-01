@@ -517,7 +517,7 @@ class AccountsTest extends TestCase
         // the books stay: orders, the payment, every ledger line, plus one that explains the zero
         $this->assertSame(3, FarmOrder::where('user_id', $user->id)->count());
         $this->assertSame(1, Payment::where('user_id', $user->id)->count());
-        $this->assertSame(0.0, app(Wallet::class)->balance($user));
+        $this->assertSame(0.0, app(Wallet::class)->balance($user)->amount);
         $this->assertSame(-500.0, CreditTransaction::where('user_id', $user->id)->where('type', CreditTransaction::TYPE_FORFEIT)->value('amount'));
         // a delivered parcel forgets its address, a print still on the machine keeps it until it is handed over
         $this->assertNull($done->fresh()->shipping_address);
@@ -555,7 +555,8 @@ class AccountsTest extends TestCase
         // opening the link deletes nothing (mail scanners open links): it shows a page with one more button
         $page = $this->get($link)->assertOk()->assertSee(__('user.delete.confirm_button', [], 'en'));
         $this->assertFalse($user->fresh()->isAnonymized());
-        preg_match('/<form method="post" action="([^"]+)"/', $page->getContent(), $m);
+        // the form that deletes, not the currency switch in the header
+        preg_match('/<form method="post" action="([^"]*account\/delete[^"]*)"/', $page->getContent(), $m);
         $action = html_entity_decode($m[1]);
 
         // a forged address does nothing

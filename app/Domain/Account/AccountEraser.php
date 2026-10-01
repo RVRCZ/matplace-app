@@ -38,8 +38,8 @@ final class AccountEraser
         $avatar = $user->avatar_path;
         DB::transaction(function () use ($user) {
             $balance = $this->wallet->balance($user);
-            if ($balance > 0) {
-                $this->wallet->forfeit($user, $balance, __('user.delete.forfeit_note', [], $user->preferredLocale()));
+            if ($balance->isPositive()) {
+                $this->wallet->forfeit($user, $balance->amount, __('user.delete.forfeit_note', [], $user->preferredLocale()));
             }
             // other features clean up after themselves (designer cards, statistics): listeners run right here, in the transaction
             event(new AccountErasing($user));

@@ -7,7 +7,7 @@
     <div class="shrink-0 text-right text-sm font-semibold">
         @if(config('features.marketplace') || ($c->slicer && \App\Http\Controllers\Api\CalculationController::describe($c)['prices']))
             @php $tot = collect(\App\Http\Controllers\Api\CalculationController::describe($c)['prices'] ?? $c->rough['prices'] ?? [])->pluck('total'); @endphp
-            @if($tot->isNotEmpty()){{ number_format($tot->min(), 0, ',', ' ') }}@if($tot->count() > 1) – {{ number_format($tot->max(), 0, ',', ' ') }}@endif Kč@else —@endif
+            @if($tot->isNotEmpty())@money($tot->min())@if($tot->count() > 1) – @money($tot->max())@endif @else —@endif
         @else
             @php $min = $c->slicer['minutes'] ?? $c->rough['minutes'] ?? null; @endphp
             @if($min){{ $min >= 60 ? intdiv($min, 60).' h '.($min % 60).' min' : $min.' min' }} · {{ round($c->slicer['grams'] ?? $c->rough['grams'] ?? 0) }} g@else —@endif

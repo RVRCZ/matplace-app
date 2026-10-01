@@ -141,7 +141,7 @@ class AccountSecurityController extends Controller
     /** @return array<string, list<string>> */
     private function deleteRules(User $user, Wallet $wallet): array
     {
-        return ['understand' => ['accepted']] + ($wallet->balance($user) > 0 ? ['credit' => ['accepted']] : []);
+        return ['understand' => ['accepted']] + ($wallet->balance($user)->isPositive() ? ['credit' => ['accepted']] : []);
     }
 
     private function eraseAndLeave(Request $request, User $user, AccountEraser $eraser): RedirectResponse

@@ -212,7 +212,6 @@ class FarmCatalogController extends Controller
             'min_price' => ['required', 'numeric', 'min:0'],
             'vat_percent' => ['required', 'numeric', 'min:0', 'max:50'],
             'rounding' => ['required', 'numeric', 'min:0', 'max:1000'],
-            'shipping_price' => ['required', 'numeric', 'min:0'],
             'topup_amounts' => ['required', 'string', 'max:120'],
             'topup_min' => ['required', 'integer', 'min:1'],
             'topup_max' => ['required', 'integer', 'gte:topup_min'],
@@ -231,7 +230,7 @@ class FarmCatalogController extends Controller
         $data['marketplace'] = $request->boolean('marketplace');
         $data['farm_open'] = $request->boolean('farm_open');
         $data['farm_public'] = $request->boolean('farm_public');
-        $data['delivery_modes'] = array_values(array_intersect(['pickup', 'shipping'], (array) $request->input('delivery_modes', ['pickup']))) ?: ['pickup'];
+        $data['delivery_modes'] = array_values(array_intersect(['pickup', 'packeta_point', 'packeta_home'], (array) $request->input('delivery_modes', ['pickup']))) ?: ['pickup'];
         foreach ($data as $key => $value) {
             $settings->set($key, $value);
         }
@@ -282,6 +281,19 @@ class FarmCatalogController extends Controller
     {
         $data = $request->validate(['user_id' => ['required', 'exists:users,id'], 'amount' => ['required', 'numeric', 'not_in:0', 'min:-100000', 'max:100000'], 'note' => ['required', 'string', 'max:300']]);
         $wallet->adjust(User::findOrFail($data['user_id']), (float) $data['amount'], $data['note'], $request->user()->id);
+
+        return back()->with('status', __('farm.admin.saved'));
+    }
+
+    /** Another currency for an account: only an admin, only while the account holds nothing. */
+    public function accountCurrency(Request $request, Wallet $wallet): RedirectResponse
+    {
+        $data = $request->validate(['user_id' => ['required', 'exists:users,id'], 'currency' => ['required', 'in:CZK,EUR']]);
+        try {
+            $wallet->changeCurrency(User::findOrFail($data['user_id']), $data['currency']);
+        } catch (\DomainException) {
+            return back()->with('error', __('farm.admin.currency_locked'));
+        }
 
         return back()->with('status', __('farm.admin.saved'));
     }

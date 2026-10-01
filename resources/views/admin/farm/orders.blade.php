@@ -13,7 +13,7 @@
 <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
     <table class="w-full text-left text-sm">
         <thead class="bg-slate-50 text-xs uppercase text-slate-500">
-            <tr><th class="px-3 py-2">#</th><th class="px-3 py-2">{{ __('farm.start.model') }}</th><th class="px-3 py-2">E-mail</th><th class="px-3 py-2">{{ __('farm.order.color') }}</th><th class="px-3 py-2">{{ __('farm.order.time') }}</th><th class="px-3 py-2">g</th><th class="px-3 py-2">Kč</th><th class="px-3 py-2">Status</th></tr>
+            <tr><th class="px-3 py-2">#</th><th class="px-3 py-2">{{ __('farm.start.model') }}</th><th class="px-3 py-2">E-mail</th><th class="px-3 py-2">{{ __('farm.order.color') }}</th><th class="px-3 py-2">{{ __('farm.order.time') }}</th><th class="px-3 py-2">g</th><th class="px-3 py-2">{{ __('farm.order.price') }}</th><th class="px-3 py-2">Status</th></tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
             @forelse($orders as $o)
@@ -24,7 +24,7 @@
                     <td class="px-3 py-2">{{ $o->color?->name ?? '—' }}</td>
                     <td class="px-3 py-2">{{ $o->est_minutes }}@if($o->actual_minutes) <span class="text-xs text-slate-500">→ {{ $o->actual_minutes }}</span>@endif</td>
                     <td class="px-3 py-2">{{ $o->est_grams }}@if($o->actual_grams) <span class="text-xs text-slate-500">→ {{ $o->actual_grams }}</span>@endif</td>
-                    <td class="px-3 py-2 font-semibold">{{ $o->price_total ? number_format($o->price_total, 0, ',', ' ') : '—' }}</td>
+                    <td class="px-3 py-2 font-semibold">@if($o->price_total)@money($o->total())@else — @endif</td>
                     <td class="px-3 py-2">{{ __('farm.status.'.$o->status) }}@if($o->error)<span class="block text-xs text-red-700">{{ $o->error }}</span>@endif</td>
                 </tr>
             @empty

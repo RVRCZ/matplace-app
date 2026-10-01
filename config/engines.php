@@ -10,6 +10,7 @@ return [
     'generator' => env('ENGINE_GENERATOR', 'null'),  // null | tripo | meshy (later)
     'settlement' => env('ENGINE_SETTLEMENT', 'qr-manual'),
     'translator' => env('ENGINE_TRANSLATOR', 'claude'),   // claude | fake
+    'shipping' => env('ENGINE_SHIPPING', 'packeta'),      // packeta | fake
 
     // Portfolio import (Printables, MakerWorld): metadata and pictures only, never files.
     'import' => [

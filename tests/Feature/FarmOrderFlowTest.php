@@ -63,6 +63,8 @@ class FarmOrderFlowTest extends TestCase
         $this->actingAs($this->user)->post('/account/credit', ['amount' => $amount])->assertRedirect();
         $payment = Payment::latest('id')->firstOrFail();
         $this->postJson('/webhooks/payments/fake', ['ref' => $payment->gateway_ref, 'paid' => true], ['X-Fake-Signature' => 'fake'])->assertOk();
+        // the payment fixed the currency of the account; the test keeps signing in with this very object
+        $this->user->refresh();
     }
 
     private function pay(FarmOrder $order, array $over = [])
@@ -126,7 +128,7 @@ class FarmOrderFlowTest extends TestCase
         $this->assertSame('25%', $order->slice_params['overrides']['process']['sparse_infill_density']);
         $this->assertEqualsWithDelta($paid['total'], $order->price_total, 0.001, 'the customer pays what was shown');
         $this->assertSame(['nozzle' => 222, 'nozzle_first' => 225, 'bed' => 60], $white->fresh()->temps(), 'own nozzle, first layer and bed inherited from PLA+');
-        $this->assertEqualsWithDelta(1000 - $paid['total'], app(Wallet::class)->balance($this->user), 0.001);
+        $this->assertEqualsWithDelta(1000 - $paid['total'], app(Wallet::class)->balance($this->user)->amount, 0.001);
         $this->assertStringContainsString('reslice', $order->events->pluck('note')->implode(' '));
     }
 
@@ -147,12 +149,13 @@ class FarmOrderFlowTest extends TestCase
         // a small part goes to the cheapest kind's machine (the S1) but both machines' colours are on offer
         $small = $this->order();
         $this->assertSame($s1->id, $small->farm_printer_id);
+        // the account is kept in crowns from here on (without money on it, an English page would quote euros)
+        $this->credit(1000);
         $state = $this->actingAs($this->user)->getJson("/en/farm/orders/{$small->token}/status")->json();
         $this->assertEqualsCanonicalizing(['white', 'light blue'], array_column($state['colors'], 'name'));
         $offer = collect($state['colors'])->firstWhere('name', 'light blue');
 
         // choosing the Max's blue: paid at the shown price, sliced again for the Max, queued there
-        $this->credit(1000);
         $this->actingAs($this->user)->postJson("/farm/orders/{$small->token}/pay", ['slot' => $offer['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $offer['total']])->assertOk();
         $small->refresh();
         $this->assertSame($max->id, $small->farm_printer_id);
@@ -467,11 +470,11 @@ class FarmOrderFlowTest extends TestCase
         $this->actingAs($this->user)->post('/account/credit', ['amount' => 500]);
         $ref = Payment::latest('id')->value('gateway_ref');
         $this->postJson('/webhooks/payments/fake', ['ref' => $ref, 'paid' => true], ['X-Fake-Signature' => 'nope'])->assertStatus(400);
-        $this->assertSame(0.0, app(Wallet::class)->balance($this->user));
+        $this->assertSame(0.0, app(Wallet::class)->balance($this->user)->amount);
 
         $this->postJson('/webhooks/payments/fake', ['ref' => $ref, 'paid' => true], ['X-Fake-Signature' => 'fake'])->assertOk();
         $this->postJson('/webhooks/payments/fake', ['ref' => $ref, 'paid' => true], ['X-Fake-Signature' => 'fake'])->assertOk();
-        $this->assertSame(500.0, app(Wallet::class)->balance($this->user));
+        $this->assertSame(500.0, app(Wallet::class)->balance($this->user)->amount);
     }
 
     public function test_terms_must_be_accepted_and_a_changed_price_is_never_charged_silently(): void
@@ -481,7 +484,7 @@ class FarmOrderFlowTest extends TestCase
 
         $this->pay($order, ['terms' => false])->assertStatus(422);
         $this->pay($order, ['expected_total' => 1])->assertStatus(422)->assertJsonPath('error', 'price_changed');
-        $this->assertSame(1000.0, app(Wallet::class)->balance($this->user));
+        $this->assertSame(1000.0, app(Wallet::class)->balance($this->user)->amount);
     }
 
     public function test_manual_printer_order_is_paid_queued_and_the_operator_is_told(): void
@@ -493,13 +496,13 @@ class FarmOrderFlowTest extends TestCase
         $order->refresh();
         $this->assertMatchesRegularExpression('/^F\d{2}-000001$/', $order->number);
         $this->assertNotNull($order->terms_accepted_at);
-        $this->assertSame(round(1000 - $order->price_total, 2), app(Wallet::class)->balance($this->user));
+        $this->assertSame(round(1000 - $order->price_total, 2), app(Wallet::class)->balance($this->user)->amount);
         Mail::assertQueued(FarmAdminAlert::class);
         Mail::assertQueued(FarmOrderStatus::class, fn ($m) => $m->status === 'queued');
 
         // the customer changes their mind before the print: everything comes back
         $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/cancel")->assertOk()->assertJsonPath('status', 'cancelled');
-        $this->assertSame(1000.0, app(Wallet::class)->balance($this->user));
+        $this->assertSame(1000.0, app(Wallet::class)->balance($this->user)->amount);
     }
 
     public function test_approval_mode_holds_the_order_until_an_admin_lets_it_through(): void
@@ -587,19 +590,19 @@ T2 ; slot chosen by matplace farm
         $this->assertGreaterThan(0, $expected);
         $this->assertLessThan($paid['total'], $expected);
         $this->assertEqualsWithDelta($expected, $p['charged_on_cancel'], 0.001);
-        $this->assertEqualsWithDelta(1000 - $expected, app(Wallet::class)->balance($this->user), 0.001);
+        $this->assertEqualsWithDelta(1000 - $expected, app(Wallet::class)->balance($this->user)->amount, 0.001);
         $this->assertDatabaseHas('credit_transactions', ['farm_order_id' => $order->id, 'type' => 'capture', 'note' => (string) $expected]);
         $this->assertSame('cancel', FarmCommand::latest('id')->first()->type, 'the printer is told to stop');
         // the admin's refund button can still hand the kept part back, on purpose
         $this->assertEqualsWithDelta($expected, app(Wallet::class)->giveBack($order), 0.001);
-        $this->assertEqualsWithDelta(1000, app(Wallet::class)->balance($this->user), 0.001);
+        $this->assertEqualsWithDelta(1000, app(Wallet::class)->balance($this->user)->amount, 0.001);
         $this->assertSame(0.0, app(Wallet::class)->giveBack($order), 'and only once');
 
         // an order cancelled before anything printed costs nothing
         $other = $this->order();
         $this->pay($other)->assertOk();
         $this->actingAs($this->user)->postJson("/farm/orders/{$other->token}/cancel")->assertOk();
-        $this->assertEqualsWithDelta(1000, app(Wallet::class)->balance($this->user), 0.001);
+        $this->assertEqualsWithDelta(1000, app(Wallet::class)->balance($this->user)->amount, 0.001);
     }
 
     public function test_failed_print_returns_the_credit_and_alerts_the_admin(): void
@@ -616,7 +619,7 @@ T2 ; slot chosen by matplace farm
         $order->refresh();
         $this->assertSame(FarmOrder::STATUS_FAILED, $order->status);
         $this->assertSame('print_failed', $order->error);
-        $this->assertSame(1000.0, app(Wallet::class)->balance($this->user));
+        $this->assertSame(1000.0, app(Wallet::class)->balance($this->user)->amount);
         Mail::assertQueued(FarmAdminAlert::class);
     }
 

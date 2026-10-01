@@ -23,7 +23,7 @@
         <div class="card p-4"><dt class="text-xs font-semibold uppercase tracking-wide text-muted">{{ __('designer.stats.visits_7') }}</dt><dd class="mt-1 text-2xl font-extrabold">{{ $week['visits'] }}</dd><dd class="text-xs text-muted">{{ __('designer.stats.via_ref', ['n' => $week['via_ref']]) }}</dd></div>
         <div class="card p-4"><dt class="text-xs font-semibold uppercase tracking-wide text-muted">{{ __('designer.stats.visits_30') }}</dt><dd class="mt-1 text-2xl font-extrabold">{{ $month['visits'] }}</dd><dd class="text-xs text-muted">{{ __('designer.stats.via_ref', ['n' => $month['via_ref']]) }} · {{ __('designer.stats.arrivals', ['n' => $month['ref_visits']]) }}</dd></div>
         <div class="card p-4"><dt class="text-xs font-semibold uppercase tracking-wide text-muted">{{ __('designer.stats.prints') }}</dt><dd class="mt-1 text-2xl font-extrabold">{{ $prints['orders'] }}</dd><dd class="text-xs text-muted">{{ __('designer.stats.pieces', ['n' => $prints['pieces']]) }}</dd></div>
-        <div class="card p-4"><dt class="text-xs font-semibold uppercase tracking-wide text-muted">{{ __('designer.stats.rewards') }}</dt><dd class="mt-1 text-2xl font-extrabold">{{ number_format($rewards, 0, ',', ' ') }} Kč</dd><dd class="text-xs text-muted"><a href="{{ route('account.credit') }}" class="underline">{{ __('designer.stats.credit', ['amount' => number_format($balance, 0, ',', ' ').' Kč']) }}</a></dd></div>
+        <div class="card p-4"><dt class="text-xs font-semibold uppercase tracking-wide text-muted">{{ __('designer.stats.rewards') }}</dt><dd class="mt-1 text-2xl font-extrabold">@money($rewards, $balance->currency)</dd><dd class="text-xs text-muted"><a href="{{ route('account.credit') }}" class="underline">{{ __('designer.stats.credit', ['amount' => $balance->format()]) }}</a></dd></div>
     </dl>
 
     {{-- adding cards --}}
@@ -64,7 +64,7 @@
                 @foreach($lastRewards as $t)
                     <li class="flex items-center justify-between gap-3 px-4 py-2">
                         <span class="min-w-0 truncate">{{ $t->created_at->format('j. n. Y') }} · {{ $t->order?->number ?? '' }} {{ $t->note }}</span>
-                        <span class="shrink-0 font-semibold {{ $t->amount < 0 ? 'text-red-700' : 'text-ok' }}">{{ $t->amount > 0 ? '+' : '' }}{{ number_format($t->amount, 2, ',', ' ') }} {{ $t->currency === 'EUR' ? '€' : 'Kč' }}</span>
+                        <span class="shrink-0 font-semibold {{ $t->amount < 0 ? 'text-red-700' : 'text-ok' }}">{{ $t->money()->format(null, true) }}</span>
                     </li>
                 @endforeach
             </ul>

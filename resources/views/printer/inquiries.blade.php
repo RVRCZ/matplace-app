@@ -20,7 +20,7 @@
                             @if($unread)<span class="ml-1 rounded-full bg-red-600 px-1.5 text-[10px] text-white">{{ $unread }}</span>@endif</div>
                     </div>
                     <div class="text-right">
-                        <div class="font-semibold">{{ $mine ? number_format($mine->total, 0, ',', ' ').' Kč' : ($d->auto_price ? '≈ '.number_format($d->auto_price, 0, ',', ' ').' Kč' : '') }}</div>
+                        <div class="font-semibold">{{ $mine ? \App\Support\Money::czk($mine->total)->format() : ($d->auto_price ? '≈ '.\App\Support\Money::czk($d->auto_price)->format() : '') }}</div>
                         <span class="text-xs text-slate-500">
                             @if($d->declined_at) {{ __('inquiry.declined_status') }}
                             @elseif($i->accepted_quote_id && $mine && $i->accepted_quote_id === $mine->id) ✅ {{ __('inquiry.status.accepted') }}

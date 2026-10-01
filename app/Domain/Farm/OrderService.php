@@ -13,6 +13,8 @@ use App\Models\FarmPrinter;
 use App\Models\FarmPrinterSlot;
 use App\Models\ModelFile;
 use App\Models\User;
+use App\Support\Currency;
+use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -20,7 +22,7 @@ use Illuminate\Support\Str;
 /** Everything the customer can do with a farm order before it is paid: create, change presets, see colours and price. */
 final class OrderService
 {
-    public function __construct(private readonly FarmSettings $settings, private readonly PriceCalculator $prices) {}
+    public function __construct(private readonly FarmSettings $settings, private readonly PriceCalculator $prices, private readonly Shipping $shipping) {}
 
     /**
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
@@ -88,7 +90,8 @@ final class OrderService
             'farm_printer_slot_id' => $chosen['slot']->id ?? null,
             'second_slot_id' => $second?->id,
             'second_color_id' => $second?->color->id,
-            'currency' => $this->settings->get('currency'),
+            // the account's currency, or the one this customer sees prices in until the first payment fixes it
+            'currency' => $user->currency ?: Currency::current($user),
             // a designer's card (the reward is added to the price) or the inspiration page the customer came from
             'designer_model_id' => $card?->id,
             'catalog_model_id' => $inspiration?->id,
@@ -232,26 +235,75 @@ final class OrderService
     }
 
     /**
+     * What this order costs on a given printer: the print (computed in crowns, where the rates are defined), the
+     * designer's reward, the parcel; everything the customer pays in the currency asked for.
+     *
      * @param  FarmMaterial|null  $material  the kind of the chosen colour; before a colour is chosen, the order's kind
-     * @return array<string,mixed> price breakdown for this order on a given printer
+     * @param  string|null  $country  where it is delivered (sets the parcel price and, once config says so, the VAT)
+     * @param  string|null  $currency  CZK | EUR; the order's own when not given
+     * @return array<string,mixed> price breakdown
      */
-    public function priceFor(FarmOrder $order, FarmPrinter $printer, ?string $delivery = null, ?FarmMaterial $material = null): array
+    public function priceFor(FarmOrder $order, FarmPrinter $printer, ?string $delivery = null, ?FarmMaterial $material = null, ?string $country = null, ?string $currency = null): array
     {
         $delivery ??= $order->delivery;
         $material ??= $order->material;
+        $currency = strtoupper((string) ($currency ?: $order->currency ?: Money::CZK));
+        $country = $delivery === Shipping::PICKUP ? 'CZ' : strtoupper((string) ($country ?: ($order->shipping_address['country'] ?? 'CZ')));
 
-        return $this->withRoyalty($order, $this->prices->price((int) $order->est_minutes, (float) $order->est_grams, [
+        $price = $this->withRoyalty($order, $this->prices->price((int) $order->est_minutes, (float) $order->est_grams, [
             'hourly_rate' => $printer->hourly_rate ?? (float) $this->settings->get('hourly_rate'),
             'price_per_gram' => (float) $material->price_per_gram,
             'fixed_fee' => (float) $this->settings->get('fixed_fee'),
             'min_price' => (float) $this->settings->get('min_price'),
-            'vat_percent' => (float) $this->settings->get('vat_percent'),
+            'vat_percent' => $this->shipping->vatPercent($country),
             'rounding' => (float) $this->settings->get('rounding'),
             'time_factor' => $printer->time_factor,
             'weight_factor' => $printer->weight_factor,
-            'shipping' => $delivery === 'shipping' ? (float) $this->settings->get('shipping_price') : 0.0,
-            'currency' => (string) $this->settings->get('currency'),
+            'currency' => Money::CZK,
         ]));
+        $parcel = $this->shipping->price($delivery, $country, $this->shipping->parcelGrams($order), $currency);
+
+        return self::inCurrency($price, $currency, (float) $parcel?->amount) + ['delivery' => $delivery, 'country' => $delivery === Shipping::PICKUP ? null : $country];
+    }
+
+    /**
+     * The breakdown in the currency the customer pays in. What is charged (print, reward, total) is rounded the way
+     * prices are (euros up to 0.10); the lines that only explain the print (time, material, fee, net) are plain
+     * conversions, and the VAT line is what is left, so the lines always add up to the print price.
+     * `royalty_unit` stays in crowns: it is the frozen per-piece reward the designer's account is credited from.
+     *
+     * @param  array<string,mixed>  $price  computed in crowns
+     * @return array<string,mixed>
+     */
+    private static function inCurrency(array $price, string $currency, float $shipping): array
+    {
+        $charged = fn (float $czk) => Money::czk($czk)->to($currency)->amount;
+        $plain = fn (float $czk) => Money::czk($czk)->exactly($currency)->amount;
+        $print = $charged((float) $price['print_total']);
+        $royalty = $charged((float) $price['royalty']);
+        $net = $plain((float) $price['net']);
+
+        return [
+            'currency' => $currency,
+            'time' => $plain((float) $price['time']), 'material' => $plain((float) $price['material']), 'fixed' => $plain((float) $price['fixed']),
+            'net' => $net, 'vat' => round($print - $net, 2), 'print_total' => $print, 'rounding_added' => $plain((float) $price['rounding_added']),
+            'royalty' => $royalty, 'shipping' => round($shipping, 2), 'total' => round($print + $royalty + $shipping, 2),
+        ] + ($currency === Money::CZK ? [] : ['czk' => ['print_total' => $price['print_total'], 'royalty' => $price['royalty'], 'rate' => Money::rate()]]) + $price;
+    }
+
+    /**
+     * An order that is not paid yet follows the currency its customer sees prices in (they may switch Kč / € or
+     * top up in the other one meanwhile); a paid order keeps the currency it was paid in for good.
+     */
+    public function alignCurrency(FarmOrder $order, string $currency): FarmOrder
+    {
+        if ($order->paid_at !== null || $order->status !== FarmOrder::STATUS_SLICED || $order->currency === $currency || ! $order->printer || ! $order->material) {
+            return $order;
+        }
+        $price = $this->priceFor($order, $order->printer, Shipping::PICKUP, null, null, $currency);
+        $order->forceFill(['currency' => $currency, 'price' => $price, 'price_total' => $price['total']])->save();
+
+        return $order;
     }
 
     /**

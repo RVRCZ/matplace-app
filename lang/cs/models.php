@@ -8,7 +8,7 @@ return [
     'description' => 'Modely od designérů, které vám vytiskneme a pošleme. Vyberte materiál a počet kusů, cenu vidíte hned.',
     'description_one' => 'Model „:title“ od designéra :name. Vytiskneme a pošleme.',
     'lead' => 'Modely od designérů, které vám vytiskneme na naší farmě. Část ceny jde vždy autorovi.',
-    'from' => 'od :price Kč',
+    'from' => 'od :price',
     'sort' => ['label' => 'Řazení', 'new' => 'Nové', 'printed' => 'Nejvíc tištěné'],
     'size' => [
         'label' => 'Velikost',
@@ -107,7 +107,7 @@ return [
 
     'farm' => [
         'card' => 'Model „:title“ od designéra :name',
-        'reward' => 'V ceně je odměna autorovi (nejvýše :amount Kč za kus).',
+        'reward' => 'V ceně je odměna autorovi (nejvýše :amount za kus).',
         'no_preview' => 'Soubor tohoto modelu autor ke stažení nedává, proto tu není 3D náhled.',
         'source_title' => 'Model z inspiračního katalogu',
         'source_text' => 'K objednávce si poznamenáme: :line',

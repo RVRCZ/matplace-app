@@ -87,7 +87,7 @@ return [
         'empty' => 'Nothing here yet. Import your models from Printables or MakerWorld, or add the first one by hand.',
         'state' => ['printable' => 'can be printed', 'checking' => 'checking the file', 'failed' => 'file refused', 'hidden' => 'hidden', 'link' => 'link only'],
         'remix' => 'remix',
-        'reward' => 'reward :amount CZK',
+        'reward' => 'reward :amount',
         'views_orders' => 'views · prints',
     ],
 

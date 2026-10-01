@@ -8,6 +8,7 @@ use App\Domain\Generation\QuotaExceeded;
 use App\Engines\Vision\VisionDescriber;
 use App\Http\Controllers\Controller;
 use App\Models\GenerationRequest;
+use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -88,10 +89,20 @@ class GenerationController extends Controller
                 $req = $service->fromText($data['prompt'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user);
             }
         } catch (QuotaExceeded $e) {
-            return response()->json(['error' => $e->reason, 'limit' => $e->limit, 'login_limit' => (int) config('ai.daily_limits.generate_user'), 'price' => $e->price, 'missing' => $e->missing, 'topup_url' => $request->user() ? route('account.credit', ['need' => (int) ceil($e->missing)]) : null], 429);
+            return response()->json(self::quotaAnswer($e, $request), 429);
         }
 
         return response()->json(['generation' => self::describe($req), 'skipped_views' => $skipped ?? []], 201);
+    }
+
+    /** Why a generation was not started; with the price and what is missing as texts in the account's currency. */
+    private static function quotaAnswer(QuotaExceeded $e, Request $request): array
+    {
+        return [
+            'error' => $e->reason, 'limit' => $e->limit, 'login_limit' => (int) config('ai.daily_limits.generate_user'),
+            'price' => Money::of($e->price, $e->currency)->format(), 'missing' => Money::of($e->missing, $e->currency)->format(),
+            'topup_url' => $request->user() ? route('account.credit', ['need' => ceil($e->missing * 10) / 10]) : null,
+        ];
     }
 
     /** POST /api/generate/{token}/refine {instruction} → a new generation: the same subject changed in words */
@@ -107,7 +118,7 @@ class GenerationController extends Controller
         } catch (\InvalidArgumentException) {
             return response()->json(['error' => 'not_refinable'], 422);
         } catch (QuotaExceeded $e) {
-            return response()->json(['error' => $e->reason, 'limit' => $e->limit, 'login_limit' => (int) config('ai.daily_limits.generate_user'), 'price' => $e->price, 'missing' => $e->missing, 'topup_url' => $request->user() ? route('account.credit', ['need' => (int) ceil($e->missing)]) : null], 429);
+            return response()->json(self::quotaAnswer($e, $request), 429);
         }
 
         return response()->json(['generation' => self::describe($req)], 201);

@@ -10,7 +10,7 @@
         <dl class="flex gap-6 text-center text-sm">
             <div><dd class="text-lg font-bold">{{ $headline['visits'] }}</dd><dt class="text-xs text-muted">{{ __('designer.stats.visits_30') }}</dt></div>
             <div><dd class="text-lg font-bold">{{ $headline['prints'] }}</dd><dt class="text-xs text-muted">{{ __('designer.stats.prints') }}</dt></div>
-            <div><dd class="text-lg font-bold">{{ number_format($headline['rewards'], 0, ',', ' ') }} Kč</dd><dt class="text-xs text-muted">{{ __('designer.stats.rewards') }}</dt></div>
+            <div><dd class="text-lg font-bold">@money($headline['rewards'], auth()->user()->currency ?: \App\Support\Currency::current())</dd><dt class="text-xs text-muted">{{ __('designer.stats.rewards') }}</dt></div>
         </dl>
         <a href="{{ route('designer.dashboard') }}" class="btn-secondary min-h-0 px-4 py-2 text-sm">{{ __('designer.open') }}</a>
     @else

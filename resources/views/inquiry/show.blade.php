@@ -55,7 +55,7 @@
                             <div class="text-xs text-slate-500">{{ $p->user->city ?: '' }} @php $d = $inquiry->dispatches->firstWhere('printer_profile_id', $p->id); @endphp @if($d?->distance_km !== null)· {{ round($d->distance_km) }} km @endif @if($o->lead_time_days !== null)· {{ __('calc.days', ['n' => $o->lead_time_days]) }}@endif</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-2xl font-extrabold">{{ number_format($o->total, 0, ',', ' ') }} Kč</div>
+                            <div class="text-2xl font-extrabold">@money($o->total, 'CZK')</div>
                             <span class="text-xs text-slate-500">{{ __('quote.status.'.$o->status) }}</span>
                         </div>
                     </div>
