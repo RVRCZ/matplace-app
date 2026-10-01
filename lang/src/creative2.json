@@ -3,7 +3,7 @@
     "tools.stencil.hint": ["Text nebo motiv vyříznutý do destičky. Vnitřky písmen držíme můstky, takže nic nevypadne.", "A text or a motif cut into a plate. The insides of letters are held by bridges, so nothing falls out.", "Un texto o motivo recortado en una placa. El interior de las letras se sujeta con puentes, así que nada se cae."],
     "tools.stencil.action": ["Navrhnout šablonu", "Design a stencil", "Diseñar una plantilla"],
     "tools.lightbox.title": ["Světelný nápis nebo logo", "Illuminated sign or logo", "Rótulo o logo luminoso"],
-    "tools.lightbox.hint": ["Čelní maska, difuzor, tělo a zadní kryt s otvorem na kabel. LED pásek není součástí výtisku.", "Front mask, diffuser, body and back cover with a cable hole. The LED strip is not part of the print.", "Máscara frontal, difusor, cuerpo y tapa trasera con orificio para el cable. La tira LED no forma parte de la impresión."],
+    "tools.lightbox.hint": ["Čelní maska, difuzor, tělo s otvorem na kabel a zadní kryt. LED pásek není součástí výtisku.", "Front mask, diffuser, body with a cable hole and back cover. The LED strip is not part of the print.", "Máscara frontal, difusor, cuerpo con orificio para el cable y tapa trasera. La tira LED no forma parte de la impresión."],
     "tools.lightbox.action": ["Navrhnout světelný nápis", "Design an illuminated sign", "Diseñar un rótulo luminoso"],
 
     "param.part.face": ["Jen čelní maska", "Front mask only", "Solo la máscara frontal"],

@@ -451,8 +451,18 @@ def phone_stand(M, p):
     C = M.CrossSection
     note = {}
 
+    def lean(lo=None, hi=None):
+        """The angle that was asked for, kept to what this shape stands firmly at; a changed angle is told (param.warn.stand_angle_*)."""
+        asked = num(p, k, "angle", 65)
+        used = asked if lo is None else max(asked, lo)
+        used = used if hi is None else min(used, hi)
+        if used != asked:
+            note.setdefault("warnings", []).append("stand_angle_%d" % used)
+        note["angle"] = used
+        return used
+
     if style == "wave":
-        angle, back = max(num(p, k, "angle", 65), 55.0), num(p, k, "back", 90)
+        angle, back = lean(lo=55.0), num(p, k, "back", 90)
         profile, depth, height, seat_top, (sx0, sx1) = _wave_profile(M, device, angle, back, t)
         solid = profile.extrude(width)
         if cable:
@@ -466,7 +476,7 @@ def phone_stand(M, p):
 
     if style == "plate":
         # flat base, a leaning back plate braced by a fin, two hook blocks with a seat and a lip; printed upright
-        angle, back = max(num(p, k, "angle", 65), 55.0), num(p, k, "back", 100)
+        angle, back = lean(lo=55.0), num(p, k, "back", 100)
         a = math.radians(angle)
         seat_h, lip_h, lip_t, hook_w = 10.0, 6.0, 3.0, 12.0
         y_lip = 8.0
@@ -490,7 +500,7 @@ def phone_stand(M, p):
         return {"all": solid, "use": use}, note
 
     if style == "wedge":
-        angle = min(num(p, k, "angle", 65), 70.0)
+        angle = lean(hi=70.0)
         profile, mouth, height, depth = _wedge_profile(M, device, angle, num(p, k, "depth", 60), r)
         solid = profile.extrude(width)
         if cable:
@@ -553,7 +563,7 @@ def phone_stand(M, p):
         note["material_hint"] = "petg"
         return {"all": solid, "use": use}, note
 
-    angle, back = max(num(p, k, "angle", 65), 45.0), num(p, k, "back", 100)
+    angle, back = lean(lo=45.0), num(p, k, "back", 100)
     profile, fx, rear_x, top_y, shelf_h, lip_h = _desk_profile(M, device, angle, back, t, r, bool(p.get("window", True)))
     solid = profile.extrude(width)
     if cable:

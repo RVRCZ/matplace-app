@@ -5,7 +5,7 @@ return [
     'description' => 'Escriba un nombre o un texto, elija la forma y la tipografía y vea al instante el modelo y el precio. Imprimimos la placa o el llavero, o lo descarga.',
     'h1' => 'Placa, etiqueta o llavero con su propio texto',
     'intro' => [
-        'La herramienta convierte su texto en un cartel de puerta, una etiqueta, un llavero o un nombre sin placa. El texto admite una o dos líneas de hasta 40 caracteres. Usted elige el acabado (en relieve, grabado, contorno o solo el nombre), la forma de la placa y una de cuatro tipografías. Las medidas de la placa se calculan según el texto, la altura de letra y el margen.',
+        'La herramienta convierte su texto en un cartel de puerta, una etiqueta, un llavero o un nombre sin placa. El texto admite una o dos líneas de hasta 40 caracteres; la segunda línea es más pequeña que la primera. Usted elige el acabado (en relieve, grabado, contorno o solo el nombre), la forma de la placa y una de cuatro tipografías. Las medidas de la placa se calculan según el texto, la altura de letra y el margen.',
         'La vista previa cambia con cada ajuste y muestra las medidas exteriores en milímetros y un precio orientativo. Puede pedir el diseño impreso en nuestra granja de impresión o descargarlo gratis para su impresora. Las letras en relieve se pueden imprimir en un segundo color: la impresora lo cambia a la altura donde empiezan las letras. Los colores disponibles son los cargados en las impresoras en ese momento.',
     ],
     'steps' => [

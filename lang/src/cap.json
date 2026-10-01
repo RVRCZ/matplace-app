@@ -124,11 +124,6 @@
         "The thread is a smooth helix with clearance; for an unknown thread print one piece to try first.",
         "La rosca es una hélice suave con holgura; con una rosca desconocida imprima primero una pieza de prueba."
     ],
-    "param.error.cap_thread_round": [
-        "Závit umíme jen na kulatém víčku. Zvolte kulatý tvar.",
-        "A thread works on a round cap only. Choose the round shape.",
-        "La rosca solo funciona en una tapa redonda. Elija la forma redonda."
-    ],
     "param.error.cap_too_small": [
         "Tak malý díl by se nedal vytisknout pevně. Zvětšete rozměr.",
         "A part this small would not print sturdy. Make it bigger.",

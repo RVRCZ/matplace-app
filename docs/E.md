@@ -108,7 +108,8 @@ vypne indexování celé kopie webu.
   jak chtělo zadání; upravit půjde v editoru (krok F).
 - **Texty nástrojů** zkontrolovat; psané jsou podle kódu nástrojů, ne podle dojmu.
 
-Chyby v nástrojích, které se našly při psaní textů (neopravoval jsem, nejsou v zadání):
+Chyby v nástrojích, které se našly při psaní textů (v kroku E neopravené; cedulku, světelnou ceduli, stojánek
+a krytku opravuje `docs/H.md`, QR kód jiná session):
 - QR kód: volba „otvor na zavěšení“ bez stojánku nic neudělá (`creative_kinds.py`, podmínka nikdy neplatí).
 - Cedulka: popisek říká „druhý řádek (menší)“, ale oba řádky mají stejnou výšku písma.
 - Světelná cedule: nápověda říká, že otvor pro kabel je v zadním krytu; je v těle.

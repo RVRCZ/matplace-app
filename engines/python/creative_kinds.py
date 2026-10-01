@@ -255,6 +255,9 @@ def logo(M, Invalid, p):
 
 # ── sign / name tag / keychain ───────────────────────────────────────────────
 
+SIGN_SECOND_LINE = 0.7     # the height of a sign's second line against the first
+
+
 def sign(M, Invalid, p):
     """
     Text on a plate: raised (emboss), sunk (engrave) or raised as an outline. Keyring tab, raised rim, a bevelled top
@@ -273,7 +276,8 @@ def sign(M, Invalid, p):
     if not lines:
         raise Invalid("no_text")
     try:
-        art, info = S.text(M, lines[:2], p.get("font"), cap)
+        # the form calls the second line "smaller": a name and a line under it, not two headlines
+        art, info = S.text(M, lines[:2], p.get("font"), cap, scales=[1.0, SIGN_SECOND_LINE])
     except S.ArtworkError as e:
         raise Invalid(e.code)
     w, hgt = S.size(art)

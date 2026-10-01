@@ -84,8 +84,11 @@ def _spare_fonts(font_path):
 SILENT = {0xFE0E, 0xFE0F, 0x200D, 0x20E3} | set(range(0x1F3FB, 0x1F400))
 
 
-def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center"):
-    """Lines of text → outline. cap_height_mm is the height of a capital letter, so "12 mm text" means what people expect."""
+def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center", scales=None):
+    """
+    Lines of text → outline. cap_height_mm is the height of a capital letter, so "12 mm text" means what people expect.
+    scales: how tall each line is against that height (None = all the same); a name with a smaller line under it is [1, 0.7].
+    """
     import numpy as np
     from fontTools.ttLib import TTFont
     lines = [l for l in (str(x).strip() for x in lines) if l]
@@ -153,22 +156,28 @@ def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center"):
             x += hmtx[g][0]
         rows.append(row)
         widths.append(x)
+    size = [float(scales[i]) if scales and i < len(scales) else 1.0 for i in range(len(rows))]
+    widths = [w * s for w, s in zip(widths, size)]
     wmax = max(widths) if widths else 0
-    step = cap * (1 + line_gap) + units * 0.12
+    # baselines: under a line comes the gap, what hangs below its baseline, and the capitals of the next line
+    # (with every line the same size this is the one step there always was)
+    base = [0.0]
+    for i in range(1, len(rows)):
+        base.append(base[-1] - (cap * size[i] + cap * line_gap * (size[i - 1] + size[i]) / 2 + units * 0.12 * size[i - 1]))
     for i, row in enumerate(rows):
         dx = {"left": 0, "right": wmax - widths[i]}.get(align, (wmax - widths[i]) / 2)
-        dy = -i * step
+        s, dy = size[i], base[i]
         for poly in row:
             total += len(poly)
-            polys.append(np.array([((px + dx) * k, (py + dy) * k) for px, py in poly], dtype=np.float64))
+            polys.append(np.array([((px * s + dx) * k, (py * s + dy) * k) for px, py in poly], dtype=np.float64))
     if not polys:
         raise ArtworkError("no_text")
     if total > MAX_POINTS:
         raise ArtworkError("too_complex")
     cs = M.CrossSection(polys, M.FillRule.NonZero)
     bx0, by0, bx1, by1 = cs.bounds()
-    # the baseline of the last line sits at y = -(lines-1)·step; how far the ink hangs below it, relative to the text width
-    base_y = -(len(rows) - 1) * step * k
+    # how far the ink hangs below the baseline of the last line, relative to the text width
+    base_y = base[-1] * k
     hang = max(0.0, base_y - by0) / max(1e-6, bx1 - bx0)
     return cs, {"missing_chars": sorted(missing), "source": "text", "descent_ratio": hang}
 
