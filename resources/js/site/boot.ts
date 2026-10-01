@@ -2,9 +2,11 @@
 import { bootThumbs } from './thumbs';
 import { bootPrinterPick } from './printer_pick';
 import { bootPickup } from './pickup';
+import { bootDesigner } from './designer';
 
 export function bootSite(): void {
     bootThumbs();
     bootPrinterPick();
     bootPickup();
+    bootDesigner();
 }

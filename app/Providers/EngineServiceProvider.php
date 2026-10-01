@@ -23,6 +23,11 @@ use App\Engines\Farm\PythonPrintPreparer;
 use App\Engines\Generator\FakeGenerator;
 use App\Engines\Generator\NullGenerator;
 use App\Engines\Generator\TripoGenerator;
+use App\Engines\Import\FakeSource;
+use App\Engines\Import\MakerWorldSource;
+use App\Engines\Import\ModelSource;
+use App\Engines\Import\PrintablesSource;
+use App\Engines\Import\Sources;
 use App\Engines\Payment\FakeGateway;
 use App\Engines\Payment\StripeGateway;
 use App\Engines\Project\CompositeProjectExporter;
@@ -38,6 +43,9 @@ use App\Engines\Search\MakerWorldSearch;
 use App\Engines\Search\PrintablesSearch;
 use App\Engines\Slicer\FakeSlicer;
 use App\Engines\Slicer\OrcaSlicer;
+use App\Engines\Translate\ClaudeTranslator;
+use App\Engines\Translate\FakeTranslator;
+use App\Engines\Translate\Translator;
 use App\Engines\Vision\VisionDescriber;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
@@ -93,6 +101,19 @@ class EngineServiceProvider extends ServiceProvider
             'fake' => new FakeGenerator,
             default => new NullGenerator,
         });
+
+        // sites a designer's portfolio is imported from; "fake" keeps everything in memory (tests, local work)
+        $this->app->singleton(Sources::class, function () {
+            $config = (array) config('engines.import');
+            $real = ['printables' => new PrintablesSource($config), 'makerworld' => new MakerWorldSource($config)];
+
+            return new Sources(($config['driver'] ?? 'live') === 'fake'
+                ? array_map(fn (ModelSource $s) => new FakeSource($s->key(), $s), $real)
+                : $real);
+        });
+        $this->app->singleton(Translator::class, fn () => config('engines.translator') === 'fake'
+            ? new FakeTranslator
+            : new ClaudeTranslator((array) config('ai.anthropic')));
 
         $this->app->singleton(VisionDescriber::class, fn () => new VisionDescriber([
             'api_key' => config('ai.anthropic.api_key'), 'model' => config('ai.anthropic.vision_model'), 'timeout' => config('ai.anthropic.timeout'),

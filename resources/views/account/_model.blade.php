@@ -9,7 +9,7 @@
     $label = $m->origin === 'tool' && \Illuminate\Support\Facades\Lang::has('tools.'.$m->kind().'.title') ? __('tools.'.$m->kind().'.title') : __('user.models.kind.'.(in_array($m->kind(), ['repaired', 'mold'], true) ? $m->kind() : (in_array($m->origin, ['generated', 'tool'], true) ? $m->origin : 'upload')));
 @endphp
 <article class="card flex flex-col overflow-hidden" data-model="{{ $m->uuid }}">
-    <a href="{{ $toolUrl ?? route('home', ['open' => $m->uuid]) }}" class="block aspect-[4/3] bg-slate-50" tabindex="-1" aria-hidden="true">
+    <a href="{{ $toolUrl ?? route('home', ['open' => $m->uuid]) }}" class="block aspect-[4/3] overflow-hidden bg-slate-50" tabindex="-1" aria-hidden="true">
         @if($picture)
             <img src="{{ $picture }}" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover">
         @elseif($ready && ($m->triangles === null || $m->triangles <= 400000))

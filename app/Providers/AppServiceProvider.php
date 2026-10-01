@@ -5,11 +5,15 @@ namespace App\Providers;
 use App\Domain\Calculation\MaterialCatalog;
 use App\Domain\Calculation\PriceEngine;
 use App\Domain\Calculation\RoughEstimator;
+use App\Domain\Designer\DesignerProfiles;
 use App\Domain\Farm\FarmSettings;
+use App\Events\AccountErasing;
+use App\Models\Event as Visit;
 use App\Routing\LocalizedUrlGenerator;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Routing\UrlGenerator;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
@@ -52,6 +56,12 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Throwable) {
             // no database yet (first install, artisan key:generate…): the .env defaults stand
         }
+
+        // an account being deleted takes its designer profile down with it and leaves the statistics without a person
+        Event::listen(function (AccountErasing $erasing) {
+            $this->app->make(DesignerProfiles::class)->eraseFor($erasing->user);
+            Visit::where('user_id', $erasing->user->id)->update(['user_id' => null]);
+        });
 
         RateLimiter::for('uploads', fn (Request $r) => Limit::perMinute(20)->by($r->ip()));
         RateLimiter::for('calculations', fn (Request $r) => Limit::perMinute(60)->by($r->ip()));

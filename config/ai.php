@@ -15,6 +15,26 @@ return [
         // "how do I print this?" for a model in the calculator
         'advise_model' => env('ANTHROPIC_ADVISE_MODEL', 'claude-opus-5'),
         'advise_effort' => env('ANTHROPIC_ADVISE_EFFORT', 'medium'),
+        // descriptions of models in cs / en / es (designer cards, the inspiration catalogue)
+        'translate_model' => env('ANTHROPIC_TRANSLATE_MODEL', 'claude-opus-5-5'),
+        'translate_effort' => env('ANTHROPIC_TRANSLATE_EFFORT', 'low'),
+    ],
+
+    /*
+     * What a call costs, for /admin/ai (App\Support\AiUsage). Language models: USD per million tokens in / out,
+     * matched by the beginning of the model id; `call` is a flat USD price per call for services without tokens.
+     */
+    'prices' => [
+        'usd_czk' => (float) env('AI_USD_CZK', 23),
+        'models' => [
+            'claude-fable' => ['in' => 10.0, 'out' => 50.0],
+            'claude-opus-5-5' => ['in' => 4.0, 'out' => 20.0],
+            'claude-opus' => ['in' => 5.0, 'out' => 25.0],
+            'claude-sonnet' => ['in' => 2.0, 'out' => 10.0],
+            'claude-haiku' => ['in' => 1.0, 'out' => 5.0],
+            'tripo' => ['in' => 0, 'out' => 0, 'call' => 0.40],
+            'gemini' => ['in' => 0, 'out' => 0, 'call' => 0.04],
+        ],
     ],
     'daily_limits' => [
         'describe' => (int) env('AI_LIMIT_DESCRIBE', 20),   // photo identifications per visitor per day

@@ -9,6 +9,17 @@ return [
     'repair' => env('ENGINE_REPAIR', 'trimesh'),     // trimesh | null
     'generator' => env('ENGINE_GENERATOR', 'null'),  // null | tripo | meshy (later)
     'settlement' => env('ENGINE_SETTLEMENT', 'qr-manual'),
+    'translator' => env('ENGINE_TRANSLATOR', 'claude'),   // claude | fake
+
+    // Portfolio import (Printables, MakerWorld): metadata and pictures only, never files.
+    'import' => [
+        'driver' => env('ENGINE_IMPORT', 'live'),         // live | fake
+        // api.printables.com refuses some data-centre addresses (403 from the Hetzner server): send the calls through a proxy
+        'proxy' => env('IMPORT_HTTP_PROXY'),
+        'timeout' => 20,
+        // pictures of imported cards are fetched only from these hosts (and their subdomains)
+        'image_hosts' => ['printables.com', 'bblmw.com', 'bambulab.com', 'makerworld.com'],
+    ],
     'search' => ['local', 'printables', 'makerworld'],       // ModelSearch sources, merged in this order
     'converters' => ['threemf', 'trimesh', 'ocp', 'freecad'], // tried in order; STL needs no conversion
 

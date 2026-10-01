@@ -22,10 +22,17 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\CalculatorController;
+use App\Http\Controllers\Designer\BulkUploadController as DesignerBulkController;
+use App\Http\Controllers\Designer\CardController as DesignerCardController;
+use App\Http\Controllers\Designer\ImportController as DesignerImportController;
+use App\Http\Controllers\Designer\ProfileController as DesignerProfileController;
+use App\Http\Controllers\Designer\VerificationController as DesignerVerificationController;
+use App\Http\Controllers\DesignerPageController;
 use App\Http\Controllers\Farm\CreditController;
 use App\Http\Controllers\Farm\OrderController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\LocaleRedirectController;
+use App\Http\Controllers\OgController;
 use App\Http\Controllers\Printer\InquiryController as PrinterInquiryController;
 use App\Http\Controllers\Printer\PrinterController;
 use App\Http\Controllers\Printer\QuoteController;
@@ -59,6 +66,9 @@ $pages = function () {
         Route::post('/i/{inquiry}/cancel', [InquiryController::class, 'cancel'])->name('inquiry.cancel');
         Route::post('/i/{inquiry}/rate', [InquiryController::class, 'rate'])->name('inquiry.rate');
     });
+
+    // Designers: the public portfolio (the designer's own pages are under /account/designer below)
+    Route::get('/d/{designer}', [DesignerPageController::class, 'show'])->name('designers.show');
 
     // Tools menu (everything that is not the one main screen)
     Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
@@ -122,6 +132,37 @@ $pages = function () {
         Route::post('/delete', [AccountSecurityController::class, 'delete'])->middleware('throttle:5,60,account-delete')->name('.delete');
     });
 
+    // ── Designer profile: portfolio, import from Printables / MakerWorld, files for the farm ──
+    Route::post('/account/designer/enable', [DesignerProfileController::class, 'enable'])->middleware(['auth', 'verified.email'])->name('designer.enable');
+    Route::middleware(['auth', 'role:designer'])->prefix('account/designer')->name('designer.')->group(function () {
+        Route::get('/', [DesignerProfileController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [DesignerProfileController::class, 'edit'])->name('profile');
+        Route::post('/profile', [DesignerProfileController::class, 'update'])->name('profile.update');
+
+        Route::get('/verify/{source}', [DesignerVerificationController::class, 'show'])->name('verify');
+        Route::post('/verify/{source}', [DesignerVerificationController::class, 'check'])->middleware('throttle:12,10,designer-verify')->name('verify.check');
+        Route::get('/import/{source}', [DesignerImportController::class, 'form'])->name('import');
+        Route::post('/import/{source}', [DesignerImportController::class, 'start'])->middleware('throttle:10,10,designer-import')->name('import.start');
+        Route::get('/imports/{import}', [DesignerImportController::class, 'show'])->whereNumber('import')->name('imports.show');
+        Route::get('/imports/{import}/status', [DesignerImportController::class, 'status'])->whereNumber('import')->name('imports.status');
+
+        Route::get('/models/new', [DesignerCardController::class, 'create'])->name('models.create');
+        Route::post('/models', [DesignerCardController::class, 'store'])->name('models.store');
+        Route::get('/models/{card}', [DesignerCardController::class, 'edit'])->whereNumber('card')->name('models.edit');
+        Route::post('/models/{card}', [DesignerCardController::class, 'update'])->whereNumber('card')->name('models.update');
+        Route::post('/models/{card}/delete', [DesignerCardController::class, 'destroy'])->whereNumber('card')->name('models.delete');
+        Route::post('/models/{card}/file', [DesignerCardController::class, 'file'])->whereNumber('card')->middleware('throttle:30,10,designer-file')->name('models.file');
+        Route::post('/models/{card}/file/remove', [DesignerCardController::class, 'removeFile'])->whereNumber('card')->name('models.file.remove');
+        Route::post('/models/{card}/images', [DesignerCardController::class, 'addImages'])->whereNumber('card')->name('models.images.add');
+        Route::post('/models/{card}/images/{image}/delete', [DesignerCardController::class, 'removeImage'])->whereNumber(['card', 'image'])->name('models.images.delete');
+        Route::post('/models/{card}/images/{image}/cover', [DesignerCardController::class, 'coverImage'])->whereNumber(['card', 'image'])->name('models.images.cover');
+
+        Route::get('/upload', [DesignerBulkController::class, 'form'])->name('bulk');
+        Route::post('/upload', [DesignerBulkController::class, 'store'])->middleware('throttle:10,10,designer-zip')->name('bulk.store');
+        Route::get('/upload/{token}', [DesignerBulkController::class, 'match'])->name('bulk.match');
+        Route::post('/upload/{token}', [DesignerBulkController::class, 'confirm'])->name('bulk.confirm');
+    });
+
     // ── Print farm: "Rent a printer" (logged-in users; credit from the payment gateway) ──
     Route::get('/farm/terms', [OrderController::class, 'terms'])->name('farm.terms');
     Route::view('/privacy', 'pages.privacy')->name('privacy');
@@ -175,6 +216,10 @@ Route::get('/cs/{path?}', LocaleRedirectController::class)->where('path', '.*')-
 // Open to logged-in people too: "link Google" in the profile goes the same way with ?link=1.
 Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])->name('oauth.redirect');
 Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
+
+// ── Pictures for link previews (drawn on demand, one address for every language unless the text differs) ──
+Route::get('/og/designer/{slug}.png', [OgController::class, 'designer'])->where('slug', '[a-z0-9-]+')->name('og.designer');
+Route::get('/og/{locale}/designer/{slug}.png', [OgController::class, 'designerIn'])->where(['slug' => '[a-z0-9-]+', 'locale' => 'en|es'])->name('og.designer.localized');
 
 // ── Files of a farm order (not pages: one address for every language) ────────
 Route::middleware('auth')->group(function () {

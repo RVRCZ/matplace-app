@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureAnonymousSession;
 use App\Http\Middleware\EnsureEmailVerified;
 use App\Http\Middleware\EnsureFeature;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\RememberReferral;
 use App\Http\Middleware\SetLocale;
 use App\Models\AnonymousSession;
 use App\Support\Locales;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SetLocale::class,
             EnsureAnonymousSession::class,
+            RememberReferral::class,
         ]);
         // mp_sid is a plain random token (never encrypted) so the value survives across app-key rotations and tests
         $middleware->encryptCookies(except: [AnonymousSession::COOKIE]);
