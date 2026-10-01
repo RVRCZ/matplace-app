@@ -201,6 +201,17 @@ M83
         $this->assertSame($order->dir().'/short.mp4', $order->timelapse_short_path);
         $this->assertCount(30, $disk->files($order->dir().'/frames_layer'), 'frames stay for a rebuild (matplace:prune removes them later)');
         $this->artisan('farm:timelapse', ['number' => $order->number])->assertSuccessful();
+
+        // a photo of the cleaned piece from the photo box ends both videos
+        $seconds = fn (string $rel) => preg_match('/Duration: 00:00:(\d+\.\d+)/', Process::run([$ffmpeg, '-hide_banner', '-i', $disk->path($rel)])->errorOutput(), $m) ? (float) $m[1] : 0.0;
+        $without = [$seconds($order->timelapse_short_path), $seconds($order->timelapse_path)];
+        $disk->put($order->dir().'/photos/left.jpg', $this->picture(300));
+        $order->forceFill(['test_params' => ['photos' => [['file' => $order->dir().'/photos/left.jpg', 'view' => 'left']]]])->save();
+        $this->artisan('farm:timelapse', ['number' => $order->number])->assertSuccessful();
+        $order->refresh();
+        $this->assertEqualsWithDelta($without[0] + 2.5, $seconds($order->timelapse_short_path), 0.3, 'the Short: + 3 s photo - 0.5 s crossfade');
+        $this->assertEqualsWithDelta($without[1] + 3.0, $seconds($order->timelapse_path), 0.3, 'the landscape video: + 3 s photo');
+        $this->assertMatchesRegularExpression('/Video: h264.*\b720x720\b/', Process::run([$ffmpeg, '-hide_banner', '-i', $disk->path($order->timelapse_short_path)])->errorOutput());
         $info = Process::run([$ffmpeg, '-hide_banner', '-i', $disk->path($order->timelapse_short_path)])->errorOutput();
         $this->assertMatchesRegularExpression('/Video: h264.*\b720x720\b/', $info, 'a square Short');
     }

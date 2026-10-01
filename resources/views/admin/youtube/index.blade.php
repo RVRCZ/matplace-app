@@ -161,6 +161,7 @@
             <span class="flex gap-2">
                 @if($v->status === 'published' && $v->watchUrl())<a href="{{ $v->watchUrl() }}" target="_blank" rel="noopener" class="btn-quiet text-sm">Přehrát</a>@endif
                 @if($v->status === 'published')
+                    <form method="post" action="{{ route('admin.youtube.replace', $v) }}" onsubmit="return confirm('Nahradit zveřejněné video novou verzí (např. s fotkou z foto-boxu)? Staré se z YouTube smaže i se zhlédnutími, nové půjde znovu ke schválení.')">@csrf<button class="btn-quiet text-sm">Nahradit novou verzí</button></form>
                     <form method="post" action="{{ route('admin.youtube.reject', $v) }}" onsubmit="return confirm('Stáhnout video? Z YouTube se smaže.')">@csrf<button class="btn-quiet text-sm text-red-700">Stáhnout</button></form>
                 @endif
             </span>

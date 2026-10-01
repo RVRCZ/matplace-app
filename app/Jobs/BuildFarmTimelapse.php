@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Domain\Farm\TestPhotos;
 use App\Domain\Farm\TimelapseFrames;
 use App\Domain\YouTube\FarmVideos;
 use App\Models\FarmOrder;
@@ -39,6 +40,8 @@ class BuildFarmTimelapse implements ShouldQueue
 
     private const SHORT_MAX_FRAMES = 1000;
 
+    private const PHOTO_SECONDS = 3.0;      // the cleaned piece from the photo box at the end (Roman, 1 Oct 2026)
+
     private const GROWTH_SPEED = 1.25;      // the growing part runs 20 % faster than the pacing below (Roman, 27 Sep 2026)
 
     public const KEEP_FRAMES_DAYS = 14;     // frames stay this long so a video can be built again (farm:timelapse)
@@ -69,7 +72,8 @@ class BuildFarmTimelapse implements ShouldQueue
             $this->ffmpeg(), '-y', '-loglevel', 'error',
             '-f', 'concat', '-safe', '0', '-i', $list,            // 0: the print
             '-loop', '1', '-t', '8', '-i', public_path('img/logo.png'),   // 1: the logo
-            '-filter_complex', $this->graph($w, $h, $frames->count() * $frameSeconds, $thanks),
+            ...($photo = $this->finishPhoto($order)) ? ['-loop', '1', '-t', (string) (self::PHOTO_SECONDS + 1), '-i', $photo] : [],   // 2: the cleaned piece
+            '-filter_complex', $this->graph($w, $h, $frames->count() * $frameSeconds, $thanks, $photo !== null),
             '-map', '[v]', '-r', (string) self::FPS, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '26', '-movflags', '+faststart', $out,
         ]);
         @unlink($list);
@@ -146,14 +150,22 @@ class BuildFarmTimelapse implements ShouldQueue
         [$cx, $cy, $side] = $this->crop($order, (int) $w, (int) $h);
         $size = min(1080, $side - $side % 2);
         $out = $disk->path($order->dir().'/short.mp4');
+        $photo = $this->finishPhoto($order);
+        $printSeconds = 1.0 + $picked->count() * $seconds + 2.0;
+        $graph = sprintf('[0:v]crop=%d:%d:%d:%d,scale=%d:%d,fps=%d,format=yuv420p,settb=AVTB[print];[1:v]scale=%d:-2[logo];',
+            $side, $side, $cx, $cy, $size, $size, self::FPS, (int) round($size * 0.22));
+        $graph .= $photo
+            // the cleaned piece crossfades in after the finished print and stays to the end
+            ? sprintf('[2:v]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,setsar=1,fps=%d,format=yuv420p,settb=AVTB,trim=duration=%s[photo];[print][photo]xfade=transition=fade:duration=0.5:offset=%.3f[body];',
+                $size, $size, $size, $size, self::FPS, self::PHOTO_SECONDS, $printSeconds - 0.5)
+            : '[print]null[body];';
+        $graph .= sprintf('[body][logo]overlay=%d:%d,format=yuv420p[v]', (int) round($size * 0.03), (int) round($size * 0.03));
         $r = Process::timeout(240)->run([
             $this->ffmpeg(), '-y', '-loglevel', 'error',
             '-f', 'concat', '-safe', '0', '-i', $list,
             '-i', public_path('img/logo.png'),
-            '-filter_complex', sprintf(
-                '[0:v]crop=%d:%d:%d:%d,scale=%d:%d,fps=%d,format=yuv420p[print];[1:v]scale=%d:-2[logo];[print][logo]overlay=%d:%d,format=yuv420p[v]',
-                $side, $side, $cx, $cy, $size, $size, self::FPS, (int) round($size * 0.22), (int) round($size * 0.03), (int) round($size * 0.03)
-            ),
+            ...$photo ? ['-loop', '1', '-t', (string) (self::PHOTO_SECONDS + 1), '-i', $photo] : [],
+            '-filter_complex', $graph,
             '-map', '[v]', '-r', (string) self::FPS, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-movflags', '+faststart', $out,
         ]);
         @unlink($list);
@@ -196,13 +208,29 @@ class BuildFarmTimelapse implements ShouldQueue
         return [$picked, $min];
     }
 
+    /** The cleaned piece from the photo box: a side view first (they look best), the latest of its kind. */
+    private function finishPhoto(FarmOrder $order): ?string
+    {
+        $photos = app(TestPhotos::class)->all($order);
+        foreach (['left', 'right', 'phone', 'top'] as $view) {
+            $match = array_values(array_filter($photos, fn ($p) => ($p['view'] ?? '') === $view));
+            if ($match) {
+                $path = app(TestPhotos::class)->path(end($match));
+
+                return is_file($path) ? $path : null;
+            }
+        }
+
+        return null;
+    }
+
     private function ffmpeg(): string
     {
         return (string) config('farm.ffmpeg', 'ffmpeg');
     }
 
     /** ffmpeg filter graph: intro, the print with the finished piece held, outro; all at the frame size, 24 fps. */
-    private function graph(int $w, int $h, float $printSeconds, string $thanksFile): string
+    private function graph(int $w, int $h, float $printSeconds, string $thanksFile, bool $photo = false): string
     {
         $fps = self::FPS;
         $font = $this->font();
@@ -229,7 +257,12 @@ class BuildFarmTimelapse implements ShouldQueue
             '[logo_b]scale='.(int) round($w * 0.4).':-2[logo_small]',
             sprintf("[bg_out]drawtext=fontfile='%s':textfile='%s':fontsize=%d:fontcolor=white:x=(w-text_w)/2:y=h*0.28[thanks]", $font, $this->path($thanksFile), (int) round($h * 0.07)),
             '[thanks][logo_small]overlay=(W-w)/2:H*0.42:shortest=1,fade=in:st=0:d=0.8,format=yuv420p[outro]',
-            '[intro][print][outro]concat=n=3:v=1:a=0[v]',
+            ...$photo ? [
+                // the cleaned piece from the photo box, whole, on black, fading in and out
+                sprintf('[2:v]scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=%d,trim=duration=%s,fade=in:st=0:d=0.5,fade=out:st=%s:d=0.5,format=yuv420p[photo]',
+                    $w, $h, $w, $h, $fps, self::PHOTO_SECONDS, self::PHOTO_SECONDS - 0.5),
+                '[intro][print][photo][outro]concat=n=4:v=1:a=0[v]',
+            ] : ['[intro][print][outro]concat=n=3:v=1:a=0[v]'],
         ]);
     }
 

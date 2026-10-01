@@ -136,13 +136,15 @@ class FarmVideos
     /** The videos were built again (farm:timelapse): the private copy on YouTube goes, the new file goes up. */
     public function replace(FarmVideo $video): void
     {
-        if ($video->status !== FarmVideo::STATUS_UPLOADED) {
-            throw new YouTubeError('not_replaceable', 'Only a video waiting for approval can be replaced.');
+        // a published one too, when the admin wants it (its views stay with the deleted copy; the new one waits for approval)
+        if (! in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_PUBLISHED], true)) {
+            throw new YouTubeError('not_replaceable', 'Only a video on YouTube can be replaced.');
         }
         if ($video->youtube_id) {
             $this->youtube->delete($video->youtube_id);
         }
-        $video->update(['status' => FarmVideo::STATUS_QUEUED, 'youtube_id' => null, 'uploaded_at' => null, 'error' => null]);
+        $video->update(['status' => FarmVideo::STATUS_QUEUED, 'youtube_id' => null, 'uploaded_at' => null, 'published_at' => null, 'error' => null,
+            'views' => null, 'likes' => null, 'comments' => null, 'stats_at' => null]);
         UploadFarmVideo::dispatch($video->id);
     }
 

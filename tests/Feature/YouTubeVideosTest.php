@@ -155,8 +155,11 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame('Váza ve spirále', $video->title);
         Http::assertSent(fn (HttpRequest $r) => $r->method() === 'PUT' && str_contains($r->url(), 'youtube/v3/videos?part=snippet,status') && $r['status']['privacyStatus'] === 'public');
 
-        // rebuilt videos replace the private copy (only before publishing)
-        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/replace")->assertRedirect()->assertSessionHas('error');
+        // a published video can be replaced too (e.g. with the finish photo): it goes back to approval, numbers reset
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/replace")->assertRedirect()->assertSessionHas('status');
+        $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->refresh()->status);
+        $this->assertNull($video->published_at);
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza ve spirále', 'description' => 'Popis'])->assertRedirect();
 
         // the customer sees the link, then takes the consent back → deleted on YouTube
         $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('watch?v=vid123', false);

@@ -6,6 +6,7 @@ use App\Domain\Farm\FarmRefusal;
 use App\Domain\Farm\TestPhotoJudge;
 use App\Domain\Farm\TestPhotos;
 use App\Http\Controllers\Controller;
+use App\Jobs\AddFinishPhotoToVideo;
 use App\Jobs\JudgeTestPhotos;
 use App\Models\FarmOrder;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +27,6 @@ class FarmTestPhotoController extends Controller
 
     public function store(Request $request, FarmOrder $order): RedirectResponse|JsonResponse
     {
-        abort_unless($order->isTest(), 404);
         $request->validate([
             'photos' => ['required', 'array', 'max:'.TestPhotos::MAX],
             'photos.*' => ['file', 'max:30720'],
@@ -43,6 +43,10 @@ class FarmTestPhotoController extends Controller
             } catch (FarmRefusal $e) {
                 $error = $e->text();
             }
+        }
+        // a customer's print or a showcase: its videos end with the cleaned piece, built again in the background
+        if ($added && ! $order->isTest() && $order->timelapse_path) {
+            AddFinishPhotoToVideo::dispatch($order->id);
         }
         if ($request->wantsJson()) {
             return response()->json(['ok' => $error === null, 'added' => $added, 'message' => $error ?? 'Uloženo '.$added.' fotek.', 'photos' => count($this->photos->all($order))], $error && ! $added ? 422 : 200);
@@ -86,8 +90,9 @@ class FarmTestPhotoController extends Controller
     /** The photo box: three fixed cameras on the PC next to it, one click takes all three for the chosen test. */
     public function box(Request $request): View
     {
-        $tests = FarmOrder::where('kind', FarmOrder::KIND_TEST)->whereIn('status', [FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_PRINTING])
-            ->with(['printer', 'color', 'material'])->latest('id')->limit(20)->get();
+        // test prints for the evaluation, customer prints and showcases for the end of their video
+        $tests = FarmOrder::whereIn('status', [FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_PRINTING])
+            ->with(['printer', 'color', 'material'])->latest('id')->limit(30)->get();
         $order = $request->query('order') ? $tests->firstWhere('token', $request->query('order')) : $tests->first();
 
         return view('admin.farm.photobox', ['tests' => $tests, 'order' => $order, 'photos' => $order ? $this->photos->all($order) : []]);
