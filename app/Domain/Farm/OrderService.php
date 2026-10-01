@@ -4,6 +4,8 @@ namespace App\Domain\Farm;
 
 use App\Engines\DTO\Dimensions;
 use App\Jobs\PrepareFarmOrder;
+use App\Models\CatalogModel;
+use App\Models\DesignerModel;
 use App\Models\FarmColor;
 use App\Models\FarmMaterial;
 use App\Models\FarmOrder;
@@ -23,7 +25,7 @@ final class OrderService
     /**
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null): FarmOrder
+    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! config('farm.open', true)) {
@@ -87,6 +89,10 @@ final class OrderService
             'second_slot_id' => $second?->id,
             'second_color_id' => $second?->color->id,
             'currency' => $this->settings->get('currency'),
+            // a designer's card (the reward is added to the price) or the inspiration page the customer came from
+            'designer_model_id' => $card?->id,
+            'catalog_model_id' => $inspiration?->id,
+            'note' => $inspiration?->attribution(),
         ]);
         $order->events()->create(['to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'user', 'actor_id' => $user->id]);
         PrepareFarmOrder::dispatch($order->id);
@@ -234,7 +240,7 @@ final class OrderService
         $delivery ??= $order->delivery;
         $material ??= $order->material;
 
-        return $this->prices->price((int) $order->est_minutes, (float) $order->est_grams, [
+        return $this->withRoyalty($order, $this->prices->price((int) $order->est_minutes, (float) $order->est_grams, [
             'hourly_rate' => $printer->hourly_rate ?? (float) $this->settings->get('hourly_rate'),
             'price_per_gram' => (float) $material->price_per_gram,
             'fixed_fee' => (float) $this->settings->get('fixed_fee'),
@@ -245,7 +251,33 @@ final class OrderService
             'weight_factor' => $printer->weight_factor,
             'shipping' => $delivery === 'shipping' ? (float) $this->settings->get('shipping_price') : 0.0,
             'currency' => (string) $this->settings->get('currency'),
-        ]);
+        ]));
+    }
+
+    /**
+     * A designer's model costs the print plus the designer's reward: per piece what the card asks, at most 30 % of
+     * the print price of one piece (without delivery), in whole crowns. The whole reward is the designer's.
+     * Nothing is added for the customer's own file, nor for a designer printing their own model.
+     *
+     * @param  array<string,mixed>  $price
+     * @return array<string,mixed>
+     */
+    private function withRoyalty(FarmOrder $order, array $price): array
+    {
+        $unit = self::royaltyPerPiece($order->designer_model_id ? $order->designerModel : null, $order->user_id, (float) $price['print_total'], (int) $order->copies);
+        $royalty = round($unit * max(1, (int) $order->copies), 2);
+
+        return ['royalty_unit' => $unit, 'royalty' => $royalty, 'total' => round((float) $price['total'] + $royalty, 2)] + $price;
+    }
+
+    public static function royaltyPerPiece(?DesignerModel $card, ?int $customerId, float $printTotal, int $copies): float
+    {
+        if (! $card || $card->profile?->user_id === $customerId) {
+            return 0.0;
+        }
+        $cap = (float) config('catalog.royalty_cap', 0.30) * $printTotal / max(1, $copies);
+
+        return (float) floor(min((float) $card->royalty_czk, $cap));
     }
 
     /**

@@ -63,6 +63,7 @@ class FarmOrder extends Model
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
         'terms_ip', 'paid_at', 'approved_at', 'approved_by', 'queued_at', 'started_at', 'finished_at', 'handed_at', 'tracking',
         'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at', 'timelapse_short_path',
+        'designer_model_id', 'royalty_czk', 'catalog_model_id',
     ];
 
     protected $casts = [
@@ -71,7 +72,7 @@ class FarmOrder extends Model
         'est_meters' => 'float', 'supports_used' => 'bool', 'price_total' => 'float', 'actual_minutes' => 'int', 'actual_grams' => 'float',
         'terms_accepted_at' => 'datetime', 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'queued_at' => 'datetime',
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime',
-        'video_consent' => 'bool', 'video_consent_at' => 'datetime',
+        'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',
     ];
 
     public function getRouteKeyName(): string
@@ -87,6 +88,32 @@ class FarmOrder extends Model
     public function modelFile(): BelongsTo
     {
         return $this->belongsTo(ModelFile::class);
+    }
+
+    /** The designer's card this order prints (null for the customer's own file). */
+    public function designerModel(): BelongsTo
+    {
+        return $this->belongsTo(DesignerModel::class);
+    }
+
+    /** The inspiration page the customer came from with their own file. */
+    public function catalogModel(): BelongsTo
+    {
+        return $this->belongsTo(CatalogModel::class);
+    }
+
+    /**
+     * The customer must not get the file of a designer's model that is not offered for download: the order page then
+     * shows the card's picture instead of the 3D preview. The designer and the farm's operators see it as usual.
+     */
+    public function hidesModelFrom(?User $viewer): bool
+    {
+        $card = $this->designer_model_id ? $this->designerModel : null;
+        if (! $card || $card->download_allowed) {
+            return false;
+        }
+
+        return ! $viewer || (! $viewer->isAdmin() && $viewer->id !== $card->profile?->user_id);
     }
 
     public function material(): BelongsTo

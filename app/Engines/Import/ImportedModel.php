@@ -36,6 +36,9 @@ final class ImportedModel
         $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = (string) preg_replace('/[ \t\x{00A0}]+/u', ' ', $text);
         $text = (string) preg_replace('/ ?\n ?/', "\n", $text);
+        // a list item that wraps a paragraph: the bullet belongs on the line of its text, and items follow each other closely
+        $text = (string) preg_replace('/•\s*\n+\s*/u', '• ', $text);
+        $text = (string) preg_replace('/(\n• [^\n]*)\n{2,}(?=• )/u', "$1\n", $text);
 
         return trim((string) preg_replace('/\n{3,}/', "\n\n", $text));
     }

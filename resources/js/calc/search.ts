@@ -19,18 +19,22 @@ const t = (k: string, r: Record<string, string | number> = {}) => Object.entries
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const fmt = new Intl.NumberFormat({ en: 'en-GB', es: 'es-ES' }[document.documentElement.lang] ?? 'cs-CZ', { maximumFractionDigits: 0 });
 
-const SOURCE_LABEL: Record<string, string> = { local: 'matplace', printables: 'Printables', makerworld: 'MakerWorld', makeronline: 'MakerOnline', cults3d: 'Cults3D', thingiverse: 'Thingiverse', thangs: 'Thangs' };
+const SOURCE_LABEL: Record<string, string> = { local: 'matplace', matplace: 'matplace', inspiration: 'matplace', printables: 'Printables', makerworld: 'MakerWorld', makeronline: 'MakerOnline', cults3d: 'Cults3D', thingiverse: 'Thingiverse', thangs: 'Thangs' };
 /** The site a card's link opens. Entries of our own index point to other sites, so they are named after those. */
 const siteOf = (c: Candidate): string => { const k = c.origin ?? c.source; return SOURCE_LABEL[k] ?? k; };
 
 function card(c: Candidate): string {
     const img = c.previewUrl ? `<img src="${c.previewUrl}" alt="" loading="lazy" class="h-32 w-full object-cover">` : `<div class="flex h-32 items-center justify-center bg-slate-100 text-slate-400">—</div>`;
-    const link = c.externalUrl ? `<a href="${c.externalUrl}" target="_blank" rel="noopener" class="mt-2 block rounded-lg border border-slate-300 px-2 py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">${t('search.open_source', { s: siteOf(c) })} ↗</a>` : '';
+    const own = c.origin === 'matplace' || c.origin === 'inspiration';
+    const link = !c.externalUrl ? ''
+        : own ? `<a href="${c.externalUrl}" class="mt-2 block rounded-lg ${c.origin === 'matplace' ? 'bg-action text-white' : 'border border-slate-300 text-slate-700 hover:bg-slate-50'} px-2 py-1.5 text-center text-xs font-semibold">${t(c.origin === 'matplace' ? 'models.search.open_print' : 'models.search.open_inspiration')}</a>`
+            : `<a href="${c.externalUrl}" target="_blank" rel="noopener" class="mt-2 block rounded-lg border border-slate-300 px-2 py-1.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">${t('search.open_source', { s: siteOf(c) })} ↗</a>`;
+    const badge = own ? `<span class="rounded-full ${c.origin === 'matplace' ? 'bg-ok-soft text-ok' : 'bg-slate-100 text-slate-600'} px-1.5 py-0.5 font-semibold">${t(c.origin === 'matplace' ? 'models.search.label_print' : 'models.search.label_inspiration')}</span> ` : '';
     return `<div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
         ${img}
         <div class="p-2">
             <div class="truncate text-sm font-semibold" title="${c.title.replace(/"/g, '&quot;')}">${c.title}</div>
-            <div class="truncate text-xs text-slate-500">${siteOf(c)}${c.authorName ? ' · ' + c.authorName : ''}${c.license ? ' · ' + c.license : ''}</div>
+            <div class="truncate text-xs text-slate-500">${badge}${own ? '' : siteOf(c)}${c.authorName && own ? c.authorName : c.authorName ? ' · ' + c.authorName : ''}${c.license ? ' · ' + c.license : ''}</div>
             ${link}
         </div></div>`;
 }

@@ -239,7 +239,7 @@ class PrepareFarmOrder implements ShouldQueue
                 return;
             }
             $price = $orders->priceFor($order, $printer);
-            $order->fill(['price' => $price, 'price_total' => $price['total'], 'currency' => $price['currency'], 'stage' => null])->save();
+            $order->fill(['price' => $price, 'price_total' => $price['total'], 'royalty_czk' => $price['royalty_unit'] ?? null, 'currency' => $price['currency'], 'stage' => null])->save();
             $flow->move($order, FarmOrder::STATUS_SLICED, 'system');
         } catch (\Throwable $e) {
             Log::warning('PrepareFarmOrder failed', ['order' => $order->id, 'error' => $e->getMessage()]);

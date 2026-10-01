@@ -7,6 +7,7 @@ use App\Domain\Designer\DesignerImages;
 use App\Domain\Designer\DesignerProfiles;
 use App\Domain\Designer\PortfolioImporter;
 use App\Http\Controllers\Controller;
+use App\Models\CatalogCategory;
 use App\Models\DesignerModel;
 use App\Models\DesignerModelImage;
 use App\Models\DesignerProfile;
@@ -15,6 +16,7 @@ use App\Support\Locales;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +29,7 @@ class CardController extends Controller
     {
         $profile = $this->profileOf($request);
 
-        return view('designer.card', ['profile' => $profile, 'card' => new DesignerModel(['royalty_czk' => $profile->default_royalty_czk]), 'share' => null]);
+        return view('designer.card', ['profile' => $profile, 'card' => new DesignerModel(['royalty_czk' => $profile->default_royalty_czk]), 'share' => null, 'categories' => $this->categories()]);
     }
 
     /** A card made by hand, for designers who publish nowhere else. */
@@ -43,6 +45,7 @@ class CardController extends Controller
             'designer_profile_id' => $profile->id, 'title' => $data['title'], 'slug' => DesignerModel::makeSlug($data['title']),
             'description' => $description, 'source' => 'manual', 'source_locale' => $locale,
             'royalty_czk' => round((float) $data['royalty_czk'], 2), 'visible' => $request->boolean('visible', true),
+            'catalog_category_id' => $data['catalog_category_id'] ?? null,
         ]);
         $profiles->cardShown($card);
 
@@ -57,7 +60,7 @@ class CardController extends Controller
             $texts[$locale] = __('designer.share.text_model', ['title' => $card->title, 'url' => $this->shareUrl($card, $locale)], $locale);
         }
 
-        return view('designer.card', ['profile' => $card->profile, 'card' => $card, 'share' => ['url' => $this->shareUrl($card), 'texts' => $texts]]);
+        return view('designer.card', ['profile' => $card->profile, 'card' => $card, 'share' => ['url' => $this->shareUrl($card), 'texts' => $texts], 'categories' => $this->categories()]);
     }
 
     public function update(Request $request, int $card, PortfolioImporter $importer, DesignerProfiles $profiles): RedirectResponse
@@ -70,6 +73,7 @@ class CardController extends Controller
         $card->fill([
             'title' => $data['title'], 'description' => $description, 'source_locale' => $card->source_locale ?? $locale,
             'royalty_czk' => round((float) $data['royalty_czk'], 2),
+            'catalog_category_id' => $data['catalog_category_id'] ?? null,
             'visible' => $request->boolean('visible'),
             'download_allowed' => $request->boolean('download_allowed'),
             'download_license' => $request->boolean('download_allowed') ? $data['download_license'] : null,
@@ -168,6 +172,7 @@ class CardController extends Controller
             'description' => ['nullable', 'array'],
             'description.*' => ['nullable', 'string', 'max:8000'],
             'royalty_czk' => ['required', 'numeric', 'min:0', 'max:'.DesignerProfile::MAX_ROYALTY_CZK],
+            'catalog_category_id' => ['nullable', 'integer', 'exists:catalog_categories,id'],
             'download_license' => [Rule::requiredIf($request->boolean('download_allowed')), 'nullable', Rule::in(DesignerModel::DOWNLOAD_LICENSES)],
         ], ['download_license.required' => __('designer.card.license_required')]);
     }
@@ -187,6 +192,12 @@ class CardController extends Controller
         $from = isset($typed[Locales::current()]) ? Locales::current() : array_key_first($typed);
 
         return $importer->describe('', ['subject_type' => 'designer_model', 'subject_id' => $card?->id, 'user_id' => $profile->user_id], $typed, $from);
+    }
+
+    /** The tree of categories a card can be filed under (two levels). */
+    private function categories(): Collection
+    {
+        return CatalogCategory::whereNull('parent_id')->with('children')->orderBy('position')->get();
     }
 
     private function shareUrl(DesignerModel $card, ?string $locale = null): string

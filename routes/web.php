@@ -31,7 +31,9 @@ use App\Http\Controllers\DesignerPageController;
 use App\Http\Controllers\Farm\CreditController;
 use App\Http\Controllers\Farm\OrderController;
 use App\Http\Controllers\InquiryController;
+use App\Http\Controllers\InspirationController;
 use App\Http\Controllers\LocaleRedirectController;
+use App\Http\Controllers\ModelCatalogController;
 use App\Http\Controllers\OgController;
 use App\Http\Controllers\Printer\InquiryController as PrinterInquiryController;
 use App\Http\Controllers\Printer\PrinterController;
@@ -69,6 +71,14 @@ $pages = function () {
 
     // Designers: the public portfolio (the designer's own pages are under /account/designer below)
     Route::get('/d/{designer}', [DesignerPageController::class, 'show'])->name('designers.show');
+
+    // Models the farm prints (designers' cards with a file)
+    Route::get('/models', [ModelCatalogController::class, 'index'])->name('models.index');
+    Route::get('/models/{designerModel}', [ModelCatalogController::class, 'show'])->name('models.show');
+    // The inspiration catalogue of the old site, at its old addresses: models that live elsewhere
+    Route::get('/model', [InspirationController::class, 'index'])->name('catalog.index');
+    Route::get('/model/kategorie/{category}', [InspirationController::class, 'index'])->name('catalog.category');
+    Route::get('/model/{catalogModel}', [InspirationController::class, 'show'])->name('catalog.show');
 
     // Tools menu (everything that is not the one main screen)
     Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
@@ -217,6 +227,9 @@ Route::get('/cs/{path?}', LocaleRedirectController::class)->where('path', '.*')-
 Route::get('/auth/{provider}/redirect', [OAuthController::class, 'redirect'])->name('oauth.redirect');
 Route::get('/auth/{provider}/callback', [OAuthController::class, 'callback'])->name('oauth.callback');
 
+// the old site's list of models lived at /katalog
+Route::permanentRedirect('/katalog', '/model');
+
 // ── Pictures for link previews (drawn on demand, one address for every language unless the text differs) ──
 Route::get('/og/designer/{slug}.png', [OgController::class, 'designer'])->where('slug', '[a-z0-9-]+')->name('og.designer');
 Route::get('/og/{locale}/designer/{slug}.png', [OgController::class, 'designerIn'])->where(['slug' => '[a-z0-9-]+', 'locale' => 'en|es'])->name('og.designer.localized');
@@ -237,18 +250,19 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('config', [ConfigController::class, 'show'])->name('config');
     Route::post('uploads', [UploadController::class, 'store'])->middleware('throttle:uploads')->name('uploads.store');
     Route::get('files/{modelFile}', [UploadController::class, 'show'])->name('files.show');
-    Route::get('files/{modelFile}/model.stl', [ModelFileController::class, 'stl'])->name('files.stl');
+    Route::get('files/{modelFile}/model.stl', [ModelFileController::class, 'stl'])->middleware('file:stl')->name('files.stl');
     Route::get('files/{modelFile}/preview.webp', [ModelPreviewController::class, 'show'])->name('files.preview');
     Route::post('files/{modelFile}/preview', [ModelPreviewController::class, 'store'])->middleware('throttle:60,1,preview-store')->name('files.preview.store');
-    Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware('throttle:20,1,project')->name('files.project');
-    Route::post('files/{modelFile}/pedestal', [ModelFileController::class, 'pedestal'])->middleware('throttle:20,1,pedestal')->name('files.pedestal');
-    Route::post('files/{modelFile}/mold', [ModelFileController::class, 'mold'])->middleware('throttle:20,1,mold')->name('files.mold');
-    Route::post('files/{modelFile}/mold/analysis', [ModelFileController::class, 'moldAnalysis'])->middleware('throttle:30,1,moldanalysis')->name('files.mold.analysis');
-    Route::get('files/{modelFile}/mold/{name}', [ModelFileController::class, 'moldCast'])->where('name', 'cast\\.(stl|bin)')->name('files.mold.cast');
-    Route::post('files/{modelFile}/repair', [ModelFileController::class, 'repair'])->middleware('throttle:12,1,repair')->name('files.repair');
-    Route::post('files/{modelFile}/advice', [AdviceController::class, 'store'])->middleware('throttle:20,1,advice')->name('files.advice');
+    Route::get('files/{modelFile}/project.3mf', [ModelFileController::class, 'project'])->middleware(['file:project', 'throttle:20,1,project'])->name('files.project');
+    Route::post('files/{modelFile}/pedestal', [ModelFileController::class, 'pedestal'])->middleware(['file', 'throttle:20,1,pedestal'])->name('files.pedestal');
+    Route::post('files/{modelFile}/mold', [ModelFileController::class, 'mold'])->middleware(['file', 'throttle:20,1,mold'])->name('files.mold');
+    Route::post('files/{modelFile}/mold/analysis', [ModelFileController::class, 'moldAnalysis'])->middleware(['file', 'throttle:30,1,moldanalysis'])->name('files.mold.analysis');
+    Route::get('files/{modelFile}/mold/{name}', [ModelFileController::class, 'moldCast'])->middleware('file')->where('name', 'cast\\.(stl|bin)')->name('files.mold.cast');
+    Route::post('files/{modelFile}/repair', [ModelFileController::class, 'repair'])->middleware(['file', 'throttle:12,1,repair'])->name('files.repair');
+    Route::post('files/{modelFile}/advice', [AdviceController::class, 'store'])->middleware(['file', 'throttle:20,1,advice'])->name('files.advice');
     Route::get('advice/{token}', [AdviceController::class, 'show'])->name('advice.show');
     Route::get('printers', [ModelFileController::class, 'printers'])->name('printers');
+    Route::get('models/{designerModel}/quote', [ModelCatalogController::class, 'quote'])->middleware('throttle:120,1,model-quote')->name('models.quote');
     Route::post('calculations', [CalculationController::class, 'store'])->middleware('throttle:calculations')->name('calculations.store');
     Route::get('calculations/{calculation}', [CalculationController::class, 'show'])->name('calculations.show');
     Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1,search')->name('search');
@@ -260,7 +274,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('tools/artwork', [ToolsApiController::class, 'artwork'])->middleware('throttle:30,1,artwork')->name('tools.artwork');
     Route::post('tools/param/preview', [ToolsApiController::class, 'paramPreview'])->middleware('throttle:90,1,preview')->name('tools.param.preview');
     Route::post('tools/param', [ToolsApiController::class, 'paramCreate'])->middleware('throttle:20,1,create')->name('tools.param');
-    Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware('throttle:30,1,part')->name('tools.param.part');
+    Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware(['file', 'throttle:30,1,part'])->name('tools.param.part');
     Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1,relief')->name('tools.relief');
     Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware(['feature:marketplace', 'throttle:10,1,inquiry'])->name('inquiries.store');
     Route::post('spare-parts', [ApiInquiryController::class, 'spare'])->middleware(['feature:marketplace', 'throttle:6,1,spare'])->name('spare');

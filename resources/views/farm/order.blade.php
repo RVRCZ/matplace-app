@@ -5,7 +5,7 @@
         'farm.order.low_filament', 'farm.order.starts_now', 'farm.order.goes_to_queue', 'farm.order.no_colors', 'farm.order.paying', 'farm.order.pay',
         'farm.order.queue_ahead', 'farm.order.queue_start', 'farm.order.queue_starting', 'farm.order.queue_finish', 'farm.order.blocked_plate', 'farm.order.blocked_offline',
         'farm.order.blocked_approval', 'farm.order.cancel_confirm', 'farm.order.b_time', 'farm.order.b_material', 'farm.order.b_fixed', 'farm.order.b_min',
-        'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line',
+        'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'models.price.to_author', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line',
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m'];
     $farmCfg = [
         'state' => $state,
@@ -36,7 +36,11 @@
         {{-- model as it will be printed --}}
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <div class="relative">
-                <canvas id="farm-viewer" class="block h-[45vh] w-full touch-none lg:h-[70vh]"></canvas>
+                <canvas id="farm-viewer" class="block h-[45vh] w-full touch-none lg:h-[70vh] {{ ($modelHidden ?? false) ? 'hidden' : '' }}"></canvas>
+                @if($modelHidden ?? false)
+                    {{-- a designer's model that is not offered for download: its picture instead of the 3D preview --}}
+                    @if($card?->coverUrl(false))<img src="{{ $card->coverUrl(false) }}" alt="{{ $card->title }}" class="h-[45vh] w-full bg-slate-50 object-contain lg:h-[70vh]">@else<div class="h-[45vh] bg-slate-50 lg:h-[70vh]"></div>@endif
+                @endif
                 <div id="farm-dims" class="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow"></div>
                 <button type="button" id="farm-supports-toggle" class="absolute right-3 top-3 hidden rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow" aria-pressed="true">{{ __('farm.order.supports_hide') }}</button>
             </div>

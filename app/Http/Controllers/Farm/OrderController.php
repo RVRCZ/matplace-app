@@ -14,10 +14,13 @@ use App\Domain\Farm\Wallet;
 use App\Domain\YouTube\FarmVideos;
 use App\Http\Controllers\Controller;
 use App\Models\Calculation;
+use App\Models\CatalogModel;
+use App\Models\DesignerModel;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrinterSlot;
 use App\Models\ModelFile;
+use App\Support\Track;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,6 +37,14 @@ class OrderController extends Controller
     public function start(Request $request): View
     {
         $file = $request->query('file') ? ModelFile::where('uuid', $request->query('file'))->first() : null;
+        // a designer's model from the catalogue: the file is the card's, the customer never holds it
+        $card = $request->query('designer_model') ? DesignerModel::with(['profile', 'modelFile', 'images'])->find((int) $request->query('designer_model')) : null;
+        $card = $card?->isPrintable() ? $card : null;
+        if ($card) {
+            $file = $card->modelFile;
+        }
+        // the customer's own file of a model seen in the inspiration catalogue (only where the licence lets us print it)
+        $inspiration = $request->query('source') ? CatalogModel::shown()->where('license_restricted', false)->find((int) $request->query('source')) : null;
         $quality = (string) $request->query('quality', 'standard');
         $strength = (string) $request->query('strength', 'standard');
         $supports = $request->query('supports') === 'off' ? 'off' : 'auto';
@@ -65,6 +76,10 @@ class OrderController extends Controller
 
         return view('farm.start', [
             'file' => $file,
+            'card' => $card,
+            'inspiration' => $inspiration,
+            // no 3D preview of a designer's file that is not offered for download
+            'previewUrl' => $file && (! $card || $card->download_allowed || $request->user()->isAdmin() || $request->user()->id === $card->profile->user_id) ? route('api.files.stl', $file) : null,
             'bed' => $this->orders->largestBed(),
             'quality' => $quality,
             'strength' => $strength,
@@ -124,12 +139,23 @@ class OrderController extends Controller
             'color' => ['nullable', 'integer'],
             'second_color' => ['nullable', 'integer'],
             'supports' => ['nullable', 'in:auto,off'],
+            'designer_model' => ['nullable', 'integer'],
+            'catalog_model' => ['nullable', 'integer'],
         ]);
-        $file = ModelFile::where('uuid', $data['file'])->firstOrFail();
-        $this->claim($request, $file);
+        $card = isset($data['designer_model']) ? DesignerModel::with('profile')->find((int) $data['designer_model']) : null;
+        if (isset($data['designer_model'])) {
+            // the card's own file, whatever uuid the form carries; a card that is no longer printable cannot be ordered
+            abort_unless($card && $card->isPrintable(), 404);
+            $file = $card->modelFile;
+        } else {
+            $file = ModelFile::where('uuid', $data['file'])->firstOrFail();
+            $this->claim($request, $file);
+        }
+        $inspiration = isset($data['catalog_model']) && ! $card ? CatalogModel::shown()->where('license_restricted', false)->find((int) $data['catalog_model']) : null;
 
         try {
-            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto', isset($data['second_color']) ? (int) $data['second_color'] : null);
+            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto', isset($data['second_color']) ? (int) $data['second_color'] : null, $card, $inspiration);
+            Track::event('order_created', $card ?? $order->modelFile, ['order' => $order->id]);
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
                 ? response()->json(['error' => $e->reason, 'message' => $e->text()], 422)
@@ -149,6 +175,8 @@ class OrderController extends Controller
 
         return view('farm.order', [
             'order' => $order,
+            'card' => $order->designer_model_id ? $order->designerModel?->load(['profile', 'images']) : null,
+            'modelHidden' => $order->hidesModelFrom($request->user()),
             'state' => $this->describe($order, $request),
             // the quality buttons name the layer this order's machine really prints (a finer nozzle, a finer ladder)
             'settings' => $this->withPrinterLayers($this->settings->all(), $order->printer),
@@ -263,6 +291,7 @@ class OrderController extends Controller
     public function model(Request $request, FarmOrder $order): BinaryFileResponse
     {
         $this->authorizeOrder($request, $order);
+        abort_if($order->hidesModelFrom($request->user()), 403);
         $path = $order->absolutePrintStlPath() ?: $order->modelFile?->absoluteStlPath();
         abort_unless($path && is_file($path), 404);
 
@@ -391,7 +420,7 @@ class OrderController extends Controller
             'color' => $order->color ? ['name' => $order->color->material->label().' '.$order->color->displayName(), 'hex' => $order->color->hex] : null,
             'delivery' => $order->delivery,
             'balance' => $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user),
-            'model_url' => $order->print_stl_path || $order->modelFile?->stl_path ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
+            'model_url' => ($order->print_stl_path || $order->modelFile?->stl_path) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
             'timelapse_url' => $order->timelapse_path ? route('farm.orders.timelapse', $order) : null,

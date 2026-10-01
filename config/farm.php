@@ -65,6 +65,9 @@ return [
         'farm_public' => false,                                       // false: only admins see "rent a printer" (the farm is still being tried out)
     ],
 
+    // Prices are defined in CZK. Accounts outside Czechia pay and are paid in EUR at this fixed rate (CZK per 1 EUR).
+    'eur_rate' => (float) env('FARM_EUR_RATE', 25),
+
     'payments' => [
         'gateway' => env('FARM_PAYMENT_GATEWAY', 'stripe'),   // stripe | fake
         'stripe' => [

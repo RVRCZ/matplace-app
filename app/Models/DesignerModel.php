@@ -37,6 +37,7 @@ class DesignerModel extends Model
         'designer_profile_id', 'title', 'slug', 'description', 'source', 'source_locale', 'external_url', 'external_id', 'license_source',
         'is_remix', 'remix_source_url', 'remix_confirmed_at', 'model_file_id', 'royalty_czk', 'download_allowed', 'download_license',
         'author_confirmed_at', 'visible', 'catalog_model_id', 'slice_summary', 'file_status', 'file_check', 'tags', 'source_files',
+        'catalog_category_id', 'max_mm',
     ];
 
     protected $casts = [
@@ -63,6 +64,11 @@ class DesignerModel extends Model
     public function catalogModel(): BelongsTo
     {
         return $this->belongsTo(CatalogModel::class);
+    }
+
+    public function categoryRow(): BelongsTo
+    {
+        return $this->belongsTo(CatalogCategory::class, 'catalog_category_id');
     }
 
     public function images(): HasMany

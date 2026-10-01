@@ -65,7 +65,9 @@ class PrepareDesignerFile implements ShouldQueue
             // the check passed, so the card may be printed; the numbers come later (admin can slice it again)
             Log::warning('Designer file could not be sliced for its summary', ['card' => $card->id, 'error' => $e->getMessage()]);
         }
-        $card->forceFill(['model_file_id' => $file->id, 'file_status' => DesignerModel::FILE_READY, 'file_check' => ['items' => $report['items']], 'slice_summary' => $summary])->save();
+        $card->forceFill(['model_file_id' => $file->id, 'file_status' => DesignerModel::FILE_READY, 'file_check' => ['items' => $report['items']], 'slice_summary' => $summary,
+            'max_mm' => (int) ceil(max(array_map('floatval', array_values((array) $summary['dims'])) ?: [0])),
+        ])->save();
     }
 
     public function failed(?\Throwable $e): void

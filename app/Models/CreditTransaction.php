@@ -26,7 +26,11 @@ class CreditTransaction extends Model
 
     public const TYPE_FORFEIT = 'forfeit';   // − unused credit given up when the owner deleted the account
 
-    protected $fillable = ['user_id', 'type', 'amount', 'currency', 'farm_order_id', 'payment_id', 'note', 'created_by'];
+    public const TYPE_ROYALTY = 'royalty';   // + a designer's reward for a finished print of their model
+
+    public const TYPE_ROYALTY_REVERSAL = 'royalty_reversal';   // − the reward taken back when the print was refunded after it was done
+
+    protected $fillable = ['user_id', 'type', 'amount', 'currency', 'farm_order_id', 'payment_id', 'note', 'created_by', 'designer_model_id'];
 
     protected $casts = ['amount' => 'float', 'created_at' => 'datetime'];
 

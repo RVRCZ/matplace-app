@@ -36,6 +36,20 @@
             <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="translate" value="1" class="mt-1" @checked($new)> <span>{{ __('designer.card.translate') }}</span></label>
         </fieldset>
 
+        @if(($categories ?? collect())->isNotEmpty())
+            <label class="lbl">{{ __('models.category') }}
+                <select name="catalog_category_id" class="field">
+                    <option value="">—</option>
+                    @foreach($categories as $top)
+                        <option value="{{ $top->id }}" @selected((int) old('catalog_category_id', $card->catalog_category_id) === $top->id)>{{ $top->label() }}</option>
+                        @foreach($top->children as $child)
+                            <option value="{{ $child->id }}" @selected((int) old('catalog_category_id', $card->catalog_category_id) === $child->id)>&nbsp;&nbsp;{{ $child->label() }}</option>
+                        @endforeach
+                    @endforeach
+                </select>
+            </label>
+        @endif
+
         <label class="lbl">{{ __('designer.royalty.label') }}
             <span class="mt-1 flex items-center gap-2 font-normal"><input name="royalty_czk" type="number" min="0" max="{{ \App\Models\DesignerProfile::MAX_ROYALTY_CZK }}" step="1" required value="{{ old('royalty_czk', (int) $card->royalty_czk) }}" class="field mt-0 w-32"> Kč</span>
             <span class="hint mt-1 block font-normal">{{ __('designer.royalty.hint') }}</span>

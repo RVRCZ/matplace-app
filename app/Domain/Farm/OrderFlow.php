@@ -70,8 +70,10 @@ final class OrderFlow
                 'farm_printer_id' => $offer['printer']->id, 'farm_printer_slot_id' => $offer['slot']->id, 'farm_color_id' => $offer['color']->id,
                 'farm_material_id' => $offer['color']->farm_material_id,
                 'second_slot_id' => $second?->id, 'second_color_id' => $second?->farm_color_id,
-                'delivery' => $delivery, 'shipping_address' => $delivery === 'shipping' ? $address : null, 'note' => $note,
-                'price' => $price, 'price_total' => $price['total'],
+                'delivery' => $delivery, 'shipping_address' => $delivery === 'shipping' ? $address : null,
+                // an order made from an inspiration page keeps the line that names the model and its author
+                'note' => trim(implode("\n", array_filter([$order->catalog_model_id ? $order->catalogModel?->attribution() : null, $note]))) ?: null,
+                'price' => $price, 'price_total' => $price['total'], 'royalty_czk' => $price['royalty_unit'] ?? null,
                 'terms_version' => (string) $this->settings->get('terms_version'), 'terms_accepted_at' => now(), 'terms_ip' => $ip,
             ])->save();
             $this->wallet->hold($order);
@@ -186,6 +188,8 @@ final class OrderFlow
     private function onDone(FarmOrder $order): void
     {
         $this->wallet->capture($order);
+        // the same moment the customer's money becomes final, the designer of the printed model gets the reward
+        $this->wallet->creditRoyalty($order);
         BuildFarmTimelapse::dispatch($order->id);
         if ($slot = $order->slot) {
             // what really left the spool when we know it, else the estimate

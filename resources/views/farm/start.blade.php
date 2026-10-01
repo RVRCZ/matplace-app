@@ -37,9 +37,19 @@
     <form id="farm-start" method="post" action="{{ route('farm.orders.store') }}" class="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
         @csrf
         <input type="hidden" name="file" id="farm-file" value="{{ $file?->uuid }}">
+        @if($card)<input type="hidden" name="designer_model" value="{{ $card->id }}">@endif
+        @if($inspiration)<input type="hidden" name="catalog_model" value="{{ $inspiration->id }}">@endif
 
         <div class="text-sm font-semibold text-slate-700">{{ __('farm.start.model') }}</div>
-        @if($file)
+        @if($card)
+            {{-- a designer's model: its name and author instead of a file name; the reward is part of the price --}}
+            <p class="mt-1 text-sm font-semibold">{{ __('models.farm.card', ['title' => $card->title, 'name' => $card->profile->display_name]) }}</p>
+            @if($card->royalty_czk > 0 && $card->profile->user_id !== auth()->id())<p class="text-xs text-slate-500">{{ __('models.farm.reward', ['amount' => number_format($card->royalty_czk, 0, ',', ' ')]) }}</p>@endif
+            @unless($previewUrl)
+                @if($card->coverUrl(false))<img src="{{ $card->coverUrl(false) }}" alt="" class="mt-2 max-h-64 w-full rounded-xl border border-slate-200 bg-slate-50 object-contain">@endif
+                <p class="mt-1 text-xs text-slate-500">{{ __('models.farm.no_preview') }}</p>
+            @endunless
+        @elseif($file)
             <p class="mt-1 text-sm">{{ $file->original_name }}</p>
         @else
             {{-- a real drop zone: the bare file input looks like a line of text --}}
@@ -52,9 +62,15 @@
             <p class="mt-1 text-xs text-slate-500">{{ __('farm.start.upload_hint', ['max' => $settings['max_upload_mb'], 'x' => (int) ($bed?->x ?? 250), 'y' => (int) ($bed?->y ?? 250), 'z' => (int) ($bed?->z ?? 250)]) }}</p>
             <p id="farm-upload-status" class="mt-1 hidden text-sm text-slate-600" role="status"></p>
         @endif
-        <div id="farm-preview-box" class="mt-3 {{ $file ? '' : 'hidden' }} overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-            <canvas id="farm-preview" class="block h-64 w-full touch-none" data-model="{{ $file ? route('api.files.stl', $file) : '' }}" data-change="{{ $twoColor ?? '' }}"></canvas>
+        <div id="farm-preview-box" class="mt-3 {{ $file && ($previewUrl || ! $card) ? '' : 'hidden' }} overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <canvas id="farm-preview" class="block h-64 w-full touch-none" data-model="{{ $previewUrl ?? '' }}" data-change="{{ $twoColor ?? '' }}"></canvas>
         </div>
+        @if($inspiration)
+            <div class="mt-3 rounded-xl bg-action-soft p-3 text-sm">
+                <p class="font-semibold">{{ __('models.farm.source_title') }}</p>
+                <p class="text-slate-700">{{ __('models.farm.source_text', ['line' => $inspiration->attribution()]) }}</p>
+            </div>
+        @endif
 
         {{-- the size as the calculator had it (or as uploaded); one dimension typed scales the whole model --}}
         <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span> <button id="farm-size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('farm.size.reset') }}</button></div>
