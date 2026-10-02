@@ -6,7 +6,7 @@
  *   bootFarmDashboard  /admin/farm: buttons post over fetch, the answer is a short toast, cards redraw in place
  */
 import { BufferGeometry } from 'three';
-import { Viewer, FacePaint } from './viewer';
+import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; inputs: { vat_percent: number } }
@@ -62,15 +62,24 @@ function rgbOf(hex: string): [number, number, number] {
     return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
 
+/**
+ * Where the second colour starts: a hair above the plate. The top face of the plate lies exactly at the height of the
+ * change and belongs to the plate (measured at the change itself, rounding put the whole face into the second colour
+ * and the code was lost in it).
+ */
+const edge = (changeZ: number): number => changeZ * 1.02;
+
+/** The model as the two colours will print it: cut at the change, so a stand keeps its foot in the first colour. */
+const cutForTwoTone = (geom: BufferGeometry, changeZ: number): BufferGeometry => (changeZ > 0 ? cutAtHeight(geom, edge(changeZ)) : geom);
+
 /** A plate with a code or a text: the triangles above the plate in the second colour, the rest in the first. */
 function twoTone(geom: BufferGeometry, changeZ: number, first: string, second: string): FacePaint | null {
     const pos = geom.getAttribute('position');
     if (!pos || geom.index) return null;
     const flags = new Uint8Array(pos.count / 3);
-    for (let t = 0; t < flags.length; t++) flags[t] = (pos.getZ(t * 3) + pos.getZ(t * 3 + 1) + pos.getZ(t * 3 + 2)) / 3 > changeZ ? 1 : 0;
-    // vertex colours are multiplied by the viewer's lights: kept a little deeper than the swatch
-    const rgb = (hex: string): [number, number, number] => { const c = rgbOf(hex); return [c[0] * 0.85, c[1] * 0.85, c[2] * 0.85]; };
-    const a = rgb(first); const b = rgb(second);
+    for (let t = 0; t < flags.length; t++) flags[t] = (pos.getZ(t * 3) + pos.getZ(t * 3 + 1) + pos.getZ(t * 3 + 2)) / 3 > edge(changeZ) ? 1 : 0;
+    // the colours as the swatches of the spools show them: a dark code stays dark on a light plate
+    const a = deep(rgbOf(first)); const b = deep(rgbOf(second));
     return { flags, color: (f) => (f ? b : a) };
 }
 
@@ -120,7 +129,7 @@ export function bootFarmStart(): void {
         if (!preview) return;
         viewer ??= new Viewer(preview);
         show($('farm-preview-box'), true);
-        loadGeometryFromUrl(url).then((g) => { geom = g; viewer!.setGeometry(g, Number(($('farm-scale') as HTMLInputElement | null)?.value || 1) || 1, null); paint(); }).catch(() => show($('farm-preview-box'), false));
+        loadGeometryFromUrl(url).then((g) => { geom = cutForTwoTone(g, Number(preview.dataset.change || 0)); viewer!.setGeometry(geom, Number(($('farm-scale') as HTMLInputElement | null)?.value || 1) || 1, null); paint(); }).catch(() => show($('farm-preview-box'), false));
     };
     paint();
     // the size: the file's own millimetres times the factor from the calculator; one dimension typed scales the whole model
@@ -402,7 +411,7 @@ export function bootFarmOrder(): void {
         if (s.model_url && s.model_url !== shownModel) {
             shownModel = s.model_url;
             shownSupports = '';
-            loadGeometryFromUrl(s.model_url).then((g) => { geom = g; viewer.setGeometry(g, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTwo(); showSupports(); }).catch(() => { shownModel = ''; });
+            loadGeometryFromUrl(s.model_url).then((g) => { geom = cutForTwoTone(g, s.color_change_mm ?? 0); viewer.setGeometry(geom, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTwo(); showSupports(); }).catch(() => { shownModel = ''; });
         } else {
             showSupports();
         }

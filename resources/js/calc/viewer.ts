@@ -203,7 +203,7 @@ export function twoColorRegions(params: Record<string, unknown> | null | undefin
  * The same model with every triangle that crosses the height z cut along it (file coordinates, Z up), so each
  * triangle lies wholly below or wholly above: the foot of a stand comes out in the first colour, its body in the second.
  */
-function cutAtHeight(geom: BufferGeometry, z: number): BufferGeometry {
+export function cutAtHeight(geom: BufferGeometry, z: number): BufferGeometry {
     const pos = geom.getAttribute('position');
     if (!pos || geom.index) return geom;
     const out: number[] = [];
@@ -232,7 +232,7 @@ export const FILAMENT: Record<string, [number, number, number]> = {
 };
 
 /** A swatch colour (sRGB) as the linear value the renderer needs to show that very colour. */
-function deep(c: [number, number, number]): [number, number, number] {
+export function deep(c: [number, number, number]): [number, number, number] {
     const lin = (x: number): number => (x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4);
     return [lin(c[0]), lin(c[1]), lin(c[2])];
 }
