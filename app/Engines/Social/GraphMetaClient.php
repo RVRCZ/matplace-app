@@ -63,7 +63,7 @@ final class GraphMetaClient implements MetaClient
         $account = str_starts_with($account, 'act_') ? $account : 'act_'.$account;
         $period = in_array($period, ['last_7d', 'last_30d'], true) ? $period : 'last_7d';
         $rows = (array) ($this->call('GET', $account.'/campaigns', [
-            'fields' => 'id,name,status,account_currency,insights.date_preset('.$period.'){spend,impressions,clicks}', 'limit' => 50,
+            'fields' => 'id,name,status,insights.date_preset('.$period.'){spend,impressions,clicks,account_currency}', 'limit' => 50,
         ])['data'] ?? []);
 
         return array_values(array_map(function (array $c) {
@@ -72,7 +72,7 @@ final class GraphMetaClient implements MetaClient
             return [
                 'id' => (string) ($c['id'] ?? ''), 'name' => (string) ($c['name'] ?? ''), 'status' => (string) ($c['status'] ?? ''),
                 'spend' => (float) ($insights['spend'] ?? 0), 'impressions' => (int) ($insights['impressions'] ?? 0), 'clicks' => (int) ($insights['clicks'] ?? 0),
-                'currency' => isset($c['account_currency']) ? (string) $c['account_currency'] : null,
+                'currency' => isset($insights['account_currency']) ? (string) $insights['account_currency'] : null,   // the currency is a field of the insights, not of the campaign
             ];
         }, $rows));
     }
