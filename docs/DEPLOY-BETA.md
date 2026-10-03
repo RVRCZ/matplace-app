@@ -148,7 +148,8 @@ systemctl daemon-reload && systemctl restart matplace-worker
 
 Cloudflare odpovídá adrese serveru (IPv4 i IPv6) výzvou, takže import z Printables ani vyhledávání v Printables
 ze serveru nejdou. Řešení od 3. 10. 2026: na Romanově PC běží naplánovaná úloha „matplace import relay“
-(`C:\matplace-relayelay.cmd`): malá HTTP proxy na `127.0.0.1:3128` a SSH tunel `-R 127.0.0.1:3128` na server.
+(`C:\matplace-relay
+elay.cmd`): malá HTTP proxy na `127.0.0.1:3128` a SSH tunel `-R 127.0.0.1:3128` na server.
 Server má `IMPORT_HTTP_PROXY=http://127.0.0.1:3128`; přes proxy jdou jen volání API Printables a MakerWorld
 (import i hledání), obrázky se stahují přímo. Kontrola ze serveru:
 
@@ -181,3 +182,21 @@ zapnutí designérského profilu a import z Printables (ověří proxy), objedn�
   (zapiš si ho před krokem 2: `git rev-parse HEAD`), `.env` ze zálohy, DB z dumpu; migrace zpět
   (`migrate:rollback --step=7`) jsou napsané, ale u přejmenovaných sloupců katalogu je dump jistější.
 - Worker: `journalctl -u matplace-worker -n 50`, aplikace: `storage/logs/laravel.log`.
+
+## 7. Přepnutí na matplace.com (provedeno 3. 10. 2026, 16:00)
+
+1. DNS `legacy.matplace.com` → server (Roman, Wedos); certifikát `certbot certonly --nginx -d legacy.matplace.com`
+   (Let's Encrypt si první neúspěšný pokus pamatuje hodinu – negativní cache zóny).
+2. `sites-enabled`: `legacy.matplace.com.conf` (starý web, `/model`, `/blog`, `/katalog` → matplace.com),
+   `matplace.com.conf` (nová aplikace; `beta.matplace.com` dál odpovídá stejnou aplikací pod vlastním certifikátem,
+   `matplace.cz` má vlastní blok se svým certifikátem); vypnuté `matplace`, `matplace-app` a zapomenutá záloha
+   `matplace.bak.20260523-170654`, která v `sites-enabled` ležela od května (přesunutá do `/root`).
+3. `.env`: `APP_URL`, `GOOGLE_REDIRECT_URI`, `FACEBOOK_REDIRECT_URI` na matplace.com, `LEGACY_ASSETS_URL` na legacy,
+   `SEO_INDEXABLE=true`, `MAIL_ALWAYS_TO` pryč (záloha `/root/matplace-app.env.bak-switch-*`). `optimize`, restart,
+   `matplace:sitemap` (12 589 adres).
+4. Starý web se nezměnil (`APP_URL` má dál matplace.com; odkazy z jeho e‑mailů na účty a zakázky nová aplikace
+   přesměruje na legacy).
+
+Po přepnutí v konzolích (Roman): Google a Facebook redirect URI `https://matplace.com/auth/{google,facebook}/callback`;
+Stripe webhook pro `https://matplace.com/webhooks/payments/stripe` (ten na betě dál funguje, beta je alias);
+Search Console: sitemapa `https://matplace.com/sitemap.xml`.
