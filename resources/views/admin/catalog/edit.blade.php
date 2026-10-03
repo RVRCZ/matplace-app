@@ -41,7 +41,7 @@
             @if($model->thumbUrl())<img src="{{ $model->thumbUrl() }}" alt="" class="w-full rounded-lg">@endif
             <p class="mt-2 text-xs text-slate-600">Zdroj: {{ $model->source }} @if($model->hasWebLink())· <a href="{{ $model->external_url }}" target="_blank" rel="noopener" class="underline">otevřít</a>@endif
                 @if($model->slug)· <a href="{{ route('catalog.show', $model->slug) }}" target="_blank" class="underline">stránka</a>@endif</p>
-            <p class="text-xs text-slate-600">Zobrazení: {{ $model->view_count }} · {{ $model->license_restricted ? 'jen osobní použití, tisk nenabízíme' : 'licence dovoluje tisk' }}</p>
+            <p class="text-xs text-slate-600">Zobrazení: {{ $model->view_count }} · {{ $model->license_restricted ? 'licence: jen pro vlastní potřebu' : 'licence dovoluje i prodej výtisků' }}</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-3">
             <h2 class="font-bold">AI</h2>

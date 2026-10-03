@@ -265,7 +265,7 @@ return [
                 'h' => '5. Co je zakázáno',
                 'li' => [
                     'nahrávat nebo objednávat zbraně, jejich části a díly určené k obcházení zákona,',
-                    'nahrávat soubory, které porušují cizí autorská nebo průmyslová práva,',
+                    'tisknout cizí modely na prodej bez souhlasu autora nebo jinak porušovat cizí autorská a průmyslová práva,',
                     'vydávat cizí modely za vlastní,',
                     'získávat obsah webu automatizovaně bez našeho souhlasu,',
                     'narušovat provoz webu nebo obcházet jeho limity a zabezpečení.',
@@ -283,7 +283,7 @@ return [
                 'h' => '7. Inspirační katalog',
                 'p' => [
                     'Inspirační katalog ukazuje modely zveřejněné na jiných webech, například na Printables nebo MakerWorldu. U každého uvádíme autora, odkaz na zdroj a licenci tak, jak ji uvádí zdroj; za její úplnost a aktuálnost neručíme.',
-                    'Tisk na zakázku nabízíme jen u modelů, jejichž licence dovoluje komerční použití. Soubor si stáhnete u zdroje a nahrajete k nám; autora a zdroj uvedeme u objednávky za vás.',
+                    'Tisk pro vlastní potřebu na pronajaté tiskárně je možný u všech modelů; výtisky na prodej jen tam, kde to licence dovoluje. Soubor si stáhnete u zdroje a nahrajete k nám; autora a zdroj uvedeme u objednávky za vás.',
                 ],
             ],
             [
@@ -341,10 +341,11 @@ return [
                 ],
             ],
             [
-                'h' => '3. Co tiskneme a co ne',
+                'h' => '3. Pronájem tiskárny: co na ní tisknout nelze',
                 'p' => [
-                    'Model tiskneme tak, jak je. Automatická kontrola, oprava a natočení pomáhají, ale nezaručují, že díl bude plnit svůj účel. Nosné a bezpečnostní díly si necháváte tisknout na vlastní odpovědnost.',
-                    'Za model, který nahrajete, odpovídáte vy. Netiskneme zbraně ani jejich části, díly určené k obcházení zákona a modely, které porušují cizí autorská nebo průmyslová práva. Takovou zakázku zrušíme a kredit vrátíme.',
+                    'Tiskárnu vám pronajímáme: tiskne se váš soubor podle vašeho nastavení a kopii si tím pořizujete vy. Za to, že smíte model vytisknout (je váš, licence to dovoluje, nebo tisknete pro vlastní potřebu), odpovídáte vy. Nic z toho neposuzujeme.',
+                    'Model se tiskne tak, jak je. Automatická kontrola, oprava a natočení pomáhají, ale nezaručují, že díl bude plnit svůj účel. Nosné a bezpečnostní díly tisknete na vlastní odpovědnost.',
+                    'Tiskárnu nepronajmeme na zbraně ani jejich části, díly určené k obcházení zákona a na výtisky cizích modelů určené k prodeji bez souhlasu autora. Takovou zakázku zrušíme a kredit vrátíme. Když nás nositel práv oprávněně vyzve, tisk zastavíme a model odstraníme.',
                 ],
             ],
             [

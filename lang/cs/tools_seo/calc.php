@@ -12,7 +12,7 @@ return [
         ['name' => 'Nahrajte soubor', 'text' => 'Přetáhněte model do pole na úvodní stránce nebo klepněte na „Nahrát soubor“. Umíme STL, 3MF, OBJ a STEP do 100 MB.'],
         ['name' => 'Prohlédněte si model a údaje', 'text' => 'Model si otočíte v náhledu. Hrubý odhad doby tisku, hmotnosti a ceny vidíte hned, přesný výpočet doběhne za chvíli.'],
         ['name' => 'Nastavte velikost, materiál a kusy', 'text' => 'Změňte rozměry, počet kusů, materiál, kvalitu nebo výplň a klepněte na „Přepočítat“. Materiály si pro svůj model můžete porovnat v tabulce.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Tlačítkem „Pronajmout tiskárnu“ přejdete k objednávce: vyberete barvu a způsob převzetí a zaplatíte kreditem. Tlačítkem „Mám tiskárnu, stáhnout“ získáte projekt pro svou tiskárnu nebo samotné STL.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Tlačítkem „Tisknout na naší tiskárně“ přejdete k objednávce: vyberete barvu a způsob převzetí a zaplatíte kreditem. Tlačítkem „Mám tiskárnu, stáhnout“ získáte projekt pro svou tiskárnu nebo samotné STL.'],
     ],
     'faq' => [
         ['q' => 'Jaké soubory mohu nahrát?', 'a' => 'STL, 3MF, OBJ a STEP, nejvýše 100 MB. Úplný seznam formátů je napsaný přímo u pole pro nahrání.'],

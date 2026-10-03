@@ -62,17 +62,12 @@
                         <a href="{{ $card->profile->publicUrl() }}" class="text-action-dark underline">{{ __('models.inspiration.portfolio') }}</a>
                     </div>
                 </section>
-            @elseif(! $model->license_restricted)
-                <section id="cta" class="card mt-4 border-action p-4" data-cta="print">
-                    <h2 class="font-bold">{{ __('models.inspiration.have_file') }}</h2>
-                    <p class="mt-1 text-sm text-slate-700">{{ __('models.inspiration.have_file_text', ['license' => $licenseName]) }}@if($model->needsAttribution()) {{ __('models.inspiration.attribution') }}@endif</p>
-                    <a href="{{ route('farm.start', ['source' => $model->id]) }}" class="btn-primary mt-3" rel="nofollow">{{ __('models.inspiration.upload_print') }}</a>
-                </section>
             @else
-                <section id="cta" class="card mt-4 p-4" data-cta="none">
-                    <h2 class="font-bold">{{ __('models.inspiration.no_print') }}</h2>
-                    <p class="mt-1 text-sm text-slate-700">{{ __('models.inspiration.no_print_text', ['license' => $licenseName]) }}</p>
-                    <a href="{{ route('models.index') }}" class="mt-3 inline-block text-sm text-action-dark underline">{{ __('models.inspiration.printable_link') }}</a>
+                {{-- the customer rents the printer and prints for themselves: every licence allows that, a non-commercial one says so --}}
+                <section id="cta" class="card mt-4 border-action p-4" data-cta="print" data-use="{{ $model->license_restricted ? 'personal' : 'commercial' }}">
+                    <h2 class="font-bold">{{ __($model->license_restricted ? 'models.inspiration.personal' : 'models.inspiration.have_file') }}</h2>
+                    <p class="mt-1 text-sm text-slate-700">{{ __($model->license_restricted ? 'models.inspiration.personal_text' : 'models.inspiration.have_file_text', ['license' => $licenseName]) }}@if($model->needsAttribution()) {{ __('models.inspiration.attribution') }}@endif</p>
+                    <a href="{{ route('farm.start', ['source' => $model->id]) }}" class="btn-primary mt-3" rel="nofollow">{{ __('models.inspiration.upload_print') }}</a>
                 </section>
             @endif
             @if($author && ! $card)

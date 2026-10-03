@@ -407,7 +407,7 @@ class CatalogTest extends TestCase
         $this->get('/model/hidden-thing')->assertNotFound();
     }
 
-    public function test_a_model_page_calls_to_print_only_where_the_licence_allows_it(): void
+    public function test_a_model_page_calls_to_print_and_the_licence_only_changes_the_words(): void
     {
         $category = CatalogCategory::create(['slug' => 'domacnost', 'name' => ['cs' => 'Domácnost']]);
         $free = CatalogModel::create(['slug' => 'phone-stand', 'title' => 'Phone stand', 'description' => ['en' => 'A simple stand.', 'cs' => 'Jednoduchý stojánek.'], 'source_locale' => 'en', 'source' => 'printables', 'external_id' => '100', 'external_url' => 'https://www.printables.com/model/100-phone-stand', 'license' => 'cc_by', 'license_restricted' => false, 'author_name' => 'jana', 'category_id' => $category->id, 'tags' => ['phone']]);
@@ -423,9 +423,11 @@ class CatalogTest extends TestCase
         $this->assertSame(1, $free->refresh()->view_count);
         $this->flushHeaders();
 
-        // non-commercial: no call to print, a link to what can be printed instead
+        // non-commercial: the customer rents the printer and prints for themselves, so the call to print stays; the words say "not for sale"
         $nc = $this->get('/model/dragon')->assertOk();
-        $nc->assertSee('data-cta="none"', false)->assertSee(__('models.inspiration.no_print'))->assertDontSee(__('models.inspiration.upload_print'))->assertSee(route('models.index'), false);
+        $nc->assertSee('data-cta="print" data-use="personal"', false)->assertSee(__('models.inspiration.personal'))->assertSee(__('models.inspiration.upload_print'))
+            ->assertSee(route('farm.start', ['source' => $closed->id]), false)->assertDontSee(__('models.inspiration.attribution'));
+        $page->assertSee('data-use="commercial"', false);
         $this->assertStringNotContainsString('<link rel="alternate"', $nc->getContent(), 'Czech only: no hreflang');
 
         // a page exists only in the languages it has a text in; the others point to the Czech one
@@ -435,7 +437,7 @@ class CatalogTest extends TestCase
 
         // the customer brings the file: the order's note names the model, its author, address and licence
         $this->actingAs($this->customer)->get('/farm?source='.$free->id)->assertOk()->assertSee($free->attribution())->assertSee('name="catalog_model" value="'.$free->id.'"', false);
-        $this->actingAs($this->customer)->get('/farm?source='.$closed->id)->assertOk()->assertDontSee('name="catalog_model"', false);
+        $this->actingAs($this->customer)->get('/farm?source='.$closed->id)->assertOk()->assertSee('name="catalog_model" value="'.$closed->id.'"', false);
         $path = sys_get_temp_dir().'/mp_src_'.uniqid().'.stl';
         MeshFixtures::cubeStl($path, 30);
         $uuid = $this->actingAs($this->customer)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'stand.stl', null, null, true)])->json('file.uuid');
@@ -447,9 +449,9 @@ class CatalogTest extends TestCase
         $state = $this->actingAs($this->customer)->getJson("/farm/orders/{$order->token}/status")->json();
         $this->actingAs($this->customer)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $state['colors'][0]['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $state['colors'][0]['total'], 'note' => 'Prosím černě.'])->assertOk();
         $this->assertSame("Model: Phone stand, jana, https://www.printables.com/model/100-phone-stand, CC BY\nProsím černě.", $order->refresh()->note);
-        // a restricted model cannot be slipped in by hand
-        $bad = $this->actingAs($this->customer)->postJson('/farm/orders', ['file' => $uuid, 'catalog_model' => $closed->id])->assertCreated()->json('url');
-        $this->assertNull(FarmOrder::where('token', basename($bad))->firstOrFail()->catalog_model_id);
+        // a non-commercial model is printed for one's own use; the note still names it and its licence
+        $own = $this->actingAs($this->customer)->postJson('/farm/orders', ['file' => $uuid, 'catalog_model' => $closed->id])->assertCreated()->json('url');
+        $this->assertSame([$closed->id, 'Model: Dragon, https://makerworld.com/en/models/5-dragon, CC BY NC'], [FarmOrder::where('token', basename($own))->firstOrFail()->catalog_model_id, FarmOrder::where('token', basename($own))->firstOrFail()->note]);
 
         // the author brings the model to matplace: the page offers their card instead
         $card = $this->card('Phone stand', 40, ['source' => 'printables', 'external_id' => '100', 'external_url' => 'https://www.printables.com/model/100-phone-stand', 'catalog_model_id' => $free->id]);

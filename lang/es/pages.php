@@ -265,7 +265,7 @@ return [
                 'h' => '5. Qué está prohibido',
                 'li' => [
                     'subir o pedir armas, sus piezas y piezas destinadas a eludir la ley,',
-                    'subir archivos que infrinjan derechos de autor o de propiedad industrial ajenos,',
+                    'imprimir modelos ajenos para la venta sin el consentimiento del autor o infringir de otro modo derechos de autor o de propiedad industrial ajenos,',
                     'presentar como propios modelos ajenos,',
                     'extraer el contenido de la web de forma automatizada sin nuestro consentimiento,',
                     'perturbar el funcionamiento de la web o eludir sus límites y su seguridad.',
@@ -283,7 +283,7 @@ return [
                 'h' => '7. Catálogo de inspiración',
                 'p' => [
                     'El catálogo de inspiración muestra modelos publicados en otras webs, como Printables o MakerWorld. De cada uno indicamos el autor, el enlace a la fuente y la licencia tal como la indica la fuente; no garantizamos que sea completa ni que esté actualizada.',
-                    'Solo ofrecemos la impresión por encargo de los modelos cuya licencia permite el uso comercial. Usted descarga el archivo en la fuente y lo sube a nuestra web; nosotros anotamos el autor y la fuente en el pedido.',
+                    'La impresión para uso propio en la impresora alquilada es posible con todos los modelos; las impresiones para la venta, solo donde la licencia lo permite. Usted descarga el archivo en la fuente y lo sube a nuestra web; nosotros anotamos el autor y la fuente en el pedido.',
                 ],
             ],
             [
@@ -341,10 +341,11 @@ return [
                 ],
             ],
             [
-                'h' => '3. Qué imprimimos y qué no',
+                'h' => '3. Alquiler de la impresora: qué no se puede imprimir en ella',
                 'p' => [
-                    'Imprimimos el modelo tal como es. La revisión, la reparación y la orientación automáticas ayudan, pero no garantizan que la pieza cumpla su función. Las piezas de carga y de seguridad se imprimen bajo su responsabilidad.',
-                    'Usted es responsable del modelo que sube. No imprimimos armas ni sus piezas, piezas destinadas a eludir la ley ni modelos que infrinjan derechos de autor o de propiedad industrial ajenos. Un pedido así se cancela y el crédito se devuelve.',
+                    'Le alquilamos la impresora: imprime su archivo con sus ajustes y es usted quien hace la copia. Usted responde de poder imprimir el modelo (es suyo, su licencia lo permite o lo imprime para uso propio). Nosotros no lo juzgamos.',
+                    'El modelo se imprime tal como es. La revisión, la reparación y la orientación automáticas ayudan, pero no garantizan que la pieza cumpla su función. Las piezas de carga y de seguridad se imprimen bajo su responsabilidad.',
+                    'No alquilamos la impresora para armas ni sus piezas, piezas destinadas a eludir la ley ni impresiones de modelos ajenos destinadas a la venta sin el consentimiento del autor. Un pedido así se cancela y el crédito se devuelve. Si un titular de derechos nos lo pide con fundamento, detenemos la impresión y retiramos el modelo.',
                 ],
             ],
             [

@@ -265,7 +265,7 @@ return [
                 'h' => '5. What is prohibited',
                 'li' => [
                     'uploading or ordering weapons, their parts and parts meant to circumvent the law,',
-                    'uploading files that infringe somebody else\'s copyright or industrial rights,',
+                    'printing other people\'s models for sale without the author\'s consent, or infringing somebody else\'s copyright or industrial rights in any other way,',
                     'passing off other people\'s models as your own,',
                     'collecting the content of the website automatically without our consent,',
                     'disrupting the website or getting round its limits and security.',
@@ -283,7 +283,7 @@ return [
                 'h' => '7. Inspiration catalogue',
                 'p' => [
                     'The inspiration catalogue shows models published on other websites, such as Printables or MakerWorld. For each one we give the author, a link to the source and the licence as the source states it; we do not guarantee that it is complete or up to date.',
-                    'We offer printing to order only for models whose licence allows commercial use. You download the file at the source and upload it to us; we note the author and the source on the order for you.',
+                    'Printing for your own use on the rented printer is possible with every model; prints for sale only where the licence allows it. You download the file at the source and upload it to us; we note the author and the source on the order for you.',
                 ],
             ],
             [
@@ -341,10 +341,11 @@ return [
                 ],
             ],
             [
-                'h' => '3. What we print and what we do not',
+                'h' => '3. Renting the printer: what cannot be printed on it',
                 'p' => [
-                    'We print the model as it is. Automatic checking, repair and orientation help, but do not guarantee that the part will serve its purpose. Load-bearing and safety parts are printed at your own risk.',
-                    'You are responsible for the model you upload. We do not print weapons or their parts, parts meant to circumvent the law, or models that infringe somebody else\'s copyright or industrial rights. Such an order is cancelled and the credit returned.',
+                    'We rent the printer to you: it prints your file with your settings, and it is you who makes the copy. You are responsible for being allowed to print the model (it is yours, its licence allows it, or you print it for your own use). We do not judge any of that.',
+                    'The model is printed as it is. Automatic checking, repair and orientation help, but do not guarantee that the part will serve its purpose. Load-bearing and safety parts are printed at your own risk.',
+                    'We do not rent the printer for weapons or their parts, for parts meant to circumvent the law, or for prints of other people\'s models meant for sale without the author\'s consent. Such an order is cancelled and the credit returned. When a rights holder rightly asks us to, we stop the print and remove the model.',
                 ],
             ],
             [

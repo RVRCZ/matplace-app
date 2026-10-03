@@ -9,9 +9,9 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Queues translations for the part of the inspiration catalogue that is worth it: every model the farm may print
- * (commercial licence) and the most visited ones. The rest stays in the language of its source; translating all
- * of it would cost money for pages nobody opens.
+ * Queues translations for the part of the inspiration catalogue that is worth it: every model whose prints may be
+ * sold (commercial licence, the ones people look for) and the most visited ones. The rest stays in the language of
+ * its source; translating all of it would cost money for pages nobody opens.
  *
  *   php artisan matplace:translate-catalog --dry-run
  *   php artisan matplace:translate-catalog [--top=500] [--limit=200]

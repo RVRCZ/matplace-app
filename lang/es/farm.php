@@ -2,10 +2,10 @@
 
 return [
     'price_label' => 'Impreso por nosotros (:material)',
-    'cta' => 'Alquilar una impresora',
+    'cta' => 'Imprimir en nuestra impresora',
     'cta_hint' => 'Lo imprimimos en nuestra impresora. Paga con crédito y la impresión empieza en cuanto la impresora esté libre.',
-    'cta_wait' => 'Espere a que termine el cálculo preciso; después podrá alquilar una impresora.',
-    'title' => 'Alquilar una impresora',
+    'cta_wait' => 'Espere a que termine el cálculo preciso; después podrá imprimir en nuestra impresora.',
+    'title' => 'Imprimir en nuestra impresora',
     'lead' => 'Suba un modelo; nosotros lo orientamos, lo preparamos y calculamos el precio. Elija el color, pague con crédito y la impresora empieza.',
     'my_orders' => 'Mis impresiones',
     'no_orders' => 'Todavía no hay nada.',
@@ -99,7 +99,7 @@ return [
         'pickup' => 'Recogida en persona',
         'address' => ['name' => 'Nombre y apellidos', 'street' => 'Calle y número', 'city' => 'Ciudad', 'zip' => 'Código postal', 'phone' => 'Teléfono'],
         'note' => 'Nota para el operador',
-        'terms' => 'Acepto las <a href=":url" target="_blank" class="underline">condiciones de la granja de impresión</a>: soy responsable del modelo, no contiene armas ni sus piezas y no es una obra protegida ajena.',
+        'terms' => 'Acepto las <a href=":url" target="_blank" class="underline">condiciones de la granja de impresión</a>: alquilo la impresora, respondo del modelo y de mi derecho a imprimirlo; el modelo no contiene armas ni sus piezas.',
         'pay' => 'Pagar con crédito e iniciar la impresión',
         'paying' => 'Enviando…',
         'need_credit' => 'Le faltan :missing de crédito.',
@@ -231,8 +231,8 @@ return [
         'title' => 'Condiciones de la granja de impresión',
         'version' => 'Versión :v',
         'items' => [
-            'Usted es responsable del modelo que sube. Suba solo modelos que haya creado o que tenga derecho a imprimir.',
-            'No imprimimos armas ni sus piezas, piezas destinadas a eludir la ley ni modelos que infrinjan derechos de autor o de propiedad industrial ajenos. Un pedido así se cancela y el crédito se devuelve.',
+            'Le alquilamos la impresora: imprime su archivo con sus ajustes y es usted quien hace la copia. Usted responde de poder imprimir el modelo (es suyo, su licencia lo permite o lo imprime para uso propio). Nosotros no lo juzgamos.',
+            'No alquilamos la impresora para armas ni sus piezas, piezas destinadas a eludir la ley ni impresiones de modelos ajenos destinadas a la venta sin el consentimiento del autor. Un pedido así se cancela y el crédito se devuelve. Si un titular de derechos nos lo pide con fundamento, detenemos la impresión y retiramos el modelo.',
             'Imprimimos el modelo tal como es. La revisión, la reparación y la orientación automáticas ayudan, pero no garantizan que la pieza cumpla su función. Las piezas de carga y de seguridad se imprimen bajo su responsabilidad.',
             'El precio se conoce antes de pedir y se paga con crédito. El crédito se retiene al pedir y solo se cobra cuando la impresión termina. Si la impresión no empieza o falla por nuestra causa, se devuelve entero.',
             'Pequeñas marcas de soportes, capas visibles y desviaciones de décimas de milímetro son propias de la impresión 3D y no son defectos.',

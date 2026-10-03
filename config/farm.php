@@ -58,7 +58,7 @@ return [
         'changeover_minutes' => 10,         // plate swap between two jobs, used for the queue estimate
         'offline_after_seconds' => 120,     // no heartbeat for this long = printer offline
         'snapshot_keep' => 1,               // snapshots kept per order (the last one is what people see)
-        'terms_version' => '2026-09',
+        'terms_version' => '2026-10',
         'admin_email' => env('FARM_ADMIN_EMAIL', env('MAIL_FROM_ADDRESS')),
 
         // ── product switches (the admin's value wins over .env; see App\Providers\AppServiceProvider) ──

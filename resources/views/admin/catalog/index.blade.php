@@ -47,7 +47,7 @@
                     <td class="px-3 py-2"><a href="{{ route('admin.catalog.edit', $m->id) }}" class="font-semibold underline">{{ $m->title }}</a>
                         <span class="block text-xs text-slate-500">{{ $m->source }} · {{ $m->author_name ?: 'autor neuveden' }} @if($m->slug)· <a href="{{ route('catalog.show', $m->slug) }}" target="_blank" class="underline">/model/{{ $m->slug }}</a>@endif</span></td>
                     <td class="px-3 py-2">{{ $m->categoryRow?->label('cs') ?? '—' }}@if($m->ai_category_id || $m->ai_mismatch)<span class="block text-xs text-amber-700">AI: ke kontrole</span>@endif</td>
-                    <td class="px-3 py-2 text-xs">{{ $m->license ?: '—' }}@if(! $m->license_restricted)<span class="block text-ok">lze tisknout</span>@endif</td>
+                    <td class="px-3 py-2 text-xs">{{ $m->license ?: '—' }}<span class="block {{ $m->license_restricted ? 'text-slate-500' : 'text-ok' }}">{{ $m->license_restricted ? 'jen pro sebe' : 'i na prodej' }}</span></td>
                     <td class="px-3 py-2 text-xs uppercase">{{ implode(' ', $m->locales()) }}</td>
                     <td class="px-3 py-2">{{ $m->view_count }}</td>
                     <td class="px-3 py-2 text-right">

@@ -2,10 +2,10 @@
 
 return [
     'price_label' => 'Printed by us (:material)',
-    'cta' => 'Rent a printer',
+    'cta' => 'Print on our printer',
     'cta_hint' => 'We print it on our own printer. You pay with credit and the print starts as soon as the printer is free.',
-    'cta_wait' => 'Wait for the precise calculation to finish, then you can rent a printer.',
-    'title' => 'Rent a printer',
+    'cta_wait' => 'Wait for the precise calculation to finish, then you can print on our printer.',
+    'title' => 'Print on our printer',
     'lead' => 'Upload a model; we turn it, prepare it and work out the price. You pick a colour, pay with credit and the printer starts.',
     'my_orders' => 'My prints',
     'no_orders' => 'Nothing here yet.',
@@ -99,7 +99,7 @@ return [
         'pickup' => 'Pick up in person',
         'address' => ['name' => 'Full name', 'street' => 'Street and number', 'city' => 'City', 'zip' => 'Postcode', 'phone' => 'Phone'],
         'note' => 'Note for the operator',
-        'terms' => 'I agree with the <a href=":url" target="_blank" class="underline">print farm terms</a>: I am responsible for the model, it contains no weapons or their parts and it is not somebody else\'s protected work.',
+        'terms' => 'I agree with the <a href=":url" target="_blank" class="underline">print farm terms</a>: I am renting the printer, I am responsible for the model and for my right to print it; the model contains no weapons or their parts.',
         'pay' => 'Pay with credit and start the print',
         'paying' => 'Sending…',
         'need_credit' => 'You are :missing short of credit.',
@@ -231,8 +231,8 @@ return [
         'title' => 'Print farm terms',
         'version' => 'Version :v',
         'items' => [
-            'You are responsible for the model you upload. Upload only models you made or have the right to print.',
-            'We do not print weapons or their parts, parts meant to circumvent the law, or models that infringe somebody else\'s copyright or industrial rights. Such an order is cancelled and the credit returned.',
+            'We rent the printer to you: it prints your file with your settings, and it is you who makes the copy. You are responsible for being allowed to print the model (it is yours, its licence allows it, or you print it for your own use). We do not judge any of that.',
+            'We do not rent the printer for weapons or their parts, for parts meant to circumvent the law, or for prints of other people\'s models meant for sale without the author\'s consent. Such an order is cancelled and the credit returned. When a rights holder rightly asks us to, we stop the print and remove the model.',
             'We print the model as it is. Automatic checking, repair and orientation help, but do not guarantee the part will serve its purpose. Load-bearing and safety parts are printed at your own risk.',
             'The price is known before ordering and is paid from credit. The credit is held when you order and taken only when the print is finished. If the print does not start or fails through our fault, all of it comes back.',
             'Small support marks, visible layers and deviations of tenths of a millimetre belong to 3D printing and are not defects.',

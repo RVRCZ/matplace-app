@@ -108,7 +108,7 @@ Celý tok od zákazníka po „hotovo“ jde projít se simulovanou tiskárnou:
 
 1. V `config.yaml` dejte tiskárně `driver: mock` (např. `print_seconds: 90`), spusťte agenta.
 2. V administraci: tiskárna v režimu *agent*, přiřazený agent, ve slotu 1 barva se zapnutým „nabízet“.
-3. Jako zákazník: kalkulace → **Pronajmout tiskárnu** → dobít kredit → vybrat barvu → zaplatit.
+3. Jako zákazník: kalkulace → **Tisknout na naší tiskárně** → dobít kredit → vybrat barvu → zaplatit.
 4. V `/admin/farm` klikněte **Podložka je volná, může tisknout**. Do pár vteřin agent převezme příkaz, „tiskne“,
    zákazník i admin vidí průběh, teploty a snímek; po doběhnutí je zakázka *Hotovo*, kredit stržený a u zakázky
    je zapsaný skutečný čas a spotřeba.

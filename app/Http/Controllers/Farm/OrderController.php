@@ -34,7 +34,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-/** "Rent a printer": the customer's side of a farm order. Logged-in users only; an order is visible to its owner and admins. */
+/** "Print on our printer" (the customer rents it): the customer's side of a farm order. Logged-in users only; an order is visible to its owner and admins. */
 class OrderController extends Controller
 {
     public function __construct(private readonly OrderService $orders, private readonly FarmSettings $settings, private readonly Wallet $wallet, private readonly Shipping $shipping) {}
@@ -49,8 +49,8 @@ class OrderController extends Controller
         if ($card) {
             $file = $card->modelFile;
         }
-        // the customer's own file of a model seen in the inspiration catalogue (only where the licence lets us print it)
-        $inspiration = $request->query('source') ? CatalogModel::shown()->where('license_restricted', false)->find((int) $request->query('source')) : null;
+        // the customer's own file of a model seen in the inspiration catalogue (any licence: they rent the printer and print for themselves)
+        $inspiration = $request->query('source') ? CatalogModel::shown()->find((int) $request->query('source')) : null;
         $quality = (string) $request->query('quality', 'standard');
         $strength = (string) $request->query('strength', 'standard');
         $supports = $request->query('supports') === 'off' ? 'off' : 'auto';
@@ -191,7 +191,7 @@ class OrderController extends Controller
             $file = ModelFile::where('uuid', $data['file'])->firstOrFail();
             $this->claim($request, $file);
         }
-        $inspiration = isset($data['catalog_model']) && ! $card ? CatalogModel::shown()->where('license_restricted', false)->find((int) $data['catalog_model']) : null;
+        $inspiration = isset($data['catalog_model']) && ! $card ? CatalogModel::shown()->find((int) $data['catalog_model']) : null;
 
         try {
             $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto', isset($data['second_color']) ? (int) $data['second_color'] : null, $card, $inspiration);

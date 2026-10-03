@@ -37,9 +37,9 @@ config/engines.php        volba motorů  ·  config/materials.php  ·  config/pr
 deploy/                   nginx vhost, systemd worker, server-setup.sh, deploy.sh
 ```
 
-## Tisková farma („Pronajmout tiskárnu“)
+## Tisková farma („Tisknout na naší tiskárně“)
 
-Třetí tlačítko v kalkulaci: přihlášený zákazník nechá model vytisknout na naší tiskárně a platí předem nabitým kreditem.
+Třetí tlačítko v kalkulaci: přihlášený zákazník si pronajme naši tiskárnu, ta vytiskne jeho soubor a platí se předem nabitým kreditem.
 
 ```
 app/Domain/Farm/          OrderService (založení, barvy, cena), OrderFlow (jediné místo změny stavu: historie, kredit, e-maily),

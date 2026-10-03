@@ -12,12 +12,13 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * The inspiration catalogue: models that live elsewhere (Printables, MakerWorld, MakerOnline, Cults3D), taken over
- * from the old site with their addresses (/model/{slug}). A page links to the source; the farm prints such a model
- * only when its licence allows commercial use and the customer brings the file.
+ * from the old site with their addresses (/model/{slug}). A page links to the source; the customer brings the file and
+ * prints it on a rented printer. Every licence allows that for one's own use; `license_restricted` marks the ones
+ * (non-commercial, paid, unknown) whose prints must not be sold, and the page says so.
  */
 class CatalogModel extends Model
 {
-    /** Licences under which the farm may print a model for a customer (CC BY and CC BY-SA with attribution). */
+    /** Licences that allow commercial use, i.e. selling the prints (CC BY and CC BY-SA with attribution). */
     public const COMMERCIAL_LICENSES = ['cc0', 'cc_by', 'cc_by_sa', 'free_commercial'];
 
     protected $fillable = [
