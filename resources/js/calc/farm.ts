@@ -465,7 +465,12 @@ export function bootFarmOrder(): void {
         if (s.status === 'sliced') {
             renderColors();
             renderDelivery();
-            ($('farm-pay-btn') as HTMLButtonElement).disabled = picked === null || total() === null || deliveryMissing() !== null || !($('farm-terms') as HTMLInputElement).checked;
+            // short of credit: the button says by how much and leads to the top-up instead of a payment that would fail
+            const payBtn = $('farm-pay-btn') as HTMLButtonElement;
+            const short = total() !== null ? Math.max(0, total()! - s.balance) : 0;
+            payBtn.dataset.need = short > 0.005 ? String(Math.ceil(short)) : '';
+            payBtn.textContent = payBtn.dataset.need ? tr('farm.order.pay_short', { missing: money(short) }) : tr('farm.order.pay');
+            payBtn.disabled = payBtn.dataset.need ? false : picked === null || total() === null || deliveryMissing() !== null || !($('farm-terms') as HTMLInputElement).checked;
             // another colour may mean another machine and another kind of filament: the numbers above must be computed again first
             const recolor = picked !== null && state.colors.find((c) => c.slot === picked)?.sliced === false;
             show($('farm-recolor'), recolor); show($('farm-recolor-note'), recolor); show($('farm-pay-btn'), !recolor);
@@ -576,6 +581,7 @@ export function bootFarmOrder(): void {
     $('farm-pay')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = $<HTMLButtonElement>('farm-pay-btn')!;
+        if (btn.dataset.need) { window.location.href = `${cfg.routes.topup}&need=${btn.dataset.need}`; return; }
         const errBox = $('farm-pay-error')!;
         const form = e.target as HTMLFormElement;
         const missing = deliveryMissing();

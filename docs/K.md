@@ -29,6 +29,16 @@ kopii si tím pořizuje on), ale texty mluvily o „tisku na zakázku“ a tvrdi
 Právní opora, kterou má Roman ukázat právníkovi: § 30 autorského zákona (rozmnoženina pro osobní potřebu) a to,
 že u pronájmu je pořizovatelem kopie zákazník. Zbraně zůstávají vyloučené bez ohledu na licenci.
 
+## Tlačítko a kredit (doplněno)
+
+- Tlačítko v kalkulaci je krátké a výrazné: **„Vytisknout u nás“** (en *Print it with us*, es *Imprimirlo con
+  nosotros*), oranžové jako hlavní akce, větší; text o pronájmu zůstává pod ním (`farm.cta_hint`). Nadpis stránky
+  objednávky zůstal „Tisknout na naší tiskárně“.
+- Stránka zakázky: když je cena vyšší než kredit, tlačítko „Zaplatit kreditem a spustit tisk“ se změní na
+  **„Chybí 85 Kč kreditu – dobít kartou“** (`farm.order.pay_short`), je aktivní bez ohledu na barvu a souhlas
+  a vede na `/account/credit?back=<token>&need=<chybí, celé>`; po dobití se vrátí na zakázku. Platba, která by
+  stejně selhala (402), se neposílá; odpověď 402 se dál ošetřuje pro případ, že se kredit změní mezitím.
+
 ## Testy
 
 `CatalogTest::test_a_model_page_calls_to_print_and_the_licence_only_changes_the_words`: komerční karta

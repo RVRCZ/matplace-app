@@ -37,7 +37,7 @@ config/engines.php        volba motorů  ·  config/materials.php  ·  config/pr
 deploy/                   nginx vhost, systemd worker, server-setup.sh, deploy.sh
 ```
 
-## Tisková farma („Tisknout na naší tiskárně“)
+## Tisková farma („Vytisknout u nás“)
 
 Třetí tlačítko v kalkulaci: přihlášený zákazník si pronajme naši tiskárnu, ta vytiskne jeho soubor a platí se předem nabitým kreditem.
 

@@ -203,7 +203,9 @@ class FarmPagesTest extends TestCase
         $order = $this->order();
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json();
         $this->assertSame('PLA Silk', collect($state['colors'])->firstWhere('name', $color->name)['kind']);
-        $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('id="mp-lightbox"', false);
+        // … and the words and the address for the pay button that turns into "top up" when credit is short
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('id="mp-lightbox"', false)
+            ->assertSee('farm.order.pay_short', false)->assertSee('back='.$order->token, false);
         $this->actingAs($this->admin)->get('/admin/farm/materials')->assertOk()->assertSee('přeřazení');
     }
 

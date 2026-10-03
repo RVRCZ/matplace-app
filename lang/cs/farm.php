@@ -2,7 +2,7 @@
 
 return [
     'price_label' => 'Tisk u nás (:material)',
-    'cta' => 'Tisknout na naší tiskárně',
+    'cta' => 'Vytisknout u nás',
     'cta_hint' => 'Tiskárnu si na dobu tisku pronajmete: tiskne se váš soubor. Platíte kreditem, tisk se spustí hned, jak je tiskárna volná.',
     'cta_wait' => 'Počkejte na dokončení přesného výpočtu, pak půjde tisknout na naší tiskárně.',
     'title' => 'Tisknout na naší tiskárně',
@@ -102,7 +102,7 @@ return [
         'terms' => 'Souhlasím s <a href=":url" target="_blank" class="underline">podmínkami tiskové farmy</a>: tiskárnu si pronajímám, za model a právo ho vytisknout odpovídám já; model neobsahuje zbraně ani jejich části.',
         'pay' => 'Zaplatit kreditem a spustit tisk',
         'paying' => 'Odesílám…',
-        'need_credit' => 'Chybí vám :missing kreditu.',
+        'pay_short' => 'Chybí :missing kreditu – dobít kartou',
         'cancel' => 'Zrušit zakázku',
         'cancel_confirm' => 'Opravdu zakázku zrušit? Kredit se vám vrátí.',
         'cancel_running_confirm' => 'Tisk už běží. Za vytištěnou část vám naúčtujeme :amount, zbytek kreditu vrátíme. Opravdu zrušit?',

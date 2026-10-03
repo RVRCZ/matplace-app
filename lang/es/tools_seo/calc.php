@@ -12,7 +12,7 @@ return [
         ['name' => 'Suba un archivo', 'text' => 'Arrastre el modelo al recuadro de la página de inicio o toque «Subir archivo». Leemos STL, 3MF, OBJ y STEP de hasta 100 MB.'],
         ['name' => 'Vea los datos del modelo', 'text' => 'Gire el modelo en la vista previa. La estimación aproximada de tiempo, peso y precio aparece al instante; el cálculo exacto llega poco después.'],
         ['name' => 'Ajuste tamaño, material y unidades', 'text' => 'Cambie las dimensiones, las unidades, el material, la calidad o el relleno y toque «Recalcular». Una tabla compara los materiales para su modelo.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'El botón «Imprimir en nuestra impresora» le lleva al pedido: elige el color y la forma de entrega y paga con crédito. Con «Tengo impresora, descargar» obtiene un proyecto para su impresora o solo el STL.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'El botón «Imprimirlo con nosotros» le lleva al pedido: elige el color y la forma de entrega y paga con crédito. Con «Tengo impresora, descargar» obtiene un proyecto para su impresora o solo el STL.'],
     ],
     'faq' => [
         ['q' => '¿Qué archivos puedo subir?', 'a' => 'STL, 3MF, OBJ y STEP, de hasta 100 MB. La lista completa de formatos está escrita junto al recuadro de subida.'],

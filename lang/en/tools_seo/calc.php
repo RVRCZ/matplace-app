@@ -12,7 +12,7 @@ return [
         ['name' => 'Upload a file', 'text' => 'Drop the model into the field on the home page or tap "Upload a file". We read STL, 3MF, OBJ and STEP up to 100 MB.'],
         ['name' => 'View the model and numbers', 'text' => 'Turn the model in the preview. A rough estimate of print time, weight and price shows at once; the exact calculation follows shortly.'],
         ['name' => 'Set size, material and pieces', 'text' => 'Change the dimensions, the number of pieces, the material, the quality or the infill and tap "Recalculate". A table compares the materials for your model.'],
-        ['name' => 'Order the print or download', 'text' => 'The "Print on our printer" button takes you to the order: you choose the colour and how you will receive the print, and pay with credit. "I own a printer, download" gives you a project for your printer or the plain STL.'],
+        ['name' => 'Order the print or download', 'text' => 'The "Print it with us" button takes you to the order: you choose the colour and how you will receive the print, and pay with credit. "I own a printer, download" gives you a project for your printer or the plain STL.'],
     ],
     'faq' => [
         ['q' => 'Which files can I upload?', 'a' => 'STL, 3MF, OBJ and STEP, up to 100 MB. The full list of formats is written next to the upload field.'],

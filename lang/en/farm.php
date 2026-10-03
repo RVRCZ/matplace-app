@@ -2,7 +2,7 @@
 
 return [
     'price_label' => 'Printed by us (:material)',
-    'cta' => 'Print on our printer',
+    'cta' => 'Print it with us',
     'cta_hint' => 'We print it on our own printer. You pay with credit and the print starts as soon as the printer is free.',
     'cta_wait' => 'Wait for the precise calculation to finish, then you can print on our printer.',
     'title' => 'Print on our printer',
@@ -102,7 +102,7 @@ return [
         'terms' => 'I agree with the <a href=":url" target="_blank" class="underline">print farm terms</a>: I am renting the printer, I am responsible for the model and for my right to print it; the model contains no weapons or their parts.',
         'pay' => 'Pay with credit and start the print',
         'paying' => 'Sending…',
-        'need_credit' => 'You are :missing short of credit.',
+        'pay_short' => ':missing of credit missing – top up by card',
         'cancel' => 'Cancel the order',
         'cancel_confirm' => 'Really cancel the order? Your credit comes back.',
         'cancel_running_confirm' => 'The print is already running. The printed part costs :amount, the rest of the credit comes back. Really cancel?',

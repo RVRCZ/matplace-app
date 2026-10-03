@@ -2,7 +2,7 @@
 
 return [
     'price_label' => 'Impreso por nosotros (:material)',
-    'cta' => 'Imprimir en nuestra impresora',
+    'cta' => 'Imprimirlo con nosotros',
     'cta_hint' => 'Lo imprimimos en nuestra impresora. Paga con crédito y la impresión empieza en cuanto la impresora esté libre.',
     'cta_wait' => 'Espere a que termine el cálculo preciso; después podrá imprimir en nuestra impresora.',
     'title' => 'Imprimir en nuestra impresora',
@@ -102,7 +102,7 @@ return [
         'terms' => 'Acepto las <a href=":url" target="_blank" class="underline">condiciones de la granja de impresión</a>: alquilo la impresora, respondo del modelo y de mi derecho a imprimirlo; el modelo no contiene armas ni sus piezas.',
         'pay' => 'Pagar con crédito e iniciar la impresión',
         'paying' => 'Enviando…',
-        'need_credit' => 'Le faltan :missing de crédito.',
+        'pay_short' => 'Faltan :missing de crédito – recargar con tarjeta',
         'cancel' => 'Cancelar el pedido',
         'cancel_confirm' => '¿Cancelar el pedido? El crédito se le devuelve.',
         'cancel_running_confirm' => 'La impresión ya está en marcha. La parte impresa cuesta :amount, el resto del crédito se devuelve. ¿Cancelar de verdad?',
