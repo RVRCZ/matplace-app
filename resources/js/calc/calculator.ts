@@ -1,6 +1,6 @@
 import { BufferGeometry } from 'three';
 import { moldReport } from './mold';
-import { Viewer } from './viewer';
+import { Viewer, twoColorRegions } from './viewer';
 import { loadGeometry, loadGeometryFromUrl, extensionOf, BROWSER_FORMATS } from './loaders';
 import { stats, normaliseUnits, GeoStats } from './geometry';
 import { estimate, price, range, RoughConfig, Profile, Params } from './rough';
@@ -346,7 +346,7 @@ async function showServerStl(url: string): Promise<void> {
         const geom = await loadGeometryFromUrl(url);
         state.geometry = geom;
         state.geo = stats(geom);
-        viewer?.setGeometry(geom, state.params.scale, state.file?.kind ?? null);
+        viewer?.setGeometry(geom, state.params.scale, state.file?.kind ?? null, twoColorRegions(state.file?.tool?.params));
     } catch { /* viewer is optional */ }
 }
 

@@ -1,0 +1,47 @@
+{
+    "param.c.qr.plate_color": [
+        "Barva destičky",
+        "Plate colour",
+        "Color de la placa"
+    ],
+    "param.c.qr.code_color": [
+        "Barva kódu a popisku",
+        "Colour of the code and the caption",
+        "Color del código y del texto"
+    ],
+    "param.c.qr.code_color.hint": [
+        "Nejspolehlivěji se čte tmavý kód na světlé destičce. Náhled ukazuje obě barvy.",
+        "A dark code on a light plate reads most reliably. The preview shows both colours.",
+        "Un código oscuro sobre una placa clara es lo que mejor se lee. La vista previa muestra los dos colores."
+    ],
+    "param.c.qr.code_color.hint.farm": [
+        "Nejspolehlivěji se čte tmavý kód na světlé destičce. Při objednání tisku předvybereme dvojici cívek, která je těmto barvám nejblíž; tiskárna si barvu nad destičkou vymění sama.",
+        "A dark code on a light plate reads most reliably. When you order the print, we tick the pair of spools nearest to these colours; the printer changes the colour above the plate by itself.",
+        "Un código oscuro sobre una placa clara es lo que mejor se lee. Al pedir la impresión marcamos el par de bobinas más cercano a estos colores; la impresora cambia el color sobre la placa por sí sola."
+    ],
+    "param.c.qr.code_color.hint.download": [
+        "Nejspolehlivěji se čte tmavý kód na světlé destičce. Stažený projekt zastaví tiskárnu nad destičkou, tam vyměníte cívku za barvu kódu.",
+        "A dark code on a light plate reads most reliably. The downloaded project stops the printer above the plate, where you swap the spool for the colour of the code.",
+        "Un código oscuro sobre una placa clara es lo que mejor se lee. El proyecto descargado detiene la impresora sobre la placa; ahí cambia la bobina por el color del código."
+    ],
+    "param.warn.qr_one_color": [
+        "Destička a kód mají stejnou barvu. Takový kód nejde přečíst, zvolte dvě různé barvy.",
+        "The plate and the code are the same colour. Such a code cannot be read, pick two different colours.",
+        "La placa y el código tienen el mismo color. Un código así no se puede leer; elija dos colores distintos."
+    ],
+    "param.warn.qr_low_contrast": [
+        "Tyto dvě barvy jsou si jasem příliš blízko a čtečka je nemusí rozlišit. Zvolte světlou destičku a tmavý kód, nebo kód před větší zakázkou vyzkoušejte telefonem.",
+        "These two colours are too close in brightness and a reader may not tell them apart. Pick a light plate and a dark code, or try the code with a phone before a bigger order.",
+        "Estos dos colores tienen un brillo demasiado parecido y el lector puede no distinguirlos. Elija una placa clara y un código oscuro, o pruebe el código con el móvil antes de un pedido grande."
+    ],
+    "param.warn.qr_inverted": [
+        "Světlý kód na tmavé destičce některé čtečky nepřečtou. Jistější je světlá destička a tmavý kód.",
+        "Some readers do not take a light code on a dark plate. A light plate with a dark code is the safe choice.",
+        "Algunos lectores no leen un código claro sobre una placa oscura. Lo seguro es una placa clara con un código oscuro."
+    ],
+    "param.qr.facts": [
+        "Kód má :c × :c polí, jedno pole měří :m mm a volný okraj :q mm. Čitelnost návrhu v této velikosti jsme ověřili. Tiskne se dvoubarevně: stažený projekt má výměnu filamentu nad destičkou vloženou, tisk u nás ji provede sám.",
+        "The code has :c × :c modules, one module is :m mm and the quiet zone :q mm. We verified that the design reads at this size. It prints in two colours: the downloaded project carries the filament change above the plate, a print with us does it by itself.",
+        "El código tiene :c × :c módulos, cada uno de :m mm y un margen libre de :q mm. Hemos comprobado que el diseño se lee a este tamaño. Se imprime en dos colores: el proyecto descargado lleva el cambio de filamento sobre la placa; una impresión con nosotros lo hace sola."
+    ]
+}

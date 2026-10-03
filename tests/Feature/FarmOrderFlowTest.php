@@ -297,6 +297,49 @@ class FarmOrderFlowTest extends TestCase
         $this->pay($plain, ['second_slot' => $free[0]->id])->assertStatus(422);
     }
 
+    /** A QR code in one colour cannot be read: the start page ticks the two spools of one machine nearest to the design. */
+    public function test_a_qr_sign_starts_with_the_pair_of_spools_nearest_to_its_colours(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        // the S1 holds a white spool; a black and a red one of the same family join it
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $white = $s1->slots()->whereNotNull('farm_color_id')->firstOrFail()->color;
+        $white->update(['hex' => '#F4F4F0']);
+        [$black, $red] = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->where('id', '!=', $white->id)->take(2)->get()->all();
+        $black->update(['hex' => '#101012', 'enabled' => true]);
+        $red->update(['hex' => '#C01818', 'enabled' => true]);
+        $free = $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->get();
+        $free[0]->update(['farm_color_id' => $red->id, 'remaining_g' => 800, 'enabled' => true]);
+        $free[1]->update(['farm_color_id' => $black->id, 'remaining_g' => 800, 'enabled' => true]);
+
+        $design = fn (array $colors) => $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'qr', 'params' => ['url' => 'https://matplace.com'] + $colors])->assertCreated()->json('file.uuid');
+        $ticked = function (string $query, string $name): ?int {
+            $html = $this->actingAs($this->user)->get('/farm?'.$query)->assertOk()->getContent();
+
+            return preg_match('/name="'.$name.'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
+        };
+
+        $plain = $design([]);
+        $this->assertSame($white->id, $ticked('file='.$plain, 'color'), 'the plate in the lightest spool');
+        $this->assertSame($black->id, $ticked('file='.$plain, 'second_color'), 'the code in the darkest spool of that machine');
+        $this->actingAs($this->user)->get('/farm?file='.$plain)->assertSee('data-want="'.ParametricGenerator::COLOR_HEX['black'].'"', false);
+
+        $redCode = $design(['code_color' => 'red']);
+        $this->assertSame($red->id, $ticked('file='.$redCode, 'second_color'), 'the design asked for a red code');
+
+        $darkPlate = $design(['plate_color' => 'black', 'code_color' => 'white']);
+        $this->assertSame([$black->id, $white->id], [$ticked('file='.$darkPlate, 'color'), $ticked('file='.$darkPlate, 'second_color')]);
+
+        // colours named in the address (a repeated print) are left as they are
+        $this->assertSame(0, $ticked('file='.$plain.'&color='.$red->id, 'second_color'));
+        $this->assertSame($red->id, $ticked('file='.$plain.'&color='.$red->id, 'color'));
+        // a raised name reads in one colour too: nothing is ticked for it
+        $sign = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'sign', 'params' => ['line1' => 'Emma']])->assertCreated()->json('file.uuid');
+        $this->assertSame(0, $ticked('file='.$sign, 'second_color'));
+    }
+
     /** A turtle with joints prints in place: the customer switches the supports off and the slicer is told so. */
     public function test_the_customer_can_switch_supports_off_and_back(): void
     {

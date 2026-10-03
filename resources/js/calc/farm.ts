@@ -6,7 +6,7 @@
  *   bootFarmDashboard  /admin/farm: buttons post over fetch, the answer is a short toast, cards redraw in place
  */
 import { BufferGeometry } from 'three';
-import { Viewer, FacePaint } from './viewer';
+import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
 import { money as moneyText } from '../site/money';
 
@@ -60,19 +60,31 @@ export function bootFarmAdminViewer(): void {
     loadGeometryFromUrl(canvas.dataset.model).then((g) => viewer.setGeometry(g, 1, null)).catch(() => undefined);
 }
 
+/** "#rrggbb" as numbers 0..1; anything else is the default blue of the viewer. */
+function rgbOf(hex: string): [number, number, number] {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+    const n = m ? parseInt(m[1], 16) : 0x83a6d4;
+    return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+}
+
+/**
+ * Where the second colour starts: a hair above the plate. The top face of the plate lies exactly at the height of the
+ * change and belongs to the plate (measured at the change itself, rounding put the whole face into the second colour
+ * and the code was lost in it).
+ */
+const edge = (changeZ: number): number => changeZ * 1.02;
+
+/** The model as the two colours will print it: cut at the change, so a stand keeps its foot in the first colour. */
+const cutForTwoTone = (geom: BufferGeometry, changeZ: number): BufferGeometry => (changeZ > 0 ? cutAtHeight(geom, edge(changeZ)) : geom);
+
 /** A plate with a code or a text: the triangles above the plate in the second colour, the rest in the first. */
 function twoTone(geom: BufferGeometry, changeZ: number, first: string, second: string): FacePaint | null {
     const pos = geom.getAttribute('position');
     if (!pos || geom.index) return null;
     const flags = new Uint8Array(pos.count / 3);
-    for (let t = 0; t < flags.length; t++) flags[t] = (pos.getZ(t * 3) + pos.getZ(t * 3 + 1) + pos.getZ(t * 3 + 2)) / 3 > changeZ ? 1 : 0;
-    // vertex colours are multiplied by the viewer's lights: kept a little deeper than the swatch
-    const rgb = (hex: string): [number, number, number] => {
-        const m = /^#?([0-9a-f]{6})$/i.exec(hex);
-        const n = m ? parseInt(m[1], 16) : 0x83a6d4;
-        return [((n >> 16) & 255) / 255 * 0.85, ((n >> 8) & 255) / 255 * 0.85, (n & 255) / 255 * 0.85];
-    };
-    const a = rgb(first); const b = rgb(second);
+    for (let t = 0; t < flags.length; t++) flags[t] = (pos.getZ(t * 3) + pos.getZ(t * 3 + 1) + pos.getZ(t * 3 + 2)) / 3 > edge(changeZ) ? 1 : 0;
+    // the colours as the swatches of the spools show them: a dark code stays dark on a light plate
+    const a = deep(rgbOf(first)); const b = deep(rgbOf(second));
     return { flags, color: (f) => (f ? b : a) };
 }
 
@@ -84,32 +96,45 @@ export function bootFarmStart(): void {
     let geom: BufferGeometry | null = null;
     const form = preview?.closest('form') ?? document;
     const checkedHex = (name: string): string | null => (form.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.dataset.hex ?? '') || null;
+    const want = $('farm-second-start')?.dataset.want ?? '';
+    let oneColorByHand = false;
     // the second colour has to come from the machine of the first: only its spools are offered, the rest stay hidden
     const paint = (): void => {
         const first = checkedHex('color');
         const changeZ = Number(preview?.dataset.change || 0);
         const chosen = form.querySelector<HTMLInputElement>('input[name="color"]:checked')?.value ?? '';
         let visible = 0;
+        let before = '';                       // the second colour that was ticked under the previous first colour
         form.querySelectorAll<HTMLElement>('[data-second-for]').forEach((el) => {
             const on = el.dataset.secondFor === '*' || el.dataset.secondFor === chosen;
             el.classList.toggle('hidden', !on); el.classList.toggle('flex', on);
             const radio = el.querySelector<HTMLInputElement>('input');
-            if (radio && !on && radio.checked) { radio.checked = false; form.querySelector<HTMLInputElement>('input[name="second_color"][value=""]')!.checked = true; }
+            if (radio && !on && radio.checked) { before = radio.value; radio.checked = false; form.querySelector<HTMLInputElement>('input[name="second_color"][value=""]')!.checked = true; }
             if (on && el.dataset.secondFor !== '*') visible++;
         });
         const none = $('farm-second-none'); if (none) show(none, !!preview?.dataset.change && visible === 0 && !!chosen);
+        // the first colour changed: the second stays when the new machine holds it too. A QR code in one colour cannot be
+        // read, so there it otherwise goes to the spool nearest to the colour of the design, unless the customer asked
+        // for one colour by hand
+        if (!oneColorByHand && !checkedHex('second_color')) {
+            const offer = [...form.querySelectorAll<HTMLInputElement>(`[data-second-for="${chosen}"] input`)];
+            const far = (hex: string): number => { const a = rgbOf(hex); const b = rgbOf(want); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
+            const best = offer.find((r) => before !== '' && r.value === before) ?? (want ? [...offer].sort((a, b) => far(a.dataset.hex ?? '') - far(b.dataset.hex ?? ''))[0] : undefined);
+            if (best) best.checked = true;
+        }
         if (!viewer) return;
         viewer.setColor(first);
         const second = checkedHex('second_color');
         const painted = geom && changeZ > 0 && second ? twoTone(geom, changeZ, first ?? '#83a6d4', second) : null;
         viewer.paint(painted);
     };
+    form.querySelectorAll<HTMLInputElement>('input[name="second_color"]').forEach((r) => r.addEventListener('change', () => { oneColorByHand = r.value === ''; }));
     form.querySelectorAll<HTMLInputElement>('input[name="color"], input[name="second_color"]').forEach((r) => r.addEventListener('change', paint));
     const showModel = (url: string): void => {
         if (!preview) return;
         viewer ??= new Viewer(preview);
         show($('farm-preview-box'), true);
-        loadGeometryFromUrl(url).then((g) => { geom = g; viewer!.setGeometry(g, Number(($('farm-scale') as HTMLInputElement | null)?.value || 1) || 1, null); paint(); }).catch(() => show($('farm-preview-box'), false));
+        loadGeometryFromUrl(url).then((g) => { geom = cutForTwoTone(g, Number(preview.dataset.change || 0)); viewer!.setGeometry(geom, Number(($('farm-scale') as HTMLInputElement | null)?.value || 1) || 1, null); paint(); }).catch(() => show($('farm-preview-box'), false));
     };
     paint();
     // the size: the file's own millimetres times the factor from the calculator; one dimension typed scales the whole model
@@ -483,7 +508,7 @@ export function bootFarmOrder(): void {
         if (s.model_url && s.model_url !== shownModel) {
             shownModel = s.model_url;
             shownSupports = '';
-            loadGeometryFromUrl(s.model_url).then((g) => { geom = g; viewer.setGeometry(g, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTwo(); showSupports(); }).catch(() => { shownModel = ''; });
+            loadGeometryFromUrl(s.model_url).then((g) => { geom = cutForTwoTone(g, s.color_change_mm ?? 0); viewer.setGeometry(geom, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTwo(); showSupports(); }).catch(() => { shownModel = ''; });
         } else {
             showSupports();
         }

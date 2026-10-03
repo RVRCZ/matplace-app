@@ -127,12 +127,13 @@
 
         @if($twoColor)
             {{-- a plate with a code or a text: the second colour, from the machine of the first one (its ACE changes the spool) --}}
-            <div id="farm-second-start" class="mt-4">
+            {{-- data-want (a QR code): a second colour is always ticked, the spool nearest to the colour the code was designed in --}}
+            <div id="farm-second-start" class="mt-4" data-want="{{ $codeColor ?? '' }}">
                 <div class="text-sm font-semibold text-slate-700">{{ __('farm.start.second_title') }}</div>
                 <p class="text-xs text-slate-500">{{ __('farm.start.second_hint') }}</p>
                 <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.start.second_title') }}">
                     <label data-second-for="*" class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
-                        <input type="radio" name="second_color" value="" class="sr-only" data-hex="" checked>
+                        <input type="radio" name="second_color" value="" class="sr-only" data-hex="" @checked(! $secondPreselect)>
                         <span class="h-10 w-10 shrink-0 rounded-lg border border-dashed border-slate-300"></span>
                         <span><span class="font-semibold">{{ __('farm.order.second_same') }}</span><br><span class="text-xs text-slate-500">{{ __('farm.start.second_same_hint') }}</span></span>
                     </label>

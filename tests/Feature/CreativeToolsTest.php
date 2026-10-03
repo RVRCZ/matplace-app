@@ -217,6 +217,39 @@ class CreativeToolsTest extends TestCase
         $this->assertGreaterThan(30, $stand['bbox']['x']);
     }
 
+    /** The plate and the code each get a filament colour: the preview paints them, weak pairs are named, the design keeps them. */
+    public function test_qr_sign_carries_its_two_colours_and_names_weak_pairs(): void
+    {
+        Storage::fake('models');
+        $link = ['url' => 'https://matplace.com'];
+        $plain = $this->meta($this->preview('qr', $link)->assertOk())['notes'];
+        $this->assertSame(['plate' => 'white', 'code' => 'black'], $plain['colors']);          // a light plate and a dark code unless asked otherwise
+        $this->assertSame([], $plain['warnings']);
+        $this->assertSame(['black', 'white'], array_column($plain['regions'], 'color'));
+        $this->assertEqualsWithDelta($plain['color_change_mm'] + 0.05, $plain['regions'][0]['z0'], 0.001);   // the code starts where the printer changes the spool
+
+        $warn = fn (string $plate, string $code) => $this->meta($this->preview('qr', $link + ['plate_color' => $plate, 'code_color' => $code])->assertOk())['notes']['warnings'];
+        $this->assertSame([], $warn('yellow', 'blue'));
+        $this->assertSame(['qr_one_color'], $warn('red', 'red'));
+        $this->assertSame(['qr_low_contrast'], $warn('white', 'grey'));
+        $this->assertSame(['qr_inverted'], $warn('black', 'white'));
+        $this->preview('qr', $link + ['plate_color' => 'pink'])->assertStatus(422);
+
+        // the stand lies on the same plate: its colours go by height too, shown alone or with the sign
+        $stand = $this->meta($this->preview('qr', $link + ['stand' => true, 'code_color' => 'blue'], 'stand')->assertOk())['notes'];
+        $this->assertSame(['blue', 'white'], array_column($stand['regions'], 'color'));
+
+        $this->get('/tools/qr?lang=cs')->assertOk()->assertSee('Barva destičky')->assertSee('data-choice="plate_color"', false)->assertSee('data-choice="code_color"', false);
+
+        $uuid = $this->postJson('/api/tools/param', ['kind' => 'qr', 'params' => $link + ['plate_color' => 'yellow', 'code_color' => 'blue']])->assertCreated()->json('file.uuid');
+        $file = ModelFile::where('uuid', $uuid)->firstOrFail();
+        $this->assertSame(['yellow', 'blue'], [$file->tool_params['plate_color'], $file->tool_params['code_color']]);
+        $this->assertSame([ParametricGenerator::COLOR_HEX['yellow'], ParametricGenerator::COLOR_HEX['blue']], $file->codeColors());
+        // a design from before the choice existed is a white plate with a black code
+        $file->tool_params = array_diff_key($file->tool_params, ['plate_color' => 1, 'code_color' => 1]);
+        $this->assertSame([ParametricGenerator::COLOR_HEX['white'], ParametricGenerator::COLOR_HEX['black']], $file->codeColors());
+    }
+
     public function test_stencil_keeps_letter_insides_with_bridges_and_stays_one_piece(): void
     {
         config(['engines.repair' => 'trimesh']);                                 // the exact mesh check, not the PHP approximation

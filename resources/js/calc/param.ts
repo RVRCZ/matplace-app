@@ -185,7 +185,8 @@ export function bootParam(): void {
             if (mine !== seq) return;                       // a newer change is already on its way
             if (!res.ok) { valid = false; showError(await errorOf(res)); return; }
             lastMeta = JSON.parse(res.headers.get('X-Model-Meta') ?? 'null');
-            const regions = viewPart === 'all' ? ((lastMeta?.notes as { regions?: Region[] } | undefined)?.regions ?? null) : null;
+            // the colours of a QR sign go by height alone, so they hold for the sign and the stand shown on their own too
+            const regions = viewPart === 'all' || cfg.kind === 'qr' ? ((lastMeta?.notes as { regions?: Region[] } | undefined)?.regions ?? null) : null;
             viewer.setGeometry(new STLLoader().parse(await res.arrayBuffer()), 1, cfg.kind, regions);
             valid = true; showError(null);
             if (lastMeta) { renderDims(lastMeta); renderWarnings(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
@@ -405,6 +406,10 @@ export function bootParam(): void {
             const current = form.querySelector<HTMLInputElement>(`[data-choice="${key}"]:checked`)?.value ?? (flag ? (flag.checked ? 'on' : 'off') : '');
             el.classList.toggle('hidden', !list.split(',').includes(current));
         });
+        // colour swatches carry no text: the name of the picked one stands next to the heading
+        form.querySelectorAll<HTMLElement>('[data-color-name]').forEach((el) => {
+            el.textContent = form.querySelector<HTMLInputElement>(`[data-choice="${el.dataset.colorName}"]:checked`)?.dataset.name ?? '';
+        });
     };
     applyWhen();
     // a standard picked by name (an M10 thread) writes its numbers into the fields; a number edited by hand means "custom"
@@ -433,7 +438,8 @@ export function bootParam(): void {
             if (!res.ok) { showError(await errorOf(res)); go.disabled = false; go.textContent = label; return; }
             const body = await res.json();
             const bomNote = lastMeta ? bomText(lastMeta).join('; ') : '';
-            const q = new URLSearchParams({ ...(bomNote ? { note: bomNote.slice(0, 900) } : {}), open: body.file.uuid, material: ($('param-material') as HTMLSelectElement).value, quantity: ($('param-qty') as HTMLInputElement).value || '1', color: ($('param-color') as HTMLSelectElement).value, ...(download ? { download: '1' } : {}) });
+            const plate = params().plate_color;      // a two-colour design: the plate is "the colour", the second one travels with the design
+            const q = new URLSearchParams({ ...(bomNote ? { note: bomNote.slice(0, 900) } : {}), open: body.file.uuid, material: ($('param-material') as HTMLSelectElement).value, quantity: ($('param-qty') as HTMLInputElement).value || '1', color: typeof plate === 'string' ? plate : ($('param-color') as HTMLSelectElement).value, ...(download ? { download: '1' } : {}) });
             location.href = `${cfg.home}?${q}`;
         } catch {
             showError(t('param.failed')); go.disabled = false; go.textContent = label;

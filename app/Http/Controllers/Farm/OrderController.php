@@ -78,6 +78,15 @@ class OrderController extends Controller
         ])->sortBy(fn ($c) => [$c['code'] === $material ? 0 : 1, $c['name']])->values()->all();
         // the colour of the print being repeated when it is still loaded, else the first one on offer
         $preselect = collect($colors)->firstWhere('id', $wantedColor)['id'] ?? ($colors[0]['id'] ?? null);
+        // a QR code reads only in two colours: unless the address names the colours, the pair of spools nearest to the
+        // design is ticked (a light plate, a dark code), never "one colour"
+        $secondPreselect = (int) $request->query('second');
+        $codeColors = $twoColor ? $file->codeColors() : null;
+        if ($codeColors && ! $wantedColor && ! $secondPreselect && ($pair = self::nearestPair($colors, $codeColors))) {
+            [$preselect, $secondPreselect] = $pair;
+        }
+        // a second colour is ticked only when the machine of the first one really holds it
+        $secondPreselect = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->contains('id', $secondPreselect) ? $secondPreselect : 0;
 
         return view('farm.start', [
             'file' => $file,
@@ -96,11 +105,36 @@ class OrderController extends Controller
             'maxScale' => (float) config('pricing.max_scale', 4),
             'colors' => $colors,
             'twoColor' => $twoColor,
-            'secondPreselect' => (int) $request->query('second'),
+            'secondPreselect' => $secondPreselect,
+            'codeColor' => $codeColors[1] ?? null,
             'settings' => $this->settings->all(),
             'balance' => $this->wallet->balance($request->user()),
             'slicesLeft' => max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())),
         ]);
+    }
+
+    /**
+     * The first colour and its second spool that come nearest to the wanted plate and code colours.
+     *
+     * @param  list<array<string, mixed>>  $colors  the offer of the start page, every colour with its `seconds`
+     * @param  array{0: string, 1: string}  $wanted  hex of the plate and of the code
+     * @return array{0: int, 1: int}|null ids of the two colours; null when no machine holds two spools that go together
+     */
+    private static function nearestPair(array $colors, array $wanted): ?array
+    {
+        $rgb = fn (?string $hex) => preg_match('/^#?([0-9a-f]{6})$/i', (string) $hex, $m) ? array_map('hexdec', str_split($m[1], 2)) : [128, 128, 128];
+        $far = fn (?string $a, string $b) => sqrt(array_sum(array_map(fn ($x, $y) => ($x - $y) ** 2, $rgb($a), $rgb($b))));
+        $best = null;
+        foreach ($colors as $c) {
+            foreach ($c['enough'] ? $c['seconds'] : [] as $s) {
+                $d = $far($c['hex'], $wanted[0]) + $far($s['hex'], $wanted[1]);
+                if ($best === null || $d < $best[0]) {
+                    $best = [$d, (int) $c['id'], (int) $s['id']];
+                }
+            }
+        }
+
+        return $best ? [$best[1], $best[2]] : null;
     }
 
     /** "Print again": the start page with this order's model and settings; the colour is offered again when it is still loaded. */
@@ -111,7 +145,7 @@ class OrderController extends Controller
         return redirect()->route('farm.start', array_filter([
             'file' => $order->modelFile?->uuid, 'quality' => $order->quality, 'strength' => $order->strength, 'copies' => $order->copies,
             'supports' => $order->supports === 'off' ? 'off' : null,
-            'scale' => abs((float) $order->scale - 1) > 0.0005 ? (float) $order->scale : null, 'color' => $order->farm_color_id,
+            'scale' => abs((float) $order->scale - 1) > 0.0005 ? (float) $order->scale : null, 'color' => $order->farm_color_id, 'second' => $order->second_color_id,
         ]));
     }
 

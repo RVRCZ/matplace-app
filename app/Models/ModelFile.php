@@ -119,6 +119,22 @@ class ModelFile extends Model
         return $z ? round((float) $z * $scale, 3) : null;
     }
 
+    /**
+     * The two filament colours a QR sign was designed in, as hex [plate, code]. A design from before the choice
+     * existed is a white plate with a black code; null for everything that is not a code.
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    public function codeColors(): ?array
+    {
+        if ($this->kind() !== 'qr' || ! $this->builtForPrinting()) {
+            return null;
+        }
+        $hex = ParametricGenerator::COLOR_HEX;
+
+        return [$hex[$this->tool_params['plate_color'] ?? ''] ?? $hex['white'], $hex[$this->tool_params['code_color'] ?? ''] ?? $hex['black']];
+    }
+
     /** Made by one of our measured tools: the builder laid it the way it prints best, the farm must not turn it. */
     public function builtForPrinting(): bool
     {
