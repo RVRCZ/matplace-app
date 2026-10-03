@@ -58,6 +58,8 @@
                 <a href="{{ route('tools') }}" class="hover:text-slate-900">{{ __('footer.tools') }}</a>
                 @auth
                     <a href="{{ route('account') }}" class="font-medium hover:text-slate-900">{{ __('nav.account') }}</a>
+                    {{-- signing out is reachable from every page, not only from the bottom of the account --}}
+                    <form method="post" action="{{ route('logout') }}" class="inline">@csrf<button type="submit" class="hover:text-slate-900">{{ __('auth.logout') }}</button></form>
                 @else
                     <a href="{{ route('login') }}" class="font-medium hover:text-slate-900">{{ __('nav.login') }}</a>
                 @endauth
