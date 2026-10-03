@@ -10,7 +10,7 @@ return [
     ],
     'steps' => [
         ['name' => 'Pegue el enlace o texto', 'text' => 'Ponga la dirección u otro texto en el campo «Enlace o texto» y unas palabras, por ejemplo el nombre de la red, en «Texto bajo el código». Este segundo campo puede quedar vacío.'],
-        ['name' => 'Ajuste el tamaño', 'text' => 'Indique el tamaño del código con el margen libre, de 30 a 150 mm. Marque el soporte de mesa si lo quiere.'],
+        ['name' => 'Ajuste el tamaño', 'text' => 'Indique el tamaño del código con el margen libre, de 30 a 150 mm. Marque el soporte de mesa si lo quiere, o un orificio para colgar el rótulo.'],
         ['name' => 'Revise la vista previa', 'text' => 'Bajo la vista previa verá el número de módulos, el tamaño de un módulo y un precio orientativo. Si el código es demasiado denso para el tamaño elegido, la herramienta indica cuántos milímetros necesita.'],
         ['name' => 'Pida la impresión o descargue', 'text' => 'Pida la impresión a nuestra granja de impresión, elija los colores de la placa y del código y pague con crédito prepagado. O descargue el modelo gratis como archivo STL o como proyecto listo para su impresora.'],
     ],

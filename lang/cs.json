@@ -847,7 +847,7 @@
     "param.flag.stand": "Se stolním stojánkem",
     "param.flag.stand.hint": "Samostatný díl, cedulka se do něj zasune v mírném sklonu.",
     "param.flag.hole": "S otvorem na zavěšení",
-    "param.flag.hole.hint": "Nahoře uprostřed, jen bez stojánku a s popiskem.",
+    "param.flag.hole.hint": "Nahoře uprostřed, na proužku nad kódem. Jen bez stojánku.",
     "param.error.bad_choice": "Neplatná volba (:n).",
     "param.error.no_text": "Napište text nebo nahrajte předlohu.",
     "param.error.artwork_gone": "Nahraná předloha už není k dispozici. Nahrajte ji prosím znovu.",

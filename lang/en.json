@@ -847,7 +847,7 @@
     "param.flag.stand": "With a desk stand",
     "param.flag.stand.hint": "A separate part, the sign slides in at a slight lean.",
     "param.flag.hole": "With a hanging hole",
-    "param.flag.hole.hint": "Top centre, only without the stand and with a caption.",
+    "param.flag.hole.hint": "Top centre, on a strip above the code. Only without the stand.",
     "param.error.bad_choice": "Invalid choice (:n).",
     "param.error.no_text": "Type a text or upload artwork.",
     "param.error.artwork_gone": "The uploaded artwork is no longer available. Please upload it again.",

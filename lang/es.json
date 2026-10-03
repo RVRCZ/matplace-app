@@ -847,7 +847,7 @@
     "param.flag.stand": "Con soporte de mesa",
     "param.flag.stand.hint": "Pieza aparte, el cartel encaja con una ligera inclinación.",
     "param.flag.hole": "Con orificio para colgar",
-    "param.flag.hole.hint": "Arriba en el centro, solo sin soporte y con texto.",
+    "param.flag.hole.hint": "Arriba en el centro, en una franja sobre el código. Solo sin el soporte.",
     "param.error.bad_choice": "Opción no válida (:n).",
     "param.error.no_text": "Escriba un texto o suba un diseño.",
     "param.error.artwork_gone": "El diseño subido ya no está disponible. Súbalo de nuevo.",

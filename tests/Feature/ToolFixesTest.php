@@ -83,6 +83,27 @@ class ToolFixesTest extends TestCase
         $this->assertSame($volume('back', 4), $volume('back', 8));
     }
 
+    public function test_the_qr_sign_really_gets_its_hanging_hole(): void
+    {
+        $qr = ['url' => 'https://matplace.com', 'size' => 50, 'plate' => 2.4];
+        $meta = function (array $params): array {
+            $response = $this->postJson('/api/tools/param/preview', ['kind' => 'qr', 'params' => $params])->assertOk();
+
+            return (array) json_decode((string) $response->headers->get('X-Model-Meta'), true);
+        };
+        $plain = $meta($qr);
+        $hole = $meta($qr + ['hole' => true]);
+        // a strip of 9 mm above the code carries the hole, so the quiet zone of the code stays blank
+        $this->assertEqualsWithDelta(9.0, $hole['notes']['outer'][1] - $plain['notes']['outer'][1], 0.01);
+        $this->assertSame($plain['notes']['outer'][0], $hole['notes']['outer'][0]);
+        // … and the hole is really cut: the strip minus a circle of 4.4 mm
+        $this->assertEqualsWithDelta((9 * 50 - M_PI * 2.2 ** 2) * 2.4, $hole['volume_mm3'] - $plain['volume_mm3'], 2.0);
+        // in a stand the sign has no hole, whatever the box says
+        $stand = $meta($qr + ['stand' => true]);
+        $this->assertSame($stand['notes']['outer'], $meta($qr + ['stand' => true, 'hole' => true])['notes']['outer']);
+        $this->assertEqualsWithDelta($stand['volume_mm3'], $meta($qr + ['stand' => true, 'hole' => true])['volume_mm3'], 0.01);
+    }
+
     public function test_a_threaded_cap_may_be_round_square_or_hexagonal_and_no_text_says_otherwise(): void
     {
         foreach (['round', 'rect', 'hex'] as $shape) {

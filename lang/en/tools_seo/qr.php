@@ -10,7 +10,7 @@ return [
     ],
     'steps' => [
         ['name' => 'Paste the link or text', 'text' => 'Put the address or another text into the field "Link or text" and a short wording, such as the network name, into "Caption under the code". The caption can stay empty.'],
-        ['name' => 'Set the size', 'text' => 'Enter the code size including the quiet zone, 30 to 150 mm. Tick the desk stand if you want one.'],
+        ['name' => 'Set the size', 'text' => 'Enter the code size including the quiet zone, 30 to 150 mm. Tick the desk stand if you want one, or a hole to hang the sign by.'],
         ['name' => 'Check the preview', 'text' => 'Below the preview you see the number of modules, the size of one module and a rough price. If the code is too dense for the chosen size, the tool says how many millimetres it needs.'],
         ['name' => 'Order the print or download', 'text' => 'Order the print from our print farm, choose the colours of the plate and the code and pay from prepaid credit. Or download the model free as an STL file or a ready project for your own printer.'],
     ],

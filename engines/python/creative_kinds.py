@@ -595,10 +595,13 @@ def qr(M, Invalid, p):
         label_h = th + 6.0
         x0, y0, _, _ = txt.bounds()
         parts_2d = [modules.translate([0, foot + label_h]), txt.translate([-x0 + (size - tw) / 2, -y0 + foot + 3.0])]
-    total_h = size + label_h + foot
+    # the hanging hole sits on a strip of its own above the code, so the quiet zone stays blank; a sign in a stand has no hole
+    hole = bool(p.get("hole", False)) and not stand
+    head = 9.0 if hole else 0.0
+    total_h = size + label_h + foot + head
     plate = S.rounded_rect(M, size, total_h, 4)
-    if p.get("hole", False) and not stand:
-        plate = plate - M.CrossSection.circle(2.2, 32).translate([size / 2, total_h - 3.2]) if total_h - size - label_h > 6 else plate
+    if hole:
+        plate = plate - M.CrossSection.circle(2.2, 32).translate([size / 2, total_h - head / 2])
     raised = M.CrossSection.batch_boolean(parts_2d, M.OpType.Add) if len(parts_2d) > 1 else parts_2d[0]
     body = plate.extrude(plate_t) + raised.extrude(relief).translate([0, 0, plate_t - 0.01])
     parts = {"body": body}

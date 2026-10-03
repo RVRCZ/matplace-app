@@ -10,7 +10,7 @@ return [
     ],
     'steps' => [
         ['name' => 'Vložte odkaz nebo text', 'text' => 'Do pole „Odkaz nebo text“ vložíte adresu nebo jiný text, do pole „Popisek pod kódem“ krátký nápis, například název sítě. Popisek můžete nechat prázdný.'],
-        ['name' => 'Nastavte velikost', 'text' => 'Zadáte velikost kódu včetně volného okraje, 30 až 150 mm. Podle potřeby zaškrtnete stolní stojánek.'],
+        ['name' => 'Nastavte velikost', 'text' => 'Zadáte velikost kódu včetně volného okraje, 30 až 150 mm. Podle potřeby zaškrtnete stolní stojánek, nebo otvor na zavěšení.'],
         ['name' => 'Zkontrolujte náhled', 'text' => 'Pod náhledem vidíte počet polí kódu, velikost jednoho pole a orientační cenu. Když je kód na zvolenou velikost příliš hustý, nástroj napíše, na kolik milimetrů ho zvětšit.'],
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Tisk objednáte z naší tiskové farmy, vyberete barvu destičky i kódu a zaplatíte z předplaceného kreditu. Nebo si model zdarma stáhnete jako soubor STL či hotový projekt pro svou tiskárnu.'],
     ],
