@@ -35,6 +35,11 @@ return [
     'quality' => ['label' => 'Quality', 'draft' => 'Fast', 'standard' => 'Standard', 'fine' => 'Fine'],
     'strength' => ['label' => 'Strength', 'low' => 'Low', 'standard' => 'Standard', 'high' => 'High', 'infill' => ':n % infill'],
     'supports' => ['label' => 'Supports', 'auto' => 'Automatic', 'auto_hint' => 'only where needed', 'off' => 'No supports', 'off_hint' => 'the model is made to print without them'],
+    'advanced' => [
+        'label' => 'Advanced settings', 'hint' => '(infill %, perimeters, layers)', 'preset' => 'preset',
+        'infill' => 'Infill (%)', 'walls' => 'Perimeters (walls)', 'top' => 'Top layers', 'bottom' => 'Bottom layers',
+        'note' => 'An empty field means the value of the presets above. Infill 5 to 100 %, 1 to 6 perimeters, 0 to 10 layers. The price is recalculated after a change.',
+    ],
     'units' => [
         'label' => 'Model units', 'mm' => 'millimetres', 'cm' => 'centimetres', 'in' => 'inches', 'm' => 'metres',
         'guess' => 'The model looks like it is in ":unit". We used that; change it if it is wrong.',

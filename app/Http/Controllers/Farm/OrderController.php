@@ -10,6 +10,7 @@ use App\Domain\Farm\ModelValidator;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
 use App\Domain\Farm\PlateLayout;
+use App\Domain\Farm\PrintSettings;
 use App\Domain\Farm\Shipping;
 use App\Domain\Farm\Wallet;
 use App\Domain\Social\SocialPublisher;
@@ -266,9 +267,16 @@ class OrderController extends Controller
             'scale' => ['nullable', 'numeric', 'min:0.25', 'max:'.config('pricing.max_scale', 4)],
             'supports' => ['nullable', 'in:auto,off'],
             'slot' => ['nullable', 'integer'],
+            // the "advanced" numbers (PrintSettings::FIELDS); an empty field means the preset
+            'settings' => ['nullable', 'array'],
+            'settings.infill' => ['nullable', 'integer', 'min:5', 'max:100'],
+            'settings.walls' => ['nullable', 'integer', 'min:1', 'max:6'],
+            'settings.top' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'settings.bottom' => ['nullable', 'integer', 'min:0', 'max:10'],
         ]);
         try {
-            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null, $data['supports'] ?? null, isset($data['slot']) ? (int) $data['slot'] : null);
+            $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null, $data['supports'] ?? null, isset($data['slot']) ? (int) $data['slot'] : null,
+                $request->exists('settings') ? (array) $request->input('settings', []) : null);   // [] = back to the presets, absent = leave as they are
         } catch (FarmRefusal $e) {
             return response()->json(['error' => $e->reason, 'message' => $e->text()], 422);
         }
@@ -502,6 +510,8 @@ class OrderController extends Controller
             'orientation_changed' => (bool) ($order->orientation['changed'] ?? false),
             'supports' => $order->supports_used,
             'supports_mode' => $order->supports ?: 'auto',
+            'settings' => PrintSettings::of($order) ?: null,
+            'admin_overrides' => PrintSettings::adminOverrides($order) ?: null,
             'color_change_mm' => $order->colorChangeMm(),
             'second_slot' => $order->second_slot_id,
             'second_color' => $order->second_color_id && $order->secondColor ? ['name' => $order->secondColor->displayName(), 'hex' => $order->secondColor->hex] : null,

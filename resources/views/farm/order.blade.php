@@ -122,6 +122,18 @@
                         <button type="button" data-value="{{ $key }}" class="seg">{{ __('farm.supports.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.supports.'.$key.'_hint') }}</span></button>
                     @endforeach
                 </div>
+                {{-- the numbers a drawing asks for; empty = the presets above --}}
+                <details id="farm-advanced" class="mt-4 rounded-xl border border-slate-200 p-3">
+                    <summary class="cursor-pointer text-sm font-semibold text-slate-700">{{ __('farm.advanced.label') }} <span class="font-normal text-slate-500">{{ __('farm.advanced.hint') }}</span></summary>
+                    <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        @foreach(\App\Domain\Farm\PrintSettings::FIELDS as $field => [$min, $max])
+                            <label class="text-xs font-semibold text-slate-600">{{ __('farm.advanced.'.$field) }}
+                                <input id="farm-adv-{{ $field }}" data-setting="{{ $field }}" type="number" inputmode="numeric" min="{{ $min }}" max="{{ $max }}" step="1" placeholder="{{ __('farm.advanced.preset') }}" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-xs text-slate-500">{{ __('farm.advanced.note') }}</p>
+                </details>
                 <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span> <button id="farm-size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('farm.size.reset') }}</button></div>
                 <div class="mt-2 grid grid-cols-3 gap-2">
                     @foreach(['x', 'y', 'z'] as $axis)

@@ -35,6 +35,11 @@ return [
     'quality' => ['label' => 'Calidad', 'draft' => 'Rápida', 'standard' => 'Estándar', 'fine' => 'Fina'],
     'strength' => ['label' => 'Resistencia', 'low' => 'Baja', 'standard' => 'Estándar', 'high' => 'Alta', 'infill' => ':n % de relleno'],
     'supports' => ['label' => 'Soportes', 'auto' => 'Automáticos', 'auto_hint' => 'solo donde hacen falta', 'off' => 'Sin soportes', 'off_hint' => 'el modelo está hecho para imprimirse sin ellos'],
+    'advanced' => [
+        'label' => 'Ajustes avanzados', 'hint' => '(relleno en %, perímetros, capas)', 'preset' => 'preajuste',
+        'infill' => 'Relleno (%)', 'walls' => 'Perímetros (paredes)', 'top' => 'Capas superiores', 'bottom' => 'Capas inferiores',
+        'note' => 'Un campo vacío significa el valor de los preajustes de arriba. Relleno de 5 a 100 %, de 1 a 6 perímetros, de 0 a 10 capas. El precio se recalcula tras el cambio.',
+    ],
     'units' => [
         'label' => 'Unidades del modelo', 'mm' => 'milímetros', 'cm' => 'centímetros', 'in' => 'pulgadas', 'm' => 'metros',
         'guess' => 'El modelo parece estar en «:unit». Las hemos usado; cámbielas si no es correcto.',

@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Farm\Dispatcher;
+use App\Domain\Farm\FarmRefusal;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\GcodeSlot;
 use App\Domain\Farm\OrderFlow;
+use App\Domain\Farm\OrderService;
 use App\Domain\Farm\PrintProfile;
+use App\Domain\Farm\PrintSettings;
 use App\Domain\Farm\Wallet;
 use App\Engines\Shipping\Parcel;
 use App\Engines\Shipping\ShippingCarrier;
@@ -101,6 +104,28 @@ class FarmOrderController extends Controller
         abort_unless($order->timelapse_path && Storage::disk(config('farm.disk'))->exists($order->timelapse_path), 404);
 
         return response()->file(Storage::disk(config('farm.disk'))->path($order->timelapse_path), ['Content-Type' => 'video/mp4']);
+    }
+
+    /** The admin's process overrides for one order (JSON object of slicer settings), then a new slice. */
+    public function overrides(Request $request, FarmOrder $order, OrderService $orders): RedirectResponse
+    {
+        $data = $request->validate(['overrides' => ['nullable', 'string', 'max:4000']]);
+        $raw = trim((string) ($data['overrides'] ?? ''));
+        $decoded = $raw === '' ? [] : json_decode($raw, true);
+        if (! is_array($decoded)) {
+            return back()->with('error', 'Přepisy nejsou platný JSON objekt, například {"wall_loops": "3", "sparse_infill_pattern": "gyroid"}.');
+        }
+        $unknown = array_diff_key($decoded, PrintSettings::cleanOverrides($decoded));
+        if ($unknown) {
+            return back()->with('error', 'Tyhle klíče nejsou nastavení sliceru (jen malá písmena, číslice a podtržítka; hodnoty čísla nebo texty): '.implode(', ', array_keys($unknown)));
+        }
+        try {
+            $orders->overrideByAdmin($order, $decoded);
+        } catch (FarmRefusal $e) {
+            return back()->with('error', 'Zakázka už stojí ve frontě nebo se tiskne; přepisy jdou měnit jen před zařazením.');
+        }
+
+        return back()->with('status', $decoded ? 'Přepisy uložené, zakázka se slicuje znovu.' : 'Přepisy zrušené, zakázka se slicuje znovu.');
     }
 
     public function approve(Request $request, FarmOrder $order): RedirectResponse

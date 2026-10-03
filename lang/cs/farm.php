@@ -35,6 +35,11 @@ return [
     'quality' => ['label' => 'Kvalita', 'draft' => 'Rychlý', 'standard' => 'Standard', 'fine' => 'Jemný'],
     'strength' => ['label' => 'Pevnost', 'low' => 'Nízká', 'standard' => 'Standard', 'high' => 'Vysoká', 'infill' => ':n % výplně'],
     'supports' => ['label' => 'Podpěry', 'auto' => 'Automaticky', 'auto_hint' => 'jen kde jsou potřeba', 'off' => 'Bez podpěr', 'off_hint' => 'model je navržený pro tisk bez nich'],
+    'advanced' => [
+        'label' => 'Pokročilé nastavení', 'hint' => '(výplň v %, perimetry, vrstvy)', 'preset' => 'předvolba',
+        'infill' => 'Výplň (%)', 'walls' => 'Perimetry (stěny)', 'top' => 'Horní vrstvy', 'bottom' => 'Spodní vrstvy',
+        'note' => 'Prázdné pole znamená hodnotu z předvoleb výše. Výplň 5 až 100 %, 1 až 6 perimetrů, 0 až 10 vrstev. Cena se po změně přepočítá.',
+    ],
     'units' => [
         'label' => 'Jednotky modelu', 'mm' => 'milimetry', 'cm' => 'centimetry', 'in' => 'palce', 'm' => 'metry',
         'guess' => 'Model vypadá, že je v jednotkách „:unit“. Použili jsme je; pokud to nesedí, změňte je.',

@@ -8,6 +8,7 @@ use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
 use App\Domain\Farm\PlateLayout;
 use App\Domain\Farm\PrintProfile;
+use App\Domain\Farm\PrintSettings;
 use App\Domain\Farm\TestPrintService;
 use App\Domain\Farm\TimelapseGcode;
 use App\Domain\Farm\TowerGcode;
@@ -130,7 +131,9 @@ class PrepareFarmOrder implements ShouldQueue
             $quality = $order->quality;
             // the quality settings are written for a 0.4 nozzle; a finer nozzle prints the whole ladder finer
             $layer = $printer->layerFor($settings->layerFor($quality));
-            $infill = $settings->infillFor($order->strength);
+            // the customer's own numbers (the "advanced" settings) win over the presets; the admin's overrides over everything
+            $custom = PrintSettings::of($order);
+            $infill = $custom['infill'] ?? $settings->infillFor($order->strength);
             // the kind, then the kind on this machine, then the spool: the most specific layer wins (PrintProfile);
             // temperatures are written into the G-code copy for the chosen spool later
             $profile = PrintProfile::forOrder($order);
@@ -158,6 +161,8 @@ class PrepareFarmOrder implements ShouldQueue
             if ($noSupports) {
                 $overrides['process']['enable_support'] = '0';
             }
+            $overrides['process'] = PrintSettings::process($custom) + $overrides['process'];
+            $overrides['process'] = PrintSettings::adminOverrides($order) + $overrides['process'];
             $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() || $noSupports ? false : null, treeSupports: true))
                 ->withFarmProfile($profiles, $overrides);
             $result = $slicer->slice($disk->path($stlRel), $params);

@@ -104,7 +104,10 @@ final class OrderService
     }
 
     /** Another quality, strength or unit: slice again (counts towards the daily limit, like a new order). */
-    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null, ?int $slotId = null): FarmOrder
+    /**
+     * @param  array<string, mixed>|null  $settings  the "advanced" numbers (PrintSettings::FIELDS); null = leave as they are, [] = back to the presets
+     */
+    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null, ?int $slotId = null, ?array $settings = null): FarmOrder
     {
         if (! in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED], true) || $order->paid_at !== null) {
             throw new FarmRefusal('locked');
@@ -119,6 +122,7 @@ final class OrderService
             'copies' => $copies === null ? $order->copies : max(1, min(PlateLayout::MAX_COPIES, $copies)),
             'scale' => $scale === null ? $order->scale : round(max(0.25, min((float) config('pricing.max_scale', 4), $scale)), 3),
             'unit_scale' => ModelValidator::UNITS[$unit] ?? $order->unit_scale,
+            'print_settings' => $settings === null ? $order->print_settings : PrintSettings::clean($settings),
             'price' => null, 'price_total' => null,
         ]);
         // another colour: the order moves to the machine that holds that spool and is sliced and priced for it
@@ -142,6 +146,36 @@ final class OrderService
         Cache::add($this->sliceCounterKey($order->user), 0, now()->endOfDay());
         Cache::increment($this->sliceCounterKey($order->user));
         PrepareFarmOrder::dispatch($order->id);
+
+        return $order;
+    }
+
+    /**
+     * The admin's process overrides for one order (a drawing: "3 perimeters, gyroid"), then the order is sliced
+     * again. Only while nothing was printed yet: an unpaid order, or a paid one still waiting for the admin's
+     * approval. Once it stands in the queue, the printer may already be fetching its G-code.
+     *
+     * @param  array<string, mixed>|null  $overrides
+     *
+     * @throws FarmRefusal locked
+     */
+    public function overrideByAdmin(FarmOrder $order, ?array $overrides): FarmOrder
+    {
+        if (! in_array($order->status, [FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED, FarmOrder::STATUS_PAID], true)) {
+            throw new FarmRefusal('locked');
+        }
+        $clean = PrintSettings::cleanOverrides($overrides);
+        $order->fill(['admin_overrides' => $clean ?: null]);
+        if ($order->status !== FarmOrder::STATUS_UPLOADED) {
+            $order->fill(['status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'checking', 'error' => null, 'error_detail' => null]);
+            if ($order->paid_at === null) {
+                $order->fill(['price' => null, 'price_total' => null]);
+            }
+            $order->save();
+            PrepareFarmOrder::dispatch($order->id);
+        } else {
+            $order->save();
+        }
 
         return $order;
     }

@@ -49,6 +49,22 @@
             @endif
         </section>
 
+        @php $overridesLocked = ! in_array($order->status, ['uploaded', 'sliced', 'failed', 'paid'], true); @endphp
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+            <h2 class="font-bold">Přepisy nastavení sliceru pro tuhle zakázku</h2>
+            <p class="mt-1 text-xs text-slate-600">JSON objekt s klíči procesního profilu OrcaSlicer, například
+                <code>{"wall_loops": "3", "sparse_infill_density": "20%", "sparse_infill_pattern": "gyroid", "top_shell_layers": "5"}</code>.
+                Má přednost před předvolbami i před nastavením zákazníka. Po uložení se zakázka naslicuje a (u nezaplacené) nacení znovu.
+                @if($order->print_settings) Zákazník zadal: <code>{{ json_encode($order->print_settings) }}</code>.@endif</p>
+            <form method="post" action="{{ route('admin.farm.orders.overrides', $order) }}" class="mt-2">@csrf
+                <textarea name="overrides" rows="3" @disabled($overridesLocked) class="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs" placeholder='{"wall_loops": "3"}'>{{ old('overrides', $order->admin_overrides ? json_encode($order->admin_overrides, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : '') }}</textarea>
+                <div class="mt-2 flex items-center gap-3">
+                    <button class="btn-quiet min-h-0 px-3 py-2 text-sm" @disabled($overridesLocked)>Uložit a naslicovat znovu</button>
+                    @if($overridesLocked)<span class="text-xs text-slate-500">Zakázka už je ve frontě nebo dál; přepisy jdou měnit jen před zařazením.</span>@endif
+                </div>
+            </form>
+        </section>
+
         <details class="rounded-2xl border border-slate-200 bg-white p-4 text-xs">
             <summary class="cursor-pointer text-sm font-bold">Slice parameters (reproducibility)</summary>
             <pre class="mt-2 overflow-x-auto whitespace-pre-wrap">{{ json_encode(['slice_params' => $order->slice_params, 'slice_result' => $order->slice_result, 'orientation' => $order->orientation, 'check' => $order->check, 'gcode_sha256' => $order->gcode_sha256], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>

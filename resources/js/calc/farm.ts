@@ -21,6 +21,7 @@ interface FarmState {
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
     unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null;
+    settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
     shipping: Shipping | null; destination: string | null; tracking_url: string | null;
@@ -262,7 +263,15 @@ export function bootFarmOrder(): void {
         viewer.paint(geom && state.color_change_mm && first && other ? twoTone(geom, state.color_change_mm, first, other) : null);
     };
     let timer = 0;
-    const wanted = { quality: state.quality, strength: state.strength, supports: state.supports_mode || 'auto', unit: state.unit, copies: state.copies || 1, scale: state.scale || 1 };
+    const wanted = { quality: state.quality, strength: state.strength, supports: state.supports_mode || 'auto', unit: state.unit, copies: state.copies || 1, scale: state.scale || 1, settings: { ...(state.settings ?? {}) } as Record<string, number> };
+    // the "advanced" numbers: what the fields hold, only the filled ones
+    const settingInputs = [...document.querySelectorAll<HTMLInputElement>('#farm-advanced [data-setting]')];
+    const settingsOf = (s: Record<string, number> | null | undefined): string => JSON.stringify(Object.fromEntries(Object.entries(s ?? {}).filter(([, v]) => v !== null && v !== undefined).sort()));
+    settingInputs.forEach((i) => i.addEventListener('input', () => {
+        const v = i.value.trim();
+        if (v === '') delete wanted.settings[i.dataset.setting!]; else wanted.settings[i.dataset.setting!] = Math.round(Number(v));
+        render();
+    }));
     // the model's own millimetres (in the chosen unit) so a typed dimension gives a factor
     const nativeMm = (): { x: number; y: number; z: number } | null => state.raw_bbox ? { x: state.raw_bbox.x * (UNIT_MM[wanted.unit] ?? 1), y: state.raw_bbox.y * (UNIT_MM[wanted.unit] ?? 1), z: state.raw_bbox.z * (UNIT_MM[wanted.unit] ?? 1) } : null;
     const renderSizeInputs = (): void => {
@@ -447,7 +456,10 @@ export function bootFarmOrder(): void {
         const guess = s.unit_guess;
         note.textContent = guess && guess.unit !== 'mm' ? (guess.confident && s.unit === guess.unit ? tr('farm.units.guess', { unit: tr(`farm.units.${guess.unit}`) }) : (!guess.confident && s.unit === 'mm' ? tr('farm.units.ask') : '')) : '';
         show(note, note.textContent !== '');
-        show($('farm-reslice'), editable && (wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005));
+        settingInputs.forEach((i) => { if (document.activeElement !== i) { const v = wanted.settings[i.dataset.setting!]; i.value = v === undefined ? '' : String(v); } });
+        const adv = $('farm-advanced') as HTMLDetailsElement | null;
+        if (adv && Object.keys(wanted.settings).length && !adv.open) adv.open = true;
+        show($('farm-reslice'), editable && (wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005 || settingsOf(wanted.settings) !== settingsOf(s.settings)));
 
         show($('farm-pay'), s.status === 'sliced');
         if (s.status === 'sliced') {

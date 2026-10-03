@@ -328,6 +328,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/orders/{order}/timelapse.mp4', [$orders, 'timelapse'])->name('orders.timelapse');
     Route::post('/orders/{order}/approve', [$orders, 'approve'])->name('orders.approve');
     Route::post('/orders/{order}/status', [$orders, 'status'])->name('orders.status');
+    Route::post('/orders/{order}/overrides', [$orders, 'overrides'])->name('orders.overrides');
     Route::post('/orders/{order}/actuals', [$orders, 'actuals'])->name('orders.actuals');
     Route::post('/orders/{order}/refund', [$orders, 'refund'])->name('orders.refund');
     Route::post('/orders/{order}/ship', [$orders, 'ship'])->name('orders.ship');
