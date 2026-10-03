@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Generation\ModelNormalizer;
 use App\Engines\Contracts\MeshRepair;
+use App\Engines\Mesh\StlFile;
 use App\Engines\Repair\PythonTool;
 use App\Models\GenerationRequest;
 use App\Models\ModelFile;
@@ -186,6 +187,62 @@ class FigureToolTest extends TestCase
             $this->assertEqualsWithDelta(80, $made->bbox->max(), 0.1, $style);
         }
         $this->assertGreaterThan($socle->triangles, $check->check($dir.'/antique.stl')->triangles);
+        File::deleteDirectory($dir);
+    }
+
+    public function test_torn_bottom_gets_a_flat_cut_and_the_socle_collar_stays_inside_the_chest(): void
+    {
+        $python = app(PythonTool::class);
+        if (! $python->available()) {
+            $this->markTestSkipped('Python is not installed.');
+        }
+        $dir = sys_get_temp_dir().'/mp_torn_'.uniqid();
+        File::ensureDirectoryExists($dir);
+        MeshFixtures::tornBustStl($dir.'/in.stl');
+        $r = $python->run(['normalize', $dir.'/in.stl', $dir.'/socle.stl', '80', '0', 'clean,pedestal,solid', json_encode(['pedestal' => 'socle'])]);
+        $this->assertTrue($r['ok'] ?? false, json_encode($r));
+        $this->assertSame('socle', $r['pedestal']);
+        $this->assertTrue($r['watertight']);
+        $this->assertSame(1, $r['shells']);
+        $this->assertGreaterThan(1.5, $r['cut_raised']);                         // the torn millimetres are cut away
+        // nothing of the foot shows above the cut: what is outside the chest is exactly what is below the cut
+        $this->assertEqualsWithDelta($r['foot_below_cut_mm3'], $r['foot_outside_mm3'], 1.0 + 0.01 * $r['foot_below_cut_mm3']);
+        $this->assertGreaterThan($r['cut_z'] + 3, $r['collar_top_z']);           // the collar really lies inside
+
+        [$fx, $fy, $zc, $rc, $rf] = [$r['foot_x'], $r['foot_y'], $r['cut_z'], $r['collar_r'], $r['foot_r']];
+        $flat = $below = 0;
+        foreach (StlFile::triangles($dir.'/socle.stl') as [$a, $b, $c]) {
+            $cz = ($a[2] + $b[2] + $c[2]) / 3;
+            $d = hypot(($a[0] + $b[0] + $c[0]) / 3 - $fx, ($a[1] + $b[1] + $c[1]) / 3 - $fy);
+            if ($cz < $zc - 0.2) {
+                // below the cut there is only the foot: no fringe of the chest, nothing of the foot sticking out sideways
+                $this->assertLessThanOrEqual($rf + 0.3, $d, sprintf('triangle at z=%.2f, %.1f mm from the foot', $cz, $d));
+                $below++;
+            } elseif ($cz < $zc + 3 && $d <= $rc + 2.0) {
+                // the chest's underside round the foot is one flat plane
+                $n = [($b[1] - $a[1]) * ($c[2] - $a[2]) - ($b[2] - $a[2]) * ($c[1] - $a[1]), ($b[2] - $a[2]) * ($c[0] - $a[0]) - ($b[0] - $a[0]) * ($c[2] - $a[2]), ($b[0] - $a[0]) * ($c[1] - $a[1]) - ($b[1] - $a[1]) * ($c[0] - $a[0])];
+                $len = sqrt($n[0] ** 2 + $n[1] ** 2 + $n[2] ** 2);
+                if ($len > 1e-9 && $n[2] / $len < -0.9) {
+                    $this->assertEqualsWithDelta($zc, $cz, 0.2, 'the cut face is not flat');
+                    $flat++;
+                }
+            }
+        }
+        $this->assertGreaterThan(100, $below);
+        $this->assertGreaterThan(10, $flat);
+
+        // the same body on the antique socle and on the plain base: closed, one piece, the torn edge gone too
+        foreach (['antique', 'round'] as $kind) {
+            $s = $python->run(['normalize', $dir.'/in.stl', $dir.'/'.$kind.'.stl', '80', '0', 'clean,pedestal,solid', json_encode(['pedestal' => $kind])]);
+            $this->assertTrue($s['ok'] ?? false, $kind);
+            $this->assertSame($kind, $s['pedestal'], $kind);
+            $this->assertTrue($s['watertight'], $kind);
+            $this->assertSame(1, $s['shells'], $kind);
+            $this->assertGreaterThan(1.5, $s['cut_raised'], $kind);
+            if ($kind === 'antique') {
+                $this->assertEqualsWithDelta($s['foot_below_cut_mm3'], $s['foot_outside_mm3'], 1.0 + 0.01 * $s['foot_below_cut_mm3']);
+            }
+        }
         File::deleteDirectory($dir);
     }
 

@@ -60,6 +60,48 @@ final class MeshFixtures
         fclose($fh);
     }
 
+    /**
+     * A bust the way a generator hands it over: an oval chest, a neck and a head, closed, standing on the bed, but
+     * with the lowest 3 mm of the chest torn into random notches and spikes about 1.3 mm wide (the generator's open
+     * edge after the rebuild). Height 85 mm, chest 60 x 34 mm. Deterministic (seeded).
+     */
+    public static function tornBustStl(string $path): void
+    {
+        $n = 144;
+        // rings bottom to top: [z, half width, half depth]; the lowest three are the torn zone
+        $rings = [[0, 30, 17], [1.5, 30, 17], [3, 30, 17], [4.5, 29.8, 16.9], [15, 29, 16.5], [30, 28, 16], [45, 26.5, 15], [50, 24, 14], [53, 10, 10], [58, 9, 9], [62, 11, 11], [68, 13.5, 13.5], [75, 14, 14], [81, 12, 12], [84.5, 6, 6]];
+        mt_srand(20261004);
+        $pts = [];
+        foreach ($rings as $i => [$z, $a, $b]) {
+            $row = [];
+            for ($j = 0; $j < $n; $j++) {
+                $t = 2 * M_PI * $j / $n;
+                $f = $i < 3 ? 0.72 + 0.3 * mt_rand(0, 1000) / 1000 : 1.0;
+                $row[] = [$f * $a * cos($t), $f * $b * sin($t), $z];
+            }
+            $pts[] = $row;
+        }
+        $tris = [];
+        $bottom = [0, 0, -0.01];
+        $top = [0, 0, 85];
+        for ($j = 0; $j < $n; $j++) {
+            $k = ($j + 1) % $n;
+            $tris[] = [$bottom, $pts[0][$k], $pts[0][$j]];
+            $last = count($pts) - 1;
+            $tris[] = [$top, $pts[$last][$j], $pts[$last][$k]];
+            for ($i = 0; $i < $last; $i++) {
+                $tris[] = [$pts[$i][$j], $pts[$i][$k], $pts[$i + 1][$k]];
+                $tris[] = [$pts[$i][$j], $pts[$i + 1][$k], $pts[$i + 1][$j]];
+            }
+        }
+        $fh = fopen($path, 'wb');
+        fwrite($fh, str_pad('torn bust', 80, "\0").pack('V', count($tris)));
+        foreach ($tris as [$a, $b, $c]) {
+            fwrite($fh, pack('f3', 0, 0, 0).pack('f3', ...$a).pack('f3', ...$b).pack('f3', ...$c).pack('v', 0));
+        }
+        fclose($fh);
+    }
+
     /** Same cube as ASCII STL. */
     public static function cubeStlAscii(string $path, float $size = 20.0): void
     {
