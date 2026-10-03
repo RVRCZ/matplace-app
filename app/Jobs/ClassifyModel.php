@@ -13,9 +13,6 @@ class ClassifyModel implements ShouldQueue
 {
     use Queueable;
 
-    /** Batches over the catalogue wait behind customers' work: the worker takes `ai` only when `default` is empty. */
-    public $queue = 'ai';
-
     public int $tries = 2;
 
     public int $timeout = 180;
@@ -23,7 +20,11 @@ class ClassifyModel implements ShouldQueue
     public int $backoff = 30;
 
     /** @param  string  $type  catalog_model | designer_model */
-    public function __construct(public readonly string $type, public readonly int $id) {}
+    public function __construct(public readonly string $type, public readonly int $id)
+    {
+        // batches over the catalogue wait behind customers' work: the worker takes `ai` only when `default` is empty
+        $this->onQueue('ai');
+    }
 
     public function handle(CategoryClassifier $classifier): void
     {

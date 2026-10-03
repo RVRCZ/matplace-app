@@ -16,16 +16,17 @@ class TranslateCatalogModel implements ShouldQueue
 {
     use Queueable;
 
-    /** Batches over the catalogue wait behind customers' work: the worker takes `ai` only when `default` is empty. */
-    public $queue = 'ai';
-
     public int $tries = 3;
 
     public int $timeout = 180;
 
     public int $backoff = 30;
 
-    public function __construct(public readonly int $catalogModelId) {}
+    public function __construct(public readonly int $catalogModelId)
+    {
+        // batches over the catalogue wait behind customers' work: the worker takes `ai` only when `default` is empty
+        $this->onQueue('ai');
+    }
 
     public function handle(Translator $translator): void
     {
