@@ -239,7 +239,7 @@ class CreativeToolsTest extends TestCase
         $stand = $this->meta($this->preview('qr', $link + ['stand' => true, 'code_color' => 'blue'], 'stand')->assertOk())['notes'];
         $this->assertSame(['blue', 'white'], array_column($stand['regions'], 'color'));
 
-        $this->get('/tools/qr?lang=cs')->assertOk()->assertSee('Barva destičky')->assertSee('data-choice="plate_color"', false)->assertSee('data-choice="code_color"', false);
+        $this->get('/tools/qr')->assertOk()->assertSee('Barva destičky')->assertSee('data-choice="plate_color"', false)->assertSee('data-choice="code_color"', false);
 
         $uuid = $this->postJson('/api/tools/param', ['kind' => 'qr', 'params' => $link + ['plate_color' => 'yellow', 'code_color' => 'blue']])->assertCreated()->json('file.uuid');
         $file = ModelFile::where('uuid', $uuid)->firstOrFail();
