@@ -20,9 +20,16 @@ class TuningAdvisorTest extends TestCase
         return $out;
     }
 
-    public function test_a_clean_print_changes_nothing(): void
+    public function test_a_clean_print_changes_nothing_but_tells_the_slicer_what_goes_without_supports(): void
     {
         $r = TuningAdvisor::advise(['stringing' => 0, 'overhang_ok' => 70, 'bridge' => 'ok', 'corners' => 'ok', 'top' => 'ok', 'cube_x' => 15.02, 'cube_y' => 14.97, 'hole' => 7.98], $this->candidate, 'quick');
+        // temperatures, fan and speeds stay; the clean 70° overhang and the clean bridge become the support thresholds
+        $this->assertSame(['process.support_threshold_angle' => '25', 'process.max_bridge_length' => '20'], $this->settings($r));
+        $this->assertEquals($this->candidate['process'] + ['support_threshold_angle' => '25', 'max_bridge_length' => '20'], $r['overrides']['process']);
+        $this->assertEquals(array_diff_key($this->candidate, ['process' => 1]), array_diff_key($r['overrides'], ['process' => 1]));
+
+        // a test that did not judge overhangs and bridges changes nothing at all
+        $r = TuningAdvisor::advise(['stringing' => 0, 'corners' => 'ok', 'top' => 'ok', 'cube_x' => 15.02, 'cube_y' => 14.97, 'hole' => 7.98], $this->candidate, 'quick');
         $this->assertSame([], $r['advice']);
         $this->assertEquals($this->candidate, $r['overrides']);
     }

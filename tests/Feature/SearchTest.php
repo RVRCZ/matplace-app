@@ -65,6 +65,7 @@ class SearchTest extends TestCase
     public function test_photo_describe_returns_description_range_and_results(): void
     {
         $this->fakeExternal();
+        config(['engines.generator' => 'null']);   // whatever the machine's .env says: the answer offers no generation without a generator
         Http::fake([
             'api.anthropic.com/*' => Http::response(['content' => [['type' => 'text', 'text' => json_encode([
                 'name' => 'Kryt baterie dálkového ovladače', 'name_en' => 'Remote control battery cover', 'category' => 'spare_part',
