@@ -16,6 +16,9 @@ final class PrintablesSearch implements ModelSearch
 
     private const MEDIA = 'https://media.printables.com/';
 
+    /** Cloudflare in front of the API lets a browser through, not a script's name (the import says the same) */
+    private const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
+
     public function source(): string
     {
         return 'printables';
@@ -31,10 +34,11 @@ final class PrintablesSearch implements ModelSearch
         // cache only non-empty answers: a blocked/failed call must not hide results for hours
         $items = Cache::get($key) ?? tap((function () use ($query, $options) {
             try {
-                $res = Http::timeout(12)->withHeaders(['User-Agent' => 'matplace-search/2.0'])->post(self::GQL, [
-                    'query' => 'query Search($q: String!, $limit: Int, $offset: Int) { searchPrints2(query: $q, limit: $limit, offset: $offset) { items { id slug name image { filePath } license { name } user { publicUsername } } } }',
-                    'variables' => ['q' => $query, 'limit' => $options->limit, 'offset' => 0],
-                ]);
+                $res = Http::timeout(12)->withHeaders(['User-Agent' => self::UA])
+                    ->withOptions(array_filter(['proxy' => config('engines.import.proxy')]))->post(self::GQL, [
+                        'query' => 'query Search($q: String!, $limit: Int, $offset: Int) { searchPrints2(query: $q, limit: $limit, offset: $offset) { items { id slug name image { filePath } license { name } user { publicUsername } } } }',
+                        'variables' => ['q' => $query, 'limit' => $options->limit, 'offset' => 0],
+                    ]);
                 if (! $res->ok()) {
                     return [];
                 }

@@ -19,7 +19,8 @@ return [
     // Portfolio import (Printables, MakerWorld): metadata and pictures only, never files.
     'import' => [
         'driver' => env('ENGINE_IMPORT', 'live'),         // live | fake
-        // api.printables.com refuses some data-centre addresses (403 from the Hetzner server): send the calls through a proxy
+        // api.printables.com and makerworld.com refuse data-centre addresses (Cloudflare, 403 from the Hetzner server):
+        // the import AND the search send their calls through this proxy (pictures are fetched directly, those hosts allow it)
         'proxy' => env('IMPORT_HTTP_PROXY'),
         'timeout' => 20,
         // pictures of imported cards are fetched only from these hosts (and their subdomains)

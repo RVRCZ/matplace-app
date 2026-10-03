@@ -35,7 +35,7 @@ final class MakerWorldSearch implements ModelSearch
                 $res = Http::timeout(10)->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
                     'Accept' => 'application/json',
-                ])->get(self::API, ['keyword' => $query, 'limit' => $options->limit, 'offset' => 0]);
+                ])->withOptions(array_filter(['proxy' => config('engines.import.proxy')]))->get(self::API, ['keyword' => $query, 'limit' => $options->limit, 'offset' => 0]);
                 if (! $res->ok() || ! str_contains((string) $res->header('Content-Type'), 'json')) {
                     return [];
                 }
