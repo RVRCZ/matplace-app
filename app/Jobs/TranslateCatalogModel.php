@@ -16,6 +16,9 @@ class TranslateCatalogModel implements ShouldQueue
 {
     use Queueable;
 
+    /** Batches over the catalogue wait behind customers' work: the worker takes `ai` only when `default` is empty. */
+    public $queue = 'ai';
+
     public int $tries = 3;
 
     public int $timeout = 180;

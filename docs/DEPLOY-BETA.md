@@ -134,6 +134,16 @@ Překlady a klasifikaci pusť nejdřív v dávce (`--limit=50`), podívej se do 
 pak zbytek. Ověř, že cron se `php artisan schedule:run` běží (`crontab -l`); plán přibral `matplace:sitemap`
 denně, `matplace:packeta-carriers` týdně a `matplace:events-rollup` měsíčně.
 
+## 5b. Worker: dvě fronty
+
+Překlady a klasifikace katalogu jdou do fronty `ai`; worker ji bere, až když je běžná fronta prázdná (jinak
+nahraný model zákazníka čekal za stovkami překladů). Po nasazení aktualizovat službu:
+
+```
+cp deploy/matplace-worker.service /etc/systemd/system/matplace-worker.service
+systemctl daemon-reload && systemctl restart matplace-worker
+```
+
 ## 6. Kontrola (10 minut)
 
 ```
