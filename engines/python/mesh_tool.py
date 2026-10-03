@@ -595,6 +595,113 @@ def seat_of(m):
     return z_seat, cx, cy, r
 
 
+def perimeter(cs):
+    """Length of all outlines of a cross-section."""
+    import numpy as np
+    total = 0.0
+    for poly in cs.to_polygons():
+        p = np.asarray(poly, dtype=np.float64)
+        total += float(np.linalg.norm(np.roll(p, -1, axis=0) - p, axis=1).sum())
+    return total
+
+
+def clean_level(m, z_from, target):
+    """
+    Generated meshes end in a torn edge: the generator stops the skin at the elbows wherever it likes and the rebuild
+    closes it, so the lowest millimetres of the body are full of notches and slivers. A cut through that zone leaves
+    an edge like torn paper. Slice by slice from `z_from` up, the outline is compared with itself smoothed (notches
+    narrower than 2 mm filled, spikes narrower than 2 mm shaved off); the mean depth of what changes is the roughness
+    of the slice. The cut goes half a millimetre above the lowest slice from which two millimetres of slices are
+    smooth. Sizes are for an 80 mm model and scale with it. Never more than 8 % of the height: a model that is rough
+    all the way up is detailed, not torn, and keeps its bottom.
+    """
+    import numpy as np
+    import manifold3d as M
+    z0, h = float(z_from), float(m.bounds[1][2]) - float(z_from)
+    k = target / 80.0
+    step, window, cap = 0.25 * k, 2.0 * k, 0.08 * h
+    limit_rough, limit_spike, radius = 0.06 * k, 0.03 * k, 1.0 * k
+    man = as_manifold(m)
+    levels = np.arange(z0 + 0.05 * k, z0 + cap + window + step, step)
+    rough, spike = [], []
+    for z in levels:
+        cs = man.slice(float(z))
+        a = cs.area()
+        if a <= 0:
+            rough.append(0.0)
+            spike.append(0.0)
+            continue
+        opened = cs.offset(-radius, M.JoinType.Round).offset(radius, M.JoinType.Round)
+        closed = cs.offset(radius, M.JoinType.Round).offset(-radius, M.JoinType.Round)
+        p = max(perimeter(closed), 1e-9)
+        rough.append((closed.area() - opened.area()) / p)
+        spike.append((a - opened.area()) / p)
+    n = max(1, int(round(window / step)))
+    for i in range(len(levels) - n + 1):
+        if levels[i] - z0 > cap:
+            break
+        if max(rough[i:i + n]) <= limit_rough and max(spike[i:i + n]) <= limit_spike:
+            return z0 if i == 0 else float(levels[i]) + 0.5 * k
+    return z0
+
+
+def centroid_of(cs):
+    """Centre of area of a cross-section (holes count against)."""
+    import numpy as np
+    area, sx, sy = 0.0, 0.0, 0.0
+    for poly in cs.to_polygons():
+        p = np.asarray(poly, dtype=np.float64)
+        q = np.roll(p, -1, axis=0)
+        cross = p[:, 0] * q[:, 1] - q[:, 0] * p[:, 1]
+        area += cross.sum() / 2.0
+        sx += ((p[:, 0] + q[:, 0]) * cross).sum() / 6.0
+        sy += ((p[:, 1] + q[:, 1]) * cross).sum() / 6.0
+    if abs(area) < 1e-9:
+        b = cs.bounds()
+        return float(b[0] + b[2]) / 2, float(b[1] + b[3]) / 2
+    return float(sx / area), float(sy / area)
+
+
+def nearest_inside(region, x, y):
+    """The point of `region` nearest to (x, y): the point itself when it lies inside, else the nearest point of the outline. None when the region is empty."""
+    import numpy as np
+    import manifold3d as M
+    if region is None or region.is_empty() or region.area() <= 0:
+        return None
+    probe = M.CrossSection.circle(0.05, 12).translate([float(x), float(y)])
+    if (region ^ probe).area() > 0:
+        return float(x), float(y)
+    best, best_d = None, None
+    for poly in region.to_polygons():
+        p = np.asarray(poly, dtype=np.float64)
+        e = np.roll(p, -1, axis=0) - p
+        t = np.clip(((x - p[:, 0]) * e[:, 0] + (y - p[:, 1]) * e[:, 1]) / np.maximum((e ** 2).sum(axis=1), 1e-12), 0.0, 1.0)
+        foot = p + e * t[:, None]
+        d = np.hypot(foot[:, 0] - x, foot[:, 1] - y)
+        i = int(np.argmin(d))
+        if best_d is None or d[i] < best_d:
+            best, best_d = foot[i], float(d[i])
+    return float(best[0]), float(best[1])
+
+
+def room_for(body, levels, reach):
+    """
+    Where the axis of a round part of radius `reach` (its margin included) can stand so that the part lies inside the
+    body at every one of `levels`: the body's sections there, each shrunk by `reach`, intersected. Empty when it fits nowhere.
+    """
+    import manifold3d as M
+    room = None
+    for z in levels:
+        sec = body.slice(float(z))
+        if sec.area() <= 0:
+            return M.CrossSection()
+        inner = sec.offset(-float(reach), M.JoinType.Round)
+        room = inner if room is None else (room ^ inner)
+        if room.is_empty():
+            break
+    return room
+
+
 def without_pedestal(m):
     """Older generated files carry their base as a separate closed part standing on the bed; take it away again."""
     import trimesh
@@ -699,6 +806,10 @@ def socle_sizes(bust_h, r, kind="socle"):
         out["r_foot"] = min(out["r_foot"], max(r * 0.9, out["r_top"] * 1.3))
         out["r_top"] = min(out["r_top"], out["r_foot"] * 0.62)
         out["band"] = max(5.0, out["band"])
+        # the collar on top of the waist: a 45-degree flare and a short straight piece, both hidden in the chest
+        out["collar_h"] = max(1.2, out["foot"] * 0.06)
+        out["r_collar"] = out["r_top"] * 1.22
+        out["flare"] = out["r_collar"] - out["r_top"]
     return out
 
 
@@ -832,71 +943,112 @@ def slant_cut(body, z_bottom, lean_deg, keep):
     return body
 
 
-def arc_cut(body, m, cx, z_cut, rise, tilt_deg):
+def arc_cut(body, m, cx, z_cut, rise, tilt_deg, flat_half=0.0, tilt_from=None):
     """
-    The cut of a modern studio bust. Seen from the front the chest ends in an arc: lowest in the middle, up at
-    the shoulders by `rise`. Seen from the side the cut climbs to the back by `tilt_deg`. Only material is taken
-    away. Returns (body, y of the front of the chest, the tangent of the tilt).
+    The cut of a modern studio bust on a body already cut flat at `z_cut`. Seen from the front the chest ends in an
+    arc: flat across the middle (`flat_half` to either side of `cx`, where the collar of the foot lies under it),
+    then up to the shoulders by `rise`. Seen from the side the cut stays flat as far back as `tilt_from` (behind the
+    collar) and climbs to the back by `tilt_deg` from there. Only material is taken away. Returns the body.
     """
     import numpy as np
     import manifold3d as M
     x0, y0, _, x1, y1, z1 = body.bounding_box()
-    # the cut turns round the front edge of the chest (the nose and the chin reach further out than the chest)
-    base = body.slice(float(z_cut + 0.5))
-    if base.area() > 0:
-        y0 = float(base.bounds()[1])
     neck = neck_level(m, z_cut)
     if neck is not None:
         rise = min(rise, 0.62 * (neck - z_cut))                 # the arc ends below the shoulders, never at the neck
     # the width of the chest where the arc ends, not of a strand of hair or a hand further out
     row = body.slice(float(z_cut + rise)).hull()
-    rx0, _, rx1, _ = row.bounds()
-    half = max(abs(rx1 - cx), abs(cx - rx0)) * 1.03
-    if rise < 1.0 or half < 1.0:
-        return body, float(y0), 0.0
-    xs = np.linspace(-half, half, 97)
-    arc = rise * (1 - np.sqrt(np.clip(1 - (xs / half) ** 2, 0, 1)))
+    half = 0.0
+    if row.area() > 0:
+        rx0, _, rx1, _ = row.bounds()
+        half = max(abs(rx1 - cx), abs(cx - rx0)) * 1.03
     deep = (z1 - z_cut) + 10.0
-    pts = [(-half - 60.0, rise), (-half - 60.0, -deep), (half + 60.0, -deep), (half + 60.0, rise)]
-    pts += [(float(x), float(h)) for x, h in zip(xs[::-1], arc[::-1])]
     long = (y1 - y0) + 40.0
-    # drawn in x and height, pushed through the depth of the bust, then tipped up to the back round the front edge
-    tool = M.CrossSection([np.array(pts, dtype=np.float64)]).extrude(float(long)).rotate([90.0, 0.0, 0.0]).translate([0, long - 20.0, 0])
-    tool = tool.rotate([float(tilt_deg), 0.0, 0.0]).translate([cx, y0, z_cut])
-    cut = body - tool
-    if cut.volume() < 0.5 * body.volume():
-        return body, float(y0), 0.0
-    return cut, float(y0), float(np.tan(np.radians(tilt_deg)))
+    if rise >= 1.0 and half >= flat_half + 2.0:
+        xs = np.linspace(flat_half, half, 61)
+        arc = rise * (1 - np.sqrt(np.clip(1 - ((xs - flat_half) / (half - flat_half)) ** 2, 0, 1)))
+        right = [(float(x), float(h)) for x, h in zip(xs, arc)]
+        pts = [(-half - 60.0, rise), (-half - 60.0, -deep), (half + 60.0, -deep), (half + 60.0, rise)]
+        pts += right[::-1] + [(-x, h) for x, h in right]
+        # drawn in x and height, pushed through the depth of the bust
+        tool = M.CrossSection([np.array(pts, dtype=np.float64)]).extrude(float(long)).rotate([90.0, 0.0, 0.0]).translate([cx, y0 + long - 20.0, z_cut])
+        cut = body - tool
+        if cut.volume() >= 0.5 * body.volume():
+            body = cut
+    if tilt_from is not None and tilt_deg > 0:
+        # a block whose top face passes through (tilt_from, z_cut) and climbs to the back
+        wedge = M.Manifold.cube([x1 - x0 + 20.0, long, deep]).translate([x0 - 10.0, 0.0, -deep])
+        wedge = wedge.rotate([float(tilt_deg), 0.0, 0.0]).translate([0.0, float(tilt_from), float(z_cut)])
+        cut = body - wedge
+        if cut.volume() >= 0.5 * body.volume():
+            body = cut
+    return body
 
 
-def bust_shape(kind, body, m, cx, cy, z_cut, r):
-    """The chest of the bust the way the style wants it. Returns (body, bottom of the chest, sizes of the foot)."""
+def bust_shape(kind, body, m, cx, cy, z_cut, r, overlap=2.8):
+    """
+    The chest of the bust the way the style wants it, on a body already cut flat at `z_cut`.
+    Returns (body, level the foot's top is measured from, sizes of the foot). The sizes carry where the foot stands
+    ("cx", "cy") and the plane of the flat cut ("cut_z"). Raises ValueError when no foot fits under this chest.
+    """
+    import numpy as np
     style = BUST_STYLES[kind]
     if kind == "socle":
         sizes = socle_sizes(float(m.bounds[1][2]) - float(z_cut), r, kind)
-        sizes["added"], sizes["chest_enough"] = 0.0, True
-        body, front, climb = arc_cut(body, m, cx, float(z_cut), sizes["arc"], style["tilt"])
-        # the foot stands under the middle of the chest; its collar goes into the body as far as the cut climbs
-        # over it, so the bust lies on the foot and no gap shows behind the collar
-        collar = sizes["r_top"] * 1.22
-        # the foot moves forward under the front of the chest, so the chest lies on it as on the reference,
-        # but the weight of the bust stays well inside the foot
+        sizes["added"], sizes["chest_enough"], sizes["cut_z"] = 0.0, True, float(z_cut)
         try:
             weight_y = float(m.center_mass[1])
         except Exception:  # noqa: BLE001
             weight_y = float(cy)
-        at = max(front + collar + 0.04 * sizes["bust_h"], weight_y - 0.45 * sizes["r_foot"])
-        at = min(at, float(cy))
-        sizes["cy"] = at
-        seat = float(z_cut) + climb * max(0.0, at - front) + climb * collar + sizes["arc"] * (1 - (1 - min(1.0, collar / max(r, collar)) ** 2) ** 0.5)
-        return body, seat, sizes
+        # The collar (flare and straight piece) lies wholly inside the chest: the chest is flat under it and
+        # 1.5 mm of chest surrounds it at every height it reaches, so nothing of it shows and no gap opens.
+        # The foot stands under the middle of that flat, never so far forward that the bust tips. A chest too
+        # narrow for the collar gets a straight foot (the waist runs into the chest without a flare); one too
+        # narrow even for that keeps the plain round base.
+        placed = None
+        for r_collar, margin in ((sizes["r_collar"], 1.5), (sizes["r_top"], 1.5), (sizes["r_top"], 0.5)):
+            hidden = 0.3 + (r_collar - sizes["r_top"]) + sizes["collar_h"]
+            levels = (float(z_cut) + 0.3, float(z_cut) + 0.5 * (hidden + overlap), float(z_cut) + hidden + overlap)
+            fx, fy = float(cx), float(cy)
+            for _ in range(3):
+                shaped = arc_cut(body, m, fx, float(z_cut), sizes["arc"], style["tilt"], r_collar + 2.0, fy + r_collar + 2.0)
+                tx, ty = centroid_of(shaped.slice(float(z_cut) + 0.3))
+                ty = max(ty, weight_y - 0.45 * sizes["r_foot"])
+                at = nearest_inside(room_for(shaped, levels, r_collar + margin), tx, ty)
+                if at is None:
+                    break
+                moved = abs(at[0] - fx) > 1.0 or abs(at[1] - fy) > 1.0
+                fx, fy = at
+                if not moved:
+                    placed = (shaped, r_collar, hidden, fx, fy)
+                    break
+            if placed:
+                break
+        if placed is None:
+            raise ValueError("collar_does_not_fit")
+        body, r_collar, hidden, fx, fy = placed
+        sizes["r_collar"], sizes["flare"], sizes["cx"], sizes["cy"] = r_collar, r_collar - sizes["r_top"], fx, fy
+        return body, float(z_cut) + hidden, sizes
     before = float(m.bounds[1][2]) - float(z_cut)
     body, bottom, chest = longer_chest(body, m, float(z_cut), style["chest"], style["more"], style.get("round", 0.0) * 0.8)
     sizes = socle_sizes(float(m.bounds[1][2]) - bottom, r, kind)
     sizes["added"] = round((float(m.bounds[1][2]) - bottom) - before, 1)
     sizes["chest_enough"] = chest is not None
+    sizes["cut_z"], sizes["cx"], sizes["cy"] = float(bottom), float(cx), float(cy)
     if kind == "cut":
         return slant_cut(body, bottom, style["lean"], style["keep"]), bottom, sizes
+    # the tablet goes `overlap` into the chest and must lie inside it with 1.5 mm to spare at every height it
+    # reaches; else it moves under the middle of the chest, else it shrinks, else the plain round base stays
+    half_diag = 0.5 * float(np.hypot(sizes["tablet_w"], sizes["tablet_d"]))
+    levels = (float(bottom) + 0.3, float(bottom) + 0.5 * overlap, float(bottom) + overlap + 0.3)
+    for scale in (1.0, 0.85, 0.7):
+        at = nearest_inside(room_for(body, levels, half_diag * scale + 1.5), float(cx), float(cy))
+        if at is not None:
+            sizes["tablet_w"], sizes["tablet_d"] = sizes["tablet_w"] * scale, sizes["tablet_d"] * scale
+            sizes["cx"], sizes["cy"] = at
+            break
+    else:
+        raise ValueError("tablet_does_not_fit")
     # a long chest is rounded itself, its folds run down to the rounded edge, but never more than a third of it
     # (a deeper sweep turns the chest into a ring); on a short chest the sweep lives in the part that was added
     # and a little above, so it never eats the chest the model came with
@@ -905,7 +1057,8 @@ def bust_shape(kind, body, m, cx, cy, z_cut, r):
     else:
         high = min(sizes["round"], sizes["added"] + 0.05 * sizes["bust_h"])
     if high > 1.0:
-        body = round_under(body, cx, cy, bottom, high, sizes["flat"], style["power"])
+        # the flat of the rounded underside is centred on the tablet and covers it
+        body = round_under(body, sizes["cx"], sizes["cy"], bottom, high, max(sizes["flat"], half_diag * scale + 1.0), style["power"])
     return body, bottom, sizes
 
 
@@ -941,16 +1094,19 @@ def socle_mesh(M, S, cx, cy, extras, z_top, overlap, sizes, note):
     height, band, r_foot, r_top = sizes["foot"], sizes["band"], sizes["r_foot"], sizes["r_top"]
     edge = min(1.2, band * 0.15)
     bead = max(0.8, band * 0.12)
-    collar = max(1.2, height * 0.06)
-    r_collar = r_top * 1.22
+    collar = sizes.get("collar_h", max(1.2, height * 0.06))
+    r_collar = sizes.get("r_collar", r_top * 1.22)
     flare = r_collar - r_top                                  # 45 degrees, prints without supports
     x0, y0 = r_foot * 0.95, band + bead
-    y1 = height - collar - flare                              # the waist is narrowest here
+    y1 = height - collar                                      # the waist is narrowest here and meets the chest; the flare and the collar above it lie inside the chest
+    total = y1 + flare + collar + overlap
     prof = [(0.0, 0.0), (r_foot - edge, 0.0), (r_foot, edge), (r_foot, band), (x0, y0)]
     for t in np.linspace(0.0, 1.0, 28)[1:]:
         # a hollow: it leaves the band flat and arrives upright at the waist
         prof.append((r_top + (x0 - r_top) * (1 - np.sin(t * np.pi / 2)), y0 + (y1 - y0) * (1 - np.cos(t * np.pi / 2))))
-    prof += [(r_collar, y1 + flare), (r_collar, height + overlap), (0.0, height + overlap)]
+    if flare > 1e-6:
+        prof.append((r_collar, y1 + flare))
+    prof += [(r_collar, total), (0.0, total)]
     solid = M.CrossSection([np.array(prof, dtype=np.float64)]).revolve(144)
 
     try:
@@ -969,9 +1125,9 @@ def socle_mesh(M, S, cx, cy, extras, z_top, overlap, sizes, note):
     except Exception as e:  # noqa: BLE001 - a name that cannot be set must never lose the customer their model
         note["text_error"] = str(e)[:120]
 
-    mesh = solid.translate([cx, cy, z_top - overlap - height]).to_mesh()
+    mesh = solid.translate([cx, cy, z_top - total]).to_mesh()
     note["pedestal"] = "socle"
-    note["pedestal_height"] = round(float(height), 1)
+    note["pedestal_height"] = round(float(total - overlap), 1)
     return trimesh.Trimesh(vertices=np.asarray(mesh.vert_properties)[:, :3], faces=np.asarray(mesh.tri_verts), process=True), note
 
 
@@ -1158,10 +1314,21 @@ def main(argv):
                 r = min(r, float(max(m.extents[0], m.extents[1])) * 0.55)   # never much wider than the figure itself
                 ped_h = max(3.0, target * 0.05)
                 overlap = max(2.0, target * 0.035)
+                if m.is_watertight:
+                    # a torn bottom (the generator's open edge, closed by the rebuild) is cut away: the cut goes
+                    # just above the lowest smooth slice, so the chest ends in a clean edge, not in torn paper
+                    try:
+                        clean = clean_level(m, z_seat, target)
+                    except Exception:  # noqa: BLE001
+                        clean = z_seat
+                    if clean > z_seat + 0.01:
+                        ped_note["cut_raised"] = round(clean - z_seat, 2)
+                        z_seat = clean
                 whole = m
                 shaped_kinds = tuple(BUST_STYLES)
+                geometry = {}
                 for kind in ([kind, "round"] if kind in ("socle", "antique") else [kind]):
-                    m, ped, joined = whole, None, None
+                    m, ped, joined, geometry = whole, None, None, {}
                     try:
                         sizes = None
                         z_base = float(z_seat)
@@ -1169,17 +1336,30 @@ def main(argv):
                             if not m.is_watertight:
                                 raise ValueError("open_body")
                             # nothing of the figure may hang below the cut; then the chest gets the end the style asks for
-                            body, z_base, sizes = bust_shape(kind, as_manifold(m).trim_by_plane([0, 0, 1], float(z_seat)), m, cx, cy, z_seat, r)
+                            body, z_base, sizes = bust_shape(kind, as_manifold(m).trim_by_plane([0, 0, 1], float(z_seat)), m, cx, cy, z_seat, r, overlap)
                             shaped = from_manifold(body)
                             if not (len(shaped.faces) and shaped.is_watertight):
                                 raise ValueError("shape_failed")
                             m = shaped
                             ped_note["chest_added"] = sizes["added"]
                             ped_note["chest_enough"] = bool(sizes.get("chest_enough", False))
+                        elif "cut_raised" in ped_note and m.is_watertight:
+                            # the plain bases only overlap the figure; the torn millimetres would show above them
+                            trimmed = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], float(z_seat)))
+                            if len(trimmed.faces) and trimmed.is_watertight:
+                                m = trimmed
                         if kind == "cut":
                             note = {"pedestal": "cut", "pedestal_height": 0.0}
                         else:
-                            ped, note = pedestal_mesh(kind, cx, float((sizes or {}).get("cy", cy)), r, ped_h, overlap, extras, z_base + overlap, sizes)
+                            at = sizes or {}
+                            ped, note = pedestal_mesh(kind, float(at.get("cx", cx)), float(at.get("cy", cy)), r, ped_h, overlap, extras, z_base + overlap, sizes)
+                            if kind in ("socle", "antique"):
+                                # for the record and the tests: the foot outside the body must be the foot below the cut
+                                P, B = as_manifold(ped), as_manifold(m)
+                                geometry = {"cut_z": float(at["cut_z"]), "foot_x": float(at["cx"]), "foot_y": float(at["cy"]),
+                                            "foot_r": float(at["r_foot"]), "collar_r": float(at.get("r_collar", 0.5 * max(at.get("tablet_w", 0.0), at.get("tablet_d", 0.0)))),
+                                            "collar_top_z": float(z_base + overlap),
+                                            "foot_outside_mm3": (P - B).volume(), "foot_below_cut_mm3": P.trim_by_plane([0, 0, -1], -float(at["cut_z"])).volume()}
                     except Exception as e:  # noqa: BLE001 - fall back to the plain round base
                         if kind == "cut":
                             m, ped, note = whole, None, {"pedestal": "none", "pedestal_error": str(e)[:120]}
@@ -1215,8 +1395,20 @@ def main(argv):
                     ped_note = {k: v for k, v in ped_note.items() if k not in ("engraved_lines", "small_text_mm", "chest_added", "chest_enough")}
                     ped_note["socle_fallback"] = "not_joined"
                 m = joined if joined is not None else trimesh.util.concatenate([m, ped])
+                shift = m.bounds[0].copy()
                 m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
-                m.apply_scale(target / float(max(m.extents)))
+                factor = target / float(max(m.extents))
+                m.apply_scale(factor)
+                for key, value in geometry.items():
+                    # into the coordinates of the file that is written
+                    axis = {"x": 0, "y": 1, "z": 2}.get(key.rsplit("_", 1)[-1])
+                    if axis is not None:
+                        value = (value - float(shift[axis])) * factor
+                    elif key.endswith("_r"):
+                        value = value * factor
+                    elif key.endswith("_mm3"):
+                        value = value * factor ** 3
+                    ped_note[key] = round(float(value), 3)
             m.export(argv[3], file_type="stl")
             out(report(m, dict({"out": argv[3], "removed_fragments": removed}, **ped_note)))
         if cmd == "cad":
