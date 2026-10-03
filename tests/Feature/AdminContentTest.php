@@ -8,6 +8,7 @@ use App\Domain\Designer\DesignerProfiles;
 use App\Domain\Mail\Outbox;
 use App\Domain\Stats\Funnel;
 use App\Domain\Stats\SearchLog;
+use App\Engines\Ai\ClaudeAssistant;
 use App\Engines\Ai\FakeAssistant;
 use App\Engines\DTO\SearchOptions;
 use App\Engines\Import\FakeSource;
@@ -162,6 +163,24 @@ class AdminContentTest extends TestCase
             'Creative Commons — Public Domain', 'Creative Commons — Attribution', 'CC BY-SA 4.0', 'Creative Commons — Attribution — Noncommercial — Share Alike',
             'Creative Commons — Attribution — NoDerivatives', 'CC BY-NC-ND', 'Standard Digital File License', '', 'cc_by_sa',
         ]));
+    }
+
+    public function test_a_picture_goes_to_the_assistant_with_the_type_its_bytes_have(): void
+    {
+        $method = new \ReflectionMethod(ClaudeAssistant::class, 'image');
+        $jpegCalledPng = sys_get_temp_dir().'/mp_'.uniqid().'.png';     // the thumbnails of the old catalogue
+        imagejpeg($im = imagecreatetruecolor(8, 8), $jpegCalledPng);
+        $png = sys_get_temp_dir().'/mp_'.uniqid().'.jpg';
+        imagepng($im, $png);
+        $text = sys_get_temp_dir().'/mp_'.uniqid().'.png';
+        file_put_contents($text, 'not a picture');
+        $this->assertSame('image/jpeg', $method->invoke(null, $jpegCalledPng)['source']['media_type']);
+        $this->assertSame('image/png', $method->invoke(null, $png)['source']['media_type']);
+        $this->assertNull($method->invoke(null, $text));
+        $this->assertSame('url', $method->invoke(null, 'https://example.com/a.jpg')['source']['type']);
+        @unlink($jpegCalledPng);
+        @unlink($png);
+        @unlink($text);
     }
 
     public function test_the_ai_puts_a_model_into_a_category_only_when_it_is_sure(): void

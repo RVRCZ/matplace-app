@@ -71,8 +71,12 @@ final class ClaudeAssistant implements Assistant
         if (! is_file($image) || filesize($image) > 4_500_000) {
             return null;
         }
-        $type = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'][strtolower(pathinfo($image, PATHINFO_EXTENSION))] ?? null;
+        // the kind by what the file is, not by its name: thumbnails of the old catalogue are JPEGs called .png,
+        // and the API refuses a picture whose declared type does not match its bytes
+        $type = @getimagesize($image)['mime'] ?? null;
 
-        return $type ? ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $type, 'data' => base64_encode((string) file_get_contents($image))]] : null;
+        return in_array($type, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)
+            ? ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $type, 'data' => base64_encode((string) file_get_contents($image))]]
+            : null;
     }
 }
