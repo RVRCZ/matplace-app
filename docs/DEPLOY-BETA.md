@@ -144,6 +144,22 @@ cp deploy/matplace-worker.service /etc/systemd/system/matplace-worker.service
 systemctl daemon-reload && systemctl restart matplace-worker
 ```
 
+## 5c. Printables a MakerWorld: proxy přes Romanův počítač
+
+Cloudflare odpovídá adrese serveru (IPv4 i IPv6) výzvou, takže import z Printables ani vyhledávání v Printables
+ze serveru nejdou. Řešení od 3. 10. 2026: na Romanově PC běží naplánovaná úloha „matplace import relay“
+(`C:\matplace-relayelay.cmd`): malá HTTP proxy na `127.0.0.1:3128` a SSH tunel `-R 127.0.0.1:3128` na server.
+Server má `IMPORT_HTTP_PROXY=http://127.0.0.1:3128`; přes proxy jdou jen volání API Printables a MakerWorld
+(import i hledání), obrázky se stahují přímo. Kontrola ze serveru:
+
+```
+curl -s -o /dev/null -w "%{http_code}" -x http://127.0.0.1:3128 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" https://api.printables.com/graphql/ -d '{"query":"{ __typename }"}'
+```
+
+Když je PC vypnuté, import i hledání v Printables potichu nejdou (hledání vrátí jen náš katalog). Trvalejší
+náhrada je placená proxy s rezidenční IP a změna `IMPORT_HTTP_PROXY`. Vyhledávání v MakerWorldu nefunguje
+ani přes proxy (jejich hledání vyžaduje prohlížeč), import modelu podle adresy ano.
+
 ## 6. Kontrola (10 minut)
 
 ```
