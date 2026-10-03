@@ -5,6 +5,7 @@
 @include('partials.flash')
 
 <nav class="mt-2 flex flex-wrap gap-2 text-sm" aria-label="Stav">
+    <a href="{{ route('admin.emails.inbox') }}" class="chip">Příchozí</a>
     @foreach(['draft' => 'Ke schválení', 'approved' => 'Schválené, neodeslané', 'sent' => 'Odeslané', 'rejected' => 'Zamítnuté'] as $key => $label)
         <a href="{{ route('admin.emails.index', ['status' => $key]) }}" class="chip {{ $status === $key ? 'chip-on' : '' }}">{{ $label }} ({{ $counts[$key] ?? 0 }})</a>
     @endforeach

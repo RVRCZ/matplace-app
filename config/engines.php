@@ -13,6 +13,7 @@ return [
     'shipping' => env('ENGINE_SHIPPING', 'packeta'),      // packeta | fake
     'assistant' => env('ENGINE_ASSISTANT', 'claude'),     // claude | fake
     'social' => env('ENGINE_SOCIAL', 'meta'),             // meta | fake
+    'mailbox' => env('ENGINE_MAILBOX', 'gmail'),          // gmail | fake — the shared inbox the admin answers from
     // where the admin looks for models to add to the inspiration catalogue (the home page searches `search` below)
     'admin_search' => ['printables', 'makerworld', 'makeronline'],
 

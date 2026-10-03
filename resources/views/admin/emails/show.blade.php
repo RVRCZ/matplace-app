@@ -14,6 +14,19 @@
     @if($email->approver) · {{ $email->status === 'rejected' ? 'zamítl' : 'schválil' }} {{ $email->approver->name }}@endif
 </p>
 @if($email->instruction)<p class="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">Zadání pro AI: {{ $email->instruction }}</p>@endif
+@if($email->isReply())
+    <section class="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
+        <h2 class="text-xs font-bold uppercase text-slate-500">Odpověď na zprávu ze schránky</h2>
+        @if($original)
+            <p class="mt-1"><strong>{{ $original['from_name'] ?: $original['from'] }}</strong> &lt;{{ $original['from'] }}&gt; · {{ $original['date'] }}</p>
+            <p class="font-semibold">{{ $original['subject'] }}</p>
+            <pre class="mt-2 max-h-80 overflow-auto whitespace-pre-wrap font-sans text-xs text-slate-700">{{ $original['text'] }}</pre>
+            <a href="{{ route('admin.emails.inbox.show', $original['id']) }}" class="mt-1 inline-block text-xs underline">zpráva ve schránce</a>
+        @else
+            <p class="mt-1 text-xs text-slate-500">Původní zprávu se teď nepodařilo načíst; odpověď odejde ve vlákně i tak.</p>
+        @endif
+    </section>
+@endif
 
 <form method="post" action="{{ route('admin.emails.update', $email->id) }}" class="mt-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm">@csrf
     <label class="lbl">Komu<input name="to" type="email" required maxlength="190" value="{{ old('to', $email->to) }}" @disabled(! $editable) class="field"></label>

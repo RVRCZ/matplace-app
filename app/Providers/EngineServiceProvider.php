@@ -31,6 +31,9 @@ use App\Engines\Import\MakerWorldSource;
 use App\Engines\Import\ModelSource;
 use App\Engines\Import\PrintablesSource;
 use App\Engines\Import\Sources;
+use App\Engines\Mail\FakeMailbox;
+use App\Engines\Mail\GmailMailbox;
+use App\Engines\Mail\Mailbox;
 use App\Engines\Payment\FakeGateway;
 use App\Engines\Payment\StripeGateway;
 use App\Engines\Project\CompositeProjectExporter;
@@ -131,6 +134,11 @@ class EngineServiceProvider extends ServiceProvider
         $this->app->singleton(MetaClient::class, fn ($app) => config('engines.social') === 'fake' && ! $app->environment('production')
             ? new FakeMetaClient
             : new GraphMetaClient((array) config('services.meta')));
+
+        // the shared mailbox; the fake answers nobody, so it must never answer in production
+        $this->app->singleton(Mailbox::class, fn ($app) => config('engines.mailbox') === 'fake' && ! $app->environment('production')
+            ? new FakeMailbox
+            : new GmailMailbox((array) config('services.gmail')));
 
         // parcels; the fake hands every order over without a parcel existing, so it must never answer in production
         $this->app->singleton(ShippingCarrier::class, fn ($app) => config('engines.shipping') === 'fake' && ! $app->environment('production')

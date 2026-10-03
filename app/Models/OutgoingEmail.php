@@ -19,7 +19,13 @@ class OutgoingEmail extends Model
 
     public const STATUS_REJECTED = 'rejected';
 
-    protected $fillable = ['to', 'subject', 'body', 'locale', 'status', 'generated_by_ai', 'instruction', 'approved_by', 'sent_at', 'error'];
+    protected $fillable = ['to', 'subject', 'body', 'locale', 'status', 'generated_by_ai', 'instruction', 'inbox_message_id', 'inbox_thread_id', 'in_reply_to', 'approved_by', 'sent_at', 'error'];
+
+    /** A reply to a message of the shared mailbox: it leaves in that thread, from the mailbox's address. */
+    public function isReply(): bool
+    {
+        return $this->inbox_thread_id !== null;
+    }
 
     protected $casts = ['generated_by_ai' => 'bool', 'sent_at' => 'datetime'];
 

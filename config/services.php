@@ -63,6 +63,14 @@ return [
     ],
 
     // Packeta (Zásilkovna): the API key also opens the pickup point picker in the browser, the password is server-side only
+    // the shared mailbox (info@): Gmail API with the owner's OAuth token file (refresh token, scopes gmail.modify + gmail.send)
+    'gmail' => [
+        'token_path' => env('GMAIL_TOKEN_PATH', storage_path('app/private/gmail_token.json')),
+        'client_id' => env('GMAIL_CLIENT_ID'),
+        'client_secret' => env('GMAIL_CLIENT_SECRET'),
+        'inbox' => env('GMAIL_INBOX_EMAIL', 'info@matplace.com'),
+    ],
+
     'packeta' => [
         'api_key' => env('PACKETA_API_KEY'),
         'api_password' => env('PACKETA_API_PASS'),

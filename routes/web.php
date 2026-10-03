@@ -438,6 +438,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/emails', [AdminEmailController::class, 'index'])->name('emails.index');
     Route::post('/emails/write', [AdminEmailController::class, 'write'])->middleware('throttle:30,1,admin-ai')->name('emails.write');
+    Route::get('/emails/inbox', [AdminEmailController::class, 'inbox'])->name('emails.inbox');
+    Route::get('/emails/inbox/{id}', [AdminEmailController::class, 'inboxShow'])->where('id', '[A-Za-z0-9_-]+')->name('emails.inbox.show');
+    Route::post('/emails/inbox/{id}/reply', [AdminEmailController::class, 'reply'])->where('id', '[A-Za-z0-9_-]+')->middleware('throttle:30,1,admin-ai')->name('emails.inbox.reply');
+    Route::post('/emails/inbox/{id}/read', [AdminEmailController::class, 'markRead'])->where('id', '[A-Za-z0-9_-]+')->name('emails.inbox.read');
     Route::get('/emails/{email}', [AdminEmailController::class, 'show'])->whereNumber('email')->name('emails.show');
     Route::post('/emails/{email}', [AdminEmailController::class, 'update'])->whereNumber('email')->name('emails.update');
 });

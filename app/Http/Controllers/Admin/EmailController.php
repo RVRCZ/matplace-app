@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Mail\Outbox;
 use App\Engines\Exceptions\EngineException;
+use App\Engines\Mail\Mailbox;
+use App\Engines\Mail\MailboxFailed;
 use App\Http\Controllers\Controller;
 use App\Models\OutgoingEmail;
 use App\Support\Locales;
@@ -28,6 +30,64 @@ class EmailController extends Controller
         ]);
     }
 
+    /** The shared mailbox: what came in, unread first. */
+    public function inbox(Request $request, Mailbox $mailbox): View
+    {
+        $all = $request->query('all') === '1';
+        $messages = [];
+        $error = null;
+        if ($mailbox->available()) {
+            try {
+                $messages = $mailbox->recent(40, ! $all);
+            } catch (MailboxFailed $e) {
+                $error = $e->getMessage();
+            }
+        }
+        // what already has a draft or a reply: the admin sees it next to the message
+        $answered = OutgoingEmail::whereIn('inbox_message_id', array_column($messages, 'id'))->get()->groupBy('inbox_message_id');
+
+        return view('admin.emails.inbox', ['messages' => $messages, 'all' => $all, 'error' => $error, 'available' => $mailbox->available(), 'address' => $mailbox->address(), 'answered' => $answered]);
+    }
+
+    /** One message of the mailbox with its text, and the drafts written for it. */
+    public function inboxShow(string $id, Mailbox $mailbox): View|RedirectResponse
+    {
+        try {
+            $message = $mailbox->message($id);
+        } catch (MailboxFailed $e) {
+            return redirect()->route('admin.emails.inbox')->with('error', $e->getMessage());
+        }
+        abort_unless($message, 404);
+
+        return view('admin.emails.inbox_show', ['message' => $message, 'drafts' => OutgoingEmail::where('inbox_message_id', $id)->latest('id')->get()]);
+    }
+
+    /** "Suggest a reply": the assistant drafts it, the admin reads, changes and approves (then it goes in the thread). */
+    public function reply(Request $request, string $id, Mailbox $mailbox, Outbox $outbox): RedirectResponse
+    {
+        $data = $request->validate(['locale' => ['required', Rule::in(Locales::SUPPORTED)], 'instruction' => ['nullable', 'string', 'max:2000']]);
+        try {
+            $message = $mailbox->message($id);
+            abort_unless($message, 404);
+            $draft = $outbox->reply($message, $data['locale'], $data['instruction'] ?? null);
+        } catch (EngineException $e) {
+            return back()->withInput()->with('error', 'Návrh se nepodařilo napsat: '.$e->getMessage());
+        }
+
+        return redirect()->route('admin.emails.show', $draft->id)->with('status', 'Návrh odpovědi je připravený. Přečtěte ho, upravte a schvalte; odejde jako odpověď ve vlákně.');
+    }
+
+    public function markRead(string $id, Mailbox $mailbox): RedirectResponse
+    {
+        try {
+            $mailbox->markRead($id);
+        } catch (MailboxFailed $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('admin.emails.inbox')->with('status', 'Označeno jako přečtené.');
+    }
+
     /** "Write an e-mail with AI": the result is a draft to read, never a sent mail. */
     public function write(Request $request, Outbox $outbox): RedirectResponse
     {
@@ -44,9 +104,19 @@ class EmailController extends Controller
         return redirect()->route('admin.emails.show', $email->id)->with('status', 'Návrh je připravený. Přečtěte ho, upravte a schvalte, nebo zamítněte.');
     }
 
-    public function show(int $email): View
+    public function show(int $email, Mailbox $mailbox): View
     {
-        return view('admin.emails.show', ['email' => OutgoingEmail::with('approver')->findOrFail($email)]);
+        $email = OutgoingEmail::with('approver')->findOrFail($email);
+        $original = null;
+        if ($email->isReply()) {
+            try {
+                $original = $mailbox->message((string) $email->inbox_message_id);
+            } catch (MailboxFailed) {
+                $original = null;   // the reply can still be read and sent; only the original is not shown
+            }
+        }
+
+        return view('admin.emails.show', ['email' => $email, 'original' => $original]);
     }
 
     /** Save the admin's changes; with "approve" the saved text is sent. */
