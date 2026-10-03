@@ -9,6 +9,7 @@
         'Meta' => ['admin.meta.index', ['admin.meta.*']],
         'AI' => ['admin.ai.index', ['admin.ai.*']],
         'E-maily' => ['admin.emails.index', ['admin.emails.*']],
+        'Uživatelé' => ['admin.users.index', ['admin.users.*']],
     ];
     $drafts = \App\Models\OutgoingEmail::where('status', 'draft')->count();
 @endphp

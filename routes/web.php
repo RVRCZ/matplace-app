@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
 use App\Http\Controllers\Admin\MetaController as AdminMetaController;
 use App\Http\Controllers\Admin\StatsController as AdminStatsController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\YouTubeController;
 use App\Http\Controllers\Api\AdviceController;
 use App\Http\Controllers\Api\CalculationController;
@@ -428,6 +429,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/stats', [AdminStatsController::class, 'funnel'])->name('stats.funnel');
     Route::get('/stats/search', [AdminStatsController::class, 'search'])->name('stats.search');
     Route::get('/ai', [AdminStatsController::class, 'ai'])->name('ai.index');
+
+    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::get('/users/{user}', [AdminUserController::class, 'show'])->whereNumber('user')->name('users.show');
+    Route::post('/users/{user}/role', [AdminUserController::class, 'role'])->whereNumber('user')->name('users.role');
+    Route::post('/users/{user}/reset-link', [AdminUserController::class, 'resetLink'])->whereNumber('user')->middleware('throttle:10,1,admin-reset')->name('users.reset');
+    Route::post('/users/{user}/erase', [AdminUserController::class, 'erase'])->whereNumber('user')->name('users.erase');
 
     Route::get('/emails', [AdminEmailController::class, 'index'])->name('emails.index');
     Route::post('/emails/write', [AdminEmailController::class, 'write'])->middleware('throttle:30,1,admin-ai')->name('emails.write');

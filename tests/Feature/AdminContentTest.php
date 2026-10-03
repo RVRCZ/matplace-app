@@ -92,7 +92,7 @@ class AdminContentTest extends TestCase
     public function test_the_admin_sections_are_for_admins_only(): void
     {
         $pages = ['/admin', '/admin/stats', '/admin/stats/search', '/admin/ai', '/admin/catalog', '/admin/catalog/search', '/admin/catalog/review', '/admin/catalog/cards',
-            '/admin/collections', '/admin/collections/suggestions', '/admin/content/posts', '/admin/content/posts/new', '/admin/content/banners', '/admin/content/meta', '/admin/emails'];
+            '/admin/collections', '/admin/collections/suggestions', '/admin/content/posts', '/admin/content/posts/new', '/admin/content/banners', '/admin/content/meta', '/admin/emails', '/admin/users'];
         foreach ($pages as $page) {
             $this->get($page)->assertRedirect();   // a guest goes to the login page
         }
