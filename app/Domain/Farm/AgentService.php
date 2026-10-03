@@ -134,6 +134,9 @@ final class AgentService
      *
      * @return int number of printers newly reported offline
      */
+    /** Hours between two "offline" mails about the same printer (a running print is told at once regardless). */
+    public const ALERT_GAP_HOURS = 6;
+
     public function watch(): int
     {
         $limit = (int) $this->settings->get('offline_after_seconds');
@@ -145,13 +148,17 @@ final class AgentService
             foreach ($jobs as $job) {
                 $job->update(['status' => FarmPrintJob::STATUS_UNKNOWN, 'message' => 'connection lost']);
             }
-            if ($printer->last_seen_at !== null || $jobs->isNotEmpty()) {
+            // a connection that flaps would mail at every drop: the admin hears about a printer at most once in a while,
+            // unless a print was running on it (that is news every time)
+            $recently = $printer->offline_alerted_at !== null && $printer->offline_alerted_at->gt(now()->subHours(self::ALERT_GAP_HOURS));
+            $tell = ($printer->last_seen_at !== null || $jobs->isNotEmpty()) && ($jobs->isNotEmpty() || ! $recently);
+            if ($tell) {
                 $this->flow->alertAdmin(__('farm.admin.mail.offline', ['printer' => $printer->name]), $jobs->first()?->order, [
                     __('farm.admin.mail.offline_since', ['time' => $printer->last_seen_at?->format('j. n. H:i') ?? '—']),
                 ]);
                 $count++;
             }
-            $printer->update(['offline_notified_at' => now(), 'state' => FarmPrinter::STATE_UNKNOWN]);
+            $printer->update(['offline_notified_at' => now(), 'offline_alerted_at' => $tell ? now() : $printer->offline_alerted_at, 'state' => FarmPrinter::STATE_UNKNOWN]);
         }
 
         return $count;

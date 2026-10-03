@@ -45,14 +45,14 @@ class FarmPrinter extends Model
         'name', 'model', 'key', 'farm_agent_id', 'mode', 'enabled', 'bed_x', 'bed_y', 'bed_z', 'nozzle_mm',
         'machine_profile', 'process_profiles', 'machine_overrides', 'process_overrides', 'time_factor', 'weight_factor',
         'hourly_rate', 'bed_clear', 'bed_cleared_at', 'state', 'telemetry', 'last_seen_at', 'snapshot_path', 'snapshot_at',
-        'offline_notified_at', 'timelapse',
+        'offline_notified_at', 'offline_alerted_at', 'timelapse',
     ];
 
     protected $casts = [
         'enabled' => 'bool', 'bed_clear' => 'bool', 'bed_x' => 'float', 'bed_y' => 'float', 'bed_z' => 'float',
         'nozzle_mm' => 'float', 'time_factor' => 'float', 'weight_factor' => 'float', 'hourly_rate' => 'float',
         'process_profiles' => 'array', 'machine_overrides' => 'array', 'process_overrides' => 'array', 'telemetry' => 'array',
-        'bed_cleared_at' => 'datetime', 'last_seen_at' => 'datetime', 'snapshot_at' => 'datetime', 'offline_notified_at' => 'datetime',
+        'bed_cleared_at' => 'datetime', 'last_seen_at' => 'datetime', 'snapshot_at' => 'datetime', 'offline_notified_at' => 'datetime', 'offline_alerted_at' => 'datetime',
         'timelapse' => 'array',
     ];
 
