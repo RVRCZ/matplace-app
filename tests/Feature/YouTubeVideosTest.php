@@ -337,6 +337,7 @@ class YouTubeVideosTest extends TestCase
 
         $this->assertSame(FarmVideo::STATUS_QUEUED, $video->refresh()->status);
         $this->assertStringContainsString('quota', (string) $video->error);
+        $this->assertStringContainsString('zkusíme to znovu '.now()->addMinutes(360)->timezone('Europe/Prague')->format('j. n. H:i'), (string) $video->error, 'the admin reads when the next try is');
         Queue::assertPushed(UploadFarmVideo::class, fn ($job) => $job->delay !== null);
     }
 

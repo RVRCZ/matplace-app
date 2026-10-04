@@ -93,6 +93,8 @@ class YouTubeClient
     /** Upload an MP4 as a private video; returns the YouTube video id. */
     public function upload(string $path, string $title, string $description): string
     {
+        // the worker lives long and the music mix is written to the same path every time: a cached size would be the old one
+        clearstatcache(true, $path);
         $size = filesize($path);
         $init = $this->api()->withHeaders(['X-Upload-Content-Type' => 'video/mp4', 'X-Upload-Content-Length' => (string) $size])
             ->post(self::UPLOAD.'?uploadType=resumable&part=snippet,status', [

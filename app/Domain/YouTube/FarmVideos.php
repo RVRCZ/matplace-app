@@ -78,8 +78,10 @@ class FarmVideos
             $id = $this->youtube->upload($withMusic ?? Storage::disk(config('farm.disk'))->path($this->file($order)), $video->title, (string) $video->description);
         } catch (YouTubeError $e) {
             if ($e->isQuota()) {
-                $video->update(['status' => FarmVideo::STATUS_QUEUED, 'error' => $e->getMessage()]);
-                UploadFarmVideo::dispatch($video->id)->delay(now()->addMinutes((int) config('youtube.retry_after_minutes', 360)));
+                // YouTube's own limit (a young channel takes only a few videos a day): the admin reads when the next try is
+                $next = now()->addMinutes((int) config('youtube.retry_after_minutes', 360));
+                $video->update(['status' => FarmVideo::STATUS_QUEUED, 'error' => 'YouTube teď další video nepřijal (limit kanálu, ne náš); zkusíme to znovu '.$next->copy()->timezone('Europe/Prague')->format('j. n. H:i').'. '.$e->getMessage()]);
+                UploadFarmVideo::dispatch($video->id)->delay($next);
             } else {
                 $video->update(['status' => FarmVideo::STATUS_FAILED, 'error' => $e->getMessage()]);
                 Log::warning('YouTube upload failed', ['video' => $video->id, 'reason' => $e->reason, 'error' => $e->getMessage()]);
