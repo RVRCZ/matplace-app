@@ -19,7 +19,7 @@ class Calculation extends Model
 
     protected $fillable = [
         'token', 'model_file_id', 'owner_user_id', 'anonymous_session_id', 'params', 'params_hash',
-        'rough', 'slicer', 'slicer_engine', 'prices', 'pricing_context', 'status', 'error',
+        'rough', 'slicer', 'slicer_engine', 'prices', 'pricing_context', 'status', 'error', 'timings',
     ];
 
     protected $casts = [
@@ -28,6 +28,7 @@ class Calculation extends Model
         'slicer' => 'array',
         'prices' => 'array',
         'pricing_context' => 'array',
+        'timings' => 'array',
     ];
 
     public function getRouteKeyName(): string

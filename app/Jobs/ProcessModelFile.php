@@ -7,6 +7,7 @@ use App\Engines\Converter\ConverterChain;
 use App\Engines\Mesh\StlFile;
 use App\Models\Calculation;
 use App\Models\ModelFile;
+use App\Support\Stopwatch;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\File;
@@ -36,6 +37,8 @@ class ProcessModelFile implements ShouldQueue
         }
         $file->status = ModelFile::STATUS_PROCESSING;
         $file->save();
+        // the file waited in the queue since it was stored (uploaded, generated, repaired…)
+        $clock = (new Stopwatch)->note('started', round(microtime(true), 1))->since('queue', $file->created_at?->getTimestamp());
 
         try {
             $disk = Storage::disk(ModelFile::DISK);
@@ -44,14 +47,16 @@ class ProcessModelFile implements ShouldQueue
             $stlAbs = $disk->path($stlRel);
             File::ensureDirectoryExists(dirname($stlAbs));
 
-            if ($file->ext === 'stl') {
-                // normalise (ASCII → binary, consistent header) by rewriting through StlFile
-                StlFile::scale($in, $stlAbs, 1.0);
-            } else {
-                $converters->convert($in, 'stl', $stlAbs);
-            }
+            $clock->measure('convert', function () use ($file, $converters, $in, $stlAbs) {
+                if ($file->ext === 'stl') {
+                    // normalise (ASCII → binary, consistent header) by rewriting through StlFile
+                    StlFile::scale($in, $stlAbs, 1.0);
+                } else {
+                    $converters->convert($in, 'stl', $stlAbs);
+                }
+            });
 
-            $report = $repair->check($stlAbs);
+            $report = $clock->measure('analyse', fn () => $repair->check($stlAbs));
             $file->stl_path = $stlRel;
             $file->bbox = $report->bbox->toArray();
             $file->volume_mm3 = $report->volumeMm3;
@@ -60,11 +65,14 @@ class ProcessModelFile implements ShouldQueue
             $file->mesh_report = $report->toArray();
             $file->status = ModelFile::STATUS_READY;
             $file->error = null;
+            $file->timings = $clock->note('triangles', $report->triangles)->note('mb', round(filesize($stlAbs) / 1048576, 1))->note('ext', $file->ext)
+                ->note('finished', round(microtime(true), 1))->toArray();
             $file->save();
         } catch (\Throwable $e) {
             Log::warning('ProcessModelFile failed', ['id' => $file->id, 'error' => $e->getMessage()]);
             $file->status = ModelFile::STATUS_FAILED;
             $file->error = mb_substr($e->getMessage(), 0, 1000);
+            $file->timings = $clock->note('failed', true)->note('finished', round(microtime(true), 1))->toArray();
             $file->save();
             // calculations waiting for this file cannot proceed
             Calculation::where('model_file_id', $file->id)

@@ -65,7 +65,7 @@ class FarmOrder extends Model
         'terms_ip', 'paid_at', 'approved_at', 'approved_by', 'queued_at', 'started_at', 'finished_at', 'handed_at', 'tracking',
         'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at', 'timelapse_short_path',
         'designer_model_id', 'royalty_czk', 'catalog_model_id',
-        'shipping_price', 'packeta_packet_id', 'packeta_barcode', 'tracking_url', 'shipped_at',
+        'shipping_price', 'packeta_packet_id', 'packeta_barcode', 'tracking_url', 'shipped_at', 'timings',
     ];
 
     protected $casts = [
@@ -75,7 +75,7 @@ class FarmOrder extends Model
         'terms_accepted_at' => 'datetime', 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'queued_at' => 'datetime',
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime',
         'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',
-        'shipping_price' => 'float', 'shipped_at' => 'datetime',
+        'shipping_price' => 'float', 'shipped_at' => 'datetime', 'timings' => 'array',
     ];
 
     /** What the customer pays (or paid), in the order's own currency. */

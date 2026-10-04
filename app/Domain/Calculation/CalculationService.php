@@ -66,6 +66,7 @@ final class CalculationService
             $calc->slicer_engine = $cached->slicer_engine;
             $calc->prices = $this->pricesFor((float) $cached->slicer['grams'], (int) $cached->slicer['minutes'], $quantity, $source['profiles']);
             $calc->status = Calculation::STATUS_DONE;
+            $calc->timings = ['cache' => 'calculation'];
             $calc->save();
 
             return $calc;
