@@ -33,9 +33,9 @@ class FarmVideo extends Model
 
     public const STATUS_FAILED = 'failed';
 
-    protected $fillable = ['farm_order_id', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'approved_at', 'scheduled_at', 'views', 'likes', 'comments', 'stats_at', 'score', 'music'];
+    protected $fillable = ['farm_order_id', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'approved_at', 'scheduled_at', 'share', 'views', 'likes', 'comments', 'stats_at', 'score', 'music'];
 
-    protected $casts = ['uploaded_at' => 'datetime', 'published_at' => 'datetime', 'decided_at' => 'datetime', 'approved_at' => 'datetime', 'scheduled_at' => 'datetime', 'stats_at' => 'datetime',
+    protected $casts = ['uploaded_at' => 'datetime', 'published_at' => 'datetime', 'decided_at' => 'datetime', 'approved_at' => 'datetime', 'scheduled_at' => 'datetime', 'share' => 'array', 'stats_at' => 'datetime',
         'views' => 'int', 'likes' => 'int', 'comments' => 'int', 'score' => 'int'];
 
     public function order(): BelongsTo

@@ -28,6 +28,23 @@ interface MetaClient
     public function postToInstagram(string $imageUrl, string $caption): string;
 
     /**
+     * A video on the Facebook page, uploaded from a local file (a short vertical or square one shows as a Reel).
+     *
+     * @return string the id Meta gave the video
+     *
+     * @throws MetaFailed
+     */
+    public function postVideoToPage(string $path, string $title, string $description): string;
+
+    /**
+     * A Reel on Instagram from a video Meta can download (a public address). Meta processes the file first; when it
+     * is not done in time the failure says `retryLater`.
+     *
+     * @throws MetaFailed
+     */
+    public function postReelToInstagram(string $videoUrl, string $caption): string;
+
+    /**
      * Campaigns of the ad account with what they spent in a period: read only.
      *
      * @param  string  $period  last_7d | last_30d

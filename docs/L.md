@@ -36,6 +36,22 @@ zapíše jako `published` s časem termínu. Když schválení čeká na limit n
 nahrání se vezme další volný. Admin může u každého videa zvolit „hned“ a u naplánovaného kliknout „Zveřejnit hned“.
 `FarmVideos::nextSlot` počítá do dne i videa zveřejněná „hned“, takže se schválení sama rozprostřou po dnech.
 
+## Facebook stránka a Instagram (doplněno)
+
+Při schválení jsou zaškrtnuté **Facebook stránka (video)** a **Instagram (Reel)** (jen když je Meta připojená,
+`MetaClient::available`). Volba se uloží do `farm_videos.share`; `social:videos` (každých 5 minut,
+`App\Domain\Social\VideoSharer`) pošle video ve chvíli, kdy je veřejné na YouTube (stav `published`, nebo
+`scheduled` s prošlým termínem) — tedy ve stejném večerním slotu. Facebook dostane soubor videa
+(`graph-video.facebook.com/{page}/videos`, krátké čtvercové/na výšku ukáže jako Reel), Instagram Reel z podepsané
+adresy `/social/videos/{id}.mp4` (platí 2 dny, `signed` middleware; Meta si soubor stáhne, zpracuje a pak se zveřejní;
+„ještě se zpracovává“ se zkusí znovu v dalším běhu). Text = název + popis YouTube. Výsledek je v `social_posts`
+(`subject_type` = `farm_video`): u videa v adminu „Facebook ✓ · Instagram ✗ chyba“ a „zkusit znovu“. Selhání se
+samo neopakuje. `FakeMetaClient` to v testech zaznamenává jako `facebook_video` / `instagram_reel`.
+
+Stav účtů 4. 10. 2026: stránka „MatPlace.com“ (1027125233825471) 7 sledujících, Instagram @matplacecom 1 sledující
+a 0 příspěvků; z nového webu zatím nic neodešlo (`social_posts` prázdná). Token systémového uživatele má
+`pages_manage_posts`, `instagram_content_publish`; na stránku se posílá tokenem stránky z `me/accounts`.
+
 ## Fotka z foto-boxu na konci videa
 
 Video zakázky končí fotkou hotového kusu; kterou, říká `TestPhotos::finishIndex`: přednostně boční pohled (zleva,

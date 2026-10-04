@@ -36,6 +36,16 @@ final class FakeMetaClient implements MetaClient
         return $this->post('instagram', $caption, null, $imageUrl);
     }
 
+    public function postVideoToPage(string $path, string $title, string $description): string
+    {
+        return $this->post('facebook_video', $title."\n\n".$description, null, $path);
+    }
+
+    public function postReelToInstagram(string $videoUrl, string $caption): string
+    {
+        return $this->post('instagram_reel', $caption, null, $videoUrl);
+    }
+
     public function campaigns(string $period = 'last_7d'): array
     {
         $scale = $period === 'last_30d' ? 4 : 1;

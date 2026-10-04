@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Farm\FarmSettings;
 use App\Domain\YouTube\FarmVideos;
+use App\Engines\Social\FakeMetaClient;
 use App\Jobs\UploadFarmVideo;
 use App\Mail\FarmAdminAlert;
 use App\Models\FarmAgent;
@@ -11,6 +12,7 @@ use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmVideo;
 use App\Models\Payment;
+use App\Models\SocialPost;
 use App\Models\User;
 use App\Models\YouTubeAccount;
 use Database\Seeders\FarmSeeder;
@@ -401,6 +403,59 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(FarmVideo::STATUS_PUBLISHED, $second->refresh()->status);
         Http::assertSent(fn (HttpRequest $r) => $r->method() === 'PUT' && str_contains($r->url(), 'youtube/v3/videos?part=snippet,status') && $r['status']['privacyStatus'] === 'public' && ! isset($r['status']['publishAt']));
         $this->assertSame('2026-10-06 16:00:00', $videos->nextSlot()->toDateTimeString());
+    }
+
+    public function test_a_public_video_goes_to_the_facebook_page_and_instagram_when_the_admin_ticked_them(): void
+    {
+        FakeMetaClient::reset();
+        $this->connectedChannel();
+        $this->fakeGoogle();
+        $order = $this->paidOrder(consent: true);
+        $this->filmed($order);
+        $video = app(FarmVideos::class)->queueFor($order)->refresh();
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Facebook stránka (video)')->assertSee('Instagram (Reel)');
+
+        // approved for YouTube now, Facebook and Instagram ticked: they follow once the video is public
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza', 'description' => 'Popis', 'when' => 'now', 'share_choice' => 1, 'share' => ['facebook', 'instagram']])->assertRedirect();
+        $this->assertSame([FarmVideo::STATUS_PUBLISHED, ['facebook', 'instagram']], [$video->refresh()->status, $video->share]);
+        $this->assertSame([], FakeMetaClient::$posts, 'nothing before the scheduler runs');
+
+        $this->artisan('social:videos')->expectsOutputToContain('posted: 2')->assertSuccessful();
+        $this->assertSame(['facebook_video', 'instagram_reel'], array_column(FakeMetaClient::$posts, 'platform'));
+        $this->assertStringEndsWith('timelapse.mp4', FakeMetaClient::$posts[0]['image'], 'the page gets the file itself');
+        $this->assertStringContainsString("Váza\n\nPopis", FakeMetaClient::$posts[0]['message']);
+        $reelUrl = FakeMetaClient::$posts[1]['image'];
+        $this->assertStringContainsString("/social/videos/{$video->id}.mp4?", $reelUrl, 'Instagram fetches the video from a signed address');
+        $this->get($reelUrl)->assertOk()->assertHeader('Content-Type', 'video/mp4');
+        $this->get("/social/videos/{$video->id}.mp4")->assertForbidden();
+        $posts = SocialPost::where('subject_type', 'farm_video')->where('subject_id', $video->id)->orderBy('id')->get();
+        $this->assertSame(['facebook' => 'posted', 'instagram' => 'posted'], $posts->pluck('status', 'platform')->all());
+        $this->assertSame(['facebook_video_1', 'instagram_reel_2'], $posts->pluck('external_id')->all());
+        $this->artisan('social:videos')->expectsOutputToContain('posted: 0');   // done is done
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Facebook ✓')->assertSee('Instagram ✓');
+
+        // a refusal is kept for the admin; "try again" asks once more at the next run
+        $other = $this->paidOrder(consent: true);
+        $this->filmed($other);
+        $second = app(FarmVideos::class)->queueFor($other)->refresh();
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$second->id}/publish", ['title' => 'Druhé', 'description' => '', 'when' => 'now', 'share_choice' => 1, 'share' => ['facebook']])->assertRedirect();
+        FakeMetaClient::$refuse = 'Page token expired';
+        $this->artisan('social:videos')->expectsOutputToContain('posted: 0');
+        $this->assertSame('Page token expired', SocialPost::where('subject_id', $second->id)->value('error'));
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Facebook ✗ Page token expired')->assertSee('zkusit znovu');
+        FakeMetaClient::$refuse = null;
+        $this->artisan('social:videos')->expectsOutputToContain('posted: 0', 'a failure is not retried by itself');
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$second->id}/share/facebook/retry")->assertRedirect();
+        $this->artisan('social:videos')->expectsOutputToContain('posted: 1');
+        $this->assertSame('posted', SocialPost::where('subject_id', $second->id)->value('status'));
+
+        // nothing ticked: nothing goes anywhere
+        $third = $this->paidOrder(consent: true);
+        $this->filmed($third);
+        $v3 = app(FarmVideos::class)->queueFor($third)->refresh();
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$v3->id}/publish", ['title' => 'Třetí', 'description' => '', 'when' => 'now', 'share_choice' => 1])->assertRedirect();
+        $this->assertSame([], $v3->refresh()->share);
+        $this->artisan('social:videos')->expectsOutputToContain('posted: 0');
     }
 
     public function test_an_unaudited_project_leaves_the_video_private_and_the_admin_is_told(): void

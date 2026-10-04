@@ -54,6 +54,61 @@ final class GraphMetaClient implements MetaClient
         return (string) ($this->call('POST', $ig.'/media_publish', ['creation_id' => $container], $token)['id'] ?? '');
     }
 
+    public function postVideoToPage(string $path, string $title, string $description): string
+    {
+        $page = (string) ($this->config['page_id'] ?? '');
+        if ($page === '') {
+            throw new MetaFailed('META_PAGE_ID is not set.');
+        }
+        if (! is_file($path)) {
+            throw new MetaFailed('The video file is missing: '.basename($path));
+        }
+        // videos go to their own host, as one multipart request (our shorts are a few MB)
+        $url = 'https://graph-video.facebook.com/'.$this->version().'/'.$page.'/videos';
+        try {
+            $res = Http::timeout(300)->attach('source', fopen($path, 'rb'), basename($path))
+                ->post($url, ['access_token' => $this->pageToken(), 'title' => mb_substr($title, 0, 255), 'description' => $description]);
+        } catch (\Throwable $e) {
+            throw new MetaFailed('Meta could not be reached: '.$e->getMessage());
+        }
+        $data = $res->json();
+        if (! is_array($data) || isset($data['error'])) {
+            throw new MetaFailed((string) ($data['error']['message'] ?? ('Graph API HTTP '.$res->status())));
+        }
+
+        return (string) ($data['id'] ?? '');
+    }
+
+    public function postReelToInstagram(string $videoUrl, string $caption): string
+    {
+        $ig = (string) ($this->config['ig_id'] ?? '');
+        if ($ig === '') {
+            throw new MetaFailed('META_IG_ID is not set.');
+        }
+        $token = $this->pageToken();
+        // a container Meta fills from the address, then (once processed) publishing it
+        $container = (string) ($this->call('POST', $ig.'/media', ['media_type' => 'REELS', 'video_url' => $videoUrl, 'caption' => $caption, 'share_to_feed' => 'true'], $token)['id'] ?? '');
+        if ($container === '') {
+            throw new MetaFailed('Instagram created no media container.');
+        }
+        $status = '';
+        for ($i = 0; $i < 18; $i++) {
+            $status = (string) ($this->call('GET', $container, ['fields' => 'status_code,status'], $token)['status_code'] ?? '');
+            if ($status === 'FINISHED') {
+                break;
+            }
+            if ($status === 'ERROR' || $status === 'EXPIRED') {
+                throw new MetaFailed('Instagram could not process the video ('.$status.').');
+            }
+            sleep(5);
+        }
+        if ($status !== 'FINISHED') {
+            throw MetaFailed::later('Instagram is still processing the video.');
+        }
+
+        return (string) ($this->call('POST', $ig.'/media_publish', ['creation_id' => $container], $token)['id'] ?? '');
+    }
+
     public function campaigns(string $period = 'last_7d'): array
     {
         $account = trim((string) ($this->config['ad_account_id'] ?? ''));

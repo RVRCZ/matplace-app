@@ -130,8 +130,11 @@ class FarmVideos
      * now; one already there (private) is dealt with at once. Public at the next free slot (nextSlot), or right away
      * with $now.
      */
-    public function publish(FarmVideo $video, string $title, string $description, int $adminId, bool $now = false): FarmVideo
+    public function publish(FarmVideo $video, string $title, string $description, int $adminId, bool $now = false, ?array $share = null): FarmVideo
     {
+        if ($share !== null) {
+            $video->share = array_values(array_intersect(['facebook', 'instagram'], $share));   // where else it goes (VideoSharer), once public
+        }
         if (! $video->youtube_id && in_array($video->status, [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED], true)) {
             $video->update(['title' => $title, 'description' => $description, 'status' => FarmVideo::STATUS_QUEUED, 'error' => null,
                 'approved_at' => now(), 'scheduled_at' => $now ? null : $this->nextSlot(), 'decided_by' => $adminId, 'decided_at' => now()]);

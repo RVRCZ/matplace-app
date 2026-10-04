@@ -51,6 +51,7 @@ use App\Http\Controllers\Printer\PrinterController;
 use App\Http\Controllers\Printer\QuoteController;
 use App\Http\Controllers\PrinterPageController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\SocialVideoController;
 use App\Http\Controllers\ToolsController;
 use App\Support\Locales;
 use Illuminate\Support\Facades\Route;
@@ -275,6 +276,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/farm/orders/{order}/timelapse.mp4', [OrderController::class, 'timelapse'])->name('farm.orders.timelapse');
     Route::get('/farm/orders/{order}/short.mp4', [OrderController::class, 'short'])->name('farm.orders.short');
 });
+// a print video for Instagram to fetch (signed address that expires; App\Domain\Social\VideoSharer)
+Route::get('/social/videos/{video}.mp4', [SocialVideoController::class, 'show'])->whereNumber('video')->middleware('signed')->name('social.video');
 
 // ── JSON API used by the calculator ──────────────────────────────────────────
 // Every "throttle:N,1" below carries its own prefix: without one Laravel counts all of them on ONE key per visitor,
@@ -459,6 +462,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/youtube')->name('admin.
     Route::post('/videos/{video}/reject', [$yt, 'reject'])->name('reject');
     Route::post('/videos/{video}/retry', [$yt, 'retry'])->name('retry');
     Route::post('/videos/{video}/replace', [$yt, 'replace'])->name('replace');
+    Route::post('/videos/{video}/share/{platform}/retry', [$yt, 'shareRetry'])->name('share_retry');
     Route::post('/stats', [$yt, 'stats'])->name('stats');
     Route::post('/showcase', [$yt, 'showcase'])->name('showcase');
 });

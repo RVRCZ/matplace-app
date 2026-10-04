@@ -5,15 +5,18 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Farm\FarmRefusal;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\TestPhotos;
+use App\Domain\Social\VideoSharer;
 use App\Domain\YouTube\FarmVideos;
 use App\Domain\YouTube\ShowcasePrints;
 use App\Domain\YouTube\YouTubeClient;
 use App\Domain\YouTube\YouTubeError;
+use App\Engines\Social\MetaClient;
 use App\Http\Controllers\Controller;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrinterSlot;
 use App\Models\FarmVideo;
+use App\Models\SocialPost;
 use App\Models\YouTubeAccount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,7 +28,16 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 /** /admin/youtube: connect the channel, approve (publish) or reject the print videos customers agreed to share. */
 class YouTubeController extends Controller
 {
-    public function __construct(private readonly YouTubeClient $youtube, private readonly FarmVideos $videos, private readonly TestPhotos $photos) {}
+    public function __construct(private readonly YouTubeClient $youtube, private readonly FarmVideos $videos, private readonly TestPhotos $photos, private readonly MetaClient $meta) {}
+
+    /** A failed Facebook / Instagram post is tried again at the next run. */
+    public function shareRetry(FarmVideo $video, string $platform, VideoSharer $sharer): RedirectResponse
+    {
+        abort_unless(in_array($platform, ['facebook', 'instagram'], true), 404);
+        $sharer->retry($video, $platform);
+
+        return back()->with('status', 'Zkusíme to znovu během pěti minut.');
+    }
 
     public function index(): View
     {
@@ -41,6 +53,9 @@ class YouTubeController extends Controller
                 ->mapWithKeys(fn ($v) => [$v->farm_order_id => $v->order ? $this->photos->finishIndex($v->order) : null])->all(),
             'done' => $videos->whereIn('status', [FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN]),
             'nextSlot' => $this->videos->nextSlot()->timezone((string) config('youtube.publish_timezone', 'Europe/Prague')),
+            // the Facebook page / Instagram: offered at the approval when Meta is connected, and what came of it per video
+            'metaAvailable' => $this->meta->available(),
+            'shares' => SocialPost::where('subject_type', VideoSharer::SUBJECT)->get()->groupBy('subject_id'),
             'showcases' => FarmOrder::with(['color.material', 'printer', 'video'])->where('kind', FarmOrder::KIND_SHOWCASE)->latest('id')->limit(10)->get(),
             'slots' => FarmPrinterSlot::with(['color.material', 'printer'])->whereNotNull('farm_color_id')
                 ->whereHas('printer', fn ($q) => $q->where('enabled', true)->where('mode', FarmPrinter::MODE_AGENT))->orderBy('farm_printer_id')->orderBy('slot')->get(),
@@ -107,9 +122,11 @@ class YouTubeController extends Controller
 
     public function publish(Request $request, FarmVideo $video): RedirectResponse
     {
-        $data = $request->validate(['title' => ['required', 'string', 'max:100'], 'description' => ['nullable', 'string', 'max:5000'], 'when' => ['nullable', 'in:slot,now']]);
+        $data = $request->validate(['title' => ['required', 'string', 'max:100'], 'description' => ['nullable', 'string', 'max:5000'], 'when' => ['nullable', 'in:slot,now'],
+            'share' => ['nullable', 'array'], 'share.*' => ['in:facebook,instagram']]);
         try {
-            $video = $this->videos->publish($video, $data['title'], (string) ($data['description'] ?? ''), $request->user()->id, now: ($data['when'] ?? 'slot') === 'now');
+            $video = $this->videos->publish($video, $data['title'], (string) ($data['description'] ?? ''), $request->user()->id, now: ($data['when'] ?? 'slot') === 'now',
+                share: $request->has('share_choice') ? (array) ($data['share'] ?? []) : null);
         } catch (YouTubeError $e) {
             return back()->with('error', $e->reason === 'locked_private'
                 ? 'YouTube nechal video soukromé. Dokud neprojde audit API projektu, jde video zveřejnit jen ručně v YouTube Studiu.'

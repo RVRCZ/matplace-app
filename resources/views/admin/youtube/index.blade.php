@@ -134,6 +134,15 @@
                         <label class="flex items-center gap-1"><input type="radio" name="when" value="slot" checked class="accent-action"> zveřejnit v nejbližším volném termínu: <strong>{{ $when($nextSlot) }}</strong></label>
                         <label class="flex items-center gap-1"><input type="radio" name="when" value="now" class="accent-action"> hned</label>
                     </div>
+                    @if($metaAvailable)
+                        @php($chosen = $v->share ?? ['facebook', 'instagram'])
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-700">
+                            <input type="hidden" name="share_choice" value="1">
+                            <span class="text-slate-500">Ve stejný čas také:</span>
+                            <label class="flex items-center gap-1"><input type="checkbox" name="share[]" value="facebook" @checked(in_array('facebook', $chosen, true)) class="accent-action"> Facebook stránka (video)</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" name="share[]" value="instagram" @checked(in_array('instagram', $chosen, true)) class="accent-action"> Instagram (Reel)</label>
+                        </div>
+                    @endif
                     <button class="btn-primary text-sm">{{ $v->status === 'pending' ? 'Nahrát na YouTube a zveřejnit' : 'Zveřejnit na YouTube' }}</button>
                 </form>
             @endif
@@ -179,6 +188,25 @@
                 @if($v->score !== null)<span class="text-xs text-slate-500">· zajímavost {{ $v->score }}</span>@endif
                 @if($v->views !== null)<span class="text-xs text-slate-600">· {{ number_format($v->views, 0, ',', ' ') }} zhlédnutí · {{ $v->likes === null ? '–' : number_format($v->likes, 0, ',', ' ') }} lajků</span>@endif
                 @if($v->error)<span class="block text-xs text-red-700">{{ $v->error }}</span>@endif
+                @if($v->share)
+                    <span class="block text-xs">
+                        @foreach($v->share as $platform)
+                            @php($sp = ($shares[$v->id] ?? collect())->firstWhere('platform', $platform))
+                            @php($name = $platform === 'instagram' ? 'Instagram' : 'Facebook')
+                            @if(! $sp)
+                                <span class="text-slate-500">{{ $name }}: po zveřejnění</span>
+                            @elseif($sp->status === 'posted')
+                                <span class="text-ok">{{ $name }} ✓</span>
+                            @elseif($sp->status === 'failed')
+                                <span class="text-red-700">{{ $name }} ✗ {{ $sp->error }}</span>
+                                <form method="post" action="{{ route('admin.youtube.share_retry', [$v, $platform]) }}" class="inline">@csrf<button class="underline">zkusit znovu</button></form>
+                            @else
+                                <span class="text-slate-500">{{ $name }}: odesílá se</span>
+                            @endif
+                            @if(! $loop->last) · @endif
+                        @endforeach
+                    </span>
+                @endif
             </span>
             <span class="flex gap-2">
                 @if($v->status === 'scheduled')
