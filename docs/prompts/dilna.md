@@ -1,9 +1,11 @@
 # Zadání: počítač v dílně – farma matplace (agent, foto-box, Claude Code)
 
-Datum: 4. 10. 2026. Tohle je první prompt pro Claude Code na **počítači v dílně**, kam se stěhuje router farmy
-s tiskárnami. Vývojový počítač (repozitáře, nasazování na server, relay pro import z Printables) zůstává doma;
-tenhle počítač jen **provozuje farmu**: běží na něm agent tiskáren a slouží k foto-boxu. Kód se tu nevyvíjí – změny
-agenta vznikají na vývojovém počítači a sem se jen zkopírují / stáhnou.
+Datum: 4. 10. 2026. Tohle je první prompt pro Claude Code na **počítači v dílně**, kam se stěhuje dosavadní router
+farmy (bez tiskáren – ty tři Kobry zůstávají doma na novém routeru se stejnou sítí a obsluhuje je dál agent na
+vývojovém počítači). Dílna bude **druhé stanoviště farmy**: vlastní agent „Dílna“ pro tiskárny, které tam
+přibudou, a foto-box. Vývojový počítač (repozitáře, nasazování na server, relay pro import z Printables) zůstává doma;
+tenhle počítač jen **provozuje farmu**. Kód se tu nevyvíjí – změny agenta vznikají na vývojovém počítači a sem se jen
+zkopírují / stáhnou.
 
 ## Co je co
 
@@ -12,16 +14,15 @@ agenta vznikají na vývojovém počítači a sem se jen zkopírují / stáhnou.
 - **Farm agent** (`agent/` v repu `RVRCZ/matplace-app`, Python 3.11) – malá služba, která běží v síti u tiskáren,
   polluje matplace (jen odchozí HTTPS), stahuje G‑code a mluví s tiskárnami lokálně přes Moonraker (Rinkhals).
   Tisk nikdy nezačne sám – jen po potvrzení „podložka je volná“ v administraci. Dokumentace: `agent/README.md`.
-- **Tiskárny** (síť routeru farmy, pevné IP podle MAC v routeru, Wi‑Fi 2,4 GHz, SSID se nemění, takže se po
-  přestěhování připojí samy):
-
-  | klíč v adminu | tiskárna | IP | poznámka |
-  |---|---|---|---|
-  | `kobra-s1-01` | Anycubic Kobra S1 Combo (Rinkhals) | 192.168.1.101 | kamera Rinkhals, světlo `chamber_light` |
-  | `kobra-3-max-01` | Anycubic Kobra 3 Max Combo (Rinkhals) | 192.168.1.102 | USB kamera přes Rinkhals, světlo `head_light` |
-  | `kobra-s1-02` | Anycubic Kobra S1 #2 | 192.168.1.103 | **ještě stock firmware** – Moonraker :7125 neodpovídá, bude offline, dokud na ni nepřijde Rinkhals |
-
-  Zkouška, že počítač tiskárnu vidí: `curl http://192.168.1.101:7125/server/info` vrátí JSON.
+- **Tiskárny doma** (zůstávají, agent „Agent1 S1“ na vývojovém počítači, síť 192.168.1.x): `kobra-s1-01`
+  (.101), `kobra-3-max-01` (.102), `kobra-s1-02` (.103, stock firmware, offline). **Těch se tady nedotýkej** – v adminu
+  je nech u původního agenta.
+- **Tiskárny v dílně** přibudou: každá dostane v `/admin/farm/printers` vlastní klíč, režim *Automaticky přes agenta*
+  a agenta „Dílna“; v routeru dílny pevnou IP podle MAC; Anycubic s Rinkhals = ovladač `moonraker`
+  (`http://IP:7125`, kamera `http://IP/webcam/?action=snapshot`), Prusa = ovladač `prusalink` (až vznikne,
+  zadání `docs/prompts/prusa.md`). Zkouška, že počítač tiskárnu vidí: `curl http://IP:7125/server/info` vrátí JSON.
+  Dokud v dílně žádná tiskárna není, agent se spustí s jedním blokem `driver: mock` (viz README „Zkouška bez
+  tiskárny“), aby bylo vidět, že spojení se serverem funguje.
 - **Foto-box** – tři USB kamery (shora, zleva, zprava) připojené k tomuto počítači; stránka
   `https://matplace.com/admin/farm/photobox` je obsluhuje přímo z prohlížeče (kamery si prohlížeč pamatuje).
   Fotky hotových kusů končí na konci videí na YouTube/Facebooku.
@@ -37,14 +38,15 @@ agenta vznikají na vývojovém počítači a sem se jen zkopírují / stáhnou.
    (LAN port), ne na dílenskou Wi‑Fi – jinak tiskárny neuvidí. Zkontroluj, že router farmy nemá zapnutou
    izolaci klientů a tiskárny nejsou v síti pro hosty.
 3. **Nový token agenta**: Roman ho vytvoří v `https://matplace.com/admin/farm/agents` → *Vytvořit a zobrazit token*
-   (jméno „Dílna“) a u všech tří tiskáren v `/admin/farm/printers` přepne agenta na „Dílna“. Token se ukáže
-   jen jednou; Roman ti ho **vloží do `C:\farm-agent\config.yaml` sám**, nebo ti ho dá a ty ho tam zapíšeš.
-   **Token nikdy nevypisuj** do chatu, logu ani jiného souboru.
+   (jméno „Dílna“). Tiskárny dílny v `/admin/farm/printers` dostanou tohoto agenta; domácí Kobry zůstávají u
+   „Agent1 S1“. Token se ukáže jen jednou; Roman ti ho **vloží do `C:\farm-agent\config.yaml` sám**, nebo ti ho
+   dá a ty ho tam zapíšeš. **Token nikdy nevypisuj** do chatu, logu ani jiného souboru.
 4. **Zdroj kódu**: na flashce (D:\matplace-dilna\agent – složka agenta připravená na vývojovém počítači), nebo
    klon repozitáře `git@github.com:RVRCZ/matplace-app.git` (soukromý: Roman musí na GitHub přidat SSH klíč
    tohoto počítače jako *deploy key*, jen čtení). Pro provoz stačí flashka.
 5. **Přihlášení**: účet Claude (claude.ai) pro Claude Code a admin účet matplace v prohlížeči.
-6. Že jsou **tiskárny zapnuté** a připojené (na displeji Kobry v LAN módu svítí IP).
+6. Které **tiskárny v dílně** budou (model, IP, Rinkhals/PrusaLink), a že jsou zapnuté (na displeji Kobry v LAN
+   módu svítí IP). Když zatím žádná, jede se s `mock`.
 
 ## Postup
 
@@ -73,17 +75,14 @@ cd C:\farm-agent
 copy config.yaml.template config.yaml       # pak doplnit token (viz bod 3 výše)
 ```
 
-`config.yaml`: `server: https://matplace.com` (ne beta!), `token: ...`, `work_dir: C:/farm-agent/work`, bloky
-tří tiskáren tak, jak jsou v šabloně (IP 101–103, `snapshot_url`, u Maxu `light_device: head_light`).
+`config.yaml`: `server: https://matplace.com` (ne beta!), `token: ...`, `work_dir: C:/farm-agent/work`, pak
+**jen tiskárny dílny** – bloky domácích Kober ze šablony **smaž** (ty obsluhuje domácí agent; stejný klíč u dvou
+agentů dělá zmatek). Bez tiskárny nech jeden blok `driver: mock`.
 Pak **jako správce**: `powershell -ExecutionPolicy Bypass -File C:\farm-agent\install-farma.ps1` – založí venv,
 nainstaluje knihovny, vypne usínání, ověří tiskárny v síti, spustí `--check` (nic nespouští; vypíše stav tiskáren
 a zda server token přijal) a založí úlohu Plánovače **matplace-farm-agent** (start s počítačem jako SYSTEM, restart
-po pádu). Výpis: `C:\farm-agent\agent.log`. Ověření: v `/admin/farm/printers` jsou kobra-s1-01 a kobra-3-max-01
-do minuty **online** (s1-02 offline je v pořádku, viz tabulka).
-
-Teprve potom Roman na **vývojovém počítači** starého agenta zastaví (`Stop-ScheduledTask matplace-farm-agent;
-Disable-ScheduledTask matplace-farm-agent`) a v `/admin/farm/agents` starý token „Agent1 S1“ zneplatní. Dva
-agenti se stejnými tiskárnami najednou běžet nesmějí.
+po pádu). Výpis: `C:\farm-agent\agent.log`. Ověření: v `/admin/farm/agents` má „Dílna“ čerstvý heartbeat a tiskárny
+dílny jsou v `/admin/farm/printers` do minuty **online**. Domácí agent běží dál, nic na něm neměň.
 
 ### 4. Foto-box
 
@@ -118,6 +117,6 @@ nemá heslo.
 
 ## Hotovo, když
 
-`/admin/farm/printers`: obě Rinkhals tiskárny online z agenta „Dílna“, starý agent vypnutý a zneplatněný,
-zkušební tisk prošel do *Hotovo* se snímky, foto-box fotí všemi třemi kamerami, úloha Plánovače přežije restart
-počítače (vyzkoušet restartem).
+`/admin/farm/agents`: „Dílna“ online; tiskárny dílny (nebo mock) online a zkušební tisk prošel do *Hotovo* se
+snímky; domácí Kobry dál online u „Agent1 S1“; foto-box fotí všemi třemi kamerami; úloha Plánovače přežije
+restart počítače (vyzkoušet restartem).
