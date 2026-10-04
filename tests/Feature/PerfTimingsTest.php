@@ -97,4 +97,9 @@ class PerfTimingsTest extends TestCase
             ['started' => 0, 'finished' => 6], ['started' => 2, 'finished' => 8], ['started' => 5, 'finished' => 9], ['started' => 9, 'finished' => 12],
         ]));
     }
+
+    public function test_the_bench_wants_files(): void
+    {
+        $this->artisan('matplace:perf-bench')->expectsOutputToContain('Give uuids')->assertFailed();
+    }
 }
