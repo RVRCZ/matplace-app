@@ -36,6 +36,9 @@ return [
         'xvfb' => env('ORCA_XVFB', true),
         'work_dir' => env('ORCA_WORK_DIR', storage_path('app/slicer')),
         'timeout' => (int) env('ORCA_TIMEOUT', 180),
+        // the same mesh + parameters + profiles + slicer = the same G-code: kept in work_dir/cache (App\Engines\Slicer\CachedSlicer)
+        'cache' => (bool) env('ORCA_CACHE', true),
+        'cache_mb' => (int) env('ORCA_CACHE_MB', 3000),
         // printer catalogue for 3MF projects: vendor presets shipped with OrcaSlicer
         'vendor_profiles' => env('ORCA_VENDOR_PROFILES', '/opt/orca/squashfs-root/resources/profiles'),
         'catalog' => storage_path('app/printer_catalog.json'),
