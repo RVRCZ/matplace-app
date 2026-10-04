@@ -3,6 +3,7 @@
 namespace App\Domain\YouTube;
 
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Social\VideoSharer;
 use App\Jobs\UploadFarmVideo;
 use App\Mail\FarmAdminAlert;
 use App\Models\FarmOrder;
@@ -133,7 +134,7 @@ class FarmVideos
     public function publish(FarmVideo $video, string $title, string $description, int $adminId, bool $now = false, ?array $share = null): FarmVideo
     {
         if ($share !== null) {
-            $video->share = array_values(array_intersect(['facebook', 'instagram'], $share));   // where else it goes (VideoSharer), once public
+            $video->share = array_values(array_intersect(VideoSharer::PLATFORMS, $share));   // where else it goes (VideoSharer), once public
         }
         if (! $video->youtube_id && in_array($video->status, [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED], true)) {
             $video->update(['title' => $title, 'description' => $description, 'status' => FarmVideo::STATUS_QUEUED, 'error' => null,

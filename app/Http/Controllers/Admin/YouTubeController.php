@@ -22,6 +22,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -33,7 +34,7 @@ class YouTubeController extends Controller
     /** A failed Facebook / Instagram post is tried again at the next run. */
     public function shareRetry(FarmVideo $video, string $platform, VideoSharer $sharer): RedirectResponse
     {
-        abort_unless(in_array($platform, ['facebook', 'instagram'], true), 404);
+        abort_unless(in_array($platform, VideoSharer::PLATFORMS, true), 404);
         $sharer->retry($video, $platform);
 
         return back()->with('status', 'Zkusíme to znovu během pěti minut.');
@@ -123,7 +124,7 @@ class YouTubeController extends Controller
     public function publish(Request $request, FarmVideo $video): RedirectResponse
     {
         $data = $request->validate(['title' => ['required', 'string', 'max:100'], 'description' => ['nullable', 'string', 'max:5000'], 'when' => ['nullable', 'in:slot,now'],
-            'share' => ['nullable', 'array'], 'share.*' => ['in:facebook,instagram']]);
+            'share' => ['nullable', 'array'], 'share.*' => [Rule::in(VideoSharer::PLATFORMS)]]);
         try {
             $video = $this->videos->publish($video, $data['title'], (string) ($data['description'] ?? ''), $request->user()->id, now: ($data['when'] ?? 'slot') === 'now',
                 share: $request->has('share_choice') ? (array) ($data['share'] ?? []) : null);

@@ -38,8 +38,9 @@ nahrání se vezme další volný. Admin může u každého videa zvolit „hned
 
 ## Facebook stránka a Instagram (doplněno)
 
-Při schválení jsou zaškrtnuté **Facebook stránka (video)** a **Instagram (Reel)** (jen když je Meta připojená,
-`MetaClient::available`). Volba se uloží do `farm_videos.share`; `social:videos` (každých 5 minut,
+Při schválení jsou zaškrtnuté **Facebook stránka (video)**, **Facebook příspěvek s odkazem na matplace.com**
+(`facebook_link`: text + klikací odkaz s UTM `utm_campaign=video`, náhledová karta z OG obrázku webu; u videa je
+odkaz jen text) a **Instagram (Reel)** (jen když je Meta připojená, `MetaClient::available`). Volba se uloží do `farm_videos.share`; `social:videos` (každých 5 minut,
 `App\Domain\Social\VideoSharer`) pošle video ve chvíli, kdy je veřejné na YouTube (stav `published`, nebo
 `scheduled` s prošlým termínem) — tedy ve stejném večerním slotu. Facebook dostane soubor videa
 (`graph-video.facebook.com/{page}/videos`, krátké čtvercové/na výšku ukáže jako Reel), Instagram Reel z podepsané

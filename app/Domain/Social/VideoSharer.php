@@ -20,6 +20,9 @@ final class VideoSharer
 {
     public const SUBJECT = 'farm_video';
 
+    /** facebook = the video on the page, facebook_link = a post with a clickable link to the site, instagram = a Reel */
+    public const PLATFORMS = ['facebook', 'facebook_link', 'instagram'];
+
     public function __construct(private readonly MetaClient $meta, private readonly FarmVideos $videos) {}
 
     /** The videos whose time has come: public on YouTube (or past the slot YouTube flips them at) with a platform still waiting. */
@@ -55,9 +58,12 @@ final class VideoSharer
             $post = SocialPost::create(['platform' => $platform, 'subject_type' => self::SUBJECT, 'subject_id' => $video->id, 'text' => $text,
                 'link' => $video->watchUrl(), 'status' => SocialPost::STATUS_DRAFT, 'created_by' => $video->decided_by]);
             try {
-                $id = $platform === 'instagram'
-                    ? $this->meta->postReelToInstagram(URL::temporarySignedRoute('social.video', now()->addDays(2), ['video' => $video->id]), $text)
-                    : $this->meta->postVideoToPage(Storage::disk(config('farm.disk'))->path($this->videos->file($order)), (string) $video->title, (string) $video->description);
+                $id = match ($platform) {
+                    'instagram' => $this->meta->postReelToInstagram(URL::temporarySignedRoute('social.video', now()->addDays(2), ['video' => $video->id]), $text),
+                    // a plain post with a clickable link to the site (the video post's link is only text); the preview card is the site's OG picture
+                    'facebook_link' => $this->meta->postToPage($text, $this->siteLink($post)),
+                    default => $this->meta->postVideoToPage(Storage::disk(config('farm.disk'))->path($this->videos->file($order)), (string) $video->title, (string) $video->description),
+                };
                 $post->update(['status' => SocialPost::STATUS_POSTED, 'external_id' => $id, 'posted_at' => now()]);
                 $n++;
             } catch (MetaFailed $e) {
@@ -73,6 +79,15 @@ final class VideoSharer
         }
 
         return $n;
+    }
+
+    /** The site with the campaign tags of a video post, written on the row too. */
+    private function siteLink(SocialPost $post): string
+    {
+        $link = rtrim((string) config('app.url'), '/').'/?'.http_build_query(['utm_source' => 'facebook', 'utm_medium' => 'social', 'utm_campaign' => 'video']);
+        $post->update(['link' => $link]);
+
+        return $link;
     }
 
     /** Forget a failed attempt so the next run tries that platform again. */

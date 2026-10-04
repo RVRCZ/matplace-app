@@ -135,11 +135,12 @@
                         <label class="flex items-center gap-1"><input type="radio" name="when" value="now" class="accent-action"> hned</label>
                     </div>
                     @if($metaAvailable)
-                        @php($chosen = $v->share ?? ['facebook', 'instagram'])
+                        @php($chosen = $v->share ?? ['facebook', 'facebook_link', 'instagram'])
                         <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-700">
                             <input type="hidden" name="share_choice" value="1">
                             <span class="text-slate-500">Ve stejný čas také:</span>
                             <label class="flex items-center gap-1"><input type="checkbox" name="share[]" value="facebook" @checked(in_array('facebook', $chosen, true)) class="accent-action"> Facebook stránka (video)</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" name="share[]" value="facebook_link" @checked(in_array('facebook_link', $chosen, true)) class="accent-action"> Facebook příspěvek s odkazem na matplace.com</label>
                             <label class="flex items-center gap-1"><input type="checkbox" name="share[]" value="instagram" @checked(in_array('instagram', $chosen, true)) class="accent-action"> Instagram (Reel)</label>
                         </div>
                     @endif
@@ -192,7 +193,7 @@
                     <span class="block text-xs">
                         @foreach($v->share as $platform)
                             @php($sp = ($shares[$v->id] ?? collect())->firstWhere('platform', $platform))
-                            @php($name = $platform === 'instagram' ? 'Instagram' : 'Facebook')
+                            @php($name = ['instagram' => 'Instagram', 'facebook_link' => 'FB odkaz'][$platform] ?? 'Facebook')
                             @if(! $sp)
                                 <span class="text-slate-500">{{ $name }}: po zveřejnění</span>
                             @elseif($sp->status === 'posted')

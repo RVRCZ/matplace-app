@@ -416,23 +416,24 @@ class YouTubeVideosTest extends TestCase
         $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Facebook stránka (video)')->assertSee('Instagram (Reel)');
 
         // approved for YouTube now, Facebook and Instagram ticked: they follow once the video is public
-        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza', 'description' => 'Popis', 'when' => 'now', 'share_choice' => 1, 'share' => ['facebook', 'instagram']])->assertRedirect();
-        $this->assertSame([FarmVideo::STATUS_PUBLISHED, ['facebook', 'instagram']], [$video->refresh()->status, $video->share]);
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza', 'description' => 'Popis', 'when' => 'now', 'share_choice' => 1, 'share' => ['facebook', 'facebook_link', 'instagram']])->assertRedirect();
+        $this->assertSame([FarmVideo::STATUS_PUBLISHED, ['facebook', 'facebook_link', 'instagram']], [$video->refresh()->status, $video->share]);
         $this->assertSame([], FakeMetaClient::$posts, 'nothing before the scheduler runs');
 
-        $this->artisan('social:videos')->expectsOutputToContain('posted: 2')->assertSuccessful();
-        $this->assertSame(['facebook_video', 'instagram_reel'], array_column(FakeMetaClient::$posts, 'platform'));
+        $this->artisan('social:videos')->expectsOutputToContain('posted: 3')->assertSuccessful();
+        $this->assertSame(['facebook_video', 'facebook', 'instagram_reel'], array_column(FakeMetaClient::$posts, 'platform'));
         $this->assertStringEndsWith('timelapse.mp4', FakeMetaClient::$posts[0]['image'], 'the page gets the file itself');
         $this->assertStringContainsString("Váza\n\nPopis", FakeMetaClient::$posts[0]['message']);
-        $reelUrl = FakeMetaClient::$posts[1]['image'];
+        $this->assertSame(url('/').'/?utm_source=facebook&utm_medium=social&utm_campaign=video', FakeMetaClient::$posts[1]['link'], 'the link post points at the site');
+        $reelUrl = FakeMetaClient::$posts[2]['image'];
         $this->assertStringContainsString("/social/videos/{$video->id}.mp4?", $reelUrl, 'Instagram fetches the video from a signed address');
         $this->get($reelUrl)->assertOk()->assertHeader('Content-Type', 'video/mp4');
         $this->get("/social/videos/{$video->id}.mp4")->assertForbidden();
         $posts = SocialPost::where('subject_type', 'farm_video')->where('subject_id', $video->id)->orderBy('id')->get();
-        $this->assertSame(['facebook' => 'posted', 'instagram' => 'posted'], $posts->pluck('status', 'platform')->all());
-        $this->assertSame(['facebook_video_1', 'instagram_reel_2'], $posts->pluck('external_id')->all());
+        $this->assertSame(['facebook' => 'posted', 'facebook_link' => 'posted', 'instagram' => 'posted'], $posts->pluck('status', 'platform')->all());
+        $this->assertSame(['facebook_video_1', 'facebook_2', 'instagram_reel_3'], $posts->pluck('external_id')->all());
         $this->artisan('social:videos')->expectsOutputToContain('posted: 0');   // done is done
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Facebook ✓')->assertSee('Instagram ✓');
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Facebook ✓')->assertSee('FB odkaz ✓')->assertSee('Instagram ✓');
 
         // a refusal is kept for the admin; "try again" asks once more at the next run
         $other = $this->paidOrder(consent: true);
