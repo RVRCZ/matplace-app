@@ -15,12 +15,15 @@ use App\Models\Event;
  *
  * A step counts the visitors (browser sessions) who did it and every step before it, inside the chosen period.
  * The same numbers are broken down by where the visit came from, by language and by tool.
+ *
+ * Visitors are people (docs/O.md): a session whose visit was a robot's, the staff's, or — since visits are confirmed
+ * by the browser — never confirmed, is left out with everything it did.
  */
 final class Funnel
 {
     public const PERIODS = [7, 30, 90];
 
-    public const SOURCES = ['google', 'seznam', 'bing', 'facebook', 'instagram', 'designer', 'direct', 'other'];
+    public const SOURCES = ['google', 'seznam', 'bing', 'facebook', 'instagram', 'youtube', 'designer', 'direct', 'other'];
 
     /** path → steps; a step is the marks that satisfy it */
     public const PATHS = [
@@ -131,14 +134,21 @@ final class Funnel
     private function sessions(int $days): array
     {
         $sessions = [];
+        $out = [];
+        $confirmed = Humans::since();
         $since = now()->subDays($days);
         $ofUser = Event::where('created_at', '>=', $since)->whereNotNull('session_id')->whereNotNull('user_id')
             ->selectRaw('user_id, max(session_id) as session_id')->groupBy('user_id')->pluck('session_id', 'user_id');
         Event::where('created_at', '>=', $since)->where(fn ($q) => $q->whereNotNull('session_id')->orWhereNotNull('user_id'))->orderBy('id')
-            ->select(['id', 'session_id', 'user_id', 'type', 'subject_type', 'source', 'locale', 'meta'])
-            ->chunk(5000, function ($events) use (&$sessions, $ofUser) {
+            ->select(['id', 'created_at', 'session_id', 'user_id', 'type', 'subject_type', 'source', 'locale', 'meta'])
+            ->chunk(5000, function ($events) use (&$sessions, &$out, $ofUser, $confirmed) {
                 foreach ($events as $e) {
-                    $s = &$sessions[$e->session_id ?? $ofUser[$e->user_id] ?? 'u'.$e->user_id];
+                    $key = $e->session_id ?? $ofUser[$e->user_id] ?? 'u'.$e->user_id;
+                    $meta = (array) $e->meta;
+                    if (! empty($meta['staff']) || ($e->type === Event::VISIT && (! empty($meta['bot']) || ($confirmed && $e->created_at >= $confirmed && empty($meta['js']) && empty($meta['act']))))) {
+                        $out[$key] = true;
+                    }
+                    $s = &$sessions[$key];
                     // where the visit came from and its language are those of its first event
                     $s ??= ['source' => (string) ($e->source ?: 'other'), 'locale' => (string) ($e->locale ?: 'cs'), 'marks' => ['visit' => true], 'tools' => []];
                     $mark = match (true) {
@@ -155,6 +165,6 @@ final class Funnel
                 }
             });
 
-        return $sessions;
+        return array_diff_key($sessions, $out);
     }
 }

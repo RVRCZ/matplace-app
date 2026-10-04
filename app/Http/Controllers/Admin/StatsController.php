@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Stats\AiActivity;
 use App\Domain\Stats\Funnel;
+use App\Domain\Stats\Overview;
 use App\Http\Controllers\Controller;
 use App\Models\SearchQuery;
 use App\Support\Locales;
@@ -14,19 +15,20 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * /admin/stats: what visitors do (three funnels from our own events, by source, language and tool, and what each
+ * /admin/stats: the owner's overview (people without robots, sources, pages, the short funnel, missing addresses,
+ * robots), what visitors do (three funnels from our own events, by source, language and tool, and what each
  * designer's links brought), what the AI costs, and what people search for.
  */
 class StatsController extends Controller
 {
-    public function funnel(Request $request, Funnel $funnel): View
+    public function funnel(Request $request, Funnel $funnel, Overview $overview): View
     {
-        $days = (int) $request->query('days', 30);
+        $days = in_array((int) $request->query('days'), Funnel::PERIODS, true) ? (int) $request->query('days') : 7;
         $source = in_array($request->query('source'), Funnel::SOURCES, true) ? (string) $request->query('source') : null;
         $locale = in_array($request->query('locale'), Locales::SUPPORTED, true) ? (string) $request->query('locale') : null;
         $tool = in_array($request->query('tool'), ToolSeo::tools(), true) ? (string) $request->query('tool') : null;
 
-        return view('admin.stats.funnel', ['stats' => $funnel->compute($days, $source, $locale, $tool), 'source' => $source, 'locale' => $locale, 'tool' => $tool, 'tools' => ToolSeo::tools()]);
+        return view('admin.stats.funnel', ['stats' => $funnel->compute($days, $source, $locale, $tool), 'o' => $overview->compute($days), 'source' => $source, 'locale' => $locale, 'tool' => $tool, 'tools' => ToolSeo::tools()]);
     }
 
     public function ai(Request $request, AiActivity $activity): View

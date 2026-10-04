@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\ForwardEvents;
 use App\Http\Middleware\GuardModelFile;
 use App\Http\Middleware\LegacyRedirects;
+use App\Http\Middleware\RecordMissing;
 use App\Http\Middleware\RecordVisit;
 use App\Http\Middleware\RememberReferral;
 use App\Http\Middleware\SetLocale;
@@ -41,6 +42,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         // addresses of the old site are answered before routing (config/legacy.php)
         $middleware->prepend(LegacyRedirects::class);
+        // what neither the old nor the new site answers to is collected for a decision (admin: statistics)
+        $middleware->append(RecordMissing::class);
         // written by the cookie bar in the browser: a plain value
         $middleware->encryptCookies(except: [Consent::COOKIE]);
         // mp_sid is a plain random token (never encrypted) so the value survives across app-key rotations and tests

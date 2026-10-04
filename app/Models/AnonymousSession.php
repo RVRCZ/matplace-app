@@ -14,7 +14,7 @@ class AnonymousSession extends Model
 
     protected $fillable = ['token', 'ip', 'user_agent', 'claimed_by_user_id', 'last_seen_at'];
 
-    protected $casts = ['last_seen_at' => 'datetime'];
+    protected $casts = ['last_seen_at' => 'datetime', 'staff' => 'bool'];
 
     public static function start(?string $ip, ?string $userAgent): self
     {

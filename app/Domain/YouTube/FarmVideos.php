@@ -496,7 +496,8 @@ class FarmVideos
             'color' => $order->color?->displayName() ?? '',
             'printer' => $order->printer?->model ?: ($order->printer?->name ?? ''),
             'time' => $minutes >= 60 ? intdiv($minutes, 60).' h '.($minutes % 60).' min' : $minutes.' min',
-            'url' => rtrim((string) config('app.url'), '/'),
+            // marked, so the people a video brings can be counted (YouTube often sends no referrer)
+            'url' => rtrim((string) config('app.url'), '/').'/?utm_source=youtube&utm_medium=social&utm_campaign=video',
         ];
     }
 }

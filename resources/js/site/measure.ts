@@ -1,5 +1,7 @@
 /**
- * Measurement in the browser. Our own statistics are written by the server and need nothing here. Google Analytics 4
+ * Measurement in the browser. Our own statistics are written by the server; the only thing asked of the browser is
+ * to say "a page was really shown" (seen(): one small request without any data about the visitor), which is how
+ * people are told from robots that never run a script. Google Analytics 4
  * and the Meta pixel are third parties: they are loaded only after the visitor allowed them in the cookie bar, and
  * they hear about the same events the server records:
  *
@@ -145,7 +147,18 @@ function watchClicks(): void {
     });
 }
 
+/** Tell our own statistics that a browser showed this page. No cookie of its own, no consent needed: nothing personal goes. */
+function seen(): void {
+    if ((navigator as Navigator & { webdriver?: boolean }).webdriver) return;   // an automated browser is a robot too
+    const body = new URLSearchParams({ path: location.pathname });
+    try {
+        if (navigator.sendBeacon?.('/api/seen', body)) return;
+    } catch { /* fall through to fetch */ }
+    void fetch('/api/seen', { method: 'POST', body, keepalive: true, credentials: 'same-origin' }).catch(() => undefined);
+}
+
 export function bootMeasure(): void {
+    seen();
     bar();
     watchFetch();
     watchClicks();
