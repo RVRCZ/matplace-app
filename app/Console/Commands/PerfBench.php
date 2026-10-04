@@ -79,7 +79,7 @@ class PerfBench extends Command
         fclose($fh);
         File::delete((string) $r->gcodePath);
 
-        return ['seconds' => $seconds, 'triangles' => $file->triangles, 'timings' => $r->timings, 'grams' => $r->grams, 'minutes' => $r->minutes,
+        return ['seconds' => $seconds, 'triangles' => $file->triangles, 'timings' => property_exists($r, 'timings') ? $r->timings : [], 'grams' => $r->grams, 'minutes' => $r->minutes,
             'gcode' => substr(hash_final($hash), 0, 16)];
     }
 }
