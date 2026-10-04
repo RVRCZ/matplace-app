@@ -31,7 +31,8 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Farm order: uploaded → sliced. Check and repair the mesh, turn it for the plate, slice it with the printer's and the
  * material's profile, store the G-code with everything needed to produce it again, price it.
- * Waits (by re-queueing) until the model file itself is processed, like SliceCalculation.
+ * Started when the order is made and again by ProcessModelFile when its file is ready, like SliceCalculation; two
+ * copies never run at once (WithoutOverlapping), and the later one finds the order no longer "uploaded".
  */
 class PrepareFarmOrder implements ShouldQueue
 {
@@ -48,6 +49,7 @@ class PrepareFarmOrder implements ShouldQueue
 
     public function __construct(public readonly int $orderId)
     {
+        $this->onQueue(config('queue.interactive'));
         $this->queuedAt = microtime(true);
     }
 
@@ -70,9 +72,7 @@ class PrepareFarmOrder implements ShouldQueue
             return;
         }
         if (! $file->isReady()) {
-            $this->release($this->backoff);
-
-            return;
+            return;   // ProcessModelFile starts it again when the file is ready (or fails it when the file failed)
         }
         $printer = $order->printer;
         if (! $printer) {

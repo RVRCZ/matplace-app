@@ -12,14 +12,15 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
-/** Precise slice for one calculation. Waits (by re-queueing) until the model file is processed. */
+/**
+ * Precise slice for one calculation. Dispatched when the calculation is made and again by ProcessModelFile when its
+ * file is ready (instead of asking every three seconds); the copy that claims the calculation slices it.
+ */
 class SliceCalculation implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 40;      // × backoff = up to ~2 minutes of waiting for the file
-
-    public int $backoff = 3;
+    public int $tries = 3;
 
     public int $timeout = 400;
 
@@ -28,6 +29,7 @@ class SliceCalculation implements ShouldQueue
 
     public function __construct(public readonly int $calculationId)
     {
+        $this->onQueue(config('queue.interactive'));
         $this->queuedAt = microtime(true);
     }
 
@@ -49,8 +51,15 @@ class SliceCalculation implements ShouldQueue
             return;
         }
         if (! $file->isReady()) {
-            $this->release($this->backoff);
-
+            return;   // ProcessModelFile starts it again when the file is ready
+        }
+        // one copy slices: the other finds it claimed. A slice left half done by a killed worker is claimed again
+        // once it is older than the job's timeout.
+        $claimed = Calculation::whereKey($calc->id)
+            ->where(fn ($q) => $q->where('status', Calculation::STATUS_QUEUED)
+                ->orWhere(fn ($q) => $q->where('status', Calculation::STATUS_SLICING)->where('updated_at', '<', now()->subSeconds($this->timeout - 60))))
+            ->update(['status' => Calculation::STATUS_SLICING, 'updated_at' => now()]);
+        if (! $claimed) {
             return;
         }
 

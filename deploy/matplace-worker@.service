@@ -1,0 +1,19 @@
+[Unit]
+Description=matplace queue worker %i (extra worker; restarts together with matplace-worker)
+PartOf=matplace-worker.service
+After=network.target mariadb.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/matplace-app
+# what a customer waits for first (upload, calculation, farm order), then the ordinary queue; the AI batches only on worker 1
+ExecStart=/usr/bin/php /var/www/matplace-app/artisan queue:work database --queue=interactive,default --sleep=2 --tries=3 --max-time=3600 --memory=512
+Restart=always
+RestartSec=5
+Environment=HOME=/var/www/matplace-app/storage/app/slicer
+StandardOutput=append:/var/log/matplace-worker.log
+StandardError=append:/var/log/matplace-worker.log
+
+[Install]
+WantedBy=multi-user.target

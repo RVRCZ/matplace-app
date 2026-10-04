@@ -6,6 +6,7 @@ use App\Engines\Contracts\MeshRepair;
 use App\Engines\Converter\ConverterChain;
 use App\Engines\Mesh\StlFile;
 use App\Models\Calculation;
+use App\Models\FarmOrder;
 use App\Models\ModelFile;
 use App\Support\Stopwatch;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -27,7 +28,11 @@ class ProcessModelFile implements ShouldQueue
 
     public int $timeout = 600;
 
-    public function __construct(public readonly int $modelFileId) {}
+    public function __construct(public readonly int $modelFileId)
+    {
+        // a customer waits for it; a designer's card file is dispatched onto the ordinary queue instead (CardFiles)
+        $this->onQueue(config('queue.interactive'));
+    }
 
     public function handle(ConverterChain $converters, MeshRepair $repair): void
     {
@@ -79,5 +84,22 @@ class ProcessModelFile implements ShouldQueue
                 ->whereIn('status', [Calculation::STATUS_QUEUED, Calculation::STATUS_ROUGH])
                 ->update(['status' => Calculation::STATUS_FAILED, 'error' => 'file_processing_failed']);
         }
+        $this->startWaiting($file);
+    }
+
+    /**
+     * The precise calculations and farm orders made while the file was still being processed start now, instead of
+     * asking every few seconds whether it is ready. Their own jobs also start them when the file was ready first;
+     * a second copy finds the work claimed or done and does nothing.
+     */
+    private function startWaiting(ModelFile $file): void
+    {
+        if ($file->status === ModelFile::STATUS_READY) {
+            Calculation::where('model_file_id', $file->id)->where('status', Calculation::STATUS_QUEUED)->pluck('id')
+                ->each(fn (int $id) => SliceCalculation::dispatch($id));
+        }
+        // a failed file fails its orders there, with the farm's own reason
+        FarmOrder::where('model_file_id', $file->id)->where('status', FarmOrder::STATUS_UPLOADED)->pluck('id')
+            ->each(fn (int $id) => PrepareFarmOrder::dispatch($id));
     }
 }
