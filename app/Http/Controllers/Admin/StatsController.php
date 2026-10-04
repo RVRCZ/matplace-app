@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Stats\AiActivity;
 use App\Domain\Stats\Funnel;
+use App\Domain\Stats\Speed;
 use App\Http\Controllers\Controller;
 use App\Models\SearchQuery;
 use App\Support\Locales;
@@ -34,6 +35,14 @@ class StatsController extends Controller
         $days = in_array((int) $request->query('days'), [7, 30, 90], true) ? (int) $request->query('days') : 30;
 
         return view('admin.ai.index', ['stats' => $activity->summary($days)]);
+    }
+
+    /** How long customers wait for the server: queue, repair, slicing… per step (matplace:perf-report on a page). */
+    public function speed(Request $request, Speed $speed): View
+    {
+        $days = in_array((int) $request->query('days'), [1, 7, 30], true) ? (int) $request->query('days') : 7;
+
+        return view('admin.stats.speed', ['stats' => $speed->summary($days)]);
     }
 
     /** What people search for: the most frequent queries, the ones our own catalogue had nothing for, by language. */

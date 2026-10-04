@@ -20,6 +20,7 @@ use App\Engines\Farm\PhpPrintPreparer;
 use App\Engines\Gcode\SupportLines;
 use App\Models\FarmOrder;
 use App\Models\ModelFile;
+use App\Support\Stopwatch;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
@@ -30,7 +31,8 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Farm order: uploaded → sliced. Check and repair the mesh, turn it for the plate, slice it with the printer's and the
  * material's profile, store the G-code with everything needed to produce it again, price it.
- * Waits (by re-queueing) until the model file itself is processed, like SliceCalculation.
+ * Started when the order is made and again by ProcessModelFile when its file is ready, like SliceCalculation; two
+ * copies never run at once (WithoutOverlapping), and the later one finds the order no longer "uploaded".
  */
 class PrepareFarmOrder implements ShouldQueue
 {
@@ -42,7 +44,14 @@ class PrepareFarmOrder implements ShouldQueue
 
     public int $timeout = 900;
 
-    public function __construct(public readonly int $orderId) {}
+    /** When it was put in the queue (epoch): the wait in the queue is part of the customer's wait. */
+    public ?float $queuedAt = null;
+
+    public function __construct(public readonly int $orderId)
+    {
+        $this->onQueue(config('queue.interactive'));
+        $this->queuedAt = microtime(true);
+    }
 
     /** Several workers: two recalculations of one order never write its files at the same time. */
     public function middleware(): array
@@ -63,9 +72,7 @@ class PrepareFarmOrder implements ShouldQueue
             return;
         }
         if (! $file->isReady()) {
-            $this->release($this->backoff);
-
-            return;
+            return;   // ProcessModelFile starts it again when the file is ready (or fails it when the file failed)
         }
         $printer = $order->printer;
         if (! $printer) {
@@ -76,6 +83,13 @@ class PrepareFarmOrder implements ShouldQueue
 
         $disk = Storage::disk(config('farm.disk'));
         $bed = new Dimensions($printer->bed_x, $printer->bed_y, $printer->bed_z);
+        // a first slice is waited for from the upload, a re-slice (other quality, colour, printer) from the click
+        $reslice = $order->slice_params !== null;
+        $clock = (new Stopwatch)->note('started', round(microtime(true), 1))->note('reslice', $reslice)->since('queue', $this->queuedAt)
+            ->note('triangles', $file->triangles);
+        if (! $reslice) {
+            $clock->since('wait', $order->created_at?->getTimestamp());
+        }
 
         try {
             // ── 1. check, repair, orient ───────────────────────────────────────
@@ -84,8 +98,9 @@ class PrepareFarmOrder implements ShouldQueue
             File::ensureDirectoryExists(dirname($disk->path($stlRel)));
             @unlink($disk->path($stlRel).'.stage');
             // a test object is built closed, on Z = 0, the way it must be printed: nothing to repair or turn
-            $mesh = $order->isTest() ? (new PhpPrintPreparer)->prepare($file->absoluteStlPath(), $disk->path($stlRel), 1.0, $bed)
-                : $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale * (float) ($order->scale ?: 1), $bed, $file->builtForPrinting());
+            $mesh = $clock->measure('prepare', fn () => $order->isTest() ? (new PhpPrintPreparer)->prepare($file->absoluteStlPath(), $disk->path($stlRel), 1.0, $bed)
+                : $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale * (float) ($order->scale ?: 1), $bed, $file->builtForPrinting()));
+            $clock->note('prepare_cached', (bool) ($mesh->orientation['reused'] ?? false));
             @unlink($disk->path($order->dir().'/print.stl.stage'));   // the tool's running commentary ends with it
             $piece = $mesh;
             $margin = 2 * (float) $settings->get('bed_margin_mm');
@@ -106,7 +121,7 @@ class PrepareFarmOrder implements ShouldQueue
                     }
                 }
                 $plateRel = $order->dir().'/plate.stl';
-                $mesh = PlateLayout::replicate($piece, $disk->path($plateRel), $perPlate, $usable) ?? throw new \RuntimeException('Plate layout failed although the capacity allowed it.');
+                $mesh = $clock->measure('layout', fn () => PlateLayout::replicate($piece, $disk->path($plateRel), $perPlate, $usable)) ?? throw new \RuntimeException('Plate layout failed although the capacity allowed it.');
                 $stlRel = $plateRel;
             }
             $order->fill(['plates' => $plates, 'plates_done' => 0, 'plate_copies' => $perPlate, 'rest_copies' => $rest, 'rest_gcode_path' => null]);
@@ -165,7 +180,9 @@ class PrepareFarmOrder implements ShouldQueue
             $overrides['process'] = PrintSettings::adminOverrides($order) + $overrides['process'];
             $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() || $noSupports ? false : null, treeSupports: true))
                 ->withFarmProfile($profiles, $overrides);
-            $result = $slicer->slice($disk->path($stlRel), $params);
+            $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($stlRel), $params));
+            $clock->merge($result->timings);
+            $postStart = hrtime(true);
             if (! $result->gcodePath || ! is_file($result->gcodePath)) {
                 throw new \RuntimeException('Slicer returned no G-code.');
             }
@@ -188,7 +205,10 @@ class PrepareFarmOrder implements ShouldQueue
             if ($rest !== null) {
                 $restStl = $disk->path($order->dir().'/rest.stl');
                 PlateLayout::replicate($piece, $restStl, $rest, $usable) ?? throw new \RuntimeException('Rest plate layout failed.');
-                $restResult = $slicer->slice($restStl, $params);
+                $clock->add('post', (hrtime(true) - $postStart) / 1e9);
+                $restResult = $clock->measure('rest_slice', fn () => $slicer->slice($restStl, $params));
+                $clock->merge($restResult->timings, 'rest_');
+                $postStart = hrtime(true);
                 if (! $restResult->gcodePath || ! is_file($restResult->gcodePath)) {
                     throw new \RuntimeException('Slicer returned no G-code for the last plate.');
                 }
@@ -223,6 +243,8 @@ class PrepareFarmOrder implements ShouldQueue
                 'supports_used' => $result->supportsUsed,
             ])->save();
 
+            $clock->add('post', (hrtime(true) - $postStart) / 1e9)->note('print_minutes', $order->est_minutes);
+
             // ── 3. price ───────────────────────────────────────────────────────
             if ($order->isFree()) {
                 // the farm's own print (test or YouTube showcase): nobody pays, it goes straight to the queue
@@ -243,12 +265,18 @@ class PrepareFarmOrder implements ShouldQueue
 
                 return;
             }
-            $price = $orders->priceFor($order, $printer);
+            $price = $clock->measure('price', fn () => $orders->priceFor($order, $printer));
             $order->fill(['price' => $price, 'price_total' => $price['total'], 'royalty_czk' => $price['royalty_unit'] ?? null, 'currency' => $price['currency'], 'stage' => null])->save();
             $flow->move($order, FarmOrder::STATUS_SLICED, 'system');
         } catch (\Throwable $e) {
             Log::warning('PrepareFarmOrder failed', ['order' => $order->id, 'error' => $e->getMessage()]);
+            $clock->note('failed', true);
             $flow->fail($order, 'slicing_failed', 'system', detail: mb_substr($e->getMessage(), 0, 1000));
+        } finally {
+            // only the column: whatever the steps above saved stays as it is
+            $clock->note('finished', round(microtime(true), 1));
+            $clock->add('total', (float) $clock->toArray()['finished'] - (float) $clock->toArray()['started']);
+            FarmOrder::whereKey($order->id)->update(['timings' => json_encode($clock->toArray())]);
         }
     }
 

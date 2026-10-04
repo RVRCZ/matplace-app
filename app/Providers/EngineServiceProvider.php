@@ -50,6 +50,7 @@ use App\Engines\Search\PrintablesSearch;
 use App\Engines\Shipping\FakeCarrier;
 use App\Engines\Shipping\PacketaClient;
 use App\Engines\Shipping\ShippingCarrier;
+use App\Engines\Slicer\CachedSlicer;
 use App\Engines\Slicer\FakeSlicer;
 use App\Engines\Slicer\OrcaSlicer;
 use App\Engines\Social\FakeMetaClient;
@@ -72,7 +73,14 @@ class EngineServiceProvider extends ServiceProvider
         $this->app->singleton(Slicer::class, function ($app) {
             return match (config('engines.slicer')) {
                 'fake' => new FakeSlicer($app->make(RoughEstimator::class)),
-                default => new OrcaSlicer(config('engines.orca')),
+                default => config('engines.orca.cache') ? new CachedSlicer(
+                    new OrcaSlicer(config('engines.orca')),
+                    rtrim(config('engines.orca.work_dir'), '/').'/cache',
+                    rtrim(config('engines.orca.work_dir'), '/').'/gcode',
+                    array_values(array_filter([config('engines.orca.profiles'), config('farm.profiles_dir')])),
+                    config('engines.orca.bin'),
+                    maxMb: (int) config('engines.orca.cache_mb'),
+                ) : new OrcaSlicer(config('engines.orca')),
             };
         });
 

@@ -19,7 +19,14 @@ final class SliceResult
         public readonly ?float $meters = null,
         public readonly array $minutesByMode = [],   // normal | silent | sport → minutes, when the machine has speed modes
         public readonly ?int $layers = null,
+        public readonly array $timings = [],         // seconds per step of the engine (mesh_s, slice1_s, slice2_s, parse_s…), not part of the result
     ) {}
+
+    /** The same result with the engine's timings added (a cached result says how it was served). */
+    public function withTimings(array $timings): self
+    {
+        return new self($this->grams, $this->minutes, $this->dims, $this->supportsUsed, $this->gcodePath, $this->warnings, $this->raw, $this->meters, $this->minutesByMode, $this->layers, $timings + $this->timings);
+    }
 
     public function toArray(): array
     {

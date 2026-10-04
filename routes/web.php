@@ -431,6 +431,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/stats', [AdminStatsController::class, 'funnel'])->name('stats.funnel');
     Route::get('/stats/search', [AdminStatsController::class, 'search'])->name('stats.search');
+    Route::get('/stats/speed', [AdminStatsController::class, 'speed'])->name('stats.speed');
     Route::get('/ai', [AdminStatsController::class, 'ai'])->name('ai.index');
 
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');

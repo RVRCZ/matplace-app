@@ -6,7 +6,7 @@ After=network.target mariadb.service
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/matplace-app
-ExecStart=/usr/bin/php /var/www/matplace-app/artisan queue:work database --queue=default,ai --sleep=2 --tries=3 --max-time=3600 --memory=512
+ExecStart=/usr/bin/php /var/www/matplace-app/artisan queue:work database --queue=interactive,default,ai --sleep=2 --tries=3 --max-time=3600 --memory=512
 Restart=always
 RestartSec=5
 # OrcaSlicer needs a writable HOME and a virtual X display (xvfb-run is invoked by the engine itself)

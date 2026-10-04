@@ -15,6 +15,11 @@ return [
 
     'default' => env('QUEUE_CONNECTION', 'database'),
 
+    // What a customer waits for (processing an upload, the precise calculation, preparing a farm order) goes to its
+    // own queue, which every worker takes first: generation, time-lapses, imports and the AI never stand in front of
+    // it. The workers must listen to it (deploy/matplace-worker*.service: --queue=interactive,default…).
+    'interactive' => env('QUEUE_INTERACTIVE', 'interactive'),
+
     /*
     |--------------------------------------------------------------------------
     | Queue Connections

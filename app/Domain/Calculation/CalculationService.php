@@ -52,20 +52,24 @@ final class CalculationService
         }
 
         // Reuse a finished slice for the same file + parameters instead of slicing again (prices are recomputed:
-        // the viewer or the printers in range may differ).
+        // the viewer or the printers in range may differ). The quantity is not a parameter of the slice: one piece
+        // is sliced and the price counts the pieces, so 1 → 5 pieces needs no slicer.
+        $slice = fn (array $p) => json_encode(array_diff_key($p, ['quantity' => 1]));
         $cached = Calculation::query()
             ->where('model_file_id', $file->id)
-            ->where('params_hash', $calc->params_hash)
             ->where('status', Calculation::STATUS_DONE)
             ->whereNotNull('slicer')
             ->latest('id')
-            ->first();
+            ->limit(50)
+            ->get(['id', 'params', 'slicer', 'slicer_engine'])
+            ->first(fn (Calculation $c) => $slice((array) $c->params) === $slice($calc->params));
 
         if ($cached) {
             $calc->slicer = $cached->slicer;
             $calc->slicer_engine = $cached->slicer_engine;
             $calc->prices = $this->pricesFor((float) $cached->slicer['grams'], (int) $cached->slicer['minutes'], $quantity, $source['profiles']);
             $calc->status = Calculation::STATUS_DONE;
+            $calc->timings = ['cache' => 'calculation'];
             $calc->save();
 
             return $calc;

@@ -77,7 +77,8 @@ final class CardFiles
         // the card shows "being checked" until the file has passed; the old file (if any) keeps serving meanwhile
         $card->forceFill(['file_status' => DesignerModel::FILE_CHECKING, 'file_check' => null, 'author_confirmed_at' => now()])->save();
         Track::event('designer_file_uploaded', $card);
-        ProcessModelFile::dispatch($file->id);
+        // a designer's files come by the dozen (a ZIP of the portfolio): not in front of a customer's upload
+        ProcessModelFile::dispatch($file->id)->onQueue('default');
         PrepareDesignerFile::dispatch($card->id, $file->id);
 
         return ['ok' => true, 'others' => array_map(fn (string $e) => basename($e), $others)];

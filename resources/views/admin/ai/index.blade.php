@@ -12,6 +12,7 @@
     <a href="{{ route('admin.stats.funnel') }}" class="chip">Cesty návštěvníků</a>
     <a href="{{ route('admin.stats.search') }}" class="chip">Vyhledávání</a>
     <a href="{{ route('admin.ai.index') }}" class="chip chip-on">AI aktivita</a>
+    <a href="{{ route('admin.stats.speed') }}" class="chip">Rychlost</a>
 </nav>
 
 <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
