@@ -56,7 +56,7 @@ class SearchController extends Controller
         $limit = (int) config('ai.daily_limits.describe', 20);
         $used = GenerationRequest::where('type', 'describe')->where('created_at', '>=', now()->startOfDay())
             ->where(fn ($q) => $q->where('ip', $ip)->orWhere('anonymous_session_id', $session?->id))->count();
-        if ($used >= $limit) {
+        if ($used >= $limit && ! $user?->isAdmin()) {   // the admin tries the tools without a daily count
             return response()->json(['error' => 'daily_limit', 'limit' => $limit], 429);
         }
 

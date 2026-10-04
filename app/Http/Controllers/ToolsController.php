@@ -94,7 +94,8 @@ class ToolsController extends Controller
         return view('tools.figure', [
             'generator' => $generation->enabled(),
             'guestLimit' => (int) config('ai.daily_limits.generate_guest'),
-            'userLimit' => $generation->limitFor(auth()->user()) > (int) config('ai.daily_limits.generate_user') ? $generation->limitFor(auth()->user()) : (int) config('ai.daily_limits.generate_user'),
+            // the page explains the limits of accounts; the admin's own (none) is not what it is about
+            'userLimit' => max((int) config('ai.daily_limits.generate_user'), auth()->user()?->isAdmin() ? 0 : $generation->limitFor(auth()->user())),
         ]);
     }
 }

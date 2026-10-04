@@ -16,6 +16,9 @@ use Illuminate\Support\Str;
 /** Starts generations with daily quotas (count per day, never money) and reuses results for identical inputs. */
 final class GenerationService
 {
+    /** The admin tries the tools all day: a daily count that is never reached, the global cost cap does not hold them either. */
+    public const ADMIN_DAILY = 1000;
+
     public function __construct(private readonly ModelGenerator $generator) {}
 
     public function enabled(): bool
@@ -29,16 +32,20 @@ final class GenerationService
         $limit = $this->limitFor($user);
         $used = GenerationRequest::usedToday($ip, $session?->id, $user?->id);
         $global = GenerationRequest::where('created_at', '>=', now()->startOfDay())->whereIn('type', ['image', 'text'])->whereNotNull('external_id')->count();
-        if ($global >= (int) config('ai.daily_limits.generate_global')) {
+        if ($global >= (int) config('ai.daily_limits.generate_global') && ! $user?->isAdmin()) {
             return ['allowed' => false, 'reason' => 'global_limit', 'used' => $used, 'limit' => $limit];
         }
 
         return ['allowed' => $used < $limit, 'reason' => $used < $limit ? null : 'daily_limit', 'used' => $used, 'limit' => $limit];
     }
 
-    /** Daily count of generations: guest < account < printer. */
+    /** Daily count of generations: guest < account < printer < admin. */
     public function limitFor(?User $user): int
     {
+        if ($user?->isAdmin()) {
+            return self::ADMIN_DAILY;
+        }
+
         return (int) config(match (true) {
             $user === null => 'ai.daily_limits.generate_guest',
             $user->isPrinter() => 'ai.daily_limits.generate_printer',

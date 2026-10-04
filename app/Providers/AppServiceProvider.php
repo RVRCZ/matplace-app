@@ -79,7 +79,8 @@ class AppServiceProvider extends ServiceProvider
             Outbox::logSent($to, (string) $sent->message->getSubject(), (string) ($sent->message->getTextBody() ?? strip_tags((string) $sent->message->getHtmlBody())), app()->getLocale());
         });
 
-        RateLimiter::for('uploads', fn (Request $r) => Limit::perMinute(20)->by($r->ip()));
-        RateLimiter::for('calculations', fn (Request $r) => Limit::perMinute(60)->by($r->ip()));
+        // the admin tries the tools in bursts and is not counted
+        RateLimiter::for('uploads', fn (Request $r) => $r->user()?->isAdmin() ? Limit::none() : Limit::perMinute(20)->by($r->ip()));
+        RateLimiter::for('calculations', fn (Request $r) => $r->user()?->isAdmin() ? Limit::none() : Limit::perMinute(60)->by($r->ip()));
     }
 }

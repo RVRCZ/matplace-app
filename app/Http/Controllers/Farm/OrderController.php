@@ -110,7 +110,8 @@ class OrderController extends Controller
             'codeColor' => $codeColors[1] ?? null,
             'settings' => $this->settings->all(),
             'balance' => $this->wallet->balance($request->user()),
-            'slicesLeft' => max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())),
+            // null = no daily count (the admin, or the limit switched off in the settings)
+            'slicesLeft' => $this->settings->get('daily_slices_per_user') > 0 && ! $request->user()->isAdmin() ? max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())) : null,
         ]);
     }
 

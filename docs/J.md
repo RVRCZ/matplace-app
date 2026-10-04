@@ -36,6 +36,15 @@ Starý web četl schránku `info@matplace.com` přes Gmail API a nabízel odpov�
 
 Nepřeneseno: výběr odesílacího aliasu (vždy info@), Messenger/Instagram.
 
+## Admin bez denních limitů (4. 10. 2026)
+
+Roman zkouší nástroje celý den, denní počty ho zastavovaly. Účet s rolí `admin` není počítán: popis fotky
+(`/api/describe`, jinak 20/den), tipy k tisku (`/api/files/{file}/advice`, 10/den i celosvětový strop), generování
+modelů (`GenerationService::ADMIN_DAILY` = 1000/den, celosvětový strop neplatí), nahrávání (`throttle:uploads`,
+jinak 20/min na adresu) a kalkulace (`throttle:calculations`, 60/min). Výpočty na farmě admina nepočítaly už dřív;
+stránka `/farm` mu teď nezobrazuje „Dnes můžete spočítat ještě…“ (stejně jako při vypnutém limitu). Minutové
+`throttle:N,1` na ostatních cestách (10/min generování a popis) zůstávají. Test `AdminLimitsTest`.
+
 ## `.env` (server)
 
 | klíč | hodnota |

@@ -39,7 +39,8 @@ class AdviceController extends Controller
         $session = $request->attributes->get('anon_session');
         $today = GenerationRequest::where('type', 'advise')->where('created_at', '>=', now()->startOfDay());
         $mine = (clone $today)->where(fn ($q) => $q->where('ip', $ip)->orWhere('anonymous_session_id', $session?->id)->orWhere('owner_user_id', $request->user()?->id ?? 0))->count();
-        if ($mine >= (int) config('ai.daily_limits.advise', 10) || (clone $today)->count() >= (int) config('ai.daily_limits.advise_global', 300)) {
+        $limited = $mine >= (int) config('ai.daily_limits.advise', 10) || (clone $today)->count() >= (int) config('ai.daily_limits.advise_global', 300);
+        if ($limited && ! $request->user()?->isAdmin()) {   // the admin tries the tools without a daily count
             return response()->json(['error' => 'daily_limit'], 429);
         }
 
