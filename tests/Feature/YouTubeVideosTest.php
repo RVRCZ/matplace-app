@@ -17,6 +17,7 @@ use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -101,7 +102,10 @@ class YouTubeVideosTest extends TestCase
                 return Http::response(['id' => 'vid123', 'status' => ['privacyStatus' => 'private']]);
             }
             if (str_contains($url, '/youtube/v3/videos') && $r->method() === 'PUT') {
-                return Http::response(['id' => 'vid123', 'status' => ['privacyStatus' => $privacy]]);
+                // a scheduled video stays private and YouTube echoes the time
+                $at = $r['status']['publishAt'] ?? null;
+
+                return Http::response(['id' => 'vid123', 'status' => ['privacyStatus' => $at ? 'private' : $privacy] + ($at ? ['publishAt' => $at] : [])]);
             }
             if (str_contains($url, '/youtube/v3/videos') && $r->method() === 'GET') {
                 return Http::response(['items' => [['id' => 'vid123', 'statistics' => ['viewCount' => '1520', 'likeCount' => '87', 'commentCount' => '4'], 'status' => ['privacyStatus' => 'public']]]]);
@@ -148,8 +152,8 @@ class YouTubeVideosTest extends TestCase
         Http::assertNotSent(fn (HttpRequest $r) => $r->method() === 'DELETE');
 
         // the admin page lists it; the approval uses the edited title: uploaded private, then made public, in one go (sync queue)
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Nahrát a zveřejnit na YouTube')->assertSee('Bez fotky hotového kusu');
-        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza ve spirále', 'description' => 'Popis'])->assertRedirect()->assertSessionHas('status');
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Nahrát na YouTube a zveřejnit')->assertSee('Bez fotky hotového kusu');
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza ve spirále', 'description' => 'Popis', 'when' => 'now'])->assertRedirect()->assertSessionHas('status');
         $video->refresh();
         $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->status);
         $this->assertSame(['vid123', 'Váza ve spirále', $this->admin->id], [$video->youtube_id, $video->title, $video->decided_by]);
@@ -163,7 +167,7 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(FarmVideo::STATUS_PENDING, $video->refresh()->status);
         $this->assertNull($video->published_at);
         $this->assertNull($video->approved_at);
-        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza ve spirále', 'description' => 'Popis'])->assertRedirect();
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza ve spirále', 'description' => 'Popis', 'when' => 'now'])->assertRedirect();
         $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->refresh()->status);
 
         // the customer sees the link, then takes the consent back → deleted on YouTube
@@ -210,7 +214,7 @@ class YouTubeVideosTest extends TestCase
         $order = $this->paidOrder(consent: true);
         $this->filmed($order);
         $video = app(FarmVideos::class)->queueFor($order)->refresh();
-        app(FarmVideos::class)->publish($video, 'T', '', $this->admin->id);
+        app(FarmVideos::class)->publish($video, 'T', '', $this->admin->id, now: true);
         $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->refresh()->status);
 
         $this->artisan('youtube:stats')->assertSuccessful();
@@ -358,6 +362,47 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(FarmVideo::STATUS_PENDING, $video->refresh()->status);
     }
 
+    public function test_an_approved_video_takes_the_next_free_evening_slot_and_youtube_makes_it_public(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-05 10:00', 'Europe/Prague'));   // a Monday morning
+        $this->connectedChannel();
+        $this->fakeGoogle();
+        $videos = app(FarmVideos::class);
+        $this->assertSame('2026-10-05 16:00:00', $videos->nextSlot()->toDateTimeString(), '18:00 Prague in UTC');
+
+        $a = $this->paidOrder(consent: true);
+        $this->filmed($a);
+        $first = $videos->queueFor($a)->refresh();
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Po 5. 10. 18:00');
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$first->id}/publish", ['title' => 'První', 'description' => ''])->assertRedirect()->assertSessionHas('status');
+        $first->refresh();
+        $this->assertSame([FarmVideo::STATUS_SCHEDULED, 'vid123', '2026-10-05 16:00:00'], [$first->status, $first->youtube_id, $first->scheduled_at->toDateTimeString()]);
+        Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable') && $r['status']['privacyStatus'] === 'private' && $r['status']['publishAt'] === '2026-10-05T16:00:00Z');
+        Http::assertNotSent(fn (HttpRequest $r) => $r->method() === 'PUT' && str_contains($r->url(), 'youtube/v3/videos?part=snippet,status'));
+
+        // the next approval the same day goes to the next day: one video a day
+        $b = $this->paidOrder(consent: true);
+        $this->filmed($b);
+        $second = $videos->queueFor($b)->refresh();
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$second->id}/publish", ['title' => 'Druhé', 'description' => ''])->assertRedirect();
+        $this->assertSame('2026-10-06 16:00:00', $second->refresh()->scheduled_at->toDateTimeString());
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Naplánováno na Po 5. 10. 18:00')->assertSee('Naplánováno na Út 6. 10. 18:00')->assertSee('Zveřejnit hned');
+        $this->actingAs($this->user)->get("/farm/orders/{$a->token}")->assertOk()->assertDontSee('watch?v=vid123', false);
+
+        // the evening came, YouTube flipped the first one: the hourly stats run writes it down with the planned time
+        $this->travelTo(Carbon::parse('2026-10-05 18:30', 'Europe/Prague'));
+        $this->artisan('youtube:stats')->assertSuccessful();
+        $first->refresh();
+        $this->assertSame([FarmVideo::STATUS_PUBLISHED, '2026-10-05 16:00:00'], [$first->status, $first->published_at->toDateTimeString()]);
+        $this->actingAs($this->user)->get("/farm/orders/{$a->token}")->assertOk()->assertSee('watch?v=vid123', false);
+
+        // "now" on a scheduled one: public at once; that day is full, so the next slot is the day after
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$second->id}/publish", ['title' => 'Druhé', 'description' => '', 'when' => 'now'])->assertRedirect()->assertSessionHas('status', 'Video je zveřejněné.');
+        $this->assertSame(FarmVideo::STATUS_PUBLISHED, $second->refresh()->status);
+        Http::assertSent(fn (HttpRequest $r) => $r->method() === 'PUT' && str_contains($r->url(), 'youtube/v3/videos?part=snippet,status') && $r['status']['privacyStatus'] === 'public' && ! isset($r['status']['publishAt']));
+        $this->assertSame('2026-10-06 16:00:00', $videos->nextSlot()->toDateTimeString());
+    }
+
     public function test_an_unaudited_project_leaves_the_video_private_and_the_admin_is_told(): void
     {
         $this->connectedChannel();
@@ -367,11 +412,11 @@ class YouTubeVideosTest extends TestCase
         $video = app(FarmVideos::class)->queueFor($order)->refresh();
 
         // approved: uploaded, but YouTube keeps it private; the admin reads why on the page and can publish it again from there
-        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'T'])->assertRedirect();
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'T', 'when' => 'now'])->assertRedirect();
         $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->refresh()->status);
         $this->assertStringContainsString('private', (string) $video->error);
         $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Zveřejnit na YouTube')->assertSee('private');
-        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'T'])
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'T', 'when' => 'now'])
             ->assertRedirect()->assertSessionHas('error');
     }
 

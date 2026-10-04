@@ -33,7 +33,7 @@ class AddFinishPhotoToVideo implements ShouldQueue
         }
         (new BuildFarmTimelapse($order->id, rebuild: true))->handle();
         $video = $order->video()->first();
-        if ($video?->status === FarmVideo::STATUS_UPLOADED) {
+        if (in_array($video?->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED], true)) {
             try {
                 $videos->replace($video);
             } catch (YouTubeError $e) {

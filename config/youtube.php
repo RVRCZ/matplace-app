@@ -23,4 +23,12 @@ return [
 
     // quota ran out (about 6 uploads a day by default): try again after this many minutes
     'retry_after_minutes' => 360,
+
+    // When an approved video goes public. Shorts live or die in their first hours, so they go out when the Czech
+    // audience is on the phone (early evening), and one a day: several on one day compete with each other and the
+    // channel looks like spam; a steady one-a-day beats a burst. The approval takes the next free slot; YouTube
+    // flips the video public at that time (status.publishAt), the admin can still say "now".
+    'publish_times' => array_values(array_filter(array_map('trim', explode(',', (string) env('YOUTUBE_PUBLISH_TIMES', '18:00'))))),
+    'publish_timezone' => 'Europe/Prague',
+    'max_per_day' => (int) env('YOUTUBE_MAX_PER_DAY', 1),
 ];

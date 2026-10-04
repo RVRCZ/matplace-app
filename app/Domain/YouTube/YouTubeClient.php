@@ -3,6 +3,7 @@
 namespace App\Domain\YouTube;
 
 use App\Models\YouTubeAccount;
+use Carbon\Carbon;
 use GuzzleHttp\Psr7\Utils;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
@@ -90,8 +91,8 @@ class YouTubeClient
         YouTubeAccount::query()->delete();
     }
 
-    /** Upload an MP4 as a private video; returns the YouTube video id. */
-    public function upload(string $path, string $title, string $description): string
+    /** Upload an MP4 as a private video (public by itself at $publishAt when given); returns the YouTube video id. */
+    public function upload(string $path, string $title, string $description, ?\DateTimeInterface $publishAt = null): string
     {
         // the worker lives long and the music mix is written to the same path every time: a cached size would be the old one
         clearstatcache(true, $path);
@@ -99,7 +100,7 @@ class YouTubeClient
         $init = $this->api()->withHeaders(['X-Upload-Content-Type' => 'video/mp4', 'X-Upload-Content-Length' => (string) $size])
             ->post(self::UPLOAD.'?uploadType=resumable&part=snippet,status', [
                 'snippet' => $this->snippet($title, $description),
-                'status' => ['privacyStatus' => 'private', 'selfDeclaredMadeForKids' => false, 'embeddable' => true],
+                'status' => $this->status('private', $publishAt),
             ]);
         if (! $init->successful() || ! $init->header('Location')) {
             throw YouTubeError::from($init, 'Upload start');
@@ -113,19 +114,30 @@ class YouTubeClient
         return (string) $put->json('id');
     }
 
-    /** New title/description and public. Returns the privacy YouTube really set: an unaudited API project stays `private`. */
-    public function publish(string $id, string $title, string $description): string
+    /**
+     * New title/description and public now, or private until $publishAt (YouTube makes it public then). Returns what
+     * YouTube really set: `privacy` (an unaudited API project stays `private`) and `publishAt` (empty when not scheduled).
+     *
+     * @return array{privacy: string, publishAt: string}
+     */
+    public function publish(string $id, string $title, string $description, ?\DateTimeInterface $publishAt = null): array
     {
         $r = $this->api()->put(self::API.'/videos?part=snippet,status', [
             'id' => $id,
             'snippet' => $this->snippet($title, $description),
-            'status' => ['privacyStatus' => 'public', 'selfDeclaredMadeForKids' => false, 'embeddable' => true],
+            'status' => $this->status($publishAt ? 'private' : 'public', $publishAt),
         ]);
         if (! $r->successful()) {
             throw YouTubeError::from($r, 'Publish');
         }
 
-        return (string) $r->json('status.privacyStatus', 'public');
+        return ['privacy' => (string) $r->json('status.privacyStatus', $publishAt ? 'private' : 'public'), 'publishAt' => (string) $r->json('status.publishAt', '')];
+    }
+
+    private function status(string $privacy, ?\DateTimeInterface $publishAt): array
+    {
+        return ['privacyStatus' => $privacy, 'selfDeclaredMadeForKids' => false, 'embeddable' => true]
+            + ($publishAt ? ['publishAt' => Carbon::instance($publishAt)->utc()->format('Y-m-d\TH:i:s\Z')] : []);
     }
 
     /**

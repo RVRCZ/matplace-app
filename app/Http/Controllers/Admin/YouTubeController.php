@@ -39,7 +39,8 @@ class YouTubeController extends Controller
             // what the end of each waiting video shows (the cleaned piece from the photo box), by order id
             'finish' => $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED])
                 ->mapWithKeys(fn ($v) => [$v->farm_order_id => $v->order ? $this->photos->finishIndex($v->order) : null])->all(),
-            'done' => $videos->whereIn('status', [FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN]),
+            'done' => $videos->whereIn('status', [FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN]),
+            'nextSlot' => $this->videos->nextSlot()->timezone((string) config('youtube.publish_timezone', 'Europe/Prague')),
             'showcases' => FarmOrder::with(['color.material', 'printer', 'video'])->where('kind', FarmOrder::KIND_SHOWCASE)->latest('id')->limit(10)->get(),
             'slots' => FarmPrinterSlot::with(['color.material', 'printer'])->whereNotNull('farm_color_id')
                 ->whereHas('printer', fn ($q) => $q->where('enabled', true)->where('mode', FarmPrinter::MODE_AGENT))->orderBy('farm_printer_id')->orderBy('slot')->get(),
@@ -106,16 +107,21 @@ class YouTubeController extends Controller
 
     public function publish(Request $request, FarmVideo $video): RedirectResponse
     {
-        $data = $request->validate(['title' => ['required', 'string', 'max:100'], 'description' => ['nullable', 'string', 'max:5000']]);
+        $data = $request->validate(['title' => ['required', 'string', 'max:100'], 'description' => ['nullable', 'string', 'max:5000'], 'when' => ['nullable', 'in:slot,now']]);
         try {
-            $video = $this->videos->publish($video, $data['title'], (string) ($data['description'] ?? ''), $request->user()->id);
+            $video = $this->videos->publish($video, $data['title'], (string) ($data['description'] ?? ''), $request->user()->id, now: ($data['when'] ?? 'slot') === 'now');
         } catch (YouTubeError $e) {
             return back()->with('error', $e->reason === 'locked_private'
                 ? 'YouTube nechal video soukromé. Dokud neprojde audit API projektu, jde video zveřejnit jen ručně v YouTube Studiu.'
                 : 'Zveřejnění se nepovedlo: '.$e->getMessage());
         }
+        $slot = $video->scheduled_at?->timezone((string) config('youtube.publish_timezone', 'Europe/Prague'))->format('j. n. H:i');
 
-        return back()->with('status', $video->status === FarmVideo::STATUS_PUBLISHED ? 'Video je zveřejněné.' : 'Video se nahrává na YouTube a hned po nahrání bude veřejné.');
+        return back()->with('status', match ($video->status) {
+            FarmVideo::STATUS_PUBLISHED => 'Video je zveřejněné.',
+            FarmVideo::STATUS_SCHEDULED => 'Video je na YouTube a zveřejní se '.$slot.'.',
+            default => 'Video se nahrává na YouTube'.($slot ? ' a zveřejní se '.$slot : ' a hned po nahrání bude veřejné').'.',
+        });
     }
 
     public function reject(Request $request, FarmVideo $video): RedirectResponse

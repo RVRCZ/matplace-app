@@ -1,7 +1,9 @@
 @extends('layouts.app', ['title' => __('farm.admin.nav.videos').' · admin', 'noindex' => true])
 
 @php
-    $label = ['pending' => 'Ke schválení (na YouTube zatím není)', 'queued' => 'Schváleno, čeká na nahrání', 'uploading' => 'Nahrává se', 'uploaded' => 'Na YouTube jako soukromé, čeká na zveřejnění', 'published' => 'Zveřejněno', 'rejected' => 'Zamítnuto', 'withdrawn' => 'Zákazník odvolal souhlas', 'failed' => 'Nahrání selhalo'];
+    $label = ['pending' => 'Ke schválení (na YouTube zatím není)', 'queued' => 'Schváleno, čeká na nahrání', 'uploading' => 'Nahrává se', 'uploaded' => 'Na YouTube jako soukromé, čeká na zveřejnění', 'scheduled' => 'Naplánováno', 'published' => 'Zveřejněno', 'rejected' => 'Zamítnuto', 'withdrawn' => 'Zákazník odvolal souhlas', 'failed' => 'Nahrání selhalo'];
+    $tz = config('youtube.publish_timezone', 'Europe/Prague');
+    $when = fn ($t) => ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'][$t->dayOfWeek].' '.$t->format('j. n. H:i');
     $viewNames = ['top' => 'shora', 'left' => 'zleva', 'right' => 'zprava', 'phone' => 'z mobilu'];
 @endphp
 
@@ -49,7 +51,7 @@
                 @endforeach
             </ol>
         @endif
-        <p class="mt-2 text-xs text-slate-500">Načítá se každý den v 6:10{{ $totals['at'] ? ', naposledy '.\Illuminate\Support\Carbon::parse($totals['at'])->format('j. n. H:i') : '' }}. Videa zveřejněná ručně v YouTube Studiu se tu tím označí jako zveřejněná.</p>
+        <p class="mt-2 text-xs text-slate-500">Načítá se každou hodinu{{ $totals['at'] ? ', naposledy '.\Illuminate\Support\Carbon::parse($totals['at'])->timezone($tz)->format('j. n. H:i') : '' }}. Naplánovaná videa, která YouTube mezitím zveřejnil, a videa zveřejněná ručně ve Studiu se tu tím označí jako zveřejněná.</p>
     </section>
 @endif
 
@@ -128,7 +130,11 @@
                         <input name="title" value="{{ old('title', $v->title) }}" required maxlength="100" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal"></label>
                     <label class="block text-xs font-semibold text-slate-600">Popis
                         <textarea name="description" rows="7" maxlength="5000" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal">{{ old('description', $v->description) }}</textarea></label>
-                    <button class="btn-primary text-sm">{{ $v->status === 'pending' ? 'Nahrát a zveřejnit na YouTube' : 'Zveřejnit na YouTube' }}</button>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-700">
+                        <label class="flex items-center gap-1"><input type="radio" name="when" value="slot" checked class="accent-action"> zveřejnit v nejbližším volném termínu: <strong>{{ $when($nextSlot) }}</strong></label>
+                        <label class="flex items-center gap-1"><input type="radio" name="when" value="now" class="accent-action"> hned</label>
+                    </div>
+                    <button class="btn-primary text-sm">{{ $v->status === 'pending' ? 'Nahrát na YouTube a zveřejnit' : 'Zveřejnit na YouTube' }}</button>
                 </form>
             @endif
             <div class="mt-2 flex flex-wrap gap-2">
@@ -165,12 +171,20 @@
         <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm">
             <span>
                 <a href="{{ route('admin.farm.orders.show', $v->order) }}" class="underline">{{ $v->order?->number }}</a> · {{ $v->title }}
-                <span class="text-xs text-slate-500">· {{ $label[$v->status] ?? $v->status }} {{ ($v->published_at ?? $v->decided_at ?? $v->updated_at)?->format('j. n. Y') }}</span>
+                @if($v->status === 'scheduled')
+                    <span class="text-xs font-semibold text-action-dark">· Naplánováno na {{ $v->scheduled_at ? $when($v->scheduled_at->timezone($tz)) : '?' }}</span>
+                @else
+                    <span class="text-xs text-slate-500">· {{ $label[$v->status] ?? $v->status }} {{ ($v->published_at ?? $v->decided_at ?? $v->updated_at)?->timezone($tz)->format('j. n. Y') }}</span>
+                @endif
                 @if($v->score !== null)<span class="text-xs text-slate-500">· zajímavost {{ $v->score }}</span>@endif
                 @if($v->views !== null)<span class="text-xs text-slate-600">· {{ number_format($v->views, 0, ',', ' ') }} zhlédnutí · {{ $v->likes === null ? '–' : number_format($v->likes, 0, ',', ' ') }} lajků</span>@endif
                 @if($v->error)<span class="block text-xs text-red-700">{{ $v->error }}</span>@endif
             </span>
             <span class="flex gap-2">
+                @if($v->status === 'scheduled')
+                    <form method="post" action="{{ route('admin.youtube.publish', $v) }}">@csrf<input type="hidden" name="title" value="{{ $v->title }}"><input type="hidden" name="description" value="{{ $v->description }}"><input type="hidden" name="when" value="now"><button class="btn-quiet text-sm">Zveřejnit hned</button></form>
+                    <form method="post" action="{{ route('admin.youtube.reject', $v) }}" onsubmit="return confirm('Zamítnout video? Z YouTube se smaže.')">@csrf<button class="btn-quiet text-sm text-red-700">Zamítnout</button></form>
+                @endif
                 @if($v->status === 'published' && $v->watchUrl())<a href="{{ $v->watchUrl() }}" target="_blank" rel="noopener" class="btn-quiet text-sm">Přehrát</a>@endif
                 @if($v->status === 'published')
                     <form method="post" action="{{ route('admin.youtube.replace', $v) }}" onsubmit="return confirm('Nahradit zveřejněné video novou verzí (např. s fotkou z foto-boxu)? Staré se z YouTube smaže i se zhlédnutími, nové půjde znovu ke schválení.')">@csrf<button class="btn-quiet text-sm">Nahradit novou verzí</button></form>

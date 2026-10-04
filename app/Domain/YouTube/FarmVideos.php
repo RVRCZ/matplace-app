@@ -8,6 +8,7 @@ use App\Mail\FarmAdminAlert;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
 use App\Models\YouTubeAccount;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Process;
@@ -74,10 +75,12 @@ class FarmVideos
             return;
         }
         $video->update(['status' => FarmVideo::STATUS_UPLOADING, 'error' => null]);
+        // the slot the admin's approval got; a wait for the quota may have carried the video past it
+        $at = $video->approved_at && $video->scheduled_at ? ($video->scheduled_at->gt(now()->addMinutes(5)) ? $video->scheduled_at : $this->nextSlot()) : null;
 
         try {
             $withMusic = $this->withMusic($order, $video->music);
-            $id = $this->youtube->upload($withMusic ?? Storage::disk(config('farm.disk'))->path($this->file($order)), $video->title, (string) $video->description);
+            $id = $this->youtube->upload($withMusic ?? Storage::disk(config('farm.disk'))->path($this->file($order)), $video->title, (string) $video->description, $at);
         } catch (YouTubeError $e) {
             if ($e->isQuota()) {
                 // YouTube's own limit (a young channel takes only a few videos a day): the admin reads when the next try is
@@ -107,8 +110,13 @@ class FarmVideos
 
             return;
         }
+        if ($at) {
+            $video->update(['status' => FarmVideo::STATUS_SCHEDULED, 'scheduled_at' => $at]);   // YouTube makes it public at that time
+
+            return;
+        }
         try {
-            $this->publish($video, (string) $video->title, (string) $video->description, (int) $video->decided_by);
+            $this->publish($video, (string) $video->title, (string) $video->description, (int) $video->decided_by, now: true);
         } catch (YouTubeError $e) {
             // `locked_private` is already written on the video; anything else leaves it private for the admin to publish by hand
             if ($e->reason !== 'locked_private') {
@@ -119,29 +127,42 @@ class FarmVideos
 
     /**
      * The admin's approval with the title and description they settled on. A video that is not on YouTube yet goes up
-     * now and becomes public right after; one already there (private) is made public at once.
+     * now; one already there (private) is dealt with at once. Public at the next free slot (nextSlot), or right away
+     * with $now.
      */
-    public function publish(FarmVideo $video, string $title, string $description, int $adminId): FarmVideo
+    public function publish(FarmVideo $video, string $title, string $description, int $adminId, bool $now = false): FarmVideo
     {
         if (! $video->youtube_id && in_array($video->status, [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED], true)) {
             $video->update(['title' => $title, 'description' => $description, 'status' => FarmVideo::STATUS_QUEUED, 'error' => null,
-                'approved_at' => now(), 'decided_by' => $adminId, 'decided_at' => now()]);
+                'approved_at' => now(), 'scheduled_at' => $now ? null : $this->nextSlot(), 'decided_by' => $adminId, 'decided_at' => now()]);
             UploadFarmVideo::dispatch($video->id);
 
             return $video;
         }
-        if (! in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_PUBLISHED], true) || ! $video->youtube_id) {
+        if (! in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED], true) || ! $video->youtube_id) {
             throw new YouTubeError('not_uploaded', 'The video is not on YouTube yet.');
         }
         if (! $video->order?->video_consent) {
             throw new YouTubeError('no_consent', 'The customer has taken the consent back.');
         }
-        $privacy = $this->youtube->publish($video->youtube_id, $title, $description);
+        if (! $now && $video->status === FarmVideo::STATUS_UPLOADED) {
+            // private on YouTube: give it the slot and let YouTube flip it
+            $at = $this->nextSlot();
+            $r = $this->youtube->publish($video->youtube_id, $title, $description, $at);
+            if ($r['publishAt'] === '') {
+                throw new YouTubeError('not_scheduled', 'YouTube did not take the publishing time.');
+            }
+            $video->update(['title' => $title, 'description' => $description, 'status' => FarmVideo::STATUS_SCHEDULED, 'scheduled_at' => $at,
+                'approved_at' => $video->approved_at ?? now(), 'decided_by' => $adminId, 'decided_at' => now(), 'error' => null]);
+
+            return $video;
+        }
+        $privacy = $this->youtube->publish($video->youtube_id, $title, $description)['privacy'];
         $public = $privacy === 'public';
         $video->update([
             'title' => $title, 'description' => $description,
             'status' => $public ? FarmVideo::STATUS_PUBLISHED : FarmVideo::STATUS_UPLOADED,
-            'published_at' => $public ? now() : null, 'decided_by' => $adminId, 'decided_at' => now(),
+            'published_at' => $public ? now() : null, 'scheduled_at' => null, 'decided_by' => $adminId, 'decided_at' => now(),
             // an API project YouTube has not audited yet keeps every uploaded video locked private
             'error' => $public ? null : 'YouTube left the video '.$privacy.' (API project not audited yet?).',
         ]);
@@ -165,13 +186,13 @@ class FarmVideos
     public function replace(FarmVideo $video): void
     {
         // a published one too, when the admin wants it (its views stay with the deleted copy)
-        if (! in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_PUBLISHED], true)) {
+        if (! in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED], true)) {
             throw new YouTubeError('not_replaceable', 'Only a video on YouTube can be replaced.');
         }
         if ($video->youtube_id) {
             $this->youtube->delete($video->youtube_id);
         }
-        $video->update(['status' => FarmVideo::STATUS_PENDING, 'youtube_id' => null, 'uploaded_at' => null, 'published_at' => null, 'approved_at' => null, 'error' => null,
+        $video->update(['status' => FarmVideo::STATUS_PENDING, 'youtube_id' => null, 'uploaded_at' => null, 'published_at' => null, 'approved_at' => null, 'scheduled_at' => null, 'error' => null,
             'views' => null, 'likes' => null, 'comments' => null, 'stats_at' => null]);
     }
 
@@ -245,7 +266,7 @@ class FarmVideos
      */
     public function refreshStats(): int
     {
-        $videos = FarmVideo::whereNotNull('youtube_id')->whereIn('status', [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_PUBLISHED])->get();
+        $videos = FarmVideo::whereNotNull('youtube_id')->whereIn('status', [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED])->get();
         if ($videos->isEmpty() || ! YouTubeAccount::current()) {
             return 0;
         }
@@ -260,8 +281,9 @@ class FarmVideos
             if ($video->score === null && $video->order) {
                 $fill['score'] = $this->score($video->order);
             }
-            if ($s['privacy'] === 'public' && $video->status === FarmVideo::STATUS_UPLOADED && $video->order?->video_consent) {
-                $fill += ['status' => FarmVideo::STATUS_PUBLISHED, 'published_at' => now(), 'error' => null];
+            // made public by hand in Studio, or by YouTube at the scheduled time
+            if ($s['privacy'] === 'public' && in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED], true) && $video->order?->video_consent) {
+                $fill += ['status' => FarmVideo::STATUS_PUBLISHED, 'published_at' => $video->scheduled_at ?? now(), 'error' => null];
             }
             $video->update($fill);
             $n++;
@@ -300,6 +322,39 @@ class FarmVideos
         $detail = 30 * min(1.0, ($layers ? $moves / $layers : 0) / 1200);
 
         return (int) round($time + $layerPart + $detail);
+    }
+
+    /**
+     * The next free publishing slot: the times of day in config youtube.publish_times (channel time zone), at most
+     * youtube.max_per_day videos a day, never within the next ten minutes. Videos already holding a slot (approved,
+     * scheduled) and ones published on a day count against it, so approvals spread out over the days by themselves.
+     */
+    public function nextSlot(): Carbon
+    {
+        $tz = (string) config('youtube.publish_timezone', 'Europe/Prague');
+        $times = (array) config('youtube.publish_times', ['18:00']) ?: ['18:00'];
+        sort($times);
+        $max = max(1, (int) config('youtube.max_per_day', 1));
+        $earliest = now()->addMinutes(10);
+        $holding = FarmVideo::whereIn('status', [FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED])
+            ->where(fn ($q) => $q->whereNotNull('scheduled_at')->orWhereNotNull('published_at'))
+            ->get(['scheduled_at', 'published_at'])
+            ->map(fn (FarmVideo $v) => ($v->scheduled_at ?? $v->published_at)->copy()->timezone($tz));
+        for ($d = 0; $d < 120; $d++) {
+            $day = now($tz)->startOfDay()->addDays($d);
+            $onDay = $holding->filter(fn (Carbon $t) => $t->isSameDay($day));
+            if ($onDay->count() >= $max) {
+                continue;
+            }
+            foreach ($times as $time) {
+                $slot = $day->copy()->setTimeFromTimeString($time);
+                if ($slot->gte($earliest) && ! $onDay->contains(fn (Carbon $t) => $t->equalTo($slot))) {
+                    return $slot->utc();
+                }
+            }
+        }
+
+        return $earliest;
     }
 
     /** @return list<string> the background tracks on this server (file names), sorted */

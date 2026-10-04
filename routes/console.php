@@ -6,7 +6,7 @@ Schedule::command('matplace:expire-inquiries')->hourly();
 Schedule::command('queue:prune-failed --hours=168')->daily();
 Schedule::command('matplace:prune')->dailyAt('03:30');
 Schedule::command('farm:watch')->everyMinute()->withoutOverlapping();
-Schedule::command('youtube:stats')->dailyAt('06:10');
+Schedule::command('youtube:stats')->hourlyAt(20);   // numbers, and scheduled videos YouTube made public meanwhile (1 quota unit)
 Schedule::command('matplace:sitemap')->dailyAt('04:40');
 // events older than 13 months are folded into a daily summary and deleted
 Schedule::command('matplace:events-rollup')->monthlyOn(2, '03:50');

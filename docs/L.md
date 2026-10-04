@@ -25,6 +25,17 @@ kdykoli → rejected (admin) | withdrawn (zákazník odvolal souhlas; kopie na Y
 - Migrace `2026_10_11_100000_farm_videos_pending`: sloupec `approved_at`; co čekalo ve frontě bez schválení, je teď
   `pending`. Naplánované `UploadFarmVideo` joby těchto videí skončí bez akce (stav není `queued`).
 
+## Plánované zveřejnění (doplněno)
+
+Zhlédnutí Shorts rozhodují první hodiny po zveřejnění a kanál, který vysype tři videa za dopoledne, si konkuruje
+sám se sebou. Proto schválené video nejde ven hned, ale v **nejbližším volném termínu**: `youtube.publish_times`
+(výchozí `18:00`, env `YOUTUBE_PUBLISH_TIMES=18:00,11:00`), nejvýš `youtube.max_per_day` videí denně (výchozí 1),
+čas kanálu Europe/Prague. Termín drží `farm_videos.scheduled_at`; video se nahraje hned po schválení jako soukromé
+s `status.publishAt` a **YouTube ho v ten čas zveřejní sám** (stav `scheduled`). Hodinový `youtube:stats` to pak
+zapíše jako `published` s časem termínu. Když schválení čeká na limit nahrávání a termín mezitím propadne, při
+nahrání se vezme další volný. Admin může u každého videa zvolit „hned“ a u naplánovaného kliknout „Zveřejnit hned“.
+`FarmVideos::nextSlot` počítá do dne i videa zveřejněná „hned“, takže se schválení sama rozprostřou po dnech.
+
 ## Fotka z foto-boxu na konci videa
 
 Video zakázky končí fotkou hotového kusu; kterou, říká `TestPhotos::finishIndex`: přednostně boční pohled (zleva,
