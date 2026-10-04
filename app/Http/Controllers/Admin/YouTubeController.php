@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Farm\FarmRefusal;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\TestPhotos;
 use App\Domain\YouTube\FarmVideos;
 use App\Domain\YouTube\ShowcasePrints;
 use App\Domain\YouTube\YouTubeClient;
@@ -24,7 +25,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 /** /admin/youtube: connect the channel, approve (publish) or reject the print videos customers agreed to share. */
 class YouTubeController extends Controller
 {
-    public function __construct(private readonly YouTubeClient $youtube, private readonly FarmVideos $videos) {}
+    public function __construct(private readonly YouTubeClient $youtube, private readonly FarmVideos $videos, private readonly TestPhotos $photos) {}
 
     public function index(): View
     {
@@ -34,7 +35,10 @@ class YouTubeController extends Controller
             'configured' => $this->youtube->configured(),
             'account' => YouTubeAccount::current(),
             // the likely hits first (FarmVideos::score)
-            'waiting' => $videos->whereIn('status', [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED])->sortByDesc(fn ($v) => $v->score ?? -1)->values(),
+            'waiting' => $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED])->sortByDesc(fn ($v) => $v->score ?? -1)->values(),
+            // what the end of each waiting video shows (the cleaned piece from the photo box), by order id
+            'finish' => $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED])
+                ->mapWithKeys(fn ($v) => [$v->farm_order_id => $v->order ? $this->photos->finishIndex($v->order) : null])->all(),
             'done' => $videos->whereIn('status', [FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN]),
             'showcases' => FarmOrder::with(['color.material', 'printer', 'video'])->where('kind', FarmOrder::KIND_SHOWCASE)->latest('id')->limit(10)->get(),
             'slots' => FarmPrinterSlot::with(['color.material', 'printer'])->whereNotNull('farm_color_id')
@@ -104,14 +108,14 @@ class YouTubeController extends Controller
     {
         $data = $request->validate(['title' => ['required', 'string', 'max:100'], 'description' => ['nullable', 'string', 'max:5000']]);
         try {
-            $this->videos->publish($video, $data['title'], (string) ($data['description'] ?? ''), $request->user()->id);
+            $video = $this->videos->publish($video, $data['title'], (string) ($data['description'] ?? ''), $request->user()->id);
         } catch (YouTubeError $e) {
             return back()->with('error', $e->reason === 'locked_private'
                 ? 'YouTube nechal video soukromé. Dokud neprojde audit API projektu, jde video zveřejnit jen ručně v YouTube Studiu.'
                 : 'Zveřejnění se nepovedlo: '.$e->getMessage());
         }
 
-        return back()->with('status', 'Video je zveřejněné.');
+        return back()->with('status', $video->status === FarmVideo::STATUS_PUBLISHED ? 'Video je zveřejněné.' : 'Video se nahrává na YouTube a hned po nahrání bude veřejné.');
     }
 
     public function reject(Request $request, FarmVideo $video): RedirectResponse

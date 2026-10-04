@@ -11,8 +11,9 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
 /**
- * A photo of the cleaned piece arrived from the photo box: both videos are built again so they end with it, and a
- * YouTube copy that still waits for approval is replaced. A published one stays (it has views); the admin decides.
+ * A photo of the cleaned piece arrived from the photo box (or went away): both videos are built again so they end with
+ * it. A video waiting for the admin simply goes up as the new file; a private copy already on YouTube is replaced
+ * (and waits for the admin again). A published one stays (it has views); the admin decides.
  */
 class AddFinishPhotoToVideo implements ShouldQueue
 {

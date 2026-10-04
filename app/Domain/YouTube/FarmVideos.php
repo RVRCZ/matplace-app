@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\Storage;
 /**
  * The life of a print video: the only place a FarmVideo changes state.
  *
- * Nothing goes to YouTube without the customer's consent, and nothing becomes public without an admin.
+ * Nothing goes to YouTube without the customer's consent, and nothing goes up at all without an admin: a video waits
+ * here (`pending`), the admin settles the title and description and approves it, then it is uploaded and made public
+ * in one go. YouTube counts every upload against the channel's daily limit, so rejected videos never get there.
  * The customer may take the consent back at any time: the video is then deleted from YouTube.
  */
 class FarmVideos
@@ -47,18 +49,18 @@ class FarmVideos
         }
         $video ??= new FarmVideo(['farm_order_id' => $order->id]);
         $video->fill([
-            'status' => FarmVideo::STATUS_QUEUED, 'youtube_id' => null, 'error' => null,
+            'status' => FarmVideo::STATUS_PENDING, 'youtube_id' => null, 'error' => null, 'approved_at' => null,
             'title' => $video->title ?: $this->defaultTitle($order),
             'score' => $video->score ?? $this->score($order),
             'music' => $music = $video->music ?? $this->pickMusic($order),
             'description' => $video->description ?: $this->defaultDescription($order, $music),
         ])->save();
-        UploadFarmVideo::dispatch($video->id);
+        $this->tellAdmin($video, $order);
 
         return $video;
     }
 
-    /** The queue job: send the time-lapse to YouTube as a private video. */
+    /** The queue job: send an approved time-lapse to YouTube and make it public. */
     public function upload(FarmVideo $video): void
     {
         $order = $video->order;
@@ -100,12 +102,34 @@ class FarmVideos
 
             return;
         }
-        $this->tellAdmin($video, $order);
+        if (! $video->approved_at) {
+            $this->tellAdmin($video, $order);   // an older copy that went up unapproved: the admin decides on YouTube's private video
+
+            return;
+        }
+        try {
+            $this->publish($video, (string) $video->title, (string) $video->description, (int) $video->decided_by);
+        } catch (YouTubeError $e) {
+            // `locked_private` is already written on the video; anything else leaves it private for the admin to publish by hand
+            if ($e->reason !== 'locked_private') {
+                $video->update(['error' => 'Publish: '.$e->getMessage()]);
+            }
+        }
     }
 
-    /** Make an uploaded video public, with the title and description the admin settled on. */
-    public function publish(FarmVideo $video, string $title, string $description, int $adminId): void
+    /**
+     * The admin's approval with the title and description they settled on. A video that is not on YouTube yet goes up
+     * now and becomes public right after; one already there (private) is made public at once.
+     */
+    public function publish(FarmVideo $video, string $title, string $description, int $adminId): FarmVideo
     {
+        if (! $video->youtube_id && in_array($video->status, [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED], true)) {
+            $video->update(['title' => $title, 'description' => $description, 'status' => FarmVideo::STATUS_QUEUED, 'error' => null,
+                'approved_at' => now(), 'decided_by' => $adminId, 'decided_at' => now()]);
+            UploadFarmVideo::dispatch($video->id);
+
+            return $video;
+        }
         if (! in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_PUBLISHED], true) || ! $video->youtube_id) {
             throw new YouTubeError('not_uploaded', 'The video is not on YouTube yet.');
         }
@@ -124,6 +148,8 @@ class FarmVideos
         if (! $public) {
             throw new YouTubeError('locked_private', (string) $video->error);
         }
+
+        return $video;
     }
 
     /** Not for the channel: delete it from YouTube, remember the decision (a later consent does not upload it again). */
@@ -135,28 +161,33 @@ class FarmVideos
         $video->update(['status' => FarmVideo::STATUS_REJECTED, 'youtube_id' => null, 'published_at' => null, 'decided_by' => $adminId, 'decided_at' => now()]);
     }
 
-    /** The videos were built again (farm:timelapse): the private copy on YouTube goes, the new file goes up. */
+    /** The videos were built again (farm:timelapse): the copy on YouTube goes, the new file waits for the admin again. */
     public function replace(FarmVideo $video): void
     {
-        // a published one too, when the admin wants it (its views stay with the deleted copy; the new one waits for approval)
+        // a published one too, when the admin wants it (its views stay with the deleted copy)
         if (! in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_PUBLISHED], true)) {
             throw new YouTubeError('not_replaceable', 'Only a video on YouTube can be replaced.');
         }
         if ($video->youtube_id) {
             $this->youtube->delete($video->youtube_id);
         }
-        $video->update(['status' => FarmVideo::STATUS_QUEUED, 'youtube_id' => null, 'uploaded_at' => null, 'published_at' => null, 'error' => null,
+        $video->update(['status' => FarmVideo::STATUS_PENDING, 'youtube_id' => null, 'uploaded_at' => null, 'published_at' => null, 'approved_at' => null, 'error' => null,
             'views' => null, 'likes' => null, 'comments' => null, 'stats_at' => null]);
-        UploadFarmVideo::dispatch($video->id);
     }
 
-    /** Failed, or stuck in `uploading` after a crash: try again. */
+    /** Failed, or stuck in `uploading` after a crash: try again (an approved video goes up, an unapproved one waits for the admin). */
     public function retry(FarmVideo $video): void
     {
-        if (in_array($video->status, [FarmVideo::STATUS_FAILED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_QUEUED], true)) {
-            $video->update(['status' => FarmVideo::STATUS_QUEUED, 'error' => null]);
-            UploadFarmVideo::dispatch($video->id);
+        if (! in_array($video->status, [FarmVideo::STATUS_FAILED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_QUEUED], true)) {
+            return;
         }
+        if (! $video->approved_at) {
+            $video->update(['status' => FarmVideo::STATUS_PENDING, 'error' => null]);
+
+            return;
+        }
+        $video->update(['status' => FarmVideo::STATUS_QUEUED, 'error' => null]);
+        UploadFarmVideo::dispatch($video->id);
     }
 
     /** The customer's switch on the order page (and the checkbox when paying). */
@@ -196,7 +227,9 @@ class FarmVideos
         }
         try {
             Mail::to($to)->queue(new FarmAdminAlert('Video ke schválení: '.$order->number, [
-                'Časosběr zakázky '.$order->number.' je na YouTube jako soukromé video a čeká na schválení.',
+                $video->youtube_id
+                    ? 'Časosběr zakázky '.$order->number.' je na YouTube jako soukromé video a čeká na schválení.'
+                    : 'Časosběr zakázky '.$order->number.' čeká na schválení; na YouTube se nahraje až po něm.',
                 'Název: '.$video->title,
             ], route('admin.youtube.index')));
         } catch (\Throwable $e) {

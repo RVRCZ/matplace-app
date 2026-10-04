@@ -65,4 +65,18 @@ final class TestPhotos
     {
         return Storage::disk(config('farm.disk'))->path($photo['file']);
     }
+
+    /** Index of the photo the print's video ends with: a side view first (they look best), the latest of its kind. */
+    public function finishIndex(FarmOrder $order): ?int
+    {
+        $photos = $this->all($order);
+        foreach (['left', 'right', 'phone', 'top'] as $view) {
+            $match = array_keys(array_filter($photos, fn ($p) => ($p['view'] ?? '') === $view));
+            if ($match) {
+                return end($match);
+            }
+        }
+
+        return null;
+    }
 }

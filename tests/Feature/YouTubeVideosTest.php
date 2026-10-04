@@ -117,7 +117,7 @@ class YouTubeVideosTest extends TestCase
         });
     }
 
-    public function test_consented_video_is_uploaded_private_published_by_an_admin_and_removed_when_the_consent_is_withdrawn(): void
+    public function test_consented_video_waits_for_an_admin_goes_up_public_on_approval_and_is_removed_when_the_consent_is_withdrawn(): void
     {
         $this->connectedChannel();
         $this->fakeGoogle();
@@ -128,9 +128,10 @@ class YouTubeVideosTest extends TestCase
         $this->filmed($order);
         $video = app(FarmVideos::class)->queueFor($order)->refresh();   // what BuildFarmTimelapse does at its end
 
-        $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->status);
-        $this->assertSame('vid123', $video->youtube_id);
-        Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable') && $r['status']['privacyStatus'] === 'private');
+        // nothing goes to YouTube before the admin says so (every upload counts against the channel's daily limit)
+        $this->assertSame(FarmVideo::STATUS_PENDING, $video->status);
+        $this->assertNull($video->youtube_id);
+        Http::assertNotSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable'));
         $this->assertStringContainsString('3D tisku', $video->title);      // no readable name in "part.stl": material and colour, then the print time
         Mail::assertQueued(FarmAdminAlert::class, fn ($m) => str_contains($m->subjectLine, 'Video ke schválení') && $m->url === route('admin.youtube.index'));
 
@@ -142,24 +143,28 @@ class YouTubeVideosTest extends TestCase
         $this->assertStringContainsString('short.mp4', (string) $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json('short_url'));
         $this->actingAs(User::factory()->create())->get("/farm/orders/{$order->token}/short.mp4")->assertNotFound();
 
-        // built again before approval: the private copy is deleted and the new file uploaded
-        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/replace")->assertRedirect()->assertSessionHas('status');
-        Http::assertSent(fn (HttpRequest $r) => $r->method() === 'DELETE' && str_contains($r->url(), 'id=vid123'));
-        $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->refresh()->status);
+        // nothing on YouTube yet: there is nothing to replace
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/replace")->assertRedirect()->assertSessionHas('error');
+        Http::assertNotSent(fn (HttpRequest $r) => $r->method() === 'DELETE');
 
-        // the admin page lists it; publishing uses the edited title
-        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Zveřejnit na YouTube');
-        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza ve spirále', 'description' => 'Popis'])->assertRedirect();
+        // the admin page lists it; the approval uses the edited title: uploaded private, then made public, in one go (sync queue)
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Nahrát a zveřejnit na YouTube')->assertSee('Bez fotky hotového kusu');
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza ve spirále', 'description' => 'Popis'])->assertRedirect()->assertSessionHas('status');
         $video->refresh();
         $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->status);
-        $this->assertSame('Váza ve spirále', $video->title);
+        $this->assertSame(['vid123', 'Váza ve spirále', $this->admin->id], [$video->youtube_id, $video->title, $video->decided_by]);
+        $this->assertNotNull($video->approved_at);
+        Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable') && $r['status']['privacyStatus'] === 'private' && $r['snippet']['title'] === 'Váza ve spirále');
         Http::assertSent(fn (HttpRequest $r) => $r->method() === 'PUT' && str_contains($r->url(), 'youtube/v3/videos?part=snippet,status') && $r['status']['privacyStatus'] === 'public');
 
-        // a published video can be replaced too (e.g. with the finish photo): it goes back to approval, numbers reset
+        // a published video can be replaced (e.g. with the finish photo): the copy goes, the new file waits for approval again
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/replace")->assertRedirect()->assertSessionHas('status');
-        $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->refresh()->status);
+        Http::assertSent(fn (HttpRequest $r) => $r->method() === 'DELETE' && str_contains($r->url(), 'id=vid123'));
+        $this->assertSame(FarmVideo::STATUS_PENDING, $video->refresh()->status);
         $this->assertNull($video->published_at);
+        $this->assertNull($video->approved_at);
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza ve spirále', 'description' => 'Popis'])->assertRedirect();
+        $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->refresh()->status);
 
         // the customer sees the link, then takes the consent back → deleted on YouTube
         $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('watch?v=vid123', false);
@@ -181,10 +186,11 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(0, FarmVideo::count());
         Http::assertNothingSent();
 
-        // allowed later from the order page: uploaded at once, because the time-lapse already exists
+        // allowed later from the order page: waits for the admin at once, because the time-lapse already exists
         $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee(__('youtube.order.agree'));
         $this->actingAs($this->user)->post("/farm/orders/{$order->token}/video-consent", ['consent' => 1])->assertRedirect();
-        $this->assertSame(FarmVideo::STATUS_UPLOADED, $order->video()->first()->status);
+        $this->assertSame(FarmVideo::STATUS_PENDING, $order->video()->first()->status);
+        Http::assertNothingSent();
     }
 
     public function test_the_consent_box_starts_ticked_except_for_models_from_photos(): void
@@ -200,11 +206,12 @@ class YouTubeVideosTest extends TestCase
     public function test_statistics_come_from_youtube_and_a_video_made_public_in_studio_counts_as_published(): void
     {
         $this->connectedChannel();
-        $this->fakeGoogle();
+        $this->fakeGoogle(privacy: 'private');   // YouTube keeps the approved video private (unaudited project)
         $order = $this->paidOrder(consent: true);
         $this->filmed($order);
         $video = app(FarmVideos::class)->queueFor($order)->refresh();
-        $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->status);
+        app(FarmVideos::class)->publish($video, 'T', '', $this->admin->id);
+        $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->refresh()->status);
 
         $this->artisan('youtube:stats')->assertSuccessful();
         $video->refresh();
@@ -333,12 +340,22 @@ class YouTubeVideosTest extends TestCase
 
         Queue::fake();
         $video = app(FarmVideos::class)->queueFor($order);
+        app(FarmVideos::class)->publish($video->refresh(), 'T', '', $this->admin->id);
+        Queue::assertPushed(UploadFarmVideo::class, fn ($job) => $job->delay === null);
         app(FarmVideos::class)->upload($video->refresh());
 
         $this->assertSame(FarmVideo::STATUS_QUEUED, $video->refresh()->status);
+        $this->assertNotNull($video->approved_at, 'the approval holds through the wait');
         $this->assertStringContainsString('quota', (string) $video->error);
         $this->assertStringContainsString('zkusíme to znovu '.now()->addMinutes(360)->timezone('Europe/Prague')->format('j. n. H:i'), (string) $video->error, 'the admin reads when the next try is');
         Queue::assertPushed(UploadFarmVideo::class, fn ($job) => $job->delay !== null);
+
+        // "try again" by hand keeps the approval; an unapproved one would go back to waiting for the admin
+        app(FarmVideos::class)->retry($video->refresh());
+        $this->assertSame(FarmVideo::STATUS_QUEUED, $video->refresh()->status);
+        $video->update(['approved_at' => null, 'status' => FarmVideo::STATUS_FAILED]);
+        app(FarmVideos::class)->retry($video->refresh());
+        $this->assertSame(FarmVideo::STATUS_PENDING, $video->refresh()->status);
     }
 
     public function test_an_unaudited_project_leaves_the_video_private_and_the_admin_is_told(): void
@@ -349,10 +366,13 @@ class YouTubeVideosTest extends TestCase
         $this->filmed($order);
         $video = app(FarmVideos::class)->queueFor($order)->refresh();
 
-        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'T'])
-            ->assertRedirect()->assertSessionHas('error');
+        // approved: uploaded, but YouTube keeps it private; the admin reads why on the page and can publish it again from there
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'T'])->assertRedirect();
         $this->assertSame(FarmVideo::STATUS_UPLOADED, $video->refresh()->status);
         $this->assertStringContainsString('private', (string) $video->error);
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Zveřejnit na YouTube')->assertSee('private');
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'T'])
+            ->assertRedirect()->assertSessionHas('error');
     }
 
     public function test_connecting_the_channel_keeps_the_refresh_token_encrypted(): void

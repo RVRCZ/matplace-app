@@ -8,11 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * The time-lapse of one farm order on YouTube. Moves only through App\Domain\YouTube\FarmVideos:
  *
- *   queued → uploading → uploaded (private, waits for an admin) → published | rejected
+ *   pending (waits for an admin, nothing on YouTube yet) → queued (approved) → uploading → published | rejected
+ *   uploaded: on YouTube but private (YouTube kept it so, or an older copy); the admin publishes it from there
  *   any state → withdrawn (the customer took the consent back; the YouTube copy is deleted)
  */
 class FarmVideo extends Model
 {
+    public const STATUS_PENDING = 'pending';
+
     public const STATUS_QUEUED = 'queued';
 
     public const STATUS_UPLOADING = 'uploading';
@@ -27,9 +30,9 @@ class FarmVideo extends Model
 
     public const STATUS_FAILED = 'failed';
 
-    protected $fillable = ['farm_order_id', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'views', 'likes', 'comments', 'stats_at', 'score', 'music'];
+    protected $fillable = ['farm_order_id', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'approved_at', 'views', 'likes', 'comments', 'stats_at', 'score', 'music'];
 
-    protected $casts = ['uploaded_at' => 'datetime', 'published_at' => 'datetime', 'decided_at' => 'datetime', 'stats_at' => 'datetime',
+    protected $casts = ['uploaded_at' => 'datetime', 'published_at' => 'datetime', 'decided_at' => 'datetime', 'approved_at' => 'datetime', 'stats_at' => 'datetime',
         'views' => 'int', 'likes' => 'int', 'comments' => 'int', 'score' => 'int'];
 
     public function order(): BelongsTo

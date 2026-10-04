@@ -48,13 +48,24 @@
 
         <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
             <h2 class="font-bold">Fotky u {{ $order->number }} ({{ count($photos) }})</h2>
+            @php $viewNames = ['top' => 'shora', 'left' => 'zleva', 'right' => 'zprava', 'phone' => 'mobil']; @endphp
             <div class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-6">
                 @foreach($photos as $i => $p)
-                    <a href="{{ route('admin.farm.photos.show', [$order, $i]) }}" target="_blank" rel="noopener">
-                        <img src="{{ route('admin.farm.photos.show', [$order, $i]) }}?thumb=1" alt="fotka {{ $i + 1 }}" loading="lazy" class="aspect-square w-full rounded-md object-cover">
-                    </a>
+                    <figure class="relative">
+                        <a href="{{ route('admin.farm.photos.show', [$order, $i]) }}" target="_blank" rel="noopener">
+                            <img src="{{ route('admin.farm.photos.show', [$order, $i]) }}?thumb=1" alt="fotka {{ $i + 1 }}" loading="lazy" class="aspect-square w-full rounded-md object-cover {{ $finish === $i ? 'ring-2 ring-action' : '' }}">
+                        </a>
+                        @if($finish === $i)<span class="absolute left-1 top-1 rounded-full bg-action px-1.5 py-0.5 text-[10px] font-bold text-white">do videa</span>@endif
+                        <figcaption class="mt-0.5 flex items-center justify-between gap-1 text-[11px] text-slate-600">
+                            <span>{{ $i + 1 }} · {{ $viewNames[$p['view']] ?? $p['view'] }}</span>
+                            <form method="post" action="{{ route('admin.farm.photos.destroy', [$order, $i]) }}" onsubmit="return confirm('Smazat fotku?')">@csrf<button class="text-red-700" aria-label="Smazat fotku {{ $i + 1 }}">✕</button></form>
+                        </figcaption>
+                    </figure>
                 @endforeach
             </div>
+            @if(! $order->isTest())
+                <p class="mt-2 text-xs text-slate-500">Video zakázky končí fotkou označenou „do videa“: přednostně boční pohled (zleva, zprava), jinak z mobilu, jinak shora, vždy ta nejnovější. Po vyfocení nebo smazání se video přestaví samo.</p>
+            @endif
         </section>
     @endif
 </div>

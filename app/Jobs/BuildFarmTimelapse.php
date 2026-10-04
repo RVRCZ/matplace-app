@@ -208,20 +208,17 @@ class BuildFarmTimelapse implements ShouldQueue
         return [$picked, $min];
     }
 
-    /** The cleaned piece from the photo box: a side view first (they look best), the latest of its kind. */
+    /** The cleaned piece from the photo box (TestPhotos::finishIndex says which one). */
     private function finishPhoto(FarmOrder $order): ?string
     {
-        $photos = app(TestPhotos::class)->all($order);
-        foreach (['left', 'right', 'phone', 'top'] as $view) {
-            $match = array_values(array_filter($photos, fn ($p) => ($p['view'] ?? '') === $view));
-            if ($match) {
-                $path = app(TestPhotos::class)->path(end($match));
-
-                return is_file($path) ? $path : null;
-            }
+        $photos = app(TestPhotos::class);
+        $index = $photos->finishIndex($order);
+        if ($index === null) {
+            return null;
         }
+        $path = $photos->path($photos->all($order)[$index]);
 
-        return null;
+        return is_file($path) ? $path : null;
     }
 
     private function ffmpeg(): string

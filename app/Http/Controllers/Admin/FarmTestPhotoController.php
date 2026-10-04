@@ -65,11 +65,16 @@ class FarmTestPhotoController extends Controller
         return response()->file($disk->path($file), ['Content-Type' => 'image/jpeg', 'Cache-Control' => 'private, max-age=86400']);
     }
 
-    public function destroy(FarmOrder $order, int $index): RedirectResponse
+    public function destroy(Request $request, FarmOrder $order, int $index): RedirectResponse
     {
         $this->photos->remove($order, $index);
+        // the end of a customer's video may have shown this very photo: built again without it
+        if (! $order->isTest() && $order->timelapse_path) {
+            AddFinishPhotoToVideo::dispatch($order->id);
+        }
+        $to = str_contains((string) $request->headers->get('referer'), '/photobox') ? redirect()->route('admin.farm.photobox', ['order' => $order->token]) : $this->back($order);
 
-        return $this->back($order)->with('status', 'Fotka smazána.');
+        return $to->with('status', 'Fotka smazána.');
     }
 
     public function judge(FarmOrder $order, TestPhotoJudge $judge): RedirectResponse
@@ -95,7 +100,8 @@ class FarmTestPhotoController extends Controller
             ->with(['printer', 'color', 'material'])->latest('id')->limit(30)->get();
         $order = $request->query('order') ? $tests->firstWhere('token', $request->query('order')) : $tests->first();
 
-        return view('admin.farm.photobox', ['tests' => $tests, 'order' => $order, 'photos' => $order ? $this->photos->all($order) : []]);
+        return view('admin.farm.photobox', ['tests' => $tests, 'order' => $order, 'photos' => $order ? $this->photos->all($order) : [],
+            'finish' => $order && ! $order->isTest() ? $this->photos->finishIndex($order) : null]);
     }
 
     private function back(FarmOrder $order): RedirectResponse
