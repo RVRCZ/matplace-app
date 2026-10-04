@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Http;
  */
 final class ClaudeAssistant implements Assistant
 {
-    /** @param  array{api_key?: string, assistant_model?: string, assistant_effort?: string, timeout?: int}  $config */
+    /** @param  array{api_key?: string, assistant_model?: string, assistant_effort?: string, kind_models?: array<string, ?string>, timeout?: int}  $config */
     public function __construct(private readonly array $config) {}
 
     public function available(): bool
@@ -25,7 +25,8 @@ final class ClaudeAssistant implements Assistant
         if (! $this->available()) {
             throw new EngineException('The assistant is not configured (ANTHROPIC_API_KEY).');
         }
-        $model = (string) ($this->config['assistant_model'] ?? 'claude-opus-5-5');
+        // a kind may have a cheaper model of its own (classify: one category out of 82 is a small model's job)
+        $model = (string) (($this->config['kind_models'][$kind] ?? null) ?: ($this->config['assistant_model'] ?? 'claude-opus-5-5'));
         // effort and the server-side fallback exist on the current Opus / Sonnet / Fable models; a Haiku set in .env gets neither
         $current = (bool) preg_match('/^claude-(opus-5|sonnet-5|fable|mythos)/', $model);
         $content = [];

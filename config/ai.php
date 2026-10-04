@@ -21,6 +21,8 @@ return [
         // the admin's helper: categories of models, texts for posts and descriptions, drafts of e-mails, themes of collections
         'assistant_model' => env('ANTHROPIC_ASSISTANT_MODEL', 'claude-opus-5-5'),
         'assistant_effort' => env('ANTHROPIC_ASSISTANT_EFFORT', 'low'),
+        // a cheaper model for one kind of the assistant's work (empty = assistant_model); classifying 8 000 catalogue models adds up
+        'kind_models' => ['classify' => env('ANTHROPIC_CLASSIFY_MODEL')],
     ],
 
     /*

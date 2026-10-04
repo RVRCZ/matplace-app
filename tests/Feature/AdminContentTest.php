@@ -183,6 +183,18 @@ class AdminContentTest extends TestCase
         @unlink($text);
     }
 
+    public function test_one_kind_of_the_assistants_work_can_run_on_a_cheaper_model(): void
+    {
+        Http::fake(['api.anthropic.com/*' => Http::response([
+            'model' => 'claude-haiku-4-5-20251001', 'content' => [['type' => 'text', 'text' => '{"ok":true}']], 'usage' => ['input_tokens' => 10, 'output_tokens' => 5],
+        ])]);
+        $assistant = new ClaudeAssistant(['api_key' => 'k', 'assistant_model' => 'claude-sonnet-5-5', 'kind_models' => ['classify' => 'claude-haiku-4-5-20251001', 'email' => null]]);
+        $assistant->ask('classify', 'sys', 'which?', ['type' => 'object']);
+        $assistant->ask('email', 'sys', 'write', ['type' => 'object']);
+        Http::assertSent(fn ($r) => $r['model'] === 'claude-haiku-4-5-20251001' && ! isset($r['output_config']['effort']));   // Haiku: no effort, no fallback
+        Http::assertSent(fn ($r) => $r['model'] === 'claude-sonnet-5-5' && isset($r['output_config']['effort']));
+    }
+
     public function test_the_ai_puts_a_model_into_a_category_only_when_it_is_sure(): void
     {
         $home = $this->category('home', 'Domácnost');
