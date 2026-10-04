@@ -123,10 +123,7 @@ final class Locales
 
     public static function isBot(Request $request): bool
     {
-        $agent = (string) $request->userAgent();
-
-        // every real browser introduces itself as Mozilla; libraries, monitors and scripts do not
-        return ! str_starts_with($agent, 'Mozilla/') || preg_match('/bot|crawl|spider|slurp|facebookexternalhit|whatsapp|telegram|preview|lighthouse|pagespeed|headless|curl|wget|python|monitor|scan|fetch|feed|archiver|validator/i', $agent) === 1;
+        return Bots::byAgent($request->userAgent()) !== null;
     }
 
     // ── What the current page offers ─────────────────────────────────────────

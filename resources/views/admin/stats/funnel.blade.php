@@ -8,7 +8,7 @@
         'register' => 'Registrace', 'designer_enabled' => 'Zapnul designérský profil', 'designer_import' => 'Import portfolia', 'designer_file_uploaded' => 'Nahrál soubor pro farmu',
     ];
     $paths = ['customer' => 'Zákazník', 'owner' => 'Majitel tiskárny', 'designer' => 'Designér'];
-    $sources = ['google' => 'Google', 'seznam' => 'Seznam', 'bing' => 'Bing', 'facebook' => 'Facebook', 'instagram' => 'Instagram', 'designer' => 'Odkaz designéra', 'direct' => 'Přímo', 'other' => 'Ostatní'];
+    $sources = ['google' => 'Google', 'seznam' => 'Seznam', 'bing' => 'Bing', 'facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube' => 'YouTube', 'designer' => 'Odkaz designéra', 'direct' => 'Přímo', 'other' => 'Ostatní'];
 @endphp
 
 @section('content')
@@ -20,8 +20,11 @@
     <a href="{{ route('admin.stats.speed') }}" class="chip">Rychlost</a>
 </nav>
 
+<div class="mt-3 flex gap-1 text-sm">@foreach(\App\Domain\Stats\Funnel::PERIODS as $d)<a href="{{ $link(['days' => $d]) }}" class="chip {{ $stats['days'] === $d ? 'chip-on' : '' }}">{{ $d }} dní</a>@endforeach</div>
+
+@include('admin.stats.overview')
+
 <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-    <span class="flex gap-1">@foreach(\App\Domain\Stats\Funnel::PERIODS as $d)<a href="{{ $link(['days' => $d]) }}" class="chip {{ $stats['days'] === $d ? 'chip-on' : '' }}">{{ $d }} dní</a>@endforeach</span>
     <form method="get" class="flex flex-wrap items-center gap-2">
         <input type="hidden" name="days" value="{{ $stats['days'] }}">
         <select name="source" onchange="this.form.submit()" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5" aria-label="Zdroj">
@@ -37,7 +40,7 @@
     </form>
     <span class="text-slate-600">Návštěvníků: <strong>{{ $stats['sessions'] }}</strong></span>
 </div>
-<p class="mt-1 text-xs text-slate-500">Z vlastních událostí webu (bez cookies třetích stran, i bez souhlasu). Krok počítá návštěvníky, kteří udělali jeho i všechny předchozí kroky. Stažení je plnohodnotný výsledek, ne mezikrok.</p>
+<p class="mt-1 text-xs text-slate-500">Z vlastních událostí webu (bez cookies třetích stran, i bez souhlasu), jen lidé. Krok počítá návštěvníky, kteří udělali jeho i všechny předchozí kroky. Stažení je plnohodnotný výsledek, ne mezikrok.</p>
 
 <div class="mt-4 grid gap-4 lg:grid-cols-3">
     @foreach($paths as $key => $name)

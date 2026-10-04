@@ -7,16 +7,24 @@ use App\Models\DesignerProfile;
 use App\Models\Event;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route as MatchedRoute;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 /**
  * Our own statistics, written to `events`. First-party and without any extra cookie: a visitor is the anonymous
- * session every visitor already has. Page views of robots are left out. Recording never breaks the page that calls it.
+ * session every visitor already has. Recording never breaks the page that calls it. What the numbers mean: docs/O.md.
+ *
+ * People only:
+ *   robots   are no visitors: a page they fetch is one `crawl` (which robot, which page), nothing else (App\Support\Bots);
+ *   a visit  is a person's once the browser confirmed it — the page's script called home (`meta.js`), or the
+ *            visitor did something only a person does (`meta.act`); a robot dressed as a browser does neither;
+ *   staff    a browser an admin signed in from is left out for good, signed in or not.
  *
  * Where a visit came from is decided once per browser session (first page) and remembered in the PHP session:
  *   designer  — arrived through a designer's ?ref= link (the cookie `ref` lasts 30 days)
- *   google | seznam | bing | facebook | instagram — by utm_source or the referring site
+ *   google | seznam | bing | facebook | instagram | youtube — by utm_source or the referring site
  *   direct    — no referrer        other — any other site
  */
 final class Track
@@ -40,14 +48,32 @@ final class Track
     private const SITES = [
         'google' => ['google.'], 'seznam' => ['seznam.cz'], 'bing' => ['bing.com'],
         'facebook' => ['facebook.com', 'fb.com', 'fb.me'], 'instagram' => ['instagram.com'],
+        'youtube' => ['youtube.com', 'youtu.be'],
     ];
+
+    /** What only a person does. One of these makes the visit a person's even when its script never called home. */
+    public const ACTIONS = ['upload', 'generate', 'calculation', 'order_created', 'order_paid', 'register', 'search', 'designer_enabled', 'designer_import', 'designer_file_uploaded'];
+
+    /** Pages whose address names public content; any other address with a parameter is kept as its pattern (/c/{calculation}): private links carry tokens. */
+    private const PUBLIC_PAGES = ['printers.show', 'designers.show', 'collections.show', 'blog.show', 'models.show', 'catalog.category', 'catalog.show'];
+
+    /** Session keys: the id of this browser session's `visit`, and how it was confirmed already. */
+    private const VISIT = 'visit_id';
+
+    private const CONFIRMED = 'visit_confirmed';
 
     /** @param  array<string, mixed>  $meta */
     public static function event(string $type, ?Model $subject = null, array $meta = [], ?string $subjectType = null): ?Event
     {
         try {
             $request = request();
+            if (self::staff($request)) {
+                return null;
+            }
             $origin = self::origin($request);
+            if (in_array($type, self::ACTIONS, true)) {
+                self::confirm($request, 'act');
+            }
             if (in_array($type, self::SHARED, true)) {
                 $request->attributes->set('track.fired', array_merge((array) $request->attributes->get('track.fired', []), [
                     ['type' => $type, 'meta' => array_intersect_key($meta, array_flip(self::SHARED_META))],
@@ -79,12 +105,135 @@ final class Track
      */
     public static function visit(Request $request, ?string $tool = null): ?Event
     {
-        if (! $request->isMethod('GET') || $request->expectsJson() || Locales::isBot($request) || ! $request->hasSession() || $request->session()->has('visited')) {
+        if (! $request->isMethod('GET') || $request->expectsJson() || Bots::is($request) || ! $request->hasSession() || $request->session()->has('visited')) {
             return null;
         }
         $request->session()->put('visited', now()->timestamp);
+        $visit = self::event(Event::VISIT, null, array_filter(['path' => self::pathOf($request), 'tool' => $tool]));
+        if ($visit) {
+            $request->session()->put(self::VISIT, $visit->id);
+        }
 
-        return self::event(Event::VISIT, null, array_filter(['path' => '/'.ltrim($request->path(), '/'), 'tool' => $tool]));
+        return $visit;
+    }
+
+    /** A page a robot fetched: which robot and which page, no session and nothing about the machine behind it. */
+    public static function crawl(Request $request, string $bot): ?Event
+    {
+        try {
+            return Event::create(['type' => Event::CRAWL, 'source' => mb_substr($bot, 0, 20), 'locale' => Locales::current(), 'meta' => ['path' => mb_substr('/'.ltrim($request->path(), '/'), 0, 190)]]);
+        } catch (\Throwable $e) {
+            Log::warning('Crawl was not recorded', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * The page's script called home (resources/js/site/measure.ts → POST /api/seen): a browser really showed the
+     * page. The visit of this session is confirmed as a person's, and the page counts as one page view (`page`),
+     * at most once per address in a row.
+     */
+    public static function seen(Request $request, string $address): void
+    {
+        try {
+            if (Bots::byAgent($request->userAgent()) !== null || ! $request->hasSession() || self::staff($request)) {
+                return;
+            }
+            $path = self::pathOfAddress($address);
+            self::confirm($request, 'js', $path);
+            if ($request->session()->get('page_last') !== $path) {
+                $request->session()->put('page_last', $path);
+                self::event(Event::PAGE, null, ['path' => $path], 'page');
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Page view was not recorded', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Marks this session's visit as a person's: `js` = its script ran, `act` = the visitor did something.
+     * A script that calls home in a session without a visit (the session began before visits were confirmed, or its
+     * first page was not counted) is the visit itself.
+     */
+    private static function confirm(Request $request, string $by, ?string $path = null): void
+    {
+        if (! $request->hasSession() || in_array($by, (array) $request->session()->get(self::CONFIRMED, []), true)) {
+            return;
+        }
+        $session = $request->session();
+        $anon = $request->attributes->get('anon_session')?->id;
+        $visit = $session->has(self::VISIT) ? Event::find($session->get(self::VISIT)) : null;
+        $visit ??= $anon ? Event::where('session_id', $anon)->where('type', Event::VISIT)->where('created_at', '>', now()->subDay())->latest('id')->first() : null;
+        if (! $visit && $by === 'js') {
+            $session->put('visited', now()->timestamp);
+            $visit = self::event(Event::VISIT, null, array_filter(['path' => $path]));
+        }
+        if (! $visit) {
+            return;
+        }
+        $visit->forceFill(['meta' => [$by => true] + (array) $visit->meta])->save();
+        $session->put(self::VISIT, $visit->id);
+        $session->push(self::CONFIRMED, $by);
+    }
+
+    /**
+     * True for a browser of the staff. The first time an admin is seen in a browser, the browser is remembered
+     * (anonymous_sessions.staff) and what it did in the last 30 days is marked `meta.staff`, so it leaves the numbers.
+     */
+    public static function staff(Request $request): bool
+    {
+        $anon = $request->attributes->get('anon_session');
+        if ($anon?->staff) {
+            return true;
+        }
+        if (! $request->user()?->isAdmin()) {
+            return false;
+        }
+        if ($anon) {
+            $anon->forceFill(['staff' => true])->saveQuietly();
+            foreach (Event::where('session_id', $anon->id)->where('created_at', '>', now()->subDays(30))->get() as $event) {
+                $event->forceFill(['meta' => ['staff' => true] + (array) $event->meta])->save();
+            }
+        }
+
+        return true;
+    }
+
+    /** The address of the page being shown, as the statistics keep it. */
+    public static function pathOf(Request $request): string
+    {
+        return self::masked($request->route(), '/'.ltrim($request->path(), '/'));
+    }
+
+    /** The same for an address the browser reported. */
+    public static function pathOfAddress(string $address): string
+    {
+        $path = '/'.trim((string) parse_url($address, PHP_URL_PATH), '/');
+        try {
+            $route = Route::getRoutes()->match(Request::create($path, 'GET'));
+        } catch (\Throwable) {
+            return '/?';   // no page of ours
+        }
+
+        return self::masked($route, $path);
+    }
+
+    /**
+     * One page = one line in every language (the language is the event's `locale`), and no private token: an address
+     * with parameters is kept as written only for public content, otherwise as its pattern.
+     */
+    private static function masked(?MatchedRoute $route, string $path): string
+    {
+        $first = explode('/', ltrim($path, '/'))[0];
+        if (in_array($first, Locales::PREFIXED, true)) {
+            $path = '/'.ltrim(substr(ltrim($path, '/'), strlen($first)), '/');
+        }
+        if ($route && array_diff($route->parameterNames(), ['locale']) && ! in_array(Locales::baseName($route->getName()), self::PUBLIC_PAGES, true)) {
+            $path = '/'.ltrim((string) preg_replace('#^\{locale\}/?#', '', $route->uri()), '/');
+        }
+
+        return mb_substr($path, 0, 190);
     }
 
     /**
@@ -93,7 +242,7 @@ final class Track
     public static function tool(string $tool): ?Event
     {
         $request = request();
-        if (Locales::isBot($request)) {
+        if (Bots::is($request)) {
             return null;
         }
         $session = $request->attributes->get('anon_session')?->id;
@@ -139,7 +288,7 @@ final class Track
      */
     public static function view(Model $subject): ?Event
     {
-        if (Locales::isBot(request())) {
+        if (Bots::is(request())) {
             return null;
         }
         $session = request()->attributes->get('anon_session')?->id;

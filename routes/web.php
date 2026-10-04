@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
 use App\Http\Controllers\Api\ModelFileController;
 use App\Http\Controllers\Api\ModelPreviewController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\SeenController;
 use App\Http\Controllers\Api\ThreadController;
 use App\Http\Controllers\Api\ToolsApiController;
 use App\Http\Controllers\Api\UploadController;
@@ -301,6 +302,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('models/{designerModel}/quote', [ModelCatalogController::class, 'quote'])->middleware('throttle:120,1,model-quote')->name('models.quote');
     Route::post('calculations', [CalculationController::class, 'store'])->middleware('throttle:calculations')->name('calculations.store');
     Route::get('calculations/{calculation}', [CalculationController::class, 'show'])->name('calculations.show');
+    // the page's script confirms that a browser really showed the page (our own statistics: people, not robots)
+    Route::post('seen', SeenController::class)->middleware('throttle:120,1,seen')->name('seen');
     Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1,search')->name('search');
     Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1,describe')->name('describe');
     Route::post('generate', [GenerationController::class, 'store'])->middleware('throttle:10,1,generate')->name('generate.store');
