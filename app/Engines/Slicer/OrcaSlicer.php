@@ -58,7 +58,7 @@ final class OrcaSlicer implements Slicer
                 }
             }
 
-            $attempt = function (bool $supports) use ($work, $mesh, $placed, $params, $filament, $process, $machine, $pairing): array {
+            $attempt = function (bool $supports) use ($work, $mesh, $placed, $params, $filament, $process, $machine, $pairing, $clock): array {
                 $proc = json_decode((string) File::get($process), true) ?: [];
                 if ($params->vaseMode) {
                     $proc['spiral_mode'] = '1';
@@ -94,8 +94,16 @@ final class OrcaSlicer implements Slicer
                     '--outputdir', $out,
                     $placed ?? $mesh,
                 ]);
-                $result = Process::path($work)->env(['HOME' => $work, 'TMPDIR' => $work])
-                    ->timeout($this->config['timeout'])->run($cmd);
+                $slot = $this->slot($clock);
+                try {
+                    $result = Process::path($work)->env(['HOME' => $work, 'TMPDIR' => $work])
+                        ->timeout($this->config['timeout'])->run($cmd);
+                } finally {
+                    if ($slot) {
+                        flock($slot, LOCK_UN);
+                        fclose($slot);
+                    }
+                }
 
                 return ['gcodes' => File::glob($out.'/*.gcode'), 'raw' => $result->output().$result->errorOutput()];
             };
@@ -119,9 +127,9 @@ final class OrcaSlicer implements Slicer
 
             $gcodePath = $r['gcodes'][0];
             $parseStart = hrtime(true);
-            $gcode = (string) File::get($gcodePath);
-            $grams = GcodeStats::grams($gcode);
-            $minutes = GcodeStats::minutes($gcode);
+            $stats = GcodeStats::fromFile($gcodePath);
+            $grams = $stats['grams'];
+            $minutes = $stats['minutes'];
             if ($grams === null) {
                 throw new SlicerException('Could not parse filament grams from gcode.');
             }
@@ -130,11 +138,10 @@ final class OrcaSlicer implements Slicer
             File::ensureDirectoryExists(dirname($keep));
             File::move($gcodePath, $keep);
 
-            $meters = GcodeStats::meters($gcode);
-            $byMode = GcodeStats::minutesByMode($gcode);
-            $layers = GcodeStats::layers($gcode);
-            $supportsUsed = $forced ? GcodeStats::hasSupports($gcode) : ($wantSupports || $autoSupports);
-            unset($gcode);
+            $meters = $stats['meters'];
+            $byMode = $stats['minutes_by_mode'];
+            $layers = $stats['layers'];
+            $supportsUsed = $forced ? $stats['has_supports'] : ($wantSupports || $autoSupports);
             $clock->add('parse', (hrtime(true) - $parseStart) / 1e9)->note('gcode_mb', round(filesize($keep) / 1048576, 1));
 
             $dims = $clock->measure('mesh', fn () => StlFile::stats($mesh)->bbox);
@@ -262,6 +269,38 @@ final class OrcaSlicer implements Slicer
         $y = max($ys) - min($ys);
 
         return $x > 0 && $y > 0 ? ['x' => $x, 'y' => $y, 'cx' => (min($xs) + max($xs)) / 2, 'cy' => (min($ys) + max($ys)) / 2] : null;
+    }
+
+    /**
+     * At most ORCA_PARALLEL slicers at once (0 = no limit): every slicer spreads over all cores, so three at once on
+     * four cores may finish no sooner than one after another. A free slot is a lock on a file; it is released with
+     * the process even when the worker is killed. The wait is part of the timings (orca_wait_s).
+     *
+     * @return resource|null the held lock
+     */
+    private function slot(Stopwatch $clock)
+    {
+        $n = (int) ($this->config['parallel'] ?? 0);
+        if ($n <= 0) {
+            return null;
+        }
+        $dir = rtrim($this->config['work_dir'], '/');
+        File::ensureDirectoryExists($dir);
+        $start = hrtime(true);
+        $deadline = microtime(true) + (int) $this->config['timeout'];
+        do {
+            for ($i = 1; $i <= $n; $i++) {
+                $fh = fopen($dir.'/.orca-slot-'.$i, 'c');
+                if ($fh && flock($fh, LOCK_EX | LOCK_NB)) {
+                    $clock->add('orca_wait', (hrtime(true) - $start) / 1e9);
+
+                    return $fh;
+                }
+                $fh && fclose($fh);
+            }
+            usleep(250000);
+        } while (microtime(true) < $deadline);
+        throw new SlicerException('No free slicer slot within '.$this->config['timeout'].' s.');
     }
 
     private function prefix(): array

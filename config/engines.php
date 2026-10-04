@@ -39,6 +39,8 @@ return [
         // the same mesh + parameters + profiles + slicer = the same G-code: kept in work_dir/cache (App\Engines\Slicer\CachedSlicer)
         'cache' => (bool) env('ORCA_CACHE', true),
         'cache_mb' => (int) env('ORCA_CACHE_MB', 3000),
+        // at most this many slicers at once (0 = no limit): see docs/M.md before changing
+        'parallel' => (int) env('ORCA_PARALLEL', 0),
         // printer catalogue for 3MF projects: vendor presets shipped with OrcaSlicer
         'vendor_profiles' => env('ORCA_VENDOR_PROFILES', '/opt/orca/squashfs-root/resources/profiles'),
         'catalog' => storage_path('app/printer_catalog.json'),
