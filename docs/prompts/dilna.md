@@ -33,10 +33,11 @@ zkopírují / stáhnou.
 
 1. **Windows** na tomhle počítači (10/11, 64bit) a že má účet správce; počítač může běžet nepřetržitě (bude se
    mu vypínat usínání).
-2. **Internet pro router farmy v dílně**: kabel z dílenského routeru do WAN portu routeru farmy (nejlepší), nebo
-   router farmy v režimu klient/repeater na dílenské Wi‑Fi. Tento počítač připoj **kabelem do routeru farmy**
-   (LAN port), ne na dílenskou Wi‑Fi – jinak tiskárny neuvidí. Zkontroluj, že router farmy nemá zapnutou
-   izolaci klientů a tiskárny nejsou v síti pro hosty.
+2. **Síť v dílně**: router farmy je 5G box (T‑Mobile/O2 SIM, LAN 192.168.1.1, SSID „MujO2Internet_5G_B47CB1“)
+   s **vlastním internetem** – dílenský přívod ani Wi‑Fi dílny nejsou potřeba. Tento počítač připoj **kabelem do
+   LAN portu 5G boxu** (DHCP, dostane bránu i internet), nové tiskárny na jeho Wi‑Fi 2,4 GHz. Zkontroluj, že
+   box nemá zapnutou izolaci klientů a tiskárny nejsou v síti pro hosty; mobilní síť má CGNAT (10.x), to nevadí –
+   agent jde jen ven.
 3. **Nový token agenta**: Roman ho vytvoří v `https://matplace.com/admin/farm/agents` → *Vytvořit a zobrazit token*
    (jméno „Dílna“). Tiskárny dílny v `/admin/farm/printers` dostanou tohoto agenta; domácí Kobry zůstávají u
    „Agent1 S1“. Token se ukáže jen jednou; Roman ti ho **vloží do `C:\farm-agent\config.yaml` sám**, nebo ti ho
