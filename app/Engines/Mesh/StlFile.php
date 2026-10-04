@@ -17,6 +17,8 @@ final class StlFile
 
     private const TRIANGLE_BYTES = 50;
 
+    private const BLOCK = 20000;   // triangles read at a time (1 MB)
+
     /** Geometry statistics in millimetres. */
     public static function stats(string $path): MeshReport
     {
@@ -27,37 +29,40 @@ final class StlFile
         $count = 0;
         $degenerate = 0;
 
-        foreach (self::triangles($path) as [$a, $b, $c]) {
-            $count++;
-            foreach ([$a, $b, $c] as $p) {
-                for ($i = 0; $i < 3; $i++) {
-                    if ($p[$i] < $min[$i]) {
-                        $min[$i] = $p[$i];
-                    }
-                    if ($p[$i] > $max[$i]) {
-                        $max[$i] = $p[$i];
+        foreach (self::records($path) as $block) {
+            foreach ($block as $v) {
+                // a = 4..6, b = 7..9, c = 10..12 (1..3 is the normal)
+                $count++;
+                for ($k = 4; $k <= 12; $k += 3) {
+                    for ($i = 0; $i < 3; $i++) {
+                        if ($v[$k + $i] < $min[$i]) {
+                            $min[$i] = $v[$k + $i];
+                        }
+                        if ($v[$k + $i] > $max[$i]) {
+                            $max[$i] = $v[$k + $i];
+                        }
                     }
                 }
+                // signed volume of tetrahedron (origin, a, b, c)
+                $volume += ($v[4] * ($v[8] * $v[12] - $v[9] * $v[11])
+                    - $v[5] * ($v[7] * $v[12] - $v[9] * $v[10])
+                    + $v[6] * ($v[7] * $v[11] - $v[8] * $v[10])) / 6.0;
+                // area = |(b-a) x (c-a)| / 2
+                $ux = $v[7] - $v[4];
+                $uy = $v[8] - $v[5];
+                $uz = $v[9] - $v[6];
+                $vx = $v[10] - $v[4];
+                $vy = $v[11] - $v[5];
+                $vz = $v[12] - $v[6];
+                $cx = $uy * $vz - $uz * $vy;
+                $cy = $uz * $vx - $ux * $vz;
+                $cz = $ux * $vy - $uy * $vx;
+                $t = sqrt($cx * $cx + $cy * $cy + $cz * $cz) / 2.0;
+                if ($t <= 1e-12) {
+                    $degenerate++;
+                }
+                $area += $t;
             }
-            // signed volume of tetrahedron (origin, a, b, c)
-            $volume += ($a[0] * ($b[1] * $c[2] - $b[2] * $c[1])
-                - $a[1] * ($b[0] * $c[2] - $b[2] * $c[0])
-                + $a[2] * ($b[0] * $c[1] - $b[1] * $c[0])) / 6.0;
-            // area = |(b-a) x (c-a)| / 2
-            $ux = $b[0] - $a[0];
-            $uy = $b[1] - $a[1];
-            $uz = $b[2] - $a[2];
-            $vx = $c[0] - $a[0];
-            $vy = $c[1] - $a[1];
-            $vz = $c[2] - $a[2];
-            $cx = $uy * $vz - $uz * $vy;
-            $cy = $uz * $vx - $ux * $vz;
-            $cz = $ux * $vy - $uy * $vx;
-            $t = sqrt($cx * $cx + $cy * $cy + $cz * $cz) / 2.0;
-            if ($t <= 1e-12) {
-                $degenerate++;
-            }
-            $area += $t;
         }
 
         if ($count === 0) {
@@ -93,27 +98,12 @@ final class StlFile
      */
     public static function place(string $inPath, string $outPath, float $factor, float $cx, float $cy): array
     {
-        $lo = [INF, INF, INF];
-        $hi = [-INF, -INF, -INF];
-        foreach (self::triangles($inPath) as $tri) {
-            foreach ($tri as $v) {
-                for ($i = 0; $i < 3; $i++) {
-                    $lo[$i] = min($lo[$i], $v[$i]);
-                    $hi[$i] = max($hi[$i], $v[$i]);
-                }
-            }
-        }
+        [$lo, $hi] = self::bounds($inPath);
         if (! is_finite($lo[0])) {
             throw new EngineException('No triangles in '.$inPath);
         }
         $move = [$cx - ($lo[0] + $hi[0]) / 2 * $factor, $cy - ($lo[1] + $hi[1]) / 2 * $factor, -$lo[2] * $factor];
-        $fh = self::beginBinary($outPath);
-        $n = 0;
-        foreach (self::triangles($inPath) as $tri) {
-            self::writeTriangle($fh, ...array_map(fn ($v) => [$v[0] * $factor + $move[0], $v[1] * $factor + $move[1], $v[2] * $factor + $move[2]], $tri));
-            $n++;
-        }
-        self::endBinary($fh, $n);
+        self::transform($inPath, self::beginBinary($outPath), $factor, $move);
 
         return [($hi[0] - $lo[0]) * $factor, ($hi[1] - $lo[1]) * $factor, ($hi[2] - $lo[2]) * $factor];
     }
@@ -127,20 +117,8 @@ final class StlFile
         }
         fwrite($out, str_pad('matplace scaled '.$factor, self::BINARY_HEADER, "\0"));
         fwrite($out, pack('V', 0));
-        $n = 0;
-        foreach (self::triangles($inPath) as [$a, $b, $c]) {
-            fwrite($out, pack('f3', 0, 0, 0)
-                .pack('f3', $a[0] * $factor, $a[1] * $factor, $a[2] * $factor)
-                .pack('f3', $b[0] * $factor, $b[1] * $factor, $b[2] * $factor)
-                .pack('f3', $c[0] * $factor, $c[1] * $factor, $c[2] * $factor)
-                .pack('v', 0));
-            $n++;
-        }
-        fseek($out, self::BINARY_HEADER);
-        fwrite($out, pack('V', $n));
-        fclose($out);
 
-        return $n;
+        return self::transform($inPath, $out, $factor, null);
     }
 
     /** Starts a binary STL writer; returns handle. Finish with endBinary(). */
@@ -178,6 +156,113 @@ final class StlFile
         fseek($fh, self::BINARY_HEADER);
         fwrite($fh, pack('V', $count));
         fclose($fh);
+    }
+
+    /**
+     * Smallest and largest coordinate of all vertices.
+     *
+     * @return array{0:array{0:float,1:float,2:float},1:array{0:float,1:float,2:float}} [lo, hi]; INF when there is nothing
+     */
+    public static function bounds(string $path): array
+    {
+        $lo = [INF, INF, INF];
+        $hi = [-INF, -INF, -INF];
+        foreach (self::records($path) as $block) {
+            foreach ($block as $v) {
+                for ($k = 4; $k <= 12; $k += 3) {
+                    for ($i = 0; $i < 3; $i++) {
+                        if ($v[$k + $i] < $lo[$i]) {
+                            $lo[$i] = $v[$k + $i];
+                        }
+                        if ($v[$k + $i] > $hi[$i]) {
+                            $hi[$i] = $v[$k + $i];
+                        }
+                    }
+                }
+            }
+        }
+
+        return [$lo, $hi];
+    }
+
+    /**
+     * Triangles in blocks, each triangle as unpack('f12') gives it: [1..3] normal, [4..6] a, [7..9] b, [10..12] c.
+     * A binary file is read a block at a time (a read and a generator step per triangle made a big mesh take
+     * seconds); ASCII keeps its double precision, as triangles() gives it.
+     *
+     * @return \Generator<int, list<array<int,float>>>
+     */
+    public static function records(string $path): \Generator
+    {
+        if (! is_file($path)) {
+            throw new EngineException('File not found: '.$path);
+        }
+        if (! self::isBinary($path)) {
+            $block = [];
+            foreach (self::asciiTriangles($path) as [$a, $b, $c]) {
+                $block[] = [1 => 0.0, 2 => 0.0, 3 => 0.0, 4 => $a[0], 5 => $a[1], 6 => $a[2], 7 => $b[0], 8 => $b[1], 9 => $b[2], 10 => $c[0], 11 => $c[1], 12 => $c[2]];
+                if (count($block) === self::BLOCK) {
+                    yield $block;
+                    $block = [];
+                }
+            }
+            if ($block) {
+                yield $block;
+            }
+
+            return;
+        }
+        $fh = fopen($path, 'rb');
+        try {
+            fseek($fh, self::BINARY_HEADER);
+            $count = unpack('V', fread($fh, 4))[1];
+            for ($done = 0; $done < $count;) {
+                $want = min(self::BLOCK, $count - $done);
+                $buf = fread($fh, $want * self::TRIANGLE_BYTES);
+                $got = $buf === false ? 0 : intdiv(strlen($buf), self::TRIANGLE_BYTES);
+                if ($got === 0) {
+                    break;
+                }
+                $block = [];
+                for ($i = 0, $o = 0; $i < $got; $i++, $o += self::TRIANGLE_BYTES) {
+                    $block[] = unpack('f12', $buf, $o);
+                }
+                yield $block;
+                $done += $got;
+                if ($got < $want) {
+                    break;   // a truncated file: what is there, as before
+                }
+            }
+        } finally {
+            fclose($fh);
+        }
+    }
+
+    /**
+     * Writes every triangle as v × factor + move (move null: scaled only) to an open binary writer and closes it.
+     * The same arithmetic as one triangle at a time before, so the same bytes; one pack and one write per block.
+     */
+    private static function transform(string $inPath, $fh, float $f, ?array $move): int
+    {
+        $n = 0;
+        foreach (self::records($inPath) as $block) {
+            $out = '';
+            if ($move === null) {
+                foreach ($block as $v) {
+                    $out .= pack('f12v', 0, 0, 0, $v[4] * $f, $v[5] * $f, $v[6] * $f, $v[7] * $f, $v[8] * $f, $v[9] * $f, $v[10] * $f, $v[11] * $f, $v[12] * $f, 0);
+                }
+            } else {
+                [$mx, $my, $mz] = $move;
+                foreach ($block as $v) {
+                    $out .= pack('f12v', 0, 0, 0, $v[4] * $f + $mx, $v[5] * $f + $my, $v[6] * $f + $mz, $v[7] * $f + $mx, $v[8] * $f + $my, $v[9] * $f + $mz, $v[10] * $f + $mx, $v[11] * $f + $my, $v[12] * $f + $mz, 0);
+                }
+            }
+            fwrite($fh, $out);
+            $n += count($block);
+        }
+        self::endBinary($fh, $n);
+
+        return $n;
     }
 
     public static function isBinary(string $path): bool

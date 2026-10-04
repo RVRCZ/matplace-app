@@ -64,16 +64,12 @@ final class PlateLayout
         $rows = (int) ceil($copies / $cols);
 
         // the piece's own footprint (min corner) so every copy starts at its cell's origin
-        $min = [INF, INF, INF];
-        foreach (StlFile::triangles($piece->path) as $tri) {
-            foreach ($tri as $p) {
-                for ($i = 0; $i < 3; $i++) {
-                    $min[$i] = min($min[$i], $p[$i]);
-                }
-            }
-        }
+        [$min] = StlFile::bounds($piece->path);
         $stepX = ($layout['rotated'] ? $d->y : $d->x) + $gap;
         $stepY = ($layout['rotated'] ? $d->x : $d->y) + $gap;
+        $rotated = (bool) $layout['rotated'];
+        $dy = $d->y;
+        [$mx, $my, $mz] = $min;
         $fh = StlFile::beginBinary($outPath);
         $n = 0;
         $placed = 0;
@@ -81,17 +77,26 @@ final class PlateLayout
             for ($c = 0; $c < $cols && $placed < $copies; $c++, $placed++) {
                 $ox = $c * $stepX;
                 $oy = $r * $stepY;
-                foreach (StlFile::triangles($piece->path) as $tri) {
-                    $out = [];
-                    foreach ($tri as $p) {
-                        $x = $p[0] - $min[0];
-                        $y = $p[1] - $min[1];
-                        $z = $p[2] - $min[2];
-                        // a quarter turn about Z: (x, y) → (y_max - y, x)
-                        $out[] = $layout['rotated'] ? [$ox + ($d->y - $y), $oy + $x, $z] : [$ox + $x, $oy + $y, $z];
+                // a block of triangles at a time, one pack per triangle (the copies of a big model took minutes)
+                foreach (StlFile::records($piece->path) as $block) {
+                    $out = '';
+                    foreach ($block as $v) {
+                        $t = [0.0, 0.0, 0.0];
+                        for ($k = 4; $k <= 12; $k += 3) {
+                            $x = $v[$k] - $mx;
+                            $y = $v[$k + 1] - $my;
+                            $z = $v[$k + 2] - $mz;
+                            // a quarter turn about Z: (x, y) → (y_max - y, x)
+                            if ($rotated) {
+                                array_push($t, $ox + ($dy - $y), $oy + $x, $z);
+                            } else {
+                                array_push($t, $ox + $x, $oy + $y, $z);
+                            }
+                        }
+                        $out .= pack('f12v', ...[...$t, 0]);
                     }
-                    StlFile::writeTriangle($fh, $out[0], $out[1], $out[2]);
-                    $n++;
+                    fwrite($fh, $out);
+                    $n += count($block);
                 }
             }
         }
