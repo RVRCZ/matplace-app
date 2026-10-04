@@ -134,15 +134,20 @@ final class OrcaSlicer implements Slicer
                 throw new SlicerException('Could not parse filament grams from gcode.');
             }
 
-            $keep = $this->config['work_dir'].'/gcode/'.Str::uuid().'.gcode';
-            File::ensureDirectoryExists(dirname($keep));
-            File::move($gcodePath, $keep);
+            $mb = round(filesize($gcodePath) / 1048576, 1);
+            // an estimate needs the numbers only: its G-code goes with the work directory instead of filling the disk
+            $keep = null;
+            if ($params->keepGcode) {
+                $keep = $this->config['work_dir'].'/gcode/'.Str::uuid().'.gcode';
+                File::ensureDirectoryExists(dirname($keep));
+                File::move($gcodePath, $keep);
+            }
 
             $meters = $stats['meters'];
             $byMode = $stats['minutes_by_mode'];
             $layers = $stats['layers'];
             $supportsUsed = $forced ? $stats['has_supports'] : ($wantSupports || $autoSupports);
-            $clock->add('parse', (hrtime(true) - $parseStart) / 1e9)->note('gcode_mb', round(filesize($keep) / 1048576, 1));
+            $clock->add('parse', (hrtime(true) - $parseStart) / 1e9)->note('gcode_mb', $mb);
 
             $dims = $clock->measure('mesh', fn () => StlFile::stats($mesh)->bbox);
             $warnings = [];
