@@ -1,123 +1,123 @@
-# Zadání: počítač v dílně – farma matplace (agent, foto-box, Claude Code)
+# Zadání: počítač v dílně – farma matplace (8× Kobra S1, agent, foto-box)
 
-Datum: 4. 10. 2026. Tohle je první prompt pro Claude Code na **počítači v dílně**, kam se stěhuje dosavadní router
-farmy (bez tiskáren – ty tři Kobry zůstávají doma na novém routeru se stejnou sítí a obsluhuje je dál agent na
-vývojovém počítači). Dílna bude **druhé stanoviště farmy**: vlastní agent „Dílna“ pro tiskárny, které tam
-přibudou, a foto-box. Vývojový počítač (repozitáře, nasazování na server, relay pro import z Printables) zůstává doma;
-tenhle počítač jen **provozuje farmu**. Kód se tu nevyvíjí – změny agenta vznikají na vývojovém počítači a sem se jen
-zkopírují / stáhnou.
+Datum: 5. 10. 2026. Tohle je první prompt pro Claude Code na **počítači v dílně** (čerstvá Windows 11). V dílně je
+**8 tiskáren Anycubic Kobra S1** a 5G box (router s vlastním internetem přes SIM). Tenhle počítač **provozuje
+farmu**: běží na něm agent tiskáren (trvale, jako služba Windows) a slouží k foto-boxu. Kód se tu nevyvíjí – změny
+agenta vznikají na vývojovém počítači doma a sem se jen zkopírují. Domácí tiskárny (3 Kobry na jiné síti) obsluhuje
+domácí agent; těch se tady nedotýkáš.
+
+Na flashce `D:\` (FAT32) je všechno potřebné:
+
+| cesta | co to je |
+|---|---|
+| `D:\aGVscF9zb3Nf\update.swu` | Rinkhals 20260901_01 pro Kobra S1 – vkládá se do USB tiskárny, viz `NAVOD-kobra-s1.md` |
+| `D:\matplace-dilna\NAVOD-kobra-s1.md` | postup pro každou tiskárnu (firmware, Wi‑Fi, instalace, rezervace IP, kontrola) |
+| `D:\matplace-dilna\agent\` | agent farmy: `farm_agent\`, `requirements.txt`, `install-farma.ps1`, `run-agent.cmd`, `config.yaml.template` (8 tiskáren) |
+| `D:\matplace-dilna\PROMPT-dilna.md` | tento text |
 
 ## Co je co
 
-- **matplace.com** – Laravel aplikace na serveru Hetzner (178.104.162.164). Nic na serveru neměň a nepřipojuj se
-  k němu; všechno, co dílna potřebuje, jde přes HTTPS a administraci `https://matplace.com/admin/farm`.
-- **Farm agent** (`agent/` v repu `RVRCZ/matplace-app`, Python 3.11) – malá služba, která běží v síti u tiskáren,
-  polluje matplace (jen odchozí HTTPS), stahuje G‑code a mluví s tiskárnami lokálně přes Moonraker (Rinkhals).
-  Tisk nikdy nezačne sám – jen po potvrzení „podložka je volná“ v administraci. Dokumentace: `agent/README.md`.
-- **Tiskárny doma** (zůstávají, agent „Agent1 S1“ na vývojovém počítači, síť 192.168.1.x): `kobra-s1-01`
-  (.101), `kobra-3-max-01` (.102), `kobra-s1-02` (.103, stock firmware, offline). **Těch se tady nedotýkej** – v adminu
-  je nech u původního agenta.
-- **Tiskárny v dílně** přibudou: každá dostane v `/admin/farm/printers` vlastní klíč, režim *Automaticky přes agenta*
-  a agenta „Dílna“; v routeru dílny pevnou IP podle MAC; Anycubic s Rinkhals = ovladač `moonraker`
-  (`http://IP:7125`, kamera `http://IP/webcam/?action=snapshot`), Prusa = ovladač `prusalink` (až vznikne,
-  zadání `docs/prompts/prusa.md`). Zkouška, že počítač tiskárnu vidí: `curl http://IP:7125/server/info` vrátí JSON.
-  Dokud v dílně žádná tiskárna není, agent se spustí s jedním blokem `driver: mock` (viz README „Zkouška bez
-  tiskárny“), aby bylo vidět, že spojení se serverem funguje.
-- **Foto-box** – tři USB kamery (shora, zleva, zprava) připojené k tomuto počítači; stránka
-  `https://matplace.com/admin/farm/photobox` je obsluhuje přímo z prohlížeče (kamery si prohlížeč pamatuje).
-  Fotky hotových kusů končí na konci videí na YouTube/Facebooku.
-- **Časosběr** – snímky bere agent z kamer tiskáren, nic k nastavení.
-- **Relay pro import z Printables** (`C:\matplace-relay` na vývojovém počítači) – zůstává doma, s dílnou nesouvisí.
+- **matplace.com** – Laravel aplikace na serveru Hetzner. Nic na serveru neměň a nepřipojuj se k němu; všechno
+  jde přes HTTPS a administraci `https://matplace.com/admin/farm`.
+- **Farm agent** (Python 3.11, `agent/README.md` na flashce) – polluje matplace (jen odchozí HTTPS), stahuje
+  G‑code a mluví s tiskárnami lokálně přes Moonraker (Rinkhals, port 7125). Tisk nikdy nezačne sám – jen po
+  „Podložka je volná“ v administraci. Jeden agent obslouží všech 8 tiskáren.
+- **Tiskárny**: v adminu jsou předpřipravené **Dílna S1 #1 … #8** (klíče `kobra-s1-d01` … `kobra-s1-d08`,
+  vypnuté, bez agenta) – kopie nastavení domácí S1 #1 (podložka 250×250×250, tryska 0,4, texturovaná PEI, časosběr
+  „consent“). Síť: 5G box `192.168.1.1`, SSID 2,4 GHz **`MujO2Internet_2.4G_B47CB1`**; tiskárna N dostane
+  rezervací podle MAC adresu **192.168.1.10N**. Kamera Rinkhals `http://IP/webcam/?action=snapshot`, Mainsail `:4409`.
+- **Foto-box** – tři USB kamery (shora, zleva, zprava) u tohoto počítače; `https://matplace.com/admin/farm/photobox`
+  je obsluhuje z prohlížeče. Fotky hotových kusů končí na konci videí.
+- **Dva agenti souběžně** (domácí „Agent1 S1“ a tenhle „Dílna“) jsou v pořádku – každý má své tiskárny.
 
-## Než začneš, vyžádej si od Romana (jedna zpráva, všechno najednou)
+## Než začneš, vyžádej si od Romana (jedna zpráva)
 
-1. **Windows** na tomhle počítači (10/11, 64bit) a že má účet správce; počítač může běžet nepřetržitě (bude se
-   mu vypínat usínání).
-2. **Síť v dílně**: router farmy je 5G box (T‑Mobile/O2 SIM, LAN 192.168.1.1, SSID „MujO2Internet_5G_B47CB1“)
-   s **vlastním internetem** – dílenský přívod ani Wi‑Fi dílny nejsou potřeba. Tento počítač připoj **kabelem do
-   LAN portu 5G boxu** (DHCP, dostane bránu i internet), nové tiskárny na jeho Wi‑Fi 2,4 GHz. Zkontroluj, že
-   box nemá zapnutou izolaci klientů a tiskárny nejsou v síti pro hosty; mobilní síť má CGNAT (10.x), to nevadí –
-   agent jde jen ven.
-3. **Nový token agenta**: Roman ho vytvoří v `https://matplace.com/admin/farm/agents` → *Vytvořit a zobrazit token*
-   (jméno „Dílna“). Tiskárny dílny v `/admin/farm/printers` dostanou tohoto agenta; domácí Kobry zůstávají u
-   „Agent1 S1“. Token se ukáže jen jednou; Roman ti ho **vloží do `C:\farm-agent\config.yaml` sám**, nebo ti ho
-   dá a ty ho tam zapíšeš. **Token nikdy nevypisuj** do chatu, logu ani jiného souboru.
-4. **Zdroj kódu**: na flashce (D:\matplace-dilna\agent – složka agenta připravená na vývojovém počítači), nebo
-   klon repozitáře `git@github.com:RVRCZ/matplace-app.git` (soukromý: Roman musí na GitHub přidat SSH klíč
-   tohoto počítače jako *deploy key*, jen čtení). Pro provoz stačí flashka.
-5. **Přihlášení**: účet Claude (claude.ai) pro Claude Code a admin účet matplace v prohlížeči.
-6. Které **tiskárny v dílně** budou (model, IP, Rinkhals/PrusaLink), a že jsou zapnuté (na displeji Kobry v LAN
-   módu svítí IP). Když zatím žádná, jede se s `mock`.
+1. Že je počítač **kabelem v LAN portu 5G boxu** (ne na jiné Wi‑Fi) a má internet (`curl https://matplace.com`).
+2. **Token agenta „Dílna“**: Roman v `https://matplace.com/admin/farm/agents` → *Vytvořit a zobrazit token*
+   (jméno „Dílna“), token se ukáže jen jednou. Vloží ho **sám** do `C:\farm-agent\config.yaml`, nebo ti ho dá a ty ho
+   tam zapíšeš. **Token nikdy nevypisuj** do chatu, logu ani jiného souboru.
+3. Heslo do rozhraní 5G boxu (`http://192.168.1.1`) – kvůli rezervacím IP; zadává ho Roman, ty nepotřebuješ.
+4. Přihlášení **Claude** (claude.ai) a **admin matplace** v prohlížeči tohoto počítače.
+5. Kolik tiskáren už má Rinkhals (instaluje je Roman podle `NAVOD-kobra-s1.md`, od 1 do 8) – agent spustíš
+   klidně dřív, tiskárny bez Rinkhals jsou prostě offline.
 
 ## Postup
 
-### 1. Windows
+### 1. Windows 11 (aby počítač běžel pořád)
 
-- Napájení: nikdy neusínat, nehibernovat, displej vypínat klidně (`powercfg /change standby-timeout-ac 0`,
-  `hibernate-timeout-ac 0`); v BIOSu/UEFI zapnout „po výpadku proudu zapnout“, pokud to deska umí.
-- Windows Update: aktivní hodiny tak, aby restart nepřišel uprostřed tisku (např. 2–6 h ráno). Agent se po
-  restartu spustí sám (úloha v Plánovači, bez přihlášení), ale běžící tisk sleduje jen když počítač běží.
-- Časové pásmo Europe/Prague, správný čas (jinak nesedí HTTPS a logy).
-- Prohlížeč: Chrome nebo Edge, jeden profil, přihlásit admina na matplace.com a nechat přihlášeného.
+- Napájení: nikdy neusínat ani nehibernovat (`powercfg /change standby-timeout-ac 0`, `hibernate-timeout-ac 0`,
+  `powercfg /h off`); displej se může vypínat. V BIOS/UEFI „po výpadku napájení zapnout“ (AC Power Recovery = On),
+  pokud to deska umí – Roman nastaví při restartu.
+- **Rychlé spuštění vypnout** (Ovládací panely → Možnosti napájení → Nastavení tlačítek → *Zapnout rychlé spuštění* odškrtnout),
+  jinak se po „vypnutí“ služby nechovají předvídatelně.
+- Windows Update: aktivní hodiny tak, aby restart nepřišel uprostřed tisku (např. 02–06 h); po restartu agent
+  naběhne sám (úloha jako SYSTEM, bez přihlášení).
+- Časové pásmo Europe/Prague, čas automaticky; název počítače např. `matplace-dilna`.
+- Automatické přihlášení uživatele **není nutné** (agent jede jako SYSTEM); foto-box ale potřebuje otevřený
+  prohlížeč, takže je pohodlné ho zapnout (`netplwiz` → odškrtnout „Uživatelé musí zadat jméno a heslo“).
+- Prohlížeč: Chrome nebo Edge, jeden profil, přihlásit admina matplace a nechat přihlášeného.
+- Antivir/Defender: nechat; **Řízený přístup ke složkám** (Controlled Folder Access) nezapínat – blokuje Python a Git.
 
 ### 2. Nástroje
 
-`winget install Git.Git Python.Python.3.11 Microsoft.VisualStudioCode OpenJS.NodeJS.LTS` (u Pythonu
-zaškrtnout/ověřit „Add to PATH“; `py -3 --version` → 3.11). Claude Code: `npm install -g @anthropic-ai/claude-code`,
-pak `claude` a přihlášení. VS Code otevři na složce `C:\farm-agent` (a případně na klonu repa, jen pro čtení).
-Na vývojovém počítači běží Python 3.11.9, Node 22, Claude Code 2.1.x – drž se stejných řad.
+```powershell
+winget install -e --id Git.Git
+winget install -e --id Python.Python.3.11 --scope machine     # "pro všechny uživatele" – nutné, agent poběží jako SYSTEM
+winget install -e --id Microsoft.VisualStudioCode
+winget install -e --id OpenJS.NodeJS.LTS
+npm install -g @anthropic-ai/claude-code
+```
+Ověř: `py -3 --version` → 3.11.x a `(Get-Command python).Source` ukazuje do `C:\Program Files\Python311\`
+(ne do `WindowsApps` – Python z Microsoft Storu je jen pro uživatele a služba SYSTEM ho nespustí; kdyby tam byl,
+odinstalovat a nechat jen ten z python.org/wingetu). Claude Code: `claude` a přihlášení. VS Code otevři na `C:\farm-agent`.
 
-### 3. Agent
+### 3. Agent jako služba (SYSTEM, startuje s počítačem, restart po pádu)
 
 ```powershell
-# z flashky
 robocopy D:\matplace-dilna\agent C:\farm-agent /E
 cd C:\farm-agent
-copy config.yaml.template config.yaml       # pak doplnit token (viz bod 3 výše)
+copy config.yaml.template config.yaml        # doplnit token (bod 2 výše); zbytek sedí (8 tiskáren, 192.168.1.101–108)
 ```
+Pak **PowerShell jako správce**: `powershell -ExecutionPolicy Bypass -File C:\farm-agent\install-farma.ps1`.
+Skript založí `venv`, nainstaluje knihovny, vypne usínání, ověří tiskárny v síti (ty bez Rinkhals zatím
+„NEODPOVÍDÁ“ – v pořádku), spustí `--check` (nic nespouští; musí vypsat, že server token přijal a které tiskárny
+agentovi patří) a založí úlohu Plánovače **matplace-farm-agent**: spouští se při startu počítače **jako SYSTEM**
+(bez přihlášení), při pádu restart každou minutu, bez časového limitu. Výpis: `C:\farm-agent\agent.log`.
 
-`config.yaml`: `server: https://matplace.com` (ne beta!), `token: ...`, `work_dir: C:/farm-agent/work`, pak
-**jen tiskárny dílny** – bloky domácích Kober ze šablony **smaž** (ty obsluhuje domácí agent; stejný klíč u dvou
-agentů dělá zmatek). Bez tiskárny nech jeden blok `driver: mock`.
-Pak **jako správce**: `powershell -ExecutionPolicy Bypass -File C:\farm-agent\install-farma.ps1` – založí venv,
-nainstaluje knihovny, vypne usínání, ověří tiskárny v síti, spustí `--check` (nic nespouští; vypíše stav tiskáren
-a zda server token přijal) a založí úlohu Plánovače **matplace-farm-agent** (start s počítačem jako SYSTEM, restart
-po pádu). Výpis: `C:\farm-agent\agent.log`. Ověření: v `/admin/farm/agents` má „Dílna“ čerstvý heartbeat a tiskárny
-dílny jsou v `/admin/farm/printers` do minuty **online**. Domácí agent běží dál, nic na něm neměň.
+Ověření: `Get-ScheduledTask matplace-farm-agent` → Running; v `/admin/farm/agents` má „Dílna“ čerstvý heartbeat;
+tiskárny s Rinkhals jsou v `/admin/farm/printers` do minuty online (po tom, co jim Roman v adminu zapne „povolena“
+a přiřadí agenta „Dílna“). **Restartuj počítač a ověř, že agent naběhl sám** – to je smysl celé úlohy.
 
-### 4. Foto-box
+Ovládání: `Stop-ScheduledTask matplace-farm-agent` / `Start-ScheduledTask matplace-farm-agent` (jako správce).
+Nová verze agenta z domova: zkopírovat složku `farm_agent` a úlohu restartovat.
+
+### 4. Tiskárny (Roman podle `NAVOD-kobra-s1.md`, ty kontroluješ)
+
+Pro každou: `curl http://192.168.1.10N:7125/server/info` (JSON), snímek z kamery, v adminu online, na displeji
+Rinkhals → Settings → Apps → Moonraker → *Auto leveling when starting prints* = ON. Zkušební tisk `quick` z
+`/admin/farm/tuning` na první hotové tiskárně, až pak další.
+
+### 5. Foto-box
 
 Zapoj tři kamery, otevři `https://matplace.com/admin/farm/photobox`, povol kamery, u každého pohledu vyber
-správnou kameru (prohlížeč si volbu pamatuje – používej pořád stejný profil), *Vyfotit a uložit* u zkušební
-zakázky. Fotka označená „do videa“ je ta, kterou skončí video zakázky.
+správnou kameru (prohlížeč si volbu pamatuje), *Vyfotit a uložit* u zkušební zakázky.
 
-### 5. Zkouška provozu
+### 6. Vzdálená správa (doporučeno)
 
-Malý tisk přes celou cestu: v adminu „Podložka je volná“ u zakázky ve frontě → agent do pár vteřin převezme,
-v adminu běží průběh, teploty a snímek; po dokončení je zakázka *Hotovo*. Pak zkus pauzu/pokračování
-z administrace a vypnutí agenta na 3 minuty (tiskárna „offline“, Romanovi přijde e‑mail; po zapnutí se
-sám přihlásí).
-
-### 6. Vzdálená správa (doporučeno, volitelné)
-
-Aby Roman nemusel do dílny kvůli každé drobnosti: Tailscale (zdarma) na tomhle i vývojovém počítači a RDP,
-nebo alespoň Chrome Remote Desktop. Žádné porty z internetu do sítě farmy neotvírat – Moonraker na tiskárnách
-nemá heslo.
+Tailscale (zdarma) na tomto i vývojovém počítači + vzdálená plocha, nebo Chrome Remote Desktop, aby Roman
+nemusel kvůli každé drobnosti do dílny. **Žádné porty z internetu do sítě farmy** – Moonraker na tiskárnách nemá heslo.
 
 ## Pravidla
 
 - Token agenta a hesla **nikdy nevypisuj** a neukládej jinam než do `C:\farm-agent\config.yaml`.
-- Firmware tiskáren **neaktualizovat** (Rinkhals podporuje jen konkrétní verze; v aplikaci Anycubic i na displeji
-  vypnout automatické aktualizace). Kobra S1 #2 dostane Rinkhals až po domluvě s Romanem.
-- Na serveru nic neměň; když něco chybí v administraci nebo v agentu, napiš, co přesně, a Roman to zadá
-  vývojové session (`docs/prompts/` v repu).
-- Nic z repa tu neupravuj a necommituj; po změně agenta na vývojovém počítači sem jen zkopíruj novou složku
-  `farm_agent` a restartuj úlohu (`Restart` = `Stop-ScheduledTask` + `Start-ScheduledTask matplace-farm-agent`).
+- Firmware tiskáren **neaktualizovat**; Rinkhals jen verze z flashky (podporuje firmware 2.7.0.9 a 2.7.2.7).
+- Na serveru nic neměň; co chybí v administraci nebo v agentu, napiš přesně a Roman to zadá vývojové session.
+- Nic z repa tu neupravuj a necommituj (repozitář tu ani být nemusí; agent je na flashce).
 - Při každém kroku napiš, co jsi udělal a co vidíš v logu/adminu; když tiskárna neodpovídá, nejdřív síť
-  (`ping`, `curl …:7125/server/info`), pak až konfigurace.
+  (`ping`, `curl …:7125/server/info`, rezervace v boxu), pak až konfigurace.
 
 ## Hotovo, když
 
-`/admin/farm/agents`: „Dílna“ online; tiskárny dílny (nebo mock) online a zkušební tisk prošel do *Hotovo* se
-snímky; domácí Kobry dál online u „Agent1 S1“; foto-box fotí všemi třemi kamerami; úloha Plánovače přežije
-restart počítače (vyzkoušet restartem).
+Úloha `matplace-farm-agent` běží jako SYSTEM a přežije restart počítače; „Dílna“ v `/admin/farm/agents` má
+heartbeat; každá Kobra s Rinkhals je online pod svým klíčem; první zkušební tisk prošel do *Hotovo* se snímky;
+foto-box fotí všemi třemi kamerami; domácí tiskárny zůstaly online u domácího agenta.
