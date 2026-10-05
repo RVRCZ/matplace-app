@@ -22,13 +22,27 @@ class Server:
         self.headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
         self.verify_tls = verify_tls
         self._session: Optional[aiohttp.ClientSession] = None
+        self._failures = 0
+
+    # after this many calls in a row that got no answer the session is thrown away: a connection pool and a DNS
+    # cache that outlived an outage of the line (5 Oct 2026: two hours of timeouts after the network came back)
+    REOPEN_AFTER = 3
 
     async def open(self) -> None:
-        self._session = aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=None if self.verify_tls else False))
+        self._session = aiohttp.ClientSession(headers=self.headers, connector=aiohttp.TCPConnector(ssl=None if self.verify_tls else False, ttl_dns_cache=60))
 
     async def close(self) -> None:
         if self._session:
             await self._session.close()
+
+    async def _reopen(self) -> None:
+        old = self._session
+        await self.open()
+        if old:
+            try:
+                await old.close()
+            except Exception:  # noqa: BLE001 - the old session is being discarded, whatever state it is in
+                pass
 
     async def sync(self, version: str, printers: list[dict]) -> dict:
         return await self._json("POST", "/api/agent/sync", json={"version": version, "printers": printers}, timeout=20)
@@ -77,6 +91,12 @@ class Server:
                     raise ServerError("the server rejected the agent token (401)")
                 if r.status >= 400:
                     raise ServerError(f"{path}: HTTP {r.status} {(await r.text())[:200]}")
+                self._failures = 0
                 return await r.json()
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            self._failures += 1
+            if self._failures >= self.REOPEN_AFTER:
+                self._failures = 0
+                await self._reopen()
+                raise ServerError(f"{path}: {e.__class__.__name__} {e} (connection reopened)") from e
             raise ServerError(f"{path}: {e.__class__.__name__} {e}") from e
