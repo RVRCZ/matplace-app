@@ -10,10 +10,10 @@
             <button type="button" class="rounded-full bg-action px-4 py-2 font-semibold text-white" onclick="document.getElementById('file-input').click()">{{ __('hero.choose_file') }}</button>
             @if($mode !== 'printer')
                 @if($config['vision'])
-                    <button type="button" id="hero-photo-btn" class="rounded-full border border-action bg-white px-4 py-2 font-semibold text-action-dark">📷 {{ __('hero.photo') }}</button>
+                    <button type="button" id="hero-photo-btn" class="inline-flex items-center gap-1.5 rounded-full border border-action bg-white px-4 py-2 font-semibold text-action-dark"><x-icon name="camera" class="h-4 w-4" />{{ __('hero.photo') }}</button>
                     <input id="photo-input" type="file" accept="image/*" capture="environment" class="sr-only">
                 @endif
-                <button type="button" id="hero-text-btn" class="rounded-full border border-action bg-white px-4 py-2 font-semibold text-action-dark">✍️ {{ __('hero.text') }}</button>
+                <button type="button" id="hero-text-btn" class="inline-flex items-center gap-1.5 rounded-full border border-action bg-white px-4 py-2 font-semibold text-action-dark"><x-icon name="type" class="h-4 w-4" />{{ __('hero.text') }}</button>
             @endif
         </div>
         <form id="search-form" class="mt-3 hidden gap-2 sm:flex">

@@ -5,6 +5,7 @@
  *   bootFarmOrder  /farm/orders/{token}: preview of the print pose, presets, colours, pay, progress (polled)
  *   bootFarmDashboard  /admin/farm: buttons post over fetch, the answer is a short toast, cards redraw in place
  */
+import { icon } from '../site/icon';
 import { BufferGeometry } from 'three';
 import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
@@ -417,7 +418,7 @@ export function bootFarmOrder(): void {
         const num = $('farm-number')!; num.textContent = s.number ? `${s.number}${s.color ? ` · ${s.color.name}` : ''}${s.second_color ? `, ${tr('farm.order.second_line', { name: s.second_color.name })}` : ''}` : ''; show(num, !!s.number);
         const pr = $('farm-printer'); if (pr) { pr.textContent = s.printer ? tr('farm.order.printer', { name: s.printer.name, bed: s.printer.bed }) : ''; show(pr, !!s.printer); }
         const err = $('farm-error')!; err.textContent = s.error_text ?? ''; show(err, s.status === 'failed' && !!s.error_text);
-        $('farm-warnings')!.innerHTML = s.warnings.map((w) => `<li>⚠ ${esc(w)}</li>`).join('');
+        $('farm-warnings')!.innerHTML = s.warnings.map((w) => `<li class="flex items-start gap-1.5">${icon('triangle-alert', 'mt-0.5 h-4 w-4')}<span>${esc(w)}</span></li>`).join('');
         $('farm-dims')!.textContent = s.dims ? `${s.dims.x.toFixed(1)} × ${s.dims.y.toFixed(1)} × ${s.dims.z.toFixed(1)} mm` : '';
         show($('farm-oriented'), s.orientation_changed && s.status !== 'failed');
         $('farm-balance')!.textContent = money(s.balance);

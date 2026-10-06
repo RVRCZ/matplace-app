@@ -7,7 +7,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 function bubble(m: Msg, side: string): string {
     if (m.sender === 'system') return `<div class="text-center text-xs text-slate-400">${esc(m.body ?? '')}</div>`;
     const mine = m.sender === side;
-    const att = m.attachment ? `<a href="${m.attachment.url}" class="mt-1 block text-xs underline">📎 ${esc(m.attachment.name)}</a>` : '';
+    const att = m.attachment ? `<a href="${m.attachment.url}" class="mt-1 block text-xs underline">${esc(m.attachment.name)}</a>` : '';
     const time = new Date(m.at).toLocaleTimeString(document.documentElement.lang === 'en' ? 'en-GB' : 'cs-CZ', { hour: '2-digit', minute: '2-digit' });
     return `<div class="flex ${mine ? 'justify-end' : 'justify-start'}"><div class="max-w-[80%] rounded-2xl px-3 py-2 ${mine ? 'bg-action text-white' : 'bg-slate-100 text-slate-800'}">${m.body ? esc(m.body).replace(/\n/g, '<br>') : ''}${att}<div class="mt-0.5 text-[10px] opacity-70">${time}</div></div></div>`;
 }

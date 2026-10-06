@@ -7,7 +7,7 @@
     </div>
     <div class="chat-log h-72 space-y-2 overflow-y-auto px-4 py-3 text-sm"></div>
     <form class="chat-form flex items-center gap-2 border-t border-slate-100 p-2">
-        <label class="cursor-pointer rounded-lg px-2 py-2 text-slate-500 hover:bg-slate-100" title="{{ __('inquiry.chat.attach') }}">📎<input type="file" class="chat-file sr-only" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.stl,.3mf,.obj,.step,.stp,.zip"></label>
+        <label class="cursor-pointer rounded-lg px-2 py-2 text-slate-500 hover:bg-slate-100" title="{{ __('inquiry.chat.attach') }}"><x-icon name="upload" class="h-5 w-5" /><input type="file" class="chat-file sr-only" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.stl,.3mf,.obj,.step,.stp,.zip"></label>
         <input type="text" class="chat-input w-full rounded-lg border border-slate-300 px-3 py-2" maxlength="4000" placeholder="{{ __('inquiry.chat.placeholder') }}">
         <button class="rounded-lg bg-action px-3 py-2 font-semibold text-white">{{ __('inquiry.chat.send') }}</button>
     </form>

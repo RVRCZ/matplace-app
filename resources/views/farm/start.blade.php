@@ -54,7 +54,7 @@
         @else
             {{-- a real drop zone: the bare file input looks like a line of text --}}
             <label id="farm-dropzone" for="farm-upload" class="mt-2 flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center transition hover:border-action hover:bg-action-soft">
-                <span class="text-3xl" aria-hidden="true">📂</span>
+                <x-icon name="folder-open" class="h-8 w-8 text-muted" />
                 <span class="btn-primary pointer-events-none text-sm">{{ __('farm.start.upload') }}</span>
                 <span class="text-xs text-slate-500">{{ __('farm.start.drop_hint') }}</span>
             </label>

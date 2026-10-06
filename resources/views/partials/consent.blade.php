@@ -19,7 +19,7 @@
             <button type="button" class="btn-quiet min-h-0 px-3 py-2 text-sm" data-consent="settings">{{ __('site.consent.settings') }}</button>
             <button type="button" class="btn-quiet hidden min-h-0 px-3 py-2 text-sm" data-consent="save">{{ __('site.consent.save') }}</button>
             <button type="button" class="btn-secondary min-h-0 px-3 py-2 text-sm" data-consent="necessary">{{ __('site.consent.only_necessary') }}</button>
-            <button type="button" class="btn-primary min-h-0 px-3 py-2 text-sm" data-consent="all">{{ __('site.consent.all') }}</button>
+            <button type="button" class="btn-ink min-h-0 px-3 py-2 text-sm" data-consent="all">{{ __('site.consent.all') }}</button>
         </div>
     </div>
 </section>

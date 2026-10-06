@@ -1,3 +1,4 @@
+import { icon } from '../site/icon';
 import { BufferGeometry } from 'three';
 import { moldReport } from './mold';
 import { Viewer, twoColorRegions } from './viewer';
@@ -274,7 +275,7 @@ function renderPrecise(c: CalcInfo): void {
         enableQuote(c);
         renderCheck(document.getElementById('model-check'), c.file?.check);
         renderAdvice(document.getElementById('model-advice'), state.file?.uuid, c.token);
-        $('warnings').innerHTML = [...new Set(c.slicer.warnings ?? [])].filter((w) => i18n[`calc.warn.${w}`]).map((w) => `<li>⚠️ ${t(`calc.warn.${w}`)}</li>`).join('');
+        $('warnings').innerHTML = [...new Set(c.slicer.warnings ?? [])].filter((w) => i18n[`calc.warn.${w}`]).map((w) => `<li class="flex items-start gap-1.5">${icon('triangle-alert', 'mt-0.5 h-4 w-4')}<span>${t(`calc.warn.${w}`)}</span></li>`).join('');
         return;
     }
     const own = ownProfileId ? c.prices.find((p) => (p as { printer_profile_id?: number | null }).printer_profile_id === ownProfileId) : undefined;
@@ -305,7 +306,7 @@ function renderPrecise(c: CalcInfo): void {
     renderCheck(document.getElementById('model-check'), c.file?.check);
     renderAdvice(document.getElementById('model-advice'), state.file?.uuid, c.token);
     const warns = [...(c.slicer.warnings ?? [])];
-    $('warnings').innerHTML = [...new Set(warns)].filter((w) => i18n[`calc.warn.${w}`]).map((w) => `<li>⚠️ ${t(`calc.warn.${w}`)}</li>`).join('');
+    $('warnings').innerHTML = [...new Set(warns)].filter((w) => i18n[`calc.warn.${w}`]).map((w) => `<li class="flex items-start gap-1.5">${icon('triangle-alert', 'mt-0.5 h-4 w-4')}<span>${t(`calc.warn.${w}`)}</span></li>`).join('');
 }
 
 function stopPolling(): void {

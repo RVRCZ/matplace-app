@@ -2,7 +2,7 @@
 {{-- until the farm is public only admins see the button (they try the farm out on the live site) --}}
 @if(config('farm.enabled') && config('farm.open', true) && (config('farm.public') || auth()->user()?->isAdmin()))
 <div class="rounded-2xl border border-line bg-action-soft p-4">
-    <button id="cta-farm" type="button" data-url="{{ route('farm.start') }}" class="w-full rounded-xl bg-action px-4 py-4 text-lg font-bold text-white shadow-md hover:bg-action-dark">🖨️ {{ __('farm.cta') }}</button>
+    <button id="cta-farm" type="button" data-url="{{ route('farm.start') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-action px-4 py-4 text-lg font-bold text-white shadow-sm hover:bg-action-dark"><x-icon name="printer" class="h-5 w-5" />{{ __('farm.cta') }}</button>
     <p class="mt-2 text-xs text-slate-600">{{ __('farm.cta_hint') }}</p>
     <p id="cta-farm-note" class="mt-1 hidden text-xs text-amber-800">{{ __('farm.cta_wait') }}</p>
 </div>

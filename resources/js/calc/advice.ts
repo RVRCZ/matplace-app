@@ -2,6 +2,7 @@
  * "How do I print this?" under the model check: on request, the server measures the model and an AI turns the numbers
  * into a few plain tips (orientation, supports, adhesion, thin walls, strength). One question per model and settings.
  */
+import { icon } from '../site/icon';
 interface AdviceItem { topic: string; level: 'important' | 'tip' | 'fine'; title: string; text: string }
 interface AdviceState { token: string; status: 'running' | 'done' | 'failed'; advice: { summary: string; items: AdviceItem[] } | null }
 
@@ -20,7 +21,7 @@ export function renderAdvice(box: HTMLElement | null, fileUuid: string | undefin
     box.innerHTML = `<div class="mt-3 rounded-xl border border-line bg-white p-3">
         <p class="font-bold text-ink">${esc(tr('advice.title'))}</p>
         <p class="mt-1 text-xs text-muted">${esc(tr('advice.lead'))}</p>
-        <button type="button" data-advice-go class="btn-quiet mt-2 !min-h-0 !py-1.5 text-sm">✨ ${esc(tr('advice.button'))}</button>
+        <button type="button" data-advice-go class="btn-quiet mt-2 !min-h-0 gap-1.5 !py-1.5 text-sm">${icon('sparkles')}${esc(tr('advice.button'))}</button>
         <div data-advice-out class="mt-2" aria-live="polite"></div>
     </div>`;
     const go = box.querySelector<HTMLButtonElement>('[data-advice-go]')!;

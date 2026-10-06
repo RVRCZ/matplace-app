@@ -37,6 +37,7 @@ export class Viewer {
     private spread = 0;
     private hold = false;
     private framed = false;
+    private framedSize = 0;
     private bed: { x: number; y: number; margin: number } | null = null;
     private bedGroup: Group | null = null;
     private over = false;
@@ -182,7 +183,9 @@ export class Viewer {
         // a bust is looked at almost from the front, like a portrait
         const dir = flat ? new Vector3(0.14, 0.86, 0.5) : standingPlate ? new Vector3(0.25, 0.18, 0.95) : this.frontal ? new Vector3(0.38, 0.22, 0.9) : new Vector3(0.62, 0.45, 0.7);
         // the tool page keeps the visitor's own view while numbers change (keepView); "fit" frames again
-        const keep = this.hold && this.framed;
+        // …unless the model has become a clearly different thing (a lid laid next to its box): then it is framed anew
+        const keep = this.hold && this.framed && Math.abs(sphere - this.framedSize) / (this.framedSize || 1) < 0.2;
+        if (!keep) this.framedSize = sphere;
         if (!keep) this.camera.position.copy(dir.normalize().multiplyScalar(dist)).add(new Vector3(0, size.y / 2, 0));
         this.camera.near = Math.min(radius / 100, keep ? this.camera.near : Infinity);
         this.camera.far = Math.max(radius * 100, keep ? this.camera.far : 0);

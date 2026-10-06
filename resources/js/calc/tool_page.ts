@@ -50,7 +50,6 @@ export class Stage {
         this.nf = new Intl.NumberFormat(cfg.locale, { maximumFractionDigits: 1 });
         this.plural = new Intl.PluralRules(cfg.locale);
         this.viewer = new Viewer(canvas);
-        this.viewer.setBed({ x: cfg.bed.x, y: cfg.bed.y, margin: cfg.bed.margin });
         initPalette(cfg.colors, this.t, (cfg.i18n['farm.finish'] ?? {}) as Record<string, string>);
         initArtwork(cfg.artwork, this.t);
         this.toolbar();
@@ -80,7 +79,8 @@ export class Stage {
     show(geom: BufferGeometry, o: Shown = {}): void {
         this.viewer.setGeometry(geom, o.scale ?? 1, o.kind ?? null, o.regions ?? null, o.faces ?? null);
         this.viewer.setPieces(o.pieces ?? null);
-        if (this.first) { this.first = false; this.viewer.keepView(true); }
+        // the bed comes with the first model: under an empty viewer it would be a stray line across the picture
+        if (this.first) { this.first = false; this.viewer.keepView(true); if (this.el('tool-bed').getAttribute('aria-pressed') === 'true') this.viewer.setBed({ x: this.cfg.bed.x, y: this.cfg.bed.y, margin: this.cfg.bed.margin }); }
         this.el('tool-empty').classList.add('hidden');
         const many = this.viewer.getPieces().length > 1;
         const wrap = this.el('tool-spread-wrap');
