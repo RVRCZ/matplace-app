@@ -526,7 +526,8 @@ function bindControls(): void {
     const qty = $('quantity') as HTMLInputElement;
     qty.onchange = () => { state.params.quantity = Math.max(1, Math.min(1000, Number(qty.value) || 1)); qty.value = String(state.params.quantity); onParamsChanged(); };
     const recalc = document.getElementById('cta-recalc');
-    if (recalc) recalc.onclick = recalculate;
+    // the button sits under the settings, the numbers above them: bring the result back into view
+    if (recalc) recalc.onclick = () => { recalculate(); $('price-main').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
     const reset = document.getElementById('size-reset');
     if (reset) reset.onclick = () => { state.params.scale = 1; document.getElementById('size-limit')?.classList.add('hidden'); onParamsChanged(); };
     const scale = $('scale') as HTMLInputElement;

@@ -113,9 +113,6 @@
                             </label>
                             <p id="bed-fit" class="pb-2 text-xs text-slate-500" aria-live="polite"></p>
                         </div>
-                        {{-- settings change the model at once, the numbers on request: a slice is real work for the server --}}
-                        <button id="cta-recalc" type="button" class="btn-primary mt-3 w-full">{{ __('calc.recalc') }}</button>
-                        <p class="mt-1 text-xs text-slate-500">{{ __('calc.recalc.hint') }}</p>
                     </div>
 
                     <dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
@@ -196,7 +193,7 @@
                         </details>
                     </form>
                     <p id="mold-report" class="mt-3 hidden rounded-xl bg-slate-50 p-3 text-xs text-slate-700" role="status"></p>
-                    <details class="mt-3 text-sm" @if($mode === 'printer') open @endif>
+                    <details class="mt-3 text-sm" open>
                         <summary class="cursor-pointer text-action-dark">{{ $config['marketplace'] ? __('calc.breakdown') : __('calc.facts.title') }}</summary>
                         <div id="breakdown" class="mt-2 space-y-2"></div>
                     </details>
@@ -235,6 +232,10 @@
                             <button type="button" data-supports="0" class="seg">{{ __('calc.supports.no') }}</button>
                         </div>
                     </details>
+                    {{-- settings change the model at once, the numbers on request: a slice is real work for the server.
+                         Under the last setting, so nobody scrolls back up for it --}}
+                    <button id="cta-recalc" type="button" class="btn-primary mt-4 w-full">{{ __('calc.recalc') }}</button>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('calc.recalc.hint') }}</p>
                 </div>
 
                 <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
