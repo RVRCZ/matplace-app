@@ -1,5 +1,3 @@
-@extends('layouts.app', ['title' => __('tools.check.title').' · matplace', 'tool' => 'check'])
-
 @php
     $keys = ['check.head.error', 'check.head.advice', 'check.head.ok', 'check.group.error', 'check.group.advice', 'check.group.ok', 'check.disclaimer',
         'check.page.bad_format', 'check.page.too_big', 'check.page.uploading', 'check.page.checking', 'check.page.failed'];
@@ -9,6 +7,9 @@
     $i18n = collect($keys)->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k)])->all();
 @endphp
 
+@extends('tools.page', ['tool' => 'check', 'module' => 'check', 'lead' => __('check.page.lead'), 'goLabel' => \App\Support\NextStep::text('check.page.go'),
+    'sections' => ['file' => __('toolpage.section.file'), 'result' => __('toolpage.section.result')]])
+
 @push('head')
 <script>
     window.MP_I18N = {{ \Illuminate\Support\Js::from($i18n) }};
@@ -16,25 +17,23 @@
 </script>
 @endpush
 
-@section('content')
-<div class="mx-auto max-w-4xl">
-    <a href="{{ route('tools') }}" class="text-sm text-action-dark underline">← {{ __('tools.title') }}</a>
-    <h1 class="mt-1 text-2xl font-extrabold text-ink">{{ __('tools.check.title') }}</h1>
-    <p class="hint">{{ __('check.page.lead') }}</p>
+@section('viewer-empty'){{ __('check.page.pick') }}@endsection
 
-    <label id="check-drop" class="card mt-4 block cursor-pointer border-2 border-dashed p-8 text-center hover:border-action">
-        <input id="check-file" type="file" class="sr-only" accept="{{ collect($config['formats'])->map(fn ($f) => '.'.$f)->join(',') }}">
-        <span class="block text-lg font-bold text-ink">{{ __('check.page.pick') }}</span>
-        <span class="block text-sm text-muted">{{ strtoupper(implode(', ', $config['formats'])) }} · {{ __('check.page.max', ['max' => $config['max_upload_mb']]) }}</span>
-    </label>
-    <p id="check-status" class="note-warn mt-3 hidden" role="status" aria-live="polite"></p>
+@section('panel')
+<form id="check-form" onsubmit="return false">
+    <x-tool-section id="file" :title="__('toolpage.section.file')">
+        <label id="check-drop" class="block cursor-pointer rounded-xl border-2 border-dashed border-line p-6 text-center hover:border-ink">
+            <input id="check-file" type="file" class="sr-only" accept="{{ collect($config['formats'])->map(fn ($f) => '.'.$f)->join(',') }}">
+            <x-icon name="upload" class="mx-auto h-7 w-7 text-muted" />
+            <span class="mt-1 block font-medium text-ink">{{ __('check.page.pick') }}</span>
+            <span class="block text-sm text-muted">{{ strtoupper(implode(', ', $config['formats'])) }} · {{ __('check.page.max', ['max' => $config['max_upload_mb']]) }}</span>
+        </label>
+        <p id="check-status" class="note-warn hidden text-sm" role="status" aria-live="polite"></p>
+    </x-tool-section>
 
-    <div id="check-result" class="mt-4 hidden grid gap-4 lg:grid-cols-2">
-        <div class="card overflow-hidden"><canvas id="check-viewer" class="block h-[40vh] w-full touch-none" role="img" aria-label="{{ __('param.viewer') }}"></canvas></div>
-        <div>
-            <div id="check-report" class="card p-5"></div>
-            <a id="check-go" href="{{ route('home') }}" class="btn-primary mt-3 w-full">{{ \App\Support\NextStep::text('check.page.go') }}</a>
-        </div>
-    </div>
-</div>
+    <x-tool-section id="result" :title="__('toolpage.section.result')">
+        <div id="check-result" class="hidden"><div id="check-report"></div></div>
+        <p id="check-wait" class="text-sm text-muted">{{ __('toolpage.status.empty') }}</p>
+    </x-tool-section>
+</form>
 @endsection

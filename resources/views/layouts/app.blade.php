@@ -50,12 +50,14 @@
     @stack('head')
 </head>
 <body class="min-h-full bg-page text-ink antialiased">
+    @include('partials.icons')
     <header class="border-b border-slate-200 bg-white">
-        <div class="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2">
-            <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2" aria-label="matplace"><img src="/img/logo-header.webp" alt="matplace" width="299" height="180" class="h-10 w-auto sm:h-12" fetchpriority="high"><span class="hidden rounded border border-line px-1.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-muted sm:inline">beta</span></a>
+        <div class="mx-auto flex {{ empty($wide) ? 'max-w-6xl' : 'max-w-[1600px]' }} items-center justify-between gap-2 px-4 py-2">
+            <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2" aria-label="matplace"><img src="/img/logo-header.webp" alt="matplace" width="299" height="180" class="h-10 w-auto sm:h-12" fetchpriority="high"></a>
             <nav class="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm text-slate-600 sm:gap-x-4">
                 <a href="{{ route('models.index') }}" class="hover:text-slate-900">{{ __('models.nav') }}</a>
                 <a href="{{ route('tools') }}" class="hover:text-slate-900">{{ __('footer.tools') }}</a>
+                <a href="{{ route('home') }}" class="hover:text-slate-900">{{ __('nav.price') }}</a>
                 @auth
                     <a href="{{ route('account') }}" class="font-medium hover:text-slate-900">{{ __('nav.account') }}</a>
                     {{-- signing out is reachable from every page, not only from the bottom of the account --}}
@@ -83,7 +85,8 @@
         </div>
     </header>
 
-    <main class="mx-auto max-w-6xl px-4 pb-16 pt-6">
+    {{-- a tool's page takes the width of the screen: the viewer is the main thing on it --}}
+    <main class="mx-auto {{ empty($wide) ? 'max-w-6xl' : 'max-w-[1600px]' }} px-4 pb-16 pt-{{ empty($wide) ? '6' : '4' }}">
         @yield('content')
         @if(($tool ?? null) === 'calc')
             @include('partials.banners')

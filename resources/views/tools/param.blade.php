@@ -1,17 +1,34 @@
-@extends('layouts.app', ['title' => __('tools.'.$kind.'.title').' · matplace', 'tool' => $kind])
-
 @php
     $integer = fn (array $f) => $f[3] === 1;
     $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : ($k === 'flute' ? '%' : 'mm'));
     $i18n = collect(['param.working', 'param.failed', 'param.too_fast', 'param.text_required', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
         'param.warn.stand_angle_45', 'param.warn.stand_angle_55', 'param.warn.stand_angle_70', 'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
         'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.cut', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
-        'color.white', 'color.black', 'color.grey', 'color.brown', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
+        'color.white', 'color.black', 'color.grey', 'color.brown', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.part.plate', 'param.part.text', 'param.part.stamp', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
         'param.warn.thread_try', 'param.warn.seal_try', 'param.need.liner', 'param.fits', 'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.warn.qr_one_color', 'param.warn.qr_low_contrast', 'param.warn.qr_inverted', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
     // a field may be called differently in one tool ("param.f.holder.clearance"), else the common name
     $label = fn (string $k) => \Illuminate\Support\Facades\Lang::has('param.f.'.$kind.'.'.$k) ? __('param.f.'.$kind.'.'.$k) : __('param.f.'.$k);
-    $colors = ['white', 'black', 'grey', 'brown', 'red', 'blue', 'green', 'yellow', 'orange', 'any'];
+    $palette = $config['colors'];
+    // a built-in colour name as the code of the farm's spool nearest to it (the same name when there is no catalogue)
+    $spool = fn (string $name) => $palette['legacy'][$name] ?? $name;
+    $colorChoices = collect($choices)->filter(fn ($o, $k) => \App\Domain\Tools\ParametricGenerator::isColor($k));
+    $plainChoices = collect($choices)->reject(fn ($o, $k) => \App\Domain\Tools\ParametricGenerator::isColor($k));
+    $hasInput = $presets || $texts || $artwork || $plainChoices->isNotEmpty();
+    $sections = array_filter([
+        'input' => $hasInput ? __('toolpage.section.input') : null,
+        'size' => __('toolpage.section.size'),
+        'colors' => __('toolpage.section.colors'),
+        'print' => \App\Support\NextStep::text('param.step.inquiry'),   // "print or download" / "download" / "inquiry": what this site offers
+    ]);
+    // fields, flags and choices that belong to one choice only: the script hides them for the others
+    $whenOf = fn (string $key) => isset($when[$key]) ? 'data-when="'.e($when[$key][0].'='.implode(',', $when[$key][1])).'"' : '';
+    // which wall of the model a size moves when it is dragged in the viewer (x width, y depth, z height)
+    $handles = \App\Domain\Tools\ParametricGenerator::HANDLES[$kind] ?? [];
+    // which section a warning of the tool belongs to; everything else is about the size
+    $warnAt = ['thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors'];
 @endphp
+
+@extends('tools.page', ['tool' => $kind, 'module' => 'param', 'lead' => __('param.'.$kind.'.lead'), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
 
 @push('head')
 <script>
@@ -25,221 +42,197 @@
         artworkUrl: @json(route('api.tools.artwork')),
         files: @json(url('/api/files')),
         from: @json(request('from')),
-        config: {{ \Illuminate\Support\Js::from($config) }},
+        config: {{ \Illuminate\Support\Js::from(\Illuminate\Support\Arr::except($config, ['colors'])) }},
         locale: @json(app()->getLocale()),
+        handles: {{ \Illuminate\Support\Js::from($handles) }},
+        warnAt: {{ \Illuminate\Support\Js::from($warnAt) }},
         i18n: {{ \Illuminate\Support\Js::from($i18n) }},
     };
 </script>
 @endpush
 
-@section('content')
-<div class="mx-auto max-w-6xl">
-    <a href="{{ route('tools') }}" class="text-sm text-action-dark underline">← {{ __('tools.title') }}</a>
-    <h1 class="mt-1 text-2xl font-extrabold text-ink">{{ __('tools.'.$kind.'.title') }}</h1>
-    <p class="hint">{{ __('param.'.$kind.'.lead') }}</p>
+@section('price-note'){{ \App\Support\NextStep::text('param.estimate.note') }} {{ \App\Support\NextStep::text('param.go.hint') }}@endsection
 
-    <ol class="steps mt-3" aria-label="{{ __('param.steps') }}">
-        <li aria-current="step"><span class="step-no">1</span>{{ __('param.step.settings') }}</li>
-        <li aria-current="step"><span class="step-no">2</span>{{ __('param.step.preview') }}</li>
-        <li><span class="step-no">3</span>{{ \App\Support\NextStep::text('param.step.inquiry') }}</li>
-    </ol>
+@section('stage')
+    <div id="param-bom" class="card hidden p-4 text-sm"></div>
+    <p class="text-xs text-muted">{{ \App\Support\NextStep::text('param.'.$kind.'.tip') }}</p>
+@endsection
 
-    @unless($available)
-        <div class="note-warn mt-4">{{ __('sign.unavailable') }}</div>
-    @else
-    <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        {{-- 1 · settings --}}
-        <form id="param-form" class="card space-y-5 p-5" novalidate>
-            @if($presets)
-                <fieldset>
-                    <legend class="lbl">{{ __('param.presets') }}</legend>
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        @foreach($presets as $key => $values)
-                            <button type="button" class="chip" data-preset="{{ $key }}">{{ __('param.preset.'.$key) }}</button>
-                        @endforeach
-                    </div>
-                </fieldset>
-            @endif
-
-            @if($texts || $artwork)
-                <fieldset>
-                    <legend class="lbl">{{ __('param.'.$kind.'.content') }}</legend>
-                    <div class="mt-2 grid gap-3 sm:grid-cols-2">
-                        @foreach($texts as $key => $t)
-                            <label class="text-sm font-medium text-ink {{ $key === 'url' ? 'sm:col-span-2' : '' }}">{{ __('param.t.'.$kind.'.'.$key) }}
-                                <input data-text="{{ $key }}" maxlength="{{ $t[0] }}" value="{{ $t[2] }}" @if($t[1]) required @endif class="field" @if($key === 'url') inputmode="url" autocapitalize="off" spellcheck="false" @endif>
-                            </label>
-                        @endforeach
-                    </div>
-                    @if($kind !== 'qr' && $texts)
-                        {{-- symbols the typefaces can draw: a click writes one where the cursor is --}}
-                        <div id="param-symbols" class="mt-2 flex flex-wrap items-center gap-1" role="group" aria-label="{{ __('param.symbols') }}">
-                            <span class="mr-1 text-xs text-muted">{{ __('param.symbols') }}</span>
-                            @foreach(['♥', '★', '☺', '♪', '✿', '☀', '☾', '✓', '🐾', '🎂', '🎄', '🎁', '👑', '⚽', '🚀', '🦋', '🐱', '🐶', '🌸'] as $symbol)
-                                <button type="button" data-symbol="{{ $symbol }}" class="h-9 w-9 rounded-lg border border-slate-300 bg-white text-lg leading-none hover:border-action">{{ $symbol }}</button>
-                            @endforeach
-                        </div>
-                    @endif
-                    @if($artwork)
-                        <div class="mt-3 rounded-xl border border-dashed border-line p-3">
-                            <label class="text-sm font-medium text-ink">{{ __('param.artwork') }} <span class="font-normal text-muted">{{ __('param.artwork.hint') }}</span>
-                                <input id="param-artwork" type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-action-soft file:px-4 file:py-2.5 file:font-semibold file:text-action-dark">
-                            </label>
-                            <p id="param-artwork-state" class="mt-1 text-sm text-muted" aria-live="polite"></p>
-                        </div>
-                    @endif
-                </fieldset>
-            @endif
-
-            @foreach($choices as $key => $options)
-                @if(str_ends_with($key, '_color'))
-                    {{-- a filament colour: swatches in the colours the preview paints with --}}
-                    <fieldset>
-                        <legend class="lbl">{{ __('param.c.'.$kind.'.'.$key) }}: <span class="font-normal text-muted" data-color-name="{{ $key }}">{{ __('color.'.$options[0]) }}</span></legend>
-                        <div class="mt-2 flex flex-wrap gap-1" role="radiogroup">
-                            @foreach($options as $i => $o)
-                                <label class="cursor-pointer rounded-full border-2 border-transparent p-0.5 has-[:checked]:border-action has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action" title="{{ __('color.'.$o) }}">
-                                    <input type="radio" name="c-{{ $key }}" data-choice="{{ $key }}" value="{{ $o }}" class="sr-only" aria-label="{{ __('color.'.$o) }}" data-name="{{ __('color.'.$o) }}" @checked($i === 0)>
-                                    <span class="block h-9 w-9 rounded-full border border-slate-300" style="background:{{ \App\Domain\Tools\ParametricGenerator::COLOR_HEX[$o] }}" aria-hidden="true"></span>
-                                </label>
-                            @endforeach
-                        </div>
-                        @if(\Illuminate\Support\Facades\Lang::has('param.c.'.$kind.'.'.$key.'.hint'))<p class="hint">{{ \App\Support\NextStep::text('param.c.'.$kind.'.'.$key.'.hint') }}</p>@endif
-                    </fieldset>
-                    @continue
-                @endif
-                <fieldset @if(isset($when[$key])) data-when="{{ $when[$key][0] }}={{ implode(',', $when[$key][1]) }}" @endif>
-                    <legend class="lbl">{{ __('param.c.'.$kind.'.'.$key) }}</legend>
-                    <div class="mt-2 flex flex-wrap gap-2" role="radiogroup">
-                        @foreach($options as $i => $o)
-                            <label class="cursor-pointer rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-ink has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action">
-                                <input type="radio" name="c-{{ $key }}" data-choice="{{ $key }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('param.o.'.$kind.'.'.$o) }}
-                            </label>
-                        @endforeach
-                    </div>
-                </fieldset>
-            @endforeach
-
+@section('panel')
+<form id="param-form" novalidate>
+    {{-- 1 · what it is made from: a preset to start with, the text, the picture, the kind of thing --}}
+    @if($hasInput)
+    <x-tool-section id="input" :title="__('toolpage.section.input')">
+        @if($presets)
             <fieldset>
-                <legend class="lbl">{{ __('param.'.$kind.'.size') }}</legend>
-                <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    @foreach($main as $key)
-                        @php $f = $fields[$key]; @endphp
-                        <label class="text-sm font-medium text-ink" @if(isset($when[$key])) data-when="{{ $when[$key][0] }}={{ implode(',', $when[$key][1]) }}" @endif>{{ $label($key) }} @if($unit($key))<span class="font-normal text-muted">{{ $unit($key) }}</span>@endif
-                            <input data-param="{{ $key }}" type="number" inputmode="decimal" min="{{ $f[0] }}" max="{{ $f[1] }}" step="{{ $f[3] }}" value="{{ $f[2] }}" class="field" aria-describedby="range-{{ $key }}">
-                            <span id="range-{{ $key }}" class="text-xs text-muted">{{ $f[0] }}–{{ $f[1] }}</span>
+                <legend class="lbl">{{ __('param.presets') }}</legend>
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                    @foreach($presets as $key => $values)
+                        <button type="button" class="chip !py-1" data-preset="{{ $key }}">{{ __('param.preset.'.$key) }}</button>
+                    @endforeach
+                </div>
+            </fieldset>
+        @endif
+
+        @if($texts || $artwork)
+            <fieldset>
+                <legend class="lbl">{{ __('param.'.$kind.'.content') }}</legend>
+                <div class="mt-2 grid gap-3">
+                    @foreach($texts as $key => $t)
+                        <label class="text-sm font-medium text-ink">{{ __('param.t.'.$kind.'.'.$key) }}
+                            <input data-text="{{ $key }}" maxlength="{{ $t[0] }}" value="{{ $t[2] }}" @if($t[1]) required @endif class="field" @if($key === 'url') inputmode="url" autocapitalize="off" spellcheck="false" @endif>
+                        </label>
+                    @endforeach
+                </div>
+                @if($kind !== 'qr' && $texts)
+                    {{-- symbols the typefaces can draw: a click writes one where the cursor is. Drawn in the tool's own symbol
+                         face (engines/fonts/NotoEmoji, the one the model is made from), not as the system's colour emoji. --}}
+                    <div id="param-symbols" class="mt-2 flex flex-wrap items-center gap-1" role="group" aria-label="{{ __('param.symbols') }}">
+                        <span class="mr-1 text-xs text-muted">{{ __('param.symbols') }}</span>
+                        @foreach(['♥', '★', '☺', '♪', '✿', '☀', '☾', '✓', '🐾', '🎂', '🎄', '🎁', '👑', '⚽', '🚀', '🦋', '🐱', '🐶', '🌸'] as $symbol)
+                            <button type="button" data-symbol="{{ $symbol }}" class="tool-symbol">{{ $symbol }}</button>
+                        @endforeach
+                    </div>
+                @endif
+                @if($artwork)
+                    {{-- a picture instead of the text: upload, our library of silhouettes, or one uploaded before --}}
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <button type="button" id="param-artwork-open" class="btn-quiet !min-h-10 gap-1.5 !px-3 !py-2 text-sm"><x-icon name="image" class="h-4 w-4" />{{ __('toolpage.artwork.choose') }}</button>
+                        <span id="param-artwork-thumb" class="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-line bg-white p-1"></span>
+                        <p id="param-artwork-state" class="text-sm text-muted" aria-live="polite"></p>
+                    </div>
+                    <p class="hint mt-1 !text-xs">{{ __('param.artwork.hint') }}</p>
+                    <input id="param-artwork" type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="sr-only" tabindex="-1" aria-hidden="true">
+                @endif
+            </fieldset>
+        @endif
+
+        @foreach($plainChoices as $key => $options)
+            <fieldset {!! $whenOf($key) !!}>
+                <legend class="lbl">{{ __('param.c.'.$kind.'.'.$key) }}</legend>
+                <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
+                    @foreach($options as $i => $o)
+                        <label class="tool-choice">
+                            <input type="radio" name="c-{{ $key }}" data-choice="{{ $key }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('param.o.'.$kind.'.'.$o) }}
                         </label>
                     @endforeach
                 </div>
             </fieldset>
+        @endforeach
+    </x-tool-section>
+    @endif
 
-            @foreach($flags as $flag)
-                <label class="flex items-start gap-3 text-sm text-ink" @if(isset($when[$flag])) data-when="{{ $when[$flag][0] }}={{ implode(',', $when[$flag][1]) }}" @endif>
-                    <input data-flag="{{ $flag }}" type="checkbox" class="mt-1 h-5 w-5 accent-action" @checked(in_array($flag, $flagsOn, true))>
-                    <span><span class="font-semibold">{{ __('param.flag.'.$flag) }}</span><br><span class="text-muted">{{ __('param.flag.'.$flag.'.hint') }}</span></span>
-                </label>
-            @endforeach
-
-            @if($kind === 'modular')
-                <fieldset>
-                    <legend class="lbl">{{ __('param.bins') }}</legend>
-                    <p class="hint" id="bins-help">{{ __('param.bins.hint') }}</p>
-                    <div id="bin-grid" class="mt-2 grid select-none gap-1 rounded-xl bg-page p-2" role="grid" aria-describedby="bins-help"></div>
-                    <div class="mt-2 flex flex-wrap items-center gap-2">
-                        <span class="text-sm font-semibold text-ink">{{ __('param.bins.color') }}</span>
-                        <div id="bin-colors" class="flex flex-wrap gap-1" role="radiogroup" aria-label="{{ __('param.bins.color') }}"></div>
+    {{-- 2 · sizes: the main ones with a slider (and a handle in the viewer), the rest under "more" --}}
+    <x-tool-section id="size" :title="__('toolpage.section.size')">
+        <fieldset>
+            <legend class="sr-only">{{ __('param.'.$kind.'.size') }}</legend>
+            <div class="grid gap-3">
+                @foreach($main as $key)
+                    @php $f = $fields[$key]; @endphp
+                    <div class="tool-num" {!! $whenOf($key) !!} data-field="{{ $key }}">
+                        <label for="p-{{ $key }}" class="text-sm font-medium text-ink">{{ $label($key) }}</label>
+                        <div class="mt-1 flex items-center gap-3">
+                            <input type="range" data-range="{{ $key }}" min="{{ $f[0] }}" max="{{ $f[1] }}" step="{{ $f[3] }}" value="{{ $f[2] }}" class="min-w-0 flex-1 accent-ink" aria-label="{{ $label($key) }}" tabindex="-1">
+                            <span class="tool-unit" data-unit="{{ $unit($key) }}">
+                                <input id="p-{{ $key }}" data-param="{{ $key }}" type="number" inputmode="decimal" min="{{ $f[0] }}" max="{{ $f[1] }}" step="{{ $f[3] }}" value="{{ $f[2] }}" class="field !mt-0" aria-describedby="range-{{ $key }}">
+                            </span>
+                        </div>
+                        <span id="range-{{ $key }}" class="sr-only">{{ $f[0] }}–{{ $f[1] }} {{ $unit($key) }}</span>
                     </div>
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        <button type="button" id="bins-fill" class="btn-quiet text-sm">{{ __('param.bins.fill') }}</button>
-                        <button type="button" id="bins-remove" class="btn-quiet text-sm">{{ __('param.bins.remove') }}</button>
-                        <button type="button" id="bins-clear" class="btn-quiet text-sm">{{ __('param.bins.clear') }}</button>
-                    </div>
-                    <p id="bins-state" class="mt-1 text-sm text-muted" aria-live="polite"></p>
-                </fieldset>
-            @endif
+                @endforeach
+            </div>
+        </fieldset>
 
-            @if($kind === 'box')
-                <fieldset>
-                    <legend class="lbl">{{ __('param.holes') }}</legend>
-                    <p class="hint">{{ __('param.holes.hint') }}</p>
-                    <div id="holes" class="mt-2 space-y-2"></div>
-                    <button type="button" id="add-hole" class="btn-quiet mt-2 text-sm">+ {{ __('param.holes.add') }}</button>
-                </fieldset>
-            @endif
+        @foreach($flags as $flag)
+            <label class="flex items-start gap-3 text-sm text-ink" {!! $whenOf($flag) !!}>
+                <input data-flag="{{ $flag }}" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" @checked(in_array($flag, $flagsOn, true))>
+                <span><span class="font-medium">{{ __('param.flag.'.$flag) }}</span><br><span class="text-muted">{{ __('param.flag.'.$flag.'.hint') }}</span></span>
+            </label>
+        @endforeach
 
-            <details class="text-sm">
-                <summary class="cursor-pointer font-semibold text-action-dark">{{ __('param.more') }}</summary>
-                <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    @foreach($fields as $key => $f)
-                        @continue(in_array($key, $main, true))
-                        <label class="text-sm font-medium text-ink" @if(isset($when[$key])) data-when="{{ $when[$key][0] }}={{ implode(',', $when[$key][1]) }}" @endif>{{ $label($key) }} <span class="font-normal text-muted">{{ $unit($key) }}</span>
-                            <input data-param="{{ $key }}" type="number" inputmode="decimal" min="{{ $f[0] }}" max="{{ $f[1] }}" step="{{ $f[3] }}" value="{{ $f[2] }}" class="field">
-                            <span class="text-xs text-muted">{{ $f[0] }}–{{ $f[1] }}</span>
-                        </label>
-                    @endforeach
+        @if($kind === 'modular')
+            <fieldset>
+                <legend class="lbl">{{ __('param.bins') }}</legend>
+                <p class="hint" id="bins-help">{{ __('param.bins.hint') }}</p>
+                <div id="bin-grid" class="mt-2 grid select-none gap-1 rounded-xl bg-page p-2" role="grid" aria-describedby="bins-help"></div>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-medium text-ink">{{ __('param.bins.color') }}</span>
+                    <div id="bin-colors" class="flex flex-wrap items-center gap-1.5"></div>
                 </div>
-                @if($kind === 'box')<p class="hint mt-2">{{ __('param.clearance.hint') }}</p>@endif
-            </details>
-
-            <fieldset class="border-t border-line pt-4">
-                <legend class="sr-only">{{ __('param.order') }}</legend>
-                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    <label class="lbl">{{ __('calc.material') }}
-                        <select id="param-material" class="field">
-                            @foreach($config['materials'] as $m)<option value="{{ $m['code'] }}" @selected($m['code'] === $config['default_material'])>{{ $m['label'] }} ({{ $m['code'] }})</option>@endforeach
-                        </select>
-                    </label>
-                    @if($kind === 'modular' || isset($choices['plate_color']))
-                        {{-- every bin has its own colour: they travel to the inquiry as a bill of parts; a two-colour sign has its colours above --}}
-                        <input type="hidden" id="param-color" value="">
-                    @else
-                    <label class="lbl">{{ __('param.color') }}
-                        <select id="param-color" class="field">
-                            @foreach($colors as $c)<option value="{{ $c }}">{{ __('color.'.$c) }}</option>@endforeach
-                        </select>
-                    </label>
-                    @endif
-                    <label class="lbl">{{ __('calc.quantity') }}
-                        <input id="param-qty" type="number" inputmode="numeric" min="1" max="1000" value="1" class="field">
-                    </label>
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                    <button type="button" id="bins-fill" class="chip !py-1 text-sm">{{ __('param.bins.fill') }}</button>
+                    <button type="button" id="bins-remove" class="chip !py-1 text-sm">{{ __('param.bins.remove') }}</button>
+                    <button type="button" id="bins-clear" class="chip !py-1 text-sm">{{ __('param.bins.clear') }}</button>
                 </div>
+                <p id="bins-state" class="mt-1 text-sm text-muted" aria-live="polite"></p>
             </fieldset>
-        </form>
+        @endif
 
-        {{-- 2 · preview and price, 3 · on to the inquiry --}}
-        <div class="space-y-4">
-            <div class="card overflow-hidden">
-                <div class="relative">
-                    <canvas id="param-viewer" class="block h-[42vh] w-full touch-none lg:h-[52vh]" role="img" aria-label="{{ __('param.viewer') }}"></canvas>
-                    <div id="param-views" class="absolute left-3 top-3 flex flex-wrap gap-1" role="group" aria-label="{{ __('param.view') }}"></div>
-                    <div id="param-busy" class="absolute right-3 top-3 hidden rounded-full bg-white/90 px-3 py-1 text-xs text-muted shadow">{{ __('param.working') }}</div>
-                </div>
-                <dl id="param-dims" class="grid grid-cols-1 gap-x-4 gap-y-1 border-t border-line px-4 py-3 text-sm sm:grid-cols-2" aria-live="polite"></dl>
+        @if($kind === 'box')
+            <fieldset>
+                <legend class="lbl">{{ __('param.holes') }}</legend>
+                <p class="hint">{{ __('param.holes.hint') }}</p>
+                <div id="holes" class="mt-2 space-y-2"></div>
+                <button type="button" id="add-hole" class="chip mt-2 inline-flex items-center gap-1 !py-1 text-sm"><x-icon name="plus" class="h-3.5 w-3.5" />{{ __('param.holes.add') }}</button>
+            </fieldset>
+        @endif
+
+        @if(count($fields) > count($main))
+        <details class="text-sm">
+            <summary class="cursor-pointer font-medium text-ink underline decoration-line underline-offset-4">{{ __('param.more') }}</summary>
+            <div class="mt-3 grid grid-cols-2 gap-3">
+                @foreach($fields as $key => $f)
+                    @continue(in_array($key, $main, true))
+                    <label class="text-sm font-medium text-ink" {!! $whenOf($key) !!}>{{ $label($key) }}
+                        <span class="tool-unit mt-1" data-unit="{{ $unit($key) }}">
+                            <input data-param="{{ $key }}" type="number" inputmode="decimal" min="{{ $f[0] }}" max="{{ $f[1] }}" step="{{ $f[3] }}" value="{{ $f[2] }}" class="field !mt-0">
+                        </span>
+                        <span class="text-xs font-normal text-muted">{{ $f[0] }}–{{ $f[1] }}</span>
+                    </label>
+                @endforeach
             </div>
+            @if($kind === 'box')<p class="hint mt-2">{{ __('param.clearance.hint') }}</p>@endif
+        </details>
+        @endif
+    </x-tool-section>
 
-            <div id="param-error" class="note-error hidden" role="alert"></div>
-            <div id="param-bom" class="card hidden p-4 text-sm"></div>
-            <ul id="param-warnings" class="note-warn hidden list-disc space-y-1 pl-8 text-sm"></ul>
-
-            <div class="card p-5">
-                <div class="text-sm text-muted">{{ __('param.estimate.title') }}</div>
-                <div id="param-price" class="text-3xl font-extrabold text-ink" aria-live="polite">—</div>
-                <div id="param-price-sub" class="text-sm text-muted"></div>
-                <p class="mt-2 text-xs text-muted">{{ \App\Support\NextStep::text('param.estimate.note') }}</p>
-
-                <button id="param-go" type="button" class="btn-primary mt-4 w-full">{{ \App\Support\NextStep::text('param.go') }}</button>
-                <p class="mt-2 text-xs text-muted">{{ \App\Support\NextStep::text('param.go.hint') }}</p>
-
-                <div class="mt-4 border-t border-line pt-3">
-                    <div class="text-sm font-semibold text-ink">{{ __('param.download') }}</div>
-                    <div id="param-downloads" class="mt-2 flex flex-wrap gap-2"></div>
-                    <button id="param-3mf" type="button" class="btn-secondary mt-3 w-full text-sm">{{ __('param.download.project') }}</button>
-                    <p class="mt-1 text-xs text-muted">{{ __('param.download.project.hint') }}</p>
-                </div>
+    {{-- 3 · colours: every separately printed part with one swatch from the farm's spools (a click opens the window) --}}
+    <x-tool-section id="colors" :title="__('toolpage.section.colors')">
+        @foreach($colorChoices as $key => $options)
+            {{-- a colour that changes the design itself (the plate and the code of a QR sign): kept with the model --}}
+            <div class="flex items-center gap-3">
+                <input type="hidden" data-choice="{{ $key }}" data-color value="{{ $spool($options[0]) }}">
+                <button type="button" class="tool-swatch" data-swatch-for="{{ $key }}" aria-label="{{ __('param.c.'.$kind.'.'.$key) }}: {{ __('toolpage.color.pick') }}"></button>
+                <span class="min-w-0 text-sm"><span class="block font-medium text-ink">{{ __('param.c.'.$kind.'.'.$key) }}</span><span class="block truncate text-muted" data-swatch-name="{{ $key }}"></span></span>
             </div>
-            <p class="text-xs text-muted">{{ \App\Support\NextStep::text('param.'.$kind.'.tip') }}</p>
+            @if(\Illuminate\Support\Facades\Lang::has('param.c.'.$kind.'.'.$key.'.hint'))<p class="hint !text-xs">{{ \App\Support\NextStep::text('param.c.'.$kind.'.'.$key.'.hint') }}</p>@endif
+        @endforeach
+        {{-- the parts of the design, filled by the script as the preview says which there are --}}
+        <div id="tool-parts" class="space-y-2" data-own-colors="{{ $colorChoices->isNotEmpty() || $kind === 'modular' ? '1' : '0' }}"></div>
+        @if($kind === 'modular')<p class="hint !text-xs">{{ __('toolpage.color.bins') }}</p>@endif
+        <div id="tool-recent" class="hidden">
+            <div class="text-xs text-muted">{{ __('toolpage.color.recent') }}</div>
+            <div id="tool-recent-list" class="mt-1 flex flex-wrap gap-1.5"></div>
         </div>
-    </div>
-    @endunless
-</div>
+        @unless($palette['farm'])<p class="hint !text-xs">{{ __('toolpage.color.builtin') }}</p>@endunless
+        {{-- the one colour the order starts from (the first part's); two-colour designs carry theirs in the design --}}
+        <input type="hidden" id="param-color" value="">
+    </x-tool-section>
+
+    {{-- 4 · the print: material and how many --}}
+    <x-tool-section id="print" :title="\App\Support\NextStep::text('param.step.inquiry')">
+        <div class="grid grid-cols-2 gap-3">
+            <label class="lbl">{{ __('calc.material') }}
+                <select id="param-material" class="field">
+                    @foreach($config['materials'] as $m)<option value="{{ $m['code'] }}" @selected($m['code'] === $config['default_material'])>{{ $m['label'] }} ({{ $m['code'] }})</option>@endforeach
+                </select>
+            </label>
+            <label class="lbl">{{ __('calc.quantity') }}
+                <input id="param-qty" type="number" inputmode="numeric" min="1" max="1000" value="1" class="field">
+            </label>
+        </div>
+        {{-- the slicer project straight from here: the design is saved and the printer picker opens --}}
+        <button id="param-3mf" type="button" class="hidden">{{ __('param.download.project') }}</button>
+    </x-tool-section>
+</form>
 @endsection

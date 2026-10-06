@@ -2,16 +2,10 @@ import { boot } from './calc/calculator';
 import { bootSearch } from './calc/search';
 import { bootChat } from './calc/chat';
 import { bootMiniViewers } from './calc/mini';
-import { bootFigure } from './calc/figure';
-import { bootSign } from './calc/sign';
-import { bootRelief } from './calc/relief';
-import { bootParam } from './calc/param';
+import { bootToolPage } from './calc/tool_page';
 import { bootSpare } from './calc/spare';
-import { bootCheckPage } from './calc/check';
-import { bootMoldPage } from './calc/mold';
-import { bootRepairPage } from './calc/repair';
 import { bootFarmCta, bootFarmStart, bootFarmOrder, bootFarmAdminViewer, bootFarmDashboard } from './calc/farm';
 import { bootPhotobox } from './calc/photobox';
 import { bootSite } from './site/boot';
 
-document.addEventListener('DOMContentLoaded', () => { boot(); bootSearch(); bootChat(); bootMiniViewers(); bootFigure(); bootSign(); bootRelief(); bootParam(); bootSpare(); bootCheckPage(); bootMoldPage(); bootRepairPage(); bootFarmCta(); bootFarmStart(); bootFarmOrder(); bootFarmAdminViewer(); bootFarmDashboard(); bootPhotobox(); bootSite(); });
+document.addEventListener('DOMContentLoaded', () => { boot(); bootSearch(); bootChat(); bootMiniViewers(); bootToolPage(); bootSpare(); bootFarmCta(); bootFarmStart(); bootFarmOrder(); bootFarmAdminViewer(); bootFarmDashboard(); bootPhotobox(); bootSite(); });

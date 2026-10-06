@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\StatsController as AdminStatsController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\YouTubeController;
 use App\Http\Controllers\Api\AdviceController;
+use App\Http\Controllers\Api\ArtworkController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\GenerationController;
@@ -313,6 +314,12 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('tools/artwork', [ToolsApiController::class, 'artwork'])->middleware('throttle:30,1,artwork')->name('tools.artwork');
     Route::post('tools/param/preview', [ToolsApiController::class, 'paramPreview'])->middleware('throttle:90,1,preview')->name('tools.param.preview');
     Route::post('tools/param', [ToolsApiController::class, 'paramCreate'])->middleware('throttle:20,1,create')->name('tools.param');
+    Route::post('tools/param/zip', [ToolsApiController::class, 'paramZip'])->middleware('throttle:12,1,zip')->name('tools.param.zip');
+    // the picture window of the tools: our library of silhouettes (CC0) and the visitor's own uploads
+    Route::get('artwork/library', [ArtworkController::class, 'library'])->middleware('throttle:120,1,artlib')->name('artwork.library');
+    Route::get('artwork/library/{category}/{slug}.svg', [ArtworkController::class, 'item'])->where(['category' => '[a-z-]+', 'slug' => '[a-z0-9-]+'])->name('artwork.item');
+    Route::get('artwork/mine', [ArtworkController::class, 'mine'])->name('artwork.mine');
+    Route::get('artwork/file/{id}', [ArtworkController::class, 'file'])->where('id', '[0-9a-f-]{36}')->name('artwork.file');
     Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware(['file', 'throttle:30,1,part'])->name('tools.param.part');
     Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1,relief')->name('tools.relief');
     Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware(['feature:marketplace', 'throttle:10,1,inquiry'])->name('inquiries.store');
@@ -352,6 +359,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/materials', [$catalog, 'materials'])->name('materials');
     Route::post('/materials/new', [$catalog, 'saveMaterial'])->name('materials.create');
     Route::post('/materials/{material}', [$catalog, 'saveMaterial'])->name('materials.update');
+    Route::post('/colors/fill', [$catalog, 'fillColors'])->name('colors.fill');
+    Route::post('/colors/import', [$catalog, 'importColors'])->name('colors.import');
     Route::post('/colors/new', [$catalog, 'saveColor'])->name('colors.create');
     Route::post('/colors/{color}', [$catalog, 'saveColor'])->name('colors.update');
     Route::get('/settings', [$catalog, 'settings'])->name('settings');

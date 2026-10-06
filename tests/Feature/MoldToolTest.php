@@ -37,7 +37,7 @@ class MoldToolTest extends TestCase
     public function test_tool_page_renders_and_is_listed(): void
     {
         $this->get('/tools')->assertOk()->assertSee(route('tools.mold'));
-        $this->get('/tools/mold')->assertOk()->assertSee(__('mold.wall'))->assertSee('mold-drop', false)->assertSee('mold-model-viewer', false)->assertSee(__('mold.type.silicone'));
+        $this->get('/tools/mold')->assertOk()->assertSee(__('mold.wall'))->assertSee('mold-drop', false)->assertSee('id="tool-viewer"', false)->assertSee(__('mold.type.silicone'));
         $this->get('/en/tools/mold')->assertOk()->assertSee('Casting mold');
         $this->get('/tools/mold?from=not-a-uuid')->assertOk()->assertSee('from: null', false);
     }
@@ -101,7 +101,7 @@ class MoldToolTest extends TestCase
     public function test_analysis_marks_the_triangles_a_mold_would_hold_on_to(): void
     {
         $uuid = $this->spool();
-        $this->get('/tools/mold')->assertOk()->assertSee('mold-analysis', false)->assertSee('Počet dílů formy')->assertSee('Vyplnit podřezy')->assertSee('mold-cast-viewer', false);
+        $this->get('/tools/mold')->assertOk()->assertSee('mold-analysis', false)->assertSee('Počet dílů formy')->assertSee('Vyplnit podřezy')->assertSee('id="mold-cast"', false);
         $this->postJson('/api/files/'.$uuid.'/mold/analysis', ['parts' => 5])->assertStatus(422);
 
         $a = $this->postJson('/api/files/'.$uuid.'/mold/analysis', ['parts' => 2, 'axis' => 'z'])->assertOk()->json('analysis');

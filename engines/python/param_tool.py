@@ -2,7 +2,7 @@
 """
 Parametric everyday products as exact watertight solids (manifold3d): no AI, no cost per piece, milliseconds per model.
 
-  param_tool.py <kind> <out.stl> <params-json> [part] [view]
+  param_tool.py <kind> <out.stl> <params-json> [part] [view] [parts]
 
 kind:  organizer | box | phone_stand | cable_holder | holder | cap | vase | logo | stamp | qr   (the last four live in creative_kinds.py)
 part:  all (default) | body | lid | saucer | handle | stand | imprint   (separate exports of multi-part products)
@@ -10,6 +10,11 @@ view:  print (default, the orientation it should be printed in) | use (how it st
 
 All lengths in millimetres. Limits are enforced here as well as in the web layer, so the tool can never be asked
 for an impossible or absurdly heavy shape. Prints one JSON object: {ok, bbox, volume_mm3, area_mm2, triangles, outer, notes}.
+
+With the sixth argument "parts" (the tool page's preview) the triangles of the file are grouped by the piece they
+belong to and the answer carries `parts`: [{name, tris: [from, to), bbox: [x0, y0, z0, x1, y1, z1]}], one entry per
+separate body, in the order of the file. The viewer selects, colours and spreads the pieces by it. Without the
+argument the file is written exactly as before.
 """
 import json
 import math
@@ -123,7 +128,7 @@ def modular(M, p):
                 if taken[yy][xx]:
                     raise Invalid("bins_overlap", "%d+%d" % (taken[yy][xx], i + 1))
                 taken[yy][xx] = i + 1
-        clean.append((x, y, w, d, str(b.get("color", "white"))[:12]))
+        clean.append((x, y, w, d, str(b.get("color", "white"))[:80]))   # a built-in name or the code of a spool
 
     def bin_solid(w, d):
         ow, od = w * ux - gap, d * uy - gap
@@ -925,12 +930,46 @@ def cap(M, p):
     return views(solid), note
 
 
+NOT_PIECES = ("all", "use", "imprint", "cut")
+
+
+def pieces_of(M, shown, parts):
+    """
+    The bodies of the shown solid, each named after the part it is: matched by volume and surface (they survive the
+    moves and turns of a layout). A body no part answers for (pieces fused into one, a trimmed preview) is "body".
+    Returns [(name, manifold)] with the pieces of one part next to each other.
+    """
+    known = []
+    for name, solid in parts.items():
+        if name in NOT_PIECES or solid.is_empty():
+            continue
+        for piece in solid.decompose():
+            known.append((name, piece.volume(), piece.surface_area()))
+    found = []
+    for piece in shown.decompose():
+        v, a = piece.volume(), piece.surface_area()
+        if v <= 0:
+            continue
+        best, best_err = "body", 0.02                       # 2 %: meshing noise, never another part
+        for name, kv, ka in known:
+            err = max(abs(kv - v) / max(kv, 1e-9), abs(ka - a) / max(ka, 1e-9))
+            if err < best_err:
+                best, best_err = name, err
+        found.append((best, piece))
+    order = []
+    for name, _ in found:
+        if name not in order:
+            order.append(name)
+    return sorted(found, key=lambda f: order.index(f[0]))
+
+
 def main(argv):
     if len(argv) < 4:
         out({"ok": False, "error": "usage", "code": "usage"})
     kind, dst = argv[1], argv[2]
     part = argv[4] if len(argv) > 4 else "all"
     view = argv[5] if len(argv) > 5 else "print"
+    with_parts = len(argv) > 6 and argv[6] == "parts"
     try:
         import manifold3d as M
         import numpy as np
@@ -951,10 +990,25 @@ def main(argv):
             raise Invalid("empty_result")
         x0, y0, z0, x1, y1, z1 = solid.bounding_box()
         solid = solid.translate([-x0, -y0, -z0])
-        mesh = solid.to_mesh()
-        verts = np.asarray(mesh.vert_properties, dtype=np.float32)[:, :3]
-        tris = np.asarray(mesh.tri_verts, dtype=np.int64)
-        tri = verts[tris]
+        listed = []
+        if with_parts:
+            chunks, at = [], 0
+            for name, piece in pieces_of(M, solid, parts):
+                m = piece.to_mesh()
+                t = np.asarray(m.vert_properties, dtype=np.float32)[:, :3][np.asarray(m.tri_verts, dtype=np.int64)]
+                if not len(t):
+                    continue
+                lo, hi = t.reshape(-1, 3).min(axis=0), t.reshape(-1, 3).max(axis=0)
+                listed.append({"name": name, "tris": [at, at + len(t)], "bbox": [round(float(c), 2) for c in (*lo, *hi)]})
+                chunks.append(t)
+                at += len(t)
+            tri = np.concatenate(chunks) if chunks else np.zeros((0, 3, 3), dtype=np.float32)
+            tris = tri                                      # only its length is used below
+        else:
+            mesh = solid.to_mesh()
+            verts = np.asarray(mesh.vert_properties, dtype=np.float32)[:, :3]
+            tris = np.asarray(mesh.tri_verts, dtype=np.int64)
+            tri = verts[tris]
         normals = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
         lens = np.linalg.norm(normals, axis=1, keepdims=True)
         normals = np.divide(normals, lens, out=np.zeros_like(normals), where=lens > 0)
@@ -965,7 +1019,7 @@ def main(argv):
             fh.write(np.uint32(len(tris)).tobytes())
             fh.write(rec.tobytes())
         out({"ok": True, "kind": kind, "part": key, "bbox": {"x": round(x1 - x0, 2), "y": round(y1 - y0, 2), "z": round(z1 - z0, 2)},
-             "volume_mm3": round(solid.volume(), 1), "area_mm2": round(solid.surface_area(), 1), "triangles": int(len(tris)), "notes": notes})
+             "volume_mm3": round(solid.volume(), 1), "area_mm2": round(solid.surface_area(), 1), "triangles": int(len(tris)), "notes": notes, **({"parts": listed} if with_parts else {})})
     except Invalid as e:
         out({"ok": False, "code": e.code, "error": str(e)})
     except SystemExit:

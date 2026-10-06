@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\ModelFile;
+use App\Models\Calculation;
+use App\Models\FarmOrder;
 use App\Models\User;
+use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -42,21 +44,23 @@ class MarketplaceSwitchTest extends TestCase
 
     public function test_a_calculation_stored_with_printer_prices_shows_the_farm_price_now(): void
     {
-        $this->seed(\Database\Seeders\FarmSeeder::class);
+        $this->seed(FarmSeeder::class);
         $user = User::factory()->create();
         $path = sys_get_temp_dir().'/mp_old_'.uniqid().'.stl';
         MeshFixtures::cubeStl($path, 20);
         $uuid = $this->actingAs($user)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'cube.stl', null, null, true)])->json('file.uuid');
         $token = $this->actingAs($user)->postJson('/api/calculations', ['file' => $uuid, 'material' => 'PLA', 'quality' => 'standard', 'infill' => 15])->json('calculation.token');
         // pretend it was computed with printers' lists before the switch was flipped
-        $calc = \App\Models\Calculation::where('token', $token)->firstOrFail();
+        $calc = Calculation::where('token', $token)->firstOrFail();
         $old = [['profile' => 'p39', 'label' => 'Print Fast', 'total' => 999, 'lead_time_days' => 3, 'unit' => ['material' => 1, 'time' => 1, 'royalty' => 0], 'setup' => 0, 'quantity' => 1, 'printer_profile_id' => 39]];
         $calc->forceFill(['prices' => $old, 'rough' => ($calc->rough ?? []) + ['prices' => $old], 'pricing_context' => ['printer_profile_ids' => [39]]])->save();
 
         $r = $this->get('/c/'.$token)->assertOk();
         $this->assertStringNotContainsString('Print Fast', $r->getContent());
         $this->assertSame('farm', $this->getJson('/api/calculations/'.$token)->json('calculation.prices.0.profile'));
-        $this->actingAs($user)->get('/account')->assertOk()->assertDontSee('999');
+        // (the icon sprite of the layout is path data full of digits: it is not what the page says)
+        $account = (string) $this->actingAs($user)->get('/account')->assertOk()->getContent();
+        $this->assertStringNotContainsString('999', (string) preg_replace('/<svg[^>]*focusable="false">.*?<\/svg>/s', '', $account));
     }
 
     public function test_marketplace_routes_answer_404_and_the_printer_role_is_hidden(): void
@@ -77,7 +81,7 @@ class MarketplaceSwitchTest extends TestCase
 
     public function test_farm_still_works_without_the_marketplace_and_is_the_only_price_list(): void
     {
-        $this->seed(\Database\Seeders\FarmSeeder::class);
+        $this->seed(FarmSeeder::class);
         $user = User::factory()->create();
         $this->actingAs($user)->get('/farm')->assertOk();
         config(['farm.public' => true]);
@@ -97,7 +101,7 @@ class MarketplaceSwitchTest extends TestCase
         $calcPrice = $calc->json('calculation.prices.0.total');
 
         $url = $this->actingAs($user)->postJson('/farm/orders', ['file' => $uuid])->json('url');
-        $order = \App\Models\FarmOrder::where('token', basename($url))->firstOrFail();
+        $order = FarmOrder::where('token', basename($url))->firstOrFail();
         $this->assertEqualsWithDelta($calcPrice, $order->price_total, 0.001, 'calculator and farm agree');
     }
 }

@@ -86,6 +86,12 @@ export function bootDownload(): void {
             vendorSel.innerHTML = list.map((g) => `<option>${g.vendor}</option>`).join('');
             const mem = remembered();
             if (mem && list.some((g) => g.vendor === mem.vendor)) vendorSel.value = mem.vendor;
+            // a tool page asked for the project of one slicer ("?slicer=prusaslicer"): start at a maker whose printers use it,
+            // unless the remembered printer already does
+            const slicer = new URLSearchParams(location.search).get('slicer');
+            const uses = (g: VendorGroup): boolean => g.printers.some((p) => (p.slicer ?? 'orca') === slicer);
+            const now = list.find((g) => g.vendor === vendorSel.value);
+            if (slicer && !(now && mem && now.printers.some((p) => p.id === mem.id && (p.slicer ?? 'orca') === slicer))) { const first = list.find(uses); if (first) vendorSel.value = first.vendor; }
             vendorSel.onchange = fillModels;
             el<HTMLSelectElement>('dl-model')!.onchange = refresh;
         }

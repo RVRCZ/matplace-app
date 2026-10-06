@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Domain\Farm\Palette;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Repair\PythonTool;
 use App\Support\ToolSeo;
@@ -16,10 +17,14 @@ use Illuminate\Support\Facades\File;
  *   php artisan matplace:tool-examples            every tool, only pictures that are missing
  *   php artisan matplace:tool-examples vase box   just these tools
  *   php artisan matplace:tool-examples --force    draw again what already exists
+ *   php artisan matplace:tool-examples --card     the picture of each tool's card instead (public/img/tools/<tool>-800.jpg,
+ *                                                 -800.webp, -480.webp): the first example, or `card` of config/tools.php,
+ *                                                 3:2 on the beige backdrop, parts in filament colours. A photo of a real
+ *                                                 print put at the same path wins: without --force it is never overwritten.
  */
 class ToolExamples extends Command
 {
-    protected $signature = 'matplace:tool-examples {tools?* : tool keys (default: all)} {--force : draw again what already exists}';
+    protected $signature = 'matplace:tool-examples {tools?* : tool keys (default: all)} {--force : draw again what already exists} {--card : draw the cards of the tools (public/img/tools) instead of the examples}';
 
     protected $description = 'Draw the example pictures of the tools (public/img/tool-examples)';
 
@@ -31,6 +36,9 @@ class ToolExamples extends Command
             return self::FAILURE;
         }
         $only = (array) $this->argument('tools');
+        if ($this->option('card')) {
+            return $this->cards($generator, $python, $only);
+        }
         $drawn = $kept = $failed = 0;
         foreach ((array) config('tools') as $tool => $definition) {
             $examples = (array) ($definition['seo']['examples'] ?? []);
@@ -67,6 +75,85 @@ class ToolExamples extends Command
             }
         }
         $this->info("Drawn {$drawn}, kept {$kept}".($failed ? ", failed {$failed}" : '').'.');
+
+        return $failed ? self::FAILURE : self::SUCCESS;
+    }
+
+    /** The colours the parts of a card are drawn in when the design names none: filaments that read well on the beige. */
+    private const CARD_COLORS = ['body' => 'blue', 'lid' => 'orange', 'saucer' => 'grey', 'handle' => 'black', 'stand' => 'black', 'face' => 'black', 'diffuser' => 'white', 'back' => 'grey', 'plate' => 'white', 'text' => 'orange', 'stamp' => 'orange', 'tray' => 'grey'];
+
+    /**
+     * Cards: the output of the tool itself. A tool that is one of the generators draws its own first example; a tool
+     * that is not (`card` => ['kind' => …, 'params' => …] in config/tools.php) borrows a generator's output that shows
+     * what it is about. Tools with neither keep the picture they have.
+     */
+    private function cards(ParametricGenerator $generator, PythonTool $python, array $only): int
+    {
+        $palette = app(Palette::class);
+        $hex = fn (?string $color) => Palette::BUILT_IN[$color ?? ''] ?? $palette->hex($color) ?? Palette::BUILT_IN['blue'];
+        $drawn = $kept = $failed = 0;
+        foreach ((array) config('tools') as $tool => $definition) {
+            if (($only && ! in_array($tool, $only, true)) || empty($definition['available'])) {
+                continue;
+            }
+            $card = (array) ($definition['card'] ?? []);
+            $kind = (string) ($card['kind'] ?? $tool);
+            $example = $card ?: ((array) ($definition['seo']['examples'] ?? []))[0] ?? null;
+            if (! isset(ParametricGenerator::FIELDS[$kind]) || $example === null) {
+                continue;
+            }
+            $base = public_path('img/tools/'.$tool);
+            if (is_file($base.'-800.jpg') && ! $this->option('force')) {
+                $kept++;
+
+                continue;
+            }
+            try {
+                $built = $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', true);
+            } catch (\Throwable $e) {
+                $this->warn(sprintf('%s: the tool refused the parameters (%s)', $tool, mb_substr($e->getMessage(), 0, 160)));
+                $failed++;
+
+                continue;
+            }
+            // one-body tools take turns in the filament colours, so the catalogue is not a wall of one blue
+            $turn = ['blue', 'green', 'orange', 'yellow', 'red', 'grey'][$drawn % 6];
+            $colors = (array) ($card['colors'] ?? []) + (count((array) ($built['meta']['parts'] ?? [])) > 1 ? [] : ['body' => $turn]) + self::CARD_COLORS;
+            $regions = (array) ($built['meta']['notes']['regions'] ?? []);
+            $parts = (array) ($built['meta']['parts'] ?? []);
+            // a set of separate pieces with a colour each (bins): a whole piece takes the colour of the region its middle
+            // lies in, outer walls included; a plate in two colours is one piece and is split by its regions instead
+            $ofRegion = function (array $p) use ($regions): ?string {
+                [$cx, $cy] = [($p['bbox'][0] + $p['bbox'][3]) / 2, ($p['bbox'][1] + $p['bbox'][4]) / 2];
+                foreach ($regions as $r) {
+                    if ($cx >= $r['x0'] && $cx <= $r['x1'] && $cy >= $r['y0'] && $cy <= $r['y1']) {
+                        return $r['color'] ?? null;
+                    }
+                }
+
+                return null;
+            };
+            $byPiece = count($parts) > 1 && $regions && empty($regions[0]['exact']);
+            $paint = [
+                'color' => $hex($colors['body']),
+                'parts' => array_map(fn ($p) => ['tris' => $p['tris'], 'color' => $hex(($byPiece ? $ofRegion($p) : null) ?? $colors[$p['name']] ?? 'blue')], $parts),
+                'regions' => $byPiece ? [] : array_map(fn ($r) => ['color' => $hex($r['color'] ?? null)] + $r, $regions),
+            ];
+            $paintFile = $built['path'].'.json';
+            File::put($paintFile, json_encode($paint));
+            $result = $python->runScript('render_tool.py', [$built['path'], $base, 'card', $paintFile], 300);
+            @unlink($built['path']);
+            @unlink($paintFile);
+            if (empty($result['ok']) || ! is_file($base.'-800.jpg')) {
+                $this->warn(sprintf('%s: not drawn (%s)', $tool, (string) ($result['error'] ?? 'no answer')));
+                $failed++;
+
+                continue;
+            }
+            $this->line(sprintf('%-14s card  jpg %d kB  webp %d kB / %d kB', $tool, (int) ceil(filesize($base.'-800.jpg') / 1024), (int) ceil(filesize($base.'-800.webp') / 1024), (int) ceil(filesize($base.'-480.webp') / 1024)));
+            $drawn++;
+        }
+        $this->info("Cards drawn {$drawn}, kept {$kept}".($failed ? ", failed {$failed}" : '').'.');
 
         return $failed ? self::FAILURE : self::SUCCESS;
     }

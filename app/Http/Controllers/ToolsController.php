@@ -8,7 +8,6 @@ use App\Domain\Tools\ModelRepair;
 use App\Domain\Tools\MoldGenerator;
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
-use App\Domain\Tools\SignGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Api\ConfigController;
 use Illuminate\Contracts\View\View;
@@ -22,14 +21,9 @@ class ToolsController extends Controller
         return view('tools.index', ['generator' => $generation->enabled()]);
     }
 
-    public function sign(SignGenerator $signs): View
+    public function relief(ReliefGenerator $reliefs, MaterialCatalog $materials, ConverterChain $converters): View
     {
-        return view('tools.sign', ['available' => $signs->available(), 'fonts' => array_keys($signs->fonts())]);
-    }
-
-    public function relief(ReliefGenerator $reliefs): View
-    {
-        return view('tools.relief', ['available' => $reliefs->available()]);
+        return view('tools.relief', ['available' => $reliefs->available(), 'config' => ConfigController::payload($materials, $converters)]);
     }
 
     /** Organizer, box, phone stand, cable holder: one page, the fields come from the generator's own limits. */
@@ -49,7 +43,7 @@ class ToolsController extends Controller
             'main' => ParametricGenerator::MAIN[$kind],
             'presets' => ParametricGenerator::PRESETS[$kind] ?? [],
             'fills' => ParametricGenerator::FILLS[$kind] ?? [],
-            'config' => ConfigController::payload($materials, $converters),
+            'config' => ConfigController::payload($materials, $converters, true),
         ]);
     }
 
@@ -89,9 +83,10 @@ class ToolsController extends Controller
         return view('tools.check', ['config' => ConfigController::payload($materials, $converters)]);
     }
 
-    public function figure(GenerationService $generation): View
+    public function figure(GenerationService $generation, MaterialCatalog $materials, ConverterChain $converters): View
     {
         return view('tools.figure', [
+            'config' => ConfigController::payload($materials, $converters),
             'generator' => $generation->enabled(),
             'guestLimit' => (int) config('ai.daily_limits.generate_guest'),
             // the page explains the limits of accounts; the admin's own (none) is not what it is about

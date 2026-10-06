@@ -7,6 +7,7 @@ use App\Domain\Calculation\PriceEngine;
 use App\Domain\Calculation\RoughEstimator;
 use App\Domain\Designer\DesignerProfiles;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\Palette;
 use App\Domain\Mail\Outbox;
 use App\Events\AccountErasing;
 use App\Models\Event as Visit;
@@ -31,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(RoughEstimator::class, fn ($app) => new RoughEstimator(config('pricing.rough'), $app->make(MaterialCatalog::class)));
         // scoped: the admin's overrides are read once per request / queue job, never kept across them
         $this->app->scoped(FarmSettings::class);
+        // the colour catalogue is read once per request: a page with twenty swatch fields asks it twenty times
+        $this->app->scoped(Palette::class);
 
         // route() follows the language of the page (App\Support\Locales): the framework's generator is swapped for ours
         $this->app->extend('url', function (UrlGenerator $url, $app) {

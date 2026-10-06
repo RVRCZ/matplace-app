@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Farm\ColorCatalog;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\ProfileLibrary;
 use App\Domain\Farm\Wallet;
@@ -165,6 +166,35 @@ class FarmCatalogController extends Controller
         return back()->with('status', __('farm.admin.saved'));
     }
 
+    /** "Fill hex and English names": what `php artisan farm:colors-fill` does, from the admin. */
+    public function fillColors(ColorCatalog $catalog): RedirectResponse
+    {
+        $r = $catalog->fill();
+        $lines = array_merge(
+            array_map(fn ($x) => $x['code'].': '.$x['hex'].($x['note'] ? ' (zkontrolovat)' : ''), $r['hex']),
+            array_map(fn ($x) => $x['code'].': '.$x['name'].' → '.$x['name_en'], $r['name_en']),
+            array_map(fn ($x) => 'vynecháno '.$x['code'].': '.$x['why'], $r['skipped']),
+        );
+
+        return back()->with('status', sprintf('Doplněno: hex %d, anglický název %d, vynecháno %d.', count($r['hex']), count($r['name_en']), count($r['skipped'])))->with('color_report', array_slice($lines, 0, 300));
+    }
+
+    /** The catalogue from a spreadsheet: what `php artisan farm:import-colors` does; "preview" changes nothing. */
+    public function importColors(Request $request, ColorCatalog $catalog): RedirectResponse
+    {
+        $request->validate(['csv' => ['required', 'file', 'max:2048']]);
+        $dry = $request->boolean('preview');
+        $r = $catalog->import($request->file('csv')->getRealPath(), $dry);
+        $lines = array_merge(
+            array_map(fn ($code) => 'nová '.$code, $r['created']),
+            array_map(fn ($u) => 'změna '.$u['code'].': '.collect($u['changes'])->map(fn ($c, $k) => $k.' '.json_encode($c[0], JSON_UNESCAPED_UNICODE).' → '.json_encode($c[1], JSON_UNESCAPED_UNICODE))->implode(', '), $r['updated']),
+            array_map(fn ($e) => 'chyba '.$e, $r['errors']),
+        );
+
+        return back()->with('status', ($dry ? 'Náhled importu (nic se nezměnilo): ' : 'Import: ').sprintf('nových %d, změněných %d, beze změny %d, chyb %d.', count($r['created']), count($r['updated']), $r['same'], count($r['errors'])))
+            ->with('color_report', array_slice($lines, 0, 300));
+    }
+
     public function saveColor(Request $request, ?FarmColor $color = null): RedirectResponse
     {
         $data = $request->validate([
@@ -172,7 +202,7 @@ class FarmCatalogController extends Controller
             'name' => ['required', 'string', 'max:80'],
             'name_en' => ['nullable', 'string', 'max:80'],
             'code' => ['nullable', 'string', 'max:80'],
-            'hex' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'hex' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],   // empty or the grey default = "not known yet": farm:colors-fill reads it from the photo
             'photo' => ['nullable', 'image', 'max:8192'],
             'remove_photo' => ['nullable', 'boolean'],
             'print_overrides' => ['nullable', 'json'],
@@ -180,7 +210,7 @@ class FarmCatalogController extends Controller
         ]);
         $color = $color ?? new FarmColor;
         $color->fill(['farm_material_id' => $data['farm_material_id'], 'name' => $data['name'], 'name_en' => $data['name_en'] ?? null, 'code' => $data['code'] ?? null,
-            'hex' => strtolower($data['hex']), 'enabled' => $request->boolean('enabled'), 'in_stock' => $request->boolean('in_stock', true),
+            'hex' => strtolower($data['hex'] ?? ColorCatalog::UNSET_HEX), 'enabled' => $request->boolean('enabled'), 'in_stock' => $request->boolean('in_stock', true),
             'print_overrides' => ! empty($data['print_overrides']) ? json_decode($data['print_overrides'], true) : null, 'test_notes' => $data['test_notes'] ?? null]);
         if (($request->boolean('remove_photo') || $request->hasFile('photo')) && $color->photo_path) {
             Storage::disk('public')->delete($color->photo_path);

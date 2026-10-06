@@ -34,6 +34,20 @@ class DesignTokensTest extends TestCase
     {
         $t = $this->tokens();
         $this->assertSame(['#F7F8FA', '#FFFFFF', '#172B4D', '#C94714', '#526176', '#18794E'], array_map('strtoupper', [$t['page'], $t['card'], $t['ink'], $t['action'], $t['muted'], $t['ok']]));
+        $this->assertSame(['#7A4A00', '#FFF4D6', '#B42318', '#FEECEB', '#F3EEE6'], array_map('strtoupper', [$t['warn'], $t['warn-soft'], $t['danger'], $t['danger-soft'], $t['studio']]));
+    }
+
+    /** One typeface from our own server (no font CDN), headings 600, cards 12 px. */
+    public function test_typeface_and_shape_are_the_agreed_ones(): void
+    {
+        $css = (string) file_get_contents(__DIR__.'/../../resources/css/app.css');
+        $this->assertStringContainsString("url('/fonts/InterVariable.woff2')", $css);
+        $this->assertStringContainsString('font-display: swap', $css);
+        $this->assertStringNotContainsString('fonts.googleapis.com', $css);
+        $this->assertFileExists(__DIR__.'/../../public/fonts/InterVariable.woff2');
+        $this->assertFileExists(__DIR__.'/../../public/fonts/Inter-LICENSE.txt');
+        $this->assertMatchesRegularExpression('/--font-weight-extrabold:\s*600/', $css);
+        $this->assertMatchesRegularExpression('/--radius-2xl:\s*0\.75rem/', $css);
     }
 
     public function test_text_pairs_meet_aa_contrast(): void
@@ -46,6 +60,10 @@ class DesignTokensTest extends TestCase
             'action-dark on card' => [$t['action-dark'], $t['card']], 'action-dark on action-soft' => [$t['action-dark'], $t['action-soft']],
             'action on card' => [$t['action'], $t['card']],
             'ok on card' => [$t['ok'], $t['card']], 'ok on ok-soft' => [$t['ok'], $t['ok-soft']],
+            'warn on warn-soft' => [$t['warn'], $t['warn-soft']], 'warn on card' => [$t['warn'], $t['card']],
+            'danger on danger-soft' => [$t['danger'], $t['danger-soft']], 'danger on card' => [$t['danger'], $t['card']],
+            'ink on studio' => [$t['ink'], $t['studio']], 'muted on studio' => [$t['muted'], $t['studio']],
+            'white on ink' => ['#FFFFFF', $t['ink']],
         ];
         foreach ($pairs as $name => [$fg, $bg]) {
             $this->assertGreaterThanOrEqual(4.5, $this->ratio($fg, $bg), $name.' = '.round($this->ratio($fg, $bg), 2));

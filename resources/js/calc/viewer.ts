@@ -1,6 +1,7 @@
 import {
-    AmbientLight, BufferGeometry, Color, DirectionalLight, GridHelper, HemisphereLight, LineBasicMaterial, LineSegments, Mesh,
-    MeshStandardMaterial, PerspectiveCamera, Scene, Vector3, WebGLRenderer, Box3, Float32BufferAttribute,
+    AmbientLight, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, GridHelper, Group, HemisphereLight, LineBasicMaterial,
+    LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3,
+    WebGLRenderer, Box3, Float32BufferAttribute,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -24,6 +25,28 @@ export class Viewer {
     private sculptureMaterial = new MeshStandardMaterial({ color: 0xc98f5a, roughness: 0.42, metalness: 0.25, flatShading: false });
     // plates (signs, reliefs, lithophanes): colour follows the height, so letters and pictures read like a two-colour print
     private plateMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0.0, flatShading: true, vertexColors: true });
+
+    // ── the tool page's additions (see "Tool page" below); every other page leaves them untouched ──
+    private pieces: Piece[] = [];
+    private basePos: Float32Array | null = null;        // positions as the file has them (the spread view moves copies)
+    private baseCol: Float32Array | null = null;        // colours as setGeometry painted them, null = plain material
+    private baseMaterial: Material | null = null;
+    private pieceColors = new Map<number, [number, number, number]>();
+    private selected = -1;
+    private highlight: Mesh | null = null;
+    private spread = 0;
+    private hold = false;
+    private framed = false;
+    private bed: { x: number; y: number; margin: number } | null = null;
+    private bedGroup: Group | null = null;
+    private over = false;
+    private bedCheck = true;
+    private handles: { id: string; axis: 'x' | 'y' | 'z'; group: Group; dir: Vector3 }[] = [];
+    private onHandle: ((id: string, mm: number, phase: 'move' | 'end') => string | void) | null = null;
+    private handleLabel: HTMLElement | null = null;
+    private onPick: ((index: number, piece: Piece | null) => void) | null = null;
+    private listening = false;
+    private anim: { from: Vector3; to: Vector3; t0: number; ms: number } | null = null;
 
     constructor(private canvas: HTMLCanvasElement) {
         this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false });
@@ -75,6 +98,7 @@ export class Viewer {
         this.mesh.scale.setScalar(scale);
         this.scene.add(this.mesh);
         this.fit();
+        this.afterGeometry();
     }
 
     /** A picture of the model as it is framed now (drawn in this very call, so no kept drawing buffer is needed). */
@@ -146,6 +170,7 @@ export class Viewer {
         this.mesh.position.y += size.y / 2; // stand on the grid
         const radius = Math.max(size.x, size.y, size.z) || 1;
         this.grid = new GridHelper(radius * 2.5, 10, 0xcbd5e1, 0xe2e8f0);
+        this.grid.visible = !this.bed;
         this.scene.add(this.grid);
         // frame the bounding sphere: whatever the proportions, the model fills the view without being cut off
         const sphere = 0.5 * Math.hypot(size.x, size.y, size.z) || 1;
@@ -156,12 +181,15 @@ export class Viewer {
         const standingPlate = !flat && size.z / radius < 0.2; // lithophane standing on its edge: look at its face
         // a bust is looked at almost from the front, like a portrait
         const dir = flat ? new Vector3(0.14, 0.86, 0.5) : standingPlate ? new Vector3(0.25, 0.18, 0.95) : this.frontal ? new Vector3(0.38, 0.22, 0.9) : new Vector3(0.62, 0.45, 0.7);
-        this.camera.position.copy(dir.normalize().multiplyScalar(dist)).add(new Vector3(0, size.y / 2, 0));
-        this.camera.near = radius / 100;
-        this.camera.far = radius * 100;
+        // the tool page keeps the visitor's own view while numbers change (keepView); "fit" frames again
+        const keep = this.hold && this.framed;
+        if (!keep) this.camera.position.copy(dir.normalize().multiplyScalar(dist)).add(new Vector3(0, size.y / 2, 0));
+        this.camera.near = Math.min(radius / 100, keep ? this.camera.near : Infinity);
+        this.camera.far = Math.max(radius * 100, keep ? this.camera.far : 0);
         this.camera.updateProjectionMatrix();
-        this.controls.target.set(0, size.y / 2, 0);
+        if (!keep) this.controls.target.set(0, size.y / 2, 0);
         this.controls.update();
+        this.framed = true;
     }
 
     private resize(): void {
@@ -173,10 +201,335 @@ export class Viewer {
     }
 
     private loop = (): void => {
+        this.tick();
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
         requestAnimationFrame(this.loop);
     };
+
+    // ── Tool page: pieces, picking, colours, spread view, x-ray, fixed views, print bed, size handles ──────────
+
+    /** Called at the end of setGeometry: what was set for the previous model does not hold for the new one. */
+    private afterGeometry(): void {
+        if (this.highlight) { this.highlight.geometry.dispose(); this.highlight = null; }
+        this.selected = -1;
+        this.pieces = [];
+        this.basePos = null;
+        this.baseCol = null;
+        this.baseMaterial = this.mesh ? (this.mesh.material as Material) : null;
+        if (this.mesh && !this.mesh.geometry.index) {
+            const col = this.mesh.geometry.getAttribute('color');
+            this.baseCol = col && this.mesh.material === this.plateMaterial ? new Float32Array(col.array as Float32Array) : null;
+        }
+        if (this.bed) this.drawBed();
+        this.placeHandles();
+    }
+
+    /** While on, a new model keeps the camera where the visitor left it (numbers change, the view does not jump). */
+    keepView(on: boolean): void { this.hold = on; }
+
+    /** Frame the model again from the default side. */
+    fitView(): void {
+        if (!this.mesh) return;
+        const was = this.hold; this.hold = false;
+        if (this.grid) this.scene.remove(this.grid);
+        this.fit();
+        this.hold = was;
+        this.placeHandles();
+    }
+
+    /**
+     * Which triangles are which piece (the order of the file; from the preview's `parts`). Pieces that do not cover
+     * the shown triangles exactly (the model was cut for two colours, welded for smooth shading) become one piece.
+     */
+    setPieces(pieces: Piece[] | null): void {
+        const pos = this.mesh?.geometry.getAttribute('position');
+        const count = pos && !this.mesh!.geometry.index ? pos.count / 3 : 0;
+        const ok = !!pieces?.length && pieces[pieces.length - 1].tris[1] === count && pieces.every((p, i) => p.tris[0] === (i ? pieces[i - 1].tris[1] : 0));
+        this.pieces = ok ? pieces! : count ? [{ name: 'body', tris: [0, count] }] : [];
+        this.pieceColors.clear();
+        this.basePos = pos && count ? new Float32Array(pos.array as Float32Array) : null;
+        if (this.spread) this.setSpread(this.spread);
+    }
+
+    getPieces(): Piece[] { return this.pieces; }
+
+    /** A click (not a drag) on the model tells which piece was hit; -1 and null for a click beside it. */
+    onPiecePicked(cb: (index: number, piece: Piece | null) => void): void {
+        this.onPick = cb;
+        this.listen();
+    }
+
+    /** Marks one piece (an orange veil over it); -1 takes the mark away. */
+    select(index: number): void {
+        if (this.highlight) { this.highlight.parent?.remove(this.highlight); this.highlight.geometry.dispose(); this.highlight = null; }
+        this.selected = index >= 0 && index < this.pieces.length && this.pieces.length > 1 ? index : -1;
+        const pos = this.mesh?.geometry.getAttribute('position');
+        if (this.selected < 0 || !pos || !this.mesh) return;
+        const [a, b] = this.pieces[this.selected].tris;
+        const geom = new BufferGeometry();
+        geom.setAttribute('position', new Float32BufferAttribute((pos.array as Float32Array).slice(a * 9, b * 9), 3));
+        this.highlight = new Mesh(geom, new MeshBasicMaterial({ color: 0xc94714, transparent: true, opacity: 0.3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+        this.highlight.renderOrder = 5;
+        this.mesh.add(this.highlight);
+    }
+
+    /** One piece in a filament colour (CSS hex), or null to give it back the colour the model came with. */
+    setPieceColor(index: number, hex: string | null): void {
+        const rgb = hex ? hexRgb(hex) : null;
+        if (rgb) this.pieceColors.set(index, deep(rgb)); else this.pieceColors.delete(index);
+        this.repaint();
+    }
+
+    /** Colours of the pieces and the red of what hangs over the bed, laid over the colours setGeometry gave the model. */
+    private repaint(): void {
+        const mesh = this.mesh;
+        const pos = mesh?.geometry.getAttribute('position');
+        if (!mesh || !pos || mesh.geometry.index || !this.baseMaterial || this.baseMaterial === this.sculptureMaterial) return;
+        const beyond = this.bed && this.bedCheck ? this.beyondBed() : null;
+        this.over = !!beyond;
+        if (!this.pieceColors.size && !beyond) {
+            if (this.baseCol) mesh.geometry.setAttribute('color', new Float32BufferAttribute(this.baseCol.slice(), 3)); else mesh.geometry.deleteAttribute('color');
+            mesh.material = this.baseMaterial;
+            return;
+        }
+        const plain = new Color(MODEL_COLOR);
+        const col = this.baseCol ? this.baseCol.slice() : new Float32Array(pos.count * 3).map((_, i) => [plain.r, plain.g, plain.b][i % 3]);
+        this.pieceColors.forEach((c, index) => {
+            const piece = this.pieces[index]; if (!piece) return;
+            for (let v = piece.tris[0] * 3; v < piece.tris[1] * 3; v++) { col[v * 3] = c[0]; col[v * 3 + 1] = c[1]; col[v * 3 + 2] = c[2]; }
+        });
+        if (beyond) for (let t = 0; t < beyond.length; t++) if (beyond[t]) for (let k = 0; k < 3; k++) { col[(t * 3 + k) * 3] = 0.62; col[(t * 3 + k) * 3 + 1] = 0.03; col[(t * 3 + k) * 3 + 2] = 0.03; }
+        mesh.geometry.setAttribute('color', new Float32BufferAttribute(col, 3));
+        mesh.material = this.plateMaterial;
+    }
+
+    /** 0…1: the pieces move apart from the middle of the whole, so each can be seen and picked. */
+    setSpread(k: number): void {
+        this.spread = Math.max(0, Math.min(1, k));
+        const mesh = this.mesh; const pos = mesh?.geometry.getAttribute('position');
+        if (!mesh || !pos || !this.basePos || this.pieces.length < 2) return;
+        const out = pos.array as Float32Array; const base = this.basePos;
+        const centre = (a: number, b: number): [number, number, number, number] => {
+            const lo = [Infinity, Infinity, Infinity]; const hi = [-Infinity, -Infinity, -Infinity];
+            for (let i = a * 9; i < b * 9; i += 3) for (let k = 0; k < 3; k++) { if (base[i + k] < lo[k]) lo[k] = base[i + k]; if (base[i + k] > hi[k]) hi[k] = base[i + k]; }
+            return [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2, Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) / 2];
+        };
+        const whole = centre(0, base.length / 9);
+        this.pieces.forEach((piece, n) => {
+            const c = centre(piece.tris[0], piece.tris[1]);
+            let d = [c[0] - whole[0], c[1] - whole[1], c[2] - whole[2]];
+            let len = Math.hypot(d[0], d[1], d[2]);
+            if (len < 0.5) { d = [0, 0, n % 2 ? 1 : -1]; len = 1; }                   // pieces that share a centre (a lid on its box) part along the height
+            const move = this.spread * Math.max(len * 0.7, whole[3] * 0.3);
+            const o = [d[0] / len * move, d[1] / len * move, d[2] / len * move];
+            for (let i = piece.tris[0] * 9; i < piece.tris[1] * 9; i += 3) { out[i] = base[i] + o[0]; out[i + 1] = base[i + 1] + o[1]; out[i + 2] = base[i + 2] + o[2]; }
+        });
+        pos.needsUpdate = true;
+        mesh.geometry.computeBoundingBox(); mesh.geometry.computeBoundingSphere();
+        if (this.selected >= 0) this.select(this.selected);
+        this.handles.forEach((h) => { h.group.visible = this.spread === 0; });
+    }
+
+    /** See-through walls (35 %): what is inside a hollow thing. */
+    setXray(on: boolean): void {
+        [this.material, this.sculptureMaterial, this.plateMaterial].forEach((m) => { m.transparent = on; m.opacity = on ? 0.35 : 1; m.depthWrite = !on; m.needsUpdate = true; });
+    }
+
+    /** A fixed view, reached in 300 ms; the distance and what is looked at stay. */
+    setView(view: ViewName, ms = 300): void {
+        const dirs: Record<ViewName, [number, number, number]> = { iso: [0.62, 0.45, 0.7], top: [0, 1, 0.0005], bottom: [0, -1, 0.0005], front: [0, 0, 1], side: [1, 0, 0] };
+        const target = this.controls.target;
+        const dist = this.camera.position.distanceTo(target) || 100;
+        const to = new Vector3(...dirs[view]).normalize().multiplyScalar(dist).add(target);
+        this.anim = { from: this.camera.position.clone(), to, t0: performance.now(), ms: Math.max(1, ms) };
+    }
+
+    /** The print bed under the model (mm, the margin the farm keeps free); null takes it away. What hangs over turns red. */
+    setBed(bed: { x: number; y: number; margin: number } | null): void {
+        this.bed = bed;
+        if (this.grid) this.grid.visible = !bed;
+        this.drawBed();
+    }
+
+    /**
+     * Whether what hangs over the bed is painted red. A set shown assembled (bins in their tray) may be wider than the
+     * bed while every piece of it fits: the page knows, and switches the red off.
+     */
+    checkBed(on: boolean): void {
+        if (this.bedCheck === on) return;
+        this.bedCheck = on;
+        this.drawBed();
+    }
+
+    /** True when the shown model does not fit the usable part of the bed. */
+    overBed(): boolean { return this.over; }
+
+    private drawBed(): void {
+        if (this.bedGroup) { this.scene.remove(this.bedGroup); this.bedGroup = null; }
+        if (!this.bed) { this.repaint(); return; }
+        this.repaint();
+        const { x, y, margin } = this.bed;
+        const g = new Group();
+        const lines = (pts: number[], color: number, opacity = 1): LineSegments => {
+            const geom = new BufferGeometry(); geom.setAttribute('position', new Float32BufferAttribute(pts, 3));
+            return new LineSegments(geom, new LineBasicMaterial({ color, transparent: opacity < 1, opacity }));
+        };
+        const rect = (w: number, d: number): number[] => { const a = w / 2; const b = d / 2; return [-a, 0, -b, a, 0, -b, a, 0, -b, a, 0, b, a, 0, b, -a, 0, b, -a, 0, b, -a, 0, -b]; };
+        const cells: number[] = [];
+        for (let i = 25; i < x; i += 25) cells.push(-x / 2 + i, 0, -y / 2, -x / 2 + i, 0, y / 2);
+        for (let i = 25; i < y; i += 25) cells.push(-x / 2, 0, -y / 2 + i, x / 2, 0, -y / 2 + i);
+        g.add(lines(cells, 0xe2e8f0));
+        g.add(lines(rect(x, y), this.over ? 0xb42318 : 0x94a3b8));
+        if (margin > 0) g.add(lines(rect(x - 2 * margin, y - 2 * margin), this.over ? 0xb42318 : 0xcbd5e1, 0.9));
+        this.bedGroup = g;
+        this.scene.add(g);
+    }
+
+    /** One flag per triangle that reaches beyond the usable bed (the model stands centred on it); null when all fits. */
+    private beyondBed(): Uint8Array | null {
+        const mesh = this.mesh; const pos = mesh?.geometry.getAttribute('position');
+        if (!mesh || !pos || !this.bed || mesh.geometry.index) return null;
+        const s = mesh.scale.x; const hx = this.bed.x / 2 - this.bed.margin; const hy = this.bed.y / 2 - this.bed.margin;
+        const flags = new Uint8Array(pos.count / 3); let any = false;
+        for (let t = 0; t < flags.length; t++) {
+            for (let k = 0; k < 3; k++) {
+                const wx = pos.getX(t * 3 + k) * s + mesh.position.x; const wz = -pos.getY(t * 3 + k) * s + mesh.position.z;
+                if (Math.abs(wx) > hx + 0.01 || Math.abs(wz) > hy + 0.01) { flags[t] = 1; any = true; break; }
+            }
+        }
+        return any ? flags : null;
+    }
+
+    /**
+     * Arrows on the walls of the model for the sizes that can be dragged: x (width, right wall), y (depth, back wall),
+     * z (height, top). The callback gets how far the wall was dragged along its axis in mm and may answer with the
+     * text shown at the arrow ("120 mm"). The model itself is rebuilt by the page, not by the viewer.
+     */
+    setHandles(handles: { id: string; axis: 'x' | 'y' | 'z' }[], cb: ((id: string, mm: number, phase: 'move' | 'end') => string | void) | null): void {
+        this.handles.forEach((h) => this.scene.remove(h.group));
+        this.onHandle = cb;
+        const ink = new MeshBasicMaterial({ color: 0x172b4d, depthTest: false, transparent: true, opacity: 0.92 });
+        this.handles = handles.map((h) => {
+            const group = new Group();
+            const shaft = new Mesh(new CylinderGeometry(0.035, 0.035, 0.7, 10), ink); shaft.position.y = 0.35;
+            const tip = new Mesh(new ConeGeometry(0.14, 0.34, 16), ink); tip.position.y = 0.86;
+            const grab = new Mesh(new SphereGeometry(0.42, 8, 8), new MeshBasicMaterial({ visible: false })); grab.position.y = 0.6;
+            [shaft, tip, grab].forEach((m) => { m.renderOrder = 10; m.userData.handle = h.id; group.add(m); });
+            // file axes → the scene (Z of the file is up): x right, y away from the eye, z up
+            const dir = h.axis === 'x' ? new Vector3(1, 0, 0) : h.axis === 'y' ? new Vector3(0, 0, -1) : new Vector3(0, 1, 0);
+            group.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), dir);
+            this.scene.add(group);
+            return { id: h.id, axis: h.axis, group, dir };
+        });
+        if (handles.length) this.listen();
+        this.placeHandles();
+    }
+
+    private placeHandles(): void {
+        if (!this.mesh || !this.handles.length) return;
+        const box = new Box3().setFromObject(this.mesh);
+        const mid = box.getCenter(new Vector3());
+        this.handles.forEach((h) => {
+            h.group.position.set(h.axis === 'x' ? box.max.x : mid.x, h.axis === 'z' ? box.max.y : mid.y, h.axis === 'y' ? box.min.z : mid.z);
+            h.group.visible = this.spread === 0;
+        });
+    }
+
+    /** Every frame: the running change of view, and the arrows kept the same size on the screen. */
+    private tick(): void {
+        if (this.anim) {
+            const k = Math.min(1, (performance.now() - this.anim.t0) / this.anim.ms);
+            const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+            const target = this.controls.target;
+            const dist = this.anim.to.distanceTo(target);
+            // along the sphere round the target, not through the model
+            this.camera.position.lerpVectors(this.anim.from, this.anim.to, e).sub(target).setLength(dist).add(target);
+            if (k >= 1) this.anim = null;
+        }
+        for (const h of this.handles) h.group.scale.setScalar(this.camera.position.distanceTo(h.group.position) * 0.055);
+    }
+
+    /** Pointer events of the tool page: a handle is dragged before the orbit controls see the press; a plain click picks a piece. */
+    private listen(): void {
+        if (this.listening) return;
+        this.listening = true;
+        const ray = new Raycaster();
+        const at = (e: PointerEvent): Vector2 => { const r = this.canvas.getBoundingClientRect(); return new Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); };
+        let down: { x: number; y: number } | null = null;
+        let drag: { id: string; x: number; y: number; px: Vector2; mm: number } | null = null;
+        const label = (text: string | void, e: PointerEvent): void => {
+            if (!this.handleLabel) {
+                this.handleLabel = document.createElement('div');
+                this.handleLabel.className = 'num pointer-events-none absolute z-10 hidden rounded-md bg-ink px-2 py-1 text-xs font-semibold text-white shadow-sm';
+                this.canvas.parentElement?.appendChild(this.handleLabel);
+            }
+            const r = this.canvas.getBoundingClientRect();
+            this.handleLabel.textContent = text || '';
+            this.handleLabel.classList.toggle('hidden', !text);
+            this.handleLabel.style.left = `${e.clientX - r.left + 14}px`; this.handleLabel.style.top = `${e.clientY - r.top - 10}px`;
+        };
+        this.canvas.addEventListener('pointerdown', (e) => {
+            down = { x: e.clientX, y: e.clientY };
+            if (!this.handles.length || !this.onHandle) return;
+            ray.setFromCamera(at(e), this.camera);
+            const hit = ray.intersectObjects(this.handles.filter((h) => h.group.visible).flatMap((h) => h.group.children), false)[0];
+            const h = hit && this.handles.find((x) => x.id === hit.object.userData.handle);
+            if (!h) return;
+            e.stopImmediatePropagation(); e.preventDefault();
+            // how many pixels one millimetre along the axis is on the screen, here and now
+            const r = this.canvas.getBoundingClientRect();
+            const px = (p: Vector3): Vector2 => { const q = p.clone().project(this.camera); return new Vector2((q.x + 1) / 2 * r.width, (1 - q.y) / 2 * r.height); };
+            const a = px(h.group.position); const b = px(h.group.position.clone().addScaledVector(h.dir, 10));
+            drag = { id: h.id, x: e.clientX, y: e.clientY, px: b.sub(a).divideScalar(10), mm: 0 };
+            this.controls.enabled = false;
+            this.canvas.setPointerCapture(e.pointerId);
+            label(this.onHandle(h.id, 0, 'move'), e);
+        }, { capture: true });
+        this.canvas.addEventListener('pointermove', (e) => {
+            if (!drag || !this.onHandle) return;
+            const len = drag.px.lengthSq() || 1;
+            drag.mm = ((e.clientX - drag.x) * drag.px.x + (e.clientY - drag.y) * drag.px.y) / len;
+            label(this.onHandle(drag.id, drag.mm, 'move'), e);
+        });
+        const up = (e: PointerEvent): void => {
+            if (drag) {
+                this.onHandle?.(drag.id, drag.mm, 'end');
+                drag = null; this.controls.enabled = true;
+                this.handleLabel?.classList.add('hidden');
+                down = null;
+                return;
+            }
+            if (!down || !this.onPick || !this.mesh || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) { down = null; return; }
+            down = null;
+            ray.setFromCamera(at(e), this.camera);
+            const hit = ray.intersectObject(this.mesh, false)[0];
+            const tri = hit?.faceIndex ?? -1;
+            const index = tri < 0 ? -1 : this.pieces.findIndex((p) => tri >= p.tris[0] && tri < p.tris[1]);
+            this.onPick(index, index >= 0 ? this.pieces[index] : null);
+        };
+        this.canvas.addEventListener('pointerup', up);
+        this.canvas.addEventListener('pointercancel', () => { if (drag) { drag = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } down = null; });
+    }
+}
+
+/** A separately printed piece of the shown model: its name and its triangles [from, to) in the order of the file. */
+export interface Piece { name: string; tris: [number, number]; bbox?: number[] }
+
+export type ViewName = 'iso' | 'top' | 'front' | 'side' | 'bottom';
+
+/** '#rrggbb' → [r, g, b] 0..1 as the swatch shows it; null for anything else. */
+export function hexRgb(hex: string): [number, number, number] | null {
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+    return m ? [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255] : null;
+}
+
+/**
+ * The farm's colour catalogue joins the built-in filament colours: everything that paints by a colour name
+ * (regions of a preview, bins of a modular set) then knows the spools by their code.
+ */
+export function setPalette(items: { code: string; hex: string }[]): void {
+    items.forEach((c) => { const rgb = hexRgb(c.hex); if (rgb) FILAMENT[c.code] = rgb; });
 }
 
 /** One number per triangle (in the order of the file) and the colour each number stands for, as [r, g, b] 0..1. */

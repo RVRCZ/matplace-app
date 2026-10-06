@@ -1,8 +1,13 @@
-/** Tools → figure / bust from a photo: consent, upload, progress, then the model opens in the calculator. */
+/**
+ * Figure / bust from a photo, as a module of the tool page: consent, upload, progress, then the model on the stage
+ * (viewer, size, rough price) and one click on to the calculator, where the base can still be changed.
+ */
+import type { Stage } from './tool_page';
+import { FileInfo } from './api';
 
 interface FigureCfg { generate: string; show: string; home: string; i18n: Record<string, string> }
 
-export function bootFigure(): void {
+export function bootFigure(stage: Stage): void {
     const form = document.getElementById('figure-form') as HTMLFormElement | null;
     const cfg = (window as unknown as { MP_FIGURE?: FigureCfg }).MP_FIGURE;
     if (!form || !cfg) return;
@@ -94,8 +99,12 @@ export function bootFigure(): void {
             if (g.status === 'failed' || !g.file) return idle(t('figure.failed'));
             bar.style.width = '100%';
             msg.textContent = note ? `${note} ${t('figure.done')}` : t('figure.done');
-            if (note) await new Promise((r) => setTimeout(r, 2500)); // time to read it before the model opens
-            location.href = `${cfg.home}?open=${g.file.uuid}`;
+            // the model stays on this page: turn it, see its size and a first price; the calculator is one click on
+            const file = await stage.untilReady(g.file as FileInfo);
+            if (file.status !== 'ready') return idle(t('figure.failed'));
+            await stage.fileResult(file);
+            btn.disabled = false; $('figure-progress').classList.add('hidden');
+            stage.reveal('print');
         } catch {
             idle(t('figure.failed'));
         }

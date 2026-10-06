@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Farm\Palette;
 use App\Domain\Generation\GenerationService;
 use App\Domain\Generation\PedestalChanger;
 use App\Domain\Tools\ParametricGenerator;
@@ -131,8 +132,11 @@ class ModelFile extends Model
             return null;
         }
         $hex = ParametricGenerator::COLOR_HEX;
+        $palette = app(Palette::class);
+        // the hex stored with the design wins: it is what the customer saw, even when the spool has left the catalogue
+        $of = fn (string $key, string $default) => isset($this->tool_params[$key]) ? ($this->tool_params[$key.'_hex'] ?? $palette->hex($this->tool_params[$key]) ?? $hex[$default]) : $hex[$default];
 
-        return [$hex[$this->tool_params['plate_color'] ?? ''] ?? $hex['white'], $hex[$this->tool_params['code_color'] ?? ''] ?? $hex['black']];
+        return [$of('plate_color', 'white'), $of('code_color', 'black')];
     }
 
     /** Made by one of our measured tools: the builder laid it the way it prints best, the farm must not turn it. */

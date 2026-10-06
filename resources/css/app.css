@@ -3,12 +3,31 @@
 @source '../**/*.blade.php';
 @source '../**/*.ts';
 
+/* Inter (SIL OFL 1.1, public/fonts/Inter-LICENSE.txt): one variable file from our own server, no font CDN. */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/fonts/InterVariable.woff2') format('woff2');
+}
+
 /*
  * Design tokens (one place, used as Tailwind colours: bg-page, bg-card, text-ink, bg-action, text-muted, text-ok…).
  * Contrast on white / on the page background is checked in tests/Unit/DesignTokensTest.php (WCAG AA for text).
+ * The orange `action` is the brand and belongs to ONE main action on a screen (.btn-primary); everything else is
+ * ink, grey or outlined (.btn-secondary, .btn-quiet, .chip-on, .seg-on). Shadows: shadow-sm only.
  */
 @theme {
-    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    /* one scale: 14 / 16 / 18 / 24 / 30 (12 stays for fine print); headings 600, text 400 */
+    --text-xl: 1.125rem;
+    --text-xl--line-height: 1.5;
+    --font-weight-bold: 600;
+    --font-weight-extrabold: 600;
+    /* cards and panels: 12 px, whatever the markup asks for */
+    --radius-2xl: 0.75rem;
+    --radius-3xl: 0.75rem;
     --color-page: #F7F8FA;
     --color-card: #FFFFFF;
     --color-ink: #172B4D;
@@ -19,6 +38,12 @@
     --color-ok: #18794E;
     --color-ok-soft: #E6F4EC;
     --color-line: #DDE2EA;
+    /* warnings in the section they belong to, errors, and the neutral backdrop of product renders */
+    --color-warn: #7A4A00;
+    --color-warn-soft: #FFF4D6;
+    --color-danger: #B42318;
+    --color-danger-soft: #FEECEB;
+    --color-studio: #F3EEE6;
 }
 
 @layer base {
@@ -28,26 +53,31 @@
         outline-offset: 2px;
         border-radius: 6px;
     }
+    /* numbers line up under each other: sizes, prices, tables */
+    :where(input[type='number'], output, dd, td, .num) { font-variant-numeric: tabular-nums; }
+    body { font-feature-settings: 'cv11', 'ss03'; }
 }
 
 @layer components {
     .calc-hero { @apply mx-auto max-w-3xl text-center; }
     .calc-tile { @apply flex flex-col items-center rounded-xl border border-line bg-card px-2 py-3 text-center text-sm transition hover:border-action; }
     .seg { @apply rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-semibold text-slate-700 transition; }
-    .seg-on { @apply border-action bg-action-soft text-action-dark; }
+    .seg-on { @apply border-ink bg-slate-100 text-ink; }
     .chip { @apply rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition; }
-    .chip-on { @apply border-action bg-action text-white; }
+    .chip-on { @apply border-ink bg-ink text-white; }
 
-    .card { @apply rounded-2xl border border-line bg-card; }
+    .card { @apply rounded-xl border border-line bg-card shadow-sm; }
     .btn-primary { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 bg-action text-white hover:bg-action-dark; }
-    .btn-secondary { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 border border-action bg-card text-action-dark hover:bg-action-soft; }
+    .btn-secondary { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 border border-slate-400 bg-card text-ink hover:border-ink; }
     .btn-quiet { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 border border-line bg-card text-ink hover:border-muted; }
+    /* "do it" inside a form, where the orange main action of the screen is elsewhere */
+    .btn-ink { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 bg-ink text-white hover:bg-slate-800; }
     .lbl { @apply block text-sm font-semibold text-ink; }
     .field { @apply mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal text-ink; }
     .hint { @apply text-sm text-muted; }
     .note-ok { @apply rounded-xl bg-ok-soft px-4 py-3 text-ok; }
-    .note-warn { @apply rounded-xl bg-amber-50 px-4 py-3 text-amber-900; }
-    .note-error { @apply rounded-xl bg-red-50 px-4 py-3 text-red-800; }
+    .note-warn { @apply rounded-xl bg-warn-soft px-4 py-3 text-warn; }
+    .note-error { @apply rounded-xl bg-danger-soft px-4 py-3 text-danger; }
 
     /* the text of a blog article (Markdown or cleaned HTML of the old site): plain tags, styled here */
     .article { @apply text-base leading-relaxed text-slate-700; }
@@ -73,5 +103,50 @@
     .steps li + li::before { content: '→'; @apply text-line; }
     .steps .step-no { @apply flex h-6 w-6 items-center justify-center rounded-full border border-line bg-card text-xs font-bold; }
     .steps [aria-current='step'] { @apply font-semibold text-ink; }
-    .steps [aria-current='step'] .step-no { @apply border-action bg-action text-white; }
+    .steps [aria-current='step'] .step-no { @apply border-ink bg-ink text-white; }
+}
+
+/* ── the tool page (resources/views/tools/page.blade.php) ── */
+@layer components {
+    #tool-panel { counter-reset: tool-section; }
+    .tool-sec-no { @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white; counter-increment: tool-section; }
+    .tool-sec-no::before { content: counter(tool-section); }
+    .tool-nav-item { @apply flex shrink-0 items-center gap-1.5 rounded-full border border-transparent px-2.5 py-1 text-sm text-muted transition hover:text-ink; }
+    .tool-nav-no { @apply flex h-5 w-5 items-center justify-center rounded-full border border-line bg-card text-[0.7rem] font-semibold; }
+    .tool-nav-item[aria-current='true'] { @apply border-line bg-card font-medium text-ink shadow-sm; }
+    .tool-nav-item[aria-current='true'] .tool-nav-no { @apply border-ink bg-ink text-white; }
+    .tool-icon-btn { @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-card text-ink transition hover:border-muted disabled:cursor-not-allowed disabled:opacity-40; }
+    .tool-bar { @apply flex overflow-hidden rounded-lg border border-line bg-card/95 shadow-sm; }
+    .tool-bar-btn { @apply inline-flex min-h-9 items-center gap-1.5 border-l border-line px-2.5 text-xs font-medium text-ink transition first:border-l-0 hover:bg-slate-100; }
+    .tool-bar-btn[aria-pressed='true'] { @apply bg-ink text-white hover:bg-ink; }
+    .tool-choice { @apply cursor-pointer rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-medium text-ink transition has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action; }
+    /* a number with its unit inside the field, on the right */
+    .tool-unit { @apply relative block w-28 shrink-0; }
+    .tool-unit::after { content: attr(data-unit); @apply pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted; }
+    .tool-unit .field { @apply min-h-10 pr-9 text-right; }
+    .tool-unit[data-unit=''] .field { @apply pr-3; }
+    /* symbols a text tool can draw: shown in the face the model is made from, never as colour emoji */
+    .tool-symbol { @apply h-8 w-8 rounded-lg border border-slate-300 bg-white text-base leading-none text-ink transition hover:border-ink; font-family: 'Noto Emoji', 'Segoe UI Symbol', 'Apple Symbols', 'Noto Sans Symbols 2', 'DejaVu Sans', sans-serif; font-variant-emoji: text; }
+    /* fields that belong to one choice only fold away */
+    [data-when] { transition: opacity 0.18s ease, max-height 0.22s ease; max-height: 20rem; }
+    [data-when].is-off { @apply pointer-events-none m-0 overflow-hidden border-0 p-0 opacity-0; max-height: 0; }
+    /* one colour: a round swatch, a click opens the colour window */
+    .tool-swatch { @apply h-9 w-9 shrink-0 cursor-pointer rounded-full border border-slate-300 bg-cover bg-center shadow-sm transition hover:scale-105; }
+    .tool-swatch-sm { @apply h-7 w-7 shrink-0 cursor-pointer rounded-full border border-slate-300 bg-cover bg-center transition hover:scale-105; }
+    .tool-warn { @apply flex items-start gap-2 rounded-lg bg-warn-soft px-3 py-2 text-warn; }
+    .tool-menu-item { @apply flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-ink transition hover:bg-slate-100 disabled:opacity-50; }
+    /* windows (colour, picture): a native <dialog> */
+    .tool-dialog { @apply m-auto w-[min(56rem,calc(100vw-1.5rem))] max-w-none rounded-xl border border-line bg-card p-0 text-ink shadow-sm; max-height: min(44rem, calc(100vh - 2rem)); }
+    .tool-dialog::backdrop { background: rgb(23 43 77 / 0.45); }
+    .tool-tab { @apply rounded-full px-3 py-1.5 text-sm font-medium text-muted transition hover:text-ink; }
+    .tool-tab[aria-selected='true'] { @apply bg-ink text-white; }
+    .tool-tile { @apply flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-line bg-card p-2 text-center text-xs text-ink transition hover:border-ink; }
+    .tool-tile[aria-pressed='true'] { @apply border-ink ring-2 ring-ink; }
+}
+
+/* the symbol face of the text tools (engines/fonts/NotoEmoji, OFL): the same outlines the model is made from */
+@font-face {
+    font-family: 'Noto Emoji';
+    font-display: swap;
+    src: url('/fonts/NotoEmoji-symbols.woff') format('woff');   /* a subset: only the symbols the form offers (docs/N.md says how it is made) */
 }

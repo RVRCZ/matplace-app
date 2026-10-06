@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Tools\Artwork;
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
 use App\Domain\Tools\SignGenerator;
@@ -78,17 +79,20 @@ class ToolsApiController extends Controller
     {
         $request->validate(['file' => ['required', 'file', 'max:5120', 'mimes:svg,png,jpg,jpeg,webp']]);
 
-        return response()->json(['artwork' => ParametricGenerator::storeArtwork($request->file('file')), 'name' => $request->file('file')->getClientOriginalName()], 201);
+        // kept for the visitor (account or this browser) among "my pictures" for 30 days
+        $owner = Artwork::owner($request->user(), $request->attributes->get('anon_session'));
+
+        return response()->json(['artwork' => ParametricGenerator::storeArtwork($request->file('file'), $owner), 'name' => $request->file('file')->getClientOriginalName()], 201);
     }
 
-    /** POST /api/tools/param/preview {kind, params, part?, view?, download?} → STL + X-Model-Meta (size, volume, notes) */
+    /** POST /api/tools/param/preview {kind, params, part?, view?, download?, pieces?} → STL + X-Model-Meta (size, volume, notes; with pieces also parts: which triangles are which piece) */
     public function paramPreview(Request $request, ParametricGenerator $tools): BinaryFileResponse|JsonResponse
     {
         if (! $tools->available()) {
             return response()->json(['error' => 'tool_unavailable'], 503);
         }
         [$kind, $params, $part, $view] = $this->paramInput($request);
-        $built = $tools->build($kind, $params, $part, $view);
+        $built = $tools->build($kind, $params, $part, $view, $request->boolean('pieces') && ! $request->boolean('download'));
         $name = str_replace('_', '-', $kind).($part !== 'all' ? '-'.$part : '').'.stl';
 
         return response()->file($built['path'], [
@@ -97,6 +101,17 @@ class ToolsApiController extends Controller
             'X-Model-Meta' => json_encode($built['meta']),
             'Cache-Control' => 'no-store',
         ])->deleteFileAfterSend(true);
+    }
+
+    /** POST /api/tools/param/zip {kind, params} → every part of the design as its own STL, in one archive */
+    public function paramZip(Request $request, ParametricGenerator $tools): BinaryFileResponse|JsonResponse
+    {
+        if (! $tools->available()) {
+            return response()->json(['error' => 'tool_unavailable'], 503);
+        }
+        [$kind, $params] = $this->paramInput($request);
+
+        return response()->download($tools->zip($kind, $params), str_replace('_', '-', $kind).'.zip', ['Content-Type' => 'application/zip'])->deleteFileAfterSend(true);
     }
 
     /** POST /api/tools/param {kind, params} → a model file that opens in the calculator (price, inquiry, download) */

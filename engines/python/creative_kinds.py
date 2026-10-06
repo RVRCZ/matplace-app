@@ -535,9 +535,31 @@ _FILAMENT = {"white": (0.93, 0.9, 0.84), "black": (0.09, 0.09, 0.1), "grey": (0.
              "blue": (0.13, 0.24, 0.47), "green": (0.16, 0.45, 0.27), "yellow": (0.92, 0.74, 0.16), "orange": (0.82, 0.32, 0.12)}
 
 
-def _lightness(name):
+def _hex_rgb(value):
+    """'#rrggbb' → (r, g, b) 0..1, None for anything else."""
+    v = str(value or "")
+    if len(v) != 7 or v[0] != "#":
+        return None
+    try:
+        return tuple(int(v[i:i + 2], 16) / 255.0 for i in (1, 3, 5))
+    except ValueError:
+        return None
+
+
+def _color(Invalid, p, kind, key):
+    """A filament colour: one of the built-in names, or the code of a spool of the farm sent with its hex (<key>_hex)."""
+    v = p.get(key, CHOICES[kind][key][0])
+    if v in CHOICES[kind][key] and v in _FILAMENT:
+        return str(v), _FILAMENT[v]
+    rgb = _hex_rgb(p.get(key + "_hex"))
+    if rgb is None or not isinstance(v, str) or not v or len(v) > 80:
+        raise Invalid("bad_choice", key)
+    return v, rgb
+
+
+def _lightness(rgb):
     """Relative luminance of a filament colour, 0 black … 1 white (the sRGB formula contrast is measured with)."""
-    lin = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in _FILAMENT[name]]
+    lin = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
     return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
 
 
@@ -610,12 +632,12 @@ def qr(M, Invalid, p):
     # looks meant (before 30 Sep 2026 a sign with a stand stayed one colour, and a one-colour code is useless)
     notes["color_change_mm"] = round(plate_t, 2)
     # the two colours the customer picked: the preview paints them, the order of a print starts from them
-    plate_color, code_color = _pick(Invalid, p, k, "plate_color"), _pick(Invalid, p, k, "code_color")
+    (plate_color, plate_rgb), (code_color, code_rgb) = _color(Invalid, p, k, "plate_color"), _color(Invalid, p, k, "code_color")
     notes["colors"] = {"plate": plate_color, "code": code_color}
     # "exact": the preview cuts the model at that height and paints the colours as their swatches show them
     notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(plate_t + 0.05, 2), "color": code_color, "exact": True},
                         {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": plate_color, "exact": True}]
-    light, dark = _lightness(plate_color), _lightness(code_color)
+    light, dark = _lightness(plate_rgb), _lightness(code_rgb)
     contrast = (max(light, dark) + 0.05) / (min(light, dark) + 0.05)
     notes["contrast"] = round(contrast, 1)
     notes["warnings"] = []

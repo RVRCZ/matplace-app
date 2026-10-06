@@ -2,6 +2,7 @@
 
 namespace App\Domain\Tools;
 
+use App\Domain\Farm\Palette;
 use App\Engines\Exceptions\EngineException;
 use App\Engines\Repair\PythonTool;
 use App\Jobs\ProcessModelFile;
@@ -12,6 +13,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -96,6 +98,19 @@ final class ParametricGenerator
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
 
+    /**
+     * kind → size → the wall of the previewed model it moves: x (width, the right wall), y (depth, the back wall),
+     * z (height, the top). The tool page puts an arrow there; dragging it changes the field. A size that grows to
+     * both sides (the model is centred) counts the dragged distance twice, one that grows from the floor once.
+     */
+    public const HANDLES = [
+        'organizer' => ['width' => 'x', 'depth' => 'y', 'height' => 'z'], 'box' => ['inner_w' => 'x', 'inner_d' => 'y', 'inner_h' => 'z'],
+        'modular' => ['inner_w' => 'x', 'inner_d' => 'y', 'height' => 'z'], 'vase' => ['top_d' => 'x', 'height' => 'z'], 'phone_stand' => ['width' => 'x'],
+        'cable_holder' => ['depth' => 'y'], 'holder' => ['obj_w' => 'x', 'height' => 'z'], 'cap' => ['size_a' => 'x', 'height' => 'z'],
+        'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
+        'cutter' => ['width' => 'x', 'height' => 'z'],
+    ];
+
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp'];
 
     public const FLAGS = ['box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
@@ -169,8 +184,18 @@ final class ParametricGenerator
 
     public const COLORS = ['white', 'black', 'grey', 'brown', 'red', 'blue', 'green', 'yellow', 'orange'];
 
-    /** The same colours as the preview paints them (FILAMENT in resources/js/calc/viewer.ts): swatches in forms, the nearest spool of the farm. */
-    public const COLOR_HEX = ['white' => '#EDE6D6', 'black' => '#17171A', 'grey' => '#8C9199', 'brown' => '#C2996B', 'red' => '#B8211F', 'blue' => '#213D78', 'green' => '#297345', 'yellow' => '#EBBD29', 'orange' => '#D1521F'];
+    /**
+     * The built-in colours as the preview paints them (FILAMENT in resources/js/calc/viewer.ts). A colour field carries
+     * one of these names (designs from before the farm's catalogue, a site without a farm) or the `code` of a spool
+     * in farm_colors: App\Domain\Farm\Palette knows both and is the one place that says what a colour looks like.
+     */
+    public const COLOR_HEX = Palette::BUILT_IN;
+
+    /** A choice that is a filament colour: any colour of the palette is allowed, its hex is stored next to it. */
+    public static function isColor(string $choice): bool
+    {
+        return str_ends_with($choice, '_color');
+    }
 
     public function __construct(private readonly PythonTool $python) {}
 
@@ -210,14 +235,18 @@ final class ParametricGenerator
         foreach (self::FLAGS[$kind] ?? [] as $flag) {
             $rules['params.'.$flag] = ['nullable', 'boolean'];
         }
+        $palette = app(Palette::class);
         foreach (self::CHOICES[$kind] ?? [] as $key => $options) {
-            $rules['params.'.$key] = ['nullable', 'in:'.implode(',', $options)];
+            $rules['params.'.$key] = ['nullable', Rule::in(self::isColor($key) ? $palette->codes() : $options)];
         }
         foreach (self::TEXTS[$kind] ?? [] as $key => [$max, $required]) {
             $rules['params.'.$key] = [$required ? 'required' : 'nullable', 'string', 'max:'.$max];
         }
+        // which spool each separately printed part is meant for (the colours section of the tool page)
+        $rules['params.part_colors'] = ['nullable', 'array', 'max:16'];
+        $rules['params.part_colors.*'] = ['nullable', Rule::in($palette->codes())];
         if (in_array($kind, self::ARTWORK, true)) {
-            $rules['params.artwork'] = ['nullable', 'string', 'regex:/^(file:)?[0-9a-f-]{36}$/'];
+            $rules['params.artwork'] = ['nullable', 'string', 'regex:'.Artwork::REF];
         }
         if ($kind === 'modular') {
             $rules += [
@@ -226,7 +255,7 @@ final class ParametricGenerator
                 'params.bins.*.y' => ['required', 'integer', 'min:0', 'max:11'],
                 'params.bins.*.w' => ['required', 'integer', 'min:1', 'max:12'],
                 'params.bins.*.h' => ['required', 'integer', 'min:1', 'max:12'],
-                'params.bins.*.color' => ['nullable', 'in:'.implode(',', self::COLORS)],
+                'params.bins.*.color' => ['nullable', Rule::in($palette->codes())],
             ];
         }
         if ($kind === 'box') {
@@ -255,7 +284,15 @@ final class ParametricGenerator
         foreach (self::FLAGS[$kind] ?? [] as $flag) {
             $out[$flag] = filter_var($p[$flag] ?? in_array($flag, self::FLAGS_ON, true), FILTER_VALIDATE_BOOLEAN);
         }
+        $palette = app(Palette::class);
         foreach (self::CHOICES[$kind] ?? [] as $key => $options) {
+            if (self::isColor($key)) {
+                // the code of the spool and what it looks like: the preview stays right when the spool leaves the stock
+                $out[$key] = is_string($p[$key] ?? null) && $palette->has($p[$key]) ? $p[$key] : $options[0];
+                $out[$key.'_hex'] = $palette->hex($out[$key]) ?? self::COLOR_HEX[$options[0]];
+
+                continue;
+            }
             $out[$key] = in_array($p[$key] ?? null, $options, true) ? $p[$key] : $options[0];
             // a standard picked by name (an M10 thread) brings its own numbers, whatever the form sent
             foreach (self::FILLS[$kind][$key][$out[$key]] ?? [] as $field => $value) {
@@ -269,11 +306,20 @@ final class ParametricGenerator
         if (in_array($kind, self::ARTWORK, true) && ! empty($p['artwork'])) {
             $out['artwork'] = (string) $p['artwork'];
         }
+        // part → the code of its spool and what it looks like (a stored design comes back with both)
+        foreach (array_slice((array) ($p['part_colors'] ?? []), 0, 16, true) as $part => $color) {
+            $code = is_array($color) ? ($color['code'] ?? null) : $color;
+            if (is_string($part) && preg_match('/^[a-z0-9_]{1,24}$/', $part) && is_string($code) && $palette->has($code)) {
+                $out['part_colors'][$part] = ['code' => $code, 'hex' => $palette->hex($code)];
+            }
+        }
         if ($kind === 'modular') {
-            $out['bins'] = array_values(array_map(fn ($b) => [
-                'x' => (int) $b['x'], 'y' => (int) $b['y'], 'w' => (int) $b['w'], 'h' => (int) $b['h'],
-                'color' => in_array($b['color'] ?? null, self::COLORS, true) ? $b['color'] : 'white',
-            ], array_slice((array) ($p['bins'] ?? []), 0, self::MAX_BINS)));
+            $out['bins'] = array_values(array_map(function ($b) use ($palette) {
+                $color = is_string($b['color'] ?? null) && $palette->has($b['color']) ? $b['color'] : 'white';
+
+                return ['x' => (int) $b['x'], 'y' => (int) $b['y'], 'w' => (int) $b['w'], 'h' => (int) $b['h'], 'color' => $color]
+                    + (isset(self::COLOR_HEX[$color]) ? [] : ['hex' => $palette->hex($color)]);   // a built-in name needs no hex: old designs stay as they were stored
+            }, array_slice((array) ($p['bins'] ?? []), 0, self::MAX_BINS)));
         }
         if ($kind === 'box') {
             $out['holes'] = array_values(array_map(fn ($h) => [
@@ -286,9 +332,10 @@ final class ParametricGenerator
     }
 
     /**
+     * @param  bool  $pieces  group the triangles by the piece they belong to and say so in meta.parts (the tool page's preview)
      * @return array{path: string, meta: array<string, mixed>} temporary STL (caller deletes) + size, volume, notes
      */
-    public function build(string $kind, array $params, string $part = 'all', string $view = 'print'): array
+    public function build(string $kind, array $params, string $part = 'all', string $view = 'print', bool $pieces = false): array
     {
         if (! isset(self::FIELDS[$kind])) {
             throw new EngineException('Unknown product.');
@@ -296,7 +343,7 @@ final class ParametricGenerator
         $dir = storage_path('app/tmp/param');
         File::ensureDirectoryExists($dir);
         $path = $dir.'/'.Str::uuid().'.stl';
-        $r = $this->python->runScript('param_tool.py', [$kind, $path, json_encode($this->forTool($kind, self::clean($kind, $params)), JSON_UNESCAPED_UNICODE), $part, $view], 60);
+        $r = $this->python->runScript('param_tool.py', [$kind, $path, json_encode($this->forTool($kind, self::clean($kind, $params)), JSON_UNESCAPED_UNICODE), $part, $view, ...($pieces ? ['parts'] : [])], 60);
         if (empty($r['ok']) || ! is_file($path)) {
             @unlink($path);
             $code = (string) ($r['code'] ?? 'failed');
@@ -304,7 +351,7 @@ final class ParametricGenerator
             throw ValidationException::withMessages(['params' => [self::explain($code, (string) ($r['error'] ?? ''))]])->status(422);
         }
 
-        return ['path' => $path, 'meta' => ['part' => $r['part'] ?? 'all', 'bbox' => $r['bbox'], 'volume_mm3' => $r['volume_mm3'], 'area_mm2' => $r['area_mm2'], 'triangles' => $r['triangles'], 'notes' => $r['notes'] ?? []]];
+        return ['path' => $path, 'meta' => ['part' => $r['part'] ?? 'all', 'bbox' => $r['bbox'], 'volume_mm3' => $r['volume_mm3'], 'area_mm2' => $r['area_mm2'], 'triangles' => $r['triangles'], 'notes' => $r['notes'] ?? []] + ($pieces ? ['parts' => $r['parts'] ?? []] : [])];
     }
 
     /** Adds what only the server knows: the font file and where the uploaded artwork lives. */
@@ -330,26 +377,50 @@ final class ParametricGenerator
         return $clean;
     }
 
-    /** "<uuid>" = fresh upload (kept for a day), "file:<uuid>" = artwork stored with a created model (kept with it). */
+    /** An upload, a silhouette of the library or the copy kept with a created model: see App\Domain\Tools\Artwork. */
     public static function artworkPath(string $ref): ?string
     {
-        $stored = str_starts_with($ref, 'file:');
-        $id = $stored ? substr($ref, 5) : $ref;
-        $pattern = $stored ? Storage::disk(ModelFile::DISK)->path('files/'.$id.'/artwork.*') : storage_path('app/tmp/artwork/'.$id.'.*');
-        $hit = File::glob($pattern);
-
-        return $hit ? str_replace('\\', '/', $hit[0]) : null;
+        return Artwork::path($ref);
     }
 
-    /** Uploaded SVG or picture → a reference the form sends along with the numbers. */
-    public static function storeArtwork(UploadedFile $file): string
+    /** Uploaded SVG or picture → a reference the form sends along with the numbers; with an owner it shows among "my pictures". */
+    public static function storeArtwork(UploadedFile $file, ?string $owner = null): string
     {
-        $id = (string) Str::uuid();
-        $ext = strtolower($file->getClientOriginalExtension()) === 'svg' ? 'svg' : (['image/png' => 'png', 'image/webp' => 'webp'][$file->getMimeType()] ?? 'jpg');
-        File::ensureDirectoryExists(storage_path('app/tmp/artwork'));
-        File::copy($file->getRealPath(), storage_path('app/tmp/artwork/'.$id.'.'.$ext));
+        return Artwork::store($file, $owner);
+    }
 
-        return $id;
+    /**
+     * Every separately printed part of a design as its own STL in one ZIP (and the whole set as it is laid out).
+     *
+     * @return string path of a temporary ZIP (caller deletes)
+     */
+    public function zip(string $kind, array $params): string
+    {
+        $clean = self::clean($kind, $params);
+        $whole = $this->build($kind, $clean);
+        if (isset($whole['meta']['notes']['parts'])) {
+            $clean['parts'] = array_values((array) $whole['meta']['notes']['parts']);
+        }
+        $name = str_replace('_', '-', $kind);
+        $path = storage_path('app/tmp/param/'.Str::uuid().'.zip');
+        $zip = new \ZipArchive;
+        if ($zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            @unlink($whole['path']);
+            throw new EngineException('The archive could not be written.');
+        }
+        $temp = [$whole['path']];
+        $zip->addFile($whole['path'], $name.'.stl');
+        foreach (array_diff(self::partsOf($kind, $clean), ['all']) as $part) {
+            $one = $this->build($kind, $clean, $part);
+            $temp[] = $one['path'];
+            if ($one['meta']['part'] === $part) {
+                $zip->addFile($one['path'], $name.'-'.$part.'.stl');
+            }
+        }
+        $zip->close();
+        array_map(fn ($t) => @unlink($t), $temp);
+
+        return $path;
     }
 
     public static function explain(string $code, string $raw = ''): string

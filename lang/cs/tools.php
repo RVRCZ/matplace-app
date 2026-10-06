@@ -1,0 +1,50 @@
+<?php
+
+// The catalogue of tools (/tools): categories, search and the words each tool is found by. The names and hints of
+// the tools themselves (tools.<tool>.title …) are older and live in lang/<locale>.json; Laravel looks there first.
+return [
+    'search' => 'Hledat nástroj',
+    'search.hint' => 'např. klíčenka, krabička, logo, forma',
+    'search.none' => 'Takový nástroj tu zatím není. Zkuste jiné slovo, nebo nám napište, co potřebujete vyrobit.',
+    'search.count' => 'Nalezeno: :n',
+    'verified' => 'ověřeno tiskem :date',
+    'all' => 'Všechny nástroje',
+
+    'cats' => [
+        'images' => 'Obrázky a loga',
+        'names' => 'Jména a dárky',
+        'home' => 'Domácnost a úložné',
+        'parts' => 'Díly a mechanika',
+        'toys' => 'Hračky a hry',
+        'signs' => 'Cedule a nápisy',
+        'craft' => 'Dílna a řemeslo',
+        'edit' => 'Úprava modelu',
+        'sell' => 'Prodej a plánování',
+    ],
+
+    'keywords' => [
+        'calc' => 'cena kalkulace kolik stojí tisk stl 3mf obj step soubor nacenění',
+        'repair' => 'oprava díry síť manifold rozbitý stl opravit',
+        'check' => 'kontrola tisknutelnost stěny rozměry chyby',
+        'mold' => 'forma odlévání silikon sádra pryskyřice vosk mýdlo kopie',
+        'organizer' => 'organizér zásuvka přihrádky šuplík pořádek úložný box',
+        'modular' => 'modulární misky mřížka zásuvka barevné přihrádky gridfinity',
+        'box' => 'krabička víčko pouzdro elektronika otvory kabel box',
+        'phone_stand' => 'stojánek telefon mobil držák tablet auto zeď',
+        'holder' => 'držák háček klip ovladač sluchátka koště láhev na zeď',
+        'cap' => 'víčko zátka krytka závit pet láhev trubka profil m10',
+        'cable_holder' => 'držák kabelů kabely nabíječka stůl pořádek',
+        'vase' => 'váza květináč obal podmiska spirála květiny',
+        'figure' => 'busta figurka fotka portrét soška 3d model z fotky socha',
+        'relief' => 'litofanie reliéf fotka lampička obrázek prosvícení',
+        'gifts' => 'dárek jméno vánoce narozeniny svatba klíčenka ozdoba',
+        'sign' => 'cedulka jmenovka klíčenka jméno dveře štítek nápis text',
+        'qr' => 'qr kód wifi odkaz cedulka stojánek menu platba',
+        'logo' => 'logo svg obrázek do 3d znak firma reliéf vytažení',
+        'cutter' => 'vykrajovátko cukroví sušenky perníčky těsto formička razítko',
+        'stamp' => 'razítko otisk inkoust jméno logo keramika mýdlo',
+        'stencil' => 'šablona malování sprej stříkání nápis písmena',
+        'lightbox' => 'světelný nápis led lightbox reklama podsvícený neon',
+        'spare' => 'náhradní díl rozbitý kus poptávka vymodelovat',
+    ],
+];
