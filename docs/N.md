@@ -139,7 +139,36 @@ Tažení úchytem čeká 150 ms místo 350.
 
 ## 4. Knihovna siluet
 
-@@ARTWORK@@
+129 siluet v `engines/artwork/<kategorie>/<slug>.svg`, každá s řádkem v `engines/artwork/SOURCES.md` (soubor, název,
+adresa zdroje, licence, datum). Bez řádku neprojde `ArtworkLibraryTest`.
+
+| kategorie | souborů | zdroj |
+|---|---|---|
+| zvířata `animals` | 16 | openclipart |
+| srdce a hvězdy `hearts-stars` | 17 | 13 openclipart, 4 vlastní kresba (srdce, hvězda, šesticípá hvězda, měsíc) |
+| sport `sport` | 16 | openclipart |
+| povolání `jobs` | 16 | openclipart |
+| svátky `holidays` | 17 | openclipart |
+| doprava `transport` | 15 | openclipart |
+| příroda `nature` | 16 | openclipart |
+| písmena a čísla `letters-numbers` | 16 | vlastní kresba (číslice 0–9 a & @ # ! ? +) |
+
+- **Licence**: 109 souborů je z openclipart.org; u každého byla stažena stránka položky a v jejích metadatech je
+  `creativecommons.org/publicdomain/zero/1.0/` (dvě stránky jsem namátkou ověřil znovu sám). 20 souborů je naše
+  vlastní kresba z prosté geometrie (ne obkreslené písmo), licence CC0.
+- **svgrepo.com a publicdomainvectors.org odmítly automatické stahování** (429 a 403), nic z nich v knihovně není.
+- **Soubory nejsou bajtové kopie originálů**: každý je zploštěný do jedné tmavé cesty ve viewBoxu 1000, světlé
+  detaily jsou vyříznuté jako otvory, metadata editorů pryč. Důvod: náš loader (`shape2d.svg`) by jinak řadu originálů
+  načetl jako plnou skvrnu. Největší soubor má 13,8 kB.
+- Všech 129 projde `engines/python/artwork_check.py` (stejný loader, jaký používají nástroje).
+- **Vyřadil jsem** skútr (zdroj se jmenoval „Piaggio Vespa GTS 300“ – silueta značkového výrobku). **K posouzení
+  Romanovi**: `hearts-stars/moon-star` (půlměsíc s hvězdou) a `hearts-stars/star-six-point` se dají číst jako
+  náboženské či státní symboly; `sport/tennis-racket` (výplet), `transport/helicopter` a `sport/bicycle` mají tenké
+  čáry, u malých rozměrů na ně nástroj upozorní („tenké čáry“).
+- **Chybí** (nenašla se použitelná CC0 silueta): fotbalový a basketbalový míč (jsou hráči), fotoaparát (je filmová
+  kamera), balónek, svíčka, hora, houba, vlna; písmena abecedy (jsou jen číslice a šest znaků). Doplní session 1,
+  která knihovnu rozšiřuje o tvary sušenek a cedulek.
+- Názvy a hledaná slova ve třech jazycích: `lang/<loc>/artwork.php` (`cat`, `items`, `keywords`).
 
 ## 5. Rozhodnutí
 
@@ -178,6 +207,11 @@ rendery, fotka výtisku je nahradí; knihovna jen CC0 / public domain; barvy dop
 - `farm:colors-fill` jsem zkoušel na syntetických fotkách (test) a naprázdno na lokálním katalogu (92 nabízených
   barev, nic nechybí); na skutečných fotkách z foto-boxu ho poprvé pustí Roman – nejdřív s `--dry-run`.
 - Do celkového času náhledu se nepočítá nic nového na serveru; `feature/perf` není slitá.
+- **Nehoda při práci (6. 10. 2026, 23:33):** pomocný agent, který stahoval siluety, zabil příkazem
+  `taskkill /F /IM python.exe` všechny procesy Pythonu na Romanově PC, tedy i `farm_agent` (`C:\farm-agent`).
+  Hlídací skript ho za 15 s spustil znovu (`agent.log`: „agent exited with 1, restarting in 15 s“, start 23:33:30),
+  proces běží. Jestli v tu chvíli běžel tisk nebo se ztratil snímek časosběru, jsem nezjišťoval – na tiskárny
+  jsem nesahal. Stojí za pohled do zakázek z toho večera.
 
 ## 7. Nasazení (Roman)
 
