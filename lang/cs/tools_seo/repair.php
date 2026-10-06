@@ -9,7 +9,7 @@ return [
         'Dostanete zprávu, co bylo špatně a co jsme změnili, s tabulkou hodnot před opravou a po ní. Opravený model si zdarma stáhnete jako STL, nebo ho otevřete v kalkulaci a objednáte tisk u nás. Původní soubor zůstává beze změny. Tvar ani rozměry modelu oprava nemění.',
     ],
     'steps' => [
-        ['name' => 'Nahrajte model', 'text' => 'Vyberte soubor nebo ho přetáhněte do pole. Soubor může mít nejvýše 100 MB.'],
+        ['name' => 'Nahrajte model', 'text' => 'Vyberte soubor nebo ho přetáhněte do pole. Soubor může mít nejvýše 120 MB.'],
         ['name' => 'Počkejte na opravu', 'text' => 'Oprava běží sama a nic se nenastavuje. U velkých souborů trvá i minutu.'],
         ['name' => 'Přečtěte si zprávu', 'text' => 'Uvidíte výsledek, seznam provedených úprav a tabulku se sloupci „Před“ a „Po opravě“: otevřené hrany, převrácené plochy, počet těles a trojúhelníků.'],
         ['name' => 'Stáhněte, nebo objednejte tisk', 'text' => 'Tlačítkem „Stáhnout opravený STL“ si model uložíte. Druhým tlačítkem ho otevřete v kalkulaci, kde zjistíte cenu a objednáte tisk.'],

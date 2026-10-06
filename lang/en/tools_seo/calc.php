@@ -9,13 +9,13 @@ return [
         'You set the size, number of pieces, material, quality and infill yourself and have the numbers recalculated. The print is made on our print farm in Czechia and paid from prepaid credit. We send it by Packeta to a pickup point or to your door in most EU countries. With your own printer, you download the STL or a ready project for free.',
     ],
     'steps' => [
-        ['name' => 'Upload a file', 'text' => 'Drop the model into the field on the home page or tap "Upload a file". We read STL, 3MF, OBJ and STEP up to 100 MB.'],
+        ['name' => 'Upload a file', 'text' => 'Drop the model into the field on the home page or tap "Upload a file". We read STL, 3MF, OBJ and STEP up to 120 MB.'],
         ['name' => 'View the model and numbers', 'text' => 'Turn the model in the preview. A rough estimate of print time, weight and price shows at once; the exact calculation follows shortly.'],
         ['name' => 'Set size, material and pieces', 'text' => 'Change the dimensions, the number of pieces, the material, the quality or the infill and tap "Recalculate". A table compares the materials for your model.'],
         ['name' => 'Order the print or download', 'text' => 'The "Print it with us" button takes you to the order: you choose the colour and how you will receive the print, and pay with credit. "I own a printer, download" gives you a project for your printer or the plain STL.'],
     ],
     'faq' => [
-        ['q' => 'Which files can I upload?', 'a' => 'STL, 3MF, OBJ and STEP, up to 100 MB. The full list of formats is written next to the upload field.'],
+        ['q' => 'Which files can I upload?', 'a' => 'STL, 3MF, OBJ and STEP, up to 120 MB. The full list of formats is written next to the upload field.'],
         ['q' => 'Is the price in the calculator final?', 'a' => 'It is an estimate, in Czech crowns or euros, for printing on our farm. You see the exact price before you pay, once the colour and the printer are chosen.'],
         ['q' => 'Which materials can I choose?', 'a' => 'The calculator offers everyday plastic (PLA), strong plastic (PETG), an outdoor material (ASA) and flexible plastic (TPU). Technical nylon and resin are estimated only. For printing with us you choose from the materials and colours loaded in the printers at that moment.'],
         ['q' => 'Do I have to sign up?', 'a' => 'Not for the calculation. You need an account only to order a print, because it is paid from prepaid credit topped up by card.'],

@@ -127,6 +127,6 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 - `.env`: `IMPORT_HTTP_PROXY=…` (bez něj Printables ze serveru nepůjde), `ANTHROPIC_API_KEY` už je.
-- Nahrávání: karta přijme soubor do 100 MB, hromadný zip do 500 MB. `upload_max_filesize`, `post_max_size`
+- Nahrávání: karta přijme soubor do 120 MB, hromadný zip do 500 MB. `upload_max_filesize`, `post_max_size`
   (php.ini) a `client_max_body_size` (nginx) musí 500 MB pustit, jinak velký zip skončí chybou serveru.
 - Fronta: import běží na workeru (`matplace-worker`), jeden model po druhém.

@@ -18,7 +18,7 @@ return [
 
     'settings' => [
         // ── upload and abuse limits ──────────────────────────────────────────
-        'max_upload_mb' => (int) env('FARM_MAX_UPLOAD_MB', 50),
+        'max_upload_mb' => (int) env('FARM_MAX_UPLOAD_MB', 120),
         'daily_slices_per_user' => (int) env('FARM_DAILY_SLICES', 20),
         'min_model_mm' => 5.0,              // largest side below this = "extremely small part"
         'bed_margin_mm' => 2.0,             // kept free on each side of the plate

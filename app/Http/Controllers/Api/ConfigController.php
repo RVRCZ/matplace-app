@@ -36,7 +36,7 @@ class ConfigController extends Controller
             'default_material' => $materials->defaultCode(),
             'qualities' => SliceParams::QUALITIES,
             'formats' => $converters->inputFormats(),
-            'max_upload_mb' => (int) config('uploads.max_mb', 100),
+            'max_upload_mb' => (int) config('uploads.max_mb', 120),
             'vision' => (string) config('ai.anthropic.api_key') !== '',
             'generator' => app(\App\Engines\Contracts\ModelGenerator::class)->name() !== 'null',
             'lay' => collect(['home', 'decor', 'hand', 'strong', 'outdoor', 'outdoor_light', 'flexible', 'technical', 'detail'])

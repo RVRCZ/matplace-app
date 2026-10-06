@@ -80,6 +80,21 @@ class FarmPagesTest extends TestCase
         $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid])->assertStatus(422)->assertJsonPath('error', 'not_ready');
     }
 
+    public function test_a_refused_order_comes_back_with_the_customers_choices(): void
+    {
+        $file = $this->order()->modelFile;
+        $file->forceFill(['size_bytes' => 121 * 1024 * 1024])->save();
+        $start = '/farm?file='.$file->uuid;
+
+        $this->actingAs($this->user)->from($start)->post('/farm/orders', ['file' => $file->uuid, 'quality' => 'fine', 'strength' => 'high', 'supports' => 'off', 'copies' => 3])
+            ->assertRedirect($start)->assertSessionHas('error');
+        $this->actingAs($this->user)->get($start)->assertOk()
+            ->assertSee('name="supports" value="off" class="sr-only" checked', false)
+            ->assertSee('name="quality" value="fine" class="sr-only" checked', false)
+            ->assertSee('name="strength" value="high" class="sr-only" checked', false)
+            ->assertSee('max="'.\App\Domain\Farm\PlateLayout::MAX_COPIES.'" value="3"', false);
+    }
+
     public function test_calculator_offers_the_farm_and_the_start_page_takes_a_shared_calculation(): void
     {
         app(FarmSettings::class)->set('farm_public', true);

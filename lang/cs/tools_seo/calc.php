@@ -9,13 +9,13 @@ return [
         'Velikost, počet kusů, materiál, kvalitu a výplň nastavíte sami a čísla necháte přepočítat. Tisk objednáte na naší tiskové farmě v Česku a zaplatíte z předplaceného kreditu. Výtisk pošleme Zásilkovnou na výdejní místo či domů do většiny zemí EU. Kdo má vlastní tiskárnu, stáhne si zdarma STL nebo připravený projekt.',
     ],
     'steps' => [
-        ['name' => 'Nahrajte soubor', 'text' => 'Přetáhněte model do pole na úvodní stránce nebo klepněte na „Nahrát soubor“. Umíme STL, 3MF, OBJ a STEP do 100 MB.'],
+        ['name' => 'Nahrajte soubor', 'text' => 'Přetáhněte model do pole na úvodní stránce nebo klepněte na „Nahrát soubor“. Umíme STL, 3MF, OBJ a STEP do 120 MB.'],
         ['name' => 'Prohlédněte si model a údaje', 'text' => 'Model si otočíte v náhledu. Hrubý odhad doby tisku, hmotnosti a ceny vidíte hned, přesný výpočet doběhne za chvíli.'],
         ['name' => 'Nastavte velikost, materiál a kusy', 'text' => 'Změňte rozměry, počet kusů, materiál, kvalitu nebo výplň a klepněte na „Přepočítat“. Materiály si pro svůj model můžete porovnat v tabulce.'],
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Tlačítkem „Vytisknout u nás“ přejdete k objednávce: vyberete barvu a způsob převzetí a zaplatíte kreditem. Tlačítkem „Mám tiskárnu, stáhnout“ získáte projekt pro svou tiskárnu nebo samotné STL.'],
     ],
     'faq' => [
-        ['q' => 'Jaké soubory mohu nahrát?', 'a' => 'STL, 3MF, OBJ a STEP, nejvýše 100 MB. Úplný seznam formátů je napsaný přímo u pole pro nahrání.'],
+        ['q' => 'Jaké soubory mohu nahrát?', 'a' => 'STL, 3MF, OBJ a STEP, nejvýše 120 MB. Úplný seznam formátů je napsaný přímo u pole pro nahrání.'],
         ['q' => 'Je cena v kalkulačce konečná?', 'a' => 'Je orientační, v korunách nebo eurech, a platí pro tisk na naší farmě. Přesnou cenu vidíte před zaplacením, podle zvolené barvy a tiskárny.'],
         ['q' => 'Z jakých materiálů si mohu vybrat?', 'a' => 'Kalkulačka nabízí běžný plast (PLA), pevný plast (PETG), materiál na ven (ASA) a pružný plast (TPU). U technického nylonu a pryskyřice počítáme jen odhad. Pro tisk u nás vybíráte z materiálů a barev, které jsou právě založené v tiskárnách.'],
         ['q' => 'Musím se registrovat?', 'a' => 'Na výpočet ne. Účet potřebujete až pro objednávku tisku, protože se platí z předplaceného kreditu dobitého kartou.'],

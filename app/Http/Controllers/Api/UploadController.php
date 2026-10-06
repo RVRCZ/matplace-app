@@ -22,7 +22,7 @@ class UploadController extends Controller
     /** POST /api/uploads — multipart "file" (+ optional browser geometry). Returns the model file descriptor. */
     public function store(Request $request, ConverterChain $converters): JsonResponse
     {
-        $maxKb = (int) config('uploads.max_mb', 100) * 1024;
+        $maxKb = (int) config('uploads.max_mb', 120) * 1024;
         $formats = $converters->inputFormats();
 
         $request->validate([

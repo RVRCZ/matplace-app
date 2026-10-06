@@ -9,7 +9,7 @@ return [
         'You get a report of what was wrong and what we changed, with a table of values before and after the repair. You download the repaired model as an STL for free, or open it in the calculator and order the print from us. The original file stays as it was. The repair does not change the shape or the size of the model.',
     ],
     'steps' => [
-        ['name' => 'Upload the model', 'text' => 'Choose a file or drop it into the field. The file may be 100 MB at most.'],
+        ['name' => 'Upload the model', 'text' => 'Choose a file or drop it into the field. The file may be 120 MB at most.'],
         ['name' => 'Wait for the repair', 'text' => 'The repair runs by itself and there is nothing to set. Large files can take a minute.'],
         ['name' => 'Read the report', 'text' => 'You see the result, the list of changes and a table with the columns "Before" and "After": open edges, flipped faces, the number of bodies and triangles.'],
         ['name' => 'Download or order the print', 'text' => 'The "Download the repaired STL" button saves the model. The second button opens it in the calculator, where you get the price and order the print.'],

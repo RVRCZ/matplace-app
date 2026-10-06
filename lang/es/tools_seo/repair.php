@@ -9,7 +9,7 @@ return [
         'Recibe un informe de lo que fallaba y de lo que hemos cambiado, con una tabla de valores antes y después de la reparación. Puede descargar gratis el modelo reparado en STL o abrirlo en la calculadora y pedirnos la impresión. El archivo original queda intacto. La reparación no cambia la forma ni el tamaño del modelo.',
     ],
     'steps' => [
-        ['name' => 'Suba el modelo', 'text' => 'Elija un archivo o arrástrelo al recuadro. El archivo puede tener como máximo 100 MB.'],
+        ['name' => 'Suba el modelo', 'text' => 'Elija un archivo o arrástrelo al recuadro. El archivo puede tener como máximo 120 MB.'],
         ['name' => 'Espere la reparación', 'text' => 'La reparación se hace sola y no hay nada que ajustar. Con archivos grandes puede tardar un minuto.'],
         ['name' => 'Lea el informe', 'text' => 'Verá el resultado, la lista de cambios y una tabla con las columnas «Antes» y «Después»: aristas abiertas, caras invertidas, número de cuerpos y de triángulos.'],
         ['name' => 'Descargue o pida la impresión', 'text' => 'Con el botón «Descargar el STL reparado» guarda el modelo. El segundo botón lo abre en la calculadora, donde verá el precio y podrá pedir la impresión.'],

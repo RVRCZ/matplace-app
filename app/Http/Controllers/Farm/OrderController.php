@@ -67,6 +67,17 @@ class OrderController extends Controller
             $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) ($calc->params['scale'] ?? 1)));
             $material = $calc->params['material'] ?? null;
         }
+        // a refused order (too big, daily limit…) comes back with what the customer had chosen, not with the defaults
+        $old = (array) $request->session()->getOldInput();
+        if ($old) {
+            $file ??= isset($old['file']) && ! $card ? ModelFile::where('uuid', (string) $old['file'])->first() : null;
+            $quality = (string) ($old['quality'] ?? $quality);
+            $strength = (string) ($old['strength'] ?? $strength);
+            $supports = ($old['supports'] ?? $supports) === 'off' ? 'off' : 'auto';
+            $copies = max(1, min(PlateLayout::MAX_COPIES, (int) ($old['copies'] ?? $copies)));
+            $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) ($old['scale'] ?? $scale)));
+            $wantedColor = (int) ($old['color'] ?? $wantedColor);
+        }
         // the colours loaded right now; those of the calculator's material kind come first
         $offered = $this->orders->offeredColors($quality);
         // a plate with a code or a text prints in two colours: the second one has to sit in the same machine (its ACE
@@ -81,7 +92,7 @@ class OrderController extends Controller
         $preselect = collect($colors)->firstWhere('id', $wantedColor)['id'] ?? ($colors[0]['id'] ?? null);
         // a QR code reads only in two colours: unless the address names the colours, the pair of spools nearest to the
         // design is ticked (a light plate, a dark code), never "one colour"
-        $secondPreselect = (int) $request->query('second');
+        $secondPreselect = (int) ($old['second_color'] ?? $request->query('second'));
         $codeColors = $twoColor ? $file->codeColors() : null;
         if ($codeColors && ! $wantedColor && ! $secondPreselect && ($pair = self::nearestPair($colors, $codeColors))) {
             [$preselect, $secondPreselect] = $pair;
@@ -200,7 +211,7 @@ class OrderController extends Controller
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
                 ? response()->json(['error' => $e->reason, 'message' => $e->text()], 422)
-                : back()->with('error', $e->text());
+                : back()->withInput()->with('error', $e->text());
         }
 
         return $request->expectsJson()
