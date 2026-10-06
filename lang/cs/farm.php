@@ -2,7 +2,7 @@
 
 return [
     'price_label' => 'Tisk u nás (:material)',
-    'cta' => 'Vytisknout u nás',
+    'cta' => 'VYTISKNOUT',
     'cta_hint' => 'Tiskárnu si na dobu tisku pronajmete: tiskne se váš soubor. Platíte kreditem, tisk se spustí hned, jak je tiskárna volná.',
     'cta_wait' => 'Počkejte na dokončení přesného výpočtu, pak půjde tisknout na naší tiskárně.',
     'title' => 'Tisknout na naší tiskárně',

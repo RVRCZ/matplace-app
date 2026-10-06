@@ -42,8 +42,8 @@
     <section class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
         <h2 class="font-bold">Přepínače webu</h2>
         <div class="mt-2 grid gap-3 text-sm">
-            <label class="flex items-start gap-2"><input type="checkbox" name="farm_open" value="1" @checked($settings['farm_open']) class="mt-1 h-4 w-4 accent-action"><span><strong>Farma přijímá zakázky</strong><br><span class="text-xs text-slate-600">Vypnuto: tlačítko „Vytisknout u nás“ zmizí a nové zakázky nejdou založit; rozjeté tisky doběhnou, kredit zůstává.</span></span></label>
-            <label class="flex items-start gap-2"><input type="checkbox" name="farm_public" value="1" @checked($settings['farm_public'] ?? false) class="mt-1 h-4 w-4 accent-action"><span><strong>Farma je veřejná</strong><br><span class="text-xs text-slate-600">Vypnuto: tlačítko „Vytisknout u nás“ v kalkulaci a nástrojích vidí jen administrátor.</span></span></label>
+            <label class="flex items-start gap-2"><input type="checkbox" name="farm_open" value="1" @checked($settings['farm_open']) class="mt-1 h-4 w-4 accent-action"><span><strong>Farma přijímá zakázky</strong><br><span class="text-xs text-slate-600">Vypnuto: tlačítko „VYTISKNOUT“ zmizí a nové zakázky nejdou založit; rozjeté tisky doběhnou, kredit zůstává.</span></span></label>
+            <label class="flex items-start gap-2"><input type="checkbox" name="farm_public" value="1" @checked($settings['farm_public'] ?? false) class="mt-1 h-4 w-4 accent-action"><span><strong>Farma je veřejná</strong><br><span class="text-xs text-slate-600">Vypnuto: tlačítko „VYTISKNOUT“ v kalkulaci a nástrojích vidí jen administrátor.</span></span></label>
             <label class="flex items-start gap-2"><input type="checkbox" name="marketplace" value="1" @checked($settings['marketplace']) class="mt-1 h-4 w-4 accent-action"><span><strong>Tržiště tiskařů</strong><br><span class="text-xs text-slate-600">Zapnuto: ceny tiskařů v kalkulaci, poptávky „Chci to vyrobit“, nabídky, veřejné stránky a role tiskaře. Vypnuto: kalkulace ukazuje jen údaje o tisku a jedinou cenu má farma.</span></span></label>
         </div>
     </section>
