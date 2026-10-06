@@ -104,6 +104,12 @@ class FarmPagesTest extends TestCase
         $order = $this->order();
         $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $order->modelFile->uuid, 'material' => 'PLA', 'quality' => 'fine', 'infill' => 15])->json('calculation.token');
         $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()->assertSee('part.stl')->assertSee('value="fine" class="sr-only" checked', false);
+
+        // "no supports" and the infill chosen in the calculator come along too
+        $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $order->modelFile->uuid, 'material' => 'PLA', 'quality' => 'standard', 'infill' => 35, 'supports' => 0])->json('calculation.token');
+        $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()
+            ->assertSee('name="supports" value="off" class="sr-only" checked', false)
+            ->assertSee('name="strength" value="high" class="sr-only" checked', false);
     }
 
     public function test_until_the_farm_is_public_only_admins_see_the_button(): void

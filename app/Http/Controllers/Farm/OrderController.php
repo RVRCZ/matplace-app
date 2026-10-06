@@ -66,6 +66,12 @@ class OrderController extends Controller
             $copies = max(1, min(PlateLayout::MAX_COPIES, (int) ($calc->params['quantity'] ?? 1)));
             $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) ($calc->params['scale'] ?? 1)));
             $material = $calc->params['material'] ?? null;
+            // "no supports" stays "no"; the farm has no forced "yes", that one is left to the slicer
+            $supports = ($calc->params['supports'] ?? null) === false ? 'off' : $supports;
+            // the infill slider becomes the nearest strength preset
+            if (isset($calc->params['infill']) && ($presets = collect($this->settings->get('strengths'))->map(fn ($s) => abs((int) $s['infill'] - (int) $calc->params['infill']))->sort())->isNotEmpty()) {
+                $strength = (string) $presets->keys()->first();
+            }
         }
         // a refused order (too big, daily limit…) comes back with what the customer had chosen, not with the defaults
         $old = (array) $request->session()->getOldInput();
