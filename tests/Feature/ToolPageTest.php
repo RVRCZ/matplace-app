@@ -57,6 +57,10 @@ class ToolPageTest extends TestCase
             preg_match_all('/data-section="([a-z]+)"/', $html, $sections);
             $this->assertSame($nav[1], $sections[1], $key);
             $this->assertGreaterThanOrEqual(2, count($nav[1]), $key);
+            // the steps wrap in the 340 px panel: a row that scrolls sideways cut the fourth one off ("4 St…")
+            preg_match('/<nav id="tool-nav" class="([^"]*)"/', $html, $row);
+            $this->assertContains('flex-wrap', explode(' ', $row[1] ?? ''), $key);
+            $this->assertStringNotContainsString('overflow-x-auto', $row[1] ?? '', $key);
         }
         $this->assertGreaterThanOrEqual(18, $seen);
         // all 15 generators are on it, in every language

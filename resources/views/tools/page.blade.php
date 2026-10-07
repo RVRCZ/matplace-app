@@ -55,7 +55,8 @@
             <div class="note-warn mt-4 text-sm">{{ $unavailable ?? __('sign.unavailable') }}</div>
         @else
             {{-- the steps, as anchors: every section stays on the page, the one in view is marked --}}
-            <nav id="tool-nav" class="sticky top-0 z-10 -mx-1 mt-3 flex gap-1 overflow-x-auto bg-page px-1 py-2" aria-label="{{ __('param.steps') }}">
+            {{-- four steps do not fit 340 px in one row ("Tisk nebo stažení"): they wrap, nothing is cut off --}}
+            <nav id="tool-nav" class="sticky top-0 z-10 -mx-1 mt-3 flex flex-wrap gap-1 bg-page px-1 py-2" aria-label="{{ __('param.steps') }}">
                 @foreach($sections as $id => $label)
                     <a href="#sec-{{ $id }}" data-nav="{{ $id }}" class="tool-nav-item"><span class="tool-nav-no">{{ $loop->iteration }}</span>{{ $label }}</a>
                 @endforeach
