@@ -8,6 +8,8 @@
         'school' => ['name', 'nametag', 'keyring'],
         'birthday' => ['name', 'door', 'keyring', 'nametag'],
     ];
+    // gifts that have a tool of their own: a picture or a name in the colours of filaments (the ones that are in the catalogue)
+    $more = array_values(array_filter(['gingerbread', 'name_letter', 'topper', 'keychain', 'ornament', 'charm', 'earrings', 'magnet', 'coaster', 'cookie'], fn ($key) => ! empty(config('tools.'.$key.'.available'))));
 @endphp
 
 @section('content')
@@ -43,6 +45,25 @@
             </div>
         </section>
     @endforeach
+
+    @if($more)
+        <section class="mt-8" aria-labelledby="gift-more">
+            <h2 id="gift-more" class="text-xl font-bold text-ink">{{ __('tools.gifts.more') }}</h2>
+            <p class="hint">{{ __('tools.gifts.more.text') }}</p>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach($more as $key)
+                    <a href="{{ \App\Support\ToolSeo::url($key) }}" class="card flex flex-col overflow-hidden hover:border-action">
+                        <span class="block bg-studio">@include('tools.picture', ['key' => $key, 'sizes' => '(min-width: 1024px) 320px, (min-width: 640px) 50vw, 100vw'])</span>
+                        <span class="flex flex-1 flex-col p-4">
+                            <span class="text-lg font-bold text-ink">{{ __('tools.'.$key.'.title') }}</span>
+                            <span class="mt-1 flex-1 text-sm text-muted">{{ __('tools.'.$key.'.hint') }}</span>
+                            <span class="mt-3 font-semibold text-action-dark">{{ __('tools.'.$key.'.action') }} →</span>
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     <p class="mt-8 text-sm text-muted">{{ \App\Support\NextStep::text('gifts.after') }}</p>
 </div>

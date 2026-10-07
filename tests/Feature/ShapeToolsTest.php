@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
 use App\Models\ModelFile;
+use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper'];
 
     protected function setUp(): void
     {
@@ -59,10 +60,10 @@ class ShapeToolsTest extends TestCase
         foreach (self::KINDS as $kind) {
             foreach (['cs', 'en', 'es'] as $lang) {
                 app()->setLocale($lang);
-                $page = $this->get($this->localized('/tools/'.str_replace('_', '-', $kind), $lang))->assertOk();
+                $page = $this->get($this->localized('/tools/'.(['topper' => 'cake-topper'][$kind] ?? str_replace('_', '-', $kind)), $lang))->assertOk();
                 $page->assertSee(__('tools.'.$kind.'.title'))->assertSee(__('param.'.$kind.'.lead'));
                 // a gingerbread and a big letter have a shape of ours: there is no picture to bring
-                in_array($kind, ['gingerbread', 'name_letter'], true) ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));
+                in_array($kind, ['gingerbread', 'name_letter', 'topper'], true) ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));
                 // no key is shown instead of a text
                 $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $page->getContent(), "{$kind} ({$lang})");
             }
@@ -72,6 +73,21 @@ class ShapeToolsTest extends TestCase
             $sample = ParametricGenerator::SAMPLE[$kind] ?? null;
             $this->assertTrue($sample ? ParametricGenerator::artworkPath($sample) !== null : ParametricGenerator::TEXTS[$kind]['line1'][2] !== '', "{$kind} opens empty");
         }
+    }
+
+    public function test_the_gifts_page_leads_to_every_one_of_them(): void
+    {
+        foreach (['cs' => '/gifts', 'en' => '/en/gifts', 'es' => '/es/gifts'] as $lang => $path) {
+            app()->setLocale($lang);
+            $page = $this->get($path)->assertOk()->assertSee(__('tools.gifts.more'));
+            foreach (self::KINDS as $kind) {
+                $page->assertSee(ToolSeo::url($kind, $lang), false)->assertSee(__('tools.'.$kind.'.title'))->assertSee('img/tools/'.$kind.'-800', false);
+            }
+        }
+        app()->setLocale('cs');
+        // a tool taken out of the catalogue is not offered as a gift either
+        config(['tools.cookie.available' => false]);
+        $this->get('/gifts')->assertOk()->assertDontSee(ToolSeo::url('cookie', 'cs'), false);
     }
 
     public function test_a_picture_becomes_parts_in_the_colours_of_filaments(): void
@@ -359,6 +375,39 @@ class ShapeToolsTest extends TestCase
         $this->assertSame(['icing_1', 'icing_2'], array_column($file->tool_params['color_changes'], 'part'));
         $this->assertCount(2, $file->colorChanges());
         $this->get('/api/tools/param/'.$file->uuid.'/icing_2.stl')->assertOk();
+    }
+
+    public function test_a_cake_topper_is_one_piece_with_a_name_across_it_and_sticks_under_it(): void
+    {
+        $t = $this->meta($this->preview('topper', ['template' => 'number', 'number' => '2', 'line1' => 'Olivia', 'width' => 110, 'text_size' => 105, 'spike' => 60, 'spikes' => 2, 'thickness' => 3, 'relief' => 0.8], 'all', true)->assertOk());
+        $n = $t['notes'];
+        $this->assertSame(['body', 'color_1'], $n['parts']);
+        $this->assertSame(2, $n['filaments']);
+        $this->assertEqualsWithDelta(3, $n['color_change_mm'], 0.001);
+        $this->assertEqualsWithDelta(3.8, $t['bbox']['z'], 0.01);
+        $this->assertGreaterThan(110 * 1.05, $t['bbox']['x']);                 // the name is wider than the number and has its own backing
+        $this->assertLessThan(110 * 1.05 + 8, $t['bbox']['x']);
+        // shape, name and sticks are one body: nothing falls apart when it is lifted off the bed
+        $body = $this->meta($this->preview('topper', ['number' => '2', 'line1' => 'Olivia'], 'body', true)->assertOk());
+        $this->assertCount(1, $body['parts']);
+        // longer sticks make it taller by exactly that much; one stick is less plastic than two
+        $long = $this->meta($this->preview('topper', ['number' => '2', 'line1' => 'Olivia', 'width' => 110, 'spike' => 100])->assertOk());
+        $this->assertEqualsWithDelta(40, $long['bbox']['y'] - $t['bbox']['y'], 0.2);
+        $one = $this->meta($this->preview('topper', ['number' => '2', 'line1' => 'Olivia', 'width' => 110, 'spikes' => 1])->assertOk());
+        $this->assertLessThan($t['volume_mm3'] - 400, $one['volume_mm3']);
+        // the name alone: one colour, still one piece with its sticks, letters tied together
+        $text = $this->meta($this->preview('topper', ['template' => 'none', 'line1' => 'Ela a Tom', 'typeface' => 'sans', 'width' => 150], 'all', true)->assertOk());
+        $this->assertSame(['body'], $text['notes']['parts']);
+        $this->assertSame(1, $text['notes']['filaments']);
+        $this->assertCount(1, $text['parts']);
+        $this->assertContains('pieces_tied', $text['notes']['warnings']);
+        $this->assertEqualsWithDelta(150, $text['bbox']['x'], 4);
+        // a heart with a name lower on it; a number that was not typed leaves the name alone
+        $heart = $this->meta($this->preview('topper', ['template' => 'heart', 'line1' => 'Ela', 'width' => 100, 'text_size' => 60, 'text_y' => -20])->assertOk());
+        $this->assertEqualsWithDelta(100, $heart['bbox']['x'], 0.5);
+        $this->assertSame(['body'], $this->meta($this->preview('topper', ['template' => 'number', 'number' => '', 'line1' => 'Ela'])->assertOk())['notes']['parts']);
+        $this->preview('topper', ['template' => 'none', 'line1' => '', 'number' => ''])->assertStatus(422);
+        $this->preview('topper', ['template' => 'cube', 'line1' => 'Ela'])->assertStatus(422);
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

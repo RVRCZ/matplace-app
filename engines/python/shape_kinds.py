@@ -24,16 +24,16 @@ import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
     "width": (10, 250), "height": (40, 250), "thickness": (1.2, 15), "frame": (0, 4), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
-    "mag_d": (4, 30), "mag_h": (1, 6), "mag_gap": (0, 0.4),
+    "mag_d": (4, 30), "mag_h": (1, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle")}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",)}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -133,7 +133,7 @@ def build(M, Invalid, p, product):
     flush, rim, bevel = (bool(p.get(f, False)) for f in ("flush", "rim", "bevel"))
     eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product == "cookie")
     biscuit = product == "cookie"                             # a picture or a silhouette as dough, icing piped on it by hand
-    cookie = product in ("gingerbread", "name_letter")        # the shape is ours, the visitor brings the name
+    cookie = product in ("gingerbread", "name_letter", "topper")      # the shape is ours, the visitor brings the name
     warn = []
     lines = [str(x).strip() for x in (p.get("lines") or []) if str(x).strip()]
     art_path = p.get("artwork_path")
@@ -163,7 +163,7 @@ def build(M, Invalid, p, product):
         raise Invalid("shape_too_small")
     try:
         if cookie:
-            layers, info = (_gingerbread if product == "gingerbread" else _name_letter)(M, Invalid, p, width, lines, warn)
+            layers, info = {"gingerbread": _gingerbread, "name_letter": _name_letter, "topper": _topper}[product](M, Invalid, p, width, lines, warn)
         elif is_text:
             art, tinfo = S.text(M, lines[:2], p.get("font"), 10, scales=[1.0, 0.7])
             w0, h0 = S.size(art)
@@ -752,6 +752,95 @@ def _icing(M, p, unit, clip):
             continue
         layers.append({"index": 10 + n + 1, "part": "icing_%d" % (n + 1), "rgb": hx, "code": code, "hex": hx, "share": round(cs.area() / whole, 4), "own": cs, "stack": cs})
     return layers
+
+
+# ── cake topper ──────────────────────────────────────────────────────────────
+
+TEMPLATES = ("number", "heart", "star", "circle", "none")
+STICK = 4.0                 # how wide a stick of the topper is: printed flat, it must not snap when pushed into a cake
+
+
+def _topper(M, Invalid, p, width, lines, warn):
+    """
+    A number or a shape with a name written across it and one or two sticks under it: everything one flat piece, the
+    name raised in a second colour. Returns (layers, info) like _gingerbread.
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    template = p.get("template", TEMPLATES[0])
+    if template not in TEMPLATES:
+        raise Invalid("bad_choice", "template")
+    name = lines[0] if lines else ""
+    number = str(p.get("number") or "").strip()[:3]
+    missing, back = [], None
+    try:
+        if template == "number" and number:
+            back, binfo = S.text(M, [number], p.get("letter_font") or p.get("font"), 100)
+            missing += binfo.get("missing_chars", [])
+        elif template == "heart":
+            back = C([[(16 * math.sin(t) ** 3, 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)) for t in (2 * math.pi * (160 - i) / 160 for i in range(160))]])
+        elif template == "star":
+            back = C([[((10 if i % 2 == 0 else 5.2) * math.cos(math.pi / 2 + i * math.pi / 5), (10 if i % 2 == 0 else 5.2) * math.sin(math.pi / 2 + i * math.pi / 5)) for i in range(10)]])
+        elif template == "circle":
+            back = C.circle(10, 128)
+        text = None
+        if name:
+            text, tinfo = S.text(M, [name], p.get("font"), 10)
+            missing += [c for c in tinfo.get("missing_chars", []) if c not in missing]
+    except S.ArtworkError as e:
+        raise Invalid(e.code)
+    if back is None and text is None:
+        raise Invalid("no_text")
+    art = C()
+    if back is not None:
+        back = S.fit(back, width_mm=width)
+        if template == "star":
+            back = back.offset(-1.5, J, 2.0, 24).offset(1.5, J, 2.0, 24)
+        bw, bh = S.size(back)
+        body = back
+    if text is not None:
+        tw0, th0 = S.size(text)
+        tw = width * (_num(Invalid, p, "text_size", 90) / 100.0 if back is not None else 1.0)
+        text = S.fit(text, width_mm=tw)
+        th = th0 * tw / tw0
+        if th < 5.0:
+            warn.append("name_small")
+        cx, cy = (bw / 2, bh / 2 + bh * _num(Invalid, p, "text_y", -10) / 100.0) if back is not None else (tw / 2, th / 2)
+        text = text.translate([cx - tw / 2, cy - th / 2])
+        # under the name lies a fattened copy of it: letters that reach beyond the shape still have something to stand on
+        fat = text.offset(max(1.2, th * 0.06), J, 2.0, 16)
+        body = (back + fat) if back is not None else fat
+        art = text
+    body, links = S.joined(M, body.simplify(0.02), 1.0, 2.4)
+    if links:
+        warn.append("pieces_tied")
+    # sticks: from inside the piece down to a common tip line, where the piece has material above them
+    x0, y0, x1, y1 = body.bounds()
+    length, count = _num(Invalid, p, "spike", 60), int(_num(Invalid, p, "spikes", 2))
+    bottom = y0 - length
+    for share in ((0.5,) if count == 1 else (0.3, 0.7)):
+        x = x0 + (x1 - x0) * share
+        for _ in range(12):                                  # a place with nothing above it (the gap of a heart, a space in a name): move towards the middle
+            above = body ^ C.square([STICK, y1 - y0 + 2]).translate([x - STICK / 2, y0 - 1])
+            if above.area() > STICK * 2:
+                break
+            x += (x0 + x1 - 2 * x) * 0.15
+        top = above.bounds()[1] + 3.0 if not above.is_empty() else y0 + 3.0
+        body = body + C([[(x - STICK / 2, top), (x - STICK / 2, bottom + 6), (x, bottom), (x + STICK / 2, bottom + 6), (x + STICK / 2, top)]])
+    pal = p.get("palette") or []
+    by_code = dict((c, h) for c, h in pal)
+    chosen = (p.get("part_colors") or {}).get("color_1")
+    own = chosen.get("code") if isinstance(chosen, dict) else None
+    light = max(pal, key=lambda f: _light(f[1])) if pal else ("", "#f4f4f2")
+    dark = min(pal, key=lambda f: _light(f[1])) if pal else ("", "#1b1b1d")
+    code = own if own in by_code else light[0]
+    hx = by_code.get(code, light[1])
+    bx0, by0, bx1, by1 = body.bounds()
+    move = [-bx0, -by0]
+    body, art = body.translate(move), (art.translate(move) if not art.is_empty() else art)
+    layers = [] if art.is_empty() or back is None else [{"index": 1, "rgb": hx, "code": code, "hex": hx, "share": round(art.area() / max(body.area(), 1e-9), 4), "own": art, "stack": art}]
+    info = {"source": "topper", "silhouette": body, "size": [bx1 - bx0, by1 - by0], "found": 1, "wanted": 1, "background": "alpha", "missing_chars": missing,
+            "body": body, "dough": (dark[0], dark[1]), "top": None}
+    return layers, info
 
 
 BUILDERS = {product: (lambda M, Invalid, p, product=product: build(M, Invalid, p, product)) for product in PRODUCTS}

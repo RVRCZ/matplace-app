@@ -138,6 +138,11 @@ return [
             ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.50, 0.70]]], ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.28, 0.17]]], ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.72, 0.17]]],
         ]]],
     ]]],
+    'topper' => ['route' => 'tools.topper', 'intent' => 'create', 'categories' => ['names', 'craft'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['template' => 'number', 'number' => '2', 'line1' => 'Olivia', 'width' => 110]],
+        ['params' => ['template' => 'heart', 'line1' => 'Ela a Tom', 'width' => 120, 'text_size' => 90, 'text_y' => 5]],
+        ['params' => ['template' => 'none', 'line1' => 'Všechno nejlepší', 'width' => 180, 'spike' => 80]],
+    ]]],
     'name_letter' => ['route' => 'tools.name_letter', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['line1' => 'Ela', 'height' => 120]],
         ['params' => ['line1' => 'Tomáš', 'height' => 150, 'letter_face' => 'serif', 'typeface' => 'sans']],

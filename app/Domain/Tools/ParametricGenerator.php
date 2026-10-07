@@ -27,7 +27,7 @@ final class ParametricGenerator
      * magnet, coaster. Each is a kind of its own (its own page, limits and stored designs) built by the one builder;
      * what they share is written once here and the kinds only say where they differ.
      */
-    public const FAMILY = ['charm' => 'shape', 'keychain' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape', 'gingerbread' => 'shape', 'name_letter' => 'shape', 'cookie' => 'shape'];
+    public const FAMILY = ['charm' => 'shape', 'keychain' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape', 'gingerbread' => 'shape', 'name_letter' => 'shape', 'cookie' => 'shape', 'topper' => 'shape'];
 
     private const SHAPE_FIELDS = [
         'width' => [20, 120, 45, 1], 'thickness' => [2, 6, 3, 0.2], 'frame' => [0, 3, 1.2, 0.1],
@@ -64,6 +64,9 @@ final class ParametricGenerator
         'gingerbread' => ['width' => [50, 150, 90, 1], 'thickness' => [2, 6, 3, 0.2], 'relief' => [0.4, 1.2, 0.6, 0.2], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_EYELET,
         // a biscuit to play with or to hang: a picture or a silhouette as dough, icing drawn on it by hand (`strokes`)
         'cookie' => ['width' => [40, 150, 80, 1], 'thickness' => [4, 10, 6, 0.5], 'frame' => [0, 6, 2, 0.1], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
+        // a number or a shape with a name across it and sticks under it: the name's width in % of the width, its place in % of the shape's height
+        'topper' => ['width' => [50, 200, 110, 1], 'text_size' => [30, 150, 105, 1], 'text_y' => [-60, 60, -12, 1], 'spike' => [30, 100, 60, 1], 'spikes' => [1, 2, 2, 1],
+            'thickness' => [2, 4, 3, 0.2], 'relief' => [0.4, 1.2, 0.8, 0.2]],
         // a big first letter with the whole name on it: thick enough to stand on a shelf
         'name_letter' => ['height' => [60, 200, 120, 1], 'thickness' => [3, 15, 8, 0.2], 'relief' => [0.4, 2, 1, 0.2]],
         'organizer' => [
@@ -116,6 +119,7 @@ final class ParametricGenerator
         'gingerbread' => ['cookie' => ['man', 'heart', 'star', 'tree'], 'icing' => ['wavy', 'plain', 'none'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
         'name_letter' => ['letter_face' => ['sans', 'serif', 'mono'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
         'cookie' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'topper' => ['template' => ['number', 'heart', 'star', 'circle', 'none'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
         'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -138,6 +142,7 @@ final class ParametricGenerator
         'gingerbread' => ['line1' => [16, false, 'Ela']],
         'name_letter' => ['line1' => [20, true, 'Ela'], 'initial' => [1, false, '']],
         'cookie' => ['line1' => [16, false, ''], 'line2' => [16, false, '']],
+        'topper' => ['line1' => [20, false, 'Olivia'], 'number' => [3, false, '2']],
         'sign' => ['line1' => [40, true, 'Jana'], 'line2' => [40, false, '']],
         'logo' => ['line1' => [30, false, 'LOGO'], 'line2' => [30, false, '']],
         'stamp' => ['line1' => [20, false, 'EVA'], 'line2' => [20, false, '']],
@@ -153,7 +158,7 @@ final class ParametricGenerator
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
-        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'],
+        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
@@ -168,7 +173,7 @@ final class ParametricGenerator
         'modular' => ['inner_w' => 'x', 'inner_d' => 'y', 'height' => 'z'], 'vase' => ['top_d' => 'x', 'height' => 'z'], 'phone_stand' => ['width' => 'x'],
         'cable_holder' => ['depth' => 'y'], 'holder' => ['obj_w' => 'x', 'height' => 'z'], 'cap' => ['size_a' => 'x', 'height' => 'z'],
         'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
-        'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'], 'cookie' => ['width' => 'x'],
+        'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'], 'cookie' => ['width' => 'x'], 'topper' => ['width' => 'x'],
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
 
@@ -181,13 +186,13 @@ final class ParametricGenerator
     public const MAX_STROKE_POINTS = 48;
 
     public const FLAGS = ['charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
-        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'],
+        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'], 'topper' => ['flush'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
         'cookie' => ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]] + self::SHAPE_WHEN,
-        'gingerbread' => self::SHAPE_WHEN, 'name_letter' => self::SHAPE_WHEN, 'charm' => self::SHAPE_WHEN, 'keychain' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
+        'topper' => self::SHAPE_WHEN, 'gingerbread' => self::SHAPE_WHEN, 'name_letter' => self::SHAPE_WHEN, 'charm' => self::SHAPE_WHEN, 'keychain' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
         'magnet' => self::SHAPE_WHEN + ['disc' => ['mount', ['glue', 'press', 'through']], 'mag_d' => ['mount', ['glue', 'press', 'through']], 'mag_h' => ['mount', ['glue', 'press']], 'mag_gap' => ['mount', ['glue']]],
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
@@ -299,7 +304,7 @@ final class ParametricGenerator
             'cutter' => array_values(array_intersect((array) ($p['parts'] ?? []), ['body', 'stamp'])),   // the stamp exists only when the drawing had inner lines: the tool says so
             'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
             // a picture in colours: the plate, every colour and the rim, as the tool listed them
-            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8]|icing_[1-6])$/', $part))),
+            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8]|icing_[1-6])$/', $part))),
             default => [],
         };
     }
@@ -486,9 +491,9 @@ final class ParametricGenerator
                 $clean['font'] = base_path('engines/fonts/Pacifico-Regular.ttf');   // handwritten, letters joined (OFL)
             }
             $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? ''], fn ($l) => $l !== ''));
-            if (isset($clean['letter_face'])) {
+            if (isset($clean['letter_face']) || $kind === 'topper') {
                 // the big letter has a typeface of its own: always a bold one, it carries the name
-                $clean['letter_font'] = base_path('vendor/dompdf/dompdf/lib/fonts/'.(['serif' => 'DejaVuSerif-Bold.ttf', 'mono' => 'DejaVuSansMono-Bold.ttf'][$clean['letter_face']] ?? 'DejaVuSans-Bold.ttf'));
+                $clean['letter_font'] = base_path('vendor/dompdf/dompdf/lib/fonts/'.(['serif' => 'DejaVuSerif-Bold.ttf', 'mono' => 'DejaVuSansMono-Bold.ttf'][$clean['letter_face'] ?? ''] ?? 'DejaVuSans-Bold.ttf'));
             }
         }
         if (isset(self::FAMILY[$kind])) {
