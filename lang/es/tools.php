@@ -73,6 +73,9 @@ return [
     'soap_model.title' => 'Jabonera según su propio modelo',
     'soap_model.hint' => 'Un hueco a medida de la huella del modelo que suba, con holgura, pared y fondo con desagüe: una bandeja para jabón, un dado, un teléfono.',
     'soap_model.action' => 'Hacer la jabonera',
+    'wearable.title' => 'Casco o armadura a medida',
+    'wearable.hint' => 'Un modelo de casco, máscara o armadura escalado a su contorno de cabeza o pecho, vaciado, con visores y ranuras de correa, y dividido para la cama.',
+    'wearable.action' => 'Hacer a medida',
 
     'cats' => [
         'images' => 'Imágenes y logos',
@@ -130,5 +133,6 @@ return [
         'flexi_cut' => 'flexi articulado articulación de bola segmentos print in place juguete dragón serpiente lagarto figura',
         'colors' => 'colores 3mf impresión multicolor ams mmu dividir por colores pintado bambu orca prusa piezas',
         'soap_model' => 'jabonera bandeja de jabón según modelo huella desagüe ranuras nervios baño',
+        'wearable' => 'casco máscara armadura a medida contorno de cabeza cosplay visores correa hueco disfraz',
     ],
 ];

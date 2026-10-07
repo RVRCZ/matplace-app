@@ -30,6 +30,7 @@ modulů), `viewer.ts` (dvě nové metody), `ModelFile` (`builtForPrinting`, `pri
 | Flexi z modelu | `/tools/flexi-cut` | `edit` (`edit_tool.py flexi_cut`) | podlouhlý model → 3–20 článků napříč osou s kulovými klouby Ø 6–10 (vůle 0,35–0,5), tiskne se najednou složené |
 | Díly podle barev | `/tools/colors` | `edit` (`colors_tool.py` přes `edit_tool.py colors`) | barevný 3MF (materiály, extrudery objektů, malování Bambu / Orca / Prusa) → díl na barvu: samostatná tělesa tak, jak jsou, namalované plochy jako vložky 0,6–3 mm s vybráním v těle |
 | Mýdlenka podle modelu | `/tools/soap-from-model` | `edit` (`edit_tool.py soap`, karta `soap_model`) | půdorys nahraného modelu (projekce nebo dno) + vůle → kapsa, stěna, dno s drážkami / mřížkou / žebry; model sám se netiskne |
+| Přilba nebo brnění na míru | `/tools/wearable` | `edit` (`edit_tool.py wearable`) | model přilby / brnění → měřítko podle obvodu hlavy, hrudi…, dutina 2–4 mm otevřená zespodu, až 4 průzory skrz bližší stěnu, drážky na popruh 25 mm, dělení na podložku s kolíky |
 | Litofanie a reliéf (rozšíření) | `/tools/relief` | `relief` (`relief_tool.py`, `ReliefGenerator`) | fotka → panel v 7 tvarech (i vlastní silueta), rámeček, otvor / očko, stojánek; **lampa** (fotka kolem válce, dno na E27 / E14 / LED); jas, kontrast, střední tóny; náhled podsvícený / povrch |
 
 ### Obraz z filamentu (`filament_art`)
@@ -231,6 +232,34 @@ o 3 mm, aby nikdy nesahaly ke stěně), `grid` (oběma směry), `ribs` (žebra 2
 Ø 6 v rozích, pokud se do dna vejdou), `none`. Model menší než 15 mm v půdorysu → `too_small` (stojící litofanie má
 půdorys 80 × 3!), miska nad 300 mm → `too_big`. Jeden díl `body`.
 
+### Přilba nebo brnění na míru (`wearable`)
+
+**Míra**: co model obepíná (hlava 56, hruď 95, pas 80, paže 30, předloktí 26, zápěstí 17, stehno 55, lýtko 37 cm
+jako výchozí; nebo „nezvětšovat“), obvod v cm, vůle na obvodu (výchozí 10 mm). Nástroj najde **nejširší vodorovný
+řez** modelu (24 vzorků výšky, největší šířka + hloubka), změří obvod vnějšího obrysu a největší díry; díra větší než
+polovina vnějšího obvodu = model je **už dutý** (vnitřní obvod = obvod díry, dutina se nedělá); jinak vnitřní obvod =
+vnější − 2π·stěna. Měřítko = (obvod + vůle) / vnitřní obvod, rovnoměrně ve všech osách (0,2–20×). **Dutina**: týž
+`hollow_solid` jako u životní velikosti (bez odtoků, límce u řezů, když se bude dělit); pak **otevření zespodu**:
+řez dutiny ve výšce stěna + 1 mm dá obrys dutiny (díry řezu obrácené na vnější smyčky), ten se vytáhne skrz dno – dno
+zmizí jen uvnitř obrysu dutiny, lem stěny zůstane. **Průzory** (až 4): strana `front | back | left | right | top`,
+tvar obdélník / ovál, šířka × výška, posun do strany a nahoru od **linie očí** (60 % výšky); hranol tvaru jde z vnějšku
+do **poloviny** modelu po ose strany, takže projde jen bližší stěnou (vzadu nic). Rotace: hranol se táhne po +z a
+otáčí (`rotate([±90,0,0])` pro y, `shape.rotate(90)` + `rotate([0,±90,0])` pro x; tvary jsou středově souměrné, tak
+na převrácení osy v nezáleží). **Popruh**: dvě drážky 25 × 4 mm vodorovně v obou bocích ve výšce `strap_h` %
+(hranol z vnějšku do poloviny, každý bok zvlášť). **Dělení**: `plan` + `split_solid` jako životní velikost (kolíky,
+čísla, položení), nebo vypnuto. Odpověď: měřítko, rozměry, `girth_inner` (obvod díry v nejširším řezu po dutině,
+před průzory), cíl, `hollowed`, `opened`, `already_hollow`, průzory, drážky, díly, gramy. Analýza před výrobou
+ukazuje měřítko, rozměry, cílový obvod a díly (stejná větev stránky jako životní velikost). Průzory stránka drží
+jako čtyři řádky (strana, tvar, 4 čísla) → skryté textové pole s JSON (`windows`), PHP `windowsOf` je pročistí.
+Umístění průzorů klepnutím do vieweru (zadání) jsem nedělal: strana + posun stačí a nevyžaduje nic v `viewer.ts`.
+
+**Mřížka dutiny z přesných řezů** (změna sdílená všemi dutinami): `trimesh.voxelized(pitch)` dělí každý trojúhelník
+až na rozteč mřížky – hrubá kopule 190 mm (4 tis. velkých trojúhelníků) stála 51 s ze 63. Nový `filled_grid` řeže
+exaktní solid po hladinách (`Manifold.slice`), řez rozšíří o půl buňky a vyplní do bitmapy (PIL, vnější smyčky
+pak díry): stejná sémantika „buňka, které se těleso dotýká“, kopule 6,8 s celkem. Kalibrace po změně: krychle 40 se
+stěnou 6 → 5,98 mm; koule Ø 60 se stěnou 2 → 2,2 mm (o 0,2 silnější, k bezpečné straně); `SURFACE_OFFSET` 1,1
+ponechán, test dutiny (krychle 60, ±6 % objemu dutiny) prochází.
+
 ## 2. Rozhodnutí a proč
 
 1. **Filament art není kind `ParametricGenerator`**, ale vlastní generátor a modul `art`. Zadání ho tam chtělo;
@@ -270,6 +299,13 @@ půdorys 80 × 3!), miska nad 300 mm → `too_big`. Jeden díl `body`.
     ModelFile; nástroj místo toho čte 3MF znovu v Pythonu (`colors_tool.py`), převodník zůstal beze změny a STL celku
     je pro cenu a náhled totéž co dřív. Namalovaná barva je **vložka s vybráním**, ne jen plocha: plocha by nebyla
     tisknutelná a vícemateriálový slicer stejně barví do hloubky několika perimetrů; 1,2 mm = 3 perimetry 0,4.
+14. **Průzory podle strany a posunu, ne klepnutím do vieweru.** Zadání chtělo obdélníky umístěné myší na povrch;
+    to znamená picking a promítání ve `viewer.ts` (sdílený soubor) a stav v modulu. Strana + tvar + rozměr + posun
+    od linie očí dá totéž pro přilbu i brnění (přední hledí, boční otvory na uši, horní větrání) a jde zadat i
+    z klávesnice; klepnutí do vieweru může přijít jako doplněk, až bude po tisku jasné, že se nástroj používá.
+15. **Mřížka dutiny z řezů exaktního tělesa** (viz dutina výše): voxelizér trimeshe dělí trojúhelníky, hrubé modely
+    (kopule, krabice, skenované sítě decimované na velké plochy) stály desítky sekund; řezání solidu je nezávislé na
+    hustotě sítě a dalo stejnou kalibraci stěny.
 
 ## 3. Rychlost (změřeno 7. 10. 2026, lokálně, Windows, 4 jádra)
 
@@ -336,6 +372,15 @@ Limit 60 s ze zadání je daleko; decimaci nad 2 M jsem na skutečném modelu ne
 
 `soap` na ležícím srdci 90 × 74 (277 tis. trojúhelníků): drážky 1,9 s, žebra 1,8 s (z toho načtení a projekce
 většina); na kvádru testu 1,2 s.
+
+`wearable` na plné kopuli Ø 120 (4 tis. trojúhelníků):
+
+| případ | čas |
+|---|---|
+| analýza (nejširší řez, měřítko, plán dělení) | 1,1 s |
+| hlava 56 cm → Ø 191, dutina 3 mm, otevření, 2 průzory, drážky | 6,8 s (před změnou mřížky 63 s) |
+| hruď 95 cm → 322 mm, dutina (mřížka 1,0 mm, `coarse_grid`), 4 díly s 12 kolíky | 8,1 s (před změnou 61 s) |
+| nezvětšovat, bez dutiny | 1,1 s |
 Čtení XML přes `ElementTree` drží celý strom v paměti; 2 M trojúhelníků (limit) je odhadem 1–1,5 GB – přes 1 M by
 stálo za `iterparse`, nezměřeno.
 
@@ -362,7 +407,10 @@ podle plochy, názvy / hex / extruder / zdroje / podíl), rozdělení (díly `co
 objem celku = 3 krychle, modrý díl 60 mm široký, vložka 1,25 vysoká, tělo o 1,2 nižší, stažení dílu, cizí 404), STL
 bez barev (analýza `has_colors` false, rozdělení `no_colors`), hloubka mimo rozsah 422. +1 (mýdlenka): kvádr
 90 × 60 × 30 → kapsa 94, miska 98,8 × 68,8 × 22, ≥ 7 drážek, uzavřená, objem mezi 60 % a 100 % skořepiny; plné dno
-těžší, dno jako půdorys totéž u kvádru, žebra ≥ 8, špatný odtok 422.
+těžší, dno jako půdorys totéž u kvádru, žebra ≥ 8, špatný odtok 422. +1 (na míru): kopule Ø 120 stavěná v testu
+(UV polokoule) → analýza (měřítko 1,592 ± 0,01, cílový obvod 570, dutina ano, vejde se, 191 mm), výroba (dutina,
+otevřeno, 2 drážky, 2 průzory z JSON, vnitřní obvod 570 ± 4 %, 1 díl, uzavřeno, objem 4–20 % plné kopule),
+„nezvětšovat“ bez dutiny = původní objem, `windowsOf` pročistí nesmysly, stěna 9 → 422.
 
 ## 5. Co není ověřené
 
@@ -396,6 +444,12 @@ těžší, dno jako půdorys totéž u kvádru, žebra ≥ 8, špatný odtok 422
   (stromy) jsou podle zdroje PrusaSliceru, ale nezkoušené na datech. Před ohlášením nástroje: uložit z Bambu Studia
   model s malováním a 2–3 díly v AMS slotech, nahrát, porovnat barvy a podíly s tím, co ukazuje slicer. Vložky na
   silně zakřivených plochách (poloměr pod 2× hloubka) se mohou samy protnout – pak je `solidify` přestaví na mřížce.
+- **Na míru**: zkoušeno jen na kopuli a na čepičce z generátoru (karta), ne na skutečné přilbě z Printables.
+  Nejširší řez u přilby s hledím nebo s lícnicemi nemusí být tam, kde se měří hlava; model, který leží na boku,
+  bude měřen špatně (nástroj nic neotáčí). Vůle 10 mm na obvodu je odhad bez tisku. Dutina u přilby s tenkými
+  detaily (hřeben, rohy) je nechá plné (stěna 3 mm je víc než detail). Vnitřní obvod po dutině vyšel u kopule
+  582 mm proti cíli 570 (+2 %): měří se v řezu nejširšího místa, u kopule těsně nad lemem, kde mřížka dutinu
+  o desetiny rozšíří; na skutečné přilbě ověřit metrem po tisku a případně vůli snížit.
 
 ## 6. Nasazení (Roman)
 
@@ -414,8 +468,8 @@ Hotové: `/tools/filament-art` (oba režimy, rám, LED, návod), `/tools/split` 
 3D profilu pro vysoké modely), `/tools/holder-from-model`, `/tools/potion`, `/tools/flexi-cut`, společný základ `edit_tool.py` + `ModelEditor` +
 `EditModel` + stránka `edit`.
 Zbývá (v pořadí, jak dává smysl): `/tools/wearable` (míra, průzory ve vieweru, drážky na popruh); `/tools/flexi` (zvíře z primitiv);
-`/tools/slider`. Rozšíření `relief` (tvary, lampa, podsvícený náhled), `/tools/colors` a `soap` podle stopy
-(`/tools/soap-from-model`) jsou hotové.
+`/tools/slider` (volitelné) a `/tools/flexi` (zvíře z primitiv). Rozšíření `relief` (tvary, lampa, podsvícený
+náhled), `/tools/colors`, `soap` podle stopy (`/tools/soap-from-model`) a `/tools/wearable` jsou hotové.
 
 ## 8. Stav
 
@@ -426,4 +480,5 @@ chyba – `ToolsFlowTest` hlídá, že každý inline `throttle` má vlastní p�
 `edit/{part}.stl` sdílely `preview`, `create`, `zip`, `part` s nástroji session 1 → přejmenováno na `art_*`,
 `edit_part`. Pak rozšíření litofanie (tvary, zavěšení, lampa, světlo, náhled) – `ReliefToolTest` 6 testů,
 `ToolsFlowTest` zelený, build (a82aed8). Pak `/tools/colors` (`colors_tool.py`, karta ze sněhuláka, test), build,
-pint, testy stránek, katalogu, karet, SEO a toku zelené (2e3957c). Pak mýdlenka podle modelu (`soap`).
+pint, testy stránek, katalogu, karet, SEO a toku zelené (2e3957c). Pak mýdlenka podle modelu (`soap`, 14a3e52) a
+přilba na míru (`wearable`) s mřížkou dutiny z řezů.

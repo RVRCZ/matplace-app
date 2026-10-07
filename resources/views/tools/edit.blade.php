@@ -6,11 +6,11 @@
         'joint.pins', 'joint.dovetail', 'joint.none', 'report.tabs', 'report.frame', 'part.frame', 'report.wall', 'report.thin', 'report.floor', 'report.cork', 'report.label', 'report.solid', 'part.body', 'part.cork', 'part.label', 'part.segment', 'report.joints', 'report.none',
         'warn.does_not_fit', 'warn.many_pieces', 'warn.no_room_for_pins', 'warn.key_as_pins', 'warn.too_big', 'warn.nothing_to_hollow', 'warn.no_room_for_drain', 'warn.coarse_grid', 'warn.tall_gets_pins', 'warn.piece_split', 'warn.too_thin_for_pins',
         'error.fits_already', 'error.too_heavy', 'error.too_small', 'error.too_big', 'error.not_watertight', 'error.edit_failed', 'error.too_tall', 'error.pieces_too_small', 'warn.wall_thin', 'error.too_short', 'warn.small_foot', 'warn.solid_bottle', 'warn.label_failed', 'warn.joint_no_room', 'warn.segment_split', 'error.segments_too_short',
-        'found', 'none', 'not_3mf', 'majority', 'filament', 'report.parts', 'part.color', 'warn.inlay_failed', 'warn.recess_failed', 'warn.body_open', 'warn.many_colors', 'error.no_colors', 'error.not_3mf', 'error.empty', 'error.empty_result', 'report.drain.grooves', 'report.drain.grid', 'report.drain.ribs', 'report.drain.none'];
+        'found', 'none', 'not_3mf', 'majority', 'filament', 'report.parts', 'part.color', 'warn.inlay_failed', 'warn.recess_failed', 'warn.body_open', 'warn.many_colors', 'error.no_colors', 'error.not_3mf', 'error.empty', 'error.empty_result', 'report.drain.grooves', 'report.drain.grid', 'report.drain.ribs', 'report.drain.none', 'report.already', 'report.cuts', 'warn.no_opening'];
     $i18n = collect(['check.page.max', 'toolpage.status.empty', 'param.too_fast'])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb']])])
         ->merge(collect($keys)->mapWithKeys(fn ($k) => ['edit.'.$op.'.'.$k => \Illuminate\Support\Facades\Lang::has('edit.'.$op.'.'.$k) ? \App\Support\NextStep::text('edit.'.$op.'.'.$k) : \App\Support\NextStep::text('edit.'.$k)]))->all();
     $sections = ['file' => __('toolpage.section.file'), 'settings' => __('toolpage.section.settings'), 'result' => __('toolpage.section.result')];
-    $icon = ['split' => 'scissors', 'hollow' => 'box', 'life_size' => 'maximize', 'scale' => 'maximize', 'puzzle' => 'grid-3x3', 'holder' => 'box', 'potion' => 'sparkles', 'flexi_cut' => 'link', 'colors' => 'palette', 'soap' => 'box'][$op] ?? 'box';
+    $icon = ['split' => 'scissors', 'hollow' => 'box', 'life_size' => 'maximize', 'scale' => 'maximize', 'puzzle' => 'grid-3x3', 'holder' => 'box', 'potion' => 'sparkles', 'flexi_cut' => 'link', 'colors' => 'palette', 'soap' => 'box', 'wearable' => 'person-standing'][$op] ?? 'box';
     // only a 3MF carries colours: the splitter's page takes nothing else
     $formats = $op === 'colors' ? ['3mf'] : $config['formats'];
 @endphp
@@ -139,6 +139,74 @@
                 @include('tools._num', ['key' => 'floor', 'f' => $fields['floor'], 'label' => __('edit.f.floor'), 'unit' => 'mm', 'when' => ''])
             </div>
         @endif
+        @if($op === 'wearable')
+            <fieldset>
+                <legend class="lbl">{{ __('edit.c.measure') }}</legend>
+                <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
+                    @foreach($choices['measure'] as $i => $o)
+                        <label class="tool-choice"><input type="radio" name="c-measure" data-choice="measure" data-preset="{{ \App\Domain\Tools\ModelEditor::MEASURES[$o] ?? '' }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('edit.o.measure.'.$o) }}</label>
+                    @endforeach
+                </div>
+            </fieldset>
+            <div class="grid gap-3" data-when="measure=head,chest,waist,arm,forearm,wrist,thigh,calf">
+                @include('tools._num', ['key' => 'circumference', 'f' => $fields['circumference'], 'label' => __('edit.f.circumference'), 'unit' => 'cm', 'when' => ''])
+                @include('tools._num', ['key' => 'play', 'f' => $fields['play'], 'label' => __('edit.f.play'), 'unit' => 'mm', 'when' => ''])
+                <p class="hint !text-xs">{{ __('edit.wearable.measure.hint') }}</p>
+            </div>
+            <label class="flex items-start gap-3 text-sm text-ink">
+                <input data-flag="hollow" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" checked>
+                <span><span class="font-medium">{{ __('edit.wearable.flag.hollow') }}</span><br><span class="text-muted">{{ __('edit.wearable.flag.hollow.hint') }}</span></span>
+            </label>
+            <div class="grid gap-3" data-when="hollow=on">
+                @include('tools._num', ['key' => 'wall', 'f' => $fields['wall'], 'label' => __('edit.f.wall.wearable'), 'unit' => 'mm', 'when' => ''])
+            </div>
+            <fieldset>
+                <legend class="lbl">{{ __('edit.c.windows') }}</legend>
+                <p class="hint !text-xs">{{ __('edit.wearable.windows.hint') }}</p>
+                <div class="mt-2 grid gap-2">
+                    @for($i = 0; $i < 4; $i++)
+                        <div class="rounded-lg border border-line p-2 text-sm" data-window="{{ $i }}">
+                            <label class="flex items-center gap-2 font-medium text-ink"><input type="checkbox" data-win="on" class="h-5 w-5 accent-ink" @checked($i === 0)> {{ __('edit.wearable.window', ['n' => $i + 1]) }}</label>
+                            <div class="mt-2 grid grid-cols-2 gap-2">
+                                <label class="text-xs text-muted">{{ __('edit.c.side') }}<select data-win="side" class="field !mt-0.5">@foreach(\App\Domain\Tools\ModelEditor::SIDES as $s)<option value="{{ $s }}">{{ __('edit.o.side.'.$s) }}</option>@endforeach</select></label>
+                                <label class="text-xs text-muted">{{ __('edit.c.wshape') }}<select data-win="shape" class="field !mt-0.5"><option value="rect">{{ __('edit.o.wshape.rect') }}</option><option value="ellipse">{{ __('edit.o.wshape.ellipse') }}</option></select></label>
+                                @foreach(['w' => 60, 'h' => 30, 'dx' => 0, 'dy' => 0] as $k => $v)
+                                    <label class="text-xs text-muted">{{ __('edit.f.win_'.$k) }}<span class="tool-unit mt-0.5" data-unit="mm"><input data-win="{{ $k }}" type="number" inputmode="decimal" min="{{ in_array($k, ['w', 'h'], true) ? 5 : -150 }}" max="{{ in_array($k, ['w', 'h'], true) ? 300 : 150 }}" step="1" value="{{ $v }}" class="field !mt-0"></span></label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endfor
+                </div>
+                <input type="hidden" data-text="windows" value="">
+            </fieldset>
+            <label class="flex items-start gap-3 text-sm text-ink">
+                <input data-flag="straps" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink">
+                <span><span class="font-medium">{{ __('edit.flag.straps') }}</span><br><span class="text-muted">{{ __('edit.flag.straps.hint') }}</span></span>
+            </label>
+            <div class="grid gap-3" data-when="straps=on">
+                @include('tools._num', ['key' => 'strap_h', 'f' => $fields['strap_h'], 'label' => __('edit.f.strap_h'), 'unit' => '%', 'when' => ''])
+            </div>
+            <label class="flex items-start gap-3 text-sm text-ink">
+                <input data-flag="split" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" checked>
+                <span><span class="font-medium">{{ __('edit.flag.split') }}</span><br><span class="text-muted">{{ __('edit.flag.split.hint') }}</span></span>
+            </label>
+            <div class="grid gap-3" data-when="split=on">
+                <fieldset>
+                    <legend class="lbl">{{ __('edit.c.joint') }}</legend>
+                    <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
+                        @foreach($choices['joint'] as $i => $o)
+                            <label class="tool-choice"><input type="radio" name="c-joint" data-choice="joint" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('edit.o.joint.'.$o) }}</label>
+                        @endforeach
+                    </div>
+                </fieldset>
+                @foreach(['numbers', 'lay'] as $flag)
+                    <label class="flex items-start gap-3 text-sm text-ink">
+                        <input data-flag="{{ $flag }}" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" checked>
+                        <span><span class="font-medium">{{ __('edit.flag.'.$flag) }}</span><br><span class="text-muted">{{ __('edit.flag.'.$flag.'.hint') }}</span></span>
+                    </label>
+                @endforeach
+            </div>
+        @endif
         @if($op === 'potion')
             <div class="grid gap-3">
                 @include('tools._num', ['key' => 'height', 'f' => $fields['height'], 'label' => __('edit.f.height.potion'), 'unit' => 'mm', 'when' => ''])
@@ -212,7 +280,7 @@
                 <p class="hint mt-1 !text-xs" id="edit-joint-hint"></p>
             </fieldset>
         @endif
-        @if($op === 'hollow' || $op === 'holder' || $op === 'potion' || $op === 'flexi_cut' || $op === 'colors' || $op === 'soap')
+        @if($op === 'hollow' || $op === 'holder' || $op === 'potion' || $op === 'flexi_cut' || $op === 'colors' || $op === 'soap' || $op === 'wearable')
             @if($op === 'hollow')
             <label class="flex items-start gap-3 text-sm text-ink">
                 <input data-flag="drain" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" checked>

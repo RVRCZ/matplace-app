@@ -439,4 +439,81 @@ class ModelEditTest extends TestCase
         $this->assertGreaterThanOrEqual(8, $ribs->json('file.edit.drains'));
         $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'soap', 'drain' => 'holes'])->assertStatus(422);
     }
+
+    /** A dome (half a sphere of radius r, flat underneath) as an upload: a helmet's shape. */
+    private function dome(float $r, string $name = 'dome.stl'): string
+    {
+        $rings = 24;
+        $segs = 48;
+        $pt = fn (int $i, int $j) => [$r * cos(M_PI / 2 * $i / $rings) * cos(2 * M_PI * $j / $segs), $r * cos(M_PI / 2 * $i / $rings) * sin(2 * M_PI * $j / $segs), $r * sin(M_PI / 2 * $i / $rings)];
+        $tri = [];
+        for ($i = 0; $i < $rings; $i++) {
+            for ($j = 0; $j < $segs; $j++) {
+                $tri[] = [$pt($i, $j), $pt($i, $j + 1), $pt($i + 1, $j + 1)];
+                if ($i < $rings - 1) {
+                    $tri[] = [$pt($i, $j), $pt($i + 1, $j + 1), $pt($i + 1, $j)];
+                }
+            }
+        }
+        for ($j = 0; $j < $segs; $j++) {
+            $tri[] = [[0, 0, 0], $pt(0, $j + 1), $pt(0, $j)];        // the flat bottom, facing down
+        }
+        $path = sys_get_temp_dir().'/mp_dome_'.uniqid().'.stl';
+        $fh = fopen($path, 'wb');
+        fwrite($fh, str_pad('dome', 80, "\0").pack('V', count($tri)));
+        foreach ($tri as [$a, $b, $c]) {
+            fwrite($fh, pack('f3', 0, 0, 0).pack('f3', ...$a).pack('f3', ...$b).pack('f3', ...$c).pack('v', 0));
+        }
+        fclose($fh);
+
+        return $this->postJson('/api/uploads', ['file' => new UploadedFile($path, $name, null, null, true)])->assertCreated()->json('file.uuid');
+    }
+
+    public function test_a_dome_becomes_a_helmet_to_a_head_girth_hollow_with_a_window_and_strap_slots(): void
+    {
+        $this->get('/tools/wearable')->assertOk()->assertSee(__('tools.wearable.title'))->assertSee('data-module="edit"', false)->assertSee(__('edit.o.measure.head'))->assertSee('data-window="3"', false);
+        $uuid = $this->dome(60);
+        $solidVolume = 2 / 3 * M_PI * 60 ** 3;
+        // the analysis: a head of 56 cm plus 10 mm of play wants an inner girth of 570; the solid dome's girth less a 3 mm wall is 358 → 1.59×
+        $a = $this->postJson('/api/files/'.$uuid.'/edit/analysis', ['op' => 'wearable', 'measure' => 'head', 'circumference' => 56, 'play' => 10, 'wall' => 3])->assertOk()->json('analysis');
+        $this->assertEqualsWithDelta(1.592, $a['factor'], 0.01);
+        $this->assertEqualsWithDelta(570, $a['girth'], 2);
+        $this->assertTrue($a['hollow']);
+        $this->assertFalse($a['already_hollow']);
+        $this->assertTrue($a['fits']);                                            // 191 mm across fits the farm's bed
+        $this->assertEqualsWithDelta(191, $a['scaled'][0], 1);
+
+        $windows = json_encode([['side' => 'front', 'shape' => 'rect', 'w' => 60, 'h' => 30], ['side' => 'top', 'shape' => 'ellipse', 'w' => 40, 'h' => 25]]);
+        $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'wearable', 'measure' => 'head', 'circumference' => 56, 'play' => 10, 'wall' => 3, 'windows' => $windows, 'straps' => true, 'strap_h' => 35])->assertCreated();
+        $this->assertSame('ready', $r->json('file.status'), (string) $r->json('file.error'));
+        $r->assertJsonPath('file.kind', 'wearable')->assertJsonPath('file.parts', ['body']);
+        $e = $r->json('file.edit');
+        $this->assertEqualsWithDelta(1.592, $e['factor'], 0.01);
+        $this->assertTrue($e['hollowed']);
+        $this->assertTrue($e['opened']);
+        $this->assertSame(2, $e['straps']);
+        $this->assertCount(2, $e['windows']);
+        $this->assertSame('top', $e['windows'][1]['side']);
+        $this->assertEqualsWithDelta(570, $e['girth_inner'], 570 * 0.04);           // the hollow is measured on a grid
+        $this->assertSame(1, $e['pieces']);
+        $this->assertSame([], $e['warnings']);
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertEqualsWithDelta(191, $file->bbox['x'], 1.5);
+        $this->assertEqualsWithDelta(95.5, $file->bbox['z'], 1.0);
+        $this->assertTrue(StlTopology::check($file->absoluteStlPath())['watertight']);
+        // a shell 3 mm thick holds a small share of the scaled solid dome
+        $scaledSolid = $solidVolume * 1.592 ** 3;
+        $this->assertLessThan($scaledSolid * 0.2, $file->volume_mm3);
+        $this->assertGreaterThan($scaledSolid * 0.04, $file->volume_mm3);
+
+        // not scaled, not hollowed, no windows: the dome as it is
+        $same = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'wearable', 'measure' => 'none', 'hollow' => false, 'windows' => '[]'])->assertCreated();
+        $this->assertSame('ready', $same->json('file.status'), (string) $same->json('file.error'));
+        $this->assertSame(1.0, (float) $same->json('file.edit.factor'));
+        $this->assertEqualsWithDelta($solidVolume, ModelFile::where('uuid', $same->json('file.uuid'))->firstOrFail()->volume_mm3, $solidVolume * 0.02);
+        $this->assertSame([], ModelEditor::windowsOf('nonsense'));
+        $this->assertSame('front', ModelEditor::windowsOf('[{"side":"inside","w":999}]')[0]['side']);
+        $this->assertSame(300.0, ModelEditor::windowsOf('[{"side":"inside","w":999}]')[0]['w']);
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'wearable', 'wall' => 9])->assertStatus(422);
+    }
 }

@@ -14,10 +14,10 @@ import { FileInfo } from './api';
 
 interface Cfg { op: string; upload: string; files: string; parts: string; home: string; from: string | null; formats: string[]; maxMb: number; beds: Record<string, number[] | null>; margin: number; farmMargin: number; config: PriceConfig & { bed_mm: { x: number; y: number; z: number } }; i18n: Record<string, string> }
 interface ColorInfo { key?: number; part?: string; name: string; hex: string; extruder: number | null; sources?: string[]; triangles: number; share: number; kind?: string; bodies?: number }
-interface Analysis { bbox: { x: number; y: number; z: number }; fits: boolean; planes: Record<'x' | 'y' | 'z', number[]> | null; pieces: number | null; too_many: boolean; repaired: boolean; factor?: number; scaled?: number[]; hollow?: boolean; wall?: number; colors?: ColorInfo[]; has_colors?: boolean; not_3mf?: boolean; split_triangles?: number }
+interface Analysis { bbox: { x: number; y: number; z: number }; fits: boolean; planes: Record<'x' | 'y' | 'z', number[]> | null; pieces: number | null; too_many: boolean; repaired: boolean; factor?: number; scaled?: number[]; hollow?: boolean; wall?: number; colors?: ColorInfo[]; has_colors?: boolean; not_3mf?: boolean; split_triangles?: number; girth?: number; target?: number; already_hollow?: boolean }
 interface MapPiece { n: number; part: string; cell: number[]; lo: number[]; hi: number[]; volume_mm3: number; down: [string, number] | null; number_at: number[] | null }
 interface Hollow { wall: number; pitch: number; cavity_mm3: number; saved_g: number; drains: number; drain_at: number[][]; drain_d: number }
-interface Report { op: string; stage?: string; planes?: Record<string, number[]>; joint?: string; pins?: number; keys?: number; pieces?: number; cells?: number[]; model?: number[]; warnings?: string[]; map?: MapPiece[]; too_big?: string[]; repaired?: boolean; parts?: string[]; pieces_tris?: Piece[]; volume_in_mm3?: number; hollow?: Hollow | null; factor?: number; scaled?: number[]; grams?: number; rows?: number; cols?: number; lock?: string; knob?: number; clearance?: number; frame?: { rim: number; base: number; height: number } | null; cavity?: string; cavity_mm?: Record<string, number>; min_wall?: number; floor?: number; grow_to?: number; bottle?: number[]; neck?: { d: number; h: number }; cut_mm?: number; wall?: number; cork?: { h: number }; label?: { w: number; h: number; text: string }; axis?: string; segments?: number; ball_d?: number; joined?: number; cuts?: number[]; colors?: ColorInfo[]; depth?: number; shells?: number; inlays?: number; bases?: number; split_triangles?: number; dish?: number[]; pocket?: number[]; footprint?: number[]; drain?: string; drains?: number }
+interface Report { op: string; stage?: string; planes?: Record<string, number[]>; joint?: string; pins?: number; keys?: number; pieces?: number; cells?: number[]; model?: number[]; warnings?: string[]; map?: MapPiece[]; too_big?: string[]; repaired?: boolean; parts?: string[]; pieces_tris?: Piece[]; volume_in_mm3?: number; hollow?: Hollow | null; factor?: number; scaled?: number[]; grams?: number; rows?: number; cols?: number; lock?: string; knob?: number; clearance?: number; frame?: { rim: number; base: number; height: number } | null; cavity?: string; cavity_mm?: Record<string, number>; min_wall?: number; floor?: number; grow_to?: number; bottle?: number[]; neck?: { d: number; h: number }; cut_mm?: number; wall?: number; cork?: { h: number }; label?: { w: number; h: number; text: string }; axis?: string; segments?: number; ball_d?: number; joined?: number; cuts?: number[]; colors?: ColorInfo[]; depth?: number; shells?: number; inlays?: number; bases?: number; split_triangles?: number; dish?: number[]; pocket?: number[]; footprint?: number[]; drain?: string; drains?: number; girth_inner?: number; target?: number; hollowed?: boolean; already_hollow?: boolean; opened?: boolean; windows?: unknown[]; straps?: number }
 type Edited = FileInfo & { edit?: Report | null; tool?: { kind: string; params: Record<string, unknown> & { each?: number[][]; parts?: string[] }; url: string } | null };
 
 // the pieces in calm colours that read as different, the pins and keys grey
@@ -38,7 +38,7 @@ export function bootEdit(stage: Stage): void {
     const status = $('edit-status'); const go = $('edit-go') as HTMLButtonElement; const source = $('edit-source');
     const result = $('edit-result'); const wait = $('edit-wait'); const analysisEl = $('edit-analysis');
     const withPlanes = cfg.op === 'split';
-    const withAnalysis = cfg.op === 'split' || cfg.op === 'life_size' || cfg.op === 'colors';
+    const withAnalysis = cfg.op === 'split' || cfg.op === 'life_size' || cfg.op === 'colors' || cfg.op === 'wearable';
     let model: FileInfo | null = null; let modelGeom: BufferGeometry | null = null;
     let made: Edited | null = null;
     let analysis: Analysis | null = null;
@@ -48,7 +48,29 @@ export function bootEdit(stage: Stage): void {
     const headers = { Accept: 'application/json' };
     let commit: () => void = () => undefined;
 
+    // the windows of a wearable: four rows of the page as one JSON list in a hidden text field
+    const windowRows = (): HTMLElement[] => Array.from(form.querySelectorAll<HTMLElement>('[data-window]'));
+    const syncWindows = (): void => {
+        const field = form.querySelector<HTMLInputElement>('[data-text="windows"]');
+        if (!field) return;
+        const list = windowRows().filter((row) => row.querySelector<HTMLInputElement>('[data-win="on"]')?.checked).map((row) => {
+            const v = (k: string) => row.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-win="${k}"]`)?.value ?? '';
+            return { side: v('side'), shape: v('shape'), w: Number(v('w')), h: Number(v('h')), dx: Number(v('dx')), dy: Number(v('dy')) };
+        });
+        field.value = JSON.stringify(list);
+    };
+    const applyWindows = (json: string): void => {
+        let list: Record<string, unknown>[] = [];
+        try { list = JSON.parse(json || '[]') as Record<string, unknown>[]; } catch { list = []; }
+        windowRows().forEach((row, i) => {
+            const w = list[i];
+            const on = row.querySelector<HTMLInputElement>('[data-win="on"]'); if (on) on.checked = !!w;
+            if (!w) return;
+            (['side', 'shape', 'w', 'h', 'dx', 'dy'] as const).forEach((k) => { const el = row.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-win="${k}"]`); if (el && w[k] !== undefined) el.value = String(w[k]); });
+        });
+    };
     const settings = (): Record<string, unknown> => {
+        syncWindows();
         const p: Record<string, unknown> = {};
         form.querySelectorAll<HTMLInputElement>('[data-param]').forEach((i) => { p[i.dataset.param!] = Number(i.value); });
         form.querySelectorAll<HTMLInputElement>('[data-flag]').forEach((i) => { p[i.dataset.flag!] = i.checked; });
@@ -131,9 +153,9 @@ export function bootEdit(stage: Stage): void {
                 go.disabled = !ok;
                 return;
             }
-            if (cfg.op === 'life_size') {
+            if (cfg.op === 'life_size' || cfg.op === 'wearable') {
                 const s = analysis.scaled ?? [0, 0, 0];
-                const dims = { x: nf.format(s[0]), y: nf.format(s[1]), z: nf.format(s[2]), f: nf.format(analysis.factor ?? 1) };
+                const dims = { x: nf.format(s[0]), y: nf.format(s[1]), z: nf.format(s[2]), f: nf.format(analysis.factor ?? 1), g: nf.format(analysis.girth ?? 0), t: nf.format(analysis.target ?? 0) };
                 analysisEl.textContent = analysis.fits ? t('fits', dims) : t('plan', { ...dims, h: analysis.hollow ? t('plan.hollow', { w: nf.format(analysis.wall ?? 0) }) : t('plan.solid'), c: cuts, p: analysis.pieces ?? 0 });
                 go.disabled = false;
             } else {
@@ -255,6 +277,11 @@ export function bootEdit(stage: Stage): void {
             lines.push(t('report', { f: nf.format(r.factor ?? 1), x: nf.format(r.scaled[0]), y: nf.format(r.scaled[1]), z: nf.format(r.scaled[2]), g: nf.format(r.grams ?? 0) }));
             lines.push(r.hollow ? t('report.hollow', { w: nf.format(r.hollow.wall), s: nf.format(r.hollow.saved_g) }) : t('report.solid'));
         }
+        if (cfg.op === 'wearable' && r.scaled) {
+            lines.push(t('report', { f: nf.format(r.factor ?? 1), x: nf.format(r.scaled[0]), y: nf.format(r.scaled[1]), z: nf.format(r.scaled[2]), g: nf.format(r.girth_inner ?? 0), t: nf.format(r.target ?? 0), w: nf.format(r.grams ?? 0) }));
+            lines.push(r.hollowed ? t('report.hollow', { w: nf.format(r.wall ?? 0) }) : r.already_hollow ? t('report.already') : t('report.solid'));
+            lines.push(t('report.cuts', { n: (r.windows ?? []).length, s: r.straps ?? 0 }));
+        }
         if (cfg.op === 'hollow' && r.hollow) {
             const saved = priceOf(r.volume_in_mm3 ?? 0) - priceOf((r.volume_in_mm3 ?? 0) - r.hollow.cavity_mm3);
             lines.push(t('report', { w: nf.format(r.hollow.wall), c: nf.format(Math.round(r.hollow.cavity_mm3 / 1000)), g: nf.format(r.hollow.saved_g), p: saved > 0 ? priceText(saved) : '—' }));
@@ -291,12 +318,12 @@ export function bootEdit(stage: Stage): void {
             lines.push(t('report', { c: r.cols ?? 0, r: r.rows ?? 0, n: r.pieces ?? 0, l: r.lock === 'pins' ? t('report.pins', { n: r.pins ?? 0 }) : t('report.tabs', { k: r.knob ?? 0, p: nf.format(r.clearance ?? 0) }) }));
             if (r.frame) lines.push(t('report.frame', { w: nf.format(r.frame.rim), b: nf.format(r.frame.base), h: nf.format(r.frame.height) }));
         }
-        if (cfg.op === 'split' || (cfg.op === 'life_size' && (r.pieces ?? 1) > 1)) {
+        if (cfg.op === 'split' || ((cfg.op === 'life_size' || cfg.op === 'wearable') && (r.pieces ?? 1) > 1)) {
             lines.push(t('report', { n: r.pieces ?? 0, c: cuts }));
             if (r.pins) lines.push(t('report.pins', { n: r.pins }));
             if (r.keys) lines.push(t('report.keys', { n: r.keys }));
             if (!r.pins && !r.keys) lines.push(t('report.none'));
-        } else if (cfg.op === 'life_size') lines.push(t('report.one'));
+        } else if (cfg.op === 'life_size' || cfg.op === 'wearable') lines.push(t('report.one'));
         if (r.repaired) lines.push(t('report.repaired'));
         $('edit-report').innerHTML = lines.map((s) => `<p class="mt-2 first:mt-0">${esc(s)}</p>`).join('');
         if (cfg.op === 'colors' && r.colors) $('edit-report').insertAdjacentHTML('beforeend', `<p class="mt-2 flex flex-wrap gap-1.5">${r.colors.map(swatch).join('')}</p>`);
@@ -382,10 +409,13 @@ export function bootEdit(stage: Stage): void {
     form.querySelectorAll<HTMLInputElement>('[data-param]').forEach((i) => i.addEventListener('input', () => { syncRange(i); planes = null; analyseSoon(); commit(); }));
     form.querySelectorAll<HTMLInputElement>('[data-flag], [data-choice]').forEach((el) => el.addEventListener('change', () => { applyWhen(); if (el.dataset.choice === 'bed') planes = null; analyseSoon(); commit(); }));
     form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((el) => el.addEventListener('input', () => commit()));
+    form.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-win]').forEach((el) => el.addEventListener(el instanceof HTMLSelectElement || el.type === 'checkbox' ? 'change' : 'input', () => { syncWindows(); analyseSoon(); commit(); }));
+    // a body part chosen: its usual girth goes into the field as a start
+    form.querySelectorAll<HTMLInputElement>('[data-choice="measure"]').forEach((el) => el.addEventListener('change', () => { const num = form.querySelector<HTMLInputElement>('[data-param="circumference"]'); if (el.dataset.preset && num) { num.value = el.dataset.preset; syncRange(num); } }));
     commit = stage.track({ read: () => settings(), write: (s) => { Object.entries(s).forEach(([k, v]) => {
         const num = form.querySelector<HTMLInputElement>(`[data-param="${k}"]`); if (num) { num.value = String(v); syncRange(num); }
         const flag = form.querySelector<HTMLInputElement>(`[data-flag="${k}"]`); if (flag) flag.checked = Boolean(v);
-        const text = form.querySelector<HTMLInputElement>(`[data-text="${k}"]`); if (text) text.value = String(v ?? '');
+        const text = form.querySelector<HTMLInputElement>(`[data-text="${k}"]`); if (text) { text.value = String(v ?? ''); if (k === 'windows') applyWindows(text.value); }
         const choice = form.querySelector<HTMLInputElement>(`[data-choice="${k}"][value="${String(v)}"]`); if (choice) choice.checked = true;
     }); planes = (s.planes as Record<'x' | 'y' | 'z', number[]>) ?? null; applyWhen(); showPlanes(); } }, !cfg.from);
     applyWhen();

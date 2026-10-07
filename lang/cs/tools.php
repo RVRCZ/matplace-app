@@ -73,6 +73,9 @@ return [
     'soap_model.title' => 'Mýdlenka podle vlastního modelu',
     'soap_model.hint' => 'Kapsa přesně na půdorys nahraného modelu s vůlí, stěna a dno s odtokem: miska na mýdlo, kostku, telefon.',
     'soap_model.action' => 'Udělat mýdlenku',
+    'wearable.title' => 'Přilba nebo brnění na míru',
+    'wearable.hint' => 'Model přilby, masky nebo brnění zvětšíme na váš obvod hlavy či hrudi, vydutíme, vyřízneme průzory a drážky na popruh a rozdělíme na podložku.',
+    'wearable.action' => 'Udělat na míru',
 
     'cats' => [
         'images' => 'Obrázky a loga',
@@ -130,5 +133,6 @@ return [
         'flexi_cut' => 'flexi ohebný kloub články kulový kloub print in place hračka drak had ještěrka figurka',
         'colors' => 'barvy 3mf vícebarevný tisk ams mmu rozdělit podle barev malování bambu orca prusa díly',
         'soap_model' => 'mýdlenka miska na mýdlo podle modelu půdorys odtok drážky žebra koupelna',
+        'wearable' => 'přilba maska brnění na míru obvod hlavy cosplay průzory popruh dutý kostým',
     ],
 ];

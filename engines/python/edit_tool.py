@@ -424,6 +424,18 @@ def analyse(src, p):
     answer = {"ok": True, "bbox": {"x": round(ext[0], 2), "y": round(ext[1], 2), "z": round(ext[2], 2)}, "volume_mm3": round(man.volume(), 1), "triangles": int(man.num_tri()),
               "repaired": notes.get("repaired", False), "fits": planes is not None and not any(planes.values()), "planes": planes, "too_many": planes is None,
               "pieces": (len(planes["x"]) + 1) * (len(planes["y"]) + 1) * (len(planes["z"]) + 1) if planes else None, "bed": bed}
+    if p.get("op") == "wearable":
+        # wearable: the scale the measure asks for, the size that gives, whether it gets hollowed, how many pieces
+        factor, z, outer, inner, already, target = wearable_factor(p, man, ext)
+        if not 0.2 <= factor <= 20:
+            raise Invalid("out_of_range", "factor")
+        big = [v * factor for v in ext]
+        planes = plan(big, bed, {}) if p.get("split", True) else {"x": [], "y": [], "z": []}
+        wall = float(p.get("wall", 3.0))
+        answer.update({"factor": round(factor, 4), "scaled": [round(v, 1) for v in big], "hollow": bool(p.get("hollow", True)) and not already, "already_hollow": already, "wall": wall,
+                       "target": round(target, 1), "girth": round((inner if already else max(outer - 2 * math.pi * wall, 0.0)) * factor, 1),
+                       "pieces": (len(planes["x"]) + 1) * (len(planes["y"]) + 1) * (len(planes["z"]) + 1) if planes else None, "planes": planes, "too_many": planes is None, "fits": planes is not None and not any(planes.values())})
+        out(answer)
     if p.get("height"):
         # life size: what the scaled model would come to (hollow or not, how many pieces)
         factor = float(p["height"]) / ext[2]
@@ -636,6 +648,41 @@ def split(src, dst, p, parts_dir):
 
 # ── hollow ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
+def filled_grid(M, man, m, pitch):
+    """
+    The cells of a grid of `pitch` the solid touches (their centres within half a cell of it), as trimesh's
+    voxelized(pitch).fill() gives them, but drawn from slices of the exact solid: a coarse mesh with big triangles
+    costs nothing extra (the voxelizer subdivides every triangle down to the pitch, 50 s on a 190 mm dome).
+    Returns (grid[x, y, z], origin): cell (0, 0, 0) is centred on the model's lowest corner.
+    """
+    import numpy as np
+    from PIL import Image, ImageDraw
+    lo, hi = m.bounds
+    n = [int(math.ceil((hi[k] - lo[k]) / pitch)) + 1 for k in range(3)]
+    grid = np.zeros((n[0], n[1], n[2]), dtype=bool)
+    half = pitch / 2
+    eps = min(0.02 * pitch, 0.01)
+    for k in range(n[2]):
+        z = min(max(lo[2] + k * pitch, lo[2] + eps), hi[2] - eps)
+        cs = man.slice(z)
+        if cs.is_empty():
+            continue
+        cs = cs.offset(half, M.JoinType.Miter, 2.0, 8)
+        polys = []
+        for poly in cs.to_polygons():
+            if len(poly) < 3:
+                continue
+            area = sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly)))
+            polys.append((area, poly))
+        polys.sort(key=lambda ap: -ap[0])                       # outer loops first, holes (clockwise, negative) after
+        img = Image.new("1", (n[0], n[1]), 0)
+        draw = ImageDraw.Draw(img)
+        for area, poly in polys:
+            draw.polygon([((x - lo[0]) / pitch + 0.5, (y - lo[1]) / pitch + 0.5) for x, y in poly], fill=1 if area > 0 else 0)
+        grid[:, :, k] = np.asarray(img, dtype=bool).T
+    return grid, np.array(lo, dtype=np.float64)
+
+
 def hollow_solid(M, man, m, p, dst, notes, keep_planes=None):
     """
     The inside taken out of `man`, a wall of `wall` mm left. The distance to the surface is measured on a grid (the
@@ -665,9 +712,9 @@ def hollow_solid(M, man, m, p, dst, notes, keep_planes=None):
     if pitch > GRID_MM + 1e-6:
         warn.append("coarse_grid")
     notes["hollow"] = {"wall": wall, "pitch": round(pitch, 2), "cavity_mm3": 0.0, "saved_g": 0.0, "drains": 0, "drain_at": [], "drain_d": drain_d}
-    vox = m.voxelized(pitch).fill()
-    grid = np.pad(vox.matrix, 2)
-    origin = vox.transform[:3, 3] - 2 * pitch
+    grid, origin = filled_grid(M, man, m, pitch)
+    grid = np.pad(grid, 2)
+    origin = origin - 2 * pitch
     inside = ndimage.distance_transform_edt(grid).astype(np.float32) * pitch       # mm to the nearest outside cell, from the cell centre
     # the surface cells themselves lie about half a cell inside the true surface
     field = ndimage.gaussian_filter(inside, 0.8) - (wall + SURFACE_OFFSET * pitch)
@@ -1173,6 +1220,161 @@ def soap(src, dst, p, parts_dir):
     finish(M, "soap", dst, [("body", dish)], notes, parts_dir)
 
 
+# ── wearable: a helmet or armour piece scaled to a body girth ─────────────────────────────────────────────────────
+
+STRAP_W, STRAP_T = 25.0, 4.0                  # mm: a slot for a 25 mm strap through a side wall
+EYE_LINE = 0.6                                # a window sits at this share of the height unless moved
+SIDES = {"front": ("y", 0), "back": ("y", 1), "left": ("x", 0), "right": ("x", 1), "top": ("z", 1)}
+
+
+def loops_of(cs):
+    """A section's outer loops and its holes as [(perimeter, polygon)] each (manifold winds holes clockwise)."""
+    outer, holes = [], []
+    for poly in cs.to_polygons():
+        n = len(poly)
+        if n < 3:
+            continue
+        area = sum(poly[i][0] * poly[(i + 1) % n][1] - poly[(i + 1) % n][0] * poly[i][1] for i in range(n))
+        per = sum(math.hypot(poly[(i + 1) % n][0] - poly[i][0], poly[(i + 1) % n][1] - poly[i][1]) for i in range(n))
+        (outer if area > 0 else holes).append((per, poly))
+    return outer, holes
+
+
+def girth_level(man, ext, samples=24):
+    """The level where the model is widest (a helmet's brow) and that section's outer and inner girths in mm."""
+    best = None
+    for i in range(samples):
+        z = ext[2] * (i + 0.5) / samples
+        cs = man.slice(z)
+        if cs.is_empty():
+            continue
+        x0, y0, x1, y1 = cs.bounds()
+        width = (x1 - x0) + (y1 - y0)
+        if best is None or width > best[0] + 1e-6:
+            outer, holes = loops_of(cs)
+            best = (width, z, max((p for p, _ in outer), default=0.0), max((p for p, _ in holes), default=0.0))
+    if best is None:
+        raise Invalid("empty_result")
+    return best[1], best[2], best[3]
+
+
+def wearable_factor(p, man, ext):
+    """How much the model grows so its inner girth at the widest level meets the measure plus play."""
+    wall = float(p.get("wall", 3.0))
+    target = float(p.get("circumference", 560.0)) + float(p.get("play", 10.0))
+    z, outer, inner = girth_level(man, ext)
+    hollow_already = inner > 0.5 * outer
+    inner_now = inner if hollow_already else max(outer - 2 * math.pi * wall, 1.0)
+    factor = 1.0 if p.get("measure") == "none" else target / inner_now
+    return factor, z, outer, inner, hollow_already, target
+
+
+def window_cutter(M, w, side, W, D, H):
+    """A window's prism: from outside the model to its middle along the side's axis, so only the near wall opens."""
+    C = M.CrossSection
+    ww, wh = w["w"], w["h"]
+    shape = C.square([ww, wh]).translate([-ww / 2, -wh / 2]) if w["shape"] == "rect" else C.circle(0.5, 96).scale([ww, wh])
+    axis, end = SIDES[side]
+    k = "xyz".index(axis)
+    depth = [W, D, H][k] / 2 + 1.0
+    cv = H * EYE_LINE + w["dy"]
+    if axis == "y":
+        prism = shape.extrude(depth).rotate([90, 0, 0]) if end == 0 else shape.extrude(depth).rotate([-90, 0, 0])
+        return prism.translate([W / 2 + w["dx"], D / 2, cv])
+    if axis == "x":
+        prism = shape.rotate(90).extrude(depth).rotate([0, -90, 0]) if end == 0 else shape.rotate(90).extrude(depth).rotate([0, 90, 0])
+        return prism.translate([W / 2, D / 2 + w["dx"], cv])
+    return shape.extrude(depth).translate([W / 2 + w["dx"], D / 2 + w["dy"], H / 2])
+
+
+def windows_of(p):
+    raw = p.get("windows") or []
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            raw = []
+    out = []
+    for w in list(raw)[:4]:
+        if not isinstance(w, dict):
+            continue
+        side = w.get("side", "front")
+        shape = w.get("shape", "rect")
+        if side not in SIDES or shape not in ("rect", "ellipse"):
+            raise Invalid("bad_choice", "window")
+        num = lambda key, d, lo, hi: max(lo, min(hi, float(w.get(key, d) if w.get(key) is not None else d)))
+        out.append({"side": side, "shape": shape, "w": num("w", 60.0, 5.0, 300.0), "h": num("h", 30.0, 5.0, 300.0), "dx": num("dx", 0.0, -150.0, 150.0), "dy": num("dy", 0.0, -150.0, 150.0)})
+    return out
+
+
+def wearable(src, dst, p, parts_dir):
+    import manifold3d as M
+    C = M.CrossSection
+    notes = {"warnings": []}
+    warn = notes["warnings"]
+    man, m = load_solid(src, dst, notes)
+    ext0 = [float(v) for v in m.extents]
+    wall = float(p.get("wall", 3.0))
+    if not 2.0 <= wall <= 4.0:
+        raise Invalid("out_of_range", "wall 2-4")
+    windows = windows_of(p)
+    factor, z_girth, outer0, inner0, hollow_already, target = wearable_factor(p, man, ext0)
+    if not 0.2 <= factor <= 20:
+        raise Invalid("out_of_range", "factor")
+    solid, big = scaled(M, man, m, factor)
+    ext = [float(v) for v in big.extents]
+    if max(ext) > 1000:
+        raise Invalid("too_big")
+    W, D, H = ext
+    notes.update({"factor": round(factor, 4), "model": [round(v, 1) for v in ext0], "scaled": [round(v, 1) for v in ext], "measure": p.get("measure", "head"), "target": round(target, 1), "wall": wall,
+                  "girth_at": round(z_girth * factor, 1), "girth_outer": round(outer0 * factor, 1), "already_hollow": hollow_already})
+    bed = bed_of(p)
+    want_split = bool(p.get("split", True))
+    planes = plan(ext, bed, {}) if want_split else {"x": [], "y": [], "z": []}
+    # ── the hollow, and the opening underneath so the head goes in ─────────────────────────────────────────────
+    hollowed = opened = False
+    if bool(p.get("hollow", True)) and not hollow_already:
+        before = solid.volume()
+        solid = hollow_solid(M, solid, big, {"wall": wall, "no_drain": True}, dst, notes, planes if planes else None)
+        hollowed = solid.volume() < before - 1.0
+        if hollowed:
+            _, holes = loops_of(solid.slice(wall + 1.0))
+            if holes:
+                # the cavity's outline just above the floor, turned round into outer loops, cut down through the floor
+                opening = C([poly[::-1] for _, poly in holes])
+                solid = solid - opening.extrude(wall + 2.0).translate([0, 0, -1.0])
+                opened = True
+            else:
+                warn.append("no_opening")
+    notes.update({"hollowed": hollowed, "opened": opened})
+    # the inner girth as it came out (measured before the windows, which would open the section)
+    _, holes = loops_of(solid.slice(min(max(z_girth * factor, 1.0), H - 1.0)))
+    notes["girth_inner"] = round(max((pp for pp, _ in holes), default=0.0), 1)
+    # ── windows through the near wall, strap slots through both side walls ─────────────────────────────────────
+    stage(dst, "cutting")
+    for w in windows:
+        solid = solid - window_cutter(M, w, w["side"], W, D, H)
+    notes["windows"] = windows
+    straps = 0
+    if bool(p.get("straps", False)):
+        zc = H * max(0.1, min(0.9, float(p.get("strap_h", 35.0)) / 100.0))
+        for x0 in (-1.0, W / 2):
+            solid = solid - M.Manifold.cube([W / 2 + 1.0, STRAP_W, STRAP_T]).translate([x0, D / 2 - STRAP_W / 2, zc - STRAP_T / 2])
+        straps = 2
+    notes["straps"] = straps
+    if solid.is_empty() or solid.status() != M.Error.NoError or solid.volume() < MIN_PIECE:
+        raise Invalid("empty_result")
+    notes["grams"] = round(solid.volume() / 1000 * PLA_G_CM3, 1)
+    if not want_split or (planes is not None and not any(planes.values())):
+        notes.update({"pieces": 1, "pins": 0, "keys": 0, "planes": planes or {"x": [], "y": [], "z": []}, "bed": bed, "cells": [1, 1, 1], "map": [], "joints": []})
+        finish(M, "wearable", dst, [("body", solid)], notes, parts_dir)
+    q = dict(p)
+    q.setdefault("joint", "pins")
+    q.pop("planes", None)
+    laid = split_solid(M, solid, ext, q, dst, notes)
+    finish(M, "wearable", dst, laid, notes, parts_dir)
+
+
 # ── potion ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 def potion(src, dst, p, parts_dir):
@@ -1380,7 +1582,7 @@ def main(argv):
         p = json.loads(raw or "{}")
         if not isinstance(p, dict):
             raise Invalid("unknown_kind")
-        commands = {"split": split, "hollow": hollow, "scale": scale, "life_size": life_size, "puzzle": puzzle, "holder": holder, "potion": potion, "flexi_cut": flexi_cut, "soap": soap}
+        commands = {"split": split, "hollow": hollow, "scale": scale, "life_size": life_size, "puzzle": puzzle, "holder": holder, "potion": potion, "flexi_cut": flexi_cut, "soap": soap, "wearable": wearable}
         if op == "colors":
             # a coloured 3MF into a part per colour: its own module, the source is the 3MF itself
             import colors_tool

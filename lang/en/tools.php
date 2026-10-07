@@ -73,6 +73,9 @@ return [
     'soap_model.title' => 'Soap dish from your own model',
     'soap_model.hint' => 'A pocket made to the footprint of the model you upload, with play, a wall and a floor with a drain: a dish for a bar of soap, a die, a phone.',
     'soap_model.action' => 'Make the dish',
+    'wearable.title' => 'A helmet or armour to measure',
+    'wearable.hint' => 'A helmet, mask or armour model scaled to your head or chest girth, hollowed, with windows and strap slots cut, and split for the bed.',
+    'wearable.action' => 'Make it to measure',
 
     'cats' => [
         'images' => 'Pictures and logos',
@@ -130,5 +133,6 @@ return [
         'flexi_cut' => 'flexi articulated ball joint segments print in place toy dragon snake lizard figure',
         'colors' => 'colours 3mf multi-colour print ams mmu split by colour painting bambu orca prusa parts',
         'soap_model' => 'soap dish tray from a model footprint drain grooves ribs bathroom',
+        'wearable' => 'helmet mask armour to measure head girth cosplay windows visor strap hollow costume',
     ],
 ];

@@ -20,7 +20,13 @@ use Illuminate\Support\Str;
  */
 final class ModelEditor
 {
-    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'soap', 'scale'];
+    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'soap', 'wearable', 'scale'];
+
+    /** body girths in cm a wearable starts from, by what the model goes round */
+    public const MEASURES = ['head' => 56, 'chest' => 95, 'waist' => 80, 'arm' => 30, 'forearm' => 26, 'wrist' => 17, 'thigh' => 55, 'calf' => 37];
+
+    /** where a window of a wearable can be */
+    public const SIDES = ['front', 'back', 'left', 'right', 'top'];
 
     /** print beds a model is cut for: the farm's, two common ones, or the visitor's own (usable size = bed − margins) */
     public const BEDS = ['farm' => [250, 250, 250], '220' => [220, 220, 250], '180' => [180, 180, 180], 'custom' => null];
@@ -46,6 +52,8 @@ final class ModelEditor
         'colors' => ['depth' => [0.6, 3, 1.2, 0.2]],
         // a soap dish round a model's footprint: the wall's height above the floor, the play round the model, the wall, the floor
         'soap' => ['height' => [8, 60, 20, 1], 'clearance' => [0.5, 6, 2, 0.5], 'wall' => [1.2, 6, 2.4, 0.2], 'floor' => [1.2, 6, 2, 0.2]],
+        // a wearable: the girth in cm and the play on it in mm, the wall of the hollow, the strap slots' height in % of the model's, the bed
+        'wearable' => ['circumference' => [10, 160, 56, 0.5], 'play' => [0, 40, 10, 1], 'wall' => [2, 4, 3, 0.5], 'strap_h' => [10, 90, 35, 5], 'bed_x' => [50, 600, 250, 1], 'bed_y' => [50, 600, 250, 1], 'bed_z' => [50, 600, 250, 1]],
         'scale' => ['height' => [10, 1000, 300, 1]],
     ];
 
@@ -56,14 +64,15 @@ final class ModelEditor
         'holder' => ['cavity' => ['can330', 'slim330', 'can500', 'pint', 'soap', 'candle', 'custom']],
         'flexi_cut' => ['axis' => ['auto', 'x', 'y', 'z']],
         'soap' => ['drain' => ['grooves', 'grid', 'ribs', 'none'], 'foot' => ['widest', 'bottom']],
+        'wearable' => ['measure' => ['head', 'chest', 'waist', 'arm', 'forearm', 'wrist', 'thigh', 'calf', 'none'], 'bed' => ['farm', '220', '180', 'custom'], 'joint' => ['pins', 'dovetail', 'none']],
     ];
 
-    public const FLAGS = ['split' => ['numbers', 'lay'], 'hollow' => ['drain'], 'life_size' => ['hollow', 'numbers', 'lay'], 'puzzle' => ['numbers', 'frame'], 'holder' => ['cav_depth_own'], 'potion' => ['label']];
+    public const FLAGS = ['split' => ['numbers', 'lay'], 'hollow' => ['drain'], 'life_size' => ['hollow', 'numbers', 'lay'], 'puzzle' => ['numbers', 'frame'], 'holder' => ['cav_depth_own'], 'potion' => ['label'], 'wearable' => ['hollow', 'straps', 'split', 'numbers', 'lay']];
 
     /** op → text input → max length */
-    public const TEXTS = ['potion' => ['text' => 20]];
+    public const TEXTS = ['potion' => ['text' => 20], 'wearable' => ['windows' => 600]];
 
-    public const FLAGS_ON = ['numbers', 'lay', 'drain', 'hollow', 'label'];
+    public const FLAGS_ON = ['numbers', 'lay', 'drain', 'hollow', 'label', 'split'];
 
     /** changes when the tool measures differently: stored analyses made by an older one are not used */
     private const ANALYSIS = 1;
@@ -152,6 +161,31 @@ final class ModelEditor
         return [round($preset[0] - 2 * $margin, 1), round($preset[1] - 2 * $margin, 1), (float) $preset[2]];
     }
 
+    /**
+     * The windows of a wearable as the page sends them (a JSON list), only what the tool knows: at most four, a side
+     * and a shape it has, sizes 5–300 mm, offsets within ±150 mm.
+     *
+     * @return list<array{side: string, shape: string, w: float, h: float, dx: float, dy: float}>
+     */
+    public static function windowsOf(string $json): array
+    {
+        $list = json_decode($json, true);
+        if (! is_array($list)) {
+            return [];
+        }
+        $out = [];
+        foreach (array_slice(array_values($list), 0, 4) as $w) {
+            if (! is_array($w)) {
+                continue;
+            }
+            $n = fn (string $k, float $d, float $lo, float $hi): float => max($lo, min($hi, is_numeric($w[$k] ?? null) ? (float) $w[$k] : $d));
+            $out[] = ['side' => in_array($w['side'] ?? '', self::SIDES, true) ? $w['side'] : 'front', 'shape' => ($w['shape'] ?? 'rect') === 'ellipse' ? 'ellipse' : 'rect',
+                'w' => $n('w', 60, 5, 300), 'h' => $n('h', 30, 5, 300), 'dx' => $n('dx', 0, -150, 150), 'dy' => $n('dy', 0, -150, 150)];
+        }
+
+        return $out;
+    }
+
     /** The file the tool reads: the normalised STL, or the 3MF itself when its colours are wanted. */
     public static function sourceOf(ModelFile $src, string $op): ?string
     {
@@ -186,6 +220,12 @@ final class ModelEditor
         }
         if ($op === 'flexi_cut' && (float) $clean['height'] <= 0) {
             unset($p['height']);
+        }
+        if ($op === 'wearable') {
+            $p['bed'] = self::bedOf($clean);
+            $p['font'] = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf');
+            $p['circumference'] = round((float) $clean['circumference'] * 10, 1);     // cm on the page, mm in the tool
+            $p['windows'] = self::windowsOf((string) ($clean['windows'] ?? ''));
         }
         if ($op === 'holder') {
             // the preset's own sizes unless the cavity is custom; a height of 0 keeps the model as it is

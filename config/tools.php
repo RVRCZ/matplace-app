@@ -206,6 +206,9 @@ return [
     // the card: a dish round the footprint of a rounded plate
     'soap_model' => ['route' => 'tools.soap_model', 'intent' => 'file', 'categories' => ['edit', 'home'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'soap', 'kind' => 'logo', 'params' => ['mode' => 'relief', 'shape' => 'rounded', 'width' => 90, 'line1' => 'SOAP'], 'edit_params' => ['drain' => 'grooves']]],
+    // the card: a domed cap grown to a head of 56 cm, a window in front, strap slots in the sides
+    'wearable' => ['route' => 'tools.wearable', 'intent' => 'file', 'categories' => ['edit', 'craft'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'wearable', 'kind' => 'cap', 'params' => ['style' => 'push', 'shape' => 'round', 'head' => 'dome', 'size_a' => 60, 'height' => 30, 'wall' => 2], 'edit_params' => ['measure' => 'head', 'circumference' => 56, 'windows' => '[{"side":"front","shape":"rect","w":80,"h":30}]', 'straps' => true]]],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => false],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only
