@@ -16,7 +16,7 @@ return [
     ],
     'faq' => [
         ['q' => 'Je sušenka k jídlu?', 'a' => 'Ne. Je to plastová hračka do dětské kuchyňky nebo ozdoba. Doporučujeme PLA; pro malé děti zvolte větší rozměr bez očka a drobných dílů.'],
-        ['q' => 'Kolik barev polevy můžu použít?', 'a' => 'Až šest barev polevy a nejvýš 60 tahů na jedné sušence. Na naší farmě dnes vytiskneme jednu nebo dvě barvy, tedy těsto a jednu barvu polevy; sušenku s více barvami si zdarma stáhnete pro svou tiskárnu.'],
+        ['q' => 'Kolik barev polevy můžu použít?', 'a' => 'Až šest barev polevy a nejvýš 60 tahů na jedné sušence. Na naší farmě vytiskneme až čtyři barvy najednou, tedy těsto a až tři barvy polevy. Cívku pro každou barvu potvrdíte při objednávce; sušenku s více barvami si zdarma stáhnete pro svou tiskárnu.'],
         ['q' => 'Jde tah vrátit?', 'a' => 'Ano. Tlačítkem odeberete poslední tah, šipkami zpět a vpřed vrátíte jakoukoli změnu a celou polevu smažete jedním klikem.'],
         ['q' => 'Jak jemně se dá kreslit?', 'a' => 'Nejužší tah má 1,5 mm, což tiskárna s tryskou 0,4 mm vytiskne čistě. Poleva se drží kousek od zaoblené hrany, aby nepřepadala přes okraj.'],
         ['q' => 'Můžu sušenku nazdobit na mobilu?', 'a' => 'Ano, kreslí se i prstem. Na větším displeji je to ale pohodlnější.'],

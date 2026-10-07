@@ -63,7 +63,7 @@
             <p id="farm-upload-status" class="mt-1 hidden text-sm text-slate-600" role="status"></p>
         @endif
         <div id="farm-preview-box" class="mt-3 {{ $file && ($previewUrl || ! $card) ? '' : 'hidden' }} overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-            <canvas id="farm-preview" class="block h-64 w-full touch-none" data-model="{{ $previewUrl ?? '' }}" data-change="{{ $twoColor ?? '' }}"></canvas>
+            <canvas id="farm-preview" class="block h-64 w-full touch-none" data-model="{{ $previewUrl ?? '' }}" data-change="{{ $twoColor ?? '' }}" data-changes="{{ json_encode(array_map(fn ($c) => round((float) $c['z'], 3), $changes ?? [])) }}"></canvas>
         </div>
         @if($inspiration)
             <div class="mt-3 rounded-xl bg-action-soft p-3 text-sm">
@@ -125,31 +125,32 @@
             @endforelse
         </div>
 
-        @if($twoColor)
-            {{-- a plate with a code or a text: the second colour, from the machine of the first one (its ACE changes the spool) --}}
-            {{-- data-want (a QR code): a second colour is always ticked, the spool nearest to the colour the code was designed in --}}
-            <div id="farm-second-start" class="mt-4" data-want="{{ $codeColor ?? '' }}">
-                <div class="text-sm font-semibold text-slate-700">{{ __('farm.start.second_title') }}</div>
-                <p class="text-xs text-slate-500">{{ __('farm.start.second_hint') }}</p>
-                <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.start.second_title') }}">
+        @php($one = count($changes ?? []) === 1)
+        @foreach($changes ?? [] as $i => $change)
+            {{-- a plate with a text, a picture in filament colours: every change of the design takes a spool of the machine of
+                 the first colour (its ACE changes the spool). data-want: the colour the design was made in, the nearest spool is ticked --}}
+            <div id="{{ $i === 0 ? 'farm-second-start' : 'farm-change-'.$i }}" class="farm-change mt-4" data-change-index="{{ $i }}" data-want="{{ $change['hex'] }}">
+                <div class="text-sm font-semibold text-slate-700">{{ $one ? __('farm.start.second_title') : __('farm.start.change_title', ['n' => $i + 2, 'z' => number_format($change['z'] * ($scaleNow ?? 1), 1, ',', ' ')]) }}</div>
+                @if($i === 0)<p class="text-xs text-slate-500">{{ $one ? __('farm.start.second_hint') : __('farm.start.changes_hint', ['n' => count($changes) + 1, 'max' => \App\Models\FarmOrder::MAX_COLORS]) }}</p>@endif
+                <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ $one ? __('farm.start.second_title') : __('farm.start.change_title', ['n' => $i + 2, 'z' => number_format($change['z'] * ($scaleNow ?? 1), 1, ',', ' ')]) }}">
                     <label data-second-for="*" class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
-                        <input type="radio" name="second_color" value="" class="sr-only" data-hex="" @checked(! $secondPreselect)>
+                        <input type="radio" name="change_color[{{ $i }}]" value="" class="sr-only" data-hex="" @checked(! ($changePreselect[$i] ?? 0))>
                         <span class="h-10 w-10 shrink-0 rounded-lg border border-dashed border-slate-300"></span>
-                        <span><span class="font-semibold">{{ __('farm.order.second_same') }}</span><br><span class="text-xs text-slate-500">{{ __('farm.start.second_same_hint') }}</span></span>
+                        <span><span class="font-semibold">{{ $i === 0 ? __('farm.order.second_same') : __('farm.order.change_same') }}</span><br><span class="text-xs text-slate-500">{{ $i === 0 ? __('farm.start.second_same_hint') : __('farm.order.change_same_hint') }}</span></span>
                     </label>
                     @foreach($colors as $c)
-                        @foreach($c['seconds'] as $s)
+                        @foreach($i === 0 ? $c['seconds'] : array_merge([$c + ['own' => true]], $c['seconds']) as $s)
                             <label data-second-for="{{ $c['id'] }}" class="hidden cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
-                                <input type="radio" name="second_color" value="{{ $s['id'] }}" class="sr-only" data-hex="{{ $s['hex'] }}" @checked($s['id'] === $secondPreselect && $c['id'] === $preselect)>
+                                <input type="radio" name="change_color[{{ $i }}]" value="{{ $s['id'] }}" class="sr-only" data-hex="{{ $s['hex'] }}" @checked($s['id'] === ($changePreselect[$i] ?? 0) && $c['id'] === $preselect)>
                                 @if($s['photo'])<img src="{{ $s['photo'] }}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">@else<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:{{ $s['hex'] }}"></span>@endif
-                                <span><span class="font-semibold">{{ $s['name'] }}</span><br><span class="text-xs text-slate-500">{{ $s['kind'] }}</span></span>
+                                <span><span class="font-semibold">{{ $s['name'] }}</span><br><span class="text-xs text-slate-500">{{ ! empty($s['own']) ? __('farm.order.change_first') : $s['kind'] }}</span></span>
                             </label>
                         @endforeach
                     @endforeach
                 </div>
-                <p id="farm-second-none" class="mt-2 hidden text-xs text-amber-800">{{ __('farm.start.second_none') }}</p>
+                <p class="farm-change-none mt-2 hidden text-xs text-amber-800">{{ __('farm.start.second_none') }}</p>
             </div>
-        @endif
+        @endforeach
 
         <button id="farm-continue" type="submit" class="mt-4 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" @disabled(! $file)>{{ __('farm.start.continue') }}</button>
         @if($slicesLeft !== null)<p class="mt-2 text-xs text-slate-500">{{ __('farm.slices_left', ['n' => $slicesLeft]) }}</p>@endif

@@ -17,11 +17,13 @@ interface Second { slot: number; name: string; kind?: string; hex: string; photo
 const UNIT_MM: Record<string, number> = { mm: 1, cm: 10, in: 25.4, m: 1000 };
 const clampScale = (v: number, max: number) => Math.max(0.25, Math.min(max || 4, v));
 
+/** One change of the design: where (mm, as printed), the colour it was made in, and the spool chosen for it so far. */
+interface Change { z: number; hex: string; code: string | null; slot_id: number | null; name?: string | null }
 interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
@@ -70,24 +72,34 @@ function rgbOf(hex: string): [number, number, number] {
 }
 
 /**
- * Where the second colour starts: a hair above the plate. The top face of the plate lies exactly at the height of the
- * change and belongs to the plate (measured at the change itself, rounding put the whole face into the second colour
- * and the code was lost in it).
+ * Where a new colour starts: a hair above the change. The top face of the layer below lies exactly at the height of
+ * the change and belongs to the colour below (measured at the change itself, rounding put the whole face into the
+ * new colour and a code was lost in it).
  */
 const edge = (changeZ: number): number => changeZ * 1.02;
 
-/** The model as the two colours will print it: cut at the change, so a stand keeps its foot in the first colour. */
-const cutForTwoTone = (geom: BufferGeometry, changeZ: number): BufferGeometry => (changeZ > 0 ? cutAtHeight(geom, edge(changeZ)) : geom);
+/** The model as the colours will print it: cut at every change, so each face lies whole in one colour. */
+const cutForTones = (geom: BufferGeometry, heights: number[]): BufferGeometry => heights.filter((z) => z > 0).reduce((g, z) => cutAtHeight(g, edge(z)), geom);
 
-/** A plate with a code or a text: the triangles above the plate in the second colour, the rest in the first. */
-function twoTone(geom: BufferGeometry, changeZ: number, first: string, second: string): FacePaint | null {
+/**
+ * A plate with a text, a picture in colours one on another: every triangle takes the colour of the highest change
+ * below its middle. A change the customer left "the same" keeps the colour printing before it.
+ */
+function multiTone(geom: BufferGeometry, heights: number[], first: string, picked: (string | null)[]): FacePaint | null {
     const pos = geom.getAttribute('position');
     if (!pos || geom.index) return null;
+    const tones: string[] = [first];
+    heights.forEach((_, i) => tones.push(picked[i] ?? tones[i]));
     const flags = new Uint8Array(pos.count / 3);
-    for (let t = 0; t < flags.length; t++) flags[t] = (pos.getZ(t * 3) + pos.getZ(t * 3 + 1) + pos.getZ(t * 3 + 2)) / 3 > edge(changeZ) ? 1 : 0;
+    for (let t = 0; t < flags.length; t++) {
+        const z = (pos.getZ(t * 3) + pos.getZ(t * 3 + 1) + pos.getZ(t * 3 + 2)) / 3;
+        let k = 0;
+        heights.forEach((h, i) => { if (h > 0 && z > edge(h)) k = i + 1; });
+        flags[t] = k;
+    }
     // the colours as the swatches of the spools show them: a dark code stays dark on a light plate
-    const a = deep(rgbOf(first)); const b = deep(rgbOf(second));
-    return { flags, color: (f) => (f ? b : a) };
+    const rgb = tones.map((h) => deep(rgbOf(h)));
+    return { flags, color: (f) => rgb[f] ?? rgb[0] };
 }
 
 export function bootFarmStart(): void {
@@ -98,45 +110,47 @@ export function bootFarmStart(): void {
     let geom: BufferGeometry | null = null;
     const form = preview?.closest('form') ?? document;
     const checkedHex = (name: string): string | null => (form.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.dataset.hex ?? '') || null;
-    const want = $('farm-second-start')?.dataset.want ?? '';
-    let oneColorByHand = false;
-    // the second colour has to come from the machine of the first: only its spools are offered, the rest stay hidden
+    // every change of the design (bottom to top) has a block of spools; all of them from the machine of the first colour
+    const blocks = [...form.querySelectorAll<HTMLElement>('[data-change-index]')];
+    const heights: number[] = (() => { try { return (JSON.parse(preview?.dataset.changes || '[]') as number[]).map(Number); } catch { return []; } })();
+    const byHand = new Set<number>();          // blocks where the customer chose "no change" on purpose
     const paint = (): void => {
         const first = checkedHex('color');
-        const changeZ = Number(preview?.dataset.change || 0);
         const chosen = form.querySelector<HTMLInputElement>('input[name="color"]:checked')?.value ?? '';
-        let visible = 0;
-        let before = '';                       // the second colour that was ticked under the previous first colour
-        form.querySelectorAll<HTMLElement>('[data-second-for]').forEach((el) => {
-            const on = el.dataset.secondFor === '*' || el.dataset.secondFor === chosen;
-            el.classList.toggle('hidden', !on); el.classList.toggle('flex', on);
-            const radio = el.querySelector<HTMLInputElement>('input');
-            if (radio && !on && radio.checked) { before = radio.value; radio.checked = false; form.querySelector<HTMLInputElement>('input[name="second_color"][value=""]')!.checked = true; }
-            if (on && el.dataset.secondFor !== '*') visible++;
+        blocks.forEach((block, i) => {
+            const name = `change_color[${i}]`;
+            let visible = 0;
+            let before = '';                   // the spool that was ticked under the previous first colour
+            block.querySelectorAll<HTMLElement>('[data-second-for]').forEach((el) => {
+                const on = el.dataset.secondFor === '*' || el.dataset.secondFor === chosen;
+                el.classList.toggle('hidden', !on); el.classList.toggle('flex', on);
+                const radio = el.querySelector<HTMLInputElement>('input');
+                if (radio && !on && radio.checked) { before = radio.value; radio.checked = false; block.querySelector<HTMLInputElement>('input[value=""]')!.checked = true; }
+                if (on && el.dataset.secondFor !== '*') visible++;
+            });
+            const none = block.querySelector<HTMLElement>('.farm-change-none'); if (none) show(none, visible === 0 && !!chosen);
+            // the first colour changed: the choice stays when the new machine holds that spool too; else the spool nearest
+            // to the colour the design was made in (a QR code in one colour cannot be read), unless "no change" was asked for by hand
+            if (!byHand.has(i) && !checkedHex(name)) {
+                const offer = [...block.querySelectorAll<HTMLInputElement>(`[data-second-for="${chosen}"] input`)];
+                const want = block.dataset.want ?? '';
+                const far = (hex: string): number => { const a = rgbOf(hex); const b = rgbOf(want); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
+                const best = offer.find((r) => before !== '' && r.value === before) ?? (want ? [...offer].sort((a, b) => far(a.dataset.hex ?? '') - far(b.dataset.hex ?? ''))[0] : undefined);
+                if (best) best.checked = true;
+            }
         });
-        const none = $('farm-second-none'); if (none) show(none, !!preview?.dataset.change && visible === 0 && !!chosen);
-        // the first colour changed: the second stays when the new machine holds it too. A QR code in one colour cannot be
-        // read, so there it otherwise goes to the spool nearest to the colour of the design, unless the customer asked
-        // for one colour by hand
-        if (!oneColorByHand && !checkedHex('second_color')) {
-            const offer = [...form.querySelectorAll<HTMLInputElement>(`[data-second-for="${chosen}"] input`)];
-            const far = (hex: string): number => { const a = rgbOf(hex); const b = rgbOf(want); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
-            const best = offer.find((r) => before !== '' && r.value === before) ?? (want ? [...offer].sort((a, b) => far(a.dataset.hex ?? '') - far(b.dataset.hex ?? ''))[0] : undefined);
-            if (best) best.checked = true;
-        }
         if (!viewer) return;
         viewer.setColor(first);
-        const second = checkedHex('second_color');
-        const painted = geom && changeZ > 0 && second ? twoTone(geom, changeZ, first ?? '#83a6d4', second) : null;
-        viewer.paint(painted);
+        const picked = blocks.map((_, i) => checkedHex(`change_color[${i}]`));
+        viewer.paint(geom && heights.length ? multiTone(geom, heights, first ?? '#83a6d4', picked) : null);
     };
-    form.querySelectorAll<HTMLInputElement>('input[name="second_color"]').forEach((r) => r.addEventListener('change', () => { oneColorByHand = r.value === ''; }));
-    form.querySelectorAll<HTMLInputElement>('input[name="color"], input[name="second_color"]').forEach((r) => r.addEventListener('change', paint));
+    blocks.forEach((block, i) => block.querySelectorAll<HTMLInputElement>('input').forEach((r) => r.addEventListener('change', () => { if (r.value === '') byHand.add(i); else byHand.delete(i); })));
+    form.querySelectorAll<HTMLInputElement>('input[name="color"], [data-change-index] input').forEach((r) => r.addEventListener('change', paint));
     const showModel = (url: string): void => {
         if (!preview) return;
         viewer ??= new Viewer(preview);
         show($('farm-preview-box'), true);
-        loadGeometryFromUrl(url).then((g) => { geom = cutForTwoTone(g, Number(preview.dataset.change || 0)); viewer!.setGeometry(geom, Number(($('farm-scale') as HTMLInputElement | null)?.value || 1) || 1, null); paint(); }).catch(() => show($('farm-preview-box'), false));
+        loadGeometryFromUrl(url).then((g) => { geom = cutForTones(g, heights); viewer!.setGeometry(geom, Number(($('farm-scale') as HTMLInputElement | null)?.value || 1) || 1, null); paint(); }).catch(() => show($('farm-preview-box'), false));
     };
     paint();
     // the size: the file's own millimetres times the factor from the calculator; one dimension typed scales the whole model
@@ -253,15 +267,18 @@ export function bootFarmOrder(): void {
         if (quoting === key) quoting = '';
         if (r.ok && key === quoteKey()) { quoted = { key, price: r.json.price as unknown as Price, total: Number(r.json.total) }; render(); }
     };
-    let second: number | null = state.second_slot ?? null;             // the spool of the code or text; null = the colour of the plate
+    // the spool of every change of the design (bottom to top); null = no change there, the colour before goes on
+    let changes: (number | null)[] = (state.changes ?? []).map((c) => c.slot_id ?? null);
+    const byHand = new Set<number>();                                  // rows where "no change" was chosen on purpose
+    const changeHeights = (): number[] => (state.changes ?? []).map((c) => c.z);
     let geom: BufferGeometry | null = null;
-    // the plate in the first colour, the code or text in the second, as the machine will print it
-    const paintTwo = (): void => {
+    // the model as the machine will print it: the first colour, then every change at its height
+    const paintTones = (): void => {
         const c = state.colors.find((x) => x.slot === picked);
-        const o = c?.second?.find((x) => x.slot === second);
         const first = (state.status === 'sliced' ? c?.hex : state.color?.hex) ?? null;
-        const other = state.status === 'sliced' ? o?.hex : state.second_color?.hex;
-        viewer.paint(geom && state.color_change_mm && first && other ? twoTone(geom, state.color_change_mm, first, other) : null);
+        const spools = c ? [{ slot: c.slot, hex: c.hex }, ...(c.second ?? [])] : [];
+        const picks = (state.changes ?? []).map((w, i) => (state.status === 'sliced' ? spools.find((s) => s.slot === changes[i])?.hex ?? null : (w.slot_id === null ? null : w.hex)));
+        viewer.paint(geom && changeHeights().length && first ? multiTone(geom, changeHeights(), first, picks) : null);
     };
     let timer = 0;
     const wanted = { quality: state.quality, strength: state.strength, supports: state.supports_mode || 'auto', unit: state.unit, copies: state.copies || 1, scale: state.scale || 1, settings: { ...(state.settings ?? {}) } as Record<string, number> };
@@ -370,23 +387,40 @@ export function bootFarmOrder(): void {
         const c = state.colors.find((x) => x.slot === picked);
         $('farm-start-note')!.textContent = c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '';
         viewer.setColor(c?.hex ?? null);
-        // a plate with a raised text or a code: the raised part may have its own colour from the same machine
-        const offer = state.color_change_mm && c?.second?.length ? c.second : [];
-        if (second !== null && !offer.some((o) => o.slot === second)) second = null;
+        // a plate with a raised text, a picture in colours one on another: every change picks a spool of this machine
+        // (the first colour itself counts: a print may go back to it)
+        const wanted = state.changes ?? [];
+        const offer = wanted.length && c?.second?.length ? [{ slot: c.slot, name: c.name, kind: c.kind ?? '', hex: c.hex, photo: c.photo }, ...c.second] : [];
+        changes = wanted.map((w, i) => (changes[i] !== null && changes[i] !== undefined && offer.some((o) => o.slot === changes[i]) ? changes[i] : null));
+        // nothing chosen yet (a fresh order, another machine): the spool nearest to the colour the design was made in
+        wanted.forEach((w, i) => {
+            if (changes[i] !== null || byHand.has(i) || !offer.length) return;
+            const far = (hex: string): number => { const a = rgbOf(hex); const b = rgbOf(w.hex); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
+            const pool = i === 0 ? offer.filter((o) => o.slot !== c?.slot) : offer;
+            changes[i] = [...pool].sort((a, b) => far(a.hex) - far(b.hex))[0]?.slot ?? null;
+        });
         show($('farm-second'), offer.length > 0);
         const list = $('farm-second-colors');
+        const heading = $('farm-second')?.querySelector<HTMLElement>('div');
+        if (heading) heading.textContent = tr(wanted.length === 1 ? 'farm.order.second_color' : 'farm.order.changes_title');
         if (list && offer.length) {
-            const tile = (slot: number | null, name: string, kind: string, swatch: string): string => `
-                <button type="button" role="radio" aria-checked="${slot === second}" data-second="${slot ?? ''}"
-                    class="flex items-center gap-2 rounded-xl border bg-white p-2 text-left text-sm ${slot === second ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
+            const tile = (i: number, slot: number | null, name: string, kind: string, swatch: string): string => `
+                <button type="button" role="radio" aria-checked="${slot === changes[i]}" data-change="${i}" data-second="${slot ?? ''}"
+                    class="flex items-center gap-2 rounded-xl border bg-white p-2 text-left text-sm ${slot === changes[i] ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
                     ${swatch}<span><span class="font-semibold">${esc(name)}</span>${kind ? `<br><span class="text-xs text-slate-500">${esc(kind)}</span>` : ''}</span>
                 </button>`;
             const dot = (hex: string): string => `<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:${esc(hex)}"></span>`;
-            list.innerHTML = tile(null, tr('farm.order.second_same'), tr('farm.order.second_same_hint'), dot(c?.hex ?? '#ffffff'))
-                + offer.map((o) => tile(o.slot, o.name, o.kind ?? '', o.photo ? `<img src="${esc(o.photo)}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">` : dot(o.hex))).join('');
-            list.querySelectorAll<HTMLButtonElement>('button[data-second]').forEach((b) => b.addEventListener('click', () => { second = b.dataset.second ? Number(b.dataset.second) : null; render(); }));
+            list.innerHTML = wanted.map((w, i) => (wanted.length > 1 ? `<div class="col-span-full mt-1 text-xs font-semibold text-slate-700">${esc(tr('farm.order.change_title', { n: i + 2, z: w.z.toFixed(1) }))}</div>` : '')
+                + tile(i, null, tr(i === 0 ? 'farm.order.second_same' : 'farm.order.change_same'), tr(i === 0 ? 'farm.order.second_same_hint' : 'farm.order.change_same_hint'), dot(i === 0 ? c?.hex ?? '#ffffff' : '#ffffff'))
+                + offer.filter((o) => i > 0 || o.slot !== c?.slot).map((o) => tile(i, o.slot, o.name, o.slot === c?.slot ? tr('farm.order.change_first') : (o.kind ?? ''), o.photo ? `<img src="${esc(o.photo)}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">` : dot(o.hex))).join('')).join('');
+            list.querySelectorAll<HTMLButtonElement>('button[data-change]').forEach((b) => b.addEventListener('click', () => {
+                const i = Number(b.dataset.change);
+                changes[i] = b.dataset.second ? Number(b.dataset.second) : null;
+                if (changes[i] === null) byHand.add(i); else byHand.delete(i);
+                render();
+            }));
         }
-        paintTwo();
+        paintTones();
     };
 
     const renderBreakdown = (): void => {
@@ -415,7 +449,7 @@ export function bootFarmOrder(): void {
             $('farm-progress-step')!.textContent = tr('farm.stage_step', { n: step, total: s.stage_total || 5 });
         }
         show($('farm-spinner'), working || s.status === 'printing');
-        const num = $('farm-number')!; num.textContent = s.number ? `${s.number}${s.color ? ` · ${s.color.name}` : ''}${s.second_color ? `, ${tr('farm.order.second_line', { name: s.second_color.name })}` : ''}` : ''; show(num, !!s.number);
+        const num = $('farm-number')!; num.textContent = s.number ? `${s.number}${s.color ? ` · ${s.color.name}` : ''}${(s.changes ?? []).some((c) => c.name) ? `, ${(s.changes ?? []).length === 1 ? tr('farm.order.second_line', { name: s.changes![0].name ?? '' }) : (s.changes ?? []).map((c, i) => (c.name ? tr('farm.order.change_line', { n: i + 2, name: c.name }) : '')).filter(Boolean).join(', ')}` : ''}` : ''; show(num, !!s.number);
         const pr = $('farm-printer'); if (pr) { pr.textContent = s.printer ? tr('farm.order.printer', { name: s.printer.name, bed: s.printer.bed }) : ''; show(pr, !!s.printer); }
         const err = $('farm-error')!; err.textContent = s.error_text ?? ''; show(err, s.status === 'failed' && !!s.error_text);
         $('farm-warnings')!.innerHTML = s.warnings.map((w) => `<li class="flex items-start gap-1.5">${icon('triangle-alert', 'mt-0.5 h-4 w-4')}<span>${esc(w)}</span></li>`).join('');
@@ -526,7 +560,7 @@ export function bootFarmOrder(): void {
         if (s.model_url && s.model_url !== shownModel) {
             shownModel = s.model_url;
             shownSupports = '';
-            loadGeometryFromUrl(s.model_url).then((g) => { geom = cutForTwoTone(g, s.color_change_mm ?? 0); viewer.setGeometry(geom, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTwo(); showSupports(); }).catch(() => { shownModel = ''; });
+            loadGeometryFromUrl(s.model_url).then((g) => { geom = cutForTones(g, (s.changes ?? []).map((x) => x.z)); viewer.setGeometry(geom, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTones(); showSupports(); }).catch(() => { shownModel = ''; });
         } else {
             showSupports();
         }
@@ -592,7 +626,7 @@ export function bootFarmOrder(): void {
         if (kind() === 'point') address.point = pointOf();
         btn.disabled = true; btn.textContent = tr('farm.order.paying'); show(errBox, false); show($('farm-topup'), false);
         const r = await post(cfg.routes.pay, {
-            slot: picked, second_slot: second, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
+            slot: picked, change_slots: changes, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
             video_consent: ($('farm-video-consent') as HTMLInputElement | null)?.checked ?? false,
             note: (form.elements.namedItem('note') as HTMLTextAreaElement).value, address: kind() ? address : null,
         });

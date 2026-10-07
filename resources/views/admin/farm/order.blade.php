@@ -94,6 +94,11 @@
                 <dt class="text-slate-500">E-mail</dt><dd>{{ $order->user?->email }} <span class="text-xs text-slate-500">(@money($balance))</span></dd>
                 <dt class="text-slate-500">{{ __('farm.admin.nav.printers') }}</dt><dd>{{ $order->printer?->name ?? '—' }} · slot {{ ($order->slot?->slot ?? 0) + 1 }}</dd>
                 <dt class="text-slate-500">{{ __('farm.order.color') }}</dt><dd>{{ $order->material?->code }} {{ $order->color?->name ?? '—' }}</dd>
+                @if($changeSlots = $order->colorSlots())
+                    @php($changeColors = \App\Models\FarmColor::whereIn('id', array_column($changeSlots, 'color_id'))->get()->keyBy('id'))
+                    {{-- colours one on another: the spool the machine switches to at every height --}}
+                    <dt class="text-slate-500">{{ __('farm.order.changes_title') }}</dt><dd>@foreach($changeSlots as $i => $c){{ $i ? ', ' : '' }}{{ number_format($c['z'], 1, ',', ' ') }} mm → {{ $changeColors->get($c['color_id'])?->name ?? '—' }}@endforeach</dd>
+                @endif
                 <dt class="text-slate-500">{{ __('farm.quality.label') }} / {{ __('farm.strength.label') }}</dt><dd>{{ $order->quality }} / {{ $order->strength }}</dd>
                 @if($order->copies > 1)<dt class="text-slate-500">{{ __('farm.copies.label') }}</dt><dd>{{ $order->plates > 1 ? __('farm.copies.plates', ['n' => $order->copies, 'p' => $order->plates, 'layout' => implode(' + ', $order->plateLayout())]) : __('farm.copies.note', ['n' => $order->copies]) }}@if($order->plates > 1) · {{ __('farm.copies.plate_of', ['i' => $order->plates_done, 'p' => $order->plates]) }}@endif</dd>@endif
                 <dt class="text-slate-500">{{ __('farm.order.dims') }}</dt><dd>@if($order->check){{ implode(' × ', array_map(fn ($v) => round($v, 1), $order->check['dims'] ?? [])) }} mm @endif</dd>

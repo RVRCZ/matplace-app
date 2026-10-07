@@ -6,7 +6,7 @@ return [
     'h1' => 'Magnetka na lednici z obrázku, fotky nebo nápisu',
     'intro' => [
         'Nástroj udělá z obrázku magnetku na lednici. Nahrajete PNG, JPG, WebP nebo SVG, vyberete motiv z knihovny, nebo napíšete jméno. Obrázek se převede na 1 až 8 barev filamentů, které máme na tiskové farmě opravdu skladem. Magnetka kopíruje obrys obrázku, nebo je to kruh či obdélník, široký 40 až 100 mm a silný 3 až 6 mm.',
-        'Na zadní straně je uprostřed kapsa na magnet. Vyberete běžný kulatý magnet od Ø 6 × 2 do Ø 20 × 3 mm, nebo zadáte vlastní rozměr. Magnet vlepíte, nalisujete, nebo necháte otvor skrz; pro samolepicí magnetickou fólii zvolíte magnetku bez kapsy. Když je potřeba, nástroj podklad zesílí, aby nad magnetem zůstaly čtyři vrstvy plastu. Magnety součástí nejsou. Výtisk objednáte z naší farmy v jedné nebo dvou barvách, nebo si model zdarma stáhnete.',
+        'Na zadní straně je uprostřed kapsa na magnet. Vyberete běžný kulatý magnet od Ø 6 × 2 do Ø 20 × 3 mm, nebo zadáte vlastní rozměr. Magnet vlepíte, nalisujete, nebo necháte otvor skrz; pro samolepicí magnetickou fólii zvolíte magnetku bez kapsy. Když je potřeba, nástroj podklad zesílí, aby nad magnetem zůstaly čtyři vrstvy plastu. Magnety součástí nejsou. Výtisk objednáte z naší farmy až ve čtyřech barvách, nebo si model zdarma stáhnete.',
     ],
     'steps' => [
         ['name' => 'Nahrajte obrázek nebo fotku', 'text' => 'Pozadí se odstraní samo a tvar pak kopíruje obrys motivu. Když má být vidět celá fotka, odstranění pozadí vypnete. Kontrast, jas a sytost fotky doladíte posuvníky.'],
@@ -19,7 +19,7 @@ return [
         ['q' => 'Jak magnet v magnetce drží?', 'a' => 'Do kapsy na lepení ho vlepíte, například vteřinovým lepidlem; vůli kolem magnetu nastavíte od 0,1 do 0,3 mm. Do kapsy na nalisování se magnet zatlačí. Otvor skrz prochází celou magnetkou, magnet pak může být zepředu vidět.'],
         ['q' => 'Co když je magnet na zvolenou tloušťku moc vysoký?', 'a' => 'Nástroj podklad sám zesílí tak, aby nad magnetem zůstaly čtyři vrstvy plastu, a napíše novou tloušťku. Když se magnet do tvaru nevejde, upozorní vás, ať zvětšíte šířku nebo zvolíte menší magnet.'],
         ['q' => 'Z čeho se magnetka tiskne?', 'a' => 'Doporučujeme PLA. Tiskne se lícem nahoru, kapsou dolů a bez podpěr. Pro místa, kde se magnetka zahřívá, zvolte PETG.'],
-        ['q' => 'Vytisknete magnetku barevně?', 'a' => 'Naše farma dnes tiskne jednu barvu, nebo dvě: podklad a jednu barvu na něm. Návrhy s více barvami si zdarma stáhnete; barvy leží nad sebou, takže je vytiskne jakákoli tiskárna výměnou filamentu ve výškách, které projekt obsahuje.'],
+        ['q' => 'Vytisknete magnetku barevně?', 'a' => 'Ano, až ve čtyřech barvách v jednom tisku: podklad a tři barvy nad ním. Cívku pro každou barvu potvrdíte při objednávce, ty z návrhu jsou předvybrané. Návrhy s více barvami si zdarma stáhnete; barvy leží nad sebou, takže je vytiskne jakákoli tiskárna výměnou filamentu ve výškách, které projekt obsahuje.'],
         ['q' => 'Jak zaplatím a jak magnetku dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
     ],
     'examples' => [

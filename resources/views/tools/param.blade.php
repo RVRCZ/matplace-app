@@ -10,7 +10,7 @@
         'param.warn.thread_try', 'param.warn.seal_try', 'param.need.liner', 'param.fits', 'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.warn.qr_one_color', 'param.warn.qr_low_contrast', 'param.warn.qr_inverted', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
     if ($family === 'shape') {
         // the picture in colours: its list of colours, the notes on how it prints, the eyelet
-        $i18n += collect(['part.body', 'part.rim', 'part.color', 'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.found', 'colors.picture', 'print.one', 'print.swap1', 'print.swap', 'print.multi',
+        $i18n += collect(['part.body', 'part.rim', 'part.color', 'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.found', 'colors.picture', 'print.one', 'print.swap1', 'print.swap', 'print.many', 'print.multi',
             'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'warn.name_small', 'warn.name_no_room', 'part.icing', 'thickened', 'magnet.fact',
             // a part may be called by what it is in this tool (the plate of a gingerbread is "the gingerbread")
             ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text('param.shape.'.$k)])->all();
@@ -212,9 +212,9 @@
                 @endforeach
             </div>
         </fieldset>
-        @if($family === 'shape' && in_array('eyelet', $flags, true))
+        @if($family === 'shape' && array_intersect(['eyelet', 'hang'], $flags))
             {{-- the eyelet goes where it is dragged to in the preview; this puts it back on top --}}
-            <div data-when="eyelet=on">
+            <div data-when="{{ in_array('hang', $flags, true) ? 'hang' : 'eyelet' }}=on">
                 <button type="button" id="shape-eyelet-top" class="chip !py-1 text-sm">{{ __('param.shape.eyelet.top') }}</button>
                 <p class="hint mt-1 !text-xs">{{ __('param.shape.eyelet.drag') }}</p>
             </div>

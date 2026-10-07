@@ -40,7 +40,7 @@ final class OrderFlow
      *
      * @throws FarmRefusal|InsufficientCredit
      */
-    public function pay(FarmOrder $order, FarmPrinterSlot $slot, string $delivery, ?array $address, bool $termsAccepted, ?string $ip, ?float $expectedTotal = null, ?string $note = null, ?int $secondSlotId = null, ?string $currency = null): FarmOrder
+    public function pay(FarmOrder $order, FarmPrinterSlot $slot, string $delivery, ?array $address, bool $termsAccepted, ?string $ip, ?float $expectedTotal = null, ?string $note = null, ?int $secondSlotId = null, ?string $currency = null, ?array $changeSlotIds = null): FarmOrder
     {
         if ($order->status !== FarmOrder::STATUS_SLICED) {
             throw new FarmRefusal('not_ready');
@@ -65,10 +65,30 @@ final class OrderFlow
             throw new FarmRefusal('filament_low');
         }
 
-        $second = null;
-        if ($secondSlotId) {
-            $second = $this->orders->secondColors($order, $offer['slot'])->firstWhere('id', $secondSlotId) ?? throw new FarmRefusal('color_gone');
+        // the spools of the changes, one per change of the design (bottom to top): the chosen spool itself or another one
+        // of its machine; an older page names just the one second colour
+        $ids = $changeSlotIds ?? ($secondSlotId ? [$secondSlotId] : []);
+        $picked = [];
+        $others = collect();
+        if ($ids) {
+            $wanted = array_values($order->wantedChanges());
+            $others = $this->orders->secondColors($order, $offer['slot']);
+            if (! $wanted) {
+                throw new FarmRefusal('color_gone');
+            }
+            foreach ($wanted as $i => $change) {
+                $id = (int) ($ids[$i] ?? 0);
+                if (! $id) {
+                    continue;
+                }
+                $slot = $id === (int) $offer['slot']->id ? $offer['slot'] : ($others->firstWhere('id', $id) ?? throw new FarmRefusal('color_gone'));
+                $picked[] = ['z' => round((float) $change['z'], 3), 'slot_id' => (int) $slot->id, 'color_id' => (int) $slot->farm_color_id];
+            }
+            if (count(array_unique(array_merge([(int) $offer['slot']->farm_color_id], array_column($picked, 'color_id')))) > FarmOrder::MAX_COLORS) {
+                throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
+            }
         }
+        $second = $picked && $picked[0]['slot_id'] !== $offer['slot']->id ? $others->firstWhere('id', $picked[0]['slot_id']) : null;
 
         $price = $this->orders->priceFor($order, $offer['printer'], $delivery, $offer['color']->material, $destination['country'] ?? null, $currency);
         if ($expectedTotal !== null && abs($expectedTotal - $price['total']) > 0.009) {
@@ -76,11 +96,11 @@ final class OrderFlow
         }
 
         $slicedFor = $order->farm_printer_id;
-        DB::transaction(function () use ($order, $offer, $delivery, $destination, $ip, $price, $note, $second, $currency) {
+        DB::transaction(function () use ($order, $offer, $delivery, $destination, $ip, $price, $note, $second, $picked, $currency) {
             $order->fill([
                 'farm_printer_id' => $offer['printer']->id, 'farm_printer_slot_id' => $offer['slot']->id, 'farm_color_id' => $offer['color']->id,
                 'farm_material_id' => $offer['color']->farm_material_id,
-                'second_slot_id' => $second?->id, 'second_color_id' => $second?->farm_color_id,
+                'second_slot_id' => $second?->id, 'second_color_id' => $second?->farm_color_id, 'color_changes' => $picked ?: null,
                 'delivery' => $delivery, 'shipping_address' => $destination, 'shipping_price' => $price['shipping'], 'currency' => $currency,
                 // an order made from an inspiration page keeps the line that names the model and its author
                 'note' => trim(implode("\n", array_filter([$order->catalog_model_id ? $order->catalogModel?->attribution() : null, $note]))) ?: null,
