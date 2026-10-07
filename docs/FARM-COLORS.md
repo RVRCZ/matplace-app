@@ -80,3 +80,12 @@ systemctl restart php8.2-fpm matplace-worker 'matplace-worker@*'
 Po nasazení: `/tools/charm` s obrázkem ve 3 barvách → „Pokračovat k ceně“ → `/farm` (tři bloky barev, cívky stroje
 Farm U #1 předvybrané) → objednávka → zaplatit → stáhnout G‑code v adminu a najít `T<n>` ve třech výškách
 (`grep -n "colour change" soubor.gcode`). Potom teprve pustit tisk s obsluhou u stroje.
+
+## 5. Nasazeno (7. 10. 2026, 18:27 UTC)
+
+`main` = 5772959 (feature/tools-shapes a764dcf + feature/farm-colors), server slil jako e0a4afa, strom shodný
+s `main`. Odstávka 11 s, migrace `farm_orders.color_changes` proběhla, build prošel, stránky nástrojů i `/gifts`
+200, `laravel.log` bez chyby, oba agenti s heartbeatem do minuty. Zálohy `/root/matplace_app-20261007-1827.sql`
+a `/root/matplace-app.env.bak-20261007-1827`. Testy sloučeného stavu před nasazením: 99 + 34 zelených.
+Co zbývá Romanovi: zapnout farmu v adminu, první tisk ve třech barvách z produkce s obsluhou u stroje, G‑code
+z adminu před tiskem zkontrolovat (`grep -n "colour change" …`).
