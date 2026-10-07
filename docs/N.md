@@ -241,3 +241,35 @@ Po nasazení:
 
 Další session (`nastroje.md`, 1–4) startují z `main` po slití této větve; stavějí na `tools/page.blade.php`,
 `Stage`, `Palette`, `Artwork` a `matplace:tool-examples --card`.
+
+## 8. Nasazeno (7. 10. 2026, podle `docs/prompts/nasazeni-zakladu.md`)
+
+- **`main` = 6864d63** (tři commity základu + brief + oprava zalomení kroků), na GitHubu i v holém repu na serveru.
+  Server `/var/www/matplace-app` (větev `feature/farm`) ho slil jako merge commit identitou `deploy` (46c969f),
+  strom shodný s `main`. Zálohy před tím: `/root/matplace-app.env.bak-20261007-0459`,
+  `/root/matplace_app-20261007-0459.sql`. Žádná migrace, žádný nový balíček, žádný nový klíč `.env`.
+- **Odstávka 14 s** (04:59:01–04:59:15 UTC): `down` → merge → composer → `npm ci && npm run build` (2,9 s) →
+  `optimize` → restart `php8.2-fpm matplace-worker matplace-worker@*` → `up`. Roman předtím vypnul farmu
+  v adminu, rozdělané tisky dojely; oba agenti (Agent1 S1, Farma B) měli heartbeat do minuty po `up`,
+  11 tiskáren online.
+- **Kontroly po nasazení**: `/`, `/tools`, `/tools/box`, `/tools/qr`, `/tools/logo`, `/tools/mold`,
+  `/api/artwork/library?q=srdce` → 200; `/api/config` nese paletu (`colors.items` 92 cívek skladem, `legacy` 9,
+  `hues` 8); `laravel.log` bez chyby (poslední je z 6. 10. 05:45, tinker); v nginx `error.log` jen skenovací
+  roboti na legacy hostu. Snímky produkce: `img/base-after-sign.png` je teď z matplace.com po opravě kroků
+  (čtyři kroky na dva řádky, nic oříznuté); krabička ukazuje úchyty.
+- **Cívky**: `farm:colors-fill --dry-run` → 2 hexy (#116 Silk Rainbow Fire Red → `#b64726` s poznámkou
+  „bez jedné barvy, zkontrolovat“, #117 Fire copper → `#c39a91`), 0 překladů; puštěno naostro. Katalog má
+  117 cívek, 116 s fotkou, 95 zapnutých, anglické názvy všude. Roman přes tento týden přidává ~250 druhů
+  s profesionálními fotkami – `colors-fill` se pak pustí znovu (doplňuje jen, co chybí).
+- **Ověřeno tiskem**: Roman: „jen QR“ → `'verified' => '2026-10-04'` u `qr` (poslední předaná zakázka QR
+  4. 10. 2026). Podle `farm_orders` se předaly i výtisky z `cap` (3×, do 1. 10.), `holder` (29. 9.),
+  `cable_holder` (25. 9. a 5. 10.) a `sign` (29. 9.) – data jsou tu, štítek u nich dostane, až Roman řekne.
+- **Dvoubarevný projekt** ověřený z produkce (QR, destička bílá `#EDE6D6`, kód modrý `#213D78`, soubor
+  abf26b0c): Orca projekt (`printer=prusa-mk4s`) má v `Metadata/custom_gcode_per_layer.xml` M600 při
+  `top_z="2.60"` v barvě kódu; PrusaSlicer projekt (`printer=prusaslicer-core-one`) má totéž
+  v `Metadata/Prusa_Slicer_custom_gcode_per_print_z.xml` a `prusa-slicer-console --info` ho načte (manifold,
+  1 díl, 83 × 70 × 3,4 mm). Výběr sliceru řídí id tiskárny, ne parametr `slicer`.
+- **Zbývá Romanovi**: ruční průchod v prohlížeči (`/tools/box` víčko → Rozložit, barva víčka, Stáhnout → ZIP;
+  `/tools/logo` → Knihovna; tažení úchytu na krabičce; `/` s nahraným STL; objednávka na `/farm` až k výběru
+  cívky) a souhlas s úklidem sloučených větví a worktree (`feature/bust-fixes`, `feature/perf`,
+  `feature/traffic`, `feature/tools`). Pak startuje session 1 (`docs/prompts/nastroje.md`, vánoční sada).
