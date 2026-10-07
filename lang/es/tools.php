@@ -76,6 +76,9 @@ return [
     'wearable.title' => 'Casco o armadura a medida',
     'wearable.hint' => 'Un modelo de casco, máscara o armadura escalado a su contorno de cabeza o pecho, vaciado, con visores y ranuras de correa, y dividido para la cama.',
     'wearable.action' => 'Hacer a medida',
+    'slider.title' => 'Fidget deslizante en una placa',
+    'slider.hint' => 'Una ranura en cola de milano con cursor y topes recortada en una placa plana; se imprime de una vez y, al retirarla, se desliza y hace clic.',
+    'slider.action' => 'Hacer el fidget deslizante',
 
     'cats' => [
         'images' => 'Imágenes y logos',
@@ -134,5 +137,6 @@ return [
         'colors' => 'colores 3mf impresión multicolor ams mmu dividir por colores pintado bambu orca prusa piezas',
         'soap_model' => 'jabonera bandeja de jabón según modelo huella desagüe ranuras nervios baño',
         'wearable' => 'casco máscara armadura a medida contorno de cabeza cosplay visores correa hueco disfraz',
+        'slider' => 'fidget deslizante cursor ranura cola de milano print in place clic topes juguete',
     ],
 ];

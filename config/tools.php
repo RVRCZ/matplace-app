@@ -209,6 +209,9 @@ return [
     // the card: a domed cap grown to a head of 56 cm, a window in front, strap slots in the sides
     'wearable' => ['route' => 'tools.wearable', 'intent' => 'file', 'categories' => ['edit', 'craft'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'wearable', 'kind' => 'cap', 'params' => ['style' => 'push', 'shape' => 'round', 'head' => 'dome', 'size_a' => 60, 'height' => 30, 'wall' => 2], 'edit_params' => ['measure' => 'head', 'circumference' => 56, 'windows' => '[{"side":"front","shape":"rect","w":80,"h":30}]', 'straps' => true]]],
+    // the card: a square coaster 6 mm thick with a word on top and the groove, its slider and four detents along the lower edge
+    'slider' => ['route' => 'tools.slider', 'intent' => 'file', 'categories' => ['edit', 'toys'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'slider', 'kind' => 'coaster', 'params' => ['body' => 'square', 'width' => 100, 'thickness' => 6, 'frame' => 2, 'line1' => 'FIDGET'], 'edit_params' => ['detents' => 4, 'dy' => -30]]],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => false],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only

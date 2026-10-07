@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  */
 final class ModelEditor
 {
-    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'soap', 'wearable', 'scale'];
+    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'soap', 'wearable', 'slider', 'scale'];
 
     /** body girths in cm a wearable starts from, by what the model goes round */
     public const MEASURES = ['head' => 56, 'chest' => 95, 'waist' => 80, 'arm' => 30, 'forearm' => 26, 'wrist' => 17, 'thigh' => 55, 'calf' => 37];
@@ -54,6 +54,8 @@ final class ModelEditor
         'soap' => ['height' => [8, 60, 20, 1], 'clearance' => [0.5, 6, 2, 0.5], 'wall' => [1.2, 6, 2.4, 0.2], 'floor' => [1.2, 6, 2, 0.2]],
         // a wearable: the girth in cm and the play on it in mm, the wall of the hollow, the strap slots' height in % of the model's, the bed
         'wearable' => ['circumference' => [10, 160, 56, 0.5], 'play' => [0, 40, 10, 1], 'wall' => [2, 4, 3, 0.5], 'strap_h' => [10, 90, 35, 5], 'bed_x' => [50, 600, 250, 1], 'bed_y' => [50, 600, 250, 1], 'bed_z' => [50, 600, 250, 1]],
+        // a sliding fidget: the dovetail groove's width at the top and depth, the margin kept at the ends, the slider, the detents, the play, the groove's offset across
+        'slider' => ['width' => [6, 30, 12, 0.5], 'depth' => [2.5, 10, 4, 0.5], 'margin' => [3, 60, 8, 1], 'slider_len' => [10, 80, 24, 1], 'detents' => [0, 5, 3, 1], 'play' => [0.2, 0.6, 0.3, 0.05], 'dy' => [-150, 150, 0, 1]],
         'scale' => ['height' => [10, 1000, 300, 1]],
     ];
 
@@ -65,14 +67,15 @@ final class ModelEditor
         'flexi_cut' => ['axis' => ['auto', 'x', 'y', 'z']],
         'soap' => ['drain' => ['grooves', 'grid', 'ribs', 'none'], 'foot' => ['widest', 'bottom']],
         'wearable' => ['measure' => ['head', 'chest', 'waist', 'arm', 'forearm', 'wrist', 'thigh', 'calf', 'none'], 'bed' => ['farm', '220', '180', 'custom'], 'joint' => ['pins', 'dovetail', 'none']],
+        'slider' => ['axis' => ['auto', 'x', 'y']],
     ];
 
-    public const FLAGS = ['split' => ['numbers', 'lay'], 'hollow' => ['drain'], 'life_size' => ['hollow', 'numbers', 'lay'], 'puzzle' => ['numbers', 'frame'], 'holder' => ['cav_depth_own'], 'potion' => ['label'], 'wearable' => ['hollow', 'straps', 'split', 'numbers', 'lay']];
+    public const FLAGS = ['split' => ['numbers', 'lay'], 'hollow' => ['drain'], 'life_size' => ['hollow', 'numbers', 'lay'], 'puzzle' => ['numbers', 'frame'], 'holder' => ['cav_depth_own'], 'potion' => ['label'], 'wearable' => ['hollow', 'straps', 'split', 'numbers', 'lay'], 'slider' => ['knob']];
 
     /** op → text input → max length */
     public const TEXTS = ['potion' => ['text' => 20], 'wearable' => ['windows' => 600]];
 
-    public const FLAGS_ON = ['numbers', 'lay', 'drain', 'hollow', 'label', 'split'];
+    public const FLAGS_ON = ['numbers', 'lay', 'drain', 'hollow', 'label', 'split', 'knob'];
 
     /** changes when the tool measures differently: stored analyses made by an older one are not used */
     private const ANALYSIS = 1;

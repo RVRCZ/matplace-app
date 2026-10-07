@@ -31,6 +31,7 @@ modulů), `viewer.ts` (dvě nové metody), `ModelFile` (`builtForPrinting`, `pri
 | Díly podle barev | `/tools/colors` | `edit` (`colors_tool.py` přes `edit_tool.py colors`) | barevný 3MF (materiály, extrudery objektů, malování Bambu / Orca / Prusa) → díl na barvu: samostatná tělesa tak, jak jsou, namalované plochy jako vložky 0,6–3 mm s vybráním v těle |
 | Mýdlenka podle modelu | `/tools/soap-from-model` | `edit` (`edit_tool.py soap`, karta `soap_model`) | půdorys nahraného modelu (projekce nebo dno) + vůle → kapsa, stěna, dno s drážkami / mřížkou / žebry; model sám se netiskne |
 | Přilba nebo brnění na míru | `/tools/wearable` | `edit` (`edit_tool.py wearable`) | model přilby / brnění → měřítko podle obvodu hlavy, hrudi…, dutina 2–4 mm otevřená zespodu, až 4 průzory skrz bližší stěnu, drážky na popruh 25 mm, dělení na podložku s kolíky |
+| Posuvný fidget | `/tools/slider` | `edit` (`edit_tool.py slider`) | plochý model ≥ 6 mm → rybinová drážka (15°) po delší straně, jezdec s vůlí 0,3 na místě (print‑in‑place), knoflík Ø 10, zarážky jako kuličky na dně + důlek v jezdci |
 | Litofanie a reliéf (rozšíření) | `/tools/relief` | `relief` (`relief_tool.py`, `ReliefGenerator`) | fotka → panel v 7 tvarech (i vlastní silueta), rámeček, otvor / očko, stojánek; **lampa** (fotka kolem válce, dno na E27 / E14 / LED); jas, kontrast, střední tóny; náhled podsvícený / povrch |
 
 ### Obraz z filamentu (`filament_art`)
@@ -260,6 +261,19 @@ pak díry): stejná sémantika „buňka, které se těleso dotýká“, kopule 
 stěnou 6 → 5,98 mm; koule Ø 60 se stěnou 2 → 2,2 mm (o 0,2 silnější, k bezpečné straně); `SURFACE_OFFSET` 1,1
 ponechán, test dutiny (krychle 60, ±6 % objemu dutiny) prochází.
 
+### Posuvný fidget (`slider`)
+
+Osa drážky: delší strana (nebo volba x / y; u y se model otočí o −90°, pracuje se po x a otočí zpět i s jezdcem,
+posun do kladného kvadrantu podle těla). Drážka: rybina s boky 15° od svislice, šířka nahoře 6–30 (12), hloubka
+2,5–10 (4), dno ≥ 2 mm (jinak `too_thin` s potřebnou tloušťkou), délka = šířka modelu − 2 × okraj (3–60, 8), musí
+zbýt jezdec + 10 mm (`too_short`), posun napříč `dy`, kolem drážky 2 mm materiálu (`too_narrow`). Řez (y, z) se
+táhne po z a otočí permutací (x, y, z) → (z, x, y), takže leží po x. Jezdec: tatáž rybina zmenšená o vůli (0,2–0,6;
+0,3) ze všech stran, zarovnaný s horní plochou, délka 10–80 (24), knoflík válec Ø 10 × 4 (volitelně). Zarážky
+0–5: koule r 1 na dně drážky utopené 0,45 (čouhají 0,55, jezdec má mezeru 0,3 → přejezd zvedne jezdec o 0,25, což
+rybina s vůlí dovolí), rovnoměrně mezi krajními polohami středu jezdce; jezdec má zespodu důlek r 1 + vůle a startuje
+na první zarážce. Dva díly `body` + `slider` na místě; stránka je obarví jako díly. Model s reliéfem (písmo) nahoře:
+drážka ho v pruhu odřízne, proto je tu posun `dy` (karta: čtvercový tácek 100 × 6 s nápisem, drážka při dolním okraji).
+
 ## 2. Rozhodnutí a proč
 
 1. **Filament art není kind `ParametricGenerator`**, ale vlastní generátor a modul `art`. Zadání ho tam chtělo;
@@ -373,6 +387,8 @@ Limit 60 s ze zadání je daleko; decimaci nad 2 M jsem na skutečném modelu ne
 `soap` na ležícím srdci 90 × 74 (277 tis. trojúhelníků): drážky 1,9 s, žebra 1,8 s (z toho načtení a projekce
 většina); na kvádru testu 1,2 s.
 
+`slider` na desce 120 × 60 × 8 (12 trojúhelníků): 1,1 s (start Pythonu a importy); karta z tácku 100 mm (tácek + fidget + obrázek): 8,5 s.
+
 `wearable` na plné kopuli Ø 120 (4 tis. trojúhelníků):
 
 | případ | čas |
@@ -410,7 +426,10 @@ bez barev (analýza `has_colors` false, rozdělení `no_colors`), hloubka mimo r
 těžší, dno jako půdorys totéž u kvádru, žebra ≥ 8, špatný odtok 422. +1 (na míru): kopule Ø 120 stavěná v testu
 (UV polokoule) → analýza (měřítko 1,592 ± 0,01, cílový obvod 570, dutina ano, vejde se, 191 mm), výroba (dutina,
 otevřeno, 2 drážky, 2 průzory z JSON, vnitřní obvod 570 ± 4 %, 1 díl, uzavřeno, objem 4–20 % plné kopule),
-„nezvětšovat“ bez dutiny = původní objem, `windowsOf` pročistí nesmysly, stěna 9 → 422.
+„nezvětšovat“ bez dutiny = původní objem, `windowsOf` pročistí nesmysly, stěna 9 → 422. +1 (fidget): deska
+120 × 60 × 8 → díly `body` + `slider`, drážka 104 × 12 × 4 po x, jezdec 24 × 11,4 × 3,7, zarážky v 20 / 60 / 100,
+výška 12 s knoflíkem, uzavřeno, objem = deska − drážka + jezdec + knoflík (±300 mm³), rozměry dílů; po y bez knoflíku
+a zarážek (výška 8); tenká deska → `too_thin`; osa z → 422. `ModelEditTest` má 16 testů.
 
 ## 5. Co není ověřené
 
@@ -444,6 +463,8 @@ otevřeno, 2 drážky, 2 průzory z JSON, vnitřní obvod 570 ± 4 %, 1 díl, uz
   (stromy) jsou podle zdroje PrusaSliceru, ale nezkoušené na datech. Před ohlášením nástroje: uložit z Bambu Studia
   model s malováním a 2–3 díly v AMS slotech, nahrát, porovnat barvy a podíly s tím, co ukazuje slicer. Vložky na
   silně zakřivených plochách (poloměr pod 2× hloubka) se mohou samy protnout – pak je `solidify` přestaví na mřížce.
+- **Fidget**: vůle 0,3 a zarážky 0,25 nad mezerou jsou obvyklé hodnoty print‑in‑place posuvníků, ale netištěné;
+  když jezdec po tisku drží, pomůže vůle 0,4 (pole) – první test na farmě by měl být právě tahle deska.
 - **Na míru**: zkoušeno jen na kopuli a na čepičce z generátoru (karta), ne na skutečné přilbě z Printables.
   Nejširší řez u přilby s hledím nebo s lícnicemi nemusí být tam, kde se měří hlava; model, který leží na boku,
   bude měřen špatně (nástroj nic neotáčí). Vůle 10 mm na obvodu je odhad bez tisku. Dutina u přilby s tenkými
@@ -468,8 +489,10 @@ Hotové: `/tools/filament-art` (oba režimy, rám, LED, návod), `/tools/split` 
 3D profilu pro vysoké modely), `/tools/holder-from-model`, `/tools/potion`, `/tools/flexi-cut`, společný základ `edit_tool.py` + `ModelEditor` +
 `EditModel` + stránka `edit`.
 Zbývá (v pořadí, jak dává smysl): `/tools/wearable` (míra, průzory ve vieweru, drážky na popruh); `/tools/flexi` (zvíře z primitiv);
-`/tools/slider` (volitelné) a `/tools/flexi` (zvíře z primitiv). Rozšíření `relief` (tvary, lampa, podsvícený
-náhled), `/tools/colors`, `soap` podle stopy (`/tools/soap-from-model`) a `/tools/wearable` jsou hotové.
+`/tools/flexi` (zvíře z primitiv: hlava kočka / pes / medvěd…, oči, doplňky, články s klouby, ocas). To je
+samostatná tvůrčí práce (desítky primitiv na druh, „roztomilost“ se ladí okem, případně hlava z Tripo jako asset) –
+víc než zbylé položky dohromady; kloub je hotový ve `flexi_cut` (`sphere_at`, krček, dutina s vůlí), takže
+`/tools/flexi` z něj vezme spoje a přidá jen tvary. Vše ostatní ze zadání session 3 je hotové.
 
 ## 8. Stav
 
@@ -480,5 +503,5 @@ chyba – `ToolsFlowTest` hlídá, že každý inline `throttle` má vlastní p�
 `edit/{part}.stl` sdílely `preview`, `create`, `zip`, `part` s nástroji session 1 → přejmenováno na `art_*`,
 `edit_part`. Pak rozšíření litofanie (tvary, zavěšení, lampa, světlo, náhled) – `ReliefToolTest` 6 testů,
 `ToolsFlowTest` zelený, build (a82aed8). Pak `/tools/colors` (`colors_tool.py`, karta ze sněhuláka, test), build,
-pint, testy stránek, katalogu, karet, SEO a toku zelené (2e3957c). Pak mýdlenka podle modelu (`soap`, 14a3e52) a
-přilba na míru (`wearable`) s mřížkou dutiny z řezů.
+pint, testy stránek, katalogu, karet, SEO a toku zelené (2e3957c). Pak mýdlenka podle modelu (`soap`, 14a3e52),
+přilba na míru (`wearable`, e947c16) s mřížkou dutiny z řezů a posuvný fidget (`slider`).

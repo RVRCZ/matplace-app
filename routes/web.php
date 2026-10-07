@@ -156,6 +156,7 @@ $pages = function () {
     Route::get('/tools/colors', [EditToolsController::class, 'edit'])->defaults('op', 'colors')->name('tools.colors');
     Route::get('/tools/soap-from-model', [EditToolsController::class, 'edit'])->defaults('op', 'soap')->name('tools.soap_model');
     Route::get('/tools/wearable', [EditToolsController::class, 'edit'])->defaults('op', 'wearable')->name('tools.wearable');
+    Route::get('/tools/slider', [EditToolsController::class, 'edit'])->defaults('op', 'slider')->name('tools.slider');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {

@@ -1375,6 +1375,85 @@ def wearable(src, dst, p, parts_dir):
     finish(M, "wearable", dst, laid, notes, parts_dir)
 
 
+# ── sliding fidget: a dovetail groove across a flat model with a slider printed in place ─────────────────────────
+
+DOVETAIL_DEG = 15.0                           # the flanks lean this much from vertical: the slider cannot lift out
+SLIDER_FLOOR = 2.0                            # mm of model left under the groove
+BUMP_R, BUMP_SINK = 1.0, 0.45                 # a detent: a ball on the floor, sunk this deep; the slider's dimple matches it
+KNOB_D, KNOB_H = 10.0, 4.0
+
+
+def slider(src, dst, p, parts_dir):
+    import numpy as np
+    import manifold3d as M
+    C = M.CrossSection
+    notes = {"warnings": []}
+    man, m = load_solid(src, dst, notes)
+    ext = [float(v) for v in m.extents]
+    axis = p.get("axis", "auto")
+    if axis not in ("auto", "x", "y"):
+        raise Invalid("bad_choice", "axis")
+    if axis == "auto":
+        axis = "x" if ext[0] >= ext[1] else "y"
+    clamp = lambda key, d, lo, hi: max(lo, min(hi, float(p.get(key, d) if p.get(key) is not None else d)))
+    play = clamp("play", 0.3, 0.2, 0.6)
+    width = clamp("width", 12.0, 6.0, 30.0)
+    depth = clamp("depth", 4.0, 2.5, 10.0)
+    margin = clamp("margin", 8.0, 3.0, 60.0)
+    slen = clamp("slider_len", 24.0, 10.0, 80.0)
+    detents = int(clamp("detents", 3, 0, 5))
+    dy = clamp("dy", 0.0, -150.0, 150.0)
+    knob = bool(p.get("knob", True))
+    solid = man
+    if axis == "y":
+        # the groove runs along x: the model is turned so its y lies along x, and everything is turned back at the end
+        solid = solid.rotate([0, 0, -90])
+        x0, y0, z0, _, _, _ = solid.bounding_box()
+        solid = solid.translate([-x0, -y0, -z0])
+        ext = [ext[1], ext[0], ext[2]]
+    W, D, H = ext
+    if H < depth + SLIDER_FLOOR:
+        raise Invalid("too_thin", "%.0f" % (depth + SLIDER_FLOOR))
+    L = W - 2 * margin
+    if L < slen + 10.0:
+        raise Invalid("too_short", "%.0f" % (slen + 10.0 + 2 * margin))
+    e = depth * math.tan(math.radians(DOVETAIL_DEG))
+    cy = D / 2 + dy
+    if width / 2 + e + 2.0 > min(cy, D - cy):
+        raise Invalid("too_narrow", "%.0f" % (width + 2 * e + 4.0))
+    zf = H - depth
+    stage(dst, "cutting")
+    TO_X = np.array([[0, 0, 1, 0], [1, 0, 0, 0], [0, 1, 0, 0]], dtype=np.float64)      # a (y, z) section extruded along z → along x
+    along = lambda section, x_from, length: section.extrude(length).transform(TO_X).translate([x_from, 0, 0])
+    # the groove's section: a dovetail, wider at the floor, open straight up above the model's top
+    groove2d = C([[(-(width / 2 + e), zf), (width / 2 + e, zf), (width / 2, H), (width / 2, H + 1.0), (-width / 2, H + 1.0), (-width / 2, H)]]).translate([cy, 0])
+    body = solid - along(groove2d, W / 2 - L / 2, L)
+    # detents: balls on the floor where the slider's middle can rest; the slider starts on the first one
+    xs = []
+    if detents:
+        x_lo, x_hi = W / 2 - L / 2 + slen / 2, W / 2 + L / 2 - slen / 2
+        xs = [x_lo + (x_hi - x_lo) * i / (detents - 1) for i in range(detents)] if detents > 1 else [W / 2]
+        for x in xs:
+            body = body + M.Manifold.sphere(BUMP_R, 32).translate([x, cy, zf - BUMP_SINK])
+    xc = xs[0] if xs else W / 2
+    # the slider: the dovetail less the play all round, flush with the top, a dimple underneath, a knob on top
+    s_lo = zf + play
+    slider2d = C([[(-(width / 2 + e - play), s_lo), (width / 2 + e - play, s_lo), (width / 2 - play, H), (-(width / 2 - play), H)]]).translate([cy, 0])
+    piece = along(slider2d, xc - slen / 2, slen)
+    piece = piece - M.Manifold.sphere(BUMP_R + play, 32).translate([xc, cy, zf - BUMP_SINK])
+    if knob:
+        piece = piece + M.Manifold.cylinder(KNOB_H + 0.2, KNOB_D / 2, KNOB_D / 2, 48).translate([xc, cy, H - 0.2])
+    if body.is_empty() or piece.is_empty() or body.status() != M.Error.NoError or piece.status() != M.Error.NoError:
+        raise Invalid("empty_result")
+    if axis == "y":
+        body, piece = body.rotate([0, 0, 90]), piece.rotate([0, 0, 90])
+        x0, y0, z0, _, _, _ = body.bounding_box()
+        body, piece = body.translate([-x0, -y0, -z0]), piece.translate([-x0, -y0, -z0])
+    notes.update({"axis": axis, "model": [round(v, 1) for v in ext], "groove": [round(L, 1), round(width, 2), round(depth, 2)], "slider": [round(slen, 1), round(width - 2 * play, 2), round(H - s_lo, 2)],
+                  "play": play, "detents": len(xs), "detent_at": [round(x, 1) for x in xs], "knob": knob, "floor": round(zf, 2), "margin": margin, "dy": dy, "dovetail_deg": DOVETAIL_DEG})
+    finish(M, "slider", dst, [("body", body), ("slider", piece)], notes, parts_dir)
+
+
 # ── potion ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 def potion(src, dst, p, parts_dir):
@@ -1582,7 +1661,7 @@ def main(argv):
         p = json.loads(raw or "{}")
         if not isinstance(p, dict):
             raise Invalid("unknown_kind")
-        commands = {"split": split, "hollow": hollow, "scale": scale, "life_size": life_size, "puzzle": puzzle, "holder": holder, "potion": potion, "flexi_cut": flexi_cut, "soap": soap, "wearable": wearable}
+        commands = {"split": split, "hollow": hollow, "scale": scale, "life_size": life_size, "puzzle": puzzle, "holder": holder, "potion": potion, "flexi_cut": flexi_cut, "soap": soap, "wearable": wearable, "slider": slider}
         if op == "colors":
             # a coloured 3MF into a part per colour: its own module, the source is the 3MF itself
             import colors_tool

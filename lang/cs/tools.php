@@ -76,6 +76,9 @@ return [
     'wearable.title' => 'Přilba nebo brnění na míru',
     'wearable.hint' => 'Model přilby, masky nebo brnění zvětšíme na váš obvod hlavy či hrudi, vydutíme, vyřízneme průzory a drážky na popruh a rozdělíme na podložku.',
     'wearable.action' => 'Udělat na míru',
+    'slider.title' => 'Posuvný fidget do desky',
+    'slider.hint' => 'Do ploché desky vyřízneme rybinovou drážku s jezdcem a zarážkami; tiskne se najednou a po sejmutí jezdí a cvaká.',
+    'slider.action' => 'Udělat posuvný fidget',
 
     'cats' => [
         'images' => 'Obrázky a loga',
@@ -134,5 +137,6 @@ return [
         'colors' => 'barvy 3mf vícebarevný tisk ams mmu rozdělit podle barev malování bambu orca prusa díly',
         'soap_model' => 'mýdlenka miska na mýdlo podle modelu půdorys odtok drážky žebra koupelna',
         'wearable' => 'přilba maska brnění na míru obvod hlavy cosplay průzory popruh dutý kostým',
+        'slider' => 'fidget posuvný jezdec drážka rybina print in place cvakání antistres hračka',
     ],
 ];

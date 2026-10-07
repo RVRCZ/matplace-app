@@ -76,6 +76,9 @@ return [
     'wearable.title' => 'A helmet or armour to measure',
     'wearable.hint' => 'A helmet, mask or armour model scaled to your head or chest girth, hollowed, with windows and strap slots cut, and split for the bed.',
     'wearable.action' => 'Make it to measure',
+    'slider.title' => 'Sliding fidget in a plate',
+    'slider.hint' => 'A dovetail groove with a slider and detents cut into a flat plate; prints in one go and slides and clicks once off the bed.',
+    'slider.action' => 'Make the sliding fidget',
 
     'cats' => [
         'images' => 'Pictures and logos',
@@ -134,5 +137,6 @@ return [
         'colors' => 'colours 3mf multi-colour print ams mmu split by colour painting bambu orca prusa parts',
         'soap_model' => 'soap dish tray from a model footprint drain grooves ribs bathroom',
         'wearable' => 'helmet mask armour to measure head girth cosplay windows visor strap hollow costume',
+        'slider' => 'fidget slider groove dovetail print in place click detents toy',
     ],
 ];

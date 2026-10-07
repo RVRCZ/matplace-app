@@ -516,4 +516,41 @@ class ModelEditTest extends TestCase
         $this->assertSame(300.0, ModelEditor::windowsOf('[{"side":"inside","w":999}]')[0]['w']);
         $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'wearable', 'wall' => 9])->assertStatus(422);
     }
+
+    public function test_a_plate_gets_a_dovetail_groove_with_a_slider_and_detents_printed_in_place(): void
+    {
+        $this->get('/tools/slider')->assertOk()->assertSee(__('tools.slider.title'))->assertSee('data-module="edit"', false)->assertSee(__('edit.f.detents'));
+        $uuid = $this->box(120, 60, 8, 'plate.stl');
+        $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'slider', 'width' => 12, 'depth' => 4, 'margin' => 8, 'slider_len' => 24, 'detents' => 3, 'play' => 0.3])->assertCreated();
+        $this->assertSame('ready', $r->json('file.status'), (string) $r->json('file.error'));
+        $r->assertJsonPath('file.kind', 'slider')->assertJsonPath('file.parts', ['body', 'slider']);
+        $e = $r->json('file.edit');
+        $this->assertSame('x', $e['axis']);
+        $this->assertSame([104.0, 12.0, 4.0], array_map('floatval', $e['groove']));
+        $this->assertSame([24.0, 11.4, 3.7], array_map('floatval', $e['slider']));
+        $this->assertSame([20.0, 60.0, 100.0], array_map('floatval', $e['detent_at']));                // the slider's middle can rest at these
+        $this->assertSame(3, $e['detents']);
+        $this->assertCount(2, $e['pieces_tris']);
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertEqualsWithDelta(12, $file->bbox['z'], 0.05);                                       // the knob stands 4 mm above the plate
+        $this->assertTrue(StlTopology::check($file->absoluteStlPath())['watertight']);
+        // the plate less the groove, plus the slider (the dovetail less the play) and its knob
+        $groove = 104 * 4 * (12 + 4 * tan(deg2rad(15)));
+        $slider = 24 * 3.7 * (11.4 + 4 * tan(deg2rad(15)) - 0.6 + 0.3 * tan(deg2rad(15)) * 2) + M_PI * 25 * 4;
+        $this->assertEqualsWithDelta(120 * 60 * 8 - $groove + $slider, $file->volume_mm3, 300);
+        // the slider sits in the groove with play all round: the body alone holds less than the plate less the groove plus the bumps
+        $parts = $file->tool_params['parts_bbox'];
+        $this->assertEqualsWithDelta(24, $parts['slider'][0], 0.05);
+        $this->assertEqualsWithDelta(120, $parts['body'][0], 0.05);
+        // across the plate instead, without a knob and without detents
+        $y = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'slider', 'axis' => 'y', 'margin' => 5, 'slider_len' => 20, 'detents' => 0, 'knob' => false])->assertCreated();
+        $this->assertSame('ready', $y->json('file.status'), (string) $y->json('file.error'));
+        $this->assertSame('y', $y->json('file.edit.axis'));
+        $this->assertSame(0, $y->json('file.edit.detents'));
+        $this->assertEqualsWithDelta(8, ModelFile::where('uuid', $y->json('file.uuid'))->firstOrFail()->bbox['z'], 0.05);
+        // a thin plate is refused with the thickness it would need
+        $thin = $this->box(100, 40, 4, 'thin.stl');
+        $this->assertStringStartsWith('too_thin', (string) $this->postJson('/api/files/'.$thin.'/edit', ['op' => 'slider'])->assertCreated()->json('file.error'));
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'slider', 'axis' => 'z'])->assertStatus(422);
+    }
 }
