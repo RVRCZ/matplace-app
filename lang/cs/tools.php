@@ -43,6 +43,12 @@ return [
     'coaster.title' => 'Podtácek s obrázkem',
     'coaster.hint' => 'Kulatý, čtvercový nebo šestihranný podtácek s fotkou či kresbou v barvách filamentů.',
     'coaster.action' => 'Navrhnout podtácek',
+    'filament_art.title' => 'Obraz z filamentu',
+    'filament_art.hint' => 'Obrázek nebo fotka v barvách filamentů jako obraz na zeď: vrstvené desky v rámu, nebo jeden tisk s barvami nad sebou.',
+    'filament_art.action' => 'Navrhnout obraz',
+    'split.title' => 'Rozdělení modelu na díly',
+    'split.hint' => 'Model větší než podložka rozřežeme na díly s kolíky nebo rybinami, s čísly a položené pro tisk bez podpěr.',
+    'split.action' => 'Rozdělit model',
 
     'cats' => [
         'images' => 'Obrázky a loga',
@@ -90,5 +96,7 @@ return [
         'earrings' => 'náušnice šperk bižuterie pár obrázek barevné háčky',
         'magnet' => 'magnetka magnet lednice lednička fotka obrázek suvenýr',
         'coaster' => 'podtácek tácek pod sklenici hrnek pivo fotka obrázek sada',
+        'filament_art' => 'obraz filament art vrstvený obrázek fotka na zeď rám desky vrstvy barevný dárek vánoce',
+        'split' => 'rozdělit rozřezat dělení model velký díly kolíky rybina podložka nevejde se spojit slepit',
     ],
 ];

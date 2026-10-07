@@ -43,6 +43,12 @@ return [
     'coaster.title' => 'Posavasos con una imagen',
     'coaster.hint' => 'Un posavasos redondo, cuadrado o hexagonal con una foto o un dibujo en colores de filamento.',
     'coaster.action' => 'Diseñar un posavasos',
+    'filament_art.title' => 'Cuadro de filamento',
+    'filament_art.hint' => 'Una imagen o una foto en colores de filamento como cuadro para la pared: placas en capas en un marco, o una impresión con los colores uno sobre otro.',
+    'filament_art.action' => 'Diseñar un cuadro',
+    'split.title' => 'Dividir un modelo en piezas',
+    'split.hint' => 'Un modelo mayor que la cama se corta en piezas con pasadores o colas de milano, numeradas y colocadas para imprimir sin soportes.',
+    'split.action' => 'Dividir un modelo',
 
     'cats' => [
         'images' => 'Imágenes y logos',
@@ -90,5 +96,7 @@ return [
         'earrings' => 'pendientes aretes joya bisutería bisuteria par imagen color ganchos',
         'magnet' => 'imán iman nevera frigorífico frigorifico foto imagen recuerdo souvenir',
         'coaster' => 'posavasos vaso taza cerveza foto imagen juego set',
+        'filament_art' => 'cuadro filamento arte capas imagen foto pared marco placas colores regalo navidad',
+        'split' => 'dividir cortar modelo grande piezas pasadores cola de milano cama no cabe unir pegar',
     ],
 ];

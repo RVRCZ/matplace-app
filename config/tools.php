@@ -174,6 +174,15 @@ return [
         ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 95, 'body' => 'hex', 'grooves' => true]],
         ['params' => ['artwork' => 'lib:colour/christmas-tree-colour', 'width' => 100, 'body' => 'square']],
     ]]],
+    // session 3 (docs/R.md): a picture as plates for the wall (engines/python/art_tool.py) and the editing of a model file (edit_tool.py)
+    'filament_art' => ['route' => 'tools.filament_art', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/snowman', 'mode' => 'layered', 'frame' => 'round', 'width' => 160, 'height' => 160, 'colors_n' => 5]],
+        ['params' => ['artwork' => 'lib:colour/christmas-tree-colour', 'mode' => 'layered', 'frame' => 'none', 'width' => 150, 'height' => 150, 'colors_n' => 5]],
+        ['params' => ['artwork' => 'lib:colour/gingerbread-man', 'mode' => 'stack', 'shape' => 'rect', 'width' => 120, 'height' => 140, 'colors_n' => 4]],
+    ]]],
+    // the card of a file tool is its own output: a vase of the vase tool at 300 mm, cut for the farm's bed
+    'split' => ['route' => 'tools.split', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'split', 'kind' => 'vase', 'preset' => 'smooth', 'params' => ['height' => 300, 'top_d' => 120, 'bottom_d' => 90], 'edit_params' => ['joint' => 'pins']]],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => false],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only

@@ -43,6 +43,12 @@ return [
     'coaster.title' => 'Coaster with a picture',
     'coaster.hint' => 'A round, square or hexagonal coaster with a photo or a drawing in filament colours.',
     'coaster.action' => 'Design a coaster',
+    'filament_art.title' => 'Filament art',
+    'filament_art.hint' => 'A picture or a photo in filament colours as a picture for the wall: layered plates in a frame, or one print with the colours one above another.',
+    'filament_art.action' => 'Design a picture',
+    'split.title' => 'Split a model into pieces',
+    'split.hint' => 'A model bigger than the bed is cut into pieces with pins or dovetails, numbered and laid to print without supports.',
+    'split.action' => 'Split a model',
 
     'cats' => [
         'images' => 'Pictures and logos',
@@ -90,5 +96,7 @@ return [
         'earrings' => 'earrings jewellery jewelry pair picture colour color hooks',
         'magnet' => 'fridge magnet magnets refrigerator photo picture souvenir',
         'coaster' => 'coaster drink mat glass mug beer photo picture set',
+        'filament_art' => 'picture filament art layered wall art photo frame plates layers colour gift christmas',
+        'split' => 'split cut divide model big pieces pins dovetail bed does not fit join glue',
     ],
 ];
