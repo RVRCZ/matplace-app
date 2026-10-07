@@ -27,7 +27,9 @@ běžet souběžně (jiné soubory); session 2 až po
 sloučení session 1 (sdílí `ParametricGenerator`, `config/tools.php` a stránku nástroje); session 4 kdykoli.
 Každá session nejdřív slije aktuální `main` a na konci znovu, než předá.
 
-Pravidla jako vždy: nikdy `git add -A`, nikdy `git stash` (stash je společný s jinými session); testy
+Pravidla jako vždy: nikdy `git add -A`, nikdy `git stash` (stash je společný s jinými session); **nikdy
+`taskkill /F /IM python.exe`** ani jiné hromadné zabíjení procesů – na tomhle PC běží agent tiskové farmy
+(`C:\farm-agent`), session 0 ho tím 6. 10. 2026 shodila; zabíjej jen PID, které jsi sám spustil; testy
 `php -d memory_limit=2G vendor/bin/phpunit` (celá sada ~16 min, pouštěj na pozadí a čti log; v testech
 `ENGINE_SLICER=fake`); `vendor/bin/pint --dirty`; po změně TS `npm run build`. Nové texty **jen do skupinových
 souborů** `lang/{cs,en,es}/<skupina>.php` (`param.php` pro popisky polí a varování, nový `tools.php` pro názvy a
@@ -186,6 +188,14 @@ v prohlížeči. **To je laťka, ne cíl.** Lépe u nás znamená, u každého n
    vidět na kartě i na stránce nástroje).
 
 ## Session 1 – Tvar z obrázku a jména (`feature/tools-shapes`, `docs/P.md`)
+
+**Pořadí podle kalendáře, ne podle tabulky.** Session 0 skončila 7. 10. 2026; listopad je vánoční prodej a farma
+tiskne barevně. Proto nejdřív **vánoční sada** a každý hotový nástroj hned do katalogu (commit, Roman nasadí
+průběžně): ozdoba (`ornament`), perníček se jménem (`sign` tvar `gingerbread`), sušenka s polevou (`cookie`),
+magnetka, podtácek, náušnice, přívěsek, klíčenka, velké písmeno se jménem (`name_letter`), zápich do dortu
+(`topper`) – všechno na „obrázku v barvách“ a na skladbě vrstev, které vznikají jako první. Cíl: v katalogu do
+**15. 11. 2026**. Zbytek session 1 (ostatní produkty `shape`, korálky, stojánek na tužky, rozšíření cedulky a loga)
+až potom.
 
 Katalog, společnou stránku nástroje s viewerem, paletu barev farmy a knihovnu obrázků postavila **session 0**
 (`docs/prompts/nastroje-0.md`, `docs/N.md`); odrážky níže jsou její výstup, který tu používáš – nestav je
