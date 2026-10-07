@@ -17,7 +17,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread'];
 
     protected function setUp(): void
     {
@@ -60,7 +60,8 @@ class ShapeToolsTest extends TestCase
             foreach (['cs', 'en', 'es'] as $lang) {
                 app()->setLocale($lang);
                 $page = $this->get($this->localized('/tools/'.$kind, $lang))->assertOk();
-                $page->assertSee(__('tools.'.$kind.'.title'))->assertSee(__('param.'.$kind.'.lead'))->assertSee(__('param.shape.picture'));
+                $page->assertSee(__('tools.'.$kind.'.title'))->assertSee(__('param.'.$kind.'.lead'));
+                $kind === 'gingerbread' ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));      // its shape is ours, there is no picture to bring
                 // no key is shown instead of a text
                 $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $page->getContent(), "{$kind} ({$lang})");
             }
@@ -226,6 +227,38 @@ class ShapeToolsTest extends TestCase
                 $this->assertNotSame('param.shape.warn.'.$w, __('param.shape.warn.'.$w), "{$w} ({$lang})");
             }
         }
+    }
+
+    public function test_gingerbread_is_dough_and_icing_with_the_name_across_it(): void
+    {
+        foreach (['man', 'heart', 'star', 'tree'] as $cookie) {
+            $g = $this->meta($this->preview('gingerbread', ['line1' => 'Ela', 'cookie' => $cookie, 'width' => 90, 'thickness' => 3, 'relief' => 0.6], 'all', true)->assertOk());
+            $this->assertEqualsWithDelta(90, $g['notes']['each'][0], 0.3, $cookie);
+            $this->assertSame(['body', 'color_1'], $g['notes']['parts'], $cookie);
+            // brown under white: two filaments, one change at the top of the dough
+            $this->assertSame(['brown', 'white'], [$g['notes']['body_color']['code'], $g['notes']['colors'][0]['code']], $cookie);
+            $this->assertEqualsWithDelta(3, $g['notes']['color_change_mm'], 0.001, $cookie);
+            $this->assertFalse($g['notes']['multi_material']);
+            $this->assertEqualsWithDelta(3.6, $g['bbox']['z'], 0.01);
+            $this->assertLessThan(20000, $g['triangles'], $cookie);
+            $this->assertSame([], $g['notes']['warnings'], $cookie);
+        }
+        // the heart hangs by the dip between its lobes, in the middle
+        $heart = $this->meta($this->preview('gingerbread', ['line1' => 'Ela', 'cookie' => 'heart', 'width' => 90])->assertOk());
+        $this->assertEqualsWithDelta(45, $heart['notes']['eyelet']['x'], 1.0);
+        // icing takes material: with it there is more of the second colour than without
+        $plain = $this->meta($this->preview('gingerbread', ['line1' => 'Ela', 'cookie' => 'heart', 'icing' => 'none'], 'color_1')->assertOk());
+        $wavy = $this->meta($this->preview('gingerbread', ['line1' => 'Ela', 'cookie' => 'heart', 'icing' => 'wavy'], 'color_1')->assertOk());
+        $this->assertGreaterThan($plain['volume_mm3'] * 2, $wavy['volume_mm3']);
+        // a name too long for the biscuit is said, not printed as a smear; no name and no icing is nothing to print
+        $long = $this->meta($this->preview('gingerbread', ['line1' => 'Maxmiliánkovi ♥♥', 'cookie' => 'star', 'width' => 50])->assertOk());
+        $this->assertContains('name_small', $long['notes']['warnings']);
+        $this->preview('gingerbread', ['line1' => '', 'cookie' => 'heart', 'icing' => 'none'])->assertStatus(422);
+        $this->assertGreaterThan(0, $this->meta($this->preview('gingerbread', ['line1' => '', 'cookie' => 'man', 'icing' => 'none'])->assertOk())['volume_mm3']);      // the man keeps his face
+        $this->preview('gingerbread', ['cookie' => 'bell'])->assertStatus(422);
+        // the visitor's own filaments: a red gingerbread with yellow icing
+        $own = $this->meta($this->preview('gingerbread', ['line1' => 'Ela', 'part_colors' => ['body' => 'red', 'color_1' => 'yellow']])->assertOk())['notes'];
+        $this->assertSame(['red', 'yellow'], [$own['body_color']['code'], $own['colors'][0]['code']]);
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

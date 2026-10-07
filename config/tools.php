@@ -117,6 +117,12 @@ return [
         ['params' => ['artwork' => 'lib:colour/christmas-tree-colour', 'width' => 90, 'colors_n' => 5]],
         ['params' => ['artwork' => 'lib:colour/christmas-ball', 'width' => 70, 'frame' => 0]],
     ]]],
+    // dough and icing with the name: two colours one on another, one filament change
+    'gingerbread' => ['route' => 'tools.gingerbread', 'intent' => 'create', 'categories' => ['names', 'images'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['line1' => 'Ela', 'cookie' => 'man', 'width' => 90]],
+        ['params' => ['line1' => 'Mamince', 'cookie' => 'heart', 'width' => 90]],
+        ['params' => ['line1' => 'Tom', 'cookie' => 'star', 'width' => 80]],
+    ]]],
     'charm' => ['route' => 'tools.charm', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/happy-ghost', 'width' => 45]],
         ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 50, 'eye_pos' => 0]],

@@ -752,14 +752,24 @@ def dense(ring, step=1.0):
     return np.array(out, dtype=np.float64)
 
 
+def started(ring, point):
+    """The same contour with one more point where it comes nearest to `point`, marked as the place `along` counts from."""
+    import numpy as np
+    at = int(np.argmin(((ring - np.asarray(point, dtype=np.float64)) ** 2).sum(axis=1)))
+    return np.concatenate([ring, [[float("nan"), float(at)]]])
+
+
 def along(ring, share):
     """
     The point of a contour at a share of its length, counted clockwise from its topmost point, and the direction that
     points out of the shape there: (x, y, nx, ny). Where an eyelet goes when "12 % round the outline" is asked for.
     """
     import numpy as np
+    start = None
+    if len(ring) and np.isnan(ring[-1, 0]):                  # see started(): the last row names the point to count from
+        start, ring = int(ring[-1, 1]), ring[:-1]
     pts = ring[::-1]                                         # clockwise
-    top = int(np.argmax(pts[:, 1] - 1e-6 * np.abs(pts[:, 0] - pts[:, 0].mean())))
+    top = len(ring) - 1 - start if start is not None else int(np.argmax(pts[:, 1] - 1e-6 * np.abs(pts[:, 0] - pts[:, 0].mean())))
     pts = np.roll(pts, -top, axis=0)
     seg = np.linalg.norm(np.roll(pts, -1, axis=0) - pts, axis=1)
     total = float(seg.sum())

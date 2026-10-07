@@ -11,7 +11,9 @@
     if ($family === 'shape') {
         // the picture in colours: its list of colours, the notes on how it prints, the eyelet
         $i18n += collect(['part.body', 'part.rim', 'part.color', 'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.found', 'colors.picture', 'print.one', 'print.swap1', 'print.swap', 'print.multi',
-            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'thickened', 'magnet.fact'])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text('param.shape.'.$k)])->all();
+            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'warn.name_small', 'thickened', 'magnet.fact',
+            // a part may be called by what it is in this tool (the plate of a gingerbread is "the gingerbread")
+            ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text('param.shape.'.$k)])->all();
     }
     // a text may be written for one tool, for its family (pendant, earrings… are all "shape") or for every tool
     $tr = function (string $prefix, string $k) use ($kind, $family): string {
@@ -97,7 +99,7 @@
             </fieldset>
         @endif
 
-        @if($family === 'shape')
+        @if($family === 'shape' && $artwork)
             {{-- the picture comes first here: the three ways to one (upload, the library, my pictures), then what is done with it --}}
             <fieldset>
                 <legend class="lbl">{{ __('param.shape.picture') }}</legend>

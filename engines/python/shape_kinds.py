@@ -13,12 +13,15 @@ The picture comes in the colours of the farm's filaments (shape2d.colors). Two w
 
 Parts: `body` (the plate, with the eyelet), `color_<n>` (n = the colour's number in the list shown to the visitor),
 `rim` (a raised border in its own colour). Everything lies flat on the bed, face up.
+
+The gingerbread is the same thing the other way round: the shape is ours (a man, a heart, a star, a tree), icing is
+piped on it and the visitor's name goes across it. Dough and icing: two colours one on another, one filament change.
 """
 import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
@@ -27,7 +30,7 @@ LIMITS = {
     "mag_d": (4, 30), "mag_h": (1, 6), "mag_gap": (0, 0.4),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex")}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",)}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -125,13 +128,14 @@ def build(M, Invalid, p, product):
     if body_kind not in BODIES[product]:
         raise Invalid("bad_choice", "body")
     flush, rim, bevel = (bool(p.get(f, False)) for f in ("flush", "rim", "bevel"))
-    eyelet = bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament")
+    eyelet = bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")
+    cookie = product == "gingerbread"                         # the shape is ours, the visitor brings the name
     warn = []
     lines = [str(x).strip() for x in (p.get("lines") or []) if str(x).strip()]
     art_path = p.get("artwork_path")
-    if not art_path and not lines:
+    if not cookie and not art_path and not lines:
         raise Invalid("no_text")
-    is_text = not art_path
+    is_text = not art_path and not cookie
     edge = max(frame, 1.0) if (rim or (is_text and body_kind == "image")) else frame      # a rim needs a body to stand on, letters a body to hold them
     geometric = body_kind not in ("image", "rect")
     if is_text and body_kind == "rect":
@@ -154,7 +158,9 @@ def build(M, Invalid, p, product):
     if art_w < 6:
         raise Invalid("shape_too_small")
     try:
-        if is_text:
+        if cookie:
+            layers, info = _gingerbread(M, Invalid, p, width, lines, warn)
+        elif is_text:
             art, tinfo = S.text(M, lines[:2], p.get("font"), 10, scales=[1.0, 0.7])
             w0, h0 = S.size(art)
             k = (2 * (inner_r - 1.0) / math.hypot(w0, h0)) if geometric else art_w / w0
@@ -195,13 +201,15 @@ def build(M, Invalid, p, product):
             clip = S.rounded_rect(M, aw, ah, max(0.5, r - edge))
             for layer in layers:
                 layer["own"], layer["stack"] = layer["own"] ^ clip, layer["stack"] ^ clip
+    elif cookie:
+        body2d = info["body"]
     else:
         grown = sil.offset(edge, J, 2.0, 24) if edge > 0 else sil
         body2d = _filled(M, grown.simplify(0.02), 4.0)
         body2d, links = S.joined(M, body2d, max(edge, 0.6), max(2.0, min(aw, ah) * 0.06))
         if links:
             warn.append("pieces_tied")
-    if is_text and info.get("missing_chars"):
+    if (is_text or cookie) and info.get("missing_chars"):
         warn.append("missing_chars")
     if info.get("ignored_outlines"):
         warn.append("outlines_ignored")
@@ -214,6 +222,8 @@ def build(M, Invalid, p, product):
     if eyelet:
         hole_d, wall = n("eye_hole", 3), n("eye_wall", 2)
         travel = S.dense(S.outer_ring(body2d))
+        if cookie and info.get("top"):
+            travel = S.started(travel, info["top"])
         px, py, nx, ny = S.along(travel, n("eye_pos", 0) / 100.0)
         reach = hole_d / 2 + wall / 2                        # the hole stays outside the shape, half the wall bites into it
         cx, cy = px + nx * reach, py + ny * reach
@@ -294,7 +304,9 @@ def build(M, Invalid, p, product):
 
     # ── colours of the parts ───────────────────────────────────────────────────────────────────────────────────
     own = _code(p, "body")
-    if is_text:
+    if cookie:
+        body_color = own or info["dough"]
+    elif is_text:
         pal = sorted(p.get("palette") or [], key=lambda f: -_light(f[1]))
         body_color = own or ((pal[0][0], pal[0][1]) if pal else ("", "#ede6d6"))       # letters dark, the plate light
     else:
@@ -396,6 +408,128 @@ def build(M, Invalid, p, product):
     if "magnet" in notes:
         notes["magnet"]["x"], notes["magnet"]["y"] = round(notes["magnet"]["x"] - x0, 2), round(notes["magnet"]["y"] - y0, 2)
     return parts, notes
+
+
+# ── gingerbread with a name ──────────────────────────────────────────────────
+
+COOKIES = ("man", "heart", "star", "tree")
+ICINGS = ("wavy", "plain", "none")
+DOUGH = "#b0703c"           # baked gingerbread: the plate gets the filament nearest to it
+
+
+def _piped(M, cs, inset, amp, wave, width):
+    """A line of icing piped along the inside of an outline: wavy (amp > 0) or plain, `width` thick."""
+    import numpy as np
+    J = M.JoinType.Round
+    ring = S.outer_ring(cs.offset(-inset, J, 2.0, 32))
+    if ring is None:
+        return M.CrossSection()
+    pts = S.dense(ring, 0.8)
+    step = np.linalg.norm(np.roll(pts, -1, axis=0) - pts, axis=1)
+    run = np.concatenate([[0.0], np.cumsum(step)[:-1]])
+    total = float(step.sum())
+    waves = max(6, int(round(total / wave)))
+    way = np.roll(pts, -3, axis=0) - np.roll(pts, 3, axis=0)
+    way /= np.maximum(np.linalg.norm(way, axis=1, keepdims=True), 1e-9)
+    out = np.stack([way[:, 1], -way[:, 0]], 1)               # the ring runs counter-clockwise: out of it is to the right
+    line = M.CrossSection([pts + out * (amp * np.sin(2 * np.pi * waves * run / total))[:, None]])
+    return (line.offset(width / 2, J, 2.0, 8) - line.offset(-width / 2, J, 2.0, 8)).simplify(0.4)       # in drawing units: a hundredth of a millimetre on the biscuit
+
+
+def _garland(M, x0, x1, y, amp, width, humps):
+    """A wavy (or straight) band from x0 to x1: icing across a branch or an ankle."""
+    top, bottom = [], []
+    for i in range(49):
+        x = x0 + (x1 - x0) * i / 48
+        dy = amp * math.sin(2 * math.pi * humps * i / 48)
+        top.append((x, y + dy + width / 2))
+        bottom.append((x, y + dy - width / 2))
+    return M.CrossSection([bottom + top[::-1]])
+
+
+def _gingerbread(M, Invalid, p, width, lines, warn):
+    """
+    The biscuit, what is piped on it and where its name goes. Drawn in units of a thousandth of the drawing and scaled
+    to the width asked for. Returns (body, icing with the name, info).
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    kind = p.get("cookie", COOKIES[0])
+    icing = p.get("icing", ICINGS[0])
+    if kind not in COOKIES:
+        raise Invalid("bad_choice", "cookie")
+    if icing not in ICINGS:
+        raise Invalid("bad_choice", "icing")
+    amp = 1.0 if icing == "wavy" else 0.0
+    rr = lambda x, y, w, h, r, turn=0: S.rounded_rect(M, w, h, r).translate([-w / 2, -h / 2]).rotate(turn).translate([x + w / 2, y + h / 2])      # noqa: E731
+    dot = lambda x, y, r: C.circle(r, 32).translate([x, y])       # noqa: E731
+    extras, top = [], None
+    if kind == "man":
+        body = dot(500, 770, 190) + rr(330, 260, 340, 380, 90) + rr(110, 470, 780, 130, 65) + rr(330, 50, 140, 330, 70, -12) + rr(530, 50, 140, 330, 70, 12)
+        body = body.offset(25, J, 2.0, 32).offset(-25, J, 2.0, 32)
+        name = (500.0, 535.0, 640.0, 92.0)                   # centre, the widest it may be, the tallest its capitals may be
+        arc = [(500 + 105 * math.cos(math.radians(a)), 770 + 105 * math.sin(math.radians(a))) for a in range(205, 336, 5)]
+        arc += [(500 + 79 * math.cos(math.radians(a)), 770 + 79 * math.sin(math.radians(a))) for a in range(335, 204, -5)]
+        extras = [dot(430, 800, 28), dot(570, 800, 28), C([arc]), dot(500, 400, 32), dot(500, 310, 32)]
+        if icing != "none":
+            extras += [_garland(M, 310, 480, 160, 16 * amp, 26, 1), _garland(M, 520, 690, 160, 16 * amp, 26, 1)]
+    elif kind == "heart":
+        pts = []
+        for i in range(160):
+            t = 2 * math.pi * i / 160
+            pts.append((500 + 16 * math.sin(t) ** 3 * 30, 520 + (13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)) * 30))
+        body = C([pts[::-1]])
+        name = (500.0, 470.0, 560.0, 130.0)
+        top = (500.0, 670.0)                                 # hung by the dip between the lobes, not by one of them
+    elif kind == "star":
+        R, r = 520.0, 290.0
+        pts = [((R if i % 2 == 0 else r) * math.cos(math.pi / 2 + i * math.pi / 5) + 500, (R if i % 2 == 0 else r) * math.sin(math.pi / 2 + i * math.pi / 5) + 480) for i in range(10)]
+        body = C([pts]).offset(-30, J, 2.0, 32).offset(30, J, 2.0, 32)
+        name = (500.0, 470.0, 430.0, 120.0)
+    else:
+        body = C([[(500, 900), (240, 580), (760, 580)]]) + C([[(500, 720), (160, 360), (840, 360)]]) + C([[(500, 530), (80, 140), (920, 140)]]) + rr(430, 30, 140, 150, 12)
+        body = body.offset(-14, J, 2.0, 32).offset(28, J, 2.0, 32).offset(-14, J, 2.0, 32)
+        name = (500.0, 225.0, 560.0, 90.0)
+        if icing != "none":
+            extras = [_garland(M, 330, 670, 455, 18 * amp, 26, 2), _garland(M, 400, 600, 650, 16 * amp, 26, 1)]
+    if kind in ("heart", "star") and icing != "none":
+        extras.append(_piped(M, body, 62, 16 * amp, 110, 26))
+    x0, y0, x1, _ = body.bounds()
+    k = width / (x1 - x0)                                    # as wide as asked, rounded corners included
+    place = lambda cs: cs.translate([-x0, -y0]).scale([k, k])       # noqa: E731
+    body = place(body).simplify(0.02)
+    piped = None
+    for extra in extras:
+        piped = extra if piped is None else piped + extra
+    art = place(piped) if piped is not None else C()
+    missing = []
+    if lines:
+        try:
+            text, tinfo = S.text(M, lines[:1], p.get("font"), 10)
+        except S.ArtworkError as e:
+            raise Invalid(e.code)
+        missing = tinfo.get("missing_chars", [])
+        w0, h0 = S.size(text)
+        fit = min(name[2] * k / w0, name[3] * k / 10.0)
+        text = S.fit(text, width_mm=w0 * fit)
+        tw, th = S.size(text)
+        if fit * 10.0 < 3.0:
+            warn.append("name_small")                        # capitals under 3 mm: a shorter name or a wider biscuit
+        art = art + text.translate([(name[0] - x0) * k - tw / 2, (name[1] - y0) * k - th / 2])
+    art = art ^ body.offset(-0.8, J, 2.0, 16)
+    if art.is_empty():
+        raise Invalid("no_text")
+    pal = p.get("palette") or []
+    own = ((p.get("part_colors") or {}).get("color_1") or {}).get("code") if isinstance((p.get("part_colors") or {}).get("color_1"), dict) else None
+    by_code = dict((c, h) for c, h in pal)
+    white = max(pal, key=lambda f: _light(f[1])) if pal else ("", "#f4f4f2")
+    code = own if own in by_code else white[0]
+    hx = by_code.get(code, white[1])
+    dough = min(pal, key=lambda f: float(((S.hex_lab(f[1]) - S.hex_lab(DOUGH)) ** 2).sum())) if pal else ("", DOUGH)
+    bx0, by0, bx1, by1 = body.bounds()
+    layers = [{"index": 1, "rgb": hx, "code": code, "hex": hx, "share": round(art.area() / max(body.area(), 1e-9), 4), "own": art, "stack": art}]
+    info = {"source": "cookie", "silhouette": body, "size": [bx1 - bx0, by1 - by0], "found": 1, "wanted": 1, "background": "alpha", "missing_chars": missing,
+            "body": body, "dough": (dough[0], dough[1]), "top": ((top[0] - x0) * k, (top[1] - y0) * k) if top else None}
+    return layers, info
 
 
 BUILDERS = {product: (lambda M, Invalid, p, product=product: build(M, Invalid, p, product)) for product in PRODUCTS}

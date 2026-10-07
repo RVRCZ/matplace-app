@@ -158,6 +158,7 @@ export function bootParam(stage: Stage): void {
     /** "body" and "stand" mean different things per product: the box, the logo, the sign… */
     const partLabel = (v: string): string => {
         if (v.startsWith('bin_')) return t('param.part.bin', { s: v.slice(4).replace('x', ' × ') });
+        if (shape && cfg.i18n[`shape.part.${v}.${cfg.kind}`]) return t(`shape.part.${v}.${cfg.kind}`);
         if (shape && v.startsWith('color_')) return t('shape.part.color', { n: v.slice(6) });
         if (shape && (v === 'body' || v === 'rim')) return t(`shape.part.${v}`);
         const own = `param.part.${v}.${cfg.kind}`;
