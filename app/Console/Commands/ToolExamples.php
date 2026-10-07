@@ -126,6 +126,47 @@ class ToolExamples extends Command
         return ['path' => $out, 'meta' => ['bbox' => $r['bbox'], 'volume_mm3' => $r['volume_mm3'], 'area_mm2' => $r['area_mm2'], 'triangles' => $r['triangles'], 'notes' => ['paint' => $paint] + (array) ($r['notes'] ?? []), 'parts' => $r['parts'] ?? []]];
     }
 
+    /**
+     * The card of the colour splitter: a picture in colours (every plate its own filament) packed as a coloured 3MF
+     * and split by colour again; the parts come back painted in the file's colours.
+     *
+     * @return array{path: string, meta: array<string, mixed>}
+     */
+    private function recolored(PythonTool $python, array $card): array
+    {
+        $art = app(ArtGenerator::class)->build((array) ($card['params'] ?? []), 'use', true);
+        $dir = storage_path('app/tmp/param');
+        $pack = $dir.'/'.Str::uuid().'.3mf';
+        $out = $dir.'/'.Str::uuid().'.stl';
+        $own = (array) ($art['meta']['notes']['paint'] ?? []);
+        $spec = $pack.'.json';
+        $json = $out.'.json';
+        File::put($spec, (string) json_encode(['parts' => array_map(fn ($p) => ['name' => $p['name'], 'tris' => $p['tris'], 'hex' => $own[$p['name']] ?? '#888888'], (array) ($art['meta']['parts'] ?? []))]));
+        File::put($json, (string) json_encode(ModelEditor::forTool('colors', ModelEditor::clean('colors', (array) ($card['edit_params'] ?? [])))));
+        try {
+            $packed = $python->runScript('colors_tool.py', ['pack', $pack, $art['path'], '@'.$spec], 120);
+            if (empty($packed['ok'])) {
+                throw new \RuntimeException((string) ($packed['error'] ?? 'pack failed'));
+            }
+            $r = $python->runScript('edit_tool.py', ['colors', $pack, $out, '@'.$json], 600);
+        } finally {
+            @unlink($spec);
+            @unlink($json);
+            @unlink($art['path']);
+            @unlink($pack);
+            @unlink($out.'.stage');
+        }
+        if (empty($r['ok']) || ! is_file($out)) {
+            throw new \RuntimeException((string) ($r['error'] ?? 'colors failed'));
+        }
+        $paint = [];
+        foreach ((array) ($r['notes']['colors'] ?? []) as $c) {
+            $paint[$c['part']] = $c['hex'];
+        }
+
+        return ['path' => $out, 'meta' => ['bbox' => $r['bbox'], 'volume_mm3' => $r['volume_mm3'], 'area_mm2' => $r['area_mm2'], 'triangles' => $r['triangles'], 'notes' => ['paint' => $paint] + (array) ($r['notes'] ?? []), 'parts' => $r['parts'] ?? []]];
+    }
+
     /** The colours the parts of a card are drawn in when the design names none: filaments that read well on the beige. */
     private const CARD_COLORS = ['body' => 'blue', 'lid' => 'orange', 'saucer' => 'grey', 'handle' => 'black', 'stand' => 'black', 'face' => 'black', 'diffuser' => 'white', 'back' => 'grey', 'plate' => 'white', 'text' => 'orange', 'stamp' => 'orange', 'tray' => 'grey'];
 
@@ -156,8 +197,9 @@ class ToolExamples extends Command
                 continue;
             }
             try {
-                $built = $kind === ArtGenerator::KIND ? app(ArtGenerator::class)->build((array) ($example['params'] ?? []), 'use', true)
-                    : ($card['edit'] ?? null ? $this->edited($generator, $python, $kind, $card) : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', true));
+                $built = ($card['edit'] ?? null) === 'colors' ? $this->recolored($python, $card)
+                    : ($kind === ArtGenerator::KIND ? app(ArtGenerator::class)->build((array) ($example['params'] ?? []), 'use', true)
+                    : ($card['edit'] ?? null ? $this->edited($generator, $python, $kind, $card) : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', true)));
             } catch (\Throwable $e) {
                 $this->warn(sprintf('%s: the tool refused the parameters (%s)', $tool, mb_substr($e->getMessage(), 0, 160)));
                 $failed++;

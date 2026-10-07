@@ -1269,7 +1269,14 @@ def main(argv):
             if raw.startswith("@"):
                 with open(raw[1:], encoding="utf-8") as fh:
                     raw = fh.read()
-            analyse(argv[2], json.loads(raw or "{}"))
+            p = json.loads(raw or "{}")
+            if p.get("op") == "colors":
+                import colors_tool
+                try:
+                    colors_tool.analyse(argv[2], p)
+                except colors_tool.Invalid as e:
+                    raise Invalid(e.code, e.detail)
+            analyse(argv[2], p)
         src, dst, raw = argv[2], argv[3], argv[4] if len(argv) > 4 else "{}"
         parts_dir = argv[5] if len(argv) > 5 else None
         if raw.startswith("@"):
@@ -1279,6 +1286,13 @@ def main(argv):
         if not isinstance(p, dict):
             raise Invalid("unknown_kind")
         commands = {"split": split, "hollow": hollow, "scale": scale, "life_size": life_size, "puzzle": puzzle, "holder": holder, "potion": potion, "flexi_cut": flexi_cut}
+        if op == "colors":
+            # a coloured 3MF into a part per colour: its own module, the source is the 3MF itself
+            import colors_tool
+            try:
+                colors_tool.colors(src, dst, p, parts_dir, stage)
+            except colors_tool.Invalid as e:
+                raise Invalid(e.code, e.detail)
         if op not in commands:
             raise Invalid("unknown_kind", op)
         commands[op](src, dst, p, parts_dir)

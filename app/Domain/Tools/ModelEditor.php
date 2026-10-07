@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  */
 final class ModelEditor
 {
-    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'scale'];
+    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'scale'];
 
     /** print beds a model is cut for: the farm's, two common ones, or the visitor's own (usable size = bed − margins) */
     public const BEDS = ['farm' => [250, 250, 250], '220' => [220, 220, 250], '180' => [180, 180, 180], 'custom' => null];
@@ -42,6 +42,8 @@ final class ModelEditor
         'potion' => ['height' => [0, 300, 0, 1], 'wall' => [1.5, 4, 2, 0.5], 'neck_d' => [12, 60, 26, 1], 'neck_h' => [10, 80, 30, 1], 'cut' => [0, 30, 4, 1]],
         // a flexi: how many segments (0 = by the ball), the ball of the joints, the play in the sockets, the model's height (0 = as it is)
         'flexi_cut' => ['segments' => [0, 20, 0, 1], 'ball_d' => [6, 10, 8, 0.5], 'clearance' => [0.35, 0.5, 0.4, 0.05], 'height' => [0, 300, 0, 1]],
+        // a coloured 3MF into parts: how deep a painted colour reaches into the body (an inlay), separate bodies as they are
+        'colors' => ['depth' => [0.6, 3, 1.2, 0.2]],
         'scale' => ['height' => [10, 1000, 300, 1]],
     ];
 
@@ -147,6 +149,18 @@ final class ModelEditor
         return [round($preset[0] - 2 * $margin, 1), round($preset[1] - 2 * $margin, 1), (float) $preset[2]];
     }
 
+    /** The file the tool reads: the normalised STL, or the 3MF itself when its colours are wanted. */
+    public static function sourceOf(ModelFile $src, string $op): ?string
+    {
+        if ($op === 'colors' && $src->ext === '3mf') {
+            $path = Storage::disk(ModelFile::DISK)->path($src->storage_path);
+
+            return is_file($path) ? $path : $src->absoluteStlPath();
+        }
+
+        return $src->absoluteStlPath();
+    }
+
     /** What the tool hands to the script. */
     public static function forTool(string $op, array $clean): array
     {
@@ -209,9 +223,9 @@ final class ModelEditor
             return $known;
         }
         $json = $stored.'.in';
-        File::put($json, (string) json_encode(self::forTool($op, $clean)));
+        File::put($json, (string) json_encode(self::forTool($op, $clean) + ['op' => $op]));
         try {
-            $r = $this->python->runScript('edit_tool.py', ['analyse', $stl, '@'.$json], 180);
+            $r = $this->python->runScript('edit_tool.py', ['analyse', self::sourceOf($src, $op), '@'.$json], 180);
         } finally {
             @unlink($json);
         }

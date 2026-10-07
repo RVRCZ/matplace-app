@@ -331,4 +331,81 @@ class ModelEditTest extends TestCase
         $this->assertIsBool($r->json('file.edit.repaired'));                                   // the fixture's notches are closed as it is built: nothing to repair, but the tool says so either way
         $this->assertTrue(StlTopology::check(ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail()->absoluteStlPath())['watertight']);
     }
+
+    /** A 3MF with colours of every kind: a material on an object, a material on triangles, slicer paint with the project's filaments. */
+    private function colored3mf(): string
+    {
+        $cube = function (int $id, string $attrs, callable $tri): string {
+            $v = [[0, 0, 0], [20, 0, 0], [20, 20, 0], [0, 20, 0], [0, 0, 20], [20, 0, 20], [20, 20, 20], [0, 20, 20]];
+            $faces = [[0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7], [0, 1, 5], [0, 5, 4], [2, 3, 7], [2, 7, 6], [0, 4, 7], [0, 7, 3], [1, 2, 6], [1, 6, 5]];
+            $xml = '<object id="'.$id.'" type="model"'.$attrs.'><mesh><vertices>';
+            foreach ($v as [$x, $y, $z]) {
+                $xml .= sprintf('<vertex x="%d" y="%d" z="%d"/>', $x, $y, $z);
+            }
+            $xml .= '</vertices><triangles>';
+            foreach ($faces as $i => [$a, $b, $c]) {
+                $xml .= sprintf('<triangle v1="%d" v2="%d" v3="%d"%s/>', $a, $b, $c, $tri($i));
+            }
+
+            return $xml.'</triangles></mesh></object>';
+        };
+        // the faces 2 and 3 are the top of a cube
+        $model = '<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02"><resources>'
+            .'<basematerials id="1"><base name="Red" displaycolor="#FF0000FF"/><base name="Blue" displaycolor="#0000FFFF"/></basematerials>'
+            .$cube(1, ' pid="1" pindex="0"', fn ($i) => in_array($i, [2, 3], true) ? ' pid="1" p1="1"' : '')          // red, a blue top painted by material
+            .$cube(2, ' pid="1" pindex="1"', fn () => '')                                                         // all blue
+            .$cube(3, '', fn ($i) => in_array($i, [2, 3], true) ? ' paint_color="0C"' : ' paint_color="4"')       // slicer paint: filament 1, the top filament 3
+            .'</resources><build><item objectid="1"/><item objectid="2" transform="1 0 0 0 1 0 0 0 1 40 0 0"/><item objectid="3" transform="1 0 0 0 1 0 0 0 1 80 0 0"/></build></model>';
+        $path = sys_get_temp_dir().'/mp_colors_'.uniqid().'.3mf';
+        $zip = new \ZipArchive;
+        $zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>');
+        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>');
+        $zip->addFromString('3D/3dmodel.model', $model);
+        $zip->addFromString('Metadata/project_settings.config', json_encode(['filament_colour' => ['#00FF00', '#FFFFFF', '#FFA500']]));
+        $zip->close();
+
+        return $this->postJson('/api/uploads', ['file' => new UploadedFile($path, 'colors.3mf', null, null, true)])->assertCreated()->json('file.uuid');
+    }
+
+    public function test_a_coloured_3mf_becomes_a_part_per_colour_with_painted_colours_as_inlays(): void
+    {
+        $this->get('/tools/colors')->assertOk()->assertSee(__('tools.colors.title'))->assertSee('data-module="edit"', false)->assertSee(__('edit.f.depth'));
+        $uuid = $this->colored3mf();
+        // the analysis: four colours by area (blue: a whole cube and a top; red: five faces; filament 1: five faces; filament 3: a top)
+        $a = $this->postJson('/api/files/'.$uuid.'/edit/analysis', ['op' => 'colors'])->assertOk()->json('analysis');
+        $this->assertTrue($a['has_colors']);
+        $this->assertSame(['Blue', 'Red', '', ''], array_column($a['colors'], 'name'));
+        $this->assertSame(['#0000FF', '#FF0000', '#00FF00', '#FFA500'], array_column($a['colors'], 'hex'));
+        $this->assertSame([null, null, 1, 3], array_column($a['colors'], 'extruder'));
+        $this->assertEqualsWithDelta(38.9, $a['colors'][0]['share'], 0.2);
+        $this->assertSame(['materials'], $a['colors'][0]['sources']);
+        $this->assertSame(['paint'], $a['colors'][3]['sources']);
+        $this->assertSame(0, $a['split_triangles']);
+
+        $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'colors', 'depth' => 1.2])->assertCreated();
+        $this->assertSame('ready', $r->json('file.status'), (string) $r->json('file.error'));
+        $this->assertSame(['color_1', 'color_2', 'color_3', 'color_4'], $r->json('file.parts'));
+        $e = $r->json('file.edit');
+        $this->assertSame(['mixed', 'base', 'base', 'inlay'], array_column($e['colors'], 'kind'));   // blue: a shell and an inlay
+        $this->assertSame([1, 2, 0], [$e['shells'], $e['bases'], $e['inlays'] - 2]);
+        $this->assertSame([], $e['warnings']);
+        $this->assertCount(4, $e['pieces_tris']);
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        // the parts sit where the bodies were: three cubes in a row; the whole holds what the cubes held
+        $this->assertEqualsWithDelta(100, $file->bbox['x'], 0.2);
+        $this->assertEqualsWithDelta(3 * 8000, $file->volume_mm3, 3 * 8000 * 0.02);
+        $bbox = $file->tool_params['parts_bbox'];
+        $this->assertEqualsWithDelta(60, $bbox['color_1'][0], 0.2);           // blue: the cube at 40 and the inlay on the first cube
+        $this->assertEqualsWithDelta(1.25, $bbox['color_4'][2], 0.1);         // the painted top as an inlay: 1.2 deep and 0.05 proud
+        $this->assertEqualsWithDelta(18.8, $bbox['color_2'][2], 0.1);         // the red body lost its painted top: a recess 1.2 mm deep
+        $this->get('/api/tools/edit/'.$file->uuid.'/color_4.stl')->assertOk();
+        $this->get('/api/tools/edit/'.$file->uuid.'/color_5.stl')->assertNotFound();
+
+        // an STL carries no colours: the analysis says so, the split is refused
+        $plain = $this->box(20, 20, 20, 'plain.stl');
+        $this->assertFalse($this->postJson('/api/files/'.$plain.'/edit/analysis', ['op' => 'colors'])->assertOk()->json('analysis.has_colors'));
+        $this->assertStringStartsWith('no_colors', (string) $this->postJson('/api/files/'.$plain.'/edit', ['op' => 'colors'])->assertCreated()->json('file.error'));
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'colors', 'depth' => 9])->assertStatus(422);
+    }
 }

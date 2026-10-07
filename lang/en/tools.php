@@ -67,6 +67,9 @@ return [
     'flexi_cut.title' => 'Flexi from a model',
     'flexi_cut.hint' => 'A model cut into segments with ball joints, printed in one go assembled. A bendy toy out of your own figure.',
     'flexi_cut.action' => 'Make a flexi',
+    'colors.title' => 'Parts by colour from a 3MF',
+    'colors.hint' => 'A multi-colour 3MF from your slicer split into a part for every colour: separate bodies, and painted areas as inlays.',
+    'colors.action' => 'Split by colour',
 
     'cats' => [
         'images' => 'Pictures and logos',
@@ -122,5 +125,6 @@ return [
         'holder_model' => 'holder sleeve koozie can pint ice cream soap dish candle figure bust cavity from model',
         'potion' => 'potion bottle elixir cork neck label figure skull halloween gift hollow',
         'flexi_cut' => 'flexi articulated ball joint segments print in place toy dragon snake lizard figure',
+        'colors' => 'colours 3mf multi-colour print ams mmu split by colour painting bambu orca prusa parts',
     ],
 ];

@@ -5,11 +5,14 @@
         'report', 'report.keys', 'report.pins', 'report.none', 'report.repaired', 'report.drains', 'report.coarse', 'report.hollow', 'report.solid', 'report.one', 'map', 'map.level', 'piece', 'piece.size', 'piece.down.x', 'piece.down.y', 'piece.down.z', 'part.pins', 'part.keys', 'part.piece', 'part.body', 'glue', 'again',
         'joint.pins', 'joint.dovetail', 'joint.none', 'report.tabs', 'report.frame', 'part.frame', 'report.wall', 'report.thin', 'report.floor', 'report.cork', 'report.label', 'report.solid', 'part.body', 'part.cork', 'part.label', 'part.segment', 'report.joints', 'report.none',
         'warn.does_not_fit', 'warn.many_pieces', 'warn.no_room_for_pins', 'warn.key_as_pins', 'warn.too_big', 'warn.nothing_to_hollow', 'warn.no_room_for_drain', 'warn.coarse_grid', 'warn.tall_gets_pins', 'warn.piece_split', 'warn.too_thin_for_pins',
-        'error.fits_already', 'error.too_heavy', 'error.too_small', 'error.too_big', 'error.not_watertight', 'error.edit_failed', 'error.too_tall', 'error.pieces_too_small', 'warn.wall_thin', 'error.too_short', 'warn.small_foot', 'warn.solid_bottle', 'warn.label_failed', 'warn.joint_no_room', 'warn.segment_split', 'error.segments_too_short'];
+        'error.fits_already', 'error.too_heavy', 'error.too_small', 'error.too_big', 'error.not_watertight', 'error.edit_failed', 'error.too_tall', 'error.pieces_too_small', 'warn.wall_thin', 'error.too_short', 'warn.small_foot', 'warn.solid_bottle', 'warn.label_failed', 'warn.joint_no_room', 'warn.segment_split', 'error.segments_too_short',
+        'found', 'none', 'not_3mf', 'majority', 'filament', 'report.parts', 'part.color', 'warn.inlay_failed', 'warn.recess_failed', 'warn.body_open', 'warn.many_colors', 'error.no_colors', 'error.not_3mf', 'error.empty', 'error.empty_result'];
     $i18n = collect(['check.page.max', 'toolpage.status.empty', 'param.too_fast'])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb']])])
         ->merge(collect($keys)->mapWithKeys(fn ($k) => ['edit.'.$op.'.'.$k => \Illuminate\Support\Facades\Lang::has('edit.'.$op.'.'.$k) ? \App\Support\NextStep::text('edit.'.$op.'.'.$k) : \App\Support\NextStep::text('edit.'.$k)]))->all();
     $sections = ['file' => __('toolpage.section.file'), 'settings' => __('toolpage.section.settings'), 'result' => __('toolpage.section.result')];
-    $icon = ['split' => 'scissors', 'hollow' => 'box', 'life_size' => 'maximize', 'scale' => 'maximize', 'puzzle' => 'grid-3x3', 'holder' => 'box', 'potion' => 'sparkles', 'flexi_cut' => 'link'][$op] ?? 'box';
+    $icon = ['split' => 'scissors', 'hollow' => 'box', 'life_size' => 'maximize', 'scale' => 'maximize', 'puzzle' => 'grid-3x3', 'holder' => 'box', 'potion' => 'sparkles', 'flexi_cut' => 'link', 'colors' => 'palette'][$op] ?? 'box';
+    // only a 3MF carries colours: the splitter's page takes nothing else
+    $formats = $op === 'colors' ? ['3mf'] : $config['formats'];
 @endphp
 
 @extends('tools.page', ['tool' => $op === 'holder' ? 'holder_model' : $op, 'module' => 'edit', 'lead' => __('edit.'.$op.'.lead'), 'available' => $available, 'unavailable' => __('edit.unavailable'), 'goLabel' => \App\Support\NextStep::text('param.go'),
@@ -20,7 +23,7 @@
     window.MP_EDIT = {
         op: @json($op),
         upload: @json(route('api.uploads.store')), files: @json(url('/api/files')), parts: @json(url('/api/tools/edit')), home: @json(route('home')), from: @json($from),
-        formats: {{ \Illuminate\Support\Js::from($config['formats']) }}, maxMb: {{ (int) $config['max_upload_mb'] }},
+        formats: {{ \Illuminate\Support\Js::from($formats) }}, maxMb: {{ (int) $config['max_upload_mb'] }},
         beds: {{ \Illuminate\Support\Js::from($beds) }}, margin: {{ \App\Domain\Tools\ModelEditor::MARGIN }}, farmMargin: {{ (float) ($config['bed_margin_mm'] ?? 0) }},
         config: {{ \Illuminate\Support\Js::from(\Illuminate\Support\Arr::except($config, ['colors'])) }},
         i18n: {{ \Illuminate\Support\Js::from($i18n) }},
@@ -42,10 +45,10 @@
 <form id="edit-form" novalidate>
     <x-tool-section id="file" :title="__('toolpage.section.file')">
         <label id="edit-drop" class="block cursor-pointer rounded-xl border-2 border-dashed border-line p-6 text-center hover:border-ink">
-            <input id="edit-file" type="file" class="sr-only" accept="{{ collect($config['formats'])->map(fn ($f) => '.'.$f)->join(',') }}">
+            <input id="edit-file" type="file" class="sr-only" accept="{{ collect($formats)->map(fn ($f) => '.'.$f)->join(',') }}">
             <x-icon name="upload" class="mx-auto h-7 w-7 text-muted" />
             <span class="mt-1 block font-medium text-ink">{{ __('edit.pick') }}</span>
-            <span class="block text-sm text-muted">{{ strtoupper(implode(', ', $config['formats'])) }} · {{ __('check.page.max', ['max' => $config['max_upload_mb']]) }}</span>
+            <span class="block text-sm text-muted">{{ strtoupper(implode(', ', $formats)) }} · {{ __('check.page.max', ['max' => $config['max_upload_mb']]) }}</span>
             <span id="edit-source" class="mt-2 hidden text-sm font-medium text-ink"></span>
         </label>
         <p id="edit-status" class="note-warn hidden text-sm" role="status" aria-live="polite"></p>
@@ -111,6 +114,12 @@
                 @include('tools._num', ['key' => 'clearance', 'f' => $fields['clearance'], 'label' => __('edit.f.clearance.flexi'), 'unit' => 'mm', 'when' => ''])
                 @include('tools._num', ['key' => 'height', 'f' => $fields['height'], 'label' => __('edit.f.height.flexi'), 'unit' => 'mm', 'when' => ''])
             </div>
+        @endif
+        @if($op === 'colors')
+            <div class="grid gap-3">
+                @include('tools._num', ['key' => 'depth', 'f' => $fields['depth'], 'label' => __('edit.f.depth'), 'unit' => 'mm', 'when' => ''])
+            </div>
+            <p class="text-sm text-muted">{{ __('edit.colors.depth.hint') }}</p>
         @endif
         @if($op === 'potion')
             <div class="grid gap-3">
@@ -185,7 +194,7 @@
                 <p class="hint mt-1 !text-xs" id="edit-joint-hint"></p>
             </fieldset>
         @endif
-        @if($op === 'hollow' || $op === 'holder' || $op === 'potion' || $op === 'flexi_cut')
+        @if($op === 'hollow' || $op === 'holder' || $op === 'potion' || $op === 'flexi_cut' || $op === 'colors')
             @if($op === 'hollow')
             <label class="flex items-start gap-3 text-sm text-ink">
                 <input data-flag="drain" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" checked>

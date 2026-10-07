@@ -200,6 +200,9 @@ return [
     // a flexi out of a model: a big letter I of the letter tool, cut into segments with ball joints
     'flexi_cut' => ['route' => 'tools.flexi_cut', 'intent' => 'file', 'categories' => ['edit', 'toys'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'flexi_cut', 'kind' => 'name_letter', 'params' => ['line1' => 'Ivo', 'height' => 140, 'thickness' => 14], 'edit_params' => ['segments' => 5, 'ball_d' => 8]]],
+    // the card: a picture in colours (every plate its own filament) packed as a coloured 3MF and split by colour again
+    'colors' => ['route' => 'tools.colors', 'intent' => 'file', 'categories' => ['edit', 'images'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'colors', 'kind' => 'filament_art', 'params' => ['artwork' => 'lib:colour/snowman', 'mode' => 'layered', 'frame' => 'none', 'width' => 160, 'height' => 160, 'colors_n' => 5], 'edit_params' => ['depth' => 1.2]]],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => false],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only

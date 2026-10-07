@@ -67,6 +67,9 @@ return [
     'flexi_cut.title' => 'Flexi z modelu',
     'flexi_cut.hint' => 'Model rozřezaný na články s kulovými klouby, které se tisknou najednou v složeném stavu. Ohebná hračka z vlastní figurky.',
     'flexi_cut.action' => 'Udělat flexi',
+    'colors.title' => 'Díly podle barev z 3MF',
+    'colors.hint' => 'Vícebarevný 3MF ze sliceru rozdělíme na díl pro každou barvu: samostatná tělesa i namalované plochy jako vložky.',
+    'colors.action' => 'Rozdělit podle barev',
 
     'cats' => [
         'images' => 'Obrázky a loga',
@@ -122,5 +125,6 @@ return [
         'holder_model' => 'držák obal plechovka koozie kelímek zmrzlina mýdlenka mýdlo svíčka figurka busta dutina z modelu',
         'potion' => 'lektvar láhev lahvička elixír zátka korek hrdlo štítek figurka lebka halloween dárek dutá',
         'flexi_cut' => 'flexi ohebný kloub články kulový kloub print in place hračka drak had ještěrka figurka',
+        'colors' => 'barvy 3mf vícebarevný tisk ams mmu rozdělit podle barev malování bambu orca prusa díly',
     ],
 ];

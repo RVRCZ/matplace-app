@@ -50,7 +50,7 @@ class EditModel implements ShouldQueue
             File::ensureDirectoryExists(dirname($dst));
             $json = dirname($dst).'/edit.json';
             File::put($json, (string) json_encode(ModelEditor::forTool($op, array_diff_key($params, ['source' => 1]))));
-            $r = $clock->measure('edit', fn () => $python->runScript('edit_tool.py', [$op, $src->absoluteStlPath(), $dst, '@'.$json, dirname($dst).'/parts'], 840));
+            $r = $clock->measure('edit', fn () => $python->runScript('edit_tool.py', [$op, ModelEditor::sourceOf($src, $op), $dst, '@'.$json, dirname($dst).'/parts'], 840));
             @unlink($json);
             @unlink($dst.'.stage');
             if (empty($r['ok']) || ! is_file($dst)) {

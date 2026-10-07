@@ -28,6 +28,7 @@ modulů), `viewer.ts` (dvě nové metody), `ModelFile` (`builtForPrinting`, `pri
 | Držák z vlastního modelu | `/tools/holder-from-model` | `edit` (`edit_tool.py holder`, kind `holder`, karta `holder_model`) | model → výška, dutina na plechovku 330/slim/500, kelímek 473 ml, mýdlo, svíčku nebo vlastní válec/kužel; stěna měřená v pěti výškách |
 | Lektvarová láhev z modelu | `/tools/potion` | `edit` (`edit_tool.py potion`) | model → seříznuté dno, dutina, hrdlo na kuželovém nástavci, kónická zátka (`cork`), štítek s nápisem (`label`) |
 | Flexi z modelu | `/tools/flexi-cut` | `edit` (`edit_tool.py flexi_cut`) | podlouhlý model → 3–20 článků napříč osou s kulovými klouby Ø 6–10 (vůle 0,35–0,5), tiskne se najednou složené |
+| Díly podle barev | `/tools/colors` | `edit` (`colors_tool.py` přes `edit_tool.py colors`) | barevný 3MF (materiály, extrudery objektů, malování Bambu / Orca / Prusa) → díl na barvu: samostatná tělesa tak, jak jsou, namalované plochy jako vložky 0,6–3 mm s vybráním v těle |
 | Litofanie a reliéf (rozšíření) | `/tools/relief` | `relief` (`relief_tool.py`, `ReliefGenerator`) | fotka → panel v 7 tvarech (i vlastní silueta), rámeček, otvor / očko, stojánek; **lampa** (fotka kolem válce, dno na E27 / E14 / LED); jas, kontrast, střední tóny; náhled podsvícený / povrch |
 
 ### Obraz z filamentu (`filament_art`)
@@ -195,6 +196,29 @@ nese `shades` (počet odstínů; 0,8–3,0 = 12), stránka to ukazuje živě i p
 = světlé, `viewer` kind `lithophane`) s přepínačem na povrch; lampa jako povrch (barvení podle výšky nemá na válci
 smysl). Malý obrázek fotky se mění hned s posuvníky (CSS filtr; střední tóny jen přibližně jako jas).
 
+### Díly podle barev (`colors`)
+
+Vlastní modul `colors_tool.py` (edit_tool jen předává; zdroj je **3MF sám**, ne převedené STL –
+`ModelEditor::sourceOf`). Čtení: core + material extension (`basematerials`, `m:colorgroup`; `pid/pindex` na
+objektu, `pid/p1` na trojúhelníku), production extension (`p:path` u položek i komponent, transformace skládané jako
+v `ThreeMfConverter`), extrudery objektů a dílů (`Metadata/model_settings.config` Bambu/Orca, `Slic3r_PE_model.config`
+Prusa včetně `volume firstid/lastid`), barvy filamentů (`project_settings.config` → `filament_colour`, Prusa ini
+`extruder_colour`; jinak pevná paleta), malování (`paint_color` Bambu/Orca, `slic3rpe:mmu_segmentation` Prusa):
+řetězec TriangleSelectoru se čte **odzadu** po nibblech, bity od nejnižšího, 2 bity „kolik stran rozděleno“, list má
+2 bity stavu (3 = 3 + další 4 bity), uzel 2 bity „zvláštní strana“ a pak děti; rozdělený trojúhelník dostane stav
+většiny listů (váha rovným dílem) a odpověď počítá `split_triangles`. Ověřeno na známých hodnotách `4` → 1, `8` → 2,
+`0C` → 3, `1C` → 4. Priorita barvy trojúhelníku: malování > `p1` > svazek (volume) > extruder objektu > `pindex`
+objektu > „bez barvy“. Geometrie: trojúhelníky celku svařené (`merge_vertices`), souvislé komponenty; komponenta
+v jedné barvě = díl tak, jak je (`shell`); komponenta ve více barvách: barva s největší plochou je **tělo**, ostatní
+**vložky** – namalované plochy posunuté o `depth` dovnitř po normálách **samotné namalované plochy** (ne celého těla:
+na hraně krychle je normála těla 45° a vložka vyšla 0,7 místo 1,2 mm) a uzavřené stěnami po obvodu, nahoře o 0,05 mm
+nad povrchem (`PROUD`), aby boolean vybrání neměl koincidentní stěny; tělo = komponenta − sjednocení vložek
+(`batch_boolean`), u neuzavřené komponenty bez vybrání (`body_open`). Díly `color_1…` podle plochy, v odpovědi
+`colors` (název materiálu / číslo filamentu / hex, zdroje, podíl, druh `shell | inlay | base | mixed`, počet těles);
+stránka kreslí díly v barvách souboru a ukazuje seznam s podíly už v analýze (před rozdělením). Nad 16 barev připadnou
+menší té největší (`many_colors`). `colors_tool.py pack <out.3mf> <stl> <json díly>` zabalí díly STL do 3MF s
+`basematerials` – z toho je karta (sněhulák z filament artu zpět rozdělený na barvy) i test.
+
 ## 2. Rozhodnutí a proč
 
 1. **Filament art není kind `ParametricGenerator`**, ale vlastní generátor a modul `art`. Zadání ho tam chtělo;
@@ -229,6 +253,11 @@ smysl). Malý obrázek fotky se mění hned s posuvníky (CSS filtr; střední t
     trojúhelnících), tvary desek jdou přes manifold (průnik desky s obrysem + rámeček jako prstenec obrysu).
     Zavěšení se měří od horního bodu obrysu ve středu, ne od opsaného obdélníku – jinak očko srdce viselo ve
     vzduchu (první verze, `multiple_shells`).
+13. **Barvy čte Python, ne `ThreeMfConverter`.** Zadání říká „doplň čtení, ne přepisuj“; převodník je PHP a dělá
+    jen geometrii pro slicer. Doplňovat do něj barvy by znamenalo nést je přes STL (které barvy neumí) nebo měnit
+    ModelFile; nástroj místo toho čte 3MF znovu v Pythonu (`colors_tool.py`), převodník zůstal beze změny a STL celku
+    je pro cenu a náhled totéž co dřív. Namalovaná barva je **vložka s vybráním**, ne jen plocha: plocha by nebyla
+    tisknutelná a vícemateriálový slicer stejně barví do hloubky několika perimetrů; 1,2 mm = 3 perimetry 0,4.
 
 ## 3. Rychlost (změřeno 7. 10. 2026, lokálně, Windows, 4 jádra)
 
@@ -285,6 +314,16 @@ Limit 60 s ze zadání je daleko; decimaci nad 2 M jsem na skutečném modelu ne
 | lampa obvod 200 × 152 E27 (476 tis. trojúhelníků) | 1,6 s |
 | lampa obvod 150 × 60, LED / zavřená | 1,3 s |
 
+`colors` (ikosféra 328 tis. trojúhelníků, 4 barvy po pásech jako `p1` na trojúhelnících, 3MF 3,9 MB):
+
+| krok | čas |
+|---|---|
+| analýza (čtení XML, svaření, plochy) | 2,9 s |
+| rozdělení: 3 vložky + tělo s vybráním, 843 tis. trojúhelníků ven, vše uzavřené | 7,2 s |
+| tři krychle testu (36 trojúhelníků) | 1,1 s |
+Čtení XML přes `ElementTree` drží celý strom v paměti; 2 M trojúhelníků (limit) je odhadem 1–1,5 GB – přes 1 M by
+stálo za `iterparse`, nezměřeno.
+
 ## 4. Testy
 
 `FilamentArtTest` (7): stránka ve třech jazycích a katalog; vrstvený obraz = rám, zadní deska, deska na barvu,
@@ -302,6 +341,11 @@ starý zaškrtnutý rámeček = 2 mm), původní test stojící litofanie a lež
 nový: srdce s očkem (rozměr, výška s kroužkem, jedno tělo), kruh s otvorem (čtvercový, objem menší než hranol),
 `frame_too_wide`, `silhouette`, lampa E27 (Ø z obvodu, výška + dno, jedno tělo, `report.diameter`), zavřené dno
 těžší o disk otvoru, `socket_too_big`.
+`ModelEditTest` +1 (barvy): 3MF stavěný v testu (`ZipArchive`): krychle s materiálem na objektu a modrým vrškem přes
+`p1`, celá modrá krychle, krychle malovaná `paint_color` (`4` a `0C`) s `filament_colour` z projektu → analýza (4 barvy
+podle plochy, názvy / hex / extruder / zdroje / podíl), rozdělení (díly `color_1–4`, druhy `mixed, base, base, inlay`,
+objem celku = 3 krychle, modrý díl 60 mm široký, vložka 1,25 vysoká, tělo o 1,2 nižší, stažení dílu, cizí 404), STL
+bez barev (analýza `has_colors` false, rozdělení `no_colors`), hloubka mimo rozsah 422.
 
 ## 5. Co není ověřené
 
@@ -330,6 +374,11 @@ těžší o disk otvoru, `socket_too_big`.
   běžnou objímku s převlečným kroužkem, E14 Ø 28 na kroužek 28–29 – rozměry z katalogů, ne z měření. Očko Ø 10 /
   otvor Ø 3 u desky 0,8 mm nejtenčí: krček i kroužek mají plnou tloušťku (největší), takže drží. Podsvícený náhled
   je týž `paintByHeight` jako dřív; u vlastní siluety s dírami uvnitř (`fill_holes`) se díry zaplní.
+- **Barvy**: skutečný soubor z Bambu Studia ani PrusaSliceru jsem neměl – čtení `paint_color` /
+  `mmu_segmentation` stojí na popisu formátu (TriangleSelector) a čtyřech známých hodnotách; rozdělené trojúhelníky
+  (stromy) jsou podle zdroje PrusaSliceru, ale nezkoušené na datech. Před ohlášením nástroje: uložit z Bambu Studia
+  model s malováním a 2–3 díly v AMS slotech, nahrát, porovnat barvy a podíly s tím, co ukazuje slicer. Vložky na
+  silně zakřivených plochách (poloměr pod 2× hloubka) se mohou samy protnout – pak je `solidify` přestaví na mřížce.
 
 ## 6. Nasazení (Roman)
 
@@ -348,8 +397,8 @@ Hotové: `/tools/filament-art` (oba režimy, rám, LED, návod), `/tools/split` 
 3D profilu pro vysoké modely), `/tools/holder-from-model`, `/tools/potion`, `/tools/flexi-cut`, společný základ `edit_tool.py` + `ModelEditor` +
 `EditModel` + stránka `edit`.
 Zbývá (v pořadí, jak dává smysl): `/tools/wearable` (míra, průzory ve vieweru, drážky na popruh); `/tools/flexi` (zvíře z primitiv);
-`/tools/colors` (barvený 3MF, `ThreeMfConverter` čtení barev); `soap` podle stopy; `/tools/slider`. Rozšíření
-`relief` (tvary, lampa, podsvícený náhled) je hotové.
+`soap` podle stopy; `/tools/slider`. Rozšíření `relief` (tvary, lampa, podsvícený náhled) a `/tools/colors` jsou
+hotové.
 
 ## 8. Stav
 
@@ -359,4 +408,5 @@ stránek, katalogu, SEO a karet zelené. Flexi z modelu (869c633). **Celá sada*
 chyba – `ToolsFlowTest` hlídá, že každý inline `throttle` má vlastní předponu, a `art/preview`, `art`, `art/zip`,
 `edit/{part}.stl` sdílely `preview`, `create`, `zip`, `part` s nástroji session 1 → přejmenováno na `art_*`,
 `edit_part`. Pak rozšíření litofanie (tvary, zavěšení, lampa, světlo, náhled) – `ReliefToolTest` 6 testů,
-`ToolsFlowTest` zelený, build.
+`ToolsFlowTest` zelený, build (a82aed8). Pak `/tools/colors` (`colors_tool.py`, karta ze sněhuláka, test), build,
+pint, testy stránek, katalogu, karet, SEO a toku zelené.

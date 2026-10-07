@@ -67,6 +67,9 @@ return [
     'flexi_cut.title' => 'Flexi de un modelo',
     'flexi_cut.hint' => 'Un modelo cortado en segmentos con articulaciones de bola, impreso de una vez ya montado. Un juguete flexible de su propia figura.',
     'flexi_cut.action' => 'Hacer un flexi',
+    'colors.title' => 'Piezas por color de un 3MF',
+    'colors.hint' => 'Un 3MF multicolor del slicer dividido en una pieza por cada color: cuerpos separados y zonas pintadas como incrustaciones.',
+    'colors.action' => 'Dividir por colores',
 
     'cats' => [
         'images' => 'Imágenes y logos',
@@ -122,5 +125,6 @@ return [
         'holder_model' => 'soporte funda lata tarrina helado jabonera jabón vela figura busto hueco de modelo',
         'potion' => 'poción botella elixir corcho cuello etiqueta figura calavera halloween regalo hueca',
         'flexi_cut' => 'flexi articulado articulación de bola segmentos print in place juguete dragón serpiente lagarto figura',
+        'colors' => 'colores 3mf impresión multicolor ams mmu dividir por colores pintado bambu orca prusa piezas',
     ],
 ];

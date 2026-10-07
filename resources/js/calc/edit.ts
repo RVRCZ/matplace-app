@@ -13,10 +13,11 @@ import { price as priceText } from '../site/money';
 import { FileInfo } from './api';
 
 interface Cfg { op: string; upload: string; files: string; parts: string; home: string; from: string | null; formats: string[]; maxMb: number; beds: Record<string, number[] | null>; margin: number; farmMargin: number; config: PriceConfig & { bed_mm: { x: number; y: number; z: number } }; i18n: Record<string, string> }
-interface Analysis { bbox: { x: number; y: number; z: number }; fits: boolean; planes: Record<'x' | 'y' | 'z', number[]> | null; pieces: number | null; too_many: boolean; repaired: boolean; factor?: number; scaled?: number[]; hollow?: boolean; wall?: number }
+interface ColorInfo { key?: number; part?: string; name: string; hex: string; extruder: number | null; sources?: string[]; triangles: number; share: number; kind?: string; bodies?: number }
+interface Analysis { bbox: { x: number; y: number; z: number }; fits: boolean; planes: Record<'x' | 'y' | 'z', number[]> | null; pieces: number | null; too_many: boolean; repaired: boolean; factor?: number; scaled?: number[]; hollow?: boolean; wall?: number; colors?: ColorInfo[]; has_colors?: boolean; not_3mf?: boolean; split_triangles?: number }
 interface MapPiece { n: number; part: string; cell: number[]; lo: number[]; hi: number[]; volume_mm3: number; down: [string, number] | null; number_at: number[] | null }
 interface Hollow { wall: number; pitch: number; cavity_mm3: number; saved_g: number; drains: number; drain_at: number[][]; drain_d: number }
-interface Report { op: string; stage?: string; planes?: Record<string, number[]>; joint?: string; pins?: number; keys?: number; pieces?: number; cells?: number[]; model?: number[]; warnings?: string[]; map?: MapPiece[]; too_big?: string[]; repaired?: boolean; parts?: string[]; pieces_tris?: Piece[]; volume_in_mm3?: number; hollow?: Hollow | null; factor?: number; scaled?: number[]; grams?: number; rows?: number; cols?: number; lock?: string; knob?: number; clearance?: number; frame?: { rim: number; base: number; height: number } | null; cavity?: string; cavity_mm?: Record<string, number>; min_wall?: number; floor?: number; grow_to?: number; bottle?: number[]; neck?: { d: number; h: number }; cut_mm?: number; wall?: number; cork?: { h: number }; label?: { w: number; h: number; text: string }; axis?: string; segments?: number; ball_d?: number; joined?: number; cuts?: number[] }
+interface Report { op: string; stage?: string; planes?: Record<string, number[]>; joint?: string; pins?: number; keys?: number; pieces?: number; cells?: number[]; model?: number[]; warnings?: string[]; map?: MapPiece[]; too_big?: string[]; repaired?: boolean; parts?: string[]; pieces_tris?: Piece[]; volume_in_mm3?: number; hollow?: Hollow | null; factor?: number; scaled?: number[]; grams?: number; rows?: number; cols?: number; lock?: string; knob?: number; clearance?: number; frame?: { rim: number; base: number; height: number } | null; cavity?: string; cavity_mm?: Record<string, number>; min_wall?: number; floor?: number; grow_to?: number; bottle?: number[]; neck?: { d: number; h: number }; cut_mm?: number; wall?: number; cork?: { h: number }; label?: { w: number; h: number; text: string }; axis?: string; segments?: number; ball_d?: number; joined?: number; cuts?: number[]; colors?: ColorInfo[]; depth?: number; shells?: number; inlays?: number; bases?: number; split_triangles?: number }
 type Edited = FileInfo & { edit?: Report | null; tool?: { kind: string; params: Record<string, unknown> & { each?: number[][]; parts?: string[] }; url: string } | null };
 
 // the pieces in calm colours that read as different, the pins and keys grey
@@ -31,10 +32,13 @@ export function bootEdit(stage: Stage): void {
     const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const nf = stage.nf; const viewer = stage.viewer;
     const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '"': '&quot;', '>': '&gt;' }[c] as string));
+    // a colour of a 3MF: the material's name, else the filament's number, else the hex
+    const colorName = (c: ColorInfo): string => c.name || (c.extruder ? t('filament', { n: c.extruder }) : c.hex);
+    const swatch = (c: ColorInfo): string => `<span class="inline-flex items-center gap-1 rounded-full border border-line bg-white px-2 py-0.5 text-xs text-ink"><span class="inline-block h-3 w-3 rounded-full border border-line" style="background:${esc(c.hex)}"></span>${esc(colorName(c))} · ${nf.format(c.share)} %</span>`;
     const status = $('edit-status'); const go = $('edit-go') as HTMLButtonElement; const source = $('edit-source');
     const result = $('edit-result'); const wait = $('edit-wait'); const analysisEl = $('edit-analysis');
     const withPlanes = cfg.op === 'split';
-    const withAnalysis = cfg.op === 'split' || cfg.op === 'life_size';
+    const withAnalysis = cfg.op === 'split' || cfg.op === 'life_size' || cfg.op === 'colors';
     let model: FileInfo | null = null; let modelGeom: BufferGeometry | null = null;
     let made: Edited | null = null;
     let analysis: Analysis | null = null;
@@ -118,6 +122,15 @@ export function bootEdit(stage: Stage): void {
             analysisEl.classList.remove('text-warn');
             if (analysis.too_many) { analysisEl.textContent = t('too_many'); analysisEl.classList.add('text-warn'); go.disabled = true; showPlanes(); return; }
             const cuts = analysis.planes ? Object.values(analysis.planes).reduce((n, l) => n + l.length, 0) : 0;
+            if (cfg.op === 'colors') {
+                // the colours the file holds, with their shares; one colour is nothing to split
+                const list = analysis.colors ?? [];
+                const ok = list.length > 1;
+                analysisEl.innerHTML = ok ? `${esc(t('found', { n: list.length }))}<span class="mt-1 flex flex-wrap gap-1.5">${list.map(swatch).join('')}</span>${analysis.split_triangles ? `<span class="mt-1 block text-muted">${esc(t('majority', { n: analysis.split_triangles }))}</span>` : ''}` : esc(t(analysis.not_3mf ? 'not_3mf' : 'none'));
+                analysisEl.classList.toggle('text-warn', !ok);
+                go.disabled = !ok;
+                return;
+            }
             if (cfg.op === 'life_size') {
                 const s = analysis.scaled ?? [0, 0, 0];
                 const dims = { x: nf.format(s[0]), y: nf.format(s[1]), z: nf.format(s[2]), f: nf.format(analysis.factor ?? 1) };
@@ -196,6 +209,7 @@ export function bootEdit(stage: Stage): void {
         if (part === 'frame') return t('part.frame');
         if (part === 'cork') return t('part.cork');
         if (part.startsWith('segment_')) return t('part.segment', { n: part.slice(8) });
+        if (part.startsWith('color_')) { const c = made?.edit?.colors?.find((x) => x.part === part); return c ? colorName(c) : t('part.color', { n: part.slice(6) }); }
         if (part === 'label') return t('part.label');
         if (part.startsWith('piece_')) return t('part.piece', { n: part.slice(6) });
         return part;
@@ -251,6 +265,11 @@ export function bootEdit(stage: Stage): void {
             lines.push(t('report', { n: r.segments, a: String(r.axis ?? '').toUpperCase(), d: nf.format(r.ball_d ?? 0), p: nf.format(r.clearance ?? 0) }));
             lines.push((r.joined ?? 0) > 0 ? t('report.joints', { j: r.joined ?? 0, c: (r.segments ?? 1) - 1 }) : t('report.none'));
         }
+        if (cfg.op === 'colors' && r.colors) {
+            lines.push(t('report', { n: r.colors.length, d: nf.format(r.depth ?? 0) }));
+            lines.push(t('report.parts', { s: r.shells ?? 0, i: r.inlays ?? 0, b: r.bases ?? 0 }));
+            if (r.split_triangles) lines.push(t('majority', { n: r.split_triangles }));
+        }
         if (cfg.op === 'potion' && r.bottle) {
             lines.push(t('report', { x: nf.format(r.bottle[0]), y: nf.format(r.bottle[1]), z: nf.format(r.bottle[2]), d: nf.format(r.neck?.d ?? 0), h: nf.format(r.neck?.h ?? 0), w: nf.format(r.wall ?? 0) }));
             lines.push(r.hollow && r.hollow.cavity_mm3 > 0 ? t('report.hollow', { c: nf.format(Math.round(r.hollow.cavity_mm3 / 1000)) }) : t('report.solid'));
@@ -276,6 +295,7 @@ export function bootEdit(stage: Stage): void {
         } else if (cfg.op === 'life_size') lines.push(t('report.one'));
         if (r.repaired) lines.push(t('report.repaired'));
         $('edit-report').innerHTML = lines.map((s) => `<p class="mt-2 first:mt-0">${esc(s)}</p>`).join('');
+        if (cfg.op === 'colors' && r.colors) $('edit-report').insertAdjacentHTML('beforeend', `<p class="mt-2 flex flex-wrap gap-1.5">${r.colors.map(swatch).join('')}</p>`);
         const by: Record<string, string[]> = {};
         (r.warnings ?? []).filter((w) => !(cfg.op === 'hollow' && w === 'coarse_grid') && !(cfg.op === 'holder' && w === 'wall_thin')).forEach((w) => { (by.result = by.result ?? []).push(t(`warn.${w}`, { n: (r.too_big ?? []).map(partLabel).join(', ') })); });
         stage.warnings(by);
@@ -286,6 +306,8 @@ export function bootEdit(stage: Stage): void {
             viewer.setPlanes(null);
             stage.show(geom, { kind: null, pieces: r.pieces_tris ?? null });
             viewer.getPieces().forEach((p, i) => viewer.setPieceColor(i, p.name.startsWith('piece_') ? PIECES[(Number(p.name.slice(6)) - 1) % PIECES.length] : p.name.startsWith('segment_') ? PIECES[(Number(p.name.slice(8)) - 1) % PIECES.length] : p.name === 'body' ? null : p.name === 'frame' ? '#4A4A4F' : '#8C9199'));
+            // the parts of a coloured 3MF in the file's own colours
+            if (cfg.op === 'colors' && r.colors) { const hexOf: Record<string, string> = {}; r.colors.forEach((c) => { if (c.part) hexOf[c.part] = c.hex; }); viewer.getPieces().forEach((p, i) => { if (hexOf[p.name]) viewer.setPieceColor(i, hexOf[p.name]); }); }
             // a hollow model looks the same outside: the x-ray shows what was done
             if ((cfg.op === 'hollow' || cfg.op === 'holder') && $('tool-xray').getAttribute('aria-pressed') !== 'true') $('tool-xray').click();
         }

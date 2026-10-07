@@ -153,6 +153,7 @@ $pages = function () {
     Route::get('/tools/holder-from-model', [EditToolsController::class, 'edit'])->defaults('op', 'holder')->name('tools.holder_model');
     Route::get('/tools/potion', [EditToolsController::class, 'edit'])->defaults('op', 'potion')->name('tools.potion');
     Route::get('/tools/flexi-cut', [EditToolsController::class, 'edit'])->defaults('op', 'flexi_cut')->name('tools.flexi_cut');
+    Route::get('/tools/colors', [EditToolsController::class, 'edit'])->defaults('op', 'colors')->name('tools.colors');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {
