@@ -16,7 +16,7 @@ return [
     ],
     'faq' => [
         ['q' => '¿La galleta se puede comer?', 'a' => 'No. Es un juguete de plástico para la cocinita o un adorno. Recomendamos PLA; para niños pequeños elija un tamaño mayor, sin ojal ni piezas pequeñas.'],
-        ['q' => '¿Cuántos colores de glaseado puedo usar?', 'a' => 'Hasta seis colores de glaseado y 60 trazos en una galleta. Nuestra granja imprime hoy uno o dos colores, es decir, la masa y un color de glaseado; una galleta con más colores puede descargarla gratis para su impresora.'],
+        ['q' => '¿Cuántos colores de glaseado puedo usar?', 'a' => 'Hasta seis colores de glaseado y 60 trazos en una galleta. Nuestra granja imprime hasta cuatro colores en una misma impresión, es decir, la masa y hasta tres colores de glaseado. La bobina de cada color se confirma al hacer el pedido; una galleta con más colores puede descargarla gratis para su impresora.'],
         ['q' => '¿Se puede deshacer un trazo?', 'a' => 'Sí. Un botón quita el último trazo, las flechas de deshacer y rehacer revierten cualquier cambio y con un clic se borra todo el glaseado.'],
         ['q' => '¿Con qué finura se puede dibujar?', 'a' => 'El trazo más estrecho mide 1,5 mm, que una impresora con boquilla de 0,4 mm imprime limpio. El glaseado se mantiene algo separado del borde redondeado para no sobresalir.'],
         ['q' => '¿Puedo decorar una galleta en el móvil?', 'a' => 'Sí, se dibuja con el dedo. En una pantalla más grande resulta más cómodo.'],

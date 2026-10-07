@@ -329,7 +329,9 @@ export function bootParam(stage: Stage): void {
         if (found) found.textContent = n.source !== 'text' && n.found && n.wanted && n.found < n.wanted ? t('shape.colors.found', { n: n.found, w: n.wanted }) : '';
         const print = document.getElementById('shape-print');
         const swaps = (n.color_changes ?? []).length;
-        if (print) print.textContent = n.multi_material ? t('shape.print.multi') : swaps > 1 ? t('shape.print.swap', { n: swaps }) : swaps ? t('shape.print.swap1') : t('shape.print.one');
+        // the farm loads four spools for one print: a design of more different colours is told so (a colour may come back, that costs no spool)
+        const spools = n.filaments ?? 1;
+        if (print) print.textContent = n.multi_material ? t('shape.print.multi') : spools > 4 ? t('shape.print.many', { n: swaps, c: spools }) : swaps > 1 ? t('shape.print.swap', { n: swaps }) : swaps ? t('shape.print.swap1') : t('shape.print.one');
         renderRecent();
     };
 
