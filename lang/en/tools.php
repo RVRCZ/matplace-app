@@ -70,6 +70,9 @@ return [
     'colors.title' => 'Parts by colour from a 3MF',
     'colors.hint' => 'A multi-colour 3MF from your slicer split into a part for every colour: separate bodies, and painted areas as inlays.',
     'colors.action' => 'Split by colour',
+    'soap_model.title' => 'Soap dish from your own model',
+    'soap_model.hint' => 'A pocket made to the footprint of the model you upload, with play, a wall and a floor with a drain: a dish for a bar of soap, a die, a phone.',
+    'soap_model.action' => 'Make the dish',
 
     'cats' => [
         'images' => 'Pictures and logos',
@@ -126,5 +129,6 @@ return [
         'potion' => 'potion bottle elixir cork neck label figure skull halloween gift hollow',
         'flexi_cut' => 'flexi articulated ball joint segments print in place toy dragon snake lizard figure',
         'colors' => 'colours 3mf multi-colour print ams mmu split by colour painting bambu orca prusa parts',
+        'soap_model' => 'soap dish tray from a model footprint drain grooves ribs bathroom',
     ],
 ];

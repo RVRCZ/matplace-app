@@ -14,7 +14,7 @@ class ToolPageTest extends TestCase
     use RefreshDatabase;
 
     /** tool key → the script module that drives its page */
-    private const MODULES = ['relief' => 'relief', 'mold' => 'mold', 'repair' => 'repair', 'check' => 'check', 'figure' => 'figure', 'filament_art' => 'art', 'split' => 'edit', 'hollow' => 'edit', 'life_size' => 'edit', 'puzzle' => 'edit', 'holder_model' => 'edit', 'potion' => 'edit', 'flexi_cut' => 'edit', 'colors' => 'edit'];
+    private const MODULES = ['relief' => 'relief', 'mold' => 'mold', 'repair' => 'repair', 'check' => 'check', 'figure' => 'figure', 'filament_art' => 'art', 'split' => 'edit', 'hollow' => 'edit', 'life_size' => 'edit', 'puzzle' => 'edit', 'holder_model' => 'edit', 'potion' => 'edit', 'flexi_cut' => 'edit', 'colors' => 'edit', 'soap_model' => 'edit'];
 
     private function needsPython(): void
     {

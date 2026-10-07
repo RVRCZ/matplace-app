@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  */
 final class ModelEditor
 {
-    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'scale'];
+    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'soap', 'scale'];
 
     /** print beds a model is cut for: the farm's, two common ones, or the visitor's own (usable size = bed − margins) */
     public const BEDS = ['farm' => [250, 250, 250], '220' => [220, 220, 250], '180' => [180, 180, 180], 'custom' => null];
@@ -44,6 +44,8 @@ final class ModelEditor
         'flexi_cut' => ['segments' => [0, 20, 0, 1], 'ball_d' => [6, 10, 8, 0.5], 'clearance' => [0.35, 0.5, 0.4, 0.05], 'height' => [0, 300, 0, 1]],
         // a coloured 3MF into parts: how deep a painted colour reaches into the body (an inlay), separate bodies as they are
         'colors' => ['depth' => [0.6, 3, 1.2, 0.2]],
+        // a soap dish round a model's footprint: the wall's height above the floor, the play round the model, the wall, the floor
+        'soap' => ['height' => [8, 60, 20, 1], 'clearance' => [0.5, 6, 2, 0.5], 'wall' => [1.2, 6, 2.4, 0.2], 'floor' => [1.2, 6, 2, 0.2]],
         'scale' => ['height' => [10, 1000, 300, 1]],
     ];
 
@@ -53,6 +55,7 @@ final class ModelEditor
         'puzzle' => ['lock' => ['tabs', 'pins']],
         'holder' => ['cavity' => ['can330', 'slim330', 'can500', 'pint', 'soap', 'candle', 'custom']],
         'flexi_cut' => ['axis' => ['auto', 'x', 'y', 'z']],
+        'soap' => ['drain' => ['grooves', 'grid', 'ribs', 'none'], 'foot' => ['widest', 'bottom']],
     ];
 
     public const FLAGS = ['split' => ['numbers', 'lay'], 'hollow' => ['drain'], 'life_size' => ['hollow', 'numbers', 'lay'], 'puzzle' => ['numbers', 'frame'], 'holder' => ['cav_depth_own'], 'potion' => ['label']];

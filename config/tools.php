@@ -203,6 +203,9 @@ return [
     // the card: a picture in colours (every plate its own filament) packed as a coloured 3MF and split by colour again
     'colors' => ['route' => 'tools.colors', 'intent' => 'file', 'categories' => ['edit', 'images'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'colors', 'kind' => 'filament_art', 'params' => ['artwork' => 'lib:colour/snowman', 'mode' => 'layered', 'frame' => 'none', 'width' => 160, 'height' => 160, 'colors_n' => 5], 'edit_params' => ['depth' => 1.2]]],
+    // the card: a dish round the footprint of a rounded plate
+    'soap_model' => ['route' => 'tools.soap_model', 'intent' => 'file', 'categories' => ['edit', 'home'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'soap', 'kind' => 'logo', 'params' => ['mode' => 'relief', 'shape' => 'rounded', 'width' => 90, 'line1' => 'SOAP'], 'edit_params' => ['drain' => 'grooves']]],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => false],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only

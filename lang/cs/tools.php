@@ -70,6 +70,9 @@ return [
     'colors.title' => 'Díly podle barev z 3MF',
     'colors.hint' => 'Vícebarevný 3MF ze sliceru rozdělíme na díl pro každou barvu: samostatná tělesa i namalované plochy jako vložky.',
     'colors.action' => 'Rozdělit podle barev',
+    'soap_model.title' => 'Mýdlenka podle vlastního modelu',
+    'soap_model.hint' => 'Kapsa přesně na půdorys nahraného modelu s vůlí, stěna a dno s odtokem: miska na mýdlo, kostku, telefon.',
+    'soap_model.action' => 'Udělat mýdlenku',
 
     'cats' => [
         'images' => 'Obrázky a loga',
@@ -126,5 +129,6 @@ return [
         'potion' => 'lektvar láhev lahvička elixír zátka korek hrdlo štítek figurka lebka halloween dárek dutá',
         'flexi_cut' => 'flexi ohebný kloub články kulový kloub print in place hračka drak had ještěrka figurka',
         'colors' => 'barvy 3mf vícebarevný tisk ams mmu rozdělit podle barev malování bambu orca prusa díly',
+        'soap_model' => 'mýdlenka miska na mýdlo podle modelu půdorys odtok drážky žebra koupelna',
     ],
 ];

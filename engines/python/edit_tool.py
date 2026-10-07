@@ -1078,6 +1078,101 @@ def holder(src, dst, p, parts_dir):
     finish(M, "holder", dst, [("body", holder_solid)], notes, parts_dir)
 
 
+# ── soap dish by the footprint of a model ──────────────────────────────────────────────────────────────────────────
+
+DRAIN_SLOT = 3.0                              # mm: the width of a drain slot through the floor
+DRAIN_PITCH = 10.0                            # mm between slots or ribs
+RIB_W, RIB_H = 2.0, 2.0                       # mm: ribs the bar lies on, water runs between them
+FLOOR_MARGIN = 3.0                            # mm of floor kept along the wall, so the drains never meet it
+
+
+def footprint_of(M, man, ext, kind):
+    """The model's outline on the bed: its whole projection, or the slice just above its bottom; outer loops only."""
+    C, J = M.CrossSection, M.JoinType.Round
+    if kind == "bottom":
+        foot = man.slice(min(0.6, ext[2] / 2))
+    else:
+        try:
+            foot = man.project()
+        except AttributeError:
+            foot = C()
+            for i in range(12):
+                foot = foot + man.slice(ext[2] * (i + 0.5) / 12)
+    if foot.is_empty():
+        raise Invalid("empty_result")
+    # one outline without holes, lightly rounded: the bar's silhouette, not its engraving
+    foot = foot.offset(1.0, J, 2.0, 24).offset(-1.0, J, 2.0, 24).simplify(0.05)
+    loops = [poly for poly in foot.to_polygons() if sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly))) > 0]
+    return C(loops) if loops else foot
+
+
+def soap(src, dst, p, parts_dir):
+    """A soap dish round a model's footprint: a pocket the outline plus play, a wall, a floor with drains."""
+    import functools
+    import manifold3d as M
+    C, J = M.CrossSection, M.JoinType.Round
+    notes = {"warnings": []}
+    man, m = load_solid(src, dst, notes)
+    ext = [float(v) for v in m.extents]
+    height = float(p.get("height", 20.0))
+    play = float(p.get("clearance", 2.0))
+    wall = float(p.get("wall", 2.4))
+    floor = float(p.get("floor", 2.0))
+    drain = p.get("drain", "grooves")
+    foot_kind = p.get("foot", "widest")
+    if drain not in ("grooves", "grid", "ribs", "none"):
+        raise Invalid("bad_choice", "drain")
+    if foot_kind not in ("widest", "bottom"):
+        raise Invalid("bad_choice", "foot")
+    for name, v, lo, hi in (("height", height, 8.0, 60.0), ("clearance", play, 0.5, 6.0), ("wall", wall, 1.2, 6.0), ("floor", floor, 1.2, 6.0)):
+        if not lo <= v <= hi:
+            raise Invalid("out_of_range", "%s %g-%g" % (name, lo, hi))
+    stage(dst, "measuring")
+    foot = footprint_of(M, man, ext, foot_kind)
+    fx0, fy0, fx1, fy1 = foot.bounds()
+    if max(fx1 - fx0, fy1 - fy0) + 2 * (play + wall) > 300:
+        raise Invalid("too_big")
+    if min(fx1 - fx0, fy1 - fy0) < 15:
+        raise Invalid("too_small")
+    pocket = foot.offset(play, J, 2.0, 32)
+    outer = pocket.offset(wall, J, 2.0, 32)
+    stage(dst, "cutting")
+    dish = outer.extrude(floor + height) - pocket.extrude(height + 1.0).translate([0, 0, floor])
+    px0, py0, px1, py1 = pocket.bounds()
+    cx, cy = (px0 + px1) / 2, (py0 + py1) / 2
+    inner = pocket.offset(-FLOOR_MARGIN, J, 2.0, 24)
+    union = lambda shapes: functools.reduce(lambda a, b: a + b, shapes)
+    across = lambda w, n_of: [C.square([w, py1 - py0 + 2.0]).translate([cx + i * DRAIN_PITCH - w / 2, py0 - 1.0]) for i in range(-(n_of // 2), n_of // 2 + 1)]
+    along = lambda w, n_of: [C.square([px1 - px0 + 2.0, w]).translate([px0 - 1.0, cy + i * DRAIN_PITCH - w / 2]) for i in range(-(n_of // 2), n_of // 2 + 1)]
+    drains = 0
+    if drain in ("grooves", "grid") and not inner.is_empty():
+        slots = across(DRAIN_SLOT, int((px1 - px0 - 2 * FLOOR_MARGIN) / DRAIN_PITCH))
+        if drain == "grid":
+            slots += along(DRAIN_SLOT, int((py1 - py0 - 2 * FLOOR_MARGIN) / DRAIN_PITCH))
+        cut2d = union(slots) ^ inner
+        if not cut2d.is_empty():
+            dish = dish - cut2d.extrude(floor + 2.0).translate([0, 0, -1.0])
+            drains = len(slots)
+    elif drain == "ribs":
+        # ribs the bar lies on, water runs between them to holes in the four corners of the floor
+        ribs = across(RIB_W, int((px1 - px0 - 2.0) / DRAIN_PITCH))
+        rib2d = union(ribs) ^ pocket.offset(-0.3, J, 2.0, 24)
+        if not rib2d.is_empty():
+            dish = dish + rib2d.extrude(RIB_H + 0.5).translate([0, 0, floor - 0.5])
+            drains = len(ribs)
+        ix0, iy0, ix1, iy1 = inner.bounds()
+        for x, y in ((ix0 + 4.0, iy0 + 4.0), (ix1 - 4.0, iy0 + 4.0), (ix0 + 4.0, iy1 - 4.0), (ix1 - 4.0, iy1 - 4.0)):
+            hole = C.circle(3.0, 32).translate([x, y])
+            if (hole - inner).is_empty():
+                dish = dish - hole.extrude(floor + 2.0).translate([0, 0, -1.0])
+    if dish.is_empty() or dish.status() != M.Error.NoError:
+        raise Invalid("empty_result")
+    ox0, oy0, ox1, oy1 = outer.bounds()
+    notes.update({"model": [round(v, 1) for v in ext], "foot": foot_kind, "footprint": [round(fx1 - fx0, 1), round(fy1 - fy0, 1)], "pocket": [round(px1 - px0, 1), round(py1 - py0, 1)],
+                  "dish": [round(ox1 - ox0, 1), round(oy1 - oy0, 1), round(floor + height, 1)], "clearance": play, "wall": wall, "floor": floor, "height": height, "drain": drain, "drains": drains})
+    finish(M, "soap", dst, [("body", dish)], notes, parts_dir)
+
+
 # ── potion ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 def potion(src, dst, p, parts_dir):
@@ -1285,7 +1380,7 @@ def main(argv):
         p = json.loads(raw or "{}")
         if not isinstance(p, dict):
             raise Invalid("unknown_kind")
-        commands = {"split": split, "hollow": hollow, "scale": scale, "life_size": life_size, "puzzle": puzzle, "holder": holder, "potion": potion, "flexi_cut": flexi_cut}
+        commands = {"split": split, "hollow": hollow, "scale": scale, "life_size": life_size, "puzzle": puzzle, "holder": holder, "potion": potion, "flexi_cut": flexi_cut, "soap": soap}
         if op == "colors":
             # a coloured 3MF into a part per colour: its own module, the source is the 3MF itself
             import colors_tool

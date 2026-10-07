@@ -408,4 +408,35 @@ class ModelEditTest extends TestCase
         $this->assertStringStartsWith('no_colors', (string) $this->postJson('/api/files/'.$plain.'/edit', ['op' => 'colors'])->assertCreated()->json('file.error'));
         $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'colors', 'depth' => 9])->assertStatus(422);
     }
+
+    public function test_a_soap_dish_is_built_round_the_footprint_of_a_model(): void
+    {
+        $this->get('/tools/soap-from-model')->assertOk()->assertSee(__('tools.soap_model.title'))->assertSee('data-module="edit"', false)->assertSee(__('edit.o.drain.ribs'));
+        $uuid = $this->box(90, 60, 30, 'bar.stl');
+        $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'soap', 'height' => 20, 'clearance' => 2, 'wall' => 2.4, 'floor' => 2, 'drain' => 'grooves'])->assertCreated();
+        $this->assertSame('ready', $r->json('file.status'), (string) $r->json('file.error'));
+        $r->assertJsonPath('file.kind', 'soap')->assertJsonPath('file.parts', ['body']);
+        $e = $r->json('file.edit');
+        $this->assertSame(['grooves', 'widest'], [$e['drain'], $e['foot']]);
+        $this->assertEqualsWithDelta(94, $e['pocket'][0], 0.2);                  // the bar plus 2 mm of play each side
+        $this->assertEqualsWithDelta(98.8, $e['dish'][0], 0.2);                  // plus the wall
+        $this->assertEqualsWithDelta(22, $e['dish'][2], 0.01);                   // the floor and the wall's height
+        $this->assertGreaterThanOrEqual(7, $e['drains']);                        // one every 10 mm along 94 mm, 3 mm of margin kept
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertEqualsWithDelta(98.8, $file->bbox['x'], 0.2);
+        $this->assertEqualsWithDelta(22, $file->bbox['z'], 0.05);
+        $this->assertTrue(StlTopology::check($file->absoluteStlPath())['watertight']);
+        // the dish is a shell: the walls, the floor less the grooves
+        $shell = 98.8 * 68.8 * 22 - 94 * 64 * 20;
+        $this->assertLessThan($shell, $file->volume_mm3);
+        $this->assertGreaterThan($shell * 0.6, $file->volume_mm3);
+        // a solid floor holds more, ribs more still (they sit on the floor); the bottom slice of a box is the same footprint
+        $solid = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'soap', 'drain' => 'none', 'foot' => 'bottom'])->assertCreated();
+        $this->assertGreaterThan($file->volume_mm3, ModelFile::where('uuid', $solid->json('file.uuid'))->firstOrFail()->volume_mm3);
+        $this->assertEqualsWithDelta(94, $solid->json('file.edit.pocket.0'), 0.2);
+        $ribs = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'soap', 'drain' => 'ribs'])->assertCreated();
+        $this->assertSame('ready', $ribs->json('file.status'), (string) $ribs->json('file.error'));
+        $this->assertGreaterThanOrEqual(8, $ribs->json('file.edit.drains'));
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'soap', 'drain' => 'holes'])->assertStatus(422);
+    }
 }

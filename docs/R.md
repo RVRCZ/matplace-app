@@ -29,6 +29,7 @@ modulů), `viewer.ts` (dvě nové metody), `ModelFile` (`builtForPrinting`, `pri
 | Lektvarová láhev z modelu | `/tools/potion` | `edit` (`edit_tool.py potion`) | model → seříznuté dno, dutina, hrdlo na kuželovém nástavci, kónická zátka (`cork`), štítek s nápisem (`label`) |
 | Flexi z modelu | `/tools/flexi-cut` | `edit` (`edit_tool.py flexi_cut`) | podlouhlý model → 3–20 článků napříč osou s kulovými klouby Ø 6–10 (vůle 0,35–0,5), tiskne se najednou složené |
 | Díly podle barev | `/tools/colors` | `edit` (`colors_tool.py` přes `edit_tool.py colors`) | barevný 3MF (materiály, extrudery objektů, malování Bambu / Orca / Prusa) → díl na barvu: samostatná tělesa tak, jak jsou, namalované plochy jako vložky 0,6–3 mm s vybráním v těle |
+| Mýdlenka podle modelu | `/tools/soap-from-model` | `edit` (`edit_tool.py soap`, karta `soap_model`) | půdorys nahraného modelu (projekce nebo dno) + vůle → kapsa, stěna, dno s drážkami / mřížkou / žebry; model sám se netiskne |
 | Litofanie a reliéf (rozšíření) | `/tools/relief` | `relief` (`relief_tool.py`, `ReliefGenerator`) | fotka → panel v 7 tvarech (i vlastní silueta), rámeček, otvor / očko, stojánek; **lampa** (fotka kolem válce, dno na E27 / E14 / LED); jas, kontrast, střední tóny; náhled podsvícený / povrch |
 
 ### Obraz z filamentu (`filament_art`)
@@ -219,6 +220,17 @@ stránka kreslí díly v barvách souboru a ukazuje seznam s podíly už v anal�
 menší té největší (`many_colors`). `colors_tool.py pack <out.3mf> <stl> <json díly>` zabalí díly STL do 3MF s
 `basematerials` – z toho je karta (sněhulák z filament artu zpět rozdělený na barvy) i test.
 
+### Mýdlenka podle půdorysu modelu (`soap`)
+
+Zadání ji chtělo jako režim kindu `soap` ze session 2 („podle stopy modelu“); ten kind v této větvi není, tak je to
+op `soap` na stránce `edit` s katalogovým klíčem `soap_model` (adresa `/tools/soap-from-model`), aby `/tools/soap-dish`
+zůstal session 2. Půdorys: `Manifold.project()` (celá silueta shora) nebo řez 0,6 mm nad dnem; obrys se zbaví děr
+(jen kladně orientované smyčky) a lehce zaoblí (offset +1/−1). Kapsa = obrys + vůle (0,5–6), vnější = kapsa + stěna
+(1,2–6), výška stěny 8–60, dno 1,2–6. Odtok: `grooves` (drážky 3 mm po 10 mm skrz dno, jen uvnitř kapsy zmenšené
+o 3 mm, aby nikdy nesahaly ke stěně), `grid` (oběma směry), `ribs` (žebra 2 × 2 mm po 10 mm na dně a čtyři otvory
+Ø 6 v rozích, pokud se do dna vejdou), `none`. Model menší než 15 mm v půdorysu → `too_small` (stojící litofanie má
+půdorys 80 × 3!), miska nad 300 mm → `too_big`. Jeden díl `body`.
+
 ## 2. Rozhodnutí a proč
 
 1. **Filament art není kind `ParametricGenerator`**, ale vlastní generátor a modul `art`. Zadání ho tam chtělo;
@@ -321,6 +333,9 @@ Limit 60 s ze zadání je daleko; decimaci nad 2 M jsem na skutečném modelu ne
 | analýza (čtení XML, svaření, plochy) | 2,9 s |
 | rozdělení: 3 vložky + tělo s vybráním, 843 tis. trojúhelníků ven, vše uzavřené | 7,2 s |
 | tři krychle testu (36 trojúhelníků) | 1,1 s |
+
+`soap` na ležícím srdci 90 × 74 (277 tis. trojúhelníků): drážky 1,9 s, žebra 1,8 s (z toho načtení a projekce
+většina); na kvádru testu 1,2 s.
 Čtení XML přes `ElementTree` drží celý strom v paměti; 2 M trojúhelníků (limit) je odhadem 1–1,5 GB – přes 1 M by
 stálo za `iterparse`, nezměřeno.
 
@@ -345,7 +360,9 @@ těžší o disk otvoru, `socket_too_big`.
 `p1`, celá modrá krychle, krychle malovaná `paint_color` (`4` a `0C`) s `filament_colour` z projektu → analýza (4 barvy
 podle plochy, názvy / hex / extruder / zdroje / podíl), rozdělení (díly `color_1–4`, druhy `mixed, base, base, inlay`,
 objem celku = 3 krychle, modrý díl 60 mm široký, vložka 1,25 vysoká, tělo o 1,2 nižší, stažení dílu, cizí 404), STL
-bez barev (analýza `has_colors` false, rozdělení `no_colors`), hloubka mimo rozsah 422.
+bez barev (analýza `has_colors` false, rozdělení `no_colors`), hloubka mimo rozsah 422. +1 (mýdlenka): kvádr
+90 × 60 × 30 → kapsa 94, miska 98,8 × 68,8 × 22, ≥ 7 drážek, uzavřená, objem mezi 60 % a 100 % skořepiny; plné dno
+těžší, dno jako půdorys totéž u kvádru, žebra ≥ 8, špatný odtok 422.
 
 ## 5. Co není ověřené
 
@@ -397,8 +414,8 @@ Hotové: `/tools/filament-art` (oba režimy, rám, LED, návod), `/tools/split` 
 3D profilu pro vysoké modely), `/tools/holder-from-model`, `/tools/potion`, `/tools/flexi-cut`, společný základ `edit_tool.py` + `ModelEditor` +
 `EditModel` + stránka `edit`.
 Zbývá (v pořadí, jak dává smysl): `/tools/wearable` (míra, průzory ve vieweru, drážky na popruh); `/tools/flexi` (zvíře z primitiv);
-`soap` podle stopy; `/tools/slider`. Rozšíření `relief` (tvary, lampa, podsvícený náhled) a `/tools/colors` jsou
-hotové.
+`/tools/slider`. Rozšíření `relief` (tvary, lampa, podsvícený náhled), `/tools/colors` a `soap` podle stopy
+(`/tools/soap-from-model`) jsou hotové.
 
 ## 8. Stav
 
@@ -409,4 +426,4 @@ chyba – `ToolsFlowTest` hlídá, že každý inline `throttle` má vlastní p�
 `edit/{part}.stl` sdílely `preview`, `create`, `zip`, `part` s nástroji session 1 → přejmenováno na `art_*`,
 `edit_part`. Pak rozšíření litofanie (tvary, zavěšení, lampa, světlo, náhled) – `ReliefToolTest` 6 testů,
 `ToolsFlowTest` zelený, build (a82aed8). Pak `/tools/colors` (`colors_tool.py`, karta ze sněhuláka, test), build,
-pint, testy stránek, katalogu, karet, SEO a toku zelené.
+pint, testy stránek, katalogu, karet, SEO a toku zelené (2e3957c). Pak mýdlenka podle modelu (`soap`).

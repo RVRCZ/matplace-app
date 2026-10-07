@@ -154,6 +154,7 @@ $pages = function () {
     Route::get('/tools/potion', [EditToolsController::class, 'edit'])->defaults('op', 'potion')->name('tools.potion');
     Route::get('/tools/flexi-cut', [EditToolsController::class, 'edit'])->defaults('op', 'flexi_cut')->name('tools.flexi_cut');
     Route::get('/tools/colors', [EditToolsController::class, 'edit'])->defaults('op', 'colors')->name('tools.colors');
+    Route::get('/tools/soap-from-model', [EditToolsController::class, 'edit'])->defaults('op', 'soap')->name('tools.soap_model');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {

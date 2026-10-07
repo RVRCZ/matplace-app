@@ -70,6 +70,9 @@ return [
     'colors.title' => 'Piezas por color de un 3MF',
     'colors.hint' => 'Un 3MF multicolor del slicer dividido en una pieza por cada color: cuerpos separados y zonas pintadas como incrustaciones.',
     'colors.action' => 'Dividir por colores',
+    'soap_model.title' => 'Jabonera según su propio modelo',
+    'soap_model.hint' => 'Un hueco a medida de la huella del modelo que suba, con holgura, pared y fondo con desagüe: una bandeja para jabón, un dado, un teléfono.',
+    'soap_model.action' => 'Hacer la jabonera',
 
     'cats' => [
         'images' => 'Imágenes y logos',
@@ -126,5 +129,6 @@ return [
         'potion' => 'poción botella elixir corcho cuello etiqueta figura calavera halloween regalo hueca',
         'flexi_cut' => 'flexi articulado articulación de bola segmentos print in place juguete dragón serpiente lagarto figura',
         'colors' => 'colores 3mf impresión multicolor ams mmu dividir por colores pintado bambu orca prusa piezas',
+        'soap_model' => 'jabonera bandeja de jabón según modelo huella desagüe ranuras nervios baño',
     ],
 ];
