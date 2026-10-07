@@ -17,7 +17,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter'];
 
     protected function setUp(): void
     {
@@ -59,9 +59,10 @@ class ShapeToolsTest extends TestCase
         foreach (self::KINDS as $kind) {
             foreach (['cs', 'en', 'es'] as $lang) {
                 app()->setLocale($lang);
-                $page = $this->get($this->localized('/tools/'.$kind, $lang))->assertOk();
+                $page = $this->get($this->localized('/tools/'.str_replace('_', '-', $kind), $lang))->assertOk();
                 $page->assertSee(__('tools.'.$kind.'.title'))->assertSee(__('param.'.$kind.'.lead'));
-                $kind === 'gingerbread' ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));      // its shape is ours, there is no picture to bring
+                // a gingerbread and a big letter have a shape of ours: there is no picture to bring
+                in_array($kind, ['gingerbread', 'name_letter'], true) ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));
                 // no key is shown instead of a text
                 $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $page->getContent(), "{$kind} ({$lang})");
             }
@@ -259,6 +260,31 @@ class ShapeToolsTest extends TestCase
         // the visitor's own filaments: a red gingerbread with yellow icing
         $own = $this->meta($this->preview('gingerbread', ['line1' => 'Ela', 'part_colors' => ['body' => 'red', 'color_1' => 'yellow']])->assertOk())['notes'];
         $this->assertSame(['red', 'yellow'], [$own['body_color']['code'], $own['colors'][0]['code']]);
+    }
+
+    public function test_a_big_letter_carries_the_whole_name_where_it_has_room(): void
+    {
+        $e = $this->meta($this->preview('name_letter', ['line1' => 'Ela', 'height' => 120, 'thickness' => 8, 'relief' => 1], 'all', true)->assertOk());
+        $this->assertEqualsWithDelta(120, $e['bbox']['y'], 0.5);
+        $this->assertEqualsWithDelta(9, $e['bbox']['z'], 0.01);
+        $this->assertSame(['body', 'color_1'], $e['notes']['parts']);
+        $this->assertEqualsWithDelta(8, $e['notes']['color_change_mm'], 0.001);
+        $this->assertSame(['black', 'white'], [$e['notes']['body_color']['code'], $e['notes']['colors'][0]['code']]);
+        $this->assertSame([], $e['notes']['warnings']);
+        // the name runs up the stem of the E: taller than wide, and well inside the letter
+        $name = $this->meta($this->preview('name_letter', ['line1' => 'Ela', 'height' => 120], 'color_1')->assertOk());
+        $this->assertGreaterThan($name['bbox']['x'] * 1.3, $name['bbox']['y']);
+        $this->assertGreaterThan(15, $name['bbox']['x']);
+        // another letter than the first one of the name, another typeface for it
+        $n = $this->meta($this->preview('name_letter', ['line1' => 'Ela', 'initial' => 'n', 'height' => 120])->assertOk());
+        $this->assertNotEqualsWithDelta($e['bbox']['x'], $n['bbox']['x'], 3);
+        $serif = $this->meta($this->preview('name_letter', ['line1' => 'Ela', 'height' => 120, 'letter_face' => 'serif'])->assertOk());
+        $this->assertNotEqualsWithDelta($e['volume_mm3'], $serif['volume_mm3'], 100);
+        // a long name in a round letter comes out small, and the tool says so
+        $o = $this->meta($this->preview('name_letter', ['line1' => 'Oldřiška Nováková ml', 'typeface' => 'mono', 'height' => 60])->assertOk());
+        $this->assertNotEmpty(array_intersect(['name_small', 'name_no_room'], $o['notes']['warnings']));
+        $this->assertSame(__('param.text_required'), $this->preview('name_letter', ['line1' => ''])->assertStatus(422)->json('errors')['params.line1'][0]);
+        $this->preview('name_letter', ['line1' => 'Ela', 'height' => 400])->assertStatus(422);
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

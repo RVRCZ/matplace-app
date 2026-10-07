@@ -1,13 +1,13 @@
 # P: tvar z obrázku a jména (session 1, vánoční sada)
 
 Větev `feature/tools-shapes` (z `main` 4438a2d, 7. 10. 2026), zadání `docs/prompts/nastroje.md`, část „Session 1“.
-Tenhle dokument popisuje **první várku**: obrázek v barvách filamentů a sedm nástrojů, které na něm stojí. Zbytek
-vánoční sady (sušenka s polevou, velké písmeno, zápich do dortu) a zbytek session 1
+Tenhle dokument popisuje **první várku**: obrázek v barvách filamentů a osm nástrojů, které na něm stojí. Zbytek
+vánoční sady (sušenka s polevou, zápich do dortu) a zbytek session 1
 jsou v sekci 7 jako to, co teprve přijde.
 
 ## 1. Co vzniklo
 
-**Sedm nástrojů v katalogu**, každý s vlastní stránkou, kartou, SEO texty ve třech jazycích a třemi ukázkami:
+**Osm nástrojů v katalogu**, každý s vlastní stránkou, kartou, SEO texty ve třech jazycích a třemi ukázkami:
 
 | nástroj | adresa | kind | co přidává k obrázku |
 |---|---|---|---|
@@ -18,6 +18,7 @@ jsou v sekci 7 jako to, co teprve přijde.
 | Magnetka z obrázku | `/tools/magnet` | `magnet` | kapsa na magnet vzadu (lepení, nalisování, skrz, bez), předvolby disků |
 | Podtácek s obrázkem | `/tools/coaster` | `coaster` | kruh, čtverec, šestiúhelník; drážky zespodu |
 | Perníček se jménem | `/tools/gingerbread` | `gingerbread` | tvar je náš (panáček, srdce, hvězda, stromek), poleva vlnkou nebo linkou, jméno se samo vejde |
+| Velké písmeno se jménem | `/tools/name-letter` | `name_letter` | první písmeno jména 60–200 mm vysoké a 3–15 mm silné, celé jméno na něm druhou barvou |
 
 **Obrázek v barvách** (`engines/python/shape2d.py`, funkce `colors`) – sdílené pro všechno, co přijde (sušenka,
 filament‑art v session 3):
@@ -39,7 +40,7 @@ filament‑art v session 3):
    (`skimage.measure.find_contours`) – hrany jsou hladké, ne schodovité, a maska uvnitř jiné masky dá obrys uvnitř
    jejího obrysu. Každá barva má dvě plochy: `own` (jen ona) a `stack` (ona a všechno nad ní).
 
-**Builder** `engines/python/shape_kinds.py` – jeden pro všech sedm produktů. Díly: `body` (podklad s očkem),
+**Builder** `engines/python/shape_kinds.py` – jeden pro všech osm produktů. Díly: `body` (podklad s očkem),
 `color_<n>`, `rim`. Dva způsoby, jak barvy vytisknout:
 
 - **nad sebou (výchozí)**: každá barva je o krok výš než ta pod ní (0,4–1,2 mm po 0,2; náušnice a podtácek
@@ -57,6 +58,12 @@ nohách; srdce a hvězda s polevou po obvodu; stromek se dvěma girlandami), ná
 aby se vešlo do nejširšího místa tvaru; pod 3 mm výšky písmen přijde upozornění. Těsto dostane cívku nejbližší perníkové
 hnědé, poleva nejsvětlejší – dvě barvy nad sebou, jedna výměna. Srdce visí za zářez mezi laloky, ne za jeden z nich.
 Zadání ho chtělo jako tvar cedulky (`sign`); je v rodině `shape`, protože z ní má barvy, očko tažením i projekt s výměnou.
+
+**Velké písmeno se jménem** (`_name_letter`): tučné písmeno (bezpatkové, patkové nebo strojové) a na něm jméno tam,
+kde má písmeno nejvíc místa – `_room` hledá největší obdélník v poměru stran jména, naležato i otočený o čtvrt kruhu
+(podél svislého tahu), 1,5 mm od okraje. Pod 4 mm výšky přijde upozornění, bez místa jiné. Tělo dostane nejtmavší cívku,
+jméno nejsvětlejší. Zadání ho stavělo na skladbě vrstev a chtělo i otvor na zavěšení a podstavec; ty tu nejsou – od
+10 mm tloušťky většina písmen stojí sama a stránka to říká.
 
 **Očko** je kroužek na obrysu: poloha v % obvodu po směru hodin od nejvyššího bodu (posuvník), nebo **tažením
 v náhledu** – oranžový úchyt jede po obrysu (`viewer.ts` `setMarker`, obrys posílá nástroj jako 120 bodů rovnoměrně
@@ -151,7 +158,7 @@ nesplňuju** (1,35 s + 0,35 s prodleva před dotazem). Na produkci jsem neměři
 - **Nic z toho se netisklo.** Geometrie je ověřená výpočtem (testy: objemy, rozměry, díly, výšky výměn), ne tiskem.
   K vyzkoušení na farmě: přívěsek 45 mm ve dvou barvách (očko Ø 3, stěna 2 – drží?), náušnice 30 mm (tloušťka 2,4),
   magnetka s kapsou Ø 10 × 2 na lepení (vůle 0,2) a nalisování (0,05), podtácek 100 mm s drážkami. Štítek „ověřeno
-  tiskem“ žádný ze sedmi nemá. Rozcestník `/gifts` na nové nástroje zatím neodkazuje.
+  tiskem“ žádný z osmi nemá. Rozcestník `/gifts` na nové nástroje zatím neodkazuje.
 - **Projekt s více výměnami** hlídá test (`ColorChangeTest`: tři řádky ve správném pořadí, Orca i Prusa); ve
   skutečné Orce ani PrusaSliceru jsem ho neotvíral. Jedna výměna je ověřená z dřívějška (N.md §8).
 - **Tažení očka** jsem zkoušel skriptem v headless Chrome (úchyt se chytí, hodnota se změní, náhled se přepočítá),
@@ -172,8 +179,8 @@ php artisan optimize
 systemctl restart php8.2-fpm matplace-worker
 ```
 
-S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png`. Po nasazení projít `/tools` (sedm nových karet), `/tools/charm` (táhnout
+S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
+`public/img/tool-examples/…-{1,2,3}.png`. Po nasazení projít `/tools` (osm nových karet), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -183,7 +190,7 @@ jsem odkaz nahradil vlastním `npm ci`; sdílený adresář obnoví `npm ci` v `
 
 ## 7. Co přijde (v tomhle pořadí)
 
-Vánoční sada: sušenka s kreslenou polevou (`cookie`), skladba vrstev `compose` → velké písmeno se jménem a zápich do dortu.
+Vánoční sada: sušenka s kreslenou polevou (`cookie`), skladba vrstev `compose` → zápich do dortu.
 Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák, miska,
 organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), korálky, stojánek
 na tužky, tvary a motivy cedulky, `logo` `extrude`, 20+ písem.

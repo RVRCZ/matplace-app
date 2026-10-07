@@ -27,7 +27,7 @@ final class ParametricGenerator
      * magnet, coaster. Each is a kind of its own (its own page, limits and stored designs) built by the one builder;
      * what they share is written once here and the kinds only say where they differ.
      */
-    public const FAMILY = ['charm' => 'shape', 'keychain' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape', 'gingerbread' => 'shape'];
+    public const FAMILY = ['charm' => 'shape', 'keychain' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape', 'gingerbread' => 'shape', 'name_letter' => 'shape'];
 
     private const SHAPE_FIELDS = [
         'width' => [20, 120, 45, 1], 'thickness' => [2, 6, 3, 0.2], 'frame' => [0, 3, 1.2, 0.1],
@@ -62,6 +62,8 @@ final class ParametricGenerator
         'coaster' => ['width' => [80, 120, 100, 1], 'thickness' => [3, 6, 4, 0.2], 'frame' => [0, 4, 2, 0.1], 'relief' => [0.2, 0.8, 0.4, 0.2]] + self::SHAPE_FIELDS,
         // the shape is ours (a gingerbread man, a heart, a star, a tree), the visitor brings the name: no picture, no picture's fields
         'gingerbread' => ['width' => [50, 150, 90, 1], 'thickness' => [2, 6, 3, 0.2], 'relief' => [0.4, 1.2, 0.6, 0.2], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_EYELET,
+        // a big first letter with the whole name on it: thick enough to stand on a shelf
+        'name_letter' => ['height' => [60, 200, 120, 1], 'thickness' => [3, 15, 8, 0.2], 'relief' => [0.4, 2, 1, 0.2]],
         'organizer' => [
             'width' => [30, 400, 200, 1], 'depth' => [30, 400, 120, 1], 'height' => [10, 150, 40, 1],
             'rows' => [1, 8, 2, 1], 'cols' => [1, 8, 3, 1], 'radius' => [0, 20, 4, 0.5], 'wall' => [0.8, 4, 1.6, 0.2], 'floor' => [0.8, 4, 1.2, 0.2],
@@ -110,6 +112,7 @@ final class ParametricGenerator
             'disc' => ['custom', 'd6x2', 'd8x3', 'd10x2', 'd12x3', 'd15x3', 'd20x3']],
         'coaster' => ['body' => ['circle', 'square', 'hex'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'gingerbread' => ['cookie' => ['man', 'heart', 'star', 'tree'], 'icing' => ['wavy', 'plain', 'none'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
+        'name_letter' => ['letter_face' => ['sans', 'serif', 'mono'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
         'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -130,6 +133,7 @@ final class ParametricGenerator
         'ornament' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'magnet' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
         'coaster' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
         'gingerbread' => ['line1' => [16, false, 'Ela']],
+        'name_letter' => ['line1' => [20, true, 'Ela'], 'initial' => [1, false, '']],
         'sign' => ['line1' => [40, true, 'Jana'], 'line2' => [40, false, '']],
         'logo' => ['line1' => [30, false, 'LOGO'], 'line2' => [30, false, '']],
         'stamp' => ['line1' => [20, false, 'EVA'], 'line2' => [20, false, '']],
@@ -145,7 +149,7 @@ final class ParametricGenerator
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
-        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'],
+        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
@@ -160,7 +164,7 @@ final class ParametricGenerator
         'modular' => ['inner_w' => 'x', 'inner_d' => 'y', 'height' => 'z'], 'vase' => ['top_d' => 'x', 'height' => 'z'], 'phone_stand' => ['width' => 'x'],
         'cable_holder' => ['depth' => 'y'], 'holder' => ['obj_w' => 'x', 'height' => 'z'], 'cap' => ['size_a' => 'x', 'height' => 'z'],
         'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
-        'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'],
+        'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'],
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
 
@@ -168,12 +172,12 @@ final class ParametricGenerator
         'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8'];
 
     public const FLAGS = ['charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
-        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'],
+        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['flush', 'bevel'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
-        'gingerbread' => self::SHAPE_WHEN, 'charm' => self::SHAPE_WHEN, 'keychain' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
+        'gingerbread' => self::SHAPE_WHEN, 'name_letter' => self::SHAPE_WHEN, 'charm' => self::SHAPE_WHEN, 'keychain' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
         'magnet' => self::SHAPE_WHEN + ['disc' => ['mount', ['glue', 'press', 'through']], 'mag_d' => ['mount', ['glue', 'press', 'through']], 'mag_h' => ['mount', ['glue', 'press']], 'mag_gap' => ['mount', ['glue']]],
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
@@ -285,7 +289,7 @@ final class ParametricGenerator
             'cutter' => array_values(array_intersect((array) ($p['parts'] ?? []), ['body', 'stamp'])),   // the stamp exists only when the drawing had inner lines: the tool says so
             'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
             // a picture in colours: the plate, every colour and the rim, as the tool listed them
-            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8])$/', $part))),
+            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8])$/', $part))),
             default => [],
         };
     }
@@ -440,6 +444,10 @@ final class ParametricGenerator
                 $clean['font'] = base_path('engines/fonts/Pacifico-Regular.ttf');   // handwritten, letters joined (OFL)
             }
             $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? ''], fn ($l) => $l !== ''));
+            if (isset($clean['letter_face'])) {
+                // the big letter has a typeface of its own: always a bold one, it carries the name
+                $clean['letter_font'] = base_path('vendor/dompdf/dompdf/lib/fonts/'.(['serif' => 'DejaVuSerif-Bold.ttf', 'mono' => 'DejaVuSansMono-Bold.ttf'][$clean['letter_face']] ?? 'DejaVuSans-Bold.ttf'));
+            }
         }
         if (isset(self::FAMILY[$kind])) {
             $clean['palette'] = self::spools();

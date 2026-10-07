@@ -21,16 +21,16 @@ import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
-    "width": (10, 250), "thickness": (1.2, 10), "frame": (0, 4), "relief": (0.2, 1.2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
+    "width": (10, 250), "height": (40, 250), "thickness": (1.2, 15), "frame": (0, 4), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
     "mag_d": (4, 30), "mag_h": (1, 6), "mag_gap": (0, 0.4),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",)}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",)}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -129,7 +129,7 @@ def build(M, Invalid, p, product):
         raise Invalid("bad_choice", "body")
     flush, rim, bevel = (bool(p.get(f, False)) for f in ("flush", "rim", "bevel"))
     eyelet = bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")
-    cookie = product == "gingerbread"                         # the shape is ours, the visitor brings the name
+    cookie = product in ("gingerbread", "name_letter")        # the shape is ours, the visitor brings the name
     warn = []
     lines = [str(x).strip() for x in (p.get("lines") or []) if str(x).strip()]
     art_path = p.get("artwork_path")
@@ -159,7 +159,7 @@ def build(M, Invalid, p, product):
         raise Invalid("shape_too_small")
     try:
         if cookie:
-            layers, info = _gingerbread(M, Invalid, p, width, lines, warn)
+            layers, info = (_gingerbread if product == "gingerbread" else _name_letter)(M, Invalid, p, width, lines, warn)
         elif is_text:
             art, tinfo = S.text(M, lines[:2], p.get("font"), 10, scales=[1.0, 0.7])
             w0, h0 = S.size(art)
@@ -529,6 +529,102 @@ def _gingerbread(M, Invalid, p, width, lines, warn):
     layers = [{"index": 1, "rgb": hx, "code": code, "hex": hx, "share": round(art.area() / max(body.area(), 1e-9), 4), "own": art, "stack": art}]
     info = {"source": "cookie", "silhouette": body, "size": [bx1 - bx0, by1 - by0], "found": 1, "wanted": 1, "background": "alpha", "missing_chars": missing,
             "body": body, "dough": (dough[0], dough[1]), "top": ((top[0] - x0) * k, (top[1] - y0) * k) if top else None}
+    return layers, info
+
+
+# ── a big letter with the name on it ─────────────────────────────────────────
+
+def _room(M, cs, aspect, margin):
+    """
+    The biggest rectangle of the given aspect (width / height) that lies inside an outline, `margin` away from its
+    edge, lying flat or turned a quarter (up a stem): (cx, cy, width, height, turned), or None when there is no room.
+    """
+    import numpy as np
+    from PIL import Image, ImageDraw
+    from scipy import ndimage
+    x0, y0, x1, y1 = cs.bounds()
+    cell = max(0.3, max(x1 - x0, y1 - y0) / 260)
+    size = (int((x1 - x0) / cell) + 3, int((y1 - y0) / cell) + 3)
+    img = Image.new("1", size, 0)
+    draw = ImageDraw.Draw(img)
+    rings = []
+    for poly in cs.to_polygons():
+        pts = [((float(x) - x0) / cell + 1, (float(y) - y0) / cell + 1) for x, y in poly]
+        rings.append((sum(pts[i][0] * pts[(i + 1) % len(pts)][1] - pts[(i + 1) % len(pts)][0] * pts[i][1] for i in range(len(pts))), pts))
+    for area, pts in sorted(rings, key=lambda ring: -ring[0]):      # the outer rings first, then their holes
+        draw.polygon(pts, fill=1 if area > 0 else 0)
+    inside = ndimage.distance_transform_edt(np.asarray(img, dtype=bool)) * cell >= margin
+    best = None
+    for turned, mask in ((False, inside), (True, inside.T)):
+        rows = mask.shape[0]
+        # heights to try, tallest first; for each one the rows that are inside for the whole height and their longest run
+        for h in sorted({int(round(v)) for v in np.geomspace(3, rows, 28)}, reverse=True):
+            if best is not None and h * cell <= best[0]:
+                break
+            band = ndimage.minimum_filter1d(mask.astype(np.uint8), h, axis=0, mode="constant") > 0
+            if not band.any():
+                continue
+            edge = np.zeros((rows, 1), dtype=np.int8)
+            d = np.diff(np.concatenate([edge, band.astype(np.int8), edge], axis=1), axis=1)
+            for r in np.flatnonzero(band.any(axis=1)):
+                starts, ends = np.flatnonzero(d[r] == 1), np.flatnonzero(d[r] == -1)
+                i = int(np.argmax(ends - starts))
+                tall = min(h * cell, (ends[i] - starts[i]) * cell / aspect)       # its height limits the text, or its width
+                if best is None or tall > best[0]:
+                    best = (tall, (starts[i] + ends[i]) / 2, float(r), turned)
+    if best is None:
+        return None
+    tall, cx, cy, turned = best
+    if turned:
+        cx, cy = cy, cx
+    return x0 + (cx - 1) * cell, y0 + (cy - 1) * cell, tall * aspect, tall, turned
+
+
+def _name_letter(M, Invalid, p, width, lines, warn):
+    """
+    The first letter of a name, big and thick, with the whole name written on it where the letter has the most room:
+    across a bar or up a stem. Returns (layers, info) like _gingerbread.
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    name = lines[0] if lines else ""
+    initial = (str(p.get("initial") or "").strip() or name)[:1].upper()
+    if not initial:
+        raise Invalid("no_text")
+    height = _num(Invalid, p, "height", 120)
+    try:
+        letter, linfo = S.text(M, [initial], p.get("letter_font") or p.get("font"), 100)
+        letter = S.fit(letter, height_mm=height).simplify(0.02)
+        missing = list(linfo.get("missing_chars", []))
+        art = C()
+        if name:
+            text, tinfo = S.text(M, [name], p.get("font"), 10)
+            missing += [c for c in tinfo.get("missing_chars", []) if c not in missing]
+            tw, th = S.size(text)
+            place = _room(M, letter, tw / th, 1.5)
+            if place is None or place[3] < 2.0:
+                warn.append("name_no_room")
+            else:
+                cx, cy, w, h, turned = place
+                if h < 4.0:
+                    warn.append("name_small")
+                text = S.fit(text, width_mm=w).translate([-w / 2, -h / 2])
+                art = (text.rotate(90) if turned else text).translate([cx, cy]) ^ letter.offset(-0.6, J, 2.0, 16)
+    except S.ArtworkError as e:
+        raise Invalid(e.code)
+    if missing and letter.is_empty():
+        raise Invalid("no_text")
+    pal = p.get("palette") or []
+    by_code = dict((c, h) for c, h in pal)
+    chosen = (p.get("part_colors") or {}).get("color_1")
+    own = chosen.get("code") if isinstance(chosen, dict) else None
+    light = max(pal, key=lambda f: _light(f[1])) if pal else ("", "#f4f4f2")
+    dark = min(pal, key=lambda f: _light(f[1])) if pal else ("", "#1b1b1d")
+    code = own if own in by_code else light[0]
+    hx = by_code.get(code, light[1])
+    x0, y0, x1, y1 = letter.bounds()
+    layers = [] if art.is_empty() else [{"index": 1, "rgb": hx, "code": code, "hex": hx, "share": round(art.area() / max(letter.area(), 1e-9), 4), "own": art, "stack": art}]
+    info = {"source": "letter", "silhouette": letter, "size": [x1 - x0, y1 - y0], "found": 1, "wanted": 1, "background": "alpha", "missing_chars": missing,
+            "body": letter, "dough": (dark[0], dark[1]), "top": None}
     return layers, info
 
 

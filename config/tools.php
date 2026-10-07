@@ -123,6 +123,11 @@ return [
         ['params' => ['line1' => 'Mamince', 'cookie' => 'heart', 'width' => 90]],
         ['params' => ['line1' => 'Tom', 'cookie' => 'star', 'width' => 80]],
     ]]],
+    'name_letter' => ['route' => 'tools.name_letter', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['line1' => 'Ela', 'height' => 120]],
+        ['params' => ['line1' => 'Tomáš', 'height' => 150, 'letter_face' => 'serif', 'typeface' => 'sans']],
+        ['params' => ['line1' => 'Ivana', 'height' => 100, 'thickness' => 12]],
+    ]]],
     'charm' => ['route' => 'tools.charm', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/happy-ghost', 'width' => 45]],
         ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 50, 'eye_pos' => 0]],
