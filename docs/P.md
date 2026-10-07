@@ -174,11 +174,26 @@ z knihovny, lokálně (PHP vestavěný server na Windows, 7. 10. 2026):
 | přívěsek ze jména (bez obrázku) | 0,74 s | 214 kB |
 | cedulka pro srovnání (N.md: 0,71 s) | 0,74 s | 110 kB |
 
-Samotný `param_tool.py` s obrázkem běží 0,7–0,9 s (fotka v osmi barvách na 120 mm: 0,89 s); z toho asi 0,45 s je
-import numpy, `scipy.ndimage` (0,24 s) a Pillow, zbytek čtení obrázku, barvy a obrysy. **Cíl „do 1 s“ lokálně
-nesplňuju** (1,35 s + 0,35 s prodleva před dotazem). Na produkci jsem neměřil (větev není nasazená); cedulka je tam
-1,6× rychlejší než lokálně (0,44 vs. 0,71 s), takže čekám kolem 0,9 s – po nasazení změřit. Po zjednodušení obrysů
+Samotný `param_tool.py` s obrázkem běží 0,7–0,9 s (fotka v osmi barvách na 120 mm: 0,89 s). Po zjednodušení obrysů
 (bod na desetinu buněk) má model 2–5 tisíc trojúhelníků; předtím 14 tisíc.
+
+**Na produkci** (matplace.com, `main` 5355fa3, 7. 10. 2026 večer, medián z pěti, stejný požadavek):
+
+| nástroj | požadavek | STL |
+|---|---|---|
+| přívěsek, duch | 1,26 s | 107 kB |
+| podtácek, sněhulák | 1,28 s | 136 kB |
+| sušenka, perníkový panáček | 1,31 s | 400 kB |
+| velké písmeno „Ela“ | 0,82 s | 137 kB |
+| perníček „Ela“ | 0,59 s | 262 kB |
+| cedulka pro srovnání | 0,49 s | 110 kB |
+
+**Cíl „do 1 s“ nástroje s obrázkem neplní** ani lokálně, ani na produkci (1,3 s + 0,35 s prodleva před dotazem);
+nástroje se jménem ano. Můj odhad „kolem 0,9 s“ z první verze tohoto dokumentu byl špatně. Kam čas jde (lokální
+profil): import `scipy.ndimage` 0,27 s, čtení SVG 0,1–0,15 s, barvy a obrysy 0,2 s, zbytek start Pythonu a PHP.
+Po měření jsem zrychlil čtení SVG (body celé křivky jedním voláním, stejné obrysy na desetinu mm², o ~0,04 s na
+obrázek) – to v číslech výše ještě není. Dál by pomohl jen běžící proces místo nového Pythonu na každý náhled, což je
+věc `feature/perf`, ne této větve.
 
 ## 5. Co není ověřené
 
@@ -215,6 +230,12 @@ u dvoubarevného návrhu objednávku na farmě.
 Poznámka k tomuhle PC: `C:\matplace-app\node_modules` je od 7. 10. 07:37 prázdný (zmizel při úklidu worktree, které
 na něj měly odkaz), takže `npm run build` nejde v žádném worktree, který tam odkazuje. V `C:\matplace-shapes-wt`
 jsem odkaz nahradil vlastním `npm ci`; sdílený adresář obnoví `npm ci` v `C:\matplace-app`.
+
+**Nasazeno 7. 10. 2026 v 18:27 UTC** (nasazovala session, která stavěla `feature/farm-colors`; podrobnosti v
+`docs/FARM-COLORS.md` §5): `main` 5772959 = tato větev po `a764dcf` slitá s `feature/farm-colors`, jedna migrace
+(`farm_orders.color_changes`, ne z této větve), odstávka 11 s. Po nasazení jsem ověřil, že `/tools`, `/gifts` a
+stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled na produkci přiřazuje barvám skutečné cívky
+(duch: `02_PLA+_bily`, `01_PLA+_cerny`, `04_PLA+_ruzovy`). Zkušební tisk je na Romanovi.
 
 ## 7. Co přijde (v tomhle pořadí)
 
