@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Dividir un modelo 3D en piezas que quepan en su impresora',
-    'description' => 'Un modelo mayor que la cama de impresión se corta en piezas con pasadores o llaves de cola de milano, numeradas en los cortes y apoyadas para imprimir sin soportes. Gratis y en línea.',
+    'description' => 'Un modelo mayor que la cama se corta en piezas con pasadores o llaves de cola de milano, numeradas y listas para imprimir sin soportes. Gratis, con mapa.',
     'h1' => 'Dividir un modelo en piezas: una impresión grande en una impresora pequeña',
     'intro' => [
         'La herramienta corta un modelo con planos a lo ancho, a lo fondo y a lo alto en piezas que quepan en la cama elegida: nuestra granja de 250 mm, impresoras comunes de 220 o 180 mm, o una medida propia. Usa los menos cortes posibles y los planos se pueden mover con deslizadores; la vista previa los muestra sobre el modelo. Cada pieza se gira para apoyar su mayor cara de corte en la cama, de modo que se imprime sin soportes en la unión.',

@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'title' => 'Cuadro de filamento: una imagen en placas en capas o en una impresión',
-    'description' => 'Una imagen o una foto se convierte en un cuadro para la pared en colores de filamento: placas en capas en un marco, o una impresión con los colores uno sobre otro. Lo imprimimos o lo descarga.',
+    'title' => 'Cuadro de filamento: placas en capas o una sola impresión',
+    'description' => 'Una imagen o foto como cuadro de pared en colores de filamento: placas en capas en un marco o una impresión con colores apilados. Lo imprimimos o lo descarga.',
     'h1' => 'Cuadro de filamento: una foto o un dibujo como capas de plástico',
     'intro' => [
         'La herramienta reduce una imagen o una foto a entre 1 y 8 colores de filamentos que tenemos de verdad en nuestra granja de impresión y construye con ellos un cuadro para la pared de 50 a 250 mm de ancho. Por defecto es un cuadro en capas: cada color es una placa propia de 1,5 a 3 mm, y las placas se apilan una tras otra como un recortable; la trasera lleva toda la silueta y la delantera solo su color. Entre las placas hay separadores de 2 a 5 mm que dan profundidad y sombra; para un cuadro fino, las placas van planas. Puede añadir un marco redondo o cuadrado con ranura para un clavo y, si quiere, sitio para una tira LED.',

@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'title' => 'Obraz z filamentu: obrázek jako vrstvené desky nebo jeden tisk',
+    'title' => 'Obraz z filamentu: vrstvené desky, nebo jeden tisk',
     'description' => 'Z obrázku nebo fotky vznikne obraz na zeď v barvách filamentů: vrstvené desky v rámu, nebo jeden tisk s barvami nad sebou. Vytiskneme ho, nebo si ho stáhnete.',
     'h1' => 'Obraz z filamentu: fotka nebo kresba jako vrstvy plastu',
     'intro' => [

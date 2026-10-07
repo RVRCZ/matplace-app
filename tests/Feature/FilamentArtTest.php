@@ -61,14 +61,16 @@ class FilamentArtTest extends TestCase
         $this->assertSame(count($plates), $n['plates']);
         // the plates stack back to front: each one a step deeper (plate + gap), the picture's outer size is the frame's window
         $guide = $n['guide'];
-        $this->assertCount(count($plates), $guide);
+        $this->assertCount(count($plates) + 1, $guide);                                      // the plates, and the back plate a cut-out motif stands on
+        $this->assertSame('body', $guide[0]['part']);
+        $this->assertContains('body', $parts);
         foreach ($guide as $i => $g) {
             $this->assertEqualsWithDelta($i * 5.0, $g['z'], 0.01, 'plate '.$i);
             $this->assertNotEmpty($g['svg']);
             $this->assertMatchesRegularExpression('/^#[0-9a-f]{6}$/i', $g['hex']);
         }
-        $this->assertSame([160.0, 160.0], array_map('floatval', array_slice($n['outer'], 0, 2)));
-        $this->assertSame([180.0, 180.0], array_map('floatval', $n['frame_outer']));       // 160 + 2 × 10 mm of frame
+        $this->assertEquals([160, 160], array_slice($n['outer'], 0, 2));
+        $this->assertEquals([180, 180], $n['frame_outer']);                                 // 160 + 2 × 10 mm of frame
         // the back plate carries the whole silhouette: it is the biggest; the front one is the smallest
         $areas = array_column($n['colors'], 'area_mm2');
         $this->assertGreaterThan(end($areas), $areas[0]);
@@ -89,7 +91,8 @@ class FilamentArtTest extends TestCase
 
         // laid out for printing: the pieces side by side on the bed, nothing stacked, the frame rim up
         $print = $this->meta($this->preview(['artwork' => 'lib:colour/snowman', 'mode' => 'layered', 'frame' => 'round', 'width' => 160, 'colors_n' => 5], 'print')->assertOk());
-        $this->assertEqualsWithDelta(20.0, $print['bbox']['z'], 0.1);                     // the frame is the tallest piece (2 mm board + 17 mm of plates + 1)
+        $this->assertEqualsWithDelta($print['notes']['frame_depth'], $print['bbox']['z'], 0.1);   // the frame is the tallest piece: its board, the plates and a hair of room
+        $this->assertEqualsWithDelta(2 + 22 + 1, $print['notes']['frame_depth'], 0.1);           // 5 plates of 2 mm with 3 mm gaps = 22 mm of depth
         $this->assertGreaterThan($m['bbox']['y'] + 100, $print['bbox']['y']);
         foreach ($print['notes']['each'] as $size) {
             $this->assertLessThanOrEqual(240, max($size[0], $size[1]));
@@ -101,7 +104,7 @@ class FilamentArtTest extends TestCase
         $m = $this->meta($this->preview(['artwork' => 'lib:colour/gingerbread-man', 'mode' => 'stack', 'shape' => 'rect', 'width' => 120, 'height' => 140, 'margin' => 6, 'colors_n' => 4, 'base' => 1.2, 'step' => 0.4])->assertOk());
         $n = $m['notes'];
         $this->assertSame('stack', $n['mode']);
-        $this->assertSame([120.0, 140.0], [$m['bbox']['x'], $m['bbox']['y']]);           // the plate is as big as asked
+        $this->assertEquals([120, 140], [$m['bbox']['x'], $m['bbox']['y']]);             // the plate is as big as asked
         $parts = array_column($m['parts'], 'name');
         $this->assertSame('body', $parts[0]);
         $colors = array_values(array_filter($parts, fn ($p) => str_starts_with($p, 'color_')));

@@ -105,7 +105,8 @@ final class ModelEditor
     /** The usable bed of a split, in mm: the preset less the margins the farm keeps clear, or the visitor's own numbers. */
     public static function bedOf(array $clean): array
     {
-        $preset = self::BEDS[$clean['bed'] ?? 'farm'] ?? self::BEDS['farm'];
+        $choice = array_key_exists($clean['bed'] ?? '', self::BEDS) ? $clean['bed'] : 'farm';
+        $preset = self::BEDS[$choice];
         if ($preset === null) {
             return [(float) $clean['bed_x'] - 2 * self::MARGIN, (float) $clean['bed_y'] - 2 * self::MARGIN, (float) $clean['bed_z']];
         }

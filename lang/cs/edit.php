@@ -91,7 +91,7 @@ return [
     'art.tip.farm' => 'Vrstvený obraz: každou desku vytiskněte v její barvě, pak je slepte v pořadí návodu, zadní první. Jeden tisk s barvami nad sebou vytiskneme na farmě najednou, barvy si vyberete při objednávce (nejvýš čtyři).',
     'art.picture' => 'Obrázek',
     'art.picture.hint' => 'PNG, JPG, WebP nebo SVG. Nejlépe vyjde kresba s několika plnými barvami; z fotky vybereme hlavní barvy.',
-    'art.part.body' => 'Podklad',
+    'art.part.body' => 'Zadní deska',
     'art.part.frame' => 'Rám',
     'art.part.plate' => 'Deska :n',
     'art.part.color' => 'Barva :n',

@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Split a 3D model into pieces that fit your printer',
-    'description' => 'A model bigger than the print bed is cut into pieces with pins or dovetail keys, numbered in the cuts and laid to print without supports. Free, online, with a map of the pieces.',
+    'description' => 'A model bigger than the print bed is cut into pieces with pins or dovetail keys, numbered and laid to print without supports. Free, with a map of the pieces.',
     'h1' => 'Split a model into pieces: a big print from a small printer',
     'intro' => [
         'The tool cuts a model by planes across its width, depth and height into pieces that fit the chosen bed: our farm with 250 mm, common printers with 220 or 180 mm, or your own size. It uses as few cuts as it can and you can move the planes with sliders; the preview shows them on the model. Every piece is turned so that its largest cut face lies on the bed, so it prints without supports at the joint.',

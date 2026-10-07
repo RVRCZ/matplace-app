@@ -212,7 +212,7 @@ final class ArtGenerator
         $path = dirname(Storage::disk(ModelFile::DISK)->path($file->storage_path)).'/guide.json';
         $data = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
 
-        return is_array($data) ? $data : null;
+        return is_array($data) && ! empty($data['guide']) ? $data : null;
     }
 
     /**

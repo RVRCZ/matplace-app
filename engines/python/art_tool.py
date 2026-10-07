@@ -195,8 +195,8 @@ def build(M, p):
     window = width
     if frame == "round":
         shape = "circle"
-        window = min(width, height)
-        width = height = window
+        window = width
+        height = width
     elif frame == "square":
         shape = "rect" if shape == "image" else shape
         window = min(width, height) if shape == "circle" else None
@@ -264,7 +264,11 @@ def build(M, p):
             stacks.append(stack)
         for i in range(count - 1):
             layers[i]["own"] = layers[i]["stack"] - layers[i + 1]["stack"]
-        layers[0]["stack"] = body2d if shape != "image" else layers[0]["stack"] + body2d
+        backing = shape != "image" and info["background"] != "kept"       # a cut-out motif on a disc or a rectangle: the plate behind it is a plate of its own
+        if shape == "image":
+            layers[0]["stack"] = layers[0]["stack"] + body2d
+        elif not backing:
+            layers[0]["stack"] = body2d
         layers[0]["own"] = layers[0]["stack"] - (layers[1]["stack"] if count > 1 else C())
         if merged_mm2 > 2.0:
             warn.append("thin_merged")
@@ -330,6 +334,28 @@ def build(M, p):
         depth = 0.0
         plates = []
         guide = []
+        if backing:
+            own = _code(p, "body")
+            if own:
+                body_color = own
+            elif spools:
+                motif = [S.hex_lab(layer["hex"]) for layer in layers]
+                pick = max(spools, key=lambda f: min(float(((S.hex_lab(f[1]) - m) ** 2).sum()) for m in motif))
+                body_color = (pick[0], pick[1])
+            else:
+                body_color = ("", "#ede6d6")
+            solid = body2d.extrude(plate_t)
+            posts = []
+            if gap > 0:
+                want = 4 if layers[0]["stack"].area() > 2500 else 3 if layers[0]["stack"].area() > 600 else 2
+                for px, py in _spots(M, layers[0]["stack"], POST_D / 2 + POST_MIN_WALL, want):
+                    solid = solid + M.Manifold.cylinder(gap + 0.01, POST_D / 2, POST_D / 2, 32).translate([px, py, plate_t - 0.01])
+                    posts.append([round(px - x0, 1), round(py - y0, 1)])
+            plates.append(("body", solid, body_color, None))
+            guide.append({"part": "body", "index": 0, "code": body_color[0], "hex": body_color[1], "rgb": body_color[1], "share": 0, "area_mm2": round(body2d.area(), 1),
+                          "z": 0.0, "posts": posts, "post_d": POST_D if posts else 0, "svg": _polys(body2d.translate([-x0, -y0]).simplify(0.15)), "own_svg": ""})
+            notes["body_color"] = {"code": body_color[0], "hex": body_color[1]}
+            depth = plate_t + (gap if posts else 0.0)
         for i, layer in enumerate(layers):
             name = "plate_%d" % layer["index"]
             area2d = layer["stack"]
@@ -420,7 +446,8 @@ def build(M, p):
         parts["all"] = fused
         for name, solid, color, layer in plates:
             paint[name] = color[1]
-            listed.append({"part": name, "index": layer["index"], "rgb": layer["rgb"], "code": color[0], "hex": color[1], "share": layer["share"], "area_mm2": round(layer["own"].area(), 1)})
+            if layer is not None:
+                listed.append({"part": name, "index": layer["index"], "rgb": layer["rgb"], "code": color[0], "hex": color[1], "share": layer["share"], "area_mm2": round(layer["own"].area(), 1)})
         if frame_solid is not None:
             paint["frame"] = frame_color[1]
             notes["frame_color"] = {"code": frame_color[0], "hex": frame_color[1]}
@@ -428,7 +455,7 @@ def build(M, p):
         for name, solid in pieces:
             bx0, by0, bz0, bx1, by1, bz1 = solid.bounding_box()
             each.append([round(bx1 - bx0, 1), round(by1 - by0, 1), round(bz1 - bz0, 1)])
-        notes.update({"guide": guide, "plates": len(plates), "depth": round(stack_depth, 1), "filaments": len({c[0] for _, _, c, _ in plates} | ({frame_color[0]} if frame_color else set())),
+        notes.update({"guide": guide, "plates": len([1 for _, _, _, layer in plates if layer is not None]), "depth": round(stack_depth, 1), "filaments": len({c[0] for _, _, c, _ in plates} | ({frame_color[0]} if frame_color else set())),
                       "multi_material": False, "color_changes": [], "outer": [round(span_w, 1), round(span_h, 1), round(stack_depth + lift, 1)], "each": each, "merged_mm2": round(merged_mm2, 1)})
     parts["_pieces"] = {"all": pieces}
     notes.update({"colors": listed, "paint": paint, "parts": [name for name, _ in pieces], "picture": [round(aw, 1), round(ah, 1)]})

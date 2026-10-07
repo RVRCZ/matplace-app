@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Filament art: a picture as layered plates or one print',
-    'description' => 'A picture or a photo becomes a picture for the wall in filament colours: layered plates in a frame, or one print with the colours one above another. We print it, or you download it.',
+    'description' => 'A picture or a photo becomes wall art in filament colours: layered plates in a frame, or one print with the colours stacked. We print it, or you download it.',
     'h1' => 'Filament art: a photo or a drawing as layers of plastic',
     'intro' => [
         'The tool reduces a picture or a photo to 1 to 8 colours of filaments we really have in stock on our print farm and builds a picture for the wall of them, 50 to 250 mm wide. By default it is a layered picture: every colour is a plate of its own, 1.5 to 3 mm thick, and the plates stack one behind another like a paper cut, the back one carrying the whole silhouette and the front one only its colour. Spacer posts of 2 to 5 mm between the plates give the picture depth and shadow; for a thin picture the plates lie flat. Add a round or square frame with a slot for a nail and, if you like, room for an LED strip.',

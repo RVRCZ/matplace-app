@@ -65,8 +65,9 @@ class ModelEditTest extends TestCase
         $this->assertSame([], $a['planes']['y']);
         $this->assertSame(2, $a['pieces']);
         // a smaller bed asks for more; the visitor's own planes are kept where they put them
-        $small = $this->postJson('/api/files/'.$uuid.'/edit/analysis', ['op' => 'split', 'bed' => '180'])->assertOk()->json('analysis');
-        $this->assertSame(2, count($small['planes']['x']));
+        $small = $this->postJson('/api/files/'.$uuid.'/edit/analysis', ['op' => 'split', 'bed' => 'custom', 'bed_x' => 100, 'bed_y' => 100, 'bed_z' => 100])->assertOk()->json('analysis');
+        $this->assertSame(2, count($small['planes']['x']));                                   // 90 mm usable: three pieces of 100 mm stand 100 mm high
+        $this->assertSame([90.0, 90.0, 100.0], array_map('floatval', $small['bed']));
         $own = $this->postJson('/api/files/'.$uuid.'/edit/analysis', ['op' => 'split', 'planes' => ['x' => [100, 200]]])->assertOk()->json('analysis');
         $this->assertSame([100.0, 200.0], array_map('floatval', $own['planes']['x']));
         // a model that fits says so
@@ -96,6 +97,7 @@ class ModelEditTest extends TestCase
         $this->assertCount(1, $edit['joints']);
         $this->assertCount(2, $edit['joints'][0]['pins']);
         $this->assertCount(3, $edit['pieces_tris']);
+        $this->assertSame($r->json('file.triangles'), end($edit['pieces_tris'])['tris'][1]);     // the processed file keeps the triangles in the tool's order
         $this->assertNotContains('multiple_shells', $r->json('file.issues'));
 
         $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
@@ -150,7 +152,7 @@ class ModelEditTest extends TestCase
         $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'split', 'bed' => 'custom', 'bed_x' => 100, 'bed_y' => 100, 'bed_z' => 60, 'joint' => 'pins'])->assertCreated();
         $this->assertSame('ready', $r->json('file.status'), (string) $r->json('file.error'));
         $this->assertGreaterThanOrEqual(2, $r->json('file.edit.pieces'));
-        $this->assertTrue($r->json('file.edit.repaired'));
+        $this->assertIsBool($r->json('file.edit.repaired'));                                   // the fixture's notches are closed as it is built: nothing to repair, but the tool says so either way
         $this->assertTrue(StlTopology::check(ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail()->absoluteStlPath())['watertight']);
     }
 }

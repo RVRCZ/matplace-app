@@ -91,7 +91,7 @@ return [
     'art.tip.farm' => 'Layered picture: print every plate in its colour, then glue them in the order of the guide, back plate first. One print with the colours as steps we print on the farm in one go; you pick the colours when ordering (four at most).',
     'art.picture' => 'Picture',
     'art.picture.hint' => 'PNG, JPG, WebP or SVG. A drawing with a few solid colours comes out best; of a photo we take the main colours.',
-    'art.part.body' => 'Base',
+    'art.part.body' => 'Back plate',
     'art.part.frame' => 'Frame',
     'art.part.plate' => 'Plate :n',
     'art.part.color' => 'Colour :n',

@@ -366,7 +366,10 @@ def split(src, dst, p, parts_dir):
             for k in range(len(bounds["z"]) - 1):
                 lo = (bounds["x"][i], bounds["y"][j], bounds["z"][k])
                 hi = (bounds["x"][i + 1], bounds["y"][j + 1], bounds["z"][k + 1])
-                box = M.Manifold.cube([hi[0] - lo[0] + 2 * eps, hi[1] - lo[1] + 2 * eps, hi[2] - lo[2] + 2 * eps]).translate([lo[0] - eps, lo[1] - eps, lo[2] - eps])
+                # neighbouring cells meet exactly on the plane; only the outside of the model gets a hair of room
+                pad_lo = [eps if idx == 0 else 0.0 for idx in (i, j, k)]
+                pad_hi = [eps if idx == last else 0.0 for idx, last in ((i, len(bounds["x"]) - 2), (j, len(bounds["y"]) - 2), (k, len(bounds["z"]) - 2))]
+                box = M.Manifold.cube([hi[0] - lo[0] + pad_lo[0] + pad_hi[0], hi[1] - lo[1] + pad_lo[1] + pad_hi[1], hi[2] - lo[2] + pad_lo[2] + pad_hi[2]]).translate([lo[0] - pad_lo[0], lo[1] - pad_lo[1], lo[2] - pad_lo[2]])
                 piece = man ^ box
                 if piece.is_empty() or piece.volume() < MIN_PIECE:
                     continue

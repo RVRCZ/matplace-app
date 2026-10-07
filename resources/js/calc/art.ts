@@ -98,7 +98,7 @@ export function bootArt(stage: Stage): void {
         const box = $('tool-parts'); const n = notes();
         const colors = n.colors;
         box.innerHTML = '';
-        const rows = [...(n.frame_color ? ['frame'] : []), ...colors.map((c) => c.part).reverse(), ...(n.mode === 'stack' ? ['body'] : [])];
+        const rows = [...(n.frame_color ? ['frame'] : []), ...colors.map((c) => c.part).reverse(), ...(n.body_color ? ['body'] : [])];
         rows.forEach((part) => {
             const c = colors.find((x) => x.part === part);
             const pos = c ? colors.indexOf(c) : -1;

@@ -91,7 +91,7 @@ return [
     'art.tip.farm' => 'Cuadro en capas: imprima cada placa en su color y péguelas en el orden de la guía, la trasera primero. La impresión con colores en escalones la hacemos en la granja de una vez; los colores los elige al pedir (cuatro como máximo).',
     'art.picture' => 'Imagen',
     'art.picture.hint' => 'PNG, JPG, WebP o SVG. Sale mejor un dibujo con pocos colores planos; de una foto tomamos los colores principales.',
-    'art.part.body' => 'Base',
+    'art.part.body' => 'Placa de fondo',
     'art.part.frame' => 'Marco',
     'art.part.plate' => 'Placa :n',
     'art.part.color' => 'Color :n',
