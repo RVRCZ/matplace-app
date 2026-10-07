@@ -8,6 +8,14 @@ any font or artwork).
 
 | file | title | source URL | licence | fetched |
 |---|---|---|---|---|
+| colour/happy-ghost.svg | - | own drawing for matplace (engines/artwork/colour/_draw.py) | CC0 (own work) | 2026-10-07 |
+| colour/red-heart.svg | - | own drawing for matplace (engines/artwork/colour/_draw.py) | CC0 (own work) | 2026-10-07 |
+| colour/gingerbread-man.svg | - | own drawing for matplace (engines/artwork/colour/_draw.py) | CC0 (own work) | 2026-10-07 |
+| colour/snowman.svg | - | own drawing for matplace (engines/artwork/colour/_draw.py) | CC0 (own work) | 2026-10-07 |
+| colour/paw-badge.svg | - | own drawing for matplace (engines/artwork/colour/_draw.py) | CC0 (own work) | 2026-10-07 |
+| colour/christmas-ball.svg | - | own drawing for matplace (engines/artwork/colour/_draw.py) | CC0 (own work) | 2026-10-07 |
+| colour/christmas-tree-colour.svg | - | own drawing for matplace (engines/artwork/colour/_draw.py) | CC0 (own work) | 2026-10-07 |
+| colour/smiling-star.svg | - | own drawing for matplace (engines/artwork/colour/_draw.py) | CC0 (own work) | 2026-10-07 |
 | animals/cat.svg | Cat Silhouette | https://openclipart.org/detail/319840 | CC0 1.0 | 2026-10-07 |
 | animals/dog.svg | Sitting Dog Silhouette | https://openclipart.org/detail/286632 | CC0 1.0 | 2026-10-07 |
 | animals/paw.svg | Paw Print Spectrum | https://openclipart.org/detail/308498 | CC0 1.0 | 2026-10-07 |

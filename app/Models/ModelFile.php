@@ -84,7 +84,8 @@ class ModelFile extends Model
             'generated' => ['supports' => true],                                           // organic shapes: tree supports
             'lithophane' => ['infill' => 100, 'quality' => 'fine', 'supports' => false],   // must be solid, fine layers = smooth picture
             'vase' => ['supports' => false] + (($this->tool_params['purpose'] ?? 'vase') === 'vase' ? ['vase' => true] : []),   // a plain vase is one closed contour: it prints best in vase mode, one wall and no infill
-            'relief', 'sign', 'logo', 'stamp', 'qr', 'stencil', 'lightbox', 'modular', 'organizer', 'box', 'phone_stand', 'cable_holder', 'cutter', 'holder', 'cap' => ['supports' => false],
+            'relief', 'sign', 'logo', 'stamp', 'qr', 'stencil', 'lightbox', 'modular', 'organizer', 'box', 'phone_stand', 'cable_holder', 'cutter', 'holder', 'cap',
+            'charm', 'earrings', 'ornament', 'magnet', 'coaster' => ['supports' => false],
             // halves lie parting face up, supports would scar the cavity; the master of a silicone mold is the model itself and prints as it needs
             'mold' => ($this->tool_params['type'] ?? 'rigid') === 'silicone' ? ['supports' => true, 'infill' => 15] : ['supports' => false, 'infill' => 30],
             default => [],
@@ -118,6 +119,31 @@ class ModelFile extends Model
         $z = $this->builtForPrinting() ? ($this->tool_params['color_change_mm'] ?? null) : null;
 
         return $z ? round((float) $z * $scale, 3) : null;
+    }
+
+    /**
+     * Every height (mm) at which a tool model changes filament, bottom to top, with the colour it changes to. A plate
+     * with a text has one; a picture whose colours lie one on another (pendant, magnet, ornament…) has one per colour.
+     *
+     * @return list<array{z: float, hex: string, code: ?string}>
+     */
+    public function colorChanges(float $scale = 1.0): array
+    {
+        if (! $this->builtForPrinting()) {
+            return [];
+        }
+        $out = [];
+        foreach ((array) ($this->tool_params['color_changes'] ?? []) as $change) {
+            if (is_array($change) && isset($change['z']) && (float) $change['z'] > 0) {
+                $hex = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($change['hex'] ?? '')) ? (string) $change['hex'] : '#2B2B2B';
+                $out[] = ['z' => round((float) $change['z'] * $scale, 3), 'hex' => $hex, 'code' => isset($change['code']) ? (string) $change['code'] : null];
+            }
+        }
+        if (! $out && ($z = $this->colorChangeMm($scale))) {
+            $out[] = ['z' => $z, 'hex' => $this->codeColors()[1] ?? '#D97706', 'code' => null];
+        }
+
+        return $out;
     }
 
     /**

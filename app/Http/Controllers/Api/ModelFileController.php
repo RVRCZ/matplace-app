@@ -55,8 +55,9 @@ class ModelFileController extends Controller
         try {
             $path = $exporter->export($modelFile->absoluteStlPath(), $data['printer'], $params, ['kind' => $modelFile->kind()]);
             // a plate with a code or a text on it: the project stops the printer for the second colour above the plate
-            if ($z = $modelFile->colorChangeMm((float) $params->scale)) {
-                ColorChange::add($path, $z, $modelFile->codeColors()[1] ?? '#D97706');
+            // (a picture in colours stops once for every colour that lies higher)
+            if ($changes = $modelFile->colorChanges((float) $params->scale)) {
+                ColorChange::addAll($path, $changes);
             }
         } catch (EngineException $e) {
             return response()->json(['error' => 'export_failed', 'message' => $e->getMessage()], 422);

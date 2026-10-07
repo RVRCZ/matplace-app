@@ -10,6 +10,23 @@ return [
     'verified' => 'verified by printing :date',
     'all' => 'All tools',
 
+    // names of the tools added after the shared dictionary was closed (lang/en.json holds the older ones)
+    'ornament.title' => 'Christmas ornament from a picture',
+    'ornament.hint' => 'A gingerbread man, a tree or a photo in the colours of our filaments, with an eyelet for a ribbon.',
+    'ornament.action' => 'Design an ornament',
+    'charm.title' => 'Charm from a picture or a name',
+    'charm.hint' => 'A picture in filament colours and an eyelet you move anywhere along the outline.',
+    'charm.action' => 'Design a charm',
+    'earrings.title' => 'Earrings from a picture',
+    'earrings.hint' => 'A pair of identical or mirrored earrings from your own motif, with an eyelet for a hook.',
+    'earrings.action' => 'Design earrings',
+    'magnet.title' => 'Fridge magnet from a picture',
+    'magnet.hint' => 'A picture or a photo in colour, with a pocket at the back made exactly for your magnet.',
+    'magnet.action' => 'Design a magnet',
+    'coaster.title' => 'Coaster with a picture',
+    'coaster.hint' => 'A round, square or hexagonal coaster with a photo or a drawing in filament colours.',
+    'coaster.action' => 'Design a coaster',
+
     'cats' => [
         'images' => 'Pictures and logos',
         'names' => 'Names and gifts',
@@ -46,5 +63,10 @@ return [
         'stencil' => 'stencil painting spray lettering letters',
         'lightbox' => 'illuminated sign led lightbox advert backlit neon',
         'spare' => 'spare part broken piece inquiry model it',
+        'ornament' => 'christmas ornament tree decoration bauble gingerbread xmas gift picture photo colour color',
+        'charm' => 'charm pendant keyring keychain bag backpack zip tag picture name colour color eyelet',
+        'earrings' => 'earrings jewellery jewelry pair picture colour color hooks',
+        'magnet' => 'fridge magnet magnets refrigerator photo picture souvenir',
+        'coaster' => 'coaster drink mat glass mug beer photo picture set',
     ],
 ];

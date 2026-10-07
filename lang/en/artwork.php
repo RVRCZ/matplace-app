@@ -2,6 +2,7 @@
 
 return [
     'cat' => [
+        'colour' => 'In colour',
         'animals' => 'Animals',
         'hearts-stars' => 'Hearts and stars',
         'sport' => 'Sport',
@@ -12,6 +13,15 @@ return [
         'letters-numbers' => 'Letters and numbers',
     ],
     'items' => [
+        // colour: our own drawings in the colours of filaments
+        'happy-ghost' => 'Happy ghost',
+        'red-heart' => 'Red heart',
+        'gingerbread-man' => 'Gingerbread man',
+        'snowman' => 'Snowman',
+        'paw-badge' => 'Paw in a circle',
+        'christmas-ball' => 'Christmas ball',
+        'christmas-tree-colour' => 'Decorated Christmas tree',
+        'smiling-star' => 'Smiling star',
         // animals
         'cat' => 'Cat',
         'dog' => 'Dog',
@@ -151,6 +161,14 @@ return [
         'plus-sign' => 'Plus sign',
     ],
     'keywords' => [
+        'happy-ghost' => 'ghost spook halloween boo',
+        'red-heart' => 'heart love valentine',
+        'gingerbread-man' => 'gingerbread biscuit cookie christmas',
+        'snowman' => 'winter christmas snow',
+        'paw-badge' => 'paw print dog cat pet',
+        'christmas-ball' => 'bauble ornament ball christmas xmas',
+        'christmas-tree-colour' => 'christmas tree xmas fir spruce',
+        'smiling-star' => 'star smiley smile',
         'cat' => 'kitten pet',
         'dog' => 'puppy pet',
         'paw' => 'paw footprint pet',

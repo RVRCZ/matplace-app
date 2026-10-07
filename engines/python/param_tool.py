@@ -981,9 +981,16 @@ def main(argv):
             parts, notes = builders[kind](M, p)
         else:
             import creative_kinds
-            if kind not in creative_kinds.BUILDERS:
+            import shape_kinds
+            if kind in shape_kinds.BUILDERS:
+                parts, notes = shape_kinds.BUILDERS[kind](M, Invalid, p)
+            elif kind in creative_kinds.BUILDERS:
+                parts, notes = creative_kinds.BUILDERS[kind](M, Invalid, p)
+            else:
                 raise Invalid("unknown_kind")
-            parts, notes = creative_kinds.BUILDERS[kind](M, Invalid, p)
+        # a builder that knows its pieces itself (a picture in colours: every colour a part) says so; the others are
+        # recognised in the finished solid
+        named = parts.pop("_pieces", {})
         key = part if (part != "all" and part in parts) else ("use" if (view == "use" and "use" in parts) else "all")
         solid = parts[key]
         if solid.is_empty() or solid.status() != M.Error.NoError or solid.volume() <= 0:
@@ -993,7 +1000,7 @@ def main(argv):
         listed = []
         if with_parts:
             chunks, at = [], 0
-            for name, piece in pieces_of(M, solid, parts):
+            for name, piece in ([(nm, pc.translate([-x0, -y0, -z0])) for nm, pc in named[key]] if key in named else pieces_of(M, solid, parts)):
                 m = piece.to_mesh()
                 t = np.asarray(m.vert_properties, dtype=np.float32)[:, :3][np.asarray(m.tri_verts, dtype=np.int64)]
                 if not len(t):

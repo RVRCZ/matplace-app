@@ -22,6 +22,18 @@ final class ColorChange
      */
     public static function add(string $project, float $z, string $hex = '#2B2B2B'): ?float
     {
+        return self::addAll($project, [['z' => $z, 'hex' => $hex]])[0] ?? null;
+    }
+
+    /**
+     * Several changes in one project: a picture whose colours lie one on another changes filament at every step.
+     * Two changes that fall into the same layer are one change, to the later colour.
+     *
+     * @param  list<array{z: float, hex?: string}>  $changes  bottom to top
+     * @return list<float>|null the print_z of every change written; null when the project could not be read
+     */
+    public static function addAll(string $project, array $changes): ?array
+    {
         $zip = new \ZipArchive;
         if ($zip->open($project) !== true) {
             return null;
@@ -33,17 +45,27 @@ final class ColorChange
                 return null;
             }
             [$first, $layer] = $orca !== false ? self::orcaLayers((string) $orca) : self::prusaLayers((string) $prusa);
-            $printZ = self::layerAbove($z, $first, $layer);
-            $height = number_format($printZ, 2, '.', '');
+            $at = [];
+            foreach ($changes as $change) {
+                $hex = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($change['hex'] ?? '')) ? (string) $change['hex'] : '#2B2B2B';
+                $at[number_format(self::layerAbove((float) $change['z'], $first, $layer), 2, '.', '')] = $hex;
+            }
+            ksort($at, SORT_NUMERIC);
+            $lines = '';
+            foreach ($at as $height => $hex) {
+                $lines .= $orca !== false
+                    ? "<layer top_z=\"{$height}\" type=\"4\" extruder=\"1\" color=\"{$hex}\" extra=\"M600\" gcode=\"M600\"/>\n"
+                    : "<code print_z=\"{$height}\" type=\"0\" extruder=\"1\" color=\"{$hex}\" extra=\"\" gcode=\"M600\"/>\n";
+            }
             if ($orca !== false) {
                 $zip->addFromString('Metadata/custom_gcode_per_layer.xml', "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<custom_gcodes_per_layer>\n<plate>\n<plate_info id=\"1\"/>\n"
-                    ."<layer top_z=\"{$height}\" type=\"4\" extruder=\"1\" color=\"{$hex}\" extra=\"M600\" gcode=\"M600\"/>\n<mode value=\"SingleExtruder\"/>\n</plate>\n</custom_gcodes_per_layer>\n");
+                    .$lines."<mode value=\"SingleExtruder\"/>\n</plate>\n</custom_gcodes_per_layer>\n");
             } else {
                 $zip->addFromString('Metadata/Prusa_Slicer_custom_gcode_per_print_z.xml', "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<custom_gcodes_per_print_z>\n"
-                    ."<code print_z=\"{$height}\" type=\"0\" extruder=\"1\" color=\"{$hex}\" extra=\"\" gcode=\"M600\"/>\n<mode value=\"SingleExtruder\"/>\n</custom_gcodes_per_print_z>\n");
+                    .$lines."<mode value=\"SingleExtruder\"/>\n</custom_gcodes_per_print_z>\n");
             }
 
-            return $printZ;
+            return array_map('floatval', array_keys($at));
         } finally {
             $zip->close();
         }

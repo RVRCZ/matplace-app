@@ -23,7 +23,7 @@ final class Artwork
 {
     public const KEEP_DAYS = 30;
 
-    public const CATEGORIES = ['animals', 'hearts-stars', 'sport', 'jobs', 'holidays', 'transport', 'nature', 'letters-numbers'];
+    public const CATEGORIES = ['colour', 'animals', 'hearts-stars', 'sport', 'jobs', 'holidays', 'transport', 'nature', 'letters-numbers'];
 
     public const REF = '/^((file:)?[0-9a-f-]{36}|lib:[a-z-]{2,30}\/[a-z0-9-]{1,60})$/';
 

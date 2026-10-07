@@ -2,6 +2,7 @@
 
 return [
     'cat' => [
+        'colour' => 'Barevné',
         'animals' => 'Zvířata',
         'hearts-stars' => 'Srdce a hvězdy',
         'sport' => 'Sport',
@@ -12,6 +13,15 @@ return [
         'letters-numbers' => 'Písmena a čísla',
     ],
     'items' => [
+        // colour: our own drawings in the colours of filaments
+        'happy-ghost' => 'Veselý duch',
+        'red-heart' => 'Červené srdce',
+        'gingerbread-man' => 'Perníček',
+        'snowman' => 'Sněhulák',
+        'paw-badge' => 'Tlapka v kruhu',
+        'christmas-ball' => 'Vánoční baňka',
+        'christmas-tree-colour' => 'Ozdobený stromek',
+        'smiling-star' => 'Usměvavá hvězda',
         // animals
         'cat' => 'Kočka',
         'dog' => 'Pes',
@@ -151,6 +161,14 @@ return [
         'plus-sign' => 'Plus',
     ],
     'keywords' => [
+        'happy-ghost' => 'duch strašidlo halloween bubák',
+        'red-heart' => 'srdce srdíčko láska valentýn',
+        'gingerbread-man' => 'perník pernicek panáček vánoce cukroví',
+        'snowman' => 'snehulak zima vánoce sníh',
+        'paw-badge' => 'tlapka packa pes kočka mazlíček',
+        'christmas-ball' => 'banka ozdoba koule vánoce',
+        'christmas-tree-colour' => 'stromecek vánoce jedlička smrk',
+        'smiling-star' => 'hvezda hvězdička smajlík',
         'cat' => 'kocka kotě mazlíček',
         'dog' => 'pejsek štěně mazlíček',
         'paw' => 'tlapa stopa packa pes kočka',

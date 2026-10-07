@@ -2,6 +2,7 @@
 
 return [
     'cat' => [
+        'colour' => 'En color',
         'animals' => 'Animales',
         'hearts-stars' => 'Corazones y estrellas',
         'sport' => 'Deporte',
@@ -12,6 +13,15 @@ return [
         'letters-numbers' => 'Letras y números',
     ],
     'items' => [
+        // colour: our own drawings in the colours of filaments
+        'happy-ghost' => 'Fantasma alegre',
+        'red-heart' => 'Corazón rojo',
+        'gingerbread-man' => 'Hombrecito de jengibre',
+        'snowman' => 'Muñeco de nieve',
+        'paw-badge' => 'Huella en un círculo',
+        'christmas-ball' => 'Bola de Navidad',
+        'christmas-tree-colour' => 'Árbol de Navidad decorado',
+        'smiling-star' => 'Estrella sonriente',
         // animals
         'cat' => 'Gato',
         'dog' => 'Perro',
@@ -151,6 +161,14 @@ return [
         'plus-sign' => 'Signo más',
     ],
     'keywords' => [
+        'happy-ghost' => 'fantasma espectro halloween susto',
+        'red-heart' => 'corazon corazón amor san valentín',
+        'gingerbread-man' => 'jengibre galleta muñeco muneco navidad',
+        'snowman' => 'muneco nieve invierno navidad',
+        'paw-badge' => 'huella pata perro gato mascota',
+        'christmas-ball' => 'bola adorno esfera navidad',
+        'christmas-tree-colour' => 'arbol árbol navidad abeto pino',
+        'smiling-star' => 'estrella sonrisa carita',
         'cat' => 'gatito mascota',
         'dog' => 'perrito cachorro mascota',
         'paw' => 'pata huella mascota',

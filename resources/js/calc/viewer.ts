@@ -46,6 +46,8 @@ export class Viewer {
     private onHandle: ((id: string, mm: number, phase: 'move' | 'end') => string | void) | null = null;
     private handleLabel: HTMLElement | null = null;
     private onPick: ((index: number, piece: Piece | null) => void) | null = null;
+    private marker: { group: Group; path: [number, number][]; z: number } | null = null;
+    private onMarker: ((share: number, phase: 'move' | 'end') => string | void) | null = null;
     private listening = false;
     private anim: { from: Vector3; to: Vector3; t0: number; ms: number } | null = null;
 
@@ -429,6 +431,54 @@ export class Viewer {
         this.placeHandles();
     }
 
+    /**
+     * A grip that travels along a closed line lying on the model: the eyelet on the outline of a pendant. `path` is the
+     * line in the millimetres of the file (x, y), its points evenly spread along its length; `z` the height it lies at;
+     * `at` where the grip is now. Dragging reports the share of the line (0…1 from its first point) nearest to the pointer.
+     */
+    setMarker(marker: { path: [number, number][]; z: number; at: [number, number] } | null, cb: ((share: number, phase: 'move' | 'end') => string | void) | null): void {
+        if (this.marker) this.scene.remove(this.marker.group);
+        this.marker = null; this.onMarker = cb;
+        if (!marker || !this.mesh || marker.path.length < 3) return;
+        const group = new Group();
+        const dot = new Mesh(new SphereGeometry(0.16, 20, 14), new MeshBasicMaterial({ color: 0xc94714, depthTest: false, transparent: true, opacity: 0.95 }));
+        const halo = new Mesh(new SphereGeometry(0.24, 20, 14), new MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true, opacity: 0.55 }));
+        const grab = new Mesh(new SphereGeometry(0.5, 8, 8), new MeshBasicMaterial({ visible: false }));
+        halo.renderOrder = 10; dot.renderOrder = 11;
+        group.add(halo, dot, grab);
+        this.scene.add(group);
+        this.marker = { group, path: marker.path, z: marker.z };
+        this.moveMarker(marker.at[0], marker.at[1]);
+        this.listen();
+    }
+
+    private moveMarker(x: number, y: number): void {
+        if (!this.marker || !this.mesh) return;
+        this.mesh.updateMatrixWorld();
+        this.marker.group.position.copy(this.mesh.localToWorld(new Vector3(x, y, this.marker.z)));
+    }
+
+    /** The point of the marker's line nearest to where the pointer's ray meets the line's height: [share, x, y] in file millimetres. */
+    private markerUnder(ray: Raycaster): [number, number, number] | null {
+        if (!this.marker || !this.mesh) return null;
+        this.mesh.updateMatrixWorld();
+        const height = this.mesh.localToWorld(new Vector3(0, 0, this.marker.z)).y;
+        const k = (height - ray.ray.origin.y) / (ray.ray.direction.y || 1e-9);
+        if (k <= 0) return null;
+        const p = this.mesh.worldToLocal(ray.ray.origin.clone().addScaledVector(ray.ray.direction, k));
+        const path = this.marker.path; const n = path.length;
+        let best: [number, number, number] | null = null; let bestD = Infinity;
+        for (let i = 0; i < n; i++) {
+            const a = path[i]; const b = path[(i + 1) % n];
+            const dx = b[0] - a[0]; const dy = b[1] - a[1];
+            const t = Math.max(0, Math.min(1, ((p.x - a[0]) * dx + (p.y - a[1]) * dy) / (dx * dx + dy * dy || 1)));
+            const x = a[0] + dx * t; const y = a[1] + dy * t;
+            const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+            if (d < bestD) { bestD = d; best = [(i + t) / n, x, y]; }
+        }
+        return best;
+    }
+
     private placeHandles(): void {
         if (!this.mesh || !this.handles.length) return;
         const box = new Box3().setFromObject(this.mesh);
@@ -451,6 +501,7 @@ export class Viewer {
             if (k >= 1) this.anim = null;
         }
         for (const h of this.handles) h.group.scale.setScalar(this.camera.position.distanceTo(h.group.position) * 0.055);
+        if (this.marker) this.marker.group.scale.setScalar(this.camera.position.distanceTo(this.marker.group.position) * 0.055);
     }
 
     /** Pointer events of the tool page: a handle is dragged before the orbit controls see the press; a plain click picks a piece. */
@@ -461,6 +512,7 @@ export class Viewer {
         const at = (e: PointerEvent): Vector2 => { const r = this.canvas.getBoundingClientRect(); return new Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); };
         let down: { x: number; y: number } | null = null;
         let drag: { id: string; x: number; y: number; px: Vector2; mm: number } | null = null;
+        let grip: { share: number } | null = null;           // the marker is being dragged along its line
         const label = (text: string | void, e: PointerEvent): void => {
             if (!this.handleLabel) {
                 this.handleLabel = document.createElement('div');
@@ -474,6 +526,16 @@ export class Viewer {
         };
         this.canvas.addEventListener('pointerdown', (e) => {
             down = { x: e.clientX, y: e.clientY };
+            if (this.marker && this.onMarker && this.marker.group.visible) {
+                ray.setFromCamera(at(e), this.camera);
+                if (ray.intersectObjects(this.marker.group.children, false).length) {
+                    e.stopImmediatePropagation(); e.preventDefault();
+                    grip = { share: this.markerUnder(ray)?.[0] ?? 0 };
+                    this.controls.enabled = false;
+                    this.canvas.setPointerCapture(e.pointerId);
+                    return;
+                }
+            }
             if (!this.handles.length || !this.onHandle) return;
             ray.setFromCamera(at(e), this.camera);
             const hit = ray.intersectObjects(this.handles.filter((h) => h.group.visible).flatMap((h) => h.group.children), false)[0];
@@ -490,12 +552,28 @@ export class Viewer {
             label(this.onHandle(h.id, 0, 'move'), e);
         }, { capture: true });
         this.canvas.addEventListener('pointermove', (e) => {
+            if (grip && this.onMarker) {
+                ray.setFromCamera(at(e), this.camera);
+                const hit = this.markerUnder(ray);
+                if (!hit) return;
+                grip.share = hit[0];
+                this.moveMarker(hit[1], hit[2]);
+                label(this.onMarker(hit[0], 'move'), e);
+                return;
+            }
             if (!drag || !this.onHandle) return;
             const len = drag.px.lengthSq() || 1;
             drag.mm = ((e.clientX - drag.x) * drag.px.x + (e.clientY - drag.y) * drag.px.y) / len;
             label(this.onHandle(drag.id, drag.mm, 'move'), e);
         });
         const up = (e: PointerEvent): void => {
+            if (grip) {
+                this.onMarker?.(grip.share, 'end');
+                grip = null; this.controls.enabled = true;
+                this.handleLabel?.classList.add('hidden');
+                down = null;
+                return;
+            }
             if (drag) {
                 this.onHandle?.(drag.id, drag.mm, 'end');
                 drag = null; this.controls.enabled = true;
@@ -512,7 +590,7 @@ export class Viewer {
             this.onPick(index, index >= 0 ? this.pieces[index] : null);
         };
         this.canvas.addEventListener('pointerup', up);
-        this.canvas.addEventListener('pointercancel', () => { if (drag) { drag = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } down = null; });
+        this.canvas.addEventListener('pointercancel', () => { if (grip) { grip = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } if (drag) { drag = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } down = null; });
     }
 }
 

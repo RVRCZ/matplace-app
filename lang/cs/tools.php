@@ -10,6 +10,23 @@ return [
     'verified' => 'ověřeno tiskem :date',
     'all' => 'Všechny nástroje',
 
+    // names of the tools added after the shared dictionary was closed (lang/cs.json holds the older ones)
+    'ornament.title' => 'Vánoční ozdoba z obrázku',
+    'ornament.hint' => 'Perníček, stromek nebo fotka v barvách našich filamentů, s očkem na stužku.',
+    'ornament.action' => 'Navrhnout ozdobu',
+    'charm.title' => 'Přívěsek z obrázku nebo jména',
+    'charm.hint' => 'Obrázek v barvách filamentů a očko, které posunete kamkoli po obrysu.',
+    'charm.action' => 'Navrhnout přívěsek',
+    'earrings.title' => 'Náušnice z obrázku',
+    'earrings.hint' => 'Pár stejných nebo zrcadlových náušnic z vlastního motivu, s očkem na háček.',
+    'earrings.action' => 'Navrhnout náušnice',
+    'magnet.title' => 'Magnetka z obrázku',
+    'magnet.hint' => 'Obrázek nebo fotka v barvách, vzadu kapsa přesně na váš magnet.',
+    'magnet.action' => 'Navrhnout magnetku',
+    'coaster.title' => 'Podtácek s obrázkem',
+    'coaster.hint' => 'Kulatý, čtvercový nebo šestihranný podtácek s fotkou či kresbou v barvách filamentů.',
+    'coaster.action' => 'Navrhnout podtácek',
+
     'cats' => [
         'images' => 'Obrázky a loga',
         'names' => 'Jména a dárky',
@@ -46,5 +63,10 @@ return [
         'stencil' => 'šablona malování sprej stříkání nápis písmena',
         'lightbox' => 'světelný nápis led lightbox reklama podsvícený neon',
         'spare' => 'náhradní díl rozbitý kus poptávka vymodelovat',
+        'ornament' => 'vánoční ozdoba ozdoby na stromeček baňka perníček vánoce dárek obrázek fotka barevná',
+        'charm' => 'přívěsek přívěšek klíčenka taška batoh obrázek jméno barevný očko',
+        'earrings' => 'náušnice šperk bižuterie pár obrázek barevné háčky',
+        'magnet' => 'magnetka magnet lednice lednička fotka obrázek suvenýr',
+        'coaster' => 'podtácek tácek pod sklenici hrnek pivo fotka obrázek sada',
     ],
 ];

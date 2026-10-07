@@ -10,6 +10,23 @@ return [
     'verified' => 'verificado imprimiendo :date',
     'all' => 'Todas las herramientas',
 
+    // names of the tools added after the shared dictionary was closed (lang/es.json holds the older ones)
+    'ornament.title' => 'Adorno de Navidad con una imagen',
+    'ornament.hint' => 'Un hombrecito de jengibre, un árbol o una foto en los colores de nuestros filamentos, con ojal para la cinta.',
+    'ornament.action' => 'Diseñar un adorno',
+    'charm.title' => 'Colgante con una imagen o un nombre',
+    'charm.hint' => 'Una imagen en colores de filamento y un ojal que se mueve a cualquier punto del contorno.',
+    'charm.action' => 'Diseñar un colgante',
+    'earrings.title' => 'Pendientes con una imagen',
+    'earrings.hint' => 'Un par de pendientes iguales o en espejo con su propio motivo, con ojal para el gancho.',
+    'earrings.action' => 'Diseñar pendientes',
+    'magnet.title' => 'Imán de nevera con una imagen',
+    'magnet.hint' => 'Una imagen o una foto en color y, detrás, un hueco a la medida de su imán.',
+    'magnet.action' => 'Diseñar un imán',
+    'coaster.title' => 'Posavasos con una imagen',
+    'coaster.hint' => 'Un posavasos redondo, cuadrado o hexagonal con una foto o un dibujo en colores de filamento.',
+    'coaster.action' => 'Diseñar un posavasos',
+
     'cats' => [
         'images' => 'Imágenes y logos',
         'names' => 'Nombres y regalos',
@@ -46,5 +63,10 @@ return [
         'stencil' => 'plantilla pintar aerosol letras rótulo',
         'lightbox' => 'rótulo luminoso led caja de luz anuncio retroiluminado neón',
         'spare' => 'repuesto pieza rota consulta modelar',
+        'ornament' => 'adorno navidad navideño navideno árbol arbol bola jengibre regalo imagen foto color',
+        'charm' => 'colgante dije llavero bolso mochila cremallera imagen nombre color ojal',
+        'earrings' => 'pendientes aretes joya bisutería bisuteria par imagen color ganchos',
+        'magnet' => 'imán iman nevera frigorífico frigorifico foto imagen recuerdo souvenir',
+        'coaster' => 'posavasos vaso taza cerveza foto imagen juego set',
     ],
 ];

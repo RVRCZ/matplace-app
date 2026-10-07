@@ -179,6 +179,8 @@ class ToolPageTest extends TestCase
 
     public function test_verified_by_printing_shows_on_the_card_and_on_the_page(): void
     {
+        // the catalogue as it was before anything was printed (config/tools.php carries the real dates since 7 Oct 2026)
+        config(['tools' => array_map(fn (array $tool) => array_diff_key($tool, ['verified' => true]), config('tools'))]);
         $this->get('/tools')->assertOk()->assertDontSee('ověřeno tiskem');
         config(['tools.box.verified' => '2026-10-01']);
         $this->get('/tools')->assertOk()->assertSee('ověřeno tiskem')->assertSee('1. 10. 2026');

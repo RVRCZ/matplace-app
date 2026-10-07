@@ -111,6 +111,32 @@ return [
         ['params' => ['shape' => 'round', 'width' => 160, 'line1' => 'BAR']],
         ['params' => ['shape' => 'rect', 'width' => 240, 'line1' => 'CAFÉ', 'line2' => 'LUNA']],
     ]]],
+    // a picture or a name in the colours of filaments (engines/python/shape_kinds.py): the pictures are of our own library
+    'ornament' => ['route' => 'tools.ornament', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/gingerbread-man', 'width' => 80]],
+        ['params' => ['artwork' => 'lib:colour/christmas-tree-colour', 'width' => 90, 'colors_n' => 5]],
+        ['params' => ['artwork' => 'lib:colour/christmas-ball', 'width' => 70, 'frame' => 0]],
+    ]]],
+    'charm' => ['route' => 'tools.charm', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/happy-ghost', 'width' => 45]],
+        ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 50, 'eye_pos' => 0]],
+        ['params' => ['line1' => 'Ela', 'typeface' => 'script', 'width' => 60]],
+    ]]],
+    'earrings' => ['route' => 'tools.earrings', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/red-heart', 'width' => 28]],
+        ['params' => ['artwork' => 'lib:colour/happy-ghost', 'width' => 32, 'mirror' => true]],
+        ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 30, 'body' => 'circle']],
+    ]]],
+    'magnet' => ['route' => 'tools.magnet', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 60]],
+        ['params' => ['artwork' => 'lib:colour/red-heart', 'width' => 50, 'disc' => 'd8x3', 'mount' => 'press']],
+        ['params' => ['artwork' => 'lib:colour/snowman', 'width' => 45, 'body' => 'rect']],
+    ]]],
+    'coaster' => ['route' => 'tools.coaster', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/snowman', 'width' => 100, 'body' => 'circle']],
+        ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 95, 'body' => 'hex', 'grooves' => true]],
+        ['params' => ['artwork' => 'lib:colour/christmas-tree-colour', 'width' => 100, 'body' => 'square']],
+    ]]],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => false],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only

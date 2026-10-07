@@ -366,31 +366,7 @@ def _sign_name(M, p, art, info, cap, t, relief, keyring, two, warn):
     J = M.JoinType.Round
     grow = max(1.0, cap * 0.1)
     link_w = max(2.0, cap * 0.2)
-    base = art.offset(grow, J, 2.0, 24).simplify(0.02)
-    links = 0
-    for _ in range(60):
-        pieces = base.decompose()
-        if len(pieces) <= 1:
-            break
-        pieces.sort(key=lambda c: c.area(), reverse=True)
-        small = pieces[-1]
-        a = np.vstack([np.asarray(poly) for poly in small.to_polygons()])
-        best = None
-        for other in pieces[:-1]:
-            b = np.vstack([np.asarray(poly) for poly in other.to_polygons()])
-            if len(b) > 1500:
-                b = b[:: len(b) // 1500 + 1]
-            d = np.linalg.norm(a[:, None, :] - b[None, :, :], axis=2)
-            i, j = np.unravel_index(int(np.argmin(d)), d.shape)
-            if best is None or d[i, j] < best[0]:
-                best = (float(d[i, j]), a[i], b[j])
-        _, pa, pb = best
-        # the link reaches a little into both pieces, so it is a real joint and not a touching edge
-        way = (pb - pa) / (np.linalg.norm(pb - pa) or 1.0)
-        pa, pb = pa - way * grow, pb + way * grow
-        dot = C.circle(link_w / 2, 24)
-        base = base + (dot.translate([float(pa[0]), float(pa[1])]) + dot.translate([float(pb[0]), float(pb[1])])).hull()
-        links += 1
+    base, links = S.joined(M, art.offset(grow, J, 2.0, 24).simplify(0.02), grow, link_w)
     tab_note = {}
     if keyring:
         r_out = max(4.0, cap * 0.36)

@@ -1,7 +1,7 @@
 """
 Draws a picture of a model: the examples under a tool's page (php artisan matplace:tool-examples).
 
-    python render_tool.py <model.stl> <picture.png> [width height] [#rrggbb]
+    python render_tool.py <model.stl> <picture.png> [width height] [#rrggbb | paint.json]
     python render_tool.py <model.stl> <base> card <paint.json>
 
 The second form draws the picture of a tool's card (php artisan matplace:tool-examples --card): 3:2, studio light on
@@ -194,16 +194,21 @@ def main(argv):
         return card(argv)
     width = int(argv[3]) if len(argv) > 4 else 800
     height = int(argv[4]) if len(argv) > 4 else 600
-    colour = FILAMENT
+    colour, paint = FILAMENT, None
     for arg in argv[3:]:
         if arg.startswith('#') and len(arg) == 7:
             colour = tuple(int(arg[i:i + 2], 16) for i in (1, 3, 5))
+        if arg.lower().endswith('.json'):                    # a picture in colours: every part in its filament, as on the cards
+            paint = arg
     try:
         mesh = trimesh.load(argv[1], force='mesh', process=False)
         if not isinstance(mesh, trimesh.Trimesh) or len(mesh.faces) == 0:
             raise ValueError('the file holds no triangles')
         if len(mesh.faces) > MAX_TRIANGLES:
             raise ValueError('too many triangles to draw: %d' % len(mesh.faces))
+        if paint:
+            with open(paint, encoding='utf-8') as fh:
+                colour = face_colours(mesh, json.load(fh))
         render(mesh, width, height, colour).save(argv[2], optimize=True)
     except Exception as e:  # noqa: BLE001 - the caller reads the reason
         print(json.dumps({'ok': False, 'error': str(e)}))

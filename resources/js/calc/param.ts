@@ -9,9 +9,10 @@ import { Region, FILAMENT, Piece } from './viewer';
 import type { Stage, MenuItem, PriceConfig } from './tool_page';
 import { colorOf, spoolCode, paintSwatch, pickColor, recentColors, rememberColor, materialLabel } from './colors';
 import { pickArtwork, PickedArtwork } from './artwork';
+import { icon } from '../site/icon';
 
 interface Cfg {
-    kind: string; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
+    kind: string; family: string | null; sample: string | null; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
     presets: Record<string, Record<string, number | string>>;
     fills: Record<string, Record<string, Record<string, number | string>>>;
     config: PriceConfig & { currency: string };
@@ -22,6 +23,13 @@ interface Cfg {
 interface Hole { wall: string; shape: string; w: number; h: number; x: number; z: number }
 interface Bin { x: number; y: number; w: number; h: number; color: string }
 interface BomLine { size: string; w_mm: number; d_mm: number; color: string; count: number }
+/** One colour of a picture as the tool read it: its part, its number in the list, the colour in the picture, the filament it got. */
+interface ShapeColor { part: string; index: number; rgb: string; code: string; hex: string; share: number }
+interface ShapeNotes {
+    colors?: ShapeColor[]; paint?: Record<string, string>; parts?: string[]; body_color?: { code: string; hex: string }; rim_color?: { code: string; hex: string };
+    filaments?: number; multi_material?: boolean; color_changes?: { z: number }[]; found?: number; wanted?: number; each?: number[]; copies?: number;
+    eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; source?: string;
+}
 interface Meta { bbox: { x: number; y: number; z: number }; volume_mm3: number; area_mm2: number; notes: Record<string, unknown>; parts?: Piece[] }
 
 export function bootParam(stage: Stage): void {
@@ -43,6 +51,15 @@ export function bootParam(stage: Stage): void {
     const partColors: Record<string, string> = {};   // part → code of the spool it is printed from
     const ownColors = $('tool-parts')?.dataset.ownColors === '1';   // the design carries its colours itself (QR sign, modular set)
     let commit: () => void = () => undefined;
+    // a picture in colours (pendant, earrings, ornament, magnet, coaster): which of its colours were joined and their order, bottom to top
+    const shape = cfg.family === 'shape';
+    let merge: number[][] = []; let order: number[] = [];
+    const shapeNotes = (): ShapeNotes => (lastMeta?.notes ?? {}) as ShapeNotes;
+    /** A new picture has new colours: what was said about the old ones (which filament, which order) no longer holds. */
+    const forgetColours = (): void => {
+        merge = []; order = [];
+        Object.keys(partColors).forEach((p) => { if (p.startsWith('color_')) delete partColors[p]; });
+    };
 
     const colorName = (code: string): string => colorOf(code)?.name ?? (cfg.i18n[`color.${code}`] ?? code);
 
@@ -55,6 +72,8 @@ export function bootParam(stage: Stage): void {
         if (artwork) p.artwork = artwork;
         if (cfg.kind === 'box') p.holes = holes;
         if (cfg.kind === 'modular') p.bins = bins;
+        if (shape && merge.length) p.merge = merge;
+        if (shape && order.length) p.order = order;
         if (Object.keys(partColors).length) p.part_colors = { ...partColors };
         return p;
     };
@@ -99,6 +118,8 @@ export function bootParam(stage: Stage): void {
         if (n.bridges) facts.push(t('param.bridges', { n: n.bridges }));
         if (n.led_m) facts.push(t('param.lightbox.led', { m: nf.format(n.led_m) }));
         if (n.saucer_d) facts.push(t('param.saucer', { d: nf.format(n.saucer_d), h: n.drainage_holes ?? 0 }));
+        const magnet = shapeNotes().magnet;
+        if (shape && magnet && magnet.mount !== 'through') facts.push(t('shape.magnet.fact', { d: nf.format(magnet.d), h: nf.format(magnet.h) }));
         if ((n.needs ?? []).length) facts.push(`${t('param.needs')}: ${(n.needs ?? []).map((x) => t(`param.need.${x}`)).join(', ')}`);
         const el = $('param-dims');
         el.innerHTML = rows.map(([k, v]) => `<div class="flex justify-between gap-3"><dt class="text-muted">${k}</dt><dd class="font-medium text-ink">${v}</dd></div>`).join('')
@@ -121,6 +142,7 @@ export function bootParam(stage: Stage): void {
     /** Separately printed parts of the current design (mirrors UploadController::partsOf). */
     const partsNow = (): string[] => {
         const p = params();
+        if (shape) return shapeNotes().parts ?? [];
         if (cfg.kind === 'box' && p.lid) return ['body', 'lid'];
         if (cfg.kind === 'vase' && p.purpose === 'pot' && p.saucer) return ['body', 'saucer'];
         if (cfg.kind === 'stamp' && p.handle === 'knob') return ['body', 'handle'];
@@ -136,6 +158,8 @@ export function bootParam(stage: Stage): void {
     /** "body" and "stand" mean different things per product: the box, the logo, the sign… */
     const partLabel = (v: string): string => {
         if (v.startsWith('bin_')) return t('param.part.bin', { s: v.slice(4).replace('x', ' × ') });
+        if (shape && v.startsWith('color_')) return t('shape.part.color', { n: v.slice(6) });
+        if (shape && (v === 'body' || v === 'rim')) return t(`shape.part.${v}`);
         const own = `param.part.${v}.${cfg.kind}`;
         return cfg.i18n[own] ? t(own) : cfg.i18n[`param.part.${v}`] ? t(`param.part.${v}`) : v;
     };
@@ -144,6 +168,7 @@ export function bootParam(stage: Stage): void {
     const renderViews = (): void => {
         const box = document.getElementById('param-views');
         if (!box) return;
+        if (shape) { box.innerHTML = ''; viewPart = 'all'; return; }      // the colours lie on one plate: nothing to look at one by one
         // a threaded cap: the thread is inside, a look at the cut model shows it
         const views = ['all', ...partsNow().filter((p) => !['plate', 'text'].includes(p)), ...(cfg.kind === 'stamp' ? ['imprint'] : []), ...(cfg.kind === 'cap' && params().style === 'thread' ? ['cut'] : [])];
         if (!views.includes(viewPart)) viewPart = 'all';
@@ -176,7 +201,9 @@ export function bootParam(stage: Stage): void {
         const by: Record<string, string[]> = {};
         const add = (section: string, line: string): void => { (by[section] = by[section] ?? []).push(line); };
         const n = (m?.notes ?? {}) as { warnings?: string[]; missing_chars?: string[]; thin_pct?: number; pieces?: number };
-        (n.warnings ?? []).forEach((w) => add(cfg.warnAt[w] ?? 'size', t(`param.warn.${w}`, { n: n.thin_pct ?? 0, c: (n.missing_chars ?? []).join(' '), p: n.pieces ?? 0 })));
+        (n.warnings ?? []).forEach((w) => add(cfg.warnAt[w] ?? 'size', t(cfg.i18n[`shape.warn.${w}`] ? `shape.warn.${w}` : `param.warn.${w}`, { n: n.thin_pct ?? 0, c: (n.missing_chars ?? []).join(' '), p: n.pieces ?? 0 })));
+        const thickened = shapeNotes().thickened;
+        if (shape && m && thickened) add('size', t('shape.thickened', { t: nf.format(thickened) }));
         // a spool that is out of stock: the design keeps its colour, the visitor is told to pick another
         const used = [...form.querySelectorAll<HTMLInputElement>('[data-choice][data-color]')].map((i) => i.value).concat(Object.values(partColors), cfg.kind === 'modular' ? bins.map((b) => b.color) : []);
         if (used.some((code) => { const c = colorOf(code); return c !== null && !c.in_stock; })) add('colors', stage.t('toolpage.color.out'));
@@ -194,6 +221,12 @@ export function bootParam(stage: Stage): void {
     /** Paints the pieces in the colours picked for their parts. A one-body design takes the colour of its only row. */
     const paintParts = (): void => {
         // a set of bins: each bin whole in its own colour (the region its middle lies in), outer walls included
+        if (shape) {
+            // every colour is a piece of its own and the tool said which filament it is
+            const paint = shapeNotes().paint ?? {};
+            viewer.getPieces().forEach((piece, i) => viewer.setPieceColor(i, paint[piece.name] ?? null));
+            return;
+        }
         const regions = (lastMeta?.notes as { regions?: Region[] } | undefined)?.regions ?? [];
         if (cfg.kind === 'modular' && viewPart === 'all' && viewer.getPieces().length > 1) {
             viewer.getPieces().forEach((piece, i) => {
@@ -216,8 +249,76 @@ export function bootParam(stage: Stage): void {
     /** The rows of the colours section: the parts printed separately, or the one body. */
     const partRows = (): string[] => { const p = partsNow(); return p.length ? p : ['body']; };
 
+    /** The filament of a part of a picture: the visitor's own choice, else the one the tool matched to the picture. */
+    const shapeCode = (part: string): string | null => {
+        const n = shapeNotes();
+        if (partColors[part]) return partColors[part];
+        if (part === 'body') return n.body_color?.code ?? null;
+        if (part === 'rim') return n.rim_color?.code ?? null;
+        return n.colors?.find((c) => c.part === part)?.code ?? null;
+    };
+    const setShapeColor = (part: string, code: string): void => {
+        partColors[part] = code; rememberColor(code);
+        void refresh().then(commit);
+    };
+    /**
+     * The colours of the picture as a list, the top layer first and the plate last: each with the filament it is printed
+     * from (a click opens the colour window), the colour it had in the picture and how much of it there is. A colour can
+     * be moved up or down (what lies on what) and joined with the one under it.
+     */
+    const renderShapeColors = (): void => {
+        const box = document.getElementById('tool-parts'); if (!box) return;
+        const n = shapeNotes(); const colors = n.colors ?? [];
+        box.innerHTML = '';
+        const rows = [...(n.rim_color ? ['rim'] : []), ...colors.map((c) => c.part).reverse(), 'body'];
+        rows.forEach((part) => {
+            const c = colors.find((x) => x.part === part);
+            const pos = c ? colors.indexOf(c) : -1;
+            const code = shapeCode(part); const spool = colorOf(code);
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-3 rounded-lg'; row.dataset.part = part;
+            const fact = c ? `<span class="inline-block h-3 w-3 shrink-0 rounded-full border border-line" style="background:${c.rgb}" title="${t('shape.colors.picture')}"></span><span class="font-normal text-muted">${t('shape.colors.share', { p: nf.format(Math.round(c.share * 1000) / 10) })}</span>` : '';
+            const move = (act: string, label: string, name: string, off: boolean): string => `<button type="button" data-act="${act}" class="chip !min-h-8 !px-2 !py-1" aria-label="${label}" title="${label}" ${off ? 'disabled' : ''}>${icon(name, 'h-3.5 w-3.5')}</button>`;
+            const tools = c && colors.length > 1 ? `<span class="flex shrink-0 gap-1">${move('up', t('shape.colors.up'), 'arrow-up', pos === colors.length - 1)}${move('down', t('shape.colors.down'), 'arrow-down', pos === 0)}${move('merge', pos > 0 ? t('shape.colors.merge.into', { n: colors[pos - 1].index }) : t('shape.colors.merge'), 'layers', pos === 0)}</span>` : '';
+            row.innerHTML = `<button type="button" class="tool-swatch" aria-label="${partLabel(part)}: ${stage.t('toolpage.color.pick')}"></button>
+                <span class="min-w-0 flex-1 text-sm"><span class="flex items-center gap-1.5 font-medium text-ink">${partLabel(part)}${fact}</span><span class="block truncate text-muted">${spool ? `${spool.name} · ${materialLabel(spool)}` : stage.t('toolpage.color.pick')}</span></span>${tools}`;
+            const swatch = row.querySelector<HTMLElement>('.tool-swatch')!;
+            paintSwatch(swatch, code);
+            swatch.onclick = async () => { lastColorTarget = () => (picked) => setShapeColor(part, picked); const picked = await pickColor(code); if (picked) setShapeColor(part, picked); };
+            row.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) => {
+                b.onclick = () => {
+                    const now = colors.map((x) => x.index);
+                    if (b.dataset.act === 'merge') {
+                        merge = [...merge, [c!.index, colors[pos - 1].index]];
+                        delete partColors[part];
+                    } else {
+                        const to = pos + (b.dataset.act === 'up' ? 1 : -1);
+                        [now[pos], now[to]] = [now[to], now[pos]];
+                        order = now;
+                    }
+                    void refresh().then(commit);
+                };
+            });
+            box.appendChild(row);
+        });
+        if (merge.length || order.length) {
+            const undo = document.createElement('button');
+            undo.type = 'button'; undo.className = 'text-left text-sm text-muted underline'; undo.textContent = t('shape.colors.split');
+            undo.onclick = () => { merge = []; order = []; void refresh().then(commit); };
+            box.appendChild(undo);
+        }
+        ($('param-color') as HTMLInputElement).value = shapeCode('body') ? colorName(shapeCode('body')!) : '';
+        const found = document.getElementById('shape-found');
+        if (found) found.textContent = n.source !== 'text' && n.found && n.wanted && n.found < n.wanted ? t('shape.colors.found', { n: n.found, w: n.wanted }) : '';
+        const print = document.getElementById('shape-print');
+        const swaps = (n.color_changes ?? []).length;
+        if (print) print.textContent = n.multi_material ? t('shape.print.multi') : swaps > 1 ? t('shape.print.swap', { n: swaps }) : swaps ? t('shape.print.swap1') : t('shape.print.one');
+        renderRecent();
+    };
+
     const renderParts = (): void => {
         const box = document.getElementById('tool-parts'); if (!box) return;
+        if (shape) { renderShapeColors(); return; }
         if (ownColors) { box.innerHTML = ''; renderRecent(); return; }
         const rows = partRows();
         Object.keys(partColors).forEach((p) => { if (!rows.includes(p)) delete partColors[p]; });
@@ -256,6 +357,7 @@ export function bootParam(stage: Stage): void {
             b.type = 'button'; b.className = 'tool-swatch-sm'; paintSwatch(b, code); b.setAttribute('aria-label', colorName(code));
             b.onclick = () => {
                 if (lastColorTarget) { lastColorTarget()(code); return; }
+                if (shape) { setShapeColor('body', code); return; }
                 const field = form.querySelector<HTMLInputElement>('[data-choice][data-color]');
                 if (field) setChoiceColor(field, code); else if (cfg.kind === 'modular') setBinColor(code); else setPartColor(partRows()[0], code);
             };
@@ -292,6 +394,12 @@ export function bootParam(stage: Stage): void {
 
     const renderStatus = (): void => {
         if (!lastMeta) { stage.status(null); return; }
+        if (shape) {
+            // one thing (two for a pair of earrings), measured as it comes off the bed; the colours are filaments, not parts
+            const n = shapeNotes(); const e = n.each ?? [lastMeta.bbox.x, lastMeta.bbox.y, lastMeta.bbox.z];
+            stage.status({ bbox: { x: e[0], y: e[1], z: e[2] }, pieces: n.copies ?? 1, colors: n.filaments ?? 1 });
+            return;
+        }
         const pieces = viewer.getPieces();
         const sizes = pieces.filter((p) => p.bbox).map((p) => [p.bbox![3] - p.bbox![0], p.bbox![4] - p.bbox![1], p.bbox![5] - p.bbox![2]]);
         const outer = (lastMeta.notes as { outer?: number[] }).outer;
@@ -321,7 +429,7 @@ export function bootParam(stage: Stage): void {
             valid = true; showError(null);
             if (lastMeta) { renderDims(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus();
-            renderDownloads();
+            renderDownloads(); placeEyelet();
         } catch {
             if (mine === seq) { valid = false; showError(t('param.failed')); }
         } finally {
@@ -412,6 +520,8 @@ export function bootParam(stage: Stage): void {
             if (typeof set.artwork === 'string' && set.artwork) setArtwork({ ref: set.artwork, name: (set._artwork_name as string) ?? '', url: null });
             else setArtwork(null);
         }
+        if ('merge' in set) merge = Array.isArray(set.merge) ? (set.merge as number[][]).map((pair) => [Number(pair[0]), Number(pair[1])]) : [];
+        if ('order' in set) order = Array.isArray(set.order) ? (set.order as number[]).map(Number) : [];
         if (set.part_colors && typeof set.part_colors === 'object') {
             Object.keys(partColors).forEach((p) => delete partColors[p]);
             Object.entries(set.part_colors as Record<string, unknown>).forEach(([part, c]) => { const code = typeof c === 'string' ? c : (c as { code?: string } | null)?.code; if (code) partColors[part] = spoolCode(code); });
@@ -420,7 +530,14 @@ export function bootParam(stage: Stage): void {
     };
 
     // ── a picture instead of the text: upload, the library, own pictures ───
+    /** The photo's own sliders show at once on the small picture; the model follows a moment later. */
+    const adjustThumb = (): void => {
+        const img = document.querySelector<HTMLImageElement>('#param-artwork-thumb img'); if (!img || !shape) return;
+        const v = (k: string): number => Number(form.querySelector<HTMLInputElement>(`[data-param="${k}"]`)?.value ?? 100);
+        img.style.filter = `contrast(${v('contrast')}%) brightness(${v('brightness')}%) saturate(${v('saturation')}%)`;
+    };
     const setArtwork = (picked: PickedArtwork | null): void => {
+        if (shape && (picked?.ref ?? null) !== artwork) forgetColours();
         artwork = picked?.ref ?? null;
         // the thumbnail by the reference wherever it can be: an address of this very page load would not survive a reload
         const lib = /^lib:(.+)$/.exec(picked?.ref ?? ''); const own = /^[0-9a-f-]{36}$/.test(picked?.ref ?? '');
@@ -431,6 +548,7 @@ export function bootParam(stage: Stage): void {
         const label = open.lastChild; if (label) label.textContent = stage.t(picked ? 'toolpage.artwork.change' : 'toolpage.artwork.choose');
         thumb.innerHTML = picked?.url ? `<img src="${picked.url.replace(/"/g, '&quot;')}" alt="" class="max-h-full max-w-full object-contain">` : '';
         thumb.classList.toggle('hidden', !picked?.url); thumb.classList.toggle('flex', !!picked?.url);
+        adjustThumb();
         state.textContent = '';
         if (!picked) return;
         const b = document.createElement('button'); b.type = 'button'; b.className = 'text-left text-sm text-muted underline'; b.textContent = stage.t('toolpage.artwork.remove');
@@ -585,6 +703,22 @@ export function bootParam(stage: Stage): void {
         });
     };
 
+    // ── the eyelet of a pendant: a grip on the outline, dragged in the viewer ──
+    const placeEyelet = (): void => {
+        const n = shapeNotes();
+        if (!shape || !n.eyelet || !n.outline || viewPart !== 'all') { viewer.setMarker(null, null); return; }
+        viewer.setMarker({ path: n.outline, z: n.eyelet.z, at: [n.eyelet.x, n.eyelet.y] }, (share, phase) => {
+            const input = fieldOf('eye_pos'); if (!input) return;
+            const value = String((Math.round(share * 200) / 2) % 100);
+            if (input.value !== value) { input.value = value; syncRange(input); soon(phase === 'end' ? 0 : 150); } else if (phase === 'end') soon(0);
+            return `${nf.format(Number(value))} %`;
+        });
+    };
+    document.getElementById('shape-eyelet-top')?.addEventListener('click', () => {
+        const input = fieldOf('eye_pos'); if (!input) return;
+        input.value = '0'; syncRange(input); soon(0);
+    });
+
     // fields and flags that belong to one choice only ("data-when=style=desk,wedge") fold away for the other choices;
     // the key may be a flag too ("data-when=mount=on")
     const applyWhen = (): void => {
@@ -604,6 +738,8 @@ export function bootParam(stage: Stage): void {
     form.addEventListener('input', (e) => {
         const el = e.target as HTMLInputElement;
         if (el.dataset.choice && fills[el.dataset.choice]?.[el.value]) applyValues(fills[el.dataset.choice][el.value]);
+        // what changes the colours the picture is read in also empties what was said about them
+        if (shape && (['colors_n', 'bg_strength', 'contrast', 'brightness', 'saturation'].includes(el.dataset.param ?? '') || el.dataset.flag === 'remove_bg')) { forgetColours(); adjustThumb(); }
         if (el.dataset.param) {
             syncRange(el);
             Object.entries(fills).forEach(([choice, table]) => {
@@ -637,7 +773,8 @@ export function bootParam(stage: Stage): void {
             const body = await res.json();
             // what the colours of the parts are travels on as a note: the farm and a printer read it with the order
             const rows = partRows();
-            const colourNote = rows.length > 1 ? rows.filter((p) => partColors[p]).map((p) => `${partLabel(p)}: ${colorName(partColors[p])}`).join('; ') : '';
+            const colourNote = shape ? rows.filter((p) => shapeCode(p)).map((p) => `${partLabel(p)}: ${colorName(shapeCode(p)!)}`).join('; ')
+                : rows.length > 1 ? rows.filter((p) => partColors[p]).map((p) => `${partLabel(p)}: ${colorName(partColors[p])}`).join('; ') : '';
             const note = [lastMeta ? bomText(lastMeta).join('; ') : '', colourNote ? `${stage.t('toolpage.color.note')}: ${colourNote}` : ''].filter(Boolean).join(' | ');
             const plate = params().plate_color;      // a two-colour design: the plate is "the colour", the second one travels with the design
             const q = new URLSearchParams({
@@ -656,7 +793,7 @@ export function bootParam(stage: Stage): void {
     // what undo, redo and "restore my last settings" carry: the whole form
     const track = (offerSaved: boolean): void => {
         commit = stage.track({
-            read: () => ({ ...params(), holes: holes.map((h) => ({ ...h })), bins: bins.map((b) => ({ ...b })), artwork: artwork ?? '', _artwork_name: artworkShown?.name ?? '', part_colors: { ...partColors },
+            read: () => ({ ...params(), holes: holes.map((h) => ({ ...h })), bins: bins.map((b) => ({ ...b })), merge: merge.map((pair) => [...pair]), order: [...order], artwork: artwork ?? '', _artwork_name: artworkShown?.name ?? '', part_colors: { ...partColors },
                 _material: ($('param-material') as HTMLSelectElement).value, _qty: ($('param-qty') as HTMLInputElement).value }),
             write: (s) => {
                 applyValues(s);
@@ -687,6 +824,8 @@ export function bootParam(stage: Stage): void {
         const typed: Record<string, string> = {};
         form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { const v = qs.get(i.dataset.text!); if (v) typed[i.dataset.text!] = v.slice(0, i.maxLength > 0 ? i.maxLength : 40); });
         if (Object.keys(typed).length) applyValues(typed);
+        // a tool that needs a picture opens with one of ours, so the first thing a visitor sees is a finished thing
+        else if (shape && cfg.sample && !artwork && !preset) setArtwork({ ref: cfg.sample, name: '', url: null });
         track(!preset && !Object.keys(typed).length);
         void refresh();
     }

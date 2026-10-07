@@ -1,13 +1,31 @@
 @php
+    $family = $family ?? null;
+    $place = $place ?? [];
     $integer = fn (array $f) => $f[3] === 1;
-    $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : ($k === 'flute' ? '%' : 'mm'));
+    $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs', 'colors_n', 'bg_strength'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : (in_array($k, ['flute', 'contrast', 'brightness', 'saturation', 'eye_pos'], true) ? '%' : 'mm'));
     $i18n = collect(['param.working', 'param.failed', 'param.too_fast', 'param.text_required', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
         'param.warn.stand_angle_45', 'param.warn.stand_angle_55', 'param.warn.stand_angle_70', 'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
         'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.cut', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
         'color.white', 'color.black', 'color.grey', 'color.brown', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.part.plate', 'param.part.text', 'param.part.stamp', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
         'param.warn.thread_try', 'param.warn.seal_try', 'param.need.liner', 'param.fits', 'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.warn.qr_one_color', 'param.warn.qr_low_contrast', 'param.warn.qr_inverted', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
-    // a field may be called differently in one tool ("param.f.holder.clearance"), else the common name
-    $label = fn (string $k) => \Illuminate\Support\Facades\Lang::has('param.f.'.$kind.'.'.$k) ? __('param.f.'.$kind.'.'.$k) : __('param.f.'.$k);
+    if ($family === 'shape') {
+        // the picture in colours: its list of colours, the notes on how it prints, the eyelet
+        $i18n += collect(['part.body', 'part.rim', 'part.color', 'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.found', 'colors.picture', 'print.one', 'print.swap1', 'print.swap', 'print.multi',
+            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'thickened', 'magnet.fact'])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text('param.shape.'.$k)])->all();
+    }
+    // a text may be written for one tool, for its family (pendant, earrings… are all "shape") or for every tool
+    $tr = function (string $prefix, string $k) use ($kind, $family): string {
+        foreach (array_filter([$kind, $family]) as $owner) {
+            if (\Illuminate\Support\Facades\Lang::has('param.'.$prefix.'.'.$owner.'.'.$k)) {
+                return __('param.'.$prefix.'.'.$owner.'.'.$k);
+            }
+        }
+
+        return __('param.'.$prefix.'.'.$k);
+    };
+    $own = fn (string $k) => \Illuminate\Support\Facades\Lang::has('param.'.$kind.'.'.$k) || ! $family ? 'param.'.$kind.'.'.$k : 'param.'.$family.'.'.$k;
+    $label = fn (string $k) => $tr('f', $k);
+    $at = fn (string $k, string $default) => $place[$k] ?? $default;      // the section a field, flag or choice is shown in
     $palette = $config['colors'];
     // a built-in colour name as the code of the farm's spool nearest to it (the same name when there is no catalogue)
     $spool = fn (string $name) => $palette['legacy'][$name] ?? $name;
@@ -25,7 +43,10 @@
     // which wall of the model a size moves when it is dragged in the viewer (x width, y depth, z height)
     $handles = \App\Domain\Tools\ParametricGenerator::HANDLES[$kind] ?? [];
     // which section a warning of the tool belongs to; everything else is about the size
-    $warnAt = ['thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors'];
+    $warnAt = ['thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'pieces_tied' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors'];
+    $folded = \App\Domain\Tools\ParametricGenerator::FOLDED;
+    $fieldsAt = fn (string $section) => collect($fields)->filter(fn ($f, $k) => $at($k, 'size') === $section);
+    $flagsAt = fn (string $section) => collect($flags)->filter(fn ($flag) => $at($flag, 'size') === $section);
 @endphp
 
 @extends('tools.page', ['tool' => $kind, 'module' => 'param', 'lead' => __('param.'.$kind.'.lead'), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
@@ -34,6 +55,8 @@
 <script>
     window.MP_PARAM = {
         kind: @json($kind),
+        family: @json($family),
+        sample: @json($sample ?? null),
         preview: @json(route('api.tools.param.preview')),
         create: @json(route('api.tools.param')),
         home: @json(route('home')),
@@ -55,7 +78,7 @@
 
 @section('stage')
     <div id="param-bom" class="card hidden p-4 text-sm"></div>
-    <p class="text-xs text-muted">{{ \App\Support\NextStep::text('param.'.$kind.'.tip') }}</p>
+    <p class="text-xs text-muted">{{ \App\Support\NextStep::text($own('tip')) }}</p>
 @endsection
 
 @section('panel')
@@ -74,12 +97,49 @@
             </fieldset>
         @endif
 
-        @if($texts || $artwork)
+        @if($family === 'shape')
+            {{-- the picture comes first here: the three ways to one (upload, the library, my pictures), then what is done with it --}}
             <fieldset>
-                <legend class="lbl">{{ __('param.'.$kind.'.content') }}</legend>
+                <legend class="lbl">{{ __('param.shape.picture') }}</legend>
+                <div class="mt-2 flex items-start gap-3">
+                    <span id="param-artwork-thumb" class="hidden h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-white p-1.5"></span>
+                    <div class="min-w-0">
+                        <button type="button" id="param-artwork-open" class="btn-quiet !min-h-10 gap-1.5 !px-3 !py-2 text-sm"><x-icon name="image" class="h-4 w-4" />{{ __('toolpage.artwork.choose') }}</button>
+                        <p id="param-artwork-state" class="mt-1 text-sm text-muted" aria-live="polite"></p>
+                    </div>
+                </div>
+                <p class="hint mt-1 !text-xs">{{ __('param.shape.picture.hint') }}</p>
+                <input id="param-artwork" type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="sr-only" tabindex="-1" aria-hidden="true">
+            </fieldset>
+            @foreach($flagsAt('input') as $flag)
+                <label class="flex items-start gap-3 text-sm text-ink" {!! $whenOf($flag) !!}>
+                    <input data-flag="{{ $flag }}" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" @checked(in_array($flag, $flagsOn, true))>
+                    <span><span class="font-medium">{{ $tr('flag', $flag) }}</span><br><span class="text-muted">{{ $tr('flag', $flag.'.hint') }}</span></span>
+                </label>
+            @endforeach
+            <div class="grid gap-3">
+                @foreach($fieldsAt('input') as $key => $f)
+                    @continue(in_array($key, $folded, true))
+                    @include('tools._num', ['key' => $key, 'f' => $f, 'label' => $label($key), 'unit' => $unit($key), 'when' => $whenOf($key)])
+                @endforeach
+            </div>
+            <details class="text-sm" id="shape-adjust">
+                <summary class="cursor-pointer font-medium text-ink underline decoration-line underline-offset-4">{{ __('param.shape.adjust') }}</summary>
+                <div class="mt-3 grid gap-3">
+                    @foreach($fieldsAt('input') as $key => $f)
+                        @continue(! in_array($key, $folded, true))
+                        @include('tools._num', ['key' => $key, 'f' => $f, 'label' => $label($key), 'unit' => $unit($key), 'when' => $whenOf($key)])
+                    @endforeach
+                </div>
+            </details>
+        @endif
+
+        @if($texts || ($artwork && $family !== 'shape'))
+            <fieldset>
+                <legend class="lbl">{{ __($own('content')) }}</legend>
                 <div class="mt-2 grid gap-3">
                     @foreach($texts as $key => $t)
-                        <label class="text-sm font-medium text-ink">{{ __('param.t.'.$kind.'.'.$key) }}
+                        <label class="text-sm font-medium text-ink">{{ $tr('t', $key) }}
                             <input data-text="{{ $key }}" maxlength="{{ $t[0] }}" value="{{ $t[2] }}" @if($t[1]) required @endif class="field" @if($key === 'url') inputmode="url" autocapitalize="off" spellcheck="false" @endif>
                         </label>
                     @endforeach
@@ -94,7 +154,7 @@
                         @endforeach
                     </div>
                 @endif
-                @if($artwork)
+                @if($artwork && $family !== 'shape')
                     {{-- a picture instead of the text: upload, our library of silhouettes, or one uploaded before --}}
                     <div class="mt-3 flex flex-wrap items-center gap-2">
                         <button type="button" id="param-artwork-open" class="btn-quiet !min-h-10 gap-1.5 !px-3 !py-2 text-sm"><x-icon name="image" class="h-4 w-4" />{{ __('toolpage.artwork.choose') }}</button>
@@ -108,12 +168,13 @@
         @endif
 
         @foreach($plainChoices as $key => $options)
+            @continue($at($key, 'input') !== 'input')
             <fieldset {!! $whenOf($key) !!}>
-                <legend class="lbl">{{ __('param.c.'.$kind.'.'.$key) }}</legend>
+                <legend class="lbl">{{ $tr('c', $key) }}</legend>
                 <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
                     @foreach($options as $i => $o)
                         <label class="tool-choice">
-                            <input type="radio" name="c-{{ $key }}" data-choice="{{ $key }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('param.o.'.$kind.'.'.$o) }}
+                            <input type="radio" name="c-{{ $key }}" data-choice="{{ $key }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ $tr('o', $o) }}
                         </label>
                     @endforeach
                 </div>
@@ -124,29 +185,40 @@
 
     {{-- 2 · sizes: the main ones with a slider (and a handle in the viewer), the rest under "more" --}}
     <x-tool-section id="size" :title="__('toolpage.section.size')">
+        @foreach($plainChoices as $key => $options)
+            @continue($at($key, 'input') !== 'size')
+            <fieldset {!! $whenOf($key) !!}>
+                <legend class="lbl">{{ $tr('c', $key) }}</legend>
+                <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
+                    @foreach($options as $i => $o)
+                        <label class="tool-choice">
+                            <input type="radio" name="c-{{ $key }}" data-choice="{{ $key }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ $tr('o', $o) }}
+                        </label>
+                    @endforeach
+                </div>
+            </fieldset>
+        @endforeach
+
         <fieldset>
-            <legend class="sr-only">{{ __('param.'.$kind.'.size') }}</legend>
+            <legend class="sr-only">{{ __($own('size')) }}</legend>
             <div class="grid gap-3">
                 @foreach($main as $key)
-                    @php $f = $fields[$key]; @endphp
-                    <div class="tool-num" {!! $whenOf($key) !!} data-field="{{ $key }}">
-                        <label for="p-{{ $key }}" class="text-sm font-medium text-ink">{{ $label($key) }}</label>
-                        <div class="mt-1 flex items-center gap-3">
-                            <input type="range" data-range="{{ $key }}" min="{{ $f[0] }}" max="{{ $f[1] }}" step="{{ $f[3] }}" value="{{ $f[2] }}" class="min-w-0 flex-1 accent-ink" aria-label="{{ $label($key) }}" tabindex="-1">
-                            <span class="tool-unit" data-unit="{{ $unit($key) }}">
-                                <input id="p-{{ $key }}" data-param="{{ $key }}" type="number" inputmode="decimal" min="{{ $f[0] }}" max="{{ $f[1] }}" step="{{ $f[3] }}" value="{{ $f[2] }}" class="field !mt-0" aria-describedby="range-{{ $key }}">
-                            </span>
-                        </div>
-                        <span id="range-{{ $key }}" class="sr-only">{{ $f[0] }}–{{ $f[1] }} {{ $unit($key) }}</span>
-                    </div>
+                    @include('tools._num', ['key' => $key, 'f' => $fields[$key], 'label' => $label($key), 'unit' => $unit($key), 'when' => $whenOf($key)])
                 @endforeach
             </div>
         </fieldset>
+        @if($family === 'shape' && in_array('eyelet', $flags, true))
+            {{-- the eyelet goes where it is dragged to in the preview; this puts it back on top --}}
+            <div data-when="eyelet=on">
+                <button type="button" id="shape-eyelet-top" class="chip !py-1 text-sm">{{ __('param.shape.eyelet.top') }}</button>
+                <p class="hint mt-1 !text-xs">{{ __('param.shape.eyelet.drag') }}</p>
+            </div>
+        @endif
 
-        @foreach($flags as $flag)
+        @foreach($flagsAt('size') as $flag)
             <label class="flex items-start gap-3 text-sm text-ink" {!! $whenOf($flag) !!}>
                 <input data-flag="{{ $flag }}" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" @checked(in_array($flag, $flagsOn, true))>
-                <span><span class="font-medium">{{ __('param.flag.'.$flag) }}</span><br><span class="text-muted">{{ __('param.flag.'.$flag.'.hint') }}</span></span>
+                <span><span class="font-medium">{{ $tr('flag', $flag) }}</span><br><span class="text-muted">{{ $tr('flag', $flag.'.hint') }}</span></span>
             </label>
         @endforeach
 
@@ -177,11 +249,11 @@
             </fieldset>
         @endif
 
-        @if(count($fields) > count($main))
+        @if($fieldsAt('size')->count() > count($main))
         <details class="text-sm">
             <summary class="cursor-pointer font-medium text-ink underline decoration-line underline-offset-4">{{ __('param.more') }}</summary>
             <div class="mt-3 grid grid-cols-2 gap-3">
-                @foreach($fields as $key => $f)
+                @foreach($fieldsAt('size') as $key => $f)
                     @continue(in_array($key, $main, true))
                     <label class="text-sm font-medium text-ink" {!! $whenOf($key) !!}>{{ $label($key) }}
                         <span class="tool-unit mt-1" data-unit="{{ $unit($key) }}">
@@ -198,6 +270,16 @@
 
     {{-- 3 · colours: every separately printed part with one swatch from the farm's spools (a click opens the window) --}}
     <x-tool-section id="colors" :title="__('toolpage.section.colors')">
+        @if($family === 'shape')
+            {{-- how many colours the picture is reduced to; each one a filament of the farm, listed below from the top layer down --}}
+            <div class="grid gap-3">
+                @foreach($fieldsAt('colors') as $key => $f)
+                    @continue($key !== 'colors_n')
+                    @include('tools._num', ['key' => $key, 'f' => $f, 'label' => $label($key), 'unit' => $unit($key), 'when' => $whenOf($key)])
+                @endforeach
+            </div>
+            <p id="shape-found" class="hint !text-xs" aria-live="polite"></p>
+        @endif
         @foreach($colorChoices as $key => $options)
             {{-- a colour that changes the design itself (the plate and the code of a QR sign): kept with the model --}}
             <div class="flex items-center gap-3">
@@ -214,6 +296,22 @@
             <div class="text-xs text-muted">{{ __('toolpage.color.recent') }}</div>
             <div id="tool-recent-list" class="mt-1 flex flex-wrap gap-1.5"></div>
         </div>
+        @if($family === 'shape')
+            <div class="grid gap-3">
+                @foreach($fieldsAt('colors') as $key => $f)
+                    @continue($key === 'colors_n')
+                    @include('tools._num', ['key' => $key, 'f' => $f, 'label' => $label($key), 'unit' => $unit($key), 'when' => $whenOf($key)])
+                @endforeach
+            </div>
+            @foreach($flagsAt('colors') as $flag)
+                <label class="flex items-start gap-3 text-sm text-ink" {!! $whenOf($flag) !!}>
+                    <input data-flag="{{ $flag }}" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" @checked(in_array($flag, $flagsOn, true))>
+                    <span><span class="font-medium">{{ $tr('flag', $flag) }}</span><br><span class="text-muted">{{ $tr('flag', $flag.'.hint') }}</span></span>
+                </label>
+            @endforeach
+            {{-- how this design gets its colours in print: one filament, swaps by height, or a printer that changes filament itself --}}
+            <p id="shape-print" class="rounded-lg bg-page p-3 text-sm text-ink" aria-live="polite"></p>
+        @endif
         @unless($palette['farm'])<p class="hint !text-xs">{{ __('toolpage.color.builtin') }}</p>@endunless
         {{-- the one colour the order starts from (the first part's); two-colour designs carry theirs in the design --}}
         <input type="hidden" id="param-color" value="">

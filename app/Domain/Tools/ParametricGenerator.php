@@ -22,8 +22,42 @@ use Illuminate\Validation\ValidationException;
  */
 final class ParametricGenerator
 {
+    /**
+     * Things cut out of a picture or a name (engines/python/shape_kinds.py): pendant, earrings, Christmas ornament, fridge
+     * magnet, coaster. Each is a kind of its own (its own page, limits and stored designs) built by the one builder;
+     * what they share is written once here and the kinds only say where they differ.
+     */
+    public const FAMILY = ['charm' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape'];
+
+    private const SHAPE_FIELDS = [
+        'width' => [20, 120, 45, 1], 'thickness' => [2, 6, 3, 0.2], 'frame' => [0, 3, 1.2, 0.1],
+        // the picture: how many colours, how much of the background goes, how smooth the edges are, the photo's own sliders
+        'colors_n' => [1, 8, 4, 1], 'bg_strength' => [0, 100, 30, 1], 'smooth' => [0, 1, 0.3, 0.05], 'contrast' => [50, 150, 100, 1], 'brightness' => [50, 150, 100, 1], 'saturation' => [0, 200, 100, 1],
+        // every colour lies this much higher than the one under it: whole 0.2 mm layers, so a colour ends where a layer ends
+        'relief' => [0.4, 1.2, 0.6, 0.2],
+    ];
+
+    private const SHAPE_EYELET = ['eye_pos' => [0, 100, 0, 0.5], 'eye_hole' => [2, 6, 3, 0.5], 'eye_wall' => [1.5, 3, 2, 0.1]];
+
+    /** family → field, flag or choice → the section of the tool page it belongs to (fields and flags: size, choices: input, when not named) */
+    public const PLACE = ['shape' => [
+        'bg_strength' => 'input', 'smooth' => 'input', 'contrast' => 'input', 'brightness' => 'input', 'saturation' => 'input', 'remove_bg' => 'input',
+        'colors_n' => 'colors', 'relief' => 'colors', 'flush' => 'colors', 'rim' => 'colors', 'body' => 'size', 'mount' => 'size', 'disc' => 'size',
+    ]];
+
+    /** fields of the input section that sit folded under "adjust the photo" */
+    public const FOLDED = ['contrast', 'brightness', 'saturation'];
+
+    /** kind → the picture of our library a new visitor starts with (a tool that needs a picture must not open empty) */
+    public const SAMPLE = ['charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman'];
+
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
+        'charm' => self::SHAPE_FIELDS + self::SHAPE_EYELET,
+        'earrings' => ['width' => [10, 60, 32, 1], 'thickness' => [1.6, 3, 2.4, 0.2], 'frame' => [0, 2, 0.8, 0.1], 'relief' => [0.2, 0.8, 0.4, 0.2], 'eye_hole' => [1.5, 3, 2, 0.1], 'eye_wall' => [1.2, 3, 1.6, 0.1]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
+        'ornament' => ['width' => [40, 150, 80, 1], 'thickness' => [2, 5, 3, 0.2], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
+        'magnet' => ['width' => [40, 100, 60, 1], 'thickness' => [3, 6, 3, 0.2], 'frame' => [0, 3, 1.5, 0.1]] + self::SHAPE_FIELDS + ['mag_d' => [4, 30, 10, 0.5], 'mag_h' => [1, 6, 2, 0.5], 'mag_gap' => [0.1, 0.3, 0.2, 0.05]],
+        'coaster' => ['width' => [80, 120, 100, 1], 'thickness' => [3, 6, 4, 0.2], 'frame' => [0, 4, 2, 0.1], 'relief' => [0.2, 0.8, 0.4, 0.2]] + self::SHAPE_FIELDS,
         'organizer' => [
             'width' => [30, 400, 200, 1], 'depth' => [30, 400, 120, 1], 'height' => [10, 150, 40, 1],
             'rows' => [1, 8, 2, 1], 'cols' => [1, 8, 3, 1], 'radius' => [0, 20, 4, 0.5], 'wall' => [0.8, 4, 1.6, 0.2], 'floor' => [0.8, 4, 1.2, 0.2],
@@ -64,6 +98,12 @@ final class ParametricGenerator
 
     /** kind → choice → allowed values (the first one is the default) */
     public const CHOICES = [
+        'charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'earrings' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'ornament' => ['body' => ['image', 'circle', 'star'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'magnet' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script'], 'mount' => ['glue', 'press', 'through', 'none'],
+            'disc' => ['custom', 'd6x2', 'd8x3', 'd10x2', 'd12x3', 'd15x3', 'd20x3']],
+        'coaster' => ['body' => ['circle', 'square', 'hex'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
         'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -80,6 +120,9 @@ final class ParametricGenerator
 
     /** kind → text input → [max length, required, default] */
     public const TEXTS = [
+        'charm' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'earrings' => ['line1' => [12, false, ''], 'line2' => [12, false, '']],
+        'ornament' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'magnet' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
+        'coaster' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
         'sign' => ['line1' => [40, true, 'Jana'], 'line2' => [40, false, '']],
         'logo' => ['line1' => [30, false, 'LOGO'], 'line2' => [30, false, '']],
         'stamp' => ['line1' => [20, false, 'EVA'], 'line2' => [20, false, '']],
@@ -90,10 +133,12 @@ final class ParametricGenerator
     ];
 
     /** kinds that accept an uploaded SVG or picture instead of text */
-    public const ARTWORK = ['logo', 'stamp', 'stencil', 'lightbox', 'cutter'];
+    public const ARTWORK = ['logo', 'stamp', 'stencil', 'lightbox', 'cutter', 'charm', 'earrings', 'ornament', 'magnet', 'coaster'];
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
+        'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
+        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
@@ -108,15 +153,21 @@ final class ParametricGenerator
         'modular' => ['inner_w' => 'x', 'inner_d' => 'y', 'height' => 'z'], 'vase' => ['top_d' => 'x', 'height' => 'z'], 'phone_stand' => ['width' => 'x'],
         'cable_holder' => ['depth' => 'y'], 'holder' => ['obj_w' => 'x', 'height' => 'z'], 'cap' => ['size_a' => 'x', 'height' => 'z'],
         'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
+        'charm' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'],
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
 
-    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp'];
+    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp',
+        'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8'];
 
-    public const FLAGS = ['box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
+    public const FLAGS = ['charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
+        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'],
+        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
+        'charm' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
+        'magnet' => self::SHAPE_WHEN + ['disc' => ['mount', ['glue', 'press', 'through']], 'mag_d' => ['mount', ['glue', 'press', 'through']], 'mag_h' => ['mount', ['glue', 'press']], 'mag_gap' => ['mount', ['glue']]],
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
         'sign' => ['radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']],
@@ -133,6 +184,9 @@ final class ParametricGenerator
      * Threads: PET PCO 1881 (27.43 over the thread, pitch 2.7) and ISO metric coarse (major diameter, pitch).
      */
     public const FILLS = [
+        // the discs sold everywhere: diameter × height
+        'magnet' => ['disc' => ['d6x2' => ['mag_d' => 6, 'mag_h' => 2], 'd8x3' => ['mag_d' => 8, 'mag_h' => 3], 'd10x2' => ['mag_d' => 10, 'mag_h' => 2], 'd12x3' => ['mag_d' => 12, 'mag_h' => 3],
+            'd15x3' => ['mag_d' => 15, 'mag_h' => 3], 'd20x3' => ['mag_d' => 20, 'mag_h' => 3]]],
         'cap' => ['thread' => [
             'pet28' => ['size_a' => 27.4, 'pitch' => 2.7],
             'm6' => ['size_a' => 6, 'pitch' => 1], 'm8' => ['size_a' => 8, 'pitch' => 1.25], 'm10' => ['size_a' => 10, 'pitch' => 1.5], 'm12' => ['size_a' => 12, 'pitch' => 1.75],
@@ -141,7 +195,9 @@ final class ParametricGenerator
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet'];
+
+    private const SHAPE_WHEN = ['bg_strength' => ['remove_bg', ['on']], 'eye_pos' => ['eyelet', ['on']], 'eye_hole' => ['eyelet', ['on']], 'eye_wall' => ['eyelet', ['on']], 'relief' => ['flush', ['off']]];
 
     public const PRESETS = [
         'vase' => [
@@ -221,6 +277,8 @@ final class ParametricGenerator
             'lightbox' => ['body', 'face', 'diffuser', 'back'],
             'cutter' => array_values(array_intersect((array) ($p['parts'] ?? []), ['body', 'stamp'])),   // the stamp exists only when the drawing had inner lines: the tool says so
             'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
+            // a picture in colours: the plate, every colour and the rim, as the tool listed them
+            'charm', 'earrings', 'ornament', 'magnet', 'coaster' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8])$/', $part))),
             default => [],
         };
     }
@@ -247,6 +305,13 @@ final class ParametricGenerator
         $rules['params.part_colors.*'] = ['nullable', Rule::in($palette->codes())];
         if (in_array($kind, self::ARTWORK, true)) {
             $rules['params.artwork'] = ['nullable', 'string', 'regex:'.Artwork::REF];
+        }
+        if (isset(self::FAMILY[$kind])) {
+            // colours of the picture the visitor joined into one, and their order from the bottom up (numbers of the list shown)
+            $rules += [
+                'params.merge' => ['nullable', 'array', 'max:8'], 'params.merge.*' => ['array', 'size:2'], 'params.merge.*.*' => ['integer', 'min:1', 'max:8'],
+                'params.order' => ['nullable', 'array', 'max:8'], 'params.order.*' => ['integer', 'min:1', 'max:8'],
+            ];
         }
         if ($kind === 'modular') {
             $rules += [
@@ -313,6 +378,10 @@ final class ParametricGenerator
                 $out['part_colors'][$part] = ['code' => $code, 'hex' => $palette->hex($code)];
             }
         }
+        if (isset(self::FAMILY[$kind])) {
+            $out['merge'] = array_values(array_map(fn ($pair) => [(int) $pair[0], (int) $pair[1]], array_filter(array_slice((array) ($p['merge'] ?? []), 0, 8), fn ($pair) => is_array($pair) && count($pair) === 2)));
+            $out['order'] = array_values(array_unique(array_map('intval', array_slice((array) ($p['order'] ?? []), 0, 8))));
+        }
         if ($kind === 'modular') {
             $out['bins'] = array_values(array_map(function ($b) use ($palette) {
                 $color = is_string($b['color'] ?? null) && $palette->has($b['color']) ? $b['color'] : 'white';
@@ -365,6 +434,9 @@ final class ParametricGenerator
             }
             $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? ''], fn ($l) => $l !== ''));
         }
+        if (isset(self::FAMILY[$kind])) {
+            $clean['palette'] = self::spools();
+        }
         if (! empty($clean['artwork'])) {
             $clean['artwork_path'] = self::artworkPath($clean['artwork']);
             if (! $clean['artwork_path']) {
@@ -375,6 +447,22 @@ final class ParametricGenerator
         }
 
         return $clean;
+    }
+
+    /**
+     * The filaments a picture's colours are matched to by themselves: plain colours in stock, of the plastic most of them
+     * are made of (one print is one kind of plastic). The visitor can still give any spool of the catalogue to a colour.
+     *
+     * @return list<array{0: string, 1: string}> [code, hex]
+     */
+    public static function spools(): array
+    {
+        $rows = array_values(array_filter(app(Palette::class)->all(), fn ($c) => $c['in_stock'] && $c['hue'] !== 'special'));
+        $materials = array_count_values(array_column($rows, 'material'));
+        arsort($materials);
+        $main = array_key_first($materials);
+
+        return array_values(array_map(fn ($c) => [$c['code'], $c['hex']], array_filter($rows, fn ($c) => $c['material'] === $main)));
     }
 
     /** An upload, a silhouette of the library or the copy kept with a created model: see App\Domain\Tools\Artwork. */
@@ -453,9 +541,23 @@ final class ParametricGenerator
         if (isset($built['meta']['notes']['parts'])) {
             $clean['parts'] = array_values((array) $built['meta']['notes']['parts']);   // which separately printed parts this design really has
         }
+        if (isset(self::FAMILY[$kind])) {
+            $notes = $built['meta']['notes'];
+            // the filaments the tool chose are kept with the design: opened again next month it looks the same, whatever the catalogue holds by then
+            $chosen = ['body' => $notes['body_color'] ?? null, 'rim' => $notes['rim_color'] ?? null] + array_column((array) ($notes['colors'] ?? []), null, 'part');
+            foreach ($chosen as $part => $color) {
+                if (is_array($color) && ! empty($color['code']) && ! isset($clean['part_colors'][$part]) && in_array($part, $clean['parts'] ?? [], true)) {
+                    $clean['part_colors'][$part] = ['code' => (string) $color['code'], 'hex' => (string) $color['hex']];
+                }
+            }
+            // where the print changes filament by height (more than one place: color_change_mm above knows only one), and
+            // whether colours share a layer, which only a printer that changes filament by itself can print
+            $clean['color_changes'] = array_values((array) ($notes['color_changes'] ?? []));
+            $clean['multi_material'] = ! empty($notes['multi_material']);
+        }
         // what has to fit a printer is each part alone, not the plate they are laid out on: the check reads these sizes
         $parts = array_diff(self::partsOf($kind, $clean), ['all']);
-        if ($parts && $kind !== 'modular') {
+        if ($parts && $kind !== 'modular' && ! isset(self::FAMILY[$kind])) {       // the colours of a picture all lie on the one plate
             foreach ($parts as $part) {
                 $one = $this->build($kind, $clean, $part);
                 @unlink($one['path']);

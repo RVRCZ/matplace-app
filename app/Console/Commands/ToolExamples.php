@@ -54,7 +54,7 @@ class ToolExamples extends Command
                 }
                 try {
                     // "use": the product as it is used (a box with its lid on, a vase on its saucer), not laid out for printing
-                    $built = $generator->build($tool, ToolSeo::exampleParams($tool, $example), 'all', 'use');
+                    $built = $generator->build($tool, ToolSeo::exampleParams($tool, $example), 'all', 'use', isset(ParametricGenerator::FAMILY[$tool]));
                 } catch (\Throwable $e) {
                     $this->warn(sprintf('%s #%d: the tool refused the parameters (%s)', $tool, $i + 1, mb_substr($e->getMessage(), 0, 160)));
                     $failed++;
@@ -62,8 +62,17 @@ class ToolExamples extends Command
                     continue;
                 }
                 File::ensureDirectoryExists(dirname($target));
-                $result = $python->runScript('render_tool.py', [$built['path'], $target, '800', '600'], 180);
+                // a picture in colours is drawn in its filaments: the tool says which part is which and what it looks like
+                $own = (array) ($built['meta']['notes']['paint'] ?? []);
+                $paintFile = null;
+                if ($own && ! empty($built['meta']['parts'])) {
+                    $paintFile = $built['path'].'.json';
+                    File::put($paintFile, json_encode(['color' => $own['body'] ?? '#888888', 'regions' => [],
+                        'parts' => array_map(fn ($p) => ['tris' => $p['tris'], 'color' => $own[$p['name']] ?? '#888888'], (array) $built['meta']['parts'])]));
+                }
+                $result = $python->runScript('render_tool.py', [$built['path'], $target, '800', '600', ...($paintFile ? [$paintFile] : [])], 180);
                 @unlink($built['path']);
+                $paintFile && @unlink($paintFile);
                 if (empty($result['ok']) || ! is_file($target)) {
                     $this->warn(sprintf('%s #%d: not drawn (%s)', $tool, $i + 1, (string) ($result['error'] ?? 'no answer')));
                     $failed++;
@@ -134,9 +143,10 @@ class ToolExamples extends Command
                 return null;
             };
             $byPiece = count($parts) > 1 && $regions && empty($regions[0]['exact']);
+            $own = (array) ($built['meta']['notes']['paint'] ?? []);      // a picture in colours: the tool's own filaments
             $paint = [
-                'color' => $hex($colors['body']),
-                'parts' => array_map(fn ($p) => ['tris' => $p['tris'], 'color' => $hex(($byPiece ? $ofRegion($p) : null) ?? $colors[$p['name']] ?? 'blue')], $parts),
+                'color' => $own['body'] ?? $hex($colors['body']),
+                'parts' => array_map(fn ($p) => ['tris' => $p['tris'], 'color' => $own[$p['name']] ?? $hex(($byPiece ? $ofRegion($p) : null) ?? $colors[$p['name']] ?? 'blue')], $parts),
                 'regions' => $byPiece ? [] : array_map(fn ($r) => ['color' => $hex($r['color'] ?? null)] + $r, $regions),
             ];
             $paintFile = $built['path'].'.json';
