@@ -301,6 +301,12 @@ class ShapeToolsTest extends TestCase
         $this->assertNotEmpty(array_intersect(['name_small', 'name_no_room'], $o['notes']['warnings']));
         $this->assertSame(__('param.text_required'), $this->preview('name_letter', ['line1' => ''])->assertStatus(422)->json('errors')['params.line1'][0]);
         $this->preview('name_letter', ['line1' => 'Ela', 'height' => 400])->assertStatus(422);
+        // hung on a door: an eyelet on top of the letter, only when asked for
+        $hung = $this->meta($this->preview('name_letter', ['line1' => 'Ela', 'height' => 120, 'hang' => true, 'eye_hole' => 5])->assertOk());
+        $this->assertArrayNotHasKey('eyelet', $e['notes']);
+        $this->assertSame(5, (int) $hung['notes']['eyelet']['hole']);
+        $this->assertGreaterThan(120 + 4, $hung['bbox']['y']);
+        $this->assertCount(120, $hung['notes']['outline']);
     }
 
     public function test_a_biscuit_takes_icing_drawn_by_hand(): void

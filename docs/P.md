@@ -85,8 +85,9 @@ zvětšení v náhledu) zůstává otevřená; cedulka a klíčenka, které na n
 **Velké písmeno se jménem** (`_name_letter`): tučné písmeno (bezpatkové, patkové nebo strojové) a na něm jméno tam,
 kde má písmeno nejvíc místa – `_room` hledá největší obdélník v poměru stran jména, naležato i otočený o čtvrt kruhu
 (podél svislého tahu), 1,5 mm od okraje. Pod 4 mm výšky přijde upozornění, bez místa jiné. Tělo dostane nejtmavší cívku,
-jméno nejsvětlejší. Zadání ho stavělo na skladbě vrstev a chtělo i otvor na zavěšení a podstavec; ty tu nejsou – od
-10 mm tloušťky většina písmen stojí sama a stránka to říká.
+jméno nejsvětlejší. Volitelné **očko na zavěšení** (`hang`, otvor 3–8 mm, kdekoli na obrysu, tažením v náhledu).
+Zadání ho stavělo na skladbě vrstev a chtělo i podstavec; ten tu není – od 10 mm tloušťky většina písmen stojí sama
+a stránka to říká.
 
 **Očko** je kroužek na obrysu: poloha v % obvodu po směru hodin od nejvyššího bodu (posuvník), nebo **tažením
 v náhledu** – oranžový úchyt jede po obrysu (`viewer.ts` `setMarker`, obrys posílá nástroj jako 120 bodů rovnoměrně
@@ -136,28 +137,27 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 9. **Test `ToolPageTest::test_verified…`** padal už na `main` (od 7. 10. mají tři nástroje v configu datum ověření
    a test čekal katalog bez štítků). Test si teď data sám vynuluje; chování hlídá dál.
 
-## 3. Co se na farmě vytiskne a co ne – **potřebuju rozhodnutí**
+## 3. Co se na farmě vytiskne a co ne
 
-Farma dnes umí **jednu barvu, nebo dvě** (podklad + všechno nad jednou výškou; `second_slot_id`,
-`GcodeSlot::secondColor`, ověřeno na S1 + ACE 22.–30. 9.). Z toho plyne:
+Když tahle větev vznikala, uměla farma jednu nebo dvě barvy (jedna výměna ve výšce). Víc výměn postavila souběžně
+jiná session na větvi `feature/farm-colors` (z `b070caf`; popis v `docs/FARM-COLORS.md` tamtéž): objednávka nese
+seznam výměn, úvodní stránka objednávky nabídne cívku pro každou výměnu a předvybere ty z návrhu, `GcodeSlot` vloží
+`T<n>` do každé výšky. Z návrhu čte to, co tu vzniká: `ModelFile::colorChanges()` (`z`, `hex`, `code`) a
+`tool_params.part_colors.body.hex`. Limit je **čtyři různé cívky v jednom tisku** (`FarmOrder::MAX_COLORS`); barva
+se smí vrátit (A, B, A) a nestojí cívku navíc.
 
-| návrh | na farmě dnes | ke stažení |
+Texty nástrojů a SEO stránek to říkají od commitu „four colours“ na této větvi – **ten smí do `main` jen spolu
+s `feature/farm-colors`**, jinak by sliboval, co farma neumí.
+
+| návrh | na farmě | ke stažení |
 |---|---|---|
 | jedna barva | ano | STL, projekt |
-| dvě barvy nad sebou (počet barev 2, nebo jméno na podkladu) | **ano**, druhou barvu si zákazník vybere při objednávce | projekt s jednou výměnou |
-| tři a víc barev nad sebou (výchozí u obrázků) | jen jednobarevně – stránka to říká a radí „počet barev 2“ | projekt s N výměnami, STL po barvách |
-| zarovno / lem | ne | STL po barvách (projekt je jednobarevný) |
+| 2–4 různé cívky nad sebou | ano, cívku pro každou barvu zákazník potvrdí při objednávce | projekt s výměnami, STL po barvách |
+| 5–8 různých cívek nad sebou | ne; stránka nástroje to řekne a radí méně barev nebo sloučení | projekt s výměnami, STL po barvách |
+| zarovno / lem (barvy v jedné vrstvě) | ne | STL po barvách (projekt je jednobarevný) |
 
-Aby vánoční sada šla objednat ve třech a čtyřech barvách, musí farma umět **N výměn ve výšce**: jedna cívka navíc
-se zobecní na seznam (`farm_orders` sloupec se sloty, výběr barev na úvodní stránce objednávky, `GcodeSlot` vloží
-`T<n>` do každé z vrstev, stroj musí mít všechny cívky založené – ACE má čtyři sloty). Návrh už všechno potřebné nese:
-`tool_params.color_changes` = výšky a kódy cívek, `part_colors` = cívka každého dílu. Do objednávky jsem nesahal:
-mění placený tok živé farmy a potřebuje zkušební tisk. **Roman: mám to udělat jako další krok téhle session?**
-Do té doby texty nástrojů i SEO stránek říkají pravdu („na farmě jednu nebo dvě barvy“).
-
-Druhá věc k rozhodnutí: úvodní stránka objednávky u dvoubarevného návrhu z těchto nástrojů nepředvybere barvy
-z návrhu (to umí jen pro QR, `codeColors()`); zákazník je vybere ručně. Je to pár řádků v `OrderController`, ale
-taky objednávka – čeká na stejné „ano“.
+Stránka nástroje se rozhoduje podle `notes.filaments` (počet různých cívek) a `notes.multi_material`.
+**Vícebarevný tisk z těchto nástrojů se na farmě ještě netiskl** – první zkouška je tříbarevný přívěsek po nasazení.
 
 ## 4. Rychlost
 
@@ -219,7 +219,7 @@ jsem odkaz nahradil vlastním `npm ci`; sdílený adresář obnoví `npm ci` v `
 ## 7. Co přijde (v tomhle pořadí)
 
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
-tahu, cukrovinky a tácek, u velkého písmene otvor na zavěšení a podstavec.
+tahu, cukrovinky a tácek, u velkého písmene podstavec.
 Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák, miska,
 organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), korálky, stojánek
 na tužky, tvary a motivy cedulky, `logo` `extrude`, 20+ písem.

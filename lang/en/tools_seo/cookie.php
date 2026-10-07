@@ -16,7 +16,7 @@ return [
     ],
     'faq' => [
         ['q' => 'Can the biscuit be eaten?', 'a' => 'No. It is a plastic toy for a play kitchen or an ornament. We recommend PLA; for small children choose a bigger size without the eyelet and small parts.'],
-        ['q' => 'How many colours of icing can I use?', 'a' => 'Up to six colours of icing and 60 strokes on one biscuit. Our farm prints one or two colours today, that is the dough and one colour of icing; a biscuit with more colours can be downloaded for your own printer for free.'],
+        ['q' => 'How many colours of icing can I use?', 'a' => 'Up to six colours of icing and 60 strokes on one biscuit. Our farm prints up to four colours in one print, that is the dough and up to three colours of icing. You confirm the spool for each colour when ordering; a biscuit with more colours can be downloaded for your own printer for free.'],
         ['q' => 'Can a stroke be undone?', 'a' => 'Yes. A button removes the last stroke, the back and forward arrows undo any change, and one click clears the whole icing.'],
         ['q' => 'How fine can the drawing be?', 'a' => 'The narrowest stroke is 1.5 mm, which a printer with a 0.4 mm nozzle prints cleanly. The icing keeps a little away from the rounded edge so that it does not hang over it.'],
         ['q' => 'Can I decorate a biscuit on a phone?', 'a' => 'Yes, you can draw with a finger. A bigger screen is more comfortable, though.'],
