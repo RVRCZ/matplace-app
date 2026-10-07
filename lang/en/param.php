@@ -14,6 +14,8 @@ return [
     // ── a picture or a name in the colours of filaments ─────────────────────────────────────────────────────────
     'charm.lead' => 'Upload a picture, pick one from the library, or type a name. You get a charm in the colours of our filaments, with an eyelet you can move wherever you like.',
     'charm.tip' => 'It prints flat, face up, without supports. The colours lie one on another, so a printer with a single nozzle can print it too: just swap the filament at the heights the project contains.',
+    'keychain.lead' => 'Type a name or upload a picture. You get a keychain in two or more colours of our filaments, with an eyelet for the ring that you can move wherever you like.',
+    'keychain.tip' => 'It prints flat, face up, without supports. A name on a base is two colours, one on the other: one filament change is enough. The key ring is not part of the print.',
     'earrings.lead' => 'A picture or a short text becomes a pair of earrings, identical or mirrored. You move the eyelet for the hook along the outline and pick the colours from our filaments.',
     'earrings.tip' => 'Both earrings print together, flat and without supports. Hooks and jump rings for the eyelet are not part of the print; you can buy them at a craft shop.',
     'ornament.lead' => 'A Christmas ornament from your own picture or a name: a gingerbread man, a tree, a photo of the dog. The colours are filaments we have on the farm, and the eyelet for a ribbon is at the top.',

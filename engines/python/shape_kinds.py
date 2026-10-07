@@ -1,5 +1,6 @@
 """
-Things cut out of a picture or a name for param_tool.py: pendant, earrings, Christmas ornament, fridge magnet, coaster.
+Things cut out of a picture or a name for param_tool.py: pendant, keychain, earrings, Christmas ornament, fridge magnet,
+coaster.
 One builder; the product says what is added to the shape (an eyelet, a pocket for a magnet, grooves underneath…).
 
 The picture comes in the colours of the farm's filaments (shape2d.colors). Two ways to print them:
@@ -17,7 +18,7 @@ import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "earrings", "ornament", "magnet", "coaster")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
@@ -25,7 +26,7 @@ LIMITS = {
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
     "mag_d": (4, 30), "mag_h": (1, 6), "mag_gap": (0, 0.4),
 }
-BODIES = {"charm": ("image", "circle", "rect"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
+BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
           "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex")}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
@@ -124,7 +125,7 @@ def build(M, Invalid, p, product):
     if body_kind not in BODIES[product]:
         raise Invalid("bad_choice", "body")
     flush, rim, bevel = (bool(p.get(f, False)) for f in ("flush", "rim", "bevel"))
-    eyelet = bool(p.get("eyelet", False)) and product in ("charm", "earrings", "ornament")
+    eyelet = bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament")
     warn = []
     lines = [str(x).strip() for x in (p.get("lines") or []) if str(x).strip()]
     art_path = p.get("artwork_path")
@@ -133,6 +134,8 @@ def build(M, Invalid, p, product):
     is_text = not art_path
     edge = max(frame, 1.0) if (rim or (is_text and body_kind == "image")) else frame      # a rim needs a body to stand on, letters a body to hold them
     geometric = body_kind not in ("image", "rect")
+    if is_text and body_kind == "rect":
+        edge += 2.0                                           # letters on a plate want air round them, a picture brings its own
 
     # ── the picture: its colours bottom to top, in the place they will have on the body ─────────────────────────
     shape2d, inner_r = (None, 0.0)

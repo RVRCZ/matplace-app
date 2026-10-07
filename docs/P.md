@@ -1,18 +1,19 @@
 # P: tvar z obrázku a jména (session 1, vánoční sada)
 
 Větev `feature/tools-shapes` (z `main` 4438a2d, 7. 10. 2026), zadání `docs/prompts/nastroje.md`, část „Session 1“.
-Tenhle dokument popisuje **první várku**: obrázek v barvách filamentů a pět nástrojů, které na něm stojí. Zbytek
-vánoční sady (perníček se jménem, sušenka s polevou, klíčenka, velké písmeno, zápich do dortu) a zbytek session 1
+Tenhle dokument popisuje **první várku**: obrázek v barvách filamentů a šest nástrojů, které na něm stojí. Zbytek
+vánoční sady (perníček se jménem, sušenka s polevou, velké písmeno, zápich do dortu) a zbytek session 1
 jsou v sekci 7 jako to, co teprve přijde.
 
 ## 1. Co vzniklo
 
-**Pět nástrojů v katalogu**, každý s vlastní stránkou, kartou, SEO texty ve třech jazycích a třemi ukázkami:
+**Šest nástrojů v katalogu**, každý s vlastní stránkou, kartou, SEO texty ve třech jazycích a třemi ukázkami:
 
 | nástroj | adresa | kind | co přidává k obrázku |
 |---|---|---|---|
 | Vánoční ozdoba z obrázku | `/tools/ornament` | `ornament` | očko na stužku; tvar podle obrázku, kruh nebo hvězda |
 | Přívěsek z obrázku nebo jména | `/tools/charm` | `charm` | očko kdekoli na obrysu; tvar podle obrázku, kruh, obdélník |
+| Klíčenka se jménem nebo obrázkem | `/tools/keychain` | `keychain` | otevírá se se jménem na zaobleném obdélníku, očko vlevo, otvor 3–8 mm |
 | Náušnice z obrázku | `/tools/earrings` | `earrings` | pár stejných nebo zrcadlových, obě na jedné podložce |
 | Magnetka z obrázku | `/tools/magnet` | `magnet` | kapsa na magnet vzadu (lepení, nalisování, skrz, bez), předvolby disků |
 | Podtácek s obrázkem | `/tools/coaster` | `coaster` | kruh, čtverec, šestiúhelník; drážky zespodu |
@@ -37,7 +38,7 @@ filament‑art v session 3):
    (`skimage.measure.find_contours`) – hrany jsou hladké, ne schodovité, a maska uvnitř jiné masky dá obrys uvnitř
    jejího obrysu. Každá barva má dvě plochy: `own` (jen ona) a `stack` (ona a všechno nad ní).
 
-**Builder** `engines/python/shape_kinds.py` – jeden pro všech pět produktů. Díly: `body` (podklad s očkem),
+**Builder** `engines/python/shape_kinds.py` – jeden pro všech šest produktů. Díly: `body` (podklad s očkem),
 `color_<n>`, `rim`. Dva způsoby, jak barvy vytisknout:
 
 - **nad sebou (výchozí)**: každá barva je o krok výš než ta pod ní (0,4–1,2 mm po 0,2; náušnice a podtácek
@@ -64,8 +65,9 @@ Sekce Barvy ukazuje seznam barev shora dolů: vzorník cívky (klik = okno Barva
 Posuvníky fotky se na malém obrázku projeví hned (CSS filtr), model za okamžik.
 
 **Knihovna**: nová kategorie `colour` (Barevné) s osmi vlastními kresbami v barvách, které mají cívku
-(`engines/artwork/colour/_draw.py` je kreslí z prosté geometrie; CC0, řádky v `SOURCES.md`). Každý z pěti nástrojů
-se otevírá s jednou z nich (`ParametricGenerator::SAMPLE`), takže první, co návštěvník vidí, je hotová věc.
+(`engines/artwork/colour/_draw.py` je kreslí z prosté geometrie; CC0, řádky v `SOURCES.md`). Pět nástrojů se
+otevírá s jednou z nich (`ParametricGenerator::SAMPLE`), klíčenka se jménem „Jana“ – dvě barvy, jedna výměna, tedy
+to, co farma tiskne už dnes. První, co návštěvník vidí, je vždy hotová věc.
 
 **Projekt pro slicer s více výměnami**: `ColorChange::addAll` zapíše do projektu Orca / Bambu i PrusaSlicer výměnu
 filamentu pro každou barvu (dvě výměny ve stejné vrstvě jsou jedna); `ModelFile::colorChanges()` je čte z návrhu.
@@ -142,7 +144,7 @@ nesplňuju** (1,35 s + 0,35 s prodleva před dotazem). Na produkci jsem neměři
 - **Nic z toho se netisklo.** Geometrie je ověřená výpočtem (testy: objemy, rozměry, díly, výšky výměn), ne tiskem.
   K vyzkoušení na farmě: přívěsek 45 mm ve dvou barvách (očko Ø 3, stěna 2 – drží?), náušnice 30 mm (tloušťka 2,4),
   magnetka s kapsou Ø 10 × 2 na lepení (vůle 0,2) a nalisování (0,05), podtácek 100 mm s drážkami. Štítek „ověřeno
-  tiskem“ žádný z pěti nemá.
+  tiskem“ žádný z šesti nemá.
 - **Projekt s více výměnami** hlídá test (`ColorChangeTest`: tři řádky ve správném pořadí, Orca i Prusa); ve
   skutečné Orce ani PrusaSliceru jsem ho neotvíral. Jedna výměna je ověřená z dřívějška (N.md §8).
 - **Tažení očka** jsem zkoušel skriptem v headless Chrome (úchyt se chytí, hodnota se změní, náhled se přepočítá),
@@ -163,8 +165,8 @@ php artisan optimize
 systemctl restart php8.2-fpm matplace-worker
 ```
 
-S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,charm,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png`. Po nasazení projít `/tools` (pět nových karet), `/tools/charm` (táhnout
+S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,charm,keychain,earrings,magnet,coaster}-*`,
+`public/img/tool-examples/…-{1,2,3}.png`. Po nasazení projít `/tools` (šest nových karet), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -174,7 +176,7 @@ jsem odkaz nahradil vlastním `npm ci`; sdílený adresář obnoví `npm ci` v `
 
 ## 7. Co přijde (v tomhle pořadí)
 
-Vánoční sada: klíčenka (`keychain`, stejná rodina), perníček se jménem (`sign` tvar `gingerbread` s polevou),
+Vánoční sada: perníček se jménem (`sign` tvar `gingerbread` s polevou),
 sušenka s kreslenou polevou (`cookie`), skladba vrstev `compose` → velké písmeno se jménem a zápich do dortu.
 Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák, miska,
 organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), korálky, stojánek

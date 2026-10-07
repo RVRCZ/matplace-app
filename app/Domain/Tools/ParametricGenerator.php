@@ -27,7 +27,7 @@ final class ParametricGenerator
      * magnet, coaster. Each is a kind of its own (its own page, limits and stored designs) built by the one builder;
      * what they share is written once here and the kinds only say where they differ.
      */
-    public const FAMILY = ['charm' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape'];
+    public const FAMILY = ['charm' => 'shape', 'keychain' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape'];
 
     private const SHAPE_FIELDS = [
         'width' => [20, 120, 45, 1], 'thickness' => [2, 6, 3, 0.2], 'frame' => [0, 3, 1.2, 0.1],
@@ -54,6 +54,8 @@ final class ParametricGenerator
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
         'charm' => self::SHAPE_FIELDS + self::SHAPE_EYELET,
+        // the eyelet starts on the left side (three quarters of the way round), where a key ring pulls along the name
+        'keychain' => ['width' => [30, 100, 55, 1], 'thickness' => [2.4, 6, 3, 0.2], 'eye_pos' => [0, 100, 75, 0.5], 'eye_hole' => [3, 8, 5, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
         'earrings' => ['width' => [10, 60, 32, 1], 'thickness' => [1.6, 3, 2.4, 0.2], 'frame' => [0, 2, 0.8, 0.1], 'relief' => [0.2, 0.8, 0.4, 0.2], 'eye_hole' => [1.5, 3, 2, 0.1], 'eye_wall' => [1.2, 3, 1.6, 0.1]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
         'ornament' => ['width' => [40, 150, 80, 1], 'thickness' => [2, 5, 3, 0.2], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
         'magnet' => ['width' => [40, 100, 60, 1], 'thickness' => [3, 6, 3, 0.2], 'frame' => [0, 3, 1.5, 0.1]] + self::SHAPE_FIELDS + ['mag_d' => [4, 30, 10, 0.5], 'mag_h' => [1, 6, 2, 0.5], 'mag_gap' => [0.1, 0.3, 0.2, 0.05]],
@@ -99,6 +101,7 @@ final class ParametricGenerator
     /** kind → choice → allowed values (the first one is the default) */
     public const CHOICES = [
         'charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'keychain' => ['body' => ['rect', 'image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'earrings' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'ornament' => ['body' => ['image', 'circle', 'star'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'magnet' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script'], 'mount' => ['glue', 'press', 'through', 'none'],
@@ -120,7 +123,7 @@ final class ParametricGenerator
 
     /** kind → text input → [max length, required, default] */
     public const TEXTS = [
-        'charm' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'earrings' => ['line1' => [12, false, ''], 'line2' => [12, false, '']],
+        'charm' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'keychain' => ['line1' => [24, false, 'Jana'], 'line2' => [24, false, '']], 'earrings' => ['line1' => [12, false, ''], 'line2' => [12, false, '']],
         'ornament' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'magnet' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
         'coaster' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
         'sign' => ['line1' => [40, true, 'Jana'], 'line2' => [40, false, '']],
@@ -133,11 +136,11 @@ final class ParametricGenerator
     ];
 
     /** kinds that accept an uploaded SVG or picture instead of text */
-    public const ARTWORK = ['logo', 'stamp', 'stencil', 'lightbox', 'cutter', 'charm', 'earrings', 'ornament', 'magnet', 'coaster'];
+    public const ARTWORK = ['logo', 'stamp', 'stencil', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster'];
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
-        'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
+        'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
@@ -153,20 +156,20 @@ final class ParametricGenerator
         'modular' => ['inner_w' => 'x', 'inner_d' => 'y', 'height' => 'z'], 'vase' => ['top_d' => 'x', 'height' => 'z'], 'phone_stand' => ['width' => 'x'],
         'cable_holder' => ['depth' => 'y'], 'holder' => ['obj_w' => 'x', 'height' => 'z'], 'cap' => ['size_a' => 'x', 'height' => 'z'],
         'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
-        'charm' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'],
+        'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'],
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp',
         'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8'];
 
-    public const FLAGS = ['charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
+    public const FLAGS = ['charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
-        'charm' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
+        'charm' => self::SHAPE_WHEN, 'keychain' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
         'magnet' => self::SHAPE_WHEN + ['disc' => ['mount', ['glue', 'press', 'through']], 'mag_d' => ['mount', ['glue', 'press', 'through']], 'mag_h' => ['mount', ['glue', 'press']], 'mag_gap' => ['mount', ['glue']]],
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
@@ -278,7 +281,7 @@ final class ParametricGenerator
             'cutter' => array_values(array_intersect((array) ($p['parts'] ?? []), ['body', 'stamp'])),   // the stamp exists only when the drawing had inner lines: the tool says so
             'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
             // a picture in colours: the plate, every colour and the rim, as the tool listed them
-            'charm', 'earrings', 'ornament', 'magnet', 'coaster' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8])$/', $part))),
+            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8])$/', $part))),
             default => [],
         };
     }

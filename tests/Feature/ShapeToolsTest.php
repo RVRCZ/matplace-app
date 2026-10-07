@@ -17,7 +17,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'earrings', 'ornament', 'magnet', 'coaster'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster'];
 
     protected function setUp(): void
     {
@@ -66,7 +66,9 @@ class ShapeToolsTest extends TestCase
             }
             app()->setLocale('cs');
             $this->assertSame(route('tools.'.$kind), route(config('tools')[$kind]['route']));
-            $this->assertNotNull(ParametricGenerator::artworkPath(ParametricGenerator::SAMPLE[$kind]), "{$kind}: the picture a visitor starts with is in the library");
+            // a tool opens with something to look at: a picture of the library, or a text of its own (the keychain's name)
+            $sample = ParametricGenerator::SAMPLE[$kind] ?? null;
+            $this->assertTrue($sample ? ParametricGenerator::artworkPath($sample) !== null : ParametricGenerator::TEXTS[$kind]['line1'][2] !== '', "{$kind} opens empty");
         }
     }
 
@@ -202,6 +204,15 @@ class ShapeToolsTest extends TestCase
         $this->assertEqualsWithDelta(3, $name['notes']['color_change_mm'], 0.001);       // letters on a plate: the two colours the farm prints
         $this->assertEqualsWithDelta(60, $name['notes']['each'][0], 3.5);                 // the eyelet may reach over the side
         $this->assertNotSame($name['notes']['colors'][0]['code'], $name['notes']['body_color']['code']);
+
+        // the keychain as it opens: the name on a rounded plate, the eyelet on the left side, one change of filament
+        $key = $this->meta($this->preview('keychain', [])->assertOk());
+        $this->assertSame(['body', 'color_1'], $key['notes']['parts']);
+        $this->assertEqualsWithDelta(3, $key['notes']['color_change_mm'], 0.001);
+        $this->assertEqualsWithDelta(4.5, $key['notes']['eyelet']['x'], 0.1);           // a 5 mm hole in a 2 mm ring: the ring's own radius from the left edge
+        $this->assertEqualsWithDelta($key['bbox']['y'] / 2, $key['notes']['eyelet']['y'], 1.5);
+        $this->assertGreaterThan(55, $key['bbox']['x']);
+        $this->assertLessThan(55 + 12, $key['bbox']['x']);
 
         $nothing = $this->preview('charm', ['line1' => ''])->assertStatus(422);
         $this->assertSame(__('param.error.no_text'), $nothing->json('errors.params.0'));

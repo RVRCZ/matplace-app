@@ -14,6 +14,8 @@ return [
     // ── a picture or a name in the colours of filaments ─────────────────────────────────────────────────────────
     'charm.lead' => 'Suba una imagen, elíjala de la biblioteca o escriba un nombre. Obtendrá un colgante en los colores de nuestros filamentos, con un ojal que puede mover adonde quiera.',
     'charm.tip' => 'Se imprime en plano, con la cara hacia arriba y sin soportes. Los colores van uno sobre otro, así que también lo imprime una impresora de una sola boquilla: basta cambiar el filamento a las alturas que incluye el proyecto.',
+    'keychain.lead' => 'Escriba un nombre o suba una imagen. Obtendrá un llavero en dos o más colores de nuestros filamentos, con un ojal para la anilla que puede mover adonde quiera.',
+    'keychain.tip' => 'Se imprime en plano, con la cara hacia arriba y sin soportes. Un nombre sobre una base son dos colores, uno encima del otro: basta un cambio de filamento. La anilla no se incluye en la pieza.',
     'earrings.lead' => 'De una imagen o un texto corto sale un par de pendientes, iguales o en espejo. El ojal para el gancho se desplaza por el contorno y los colores se eligen entre nuestros filamentos.',
     'earrings.tip' => 'Los dos pendientes se imprimen a la vez, en plano y sin soportes. Los ganchos y las anillas para el ojal no vienen con la impresión; se compran en una tienda de manualidades.',
     'ornament.lead' => 'Un adorno de Navidad con su propia imagen o un nombre: un hombrecito de jengibre, un árbol, una foto del perro. Los colores son filamentos que tenemos en la granja y el ojal para la cinta va arriba.',

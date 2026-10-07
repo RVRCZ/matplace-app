@@ -133,6 +133,7 @@ $pages = function () {
     Route::get('/tools/cookie-cutter', [ToolsController::class, 'param'])->defaults('kind', 'cutter')->name('tools.cutter');
     // a picture or a name in the colours of filaments: one builder, every product its own page
     Route::get('/tools/charm', [ToolsController::class, 'param'])->defaults('kind', 'charm')->name('tools.charm');
+    Route::get('/tools/keychain', [ToolsController::class, 'param'])->defaults('kind', 'keychain')->name('tools.keychain');
     Route::get('/tools/earrings', [ToolsController::class, 'param'])->defaults('kind', 'earrings')->name('tools.earrings');
     Route::get('/tools/ornament', [ToolsController::class, 'param'])->defaults('kind', 'ornament')->name('tools.ornament');
     Route::get('/tools/magnet', [ToolsController::class, 'param'])->defaults('kind', 'magnet')->name('tools.magnet');

@@ -122,6 +122,12 @@ return [
         ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 50, 'eye_pos' => 0]],
         ['params' => ['line1' => 'Ela', 'typeface' => 'script', 'width' => 60]],
     ]]],
+    // opens with a name: letters on a plate are two colours one on another, the kind of print the farm does today
+    'keychain' => ['route' => 'tools.keychain', 'intent' => 'create', 'categories' => ['names', 'images'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['line1' => 'Jana', 'width' => 55, 'body' => 'rect']],
+        ['params' => ['line1' => '', 'artwork' => 'lib:colour/paw-badge', 'width' => 50, 'body' => 'image', 'eye_pos' => 0]],
+        ['params' => ['line1' => '', 'artwork' => 'lib:colour/smiling-star', 'width' => 45, 'body' => 'circle', 'eye_pos' => 0]],
+    ]]],
     'earrings' => ['route' => 'tools.earrings', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/red-heart', 'width' => 28]],
         ['params' => ['artwork' => 'lib:colour/happy-ghost', 'width' => 32, 'mirror' => true]],

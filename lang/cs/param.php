@@ -14,6 +14,8 @@ return [
     // ── a picture or a name in the colours of filaments ─────────────────────────────────────────────────────────
     'charm.lead' => 'Nahrajte obrázek, vyberte ho z knihovny, nebo napište jméno. Vznikne přívěsek v barvách našich filamentů s očkem, které si posunete, kam chcete.',
     'charm.tip' => 'Tiskne se naplocho, lícem nahoru, bez podpěr. Barvy leží jedna na druhé, takže je zvládne i tiskárna s jednou tryskou: stačí vyměnit filament ve výškách, které projekt obsahuje.',
+    'keychain.lead' => 'Napište jméno, nebo nahrajte obrázek. Vznikne klíčenka ve dvou a více barvách našich filamentů s očkem na kroužek, které si posunete, kam chcete.',
+    'keychain.tip' => 'Tiskne se naplocho, lícem nahoru, bez podpěr. Jméno na podkladu jsou dvě barvy nad sebou: stačí jedna výměna filamentu. Kroužek na klíče není součástí výtisku.',
     'earrings.lead' => 'Z obrázku nebo krátkého nápisu vznikne pár náušnic: stejných, nebo zrcadlových. Očko na háček posunete po obrysu, barvy vyberete z našich filamentů.',
     'earrings.tip' => 'Obě náušnice se tisknou najednou, naplocho a bez podpěr. Háčky a kroužky do očka nejsou součástí výtisku, koupíte je v galanterii.',
     'ornament.lead' => 'Vánoční ozdoba z vlastního obrázku nebo jména: perníček, stromek, fotka psa. Barvy jsou filamenty, které máme na farmě, očko na stužku je nahoře.',
