@@ -28,6 +28,7 @@ modulů), `viewer.ts` (dvě nové metody), `ModelFile` (`builtForPrinting`, `pri
 | Držák z vlastního modelu | `/tools/holder-from-model` | `edit` (`edit_tool.py holder`, kind `holder`, karta `holder_model`) | model → výška, dutina na plechovku 330/slim/500, kelímek 473 ml, mýdlo, svíčku nebo vlastní válec/kužel; stěna měřená v pěti výškách |
 | Lektvarová láhev z modelu | `/tools/potion` | `edit` (`edit_tool.py potion`) | model → seříznuté dno, dutina, hrdlo na kuželovém nástavci, kónická zátka (`cork`), štítek s nápisem (`label`) |
 | Flexi z modelu | `/tools/flexi-cut` | `edit` (`edit_tool.py flexi_cut`) | podlouhlý model → 3–20 článků napříč osou s kulovými klouby Ø 6–10 (vůle 0,35–0,5), tiskne se najednou složené |
+| Litofanie a reliéf (rozšíření) | `/tools/relief` | `relief` (`relief_tool.py`, `ReliefGenerator`) | fotka → panel v 7 tvarech (i vlastní silueta), rámeček, otvor / očko, stojánek; **lampa** (fotka kolem válce, dno na E27 / E14 / LED); jas, kontrast, střední tóny; náhled podsvícený / povrch |
 
 ### Obraz z filamentu (`filament_art`)
 
@@ -173,6 +174,27 @@ koule. Otvor dutiny v řezné ploše má poloměr √((r+c)² − (0,7r)²) ≈ 
 se články na místě (print‑in‑place), díly `segment_<n>` jen pro barvení v náhledu (stahují se jako celek). Článek
 kratší než Ø koule + 2 → `segments_too_short` s potřebnou délkou.
 
+### Litofanie: tvary, zavěšení, lampa (`relief`)
+
+Nástroj z `main` (obdélník, rámeček ano/ne, stojánek) rozšířený na místě – stejná adresa, stejný `origin_ref`
+(`lithophane` / `relief`), stará nastavení (`frame` jako ano/ne) se stále otevřou. Stránka se ptá nejdřív **co
+vyrobit**: fotopanel, lampa, reliéf na zeď; podle toho ukáže pole. Panel: tvar `rect | circle | oval | heart | arch |
+tree | custom` (silueta z knihovny obrázků nebo vlastní obrázek přes `Artwork`, kopíruje se k modelu jako
+`artwork.*`), šířka 40–250, výška 0 (= poměr fotky; kruh je vždy čtvercový) nebo 30–250, rámeček 0–6 (uvnitř
+rozměru, výška rámečku = největší tloušťka), zavěšení `hole` (Ø 3, Ø 4 u rámečku ≥ 6; 4 mm pod **horním bodem
+obrysu ve středním sloupci** – u srdce pod zářezem, u stromku pod špičkou) nebo `eyelet` (kroužek Ø 10 / 5 nad
+nejvyšším bodem desky, krček 8 mm široký od horního bodu obrysu – u srdce vyplní zářez), stojánek jako dřív.
+Lampa: `shape = cylinder`, šířka = **obvod** (60–400 → Ø 19–127), výška 30–250, reliéf vně (poloměr + z), hladká
+stěna uvnitř, horní prstenec, dno 2 mm s otvorem Ø 40 (E27) / Ø 28 (E14), `none` = zavřené dno (LED svíčka),
+`led` = bez dna (prstenec na pásek); otvor větší než Ø − 6 → `socket_too_big`. Síť lampy je psaná přímo (vnější a
+vnitřní mřížka, prstence, mezikruží dna) – jedno uzavřené tělo bez booleanů, 1,3–1,8 s. Fotka: autokontrast, jas a
+kontrast ±50 %, střední tóny (gamma 0,5–2), obrácení; tloušťky se zaokrouhlují na celé vrstvy 0,2 mm a odpověď
+nese `shades` (počet odstínů; 0,8–3,0 = 12), stránka to ukazuje živě i před vytvořením. Odpověď má `report`
+(rozměry, Ø a obvod lampy, odstíny, trojúhelníky) v `tool_params`; chyby `frame_too_wide`, `socket_too_big`,
+`silhouette` jdou jako `reason` a stránka má na ně větu. Náhled: panel se kreslí jako litofanie proti světlu (tenké
+= světlé, `viewer` kind `lithophane`) s přepínačem na povrch; lampa jako povrch (barvení podle výšky nemá na válci
+smysl). Malý obrázek fotky se mění hned s posuvníky (CSS filtr; střední tóny jen přibližně jako jas).
+
 ## 2. Rozhodnutí a proč
 
 1. **Filament art není kind `ParametricGenerator`**, ale vlastní generátor a modul `art`. Zadání ho tam chtělo;
@@ -201,6 +223,12 @@ kratší než Ø koule + 2 → `segments_too_short` s potřebnou délkou.
     každá tištěná skládačka a díly se k sobě dají přitlačit; tisk sám přidá setinu až desetinu.
 9. **Límec u řezů jen jako prstenec** (ne celý průřez): celý průřez 12 mm silný přidal bustě 400 mm 0,8 kg;
    prstenec 13 mm hluboký 0,15 kg a kolíky sedí stejně.
+12. **Litofanie rozšířená na místě, ne nový nástroj**: adresa `/tools/relief` je živá a indexovaná, stará nastavení
+    se otevřou; zadání chtělo „9 tvarů“ – je jich 7 + lampa (válec) + vlastní silueta, protože hvězda, šestiúhelník
+    a podobné jsou právě ta vlastní silueta z knihovny. Lampa má síť psanou přímo (žádný boolean na 300 tis.
+    trojúhelnících), tvary desek jdou přes manifold (průnik desky s obrysem + rámeček jako prstenec obrysu).
+    Zavěšení se měří od horního bodu obrysu ve středu, ne od opsaného obdélníku – jinak očko srdce viselo ve
+    vzduchu (první verze, `multiple_shells`).
 
 ## 3. Rychlost (změřeno 7. 10. 2026, lokálně, Windows, 4 jádra)
 
@@ -245,6 +273,18 @@ Dutina a životní velikost (tentýž den):
 | `flexi_cut` kapsle Ø 18 × 118 → 6 článků, 5 kloubů | 1,2 s |
 Limit 60 s ze zadání je daleko; decimaci nad 2 M jsem na skutečném modelu neměřil.
 
+`relief_tool.py` (fotka 400 × 300, mřížka ~0,14 mm na desce 80 mm, tj. 240–400 tis. trojúhelníků):
+
+| případ | čas |
+|---|---|
+| obdélník 80 nastojato | 2,1 s |
+| kruh 80, rámeček 3, otvor | 4,0 s |
+| srdce 90 reliéf, očko | 2,7 s |
+| oblouk 70 × 100 se stojánkem | 3,2 s |
+| stromek 80, vlastní silueta (hvězda) | 2,5 / 1,9 s |
+| lampa obvod 200 × 152 E27 (476 tis. trojúhelníků) | 1,6 s |
+| lampa obvod 150 × 60, LED / zavřená | 1,3 s |
+
 ## 4. Testy
 
 `FilamentArtTest` (7): stránka ve třech jazycích a katalog; vrstvený obraz = rám, zadní deska, deska na barvu,
@@ -256,7 +296,12 @@ po 0,4 mm, výměny na celých vrstvách; vlastní cívka a sloučení barev; od
 cizí díl 404, znovuotevření); rybinové klíče, hladké řezy s vlastními rovinami, odmítnutí dělení toho, co se vejde,
 špatné volby 422; busta s vruby se před řezáním uzavře. Celkem 12 testů, ~2 min (Python). Související existující
 testy po změnách (`ToolPageTest`, `ToolsCatalogTest`, `SeoTest`, `ToolCardsTest`, `ProjectExportTest`,
-`ColorsPayloadTest`) procházejí; celá sada viz sekce 8.
+`ColorsPayloadTest`) procházejí; celá sada viz sekce 8. `ReliefToolTest` rozšířen (6): stránka s tvary a objímkou,
+odmítnutí tvaru / objímky / siluety / gammy mimo rozsah, `clean` (lampa bez rámečku a stojánku, deska bez objímky,
+starý zaškrtnutý rámeček = 2 mm), původní test stojící litofanie a ležícího reliéfu (+ `shades` 12, `shape`),
+nový: srdce s očkem (rozměr, výška s kroužkem, jedno tělo), kruh s otvorem (čtvercový, objem menší než hranol),
+`frame_too_wide`, `silhouette`, lampa E27 (Ø z obvodu, výška + dno, jedno tělo, `report.diameter`), zavřené dno
+těžší o disk otvoru, `socket_too_big`.
 
 ## 5. Co není ověřené
 
@@ -279,6 +324,12 @@ testy po změnách (`ToolPageTest`, `ToolsCatalogTest`, `SeoTest`, `ToolCardsTes
   → **Pro řídící session**: objednávka sady dílů po barvách (každý díl `part_colors` vlastní cívka, N výtisků v jedné
   zakázce) by vrstvený obraz i vícebarevné sady zpřístupnila farmě.
 - Fotky lidí: postup je pro kresby; z fotky vybere hlavní barvy (plakát).
+- **Litofanie**: testy běží na jednobarevné (černé) fotce z `UploadedFile::fake()`, geometrie tvarů a lampy je
+  ověřená objemem a uzavřeností, obrázek sám jen na syntetické fotce (disk na gradientu) v `relief_try`. Lampa se
+  netiskla: stěna 0,8–3 mm nastojato bez podpěr by měla jít, horní prstenec je bez převisu; otvor E27 Ø 40 sedí na
+  běžnou objímku s převlečným kroužkem, E14 Ø 28 na kroužek 28–29 – rozměry z katalogů, ne z měření. Očko Ø 10 /
+  otvor Ø 3 u desky 0,8 mm nejtenčí: krček i kroužek mají plnou tloušťku (největší), takže drží. Podsvícený náhled
+  je týž `paintByHeight` jako dřív; u vlastní siluety s dírami uvnitř (`fill_holes`) se díry zaplní.
 
 ## 6. Nasazení (Roman)
 
@@ -297,11 +348,15 @@ Hotové: `/tools/filament-art` (oba režimy, rám, LED, návod), `/tools/split` 
 3D profilu pro vysoké modely), `/tools/holder-from-model`, `/tools/potion`, `/tools/flexi-cut`, společný základ `edit_tool.py` + `ModelEditor` +
 `EditModel` + stránka `edit`.
 Zbývá (v pořadí, jak dává smysl): `/tools/wearable` (míra, průzory ve vieweru, drážky na popruh); `/tools/flexi` (zvíře z primitiv);
-`/tools/colors` (barvený 3MF, `ThreeMfConverter` čtení barev); rozšíření `relief` (9 tvarů, lampa, náhled
-s podsvícením); `soap` podle stopy; `/tools/slider`.
+`/tools/colors` (barvený 3MF, `ThreeMfConverter` čtení barev); `soap` podle stopy; `/tools/slider`. Rozšíření
+`relief` (tvary, lampa, podsvícený náhled) je hotové.
 
 ## 8. Stav
 
 7. 10. 2026 večer: filament art a dělení v katalogu (commit 61d99ef). Později téhož večera: dutina, životní velikost,
 puzzle, držák z modelu a lektvarová láhev (všechny na stránce `edit`), `ModelEditTest` má 10 testů; build, pint a testy
-stránek, katalogu, SEO a karet zelené. Celá sada se pouští na konci session (sekce se doplní).
+stránek, katalogu, SEO a karet zelené. Flexi z modelu (869c633). **Celá sada** po flexi: 462 testů, 22 min, jedna
+chyba – `ToolsFlowTest` hlídá, že každý inline `throttle` má vlastní předponu, a `art/preview`, `art`, `art/zip`,
+`edit/{part}.stl` sdílely `preview`, `create`, `zip`, `part` s nástroji session 1 → přejmenováno na `art_*`,
+`edit_part`. Pak rozšíření litofanie (tvary, zavěšení, lampa, světlo, náhled) – `ReliefToolTest` 6 testů,
+`ToolsFlowTest` zelený, build.
