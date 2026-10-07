@@ -480,7 +480,12 @@ balíček povinný; **`fast_simplification`** (`pip install fast_simplification`
 modelů nad 2 M trojúhelníků, bez něj je nástroj odmítne s důvodem. `npm run build`, `php artisan view:clear`,
 restart `php8.2-fpm` a `matplace-worker` (job `EditModel` běží ve frontě `interactive`). Karty a ukázky
 (`public/img/tools/{filament_art,split}-*`, `public/img/tool-examples/filament-art-{1,2,3}.png`) jsou v repozitáři,
-kreslené z lokálního katalogu cívek (37 PLA+); na produkci se nepřekreslují.
+kreslené z lokálního katalogu cívek (37 PLA+); na produkci se nepřekreslují. Pozdější nástroje nepřidaly nic
+dalšího: `colors_tool.py` a rozšířený `relief_tool.py` používají jen stdlib + numpy / Pillow / trimesh / manifold3d,
+které už na serveru jsou; karty `colors`, `soap_model`, `wearable`, `slider` a `relief` jsou v repozitáři. Texty
+nástrojů `relief` jsou nově i v `lang/<loc>/relief.php` (JSON soubory beze změny), route `tools.colors`,
+`tools.soap_model`, `tools.wearable`, `tools.slider`. Po nasazení stojí za to `php artisan route:cache` jen pokud se
+používá (dosud ne) a `view:clear` kvůli změněným blade šablonám `edit` a `relief`.
 
 ## 7. Co ze zadání session 3 teprve přijde
 
@@ -505,3 +510,7 @@ chyba – `ToolsFlowTest` hlídá, že každý inline `throttle` má vlastní p�
 `ToolsFlowTest` zelený, build (a82aed8). Pak `/tools/colors` (`colors_tool.py`, karta ze sněhuláka, test), build,
 pint, testy stránek, katalogu, karet, SEO a toku zelené (2e3957c). Pak mýdlenka podle modelu (`soap`, 14a3e52),
 přilba na míru (`wearable`, e947c16) s mřížkou dutiny z řezů a posuvný fidget (`slider`).
+
+**Závěr session (8. 10. 2026 po půlnoci):** celá sada po fidgetu: 468 testů, 22 min, jedna chyba – `ToolPageTest` kontroluje, že kategorie bez nástroje nemá filtr, a přeřazuje hračky do `edit`; nový `slider` je hračka taky → doplněn do testu, pak zelený (ostatních 467 prošlo napoprvé; 1 varování a 2 přeskočené jsou z `main`). `origin/main` je stále 5355fa3, slitý už 7. 10. – není co slévat. Větev `feature/tools-edit`
+odeslaná; k nasazení podle sekce 6. Ze zadání session 3 zbývá jen `/tools/flexi` (zvíře z primitiv, sekce 7);
+nic z toho, co vzniklo, nebylo vytištěno (sekce 5 říká, co ověřit první: fidget, flexi, kolíky dělení).
