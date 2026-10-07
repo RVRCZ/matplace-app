@@ -472,6 +472,57 @@ a zarážek (výška 8); tenká deska → `too_thin`; osa z → 422. `ModelEditT
   582 mm proti cíli 570 (+2 %): měří se v řezu nejširšího místa, u kopule těsně nad lemem, kde mřížka dutinu
   o desetiny rozšíří; na skutečné přilbě ověřit metrem po tisku a případně vůli snížit.
 
+## 5a. Zkušební tisky: checklist u tiskárny (Roman)
+
+Pořadí podle toho, co nejvíc visí na vůli tisku. Každý řádek: jak kus vyrobit na webu, čím tisknout, co změřit nebo
+zkusit, kdy je to dobře, a které pole změnit, když ne. Všechno jsou malé kusy (do 1 h tisku), PLA, vrstva 0,2 mm,
+bez podpěr, pokud není psáno jinak. Výsledky prosím do sekce 5 (stačí „prošlo / neprošlo + číslo“).
+
+1. **Posuvný fidget** – `/tools/slider`, nahrát `docs/img`-nezávislý kus: kalkulačka → generátor `coaster` čtverec
+   100 × 6 s textem, stáhnout STL, nahrát do slideru, výchozí hodnoty (drážka 12 × 4, jezdec 24, vůle 0,3, 3 zarážky).
+   Tisk naležato. **Zkouška:** jezdec se uvolní zatlačením ze strany (první pohyb přetrhne můstky), jede po celé
+   drážce, na třech místech cvakne, nejde vytáhnout nahoru. **Dobře:** uvolnění bez nástroje, cvaknutí slyšet.
+   **Špatně → změna:** drží → vůle 0,4 (pole „Vůle jezdce“); jede bez cvakání → to je v pořádku jen bez zarážek,
+   jinak napsat (kuličky 1 mm asi slicer nevytiskl: zkusit vrstvu 0,12); vypadne nahoru → napsat (rybina 15° nestačí).
+2. **Flexi z modelu** – `/tools/flexi-cut`, model: generátor `name_letter` „Ivo“ výška 140, tloušťka 14 → STL →
+   flexi 5 článků, koule 8, vůle 0,4 (karta nástroje je totéž). **Zkouška:** články se prolomí prsty, každý kloub
+   se ohne aspoň o 30° na obě strany, koule nevypadne. **Dobře:** 4 klouby z 4. **Špatně → změna:** srostlé → vůle
+   0,5; kloub vyklouzne → napsat (krček 0,5 r je moc tenký, nebo otvor dutiny moc velký); tisknout s 0,2 mm, ne 0,28.
+3. **Dělení s kolíky a rybinami** – `/tools/split`, model: generátor `vase` 300 mm (karta), podložka 180,
+   spoje kolíky; a podruhé rybinové klíče. **Zkouška:** kolík Ø 6 do díry 6,2 jde zatlačit rukou a nevypadne
+   obrácením; rybinový klíč 8/5/3 jde zasunout do drážky a drží; čísla 0,6 mm hluboko čitelná; díly ležely řezem
+   dolů bez podpěr. **Dobře:** vše rukou, bez pilníku. **Špatně → změna:** kolík nejde → tisknout díru s „vnější
+   perimetr první“ nebo napsat (vůle 0,2 → 0,3 je změna v kódu `PLAY`); klíč nejde → napsat (`KEY_*` 8/5/3 + 0,2).
+4. **Vrstvený obraz** – `/tools/filament-art`, sněhulák 150 mm bez rámu, 5 barev, vrstvený, desky 2 mm, sloupky
+   zapnuté. Každou desku tisknout zvlášť svou barvou (návod ze stránky říká pořadí). **Zkouška:** sloupky Ø 6 na
+   desce 2 mm drží a nelámou se; desky na sebe sednou (přední jen leží, lepí se); tenké linky nechybí.
+   **Dobře:** obraz drží pohromadě po slepení, hloubka vidět. Pak kulatý rám 180: desky se vejdou do okna s vůlí
+   0,6, drážka na hřebík drží. **Špatně → změna:** sloupky se lámou → pole „Tloušťka desky“ 3; desky nejdou do
+   okna → napsat (vůle okna je v kódu).
+5. **Litofanie lampa a panel** – `/tools/relief`, lampa: obvod 200, výška 90, E27, bílé PLA, nastojato, 100 %
+   výplň, vrstva 0,12 (jemnější obraz). **Zkouška:** objímka E27 s převlečným kroužkem sedne do otvoru Ø 40, lampa
+   stojí, obraz proti žárovce čitelný, stěna 0,8 mm se vytiskla bez děr. Panel: srdce 90 s očkem, bílé PLA.
+   **Dobře:** objímka drží bez lepení. **Špatně → změna:** otvor malý → napsat rozměr kroužku (konstanta
+   `SOCKETS`); obraz slabý → kontrast +20, střední tóny 1,3.
+6. **Puzzle** – `/tools/puzzle`, model: generátor `logo` „PUZZLE / 2026“ 120 mm (karta), 3 × 4, zámky, vůle 0,2,
+   rámeček. **Zkouška:** dílky do sebe zapadnou rukou, drží i zvednuté za jeden dílek, do tácku s vůlí sednou,
+   čísla zespodu čitelná. **Špatně → změna:** těsné → vůle 0,3; volné → 0,15.
+7. **Držák z modelu** – `/tools/holder-from-model`, model: `vase` (karta), plechovka 330, vůle 0,6. **Zkouška:**
+   plechovka 330 ml jde dovnitř a ven, nekývá se víc než pár mm. **Špatně → změna:** vůle 0,4 / 1,0.
+8. **Lektvarová láhev** – `/tools/potion`, model: `vase` belly 90 mm (karta), štítek „Elixir“. **Zkouška:** zátka
+   sedne do hrdla a drží obrácením, nápis čitelný. **Špatně → změna:** napsat (kužel zátky je v kódu).
+9. **Mýdlenka** – `/tools/soap-from-model`, model: krabička 90 × 60 × 30 z kalkulačky nebo jakékoli mýdlo (STL),
+   drážky. **Zkouška:** mýdlo sedne s vůlí 2 mm, voda proteče. Žebra: mýdlo leží na žebrech, ne ve vodě.
+10. **Dutina (váha místo řezu)** – `/tools/hollow`, model: koule Ø 60 z kalkulačky, stěna 2, jeden odtok.
+    **Zkouška:** váha asi 28 g (plná by byla 140 g), odtok Ø 5 dole průchozí. Bez tisku: v sliceru průřez ukazuje
+    stěnu 2,0–2,2 mm.
+11. **Barvy z 3MF (bez tisku)** – `/tools/colors`: uložit z Bambu Studia model s malováním a dvěma díly v různých
+    slotech AMS jako 3MF, nahrát. **Zkouška:** počet barev a podíly odpovídají tomu, co ukazuje slicer; vložky
+    1,2 mm na správných místech. **Špatně:** poslat ten 3MF (formát malování je podle popisu, ne podle souboru).
+12. **Na míru (volitelné)** – `/tools/wearable`: libovolná přilba z Printables, hlava 56 cm, průzor vpředu
+    80 × 30, drážky na popruh. **Zkouška:** vnitřní obvod metrem 56–57 cm, otvor zespodu průchozí, průzor jen v přední
+    stěně. Tisk je velký (190 mm, ~200 g); stačí ověřit v sliceru, tisknout až když zbyde čas.
+
 ## 6. Nasazení (Roman)
 
 Podle `docs/DEPLOY-BETA.md` (merge `origin/main` identitou `deploy`, stop na konfliktu). Nic nového v `.env`, žádná
