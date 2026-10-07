@@ -16,12 +16,15 @@ Parts: `body` (the plate, with the eyelet), `color_<n>` (n = the colour's number
 
 The gingerbread is the same thing the other way round: the shape is ours (a man, a heart, a star, a tree), icing is
 piped on it and the visitor's name goes across it. Dough and icing: two colours one on another, one filament change.
+
+The cookie takes a picture or a silhouette as its dough and the strokes the visitor draws on it in the preview as
+icing: one part `icing_<n>` for every filament drawn with, stacked like the colours of a picture.
 """
 import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
@@ -30,7 +33,7 @@ LIMITS = {
     "mag_d": (4, 30), "mag_h": (1, 6), "mag_gap": (0, 0.4),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",)}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle")}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -128,7 +131,8 @@ def build(M, Invalid, p, product):
     if body_kind not in BODIES[product]:
         raise Invalid("bad_choice", "body")
     flush, rim, bevel = (bool(p.get(f, False)) for f in ("flush", "rim", "bevel"))
-    eyelet = bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")
+    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product == "cookie")
+    biscuit = product == "cookie"                             # a picture or a silhouette as dough, icing piped on it by hand
     cookie = product in ("gingerbread", "name_letter")        # the shape is ours, the visitor brings the name
     warn = []
     lines = [str(x).strip() for x in (p.get("lines") or []) if str(x).strip()]
@@ -213,6 +217,30 @@ def build(M, Invalid, p, product):
         warn.append("missing_chars")
     if info.get("ignored_outlines"):
         warn.append("outlines_ignored")
+    dough = None
+    if biscuit:
+        spools = p.get("palette") or []
+        dough = min(spools, key=lambda f: float(((S.hex_lab(f[1]) - S.hex_lab(DOUGH)) ** 2).sum())) if spools else ("", DOUGH)
+        # a silhouette is only the shape of the biscuit; of a picture in colours the part that is dough anyway is left out
+        if not is_text and (info["found"] == 1 or (layers and layers[0]["code"] == dough[0])):
+            layers = layers[1:]
+        clip = body2d.offset(-(ROUND + 0.3), J, 2.0, 24)       # icing stays off the rounded edge
+        for layer in layers:
+            layer["own"], layer["stack"] = layer["own"] ^ clip, layer["stack"] ^ clip
+        layers = [layer for layer in layers if not layer["stack"].is_empty()]
+        piped = _icing(M, p, aw, clip)
+        if piped:
+            # what is piped lies on everything: under each stroke the layers below are filled up to it, so every layer of
+            # the print still holds one filament (see the picture's colours in shape2d.colors)
+            above = None
+            for layer in reversed(piped):
+                layer["stack"] = layer["own"] if above is None else layer["own"] + above
+                above = layer["stack"]
+            for i, layer in enumerate(piped[:-1]):
+                layer["own"] = layer["own"] - piped[i + 1]["stack"]
+            for layer in layers:
+                layer["own"], layer["stack"] = layer["own"] - above, layer["stack"] + above
+            layers = layers + piped
     count = len(layers)
 
     # ── eyelet: a ring on the outline, wherever the visitor put it ───────────────────────────────────────────────
@@ -252,8 +280,8 @@ def build(M, Invalid, p, product):
     else:
         top = t + count * step
         solids = [(layer, layer["stack"].extrude(step).translate([0, 0, t + i * step])) for i, layer in enumerate(layers)]
-    body = plate2d.extrude(t)
-    if bevel and not rim and edge >= 0.4:
+    body = _rounded_top(M, plate2d, t, ROUND) if biscuit else plate2d.extrude(t)
+    if bevel and not rim and edge >= 0.4 and not biscuit:
         c = min(0.8, edge, t * 0.3)
         body = plate2d.extrude(t - c)
         for i in range(4):
@@ -306,6 +334,8 @@ def build(M, Invalid, p, product):
     own = _code(p, "body")
     if cookie:
         body_color = own or info["dough"]
+    elif biscuit:
+        body_color = own or (dough[0], dough[1])
     elif is_text:
         pal = sorted(p.get("palette") or [], key=lambda f: -_light(f[1]))
         body_color = own or ((pal[0][0], pal[0][1]) if pal else ("", "#ede6d6"))       # letters dark, the plate light
@@ -340,7 +370,7 @@ def build(M, Invalid, p, product):
     for layer, solid in solids:
         if solid.is_empty():
             continue
-        name = "color_%d" % layer["index"]
+        name = layer.get("part") or "color_%d" % layer["index"]
         parts[name] = laid(solid)
         pieces.append((name, parts[name]))
         paint[name] = layer["hex"]
@@ -383,7 +413,7 @@ def build(M, Invalid, p, product):
             if held[0][0] != last:
                 changes.append({"z": z, "part": part, "code": held[0][0], "hex": held[0][1]})
                 last = held[0][0]
-    thin = max((S.printability(M, layer["own"], 0.45)["thin_pct"] for layer in layers), default=0)
+    thin = max((S.printability(M, layer["own"], 0.45)["thin_pct"] for layer in layers if not layer["own"].is_empty()), default=0)
     if thin > 35:
         warn.append("thin_lines")
     if mount == "through" and count:
@@ -397,6 +427,11 @@ def build(M, Invalid, p, product):
     })
     if has_rim:
         notes["rim_color"] = {"code": rim_color[0], "hex": rim_color[1]}
+    if biscuit:
+        # where the picture's own corner lies in the model and how wide it is: strokes are stored in shares of that width
+        notes["frame"] = [round(-x0, 2), round(-y0, 2), round(aw, 2)]
+        notes["draw_z"] = round(top, 2)
+        notes["strokes"] = len([c for c in listed if c["part"].startswith("icing_")])
     if len(changes) == 1:
         notes["color_change_mm"] = changes[0]["z"]          # one change is what the farm and the slicer projects already know
     if eyelet:
@@ -626,6 +661,97 @@ def _name_letter(M, Invalid, p, width, lines, warn):
     info = {"source": "letter", "silhouette": letter, "size": [x1 - x0, y1 - y0], "found": 1, "wanted": 1, "background": "alpha", "missing_chars": missing,
             "body": letter, "dough": (dark[0], dark[1]), "top": None}
     return layers, info
+
+
+# ── a biscuit with icing piped by hand ───────────────────────────────────────
+
+ROUND = 1.5                 # the top edge of a biscuit is rounded by this much
+MAX_STROKES, MAX_ICINGS = 60, 6
+
+
+def _rounded_top(M, outline, t, r):
+    """A plate whose top edge is a quarter round, in steps a layer high: a biscuit, not a slab."""
+    steps = max(3, int(round(r / 0.25)))
+    solid = outline.extrude(t - r)
+    for i in range(steps):
+        inset = r * (1 - math.sqrt(1 - ((i + 0.5) / steps) ** 2))
+        ring = outline.offset(-inset, M.JoinType.Round, 2.0, 16) if inset > 0.01 else outline
+        solid = solid + ring.extrude(r / steps + 0.01).translate([0, 0, t - r + r * i / steps - 0.01])
+    return solid
+
+
+def _stroke(M, pts, w, tip):
+    """One stroke of the piping bag as an outline: a ribbon `w` wide along the points, round or flat at its ends, or a row of dots."""
+    import numpy as np
+    C = M.CrossSection
+    kept = []
+    for x, y in pts:                                         # a hand gives a point every pixel: one every 0.3 mm draws the same line
+        if not kept or math.hypot(x - kept[-1][0], y - kept[-1][1]) >= 0.3:
+            kept.append((x, y))
+    if not kept:
+        return None
+    if len(kept) == 1:
+        return C.circle(w / 2 if tip != "dots" else w * 0.6, 24).translate(list(kept[0]))
+    a = np.array(kept, dtype=np.float64)
+    if tip == "dots":
+        seg = np.linalg.norm(np.diff(a, axis=0), axis=1)
+        run = np.concatenate([[0.0], np.cumsum(seg)])
+        out = None
+        for s in np.arange(0.0, run[-1] + 1e-6, max(1.7 * w, 1.0)):
+            i = int(min(np.searchsorted(run, s, side="right") - 1, len(seg) - 1))
+            p = a[i] + (a[i + 1] - a[i]) * ((s - run[i]) / max(seg[i], 1e-9))
+            dot = C.circle(w / 2, 20).translate([float(p[0]), float(p[1])])
+            out = dot if out is None else out + dot
+        return out
+    way = np.gradient(a, axis=0)
+    way /= np.maximum(np.linalg.norm(way, axis=1, keepdims=True), 1e-9)
+    side = np.stack([-way[:, 1], way[:, 0]], 1) * (w / 2)
+    left, right = a + side, a - side
+    ring = [tuple(p) for p in left]
+    if tip == "round":                                       # half a circle round the end, from the left edge to the right one
+        base = math.atan2(side[-1][1], side[-1][0])
+        ring += [(a[-1][0] + w / 2 * math.cos(base - math.pi * k / 8), a[-1][1] + w / 2 * math.sin(base - math.pi * k / 8)) for k in range(1, 8)]
+    ring += [tuple(p) for p in right[::-1]]
+    if tip == "round":
+        base = math.atan2(-side[0][1], -side[0][0])
+        ring += [(a[0][0] + w / 2 * math.cos(base - math.pi * k / 8), a[0][1] + w / 2 * math.sin(base - math.pi * k / 8)) for k in range(1, 8)]
+    return C([np.array(ring, dtype=np.float64)], M.FillRule.NonZero)
+
+
+def _icing(M, p, unit, clip):
+    """
+    The strokes the visitor drew, one layer for each filament they were drawn in, in the order the filaments first
+    appear (a colour used later lies higher). Points are in shares of the picture's width: the drawing keeps its place
+    when the biscuit is made bigger.
+    """
+    groups = []
+    for s in (p.get("strokes") or [])[:MAX_STROKES]:
+        if not isinstance(s, dict):
+            continue
+        try:
+            pts = [(float(x) * unit, float(y) * unit) for x, y in (s.get("p") or [])[:300]]
+            w = min(4.0, max(1.5, float(s.get("w", 2.5))))
+        except (TypeError, ValueError):
+            continue
+        shape = _stroke(M, pts, w, str(s.get("t", "round")))
+        if shape is None or shape.is_empty():
+            continue
+        code = str(s.get("c") or "")
+        for group in groups:
+            if group[0] == code:
+                group[2] = group[2] + shape
+                break
+        else:
+            if len(groups) < MAX_ICINGS:
+                groups.append([code, str(s.get("h") or "#f4f4f2"), shape])
+    layers = []
+    whole = max(clip.area(), 1e-9)
+    for n, (code, hx, cs) in enumerate(groups):
+        cs = (cs ^ clip).simplify(0.02)
+        if cs.is_empty():
+            continue
+        layers.append({"index": 10 + n + 1, "part": "icing_%d" % (n + 1), "rgb": hx, "code": code, "hex": hx, "share": round(cs.area() / whole, 4), "own": cs, "stack": cs})
+    return layers
 
 
 BUILDERS = {product: (lambda M, Invalid, p, product=product: build(M, Invalid, p, product)) for product in PRODUCTS}

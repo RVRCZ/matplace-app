@@ -17,7 +17,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie'];
 
     protected function setUp(): void
     {
@@ -285,6 +285,80 @@ class ShapeToolsTest extends TestCase
         $this->assertNotEmpty(array_intersect(['name_small', 'name_no_room'], $o['notes']['warnings']));
         $this->assertSame(__('param.text_required'), $this->preview('name_letter', ['line1' => ''])->assertStatus(422)->json('errors')['params.line1'][0]);
         $this->preview('name_letter', ['line1' => 'Ela', 'height' => 400])->assertStatus(422);
+    }
+
+    public function test_a_biscuit_takes_icing_drawn_by_hand(): void
+    {
+        $star = ['artwork' => 'lib:hearts-stars/star', 'width' => 80, 'thickness' => 6, 'frame' => 2, 'relief' => 0.6];
+        $zigzag = ['c' => 'white', 'w' => 2.5, 't' => 'round', 'p' => [[0.12, 0.55], [0.3, 0.6], [0.5, 0.54], [0.7, 0.6], [0.88, 0.55]]];
+        $dot = fn (float $x, float $y, string $c = 'red') => ['c' => $c, 'w' => 4, 't' => 'round', 'p' => [[$x, $y]]];
+
+        // a silhouette is only the shape: dough with a rounded top edge, nothing on it
+        $plain = $this->meta($this->preview('cookie', $star)->assertOk());
+        $this->assertSame(['body'], $plain['notes']['parts']);
+        $this->assertSame('brown', $plain['notes']['body_color']['code']);
+        $this->assertEqualsWithDelta(6, $plain['bbox']['z'], 0.01);
+        $slab = $this->meta($this->preview('charm', ['artwork' => 'lib:hearts-stars/star', 'width' => 80, 'thickness' => 6, 'frame' => 2, 'colors_n' => 1, 'eyelet' => false], 'body')->assertOk());
+        $this->assertLessThan($slab['volume_mm3'] - 80, $plain['volume_mm3']);            // the rounded edge takes a little off
+        $this->assertGreaterThan($slab['volume_mm3'] * 0.9, $plain['volume_mm3']);
+
+        // strokes become icing: a part for every filament drawn with, in the order the filaments first appear, each a step higher
+        $iced = $this->meta($this->preview('cookie', $star + ['strokes' => [$zigzag, $dot(0.5, 0.38), $dot(0.38, 0.22), $dot(0.6, 0.4, 'white')]], 'all', true)->assertOk());
+        $n = $iced['notes'];
+        $this->assertSame(['body', 'icing_1', 'icing_2'], $n['parts']);
+        $this->assertSame(['white', 'red'], array_column($n['colors'], 'code'));
+        $this->assertSame([6.0, 6.6], array_map('floatval', array_column($n['color_changes'], 'z')));
+        $this->assertSame(['icing_1', 'icing_2'], array_column($n['color_changes'], 'part'));
+        $this->assertFalse($n['multi_material']);
+        $this->assertEqualsWithDelta(7.2, $iced['bbox']['z'], 0.01);
+        $this->assertSame(3, $n['filaments']);
+        $this->assertEqualsWithDelta(76, $n['frame'][2], 0.6);                      // the width of the picture itself: what a stroke is measured in
+        // the zigzag lies where it was drawn, and stays there on a bigger biscuit
+        $line = $this->meta($this->preview('cookie', $star + ['strokes' => [$zigzag]], 'icing_1')->assertOk());
+        $this->assertEqualsWithDelta(0.76 * 76 + 2.5, $line['bbox']['x'], 1.5);
+        $big = $this->meta($this->preview('cookie', ['width' => 120] + $star + ['strokes' => [$zigzag]], 'icing_1')->assertOk());
+        $this->assertEqualsWithDelta(0.76 * 116 + 2.5, $big['bbox']['x'], 1.5);
+        // a stroke over the edge is cut off before the rounded rim; one wholly outside the biscuit leaves nothing
+        $over = $this->meta($this->preview('cookie', $star + ['strokes' => [['c' => 'white', 'w' => 3, 't' => 'flat', 'p' => [[-0.5, 0.57], [1.5, 0.57]]]]], 'icing_1')->assertOk());
+        $this->assertLessThan(76, $over['bbox']['x']);
+        $this->assertSame(['body'], $this->meta($this->preview('cookie', $star + ['strokes' => [$dot(3.5, 3.5)]])->assertOk())['notes']['parts']);
+        // a row of dots is more pieces of icing than one line
+        $dots = $this->meta($this->preview('cookie', $star + ['strokes' => [['t' => 'dots'] + $zigzag]], 'icing_1', true)->assertOk());
+        $this->assertGreaterThan(5, count($dots['parts']));
+
+        // a picture in colours decorates itself: what is dough anyway is left out, the rest is icing
+        $man = $this->meta($this->preview('cookie', ['artwork' => 'lib:colour/gingerbread-man', 'width' => 80])->assertOk())['notes'];
+        $this->assertSame('brown', $man['body_color']['code']);
+        $this->assertSame(['white', 'red'], array_column($man['colors'], 'code'));
+        // as an ornament it gets an eyelet
+        $hung = $this->meta($this->preview('cookie', $star + ['hang' => true])->assertOk());
+        $this->assertArrayHasKey('eyelet', $hung['notes']);
+        $this->assertArrayNotHasKey('eyelet', $plain['notes']);
+
+        // a long drawing goes to the tool in a file, not on the command line
+        $many = [];
+        for ($i = 0; $i < 40; $i++) {
+            $many[] = ['c' => $i % 2 ? 'white' : 'red', 'w' => 2, 't' => 'round', 'p' => array_map(fn ($k) => [round(0.3 + 0.4 * $k / 47, 4), round(0.3 + 0.3 * $i / 39 + 0.01 * sin($k), 4)], range(0, 47))];
+        }
+        $this->assertGreaterThan(12000, strlen((string) json_encode($many)));
+        $this->assertSame(['body', 'icing_1', 'icing_2'], $this->meta($this->preview('cookie', $star + ['strokes' => $many])->assertOk())['notes']['parts']);
+
+        // what the form may not send
+        $this->preview('cookie', $star + ['strokes' => [['c' => 'no-such-spool'] + $zigzag]])->assertStatus(422);
+        $this->preview('cookie', $star + ['strokes' => [['w' => 9] + $zigzag]])->assertStatus(422);
+        $this->preview('cookie', $star + ['strokes' => array_fill(0, 61, $dot(0.5, 0.4))])->assertStatus(422);
+        $this->preview('cookie', $star + ['strokes' => [['p' => array_fill(0, 49, [0.5, 0.5])] + $zigzag]])->assertStatus(422);
+
+        // stored with the design, every colour of icing a file of its own
+        Storage::fake('models');
+        config(['engines.repair' => 'trimesh']);
+        $r = $this->postJson('/api/tools/param', ['kind' => 'cookie', 'params' => $star + ['strokes' => [$zigzag, $dot(0.5, 0.38)]]])->assertCreated();
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertSame(['white', 'red'], array_column($file->tool_params['strokes'], 'c'));
+        $this->assertSame(['body', 'icing_1', 'icing_2'], $r->json('file.parts'));
+        $this->assertSame(['icing_1', 'icing_2'], array_column($file->tool_params['color_changes'], 'part'));
+        $this->assertCount(2, $file->colorChanges());
+        $this->get('/api/tools/param/'.$file->uuid.'/icing_2.stl')->assertOk();
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

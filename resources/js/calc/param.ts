@@ -29,7 +29,10 @@ interface ShapeNotes {
     colors?: ShapeColor[]; paint?: Record<string, string>; parts?: string[]; body_color?: { code: string; hex: string }; rim_color?: { code: string; hex: string };
     filaments?: number; multi_material?: boolean; color_changes?: { z: number }[]; found?: number; wanted?: number; each?: number[]; copies?: number;
     eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; source?: string;
+    frame?: [number, number, number]; draw_z?: number;
 }
+/** A stroke of icing drawn on a biscuit: the filament, the width in mm, the nib, the points in shares of the picture's width. */
+interface Stroke { c: string; w: number; t: string; p: [number, number][] }
 interface Meta { bbox: { x: number; y: number; z: number }; volume_mm3: number; area_mm2: number; notes: Record<string, unknown>; parts?: Piece[] }
 
 export function bootParam(stage: Stage): void {
@@ -55,6 +58,10 @@ export function bootParam(stage: Stage): void {
     const shape = cfg.family === 'shape';
     let merge: number[][] = []; let order: number[] = [];
     const shapeNotes = (): ShapeNotes => (lastMeta?.notes ?? {}) as ShapeNotes;
+    // a biscuit: the icing drawn on it by hand
+    const cookie = cfg.kind === 'cookie';
+    const strokes: Stroke[] = [];
+    let drawing = false; let pen = spoolCode('white');
     /** A new picture has new colours: what was said about the old ones (which filament, which order) no longer holds. */
     const forgetColours = (): void => {
         merge = []; order = [];
@@ -74,6 +81,7 @@ export function bootParam(stage: Stage): void {
         if (cfg.kind === 'modular') p.bins = bins;
         if (shape && merge.length) p.merge = merge;
         if (shape && order.length) p.order = order;
+        if (cookie && strokes.length) p.strokes = strokes;
         if (Object.keys(partColors).length) p.part_colors = { ...partColors };
         return p;
     };
@@ -159,6 +167,7 @@ export function bootParam(stage: Stage): void {
     const partLabel = (v: string): string => {
         if (v.startsWith('bin_')) return t('param.part.bin', { s: v.slice(4).replace('x', ' × ') });
         if (shape && cfg.i18n[`shape.part.${v}.${cfg.kind}`]) return t(`shape.part.${v}.${cfg.kind}`);
+        if (shape && v.startsWith('icing_')) return t('shape.part.icing', { n: v.slice(6) });
         if (shape && v.startsWith('color_')) return t('shape.part.color', { n: v.slice(6) });
         if (shape && (v === 'body' || v === 'rim')) return t(`shape.part.${v}`);
         const own = `param.part.${v}.${cfg.kind}`;
@@ -259,7 +268,13 @@ export function bootParam(stage: Stage): void {
         return n.colors?.find((c) => c.part === part)?.code ?? null;
     };
     const setShapeColor = (part: string, code: string): void => {
-        partColors[part] = code; rememberColor(code);
+        rememberColor(code);
+        if (part.startsWith('icing_')) {
+            // icing has the colour it was drawn in: another filament for it is another filament for its strokes
+            const was = shapeCode(part);
+            strokes.forEach((s) => { if (s.c === was) s.c = code; });
+            if (pen === was) pen = code;
+        } else partColors[part] = code;
         void refresh().then(commit);
     };
     /**
@@ -269,9 +284,10 @@ export function bootParam(stage: Stage): void {
      */
     const renderShapeColors = (): void => {
         const box = document.getElementById('tool-parts'); if (!box) return;
-        const n = shapeNotes(); const colors = n.colors ?? [];
+        const n = shapeNotes(); const every = n.colors ?? [];
+        const colors = every.filter((c) => c.part.startsWith('color_'));      // the picture's own colours: only these can be reordered and joined
         box.innerHTML = '';
-        const rows = [...(n.rim_color ? ['rim'] : []), ...colors.map((c) => c.part).reverse(), 'body'];
+        const rows = [...(n.rim_color ? ['rim'] : []), ...every.map((c) => c.part).reverse(), 'body'];
         rows.forEach((part) => {
             const c = colors.find((x) => x.part === part);
             const pos = c ? colors.indexOf(c) : -1;
@@ -431,6 +447,7 @@ export function bootParam(stage: Stage): void {
             if (lastMeta) { renderDims(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus();
             renderDownloads(); placeEyelet();
+            if (cookie) { renderPen(); armDraw(); }
         } catch {
             if (mine === seq) { valid = false; showError(t('param.failed')); }
         } finally {
@@ -521,6 +538,7 @@ export function bootParam(stage: Stage): void {
             if (typeof set.artwork === 'string' && set.artwork) setArtwork({ ref: set.artwork, name: (set._artwork_name as string) ?? '', url: null });
             else setArtwork(null);
         }
+        if ('strokes' in set) strokes.splice(0, strokes.length, ...(Array.isArray(set.strokes) ? (set.strokes as Stroke[]).map((s) => ({ c: spoolCode(s.c), w: Number(s.w), t: String(s.t), p: s.p.map((pt) => [Number(pt[0]), Number(pt[1])] as [number, number]) })) : []));
         if ('merge' in set) merge = Array.isArray(set.merge) ? (set.merge as number[][]).map((pair) => [Number(pair[0]), Number(pair[1])]) : [];
         if ('order' in set) order = Array.isArray(set.order) ? (set.order as number[]).map(Number) : [];
         if (set.part_colors && typeof set.part_colors === 'object') {
@@ -538,7 +556,7 @@ export function bootParam(stage: Stage): void {
         img.style.filter = `contrast(${v('contrast')}%) brightness(${v('brightness')}%) saturate(${v('saturation')}%)`;
     };
     const setArtwork = (picked: PickedArtwork | null): void => {
-        if (shape && (picked?.ref ?? null) !== artwork) forgetColours();
+        if (shape && (picked?.ref ?? null) !== artwork) { forgetColours(); strokes.length = 0; }      // another picture: what was drawn on the old one does not fit it
         artwork = picked?.ref ?? null;
         // the thumbnail by the reference wherever it can be: an address of this very page load would not survive a reload
         const lib = /^lib:(.+)$/.exec(picked?.ref ?? ''); const own = /^[0-9a-f-]{36}$/.test(picked?.ref ?? '');
@@ -707,7 +725,7 @@ export function bootParam(stage: Stage): void {
     // ── the eyelet of a pendant: a grip on the outline, dragged in the viewer ──
     const placeEyelet = (): void => {
         const n = shapeNotes();
-        if (!shape || !n.eyelet || !n.outline || viewPart !== 'all') { viewer.setMarker(null, null); return; }
+        if (!shape || !n.eyelet || !n.outline || viewPart !== 'all' || drawing) { viewer.setMarker(null, null); return; }
         viewer.setMarker({ path: n.outline, z: n.eyelet.z, at: [n.eyelet.x, n.eyelet.y] }, (share, phase) => {
             const input = fieldOf('eye_pos'); if (!input) return;
             const value = String((Math.round(share * 200) / 2) % 100);
@@ -719,6 +737,64 @@ export function bootParam(stage: Stage): void {
         const input = fieldOf('eye_pos'); if (!input) return;
         input.value = '0'; syncRange(input); soon(0);
     });
+
+    // ── icing piped on a biscuit: strokes drawn in the viewer ──
+    let penChosen = false;
+    const renderPen = (): void => {
+        if (!cookie) return;
+        if (!penChosen && !strokes.length) {
+            // the pen starts with the lightest filament the biscuit already has: two near-whites would be two spools
+            const light = (hex: string): number => { const v = parseInt(hex.slice(1), 16); return (0.299 * (v >> 16) + 0.587 * ((v >> 8) & 255) + 0.114 * (v & 255)) / 255; };
+            const lightest = [...(shapeNotes().colors ?? [])].sort((x, y) => light(y.hex) - light(x.hex))[0];
+            pen = lightest && light(lightest.hex) > 0.75 ? lightest.code : spoolCode('white');
+        }
+        paintSwatch($('cookie-pen'), pen);
+        $('cookie-pen-name').textContent = colorOf(pen) ? `${colorOf(pen)!.name} · ${materialLabel(colorOf(pen)!)}` : colorName(pen);
+        $('cookie-count').textContent = strokes.length ? t('cookie.count', { n: strokes.length }) : t('cookie.hint');
+        $('cookie-width-v').textContent = `${nf.format(Number(($('cookie-width') as HTMLInputElement).value))} mm`;
+    };
+    /** Points of a stroke no closer than 0.6 mm, at most 48 of them: what the hand drew, light enough to send. */
+    const thinned = (pts: [number, number][]): [number, number][] => {
+        const kept: [number, number][] = [];
+        pts.forEach((p, i) => { const last = kept[kept.length - 1]; if (!last || i === pts.length - 1 || Math.hypot(p[0] - last[0], p[1] - last[1]) >= 0.6) kept.push(p); });
+        if (kept.length <= 48) return kept;
+        return Array.from({ length: 48 }, (_, i) => kept[Math.round((i * (kept.length - 1)) / 47)]);
+    };
+    const armDraw = (): void => {
+        const n = shapeNotes();
+        if (!cookie || !drawing || !n.frame) { viewer.setDraw(null, null); return; }
+        viewer.setMarker(null, null);
+        viewer.setDraw({ z: n.draw_z ?? 0, color: colorOf(pen)?.hex ?? '#f4f4f2' }, (pts) => {
+            const frame = shapeNotes().frame; if (!frame) return;
+            if (strokes.length >= 60) { showError(t('cookie.limit')); return; }
+            const share = (v: number): number => Math.round(v * 10000) / 10000;
+            strokes.push({
+                c: pen, w: Number(($('cookie-width') as HTMLInputElement).value), t: form.querySelector<HTMLInputElement>('input[name="cookie-nib"]:checked')?.value ?? 'round',
+                p: thinned(pts).map(([x, y]) => [share((x - frame[0]) / frame[2]), share((y - frame[1]) / frame[2])]),
+            });
+            renderPen(); void refresh().then(commit);
+        });
+    };
+    if (cookie) {
+        const drawBtn = $('cookie-draw');
+        drawBtn.onclick = () => {
+            drawing = !drawing;
+            drawBtn.setAttribute('aria-pressed', drawing ? 'true' : 'false');
+            drawBtn.querySelector('span')!.textContent = t(drawing ? 'cookie.draw.on' : 'cookie.draw');
+            armDraw(); placeEyelet();
+        };
+        $('cookie-pen').onclick = async () => {
+            lastColorTarget = () => (code) => { pen = code; penChosen = true; renderPen(); armDraw(); };
+            const picked = await pickColor(pen);
+            if (picked) { pen = picked; penChosen = true; rememberColor(picked); renderPen(); armDraw(); }
+        };
+        // the pen's own controls are not part of the design: they must not start a new preview
+        $('cookie-width').addEventListener('input', (e) => { e.stopPropagation(); renderPen(); });
+        form.querySelectorAll<HTMLInputElement>('input[name="cookie-nib"]').forEach((r) => r.addEventListener('input', (e) => e.stopPropagation()));
+        $('cookie-undo').onclick = () => { if (strokes.pop()) { renderPen(); void refresh().then(commit); } };
+        $('cookie-clear').onclick = () => { if (strokes.length) { strokes.length = 0; renderPen(); void refresh().then(commit); } };
+        renderPen();
+    }
 
     // fields and flags that belong to one choice only ("data-when=style=desk,wedge") fold away for the other choices;
     // the key may be a flag too ("data-when=mount=on")
@@ -794,7 +870,7 @@ export function bootParam(stage: Stage): void {
     // what undo, redo and "restore my last settings" carry: the whole form
     const track = (offerSaved: boolean): void => {
         commit = stage.track({
-            read: () => ({ ...params(), holes: holes.map((h) => ({ ...h })), bins: bins.map((b) => ({ ...b })), merge: merge.map((pair) => [...pair]), order: [...order], artwork: artwork ?? '', _artwork_name: artworkShown?.name ?? '', part_colors: { ...partColors },
+            read: () => ({ ...params(), holes: holes.map((h) => ({ ...h })), bins: bins.map((b) => ({ ...b })), merge: merge.map((pair) => [...pair]), order: [...order], strokes: strokes.map((s) => ({ ...s, p: s.p.map((pt) => [...pt]) })), artwork: artwork ?? '', _artwork_name: artworkShown?.name ?? '', part_colors: { ...partColors },
                 _material: ($('param-material') as HTMLSelectElement).value, _qty: ($('param-qty') as HTMLInputElement).value }),
             write: (s) => {
                 applyValues(s);

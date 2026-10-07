@@ -11,9 +11,12 @@
     if ($family === 'shape') {
         // the picture in colours: its list of colours, the notes on how it prints, the eyelet
         $i18n += collect(['part.body', 'part.rim', 'part.color', 'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.found', 'colors.picture', 'print.one', 'print.swap1', 'print.swap', 'print.multi',
-            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'warn.name_small', 'warn.name_no_room', 'thickened', 'magnet.fact',
+            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'warn.name_small', 'warn.name_no_room', 'part.icing', 'thickened', 'magnet.fact',
             // a part may be called by what it is in this tool (the plate of a gingerbread is "the gingerbread")
             ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text('param.shape.'.$k)])->all();
+    }
+    if ($kind === 'cookie') {
+        $i18n += collect(['draw', 'draw.on', 'count', 'hint', 'limit'])->mapWithKeys(fn ($k) => ['cookie.'.$k => __('param.cookie.'.$k)])->all();
     }
     // a text may be written for one tool, for its family (pendant, earrings… are all "shape") or for every tool
     $tr = function (string $prefix, string $k) use ($kind, $family): string {
@@ -291,6 +294,30 @@
             </div>
             @if(\Illuminate\Support\Facades\Lang::has('param.c.'.$kind.'.'.$key.'.hint'))<p class="hint !text-xs">{{ \App\Support\NextStep::text('param.c.'.$kind.'.'.$key.'.hint') }}</p>@endif
         @endforeach
+        @if($kind === 'cookie')
+            {{-- icing piped by hand: draw on the biscuit in the preview; every filament drawn with becomes a part --}}
+            <fieldset id="cookie-icing">
+                <legend class="lbl">{{ __('param.cookie.icing') }}</legend>
+                <button type="button" id="cookie-draw" class="btn-ink mt-2 w-full gap-2" aria-pressed="false"><x-icon name="sparkles" class="h-4 w-4" /><span>{{ __('param.cookie.draw') }}</span></button>
+                <div class="mt-3 flex items-center gap-3">
+                    <button type="button" class="tool-swatch" id="cookie-pen" aria-label="{{ __('param.cookie.pen') }}: {{ __('toolpage.color.pick') }}"></button>
+                    <span class="min-w-0 text-sm"><span class="block font-medium text-ink">{{ __('param.cookie.pen') }}</span><span class="block truncate text-muted" id="cookie-pen-name"></span></span>
+                </div>
+                <label class="mt-3 block text-sm font-medium text-ink">{{ __('param.cookie.width') }}
+                    <span class="mt-1 flex items-center gap-3"><input type="range" id="cookie-width" min="1.5" max="4" step="0.5" value="2.5" class="min-w-0 flex-1 accent-ink"><span class="num w-14 text-right text-muted" id="cookie-width-v">2,5 mm</span></span>
+                </label>
+                <div class="mt-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label="{{ __('param.cookie.nib') }}">
+                    @foreach(['round', 'flat', 'dots'] as $i => $nib)
+                        <label class="tool-choice"><input type="radio" name="cookie-nib" value="{{ $nib }}" class="sr-only" @checked($i === 0)>{{ __('param.cookie.nib.'.$nib) }}</label>
+                    @endforeach
+                </div>
+                <div class="mt-3 flex flex-wrap gap-1.5">
+                    <button type="button" id="cookie-undo" class="chip !py-1 text-sm">{{ __('param.cookie.undo') }}</button>
+                    <button type="button" id="cookie-clear" class="chip !py-1 text-sm">{{ __('param.cookie.clear') }}</button>
+                </div>
+                <p id="cookie-count" class="hint mt-1 !text-xs" aria-live="polite"></p>
+            </fieldset>
+        @endif
         {{-- the parts of the design, filled by the script as the preview says which there are --}}
         <div id="tool-parts" class="space-y-2" data-own-colors="{{ $colorChoices->isNotEmpty() || $kind === 'modular' ? '1' : '0' }}"></div>
         @if($kind === 'modular')<p class="hint !text-xs">{{ __('toolpage.color.bins') }}</p>@endif

@@ -1,5 +1,5 @@
 import {
-    AmbientLight, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, GridHelper, Group, HemisphereLight, LineBasicMaterial,
+    AmbientLight, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, GridHelper, Group, HemisphereLight, Line, LineBasicMaterial,
     LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3,
     WebGLRenderer, Box3, Float32BufferAttribute,
 } from 'three';
@@ -48,6 +48,8 @@ export class Viewer {
     private onPick: ((index: number, piece: Piece | null) => void) | null = null;
     private marker: { group: Group; path: [number, number][]; z: number } | null = null;
     private onMarker: ((share: number, phase: 'move' | 'end') => string | void) | null = null;
+    private draw: { z: number; color: string } | null = null;
+    private onDraw: ((points: [number, number][]) => void) | null = null;
     private listening = false;
     private anim: { from: Vector3; to: Vector3; t0: number; ms: number } | null = null;
 
@@ -452,6 +454,28 @@ export class Viewer {
         this.listen();
     }
 
+    /**
+     * Drawing on the model with the pointer: icing piped on a biscuit. While it is on, a press and a drag on the model
+     * is a stroke (the view is seen from above and does not turn); `cb` gets its points in the millimetres of the file
+     * when the pointer is lifted, a single point for a tap. `z` is the height the strokes are drawn at.
+     */
+    setDraw(draw: { z: number; color: string } | null, cb: ((points: [number, number][]) => void) | null): void {
+        const starting = !!draw && !this.draw;
+        this.draw = draw; this.onDraw = cb;
+        this.controls.enableRotate = !draw;
+        this.canvas.style.cursor = draw ? 'crosshair' : '';
+        if (starting) { this.setView('top'); this.listen(); }
+    }
+
+    /** Where the pointer's ray meets the height z of the model, in the millimetres of the file. */
+    private fileAt(ray: Raycaster, z: number): Vector3 | null {
+        if (!this.mesh) return null;
+        this.mesh.updateMatrixWorld();
+        const height = this.mesh.localToWorld(new Vector3(0, 0, z)).y;
+        const k = (height - ray.ray.origin.y) / (ray.ray.direction.y || 1e-9);
+        return k > 0 ? this.mesh.worldToLocal(ray.ray.origin.clone().addScaledVector(ray.ray.direction, k)) : null;
+    }
+
     private moveMarker(x: number, y: number): void {
         if (!this.marker || !this.mesh) return;
         this.mesh.updateMatrixWorld();
@@ -461,11 +485,8 @@ export class Viewer {
     /** The point of the marker's line nearest to where the pointer's ray meets the line's height: [share, x, y] in file millimetres. */
     private markerUnder(ray: Raycaster): [number, number, number] | null {
         if (!this.marker || !this.mesh) return null;
-        this.mesh.updateMatrixWorld();
-        const height = this.mesh.localToWorld(new Vector3(0, 0, this.marker.z)).y;
-        const k = (height - ray.ray.origin.y) / (ray.ray.direction.y || 1e-9);
-        if (k <= 0) return null;
-        const p = this.mesh.worldToLocal(ray.ray.origin.clone().addScaledVector(ray.ray.direction, k));
+        const p = this.fileAt(ray, this.marker.z);
+        if (!p) return null;
         const path = this.marker.path; const n = path.length;
         let best: [number, number, number] | null = null; let bestD = Infinity;
         for (let i = 0; i < n; i++) {
@@ -513,6 +534,14 @@ export class Viewer {
         let down: { x: number; y: number } | null = null;
         let drag: { id: string; x: number; y: number; px: Vector2; mm: number } | null = null;
         let grip: { share: number } | null = null;           // the marker is being dragged along its line
+        let stroke: { pts: [number, number][]; line: Line } | null = null;      // a stroke is being drawn
+        const endStroke = (): [number, number][] | null => {
+            if (!stroke) return null;
+            const pts = stroke.pts;
+            this.scene.remove(stroke.line); stroke.line.geometry.dispose();
+            stroke = null; this.controls.enabled = true;
+            return pts;
+        };
         const label = (text: string | void, e: PointerEvent): void => {
             if (!this.handleLabel) {
                 this.handleLabel = document.createElement('div');
@@ -526,6 +555,19 @@ export class Viewer {
         };
         this.canvas.addEventListener('pointerdown', (e) => {
             down = { x: e.clientX, y: e.clientY };
+            if (this.draw && this.onDraw && e.button === 0) {
+                ray.setFromCamera(at(e), this.camera);
+                const p = this.fileAt(ray, this.draw.z);
+                if (!p) return;
+                e.stopImmediatePropagation(); e.preventDefault();
+                const line = new Line(new BufferGeometry(), new LineBasicMaterial({ color: new Color(this.draw.color), depthTest: false, transparent: true }));
+                line.renderOrder = 12; line.frustumCulled = false;
+                this.scene.add(line);
+                stroke = { pts: [[p.x, p.y]], line };
+                this.controls.enabled = false;
+                this.canvas.setPointerCapture(e.pointerId);
+                return;
+            }
             if (this.marker && this.onMarker && this.marker.group.visible) {
                 ray.setFromCamera(at(e), this.camera);
                 if (ray.intersectObjects(this.marker.group.children, false).length) {
@@ -552,6 +594,17 @@ export class Viewer {
             label(this.onHandle(h.id, 0, 'move'), e);
         }, { capture: true });
         this.canvas.addEventListener('pointermove', (e) => {
+            if (stroke && this.draw && this.mesh) {
+                ray.setFromCamera(at(e), this.camera);
+                const p = this.fileAt(ray, this.draw.z);
+                const last = stroke.pts[stroke.pts.length - 1];
+                if (!p || Math.hypot(p.x - last[0], p.y - last[1]) < 0.4) return;
+                stroke.pts.push([p.x, p.y]);
+                const z = this.draw.z + 0.05;
+                const world = stroke.pts.flatMap(([x, y]) => this.mesh!.localToWorld(new Vector3(x, y, z)).toArray());
+                stroke.line.geometry.setAttribute('position', new Float32BufferAttribute(world, 3));
+                return;
+            }
             if (grip && this.onMarker) {
                 ray.setFromCamera(at(e), this.camera);
                 const hit = this.markerUnder(ray);
@@ -567,6 +620,8 @@ export class Viewer {
             label(this.onHandle(drag.id, drag.mm, 'move'), e);
         });
         const up = (e: PointerEvent): void => {
+            const drawn = endStroke();
+            if (drawn) { down = null; this.onDraw?.(drawn); return; }
             if (grip) {
                 this.onMarker?.(grip.share, 'end');
                 grip = null; this.controls.enabled = true;
@@ -590,7 +645,7 @@ export class Viewer {
             this.onPick(index, index >= 0 ? this.pieces[index] : null);
         };
         this.canvas.addEventListener('pointerup', up);
-        this.canvas.addEventListener('pointercancel', () => { if (grip) { grip = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } if (drag) { drag = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } down = null; });
+        this.canvas.addEventListener('pointercancel', () => { endStroke(); if (grip) { grip = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } if (drag) { drag = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } down = null; });
     }
 }
 

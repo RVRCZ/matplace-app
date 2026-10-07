@@ -140,6 +140,7 @@ $pages = function () {
     Route::get('/tools/coaster', [ToolsController::class, 'param'])->defaults('kind', 'coaster')->name('tools.coaster');
     Route::get('/tools/gingerbread', [ToolsController::class, 'param'])->defaults('kind', 'gingerbread')->name('tools.gingerbread');
     Route::get('/tools/name-letter', [ToolsController::class, 'param'])->defaults('kind', 'name_letter')->name('tools.name_letter');
+    Route::get('/tools/cookie', [ToolsController::class, 'param'])->defaults('kind', 'cookie')->name('tools.cookie');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {
