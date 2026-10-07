@@ -183,6 +183,20 @@ return [
     // the card of a file tool is its own output: a vase of the vase tool at 300 mm, cut for the farm's bed
     'split' => ['route' => 'tools.split', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'split', 'kind' => 'vase', 'preset' => 'smooth', 'params' => ['height' => 300, 'top_d' => 120, 'bottom_d' => 90], 'edit_params' => ['joint' => 'pins']]],
+    // the hollow's card is a big letter with a quarter taken out, so the wall shows; life size is a vase of the vase tool at 400 mm, cut for the bed
+    'hollow' => ['route' => 'tools.hollow', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'hollow', 'kind' => 'name_letter', 'params' => ['line1' => 'Ela', 'height' => 120, 'thickness' => 15], 'edit_params' => ['wall' => 2.5, 'view' => 'cut']]],
+    'life_size' => ['route' => 'tools.life_size', 'intent' => 'file', 'categories' => ['edit', 'images'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'life_size', 'kind' => 'vase', 'preset' => 'smooth', 'params' => ['height' => 180, 'top_d' => 62, 'bottom_d' => 54], 'edit_params' => ['height_cm' => 40, 'joint' => 'pins']]],
+    // the puzzle's card is a logo plate of the logo tool cut into 3 × 4 pieces with knobs
+    'puzzle' => ['route' => 'tools.puzzle', 'intent' => 'file', 'categories' => ['edit', 'toys', 'images'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'puzzle', 'kind' => 'logo', 'params' => ['mode' => 'relief', 'shape' => 'rect', 'width' => 120, 'line1' => 'PUZZLE', 'line2' => '2026'], 'edit_params' => ['rows' => 3, 'cols' => 4, 'lock' => 'tabs']]],
+    // a holder out of a model: a big letter of the letter tool, stood up to 130 mm, with a can's cavity taken out of its top
+    'holder_model' => ['route' => 'tools.holder_model', 'intent' => 'file', 'categories' => ['edit', 'home'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'holder', 'kind' => 'vase', 'preset' => 'smooth', 'params' => ['height' => 120, 'top_d' => 90, 'bottom_d' => 80], 'edit_params' => ['cavity' => 'can330', 'cav_depth_own' => true, 'cav_depth' => 100, 'height' => 0]]],
+    // a potion bottle out of a model: a bellied vase of the vase tool with a neck, a cork and a label
+    'potion' => ['route' => 'tools.potion', 'intent' => 'file', 'categories' => ['edit', 'toys', 'craft'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'potion', 'kind' => 'vase', 'preset' => 'belly', 'params' => ['height' => 100, 'top_d' => 40, 'bottom_d' => 50], 'edit_params' => ['neck_d' => 22, 'neck_h' => 24, 'cut' => 0, 'text' => 'Elixir', 'label' => true]]],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => false],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only

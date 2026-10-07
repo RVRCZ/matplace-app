@@ -73,7 +73,7 @@ class ModelEditTest extends TestCase
         // a model that fits says so
         $cube = $this->box(20, 20, 20, 'cube.stl');
         $this->assertTrue($this->postJson('/api/files/'.$cube.'/edit/analysis', ['op' => 'split'])->assertOk()->json('analysis.fits'));
-        $this->postJson('/api/files/'.$cube.'/edit/analysis', ['op' => 'hollow'])->assertStatus(422);
+        $this->postJson('/api/files/'.$cube.'/edit/analysis', ['op' => 'melt'])->assertStatus(422);
         // stored beside the model: the same answer again
         $this->assertSame($a, $this->postJson('/api/files/'.$uuid.'/edit/analysis', ['op' => 'split'])->assertOk()->json('analysis'));
     }
@@ -142,6 +142,156 @@ class ModelEditTest extends TestCase
         $this->assertStringStartsWith('fits_already', (string) $made->json('file.error'));
         $this->postJson('/api/files/'.$cube.'/edit', ['op' => 'split', 'joint' => 'glue'])->assertStatus(422);
         $this->postJson('/api/files/'.$cube.'/edit', ['op' => 'melt'])->assertStatus(422);
+    }
+
+    public function test_a_hollow_model_keeps_its_shape_and_its_wall_and_tells_what_it_saved(): void
+    {
+        $this->get('/tools/hollow')->assertOk()->assertSee(__('tools.hollow.title'))->assertSee('data-module="edit"', false)->assertSee(__('edit.flag.drain'));
+        $uuid = $this->box(60, 60, 60, 'cube.stl');
+        $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'hollow', 'wall' => 2, 'drains' => 1])->assertCreated();
+        $r->assertJsonPath('file.kind', 'hollow')->assertJsonPath('file.status', 'ready');
+        $this->assertSame(['body'], $r->json('file.parts'));
+        $h = $r->json('file.edit.hollow');
+        $this->assertSame(2.0, (float) $h['wall']);
+        $this->assertSame(1, $h['drains']);
+        // a cube of 60 with a wall of 2: a cavity of about 56³, the shell about 60³ − 56³ (the grid rounds the corners a little)
+        $this->assertEqualsWithDelta(56 ** 3, $h['cavity_mm3'], 56 ** 3 * 0.06);
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertEqualsWithDelta(60 ** 3 - 56 ** 3, $file->volume_mm3, (60 ** 3 - 56 ** 3) * 0.1);
+        $this->assertEquals([60, 60, 60], [round($file->bbox['x']), round($file->bbox['y']), round($file->bbox['z'])]);  // the outside is untouched
+        $this->assertTrue(StlTopology::check($file->absoluteStlPath())['watertight']);
+        $this->assertEqualsWithDelta($h['cavity_mm3'] / 1000 * 1.24, $h['saved_g'], 1);
+        // no drain holes when asked so; a wall thicker than the model has nothing to take out
+        $closed = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'hollow', 'wall' => 2, 'drain' => false])->assertCreated();
+        $this->assertSame(0, $closed->json('file.edit.hollow.drains'));
+        $small = $this->box(10, 10, 10, 'tiny.stl');
+        $none = $this->postJson('/api/files/'.$small.'/edit', ['op' => 'hollow', 'wall' => 6])->assertCreated();
+        $this->assertContains('nothing_to_hollow', $none->json('file.edit.warnings'));
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'hollow', 'wall' => 0.5])->assertStatus(422);
+    }
+
+    public function test_life_size_scales_hollows_and_splits_in_one_go(): void
+    {
+        $this->get('/tools/life-size')->assertOk()->assertSee(__('tools.life_size.title'))->assertSee('data-module="edit"', false)->assertSee(__('edit.f.height_cm'));
+        $uuid = $this->box(30, 20, 60, 'post.stl');
+        // what it would come to, before anything is built
+        $a = $this->postJson('/api/files/'.$uuid.'/edit/analysis', ['op' => 'life_size', 'height_cm' => 40])->assertOk()->json('analysis');
+        $this->assertEqualsWithDelta(400 / 60, $a['factor'], 0.001);
+        $this->assertEquals([200, 133.3, 400], array_map(fn ($v) => round($v, 1), $a['scaled']));
+        $this->assertTrue($a['hollow']);                                                           // 200 × 133 × 400 mm is far over 200 cm³
+        $this->assertSame(2, $a['pieces']);                                                         // one cut across the height for a 250 mm bed
+        $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'life_size', 'height_cm' => 40, 'joint' => 'pins'])->assertCreated();
+        $r->assertJsonPath('file.kind', 'life_size')->assertJsonPath('file.status', 'ready');
+        $e = $r->json('file.edit');
+        $this->assertEqualsWithDelta(400 / 60, $e['factor'], 0.001);
+        $this->assertSame(2, $e['pieces']);
+        $this->assertGreaterThan(0, $e['pins']);
+        $this->assertNotNull($e['hollow']);
+        $this->assertGreaterThan(0, $e['hollow']['cavity_mm3']);
+        $this->assertLessThan(200 * 133.3 * 400 * 1.24 / 1000, $e['grams']);                      // lighter than solid
+        $this->assertSame(['piece_1', 'piece_2', 'pins'], $r->json('file.parts'));
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertTrue(StlTopology::check($file->absoluteStlPath())['watertight']);
+        $this->assertEqualsWithDelta(200, $file->tool_params['each'][0][2], 0.5);                 // the pieces stand on their cut faces, 200 mm high
+        // a small target fits the bed whole and stays solid
+        $one = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'life_size', 'height_cm' => 10])->assertCreated();
+        $this->assertSame(1, $one->json('file.edit.pieces'));
+        $this->assertNull($one->json('file.edit.hollow'));
+        $this->assertSame(['piece_1'], $one->json('file.parts'));
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'life_size', 'height_cm' => 300])->assertStatus(422);
+    }
+
+    public function test_a_flat_model_becomes_a_jigsaw_with_knobs_or_hidden_pins(): void
+    {
+        $this->get('/tools/puzzle')->assertOk()->assertSee(__('tools.puzzle.title'))->assertSee('data-module="edit"', false)->assertSee(__('edit.o.lock.tabs'));
+        $uuid = $this->box(120, 90, 6, 'plate.stl');
+        $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'puzzle', 'rows' => 3, 'cols' => 4, 'lock' => 'tabs', 'frame' => true])->assertCreated();
+        $r->assertJsonPath('file.kind', 'puzzle')->assertJsonPath('file.status', 'ready');
+        $parts = $r->json('file.parts');
+        $this->assertCount(13, $parts);                                                             // 12 pieces and the tray
+        $this->assertSame('frame', end($parts));
+        $e = $r->json('file.edit');
+        $this->assertSame([3, 4, 'tabs', 12], [$e['rows'], $e['cols'], $e['lock'], $e['pieces']]);
+        $this->assertSame([], $e['warnings']);
+        $this->assertCount(12, $e['map']);
+        $this->assertNotNull($e['map'][0]['number_at']);                                            // numbered underneath
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        // the pieces together are the plate less the play of the knobs; every piece is 6 mm high and the tray a little more
+        $this->assertTrue(StlTopology::check($file->absoluteStlPath())['watertight']);
+        $this->assertEqualsWithDelta(120 * 90 * 6, $file->volume_mm3 - 36125, 120 * 90 * 6 * 0.03);
+        $sizes = array_slice($file->tool_params['each'], 0, 12);
+        foreach ($sizes as $size) {
+            $this->assertEqualsWithDelta(6, $size[2], 0.01);
+            $this->assertGreaterThanOrEqual(30 - 0.01, min($size[0], $size[1]));                   // a 30 mm cell, never smaller
+        }
+        $this->assertGreaterThan(30, max(array_column($sizes, 0)));                                 // with its knobs reaching out
+        // hidden pins: straight cuts, pins as a piece of their own; a tall model gets pins whatever was asked
+        $pins = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'puzzle', 'rows' => 2, 'cols' => 3, 'lock' => 'pins'])->assertCreated();
+        $this->assertSame(['piece_1', 'piece_2', 'piece_3', 'piece_4', 'piece_5', 'piece_6', 'pins'], $pins->json('file.parts'));
+        $this->assertGreaterThan(0, $pins->json('file.edit.pins'));
+        $tall = $this->box(100, 100, 40, 'block.stl');
+        $forced = $this->postJson('/api/files/'.$tall.'/edit', ['op' => 'puzzle', 'rows' => 2, 'cols' => 2, 'lock' => 'tabs'])->assertCreated();
+        $this->assertSame('pins', $forced->json('file.edit.lock'));
+        $this->assertContains('tall_gets_pins', $forced->json('file.edit.warnings'));
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'puzzle', 'rows' => 9])->assertStatus(422);
+        $tiny = $this->box(20, 20, 4, 'tiny.stl');
+        $this->assertStringStartsWith('pieces_too_small', (string) $this->postJson('/api/files/'.$tiny.'/edit', ['op' => 'puzzle', 'rows' => 2, 'cols' => 2])->assertCreated()->json('file.error'));
+    }
+
+    public function test_a_holder_is_cut_out_of_a_model_and_its_wall_is_measured(): void
+    {
+        $this->get('/tools/holder-from-model')->assertOk()->assertSee(__('tools.holder_model.title'))->assertSee('data-module="edit"', false)->assertSee(__('edit.o.cavity.pint'));
+        $uuid = $this->box(80, 80, 100, 'block.stl');
+        $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'holder', 'cavity' => 'can330', 'clearance' => 0.6])->assertCreated();
+        $r->assertJsonPath('file.kind', 'holder')->assertJsonPath('file.status', 'ready');
+        $e = $r->json('file.edit');
+        $this->assertSame('can330', $e['cavity']);
+        $this->assertEqualsWithDelta(90, $e['cavity_mm']['depth'], 0.01);
+        $this->assertEqualsWithDelta(10, $e['floor'], 0.01);                                        // 100 − 90
+        $this->assertEqualsWithDelta((80 - 66.3 - 1.2) / 2, $e['min_wall'], 0.2);                 // the wall of a square block round a round can
+        $this->assertSame([], $e['warnings']);
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertEqualsWithDelta(80 * 80 * 100 - M_PI * (67.5 / 2) ** 2 * 90, $file->volume_mm3, 2000);
+        $this->assertTrue(StlTopology::check($file->absoluteStlPath())['watertight']);
+        // too small a model: scaled up by the height it is given; too low a model is refused with the height it needs
+        $small = $this->box(40, 40, 50, 'small.stl');
+        $this->assertStringStartsWith('too_short', (string) $this->postJson('/api/files/'.$small.'/edit', ['op' => 'holder', 'cavity' => 'can330'])->assertCreated()->json('file.error'));
+        $big = $this->postJson('/api/files/'.$small.'/edit', ['op' => 'holder', 'cavity' => 'slim330', 'height' => 130])->assertCreated();
+        $this->assertEqualsWithDelta(2.6, $big->json('file.edit.factor'), 0.001);
+        $this->assertSame([], $big->json('file.edit.warnings'));                                     // 104 mm wide round a 58 mm can
+        $thin = $this->postJson('/api/files/'.$small.'/edit', ['op' => 'holder', 'cavity' => 'can330', 'height' => 120])->assertCreated();   // 96 mm wide, a 67.5 mm hole moved aside
+        $this->assertLessThan(15, $thin->json('file.edit.min_wall'));
+        $moved = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'holder', 'cavity' => 'can330', 'cav_x' => 10])->assertCreated();
+        $this->assertContains('wall_thin', $moved->json('file.edit.warnings'));
+        $this->assertGreaterThan(0, $moved->json('file.edit.grow_to'));
+        // a soap dish: a box cavity and a push-out hole through the floor
+        $soap = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'holder', 'cavity' => 'soap'])->assertCreated();
+        $this->assertEqualsWithDelta(70, $soap->json('file.edit.floor'), 0.01);
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'holder', 'cavity' => 'bucket'])->assertStatus(422);
+    }
+
+    public function test_a_model_becomes_a_potion_bottle_with_a_neck_a_cork_and_a_label(): void
+    {
+        $this->get('/tools/potion')->assertOk()->assertSee(__('tools.potion.title'))->assertSee('data-module="edit"', false)->assertSee('data-text="text"', false);
+        $uuid = $this->box(50, 40, 80, 'block.stl');
+        $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'potion', 'height' => 100, 'neck_d' => 20, 'neck_h' => 25, 'wall' => 2, 'cut' => 5, 'text' => 'Elixir'])->assertCreated();
+        $r->assertJsonPath('file.kind', 'potion')->assertJsonPath('file.status', 'ready');
+        $this->assertSame(['body', 'cork', 'label'], $r->json('file.parts'));
+        $e = $r->json('file.edit');
+        $this->assertEqualsWithDelta(100 / 80, $e['factor'], 0.001);
+        $this->assertEqualsWithDelta(5, $e['cut_mm'], 0.01);
+        $this->assertEqualsWithDelta(95 + 25, $e['bottle'][2], 0.5);                                // the model less its bottom, plus the neck
+        $this->assertGreaterThan(0, $e['hollow']['cavity_mm3']);
+        $this->assertSame('Elixir', $e['label']['text']);
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertTrue(StlTopology::check($file->absoluteStlPath())['watertight']);
+        $this->assertLessThan(62.5 * 50 * 95 * 0.5, $file->volume_mm3);                             // hollow: well under half of the solid block
+        foreach (['body', 'cork', 'label'] as $part) {
+            $this->get('/api/tools/edit/'.$file->uuid.'/'.$part.'.stl')->assertOk();
+        }
+        $plain = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'potion', 'label' => false])->assertCreated();
+        $this->assertSame(['body', 'cork'], $plain->json('file.parts'));
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'potion', 'neck_d' => 5])->assertStatus(422);
     }
 
     public function test_a_model_with_a_hole_is_closed_before_it_is_cut(): void

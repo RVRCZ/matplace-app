@@ -2,27 +2,53 @@
 """
 Editing a ready model (manifold3d, exact mm): the "I have a file" tools of matplace.
 
-    edit_tool.py analyse <in.stl> <params-json | @file>
-    edit_tool.py split   <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
-    edit_tool.py scale   <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
+    edit_tool.py analyse   <in.stl> <params-json | @file>
+    edit_tool.py split     <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
+    edit_tool.py hollow    <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
+    edit_tool.py scale     <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
+    edit_tool.py life_size <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
+    edit_tool.py puzzle    <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
+    edit_tool.py holder    <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
+    edit_tool.py potion    <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
 
 The model is loaded (any unit guess as in mesh_tool.load), closed when it is not (mesh_tool.solidify: pymeshfix, union,
 or a rebuild through a grid, the way the farm does it) and turned into an exact solid. Very heavy models are thinned
 first (fast_simplification, when it is installed; above 2 M triangles without it the tool refuses).
 
-split   Cuts the model with planes across X, Y and Z so that every piece fits the bed, with as few cuts as it takes.
-        params: {"bed": [x, y, z] usable mm, "planes": {"x": [mm…], "y": [...], "z": [...]} (the visitor's own planes,
-        else automatic), "joint": "none" | "pins" | "dovetail", "numbers": true, "lay": true, "font": path}
-        pins      Ø 6 × 12 mm dowels (part `pins`, standing on the bed) in holes with 0.2 mm of play, on both faces
-        dovetail  a loose double-dovetail key (part `keys`) in a channel cut into both faces; the pieces slide together
-        numbers   the piece's number engraved 0.6 mm into its cut face
-        lay       every piece turned so its largest cut face lies on the bed (prints without supports there)
-        Answers with the pieces (piece_<n>), where each one came from (`map`), the planes, and warnings.
-analyse Only the plan: size, whether the model is closed, how many cuts the bed needs and where (no booleans).
-scale   Uniform scale to `height` mm (or by `factor`), standing on the bed.
+split     Cuts the model with planes across X, Y and Z so that every piece fits the bed, with as few cuts as it takes.
+          params: {"bed": [x, y, z] usable mm, "planes": {"x": [mm…], "y": [...], "z": [...]} (the visitor's own planes,
+          else automatic), "joint": "none" | "pins" | "dovetail", "numbers": true, "lay": true, "font": path}
+          pins      Ø 6 × 12 mm dowels (part `pins`, standing on the bed) in holes with 0.2 mm of play, on both faces
+          dovetail  a loose double-dovetail key (part `keys`) in a channel cut into both faces; the pieces slide together
+          numbers   the piece's number engraved 0.6 mm into its cut face
+          lay       every piece turned so its largest cut face lies on the bed (prints without supports there)
+          Answers with the pieces (piece_<n>), where each one came from (`map`), the planes, and warnings.
+hollow    Takes the inside out, leaving a wall of `wall` mm (1.5–6): the distance to the surface on a grid of at most
+          0.6 mm and 320³ cells (a bigger model gets a coarser grid, and says so), the inner surface by marching cubes,
+          subtracted from the model. Drain holes of `drain_d` mm (3–8, `drains` 0–4, 0 = as many as the bottom has room
+          for) through the lowest wall. Answers with the material saved (hollow.cavity_mm3, saved_g).
+          view "cut" draws the model with a quarter taken out (the card of the tool), not for printing.
+scale     Uniform scale to `height` mm (or by `factor`), standing on the bed.
+life_size Scale to `height` mm, hollow it when it is bigger than 200 cm³ (wall 2–5 mm by its size), split it for the bed
+          with pins: one tool for the "make it life size" page. Answers like split, with the hollowing in `hollow`.
+puzzle    A flat model (a relief, a logo, a lithophane) as a jigsaw: a grid of `rows` × `cols` (2–8) pieces cut
+          through the height, with classic knobs (`lock` "tabs": a head of `knob` % of the piece's side, 0.2 mm of play)
+          or hidden pins (`lock` "pins": straight cuts, Ø 3 × 6 pins in the sides, the top stays clean); the number of
+          every piece engraved underneath; an optional tray (part `frame`). A model taller than 25 mm gets pins.
+holder    A holder out of a model (a koozie, an ice-cream pint sleeve, a soap dish): the model scaled to `height` mm,
+          stood on the bed, and a cavity taken out of its top: `cavity` can330 | slim330 | can500 | pint | soap | candle
+          | custom (`cav_d`, `cav_d2` for a cone, `cav_depth`, `cav_w`/`cav_l` for a box), `clearance` 0.3–1.5, `cav_x`/`cav_y`
+          offset of the cavity's middle in mm, `cav_depth` for the preset too. The wall round the cavity is measured on
+          five heights; under 2 mm the tool says how much bigger the model has to be. The soap dish gets a push-out hole
+          in its floor. One part, `body`.
+potion    A potion bottle out of a model: the model scaled to `height` mm, its bottom cut flat (`cut` % of the height),
+          hollowed with `wall` mm, a neck of `neck_d` × `neck_h` on top opening into the cavity, a tapered cork (part `cork`)
+          and, with `label`, a rounded label plate with `text` raised on it (part `label`, glued on). Parts: body, cork, label.
+analyse   Only the plan: size, whether the model is closed, how many cuts the bed needs and where (no booleans); with
+          `height` also what the scaled model would come to.
 
 One JSON object on stdout; with a parts directory every piece is written there as <name>.stl. The file <out>.stage
-holds one word while the tool works (loading, repairing, cutting, joints, layout), for the page that waits.
+holds one word while the tool works (loading, repairing, cutting, joints, layout…), for the page that waits.
 """
 import json
 import math
@@ -41,6 +67,26 @@ THIN_TO = 1_200_000
 GAP = 8.0                                    # between pieces on the bed
 BED_ROW = 240.0
 MIN_PIECE = 2.0                              # mm³: slivers below it are dust of the cut, not pieces
+GRID_MM = 0.6                                # the finest grid of the hollowing
+GRID_CELLS = 320                             # and its most cells along one axis
+HOLLOW_FROM_CM3 = 200.0                      # life size: a model bigger than this is hollowed
+PLA_G_CM3 = 1.24
+PUZZLE_PIN_D, PUZZLE_PIN_L = 3.0, 6.0        # hidden pins of a puzzle
+PUZZLE_TALL = 25.0                           # mm: above it a puzzle gets pins, not knobs (a knob through 40 mm of plastic does not slide)
+# the things a holder is made for: diameter at the bottom, diameter at the top (a cone), depth; a box has width × length
+CAVITIES = {
+    "can330": {"d": 66.3, "d2": 66.3, "depth": 90.0},        # a 330 ml can (115 mm tall; the sleeve covers most of it)
+    "slim330": {"d": 58.0, "d2": 58.0, "depth": 110.0},      # a slim 330 ml can (146 mm tall)
+    "can500": {"d": 66.3, "d2": 66.3, "depth": 130.0},       # a 500 ml / energy can (168 mm tall)
+    "pint": {"d": 80.0, "d2": 95.0, "depth": 100.0},         # a 473 ml ice-cream pint, tapered
+    "soap": {"w": 90.0, "l": 60.0, "depth": 30.0, "r": 12.0},   # a bar of soap: a rounded box, a push-out hole underneath
+    "candle": {"d": 80.0, "d2": 80.0, "depth": 25.0},        # a candle in a glass, three wicks are 103 mm
+    "custom": {"d": 60.0, "d2": 60.0, "depth": 80.0},
+}
+MIN_WALL = 2.0
+SURFACE_OFFSET = 1.1                         # cells: how far inside the true surface the centre of a surface cell lies (calibrated on a cube and a sphere)
+KEEP_AT_CUT = 6.0                            # mm: a life-size model stays solid this far on each side of a cutting plane, so pins have something to sit in
+COLLAR_DEEP = 13.0                           # mm: and that collar reaches this deep under the surface (a pin of Ø 6 with 2.5 mm of wall round it)
 
 
 class Invalid(Exception):
@@ -107,6 +153,11 @@ def load_solid(src, dst, notes):
         if man.is_empty() or man.status() != M.Error.NoError:
             raise Invalid("not_watertight")
     return man, m
+
+
+def extents_of(solid):
+    x0, y0, z0, x1, y1, z1 = solid.bounding_box()
+    return [x1 - x0, y1 - y0, z1 - z0]
 
 
 def plan(ext, bed, forced=None):
@@ -259,6 +310,22 @@ def key_solid(M, axis, at, u, v, length, play):
     return solid.translate([x, y, z])
 
 
+def number_cutter(M, text, axis, at, side, depth):
+    """The text as a slab `depth` deep on the piece's side of the plane across `axis`, ready to be taken out of the piece."""
+    import numpy as np
+    slab = text.extrude(depth + 0.02)                        # in (u, v, n) with n = 0 … depth
+    # into the piece: for the high side (+1) the piece lies below the plane, for the low side above it
+    if side > 0:
+        slab = slab.translate([0, 0, -(depth + 0.01)])        # n = -depth … +0.01
+    else:
+        slab = slab.translate([0, 0, -0.01])                  # n = -0.01 … depth
+    if axis == "z":
+        return slab.translate([0, 0, at])
+    if axis == "x":
+        return slab.transform(np.array([[0, 0, 1, at], [1, 0, 0, 0], [0, 1, 0, 0]], dtype=np.float64))     # (u, v, n) → (n, u, v)
+    return slab.transform(np.array([[0, 1, 0, 0], [0, 0, 1, at], [1, 0, 0, 0]], dtype=np.float64))         # (u, v, n) → (v, n, u)
+
+
 def lay_down(M, piece, axis, side):
     """The piece turned so the face across `axis` on its `side` (-1 low, +1 high) lies on the bed."""
     if axis == "z":
@@ -286,12 +353,15 @@ def lay_out(pieces):
 
 def write_pieces(M, dst, pieces, parts_dir):
     import numpy as np
+    from art_tool import write_stl
     listed, chunks, at = [], [], 0
     if parts_dir:
         os.makedirs(parts_dir, exist_ok=True)
     for name, piece in pieces:
-        m = piece.to_mesh()
-        t = np.asarray(m.vert_properties, dtype=np.float32)[:, :3][np.asarray(m.tri_verts, dtype=np.int64)]
+        # exact solids may hold vertices that share a spot (a pinched tunnel): every program welds them and calls the
+        # file open, so they are moved a few microns apart first (mesh_tool.from_manifold, as the mold does)
+        tm = T.from_manifold(piece)
+        t = np.asarray(tm.triangles, dtype=np.float32)
         if not len(t):
             continue
         lo, hi = t.reshape(-1, 3).min(axis=0), t.reshape(-1, 3).max(axis=0)
@@ -299,12 +369,26 @@ def write_pieces(M, dst, pieces, parts_dir):
         chunks.append(t)
         at += len(t)
         if parts_dir:
-            from art_tool import write_stl
             write_stl(os.path.join(parts_dir, name + ".stl"), t - np.array([lo[0], lo[1], lo[2]], dtype=np.float32))
     tri = np.concatenate(chunks) if chunks else np.zeros((0, 3, 3), dtype=np.float32)
-    from art_tool import write_stl
     write_stl(dst, tri)
     return listed, tri
+
+
+def finish(M, kind, dst, laid, notes, parts_dir):
+    """The laid pieces as one file (and one each), measured; the one answer every command gives."""
+    fused = None
+    for _, solid in laid:
+        fused = solid if fused is None else fused + solid
+    if fused is None or fused.is_empty() or fused.status() != M.Error.NoError:
+        raise Invalid("empty_result")
+    listed, tri = write_pieces(M, dst, laid, parts_dir)
+    stage(dst, "done")
+    notes["parts"] = [name for name, _ in laid]
+    notes.setdefault("each", [[round(v, 1) for v in extents_of(solid)] for _, solid in laid])
+    x0, y0, z0, x1, y1, z1 = fused.bounding_box()
+    out({"ok": True, "kind": kind, "part": "all", "bbox": {"x": round(x1 - x0, 2), "y": round(y1 - y0, 2), "z": round(z1 - z0, 2)},
+         "volume_mm3": round(fused.volume(), 1), "area_mm2": round(fused.surface_area(), 1), "triangles": int(len(tri)), "notes": notes, "parts": listed})
 
 
 def bed_of(p):
@@ -318,6 +402,11 @@ def bed_of(p):
     return bed
 
 
+def wall_for(height_mm):
+    """The wall of a life-size hollow: 2 mm at 200 mm, 5 mm at a metre."""
+    return max(2.0, min(5.0, 2.0 + 3.0 * (height_mm - 200.0) / 800.0))
+
+
 def analyse(src, p):
     notes = {}
     man, m = load_solid(src, None, notes)
@@ -325,20 +414,26 @@ def analyse(src, p):
     bed = bed_of(p)
     forced = clean_planes(p.get("planes"), ext)
     planes = plan(ext, bed, forced)
-    x0, y0, z0, x1, y1, z1 = man.bounding_box()
-    out({"ok": True, "bbox": {"x": round(ext[0], 2), "y": round(ext[1], 2), "z": round(ext[2], 2)}, "volume_mm3": round(man.volume(), 1), "triangles": int(man.num_tri()),
-         "repaired": notes.get("repaired", False), "fits": planes is not None and not any(planes.values()), "planes": planes, "too_many": planes is None,
-         "pieces": (len(planes["x"]) + 1) * (len(planes["y"]) + 1) * (len(planes["z"]) + 1) if planes else None, "bed": bed})
+    answer = {"ok": True, "bbox": {"x": round(ext[0], 2), "y": round(ext[1], 2), "z": round(ext[2], 2)}, "volume_mm3": round(man.volume(), 1), "triangles": int(man.num_tri()),
+              "repaired": notes.get("repaired", False), "fits": planes is not None and not any(planes.values()), "planes": planes, "too_many": planes is None,
+              "pieces": (len(planes["x"]) + 1) * (len(planes["y"]) + 1) * (len(planes["z"]) + 1) if planes else None, "bed": bed}
+    if p.get("height"):
+        # life size: what the scaled model would come to (hollow or not, how many pieces)
+        factor = float(p["height"]) / ext[2]
+        big = [v * factor for v in ext]
+        planes = plan(big, bed, {})
+        answer.update({"factor": round(factor, 4), "scaled": [round(v, 1) for v in big], "scaled_volume_mm3": round(man.volume() * factor ** 3, 1),
+                       "hollow": man.volume() * factor ** 3 > HOLLOW_FROM_CM3 * 1000, "wall": round(wall_for(big[2]), 1),
+                       "pieces": (len(planes["x"]) + 1) * (len(planes["y"]) + 1) * (len(planes["z"]) + 1) if planes else None, "planes": planes, "too_many": planes is None, "fits": planes is not None and not any(planes.values())})
+    out(answer)
 
 
-def split(src, dst, p, parts_dir):
-    import manifold3d as M
-    import numpy as np
+# ── split ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+def split_solid(M, man, ext, p, dst, notes):
+    """Cuts `man` for the bed and lays the pieces out; returns [(name, solid)] and fills `notes`."""
     import shape2d as S
-    notes = {"warnings": []}
-    warn = notes["warnings"]
-    man, m = load_solid(src, dst, notes)
-    ext = [float(v) for v in m.extents]
+    warn = notes.setdefault("warnings", [])
     bed = bed_of(p)
     joint = p.get("joint", "pins")
     if joint not in ("none", "pins", "dovetail"):
@@ -415,8 +510,8 @@ def split(src, dst, p, parts_dir):
                     other["solid"] = other["solid"] - hole
                     joint_here["pins"].append([round(u, 1), round(v, 1)])
                     pin_count += 1
-                if not joint_here["pins"]:
-                    warn.append("no_room_for_pins") if "no_room_for_pins" not in warn else None
+                if not joint_here["pins"] and "no_room_for_pins" not in warn:
+                    warn.append("no_room_for_pins")
             elif joint == "dovetail":
                 uc, vc = (u0 + u1) / 2, (v0 + v1) / 2
                 length = 0.6 * (v1 - v0)
@@ -447,10 +542,7 @@ def split(src, dst, p, parts_dir):
     font = p.get("font")
     for pc in pieces:
         faces = pc["faces"]
-        if faces:
-            down = max(faces, key=lambda f: faces[f])
-        else:
-            down = None
+        down = max(faces, key=lambda f: faces[f]) if faces else None
         pc["down"] = down
         if numbers and down and font:
             a, side = down
@@ -505,64 +597,138 @@ def split(src, dst, p, parts_dir):
             keys = one if keys is None else keys + one
         extras.append(("keys", keys))
     laid = lay_out(named + extras)
-    fused = None
-    for _, solid in laid:
-        fused = solid if fused is None else fused + solid
-    if fused is None or fused.is_empty() or fused.status() != M.Error.NoError:
-        raise Invalid("empty_result")
-    listed, tri = write_pieces(M, dst, laid, parts_dir)
-    stage(dst, "done")
 
     # ── what the page shows: the map of the pieces, the planes, the sizes ──────────────────────────────────────────
     each = []
     too_big = []
-    for (name, solid), pc in zip(laid, pieces + [None] * len(extras)):
-        x0, y0, z0, x1, y1, z1 = solid.bounding_box()
-        size = [round(x1 - x0, 1), round(y1 - y0, 1), round(z1 - z0, 1)]
+    for name, solid in laid:
+        size = [round(v, 1) for v in extents_of(solid)]
         each.append(size)
         w, d, h = sorted(size[:2], reverse=True) + [size[2]]
         if not (h <= bed[2] + 0.05 and ((w <= bed[0] + 0.05 and d <= bed[1] + 0.05) or (w <= bed[1] + 0.05 and d <= bed[0] + 0.05))):
             too_big.append(name)
     if too_big and "does_not_fit" not in warn:
         warn.append("does_not_fit")
-    x0, y0, z0, x1, y1, z1 = fused.bounding_box()
     notes.update({
         "planes": planes, "bed": bed, "joint": joint, "pins": pin_count, "keys": key_count, "pieces": len(pieces), "cells": [len(bounds[a]) - 1 for a in "xyz"],
         "model": [round(v, 1) for v in ext], "volume_in_mm3": round(man.volume(), 1), "each": each, "too_big": too_big,
         "map": [{"n": pc["n"], "part": "piece_%d" % pc["n"], "cell": pc["cell"], "lo": [round(v, 1) for v in pc["lo"]], "hi": [round(v, 1) for v in pc["hi"]], "volume_mm3": round(pc["solid"].volume(), 1),
                  "down": list(pc["down"]) if pc["down"] else None, "number_at": pc.get("number_at")} for pc in pieces],
-        "joints": joints, "parts": [name for name, _ in laid],
+        "joints": joints,
     })
-    out({"ok": True, "kind": "split", "part": "all", "bbox": {"x": round(x1 - x0, 2), "y": round(y1 - y0, 2), "z": round(z1 - z0, 2)},
-         "volume_mm3": round(fused.volume(), 1), "area_mm2": round(fused.surface_area(), 1), "triangles": int(len(tri)), "notes": notes, "parts": listed})
+    return laid
 
 
-def number_cutter(M, text, axis, at, side, depth):
-    """The text as a slab `depth` deep on the piece's side of the plane across `axis`, ready to be taken out of the piece."""
-    slab = text.extrude(depth + 0.02)                        # in (u, v, n) with n = 0 … depth
-    # into the piece: for the high side (+1) the piece lies below the plane, for the low side above it
-    if side > 0:
-        slab = slab.translate([0, 0, -(depth + 0.01)])        # n = -depth … +0.01
-    else:
-        slab = slab.translate([0, 0, -0.01])                  # n = -0.01 … depth
-    if axis == "z":
-        return slab.translate([0, 0, at])
-    if axis == "x":
-        # (u, v, n) → (n, u, v)
-        import numpy as np
-        mat = np.array([[0, 0, 1, at], [1, 0, 0, 0], [0, 1, 0, 0]], dtype=np.float64)
-        return slab.transform(mat)
-    import numpy as np
-    # (u, v, n) → (v, n, u)
-    mat = np.array([[0, 1, 0, 0], [0, 0, 1, at], [1, 0, 0, 0]], dtype=np.float64)
-    return slab.transform(mat)
-
-
-def scale(src, dst, p, parts_dir):
+def split(src, dst, p, parts_dir):
     import manifold3d as M
     notes = {"warnings": []}
     man, m = load_solid(src, dst, notes)
+    laid = split_solid(M, man, [float(v) for v in m.extents], p, dst, notes)
+    finish(M, "split", dst, laid, notes, parts_dir)
+
+
+# ── hollow ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+def hollow_solid(M, man, m, p, dst, notes, keep_planes=None):
+    """
+    The inside taken out of `man`, a wall of `wall` mm left. The distance to the surface is measured on a grid (the
+    filled voxels of the model, a distance transform), the inner surface is where it reaches the wall (marching cubes
+    on the smoothed field), and that body is subtracted. Drain holes go through the lowest wall. Returns the hollow
+    solid, or `man` itself when nothing fits inside the wall (notes say so). `keep_planes`: {"x": [mm…]} planes the
+    model will be cut at: a slab of KEEP_AT_CUT on each side of them stays solid (the joints need the material).
+    """
+    import numpy as np
+    import trimesh
+    from scipy import ndimage
+    from skimage import measure
+    warn = notes.setdefault("warnings", [])
+    wall = float(p.get("wall", 2.5))
+    if not 1.5 <= wall <= 6.0:
+        raise Invalid("out_of_range", "wall 1.5-6")
+    drain_d = float(p.get("drain_d", 5.0))
+    if not 3.0 <= drain_d <= 8.0:
+        raise Invalid("out_of_range", "drain_d 3-8")
+    drains = int(p.get("drains", 0))
+    if not 0 <= drains <= 4:
+        raise Invalid("out_of_range", "drains 0-4")
+    no_drain = bool(p.get("no_drain", False))
+    stage(dst, "measuring")
     ext = [float(v) for v in m.extents]
+    pitch = max(GRID_MM, max(ext) / GRID_CELLS)
+    if pitch > GRID_MM + 1e-6:
+        warn.append("coarse_grid")
+    notes["hollow"] = {"wall": wall, "pitch": round(pitch, 2), "cavity_mm3": 0.0, "saved_g": 0.0, "drains": 0, "drain_at": [], "drain_d": drain_d}
+    vox = m.voxelized(pitch).fill()
+    grid = np.pad(vox.matrix, 2)
+    origin = vox.transform[:3, 3] - 2 * pitch
+    inside = ndimage.distance_transform_edt(grid).astype(np.float32) * pitch       # mm to the nearest outside cell, from the cell centre
+    # the surface cells themselves lie about half a cell inside the true surface
+    field = ndimage.gaussian_filter(inside, 0.8) - (wall + SURFACE_OFFSET * pitch)
+    for axis, ats in (keep_planes or {}).items():
+        # a ring of material stays round every cut: KEEP_AT_CUT on each side of the plane, COLLAR_DEEP under the surface
+        k = "xyz".index(axis)
+        deep = inside > wall + COLLAR_DEEP
+        for at in ats:
+            idx = int(round((at - origin[k]) / pitch))
+            reach = int(math.ceil(KEEP_AT_CUT / pitch))
+            lo, hi = max(0, idx - reach), min(field.shape[k], idx + reach + 1)
+            sl = [slice(None)] * 3
+            sl[k] = slice(lo, hi)
+            band = field[tuple(sl)]
+            band[~deep[tuple(sl)]] = -1.0
+    if not (field > 0).any():
+        warn.append("nothing_to_hollow")
+        return man
+    stage(dst, "hollowing")
+    verts, faces, _, _ = measure.marching_cubes(field, level=0.0)
+    inner = trimesh.Trimesh(verts * pitch + origin, faces, process=True)
+    if inner.volume < 0:
+        inner.invert()
+    bodies = [b for b in inner.split(only_watertight=True) if b.volume > 50.0]
+    cavity = None
+    for b in bodies:
+        one = T.as_manifold(T.simplified(b, 0.05))
+        if one.is_empty() or one.status() != M.Error.NoError:
+            continue
+        cavity = one if cavity is None else cavity + one
+    if cavity is None:
+        warn.append("nothing_to_hollow")
+        return man
+    hollow = man - cavity
+    # ── drain holes through the lowest wall, where the cavity has room for them ──────────────────────────────────
+    holes = []
+    if not no_drain:
+        cx0, cy0, cz0, cx1, cy1, cz1 = cavity.bounding_box()
+        floor = cavity.slice(cz0 + max(1.0, 0.6 * pitch))
+        want = drains or (1 if floor.area() < 600 else 2 if floor.area() < 6000 else 3)
+        if not floor.is_empty():
+            for (u, v) in spots(M, floor, drain_d / 2 + 1.0, want):
+                hole = M.Manifold.cylinder(cz0 + 3.0 + 1.0, drain_d / 2, drain_d / 2, 48).translate([u, v, -1.0])
+                hollow = hollow - hole
+                holes.append([round(u, 1), round(v, 1)])
+        if not holes:
+            warn.append("no_room_for_drain")
+    notes["hollow"].update({"cavity_mm3": round(cavity.volume(), 1), "saved_g": round(cavity.volume() / 1000 * PLA_G_CM3, 1), "drains": len(holes), "drain_at": holes, "cells": [int(v) for v in grid.shape]})
+    return hollow
+
+
+def hollow(src, dst, p, parts_dir):
+    import manifold3d as M
+    notes = {"warnings": []}
+    man, m = load_solid(src, dst, notes)
+    solid = hollow_solid(M, man, m, p, dst, notes)
+    notes["model"] = [round(float(v), 1) for v in m.extents]
+    notes["volume_in_mm3"] = round(man.volume(), 1)
+    if p.get("view") == "cut":
+        # the card: a quarter taken out, so the wall and the cavity can be seen
+        x0, y0, z0, x1, y1, z1 = solid.bounding_box()
+        solid = solid - M.Manifold.cube([x1 - x0, y1 - y0, z1 - z0 + 2]).translate([(x0 + x1) / 2, (y0 + y1) / 2, z0 - 1])
+    finish(M, "hollow", dst, [("body", solid)], notes, parts_dir)
+
+
+# ── scale, life size ───────────────────────────────────────────────────────────────────────────────────────────────
+
+def factor_of(p, ext):
     factor = None
     if p.get("height"):
         factor = float(p["height"]) / ext[2]
@@ -570,13 +736,428 @@ def scale(src, dst, p, parts_dir):
         factor = float(p["factor"])
     if not factor or factor <= 0 or factor > 50:
         raise Invalid("out_of_range", "factor")
+    return factor
+
+
+def scaled(M, man, m, factor):
     solid = man.scale([factor, factor, factor])
-    x0, y0, z0, x1, y1, z1 = solid.bounding_box()
+    x0, y0, z0, _, _, _ = solid.bounding_box()
     solid = solid.translate([-x0, -y0, -z0])
-    listed, tri = write_pieces(M, dst, [("body", solid)], parts_dir)
-    notes.update({"factor": round(factor, 4), "model": [round(v, 1) for v in ext], "parts": ["body"]})
-    out({"ok": True, "kind": "scale", "part": "all", "bbox": {"x": round(x1 - x0, 2), "y": round(y1 - y0, 2), "z": round(z1 - z0, 2)},
-         "volume_mm3": round(solid.volume(), 1), "area_mm2": round(solid.surface_area(), 1), "triangles": int(len(tri)), "notes": notes, "parts": listed})
+    big = m.copy()
+    big.apply_scale(factor)
+    big.apply_translation(-big.bounds[0])
+    return solid, big
+
+
+def scale(src, dst, p, parts_dir):
+    import manifold3d as M
+    notes = {"warnings": []}
+    man, m = load_solid(src, dst, notes)
+    factor = factor_of(p, [float(v) for v in m.extents])
+    solid, big = scaled(M, man, m, factor)
+    notes.update({"factor": round(factor, 4), "model": [round(float(v), 1) for v in m.extents]})
+    finish(M, "scale", dst, [("body", solid)], notes, parts_dir)
+
+
+def life_size(src, dst, p, parts_dir):
+    import manifold3d as M
+    notes = {"warnings": []}
+    man, m = load_solid(src, dst, notes)
+    factor = factor_of(p, [float(v) for v in m.extents])
+    solid, big = scaled(M, man, m, factor)
+    ext = [float(v) for v in big.extents]
+    if max(ext) > 1000:
+        raise Invalid("too_big")
+    notes.update({"factor": round(factor, 4), "model": [round(float(v), 1) for v in m.extents], "scaled": [round(v, 1) for v in ext], "scaled_volume_mm3": round(solid.volume(), 1)})
+    bed = bed_of(p)
+    planes = plan(ext, bed, {})
+    hollowed = bool(p.get("hollow", True)) and solid.volume() > HOLLOW_FROM_CM3 * 1000
+    if hollowed:
+        q = dict(p)
+        q.setdefault("wall", round(wall_for(ext[2]), 1))
+        solid = hollow_solid(M, solid, big, q, dst, notes, planes if planes else None)
+    else:
+        notes["hollow"] = None
+    notes["grams"] = round(solid.volume() / 1000 * PLA_G_CM3, 1)
+    if planes is not None and not any(planes.values()):
+        notes.update({"pieces": 1, "pins": 0, "keys": 0, "planes": planes, "bed": bed, "cells": [1, 1, 1], "map": [], "joints": []})
+        finish(M, "life_size", dst, [("piece_1", solid)], notes, parts_dir)
+    q = dict(p)
+    q.setdefault("joint", "pins")
+    q.pop("planes", None)
+    laid = split_solid(M, solid, ext, q, dst, notes)
+    finish(M, "life_size", dst, laid, notes, parts_dir)
+
+
+# ── puzzle ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+def knob2d(M, length, along, at, into, share, play=0.0):
+    """
+    A jigsaw knob on the grid line across `along` ('x': the line runs along x at y = at; 'y': along y at x = at),
+    centred at `share` of the line's length, reaching `into` (+1 / -1) across the line: a neck and a round head whose
+    diameter is `knob` of the piece's side. Grown by `play` it is the hole the knob sits in.
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    # the head is `share` wide; the whole knob reaches 0.375 of the piece's side, so knobs from opposite sides leave a web
+    head_r = share * 0.5 + play
+    neck_w = share * 0.55 + 2 * play
+    neck_l = share * 0.2
+    neck = C([[(-neck_w / 2, -0.5), (neck_w / 2, -0.5), (neck_w / 2, neck_l + head_r * 0.2), (-neck_w / 2, neck_l + head_r * 0.2)]])
+    head = C.circle(head_r, 48).translate([0, neck_l + head_r * 0.75])
+    k = (neck + head).offset(0.01, J, 2.0, 16)
+    if into < 0:
+        k = k.rotate(180)                                     # the knob is symmetric about its axis: turned round, it reaches the other way (a mirror would flip the winding)
+    if along == "x":
+        return k.translate([at, 0.0])
+    return k.rotate(-90).translate([at, 0.0])                # +y → +x: the knob reaches across the vertical line
+
+
+def puzzle_solid(M, man, ext, p, dst, notes):
+    """A flat model as a jigsaw: returns the laid pieces and fills `notes`."""
+    import random
+    import shape2d as S
+    C, J = M.CrossSection, M.JoinType.Round
+    warn = notes.setdefault("warnings", [])
+    rows = int(p.get("rows", 3))
+    cols = int(p.get("cols", 4))
+    if not (2 <= rows <= 8 and 2 <= cols <= 8):
+        raise Invalid("out_of_range", "rows/cols 2-8")
+    knob = float(p.get("knob", 35)) / 100.0
+    if not 0.2 <= knob <= 0.5:
+        raise Invalid("out_of_range", "knob 20-50")
+    play = float(p.get("clearance", 0.2))
+    if not 0.05 <= play <= 0.5:
+        raise Invalid("out_of_range", "clearance")
+    lock = p.get("lock", "tabs")
+    if lock not in ("tabs", "pins"):
+        raise Invalid("bad_choice", "lock")
+    numbers = bool(p.get("numbers", True))
+    frame = bool(p.get("frame", False))
+    font = p.get("font")
+    W, D, H = ext
+    if H > PUZZLE_TALL and lock == "tabs":
+        lock = "pins"
+        warn.append("tall_gets_pins")
+    if H > 80:
+        raise Invalid("too_tall")
+    cw, ch = W / cols, D / rows
+    if min(cw, ch) < 12:
+        raise Invalid("pieces_too_small", "%d x %d" % (cols, rows))
+    stage(dst, "cutting")
+    foot = man.project()                                      # the model's footprint: the pieces at the rim follow it
+    rnd = random.Random(int(p.get("seed", 7)))
+    # which way every inner edge's knob points: vertical lines (between columns) and horizontal lines (between rows)
+    knobs = {}
+    if lock == "tabs":
+        for i in range(1, cols):
+            for j in range(rows):
+                knobs[("v", i, j)] = rnd.choice((-1, 1))
+        for j in range(1, rows):
+            for i in range(cols):
+                knobs[("h", i, j)] = rnd.choice((-1, 1))
+    pieces2d = []
+    for j in range(rows):
+        for i in range(cols):
+            cell = C([[(i * cw, j * ch), ((i + 1) * cw, j * ch), ((i + 1) * cw, (j + 1) * ch), (i * cw, (j + 1) * ch)]])
+            if lock == "tabs":
+                # a knob of mine reaches into the neighbour; the neighbour's knob is a hole (grown by the play) in me
+                for edge in ("left", "right", "bottom", "top"):
+                    if edge == "left" and i > 0:
+                        d = knobs[("v", i, j)]                 # +1: the knob of the left line points right, into me
+                        k = knob2d(M, ch, "y", i * cw, +1, knob * ch, play if d > 0 else 0.0).translate([0, (j + 0.5) * ch])
+                        cell = (cell - k) if d > 0 else (cell + knob2d(M, ch, "y", i * cw, -1, knob * ch).translate([0, (j + 0.5) * ch]))
+                    if edge == "right" and i < cols - 1:
+                        d = knobs[("v", i + 1, j)]
+                        cell = (cell + knob2d(M, ch, "y", (i + 1) * cw, +1, knob * ch).translate([0, (j + 0.5) * ch])) if d > 0 else (cell - knob2d(M, ch, "y", (i + 1) * cw, -1, knob * ch, play).translate([0, (j + 0.5) * ch]))
+                    if edge == "bottom" and j > 0:
+                        d = knobs[("h", i, j)]                 # +1: the knob of the line below points up, into me
+                        cell = (cell - knob2d(M, cw, "x", (i + 0.5) * cw, +1, knob * cw, play).translate([0, j * ch])) if d > 0 else (cell + knob2d(M, cw, "x", (i + 0.5) * cw, -1, knob * cw).translate([0, j * ch]))
+                    if edge == "top" and j < rows - 1:
+                        d = knobs[("h", i, j + 1)]
+                        cell = (cell + knob2d(M, cw, "x", (i + 0.5) * cw, +1, knob * cw).translate([0, (j + 1) * ch])) if d > 0 else (cell - knob2d(M, cw, "x", (i + 0.5) * cw, -1, knob * cw, play).translate([0, (j + 1) * ch]))
+            pieces2d.append((i, j, cell))
+    pieces = []
+    n = 0
+    for i, j, cell in pieces2d:
+        solid = man ^ cell.extrude(H + 2.0).translate([0, 0, -1.0])
+        if solid.is_empty() or solid.volume() < MIN_PIECE:
+            continue
+        # a piece that fell apart (the footprint has a hole there) keeps its biggest body
+        bodies = solid.decompose()
+        if len(bodies) > 1:
+            solid = max(bodies, key=lambda b: b.volume())
+            warn.append("piece_split") if "piece_split" not in warn else None
+        n += 1
+        pieces.append({"n": n, "cell": [i, j], "solid": solid, "cell2d": cell})
+    if len(pieces) < 2:
+        raise Invalid("empty_result")
+    # ── hidden pins: in the sides of the pieces, at half height ──────────────────────────────────────────────────
+    stage(dst, "joints")
+    pin_count = 0
+    joints = []
+    if lock == "pins":
+        if H < PUZZLE_PIN_D + 2.0:
+            warn.append("too_thin_for_pins")
+        else:
+            by_cell = {tuple(pc["cell"]): pc for pc in pieces}
+            for pc in pieces:
+                i, j = pc["cell"]
+                for (di, dj, axis) in ((1, 0, "x"), (0, 1, "y")):
+                    other = by_cell.get((i + di, j + dj))
+                    if other is None:
+                        continue
+                    at = (i + 1) * cw if axis == "x" else (j + 1) * ch
+                    region = turned(M, man, axis).slice(at) ^ box2d(M, axis, (i * cw, j * ch, 0.0), ((i + 1) * cw, (j + 1) * ch, H))
+                    if region.area() < 20:
+                        continue
+                    want = 1 if (ch if axis == "x" else cw) < 40 else 2
+                    placed = []
+                    for (u, v) in spots(M, region, PUZZLE_PIN_D / 2 + 1.5, want):
+                        hole = cylinder_along(M, axis, at, u, v, PUZZLE_PIN_L + 2 * PLAY, PUZZLE_PIN_D / 2 + PLAY / 2)
+                        pc["solid"] = pc["solid"] - hole
+                        other["solid"] = other["solid"] - hole
+                        placed.append([round(u, 1), round(v, 1)])
+                        pin_count += 1
+                    joints.append({"axis": axis, "at": round(at, 2), "a": pc["n"], "b": other["n"], "pins": placed})
+    # ── the number of every piece, engraved underneath ───────────────────────────────────────────────────────────
+    stage(dst, "numbers")
+    if numbers and font:
+        for pc in pieces:
+            bottom = pc["solid"].slice(0.3)
+            where = spots(M, bottom, 3.5, 1)
+            if not where:
+                continue
+            u, v = where[0]
+            cap = max(3.0, min(7.0, room_at(bottom, u, v) * 0.9))
+            try:
+                text, _ = S.text(M, [str(pc["n"])], font, cap)
+                tw, th = S.size(text)
+                pc["solid"] = pc["solid"] - number_cutter(M, text.translate([u - tw / 2, v - th / 2]), "z", 0.0, -1, NUMBER_DEPTH)
+                pc["number_at"] = [round(u, 1), round(v, 1)]
+            except Exception:  # noqa: BLE001
+                pass
+    # ── the tray ──────────────────────────────────────────────────────────────────────────────────────────────────
+    extras = []
+    if frame:
+        rim_w, base_t = 6.0, 1.5
+        outer = foot.offset(rim_w + play, J, 2.0, 32)
+        inner = foot.offset(play, J, 2.0, 32)
+        tray = outer.extrude(min(H, 10.0) + base_t) - inner.extrude(min(H, 10.0) + 1.0).translate([0, 0, base_t])
+        extras.append(("frame", tray))
+        notes["frame"] = {"rim": rim_w, "base": base_t, "height": round(min(H, 10.0) + base_t, 1)}
+    if pin_count:
+        pins = None
+        cols_p = max(1, int(math.sqrt(pin_count)))
+        for q in range(pin_count):
+            one = M.Manifold.cylinder(PUZZLE_PIN_L, PUZZLE_PIN_D / 2, PUZZLE_PIN_D / 2, 32).translate([(q % cols_p) * (PUZZLE_PIN_D + 3.0), (q // cols_p) * (PUZZLE_PIN_D + 3.0), 0])
+            pins = one if pins is None else pins + one
+        extras.append(("pins", pins))
+    stage(dst, "layout")
+    named = []
+    for pc in pieces:
+        x0, y0, z0, _, _, _ = pc["solid"].bounding_box()
+        named.append(("piece_%d" % pc["n"], pc["solid"].translate([-x0, -y0, -z0])))
+    laid = lay_out(named + extras)
+    notes.update({
+        "rows": rows, "cols": cols, "lock": lock, "knob": round(knob * 100), "clearance": play, "pieces": len(pieces), "pins": pin_count, "keys": 0, "cells": [cols, rows, 1],
+        "model": [round(v, 1) for v in ext], "volume_in_mm3": round(man.volume(), 1), "planes": {"x": [round(i * cw, 2) for i in range(1, cols)], "y": [round(j * ch, 2) for j in range(1, rows)], "z": []},
+        "map": [{"n": pc["n"], "part": "piece_%d" % pc["n"], "cell": pc["cell"] + [0], "lo": [round(pc["cell"][0] * cw, 1), round(pc["cell"][1] * ch, 1), 0.0], "hi": [round((pc["cell"][0] + 1) * cw, 1), round((pc["cell"][1] + 1) * ch, 1), round(H, 1)],
+                 "volume_mm3": round(pc["solid"].volume(), 1), "down": None, "number_at": pc.get("number_at")} for pc in pieces],
+        "joints": joints,
+    })
+    return laid
+
+
+def puzzle(src, dst, p, parts_dir):
+    import manifold3d as M
+    notes = {"warnings": []}
+    man, m = load_solid(src, dst, notes)
+    laid = puzzle_solid(M, man, [float(v) for v in m.extents], p, dst, notes)
+    finish(M, "puzzle", dst, laid, notes, parts_dir)
+
+
+# ── holder ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+def cavity_2d(M, kind, spec, play, at_depth):
+    """The cavity's section at `at_depth` below its mouth (0 = the mouth), as a CrossSection centred on the origin."""
+    import shape2d as S
+    C, J = M.CrossSection, M.JoinType.Round
+    if kind == "soap":
+        w, l, r = spec["w"] + 2 * play, spec["l"] + 2 * play, spec["r"]
+        return S.rounded_rect(M, w, l, min(r, w / 2 - 0.1, l / 2 - 0.1)).translate([-w / 2, -l / 2])
+    depth = spec["depth"]
+    share = min(1.0, max(0.0, at_depth / depth)) if depth > 0 else 0.0
+    d = spec["d2"] + (spec["d"] - spec["d2"]) * share + 2 * play     # d2 at the mouth, d at the bottom
+    return C.circle(d / 2, 96)
+
+
+def holder(src, dst, p, parts_dir):
+    import manifold3d as M
+    notes = {"warnings": []}
+    warn = notes["warnings"]
+    man, m = load_solid(src, dst, notes)
+    ext0 = [float(v) for v in m.extents]
+    factor = 1.0
+    if p.get("height"):
+        factor = factor_of(p, ext0)
+    solid, big = scaled(M, man, m, factor)
+    ext = [float(v) for v in big.extents]
+    W, D, H = ext
+    kind = p.get("cavity", "can330")
+    if kind not in CAVITIES:
+        raise Invalid("bad_choice", "cavity")
+    spec = dict(CAVITIES[kind])
+    for key in ("d", "d2", "depth", "w", "l"):
+        if p.get("cav_" + key) is not None:
+            try:
+                spec[key] = float(p["cav_" + key])
+            except (TypeError, ValueError):
+                raise Invalid("not_a_number", "cav_" + key)
+    if kind == "custom" and p.get("cav_d2") is None:
+        spec["d2"] = spec["d"]
+    play = float(p.get("clearance", 0.6))
+    if not 0.3 <= play <= 1.5:
+        raise Invalid("out_of_range", "clearance 0.3-1.5")
+    depth = float(spec["depth"])
+    if not 10.0 <= depth <= 200.0:
+        raise Invalid("out_of_range", "depth 10-200")
+    floor = H - depth
+    if floor < MIN_WALL:
+        raise Invalid("too_short", "%.0f" % (depth + MIN_WALL))
+    cx = W / 2 + float(p.get("cav_x", 0) or 0)
+    cy = D / 2 + float(p.get("cav_y", 0) or 0)
+    stage(dst, "cutting")
+    # the cavity: a cone or cylinder (or a rounded box) from the mouth down, built from its sections
+    top = cavity_2d(M, kind, spec, play, 0.0)
+    if kind == "soap" or abs(spec["d"] - spec["d2"]) < 0.01:
+        cavity = top.extrude(depth + 1.0).translate([0, 0, H - depth])
+    else:
+        r_top = (spec["d2"] + 2 * play) / 2
+        r_bottom = (spec["d"] + 2 * play) / 2
+        cavity = M.Manifold.cylinder(depth + 1.0, r_bottom, r_top, 96).translate([0, 0, H - depth])
+    cavity = cavity.translate([cx, cy, 0])
+    # the wall round the cavity at five heights: how far the cavity could grow before it broke out of the model
+    walls = []
+    for i in range(5):
+        at = depth * (i + 0.5) / 5
+        z = H - at
+        section = solid.slice(z)
+        cav = cavity_2d(M, kind, spec, play, at).translate([cx, cy])
+        lo, hi = 0.0, 8.0
+        if not (cav.offset(lo, M.JoinType.Round, 2.0, 24) - section).is_empty():
+            walls.append(0.0)
+            continue
+        for _ in range(10):
+            mid = (lo + hi) / 2
+            if (cav.offset(mid, M.JoinType.Round, 2.0, 24) - section).is_empty():
+                lo = mid
+            else:
+                hi = mid
+        walls.append(round(lo, 2))
+    min_wall = min(walls) if walls else 0.0
+    holder_solid = solid - cavity
+    if kind == "soap":
+        # a hole in the floor to push the bar out, and water out
+        holder_solid = holder_solid - M.Manifold.cylinder(floor + 2.0, 10.0, 10.0, 48).translate([cx, cy, -1.0])
+    if min_wall < MIN_WALL:
+        # how much bigger the model would have to be for a 2 mm wall everywhere round the cavity
+        warn.append("wall_thin")
+        grow = (MIN_WALL - min_wall) * 2 + 1.0
+        notes["grow_to"] = round(H * (1 + grow / max(spec.get("d2", spec.get("w", 60.0)), 20.0)), 0)
+    if holder_solid.is_empty() or holder_solid.volume() < MIN_PIECE:
+        raise Invalid("empty_result")
+    notes.update({"factor": round(factor, 4), "model": [round(v, 1) for v in ext0], "scaled": [round(v, 1) for v in ext], "cavity": kind, "cavity_mm": {k: round(float(v), 1) for k, v in spec.items()},
+                  "clearance": play, "at": [round(cx - W / 2, 1), round(cy - D / 2, 1)], "floor": round(floor, 1), "walls": walls, "min_wall": round(min_wall, 2), "volume_in_mm3": round(solid.volume(), 1)})
+    finish(M, "holder", dst, [("body", holder_solid)], notes, parts_dir)
+
+
+# ── potion ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+def potion(src, dst, p, parts_dir):
+    import numpy as np
+    import shape2d as S
+    import manifold3d as M
+    notes = {"warnings": []}
+    warn = notes["warnings"]
+    man, m = load_solid(src, dst, notes)
+    ext0 = [float(v) for v in m.extents]
+    factor = factor_of(p, ext0) if p.get("height") else 1.0
+    solid, big = scaled(M, man, m, factor)
+    W, D, H = [float(v) for v in big.extents]
+    wall = float(p.get("wall", 2.0))
+    if not 1.5 <= wall <= 4.0:
+        raise Invalid("out_of_range", "wall 1.5-4")
+    neck_d = float(p.get("neck_d", 26.0))
+    neck_h = float(p.get("neck_h", 30.0))
+    if not 12.0 <= neck_d <= 60.0 or not 10.0 <= neck_h <= 80.0:
+        raise Invalid("out_of_range", "neck")
+    cut = float(p.get("cut", 4.0)) / 100.0
+    if not 0.0 <= cut <= 0.3:
+        raise Invalid("out_of_range", "cut 0-30")
+    if H < 40:
+        raise Invalid("too_small")
+    # ── a flat bottom: the lowest `cut` of the height goes ───────────────────────────────────────────────────────
+    stage(dst, "cutting")
+    z_cut = H * cut
+    if z_cut > 0:
+        solid = solid.trim_by_plane([0, 0, 1], z_cut).translate([0, 0, -z_cut])
+        H -= z_cut
+    foot = solid.slice(0.3)
+    if foot.area() < 100:
+        warn.append("small_foot")
+    # ── the neck on top: where the model is highest, the neck's ring sits on it ─────────────────────────────────
+    x0, y0, z0, x1, y1, z1 = solid.bounding_box()
+    top = solid.slice(z1 - min(3.0, H * 0.05))
+    if top.is_empty():
+        top = solid.slice(z1 - min(8.0, H * 0.15))
+    tx0, ty0, tx1, ty1 = top.bounds() if not top.is_empty() else (x0, y0, x1, y1)
+    cx, cy = (tx0 + tx1) / 2, (ty0 + ty1) / 2
+    r_in, r_out = neck_d / 2, neck_d / 2 + wall
+    # a seat the neck grows out of: a cone from the model's top down into it, so a pointed or narrow top still holds the neck
+    seat_h = min(12.0, H * 0.12)
+    seat = M.Manifold.cylinder(seat_h + neck_h, r_out + 3.0, r_out, 96).translate([cx, cy, z1 - seat_h])
+    neck = M.Manifold.cylinder(neck_h + seat_h, r_out, r_out, 96).translate([cx, cy, z1 - seat_h])
+    body = solid + seat + neck
+    # ── hollow: the cavity, and the bore of the neck opening into it ────────────────────────────────────────────
+    big_body = big
+    try:
+        import trimesh
+        mesh = body.to_mesh()
+        big_body = trimesh.Trimesh(np.asarray(mesh.vert_properties)[:, :3], np.asarray(mesh.tri_verts), process=True)
+    except Exception:  # noqa: BLE001
+        pass
+    q = {"wall": wall, "no_drain": True}
+    hollow = hollow_solid(M, body, big_body, q, dst, notes)
+    bore = M.Manifold.cylinder(neck_h + seat_h + wall + 2.0, r_in, r_in, 96).translate([cx, cy, z1 - seat_h - wall - 1.0])
+    hollow = hollow - bore
+    if notes.get("hollow", {}).get("cavity_mm3", 0) <= 0:
+        warn.append("solid_bottle")
+    # ── the cork: a tapered plug with a knob, 0.4 mm of play at the top of the neck ─────────────────────────────
+    plug_h = max(8.0, neck_h * 0.7)
+    cork = M.Manifold.cylinder(plug_h, r_in - 0.9, r_in - 0.25, 64) + M.Manifold.cylinder(6.0, r_in + 3.0, r_in + 2.0, 64).translate([0, 0, plug_h])
+    parts = [("body", hollow), ("cork", cork)]
+    # ── a label with the name of the brew: a rounded plate with the text raised on it, glued to the bottle ─────
+    text = str(p.get("text") or "").strip()
+    if bool(p.get("label", True)) and text and p.get("font"):
+        try:
+            glyphs, _ = S.text(M, [text[:20]], p["font"], 7.0)
+            tw, th = S.size(glyphs)
+            lw, lh = min(tw + 8.0, max(30.0, W * 0.7)), th + 8.0
+            if tw + 8.0 > lw:
+                k = (lw - 8.0) / tw
+                glyphs = S.fit(glyphs, width_mm=tw * k)
+                tw, th = S.size(glyphs)
+                lh = th + 8.0
+            plate = S.rounded_rect(M, lw, lh, 3.0).extrude(1.2)
+            raised = glyphs.translate([(lw - tw) / 2, (lh - th) / 2]).extrude(0.8).translate([0, 0, 1.2 - 0.01])
+            parts.append(("label", plate + raised))
+            notes["label"] = {"w": round(lw, 1), "h": round(lh, 1), "text": text[:20]}
+        except Exception:  # noqa: BLE001
+            warn.append("label_failed")
+    laid = lay_out(parts)
+    notes.update({"factor": round(factor, 4), "model": [round(v, 1) for v in ext0], "bottle": [round(v, 1) for v in extents_of(hollow)], "neck": {"d": neck_d, "h": neck_h, "x": round(cx - x0, 1), "y": round(cy - y0, 1)},
+                  "cut_mm": round(z_cut, 1), "wall": wall, "volume_in_mm3": round(solid.volume(), 1), "cork": {"h": round(plug_h + 6.0, 1)}})
+    finish(M, "potion", dst, laid, notes, parts_dir)
 
 
 def main(argv):
@@ -598,11 +1179,10 @@ def main(argv):
         p = json.loads(raw or "{}")
         if not isinstance(p, dict):
             raise Invalid("unknown_kind")
-        if op == "split":
-            split(src, dst, p, parts_dir)
-        elif op == "scale":
-            scale(src, dst, p, parts_dir)
-        raise Invalid("unknown_kind", op)
+        commands = {"split": split, "hollow": hollow, "scale": scale, "life_size": life_size, "puzzle": puzzle, "holder": holder, "potion": potion}
+        if op not in commands:
+            raise Invalid("unknown_kind", op)
+        commands[op](src, dst, p, parts_dir)
     except Invalid as e:
         out({"ok": False, "code": e.code, "error": str(e)})
     except SystemExit:

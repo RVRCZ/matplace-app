@@ -105,7 +105,8 @@ class ToolExamples extends Command
         $dir = storage_path('app/tmp/param');
         $out = $dir.'/'.Str::uuid().'.stl';
         $json = $out.'.json';
-        File::put($json, (string) json_encode(ModelEditor::forTool($op, ModelEditor::clean($op, (array) ($card['edit_params'] ?? [])))));
+        $extra = array_intersect_key((array) ($card['edit_params'] ?? []), ['view' => 1]);     // 'cut': the hollow drawn with a quarter taken out
+        File::put($json, (string) json_encode(ModelEditor::forTool($op, ModelEditor::clean($op, (array) ($card['edit_params'] ?? []))) + $extra));
         try {
             $r = $python->runScript('edit_tool.py', [$op, $source['path'], $out, '@'.$json], 600);
         } finally {

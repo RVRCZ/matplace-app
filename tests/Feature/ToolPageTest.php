@@ -14,7 +14,7 @@ class ToolPageTest extends TestCase
     use RefreshDatabase;
 
     /** tool key → the script module that drives its page */
-    private const MODULES = ['relief' => 'relief', 'mold' => 'mold', 'repair' => 'repair', 'check' => 'check', 'figure' => 'figure'];
+    private const MODULES = ['relief' => 'relief', 'mold' => 'mold', 'repair' => 'repair', 'check' => 'check', 'figure' => 'figure', 'filament_art' => 'art', 'split' => 'edit', 'hollow' => 'edit', 'life_size' => 'edit', 'puzzle' => 'edit', 'holder_model' => 'edit', 'potion' => 'edit'];
 
     private function needsPython(): void
     {
@@ -217,7 +217,7 @@ class ToolPageTest extends TestCase
             ->assertSee('krabicka vicko pouzdro', false);                                  // its keywords, without accents, for the search
         $this->get('/en/tools')->assertOk()->assertSee('Search the tools')->assertSee('Pictures and logos');
         // a category without a tool has no filter: nothing to click that shows nothing
-        config(['tools.cookie.categories' => ['images']]);
+        config(['tools.cookie.categories' => ['images'], 'tools.puzzle.categories' => ['edit'], 'tools.potion.categories' => ['edit']]);     // the puzzle and the potion of a model are the other toys
         $this->get('/tools')->assertOk()->assertDontSee('data-filter="toys"', false);
     }
 }

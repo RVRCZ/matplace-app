@@ -39,9 +39,9 @@ use App\Http\Controllers\Designer\BulkUploadController as DesignerBulkController
 use App\Http\Controllers\Designer\CardController as DesignerCardController;
 use App\Http\Controllers\Designer\ImportController as DesignerImportController;
 use App\Http\Controllers\Designer\ProfileController as DesignerProfileController;
-use App\Http\Controllers\EditToolsController;
 use App\Http\Controllers\Designer\VerificationController as DesignerVerificationController;
 use App\Http\Controllers\DesignerPageController;
+use App\Http\Controllers\EditToolsController;
 use App\Http\Controllers\Farm\CreditController;
 use App\Http\Controllers\Farm\OrderController;
 use App\Http\Controllers\InquiryController;
@@ -147,6 +147,11 @@ $pages = function () {
     // session 3: a picture as plates for the wall, and the editing of a model file (engines/python/art_tool.py, edit_tool.py)
     Route::get('/tools/filament-art', [EditToolsController::class, 'filamentArt'])->name('tools.filament_art');
     Route::get('/tools/split', [EditToolsController::class, 'edit'])->defaults('op', 'split')->name('tools.split');
+    Route::get('/tools/hollow', [EditToolsController::class, 'edit'])->defaults('op', 'hollow')->name('tools.hollow');
+    Route::get('/tools/life-size', [EditToolsController::class, 'edit'])->defaults('op', 'life_size')->name('tools.life_size');
+    Route::get('/tools/puzzle', [EditToolsController::class, 'edit'])->defaults('op', 'puzzle')->name('tools.puzzle');
+    Route::get('/tools/holder-from-model', [EditToolsController::class, 'edit'])->defaults('op', 'holder')->name('tools.holder_model');
+    Route::get('/tools/potion', [EditToolsController::class, 'edit'])->defaults('op', 'potion')->name('tools.potion');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {

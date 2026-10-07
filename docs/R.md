@@ -22,6 +22,11 @@ modulů), `viewer.ts` (dvě nové metody), `ModelFile` (`builtForPrinting`, `pri
 |---|---|---|---|
 | Obraz z filamentu | `/tools/filament-art` | `art` (`art_tool.py`, `ArtGenerator`) | obrázek → barvy filamentů → vrstvený obraz z desek v rámu, nebo jeden tisk s barvami nad sebou |
 | Rozdělení modelu na díly | `/tools/split` | `edit` (`edit_tool.py split`, `ModelEditor`, job `EditModel`) | model větší než podložka → díly s kolíky / rybinovými klíči, čísla v řezu, položené řezem dolů, mapa dílů |
+| Vydutit model | `/tools/hollow` | `edit` (`edit_tool.py hollow`) | plný model → dutý se stěnou 1,5–6 mm a odtokovými otvory; ušetřené gramy a koruny |
+| V životní velikosti | `/tools/life-size` | `edit` (`edit_tool.py life_size`) | výška v cm → zvětšení, dutina nad 200 cm³ (stěna 2–5 mm), dělení s kolíky; gramy a cena |
+| Puzzle z modelu | `/tools/puzzle` | `edit` (`edit_tool.py puzzle`) | plochý model → mřížka 2–8 × 2–8 dílků s puzzle zámky (vůle 0,2) nebo skrytými kolíky Ø 3, čísla zespodu, rámeček |
+| Držák z vlastního modelu | `/tools/holder-from-model` | `edit` (`edit_tool.py holder`, kind `holder`, karta `holder_model`) | model → výška, dutina na plechovku 330/slim/500, kelímek 473 ml, mýdlo, svíčku nebo vlastní válec/kužel; stěna měřená v pěti výškách |
+| Lektvarová láhev z modelu | `/tools/potion` | `edit` (`edit_tool.py potion`) | model → seříznuté dno, dutina, hrdlo na kuželovém nástavci, kónická zátka (`cork`), štítek s nápisem (`label`) |
 
 ### Obraz z filamentu (`filament_art`)
 
@@ -87,6 +92,8 @@ layout / done), který stránka čte přes `GET /api/files/<uuid>` (`edit.stage`
   patrech (mřížka buněk s čísly v barvách dílů) a seznam dílů; díly v náhledu každý svou barvou (`edit.pieces_tris`).
   Výsledek je `ModelFile` kind `split` (`tool_params.source` = původní soubor, `report`, `parts`, `pieces`, `each`,
   `parts_bbox` → `ModelCheck` hlídá, že se každý díl vejde), `builtForPrinting()` = farma ho neotáčí.
+  Každý díl jde do souboru přes `mesh_tool.from_manifold` (pinché vrcholy exaktních těles o mikrony od sebe), jinak
+  trimesh i slicer hlásí „neuzavřeno“ – ukázalo se u láhve.
 - **Job `EditModel`** ve frontě `interactive` s `timings` (`queue_s`, `edit_s`, pak `convert_s`, `analyse_s` z
   `ProcessModelFile`); stránka se ptá na stav po 1,5 s a říká fázi. Lokálně (`QUEUE_CONNECTION=sync`) odpoví hned.
 
@@ -94,6 +101,65 @@ Stránka `/tools/split`: Soubor (nahrání nebo `?from=<uuid>` – u výsledku d
 → Nastavení (podložka, roviny, spoje, čísla, položení) → Výsledek (věty, mapa, stažení: projekt, celý plát, díly po
 jednom přes `GET /api/tools/edit/<uuid>/<díl>.stl`). Kalkulačka ukazuje odkazy na díly (`download.ts` pozná kindy
 session 3 a bere `api/tools/edit`).
+
+### Dutina (`hollow`) a životní velikost (`life_size`)
+
+- **Dutina**: `trimesh.voxelized(pitch).fill()` → vyplněná mřížka modelu (pitch 0,6 mm, u modelu přes 192 mm
+  `max/320` a varování `coarse_grid`), `distance_transform_edt` × pitch = vzdálenost každé buňky od povrchu,
+  gaussovsky vyhlazené pole minus (stěna + 1,1 buňky) → `marching_cubes` na nule = vnitřní plocha → trimesh →
+  `simplified` → manifold → `model − dutina`. Posun 1,1 buňky je kalibrovaný na krychli a kouli (stěna vychází
+  +0,0 až +0,15 mm, nikdy tenčí). Tělesa dutiny pod 50 mm³ zanikají. **Odtokové otvory** Ø 3–8 mm (výchozí 5):
+  dno dutiny = řez dutinou 1 mm nad jejím nejnižším bodem, otvory na nejprostornějších místech (1–3 podle plochy
+  dna, nebo zadaný počet 1–4, nebo žádný), válec od z = −1 do 3 mm nad dnem dutiny. Hlášení: objem dutiny,
+  ušetřené gramy (PLA 1,24 g/cm³) a rozdíl ceny z hrubého odhadu na stránce (`rough.ts`, spodní mez rozpětí).
+  Pro kartu nástroje má `hollow` pohled `cut` (čtvrtina pryč, ať je stěnu vidět). Stránka po vydutění zapne rentgen.
+- **Životní velikost**: výška v cm (5–100) → měřítko; nad 200 cm³ dutina se stěnou `2 + 3·(h − 200)/800` mm
+  (2 mm při 200 mm, 5 mm při metru) – ale **kolem budoucích rovin řezu zůstává plný prstenec** (6 mm na každou
+  stranu roviny, 13 mm hluboko pod povrch; ve voxelovém poli se tam dutina vynuluje), aby kolíky Ø 6 měly v čem
+  sedět; bez něj u busty 400 mm nebylo na kolíky místo (stěna 2,8 mm). Pak `split_solid` s kolíky (nebo klíči /
+  bez spojů podle volby) a stejná mapa jako u dělení; když se zvětšený model na podložku vejde, je to jeden díl.
+  Analýza před stavbou (`analyse` s `height`) říká rozměr, dutý/plný a počet dílů. Nad 1000 mm po zvětšení
+  `too_big`.
+
+### Puzzle (`puzzle`)
+
+Půdorys modelu (`Manifold.project`) na mřížku `rows` × `cols` (buňky ≥ 12 mm, jinak `pieces_too_small`). **Zámky**:
+každá vnitřní hrana mřížky dostane zámek s náhodným směrem (seed pevný, stejný model = stejné puzzle); zámek
+(`knob2d`) = krček 0,55 šířky hlavy a kulatá hlava o průměru `knob` % strany dílku (výchozí 35), celkový dosah
+0,375 strany, takže zámky z protilehlých stran nechají uprostřed dílku 23 % materiálu. Dílek = buňka + vlastní
+zámky − zámky sousedů zvětšené o vůli 0,2 (jen dutina má vůli, rovné části řezu se dotýkají). Dílek = model ∩
+vytažená buňka; dílek rozpadlý na víc těles (otvor v modelu) si nechá největší a řekne to. **Skryté kolíky**: rovné
+řezy, díry Ø 3,2 ve stěnách dílků v polovině výšky (1–2 na hranu podle délky), díl `pins` Ø 3 × 6; model nad 25 mm
+dostane kolíky i když chtěl zámky (`tall_gets_pins`), nad 80 mm `too_tall`, pod 5 mm `too_thin_for_pins` (dílky se
+slepí). **Čísla** zespodu (řez ve výšce 0,3 mm, nejprostornější místo, 3–7 mm). **Rámeček** (flag `frame`, díl
+`frame`): tácek z půdorysu + vůle, lem 6 mm, dno 1,5 mm, výška min(H, 10) + 1,5. Mapa dílků jako u dělení (jedna
+úroveň), stránka v puzzle vynechá seznam dílků (mřížka s čísly stačí). Zadání chtělo pro vysoké modely „roviny
+s puzzle profilem ve třech osách“ – to tu není, vysoké modely dostanou kolíky (rozhodnutí 10).
+
+### Držák z vlastního modelu (`holder`)
+
+Model (volitelně zvětšený na `height`) stojí dnem na podložce; shora se z něj odečte dutina: válec, kužel
+(`cav_d` dole, `cav_d2` nahoře, kelímek zmrzliny 80→95) nebo zaoblený kvádr (mýdlo 90 × 60, r 12), vždy + vůle
+0,3–1,5 mm, hloubka z předvolby nebo vlastní, střed posunutelný o `cav_x`/`cav_y`. Předvolby `CAVITIES`: plechovka
+330 Ø 66,3 / 90 hluboko, slim Ø 58 / 110, 500 ml Ø 66,3 / 130, kelímek Ø 80→95 / 100, mýdlo 90 × 60 / 30, svíčka Ø 80 /
+25. **Stěna**: v pěti výškách dutiny řez modelu (`slice`) a binární hledání největšího offsetu průřezu dutiny, který
+je ještě uvnitř řezu (0–8 mm, 10 kroků) → `walls`, `min_wall`; pod 2 mm varování `wall_thin` s odhadem `grow_to`
+(hrubý: výška × (1 + potřebný přírůstek / průměr dutiny)). Dno pod dutinou < 2 mm → `too_short` s potřebnou
+výškou. Mýdlenka má zespodu otvor Ø 20 (vytlačení, odtok). Jeden díl `body`; stránka po výrobě zapne rentgen.
+Katalogový klíč je `holder_model` (klíč `holder` má generátor držáku ze session 0), kind souboru `holder`.
+
+### Lektvarová láhev (`potion`)
+
+Model zvětšený na `height` (0 = ponechat), dno seříznuté o `cut` % výšky (`trim_by_plane`), hrdlo na nejvyšším
+místě: střed řezu modelu 3 mm pod vrcholem, válec s vnitřním Ø `neck_d` (12–60) a stěnou `wall`, výška `neck_h`
+(10–80), pod ním **kuželový nástavec** (Ø hrdla + 3 mm → Ø hrdla, 12 mm nebo 12 % výšky do modelu), aby hrdlo
+drželo i na špičaté hlavě. Pak `hollow_solid` na sjednocení (bez odtoků) a vrt Ø `neck_d` od hrdla přes stěnu do
+dutiny. **Zátka** `cork`: kužel Ø (hrdlo − 0,5) nahoře → (hrdlo − 1,8) dole, výška 0,7 hrdla, hlavička Ø hrdlo + 6
+× 6 mm. **Štítek** `label` (flag, text do 20 znaků, DejaVu Sans Bold 7 mm): zaoblená destička 1,2 mm + písmo
+0,8 mm vyvýšené, šířka nejvýš 70 % láhve (text se zmenší). Varování: `small_foot` (dno pod 100 mm²), `solid_bottle`
+(dutina se nevešla – láhev plná, hrdlo průchozí), `label_failed`. Zadání chtělo sdílet hrdlo a zátku s kindem
+`bottle` session 2 – session 2 ještě neběží, hrdlo a zátka jsou tu zatím vlastní (prostý válec a kužel, bez závitu);
+až `bottle` vznikne, převezme je nebo naopak.
 
 ## 2. Rozhodnutí a proč
 
@@ -113,6 +179,16 @@ session 3 a bere `api/tools/edit`).
    plochy (u organických tvarů může být největší plocha jiná – díl si člověk ve sliceru otočí; FAQ to říká).
 6. **Podložka farmy bere okraj ze `farm_settings`** (`bed_margin_mm`), ostatní presety 5 mm.
 7. Texty do `lang/<loc>/edit.php` (ne `param.php`, který je session 1); klíče voleb `o.<volba>.<hodnota>`.
+8. **Dutina měří vzdálenost na mřížce, ne přesným offsetem**: přesný offset trojúhelníkové sítě (manifold
+   `minkowski`) by u busty s 200 tis. trojúhelníků trval minuty; mřížka 320³ to dá za sekundy a stěna je přesná na
+   desetinu milimetru, což tisk stejně nerozliší.
+10. **Puzzle vysokých modelů = kolíky, ne puzzle profil ve třech osách.** Zámek s hlavou je 2D tvar tažený skrz
+    celou výšku; v 40 mm plastu by šel zasunout jen shora a drží stejně jako kolík. Skutečný 3D puzzle profil
+    (hlava i v ose Z) by vyžadoval kulové „knoflíky“ a vůle v tisku s převisy – ponecháno jako otevřené.
+11. **Zámky mají vůli jen v dutině** (0,2 mm kolem zámku souseda), rovné části řezu se dotýkají přesně: tak to dělá
+    každá tištěná skládačka a díly se k sobě dají přitlačit; tisk sám přidá setinu až desetinu.
+9. **Límec u řezů jen jako prstenec** (ne celý průřez): celý průřez 12 mm silný přidal bustě 400 mm 0,8 kg;
+   prstenec 13 mm hluboký 0,15 kg a kolíky sedí stejně.
 
 ## 3. Rychlost (změřeno 7. 10. 2026, lokálně, Windows, 4 jádra)
 
@@ -139,6 +215,21 @@ u session 1 – produkce je ~1,6× rychlejší, odhad 0,9–1,0 s).
 | `split` bez spojů na 180 | 8,5 s |
 
 Kvádr 300 × 60 × 40 (12 trojúhelníků): analýza 1,1 s, dělení 1,2–1,4 s (většina je start Pythonu a importy).
+
+Dutina a životní velikost (tentýž den):
+
+| krok | čas |
+|---|---|
+| `hollow` koule Ø 60 (5 tis. trojúhelníků), stěna 2 | 2,3 s |
+| `hollow` busta 85 mm (4 tis. trojúhelníků), stěna 2,5 | 6,8 s |
+| `life_size` busta → 400 mm: dutina (mřížka 1,25 mm), 2 roviny, 4 díly, 12 kolíků | 27 s |
+| `life_size` koule → 150 mm, vejde se vcelku, jen dutina | 9,7 s |
+| `puzzle` deska 120 × 90 × 6 → 3 × 4 dílků se zámky (+ rámeček) | 1,2–1,5 s |
+| `puzzle` disk Ø 100 → 3 × 3 | 1,3 s |
+| `holder` trubka Ø 80 × 100 → plechovka 330 | 1,1 s |
+| `holder` busta 85 → 120 mm, svíčka Ø 80 (stěna 0, varování) | 1,1 s |
+| `potion` koule Ø 70 → 90 mm, hrdlo 24, štítek | 6,8 s |
+| `potion` busta 85 → 110 mm (dutina na mřížce 0,6 mm) | 16,5 s |
 Limit 60 s ze zadání je daleko; decimaci nad 2 M jsem na skutečném modelu neměřil.
 
 ## 4. Testy
@@ -188,14 +279,15 @@ kreslené z lokálního katalogu cívek (37 PLA+); na produkci se nepřekresluj�
 ## 7. Co ze zadání session 3 teprve přijde
 
 Hotové: `/tools/filament-art` (oba režimy, rám, LED, návod), `/tools/split` (podložky, roviny, kolíky, rybiny,
-čísla, položení, mapa), společný základ `edit_tool.py` + `ModelEditor` + `EditModel` + stránka `edit`.
-Zbývá (v pořadí, jak dává smysl): **dutina** (`hollow`, podepsaná vzdálenost na mřížce + marching cubes, odtokové
-otvory, ušetřený materiál) a **`/tools/life-size`** (měřítko + dutina + dělení s kolíky, varování nad 20 dílů);
-`/tools/wearable` (míra, průzory ve vieweru, drážky na popruh); `/tools/puzzle`; `/tools/flexi-cut` a `/tools/flexi`;
+čísla, položení, mapa), `/tools/hollow`, `/tools/life-size`, `/tools/puzzle` (zámky, kolíky, čísla, rámeček; bez
+3D profilu pro vysoké modely), `/tools/holder-from-model`, `/tools/potion`, společný základ `edit_tool.py` + `ModelEditor` +
+`EditModel` + stránka `edit`.
+Zbývá (v pořadí, jak dává smysl): `/tools/wearable` (míra, průzory ve vieweru, drážky na popruh); `/tools/flexi-cut` a `/tools/flexi`;
 `/tools/colors` (barvený 3MF, `ThreeMfConverter` čtení barev); rozšíření `relief` (9 tvarů, lampa, náhled
-s podsvícením); `/tools/holder-from-model`; `/tools/potion`; `soap` podle stopy; `/tools/slider`.
+s podsvícením); `soap` podle stopy; `/tools/slider`.
 
 ## 8. Stav
 
-7. 10. 2026 večer: oba nástroje v katalogu, build prošel (`check_bundle` OK), `pint --dirty` čistý, 12 nových testů
-zelených, související existující testy zelené; celá sada se pouští na konci session (sekce se doplní).
+7. 10. 2026 večer: filament art a dělení v katalogu (commit 61d99ef). Později téhož večera: dutina, životní velikost,
+puzzle, držák z modelu a lektvarová láhev (všechny na stránce `edit`), `ModelEditTest` má 10 testů; build, pint a testy
+stránek, katalogu, SEO a karet zelené. Celá sada se pouští na konci session (sekce se doplní).
