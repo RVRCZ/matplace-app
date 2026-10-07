@@ -3,13 +3,13 @@
     $keys = ['pick', 'bad_format', 'too_big', 'uploading', 'processing', 'model_failed', 'failed', 'unavailable', 'analysing', 'fits', 'plan', 'plan.hollow', 'plan.solid', 'too_many', 'auto', 'plane.x', 'plane.y', 'plane.z', 'planes.reset',
         'working', 'stage.queued', 'stage.loading', 'stage.thinning', 'stage.repairing', 'stage.measuring', 'stage.hollowing', 'stage.cutting', 'stage.joints', 'stage.numbers', 'stage.layout', 'stage.done',
         'report', 'report.keys', 'report.pins', 'report.none', 'report.repaired', 'report.drains', 'report.coarse', 'report.hollow', 'report.solid', 'report.one', 'map', 'map.level', 'piece', 'piece.size', 'piece.down.x', 'piece.down.y', 'piece.down.z', 'part.pins', 'part.keys', 'part.piece', 'part.body', 'glue', 'again',
-        'joint.pins', 'joint.dovetail', 'joint.none', 'report.tabs', 'report.frame', 'part.frame', 'report.wall', 'report.thin', 'report.floor', 'report.cork', 'report.label', 'report.solid', 'part.body', 'part.cork', 'part.label',
+        'joint.pins', 'joint.dovetail', 'joint.none', 'report.tabs', 'report.frame', 'part.frame', 'report.wall', 'report.thin', 'report.floor', 'report.cork', 'report.label', 'report.solid', 'part.body', 'part.cork', 'part.label', 'part.segment', 'report.joints', 'report.none',
         'warn.does_not_fit', 'warn.many_pieces', 'warn.no_room_for_pins', 'warn.key_as_pins', 'warn.too_big', 'warn.nothing_to_hollow', 'warn.no_room_for_drain', 'warn.coarse_grid', 'warn.tall_gets_pins', 'warn.piece_split', 'warn.too_thin_for_pins',
-        'error.fits_already', 'error.too_heavy', 'error.too_small', 'error.too_big', 'error.not_watertight', 'error.edit_failed', 'error.too_tall', 'error.pieces_too_small', 'warn.wall_thin', 'error.too_short', 'warn.small_foot', 'warn.solid_bottle', 'warn.label_failed'];
+        'error.fits_already', 'error.too_heavy', 'error.too_small', 'error.too_big', 'error.not_watertight', 'error.edit_failed', 'error.too_tall', 'error.pieces_too_small', 'warn.wall_thin', 'error.too_short', 'warn.small_foot', 'warn.solid_bottle', 'warn.label_failed', 'warn.joint_no_room', 'warn.segment_split', 'error.segments_too_short'];
     $i18n = collect(['check.page.max', 'toolpage.status.empty', 'param.too_fast'])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb']])])
         ->merge(collect($keys)->mapWithKeys(fn ($k) => ['edit.'.$op.'.'.$k => \Illuminate\Support\Facades\Lang::has('edit.'.$op.'.'.$k) ? \App\Support\NextStep::text('edit.'.$op.'.'.$k) : \App\Support\NextStep::text('edit.'.$k)]))->all();
     $sections = ['file' => __('toolpage.section.file'), 'settings' => __('toolpage.section.settings'), 'result' => __('toolpage.section.result')];
-    $icon = ['split' => 'scissors', 'hollow' => 'box', 'life_size' => 'maximize', 'scale' => 'maximize', 'puzzle' => 'grid-3x3', 'holder' => 'box', 'potion' => 'sparkles'][$op] ?? 'box';
+    $icon = ['split' => 'scissors', 'hollow' => 'box', 'life_size' => 'maximize', 'scale' => 'maximize', 'puzzle' => 'grid-3x3', 'holder' => 'box', 'potion' => 'sparkles', 'flexi_cut' => 'link'][$op] ?? 'box';
 @endphp
 
 @extends('tools.page', ['tool' => $op === 'holder' ? 'holder_model' : $op, 'module' => 'edit', 'lead' => __('edit.'.$op.'.lead'), 'available' => $available, 'unavailable' => __('edit.unavailable'), 'goLabel' => \App\Support\NextStep::text('param.go'),
@@ -96,6 +96,22 @@
                 @endforeach
             </div>
         @endif
+        @if($op === 'flexi_cut')
+            <fieldset>
+                <legend class="lbl">{{ __('edit.c.axis') }}</legend>
+                <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
+                    @foreach($choices['axis'] as $i => $o)
+                        <label class="tool-choice"><input type="radio" name="c-axis" data-choice="axis" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('edit.o.axis.'.$o) }}</label>
+                    @endforeach
+                </div>
+            </fieldset>
+            <div class="grid gap-3">
+                @include('tools._num', ['key' => 'segments', 'f' => $fields['segments'], 'label' => __('edit.f.segments'), 'unit' => '', 'when' => ''])
+                @include('tools._num', ['key' => 'ball_d', 'f' => $fields['ball_d'], 'label' => __('edit.f.ball_d'), 'unit' => 'mm', 'when' => ''])
+                @include('tools._num', ['key' => 'clearance', 'f' => $fields['clearance'], 'label' => __('edit.f.clearance.flexi'), 'unit' => 'mm', 'when' => ''])
+                @include('tools._num', ['key' => 'height', 'f' => $fields['height'], 'label' => __('edit.f.height.flexi'), 'unit' => 'mm', 'when' => ''])
+            </div>
+        @endif
         @if($op === 'potion')
             <div class="grid gap-3">
                 @include('tools._num', ['key' => 'height', 'f' => $fields['height'], 'label' => __('edit.f.height.potion'), 'unit' => 'mm', 'when' => ''])
@@ -169,7 +185,7 @@
                 <p class="hint mt-1 !text-xs" id="edit-joint-hint"></p>
             </fieldset>
         @endif
-        @if($op === 'hollow' || $op === 'holder' || $op === 'potion')
+        @if($op === 'hollow' || $op === 'holder' || $op === 'potion' || $op === 'flexi_cut')
             @if($op === 'hollow')
             <label class="flex items-start gap-3 text-sm text-ink">
                 <input data-flag="drain" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" checked>

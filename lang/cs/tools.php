@@ -64,6 +64,9 @@ return [
     'potion.title' => 'Lektvarová láhev z modelu',
     'potion.hint' => 'Z figurky, lebky nebo čehokoli uděláme dutou láhev s hrdlem, zátkou a štítkem. Dekorace, hračka, dárek.',
     'potion.action' => 'Udělat láhev',
+    'flexi_cut.title' => 'Flexi z modelu',
+    'flexi_cut.hint' => 'Model rozřezaný na články s kulovými klouby, které se tisknou najednou v složeném stavu. Ohebná hračka z vlastní figurky.',
+    'flexi_cut.action' => 'Udělat flexi',
 
     'cats' => [
         'images' => 'Obrázky a loga',
@@ -118,5 +121,6 @@ return [
         'puzzle' => 'puzzle skládačka reliéf fotka logo litofanie díly zámky hračka dárek děti',
         'holder_model' => 'držák obal plechovka koozie kelímek zmrzlina mýdlenka mýdlo svíčka figurka busta dutina z modelu',
         'potion' => 'lektvar láhev lahvička elixír zátka korek hrdlo štítek figurka lebka halloween dárek dutá',
+        'flexi_cut' => 'flexi ohebný kloub články kulový kloub print in place hračka drak had ještěrka figurka',
     ],
 ];

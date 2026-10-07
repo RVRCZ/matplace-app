@@ -294,6 +294,32 @@ class ModelEditTest extends TestCase
         $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'potion', 'neck_d' => 5])->assertStatus(422);
     }
 
+    public function test_a_long_model_becomes_a_flexi_with_ball_joints_printed_in_place(): void
+    {
+        $this->get('/tools/flexi-cut')->assertOk()->assertSee(__('tools.flexi_cut.title'))->assertSee('data-module="edit"', false)->assertSee(__('edit.o.axis.auto'));
+        $uuid = $this->box(120, 20, 14, 'bar.stl');
+        $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'flexi_cut', 'segments' => 5, 'ball_d' => 8])->assertCreated();
+        $r->assertJsonPath('file.kind', 'flexi_cut')->assertJsonPath('file.status', 'ready');
+        $this->assertSame(['segment_1', 'segment_2', 'segment_3', 'segment_4', 'segment_5'], $r->json('file.parts'));
+        $e = $r->json('file.edit');
+        $this->assertSame(['x', 5, 4], [$e['axis'], $e['segments'], $e['joined']]);
+        $this->assertSame([24.0, 48.0, 72.0, 96.0], array_map('floatval', $e['cuts']));
+        $this->assertSame([], $e['warnings']);
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        // printed assembled: the whole bar is still 120 mm, the segments sit in their places with a gap between them
+        $this->assertEqualsWithDelta(120, $file->bbox['x'], 0.1);
+        $this->assertTrue(StlTopology::check($file->absoluteStlPath())['watertight']);
+        $this->assertCount(5, $e['pieces_tris']);                                                     // five bodies in one file
+        $this->assertEqualsWithDelta(120 * 20 * 14, $file->volume_mm3, 120 * 20 * 14 * 0.05);           // the gaps and the sockets take a little, the balls give a little
+        // a thin model has no room for joints; too many segments are refused
+        $thin = $this->box(80, 8, 6, 'thin.stl');
+        $touch = $this->postJson('/api/files/'.$thin.'/edit', ['op' => 'flexi_cut', 'segments' => 4, 'ball_d' => 6])->assertCreated();
+        $this->assertSame(0, $touch->json('file.edit.joined'));
+        $this->assertContains('joint_no_room', $touch->json('file.edit.warnings'));
+        $this->assertStringStartsWith('segments_too_short', (string) $this->postJson('/api/files/'.$thin.'/edit', ['op' => 'flexi_cut', 'segments' => 20, 'ball_d' => 10])->assertCreated()->json('file.error'));
+        $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'flexi_cut', 'axis' => 'w'])->assertStatus(422);
+    }
+
     public function test_a_model_with_a_hole_is_closed_before_it_is_cut(): void
     {
         $path = sys_get_temp_dir().'/mp_bust_'.uniqid().'.stl';

@@ -64,6 +64,9 @@ return [
     'potion.title' => 'Potion bottle from a model',
     'potion.hint' => 'A figure, a skull or anything becomes a hollow bottle with a neck, a cork and a label. Decoration, toy, gift.',
     'potion.action' => 'Make a bottle',
+    'flexi_cut.title' => 'Flexi from a model',
+    'flexi_cut.hint' => 'A model cut into segments with ball joints, printed in one go assembled. A bendy toy out of your own figure.',
+    'flexi_cut.action' => 'Make a flexi',
 
     'cats' => [
         'images' => 'Pictures and logos',
@@ -118,5 +121,6 @@ return [
         'puzzle' => 'puzzle jigsaw relief photo logo lithophane pieces knobs toy gift children',
         'holder_model' => 'holder sleeve koozie can pint ice cream soap dish candle figure bust cavity from model',
         'potion' => 'potion bottle elixir cork neck label figure skull halloween gift hollow',
+        'flexi_cut' => 'flexi articulated ball joint segments print in place toy dragon snake lizard figure',
     ],
 ];

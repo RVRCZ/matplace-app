@@ -64,6 +64,9 @@ return [
     'potion.title' => 'Botella de poción de un modelo',
     'potion.hint' => 'Una figura, una calavera o cualquier cosa se convierte en una botella hueca con cuello, corcho y etiqueta. Decoración, juguete, regalo.',
     'potion.action' => 'Hacer una botella',
+    'flexi_cut.title' => 'Flexi de un modelo',
+    'flexi_cut.hint' => 'Un modelo cortado en segmentos con articulaciones de bola, impreso de una vez ya montado. Un juguete flexible de su propia figura.',
+    'flexi_cut.action' => 'Hacer un flexi',
 
     'cats' => [
         'images' => 'Imágenes y logos',
@@ -118,5 +121,6 @@ return [
         'puzzle' => 'puzle rompecabezas relieve foto logotipo litofanía piezas pestañas juguete regalo niños',
         'holder_model' => 'soporte funda lata tarrina helado jabonera jabón vela figura busto hueco de modelo',
         'potion' => 'poción botella elixir corcho cuello etiqueta figura calavera halloween regalo hueca',
+        'flexi_cut' => 'flexi articulado articulación de bola segmentos print in place juguete dragón serpiente lagarto figura',
     ],
 ];

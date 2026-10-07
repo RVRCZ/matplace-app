@@ -16,7 +16,7 @@ interface Cfg { op: string; upload: string; files: string; parts: string; home: 
 interface Analysis { bbox: { x: number; y: number; z: number }; fits: boolean; planes: Record<'x' | 'y' | 'z', number[]> | null; pieces: number | null; too_many: boolean; repaired: boolean; factor?: number; scaled?: number[]; hollow?: boolean; wall?: number }
 interface MapPiece { n: number; part: string; cell: number[]; lo: number[]; hi: number[]; volume_mm3: number; down: [string, number] | null; number_at: number[] | null }
 interface Hollow { wall: number; pitch: number; cavity_mm3: number; saved_g: number; drains: number; drain_at: number[][]; drain_d: number }
-interface Report { op: string; stage?: string; planes?: Record<string, number[]>; joint?: string; pins?: number; keys?: number; pieces?: number; cells?: number[]; model?: number[]; warnings?: string[]; map?: MapPiece[]; too_big?: string[]; repaired?: boolean; parts?: string[]; pieces_tris?: Piece[]; volume_in_mm3?: number; hollow?: Hollow | null; factor?: number; scaled?: number[]; grams?: number; rows?: number; cols?: number; lock?: string; knob?: number; clearance?: number; frame?: { rim: number; base: number; height: number } | null; cavity?: string; cavity_mm?: Record<string, number>; min_wall?: number; floor?: number; grow_to?: number; bottle?: number[]; neck?: { d: number; h: number }; cut_mm?: number; wall?: number; cork?: { h: number }; label?: { w: number; h: number; text: string } }
+interface Report { op: string; stage?: string; planes?: Record<string, number[]>; joint?: string; pins?: number; keys?: number; pieces?: number; cells?: number[]; model?: number[]; warnings?: string[]; map?: MapPiece[]; too_big?: string[]; repaired?: boolean; parts?: string[]; pieces_tris?: Piece[]; volume_in_mm3?: number; hollow?: Hollow | null; factor?: number; scaled?: number[]; grams?: number; rows?: number; cols?: number; lock?: string; knob?: number; clearance?: number; frame?: { rim: number; base: number; height: number } | null; cavity?: string; cavity_mm?: Record<string, number>; min_wall?: number; floor?: number; grow_to?: number; bottle?: number[]; neck?: { d: number; h: number }; cut_mm?: number; wall?: number; cork?: { h: number }; label?: { w: number; h: number; text: string }; axis?: string; segments?: number; ball_d?: number; joined?: number; cuts?: number[] }
 type Edited = FileInfo & { edit?: Report | null; tool?: { kind: string; params: Record<string, unknown> & { each?: number[][]; parts?: string[] }; url: string } | null };
 
 // the pieces in calm colours that read as different, the pins and keys grey
@@ -195,6 +195,7 @@ export function bootEdit(stage: Stage): void {
         if (part === 'body') return t('part.body');
         if (part === 'frame') return t('part.frame');
         if (part === 'cork') return t('part.cork');
+        if (part.startsWith('segment_')) return t('part.segment', { n: part.slice(8) });
         if (part === 'label') return t('part.label');
         if (part.startsWith('piece_')) return t('part.piece', { n: part.slice(6) });
         return part;
@@ -246,6 +247,10 @@ export function bootEdit(stage: Stage): void {
             lines.push(r.hollow.drains ? t('report.drains', { d: nf.format(r.hollow.drain_d), n: r.hollow.drains }) : t('report.none'));
             if ((r.warnings ?? []).includes('coarse_grid')) lines.push(t('report.coarse', { p: nf.format(r.hollow.pitch) }));
         }
+        if (cfg.op === 'flexi_cut' && r.segments) {
+            lines.push(t('report', { n: r.segments, a: String(r.axis ?? '').toUpperCase(), d: nf.format(r.ball_d ?? 0), p: nf.format(r.clearance ?? 0) }));
+            lines.push((r.joined ?? 0) > 0 ? t('report.joints', { j: r.joined ?? 0, c: (r.segments ?? 1) - 1 }) : t('report.none'));
+        }
         if (cfg.op === 'potion' && r.bottle) {
             lines.push(t('report', { x: nf.format(r.bottle[0]), y: nf.format(r.bottle[1]), z: nf.format(r.bottle[2]), d: nf.format(r.neck?.d ?? 0), h: nf.format(r.neck?.h ?? 0), w: nf.format(r.wall ?? 0) }));
             lines.push(r.hollow && r.hollow.cavity_mm3 > 0 ? t('report.hollow', { c: nf.format(Math.round(r.hollow.cavity_mm3 / 1000)) }) : t('report.solid'));
@@ -280,7 +285,7 @@ export function bootEdit(stage: Stage): void {
             viewer.setSpreadAxis(null);
             viewer.setPlanes(null);
             stage.show(geom, { kind: null, pieces: r.pieces_tris ?? null });
-            viewer.getPieces().forEach((p, i) => viewer.setPieceColor(i, p.name.startsWith('piece_') ? PIECES[(Number(p.name.slice(6)) - 1) % PIECES.length] : p.name === 'body' ? null : p.name === 'frame' ? '#4A4A4F' : '#8C9199'));
+            viewer.getPieces().forEach((p, i) => viewer.setPieceColor(i, p.name.startsWith('piece_') ? PIECES[(Number(p.name.slice(6)) - 1) % PIECES.length] : p.name.startsWith('segment_') ? PIECES[(Number(p.name.slice(8)) - 1) % PIECES.length] : p.name === 'body' ? null : p.name === 'frame' ? '#4A4A4F' : '#8C9199'));
             // a hollow model looks the same outside: the x-ray shows what was done
             if ((cfg.op === 'hollow' || cfg.op === 'holder') && $('tool-xray').getAttribute('aria-pressed') !== 'true') $('tool-xray').click();
         }
@@ -294,7 +299,8 @@ export function bootEdit(stage: Stage): void {
             { label: stage.t('toolpage.download.prusa'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', href: `${open}&slicer=prusaslicer` },
         ];
         if (file.stl_url) items.push({ label: stage.t('toolpage.download.whole'), href: file.stl_url, download: `${file.name.replace(/\.[^.]+$/, '')}.stl` });
-        if ((file.parts ?? []).length > 1) {
+        // a flexi prints in one go, assembled: its segments are not offered one by one
+        if ((file.parts ?? []).length > 1 && cfg.op !== 'flexi_cut') {
             items.push({ heading: stage.t('toolpage.download.parts') });
             (file.parts ?? []).forEach((p) => items.push({ label: stage.t('toolpage.download.part', { name: partLabel(p) }), href: `${cfg.parts}/${file.uuid}/${p}.stl` }));
         }

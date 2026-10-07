@@ -27,6 +27,7 @@ modulů), `viewer.ts` (dvě nové metody), `ModelFile` (`builtForPrinting`, `pri
 | Puzzle z modelu | `/tools/puzzle` | `edit` (`edit_tool.py puzzle`) | plochý model → mřížka 2–8 × 2–8 dílků s puzzle zámky (vůle 0,2) nebo skrytými kolíky Ø 3, čísla zespodu, rámeček |
 | Držák z vlastního modelu | `/tools/holder-from-model` | `edit` (`edit_tool.py holder`, kind `holder`, karta `holder_model`) | model → výška, dutina na plechovku 330/slim/500, kelímek 473 ml, mýdlo, svíčku nebo vlastní válec/kužel; stěna měřená v pěti výškách |
 | Lektvarová láhev z modelu | `/tools/potion` | `edit` (`edit_tool.py potion`) | model → seříznuté dno, dutina, hrdlo na kuželovém nástavci, kónická zátka (`cork`), štítek s nápisem (`label`) |
+| Flexi z modelu | `/tools/flexi-cut` | `edit` (`edit_tool.py flexi_cut`) | podlouhlý model → 3–20 článků napříč osou s kulovými klouby Ø 6–10 (vůle 0,35–0,5), tiskne se najednou složené |
 
 ### Obraz z filamentu (`filament_art`)
 
@@ -161,6 +162,17 @@ dutiny. **Zátka** `cork`: kužel Ø (hrdlo − 0,5) nahoře → (hrdlo − 1,8)
 `bottle` session 2 – session 2 ještě neběží, hrdlo a zátka jsou tu zatím vlastní (prostý válec a kužel, bez závitu);
 až `bottle` vznikne, převezme je nebo naopak.
 
+### Flexi z modelu (`flexi_cut`)
+
+Osa = nejdelší rozměr (nebo volba), `segments` 3–20 (0 = délka / 2,5 Ø koule), řezy rovnoměrně; články = model ∩
+pás mezi řezy zúžený o mezeru 0,45 mm z každé strany řezu (dvě vrstvy). **Kloub** v každém řezu: střed koule
+0,7 r za rovinou uvnitř dalšího článku (na nejprostornějším místě řezu, potřeba r + vůle + 1,2 mm stěny); z dalšího
+článku se odečte koule r + vůle (dutina), do předchozího se přidá koule r a krček Ø r od jeho řezné plochy do středu
+koule. Otvor dutiny v řezné ploše má poloměr √((r+c)² − (0,7r)²) ≈ 0,76 r < r, takže koule nevypadne, a krček
+0,5 r projde s rezervou. Řez bez místa → kloub vynechán (`joint_no_room`), články se jen dotýkají. Výstup: jeden STL
+se články na místě (print‑in‑place), díly `segment_<n>` jen pro barvení v náhledu (stahují se jako celek). Článek
+kratší než Ø koule + 2 → `segments_too_short` s potřebnou délkou.
+
 ## 2. Rozhodnutí a proč
 
 1. **Filament art není kind `ParametricGenerator`**, ale vlastní generátor a modul `art`. Zadání ho tam chtělo;
@@ -230,6 +242,7 @@ Dutina a životní velikost (tentýž den):
 | `holder` busta 85 → 120 mm, svíčka Ø 80 (stěna 0, varování) | 1,1 s |
 | `potion` koule Ø 70 → 90 mm, hrdlo 24, štítek | 6,8 s |
 | `potion` busta 85 → 110 mm (dutina na mřížce 0,6 mm) | 16,5 s |
+| `flexi_cut` kapsle Ø 18 × 118 → 6 článků, 5 kloubů | 1,2 s |
 Limit 60 s ze zadání je daleko; decimaci nad 2 M jsem na skutečném modelu neměřil.
 
 ## 4. Testy
@@ -247,7 +260,8 @@ testy po změnách (`ToolPageTest`, `ToolsCatalogTest`, `SeoTest`, `ToolCardsTes
 
 ## 5. Co není ověřené
 
-- **Nic se netisklo.** K vyzkoušení na farmě: (a) vrstvený obraz 150 mm bez rámu, 4 desky 2 mm se sloupky 3 mm –
+- **Nic se netisklo.** Flexi je nejcitlivější na vůli (0,4 mm v kloubu, mezera 0,45 mm mezi články): před zařazením
+  mezi „ověřené“ vytisknout kapsli nebo hranol 120 × 20 × 14 s pěti články. K vyzkoušení na farmě dál: (a) vrstvený obraz 150 mm bez rámu, 4 desky 2 mm se sloupky 3 mm –
   drží sloupky Ø 6 na desce 2 mm, sedí na sebe bez vůle (sloupky jsou součástí zadní desky, přední deska na nich
   jen leží, bez otvoru – lepí se)? (b) kulatý rám 180 mm: vejdou se desky do okna s vůlí 0,6 mm, drží drážka na
   hřebík? (c) dělení: kolík Ø 6 v díře 6,2 (vůle 0,2) – nejde tuho ani volně? Rybinový klíč 8/5/3 s vůlí 0,2 ve
@@ -280,9 +294,9 @@ kreslené z lokálního katalogu cívek (37 PLA+); na produkci se nepřekresluj�
 
 Hotové: `/tools/filament-art` (oba režimy, rám, LED, návod), `/tools/split` (podložky, roviny, kolíky, rybiny,
 čísla, položení, mapa), `/tools/hollow`, `/tools/life-size`, `/tools/puzzle` (zámky, kolíky, čísla, rámeček; bez
-3D profilu pro vysoké modely), `/tools/holder-from-model`, `/tools/potion`, společný základ `edit_tool.py` + `ModelEditor` +
+3D profilu pro vysoké modely), `/tools/holder-from-model`, `/tools/potion`, `/tools/flexi-cut`, společný základ `edit_tool.py` + `ModelEditor` +
 `EditModel` + stránka `edit`.
-Zbývá (v pořadí, jak dává smysl): `/tools/wearable` (míra, průzory ve vieweru, drážky na popruh); `/tools/flexi-cut` a `/tools/flexi`;
+Zbývá (v pořadí, jak dává smysl): `/tools/wearable` (míra, průzory ve vieweru, drážky na popruh); `/tools/flexi` (zvíře z primitiv);
 `/tools/colors` (barvený 3MF, `ThreeMfConverter` čtení barev); rozšíření `relief` (9 tvarů, lampa, náhled
 s podsvícením); `soap` podle stopy; `/tools/slider`.
 

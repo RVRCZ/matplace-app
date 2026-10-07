@@ -10,6 +10,7 @@ Editing a ready model (manifold3d, exact mm): the "I have a file" tools of matpl
     edit_tool.py puzzle    <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
     edit_tool.py holder    <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
     edit_tool.py potion    <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
+    edit_tool.py flexi_cut <in.stl> <out.stl> <params-json | @file> [<parts-dir>]
 
 The model is loaded (any unit guess as in mesh_tool.load), closed when it is not (mesh_tool.solidify: pymeshfix, union,
 or a rebuild through a grid, the way the farm does it) and turned into an exact solid. Very heavy models are thinned
@@ -44,6 +45,11 @@ holder    A holder out of a model (a koozie, an ice-cream pint sleeve, a soap di
 potion    A potion bottle out of a model: the model scaled to `height` mm, its bottom cut flat (`cut` % of the height),
           hollowed with `wall` mm, a neck of `neck_d` × `neck_h` on top opening into the cavity, a tapered cork (part `cork`)
           and, with `label`, a rounded label plate with `text` raised on it (part `label`, glued on). Parts: body, cork, label.
+flexi_cut A model cut into `segments` (3–20, 0 = by the ball) across its longest axis (or `axis` x | y | z), with a
+          ball joint in every cut: a ball of `ball_d` (6–10) on a neck on one segment, a socket with `clearance`
+          (0.35–0.5) in the other, the segments `gap` apart. Printed in one go, assembled (print in place); the answer
+          keeps the segments as pieces in their places, so the page can paint them. A cut too thin for the joint
+          is said so, and that joint is left out (the segments then only touch).
 analyse   Only the plan: size, whether the model is closed, how many cuts the bed needs and where (no booleans); with
           `height` also what the scaled model would come to.
 
@@ -84,6 +90,7 @@ CAVITIES = {
     "custom": {"d": 60.0, "d2": 60.0, "depth": 80.0},
 }
 MIN_WALL = 2.0
+FLEXI_GAP = 0.45                             # mm between the segments of a flexi (two layers of play)
 SURFACE_OFFSET = 1.1                         # cells: how far inside the true surface the centre of a surface cell lies (calibrated on a cube and a sphere)
 KEEP_AT_CUT = 6.0                            # mm: a life-size model stays solid this far on each side of a cutting plane, so pins have something to sit in
 COLLAR_DEEP = 13.0                           # mm: and that collar reaches this deep under the surface (a pin of Ø 6 with 2.5 mm of wall round it)
@@ -1160,6 +1167,98 @@ def potion(src, dst, p, parts_dir):
     finish(M, "potion", dst, laid, notes, parts_dir)
 
 
+# ── flexi cut ──────────────────────────────────────────────────────────────────────────────────────────────────────
+
+def sphere_at(M, r, x, y, z, n=48):
+    return M.Manifold.sphere(r, n).translate([x, y, z])
+
+
+def flexi_cut(src, dst, p, parts_dir):
+    import manifold3d as M
+    notes = {"warnings": []}
+    warn = notes["warnings"]
+    man, m = load_solid(src, dst, notes)
+    ext = [float(v) for v in m.extents]
+    factor = factor_of(p, ext) if p.get("height") else 1.0
+    solid, big = scaled(M, man, m, factor)
+    ext = [float(v) for v in big.extents]
+    axis = p.get("axis") or "auto"
+    if axis not in ("auto", "x", "y", "z"):
+        raise Invalid("bad_choice", "axis")
+    if axis == "auto":
+        axis = "xyz"[int(max(range(3), key=lambda i: ext[i]))]
+    ai = "xyz".index(axis)
+    length = ext[ai]
+    ball_d = float(p.get("ball_d", 8.0))
+    if not 6.0 <= ball_d <= 10.0:
+        raise Invalid("out_of_range", "ball_d 6-10")
+    clr = float(p.get("clearance", 0.4))
+    if not 0.35 <= clr <= 0.5:
+        raise Invalid("out_of_range", "clearance 0.35-0.5")
+    gap = float(p.get("gap", FLEXI_GAP))
+    segments = int(p.get("segments", 0))
+    if segments == 0:
+        segments = int(max(3, min(20, round(length / (ball_d * 2.5)))))
+    if not 3 <= segments <= 20:
+        raise Invalid("out_of_range", "segments 3-20")
+    seg_len = length / segments
+    r = ball_d / 2
+    if seg_len < 2 * r + 2.0:
+        raise Invalid("segments_too_short", "%.0f" % (segments * (2 * r + 2.0)))
+    cuts = [seg_len * i for i in range(1, segments)]
+    stage(dst, "cutting")
+    # ── the segments: slabs across the axis, a gap wide apart ────────────────────────────────────────────────────
+    def slab(lo, hi):
+        size = [ext[0] + 2, ext[1] + 2, ext[2] + 2]
+        size[ai] = hi - lo
+        at = [-1.0, -1.0, -1.0]
+        at[ai] = lo
+        return M.Manifold.cube(size).translate(at)
+    bounds = [0.0] + cuts + [length]
+    segs = []
+    for i in range(segments):
+        lo = bounds[i] + (gap / 2 if i > 0 else -1.0)
+        hi = bounds[i + 1] - (gap / 2 if i < segments - 1 else -1.0)
+        piece = solid ^ slab(lo, hi)
+        if piece.is_empty() or piece.volume() < MIN_PIECE:
+            raise Invalid("empty_result")
+        bodies = piece.decompose()
+        if len(bodies) > 1:
+            piece = max(bodies, key=lambda b: b.volume())
+            if "segment_split" not in warn:
+                warn.append("segment_split")
+        segs.append(piece)
+    # ── the joints: a ball on a neck out of one segment, a socket in the next ─────────────────────────────────────
+    stage(dst, "joints")
+    joints = []
+    for i, at in enumerate(cuts):
+        section = turned(M, solid, axis).slice(at)
+        need = r + clr + 1.2                                  # the socket and a wall round it
+        where = spots(M, section, need, 1)
+        if not where:
+            joints.append({"at": round(at, 2), "ok": False})
+            if "joint_no_room" not in warn:
+                warn.append("joint_no_room")
+            continue
+        u, v = where[0]
+        # the ball's centre lies 0.7 r beyond the plane, inside the next segment: the socket's opening is narrower than the ball
+        depth = 0.7 * r
+        cx, cy, cz = to3d(axis, at + gap / 2 + depth, u, v)
+        socket = sphere_at(M, r + clr, cx, cy, cz)
+        segs[i + 1] = segs[i + 1] - socket
+        ball = sphere_at(M, r, cx, cy, cz)
+        neck_len = gap + depth + 1.0
+        neck = cylinder_along(M, axis, at - gap / 2 + neck_len / 2 - 1.0, u, v, neck_len, 0.5 * r)
+        # the neck must not touch the socket's rim: it is thinner than the opening
+        segs[i] = segs[i] + ball + neck
+        joints.append({"at": round(at, 2), "ok": True, "u": round(u, 1), "v": round(v, 1), "room": round(room_at(section, u, v), 1)})
+    pieces = [("segment_%d" % (i + 1), s) for i, s in enumerate(segs)]
+    notes.update({"axis": axis, "segments": segments, "ball_d": ball_d, "clearance": clr, "gap": gap, "cuts": [round(c, 2) for c in cuts], "joints": joints,
+                  "joined": sum(1 for j in joints if j["ok"]), "factor": round(factor, 4), "model": [round(v, 1) for v in ext], "volume_in_mm3": round(solid.volume(), 1),
+                  "cells": [segments if axis == "x" else 1, segments if axis == "y" else 1, segments if axis == "z" else 1]})
+    finish(M, "flexi_cut", dst, pieces, notes, parts_dir)
+
+
 def main(argv):
     if len(argv) < 4:
         out({"ok": False, "error": "usage", "code": "usage"})
@@ -1179,7 +1278,7 @@ def main(argv):
         p = json.loads(raw or "{}")
         if not isinstance(p, dict):
             raise Invalid("unknown_kind")
-        commands = {"split": split, "hollow": hollow, "scale": scale, "life_size": life_size, "puzzle": puzzle, "holder": holder, "potion": potion}
+        commands = {"split": split, "hollow": hollow, "scale": scale, "life_size": life_size, "puzzle": puzzle, "holder": holder, "potion": potion, "flexi_cut": flexi_cut}
         if op not in commands:
             raise Invalid("unknown_kind", op)
         commands[op](src, dst, p, parts_dir)

@@ -197,6 +197,9 @@ return [
     // a potion bottle out of a model: a bellied vase of the vase tool with a neck, a cork and a label
     'potion' => ['route' => 'tools.potion', 'intent' => 'file', 'categories' => ['edit', 'toys', 'craft'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'potion', 'kind' => 'vase', 'preset' => 'belly', 'params' => ['height' => 100, 'top_d' => 40, 'bottom_d' => 50], 'edit_params' => ['neck_d' => 22, 'neck_h' => 24, 'cut' => 0, 'text' => 'Elixir', 'label' => true]]],
+    // a flexi out of a model: a big letter I of the letter tool, cut into segments with ball joints
+    'flexi_cut' => ['route' => 'tools.flexi_cut', 'intent' => 'file', 'categories' => ['edit', 'toys'], 'available' => true, 'seo' => ['examples' => []],
+        'card' => ['edit' => 'flexi_cut', 'kind' => 'name_letter', 'params' => ['line1' => 'Ivo', 'height' => 140, 'thickness' => 14], 'edit_params' => ['segments' => 5, 'ball_d' => 8]]],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => false],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only

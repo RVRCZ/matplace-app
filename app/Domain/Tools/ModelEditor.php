@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  */
 final class ModelEditor
 {
-    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'scale'];
+    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'scale'];
 
     /** print beds a model is cut for: the farm's, two common ones, or the visitor's own (usable size = bed − margins) */
     public const BEDS = ['farm' => [250, 250, 250], '220' => [220, 220, 250], '180' => [180, 180, 180], 'custom' => null];
@@ -40,6 +40,8 @@ final class ModelEditor
         'holder' => ['height' => [0, 400, 0, 1], 'clearance' => [0.3, 1.5, 0.6, 0.1], 'cav_d' => [20, 150, 60, 0.5], 'cav_d2' => [20, 150, 60, 0.5], 'cav_depth' => [10, 200, 80, 1], 'cav_w' => [20, 150, 90, 1], 'cav_l' => [20, 150, 60, 1], 'cav_x' => [-100, 100, 0, 1], 'cav_y' => [-100, 100, 0, 1]],
         // a potion bottle: the model's height (0 = as it is), the wall, the neck, how much of the bottom is cut flat
         'potion' => ['height' => [0, 300, 0, 1], 'wall' => [1.5, 4, 2, 0.5], 'neck_d' => [12, 60, 26, 1], 'neck_h' => [10, 80, 30, 1], 'cut' => [0, 30, 4, 1]],
+        // a flexi: how many segments (0 = by the ball), the ball of the joints, the play in the sockets, the model's height (0 = as it is)
+        'flexi_cut' => ['segments' => [0, 20, 0, 1], 'ball_d' => [6, 10, 8, 0.5], 'clearance' => [0.35, 0.5, 0.4, 0.05], 'height' => [0, 300, 0, 1]],
         'scale' => ['height' => [10, 1000, 300, 1]],
     ];
 
@@ -48,6 +50,7 @@ final class ModelEditor
         'life_size' => ['bed' => ['farm', '220', '180', 'custom'], 'joint' => ['pins', 'dovetail', 'none']],
         'puzzle' => ['lock' => ['tabs', 'pins']],
         'holder' => ['cavity' => ['can330', 'slim330', 'can500', 'pint', 'soap', 'candle', 'custom']],
+        'flexi_cut' => ['axis' => ['auto', 'x', 'y', 'z']],
     ];
 
     public const FLAGS = ['split' => ['numbers', 'lay'], 'hollow' => ['drain'], 'life_size' => ['hollow', 'numbers', 'lay'], 'puzzle' => ['numbers', 'frame'], 'holder' => ['cav_depth_own'], 'potion' => ['label']];
@@ -163,6 +166,9 @@ final class ModelEditor
             if ((float) $clean['height'] <= 0) {
                 unset($p['height']);
             }
+        }
+        if ($op === 'flexi_cut' && (float) $clean['height'] <= 0) {
+            unset($p['height']);
         }
         if ($op === 'holder') {
             // the preset's own sizes unless the cavity is custom; a height of 0 keeps the model as it is
