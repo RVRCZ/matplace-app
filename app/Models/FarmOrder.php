@@ -58,7 +58,7 @@ class FarmOrder extends Model
 
     protected $fillable = [
         'quality_rating', 'quality_note', 'timelapse_path', 'kind', 'farm_printer_material_id', 'test_params',
-        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'supports', 'second_slot_id', 'second_color_id', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
+        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'supports', 'second_slot_id', 'second_color_id', 'color_changes', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
         'farm_material_id', 'farm_color_id', 'farm_printer_id', 'farm_printer_slot_id', 'delivery', 'shipping_address', 'note',
         'print_settings', 'admin_overrides', 'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'rest_gcode_path', 'slice_params', 'slice_result', 'est_minutes',
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
@@ -75,7 +75,7 @@ class FarmOrder extends Model
         'terms_accepted_at' => 'datetime', 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'queued_at' => 'datetime',
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime',
         'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',
-        'shipping_price' => 'float', 'shipped_at' => 'datetime', 'timings' => 'array',
+        'shipping_price' => 'float', 'shipped_at' => 'datetime', 'timings' => 'array', 'color_changes' => 'array',
     ];
 
     /** What the customer pays (or paid), in the order's own currency. */
@@ -179,13 +179,76 @@ class FarmOrder extends Model
         return $z ? round((float) $z * (float) ($this->unit_scale ?: 1) * (float) ($this->scale ?: 1), 3) : null;
     }
 
-    /** @return array{slot:int, z:float}|null what the G-code copy for the printer has to switch to, and where */
+    /** The most spools one print may use, the first one counted: one ACE holds four. */
+    public const MAX_COLORS = 4;
+
+    /**
+     * What the design asks for, as printed: every height at which the colour changes, bottom to top, with the hex and
+     * the spool code it was designed in. A plate with a text has one, a picture in filament colours one per colour.
+     *
+     * @return list<array{z: float, hex: string, code: ?string}>
+     */
+    public function wantedChanges(): array
+    {
+        $file = $this->modelFile;
+
+        return $file ? $file->colorChanges((float) ($this->unit_scale ?: 1) * (float) ($this->scale ?: 1)) : [];
+    }
+
+    /**
+     * The spools the customer chose for the changes, bottom to top, as stored with the order. An older order carries
+     * its one second colour in second_slot_id.
+     *
+     * @return list<array{z: float, slot_id: int, color_id: int}>
+     */
+    public function colorSlots(): array
+    {
+        $out = [];
+        foreach ((array) $this->color_changes as $c) {
+            if (is_array($c) && isset($c['z'], $c['slot_id'], $c['color_id'])) {
+                $out[] = ['z' => round((float) $c['z'], 3), 'slot_id' => (int) $c['slot_id'], 'color_id' => (int) $c['color_id']];
+            }
+        }
+        if (! $out && ($z = $this->colorChangeMm()) && $this->second_slot_id) {
+            $out[] = ['z' => $z, 'slot_id' => (int) $this->second_slot_id, 'color_id' => (int) $this->second_color_id];
+        }
+
+        return $out;
+    }
+
+    /**
+     * What the G-code copy for the printer switches to and where (tool numbers of this machine), bottom to top. A spool
+     * of another machine is skipped (the order moved since), a change to the spool already printing is no change.
+     *
+     * @return list<array{slot:int, z:float}>
+     */
+    public function colorChanges(): array
+    {
+        $rows = $this->colorSlots();
+        if (! $rows) {
+            return [];
+        }
+        $slots = FarmPrinterSlot::whereIn('id', array_column($rows, 'slot_id'))->get()->keyBy('id');
+        $current = (int) ($this->slot?->slot ?? 0);
+        $out = [];
+        foreach ($rows as $r) {
+            $s = $slots->get($r['slot_id']);
+            if (! $s || (int) $s->farm_printer_id !== (int) $this->farm_printer_id) {
+                continue;
+            }
+            if ((int) $s->slot !== $current) {
+                $out[] = ['slot' => (int) $s->slot, 'z' => $r['z']];
+                $current = (int) $s->slot;
+            }
+        }
+
+        return $out;
+    }
+
+    /** @return array{slot:int, z:float}|null the first change, for code that knew only one; see colorChanges() */
     public function colorChange(): ?array
     {
-        $z = $this->colorChangeMm();
-        $second = $this->second_slot_id ? $this->secondSlot : null;
-
-        return $z && $second && $second->id !== $this->farm_printer_slot_id ? ['slot' => (int) $second->slot, 'z' => $z] : null;
+        return $this->colorChanges()[0] ?? null;
     }
 
     /** The tuning row (printer × kind, or printer × spool) a test print was made for. */

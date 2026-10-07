@@ -13,33 +13,80 @@ use App\Models\FarmMaterial;
  */
 final class GcodeSlot
 {
+    /** ;LAYER_CHANGE / ;Z:<top of the layer> / ;HEIGHT:<its thickness> */
+    private const LAYER = '/^;LAYER_CHANGE[ \t]*\r?\n;Z:([\d.]+)[ \t]*\r?\n;HEIGHT:([\d.]+)[ \t]*\r?$/m';
+
+    /**
+     * The colours of a print as the machine swaps them: `T<n>` at the first layer that lies wholly above each change
+     * height, bottom to top. It is the line OrcaSlicer itself writes for these machines on a filament change (their
+     * change_filament_gcode is `T[next_extruder]`, the firmware does the cutting and the purging). Two changes that
+     * fall into one layer: the upper one wins; a change to the slot already printing is not written.
+     *
+     * @param  list<array{slot:int, z:float}>  $changes
+     */
+    public static function colorChanges(string $gcode, array $changes): string
+    {
+        $changes = array_values(array_filter($changes, fn ($c) => is_array($c) && isset($c['slot'], $c['z']) && (float) $c['z'] > 0));
+        if (! $changes) {
+            return $gcode;
+        }
+        usort($changes, fn ($a, $b) => $a['z'] <=> $b['z']);
+        // every layer: where its block ends in the file and the height of its middle
+        $layers = [];
+        $pos = 0;
+        while (preg_match(self::LAYER, $gcode, $m, PREG_OFFSET_CAPTURE, $pos)) {
+            $pos = $m[0][1] + strlen($m[0][0]);
+            $layers[] = ['at' => $pos, 'mid' => (float) $m[1][0] - (float) $m[2][0] / 2];
+        }
+        if (! $layers) {
+            return $gcode;
+        }
+        $at = [];                                           // layer index → slot; the upper change of one layer wins
+        foreach ($changes as $c) {
+            foreach ($layers as $i => $l) {
+                // the slicer cuts a layer in its middle: the first layer whose middle is above the change is all new colour
+                if ($l['mid'] >= (float) $c['z'] - 0.001) {
+                    $at[$i] = (int) $c['slot'];
+                    break;
+                }
+            }
+        }
+        ksort($at);
+        $write = [];
+        $current = self::startSlot($gcode);
+        foreach ($at as $i => $slot) {
+            if ($slot !== $current) {
+                $write[$i] = $slot;
+                $current = $slot;
+            }
+        }
+        krsort($write);                                     // from the end of the file, so the earlier offsets stay valid
+        foreach ($write as $i => $slot) {
+            $gcode = self::insertAfterLayerChange($gcode, $layers[$i]['at'], 'T'.$slot.' ; colour change by matplace farm');
+        }
+
+        return $gcode;
+    }
+
     /**
      * The second colour of a plate with a raised text: `T<n>` at the first layer that lies wholly above the plate.
-     * It is the line OrcaSlicer itself writes for these machines on a filament change (their change_filament_gcode is
-     * `T[next_extruder]`, the firmware does the cutting and the purging).
      *
      * @param  array{slot:int, z:float}  $change
      */
     public static function secondColor(string $gcode, array $change): string
     {
-        $pos = 0;
-        $found = null;
-        // ;LAYER_CHANGE / ;Z:<top of the layer> / ;HEIGHT:<its thickness>
-        while (preg_match('/^;LAYER_CHANGE[ \t]*\r?\n;Z:([\d.]+)[ \t]*\r?\n;HEIGHT:([\d.]+)[ \t]*\r?$/m', $gcode, $m, PREG_OFFSET_CAPTURE, $pos)) {
-            $top = (float) $m[1][0];
-            $height = (float) $m[2][0];
-            $pos = $m[0][1] + strlen($m[0][0]);
-            // the slicer cuts a layer in its middle: the first layer whose middle is above the plate is all text
-            if ($top - $height / 2 >= $change['z'] - 0.001) {
-                $found = $pos;
-                break;
-            }
-        }
-        if ($found === null) {
-            return $gcode;
-        }
-        $line = 'T'.$change['slot'].' ; second colour by matplace farm';
-        // after the slicer's own layer change block, when it is there, so the nozzle is already at the new height
+        return self::colorChanges($gcode, [$change]);
+    }
+
+    /** The slot the print starts in: the tool line retarget() wrote (or the slicer's own), else 0. */
+    private static function startSlot(string $gcode): ?int
+    {
+        return preg_match('/^T(\d)[ \t]*(?:;.*)?$/m', $gcode, $m) ? (int) $m[1] : null;
+    }
+
+    /** A line after the slicer's own layer-change block, when it is there, so the nozzle is already at the new height. */
+    private static function insertAfterLayerChange(string $gcode, int $found, string $line): string
+    {
         if (preg_match('/\G(?:(?!^;LAYER_CHANGE|^;TYPE:).*\r?\n){0,120}?^; AFTER_LAYER_CHANGE.*\r?\n/m', $gcode, $a, 0, $found + 1)) {
             $found = $found + 1 + strlen($a[0]);
 
@@ -87,15 +134,20 @@ final class GcodeSlot
         return $of && $of->nozzle_temp ? ['nozzle' => (int) $of->nozzle_temp, 'nozzle_first' => (int) $of->nozzle_temp_first, 'bed' => (int) $of->bed_temp] : [];
     }
 
-    /** Writes the retargeted copy next to the original and returns its path (the original when nothing changes). */
-    public static function fileFor(string $gcodePath, int $slot, array $temps = [], ?array $change = null): string
+    /**
+     * Writes the retargeted copy next to the original and returns its path (the original when nothing changes).
+     *
+     * @param  array{slot:int, z:float}|list<array{slot:int, z:float}>|null  $changes  one change (older callers) or the list of them
+     */
+    public static function fileFor(string $gcodePath, int $slot, array $temps = [], ?array $changes = null): string
     {
+        $changes = $changes === null ? [] : (isset($changes['slot']) ? [$changes] : array_values($changes));
         $tag = '.slot'.$slot.(! empty($temps['nozzle']) ? '-'.$temps['nozzle'].'-'.(int) ($temps['bed'] ?? 0) : '')
-            .($change ? '.then'.$change['slot'].'at'.str_replace('.', '_', (string) $change['z']) : '');
+            .($changes ? '.then'.implode('_', array_map(fn ($c) => $c['slot'].'at'.str_replace('.', '_', (string) $c['z']), $changes)) : '');
         $target = preg_replace('/\.gcode$/', '', $gcodePath).$tag.'.gcode';
         if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {
             $gcode = self::retarget((string) file_get_contents($gcodePath), $slot, $temps);
-            file_put_contents($target, $change ? self::secondColor($gcode, $change) : $gcode);
+            file_put_contents($target, $changes ? self::colorChanges($gcode, $changes) : $gcode);
         }
 
         return $target;

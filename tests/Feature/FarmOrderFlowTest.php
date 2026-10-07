@@ -14,6 +14,7 @@ use App\Models\FarmColor;
 use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
+use App\Models\FarmPrinterSlot;
 use App\Models\FarmPrintJob;
 use App\Models\ModelFile;
 use App\Models\Payment;
@@ -297,6 +298,78 @@ class FarmOrderFlowTest extends TestCase
         $this->pay($plain, ['second_slot' => $free[0]->id])->assertStatus(422);
     }
 
+    /** A picture in three filament colours one on another: two changes, each with its own spool of the first colour's machine. */
+    public function test_a_picture_in_three_colours_is_ordered_with_two_changes(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        // the S1 holds a white spool; a red and a black one of the same family join it
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $mainSlot = $s1->slots()->whereNotNull('farm_color_id')->firstOrFail();
+        $white = $mainSlot->color;
+        $white->update(['hex' => '#F4F4F0']);
+        [$red, $black] = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->where('id', '!=', $white->id)->take(2)->get()->all();
+        $red->update(['hex' => '#C01818', 'enabled' => true]);
+        $black->update(['hex' => '#101012', 'enabled' => true]);
+        $free = $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->get();
+        $this->assertGreaterThanOrEqual(2, $free->count(), 'the seeded S1 has two empty positions');
+        $free[0]->update(['farm_color_id' => $red->id, 'remaining_g' => 800, 'enabled' => true]);
+        $free[1]->update(['farm_color_id' => $black->id, 'remaining_g' => 800, 'enabled' => true]);
+
+        // a design that changes colour twice: red from 3 mm up, black from 3.4 mm up (what the picture tools store)
+        $uuid = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'sign', 'params' => ['style' => 'emboss', 'thickness' => 3, 'relief' => 1.2, 'line1' => 'Emma']])->assertCreated()->json('file.uuid');
+        $file = ModelFile::where('uuid', $uuid)->firstOrFail();
+        $file->forceFill(['tool_params' => ['color_changes' => [['z' => 3, 'hex' => '#c81c1c', 'code' => null], ['z' => 3.4, 'hex' => '#141418', 'code' => null]], 'part_colors' => ['body' => ['code' => 'white', 'hex' => '#f2f2ee']]] + $file->tool_params])->save();
+        $this->assertCount(2, $file->fresh()->colorChanges());
+
+        // the start page: a block of spools per change, the nearest spools ticked (red, then black), the plate white
+        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->getContent();
+        $this->assertStringContainsString('id="farm-second-start"', $html);
+        $this->assertStringContainsString('id="farm-change-1"', $html);
+        $this->assertStringContainsString('name="change_color[1]"', $html);
+        $this->assertStringContainsString('Barva 3 (od 3,4 mm)', $html);
+        $this->assertStringContainsString('data-changes="[3,3.4]"', $html);
+        $ticked = fn (string $name) => preg_match('/name="'.preg_quote($name, '/').'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
+        $this->assertSame($white->id, $ticked('color'));
+        $this->assertSame($red->id, $ticked('change_color[0]'));
+        $this->assertSame($black->id, $ticked('change_color[1]'));
+
+        // created with both colours: every change knows its spool, the first one doubles as the second colour of older code
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $white->id, 'change_color' => [$red->id, $black->id]])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertEquals([['z' => 3, 'slot_id' => $free[0]->id, 'color_id' => $red->id], ['z' => 3.4, 'slot_id' => $free[1]->id, 'color_id' => $black->id]], $order->color_changes);
+        $this->assertSame($free[0]->id, $order->second_slot_id);
+        $this->assertSame([['slot' => (int) $free[0]->slot, 'z' => 3.0], ['slot' => (int) $free[1]->slot, 'z' => 3.4]], $order->colorChanges());
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $this->assertSame([$free[0]->id, $free[1]->id], array_column($state['changes'], 'slot_id'));
+        $this->assertSame(4, $state['max_colors']);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
+
+        // paid with the spools of the order page: the printer's copy switches twice; a spool of another machine is refused
+        $this->credit(20000);
+        $main = collect($state['colors'])->first(fn ($c) => $c['slot'] === $mainSlot->id);
+        $this->assertNotNull($main);
+        $this->pay($order, ['slot' => $main['slot'], 'change_slots' => [$free[0]->id, $free[1]->id]])->assertOk();
+        $order->refresh();
+        $this->assertSame([['slot' => (int) $free[0]->slot, 'z' => 3.0], ['slot' => (int) $free[1]->slot, 'z' => 3.4]], $order->colorChanges());
+        $this->assertSame($free[0]->id, $order->second_slot_id);
+        $foreign = FarmPrinterSlot::where('farm_printer_id', '!=', $s1->id)->whereNotNull('farm_color_id')->first();
+        if ($foreign) {
+            $again = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $white->id])->json('url')))->firstOrFail();
+            $this->pay($again, ['slot' => $main['slot'], 'change_slots' => [$foreign->id, $free[1]->id]])->assertStatus(422);
+        }
+
+        // "print again" carries the colours over; a change left "the same" is no change, the colour before goes on
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}/repeat")->assertRedirect();
+        $back = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $white->id, 'change_color' => [$red->id, 0]])->assertCreated();
+        $one = FarmOrder::where('token', basename($back->json('url')))->firstOrFail();
+        $this->assertSame([['slot' => (int) $free[0]->slot, 'z' => 3.0]], $one->colorChanges());
+        // back to the first colour on top is a change too (A, B, A)
+        $aba = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $white->id, 'change_color' => [$red->id, $white->id]])->json('url')))->firstOrFail();
+        $this->assertSame([['slot' => (int) $free[0]->slot, 'z' => 3.0], ['slot' => (int) $mainSlot->slot, 'z' => 3.4]], $aba->colorChanges());
+    }
+
     /** A QR code in one colour cannot be read: the start page ticks the two spools of one machine nearest to the design. */
     public function test_a_qr_sign_starts_with_the_pair_of_spools_nearest_to_its_colours(): void
     {
@@ -318,26 +391,26 @@ class FarmOrderFlowTest extends TestCase
         $ticked = function (string $query, string $name): ?int {
             $html = $this->actingAs($this->user)->get('/farm?'.$query)->assertOk()->getContent();
 
-            return preg_match('/name="'.$name.'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
+            return preg_match('/name="'.preg_quote($name, '/').'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
         };
 
         $plain = $design([]);
         $this->assertSame($white->id, $ticked('file='.$plain, 'color'), 'the plate in the lightest spool');
-        $this->assertSame($black->id, $ticked('file='.$plain, 'second_color'), 'the code in the darkest spool of that machine');
+        $this->assertSame($black->id, $ticked('file='.$plain, 'change_color[0]'), 'the code in the darkest spool of that machine');
         $this->actingAs($this->user)->get('/farm?file='.$plain)->assertSee('data-want="'.ParametricGenerator::COLOR_HEX['black'].'"', false);
 
         $redCode = $design(['code_color' => 'red']);
-        $this->assertSame($red->id, $ticked('file='.$redCode, 'second_color'), 'the design asked for a red code');
+        $this->assertSame($red->id, $ticked('file='.$redCode, 'change_color[0]'), 'the design asked for a red code');
 
         $darkPlate = $design(['plate_color' => 'black', 'code_color' => 'white']);
-        $this->assertSame([$black->id, $white->id], [$ticked('file='.$darkPlate, 'color'), $ticked('file='.$darkPlate, 'second_color')]);
+        $this->assertSame([$black->id, $white->id], [$ticked('file='.$darkPlate, 'color'), $ticked('file='.$darkPlate, 'change_color[0]')]);
 
         // colours named in the address (a repeated print) are left as they are
-        $this->assertSame(0, $ticked('file='.$plain.'&color='.$red->id, 'second_color'));
+        $this->assertSame(0, $ticked('file='.$plain.'&color='.$red->id, 'change_color[0]'));
         $this->assertSame($red->id, $ticked('file='.$plain.'&color='.$red->id, 'color'));
         // a raised name reads in one colour too: nothing is ticked for it
         $sign = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'sign', 'params' => ['line1' => 'Emma']])->assertCreated()->json('file.uuid');
-        $this->assertSame(0, $ticked('file='.$sign, 'second_color'));
+        $this->assertSame(0, $ticked('file='.$sign, 'change_color[0]'));
     }
 
     /** A turtle with joints prints in place: the customer switches the supports off and the slicer is told so. */

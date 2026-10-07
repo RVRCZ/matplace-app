@@ -89,6 +89,9 @@ class OrderController extends Controller
         // a plate with a code or a text prints in two colours: the second one has to sit in the same machine (its ACE
         // changes the spool), so every colour lists the other spools of its machine that go with it
         $twoColor = $file?->colorChangeMm();
+        // every change of the design (one for a plate with a text, one per colour for a picture in filament colours)
+        $changes = $file ? $file->colorChanges() : [];
+        $twoColor = $twoColor ?? ($changes[0]['z'] ?? null);
         $colors = $offered->map(fn ($r) => [
             'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex,
             'photo' => $r['color']->photoUrl(), 'printer' => $r['printer']->name, 'bed' => (int) $r['printer']->bed_x.' × '.(int) $r['printer']->bed_y.' mm', 'enough' => $r['slot']->availableGrams() > 50,
@@ -98,13 +101,22 @@ class OrderController extends Controller
         $preselect = collect($colors)->firstWhere('id', $wantedColor)['id'] ?? ($colors[0]['id'] ?? null);
         // a QR code reads only in two colours: unless the address names the colours, the pair of spools nearest to the
         // design is ticked (a light plate, a dark code), never "one colour"
-        $secondPreselect = (int) ($old['second_color'] ?? $request->query('second'));
-        $codeColors = $twoColor ? $file->codeColors() : null;
-        if ($codeColors && ! $wantedColor && ! $secondPreselect && ($pair = self::nearestPair($colors, $codeColors))) {
-            [$preselect, $secondPreselect] = $pair;
+        // what the customer had ticked (a refused order, "print again"), else the spools nearest to the design's colours
+        $wantedChanges = array_values(array_map('intval', (array) ($old['change_color'] ?? $request->query('change', []))));
+        if (! $wantedChanges && ($one = (int) ($old['second_color'] ?? $request->query('second')))) {
+            $wantedChanges = [$one];
         }
-        // a second colour is ticked only when the machine of the first one really holds it
-        $secondPreselect = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->contains('id', $secondPreselect) ? $secondPreselect : 0;
+        $bodyHex = $file ? (($file->tool_params['part_colors']['body']['hex'] ?? null) ?: ($file->codeColors()[0] ?? null)) : null;
+        // only a design that names its colours (a picture in filament colours, a QR code) has them ticked in advance;
+        // a plate with a raised text is fine in one colour and starts that way, as it always did
+        $named = $file && (! empty($file->tool_params['color_changes']) || $file->codeColors() !== null);
+        if ($named && $changes && ! $wantedColor && ! $wantedChanges && ($near = self::nearestSet($colors, $bodyHex, array_column($changes, 'hex')))) {
+            [$preselect, $wantedChanges] = $near;
+        }
+        // a change is ticked only when the machine of the first colour really holds the spool (or it is that very colour)
+        $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
+        $changePreselect = array_map(fn ($i) => $machine->contains($wantedChanges[$i] ?? 0) ? (int) $wantedChanges[$i] : 0, array_keys($changes));
+        $secondPreselect = $changePreselect[0] ?? 0;
 
         return view('farm.start', [
             'file' => $file,
@@ -123,8 +135,11 @@ class OrderController extends Controller
             'maxScale' => (float) config('pricing.max_scale', 4),
             'colors' => $colors,
             'twoColor' => $twoColor,
+            'changes' => $changes,
+            'changePreselect' => $changePreselect,
             'secondPreselect' => $secondPreselect,
-            'codeColor' => $codeColors[1] ?? null,
+            'codeColor' => $changes[0]['hex'] ?? null,
+            'scaleNow' => $scale,
             'settings' => $this->settings->all(),
             'balance' => $this->wallet->balance($request->user()),
             // null = no daily count (the admin, or the limit switched off in the settings)
@@ -133,23 +148,40 @@ class OrderController extends Controller
     }
 
     /**
-     * The first colour and its second spool that come nearest to the wanted plate and code colours.
+     * The first colour (its machine) and a spool of that machine for every change, together nearest to the colours the
+     * design was made in. A spool may serve several changes; the first colour itself may be one of them (A, B, A).
      *
      * @param  list<array<string, mixed>>  $colors  the offer of the start page, every colour with its `seconds`
-     * @param  array{0: string, 1: string}  $wanted  hex of the plate and of the code
-     * @return array{0: int, 1: int}|null ids of the two colours; null when no machine holds two spools that go together
+     * @param  list<string>  $wanted  hex of every change, bottom to top
+     * @return array{0: int, 1: list<int>}|null the first colour and a colour per change; null when nothing is loaded
      */
-    private static function nearestPair(array $colors, array $wanted): ?array
+    private static function nearestSet(array $colors, ?string $bodyHex, array $wanted): ?array
     {
         $rgb = fn (?string $hex) => preg_match('/^#?([0-9a-f]{6})$/i', (string) $hex, $m) ? array_map('hexdec', str_split($m[1], 2)) : [128, 128, 128];
         $far = fn (?string $a, string $b) => sqrt(array_sum(array_map(fn ($x, $y) => ($x - $y) ** 2, $rgb($a), $rgb($b))));
         $best = null;
         foreach ($colors as $c) {
-            foreach ($c['enough'] ? $c['seconds'] : [] as $s) {
-                $d = $far($c['hex'], $wanted[0]) + $far($s['hex'], $wanted[1]);
-                if ($best === null || $d < $best[0]) {
-                    $best = [$d, (int) $c['id'], (int) $s['id']];
+            if (! $c['enough']) {
+                continue;
+            }
+            $spools = array_merge([['id' => $c['id'], 'hex' => $c['hex']]], $c['seconds']);
+            $d = $bodyHex ? $far($c['hex'], $bodyHex) : 0.0;
+            $picks = [];
+            foreach ($wanted as $hex) {
+                $near = null;
+                foreach ($spools as $s) {
+                    $e = $far($s['hex'], $hex);
+                    if ($near === null || $e < $near[0]) {
+                        $near = [$e, (int) $s['id']];
+                    }
                 }
+                $d += $near[0];
+                $picks[] = $near[1];
+            }
+            // a design in several colours wants several spools: a machine with one spool scores worse than one with many
+            $d += max(0, count(array_unique(array_merge([$c['id']], array_column($wanted ? $spools : [], 'id')))) < min(count($wanted) + 1, FarmOrder::MAX_COLORS) ? 200 : 0);
+            if ($best === null || $d < $best[0]) {
+                $best = [$d, (int) $c['id'], $picks];
             }
         }
 
@@ -165,6 +197,7 @@ class OrderController extends Controller
             'file' => $order->modelFile?->uuid, 'quality' => $order->quality, 'strength' => $order->strength, 'copies' => $order->copies,
             'supports' => $order->supports === 'off' ? 'off' : null,
             'scale' => abs((float) $order->scale - 1) > 0.0005 ? (float) $order->scale : null, 'color' => $order->farm_color_id, 'second' => $order->second_color_id,
+            'change' => array_column($order->colorSlots(), 'color_id') ?: null,
         ]));
     }
 
@@ -196,6 +229,8 @@ class OrderController extends Controller
             'scale' => ['nullable', 'numeric', 'min:0.25', 'max:'.config('pricing.max_scale', 4)],
             'color' => ['nullable', 'integer'],
             'second_color' => ['nullable', 'integer'],
+            'change_color' => ['nullable', 'array', 'max:8'],
+            'change_color.*' => ['nullable', 'integer'],
             'supports' => ['nullable', 'in:auto,off'],
             'designer_model' => ['nullable', 'integer'],
             'catalog_model' => ['nullable', 'integer'],
@@ -212,7 +247,7 @@ class OrderController extends Controller
         $inspiration = isset($data['catalog_model']) && ! $card ? CatalogModel::shown()->find((int) $data['catalog_model']) : null;
 
         try {
-            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto', isset($data['second_color']) ? (int) $data['second_color'] : null, $card, $inspiration);
+            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto', isset($data['second_color']) ? (int) $data['second_color'] : null, $card, $inspiration, isset($data['change_color']) ? array_map('intval', array_values($data['change_color'])) : null);
             Track::event('order_created', $card ?? $order->modelFile, array_filter(['order' => $order->id, 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null]));
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
@@ -328,6 +363,8 @@ class OrderController extends Controller
         $data = $request->validate([
             'slot' => ['required', 'integer'],
             'second_slot' => ['nullable', 'integer'],
+            'change_slots' => ['nullable', 'array', 'max:8'],
+            'change_slots.*' => ['nullable', 'integer'],
             'delivery' => ['required', 'string', 'max:20'],
             'terms' => ['accepted'],
             'expected_total' => ['required', 'numeric'],
@@ -349,7 +386,7 @@ class OrderController extends Controller
         ], ['terms.accepted' => __('farm.refuse.terms')]);
 
         try {
-            $flow->pay($order, FarmPrinterSlot::findOrFail($data['slot']), $data['delivery'], $data['address'] ?? null, true, $request->ip(), (float) $data['expected_total'], $data['note'] ?? null, isset($data['second_slot']) ? (int) $data['second_slot'] : null, $this->currencyFor($order, $request));
+            $flow->pay($order, FarmPrinterSlot::findOrFail($data['slot']), $data['delivery'], $data['address'] ?? null, true, $request->ip(), (float) $data['expected_total'], $data['note'] ?? null, isset($data['second_slot']) ? (int) $data['second_slot'] : null, $this->currencyFor($order, $request), isset($data['change_slots']) ? array_map('intval', array_values($data['change_slots'])) : null);
         } catch (InsufficientCredit $e) {
             // the top-up page asks for what is missing, in the currency the order is priced in
             return response()->json(['error' => 'credit', 'message' => __('farm.refuse.credit', ['missing' => $e->missingMoney()->format()]), 'missing' => $e->missing(), 'topup_url' => route('account.credit', ['need' => $e->missing(), 'back' => $order->token])], 402);
@@ -497,9 +534,24 @@ class OrderController extends Controller
             ])->all()
             : [];
 
+        // every change of the design: where, the colour it was designed in, and the spool chosen for it so far
+        $stored = $order->colorSlots();
+        $spools = $stored ? FarmPrinterSlot::with('color')->whereIn('id', array_column($stored, 'slot_id'))->get()->keyBy('id') : collect();
+        $changes = array_map(function (array $c) use ($stored, $spools): array {
+            foreach ($stored as $s) {
+                if (abs($s['z'] - $c['z']) < 0.005) {
+                    return $c + ['slot_id' => $s['slot_id'], 'name' => $spools->get($s['slot_id'])?->color?->displayName()];
+                }
+            }
+
+            return $c + ['slot_id' => null, 'name' => null];
+        }, $order->wantedChanges());
+
         return [
             'token' => $order->token,
             'number' => $order->number,
+            'changes' => $changes,
+            'max_colors' => FarmOrder::MAX_COLORS,
             'status' => $order->status,
             'status_text' => $order->statusText(),
             'stage' => $stage = $this->stageOf($order),

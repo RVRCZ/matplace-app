@@ -83,9 +83,9 @@ class SupportLinesTest extends TestCase
             $gcode .= $layer($n + 13, $z);
         }
         $out = GcodeSlot::secondColor($gcode, ['slot' => 1, 'z' => 3.0]);
-        $this->assertSame(1, substr_count($out, 'second colour by matplace farm'));
-        $this->assertStringContainsString("; AFTER_LAYER_CHANGE 16 @ 3.2mm\nT1 ; second colour by matplace farm\n;TYPE:Outer wall", $out);
-        $this->assertSame($gcode, str_replace("T1 ; second colour by matplace farm\n", '', $out), 'nothing else is touched');
+        $this->assertSame(1, substr_count($out, 'colour change by matplace farm'));
+        $this->assertStringContainsString("; AFTER_LAYER_CHANGE 16 @ 3.2mm\nT1 ; colour change by matplace farm\n;TYPE:Outer wall", $out);
+        $this->assertSame($gcode, str_replace("T1 ; colour change by matplace farm\n", '', $out), 'nothing else is touched');
 
         // layers that do not end on the top of the plate: the layer cut above the plate is the first one of the text
         $odd = "M117\n".$layer(10, 2.8, 0.28).$layer(11, 3.08, 0.28).$layer(12, 3.36, 0.28);

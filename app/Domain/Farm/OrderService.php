@@ -27,7 +27,7 @@ final class OrderService
     /**
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null): FarmOrder
+    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! config('farm.open', true)) {
@@ -69,8 +69,10 @@ final class OrderService
         if (! $printer || ! $material) {
             throw new FarmRefusal('no_printer');
         }
-        // the second colour of a plate with a code or a text, chosen on the start page: a spool of the same machine
-        $second = $chosen && $secondColorId && $file->colorChangeMm() ? $this->secondSpools($chosen['slot'])->first(fn (FarmPrinterSlot $s) => $s->color->id === $secondColorId) : null;
+        // the colours of a plate with a text or of a picture in filament colours, chosen on the start page: spools of the
+        // same machine, one per change of the design (an older caller names just the one second colour)
+        $picked = $chosen ? $this->spoolsForChanges($chosen['slot'], $file->colorChanges((ModelValidator::UNITS[$unit] ?? 1.0) * $scale), $changeColorIds ?? ($secondColorId ? [$secondColorId] : [])) : [];
+        $second = $picked && $picked[0]['slot_id'] !== $chosen['slot']->id ? FarmPrinterSlot::with('color')->find($picked[0]['slot_id']) : null;
 
         $order = FarmOrder::create([
             'token' => Str::random(32),
@@ -90,6 +92,7 @@ final class OrderService
             'farm_printer_slot_id' => $chosen['slot']->id ?? null,
             'second_slot_id' => $second?->id,
             'second_color_id' => $second?->color->id,
+            'color_changes' => $picked ?: null,
             // the account's currency, or the one this customer sees prices in until the first payment fixes it
             'currency' => $user->currency ?: Currency::current($user),
             // a designer's card (the reward is added to the price) or the inspiration page the customer came from
@@ -199,6 +202,44 @@ final class OrderService
         }
 
         return $this->secondSpools($main);
+    }
+
+    /**
+     * The spool for every change of a design, from the colours the customer named (by index, bottom to top): the main
+     * spool itself (the print goes back to it) or another spool of its machine. A change nobody chose stays in the
+     * colour printing at that moment. Spools of another machine are ignored: the order goes where the first colour is.
+     *
+     * @param  list<array{z: float, hex: string, code: ?string}>  $wanted  the design's changes
+     * @param  list<int|null>  $colorIds  a colour per change
+     * @return list<array{z: float, slot_id: int, color_id: int}>
+     *
+     * @throws FarmRefusal when the print would need more spools than one machine holds at once
+     */
+    public function spoolsForChanges(FarmPrinterSlot $main, array $wanted, array $colorIds): array
+    {
+        if (! $wanted || ! $colorIds) {
+            return [];
+        }
+        $others = $this->secondSpools($main);
+        $out = [];
+        $used = [(int) $main->farm_color_id];
+        foreach (array_values($wanted) as $i => $change) {
+            $id = (int) ($colorIds[$i] ?? 0);
+            if (! $id) {
+                continue;
+            }
+            $slot = $id === (int) $main->farm_color_id ? $main : $others->first(fn (FarmPrinterSlot $s) => (int) $s->farm_color_id === $id);
+            if (! $slot) {
+                continue;
+            }
+            $used[] = $id;
+            $out[] = ['z' => round((float) $change['z'], 3), 'slot_id' => (int) $slot->id, 'color_id' => $id];
+        }
+        if (count(array_unique($used)) > FarmOrder::MAX_COLORS) {
+            throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
+        }
+
+        return $out;
     }
 
     /** The other spools of the same machine a second colour can come from: same plastic family, enough left. */
