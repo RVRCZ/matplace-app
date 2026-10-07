@@ -212,9 +212,12 @@ class ToolPageTest extends TestCase
         }
         $page = $this->get('/tools')->assertOk();
         $page->assertSee('id="tool-search"', false)->assertSee('data-filter="home"', false)->assertSee('data-filter="edit"', false)->assertSee(__('tools.cats.images'))
-            ->assertDontSee('data-filter="toys"', false)                                   // no tool in it yet: no empty filter
+            ->assertSee('data-filter="toys"', false)                                       // the biscuit with icing is its first tool
             ->assertSee('data-cats="home parts"', false)                                   // the box
             ->assertSee('krabicka vicko pouzdro', false);                                  // its keywords, without accents, for the search
         $this->get('/en/tools')->assertOk()->assertSee('Search the tools')->assertSee('Pictures and logos');
+        // a category without a tool has no filter: nothing to click that shows nothing
+        config(['tools.cookie.categories' => ['images']]);
+        $this->get('/tools')->assertOk()->assertDontSee('data-filter="toys"', false);
     }
 }

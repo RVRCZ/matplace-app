@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
 use App\Models\ModelFile;
+use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper'];
 
     protected function setUp(): void
     {
@@ -59,10 +60,10 @@ class ShapeToolsTest extends TestCase
         foreach (self::KINDS as $kind) {
             foreach (['cs', 'en', 'es'] as $lang) {
                 app()->setLocale($lang);
-                $page = $this->get($this->localized('/tools/'.str_replace('_', '-', $kind), $lang))->assertOk();
+                $page = $this->get($this->localized('/tools/'.(['topper' => 'cake-topper'][$kind] ?? str_replace('_', '-', $kind)), $lang))->assertOk();
                 $page->assertSee(__('tools.'.$kind.'.title'))->assertSee(__('param.'.$kind.'.lead'));
                 // a gingerbread and a big letter have a shape of ours: there is no picture to bring
-                in_array($kind, ['gingerbread', 'name_letter'], true) ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));
+                in_array($kind, ['gingerbread', 'name_letter', 'topper'], true) ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));
                 // no key is shown instead of a text
                 $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $page->getContent(), "{$kind} ({$lang})");
             }
@@ -72,6 +73,21 @@ class ShapeToolsTest extends TestCase
             $sample = ParametricGenerator::SAMPLE[$kind] ?? null;
             $this->assertTrue($sample ? ParametricGenerator::artworkPath($sample) !== null : ParametricGenerator::TEXTS[$kind]['line1'][2] !== '', "{$kind} opens empty");
         }
+    }
+
+    public function test_the_gifts_page_leads_to_every_one_of_them(): void
+    {
+        foreach (['cs' => '/gifts', 'en' => '/en/gifts', 'es' => '/es/gifts'] as $lang => $path) {
+            app()->setLocale($lang);
+            $page = $this->get($path)->assertOk()->assertSee(__('tools.gifts.more'));
+            foreach (self::KINDS as $kind) {
+                $page->assertSee(ToolSeo::url($kind, $lang), false)->assertSee(__('tools.'.$kind.'.title'))->assertSee('img/tools/'.$kind.'-800', false);
+            }
+        }
+        app()->setLocale('cs');
+        // a tool taken out of the catalogue is not offered as a gift either
+        config(['tools.cookie.available' => false]);
+        $this->get('/gifts')->assertOk()->assertDontSee(ToolSeo::url('cookie', 'cs'), false);
     }
 
     public function test_a_picture_becomes_parts_in_the_colours_of_filaments(): void
@@ -285,6 +301,113 @@ class ShapeToolsTest extends TestCase
         $this->assertNotEmpty(array_intersect(['name_small', 'name_no_room'], $o['notes']['warnings']));
         $this->assertSame(__('param.text_required'), $this->preview('name_letter', ['line1' => ''])->assertStatus(422)->json('errors')['params.line1'][0]);
         $this->preview('name_letter', ['line1' => 'Ela', 'height' => 400])->assertStatus(422);
+    }
+
+    public function test_a_biscuit_takes_icing_drawn_by_hand(): void
+    {
+        $star = ['artwork' => 'lib:hearts-stars/star', 'width' => 80, 'thickness' => 6, 'frame' => 2, 'relief' => 0.6];
+        $zigzag = ['c' => 'white', 'w' => 2.5, 't' => 'round', 'p' => [[0.12, 0.55], [0.3, 0.6], [0.5, 0.54], [0.7, 0.6], [0.88, 0.55]]];
+        $dot = fn (float $x, float $y, string $c = 'red') => ['c' => $c, 'w' => 4, 't' => 'round', 'p' => [[$x, $y]]];
+
+        // a silhouette is only the shape: dough with a rounded top edge, nothing on it
+        $plain = $this->meta($this->preview('cookie', $star)->assertOk());
+        $this->assertSame(['body'], $plain['notes']['parts']);
+        $this->assertSame('brown', $plain['notes']['body_color']['code']);
+        $this->assertEqualsWithDelta(6, $plain['bbox']['z'], 0.01);
+        $slab = $this->meta($this->preview('charm', ['artwork' => 'lib:hearts-stars/star', 'width' => 80, 'thickness' => 6, 'frame' => 2, 'colors_n' => 1, 'eyelet' => false], 'body')->assertOk());
+        $this->assertLessThan($slab['volume_mm3'] - 80, $plain['volume_mm3']);            // the rounded edge takes a little off
+        $this->assertGreaterThan($slab['volume_mm3'] * 0.9, $plain['volume_mm3']);
+
+        // strokes become icing: a part for every filament drawn with, in the order the filaments first appear, each a step higher
+        $iced = $this->meta($this->preview('cookie', $star + ['strokes' => [$zigzag, $dot(0.5, 0.38), $dot(0.38, 0.22), $dot(0.6, 0.4, 'white')]], 'all', true)->assertOk());
+        $n = $iced['notes'];
+        $this->assertSame(['body', 'icing_1', 'icing_2'], $n['parts']);
+        $this->assertSame(['white', 'red'], array_column($n['colors'], 'code'));
+        $this->assertSame([6.0, 6.6], array_map('floatval', array_column($n['color_changes'], 'z')));
+        $this->assertSame(['icing_1', 'icing_2'], array_column($n['color_changes'], 'part'));
+        $this->assertFalse($n['multi_material']);
+        $this->assertEqualsWithDelta(7.2, $iced['bbox']['z'], 0.01);
+        $this->assertSame(3, $n['filaments']);
+        $this->assertEqualsWithDelta(76, $n['frame'][2], 0.6);                      // the width of the picture itself: what a stroke is measured in
+        // the zigzag lies where it was drawn, and stays there on a bigger biscuit
+        $line = $this->meta($this->preview('cookie', $star + ['strokes' => [$zigzag]], 'icing_1')->assertOk());
+        $this->assertEqualsWithDelta(0.76 * 76 + 2.5, $line['bbox']['x'], 1.5);
+        $big = $this->meta($this->preview('cookie', ['width' => 120] + $star + ['strokes' => [$zigzag]], 'icing_1')->assertOk());
+        $this->assertEqualsWithDelta(0.76 * 116 + 2.5, $big['bbox']['x'], 1.5);
+        // a stroke over the edge is cut off before the rounded rim; one wholly outside the biscuit leaves nothing
+        $over = $this->meta($this->preview('cookie', $star + ['strokes' => [['c' => 'white', 'w' => 3, 't' => 'flat', 'p' => [[-0.5, 0.57], [1.5, 0.57]]]]], 'icing_1')->assertOk());
+        $this->assertLessThan(76, $over['bbox']['x']);
+        $this->assertSame(['body'], $this->meta($this->preview('cookie', $star + ['strokes' => [$dot(3.5, 3.5)]])->assertOk())['notes']['parts']);
+        // a row of dots is more pieces of icing than one line
+        $dots = $this->meta($this->preview('cookie', $star + ['strokes' => [['t' => 'dots'] + $zigzag]], 'icing_1', true)->assertOk());
+        $this->assertGreaterThan(5, count($dots['parts']));
+
+        // a picture in colours decorates itself: what is dough anyway is left out, the rest is icing
+        $man = $this->meta($this->preview('cookie', ['artwork' => 'lib:colour/gingerbread-man', 'width' => 80])->assertOk())['notes'];
+        $this->assertSame('brown', $man['body_color']['code']);
+        $this->assertSame(['white', 'red'], array_column($man['colors'], 'code'));
+        // as an ornament it gets an eyelet
+        $hung = $this->meta($this->preview('cookie', $star + ['hang' => true])->assertOk());
+        $this->assertArrayHasKey('eyelet', $hung['notes']);
+        $this->assertArrayNotHasKey('eyelet', $plain['notes']);
+
+        // a long drawing goes to the tool in a file, not on the command line
+        $many = [];
+        for ($i = 0; $i < 40; $i++) {
+            $many[] = ['c' => $i % 2 ? 'white' : 'red', 'w' => 2, 't' => 'round', 'p' => array_map(fn ($k) => [round(0.3 + 0.4 * $k / 47, 4), round(0.3 + 0.3 * $i / 39 + 0.01 * sin($k), 4)], range(0, 47))];
+        }
+        $this->assertGreaterThan(12000, strlen((string) json_encode($many)));
+        $this->assertSame(['body', 'icing_1', 'icing_2'], $this->meta($this->preview('cookie', $star + ['strokes' => $many])->assertOk())['notes']['parts']);
+
+        // what the form may not send
+        $this->preview('cookie', $star + ['strokes' => [['c' => 'no-such-spool'] + $zigzag]])->assertStatus(422);
+        $this->preview('cookie', $star + ['strokes' => [['w' => 9] + $zigzag]])->assertStatus(422);
+        $this->preview('cookie', $star + ['strokes' => array_fill(0, 61, $dot(0.5, 0.4))])->assertStatus(422);
+        $this->preview('cookie', $star + ['strokes' => [['p' => array_fill(0, 49, [0.5, 0.5])] + $zigzag]])->assertStatus(422);
+
+        // stored with the design, every colour of icing a file of its own
+        Storage::fake('models');
+        config(['engines.repair' => 'trimesh']);
+        $r = $this->postJson('/api/tools/param', ['kind' => 'cookie', 'params' => $star + ['strokes' => [$zigzag, $dot(0.5, 0.38)]]])->assertCreated();
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertSame(['white', 'red'], array_column($file->tool_params['strokes'], 'c'));
+        $this->assertSame(['body', 'icing_1', 'icing_2'], $r->json('file.parts'));
+        $this->assertSame(['icing_1', 'icing_2'], array_column($file->tool_params['color_changes'], 'part'));
+        $this->assertCount(2, $file->colorChanges());
+        $this->get('/api/tools/param/'.$file->uuid.'/icing_2.stl')->assertOk();
+    }
+
+    public function test_a_cake_topper_is_one_piece_with_a_name_across_it_and_sticks_under_it(): void
+    {
+        $t = $this->meta($this->preview('topper', ['template' => 'number', 'number' => '2', 'line1' => 'Olivia', 'width' => 110, 'text_size' => 105, 'spike' => 60, 'spikes' => 2, 'thickness' => 3, 'relief' => 0.8], 'all', true)->assertOk());
+        $n = $t['notes'];
+        $this->assertSame(['body', 'color_1'], $n['parts']);
+        $this->assertSame(2, $n['filaments']);
+        $this->assertEqualsWithDelta(3, $n['color_change_mm'], 0.001);
+        $this->assertEqualsWithDelta(3.8, $t['bbox']['z'], 0.01);
+        $this->assertGreaterThan(110 * 1.05, $t['bbox']['x']);                 // the name is wider than the number and has its own backing
+        $this->assertLessThan(110 * 1.05 + 8, $t['bbox']['x']);
+        // shape, name and sticks are one body: nothing falls apart when it is lifted off the bed
+        $body = $this->meta($this->preview('topper', ['number' => '2', 'line1' => 'Olivia'], 'body', true)->assertOk());
+        $this->assertCount(1, $body['parts']);
+        // longer sticks make it taller by exactly that much; one stick is less plastic than two
+        $long = $this->meta($this->preview('topper', ['number' => '2', 'line1' => 'Olivia', 'width' => 110, 'spike' => 100])->assertOk());
+        $this->assertEqualsWithDelta(40, $long['bbox']['y'] - $t['bbox']['y'], 0.2);
+        $one = $this->meta($this->preview('topper', ['number' => '2', 'line1' => 'Olivia', 'width' => 110, 'spikes' => 1])->assertOk());
+        $this->assertLessThan($t['volume_mm3'] - 400, $one['volume_mm3']);
+        // the name alone: one colour, still one piece with its sticks, letters tied together
+        $text = $this->meta($this->preview('topper', ['template' => 'none', 'line1' => 'Ela a Tom', 'typeface' => 'sans', 'width' => 150], 'all', true)->assertOk());
+        $this->assertSame(['body'], $text['notes']['parts']);
+        $this->assertSame(1, $text['notes']['filaments']);
+        $this->assertCount(1, $text['parts']);
+        $this->assertContains('pieces_tied', $text['notes']['warnings']);
+        $this->assertEqualsWithDelta(150, $text['bbox']['x'], 4);
+        // a heart with a name lower on it; a number that was not typed leaves the name alone
+        $heart = $this->meta($this->preview('topper', ['template' => 'heart', 'line1' => 'Ela', 'width' => 100, 'text_size' => 60, 'text_y' => -20])->assertOk());
+        $this->assertEqualsWithDelta(100, $heart['bbox']['x'], 0.5);
+        $this->assertSame(['body'], $this->meta($this->preview('topper', ['template' => 'number', 'number' => '', 'line1' => 'Ela'])->assertOk())['notes']['parts']);
+        $this->preview('topper', ['template' => 'none', 'line1' => '', 'number' => ''])->assertStatus(422);
+        $this->preview('topper', ['template' => 'cube', 'line1' => 'Ela'])->assertStatus(422);
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

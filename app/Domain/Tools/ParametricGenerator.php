@@ -27,7 +27,7 @@ final class ParametricGenerator
      * magnet, coaster. Each is a kind of its own (its own page, limits and stored designs) built by the one builder;
      * what they share is written once here and the kinds only say where they differ.
      */
-    public const FAMILY = ['charm' => 'shape', 'keychain' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape', 'gingerbread' => 'shape', 'name_letter' => 'shape'];
+    public const FAMILY = ['charm' => 'shape', 'keychain' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape', 'gingerbread' => 'shape', 'name_letter' => 'shape', 'cookie' => 'shape', 'topper' => 'shape'];
 
     private const SHAPE_FIELDS = [
         'width' => [20, 120, 45, 1], 'thickness' => [2, 6, 3, 0.2], 'frame' => [0, 3, 1.2, 0.1],
@@ -49,7 +49,7 @@ final class ParametricGenerator
     public const FOLDED = ['contrast', 'brightness', 'saturation'];
 
     /** kind → the picture of our library a new visitor starts with (a tool that needs a picture must not open empty) */
-    public const SAMPLE = ['charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman'];
+    public const SAMPLE = ['charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man'];
 
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
@@ -62,6 +62,11 @@ final class ParametricGenerator
         'coaster' => ['width' => [80, 120, 100, 1], 'thickness' => [3, 6, 4, 0.2], 'frame' => [0, 4, 2, 0.1], 'relief' => [0.2, 0.8, 0.4, 0.2]] + self::SHAPE_FIELDS,
         // the shape is ours (a gingerbread man, a heart, a star, a tree), the visitor brings the name: no picture, no picture's fields
         'gingerbread' => ['width' => [50, 150, 90, 1], 'thickness' => [2, 6, 3, 0.2], 'relief' => [0.4, 1.2, 0.6, 0.2], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_EYELET,
+        // a biscuit to play with or to hang: a picture or a silhouette as dough, icing drawn on it by hand (`strokes`)
+        'cookie' => ['width' => [40, 150, 80, 1], 'thickness' => [4, 10, 6, 0.5], 'frame' => [0, 6, 2, 0.1], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
+        // a number or a shape with a name across it and sticks under it: the name's width in % of the width, its place in % of the shape's height
+        'topper' => ['width' => [50, 200, 110, 1], 'text_size' => [30, 150, 105, 1], 'text_y' => [-60, 60, -12, 1], 'spike' => [30, 100, 60, 1], 'spikes' => [1, 2, 2, 1],
+            'thickness' => [2, 4, 3, 0.2], 'relief' => [0.4, 1.2, 0.8, 0.2]],
         // a big first letter with the whole name on it: thick enough to stand on a shelf
         'name_letter' => ['height' => [60, 200, 120, 1], 'thickness' => [3, 15, 8, 0.2], 'relief' => [0.4, 2, 1, 0.2]],
         'organizer' => [
@@ -113,6 +118,8 @@ final class ParametricGenerator
         'coaster' => ['body' => ['circle', 'square', 'hex'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'gingerbread' => ['cookie' => ['man', 'heart', 'star', 'tree'], 'icing' => ['wavy', 'plain', 'none'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
         'name_letter' => ['letter_face' => ['sans', 'serif', 'mono'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
+        'cookie' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'topper' => ['template' => ['number', 'heart', 'star', 'circle', 'none'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
         'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -134,6 +141,8 @@ final class ParametricGenerator
         'coaster' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
         'gingerbread' => ['line1' => [16, false, 'Ela']],
         'name_letter' => ['line1' => [20, true, 'Ela'], 'initial' => [1, false, '']],
+        'cookie' => ['line1' => [16, false, ''], 'line2' => [16, false, '']],
+        'topper' => ['line1' => [20, false, 'Olivia'], 'number' => [3, false, '2']],
         'sign' => ['line1' => [40, true, 'Jana'], 'line2' => [40, false, '']],
         'logo' => ['line1' => [30, false, 'LOGO'], 'line2' => [30, false, '']],
         'stamp' => ['line1' => [20, false, 'EVA'], 'line2' => [20, false, '']],
@@ -144,12 +153,12 @@ final class ParametricGenerator
     ];
 
     /** kinds that accept an uploaded SVG or picture instead of text */
-    public const ARTWORK = ['logo', 'stamp', 'stencil', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster'];
+    public const ARTWORK = ['logo', 'stamp', 'stencil', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie'];
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
-        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'],
+        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
@@ -164,20 +173,26 @@ final class ParametricGenerator
         'modular' => ['inner_w' => 'x', 'inner_d' => 'y', 'height' => 'z'], 'vase' => ['top_d' => 'x', 'height' => 'z'], 'phone_stand' => ['width' => 'x'],
         'cable_holder' => ['depth' => 'y'], 'holder' => ['obj_w' => 'x', 'height' => 'z'], 'cap' => ['size_a' => 'x', 'height' => 'z'],
         'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
-        'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'],
+        'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'], 'cookie' => ['width' => 'x'], 'topper' => ['width' => 'x'],
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp',
-        'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8'];
+        'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8', 'icing_1', 'icing_2', 'icing_3', 'icing_4', 'icing_5', 'icing_6'];
+
+    /** A biscuit's icing: how many strokes a drawing may have and how many points a stroke */
+    public const MAX_STROKES = 60;
+
+    public const MAX_STROKE_POINTS = 48;
 
     public const FLAGS = ['charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
-        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['flush', 'bevel'],
+        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'], 'topper' => ['flush'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
-        'gingerbread' => self::SHAPE_WHEN, 'name_letter' => self::SHAPE_WHEN, 'charm' => self::SHAPE_WHEN, 'keychain' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
+        'cookie' => ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]] + self::SHAPE_WHEN,
+        'topper' => self::SHAPE_WHEN, 'gingerbread' => self::SHAPE_WHEN, 'name_letter' => self::SHAPE_WHEN, 'charm' => self::SHAPE_WHEN, 'keychain' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
         'magnet' => self::SHAPE_WHEN + ['disc' => ['mount', ['glue', 'press', 'through']], 'mag_d' => ['mount', ['glue', 'press', 'through']], 'mag_h' => ['mount', ['glue', 'press']], 'mag_gap' => ['mount', ['glue']]],
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
@@ -289,7 +304,7 @@ final class ParametricGenerator
             'cutter' => array_values(array_intersect((array) ($p['parts'] ?? []), ['body', 'stamp'])),   // the stamp exists only when the drawing had inner lines: the tool says so
             'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
             // a picture in colours: the plate, every colour and the rim, as the tool listed them
-            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8])$/', $part))),
+            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8]|icing_[1-6])$/', $part))),
             default => [],
         };
     }
@@ -322,6 +337,18 @@ final class ParametricGenerator
             $rules += [
                 'params.merge' => ['nullable', 'array', 'max:8'], 'params.merge.*' => ['array', 'size:2'], 'params.merge.*.*' => ['integer', 'min:1', 'max:8'],
                 'params.order' => ['nullable', 'array', 'max:8'], 'params.order.*' => ['integer', 'min:1', 'max:8'],
+            ];
+        }
+        if ($kind === 'cookie') {
+            // icing drawn by hand: every stroke a filament, a width, a nib and its points in shares of the picture's width
+            $rules += [
+                'params.strokes' => ['nullable', 'array', 'max:'.self::MAX_STROKES],
+                'params.strokes.*.c' => ['required', Rule::in($palette->codes())],
+                'params.strokes.*.w' => ['required', 'numeric', 'min:1.5', 'max:4'],
+                'params.strokes.*.t' => ['required', 'in:round,flat,dots'],
+                'params.strokes.*.p' => ['required', 'array', 'min:1', 'max:'.self::MAX_STROKE_POINTS],
+                'params.strokes.*.p.*' => ['array', 'size:2'],
+                'params.strokes.*.p.*.*' => ['numeric', 'min:-1', 'max:4'],
             ];
         }
         if ($kind === 'modular') {
@@ -393,6 +420,18 @@ final class ParametricGenerator
             $out['merge'] = array_values(array_map(fn ($pair) => [(int) $pair[0], (int) $pair[1]], array_filter(array_slice((array) ($p['merge'] ?? []), 0, 8), fn ($pair) => is_array($pair) && count($pair) === 2)));
             $out['order'] = array_values(array_unique(array_map('intval', array_slice((array) ($p['order'] ?? []), 0, 8))));
         }
+        if ($kind === 'cookie') {
+            $out['strokes'] = array_values(array_filter(array_map(function ($s) use ($palette) {
+                $points = array_values(array_filter(array_slice((array) ($s['p'] ?? []), 0, self::MAX_STROKE_POINTS), fn ($pt) => is_array($pt) && count($pt) === 2));
+                if (! $points || ! is_string($s['c'] ?? null) || ! $palette->has($s['c'])) {
+                    return null;
+                }
+
+                return ['c' => $s['c'], 'h' => $palette->hex($s['c']), 'w' => round(min(4, max(1.5, (float) ($s['w'] ?? 2.5))), 1),
+                    't' => in_array($s['t'] ?? '', ['round', 'flat', 'dots'], true) ? $s['t'] : 'round',
+                    'p' => array_map(fn ($pt) => [round((float) array_values($pt)[0], 4), round((float) array_values($pt)[1], 4)], $points)];
+            }, array_slice((array) ($p['strokes'] ?? []), 0, self::MAX_STROKES))));
+        }
         if ($kind === 'modular') {
             $out['bins'] = array_values(array_map(function ($b) use ($palette) {
                 $color = is_string($b['color'] ?? null) && $palette->has($b['color']) ? $b['color'] : 'white';
@@ -423,7 +462,15 @@ final class ParametricGenerator
         $dir = storage_path('app/tmp/param');
         File::ensureDirectoryExists($dir);
         $path = $dir.'/'.Str::uuid().'.stl';
-        $r = $this->python->runScript('param_tool.py', [$kind, $path, json_encode($this->forTool($kind, self::clean($kind, $params)), JSON_UNESCAPED_UNICODE), $part, $view, ...($pieces ? ['parts'] : [])], 60);
+        $json = (string) json_encode($this->forTool($kind, self::clean($kind, $params)), JSON_UNESCAPED_UNICODE);
+        // a drawing of many strokes is longer than a command line may be: the tool then reads it from a file
+        $long = strlen($json) > 12000 ? $dir.'/'.Str::uuid().'.json' : null;
+        $long && File::put($long, $json);
+        try {
+            $r = $this->python->runScript('param_tool.py', [$kind, $path, $long ? '@'.$long : $json, $part, $view, ...($pieces ? ['parts'] : [])], 60);
+        } finally {
+            $long && @unlink($long);
+        }
         if (empty($r['ok']) || ! is_file($path)) {
             @unlink($path);
             $code = (string) ($r['code'] ?? 'failed');
@@ -444,9 +491,9 @@ final class ParametricGenerator
                 $clean['font'] = base_path('engines/fonts/Pacifico-Regular.ttf');   // handwritten, letters joined (OFL)
             }
             $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? ''], fn ($l) => $l !== ''));
-            if (isset($clean['letter_face'])) {
+            if (isset($clean['letter_face']) || $kind === 'topper') {
                 // the big letter has a typeface of its own: always a bold one, it carries the name
-                $clean['letter_font'] = base_path('vendor/dompdf/dompdf/lib/fonts/'.(['serif' => 'DejaVuSerif-Bold.ttf', 'mono' => 'DejaVuSansMono-Bold.ttf'][$clean['letter_face']] ?? 'DejaVuSans-Bold.ttf'));
+                $clean['letter_font'] = base_path('vendor/dompdf/dompdf/lib/fonts/'.(['serif' => 'DejaVuSerif-Bold.ttf', 'mono' => 'DejaVuSansMono-Bold.ttf'][$clean['letter_face'] ?? ''] ?? 'DejaVuSans-Bold.ttf'));
             }
         }
         if (isset(self::FAMILY[$kind])) {

@@ -973,7 +973,11 @@ def main(argv):
     try:
         import manifold3d as M
         import numpy as np
-        p = json.loads(argv[3] or "{}")
+        raw = argv[3] or "{}"
+        if raw.startswith("@"):                             # a drawing of many strokes does not fit a command line: it comes in a file
+            with open(raw[1:], encoding="utf-8") as fh:
+                raw = fh.read()
+        p = json.loads(raw)
         builders = {"organizer": organizer, "box": box, "phone_stand": phone_stand, "cable_holder": cable_holder, "modular": modular, "holder": holder, "cap": cap}
         if not isinstance(p, dict):
             raise Invalid("unknown_kind")

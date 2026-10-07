@@ -1,13 +1,12 @@
 # P: tvar z obrázku a jména (session 1, vánoční sada)
 
 Větev `feature/tools-shapes` (z `main` 4438a2d, 7. 10. 2026), zadání `docs/prompts/nastroje.md`, část „Session 1“.
-Tenhle dokument popisuje **první várku**: obrázek v barvách filamentů a osm nástrojů, které na něm stojí. Zbytek
-vánoční sady (sušenka s polevou, zápich do dortu) a zbytek session 1
-jsou v sekci 7 jako to, co teprve přijde.
+Tenhle dokument popisuje **první várku**: obrázek v barvách filamentů a deset nástrojů, které na něm stojí – celou vánoční sadu ze zadání. Zbytek session 1
+je v sekci 7 jako to, co teprve přijde.
 
 ## 1. Co vzniklo
 
-**Osm nástrojů v katalogu**, každý s vlastní stránkou, kartou, SEO texty ve třech jazycích a třemi ukázkami:
+**Deset nástrojů v katalogu**, každý s vlastní stránkou, kartou, SEO texty ve třech jazycích a třemi ukázkami:
 
 | nástroj | adresa | kind | co přidává k obrázku |
 |---|---|---|---|
@@ -18,6 +17,8 @@ jsou v sekci 7 jako to, co teprve přijde.
 | Magnetka z obrázku | `/tools/magnet` | `magnet` | kapsa na magnet vzadu (lepení, nalisování, skrz, bez), předvolby disků |
 | Podtácek s obrázkem | `/tools/coaster` | `coaster` | kruh, čtverec, šestiúhelník; drážky zespodu |
 | Perníček se jménem | `/tools/gingerbread` | `gingerbread` | tvar je náš (panáček, srdce, hvězda, stromek), poleva vlnkou nebo linkou, jméno se samo vejde |
+| Sušenka s polevou | `/tools/cookie` | `cookie` | tvar ze siluety nebo obrázku, zaoblená hrana, **poleva kreslená myší v náhledu** |
+| Zápich do dortu se jménem | `/tools/cake-topper` | `topper` | číslo, srdce, hvězda, kruh nebo jen nápis; jméno přes tvar druhou barvou; 1–2 hroty 30–100 mm |
 | Velké písmeno se jménem | `/tools/name-letter` | `name_letter` | první písmeno jména 60–200 mm vysoké a 3–15 mm silné, celé jméno na něm druhou barvou |
 
 **Obrázek v barvách** (`engines/python/shape2d.py`, funkce `colors`) – sdílené pro všechno, co přijde (sušenka,
@@ -40,7 +41,7 @@ filament‑art v session 3):
    (`skimage.measure.find_contours`) – hrany jsou hladké, ne schodovité, a maska uvnitř jiné masky dá obrys uvnitř
    jejího obrysu. Každá barva má dvě plochy: `own` (jen ona) a `stack` (ona a všechno nad ní).
 
-**Builder** `engines/python/shape_kinds.py` – jeden pro všech osm produktů. Díly: `body` (podklad s očkem),
+**Builder** `engines/python/shape_kinds.py` – jeden pro všech deset produktů. Díly: `body` (podklad s očkem),
 `color_<n>`, `rim`. Dva způsoby, jak barvy vytisknout:
 
 - **nad sebou (výchozí)**: každá barva je o krok výš než ta pod ní (0,4–1,2 mm po 0,2; náušnice a podtácek
@@ -58,6 +59,28 @@ nohách; srdce a hvězda s polevou po obvodu; stromek se dvěma girlandami), ná
 aby se vešlo do nejširšího místa tvaru; pod 3 mm výšky písmen přijde upozornění. Těsto dostane cívku nejbližší perníkové
 hnědé, poleva nejsvětlejší – dvě barvy nad sebou, jedna výměna. Srdce visí za zářez mezi laloky, ne za jeden z nich.
 Zadání ho chtělo jako tvar cedulky (`sign`); je v rodině `shape`, protože z ní má barvy, očko tažením i projekt s výměnou.
+
+**Sušenka s polevou** (`cookie`): těsto je silueta z knihovny, vlastní obrázek nebo nápis; horní hrana je zaoblená
+o 1,5 mm po vrstvách (`_rounded_top`). Jednobarevná silueta je jen tvar, z barevného obrázku se stane poleva (barva,
+která je stejně těsto, se vynechá). **Polevu kreslí návštěvník v náhledu**: tlačítko „Kreslit polevu“ otočí pohled
+shora a tah myší nebo prstem je tah sáčku (`viewer.ts` `setDraw`; během tahu je vidět čára, po puštění přijde skutečný
+model). Barva z okna Barva, šířka 1,5–4 mm, hrot kulatý / plochý / tečky, klepnutí = tečka; „odebrat poslední tah“,
+„smazat polevu“, zpět/vpřed. Tahy se ukládají v podílech šířky obrázku (`strokes`, nejvýš 60 tahů po 48 bodech),
+takže na větší sušence leží tam, kde byly. V Pythonu je tah stuha podél bodů (`_stroke`); tahy jedné cívky jsou díl
+`icing_<n>` a vrstva jako každá jiná barva: později použitá cívka leží výš a pod ní se nižší vrstvy doplní, takže
+i ručně zdobená sušenka má v každé vrstvě tisku jediný filament. Poleva se drží 1,8 mm od zaoblené hrany.
+Dlouhá kresba se nástroji předává souborem (`@cesta`), ne příkazovou řádkou. Proti zadání chybí: výběr a posun
+jednotlivého tahu (jde jen odebrat poslední), cukrovinky z knihovny, tácek na vystavení a vlastních 40 polotovarů –
+tvar se bere ze 137 siluet knihovny.
+
+**Zápich do dortu** (`_topper`): tvar (číslo tučným písmem, srdce, hvězda, kruh, nebo nic) a přes něj jméno; šířka
+jména je v % šířky tvaru (smí přesahovat), poloha v % jeho výšky. Pod jménem leží jeho rozšířená kopie v barvě tvaru,
+takže drží i písmena mimo tvar; co by přesto odpadlo, sváže můstek (`S.joined`). Hroty jsou ploché, 4 mm široké, se
+špičkou; nástroj je posadí tam, kde nad nimi tvar opravdu je (mezeru ve jméně nebo zářez srdce obejde ke středu).
+Všechno je jeden kus + jméno o krok výš druhou barvou. Stránka i FAQ říkají, že tištěný plast se nemá dotýkat jídla
+(hroty do fólie nebo do brčka). **Tohle není skladba vrstev ze zadání**: žádný seznam vrstev ani gizmo ve vieweru,
+rozvržení je pevné a mění se třemi posuvníky. Volná skladba (`compose`: šablona + texty + motivy, posun, otočení,
+zvětšení v náhledu) zůstává otevřená; cedulka a klíčenka, které na ní zadání také staví, mají zatím své formuláře.
 
 **Velké písmeno se jménem** (`_name_letter`): tučné písmeno (bezpatkové, patkové nebo strojové) a na něm jméno tam,
 kde má písmeno nejvíc místa – `_room` hledá největší obdélník v poměru stran jména, naležato i otočený o čtvrt kruhu
@@ -77,6 +100,8 @@ nebo všem (`param.f.<nástroj|rodina>.<pole>`), a builder může sám říct, k
 Sekce Barvy ukazuje seznam barev shora dolů: vzorník cívky (klik = okno Barva), barva v obrázku, podíl plochy,
 šipky pořadí, sloučení; pod tím větu, jak se návrh vytiskne (jedna barva / N výměn / jen vícemateriálová tiskárna).
 Posuvníky fotky se na malém obrázku projeví hned (CSS filtr), model za okamžik.
+
+**Rozcestník `/gifts`** má oddíl „Další dárky na míru“ s kartami všech deseti nástrojů (jen těch, které jsou v katalogu).
 
 **Knihovna**: nová kategorie `colour` (Barevné) s osmi vlastními kresbami v barvách, které mají cívku
 (`engines/artwork/colour/_draw.py` je kreslí z prosté geometrie; CC0, řádky v `SOURCES.md`). Pět nástrojů se
@@ -106,7 +131,9 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
    ne přes sjednocení řádků obdélníků, takže to času nepřidalo.
 6. **Automatická cívka jen z jednoho plastu** (toho, kterého je skladem nejvíc): jeden tisk je jeden druh plastu.
 7. **Očko je součást podkladu** a díra jde skrz všechny barvy; poloha po 0,5 %.
-8. **Test `ToolPageTest::test_verified…`** padal už na `main` (od 7. 10. mají tři nástroje v configu datum ověření
+8. **Kategorie „Hračky a hry“** má první nástroj (sušenku); test, který hlídal, že prázdná kategorie nemá filtr, to
+   teď ověřuje na katalogu bez ní.
+9. **Test `ToolPageTest::test_verified…`** padal už na `main` (od 7. 10. mají tři nástroje v configu datum ověření
    a test čekal katalog bez štítků). Test si teď data sám vynuluje; chování hlídá dál.
 
 ## 3. Co se na farmě vytiskne a co ne – **potřebuju rozhodnutí**
@@ -158,11 +185,12 @@ nesplňuju** (1,35 s + 0,35 s prodleva před dotazem). Na produkci jsem neměři
 - **Nic z toho se netisklo.** Geometrie je ověřená výpočtem (testy: objemy, rozměry, díly, výšky výměn), ne tiskem.
   K vyzkoušení na farmě: přívěsek 45 mm ve dvou barvách (očko Ø 3, stěna 2 – drží?), náušnice 30 mm (tloušťka 2,4),
   magnetka s kapsou Ø 10 × 2 na lepení (vůle 0,2) a nalisování (0,05), podtácek 100 mm s drážkami. Štítek „ověřeno
-  tiskem“ žádný z osmi nemá. Rozcestník `/gifts` na nové nástroje zatím neodkazuje.
+  tiskem“ žádný z deseti nemá. U zápichu je k vyzkoušení hlavně pevnost hrotů (4 × 3 mm, 60 mm).
 - **Projekt s více výměnami** hlídá test (`ColorChangeTest`: tři řádky ve správném pořadí, Orca i Prusa); ve
   skutečné Orce ani PrusaSliceru jsem ho neotvíral. Jedna výměna je ověřená z dřívějška (N.md §8).
-- **Tažení očka** jsem zkoušel skriptem v headless Chrome (úchyt se chytí, hodnota se změní, náhled se přepočítá),
-  ne rukou a ne na dotykovém displeji.
+- **Tažení očka a kreslení polevy** jsem zkoušel skriptem v headless Chrome (úchyt se chytí, tah se nakreslí, pošle
+  a objeví jako díl polevy), ne rukou a ne na dotykovém displeji. Během tahu je čára tenká (1 px); jestli je na světlé
+  sušence dost vidět, ukáže až ruka.
 - **Fotky lidí a zvířat**: postup je dělaný pro kresby a loga. Fotka projde (vybere hlavní barvy), ale výsledek je
   plakátový; na portréty bude filament‑art ze session 3.
 - Barvy ukázek a karet jsou z mého lokálního katalogu cívek (37 obyčejných PLA+ skladem). Na produkci se obrázky
@@ -179,8 +207,8 @@ php artisan optimize
 systemctl restart php8.2-fpm matplace-worker
 ```
 
-S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png`. Po nasazení projít `/tools` (osm nových karet), `/tools/charm` (táhnout
+S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
+`public/img/tool-examples/…-{1,2,3}.png`. Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -190,7 +218,8 @@ jsem odkaz nahradil vlastním `npm ci`; sdílený adresář obnoví `npm ci` v `
 
 ## 7. Co přijde (v tomhle pořadí)
 
-Vánoční sada: sušenka s kreslenou polevou (`cookie`), skladba vrstev `compose` → zápich do dortu.
+Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
+tahu, cukrovinky a tácek, u velkého písmene otvor na zavěšení a podstavec.
 Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák, miska,
 organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), korálky, stojánek
 na tužky, tvary a motivy cedulky, `logo` `extrude`, 20+ písem.

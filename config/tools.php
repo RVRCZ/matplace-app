@@ -123,6 +123,26 @@ return [
         ['params' => ['line1' => 'Mamince', 'cookie' => 'heart', 'width' => 90]],
         ['params' => ['line1' => 'Tom', 'cookie' => 'star', 'width' => 80]],
     ]]],
+    // a biscuit with icing drawn by hand; `strokes` = what was drawn, points in shares of the picture's width
+    'cookie' => ['route' => 'tools.cookie', 'intent' => 'create', 'categories' => ['toys', 'images'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/gingerbread-man', 'width' => 80]],
+        ['params' => ['artwork' => 'lib:hearts-stars/star', 'width' => 80, 'strokes' => [
+            ['c' => 'white', 'w' => 2.5, 't' => 'round', 'p' => [[0.12, 0.55], [0.22, 0.60], [0.32, 0.54], [0.42, 0.60], [0.50, 0.54], [0.58, 0.60], [0.68, 0.54], [0.78, 0.60], [0.88, 0.55]]],
+            ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.50, 0.38]]], ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.38, 0.22]]],
+            ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.62, 0.22]]], ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.50, 0.75]]],
+        ]]],
+        ['params' => ['artwork' => 'lib:holidays/christmas-tree', 'width' => 90, 'hang' => true, 'strokes' => [
+            ['c' => 'white', 'w' => 2.5, 't' => 'round', 'p' => [[0.20, 0.30], [0.30, 0.26], [0.40, 0.31], [0.50, 0.26], [0.60, 0.31], [0.70, 0.26], [0.80, 0.30]]],
+            ['c' => 'white', 'w' => 2.5, 't' => 'round', 'p' => [[0.32, 0.56], [0.41, 0.52], [0.50, 0.57], [0.59, 0.52], [0.68, 0.56]]],
+            ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.35, 0.42]]], ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.62, 0.43]]],
+            ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.50, 0.70]]], ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.28, 0.17]]], ['c' => 'red', 'w' => 4, 't' => 'round', 'p' => [[0.72, 0.17]]],
+        ]]],
+    ]]],
+    'topper' => ['route' => 'tools.topper', 'intent' => 'create', 'categories' => ['names', 'craft'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['template' => 'number', 'number' => '2', 'line1' => 'Olivia', 'width' => 110]],
+        ['params' => ['template' => 'heart', 'line1' => 'Ela a Tom', 'width' => 120, 'text_size' => 90, 'text_y' => 5]],
+        ['params' => ['template' => 'none', 'line1' => 'Všechno nejlepší', 'width' => 180, 'spike' => 80]],
+    ]]],
     'name_letter' => ['route' => 'tools.name_letter', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['line1' => 'Ela', 'height' => 120]],
         ['params' => ['line1' => 'Tomáš', 'height' => 150, 'letter_face' => 'serif', 'typeface' => 'sans']],
