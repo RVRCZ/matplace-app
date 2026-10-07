@@ -52,12 +52,12 @@ return [
         ['params' => ['style' => 'wedge', 'width' => 80, 'angle' => 60, 'depth' => 70]],
         ['params' => ['style' => 'wall', 'width' => 80, 'screws' => true]],
     ]]],
-    'holder' => ['route' => 'tools.holder', 'intent' => 'create', 'categories' => ['home', 'parts'], 'available' => true, 'seo' => ['examples' => [
+    'holder' => ['route' => 'tools.holder', 'intent' => 'create', 'categories' => ['home', 'parts'], 'available' => true, 'verified' => '2026-09-29', 'seo' => ['examples' => [
         ['preset' => 'remote'],
         ['preset' => 'headphones'],
         ['preset' => 'broom'],
     ]]],
-    'cap' => ['route' => 'tools.cap', 'intent' => 'create', 'categories' => ['parts', 'home'], 'available' => true, 'seo' => ['examples' => [
+    'cap' => ['route' => 'tools.cap', 'intent' => 'create', 'categories' => ['parts', 'home'], 'available' => true, 'verified' => '2026-10-01', 'seo' => ['examples' => [
         ['preset' => 'pet'],
         ['preset' => 'profile'],
         ['preset' => 'jar'],
