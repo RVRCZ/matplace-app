@@ -30,6 +30,7 @@ interface ShapeNotes {
     filaments?: number; multi_material?: boolean; color_changes?: { z: number }[]; found?: number; wanted?: number; each?: number[]; copies?: number;
     eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; chain?: { links: number; length: number }; pockets?: { kind: string; count: number; depth: number }; pin?: { d: number; head: number; height: number }; stand?: number[]; source?: string;
     frame?: [number, number, number]; draw_z?: number;
+    layers?: { part: string; index: number; box: [number, number, number, number]; z: number }[]; outer?: number[];
 }
 /** A layer of a composition: a text, a picture of the library or a shape; where its middle lies, how wide it is, how it is turned, its filament. */
 interface Layer { kind: string; text: string; typeface: string; art: string; shape: string; x: number; y: number; w: number; turn: number; code: string; hidden: boolean }
@@ -469,7 +470,7 @@ export function bootParam(stage: Stage): void {
             valid = true; showError(null);
             if (lastMeta) { renderDims(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus();
-            renderDownloads(); placeEyelet();
+            renderDownloads(); placeEyelet(); placeFrame();
             if (cookie) { renderPen(); armDraw(); }
         } catch {
             if (mine === seq) { valid = false; showError(t('param.failed')); }
@@ -775,6 +776,34 @@ export function bootParam(stage: Stage): void {
         input.value = '0'; syncRange(input); soon(0);
     });
 
+    // ── the chosen layer of a composition: a frame in the viewer to move, resize and turn it by ──
+    const showSlide = (l: Layer, k: 'w' | 'x' | 'y' | 'turn'): void => {
+        const s = document.querySelector<HTMLInputElement>(`#compose-edit [data-layer-slide="${k}"]`);
+        if (s) s.value = String(l[k]);
+        const v = document.querySelector<HTMLElement>(`#compose-edit [data-layer-value="${k}"]`);
+        if (v) v.textContent = `${nf.format(l[k])} ${k === 'turn' ? '°' : t('compose.unit')}`;
+    };
+    const placeFrame = (): void => {
+        const l = layers[chosen]; const n = shapeNotes();
+        // the tool numbers the layers it built: the hidden ones are not among them
+        const at = l && !l.hidden ? layers.slice(0, chosen).filter((x) => !x.hidden).length + 1 : 0;
+        const built = n.layers?.find((x) => x.index === at);
+        if (!compose || !l || !built || !valid || viewPart !== 'all') { viewer.setFrame(null, null); return; }
+        let from: { x: number; y: number; w: number; turn: number } | null = null;
+        viewer.setFrame({ box: built.box, z: n.outer?.[2] ?? built.z }, (c, phase) => {
+            from ??= { x: l.x, y: l.y, w: l.w, turn: l.turn };
+            const within = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
+            l.x = within(Math.round((from.x + c.dx) * 2) / 2, -150, 150);
+            l.y = within(Math.round((from.y + c.dy) * 2) / 2, -150, 150);
+            l.w = within(Math.round(from.w * c.scale), 5, 250);
+            l.turn = ((Math.round(from.turn + c.turn) + 540) % 360) - 180;
+            (['w', 'x', 'y', 'turn'] as const).forEach((k) => showSlide(l, k));
+            const said = c.turn ? `${nf.format(l.turn)}°` : c.scale !== 1 ? `${nf.format(l.w)} ${t('compose.unit')}` : `${nf.format(l.x)} × ${nf.format(l.y)} ${t('compose.unit')}`;
+            if (phase === 'end') { from = null; void refresh().then(commit); }
+            return said;
+        });
+    };
+
     // ── a composition: its layers and the fields of the chosen one ──
     const renderLayers = (): void => {
         const box = document.getElementById('compose-layers'); const edit = document.getElementById('compose-edit');
@@ -791,7 +820,7 @@ export function bootParam(stage: Stage): void {
                     <span class="inline-block h-3 w-3 shrink-0 rounded-full border border-line" style="background:${colorOf(l.code)?.hex ?? '#888888'}"></span>
                     <span class="min-w-0 truncate text-ink">${t(`compose.layer.${l.kind}`)}: ${what.replace(/[<>&]/g, '')}</span></button>
                 ${act('up', '↑', i === layers.length - 1)}${act('down', '↓', i === 0)}${act(l.hidden ? 'show' : 'hide', l.hidden ? '○' : '●')}${act('copy', '⧉', layers.length >= 12)}${act('remove', '×')}`;
-            row.querySelector<HTMLButtonElement>('[data-layer-pick]')!.onclick = () => { chosen = i; renderLayers(); };
+            row.querySelector<HTMLButtonElement>('[data-layer-pick]')!.onclick = () => { chosen = i; renderLayers(); placeFrame(); };
             row.querySelectorAll<HTMLButtonElement>('[data-layer-act]').forEach((b) => {
                 b.onclick = () => {
                     const a = b.dataset.layerAct;
@@ -985,6 +1014,15 @@ export function bootParam(stage: Stage): void {
         stage.note(piece && viewer.getPieces().length > 1 ? stage.t('toolpage.status.piece', { name: partLabel(piece.name) }) : null);
         if (!piece) return;
         if (cfg.kind === 'modular') { stage.reveal('size', document.getElementById('bin-grid')); return; }
+        if (compose) {
+            // the piece is a band of the print; its layer is the one of that number among the shown ones
+            const shown = layers.map((l, i) => (l.hidden ? -1 : i)).filter((i) => i >= 0);
+            const i = shown[Number(piece.name.replace('layer_', '')) - 1];
+            if (i === undefined) return;
+            viewer.select(-1);
+            if (i !== chosen) { chosen = i; renderLayers(); placeFrame(); }
+            return;
+        }
         const row = document.querySelector<HTMLElement>(`#tool-parts [data-part="${piece.name}"]`) ?? document.querySelector<HTMLElement>('#tool-parts [data-part]');
         if (row) { lastColorTarget = () => (code) => setPartColor(row.dataset.part!, code); stage.reveal('colors', row); } else stage.reveal('colors');
     });

@@ -29,7 +29,7 @@ return [
     'compose.content' => 'Capas',
     'compose.size' => 'Grosores y base',
     'compose.layers' => 'Capas (arriba, la que queda más alta)',
-    'compose.hint' => 'Toque una capa y edítela abajo. Las flechas cambian qué queda sobre qué.',
+    'compose.hint' => 'Toque una capa aquí o directamente en la vista previa. En la vista previa, arrástrela para moverla, arrastre una esquina del marco para cambiar su tamaño y el punto de encima para girarla. Las flechas cambian qué queda sobre qué.',
     'compose.add.text' => 'Texto',
     'compose.add.art' => 'Imagen',
     'compose.add.shape' => 'Forma',

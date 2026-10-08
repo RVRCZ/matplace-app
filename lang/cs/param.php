@@ -29,7 +29,7 @@ return [
     'compose.content' => 'Vrstvy',
     'compose.size' => 'Tloušťky a základ',
     'compose.layers' => 'Vrstvy (nahoře ta, která leží nejvýš)',
-    'compose.hint' => 'Klepněte na vrstvu a upravte ji níže. Šipky mění, co leží na čem.',
+    'compose.hint' => 'Klepněte na vrstvu tady nebo přímo v náhledu. V náhledu ji tažením posunete, rohem rámečku zvětšíte a kolečkem nad ním otočíte. Šipky mění, co leží na čem.',
     'compose.add.text' => 'Text',
     'compose.add.art' => 'Obrázek',
     'compose.add.shape' => 'Tvar',

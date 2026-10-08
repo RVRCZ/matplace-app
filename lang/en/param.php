@@ -29,7 +29,7 @@ return [
     'compose.content' => 'Layers',
     'compose.size' => 'Thicknesses and base',
     'compose.layers' => 'Layers (the top one is the one that lies highest)',
-    'compose.hint' => 'Tap a layer and edit it below. The arrows change what lies on what.',
+    'compose.hint' => 'Tap a layer here or right in the preview. In the preview, drag it to move it, drag a corner of its frame to resize it and the knob above it to turn it. The arrows change what lies on what.',
     'compose.add.text' => 'Text',
     'compose.add.art' => 'Picture',
     'compose.add.shape' => 'Shape',

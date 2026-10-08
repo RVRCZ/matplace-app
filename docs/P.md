@@ -206,7 +206,13 @@ z `engines/shapes/`), s polohou, šířkou, otočením a filamentem.
   vrstvy; tři předvolby na začátek (jméno na mraku, zápich „2 · Olivia“, srdce se jménem). Přidání, úpravu textu,
   posun a změnu pořadí jsem zkoušel v prohlížeči. Barvy předvoleb jsou pojmenované („white“) a server je převede na
   nejbližší cívku farmy.
-- *Co chybí proti zadání,* je v §7 bod 3: tažení ve vieweru, vlastní obrázek, převod ostatních nástrojů na skladbu.
+- *Tažení v náhledu:* klepnutí na prvek v náhledu vybere jeho vrstvu a kolem ní se objeví rámeček
+  (`Viewer.setFrame`). Tažení uvnitř rámečku vrstvu posune, roh mění šířku (kolem středu), kolečko nad rámečkem
+  otáčí; u ukazatele běží hodnota a posuvníky jdou s ní. Během tažení se hýbe jen rámeček, model se přestaví po
+  puštění (jeden dotaz místo desítek – náhled trvá 0,3–0,5 s a po každém přestavění se posune počátek souřadnic).
+  Mimo rámeček se dál otáčí pohled. Zkoušeno v prohlížeči skutečnými událostmi myši: výběr klepnutím, posun,
+  zvětšení 18 → 37 mm, otočení, otáčení pohledu vedle rámečku. **Nezkoušeno na dotykové obrazovce.**
+- *Co chybí proti zadání,* je v §7 bod 3: vlastní obrázek jako vrstva a převod ostatních nástrojů na skladbu.
 
 **Vložka do zásuvky podle fotky – hotová, ale mimo katalog** (`insert`, nový modul `engines/python/sheet_kinds.py`,
 stránka `/tools/drawer-insert`, `'available' => false`). Věci položené na list A4 a vyfocené shora dostanou v tácu
@@ -531,10 +537,10 @@ písem; dva z nich (ozdoba na brčko, otvírák) čekají mimo katalog na zkuše
 2. **Vložka do zásuvky podle fotky** (druhý režim „organizéru podle fotky“ ze zadání): nástroj je postavený, viz
    níže, ale **mimo katalog** – ověřený je jen na kreslených fotkách. Do katalogu ho pustí až zkouška na skutečných
    fotkách skutečných věcí; pak chybí už jen texty pro SEO, ukázky a karta.
-3. **Volná skladba vrstev** (`compose`, `/tools/compose`) je v katalogu, ale **bez tažení ve vieweru**: polohu,
-   šířku a otočení vybrané vrstvy mění posuvníky, ne myš v náhledu. Zadání chtělo gizmo (posun, otočení, zvětšení
-   tažením, výběr klepnutím na prvek). Zbývá také: vlastní nahraný obrázek jako vrstva (zatím jen knihovna), a převést
-   zápich, jmenovku, klíčenku, ozdobu a velké písmeno z formulářů na skladbu, jak zadání předpokládalo.
+3. **Volná skladba vrstev** (`compose`, `/tools/compose`) je v katalogu i s tažením v náhledu (výběr klepnutím,
+   posun, velikost, otočení). Zbývá: vlastní nahraný obrázek jako vrstva (zatím jen knihovna), a převést zápich,
+   jmenovku, klíčenku, ozdobu a velké písmeno z formulářů na skladbu, jak zadání předpokládalo. Při tažení se model
+   nepřekresluje průběžně, až po puštění – kdyby to při zkoušení vadilo, je to místo, kde přidat.
 4. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
    sušenek). Tvary destiček cedulky
    (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.
