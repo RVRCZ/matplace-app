@@ -5,7 +5,7 @@ return [
     'description' => 'Z obrázku nebo jména vznikne přívěsek v barvách filamentů s očkem kdekoli na obrysu. Na klíče, tašku i dárek. Vytiskneme ho, nebo si ho zdarma stáhnete.',
     'h1' => 'Přívěsek z vlastního obrázku nebo jména',
     'intro' => [
-        'Nástroj vytvoří z obrázku nebo jména přívěsek na klíče, tašku, batoh, jezdec zipu nebo jako jmenovku na dárek. Nahrajete PNG, JPG, WebP či SVG, vyberete motiv z knihovny, nebo napíšete jméno jedním ze čtyř písem. Pozadí zmizí samo a obrázek se převede na 1 až 8 barev filamentů, které máme na tiskové farmě opravdu skladem. Přívěsek kopíruje obrys obrázku, nebo je to kruh či obdélník, široký 20 až 120 mm a silný 2 až 6 mm.',
+        'Nástroj vytvoří z obrázku nebo jména přívěsek na klíče, tašku, batoh, jezdec zipu nebo jako jmenovku na dárek. Nahrajete PNG, JPG, WebP či SVG, vyberete motiv z knihovny, nebo napíšete jméno jedním ze třiceti písem. Pozadí zmizí samo a obrázek se převede na 1 až 8 barev filamentů, které máme na tiskové farmě opravdu skladem. Přívěsek kopíruje obrys obrázku, nebo je to kruh či obdélník, široký 20 až 120 mm a silný 2 až 6 mm.',
         'Očko posunete posuvníkem nebo tažením v náhledu kamkoli po obrysu a nastavíte mu otvor 2 až 6 mm a stěnu 1,5 až 3 mm. Barvy leží jedna na druhé, každá o 0,6 mm výš, pokud to nezměníte. Takový přívěsek vytiskne jakákoli tiskárna výměnou filamentu v daných výškách. Na naší farmě vytiskneme až čtyři barvy najednou: podklad a tři další. Cívku pro každou barvu potvrdíte při objednávce; návrh s více barvami si zdarma stáhnete pro svou tiskárnu.',
     ],
     'steps' => [
@@ -15,7 +15,7 @@ return [
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Orientační cenu vidíte hned vedle náhledu, přesnou cenu a dobu tisku o krok dál. Model si také zdarma a bez registrace stáhnete jako STL, ZIP s jedním STL pro každou barvu nebo projekt pro slicer.'],
     ],
     'faq' => [
-        ['q' => 'Můžu místo obrázku použít jen jméno?', 'a' => 'Ano. Napíšete jeden nebo dva řádky a vyberete bezpatkové, patkové, strojové nebo psací písmo. Oddělené kousky nástroj spojí malým můstkem, aby přívěsek držel pohromadě, a upozorní na to.'],
+        ['q' => 'Můžu místo obrázku použít jen jméno?', 'a' => 'Ano. Napíšete jeden nebo dva řádky a vyberete jedno ze třiceti písem, od tučných bezpatkových po psaná rukou. Oddělené kousky nástroj spojí malým můstkem, aby přívěsek držel pohromadě, a upozorní na to.'],
         ['q' => 'Kam můžu dát očko?', 'a' => 'Kamkoli na obrys: posuvníkem, nebo tažením přímo ve 3D náhledu. Otvor má 2 až 6 mm, výchozí jsou 3 mm, stěna kroužku 1,5 až 3 mm.'],
         ['q' => 'Jak se barvy tisknou?', 'a' => 'Barvy leží nad sebou, každá o 0,4 až 1,2 mm výš. Každá vrstva je tak z jednoho filamentu a stačí ho ve správné výšce vyměnit; projekt pro OrcaSlicer, Bambu Studio i PrusaSlicer výměny obsahuje. Barvy zarovno s povrchem a lem ve vlastní barvě vyžadují tiskárnu, která mění filament sama (AMS, MMU, ACE).'],
         ['q' => 'Kolik barev vytisknete na farmě?', 'a' => 'Až čtyři v jednom tisku: podklad a tři barvy nad ním. Cívku pro každou barvu potvrdíte při objednávce, ty z návrhu jsou předvybrané. Návrh s více barvami si zdarma stáhnete pro svou tiskárnu.'],

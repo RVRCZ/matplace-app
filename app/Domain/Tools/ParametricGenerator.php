@@ -49,6 +49,70 @@ final class ParametricGenerator
     public const FOLDED = ['contrast', 'brightness', 'saturation'];
 
     /** kind → the picture of our library a new visitor starts with (a tool that needs a picture must not open empty) */
+    /**
+     * The typefaces of the text tools: key (what a design stores as `typeface`) → [file, the family's name, group].
+     * The first four are the ones the tools started with; their keys stay, designs made before carry them. Everything in
+     * engines/fonts is under the SIL Open Font License, the file untouched and its licence next to it (<Family>-OFL.txt);
+     * a family that comes as one variable file is read at its boldest (shape2d.text). Only faces that print: bold cuts,
+     * the whole Czech and Spanish alphabet. The pictures of the picker: `php artisan matplace:font-previews`.
+     */
+    public const FONTS = [
+        'sans' => ['vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf', 'DejaVu Sans', 'plain'],
+        'serif' => ['vendor/dompdf/dompdf/lib/fonts/DejaVuSerif-Bold.ttf', 'DejaVu Serif', 'serif'],
+        'mono' => ['vendor/dompdf/dompdf/lib/fonts/DejaVuSansMono-Bold.ttf', 'DejaVu Mono', 'tech'],
+        'script' => ['engines/fonts/Pacifico-Regular.ttf', 'Pacifico', 'hand'],
+        'montserrat' => ['engines/fonts/Montserrat-wght.ttf', 'Montserrat', 'plain'],
+        'oswald' => ['engines/fonts/Oswald-wght.ttf', 'Oswald', 'plain'],
+        'bebas' => ['engines/fonts/BebasNeue-Regular.ttf', 'Bebas Neue', 'plain'],
+        'anton' => ['engines/fonts/Anton-Regular.ttf', 'Anton', 'plain'],
+        'archivo' => ['engines/fonts/ArchivoBlack-Regular.ttf', 'Archivo Black', 'plain'],
+        'russo' => ['engines/fonts/RussoOne-Regular.ttf', 'Russo One', 'plain'],
+        'comfortaa' => ['engines/fonts/Comfortaa-wght.ttf', 'Comfortaa', 'plain'],
+        'playfair' => ['engines/fonts/PlayfairDisplay-wght.ttf', 'Playfair Display', 'serif'],
+        'alfa_slab' => ['engines/fonts/AlfaSlabOne-Regular.ttf', 'Alfa Slab One', 'serif'],
+        'abril' => ['engines/fonts/AbrilFatface-Regular.ttf', 'Abril Fatface', 'serif'],
+        'lobster' => ['engines/fonts/Lobster-Regular.ttf', 'Lobster', 'hand'],
+        'caveat' => ['engines/fonts/Caveat-wght.ttf', 'Caveat', 'hand'],
+        'dancing' => ['engines/fonts/DancingScript-wght.ttf', 'Dancing Script', 'hand'],
+        'great_vibes' => ['engines/fonts/GreatVibes-Regular.ttf', 'Great Vibes', 'hand'],
+        'sacramento' => ['engines/fonts/Sacramento-Regular.ttf', 'Sacramento', 'hand'],
+        'kaushan' => ['engines/fonts/KaushanScript-Regular.ttf', 'Kaushan Script', 'hand'],
+        'courgette' => ['engines/fonts/Courgette-Regular.ttf', 'Courgette', 'hand'],
+        'patrick_hand' => ['engines/fonts/PatrickHand-Regular.ttf', 'Patrick Hand', 'hand'],
+        'amatic' => ['engines/fonts/AmaticSC-Bold.ttf', 'Amatic SC', 'hand'],
+        'bangers' => ['engines/fonts/Bangers-Regular.ttf', 'Bangers', 'fun'],
+        'titan' => ['engines/fonts/TitanOne-Regular.ttf', 'Titan One', 'fun'],
+        'paytone' => ['engines/fonts/PaytoneOne-Regular.ttf', 'Paytone One', 'fun'],
+        'bungee' => ['engines/fonts/Bungee-Regular.ttf', 'Bungee', 'fun'],
+        'righteous' => ['engines/fonts/Righteous-Regular.ttf', 'Righteous', 'fun'],
+        'baloo' => ['engines/fonts/Baloo2-wght.ttf', 'Baloo 2', 'fun'],
+        'press_start' => ['engines/fonts/PressStart2P-Regular.ttf', 'Press Start 2P', 'tech'],
+    ];
+
+    /** Tools that keep to the few typefaces of their own: a letter on a bead of 8 mm has to be plain. */
+    public const OWN_FACES = ['beads'];
+
+    /**
+     * What a tool lets the visitor choose from: its own choices, and for the typeface every face of the registry. The
+     * faces the tool names itself come first, the very first one is what it opens with.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function choicesOf(string $kind): array
+    {
+        $choices = self::CHOICES[$kind] ?? [];
+        if (isset($choices['typeface']) && ! in_array($kind, self::OWN_FACES, true)) {
+            $choices['typeface'] = array_values(array_unique([...$choices['typeface'], ...array_keys(self::FONTS)]));
+        }
+
+        return $choices;
+    }
+
+    public static function fontPath(?string $typeface, string $fallback = 'sans'): string
+    {
+        return base_path((self::FONTS[$typeface ?? ''] ?? self::FONTS[$fallback])[0]);
+    }
+
     /** Tools of the family whose text goes under the picture, not instead of it: a page opened with a name keeps its sample picture. */
     public const CAPTIONED = ['badge'];
 
@@ -352,7 +416,7 @@ final class ParametricGenerator
             $rules['params.'.$flag] = ['nullable', 'boolean'];
         }
         $palette = app(Palette::class);
-        foreach (self::CHOICES[$kind] ?? [] as $key => $options) {
+        foreach (self::choicesOf($kind) as $key => $options) {
             $rules['params.'.$key] = ['nullable', Rule::in(self::isColor($key) ? $palette->codes() : $options)];
         }
         foreach (self::TEXTS[$kind] ?? [] as $key => [$max, $required]) {
@@ -420,7 +484,7 @@ final class ParametricGenerator
             $out[$flag] = filter_var($p[$flag] ?? in_array($flag, self::FLAGS_ON, true), FILTER_VALIDATE_BOOLEAN);
         }
         $palette = app(Palette::class);
-        foreach (self::CHOICES[$kind] ?? [] as $key => $options) {
+        foreach (self::choicesOf($kind) as $key => $options) {
             if (self::isColor($key)) {
                 // the code of the spool and what it looks like: the preview stays right when the spool leaves the stock
                 $out[$key] = is_string($p[$key] ?? null) && $palette->has($p[$key]) ? $p[$key] : $options[0];
@@ -517,15 +581,11 @@ final class ParametricGenerator
     private function forTool(string $kind, array $clean): array
     {
         if (isset(self::TEXTS[$kind]) || in_array($kind, self::ARTWORK, true)) {
-            $face = ['serif' => 'DejaVuSerif-Bold.ttf', 'mono' => 'DejaVuSansMono-Bold.ttf'][$clean['typeface'] ?? ''] ?? 'DejaVuSans-Bold.ttf';
-            $clean['font'] = base_path('vendor/dompdf/dompdf/lib/fonts/'.$face);
-            if (($clean['typeface'] ?? '') === 'script') {
-                $clean['font'] = base_path('engines/fonts/Pacifico-Regular.ttf');   // handwritten, letters joined (OFL)
-            }
+            $clean['font'] = self::fontPath($clean['typeface'] ?? null);
             $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? ''], fn ($l) => $l !== ''));
             if (isset($clean['letter_face']) || $kind === 'topper') {
                 // the big letter has a typeface of its own: always a bold one, it carries the name
-                $clean['letter_font'] = base_path('vendor/dompdf/dompdf/lib/fonts/'.(['serif' => 'DejaVuSerif-Bold.ttf', 'mono' => 'DejaVuSansMono-Bold.ttf'][$clean['letter_face'] ?? ''] ?? 'DejaVuSans-Bold.ttf'));
+                $clean['letter_font'] = self::fontPath(in_array($clean['letter_face'] ?? '', ['sans', 'serif', 'mono'], true) ? $clean['letter_face'] : 'sans');
             }
         }
         if (isset(self::FAMILY[$kind])) {

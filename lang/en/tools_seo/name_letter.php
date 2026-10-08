@@ -5,12 +5,12 @@ return [
     'description' => 'Type a name and get its big first letter with the whole name on it in a second colour. We print it in two colours, or you download the model for free.',
     'h1' => 'Big letter with a name for a child\'s room or as a gift',
     'intro' => [
-        'The tool makes the big first letter of a name and writes the whole name on it. Just type a name of up to 20 characters: the letter is picked by itself, or you choose another one. The height goes from 60 to 200 mm and the thickness from 3 to 15 mm; from 10 mm most letters stand on a shelf by themselves. The big letter has three bold typefaces, the name four, including a handwritten script.',
+        'The tool makes the big first letter of a name and writes the whole name on it. Just type a name of up to 20 characters: the letter is picked by itself, or you choose another one. The height goes from 60 to 200 mm and the thickness from 3 to 15 mm; from 10 mm most letters stand on a shelf by themselves. The big letter has three bold typefaces, the name thirty, handwriting included.',
         'The tool places the name where the letter has the most room: across a horizontal bar, or upright along a vertical stem. It is raised by 0.4 to 2 mm and printed in a second colour. The two colours lie one on the other, so the print stops once and the filament is changed. On our print farm we print the letter in one go, and you choose both colours when ordering.',
     ],
     'steps' => [
         ['name' => 'Type the name', 'text' => 'The big letter is the first letter of the name. If you want another one, the initial of a surname for example, type it into the second field.'],
-        ['name' => 'Choose the typefaces', 'text' => 'Sans, serif or monospace for the big letter, always bold. Script, sans, serif or monospace for the name.'],
+        ['name' => 'Choose the typefaces', 'text' => 'Sans, serif or monospace for the big letter, always bold. Any of the thirty typefaces for the name.'],
         ['name' => 'Set the height, the thickness and the colours', 'text' => 'The preview shows where the name went and how big it is. Give the letter and the name a filament from those we have in stock.'],
         ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size and a rough price, the exact price and print time one step further. The model and the project with the filament change are free to download, without registration.'],
     ],

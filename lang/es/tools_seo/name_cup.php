@@ -10,7 +10,7 @@ return [
     ],
     'steps' => [
         ['name' => 'Escriba el nombre', 'text' => 'Un nombre corto da un hueco más ancho. Con uno más largo aumente el ancho para que quede sitio para los lápices.'],
-        ['name' => 'Elija el tipo de letra', 'text' => 'La manuscrita da un hueco continuo. Con la letra sin serifa, con serifa y monoespaciada las letras son huecos separados; donde no se tocan, las une una barra.'],
+        ['name' => 'Elija el tipo de letra', 'text' => 'Hay treinta tipos de letra para elegir. Una manuscrita cuyas letras se unen da un hueco continuo. Con las demás las letras son huecos separados; donde no se tocan, las une una barra.'],
         ['name' => 'Ajuste las medidas y la base', 'text' => 'Cambie el ancho y la altura con los controles deslizantes o arrastrando las flechas en la vista previa. Bajo las medidas aparece el ancho del hueco; si es estrecho para un lápiz, la herramienta avisa.'],
         ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto del laminador se descargan gratis y sin registro.'],
     ],

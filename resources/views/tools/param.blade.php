@@ -176,6 +176,10 @@
 
         @foreach($plainChoices as $key => $options)
             @continue($at($key, 'input') !== 'input')
+            @if($key === 'typeface' && count($options) > 4)
+                @include('tools._fonts')
+                @continue
+            @endif
             <fieldset {!! $whenOf($key) !!}>
                 <legend class="lbl">{{ $tr('c', $key) }}</legend>
                 <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">

@@ -10,7 +10,7 @@ return [
     ],
     'steps' => [
         ['name' => 'Type the name', 'text' => 'A short name gives a wider pocket. For a longer one make the holder wider so that room for pencils remains.'],
-        ['name' => 'Choose the typeface', 'text' => 'The script gives one continuous pocket. With sans, serif and monospace the letters are separate pockets; where they do not touch, a bar joins them.'],
+        ['name' => 'Choose the typeface', 'text' => 'There are thirty typefaces to pick from. A script whose letters join gives one continuous pocket. With the others the letters are separate pockets; where they do not touch, a bar joins them.'],
         ['name' => 'Set the size and the base', 'text' => 'Change the width and the height with the sliders or by dragging the arrows in the preview. Under the size you see the width of the pocket; if it is too narrow for a pencil, the tool says so.'],
         ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size and a rough price, the exact price and print time one step further. The model and the slicer project are free to download, without registration.'],
     ],

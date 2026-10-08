@@ -529,6 +529,11 @@ export function bootParam(stage: Stage): void {
     }
 
     /** Fill the form from a preset, a stored design or a step back in the history. */
+    // the font picker scrolls inside its box: the face a design was made with must be the one in view
+    const showFace = (): void => {
+        const box = form.querySelector<HTMLElement>('[data-font-picker]'); const on = box?.querySelector<HTMLInputElement>('input:checked')?.closest<HTMLElement>('label');
+        if (box && on) box.scrollTop = Math.max(0, on.offsetTop - box.clientHeight / 2 + on.clientHeight / 2);
+    };
     const applyValues = (set: Record<string, unknown>): void => {
         Object.entries(set).forEach(([k, v]) => {
             const num = form.querySelector<HTMLInputElement>(`[data-param="${k}"]`); if (num) { num.value = String(v); syncRange(num); }
@@ -539,6 +544,7 @@ export function bootParam(stage: Stage): void {
             if (colour && typeof v === 'string' && v) { colour.value = spoolCode(v); paintChoice(colour); return; }
             const choice = form.querySelector<HTMLInputElement>(`[data-choice="${k}"][value="${String(v)}"]`); if (choice) choice.checked = true;
         });
+        if ('typeface' in set) showFace();
         if (Array.isArray(set.holes)) { holes.splice(0, holes.length, ...(set.holes as Hole[]).map((h) => ({ ...h }))); renderHoles(); }
         if (Array.isArray(set.bins)) { bins.splice(0, bins.length, ...(set.bins as Bin[]).map((b) => ({ x: b.x, y: b.y, w: b.w, h: b.h, color: spoolCode(b.color) }))); renderGrid(); }
         if ('artwork' in set) {

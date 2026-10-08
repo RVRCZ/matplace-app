@@ -5,12 +5,12 @@ return [
     'description' => 'Napíšete jméno a vznikne jeho velké první písmeno s celým jménem druhou barvou. Vytiskneme ho ve dvou barvách, nebo si model zdarma stáhnete.',
     'h1' => 'Velké písmeno se jménem do dětského pokoje nebo jako dárek',
     'intro' => [
-        'Nástroj vytvoří velké první písmeno jména a na něj napíše celé jméno. Stačí zadat jméno do 20 znaků: písmeno se vybere samo, nebo zvolíte jiné. Výšku nastavíte od 60 do 200 mm a tloušťku od 3 do 15 mm; od 10 mm většina písmen sama stojí na poličce. Velké písmeno má tři tučná písma, jméno čtyři včetně psacího.',
+        'Nástroj vytvoří velké první písmeno jména a na něj napíše celé jméno. Stačí zadat jméno do 20 znaků: písmeno se vybere samo, nebo zvolíte jiné. Výšku nastavíte od 60 do 200 mm a tloušťku od 3 do 15 mm; od 10 mm většina písmen sama stojí na poličce. Velké písmeno má tři tučná písma, jméno třicet včetně psaných rukou.',
         'Jméno si nástroj umístí sám tam, kde má písmeno nejvíc místa: napříč vodorovným tahem, nebo nastojato podél svislého. Vystupuje o 0,4 až 2 mm a tiskne se druhou barvou. Dvě barvy leží nad sebou, takže tisk stačí jednou zastavit a vyměnit filament. Na naší tiskové farmě písmeno vytiskneme najednou a obě barvy si vyberete při objednávce.',
     ],
     'steps' => [
         ['name' => 'Napište jméno', 'text' => 'Velké písmeno je první písmeno jména. Když chcete jiné, třeba iniciálu příjmení, napište ho do druhého pole.'],
-        ['name' => 'Vyberte písma', 'text' => 'Pro velké písmeno bezpatkové, patkové nebo strojové, vždy tučné. Pro jméno psací, bezpatkové, patkové nebo strojové.'],
+        ['name' => 'Vyberte písma', 'text' => 'Pro velké písmeno bezpatkové, patkové nebo strojové, vždy tučné. Pro jméno kterékoli ze třiceti písem.'],
         ['name' => 'Nastavte výšku, tloušťku a barvy', 'text' => 'Náhled ukazuje, kam se jméno vešlo a jak je velké. Písmenu i jménu přiřadíte filament z těch, které máme skladem.'],
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Model i projekt s výměnou filamentu stáhnete zdarma a bez registrace.'],
     ],

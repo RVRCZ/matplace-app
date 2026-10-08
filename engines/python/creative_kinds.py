@@ -843,7 +843,6 @@ def cutter(M, Invalid, p):
     width, height, wall = n("width", 70), n("height", 18), n("wall", 1.0)
     flange, flange_t = n("flange", 5), n("flange_t", 1.6)
     edge = _pick(Invalid, p, k, "edge")
-    _pick(Invalid, p, k, "typeface")
     raster_in = bool(p.get("artwork_path")) and not str(p.get("artwork_path")).lower().endswith(".svg")
     try:
         sil, info = S.load(M, p, width, p.get("font"), None, fill_holes=raster_in)

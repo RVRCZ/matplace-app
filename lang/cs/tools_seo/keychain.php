@@ -5,7 +5,7 @@ return [
     'description' => 'Napíšete jméno, nebo nahrajete obrázek. Vznikne klíčenka v barvách filamentů s očkem na kroužek. Vytiskneme ji, nebo si model zdarma stáhnete.',
     'h1' => 'Klíčenka se jménem, logem nebo vlastním obrázkem',
     'intro' => [
-        'Nástroj vytvoří klíčenku ze jména, krátkého nápisu nebo z obrázku. Napíšete jeden či dva řádky a vyberete jedno ze čtyř písem, nebo nahrajete PNG, JPG, WebP či SVG, případně vyberete motiv z knihovny. Klíčenka má tvar zaobleného obdélníku, kruhu, nebo kopíruje obrys motivu. Šířku nastavíte od 30 do 100 mm, tloušťku od 2,4 do 6 mm.',
+        'Nástroj vytvoří klíčenku ze jména, krátkého nápisu nebo z obrázku. Napíšete jeden či dva řádky a vyberete jedno ze třiceti písem, nebo nahrajete PNG, JPG, WebP či SVG, případně vyberete motiv z knihovny. Klíčenka má tvar zaobleného obdélníku, kruhu, nebo kopíruje obrys motivu. Šířku nastavíte od 30 do 100 mm, tloušťku od 2,4 do 6 mm.',
         'Očko na kroužek má otvor 3 až 8 mm a sedí tam, kam ho posunete: posuvníkem, nebo tažením přímo v náhledu. Jméno na podkladu jsou dvě barvy nad sebou, takže tisk stačí jednou zastavit a vyměnit filament. Takovou klíčenku vytiskneme i na naší tiskové farmě, stejně jako obrázek až ve čtyřech barvách: podklad a tři další. Cívku pro každou barvu potvrdíte při objednávce; obrázek s více barvami si zdarma stáhnete pro svou tiskárnu.',
     ],
     'steps' => [

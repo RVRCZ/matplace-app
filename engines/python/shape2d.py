@@ -95,7 +95,9 @@ def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center", scal
     if not lines:
         raise ArtworkError("no_text")
     font = TTFont(font_path)
-    gs, cmap, hmtx = font.getGlyphSet(), font.getBestCmap(), font["hmtx"]
+    # a family that comes as one variable file is read at its boldest: thin strokes do not print
+    heavy = {a.axisTag: a.maxValue for a in font["fvar"].axes if a.axisTag == "wght"} if "fvar" in font else None
+    gs, cmap = (font.getGlyphSet(location=heavy) if heavy else font.getGlyphSet()), font.getBestCmap()
     units = font["head"].unitsPerEm
     cap = getattr(font["OS/2"], "sCapHeight", 0) or units * 0.72
     k = cap_height_mm / cap
@@ -153,7 +155,7 @@ def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center", scal
                 continue
             for poly in _glyph_polys(font, gs, g):
                 row.append([(px + x, py) for px, py in poly])
-            x += hmtx[g][0]
+            x += gs[g].width
         rows.append(row)
         widths.append(x)
     size = [float(scales[i]) if scales and i < len(scales) else 1.0 for i in range(len(rows))]

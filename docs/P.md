@@ -147,6 +147,33 @@ sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do
 
 Rozcestník `/gifts` odkazuje i na misku, stojánek, korálky a ozdobu na držák karty.
 
+**Třicet písem pro všechny textové nástroje** (zadání chtělo 20+, předloha jich má 29). K původním čtyřem (DejaVu
+Sans, Serif, Mono a Pacifico; jejich klíče `sans`, `serif`, `mono`, `script` zůstávají, nesou je uložené návrhy)
+přibylo 26 rodin z Google Fonts, všechny pod SIL OFL 1.1: Montserrat, Oswald, Bebas Neue, Anton, Archivo Black, Russo
+One, Comfortaa · Playfair Display, Alfa Slab One, Abril Fatface · Lobster, Caveat, Dancing Script, Great Vibes,
+Sacramento, Kaushan Script, Courgette, Patrick Hand, Amatic SC · Bangers, Titan One, Paytone One, Bungee, Righteous,
+Baloo 2 · Press Start 2P.
+
+- *Co je kde:* soubory v `engines/fonts/` (7,7 MB, beze změny, licence každé rodiny vedle jako `<Rodina>-OFL.txt`,
+  přehled se zdroji v `engines/fonts/SOURCES.md`), seznam `ParametricGenerator::FONTS` (klíč → soubor, název,
+  skupina), `choicesOf($kind)` = co nástroj nabízí (jeho vlastní písma napřed, první je výchozí, pak všechna ostatní).
+  Python už písmo nekontroluje, cestu k souboru dostává ze serveru.
+- *Jen řezy, které se tisknou:* u rodin, které Google vydává jako jeden proměnný soubor (Montserrat, Oswald, Comfortaa,
+  Playfair Display, Caveat, Dancing Script, Baloo 2), čte `shape2d.text` obrysy v nejtučnější váze
+  (`getGlyphSet(location=…)`); soubor se nemění, takže odpadá otázka vyhrazených názvů písem v OFL. Tenká psaná písma
+  (Great Vibes, Sacramento) jsou v nabídce, protože je zadání jmenuje; u malého textu na ně platí stávající varování
+  o tenkých čarách.
+- *Každé písmo umí češtinu a španělštinu.* Vyřadil jsem rodiny, kterým chybí ě, č, ř, ů, ň, ť, ď (Fredoka, Lilita One,
+  Concert One, Cookie, Passion One, Carter One), a ty, které nejsou pod OFL, ale pod Apache (Satisfy, Chewy, Luckiest
+  Guy ze seznamu v zadání). Test v každém písmu vysází „Žluťoučký kůň“ a „¿Señor Ďáblík?“ a nesmí chybět znak.
+- *Výběr na stránce* (`resources/views/tools/_fonts.blade.php`): dlaždice na písmo s jeho názvem vysázeným v něm,
+  po skupinách (bezpatková, patková, psaná rukou, ozdobná, strojová a pixelová), skupina výchozího písma první.
+  Obrázky dlaždic (`public/img/fonts/<klíč>.svg`, 3–18 kB, celkem 256 kB) kreslí `php artisan matplace:font-previews`
+  z těch samých obrysů, ze kterých vzniká model – stránka nenačítá žádný webový font. Písmo velkého písmene
+  (`letter_face`) a korálky (`OWN_FACES`) zůstávají u svých tří tučných.
+- Náhled se nezpomalil (cedulka v Lobsteru 1,1 s lokálně jako v DejaVu; samotné vysázení textu 10–15 ms).
+- Texty pod jedenácti nástroji ve třech jazycích říkaly „čtyři písma“; říkají „třicet“.
+
 **Ozdoba na navíjecí držák karty** (`badge`, rodina `shape`; „Image to Badge Reel“ předlohy). Tři věci jsou jinak,
 než říkalo zadání, a proč:
 
@@ -278,7 +305,9 @@ věc `feature/perf`, ne této větve.
 
 ## 6. Nasazení (Roman)
 
-Bez migrace, bez nových balíčků v `/opt/matplace-py` (scikit-image tam je), bez nových klíčů `.env`.
+Bez migrace, bez nových balíčků v `/opt/matplace-py` (scikit-image tam je), bez nových klíčů `.env`. Proměnná písma
+(od 8. 10.) potřebují fontTools 4.38 nebo novější (`/opt/matplace-py/bin/python -c "import fontTools; print(fontTools.version)"`;
+lokálně 4.62).
 
 ```
 git pull            # feature/tools-shapes, nebo main po slití
@@ -308,4 +337,4 @@ Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zat�
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
 Potom zbytek zadání session 1: ostatní produkty rodiny (brčko, gumičky, otvírák,
 organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), tvary
-a motivy cedulky, 20+ písem.
+a motivy cedulky.

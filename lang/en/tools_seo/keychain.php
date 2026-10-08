@@ -5,7 +5,7 @@ return [
     'description' => 'Type a name or upload a picture and get a keychain in filament colours with an eyelet for the ring. We print it, or you download the model for free.',
     'h1' => 'Keychain with a name, a logo or your own picture',
     'intro' => [
-        'The tool makes a keychain from a name, a short text or a picture. Type one or two lines and pick one of four typefaces, or upload a PNG, JPG, WebP or SVG, or choose a motif from the library. The keychain is a rounded rectangle, a circle, or follows the outline of the motif. The width goes from 30 to 100 mm, the thickness from 2.4 to 6 mm.',
+        'The tool makes a keychain from a name, a short text or a picture. Type one or two lines and pick one of thirty typefaces, or upload a PNG, JPG, WebP or SVG, or choose a motif from the library. The keychain is a rounded rectangle, a circle, or follows the outline of the motif. The width goes from 30 to 100 mm, the thickness from 2.4 to 6 mm.',
         'The eyelet for the ring has a hole of 3 to 8 mm and sits where you put it: with a slider, or by dragging it in the preview. A name on a base is two colours, one on the other, so the print stops once and the filament is changed. We print such a keychain on our print farm too, as well as a picture in up to four colours: the base and up to three more. You confirm the spool for each colour when ordering; a picture in more colours can be downloaded for your own printer for free.',
     ],
     'steps' => [

@@ -43,7 +43,7 @@ class ToolsController extends Controller
             'fields' => ParametricGenerator::FIELDS[$kind],
             'flags' => ParametricGenerator::FLAGS[$kind] ?? [],
             'when' => ParametricGenerator::WHEN[$kind] ?? [], 'flagsOn' => ParametricGenerator::FLAGS_ON,
-            'choices' => ParametricGenerator::CHOICES[$kind] ?? [],
+            'choices' => ParametricGenerator::choicesOf($kind),
             'texts' => ParametricGenerator::TEXTS[$kind] ?? [],
             'artwork' => in_array($kind, ParametricGenerator::ARTWORK, true),
             'main' => ParametricGenerator::MAIN[$kind],

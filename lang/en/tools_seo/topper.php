@@ -10,7 +10,7 @@ return [
     ],
     'steps' => [
         ['name' => 'Type the name and the number', 'text' => 'A name or a short text and a number with it, the age of the birthday child for example. For the heart, the star and the circle no number is needed.'],
-        ['name' => 'Choose the shape and the typeface', 'text' => 'A number, a heart, a star, a circle, or the text alone. The name has four typefaces; the script holds together by itself, with the others the tool joins the letters.'],
+        ['name' => 'Choose the shape and the typeface', 'text' => 'A number, a heart, a star, a circle, or the text alone. The name has thirty typefaces; a script whose letters touch holds together by itself, with the others the tool joins the letters.'],
         ['name' => 'Set the size and the sticks', 'text' => 'Sliders change the width of the shape, the width of the name and its place, and the preview follows at once. There can be one stick or two; choose longer ones for a tall cake.'],
         ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size and a rough price, the exact price and print time one step further. The model and the project with the filament change are free to download, without registration.'],
     ],
