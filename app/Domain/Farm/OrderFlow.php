@@ -40,7 +40,7 @@ final class OrderFlow
      *
      * @throws FarmRefusal|InsufficientCredit
      */
-    public function pay(FarmOrder $order, FarmPrinterSlot $slot, string $delivery, ?array $address, bool $termsAccepted, ?string $ip, ?float $expectedTotal = null, ?string $note = null, ?int $secondSlotId = null, ?string $currency = null, ?array $changeSlotIds = null): FarmOrder
+    public function pay(FarmOrder $order, FarmPrinterSlot $slot, string $delivery, ?array $address, bool $termsAccepted, ?string $ip, ?float $expectedTotal = null, ?string $note = null, ?int $secondSlotId = null, ?string $currency = null, ?array $changeSlotIds = null, ?array $partSlotIds = null): FarmOrder
     {
         if ($order->status !== FarmOrder::STATUS_SLICED) {
             throw new FarmRefusal('not_ready');
@@ -90,17 +90,33 @@ final class OrderFlow
         }
         $second = $picked && $picked[0]['slot_id'] !== $offer['slot']->id ? $others->firstWhere('id', $picked[0]['slot_id']) : null;
 
+        // an order printed by parts: every part takes the chosen spool itself or another spool of its machine
+        $partPlates = null;
+        if ($order->isByParts()) {
+            $spools = $this->orders->secondSpools($offer['slot']);
+            $partPlates = [];
+            foreach ($order->partPlates() as $plate) {
+                $id = (int) ($partSlotIds[$plate['part']] ?? 0);
+                $spool = ! $id || $id === (int) $offer['slot']->id ? $offer['slot'] : ($spools->firstWhere('id', $id) ?? throw new FarmRefusal('color_gone'));
+                $partPlates[] = ['slot_id' => (int) $spool->id, 'color_id' => (int) $spool->farm_color_id] + $plate;
+            }
+            if (count(array_unique(array_merge([(int) $offer['slot']->farm_color_id], array_column($partPlates, 'color_id')))) > FarmOrder::MAX_COLORS) {
+                throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
+            }
+        }
+
         $price = $this->orders->priceFor($order, $offer['printer'], $delivery, $offer['color']->material, $destination['country'] ?? null, $currency);
         if ($expectedTotal !== null && abs($expectedTotal - $price['total']) > 0.009) {
             throw new FarmRefusal('price_changed', ['total' => Money::of($price['total'], $currency)->format()]);
         }
 
         $slicedFor = $order->farm_printer_id;
-        DB::transaction(function () use ($order, $offer, $delivery, $destination, $ip, $price, $note, $second, $picked, $currency) {
+        DB::transaction(function () use ($order, $offer, $delivery, $destination, $ip, $price, $note, $second, $picked, $partPlates, $currency) {
             $order->fill([
                 'farm_printer_id' => $offer['printer']->id, 'farm_printer_slot_id' => $offer['slot']->id, 'farm_color_id' => $offer['color']->id,
                 'farm_material_id' => $offer['color']->farm_material_id,
                 'second_slot_id' => $second?->id, 'second_color_id' => $second?->farm_color_id, 'color_changes' => $picked ?: null,
+                'part_plates' => $partPlates ?? $order->part_plates,
                 'delivery' => $delivery, 'shipping_address' => $destination, 'shipping_price' => $price['shipping'], 'currency' => $currency,
                 // an order made from an inspiration page keeps the line that names the model and its author
                 'note' => trim(implode("\n", array_filter([$order->catalog_model_id ? $order->catalogModel?->attribution() : null, $note]))) ?: null,

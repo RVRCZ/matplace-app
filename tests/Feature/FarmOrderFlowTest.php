@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\OrderService;
 use App\Domain\Farm\Wallet;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Mesh\StlFile;
@@ -785,5 +786,114 @@ T2 ; slot chosen by matplace farm
     {
         $order = $this->order();
         $this->actingAs(User::factory()->create())->getJson("/farm/orders/{$order->token}/status")->assertNotFound();
+    }
+
+    public function test_a_box_with_a_lid_is_printed_by_parts_each_part_from_its_own_spool(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        // the S1 holds a white spool; a red one of the same family joins it
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $mainSlot = $s1->slots()->whereNotNull('farm_color_id')->firstOrFail();
+        $white = $mainSlot->color;
+        $red = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->where('id', '!=', $white->id)->firstOrFail();
+        $red->update(['hex' => '#C01818', 'enabled' => true]);
+        $redSlot = $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->firstOrFail();
+        $redSlot->update(['farm_color_id' => $red->id, 'remaining_g' => 800, 'enabled' => true]);
+
+        // a small box with a lid: two parts that are objects of their own
+        $uuid = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'box', 'params' => ['lid' => 1, 'inner_w' => 30, 'inner_d' => 20, 'inner_h' => 12]])->assertCreated()->json('file.uuid');
+        $file = ModelFile::where('uuid', $uuid)->firstOrFail();
+        $this->assertSame(['body', 'lid'], OrderService::designParts($file));
+
+        // the start page offers the parts, off by default (the design names no colours for them); the lid under its own name
+        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->getContent();
+        $this->assertStringContainsString('id="farm-parts"', $html);
+        $this->assertStringContainsString('name="part_color[lid]"', $html);
+        $this->assertStringContainsString(e(__('param.part.lid')), $html);
+        $this->assertDoesNotMatchRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $html);
+
+        // without the tick the box prints as it always did: one plate, both parts in one colour
+        $plain = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $white->id])->assertCreated()->json('url')))->firstOrFail();
+        $this->assertFalse($plain->isByParts());
+        $this->assertSame(1, $plain->plates);
+
+        // by parts, the lid red: a plate per part, each sliced on its own, the lid's plate from the red spool
+        $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $white->id, 'by_parts' => 1, 'part_color' => ['lid' => $red->id]])->assertCreated();
+        $order = FarmOrder::where('token', basename($r->json('url')))->firstOrFail();
+        $this->assertTrue($order->isByParts());
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
+        $this->assertSame(2, $order->plates);
+        $this->assertSame([1, 1], $order->plateLayout());
+        $this->assertSame(['body', 'lid'], array_column($order->partPlates(), 'part'));
+        $this->assertSame([$mainSlot->id, $redSlot->id], array_column($order->partPlates(), 'slot_id'));
+        $this->assertSame([$white->id, $red->id], array_column($order->partPlates(), 'color_id'));
+        $this->assertNull($order->color_changes);
+        $this->assertTrue($order->slice_params['by_parts']);
+        $this->assertFileExists($order->absoluteGcodePath(1));
+        $this->assertFileExists($order->absoluteGcodePath(2));
+        $this->assertNotSame($order->absoluteGcodePath(1), $order->absoluteGcodePath(2));
+        $this->assertStringEndsWith('part-1.stl', $order->print_stl_path);
+        $this->assertSame($mainSlot->id, $order->plateSpool(1)->id);
+        $this->assertSame($redSlot->id, $order->plateSpool(2)->id);
+        $this->assertSame($order->partPlates()[0]['minutes'] + $order->partPlates()[1]['minutes'], $order->est_minutes, 'the order takes as long as its plates together');
+        $this->assertGreaterThan($plain->est_minutes * 0.8, $order->est_minutes);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $this->assertTrue($state['by_parts']);
+        $this->assertSame([], $state['changes']);
+        $this->assertSame(['body', 'lid'], array_column($state['parts'], 'part'));
+        $this->assertSame([1, 2], array_column($state['parts'], 'plate'));
+        $this->assertSame(__('param.part.lid'), $state['parts'][1]['label']);
+        $this->assertSame($redSlot->id, $state['parts'][1]['slot_id']);
+        $this->assertSame($red->displayName(), $state['parts'][1]['name']);
+
+        // paid with the spools of the order page; a spool of another machine is refused
+        $this->credit(20000);
+        $main = collect($state['colors'])->first(fn ($c) => $c['slot'] === $mainSlot->id);
+        $this->assertNotNull($main);
+        $this->assertNotEmpty($main['second'], 'the order page offers the other spools of the machine for the parts');
+        $foreign = FarmPrinterSlot::where('farm_printer_id', '!=', $s1->id)->whereNotNull('farm_color_id')->first();
+        if ($foreign) {
+            $this->pay($order, ['slot' => $main['slot'], 'part_slots' => ['lid' => $foreign->id]])->assertStatus(422);
+        }
+        [$printer, $auth] = $this->agentPrinter();
+        $this->assertSame($s1->id, $printer->id);
+        $this->sync($auth)->assertOk();
+        $this->pay($order, ['slot' => $main['slot'], 'part_slots' => ['lid' => $redSlot->id]])->assertOk()->assertJsonPath('status', 'queued');
+        $order->refresh();
+        $this->assertSame([$mainSlot->id, $redSlot->id], array_column($order->partPlates(), 'slot_id'));
+
+        // the operator's copy of every plate already selects that plate's slot
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $this->assertStringContainsString("\nT{$mainSlot->slot} ; slot chosen by matplace farm\n", file_get_contents($this->actingAs($admin)->get("/admin/farm/orders/{$order->token}/print.gcode?plate=1")->assertOk()->baseResponse->getFile()->getPathname()));
+        $this->assertStringContainsString("\nT{$redSlot->slot} ; slot chosen by matplace farm\n", file_get_contents($this->actingAs($admin)->get("/admin/farm/orders/{$order->token}/print.gcode?plate=2")->assertOk()->baseResponse->getFile()->getPathname()));
+        $this->assertStringContainsString(e(__('param.part.lid')), $this->actingAs($admin)->get("/admin/farm/orders/{$order->token}")->assertOk()->getContent());
+
+        // the machine prints the body from the white spool, then the lid from the red one
+        foreach ([1 => $mainSlot, 2 => $redSlot] as $plate => $spool) {
+            $this->actingAs($admin)->post("/admin/farm/printers/{$printer->id}/bed", ['clear' => 1])->assertRedirect();
+            $cmd = $this->sync($auth)->assertOk()->assertJsonCount(1, 'commands')->json('commands.0');
+            $this->assertSame('start', $cmd['type']);
+            $this->assertSame($plate, $cmd['payload']['plate']);
+            $this->assertSame((int) $spool->slot, $cmd['payload']['slot'], "plate {$plate} prints from the spool chosen for its part");
+            $gcode = $this->get($cmd['payload']['gcode_url'], $auth)->assertOk()->streamedContent();
+            $this->assertStringContainsString("\nT{$spool->slot} ; slot chosen by matplace farm\n", $gcode);
+            $this->assertStringNotContainsString('colour change by matplace farm', $gcode);
+            $this->postJson("/api/agent/commands/{$cmd['id']}/result", ['ok' => true], $auth)->assertOk();
+            $this->sync($auth, 'printing', ['id' => $cmd['job_id'], 'status' => 'printing', 'progress' => 50, 'print_duration' => 600, 'filament_used' => 1000])->assertOk();
+            $this->sync($auth, 'idle', ['id' => $cmd['job_id'], 'status' => 'done', 'progress' => 100, 'print_duration' => 1200, 'filament_used' => 2000])->assertOk();
+            $order->refresh();
+            $this->assertSame($plate, $order->plates_done);
+            $this->assertSame($plate < 2 ? FarmOrder::STATUS_QUEUED : FarmOrder::STATUS_DONE, $order->status, "after plate {$plate}");
+        }
+
+        // "print again" keeps the parts and their colours
+        $location = $this->actingAs($this->user)->get("/farm/orders/{$order->token}/repeat")->assertRedirect()->headers->get('Location');
+        $this->assertStringContainsString('by_parts=1', $location);
+        $again = $this->actingAs($this->user)->get($location)->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $again);
+        $this->assertMatchesRegularExpression('/name="part_color\[lid\]" value="'.$red->id.'"[^>]*\schecked/', $again);
     }
 }

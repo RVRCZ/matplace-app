@@ -3,7 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build && node scripts/check_bundle.mjs",
+        "build": "tsc --noEmit -p . && vite build && node scripts/check_bundle.mjs",
         "dev": "vite",
         "check": "node scripts/check_bundle.mjs"
     },

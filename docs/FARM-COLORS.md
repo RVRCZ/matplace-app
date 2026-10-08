@@ -89,3 +89,72 @@ s `main`. Odstávka 11 s, migrace `farm_orders.color_changes` proběhla, build p
 a `/root/matplace-app.env.bak-20261007-1827`. Testy sloučeného stavu před nasazením: 99 + 34 zelených.
 Co zbývá Romanovi: zapnout farmu v adminu, první tisk ve třech barvách z produkce s obsluhou u stroje, G‑code
 z adminu před tiskem zkontrolovat (`grep -n "colour change" …`).
+
+## 6. Díly po barvách (8. 10. 2026)
+
+Druhý způsob, jak dostat víc barev do jedné zakázky: návrh z několika **samostatných dílů** (krabička a víko,
+květináč a miska, razítko a držátko, lightbox, modulární box, rozřezaný model, puzzle, desky vrstveného obrazu)
+se vytiskne **díl po dílu, každý ze své cívky**. Žádná výměna uprostřed tisku, žádný vliv na kvalitu; jen víc
+tisků za sebou na jednom stroji. Výměny ve výšce (§1–5) zůstávají pro barvy *nad sebou* v jednom kuse.
+
+### Co se změnilo
+
+- **`farm_orders.by_parts`** (bool) a **`farm_orders.part_plates`** (JSON, migrace `2026_10_15_100000`):
+  `[{part, slot_id, color_id, copies, stl_path, gcode_path, sha256, minutes, grams, meters, dims, piece_dims, supports}]`
+  v pořadí tisku. Před nařezáním jen `part, slot_id, color_id` (slot `null` = hlavní cívka, dokud ji zákazník nevybral).
+- **`FarmOrder`**: `isByParts()`, `partPlates()`, `plateSpool($plate)` (cívka desky; jiná tiskárna nebo nic → hlavní
+  cívka), `absoluteGcodePath($plate)` vrací G‑code desky, `plateLayout()` = kusy na každé desce. `plates` = počet
+  dílů; mechanika desek (`plates_done`, `nextPlate()`, `OrderFlow::plateFinished`, fronta) se **nemění**.
+- **`OrderService::designParts(ModelFile)`**: díly, které jsou samostatné předměty: generátory z `ASSEMBLED`
+  (`box, vase, stamp, logo, qr, lightbox, cutter, modular` přes `ParametricGenerator::partsOf`) a editační nástroje
+  kromě `colors` (`ModelEditor::partsOf`, `tool_params.parts`), včetně `filament_art`. Barevné vrstvy obrázků
+  (`charm`, `gingerbread`…), `sign` a malovaný 3MF (`colors`) **nejsou** díly – tisknou se v kuse s výměnami.
+  `partStl()` postaví díl znovu (`ParametricGenerator::build(kind, params, part)`) nebo vezme `…/parts/<part>.stl`,
+  který nástroj uložil. `partLabel()` překládá jméno dílu stejnými klíči jako stránka nástroje
+  (`param.part.<díl>.<druh>`, `param.part.<díl>`, `edit.art.part.*`, `edit.<op>.part.*`, `edit.part.*`).
+- **Založení** (`create(... ?array $partColorIds)`, parametry `by_parts=1`, `part_color[<díl>]=<id barvy>`):
+  `spoolsForParts()` dá každému dílu hlavní cívku nebo jinou cívku téhož stroje (`secondSpools`), nepojmenovaný díl
+  = hlavní; víc než 4 různé cívky → `too_many_colors`. `color_changes` se u zakázky po dílech neukládají.
+- **`PrepareFarmOrder::prepareParts()`**: pro každý díl STL → `PrintPreparer::prepare` → při `copies > 1`
+  `PlateLayout::replicate` (kopie dílu na jedné desce; když se nevejdou, chyba **`copies_fit`** – po dílech se
+  deska nedělí) → `ModelValidator::judge` → řez stejnými parametry jako celek (`sliceSetup()`, společné pro oba
+  režimy) → `orders/<token>/part-<k>.gcode`. Kontrola, orientace a `print_stl_path` jsou z první desky;
+  `est_*` jsou součty; `slice_result.parts` nese minuty a gramy po dílech; cena přes `price()` jako dřív.
+- **Tisk**: `Dispatcher::start` bere slot z `plateSpool($plate)`; agent i admin dostanou kopii G‑code s `T<slot>` té
+  desky a teplotami její cívky (`PrintProfile::tempsForPlate`); výměny barev se do zakázky po dílech nepíší.
+  Admin může stáhnout G‑code konkrétní desky (`…/print.gcode?plate=k`); stránka zakázky vypisuje desky s odkazy.
+- **Úvodní stránka**: u návrhu se ≥ 2 díly blok `#farm-parts` s přepínačem *Tisknout díly zvlášť, každý svou barvou*
+  a řádkem cívek pro každý díl (`part_color[<díl>]`, „Hlavní barva“ = bez vlastní cívky). Přepínač je zapnutý
+  předem u vrstveného obrazu a u návrhu, který dílům přidělil různé barvy (`tool_params.part_colors`); předvýběr =
+  nejbližší cívka stroje k barvě dílu z návrhu (hlavní barva se počítá). Při změně první barvy se řádky přepnou na
+  cívky nového stroje (`farm.ts`, `paintParts`). „Tisknout znovu“ nese `by_parts` a `part[<díl>]`.
+- **Stránka zakázky**: `state.by_parts`, `state.parts = [{part, plate, label, hex, slot_id, name, copies, minutes,
+  grams}]`; blok cívek vypíše řádek na díl (hlavní barva + ostatní cívky stroje), platba posílá `part_slots[<díl>]`.
+  `OrderFlow::pay(... ?array $partSlotIds)` ověří cívky (hlavní nebo z nabídky stroje, jinak `color_gone`), limit 4,
+  uloží `part_plates`; změna tiskárny spustí přeřez jako dřív (kostra dílů zůstává, nové cívky v ní).
+- **Texty**: `start.parts_title/parts_hint/part_main/part_main_hint`, `order.parts_title/parts_hint/part_main/part_line`,
+  `error.copies_fit` (cs, en, es).
+
+### Rozhodnutí
+
+1. **Přepínač, ne automatika.** Krabička s víkem se dál tiskne v kuse v jedné barvě, dokud zákazník nezaškrtne tisk
+   po dílech – je to dvakrát delší zakázka (dva tisky) a výsledek je jiný. Zapnuto předem je to jen tam, kde to
+   návrh sám chce (vrstvený obraz, díly s různými barvami z nástroje).
+2. **Jedna deska na díl, kopie dílu na ní.** Víc kusů než se na desku vejde = chyba `copies_fit`, ne další desky –
+   `plates` musí zůstat rovno počtu dílů, jinak by `plateSpool()` nevěděl, čí deska to je.
+3. **Barevné vrstvy nejsou díly.** `designParts()` je úmyslně užší než `partsOf()`: obrázek v barvách má díly
+   `body, color_1…` pro 3MF, ale tiskne se v kuse s výměnami (§1–5). Kdo chce další druh do tisku po dílech, přidá
+   ho do `OrderService::ASSEMBLED`.
+4. **Rezervace gramů** dál jen na hlavní cívce (jako u výměn); minuty a gramy po dílech jsou v `part_plates`.
+5. **`print_stl_path` a `gcode_path`** míří na první desku kvůli všemu, co čte jeden soubor (náhled, stáhnutí, starší
+   stránky); desky 2+ znají jen `part_plates` a `absoluteGcodePath($plate)`.
+
+### Co není ověřené
+
+- **Nic se netisklo.** Test `test_a_box_with_a_lid_is_printed_by_parts…` projde celou cestu (úvodní stránka,
+  založení, dva řezy, platba, G‑code obou desek, agent tiskne desku 1 ze slotu bílé a desku 2 ze slotu červené,
+  „tisknout znovu“), ale na stroji to nikdo neviděl. První ostrý tisk: krabička s víkem ve dvou barvách na S1.
+- **Stránky** jen testem a `tsc`; řádky dílů na úvodní stránce a na stránce zakázky jsem v prohlížeči neviděl.
+- **Vrstvený obraz** (`filament_art`): `designParts()` ho pouští (díly `body, frame, plate_N`), `partStl()` čte
+  `…/parts/<díl>.stl`; test to nepokrývá, protože desky obrazu potřebují obrázek. Vyzkoušet ručně z `/tools/art`.
+- **Cena**: tisk po dílech stojí součet dílů (minuty + gramy); žádný příplatek za další desku.
