@@ -14,6 +14,7 @@ use App\Domain\Farm\PrintSettings;
 use App\Domain\Farm\Shipping;
 use App\Domain\Farm\Wallet;
 use App\Domain\Social\SocialPublisher;
+use App\Domain\Tools\ArtGenerator;
 use App\Domain\YouTube\FarmVideos;
 use App\Http\Controllers\Controller;
 use App\Models\Calculation;
@@ -92,10 +93,13 @@ class OrderController extends Controller
         // every change of the design (one for a plate with a text, one per colour for a picture in filament colours)
         $changes = $file ? $file->colorChanges() : [];
         $twoColor = $twoColor ?? ($changes[0]['z'] ?? null);
+        // the separately printed parts of the design (a box and its lid, the plates of a layered picture): each may
+        // take its own spool of the machine, printed one after another
+        $parts = $file ? OrderService::designParts($file) : [];
         $colors = $offered->map(fn ($r) => [
             'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex,
             'photo' => $r['color']->photoUrl(), 'printer' => $r['printer']->name, 'bed' => (int) $r['printer']->bed_x.' × '.(int) $r['printer']->bed_y.' mm', 'enough' => $r['slot']->availableGrams() > 50,
-            'seconds' => $twoColor ? $this->orders->secondSpools($r['slot'])->map(fn ($s) => ['id' => $s->color->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'photo' => $s->color->photoUrl()])->values()->all() : [],
+            'seconds' => $twoColor || $parts ? $this->orders->secondSpools($r['slot'])->map(fn ($s) => ['id' => $s->color->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'photo' => $s->color->photoUrl()])->values()->all() : [],
         ])->sortBy(fn ($c) => [$c['code'] === $material ? 0 : 1, $c['name']])->values()->all();
         // the colour of the print being repeated when it is still loaded, else the first one on offer
         $preselect = collect($colors)->firstWhere('id', $wantedColor)['id'] ?? ($colors[0]['id'] ?? null);
@@ -117,6 +121,21 @@ class OrderController extends Controller
         $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
         $changePreselect = array_map(fn ($i) => $machine->contains($wantedChanges[$i] ?? 0) ? (int) $wantedChanges[$i] : 0, array_keys($changes));
         $secondPreselect = $changePreselect[0] ?? 0;
+        // by parts: what the customer had ticked ("print again", a refused order), else the spool of the machine nearest
+        // to the colour the design names for the part (the first colour itself counts); ticked on from the start when
+        // the design names different colours for its parts or is a picture of stacked plates
+        $partWanted = array_map('intval', (array) ($old['part_color'] ?? $request->query('part', [])));
+        $partHex = array_map(fn ($part) => ($file->tool_params['part_colors'][$part]['hex'] ?? null) ?: null, array_combine($parts, $parts) ?: []);
+        $spools = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->push(['id' => $preselect, 'hex' => collect($colors)->firstWhere('id', $preselect)['hex'] ?? null]);
+        $partPreselect = [];
+        foreach ($parts as $part) {
+            $want = (int) ($partWanted[$part] ?? 0);
+            if (! $want && ! $partWanted && $partHex[$part]) {
+                $want = (int) ($spools->sortBy(fn ($s) => self::hexDistance((string) $s['hex'], (string) $partHex[$part]))->first()['id'] ?? 0);
+            }
+            $partPreselect[$part] = $machine->contains($want) && $want !== $preselect ? $want : 0;
+        }
+        $byParts = $old ? ! empty($old['by_parts']) : ($request->query('by_parts') !== null ? $request->boolean('by_parts') : (count($parts) >= 2 && ($file->kind() === ArtGenerator::KIND || count(array_unique(array_filter($partHex))) >= 2)));
 
         return view('farm.start', [
             'file' => $file,
@@ -139,6 +158,8 @@ class OrderController extends Controller
             'changePreselect' => $changePreselect,
             'secondPreselect' => $secondPreselect,
             'codeColor' => $changes[0]['hex'] ?? null,
+            'parts' => count($parts) >= 2 ? array_map(fn ($part) => ['name' => $part, 'label' => OrderService::partLabel($file, $part), 'hex' => $partHex[$part], 'preselect' => $partPreselect[$part]], $parts) : [],
+            'byParts' => $byParts,
             'scaleNow' => $scale,
             'settings' => $this->settings->all(),
             'balance' => $this->wallet->balance($request->user()),
@@ -155,6 +176,14 @@ class OrderController extends Controller
      * @param  list<string>  $wanted  hex of every change, bottom to top
      * @return array{0: int, 1: list<int>}|null the first colour and a colour per change; null when nothing is loaded
      */
+    /** How far two colours are apart (RGB); a colour that is not a hex is grey. */
+    private static function hexDistance(string $a, string $b): float
+    {
+        $rgb = fn (string $hex) => preg_match('/^#?([0-9a-f]{6})$/i', $hex, $m) ? array_map('hexdec', str_split($m[1], 2)) : [128, 128, 128];
+
+        return sqrt(array_sum(array_map(fn ($x, $y) => ($x - $y) ** 2, $rgb($a), $rgb($b))));
+    }
+
     private static function nearestSet(array $colors, ?string $bodyHex, array $wanted): ?array
     {
         $rgb = fn (?string $hex) => preg_match('/^#?([0-9a-f]{6})$/i', (string) $hex, $m) ? array_map('hexdec', str_split($m[1], 2)) : [128, 128, 128];
@@ -198,6 +227,8 @@ class OrderController extends Controller
             'supports' => $order->supports === 'off' ? 'off' : null,
             'scale' => abs((float) $order->scale - 1) > 0.0005 ? (float) $order->scale : null, 'color' => $order->farm_color_id, 'second' => $order->second_color_id,
             'change' => array_column($order->colorSlots(), 'color_id') ?: null,
+            'by_parts' => $order->isByParts() ? 1 : null,
+            'part' => $order->isByParts() ? array_filter(array_column($order->partPlates(), 'color_id', 'part')) : null,
         ]));
     }
 
@@ -231,6 +262,9 @@ class OrderController extends Controller
             'second_color' => ['nullable', 'integer'],
             'change_color' => ['nullable', 'array', 'max:8'],
             'change_color.*' => ['nullable', 'integer'],
+            'by_parts' => ['nullable', 'boolean'],
+            'part_color' => ['nullable', 'array', 'max:16'],
+            'part_color.*' => ['nullable', 'integer'],
             'supports' => ['nullable', 'in:auto,off'],
             'designer_model' => ['nullable', 'integer'],
             'catalog_model' => ['nullable', 'integer'],
@@ -247,7 +281,7 @@ class OrderController extends Controller
         $inspiration = isset($data['catalog_model']) && ! $card ? CatalogModel::shown()->find((int) $data['catalog_model']) : null;
 
         try {
-            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto', isset($data['second_color']) ? (int) $data['second_color'] : null, $card, $inspiration, isset($data['change_color']) ? array_map('intval', array_values($data['change_color'])) : null);
+            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto', isset($data['second_color']) ? (int) $data['second_color'] : null, $card, $inspiration, isset($data['change_color']) ? array_map('intval', array_values($data['change_color'])) : null, $request->boolean('by_parts') ? array_map('intval', (array) ($data['part_color'] ?? [])) : null);
             Track::event('order_created', $card ?? $order->modelFile, array_filter(['order' => $order->id, 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null]));
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
@@ -365,6 +399,8 @@ class OrderController extends Controller
             'second_slot' => ['nullable', 'integer'],
             'change_slots' => ['nullable', 'array', 'max:8'],
             'change_slots.*' => ['nullable', 'integer'],
+            'part_slots' => ['nullable', 'array', 'max:16'],
+            'part_slots.*' => ['nullable', 'integer'],
             'delivery' => ['required', 'string', 'max:20'],
             'terms' => ['accepted'],
             'expected_total' => ['required', 'numeric'],
@@ -386,7 +422,7 @@ class OrderController extends Controller
         ], ['terms.accepted' => __('farm.refuse.terms')]);
 
         try {
-            $flow->pay($order, FarmPrinterSlot::findOrFail($data['slot']), $data['delivery'], $data['address'] ?? null, true, $request->ip(), (float) $data['expected_total'], $data['note'] ?? null, isset($data['second_slot']) ? (int) $data['second_slot'] : null, $this->currencyFor($order, $request), isset($data['change_slots']) ? array_map('intval', array_values($data['change_slots'])) : null);
+            $flow->pay($order, FarmPrinterSlot::findOrFail($data['slot']), $data['delivery'], $data['address'] ?? null, true, $request->ip(), (float) $data['expected_total'], $data['note'] ?? null, isset($data['second_slot']) ? (int) $data['second_slot'] : null, $this->currencyFor($order, $request), isset($data['change_slots']) ? array_map('intval', array_values($data['change_slots'])) : null, isset($data['part_slots']) ? array_map('intval', (array) $data['part_slots']) : null);
         } catch (InsufficientCredit $e) {
             // the top-up page asks for what is missing, in the currency the order is priced in
             return response()->json(['error' => 'credit', 'message' => __('farm.refuse.credit', ['missing' => $e->missingMoney()->format()]), 'missing' => $e->missing(), 'topup_url' => route('account.credit', ['need' => $e->missing(), 'back' => $order->token])], 402);
@@ -547,10 +583,22 @@ class OrderController extends Controller
             return $c + ['slot_id' => null, 'name' => null];
         }, $order->wantedChanges());
 
+        // an order printed by parts: every part, the colour the design names for it, and the spool chosen so far
+        $partPlates = $order->partPlates();
+        $partSpools = $partPlates ? FarmPrinterSlot::with('color')->whereIn('id', array_filter(array_column($partPlates, 'slot_id')))->get()->keyBy('id') : collect();
+        $parts = array_map(fn ($p, $i) => [
+            'part' => $p['part'], 'plate' => $i + 1, 'label' => OrderService::partLabel($order->modelFile, (string) $p['part']),
+            'hex' => ($order->modelFile?->tool_params['part_colors'][$p['part']]['hex'] ?? null) ?: null,
+            'slot_id' => ($p['slot_id'] ?? null) ?: null, 'name' => $partSpools->get($p['slot_id'] ?? 0)?->color?->displayName(),
+            'copies' => (int) ($p['copies'] ?? $order->copies), 'minutes' => $p['minutes'] ?? null, 'grams' => $p['grams'] ?? null,
+        ], $partPlates, array_keys($partPlates));
+
         return [
             'token' => $order->token,
             'number' => $order->number,
-            'changes' => $changes,
+            'changes' => $parts ? [] : $changes,
+            'by_parts' => $order->isByParts(),
+            'parts' => $parts,
             'max_colors' => FarmOrder::MAX_COLORS,
             'status' => $order->status,
             'status_text' => $order->statusText(),
@@ -558,7 +606,7 @@ class OrderController extends Controller
             'stage_step' => $stage ? (array_search($stage, self::STAGES, true) ?: 0) + 1 : null,
             'stage_total' => count(self::STAGES),
             'error' => $order->error,
-            'error_text' => $order->error ? __('farm.error.'.$order->error, $this->errorData($check, (string) $order->error)) : null,
+            'error_text' => $order->error ? __('farm.error.'.$order->error, $this->errorDataFor($order, $check)) : null,
             'quality' => $order->quality,
             'strength' => $order->strength,
             'copies' => $order->copies,
@@ -625,6 +673,17 @@ class OrderController extends Controller
         return $order->delivery === Shipping::POINT
             ? implode(', ', array_filter([(string) ($to['pickup_point_name'] ?? ''), $country]))
             : implode(', ', array_filter([(string) ($to['name'] ?? ''), (string) ($to['street'] ?? ''), trim(($to['zip'] ?? '').' '.($to['city'] ?? '')), $country]));
+    }
+
+    /** The data of the order's error, a part named in it under the name its tool shows. */
+    private function errorDataFor(FarmOrder $order, array $check): array
+    {
+        $data = $this->errorData($check, (string) $order->error);
+        if (isset($data['part'])) {
+            $data['part'] = OrderService::partLabel($order->modelFile, (string) $data['part']);
+        }
+
+        return $data;
     }
 
     private function errorData(array $check, string $code): array

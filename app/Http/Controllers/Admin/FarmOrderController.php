@@ -81,12 +81,12 @@ class FarmOrderController extends Controller
 
     public function gcode(FarmOrder $order): BinaryFileResponse
     {
-        // the plate that prints next (the last one of several may be a smaller file)
-        $plate = $order->nextPlate();
+        // the plate that prints next (the last one of several may be a smaller file), or the one asked for
+        $plate = max(1, min((int) $order->plates, (int) request()->query('plate') ?: $order->nextPlate()));
         $path = $order->absoluteGcodePath($plate);
         abort_unless($path && is_file($path), 404);
-        // the operator sends this file by hand: it must already select the customer's slot
-        $path = GcodeSlot::fileFor($path, (int) ($order->slot?->slot ?? 0), PrintProfile::tempsFor($order), $order->colorChanges());
+        // the operator sends this file by hand: it must already select the customer's slot (by parts: the slot of this plate)
+        $path = GcodeSlot::fileFor($path, (int) ($order->plateSpool($plate)?->slot ?? 0), PrintProfile::tempsForPlate($order, $plate), $order->isByParts() ? [] : $order->colorChanges());
 
         return response()->download($path, 'matplace-'.($order->number ?: $order->token).($order->plates > 1 ? '-p'.$plate : '').'.gcode', ['Content-Type' => 'text/x.gcode']);
     }

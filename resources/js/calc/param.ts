@@ -126,6 +126,10 @@ export function bootParam(stage: Stage): void {
         if (n.bridges) facts.push(t('param.bridges', { n: n.bridges }));
         if (n.led_m) facts.push(t('param.lightbox.led', { m: nf.format(n.led_m) }));
         if (n.saucer_d) facts.push(t('param.saucer', { d: nf.format(n.saucer_d), h: n.drainage_holes ?? 0 }));
+        const beadCount = (m.notes as { count?: number; each?: number[] });
+        if (cfg.kind === 'beads' && beadCount.count && beadCount.each) facts.push(t('param.beads.count', { n: beadCount.count, s: beadCount.each.map((v) => nf.format(v)).join(' × ') }));
+        const pocket = (m.notes as { pocket_mm?: number }).pocket_mm;
+        if (pocket) facts.push(t('param.cup.pocket', { w: nf.format(pocket) }));
         const magnet = shapeNotes().magnet;
         if (shape && magnet && magnet.mount !== 'through') facts.push(t('shape.magnet.fact', { d: nf.format(magnet.d), h: nf.format(magnet.h) }));
         if ((n.needs ?? []).length) facts.push(`${t('param.needs')}: ${(n.needs ?? []).map((x) => t(`param.need.${x}`)).join(', ')}`);
@@ -156,6 +160,7 @@ export function bootParam(stage: Stage): void {
         if (cfg.kind === 'stamp' && p.handle === 'knob') return ['body', 'handle'];
         if (cfg.kind === 'logo' && p.mode === 'standing') return ['body', 'stand'];
         if (cfg.kind === 'sign' && p.two_color && p.style !== 'engrave') return ['plate', 'text'];
+        if (cfg.kind === 'beads' && p.style === 'raised') return ['body', 'text'];
         if (cfg.kind === 'qr' && p.stand) return ['body', 'stand'];
         if (cfg.kind === 'lightbox') return ['body', 'face', 'diffuser', 'back'];
         if (cfg.kind === 'cutter') return ((lastMeta?.notes as { parts?: string[] } | undefined)?.parts ?? []);   // a stamp only when the drawing had inner lines

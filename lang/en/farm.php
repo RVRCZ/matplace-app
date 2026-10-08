@@ -31,6 +31,10 @@ return [
         'second_none' => 'No second spool of the same plastic sits in this colour\'s machine. Pick another first colour, or it prints in one colour.',
         'change_title' => 'Colour :n (from :z mm up)',
         'changes_hint' => 'This design has :n colours one on another: the printer swaps the spool itself at the height where the next colour starts. All spools have to be in one machine, :max colours at most; the offer follows the first colour.',
+        'parts_title' => 'Print the parts separately, each in its own colour (:n parts)',
+        'parts_hint' => 'Every part of the design prints as a print of its own from its own spool, part after part on the same machine. The spools have to be in one machine, :max colours at most; the offer follows the first colour. Unticked, the parts print together on one plate in one colour.',
+        'part_main' => 'The main colour',
+        'part_main_hint' => 'as the first colour above',
         'steps' => ['We check the model and repair it if needed', 'We turn it so it needs as little support as possible', 'We work out time, material and price', 'You pick a colour and start the print'],
     ],
 
@@ -76,6 +80,10 @@ return [
         'second_same_hint' => 'one colour',
         'second_line' => 'second colour: :name',
         'change_title' => 'Colour :n (from :z mm up)',
+        'parts_title' => 'The parts and their colours',
+        'parts_hint' => 'Every part prints on its own from its own spool, part after part on one machine. At most :max colours.',
+        'part_main' => 'The main colour',
+        'part_line' => ':part: :name',
         'changes_title' => 'The colours one on another',
         'changes_hint' => 'Colours one on another: the printer makes every change itself at the height where the next colour starts. At most :max colours in one print.',
         'change_same' => 'Same as the one before',
@@ -139,6 +147,7 @@ return [
     ],
 
     'error' => [
+        'copies_fit' => 'The part ":part" fits the plate at most :max times, and printing by parts does not print more pieces at once. Lower the number of pieces.',
         'file_unreadable' => 'The file could not be read. Is it really a valid STL?',
         'no_printer' => 'No printer is in operation right now. Please try again later.',
         'invalid_mesh' => 'The file contains no body that could be printed.',

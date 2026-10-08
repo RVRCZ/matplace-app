@@ -31,6 +31,10 @@ return [
         'second_none' => 'En la máquina de este color no hay otra bobina del mismo plástico. Elija otro primer color, o se imprime en un solo color.',
         'change_title' => 'Color :n (desde :z mm)',
         'changes_hint' => 'Este diseño tiene :n colores uno sobre otro: la impresora cambia la bobina sola a la altura donde empieza el siguiente color. Todas las bobinas deben estar en una misma máquina, como máximo :max colores; la oferta sigue al primer color.',
+        'parts_title' => 'Imprimir las piezas por separado, cada una en su color (:n piezas)',
+        'parts_hint' => 'Cada pieza del diseño se imprime como una impresión propia desde su propia bobina, pieza tras pieza en la misma máquina. Las bobinas deben estar en una misma máquina, como máximo :max colores; la oferta sigue al primer color. Sin marcar, las piezas se imprimen juntas en una placa y en un color.',
+        'part_main' => 'El color principal',
+        'part_main_hint' => 'como el primer color de arriba',
         'steps' => ['Revisamos el modelo y lo reparamos si hace falta', 'Lo orientamos para que necesite los mínimos soportes', 'Calculamos tiempo, material y precio', 'Usted elige el color e inicia la impresión'],
     ],
 
@@ -76,6 +80,10 @@ return [
         'second_same_hint' => 'un solo color',
         'second_line' => 'segundo color: :name',
         'change_title' => 'Color :n (desde :z mm)',
+        'parts_title' => 'Las piezas y sus colores',
+        'parts_hint' => 'Cada pieza se imprime por separado desde su propia bobina, pieza tras pieza en una máquina. Como máximo :max colores.',
+        'part_main' => 'El color principal',
+        'part_line' => ':part: :name',
         'changes_title' => 'Los colores uno sobre otro',
         'changes_hint' => 'Colores uno sobre otro: la impresora hace cada cambio sola a la altura donde empieza el siguiente color. Como máximo :max colores por impresión.',
         'change_same' => 'Igual que el anterior',
@@ -139,6 +147,7 @@ return [
     ],
 
     'error' => [
+        'copies_fit' => 'La pieza «:part» cabe en la placa como máximo :max veces, y al imprimir por piezas no se imprimen más piezas a la vez. Reduzca el número de piezas.',
         'file_unreadable' => 'No se pudo leer el archivo. ¿Es realmente un STL válido?',
         'no_printer' => 'Ahora no hay ninguna impresora en servicio. Inténtelo más tarde.',
         'invalid_mesh' => 'El archivo no contiene ningún cuerpo que se pueda imprimir.',

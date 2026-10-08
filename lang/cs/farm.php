@@ -31,6 +31,10 @@ return [
         'second_none' => 'K této barvě není v téže tiskárně žádná druhá cívka stejného plastu. Zvolte jinou první barvu, nebo se tiskne jednobarevně.',
         'change_title' => 'Barva :n (od :z mm)',
         'changes_hint' => 'Tento návrh má :n barev nad sebou: tiskárna si cívku vymění sama ve výšce, kde další barva začíná. Všechny cívky musí být v jedné tiskárně, nejvýš :max barvy najednou; nabídka se řídí první barvou.',
+        'parts_title' => 'Tisknout díly zvlášť, každý svou barvou (:n dílů)',
+        'parts_hint' => 'Každý díl návrhu se vytiskne jako samostatný tisk ze své cívky, díl po dílu na téže tiskárně. Cívky musí být v jedné tiskárně, nejvýš :max barvy; nabídka se řídí první barvou. Bez zaškrtnutí se díly tisknou spolu na jedné podložce v jedné barvě.',
+        'part_main' => 'Hlavní barva',
+        'part_main_hint' => 'jako první barva výše',
         'steps' => ['Model zkontrolujeme a případně opravíme', 'Natočíme ho tak, aby potřeboval co nejméně podpěr', 'Spočítáme čas, spotřebu a cenu', 'Vyberete barvu a spustíte tisk'],
     ],
 
@@ -81,6 +85,10 @@ return [
         'change_same_hint' => 'bez výměny',
         'change_first' => 'první barva (zpět na ni)',
         'change_line' => 'barva :n: :name',
+        'parts_title' => 'Díly a jejich barvy',
+        'parts_hint' => 'Každý díl se tiskne zvlášť ze své cívky, díl po dílu na jedné tiskárně. Nejvýš :max barvy.',
+        'part_main' => 'Hlavní barva',
+        'part_line' => ':part: :name',
         'changes_title' => 'Barvy nad sebou',
         'recolor' => 'Přepočítat pro zvolenou barvu',
         'recolor_note' => 'Změnili jste barvu. Může být v jiné tiskárně a z jiného materiálu, proto je potřeba cenu a čas spočítat znovu.',
@@ -139,6 +147,7 @@ return [
     ],
 
     'error' => [
+        'copies_fit' => 'Díl „:part“ se na podložku vejde nejvýš :max× a při tisku po dílech se víc kusů najednou netiskne. Snižte počet kusů.',
         'file_unreadable' => 'Soubor se nepodařilo přečíst. Je to opravdu platný STL?',
         'no_printer' => 'Teď není v provozu žádná tiskárna. Zkuste to prosím později.',
         'invalid_mesh' => 'V souboru není žádné těleso, které by šlo vytisknout.',

@@ -152,6 +152,41 @@
             </div>
         @endforeach
 
+        @if(count($parts ?? []) >= 2)
+            {{-- a design of several separately printed parts (a box and its lid, the plates of a layered picture): each part
+                 may print from its own spool of the machine of the first colour, one plate after another --}}
+            <div id="farm-parts" class="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+                <label class="flex cursor-pointer items-start gap-2 text-sm">
+                    <input type="checkbox" id="farm-by-parts" name="by_parts" value="1" class="mt-1 h-4 w-4 accent-action" @checked($byParts ?? false)>
+                    <span><span class="font-semibold text-slate-700">{{ __('farm.start.parts_title', ['n' => count($parts)]) }}</span><br><span class="text-xs text-slate-500">{{ __('farm.start.parts_hint', ['max' => \App\Models\FarmOrder::MAX_COLORS]) }}</span></span>
+                </label>
+                <div id="farm-part-rows" class="mt-3 space-y-3 {{ ($byParts ?? false) ? '' : 'hidden' }}">
+                    @foreach($parts as $part)
+                        <div class="farm-part" data-part="{{ $part['name'] }}" data-want="{{ $part['hex'] ?? '' }}">
+                            <div class="text-xs font-semibold text-slate-700">{{ $part['label'] }}</div>
+                            <div class="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ $part['label'] }}">
+                                <label data-second-for="*" class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
+                                    <input type="radio" name="part_color[{{ $part['name'] }}]" value="" class="sr-only" data-hex="" @checked(! $part['preselect'])>
+                                    <span class="h-10 w-10 shrink-0 rounded-lg border border-dashed border-slate-300"></span>
+                                    <span><span class="font-semibold">{{ __('farm.start.part_main') }}</span><br><span class="text-xs text-slate-500">{{ __('farm.start.part_main_hint') }}</span></span>
+                                </label>
+                                @foreach($colors as $c)
+                                    @foreach($c['seconds'] as $s)
+                                        <label data-second-for="{{ $c['id'] }}" class="hidden cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
+                                            <input type="radio" name="part_color[{{ $part['name'] }}]" value="{{ $s['id'] }}" class="sr-only" data-hex="{{ $s['hex'] }}" @checked($s['id'] === $part['preselect'] && $c['id'] === $preselect)>
+                                            @if($s['photo'])<img src="{{ $s['photo'] }}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">@else<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:{{ $s['hex'] }}"></span>@endif
+                                            <span><span class="font-semibold">{{ $s['name'] }}</span><br><span class="text-xs text-slate-500">{{ $s['kind'] }}</span></span>
+                                        </label>
+                                    @endforeach
+                                @endforeach
+                            </div>
+                            <p class="farm-change-none mt-2 hidden text-xs text-amber-800">{{ __('farm.start.second_none') }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         <button id="farm-continue" type="submit" class="mt-4 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" @disabled(! $file)>{{ __('farm.start.continue') }}</button>
         @if($slicesLeft !== null)<p class="mt-2 text-xs text-slate-500">{{ __('farm.slices_left', ['n' => $slicesLeft]) }}</p>@endif
     </form>

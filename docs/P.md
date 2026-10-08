@@ -115,6 +115,36 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 
 **Ukázky a karty** se kreslí v barvách filamentů i mimo karty (`render_tool.py` bere soubor s barvami dílů).
 
+### Po vánoční sadě (od 8. 10. 2026, jeden nástroj na commit)
+
+| nástroj | adresa | kind | co dělá |
+|---|---|---|---|
+| Stojánek na tužky ze jména | `/tools/name-organizer` | `name_cup` | jméno je stojánek: písmena rozšířená o 3 mm jsou kapsa, kolem stěna 1,6 mm, dno 2 mm, výška 40–120 mm |
+| Miska ve tvaru obrázku | `/tools/shape-tray` | `tray` | obrys obrázku je stěna (8–40 mm), kresba vyrytá do dna, v barvách, nebo hladké dno |
+| Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
+
+**Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
+tiskne se nastojato. Oka písmen pod 150 mm² se vyplní, písmena, která se po rozšíření nedotknou, sváže příčka na celou
+výšku. Stránka vypisuje nejširší místo kapsy a varuje, kdyby bylo pod 9 mm (u běžných jmen to nenastane, sousední
+písmena se slijí). Volitelný podstavec je spodní 3 mm: `color_change_mm` = 3, tedy druhá barva na farmě i v projektu.
+Zadání chtělo „každé písmeno je kapsa“ – tak to je u tiskacích písem; u psacího je kapsa jedna souvislá.
+
+**Korálky s písmeny** (`name_kinds.beads`): až 16 znaků, osm v řadě na podložce, mezera = korálek bez písmene. Písmeno je
+na horní ploše vyvýšené (díl `text`, druhá barva, `color_change_mm` = výška korálku) nebo vyryté; volitelně vyryté
+zrcadlově i do spodní plochy, aby se korálek četl z obou stran (zadání chtělo písmeno „na dvou protilehlých stranách“
+– spodní strana leží na podložce, tam jde jen vyrýt). Otvor 1,5–4 mm vede vodorovně v půli výšky; když nad ním a pod
+ním nezbývá 1,2 mm, nástroj odmítne slovy. Kulička má seříznutý vršek a spodek. Texty říkají, že malé díly nepatří
+dětem do tří let. Sada čísel ze zadání = napsat číslice do textu.
+
+**Miska ve tvaru obrázku** (`tray`, rodina `shape`, větev `dish` v `build()`): podklad je dno, kolem něj stěna podle
+obrysu. Obrázek ve dně má tři podoby: **vyrytý** (výchozí – všechny barvy kromě největší se vyříznou 0,6 mm do dna,
+jeden díl, jeden filament, vytiskne kdokoli), **v barvách** (vložený zarovno do dna → `multi_material`, protože stěna
+stojí ve stejných vrstvách; na farmě objednat nejde a stránka to říká) a **bez obrázku**. Jednobarevná silueta dá
+hladkou misku ve světlém filamentu. Obrázek drží odstup od stěny (`frame`). Při té příležitosti opravená chyba
+sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do 6 mm (meze v `shape_kinds.LIMITS`).
+
+Rozcestník `/gifts` odkazuje i na misku, stojánek a korálky.
+
 ## 2. Rozhodnutí a proč
 
 1. **Produkt = vlastní kind**, ne jeden kind `shape` s polem `product` (tak to psalo zadání). Meze a výchozí hodnoty
@@ -174,11 +204,26 @@ z knihovny, lokálně (PHP vestavěný server na Windows, 7. 10. 2026):
 | přívěsek ze jména (bez obrázku) | 0,74 s | 214 kB |
 | cedulka pro srovnání (N.md: 0,71 s) | 0,74 s | 110 kB |
 
-Samotný `param_tool.py` s obrázkem běží 0,7–0,9 s (fotka v osmi barvách na 120 mm: 0,89 s); z toho asi 0,45 s je
-import numpy, `scipy.ndimage` (0,24 s) a Pillow, zbytek čtení obrázku, barvy a obrysy. **Cíl „do 1 s“ lokálně
-nesplňuju** (1,35 s + 0,35 s prodleva před dotazem). Na produkci jsem neměřil (větev není nasazená); cedulka je tam
-1,6× rychlejší než lokálně (0,44 vs. 0,71 s), takže čekám kolem 0,9 s – po nasazení změřit. Po zjednodušení obrysů
+Samotný `param_tool.py` s obrázkem běží 0,7–0,9 s (fotka v osmi barvách na 120 mm: 0,89 s). Po zjednodušení obrysů
 (bod na desetinu buněk) má model 2–5 tisíc trojúhelníků; předtím 14 tisíc.
+
+**Na produkci** (matplace.com, `main` 5355fa3, 7. 10. 2026 večer, medián z pěti, stejný požadavek):
+
+| nástroj | požadavek | STL |
+|---|---|---|
+| přívěsek, duch | 1,26 s | 107 kB |
+| podtácek, sněhulák | 1,28 s | 136 kB |
+| sušenka, perníkový panáček | 1,31 s | 400 kB |
+| velké písmeno „Ela“ | 0,82 s | 137 kB |
+| perníček „Ela“ | 0,59 s | 262 kB |
+| cedulka pro srovnání | 0,49 s | 110 kB |
+
+**Cíl „do 1 s“ nástroje s obrázkem neplní** ani lokálně, ani na produkci (1,3 s + 0,35 s prodleva před dotazem);
+nástroje se jménem ano. Můj odhad „kolem 0,9 s“ z první verze tohoto dokumentu byl špatně. Kam čas jde (lokální
+profil): import `scipy.ndimage` 0,27 s, čtení SVG 0,1–0,15 s, barvy a obrysy 0,2 s, zbytek start Pythonu a PHP.
+Po měření jsem zrychlil čtení SVG (body celé křivky jedním voláním, stejné obrysy na desetinu mm², o ~0,04 s na
+obrázek) – to v číslech výše ještě není. Dál by pomohl jen běžící proces místo nového Pythonu na každý náhled, což je
+věc `feature/perf`, ne této větve.
 
 ## 5. Co není ověřené
 
@@ -216,10 +261,16 @@ Poznámka k tomuhle PC: `C:\matplace-app\node_modules` je od 7. 10. 07:37 prázd
 na něj měly odkaz), takže `npm run build` nejde v žádném worktree, který tam odkazuje. V `C:\matplace-shapes-wt`
 jsem odkaz nahradil vlastním `npm ci`; sdílený adresář obnoví `npm ci` v `C:\matplace-app`.
 
+**Nasazeno 7. 10. 2026 v 18:27 UTC** (nasazovala session, která stavěla `feature/farm-colors`; podrobnosti v
+`docs/FARM-COLORS.md` §5): `main` 5772959 = tato větev po `a764dcf` slitá s `feature/farm-colors`, jedna migrace
+(`farm_orders.color_changes`, ne z této větve), odstávka 11 s. Po nasazení jsem ověřil, že `/tools`, `/gifts` a
+stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled na produkci přiřazuje barvám skutečné cívky
+(duch: `02_PLA+_bily`, `01_PLA+_cerny`, `04_PLA+_ruzovy`). Zkušební tisk je na Romanovi.
+
 ## 7. Co přijde (v tomhle pořadí)
 
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
-Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák, miska,
-organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), korálky, stojánek
-na tužky, tvary a motivy cedulky, `logo` `extrude`, 20+ písem.
+Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák,
+organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), tvary
+a motivy cedulky, `logo` `extrude`, 20+ písem.

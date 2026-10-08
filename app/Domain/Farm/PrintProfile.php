@@ -100,6 +100,17 @@ final class PrintProfile
     }
 
     /** Temperatures written into the G-code copy that goes to the printer. */
+    /** The temperatures of one plate: those of its own spool in an order printed by parts, else the order's. */
+    public static function tempsForPlate(FarmOrder $order, ?int $plate): array
+    {
+        $spool = $order->isByParts() ? $order->plateSpool($plate) : null;
+        if ($spool && $spool->color && $order->printer) {
+            return self::for($order->printer, $spool->color->material, $spool->color)->temps;
+        }
+
+        return self::tempsFor($order);
+    }
+
     public static function tempsFor(FarmOrder $order): array
     {
         if (! $order->printer || ! $order->material) {

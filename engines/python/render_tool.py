@@ -158,7 +158,7 @@ def render(mesh: trimesh.Trimesh, width: int, height: int, colour, card: bool = 
         rgb = np.clip(rgb, 0, 255)
     rgb[covered] = body[covered]
 
-    picture = Image.fromarray(rgb.astype(np.uint8), 'RGB').resize((width, height), Image.LANCZOS)
+    picture = Image.fromarray(rgb.astype(np.uint8)).resize((width, height), Image.LANCZOS)
     if card:
         return picture
     return picture.quantize(colors=96, method=Image.MEDIANCUT, dither=Image.NONE)

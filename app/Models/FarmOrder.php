@@ -58,7 +58,7 @@ class FarmOrder extends Model
 
     protected $fillable = [
         'quality_rating', 'quality_note', 'timelapse_path', 'kind', 'farm_printer_material_id', 'test_params',
-        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'supports', 'second_slot_id', 'second_color_id', 'color_changes', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
+        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'supports', 'second_slot_id', 'second_color_id', 'color_changes', 'by_parts', 'part_plates', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
         'farm_material_id', 'farm_color_id', 'farm_printer_id', 'farm_printer_slot_id', 'delivery', 'shipping_address', 'note',
         'print_settings', 'admin_overrides', 'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'rest_gcode_path', 'slice_params', 'slice_result', 'est_minutes',
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
@@ -75,7 +75,7 @@ class FarmOrder extends Model
         'terms_accepted_at' => 'datetime', 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'queued_at' => 'datetime',
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime',
         'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',
-        'shipping_price' => 'float', 'shipped_at' => 'datetime', 'timings' => 'array', 'color_changes' => 'array',
+        'shipping_price' => 'float', 'shipped_at' => 'datetime', 'timings' => 'array', 'color_changes' => 'array', 'by_parts' => 'bool', 'part_plates' => 'array',
     ];
 
     /** What the customer pays (or paid), in the order's own currency. */
@@ -313,9 +313,47 @@ class FarmOrder extends Model
         return 'orders/'.$this->token;
     }
 
-    /** The G-code of one plate: every full plate shares the main file, a partly filled last plate has its own. */
+    /** Separately printed parts of the design, every part its own print from its own spool (one plate per part). */
+    public function isByParts(): bool
+    {
+        return (bool) $this->by_parts;
+    }
+
+    /**
+     * The plates of an order printed by parts, in the order they print: the part, the spool chosen for it and, once
+     * sliced, its G-code and figures. Before slicing only part, slot_id and color_id are there.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function partPlates(): array
+    {
+        if (! $this->isByParts()) {
+            return [];
+        }
+
+        return array_values(array_filter((array) $this->part_plates, fn ($p) => is_array($p) && ! empty($p['part'])));
+    }
+
+    /** The spool a plate prints from: its own for an order by parts, else the order's. */
+    public function plateSpool(?int $plate = null): ?FarmPrinterSlot
+    {
+        if ($this->isByParts() && $plate !== null) {
+            $id = (int) ($this->partPlates()[$plate - 1]['slot_id'] ?? 0);
+            $slot = $id ? FarmPrinterSlot::with('color')->find($id) : null;
+            if ($slot && (int) $slot->farm_printer_id === (int) $this->farm_printer_id) {
+                return $slot;
+            }
+        }
+
+        return $this->slot;
+    }
+
+    /** The G-code of one plate: every full plate shares the main file, a partly filled last plate has its own; by parts, every plate its own. */
     public function absoluteGcodePath(?int $plate = null): ?string
     {
+        if ($this->isByParts() && $plate !== null && ($own = $this->partPlates()[$plate - 1]['gcode_path'] ?? null)) {
+            return Storage::disk(config('farm.disk'))->path((string) $own);
+        }
         $rel = $plate !== null && $plate >= $this->plates && $this->rest_gcode_path ? $this->rest_gcode_path : $this->gcode_path;
 
         return $rel ? Storage::disk(config('farm.disk'))->path($rel) : null;
@@ -330,6 +368,9 @@ class FarmOrder extends Model
     /** Pieces on each plate, first to last: [4, 4, 1] for 9 pieces when four fit. */
     public function plateLayout(): array
     {
+        if ($this->isByParts() && $this->partPlates()) {
+            return array_map(fn ($p) => (int) ($p['copies'] ?? $this->copies), $this->partPlates());
+        }
         if ($this->plates <= 1) {
             return [$this->copies];
         }

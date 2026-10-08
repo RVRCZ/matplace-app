@@ -40,9 +40,10 @@ final class Dispatcher
 
     private function start(FarmPrinter $printer, FarmOrder $order): FarmPrintJob
     {
-        $slot = (int) ($order->slot?->slot ?? 0);
-        // a multi-plate order: the next plate in line; the last one may have its own (smaller) G-code
+        // a multi-plate order: the next plate in line; the last one may have its own (smaller) G-code, and an order
+        // printed by parts has a spool of its own for every plate
         $plate = $order->nextPlate();
+        $slot = (int) ($order->plateSpool($plate)?->slot ?? 0);
         $gcode = $order->absoluteGcodePath($plate);
         $job = FarmPrintJob::create([
             'farm_order_id' => $order->id, 'farm_printer_id' => $printer->id, 'slot' => $slot, 'plate' => $plate,

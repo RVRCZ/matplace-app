@@ -429,8 +429,13 @@ def _svg_picture(path, px):
             if not length:
                 continue
             n = int(max(8, min(400, length / max(doc.viewbox.width if doc.viewbox else 100, 1) * 600)))
-            pts = [sp.point(i / n) for i in range(n)]
-            pts = [(pt.x, pt.y) for pt in pts if pt is not None]
+            try:
+                # all the points of a subpath in one call: asking for them one by one took a third of a preview's time
+                import numpy as np
+                pts = [(float(x), float(y)) for x, y in sp.npoint(np.linspace(0, 1, n, endpoint=False))]
+            except Exception:  # noqa: BLE001 - an older svgelements has no npoint
+                pts = [sp.point(i / n) for i in range(n)]
+                pts = [(pt.x, pt.y) for pt in pts if pt is not None]
             if len(pts) >= 3:
                 total += len(pts)
                 rings.append(pts)

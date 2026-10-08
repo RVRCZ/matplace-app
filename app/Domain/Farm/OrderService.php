@@ -2,6 +2,9 @@
 
 namespace App\Domain\Farm;
 
+use App\Domain\Tools\ArtGenerator;
+use App\Domain\Tools\ModelEditor;
+use App\Domain\Tools\ParametricGenerator;
 use App\Engines\DTO\Dimensions;
 use App\Jobs\PrepareFarmOrder;
 use App\Models\CatalogModel;
@@ -17,6 +20,8 @@ use App\Support\Currency;
 use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /** Everything the customer can do with a farm order before it is paid: create, change presets, see colours and price. */
@@ -27,7 +32,7 @@ final class OrderService
     /**
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null): FarmOrder
+    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! config('farm.open', true)) {
@@ -73,6 +78,8 @@ final class OrderService
         // same machine, one per change of the design (an older caller names just the one second colour)
         $picked = $chosen ? $this->spoolsForChanges($chosen['slot'], $file->colorChanges((ModelValidator::UNITS[$unit] ?? 1.0) * $scale), $changeColorIds ?? ($secondColorId ? [$secondColorId] : [])) : [];
         $second = $picked && $picked[0]['slot_id'] !== $chosen['slot']->id ? FarmPrinterSlot::with('color')->find($picked[0]['slot_id']) : null;
+        // the parts of the design printed separately, each from its own spool: one plate per part, laid out when it is prepared
+        $partPlates = $partColorIds !== null ? $this->spoolsForParts($chosen['slot'] ?? null, self::designParts($file), $partColorIds) : [];
 
         $order = FarmOrder::create([
             'token' => Str::random(32),
@@ -92,7 +99,9 @@ final class OrderService
             'farm_printer_slot_id' => $chosen['slot']->id ?? null,
             'second_slot_id' => $second?->id,
             'second_color_id' => $second?->color->id,
-            'color_changes' => $picked ?: null,
+            'color_changes' => $partPlates ? null : ($picked ?: null),
+            'by_parts' => $partPlates !== [],
+            'part_plates' => $partPlates ?: null,
             // the account's currency, or the one this customer sees prices in until the first payment fixes it
             'currency' => $user->currency ?: Currency::current($user),
             // a designer's card (the reward is added to the price) or the inspiration page the customer came from
@@ -197,8 +206,9 @@ final class OrderService
      */
     public function secondColors(FarmOrder $order, FarmPrinterSlot $main): Collection
     {
-        // a design that changes colour at least once (a plate with a text, a picture in colours one on another)
-        if (! $order->wantedChanges()) {
+        // a design that changes colour at least once (a plate with a text, a picture in colours one on another), or one
+        // printed by parts (every part may take another spool of the machine)
+        if (! $order->wantedChanges() && ! $order->isByParts()) {
             return collect();
         }
 
@@ -237,6 +247,108 @@ final class OrderService
             $out[] = ['z' => round((float) $change['z'], 3), 'slot_id' => (int) $slot->id, 'color_id' => $id];
         }
         if (count(array_unique($used)) > FarmOrder::MAX_COLORS) {
+            throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
+        }
+
+        return $out;
+    }
+
+    /**
+     * The separately printed parts of a design (a box and its lid, the plates of a layered picture, the parts of a
+     * painted 3MF); [] for a plain upload or a one-piece design.
+     *
+     * @return list<string>
+     */
+    public static function designParts(ModelFile $file): array
+    {
+        if ($file->origin !== 'tool') {
+            return [];
+        }
+        $kind = (string) $file->origin_ref;
+        if (isset(ParametricGenerator::FIELDS[$kind])) {
+            // only parts that are objects of their own; the colour layers of a picture or a sign print as one piece
+            $parts = in_array($kind, self::ASSEMBLED, true) ? ParametricGenerator::partsOf($kind, (array) $file->tool_params) : [];
+        } else {
+            $parts = $kind === 'colors' ? [] : ModelEditor::partsOf($file);
+        }
+
+        return array_values(array_diff($parts, ['all']));
+    }
+
+    /** Our generators whose parts are separate objects (a box and its lid…), not the colour layers of one piece. */
+    public const ASSEMBLED = ['box', 'vase', 'stamp', 'logo', 'qr', 'lightbox', 'cutter', 'modular'];
+
+    /** The name of a part as the tool's page shows it ("Víko", "Deska 2", "Díl 3"); the raw name when none is known. */
+    public static function partLabel(?ModelFile $file, string $part): string
+    {
+        $kind = (string) $file?->origin_ref;
+        $n = preg_match('/_([0-9]{1,2})$/', $part, $m) ? $m[1] : null;
+        $stem = $n !== null ? substr($part, 0, -strlen($n) - 1) : $part;
+        if (str_starts_with($part, 'bin_')) {
+            return __('param.part.bin', ['s' => str_replace('x', ' × ', substr($part, 4))]);
+        }
+        foreach ($kind === ArtGenerator::KIND ? ["edit.art.part.$stem"] : (isset(ParametricGenerator::FIELDS[$kind]) ? ["param.part.$part.$kind", "param.part.$part", "param.part.$stem"] : ["edit.$kind.part.$stem", "edit.part.$stem"]) as $key) {
+            if (Lang::has($key)) {
+                return __($key, ['n' => $n]);
+            }
+        }
+
+        return $part;
+    }
+
+    /**
+     * The STL of one part of a design: built again from the stored parameters (our generators) or the part file an
+     * editing tool kept. Returns the path and whether the caller has to delete it; null when the part does not exist.
+     *
+     * @return array{path: string, temp: bool}|null
+     */
+    public function partStl(ModelFile $file, string $part): ?array
+    {
+        if (! in_array($part, self::designParts($file), true)) {
+            return null;
+        }
+        if (isset(ParametricGenerator::FIELDS[(string) $file->origin_ref])) {
+            $built = app(ParametricGenerator::class)->build((string) $file->origin_ref, (array) $file->tool_params, $part);
+            if (($built['meta']['part'] ?? null) !== $part) {
+                @unlink($built['path']);
+
+                return null;
+            }
+
+            return ['path' => $built['path'], 'temp' => true];
+        }
+        $path = dirname(Storage::disk(ModelFile::DISK)->path($file->storage_path)).'/parts/'.$part.'.stl';
+
+        return is_file($path) ? ['path' => $path, 'temp' => false] : null;
+    }
+
+    /**
+     * One plate per part, each with the spool the customer named for it (the main spool itself, or another spool of
+     * its machine); a part nobody named prints from the main spool. [] when the design has fewer than two parts.
+     *
+     * @param  list<string>  $parts
+     * @param  array<string, int|null>  $colorIds  part → colour
+     * @return list<array{part: string, slot_id: int, color_id: int}>
+     */
+    public function spoolsForParts(?FarmPrinterSlot $main, array $parts, array $colorIds): array
+    {
+        if (count($parts) < 2) {
+            return [];
+        }
+        if (! $main) {
+            // no colour chosen yet: the spools are picked on the order page
+            return array_map(fn ($part) => ['part' => $part, 'slot_id' => null, 'color_id' => null], $parts);
+        }
+        $main->loadMissing('color');
+        $others = $this->secondSpools($main);
+        $out = [];
+        foreach ($parts as $part) {
+            $id = (int) ($colorIds[$part] ?? 0);
+            $slot = $id && $id !== (int) $main->farm_color_id ? $others->first(fn (FarmPrinterSlot $s) => (int) $s->farm_color_id === $id) : null;
+            $slot ??= $main;
+            $out[] = ['part' => $part, 'slot_id' => (int) $slot->id, 'color_id' => (int) $slot->farm_color_id];
+        }
+        if (count(array_unique(array_merge([(int) $main->farm_color_id], array_column($out, 'color_id')))) > FarmOrder::MAX_COLORS) {
             throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
         }
 
