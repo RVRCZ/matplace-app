@@ -54,6 +54,7 @@ use App\Http\Controllers\Printer\InquiryController as PrinterInquiryController;
 use App\Http\Controllers\Printer\PrinterController;
 use App\Http\Controllers\Printer\QuoteController;
 use App\Http\Controllers\PrinterPageController;
+use App\Http\Controllers\SellToolsController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SocialVideoController;
 use App\Http\Controllers\ToolsController;
@@ -157,6 +158,12 @@ $pages = function () {
     Route::get('/tools/soap-from-model', [EditToolsController::class, 'edit'])->defaults('op', 'soap')->name('tools.soap_model');
     Route::get('/tools/wearable', [EditToolsController::class, 'edit'])->defaults('op', 'wearable')->name('tools.wearable');
     Route::get('/tools/slider', [EditToolsController::class, 'edit'])->defaults('op', 'slider')->name('tools.slider');
+    // session 4: selling and planning, pages without geometry (App\Domain\Sell, resources/js/site/sell.ts)
+    Route::get('/tools/cost', [SellToolsController::class, 'cost'])->name('tools.cost');
+    Route::get('/tools/profit', [SellToolsController::class, 'profit'])->name('tools.profit');
+    Route::get('/tools/plan', [SellToolsController::class, 'plan'])->name('tools.plan');
+    Route::get('/tools/vendors', [SellToolsController::class, 'vendors'])->name('tools.vendors');
+    Route::post('/tools/plan/pdf', [SellToolsController::class, 'planPdf'])->middleware('throttle:20,1,sell_pdf')->name('tools.plan.pdf');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {
@@ -311,6 +318,12 @@ Route::get('/social/videos/{video}.mp4', [SocialVideoController::class, 'show'])
 // Every "throttle:N,1" below carries its own prefix: without one Laravel counts all of them on ONE key per visitor,
 // so a minute of live previews (90/min) would lock the create button (20/min) with "Too Many Attempts".
 Route::prefix('api')->name('api.')->group(function () {
+    // session 4: the selling plans of an account
+    Route::middleware('auth')->group(function () {
+        Route::get('sell/plans', [SellToolsController::class, 'plans'])->name('sell.plans');
+        Route::post('sell/plans', [SellToolsController::class, 'storePlan'])->middleware('throttle:30,1,sell_plans')->name('sell.plans.store');
+        Route::delete('sell/plans/{plan}', [SellToolsController::class, 'deletePlan'])->whereNumber('plan')->name('sell.plans.delete');
+    });
     Route::get('config', [ConfigController::class, 'show'])->name('config');
     Route::post('uploads', [UploadController::class, 'store'])->middleware('throttle:uploads')->name('uploads.store');
     Route::get('files/{modelFile}', [UploadController::class, 'show'])->name('files.show');

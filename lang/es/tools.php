@@ -79,6 +79,15 @@ return [
     'slider.title' => 'Fidget deslizante en una placa',
     'slider.hint' => 'Una ranura en cola de milano con cursor y topes recortada en una placa plana; se imprime de una vez y, al retirarla, se desliza y hace clic.',
     'slider.action' => 'Hacer el fidget deslizante',
+    'cost.title' => 'Coste de imprimir en su propia impresora',
+    'cost.hint' => 'Filamento, electricidad, desgaste, fallos y su trabajo: lo que de verdad cuesta una pieza, un precio recomendado con margen y, al lado, por cuánto la imprimimos nosotros.',
+    'cost.action' => 'Calcular el coste',
+    'profit.title' => 'Beneficio del vendedor',
+    'profit.hint' => 'El precio menos las comisiones de Etsy, Fler, una tienda o un mercado, el envío, el IVA y el coste: lo que le queda de una venta y cuántas piezas cubren los costes fijos.',
+    'profit.action' => 'Calcular el beneficio',
+    'plan.title' => 'Plan de ventas del año',
+    'plan.hint' => 'Productos, costes fijos y temporada → ingresos y beneficio por mes, punto de equilibrio, gráfico, CSV y PDF; y los pasos de esta semana.',
+    'plan.action' => 'Planificar el año',
 
     'cats' => [
         'images' => 'Imágenes y logos',
@@ -138,5 +147,8 @@ return [
         'soap_model' => 'jabonera bandeja de jabón según modelo huella desagüe ranuras nervios baño',
         'wearable' => 'casco máscara armadura a medida contorno de cabeza cosplay visores correa hueco disfraz',
         'slider' => 'fidget deslizante cursor ranura cola de milano print in place clic topes juguete',
+        'cost' => 'coste precio de impresión calculadora filamento electricidad amortización margen cuánto cuesta una impresión venta',
+        'profit' => 'beneficio margen comisiones etsy fler shopify tienda iva punto de equilibrio venta precio',
+        'plan' => 'plan de ventas plan de negocio año meses ingresos beneficio punto de equilibrio temporada navidad csv pdf pasos',
     ],
 ];

@@ -213,6 +213,10 @@ return [
     'slider' => ['route' => 'tools.slider', 'intent' => 'file', 'categories' => ['edit', 'toys'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'slider', 'kind' => 'coaster', 'params' => ['body' => 'square', 'width' => 100, 'thickness' => 6, 'frame' => 2, 'line1' => 'FIDGET'], 'edit_params' => ['detents' => 4, 'dy' => -30]]],
     'mosaic' => ['route' => 'tools.mosaic', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => false],
+    // session 4: selling and planning (no geometry; the arithmetic is App\Domain\Sell, the cards are drawn by engines/python/sell_cards.py)
+    'cost' => ['route' => 'tools.cost', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
+    'profit' => ['route' => 'tools.profit', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
+    'plan' => ['route' => 'tools.plan', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only
 ];

@@ -79,6 +79,15 @@ return [
     'slider.title' => 'Sliding fidget in a plate',
     'slider.hint' => 'A dovetail groove with a slider and detents cut into a flat plate; prints in one go and slides and clicks once off the bed.',
     'slider.action' => 'Make the sliding fidget',
+    'cost.title' => 'Cost of printing on your own printer',
+    'cost.hint' => 'Filament, power, wear, failed prints and your work: what a piece really costs, a suggested price with margin, and beside it what we print it for.',
+    'cost.action' => 'Work out the cost',
+    'profit.title' => 'Seller\'s profit',
+    'profit.hint' => 'The price less the fees of Etsy, Fler, a shop or a market, shipping, VAT and the cost: what a sale leaves you and how many pieces cover the fixed costs.',
+    'profit.action' => 'Work out the profit',
+    'plan.title' => 'Selling plan for the year',
+    'plan.hint' => 'Products, fixed costs and the season → revenue and profit by month, the break-even, a chart, CSV and PDF; and the steps for this week.',
+    'plan.action' => 'Plan the year',
 
     'cats' => [
         'images' => 'Pictures and logos',
@@ -138,5 +147,8 @@ return [
         'soap_model' => 'soap dish tray from a model footprint drain grooves ribs bathroom',
         'wearable' => 'helmet mask armour to measure head girth cosplay windows visor strap hollow costume',
         'slider' => 'fidget slider groove dovetail print in place click detents toy',
+        'cost' => 'cost price of a print calculator filament electricity depreciation margin how much a print costs selling',
+        'profit' => 'profit margin fees etsy fler shopify shop commission vat break-even selling price',
+        'plan' => 'selling plan business planner year months revenue profit break-even season christmas csv pdf steps',
     ],
 ];

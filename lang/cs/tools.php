@@ -79,6 +79,15 @@ return [
     'slider.title' => 'Posuvný fidget do desky',
     'slider.hint' => 'Do ploché desky vyřízneme rybinovou drážku s jezdcem a zarážkami; tiskne se najednou a po sejmutí jezdí a cvaká.',
     'slider.action' => 'Udělat posuvný fidget',
+    'cost.title' => 'Náklady tisku na vlastní tiskárně',
+    'cost.hint' => 'Filament, proud, opotřebení, zmetky a vaše práce: co kus doopravdy stojí, doporučená cena s marží a vedle za kolik ho vytiskneme my.',
+    'cost.action' => 'Spočítat náklady',
+    'profit.title' => 'Zisk prodejce',
+    'profit.hint' => 'Cena minus poplatky Etsy, Fleru, e‑shopu nebo trhu, doprava, DPH a náklad: co vám z prodeje zůstane a kolik kusů pokryje fixní náklady.',
+    'profit.action' => 'Spočítat zisk',
+    'plan.title' => 'Plán prodeje na rok',
+    'plan.hint' => 'Produkty, fixní náklady a sezóna → tržby a zisk po měsících, bod zvratu, graf, CSV a PDF; k tomu seznam kroků na tento týden.',
+    'plan.action' => 'Naplánovat rok',
 
     'cats' => [
         'images' => 'Obrázky a loga',
@@ -138,5 +147,8 @@ return [
         'soap_model' => 'mýdlenka miska na mýdlo podle modelu půdorys odtok drážky žebra koupelna',
         'wearable' => 'přilba maska brnění na míru obvod hlavy cosplay průzory popruh dutý kostým',
         'slider' => 'fidget posuvný jezdec drážka rybina print in place cvakání antistres hračka',
+        'cost' => 'náklady cena tisku kalkulačka filament elektřina odpisy marže kolik stojí výtisk prodej',
+        'profit' => 'zisk marže poplatky etsy fler shopify e-shop provize dph bod zvratu prodej cena',
+        'plan' => 'plán prodeje business plán rok měsíce tržby zisk bod zvratu sezóna vánoce csv pdf kroky',
     ],
 ];
