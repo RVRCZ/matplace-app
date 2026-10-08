@@ -89,6 +89,11 @@ final class ParametricGenerator
         'press_start' => ['engines/fonts/PressStart2P-Regular.ttf', 'Press Start 2P', 'tech'],
     ];
 
+    /** The composer: how many layers a design may have, and the shapes a layer can be (three plain ones and the plates of engines/shapes). */
+    public const MAX_LAYERS = 12;
+
+    public const LAYER_SHAPES = ['rounded', 'rect', 'circle', 'heart', 'star', 'cloud', 'bone', 'hexagon', 'banner', 'arrow', 'house', 'car', 'cat', 'candy', 'flower', 'shield', 'tag', 'bubble', 'fish'];
+
     /** Tools that keep to the few typefaces of their own: a letter on a bead of 8 mm has to be plain. */
     public const OWN_FACES = ['beads'];
 
@@ -181,6 +186,8 @@ final class ParametricGenerator
         'stamp' => ['width' => [15, 120, 50, 1], 'relief' => [0.8, 4, 1.6, 0.2], 'plate' => [2, 6, 3, 0.5]],
         'qr' => ['size' => [30, 150, 70, 1], 'plate' => [1.6, 4, 2.4, 0.2], 'relief' => [0.6, 2, 1, 0.2]],
         'stencil' => ['width' => [30, 250, 120, 1], 'thickness' => [0.8, 3, 1.2, 0.2], 'margin' => [5, 40, 12, 1], 'bridge' => [0.8, 3, 1.2, 0.2]],
+        // layers laid one on another by hand (engines/python/compose_kind.py): `thickness` is the lowest layer's, `step` what every next one adds
+        'compose' => ['thickness' => [1.2, 8, 3, 0.2], 'step' => [0.4, 1.6, 0.8, 0.2], 'eye_hole' => [2, 8, 4, 0.5], 'spike' => [30, 100, 60, 1]],
         // a drawer insert from a photo of things on a sheet of A4 (engines/python/sheet_kinds.py): pockets `depth` deep with `gap` of play, the tray `margin` wider than the things
         'insert' => ['depth' => [4, 40, 15, 1], 'gap' => [0.3, 3, 1.5, 0.1], 'margin' => [2, 15, 5, 1], 'floor' => [1.2, 4, 1.6, 0.2]],
         // a figure standing behind a tray for sticky notes (engines/python/stand_kinds.py): `width` and `thickness` are the figure's, `pad` the side of the pad, `depth` how deep it lies
@@ -203,6 +210,7 @@ final class ParametricGenerator
 
     /** kind → choice → allowed values (the first one is the default) */
     public const CHOICES = [
+        'compose' => ['base' => ['none', 'eyelet', 'sticks']],
         'notes' => ['typeface' => ['sans', 'serif', 'mono', 'script']], 'hair_tie' => ['typeface' => ['script', 'sans', 'serif', 'mono']], 'candle_stand' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
         'papel' => ['border' => ['flowers', 'diamonds', 'dots', 'hearts', 'leaves', 'stars', 'none']],
         'name_cup' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
@@ -279,7 +287,7 @@ final class ParametricGenerator
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'straw_d', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'darkness', 'soften'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'darkness', 'soften'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
 
     /**
@@ -297,7 +305,8 @@ final class ParametricGenerator
     ];
 
     public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp',
-        'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8', 'icing_1', 'icing_2', 'icing_3', 'icing_4', 'icing_5', 'icing_6'];
+        'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8', 'icing_1', 'icing_2', 'icing_3', 'icing_4', 'icing_5', 'icing_6',
+        'layer_1', 'layer_2', 'layer_3', 'layer_4', 'layer_5', 'layer_6', 'layer_7', 'layer_8', 'layer_9', 'layer_10', 'layer_11', 'layer_12'];
 
     /** A biscuit's icing: how many strokes a drawing may have and how many points a stroke */
     public const MAX_STROKES = 60;
@@ -440,6 +449,7 @@ final class ParametricGenerator
             'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
             'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
             'notes', 'hair_tie', 'candle_stand' => ['body', 'stand'],
+            'compose' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^layer_\d{1,2}$/', $part))),
             'sign' => ! empty($p['two_color']) && ! in_array($p['style'] ?? 'emboss', ['engrave', 'stand'], true) ? ['plate', 'text'] : [],
             'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
             'lightbox' => ['body', 'face', 'diffuser', 'back'],
@@ -504,6 +514,23 @@ final class ParametricGenerator
                 'params.bins.*.color' => ['nullable', Rule::in($palette->codes())],
             ];
         }
+        if ($kind === 'compose') {
+            // the layers from the bottom up: a text, a picture of the library or a plain shape, where it lies, how wide, turned how, in which filament
+            $rules += [
+                'params.layers' => ['required', 'array', 'min:1', 'max:'.self::MAX_LAYERS],
+                'params.layers.*.kind' => ['required', 'in:text,art,shape'],
+                'params.layers.*.text' => ['nullable', 'string', 'max:40'],
+                'params.layers.*.typeface' => ['nullable', Rule::in(array_keys(self::FONTS))],
+                'params.layers.*.art' => ['nullable', 'string', 'regex:/^lib:[a-z-]{2,30}\/[a-z0-9-]{1,60}$/'],
+                'params.layers.*.shape' => ['nullable', Rule::in(self::LAYER_SHAPES)],
+                'params.layers.*.x' => ['nullable', 'numeric', 'min:-250', 'max:250'],
+                'params.layers.*.y' => ['nullable', 'numeric', 'min:-250', 'max:250'],
+                'params.layers.*.w' => ['nullable', 'numeric', 'min:5', 'max:250'],
+                'params.layers.*.turn' => ['nullable', 'numeric', 'min:-360', 'max:360'],
+                'params.layers.*.code' => ['nullable', Rule::in($palette->codes())],
+                'params.layers.*.hidden' => ['nullable', 'boolean'],
+            ];
+        }
         if ($kind === 'box') {
             $rules += [
                 'params.holes' => ['nullable', 'array', 'max:'.self::MAX_HOLES],
@@ -562,6 +589,19 @@ final class ParametricGenerator
         if (isset(self::FAMILY[$kind])) {
             $out['merge'] = array_values(array_map(fn ($pair) => [(int) $pair[0], (int) $pair[1]], array_filter(array_slice((array) ($p['merge'] ?? []), 0, 8), fn ($pair) => is_array($pair) && count($pair) === 2)));
             $out['order'] = array_values(array_unique(array_map('intval', array_slice((array) ($p['order'] ?? []), 0, 8))));
+        }
+        if ($kind === 'compose') {
+            $spare = $palette->codes()[0] ?? '';
+            $out['layers'] = array_values(array_map(fn ($l) => [
+                'kind' => in_array($l['kind'] ?? '', ['text', 'art', 'shape'], true) ? $l['kind'] : 'shape',
+                'text' => mb_substr(trim((string) ($l['text'] ?? '')), 0, 40),
+                'typeface' => isset(self::FONTS[$l['typeface'] ?? '']) ? $l['typeface'] : 'sans',
+                'art' => (string) ($l['art'] ?? ''),
+                'shape' => in_array($l['shape'] ?? '', self::LAYER_SHAPES, true) ? $l['shape'] : 'rounded',
+                'x' => round((float) ($l['x'] ?? 0), 2), 'y' => round((float) ($l['y'] ?? 0), 2), 'w' => round((float) ($l['w'] ?? 50), 2), 'turn' => round((float) ($l['turn'] ?? 0), 1),
+                'code' => is_string($l['code'] ?? null) && $palette->has($l['code']) ? $l['code'] : $spare,
+                'hidden' => filter_var($l['hidden'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            ], array_filter(array_slice((array) ($p['layers'] ?? []), 0, self::MAX_LAYERS), 'is_array')));
         }
         if ($kind === 'cookie') {
             $out['strokes'] = array_values(array_filter(array_map(function ($s) use ($palette) {
@@ -637,6 +677,23 @@ final class ParametricGenerator
         }
         if (isset(self::FAMILY[$kind])) {
             $clean['palette'] = self::spools();
+        }
+        if ($kind === 'compose') {
+            $palette = app(Palette::class);
+            foreach ($clean['layers'] ?? [] as $i => $layer) {
+                // every layer brings its own font, picture or shape and the look of its filament
+                $clean['layers'][$i]['font'] = self::fontPath($layer['typeface']);
+                $clean['layers'][$i]['hex'] = $palette->hex($layer['code']) ?? '#888888';
+                if ($layer['kind'] === 'art') {
+                    $clean['layers'][$i]['art_path'] = self::artworkPath($layer['art']);
+                    if (! $clean['layers'][$i]['art_path']) {
+                        throw ValidationException::withMessages(['params' => [__('param.error.artwork_gone')]])->status(422);
+                    }
+                }
+                if ($layer['kind'] === 'shape' && ! in_array($layer['shape'], ['rounded', 'rect', 'circle'], true)) {
+                    $clean['layers'][$i]['shape_path'] = base_path('engines/shapes/'.$layer['shape'].'.svg');
+                }
+            }
         }
         if (! empty($clean['artwork'])) {
             $clean['artwork_path'] = self::artworkPath($clean['artwork']);
@@ -756,9 +813,17 @@ final class ParametricGenerator
             $clean['color_changes'] = array_values((array) ($notes['color_changes'] ?? []));
             $clean['multi_material'] = ! empty($notes['multi_material']);
         }
+        if ($kind === 'compose') {
+            // layers lie one on another like the colours of a picture: the same notes for the farm and the slicer projects
+            foreach ((array) ($built['meta']['notes']['layers'] ?? []) as $layer) {
+                $clean['part_colors'][$layer['part']] = ['code' => (string) $layer['code'], 'hex' => (string) $layer['hex']];
+            }
+            $clean['color_changes'] = array_values((array) ($built['meta']['notes']['color_changes'] ?? []));
+            $clean['multi_material'] = false;
+        }
         // what has to fit a printer is each part alone, not the plate they are laid out on: the check reads these sizes
         $parts = array_diff(self::partsOf($kind, $clean), ['all']);
-        if ($parts && $kind !== 'modular' && ! isset(self::FAMILY[$kind])) {       // the colours of a picture all lie on the one plate
+        if ($parts && ! in_array($kind, ['modular', 'compose'], true) && ! isset(self::FAMILY[$kind])) {       // the colours of a picture all lie on the one plate
             foreach ($parts as $part) {
                 $one = $this->build($kind, $clean, $part);
                 @unlink($one['path']);

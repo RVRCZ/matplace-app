@@ -431,5 +431,7 @@ return [
     't.shape.line1' => 'Jméno nebo nápis',
     't.shape.line2' => 'Druhý řádek (menší)',
 
+    'error.no_layers' => 'Skladba je prázdná. Přidejte aspoň jednu vrstvu.',
+    'error.too_many_layers' => 'Skladba může mít nejvýš 12 vrstev.',
     'error.shape_too_small' => 'Na obrázek nezbývá místo. Zvětšete šířku, nebo zmenšete okraj.',
 ];

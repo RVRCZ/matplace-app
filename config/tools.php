@@ -247,6 +247,8 @@ return [
         ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 50, 'bag_hole' => 10]],
         ['params' => ['line1' => 'EMA', 'typeface' => 'titan', 'width' => 60, 'body' => 'rect']],
     ]]],
+    // the composer of layers has its builder and its server side; its page (the list of layers, dragging in the preview) is not built yet (docs/P.md §7)
+    'compose' => ['route' => 'tools.compose', 'intent' => 'create', 'categories' => ['names', 'images'], 'available' => false],
     // out of the catalogue until it was tried on real photos of real things (it is tested on drawn ones, docs/P.md)
     'insert' => ['route' => 'tools.insert', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => false],
     // out of the catalogue until one of each was printed and tried: does the clip hold a straw, does the tongue lift a tab (docs/P.md §5)

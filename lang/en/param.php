@@ -431,5 +431,7 @@ return [
     't.shape.line1' => 'Name or text',
     't.shape.line2' => 'Second line (smaller)',
 
+    'error.no_layers' => 'The composition is empty. Add at least one layer.',
+    'error.too_many_layers' => 'A composition can have 12 layers at most.',
     'error.shape_too_small' => 'No room is left for the picture. Increase the width, or reduce the frame.',
 ];

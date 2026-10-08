@@ -516,10 +516,17 @@ písem; dva z nich (ozdoba na brčko, otvírák) čekají mimo katalog na zkuše
 2. **Vložka do zásuvky podle fotky** (druhý režim „organizéru podle fotky“ ze zadání): nástroj je postavený, viz
    níže, ale **mimo katalog** – ověřený je jen na kreslených fotkách. Do katalogu ho pustí až zkouška na skutečných
    fotkách skutečných věcí; pak chybí už jen texty pro SEO, ukázky a karta.
-3. **Volná skladba vrstev** (`compose`): druhý režim společné stránky se seznamem vrstev a gizmem ve vieweru
-   (posun, otočení, zvětšení, duplikovat, smazat), builder `compose_kind.py`. Zápich, jmenovka, klíčenka, ozdoba
-   a velké písmeno jsou dnes formuláře s pevným rozvržením; fungují, ale prvek v nich nejde chytit a posunout.
-   Největší zbývající kus, řádově den práce.
+3. **Volná skladba vrstev** (`compose`) – hotová je **půlka bez obrazovky**: stavitel `engines/python/compose_kind.py`
+   a serverová část (kind `compose`: kontrola a čištění seznamu vrstev, písmo, obrázek z knihovny a tvar pro každou
+   vrstvu, filamenty a výšky výměn u uloženého návrhu; `ComposeToolTest`). Vrstva = text, obrázek z knihovny nebo
+   tvar (tři obyčejné a destičky z `engines/shapes/`), kde leží, jak je široká, jak otočená, kterým filamentem. Vrstvy
+   leží na sobě jako barvy obrázku (pod každou se nižší doplní), takže každá vrstva tisku má jeden filament a barvy
+   se mění ve výškách; co leží odděleně, spojí můstek; základ přidá očko nebo hroty zápichu. Odpověď stavitele říká
+   u každé vrstvy, kde leží (`notes.layers[].box`, `notes.origin`) – to je to, co bude stránka potřebovat k výběru
+   a tažení. **Chybí stránka:** seznam vrstev vlevo (přidat, vybrat, pořadí, skrýt, duplikovat, smazat), pole vybrané
+   vrstvy a tažení, otáčení a zvětšování ve vieweru. Do té doby je `compose` mimo katalog a bez trasy. Obrázky vrstev
+   jsou zatím jen z knihovny (`lib:`): nahraný obrázek by u uloženého návrhu po třiceti dnech zmizel a kopírování
+   více obrázků k návrhu stavitel neumí. Zápich, jmenovka, klíčenka, ozdoba a velké písmeno zůstávají formuláři.
 4. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
    sušenek). Tvary destiček cedulky
    (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.

@@ -431,5 +431,7 @@ return [
     't.shape.line1' => 'Nombre o texto',
     't.shape.line2' => 'Segunda línea (más pequeña)',
 
+    'error.no_layers' => 'La composición está vacía. Añada al menos una capa.',
+    'error.too_many_layers' => 'Una composición puede tener 12 capas como máximo.',
     'error.shape_too_small' => 'No queda sitio para la imagen. Aumente el ancho o reduzca el marco.',
 ];
