@@ -120,6 +120,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | nástroj | adresa | kind | co dělá |
 |---|---|---|---|
 | Stojánek na tužky ze jména | `/tools/name-organizer` | `name_cup` | jméno je stojánek: písmena rozšířená o 3 mm jsou kapsa, kolem stěna 1,6 mm, dno 2 mm, výška 40–120 mm |
+| Miska ve tvaru obrázku | `/tools/shape-tray` | `tray` | obrys obrázku je stěna (8–40 mm), kresba vyrytá do dna, v barvách, nebo hladké dno |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -134,6 +135,15 @@ zrcadlově i do spodní plochy, aby se korálek četl z obou stran (zadání cht
 – spodní strana leží na podložce, tam jde jen vyrýt). Otvor 1,5–4 mm vede vodorovně v půli výšky; když nad ním a pod
 ním nezbývá 1,2 mm, nástroj odmítne slovy. Kulička má seříznutý vršek a spodek. Texty říkají, že malé díly nepatří
 dětem do tří let. Sada čísel ze zadání = napsat číslice do textu.
+
+**Miska ve tvaru obrázku** (`tray`, rodina `shape`, větev `dish` v `build()`): podklad je dno, kolem něj stěna podle
+obrysu. Obrázek ve dně má tři podoby: **vyrytý** (výchozí – všechny barvy kromě největší se vyříznou 0,6 mm do dna,
+jeden díl, jeden filament, vytiskne kdokoli), **v barvách** (vložený zarovno do dna → `multi_material`, protože stěna
+stojí ve stejných vrstvách; na farmě objednat nejde a stránka to říká) a **bez obrázku**. Jednobarevná silueta dá
+hladkou misku ve světlém filamentu. Obrázek drží odstup od stěny (`frame`). Při té příležitosti opravená chyba
+sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do 6 mm (meze v `shape_kinds.LIMITS`).
+
+Rozcestník `/gifts` odkazuje i na misku, stojánek a korálky.
 
 ## 2. Rozhodnutí a proč
 
@@ -261,6 +271,6 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
-Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák, miska,
+Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák,
 organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), tvary
 a motivy cedulky, `logo` `extrude`, 20+ písem.

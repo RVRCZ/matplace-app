@@ -148,6 +148,11 @@ return [
         ['params' => ['line1' => 'MÁMA ♥', 'shape' => 'ball', 'size' => 12]],
         ['params' => ['line1' => 'TOM 7', 'shape' => 'heart', 'size' => 12, 'style' => 'engraved']],
     ]]],
+    'tray' => ['route' => 'tools.tray', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 100, 'height' => 15]],
+        ['params' => ['artwork' => 'lib:hearts-stars/heart', 'width' => 110, 'height' => 20, 'floor' => 'plain']],
+        ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 120, 'height' => 12, 'floor' => 'colors']],
+    ]]],
     'name_cup' => ['route' => 'tools.name_cup', 'intent' => 'create', 'categories' => ['names', 'home'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['line1' => 'Jana', 'width' => 160, 'height' => 80]],
         ['params' => ['line1' => 'TOM', 'typeface' => 'sans', 'width' => 150, 'height' => 90]],
