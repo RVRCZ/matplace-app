@@ -126,6 +126,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | Jmenovka ve tvaru s obrázkem | `/tools/nameplate` | `sign` (předvolba `shaped`) | destička ve 20 tvarech, která se sama zvětší kolem textu, motiv vlevo / vpravo / nad textem, očko na třech stranách |
 | 3D nápis, který stojí | `/tools/text` | `sign` (styl `stand`, předvolba `stand`) | silná písmena na patce, 1–3 řádky, obrázek na téže patce; tiskne se vleže |
 | Medaile s řetězem | `/tools/medallion` | `medallion` | kruh, hvězda nebo šestiúhelník 50–120 mm s obrázkem či číslem, očko, 0–40 otevřených článků řetězu na téže podložce |
+| Organizér ve tvaru obrázku | `/tools/photo-organizer` | `photo_organizer` | vysoká nádobka 40–120 mm podle obrysu obrázku: přihrádky v mřížce, kulaté otvory v plném bloku, nebo jedna kapsa |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -149,6 +150,14 @@ hladkou misku ve světlém filamentu. Obrázek drží odstup od stěny (`frame`)
 sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do 6 mm (meze v `shape_kinds.LIMITS`).
 
 Rozcestník `/gifts` odkazuje i na misku, stojánek, korálky a ozdobu na držák karty.
+
+**Organizér ve tvaru obrázku** (`photo_organizer`, rodina `shape`) je miska (`tray`) vytažená do výšky: stěna podle
+obrysu, dno, a uvnitř (`_inside` v `shape_kinds.py`) buď **mřížka přepážek** rozdělená rovnoměrně na buňky kolem
+zadané velikosti, nebo **plný blok s kulatými otvory** ve včelí plástvi (kartáčky, fixy), nebo nic. Jedna barva, jeden
+díl, obrázek slouží jen jako obrys. Stránka vypisuje počet přihrádek či otvorů a hloubku. Otvory jsou vrtané do
+plného bloku, ne do víka: víko nad dutinou by se tisklo na podpěrách. **Ze zadání zbývá druhý režim** – předměty
+vyfocené na listu A4 a tác s kapsami podle jejich obrysů; není udělaný (měřítko z listu a segmentace předmětů je
+samostatná práce, viz §7).
 
 **Medaile s řetězem** (`medallion`, rodina `shape`). Destička je kruh, hvězda nebo šestiúhelník s obrázkem
 v barvách, číslem nebo jménem a očkem (otvor 5–8 mm, aby jím prošel článek). **Články řetězu** jsou otevřené ovály
@@ -373,7 +382,7 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
+`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -392,4 +401,4 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
 Potom zbytek zadání session 1: ostatní produkty rodiny (brčko, gumičky, otvírák,
-organizér podle fotky, lístečky, čep na tašku, stojan na svíčku, papel picado, klikátko).
+organizér z předmětů vyfocených na A4, lístečky, čep na tašku, stojan na svíčku, papel picado, klikátko).

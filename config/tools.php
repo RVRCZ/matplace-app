@@ -217,6 +217,11 @@ return [
         ['params' => ['line1' => '1', 'typeface' => 'archivo', 'width' => 70, 'body' => 'star', 'links' => 24]],
         ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 90, 'body' => 'hex', 'links' => 0]],
     ]]],
+    'photo_organizer' => ['route' => 'tools.photo_organizer', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:nature/cloud', 'width' => 120, 'height' => 80, 'cell' => 40]],
+        ['params' => ['artwork' => 'lib:nature/cloud', 'body' => 'circle', 'width' => 90, 'height' => 90, 'inside' => 'holes', 'hole_d' => 20]],
+        ['params' => ['artwork' => 'lib:hearts-stars/heart', 'width' => 110, 'height' => 60, 'inside' => 'open']],
+    ]]],
     'coaster' => ['route' => 'tools.coaster', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/snowman', 'width' => 100, 'body' => 'circle']],
         ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 95, 'body' => 'hex', 'grooves' => true]],

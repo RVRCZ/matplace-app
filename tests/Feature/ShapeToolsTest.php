@@ -18,7 +18,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge', 'medallion'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge', 'medallion', 'photo_organizer'];
 
     protected function setUp(): void
     {
@@ -530,6 +530,43 @@ class ShapeToolsTest extends TestCase
         $this->assertCount(1, $first['notes']['color_changes']);
         $this->preview('medallion', $star + ['links' => 41])->assertStatus(422);
         $this->get('/tools/medallion')->assertOk()->assertSee('data-param="links"', false);
+    }
+
+    public function test_an_organizer_is_a_tall_dish_with_compartments_or_round_holes(): void
+    {
+        $cloud = ['artwork' => 'lib:nature/cloud', 'width' => 120, 'height' => 80, 'thickness' => 2, 'wall' => 1.6];
+        $open = $this->meta($this->preview('photo_organizer', $cloud + ['inside' => 'open'], 'all', true)->assertOk());
+        $grid = $this->meta($this->preview('photo_organizer', $cloud + ['inside' => 'grid', 'cell' => 40])->assertOk());
+        $fine = $this->meta($this->preview('photo_organizer', $cloud + ['inside' => 'grid', 'cell' => 20])->assertOk());
+        $holes = $this->meta($this->preview('photo_organizer', $cloud + ['inside' => 'holes', 'hole_d' => 20])->assertOk());
+        // as wide and as tall as asked, one part in one filament, nothing of the picture's colours
+        $this->assertEqualsWithDelta(120, $open['bbox']['x'], 0.5);
+        $this->assertEqualsWithDelta(80, $open['bbox']['z'], 0.01);
+        $this->assertSame(['body'], $open['notes']['parts']);
+        $this->assertSame(1, $open['notes']['filaments']);
+        $this->assertSame([], $open['notes']['color_changes']);
+        $this->assertSame(['kind' => 'open', 'count' => 1, 'depth' => 78], $open['notes']['pockets']);
+        // dividers add plastic and compartments, a finer grid more of both; the outside stays what it was
+        $this->assertSame($open['bbox'], $grid['bbox']);
+        $this->assertGreaterThan($open['volume_mm3'] * 1.1, $grid['volume_mm3']);
+        $this->assertGreaterThan($grid['volume_mm3'], $fine['volume_mm3']);
+        $this->assertGreaterThanOrEqual(4, $grid['notes']['pockets']['count']);
+        $this->assertGreaterThan($grid['notes']['pockets']['count'], $fine['notes']['pockets']['count']);
+        // round holes are drilled into a solid block: every hole takes its cylinder away from it
+        $n = $holes['notes']['pockets']['count'];
+        $this->assertGreaterThanOrEqual(5, $n);
+        $block = $this->meta($this->preview('photo_organizer', $cloud + ['inside' => 'holes', 'hole_d' => 8])->assertOk());
+        $m = $block['notes']['pockets']['count'];
+        $this->assertGreaterThan($n, $m);
+        $this->assertEqualsWithDelta(($n * 100 - $m * 16) * M_PI * 78, $block['volume_mm3'] - $holes['volume_mm3'], 0.02 * $block['volume_mm3']);
+        // in a round body the picture is not needed for anything but the request; a hole too big for the shape is said
+        $round = $this->meta($this->preview('photo_organizer', ['artwork' => 'lib:nature/cloud', 'body' => 'circle', 'width' => 90, 'height' => 90, 'inside' => 'holes', 'hole_d' => 20])->assertOk());
+        $this->assertSame(7, $round['notes']['pockets']['count']);
+        $this->assertEqualsWithDelta(90, $round['bbox']['y'], 0.1);
+        $this->assertSame(__('param.error.shape_too_small'), $this->preview('photo_organizer', ['artwork' => 'lib:nature/cloud', 'width' => 60, 'height' => 60, 'inside' => 'holes', 'hole_d' => 40])->assertStatus(422)->json('errors.params.0'));
+        // the page has no name to fall back on, so the picture is required
+        $this->preview('photo_organizer', ['width' => 120])->assertStatus(422);
+        $this->get('/tools/photo-organizer')->assertOk()->assertSee('data-choice="inside"', false)->assertSee('data-when="inside=grid"', false)->assertDontSee('data-text=', false);
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

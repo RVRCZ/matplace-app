@@ -25,6 +25,9 @@ colours, and a shallow pocket in the back for the reel's sticky dot.
 
 The medallion is a round or star plate with an eyelet and, next to it on the bed, the open links of its chain.
 
+The photo_organizer is the same dish grown tall: walls along the outline of the picture, and inside them a grid of
+dividers, a block with round holes, or one open pocket.
+
 The tray is a little dish in the shape of the picture: a floor, a wall round it, and the picture cut into the floor
 (one colour), inlaid in it in colours (a multi-material print) or left out.
 """
@@ -32,16 +35,16 @@ import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray", "badge", "medallion")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray", "badge", "medallion", "photo_organizer")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
     "width": (10, 250), "height": (6, 250), "wall": (1.2, 3), "thickness": (1.2, 15), "frame": (0, 10), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
-    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 40),
+    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 40), "cell": (20, 80), "hole_d": (8, 40),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex")}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex"), "photo_organizer": ("image", "circle")}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -206,6 +209,52 @@ def _chain(M, count, tall, medal_w, medal_h):
             max([medal_w] + [x + long for x, _ in spots]), max([medal_h] + [y + wide for _, y in spots]))
 
 
+INSIDES = ("grid", "holes", "open")
+
+
+def _inside(M, Invalid, p, inner, wall, floor, rise, cell, hole_d):
+    """
+    What divides a tall dish into an organizer: walls in a grid with cells of about `cell` (pencils, make-up), or a
+    solid block with round holes of `hole_d` in a honeycomb (toothbrushes), or nothing (one pocket).
+    Returns (the solid to add, or None; what it makes: {"kind", "count"}).
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    kind = p.get("inside", INSIDES[0])
+    if kind not in INSIDES:
+        raise Invalid("bad_choice", "inside")
+    if kind == "open":
+        return None, {"kind": kind, "count": 1}
+    x0, y0, x1, y1 = inner.bounds()
+    if kind == "grid":
+        bars = C()
+        for lo, hi, across in ((x0, x1, False), (y0, y1, True)):
+            cells = max(1, int(round((hi - lo) / cell)))
+            for i in range(1, cells):
+                at = lo + i * (hi - lo) / cells - wall / 2
+                bars = bars + (C.square([x1 - x0 + 2, wall]).translate([x0 - 1, at]) if across else C.square([wall, y1 - y0 + 2]).translate([at, y0 - 1]))
+        count = len([c for c in (inner - bars).decompose() if c.area() > 60.0])      # a sliver in a corner is no compartment
+        if bars.is_empty():
+            return None, {"kind": kind, "count": 1}
+        # the dividers reach a little into the wall, so they are one body with it
+        return (bars ^ inner.offset(0.3, J, 2.0, 16)).extrude(rise - floor).translate([0, 0, floor]), {"kind": kind, "count": count}
+    pitch = hole_d + max(wall, 1.6)
+    zone = inner.offset(-(hole_d / 2 + 0.4), J, 2.0, 16)
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    spots = []
+    rows = int((y1 - y0) / (pitch * 0.866)) + 2
+    cols = int((x1 - x0) / pitch) + 2
+    for r in range(-rows, rows + 1):
+        for c in range(-cols, cols + 1):
+            x, y = cx + (c + (0.5 if r % 2 else 0.0)) * pitch, cy + r * pitch * 0.866
+            if not zone.is_empty() and not (C.square([0.2, 0.2]).translate([x - 0.1, y - 0.1]) ^ zone).is_empty():
+                spots.append((x, y))
+    if not spots:
+        raise Invalid("shape_too_small")
+    drill = M.Manifold.cylinder(rise - floor + 1, hole_d / 2, hole_d / 2, 64)
+    block = inner.offset(0.3, J, 2.0, 16).extrude(rise - floor).translate([0, 0, floor])
+    return block - M.Manifold.compose([drill.translate([x, y, floor]) for x, y in spots]), {"kind": kind, "count": len(spots)}
+
+
 def build(M, Invalid, p, product):
     C, J = M.CrossSection, M.JoinType.Round
     n = lambda key, d: _num(Invalid, p, key, d)       # noqa: E731
@@ -214,8 +263,11 @@ def build(M, Invalid, p, product):
     if body_kind not in BODIES[product]:
         raise Invalid("bad_choice", "body")
     flush, rim, bevel = (bool(p.get(f, False)) for f in ("flush", "rim", "bevel"))
-    dish = product == "tray"                                  # the shape is a little dish, the picture is in its floor
-    floor_mode = p.get("floor", "engraved") if dish else None
+    dish = product in ("tray", "photo_organizer")             # the shape is a little dish, the picture is in its floor
+    if product == "photo_organizer":
+        floor_mode, frame = "plain", 0.0                      # a tall dish: nobody sees its floor, the picture only gives the outline
+    else:
+        floor_mode = p.get("floor", "engraved") if dish else None
     if dish:
         if floor_mode not in ("engraved", "colors", "plain"):
             raise Invalid("bad_choice", "floor")
@@ -408,6 +460,11 @@ def build(M, Invalid, p, product):
             whole = body
         walls = (plate2d - inner).extrude(rise)
         body, whole, top = body + walls, whole + walls, rise
+        if product == "photo_organizer":
+            filling, made = _inside(M, Invalid, p, inner, n("wall", 1.6), t, rise, n("cell", 40), n("hole_d", 20))
+            if filling is not None:
+                body, whole = body + filling, whole + filling
+            notes["pockets"] = dict(made, depth=round(rise - t, 1))
     rim_solid = None
     if rim:
         rim_top = (t + INLAY) if flush else top
