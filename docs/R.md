@@ -429,7 +429,7 @@ otevřeno, 2 drážky, 2 průzory z JSON, vnitřní obvod 570 ± 4 %, 1 díl, uz
 „nezvětšovat“ bez dutiny = původní objem, `windowsOf` pročistí nesmysly, stěna 9 → 422. +1 (fidget): deska
 120 × 60 × 8 → díly `body` + `slider`, drážka 104 × 12 × 4 po x, jezdec 24 × 11,4 × 3,7, zarážky v 20 / 60 / 100,
 výška 12 s knoflíkem, uzavřeno, objem = deska − drážka + jezdec + knoflík (±300 mm³), rozměry dílů; po y bez knoflíku
-a zarážek (výška 8); tenká deska → `too_thin`; osa z → 422. `ModelEditTest` má 16 testů.
+a zarážek (výška 8); tenká deska → `too_thin`; osa z → 422. `ModelEditTest` má 15 testů.
 
 ## 5. Co není ověřené
 
