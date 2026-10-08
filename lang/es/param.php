@@ -253,7 +253,7 @@ return [
     'f.spikes' => 'Número de varillas',
     'shape.part.body.topper' => 'Forma y varillas',
     'shape.part.color_1.topper' => 'Nombre',
-    'cookie.lead' => 'Una galleta para jugar o un adorno para el árbol. Elija la forma de la biblioteca o de su propia imagen y dibuje el glaseado encima con el ratón o con el dedo.',
+    'cookie.lead' => 'Una galleta para jugar o un adorno para el árbol. Elija la forma entre cuarenta siluetas de la biblioteca o a partir de su propia imagen y dibuje el glaseado encima con el ratón o con el dedo.',
     'cookie.tip' => 'Se imprime en plano, con la cara hacia arriba y sin soportes; el borde superior es redondeado como en una galleta de verdad. Es un juguete y un adorno, no un alimento.',
     'cookie.icing' => 'Glaseado dibujado a mano',
     'cookie.draw' => 'Dibujar el glaseado',

@@ -595,7 +595,7 @@ export function bootParam(stage: Stage): void {
         state.appendChild(b);
     };
     const artOpen = document.getElementById('param-artwork-open');
-    if (artOpen) artOpen.onclick = async () => { const picked = await pickArtwork(); if (picked) { setArtwork(picked); void refresh().then(commit); } };
+    if (artOpen) artOpen.onclick = async () => { const picked = await pickArtwork('library', cfg.kind === 'cookie' ? 'cookies' : ''); if (picked) { setArtwork(picked); void refresh().then(commit); } };
 
     // ── modular organizer: bins on the customer's own grid ─────────────────
     const grid = document.getElementById('bin-grid');

@@ -70,8 +70,11 @@ takže na větší sušence leží tam, kde byly. V Pythonu je tah stuha podél 
 `icing_<n>` a vrstva jako každá jiná barva: později použitá cívka leží výš a pod ní se nižší vrstvy doplní, takže
 i ručně zdobená sušenka má v každé vrstvě tisku jediný filament. Poleva se drží 1,8 mm od zaoblené hrany.
 Dlouhá kresba se nástroji předává souborem (`@cesta`), ne příkazovou řádkou. Proti zadání chybí: výběr a posun
-jednotlivého tahu (jde jen odebrat poslední), cukrovinky z knihovny, tácek na vystavení a vlastních 40 polotovarů –
-tvar se bere ze 137 siluet knihovny.
+jednotlivého tahu (jde jen odebrat poslední), cukrovinky z knihovny a tácek na vystavení. **40 polotovarů**
+(20 vánočních, 20 halloweenských) přibylo 8. 10. jako kategorie „Sušenky“ knihovny obrázků
+(`engines/artwork/cookies/`, vlastní kresby z `_draw.py` tamtéž): okno s obrázky se u sušenky otevírá rovnou na ní
+a polotovary může použít i každý jiný nástroj s obrázkem. Zadání je chtělo v `engines/shapes/cookies/`; knihovna
+je jediné místo, kde se obrázky vybírají, hledají a mají jména ve třech jazycích, tak jsou tam.
 
 **Zápich do dortu** (`_topper`): tvar (číslo tučným písmem, srdce, hvězda, kruh, nebo nic) a přes něj jméno; šířka
 jména je v % šířky tvaru (smí přesahovat), poloha v % jeho výšky. Pod jménem leží jeho rozšířená kopie v barvě tvaru,
@@ -472,9 +475,31 @@ jsem odkaz nahradil vlastním `npm ci`; sdílený adresář obnoví `npm ci` v `
 stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled na produkci přiřazuje barvám skutečné cívky
 (duch: `02_PLA+_bily`, `01_PLA+_cerny`, `04_PLA+_ruzovy`). Zkušební tisk je na Romanovi.
 
-## 7. Co přijde (v tomhle pořadí)
+## 7. Co ze zadání session 1 zbývá
 
-Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
-tahu, cukrovinky a tácek, u velkého písmene podstavec.
-Potom zbytek zadání session 1: organizér z předmětů vyfocených na A4 a klikátko (to mimo katalog do zkušebního
-tisku).
+Stav k 8. 10. 2026 večer; celá sada testů naposledy na commitu fd4fec3 (502 testů, bez chyby). Ze zadání je hotovo 23 nástrojů (vánoční sada, viz §1, a tabulka „Po vánoční sadě“) a třicet
+písem; dva z nich (ozdoba na brčko, otvírák) čekají mimo katalog na zkušební tisk. Nehotové, od nejbližšího:
+
+1. **Klikátko** (`clicker`). Nepostavené, a ne z nedostatku času: zadaná klenutá destička (0,8 mm, klenba 1,5–2,5 mm
+   přes Ø 25–45 mm) je při tisku naplocho převis se sklonem kolem 8° – bez podpěr se nevytiskne a s podpěrami pod
+   membránou 0,8 mm nevím, jestli po jejich odtržení zbude něco, co cvaká. Než kolem toho vznikne nástroj se stránkou
+   ve třech jazycích, stojí za to vytisknout jeden ručně nakreslený kus a zjistit, jestli tahle konstrukce v PLA/PETG
+   cvaká vůbec. Když ano, je to rám a rotační skořepina, zhruba hodina práce.
+2. **Sušenka** (`cookie`): výběr a posun jednotlivého tahu (jde jen odebrat poslední), cukrovinky z knihovny
+   a tácek na vystavení. (Čtyřicet polotovarů už je, viz §1.)
+3. **Velké písmeno se jménem** (`name_letter`): podstavec, aby stálo.
+4. **Organizér podle fotky, druhý režim:** předměty vyfocené na listu A4 → tác s kapsami podle jejich obrysů
+   (měřítko z listu, narovnání perspektivy, segmentace předmětů, vůle, výřez na prst, hloubka kapsy na předmět).
+   Samostatná práce, a bez skutečných fotek od lidí ji nejde poctivě ověřit.
+5. **Volná skladba vrstev** (`compose`): druhý režim společné stránky se seznamem vrstev a gizmem ve vieweru
+   (posun, otočení, zvětšení, duplikovat, smazat), builder `compose_kind.py`. Zápich, jmenovka, klíčenka, ozdoba
+   a velké písmeno jsou dnes formuláře s pevným rozvržením; fungují, ale prvek v nich nejde chytit a posunout.
+   Největší zbývající kus, řádově den práce.
+6. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
+   sušenek). Tvary destiček cedulky
+   (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.
+
+Co čeká na Romana (nic z toho neblokuje další práci): zkušební tisky podle §5, rozhodnutí o klikátku (bod 1),
+a nasazení. `main` na GitHubu je od 8. 10. na commitu 29cad9d (medaile) – koordinující session do něj větev slila
+po mé zprávě; všechno od organizéru ve tvaru obrázku dál je zatím jen ve `feature/tools-shapes`. Jestli je 29cad9d
+i na serveru, nevím.

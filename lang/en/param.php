@@ -253,7 +253,7 @@ return [
     'f.spikes' => 'Number of sticks',
     'shape.part.body.topper' => 'Shape and sticks',
     'shape.part.color_1.topper' => 'Name',
-    'cookie.lead' => 'A biscuit to play with or an ornament for the tree. Pick the shape from the library or from your own picture and draw the icing on it with the mouse or a finger.',
+    'cookie.lead' => 'A biscuit to play with or an ornament for the tree. Pick the shape from forty blanks in the library or from your own picture and draw the icing on it with the mouse or a finger.',
     'cookie.tip' => 'It prints flat, face up, without supports; the top edge is rounded like on a real biscuit. It is a toy and an ornament, not food.',
     'cookie.icing' => 'Icing drawn by hand',
     'cookie.draw' => 'Draw the icing',

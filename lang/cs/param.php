@@ -253,7 +253,7 @@ return [
     'f.spikes' => 'Počet hrotů',
     'shape.part.body.topper' => 'Tvar a hroty',
     'shape.part.color_1.topper' => 'Jméno',
-    'cookie.lead' => 'Sušenka na hraní nebo ozdoba na stromeček. Tvar vyberete z knihovny nebo z vlastního obrázku a polevu nakreslíte myší či prstem přímo na ni.',
+    'cookie.lead' => 'Sušenka na hraní nebo ozdoba na stromeček. Tvar vyberete ze čtyřiceti polotovarů v knihovně nebo z vlastního obrázku a polevu nakreslíte myší či prstem přímo na ni.',
     'cookie.tip' => 'Tiskne se naplocho, lícem nahoru, bez podpěr; horní hrana je zaoblená jako u opravdové sušenky. Je to hračka a ozdoba, k jídlu není.',
     'cookie.icing' => 'Poleva kreslená rukou',
     'cookie.draw' => 'Kreslit polevu',
