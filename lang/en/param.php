@@ -24,7 +24,7 @@ return [
     'magnet.tip' => 'It prints face up, with the magnet pocket down, without supports. Glue the magnet in with superglue, or choose the press fit. Magnets are not part of the print.',
     'coaster.lead' => 'A coaster with your own picture: round, square or hexagonal. We turn a photo or a drawing into the colours of the filaments we have on the farm.',
     'coaster.tip' => 'It prints flat, without supports. PLA is fine for cold and warm drinks; a mug straight from the stove does not belong on it, because PLA softens at about 55 °C. For hot dishes choose PETG.',
-    'compose.lead' => 'Put a thing together from layers: a shape, a text, a picture of the library. Every layer has its own filament colour and lies a little higher than the one under it.',
+    'compose.lead' => 'Put a thing together from layers: a shape, a text, a picture of the library or your own. Every layer has its own filament colour and lies a little higher than the one under it.',
     'compose.tip' => 'It prints flat, face up, without supports. The layers lie one on another, so each colour is a filament change at a height the project carries; what lies apart is tied by a bridge.',
     'compose.content' => 'Layers',
     'compose.size' => 'Thicknesses and base',

@@ -212,7 +212,14 @@ z `engines/shapes/`), s polohou, šířkou, otočením a filamentem.
   puštění (jeden dotaz místo desítek – náhled trvá 0,3–0,5 s a po každém přestavění se posune počátek souřadnic).
   Mimo rámeček se dál otáčí pohled. Zkoušeno v prohlížeči skutečnými událostmi myši: výběr klepnutím, posun,
   zvětšení 18 → 37 mm, otočení, otáčení pohledu vedle rámečku. **Nezkoušeno na dotykové obrazovce.**
-- *Co chybí proti zadání,* je v §7 bod 3: vlastní obrázek jako vrstva a převod ostatních nástrojů na skladbu.
+- *Vlastní obrázek jako vrstva:* vrstva „Obrázek“ bere i nahraný soubor (SVG, PNG, JPG – stejné okno jako jinde:
+  Nahrát · Knihovna · Moje obrázky). Vrstva má jeden filament, takže z obrázku zůstane silueta; u SVG se berou
+  všechny výplně jako plné (bílý kruh uvnitř tvaru díru neudělá – stejně jako u nástroje Logo). Uložený návrh si
+  drží vlastní kopii každého takového obrázku (`files/<uuid>/artwork-<n>.*`, reference `file:<uuid>:<n>`, nový tvar
+  v `Artwork::REF`), takže se dá znovu otevřít i poté, co nahrané soubory po 30 dnech zmizí. Zkoušeno testem
+  i v prohlížeči (nahrání, výběr z „Moje obrázky“, vrstva v náhledu). **Fotku jako vrstvu jsem nezkoušel** – projde
+  stejným prahováním jako u loga a u fotky s pozadím z ní nejspíš bude skvrna.
+- *Co chybí proti zadání,* je v §7 bod 3: převod ostatních nástrojů na skladbu.
 
 **Vložka do zásuvky podle fotky – hotová, ale mimo katalog** (`insert`, nový modul `engines/python/sheet_kinds.py`,
 stránka `/tools/drawer-insert`, `'available' => false`). Věci položené na list A4 a vyfocené shora dostanou v tácu
@@ -538,9 +545,10 @@ písem; dva z nich (ozdoba na brčko, otvírák) čekají mimo katalog na zkuše
    níže, ale **mimo katalog** – ověřený je jen na kreslených fotkách. Do katalogu ho pustí až zkouška na skutečných
    fotkách skutečných věcí; pak chybí už jen texty pro SEO, ukázky a karta.
 3. **Volná skladba vrstev** (`compose`, `/tools/compose`) je v katalogu i s tažením v náhledu (výběr klepnutím,
-   posun, velikost, otočení). Zbývá: vlastní nahraný obrázek jako vrstva (zatím jen knihovna), a převést zápich,
-   jmenovku, klíčenku, ozdobu a velké písmeno z formulářů na skladbu, jak zadání předpokládalo. Při tažení se model
-   nepřekresluje průběžně, až po puštění – kdyby to při zkoušení vadilo, je to místo, kde přidat.
+   posun, velikost, otočení) a s vlastním obrázkem jako vrstvou. Zbývá převést zápich, jmenovku, klíčenku, ozdobu
+   a velké písmeno z formulářů na skladbu, jak zadání předpokládalo – dnes mají vlastní formuláře, které fungují,
+   a skladba stojí vedle nich. Při tažení se model nepřekresluje průběžně, až po puštění – kdyby to při zkoušení
+   vadilo, je to místo, kde přidat.
 4. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
    sušenek). Tvary destiček cedulky
    (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.

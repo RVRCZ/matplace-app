@@ -24,7 +24,7 @@ return [
     'magnet.tip' => 'Tiskne se lícem nahoru, kapsou na magnet dolů, bez podpěr. Magnet vlepte vteřinovým lepidlem, nebo zvolte nalisování. Magnety nejsou součástí výtisku.',
     'coaster.lead' => 'Podtácek s vlastním obrázkem: kulatý, čtvercový nebo šestihran. Fotku nebo kresbu převedeme do barev filamentů, které máme na farmě.',
     'coaster.tip' => 'Tiskne se naplocho, bez podpěr. PLA snese studené i teplé nápoje; hrnek přímo z plotny na něj nepatří, PLA měkne kolem 55 °C. Na horké nádobí zvolte PETG.',
-    'compose.lead' => 'Poskládejte si věc z vrstev: tvar, text, obrázek z knihovny. Každá vrstva má svou barvu filamentu a leží o kousek výš než ta pod ní.',
+    'compose.lead' => 'Poskládejte si věc z vrstev: tvar, text, obrázek z knihovny nebo vlastní. Každá vrstva má svou barvu filamentu a leží o kousek výš než ta pod ní.',
     'compose.tip' => 'Tiskne se naplocho, lícem nahoru, bez podpěr. Vrstvy leží na sobě, takže každou barvu stačí vyměnit ve výšce, kterou projekt obsahuje; co leží odděleně, spojí můstek.',
     'compose.content' => 'Vrstvy',
     'compose.size' => 'Tloušťky a základ',

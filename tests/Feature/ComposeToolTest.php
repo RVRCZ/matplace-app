@@ -2,14 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Tools\Artwork;
 use App\Domain\Tools\ParametricGenerator;
 use App\Models\ModelFile;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * The composer of layers (engines/python/compose_kind.py): texts, pictures of the library and shapes laid one on another,
- * each in its filament. Its builder, its server side and its page; dragging a layer in the preview is not built yet.
+ * The composer of layers (engines/python/compose_kind.py): texts, pictures (of the library or the visitor's own) and
+ * shapes laid one on another, each in its filament. Its builder, its server side and its page; dragging a layer in the
+ * preview lives in the browser alone (Viewer.setFrame).
  */
 class ComposeToolTest extends TestCase
 {
@@ -111,6 +116,32 @@ class ComposeToolTest extends TestCase
         $this->assertSame('red', $kept['part_colors']['layer_1']['code']);
         $this->assertSame('white', $kept['color_changes'][0]['code']);
         $this->assertFalse($kept['multi_material']);
+    }
+
+    public function test_a_picture_of_ones_own_is_a_layer_and_stays_with_the_design(): void
+    {
+        $ann = User::factory()->create();
+        $flag = UploadedFile::fake()->createWithContent('vlajka.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20"><path d="M0 0L30 10L0 20Z"/></svg>');
+        $id = $this->actingAs($ann)->post('/api/tools/artwork', ['file' => $flag], ['Accept' => 'application/json'])->assertCreated()->json('artwork');
+        try {
+            $layers = [['kind' => 'shape', 'shape' => 'circle', 'w' => 60, 'code' => 'white'], ['kind' => 'art', 'art' => $id, 'art_name' => 'vlajka.svg', 'w' => 30, 'code' => 'red']];
+            $box = $this->meta(['layers' => $layers])['notes']['layers'][1]['box'];
+            $this->assertEqualsWithDelta([30, 20], [$box[2] - $box[0], $box[3] - $box[1]], 0.2);        // the flag as it was drawn, 30 wide
+            // the design keeps a copy of its own: the upload may go after its thirty days
+            $created = $this->actingAs($ann)->postJson('/api/tools/param', ['kind' => 'compose', 'params' => ['layers' => $layers]])->assertCreated();
+            $uuid = $created->json('file.uuid');
+            $kept = ModelFile::where('uuid', $uuid)->firstOrFail()->tool_params['layers'];
+            $this->assertSame(['file:'.$uuid.':1', 'vlajka.svg'], [$kept[1]['art'], $kept[1]['art_name']]);
+            File::deleteDirectory(storage_path('app/artwork/u'.$ann->id));
+            $this->assertNull(Artwork::path($id));
+            $this->assertNotNull(Artwork::path($kept[1]['art']));
+            $this->assertSame(['layer_1', 'layer_2'], $this->meta(['layers' => $kept])['notes']['parts']);
+            // a layer that points at a picture nobody has is said so, not built without it
+            $gone = $this->preview(['layers' => [['kind' => 'art', 'art' => 'file:'.$uuid.':7']]])->assertStatus(422)->json('errors');
+            $this->assertSame(__('param.error.artwork_gone'), $gone['params'][0]);
+        } finally {
+            File::deleteDirectory(storage_path('app/artwork/u'.$ann->id));
+        }
     }
 
     public function test_the_page_lists_the_layers_and_opens_with_a_composition(): void

@@ -32,8 +32,8 @@ interface ShapeNotes {
     frame?: [number, number, number]; draw_z?: number;
     layers?: { part: string; index: number; box: [number, number, number, number]; z: number }[]; outer?: number[];
 }
-/** A layer of a composition: a text, a picture of the library or a shape; where its middle lies, how wide it is, how it is turned, its filament. */
-interface Layer { kind: string; text: string; typeface: string; art: string; shape: string; x: number; y: number; w: number; turn: number; code: string; hidden: boolean }
+/** A layer of a composition: a text, a picture (of the library or the visitor's own) or a shape; where its middle lies, how wide it is, how it is turned, its filament. */
+interface Layer { kind: string; text: string; typeface: string; art: string; art_name: string; shape: string; x: number; y: number; w: number; turn: number; code: string; hidden: boolean }
 
 /** A stroke of icing drawn on a biscuit: the filament, the width in mm, the nib, the points in shares of the picture's width. */
 interface Stroke { c: string; w: number; t: string; p: [number, number][] }
@@ -564,7 +564,7 @@ export function bootParam(stage: Stage): void {
         if ('typeface' in set) showFace();
         if (compose && Array.isArray(set.layers)) {
             layers.splice(0, layers.length, ...(set.layers as Partial<Layer>[]).map((l) => ({
-                kind: String(l.kind ?? 'shape'), text: String(l.text ?? ''), typeface: String(l.typeface ?? 'sans'), art: String(l.art ?? ''), shape: String(l.shape ?? 'rounded'),
+                kind: String(l.kind ?? 'shape'), text: String(l.text ?? ''), typeface: String(l.typeface ?? 'sans'), art: String(l.art ?? ''), art_name: String(l.art_name ?? ''), shape: String(l.shape ?? 'rounded'),
                 x: Number(l.x ?? 0), y: Number(l.y ?? 0), w: Number(l.w ?? 50), turn: Number(l.turn ?? 0), code: spoolCode(String(l.code ?? 'white')), hidden: Boolean(l.hidden),
             })));
             chosen = Math.min(chosen, layers.length - 1);
@@ -805,6 +805,8 @@ export function bootParam(stage: Stage): void {
     };
 
     // ── a composition: its layers and the fields of the chosen one ──
+    /** What a picture is called in the list: the name it came with, or the last word of its place in the library. */
+    const artName = (l: Layer): string => l.art_name || (l.art.startsWith('lib:') ? (l.art.split('/').pop() ?? '') : '');
     const renderLayers = (): void => {
         const box = document.getElementById('compose-layers'); const edit = document.getElementById('compose-edit');
         if (!compose || !box || !edit) return;
@@ -814,11 +816,11 @@ export function bootParam(stage: Stage): void {
             const l = layers[i];
             const row = document.createElement('div');
             row.className = `flex items-center gap-1 rounded-lg border px-2 py-1 text-sm ${i === chosen ? 'border-ink bg-white' : 'border-transparent'} ${l.hidden ? 'opacity-50' : ''}`;
-            const what = l.kind === 'text' ? (l.text || '…') : l.kind === 'art' ? (l.art.split('/').pop() ?? '') : (document.querySelector<HTMLOptionElement>(`#compose-shape option[value="${l.shape}"]`)?.textContent ?? l.shape);
+            const what = l.kind === 'text' ? (l.text || '…') : l.kind === 'art' ? artName(l) : (document.querySelector<HTMLOptionElement>(`#compose-shape option[value="${l.shape}"]`)?.textContent ?? l.shape);
             const act = (name: string, sign: string, off = false): string => `<button type="button" class="chip !min-h-8 !px-2 !py-0.5" data-layer-act="${name}" aria-label="${t(`compose.layer.${name}`)}" title="${t(`compose.layer.${name}`)}" ${off ? 'disabled' : ''}>${sign}</button>`;
             row.innerHTML = `<button type="button" class="flex min-w-0 flex-1 items-center gap-2 text-left" data-layer-pick>
                     <span class="inline-block h-3 w-3 shrink-0 rounded-full border border-line" style="background:${colorOf(l.code)?.hex ?? '#888888'}"></span>
-                    <span class="min-w-0 truncate text-ink">${t(`compose.layer.${l.kind}`)}: ${what.replace(/[<>&]/g, '')}</span></button>
+                    <span class="min-w-0 truncate text-ink" title="${what.replace(/[<>&"]/g, '')}">${t(`compose.layer.${l.kind}`)}: ${what.replace(/[<>&]/g, '')}</span></button>
                 ${act('up', '↑', i === layers.length - 1)}${act('down', '↓', i === 0)}${act(l.hidden ? 'show' : 'hide', l.hidden ? '○' : '●')}${act('copy', '⧉', layers.length >= 12)}${act('remove', '×')}`;
             row.querySelector<HTMLButtonElement>('[data-layer-pick]')!.onclick = () => { chosen = i; renderLayers(); placeFrame(); };
             row.querySelectorAll<HTMLButtonElement>('[data-layer-act]').forEach((b) => {
@@ -840,7 +842,7 @@ export function bootParam(stage: Stage): void {
         ($('compose-text') as HTMLInputElement).value = l.text;
         ($('compose-font') as HTMLSelectElement).value = l.typeface;
         ($('compose-shape') as HTMLSelectElement).value = l.shape;
-        $('compose-art-name').textContent = l.art.split('/').pop() ?? '';
+        $('compose-art-name').textContent = artName(l);
         paintSwatch($('compose-color'), l.code);
         $('compose-color-name').textContent = colorOf(l.code) ? `${colorOf(l.code)!.name} · ${materialLabel(colorOf(l.code)!)}` : colorName(l.code);
         edit.querySelectorAll<HTMLInputElement>('[data-layer-slide]').forEach((s) => {
@@ -874,17 +876,17 @@ export function bootParam(stage: Stage): void {
         $('compose-art').onclick = async () => {
             const l = now(); if (!l) return;
             const picked = await pickArtwork('library');
-            if (picked && picked.ref.startsWith('lib:')) { l.art = picked.ref; changed(); }
+            if (picked) { l.art = picked.ref; l.art_name = picked.name; changed(); }
         };
         document.querySelectorAll<HTMLButtonElement>('[data-add-layer]').forEach((b) => {
             b.onclick = async () => {
                 if (layers.length >= 12) { showError(t('compose.limit')); return; }
                 const kind = b.dataset.addLayer!;
-                const fresh: Layer = { kind, text: kind === 'text' ? 'Text' : '', typeface: 'sans', art: '', shape: 'rounded', x: 0, y: 0, w: kind === 'shape' ? 80 : 40, turn: 0, code: spoolCode(layers.length ? 'black' : 'white'), hidden: false };
+                const fresh: Layer = { kind, text: kind === 'text' ? 'Text' : '', typeface: 'sans', art: '', art_name: '', shape: 'rounded', x: 0, y: 0, w: kind === 'shape' ? 80 : 40, turn: 0, code: spoolCode(layers.length ? 'black' : 'white'), hidden: false };
                 if (kind === 'art') {
                     const picked = await pickArtwork('library');
-                    if (!picked || !picked.ref.startsWith('lib:')) return;
-                    fresh.art = picked.ref;
+                    if (!picked) return;
+                    fresh.art = picked.ref; fresh.art_name = picked.name;
                 }
                 layers.push(fresh); chosen = layers.length - 1;
                 changed();

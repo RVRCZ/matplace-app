@@ -531,13 +531,14 @@ final class ParametricGenerator
             ];
         }
         if ($kind === 'compose') {
-            // the layers from the bottom up: a text, a picture of the library or a plain shape, where it lies, how wide, turned how, in which filament
+            // the layers from the bottom up: a text, a picture (of the library or an upload) or a shape, where it lies, how wide, turned how, in which filament
             $rules += [
                 'params.layers' => ['required', 'array', 'min:1', 'max:'.self::MAX_LAYERS],
                 'params.layers.*.kind' => ['required', 'in:text,art,shape'],
                 'params.layers.*.text' => ['nullable', 'string', 'max:40'],
                 'params.layers.*.typeface' => ['nullable', Rule::in(array_keys(self::FONTS))],
-                'params.layers.*.art' => ['nullable', 'string', 'regex:/^lib:[a-z-]{2,30}\/[a-z0-9-]{1,60}$/'],
+                'params.layers.*.art' => ['nullable', 'string', 'regex:'.Artwork::REF],
+                'params.layers.*.art_name' => ['nullable', 'string', 'max:120'],
                 'params.layers.*.shape' => ['nullable', Rule::in(self::LAYER_SHAPES)],
                 'params.layers.*.x' => ['nullable', 'numeric', 'min:-250', 'max:250'],
                 'params.layers.*.y' => ['nullable', 'numeric', 'min:-250', 'max:250'],
@@ -614,6 +615,7 @@ final class ParametricGenerator
                 'text' => mb_substr(trim((string) ($l['text'] ?? '')), 0, 40),
                 'typeface' => isset(self::FONTS[$l['typeface'] ?? '']) ? $l['typeface'] : 'sans',
                 'art' => (string) ($l['art'] ?? ''),
+                'art_name' => mb_substr((string) ($l['art_name'] ?? ''), 0, 120),
                 'shape' => in_array($l['shape'] ?? '', self::LAYER_SHAPES, true) ? $l['shape'] : 'rounded',
                 'x' => round((float) ($l['x'] ?? 0), 2), 'y' => round((float) ($l['y'] ?? 0), 2), 'w' => round((float) ($l['w'] ?? 50), 2), 'turn' => round((float) ($l['turn'] ?? 0), 1),
                 'code' => is_string($l['code'] ?? null) && $palette->has($l['code']) ? ($named[$l['code']] ?? $l['code']) : $spare,
@@ -807,6 +809,13 @@ final class ParametricGenerator
         if (! empty($clean['artwork']) && ($src = self::artworkPath($clean['artwork']))) {
             File::copy($src, dirname($abs).'/artwork.'.pathinfo($src, PATHINFO_EXTENSION));
             $clean['artwork'] = 'file:'.$uuid;
+        }
+        foreach ($clean['layers'] ?? [] as $i => $layer) {
+            // a visitor's own picture in a layer is kept with the design, as the one picture of the other tools is
+            if ($layer['kind'] === 'art' && ! str_starts_with($layer['art'], 'lib:') && ($src = self::artworkPath($layer['art']))) {
+                File::copy($src, dirname($abs).'/artwork-'.$i.'.'.pathinfo($src, PATHINFO_EXTENSION));
+                $clean['layers'][$i]['art'] = 'file:'.$uuid.':'.$i;
+            }
         }
 
         if (isset($built['meta']['notes']['color_change_mm'])) {

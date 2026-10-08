@@ -24,7 +24,7 @@ return [
     'magnet.tip' => 'Se imprime con la cara hacia arriba y el hueco del imán hacia abajo, sin soportes. Pegue el imán con pegamento instantáneo o elija el encaje a presión. Los imanes no vienen con la impresión.',
     'coaster.lead' => 'Un posavasos con su propia imagen: redondo, cuadrado o hexagonal. Convertimos la foto o el dibujo a los colores de los filamentos que tenemos en la granja.',
     'coaster.tip' => 'Se imprime en plano, sin soportes. El PLA aguanta bebidas frías y calientes; una taza recién sacada del fuego no debe ponerse encima, porque el PLA se ablanda hacia los 55 °C. Para recipientes muy calientes elija PETG.',
-    'compose.lead' => 'Componga un objeto con capas: una forma, un texto, una imagen de la biblioteca. Cada capa tiene su color de filamento y queda un poco más alta que la de debajo.',
+    'compose.lead' => 'Componga un objeto con capas: una forma, un texto, una imagen de la biblioteca o suya. Cada capa tiene su color de filamento y queda un poco más alta que la de debajo.',
     'compose.tip' => 'Se imprime en plano, con la cara hacia arriba y sin soportes. Las capas van una sobre otra, así que cada color es un cambio de filamento a una altura que el proyecto incluye; lo que queda separado se une con un puente.',
     'compose.content' => 'Capas',
     'compose.size' => 'Grosores y base',

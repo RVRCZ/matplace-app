@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
  *   "lib:<category>/<slug>"  a silhouette of our library (engines/artwork, CC0 / public domain only: SOURCES.md)
  *   "<uuid>"                 an upload of this visitor (storage/app/artwork/<owner>/, kept 30 days: "my pictures")
  *   "file:<uuid>"            the copy stored with a created model (kept with it)
+ *   "file:<uuid>:<n>"        the same for a model put together from layers: the picture of its layer n
  */
 final class Artwork
 {
@@ -25,7 +26,7 @@ final class Artwork
 
     public const CATEGORIES = ['colour', 'animals', 'hearts-stars', 'sport', 'jobs', 'holidays', 'cookies', 'transport', 'nature', 'letters-numbers'];
 
-    public const REF = '/^((file:)?[0-9a-f-]{36}|lib:[a-z-]{2,30}\/[a-z0-9-]{1,60})$/';
+    public const REF = '/^((file:)?[0-9a-f-]{36}|file:[0-9a-f-]{36}:\d{1,2}|lib:[a-z-]{2,30}\/[a-z0-9-]{1,60})$/';
 
     public static function libraryDir(): string
     {
@@ -68,9 +69,9 @@ final class Artwork
             return is_file($path) ? str_replace('\\', '/', $path) : null;
         }
         $stored = str_starts_with($ref, 'file:');
-        $id = $stored ? substr($ref, 5) : $ref;
+        [$id, $layer] = $stored ? explode(':', substr($ref, 5)) + [1 => null] : [$ref, null];
         $hit = $stored
-            ? File::glob(Storage::disk(ModelFile::DISK)->path('files/'.$id.'/artwork.*'))
+            ? File::glob(Storage::disk(ModelFile::DISK)->path('files/'.$id.'/artwork'.($layer === null ? '' : '-'.(int) $layer).'.*'))
             // uploads made before "my pictures" lay in tmp/artwork for a day: still found while they last
             : array_merge(self::pictures(self::uploadsDir().'/*/'.$id.'.*'), File::glob(storage_path('app/tmp/artwork/'.$id.'.*')));
 

@@ -179,7 +179,7 @@
 
         @if($kind === 'compose')
             {{-- the layers of a composition, from the bottom up (the list shows the top one first, as they lie), and the fields of the chosen one --}}
-            <fieldset>
+            <fieldset class="min-w-0">
                 <legend class="lbl">{{ __('param.compose.layers') }}</legend>
                 <p class="hint !text-xs">{{ __('param.compose.hint') }}</p>
                 <div id="compose-layers" class="mt-2 space-y-1"></div>
