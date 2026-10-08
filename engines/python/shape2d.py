@@ -355,6 +355,56 @@ def load(M, p, width_mm, font_path=None, cap_height_mm=None, fill_holes=False):
     return cs, info
 
 
+def room(M, cs, aspect):
+    """
+    The biggest box of the given proportions (width / height) that lies inside an outline, its sides level:
+    (cx, cy, width, height), or None. Read off a grid of 300 cells; numpy and PIL only, because a shaped sign asks
+    for it on every preview and the import of anything heavier would cost more than the search.
+    """
+    import numpy as np
+    from PIL import Image, ImageDraw
+    x0, y0, x1, y1 = cs.bounds()
+    cell = max(x1 - x0, y1 - y0) / 300
+    img = Image.new("1", (int((x1 - x0) / cell) + 3, int((y1 - y0) / cell) + 3), 0)
+    draw = ImageDraw.Draw(img)
+    rings = []
+    for poly in cs.to_polygons():
+        pts = [((float(x) - x0) / cell + 1, (float(y) - y0) / cell + 1) for x, y in poly]
+        rings.append((sum(pts[i][0] * pts[(i + 1) % len(pts)][1] - pts[(i + 1) % len(pts)][0] * pts[i][1] for i in range(len(pts))), pts))
+    for area, pts in sorted(rings, key=lambda ring: -ring[0]):      # the outer rings first, then their holes
+        draw.polygon(pts, fill=1 if area > 0 else 0)
+    mask = np.asarray(img, dtype=np.int32)
+    rows = mask.shape[0]
+    down = np.vstack([np.zeros((1, mask.shape[1]), dtype=np.int32), np.cumsum(mask, axis=0)])
+
+    def widest(h):
+        """A box h rows tall: the longest run of columns that are inside for all its rows → (length, its last column, its top row)."""
+        band = (down[h:] - down[:-h]) == h
+        count = np.cumsum(band, axis=1)
+        run = count - np.maximum.accumulate(np.where(band, 0, count), axis=1)
+        r, c = np.unravel_index(int(np.argmax(run)), run.shape)
+        return int(run[r, c]), int(c), int(r)
+
+    # the taller the box, the shorter the run it finds: the best box is where the two meet
+    lo, hi = 1, rows
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if widest(mid)[0] >= aspect * mid:
+            lo = mid
+        else:
+            hi = mid - 1
+    best = None
+    for h in (lo, min(rows, lo + 1)):
+        length, c, r = widest(h)
+        tall = min(h, length / aspect)
+        if tall > 0 and (best is None or tall > best[0]):
+            best = (tall, c - (length - 1) / 2.0, r + (h - 1) / 2.0)
+    if best is None or best[0] < 2:
+        return None
+    tall = (best[0] - 1) * cell                                # a cell smaller: the box must lie inside, not on the line
+    return x0 + (best[1] - 1) * cell, y0 + (best[2] - 1) * cell, tall * aspect, tall
+
+
 def slugify(s):
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")[:40] or "model"
 

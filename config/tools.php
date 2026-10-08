@@ -83,6 +83,13 @@ return [
         ['preset' => 'door', 'params' => ['line1' => 'Novákovi', 'line2' => '12']],
         ['preset' => 'name', 'params' => ['line1' => 'Ela']],
     ]]],
+    'nameplate' => ['route' => 'tools.nameplate', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true,
+        'card' => ['kind' => 'sign', 'preset' => 'shaped', 'params' => ['line1' => 'Jana', 'artwork' => 'lib:hearts-stars/star']],
+        'seo' => ['kind' => 'sign', 'examples' => [
+            ['preset' => 'shaped', 'params' => ['line1' => 'Jana', 'artwork' => 'lib:hearts-stars/star']],
+            ['preset' => 'shaped', 'params' => ['line1' => 'Rex', 'shape' => 'bone', 'border' => false, 'typeface' => 'titan', 'artwork' => 'lib:animals/paw', 'motif_at' => 'right']],
+            ['preset' => 'shaped', 'params' => ['line1' => 'Ela', 'line2' => '2020', 'shape' => 'heart', 'keyring' => true, 'ring_at' => 'top', 'text_height' => 9, 'typeface' => 'lobster']],
+        ]]],
     'qr' => ['route' => 'tools.qr', 'intent' => 'create', 'categories' => ['signs', 'sell'], 'available' => true, 'verified' => '2026-10-04', 'seo' => ['examples' => [
         ['params' => ['size' => 70, 'url' => 'https://matplace.com', 'label' => 'matplace.com']],
         ['params' => ['size' => 90, 'url' => 'WIFI:T:WPA;S:Kavarna;P:dobrakava;;', 'label' => 'Wi-Fi', 'stand' => true]],

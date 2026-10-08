@@ -124,6 +124,7 @@ $pages = function () {
     Route::get('/tools/box', [ToolsController::class, 'param'])->defaults('kind', 'box')->name('tools.box');
     Route::get('/tools/phone-stand', [ToolsController::class, 'param'])->defaults('kind', 'phone_stand')->name('tools.phone_stand');
     Route::get('/tools/vase', [ToolsController::class, 'param'])->defaults('kind', 'vase')->name('tools.vase');
+    Route::get('/tools/nameplate', [ToolsController::class, 'param'])->defaults('kind', 'sign')->defaults('as', 'nameplate')->defaults('preset', 'shaped')->name('tools.nameplate');
     Route::get('/tools/logo', [ToolsController::class, 'param'])->defaults('kind', 'logo')->name('tools.logo');
     Route::get('/tools/svg-to-stl', [ToolsController::class, 'param'])->defaults('kind', 'logo')->defaults('as', 'svg_to_stl')->defaults('preset', 'extrude')->name('tools.svg_to_stl');
     Route::get('/tools/stamp', [ToolsController::class, 'param'])->defaults('kind', 'stamp')->name('tools.stamp');

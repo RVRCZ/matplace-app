@@ -19,7 +19,8 @@ LIMITS = {
 CHOICES = {
     "vase": {"profile": ("neck", "belly", "cone", "tulip"), "style": ("twist", "ribs", "smooth"), "purpose": ("vase", "pot")},
     "logo": {"mode": ("relief", "height", "cutout", "standing"), "shape": ("rounded", "rect", "circle")},
-    "sign": {"shape": ("rounded", "rect", "oval"), "style": ("emboss", "engrave", "outline", "name"), "typeface": ("sans", "serif", "mono", "script")},
+    "sign": {"shape": ("rounded", "rect", "oval", "heart", "star", "cloud", "bone", "hexagon", "banner", "arrow", "house", "car", "cat", "candy", "flower", "shield", "tag", "bubble", "circle", "fish"),
+             "motif_at": ("left", "right", "above"), "ring_at": ("left", "right", "top"), "style": ("emboss", "engrave", "outline", "name"), "typeface": ("sans", "serif", "mono", "script")},
     "stamp": {"mode": ("raised", "recessed"), "handle": ("knob", "none")},
     "qr": {"plate_color": ("white", "yellow", "grey", "brown", "orange", "red", "green", "blue", "black"),
            "code_color": ("black", "blue", "green", "red", "brown", "orange", "grey", "yellow", "white")},
@@ -265,12 +266,72 @@ def logo(M, Invalid, p):
 # ── sign / name tag / keychain ───────────────────────────────────────────────
 
 SIGN_SECOND_LINE = 0.7     # the height of a sign's second line against the first
+# plates drawn as outlines (engines/shapes/<name>.svg, see _draw.py there): the text is fitted into the shape
+TEMPLATES = ("heart", "star", "cloud", "bone", "hexagon", "banner", "arrow", "house", "car", "cat", "candy", "flower", "shield", "tag", "bubble", "circle", "fish")
+
+
+def _beside(M, Invalid, p, art, cap, at):
+    """The picture of a sign next to its text: as tall as the text (left, right) or a line and a half (above), a third of a letter away."""
+    try:
+        pic, pinfo = S.load(M, {"artwork_path": p["artwork_path"], "invert": p.get("invert", False)}, 100.0)
+    except S.ArtworkError as e:
+        raise Invalid(e.code, str(e).split(": ", 1)[1] if ": " in str(e) else "")
+    x0, y0, x1, y1 = art.bounds()
+    w, h = x1 - x0, y1 - y0
+    gap = cap * 0.35
+    tall = max(cap * 1.5, 6.0) if at == "above" else max(h, cap * 1.2)
+    pic = S.fit(pic, height_mm=tall)
+    if S.size(pic)[0] > 2 * tall:
+        pic = S.fit(pic, width_mm=2 * tall)                  # a long flat picture must not push the text off the plate
+    pw, ph = S.size(pic)
+    px0, py0 = pic.bounds()[:2]
+    if at == "above":
+        return pic.translate([x0 + (w - pw) / 2 - px0, y1 + gap - py0]), pinfo
+    return pic.translate([(x0 - gap - pw if at == "left" else x1 + gap) - px0, y0 + (h - ph) / 2 - py0]), pinfo
+
+
+def _shaped_plate(M, Invalid, shape, pw, ph):
+    """
+    A plate in one of the drawn shapes, as big as it takes for a box of pw × ph (the text with its margins) to lie inside
+    it; the box has its corner at the origin, as on a plain plate.
+    """
+    import os
+    import re
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "shapes", shape + ".svg")
+    try:
+        # the shapes we draw ourselves are one path of straight lines: read it here, without the SVG reader and its import
+        plain = re.search(r'<path d="M([-0-9. L]+)Z"/>', open(path, encoding="utf-8").read())
+        if plain:
+            outline = M.CrossSection([[(float(x), -float(y)) for x, y in (pt.split() for pt in plain.group(1).split("L"))]], M.FillRule.NonZero)
+        else:
+            outline = S.svg(M, path, 100.0)[0]
+    except (S.ArtworkError, OSError, ValueError):
+        raise Invalid("bad_choice", "shape")
+    room = S.room(M, outline, pw / ph)
+    if room is None:
+        raise Invalid("shape_too_small")
+    cx, cy, rw = room[:3]
+    k = pw / rw
+    return outline.translate([-cx, -cy]).scale([k, k]).translate([pw / 2, ph / 2])
+
+
+def _ring_spot(M, cs, at):
+    """Where an eyelet meets an outline on the asked side, level with its middle: (x, y, the way out x, y)."""
+    C = M.CrossSection
+    x0, y0, x1, y1 = cs.bounds()
+    mx, my = (x0 + x1) / 2, (y0 + y1) / 2
+    if at == "top":
+        return mx, (cs ^ C.square([2.0, y1 - y0 + 2]).translate([mx - 1.0, y0 - 1])).bounds()[3], 0.0, 1.0
+    sx0, _, sx1, _ = (cs ^ C.square([x1 - x0 + 2, 2.0]).translate([x0 - 1, my - 1.0])).bounds()
+    return (sx1, my, 1.0, 0.0) if at == "right" else (sx0, my, -1.0, 0.0)
 
 
 def sign(M, Invalid, p):
     """
     Text on a plate: raised (emboss), sunk (engrave) or raised as an outline. Keyring tab, raised rim, a bevelled top
     edge, and the plate and the text as separate parts for a two-colour print. Exact solids, milliseconds per preview.
+    The plate is a box, an oval or one of the drawn shapes (a heart, a cloud, a bone…) grown round the text; a picture
+    of the library or the visitor's own may stand next to the text and is treated as part of it.
     """
     k = "sign"
     n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
@@ -289,23 +350,34 @@ def sign(M, Invalid, p):
         art, info = S.text(M, lines[:2], p.get("font"), cap, scales=[1.0, SIGN_SECOND_LINE])
     except S.ArtworkError as e:
         raise Invalid(e.code)
-    w, hgt = S.size(art)
     warn = []
     if info.get("missing_chars"):
         warn.append("missing_chars")
+    ring_at = _pick(Invalid, p, k, "ring_at")
+    picture = None
+    if p.get("artwork_path"):
+        picture, pinfo = _beside(M, Invalid, p, art, cap, _pick(Invalid, p, k, "motif_at"))
+        if pinfo.get("ignored_outlines"):
+            warn.append("outlines_ignored")
     if style == "name":
-        return _sign_name(M, p, art, info, cap, t, relief, keyring, two, warn)
+        return _sign_name(M, p, art if picture is None else art + picture, info, cap, t, relief, keyring, two, warn, ring_at)
     if style == "outline":
         line = max(0.6, min(1.2, cap * 0.07))
         inner = art.offset(-line, M.JoinType.Round, 2.0, 16)
         art = art - inner if not inner.is_empty() else art
+    if picture is not None:
+        art = art + picture                                  # from here on the picture is a letter like any other
+    w, hgt = S.size(art)
     thin = S.printability(M, art, 0.45)["thin_pct"]
     if thin > 35:
         warn.append("thin_lines")
     rim = 1.6 if border else 0.0
     pw, ph = w + 2 * margin + 2 * rim, hgt + 2 * margin + 2 * rim
     C = M.CrossSection
-    if shape == "oval":
+    if shape in TEMPLATES:
+        plate2d = _shaped_plate(M, Invalid, shape, pw, ph)
+        inner2d = plate2d.offset(-rim, M.JoinType.Round, 2.0, 24) if rim else None
+    elif shape == "oval":
         pw, ph = pw * 1.12, ph * 1.25
         plate2d = C.circle(1.0, 128).scale([pw / 2, ph / 2]).translate([pw / 2, ph / 2])
         inner2d = C.circle(1.0, 128).scale([pw / 2 - rim, ph / 2 - rim]).translate([pw / 2, ph / 2]) if rim else None
@@ -330,16 +402,19 @@ def sign(M, Invalid, p):
         body = plate
     else:
         body = plate
-    tab_note = {}
+    whole2d = plate2d
     if keyring:
-        r_out = max(5.0, ph * 0.28)
+        # a round tab that bites a third into the plate, on the side asked for, level with the plate's middle
+        r_out = max(5.0, min(ph * 0.28, 9.0)) if shape in TEMPLATES else max(5.0, ph * 0.28)
         r_in = max(2.0, r_out * 0.45)
-        cx = -r_out * 0.35
-        tab = C.circle(r_out, 64).translate([cx, ph / 2]).extrude(t)
-        hole = M.Manifold.cylinder(t + 2, r_in, r_in, 48).translate([cx, ph / 2, -1])
+        ex, ey, nx, ny = _ring_spot(M, plate2d, ring_at)
+        cx, cy = ex + nx * r_out * 0.35, ey + ny * r_out * 0.35
+        tab2d = C.circle(r_out, 64).translate([cx, cy])
+        tab = tab2d.extrude(t)
+        hole = M.Manifold.cylinder(t + 2, r_in, r_in, 48).translate([cx, cy, -1])
         plate = plate + tab - hole
         body = body + tab - hole
-        tab_note = {"tab": round(r_out * 0.65, 1)}
+        whole2d = plate2d + tab2d
     if style == "engrave":
         body = body - motif.extrude(relief + 1).translate([0, 0, t - relief])
         parts = {"all": body}
@@ -351,8 +426,8 @@ def sign(M, Invalid, p):
                 raised = raised + rim2d.extrude(relief).translate([0, 0, t - 0.01])
             parts["plate"] = plate
             parts["text"] = raised.translate([0, 0, -(t - 0.01)])
-    x0 = -tab_note.get("tab", 0) * 0 - (max(5.0, ph * 0.28) * 1.35 if keyring else 0.0)
-    notes = {"outer": [round(pw - x0, 1), round(ph, 1), round(t + (0 if style == "engrave" else relief), 1)], "warnings": warn, "thin_pct": thin,
+    ox0, oy0, ox1, oy1 = whole2d.bounds()
+    notes = {"outer": [round(ox1 - ox0, 1), round(oy1 - oy0, 1), round(t + (0 if style == "engrave" else relief), 1)], "warnings": warn, "thin_pct": thin,
              "missing_chars": info.get("missing_chars", []), "two_color": two and style != "engrave"}
     if style != "engrave":
         notes["color_change_mm"] = round(t, 2)             # above the plate everything is the text (and the rim)
@@ -363,7 +438,7 @@ def sign(M, Invalid, p):
     return parts, notes
 
 
-def _sign_name(M, p, art, info, cap, t, relief, keyring, two, warn):
+def _sign_name(M, p, art, info, cap, t, relief, keyring, two, warn, ring_at="left"):
     """
     The name itself is the pendant: no plate, the letters a little fattened make the body and the letters as written
     stand raised on it. What would fall apart (separate letters, a heart after a space, the dot of an i) is tied to
@@ -381,11 +456,18 @@ def _sign_name(M, p, art, info, cap, t, relief, keyring, two, warn):
         r_in = max(1.8, r_out * 0.5)
         pts = np.vstack([np.asarray(poly) for poly in base.to_polygons()])
         x0, y0, x1, y1 = base.bounds()
-        # the eyelet sits on the leftmost part of the name, at the height where the name really is
-        near = pts[pts[:, 0] < x0 + max(1.0, cap * 0.15)]
-        cy = float(near[:, 1].mean())
-        cx = x0 - r_in - 0.4
-        base = base + C.circle(r_out, 64).translate([cx, cy]) + (C.circle(link_w / 2, 24).translate([cx, cy]) + C.circle(link_w / 2, 24).translate([x0 + grow, cy])).hull()
+        # the eyelet sits on the outermost part of the name on the asked side, at the height (or the place) where the name really is
+        edge = max(1.0, cap * 0.15)
+        if ring_at == "top":
+            cx, cy = float(pts[pts[:, 1] > y1 - edge][:, 0].mean()), y1 + r_in + 0.4
+            hold = (cx, y1 - grow)
+        elif ring_at == "right":
+            cx, cy = x1 + r_in + 0.4, float(pts[pts[:, 0] > x1 - edge][:, 1].mean())
+            hold = (x1 - grow, cy)
+        else:
+            cx, cy = x0 - r_in - 0.4, float(pts[pts[:, 0] < x0 + edge][:, 1].mean())
+            hold = (x0 + grow, cy)
+        base = base + C.circle(r_out, 64).translate([cx, cy]) + (C.circle(link_w / 2, 24).translate([cx, cy]) + C.circle(link_w / 2, 24).translate(list(hold))).hull()
         base = base - C.circle(r_in, 48).translate([cx, cy])
         tab_note = {"eyelet_mm": round(2 * r_in, 1)}
     x0, y0, x1, y1 = base.bounds()

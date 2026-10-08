@@ -126,6 +126,10 @@
     .font-tile { @apply flex h-11 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white px-2 transition has-[:checked]:border-ink has-[:checked]:bg-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink; }
     .font-tile img { @apply h-6 w-auto max-w-full object-contain; }
     .font-tile:has(:checked) img { filter: invert(1); }
+    /* the shape of a plate: a small tile with its outline */
+    .shape-tile { @apply flex h-10 cursor-pointer items-center justify-center rounded-lg border border-slate-300 bg-white p-1.5 transition has-[:checked]:border-ink has-[:checked]:bg-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink; }
+    .shape-tile img { @apply h-full w-full object-contain opacity-80; }
+    .shape-tile:has(:checked) img { filter: invert(1); opacity: 1; }
     /* a number with its unit inside the field, on the right */
     .tool-unit { @apply relative block w-28 shrink-0; }
     .tool-unit::after { content: attr(data-unit); @apply pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted; }

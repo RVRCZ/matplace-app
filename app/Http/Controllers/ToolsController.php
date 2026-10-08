@@ -50,7 +50,7 @@ class ToolsController extends Controller
             'presets' => ParametricGenerator::PRESETS[$kind] ?? [],
             'fills' => ParametricGenerator::FILLS[$kind] ?? [],
             'family' => ParametricGenerator::FAMILY[$kind] ?? null,
-            'place' => ParametricGenerator::PLACE[ParametricGenerator::FAMILY[$kind] ?? ''] ?? [],
+            'place' => ParametricGenerator::PLACE[ParametricGenerator::FAMILY[$kind] ?? $kind] ?? [],
             'sample' => ParametricGenerator::SAMPLE[$tool] ?? ParametricGenerator::SAMPLE[$kind] ?? null,
             'captioned' => in_array($kind, ParametricGenerator::CAPTIONED, true),
             'config' => ConfigController::payload($materials, $converters, true),

@@ -53,7 +53,7 @@ class ToolsApiController extends Controller
         $messages = [];
         $required = match (true) {
             $kind === 'qr' => __('param.error.qr_bad_text'),
-            in_array($kind, ParametricGenerator::ARTWORK, true) => __('param.error.no_text'),
+            in_array($kind, ParametricGenerator::ARTWORK, true) && ! in_array($kind, ParametricGenerator::BESIDE, true) => __('param.error.no_text'),
             default => __('param.text_required'),
         };
         foreach (array_keys(ParametricGenerator::TEXTS[$kind] ?? []) as $text) {

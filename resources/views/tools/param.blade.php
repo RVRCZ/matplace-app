@@ -168,7 +168,7 @@
                         <span id="param-artwork-thumb" class="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-line bg-white p-1"></span>
                         <p id="param-artwork-state" class="text-sm text-muted" aria-live="polite"></p>
                     </div>
-                    <p class="hint mt-1 !text-xs">{{ __('param.artwork.hint') }}</p>
+                    <p class="hint mt-1 !text-xs">{{ __(\Illuminate\Support\Facades\Lang::has('param.'.$kind.'.artwork.hint') ? 'param.'.$kind.'.artwork.hint' : 'param.artwork.hint') }}</p>
                     <input id="param-artwork" type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="sr-only" tabindex="-1" aria-hidden="true">
                 @endif
             </fieldset>
@@ -178,6 +178,10 @@
             @continue($at($key, 'input') !== 'input')
             @if($key === 'typeface' && count($options) > 4)
                 @include('tools._fonts')
+                @continue
+            @endif
+            @if($key === 'shape' && $kind === 'sign')
+                @include('tools._shapes')
                 @continue
             @endif
             <fieldset {!! $whenOf($key) !!}>

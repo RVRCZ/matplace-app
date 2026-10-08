@@ -40,7 +40,7 @@ final class ParametricGenerator
     private const SHAPE_EYELET = ['eye_pos' => [0, 100, 0, 0.5], 'eye_hole' => [2, 6, 3, 0.5], 'eye_wall' => [1.5, 3, 2, 0.1]];
 
     /** family → field, flag or choice → the section of the tool page it belongs to (fields and flags: size, choices: input, when not named) */
-    public const PLACE = ['shape' => [
+    public const PLACE = ['sign' => ['ring_at' => 'size'], 'shape' => [
         'bg_strength' => 'input', 'smooth' => 'input', 'contrast' => 'input', 'brightness' => 'input', 'saturation' => 'input', 'remove_bg' => 'input',
         'colors_n' => 'colors', 'relief' => 'colors', 'flush' => 'colors', 'rim' => 'colors', 'body' => 'size', 'mount' => 'size', 'disc' => 'size', 'floor' => 'size',
     ]];
@@ -116,7 +116,7 @@ final class ParametricGenerator
     /** Tools of the family whose text goes under the picture, not instead of it: a page opened with a name keeps its sample picture. */
     public const CAPTIONED = ['badge'];
 
-    public const SAMPLE = ['svg_to_stl' => 'lib:animals/cat', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star'];
+    public const SAMPLE = ['svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star'];
 
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
@@ -201,7 +201,9 @@ final class ParametricGenerator
         'badge' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script'], 'mount' => ['glue', 'none']],
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
-        'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name'], 'shape' => ['rounded', 'rect', 'oval'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        // `shape`: a box, an oval, or a plate drawn as an outline (engines/shapes/<name>.svg); `motif_at`: where the picture stands against the text
+        'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name'], 'shape' => ['rounded', 'rect', 'oval', 'heart', 'star', 'cloud', 'bone', 'hexagon', 'banner', 'arrow', 'house', 'car', 'cat', 'candy', 'flower', 'shield', 'tag', 'bubble', 'circle', 'fish'],
+            'typeface' => ['sans', 'serif', 'mono', 'script'], 'motif_at' => ['left', 'right', 'above'], 'ring_at' => ['left', 'right', 'top']],
         'logo' => ['mode' => ['relief', 'height', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
         // a code is read only in two colours: the plate (light ones first) and the code with its caption (dark ones first)
@@ -236,7 +238,10 @@ final class ParametricGenerator
     ];
 
     /** kinds that accept an uploaded SVG or picture instead of text */
-    public const ARTWORK = ['logo', 'stamp', 'stencil', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge'];
+    /** Of the tools that take a picture: those where it stands next to the text, never instead of it (the text stays required). */
+    public const BESIDE = ['sign'];
+
+    public const ARTWORK = ['sign', 'logo', 'stamp', 'stencil', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge'];
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
@@ -286,7 +291,7 @@ final class ParametricGenerator
         'magnet' => self::SHAPE_WHEN + ['disc' => ['mount', ['glue', 'press', 'through']], 'mag_d' => ['mount', ['glue', 'press', 'through']], 'mag_h' => ['mount', ['glue', 'press']], 'mag_gap' => ['mount', ['glue']]],
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
-        'sign' => ['radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']],
+        'sign' => ['shape' => ['style', ['emboss', 'engrave', 'outline']], 'radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']], 'ring_at' => ['keyring', ['on']],
             'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']]],
         'holder' => ['obj_d' => ['style', ['cradle', 'pocket', 'hook']], 'height' => ['style', ['cradle', 'pocket', 'clip']], 'hook_h' => ['style', ['hook']], 'bend' => ['style', ['hook']],
             'edge' => ['style', ['hook', 'clip']], 'holes' => ['mount', ['on']], 'radius' => ['style', ['cradle', 'pocket']], 'clearance' => ['style', ['cradle', 'pocket', 'hook']]],
@@ -329,6 +334,8 @@ final class ParametricGenerator
         ],
         // gifts with a text: the same sign tool, four starting points (the landing page /gifts links to them)
         'sign' => [
+            // a plate in a shape with a picture next to the name: what the card "nameplate" (/tools/nameplate) opens with
+            'shaped' => ['style' => 'emboss', 'shape' => 'cloud', 'text_height' => 14, 'thickness' => 3, 'relief' => 1.2, 'margin' => 3, 'keyring' => false, 'border' => true, 'bevel' => false, 'two_color' => true, 'motif_at' => 'left'],
             'name' => ['style' => 'name', 'typeface' => 'script', 'text_height' => 14, 'thickness' => 3, 'relief' => 1, 'keyring' => true, 'border' => false, 'bevel' => false, 'two_color' => false],
             'keyring' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 8, 'thickness' => 3, 'relief' => 1, 'margin' => 4, 'radius' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
             'door' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 22, 'thickness' => 3, 'relief' => 1.4, 'margin' => 8, 'radius' => 8, 'keyring' => false, 'border' => true, 'bevel' => false, 'two_color' => true],
