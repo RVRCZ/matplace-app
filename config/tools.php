@@ -134,6 +134,11 @@ return [
         ['params' => ['line1' => 'Jana', 'typeface' => 'script', 'width' => 100, 'pen' => false]],
         ['params' => ['artwork' => 'lib:hearts-stars/star', 'width' => 70, 'pad' => 51, 'depth' => 10]],
     ]]],
+    'hair_tie' => ['route' => 'tools.hair_tie', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:hearts-stars/crown', 'width' => 90]],
+        ['params' => ['line1' => 'Ema', 'typeface' => 'script', 'width' => 110, 'post_h' => 120]],
+        ['params' => ['artwork' => 'lib:animals/owl', 'width' => 80, 'post_d' => 20, 'post_h' => 70]],
+    ]]],
     'stencil' => ['route' => 'tools.stencil', 'intent' => 'create', 'categories' => ['craft', 'signs'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['width' => 120, 'line1' => 'BOA 8']],
         ['params' => ['width' => 160, 'line1' => 'FRAGILE']],

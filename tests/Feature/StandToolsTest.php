@@ -7,7 +7,7 @@ use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/** Figures that stand on something useful (engines/python/stand_kinds.py): the stand for sticky notes. */
+/** Figures that stand on something useful (engines/python/stand_kinds.py): the stand for sticky notes, the holder for hair ties. */
 class StandToolsTest extends TestCase
 {
     use RefreshDatabase;
@@ -60,6 +60,32 @@ class StandToolsTest extends TestCase
         // a design is stored with both parts, each of which has to fit a printer by itself
         $created = $this->postJson('/api/tools/param', ['kind' => 'notes', 'params' => $cat])->assertCreated();
         $this->assertSame(['body', 'stand'], array_keys($created->json('file.tool.params.parts_bbox')));
+    }
+
+    public function test_the_hair_tie_holder_is_a_post_on_a_base_with_a_figure_behind(): void
+    {
+        $rabbit = ['artwork' => 'lib:hearts-stars/crown', 'width' => 90, 'thickness' => 3, 'post_d' => 14, 'post_h' => 90];
+        $base = $this->meta('hair_tie', $rabbit, 'stand');
+        // a base of 8 mm with the post on it: as tall as asked, one piece, wide and deep enough to stand
+        $this->assertEqualsWithDelta(8 + 90, $base['bbox']['z'], 0.05);
+        $this->assertGreaterThanOrEqual(70, $base['bbox']['x']);
+        $this->assertGreaterThanOrEqual(60, $base['bbox']['y']);
+        // a thicker and taller post is more plastic by about its cylinder
+        $thick = $this->meta('hair_tie', ['post_d' => 24, 'post_h' => 120] + $rabbit, 'stand');
+        $this->assertEqualsWithDelta(8 + 120, $thick['bbox']['z'], 0.05);
+        $this->assertEqualsWithDelta(M_PI * 144 * 120 - M_PI * 49 * 90, $thick['volume_mm3'] - $base['volume_mm3'], 0.25 * M_PI * 144 * 120);
+        // put together it is as tall as the taller of the two: the post or the figure in its slot
+        $figure = $this->meta('hair_tie', $rabbit, 'body');
+        $use = $this->meta('hair_tie', $rabbit, 'all', 'use');
+        $this->assertEqualsWithDelta(max(98, 8 - 6 + $figure['bbox']['y']), $use['bbox']['z'], 0.05);
+        $created = $this->postJson('/api/tools/param', ['kind' => 'hair_tie', 'params' => $rabbit])->assertCreated();
+        $this->assertSame(['body', 'stand'], array_keys($created->json('file.tool.params.parts_bbox')));
+        foreach (['cs' => '', 'en' => '/en', 'es' => '/es'] as $locale => $prefix) {
+            $html = $this->get($prefix.'/tools/hair-tie-holder')->assertOk()->getContent();
+            $this->assertStringContainsString(e(__('tools.hair_tie.title', [], $locale)), $html);
+            $this->assertStringContainsString('data-param="post_h"', $html);
+            $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $html, $locale);
+        }
     }
 
     public function test_the_page_opens_with_a_cat_in_three_languages(): void

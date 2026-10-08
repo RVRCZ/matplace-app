@@ -1,6 +1,6 @@
 """
-A picture or a name that stands on something useful, for param_tool.py: a tray for sticky notes (more to come: a holder
-for hair ties, a stand for a candle).
+A picture or a name that stands on something useful, for param_tool.py: a tray for sticky notes, a post for hair
+ties (a stand for a candle is to come).
 
 The figure is a silhouette printed lying flat, clean on both faces, with a foot under it. The foot is pushed into a slot
 of the base, as the standing logo is (creative_kinds.logo): two parts, `body` and `stand`, each one colour, no supports.
@@ -14,6 +14,7 @@ SINK, SHOW, PLAY = 6.0, 1.5, 0.25      # how deep the foot sits in the slot, how
 
 LIMITS = {
     "notes": {"width": (50, 150), "thickness": (2.4, 5), "pad": (50, 105), "depth": (8, 30)},
+    "hair_tie": {"width": (50, 150), "thickness": (2.4, 5), "post_d": (10, 30), "post_h": (40, 150)},
 }
 
 
@@ -72,6 +73,12 @@ def _slot(M, foot, t):
     return M.Manifold.cube([foot[1] - foot[0] + 2 * PLAY, t + 2 * PLAY, SINK + 1.0])
 
 
+def _slot_x(base_w, foot, fw):
+    """Where the slot begins across a base, so that the figure stands over its middle as far as the slot stays inside the base."""
+    want = (base_w - fw) / 2 + foot[0] - PLAY
+    return min(max(want, 4.0), base_w - 4.0 - (foot[1] - foot[0] + 2 * PLAY))
+
+
 def _together(M, flat, foot, size, t, base, slot_at, top):
     """
     The parts and what they look like put together. `slot_at` is the corner of the slot in the base, `top` the height of
@@ -110,7 +117,7 @@ def notes(M, Invalid, p):
     back = wall + room                                         # where the block begins
     if pen:
         base = base - M.Manifold.cylinder(base_w + 2, 4.5, 4.5, 48).rotate([0, 90, 0]).translate([-1, back + 6.5, base_h + 0.5])
-    slot_at = ((base_w - (foot[1] - foot[0])) / 2 - PLAY, base_d - 4.0 - t - 2 * PLAY)
+    slot_at = (_slot_x(base_w, foot, size[0]), base_d - 4.0 - t - 2 * PLAY)
     base = base - _slot(M, foot, t).translate([slot_at[0], slot_at[1], base_h - SINK])
     parts = _together(M, flat, foot, size, t, base, slot_at, base_h)
     notes_ = dict(said, outer=[round(max(base_w, size[0]), 1), round(base_d, 1), round(base_h - SINK + size[1], 1)], needs=["glue_optional"],
@@ -121,4 +128,32 @@ def notes(M, Invalid, p):
     return parts, notes_
 
 
-BUILDERS = {"notes": notes}
+def hair_tie(M, Invalid, p):
+    """
+    A post for hair ties and scrunchies on a base, a figure standing behind it. The post is one piece with the base and
+    is printed standing, its top rounded so that a tie slips over it; the figure goes into the slot behind.
+    """
+    k = "hair_tie"
+    n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
+    width, t, post_d, post_h = n("width", 90), n("thickness", 3), n("post_d", 14), n("post_h", 90)
+    flat, foot, size, said = _figure(M, Invalid, p, width, t)
+    base_h = 8.0
+    slot_zone = t + 2 * PLAY + 8.0                              # the slot with 4 mm of plastic either side of it
+    base_w = max(70.0, foot[1] - foot[0] + 2 * PLAY + 8.0, post_d + 40.0, 0.8 * size[0])      # most of the figure stands over the base
+    base_d = max(60.0, 12.0 + post_d + 10.0 + slot_zone)        # wide and deep enough not to tip when a tie is pulled off
+    base = S.rounded_rect(M, base_w, base_d, 6).extrude(base_h)
+    slot_at = (_slot_x(base_w, foot, size[0]), base_d - 4.0 - t - 2 * PLAY)
+    base = base - _slot(M, foot, t).translate([slot_at[0], slot_at[1], base_h - SINK])
+    r = post_d / 2
+    cx, cy = base_w / 2, (slot_at[1] - 4.0) / 2 + 2.0           # in the middle of what is left in front of the slot
+    post = M.Manifold.cylinder(post_h - r * 0.6, r, r, 64) + M.Manifold.sphere(r, 64).scale([1, 1, 0.6]).translate([0, 0, post_h - r * 0.6])
+    base = base + post.translate([cx, cy, base_h - 0.01])
+    parts = _together(M, flat, foot, size, t, base, slot_at, base_h)
+    tall = max(base_h + post_h, base_h - SINK + size[1])
+    notes_ = dict(said, outer=[round(max(base_w, size[0]), 1), round(base_d, 1), round(tall, 1)], needs=["glue_optional"], post=[round(post_d, 1), round(post_h, 1)],
+                  regions=[{"x0": -1, "y0": round(slot_at[1] + PLAY - 0.05, 2), "x1": 9999, "y1": round(slot_at[1] + PLAY + t + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange"},
+                           {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue"}])
+    return parts, notes_
+
+
+BUILDERS = {"notes": notes, "hair_tie": hair_tie}
