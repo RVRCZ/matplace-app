@@ -197,7 +197,8 @@ final class OrderService
      */
     public function secondColors(FarmOrder $order, FarmPrinterSlot $main): Collection
     {
-        if ($order->colorChangeMm() === null) {
+        // a design that changes colour at least once (a plate with a text, a picture in colours one on another)
+        if (! $order->wantedChanges()) {
             return collect();
         }
 
