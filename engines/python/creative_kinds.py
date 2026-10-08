@@ -9,7 +9,7 @@ import shape2d as S
 LIMITS = {
     "vase": {"height": (40, 300), "top_d": (30, 250), "bottom_d": (30, 250), "wall": (0.8, 4), "floor": (0.8, 5), "ribs": (6, 48), "twist": (0, 360), "flute": (0, 45)},
     "logo": {"width": (20, 250), "thickness": (0.6, 50), "plate": (0.8, 6), "margin": (0, 20), "base_h": (8, 40)},
-    "sign": {"text_height": (4, 80), "thickness": (1.2, 10), "relief": (0.4, 5), "margin": (2, 30), "radius": (0, 30)},
+    "sign": {"text_height": (4, 80), "thickness": (1.2, 30), "relief": (0.4, 5), "margin": (2, 30), "radius": (0, 30)},
     "stamp": {"width": (15, 120), "relief": (0.8, 4), "plate": (2, 6), "text_height": (4, 40)},
     "qr": {"size": (30, 150), "plate": (1.6, 4), "relief": (0.6, 2)},
     "stencil": {"width": (30, 250), "thickness": (0.8, 3), "margin": (5, 40), "bridge": (0.8, 3)},
@@ -20,7 +20,7 @@ CHOICES = {
     "vase": {"profile": ("neck", "belly", "cone", "tulip"), "style": ("twist", "ribs", "smooth"), "purpose": ("vase", "pot")},
     "logo": {"mode": ("relief", "height", "cutout", "standing"), "shape": ("rounded", "rect", "circle")},
     "sign": {"shape": ("rounded", "rect", "oval", "heart", "star", "cloud", "bone", "hexagon", "banner", "arrow", "house", "car", "cat", "candy", "flower", "shield", "tag", "bubble", "circle", "fish"),
-             "motif_at": ("left", "right", "above"), "ring_at": ("left", "right", "top"), "style": ("emboss", "engrave", "outline", "name"), "typeface": ("sans", "serif", "mono", "script")},
+             "motif_at": ("left", "right", "above"), "ring_at": ("left", "right", "top"), "style": ("emboss", "engrave", "outline", "name", "stand"), "typeface": ("sans", "serif", "mono", "script")},
     "stamp": {"mode": ("raised", "recessed"), "handle": ("knob", "none")},
     "qr": {"plate_color": ("white", "yellow", "grey", "brown", "orange", "red", "green", "blue", "black"),
            "code_color": ("black", "blue", "green", "red", "brown", "orange", "grey", "yellow", "white")},
@@ -332,6 +332,7 @@ def sign(M, Invalid, p):
     edge, and the plate and the text as separate parts for a two-colour print. Exact solids, milliseconds per preview.
     The plate is a box, an oval or one of the drawn shapes (a heart, a cloud, a bone…) grown round the text; a picture
     of the library or the visitor's own may stand next to the text and is treated as part of it.
+    Two styles have no plate: `name` (the letters fattened are the body, a pendant) and `stand` (thick letters on a foot).
     """
     k = "sign"
     n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
@@ -347,7 +348,7 @@ def sign(M, Invalid, p):
         raise Invalid("no_text")
     try:
         # the form calls the second line "smaller": a name and a line under it, not two headlines
-        art, info = S.text(M, lines[:2], p.get("font"), cap, scales=[1.0, SIGN_SECOND_LINE])
+        art, info = S.text(M, lines[:3], p.get("font"), cap, scales=[1.0, SIGN_SECOND_LINE, SIGN_SECOND_LINE])
     except S.ArtworkError as e:
         raise Invalid(e.code)
     warn = []
@@ -359,6 +360,8 @@ def sign(M, Invalid, p):
         picture, pinfo = _beside(M, Invalid, p, art, cap, _pick(Invalid, p, k, "motif_at"))
         if pinfo.get("ignored_outlines"):
             warn.append("outlines_ignored")
+    if style == "stand":
+        return _sign_stand(M, art, picture, info, cap, t, warn)
     if style == "name":
         return _sign_name(M, p, art if picture is None else art + picture, info, cap, t, relief, keyring, two, warn, ring_at)
     if style == "outline":
@@ -436,6 +439,54 @@ def sign(M, Invalid, p):
                             {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white"}]
         notes["color_change_mm"] = round(t, 1)
     return parts, notes
+
+
+def _sign_stand(M, text, picture, info, cap, depth, warn):
+    """
+    The text stands on a shelf by itself: the letters as deep as asked, a foot under the last line, and under every
+    line above it a rail that takes in what hangs below its baseline and reaches the capitals of the line beneath.
+    All of it is one flat outline pulled up: printed lying on its back, without supports; "use" shows it standing.
+    """
+    C = M.CrossSection
+    rows = info["rows"]
+    left, bottom, right, _ = text.bounds()
+    flat = text
+    for upper, lower in zip(rows, rows[1:]):
+        top, low = upper["base"] + 0.8, lower["base"] + lower["cap"] - 0.8
+        flat = flat + C.square([upper["x1"] - upper["x0"] + 2.0, top - low]).translate([upper["x0"] - 1.0, low])
+    ground = rows[-1]["base"]
+    if picture is not None:
+        px0, py0, px1, py1 = picture.bounds()
+        if py0 < rows[0]["base"] + rows[0]["cap"]:           # beside the text: it stands on the foot like the letters
+            # a picture that ends in a point (a heart) sinks into the foot until it holds by a width worth the name
+            hold, sink = min(6.0, 0.25 * (px1 - px0)), 0.8
+            while sink < 3.6:
+                cut = picture ^ C.square([px1 - px0 + 2, 0.2]).translate([px0 - 1, py0 + sink])
+                if not cut.is_empty() and cut.bounds()[2] - cut.bounds()[0] >= hold:
+                    break
+                sink += 0.4
+            picture = picture.translate([0, ground - sink - py0])
+        flat = flat + picture
+        left, right = min(left, px0), max(right, px1)
+    low = min(bottom, ground) - 3.0
+    flat = flat + S.rounded_rect(M, right - left + 4.0, ground + 0.8 - low, 1.5).translate([left - 2.0, low])
+    flat = flat.simplify(0.02)
+    loose = sorted((piece.area() for piece in flat.decompose()), reverse=True)[1:]
+    flat, links = S.joined(M, flat, 0.8, max(2.0, cap * 0.15))
+    if any(area > (0.35 * cap) ** 2 for area in loose):
+        warn.append("letters_tied")                         # a whole letter or the picture; accents and dots are tied without a word
+    x0, y0, x1, y1 = flat.bounds()
+    flat = flat.translate([-x0, -y0])
+    tall = y1 - y0
+    if depth < 0.18 * tall:
+        warn.append("stand_tippy")
+    lying = flat.extrude(depth)
+    thin = S.printability(M, text, 0.45)["thin_pct"]
+    if thin > 35:
+        warn.append("thin_lines")
+    notes = {"outer": [round(x1 - x0, 1), round(depth, 1), round(tall, 1)], "warnings": warn, "thin_pct": thin, "links": links,
+             "missing_chars": info.get("missing_chars", []), "two_color": False, "stands": True}
+    return {"all": lying, "use": lying.rotate([90, 0, 0]).translate([0, depth, 0])}, notes
 
 
 def _sign_name(M, p, art, info, cap, t, relief, keyring, two, warn, ring_at="left"):

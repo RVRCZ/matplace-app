@@ -5,11 +5,11 @@ return [
     'description' => 'Napíšete jméno nebo text, vyberete tvar a písmo a hned vidíte model i cenu. Cedulku, jmenovku nebo klíčenku vám vytiskneme, nebo si ji stáhnete.',
     'h1' => 'Cedulka, jmenovka nebo klíčenka s vlastním textem',
     'intro' => [
-        'Nástroj vytvoří z textu, který napíšete, model cedulky na dveře, jmenovky, klíčenky nebo jména bez destičky. Text může mít jeden nebo dva řádky, každý nejvýše 40 znaků; druhý řádek je menší než první. Vyberete provedení písma (vystouplé, zapuštěné, obrys, nebo jen jméno bez destičky), tvar destičky a jedno ze třiceti písem. Rozměry destičky se dopočítají samy podle délky textu, výšky písma a okraje.',
+        'Nástroj vytvoří z textu, který napíšete, model cedulky na dveře, jmenovky, klíčenky nebo jména bez destičky. Text může mít jeden až tři řádky, každý nejvýše 40 znaků; druhý a třetí řádek jsou menší než první. Vyberete provedení písma (vystouplé, zapuštěné, obrys, nebo jen jméno bez destičky), tvar destičky a jedno ze třiceti písem. Rozměry destičky se dopočítají samy podle délky textu, výšky písma a okraje.',
         'Náhled se mění při každé úpravě a pod ním vidíte vnější rozměry v milimetrech a orientační cenu. Hotový návrh si objednáte jako výtisk z naší tiskové farmy, nebo si ho zdarma stáhnete pro svou tiskárnu. Vystouplé písmo umíme vytisknout druhou barvou: tiskárna ji vymění ve výšce, kde písmo začíná. Barvy vybíráte z těch, které jsou právě založené v tiskárnách.',
     ],
     'steps' => [
-        ['name' => 'Napište text', 'text' => 'Do pole „První řádek“ napíšete jméno nebo nápis, druhý řádek je nepovinný. Tlačítky pod poli vložíte symboly, například srdce nebo hvězdu.'],
+        ['name' => 'Napište text', 'text' => 'Do pole „První řádek“ napíšete jméno nebo nápis, druhý a třetí řádek jsou nepovinné. Tlačítky pod poli vložíte symboly, například srdce nebo hvězdu.'],
         ['name' => 'Vyberte provedení a tvar', 'text' => 'Zvolíte provedení písma, tvar destičky a písmo, nebo začnete od předvolby (klíčenka, cedulka na dveře, jmenovka, ozdoba s očkem, jméno psacím písmem). Můžete přidat očko na klíče, vystouplý rámeček nebo zkosenou horní hranu.'],
         ['name' => 'Nastavte rozměry', 'text' => 'Výšku písma nastavíte od 4 do 80 mm, tloušťku desky od 1,2 do 10 mm. Pod náhledem hned vidíte vnější rozměry a orientační cenu.'],
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Tisk objednáte z naší tiskové farmy a zaplatíte z předplaceného kreditu. Nebo si model zdarma stáhnete jako soubor STL či hotový projekt pro svou tiskárnu.'],

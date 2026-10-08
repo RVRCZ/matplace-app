@@ -5,11 +5,11 @@ return [
     'description' => 'Type a name, pick one of twenty plate shapes and a motif next to the text. We print the nameplate in two colours, or you download the model for free.',
     'h1' => 'Nameplate and sign in a shape, with your own motif',
     'intro' => [
-        'The tool makes a plate with a name in one of twenty shapes: heart, star, cloud, bone, ribbon, arrow, house, car, cat, fish, shield, speech bubble and more. Type one or two lines of up to 40 characters and pick one of thirty typefaces. The shape grows by itself just enough for the text and its margin to fit in, so nothing sticks out and there is nothing to calculate. The letter height goes from 4 to 80 mm.',
+        'The tool makes a plate with a name in one of twenty shapes: heart, star, cloud, bone, ribbon, arrow, house, car, cat, fish, shield, speech bubble and more. Type one to three lines of up to 40 characters and pick one of thirty typefaces. The shape grows by itself just enough for the text and its margin to fit in, so nothing sticks out and there is nothing to calculate. The letter height goes from 4 to 80 mm.',
         'A picture can stand next to the text: a motif from the library of silhouettes, or your own SVG or simple picture. Put it left, right or above the text and it is printed like the letters. The letters and the rim can be printed in a second colour; the printer changes filament at the height where the letters begin. An eyelet goes left, right or on top, so the same design is a sign for a child\'s door, a bag tag or a tag for a collar.',
     ],
     'steps' => [
-        ['name' => 'Type the name', 'text' => 'One or two lines, the second one smaller. Below the fields is a row of symbols you can put into the text.'],
+        ['name' => 'Type the name', 'text' => 'One to three lines, the first one the biggest. Below the fields is a row of symbols you can put into the text.'],
         ['name' => 'Pick the shape and the typeface', 'text' => 'Twenty plate shapes are shown as tiles, thirty typefaces as their names set in the face itself.'],
         ['name' => 'Add a picture and an eyelet', 'text' => 'A motif from the library or your own picture goes left, right or above the text. The eyelet has three possible sides.'],
         ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price. When ordering you pick the colour of the plate and of the letters; the model and the slicer project are free to download.'],

@@ -5,11 +5,11 @@ return [
     'description' => 'Escriba un nombre, elija una de veinte formas de placa y un motivo junto al texto. Se la imprimimos en dos colores o descarga el modelo gratis.',
     'h1' => 'Placa y letrero con forma y con su propio motivo',
     'intro' => [
-        'La herramienta crea una placa con un nombre en una de veinte formas: corazón, estrella, nube, hueso, cinta, flecha, casa, coche, gato, pez, escudo, bocadillo y más. Escriba una o dos líneas de hasta 40 caracteres y elija una de treinta tipografías. La forma crece sola lo justo para que el texto y su margen quepan dentro, así que nada sobresale y no hay nada que calcular. La altura de letra va de 4 a 80 mm.',
+        'La herramienta crea una placa con un nombre en una de veinte formas: corazón, estrella, nube, hueso, cinta, flecha, casa, coche, gato, pez, escudo, bocadillo y más. Escriba de una a tres líneas de hasta 40 caracteres y elija una de treinta tipografías. La forma crece sola lo justo para que el texto y su margen quepan dentro, así que nada sobresale y no hay nada que calcular. La altura de letra va de 4 a 80 mm.',
         'Junto al texto puede ir una imagen: un motivo de la biblioteca de siluetas, o su propio SVG o imagen sencilla. Se coloca a la izquierda, a la derecha o sobre el texto y se imprime igual que las letras. Las letras y el borde pueden imprimirse en un segundo color; la impresora cambia de filamento a la altura donde empiezan las letras. La argolla va a la izquierda, a la derecha o arriba, de modo que el mismo diseño sirve de letrero para la puerta de un niño, de etiqueta para una mochila o de chapa para un collar.',
     ],
     'steps' => [
-        ['name' => 'Escriba el nombre', 'text' => 'Una o dos líneas; la segunda es más pequeña. Bajo los campos hay una fila de símbolos que puede insertar en el texto.'],
+        ['name' => 'Escriba el nombre', 'text' => 'De una a tres líneas; la primera es la mayor. Bajo los campos hay una fila de símbolos que puede insertar en el texto.'],
         ['name' => 'Elija la forma y la tipografía', 'text' => 'Las veinte formas de placa se muestran como casillas y las treinta tipografías con su nombre compuesto en la propia letra.'],
         ['name' => 'Añada una imagen y una argolla', 'text' => 'Un motivo de la biblioteca o su propia imagen va a la izquierda, a la derecha o sobre el texto. La argolla tiene tres lados posibles.'],
         ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo. Al encargar elige el color de la placa y el de las letras; el modelo y el proyecto para el laminador se descargan gratis.'],

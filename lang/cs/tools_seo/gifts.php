@@ -6,7 +6,7 @@ return [
     'h1' => 'Dárky se jménem: přívěsek, klíčenka, jmenovka, cedulka',
     'intro' => [
         'Stránka je pro ty, kdo hledají malý osobní dárek se jménem. Vyberete si příležitost a výrobek: přívěsek ve tvaru jména psacím písmem, klíčenku, jmenovku, cedulku na dveře nebo ozdobu s očkem. Odkaz otevře nástroj na cedulky s předvyplněnou ukázkou, kterou přepíšete vlastním textem.',
-        'V nástroji zvolíte tvar, písmo a provedení a hned vidíte 3D náhled, přesné rozměry a cenu. Za jméno můžete přidat symbol, třeba srdíčko nebo hvězdu. Hotový návrh necháte vytisknout u nás, nebo si model zdarma stáhnete pro svou tiskárnu. Text může mít dva řádky, každý nejvýše 40 znaků.',
+        'V nástroji zvolíte tvar, písmo a provedení a hned vidíte 3D náhled, přesné rozměry a cenu. Za jméno můžete přidat symbol, třeba srdíčko nebo hvězdu. Hotový návrh necháte vytisknout u nás, nebo si model zdarma stáhnete pro svou tiskárnu. Text může mít až tři řádky, každý nejvýše 40 znaků.',
     ],
     'steps' => [
         ['name' => 'Vyberte dárek', 'text' => 'Výrobky jsou seřazené podle příležitosti: Vánoce, Valentýn a výročí, začátek školního roku, narozeniny a nový domov.'],

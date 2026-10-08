@@ -90,6 +90,13 @@ return [
             ['preset' => 'shaped', 'params' => ['line1' => 'Rex', 'shape' => 'bone', 'border' => false, 'typeface' => 'titan', 'artwork' => 'lib:animals/paw', 'motif_at' => 'right']],
             ['preset' => 'shaped', 'params' => ['line1' => 'Ela', 'line2' => '2020', 'shape' => 'heart', 'keyring' => true, 'ring_at' => 'top', 'text_height' => 9, 'typeface' => 'lobster']],
         ]]],
+    'text' => ['route' => 'tools.text', 'intent' => 'create', 'categories' => ['names', 'signs', 'home'], 'available' => true,
+        'card' => ['kind' => 'sign', 'preset' => 'stand', 'params' => ['line1' => 'HOME']],
+        'seo' => ['kind' => 'sign', 'examples' => [
+            ['preset' => 'stand', 'params' => ['line1' => 'HOME']],
+            ['preset' => 'stand', 'params' => ['line1' => 'Ela', 'typeface' => 'script', 'text_height' => 40, 'thickness' => 15, 'artwork' => 'lib:hearts-stars/heart', 'motif_at' => 'right']],
+            ['preset' => 'stand', 'params' => ['line1' => 'KAVÁRNA', 'line2' => 'u Jany', 'typeface' => 'bebas', 'text_height' => 35, 'thickness' => 20]],
+        ]]],
     'qr' => ['route' => 'tools.qr', 'intent' => 'create', 'categories' => ['signs', 'sell'], 'available' => true, 'verified' => '2026-10-04', 'seo' => ['examples' => [
         ['params' => ['size' => 70, 'url' => 'https://matplace.com', 'label' => 'matplace.com']],
         ['params' => ['size' => 90, 'url' => 'WIFI:T:WPA;S:Kavarna;P:dobrakava;;', 'label' => 'Wi-Fi', 'stand' => true]],

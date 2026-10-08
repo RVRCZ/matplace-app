@@ -5,11 +5,11 @@ return [
     'description' => 'Type a name or a text, pick a shape and a typeface and see the model and the price at once. We print the sign, name tag or keyring, or you download it.',
     'h1' => 'A sign, name tag or keyring with your own text',
     'intro' => [
-        'The tool turns your text into a door sign, a name tag, a keyring or a name without a plate. The text can have one or two lines of up to 40 characters each; the second line is smaller than the first. You pick the lettering (raised, engraved, outline, or the name alone), the plate shape and one of thirty typefaces. The plate size follows from the length of the text, the letter height and the margin.',
+        'The tool turns your text into a door sign, a name tag, a keyring or a name without a plate. The text can have one to three lines of up to 40 characters each; the second and the third are smaller than the first. You pick the lettering (raised, engraved, outline, or the name alone), the plate shape and one of thirty typefaces. The plate size follows from the length of the text, the letter height and the margin.',
         'The preview changes with every edit and shows the outer size in millimetres and a rough price. You order the design as a print from our print farm, or download it free for your own printer. Raised letters can be printed in a second colour: the printer swaps it at the height where the letters begin. You choose from the colours loaded in the printers at that moment.',
     ],
     'steps' => [
-        ['name' => 'Type the text', 'text' => 'Type the name or the wording into the field "First line"; the second line is optional. The buttons below the fields insert symbols such as a heart or a star.'],
+        ['name' => 'Type the text', 'text' => 'Type the name or the wording into the field "First line"; the second and the third line are optional. The buttons below the fields insert symbols such as a heart or a star.'],
         ['name' => 'Pick the lettering and shape', 'text' => 'Choose the lettering, the plate shape and the typeface, or start from a preset (keyring, door sign, name tag, ornament with an eyelet, a handwritten name). You can add a keyring tab, a raised rim or a bevelled top edge.'],
         ['name' => 'Set the sizes', 'text' => 'The letter height goes from 4 to 80 mm, the plate thickness from 1.2 to 10 mm. The outer size and a rough price appear below the preview at once.'],
         ['name' => 'Order the print or download', 'text' => 'Order the print from our print farm and pay from prepaid credit. Or download the model free as an STL file or a ready project for your own printer.'],

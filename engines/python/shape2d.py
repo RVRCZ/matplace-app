@@ -181,7 +181,12 @@ def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center", scal
     # how far the ink hangs below the baseline of the last line, relative to the text width
     base_y = base[-1] * k
     hang = max(0.0, base_y - by0) / max(1e-6, bx1 - bx0)
-    return cs, {"missing_chars": sorted(missing), "source": "text", "descent_ratio": hang}
+    # where every line lies: from where to where, its baseline and the height of its capitals (a text that stands needs them)
+    rows_at = []
+    for i in range(len(rows)):
+        dx = {"left": 0, "right": wmax - widths[i]}.get(align, (wmax - widths[i]) / 2)
+        rows_at.append({"x0": dx * k, "x1": (dx + widths[i]) * k, "base": base[i] * k, "cap": cap_height_mm * size[i]})
+    return cs, {"missing_chars": sorted(missing), "source": "text", "descent_ratio": hang, "rows": rows_at}
 
 
 # ── SVG ──────────────────────────────────────────────────────────────────────

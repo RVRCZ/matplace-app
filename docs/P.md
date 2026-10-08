@@ -124,6 +124,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | SVG do STL | `/tools/svg-to-stl` | `logo` (předvolba `extrude`) | obrys SVG nebo obrázku vytažený na 0,6–50 mm, bez destičky, volitelně zkosená horní hrana |
 | Ozdoba na navíjecí držák karty | `/tools/badge-reel` | `badge` | obrázek v barvách 25–60 mm, pod ním jméno v jedné z barev obrázku, vzadu prohlubeň na lepicí kolečko |
 | Jmenovka ve tvaru s obrázkem | `/tools/nameplate` | `sign` (předvolba `shaped`) | destička ve 20 tvarech, která se sama zvětší kolem textu, motiv vlevo / vpravo / nad textem, očko na třech stranách |
+| 3D nápis, který stojí | `/tools/text` | `sign` (styl `stand`, předvolba `stand`) | silná písmena na patce, 1–3 řádky, obrázek na téže patce; tiskne se vleže |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -147,6 +148,17 @@ hladkou misku ve světlém filamentu. Obrázek drží odstup od stěny (`frame`)
 sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do 6 mm (meze v `shape_kinds.LIMITS`).
 
 Rozcestník `/gifts` odkazuje i na misku, stojánek, korálky a ozdobu na držák karty.
+
+**Stojící nápis** („Text Maker“ předlohy; karta `/tools/text` = cedulka se stylem `stand`). Text je jeden plochý
+obrys vytažený do hloubky (pole Tloušťka, nově do 30 mm): písmena, pod posledním řádkem **patka** (3 mm pod účařím,
+pohltí i to, co visí pod ním), pod každým řádkem nad ním **příčka**, která sahá k velkým písmenům řádku pod sebou. Co
+by přesto zůstalo ve vzduchu (čárky, tečky, obrázek nad textem), přichytí `shape2d.joined`; varuje se jen u celého
+písmene nebo obrázku, ne u každé čárky. Tiskne se vleže na zádech bez podpěr (`all`), náhled ho ukazuje stojící
+(`use`). Obrázek vedle textu stojí na téže patce a zapustí se do ní tak hluboko, aby držel aspoň šířkou 6 mm (srdce
+stojí na špičce). Nástroj varuje, když je hloubka pod 18 % výšky – **to číslo je odhad, ne výsledek zkoušky**;
+dokud Roman nápis nevytiskne, je to jediné, co o stabilitě víme. `shape2d.text` k tomu nově vrací polohu řádků
+(`rows`: odkud kam, účaří, výška verzálek). Cedulka má třetí řádek ve všech stylech (texty pod nástroji opraveny
+z „dva“ na „tři“).
 
 **Cedulka: tvary destičky, motiv, strana očka** („Nameplate Maker“ předlohy; karta `/tools/nameplate` je cedulka
 otevřená předvolbou `shaped`, stejně zapojená jako SVG do STL). Všechno je v nástroji `sign`, takže to má i původní
@@ -327,6 +339,14 @@ věc `feature/perf`, ne této větve.
   plakátový; na portréty bude filament‑art ze session 3.
 - Barvy ukázek a karet jsou z mého lokálního katalogu cívek (37 obyčejných PLA+ skladem). Na produkci se obrázky
   nepřekreslují samy.
+- **Nástroje přidané 8. 10.** (SVG do STL, ozdoba na držák karty, jmenovka ve tvaru, stojící nápis, třicet písem) jsou
+  ověřené stejně: výpočtem a pohledem na náhled v prohlížeči, ne tiskem. Co ukáže až tisk: jestli prohlubeň Ø 19 ×
+  0,8 mm na zádech ozdoby sedí na lepicí kolečko a strop nad ní se netrhá; jestli jméno pod obrázkem s písmeny do 7 mm
+  vyjde čitelně; jestli stojící nápis stojí při hloubce pětiny výšky (nástroj podle toho varuje); jak se tisknou
+  tenká psaná písma (Great Vibes, Sacramento) pod 30 mm. Písma jsem ověřil na úplnost znaků a na to, že z nich
+  vznikne těleso, ne na to, jak vypadají vytištěná.
+- **Proměnná písma na serveru:** čtení v nejtučnější váze potřebuje fontTools ≥ 4.38. Lokálně je 4.62; verzi
+  v `/opt/matplace-py` jsem neviděl (viz Nasazení).
 
 ## 6. Nasazení (Roman)
 
@@ -342,7 +362,7 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
+`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -361,5 +381,4 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
 Potom zbytek zadání session 1: ostatní produkty rodiny (brčko, gumičky, otvírák,
-organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), stojící nápis
-(„Text Maker“: styl `name` na tři řádky s podstavcem, karta `/tools/text`).
+organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko).

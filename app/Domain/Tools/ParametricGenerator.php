@@ -167,7 +167,7 @@ final class ParametricGenerator
             'height' => [40, 300, 180, 1], 'top_d' => [30, 250, 62, 1], 'bottom_d' => [30, 250, 54, 1], 'wall' => [0.8, 4, 1.6, 0.2], 'floor' => [0.8, 5, 1.6, 0.2],
             'ribs' => [6, 48, 20, 1], 'flute' => [0, 45, 20, 1], 'twist' => [0, 360, 200, 1],
         ],
-        'sign' => ['text_height' => [4, 80, 12, 1], 'thickness' => [1.2, 10, 3, 0.2], 'relief' => [0.4, 5, 1.2, 0.2], 'margin' => [2, 30, 5, 1], 'radius' => [0, 30, 6, 0.5]],
+        'sign' => ['text_height' => [4, 80, 12, 1], 'thickness' => [1.2, 30, 3, 0.2], 'relief' => [0.4, 5, 1.2, 0.2], 'margin' => [2, 30, 5, 1], 'radius' => [0, 30, 6, 0.5]],
         'logo' => ['width' => [20, 250, 80, 1], 'thickness' => [0.6, 50, 2, 0.2], 'plate' => [0.8, 6, 2, 0.2], 'margin' => [0, 20, 5, 1], 'base_h' => [8, 40, 11, 1]],
         'stamp' => ['width' => [15, 120, 50, 1], 'relief' => [0.8, 4, 1.6, 0.2], 'plate' => [2, 6, 3, 0.5]],
         'qr' => ['size' => [30, 150, 70, 1], 'plate' => [1.6, 4, 2.4, 0.2], 'relief' => [0.6, 2, 1, 0.2]],
@@ -202,7 +202,7 @@ final class ParametricGenerator
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
         // `shape`: a box, an oval, or a plate drawn as an outline (engines/shapes/<name>.svg); `motif_at`: where the picture stands against the text
-        'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name'], 'shape' => ['rounded', 'rect', 'oval', 'heart', 'star', 'cloud', 'bone', 'hexagon', 'banner', 'arrow', 'house', 'car', 'cat', 'candy', 'flower', 'shield', 'tag', 'bubble', 'circle', 'fish'],
+        'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name', 'stand'], 'shape' => ['rounded', 'rect', 'oval', 'heart', 'star', 'cloud', 'bone', 'hexagon', 'banner', 'arrow', 'house', 'car', 'cat', 'candy', 'flower', 'shield', 'tag', 'bubble', 'circle', 'fish'],
             'typeface' => ['sans', 'serif', 'mono', 'script'], 'motif_at' => ['left', 'right', 'above'], 'ring_at' => ['left', 'right', 'top']],
         'logo' => ['mode' => ['relief', 'height', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
@@ -228,7 +228,7 @@ final class ParametricGenerator
         'topper' => ['line1' => [20, false, 'Olivia'], 'number' => [3, false, '2']],
         'tray' => ['line1' => [16, false, ''], 'line2' => [16, false, '']],
         'badge' => ['line1' => [16, false, '']],
-        'sign' => ['line1' => [40, true, 'Jana'], 'line2' => [40, false, '']],
+        'sign' => ['line1' => [40, true, 'Jana'], 'line2' => [40, false, ''], 'line3' => [40, false, '']],
         'logo' => ['line1' => [30, false, 'LOGO'], 'line2' => [30, false, '']],
         'stamp' => ['line1' => [20, false, 'EVA'], 'line2' => [20, false, '']],
         'qr' => ['url' => [300, true, 'https://matplace.com'], 'label' => [40, false, 'matplace.com']],
@@ -292,7 +292,9 @@ final class ParametricGenerator
         'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
         'sign' => ['shape' => ['style', ['emboss', 'engrave', 'outline']], 'radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']], 'ring_at' => ['keyring', ['on']],
-            'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']]],
+            'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']],
+            // a text that stands is letters and a foot: nothing is raised on it and nothing hangs
+            'relief' => ['style', ['emboss', 'engrave', 'outline', 'name']], 'keyring' => ['style', ['emboss', 'engrave', 'outline', 'name']]],
         'holder' => ['obj_d' => ['style', ['cradle', 'pocket', 'hook']], 'height' => ['style', ['cradle', 'pocket', 'clip']], 'hook_h' => ['style', ['hook']], 'bend' => ['style', ['hook']],
             'edge' => ['style', ['hook', 'clip']], 'holes' => ['mount', ['on']], 'radius' => ['style', ['cradle', 'pocket']], 'clearance' => ['style', ['cradle', 'pocket', 'hook']]],
         'cap' => ['size_b' => ['shape', ['rect']], 'pitch' => ['style', ['thread']], 'grip' => ['style', ['push', 'thread']], 'head' => ['style', ['push']], 'edge' => ['head', ['flat']], 'seal' => ['style', ['push', 'thread']], 'mouth' => ['seal', ['lip']],
@@ -336,6 +338,8 @@ final class ParametricGenerator
         'sign' => [
             // a plate in a shape with a picture next to the name: what the card "nameplate" (/tools/nameplate) opens with
             'shaped' => ['style' => 'emboss', 'shape' => 'cloud', 'text_height' => 14, 'thickness' => 3, 'relief' => 1.2, 'margin' => 3, 'keyring' => false, 'border' => true, 'bevel' => false, 'two_color' => true, 'motif_at' => 'left'],
+            // thick letters on a foot: what the card "text" (/tools/text) opens with
+            'stand' => ['style' => 'stand', 'shape' => 'rect', 'typeface' => 'archivo', 'text_height' => 30, 'thickness' => 12, 'keyring' => false, 'border' => false, 'bevel' => false, 'two_color' => false],
             'name' => ['style' => 'name', 'typeface' => 'script', 'text_height' => 14, 'thickness' => 3, 'relief' => 1, 'keyring' => true, 'border' => false, 'bevel' => false, 'two_color' => false],
             'keyring' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 8, 'thickness' => 3, 'relief' => 1, 'margin' => 4, 'radius' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
             'door' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 22, 'thickness' => 3, 'relief' => 1.4, 'margin' => 8, 'radius' => 8, 'keyring' => false, 'border' => true, 'bevel' => false, 'two_color' => true],
@@ -400,7 +404,7 @@ final class ParametricGenerator
             'vase' => ($p['purpose'] ?? '') === 'pot' && ! empty($p['saucer']) ? ['body', 'saucer'] : [],
             'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
             'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
-            'sign' => ! empty($p['two_color']) && ($p['style'] ?? 'emboss') !== 'engrave' ? ['plate', 'text'] : [],
+            'sign' => ! empty($p['two_color']) && ! in_array($p['style'] ?? 'emboss', ['engrave', 'stand'], true) ? ['plate', 'text'] : [],
             'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
             'lightbox' => ['body', 'face', 'diffuser', 'back'],
             'beads' => ($p['style'] ?? 'raised') === 'raised' ? ['body', 'text'] : [],                  // the beads and the letters raised on them: two colours
@@ -589,7 +593,7 @@ final class ParametricGenerator
     {
         if (isset(self::TEXTS[$kind]) || in_array($kind, self::ARTWORK, true)) {
             $clean['font'] = self::fontPath($clean['typeface'] ?? null);
-            $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? ''], fn ($l) => $l !== ''));
+            $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? '', $clean['line3'] ?? ''], fn ($l) => $l !== ''));
             if (isset($clean['letter_face']) || $kind === 'topper') {
                 // the big letter has a typeface of its own: always a bold one, it carries the name
                 $clean['letter_font'] = self::fontPath(in_array($clean['letter_face'] ?? '', ['sans', 'serif', 'mono'], true) ? $clean['letter_face'] : 'sans');

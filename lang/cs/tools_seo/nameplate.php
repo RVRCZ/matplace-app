@@ -5,11 +5,11 @@ return [
     'description' => 'Napíšete jméno, vyberete jeden z dvaceti tvarů destičky a motiv vedle textu. Jmenovku vytiskneme ve dvou barvách, nebo si model zdarma stáhnete.',
     'h1' => 'Jmenovka a cedulka ve tvaru s vlastním motivem',
     'intro' => [
-        'Nástroj vytvoří destičku se jménem v jednom z dvaceti tvarů: srdce, hvězda, mrak, kost, stuha, šipka, domek, auto, kočka, ryba, štít, bublina a další. Napíšete jeden nebo dva řádky po 40 znacích a vyberete jedno ze třiceti písem. Tvar se sám zvětší právě tak, aby se do něj text s okrajem vešel, takže nic nepřesahuje a nemusíte nic počítat. Výšku písma nastavíte od 4 do 80 mm.',
+        'Nástroj vytvoří destičku se jménem v jednom z dvaceti tvarů: srdce, hvězda, mrak, kost, stuha, šipka, domek, auto, kočka, ryba, štít, bublina a další. Napíšete jeden až tři řádky po 40 znacích a vyberete jedno ze třiceti písem. Tvar se sám zvětší právě tak, aby se do něj text s okrajem vešel, takže nic nepřesahuje a nemusíte nic počítat. Výšku písma nastavíte od 4 do 80 mm.',
         'Vedle textu může stát obrázek: motiv z knihovny siluet nebo vlastní SVG či jednoduchý obrázek. Postavíte ho vlevo, vpravo nebo nad text a vytiskne se stejně jako písmo. Písmo a lem umíme vytisknout druhou barvou, tiskárna ji vymění ve výšce, kde písmo začíná. Očko na zavěšení přidáte vlevo, vpravo nebo nahoru, takže ze stejného návrhu je cedulka na dveře pokojíčku, visačka na tašku i známka na obojek.',
     ],
     'steps' => [
-        ['name' => 'Napište jméno', 'text' => 'Jeden nebo dva řádky, druhý je menší. Pod poli je řada symbolů, které jdou vložit do textu.'],
+        ['name' => 'Napište jméno', 'text' => 'Jeden až tři řádky, první je největší. Pod poli je řada symbolů, které jdou vložit do textu.'],
         ['name' => 'Vyberte tvar a písmo', 'text' => 'Dvacet tvarů destičky vidíte jako dlaždice, třicet písem jako jejich názvy vysázené v daném písmu.'],
         ['name' => 'Přidejte obrázek a očko', 'text' => 'Motiv z knihovny nebo vlastní obrázek postavíte vlevo, vpravo či nad text. Očko má tři možné strany.'],
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu. Při objednávce vyberete barvu destičky a barvu písma; model i projekt pro slicer stáhnete zdarma.'],
