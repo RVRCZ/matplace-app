@@ -129,6 +129,11 @@ return [
         ['params' => ['artwork' => 'lib:hearts-stars/heart', 'width' => 120, 'height' => 120, 'border' => 'hearts']],
         ['params' => ['artwork' => 'lib:animals/butterfly', 'width' => 200, 'height' => 150, 'border' => 'diamonds', 'invert' => true]],
     ]]],
+    'notes' => ['route' => 'tools.notes', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:animals/cat', 'width' => 90]],
+        ['params' => ['line1' => 'Jana', 'typeface' => 'script', 'width' => 100, 'pen' => false]],
+        ['params' => ['artwork' => 'lib:hearts-stars/star', 'width' => 70, 'pad' => 51, 'depth' => 10]],
+    ]]],
     'stencil' => ['route' => 'tools.stencil', 'intent' => 'create', 'categories' => ['craft', 'signs'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['width' => 120, 'line1' => 'BOA 8']],
         ['params' => ['width' => 160, 'line1' => 'FRAGILE']],

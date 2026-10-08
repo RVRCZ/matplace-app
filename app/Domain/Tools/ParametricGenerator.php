@@ -116,7 +116,7 @@ final class ParametricGenerator
     /** Tools of the family whose text goes under the picture, not instead of it: a page opened with a name keeps its sample picture. */
     public const CAPTIONED = ['badge'];
 
-    public const SAMPLE = ['papel' => 'lib:holidays/sugar-skull', 'svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star', 'medallion' => 'lib:colour/smiling-star', 'photo_organizer' => 'lib:nature/cloud', 'bag_charm' => 'lib:colour/red-heart', 'straw' => 'lib:colour/smiling-star', 'opener' => 'lib:colour/paw-badge'];
+    public const SAMPLE = ['papel' => 'lib:holidays/sugar-skull', 'notes' => 'lib:animals/cat', 'svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star', 'medallion' => 'lib:colour/smiling-star', 'photo_organizer' => 'lib:nature/cloud', 'bag_charm' => 'lib:colour/red-heart', 'straw' => 'lib:colour/smiling-star', 'opener' => 'lib:colour/paw-badge'];
 
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
@@ -181,6 +181,8 @@ final class ParametricGenerator
         'stamp' => ['width' => [15, 120, 50, 1], 'relief' => [0.8, 4, 1.6, 0.2], 'plate' => [2, 6, 3, 0.5]],
         'qr' => ['size' => [30, 150, 70, 1], 'plate' => [1.6, 4, 2.4, 0.2], 'relief' => [0.6, 2, 1, 0.2]],
         'stencil' => ['width' => [30, 250, 120, 1], 'thickness' => [0.8, 3, 1.2, 0.2], 'margin' => [5, 40, 12, 1], 'bridge' => [0.8, 3, 1.2, 0.2]],
+        // a figure standing behind a tray for sticky notes (engines/python/stand_kinds.py): `width` and `thickness` are the figure's, `pad` the side of the pad, `depth` how deep it lies
+        'notes' => ['width' => [50, 150, 90, 1], 'thickness' => [2.4, 5, 3, 0.2], 'pad' => [50, 105, 76, 1], 'depth' => [8, 30, 12, 1]],
         // papel picado: `darkness` is where a photo is split into paper and holes (50 = where the picture splits itself), `soften` how much detail is given up
         'papel' => ['width' => [80, 250, 150, 1], 'height' => [80, 250, 200, 1], 'thickness' => [0.8, 2, 1.2, 0.2], 'bridge' => [0.8, 2.4, 1.2, 0.2], 'darkness' => [10, 90, 50, 1], 'soften' => [0, 3, 1, 0.5]],
         'lightbox' => [
@@ -195,6 +197,7 @@ final class ParametricGenerator
 
     /** kind → choice → allowed values (the first one is the default) */
     public const CHOICES = [
+        'notes' => ['typeface' => ['sans', 'serif', 'mono', 'script']],
         'papel' => ['border' => ['flowers', 'diamonds', 'dots', 'hearts', 'leaves', 'stars', 'none']],
         'name_cup' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
         'beads' => ['shape' => ['cube', 'ball', 'heart', 'star'], 'style' => ['raised', 'engraved'], 'typeface' => ['sans', 'serif', 'mono']],
@@ -253,6 +256,7 @@ final class ParametricGenerator
         'stamp' => ['line1' => [20, false, 'EVA'], 'line2' => [20, false, '']],
         'qr' => ['url' => [300, true, 'https://matplace.com'], 'label' => [40, false, 'matplace.com']],
         'stencil' => ['line1' => [24, false, 'BOA 8'], 'line2' => [24, false, '']],
+        'notes' => ['line1' => [16, false, '']],
         'lightbox' => ['line1' => [16, false, 'OPEN'], 'line2' => [16, false, '']],
         'cutter' => ['line1' => [20, false, 'Ela'], 'line2' => [20, false, '']],
     ];
@@ -261,7 +265,7 @@ final class ParametricGenerator
     /** Of the tools that take a picture: those where it stands next to the text, never instead of it (the text stays required). */
     public const BESIDE = ['sign'];
 
-    public const ARTWORK = ['sign', 'logo', 'stamp', 'stencil', 'papel', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm', 'straw', 'opener'];
+    public const ARTWORK = ['sign', 'logo', 'stamp', 'stencil', 'papel', 'notes', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm', 'straw', 'opener'];
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
@@ -269,7 +273,7 @@ final class ParametricGenerator
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'straw_d', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'darkness', 'soften'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'darkness', 'soften'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
 
     /**
@@ -281,7 +285,7 @@ final class ParametricGenerator
         'organizer' => ['width' => 'x', 'depth' => 'y', 'height' => 'z'], 'box' => ['inner_w' => 'x', 'inner_d' => 'y', 'inner_h' => 'z'],
         'modular' => ['inner_w' => 'x', 'inner_d' => 'y', 'height' => 'z'], 'vase' => ['top_d' => 'x', 'height' => 'z'], 'phone_stand' => ['width' => 'x'],
         'cable_holder' => ['depth' => 'y'], 'holder' => ['obj_w' => 'x', 'height' => 'z'], 'cap' => ['size_a' => 'x', 'height' => 'z'],
-        'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'papel' => ['width' => 'x', 'height' => 'y'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
+        'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'papel' => ['width' => 'x', 'height' => 'y'], 'notes' => ['width' => 'x'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
         'name_cup' => ['width' => 'x', 'height' => 'z'], 'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'], 'cookie' => ['width' => 'x'], 'topper' => ['width' => 'x'], 'tray' => ['width' => 'x', 'height' => 'z'], 'badge' => ['width' => 'x'], 'medallion' => ['width' => 'x'], 'photo_organizer' => ['width' => 'x', 'height' => 'z'], 'bag_charm' => ['width' => 'x'], 'straw' => ['width' => 'x'], 'opener' => ['width' => 'x'],
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
@@ -296,7 +300,7 @@ final class ParametricGenerator
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
-        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['invert', 'scallop', 'string_holes'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
+        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
@@ -343,7 +347,7 @@ final class ParametricGenerator
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides', 'scallop', 'string_holes'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides', 'scallop', 'string_holes', 'pen'];
 
     /** things that hang only when asked to (a biscuit, a big letter): the eyelet's sizes show with the tick */
     private const HANG_WHEN = ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]];
@@ -429,6 +433,7 @@ final class ParametricGenerator
             'vase' => ($p['purpose'] ?? '') === 'pot' && ! empty($p['saucer']) ? ['body', 'saucer'] : [],
             'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
             'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
+            'notes' => ['body', 'stand'],
             'sign' => ! empty($p['two_color']) && ! in_array($p['style'] ?? 'emboss', ['engrave', 'stand'], true) ? ['plate', 'text'] : [],
             'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
             'lightbox' => ['body', 'face', 'diffuser', 'back'],

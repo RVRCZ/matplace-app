@@ -129,6 +129,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | Organizér ve tvaru obrázku | `/tools/photo-organizer` | `photo_organizer` | vysoká nádobka 40–120 mm podle obrysu obrázku: přihrádky v mřížce, kulaté otvory v plném bloku, nebo jedna kapsa |
 | Papel picado z obrázku | `/tools/papel-picado` | `papel` | fotka, kresba nebo silueta vyříznutá v okně tenkého panelu 80–250 mm, prolamovaný okraj v šesti vzorech, zoubky, otvory na šňůru |
 | Ozdoba na tašku s otvory | `/tools/bag-charm` | `bag_charm` | obrázek nebo jméno 30–80 mm, vzadu kapsa; vedle se tiskne čep (hlava + dřík), který se prostrčí otvorem tašky a vlepí |
+| Stojánek na lístečky se siluetou | `/tools/sticky-notes` | `notes` | miska na bloček 50–105 mm, za ní stojí silueta z obrázku nebo jména, mezi nimi žlábek na tužku; dva díly |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -152,6 +153,16 @@ hladkou misku ve světlém filamentu. Obrázek drží odstup od stěny (`frame`)
 sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do 6 mm (meze v `shape_kinds.LIMITS`).
 
 Rozcestník `/gifts` odkazuje i na misku, stojánek, korálky a ozdobu na držák karty.
+
+**Stojánek na lístečky** (`notes`, nový modul `engines/python/stand_kinds.py`, obyčejný nástroj). První ze tří
+„siluet na podstavci“ ze zadání. Silueta se tiskne **naležato** (obě strany čisté, žádné podpěry, ať má jakýkoli
+tvar) a patkou se zasune do drážky v podstavci – stejně jako stojící logo, od kterého je převzatá hloubka drážky
+6 mm a vůle 0,25 mm. Dva díly (`body`, `stand`), každý svou barvou; `use` je ukazuje složené. Podstavec je miska na
+bloček (strana + 1 mm vůle kolem, stěna a dno 2 mm, vpředu výřez na palec), za ní blok s drážkou a volitelně žlábek
+na tužku. Silueta je jednobarevná: obrázek v barvách na stojící desce by znamenal buď pruhy přes podstavec (výměny
+ve výškách platí pro celou podložku), nebo dva tisky – to je práce pro objednávku po dílech, ne pro tento nástroj.
+Společné kusy pro další dva nástroje téže skupiny (držák na gumičky, stojan na svíčku): `_figure`, `_slot`,
+`_together`.
 
 **Ozdoba na brčko a otvírák plechovek – hotové, ale mimo katalog** (`straw`, `opener`, rodina `shape`,
 `'available' => false` v `config/tools.php`). Stránky existují a fungují od začátku do konce, jen na ně nevede
@@ -432,7 +443,7 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`, `papel`, `bag_charm`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
+`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`, `papel`, `bag_charm`, `notes`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -450,5 +461,5 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
-Potom zbytek zadání session 1: ostatní produkty rodiny (držák na gumičky,
-organizér z předmětů vyfocených na A4, stojánek na lístečky, stojan na svíčku, klikátko).
+Potom zbytek zadání session 1: držák na gumičky a stojan na svíčku (oba na základu `stand_kinds.py`),
+organizér z předmětů vyfocených na A4, klikátko.
