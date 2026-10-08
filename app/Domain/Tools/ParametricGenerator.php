@@ -303,7 +303,7 @@ final class ParametricGenerator
     public const MAX_STROKE_POINTS = 48;
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
-        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
+        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
@@ -486,7 +486,7 @@ final class ParametricGenerator
                 'params.strokes' => ['nullable', 'array', 'max:'.self::MAX_STROKES],
                 'params.strokes.*.c' => ['required', Rule::in($palette->codes())],
                 'params.strokes.*.w' => ['required', 'numeric', 'min:1.5', 'max:4'],
-                'params.strokes.*.t' => ['required', 'in:round,flat,dots'],
+                'params.strokes.*.t' => ['required', 'in:round,flat,dots,candy,sprinkles'],
                 'params.strokes.*.p' => ['required', 'array', 'min:1', 'max:'.self::MAX_STROKE_POINTS],
                 'params.strokes.*.p.*' => ['array', 'size:2'],
                 'params.strokes.*.p.*.*' => ['numeric', 'min:-1', 'max:4'],
@@ -569,7 +569,7 @@ final class ParametricGenerator
                 }
 
                 return ['c' => $s['c'], 'h' => $palette->hex($s['c']), 'w' => round(min(4, max(1.5, (float) ($s['w'] ?? 2.5))), 1),
-                    't' => in_array($s['t'] ?? '', ['round', 'flat', 'dots'], true) ? $s['t'] : 'round',
+                    't' => in_array($s['t'] ?? '', ['round', 'flat', 'dots', 'candy', 'sprinkles'], true) ? $s['t'] : 'round',
                     'p' => array_map(fn ($pt) => [round((float) array_values($pt)[0], 4), round((float) array_values($pt)[1], 4)], $points)];
             }, array_slice((array) ($p['strokes'] ?? []), 0, self::MAX_STROKES))));
         }

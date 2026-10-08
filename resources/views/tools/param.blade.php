@@ -317,7 +317,7 @@
                     <span class="mt-1 flex items-center gap-3"><input type="range" id="cookie-width" min="1.5" max="4" step="0.5" value="2.5" class="min-w-0 flex-1 accent-ink"><span class="num w-14 text-right text-muted" id="cookie-width-v">2,5 mm</span></span>
                 </label>
                 <div class="mt-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label="{{ __('param.cookie.nib') }}">
-                    @foreach(['round', 'flat', 'dots'] as $i => $nib)
+                    @foreach(['round', 'flat', 'dots', 'candy', 'sprinkles'] as $i => $nib)
                         <label class="tool-choice"><input type="radio" name="cookie-nib" value="{{ $nib }}" class="sr-only" @checked($i === 0)>{{ __('param.cookie.nib.'.$nib) }}</label>
                     @endforeach
                 </div>

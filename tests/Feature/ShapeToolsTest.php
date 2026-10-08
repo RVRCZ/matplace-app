@@ -616,6 +616,45 @@ class ShapeToolsTest extends TestCase
         $this->get('/tools/name-letter')->assertOk()->assertSee('data-flag="stand"', false);
     }
 
+    public function test_a_biscuit_takes_sweets_and_sprinkles_and_a_tray_to_lie_in(): void
+    {
+        $star = ['artwork' => 'lib:cookies/cookie-star', 'width' => 80, 'thickness' => 6];
+        $tap = fn (string $tip) => ['c' => 'red', 'w' => 3, 't' => $tip, 'p' => [[0.5, 0.5]]];
+        $line = fn (string $tip) => ['c' => 'red', 'w' => 3, 't' => $tip, 'p' => [[0.35, 0.45], [0.5, 0.45], [0.65, 0.45]]];
+        $icing = fn (array $stroke) => $this->meta($this->preview('cookie', $star + ['strokes' => [$stroke]], 'icing_1', true)->assertOk());
+        // a tap with the sweets nib is one round sweet, nearly three times as wide as a tap of the plain nib
+        $dot = $icing($tap('round'));
+        $sweet = $icing($tap('candy'));
+        $this->assertEqualsWithDelta(3, $dot['bbox']['x'], 0.2);
+        $this->assertEqualsWithDelta(2.8 * 3, $sweet['bbox']['x'], 0.3);
+        $this->assertEqualsWithDelta(7.84 * $dot['volume_mm3'], $sweet['volume_mm3'], 0.08 * 7.84 * $dot['volume_mm3']);
+        // a tap of sprinkles is a handful of little rods; along a stroke they lie every which way, the same on every preview
+        $pinch = $icing($tap('sprinkles'));
+        $this->assertGreaterThan($dot['volume_mm3'], $pinch['volume_mm3']);
+        $scatter = $icing($line('sprinkles'));
+        $this->assertGreaterThan($pinch['volume_mm3'], $scatter['volume_mm3']);
+        $this->assertSame($scatter['volume_mm3'], $icing($line('sprinkles'))['volume_mm3']);
+        $this->assertGreaterThan(3 * 1.2, $scatter['bbox']['y']);
+        // sweets along a stroke are sweets, not a line
+        $row = $icing($line('candy'));
+        $this->assertGreaterThan(2 * $sweet['volume_mm3'] * 0.9, $row['volume_mm3']);
+        $this->preview('cookie', $star + ['strokes' => [$tap('glitter')]])->assertStatus(422);
+
+        // the tray: beside the biscuit, in its part and its filament, lower than the biscuit; the drawing stays where it was
+        $bare = $this->meta($this->preview('cookie', $star + ['strokes' => [$tap('candy')]], 'all', true)->assertOk());
+        $shown = $this->meta($this->preview('cookie', $star + ['tray' => true, 'strokes' => [$tap('candy')]], 'all', true)->assertOk());
+        [$w, $d] = $shown['notes']['tray'];
+        $this->assertEqualsWithDelta($bare['bbox']['x'] + 6, $w, 0.1);
+        $this->assertEqualsWithDelta($bare['bbox']['x'] + 6 + $w, $shown['bbox']['x'], 0.1);
+        $this->assertEqualsWithDelta($d, $shown['bbox']['y'], 0.1);
+        $this->assertSame($bare['bbox']['z'], $shown['bbox']['z']);
+        $this->assertSame($bare['notes']['parts'], $shown['notes']['parts']);
+        $this->assertSame($bare['notes']['color_changes'], $shown['notes']['color_changes']);
+        $this->assertSame($bare['notes']['frame'], $shown['notes']['frame']);
+        $this->assertGreaterThan($bare['volume_mm3'] + 1000, $shown['volume_mm3']);
+        $this->get('/tools/cookie')->assertOk()->assertSee('value="sprinkles"', false)->assertSee('data-flag="tray"', false);
+    }
+
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void
     {
         Storage::fake('models');

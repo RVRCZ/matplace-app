@@ -70,7 +70,11 @@ takže na větší sušence leží tam, kde byly. V Pythonu je tah stuha podél 
 `icing_<n>` a vrstva jako každá jiná barva: později použitá cívka leží výš a pod ní se nižší vrstvy doplní, takže
 i ručně zdobená sušenka má v každé vrstvě tisku jediný filament. Poleva se drží 1,8 mm od zaoblené hrany.
 Dlouhá kresba se nástroji předává souborem (`@cesta`), ne příkazovou řádkou. Proti zadání chybí: výběr a posun
-jednotlivého tahu (jde jen odebrat poslední), cukrovinky z knihovny a tácek na vystavení. **40 polotovarů**
+jednotlivého tahu (jde jen odebrat poslední). **Cukrovinky** jsou dva další hroty kreslení, ne motivy z knihovny:
+„Bonbony“ (kulatý bonbon skoro třikrát širší než čára, klepnutím jeden, tahem řada) a „Sypání“ (tyčinky
+rozházené podél tahu, pro stejný tah vždy stejně). **Tácek na vystavení** je volba: mělký tácek ve tvaru sušenky se
+vytiskne vedle ní, v jejím dílu a nižší, než je sušenka silná, takže se ho výměny filamentu pro polevu netýkají.
+**40 polotovarů**
 (20 vánočních, 20 halloweenských) přibylo 8. 10. jako kategorie „Sušenky“ knihovny obrázků
 (`engines/artwork/cookies/`, vlastní kresby z `_draw.py` tamtéž): okno s obrázky se u sušenky otevírá rovnou na ní
 a polotovary může použít i každý jiný nástroj s obrázkem. Zadání je chtělo v `engines/shapes/cookies/`; knihovna
@@ -490,8 +494,8 @@ písem; dva z nich (ozdoba na brčko, otvírák) čekají mimo katalog na zkuše
    membránou 0,8 mm nevím, jestli po jejich odtržení zbude něco, co cvaká. Než kolem toho vznikne nástroj se stránkou
    ve třech jazycích, stojí za to vytisknout jeden ručně nakreslený kus a zjistit, jestli tahle konstrukce v PLA/PETG
    cvaká vůbec. Když ano, je to rám a rotační skořepina, zhruba hodina práce.
-2. **Sušenka** (`cookie`): výběr a posun jednotlivého tahu (jde jen odebrat poslední), cukrovinky z knihovny
-   a tácek na vystavení. (Čtyřicet polotovarů už je, viz §1.)
+2. **Sušenka** (`cookie`): výběr a posun jednotlivého tahu (jde jen odebrat poslední). Polotovary, cukrovinky
+   a tácek už jsou, viz §1.
 3. **Organizér podle fotky, druhý režim:** předměty vyfocené na listu A4 → tác s kapsami podle jejich obrysů
    (měřítko z listu, narovnání perspektivy, segmentace předmětů, vůle, výřez na prst, hloubka kapsy na předmět).
    Samostatná práce, a bez skutečných fotek od lidí ji nejde poctivě ověřit.

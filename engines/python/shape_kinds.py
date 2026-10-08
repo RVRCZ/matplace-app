@@ -596,6 +596,18 @@ def build(M, Invalid, p, product):
     beside = None                                            # what lies on the bed next to the product: the plate's width, depth, and its own height
     if chain is not None:
         beside = (chain[1], chain[2], 0.0)
+    if biscuit and bool(p.get("tray", False)):
+        # a little tray to show the biscuit on: its outline with a millimetre of air, a rim 2 mm wide, a floor of 1.6 mm.
+        # Lower than the biscuit is thick, so no change of filament for the icing reaches it.
+        room = body2d.offset(1.0, J, 2.0, 24)
+        rim = room.offset(2.0, J, 2.0, 24)
+        tray = rim.extrude(min(4.6, t - 0.4)) - room.extrude(t).translate([0, 0, 1.6])
+        bx0, by0, bx1, by1 = body2d.bounds()
+        rx0, ry0, rx1, ry1 = rim.bounds()
+        tray = tray.translate([bx1 + 6.0 - rx0, by0 - ry0, 0])
+        body, whole = body + tray, whole + tray
+        notes["tray"] = [round(rx1 - rx0, 1), round(ry1 - ry0, 1)]
+        beside = (bx1 - bx0 + 6.0 + rx1 - rx0, max(by1 - by0, ry1 - ry0), 0.0)
     if foot is not None:
         base_w, base_d = max(40.0, foot + 24.0), max(32.0, t + 26.0)
         base = S.rounded_rect(M, base_w, base_d, 4).extrude(t) - M.Manifold.cube([foot + 0.5, t + 0.5, 7.0]).translate([(base_w - foot) / 2 - 0.25, (base_d - t) / 2 - 0.25, t - 6.0])
@@ -974,7 +986,11 @@ def _rounded_top(M, outline, t, r):
 
 
 def _stroke(M, pts, w, tip):
-    """One stroke of the piping bag as an outline: a ribbon `w` wide along the points, round or flat at its ends, or a row of dots."""
+    """
+    One stroke of the piping bag as an outline: a ribbon `w` wide along the points, round or flat at its ends, a row of
+    dots, a row of sweets (round, nearly three times as wide as the line) or a scatter of sprinkles (little rods lying
+    every which way along the stroke, always the same way for the same stroke).
+    """
     import numpy as np
     C = M.CrossSection
     kept = []
@@ -983,17 +999,26 @@ def _stroke(M, pts, w, tip):
             kept.append((x, y))
     if not kept:
         return None
+    def rod(x, y, k):
+        """A sprinkle: a little rod at (x, y), turned and nudged by its number so that no two lie alike."""
+        turn = (k * 97) % 180
+        dx, dy = ((k * 53) % 17 / 8.0 - 1.0) * 0.8 * w, ((k * 31) % 13 / 6.0 - 1.0) * 0.8 * w
+        long, wide = 2.2 * w, max(0.9, 0.45 * w)
+        return (C.circle(wide / 2, 12).translate([-long / 2 + wide / 2, 0]) + C.circle(wide / 2, 12).translate([long / 2 - wide / 2, 0])).hull().rotate(turn).translate([x + dx, y + dy])
+
     if len(kept) == 1:
-        return C.circle(w / 2 if tip != "dots" else w * 0.6, 24).translate(list(kept[0]))
+        if tip == "sprinkles":
+            return C.batch_boolean([rod(kept[0][0], kept[0][1], k) for k in range(5)], M.OpType.Add)
+        return C.circle({"dots": 0.6 * w, "candy": 1.4 * w}.get(tip, w / 2), 32).translate(list(kept[0]))
     a = np.array(kept, dtype=np.float64)
-    if tip == "dots":
+    if tip in ("dots", "candy", "sprinkles"):
         seg = np.linalg.norm(np.diff(a, axis=0), axis=1)
         run = np.concatenate([[0.0], np.cumsum(seg)])
         out = None
-        for s in np.arange(0.0, run[-1] + 1e-6, max(1.7 * w, 1.0)):
+        for k, s in enumerate(np.arange(0.0, run[-1] + 1e-6, {"candy": 3.4 * w, "sprinkles": 1.2 * w}.get(tip, max(1.7 * w, 1.0)))):
             i = int(min(np.searchsorted(run, s, side="right") - 1, len(seg) - 1))
             p = a[i] + (a[i + 1] - a[i]) * ((s - run[i]) / max(seg[i], 1e-9))
-            dot = C.circle(w / 2, 20).translate([float(p[0]), float(p[1])])
+            dot = rod(float(p[0]), float(p[1]), k) if tip == "sprinkles" else C.circle(1.4 * w if tip == "candy" else w / 2, 32 if tip == "candy" else 20).translate([float(p[0]), float(p[1])])
             out = dot if out is None else out + dot
         return out
     way = np.gradient(a, axis=0)
