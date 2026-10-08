@@ -114,7 +114,7 @@ export function bootParam(stage: Stage): void {
 
     /** Facts the tool measured (outer and inner size, a cell, what it fits…): rows under the status line. */
     const renderDims = (m: Meta): void => {
-        const n = m.notes as { outer?: number[]; inner?: number[]; cell?: number[]; slot?: number; fits?: number[]; module_mm?: number; modules?: number; quiet_zone_mm?: number; saucer_d?: number; drainage_holes?: number; needs?: string[]; led_m?: number; bridges?: number };
+        const n = m.notes as { outer?: number[]; inner?: number[]; cell?: number[]; slot?: number; fits?: number[]; module_mm?: number; modules?: number; quiet_zone_mm?: number; saucer_d?: number; drainage_holes?: number; needs?: string[]; led_m?: number; bridges?: number; ties?: number; open_pct?: number };
         const rows: [string, string][] = [];
         const dims = (a: number[]) => `${a.map((v) => nf.format(v)).join(' × ')} mm`;
         if (n.inner) rows.push([t('param.inner'), dims(n.inner)]);
@@ -124,6 +124,7 @@ export function bootParam(stage: Stage): void {
         const facts: string[] = [];
         if (n.module_mm) facts.push(t('param.qr.facts', { m: nf.format(n.module_mm), q: nf.format(n.quiet_zone_mm ?? 0), c: n.modules ?? 0 }));
         if (n.bridges) facts.push(t('param.bridges', { n: n.bridges }));
+        if (n.ties) facts.push(t('param.papel.ties', { n: n.ties, o: n.open_pct ?? 0 }));
         if (n.led_m) facts.push(t('param.lightbox.led', { m: nf.format(n.led_m) }));
         if (n.saucer_d) facts.push(t('param.saucer', { d: nf.format(n.saucer_d), h: n.drainage_holes ?? 0 }));
         const beadCount = (m.notes as { count?: number; each?: number[] });

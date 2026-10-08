@@ -124,6 +124,11 @@ return [
         ['params' => ['width' => 60, 'line1' => 'HAND', 'line2' => 'MADE', 'mode' => 'raised', 'handle' => 'knob']],
         ['params' => ['width' => 40, 'line1' => 'OK', 'mode' => 'recessed', 'handle' => 'none']],
     ]]],
+    'papel' => ['route' => 'tools.papel', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:holidays/sugar-skull', 'width' => 150, 'height' => 200]],
+        ['params' => ['artwork' => 'lib:hearts-stars/heart', 'width' => 120, 'height' => 120, 'border' => 'hearts']],
+        ['params' => ['artwork' => 'lib:animals/butterfly', 'width' => 200, 'height' => 150, 'border' => 'diamonds', 'invert' => true]],
+    ]]],
     'stencil' => ['route' => 'tools.stencil', 'intent' => 'create', 'categories' => ['craft', 'signs'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['width' => 120, 'line1' => 'BOA 8']],
         ['params' => ['width' => 160, 'line1' => 'FRAGILE']],

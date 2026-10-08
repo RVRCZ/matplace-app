@@ -127,6 +127,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | 3D nápis, který stojí | `/tools/text` | `sign` (styl `stand`, předvolba `stand`) | silná písmena na patce, 1–3 řádky, obrázek na téže patce; tiskne se vleže |
 | Medaile s řetězem | `/tools/medallion` | `medallion` | kruh, hvězda nebo šestiúhelník 50–120 mm s obrázkem či číslem, očko, 0–40 otevřených článků řetězu na téže podložce |
 | Organizér ve tvaru obrázku | `/tools/photo-organizer` | `photo_organizer` | vysoká nádobka 40–120 mm podle obrysu obrázku: přihrádky v mřížce, kulaté otvory v plném bloku, nebo jedna kapsa |
+| Papel picado z obrázku | `/tools/papel-picado` | `papel` | fotka, kresba nebo silueta vyříznutá v okně tenkého panelu 80–250 mm, prolamovaný okraj v šesti vzorech, zoubky, otvory na šňůru |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -150,6 +151,29 @@ hladkou misku ve světlém filamentu. Obrázek drží odstup od stěny (`frame`)
 sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do 6 mm (meze v `shape_kinds.LIMITS`).
 
 Rozcestník `/gifts` odkazuje i na misku, stojánek, korálky a ozdobu na držák karty.
+
+**Papel picado** (`papel` v `creative_kinds.py`, obyčejný nástroj, ne rodina; „Photo to Papel Picado“ předlohy).
+Panel je jeden plochý obrys vytažený na 0,8–2 mm: deska, v ní okno s obrázkem, kolem okraj se vzorem, dole zoubky
+s dírkou, nahoře dva otvory na šňůru.
+
+- *Co je papír a co díra:* tmavá místa obrázku zůstávají, světlá se vyříznou (volbou obrátit). **Fotku** čte vlastní
+  cesta (`_papel_photo`: výřez na poměr okna, automatický kontrast, rozostření podle „Zjednodušení fotky“, práh
+  Otsu posunutý posuvníkem „Kolik zůstane papíru“, úklid toho, co tryska nevytiskne) – `shape2d.raster` fotky
+  odmítá, protože pro siluety je to chyba. **SVG** se do okna vloží celé a jeho vyplněné tvary jsou papír.
+- *Spojky* (`_papel_ties`): kus papíru, který by po vyříznutí okolí nic nedrželo (lebka v okně, zornice), dostane
+  tenký svislý proužek přes díru, ve které leží – jen přes ni, ne přes celý panel jako u šablony – a od 25 mm
+  i vodorovný. Proužky končí na obrysu kusu, takže neprocházejí otvory vyříznutými v něm. Stránka píše, kolik jich je
+  a kolik procent plochy je pryč; nad 70 % varuje, že panel bude křehký.
+- *Okraj:* šest vzorů (květy, kosočtverce, puntíky, srdíčka, lístky, hvězdy) kreslí `_papel_unit` přímo v kódu, ne
+  ze souborů v `engines/shapes/papel/`, jak říkalo zadání: jsou to tři řádky geometrie na vzor a měřítko se řídí
+  šířkou okraje.
+- *Ukázkový motiv:* do knihovny přibyla **cukrová lebka** (`holidays/sugar-skull.svg`, vlastní kresba,
+  `_draw_skull.py` vedle ní) – portrét cizího člověka jsem jako ukázku přibalit nechtěl a neměl kde vzít.
+- Zadání chtělo „barvy po vrstvách“; panel je jednobarevný (girlanda se skládá z panelů různých barev, tak jako
+  papírová). Náhled 0,45 s u kresby z knihovny (celý požadavek); u fotky trvá samotná stavba 0,4 s včetně importu `scipy`,
+  celý požadavek jsem neměřil.
+- **Neověřeno:** na skutečné fotce člověka jsem to nezkoušel, jen na kreslené tváři se dvěma očima; jak dopadne
+  portrét s vlasy, stíny a pozadím, ukáže až první nahraná fotka. Tisk tenkých spojek 1,2 mm na délku 20–30 mm také.
 
 **Organizér ve tvaru obrázku** (`photo_organizer`, rodina `shape`) je miska (`tray`) vytažená do výšky: stěna podle
 obrysu, dno, a uvnitř (`_inside` v `shape_kinds.py`) buď **mřížka přepážek** rozdělená rovnoměrně na buňky kolem
@@ -382,7 +406,7 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
+`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`, `papel`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -401,4 +425,4 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
 Potom zbytek zadání session 1: ostatní produkty rodiny (brčko, gumičky, otvírák,
-organizér z předmětů vyfocených na A4, lístečky, čep na tašku, stojan na svíčku, papel picado, klikátko).
+organizér z předmětů vyfocených na A4, lístečky, čep na tašku, stojan na svíčku, klikátko).

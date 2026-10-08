@@ -130,6 +130,7 @@ $pages = function () {
     Route::get('/tools/svg-to-stl', [ToolsController::class, 'param'])->defaults('kind', 'logo')->defaults('as', 'svg_to_stl')->defaults('preset', 'extrude')->name('tools.svg_to_stl');
     Route::get('/tools/stamp', [ToolsController::class, 'param'])->defaults('kind', 'stamp')->name('tools.stamp');
     Route::get('/tools/stencil', [ToolsController::class, 'param'])->defaults('kind', 'stencil')->name('tools.stencil');
+    Route::get('/tools/papel-picado', [ToolsController::class, 'param'])->defaults('kind', 'papel')->name('tools.papel');
     Route::get('/tools/illuminated-sign', [ToolsController::class, 'param'])->defaults('kind', 'lightbox')->name('tools.lightbox');
     Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');
     Route::get('/tools/cable-holder', [ToolsController::class, 'param'])->defaults('kind', 'cable_holder')->name('tools.cable_holder');

@@ -13,6 +13,7 @@ LIMITS = {
     "stamp": {"width": (15, 120), "relief": (0.8, 4), "plate": (2, 6), "text_height": (4, 40)},
     "qr": {"size": (30, 150), "plate": (1.6, 4), "relief": (0.6, 2)},
     "stencil": {"width": (30, 250), "thickness": (0.8, 3), "margin": (5, 40), "bridge": (0.8, 3)},
+    "papel": {"width": (80, 250), "height": (80, 250), "thickness": (0.8, 2), "bridge": (0.8, 2.4), "darkness": (10, 90), "soften": (0, 3)},
     "lightbox": {"width": (80, 300), "depth": (25, 80), "wall": (1.6, 4), "face": (0.8, 2), "margin": (6, 40), "bridge": (0.8, 3), "cable": (3, 10), "clearance": (0.1, 0.6)},
     "cutter": {"width": (30, 150), "height": (10, 30), "wall": (0.8, 1.6), "flange": (3, 10), "flange_t": (1, 2.5)},
 }
@@ -25,6 +26,7 @@ CHOICES = {
     "qr": {"plate_color": ("white", "yellow", "grey", "brown", "orange", "red", "green", "blue", "black"),
            "code_color": ("black", "blue", "green", "red", "brown", "orange", "grey", "yellow", "white")},
     "stencil": {},
+    "papel": {"border": ("flowers", "diamonds", "dots", "hearts", "leaves", "stars", "none")},
     "lightbox": {"led": ("strip8", "strip10", "module"), "shape": ("rect", "round")},
     "cutter": {"edge": ("sharp", "straight"), "typeface": ("sans", "serif", "mono", "script")},
 }
@@ -833,6 +835,206 @@ def stencil(M, Invalid, p):
     return {"all": mask.extrude(t)}, notes
 
 
+# ── papel picado: a picture as a cut-out panel ──────────────────────────────
+
+PAPEL_PX = 280              # a photo is read on a grid of this many cells on the longer side of the window
+BORDERS = ("flowers", "diamonds", "dots", "hearts", "leaves", "stars", "none")
+
+
+def _papel_photo(M, path, win_w, win_h, darkness, soften, invert):
+    """
+    A photo or a drawing → what stays as paper inside a window of win_w × win_h (corner at the origin): its dark parts.
+    The picture covers the whole window (cut to its proportions, not squeezed), is softened, split into dark and light
+    at the level asked for, and cleaned of what a nozzle cannot print.
+    """
+    import numpy as np
+    from PIL import Image, ImageFilter, ImageOps
+    from scipy import ndimage
+    try:
+        img = ImageOps.exif_transpose(Image.open(path))
+    except Exception:  # noqa: BLE001
+        raise S.ArtworkError("image_unreadable")
+    if img.mode in ("RGBA", "LA", "P") or "transparency" in img.info:
+        rgba = img.convert("RGBA")
+        img = Image.alpha_composite(Image.new("RGBA", rgba.size, (255, 255, 255, 255)), rgba)
+    cell = max(win_w, win_h) / PAPEL_PX
+    cols, rows = max(8, int(round(win_w / cell))), max(8, int(round(win_h / cell)))
+    g = ImageOps.autocontrast(ImageOps.fit(img.convert("L"), (cols, rows), Image.LANCZOS), cutoff=1)
+    if soften > 0:
+        g = g.filter(ImageFilter.GaussianBlur(soften * 0.9))
+    a = np.asarray(g, dtype=np.float32)
+    hist, _ = np.histogram(a, bins=256, range=(0, 255))
+    w = np.cumsum(hist).astype(np.float64)
+    m = np.cumsum(hist * np.arange(256)).astype(np.float64)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        between = (m[-1] * w - m * w[-1]) ** 2 / (w * (w[-1] - w))
+    if np.all(np.isnan(between)):
+        raise S.ArtworkError("image_blank", "0")
+    level = float(np.nanargmax(between)) + (darkness - 50.0) * 2.0       # the middle of the slider is the split the picture asks for itself
+    paper = a <= level
+    if invert:
+        paper = ~paper
+    share = float(paper.mean())
+    if share < 0.02 or share > 0.98:
+        raise S.ArtworkError("image_blank", "%d" % round(share * 100))
+    # what a nozzle cannot print goes: specks of paper, pin holes, hairlines (an opening and a closing of one cell)
+    small = max(4, int(round((1.6 / cell) ** 2)))
+    # (done on the picture with its edge repeated outwards: otherwise the closing eats the paper along the picture's edge)
+    paper = ndimage.binary_closing(ndimage.binary_opening(np.pad(paper, 3, mode="edge"), iterations=1), iterations=1)[3:-3, 3:-3].copy()
+    for keep in (True, False):
+        labels, count = ndimage.label(paper == keep)
+        if count:
+            sizes = ndimage.sum(paper == keep, labels, range(1, count + 1))
+            for i in np.flatnonzero(sizes < small):
+                paper[labels == i + 1] = not keep
+    rects = []
+    for r in range(rows):
+        edges = np.flatnonzero(np.diff(np.concatenate(([0], paper[r].view(np.int8), [0]))))
+        for s0, e0 in zip(edges[::2], edges[1::2]):
+            y = rows - 1 - r
+            rects.append(np.array([(s0, y), (e0, y), (e0, y + 1.02), (s0, y + 1.02)], dtype=np.float64))
+    if not rects:
+        raise S.ArtworkError("image_blank", "0")
+    cs = M.CrossSection(rects, M.FillRule.NonZero)
+    cs = cs.offset(0.75, M.JoinType.Round, 2.0, 12).offset(-0.75, M.JoinType.Round, 2.0, 12).simplify(0.35)
+    return cs.scale([win_w / cols, win_h / rows])
+
+
+def _papel_unit(M, kind, u):
+    """One cut-out of a border, centred on the origin, about u across."""
+    C = M.CrossSection
+    if kind == "dots":
+        return C.circle(0.3 * u, 32)
+    if kind == "diamonds":
+        return C.square([0.54 * u, 0.54 * u]).translate([-0.27 * u, -0.27 * u]).rotate(45)
+    if kind == "hearts":
+        pts = [(0.024 * u * 16 * math.sin(a) ** 3, 0.024 * u * (13 * math.cos(a) - 5 * math.cos(2 * a) - 2 * math.cos(3 * a) - math.cos(4 * a))) for a in (2 * math.pi * i / 48 for i in range(48))]
+        return C([pts], M.FillRule.NonZero)
+    if kind == "leaves":
+        return (C.circle(0.42 * u, 48).translate([0.27 * u, 0]) ^ C.circle(0.42 * u, 48).translate([-0.27 * u, 0])).rotate(45)
+    if kind == "stars":
+        return C([[((0.42 if i % 2 == 0 else 0.19) * u * math.cos(math.pi / 2 + i * math.pi / 5), (0.42 if i % 2 == 0 else 0.19) * u * math.sin(math.pi / 2 + i * math.pi / 5)) for i in range(10)]], M.FillRule.NonZero)
+    flower = C.circle(0.13 * u, 24)                          # flowers: petals round a dot, each a hole of its own
+    for i in range(5):
+        a = math.pi / 2 + 2 * math.pi * i / 5
+        flower = flower + C.circle(0.12 * u, 24).translate([0.29 * u * math.cos(a), 0.29 * u * math.sin(a)])
+    return flower
+
+
+def _papel_ties(M, sheet, holes, plate, bridge):
+    """
+    Every piece of paper that hangs in the air (a face in a window cut out round it, the pupil of an eye) is tied to the
+    rest by thin strips across the hole it lies in, and only across that hole: one up and down through its middle, and
+    for a piece of some size one left and right as well. The strips stop at the piece's own outline, so they do not
+    run through the holes cut in it. Returns (sheet, ties, pieces that could not be tied and were left out).
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    x0, y0, x1, y1 = plate.bounds()
+
+    def filled(cs):
+        """A shape without its holes: its biggest outline alone."""
+        import numpy as np
+        rings = [np.asarray(r, dtype=np.float64) for r in cs.to_polygons()]
+        size = lambda r: abs(float(np.sum(r[:, 0] * np.roll(r[:, 1], -1) - np.roll(r[:, 0], -1) * r[:, 1])))      # noqa: E731
+        return C([max(rings, key=size)], M.FillRule.NonZero)
+
+    ties = 0
+    for _ in range(4):                                       # a tie frees nothing new, but nested pieces take another look
+        pieces = sheet.decompose()
+        if len(pieces) <= 1:
+            break
+        frame = max(pieces, key=lambda c: c.area())
+        rims = [filled(c) for c in holes.decompose()]
+        strips = []
+        for piece in pieces:
+            if piece is frame or piece.area() < 2.0:
+                continue
+            px0, py0, px1, py1 = piece.bounds()
+            bars = C.square([bridge, y1 - y0]).translate([(px0 + px1) / 2 - bridge / 2, y0])
+            if min(px1 - px0, py1 - py0) > 25.0:
+                bars = bars + C.square([x1 - x0, bridge]).translate([x0, (py0 + py1) / 2 - bridge / 2])
+            around = [rim for rim in rims if (piece - rim).area() < 0.05 * piece.area()]
+            reach = min(around, key=lambda c: c.area()) if around else plate
+            strips.append((bars ^ reach) - filled(piece).offset(-0.6, J, 2.0, 12))
+            ties += 1
+        if not strips:
+            break
+        sheet = sheet + M.CrossSection.batch_boolean(strips, M.OpType.Add)
+    pieces = sheet.decompose()
+    frame = max(pieces, key=lambda c: c.area())
+    return frame, ties, len([c for c in pieces if c is not frame and c.area() >= 2.0])
+
+
+def papel(M, Invalid, p):
+    """
+    Papel picado, the cut-paper banner of Mexican feasts, as a thin printed panel: a picture cut out in a window (its dark
+    parts stay as paper, the light ones are holes), a border pierced with flowers, a scalloped lower edge and two holes
+    for the string. One flat outline pulled up to the thickness asked for.
+    """
+    k = "papel"
+    C = M.CrossSection
+    n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
+    W, H, t, bridge = n("width", 150), n("height", 200), n("thickness", 1.2), n("bridge", 1.2)
+    darkness, soften = n("darkness", 50), n("soften", 1)
+    border = _pick(Invalid, p, k, "border")
+    invert, scallop, string = bool(p.get("invert", False)), bool(p.get("scallop", True)), bool(p.get("string_holes", True))
+    path = p.get("artwork_path")
+    if not path:
+        raise Invalid("no_text")
+    band = max(10.0, min(26.0, 0.13 * min(W, H))) if border != "none" else 6.0
+    win_w, win_h = W - 2 * band, H - 2 * band
+    if win_w < 30 or win_h < 30:
+        raise Invalid("shape_too_small")
+    try:
+        if path.lower().endswith(".svg"):
+            # a drawing: its filled shapes are the paper, set whole into the window
+            art = S.svg(M, path, 100.0)[0]
+            aw, ah = S.size(art)
+            art = S.fit(art, width_mm=aw * min((win_w - 4) / aw, (win_h - 4) / ah))
+            paper = S.centre_on(art, win_w, win_h)
+            if invert:
+                paper = C.square([win_w, win_h]) - paper
+        else:
+            paper = _papel_photo(M, path, win_w, win_h, darkness, soften, invert)
+    except S.ArtworkError as e:
+        raise Invalid(e.code, str(e).split(": ", 1)[1] if ": " in str(e) else "")
+    # the window is a hair smaller than the picture, so paper that reaches the picture's edge is one with the border
+    window = C.square([win_w - 1.0, win_h - 1.0]).translate([band + 0.5, band + 0.5])
+    holes = window - paper.translate([band, band])
+    plate = S.rounded_rect(M, W, H, 3)
+    if scallop:
+        count = max(3, int(round(W / 26.0)))
+        r = W / (2.0 * count)
+        for i in range(count):
+            plate = plate + C.circle(r, 48).translate([r + 2 * r * i, 0])
+            holes = holes + C.circle(r * 0.3, 24).translate([r + 2 * r * i, -r * 0.35])
+    if border != "none":
+        unit = _papel_unit(M, border, band * 0.72)
+        pitch = band * 0.95
+        nx, ny = max(2, int((W - band) / pitch)), max(2, int((H - band) / pitch))
+        spots = [(band / 2 + i * (W - band) / nx, y) for i in range(nx + 1) for y in (band / 2, H - band / 2)]
+        spots += [(x, band / 2 + j * (H - band) / ny) for j in range(1, ny) for x in (band / 2, W - band / 2)]
+        if string:
+            spots = [s for s in spots if not (s[1] > H - band and (s[0] < band or s[0] > W - band))]      # the top corners are for the string
+        holes = holes + M.CrossSection.batch_boolean([unit.translate(list(s)) for s in spots], M.OpType.Add)
+    if string:
+        for x in (band / 2, W - band / 2):
+            holes = holes + C.circle(2.0, 32).translate([x, H - band / 2])
+    sheet, ties, lost = _papel_ties(M, plate - holes, holes, plate, bridge)
+    warn = []
+    if lost:
+        warn.append("papel_lost")
+    thin = S.printability(M, sheet, 0.45)["thin_pct"]
+    if thin > 30:
+        warn.append("thin_lines")
+    x0, y0, x1, y1 = sheet.bounds()
+    open_pct = int(round(100 * (1 - sheet.area() / plate.area())))
+    if open_pct > 70:
+        warn.append("papel_airy")
+    notes = {"outer": [round(x1 - x0, 1), round(y1 - y0, 1), round(t, 1)], "ties": ties, "open_pct": open_pct, "warnings": warn, "thin_pct": thin, "missing_chars": []}
+    return {"all": sheet.translate([-x0, -y0]).extrude(t)}, notes
+
+
 # ── illuminated sign ────────────────────────────────────────────────────────
 
 LED = {"strip8": (8.0, 3.0), "strip10": (10.0, 3.5), "module": (18.0, 8.0)}     # width and height the light source needs on the wall / back
@@ -1068,4 +1270,4 @@ def _signed_area(poly):
     return 0.5 * sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly)))
 
 
-BUILDERS = {"vase": vase, "logo": logo, "sign": sign, "stamp": stamp, "qr": qr, "stencil": stencil, "lightbox": lightbox, "cutter": cutter}
+BUILDERS = {"vase": vase, "logo": logo, "sign": sign, "stamp": stamp, "qr": qr, "stencil": stencil, "papel": papel, "lightbox": lightbox, "cutter": cutter}

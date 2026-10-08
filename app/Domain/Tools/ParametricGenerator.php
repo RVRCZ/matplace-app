@@ -116,7 +116,7 @@ final class ParametricGenerator
     /** Tools of the family whose text goes under the picture, not instead of it: a page opened with a name keeps its sample picture. */
     public const CAPTIONED = ['badge'];
 
-    public const SAMPLE = ['svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star', 'medallion' => 'lib:colour/smiling-star', 'photo_organizer' => 'lib:nature/cloud'];
+    public const SAMPLE = ['papel' => 'lib:holidays/sugar-skull', 'svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star', 'medallion' => 'lib:colour/smiling-star', 'photo_organizer' => 'lib:nature/cloud'];
 
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
@@ -176,6 +176,8 @@ final class ParametricGenerator
         'stamp' => ['width' => [15, 120, 50, 1], 'relief' => [0.8, 4, 1.6, 0.2], 'plate' => [2, 6, 3, 0.5]],
         'qr' => ['size' => [30, 150, 70, 1], 'plate' => [1.6, 4, 2.4, 0.2], 'relief' => [0.6, 2, 1, 0.2]],
         'stencil' => ['width' => [30, 250, 120, 1], 'thickness' => [0.8, 3, 1.2, 0.2], 'margin' => [5, 40, 12, 1], 'bridge' => [0.8, 3, 1.2, 0.2]],
+        // papel picado: `darkness` is where a photo is split into paper and holes (50 = where the picture splits itself), `soften` how much detail is given up
+        'papel' => ['width' => [80, 250, 150, 1], 'height' => [80, 250, 200, 1], 'thickness' => [0.8, 2, 1.2, 0.2], 'bridge' => [0.8, 2.4, 1.2, 0.2], 'darkness' => [10, 90, 50, 1], 'soften' => [0, 3, 1, 0.5]],
         'lightbox' => [
             'width' => [80, 300, 180, 1], 'depth' => [25, 80, 35, 1], 'wall' => [1.6, 4, 2, 0.2], 'face' => [0.8, 2, 1.2, 0.2], 'margin' => [6, 40, 12, 1],
             'bridge' => [0.8, 3, 1.4, 0.2], 'cable' => [3, 10, 5, 0.5], 'clearance' => [0.1, 0.6, 0.25, 0.05],
@@ -188,6 +190,7 @@ final class ParametricGenerator
 
     /** kind → choice → allowed values (the first one is the default) */
     public const CHOICES = [
+        'papel' => ['border' => ['flowers', 'diamonds', 'dots', 'hearts', 'leaves', 'stars', 'none']],
         'name_cup' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
         'beads' => ['shape' => ['cube', 'ball', 'heart', 'star'], 'style' => ['raised', 'engraved'], 'typeface' => ['sans', 'serif', 'mono']],
         'charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -248,7 +251,7 @@ final class ParametricGenerator
     /** Of the tools that take a picture: those where it stands next to the text, never instead of it (the text stays required). */
     public const BESIDE = ['sign'];
 
-    public const ARTWORK = ['sign', 'logo', 'stamp', 'stencil', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge', 'medallion', 'photo_organizer'];
+    public const ARTWORK = ['sign', 'logo', 'stamp', 'stencil', 'papel', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge', 'medallion', 'photo_organizer'];
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
@@ -256,7 +259,7 @@ final class ParametricGenerator
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'darkness', 'soften'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
 
     /**
@@ -268,7 +271,7 @@ final class ParametricGenerator
         'organizer' => ['width' => 'x', 'depth' => 'y', 'height' => 'z'], 'box' => ['inner_w' => 'x', 'inner_d' => 'y', 'inner_h' => 'z'],
         'modular' => ['inner_w' => 'x', 'inner_d' => 'y', 'height' => 'z'], 'vase' => ['top_d' => 'x', 'height' => 'z'], 'phone_stand' => ['width' => 'x'],
         'cable_holder' => ['depth' => 'y'], 'holder' => ['obj_w' => 'x', 'height' => 'z'], 'cap' => ['size_a' => 'x', 'height' => 'z'],
-        'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
+        'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'papel' => ['width' => 'x', 'height' => 'y'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
         'name_cup' => ['width' => 'x', 'height' => 'z'], 'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'], 'cookie' => ['width' => 'x'], 'topper' => ['width' => 'x'], 'tray' => ['width' => 'x', 'height' => 'z'], 'badge' => ['width' => 'x'], 'medallion' => ['width' => 'x'], 'photo_organizer' => ['width' => 'x', 'height' => 'z'],
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
@@ -283,7 +286,7 @@ final class ParametricGenerator
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'photo_organizer' => ['remove_bg'],
-        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
+        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['invert', 'scallop', 'string_holes'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
@@ -328,7 +331,7 @@ final class ParametricGenerator
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides', 'scallop', 'string_holes'];
 
     /** things that hang only when asked to (a biscuit, a big letter): the eyelet's sizes show with the tick */
     private const HANG_WHEN = ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]];

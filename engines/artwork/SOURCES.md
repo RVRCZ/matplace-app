@@ -94,6 +94,7 @@ any font or artwork).
 | holidays/santa-hat.svg | Santa Hat | https://openclipart.org/detail/323412 | CC0 1.0 | 2026-10-07 |
 | holidays/reindeer.svg | Leaping Reindeer Silhouette | https://openclipart.org/detail/326334 | CC0 1.0 | 2026-10-07 |
 | holidays/bat.svg | Bat | https://openclipart.org/detail/327599 | CC0 1.0 | 2026-10-07 |
+| holidays/sugar-skull.svg | - | own drawing for matplace (engines/artwork/holidays/_draw_skull.py) | CC0 (own work) | 2026-10-08 |
 | holidays/witch.svg | Halloween Witch Outline | https://openclipart.org/detail/324475 | CC0 1.0 | 2026-10-07 |
 | holidays/angel.svg | Angel - Silhouette | https://openclipart.org/detail/268741 | CC0 1.0 | 2026-10-07 |
 | holidays/candy-cane.svg | Candy cane | https://openclipart.org/detail/282003 | CC0 1.0 | 2026-10-07 |
