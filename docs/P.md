@@ -537,7 +537,7 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 
 ## 7. Co ze zadání session 1 zbývá
 
-Stav k 8. 10. 2026 v noci; celá sada testů naposledy na commitu 7204205 (512 testů, bez chyby, 2 přeskočené,
+Stav k 8. 10. 2026 v noci; celá sada testů naposledy na commitu db4f611 (513 testů, bez chyby, 2 přeskočené,
 1 varování, které tu bylo už předtím). V katalogu je ze zadání 25 nástrojů (deset z vánoční sady, viz §1,
 a patnáct z tabulky „Po vánoční sadě“) a třicet písem; tři další jsou postavené, ale čekají mimo katalog
 (`available => false`) na vyzkoušení: ozdoba na brčko, otvírák a vložka do zásuvky podle fotky. Nehotové,
