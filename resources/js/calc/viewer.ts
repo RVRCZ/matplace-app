@@ -1,7 +1,7 @@
 import {
     AmbientLight, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, GridHelper, Group, HemisphereLight, Line, LineBasicMaterial,
     LineSegments, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3,
-    WebGLRenderer, Box3, Float32BufferAttribute,
+    WebGLRenderer, Box3, Float32BufferAttribute, PlaneGeometry, EdgesGeometry, DoubleSide,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -35,6 +35,8 @@ export class Viewer {
     private selected = -1;
     private highlight: Mesh | null = null;
     private spread = 0;
+    private spreadAxis: 'x' | 'y' | 'z' | null = null;      // a stack of plates comes apart along one axis, in order
+    private planes: Group | null = null;                    // cutting planes drawn on the model (the split tool)
     private hold = false;
     private framed = false;
     private framedSize = 0;
@@ -328,7 +330,12 @@ export class Viewer {
             let d = [c[0] - whole[0], c[1] - whole[1], c[2] - whole[2]];
             let len = Math.hypot(d[0], d[1], d[2]);
             if (len < 0.5) { d = [0, 0, n % 2 ? 1 : -1]; len = 1; }                   // pieces that share a centre (a lid on its box) part along the height
-            const move = this.spread * Math.max(len * 0.7, whole[3] * 0.3);
+            let move = this.spread * Math.max(len * 0.7, whole[3] * 0.3);
+            if (this.spreadAxis) {
+                // plates of a stack: each one further along the axis than the one before it, in the order of the list
+                d = [this.spreadAxis === 'x' ? 1 : 0, this.spreadAxis === 'y' ? 1 : 0, this.spreadAxis === 'z' ? 1 : 0]; len = 1;
+                move = this.spread * n * Math.max(whole[3] * 0.18, 4);
+            }
             const o = [d[0] / len * move, d[1] / len * move, d[2] / len * move];
             for (let i = piece.tris[0] * 9; i < piece.tris[1] * 9; i += 3) { out[i] = base[i] + o[0]; out[i + 1] = base[i + 1] + o[1]; out[i + 2] = base[i + 2] + o[2]; }
         });
@@ -336,6 +343,43 @@ export class Viewer {
         mesh.geometry.computeBoundingBox(); mesh.geometry.computeBoundingSphere();
         if (this.selected >= 0) this.select(this.selected);
         this.handles.forEach((h) => { h.group.visible = this.spread === 0; });
+    }
+
+    /** The spread view moves the pieces along this axis of the file, one after another (a stack of plates); null: apart from the middle. */
+    setSpreadAxis(axis: 'x' | 'y' | 'z' | null): void {
+        this.spreadAxis = axis;
+        if (this.spread) this.setSpread(this.spread);
+    }
+
+    /**
+     * Cutting planes across the model (the split tool): `at` in the millimetres of the file along `axis`, drawn as
+     * orange sheets over the whole model; null takes them away. They belong to the shown model and go with it.
+     */
+    setPlanes(planes: { axis: 'x' | 'y' | 'z'; at: number }[] | null): void {
+        if (this.planes) { this.planes.parent?.remove(this.planes); this.planes.traverse((o) => { const m = o as Mesh; m.geometry?.dispose?.(); }); this.planes = null; }
+        if (!planes?.length || !this.mesh) return;
+        const geom = this.mesh.geometry;
+        if (!geom.boundingBox) geom.computeBoundingBox();
+        const box = geom.boundingBox!;
+        const size = new Vector3(); box.getSize(size);
+        const mid = new Vector3(); box.getCenter(mid);
+        const group = new Group();
+        const fill = new MeshBasicMaterial({ color: 0xc94714, transparent: true, opacity: 0.22, side: DoubleSide, depthWrite: false });
+        const edge = new LineBasicMaterial({ color: 0xc94714 });
+        planes.forEach((p) => {
+            const grow = 1.06;
+            const w = (p.axis === 'x' ? size.z : size.x) * grow; const h = (p.axis === 'z' ? size.y : p.axis === 'y' ? size.z : size.y) * grow;
+            const sheet = new Mesh(new PlaneGeometry(w, h), fill);
+            const outline = new LineSegments(new EdgesGeometry(sheet.geometry), edge);
+            sheet.add(outline);
+            if (p.axis === 'x') { sheet.rotation.y = Math.PI / 2; sheet.position.set(p.at, mid.y, mid.z); }
+            else if (p.axis === 'y') { sheet.rotation.x = Math.PI / 2; sheet.position.set(mid.x, p.at, mid.z); }
+            else sheet.position.set(mid.x, mid.y, p.at);
+            sheet.renderOrder = 6;
+            group.add(sheet);
+        });
+        this.planes = group;
+        this.mesh.add(group);
     }
 
     /** See-through walls (35 %): what is inside a hollow thing. */

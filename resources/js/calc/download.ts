@@ -117,7 +117,9 @@ export function setDownload(file: FileInfo | null, params: () => DownloadParams,
     if (parts) {
         const i18n = (window as unknown as { MP_I18N?: Record<string, string> }).MP_I18N ?? {};
         parts.classList.toggle('hidden', !(file.parts ?? []).length);
-        parts.innerHTML = (file.parts ?? []).length ? `${i18n['download.parts'] ?? ''}: ` + (file.parts ?? []).map((p) => `<a class="text-action-dark underline" href="${routes().paramPart}/${file.uuid}/${p}.stl">${p.startsWith('bin_') ? (i18n['param.part.bin'] ?? ':s').replace(':s', p.slice(4).replace('x', ' × ')) : (i18n[`param.part.${p}.${file.kind}`] ?? i18n[`param.part.${p}`] ?? p)}</a>`).join(' · ') : '';
+        // the plates of a picture and the pieces of a split model are kept as files beside the design (api/tools/edit); the parts of the generators are rebuilt (api/tools/param)
+        const partsAt = ['filament_art', 'split', 'scale', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'soap', 'wearable', 'slider'].includes(file.kind ?? '') ? routes().paramPart.replace(/\/param$/, '/edit') : routes().paramPart;
+        parts.innerHTML = (file.parts ?? []).length ? `${i18n['download.parts'] ?? ''}: ` + (file.parts ?? []).map((p) => `<a class="text-action-dark underline" href="${partsAt}/${file.uuid}/${p}.stl">${p.startsWith('bin_') ? (i18n['param.part.bin'] ?? ':s').replace(':s', p.slice(4).replace('x', ' × ')) : (i18n[`param.part.${p}.${file.kind}`] ?? i18n[`param.part.${p}`] ?? p)}</a>`).join(' · ') : '';
     }
     refresh();
 }
