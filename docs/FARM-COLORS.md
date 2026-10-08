@@ -167,3 +167,16 @@ shodný s `main`. Odstávka 16 s, migrace `farm_orders.by_parts/part_plates` pro
 bez chyby. Zálohy `/root/matplace_app-20261008-1802.sql` a `/root/matplace-app.env.bak-20261008-1802`. Farma byla
 při nasazení vypnutá, 0 běžících úloh. Co zbývá Romanovi: zapnout farmu, první tisk po dílech (krabička s víkem ve
 dvou barvách na S1, G‑code druhé desky `?plate=2` s `T<slot červené>`), skryté nástroje session 1 vyzkoušet a odkrýt.
+
+### Doplněk (8. 10. 2026 večer, po prvním klikání Romana)
+
+- **Stránka kalkulace** (`/c/<token>`): návrh s díly v různých barvách (`tool_params.part_colors` ≥ 2 barvy,
+  `parts_bbox`) se v náhledu vybarví po dílech – `calculator.ts::partsByColour` rozdělí STL na tělesa (sdílené
+  vrcholy), každé těleso přiřadí dílu podle rozměrů (setříděné, takže otočený díl sedí) a přes `Viewer.setPieces`
+  + `setPieceColor` ho obarví. Místo tipu druhu („tisknou se najednou, cena za obojí“) se ukáže
+  `farm.calc_parts_by_colour` („u nás se každý díl vytiskne zvlášť ze své cívky…“). Ověřeno v headless Chrome na
+  místním serveru (krabička zelená, víčko modré).
+- **Úvodní stránka farmy**: u návrhu po dílech bez vybrané barvy se první barva volí podle barvy prvního dílu
+  (`nearestSet` s hexy ostatních dílů), ostatní díly dostanou nejbližší cívku toho stroje; `?color=` zákazníka má
+  přednost. Test `test_a_box_whose_parts_have_colours_starts_by_parts_with_the_nearest_spools`.
+- **Výběr barvy na stránce nástroje**: reagovalo jen kolečko; od 3a07fc6 (session 1) otevírá okno celý řádek dílu.

@@ -126,16 +126,22 @@ class OrderController extends Controller
         // the design names different colours for its parts or is a picture of stacked plates
         $partWanted = array_map('intval', (array) ($old['part_color'] ?? $request->query('part', [])));
         $partHex = array_map(fn ($part) => ($file->tool_params['part_colors'][$part]['hex'] ?? null) ?: null, array_combine($parts, $parts) ?: []);
-        $spools = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->push(['id' => $preselect, 'hex' => collect($colors)->firstWhere('id', $preselect)['hex'] ?? null]);
+        $byParts = $old ? ! empty($old['by_parts']) : ($request->query('by_parts') !== null ? $request->boolean('by_parts') : (count($parts) >= 2 && ($file->kind() === ArtGenerator::KIND || count(array_unique(array_filter($partHex))) >= 2)));
         $partPreselect = [];
+        if ($byParts && ! $wantedColor && ! $partWanted && count(array_filter($partHex)) >= 1 && ($near = self::nearestSet($colors, $partHex[$parts[0]] ?? null, array_values(array_map(fn ($h) => (string) ($h ?: ''), array_slice($partHex, 1)))))) {
+            // nothing chosen yet: the first colour follows the first part (the box), the other parts take the spool of that
+            // machine nearest to their own colour (the first colour itself counts: "the main colour")
+            [$preselect, $picks] = $near;
+            $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
+            foreach (array_slice($parts, 1) as $i => $part) {
+                $partWanted[$part] = $partHex[$part] ? (int) ($picks[$i] ?? 0) : 0;
+            }
+        }
+        $spools = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->push(['id' => $preselect, 'hex' => collect($colors)->firstWhere('id', $preselect)['hex'] ?? null]);
         foreach ($parts as $part) {
             $want = (int) ($partWanted[$part] ?? 0);
-            if (! $want && ! $partWanted && $partHex[$part]) {
-                $want = (int) ($spools->sortBy(fn ($s) => self::hexDistance((string) $s['hex'], (string) $partHex[$part]))->first()['id'] ?? 0);
-            }
             $partPreselect[$part] = $machine->contains($want) && $want !== $preselect ? $want : 0;
         }
-        $byParts = $old ? ! empty($old['by_parts']) : ($request->query('by_parts') !== null ? $request->boolean('by_parts') : (count($parts) >= 2 && ($file->kind() === ArtGenerator::KIND || count(array_unique(array_filter($partHex))) >= 2)));
 
         return view('farm.start', [
             'file' => $file,

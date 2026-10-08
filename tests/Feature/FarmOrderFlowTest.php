@@ -896,4 +896,39 @@ T2 ; slot chosen by matplace farm
         $this->assertMatchesRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $again);
         $this->assertMatchesRegularExpression('/name="part_color\[lid\]" value="'.$red->id.'"[^>]*\schecked/', $again);
     }
+
+    public function test_a_box_whose_parts_have_colours_starts_by_parts_with_the_nearest_spools(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        // the S1 holds white; green and blue spools of the same family join it
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $white = $s1->slots()->whereNotNull('farm_color_id')->firstOrFail()->color;
+        $white->update(['hex' => '#F4F4F0']);
+        [$green, $blue] = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->where('id', '!=', $white->id)->take(2)->get()->all();
+        $green->update(['hex' => '#2E8B3A', 'enabled' => true]);
+        $blue->update(['hex' => '#1E4FA0', 'enabled' => true]);
+        $free = $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->get();
+        $free[0]->update(['farm_color_id' => $green->id, 'remaining_g' => 800, 'enabled' => true]);
+        $free[1]->update(['farm_color_id' => $blue->id, 'remaining_g' => 800, 'enabled' => true]);
+
+        // the tool's page gave the box a green body and a blue lid
+        $uuid = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'box', 'params' => ['lid' => 1, 'inner_w' => 30, 'inner_d' => 20, 'inner_h' => 12]])->assertCreated()->json('file.uuid');
+        $file = ModelFile::where('uuid', $uuid)->firstOrFail();
+        $file->forceFill(['tool_params' => ['part_colors' => ['body' => ['code' => 'green', 'hex' => '#30a040'], 'lid' => ['code' => 'blue', 'hex' => '#2050b0']]] + $file->tool_params])->save();
+
+        // the start page starts by parts: the first colour follows the body, the lid takes the blue spool of that machine
+        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $html);
+        $ticked = fn (string $html, string $name) => preg_match('/name="'.preg_quote($name, '/').'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
+        $this->assertSame($green->id, $ticked($html, 'color'));
+        $this->assertSame($blue->id, $ticked($html, 'part_color[lid]'));
+        $this->assertSame(0, $ticked($html, 'part_color[body]'), 'the body is the main colour itself');
+
+        // the colour the customer chose by hand wins over the design; the lid still takes the blue spool of that machine
+        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid.'&color='.$white->id)->assertOk()->getContent();
+        $this->assertSame($white->id, $ticked($html, 'color'));
+        $this->assertMatchesRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $html);
+    }
 }

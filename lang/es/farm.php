@@ -4,6 +4,7 @@ return [
     'price_label' => 'Impreso por nosotros (:material)',
     'cta' => 'Imprimirlo con nosotros',
     'cta_hint' => 'Lo imprimimos en nuestra impresora. Paga con crédito y la impresión empieza en cuanto la impresora esté libre.',
+    'calc_parts_by_colour' => 'Las piezas tienen colores distintos: imprimimos cada pieza por separado desde su propia bobina, una impresión tras otra; el precio incluye todas las piezas. Para imprimir en casa, descargue el proyecto con los colores.',
     'cta_wait' => 'Espere a que termine el cálculo preciso; después podrá imprimir en nuestra impresora.',
     'title' => 'Imprimir en nuestra impresora',
     'lead' => 'Suba un modelo; nosotros lo orientamos, lo preparamos y calculamos el precio. Elija el color, pague con crédito y la impresora empieza.',

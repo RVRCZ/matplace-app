@@ -1,7 +1,7 @@
 import { icon } from '../site/icon';
-import { BufferGeometry } from 'three';
+import { BufferGeometry, Float32BufferAttribute } from 'three';
 import { moldReport } from './mold';
-import { Viewer, twoColorRegions } from './viewer';
+import { Viewer, twoColorRegions, Piece } from './viewer';
 import { loadGeometry, loadGeometryFromUrl, extensionOf, BROWSER_FORMATS } from './loaders';
 import { stats, normaliseUnits, GeoStats } from './geometry';
 import { estimate, price, range, RoughConfig, Profile, Params } from './rough';
@@ -347,8 +347,71 @@ async function showServerStl(url: string): Promise<void> {
         const geom = await loadGeometryFromUrl(url);
         state.geometry = geom;
         state.geo = stats(geom);
-        viewer?.setGeometry(geom, state.params.scale, state.file?.kind ?? null, twoColorRegions(state.file?.tool?.params));
+        const parts = partsByColour(geom, state.file?.tool?.params);
+        viewer?.setGeometry(geom, state.params.scale, state.file?.kind ?? null, parts ? null : twoColorRegions(state.file?.tool?.params));
+        if (viewer && parts) {
+            viewer.setPieces(parts.pieces);
+            parts.colors.forEach((hex, i) => { if (hex) viewer!.setPieceColor(i, hex); });
+            // the farm prints such parts one after another, each from its own spool: that line replaces the kind's
+            // usual "printed together" tip
+            const tip = document.getElementById('kind-tip');
+            if (tip) { tip.textContent = t('farm.calc_parts_by_colour'); tip.classList.remove('hidden'); }
+        }
     } catch { /* viewer is optional */ }
+}
+
+/**
+ * A design of separately printed parts in different colours (a box and its lid, a logo and its stand): the bodies of
+ * the model are matched to the parts by their size and the triangles reordered body by body, so the viewer can
+ * show every part in the colour the design gave it. null for a one-body model or a design in one colour.
+ */
+function partsByColour(geom: BufferGeometry, params: Record<string, unknown> | null | undefined): { pieces: Piece[]; colors: (string | null)[] } | null {
+    const p = (params ?? {}) as { parts_bbox?: Record<string, number[]>; part_colors?: Record<string, { hex?: string }> };
+    const names = Object.keys(p.parts_bbox ?? {});
+    if (names.length < 2 || new Set(names.map((n) => p.part_colors?.[n]?.hex ?? '').filter(Boolean)).size < 2) return null;
+    const pos = geom.getAttribute('position');
+    if (!pos || geom.index || pos.count > 900000) return null;
+    // the bodies: triangles joined by shared corners (union–find over positions rounded to 0.01 mm)
+    const tri = pos.count / 3;
+    const parent = new Int32Array(tri);
+    for (let i = 0; i < tri; i++) parent[i] = i;
+    const find = (i: number): number => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+    const seen = new Map<string, number>();
+    for (let tr = 0; tr < tri; tr++) for (let k = 0; k < 3; k++) {
+        const i = tr * 3 + k;
+        const key = `${Math.round(pos.getX(i) * 100)},${Math.round(pos.getY(i) * 100)},${Math.round(pos.getZ(i) * 100)}`;
+        const other = seen.get(key);
+        if (other === undefined) seen.set(key, tr); else { const a = find(tr); const b = find(other); if (a !== b) parent[a] = b; }
+    }
+    const groups = new Map<number, number[]>();
+    for (let tr = 0; tr < tri; tr++) { const r = find(tr); const g = groups.get(r); if (g) g.push(tr); else groups.set(r, [tr]); }
+    if (groups.size < 2) return null;
+    // a body is the part whose size it has (the three dimensions sorted, so a turned part still matches)
+    const sorted = (v: number[]): number[] => [...v].sort((a, b) => b - a);
+    const sizeOf = (ts: number[]): number[] => {
+        const lo = [Infinity, Infinity, Infinity]; const hi = [-Infinity, -Infinity, -Infinity];
+        ts.forEach((tr) => { for (let k = 0; k < 3; k++) { const i = tr * 3 + k; const v = [pos.getX(i), pos.getY(i), pos.getZ(i)]; for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], v[a]); hi[a] = Math.max(hi[a], v[a]); } } });
+        return sorted([hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]]);
+    };
+    const partOf = (size: number[]): string | null => {
+        let best: [number, string] | null = null;
+        names.forEach((n) => { const s = sorted(p.parts_bbox![n]); const d = Math.hypot(size[0] - s[0], size[1] - s[1], size[2] - s[2]); if (!best || d < best[0]) best = [d, n]; });
+        return best && best[0] < 2 + 0.02 * size[0] ? best[1] : null;
+    };
+    const pieces: Piece[] = []; const colors: (string | null)[] = []; const order: number[] = [];
+    groups.forEach((ts) => {
+        const part = partOf(sizeOf(ts));
+        pieces.push({ name: part ?? 'body', tris: [order.length, order.length + ts.length] });
+        colors.push(part ? p.part_colors?.[part]?.hex ?? null : null);
+        for (const tr of ts) order.push(tr);
+    });
+    if (!colors.some(Boolean)) return null;
+    const out = new Float32Array(order.length * 9);
+    order.forEach((tr, j) => { for (let k = 0; k < 3; k++) { const i = tr * 3 + k; out[j * 9 + k * 3] = pos.getX(i); out[j * 9 + k * 3 + 1] = pos.getY(i); out[j * 9 + k * 3 + 2] = pos.getZ(i); } });
+    geom.setAttribute('position', new Float32BufferAttribute(out, 3));
+    geom.deleteAttribute('normal');
+    geom.computeVertexNormals();
+    return { pieces, colors };
 }
 
 /** Printer mode: "Create quote" needs a finished calculation token. */

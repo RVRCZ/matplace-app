@@ -4,6 +4,7 @@ return [
     'price_label' => 'Printed by us (:material)',
     'cta' => 'Print it with us',
     'cta_hint' => 'We print it on our own printer. You pay with credit and the print starts as soon as the printer is free.',
+    'calc_parts_by_colour' => 'The parts have different colours: we print every part on its own from its own spool, one print after another; the price covers all the parts. For printing at home, download the project with the colours.',
     'cta_wait' => 'Wait for the precise calculation to finish, then you can print on our printer.',
     'title' => 'Print on our printer',
     'lead' => 'Upload a model; we turn it, prepare it and work out the price. You pick a colour, pay with credit and the printer starts.',
