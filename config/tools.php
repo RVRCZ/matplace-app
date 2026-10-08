@@ -232,6 +232,9 @@ return [
         ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 50, 'bag_hole' => 10]],
         ['params' => ['line1' => 'EMA', 'typeface' => 'titan', 'width' => 60, 'body' => 'rect']],
     ]]],
+    // out of the catalogue until one of each was printed and tried: does the clip hold a straw, does the tongue lift a tab (docs/P.md §5)
+    'straw' => ['route' => 'tools.straw', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => false],
+    'opener' => ['route' => 'tools.opener', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => false],
     'coaster' => ['route' => 'tools.coaster', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/snowman', 'width' => 100, 'body' => 'circle']],
         ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 95, 'body' => 'hex', 'grooves' => true]],

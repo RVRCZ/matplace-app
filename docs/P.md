@@ -153,6 +153,22 @@ sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do
 
 Rozcestník `/gifts` odkazuje i na misku, stojánek, korálky a ozdobu na držák karty.
 
+**Ozdoba na brčko a otvírák plechovek – hotové, ale mimo katalog** (`straw`, `opener`, rodina `shape`,
+`'available' => false` v `config/tools.php`). Stránky existují a fungují od začátku do konce, jen na ně nevede
+karta: `/tools/straw-topper` a `/tools/can-opener`. Zadání říká, že mechanické věci jdou do katalogu až po zkušebním
+tisku, a klip na brčko jmenuje výslovně.
+
+- *Ozdoba na brčko:* na obrysu je **klip** – trubka kolem brčka (vůle 0,4 mm, stěna 1,6 mm, délka 14 mm) otevřená
+  nahoře na 60 % průměru, ležící na podložce. Stojí vždy svisle vedle obrázku (brčko se drží svisle), na jazýčku
+  destičky, ať obrys v tom místě běží jakkoli. Brčko vede vedle ozdoby, jeho konec zůstává volný. **K ověření tiskem:**
+  jestli klip brčko drží a nepraská při nasazení, a jak se vytiskne převis horních okrajů trubky (53° od svislice,
+  bez podpěr).
+- *Otvírák:* na obrysu je **jazýček** – klín 14 mm dlouhý, u kořene silný jako destička, na špičce 1,2 mm. **K ověření
+  tiskem:** jestli se špička dostane pod očko plechovky a jestli jazýček z PLA při páčení vydrží.
+- Klip i jazýček se v náhledu táhnou po obrysu jako očko (`eye_pos`); kód: `_clip`, `_tongue`, `_placed`.
+- Až budou vyzkoušené: `'available' => true`, texty pro SEO do `lang/*/tools_seo/`, `php artisan
+  matplace:tool-examples <nástroj>` a `--card`, a přidat je do `KINDS` v `tests/Feature/ShapeToolsTest.php`.
+
 **Ozdoba na tašku s otvory** (`bag_charm`, rodina `shape`; „Bogg Bag Charm Builder“ předlohy). Zadání chtělo čep
 Ø 9–11 × 8 mm na zádech ozdoby a samostatnou zátku. Čep na zádech nejde: ozdoba se tiskne lícem nahoru (barvy
 ve výškách), čep by mířil do podložky. Proto obráceně: **v zádech je kapsa** (týž kód jako kapsa na magnet, hloubka
@@ -434,5 +450,5 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
-Potom zbytek zadání session 1: ostatní produkty rodiny (brčko, gumičky, otvírák,
-organizér z předmětů vyfocených na A4, lístečky, stojan na svíčku, klikátko).
+Potom zbytek zadání session 1: ostatní produkty rodiny (držák na gumičky,
+organizér z předmětů vyfocených na A4, stojánek na lístečky, stojan na svíčku, klikátko).

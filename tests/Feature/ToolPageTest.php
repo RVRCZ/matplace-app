@@ -65,6 +65,10 @@ class ToolPageTest extends TestCase
         $this->assertGreaterThanOrEqual(18, $seen);
         // all 15 generators are on it, in every language
         foreach (array_keys(ParametricGenerator::FIELDS) as $kind) {
+            // a generator kept out of the catalogue until its print was tried has a page (HeldShapesTest), but no card
+            if (config('tools.'.$kind.'.available') === false) {
+                continue;
+            }
             $this->assertTrue($tools->has($kind), $kind);
         }
         $this->get('/en/tools/box')->assertOk()->assertSee('X-ray')->assertSee('Download')->assertSee('Top');
