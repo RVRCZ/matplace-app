@@ -141,7 +141,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | Stojánek na lístečky se siluetou | `/tools/sticky-notes` | `notes` | miska na bloček 50–105 mm, za ní stojí silueta z obrázku nebo jména, mezi nimi žlábek na tužku; dva díly |
 | Držák na gumičky se siluetou | `/tools/hair-tie-holder` | `hair_tie` | sloupek Ø 10–30 × 40–150 mm na podstavci, za ním silueta z obrázku nebo jména; dva díly |
 | Stojan na svíčku se siluetou | `/tools/candle-stand` | `candle_stand` | kulatý podstavec s lůžkem pro svíčku ve skle Ø 40–130 mm, za ním silueta z obrázku nebo jména; dva díly |
-| Skladba z vrstev | `/tools/compose` | `compose` | až 12 vrstev (text, obrázek z knihovny, tvar), každá svým filamentem, o krok výš než ta pod ní; očko nebo hroty zápichu |
+| Skladba z vrstev | `/tools/compose` | `compose` | až 12 vrstev (text, obrázek z knihovny nebo vlastní, tvar), posun, velikost a otočení tažením v náhledu, každá svým filamentem, o krok výš než ta pod ní; očko nebo hroty zápichu |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -533,8 +533,11 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 
 ## 7. Co ze zadání session 1 zbývá
 
-Stav k 8. 10. 2026 večer; celá sada testů naposledy na commitu fd4fec3 (502 testů, bez chyby). Ze zadání je hotovo 23 nástrojů (vánoční sada, viz §1, a tabulka „Po vánoční sadě“) a třicet
-písem; dva z nich (ozdoba na brčko, otvírák) čekají mimo katalog na zkušební tisk. Nehotové, od nejbližšího:
+Stav k 8. 10. 2026 v noci; celá sada testů naposledy na commitu 7204205 (512 testů, bez chyby, 2 přeskočené,
+1 varování, které tu bylo už předtím). V katalogu je ze zadání 25 nástrojů (deset z vánoční sady, viz §1,
+a patnáct z tabulky „Po vánoční sadě“) a třicet písem; tři další jsou postavené, ale čekají mimo katalog
+(`available => false`) na vyzkoušení: ozdoba na brčko, otvírák a vložka do zásuvky podle fotky. Nehotové,
+od nejbližšího:
 
 1. **Klikátko** (`clicker`). Nepostavené, a ne z nedostatku času: zadaná klenutá destička (0,8 mm, klenba 1,5–2,5 mm
    přes Ø 25–45 mm) je při tisku naplocho převis se sklonem kolem 8° – bez podpěr se nevytiskne a s podpěrami pod
