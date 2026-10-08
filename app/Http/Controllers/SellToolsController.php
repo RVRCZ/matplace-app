@@ -74,14 +74,6 @@ class SellToolsController extends Controller
         ]);
     }
 
-    /** /tools/vendors: markets and fairs round a town, where else to sell (built in a later round of session 4) */
-    public function vendors(Request $request): View
-    {
-        abort_unless(view()->exists('tools.sell.vendors'), 404);
-
-        return view('tools.sell.vendors');
-    }
-
     /** /tools/plan: a year of selling, month by month, and the steps still to take */
     public function plan(Request $request): View
     {

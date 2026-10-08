@@ -217,6 +217,7 @@ return [
     'cost' => ['route' => 'tools.cost', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
     'profit' => ['route' => 'tools.profit', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
     'plan' => ['route' => 'tools.plan', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
+    'vendors' => ['route' => 'tools.vendors', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only
 ];

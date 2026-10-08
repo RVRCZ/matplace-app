@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CatalogController as AdminCatalogController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
 use App\Http\Controllers\Admin\ContentController as AdminContentController;
 use App\Http\Controllers\Admin\EmailController as AdminEmailController;
+use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\FarmCatalogController;
 use App\Http\Controllers\Admin\FarmOrderController;
 use App\Http\Controllers\Admin\FarmTestPhotoController;
@@ -58,6 +59,7 @@ use App\Http\Controllers\SellToolsController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SocialVideoController;
 use App\Http\Controllers\ToolsController;
+use App\Http\Controllers\VendorsController;
 use App\Support\Locales;
 use Illuminate\Support\Facades\Route;
 
@@ -162,7 +164,10 @@ $pages = function () {
     Route::get('/tools/cost', [SellToolsController::class, 'cost'])->name('tools.cost');
     Route::get('/tools/profit', [SellToolsController::class, 'profit'])->name('tools.profit');
     Route::get('/tools/plan', [SellToolsController::class, 'plan'])->name('tools.plan');
-    Route::get('/tools/vendors', [SellToolsController::class, 'vendors'])->name('tools.vendors');
+    Route::get('/tools/vendors', [VendorsController::class, 'index'])->name('tools.vendors');
+    Route::post('/tools/vendors/suggest', [VendorsController::class, 'suggest'])->middleware('throttle:10,60,sell_suggest')->name('tools.vendors.suggest');
+    Route::get('/tools/vendors/saved.ics', [VendorsController::class, 'savedIcs'])->middleware('auth')->name('tools.vendors.saved_ics');
+    Route::get('/tools/vendors/{event}.ics', [VendorsController::class, 'ics'])->whereNumber('event')->name('tools.vendors.ics');
     Route::post('/tools/plan/pdf', [SellToolsController::class, 'planPdf'])->middleware('throttle:20,1,sell_pdf')->name('tools.plan.pdf');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -323,7 +328,10 @@ Route::prefix('api')->name('api.')->group(function () {
         Route::get('sell/plans', [SellToolsController::class, 'plans'])->name('sell.plans');
         Route::post('sell/plans', [SellToolsController::class, 'storePlan'])->middleware('throttle:30,1,sell_plans')->name('sell.plans.store');
         Route::delete('sell/plans/{plan}', [SellToolsController::class, 'deletePlan'])->whereNumber('plan')->name('sell.plans.delete');
+        Route::post('sell/events/save', [VendorsController::class, 'toggleSave'])->middleware('throttle:60,1,sell_save')->name('sell.events.save');
     });
+    Route::get('sell/events', [VendorsController::class, 'search'])->middleware('throttle:60,1,sell_events')->name('sell.events');
+    Route::post('sell/events/fit', [VendorsController::class, 'fit'])->middleware('throttle:20,1,sell_fit')->name('sell.events.fit');
     Route::get('config', [ConfigController::class, 'show'])->name('config');
     Route::post('uploads', [UploadController::class, 'store'])->middleware('throttle:uploads')->name('uploads.store');
     Route::get('files/{modelFile}', [UploadController::class, 'show'])->name('files.show');
@@ -442,6 +450,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
 // ── Admin: catalogues, collections, content, Meta, statistics, AI, e-mails (step F) ──
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', fn () => redirect()->route('admin.stats.funnel'))->name('home');
+    // session 4: the markets and fairs of /tools/vendors
+    Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::get('/events/new', [EventController::class, 'create'])->name('events.create');
+    Route::post('/events', [EventController::class, 'store'])->name('events.store');
+    Route::get('/events/{event}', [EventController::class, 'edit'])->whereNumber('event')->name('events.edit');
+    Route::put('/events/{event}', [EventController::class, 'update'])->whereNumber('event')->name('events.update');
+    Route::post('/events/{event}/verify', [EventController::class, 'verify'])->whereNumber('event')->name('events.verify');
+    Route::delete('/events/{event}', [EventController::class, 'destroy'])->whereNumber('event')->name('events.destroy');
 
     $catalog = AdminCatalogController::class;
     Route::get('/catalog', [$catalog, 'index'])->name('catalog.index');

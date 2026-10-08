@@ -88,6 +88,9 @@ return [
     'plan.title' => 'Selling plan for the year',
     'plan.hint' => 'Products, fixed costs and the season → revenue and profit by month, the break-even, a chart, CSV and PDF; and the steps for this week.',
     'plan.action' => 'Plan the year',
+    'vendors.title' => 'Where to sell: markets and fairs nearby',
+    'vendors.hint' => 'Craft and Christmas markets, Maker Faires, Comic-Cons and trade fairs round your town with a map, dates and fees; the assistant picks what suits your products.',
+    'vendors.action' => 'Find events nearby',
 
     'cats' => [
         'images' => 'Pictures and logos',
@@ -150,5 +153,6 @@ return [
         'cost' => 'cost price of a print calculator filament electricity depreciation margin how much a print costs selling',
         'profit' => 'profit margin fees etsy fler shopify shop commission vat break-even selling price',
         'plan' => 'selling plan business planner year months revenue profit break-even season christmas csv pdf steps',
+        'vendors' => 'where to sell markets craft fair christmas market maker faire comic-con trade fair stall events nearby map calendar fler etsy',
     ],
 ];

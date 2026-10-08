@@ -5,6 +5,7 @@
         'Farma' => ['admin.farm.dashboard', ['admin.farm.*', 'admin.youtube.*']],
         'Katalog' => ['admin.catalog.index', ['admin.catalog.*']],
         'Kolekce' => ['admin.collections.index', ['admin.collections.*']],
+        'Akce' => ['admin.events.index', ['admin.events.*']],
         'Obsah' => ['admin.content.posts', ['admin.content.*']],
         'Meta' => ['admin.meta.index', ['admin.meta.*']],
         'AI' => ['admin.ai.index', ['admin.ai.*']],

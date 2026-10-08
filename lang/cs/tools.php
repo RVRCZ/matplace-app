@@ -88,6 +88,9 @@ return [
     'plan.title' => 'Plán prodeje na rok',
     'plan.hint' => 'Produkty, fixní náklady a sezóna → tržby a zisk po měsících, bod zvratu, graf, CSV a PDF; k tomu seznam kroků na tento týden.',
     'plan.action' => 'Naplánovat rok',
+    'vendors.title' => 'Kde prodávat: trhy a akce v okolí',
+    'vendors.hint' => 'Řemeslné a vánoční trhy, Maker Faire, Comic-Con a veletrhy kolem vašeho města s mapou, termíny a poplatky; asistent vybere, co se hodí k vašim výrobkům.',
+    'vendors.action' => 'Najít akce v okolí',
 
     'cats' => [
         'images' => 'Obrázky a loga',
@@ -150,5 +153,6 @@ return [
         'cost' => 'náklady cena tisku kalkulačka filament elektřina odpisy marže kolik stojí výtisk prodej',
         'profit' => 'zisk marže poplatky etsy fler shopify e-shop provize dph bod zvratu prodej cena',
         'plan' => 'plán prodeje business plán rok měsíce tržby zisk bod zvratu sezóna vánoce csv pdf kroky',
+        'vendors' => 'kde prodávat trhy jarmark vánoční trh maker faire comic-con veletrh stánek akce v okolí mapa kalendář fler etsy',
     ],
 ];

@@ -379,6 +379,117 @@ function bootPlan(p: Payload): void {
     render();
 }
 
+// ── vendors ──────────────────────────────────────────────────────────────────────────────────────────
+
+interface EventRow { id: number; name: string; type: string; city: string; address: string | null; country: string; lat: number | null; lng: number | null; starts_on: string | null; ends_on: string | null; url: string | null; stall_fee: string | null; note: string | null; status: string; distance_km: number | null; saved: boolean; ics: string }
+interface Pick { id: number; why: string; make: string; tool: string | null; tool_key: string | null }
+interface LeafletLike { map: (el: HTMLElement, o?: unknown) => LeafletMap; tileLayer: (url: string, o: unknown) => { addTo: (m: LeafletMap) => unknown }; marker: (ll: [number, number], o?: unknown) => LeafletMarker; circle: (ll: [number, number], o: unknown) => LeafletLayer; latLngBounds: (pts: [number, number][]) => unknown; divIcon: (o: unknown) => unknown }
+interface LeafletMap { setView: (ll: [number, number], z: number) => LeafletMap; fitBounds: (b: unknown, o?: unknown) => void; removeLayer: (l: LeafletLayer) => void }
+interface LeafletLayer { addTo: (m: LeafletMap) => LeafletLayer; remove: () => void }
+interface LeafletMarker extends LeafletLayer { bindPopup: (html: string) => LeafletMarker }
+
+function bootVendors(p: Payload & { search?: string; fit?: string; save?: string | null; saved?: EventRow[] }): void {
+    const form = document.getElementById('sell-form') as HTMLFormElement | null;
+    if (!form || !p.search) return;
+    const city = document.getElementById('vendors-city') as HTMLInputElement;
+    const country = document.getElementById('vendors-country') as HTMLSelectElement;
+    const msg = document.getElementById('vendors-msg')!; const list = document.getElementById('vendors-list')!; const title = document.getElementById('vendors-title')!;
+    const picksEl = document.getElementById('vendors-picks')!; const fitBtn = document.getElementById('vendors-fit') as HTMLButtonElement; const fitMsg = document.getElementById('vendors-fit-msg')!;
+    const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+    const date = (iso: string | null): string => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString(p.locale, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+    let found: EventRow[] = []; let place: { lat: number; lng: number } | null = null; let tab: 'found' | 'saved' = 'found';
+    const saved = new Map<number, EventRow>(); (p.saved ?? []).forEach((e) => saved.set(e.id, e));
+    const settings = () => ({ city: city.value, country: country.value, radius: form.querySelector<HTMLInputElement>('[name="radius"]:checked')?.value ?? '50', days: form.querySelector<HTMLInputElement>('[name="days"]:checked')?.value ?? '90', types: Array.from(form.querySelectorAll<HTMLInputElement>('[name="types"]:checked')).map((c) => c.value) });
+    const save = remember('sell.vendors', form, () => settings(), (s) => {
+        if (typeof s.city === 'string') city.value = s.city; if (typeof s.country === 'string') country.value = s.country;
+        const pick = (name: string, v: unknown) => { const el = form.querySelector<HTMLInputElement>(`[name="${name}"][value="${String(v)}"]`); if (el) el.checked = true; };
+        pick('radius', s.radius); pick('days', s.days);
+        if (Array.isArray(s.types)) form.querySelectorAll<HTMLInputElement>('[name="types"]').forEach((c) => { c.checked = (s.types as string[]).includes(c.value); });
+    }, false);
+
+    // the map: Leaflet from the CDN (deferred), the OpenStreetMap tiles; markers for the events, a circle for the radius
+    let map: LeafletMap | null = null; let layers: LeafletLayer[] = [];
+    const leaflet = (): LeafletLike | null => (window as unknown as { L?: LeafletLike }).L ?? null;
+    const drawMap = (rows: EventRow[], centre: { lat: number; lng: number } | null, radiusKm: number): void => {
+        const L = leaflet(); const el = document.getElementById('vendors-map');
+        if (!L || !el) return;
+        if (!map) { map = L.map(el, { scrollWheelZoom: false }).setView([49.8, 15.5], 7); L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map); }
+        layers.forEach((l) => l.remove()); layers = [];
+        const pts: [number, number][] = [];
+        if (centre) { layers.push(L.circle([centre.lat, centre.lng], { radius: radiusKm * 1000, color: '#5c80b8', weight: 1, fillOpacity: 0.06 }).addTo(map)); pts.push([centre.lat, centre.lng]); }
+        rows.forEach((e) => {
+            if (e.lat === null || e.lng === null) return;
+            const m = L.marker([e.lat, e.lng]).bindPopup(`<strong>${esc(e.name)}</strong><br>${esc(date(e.starts_on))}${e.ends_on && e.ends_on !== e.starts_on ? ' – ' + esc(date(e.ends_on)) : ''}<br>${esc(e.city)}`);
+            layers.push(m.addTo(map!)); pts.push([e.lat, e.lng]);
+        });
+        if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [24, 24], maxZoom: 11 });
+    };
+    const item = (e: EventRow): string => {
+        const when = e.starts_on ? `${date(e.starts_on)}${e.ends_on && e.ends_on !== e.starts_on ? ' – ' + date(e.ends_on) : ''}` : '';
+        const links = [e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener" class="underline">${esc(t(p, 'vendors.item.web'))}</a>` : '', `<a href="${esc(e.ics)}" class="underline">${esc(t(p, 'vendors.item.ics'))}</a>`,
+            p.save ? `<button type="button" data-save="${e.id}" class="${saved.has(e.id) ? 'font-medium text-ok' : 'underline'}">${esc(t(p, saved.has(e.id) ? 'vendors.item.unsave' : 'vendors.item.save'))}</button>` : ''].filter(Boolean).join(' · ');
+        return `<li class="py-2" data-event="${e.id}"><div class="flex flex-wrap items-baseline justify-between gap-x-3"><span class="font-medium text-ink">${esc(e.name)}</span><span class="num text-xs text-muted">${e.distance_km !== null ? esc(t(p, 'vendors.item.distance', { km: nf(p.locale, 0).format(e.distance_km) })) : ''}</span></div>
+            <div class="text-xs text-muted">${esc(t(p, `vendors.type.${e.type}`))} · ${esc(e.city)}${when ? ' · ' + esc(when) : ''}${e.status === 'verify' ? ` · <span class="text-warn">${esc(t(p, 'vendors.item.verify'))}</span>` : ''}${e.stall_fee ? ' · ' + esc(t(p, 'vendors.item.fee', { fee: e.stall_fee })) : ''}</div>
+            ${e.note ? `<div class="mt-0.5 text-xs text-muted">${esc(e.note)}</div>` : ''}<div class="mt-1 text-xs">${links}</div></li>`;
+    };
+    const render = (): void => {
+        const rows = tab === 'found' ? found : Array.from(saved.values());
+        list.innerHTML = rows.length ? rows.map(item).join('') : `<li class="py-2 text-sm text-muted">${esc(t(p, tab === 'found' ? 'vendors.list.empty' : 'vendors.saved.empty'))}</li>`;
+        document.getElementById('vendors-saved-count')!.textContent = String(saved.size);
+        document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle('chip-on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+        list.querySelectorAll<HTMLButtonElement>('[data-save]').forEach((b) => b.addEventListener('click', async () => {
+            if (!p.save) return;
+            try {
+                const res = await fetch(p.save, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token }, body: JSON.stringify({ event: Number(b.dataset.save) }) });
+                if (!res.ok) return;
+                const body = (await res.json()) as { saved: boolean; event: EventRow };
+                if (body.saved) saved.set(body.event.id, body.event); else saved.delete(body.event.id);
+                found = found.map((e) => (e.id === body.event.id ? { ...e, saved: body.saved } : e));
+                render();
+            } catch { /* leave as it was */ }
+        }));
+        fitBtn.disabled = found.length === 0;
+        drawMap(tab === 'found' ? found : rows, tab === 'found' ? place : null, Number(settings().radius));
+    };
+    document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab as 'found' | 'saved'; render(); }));
+    form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const s = settings();
+        if (s.city.trim().length < 2) { city.focus(); return; }
+        msg.textContent = t(p, 'vendors.msg.searching'); save();
+        const q = new URLSearchParams({ city: s.city.trim(), country: s.country, radius: s.radius, days: s.days }); s.types.forEach((x) => q.append('types[]', x));
+        try {
+            const res = await fetch(`${p.search}?${q.toString()}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+            const body = await res.json();
+            if (res.status === 422 && body.error === 'no_place') { msg.textContent = t(p, 'vendors.msg.no_place'); return; }
+            if (!res.ok) throw new Error('search');
+            found = body.events as EventRow[]; place = body.place; tab = 'found'; picksEl.classList.add('hidden');
+            title.textContent = found.length ? t(p, 'vendors.msg.found', { n: found.length, r: body.radius, city: body.place.city }) : t(p, 'vendors.msg.none');
+            msg.textContent = '';
+            render();
+        } catch { msg.textContent = t(p, 'vendors.msg.failed'); }
+    });
+    fitBtn.addEventListener('click', async () => {
+        const make = (document.getElementById('vendors-make') as HTMLTextAreaElement).value.trim();
+        if (!found.length) { fitMsg.textContent = t(p, 'vendors.fit.first'); return; }
+        if (make.length < 3) { (document.getElementById('vendors-make') as HTMLTextAreaElement).focus(); return; }
+        fitBtn.disabled = true; fitMsg.textContent = t(p, 'vendors.msg.searching');
+        try {
+            const res = await fetch(p.fit!, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token }, body: JSON.stringify({ make, events: found.slice(0, 60).map((e) => e.id) }) });
+            const body = await res.json();
+            if (res.status === 429) { fitMsg.textContent = t(p, 'vendors.fit.limit'); return; }
+            if (res.status === 503) { fitMsg.textContent = t(p, 'vendors.fit.unavailable'); return; }
+            if (!res.ok) throw new Error('fit');
+            const picks = body.picks as Pick[];
+            fitMsg.textContent = '';
+            picksEl.classList.remove('hidden');
+            picksEl.innerHTML = `<div class="font-semibold text-ink">${esc(t(p, 'vendors.fit.picks'))}</div>` + (picks.length ? `<ol class="mt-2 list-decimal space-y-2 pl-5">${picks.map((k) => { const e = found.find((x) => x.id === k.id); return `<li><span class="font-medium text-ink">${esc(e?.name ?? '')}</span><span class="block text-muted">${esc(k.why)}</span><span class="block">${esc(t(p, 'vendors.fit.make_it', { make: k.make }))}${k.tool ? ` <a href="${esc(k.tool)}" class="text-action-dark underline">${esc(t(p, 'vendors.fit.tool'))} →</a>` : ''}</span></li>`; }).join('')}</ol>` : `<p class="mt-1 text-muted">${esc(t(p, 'vendors.fit.none'))}</p>`);
+        } catch { fitMsg.textContent = t(p, 'vendors.msg.failed'); } finally { fitBtn.disabled = found.length === 0; }
+    });
+    render();
+    if (city.value.trim().length >= 2) form.requestSubmit();
+}
+
 // ── boot ─────────────────────────────────────────────────────────────────────────────────────────────
 
 export function bootSell(): void {
@@ -386,6 +497,6 @@ export function bootSell(): void {
     const p = cfg();
     if (!page || !p) return;
     sections();
-    const modules: Record<string, (p: Payload) => void> = { cost: bootCost, profit: bootProfit, plan: bootPlan };
+    const modules: Record<string, (p: Payload) => void> = { cost: bootCost, profit: bootProfit, plan: bootPlan, vendors: bootVendors };
     modules[page.dataset.sell ?? '']?.(p);
 }

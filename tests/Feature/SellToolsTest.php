@@ -5,10 +5,15 @@ namespace Tests\Feature;
 use App\Domain\Sell\Cost;
 use App\Domain\Sell\Plan;
 use App\Domain\Sell\Profit;
+use App\Engines\Ai\FakeAssistant;
 use App\Models\Calculation;
+use App\Models\GeocodeCache;
+use App\Models\MarketEvent;
 use App\Models\ModelFile;
 use App\Models\SellPlan;
 use App\Models\User;
+use App\Models\UserRole;
+use Database\Seeders\MarketEventsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -170,5 +175,86 @@ class SellToolsTest extends TestCase
             SellPlan::create(['user_id' => $user->id, 'name' => 'p'.$i, 'data' => []]);
         }
         $this->actingAs($user)->postJson('/api/sell/plans', ['name' => 'one more', 'data' => $plan])->assertStatus(422)->assertJsonPath('error', 'too_many');
+    }
+
+    public function test_events_round_a_town_their_calendar_the_assistant_and_the_admin(): void
+    {
+        $this->get('/tools/vendors')->assertOk()->assertSee(__('tools.vendors.title'))->assertSee('data-sell="vendors"', false)->assertSee('id="vendors-map"', false)->assertSee(__('sell.channel.fler'))->assertSee(__('sell.vendors.saved.login'));
+        $this->get('/en/tools/vendors')->assertOk()->assertSee('Suggest an event');
+        $this->get('/es/tools/vendors')->assertOk()->assertSee('Proponer un evento');
+        // the first batch: every event has a town with coordinates, a type and a status the page knows
+        $this->seed(MarketEventsSeeder::class);
+        $this->assertGreaterThanOrEqual(40, MarketEvent::count());
+        $this->assertSame(0, MarketEvent::whereNull('lat')->count());
+        $this->assertSame([], array_diff(MarketEvent::distinct()->pluck('type')->all(), MarketEvent::TYPES));
+        $this->assertSame(MarketEvent::count(), MarketEvent::where('status', 'verify')->count());
+        $this->seed(MarketEventsSeeder::class);
+        $this->assertSame(0, MarketEvent::query()->selectRaw('count(*) as n')->groupBy('name', 'city')->having('n', '>', 1)->count());       // run twice, nothing doubled
+        // a search round Prague (the town geocoded from the cache, no network): Prague's events near, Brno's beyond 50 km
+        GeocodeCache::create(['query' => 'cz||praha', 'lat' => 50.0875, 'lng' => 14.4213]);
+        $this->travelTo('2026-10-08');
+        $r = $this->getJson('/api/sell/events?city=Praha&country=CZ&radius=50&days=90')->assertOk();
+        $names = array_column($r->json('events'), 'name');
+        $this->assertContains('Vánoční trhy Staroměstské náměstí', $names);
+        $this->assertNotContains('Vánoční trhy Brno', $names);
+        $this->assertNotContains('Maker Faire Prague', $names);                                   // June: beyond the 90 days
+        $this->assertSame(0.0, (float) collect($r->json('events'))->firstWhere('name', 'Vánoční trhy Staroměstské náměstí')['distance_km']);
+        $this->assertContains('Maker Faire Prague', array_column($this->getJson('/api/sell/events?city=Praha&country=CZ&radius=50&days=365')->json('events'), 'name'));
+        $this->assertContains('Jarmark v Kutné Hoře', array_column($this->getJson('/api/sell/events?city=Praha&country=CZ&radius=100&days=365&types[]=craft')->json('events'), 'name'));   // 60 km away, next May
+        $this->assertSame([], array_diff(array_column($this->getJson('/api/sell/events?city=Praha&radius=100&days=365&types[]=maker')->json('events'), 'type'), ['maker']));
+        $this->getJson('/api/sell/events?city=Praha&radius=7')->assertStatus(422);
+        GeocodeCache::create(['query' => 'cz||nowhere', 'lat' => null, 'lng' => null]);
+        $this->getJson('/api/sell/events?city=Nowhere&country=CZ')->assertStatus(422)->assertJsonPath('error', 'no_place');
+        // the calendar file of one event
+        $id = MarketEvent::where('name', 'Vánoční trhy Staroměstské náměstí')->value('id');
+        $ics = $this->get('/tools/vendors/'.$id.'.ics')->assertOk()->assertHeader('Content-Type', 'text/calendar; charset=utf-8');
+        $this->assertStringContainsString('BEGIN:VCALENDAR', (string) $ics->getContent());
+        $this->assertStringContainsString('DTSTART;VALUE=DATE:20261128', (string) $ics->getContent());
+        $this->assertStringContainsString('DTEND;VALUE=DATE:20270107', (string) $ics->getContent());
+        $this->assertStringContainsString('SUMMARY:Vánoční trhy Staroměstské náměstí', (string) $ics->getContent());
+        // what suits a maker of Christmas ornaments: the fake assistant answers, the daily count is kept
+        FakeAssistant::reset();
+        FakeAssistant::$answers['vendors'] = ['picks' => [['id' => $id, 'why' => 'Vánoční publikum.', 'make' => 'Ozdoby se jménem', 'tool' => 'ornament'], ['id' => 999999, 'why' => 'x', 'make' => 'x', 'tool' => '']]];
+        $fit = $this->postJson('/api/sell/events/fit', ['make' => 'Vánoční ozdoby se jmény', 'events' => [$id]])->assertOk();
+        $this->assertCount(1, $fit->json('picks'));                                                   // the unknown id is dropped
+        $this->assertSame('ornament', $fit->json('picks.0.tool_key'));
+        $this->assertStringContainsString('/tools/ornament', (string) $fit->json('picks.0.tool'));
+        $this->assertSame((int) config('ai.daily_limits.vendors_fit', 10) - 1, $fit->json('left'));
+        $this->assertStringContainsString('Vánoční ozdoby se jmény', FakeAssistant::$calls[0]['user']);
+        config(['ai.daily_limits.vendors_fit' => 1]);
+        $this->postJson('/api/sell/events/fit', ['make' => 'Vánoční ozdoby se jmény', 'events' => [$id]])->assertStatus(429);
+        $this->postJson('/api/sell/events/fit', ['make' => 'x', 'events' => [$id]])->assertStatus(422);
+        // a suggestion waits for the admin and is not public; the honeypot drops a robot
+        $this->post('/tools/vendors/suggest', ['name' => 'Jarmark u nás', 'type' => 'craft', 'city' => 'Praha', 'country' => 'CZ', 'starts_on' => '2027-05-01', 'url' => 'https://example.com/jarmark', 'email' => 'me@example.com'])->assertRedirect(route('tools.vendors'))->assertSessionHas('status');
+        $suggested = MarketEvent::where('name', 'Jarmark u nás')->firstOrFail();
+        $this->assertSame('suggested', $suggested->status);
+        $this->assertNotContains('Jarmark u nás', array_column($this->getJson('/api/sell/events?city=Praha&days=365')->json('events'), 'name'));
+        $this->post('/tools/vendors/suggest', ['name' => 'Robot', 'type' => 'craft', 'city' => 'Praha', 'country' => 'CZ', 'website' => 'http://spam'])->assertSessionHasErrors('website');
+        // saving to an account, the saved calendar
+        $this->postJson('/api/sell/events/save', ['event' => $id])->assertStatus(401);
+        $user = User::factory()->create();
+        $this->actingAs($user)->postJson('/api/sell/events/save', ['event' => $id])->assertOk()->assertJsonPath('saved', true);
+        $this->assertTrue(collect($this->actingAs($user)->getJson('/api/sell/events?city=Praha&days=90')->json('events'))->firstWhere('name', 'Vánoční trhy Staroměstské náměstí')['saved']);
+        $this->actingAs($user)->get('/tools/vendors')->assertOk()->assertSee(__('sell.vendors.saved.ics'));
+        $this->assertStringContainsString('SUMMARY:Vánoční trhy Staroměstské náměstí', (string) $this->actingAs($user)->get('/tools/vendors/saved.ics')->assertOk()->getContent());
+        $this->actingAs($user)->postJson('/api/sell/events/save', ['event' => $id])->assertOk()->assertJsonPath('saved', false);
+        $this->actingAs($user)->postJson('/api/sell/events/save', ['event' => $suggested->id])->assertNotFound();
+        // the admin: the lists, the check that makes an event verified, the edit, the delete
+        $admin = User::factory()->create();
+        UserRole::create(['user_id' => $admin->id, 'role' => 'admin']);
+        $this->actingAs($user)->get('/admin/events')->assertRedirect();
+        $this->actingAs($admin)->get('/admin/events')->assertOk()->assertSee('Jarmark u nás')->assertSee('Akce');
+        $this->actingAs($admin)->get('/admin/events?status=suggested')->assertOk()->assertSee('Jarmark u nás')->assertDontSee('Maker Faire Prague');
+        $this->actingAs($admin)->post('/admin/events/'.$suggested->id.'/verify')->assertRedirect();
+        $this->assertSame('verified', $suggested->fresh()->status);
+        $this->assertNotNull($suggested->fresh()->lat);                                                // geocoded from the cache when verified
+        $this->assertContains('Jarmark u nás', array_column($this->getJson('/api/sell/events?city=Praha&days=365')->json('events'), 'name'));
+        $this->actingAs($admin)->get('/admin/events/'.$suggested->id)->assertOk()->assertSee('value="Jarmark u nás"', false);
+        $this->actingAs($admin)->put('/admin/events/'.$suggested->id, ['name' => 'Jarmark u nás 2027', 'type' => 'craft', 'city' => 'Praha', 'country' => 'CZ', 'status' => 'verified', 'starts_on' => '2027-05-01', 'ends_on' => '2027-05-02', 'stall_fee' => '800 Kč'])->assertRedirect(route('admin.events.index'));
+        $this->assertSame('800 Kč', $suggested->fresh()->stall_fee);
+        $this->actingAs($admin)->post('/admin/events', ['name' => 'Nová akce', 'type' => 'design', 'city' => 'Praha', 'country' => 'CZ', 'status' => 'verified'])->assertRedirect(route('admin.events.index'));
+        $this->assertNotNull(MarketEvent::where('name', 'Nová akce')->value('lat'));
+        $this->actingAs($admin)->delete('/admin/events/'.$suggested->id)->assertRedirect(route('admin.events.index'));
+        $this->assertNull(MarketEvent::find($suggested->id));
     }
 }

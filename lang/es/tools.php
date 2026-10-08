@@ -88,6 +88,9 @@ return [
     'plan.title' => 'Plan de ventas del año',
     'plan.hint' => 'Productos, costes fijos y temporada → ingresos y beneficio por mes, punto de equilibrio, gráfico, CSV y PDF; y los pasos de esta semana.',
     'plan.action' => 'Planificar el año',
+    'vendors.title' => 'Dónde vender: mercados y ferias cercanos',
+    'vendors.hint' => 'Mercados artesanales y navideños, Maker Faires, Comic-Cons y salones alrededor de su ciudad con mapa, fechas y cuotas; el asistente elige lo que conviene a sus productos.',
+    'vendors.action' => 'Buscar eventos cercanos',
 
     'cats' => [
         'images' => 'Imágenes y logos',
@@ -150,5 +153,6 @@ return [
         'cost' => 'coste precio de impresión calculadora filamento electricidad amortización margen cuánto cuesta una impresión venta',
         'profit' => 'beneficio margen comisiones etsy fler shopify tienda iva punto de equilibrio venta precio',
         'plan' => 'plan de ventas plan de negocio año meses ingresos beneficio punto de equilibrio temporada navidad csv pdf pasos',
+        'vendors' => 'dónde vender mercados feria artesanal mercado navideño maker faire comic-con salón puesto eventos cercanos mapa calendario fler etsy',
     ],
 ];

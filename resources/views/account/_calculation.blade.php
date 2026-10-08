@@ -14,3 +14,7 @@
         @endif
     </div>
 </a>
+@if(\Illuminate\Support\Facades\Route::has('tools.cost') && ($c->slicer['grams'] ?? $c->rough['grams'] ?? null))
+    {{-- session 4: the same piece on the visitor's own printer --}}
+    <div class="px-4 pb-2 text-xs"><a href="{{ route('tools.cost', ['from' => $c->token]) }}" class="text-action-dark underline">{{ __('sell.cost.from_calc') }}</a></div>
+@endif
