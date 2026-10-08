@@ -143,6 +143,11 @@ return [
         ['params' => ['template' => 'heart', 'line1' => 'Ela a Tom', 'width' => 120, 'text_size' => 90, 'text_y' => 5]],
         ['params' => ['template' => 'none', 'line1' => 'Všechno nejlepší', 'width' => 180, 'spike' => 80]],
     ]]],
+    'beads' => ['route' => 'tools.beads', 'intent' => 'create', 'categories' => ['names', 'toys'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['line1' => 'JANA', 'shape' => 'cube', 'size' => 10]],
+        ['params' => ['line1' => 'MÁMA ♥', 'shape' => 'ball', 'size' => 12]],
+        ['params' => ['line1' => 'TOM 7', 'shape' => 'heart', 'size' => 12, 'style' => 'engraved']],
+    ]]],
     'name_cup' => ['route' => 'tools.name_cup', 'intent' => 'create', 'categories' => ['names', 'home'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['line1' => 'Jana', 'width' => 160, 'height' => 80]],
         ['params' => ['line1' => 'TOM', 'typeface' => 'sans', 'width' => 150, 'height' => 90]],

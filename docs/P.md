@@ -120,12 +120,20 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | nástroj | adresa | kind | co dělá |
 |---|---|---|---|
 | Stojánek na tužky ze jména | `/tools/name-organizer` | `name_cup` | jméno je stojánek: písmena rozšířená o 3 mm jsou kapsa, kolem stěna 1,6 mm, dno 2 mm, výška 40–120 mm |
+| Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
 tiskne se nastojato. Oka písmen pod 150 mm² se vyplní, písmena, která se po rozšíření nedotknou, sváže příčka na celou
 výšku. Stránka vypisuje nejširší místo kapsy a varuje, kdyby bylo pod 9 mm (u běžných jmen to nenastane, sousední
 písmena se slijí). Volitelný podstavec je spodní 3 mm: `color_change_mm` = 3, tedy druhá barva na farmě i v projektu.
 Zadání chtělo „každé písmeno je kapsa“ – tak to je u tiskacích písem; u psacího je kapsa jedna souvislá.
+
+**Korálky s písmeny** (`name_kinds.beads`): až 16 znaků, osm v řadě na podložce, mezera = korálek bez písmene. Písmeno je
+na horní ploše vyvýšené (díl `text`, druhá barva, `color_change_mm` = výška korálku) nebo vyryté; volitelně vyryté
+zrcadlově i do spodní plochy, aby se korálek četl z obou stran (zadání chtělo písmeno „na dvou protilehlých stranách“
+– spodní strana leží na podložce, tam jde jen vyrýt). Otvor 1,5–4 mm vede vodorovně v půli výšky; když nad ním a pod
+ním nezbývá 1,2 mm, nástroj odmítne slovy. Kulička má seříznutý vršek a spodek. Texty říkají, že malé díly nepatří
+dětem do tří let. Sada čísel ze zadání = napsat číslice do textu.
 
 ## 2. Rozhodnutí a proč
 
@@ -254,5 +262,5 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
 Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák, miska,
-organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), korálky, tvary
+organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), tvary
 a motivy cedulky, `logo` `extrude`, 20+ písem.

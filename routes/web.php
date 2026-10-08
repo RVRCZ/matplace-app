@@ -145,6 +145,7 @@ $pages = function () {
     Route::get('/tools/cookie', [ToolsController::class, 'param'])->defaults('kind', 'cookie')->name('tools.cookie');
     Route::get('/tools/cake-topper', [ToolsController::class, 'param'])->defaults('kind', 'topper')->name('tools.topper');
     Route::get('/tools/name-organizer', [ToolsController::class, 'param'])->defaults('kind', 'name_cup')->name('tools.name_cup');
+    Route::get('/tools/letter-beads', [ToolsController::class, 'param'])->defaults('kind', 'beads')->name('tools.beads');
     // session 3: a picture as plates for the wall, and the editing of a model file (engines/python/art_tool.py, edit_tool.py)
     Route::get('/tools/filament-art', [EditToolsController::class, 'filamentArt'])->name('tools.filament_art');
     Route::get('/tools/split', [EditToolsController::class, 'edit'])->defaults('op', 'split')->name('tools.split');

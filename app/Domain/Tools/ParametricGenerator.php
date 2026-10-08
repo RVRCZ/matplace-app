@@ -55,6 +55,8 @@ final class ParametricGenerator
     public const FIELDS = [
         // a pen holder in the shape of a name (engines/python/name_kinds.py): printed standing, the name itself is the cup
         'name_cup' => ['width' => [80, 250, 160, 1], 'height' => [40, 120, 80, 1], 'wall' => [1.2, 3, 1.6, 0.2], 'floor' => [1.2, 4, 2, 0.2]],
+        // a bead for every character of a text; `size` is the edge of a cube bead, the other shapes follow it
+        'beads' => ['size' => [8, 14, 10, 1], 'hole' => [1.5, 4, 2.5, 0.5], 'relief' => [0.4, 1.2, 0.6, 0.2]],
         'charm' => self::SHAPE_FIELDS + self::SHAPE_EYELET,
         // the eyelet starts on the left side (three quarters of the way round), where a key ring pulls along the name
         'keychain' => ['width' => [30, 100, 55, 1], 'thickness' => [2.4, 6, 3, 0.2], 'eye_pos' => [0, 100, 75, 0.5], 'eye_hole' => [3, 8, 5, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
@@ -112,6 +114,7 @@ final class ParametricGenerator
     /** kind → choice → allowed values (the first one is the default) */
     public const CHOICES = [
         'name_cup' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
+        'beads' => ['shape' => ['cube', 'ball', 'heart', 'star'], 'style' => ['raised', 'engraved'], 'typeface' => ['sans', 'serif', 'mono']],
         'charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'keychain' => ['body' => ['rect', 'image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'earrings' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -140,6 +143,7 @@ final class ParametricGenerator
     /** kind → text input → [max length, required, default] */
     public const TEXTS = [
         'name_cup' => ['line1' => [14, true, 'Jana']],
+        'beads' => ['line1' => [16, true, 'JANA']],
         'charm' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'keychain' => ['line1' => [24, false, 'Jana'], 'line2' => [24, false, '']], 'earrings' => ['line1' => [12, false, ''], 'line2' => [12, false, '']],
         'ornament' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'magnet' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
         'coaster' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
@@ -161,7 +165,7 @@ final class ParametricGenerator
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
-        'name_cup' => ['width', 'height'],
+        'name_cup' => ['width', 'height'], 'beads' => ['size', 'hole'],
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
@@ -190,12 +194,13 @@ final class ParametricGenerator
 
     public const MAX_STROKE_POINTS = 48;
 
-    public const FLAGS = ['name_cup' => ['base'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
+    public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'], 'topper' => ['flush'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
+        'beads' => ['relief' => ['style', ['raised']]],
         'cookie' => self::HANG_WHEN + self::SHAPE_WHEN, 'name_letter' => self::HANG_WHEN + self::SHAPE_WHEN,
         'topper' => self::SHAPE_WHEN, 'gingerbread' => self::SHAPE_WHEN, 'charm' => self::SHAPE_WHEN, 'keychain' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
         'magnet' => self::SHAPE_WHEN + ['disc' => ['mount', ['glue', 'press', 'through']], 'mag_d' => ['mount', ['glue', 'press', 'through']], 'mag_h' => ['mount', ['glue', 'press']], 'mag_gap' => ['mount', ['glue']]],
@@ -226,7 +231,7 @@ final class ParametricGenerator
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides'];
 
     /** things that hang only when asked to (a biscuit, a big letter): the eyelet's sizes show with the tick */
     private const HANG_WHEN = ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]];
@@ -309,6 +314,7 @@ final class ParametricGenerator
             'sign' => ! empty($p['two_color']) && ($p['style'] ?? 'emboss') !== 'engrave' ? ['plate', 'text'] : [],
             'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
             'lightbox' => ['body', 'face', 'diffuser', 'back'],
+            'beads' => ($p['style'] ?? 'raised') === 'raised' ? ['body', 'text'] : [],                  // the beads and the letters raised on them: two colours
             'cutter' => array_values(array_intersect((array) ($p['parts'] ?? []), ['body', 'stamp'])),   // the stamp exists only when the drawing had inner lines: the tool says so
             'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
             // a picture in colours: the plate, every colour and the rim, as the tool listed them

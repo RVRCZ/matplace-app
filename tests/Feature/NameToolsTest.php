@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-/** Things made of a name (engines/python/name_kinds.py): the pen holder in the shape of a name. */
+/** Things made of a name (engines/python/name_kinds.py): the pen holder in the shape of a name, letter beads. */
 class NameToolsTest extends TestCase
 {
     use RefreshDatabase;
@@ -78,6 +78,55 @@ class NameToolsTest extends TestCase
 
         $this->assertSame(__('param.text_required'), $this->preview('name_cup', ['line1' => ''])->assertStatus(422)->json('errors')['params.line1'][0]);
         $this->preview('name_cup', ['line1' => 'Jana', 'width' => 400])->assertStatus(422);
+    }
+
+    public function test_a_text_becomes_a_row_of_beads_with_a_letter_each(): void
+    {
+        foreach (['cs', 'en', 'es'] as $lang) {
+            app()->setLocale($lang);
+            $page = $this->get($this->localized('/tools/letter-beads', $lang))->assertOk()->assertSee(__('tools.beads.title'))->assertSee(__('param.o.beads.heart'));
+            $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $page->getContent(), $lang);
+        }
+        app()->setLocale('cs');
+        $b = $this->meta($this->preview('beads', ['line1' => 'JANA', 'shape' => 'cube', 'size' => 10, 'hole' => 2.5, 'relief' => 0.6, 'style' => 'raised'], true)->assertOk());
+        $n = $b['notes'];
+        $this->assertSame(4, $n['count']);
+        $this->assertSame(['body', 'text'], $n['parts']);
+        $this->assertSame([10.0, 10.0, 10.6], array_map('floatval', $n['each']));
+        $this->assertEqualsWithDelta(4 * 10 + 3 * 3, $b['bbox']['x'], 0.05);            // four beads and three gaps
+        $this->assertEqualsWithDelta(10, $n['color_change_mm'], 0.001);                  // the letters start where the beads end: the second colour
+        // a bead is a cube with a hole through its side and a letter sunk into its bottom: less than the cube, most of it
+        $one = $this->meta($this->preview('beads', ['line1' => 'A', 'shape' => 'cube', 'size' => 10, 'hole' => 2.5, 'style' => 'engraved', 'two_sides' => false])->assertOk());
+        $this->assertLessThan(1000 - M_PI * 1.25 * 1.25 * 10 * 0.9, $one['volume_mm3']);
+        $this->assertGreaterThan(850, $one['volume_mm3']);
+        $this->assertArrayNotHasKey('color_change_mm', $one['notes']);
+        $this->assertSame([], $one['notes']['parts']);
+        $both = $this->meta($this->preview('beads', ['line1' => 'A', 'shape' => 'cube', 'size' => 10, 'hole' => 2.5, 'style' => 'engraved', 'two_sides' => true])->assertOk());
+        $this->assertLessThan($one['volume_mm3'], $both['volume_mm3']);
+        // a space is a bead without a letter; a long text goes on in a second row
+        $spaced = $this->meta($this->preview('beads', ['line1' => 'A B', 'size' => 10])->assertOk())['notes'];
+        $this->assertSame(3, $spaced['count']);
+        $rows = $this->meta($this->preview('beads', ['line1' => 'ABCDEFGHIJ', 'size' => 10])->assertOk());
+        $this->assertEqualsWithDelta(8 * 10 + 7 * 3, $rows['bbox']['x'], 0.05);
+        $this->assertEqualsWithDelta(2 * 10 + 3, $rows['bbox']['y'], 0.05);
+        // the other shapes; a hole too big for a low bead is refused in words
+        foreach (['ball', 'heart', 'star'] as $shape) {
+            $s = $this->meta($this->preview('beads', ['line1' => 'EVA', 'shape' => $shape, 'size' => 12, 'hole' => 2])->assertOk());
+            $this->assertSame(3, $s['notes']['count'], $shape);
+            $this->assertLessThan(60, $s['bbox']['x'], $shape);
+        }
+        $big = $this->preview('beads', ['line1' => 'EVA', 'shape' => 'heart', 'size' => 8, 'hole' => 4])->assertStatus(422);
+        $this->assertSame(__('param.error.bead_hole_big'), $big->json('errors.params.0'));
+        $this->preview('beads', ['line1' => ''])->assertStatus(422);
+
+        // stored: the beads and their letters are two parts, each a file of its own
+        Storage::fake('models');
+        config(['engines.repair' => 'trimesh']);
+        $r = $this->postJson('/api/tools/param', ['kind' => 'beads', 'params' => ['line1' => 'EVA', 'size' => 12]])->assertCreated();
+        $this->assertSame(['body', 'text'], $r->json('file.parts'));
+        $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertEqualsWithDelta(12, $file->colorChangeMm(), 0.001);
+        $this->get('/api/tools/param/'.$file->uuid.'/text.stl')->assertOk();
     }
 
     public function test_a_created_holder_opens_again_and_offers_its_second_colour(): void
