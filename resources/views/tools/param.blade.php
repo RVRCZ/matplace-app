@@ -240,6 +240,10 @@
                 </div>
             </fieldset>
         @endforeach
+        @if($composeAs ?? null)
+            {{-- the form lays the thing out by itself; who wants more pieces or his own layout takes it to the composer --}}
+            <p class="hint !text-xs">{{ __('param.compose.more') }} <a href="{{ route('tools.compose', ['preset' => $composeAs]) }}" class="font-semibold text-action-dark underline">{{ __('param.compose.open') }}</a></p>
+        @endif
     </x-tool-section>
     @endif
 

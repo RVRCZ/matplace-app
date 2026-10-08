@@ -55,6 +55,7 @@ class ToolsController extends Controller
             'captioned' => in_array($kind, ParametricGenerator::CAPTIONED, true),
             'fonts' => ParametricGenerator::FONTS,
             'layerShapes' => ParametricGenerator::LAYER_SHAPES,
+            'composeAs' => ParametricGenerator::COMPOSED[$tool] ?? null,
             'config' => ConfigController::payload($materials, $converters, true),
         ]);
     }

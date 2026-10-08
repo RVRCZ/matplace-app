@@ -219,7 +219,11 @@ z `engines/shapes/`), s polohou, šířkou, otočením a filamentem.
   v `Artwork::REF`), takže se dá znovu otevřít i poté, co nahrané soubory po 30 dnech zmizí. Zkoušeno testem
   i v prohlížeči (nahrání, výběr z „Moje obrázky“, vrstva v náhledu). **Fotku jako vrstvu jsem nezkoušel** – projde
   stejným prahováním jako u loga a u fotky s pozadím z ní nejspíš bude skvrna.
-- *Co chybí proti zadání,* je v §7 bod 3: převod ostatních nástrojů na skladbu.
+- *Produkty formulářů jako skladba:* zápich, jmenovka, klíčenka, ozdoba a velké písmeno zůstávají formuláři
+  (rozvrhnou věc samy, klíčenka a ozdoba umějí obrázek ve více barvách, což vrstva skladby neumí). Skladba má pro
+  každý z nich předvolbu (`topper`, `plate`, `keyring`, `bauble`, `initial`) a stránka formuláře na ni odkazuje
+  větou „Chcete víc textů a obrázků nebo vlastní rozložení?“ (`ParametricGenerator::COMPOSED`, adresa
+  `/tools/compose?preset=<předvolba>`). Odkaz nepřenáší, co už člověk ve formuláři napsal – otevře vzor.
 
 **Vložka do zásuvky podle fotky – hotová, ale mimo katalog** (`insert`, nový modul `engines/python/sheet_kinds.py`,
 stránka `/tools/drawer-insert`, `'available' => false`). Věci položené na list A4 a vyfocené shora dostanou v tácu
@@ -500,8 +504,8 @@ věc `feature/perf`, ne této větve.
   vyjde čitelně; jestli stojící nápis stojí při hloubce pětiny výšky (nástroj podle toho varuje); jak se tisknou
   tenká psaná písma (Great Vibes, Sacramento) pod 30 mm; jestli články řetězu medaile jdou zacvaknout do sebe. Písma jsem ověřil na úplnost znaků a na to, že z nich
   vznikne těleso, ne na to, jak vypadají vytištěná.
-- **Proměnná písma na serveru:** čtení v nejtučnější váze potřebuje fontTools ≥ 4.38. Lokálně je 4.62; verzi
-  v `/opt/matplace-py` jsem neviděl (viz Nasazení).
+- **Proměnná písma na serveru:** čtení v nejtučnější váze potřebuje fontTools ≥ 4.38. Lokálně je 4.62; na serveru
+  je podle koordinující session 4.65 (sám jsem to neviděl).
 
 ## 6. Nasazení (Roman)
 
@@ -548,15 +552,19 @@ od nejbližšího:
    níže, ale **mimo katalog** – ověřený je jen na kreslených fotkách. Do katalogu ho pustí až zkouška na skutečných
    fotkách skutečných věcí; pak chybí už jen texty pro SEO, ukázky a karta.
 3. **Volná skladba vrstev** (`compose`, `/tools/compose`) je v katalogu i s tažením v náhledu (výběr klepnutím,
-   posun, velikost, otočení) a s vlastním obrázkem jako vrstvou. Zbývá převést zápich, jmenovku, klíčenku, ozdobu
-   a velké písmeno z formulářů na skladbu, jak zadání předpokládalo – dnes mají vlastní formuláře, které fungují,
-   a skladba stojí vedle nich. Při tažení se model nepřekresluje průběžně, až po puštění – kdyby to při zkoušení
-   vadilo, je to místo, kde přidat.
+   posun, velikost, otočení) a s vlastním obrázkem jako vrstvou. Zadání chtělo, aby karty jmenovky a klíčenky
+   otevíraly rovnou skladbu a zápich, ozdoba a velké písmeno na ní stály. **To jsem neudělal a je to rozhodnutí pro
+   Romana:** formuláře dnes umějí věci, které skladba ne (obrázek ve více barvách, destička, která se sama zvětší
+   kolem textu, jméno vepsané do písmene), takže přepnutí karet by lidem něco vzalo. Místo toho má skladba předvolbu
+   pro každý z těch pěti produktů a formuláře na ni odkazují. Kdyby se karty přepnout měly, jsou to dva řádky
+   v `routes/web.php` a přepsání textů těch dvou stránek (popisují dnes formulář). Při tažení se model nepřekresluje průběžně, až po puštění – kdyby to při zkoušení vadilo, je
+   to místo, kde přidat.
 4. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
    sušenek). Tvary destiček cedulky
    (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.
 
 Co čeká na Romana (nic z toho neblokuje další práci): zkušební tisky podle §5, rozhodnutí o klikátku (bod 1),
-a nasazení. `main` na GitHubu je od 8. 10. na commitu 29cad9d (medaile) – koordinující session do něj větev slila
-po mé zprávě; všechno od organizéru ve tvaru obrázku dál je zatím jen ve `feature/tools-shapes`. Jestli je 29cad9d
-i na serveru, nevím.
+rozhodnutí o kartách jmenovky a klíčenky (bod 3) a další nasazení. Podle zprávy koordinující session běží na
+matplace.com od 8. 10. 2026 18:02 UTC `main` 9d6a49a, tedy všechno až po skladbu s tažením a vlastním obrázkem;
+tři nástroje mimo katalog tam zůstávají skryté. Co je ve větvi po 9d6a49a (předvolby produktů ve skladbě a odkazy
+z formulářů), nasazené není.

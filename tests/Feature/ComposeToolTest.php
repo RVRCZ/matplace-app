@@ -167,4 +167,18 @@ class ComposeToolTest extends TestCase
         }
         $this->assertSame(60, (int) $this->meta(ParametricGenerator::PRESETS['compose']['topper'])['notes']['sticks']);
     }
+
+    public function test_the_forms_of_its_products_show_the_way_to_the_composer(): void
+    {
+        // topper, nameplate, key ring, ornament and the big letter stay forms; each offers the same product as a composition
+        $pages = ['topper' => '/tools/cake-topper', 'nameplate' => '/tools/nameplate', 'keychain' => '/tools/keychain', 'ornament' => '/tools/ornament', 'name_letter' => '/tools/name-letter'];
+        $this->assertSame(array_keys($pages), array_keys(ParametricGenerator::COMPOSED));
+        foreach ($pages as $tool => $page) {
+            $preset = ParametricGenerator::COMPOSED[$tool];
+            $this->assertArrayHasKey($preset, ParametricGenerator::PRESETS['compose'], $tool);
+            $this->get($page)->assertOk()->assertSee('/tools/compose?preset='.$preset, false)->assertSee(__('param.compose.open'));
+        }
+        // a tool the composer has nothing for says nothing of it
+        $this->get('/tools/magnet')->assertOk()->assertDontSee('/tools/compose?preset=', false);
+    }
 }
