@@ -142,6 +142,8 @@
     [data-when].is-off { @apply pointer-events-none m-0 overflow-hidden border-0 p-0 opacity-0; max-height: 0; }
     /* one colour: a round swatch, a click opens the colour window */
     .tool-swatch { @apply h-9 w-9 shrink-0 cursor-pointer rounded-full border border-slate-300 bg-cover bg-center shadow-sm transition hover:scale-105; }
+    /* a row of a part or a colour: all of it opens the colour window (the listener is in tool_page.ts) */
+    .tool-swatch-row { @apply -mx-2 flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1 transition hover:bg-slate-100; }
     .tool-swatch-sm { @apply h-7 w-7 shrink-0 cursor-pointer rounded-full border border-slate-300 bg-cover bg-center transition hover:scale-105; }
     .tool-warn { @apply flex items-start gap-2 rounded-lg bg-warn-soft px-3 py-2 text-warn; }
     .tool-menu-item { @apply flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-ink transition hover:bg-slate-100 disabled:opacity-50; }

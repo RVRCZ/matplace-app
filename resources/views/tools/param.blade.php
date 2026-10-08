@@ -206,7 +206,7 @@
                             @foreach($layerShapes ?? [] as $shape)<option value="{{ $shape }}">{{ __(\Illuminate\Support\Facades\Lang::has('param.o.sign.'.$shape) ? 'param.o.sign.'.$shape : 'param.compose.shape.'.$shape) }}</option>@endforeach
                         </select>
                     </label>
-                    <div class="flex items-center gap-3">
+                    <div class="tool-swatch-row">
                         <button type="button" class="tool-swatch" id="compose-color" aria-label="{{ __('toolpage.color.pick') }}"></button>
                         <span class="min-w-0 text-sm"><span class="block font-medium text-ink">{{ __('param.compose.color') }}</span><span class="block truncate text-muted" id="compose-color-name"></span></span>
                     </div>
@@ -349,7 +349,7 @@
         @endif
         @foreach($colorChoices as $key => $options)
             {{-- a colour that changes the design itself (the plate and the code of a QR sign): kept with the model --}}
-            <div class="flex items-center gap-3">
+            <div class="tool-swatch-row">
                 <input type="hidden" data-choice="{{ $key }}" data-color value="{{ $spool($options[0]) }}">
                 <button type="button" class="tool-swatch" data-swatch-for="{{ $key }}" aria-label="{{ __('param.c.'.$kind.'.'.$key) }}: {{ __('toolpage.color.pick') }}"></button>
                 <span class="min-w-0 text-sm"><span class="block font-medium text-ink">{{ __('param.c.'.$kind.'.'.$key) }}</span><span class="block truncate text-muted" data-swatch-name="{{ $key }}"></span></span>
@@ -361,7 +361,7 @@
             <fieldset id="cookie-icing">
                 <legend class="lbl">{{ __('param.cookie.icing') }}</legend>
                 <button type="button" id="cookie-draw" class="btn-ink mt-2 w-full gap-2" aria-pressed="false"><x-icon name="sparkles" class="h-4 w-4" /><span>{{ __('param.cookie.draw') }}</span></button>
-                <div class="mt-3 flex items-center gap-3">
+                <div class="tool-swatch-row mt-3">
                     <button type="button" class="tool-swatch" id="cookie-pen" aria-label="{{ __('param.cookie.pen') }}: {{ __('toolpage.color.pick') }}"></button>
                     <span class="min-w-0 text-sm"><span class="block font-medium text-ink">{{ __('param.cookie.pen') }}</span><span class="block truncate text-muted" id="cookie-pen-name"></span></span>
                 </div>

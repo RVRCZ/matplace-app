@@ -315,7 +315,7 @@ export function bootParam(stage: Stage): void {
             const pos = c ? colors.indexOf(c) : -1;
             const code = shapeCode(part); const spool = colorOf(code);
             const row = document.createElement('div');
-            row.className = 'flex items-center gap-3 rounded-lg'; row.dataset.part = part;
+            row.className = 'tool-swatch-row'; row.dataset.part = part;
             const fact = c ? `<span class="inline-block h-3 w-3 shrink-0 rounded-full border border-line" style="background:${c.rgb}" title="${t('shape.colors.picture')}"></span><span class="font-normal text-muted">${t('shape.colors.share', { p: nf.format(Math.round(c.share * 1000) / 10) })}</span>` : '';
             const move = (act: string, label: string, name: string, off: boolean): string => `<button type="button" data-act="${act}" class="chip !min-h-8 !px-2 !py-1" aria-label="${label}" title="${label}" ${off ? 'disabled' : ''}>${icon(name, 'h-3.5 w-3.5')}</button>`;
             const tools = c && colors.length > 1 ? `<span class="flex shrink-0 gap-1">${move('up', t('shape.colors.up'), 'arrow-up', pos === colors.length - 1)}${move('down', t('shape.colors.down'), 'arrow-down', pos === 0)}${move('merge', pos > 0 ? t('shape.colors.merge.into', { n: colors[pos - 1].index }) : t('shape.colors.merge'), 'layers', pos === 0)}</span>` : '';
@@ -366,7 +366,7 @@ export function bootParam(stage: Stage): void {
         box.innerHTML = '';
         rows.forEach((part) => {
             const row = document.createElement('div');
-            row.className = 'flex items-center gap-3 rounded-lg'; row.dataset.part = part;
+            row.className = 'tool-swatch-row'; row.dataset.part = part;
             const code = partColors[part] ?? null; const c = colorOf(code);
             row.innerHTML = `<button type="button" class="tool-swatch" aria-label="${rows.length > 1 ? partLabel(part) : stage.t('toolpage.color.one')}: ${stage.t('toolpage.color.pick')}"></button>
                 <span class="min-w-0 text-sm"><span class="block font-medium text-ink">${rows.length > 1 ? partLabel(part) : stage.t('toolpage.color.one')}</span><span class="block truncate text-muted">${c ? `${c.name} · ${materialLabel(c)}` : stage.t('toolpage.color.pick')}</span></span>`;
