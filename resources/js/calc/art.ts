@@ -104,7 +104,7 @@ export function bootArt(stage: Stage): void {
             const pos = c ? colors.indexOf(c) : -1;
             const code = codeOf(part); const spool = colorOf(code);
             const row = document.createElement('div');
-            row.className = 'flex items-center gap-3 rounded-lg';
+            row.className = 'tool-swatch-row';
             const fact = c ? `<span class="inline-block h-3 w-3 shrink-0 rounded-full border border-line" style="background:${c.rgb}" title="${t('edit.colors.picture')}"></span><span class="font-normal text-muted">${t('edit.colors.share', { p: nf.format(Math.round(c.share * 1000) / 10) })}</span>` : '';
             const move = (act: string, label: string, name: string, off: boolean): string => `<button type="button" data-act="${act}" class="chip !min-h-8 !px-2 !py-1" aria-label="${label}" title="${label}" ${off ? 'disabled' : ''}>${icon(name, 'h-3.5 w-3.5')}</button>`;
             const tools = c && colors.length > 1 ? `<span class="flex shrink-0 gap-1">${move('up', t('edit.colors.up'), 'arrow-up', pos === colors.length - 1)}${move('down', t('edit.colors.down'), 'arrow-down', pos === 0)}${move('merge', pos > 0 ? t('edit.colors.merge.into', { n: colors[pos - 1].index }) : t('edit.colors.merge'), 'layers', pos === 0)}</span>` : '';
