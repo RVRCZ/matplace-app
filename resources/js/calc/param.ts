@@ -774,6 +774,31 @@ export function bootParam(stage: Stage): void {
         $('cookie-pen-name').textContent = colorOf(pen) ? `${colorOf(pen)!.name} · ${materialLabel(colorOf(pen)!)}` : colorName(pen);
         $('cookie-count').textContent = strokes.length ? t('cookie.count', { n: strokes.length }) : t('cookie.hint');
         $('cookie-width-v').textContent = `${nf.format(Number(($('cookie-width') as HTMLInputElement).value))} mm`;
+        renderStrokes();
+    };
+    /** Every stroke drawn so far, each with its own arrows and its own way out: any of them can be nudged or taken away, not only the last. */
+    const renderStrokes = (): void => {
+        const box = document.getElementById('cookie-strokes'); if (!box) return;
+        box.innerHTML = '';
+        const moves: [string, number, number][] = [['←', -1, 0], ['↑', 0, 1], ['↓', 0, -1], ['→', 1, 0]];
+        strokes.forEach((s, i) => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-1 text-sm';
+            row.innerHTML = `<span class="inline-block h-3 w-3 shrink-0 rounded-full border border-line" style="background:${colorOf(s.c)?.hex ?? '#888888'}"></span>
+                <span class="min-w-0 flex-1 truncate text-ink">${t('cookie.stroke', { n: i + 1 })} · ${t(`cookie.nib.${s.t}`)}</span>
+                ${moves.map(([sign], k) => `<button type="button" class="chip !min-h-8 !px-2 !py-0.5" data-move="${k}" aria-label="${t('cookie.stroke.move')} ${sign}" title="${t('cookie.stroke.move')}">${sign}</button>`).join('')}
+                <button type="button" class="chip !min-h-8 !px-2 !py-0.5" data-remove aria-label="${t('cookie.stroke.remove')}" title="${t('cookie.stroke.remove')}">×</button>`;
+            row.querySelectorAll<HTMLButtonElement>('[data-move]').forEach((b) => {
+                b.onclick = () => {
+                    const [, dx, dy] = moves[Number(b.dataset.move)];
+                    // two hundredths of the picture's width a step: 1.6 mm on a biscuit of 80 mm
+                    s.p = s.p.map(([x, y]) => [Math.round((x + dx * 0.02) * 10000) / 10000, Math.round((y + dy * 0.02) * 10000) / 10000]);
+                    void refresh().then(commit);
+                };
+            });
+            row.querySelector<HTMLButtonElement>('[data-remove]')!.onclick = () => { strokes.splice(i, 1); renderPen(); void refresh().then(commit); };
+            box.appendChild(row);
+        });
     };
     /** Points of a stroke no closer than 0.6 mm, at most 48 of them: what the hand drew, light enough to send. */
     const thinned = (pts: [number, number][]): [number, number][] => {

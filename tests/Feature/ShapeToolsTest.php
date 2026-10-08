@@ -652,7 +652,8 @@ class ShapeToolsTest extends TestCase
         $this->assertSame($bare['notes']['color_changes'], $shown['notes']['color_changes']);
         $this->assertSame($bare['notes']['frame'], $shown['notes']['frame']);
         $this->assertGreaterThan($bare['volume_mm3'] + 1000, $shown['volume_mm3']);
-        $this->get('/tools/cookie')->assertOk()->assertSee('value="sprinkles"', false)->assertSee('data-flag="tray"', false);
+        // and a place for the list of strokes, where any of them is moved or taken away
+        $this->get('/tools/cookie')->assertOk()->assertSee('value="sprinkles"', false)->assertSee('data-flag="tray"', false)->assertSee('id="cookie-strokes"', false);
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

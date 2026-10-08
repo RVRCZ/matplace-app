@@ -69,8 +69,10 @@ model). Barva z okna Barva, šířka 1,5–4 mm, hrot kulatý / plochý / tečky
 takže na větší sušence leží tam, kde byly. V Pythonu je tah stuha podél bodů (`_stroke`); tahy jedné cívky jsou díl
 `icing_<n>` a vrstva jako každá jiná barva: později použitá cívka leží výš a pod ní se nižší vrstvy doplní, takže
 i ručně zdobená sušenka má v každé vrstvě tisku jediný filament. Poleva se drží 1,8 mm od zaoblené hrany.
-Dlouhá kresba se nástroji předává souborem (`@cesta`), ne příkazovou řádkou. Proti zadání chybí: výběr a posun
-jednotlivého tahu (jde jen odebrat poslední). **Cukrovinky** jsou dva další hroty kreslení, ne motivy z knihovny:
+Dlouhá kresba se nástroji předává souborem (`@cesta`), ne příkazovou řádkou. **Každý tah jde posunout a smazat**
+ze seznamu tahů pod perem (šipky po 2 % šířky obrázku, křížek); zadání chtělo výběr klepnutím na tah v náhledu
+a tažení – seznam dělá totéž bez zásahu do vieweru. Zkoušeno v prohlížeči na uloženém návrhu se třemi tahy.
+**Cukrovinky** jsou dva další hroty kreslení, ne motivy z knihovny:
 „Bonbony“ (kulatý bonbon skoro třikrát širší než čára, klepnutím jeden, tahem řada) a „Sypání“ (tyčinky
 rozházené podél tahu, pro stejný tah vždy stejně). **Tácek na vystavení** je volba: mělký tácek ve tvaru sušenky se
 vytiskne vedle ní, v jejím dílu a nižší, než je sušenka silná, takže se ho výměny filamentu pro polevu netýkají.
@@ -494,16 +496,14 @@ písem; dva z nich (ozdoba na brčko, otvírák) čekají mimo katalog na zkuše
    membránou 0,8 mm nevím, jestli po jejich odtržení zbude něco, co cvaká. Než kolem toho vznikne nástroj se stránkou
    ve třech jazycích, stojí za to vytisknout jeden ručně nakreslený kus a zjistit, jestli tahle konstrukce v PLA/PETG
    cvaká vůbec. Když ano, je to rám a rotační skořepina, zhruba hodina práce.
-2. **Sušenka** (`cookie`): výběr a posun jednotlivého tahu (jde jen odebrat poslední). Polotovary, cukrovinky
-   a tácek už jsou, viz §1.
-3. **Organizér podle fotky, druhý režim:** předměty vyfocené na listu A4 → tác s kapsami podle jejich obrysů
+2. **Organizér podle fotky, druhý režim:** předměty vyfocené na listu A4 → tác s kapsami podle jejich obrysů
    (měřítko z listu, narovnání perspektivy, segmentace předmětů, vůle, výřez na prst, hloubka kapsy na předmět).
    Samostatná práce, a bez skutečných fotek od lidí ji nejde poctivě ověřit.
-4. **Volná skladba vrstev** (`compose`): druhý režim společné stránky se seznamem vrstev a gizmem ve vieweru
+3. **Volná skladba vrstev** (`compose`): druhý režim společné stránky se seznamem vrstev a gizmem ve vieweru
    (posun, otočení, zvětšení, duplikovat, smazat), builder `compose_kind.py`. Zápich, jmenovka, klíčenka, ozdoba
    a velké písmeno jsou dnes formuláře s pevným rozvržením; fungují, ale prvek v nich nejde chytit a posunout.
    Největší zbývající kus, řádově den práce.
-5. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
+4. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
    sušenek). Tvary destiček cedulky
    (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.
 

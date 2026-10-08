@@ -16,7 +16,7 @@
             ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text(\Illuminate\Support\Facades\Lang::has('param.shape.'.$k.'.'.$kind) ? 'param.shape.'.$k.'.'.$kind : 'param.shape.'.$k)])->all();
     }
     if ($kind === 'cookie') {
-        $i18n += collect(['draw', 'draw.on', 'count', 'hint', 'limit'])->mapWithKeys(fn ($k) => ['cookie.'.$k => __('param.cookie.'.$k)])->all();
+        $i18n += collect(['draw', 'draw.on', 'count', 'hint', 'limit', 'stroke', 'stroke.move', 'stroke.remove', 'nib.round', 'nib.flat', 'nib.dots', 'nib.candy', 'nib.sprinkles'])->mapWithKeys(fn ($k) => ['cookie.'.$k => __('param.cookie.'.$k)])->all();
     }
     // a text may be written for one tool, for its family (pendant, earrings… are all "shape") or for every tool
     $tr = function (string $prefix, string $k) use ($kind, $family): string {
@@ -326,6 +326,7 @@
                     <button type="button" id="cookie-clear" class="chip !py-1 text-sm">{{ __('param.cookie.clear') }}</button>
                 </div>
                 <p id="cookie-count" class="hint mt-1 !text-xs" aria-live="polite"></p>
+                <div id="cookie-strokes" class="mt-2 space-y-1"></div>
             </fieldset>
         @endif
         {{-- the parts of the design, filled by the script as the preview says which there are --}}
