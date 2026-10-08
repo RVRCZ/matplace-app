@@ -26,6 +26,9 @@ use App\Engines\Farm\PythonPrintPreparer;
 use App\Engines\Generator\FakeGenerator;
 use App\Engines\Generator\NullGenerator;
 use App\Engines\Generator\TripoGenerator;
+use App\Engines\Image\FakeImageGenerator;
+use App\Engines\Image\GeminiImageGenerator;
+use App\Engines\Image\ImageGenerator;
 use App\Engines\Import\FakeSource;
 use App\Engines\Import\MakerWorldSource;
 use App\Engines\Import\ModelSource;
@@ -36,6 +39,10 @@ use App\Engines\Mail\GmailMailbox;
 use App\Engines\Mail\Mailbox;
 use App\Engines\Payment\FakeGateway;
 use App\Engines\Payment\StripeGateway;
+use App\Engines\Photo\BackgroundRemover;
+use App\Engines\Photo\FakeBackgroundRemover;
+use App\Engines\Photo\NoBackgroundRemover;
+use App\Engines\Photo\RembgBackgroundRemover;
 use App\Engines\Project\CompositeProjectExporter;
 use App\Engines\Project\FakeProjectExporter;
 use App\Engines\Project\OrcaProjectExporter;
@@ -138,6 +145,15 @@ class EngineServiceProvider extends ServiceProvider
         $this->app->singleton(Assistant::class, fn () => config('engines.assistant') === 'fake'
             ? new FakeAssistant
             : new ClaudeAssistant((array) config('ai.anthropic')));
+        // session 4: a picture from a description (Gemini), and the background taken off a product photo (rembg)
+        $this->app->singleton(ImageGenerator::class, fn () => config('engines.image') === 'fake'
+            ? new FakeImageGenerator
+            : new GeminiImageGenerator((array) config('ai.gemini')));
+        $this->app->singleton(BackgroundRemover::class, fn ($app) => match (config('engines.photo')) {
+            'rembg' => new RembgBackgroundRemover((array) config('engines.python') + ['photo_home' => (string) config('engines.photo_home')]),
+            'fake' => new FakeBackgroundRemover,
+            default => new NoBackgroundRemover,
+        });
         // posts on Facebook and Instagram; the fake "publishes" nothing, so it must never answer in production
         $this->app->singleton(MetaClient::class, fn ($app) => config('engines.social') === 'fake' && ! $app->environment('production')
             ? new FakeMetaClient

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Domain\Tools\Artwork;
+use App\Domain\Tools\PhotoCut;
 use App\Jobs\BuildFarmTimelapse;
 use App\Models\GenerationRequest;
 use App\Models\ModelFile;
@@ -96,8 +97,9 @@ class PruneData extends Command
             }
         }
 
-        // pictures uploaded into the tools stay 30 days ("my pictures")
+        // pictures uploaded into the tools stay 30 days ("my pictures"); cut-out product photos a day (session 4)
         $temp += Artwork::prune($dry);
+        $temp += PhotoCut::prune($dry);
 
         $this->info(($dry ? '[dry-run] ' : '')."photos={$photos} files={$files} gcodes={$gcodes} temp={$temp}");
 

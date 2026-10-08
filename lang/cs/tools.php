@@ -145,6 +145,15 @@ return [
     'vendors.title' => 'Kde prodávat: trhy a akce v okolí',
     'vendors.hint' => 'Řemeslné a vánoční trhy, Maker Faire, Comic-Con a veletrhy kolem vašeho města s mapou, termíny a poplatky; asistent vybere, co se hodí k vašim výrobkům.',
     'vendors.action' => 'Najít akce v okolí',
+    'image.title' => 'Obrázek z popisu pro nástroje',
+    'image.hint' => 'Popište věc a dostanete siluetu, kresbu linkou nebo barevný obrázek pro vykrajovátko, razítko, šablonu, obrázek z filamentu nebo klíčenku.',
+    'image.action' => 'Vytvořit obrázek',
+    'listing.title' => 'Texty inzerátu: název, popis, štítky',
+    'listing.hint' => 'Asistent sepíše název, popis, štítky a klíčová slova pro Etsy, Fler, vlastní e‑shop nebo stránku modelu, česky, anglicky či španělsky; s fotkou i to, co je vidět.',
+    'listing.action' => 'Napsat inzerát',
+    'photo.title' => 'Produktová fotka bez pozadí',
+    'photo.hint' => 'Odstraníme pozadí a výrobek posadíme na bílé, dřevo, mramor, beton nebo papír se stínem; čtvercové fotky pro Etsy a e‑shop, až šest najednou.',
+    'photo.action' => 'Upravit fotky',
 
     'cats' => [
         'images' => 'Obrázky a loga',
@@ -226,5 +235,8 @@ return [
         'profit' => 'zisk marže poplatky etsy fler shopify e-shop provize dph bod zvratu prodej cena',
         'plan' => 'plán prodeje business plán rok měsíce tržby zisk bod zvratu sezóna vánoce csv pdf kroky',
         'vendors' => 'kde prodávat trhy jarmark vánoční trh maker faire comic-con veletrh stánek akce v okolí mapa kalendář fler etsy',
+        'image' => 'obrázek z popisu ai generátor silueta kresba clipart vykrajovátko razítko šablona vlastní obrázek nakreslit',
+        'listing' => 'inzerát popis produktu název štítky tagy klíčová slova etsy fler e-shop seo text asistent',
+        'photo' => 'produktová fotka odstranit pozadí bílé pozadí fotka výrobku etsy e-shop stín mramor dřevo výřez',
     ],
 ];

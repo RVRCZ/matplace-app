@@ -38,7 +38,8 @@ return [
             'claude-sonnet' => ['in' => 2.0, 'out' => 10.0],
             'claude-haiku' => ['in' => 1.0, 'out' => 5.0],
             'tripo' => ['in' => 0, 'out' => 0, 'call' => 0.40],
-            'gemini' => ['in' => 0, 'out' => 0, 'call' => 0.04],
+            'gemini-3-pro-image' => ['in' => 0, 'out' => 0, 'call' => 0.08],   // a picture from a description, the quality model
+            'gemini' => ['in' => 0, 'out' => 0, 'call' => 0.04],              // … the cheap one
         ],
     ],
     'daily_limits' => [
@@ -49,6 +50,23 @@ return [
         'generate_user' => (int) env('AI_LIMIT_GENERATE_USER', 3),       // … per signed-in account per day
         'generate_printer' => (int) env('AI_LIMIT_GENERATE_PRINTER', 15), // … per signed-in printer per day (they prepare models for customers)
         'generate_global' => (int) env('AI_LIMIT_GENERATE_GLOBAL', 100), // hard cap for the whole site per day (cost ceiling)
+        // session 4: pictures from a description (Gemini, about 0.08 USD each), listing texts and the vendors' picks (Claude)
+        'image_guest' => (int) env('AI_LIMIT_IMAGE_GUEST', 2),          // pictures per anonymous visitor per day
+        'image_user' => (int) env('AI_LIMIT_IMAGE_USER', 10),           // … per signed-in account per day
+        'image_global' => (int) env('AI_LIMIT_IMAGE_GLOBAL', 150),      // … for the whole site per day
+        'listing' => (int) env('AI_LIMIT_LISTING', 5),                  // listing texts per visitor per day
+        'listing_global' => (int) env('AI_LIMIT_LISTING_GLOBAL', 200),
+        'vendors_fit' => (int) env('AI_LIMIT_VENDORS_FIT', 10),         // "what suits me" asks per visitor per day
+    ],
+
+    // Google Gemini: pictures from a description (App\Engines\Image\GeminiImageGenerator); the key is never logged
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY', ''),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'image_model' => env('GEMINI_IMAGE_MODEL', 'gemini-3-pro-image'),            // Roman's choice 8 Oct 2026: quality first
+        'cheap_model' => env('GEMINI_IMAGE_CHEAP_MODEL', 'gemini-3.1-flash-lite-image'), // the cheap one (about half the price)
+        'cheap' => (bool) env('GEMINI_IMAGE_CHEAP', false),             // the cheap model for every picture
+        'timeout' => 120,
     ],
 
     'tripo' => [

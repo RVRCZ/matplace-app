@@ -4,6 +4,8 @@ Větev `feature/tools-sell` (z `main` 6bdf396, 8. 10. 2026), zadání `docs/prom
 Prodej, plánování, obrázky“ (řádek 498). Romanovo zadání přes řídící session: jen to, co nepotřebuje jeho
 rozhodnutí – `/tools/cost`, `/tools/profit`, `/tools/plan`, `/tools/vendors`. `/tools/image` (poskytovatel),
 `/tools/photo` (rembg) a záložka „popište to“ u figurky počkají; `/tools/listing` nebylo v zadání téhle kola.
+Druhé kolo (8. 10. odpoledne, po Romanově rozhodnutí: obrázky Gemini, rembg na serveru): **studio** –
+`/tools/image`, `/tools/listing`, `/tools/photo`, část 9 níže.
 
 Vlastní soubory session 4: `App\Domain\Sell\{Cost,Profit,Plan}` (čistá aritmetika, testy počítají s ní),
 `SellToolsController`, `config/sell.php` (sazby s datem a zdrojem), `resources/js/site/sell.ts` (zrcadlo
@@ -125,11 +127,115 @@ v repozitáři, Leaflet z CDN). `npm run build` (od tohoto kola s `tsc --noEmit`
 
 ## 7. Co zbývá
 
-Z tohoto kola nic. Dál podle Romana: `/tools/listing` (text inzerátu přes asistenta, denní limit), `/tools/image`
-(motor `ImageGenerator` + Fake, poskytovatel), `/tools/photo` (rembg), záložka „popište to“ u figurky.
+Z obou kol nic rozpracovaného. Dál podle Romana: záložka „popište to“ u figurky (3D model z popisu; obrázek z popisu
+teď umí `/tools/image`, takže cesta popis → obrázek → `/tools/figure` je o jeden krok), `/tools/flexi` jen na jeho
+slovo, a to, co je v části 9.4.
 
 ## 8. Stav
 
 8. 10. 2026 dopoledne: `/tools/cost`, `/tools/profit`, `/tools/plan` hotové (d94527a). Poledne: `/tools/vendors`
 s adminem, seederem a `.ics`; `SellToolsTest` 7 testů; testy stránek, katalogu, karet, SEO, toku a adminu zelené;
-build s tsc čistý.
+build s tsc čistý. Odpoledne: studio (`/tools/image`, `/tools/listing`, `/tools/photo`), `StudioToolsTest` 6 testů,
+dávka SEO + stránky + tok + prodej + obrázky zelená, build s tsc čistý; jeden skutečný obrázek z Gemini (pro model,
+13,8 s, 1 337 tokenů, zaúčtováno 1,84 Kč) – kočka z profilu, po prahování čistá silueta.
+
+## 9. Studio: obrázek z popisu, texty inzerátu, produktová fotka (druhé kolo)
+
+Vlastní soubory: `App\Engines\Image\{ImageGenerator,ImageResult,GeminiImageGenerator,FakeImageGenerator}`,
+`App\Engines\Photo\{BackgroundRemover,RembgBackgroundRemover,FakeBackgroundRemover,NoBackgroundRemover}`,
+`App\Domain\Tools\{ImageMaker,PhotoCut}`, `StudioToolsController`, `resources/js/site/studio.ts` (volá se ze
+`sell.ts` podle `data-sell`), `tools/sell/{image,listing,photo}.blade.php`, `engines/python/photo_cut.py` (rembg),
+`engines/python/photo_backgrounds.py` → `public/img/backgrounds/*.jpg`, `tools_seo/{image,listing,photo}.php` ×3,
+karty `public/img/tools/{image,listing,photo}-*` (ze `sell_cards.py`), `tests/Feature/StudioToolsTest.php`.
+Přídavky do sdílených: `config/ai.php` (blok `gemini`, limity, cena `gemini-3-pro-image`), `config/engines.php`
+(`image`, `photo`, `photo_home`), `EngineServiceProvider` (dvě vazby), `phpunit.xml` (`ENGINE_IMAGE=fake`,
+`ENGINE_PHOTO=fake`), `PruneData` (jeden řádek: `PhotoCut::prune`), `config/tools.php`, `routes/web.php`,
+`lang/<loc>/{sell,tools}.php`.
+
+### 9.1 `/tools/image` – obrázek z popisu
+
+- **Motor**: `ImageGenerator::fromText(prompt, style, size)` → `ImageResult` (bajty, mime, model, tokeny, ms).
+  `GeminiImageGenerator`: v1beta `models/{model}:generateContent`, hlavička `x-goog-api-key`, tělo
+  `contents[{parts[{text}]}]` + `generationConfig.responseModalities ["IMAGE"]`, čte `candidates[0].content.parts[]`
+  `inlineData{mimeType,data}`; chyba HTTP → `EngineException` se stavem a prvními 200 znaky zprávy, v níž je
+  cokoli ve tvaru `AQ.…` nahrazeno tečkami (klíč se nikdy nedostane do logu ani do odpovědi). Výchozí model
+  **`gemini-3-pro-image`** (Romanovo rozhodnutí 8. 10.), `cheap_model` `gemini-3.1-flash-lite-image` se zapne
+  `GEMINI_IMAGE_CHEAP=true`. Účtování `AiUsage::record('image', model, …)`; `prices.models` má
+  `gemini-3-pro-image` 0,08 USD za volání (nový řádek před obecným `gemini` 0,04, protože se hledá předponou).
+  `FakeImageGenerator` kreslí GD kočku (silueta/linka/barvy) a popis do rohu; `$fail` shodí další volání.
+- **Prompt** (`GeminiImageGenerator::prompt`): za styl doplní, co nástroje chtějí – silueta „one flat black shape
+  on pure white, no grey, no outline, no text, no frame, suitable for cutting out“, linka „uniform thick black
+  lines“, barvy „at most six flat solid colours, no gradients“; tvar čtverec / 4:3 / 3:4. Skutečný výstup pro
+  modelu: čistá kočka, viz 8.
+- **Po modelu** (`ImageMaker::prepare`): silueta a linka → šedotón, práh 128, čistě černá/bílá PNG (modely nechávají
+  šedé okraje a slabé pozadí; nástroje chtějí tvrdý obrys); barvy → JPEG 90 beze změn; delší strana nejvýš
+  1 600 px. Výsledek jde do **„mých obrázků“** (`Artwork::store` s vlastníkem účet/anonymní session), takže ho
+  každý nástroj s obrázkem najde v okně obrázku pod záložkou „moje obrázky“ (30 dní). Do `param.ts` (session 1)
+  jsem nesahal: přímé `?artwork=` by vyžadovalo jeho úpravu – stránka místo toho ukazuje tlačítka nástrojů
+  (`ParametricGenerator::ARTWORK` + compose, filament_art, colors) a větu, kde obrázek najít. Stažení PNG; obrázky
+  z téhle návštěvy v pásu pod výsledkem.
+- **Limity** (`config('ai.daily_limits.*')`, cache do půlnoci): `image_guest` **2** bez účtu (IP), `image_user`
+  **10** s účtem, `image_global` **150** pro celý web (pro model: ≈ 12 USD/den strop; limit se dá změnit přes
+  `AI_LIMIT_IMAGE_*`); admin bez limitu; neúspěšné volání se nepočítá (počítá se až po úspěchu – model
+  neúčtuje nic, když nevrátí obrázek, resp. účtuje tokeny promptu, zanedbatelné). Odpovědi 429 `daily_limit` /
+  `site_limit`, 503 bez klíče (stránka pak ukazuje `note-warn`), 502 když model nevrátí obrázek (např.
+  `IMAGE_SAFETY`).
+- Trasy `GET /tools/image`, `POST /api/tools/image` (throttle `studio_image` 10/min).
+
+### 9.2 `/tools/listing` – texty inzerátu
+
+- `Assistant::ask('listing', …)` se schématem `{title, description, tags[], materials[], keywords[], alt}`; systémový
+  prompt podle platformy (Etsy: název ≤ 140, 13 štítků ≤ 20 znaků, první věty popisu; Fler: název ≤ 60, 10–15
+  štítků; vlastní e‑shop: název ≤ 70 jako titulek, klíčová slova jako meta popis; stránka modelu: co, k čemu,
+  velikost tisku), jazyk cs/en/es, tón věcný/osobní/hravý; zákaz vymýšlení rozměrů a materiálů, bez emoji.
+  Odpověď se **ořeže na limity platformy** (`platformLimits`) i kdyby model přetekl.
+- Fotka (JPG/PNG/WebP ≤ 12 MB) jde modelu jako cesta (`ClaudeAssistant` ji převádí na base64), uložená jen do
+  `storage/app/tmp/listing/` a smazaná ve `finally`. `?model=<slug>` předvyplní název a popis z `CatalogModel`
+  (odkaz z katalogu jsem nepřidával – soubor katalogu není můj; stačí `route('tools.listing', ['model' => slug])`).
+- Limity `listing` **5**/den na návštěvníka, `listing_global` **200**; stejný vzor jako `vendors_fit` (ten jsem
+  přidal do `config/ai.php` jako výchozí 10). Trasy `GET /tools/listing`, `POST /api/tools/listing`
+  (`studio_listing` 10/min). Kopírování po částech i celé (vlastní handler ve `studio.ts`, ne `[data-copy]` z
+  `designer.ts`, aby se text skládal až po odpovědi).
+
+### 9.3 `/tools/photo` – produktová fotka bez pozadí
+
+- **Motor** `BackgroundRemover::cut(src, dst)` → `{width, height, coverage}`. `RembgBackgroundRemover` spouští
+  `engines/python/photo_cut.py` (rembg, `new_session("u2net")`, `post_process_mask`, ořez na obsah + 2 % okraj,
+  RGBA PNG; HEIC přes pillow‑heif, je‑li) s **`U2NET_HOME`** z `config('engines.photo_home')`
+  (`/opt/matplace-py/u2net`, přes `Process::env`, jak chtěla řídící session); `available()` = `photo_cut.py
+  --probe` (import rembg + onnxruntime) **cachované hodinu** (`Cache`), takže bez rembg (lokálně) stránka ukáže
+  `note-warn` a API 503, bez pádu. `ENGINE_PHOTO` výchozí `rembg`, `fake` v testech (elipsa uprostřed zůstane,
+  okolí průhledné, ≤ 400 px), `none` vypne.
+- Výřez leží v `storage/app/tmp/photo/<uuid>.png` **jeden den** (`PhotoCut::prune` z `matplace:prune`), id je
+  neuhodnutelné, `GET /api/tools/photo/{id}`. **Skládání a ukládání je v prohlížeči** (`studio.ts`, canvas):
+  pozadí bílé / světlý přechod / dřevo / mramor / beton / papír / plátno / průhledné, stín jako měkká elipsa
+  (radiální gradient, žádný `ctx.filter`, funguje všude), velikost věci 50–98 %, na střed / k zemi, výstup
+  1000/1500/2000 px čtverec, JPG 0,92 nebo PNG; až 6 fotek, fronta po jedné, stažení jedné nebo všech. Nic
+  složeného se neukládá na server.
+- **Pozadí** `public/img/backgrounds/{wood,marble,concrete,paper,linen}.jpg` jsou **kreslená** PIL skriptem
+  `photo_backgrounds.py` (šum, rozmazání, tónování), 1 200 px, 20–105 kB; žádná licence cizích fotek. Mramor je
+  „mramorovitý“, ne fotorealistický – když bude Roman chtít fotky, stačí soubory vyměnit.
+- Trasy `GET /tools/photo`, `POST /api/tools/photo` (`studio_photo` 12/min, 12 MB, jpg/png/webp/heic),
+  `GET /api/tools/photo/{id}`.
+
+### 9.4 Co není ověřené (Roman)
+
+- **Gemini pro model**: jeden skutečný obrázek (silueta kočky, 13,8 s). Linku a barvy jsem s modelem nezkoušel
+  (jen prompt a Fake); barevný obrázek pro `filament_art` chce ploché barvy – pokud model dává přechody, zkusit
+  `cheap_model`, nebo do `prepare` přidat kvantizaci barev (`imagetruecolortopalette`), to je pár řádků.
+- Model `gemini-3-pro-image` trvá ~14 s; stránka ukazuje „Kreslím…“, timeout 120 s. Limity 2/10/150 jsou můj
+  návrh (150 × 0,08 USD = 12 USD/den strop); zapsat do `.env`, pokud má být jinak.
+- **rembg**: lokálně není, `photo_cut.py` jsem pustil jen s chybějícím rembg (správný JSON `rembg_missing`) a
+  `--probe`; na serveru ověřit `php artisan tinker --execute='dump(app(\App\Engines\Photo\BackgroundRemover::class)->available());'`
+  (po `cache:clear`, probe se drží hodinu) a jednu fotku přes stránku. Kvalita u2net na lesklých a průhledných
+  dílech je, jaká je – stránka to říká v SEO textu.
+- **Stránky** viděné jen v headless Chrome (snímky: obrázek, inzerát, fotka – formuláře a prázdné stavy); tvorbu
+  obrázku, psaní inzerátu a skládání fotky jsem proklikal testy a jedním skutečným voláním Gemini z tinkeru, ne
+  myší v prohlížeči. `studio.ts` prošlo `tsc` a buildem.
+- **Katalog**: `image` je v kategoriích „obrázky“ a „prodej“, `listing` a `photo` v „prodej“. Nabídky „použít
+  v nástroji“ berou všechny nástroje s obrázkem (`ParametricGenerator::ARTWORK`) – 25 tlačítek, možná moc; snadno
+  se zkrátí na seznam v `StudioToolsController::pictureTools`.
+- **Nasazení** (k části 6 navíc): do `.env` `GEMINI_API_KEY` (už je), volitelně `ENGINE_PHOTO=rembg` (výchozí),
+  `U2NET_HOME=/opt/matplace-py/u2net` (výchozí v configu), pak `config:cache`, `cache:clear` (probe), `view:clear`,
+  `npm run build`. **Žádná nová migrace** (studio nemá tabulky; `AiCall` je stávající). Nový PHP balíček žádný;
+  Python na serveru: rembg + onnxruntime + pillow‑heif (volitelné) v `/opt/matplace-py` – podle řídící session už je.

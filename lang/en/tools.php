@@ -145,6 +145,15 @@ return [
     'vendors.title' => 'Where to sell: markets and fairs nearby',
     'vendors.hint' => 'Craft and Christmas markets, Maker Faires, Comic-Cons and trade fairs round your town with a map, dates and fees; the assistant picks what suits your products.',
     'vendors.action' => 'Find events nearby',
+    'image.title' => 'Picture from a description for the tools',
+    'image.hint' => 'Describe a thing and get a silhouette, a line drawing or a colour picture for a cookie cutter, a stamp, a stencil, a picture in filament or a keychain.',
+    'image.action' => 'Make a picture',
+    'listing.title' => 'Listing texts: title, description, tags',
+    'listing.hint' => 'The assistant writes the title, description, tags and keywords for Etsy, Fler, your own shop or a model page, in Czech, English or Spanish; with a photo, what is visible too.',
+    'listing.action' => 'Write a listing',
+    'photo.title' => 'Product photo without the background',
+    'photo.hint' => 'We take the background off and set the product on white, wood, marble, concrete or paper with a shadow; square photos for Etsy and a shop, up to six at once.',
+    'photo.action' => 'Edit photos',
 
     'cats' => [
         'images' => 'Pictures and logos',
@@ -226,5 +235,8 @@ return [
         'profit' => 'profit margin fees etsy fler shopify shop commission vat break-even selling price',
         'plan' => 'selling plan business planner year months revenue profit break-even season christmas csv pdf steps',
         'vendors' => 'where to sell markets craft fair christmas market maker faire comic-con trade fair stall events nearby map calendar fler etsy',
+        'image' => 'picture from a description ai generator silhouette line drawing clipart cookie cutter stamp stencil own picture draw',
+        'listing' => 'listing product description title tags keywords etsy fler shop seo copy assistant',
+        'photo' => 'product photo remove background white background photo of a product etsy shop shadow marble wood cut-out',
     ],
 ];

@@ -12,6 +12,9 @@ return [
     'translator' => env('ENGINE_TRANSLATOR', 'claude'),   // claude | fake
     'shipping' => env('ENGINE_SHIPPING', 'packeta'),      // packeta | fake
     'assistant' => env('ENGINE_ASSISTANT', 'claude'),     // claude | fake
+    'image' => env('ENGINE_IMAGE', 'gemini'),             // gemini | fake — pictures from a description (session 4)
+    'photo' => env('ENGINE_PHOTO', 'rembg'),              // rembg | fake | none — the background off product photos; rembg asks the interpreter whether it is installed
+    'photo_home' => env('U2NET_HOME', '/opt/matplace-py/u2net'),   // where rembg finds the u2net model (passed to the script as U2NET_HOME)
     'social' => env('ENGINE_SOCIAL', 'meta'),             // meta | fake
     'mailbox' => env('ENGINE_MAILBOX', 'gmail'),          // gmail | fake — the shared inbox the admin answers from
     // where the admin looks for models to add to the inspiration catalogue (the home page searches `search` below)

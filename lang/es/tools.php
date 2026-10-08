@@ -145,6 +145,15 @@ return [
     'vendors.title' => 'Dónde vender: mercados y ferias cercanos',
     'vendors.hint' => 'Mercados artesanales y navideños, Maker Faires, Comic-Cons y salones alrededor de su ciudad con mapa, fechas y cuotas; el asistente elige lo que conviene a sus productos.',
     'vendors.action' => 'Buscar eventos cercanos',
+    'image.title' => 'Imagen a partir de una descripción',
+    'image.hint' => 'Describa una cosa y reciba una silueta, un dibujo de líneas o una imagen en color para un cortador de galletas, un sello, una plantilla, una imagen en filamento o un llavero.',
+    'image.action' => 'Crear una imagen',
+    'listing.title' => 'Textos del anuncio: título, descripción, etiquetas',
+    'listing.hint' => 'El asistente escribe el título, la descripción, las etiquetas y las palabras clave para Etsy, Fler, su propia tienda o una página de modelo, en checo, inglés o español; con una foto, también lo que se ve.',
+    'listing.action' => 'Escribir un anuncio',
+    'photo.title' => 'Foto de producto sin fondo',
+    'photo.hint' => 'Quitamos el fondo y colocamos el producto sobre blanco, madera, mármol, hormigón o papel con sombra; fotos cuadradas para Etsy y una tienda, hasta seis a la vez.',
+    'photo.action' => 'Editar fotos',
 
     'cats' => [
         'images' => 'Imágenes y logos',
@@ -226,5 +235,8 @@ return [
         'profit' => 'beneficio margen comisiones etsy fler shopify tienda iva punto de equilibrio venta precio',
         'plan' => 'plan de ventas plan de negocio año meses ingresos beneficio punto de equilibrio temporada navidad csv pdf pasos',
         'vendors' => 'dónde vender mercados feria artesanal mercado navideño maker faire comic-con salón puesto eventos cercanos mapa calendario fler etsy',
+        'image' => 'imagen a partir de una descripción ia generador silueta dibujo de líneas clipart cortador de galletas sello plantilla imagen propia dibujar',
+        'listing' => 'anuncio descripción de producto título etiquetas palabras clave etsy fler tienda seo texto asistente',
+        'photo' => 'foto de producto quitar fondo fondo blanco foto del producto etsy tienda sombra mármol madera recorte',
     ],
 ];

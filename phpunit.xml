@@ -29,6 +29,8 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="ENGINE_SLICER" value="fake"/>
+        <env name="ENGINE_IMAGE" value="fake"/>
+        <env name="ENGINE_PHOTO" value="fake"/>
         <env name="ENGINE_REPAIR" value="php"/>
         <env name="ENGINE_IMPORT" value="fake"/>
         <env name="ENGINE_TRANSLATOR" value="fake"/>

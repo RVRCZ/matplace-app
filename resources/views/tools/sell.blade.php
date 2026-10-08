@@ -17,6 +17,7 @@
         <a href="{{ route('tools') }}" class="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"><x-icon name="arrow-left" class="h-4 w-4" />{{ __('tools.title') }}</a>
         <h1 class="mt-1 text-2xl font-semibold leading-tight text-ink">{{ __('tools.'.$tool.'.title') }}</h1>
         <p class="mt-1 text-sm text-muted">{{ $lead }}</p>
+        @if(!empty($unavailable))<div class="note-warn mt-4 text-sm">{{ $unavailable }}</div>@endif
         <nav id="sell-nav" class="sticky top-0 z-10 -mx-1 mt-3 flex flex-wrap gap-1 bg-page px-1 py-2" aria-label="{{ __('param.steps') }}">
             @foreach($sections as $id => $label)
                 <a href="#sec-{{ $id }}" data-nav="{{ $id }}" class="tool-nav-item"><span class="tool-nav-no">{{ $loop->iteration }}</span>{{ $label }}</a>

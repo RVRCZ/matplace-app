@@ -3,7 +3,7 @@
 The card pictures of the selling and planning tools (session 4), which have no model to render: simple drawings on
 the same beige studio backdrop as the rendered cards, 3:2, written as <base>-800.jpg, -800.webp and -480.webp.
 
-  sell_cards.py <public/img/tools> [cost profit plan vendors]
+  sell_cards.py <public/img/tools> [cost profit plan vendors image listing photo]
 """
 import math
 import os
@@ -140,7 +140,64 @@ def vendors(img):
         d.ellipse([x - r * 0.42, y - r * 0.42, x + r * 0.42, y + r * 0.42], fill=WHITE)
 
 
-DRAW = {"cost": cost, "profit": profit, "plan": plan, "vendors": vendors}
+def image(img):
+    # a picture from a description: a black cat silhouette on a white card, a text line (the description) underneath
+    card(img, (330, 110, 1270, 870))
+    d = ImageDraw.Draw(img)
+    cx, cy = 800, 470
+    d.ellipse([cx - 190, cy - 110, cx + 190, cy + 230], fill=INK)                       # the body
+    d.ellipse([cx - 120, cy - 290, cx + 120, cy - 60], fill=INK)                        # the head
+    d.polygon([(cx - 115, cy - 230), (cx - 95, cy - 370), (cx - 20, cy - 270)], fill=INK)   # the ears
+    d.polygon([(cx + 115, cy - 230), (cx + 95, cy - 370), (cx + 20, cy - 270)], fill=INK)
+    d.line([(cx + 170, cy + 160), (cx + 330, cy + 60), (cx + 300, cy - 120)], fill=INK, width=44, joint="curve")   # the tail
+    d.rounded_rectangle((430, 760, 1170, 820), radius=14, fill=(244, 241, 236), outline=(214, 208, 200), width=3)
+    d.rounded_rectangle((460, 782, 1000, 798), radius=8, fill=MUTED)                   # the typed description
+    d.rounded_rectangle((1090, 776, 1150, 804), radius=14, fill=ACTION)                 # the make button
+
+
+def listing(img):
+    # the texts of a listing: a title line, paragraphs and a row of tag chips
+    card(img, (280, 110, 1320, 870))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle((360, 190, 1050, 240), radius=12, fill=INK)                    # the title
+    for i, w in enumerate([880, 840, 900, 620]):
+        y = 300 + i * 48
+        d.rounded_rectangle((360, y, 360 + w, y + 22), radius=11, fill=(205, 200, 192))
+    x = 360
+    for w, col in [(170, ACTION), (220, GREEN), (150, BLUE), (200, ACTION), (120, GREEN)]:
+        d.rounded_rectangle((x, 540, x + w, 600), radius=30, fill=col)
+        x += w + 22
+    for i, w in enumerate([860, 700]):
+        y = 660 + i * 48
+        d.rounded_rectangle((360, y, 360 + w, y + 22), radius=11, fill=(205, 200, 192))
+    d.ellipse([1150, 170, 1250, 270], fill=WHITE, outline=ACTION, width=6)             # the copy mark
+    d.rounded_rectangle((1180, 200, 1222, 242), radius=6, outline=ACTION, width=6)
+
+
+def photo(img):
+    # a product photo on a backdrop: a vase cut out of a cluttered shot, set on a soft gradient with a shadow
+    card(img, (160, 110, 760, 870), fill=(226, 221, 214))
+    d = ImageDraw.Draw(img)
+    for pts in [[(200, 300), (380, 260), (560, 320), (740, 280)], [(200, 700), (420, 660), (640, 720), (740, 690)]]:
+        d.line(pts, fill=(198, 192, 184), width=18, joint="curve")                     # the clutter behind
+    d.rectangle((560, 560, 720, 640), fill=(186, 180, 172))
+    d.rectangle((190, 420, 330, 520), fill=(190, 184, 176))
+    card(img, (840, 110, 1440, 870), fill=(246, 244, 240))
+    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    gd.ellipse([930, 700, 1350, 800], fill=(0, 0, 0, 70))
+    glow = glow.filter(ImageFilter.GaussianBlur(26))
+    img.paste(glow, (0, 0), glow)
+    for ox, col in [(460, (120, 118, 116)), (1140, ACTION)]:                           # the vase, grey in the shot, orange on the backdrop
+        d = ImageDraw.Draw(img)
+        d.polygon([(ox - 110, 720), (ox + 110, 720), (ox + 70, 420), (ox + 130, 300), (ox - 130, 300), (ox - 70, 420)], fill=col)
+        d.ellipse([ox - 130, 270, ox + 130, 330], fill=col)
+        d.rectangle((ox - 118, 700, ox + 118, 724), fill=col)
+    d.polygon([(780, 470), (830, 490), (780, 510)], fill=INK)                           # the arrow between the two
+    d.rectangle((740, 480, 790, 500), fill=INK)
+
+
+DRAW = {"cost": cost, "profit": profit, "plan": plan, "vendors": vendors, "image": image, "listing": listing, "photo": photo}
 
 
 def main(argv):

@@ -305,6 +305,10 @@ return [
     'profit' => ['route' => 'tools.profit', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
     'plan' => ['route' => 'tools.plan', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
     'vendors' => ['route' => 'tools.vendors', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
+    // session 4, the studio: a picture from a description (Gemini), the texts of a listing (Claude), a product photo without its background (rembg)
+    'image' => ['route' => 'tools.image', 'intent' => 'create', 'categories' => ['images', 'sell'], 'available' => true, 'seo' => ['examples' => []]],
+    'listing' => ['route' => 'tools.listing', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
+    'photo' => ['route' => 'tools.photo', 'intent' => 'create', 'categories' => ['sell'], 'available' => true, 'seo' => ['examples' => []]],
 
     'spare' => ['route' => 'tools.spare', 'intent' => 'spare', 'categories' => ['parts'], 'available' => (bool) env('FEATURE_MARKETPLACE', false)],   // an inquiry to printers: marketplace only
 ];

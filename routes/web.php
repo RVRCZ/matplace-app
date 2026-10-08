@@ -58,6 +58,7 @@ use App\Http\Controllers\PrinterPageController;
 use App\Http\Controllers\SellToolsController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SocialVideoController;
+use App\Http\Controllers\StudioToolsController;
 use App\Http\Controllers\ToolsController;
 use App\Http\Controllers\VendorsController;
 use App\Support\Locales;
@@ -187,6 +188,10 @@ $pages = function () {
     Route::get('/tools/vendors/saved.ics', [VendorsController::class, 'savedIcs'])->middleware('auth')->name('tools.vendors.saved_ics');
     Route::get('/tools/vendors/{event}.ics', [VendorsController::class, 'ics'])->whereNumber('event')->name('tools.vendors.ics');
     Route::post('/tools/plan/pdf', [SellToolsController::class, 'planPdf'])->middleware('throttle:20,1,sell_pdf')->name('tools.plan.pdf');
+    // session 4, the studio: a picture from a description, the texts of a listing, a product photo without its background
+    Route::get('/tools/image', [StudioToolsController::class, 'image'])->name('tools.image');
+    Route::get('/tools/listing', [StudioToolsController::class, 'listing'])->name('tools.listing');
+    Route::get('/tools/photo', [StudioToolsController::class, 'photo'])->name('tools.photo');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {
@@ -350,6 +355,10 @@ Route::prefix('api')->name('api.')->group(function () {
     });
     Route::get('sell/events', [VendorsController::class, 'search'])->middleware('throttle:60,1,sell_events')->name('sell.events');
     Route::post('sell/events/fit', [VendorsController::class, 'fit'])->middleware('throttle:20,1,sell_fit')->name('sell.events.fit');
+    Route::post('tools/image', [StudioToolsController::class, 'makeImage'])->middleware('throttle:10,1,studio_image')->name('tools.image');
+    Route::post('tools/listing', [StudioToolsController::class, 'writeListing'])->middleware('throttle:10,1,studio_listing')->name('tools.listing');
+    Route::post('tools/photo', [StudioToolsController::class, 'cutPhoto'])->middleware('throttle:12,1,studio_photo')->name('tools.photo');
+    Route::get('tools/photo/{id}', [StudioToolsController::class, 'photoFile'])->where('id', '[0-9a-f-]{36}')->name('tools.photo.file');
     Route::get('config', [ConfigController::class, 'show'])->name('config');
     Route::post('uploads', [UploadController::class, 'store'])->middleware('throttle:uploads')->name('uploads.store');
     Route::get('files/{modelFile}', [UploadController::class, 'show'])->name('files.show');

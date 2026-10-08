@@ -5,6 +5,7 @@
  * page is window.MP_SELL (resources/views/tools/sell.blade.php).
  */
 import { money, fromCzk, currency } from './money';
+import { bootImage, bootListing, bootPhoto } from './studio';
 
 interface Payload { tool: string; locale: string; home: string; tools: string; i18n: Record<string, string>; currency: string; rate: number; fields?: Record<string, number[]>; values?: Record<string, number>; money?: { keys: string[] };
     from?: { name: string; grams: number; hours: number; price: number | null; url: string } | null; profit?: string; plan?: string; cost?: string; vendors?: string; pdf?: string; plans?: string | null;
@@ -497,6 +498,6 @@ export function bootSell(): void {
     const p = cfg();
     if (!page || !p) return;
     sections();
-    const modules: Record<string, (p: Payload) => void> = { cost: bootCost, profit: bootProfit, plan: bootPlan, vendors: bootVendors };
+    const modules: Record<string, (p: Payload) => void> = { cost: bootCost, profit: bootProfit, plan: bootPlan, vendors: bootVendors, image: bootImage, listing: bootListing, photo: bootPhoto };
     modules[page.dataset.sell ?? '']?.(p);
 }
