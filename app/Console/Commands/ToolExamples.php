@@ -45,7 +45,8 @@ class ToolExamples extends Command
         $drawn = $kept = $failed = 0;
         foreach ((array) config('tools') as $tool => $definition) {
             $examples = (array) ($definition['seo']['examples'] ?? []);
-            if (! $examples || ($only && ! in_array($tool, $only, true)) || (! isset(ParametricGenerator::FIELDS[$tool]) && $tool !== ArtGenerator::KIND)) {
+            $kind = (string) ($definition['seo']['kind'] ?? $tool);      // a tool that is another generator with a preset draws with that generator
+            if (! $examples || ($only && ! in_array($tool, $only, true)) || (! isset(ParametricGenerator::FIELDS[$kind]) && $tool !== ArtGenerator::KIND)) {
                 continue;
             }
             foreach ($examples as $i => $example) {
@@ -58,7 +59,7 @@ class ToolExamples extends Command
                 try {
                     // "use": the product as it is used (a box with its lid on, a vase on its saucer), not laid out for printing
                     $built = $tool === ArtGenerator::KIND ? app(ArtGenerator::class)->build((array) ($example['params'] ?? []), 'use', true)
-                        : $generator->build($tool, ToolSeo::exampleParams($tool, $example), 'all', 'use', isset(ParametricGenerator::FAMILY[$tool]));
+                        : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', isset(ParametricGenerator::FAMILY[$kind]) || $kind === 'compose');      // tools whose parts are colours: drawn in them
                 } catch (\Throwable $e) {
                     $this->warn(sprintf('%s #%d: the tool refused the parameters (%s)', $tool, $i + 1, mb_substr($e->getMessage(), 0, 160)));
                     $failed++;

@@ -20,6 +20,19 @@ piped on it and the visitor's name goes across it. Dough and icing: two colours 
 The cookie takes a picture or a silhouette as its dough and the strokes the visitor draws on it in the preview as
 icing: one part `icing_<n>` for every filament drawn with, stacked like the colours of a picture.
 
+The badge is a topper for a retractable badge reel: the picture, the wearer's name under it in one of the picture's
+colours, and a shallow pocket in the back for the reel's sticky dot.
+
+The straw topper carries a clip for a drinking straw on its outline, the opener a tongue that lifts the tab of a can;
+both sit where the visitor drags them, like the eyelet. Neither is in the catalogue until one of each was printed.
+
+The bag_charm is glued on a bag with holes: a pocket in its back takes the pin that comes through the hole from inside.
+
+The medallion is a round or star plate with an eyelet and, next to it on the bed, the open links of its chain.
+
+The photo_organizer is the same dish grown tall: walls along the outline of the picture, and inside them a grid of
+dividers, a block with round holes, or one open pocket.
+
 The tray is a little dish in the shape of the picture: a floor, a wall round it, and the picture cut into the floor
 (one colour), inlaid in it in colours (a multi-material print) or left out.
 """
@@ -27,16 +40,16 @@ import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray", "badge", "medallion", "photo_organizer", "bag_charm", "straw", "opener")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
     "width": (10, 250), "height": (6, 250), "wall": (1.2, 3), "thickness": (1.2, 15), "frame": (0, 10), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
-    "mag_d": (4, 30), "mag_h": (1, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2),
+    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 40), "cell": (20, 80), "hole_d": (8, 40), "bag_hole": (6, 20), "bag_wall": (1, 10), "straw_d": (5, 14),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle")}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex"), "photo_organizer": ("image", "circle"), "bag_charm": ("image", "circle", "rect"), "straw": ("image", "circle"), "opener": ("image", "circle", "rect")}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -126,6 +139,168 @@ def _roomiest(M, cs, need):
     return x0 + (ix - 1) * cell, y0 + (iy - 1) * cell, float(inside[iy, ix])
 
 
+def _caption(M, p, layers, info, text, body_kind, fit_d, warn):
+    """
+    A name under the picture (badge). The letters join one of the picture's own colours, the one that reads best on the
+    plate, so the name costs no filament and no change of its own. Returns the layers and the info with the name in them.
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    aw, ah = info["size"]
+    art, tinfo = S.text(M, [text], p.get("font"), 10)
+    w0, h0 = S.size(art)
+    k = min(aw / w0, 0.16 * ah / 10, 0.7)                      # as wide as the picture at most, and never the main thing: capitals of 7 mm or less
+    if 10 * k < 3.0:
+        warn.append("name_small")
+    art = S.fit(art, width_mm=w0 * k)
+    tx0, ty0, tx1, ty1 = art.bounds()
+    tw, th, m = tx1 - tx0, ty1 - ty0, 1.2
+    left = aw / 2 - tw / 2
+    # the lowest point of the picture above the name: the name hangs there, not under the whole picture's box
+    sil = info["silhouette"]
+    over = sil ^ C.square([tw + 2 * m, ah + 2]).translate([left - m, -1])
+    foot = 0.0 if over.is_empty() else over.bounds()[1]
+    top = foot - 1.0
+    art = art.translate([left - tx0, top - ty1])
+    pad = S.rounded_rect(M, tw + 2 * m, th + m + 1.5, min(2.0, (th + 2 * m) / 3)).translate([left - m, top - th - m])
+    # the name takes the colour furthest in lightness from the plate (the plate is the picture's lowest colour unless
+    # the picture is a motif on a round or square plate, which gets a filament of its own: there the darkest reads best)
+    if (body_kind == "image" or info["background"] == "kept") and len(layers) > 1:
+        base = _light(layers[0]["hex"])
+        at = max(range(1, len(layers)), key=lambda i: abs(_light(layers[i]["hex"]) - base))
+    else:
+        at = min(range(len(layers)), key=lambda i: _light(layers[i]["hex"]))
+    for i, layer in enumerate(layers):
+        if i <= at:
+            layer["stack"] = layer["stack"] + art               # the colours under the name carry it
+    layers[at]["own"] = layers[at]["own"] + art
+    sil = sil + pad
+    dx, dy = max(0.0, m - left), max(0.0, -(top - th - m))
+    width, height = max(aw, left + tw + m) + dx, ah + dy
+    scale = min(1.0, fit_d / math.hypot(width, height)) if fit_d else 1.0      # in a round body the two together must fit
+    move = lambda cs: cs.translate([dx, dy]).scale([scale, scale])            # noqa: E731
+    for layer in layers:
+        layer["own"], layer["stack"] = move(layer["own"]), move(layer["stack"])
+    info = dict(info, silhouette=move(sil), size=[width * scale, height * scale], missing_chars=tinfo.get("missing_chars", []),
+                caption={"index": layers[at]["index"], "height": round(10 * k * scale, 1)})
+    return layers, info
+
+
+LINK = (30.0, 18.0, 4.0, 0.4)    # a chain link: long, wide, the bar, and how much narrower than the bar its gap is (it snaps in)
+LINK_ROW = 7                     # links in a row on the bed
+
+
+def _chain(M, count, tall, medal_w, medal_h):
+    """
+    Open links of a chain: an oval ring with a gap in the middle of one long side, where a chain under load does not
+    pull. As tall as the medal's plate, so they are printed in its one filament. They are laid round a medal whose
+    corner is at the origin: first beside it, as high as it reaches, then in rows above it, never wider than a row of
+    seven, so the whole plate fits a bed of 250 mm. Returns (solid, width and depth of the plate with the medal) or None.
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    long, wide, bar, snap = LINK
+    gap = min(bar, tall) - snap                              # the neighbour goes through by its thinner side
+    oval = (C.circle(wide / 2, 64).translate([wide / 2, wide / 2]) + C.circle(wide / 2, 64).translate([long - wide / 2, wide / 2])).hull()
+    link = oval - oval.offset(-bar, J, 2.0, 32) - C.square([gap, bar + 2]).translate([long / 2 - gap / 2, wide - bar - 1])
+    if count < 1:
+        return None
+    one = link.extrude(tall)
+    step_x, step_y = long + 3.0, wide + 3.0
+    widest = LINK_ROW * step_x - 3.0
+    beside = (max(0, int((widest - medal_w - 4.0 + 3.0) // step_x)), max(0, int((medal_h + 3.0) // step_y)))      # columns, rows next to the medal
+    spots = [(medal_w + 4.0 + c * step_x, r * step_y) for r in range(beside[1]) for c in range(beside[0])]
+    spots += [((i % LINK_ROW) * step_x, medal_h + 4.0 + (i // LINK_ROW) * step_y) for i in range(max(0, count - len(spots)))]
+    spots = spots[:count]
+    return (M.Manifold.compose([one.translate([x, y, 0]) for x, y in spots]),
+            max([medal_w] + [x + long for x, _ in spots]), max([medal_h] + [y + wide for _, y in spots]))
+
+
+INSIDES = ("grid", "holes", "open")
+
+
+def _inside(M, Invalid, p, inner, wall, floor, rise, cell, hole_d):
+    """
+    What divides a tall dish into an organizer: walls in a grid with cells of about `cell` (pencils, make-up), or a
+    solid block with round holes of `hole_d` in a honeycomb (toothbrushes), or nothing (one pocket).
+    Returns (the solid to add, or None; what it makes: {"kind", "count"}).
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    kind = p.get("inside", INSIDES[0])
+    if kind not in INSIDES:
+        raise Invalid("bad_choice", "inside")
+    if kind == "open":
+        return None, {"kind": kind, "count": 1}
+    x0, y0, x1, y1 = inner.bounds()
+    if kind == "grid":
+        bars = C()
+        for lo, hi, across in ((x0, x1, False), (y0, y1, True)):
+            cells = max(1, int(round((hi - lo) / cell)))
+            for i in range(1, cells):
+                at = lo + i * (hi - lo) / cells - wall / 2
+                bars = bars + (C.square([x1 - x0 + 2, wall]).translate([x0 - 1, at]) if across else C.square([wall, y1 - y0 + 2]).translate([at, y0 - 1]))
+        count = len([c for c in (inner - bars).decompose() if c.area() > 60.0])      # a sliver in a corner is no compartment
+        if bars.is_empty():
+            return None, {"kind": kind, "count": 1}
+        # the dividers reach a little into the wall, so they are one body with it
+        return (bars ^ inner.offset(0.3, J, 2.0, 16)).extrude(rise - floor).translate([0, 0, floor]), {"kind": kind, "count": count}
+    pitch = hole_d + max(wall, 1.6)
+    zone = inner.offset(-(hole_d / 2 + 0.4), J, 2.0, 16)
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    spots = []
+    rows = int((y1 - y0) / (pitch * 0.866)) + 2
+    cols = int((x1 - x0) / pitch) + 2
+    for r in range(-rows, rows + 1):
+        for c in range(-cols, cols + 1):
+            x, y = cx + (c + (0.5 if r % 2 else 0.0)) * pitch, cy + r * pitch * 0.866
+            if not zone.is_empty() and not (C.square([0.2, 0.2]).translate([x - 0.1, y - 0.1]) ^ zone).is_empty():
+                spots.append((x, y))
+    if not spots:
+        raise Invalid("shape_too_small")
+    drill = M.Manifold.cylinder(rise - floor + 1, hole_d / 2, hole_d / 2, 64)
+    block = inner.offset(0.3, J, 2.0, 16).extrude(rise - floor).translate([0, 0, floor])
+    return block - M.Manifold.compose([drill.translate([x, y, floor]) for x, y in spots]), {"kind": kind, "count": len(spots)}
+
+
+def _placed(M, solid, px, py, nx, ny, box):
+    """
+    A solid built in its own frame (u away from the shape, v up from the bed, w along the outline) set on the outline at
+    (px, py) where the way out is (nx, ny). `box` is its footprint there as (u0, u1, w0, w1). Returns (solid, footprint).
+    """
+    import numpy as np
+    tx, ty = ny, -nx
+    placed = solid.transform(np.array([[nx, 0.0, tx, px], [ny, 0.0, ty, py], [0.0, 1.0, 0.0, 0.0]]))
+    u0, u1, w0, w1 = box
+    corners = [(px + nx * u + tx * w, py + ny * u + ty * w) for u, w in ((u0, w0), (u1, w0), (u1, w1), (u0, w1))]
+    return placed, M.CrossSection([corners], M.FillRule.NonZero)
+
+
+def _clip(M, px, py, nx, ny, d):
+    """
+    A clip for a drinking straw: a tube open on top for a little over half the straw's width, lying on the bed beside
+    the shape. The straw snaps in from the face and runs past the shape, so the top of the straw stays free to drink from.
+    Returns (the clip, its footprint, the tab of the plate it stands on).
+    """
+    C = M.CrossSection
+    r_in, wall, length = d / 2 + 0.2, 1.6, 14.0
+    r_out = r_in + wall
+    ring = C.circle(r_out, 72) - C.circle(r_in, 72) - C.square([0.6 * d, r_out + 1]).translate([-0.3 * d, 0])
+    # sunk half a millimetre into the bed and cut flat there, so it lies on a strip and not on a line; it bites into the edge of the shape
+    ring = ring.translate([r_out - 0.8, r_out - 0.5]) ^ C.square([4 * r_out, 4 * r_out]).translate([-2 * r_out, 0])
+    solid, foot = _placed(M, ring.extrude(length).translate([0, 0, -length / 2]), px, py, nx, ny, (-0.8, 2 * r_out - 0.8, -length / 2, length / 2))
+    # a tab of the plate under the clip and a little way into the shape: the clip holds along its whole length, whatever the outline does there
+    tab = _placed(M, M.Manifold.cube([1, 1, 1]), px, py, nx, ny, (-4.0, r_out, -length / 2, length / 2))[1]
+    return solid, foot + tab, tab
+
+
+def _tongue(M, px, py, nx, ny, t):
+    """
+    The tongue of a can opener: a wedge as thick as the plate at its root and 1.2 mm at its tip, 14 mm long. It slides
+    under the tab of a can and lifts it, so a fingernail does not have to.
+    """
+    root_slab = M.Manifold.cube([0.4, t, 13.0]).translate([-1.0, 0, -6.5])
+    tip_slab = M.Manifold.cube([0.4, 1.2, 8.0]).translate([13.6, 0, -4.0])
+    return _placed(M, (root_slab + tip_slab).hull(), px, py, nx, ny, (-1.0, 14.0, -6.5, 6.5))
+
+
 def build(M, Invalid, p, product):
     C, J = M.CrossSection, M.JoinType.Round
     n = lambda key, d: _num(Invalid, p, key, d)       # noqa: E731
@@ -134,13 +309,16 @@ def build(M, Invalid, p, product):
     if body_kind not in BODIES[product]:
         raise Invalid("bad_choice", "body")
     flush, rim, bevel = (bool(p.get(f, False)) for f in ("flush", "rim", "bevel"))
-    dish = product == "tray"                                  # the shape is a little dish, the picture is in its floor
-    floor_mode = p.get("floor", "engraved") if dish else None
+    dish = product in ("tray", "photo_organizer")             # the shape is a little dish, the picture is in its floor
+    if product == "photo_organizer":
+        floor_mode, frame = "plain", 0.0                      # a tall dish: nobody sees its floor, the picture only gives the outline
+    else:
+        floor_mode = p.get("floor", "engraved") if dish else None
     if dish:
         if floor_mode not in ("engraved", "colors", "plain"):
             raise Invalid("bad_choice", "floor")
         flush, rim, bevel = floor_mode == "colors", False, False       # colours of a floor can only be inlaid: the walls stand in the same layers
-    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter"))
+    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread", "medallion")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter"))
     biscuit = product == "cookie"                             # a picture or a silhouette as dough, icing piped on it by hand
     cookie = product in ("gingerbread", "name_letter", "topper")      # the shape is ours, the visitor brings the name
     warn = []
@@ -193,6 +371,11 @@ def build(M, Invalid, p, product):
                 # a whole photo fills the body to its edge, a cut-out motif sits inside it
                 options["fit"] = ("cover", 2 * inner_r, 2 * inner_r) if kept else ("circle", 2 * (inner_r - 1.0))
             layers, info = S.colors(M, art_path, art_w, options)
+            if product == "badge" and lines:
+                if geometric and info["background"] == "kept":
+                    warn.append("caption_photo")              # a whole photo fills the circle: no room under it
+                else:
+                    layers, info = _caption(M, p, layers, info, lines[0], body_kind, 2 * (inner_r - 1.0) if geometric else 0.0, warn)
     except S.ArtworkError as e:
         raise Invalid(e.code, str(e).split(": ", 1)[1] if ": " in str(e) else "")
     aw, ah = info["size"]
@@ -224,7 +407,7 @@ def build(M, Invalid, p, product):
         body2d, links = S.joined(M, body2d, max(edge, 0.6), max(2.0, min(aw, ah) * 0.06))
         if links:
             warn.append("pieces_tied")
-    if (is_text or cookie) and info.get("missing_chars"):
+    if (is_text or cookie or info.get("caption")) and info.get("missing_chars"):
         warn.append("missing_chars")
     if info.get("ignored_outlines"):
         warn.append("outlines_ignored")
@@ -281,16 +464,47 @@ def build(M, Invalid, p, product):
         neck = (C.circle(max(1.0, wall * 0.6), 24).translate([cx - nx * hole_d / 2, cy - ny * hole_d / 2]) + C.circle(max(1.0, wall * 0.6), 24).translate([px - nx * wall, py - ny * wall])).hull()
         body2d = body2d + ring_out + (neck - hole2d)
         notes["eyelet"] = {"x": round(cx, 2), "y": round(cy, 2), "hole": hole_d}
+    foot = None
+    if product == "name_letter" and bool(p.get("stand", False)):
+        # a letter that would not stand by itself gets a foot under its lowest part and a base with a slot for it. The base
+        # is as high as the letter is thick, so the one change of filament (the name) finds nothing of the base to colour.
+        t = max(t, 8.0)
+        fx0, fy0, fx1, fy1 = body2d.bounds()
+        reach = min(8.0, max(3.0, (fy1 - fy0) * 0.18))
+        low = body2d ^ C.square([fx1 - fx0, reach]).translate([fx0, fy0])
+        a, b = (fx0, fx1) if low.is_empty() else (low.bounds()[0], low.bounds()[2])
+        if b - a < 0.45 * (fx1 - fx0):
+            mid = (a + b) / 2
+            a, b = max(fx0, mid - 0.225 * (fx1 - fx0)), min(fx1, mid + 0.225 * (fx1 - fx0))
+        body2d = body2d + C.square([b - a, 7.5 + reach]).translate([a, fy0 - 7.5])
+        foot = b - a
+    grip, reach2d = None, None
+    if product in ("straw", "opener"):
+        # not a ring but a clip or a tongue sits on the outline, where the visitor drags it
+        travel = S.dense(S.outer_ring(body2d))
+        px, py, nx, ny = S.along(travel, n("eye_pos", 0) / 100.0)
+        if product == "straw":
+            # the clip stands upright beside the picture whatever way the outline runs there: a straw is held upright
+            mid = (body2d.bounds()[0] + body2d.bounds()[2]) / 2
+            grip, reach2d, tab = _clip(M, px, py, 1.0 if px >= mid else -1.0, 0.0, n("straw_d", 8))
+            body2d = body2d + tab
+        else:
+            grip, reach2d = _tongue(M, px, py, nx, ny, t)
+        notes["eyelet"] = {"x": round(px, 2), "y": round(py, 2), "hole": 0}
     plate2d = body2d - hole2d if hole2d is not None else body2d
     if hole2d is not None:
         for layer in layers:
             layer["own"], layer["stack"] = layer["own"] - hole2d, layer["stack"] - hole2d
 
     # ── heights ─────────────────────────────────────────────────────────────────────────────────────────────────
-    if product == "magnet" and p.get("mount", "glue") not in MOUNTS:
+    pocketed = product in ("magnet", "badge")                # a pocket in the back: for a magnet, or for the sticky dot of a badge reel
+    if pocketed and p.get("mount", "glue") not in MOUNTS:
         raise Invalid("bad_choice", "mount")
-    mount = p.get("mount", "glue") if product == "magnet" else "none"
+    mount = p.get("mount", "glue") if pocketed else "none"
     mag_d, mag_h, mag_gap = (n("mag_d", 10), n("mag_h", 2), n("mag_gap", 0.2)) if mount != "none" else (0, 0, 0)
+    if product == "bag_charm":
+        # the pocket takes the pin that comes through the hole of the bag: a little thinner than the hole, glued in 3 mm deep
+        mount, mag_d, mag_h, mag_gap = "glue", n("bag_hole", 12) - 0.6, 3.0, 0.15
     if mount in ("glue", "press") and t < mag_h + 0.8:
         t = round(mag_h + 0.8, 2)                             # a floor of four layers over the magnet
         notes["thickened"] = t
@@ -322,6 +536,11 @@ def build(M, Invalid, p, product):
             whole = body
         walls = (plate2d - inner).extrude(rise)
         body, whole, top = body + walls, whole + walls, rise
+        if product == "photo_organizer":
+            filling, made = _inside(M, Invalid, p, inner, n("wall", 1.6), t, rise, n("cell", 40), n("hole_d", 20))
+            if filling is not None:
+                body, whole = body + filling, whole + filling
+            notes["pockets"] = dict(made, depth=round(rise - t, 1))
     rim_solid = None
     if rim:
         rim_top = (t + INLAY) if flush else top
@@ -344,7 +563,8 @@ def build(M, Invalid, p, product):
             body, whole = body - cut, whole - cut
             solids = [(layer, s - cut) for layer, s in solids]
         else:
-            cut = M.Manifold.cylinder(mag_h + 0.2 + 1, need, need, 64).translate([mx, my, -1])
+            deep = mag_h + (0.2 if product == "magnet" else 0.0)      # a magnet must not stand proud; a sticky dot is as deep as asked
+            cut = M.Manifold.cylinder(deep + 1, need, need, 64).translate([mx, my, -1])
             body, whole = body - cut, whole - cut
         notes["magnet"] = {"x": round(mx, 2), "y": round(my, 2), "d": mag_d, "h": mag_h, "mount": mount}
     if product == "coaster" and p.get("grooves", False):
@@ -359,6 +579,53 @@ def build(M, Invalid, p, product):
         if cut2d is not None:
             cut = cut2d.extrude(0.4 + 1).translate([0, 0, -1])
             body, whole = body - cut, whole - cut
+
+    chain = None
+    if product == "medallion":
+        # the links lie round the medal on the bed and belong to its plate: one part, one filament
+        bx0, by0, bx1, by1 = body2d.bounds()
+        chain = _chain(M, int(n("links", 20)), t, bx1 - bx0, by1 - by0)
+        if chain is not None:
+            links = chain[0].translate([bx0, by0, 0])
+            body, whole = body + links, whole + links
+            notes["chain"] = {"links": int(n("links", 20)), "length": round(int(n("links", 20)) * (LINK[0] - 2 * LINK[2]) / 10.0) * 10}
+
+    if grip is not None:
+        body, whole = body + grip, whole + grip
+        solids = [(layer, s - grip) for layer, s in solids]      # where the clip stands, the colours give way to it
+    beside = None                                            # what lies on the bed next to the product: the plate's width, depth, and its own height
+    if chain is not None:
+        beside = (chain[1], chain[2], 0.0)
+    if biscuit and bool(p.get("tray", False)):
+        # a little tray to show the biscuit on: its outline with a millimetre of air, a rim 2 mm wide, a floor of 1.6 mm.
+        # Lower than the biscuit is thick, so no change of filament for the icing reaches it.
+        room = body2d.offset(1.0, J, 2.0, 24)
+        rim = room.offset(2.0, J, 2.0, 24)
+        tray = rim.extrude(min(4.6, t - 0.4)) - room.extrude(t).translate([0, 0, 1.6])
+        bx0, by0, bx1, by1 = body2d.bounds()
+        rx0, ry0, rx1, ry1 = rim.bounds()
+        tray = tray.translate([bx1 + 6.0 - rx0, by0 - ry0, 0])
+        body, whole = body + tray, whole + tray
+        notes["tray"] = [round(rx1 - rx0, 1), round(ry1 - ry0, 1)]
+        beside = (bx1 - bx0 + 6.0 + rx1 - rx0, max(by1 - by0, ry1 - ry0), 0.0)
+    if foot is not None:
+        base_w, base_d = max(40.0, foot + 24.0), max(32.0, t + 26.0)
+        base = S.rounded_rect(M, base_w, base_d, 4).extrude(t) - M.Manifold.cube([foot + 0.5, t + 0.5, 7.0]).translate([(base_w - foot) / 2 - 0.25, (base_d - t) / 2 - 0.25, t - 6.0])
+        bx0, by0, bx1, by1 = body2d.bounds()
+        base = base.translate([bx1 + 6.0, by0, 0])
+        body, whole = body + base, whole + base
+        notes["stand"] = [round(base_w, 1), round(base_d, 1), round(t, 1)]
+        beside = (bx1 - bx0 + 6.0 + base_w, max(by1 - by0, base_d), 0.0)
+    if product == "bag_charm":
+        # the pin: a head that stays inside the bag, a stem through its wall into the pocket. It is printed head down next
+        # to the charm, in the charm's part; taller than the charm, so its top comes out in the last colour (nobody sees it)
+        bx0, by0, bx1, by1 = body2d.bounds()
+        head_r, stem_h = mag_d / 2 + 4.0, 2.0 + n("bag_wall", 4) + mag_h - 0.3
+        pin = M.Manifold.cylinder(2.0, head_r, head_r, 64) + M.Manifold.cylinder(stem_h, mag_d / 2, mag_d / 2, 64)
+        pin = pin.translate([bx1 + 4.0 + head_r, by0 + head_r, 0])
+        body, whole = body + pin, whole + pin
+        notes["pin"] = {"d": round(mag_d, 1), "head": round(2 * head_r, 1), "height": round(stem_h, 1)}
+        beside = (bx1 - bx0 + 4.0 + 2 * head_r, max(by1 - by0, 2 * head_r), stem_h)
 
     # ── colours of the parts ───────────────────────────────────────────────────────────────────────────────────
     own = _code(p, "body")
@@ -386,7 +653,7 @@ def build(M, Invalid, p, product):
     rim_color = _code(p, "rim") or body_color
 
     # ── one earring becomes a pair ─────────────────────────────────────────────────────────────────────────────
-    x0, y0, x1, y1 = body2d.bounds()
+    x0, y0, x1, y1 = (body2d if reach2d is None else body2d + reach2d).bounds()
     span = x1 - x0
 
     def laid(solid):
@@ -452,14 +719,19 @@ def build(M, Invalid, p, product):
     if mount == "through" and count:
         warn.append("magnet_shows")
     w_all, h_all = (2 * span + GAP if product == "earrings" else span), y1 - y0
+    each_h = h_all
+    if beside is not None:
+        w_all, h_all = beside[0], beside[1]
     notes.update({
-        "outer": [round(w_all, 1), round(h_all, 1), round(top, 1)], "each": [round(span, 1), round(h_all, 1), round(top, 1)], "copies": 2 if product == "earrings" else 1,
+        "outer": [round(w_all, 1), round(h_all, 1), round(max(top, beside[2] if beside else 0.0, grip.bounding_box()[5] if grip is not None else 0.0), 1)], "each": [round(span, 1), round(each_h, 1), round(max(top, grip.bounding_box()[5] if grip is not None else 0.0), 1)], "copies": 2 if product == "earrings" else 1,
         "colors": listed, "body_color": {"code": body_color[0], "hex": body_color[1]}, "paint": paint, "parts": [name for name, _ in pieces],
         "filaments": len(filaments), "multi_material": bool(multi), "color_changes": changes, "found": info["found"], "wanted": info["wanted"],
         "background": info["background"], "source": info["source"], "warnings": warn, "thin_pct": thin, "missing_chars": info.get("missing_chars", []),
     })
     if has_rim:
         notes["rim_color"] = {"code": rim_color[0], "hex": rim_color[1]}
+    if info.get("caption"):
+        notes["caption"] = info["caption"]
     if biscuit:
         # where the picture's own corner lies in the model and how wide it is: strokes are stored in shares of that width
         notes["frame"] = [round(-x0, 2), round(-y0, 2), round(aw, 2)]
@@ -467,7 +739,7 @@ def build(M, Invalid, p, product):
         notes["strokes"] = len([c for c in listed if c["part"].startswith("icing_")])
     if len(changes) == 1:
         notes["color_change_mm"] = changes[0]["z"]          # one change is what the farm and the slicer projects already know
-    if eyelet:
+    if eyelet or grip is not None:
         # the outline the eyelet travels on, for dragging it in the preview: 120 points evenly spread along it, the
         # first one where eye_pos is 0, so a point's place in the list is the share of the way round
         notes["outline"] = [[round(c - o, 1) for c, o in zip(S.along(travel, i / 120.0)[:2], (x0, y0))] for i in range(120)]
@@ -714,7 +986,11 @@ def _rounded_top(M, outline, t, r):
 
 
 def _stroke(M, pts, w, tip):
-    """One stroke of the piping bag as an outline: a ribbon `w` wide along the points, round or flat at its ends, or a row of dots."""
+    """
+    One stroke of the piping bag as an outline: a ribbon `w` wide along the points, round or flat at its ends, a row of
+    dots, a row of sweets (round, nearly three times as wide as the line) or a scatter of sprinkles (little rods lying
+    every which way along the stroke, always the same way for the same stroke).
+    """
     import numpy as np
     C = M.CrossSection
     kept = []
@@ -723,17 +999,26 @@ def _stroke(M, pts, w, tip):
             kept.append((x, y))
     if not kept:
         return None
+    def rod(x, y, k):
+        """A sprinkle: a little rod at (x, y), turned and nudged by its number so that no two lie alike."""
+        turn = (k * 97) % 180
+        dx, dy = ((k * 53) % 17 / 8.0 - 1.0) * 0.8 * w, ((k * 31) % 13 / 6.0 - 1.0) * 0.8 * w
+        long, wide = 2.2 * w, max(0.9, 0.45 * w)
+        return (C.circle(wide / 2, 12).translate([-long / 2 + wide / 2, 0]) + C.circle(wide / 2, 12).translate([long / 2 - wide / 2, 0])).hull().rotate(turn).translate([x + dx, y + dy])
+
     if len(kept) == 1:
-        return C.circle(w / 2 if tip != "dots" else w * 0.6, 24).translate(list(kept[0]))
+        if tip == "sprinkles":
+            return C.batch_boolean([rod(kept[0][0], kept[0][1], k) for k in range(5)], M.OpType.Add)
+        return C.circle({"dots": 0.6 * w, "candy": 1.4 * w}.get(tip, w / 2), 32).translate(list(kept[0]))
     a = np.array(kept, dtype=np.float64)
-    if tip == "dots":
+    if tip in ("dots", "candy", "sprinkles"):
         seg = np.linalg.norm(np.diff(a, axis=0), axis=1)
         run = np.concatenate([[0.0], np.cumsum(seg)])
         out = None
-        for s in np.arange(0.0, run[-1] + 1e-6, max(1.7 * w, 1.0)):
+        for k, s in enumerate(np.arange(0.0, run[-1] + 1e-6, {"candy": 3.4 * w, "sprinkles": 1.2 * w}.get(tip, max(1.7 * w, 1.0)))):
             i = int(min(np.searchsorted(run, s, side="right") - 1, len(seg) - 1))
             p = a[i] + (a[i + 1] - a[i]) * ((s - run[i]) / max(seg[i], 1e-9))
-            dot = C.circle(w / 2, 20).translate([float(p[0]), float(p[1])])
+            dot = rod(float(p[0]), float(p[1]), k) if tip == "sprinkles" else C.circle(1.4 * w if tip == "candy" else w / 2, 32 if tip == "candy" else 20).translate([float(p[0]), float(p[1])])
             out = dot if out is None else out + dot
         return out
     way = np.gradient(a, axis=0)

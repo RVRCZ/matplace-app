@@ -6,7 +6,7 @@ return [
     'h1' => 'Regalos con nombre: colgante, llavero, etiqueta, cartel',
     'intro' => [
         'Esta página es para quien busca un pequeño regalo personal con nombre. Usted elige la ocasión y el producto: un colgante con la forma del nombre en letra manuscrita, un llavero, una etiqueta, un cartel de puerta o un adorno con ojal. El enlace abre la herramienta de carteles con un texto de muestra, que usted sustituye por el suyo.',
-        'En la herramienta elige la forma, la letra y el acabado y ve al instante la vista 3D, las medidas exactas y el precio. Tras el nombre puede añadir un símbolo, por ejemplo un corazón o una estrella. Puede pedirnos la impresión del diseño o descargar gratis el modelo para su impresora. El texto admite dos líneas de hasta 40 caracteres cada una.',
+        'En la herramienta elige la forma, la letra y el acabado y ve al instante la vista 3D, las medidas exactas y el precio. Tras el nombre puede añadir un símbolo, por ejemplo un corazón o una estrella. Puede pedirnos la impresión del diseño o descargar gratis el modelo para su impresora. El texto admite hasta tres líneas de hasta 40 caracteres cada una.',
     ],
     'steps' => [
         ['name' => 'Elija un regalo', 'text' => 'Los productos están ordenados por ocasión: Navidad, San Valentín y aniversarios, vuelta al cole, cumpleaños y casa nueva.'],

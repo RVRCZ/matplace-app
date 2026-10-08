@@ -12,7 +12,7 @@ import { pickArtwork, PickedArtwork } from './artwork';
 import { icon } from '../site/icon';
 
 interface Cfg {
-    kind: string; family: string | null; sample: string | null; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
+    kind: string; family: string | null; sample: string | null; preset: string | null; captioned: boolean; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
     presets: Record<string, Record<string, number | string>>;
     fills: Record<string, Record<string, Record<string, number | string>>>;
     config: PriceConfig & { currency: string };
@@ -28,9 +28,13 @@ interface ShapeColor { part: string; index: number; rgb: string; code: string; h
 interface ShapeNotes {
     colors?: ShapeColor[]; paint?: Record<string, string>; parts?: string[]; body_color?: { code: string; hex: string }; rim_color?: { code: string; hex: string };
     filaments?: number; multi_material?: boolean; color_changes?: { z: number }[]; found?: number; wanted?: number; each?: number[]; copies?: number;
-    eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; source?: string;
+    eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; chain?: { links: number; length: number }; pockets?: { kind: string; count: number; depth: number }; pin?: { d: number; head: number; height: number }; stand?: number[]; source?: string;
     frame?: [number, number, number]; draw_z?: number;
+    layers?: { part: string; index: number; box: [number, number, number, number]; z: number }[]; outer?: number[];
 }
+/** A layer of a composition: a text, a picture (of the library or the visitor's own) or a shape; where its middle lies, how wide it is, how it is turned, its filament. */
+interface Layer { kind: string; text: string; typeface: string; art: string; art_name: string; shape: string; x: number; y: number; w: number; turn: number; code: string; hidden: boolean }
+
 /** A stroke of icing drawn on a biscuit: the filament, the width in mm, the nib, the points in shares of the picture's width. */
 interface Stroke { c: string; w: number; t: string; p: [number, number][] }
 interface Meta { bbox: { x: number; y: number; z: number }; volume_mm3: number; area_mm2: number; notes: Record<string, unknown>; parts?: Piece[] }
@@ -60,6 +64,8 @@ export function bootParam(stage: Stage): void {
     const shapeNotes = (): ShapeNotes => (lastMeta?.notes ?? {}) as ShapeNotes;
     // a biscuit: the icing drawn on it by hand
     const cookie = cfg.kind === 'cookie';
+    const compose = cfg.kind === 'compose';
+    const layers: Layer[] = []; let chosen = 0;         // a composition: its layers from the bottom up, and which one is being edited
     const strokes: Stroke[] = [];
     let drawing = false; let pen = spoolCode('white');
     /** A new picture has new colours: what was said about the old ones (which filament, which order) no longer holds. */
@@ -82,6 +88,7 @@ export function bootParam(stage: Stage): void {
         if (shape && merge.length) p.merge = merge;
         if (shape && order.length) p.order = order;
         if (cookie && strokes.length) p.strokes = strokes;
+        if (compose) p.layers = layers;
         if (Object.keys(partColors).length) p.part_colors = { ...partColors };
         return p;
     };
@@ -114,7 +121,7 @@ export function bootParam(stage: Stage): void {
 
     /** Facts the tool measured (outer and inner size, a cell, what it fits…): rows under the status line. */
     const renderDims = (m: Meta): void => {
-        const n = m.notes as { outer?: number[]; inner?: number[]; cell?: number[]; slot?: number; fits?: number[]; module_mm?: number; modules?: number; quiet_zone_mm?: number; saucer_d?: number; drainage_holes?: number; needs?: string[]; led_m?: number; bridges?: number };
+        const n = m.notes as { outer?: number[]; inner?: number[]; cell?: number[]; slot?: number; fits?: number[]; module_mm?: number; modules?: number; quiet_zone_mm?: number; saucer_d?: number; drainage_holes?: number; needs?: string[]; led_m?: number; bridges?: number; ties?: number; open_pct?: number; things?: number[][] };
         const rows: [string, string][] = [];
         const dims = (a: number[]) => `${a.map((v) => nf.format(v)).join(' × ')} mm`;
         if (n.inner) rows.push([t('param.inner'), dims(n.inner)]);
@@ -124,6 +131,8 @@ export function bootParam(stage: Stage): void {
         const facts: string[] = [];
         if (n.module_mm) facts.push(t('param.qr.facts', { m: nf.format(n.module_mm), q: nf.format(n.quiet_zone_mm ?? 0), c: n.modules ?? 0 }));
         if (n.bridges) facts.push(t('param.bridges', { n: n.bridges }));
+        if (n.ties) facts.push(t('param.papel.ties', { n: n.ties, o: n.open_pct ?? 0 }));
+        if (n.things) facts.push(t('param.insert.things', { n: n.things.length, s: n.things.map((s) => s.map((v) => nf.format(v)).join(' × ')).join(', ') }));
         if (n.led_m) facts.push(t('param.lightbox.led', { m: nf.format(n.led_m) }));
         if (n.saucer_d) facts.push(t('param.saucer', { d: nf.format(n.saucer_d), h: n.drainage_holes ?? 0 }));
         const beadCount = (m.notes as { count?: number; each?: number[] });
@@ -132,6 +141,14 @@ export function bootParam(stage: Stage): void {
         if (pocket) facts.push(t('param.cup.pocket', { w: nf.format(pocket) }));
         const magnet = shapeNotes().magnet;
         if (shape && magnet && magnet.mount !== 'through') facts.push(t('shape.magnet.fact', { d: nf.format(magnet.d), h: nf.format(magnet.h) }));
+        const chain = shapeNotes().chain;
+        if (shape && chain) facts.push(t('shape.chain.fact', { n: chain.links, l: nf.format(chain.length / 10) }));
+        const pin = shapeNotes().pin;
+        if (shape && pin) facts.push(t('shape.pin.fact', { d: nf.format(pin.d), h: nf.format(pin.head), l: nf.format(pin.height) }));
+        const base = shapeNotes().stand;
+        if (shape && base) facts.push(t('shape.stand.fact', { w: nf.format(base[0]), d: nf.format(base[1]), h: nf.format(base[2]) }));
+        const pockets = shapeNotes().pockets;
+        if (shape && pockets && pockets.kind !== 'open') facts.push(t(`shape.pockets.${pockets.kind}`, { n: pockets.count, d: nf.format(pockets.depth) }));
         if ((n.needs ?? []).length) facts.push(`${t('param.needs')}: ${(n.needs ?? []).map((x) => t(`param.need.${x}`)).join(', ')}`);
         const el = $('param-dims');
         el.innerHTML = rows.map(([k, v]) => `<div class="flex justify-between gap-3"><dt class="text-muted">${k}</dt><dd class="font-medium text-ink">${v}</dd></div>`).join('')
@@ -236,7 +253,7 @@ export function bootParam(stage: Stage): void {
     /** Paints the pieces in the colours picked for their parts. A one-body design takes the colour of its only row. */
     const paintParts = (): void => {
         // a set of bins: each bin whole in its own colour (the region its middle lies in), outer walls included
-        if (shape) {
+        if (shape || compose) {
             // every colour is a piece of its own and the tool said which filament it is
             const paint = shapeNotes().paint ?? {};
             viewer.getPieces().forEach((piece, i) => viewer.setPieceColor(i, paint[piece.name] ?? null));
@@ -453,7 +470,7 @@ export function bootParam(stage: Stage): void {
             valid = true; showError(null);
             if (lastMeta) { renderDims(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus();
-            renderDownloads(); placeEyelet();
+            renderDownloads(); placeEyelet(); placeFrame();
             if (cookie) { renderPen(); armDraw(); }
         } catch {
             if (mine === seq) { valid = false; showError(t('param.failed')); }
@@ -529,6 +546,11 @@ export function bootParam(stage: Stage): void {
     }
 
     /** Fill the form from a preset, a stored design or a step back in the history. */
+    // the font picker scrolls inside its box: the face a design was made with must be the one in view
+    const showFace = (): void => {
+        const box = form.querySelector<HTMLElement>('[data-font-picker]'); const on = box?.querySelector<HTMLInputElement>('input:checked')?.closest<HTMLElement>('label');
+        if (box && on) box.scrollTop = Math.max(0, on.offsetTop - box.clientHeight / 2 + on.clientHeight / 2);
+    };
     const applyValues = (set: Record<string, unknown>): void => {
         Object.entries(set).forEach(([k, v]) => {
             const num = form.querySelector<HTMLInputElement>(`[data-param="${k}"]`); if (num) { num.value = String(v); syncRange(num); }
@@ -539,6 +561,15 @@ export function bootParam(stage: Stage): void {
             if (colour && typeof v === 'string' && v) { colour.value = spoolCode(v); paintChoice(colour); return; }
             const choice = form.querySelector<HTMLInputElement>(`[data-choice="${k}"][value="${String(v)}"]`); if (choice) choice.checked = true;
         });
+        if ('typeface' in set) showFace();
+        if (compose && Array.isArray(set.layers)) {
+            layers.splice(0, layers.length, ...(set.layers as Partial<Layer>[]).map((l) => ({
+                kind: String(l.kind ?? 'shape'), text: String(l.text ?? ''), typeface: String(l.typeface ?? 'sans'), art: String(l.art ?? ''), art_name: String(l.art_name ?? ''), shape: String(l.shape ?? 'rounded'),
+                x: Number(l.x ?? 0), y: Number(l.y ?? 0), w: Number(l.w ?? 50), turn: Number(l.turn ?? 0), code: spoolCode(String(l.code ?? 'white')), hidden: Boolean(l.hidden),
+            })));
+            chosen = Math.min(chosen, layers.length - 1);
+            renderLayers();
+        }
         if (Array.isArray(set.holes)) { holes.splice(0, holes.length, ...(set.holes as Hole[]).map((h) => ({ ...h }))); renderHoles(); }
         if (Array.isArray(set.bins)) { bins.splice(0, bins.length, ...(set.bins as Bin[]).map((b) => ({ x: b.x, y: b.y, w: b.w, h: b.h, color: spoolCode(b.color) }))); renderGrid(); }
         if ('artwork' in set) {
@@ -576,13 +607,13 @@ export function bootParam(stage: Stage): void {
         thumb.classList.toggle('hidden', !picked?.url); thumb.classList.toggle('flex', !!picked?.url);
         adjustThumb();
         state.textContent = '';
-        if (!picked) return;
+        if (!picked || !form.querySelector('[data-text]')) return;      // nothing to fall back on: the picture can only be changed
         const b = document.createElement('button'); b.type = 'button'; b.className = 'text-left text-sm text-muted underline'; b.textContent = stage.t('toolpage.artwork.remove');
         b.onclick = () => { setArtwork(null); void refresh().then(commit); };
         state.appendChild(b);
     };
     const artOpen = document.getElementById('param-artwork-open');
-    if (artOpen) artOpen.onclick = async () => { const picked = await pickArtwork(); if (picked) { setArtwork(picked); void refresh().then(commit); } };
+    if (artOpen) artOpen.onclick = async () => { const picked = await pickArtwork('library', cfg.kind === 'cookie' ? 'cookies' : ''); if (picked) { setArtwork(picked); void refresh().then(commit); } };
 
     // ── modular organizer: bins on the customer's own grid ─────────────────
     const grid = document.getElementById('bin-grid');
@@ -745,6 +776,124 @@ export function bootParam(stage: Stage): void {
         input.value = '0'; syncRange(input); soon(0);
     });
 
+    // ── the chosen layer of a composition: a frame in the viewer to move, resize and turn it by ──
+    const showSlide = (l: Layer, k: 'w' | 'x' | 'y' | 'turn'): void => {
+        const s = document.querySelector<HTMLInputElement>(`#compose-edit [data-layer-slide="${k}"]`);
+        if (s) s.value = String(l[k]);
+        const v = document.querySelector<HTMLElement>(`#compose-edit [data-layer-value="${k}"]`);
+        if (v) v.textContent = `${nf.format(l[k])} ${k === 'turn' ? '°' : t('compose.unit')}`;
+    };
+    const placeFrame = (): void => {
+        const l = layers[chosen]; const n = shapeNotes();
+        // the tool numbers the layers it built: the hidden ones are not among them
+        const at = l && !l.hidden ? layers.slice(0, chosen).filter((x) => !x.hidden).length + 1 : 0;
+        const built = n.layers?.find((x) => x.index === at);
+        if (!compose || !l || !built || !valid || viewPart !== 'all') { viewer.setFrame(null, null); return; }
+        let from: { x: number; y: number; w: number; turn: number } | null = null;
+        viewer.setFrame({ box: built.box, z: n.outer?.[2] ?? built.z }, (c, phase) => {
+            from ??= { x: l.x, y: l.y, w: l.w, turn: l.turn };
+            const within = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
+            l.x = within(Math.round((from.x + c.dx) * 2) / 2, -150, 150);
+            l.y = within(Math.round((from.y + c.dy) * 2) / 2, -150, 150);
+            l.w = within(Math.round(from.w * c.scale), 5, 250);
+            l.turn = ((Math.round(from.turn + c.turn) + 540) % 360) - 180;
+            (['w', 'x', 'y', 'turn'] as const).forEach((k) => showSlide(l, k));
+            const said = c.turn ? `${nf.format(l.turn)}°` : c.scale !== 1 ? `${nf.format(l.w)} ${t('compose.unit')}` : `${nf.format(l.x)} × ${nf.format(l.y)} ${t('compose.unit')}`;
+            if (phase === 'end') { from = null; void refresh().then(commit); }
+            return said;
+        });
+    };
+
+    // ── a composition: its layers and the fields of the chosen one ──
+    /** What a picture is called in the list: the name it came with, or the last word of its place in the library. */
+    const artName = (l: Layer): string => l.art_name || (l.art.startsWith('lib:') ? (l.art.split('/').pop() ?? '') : '');
+    const renderLayers = (): void => {
+        const box = document.getElementById('compose-layers'); const edit = document.getElementById('compose-edit');
+        if (!compose || !box || !edit) return;
+        box.innerHTML = layers.length ? '' : `<p class="text-sm text-muted">${t('compose.empty')}</p>`;
+        // the list shows the layers as they lie: the top one first
+        layers.map((l, i) => i).reverse().forEach((i) => {
+            const l = layers[i];
+            const row = document.createElement('div');
+            row.className = `flex items-center gap-1 rounded-lg border px-2 py-1 text-sm ${i === chosen ? 'border-ink bg-white' : 'border-transparent'} ${l.hidden ? 'opacity-50' : ''}`;
+            const what = l.kind === 'text' ? (l.text || '…') : l.kind === 'art' ? artName(l) : (document.querySelector<HTMLOptionElement>(`#compose-shape option[value="${l.shape}"]`)?.textContent ?? l.shape);
+            const act = (name: string, sign: string, off = false): string => `<button type="button" class="chip !min-h-8 !px-2 !py-0.5" data-layer-act="${name}" aria-label="${t(`compose.layer.${name}`)}" title="${t(`compose.layer.${name}`)}" ${off ? 'disabled' : ''}>${sign}</button>`;
+            row.innerHTML = `<button type="button" class="flex min-w-0 flex-1 items-center gap-2 text-left" data-layer-pick>
+                    <span class="inline-block h-3 w-3 shrink-0 rounded-full border border-line" style="background:${colorOf(l.code)?.hex ?? '#888888'}"></span>
+                    <span class="min-w-0 truncate text-ink" title="${what.replace(/[<>&"]/g, '')}">${t(`compose.layer.${l.kind}`)}: ${what.replace(/[<>&]/g, '')}</span></button>
+                ${act('up', '↑', i === layers.length - 1)}${act('down', '↓', i === 0)}${act(l.hidden ? 'show' : 'hide', l.hidden ? '○' : '●')}${act('copy', '⧉', layers.length >= 12)}${act('remove', '×')}`;
+            row.querySelector<HTMLButtonElement>('[data-layer-pick]')!.onclick = () => { chosen = i; renderLayers(); placeFrame(); };
+            row.querySelectorAll<HTMLButtonElement>('[data-layer-act]').forEach((b) => {
+                b.onclick = () => {
+                    const a = b.dataset.layerAct;
+                    if (a === 'up' || a === 'down') { const to = i + (a === 'up' ? 1 : -1); [layers[i], layers[to]] = [layers[to], layers[i]]; chosen = to; }
+                    if (a === 'hide' || a === 'show') l.hidden = !l.hidden;
+                    if (a === 'copy') { layers.splice(i + 1, 0, { ...l, x: l.x + 6, y: l.y - 6 }); chosen = i + 1; }
+                    if (a === 'remove') { layers.splice(i, 1); chosen = Math.max(0, Math.min(chosen, layers.length - 1)); }
+                    renderLayers(); void refresh().then(commit);
+                };
+            });
+            box.appendChild(row);
+        });
+        const l = layers[chosen];
+        edit.classList.toggle('hidden', !l);
+        if (!l) return;
+        edit.querySelectorAll<HTMLElement>('[data-layer-for]').forEach((el) => el.classList.toggle('hidden', el.dataset.layerFor !== l.kind));
+        ($('compose-text') as HTMLInputElement).value = l.text;
+        ($('compose-font') as HTMLSelectElement).value = l.typeface;
+        ($('compose-shape') as HTMLSelectElement).value = l.shape;
+        $('compose-art-name').textContent = artName(l);
+        paintSwatch($('compose-color'), l.code);
+        $('compose-color-name').textContent = colorOf(l.code) ? `${colorOf(l.code)!.name} · ${materialLabel(colorOf(l.code)!)}` : colorName(l.code);
+        edit.querySelectorAll<HTMLInputElement>('[data-layer-slide]').forEach((s) => {
+            const k = s.dataset.layerSlide as 'w' | 'x' | 'y' | 'turn';
+            s.value = String(l[k]);
+            edit.querySelector<HTMLElement>(`[data-layer-value="${k}"]`)!.textContent = `${nf.format(l[k])} ${k === 'turn' ? '°' : t('compose.unit')}`;
+        });
+    };
+    if (compose) {
+        const changed = (): void => { renderLayers(); void refresh().then(commit); };
+        const now = (): Layer | undefined => layers[chosen];
+        // these fields belong to a layer, not to the design: the form's own listener must not take them for parameters
+        const own = (el: HTMLElement, on: string, f: () => void): void => el.addEventListener(on, (e) => { e.stopPropagation(); f(); });
+        own($('compose-text'), 'input', () => { const l = now(); if (l) l.text = ($('compose-text') as HTMLInputElement).value; });
+        own($('compose-text'), 'change', changed);
+        own($('compose-font'), 'input', () => undefined);
+        own($('compose-font'), 'change', () => { const l = now(); if (l) { l.typeface = ($('compose-font') as HTMLSelectElement).value; changed(); } });
+        own($('compose-shape'), 'input', () => undefined);
+        own($('compose-shape'), 'change', () => { const l = now(); if (l) { l.shape = ($('compose-shape') as HTMLSelectElement).value; changed(); } });
+        document.querySelectorAll<HTMLInputElement>('#compose-edit [data-layer-slide]').forEach((s) => {
+            const k = s.dataset.layerSlide as 'w' | 'x' | 'y' | 'turn';
+            own(s, 'input', () => { const l = now(); if (!l) return; l[k] = Number(s.value); document.querySelector<HTMLElement>(`#compose-edit [data-layer-value="${k}"]`)!.textContent = `${nf.format(l[k])} ${k === 'turn' ? '°' : t('compose.unit')}`; });
+            own(s, 'change', changed);
+        });
+        $('compose-color').onclick = async () => {
+            const l = now(); if (!l) return;
+            lastColorTarget = () => (code) => { l.code = code; changed(); };
+            const picked = await pickColor(l.code);
+            if (picked) { l.code = picked; rememberColor(picked); changed(); }
+        };
+        $('compose-art').onclick = async () => {
+            const l = now(); if (!l) return;
+            const picked = await pickArtwork('library');
+            if (picked) { l.art = picked.ref; l.art_name = picked.name; changed(); }
+        };
+        document.querySelectorAll<HTMLButtonElement>('[data-add-layer]').forEach((b) => {
+            b.onclick = async () => {
+                if (layers.length >= 12) { showError(t('compose.limit')); return; }
+                const kind = b.dataset.addLayer!;
+                const fresh: Layer = { kind, text: kind === 'text' ? 'Text' : '', typeface: 'sans', art: '', art_name: '', shape: 'rounded', x: 0, y: 0, w: kind === 'shape' ? 80 : 40, turn: 0, code: spoolCode(layers.length ? 'black' : 'white'), hidden: false };
+                if (kind === 'art') {
+                    const picked = await pickArtwork('library');
+                    if (!picked) return;
+                    fresh.art = picked.ref; fresh.art_name = picked.name;
+                }
+                layers.push(fresh); chosen = layers.length - 1;
+                changed();
+            };
+        });
+    }
+
     // ── icing piped on a biscuit: strokes drawn in the viewer ──
     let penChosen = false;
     const renderPen = (): void => {
@@ -759,6 +908,31 @@ export function bootParam(stage: Stage): void {
         $('cookie-pen-name').textContent = colorOf(pen) ? `${colorOf(pen)!.name} · ${materialLabel(colorOf(pen)!)}` : colorName(pen);
         $('cookie-count').textContent = strokes.length ? t('cookie.count', { n: strokes.length }) : t('cookie.hint');
         $('cookie-width-v').textContent = `${nf.format(Number(($('cookie-width') as HTMLInputElement).value))} mm`;
+        renderStrokes();
+    };
+    /** Every stroke drawn so far, each with its own arrows and its own way out: any of them can be nudged or taken away, not only the last. */
+    const renderStrokes = (): void => {
+        const box = document.getElementById('cookie-strokes'); if (!box) return;
+        box.innerHTML = '';
+        const moves: [string, number, number][] = [['←', -1, 0], ['↑', 0, 1], ['↓', 0, -1], ['→', 1, 0]];
+        strokes.forEach((s, i) => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-1 text-sm';
+            row.innerHTML = `<span class="inline-block h-3 w-3 shrink-0 rounded-full border border-line" style="background:${colorOf(s.c)?.hex ?? '#888888'}"></span>
+                <span class="min-w-0 flex-1 truncate text-ink">${t('cookie.stroke', { n: i + 1 })} · ${t(`cookie.nib.${s.t}`)}</span>
+                ${moves.map(([sign], k) => `<button type="button" class="chip !min-h-8 !px-2 !py-0.5" data-move="${k}" aria-label="${t('cookie.stroke.move')} ${sign}" title="${t('cookie.stroke.move')}">${sign}</button>`).join('')}
+                <button type="button" class="chip !min-h-8 !px-2 !py-0.5" data-remove aria-label="${t('cookie.stroke.remove')}" title="${t('cookie.stroke.remove')}">×</button>`;
+            row.querySelectorAll<HTMLButtonElement>('[data-move]').forEach((b) => {
+                b.onclick = () => {
+                    const [, dx, dy] = moves[Number(b.dataset.move)];
+                    // two hundredths of the picture's width a step: 1.6 mm on a biscuit of 80 mm
+                    s.p = s.p.map(([x, y]) => [Math.round((x + dx * 0.02) * 10000) / 10000, Math.round((y + dy * 0.02) * 10000) / 10000]);
+                    void refresh().then(commit);
+                };
+            });
+            row.querySelector<HTMLButtonElement>('[data-remove]')!.onclick = () => { strokes.splice(i, 1); renderPen(); void refresh().then(commit); };
+            box.appendChild(row);
+        });
     };
     /** Points of a stroke no closer than 0.6 mm, at most 48 of them: what the hand drew, light enough to send. */
     const thinned = (pts: [number, number][]): [number, number][] => {
@@ -842,6 +1016,15 @@ export function bootParam(stage: Stage): void {
         stage.note(piece && viewer.getPieces().length > 1 ? stage.t('toolpage.status.piece', { name: partLabel(piece.name) }) : null);
         if (!piece) return;
         if (cfg.kind === 'modular') { stage.reveal('size', document.getElementById('bin-grid')); return; }
+        if (compose) {
+            // the piece is a band of the print; its layer is the one of that number among the shown ones
+            const shown = layers.map((l, i) => (l.hidden ? -1 : i)).filter((i) => i >= 0);
+            const i = shown[Number(piece.name.replace('layer_', '')) - 1];
+            if (i === undefined) return;
+            viewer.select(-1);
+            if (i !== chosen) { chosen = i; renderLayers(); placeFrame(); }
+            return;
+        }
         const row = document.querySelector<HTMLElement>(`#tool-parts [data-part="${piece.name}"]`) ?? document.querySelector<HTMLElement>('#tool-parts [data-part]');
         if (row) { lastColorTarget = () => (code) => setPartColor(row.dataset.part!, code); stage.reveal('colors', row); } else stage.reveal('colors');
     });
@@ -899,7 +1082,7 @@ export function bootParam(stage: Stage): void {
             .finally(() => { track(false); void refresh(); });
     } else {
         const qs = new URLSearchParams(location.search);
-        const preset = qs.get('preset');
+        const preset = qs.get('preset') ?? cfg.preset;      // asked for in the address, or the one this page of the tool starts with
         if (preset && cfg.presets[preset]) {
             applyValues(cfg.presets[preset]);
             form.querySelectorAll('[data-preset]').forEach((o) => o.classList.toggle('chip-on', (o as HTMLElement).dataset.preset === preset));
@@ -909,7 +1092,8 @@ export function bootParam(stage: Stage): void {
         form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { const v = qs.get(i.dataset.text!); if (v) typed[i.dataset.text!] = v.slice(0, i.maxLength > 0 ? i.maxLength : 40); });
         if (Object.keys(typed).length) applyValues(typed);
         // a tool that needs a picture opens with one of ours, so the first thing a visitor sees is a finished thing
-        else if (shape && cfg.sample && !artwork && !preset) setArtwork({ ref: cfg.sample, name: '', url: null });
+        // (a name typed in the address stands instead of the picture, unless the tool puts it under the picture)
+        if ((cfg.captioned || !Object.keys(typed).length) && cfg.sample && !artwork && (shape ? !preset : preset === cfg.preset)) setArtwork({ ref: cfg.sample, name: '', url: null });
         track(!preset && !Object.keys(typed).length);
         void refresh();
     }

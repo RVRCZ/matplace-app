@@ -276,7 +276,8 @@ class ToolsFlowTest extends TestCase
     /** The pictures on the tool cards promise these: a handwritten name with a heart, a round light box, a hexagonal and a domed cap, a box with a cable slot. */
     public function test_the_shapes_shown_on_the_tool_cards_can_be_made(): void
     {
-        $this->get('/tools/sign')->assertOk()->assertSee('Psací')->assertSee('Jen jméno, bez destičky')->assertSee('data-symbol="♥"', false)->assertSee('data-preset="name"', false);
+        // the handwritten face is one tile of the font picker (the typefaces are drawn, not named in words)
+        $this->get('/tools/sign')->assertOk()->assertSee('data-choice="typeface" value="script"', false)->assertSee('Psaná rukou')->assertSee('Jen jméno, bez destičky')->assertSee('data-symbol="♥"', false)->assertSee('data-preset="name"', false);
         $this->get('/tools/qr')->assertOk()->assertDontSee('data-symbol', false);
         $this->get('/tools/illuminated-sign')->assertOk()->assertSee('Kulatý s rovnou patou');
         $this->get('/tools/cap')->assertOk()->assertSee('Šestihranný')->assertSee('Kulový')->assertSee('data-when="style=push"', false);

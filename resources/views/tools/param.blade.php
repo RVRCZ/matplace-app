@@ -2,21 +2,24 @@
     $family = $family ?? null;
     $place = $place ?? [];
     $integer = fn (array $f) => $f[3] === 1;
-    $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs', 'colors_n', 'bg_strength', 'spikes'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : (in_array($k, ['flute', 'contrast', 'brightness', 'saturation', 'eye_pos', 'text_size', 'text_y'], true) ? '%' : 'mm'));
+    $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs', 'colors_n', 'bg_strength', 'spikes', 'links', 'soften'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : (in_array($k, ['flute', 'contrast', 'brightness', 'saturation', 'eye_pos', 'text_size', 'text_y', 'darkness'], true) ? '%' : 'mm'));
     $i18n = collect(['param.working', 'param.failed', 'param.too_fast', 'param.text_required', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
         'param.warn.stand_angle_45', 'param.warn.stand_angle_55', 'param.warn.stand_angle_70', 'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
-        'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.cut', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
+        'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.cut', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.notes', 'param.part.stand.notes', 'param.part.body.hair_tie', 'param.part.stand.hair_tie', 'param.part.body.candle_stand', 'param.part.stand.candle_stand', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
         'color.white', 'color.black', 'color.grey', 'color.brown', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.part.plate', 'param.part.text', 'param.part.stamp', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
-        'param.warn.cup_narrow', 'param.warn.pieces_tied', 'param.cup.pocket', 'param.beads.count', 'param.part.body.beads', 'param.part.text.beads', 'param.warn.thread_try', 'param.warn.seal_try', 'param.need.liner', 'param.fits', 'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.warn.qr_one_color', 'param.warn.qr_low_contrast', 'param.warn.qr_inverted', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
+        'param.warn.cup_narrow', 'param.warn.pieces_tied', 'param.warn.letters_tied', 'param.warn.stand_tippy', 'param.warn.papel_airy', 'param.warn.papel_lost', 'param.papel.ties', 'param.warn.insert_big', 'param.insert.things', 'param.cup.pocket', 'param.beads.count', 'param.part.body.beads', 'param.part.text.beads', 'param.warn.thread_try', 'param.warn.seal_try', 'param.need.liner', 'param.fits', 'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.warn.qr_one_color', 'param.warn.qr_low_contrast', 'param.warn.qr_inverted', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
     if ($family === 'shape') {
         // the picture in colours: its list of colours, the notes on how it prints, the eyelet
         $i18n += collect(['part.body', 'part.rim', 'part.color', 'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.found', 'colors.picture', 'print.one', 'print.swap1', 'print.swap', 'print.many', 'print.multi',
-            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'warn.name_small', 'warn.name_no_room', 'part.icing', 'thickened', 'magnet.fact',
+            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'warn.name_small', 'warn.name_no_room', 'warn.caption_photo', 'part.icing', 'thickened', 'magnet.fact', 'chain.fact', 'pockets.grid', 'pockets.holes', 'pin.fact', 'stand.fact',
             // a part may be called by what it is in this tool (the plate of a gingerbread is "the gingerbread")
-            ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text('param.shape.'.$k)])->all();
+            ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text(\Illuminate\Support\Facades\Lang::has('param.shape.'.$k.'.'.$kind) ? 'param.shape.'.$k.'.'.$kind : 'param.shape.'.$k)])->all();
+    }
+    if ($kind === 'compose') {
+        $i18n += collect(['layer.text', 'layer.art', 'layer.shape', 'layer.up', 'layer.down', 'layer.hide', 'layer.show', 'layer.copy', 'layer.remove', 'limit', 'empty', 'unit'])->mapWithKeys(fn ($k) => ['compose.'.$k => __('param.compose.'.$k)])->all();
     }
     if ($kind === 'cookie') {
-        $i18n += collect(['draw', 'draw.on', 'count', 'hint', 'limit'])->mapWithKeys(fn ($k) => ['cookie.'.$k => __('param.cookie.'.$k)])->all();
+        $i18n += collect(['draw', 'draw.on', 'count', 'hint', 'limit', 'stroke', 'stroke.move', 'stroke.remove', 'nib.round', 'nib.flat', 'nib.dots', 'nib.candy', 'nib.sprinkles'])->mapWithKeys(fn ($k) => ['cookie.'.$k => __('param.cookie.'.$k)])->all();
     }
     // a text may be written for one tool, for its family (pendant, earrings… are all "shape") or for every tool
     $tr = function (string $prefix, string $k) use ($kind, $family): string {
@@ -48,13 +51,13 @@
     // which wall of the model a size moves when it is dragged in the viewer (x width, y depth, z height)
     $handles = \App\Domain\Tools\ParametricGenerator::HANDLES[$kind] ?? [];
     // which section a warning of the tool belongs to; everything else is about the size
-    $warnAt = ['cup_narrow' => 'input', 'thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'pieces_tied' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors'];
+    $warnAt = ['cup_narrow' => 'input', 'thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'pieces_tied' => 'input', 'letters_tied' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors'];
     $folded = \App\Domain\Tools\ParametricGenerator::FOLDED;
     $fieldsAt = fn (string $section) => collect($fields)->filter(fn ($f, $k) => $at($k, 'size') === $section);
     $flagsAt = fn (string $section) => collect($flags)->filter(fn ($flag) => $at($flag, 'size') === $section);
 @endphp
 
-@extends('tools.page', ['tool' => $kind, 'module' => 'param', 'lead' => __('param.'.$kind.'.lead'), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
+@extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).'.lead'), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
 
 @push('head')
 <script>
@@ -62,6 +65,8 @@
         kind: @json($kind),
         family: @json($family),
         sample: @json($sample ?? null),
+        preset: @json($preset ?? null),
+        captioned: @json($captioned ?? false),
         preview: @json(route('api.tools.param.preview')),
         create: @json(route('api.tools.param')),
         home: @json(route('home')),
@@ -166,14 +171,64 @@
                         <span id="param-artwork-thumb" class="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-line bg-white p-1"></span>
                         <p id="param-artwork-state" class="text-sm text-muted" aria-live="polite"></p>
                     </div>
-                    <p class="hint mt-1 !text-xs">{{ __('param.artwork.hint') }}</p>
+                    <p class="hint mt-1 !text-xs">{{ __(\Illuminate\Support\Facades\Lang::has('param.'.$kind.'.artwork.hint') ? 'param.'.$kind.'.artwork.hint' : 'param.artwork.hint') }}</p>
                     <input id="param-artwork" type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="sr-only" tabindex="-1" aria-hidden="true">
                 @endif
             </fieldset>
         @endif
 
+        @if($kind === 'compose')
+            {{-- the layers of a composition, from the bottom up (the list shows the top one first, as they lie), and the fields of the chosen one --}}
+            <fieldset class="min-w-0">
+                <legend class="lbl">{{ __('param.compose.layers') }}</legend>
+                <p class="hint !text-xs">{{ __('param.compose.hint') }}</p>
+                <div id="compose-layers" class="mt-2 space-y-1"></div>
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                    @foreach(['text', 'art', 'shape'] as $add)
+                        <button type="button" class="chip !py-1 text-sm" data-add-layer="{{ $add }}">+ {{ __('param.compose.add.'.$add) }}</button>
+                    @endforeach
+                </div>
+                <div id="compose-edit" class="mt-3 hidden space-y-3 rounded-lg border border-line bg-slate-50 p-3">
+                    <label class="block text-sm font-medium text-ink" data-layer-for="text">{{ __('param.compose.text') }}
+                        <input id="compose-text" maxlength="40" class="field">
+                    </label>
+                    <label class="block text-sm font-medium text-ink" data-layer-for="text">{{ __('param.c.typeface') }}
+                        <select id="compose-font" class="field">
+                            @foreach($fonts ?? [] as $face => $font)<option value="{{ $face }}">{{ $font[1] }}</option>@endforeach
+                        </select>
+                    </label>
+                    <div class="flex items-center gap-2" data-layer-for="art">
+                        <button type="button" id="compose-art" class="btn-quiet !min-h-10 gap-1.5 !px-3 !py-2 text-sm"><x-icon name="image" class="h-4 w-4" />{{ __('toolpage.artwork.change') }}</button>
+                        <span id="compose-art-name" class="min-w-0 truncate text-sm text-muted"></span>
+                    </div>
+                    <label class="block text-sm font-medium text-ink" data-layer-for="shape">{{ __('param.compose.shape') }}
+                        <select id="compose-shape" class="field">
+                            @foreach($layerShapes ?? [] as $shape)<option value="{{ $shape }}">{{ __(\Illuminate\Support\Facades\Lang::has('param.o.sign.'.$shape) ? 'param.o.sign.'.$shape : 'param.compose.shape.'.$shape) }}</option>@endforeach
+                        </select>
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <button type="button" class="tool-swatch" id="compose-color" aria-label="{{ __('toolpage.color.pick') }}"></button>
+                        <span class="min-w-0 text-sm"><span class="block font-medium text-ink">{{ __('param.compose.color') }}</span><span class="block truncate text-muted" id="compose-color-name"></span></span>
+                    </div>
+                    @foreach(['w' => [5, 250, 1], 'x' => [-150, 150, 0.5], 'y' => [-150, 150, 0.5], 'turn' => [-180, 180, 1]] as $slide => [$lo, $hi, $by])
+                        <label class="block text-sm font-medium text-ink">{{ __('param.compose.'.$slide) }}
+                            <span class="mt-1 flex items-center gap-3"><input type="range" data-layer-slide="{{ $slide }}" min="{{ $lo }}" max="{{ $hi }}" step="{{ $by }}" class="min-w-0 flex-1 accent-ink"><span class="num w-16 text-right text-muted" data-layer-value="{{ $slide }}"></span></span>
+                        </label>
+                    @endforeach
+                </div>
+            </fieldset>
+        @endif
+
         @foreach($plainChoices as $key => $options)
             @continue($at($key, 'input') !== 'input')
+            @if($key === 'typeface' && count($options) > 4)
+                @include('tools._fonts')
+                @continue
+            @endif
+            @if($key === 'shape' && $kind === 'sign')
+                @include('tools._shapes')
+                @continue
+            @endif
             <fieldset {!! $whenOf($key) !!}>
                 <legend class="lbl">{{ $tr('c', $key) }}</legend>
                 <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
@@ -307,7 +362,7 @@
                     <span class="mt-1 flex items-center gap-3"><input type="range" id="cookie-width" min="1.5" max="4" step="0.5" value="2.5" class="min-w-0 flex-1 accent-ink"><span class="num w-14 text-right text-muted" id="cookie-width-v">2,5 mm</span></span>
                 </label>
                 <div class="mt-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label="{{ __('param.cookie.nib') }}">
-                    @foreach(['round', 'flat', 'dots'] as $i => $nib)
+                    @foreach(['round', 'flat', 'dots', 'candy', 'sprinkles'] as $i => $nib)
                         <label class="tool-choice"><input type="radio" name="cookie-nib" value="{{ $nib }}" class="sr-only" @checked($i === 0)>{{ __('param.cookie.nib.'.$nib) }}</label>
                     @endforeach
                 </div>
@@ -316,10 +371,11 @@
                     <button type="button" id="cookie-clear" class="chip !py-1 text-sm">{{ __('param.cookie.clear') }}</button>
                 </div>
                 <p id="cookie-count" class="hint mt-1 !text-xs" aria-live="polite"></p>
+                <div id="cookie-strokes" class="mt-2 space-y-1"></div>
             </fieldset>
         @endif
         {{-- the parts of the design, filled by the script as the preview says which there are --}}
-        <div id="tool-parts" class="space-y-2" data-own-colors="{{ $colorChoices->isNotEmpty() || $kind === 'modular' ? '1' : '0' }}"></div>
+        <div id="tool-parts" class="space-y-2" data-own-colors="{{ $colorChoices->isNotEmpty() || in_array($kind, ['modular', 'compose'], true) ? '1' : '0' }}"></div>
         @if($kind === 'modular')<p class="hint !text-xs">{{ __('toolpage.color.bins') }}</p>@endif
         <div id="tool-recent" class="hidden">
             <div class="text-xs text-muted">{{ __('toolpage.color.recent') }}</div>

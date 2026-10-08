@@ -69,9 +69,18 @@ model). Barva z okna Barva, šířka 1,5–4 mm, hrot kulatý / plochý / tečky
 takže na větší sušence leží tam, kde byly. V Pythonu je tah stuha podél bodů (`_stroke`); tahy jedné cívky jsou díl
 `icing_<n>` a vrstva jako každá jiná barva: později použitá cívka leží výš a pod ní se nižší vrstvy doplní, takže
 i ručně zdobená sušenka má v každé vrstvě tisku jediný filament. Poleva se drží 1,8 mm od zaoblené hrany.
-Dlouhá kresba se nástroji předává souborem (`@cesta`), ne příkazovou řádkou. Proti zadání chybí: výběr a posun
-jednotlivého tahu (jde jen odebrat poslední), cukrovinky z knihovny, tácek na vystavení a vlastních 40 polotovarů –
-tvar se bere ze 137 siluet knihovny.
+Dlouhá kresba se nástroji předává souborem (`@cesta`), ne příkazovou řádkou. **Každý tah jde posunout a smazat**
+ze seznamu tahů pod perem (šipky po 2 % šířky obrázku, křížek); zadání chtělo výběr klepnutím na tah v náhledu
+a tažení – seznam dělá totéž bez zásahu do vieweru. Zkoušeno v prohlížeči na uloženém návrhu se třemi tahy.
+**Cukrovinky** jsou dva další hroty kreslení, ne motivy z knihovny:
+„Bonbony“ (kulatý bonbon skoro třikrát širší než čára, klepnutím jeden, tahem řada) a „Sypání“ (tyčinky
+rozházené podél tahu, pro stejný tah vždy stejně). **Tácek na vystavení** je volba: mělký tácek ve tvaru sušenky se
+vytiskne vedle ní, v jejím dílu a nižší, než je sušenka silná, takže se ho výměny filamentu pro polevu netýkají.
+**40 polotovarů**
+(20 vánočních, 20 halloweenských) přibylo 8. 10. jako kategorie „Sušenky“ knihovny obrázků
+(`engines/artwork/cookies/`, vlastní kresby z `_draw.py` tamtéž): okno s obrázky se u sušenky otevírá rovnou na ní
+a polotovary může použít i každý jiný nástroj s obrázkem. Zadání je chtělo v `engines/shapes/cookies/`; knihovna
+je jediné místo, kde se obrázky vybírají, hledají a mají jména ve třech jazycích, tak jsou tam.
 
 **Zápich do dortu** (`_topper`): tvar (číslo tučným písmem, srdce, hvězda, kruh, nebo nic) a přes něj jméno; šířka
 jména je v % šířky tvaru (smí přesahovat), poloha v % jeho výšky. Pod jménem leží jeho rozšířená kopie v barvě tvaru,
@@ -121,6 +130,18 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 |---|---|---|---|
 | Stojánek na tužky ze jména | `/tools/name-organizer` | `name_cup` | jméno je stojánek: písmena rozšířená o 3 mm jsou kapsa, kolem stěna 1,6 mm, dno 2 mm, výška 40–120 mm |
 | Miska ve tvaru obrázku | `/tools/shape-tray` | `tray` | obrys obrázku je stěna (8–40 mm), kresba vyrytá do dna, v barvách, nebo hladké dno |
+| SVG do STL | `/tools/svg-to-stl` | `logo` (předvolba `extrude`) | obrys SVG nebo obrázku vytažený na 0,6–50 mm, bez destičky, volitelně zkosená horní hrana |
+| Ozdoba na navíjecí držák karty | `/tools/badge-reel` | `badge` | obrázek v barvách 25–60 mm, pod ním jméno v jedné z barev obrázku, vzadu prohlubeň na lepicí kolečko |
+| Jmenovka ve tvaru s obrázkem | `/tools/nameplate` | `sign` (předvolba `shaped`) | destička ve 20 tvarech, která se sama zvětší kolem textu, motiv vlevo / vpravo / nad textem, očko na třech stranách |
+| 3D nápis, který stojí | `/tools/text` | `sign` (styl `stand`, předvolba `stand`) | silná písmena na patce, 1–3 řádky, obrázek na téže patce; tiskne se vleže |
+| Medaile s řetězem | `/tools/medallion` | `medallion` | kruh, hvězda nebo šestiúhelník 50–120 mm s obrázkem či číslem, očko, 0–40 otevřených článků řetězu na téže podložce |
+| Organizér ve tvaru obrázku | `/tools/photo-organizer` | `photo_organizer` | vysoká nádobka 40–120 mm podle obrysu obrázku: přihrádky v mřížce, kulaté otvory v plném bloku, nebo jedna kapsa |
+| Papel picado z obrázku | `/tools/papel-picado` | `papel` | fotka, kresba nebo silueta vyříznutá v okně tenkého panelu 80–250 mm, prolamovaný okraj v šesti vzorech, zoubky, otvory na šňůru |
+| Ozdoba na tašku s otvory | `/tools/bag-charm` | `bag_charm` | obrázek nebo jméno 30–80 mm, vzadu kapsa; vedle se tiskne čep (hlava + dřík), který se prostrčí otvorem tašky a vlepí |
+| Stojánek na lístečky se siluetou | `/tools/sticky-notes` | `notes` | miska na bloček 50–105 mm, za ní stojí silueta z obrázku nebo jména, mezi nimi žlábek na tužku; dva díly |
+| Držák na gumičky se siluetou | `/tools/hair-tie-holder` | `hair_tie` | sloupek Ø 10–30 × 40–150 mm na podstavci, za ním silueta z obrázku nebo jména; dva díly |
+| Stojan na svíčku se siluetou | `/tools/candle-stand` | `candle_stand` | kulatý podstavec s lůžkem pro svíčku ve skle Ø 40–130 mm, za ním silueta z obrázku nebo jména; dva díly |
+| Skladba z vrstev | `/tools/compose` | `compose` | až 12 vrstev (text, obrázek z knihovny nebo vlastní, tvar), posun, velikost a otočení tažením v náhledu, každá svým filamentem, o krok výš než ta pod ní; očko nebo hroty zápichu |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -143,7 +164,240 @@ stojí ve stejných vrstvách; na farmě objednat nejde a stránka to říká) a
 hladkou misku ve světlém filamentu. Obrázek drží odstup od stěny (`frame`). Při té příležitosti opravená chyba
 sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do 6 mm (meze v `shape_kinds.LIMITS`).
 
-Rozcestník `/gifts` odkazuje i na misku, stojánek a korálky.
+Rozcestník `/gifts` odkazuje i na misku, stojánek, korálky a ozdobu na držák karty.
+
+**Stojánek na lístečky** (`notes`, nový modul `engines/python/stand_kinds.py`, obyčejný nástroj). První ze tří
+„siluet na podstavci“ ze zadání. Silueta se tiskne **naležato** (obě strany čisté, žádné podpěry, ať má jakýkoli
+tvar) a patkou se zasune do drážky v podstavci – stejně jako stojící logo, od kterého je převzatá hloubka drážky
+6 mm a vůle 0,25 mm. Dva díly (`body`, `stand`), každý svou barvou; `use` je ukazuje složené. Podstavec je miska na
+bloček (strana + 1 mm vůle kolem, stěna a dno 2 mm, vpředu výřez na palec), za ní blok s drážkou a volitelně žlábek
+na tužku. Silueta je jednobarevná: obrázek v barvách na stojící desce by znamenal buď pruhy přes podstavec (výměny
+ve výškách platí pro celou podložku), nebo dva tisky – to je práce pro objednávku po dílech, ne pro tento nástroj.
+Společné kusy pro další dva nástroje téže skupiny (držák na gumičky, stojan na svíčku): `_figure`, `_slot`,
+`_together`.
+
+**Podstavec pro velké písmeno** (`name_letter`, volba „Podstavec“): písmeno dostane patku pod svou nejnižší částí
+a vedle něj se vytiskne podstavec s drážkou (hloubka 6 mm, vůle 0,25 mm). Písmeno má pak tloušťku nejméně 8 mm
+a **podstavec je přesně tak vysoký jako písmeno silné** – výměna filamentu pro jméno je ve výšce horní plochy
+písmene, takže z podstavce nemá co obarvit a tisk zůstává „dvě barvy nad sebou, jedna výměna“.
+
+**Stojan na svíčku** (`candle_stand`, `stand_kinds.py`). Kulatý podstavec vysoký 8 mm s lůžkem hlubokým 3 mm
+(průměr sklenice + 1 mm vůle, lem 3 mm), vzadu přechází v blok s drážkou pro siluetu. Zadání chtělo plošinu jako
+samostatný díl na kuželovém čepu s vůlí 0,2 mm; udělal jsem **podstavec z jednoho kusu** – není co lícovat a pod
+svíčkou se nic nekýve. Předvolbu „3 knoty Ø 103“ jsem nahradil polem pro průměr (příklad s 103 mm je mezi ukázkami).
+Texty říkají třikrát totéž, protože na tom záleží: **jen pro svíčku ve skle nebo LED svíčku, materiál PETG**;
+plast vedle holého plamene nemá co dělat. Jak moc se dno skla zahřeje, jsem neměřil.
+
+**Držák na gumičky** (`hair_tie`, `stand_kinds.py`). Zadání chtělo vodorovné rameno Ø 12 mm vycházející ze
+siluety. Udělal jsem **svislý sloupek** se zaobleným vrškem, který je jeden kus s podstavcem: silueta se tiskne
+naležato, takže rameno by muselo být třetí díl nalepený do otvoru v desce a celou váhu gumiček by nesl ten spoj;
+sloupek se tiskne nastojato bez podpěr, gumičky z něj nepadají a nic se nelepí. Podstavec má nejméně 70 × 60 × 8 mm
+a aspoň 80 % šířky siluety, silueta stojí nad jeho středem (`_slot_x`; totéž nově u stojánku na lístečky).
+
+**Skladba z vrstev** (`compose`, `engines/python/compose_kind.py`, stránka `/tools/compose`). Věc z více prvků:
+až dvanáct vrstev, každá text (jedno ze třiceti písem), obrázek z knihovny nebo tvar (tři obyčejné a destičky
+z `engines/shapes/`), s polohou, šířkou, otočením a filamentem.
+
+- *Tisk:* vrstvy leží na sobě v pořadí seznamu jako barvy obrázku – pod každou se nižší doplní, takže každá vrstva
+  tisku má jeden filament a barvy se mění ve výškách (díly `layer_<n>`, `color_changes`, `part_colors` u uloženého
+  návrhu, tedy totéž, co farma a projekty pro slicer už umějí). Co leží odděleně, spojí můstek ve spodní vrstvě.
+  Základ přidá očko nebo dva hroty zápichu.
+- *Stránka:* seznam vrstev (nahoře ta nejvyšší) s pořadím, skrytím, zdvojením a smazáním; pod ním pole vybrané
+  vrstvy; tři předvolby na začátek (jméno na mraku, zápich „2 · Olivia“, srdce se jménem). Přidání, úpravu textu,
+  posun a změnu pořadí jsem zkoušel v prohlížeči. Barvy předvoleb jsou pojmenované („white“) a server je převede na
+  nejbližší cívku farmy.
+- *Tažení v náhledu:* klepnutí na prvek v náhledu vybere jeho vrstvu a kolem ní se objeví rámeček
+  (`Viewer.setFrame`). Tažení uvnitř rámečku vrstvu posune, roh mění šířku (kolem středu), kolečko nad rámečkem
+  otáčí; u ukazatele běží hodnota a posuvníky jdou s ní. Během tažení se hýbe jen rámeček, model se přestaví po
+  puštění (jeden dotaz místo desítek – náhled trvá 0,3–0,5 s a po každém přestavění se posune počátek souřadnic).
+  Mimo rámeček se dál otáčí pohled. Zkoušeno v prohlížeči skutečnými událostmi myši: výběr klepnutím, posun,
+  zvětšení 18 → 37 mm, otočení, otáčení pohledu vedle rámečku. **Nezkoušeno na dotykové obrazovce.**
+- *Vlastní obrázek jako vrstva:* vrstva „Obrázek“ bere i nahraný soubor (SVG, PNG, JPG – stejné okno jako jinde:
+  Nahrát · Knihovna · Moje obrázky). Vrstva má jeden filament, takže z obrázku zůstane silueta; u SVG se berou
+  všechny výplně jako plné (bílý kruh uvnitř tvaru díru neudělá – stejně jako u nástroje Logo). Uložený návrh si
+  drží vlastní kopii každého takového obrázku (`files/<uuid>/artwork-<n>.*`, reference `file:<uuid>:<n>`, nový tvar
+  v `Artwork::REF`), takže se dá znovu otevřít i poté, co nahrané soubory po 30 dnech zmizí. Zkoušeno testem
+  i v prohlížeči (nahrání, výběr z „Moje obrázky“, vrstva v náhledu). **Fotku jako vrstvu jsem nezkoušel** – projde
+  stejným prahováním jako u loga a u fotky s pozadím z ní nejspíš bude skvrna.
+- *Co chybí proti zadání,* je v §7 bod 3: převod ostatních nástrojů na skladbu.
+
+**Vložka do zásuvky podle fotky – hotová, ale mimo katalog** (`insert`, nový modul `engines/python/sheet_kinds.py`,
+stránka `/tools/drawer-insert`, `'available' => false`). Věci položené na list A4 a vyfocené shora dostanou v tácu
+kapsy ve svém tvaru.
+
+- *Jak to měří:* list je měřítko. Na fotce se najde jako největší světlá bezbarvá plocha, jeho čtyři rohy se
+  narovnají na 210 × 297 mm (naležato či nastojato, jak leží) a co je uvnitř tmavší nebo barevnější než papír, je věc.
+  Okraj listu 4 mm se nečte (stíny papíru), drobky pod 40 mm² se zahodí.
+- *Co z toho vznikne:* každá věc kapsa podle obrysu s vůlí 0,3–3 mm, hluboká 4–40 mm nad dnem, u každé půlkulatý
+  výřez na prst; tác o okraj širší než věci dohromady. Stránka vypíše, kolik věcí našla a jak jsou velké, takže
+  chybné měření je vidět dřív, než se cokoli tiskne.
+- *Proti zadání:* hloubka je jedna pro všechny kapsy, ne pole na každou zvlášť.
+- *Co je ověřené:* na kreslených „fotkách“ (stůl, list nakřivo, věci známých rozměrů, rozmazání) vycházejí rozměry
+  do 1,5 mm; fotka bez listu, prázdný list a SVG místo fotky dostanou srozumitelnou hlášku. **Co ověřené není:**
+  skutečná fotka z telefonu – stíny věcí, lesklé a světlé předměty na bílém papíře, světlý stůl pod listem, zkreslení
+  objektivu, fotka nad 5 MB (limit nahrávání). To jsou přesně ty věci, na kterých se takové měření láme, a kreslená
+  fotka je neumí napodobit. Zkouška: vyfotit nůžky, klíč a tužku na A4 a porovnat vypsané rozměry s pravítkem.
+
+**Ozdoba na brčko a otvírák plechovek – hotové, ale mimo katalog** (`straw`, `opener`, rodina `shape`,
+`'available' => false` v `config/tools.php`). Stránky existují a fungují od začátku do konce, jen na ně nevede
+karta: `/tools/straw-topper` a `/tools/can-opener`. Zadání říká, že mechanické věci jdou do katalogu až po zkušebním
+tisku, a klip na brčko jmenuje výslovně.
+
+- *Ozdoba na brčko:* na obrysu je **klip** – trubka kolem brčka (vůle 0,4 mm, stěna 1,6 mm, délka 14 mm) otevřená
+  nahoře na 60 % průměru, ležící na podložce. Stojí vždy svisle vedle obrázku (brčko se drží svisle), na jazýčku
+  destičky, ať obrys v tom místě běží jakkoli. Brčko vede vedle ozdoby, jeho konec zůstává volný. **K ověření tiskem:**
+  jestli klip brčko drží a nepraská při nasazení, a jak se vytiskne převis horních okrajů trubky (53° od svislice,
+  bez podpěr).
+- *Otvírák:* na obrysu je **jazýček** – klín 14 mm dlouhý, u kořene silný jako destička, na špičce 1,2 mm. **K ověření
+  tiskem:** jestli se špička dostane pod očko plechovky a jestli jazýček z PLA při páčení vydrží.
+- Klip i jazýček se v náhledu táhnou po obrysu jako očko (`eye_pos`); kód: `_clip`, `_tongue`, `_placed`.
+- Až budou vyzkoušené: `'available' => true`, texty pro SEO do `lang/*/tools_seo/`, `php artisan
+  matplace:tool-examples <nástroj>` a `--card`, a přidat je do `KINDS` v `tests/Feature/ShapeToolsTest.php`.
+
+**Ozdoba na tašku s otvory** (`bag_charm`, rodina `shape`; „Bogg Bag Charm Builder“ předlohy). Zadání chtělo čep
+Ø 9–11 × 8 mm na zádech ozdoby a samostatnou zátku. Čep na zádech nejde: ozdoba se tiskne lícem nahoru (barvy
+ve výškách), čep by mířil do podložky. Proto obráceně: **v zádech je kapsa** (týž kód jako kapsa na magnet, hloubka
+3 mm) a **čep je samostatný kus** – hlava o 8 mm širší než dřík zůstane uvnitř tašky, dřík projde otvorem a vlepí se
+do kapsy. Tiskne se hlavou dolů vedle ozdoby a patří k dílu `body`; je vyšší než ozdoba, takže jeho konec vyjde
+v poslední barvě obrázku (zmizí v kapse). Návštěvník zadá **průměr otvoru a tloušťku stěny své tašky**; čep je
+o 0,6 mm tenčí než otvor. **Předvolbu „taška Bogg“ jsem neudělal:** rozměr otvoru té tašky neznám z ničeho, čemu by
+se dalo věřit, a vymyšlené číslo pod cizí značkou by bylo horší než žádné. Až ho někdo změří, je to jedna předvolba.
+
+**Papel picado** (`papel` v `creative_kinds.py`, obyčejný nástroj, ne rodina; „Photo to Papel Picado“ předlohy).
+Panel je jeden plochý obrys vytažený na 0,8–2 mm: deska, v ní okno s obrázkem, kolem okraj se vzorem, dole zoubky
+s dírkou, nahoře dva otvory na šňůru.
+
+- *Co je papír a co díra:* tmavá místa obrázku zůstávají, světlá se vyříznou (volbou obrátit). **Fotku** čte vlastní
+  cesta (`_papel_photo`: výřez na poměr okna, automatický kontrast, rozostření podle „Zjednodušení fotky“, práh
+  Otsu posunutý posuvníkem „Kolik zůstane papíru“, úklid toho, co tryska nevytiskne) – `shape2d.raster` fotky
+  odmítá, protože pro siluety je to chyba. **SVG** se do okna vloží celé a jeho vyplněné tvary jsou papír.
+- *Spojky* (`_papel_ties`): kus papíru, který by po vyříznutí okolí nic nedrželo (lebka v okně, zornice), dostane
+  tenký svislý proužek přes díru, ve které leží – jen přes ni, ne přes celý panel jako u šablony – a od 25 mm
+  i vodorovný. Proužky končí na obrysu kusu, takže neprocházejí otvory vyříznutými v něm. Stránka píše, kolik jich je
+  a kolik procent plochy je pryč; nad 70 % varuje, že panel bude křehký.
+- *Okraj:* šest vzorů (květy, kosočtverce, puntíky, srdíčka, lístky, hvězdy) kreslí `_papel_unit` přímo v kódu, ne
+  ze souborů v `engines/shapes/papel/`, jak říkalo zadání: jsou to tři řádky geometrie na vzor a měřítko se řídí
+  šířkou okraje.
+- *Ukázkový motiv:* do knihovny přibyla **cukrová lebka** (`holidays/sugar-skull.svg`, vlastní kresba,
+  `_draw_skull.py` vedle ní) – portrét cizího člověka jsem jako ukázku přibalit nechtěl a neměl kde vzít.
+- Zadání chtělo „barvy po vrstvách“; panel je jednobarevný (girlanda se skládá z panelů různých barev, tak jako
+  papírová). Náhled 0,45 s u kresby z knihovny (celý požadavek); u fotky trvá samotná stavba 0,4 s včetně importu `scipy`,
+  celý požadavek jsem neměřil.
+- **Neověřeno:** na skutečné fotce člověka jsem to nezkoušel, jen na kreslené tváři se dvěma očima; jak dopadne
+  portrét s vlasy, stíny a pozadím, ukáže až první nahraná fotka. Tisk tenkých spojek 1,2 mm na délku 20–30 mm také.
+
+**Organizér ve tvaru obrázku** (`photo_organizer`, rodina `shape`) je miska (`tray`) vytažená do výšky: stěna podle
+obrysu, dno, a uvnitř (`_inside` v `shape_kinds.py`) buď **mřížka přepážek** rozdělená rovnoměrně na buňky kolem
+zadané velikosti, nebo **plný blok s kulatými otvory** ve včelí plástvi (kartáčky, fixy), nebo nic. Jedna barva, jeden
+díl, obrázek slouží jen jako obrys. Stránka vypisuje počet přihrádek či otvorů a hloubku. Otvory jsou vrtané do
+plného bloku, ne do víka: víko nad dutinou by se tisklo na podpěrách. **Ze zadání zbývá druhý režim** – předměty
+vyfocené na listu A4 a tác s kapsami podle jejich obrysů; není udělaný (měřítko z listu a segmentace předmětů je
+samostatná práce, viz §7).
+
+**Medaile s řetězem** (`medallion`, rodina `shape`). Destička je kruh, hvězda nebo šestiúhelník s obrázkem
+v barvách, číslem nebo jménem a očkem (otvor 5–8 mm, aby jím prošel článek). **Články řetězu** jsou otevřené ovály
+30 × 18 mm s příčkou 4 mm a mezerou uprostřed delší strany (tam řetěz při tahu netáhne); mezera je o 0,4 mm užší než
+článek, soused do ní má zacvaknout. Zadání chtělo díl `links`; udělal jsem články součástí dílu `body` a stejně
+vysoké jako destička – jinak by jejich vršek vyšel v barvě první výměny (výměna ve výšce platí pro celou podložku)
+a řetěz by přidal filament. Leží vedle medaile a nad ní, nejvýš sedm v řadě, takže i medaile 120 mm se 40 články je
+jedna podložka 228 × 216 mm. Medaile zůstává v rohu podložky, aby souřadnice očka pro tažení v náhledu platily.
+**Zacvaknutí článků je odhad** (0,4 mm přesahu na příčce 4 × 4 mm z PLA): jestli jdou spojit rukou a nepraskají,
+ukáže až tisk; kdyby ne, je to jedno číslo (`LINK` v `shape_kinds.py`).
+
+**Stojící nápis** („Text Maker“ předlohy; karta `/tools/text` = cedulka se stylem `stand`). Text je jeden plochý
+obrys vytažený do hloubky (pole Tloušťka, nově do 30 mm): písmena, pod posledním řádkem **patka** (3 mm pod účařím,
+pohltí i to, co visí pod ním), pod každým řádkem nad ním **příčka**, která sahá k velkým písmenům řádku pod sebou. Co
+by přesto zůstalo ve vzduchu (čárky, tečky, obrázek nad textem), přichytí `shape2d.joined`; varuje se jen u celého
+písmene nebo obrázku, ne u každé čárky. Tiskne se vleže na zádech bez podpěr (`all`), náhled ho ukazuje stojící
+(`use`). Obrázek vedle textu stojí na téže patce a zapustí se do ní tak hluboko, aby držel aspoň šířkou 6 mm (srdce
+stojí na špičce). Nástroj varuje, když je hloubka pod 18 % výšky – **to číslo je odhad, ne výsledek zkoušky**;
+dokud Roman nápis nevytiskne, je to jediné, co o stabilitě víme. `shape2d.text` k tomu nově vrací polohu řádků
+(`rows`: odkud kam, účaří, výška verzálek). Cedulka má třetí řádek ve všech stylech (texty pod nástroji opraveny
+z „dva“ na „tři“).
+
+**Cedulka: tvary destičky, motiv, strana očka** („Nameplate Maker“ předlohy; karta `/tools/nameplate` je cedulka
+otevřená předvolbou `shaped`, stejně zapojená jako SVG do STL). Všechno je v nástroji `sign`, takže to má i původní
+stránka `/tools/sign`.
+
+- *Sedmnáct kreslených tvarů* k obdélníku, zaoblenému obdélníku a oválu: srdce, hvězda, mrak, kost, šestiúhelník,
+  stuha, šipka, domek, auto, kočka, bonbon, kytka, štít, visačka, bublina, kruh, ryba. Jsou to naše vlastní kresby
+  (`engines/shapes/_draw.py` je skládá z kruhů a mnohoúhelníků a zapisuje `engines/shapes/<tvar>.svg` a dlaždice
+  `public/img/shapes/`); další tvar = další funkce tam, jméno v `CHOICES['sign']['shape']` a text `param.o.sign.<tvar>`.
+  Cizí SVG s jedním vyplněným obrysem funguje také.
+- *Text se do tvaru vejde vždy.* Nezmenšuje se text, zvětšuje se tvar: `shape2d.room` najde v obrysu největší
+  obdélník s poměrem stran textu (s okrajem) a tvar se zvětší tak, aby ten obdélník byl právě text. Proto kost nebo
+  šipka vycházejí dlouhé (úzký dřík) – stránka to vysvětluje v otázkách. Test to ověřuje u každého tvaru: rozdíl
+  objemu mezi vystouplým a zapuštěným písmem musí být stejný jako na obdélníku (písmo přečnívající přes okraj by se
+  nedalo vyrýt).
+- *Rychlost:* první verze brala čtečku SVG a `scipy` a náhled zpomalila z 0,45 na 0,87 s – skoro celé to byl import
+  těch dvou knihoven. Naše tvary se proto čtou vlastními třemi řádky a `shape2d.room` je jen numpy a PIL (půlením
+  výšky, 300 buněk); tvarovaná cedulka trvá 0,45 s jako obyčejná.
+- *Motiv vedle textu:* obrázek z knihovny nebo vlastní (`artwork`), vlevo, vpravo, nad textem (`motif_at`). Je vysoký
+  jako text (nad textem řádek a půl) a dál se s ním zachází jako s dalším písmenem: zvedá se, rytí se, tiskne se
+  druhou barvou, u jména bez destičky ho spojí můstek.
+- *Očko vlevo, vpravo, nahoře* (`ring_at`, i u jména bez destičky). Vlevo je přesně to, co cedulka dělala dosud. Na
+  srdci sedí horní očko v zářezu.
+- Formulář: tvary jsou dlaždice s obrysem, ne dvacet slov; `PLACE` jde zadat i pro nástroj mimo rodinu.
+
+**Třicet písem pro všechny textové nástroje** (zadání chtělo 20+, předloha jich má 29). K původním čtyřem (DejaVu
+Sans, Serif, Mono a Pacifico; jejich klíče `sans`, `serif`, `mono`, `script` zůstávají, nesou je uložené návrhy)
+přibylo 26 rodin z Google Fonts, všechny pod SIL OFL 1.1: Montserrat, Oswald, Bebas Neue, Anton, Archivo Black, Russo
+One, Comfortaa · Playfair Display, Alfa Slab One, Abril Fatface · Lobster, Caveat, Dancing Script, Great Vibes,
+Sacramento, Kaushan Script, Courgette, Patrick Hand, Amatic SC · Bangers, Titan One, Paytone One, Bungee, Righteous,
+Baloo 2 · Press Start 2P.
+
+- *Co je kde:* soubory v `engines/fonts/` (7,7 MB, beze změny, licence každé rodiny vedle jako `<Rodina>-OFL.txt`,
+  přehled se zdroji v `engines/fonts/SOURCES.md`), seznam `ParametricGenerator::FONTS` (klíč → soubor, název,
+  skupina), `choicesOf($kind)` = co nástroj nabízí (jeho vlastní písma napřed, první je výchozí, pak všechna ostatní).
+  Python už písmo nekontroluje, cestu k souboru dostává ze serveru.
+- *Jen řezy, které se tisknou:* u rodin, které Google vydává jako jeden proměnný soubor (Montserrat, Oswald, Comfortaa,
+  Playfair Display, Caveat, Dancing Script, Baloo 2), čte `shape2d.text` obrysy v nejtučnější váze
+  (`getGlyphSet(location=…)`); soubor se nemění, takže odpadá otázka vyhrazených názvů písem v OFL. Tenká psaná písma
+  (Great Vibes, Sacramento) jsou v nabídce, protože je zadání jmenuje; u malého textu na ně platí stávající varování
+  o tenkých čarách.
+- *Každé písmo umí češtinu a španělštinu.* Vyřadil jsem rodiny, kterým chybí ě, č, ř, ů, ň, ť, ď (Fredoka, Lilita One,
+  Concert One, Cookie, Passion One, Carter One), a ty, které nejsou pod OFL, ale pod Apache (Satisfy, Chewy, Luckiest
+  Guy ze seznamu v zadání). Test v každém písmu vysází „Žluťoučký kůň“ a „¿Señor Ďáblík?“ a nesmí chybět znak.
+- *Výběr na stránce* (`resources/views/tools/_fonts.blade.php`): dlaždice na písmo s jeho názvem vysázeným v něm,
+  po skupinách (bezpatková, patková, psaná rukou, ozdobná, strojová a pixelová), skupina výchozího písma první.
+  Obrázky dlaždic (`public/img/fonts/<klíč>.svg`, 3–18 kB, celkem 256 kB) kreslí `php artisan matplace:font-previews`
+  z těch samých obrysů, ze kterých vzniká model – stránka nenačítá žádný webový font. Písmo velkého písmene
+  (`letter_face`) a korálky (`OWN_FACES`) zůstávají u svých tří tučných.
+- Náhled se nezpomalil (cedulka v Lobsteru 1,1 s lokálně jako v DejaVu; samotné vysázení textu 10–15 ms).
+- Texty pod jedenácti nástroji ve třech jazycích říkaly „čtyři písma“; říkají „třicet“.
+
+**Ozdoba na navíjecí držák karty** (`badge`, rodina `shape`; „Image to Badge Reel“ předlohy). Tři věci jsou jinak,
+než říkalo zadání, a proč:
+
+- *Jméno pod obrázkem* (`_caption` v `shape_kinds.py`) se nepřidává jako další barva. Připojí se k té barvě obrázku,
+  která se světlostí nejvíc liší od podkladu, a barvy pod ní ho nesou. Návrh se jménem má proto stejné díly, stejný
+  počet filamentů a stejné výměny jako bez něj – jinak by jméno stálo ve stejné vrstvě jako nejnižší barva obrázku
+  a z tisku „výměnou ve výškách“ by byl tisk pro AMS. Cena za to: jméno a ta barva obrázku mají vždy stejnou cívku.
+  Jméno visí pod nejnižším místem obrázku nad sebou (u hvězdy mezi cípy), je nejvýš tak široké jako obrázek a velká
+  písmena mají nejvýš 7 mm; pod 3 mm nástroj varuje. V kruhu se obrázek se jménem zmenší, aby se vešly oba; pod celou
+  fotku v kruhu se jméno nevejde a nástroj to řekne.
+- *Vzadu není nákružek, ale prohlubeň* (Ø 10–30 mm, výchozí 19; hloubka 0,4–2, výchozí 0,8; jde vypnout). Ozdoba se
+  tiskne lícem nahoru, nákružek 1,5 mm na zadní straně by ležel na podložce a celá ozdoba by nad ním visela na
+  podpěrách. Prohlubeň se tiskne čistě, schová tloušťku lepicího kolečka nebo suchého zipu a vystředí ozdobu. Je to
+  týž kód jako kapsa na magnet (`mount` = `glue` | `none`).
+- *Šířka 25–60 mm* místo 30–50: čelo běžného držáku má kolem 32 mm, menší ozdoby se dělají také.
+
+Pro další nástroje rodiny: `ParametricGenerator::CAPTIONED` = nástroje, kde text nejde místo obrázku, ale pod něj
+(stránka otevřená se jménem v adrese si nechá ukázkový obrázek); texty rodiny předávané skriptu jde přepsat pro jeden
+nástroj klíčem `param.shape.<klíč>.<kind>` (tak má jmenovka vlastní větu o prohlubni); `ModelFile::printHints()` už
+nepotřebuje nový řádek pro každý produkt rodiny.
+
+**SVG do STL** (klíč katalogu `svg_to_stl`) není nový generátor, ale nástroj Logo otevřený předvolbou `extrude`
+(provedení „Vyříznutý tvar“, 5 mm) a s kočkou z knihovny, aby stránka začínala hotovou věcí. Hledá se to pod jiným
+slovem než logo, proto má vlastní adresu, kartu, texty a příklady; uložený návrh je dál `kind = logo`, takže úprava
+návrhu, objednávka i stažení jdou stejnou cestou. Jak je to zapojené, aby to šlo zopakovat pro další „nástroj =
+jiný nástroj s předvolbou“: trasa nese `kind`, `as` (klíč katalogu, z něj titulek, úvod `param.<as>.lead`, SEO
+a karta) a `preset`; `ToolsController::param` je předá stránce, `param.ts` vezme předvolbu z adresy, jinak tu ze
+stránky; `seo.kind` v `config/tools.php` říká, kterým generátorem se kreslí příklady; `SAMPLE[<as>]` je výchozí
+obrázek. Logu při tom přibylo: tloušťka do 50 mm (bylo 10), zkosená horní hrana u vyříznutého tvaru (čtyři
+schody po vrstvě, nejvýš 0,8 mm) a formulář schovává, co k provedení nepatří (tvar, tloušťka a okraj destičky jen
+u reliéfů, výška podstavce jen u stojícího loga). Náhled 0,46 s. DXF ani obrysy bez výplně nástroj nečte – texty
+to říkají a radí převod na obrysy.
 
 ## 2. Rozhodnutí a proč
 
@@ -240,10 +494,20 @@ věc `feature/perf`, ne této větve.
   plakátový; na portréty bude filament‑art ze session 3.
 - Barvy ukázek a karet jsou z mého lokálního katalogu cívek (37 obyčejných PLA+ skladem). Na produkci se obrázky
   nepřekreslují samy.
+- **Nástroje přidané 8. 10.** (SVG do STL, ozdoba na držák karty, jmenovka ve tvaru, stojící nápis, třicet písem) jsou
+  ověřené stejně: výpočtem a pohledem na náhled v prohlížeči, ne tiskem. Co ukáže až tisk: jestli prohlubeň Ø 19 ×
+  0,8 mm na zádech ozdoby sedí na lepicí kolečko a strop nad ní se netrhá; jestli jméno pod obrázkem s písmeny do 7 mm
+  vyjde čitelně; jestli stojící nápis stojí při hloubce pětiny výšky (nástroj podle toho varuje); jak se tisknou
+  tenká psaná písma (Great Vibes, Sacramento) pod 30 mm; jestli články řetězu medaile jdou zacvaknout do sebe. Písma jsem ověřil na úplnost znaků a na to, že z nich
+  vznikne těleso, ne na to, jak vypadají vytištěná.
+- **Proměnná písma na serveru:** čtení v nejtučnější váze potřebuje fontTools ≥ 4.38. Lokálně je 4.62; verzi
+  v `/opt/matplace-py` jsem neviděl (viz Nasazení).
 
 ## 6. Nasazení (Roman)
 
-Bez migrace, bez nových balíčků v `/opt/matplace-py` (scikit-image tam je), bez nových klíčů `.env`.
+Bez migrace, bez nových balíčků v `/opt/matplace-py` (scikit-image tam je), bez nových klíčů `.env`. Proměnná písma
+(od 8. 10.) potřebují fontTools 4.38 nebo novější (`/opt/matplace-py/bin/python -c "import fontTools; print(fontTools.version)"`;
+lokálně 4.62).
 
 ```
 git pull            # feature/tools-shapes, nebo main po slití
@@ -253,7 +517,7 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png`. Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
+`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`, `papel`, `bag_charm`, `notes`, `hair_tie`, `candle_stand`, `compose`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -267,10 +531,32 @@ jsem odkaz nahradil vlastním `npm ci`; sdílený adresář obnoví `npm ci` v `
 stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled na produkci přiřazuje barvám skutečné cívky
 (duch: `02_PLA+_bily`, `01_PLA+_cerny`, `04_PLA+_ruzovy`). Zkušební tisk je na Romanovi.
 
-## 7. Co přijde (v tomhle pořadí)
+## 7. Co ze zadání session 1 zbývá
 
-Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
-tahu, cukrovinky a tácek, u velkého písmene podstavec.
-Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák,
-organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), tvary
-a motivy cedulky, `logo` `extrude`, 20+ písem.
+Stav k 8. 10. 2026 v noci; celá sada testů naposledy na commitu 7204205 (512 testů, bez chyby, 2 přeskočené,
+1 varování, které tu bylo už předtím). V katalogu je ze zadání 25 nástrojů (deset z vánoční sady, viz §1,
+a patnáct z tabulky „Po vánoční sadě“) a třicet písem; tři další jsou postavené, ale čekají mimo katalog
+(`available => false`) na vyzkoušení: ozdoba na brčko, otvírák a vložka do zásuvky podle fotky. Nehotové,
+od nejbližšího:
+
+1. **Klikátko** (`clicker`). Nepostavené, a ne z nedostatku času: zadaná klenutá destička (0,8 mm, klenba 1,5–2,5 mm
+   přes Ø 25–45 mm) je při tisku naplocho převis se sklonem kolem 8° – bez podpěr se nevytiskne a s podpěrami pod
+   membránou 0,8 mm nevím, jestli po jejich odtržení zbude něco, co cvaká. Než kolem toho vznikne nástroj se stránkou
+   ve třech jazycích, stojí za to vytisknout jeden ručně nakreslený kus a zjistit, jestli tahle konstrukce v PLA/PETG
+   cvaká vůbec. Když ano, je to rám a rotační skořepina, zhruba hodina práce.
+2. **Vložka do zásuvky podle fotky** (druhý režim „organizéru podle fotky“ ze zadání): nástroj je postavený, viz
+   níže, ale **mimo katalog** – ověřený je jen na kreslených fotkách. Do katalogu ho pustí až zkouška na skutečných
+   fotkách skutečných věcí; pak chybí už jen texty pro SEO, ukázky a karta.
+3. **Volná skladba vrstev** (`compose`, `/tools/compose`) je v katalogu i s tažením v náhledu (výběr klepnutím,
+   posun, velikost, otočení) a s vlastním obrázkem jako vrstvou. Zbývá převést zápich, jmenovku, klíčenku, ozdobu
+   a velké písmeno z formulářů na skladbu, jak zadání předpokládalo – dnes mají vlastní formuláře, které fungují,
+   a skladba stojí vedle nich. Při tažení se model nepřekresluje průběžně, až po puštění – kdyby to při zkoušení
+   vadilo, je to místo, kde přidat.
+4. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
+   sušenek). Tvary destiček cedulky
+   (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.
+
+Co čeká na Romana (nic z toho neblokuje další práci): zkušební tisky podle §5, rozhodnutí o klikátku (bod 1),
+a nasazení. `main` na GitHubu je od 8. 10. na commitu 29cad9d (medaile) – koordinující session do něj větev slila
+po mé zprávě; všechno od organizéru ve tvaru obrázku dál je zatím jen ve `feature/tools-shapes`. Jestli je 29cad9d
+i na serveru, nevím.

@@ -6,7 +6,7 @@ return [
     'h1' => 'Gifts with a name: pendant, keyring, name tag, door sign',
     'intro' => [
         'This page is for people looking for a small personal gift with a name. You pick an occasion and a product: a pendant in the shape of a handwritten name, a keyring, a name tag, a door sign or an ornament with an eyelet. The link opens the sign tool with a sample text filled in, which you replace with your own.',
-        'In the tool you choose the shape, the typeface and the style and see the 3D preview, the exact size and the price at once. You can add a symbol after the name, a heart or a star for example. You have the finished design printed by us or download the model for your own printer for free. The text can have two lines of up to 40 characters each.',
+        'In the tool you choose the shape, the typeface and the style and see the 3D preview, the exact size and the price at once. You can add a symbol after the name, a heart or a star for example. You have the finished design printed by us or download the model for your own printer for free. The text can have up to three lines of up to 40 characters each.',
     ],
     'steps' => [
         ['name' => 'Choose a gift', 'text' => 'The products are sorted by occasion: Christmas, Valentine\'s Day and anniversaries, back to school, birthdays and a new home.'],

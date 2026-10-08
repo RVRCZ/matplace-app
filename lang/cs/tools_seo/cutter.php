@@ -9,7 +9,7 @@ return [
         'Když nahraný obrázek obsahuje čáry uvnitř obrysu, například žilky listu nebo oči a úsměv, vytvoří z nich nástroj samostatné razítko, které po vykrojení otisknete do těsta. Obrys je zrcadlený, takže po otočení obrubou nahoru vykrajuje tvar ve správném směru. Vykrajovátko si objednáte jako výtisk z naší tiskové farmy, nebo si model zdarma stáhnete pro svou tiskárnu.',
     ],
     'steps' => [
-        ['name' => 'Napište text nebo nahrajte tvar', 'text' => 'Text může mít dva řádky po 20 znacích a vyberete k němu jedno ze čtyř písem. Místo textu můžete nahrát SVG nebo obrázek tvaru.'],
+        ['name' => 'Napište text nebo nahrajte tvar', 'text' => 'Text může mít dva řádky po 20 znacích a vyberete k němu jedno ze třiceti písem. Místo textu můžete nahrát SVG nebo obrázek tvaru.'],
         ['name' => 'Nastavte rozměry a hranu', 'text' => 'Zadáte šířku tvaru, výšku a tloušťku stěny a šířku obruby. Zúžená hrana řeže ostřeji, rovná je pevnější.'],
         ['name' => 'Zkontrolujte náhled', 'text' => 'Náhled ukazuje vykrajovátko otočené tak, jak se používá, a vedle něj razítko, pokud vzniklo. Uzavřený vnitřek písmene, například u O, dostane vlastní stěnu, kterou se zbytkem spojí ploché příčky.'],
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Tisk objednáte z naší tiskové farmy a zaplatíte z předplaceného kreditu. Nebo si model zdarma stáhnete jako soubor STL či hotový projekt pro svou tiskárnu.'],

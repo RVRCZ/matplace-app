@@ -128,8 +128,12 @@ async function library(d: HTMLDialogElement): Promise<void> {
     }
 }
 
-/** Opens the picture window; answers with the chosen picture, or null when it was closed without a choice. */
-export function pickArtwork(start: Tab = 'library'): Promise<PickedArtwork | null> {
+/**
+ * Opens the picture window; answers with the chosen picture, or null when it was closed without a choice.
+ * `shelf` is the category of the library the window opens on the first time (the cookie tool: its blanks).
+ */
+export function pickArtwork(start: Tab = 'library', shelf = ''): Promise<PickedArtwork | null> {
+    if (!dialog && shelf) category = shelf;
     dialog = dialog ?? build();
     tab = start;
     show(dialog);

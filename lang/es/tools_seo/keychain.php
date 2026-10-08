@@ -5,7 +5,7 @@ return [
     'description' => 'Escriba un nombre o suba una imagen y obtenga un llavero en colores de filamento con ojal para la anilla. Lo imprimimos o descarga el modelo gratis.',
     'h1' => 'Llavero con nombre, logotipo o imagen propia',
     'intro' => [
-        'La herramienta crea un llavero a partir de un nombre, un texto corto o una imagen. Escriba una o dos líneas y elija uno de los cuatro tipos de letra, o suba un PNG, JPG, WebP o SVG, o escoja un motivo de la biblioteca. El llavero es un rectángulo redondeado, un círculo o sigue el contorno del motivo. El ancho va de 30 a 100 mm y el grosor de 2,4 a 6 mm.',
+        'La herramienta crea un llavero a partir de un nombre, un texto corto o una imagen. Escriba una o dos líneas y elija uno de los treinta tipos de letra, o suba un PNG, JPG, WebP o SVG, o escoja un motivo de la biblioteca. El llavero es un rectángulo redondeado, un círculo o sigue el contorno del motivo. El ancho va de 30 a 100 mm y el grosor de 2,4 a 6 mm.',
         'El ojal para la anilla tiene un orificio de 3 a 8 mm y queda donde usted lo coloque: con el control deslizante o arrastrándolo en la vista previa. Un nombre sobre una base son dos colores, uno encima del otro, así que la impresión se detiene una vez y se cambia el filamento. Un llavero así lo imprimimos también en nuestra granja de impresión, igual que una imagen de hasta cuatro colores: la base y hasta tres más. La bobina de cada color se confirma al hacer el pedido; una imagen con más colores puede descargarla gratis para su impresora.',
     ],
     'steps' => [

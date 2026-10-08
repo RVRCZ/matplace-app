@@ -5,7 +5,7 @@ return [
     'description' => 'A picture or a name becomes a charm in filament colours with an eyelet anywhere on the outline. For keys, bags or gifts. We print it, or download it free.',
     'h1' => 'A charm from your own picture or name',
     'intro' => [
-        'The tool turns a picture or a name into a charm for keys, a bag, a backpack, a zip pull or a gift tag. Upload a PNG, JPG, WebP or SVG, pick a motif from the library, or type a name in one of four typefaces. The background disappears automatically and the picture is reduced to 1 to 8 colours of filaments we really have in stock on our print farm. The charm follows the outline of the picture, or is a circle or a rectangle, 20 to 120 mm wide and 2 to 6 mm thick.',
+        'The tool turns a picture or a name into a charm for keys, a bag, a backpack, a zip pull or a gift tag. Upload a PNG, JPG, WebP or SVG, pick a motif from the library, or type a name in one of thirty typefaces. The background disappears automatically and the picture is reduced to 1 to 8 colours of filaments we really have in stock on our print farm. The charm follows the outline of the picture, or is a circle or a rectangle, 20 to 120 mm wide and 2 to 6 mm thick.',
         'The eyelet moves anywhere along the outline by a slider or by dragging it in the preview, with a hole of 2 to 6 mm and a wall of 1.5 to 3 mm. The colours lie one on another, each 0.6 mm higher unless you change it. Any printer can print such a charm by swapping filament at the given heights. Our farm prints up to four colours in one print: the base and up to three more. You confirm the spool for each colour when ordering; a design with more colours can be downloaded free for your own printer.',
     ],
     'steps' => [
@@ -15,7 +15,7 @@ return [
         ['name' => 'Order the print or download', 'text' => 'A rough price is shown right next to the preview, the exact price and print time one step further. You can also download the model as an STL, a ZIP with one STL per colour or a slicer project, free and without registration.'],
     ],
     'faq' => [
-        ['q' => 'Can I use just a name instead of a picture?', 'a' => 'Yes. Type one or two lines and pick the sans, serif, monospace or handwritten typeface. The tool ties loose pieces together with a small bridge so that the charm holds together, and tells you so.'],
+        ['q' => 'Can I use just a name instead of a picture?', 'a' => 'Yes. Type one or two lines and pick one of thirty typefaces, from bold sans serifs to handwriting. The tool ties loose pieces together with a small bridge so that the charm holds together, and tells you so.'],
         ['q' => 'Where can the eyelet go?', 'a' => 'Anywhere on the outline: by a slider, or by dragging it in the 3D preview. The hole is 2 to 6 mm, 3 mm by default, and the ring wall 1.5 to 3 mm.'],
         ['q' => 'How are the colours printed?', 'a' => 'The colours lie one on another, each 0.4 to 1.2 mm higher. Every layer is therefore a single filament, which you swap at the right height; the project for OrcaSlicer, Bambu Studio and PrusaSlicer contains the swaps. Colours flush with the surface and a rim in its own colour need a printer that changes filament by itself (AMS, MMU, ACE).'],
         ['q' => 'How many colours does the farm print?', 'a' => 'Up to four in one print: the base and up to three colours on top of it. You confirm the spool for each colour when ordering; the ones from the design are preselected. A design with more colours can be downloaded free for your own printer.'],

@@ -987,7 +987,16 @@ def main(argv):
             import creative_kinds
             import name_kinds
             import shape_kinds
-            if kind in name_kinds.BUILDERS:
+            import compose_kind
+            import sheet_kinds
+            import stand_kinds
+            if kind in compose_kind.BUILDERS:
+                parts, notes = compose_kind.BUILDERS[kind](M, Invalid, p)
+            elif kind in sheet_kinds.BUILDERS:
+                parts, notes = sheet_kinds.BUILDERS[kind](M, Invalid, p)
+            elif kind in stand_kinds.BUILDERS:
+                parts, notes = stand_kinds.BUILDERS[kind](M, Invalid, p)
+            elif kind in name_kinds.BUILDERS:
                 parts, notes = name_kinds.BUILDERS[kind](M, Invalid, p)
             elif kind in shape_kinds.BUILDERS:
                 parts, notes = shape_kinds.BUILDERS[kind](M, Invalid, p)

@@ -94,6 +94,47 @@ any font or artwork).
 | holidays/santa-hat.svg | Santa Hat | https://openclipart.org/detail/323412 | CC0 1.0 | 2026-10-07 |
 | holidays/reindeer.svg | Leaping Reindeer Silhouette | https://openclipart.org/detail/326334 | CC0 1.0 | 2026-10-07 |
 | holidays/bat.svg | Bat | https://openclipart.org/detail/327599 | CC0 1.0 | 2026-10-07 |
+| cookies/cookie-gingerbread-man.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-santa.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-santa-hat.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-reindeer.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-sleigh.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-gift.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-tree.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-snowman.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-stocking.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-candy-cane.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-bauble.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-snowflake.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-bell.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-star.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-mitten.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-wreath.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-elf-hat.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-penguin.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-holly.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-heart.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-pumpkin.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-ghost.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-bat.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-cat.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-spider.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-skull.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-witch-hat.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-cauldron.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-bone.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-moon.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-coffin.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-eye.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-hand.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-tooth.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-candy-corn.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-tombstone.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-broom.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-owl.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-mushroom.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| cookies/cookie-potion.svg | - | own drawing for matplace (engines/artwork/cookies/_draw.py) | CC0 (own work) | 2026-10-08 |
+| holidays/sugar-skull.svg | - | own drawing for matplace (engines/artwork/holidays/_draw_skull.py) | CC0 (own work) | 2026-10-08 |
 | holidays/witch.svg | Halloween Witch Outline | https://openclipart.org/detail/324475 | CC0 1.0 | 2026-10-07 |
 | holidays/angel.svg | Angel - Silhouette | https://openclipart.org/detail/268741 | CC0 1.0 | 2026-10-07 |
 | holidays/candy-cane.svg | Candy cane | https://openclipart.org/detail/282003 | CC0 1.0 | 2026-10-07 |

@@ -92,7 +92,8 @@ class ModelFile extends Model
             'filament_art' => ['supports' => false],
             // halves lie parting face up, supports would scar the cavity; the master of a silicone mold is the model itself and prints as it needs
             'mold' => ($this->tool_params['type'] ?? 'rigid') === 'silicone' ? ['supports' => true, 'infill' => 15] : ['supports' => false, 'infill' => 30],
-            default => [],
+            // whatever else is cut out of a picture or a name lies flat on the bed, face up
+            default => isset(ParametricGenerator::FAMILY[$this->kind()]) ? ['supports' => false] : [],
         };
     }
 

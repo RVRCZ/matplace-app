@@ -95,7 +95,9 @@ def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center", scal
     if not lines:
         raise ArtworkError("no_text")
     font = TTFont(font_path)
-    gs, cmap, hmtx = font.getGlyphSet(), font.getBestCmap(), font["hmtx"]
+    # a family that comes as one variable file is read at its boldest: thin strokes do not print
+    heavy = {a.axisTag: a.maxValue for a in font["fvar"].axes if a.axisTag == "wght"} if "fvar" in font else None
+    gs, cmap = (font.getGlyphSet(location=heavy) if heavy else font.getGlyphSet()), font.getBestCmap()
     units = font["head"].unitsPerEm
     cap = getattr(font["OS/2"], "sCapHeight", 0) or units * 0.72
     k = cap_height_mm / cap
@@ -153,7 +155,7 @@ def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center", scal
                 continue
             for poly in _glyph_polys(font, gs, g):
                 row.append([(px + x, py) for px, py in poly])
-            x += hmtx[g][0]
+            x += gs[g].width
         rows.append(row)
         widths.append(x)
     size = [float(scales[i]) if scales and i < len(scales) else 1.0 for i in range(len(rows))]
@@ -179,7 +181,12 @@ def text(M, lines, font_path, cap_height_mm, line_gap=0.35, align="center", scal
     # how far the ink hangs below the baseline of the last line, relative to the text width
     base_y = base[-1] * k
     hang = max(0.0, base_y - by0) / max(1e-6, bx1 - bx0)
-    return cs, {"missing_chars": sorted(missing), "source": "text", "descent_ratio": hang}
+    # where every line lies: from where to where, its baseline and the height of its capitals (a text that stands needs them)
+    rows_at = []
+    for i in range(len(rows)):
+        dx = {"left": 0, "right": wmax - widths[i]}.get(align, (wmax - widths[i]) / 2)
+        rows_at.append({"x0": dx * k, "x1": (dx + widths[i]) * k, "base": base[i] * k, "cap": cap_height_mm * size[i]})
+    return cs, {"missing_chars": sorted(missing), "source": "text", "descent_ratio": hang, "rows": rows_at}
 
 
 # ── SVG ──────────────────────────────────────────────────────────────────────
@@ -351,6 +358,56 @@ def load(M, p, width_mm, font_path=None, cap_height_mm=None, fill_holes=False):
     if width_mm and not cap_height_mm:
         cs = fit(cs, width_mm=width_mm)
     return cs, info
+
+
+def room(M, cs, aspect):
+    """
+    The biggest box of the given proportions (width / height) that lies inside an outline, its sides level:
+    (cx, cy, width, height), or None. Read off a grid of 300 cells; numpy and PIL only, because a shaped sign asks
+    for it on every preview and the import of anything heavier would cost more than the search.
+    """
+    import numpy as np
+    from PIL import Image, ImageDraw
+    x0, y0, x1, y1 = cs.bounds()
+    cell = max(x1 - x0, y1 - y0) / 300
+    img = Image.new("1", (int((x1 - x0) / cell) + 3, int((y1 - y0) / cell) + 3), 0)
+    draw = ImageDraw.Draw(img)
+    rings = []
+    for poly in cs.to_polygons():
+        pts = [((float(x) - x0) / cell + 1, (float(y) - y0) / cell + 1) for x, y in poly]
+        rings.append((sum(pts[i][0] * pts[(i + 1) % len(pts)][1] - pts[(i + 1) % len(pts)][0] * pts[i][1] for i in range(len(pts))), pts))
+    for area, pts in sorted(rings, key=lambda ring: -ring[0]):      # the outer rings first, then their holes
+        draw.polygon(pts, fill=1 if area > 0 else 0)
+    mask = np.asarray(img, dtype=np.int32)
+    rows = mask.shape[0]
+    down = np.vstack([np.zeros((1, mask.shape[1]), dtype=np.int32), np.cumsum(mask, axis=0)])
+
+    def widest(h):
+        """A box h rows tall: the longest run of columns that are inside for all its rows → (length, its last column, its top row)."""
+        band = (down[h:] - down[:-h]) == h
+        count = np.cumsum(band, axis=1)
+        run = count - np.maximum.accumulate(np.where(band, 0, count), axis=1)
+        r, c = np.unravel_index(int(np.argmax(run)), run.shape)
+        return int(run[r, c]), int(c), int(r)
+
+    # the taller the box, the shorter the run it finds: the best box is where the two meet
+    lo, hi = 1, rows
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if widest(mid)[0] >= aspect * mid:
+            lo = mid
+        else:
+            hi = mid - 1
+    best = None
+    for h in (lo, min(rows, lo + 1)):
+        length, c, r = widest(h)
+        tall = min(h, length / aspect)
+        if tall > 0 and (best is None or tall > best[0]):
+            best = (tall, c - (length - 1) / 2.0, r + (h - 1) / 2.0)
+    if best is None or best[0] < 2:
+        return None
+    tall = (best[0] - 1) * cell                                # a cell smaller: the box must lie inside, not on the line
+    return x0 + (best[1] - 1) * cell, y0 + (best[2] - 1) * cell, tall * aspect, tall
 
 
 def slugify(s):

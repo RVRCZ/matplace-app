@@ -18,7 +18,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm'];
 
     protected function setUp(): void
     {
@@ -60,7 +60,7 @@ class ShapeToolsTest extends TestCase
         foreach (self::KINDS as $kind) {
             foreach (['cs', 'en', 'es'] as $lang) {
                 app()->setLocale($lang);
-                $page = $this->get($this->localized('/tools/'.(['topper' => 'cake-topper', 'tray' => 'shape-tray'][$kind] ?? str_replace('_', '-', $kind)), $lang))->assertOk();
+                $page = $this->get($this->localized('/tools/'.(['topper' => 'cake-topper', 'tray' => 'shape-tray', 'badge' => 'badge-reel'][$kind] ?? str_replace('_', '-', $kind)), $lang))->assertOk();
                 $page->assertSee(__('tools.'.$kind.'.title'))->assertSee(__('param.'.$kind.'.lead'));
                 // a gingerbread and a big letter have a shape of ours: there is no picture to bring
                 in_array($kind, ['gingerbread', 'name_letter', 'topper'], true) ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));
@@ -453,6 +453,207 @@ class ShapeToolsTest extends TestCase
         $this->assertEqualsWithDelta(8, $this->meta($this->preview('tray', ['height' => 8, 'thickness' => 4] + $paw)->assertOk())['bbox']['z'], 0.01);
         // the edge of dough round a biscuit's picture may be as wide as the form allows (it was refused above 4 mm)
         $this->preview('cookie', ['artwork' => 'lib:colour/gingerbread-man', 'width' => 80, 'frame' => 6])->assertOk();
+    }
+
+    public function test_a_badge_carries_a_name_in_a_colour_of_the_picture_and_a_pocket_in_its_back(): void
+    {
+        $star = ['artwork' => 'lib:colour/smiling-star', 'width' => 40];
+        $plain = $this->meta($this->preview('badge', $star, 'all', true)->assertOk());
+        $named = $this->meta($this->preview('badge', $star + ['line1' => 'Jana'], 'all', true)->assertOk());
+        // the name hangs under the picture: the badge is taller, no wider, and holds the same parts and filaments
+        $this->assertGreaterThan($plain['bbox']['y'] + 5, $named['bbox']['y']);
+        $this->assertEqualsWithDelta($plain['bbox']['x'], $named['bbox']['x'], 0.5);
+        $this->assertSame($plain['notes']['parts'], $named['notes']['parts']);
+        $this->assertSame($plain['notes']['filaments'], $named['notes']['filaments']);
+        $this->assertSame(count($plain['notes']['color_changes']), count($named['notes']['color_changes']));
+        $this->assertFalse($named['notes']['multi_material']);
+        // it is written in the colour that reads best on the yellow star (black), in capitals of 3 to 7 mm
+        $caption = $named['notes']['caption'];
+        $ink = collect($named['notes']['colors'])->firstWhere('index', $caption['index']);
+        $this->assertSame('black', $ink['code']);
+        $this->assertGreaterThanOrEqual(3, $caption['height']);
+        $this->assertLessThanOrEqual(7, $caption['height']);
+        $this->assertArrayNotHasKey('caption', $plain['notes']);
+        // the pocket for the reel's sticky dot is cut out of the back; a flat back holds more plastic
+        $this->assertSame(['d' => 19, 'h' => 0.8], array_intersect_key($named['notes']['magnet'], ['d' => 1, 'h' => 1]));
+        $flat = $this->meta($this->preview('badge', $star + ['line1' => 'Jana', 'mount' => 'none'])->assertOk());
+        $this->assertArrayNotHasKey('magnet', $flat['notes']);
+        $this->assertEqualsWithDelta(M_PI * 9.7 * 9.7 * 0.8, $flat['volume_mm3'] - $named['volume_mm3'], 40);
+        $this->assertSame($flat['bbox'], $named['bbox']);
+        // in a circle the picture and the name share the room: the badge stays as wide as asked
+        $round = $this->meta($this->preview('badge', ['artwork' => 'lib:colour/red-heart', 'line1' => 'Eva', 'width' => 38, 'body' => 'circle'])->assertOk());
+        $this->assertEqualsWithDelta(38, $round['bbox']['x'], 0.1);
+        $this->assertEqualsWithDelta(38, $round['bbox']['y'], 0.1);
+        $this->assertArrayHasKey('caption', $round['notes']);
+        // a name too long for a small badge is said, not hidden
+        $long = $this->meta($this->preview('badge', ['artwork' => 'lib:colour/smiling-star', 'width' => 25, 'line1' => 'Bohumila Novotná'])->assertOk());
+        $this->assertContains('name_small', $long['notes']['warnings']);
+        // a name alone is a badge too, but the pocket does not fit into it and the tool says so
+        $only = $this->meta($this->preview('badge', ['line1' => 'Jana', 'width' => 40])->assertOk());
+        $this->assertContains('magnet_no_room', $only['notes']['warnings']);
+        // the page says it in the badge's own words (a pocket for a sticky dot, not a magnet)
+        $this->get('/tools/badge-reel')->assertOk()->assertSee(str_replace('\\', '\\\\', substr((string) json_encode(__('param.shape.warn.magnet_no_room.badge')), 1, -1)), false)->assertSee(__('param.o.badge.glue'));
+        // the other tools of the family still put a typed name instead of the picture, never under it
+        $this->assertArrayNotHasKey('caption', $this->meta($this->preview('charm', ['artwork' => 'lib:colour/smiling-star', 'line1' => 'Jana', 'width' => 40])->assertOk())['notes']);
+    }
+
+    public function test_a_medal_brings_the_links_of_its_chain_in_its_own_filament(): void
+    {
+        $star = ['artwork' => 'lib:colour/smiling-star', 'width' => 80, 'thickness' => 4];
+        $bare = $this->meta($this->preview('medallion', $star + ['links' => 0], 'all', true)->assertOk());
+        $chained = $this->meta($this->preview('medallion', $star + ['links' => 20], 'all', true)->assertOk());
+        // a round plate as wide as asked with an eyelet on top; without links it is the whole plate
+        $this->assertEqualsWithDelta(80, $bare['bbox']['x'], 0.1);
+        $this->assertGreaterThan(85, $bare['bbox']['y']);
+        $this->assertArrayNotHasKey('chain', $bare['notes']);
+        $this->assertSame($bare['notes']['outer'], $bare['notes']['each']);
+        // twenty links: each an open oval of 30 x 18 with a bar of 4, as tall as the plate; 22 mm of chain apiece
+        $link = (M_PI * 9 * 9 + 12 * 18 - (M_PI * 5 * 5 + 12 * 10) - 3.6 * 4) * 4;
+        $this->assertEqualsWithDelta(20 * $link, $chained['volume_mm3'] - $bare['volume_mm3'], 0.02 * 20 * $link);
+        $this->assertSame(['links' => 20, 'length' => 440], $chained['notes']['chain']);
+        // they belong to the plate: the same parts, filaments and changes, and nothing taller than the medal
+        $this->assertSame($bare['notes']['parts'], $chained['notes']['parts']);
+        $this->assertSame($bare['notes']['filaments'], $chained['notes']['filaments']);
+        $this->assertSame($bare['notes']['color_changes'], $chained['notes']['color_changes']);
+        $this->assertSame($bare['bbox']['z'], $chained['bbox']['z']);
+        $this->assertSame($bare['notes']['each'], $chained['notes']['each']);
+        // the medal keeps its corner of the bed (the eyelet is dragged where it was), the links lie beside and above it
+        $this->assertSame($bare['notes']['eyelet'], $chained['notes']['eyelet']);
+        $this->assertGreaterThan($bare['bbox']['x'] + 30, $chained['bbox']['x']);
+        // the biggest medal with the longest chain is still one plate of a 250 mm bed
+        $most = $this->meta($this->preview('medallion', ['artwork' => 'lib:colour/smiling-star', 'width' => 120, 'links' => 40])->assertOk());
+        $this->assertLessThanOrEqual(240, max($most['bbox']['x'], $most['bbox']['y']));
+        $this->assertSame(880, $most['notes']['chain']['length']);
+        // a number in a star: letters dark on a light plate, one change, links in the plate's filament
+        $first = $this->meta($this->preview('medallion', ['line1' => '1', 'body' => 'star', 'width' => 70, 'links' => 4])->assertOk());
+        $this->assertSame(2, $first['notes']['filaments']);
+        $this->assertCount(1, $first['notes']['color_changes']);
+        $this->preview('medallion', $star + ['links' => 41])->assertStatus(422);
+        $this->get('/tools/medallion')->assertOk()->assertSee('data-param="links"', false);
+    }
+
+    public function test_an_organizer_is_a_tall_dish_with_compartments_or_round_holes(): void
+    {
+        $cloud = ['artwork' => 'lib:nature/cloud', 'width' => 120, 'height' => 80, 'thickness' => 2, 'wall' => 1.6];
+        $open = $this->meta($this->preview('photo_organizer', $cloud + ['inside' => 'open'], 'all', true)->assertOk());
+        $grid = $this->meta($this->preview('photo_organizer', $cloud + ['inside' => 'grid', 'cell' => 40])->assertOk());
+        $fine = $this->meta($this->preview('photo_organizer', $cloud + ['inside' => 'grid', 'cell' => 20])->assertOk());
+        $holes = $this->meta($this->preview('photo_organizer', $cloud + ['inside' => 'holes', 'hole_d' => 20])->assertOk());
+        // as wide and as tall as asked, one part in one filament, nothing of the picture's colours
+        $this->assertEqualsWithDelta(120, $open['bbox']['x'], 0.5);
+        $this->assertEqualsWithDelta(80, $open['bbox']['z'], 0.01);
+        $this->assertSame(['body'], $open['notes']['parts']);
+        $this->assertSame(1, $open['notes']['filaments']);
+        $this->assertSame([], $open['notes']['color_changes']);
+        $this->assertSame(['kind' => 'open', 'count' => 1, 'depth' => 78], $open['notes']['pockets']);
+        // dividers add plastic and compartments, a finer grid more of both; the outside stays what it was
+        $this->assertSame($open['bbox'], $grid['bbox']);
+        $this->assertGreaterThan($open['volume_mm3'] * 1.1, $grid['volume_mm3']);
+        $this->assertGreaterThan($grid['volume_mm3'], $fine['volume_mm3']);
+        $this->assertGreaterThanOrEqual(4, $grid['notes']['pockets']['count']);
+        $this->assertGreaterThan($grid['notes']['pockets']['count'], $fine['notes']['pockets']['count']);
+        // round holes are drilled into a solid block: every hole takes its cylinder away from it
+        $n = $holes['notes']['pockets']['count'];
+        $this->assertGreaterThanOrEqual(5, $n);
+        $block = $this->meta($this->preview('photo_organizer', $cloud + ['inside' => 'holes', 'hole_d' => 8])->assertOk());
+        $m = $block['notes']['pockets']['count'];
+        $this->assertGreaterThan($n, $m);
+        $this->assertEqualsWithDelta(($n * 100 - $m * 16) * M_PI * 78, $block['volume_mm3'] - $holes['volume_mm3'], 0.02 * $block['volume_mm3']);
+        // in a round body the picture is not needed for anything but the request; a hole too big for the shape is said
+        $round = $this->meta($this->preview('photo_organizer', ['artwork' => 'lib:nature/cloud', 'body' => 'circle', 'width' => 90, 'height' => 90, 'inside' => 'holes', 'hole_d' => 20])->assertOk());
+        $this->assertSame(7, $round['notes']['pockets']['count']);
+        $this->assertEqualsWithDelta(90, $round['bbox']['y'], 0.1);
+        $this->assertSame(__('param.error.shape_too_small'), $this->preview('photo_organizer', ['artwork' => 'lib:nature/cloud', 'width' => 60, 'height' => 60, 'inside' => 'holes', 'hole_d' => 40])->assertStatus(422)->json('errors.params.0'));
+        // the page has no name to fall back on, so the picture is required
+        $this->preview('photo_organizer', ['width' => 120])->assertStatus(422);
+        $this->get('/tools/photo-organizer')->assertOk()->assertSee('data-choice="inside"', false)->assertSee('data-when="inside=grid"', false)->assertDontSee('data-text=', false);
+    }
+
+    public function test_a_bag_charm_comes_with_the_pin_that_holds_it(): void
+    {
+        $heart = ['artwork' => 'lib:colour/red-heart', 'width' => 45, 'thickness' => 5, 'bag_hole' => 12, 'bag_wall' => 4];
+        $m = $this->meta($this->preview('bag_charm', $heart, 'all', true)->assertOk());
+        // the pin: 0.6 mm thinner than the hole, a head 8 mm wider, long enough for the head, the wall of the bag and the pocket
+        $this->assertSame(['d' => 11.4, 'head' => 19.4, 'height' => 8.7], $m['notes']['pin']);
+        $this->assertSame(['d' => 11.4, 'h' => 3], array_intersect_key($m['notes']['magnet'], ['d' => 1, 'h' => 1]));
+        // it lies next to the charm and belongs to its part; the plate is as tall as the pin, the charm itself lower
+        $this->assertEqualsWithDelta(45 + 4 + 19.4, $m['bbox']['x'], 1.5);
+        $this->assertEqualsWithDelta(8.7, $m['bbox']['z'], 0.01);
+        $this->assertSame(8.7, $m['notes']['outer'][2]);
+        $this->assertLessThan(8, $m['notes']['each'][2]);
+        $this->assertNotContains('pin', $m['notes']['parts']);
+        $this->assertFalse($m['notes']['multi_material']);
+        // a thicker bag wall makes the pin longer by just that; a smaller hole makes pin and pocket thinner
+        $this->assertSame(11.7, $this->meta($this->preview('bag_charm', ['bag_wall' => 7] + $heart)->assertOk())['notes']['pin']['height']);
+        $small = $this->meta($this->preview('bag_charm', ['bag_hole' => 8] + $heart)->assertOk());
+        $this->assertSame(7.4, $small['notes']['pin']['d']);
+        $this->assertLessThan($m['volume_mm3'], $small['volume_mm3'] + 1);
+        // the thinnest charm the form allows still keeps four layers over the pocket: nothing has to be thickened
+        $thin = $this->meta($this->preview('bag_charm', ['thickness' => 4, 'frame' => 0] + $heart)->assertOk());
+        $this->assertArrayNotHasKey('thickened', $thin['notes']);
+        $this->get('/tools/bag-charm')->assertOk()->assertSee('data-param="bag_hole"', false)->assertSee(str_replace('\\', '\\\\', substr((string) json_encode(__('param.shape.magnet.fact.bag_charm')), 1, -1)), false);
+    }
+
+    public function test_a_big_letter_can_stand_in_a_base_printed_next_to_it(): void
+    {
+        $ela = ['line1' => 'Ela', 'height' => 120, 'thickness' => 5, 'relief' => 1];
+        $flat = $this->meta($this->preview('name_letter', $ela, 'all', true)->assertOk());
+        $stood = $this->meta($this->preview('name_letter', $ela + ['stand' => true], 'all', true)->assertOk());
+        // thick enough for a slot of 6 mm with a floor under it; a foot under the letter; the base beside it on the bed
+        $this->assertEqualsWithDelta(8 + 1, $stood['bbox']['z'], 0.01);
+        $this->assertEqualsWithDelta($flat['bbox']['y'] + 7.5, $stood['bbox']['y'], 0.1);
+        [$w, $d, $h] = $stood['notes']['stand'];
+        $this->assertSame(8.0, (float) $h);
+        $this->assertGreaterThanOrEqual(40, $w);
+        $this->assertEqualsWithDelta(8 + 26, $d, 0.01);
+        $this->assertEqualsWithDelta($flat['bbox']['x'] + 6 + $w, $stood['bbox']['x'], 0.5);
+        // the base is as high as the letter is thick: still two filaments one on another and one change, at the letter's top
+        $this->assertSame($flat['notes']['parts'], $stood['notes']['parts']);
+        $this->assertSame(2, $stood['notes']['filaments']);
+        $this->assertFalse($stood['notes']['multi_material']);
+        $this->assertSame([8.0], array_map('floatval', array_column($stood['notes']['color_changes'], 'z')));
+        $this->assertArrayNotHasKey('stand', $flat['notes']);
+        $this->get('/tools/name-letter')->assertOk()->assertSee('data-flag="stand"', false);
+    }
+
+    public function test_a_biscuit_takes_sweets_and_sprinkles_and_a_tray_to_lie_in(): void
+    {
+        $star = ['artwork' => 'lib:cookies/cookie-star', 'width' => 80, 'thickness' => 6];
+        $tap = fn (string $tip) => ['c' => 'red', 'w' => 3, 't' => $tip, 'p' => [[0.5, 0.5]]];
+        $line = fn (string $tip) => ['c' => 'red', 'w' => 3, 't' => $tip, 'p' => [[0.35, 0.45], [0.5, 0.45], [0.65, 0.45]]];
+        $icing = fn (array $stroke) => $this->meta($this->preview('cookie', $star + ['strokes' => [$stroke]], 'icing_1', true)->assertOk());
+        // a tap with the sweets nib is one round sweet, nearly three times as wide as a tap of the plain nib
+        $dot = $icing($tap('round'));
+        $sweet = $icing($tap('candy'));
+        $this->assertEqualsWithDelta(3, $dot['bbox']['x'], 0.2);
+        $this->assertEqualsWithDelta(2.8 * 3, $sweet['bbox']['x'], 0.3);
+        $this->assertEqualsWithDelta(7.84 * $dot['volume_mm3'], $sweet['volume_mm3'], 0.08 * 7.84 * $dot['volume_mm3']);
+        // a tap of sprinkles is a handful of little rods; along a stroke they lie every which way, the same on every preview
+        $pinch = $icing($tap('sprinkles'));
+        $this->assertGreaterThan($dot['volume_mm3'], $pinch['volume_mm3']);
+        $scatter = $icing($line('sprinkles'));
+        $this->assertGreaterThan($pinch['volume_mm3'], $scatter['volume_mm3']);
+        $this->assertSame($scatter['volume_mm3'], $icing($line('sprinkles'))['volume_mm3']);
+        $this->assertGreaterThan(3 * 1.2, $scatter['bbox']['y']);
+        // sweets along a stroke are sweets, not a line
+        $row = $icing($line('candy'));
+        $this->assertGreaterThan(2 * $sweet['volume_mm3'] * 0.9, $row['volume_mm3']);
+        $this->preview('cookie', $star + ['strokes' => [$tap('glitter')]])->assertStatus(422);
+
+        // the tray: beside the biscuit, in its part and its filament, lower than the biscuit; the drawing stays where it was
+        $bare = $this->meta($this->preview('cookie', $star + ['strokes' => [$tap('candy')]], 'all', true)->assertOk());
+        $shown = $this->meta($this->preview('cookie', $star + ['tray' => true, 'strokes' => [$tap('candy')]], 'all', true)->assertOk());
+        [$w, $d] = $shown['notes']['tray'];
+        $this->assertEqualsWithDelta($bare['bbox']['x'] + 6, $w, 0.1);
+        $this->assertEqualsWithDelta($bare['bbox']['x'] + 6 + $w, $shown['bbox']['x'], 0.1);
+        $this->assertEqualsWithDelta($d, $shown['bbox']['y'], 0.1);
+        $this->assertSame($bare['bbox']['z'], $shown['bbox']['z']);
+        $this->assertSame($bare['notes']['parts'], $shown['notes']['parts']);
+        $this->assertSame($bare['notes']['color_changes'], $shown['notes']['color_changes']);
+        $this->assertSame($bare['notes']['frame'], $shown['notes']['frame']);
+        $this->assertGreaterThan($bare['volume_mm3'] + 1000, $shown['volume_mm3']);
+        // and a place for the list of strokes, where any of them is moved or taken away
+        $this->get('/tools/cookie')->assertOk()->assertSee('value="sprinkles"', false)->assertSee('data-flag="tray"', false)->assertSee('id="cookie-strokes"', false);
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

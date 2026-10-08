@@ -7,6 +7,8 @@
  * intent:     file | create | spare          (the three entrances on the tools page)
  * categories: images | names | home | parts | toys | signs | craft | edit | sell   (the filter of the tools page, also /tools#<category>;
  *             names in lang/<locale>/tools.php `cats`; the words a tool is found by in `keywords`)
+ * seo.kind:   for a tool that is another generator opened with a preset (SVG to STL = `logo` with `extrude`): the generator
+ *             its examples are drawn by.
  * card:       for a tool that is not one of the generators: whose output its card shows (`matplace:tool-examples --card`),
  *             ['kind' => generator, 'preset' => …, 'params' => […], 'colors' => [part => filament]]. A generator draws its own
  *             first example. Tools with neither (price from a file, repair, check, mold, figure, relief) keep the picture
@@ -81,6 +83,20 @@ return [
         ['preset' => 'door', 'params' => ['line1' => 'Novákovi', 'line2' => '12']],
         ['preset' => 'name', 'params' => ['line1' => 'Ela']],
     ]]],
+    'nameplate' => ['route' => 'tools.nameplate', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true,
+        'card' => ['kind' => 'sign', 'preset' => 'shaped', 'params' => ['line1' => 'Jana', 'artwork' => 'lib:hearts-stars/star']],
+        'seo' => ['kind' => 'sign', 'examples' => [
+            ['preset' => 'shaped', 'params' => ['line1' => 'Jana', 'artwork' => 'lib:hearts-stars/star']],
+            ['preset' => 'shaped', 'params' => ['line1' => 'Rex', 'shape' => 'bone', 'border' => false, 'typeface' => 'titan', 'artwork' => 'lib:animals/paw', 'motif_at' => 'right']],
+            ['preset' => 'shaped', 'params' => ['line1' => 'Ela', 'line2' => '2020', 'shape' => 'heart', 'keyring' => true, 'ring_at' => 'top', 'text_height' => 9, 'typeface' => 'lobster']],
+        ]]],
+    'text' => ['route' => 'tools.text', 'intent' => 'create', 'categories' => ['names', 'signs', 'home'], 'available' => true,
+        'card' => ['kind' => 'sign', 'preset' => 'stand', 'params' => ['line1' => 'HOME']],
+        'seo' => ['kind' => 'sign', 'examples' => [
+            ['preset' => 'stand', 'params' => ['line1' => 'HOME']],
+            ['preset' => 'stand', 'params' => ['line1' => 'Ela', 'typeface' => 'script', 'text_height' => 40, 'thickness' => 15, 'artwork' => 'lib:hearts-stars/heart', 'motif_at' => 'right']],
+            ['preset' => 'stand', 'params' => ['line1' => 'KAVÁRNA', 'line2' => 'u Jany', 'typeface' => 'bebas', 'text_height' => 35, 'thickness' => 20]],
+        ]]],
     'qr' => ['route' => 'tools.qr', 'intent' => 'create', 'categories' => ['signs', 'sell'], 'available' => true, 'verified' => '2026-10-04', 'seo' => ['examples' => [
         ['params' => ['size' => 70, 'url' => 'https://matplace.com', 'label' => 'matplace.com']],
         ['params' => ['size' => 90, 'url' => 'WIFI:T:WPA;S:Kavarna;P:dobrakava;;', 'label' => 'Wi-Fi', 'stand' => true]],
@@ -91,6 +107,13 @@ return [
         ['params' => ['mode' => 'standing', 'width' => 120, 'line1' => 'OPEN']],
         ['params' => ['mode' => 'cutout', 'shape' => 'circle', 'width' => 80, 'line1' => 'M']],
     ]]],
+    'svg_to_stl' => ['route' => 'tools.svg_to_stl', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => true,
+        'card' => ['kind' => 'logo', 'preset' => 'extrude', 'params' => ['artwork' => 'lib:animals/cat', 'line1' => '', 'width' => 80, 'thickness' => 6]],
+        'seo' => ['kind' => 'logo', 'examples' => [
+            ['preset' => 'extrude', 'params' => ['artwork' => 'lib:animals/cat', 'line1' => '', 'width' => 80, 'thickness' => 6]],
+            ['preset' => 'extrude', 'params' => ['artwork' => 'lib:nature/oak-leaf', 'line1' => '', 'width' => 100, 'thickness' => 3, 'bevel' => true]],
+            ['preset' => 'extrude', 'params' => ['artwork' => 'lib:hearts-stars/star', 'line1' => '', 'width' => 60, 'thickness' => 20]],
+        ]]],
     'cutter' => ['route' => 'tools.cutter', 'intent' => 'create', 'categories' => ['craft', 'names'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['width' => 70, 'line1' => 'Ela', 'typeface' => 'script']],
         ['params' => ['width' => 60, 'line1' => '5', 'typeface' => 'sans', 'edge' => 'sharp']],
@@ -100,6 +123,26 @@ return [
         ['params' => ['width' => 50, 'line1' => 'EVA', 'mode' => 'raised', 'handle' => 'knob']],
         ['params' => ['width' => 60, 'line1' => 'HAND', 'line2' => 'MADE', 'mode' => 'raised', 'handle' => 'knob']],
         ['params' => ['width' => 40, 'line1' => 'OK', 'mode' => 'recessed', 'handle' => 'none']],
+    ]]],
+    'papel' => ['route' => 'tools.papel', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:holidays/sugar-skull', 'width' => 150, 'height' => 200]],
+        ['params' => ['artwork' => 'lib:hearts-stars/heart', 'width' => 120, 'height' => 120, 'border' => 'hearts']],
+        ['params' => ['artwork' => 'lib:animals/butterfly', 'width' => 200, 'height' => 150, 'border' => 'diamonds', 'invert' => true]],
+    ]]],
+    'notes' => ['route' => 'tools.notes', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:animals/cat', 'width' => 90]],
+        ['params' => ['line1' => 'Jana', 'typeface' => 'script', 'width' => 100, 'pen' => false]],
+        ['params' => ['artwork' => 'lib:hearts-stars/star', 'width' => 70, 'pad' => 51, 'depth' => 10]],
+    ]]],
+    'hair_tie' => ['route' => 'tools.hair_tie', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:hearts-stars/crown', 'width' => 90]],
+        ['params' => ['line1' => 'Ema', 'typeface' => 'script', 'width' => 110, 'post_h' => 120]],
+        ['params' => ['artwork' => 'lib:animals/owl', 'width' => 80, 'post_d' => 20, 'post_h' => 70]],
+    ]]],
+    'candle_stand' => ['route' => 'tools.candle_stand', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:holidays/christmas-tree', 'width' => 100, 'jar_d' => 80]],
+        ['params' => ['artwork' => 'lib:animals/deer', 'width' => 120, 'jar_d' => 103]],
+        ['params' => ['line1' => 'Home', 'typeface' => 'script', 'width' => 110, 'jar_d' => 70]],
     ]]],
     'stencil' => ['route' => 'tools.stencil', 'intent' => 'create', 'categories' => ['craft', 'signs'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['width' => 120, 'line1' => 'BOA 8']],
@@ -184,6 +227,35 @@ return [
         ['params' => ['artwork' => 'lib:colour/red-heart', 'width' => 50, 'disc' => 'd8x3', 'mount' => 'press']],
         ['params' => ['artwork' => 'lib:colour/snowman', 'width' => 45, 'body' => 'rect']],
     ]]],
+    'badge' => ['route' => 'tools.badge', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/smiling-star', 'line1' => 'Jana', 'width' => 40]],
+        ['params' => ['artwork' => 'lib:colour/red-heart', 'width' => 38, 'body' => 'circle']],
+        ['params' => ['artwork' => 'lib:colour/paw-badge', 'line1' => 'Petr', 'width' => 45, 'body' => 'rect']],
+    ]]],
+    'medallion' => ['route' => 'tools.medallion', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 80, 'links' => 20]],
+        ['params' => ['line1' => '1', 'typeface' => 'archivo', 'width' => 70, 'body' => 'star', 'links' => 24]],
+        ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 90, 'body' => 'hex', 'links' => 0]],
+    ]]],
+    'photo_organizer' => ['route' => 'tools.photo_organizer', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:nature/cloud', 'width' => 120, 'height' => 80, 'cell' => 40]],
+        ['params' => ['artwork' => 'lib:nature/cloud', 'body' => 'circle', 'width' => 90, 'height' => 90, 'inside' => 'holes', 'hole_d' => 20]],
+        ['params' => ['artwork' => 'lib:hearts-stars/heart', 'width' => 110, 'height' => 60, 'inside' => 'open']],
+    ]]],
+    'bag_charm' => ['route' => 'tools.bag_charm', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/red-heart', 'width' => 45]],
+        ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 50, 'bag_hole' => 10]],
+        ['params' => ['line1' => 'EMA', 'typeface' => 'titan', 'width' => 60, 'body' => 'rect']],
+    ]]],
+    // layers put together by hand; the page has the list of layers and their fields, dragging them in the preview is still to come (docs/P.md §7)
+    'compose' => ['route' => 'tools.compose', 'intent' => 'create', 'categories' => ['names', 'images'], 'available' => true, 'seo' => ['examples' => [
+        ['preset' => 'cloud'], ['preset' => 'topper'], ['preset' => 'tag'],
+    ]]],
+    // out of the catalogue until it was tried on real photos of real things (it is tested on drawn ones, docs/P.md)
+    'insert' => ['route' => 'tools.insert', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => false],
+    // out of the catalogue until one of each was printed and tried: does the clip hold a straw, does the tongue lift a tab (docs/P.md §5)
+    'straw' => ['route' => 'tools.straw', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => false],
+    'opener' => ['route' => 'tools.opener', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => false],
     'coaster' => ['route' => 'tools.coaster', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/snowman', 'width' => 100, 'body' => 'circle']],
         ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 95, 'body' => 'hex', 'grooves' => true]],

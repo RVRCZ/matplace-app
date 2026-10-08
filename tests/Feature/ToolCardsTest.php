@@ -31,7 +31,8 @@ class ToolCardsTest extends TestCase
         if (! function_exists('imagecreatefromjpeg')) {
             $this->markTestSkipped('PHP GD is not installed.');
         }
-        $drawn = array_keys(ParametricGenerator::FIELDS);
+        // every generator that is in the catalogue: one kept out until its print was tried has no card yet
+        $drawn = array_values(array_filter(array_keys(ParametricGenerator::FIELDS), fn ($kind) => config('tools.'.$kind.'.available') !== false));
         $drawn[] = 'gifts';                                                   // borrows the sign generator (config/tools.php `card`)
         foreach ($drawn as $key) {
             $im = imagecreatefromjpeg(public_path('img/tools/'.$key.'-800.jpg'));

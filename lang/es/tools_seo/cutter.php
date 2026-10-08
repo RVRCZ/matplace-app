@@ -9,7 +9,7 @@ return [
         'Si la imagen subida tiene líneas dentro del contorno, como los nervios de una hoja o ojos y una sonrisa, la herramienta las convierte en un sello aparte que se presiona sobre la masa tras cortar. El contorno va en espejo: con la pestaña hacia arriba, corta en el sentido correcto. Puede pedir el cortador impreso en nuestra granja de impresión o descargar el modelo gratis para su impresora.',
     ],
     'steps' => [
-        ['name' => 'Escriba texto o suba forma', 'text' => 'El texto admite dos líneas de 20 caracteres cada una, en una de cuatro tipografías. En lugar de texto puede subir un SVG o una imagen de la forma.'],
+        ['name' => 'Escriba texto o suba forma', 'text' => 'El texto admite dos líneas de 20 caracteres cada una, en una de treinta tipografías. En lugar de texto puede subir un SVG o una imagen de la forma.'],
         ['name' => 'Ajuste medidas y filo', 'text' => 'Indique el ancho de la forma, el alto y el grosor de la pared y el ancho de la pestaña. El filo afilado corta más limpio, el recto es más robusto.'],
         ['name' => 'Revise la vista previa', 'text' => 'La vista previa muestra el cortador girado tal como se usa y, a su lado, el sello si lo hay. El interior cerrado de una letra, como en la O, recibe su propia pared, unida al resto por barras planas.'],
         ['name' => 'Pida la impresión o descargue', 'text' => 'Pida la impresión a nuestra granja de impresión y páguela con crédito prepagado. O descargue el modelo gratis como archivo STL o como proyecto listo para su impresora.'],

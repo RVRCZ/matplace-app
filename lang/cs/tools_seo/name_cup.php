@@ -10,7 +10,7 @@ return [
     ],
     'steps' => [
         ['name' => 'Napište jméno', 'text' => 'Krátké jméno vyjde s širší kapsou. U delšího zvětšete šířku, aby zůstalo místo na tužky.'],
-        ['name' => 'Vyberte písmo', 'text' => 'Psací písmo dává jednu souvislou kapsu. U bezpatkového, patkového a strojového jsou písmena samostatné kapsy; kde se nedotýkají, spojí je příčka.'],
+        ['name' => 'Vyberte písmo', 'text' => 'Písmo vyberete ze třiceti. Psané, ve kterém se písmena spojují, dává jednu souvislou kapsu. U ostatních jsou písmena samostatné kapsy; kde se nedotýkají, spojí je příčka.'],
         ['name' => 'Nastavte rozměry a podstavec', 'text' => 'Šířku a výšku měníte posuvníky nebo tažením šipek v náhledu. Pod rozměry vidíte šířku kapsy; když je pro tužku úzká, nástroj upozorní.'],
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],

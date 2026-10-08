@@ -52,6 +52,9 @@ export class Viewer {
     private onMarker: ((share: number, phase: 'move' | 'end') => string | void) | null = null;
     private draw: { z: number; color: string } | null = null;
     private onDraw: ((points: [number, number][]) => void) | null = null;
+    private frame: { group: Group; grips: Mesh[]; box: [number, number, number, number]; z: number } | null = null;
+    private onFrame: ((change: FrameChange, phase: 'move' | 'end') => string | void) | null = null;
+    private framing: { mode: 'move' | 'size' | 'turn'; from: Vector3; change: FrameChange; x: number; y: number; moved: boolean } | null = null;
     private listening = false;
     private anim: { from: Vector3; to: Vector3; t0: number; ms: number } | null = null;
 
@@ -511,6 +514,60 @@ export class Viewer {
         if (starting) { this.setView('top'); this.listen(); }
     }
 
+    /**
+     * A frame round a thing lying on the model that the visitor moves, resizes and turns with the pointer: a layer of
+     * a composition. `box` is the frame in the millimetres of the file (x0, y0, x1, y1), `z` the height it is drawn at.
+     * A drag inside it moves the thing, a drag by a corner resizes it about its middle, the knob above it turns it.
+     * `cb` gets what has changed since the press; the model itself stays as it is until the caller builds it anew.
+     */
+    setFrame(frame: { box: [number, number, number, number]; z: number } | null, cb: ((change: FrameChange, phase: 'move' | 'end') => string | void) | null): void {
+        if (this.frame) {
+            this.scene.remove(this.frame.group);
+            this.frame.group.traverse((o) => { (o as Mesh).geometry?.dispose(); });
+        }
+        if (this.framing) { this.framing = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); }
+        this.frame = null; this.onFrame = cb;
+        if (!frame || !this.mesh) { this.canvas.style.cursor = this.draw ? 'crosshair' : ''; return; }
+        this.mesh.updateMatrixWorld();
+        const [x0, y0, x1, y1] = frame.box; const z = frame.z + 0.05;
+        const mid = this.mesh.localToWorld(new Vector3((x0 + x1) / 2, (y0 + y1) / 2, z));
+        const at = (x: number, y: number): Vector3 => this.mesh!.localToWorld(new Vector3(x, y, z)).sub(mid);
+        const knob = y1 + Math.max(3, (y1 - y0) * 0.18);
+        const group = new Group();
+        group.position.copy(mid);
+        const line = new Line(
+            new BufferGeometry().setFromPoints([at((x0 + x1) / 2, knob), at((x0 + x1) / 2, y1), at(x1, y1), at(x1, y0), at(x0, y0), at(x0, y1), at((x0 + x1) / 2, y1)]),
+            new LineBasicMaterial({ color: 0xc94714, depthTest: false, transparent: true }),
+        );
+        line.renderOrder = 10; line.frustumCulled = false;
+        group.add(line);
+        const grip = (p: Vector3, mode: 'size' | 'turn'): Mesh => {
+            const dot = new Mesh(new SphereGeometry(0.13, 16, 12), new MeshBasicMaterial({ color: mode === 'turn' ? 0xc94714 : 0xffffff, depthTest: false, transparent: true }));
+            const rim = new Mesh(new SphereGeometry(0.17, 16, 12), new MeshBasicMaterial({ color: mode === 'turn' ? 0xffffff : 0xc94714, depthTest: false, transparent: true }));
+            const grab = new Mesh(new SphereGeometry(0.45, 8, 8), new MeshBasicMaterial({ visible: false }));
+            rim.renderOrder = 11; dot.renderOrder = 12;
+            grab.add(rim, dot);
+            grab.position.copy(p); grab.userData.mode = mode;
+            group.add(grab);
+            return grab;
+        };
+        const grips = [grip(at(x0, y0), 'size'), grip(at(x1, y0), 'size'), grip(at(x1, y1), 'size'), grip(at(x0, y1), 'size'), grip(at((x0 + x1) / 2, knob), 'turn')];
+        this.scene.add(group);
+        this.frame = { group, grips, box: frame.box, z: frame.z };
+        this.listen();
+    }
+
+    /** What of the frame lies under the pointer: a corner, the knob, its inside, or nothing. */
+    private frameUnder(ray: Raycaster): { mode: 'move' | 'size' | 'turn'; at: Vector3 } | null {
+        if (!this.frame || !this.onFrame) return null;
+        const p = this.fileAt(ray, this.frame.z);
+        if (!p) return null;
+        const hit = ray.intersectObjects(this.frame.grips, false)[0];
+        if (hit) return { mode: hit.object.userData.mode, at: p };
+        const [x0, y0, x1, y1] = this.frame.box;
+        return p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1 ? { mode: 'move', at: p } : null;
+    }
+
     /** Where the pointer's ray meets the height z of the model, in the millimetres of the file. */
     private fileAt(ray: Raycaster, z: number): Vector3 | null {
         if (!this.mesh) return null;
@@ -567,6 +624,10 @@ export class Viewer {
         }
         for (const h of this.handles) h.group.scale.setScalar(this.camera.position.distanceTo(h.group.position) * 0.055);
         if (this.marker) this.marker.group.scale.setScalar(this.camera.position.distanceTo(this.marker.group.position) * 0.055);
+        if (this.frame) {
+            const k = this.camera.position.distanceTo(this.frame.group.position) * 0.055 / this.frame.group.scale.x;
+            for (const g of this.frame.grips) g.scale.setScalar(k);
+        }
     }
 
     /** Pointer events of the tool page: a handle is dragged before the orbit controls see the press; a plain click picks a piece. */
@@ -622,6 +683,17 @@ export class Viewer {
                     return;
                 }
             }
+            if (this.frame && this.onFrame && e.button === 0) {
+                ray.setFromCamera(at(e), this.camera);
+                const under = this.frameUnder(ray);
+                if (under) {
+                    e.stopImmediatePropagation(); e.preventDefault();
+                    this.framing = { mode: under.mode, from: under.at, change: { dx: 0, dy: 0, scale: 1, turn: 0 }, x: e.clientX, y: e.clientY, moved: false };
+                    this.controls.enabled = false;
+                    this.canvas.setPointerCapture(e.pointerId);
+                    return;
+                }
+            }
             if (!this.handles.length || !this.onHandle) return;
             ray.setFromCamera(at(e), this.camera);
             const hit = ray.intersectObjects(this.handles.filter((h) => h.group.visible).flatMap((h) => h.group.children), false)[0];
@@ -658,6 +730,33 @@ export class Viewer {
                 label(this.onMarker(hit[0], 'move'), e);
                 return;
             }
+            if (this.framing && this.frame && this.onFrame && this.mesh) {
+                const f = this.framing; const [x0, y0, x1, y1] = this.frame.box; const cx = (x0 + x1) / 2; const cy = (y0 + y1) / 2;
+                if (!f.moved && Math.hypot(e.clientX - f.x, e.clientY - f.y) <= 5) return;      // a click, not a drag yet
+                f.moved = true;
+                ray.setFromCamera(at(e), this.camera);
+                const p = this.fileAt(ray, this.frame.z);
+                if (!p) return;
+                const group = this.frame.group;
+                if (f.mode === 'move') {
+                    f.change.dx = p.x - f.from.x; f.change.dy = p.y - f.from.y;
+                    group.position.copy(this.mesh.localToWorld(new Vector3(cx + f.change.dx, cy + f.change.dy, this.frame.z + 0.05)));
+                } else if (f.mode === 'size') {
+                    f.change.scale = Math.max(0.05, Math.min(20, Math.hypot(p.x - cx, p.y - cy) / (Math.hypot(f.from.x - cx, f.from.y - cy) || 1)));
+                    group.scale.setScalar(f.change.scale);
+                } else {
+                    const deg = (Math.atan2(p.y - cy, p.x - cx) - Math.atan2(f.from.y - cy, f.from.x - cx)) * 180 / Math.PI;
+                    f.change.turn = Math.round(((deg + 540) % 360) - 180);
+                    group.rotation.y = f.change.turn * Math.PI / 180;
+                }
+                label(this.onFrame({ ...f.change }, 'move'), e);
+                return;
+            }
+            if (this.frame && this.onFrame && !drag && !grip && !stroke && e.buttons === 0) {
+                ray.setFromCamera(at(e), this.camera);
+                const mode = this.frameUnder(ray)?.mode;
+                this.canvas.style.cursor = mode === 'move' ? 'move' : mode === 'size' ? 'nwse-resize' : mode === 'turn' ? 'grab' : '';
+            }
             if (!drag || !this.onHandle) return;
             const len = drag.px.lengthSq() || 1;
             drag.mm = ((e.clientX - drag.x) * drag.px.x + (e.clientY - drag.y) * drag.px.y) / len;
@@ -680,6 +779,13 @@ export class Viewer {
                 down = null;
                 return;
             }
+            if (this.framing) {
+                const f = this.framing;
+                this.framing = null; this.controls.enabled = true;
+                this.handleLabel?.classList.add('hidden');
+                if (f.moved) { down = null; this.onFrame?.({ ...f.change }, 'end'); return; }
+                // a press without a drag is a click on the piece under the pointer, as anywhere else
+            }
             if (!down || !this.onPick || !this.mesh || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) { down = null; return; }
             down = null;
             ray.setFromCamera(at(e), this.camera);
@@ -689,12 +795,14 @@ export class Viewer {
             this.onPick(index, index >= 0 ? this.pieces[index] : null);
         };
         this.canvas.addEventListener('pointerup', up);
-        this.canvas.addEventListener('pointercancel', () => { endStroke(); if (grip) { grip = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } if (drag) { drag = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } down = null; });
+        this.canvas.addEventListener('pointercancel', () => { endStroke(); if (grip) { grip = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } if (drag) { drag = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } if (this.framing) { this.framing = null; this.controls.enabled = true; this.handleLabel?.classList.add('hidden'); } down = null; });
     }
 }
 
 /** A separately printed piece of the shown model: its name and its triangles [from, to) in the order of the file. */
 export interface Piece { name: string; tris: [number, number]; bbox?: number[] }
+/** What a drag of the frame has changed since the press: a shift in millimetres, a ratio of sizes, a turn in degrees (anticlockwise). */
+export interface FrameChange { dx: number; dy: number; scale: number; turn: number }
 
 export type ViewName = 'iso' | 'top' | 'front' | 'side' | 'bottom';
 

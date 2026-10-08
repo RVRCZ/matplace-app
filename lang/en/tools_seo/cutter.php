@@ -9,7 +9,7 @@ return [
         'When the uploaded picture has lines inside the outline, such as leaf veins or eyes and a smile, the tool turns them into a separate stamp to press into the dough after cutting. The outline is mirrored, so with the flange turned up it cuts the right way round. Order the cutter as a print from our print farm, or download the model free for your own printer.',
     ],
     'steps' => [
-        ['name' => 'Type text or upload shape', 'text' => 'The text can have two lines of 20 characters each, in one of four typefaces. Instead of a text you can upload an SVG or a picture of the shape.'],
+        ['name' => 'Type text or upload shape', 'text' => 'The text can have two lines of 20 characters each, in one of thirty typefaces. Instead of a text you can upload an SVG or a picture of the shape.'],
         ['name' => 'Set the sizes and edge', 'text' => 'Enter the shape width, the wall height and thickness and the flange width. A tapered edge cuts more cleanly, a straight one is sturdier.'],
         ['name' => 'Check the preview', 'text' => 'The preview shows the cutter turned the way it is used, with the stamp beside it if there is one. The closed inside of a letter, as in an O, gets its own wall, tied to the rest by flat bars.'],
         ['name' => 'Order the print or download', 'text' => 'Order the print from our print farm and pay from prepaid credit. Or download the model free as an STL file or a ready project for your own printer.'],

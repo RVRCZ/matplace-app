@@ -27,25 +27,34 @@ class ToolsController extends Controller
     }
 
     /** Organizer, box, phone stand, cable holder: one page, the fields come from the generator's own limits. */
-    public function param(string $kind, ParametricGenerator $tools, MaterialCatalog $materials, ConverterChain $converters): View
+    public function param(Request $request, string $kind, ParametricGenerator $tools, MaterialCatalog $materials, ConverterChain $converters): View
     {
         abort_unless(isset(ParametricGenerator::FIELDS[$kind]), 404);
+        // a tool of the catalogue that is another tool opened with a preset (SVG to STL = the logo tool's plain extrusion):
+        // the route names the tool whose title, texts and card the page shows, and the preset it starts with
+        $tool = (string) ($request->route('as') ?? $kind);
+        $preset = $request->route('preset');
 
         return view('tools.param', [
             'kind' => $kind,
+            'tool' => $tool,
+            'preset' => is_string($preset) && isset(ParametricGenerator::PRESETS[$kind][$preset]) ? $preset : null,
             'available' => $tools->available(),
             'fields' => ParametricGenerator::FIELDS[$kind],
             'flags' => ParametricGenerator::FLAGS[$kind] ?? [],
             'when' => ParametricGenerator::WHEN[$kind] ?? [], 'flagsOn' => ParametricGenerator::FLAGS_ON,
-            'choices' => ParametricGenerator::CHOICES[$kind] ?? [],
+            'choices' => ParametricGenerator::choicesOf($kind),
             'texts' => ParametricGenerator::TEXTS[$kind] ?? [],
             'artwork' => in_array($kind, ParametricGenerator::ARTWORK, true),
             'main' => ParametricGenerator::MAIN[$kind],
             'presets' => ParametricGenerator::PRESETS[$kind] ?? [],
             'fills' => ParametricGenerator::FILLS[$kind] ?? [],
             'family' => ParametricGenerator::FAMILY[$kind] ?? null,
-            'place' => ParametricGenerator::PLACE[ParametricGenerator::FAMILY[$kind] ?? ''] ?? [],
-            'sample' => ParametricGenerator::SAMPLE[$kind] ?? null,
+            'place' => ParametricGenerator::PLACE[ParametricGenerator::FAMILY[$kind] ?? $kind] ?? [],
+            'sample' => ParametricGenerator::SAMPLE[$tool] ?? ParametricGenerator::SAMPLE[$kind] ?? null,
+            'captioned' => in_array($kind, ParametricGenerator::CAPTIONED, true),
+            'fonts' => ParametricGenerator::FONTS,
+            'layerShapes' => ParametricGenerator::LAYER_SHAPES,
             'config' => ConfigController::payload($materials, $converters, true),
         ]);
     }
