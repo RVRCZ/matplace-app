@@ -57,7 +57,7 @@
     $flagsAt = fn (string $section) => collect($flags)->filter(fn ($flag) => $at($flag, 'size') === $section);
 @endphp
 
-@extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).'.lead'), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
+@extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).(($quickForm ?? null) === true ? '.lead_form' : '.lead')), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
 
 @push('head')
 <script>
@@ -206,7 +206,7 @@
                             @foreach($layerShapes ?? [] as $shape)<option value="{{ $shape }}">{{ __(\Illuminate\Support\Facades\Lang::has('param.o.sign.'.$shape) ? 'param.o.sign.'.$shape : 'param.compose.shape.'.$shape) }}</option>@endforeach
                         </select>
                     </label>
-                    <div class="flex items-center gap-3">
+                    <div class="tool-swatch-row">
                         <button type="button" class="tool-swatch" id="compose-color" aria-label="{{ __('toolpage.color.pick') }}"></button>
                         <span class="min-w-0 text-sm"><span class="block font-medium text-ink">{{ __('param.compose.color') }}</span><span class="block truncate text-muted" id="compose-color-name"></span></span>
                     </div>
@@ -240,6 +240,13 @@
                 </div>
             </fieldset>
         @endforeach
+        @if(($quickForm ?? null) === false)
+            {{-- the address is the composer now; the quick form it used to be does what layers cannot (a picture in several colours, a plate that sizes itself) --}}
+            <p class="hint !text-xs">{{ __('param.compose.form.'.$tool) }} <a href="{{ url()->current() }}?form=1" class="font-semibold text-action-dark underline" rel="nofollow">{{ __('param.compose.form.open') }}</a></p>
+        @elseif($composeAs ?? null)
+            {{-- the form lays the thing out by itself; who wants more pieces or his own layout takes it to the composer --}}
+            <p class="hint !text-xs">{{ __('param.compose.more') }} <a href="{{ ($quickForm ?? null) === true ? url()->current() : route('tools.compose', ['preset' => $composeAs]) }}" class="font-semibold text-action-dark underline">{{ __('param.compose.open') }}</a></p>
+        @endif
     </x-tool-section>
     @endif
 
@@ -342,7 +349,7 @@
         @endif
         @foreach($colorChoices as $key => $options)
             {{-- a colour that changes the design itself (the plate and the code of a QR sign): kept with the model --}}
-            <div class="flex items-center gap-3">
+            <div class="tool-swatch-row">
                 <input type="hidden" data-choice="{{ $key }}" data-color value="{{ $spool($options[0]) }}">
                 <button type="button" class="tool-swatch" data-swatch-for="{{ $key }}" aria-label="{{ __('param.c.'.$kind.'.'.$key) }}: {{ __('toolpage.color.pick') }}"></button>
                 <span class="min-w-0 text-sm"><span class="block font-medium text-ink">{{ __('param.c.'.$kind.'.'.$key) }}</span><span class="block truncate text-muted" data-swatch-name="{{ $key }}"></span></span>
@@ -354,7 +361,7 @@
             <fieldset id="cookie-icing">
                 <legend class="lbl">{{ __('param.cookie.icing') }}</legend>
                 <button type="button" id="cookie-draw" class="btn-ink mt-2 w-full gap-2" aria-pressed="false"><x-icon name="sparkles" class="h-4 w-4" /><span>{{ __('param.cookie.draw') }}</span></button>
-                <div class="mt-3 flex items-center gap-3">
+                <div class="tool-swatch-row mt-3">
                     <button type="button" class="tool-swatch" id="cookie-pen" aria-label="{{ __('param.cookie.pen') }}: {{ __('toolpage.color.pick') }}"></button>
                     <span class="min-w-0 text-sm"><span class="block font-medium text-ink">{{ __('param.cookie.pen') }}</span><span class="block truncate text-muted" id="cookie-pen-name"></span></span>
                 </div>

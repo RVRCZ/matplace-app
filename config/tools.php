@@ -84,11 +84,16 @@ return [
         ['preset' => 'name', 'params' => ['line1' => 'Ela']],
     ]]],
     'nameplate' => ['route' => 'tools.nameplate', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true,
-        'card' => ['kind' => 'sign', 'preset' => 'shaped', 'params' => ['line1' => 'Jana', 'artwork' => 'lib:hearts-stars/star']],
-        'seo' => ['kind' => 'sign', 'examples' => [
-            ['preset' => 'shaped', 'params' => ['line1' => 'Jana', 'artwork' => 'lib:hearts-stars/star']],
-            ['preset' => 'shaped', 'params' => ['line1' => 'Rex', 'shape' => 'bone', 'border' => false, 'typeface' => 'titan', 'artwork' => 'lib:animals/paw', 'motif_at' => 'right']],
-            ['preset' => 'shaped', 'params' => ['line1' => 'Ela', 'line2' => '2020', 'shape' => 'heart', 'keyring' => true, 'ring_at' => 'top', 'text_height' => 9, 'typeface' => 'lobster']],
+        // the card opens the composer of layers with a nameplate in it (the quick form of the sign stays under ?form=1)
+        'card' => ['kind' => 'compose', 'preset' => 'plate'],
+        'seo' => ['kind' => 'compose', 'examples' => [
+            ['preset' => 'plate'],
+            ['preset' => 'plate', 'params' => ['layers' => [
+                ['kind' => 'shape', 'shape' => 'bone', 'x' => 0, 'y' => 0, 'w' => 130, 'code' => 'blue'],
+                ['kind' => 'text', 'text' => 'Rex', 'typeface' => 'titan', 'x' => -8, 'y' => 0, 'w' => 44, 'code' => 'white'],
+                ['kind' => 'art', 'art' => 'lib:animals/paw', 'x' => 26, 'y' => 0, 'w' => 16, 'turn' => -15, 'code' => 'white'],
+            ]]],
+            ['preset' => 'cloud'],
         ]]],
     'text' => ['route' => 'tools.text', 'intent' => 'create', 'categories' => ['names', 'signs', 'home'], 'available' => true,
         'card' => ['kind' => 'sign', 'preset' => 'stand', 'params' => ['line1' => 'HOME']],
@@ -211,12 +216,18 @@ return [
         ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 50, 'eye_pos' => 0]],
         ['params' => ['line1' => 'Ela', 'typeface' => 'script', 'width' => 60]],
     ]]],
-    // opens with a name: letters on a plate are two colours one on another, the kind of print the farm does today
-    'keychain' => ['route' => 'tools.keychain', 'intent' => 'create', 'categories' => ['names', 'images'], 'available' => true, 'seo' => ['examples' => [
-        ['params' => ['line1' => 'Jana', 'width' => 55, 'body' => 'rect']],
-        ['params' => ['line1' => '', 'artwork' => 'lib:colour/paw-badge', 'width' => 50, 'body' => 'image', 'eye_pos' => 0]],
-        ['params' => ['line1' => '', 'artwork' => 'lib:colour/smiling-star', 'width' => 45, 'body' => 'circle', 'eye_pos' => 0]],
-    ]]],
+    // the card opens the composer of layers with a key ring in it; the quick form (a name, or a picture in several colours)
+    // stays under ?form=1 and for the designs made with it
+    'keychain' => ['route' => 'tools.keychain', 'intent' => 'create', 'categories' => ['names', 'images'], 'available' => true,
+        'card' => ['kind' => 'compose', 'preset' => 'keyring'],
+        'seo' => ['kind' => 'compose', 'examples' => [
+            ['preset' => 'keyring'],
+            ['preset' => 'tag'],
+            ['preset' => 'keyring', 'params' => ['layers' => [
+                ['kind' => 'shape', 'shape' => 'circle', 'x' => 0, 'y' => 0, 'w' => 45, 'code' => 'black'],
+                ['kind' => 'art', 'art' => 'lib:animals/paw', 'x' => 0, 'y' => 0, 'w' => 26, 'code' => 'yellow'],
+            ]]],
+        ]]],
     'earrings' => ['route' => 'tools.earrings', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/red-heart', 'width' => 28]],
         ['params' => ['artwork' => 'lib:colour/happy-ghost', 'width' => 32, 'mirror' => true]],

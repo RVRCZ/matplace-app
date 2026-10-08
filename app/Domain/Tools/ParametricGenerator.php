@@ -94,6 +94,9 @@ final class ParametricGenerator
 
     public const LAYER_SHAPES = ['rounded', 'rect', 'circle', 'heart', 'star', 'cloud', 'bone', 'hexagon', 'banner', 'arrow', 'house', 'car', 'cat', 'candy', 'flower', 'shield', 'tag', 'bubble', 'fish'];
 
+    /** Tools whose product the composer can start from (tool of the catalogue → preset of `compose`): their pages show the way there. */
+    public const COMPOSED = ['topper' => 'topper', 'nameplate' => 'plate', 'keychain' => 'keyring', 'ornament' => 'bauble', 'name_letter' => 'initial'];
+
     /** Tools that keep to the few typefaces of their own: a letter on a bead of 8 mm has to be plain. */
     public const OWN_FACES = ['beads'];
 
@@ -370,7 +373,8 @@ final class ParametricGenerator
     private const SHAPE_WHEN = ['bg_strength' => ['remove_bg', ['on']], 'eye_pos' => ['eyelet', ['on']], 'eye_hole' => ['eyelet', ['on']], 'eye_wall' => ['eyelet', ['on']], 'relief' => ['flush', ['off']]];
 
     public const PRESETS = [
-        // three compositions to start from; colours are named, each becomes the farm's nearest spool
+        // compositions to start from; colours are named, each becomes the farm's nearest spool. The last four are the
+        // products of the forms (nameplate, key ring, ornament, big letter), for a visitor who wants to lay them out by hand
         'compose' => [
             'cloud' => ['base' => 'none', 'thickness' => 3, 'step' => 0.8, 'layers' => [
                 ['kind' => 'shape', 'shape' => 'cloud', 'x' => 0, 'y' => 0, 'w' => 100, 'code' => 'white'],
@@ -384,6 +388,25 @@ final class ParametricGenerator
             'tag' => ['base' => 'eyelet', 'eye_hole' => 4, 'thickness' => 3, 'step' => 0.8, 'layers' => [
                 ['kind' => 'shape', 'shape' => 'heart', 'x' => 0, 'y' => 0, 'w' => 60, 'code' => 'red'],
                 ['kind' => 'text', 'text' => 'Ema', 'typeface' => 'lobster', 'x' => 0, 'y' => 4, 'w' => 34, 'code' => 'white'],
+            ]],
+            'plate' => ['base' => 'none', 'thickness' => 3, 'step' => 0.8, 'layers' => [
+                ['kind' => 'shape', 'shape' => 'hexagon', 'x' => 0, 'y' => 0, 'w' => 120, 'code' => 'black'],
+                ['kind' => 'text', 'text' => 'Adéla', 'typeface' => 'baloo', 'x' => 10, 'y' => 0, 'w' => 58, 'code' => 'white'],
+                ['kind' => 'art', 'art' => 'lib:hearts-stars/star', 'x' => -36, 'y' => 0, 'w' => 20, 'code' => 'yellow'],
+            ]],
+            'keyring' => ['base' => 'eyelet', 'eye_hole' => 4, 'thickness' => 3, 'step' => 0.8, 'layers' => [
+                ['kind' => 'shape', 'shape' => 'bone', 'x' => 0, 'y' => 0, 'w' => 70, 'code' => 'blue'],
+                ['kind' => 'text', 'text' => 'Rex', 'typeface' => 'archivo', 'x' => 0, 'y' => 0, 'w' => 28, 'code' => 'white'],
+            ]],
+            'bauble' => ['base' => 'eyelet', 'eye_hole' => 4, 'thickness' => 2.4, 'step' => 0.8, 'layers' => [
+                ['kind' => 'shape', 'shape' => 'circle', 'x' => 0, 'y' => 0, 'w' => 70, 'code' => 'red'],
+                ['kind' => 'art', 'art' => 'lib:holidays/christmas-tree', 'x' => 0, 'y' => 7, 'w' => 28, 'code' => 'white'],
+                ['kind' => 'text', 'text' => '2026', 'typeface' => 'archivo', 'x' => 0, 'y' => -20, 'w' => 26, 'code' => 'white'],
+            ]],
+            'initial' => ['base' => 'none', 'thickness' => 6, 'step' => 1.2, 'layers' => [
+                // the name runs across the letter and out of it on both sides, as such monograms are made
+                ['kind' => 'text', 'text' => 'E', 'typeface' => 'archivo', 'x' => 0, 'y' => 0, 'w' => 80, 'code' => 'black'],
+                ['kind' => 'text', 'text' => 'Ema', 'typeface' => 'script', 'x' => 0, 'y' => -4, 'w' => 116, 'code' => 'red'],
             ]],
         ],
         // the outline alone, pulled up: what "SVG to STL" means (its page /tools/svg-to-stl opens the logo tool with this)

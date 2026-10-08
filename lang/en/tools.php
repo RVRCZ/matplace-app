@@ -86,7 +86,7 @@ return [
     'charm.hint' => 'A picture in filament colours and an eyelet you move anywhere along the outline.',
     'charm.action' => 'Design a charm',
     'keychain.title' => 'Keychain with a name or a picture',
-    'keychain.hint' => 'A name, a logo or a picture in filament colours, with an eyelet for the ring anywhere on the outline.',
+    'keychain.hint' => 'A shape, a name and a picture laid one on another, each layer in its filament colour, with an eyelet for the ring.',
     'keychain.action' => 'Design a keychain',
     'earrings.title' => 'Earrings from a picture',
     'earrings.hint' => 'A pair of identical or mirrored earrings from your own motif, with an eyelet for a hook.',

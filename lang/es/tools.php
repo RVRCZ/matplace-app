@@ -86,7 +86,7 @@ return [
     'charm.hint' => 'Una imagen en colores de filamento y un ojal que se mueve a cualquier punto del contorno.',
     'charm.action' => 'Diseñar un colgante',
     'keychain.title' => 'Llavero con nombre o imagen',
-    'keychain.hint' => 'Un nombre, un logotipo o una imagen en colores de filamento, con un ojal para la anilla en cualquier punto del contorno.',
+    'keychain.hint' => 'Una forma, un nombre y una imagen superpuestos, cada capa con su color de filamento, con ojal para la anilla.',
     'keychain.action' => 'Diseñar un llavero',
     'earrings.title' => 'Pendientes con una imagen',
     'earrings.hint' => 'Un par de pendientes iguales o en espejo con su propio motivo, con ojal para el gancho.',

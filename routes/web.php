@@ -129,7 +129,9 @@ $pages = function () {
     Route::get('/tools/phone-stand', [ToolsController::class, 'param'])->defaults('kind', 'phone_stand')->name('tools.phone_stand');
     Route::get('/tools/vase', [ToolsController::class, 'param'])->defaults('kind', 'vase')->name('tools.vase');
     Route::get('/tools/compose', [ToolsController::class, 'param'])->defaults('kind', 'compose')->defaults('preset', 'cloud')->name('tools.compose');
-    Route::get('/tools/nameplate', [ToolsController::class, 'param'])->defaults('kind', 'sign')->defaults('as', 'nameplate')->defaults('preset', 'shaped')->name('tools.nameplate');
+    // the nameplate and the key ring open the composer with their product; `form` is the quick form the address used to be
+    // (kind, or kind:preset): it stays there under ?form=1 and for a design that was made with it
+    Route::get('/tools/nameplate', [ToolsController::class, 'param'])->defaults('kind', 'compose')->defaults('as', 'nameplate')->defaults('preset', 'plate')->defaults('form', 'sign:shaped')->name('tools.nameplate');
     Route::get('/tools/text', [ToolsController::class, 'param'])->defaults('kind', 'sign')->defaults('as', 'text')->defaults('preset', 'stand')->name('tools.text');
     Route::get('/tools/logo', [ToolsController::class, 'param'])->defaults('kind', 'logo')->name('tools.logo');
     Route::get('/tools/svg-to-stl', [ToolsController::class, 'param'])->defaults('kind', 'logo')->defaults('as', 'svg_to_stl')->defaults('preset', 'extrude')->name('tools.svg_to_stl');
@@ -147,7 +149,7 @@ $pages = function () {
     Route::get('/tools/cookie-cutter', [ToolsController::class, 'param'])->defaults('kind', 'cutter')->name('tools.cutter');
     // a picture or a name in the colours of filaments: one builder, every product its own page
     Route::get('/tools/charm', [ToolsController::class, 'param'])->defaults('kind', 'charm')->name('tools.charm');
-    Route::get('/tools/keychain', [ToolsController::class, 'param'])->defaults('kind', 'keychain')->name('tools.keychain');
+    Route::get('/tools/keychain', [ToolsController::class, 'param'])->defaults('kind', 'compose')->defaults('as', 'keychain')->defaults('preset', 'keyring')->defaults('form', 'keychain')->name('tools.keychain');
     Route::get('/tools/earrings', [ToolsController::class, 'param'])->defaults('kind', 'earrings')->name('tools.earrings');
     Route::get('/tools/ornament', [ToolsController::class, 'param'])->defaults('kind', 'ornament')->name('tools.ornament');
     Route::get('/tools/magnet', [ToolsController::class, 'param'])->defaults('kind', 'magnet')->name('tools.magnet');

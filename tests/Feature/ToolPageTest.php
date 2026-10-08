@@ -95,9 +95,10 @@ class ToolPageTest extends TestCase
                 $this->assertContains($axis, ['x', 'y', 'z']);
             }
         }
-        // tools that take a picture open the picture window (upload, library, my pictures)
+        // tools that take a picture open the picture window (upload, library, my pictures); `form` asks for the form
+        // where the address opens the composer of layers now (the key ring)
         foreach (ParametricGenerator::ARTWORK as $kind) {
-            $this->get(route(config('tools.'.$kind.'.route')))->assertOk()->assertSee('id="param-artwork-open"', false);
+            $this->get(route(config('tools.'.$kind.'.route'), ['form' => 1]))->assertOk()->assertSee('id="param-artwork-open"', false);
         }
         $this->get('/tools/box')->assertDontSee('id="param-artwork-open"', false);
     }

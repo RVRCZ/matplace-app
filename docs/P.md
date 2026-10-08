@@ -132,7 +132,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | Miska ve tvaru obrázku | `/tools/shape-tray` | `tray` | obrys obrázku je stěna (8–40 mm), kresba vyrytá do dna, v barvách, nebo hladké dno |
 | SVG do STL | `/tools/svg-to-stl` | `logo` (předvolba `extrude`) | obrys SVG nebo obrázku vytažený na 0,6–50 mm, bez destičky, volitelně zkosená horní hrana |
 | Ozdoba na navíjecí držák karty | `/tools/badge-reel` | `badge` | obrázek v barvách 25–60 mm, pod ním jméno v jedné z barev obrázku, vzadu prohlubeň na lepicí kolečko |
-| Jmenovka ve tvaru s obrázkem | `/tools/nameplate` | `sign` (předvolba `shaped`) | destička ve 20 tvarech, která se sama zvětší kolem textu, motiv vlevo / vpravo / nad textem, očko na třech stranách |
+| Jmenovka ve tvaru s obrázkem | `/tools/nameplate` | `compose` (předvolba `plate`); rychlý formulář `sign` / `shaped` pod `?form=1` | karta otevírá skladbu vrstev; formulář: destička ve 20 tvarech, která se sama zvětší kolem textu, motiv vlevo / vpravo / nad textem, očko na třech stranách |
 | 3D nápis, který stojí | `/tools/text` | `sign` (styl `stand`, předvolba `stand`) | silná písmena na patce, 1–3 řádky, obrázek na téže patce; tiskne se vleže |
 | Medaile s řetězem | `/tools/medallion` | `medallion` | kruh, hvězda nebo šestiúhelník 50–120 mm s obrázkem či číslem, očko, 0–40 otevřených článků řetězu na téže podložce |
 | Organizér ve tvaru obrázku | `/tools/photo-organizer` | `photo_organizer` | vysoká nádobka 40–120 mm podle obrysu obrázku: přihrádky v mřížce, kulaté otvory v plném bloku, nebo jedna kapsa |
@@ -219,7 +219,16 @@ z `engines/shapes/`), s polohou, šířkou, otočením a filamentem.
   v `Artwork::REF`), takže se dá znovu otevřít i poté, co nahrané soubory po 30 dnech zmizí. Zkoušeno testem
   i v prohlížeči (nahrání, výběr z „Moje obrázky“, vrstva v náhledu). **Fotku jako vrstvu jsem nezkoušel** – projde
   stejným prahováním jako u loga a u fotky s pozadím z ní nejspíš bude skvrna.
-- *Co chybí proti zadání,* je v §7 bod 3: převod ostatních nástrojů na skladbu.
+- *Produkty formulářů jako skladba:* skladba má předvolbu pro zápich, jmenovku, klíčenku, ozdobu a velké písmeno
+  (`topper`, `plate`, `keyring`, `bauble`, `initial`; `ParametricGenerator::COMPOSED`).
+  **Karty jmenovky a klíčenky otevírají rovnou skladbu** (rozhodnutí Romana z 8. 10., předané koordinující session):
+  `/tools/nameplate` a `/tools/keychain` jsou skladba s předvolbou `plate` / `keyring` pod vlastním názvem, texty
+  a ukázkami té karty. Formulář, kterým adresa byla dřív, na ní zůstal: otevře ho `?form=1` (odkaz „Otevřít rychlý
+  formulář“ pod volbami) a sám se otevře návrhu, který jím vznikl (`/tools/keychain?from=<uuid>` u návrhu druhu
+  `keychain`). Je to kvůli tomu, co skladba neumí: klíčenka z obrázku ve více barvách a destička, která se sama
+  zvětší kolem textu. Routa to říká třetím výchozím údajem `form` (druh, nebo druh:předvolba); úvodní věta formuláře
+  je `param.<nástroj>.lead_form`. Zápich, ozdoba a velké písmeno zůstávají formuláři a na skladbu jen odkazují větou
+  „Chcete víc textů a obrázků nebo vlastní rozložení?“; odkaz nepřenáší, co už člověk napsal – otevře vzor.
 
 **Vložka do zásuvky podle fotky – hotová, ale mimo katalog** (`insert`, nový modul `engines/python/sheet_kinds.py`,
 stránka `/tools/drawer-insert`, `'available' => false`). Věci položené na list A4 a vyfocené shora dostanou v tácu
@@ -500,8 +509,8 @@ věc `feature/perf`, ne této větve.
   vyjde čitelně; jestli stojící nápis stojí při hloubce pětiny výšky (nástroj podle toho varuje); jak se tisknou
   tenká psaná písma (Great Vibes, Sacramento) pod 30 mm; jestli články řetězu medaile jdou zacvaknout do sebe. Písma jsem ověřil na úplnost znaků a na to, že z nich
   vznikne těleso, ne na to, jak vypadají vytištěná.
-- **Proměnná písma na serveru:** čtení v nejtučnější váze potřebuje fontTools ≥ 4.38. Lokálně je 4.62; verzi
-  v `/opt/matplace-py` jsem neviděl (viz Nasazení).
+- **Proměnná písma na serveru:** čtení v nejtučnější váze potřebuje fontTools ≥ 4.38. Lokálně je 4.62; na serveru
+  je podle koordinující session 4.65 (sám jsem to neviděl).
 
 ## 6. Nasazení (Roman)
 
@@ -533,7 +542,7 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 
 ## 7. Co ze zadání session 1 zbývá
 
-Stav k 8. 10. 2026 v noci; celá sada testů naposledy na commitu 7204205 (512 testů, bez chyby, 2 přeskočené,
+Stav k 8. 10. 2026 v noci; celá sada testů naposledy na commitu db4f611 (513 testů, bez chyby, 2 přeskočené,
 1 varování, které tu bylo už předtím). V katalogu je ze zadání 25 nástrojů (deset z vánoční sady, viz §1,
 a patnáct z tabulky „Po vánoční sadě“) a třicet písem; tři další jsou postavené, ale čekají mimo katalog
 (`available => false`) na vyzkoušení: ozdoba na brčko, otvírák a vložka do zásuvky podle fotky. Nehotové,
@@ -548,15 +557,16 @@ od nejbližšího:
    níže, ale **mimo katalog** – ověřený je jen na kreslených fotkách. Do katalogu ho pustí až zkouška na skutečných
    fotkách skutečných věcí; pak chybí už jen texty pro SEO, ukázky a karta.
 3. **Volná skladba vrstev** (`compose`, `/tools/compose`) je v katalogu i s tažením v náhledu (výběr klepnutím,
-   posun, velikost, otočení) a s vlastním obrázkem jako vrstvou. Zbývá převést zápich, jmenovku, klíčenku, ozdobu
-   a velké písmeno z formulářů na skladbu, jak zadání předpokládalo – dnes mají vlastní formuláře, které fungují,
-   a skladba stojí vedle nich. Při tažení se model nepřekresluje průběžně, až po puštění – kdyby to při zkoušení
-   vadilo, je to místo, kde přidat.
+   posun, velikost, otočení) a s vlastním obrázkem jako vrstvou; karty jmenovky a klíčenky ji otevírají rovnou.
+   Zápich, ozdoba a velké písmeno na ní podle zadání stát měly a nestojí: mají formuláře, které umějí víc (obrázek
+   ve více barvách, jméno vepsané do písmene), a na skladbu odkazují. Při tažení se model nepřekresluje průběžně,
+   až po puštění – kdyby to při zkoušení vadilo, je to místo, kde přidat.
 4. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
    sušenek). Tvary destiček cedulky
    (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.
 
 Co čeká na Romana (nic z toho neblokuje další práci): zkušební tisky podle §5, rozhodnutí o klikátku (bod 1),
-a nasazení. `main` na GitHubu je od 8. 10. na commitu 29cad9d (medaile) – koordinující session do něj větev slila
-po mé zprávě; všechno od organizéru ve tvaru obrázku dál je zatím jen ve `feature/tools-shapes`. Jestli je 29cad9d
-i na serveru, nevím.
+a další nasazení. Podle zprávy koordinující session běží na
+matplace.com od 8. 10. 2026 18:02 UTC `main` 9d6a49a, tedy všechno až po skladbu s tažením a vlastním obrázkem;
+tři nástroje mimo katalog tam zůstávají skryté. Co je ve větvi potom (předvolby produktů ve skladbě, karty jmenovky
+a klíčenky na skladbě), nasazené není.

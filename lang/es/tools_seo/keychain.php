@@ -1,30 +1,30 @@
 <?php
 
 return [
-    'title' => 'Llavero con nombre o imagen para impresión 3D',
-    'description' => 'Escriba un nombre o suba una imagen y obtenga un llavero en colores de filamento con ojal para la anilla. Lo imprimimos o descarga el modelo gratis.',
-    'h1' => 'Llavero con nombre, logotipo o imagen propia',
+    'title' => 'Llavero con nombre e imagen para impresión 3D',
+    'description' => 'Superponga una forma, un nombre y una imagen, cada capa con su color de filamento, y añada el ojal. Lo imprimimos o descarga el modelo gratis.',
+    'h1' => 'Llavero con nombre, forma e imagen a su gusto',
     'intro' => [
-        'La herramienta crea un llavero a partir de un nombre, un texto corto o una imagen. Escriba una o dos líneas y elija uno de los treinta tipos de letra, o suba un PNG, JPG, WebP o SVG, o escoja un motivo de la biblioteca. El llavero es un rectángulo redondeado, un círculo o sigue el contorno del motivo. El ancho va de 30 a 100 mm y el grosor de 2,4 a 6 mm.',
-        'El ojal para la anilla tiene un orificio de 3 a 8 mm y queda donde usted lo coloque: con el control deslizante o arrastrándolo en la vista previa. Un nombre sobre una base son dos colores, uno encima del otro, así que la impresión se detiene una vez y se cambia el filamento. Un llavero así lo imprimimos también en nuestra granja de impresión, igual que una imagen de hasta cuatro colores: la base y hasta tres más. La bobina de cada color se confirma al hacer el pedido; una imagen con más colores puede descargarla gratis para su impresora.',
+        'Aquí compone el llavero con capas. Abajo va una forma (hueso, corazón, círculo, etiqueta, rectángulo redondeado y más), encima un nombre en una de treinta tipografías y, si quiere, una imagen de la biblioteca de siluetas o una suya. Cada capa tiene su color entre los filamentos que tenemos en la granja y queda un paso más alta que la de debajo. Elige una capa tocándola en la vista previa, la arrastra para moverla, arrastra una esquina del marco para cambiar su tamaño y el punto para girarla. Arriba hay un ojal con un orificio de 2 a 8 mm.',
+        'Los colores quedan unos sobre otros, así que a la impresora le basta cambiar el filamento a la altura justa; el proyecto para el laminador con los cambios se descarga gratis. En nuestra granja imprimimos hasta cuatro colores en una impresión. ¿Necesita un llavero a partir de una imagen en varios colores, por ejemplo un logotipo? Bajo las opciones del inicio de la página hay un enlace al formulario rápido: sube la imagen, se convierte en colores de filamento y desliza el ojal por el contorno.',
     ],
     'steps' => [
-        ['name' => 'Escriba un nombre o elija una imagen', 'text' => 'El texto puede tener dos líneas de 24 caracteres. En su lugar puede subir una imagen o elegir un motivo de la biblioteca; el fondo de la imagen se elimina automáticamente.'],
-        ['name' => 'Ajuste la forma, el tamaño y el ojal', 'text' => 'Elija rectángulo, círculo o la forma del contorno. Mueva el ojal por el contorno con el control deslizante o arrastrándolo en la vista previa y ajuste el orificio a su anilla.'],
-        ['name' => 'Elija los colores', 'text' => 'La base y las letras reciben un filamento de los que realmente tenemos en stock. En una imagen se define el número de colores, su orden y el filamento de cada uno.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto del laminador con el cambio de filamento se descargan gratis y sin registro.'],
+        ['name' => 'Empiece con un llavero', 'text' => 'La página se abre con un hueso y el nombre Rex. Escriba su nombre, cambie la forma o elija otra plantilla, por ejemplo un corazón con nombre.'],
+        ['name' => 'Edite las capas', 'text' => 'Toque una capa en la lista o en la vista previa y cambie su texto, tipografía, forma, imagen y color. En la vista previa la arrastra para moverla, arrastra una esquina del marco para cambiar su tamaño y el punto para girarla.'],
+        ['name' => 'Añada más y ajuste el ojal', 'text' => 'Los botones añaden un texto, una imagen o una forma, doce capas como máximo. En las medidas ajusta el grosor y el orificio del ojal según su anilla.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto para el laminador con los cambios de filamento se descargan gratis y sin registro.'],
     ],
     'faq' => [
-        ['q' => '¿Qué orificio necesita una anilla de llavero?', 'a' => 'Para una anilla habitual de 25 a 30 mm basta un orificio de 5 mm, que es el valor predefinido. Para un mosquetón o una anilla más gruesa amplíelo hasta 8 mm.'],
-        ['q' => '¿De qué se imprime el llavero y aguanta en el bolsillo?', 'a' => 'Recomendamos PLA o el PETG, más resistente. Con 3 mm de grosor el llavero soporta el uso diario; para las llaves del coche que quedan al sol elija PETG, el PLA se ablanda hacia los 55 °C.'],
-        ['q' => '¿Cuántos colores puede tener el llavero?', 'a' => 'Un nombre sobre una base tiene dos colores. Una imagen se reduce a entre 1 y 8 colores, cada uno un escalón más alto que el de debajo. Nuestra granja imprime hasta cuatro colores en una misma impresión, la base y hasta tres más; un diseño con más colores puede descargarlo con un proyecto que incluye los cambios de filamento.'],
-        ['q' => '¿Y si las letras del nombre no se tocan?', 'a' => 'Con la forma que sigue el contorno, la herramienta une las letras y los puntos sueltos con un pequeño puente y le avisa. En el rectángulo y en el círculo todo se apoya en la base.'],
-        ['q' => '¿Qué tamaño mínimo pueden tener las letras?', 'a' => 'Las líneas más finas que la boquilla de la impresora no salen y la herramienta avisa de ello. Ponga un nombre largo en un llavero más ancho o divídalo en dos líneas.'],
-        ['q' => '¿Cómo pago y cómo recibo el llavero?', 'a' => 'Se paga con crédito prepago que se recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la pieza con Packeta a un punto de recogida o a una dirección en la UE.'],
+        ['q' => '¿Qué orificio necesita la anilla del llavero?', 'a' => 'Para una anilla corriente de 25 a 30 mm basta un orificio de 4 a 5 mm; vienen 4 mm. Para un mosquetón o una anilla más gruesa amplíelo hasta 8 mm. La anilla no forma parte de la pieza.'],
+        ['q' => '¿De qué se imprime y aguanta en el bolsillo?', 'a' => 'Recomendamos PLA o el PETG, más resistente. Con 3 mm de grosor el llavero aguanta el uso diario; para llaves de coche que quedan al sol elija PETG, el PLA se ablanda hacia los 55 °C.'],
+        ['q' => '¿Cuántos colores puede tener el llavero?', 'a' => 'Cada capa tiene su color y puede haber doce capas. En nuestra granja imprimimos hasta cuatro colores en una impresión; un diseño con más lo descarga con un proyecto que incluye los cambios de filamento.'],
+        ['q' => '¿Puedo usar mi propia imagen o logotipo?', 'a' => 'Sí. Sube un SVG, PNG o JPG como capa y de él queda la silueta en un color. Un logotipo en varios colores es cosa del formulario rápido al que enlaza la página.'],
+        ['q' => '¿Y si los elementos quedan separados y no se tocan?', 'a' => 'La herramienta los une con un puente corto en la capa inferior y lo avisa, así el llavero queda de una pieza.'],
+        ['q' => '¿Cómo pago y cómo lo recibo?', 'a' => 'Paga con crédito prepagado que recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la pieza con Packeta a un punto de recogida o a una dirección de la UE.'],
     ],
     'examples' => [
-        'Llavero con el nombre Jana sobre un rectángulo redondeado de 55 mm de ancho, con el ojal a la izquierda.',
-        'Llavero con una huella que sigue el contorno del motivo, 50 mm, con el ojal arriba.',
-        'Llavero redondo de 45 mm con una estrella sonriente.',
+        'Hueso de 70 × 32 mm con el nombre Rex y ojal para la anilla, dos colores.',
+        'Corazón de 60 mm con el nombre Ema en Lobster, ojal arriba.',
+        'Llavero redondo de 45 mm con una huella, negro y amarillo.',
     ],
 ];

@@ -58,6 +58,14 @@ export class Stage {
         this.menu();
         this.spy();
         this.el('tool-go').addEventListener('click', () => { if (this.goHref) location.href = this.goHref; else void this.goAction?.(); });
+        // a row with a colour swatch (class tool-swatch-row): the whole row opens the colour window, not the small circle
+        // alone – people click the words "pick a colour". The row's other buttons (move, join) keep their own work.
+        document.addEventListener('click', (e) => {
+            const at = e.target as HTMLElement;
+            const row = at.closest<HTMLElement>('.tool-swatch-row');
+            if (!row || at.closest('button, a, input, select, label')) return;
+            row.querySelector<HTMLElement>('.tool-swatch')?.click();
+        });
     }
 
     /** A text of the page (lang/<locale>/toolpage.php), with :name placeholders filled in. */

@@ -167,4 +167,51 @@ class ComposeToolTest extends TestCase
         }
         $this->assertSame(60, (int) $this->meta(ParametricGenerator::PRESETS['compose']['topper'])['notes']['sticks']);
     }
+
+    public function test_the_forms_of_its_products_show_the_way_to_the_composer(): void
+    {
+        // topper, ornament and the big letter stay forms; each offers the same product as a composition
+        $pages = ['topper' => '/tools/cake-topper', 'nameplate' => '/tools/nameplate', 'keychain' => '/tools/keychain', 'ornament' => '/tools/ornament', 'name_letter' => '/tools/name-letter'];
+        $this->assertSame(array_keys($pages), array_keys(ParametricGenerator::COMPOSED));
+        foreach ($pages as $tool => $page) {
+            $preset = ParametricGenerator::COMPOSED[$tool];
+            $this->assertArrayHasKey($preset, ParametricGenerator::PRESETS['compose'], $tool);
+            if (in_array($tool, ['nameplate', 'keychain'], true)) {
+                continue;
+            }
+            $this->get($page)->assertOk()->assertSee('/tools/compose?preset='.$preset, false)->assertSee(__('param.compose.open'));
+        }
+        // a tool the composer has nothing for says nothing of it
+        $this->get('/tools/magnet')->assertOk()->assertDontSee('/tools/compose?preset=', false);
+    }
+
+    public function test_the_cards_of_the_nameplate_and_the_key_ring_open_the_composer(): void
+    {
+        foreach (['nameplate' => ['plate', 'sign'], 'keychain' => ['keyring', 'keychain']] as $tool => [$preset, $form]) {
+            foreach (['cs' => '', 'en' => '/en', 'es' => '/es'] as $locale => $prefix) {
+                app()->setLocale($locale);
+                $address = $prefix.'/tools/'.$tool;
+                // the address is the composer with the product in it, under the tool's own title and texts
+                $html = $this->get($address)->assertOk()->assertSee(__('tools.'.$tool.'.title'))->assertSee(__('param.'.$tool.'.lead'))->getContent();
+                foreach (['kind: "compose"', 'preset: "'.$preset.'"', 'sample: null', 'id="compose-layers"', $address.'?form=1'] as $piece) {
+                    $this->assertStringContainsString($piece, $html, $tool.' '.$piece);
+                }
+                $this->assertStringContainsString(e(__('param.compose.form.'.$tool)), $html);
+                $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $html, $tool.' '.$locale);
+                // the quick form it used to be is still there for who asks, and shows the way back
+                $quick = $this->get($address.'?form=1')->assertOk()->assertSee(__('param.'.$tool.'.lead_form'))->assertSee(__('param.compose.open'))->getContent();
+                $this->assertStringContainsString('kind: "'.$form.'"', $quick);
+                $this->assertStringNotContainsString('id="compose-layers"', $quick);
+            }
+            app()->setLocale('cs');
+            $this->assertSame('compose', config('tools.'.$tool.'.card.kind'));
+            $this->assertSame($preset, config('tools.'.$tool.'.card.preset'));
+        }
+        // a key ring made with the form opens in the form again; one made in the composer goes to the composer's own address
+        $old = $this->postJson('/api/tools/param', ['kind' => 'keychain', 'params' => ['line1' => 'Jana']])->assertCreated()->json('file.uuid');
+        $this->assertStringContainsString('kind: "keychain"', $this->get('/tools/keychain?from='.$old)->assertOk()->getContent());
+        $new = $this->postJson('/api/tools/param', ['kind' => 'compose', 'params' => ParametricGenerator::PRESETS['compose']['keyring']])->assertCreated()->json('file.uuid');
+        $this->assertStringContainsString('/tools/compose?from='.$new, (string) ModelFile::where('uuid', $new)->firstOrFail()->toolUrl());
+        $this->assertStringContainsString('/tools/keychain?from='.$old, (string) ModelFile::where('uuid', $old)->firstOrFail()->toolUrl());
+    }
 }
