@@ -146,9 +146,11 @@ class PrinterQuoteFlowTest extends TestCase
         auth()->logout();
         $page = $this->get(route('quote.public', $quote))->assertOk()->assertSee('Jan Novák')->assertSee('Tiskárna Test')
             ->assertSee(__('quote.scope.prints'))->assertSee('PETG')->assertSee('černá')->assertSee('Zásilkovna')->assertSee('Broušení')->assertSee('699');
-        // nothing of the cost sheet leaks: no cost, no margin, no machine rate, no reserve
+        // nothing of the cost sheet leaks: no cost, no margin, no machine rate, no reserve (the random ids in the page,
+        // such as the model's uuid, are not numbers: one of them held "464" on 8 Oct 2026)
+        $visible = preg_replace('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[A-Za-z0-9]{32,}/', '', $page->getContent());
         foreach (['464', __('quote.cost.margin'), __('quote.cost.markup'), __('quote.sheet.cost'), __('quote.cost.failure_pct'), __('quote.line.time')] as $secret) {
-            $page->assertDontSee($secret);
+            $this->assertStringNotContainsString($secret, $visible, "the public page shows \"{$secret}\"");
         }
         $this->assertArrayNotHasKey('cost', $quote->fresh()->toArray());
         $this->assertSame('viewed', $quote->fresh()->status);
