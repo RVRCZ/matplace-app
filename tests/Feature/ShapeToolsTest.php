@@ -18,7 +18,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge'];
 
     protected function setUp(): void
     {
@@ -60,7 +60,7 @@ class ShapeToolsTest extends TestCase
         foreach (self::KINDS as $kind) {
             foreach (['cs', 'en', 'es'] as $lang) {
                 app()->setLocale($lang);
-                $page = $this->get($this->localized('/tools/'.(['topper' => 'cake-topper', 'tray' => 'shape-tray'][$kind] ?? str_replace('_', '-', $kind)), $lang))->assertOk();
+                $page = $this->get($this->localized('/tools/'.(['topper' => 'cake-topper', 'tray' => 'shape-tray', 'badge' => 'badge-reel'][$kind] ?? str_replace('_', '-', $kind)), $lang))->assertOk();
                 $page->assertSee(__('tools.'.$kind.'.title'))->assertSee(__('param.'.$kind.'.lead'));
                 // a gingerbread and a big letter have a shape of ours: there is no picture to bring
                 in_array($kind, ['gingerbread', 'name_letter', 'topper'], true) ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));
@@ -453,6 +453,48 @@ class ShapeToolsTest extends TestCase
         $this->assertEqualsWithDelta(8, $this->meta($this->preview('tray', ['height' => 8, 'thickness' => 4] + $paw)->assertOk())['bbox']['z'], 0.01);
         // the edge of dough round a biscuit's picture may be as wide as the form allows (it was refused above 4 mm)
         $this->preview('cookie', ['artwork' => 'lib:colour/gingerbread-man', 'width' => 80, 'frame' => 6])->assertOk();
+    }
+
+    public function test_a_badge_carries_a_name_in_a_colour_of_the_picture_and_a_pocket_in_its_back(): void
+    {
+        $star = ['artwork' => 'lib:colour/smiling-star', 'width' => 40];
+        $plain = $this->meta($this->preview('badge', $star, 'all', true)->assertOk());
+        $named = $this->meta($this->preview('badge', $star + ['line1' => 'Jana'], 'all', true)->assertOk());
+        // the name hangs under the picture: the badge is taller, no wider, and holds the same parts and filaments
+        $this->assertGreaterThan($plain['bbox']['y'] + 5, $named['bbox']['y']);
+        $this->assertEqualsWithDelta($plain['bbox']['x'], $named['bbox']['x'], 0.5);
+        $this->assertSame($plain['notes']['parts'], $named['notes']['parts']);
+        $this->assertSame($plain['notes']['filaments'], $named['notes']['filaments']);
+        $this->assertSame(count($plain['notes']['color_changes']), count($named['notes']['color_changes']));
+        $this->assertFalse($named['notes']['multi_material']);
+        // it is written in the colour that reads best on the yellow star (black), in capitals of 3 to 7 mm
+        $caption = $named['notes']['caption'];
+        $ink = collect($named['notes']['colors'])->firstWhere('index', $caption['index']);
+        $this->assertSame('black', $ink['code']);
+        $this->assertGreaterThanOrEqual(3, $caption['height']);
+        $this->assertLessThanOrEqual(7, $caption['height']);
+        $this->assertArrayNotHasKey('caption', $plain['notes']);
+        // the pocket for the reel's sticky dot is cut out of the back; a flat back holds more plastic
+        $this->assertSame(['d' => 19, 'h' => 0.8], array_intersect_key($named['notes']['magnet'], ['d' => 1, 'h' => 1]));
+        $flat = $this->meta($this->preview('badge', $star + ['line1' => 'Jana', 'mount' => 'none'])->assertOk());
+        $this->assertArrayNotHasKey('magnet', $flat['notes']);
+        $this->assertEqualsWithDelta(M_PI * 9.7 * 9.7 * 0.8, $flat['volume_mm3'] - $named['volume_mm3'], 40);
+        $this->assertSame($flat['bbox'], $named['bbox']);
+        // in a circle the picture and the name share the room: the badge stays as wide as asked
+        $round = $this->meta($this->preview('badge', ['artwork' => 'lib:colour/red-heart', 'line1' => 'Eva', 'width' => 38, 'body' => 'circle'])->assertOk());
+        $this->assertEqualsWithDelta(38, $round['bbox']['x'], 0.1);
+        $this->assertEqualsWithDelta(38, $round['bbox']['y'], 0.1);
+        $this->assertArrayHasKey('caption', $round['notes']);
+        // a name too long for a small badge is said, not hidden
+        $long = $this->meta($this->preview('badge', ['artwork' => 'lib:colour/smiling-star', 'width' => 25, 'line1' => 'Bohumila Novotná'])->assertOk());
+        $this->assertContains('name_small', $long['notes']['warnings']);
+        // a name alone is a badge too, but the pocket does not fit into it and the tool says so
+        $only = $this->meta($this->preview('badge', ['line1' => 'Jana', 'width' => 40])->assertOk());
+        $this->assertContains('magnet_no_room', $only['notes']['warnings']);
+        // the page says it in the badge's own words (a pocket for a sticky dot, not a magnet)
+        $this->get('/tools/badge-reel')->assertOk()->assertSee(str_replace('\\', '\\\\', substr((string) json_encode(__('param.shape.warn.magnet_no_room.badge')), 1, -1)), false)->assertSee(__('param.o.badge.glue'));
+        // the other tools of the family still put a typed name instead of the picture, never under it
+        $this->assertArrayNotHasKey('caption', $this->meta($this->preview('charm', ['artwork' => 'lib:colour/smiling-star', 'line1' => 'Jana', 'width' => 40])->assertOk())['notes']);
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

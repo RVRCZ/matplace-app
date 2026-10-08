@@ -193,6 +193,11 @@ return [
         ['params' => ['artwork' => 'lib:colour/red-heart', 'width' => 50, 'disc' => 'd8x3', 'mount' => 'press']],
         ['params' => ['artwork' => 'lib:colour/snowman', 'width' => 45, 'body' => 'rect']],
     ]]],
+    'badge' => ['route' => 'tools.badge', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/smiling-star', 'line1' => 'Jana', 'width' => 40]],
+        ['params' => ['artwork' => 'lib:colour/red-heart', 'width' => 38, 'body' => 'circle']],
+        ['params' => ['artwork' => 'lib:colour/paw-badge', 'line1' => 'Petr', 'width' => 45, 'body' => 'rect']],
+    ]]],
     'coaster' => ['route' => 'tools.coaster', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/snowman', 'width' => 100, 'body' => 'circle']],
         ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 95, 'body' => 'hex', 'grooves' => true]],

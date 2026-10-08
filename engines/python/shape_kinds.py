@@ -20,6 +20,9 @@ piped on it and the visitor's name goes across it. Dough and icing: two colours 
 The cookie takes a picture or a silhouette as its dough and the strokes the visitor draws on it in the preview as
 icing: one part `icing_<n>` for every filament drawn with, stacked like the colours of a picture.
 
+The badge is a topper for a retractable badge reel: the picture, the wearer's name under it in one of the picture's
+colours, and a shallow pocket in the back for the reel's sticky dot.
+
 The tray is a little dish in the shape of the picture: a floor, a wall round it, and the picture cut into the floor
 (one colour), inlaid in it in colours (a multi-material print) or left out.
 """
@@ -27,16 +30,16 @@ import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray", "badge")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
     "width": (10, 250), "height": (6, 250), "wall": (1.2, 3), "thickness": (1.2, 15), "frame": (0, 10), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
-    "mag_d": (4, 30), "mag_h": (1, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2),
+    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle")}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect")}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -126,6 +129,52 @@ def _roomiest(M, cs, need):
     return x0 + (ix - 1) * cell, y0 + (iy - 1) * cell, float(inside[iy, ix])
 
 
+def _caption(M, p, layers, info, text, body_kind, fit_d, warn):
+    """
+    A name under the picture (badge). The letters join one of the picture's own colours, the one that reads best on the
+    plate, so the name costs no filament and no change of its own. Returns the layers and the info with the name in them.
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    aw, ah = info["size"]
+    art, tinfo = S.text(M, [text], p.get("font"), 10)
+    w0, h0 = S.size(art)
+    k = min(aw / w0, 0.16 * ah / 10, 0.7)                      # as wide as the picture at most, and never the main thing: capitals of 7 mm or less
+    if 10 * k < 3.0:
+        warn.append("name_small")
+    art = S.fit(art, width_mm=w0 * k)
+    tx0, ty0, tx1, ty1 = art.bounds()
+    tw, th, m = tx1 - tx0, ty1 - ty0, 1.2
+    left = aw / 2 - tw / 2
+    # the lowest point of the picture above the name: the name hangs there, not under the whole picture's box
+    sil = info["silhouette"]
+    over = sil ^ C.square([tw + 2 * m, ah + 2]).translate([left - m, -1])
+    foot = 0.0 if over.is_empty() else over.bounds()[1]
+    top = foot - 1.0
+    art = art.translate([left - tx0, top - ty1])
+    pad = S.rounded_rect(M, tw + 2 * m, th + m + 1.5, min(2.0, (th + 2 * m) / 3)).translate([left - m, top - th - m])
+    # the name takes the colour furthest in lightness from the plate (the plate is the picture's lowest colour unless
+    # the picture is a motif on a round or square plate, which gets a filament of its own: there the darkest reads best)
+    if (body_kind == "image" or info["background"] == "kept") and len(layers) > 1:
+        base = _light(layers[0]["hex"])
+        at = max(range(1, len(layers)), key=lambda i: abs(_light(layers[i]["hex"]) - base))
+    else:
+        at = min(range(len(layers)), key=lambda i: _light(layers[i]["hex"]))
+    for i, layer in enumerate(layers):
+        if i <= at:
+            layer["stack"] = layer["stack"] + art               # the colours under the name carry it
+    layers[at]["own"] = layers[at]["own"] + art
+    sil = sil + pad
+    dx, dy = max(0.0, m - left), max(0.0, -(top - th - m))
+    width, height = max(aw, left + tw + m) + dx, ah + dy
+    scale = min(1.0, fit_d / math.hypot(width, height)) if fit_d else 1.0      # in a round body the two together must fit
+    move = lambda cs: cs.translate([dx, dy]).scale([scale, scale])            # noqa: E731
+    for layer in layers:
+        layer["own"], layer["stack"] = move(layer["own"]), move(layer["stack"])
+    info = dict(info, silhouette=move(sil), size=[width * scale, height * scale], missing_chars=tinfo.get("missing_chars", []),
+                caption={"index": layers[at]["index"], "height": round(10 * k * scale, 1)})
+    return layers, info
+
+
 def build(M, Invalid, p, product):
     C, J = M.CrossSection, M.JoinType.Round
     n = lambda key, d: _num(Invalid, p, key, d)       # noqa: E731
@@ -193,6 +242,11 @@ def build(M, Invalid, p, product):
                 # a whole photo fills the body to its edge, a cut-out motif sits inside it
                 options["fit"] = ("cover", 2 * inner_r, 2 * inner_r) if kept else ("circle", 2 * (inner_r - 1.0))
             layers, info = S.colors(M, art_path, art_w, options)
+            if product == "badge" and lines:
+                if geometric and info["background"] == "kept":
+                    warn.append("caption_photo")              # a whole photo fills the circle: no room under it
+                else:
+                    layers, info = _caption(M, p, layers, info, lines[0], body_kind, 2 * (inner_r - 1.0) if geometric else 0.0, warn)
     except S.ArtworkError as e:
         raise Invalid(e.code, str(e).split(": ", 1)[1] if ": " in str(e) else "")
     aw, ah = info["size"]
@@ -224,7 +278,7 @@ def build(M, Invalid, p, product):
         body2d, links = S.joined(M, body2d, max(edge, 0.6), max(2.0, min(aw, ah) * 0.06))
         if links:
             warn.append("pieces_tied")
-    if (is_text or cookie) and info.get("missing_chars"):
+    if (is_text or cookie or info.get("caption")) and info.get("missing_chars"):
         warn.append("missing_chars")
     if info.get("ignored_outlines"):
         warn.append("outlines_ignored")
@@ -287,9 +341,10 @@ def build(M, Invalid, p, product):
             layer["own"], layer["stack"] = layer["own"] - hole2d, layer["stack"] - hole2d
 
     # ── heights ─────────────────────────────────────────────────────────────────────────────────────────────────
-    if product == "magnet" and p.get("mount", "glue") not in MOUNTS:
+    pocketed = product in ("magnet", "badge")                # a pocket in the back: for a magnet, or for the sticky dot of a badge reel
+    if pocketed and p.get("mount", "glue") not in MOUNTS:
         raise Invalid("bad_choice", "mount")
-    mount = p.get("mount", "glue") if product == "magnet" else "none"
+    mount = p.get("mount", "glue") if pocketed else "none"
     mag_d, mag_h, mag_gap = (n("mag_d", 10), n("mag_h", 2), n("mag_gap", 0.2)) if mount != "none" else (0, 0, 0)
     if mount in ("glue", "press") and t < mag_h + 0.8:
         t = round(mag_h + 0.8, 2)                             # a floor of four layers over the magnet
@@ -344,7 +399,8 @@ def build(M, Invalid, p, product):
             body, whole = body - cut, whole - cut
             solids = [(layer, s - cut) for layer, s in solids]
         else:
-            cut = M.Manifold.cylinder(mag_h + 0.2 + 1, need, need, 64).translate([mx, my, -1])
+            deep = mag_h + (0.2 if product == "magnet" else 0.0)      # a magnet must not stand proud; a sticky dot is as deep as asked
+            cut = M.Manifold.cylinder(deep + 1, need, need, 64).translate([mx, my, -1])
             body, whole = body - cut, whole - cut
         notes["magnet"] = {"x": round(mx, 2), "y": round(my, 2), "d": mag_d, "h": mag_h, "mount": mount}
     if product == "coaster" and p.get("grooves", False):
@@ -460,6 +516,8 @@ def build(M, Invalid, p, product):
     })
     if has_rim:
         notes["rim_color"] = {"code": rim_color[0], "hex": rim_color[1]}
+    if info.get("caption"):
+        notes["caption"] = info["caption"]
     if biscuit:
         # where the picture's own corner lies in the model and how wide it is: strokes are stored in shares of that width
         notes["frame"] = [round(-x0, 2), round(-y0, 2), round(aw, 2)]

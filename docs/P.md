@@ -122,6 +122,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | Stojánek na tužky ze jména | `/tools/name-organizer` | `name_cup` | jméno je stojánek: písmena rozšířená o 3 mm jsou kapsa, kolem stěna 1,6 mm, dno 2 mm, výška 40–120 mm |
 | Miska ve tvaru obrázku | `/tools/shape-tray` | `tray` | obrys obrázku je stěna (8–40 mm), kresba vyrytá do dna, v barvách, nebo hladké dno |
 | SVG do STL | `/tools/svg-to-stl` | `logo` (předvolba `extrude`) | obrys SVG nebo obrázku vytažený na 0,6–50 mm, bez destičky, volitelně zkosená horní hrana |
+| Ozdoba na navíjecí držák karty | `/tools/badge-reel` | `badge` | obrázek v barvách 25–60 mm, pod ním jméno v jedné z barev obrázku, vzadu prohlubeň na lepicí kolečko |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -144,7 +145,28 @@ stojí ve stejných vrstvách; na farmě objednat nejde a stránka to říká) a
 hladkou misku ve světlém filamentu. Obrázek drží odstup od stěny (`frame`). Při té příležitosti opravená chyba
 sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do 6 mm (meze v `shape_kinds.LIMITS`).
 
-Rozcestník `/gifts` odkazuje i na misku, stojánek a korálky.
+Rozcestník `/gifts` odkazuje i na misku, stojánek, korálky a ozdobu na držák karty.
+
+**Ozdoba na navíjecí držák karty** (`badge`, rodina `shape`; „Image to Badge Reel“ předlohy). Tři věci jsou jinak,
+než říkalo zadání, a proč:
+
+- *Jméno pod obrázkem* (`_caption` v `shape_kinds.py`) se nepřidává jako další barva. Připojí se k té barvě obrázku,
+  která se světlostí nejvíc liší od podkladu, a barvy pod ní ho nesou. Návrh se jménem má proto stejné díly, stejný
+  počet filamentů a stejné výměny jako bez něj – jinak by jméno stálo ve stejné vrstvě jako nejnižší barva obrázku
+  a z tisku „výměnou ve výškách“ by byl tisk pro AMS. Cena za to: jméno a ta barva obrázku mají vždy stejnou cívku.
+  Jméno visí pod nejnižším místem obrázku nad sebou (u hvězdy mezi cípy), je nejvýš tak široké jako obrázek a velká
+  písmena mají nejvýš 7 mm; pod 3 mm nástroj varuje. V kruhu se obrázek se jménem zmenší, aby se vešly oba; pod celou
+  fotku v kruhu se jméno nevejde a nástroj to řekne.
+- *Vzadu není nákružek, ale prohlubeň* (Ø 10–30 mm, výchozí 19; hloubka 0,4–2, výchozí 0,8; jde vypnout). Ozdoba se
+  tiskne lícem nahoru, nákružek 1,5 mm na zadní straně by ležel na podložce a celá ozdoba by nad ním visela na
+  podpěrách. Prohlubeň se tiskne čistě, schová tloušťku lepicího kolečka nebo suchého zipu a vystředí ozdobu. Je to
+  týž kód jako kapsa na magnet (`mount` = `glue` | `none`).
+- *Šířka 25–60 mm* místo 30–50: čelo běžného držáku má kolem 32 mm, menší ozdoby se dělají také.
+
+Pro další nástroje rodiny: `ParametricGenerator::CAPTIONED` = nástroje, kde text nejde místo obrázku, ale pod něj
+(stránka otevřená se jménem v adrese si nechá ukázkový obrázek); texty rodiny předávané skriptu jde přepsat pro jeden
+nástroj klíčem `param.shape.<klíč>.<kind>` (tak má jmenovka vlastní větu o prohlubni); `ModelFile::printHints()` už
+nepotřebuje nový řádek pro každý produkt rodiny.
 
 **SVG do STL** (klíč katalogu `svg_to_stl`) není nový generátor, ale nástroj Logo otevřený předvolbou `extrude`
 (provedení „Vyříznutý tvar“, 5 mm) a s kočkou z knihovny, aby stránka začínala hotovou věcí. Hledá se to pod jiným
@@ -266,7 +288,7 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
+`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -284,6 +306,6 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
-Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák,
+Potom zbytek zadání session 1: ostatní produkty rodiny (brčko, gumičky, otvírák,
 organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), tvary
 a motivy cedulky, 20+ písem.

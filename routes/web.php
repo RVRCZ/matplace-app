@@ -140,6 +140,7 @@ $pages = function () {
     Route::get('/tools/earrings', [ToolsController::class, 'param'])->defaults('kind', 'earrings')->name('tools.earrings');
     Route::get('/tools/ornament', [ToolsController::class, 'param'])->defaults('kind', 'ornament')->name('tools.ornament');
     Route::get('/tools/magnet', [ToolsController::class, 'param'])->defaults('kind', 'magnet')->name('tools.magnet');
+    Route::get('/tools/badge-reel', [ToolsController::class, 'param'])->defaults('kind', 'badge')->name('tools.badge');
     Route::get('/tools/coaster', [ToolsController::class, 'param'])->defaults('kind', 'coaster')->name('tools.coaster');
     Route::get('/tools/gingerbread', [ToolsController::class, 'param'])->defaults('kind', 'gingerbread')->name('tools.gingerbread');
     Route::get('/tools/name-letter', [ToolsController::class, 'param'])->defaults('kind', 'name_letter')->name('tools.name_letter');

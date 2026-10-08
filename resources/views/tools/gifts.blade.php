@@ -9,7 +9,7 @@
         'birthday' => ['name', 'door', 'keyring', 'nametag'],
     ];
     // gifts that have a tool of their own: a picture or a name in the colours of filaments (the ones that are in the catalogue)
-    $more = array_values(array_filter(['gingerbread', 'name_letter', 'topper', 'keychain', 'ornament', 'charm', 'earrings', 'magnet', 'coaster', 'cookie', 'tray', 'name_cup', 'beads'], fn ($key) => ! empty(config('tools.'.$key.'.available'))));
+    $more = array_values(array_filter(['gingerbread', 'name_letter', 'topper', 'keychain', 'ornament', 'charm', 'earrings', 'magnet', 'coaster', 'cookie', 'tray', 'name_cup', 'beads', 'badge'], fn ($key) => ! empty(config('tools.'.$key.'.available'))));
 @endphp
 
 @section('content')
