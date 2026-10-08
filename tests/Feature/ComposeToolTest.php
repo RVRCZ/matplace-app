@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 /**
  * The composer of layers (engines/python/compose_kind.py): texts, pictures of the library and shapes laid one on another,
- * each in its filament. Its builder and its server side; the page that drags the layers about is not built yet.
+ * each in its filament. Its builder, its server side and its page; dragging a layer in the preview is not built yet.
  */
 class ComposeToolTest extends TestCase
 {
@@ -104,14 +104,36 @@ class ComposeToolTest extends TestCase
         $layers = [['kind' => 'shape', 'shape' => 'heart', 'w' => 80, 'code' => 'red'], ['kind' => 'text', 'text' => 'Ema', 'typeface' => 'lobster', 'w' => 44, 'code' => 'white']];
         $created = $this->postJson('/api/tools/param', ['kind' => 'compose', 'params' => ['layers' => $layers]])->assertCreated();
         $this->assertSame('compose', $created->json('file.kind'));
-        $this->assertNull($created->json('file.tool'));          // nowhere to reopen it yet: the composer has no page
+        $this->assertSame('compose', $created->json('file.tool.kind'));      // the page can open it again
         $kept = ModelFile::where('uuid', $created->json('file.uuid'))->firstOrFail()->tool_params;
         $this->assertSame(['heart', 'Ema'], [$kept['layers'][0]['shape'], $kept['layers'][1]['text']]);
         $this->assertSame(['layer_1', 'layer_2'], $kept['parts']);
         $this->assertSame('red', $kept['part_colors']['layer_1']['code']);
         $this->assertSame('white', $kept['color_changes'][0]['code']);
         $this->assertFalse($kept['multi_material']);
-        // it has no page yet, so it is in no catalogue
-        $this->assertFalse(config('tools.compose.available'));
+    }
+
+    public function test_the_page_lists_the_layers_and_opens_with_a_composition(): void
+    {
+        foreach (['cs' => '', 'en' => '/en', 'es' => '/es'] as $locale => $prefix) {
+            app()->setLocale($locale);
+            $html = $this->get($prefix.'/tools/compose')->assertOk()->assertSee(__('tools.compose.title'))->assertSee(__('param.compose.layers'))->getContent();
+            // the list, the three ways to add a layer, the fields of a layer, a typeface for every face of the registry
+            foreach (['id="compose-layers"', 'data-add-layer="text"', 'data-add-layer="art"', 'data-add-layer="shape"', 'id="compose-edit"', 'data-layer-slide="turn"', 'preset: "cloud"'] as $piece) {
+                $this->assertStringContainsString($piece, $html, $piece);
+            }
+            $this->assertSame(count(ParametricGenerator::FONTS), preg_match_all('/<option value="[a-z_]+">/', explode('id="compose-shape"', explode('id="compose-font"', $html)[1])[0]));
+            $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $html, $locale);
+        }
+        app()->setLocale('cs');
+        // every composition the page offers to start from is one the server takes as it is, colours named and all
+        foreach (ParametricGenerator::PRESETS['compose'] as $name => $preset) {
+            $m = $this->meta($preset);
+            $this->assertSame(count($preset['layers']), count($m['notes']['layers']), $name);
+            foreach (['cs', 'en', 'es'] as $locale) {
+                $this->assertNotSame('param.preset.'.$name, __('param.preset.'.$name, [], $locale));
+            }
+        }
+        $this->assertSame(60, (int) $this->meta(ParametricGenerator::PRESETS['compose']['topper'])['notes']['sticks']);
     }
 }

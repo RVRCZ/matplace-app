@@ -370,6 +370,22 @@ final class ParametricGenerator
     private const SHAPE_WHEN = ['bg_strength' => ['remove_bg', ['on']], 'eye_pos' => ['eyelet', ['on']], 'eye_hole' => ['eyelet', ['on']], 'eye_wall' => ['eyelet', ['on']], 'relief' => ['flush', ['off']]];
 
     public const PRESETS = [
+        // three compositions to start from; colours are named, each becomes the farm's nearest spool
+        'compose' => [
+            'cloud' => ['base' => 'none', 'thickness' => 3, 'step' => 0.8, 'layers' => [
+                ['kind' => 'shape', 'shape' => 'cloud', 'x' => 0, 'y' => 0, 'w' => 100, 'code' => 'white'],
+                ['kind' => 'text', 'text' => 'Ela', 'typeface' => 'script', 'x' => 6, 'y' => -5, 'w' => 48, 'code' => 'blue'],
+                ['kind' => 'art', 'art' => 'lib:hearts-stars/star', 'x' => -30, 'y' => 8, 'w' => 18, 'turn' => 15, 'code' => 'yellow'],
+            ]],
+            'topper' => ['base' => 'sticks', 'spike' => 60, 'thickness' => 3, 'step' => 0.8, 'layers' => [
+                ['kind' => 'text', 'text' => '2', 'typeface' => 'archivo', 'x' => 0, 'y' => 0, 'w' => 62, 'code' => 'red'],
+                ['kind' => 'text', 'text' => 'Olivia', 'typeface' => 'script', 'x' => 0, 'y' => -6, 'w' => 92, 'code' => 'white'],
+            ]],
+            'tag' => ['base' => 'eyelet', 'eye_hole' => 4, 'thickness' => 3, 'step' => 0.8, 'layers' => [
+                ['kind' => 'shape', 'shape' => 'heart', 'x' => 0, 'y' => 0, 'w' => 60, 'code' => 'red'],
+                ['kind' => 'text', 'text' => 'Ema', 'typeface' => 'lobster', 'x' => 0, 'y' => 4, 'w' => 34, 'code' => 'white'],
+            ]],
+        ],
         // the outline alone, pulled up: what "SVG to STL" means (its page /tools/svg-to-stl opens the logo tool with this)
         'logo' => ['extrude' => ['mode' => 'cutout', 'thickness' => 5, 'bevel' => false]],
         'vase' => [
@@ -592,6 +608,7 @@ final class ParametricGenerator
         }
         if ($kind === 'compose') {
             $spare = $palette->codes()[0] ?? '';
+            $named = $palette->legacy();             // "white", "blue"… as the spools the farm has for them
             $out['layers'] = array_values(array_map(fn ($l) => [
                 'kind' => in_array($l['kind'] ?? '', ['text', 'art', 'shape'], true) ? $l['kind'] : 'shape',
                 'text' => mb_substr(trim((string) ($l['text'] ?? '')), 0, 40),
@@ -599,7 +616,7 @@ final class ParametricGenerator
                 'art' => (string) ($l['art'] ?? ''),
                 'shape' => in_array($l['shape'] ?? '', self::LAYER_SHAPES, true) ? $l['shape'] : 'rounded',
                 'x' => round((float) ($l['x'] ?? 0), 2), 'y' => round((float) ($l['y'] ?? 0), 2), 'w' => round((float) ($l['w'] ?? 50), 2), 'turn' => round((float) ($l['turn'] ?? 0), 1),
-                'code' => is_string($l['code'] ?? null) && $palette->has($l['code']) ? $l['code'] : $spare,
+                'code' => is_string($l['code'] ?? null) && $palette->has($l['code']) ? ($named[$l['code']] ?? $l['code']) : $spare,
                 'hidden' => filter_var($l['hidden'] ?? false, FILTER_VALIDATE_BOOLEAN),
             ], array_filter(array_slice((array) ($p['layers'] ?? []), 0, self::MAX_LAYERS), 'is_array')));
         }

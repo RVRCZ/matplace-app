@@ -31,6 +31,9 @@ interface ShapeNotes {
     eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; chain?: { links: number; length: number }; pockets?: { kind: string; count: number; depth: number }; pin?: { d: number; head: number; height: number }; stand?: number[]; source?: string;
     frame?: [number, number, number]; draw_z?: number;
 }
+/** A layer of a composition: a text, a picture of the library or a shape; where its middle lies, how wide it is, how it is turned, its filament. */
+interface Layer { kind: string; text: string; typeface: string; art: string; shape: string; x: number; y: number; w: number; turn: number; code: string; hidden: boolean }
+
 /** A stroke of icing drawn on a biscuit: the filament, the width in mm, the nib, the points in shares of the picture's width. */
 interface Stroke { c: string; w: number; t: string; p: [number, number][] }
 interface Meta { bbox: { x: number; y: number; z: number }; volume_mm3: number; area_mm2: number; notes: Record<string, unknown>; parts?: Piece[] }
@@ -60,6 +63,8 @@ export function bootParam(stage: Stage): void {
     const shapeNotes = (): ShapeNotes => (lastMeta?.notes ?? {}) as ShapeNotes;
     // a biscuit: the icing drawn on it by hand
     const cookie = cfg.kind === 'cookie';
+    const compose = cfg.kind === 'compose';
+    const layers: Layer[] = []; let chosen = 0;         // a composition: its layers from the bottom up, and which one is being edited
     const strokes: Stroke[] = [];
     let drawing = false; let pen = spoolCode('white');
     /** A new picture has new colours: what was said about the old ones (which filament, which order) no longer holds. */
@@ -82,6 +87,7 @@ export function bootParam(stage: Stage): void {
         if (shape && merge.length) p.merge = merge;
         if (shape && order.length) p.order = order;
         if (cookie && strokes.length) p.strokes = strokes;
+        if (compose) p.layers = layers;
         if (Object.keys(partColors).length) p.part_colors = { ...partColors };
         return p;
     };
@@ -246,7 +252,7 @@ export function bootParam(stage: Stage): void {
     /** Paints the pieces in the colours picked for their parts. A one-body design takes the colour of its only row. */
     const paintParts = (): void => {
         // a set of bins: each bin whole in its own colour (the region its middle lies in), outer walls included
-        if (shape) {
+        if (shape || compose) {
             // every colour is a piece of its own and the tool said which filament it is
             const paint = shapeNotes().paint ?? {};
             viewer.getPieces().forEach((piece, i) => viewer.setPieceColor(i, paint[piece.name] ?? null));
@@ -555,6 +561,14 @@ export function bootParam(stage: Stage): void {
             const choice = form.querySelector<HTMLInputElement>(`[data-choice="${k}"][value="${String(v)}"]`); if (choice) choice.checked = true;
         });
         if ('typeface' in set) showFace();
+        if (compose && Array.isArray(set.layers)) {
+            layers.splice(0, layers.length, ...(set.layers as Partial<Layer>[]).map((l) => ({
+                kind: String(l.kind ?? 'shape'), text: String(l.text ?? ''), typeface: String(l.typeface ?? 'sans'), art: String(l.art ?? ''), shape: String(l.shape ?? 'rounded'),
+                x: Number(l.x ?? 0), y: Number(l.y ?? 0), w: Number(l.w ?? 50), turn: Number(l.turn ?? 0), code: spoolCode(String(l.code ?? 'white')), hidden: Boolean(l.hidden),
+            })));
+            chosen = Math.min(chosen, layers.length - 1);
+            renderLayers();
+        }
         if (Array.isArray(set.holes)) { holes.splice(0, holes.length, ...(set.holes as Hole[]).map((h) => ({ ...h }))); renderHoles(); }
         if (Array.isArray(set.bins)) { bins.splice(0, bins.length, ...(set.bins as Bin[]).map((b) => ({ x: b.x, y: b.y, w: b.w, h: b.h, color: spoolCode(b.color) }))); renderGrid(); }
         if ('artwork' in set) {
@@ -760,6 +774,94 @@ export function bootParam(stage: Stage): void {
         const input = fieldOf('eye_pos'); if (!input) return;
         input.value = '0'; syncRange(input); soon(0);
     });
+
+    // ── a composition: its layers and the fields of the chosen one ──
+    const renderLayers = (): void => {
+        const box = document.getElementById('compose-layers'); const edit = document.getElementById('compose-edit');
+        if (!compose || !box || !edit) return;
+        box.innerHTML = layers.length ? '' : `<p class="text-sm text-muted">${t('compose.empty')}</p>`;
+        // the list shows the layers as they lie: the top one first
+        layers.map((l, i) => i).reverse().forEach((i) => {
+            const l = layers[i];
+            const row = document.createElement('div');
+            row.className = `flex items-center gap-1 rounded-lg border px-2 py-1 text-sm ${i === chosen ? 'border-ink bg-white' : 'border-transparent'} ${l.hidden ? 'opacity-50' : ''}`;
+            const what = l.kind === 'text' ? (l.text || '…') : l.kind === 'art' ? (l.art.split('/').pop() ?? '') : (document.querySelector<HTMLOptionElement>(`#compose-shape option[value="${l.shape}"]`)?.textContent ?? l.shape);
+            const act = (name: string, sign: string, off = false): string => `<button type="button" class="chip !min-h-8 !px-2 !py-0.5" data-layer-act="${name}" aria-label="${t(`compose.layer.${name}`)}" title="${t(`compose.layer.${name}`)}" ${off ? 'disabled' : ''}>${sign}</button>`;
+            row.innerHTML = `<button type="button" class="flex min-w-0 flex-1 items-center gap-2 text-left" data-layer-pick>
+                    <span class="inline-block h-3 w-3 shrink-0 rounded-full border border-line" style="background:${colorOf(l.code)?.hex ?? '#888888'}"></span>
+                    <span class="min-w-0 truncate text-ink">${t(`compose.layer.${l.kind}`)}: ${what.replace(/[<>&]/g, '')}</span></button>
+                ${act('up', '↑', i === layers.length - 1)}${act('down', '↓', i === 0)}${act(l.hidden ? 'show' : 'hide', l.hidden ? '○' : '●')}${act('copy', '⧉', layers.length >= 12)}${act('remove', '×')}`;
+            row.querySelector<HTMLButtonElement>('[data-layer-pick]')!.onclick = () => { chosen = i; renderLayers(); };
+            row.querySelectorAll<HTMLButtonElement>('[data-layer-act]').forEach((b) => {
+                b.onclick = () => {
+                    const a = b.dataset.layerAct;
+                    if (a === 'up' || a === 'down') { const to = i + (a === 'up' ? 1 : -1); [layers[i], layers[to]] = [layers[to], layers[i]]; chosen = to; }
+                    if (a === 'hide' || a === 'show') l.hidden = !l.hidden;
+                    if (a === 'copy') { layers.splice(i + 1, 0, { ...l, x: l.x + 6, y: l.y - 6 }); chosen = i + 1; }
+                    if (a === 'remove') { layers.splice(i, 1); chosen = Math.max(0, Math.min(chosen, layers.length - 1)); }
+                    renderLayers(); void refresh().then(commit);
+                };
+            });
+            box.appendChild(row);
+        });
+        const l = layers[chosen];
+        edit.classList.toggle('hidden', !l);
+        if (!l) return;
+        edit.querySelectorAll<HTMLElement>('[data-layer-for]').forEach((el) => el.classList.toggle('hidden', el.dataset.layerFor !== l.kind));
+        ($('compose-text') as HTMLInputElement).value = l.text;
+        ($('compose-font') as HTMLSelectElement).value = l.typeface;
+        ($('compose-shape') as HTMLSelectElement).value = l.shape;
+        $('compose-art-name').textContent = l.art.split('/').pop() ?? '';
+        paintSwatch($('compose-color'), l.code);
+        $('compose-color-name').textContent = colorOf(l.code) ? `${colorOf(l.code)!.name} · ${materialLabel(colorOf(l.code)!)}` : colorName(l.code);
+        edit.querySelectorAll<HTMLInputElement>('[data-layer-slide]').forEach((s) => {
+            const k = s.dataset.layerSlide as 'w' | 'x' | 'y' | 'turn';
+            s.value = String(l[k]);
+            edit.querySelector<HTMLElement>(`[data-layer-value="${k}"]`)!.textContent = `${nf.format(l[k])} ${k === 'turn' ? '°' : t('compose.unit')}`;
+        });
+    };
+    if (compose) {
+        const changed = (): void => { renderLayers(); void refresh().then(commit); };
+        const now = (): Layer | undefined => layers[chosen];
+        // these fields belong to a layer, not to the design: the form's own listener must not take them for parameters
+        const own = (el: HTMLElement, on: string, f: () => void): void => el.addEventListener(on, (e) => { e.stopPropagation(); f(); });
+        own($('compose-text'), 'input', () => { const l = now(); if (l) l.text = ($('compose-text') as HTMLInputElement).value; });
+        own($('compose-text'), 'change', changed);
+        own($('compose-font'), 'input', () => undefined);
+        own($('compose-font'), 'change', () => { const l = now(); if (l) { l.typeface = ($('compose-font') as HTMLSelectElement).value; changed(); } });
+        own($('compose-shape'), 'input', () => undefined);
+        own($('compose-shape'), 'change', () => { const l = now(); if (l) { l.shape = ($('compose-shape') as HTMLSelectElement).value; changed(); } });
+        document.querySelectorAll<HTMLInputElement>('#compose-edit [data-layer-slide]').forEach((s) => {
+            const k = s.dataset.layerSlide as 'w' | 'x' | 'y' | 'turn';
+            own(s, 'input', () => { const l = now(); if (!l) return; l[k] = Number(s.value); document.querySelector<HTMLElement>(`#compose-edit [data-layer-value="${k}"]`)!.textContent = `${nf.format(l[k])} ${k === 'turn' ? '°' : t('compose.unit')}`; });
+            own(s, 'change', changed);
+        });
+        $('compose-color').onclick = async () => {
+            const l = now(); if (!l) return;
+            lastColorTarget = () => (code) => { l.code = code; changed(); };
+            const picked = await pickColor(l.code);
+            if (picked) { l.code = picked; rememberColor(picked); changed(); }
+        };
+        $('compose-art').onclick = async () => {
+            const l = now(); if (!l) return;
+            const picked = await pickArtwork('library');
+            if (picked && picked.ref.startsWith('lib:')) { l.art = picked.ref; changed(); }
+        };
+        document.querySelectorAll<HTMLButtonElement>('[data-add-layer]').forEach((b) => {
+            b.onclick = async () => {
+                if (layers.length >= 12) { showError(t('compose.limit')); return; }
+                const kind = b.dataset.addLayer!;
+                const fresh: Layer = { kind, text: kind === 'text' ? 'Text' : '', typeface: 'sans', art: '', shape: 'rounded', x: 0, y: 0, w: kind === 'shape' ? 80 : 40, turn: 0, code: spoolCode(layers.length ? 'black' : 'white'), hidden: false };
+                if (kind === 'art') {
+                    const picked = await pickArtwork('library');
+                    if (!picked || !picked.ref.startsWith('lib:')) return;
+                    fresh.art = picked.ref;
+                }
+                layers.push(fresh); chosen = layers.length - 1;
+                changed();
+            };
+        });
+    }
 
     // ── icing piped on a biscuit: strokes drawn in the viewer ──
     let penChosen = false;

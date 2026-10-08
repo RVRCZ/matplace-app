@@ -53,6 +53,8 @@ class ToolsController extends Controller
             'place' => ParametricGenerator::PLACE[ParametricGenerator::FAMILY[$kind] ?? $kind] ?? [],
             'sample' => ParametricGenerator::SAMPLE[$tool] ?? ParametricGenerator::SAMPLE[$kind] ?? null,
             'captioned' => in_array($kind, ParametricGenerator::CAPTIONED, true),
+            'fonts' => ParametricGenerator::FONTS,
+            'layerShapes' => ParametricGenerator::LAYER_SHAPES,
             'config' => ConfigController::payload($materials, $converters, true),
         ]);
     }

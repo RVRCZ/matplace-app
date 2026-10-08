@@ -15,6 +15,9 @@
             // a part may be called by what it is in this tool (the plate of a gingerbread is "the gingerbread")
             ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text(\Illuminate\Support\Facades\Lang::has('param.shape.'.$k.'.'.$kind) ? 'param.shape.'.$k.'.'.$kind : 'param.shape.'.$k)])->all();
     }
+    if ($kind === 'compose') {
+        $i18n += collect(['layer.text', 'layer.art', 'layer.shape', 'layer.up', 'layer.down', 'layer.hide', 'layer.show', 'layer.copy', 'layer.remove', 'limit', 'empty', 'unit'])->mapWithKeys(fn ($k) => ['compose.'.$k => __('param.compose.'.$k)])->all();
+    }
     if ($kind === 'cookie') {
         $i18n += collect(['draw', 'draw.on', 'count', 'hint', 'limit', 'stroke', 'stroke.move', 'stroke.remove', 'nib.round', 'nib.flat', 'nib.dots', 'nib.candy', 'nib.sprinkles'])->mapWithKeys(fn ($k) => ['cookie.'.$k => __('param.cookie.'.$k)])->all();
     }
@@ -174,6 +177,48 @@
             </fieldset>
         @endif
 
+        @if($kind === 'compose')
+            {{-- the layers of a composition, from the bottom up (the list shows the top one first, as they lie), and the fields of the chosen one --}}
+            <fieldset>
+                <legend class="lbl">{{ __('param.compose.layers') }}</legend>
+                <p class="hint !text-xs">{{ __('param.compose.hint') }}</p>
+                <div id="compose-layers" class="mt-2 space-y-1"></div>
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                    @foreach(['text', 'art', 'shape'] as $add)
+                        <button type="button" class="chip !py-1 text-sm" data-add-layer="{{ $add }}">+ {{ __('param.compose.add.'.$add) }}</button>
+                    @endforeach
+                </div>
+                <div id="compose-edit" class="mt-3 hidden space-y-3 rounded-lg border border-line bg-slate-50 p-3">
+                    <label class="block text-sm font-medium text-ink" data-layer-for="text">{{ __('param.compose.text') }}
+                        <input id="compose-text" maxlength="40" class="field">
+                    </label>
+                    <label class="block text-sm font-medium text-ink" data-layer-for="text">{{ __('param.c.typeface') }}
+                        <select id="compose-font" class="field">
+                            @foreach($fonts ?? [] as $face => $font)<option value="{{ $face }}">{{ $font[1] }}</option>@endforeach
+                        </select>
+                    </label>
+                    <div class="flex items-center gap-2" data-layer-for="art">
+                        <button type="button" id="compose-art" class="btn-quiet !min-h-10 gap-1.5 !px-3 !py-2 text-sm"><x-icon name="image" class="h-4 w-4" />{{ __('toolpage.artwork.change') }}</button>
+                        <span id="compose-art-name" class="min-w-0 truncate text-sm text-muted"></span>
+                    </div>
+                    <label class="block text-sm font-medium text-ink" data-layer-for="shape">{{ __('param.compose.shape') }}
+                        <select id="compose-shape" class="field">
+                            @foreach($layerShapes ?? [] as $shape)<option value="{{ $shape }}">{{ __(\Illuminate\Support\Facades\Lang::has('param.o.sign.'.$shape) ? 'param.o.sign.'.$shape : 'param.compose.shape.'.$shape) }}</option>@endforeach
+                        </select>
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <button type="button" class="tool-swatch" id="compose-color" aria-label="{{ __('toolpage.color.pick') }}"></button>
+                        <span class="min-w-0 text-sm"><span class="block font-medium text-ink">{{ __('param.compose.color') }}</span><span class="block truncate text-muted" id="compose-color-name"></span></span>
+                    </div>
+                    @foreach(['w' => [5, 250, 1], 'x' => [-150, 150, 0.5], 'y' => [-150, 150, 0.5], 'turn' => [-180, 180, 1]] as $slide => [$lo, $hi, $by])
+                        <label class="block text-sm font-medium text-ink">{{ __('param.compose.'.$slide) }}
+                            <span class="mt-1 flex items-center gap-3"><input type="range" data-layer-slide="{{ $slide }}" min="{{ $lo }}" max="{{ $hi }}" step="{{ $by }}" class="min-w-0 flex-1 accent-ink"><span class="num w-16 text-right text-muted" data-layer-value="{{ $slide }}"></span></span>
+                        </label>
+                    @endforeach
+                </div>
+            </fieldset>
+        @endif
+
         @foreach($plainChoices as $key => $options)
             @continue($at($key, 'input') !== 'input')
             @if($key === 'typeface' && count($options) > 4)
@@ -330,7 +375,7 @@
             </fieldset>
         @endif
         {{-- the parts of the design, filled by the script as the preview says which there are --}}
-        <div id="tool-parts" class="space-y-2" data-own-colors="{{ $colorChoices->isNotEmpty() || $kind === 'modular' ? '1' : '0' }}"></div>
+        <div id="tool-parts" class="space-y-2" data-own-colors="{{ $colorChoices->isNotEmpty() || in_array($kind, ['modular', 'compose'], true) ? '1' : '0' }}"></div>
         @if($kind === 'modular')<p class="hint !text-xs">{{ __('toolpage.color.bins') }}</p>@endif
         <div id="tool-recent" class="hidden">
             <div class="text-xs text-muted">{{ __('toolpage.color.recent') }}</div>

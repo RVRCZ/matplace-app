@@ -141,6 +141,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | Stojánek na lístečky se siluetou | `/tools/sticky-notes` | `notes` | miska na bloček 50–105 mm, za ní stojí silueta z obrázku nebo jména, mezi nimi žlábek na tužku; dva díly |
 | Držák na gumičky se siluetou | `/tools/hair-tie-holder` | `hair_tie` | sloupek Ø 10–30 × 40–150 mm na podstavci, za ním silueta z obrázku nebo jména; dva díly |
 | Stojan na svíčku se siluetou | `/tools/candle-stand` | `candle_stand` | kulatý podstavec s lůžkem pro svíčku ve skle Ø 40–130 mm, za ním silueta z obrázku nebo jména; dva díly |
+| Skladba z vrstev | `/tools/compose` | `compose` | až 12 vrstev (text, obrázek z knihovny, tvar), každá svým filamentem, o krok výš než ta pod ní; očko nebo hroty zápichu |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -192,6 +193,20 @@ siluety. Udělal jsem **svislý sloupek** se zaobleným vrškem, který je jeden
 naležato, takže rameno by muselo být třetí díl nalepený do otvoru v desce a celou váhu gumiček by nesl ten spoj;
 sloupek se tiskne nastojato bez podpěr, gumičky z něj nepadají a nic se nelepí. Podstavec má nejméně 70 × 60 × 8 mm
 a aspoň 80 % šířky siluety, silueta stojí nad jeho středem (`_slot_x`; totéž nově u stojánku na lístečky).
+
+**Skladba z vrstev** (`compose`, `engines/python/compose_kind.py`, stránka `/tools/compose`). Věc z více prvků:
+až dvanáct vrstev, každá text (jedno ze třiceti písem), obrázek z knihovny nebo tvar (tři obyčejné a destičky
+z `engines/shapes/`), s polohou, šířkou, otočením a filamentem.
+
+- *Tisk:* vrstvy leží na sobě v pořadí seznamu jako barvy obrázku – pod každou se nižší doplní, takže každá vrstva
+  tisku má jeden filament a barvy se mění ve výškách (díly `layer_<n>`, `color_changes`, `part_colors` u uloženého
+  návrhu, tedy totéž, co farma a projekty pro slicer už umějí). Co leží odděleně, spojí můstek ve spodní vrstvě.
+  Základ přidá očko nebo dva hroty zápichu.
+- *Stránka:* seznam vrstev (nahoře ta nejvyšší) s pořadím, skrytím, zdvojením a smazáním; pod ním pole vybrané
+  vrstvy; tři předvolby na začátek (jméno na mraku, zápich „2 · Olivia“, srdce se jménem). Přidání, úpravu textu,
+  posun a změnu pořadí jsem zkoušel v prohlížeči. Barvy předvoleb jsou pojmenované („white“) a server je převede na
+  nejbližší cívku farmy.
+- *Co chybí proti zadání,* je v §7 bod 3: tažení ve vieweru, vlastní obrázek, převod ostatních nástrojů na skladbu.
 
 **Vložka do zásuvky podle fotky – hotová, ale mimo katalog** (`insert`, nový modul `engines/python/sheet_kinds.py`,
 stránka `/tools/drawer-insert`, `'available' => false`). Věci položené na list A4 a vyfocené shora dostanou v tácu
@@ -489,7 +504,7 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`, `papel`, `bag_charm`, `notes`, `hair_tie`, `candle_stand`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
+`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`, `papel`, `bag_charm`, `notes`, `hair_tie`, `candle_stand`, `compose`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -516,17 +531,10 @@ písem; dva z nich (ozdoba na brčko, otvírák) čekají mimo katalog na zkuše
 2. **Vložka do zásuvky podle fotky** (druhý režim „organizéru podle fotky“ ze zadání): nástroj je postavený, viz
    níže, ale **mimo katalog** – ověřený je jen na kreslených fotkách. Do katalogu ho pustí až zkouška na skutečných
    fotkách skutečných věcí; pak chybí už jen texty pro SEO, ukázky a karta.
-3. **Volná skladba vrstev** (`compose`) – hotová je **půlka bez obrazovky**: stavitel `engines/python/compose_kind.py`
-   a serverová část (kind `compose`: kontrola a čištění seznamu vrstev, písmo, obrázek z knihovny a tvar pro každou
-   vrstvu, filamenty a výšky výměn u uloženého návrhu; `ComposeToolTest`). Vrstva = text, obrázek z knihovny nebo
-   tvar (tři obyčejné a destičky z `engines/shapes/`), kde leží, jak je široká, jak otočená, kterým filamentem. Vrstvy
-   leží na sobě jako barvy obrázku (pod každou se nižší doplní), takže každá vrstva tisku má jeden filament a barvy
-   se mění ve výškách; co leží odděleně, spojí můstek; základ přidá očko nebo hroty zápichu. Odpověď stavitele říká
-   u každé vrstvy, kde leží (`notes.layers[].box`, `notes.origin`) – to je to, co bude stránka potřebovat k výběru
-   a tažení. **Chybí stránka:** seznam vrstev vlevo (přidat, vybrat, pořadí, skrýt, duplikovat, smazat), pole vybrané
-   vrstvy a tažení, otáčení a zvětšování ve vieweru. Do té doby je `compose` mimo katalog a bez trasy. Obrázky vrstev
-   jsou zatím jen z knihovny (`lib:`): nahraný obrázek by u uloženého návrhu po třiceti dnech zmizel a kopírování
-   více obrázků k návrhu stavitel neumí. Zápich, jmenovka, klíčenka, ozdoba a velké písmeno zůstávají formuláři.
+3. **Volná skladba vrstev** (`compose`, `/tools/compose`) je v katalogu, ale **bez tažení ve vieweru**: polohu,
+   šířku a otočení vybrané vrstvy mění posuvníky, ne myš v náhledu. Zadání chtělo gizmo (posun, otočení, zvětšení
+   tažením, výběr klepnutím na prvek). Zbývá také: vlastní nahraný obrázek jako vrstva (zatím jen knihovna), a převést
+   zápich, jmenovku, klíčenku, ozdobu a velké písmeno z formulářů na skladbu, jak zadání předpokládalo.
 4. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
    sušenek). Tvary destiček cedulky
    (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.
