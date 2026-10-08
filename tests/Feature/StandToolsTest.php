@@ -7,7 +7,7 @@ use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/** Figures that stand on something useful (engines/python/stand_kinds.py): the stand for sticky notes, the holder for hair ties. */
+/** Figures that stand on something useful (engines/python/stand_kinds.py): the stand for sticky notes, the holder for hair ties, the stand for a candle. */
 class StandToolsTest extends TestCase
 {
     use RefreshDatabase;
@@ -84,6 +84,37 @@ class StandToolsTest extends TestCase
             $html = $this->get($prefix.'/tools/hair-tie-holder')->assertOk()->getContent();
             $this->assertStringContainsString(e(__('tools.hair_tie.title', [], $locale)), $html);
             $this->assertStringContainsString('data-param="post_h"', $html);
+            $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $html, $locale);
+        }
+    }
+
+    public function test_the_candle_stand_seats_a_jar_in_front_of_a_figure(): void
+    {
+        $tree = ['artwork' => 'lib:holidays/christmas-tree', 'width' => 100, 'thickness' => 3, 'jar_d' => 80];
+        $base = $this->meta('candle_stand', $tree, 'stand');
+        // a round platform for the jar (half a millimetre of play, a rim of 3 mm) with a block behind for the slot: 8 mm high
+        $this->assertEqualsWithDelta(8, $base['bbox']['z'], 0.01);
+        // (the block is as wide as the foot of the figure asks: a tree stands on its lowest branches, wider than the disc)
+        $this->assertGreaterThanOrEqual(80 + 1 + 6, $base['bbox']['x']);
+        $this->assertEqualsWithDelta(87 + 3 + 0.5 + 8, $base['bbox']['y'], 0.2);
+        // the seat is a recess 3 mm deep: a solid disc of that size would hold its cylinder more
+        $solid = M_PI * 43.5 * 43.5 * 8;
+        $this->assertLessThan($solid + 12 * $base['bbox']['x'] * 8, $base['volume_mm3']);
+        $this->assertGreaterThan($solid - M_PI * 40.5 * 40.5 * 3 - 500, $base['volume_mm3']);
+        // a bigger jar is a bigger platform by just that
+        $big = $this->meta('candle_stand', ['jar_d' => 103] + $tree, 'stand');
+        $this->assertGreaterThanOrEqual(103 + 1 + 6, $big['bbox']['x']);
+        $this->assertEqualsWithDelta($base['bbox']['y'] + 23, $big['bbox']['y'], 0.2);
+        // put together, the figure stands behind the seat, its foot out of sight
+        $figure = $this->meta('candle_stand', $tree, 'body');
+        $use = $this->meta('candle_stand', $tree, 'all', 'use');
+        $this->assertEqualsWithDelta(8 - 6 + $figure['bbox']['y'], $use['bbox']['z'], 0.05);
+        $created = $this->postJson('/api/tools/param', ['kind' => 'candle_stand', 'params' => $tree])->assertCreated();
+        $this->assertSame(['body', 'stand'], array_keys($created->json('file.tool.params.parts_bbox')));
+        foreach (['cs' => '', 'en' => '/en', 'es' => '/es'] as $locale => $prefix) {
+            $html = $this->get($prefix.'/tools/candle-stand')->assertOk()->getContent();
+            $this->assertStringContainsString(e(__('tools.candle_stand.title', [], $locale)), $html);
+            $this->assertStringContainsString('data-param="jar_d"', $html);
             $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $html, $locale);
         }
     }

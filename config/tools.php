@@ -139,6 +139,11 @@ return [
         ['params' => ['line1' => 'Ema', 'typeface' => 'script', 'width' => 110, 'post_h' => 120]],
         ['params' => ['artwork' => 'lib:animals/owl', 'width' => 80, 'post_d' => 20, 'post_h' => 70]],
     ]]],
+    'candle_stand' => ['route' => 'tools.candle_stand', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:holidays/christmas-tree', 'width' => 100, 'jar_d' => 80]],
+        ['params' => ['artwork' => 'lib:animals/deer', 'width' => 120, 'jar_d' => 103]],
+        ['params' => ['line1' => 'Home', 'typeface' => 'script', 'width' => 110, 'jar_d' => 70]],
+    ]]],
     'stencil' => ['route' => 'tools.stencil', 'intent' => 'create', 'categories' => ['craft', 'signs'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['width' => 120, 'line1' => 'BOA 8']],
         ['params' => ['width' => 160, 'line1' => 'FRAGILE']],

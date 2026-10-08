@@ -131,6 +131,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | Ozdoba na tašku s otvory | `/tools/bag-charm` | `bag_charm` | obrázek nebo jméno 30–80 mm, vzadu kapsa; vedle se tiskne čep (hlava + dřík), který se prostrčí otvorem tašky a vlepí |
 | Stojánek na lístečky se siluetou | `/tools/sticky-notes` | `notes` | miska na bloček 50–105 mm, za ní stojí silueta z obrázku nebo jména, mezi nimi žlábek na tužku; dva díly |
 | Držák na gumičky se siluetou | `/tools/hair-tie-holder` | `hair_tie` | sloupek Ø 10–30 × 40–150 mm na podstavci, za ním silueta z obrázku nebo jména; dva díly |
+| Stojan na svíčku se siluetou | `/tools/candle-stand` | `candle_stand` | kulatý podstavec s lůžkem pro svíčku ve skle Ø 40–130 mm, za ním silueta z obrázku nebo jména; dva díly |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -164,6 +165,13 @@ na tužku. Silueta je jednobarevná: obrázek v barvách na stojící desce by z
 ve výškách platí pro celou podložku), nebo dva tisky – to je práce pro objednávku po dílech, ne pro tento nástroj.
 Společné kusy pro další dva nástroje téže skupiny (držák na gumičky, stojan na svíčku): `_figure`, `_slot`,
 `_together`.
+
+**Stojan na svíčku** (`candle_stand`, `stand_kinds.py`). Kulatý podstavec vysoký 8 mm s lůžkem hlubokým 3 mm
+(průměr sklenice + 1 mm vůle, lem 3 mm), vzadu přechází v blok s drážkou pro siluetu. Zadání chtělo plošinu jako
+samostatný díl na kuželovém čepu s vůlí 0,2 mm; udělal jsem **podstavec z jednoho kusu** – není co lícovat a pod
+svíčkou se nic nekýve. Předvolbu „3 knoty Ø 103“ jsem nahradil polem pro průměr (příklad s 103 mm je mezi ukázkami).
+Texty říkají třikrát totéž, protože na tom záleží: **jen pro svíčku ve skle nebo LED svíčku, materiál PETG**;
+plast vedle holého plamene nemá co dělat. Jak moc se dno skla zahřeje, jsem neměřil.
 
 **Držák na gumičky** (`hair_tie`, `stand_kinds.py`). Zadání chtělo vodorovné rameno Ø 12 mm vycházející ze
 siluety. Udělal jsem **svislý sloupek** se zaobleným vrškem, který je jeden kus s podstavcem: silueta se tiskne
@@ -450,7 +458,7 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`, `papel`, `bag_charm`, `notes`, `hair_tie`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
+`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`, `papel`, `bag_charm`, `notes`, `hair_tie`, `candle_stand`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -468,5 +476,5 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
-Potom zbytek zadání session 1: stojan na svíčku (na základu `stand_kinds.py`),
-organizér z předmětů vyfocených na A4, klikátko.
+Potom zbytek zadání session 1: organizér z předmětů vyfocených na A4 a klikátko (to mimo katalog do zkušebního
+tisku).

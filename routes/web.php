@@ -132,6 +132,7 @@ $pages = function () {
     Route::get('/tools/stencil', [ToolsController::class, 'param'])->defaults('kind', 'stencil')->name('tools.stencil');
     Route::get('/tools/sticky-notes', [ToolsController::class, 'param'])->defaults('kind', 'notes')->name('tools.notes');
     Route::get('/tools/hair-tie-holder', [ToolsController::class, 'param'])->defaults('kind', 'hair_tie')->name('tools.hair_tie');
+    Route::get('/tools/candle-stand', [ToolsController::class, 'param'])->defaults('kind', 'candle_stand')->name('tools.candle_stand');
     Route::get('/tools/papel-picado', [ToolsController::class, 'param'])->defaults('kind', 'papel')->name('tools.papel');
     Route::get('/tools/illuminated-sign', [ToolsController::class, 'param'])->defaults('kind', 'lightbox')->name('tools.lightbox');
     Route::get('/tools/qr', [ToolsController::class, 'param'])->defaults('kind', 'qr')->name('tools.qr');

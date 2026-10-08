@@ -1,6 +1,6 @@
 """
 A picture or a name that stands on something useful, for param_tool.py: a tray for sticky notes, a post for hair
-ties (a stand for a candle is to come).
+ties, a platform for a candle in a jar.
 
 The figure is a silhouette printed lying flat, clean on both faces, with a foot under it. The foot is pushed into a slot
 of the base, as the standing logo is (creative_kinds.logo): two parts, `body` and `stand`, each one colour, no supports.
@@ -15,6 +15,7 @@ SINK, SHOW, PLAY = 6.0, 1.5, 0.25      # how deep the foot sits in the slot, how
 LIMITS = {
     "notes": {"width": (50, 150), "thickness": (2.4, 5), "pad": (50, 105), "depth": (8, 30)},
     "hair_tie": {"width": (50, 150), "thickness": (2.4, 5), "post_d": (10, 30), "post_h": (40, 150)},
+    "candle_stand": {"width": (50, 160), "thickness": (2.4, 5), "jar_d": (40, 130)},
 }
 
 
@@ -156,4 +157,36 @@ def hair_tie(M, Invalid, p):
     return parts, notes_
 
 
-BUILDERS = {"notes": notes, "hair_tie": hair_tie}
+def candle_stand(M, Invalid, p):
+    """
+    A round platform with a rim for a candle in a jar and a figure standing behind it. The jar sits in a recess 3 mm
+    deep with half a millimetre of play all round; the platform runs out into a block at the back that carries the slot.
+    One piece of base instead of the brief's platform on a conical pin: nothing to fit, nothing to wobble under a flame.
+    """
+    k = "candle_stand"
+    C = M.CrossSection
+    n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
+    width, t, jar = n("width", 100), n("thickness", 3), n("jar_d", 80)
+    flat, foot, size, said = _figure(M, Invalid, p, width, t)
+    base_h, rim, lip = 8.0, 3.0, 3.0
+    r_out = jar / 2 + 0.5 + rim
+    slot_zone = t + 2 * PLAY + 8.0
+    block_w = max(foot[1] - foot[0] + 2 * PLAY + 8.0, 0.6 * size[0], 40.0)
+    # the disc and, behind it, a rounded block as wide as the foot asks; the two run into one another
+    block = S.rounded_rect(M, block_w, r_out + slot_zone, 4).translate([-block_w / 2, 0])
+    plan = (C.circle(r_out, 128) + block).offset(-3, M.JoinType.Round, 2.0, 24).offset(3, M.JoinType.Round, 2.0, 24)
+    px0, py0, px1, py1 = plan.bounds()
+    plan = plan.translate([-px0, -py0])
+    cx, cy = -px0, -py0                                         # where the jar stands
+    base = plan.extrude(base_h) - M.Manifold.cylinder(lip + 1, jar / 2 + 0.5, jar / 2 + 0.5, 128).translate([cx, cy, base_h - lip])
+    base_w, base_d = px1 - px0, py1 - py0
+    slot_at = (min(max(cx - size[0] / 2 + foot[0] - PLAY, cx - block_w / 2 + 4.0), cx + block_w / 2 - 4.0 - (foot[1] - foot[0] + 2 * PLAY)), base_d - 4.0 - t - 2 * PLAY)
+    base = base - _slot(M, foot, t).translate([slot_at[0], slot_at[1], base_h - SINK])
+    parts = _together(M, flat, foot, size, t, base, slot_at, base_h)
+    notes_ = dict(said, outer=[round(max(base_w, size[0]), 1), round(base_d, 1), round(base_h - SINK + size[1], 1)], needs=["glue_optional"], jar=[round(jar + 1.0, 1), lip],
+                  regions=[{"x0": -1, "y0": round(slot_at[1] + PLAY - 0.05, 2), "x1": 9999, "y1": round(slot_at[1] + PLAY + t + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange"},
+                           {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue"}])
+    return parts, notes_
+
+
+BUILDERS = {"notes": notes, "hair_tie": hair_tie, "candle_stand": candle_stand}
