@@ -145,6 +145,7 @@ $pages = function () {
     Route::get('/tools/magnet', [ToolsController::class, 'param'])->defaults('kind', 'magnet')->name('tools.magnet');
     Route::get('/tools/badge-reel', [ToolsController::class, 'param'])->defaults('kind', 'badge')->name('tools.badge');
     Route::get('/tools/medallion', [ToolsController::class, 'param'])->defaults('kind', 'medallion')->name('tools.medallion');
+    Route::get('/tools/bag-charm', [ToolsController::class, 'param'])->defaults('kind', 'bag_charm')->name('tools.bag_charm');
     Route::get('/tools/photo-organizer', [ToolsController::class, 'param'])->defaults('kind', 'photo_organizer')->name('tools.photo_organizer');
     Route::get('/tools/coaster', [ToolsController::class, 'param'])->defaults('kind', 'coaster')->name('tools.coaster');
     Route::get('/tools/gingerbread', [ToolsController::class, 'param'])->defaults('kind', 'gingerbread')->name('tools.gingerbread');

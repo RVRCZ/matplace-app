@@ -128,6 +128,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | Medaile s řetězem | `/tools/medallion` | `medallion` | kruh, hvězda nebo šestiúhelník 50–120 mm s obrázkem či číslem, očko, 0–40 otevřených článků řetězu na téže podložce |
 | Organizér ve tvaru obrázku | `/tools/photo-organizer` | `photo_organizer` | vysoká nádobka 40–120 mm podle obrysu obrázku: přihrádky v mřížce, kulaté otvory v plném bloku, nebo jedna kapsa |
 | Papel picado z obrázku | `/tools/papel-picado` | `papel` | fotka, kresba nebo silueta vyříznutá v okně tenkého panelu 80–250 mm, prolamovaný okraj v šesti vzorech, zoubky, otvory na šňůru |
+| Ozdoba na tašku s otvory | `/tools/bag-charm` | `bag_charm` | obrázek nebo jméno 30–80 mm, vzadu kapsa; vedle se tiskne čep (hlava + dřík), který se prostrčí otvorem tašky a vlepí |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -151,6 +152,15 @@ hladkou misku ve světlém filamentu. Obrázek drží odstup od stěny (`frame`)
 sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do 6 mm (meze v `shape_kinds.LIMITS`).
 
 Rozcestník `/gifts` odkazuje i na misku, stojánek, korálky a ozdobu na držák karty.
+
+**Ozdoba na tašku s otvory** (`bag_charm`, rodina `shape`; „Bogg Bag Charm Builder“ předlohy). Zadání chtělo čep
+Ø 9–11 × 8 mm na zádech ozdoby a samostatnou zátku. Čep na zádech nejde: ozdoba se tiskne lícem nahoru (barvy
+ve výškách), čep by mířil do podložky. Proto obráceně: **v zádech je kapsa** (týž kód jako kapsa na magnet, hloubka
+3 mm) a **čep je samostatný kus** – hlava o 8 mm širší než dřík zůstane uvnitř tašky, dřík projde otvorem a vlepí se
+do kapsy. Tiskne se hlavou dolů vedle ozdoby a patří k dílu `body`; je vyšší než ozdoba, takže jeho konec vyjde
+v poslední barvě obrázku (zmizí v kapse). Návštěvník zadá **průměr otvoru a tloušťku stěny své tašky**; čep je
+o 0,6 mm tenčí než otvor. **Předvolbu „taška Bogg“ jsem neudělal:** rozměr otvoru té tašky neznám z ničeho, čemu by
+se dalo věřit, a vymyšlené číslo pod cizí značkou by bylo horší než žádné. Až ho někdo změří, je to jedna předvolba.
 
 **Papel picado** (`papel` v `creative_kinds.py`, obyčejný nástroj, ne rodina; „Photo to Papel Picado“ předlohy).
 Panel je jeden plochý obrys vytažený na 0,8–2 mm: deska, v ní okno s obrázkem, kolem okraj se vzorem, dole zoubky
@@ -406,7 +416,7 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`, `papel`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
+`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`, `badge`, `nameplate`, `text`, `medallion`, `photo_organizer`, `papel`, `bag_charm`; dále `public/img/fonts/` a `public/img/shapes/`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -425,4 +435,4 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
 Potom zbytek zadání session 1: ostatní produkty rodiny (brčko, gumičky, otvírák,
-organizér z předmětů vyfocených na A4, lístečky, čep na tašku, stojan na svíčku, klikátko).
+organizér z předmětů vyfocených na A4, lístečky, stojan na svíčku, klikátko).

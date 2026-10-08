@@ -23,6 +23,8 @@ icing: one part `icing_<n>` for every filament drawn with, stacked like the colo
 The badge is a topper for a retractable badge reel: the picture, the wearer's name under it in one of the picture's
 colours, and a shallow pocket in the back for the reel's sticky dot.
 
+The bag_charm is glued on a bag with holes: a pocket in its back takes the pin that comes through the hole from inside.
+
 The medallion is a round or star plate with an eyelet and, next to it on the bed, the open links of its chain.
 
 The photo_organizer is the same dish grown tall: walls along the outline of the picture, and inside them a grid of
@@ -35,16 +37,16 @@ import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray", "badge", "medallion", "photo_organizer")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray", "badge", "medallion", "photo_organizer", "bag_charm")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
     "width": (10, 250), "height": (6, 250), "wall": (1.2, 3), "thickness": (1.2, 15), "frame": (0, 10), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
-    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 40), "cell": (20, 80), "hole_d": (8, 40),
+    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 40), "cell": (20, 80), "hole_d": (8, 40), "bag_hole": (6, 20), "bag_wall": (1, 10),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex"), "photo_organizer": ("image", "circle")}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex"), "photo_organizer": ("image", "circle"), "bag_charm": ("image", "circle", "rect")}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -429,6 +431,9 @@ def build(M, Invalid, p, product):
         raise Invalid("bad_choice", "mount")
     mount = p.get("mount", "glue") if pocketed else "none"
     mag_d, mag_h, mag_gap = (n("mag_d", 10), n("mag_h", 2), n("mag_gap", 0.2)) if mount != "none" else (0, 0, 0)
+    if product == "bag_charm":
+        # the pocket takes the pin that comes through the hole of the bag: a little thinner than the hole, glued in 3 mm deep
+        mount, mag_d, mag_h, mag_gap = "glue", n("bag_hole", 12) - 0.6, 3.0, 0.15
     if mount in ("glue", "press") and t < mag_h + 0.8:
         t = round(mag_h + 0.8, 2)                             # a floor of four layers over the magnet
         notes["thickened"] = t
@@ -513,6 +518,20 @@ def build(M, Invalid, p, product):
             links = chain[0].translate([bx0, by0, 0])
             body, whole = body + links, whole + links
             notes["chain"] = {"links": int(n("links", 20)), "length": round(int(n("links", 20)) * (LINK[0] - 2 * LINK[2]) / 10.0) * 10}
+
+    beside = None                                            # what lies on the bed next to the product: the plate's width, depth, and its own height
+    if chain is not None:
+        beside = (chain[1], chain[2], 0.0)
+    if product == "bag_charm":
+        # the pin: a head that stays inside the bag, a stem through its wall into the pocket. It is printed head down next
+        # to the charm, in the charm's part; taller than the charm, so its top comes out in the last colour (nobody sees it)
+        bx0, by0, bx1, by1 = body2d.bounds()
+        head_r, stem_h = mag_d / 2 + 4.0, 2.0 + n("bag_wall", 4) + mag_h - 0.3
+        pin = M.Manifold.cylinder(2.0, head_r, head_r, 64) + M.Manifold.cylinder(stem_h, mag_d / 2, mag_d / 2, 64)
+        pin = pin.translate([bx1 + 4.0 + head_r, by0 + head_r, 0])
+        body, whole = body + pin, whole + pin
+        notes["pin"] = {"d": round(mag_d, 1), "head": round(2 * head_r, 1), "height": round(stem_h, 1)}
+        beside = (bx1 - bx0 + 4.0 + 2 * head_r, max(by1 - by0, 2 * head_r), stem_h)
 
     # ── colours of the parts ───────────────────────────────────────────────────────────────────────────────────
     own = _code(p, "body")
@@ -607,10 +626,10 @@ def build(M, Invalid, p, product):
         warn.append("magnet_shows")
     w_all, h_all = (2 * span + GAP if product == "earrings" else span), y1 - y0
     each_h = h_all
-    if chain is not None:
-        w_all, h_all = chain[1], chain[2]
+    if beside is not None:
+        w_all, h_all = beside[0], beside[1]
     notes.update({
-        "outer": [round(w_all, 1), round(h_all, 1), round(top, 1)], "each": [round(span, 1), round(each_h, 1), round(top, 1)], "copies": 2 if product == "earrings" else 1,
+        "outer": [round(w_all, 1), round(h_all, 1), round(max(top, beside[2] if beside else 0.0), 1)], "each": [round(span, 1), round(each_h, 1), round(top, 1)], "copies": 2 if product == "earrings" else 1,
         "colors": listed, "body_color": {"code": body_color[0], "hex": body_color[1]}, "paint": paint, "parts": [name for name, _ in pieces],
         "filaments": len(filaments), "multi_material": bool(multi), "color_changes": changes, "found": info["found"], "wanted": info["wanted"],
         "background": info["background"], "source": info["source"], "warnings": warn, "thin_pct": thin, "missing_chars": info.get("missing_chars", []),

@@ -18,7 +18,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge', 'medallion', 'photo_organizer'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm'];
 
     protected function setUp(): void
     {
@@ -567,6 +567,31 @@ class ShapeToolsTest extends TestCase
         // the page has no name to fall back on, so the picture is required
         $this->preview('photo_organizer', ['width' => 120])->assertStatus(422);
         $this->get('/tools/photo-organizer')->assertOk()->assertSee('data-choice="inside"', false)->assertSee('data-when="inside=grid"', false)->assertDontSee('data-text=', false);
+    }
+
+    public function test_a_bag_charm_comes_with_the_pin_that_holds_it(): void
+    {
+        $heart = ['artwork' => 'lib:colour/red-heart', 'width' => 45, 'thickness' => 5, 'bag_hole' => 12, 'bag_wall' => 4];
+        $m = $this->meta($this->preview('bag_charm', $heart, 'all', true)->assertOk());
+        // the pin: 0.6 mm thinner than the hole, a head 8 mm wider, long enough for the head, the wall of the bag and the pocket
+        $this->assertSame(['d' => 11.4, 'head' => 19.4, 'height' => 8.7], $m['notes']['pin']);
+        $this->assertSame(['d' => 11.4, 'h' => 3], array_intersect_key($m['notes']['magnet'], ['d' => 1, 'h' => 1]));
+        // it lies next to the charm and belongs to its part; the plate is as tall as the pin, the charm itself lower
+        $this->assertEqualsWithDelta(45 + 4 + 19.4, $m['bbox']['x'], 1.5);
+        $this->assertEqualsWithDelta(8.7, $m['bbox']['z'], 0.01);
+        $this->assertSame(8.7, $m['notes']['outer'][2]);
+        $this->assertLessThan(8, $m['notes']['each'][2]);
+        $this->assertNotContains('pin', $m['notes']['parts']);
+        $this->assertFalse($m['notes']['multi_material']);
+        // a thicker bag wall makes the pin longer by just that; a smaller hole makes pin and pocket thinner
+        $this->assertSame(11.7, $this->meta($this->preview('bag_charm', ['bag_wall' => 7] + $heart)->assertOk())['notes']['pin']['height']);
+        $small = $this->meta($this->preview('bag_charm', ['bag_hole' => 8] + $heart)->assertOk());
+        $this->assertSame(7.4, $small['notes']['pin']['d']);
+        $this->assertLessThan($m['volume_mm3'], $small['volume_mm3'] + 1);
+        // the thinnest charm the form allows still keeps four layers over the pocket: nothing has to be thickened
+        $thin = $this->meta($this->preview('bag_charm', ['thickness' => 4, 'frame' => 0] + $heart)->assertOk());
+        $this->assertArrayNotHasKey('thickened', $thin['notes']);
+        $this->get('/tools/bag-charm')->assertOk()->assertSee('data-param="bag_hole"', false)->assertSee(str_replace('\\', '\\\\', substr((string) json_encode(__('param.shape.magnet.fact.bag_charm')), 1, -1)), false);
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

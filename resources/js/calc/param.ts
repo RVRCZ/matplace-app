@@ -28,7 +28,7 @@ interface ShapeColor { part: string; index: number; rgb: string; code: string; h
 interface ShapeNotes {
     colors?: ShapeColor[]; paint?: Record<string, string>; parts?: string[]; body_color?: { code: string; hex: string }; rim_color?: { code: string; hex: string };
     filaments?: number; multi_material?: boolean; color_changes?: { z: number }[]; found?: number; wanted?: number; each?: number[]; copies?: number;
-    eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; chain?: { links: number; length: number }; pockets?: { kind: string; count: number; depth: number }; source?: string;
+    eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; chain?: { links: number; length: number }; pockets?: { kind: string; count: number; depth: number }; pin?: { d: number; head: number; height: number }; source?: string;
     frame?: [number, number, number]; draw_z?: number;
 }
 /** A stroke of icing drawn on a biscuit: the filament, the width in mm, the nib, the points in shares of the picture's width. */
@@ -135,6 +135,8 @@ export function bootParam(stage: Stage): void {
         if (shape && magnet && magnet.mount !== 'through') facts.push(t('shape.magnet.fact', { d: nf.format(magnet.d), h: nf.format(magnet.h) }));
         const chain = shapeNotes().chain;
         if (shape && chain) facts.push(t('shape.chain.fact', { n: chain.links, l: nf.format(chain.length / 10) }));
+        const pin = shapeNotes().pin;
+        if (shape && pin) facts.push(t('shape.pin.fact', { d: nf.format(pin.d), h: nf.format(pin.head), l: nf.format(pin.height) }));
         const pockets = shapeNotes().pockets;
         if (shape && pockets && pockets.kind !== 'open') facts.push(t(`shape.pockets.${pockets.kind}`, { n: pockets.count, d: nf.format(pockets.depth) }));
         if ((n.needs ?? []).length) facts.push(`${t('param.needs')}: ${(n.needs ?? []).map((x) => t(`param.need.${x}`)).join(', ')}`);
