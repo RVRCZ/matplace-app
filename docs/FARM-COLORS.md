@@ -180,3 +180,10 @@ dvou barvách na S1, G‑code druhé desky `?plate=2` s `T<slot červené>`), sk
   (`nearestSet` s hexy ostatních dílů), ostatní díly dostanou nejbližší cívku toho stroje; `?color=` zákazníka má
   přednost. Test `test_a_box_whose_parts_have_colours_starts_by_parts_with_the_nearest_spools`.
 - **Výběr barvy na stránce nástroje**: reagovalo jen kolečko; od 3a07fc6 (session 1) otevírá okno celý řádek dílu.
+
+### Nasazeno podruhé (8. 10. 2026, 19:41 UTC)
+
+`main` = d564541 (oprava výběru barvy celým řádkem 3a07fc6, cedulka a klíčenka → skladba vrstev 1f1774c, obarvené díly
+na kalkulaci a předvýběr první barvy podle dílu d564541), server slil jako 27fe92d, strom shodný. Odstávka 12 s, bez
+migrace, build prošel, 10 stránek 200, log bez chyby. V headless Chrome na produkci: kliknutí na text řádku otevře okno
+s 92 cívkami, /tools/nameplate je skladba s odkazem na starý formulář. Záloha `/root/matplace_app-20261008-1941.sql`.
