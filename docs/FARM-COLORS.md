@@ -158,3 +158,12 @@ tisků za sebou na jednom stroji. Výměny ve výšce (§1–5) zůstávají pro
 - **Vrstvený obraz** (`filament_art`): `designParts()` ho pouští (díly `body, frame, plate_N`), `partStl()` čte
   `…/parts/<díl>.stl`; test to nepokrývá, protože desky obrazu potřebují obrázek. Vyzkoušet ručně z `/tools/art`.
 - **Cena**: tisk po dílech stojí součet dílů (minuty + gramy); žádný příplatek za další desku.
+
+### Nasazeno (8. 10. 2026, 18:02 UTC)
+
+`main` = 9d6a49a (farma po dílech ba70ae8 + oprava testu nabídek + session 1 do 9d6a49a), server slil jako 492cb9c, strom
+shodný s `main`. Odstávka 16 s, migrace `farm_orders.by_parts/part_plates` proběhla, build s `tsc` prošel, 18 stránek
+(úvod, /farm, nástroje, /gifts, /api/config) 200, 11 z 11 tiskáren viděných do tří minut, workery běží, `laravel.log`
+bez chyby. Zálohy `/root/matplace_app-20261008-1802.sql` a `/root/matplace-app.env.bak-20261008-1802`. Farma byla
+při nasazení vypnutá, 0 běžících úloh. Co zbývá Romanovi: zapnout farmu, první tisk po dílech (krabička s víkem ve
+dvou barvách na S1, G‑code druhé desky `?plate=2` s `T<slot červené>`), skryté nástroje session 1 vyzkoušet a odkrýt.
