@@ -60,8 +60,10 @@ class ShapeToolsTest extends TestCase
         foreach (self::KINDS as $kind) {
             foreach (['cs', 'en', 'es'] as $lang) {
                 app()->setLocale($lang);
-                $page = $this->get($this->localized('/tools/'.(['topper' => 'cake-topper', 'tray' => 'shape-tray', 'badge' => 'badge-reel'][$kind] ?? str_replace('_', '-', $kind)), $lang))->assertOk();
-                $page->assertSee(__('tools.'.$kind.'.title'))->assertSee(__('param.'.$kind.'.lead'));
+                // the key ring's address opens the composer of layers now; its form of this family stays under ?form=1
+                $quick = $kind === 'keychain';
+                $page = $this->get($this->localized('/tools/'.(['topper' => 'cake-topper', 'tray' => 'shape-tray', 'badge' => 'badge-reel'][$kind] ?? str_replace('_', '-', $kind)), $lang).($quick ? '?form=1' : ''))->assertOk();
+                $page->assertSee(__('tools.'.$kind.'.title'))->assertSee(__('param.'.$kind.($quick ? '.lead_form' : '.lead')));
                 // a gingerbread and a big letter have a shape of ours: there is no picture to bring
                 in_array($kind, ['gingerbread', 'name_letter', 'topper'], true) ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));
                 // no key is shown instead of a text

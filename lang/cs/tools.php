@@ -86,7 +86,7 @@ return [
     'charm.hint' => 'Obrázek v barvách filamentů a očko, které posunete kamkoli po obrysu.',
     'charm.action' => 'Navrhnout přívěsek',
     'keychain.title' => 'Klíčenka se jménem nebo obrázkem',
-    'keychain.hint' => 'Jméno, logo nebo obrázek v barvách filamentů, s očkem na kroužek kdekoli na obrysu.',
+    'keychain.hint' => 'Tvar, jméno a obrázek poskládané na sebe, každá vrstva svou barvou filamentu, s očkem na kroužek.',
     'keychain.action' => 'Navrhnout klíčenku',
     'earrings.title' => 'Náušnice z obrázku',
     'earrings.hint' => 'Pár stejných nebo zrcadlových náušnic z vlastního motivu, s očkem na háček.',

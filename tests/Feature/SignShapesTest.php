@@ -113,11 +113,13 @@ class SignShapesTest extends TestCase
         $this->assertGreaterThan($l['bbox']['y'] + 3, $t['bbox']['y']);
     }
 
-    public function test_the_nameplate_card_opens_the_sign_with_a_shape_and_a_picture(): void
+    public function test_the_quick_form_of_the_nameplate_is_the_sign_with_a_shape_and_a_picture(): void
     {
         foreach (['cs' => '', 'en' => '/en', 'es' => '/es'] as $locale => $prefix) {
-            $html = $this->get($prefix.'/tools/nameplate')->assertOk()->getContent();
+            // the card itself opens the composer of layers (ComposeToolTest); the form it used to be stays under ?form=1
+            $html = $this->get($prefix.'/tools/nameplate?form=1')->assertOk()->getContent();
             $this->assertStringContainsString(e(__('tools.nameplate.title', [], $locale)), $html);
+            $this->assertStringContainsString(e(__('param.nameplate.lead_form', [], $locale)), $html);
             $this->assertStringContainsString(e(ToolSeo::texts('nameplate', $locale)['h1']), $html);
             $this->assertStringContainsString('kind: "sign"', $html);
             $this->assertStringContainsString('preset: "shaped"', $html);

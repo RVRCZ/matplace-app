@@ -132,7 +132,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 | Miska ve tvaru obrázku | `/tools/shape-tray` | `tray` | obrys obrázku je stěna (8–40 mm), kresba vyrytá do dna, v barvách, nebo hladké dno |
 | SVG do STL | `/tools/svg-to-stl` | `logo` (předvolba `extrude`) | obrys SVG nebo obrázku vytažený na 0,6–50 mm, bez destičky, volitelně zkosená horní hrana |
 | Ozdoba na navíjecí držák karty | `/tools/badge-reel` | `badge` | obrázek v barvách 25–60 mm, pod ním jméno v jedné z barev obrázku, vzadu prohlubeň na lepicí kolečko |
-| Jmenovka ve tvaru s obrázkem | `/tools/nameplate` | `sign` (předvolba `shaped`) | destička ve 20 tvarech, která se sama zvětší kolem textu, motiv vlevo / vpravo / nad textem, očko na třech stranách |
+| Jmenovka ve tvaru s obrázkem | `/tools/nameplate` | `compose` (předvolba `plate`); rychlý formulář `sign` / `shaped` pod `?form=1` | karta otevírá skladbu vrstev; formulář: destička ve 20 tvarech, která se sama zvětší kolem textu, motiv vlevo / vpravo / nad textem, očko na třech stranách |
 | 3D nápis, který stojí | `/tools/text` | `sign` (styl `stand`, předvolba `stand`) | silná písmena na patce, 1–3 řádky, obrázek na téže patce; tiskne se vleže |
 | Medaile s řetězem | `/tools/medallion` | `medallion` | kruh, hvězda nebo šestiúhelník 50–120 mm s obrázkem či číslem, očko, 0–40 otevřených článků řetězu na téže podložce |
 | Organizér ve tvaru obrázku | `/tools/photo-organizer` | `photo_organizer` | vysoká nádobka 40–120 mm podle obrysu obrázku: přihrádky v mřížce, kulaté otvory v plném bloku, nebo jedna kapsa |
@@ -219,11 +219,16 @@ z `engines/shapes/`), s polohou, šířkou, otočením a filamentem.
   v `Artwork::REF`), takže se dá znovu otevřít i poté, co nahrané soubory po 30 dnech zmizí. Zkoušeno testem
   i v prohlížeči (nahrání, výběr z „Moje obrázky“, vrstva v náhledu). **Fotku jako vrstvu jsem nezkoušel** – projde
   stejným prahováním jako u loga a u fotky s pozadím z ní nejspíš bude skvrna.
-- *Produkty formulářů jako skladba:* zápich, jmenovka, klíčenka, ozdoba a velké písmeno zůstávají formuláři
-  (rozvrhnou věc samy, klíčenka a ozdoba umějí obrázek ve více barvách, což vrstva skladby neumí). Skladba má pro
-  každý z nich předvolbu (`topper`, `plate`, `keyring`, `bauble`, `initial`) a stránka formuláře na ni odkazuje
-  větou „Chcete víc textů a obrázků nebo vlastní rozložení?“ (`ParametricGenerator::COMPOSED`, adresa
-  `/tools/compose?preset=<předvolba>`). Odkaz nepřenáší, co už člověk ve formuláři napsal – otevře vzor.
+- *Produkty formulářů jako skladba:* skladba má předvolbu pro zápich, jmenovku, klíčenku, ozdobu a velké písmeno
+  (`topper`, `plate`, `keyring`, `bauble`, `initial`; `ParametricGenerator::COMPOSED`).
+  **Karty jmenovky a klíčenky otevírají rovnou skladbu** (rozhodnutí Romana z 8. 10., předané koordinující session):
+  `/tools/nameplate` a `/tools/keychain` jsou skladba s předvolbou `plate` / `keyring` pod vlastním názvem, texty
+  a ukázkami té karty. Formulář, kterým adresa byla dřív, na ní zůstal: otevře ho `?form=1` (odkaz „Otevřít rychlý
+  formulář“ pod volbami) a sám se otevře návrhu, který jím vznikl (`/tools/keychain?from=<uuid>` u návrhu druhu
+  `keychain`). Je to kvůli tomu, co skladba neumí: klíčenka z obrázku ve více barvách a destička, která se sama
+  zvětší kolem textu. Routa to říká třetím výchozím údajem `form` (druh, nebo druh:předvolba); úvodní věta formuláře
+  je `param.<nástroj>.lead_form`. Zápich, ozdoba a velké písmeno zůstávají formuláři a na skladbu jen odkazují větou
+  „Chcete víc textů a obrázků nebo vlastní rozložení?“; odkaz nepřenáší, co už člověk napsal – otevře vzor.
 
 **Vložka do zásuvky podle fotky – hotová, ale mimo katalog** (`insert`, nový modul `engines/python/sheet_kinds.py`,
 stránka `/tools/drawer-insert`, `'available' => false`). Věci položené na list A4 a vyfocené shora dostanou v tácu
@@ -552,19 +557,16 @@ od nejbližšího:
    níže, ale **mimo katalog** – ověřený je jen na kreslených fotkách. Do katalogu ho pustí až zkouška na skutečných
    fotkách skutečných věcí; pak chybí už jen texty pro SEO, ukázky a karta.
 3. **Volná skladba vrstev** (`compose`, `/tools/compose`) je v katalogu i s tažením v náhledu (výběr klepnutím,
-   posun, velikost, otočení) a s vlastním obrázkem jako vrstvou. Zadání chtělo, aby karty jmenovky a klíčenky
-   otevíraly rovnou skladbu a zápich, ozdoba a velké písmeno na ní stály. **To jsem neudělal a je to rozhodnutí pro
-   Romana:** formuláře dnes umějí věci, které skladba ne (obrázek ve více barvách, destička, která se sama zvětší
-   kolem textu, jméno vepsané do písmene), takže přepnutí karet by lidem něco vzalo. Místo toho má skladba předvolbu
-   pro každý z těch pěti produktů a formuláře na ni odkazují. Kdyby se karty přepnout měly, jsou to dva řádky
-   v `routes/web.php` a přepsání textů těch dvou stránek (popisují dnes formulář). Při tažení se model nepřekresluje průběžně, až po puštění – kdyby to při zkoušení vadilo, je
-   to místo, kde přidat.
+   posun, velikost, otočení) a s vlastním obrázkem jako vrstvou; karty jmenovky a klíčenky ji otevírají rovnou.
+   Zápich, ozdoba a velké písmeno na ní podle zadání stát měly a nestojí: mají formuláře, které umějí víc (obrázek
+   ve více barvách, jméno vepsané do písmene), a na skladbu odkazují. Při tažení se model nepřekresluje průběžně,
+   až po puštění – kdyby to při zkoušení vadilo, je to místo, kde přidat.
 4. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
    sušenek). Tvary destiček cedulky
    (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.
 
 Co čeká na Romana (nic z toho neblokuje další práci): zkušební tisky podle §5, rozhodnutí o klikátku (bod 1),
-rozhodnutí o kartách jmenovky a klíčenky (bod 3) a další nasazení. Podle zprávy koordinující session běží na
+a další nasazení. Podle zprávy koordinující session běží na
 matplace.com od 8. 10. 2026 18:02 UTC `main` 9d6a49a, tedy všechno až po skladbu s tažením a vlastním obrázkem;
-tři nástroje mimo katalog tam zůstávají skryté. Co je ve větvi po 9d6a49a (předvolby produktů ve skladbě a odkazy
-z formulářů), nasazené není.
+tři nástroje mimo katalog tam zůstávají skryté. Co je ve větvi potom (předvolby produktů ve skladbě, karty jmenovky
+a klíčenky na skladbě), nasazené není.

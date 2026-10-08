@@ -1,30 +1,30 @@
 <?php
 
 return [
-    'title' => 'Nameplate shaped as a heart, cloud or bone, with a picture',
-    'description' => 'Type a name, pick one of twenty plate shapes and a motif next to the text. We print the nameplate in two colours, or you download the model for free.',
-    'h1' => 'Nameplate and sign in a shape, with your own motif',
+    'title' => 'Nameplate with a name and a picture, made of layers',
+    'description' => 'Pick the shape of the plate, type a name, add a picture and give every layer a filament colour. We print it, or you download the model free.',
+    'h1' => 'A nameplate put together from a shape, a name and a picture',
     'intro' => [
-        'The tool makes a plate with a name in one of twenty shapes: heart, star, cloud, bone, ribbon, arrow, house, car, cat, fish, shield, speech bubble and more. Type one to three lines of up to 40 characters and pick one of thirty typefaces. The shape grows by itself just enough for the text and its margin to fit in, so nothing sticks out and there is nothing to calculate. The letter height goes from 4 to 80 mm.',
-        'A picture can stand next to the text: a motif from the library of silhouettes, or your own SVG or simple picture. Put it left, right or above the text and it is printed like the letters. The letters and the rim can be printed in a second colour; the printer changes filament at the height where the letters begin. An eyelet goes left, right or on top, so the same design is a sign for a child\'s door, a bag tag or a tag for a collar.',
+        'Here you put a nameplate together from layers. The plate has one of nineteen shapes: a hexagon, a heart, a star, a cloud, a bone, a banner, an arrow, a house, a car, a cat, a fish, a shield, a speech bubble and more. On it you lay a name in one of thirty typefaces and a picture from the library of silhouettes or your own. Every layer has its colour from the filaments we keep on the farm. You pick a layer by tapping it in the preview, drag it to move it, drag a corner of its frame to resize it and the knob to turn it, so the layout is all yours.',
+        'The layers lie one above another, each a step higher, so the printer only has to change the filament at the right height; on our farm we print up to four colours in one print. You can add an eyelet to hang it by: the same design is a sign for a child\'s door, a tag for a bag or a tag for a collar. Just want a name on a plate that sizes itself round the text? Under the choices at the start of the page there is a link to the quick form.',
     ],
     'steps' => [
-        ['name' => 'Type the name', 'text' => 'One to three lines, the first one the biggest. Below the fields is a row of symbols you can put into the text.'],
-        ['name' => 'Pick the shape and the typeface', 'text' => 'Twenty plate shapes are shown as tiles, thirty typefaces as their names set in the face itself.'],
-        ['name' => 'Add a picture and an eyelet', 'text' => 'A motif from the library or your own picture goes left, right or above the text. The eyelet has three possible sides.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price. When ordering you pick the colour of the plate and of the letters; the model and the slicer project are free to download.'],
+        ['name' => 'Start from a nameplate', 'text' => 'The page opens with a plate, the name Adéla and a star. Type your name and pick another shape of the plate.'],
+        ['name' => 'Edit the layers', 'text' => 'Tap a layer in the list or in the preview and change its text, typeface, shape, picture and colour. In the preview you drag it to move it, drag a corner of its frame to resize it and the knob to turn it.'],
+        ['name' => 'Add more', 'text' => 'The buttons add a second line of text, a picture or another shape, twelve layers at most. The arrows change what lies on what.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price, the precise price and print time one step further. The model and the slicer project with the filament changes are free to download without an account.'],
     ],
     'faq' => [
-        ['q' => 'How big will the nameplate be?', 'a' => 'That depends on the text and the shape. The name Jana in 14 mm letters with a star comes out as a cloud of 97 × 53 mm. Shapes with a narrow middle, such as the bone or the arrow, come out longer; smaller letters or a smaller margin shrink them.'],
-        ['q' => 'Why is the bone or the arrow so much bigger than a rectangle?', 'a' => 'The whole text must lie inside the shape. A bone has a narrow shaft in the middle, so it grows until the letter height fits into the shaft. A short name on one line suits it best.'],
-        ['q' => 'What picture can I add?', 'a' => 'A silhouette from the library, an SVG with filled shapes, or a simple high-contrast PNG or JPG. A photo does not work here; the Relief and lithophane tool is for that.'],
-        ['q' => 'Do you print the nameplate in two colours?', 'a' => 'Yes. The letters, the picture and the rim lie above the plate, so one filament change is enough. You pick both colours when ordering, from those loaded in the printers right now.'],
-        ['q' => 'Does it work as a dog tag?', 'a' => 'The bone with an eyelet does; choose PETG for a collar and letters of at least 6 mm. Put the phone number on the second line; below 4 mm it no longer prints cleanly.'],
-        ['q' => 'How do I pay and how do I get the nameplate?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or in euros. We send the print through Packeta to a pick-up point or to an address in the EU.'],
+        ['q' => 'How big will the nameplate be?', 'a' => 'As big as you set it: the width of every layer goes from 5 to 250 mm. The nameplate the page opens with is 120 × 60 mm and 4.6 mm thick.'],
+        ['q' => 'What picture can I add?', 'a' => 'A silhouette from the library (178 of them), an SVG with filled shapes, or a simple high-contrast PNG or JPG. What stays of a picture is its silhouette in one colour. Photographs do not suit it; the Relief and lithophane tool is for those.'],
+        ['q' => 'Do you print a nameplate in several colours?', 'a' => 'Yes, up to four in one print. Every layer lies a step higher, so the filament changes by height. You choose the colours from those we have in stock.'],
+        ['q' => 'What if the text reaches over the plate?', 'a' => 'The layout is yours: make the text smaller by dragging a corner of its frame, or make the plate bigger. What reaches over the plate is printed too, because under every layer the lower ones are filled in.'],
+        ['q' => 'Does it work as a dog tag?', 'a' => 'The bone with an eyelet does; for a collar choose PETG and letters at least 6 mm high. Add the phone number as one more layer of text.'],
+        ['q' => 'How do I pay and how do I get it?', 'a' => 'You pay from prepaid credit that you top up by card; prices are shown in Czech crowns or in euros. We send the print by Packeta to a pick-up point or to an address in the EU.'],
     ],
     'examples' => [
-        'A cloud with the name Jana and a star on the left, 97 × 53 mm, letters and rim in a second colour.',
-        'A bone with the name Rex and a paw on the right, 110 × 51 mm, in Titan One.',
-        'A heart of 61 × 54 mm with the name Ela, the year 2020 and an eyelet on top, in Lobster.',
+        'A hexagon of 120 × 60 mm with the name Adéla and a star, three colours.',
+        'A bone of 130 mm with the name Rex and a paw, in Titan One.',
+        'A cloud of 100 × 55 mm with the name Ela and a star.',
     ],
 ];

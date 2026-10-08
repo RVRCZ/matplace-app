@@ -57,7 +57,7 @@
     $flagsAt = fn (string $section) => collect($flags)->filter(fn ($flag) => $at($flag, 'size') === $section);
 @endphp
 
-@extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).'.lead'), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
+@extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).(($quickForm ?? null) === true ? '.lead_form' : '.lead')), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
 
 @push('head')
 <script>
@@ -240,9 +240,12 @@
                 </div>
             </fieldset>
         @endforeach
-        @if($composeAs ?? null)
+        @if(($quickForm ?? null) === false)
+            {{-- the address is the composer now; the quick form it used to be does what layers cannot (a picture in several colours, a plate that sizes itself) --}}
+            <p class="hint !text-xs">{{ __('param.compose.form.'.$tool) }} <a href="{{ url()->current() }}?form=1" class="font-semibold text-action-dark underline" rel="nofollow">{{ __('param.compose.form.open') }}</a></p>
+        @elseif($composeAs ?? null)
             {{-- the form lays the thing out by itself; who wants more pieces or his own layout takes it to the composer --}}
-            <p class="hint !text-xs">{{ __('param.compose.more') }} <a href="{{ route('tools.compose', ['preset' => $composeAs]) }}" class="font-semibold text-action-dark underline">{{ __('param.compose.open') }}</a></p>
+            <p class="hint !text-xs">{{ __('param.compose.more') }} <a href="{{ ($quickForm ?? null) === true ? url()->current() : route('tools.compose', ['preset' => $composeAs]) }}" class="font-semibold text-action-dark underline">{{ __('param.compose.open') }}</a></p>
         @endif
     </x-tool-section>
     @endif

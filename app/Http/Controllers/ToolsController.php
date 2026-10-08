@@ -10,6 +10,7 @@ use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Api\ConfigController;
+use App\Models\ModelFile;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -29,11 +30,19 @@ class ToolsController extends Controller
     /** Organizer, box, phone stand, cable holder: one page, the fields come from the generator's own limits. */
     public function param(Request $request, string $kind, ParametricGenerator $tools, MaterialCatalog $materials, ConverterChain $converters): View
     {
-        abort_unless(isset(ParametricGenerator::FIELDS[$kind]), 404);
         // a tool of the catalogue that is another tool opened with a preset (SVG to STL = the logo tool's plain extrusion):
         // the route names the tool whose title, texts and card the page shows, and the preset it starts with
         $tool = (string) ($request->route('as') ?? $kind);
         $preset = $request->route('preset');
+        // an address that became the composer keeps the quick form it used to be: for who asks for it, and for a design made with it
+        [$form, $formPreset] = explode(':', (string) $request->route('form')) + [1 => null];
+        $from = $request->query('from');
+        $quick = $form !== '' && ($request->boolean('form')
+            || (is_string($from) && preg_match('/^[0-9a-f-]{36}$/', $from) && ModelFile::where('uuid', $from)->value('origin_ref') === $form));
+        if ($quick) {
+            [$kind, $preset] = [$form, $formPreset];
+        }
+        abort_unless(isset(ParametricGenerator::FIELDS[$kind]), 404);
 
         return view('tools.param', [
             'kind' => $kind,
@@ -51,11 +60,12 @@ class ToolsController extends Controller
             'fills' => ParametricGenerator::FILLS[$kind] ?? [],
             'family' => ParametricGenerator::FAMILY[$kind] ?? null,
             'place' => ParametricGenerator::PLACE[ParametricGenerator::FAMILY[$kind] ?? $kind] ?? [],
-            'sample' => ParametricGenerator::SAMPLE[$tool] ?? ParametricGenerator::SAMPLE[$kind] ?? null,
+            'sample' => $kind === 'compose' ? null : (ParametricGenerator::SAMPLE[$tool] ?? ParametricGenerator::SAMPLE[$kind] ?? null),
             'captioned' => in_array($kind, ParametricGenerator::CAPTIONED, true),
             'fonts' => ParametricGenerator::FONTS,
             'layerShapes' => ParametricGenerator::LAYER_SHAPES,
             'composeAs' => ParametricGenerator::COMPOSED[$tool] ?? null,
+            'quickForm' => $form === '' ? null : $quick,       // null: the address has no quick form; true: this is it; false: this is the composer
             'config' => ConfigController::payload($materials, $converters, true),
         ]);
     }
