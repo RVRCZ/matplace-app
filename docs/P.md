@@ -121,6 +121,7 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 |---|---|---|---|
 | Stojánek na tužky ze jména | `/tools/name-organizer` | `name_cup` | jméno je stojánek: písmena rozšířená o 3 mm jsou kapsa, kolem stěna 1,6 mm, dno 2 mm, výška 40–120 mm |
 | Miska ve tvaru obrázku | `/tools/shape-tray` | `tray` | obrys obrázku je stěna (8–40 mm), kresba vyrytá do dna, v barvách, nebo hladké dno |
+| SVG do STL | `/tools/svg-to-stl` | `logo` (předvolba `extrude`) | obrys SVG nebo obrázku vytažený na 0,6–50 mm, bez destičky, volitelně zkosená horní hrana |
 | Korálky s písmeny | `/tools/letter-beads` | `beads` | korálek na každý znak (kostka, kulička, srdce, hvězda 8–14 mm), písmeno nahoře, otvor ze strany na stranu |
 
 **Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
@@ -144,6 +145,18 @@ hladkou misku ve světlém filamentu. Obrázek drží odstup od stěny (`frame`)
 sušenky: okraj těsta nad 4 mm odmítal builder, ač ho formulář dovoloval do 6 mm (meze v `shape_kinds.LIMITS`).
 
 Rozcestník `/gifts` odkazuje i na misku, stojánek a korálky.
+
+**SVG do STL** (klíč katalogu `svg_to_stl`) není nový generátor, ale nástroj Logo otevřený předvolbou `extrude`
+(provedení „Vyříznutý tvar“, 5 mm) a s kočkou z knihovny, aby stránka začínala hotovou věcí. Hledá se to pod jiným
+slovem než logo, proto má vlastní adresu, kartu, texty a příklady; uložený návrh je dál `kind = logo`, takže úprava
+návrhu, objednávka i stažení jdou stejnou cestou. Jak je to zapojené, aby to šlo zopakovat pro další „nástroj =
+jiný nástroj s předvolbou“: trasa nese `kind`, `as` (klíč katalogu, z něj titulek, úvod `param.<as>.lead`, SEO
+a karta) a `preset`; `ToolsController::param` je předá stránce, `param.ts` vezme předvolbu z adresy, jinak tu ze
+stránky; `seo.kind` v `config/tools.php` říká, kterým generátorem se kreslí příklady; `SAMPLE[<as>]` je výchozí
+obrázek. Logu při tom přibylo: tloušťka do 50 mm (bylo 10), zkosená horní hrana u vyříznutého tvaru (čtyři
+schody po vrstvě, nejvýš 0,8 mm) a formulář schovává, co k provedení nepatří (tvar, tloušťka a okraj destičky jen
+u reliéfů, výška podstavce jen u stojícího loga). Náhled 0,46 s. DXF ani obrysy bez výplně nástroj nečte – texty
+to říkají a radí převod na obrysy.
 
 ## 2. Rozhodnutí a proč
 
@@ -253,7 +266,7 @@ systemctl restart php8.2-fpm matplace-worker
 ```
 
 S gitem jdou: `engines/artwork/colour/` (8 SVG + `_draw.py`), `public/img/tools/{ornament,gingerbread,cookie,topper,name_letter,charm,keychain,earrings,magnet,coaster}-*`,
-`public/img/tool-examples/…-{1,2,3}.png`. Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
+`public/img/tool-examples/…-{1,2,3}.png` (a totéž pro nástroje přidané po 8. 10.: `name_cup`, `beads`, `tray`, `svg_to_stl`). Po nasazení projít `/tools` (deset nových karet), `/gifts` (oddíl „Další dárky na míru“), `/tools/cookie` (Kreslit polevu, tah myší a prstem na mobilu), `/tools/charm` (táhnout
 očko, změnit cívku barvy, šipky pořadí, sloučit), `/tools/magnet` (předvolby magnetu), „Pokračovat k ceně“ a
 u dvoubarevného návrhu objednávku na farmě.
 
@@ -273,4 +286,4 @@ Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zat�
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
 Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák,
 organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), tvary
-a motivy cedulky, `logo` `extrude`, 20+ písem.
+a motivy cedulky, 20+ písem.

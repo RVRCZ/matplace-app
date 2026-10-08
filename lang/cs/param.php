@@ -24,6 +24,8 @@ return [
     'magnet.tip' => 'Tiskne se lícem nahoru, kapsou na magnet dolů, bez podpěr. Magnet vlepte vteřinovým lepidlem, nebo zvolte nalisování. Magnety nejsou součástí výtisku.',
     'coaster.lead' => 'Podtácek s vlastním obrázkem: kulatý, čtvercový nebo šestihran. Fotku nebo kresbu převedeme do barev filamentů, které máme na farmě.',
     'coaster.tip' => 'Tiskne se naplocho, bez podpěr. PLA snese studené i teplé nápoje; hrnek přímo z plotny na něj nepatří, PLA měkne kolem 55 °C. Na horké nádobí zvolte PETG.',
+    'svg_to_stl.lead' => 'Nahrajte SVG nebo obrázek a dostanete jeho obrys vytažený do výšky jako STL: bez destičky, přesně v milimetrech, které zadáte.',
+    'preset.extrude' => 'Jen vytažení (SVG do STL)',
     'tray.lead' => 'Miska ve tvaru vašeho obrázku: na klíče, šperky nebo drobné mince. Obrys udělá stěnu, kresba se vyryje do dna.',
     'tray.tip' => 'Tiskne se dnem dolů, bez podpěr. Vyrytý obrázek je jednobarevný tisk pro každou tiskárnu; obrázek v barvách je vložený do dna a potřebuje tiskárnu, která mění filament sama.',
     'c.tray.floor' => 'Obrázek ve dně',
@@ -216,6 +218,8 @@ return [
     'flag.flush.hint' => 'Vršek je rovný, barvy jsou vložené do podkladu. Vyžaduje tiskárnu, která mění filament sama.',
     'flag.rim' => 'Lem ve vlastní barvě',
     'flag.rim.hint' => 'Zvýšený okraj kolem obrázku. Vyžaduje tiskárnu, která mění filament sama.',
+    'flag.logo.bevel' => 'Zkosená horní hrana',
+    'flag.logo.bevel.hint' => 'Horní hrana tvaru je sražená o necelý milimetr: příjemnější do ruky a hezčí na pohled.',
     'flag.shape.bevel' => 'Zkosená hrana',
     'flag.shape.bevel.hint' => 'Horní hrana podkladu je sražená, příjemnější do ruky.',
 

@@ -49,7 +49,7 @@ final class ParametricGenerator
     public const FOLDED = ['contrast', 'brightness', 'saturation'];
 
     /** kind → the picture of our library a new visitor starts with (a tool that needs a picture must not open empty) */
-    public const SAMPLE = ['charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge'];
+    public const SAMPLE = ['svg_to_stl' => 'lib:animals/cat', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge'];
 
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
@@ -99,7 +99,7 @@ final class ParametricGenerator
             'ribs' => [6, 48, 20, 1], 'flute' => [0, 45, 20, 1], 'twist' => [0, 360, 200, 1],
         ],
         'sign' => ['text_height' => [4, 80, 12, 1], 'thickness' => [1.2, 10, 3, 0.2], 'relief' => [0.4, 5, 1.2, 0.2], 'margin' => [2, 30, 5, 1], 'radius' => [0, 30, 6, 0.5]],
-        'logo' => ['width' => [20, 250, 80, 1], 'thickness' => [0.6, 10, 2, 0.2], 'plate' => [0.8, 6, 2, 0.2], 'margin' => [0, 20, 5, 1], 'base_h' => [8, 40, 11, 1]],
+        'logo' => ['width' => [20, 250, 80, 1], 'thickness' => [0.6, 50, 2, 0.2], 'plate' => [0.8, 6, 2, 0.2], 'margin' => [0, 20, 5, 1], 'base_h' => [8, 40, 11, 1]],
         'stamp' => ['width' => [15, 120, 50, 1], 'relief' => [0.8, 4, 1.6, 0.2], 'plate' => [2, 6, 3, 0.5]],
         'qr' => ['size' => [30, 150, 70, 1], 'plate' => [1.6, 4, 2.4, 0.2], 'relief' => [0.6, 2, 1, 0.2]],
         'stencil' => ['width' => [30, 250, 120, 1], 'thickness' => [0.8, 3, 1.2, 0.2], 'margin' => [5, 40, 12, 1], 'bridge' => [0.8, 3, 1.2, 0.2]],
@@ -200,11 +200,13 @@ final class ParametricGenerator
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'],
-        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
+        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
         'beads' => ['relief' => ['style', ['raised']]],
+        // a shape cut out or standing has no plate: what belongs to the plate shows only with it
+        'logo' => ['bevel' => ['mode', ['cutout']], 'shape' => ['mode', ['relief', 'height']], 'plate' => ['mode', ['relief', 'height']], 'margin' => ['mode', ['relief', 'height']], 'base_h' => ['mode', ['standing']]],
         'cookie' => self::HANG_WHEN + self::SHAPE_WHEN, 'name_letter' => self::HANG_WHEN + self::SHAPE_WHEN,
         // the step between colours means nothing in a floor ("none" is no value of the choice: the field never shows)
         'tray' => ['relief' => ['floor', ['none']], 'colors_n' => ['floor', ['engraved', 'colors']]] + self::SHAPE_WHEN,
@@ -245,6 +247,8 @@ final class ParametricGenerator
     private const SHAPE_WHEN = ['bg_strength' => ['remove_bg', ['on']], 'eye_pos' => ['eyelet', ['on']], 'eye_hole' => ['eyelet', ['on']], 'eye_wall' => ['eyelet', ['on']], 'relief' => ['flush', ['off']]];
 
     public const PRESETS = [
+        // the outline alone, pulled up: what "SVG to STL" means (its page /tools/svg-to-stl opens the logo tool with this)
+        'logo' => ['extrude' => ['mode' => 'cutout', 'thickness' => 5, 'bevel' => false]],
         'vase' => [
             'spiral' => ['style' => 'twist', 'profile' => 'neck', 'height' => 180, 'top_d' => 62, 'bottom_d' => 54, 'ribs' => 20, 'flute' => 20, 'twist' => 200],
             'ribs' => ['style' => 'ribs', 'profile' => 'neck', 'height' => 170, 'top_d' => 70, 'bottom_d' => 60, 'ribs' => 18, 'flute' => 16],

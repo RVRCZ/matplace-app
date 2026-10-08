@@ -54,7 +54,7 @@
     $flagsAt = fn (string $section) => collect($flags)->filter(fn ($flag) => $at($flag, 'size') === $section);
 @endphp
 
-@extends('tools.page', ['tool' => $kind, 'module' => 'param', 'lead' => __('param.'.$kind.'.lead'), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
+@extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).'.lead'), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
 
 @push('head')
 <script>
@@ -62,6 +62,7 @@
         kind: @json($kind),
         family: @json($family),
         sample: @json($sample ?? null),
+        preset: @json($preset ?? null),
         preview: @json(route('api.tools.param.preview')),
         create: @json(route('api.tools.param')),
         home: @json(route('home')),

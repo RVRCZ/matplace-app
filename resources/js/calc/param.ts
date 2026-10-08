@@ -12,7 +12,7 @@ import { pickArtwork, PickedArtwork } from './artwork';
 import { icon } from '../site/icon';
 
 interface Cfg {
-    kind: string; family: string | null; sample: string | null; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
+    kind: string; family: string | null; sample: string | null; preset: string | null; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
     presets: Record<string, Record<string, number | string>>;
     fills: Record<string, Record<string, Record<string, number | string>>>;
     config: PriceConfig & { currency: string };
@@ -899,7 +899,7 @@ export function bootParam(stage: Stage): void {
             .finally(() => { track(false); void refresh(); });
     } else {
         const qs = new URLSearchParams(location.search);
-        const preset = qs.get('preset');
+        const preset = qs.get('preset') ?? cfg.preset;      // asked for in the address, or the one this page of the tool starts with
         if (preset && cfg.presets[preset]) {
             applyValues(cfg.presets[preset]);
             form.querySelectorAll('[data-preset]').forEach((o) => o.classList.toggle('chip-on', (o as HTMLElement).dataset.preset === preset));
@@ -909,7 +909,7 @@ export function bootParam(stage: Stage): void {
         form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { const v = qs.get(i.dataset.text!); if (v) typed[i.dataset.text!] = v.slice(0, i.maxLength > 0 ? i.maxLength : 40); });
         if (Object.keys(typed).length) applyValues(typed);
         // a tool that needs a picture opens with one of ours, so the first thing a visitor sees is a finished thing
-        else if (shape && cfg.sample && !artwork && !preset) setArtwork({ ref: cfg.sample, name: '', url: null });
+        else if (cfg.sample && !artwork && (shape ? !preset : preset === cfg.preset)) setArtwork({ ref: cfg.sample, name: '', url: null });
         track(!preset && !Object.keys(typed).length);
         void refresh();
     }

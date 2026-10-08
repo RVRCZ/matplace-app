@@ -24,6 +24,8 @@ return [
     'magnet.tip' => 'Se imprime con la cara hacia arriba y el hueco del imán hacia abajo, sin soportes. Pegue el imán con pegamento instantáneo o elija el encaje a presión. Los imanes no vienen con la impresión.',
     'coaster.lead' => 'Un posavasos con su propia imagen: redondo, cuadrado o hexagonal. Convertimos la foto o el dibujo a los colores de los filamentos que tenemos en la granja.',
     'coaster.tip' => 'Se imprime en plano, sin soportes. El PLA aguanta bebidas frías y calientes; una taza recién sacada del fuego no debe ponerse encima, porque el PLA se ablanda hacia los 55 °C. Para recipientes muy calientes elija PETG.',
+    'svg_to_stl.lead' => 'Suba un SVG o una imagen y obtenga su contorno extruido en altura como STL: sin placa y exactamente en los milímetros que indique.',
+    'preset.extrude' => 'Solo extrusión (SVG a STL)',
     'tray.lead' => 'Una bandejita con la forma de su imagen: para llaves, joyas o monedas. El contorno hace la pared y el dibujo se graba en el fondo.',
     'tray.tip' => 'Se imprime con el fondo hacia abajo y sin soportes. Una imagen grabada es una impresión de un color para cualquier impresora; una imagen en colores va incrustada en el fondo y necesita una impresora que cambie de filamento sola.',
     'c.tray.floor' => 'Imagen en el fondo',
@@ -216,6 +218,8 @@ return [
     'flag.flush.hint' => 'La parte superior es plana y los colores van incrustados en la base. Requiere una impresora que cambie el filamento sola.',
     'flag.rim' => 'Reborde en su propio color',
     'flag.rim.hint' => 'Un borde elevado alrededor de la imagen. Requiere una impresora que cambie el filamento sola.',
+    'flag.logo.bevel' => 'Borde superior biselado',
+    'flag.logo.bevel.hint' => 'El borde superior de la forma lleva un chaflán de algo menos de un milímetro: más agradable al tacto y a la vista.',
     'flag.shape.bevel' => 'Borde biselado',
     'flag.shape.bevel.hint' => 'El borde superior de la base lleva un chaflán, más agradable al tacto.',
 

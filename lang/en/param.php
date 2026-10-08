@@ -24,6 +24,8 @@ return [
     'magnet.tip' => 'It prints face up, with the magnet pocket down, without supports. Glue the magnet in with superglue, or choose the press fit. Magnets are not part of the print.',
     'coaster.lead' => 'A coaster with your own picture: round, square or hexagonal. We turn a photo or a drawing into the colours of the filaments we have on the farm.',
     'coaster.tip' => 'It prints flat, without supports. PLA is fine for cold and warm drinks; a mug straight from the stove does not belong on it, because PLA softens at about 55 °C. For hot dishes choose PETG.',
+    'svg_to_stl.lead' => 'Upload an SVG or a picture and get its outline pulled up to a height as an STL: no plate, exactly in the millimetres you enter.',
+    'preset.extrude' => 'Extrusion only (SVG to STL)',
     'tray.lead' => 'A little dish in the shape of your picture: for keys, jewellery or small change. The outline makes the wall, the drawing is cut into the floor.',
     'tray.tip' => 'It prints bottom down, without supports. An engraved picture is a one-colour print for any printer; a picture in colours is inlaid in the floor and needs a printer that changes filament by itself.',
     'c.tray.floor' => 'Picture in the floor',
@@ -216,6 +218,8 @@ return [
     'flag.flush.hint' => 'The top is flat and the colours are inlaid in the base. Needs a printer that changes filament by itself.',
     'flag.rim' => 'Rim in its own colour',
     'flag.rim.hint' => 'A raised edge round the picture. Needs a printer that changes filament by itself.',
+    'flag.logo.bevel' => 'Bevelled top edge',
+    'flag.logo.bevel.hint' => 'The top edge of the shape is chamfered by just under a millimetre: nicer to hold and to look at.',
     'flag.shape.bevel' => 'Bevelled edge',
     'flag.shape.bevel.hint' => 'The top edge of the base is chamfered, nicer to hold.',
 

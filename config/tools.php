@@ -7,6 +7,8 @@
  * intent:     file | create | spare          (the three entrances on the tools page)
  * categories: images | names | home | parts | toys | signs | craft | edit | sell   (the filter of the tools page, also /tools#<category>;
  *             names in lang/<locale>/tools.php `cats`; the words a tool is found by in `keywords`)
+ * seo.kind:   for a tool that is another generator opened with a preset (SVG to STL = `logo` with `extrude`): the generator
+ *             its examples are drawn by.
  * card:       for a tool that is not one of the generators: whose output its card shows (`matplace:tool-examples --card`),
  *             ['kind' => generator, 'preset' => …, 'params' => […], 'colors' => [part => filament]]. A generator draws its own
  *             first example. Tools with neither (price from a file, repair, check, mold, figure, relief) keep the picture
@@ -91,6 +93,13 @@ return [
         ['params' => ['mode' => 'standing', 'width' => 120, 'line1' => 'OPEN']],
         ['params' => ['mode' => 'cutout', 'shape' => 'circle', 'width' => 80, 'line1' => 'M']],
     ]]],
+    'svg_to_stl' => ['route' => 'tools.svg_to_stl', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => true,
+        'card' => ['kind' => 'logo', 'preset' => 'extrude', 'params' => ['artwork' => 'lib:animals/cat', 'line1' => '', 'width' => 80, 'thickness' => 6]],
+        'seo' => ['kind' => 'logo', 'examples' => [
+            ['preset' => 'extrude', 'params' => ['artwork' => 'lib:animals/cat', 'line1' => '', 'width' => 80, 'thickness' => 6]],
+            ['preset' => 'extrude', 'params' => ['artwork' => 'lib:nature/oak-leaf', 'line1' => '', 'width' => 100, 'thickness' => 3, 'bevel' => true]],
+            ['preset' => 'extrude', 'params' => ['artwork' => 'lib:hearts-stars/star', 'line1' => '', 'width' => 60, 'thickness' => 20]],
+        ]]],
     'cutter' => ['route' => 'tools.cutter', 'intent' => 'create', 'categories' => ['craft', 'names'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['width' => 70, 'line1' => 'Ela', 'typeface' => 'script']],
         ['params' => ['width' => 60, 'line1' => '5', 'typeface' => 'sans', 'edge' => 'sharp']],

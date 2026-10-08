@@ -8,7 +8,7 @@ import shape2d as S
 
 LIMITS = {
     "vase": {"height": (40, 300), "top_d": (30, 250), "bottom_d": (30, 250), "wall": (0.8, 4), "floor": (0.8, 5), "ribs": (6, 48), "twist": (0, 360), "flute": (0, 45)},
-    "logo": {"width": (20, 250), "thickness": (0.6, 10), "plate": (0.8, 6), "margin": (0, 20), "base_h": (8, 40)},
+    "logo": {"width": (20, 250), "thickness": (0.6, 50), "plate": (0.8, 6), "margin": (0, 20), "base_h": (8, 40)},
     "sign": {"text_height": (4, 80), "thickness": (1.2, 10), "relief": (0.4, 5), "margin": (2, 30), "radius": (0, 30)},
     "stamp": {"width": (15, 120), "relief": (0.8, 4), "plate": (2, 6), "text_height": (4, 40)},
     "qr": {"size": (30, 150), "plate": (1.6, 4), "relief": (0.6, 2)},
@@ -239,6 +239,14 @@ def logo(M, Invalid, p):
         if pieces > 1:
             warn.append("separate_pieces")
         solid = art.extrude(t)
+        if bool(p.get("bevel", False)) and t >= 1.2:
+            # the top edge in four steps a layer high, as on the sign: printed in 0.2 mm layers that is a chamfer
+            c = min(0.8, t * 0.3)
+            solid = art.extrude(t - c)
+            for i in range(4):
+                ring = art.offset(-c * (i + 1) / 4, M.JoinType.Round, 2.0, 16)
+                if not ring.is_empty():
+                    solid = solid + ring.extrude(c / 4 + 0.01).translate([0, 0, t - c + c * i / 4 - 0.01])
         notes = {"outer": [round(w, 1), round(hgt, 1), round(t, 1)], "pieces": pieces}
     else:
         pw, ph = w + 2 * margin, hgt + 2 * margin

@@ -27,12 +27,18 @@ class ToolsController extends Controller
     }
 
     /** Organizer, box, phone stand, cable holder: one page, the fields come from the generator's own limits. */
-    public function param(string $kind, ParametricGenerator $tools, MaterialCatalog $materials, ConverterChain $converters): View
+    public function param(Request $request, string $kind, ParametricGenerator $tools, MaterialCatalog $materials, ConverterChain $converters): View
     {
         abort_unless(isset(ParametricGenerator::FIELDS[$kind]), 404);
+        // a tool of the catalogue that is another tool opened with a preset (SVG to STL = the logo tool's plain extrusion):
+        // the route names the tool whose title, texts and card the page shows, and the preset it starts with
+        $tool = (string) ($request->route('as') ?? $kind);
+        $preset = $request->route('preset');
 
         return view('tools.param', [
             'kind' => $kind,
+            'tool' => $tool,
+            'preset' => is_string($preset) && isset(ParametricGenerator::PRESETS[$kind][$preset]) ? $preset : null,
             'available' => $tools->available(),
             'fields' => ParametricGenerator::FIELDS[$kind],
             'flags' => ParametricGenerator::FLAGS[$kind] ?? [],
@@ -45,7 +51,7 @@ class ToolsController extends Controller
             'fills' => ParametricGenerator::FILLS[$kind] ?? [],
             'family' => ParametricGenerator::FAMILY[$kind] ?? null,
             'place' => ParametricGenerator::PLACE[ParametricGenerator::FAMILY[$kind] ?? ''] ?? [],
-            'sample' => ParametricGenerator::SAMPLE[$kind] ?? null,
+            'sample' => ParametricGenerator::SAMPLE[$tool] ?? ParametricGenerator::SAMPLE[$kind] ?? null,
             'config' => ConfigController::payload($materials, $converters, true),
         ]);
     }
