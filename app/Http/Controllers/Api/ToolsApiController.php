@@ -140,25 +140,20 @@ class ToolsApiController extends Controller
         return response()->download($built['path'], pathinfo($modelFile->original_name, PATHINFO_FILENAME).'-'.$part.'.stl', ['Content-Type' => 'model/stl'])->deleteFileAfterSend(true);
     }
 
-    /** POST /api/tools/relief (multipart: photo + options) → lithophane or relief plaque; the photo is not stored */
+    /** POST /api/tools/relief (multipart: photo + options) → lithophane, relief plaque or lamp; the photo is not stored */
     public function relief(Request $request, ReliefGenerator $reliefs): JsonResponse
     {
-        $data = $request->validate([
-            'photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
-            'mode' => ['nullable', 'in:lithophane,relief'],
-            'width' => ['nullable', 'numeric', 'min:40', 'max:200'],
-            'max_thickness' => ['nullable', 'numeric', 'min:1.6', 'max:10'],
-            'frame' => ['nullable', 'boolean'],
-            'invert' => ['nullable', 'boolean'],
-            'stand' => ['nullable', 'boolean'],
-        ]);
+        $data = $request->validate(ReliefGenerator::rules());
         if (! $reliefs->available()) {
             return response()->json(['error' => 'tool_unavailable'], 503);
         }
         try {
             $file = $reliefs->generate($request->file('photo'), $data, $request->attributes->get('anon_session'), $request->user());
         } catch (EngineException $e) {
-            return response()->json(['error' => 'generation_failed', 'message' => $e->getMessage()], 422);
+            // a reason the page has a text for (the frame too wide, the socket too big, no silhouette), else the engine's words
+            $reason = in_array($e->getMessage(), ReliefGenerator::REASONS, true) ? $e->getMessage() : null;
+
+            return response()->json(['error' => 'generation_failed', 'reason' => $reason, 'message' => $reason ? __('relief.warn.'.$reason) : $e->getMessage()], 422);
         }
 
         return response()->json(['file' => UploadController::describe($file)], 201);

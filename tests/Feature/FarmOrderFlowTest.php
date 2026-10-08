@@ -320,7 +320,10 @@ class FarmOrderFlowTest extends TestCase
         // a design that changes colour twice: red from 3 mm up, black from 3.4 mm up (what the picture tools store)
         $uuid = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'sign', 'params' => ['style' => 'emboss', 'thickness' => 3, 'relief' => 1.2, 'line1' => 'Emma']])->assertCreated()->json('file.uuid');
         $file = ModelFile::where('uuid', $uuid)->firstOrFail();
-        $file->forceFill(['tool_params' => ['color_changes' => [['z' => 3, 'hex' => '#c81c1c', 'code' => null], ['z' => 3.4, 'hex' => '#141418', 'code' => null]], 'part_colors' => ['body' => ['code' => 'white', 'hex' => '#f2f2ee']]] + $file->tool_params])->save();
+        // the picture tools store the list only; the one-change field of a plate with a text is not there (that is what hid
+        // the spools of the order page on 8 Oct 2026, order F26-000052 printed in one colour)
+        $file->forceFill(['tool_params' => ['color_changes' => [['z' => 3, 'hex' => '#c81c1c', 'code' => null], ['z' => 3.4, 'hex' => '#141418', 'code' => null]], 'part_colors' => ['body' => ['code' => 'white', 'hex' => '#f2f2ee']]] + array_diff_key($file->tool_params, ['color_change_mm' => 1])])->save();
+        $this->assertNull($file->fresh()->colorChangeMm());
         $this->assertCount(2, $file->fresh()->colorChanges());
 
         // the start page: a block of spools per change, the nearest spools ticked (red, then black), the plate white
@@ -350,6 +353,8 @@ class FarmOrderFlowTest extends TestCase
         $this->credit(20000);
         $main = collect($state['colors'])->first(fn ($c) => $c['slot'] === $mainSlot->id);
         $this->assertNotNull($main);
+        $this->assertGreaterThanOrEqual(2, count($main['second']), 'the order page offers the spools of the machine for the changes');
+        $this->assertSame([$free[0]->id, $free[1]->id], array_column($state['changes'], 'slot_id'), 'the choice from the start page survives to the order page');
         $this->pay($order, ['slot' => $main['slot'], 'change_slots' => [$free[0]->id, $free[1]->id]])->assertOk();
         $order->refresh();
         $this->assertSame([['slot' => (int) $free[0]->slot, 'z' => 3.0], ['slot' => (int) $free[1]->slot, 'z' => 3.4]], $order->colorChanges());

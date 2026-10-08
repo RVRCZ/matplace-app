@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\AdviceController;
 use App\Http\Controllers\Api\ArtworkController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
+use App\Http\Controllers\Api\EditApiController;
 use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
 use App\Http\Controllers\Api\ModelFileController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\Designer\ImportController as DesignerImportController;
 use App\Http\Controllers\Designer\ProfileController as DesignerProfileController;
 use App\Http\Controllers\Designer\VerificationController as DesignerVerificationController;
 use App\Http\Controllers\DesignerPageController;
+use App\Http\Controllers\EditToolsController;
 use App\Http\Controllers\Farm\CreditController;
 use App\Http\Controllers\Farm\OrderController;
 use App\Http\Controllers\InquiryController;
@@ -142,6 +144,19 @@ $pages = function () {
     Route::get('/tools/name-letter', [ToolsController::class, 'param'])->defaults('kind', 'name_letter')->name('tools.name_letter');
     Route::get('/tools/cookie', [ToolsController::class, 'param'])->defaults('kind', 'cookie')->name('tools.cookie');
     Route::get('/tools/cake-topper', [ToolsController::class, 'param'])->defaults('kind', 'topper')->name('tools.topper');
+    // session 3: a picture as plates for the wall, and the editing of a model file (engines/python/art_tool.py, edit_tool.py)
+    Route::get('/tools/filament-art', [EditToolsController::class, 'filamentArt'])->name('tools.filament_art');
+    Route::get('/tools/split', [EditToolsController::class, 'edit'])->defaults('op', 'split')->name('tools.split');
+    Route::get('/tools/hollow', [EditToolsController::class, 'edit'])->defaults('op', 'hollow')->name('tools.hollow');
+    Route::get('/tools/life-size', [EditToolsController::class, 'edit'])->defaults('op', 'life_size')->name('tools.life_size');
+    Route::get('/tools/puzzle', [EditToolsController::class, 'edit'])->defaults('op', 'puzzle')->name('tools.puzzle');
+    Route::get('/tools/holder-from-model', [EditToolsController::class, 'edit'])->defaults('op', 'holder')->name('tools.holder_model');
+    Route::get('/tools/potion', [EditToolsController::class, 'edit'])->defaults('op', 'potion')->name('tools.potion');
+    Route::get('/tools/flexi-cut', [EditToolsController::class, 'edit'])->defaults('op', 'flexi_cut')->name('tools.flexi_cut');
+    Route::get('/tools/colors', [EditToolsController::class, 'edit'])->defaults('op', 'colors')->name('tools.colors');
+    Route::get('/tools/soap-from-model', [EditToolsController::class, 'edit'])->defaults('op', 'soap')->name('tools.soap_model');
+    Route::get('/tools/wearable', [EditToolsController::class, 'edit'])->defaults('op', 'wearable')->name('tools.wearable');
+    Route::get('/tools/slider', [EditToolsController::class, 'edit'])->defaults('op', 'slider')->name('tools.slider');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {
@@ -333,6 +348,14 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('artwork/file/{id}', [ArtworkController::class, 'file'])->where('id', '[0-9a-f-]{36}')->name('artwork.file');
     Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware(['file', 'throttle:30,1,part'])->name('tools.param.part');
     Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1,relief')->name('tools.relief');
+    // filament art and the editing of a model file (session 3)
+    Route::post('tools/art/preview', [EditApiController::class, 'artPreview'])->middleware('throttle:90,1,art_preview')->name('tools.art.preview');
+    Route::post('tools/art', [EditApiController::class, 'artCreate'])->middleware('throttle:20,1,art_create')->name('tools.art');
+    Route::post('tools/art/zip', [EditApiController::class, 'artZip'])->middleware('throttle:12,1,art_zip')->name('tools.art.zip');
+    Route::get('tools/edit/{modelFile}/guide', [EditApiController::class, 'guide'])->middleware('file')->name('tools.edit.guide');
+    Route::get('tools/edit/{modelFile}/{part}.stl', [EditApiController::class, 'part'])->middleware(['file', 'throttle:60,1,edit_part'])->name('tools.edit.part');
+    Route::post('files/{modelFile}/edit/analysis', [EditApiController::class, 'analysis'])->middleware(['file', 'throttle:30,1,editanalysis'])->name('files.edit.analysis');
+    Route::post('files/{modelFile}/edit', [EditApiController::class, 'edit'])->middleware(['file', 'throttle:12,1,edit'])->name('files.edit');
     Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware(['feature:marketplace', 'throttle:10,1,inquiry'])->name('inquiries.store');
     Route::post('spare-parts', [ApiInquiryController::class, 'spare'])->middleware(['feature:marketplace', 'throttle:6,1,spare'])->name('spare');
     Route::get('threads/{thread}/messages', [ThreadController::class, 'messages'])->name('threads.messages');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Tools\ModelCheck;
+use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\MoldGenerator;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Converter\ConverterChain;
@@ -70,7 +71,7 @@ class UploadController extends Controller
     /** Products that consist of several printed parts offer each one as its own download. */
     private static function partsOf(ModelFile $f): array
     {
-        return $f->origin === 'tool' ? ParametricGenerator::partsOf((string) $f->origin_ref, (array) $f->tool_params) : [];
+        return $f->origin === 'tool' ? (ParametricGenerator::partsOf((string) $f->origin_ref, (array) $f->tool_params) ?: ModelEditor::partsOf($f)) : [];
     }
 
     /** The tool page this design came from; the page reopens with the same settings. Our own geometry, so changing it costs nothing. */
@@ -111,6 +112,8 @@ class UploadController extends Controller
             ] : []) : null,
             // repaired model: what was wrong, what was done, what is left
             'repair' => $f->kind() === 'repaired' ? ($f->tool_params['report'] ?? null) : null,
+            // a model edited here (split, scaled…): what the tool did, and while it works, the phase it is in
+            'edit' => ModelEditor::report($f),
             'parts' => self::partsOf($f),
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => self::toolOf($f),

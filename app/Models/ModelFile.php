@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Domain\Farm\Palette;
 use App\Domain\Generation\GenerationService;
 use App\Domain\Generation\PedestalChanger;
+use App\Domain\Tools\ArtGenerator;
+use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\ParametricGenerator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -86,6 +88,8 @@ class ModelFile extends Model
             'vase' => ['supports' => false] + (($this->tool_params['purpose'] ?? 'vase') === 'vase' ? ['vase' => true] : []),   // a plain vase is one closed contour: it prints best in vase mode, one wall and no infill
             'relief', 'sign', 'logo', 'stamp', 'qr', 'stencil', 'lightbox', 'modular', 'organizer', 'box', 'phone_stand', 'cable_holder', 'cutter', 'holder', 'cap',
             'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper' => ['supports' => false],
+            // plates of a picture lie flat; the pieces of a split model lie on their cut faces (the tool laid them)
+            'filament_art' => ['supports' => false],
             // halves lie parting face up, supports would scar the cavity; the master of a silicone mold is the model itself and prints as it needs
             'mold' => ($this->tool_params['type'] ?? 'rigid') === 'silicone' ? ['supports' => true, 'infill' => 15] : ['supports' => false, 'infill' => 30],
             default => [],
@@ -168,7 +172,7 @@ class ModelFile extends Model
     /** Made by one of our measured tools: the builder laid it the way it prints best, the farm must not turn it. */
     public function builtForPrinting(): bool
     {
-        return $this->origin === 'tool' && array_key_exists($this->kind(), ParametricGenerator::FIELDS);
+        return $this->origin === 'tool' && (array_key_exists($this->kind(), ParametricGenerator::FIELDS) || in_array($this->kind(), [ArtGenerator::KIND, ...ModelEditor::KINDS], true));
     }
 
     /** Organic AI meshes print best with tree supports. */
