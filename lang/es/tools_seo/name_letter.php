@@ -5,7 +5,7 @@ return [
     'description' => 'Escriba un nombre y obtenga su primera letra en grande con el nombre completo en un segundo color. La imprimimos en dos colores o lo descarga gratis.',
     'h1' => 'Letra grande con nombre para la habitación infantil o como regalo',
     'intro' => [
-        'La herramienta crea la primera letra de un nombre en grande y escribe encima el nombre completo. Basta con escribir un nombre de hasta 20 caracteres: la letra se elige sola, o puede indicar otra. La altura va de 60 a 200 mm y el grosor de 3 a 15 mm; a partir de 10 mm la mayoría de las letras se sostienen solas en una estantería. La letra grande tiene tres tipos de letra en negrita y el nombre treinta, incluidas las manuscritas.',
+        'La herramienta crea la primera letra de un nombre en grande y escribe encima el nombre completo. Basta con escribir un nombre de hasta 20 caracteres: la letra se elige sola, o puede indicar otra. La altura va de 60 a 200 mm y el grosor de 3 a 15 mm; a partir de 10 mm la mayoría de las letras se sostienen solas en una estantería, y cualquiera puede encajarse en una base con ranura que se imprime a su lado. La letra grande tiene tres tipos de letra en negrita y el nombre treinta, incluidas las manuscritas.',
         'La herramienta coloca el nombre donde la letra tiene más espacio: a lo ancho de un trazo horizontal o en vertical a lo largo de un asta. Sobresale entre 0,4 y 2 mm y se imprime en un segundo color. Los dos colores van uno encima del otro, así que la impresión se detiene una vez y se cambia el filamento. En nuestra granja de impresión imprimimos la letra de una vez y usted elige los dos colores al hacer el pedido.',
     ],
     'steps' => [

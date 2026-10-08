@@ -169,6 +169,11 @@ ve výškách platí pro celou podložku), nebo dva tisky – to je práce pro o
 Společné kusy pro další dva nástroje téže skupiny (držák na gumičky, stojan na svíčku): `_figure`, `_slot`,
 `_together`.
 
+**Podstavec pro velké písmeno** (`name_letter`, volba „Podstavec“): písmeno dostane patku pod svou nejnižší částí
+a vedle něj se vytiskne podstavec s drážkou (hloubka 6 mm, vůle 0,25 mm). Písmeno má pak tloušťku nejméně 8 mm
+a **podstavec je přesně tak vysoký jako písmeno silné** – výměna filamentu pro jméno je ve výšce horní plochy
+písmene, takže z podstavce nemá co obarvit a tisk zůstává „dvě barvy nad sebou, jedna výměna“.
+
 **Stojan na svíčku** (`candle_stand`, `stand_kinds.py`). Kulatý podstavec vysoký 8 mm s lůžkem hlubokým 3 mm
 (průměr sklenice + 1 mm vůle, lem 3 mm), vzadu přechází v blok s drážkou pro siluetu. Zadání chtělo plošinu jako
 samostatný díl na kuželovém čepu s vůlí 0,2 mm; udělal jsem **podstavec z jednoho kusu** – není co lícovat a pod
@@ -487,15 +492,14 @@ písem; dva z nich (ozdoba na brčko, otvírák) čekají mimo katalog na zkuše
    cvaká vůbec. Když ano, je to rám a rotační skořepina, zhruba hodina práce.
 2. **Sušenka** (`cookie`): výběr a posun jednotlivého tahu (jde jen odebrat poslední), cukrovinky z knihovny
    a tácek na vystavení. (Čtyřicet polotovarů už je, viz §1.)
-3. **Velké písmeno se jménem** (`name_letter`): podstavec, aby stálo.
-4. **Organizér podle fotky, druhý režim:** předměty vyfocené na listu A4 → tác s kapsami podle jejich obrysů
+3. **Organizér podle fotky, druhý režim:** předměty vyfocené na listu A4 → tác s kapsami podle jejich obrysů
    (měřítko z listu, narovnání perspektivy, segmentace předmětů, vůle, výřez na prst, hloubka kapsy na předmět).
    Samostatná práce, a bez skutečných fotek od lidí ji nejde poctivě ověřit.
-5. **Volná skladba vrstev** (`compose`): druhý režim společné stránky se seznamem vrstev a gizmem ve vieweru
+4. **Volná skladba vrstev** (`compose`): druhý režim společné stránky se seznamem vrstev a gizmem ve vieweru
    (posun, otočení, zvětšení, duplikovat, smazat), builder `compose_kind.py`. Zápich, jmenovka, klíčenka, ozdoba
    a velké písmeno jsou dnes formuláře s pevným rozvržením; fungují, ale prvek v nich nejde chytit a posunout.
    Největší zbývající kus, řádově den práce.
-6. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
+5. **Knihovna obrázků:** cíl zadání je 100–200 siluet – je jich 178 (přibyla cukrová lebka a 40 polotovarů
    sušenek). Tvary destiček cedulky
    (`engines/shapes/`) do knihovny zařazené nejsou, žijí jen jako volba tvaru.
 

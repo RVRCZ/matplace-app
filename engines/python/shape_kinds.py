@@ -464,6 +464,20 @@ def build(M, Invalid, p, product):
         neck = (C.circle(max(1.0, wall * 0.6), 24).translate([cx - nx * hole_d / 2, cy - ny * hole_d / 2]) + C.circle(max(1.0, wall * 0.6), 24).translate([px - nx * wall, py - ny * wall])).hull()
         body2d = body2d + ring_out + (neck - hole2d)
         notes["eyelet"] = {"x": round(cx, 2), "y": round(cy, 2), "hole": hole_d}
+    foot = None
+    if product == "name_letter" and bool(p.get("stand", False)):
+        # a letter that would not stand by itself gets a foot under its lowest part and a base with a slot for it. The base
+        # is as high as the letter is thick, so the one change of filament (the name) finds nothing of the base to colour.
+        t = max(t, 8.0)
+        fx0, fy0, fx1, fy1 = body2d.bounds()
+        reach = min(8.0, max(3.0, (fy1 - fy0) * 0.18))
+        low = body2d ^ C.square([fx1 - fx0, reach]).translate([fx0, fy0])
+        a, b = (fx0, fx1) if low.is_empty() else (low.bounds()[0], low.bounds()[2])
+        if b - a < 0.45 * (fx1 - fx0):
+            mid = (a + b) / 2
+            a, b = max(fx0, mid - 0.225 * (fx1 - fx0)), min(fx1, mid + 0.225 * (fx1 - fx0))
+        body2d = body2d + C.square([b - a, 7.5 + reach]).translate([a, fy0 - 7.5])
+        foot = b - a
     grip, reach2d = None, None
     if product in ("straw", "opener"):
         # not a ring but a clip or a tongue sits on the outline, where the visitor drags it
@@ -582,6 +596,14 @@ def build(M, Invalid, p, product):
     beside = None                                            # what lies on the bed next to the product: the plate's width, depth, and its own height
     if chain is not None:
         beside = (chain[1], chain[2], 0.0)
+    if foot is not None:
+        base_w, base_d = max(40.0, foot + 24.0), max(32.0, t + 26.0)
+        base = S.rounded_rect(M, base_w, base_d, 4).extrude(t) - M.Manifold.cube([foot + 0.5, t + 0.5, 7.0]).translate([(base_w - foot) / 2 - 0.25, (base_d - t) / 2 - 0.25, t - 6.0])
+        bx0, by0, bx1, by1 = body2d.bounds()
+        base = base.translate([bx1 + 6.0, by0, 0])
+        body, whole = body + base, whole + base
+        notes["stand"] = [round(base_w, 1), round(base_d, 1), round(t, 1)]
+        beside = (bx1 - bx0 + 6.0 + base_w, max(by1 - by0, base_d), 0.0)
     if product == "bag_charm":
         # the pin: a head that stays inside the bag, a stem through its wall into the pocket. It is printed head down next
         # to the charm, in the charm's part; taller than the charm, so its top comes out in the last colour (nobody sees it)

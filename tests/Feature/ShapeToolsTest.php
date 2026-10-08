@@ -594,6 +594,28 @@ class ShapeToolsTest extends TestCase
         $this->get('/tools/bag-charm')->assertOk()->assertSee('data-param="bag_hole"', false)->assertSee(str_replace('\\', '\\\\', substr((string) json_encode(__('param.shape.magnet.fact.bag_charm')), 1, -1)), false);
     }
 
+    public function test_a_big_letter_can_stand_in_a_base_printed_next_to_it(): void
+    {
+        $ela = ['line1' => 'Ela', 'height' => 120, 'thickness' => 5, 'relief' => 1];
+        $flat = $this->meta($this->preview('name_letter', $ela, 'all', true)->assertOk());
+        $stood = $this->meta($this->preview('name_letter', $ela + ['stand' => true], 'all', true)->assertOk());
+        // thick enough for a slot of 6 mm with a floor under it; a foot under the letter; the base beside it on the bed
+        $this->assertEqualsWithDelta(8 + 1, $stood['bbox']['z'], 0.01);
+        $this->assertEqualsWithDelta($flat['bbox']['y'] + 7.5, $stood['bbox']['y'], 0.1);
+        [$w, $d, $h] = $stood['notes']['stand'];
+        $this->assertSame(8.0, (float) $h);
+        $this->assertGreaterThanOrEqual(40, $w);
+        $this->assertEqualsWithDelta(8 + 26, $d, 0.01);
+        $this->assertEqualsWithDelta($flat['bbox']['x'] + 6 + $w, $stood['bbox']['x'], 0.5);
+        // the base is as high as the letter is thick: still two filaments one on another and one change, at the letter's top
+        $this->assertSame($flat['notes']['parts'], $stood['notes']['parts']);
+        $this->assertSame(2, $stood['notes']['filaments']);
+        $this->assertFalse($stood['notes']['multi_material']);
+        $this->assertSame([8.0], array_map('floatval', array_column($stood['notes']['color_changes'], 'z')));
+        $this->assertArrayNotHasKey('stand', $flat['notes']);
+        $this->get('/tools/name-letter')->assertOk()->assertSee('data-flag="stand"', false);
+    }
+
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void
     {
         Storage::fake('models');

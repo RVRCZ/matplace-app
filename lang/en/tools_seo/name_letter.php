@@ -5,7 +5,7 @@ return [
     'description' => 'Type a name and get its big first letter with the whole name on it in a second colour. We print it in two colours, or you download the model for free.',
     'h1' => 'Big letter with a name for a child\'s room or as a gift',
     'intro' => [
-        'The tool makes the big first letter of a name and writes the whole name on it. Just type a name of up to 20 characters: the letter is picked by itself, or you choose another one. The height goes from 60 to 200 mm and the thickness from 3 to 15 mm; from 10 mm most letters stand on a shelf by themselves. The big letter has three bold typefaces, the name thirty, handwriting included.',
+        'The tool makes the big first letter of a name and writes the whole name on it. Just type a name of up to 20 characters: the letter is picked by itself, or you choose another one. The height goes from 60 to 200 mm and the thickness from 3 to 15 mm; from 10 mm most letters stand on a shelf by themselves, and any letter can be set into a base with a slot that is printed next to it. The big letter has three bold typefaces, the name thirty, handwriting included.',
         'The tool places the name where the letter has the most room: across a horizontal bar, or upright along a vertical stem. It is raised by 0.4 to 2 mm and printed in a second colour. The two colours lie one on the other, so the print stops once and the filament is changed. On our print farm we print the letter in one go, and you choose both colours when ordering.',
     ],
     'steps' => [
