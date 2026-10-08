@@ -23,6 +23,8 @@ icing: one part `icing_<n>` for every filament drawn with, stacked like the colo
 The badge is a topper for a retractable badge reel: the picture, the wearer's name under it in one of the picture's
 colours, and a shallow pocket in the back for the reel's sticky dot.
 
+The medallion is a round or star plate with an eyelet and, next to it on the bed, the open links of its chain.
+
 The tray is a little dish in the shape of the picture: a floor, a wall round it, and the picture cut into the floor
 (one colour), inlaid in it in colours (a multi-material print) or left out.
 """
@@ -30,16 +32,16 @@ import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray", "badge")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray", "badge", "medallion")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
     "width": (10, 250), "height": (6, 250), "wall": (1.2, 3), "thickness": (1.2, 15), "frame": (0, 10), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
-    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2),
+    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 40),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect")}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex")}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -175,6 +177,35 @@ def _caption(M, p, layers, info, text, body_kind, fit_d, warn):
     return layers, info
 
 
+LINK = (30.0, 18.0, 4.0, 0.4)    # a chain link: long, wide, the bar, and how much narrower than the bar its gap is (it snaps in)
+LINK_ROW = 7                     # links in a row on the bed
+
+
+def _chain(M, count, tall, medal_w, medal_h):
+    """
+    Open links of a chain: an oval ring with a gap in the middle of one long side, where a chain under load does not
+    pull. As tall as the medal's plate, so they are printed in its one filament. They are laid round a medal whose
+    corner is at the origin: first beside it, as high as it reaches, then in rows above it, never wider than a row of
+    seven, so the whole plate fits a bed of 250 mm. Returns (solid, width and depth of the plate with the medal) or None.
+    """
+    C, J = M.CrossSection, M.JoinType.Round
+    long, wide, bar, snap = LINK
+    gap = min(bar, tall) - snap                              # the neighbour goes through by its thinner side
+    oval = (C.circle(wide / 2, 64).translate([wide / 2, wide / 2]) + C.circle(wide / 2, 64).translate([long - wide / 2, wide / 2])).hull()
+    link = oval - oval.offset(-bar, J, 2.0, 32) - C.square([gap, bar + 2]).translate([long / 2 - gap / 2, wide - bar - 1])
+    if count < 1:
+        return None
+    one = link.extrude(tall)
+    step_x, step_y = long + 3.0, wide + 3.0
+    widest = LINK_ROW * step_x - 3.0
+    beside = (max(0, int((widest - medal_w - 4.0 + 3.0) // step_x)), max(0, int((medal_h + 3.0) // step_y)))      # columns, rows next to the medal
+    spots = [(medal_w + 4.0 + c * step_x, r * step_y) for r in range(beside[1]) for c in range(beside[0])]
+    spots += [((i % LINK_ROW) * step_x, medal_h + 4.0 + (i // LINK_ROW) * step_y) for i in range(max(0, count - len(spots)))]
+    spots = spots[:count]
+    return (M.Manifold.compose([one.translate([x, y, 0]) for x, y in spots]),
+            max([medal_w] + [x + long for x, _ in spots]), max([medal_h] + [y + wide for _, y in spots]))
+
+
 def build(M, Invalid, p, product):
     C, J = M.CrossSection, M.JoinType.Round
     n = lambda key, d: _num(Invalid, p, key, d)       # noqa: E731
@@ -189,7 +220,7 @@ def build(M, Invalid, p, product):
         if floor_mode not in ("engraved", "colors", "plain"):
             raise Invalid("bad_choice", "floor")
         flush, rim, bevel = floor_mode == "colors", False, False       # colours of a floor can only be inlaid: the walls stand in the same layers
-    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter"))
+    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread", "medallion")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter"))
     biscuit = product == "cookie"                             # a picture or a silhouette as dough, icing piped on it by hand
     cookie = product in ("gingerbread", "name_letter", "topper")      # the shape is ours, the visitor brings the name
     warn = []
@@ -416,6 +447,16 @@ def build(M, Invalid, p, product):
             cut = cut2d.extrude(0.4 + 1).translate([0, 0, -1])
             body, whole = body - cut, whole - cut
 
+    chain = None
+    if product == "medallion":
+        # the links lie round the medal on the bed and belong to its plate: one part, one filament
+        bx0, by0, bx1, by1 = body2d.bounds()
+        chain = _chain(M, int(n("links", 20)), t, bx1 - bx0, by1 - by0)
+        if chain is not None:
+            links = chain[0].translate([bx0, by0, 0])
+            body, whole = body + links, whole + links
+            notes["chain"] = {"links": int(n("links", 20)), "length": round(int(n("links", 20)) * (LINK[0] - 2 * LINK[2]) / 10.0) * 10}
+
     # ── colours of the parts ───────────────────────────────────────────────────────────────────────────────────
     own = _code(p, "body")
     if cookie:
@@ -508,8 +549,11 @@ def build(M, Invalid, p, product):
     if mount == "through" and count:
         warn.append("magnet_shows")
     w_all, h_all = (2 * span + GAP if product == "earrings" else span), y1 - y0
+    each_h = h_all
+    if chain is not None:
+        w_all, h_all = chain[1], chain[2]
     notes.update({
-        "outer": [round(w_all, 1), round(h_all, 1), round(top, 1)], "each": [round(span, 1), round(h_all, 1), round(top, 1)], "copies": 2 if product == "earrings" else 1,
+        "outer": [round(w_all, 1), round(h_all, 1), round(top, 1)], "each": [round(span, 1), round(each_h, 1), round(top, 1)], "copies": 2 if product == "earrings" else 1,
         "colors": listed, "body_color": {"code": body_color[0], "hex": body_color[1]}, "paint": paint, "parts": [name for name, _ in pieces],
         "filaments": len(filaments), "multi_material": bool(multi), "color_changes": changes, "found": info["found"], "wanted": info["wanted"],
         "background": info["background"], "source": info["source"], "warnings": warn, "thin_pct": thin, "missing_chars": info.get("missing_chars", []),

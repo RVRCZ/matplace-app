@@ -18,7 +18,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge', 'medallion'];
 
     protected function setUp(): void
     {
@@ -495,6 +495,41 @@ class ShapeToolsTest extends TestCase
         $this->get('/tools/badge-reel')->assertOk()->assertSee(str_replace('\\', '\\\\', substr((string) json_encode(__('param.shape.warn.magnet_no_room.badge')), 1, -1)), false)->assertSee(__('param.o.badge.glue'));
         // the other tools of the family still put a typed name instead of the picture, never under it
         $this->assertArrayNotHasKey('caption', $this->meta($this->preview('charm', ['artwork' => 'lib:colour/smiling-star', 'line1' => 'Jana', 'width' => 40])->assertOk())['notes']);
+    }
+
+    public function test_a_medal_brings_the_links_of_its_chain_in_its_own_filament(): void
+    {
+        $star = ['artwork' => 'lib:colour/smiling-star', 'width' => 80, 'thickness' => 4];
+        $bare = $this->meta($this->preview('medallion', $star + ['links' => 0], 'all', true)->assertOk());
+        $chained = $this->meta($this->preview('medallion', $star + ['links' => 20], 'all', true)->assertOk());
+        // a round plate as wide as asked with an eyelet on top; without links it is the whole plate
+        $this->assertEqualsWithDelta(80, $bare['bbox']['x'], 0.1);
+        $this->assertGreaterThan(85, $bare['bbox']['y']);
+        $this->assertArrayNotHasKey('chain', $bare['notes']);
+        $this->assertSame($bare['notes']['outer'], $bare['notes']['each']);
+        // twenty links: each an open oval of 30 x 18 with a bar of 4, as tall as the plate; 22 mm of chain apiece
+        $link = (M_PI * 9 * 9 + 12 * 18 - (M_PI * 5 * 5 + 12 * 10) - 3.6 * 4) * 4;
+        $this->assertEqualsWithDelta(20 * $link, $chained['volume_mm3'] - $bare['volume_mm3'], 0.02 * 20 * $link);
+        $this->assertSame(['links' => 20, 'length' => 440], $chained['notes']['chain']);
+        // they belong to the plate: the same parts, filaments and changes, and nothing taller than the medal
+        $this->assertSame($bare['notes']['parts'], $chained['notes']['parts']);
+        $this->assertSame($bare['notes']['filaments'], $chained['notes']['filaments']);
+        $this->assertSame($bare['notes']['color_changes'], $chained['notes']['color_changes']);
+        $this->assertSame($bare['bbox']['z'], $chained['bbox']['z']);
+        $this->assertSame($bare['notes']['each'], $chained['notes']['each']);
+        // the medal keeps its corner of the bed (the eyelet is dragged where it was), the links lie beside and above it
+        $this->assertSame($bare['notes']['eyelet'], $chained['notes']['eyelet']);
+        $this->assertGreaterThan($bare['bbox']['x'] + 30, $chained['bbox']['x']);
+        // the biggest medal with the longest chain is still one plate of a 250 mm bed
+        $most = $this->meta($this->preview('medallion', ['artwork' => 'lib:colour/smiling-star', 'width' => 120, 'links' => 40])->assertOk());
+        $this->assertLessThanOrEqual(240, max($most['bbox']['x'], $most['bbox']['y']));
+        $this->assertSame(880, $most['notes']['chain']['length']);
+        // a number in a star: letters dark on a light plate, one change, links in the plate's filament
+        $first = $this->meta($this->preview('medallion', ['line1' => '1', 'body' => 'star', 'width' => 70, 'links' => 4])->assertOk());
+        $this->assertSame(2, $first['notes']['filaments']);
+        $this->assertCount(1, $first['notes']['color_changes']);
+        $this->preview('medallion', $star + ['links' => 41])->assertStatus(422);
+        $this->get('/tools/medallion')->assertOk()->assertSee('data-param="links"', false);
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

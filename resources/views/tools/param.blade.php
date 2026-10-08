@@ -2,7 +2,7 @@
     $family = $family ?? null;
     $place = $place ?? [];
     $integer = fn (array $f) => $f[3] === 1;
-    $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs', 'colors_n', 'bg_strength', 'spikes'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : (in_array($k, ['flute', 'contrast', 'brightness', 'saturation', 'eye_pos', 'text_size', 'text_y'], true) ? '%' : 'mm'));
+    $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs', 'colors_n', 'bg_strength', 'spikes', 'links'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : (in_array($k, ['flute', 'contrast', 'brightness', 'saturation', 'eye_pos', 'text_size', 'text_y'], true) ? '%' : 'mm'));
     $i18n = collect(['param.working', 'param.failed', 'param.too_fast', 'param.text_required', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
         'param.warn.stand_angle_45', 'param.warn.stand_angle_55', 'param.warn.stand_angle_70', 'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
         'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.cut', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
@@ -11,7 +11,7 @@
     if ($family === 'shape') {
         // the picture in colours: its list of colours, the notes on how it prints, the eyelet
         $i18n += collect(['part.body', 'part.rim', 'part.color', 'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.found', 'colors.picture', 'print.one', 'print.swap1', 'print.swap', 'print.many', 'print.multi',
-            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'warn.name_small', 'warn.name_no_room', 'warn.caption_photo', 'part.icing', 'thickened', 'magnet.fact',
+            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'warn.name_small', 'warn.name_no_room', 'warn.caption_photo', 'part.icing', 'thickened', 'magnet.fact', 'chain.fact',
             // a part may be called by what it is in this tool (the plate of a gingerbread is "the gingerbread")
             ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text(\Illuminate\Support\Facades\Lang::has('param.shape.'.$k.'.'.$kind) ? 'param.shape.'.$k.'.'.$kind : 'param.shape.'.$k)])->all();
     }

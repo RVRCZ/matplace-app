@@ -28,7 +28,7 @@ interface ShapeColor { part: string; index: number; rgb: string; code: string; h
 interface ShapeNotes {
     colors?: ShapeColor[]; paint?: Record<string, string>; parts?: string[]; body_color?: { code: string; hex: string }; rim_color?: { code: string; hex: string };
     filaments?: number; multi_material?: boolean; color_changes?: { z: number }[]; found?: number; wanted?: number; each?: number[]; copies?: number;
-    eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; source?: string;
+    eyelet?: { x: number; y: number; z: number }; outline?: [number, number][]; thickened?: number; magnet?: { d: number; h: number; mount: string }; chain?: { links: number; length: number }; source?: string;
     frame?: [number, number, number]; draw_z?: number;
 }
 /** A stroke of icing drawn on a biscuit: the filament, the width in mm, the nib, the points in shares of the picture's width. */
@@ -132,6 +132,8 @@ export function bootParam(stage: Stage): void {
         if (pocket) facts.push(t('param.cup.pocket', { w: nf.format(pocket) }));
         const magnet = shapeNotes().magnet;
         if (shape && magnet && magnet.mount !== 'through') facts.push(t('shape.magnet.fact', { d: nf.format(magnet.d), h: nf.format(magnet.h) }));
+        const chain = shapeNotes().chain;
+        if (shape && chain) facts.push(t('shape.chain.fact', { n: chain.links, l: nf.format(chain.length / 10) }));
         if ((n.needs ?? []).length) facts.push(`${t('param.needs')}: ${(n.needs ?? []).map((x) => t(`param.need.${x}`)).join(', ')}`);
         const el = $('param-dims');
         el.innerHTML = rows.map(([k, v]) => `<div class="flex justify-between gap-3"><dt class="text-muted">${k}</dt><dd class="font-medium text-ink">${v}</dd></div>`).join('')

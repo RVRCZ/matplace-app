@@ -212,6 +212,11 @@ return [
         ['params' => ['artwork' => 'lib:colour/red-heart', 'width' => 38, 'body' => 'circle']],
         ['params' => ['artwork' => 'lib:colour/paw-badge', 'line1' => 'Petr', 'width' => 45, 'body' => 'rect']],
     ]]],
+    'medallion' => ['route' => 'tools.medallion', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 80, 'links' => 20]],
+        ['params' => ['line1' => '1', 'typeface' => 'archivo', 'width' => 70, 'body' => 'star', 'links' => 24]],
+        ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 90, 'body' => 'hex', 'links' => 0]],
+    ]]],
     'coaster' => ['route' => 'tools.coaster', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/snowman', 'width' => 100, 'body' => 'circle']],
         ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 95, 'body' => 'hex', 'grooves' => true]],

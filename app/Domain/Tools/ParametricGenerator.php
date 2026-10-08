@@ -27,7 +27,7 @@ final class ParametricGenerator
      * magnet, coaster. Each is a kind of its own (its own page, limits and stored designs) built by the one builder;
      * what they share is written once here and the kinds only say where they differ.
      */
-    public const FAMILY = ['charm' => 'shape', 'keychain' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape', 'gingerbread' => 'shape', 'name_letter' => 'shape', 'cookie' => 'shape', 'topper' => 'shape', 'tray' => 'shape', 'badge' => 'shape'];
+    public const FAMILY = ['charm' => 'shape', 'keychain' => 'shape', 'earrings' => 'shape', 'ornament' => 'shape', 'magnet' => 'shape', 'coaster' => 'shape', 'gingerbread' => 'shape', 'name_letter' => 'shape', 'cookie' => 'shape', 'topper' => 'shape', 'tray' => 'shape', 'badge' => 'shape', 'medallion' => 'shape'];
 
     private const SHAPE_FIELDS = [
         'width' => [20, 120, 45, 1], 'thickness' => [2, 6, 3, 0.2], 'frame' => [0, 3, 1.2, 0.1],
@@ -116,7 +116,7 @@ final class ParametricGenerator
     /** Tools of the family whose text goes under the picture, not instead of it: a page opened with a name keeps its sample picture. */
     public const CAPTIONED = ['badge'];
 
-    public const SAMPLE = ['svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star'];
+    public const SAMPLE = ['svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star', 'medallion' => 'lib:colour/smiling-star'];
 
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
@@ -133,6 +133,8 @@ final class ParametricGenerator
         'coaster' => ['width' => [80, 120, 100, 1], 'thickness' => [3, 6, 4, 0.2], 'frame' => [0, 4, 2, 0.1], 'relief' => [0.2, 0.8, 0.4, 0.2]] + self::SHAPE_FIELDS,
         // the shape is ours (a gingerbread man, a heart, a star, a tree), the visitor brings the name: no picture, no picture's fields
         'gingerbread' => ['width' => [50, 150, 90, 1], 'thickness' => [2, 6, 3, 0.2], 'relief' => [0.4, 1.2, 0.6, 0.2], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_EYELET,
+        // a medal: the eyelet takes a link of the chain (a bar of 4 mm), `links` is how many of them are printed next to it
+        'medallion' => ['width' => [50, 120, 80, 1], 'thickness' => [3, 6, 4, 0.2], 'frame' => [0, 5, 2, 0.1]] + self::SHAPE_FIELDS + ['eye_pos' => [0, 100, 0, 0.5], 'eye_hole' => [5, 8, 6, 0.5], 'eye_wall' => [2, 4, 3, 0.1], 'links' => [0, 40, 20, 1]],
         // a topper glued on a badge reel: `mag_d` × `mag_h` is the pocket in its back for the reel's sticky dot
         'badge' => ['width' => [25, 60, 40, 1], 'thickness' => [2, 5, 3, 0.2], 'frame' => [0, 3, 1.5, 0.1]] + self::SHAPE_FIELDS + ['mag_d' => [10, 30, 19, 0.5], 'mag_h' => [0.4, 2, 0.8, 0.2]],
         // a little dish in the shape of a picture: `thickness` is its floor, `height` its rim, `frame` how far the picture keeps off the wall
@@ -199,6 +201,7 @@ final class ParametricGenerator
         'topper' => ['template' => ['number', 'heart', 'star', 'circle', 'none'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
         'tray' => ['body' => ['image', 'circle'], 'floor' => ['engraved', 'colors', 'plain'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'badge' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script'], 'mount' => ['glue', 'none']],
+        'medallion' => ['body' => ['circle', 'star', 'hex'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
         // `shape`: a box, an oval, or a plate drawn as an outline (engines/shapes/<name>.svg); `motif_at`: where the picture stands against the text
@@ -228,6 +231,7 @@ final class ParametricGenerator
         'topper' => ['line1' => [20, false, 'Olivia'], 'number' => [3, false, '2']],
         'tray' => ['line1' => [16, false, ''], 'line2' => [16, false, '']],
         'badge' => ['line1' => [16, false, '']],
+        'medallion' => ['line1' => [16, false, ''], 'line2' => [16, false, '']],
         'sign' => ['line1' => [40, true, 'Jana'], 'line2' => [40, false, ''], 'line3' => [40, false, '']],
         'logo' => ['line1' => [30, false, 'LOGO'], 'line2' => [30, false, '']],
         'stamp' => ['line1' => [20, false, 'EVA'], 'line2' => [20, false, '']],
@@ -241,13 +245,13 @@ final class ParametricGenerator
     /** Of the tools that take a picture: those where it stands next to the text, never instead of it (the text stays required). */
     public const BESIDE = ['sign'];
 
-    public const ARTWORK = ['sign', 'logo', 'stamp', 'stencil', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge'];
+    public const ARTWORK = ['sign', 'logo', 'stamp', 'stencil', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge', 'medallion'];
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'name_cup' => ['width', 'height'], 'beads' => ['size', 'hole'],
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
-        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'],
+        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'thickness', 'frame', 'links'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
@@ -262,7 +266,7 @@ final class ParametricGenerator
         'modular' => ['inner_w' => 'x', 'inner_d' => 'y', 'height' => 'z'], 'vase' => ['top_d' => 'x', 'height' => 'z'], 'phone_stand' => ['width' => 'x'],
         'cable_holder' => ['depth' => 'y'], 'holder' => ['obj_w' => 'x', 'height' => 'z'], 'cap' => ['size_a' => 'x', 'height' => 'z'],
         'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
-        'name_cup' => ['width' => 'x', 'height' => 'z'], 'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'], 'cookie' => ['width' => 'x'], 'topper' => ['width' => 'x'], 'tray' => ['width' => 'x', 'height' => 'z'], 'badge' => ['width' => 'x'],
+        'name_cup' => ['width' => 'x', 'height' => 'z'], 'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'], 'cookie' => ['width' => 'x'], 'topper' => ['width' => 'x'], 'tray' => ['width' => 'x', 'height' => 'z'], 'badge' => ['width' => 'x'], 'medallion' => ['width' => 'x'],
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
 
@@ -275,7 +279,7 @@ final class ParametricGenerator
     public const MAX_STROKE_POINTS = 48;
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
-        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'],
+        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
@@ -284,6 +288,7 @@ final class ParametricGenerator
         // a shape cut out or standing has no plate: what belongs to the plate shows only with it
         'logo' => ['bevel' => ['mode', ['cutout']], 'shape' => ['mode', ['relief', 'height']], 'plate' => ['mode', ['relief', 'height']], 'margin' => ['mode', ['relief', 'height']], 'base_h' => ['mode', ['standing']]],
         'cookie' => self::HANG_WHEN + self::SHAPE_WHEN, 'name_letter' => self::HANG_WHEN + self::SHAPE_WHEN,
+        'medallion' => self::SHAPE_WHEN,
         'badge' => self::SHAPE_WHEN + ['mag_d' => ['mount', ['glue']], 'mag_h' => ['mount', ['glue']]],
         // the step between colours means nothing in a floor ("none" is no value of the choice: the field never shows)
         'tray' => ['relief' => ['floor', ['none']], 'colors_n' => ['floor', ['engraved', 'colors']]] + self::SHAPE_WHEN,
@@ -411,7 +416,7 @@ final class ParametricGenerator
             'cutter' => array_values(array_intersect((array) ($p['parts'] ?? []), ['body', 'stamp'])),   // the stamp exists only when the drawing had inner lines: the tool says so
             'modular' => array_merge(! empty($p['tray']) ? ['tray'] : [], array_values(array_unique(array_map(fn ($b) => 'bin_'.$b['w'].'x'.$b['h'], (array) ($p['bins'] ?? []))))),
             // a picture in colours: the plate, every colour and the rim, as the tool listed them
-            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8]|icing_[1-6])$/', $part))),
+            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray', 'badge', 'medallion' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^(body|rim|color_[1-8]|icing_[1-6])$/', $part))),
             default => [],
         };
     }
