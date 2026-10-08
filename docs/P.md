@@ -542,7 +542,7 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 
 ## 7. Co ze zadání session 1 zbývá
 
-Stav k 8. 10. 2026 v noci; celá sada testů naposledy na commitu db4f611 (513 testů, bez chyby, 2 přeskočené,
+Stav k 8. 10. 2026 v noci; celá sada testů naposledy na commitu 3a07fc6 (514 testů, bez chyby, 2 přeskočené,
 1 varování, které tu bylo už předtím). V katalogu je ze zadání 25 nástrojů (deset z vánoční sady, viz §1,
 a patnáct z tabulky „Po vánoční sadě“) a třicet písem; tři další jsou postavené, ale čekají mimo katalog
 (`available => false`) na vyzkoušení: ozdoba na brčko, otvírák a vložka do zásuvky podle fotky. Nehotové,
@@ -568,5 +568,6 @@ od nejbližšího:
 Co čeká na Romana (nic z toho neblokuje další práci): zkušební tisky podle §5, rozhodnutí o klikátku (bod 1),
 a další nasazení. Podle zprávy koordinující session běží na
 matplace.com od 8. 10. 2026 18:02 UTC `main` 9d6a49a, tedy všechno až po skladbu s tažením a vlastním obrázkem;
-tři nástroje mimo katalog tam zůstávají skryté. Co je ve větvi potom (předvolby produktů ve skladbě, karty jmenovky
-a klíčenky na skladbě), nasazené není.
+tři nástroje mimo katalog tam zůstávají skryté. Co přišlo potom (předvolby produktů ve skladbě, karty jmenovky
+a klíčenky na skladbě, celý řádek barvy otevírá výběr), je v `main` na GitHubu od commitu d564541; o jeho nasazení
+zprávu nemám.
