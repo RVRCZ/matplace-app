@@ -18,7 +18,7 @@ class ShapeToolsTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper'];
+    private const KINDS = ['charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'tray'];
 
     protected function setUp(): void
     {
@@ -60,7 +60,7 @@ class ShapeToolsTest extends TestCase
         foreach (self::KINDS as $kind) {
             foreach (['cs', 'en', 'es'] as $lang) {
                 app()->setLocale($lang);
-                $page = $this->get($this->localized('/tools/'.(['topper' => 'cake-topper'][$kind] ?? str_replace('_', '-', $kind)), $lang))->assertOk();
+                $page = $this->get($this->localized('/tools/'.(['topper' => 'cake-topper', 'tray' => 'shape-tray'][$kind] ?? str_replace('_', '-', $kind)), $lang))->assertOk();
                 $page->assertSee(__('tools.'.$kind.'.title'))->assertSee(__('param.'.$kind.'.lead'));
                 // a gingerbread and a big letter have a shape of ours: there is no picture to bring
                 in_array($kind, ['gingerbread', 'name_letter', 'topper'], true) ? $page->assertDontSee(__('param.shape.picture.hint')) : $page->assertSee(__('param.shape.picture'));
@@ -414,6 +414,45 @@ class ShapeToolsTest extends TestCase
         $this->assertSame(['body'], $this->meta($this->preview('topper', ['template' => 'number', 'number' => '', 'line1' => 'Ela'])->assertOk())['notes']['parts']);
         $this->preview('topper', ['template' => 'none', 'line1' => '', 'number' => ''])->assertStatus(422);
         $this->preview('topper', ['template' => 'cube', 'line1' => 'Ela'])->assertStatus(422);
+    }
+
+    public function test_a_dish_follows_the_outline_and_carries_the_picture_in_its_floor(): void
+    {
+        $paw = ['artwork' => 'lib:colour/paw-badge', 'width' => 100, 'height' => 15, 'thickness' => 2, 'wall' => 1.6, 'frame' => 3];
+        // the picture cut into the floor: one part, one filament, a dish as wide and as tall as asked
+        $d = $this->meta($this->preview('tray', $paw, 'all', true)->assertOk());
+        $this->assertSame(['body'], $d['notes']['parts']);
+        $this->assertSame(1, $d['notes']['filaments']);
+        $this->assertFalse($d['notes']['multi_material']);
+        $this->assertSame([], $d['notes']['color_changes']);
+        $this->assertEqualsWithDelta(100, $d['bbox']['x'], 0.5);
+        $this->assertEqualsWithDelta(15, $d['bbox']['z'], 0.01);
+        // a floor and a wall, not a block; the carving takes a little more away than a plain floor
+        $this->assertLessThan(0.3 * M_PI * 50 * 50 * 15, $d['volume_mm3']);
+        $plain = $this->meta($this->preview('tray', ['floor' => 'plain'] + $paw)->assertOk());
+        $this->assertGreaterThan($d['volume_mm3'] + 100, $plain['volume_mm3']);
+        $this->assertLessThan($d['volume_mm3'] + 0.6 * M_PI * 44 * 44, $plain['volume_mm3']);
+        // taller walls and a thicker floor are more plastic
+        $tall = $this->meta($this->preview('tray', ['height' => 30, 'thickness' => 4] + $paw)->assertOk());
+        $this->assertEqualsWithDelta(30, $tall['bbox']['z'], 0.01);
+        $this->assertGreaterThan($d['volume_mm3'] * 1.5, $tall['volume_mm3']);
+        // in colours the picture is inlaid in the floor: parts for the colours, and the print needs a multi-material printer
+        $col = $this->meta($this->preview('tray', ['floor' => 'colors'] + $paw)->assertOk());
+        $this->assertContains('color_2', $col['notes']['parts']);
+        $this->assertTrue($col['notes']['multi_material']);
+        $this->assertEqualsWithDelta(15, $col['bbox']['z'], 0.01);
+        // a silhouette is only the outline: a plain dish in a light filament, whatever the floor was asked to be
+        $heart = $this->meta($this->preview('tray', ['artwork' => 'lib:hearts-stars/heart', 'width' => 110, 'height' => 20])->assertOk());
+        $this->assertSame(['body'], $heart['notes']['parts']);
+        $this->assertSame('white', $heart['notes']['body_color']['code']);
+        // a name instead of a picture is cut into the floor of a dish shaped like the name
+        $name = $this->meta($this->preview('tray', ['line1' => 'Ela', 'typeface' => 'script', 'width' => 120])->assertOk());
+        $this->assertSame(['body'], $name['notes']['parts']);
+        $this->assertEqualsWithDelta(120, $name['bbox']['x'], 1.0);
+        // the lowest dish with the thickest floor the form allows is still a dish
+        $this->assertEqualsWithDelta(8, $this->meta($this->preview('tray', ['height' => 8, 'thickness' => 4] + $paw)->assertOk())['bbox']['z'], 0.01);
+        // the edge of dough round a biscuit's picture may be as wide as the form allows (it was refused above 4 mm)
+        $this->preview('cookie', ['artwork' => 'lib:colour/gingerbread-man', 'width' => 80, 'frame' => 6])->assertOk();
     }
 
     public function test_a_created_design_keeps_its_filaments_and_says_where_the_print_changes_them(): void

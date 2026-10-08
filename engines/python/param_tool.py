@@ -985,8 +985,11 @@ def main(argv):
             parts, notes = builders[kind](M, p)
         else:
             import creative_kinds
+            import name_kinds
             import shape_kinds
-            if kind in shape_kinds.BUILDERS:
+            if kind in name_kinds.BUILDERS:
+                parts, notes = name_kinds.BUILDERS[kind](M, Invalid, p)
+            elif kind in shape_kinds.BUILDERS:
                 parts, notes = shape_kinds.BUILDERS[kind](M, Invalid, p)
             elif kind in creative_kinds.BUILDERS:
                 parts, notes = creative_kinds.BUILDERS[kind](M, Invalid, p)

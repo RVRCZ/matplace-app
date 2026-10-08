@@ -217,7 +217,8 @@ class ToolPageTest extends TestCase
             ->assertSee('krabicka vicko pouzdro', false);                                  // its keywords, without accents, for the search
         $this->get('/en/tools')->assertOk()->assertSee('Search the tools')->assertSee('Pictures and logos');
         // a category without a tool has no filter: nothing to click that shows nothing
-        config(['tools.cookie.categories' => ['images'], 'tools.puzzle.categories' => ['edit'], 'tools.potion.categories' => ['edit'], 'tools.flexi_cut.categories' => ['edit'], 'tools.slider.categories' => ['edit']]);     // the puzzle, the potion, the flexi of a model and the sliding fidget are the other toys
+        // (whichever tools are in it today: the category is taken from all of them)
+        config(['tools' => array_map(fn (array $tool) => ['categories' => array_values(array_diff($tool['categories'], ['toys']))] + $tool, config('tools'))]);
         $this->get('/tools')->assertOk()->assertDontSee('data-filter="toys"', false);
     }
 }

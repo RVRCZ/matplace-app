@@ -19,21 +19,24 @@ piped on it and the visitor's name goes across it. Dough and icing: two colours 
 
 The cookie takes a picture or a silhouette as its dough and the strokes the visitor draws on it in the preview as
 icing: one part `icing_<n>` for every filament drawn with, stacked like the colours of a picture.
+
+The tray is a little dish in the shape of the picture: a floor, a wall round it, and the picture cut into the floor
+(one colour), inlaid in it in colours (a multi-material print) or left out.
 """
 import math
 
 import shape2d as S
 
-PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper")
+PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "gingerbread", "name_letter", "cookie", "topper", "tray")
 
 # the widest range any product allows; each product's own limits are ParametricGenerator::FIELDS
 LIMITS = {
-    "width": (10, 250), "height": (40, 250), "thickness": (1.2, 15), "frame": (0, 4), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
+    "width": (10, 250), "height": (6, 250), "wall": (1.2, 3), "thickness": (1.2, 15), "frame": (0, 10), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
     "mag_d": (4, 30), "mag_h": (1, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",)}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle")}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
 GAP = 6.0                   # between the two earrings on the bed
@@ -131,6 +134,12 @@ def build(M, Invalid, p, product):
     if body_kind not in BODIES[product]:
         raise Invalid("bad_choice", "body")
     flush, rim, bevel = (bool(p.get(f, False)) for f in ("flush", "rim", "bevel"))
+    dish = product == "tray"                                  # the shape is a little dish, the picture is in its floor
+    floor_mode = p.get("floor", "engraved") if dish else None
+    if dish:
+        if floor_mode not in ("engraved", "colors", "plain"):
+            raise Invalid("bad_choice", "floor")
+        flush, rim, bevel = floor_mode == "colors", False, False       # colours of a floor can only be inlaid: the walls stand in the same layers
     eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter"))
     biscuit = product == "cookie"                             # a picture or a silhouette as dough, icing piped on it by hand
     cookie = product in ("gingerbread", "name_letter", "topper")      # the shape is ours, the visitor brings the name
@@ -142,6 +151,8 @@ def build(M, Invalid, p, product):
     is_text = not art_path and not cookie
     edge = max(frame, 1.0) if (rim or (is_text and body_kind == "image")) else frame      # a rim needs a body to stand on, letters a body to hold them
     geometric = body_kind not in ("image", "rect")
+    if dish:
+        edge = frame + n("wall", 1.6)                         # the picture keeps off the wall by the frame
     if is_text and body_kind == "rect":
         edge += 2.0                                           # letters on a plate want air round them, a picture brings its own
 
@@ -217,6 +228,15 @@ def build(M, Invalid, p, product):
         warn.append("missing_chars")
     if info.get("ignored_outlines"):
         warn.append("outlines_ignored")
+    carved, dish_color = None, None
+    if dish and floor_mode != "colors":
+        # one colour: the picture is cut two layers deep into the floor (everything but its ground colour), or left out
+        # a picture in colours gives the dish its ground colour; the black of a silhouette is no wish for a black dish
+        dish_color = (layers[0]["code"], layers[0]["hex"]) if layers and not is_text and info["found"] > 1 else None
+        if floor_mode == "engraved":
+            for layer in (layers if is_text else layers[1:]):
+                carved = layer["own"] if carved is None else carved + layer["own"]
+        layers = []
     dough = None
     if biscuit:
         spools = p.get("palette") or []
@@ -292,6 +312,16 @@ def build(M, Invalid, p, product):
         for layer, _ in solids:
             pocket = layer["own"] if pocket is None else pocket + layer["own"]
         body = body - pocket.extrude(INLAY + 1).translate([0, 0, t - INLAY])
+    if dish:
+        rise = n("height", 15)
+        if rise < t + 3:
+            raise Invalid("dish_low")
+        inner = body2d.offset(-n("wall", 1.6), J, 2.0, 24)
+        if carved is not None:
+            body = body - (carved ^ inner).extrude(0.6 + 1).translate([0, 0, t - 0.6])
+            whole = body
+        walls = (plate2d - inner).extrude(rise)
+        body, whole, top = body + walls, whole + walls, rise
     rim_solid = None
     if rim:
         rim_top = (t + INLAY) if flush else top
@@ -336,6 +366,9 @@ def build(M, Invalid, p, product):
         body_color = own or info["dough"]
     elif biscuit:
         body_color = own or (dough[0], dough[1])
+    elif dish and not layers:
+        spools = sorted(p.get("palette") or [], key=lambda f: -_light(f[1]))
+        body_color = own or dish_color or ((spools[0][0], spools[0][1]) if spools else ("", "#ede6d6"))
     elif is_text:
         pal = sorted(p.get("palette") or [], key=lambda f: -_light(f[1]))
         body_color = own or ((pal[0][0], pal[0][1]) if pal else ("", "#ede6d6"))       # letters dark, the plate light

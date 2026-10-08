@@ -87,7 +87,7 @@ class ModelFile extends Model
             'lithophane' => ['infill' => 100, 'quality' => 'fine', 'supports' => false],   // must be solid, fine layers = smooth picture
             'vase' => ['supports' => false] + (($this->tool_params['purpose'] ?? 'vase') === 'vase' ? ['vase' => true] : []),   // a plain vase is one closed contour: it prints best in vase mode, one wall and no infill
             'relief', 'sign', 'logo', 'stamp', 'qr', 'stencil', 'lightbox', 'modular', 'organizer', 'box', 'phone_stand', 'cable_holder', 'cutter', 'holder', 'cap',
-            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper' => ['supports' => false],
+            'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'gingerbread', 'name_letter', 'cookie', 'topper', 'name_cup', 'beads', 'tray' => ['supports' => false],
             // plates of a picture lie flat; the pieces of a split model lie on their cut faces (the tool laid them)
             'filament_art' => ['supports' => false],
             // halves lie parting face up, supports would scar the cavity; the master of a silicone mold is the model itself and prints as it needs
