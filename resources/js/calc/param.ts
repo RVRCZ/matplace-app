@@ -126,6 +126,8 @@ export function bootParam(stage: Stage): void {
         if (n.bridges) facts.push(t('param.bridges', { n: n.bridges }));
         if (n.led_m) facts.push(t('param.lightbox.led', { m: nf.format(n.led_m) }));
         if (n.saucer_d) facts.push(t('param.saucer', { d: nf.format(n.saucer_d), h: n.drainage_holes ?? 0 }));
+        const pocket = (m.notes as { pocket_mm?: number }).pocket_mm;
+        if (pocket) facts.push(t('param.cup.pocket', { w: nf.format(pocket) }));
         const magnet = shapeNotes().magnet;
         if (shape && magnet && magnet.mount !== 'through') facts.push(t('shape.magnet.fact', { d: nf.format(magnet.d), h: nf.format(magnet.h) }));
         if ((n.needs ?? []).length) facts.push(`${t('param.needs')}: ${(n.needs ?? []).map((x) => t(`param.need.${x}`)).join(', ')}`);

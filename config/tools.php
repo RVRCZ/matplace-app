@@ -143,6 +143,11 @@ return [
         ['params' => ['template' => 'heart', 'line1' => 'Ela a Tom', 'width' => 120, 'text_size' => 90, 'text_y' => 5]],
         ['params' => ['template' => 'none', 'line1' => 'Všechno nejlepší', 'width' => 180, 'spike' => 80]],
     ]]],
+    'name_cup' => ['route' => 'tools.name_cup', 'intent' => 'create', 'categories' => ['names', 'home'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['line1' => 'Jana', 'width' => 160, 'height' => 80]],
+        ['params' => ['line1' => 'TOM', 'typeface' => 'sans', 'width' => 150, 'height' => 90]],
+        ['params' => ['line1' => 'Ela', 'width' => 110, 'height' => 60, 'base' => false]],
+    ]]],
     'name_letter' => ['route' => 'tools.name_letter', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['line1' => 'Ela', 'height' => 120]],
         ['params' => ['line1' => 'Tomáš', 'height' => 150, 'letter_face' => 'serif', 'typeface' => 'sans']],

@@ -115,6 +115,18 @@ S jedinou výměnou se nic nemění (`color_change_mm` zůstává, farma ho zná
 
 **Ukázky a karty** se kreslí v barvách filamentů i mimo karty (`render_tool.py` bere soubor s barvami dílů).
 
+### Po vánoční sadě (od 8. 10. 2026, jeden nástroj na commit)
+
+| nástroj | adresa | kind | co dělá |
+|---|---|---|---|
+| Stojánek na tužky ze jména | `/tools/name-organizer` | `name_cup` | jméno je stojánek: písmena rozšířená o 3 mm jsou kapsa, kolem stěna 1,6 mm, dno 2 mm, výška 40–120 mm |
+
+**Stojánek na tužky ze jména** (`engines/python/name_kinds.py`, obyčejný parametrický nástroj, ne rodina `shape`):
+tiskne se nastojato. Oka písmen pod 150 mm² se vyplní, písmena, která se po rozšíření nedotknou, sváže příčka na celou
+výšku. Stránka vypisuje nejširší místo kapsy a varuje, kdyby bylo pod 9 mm (u běžných jmen to nenastane, sousední
+písmena se slijí). Volitelný podstavec je spodní 3 mm: `color_change_mm` = 3, tedy druhá barva na farmě i v projektu.
+Zadání chtělo „každé písmeno je kapsa“ – tak to je u tiskacích písem; u psacího je kapsa jedna souvislá.
+
 ## 2. Rozhodnutí a proč
 
 1. **Produkt = vlastní kind**, ne jeden kind `shape` s polem `product` (tak to psalo zadání). Meze a výchozí hodnoty
@@ -242,5 +254,5 @@ stránky nových nástrojů ve třech jazycích odpovídají 200 a že náhled n
 Dluhy vánoční sady: volná skladba vrstev `compose` s gizmem (zápich je zatím formulář), u sušenky výběr a posun
 tahu, cukrovinky a tácek, u velkého písmene podstavec.
 Potom zbytek zadání session 1: ostatní produkty rodiny (jmenovka na klip, brčko, gumičky, otvírák, miska,
-organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), korálky, stojánek
-na tužky, tvary a motivy cedulky, `logo` `extrude`, 20+ písem.
+organizér podle fotky, lístečky, čep na tašku, medaile, stojan na svíčku, papel picado, klikátko), korálky, tvary
+a motivy cedulky, `logo` `extrude`, 20+ písem.

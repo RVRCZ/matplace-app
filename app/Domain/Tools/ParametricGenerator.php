@@ -53,6 +53,8 @@ final class ParametricGenerator
 
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
+        // a pen holder in the shape of a name (engines/python/name_kinds.py): printed standing, the name itself is the cup
+        'name_cup' => ['width' => [80, 250, 160, 1], 'height' => [40, 120, 80, 1], 'wall' => [1.2, 3, 1.6, 0.2], 'floor' => [1.2, 4, 2, 0.2]],
         'charm' => self::SHAPE_FIELDS + self::SHAPE_EYELET,
         // the eyelet starts on the left side (three quarters of the way round), where a key ring pulls along the name
         'keychain' => ['width' => [30, 100, 55, 1], 'thickness' => [2.4, 6, 3, 0.2], 'eye_pos' => [0, 100, 75, 0.5], 'eye_hole' => [3, 8, 5, 0.5]] + self::SHAPE_FIELDS + self::SHAPE_EYELET,
@@ -109,6 +111,7 @@ final class ParametricGenerator
 
     /** kind → choice → allowed values (the first one is the default) */
     public const CHOICES = [
+        'name_cup' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
         'charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'keychain' => ['body' => ['rect', 'image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'earrings' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -136,6 +139,7 @@ final class ParametricGenerator
 
     /** kind → text input → [max length, required, default] */
     public const TEXTS = [
+        'name_cup' => ['line1' => [14, true, 'Jana']],
         'charm' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'keychain' => ['line1' => [24, false, 'Jana'], 'line2' => [24, false, '']], 'earrings' => ['line1' => [12, false, ''], 'line2' => [12, false, '']],
         'ornament' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'magnet' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
         'coaster' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
@@ -157,6 +161,7 @@ final class ParametricGenerator
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
+        'name_cup' => ['width', 'height'],
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
@@ -173,7 +178,7 @@ final class ParametricGenerator
         'modular' => ['inner_w' => 'x', 'inner_d' => 'y', 'height' => 'z'], 'vase' => ['top_d' => 'x', 'height' => 'z'], 'phone_stand' => ['width' => 'x'],
         'cable_holder' => ['depth' => 'y'], 'holder' => ['obj_w' => 'x', 'height' => 'z'], 'cap' => ['size_a' => 'x', 'height' => 'z'],
         'logo' => ['width' => 'x'], 'stamp' => ['width' => 'x'], 'qr' => ['size' => 'x'], 'stencil' => ['width' => 'x'], 'lightbox' => ['width' => 'x', 'depth' => 'z'],
-        'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'], 'cookie' => ['width' => 'x'], 'topper' => ['width' => 'x'],
+        'name_cup' => ['width' => 'x', 'height' => 'z'], 'charm' => ['width' => 'x'], 'keychain' => ['width' => 'x'], 'ornament' => ['width' => 'x'], 'magnet' => ['width' => 'x'], 'coaster' => ['width' => 'x'], 'gingerbread' => ['width' => 'x'], 'name_letter' => ['height' => 'y'], 'cookie' => ['width' => 'x'], 'topper' => ['width' => 'x'],
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
 
@@ -185,7 +190,7 @@ final class ParametricGenerator
 
     public const MAX_STROKE_POINTS = 48;
 
-    public const FLAGS = ['charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
+    public const FLAGS = ['name_cup' => ['base'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'flush'], 'topper' => ['flush'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
@@ -221,7 +226,7 @@ final class ParametricGenerator
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base'];
 
     /** things that hang only when asked to (a biscuit, a big letter): the eyelet's sizes show with the tick */
     private const HANG_WHEN = ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]];
