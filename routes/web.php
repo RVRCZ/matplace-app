@@ -152,6 +152,7 @@ $pages = function () {
     Route::get('/tools/straw-topper', [ToolsController::class, 'param'])->defaults('kind', 'straw')->name('tools.straw');
     Route::get('/tools/can-opener', [ToolsController::class, 'param'])->defaults('kind', 'opener')->name('tools.opener');
     Route::get('/tools/photo-organizer', [ToolsController::class, 'param'])->defaults('kind', 'photo_organizer')->name('tools.photo_organizer');
+    Route::get('/tools/drawer-insert', [ToolsController::class, 'param'])->defaults('kind', 'insert')->name('tools.insert');
     Route::get('/tools/coaster', [ToolsController::class, 'param'])->defaults('kind', 'coaster')->name('tools.coaster');
     Route::get('/tools/gingerbread', [ToolsController::class, 'param'])->defaults('kind', 'gingerbread')->name('tools.gingerbread');
     Route::get('/tools/name-letter', [ToolsController::class, 'param'])->defaults('kind', 'name_letter')->name('tools.name_letter');

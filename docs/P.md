@@ -193,6 +193,23 @@ naležato, takže rameno by muselo být třetí díl nalepený do otvoru v desce
 sloupek se tiskne nastojato bez podpěr, gumičky z něj nepadají a nic se nelepí. Podstavec má nejméně 70 × 60 × 8 mm
 a aspoň 80 % šířky siluety, silueta stojí nad jeho středem (`_slot_x`; totéž nově u stojánku na lístečky).
 
+**Vložka do zásuvky podle fotky – hotová, ale mimo katalog** (`insert`, nový modul `engines/python/sheet_kinds.py`,
+stránka `/tools/drawer-insert`, `'available' => false`). Věci položené na list A4 a vyfocené shora dostanou v tácu
+kapsy ve svém tvaru.
+
+- *Jak to měří:* list je měřítko. Na fotce se najde jako největší světlá bezbarvá plocha, jeho čtyři rohy se
+  narovnají na 210 × 297 mm (naležato či nastojato, jak leží) a co je uvnitř tmavší nebo barevnější než papír, je věc.
+  Okraj listu 4 mm se nečte (stíny papíru), drobky pod 40 mm² se zahodí.
+- *Co z toho vznikne:* každá věc kapsa podle obrysu s vůlí 0,3–3 mm, hluboká 4–40 mm nad dnem, u každé půlkulatý
+  výřez na prst; tác o okraj širší než věci dohromady. Stránka vypíše, kolik věcí našla a jak jsou velké, takže
+  chybné měření je vidět dřív, než se cokoli tiskne.
+- *Proti zadání:* hloubka je jedna pro všechny kapsy, ne pole na každou zvlášť.
+- *Co je ověřené:* na kreslených „fotkách“ (stůl, list nakřivo, věci známých rozměrů, rozmazání) vycházejí rozměry
+  do 1,5 mm; fotka bez listu, prázdný list a SVG místo fotky dostanou srozumitelnou hlášku. **Co ověřené není:**
+  skutečná fotka z telefonu – stíny věcí, lesklé a světlé předměty na bílém papíře, světlý stůl pod listem, zkreslení
+  objektivu, fotka nad 5 MB (limit nahrávání). To jsou přesně ty věci, na kterých se takové měření láme, a kreslená
+  fotka je neumí napodobit. Zkouška: vyfotit nůžky, klíč a tužku na A4 a porovnat vypsané rozměry s pravítkem.
+
 **Ozdoba na brčko a otvírák plechovek – hotové, ale mimo katalog** (`straw`, `opener`, rodina `shape`,
 `'available' => false` v `config/tools.php`). Stránky existují a fungují od začátku do konce, jen na ně nevede
 karta: `/tools/straw-topper` a `/tools/can-opener`. Zadání říká, že mechanické věci jdou do katalogu až po zkušebním
@@ -496,9 +513,9 @@ písem; dva z nich (ozdoba na brčko, otvírák) čekají mimo katalog na zkuše
    membránou 0,8 mm nevím, jestli po jejich odtržení zbude něco, co cvaká. Než kolem toho vznikne nástroj se stránkou
    ve třech jazycích, stojí za to vytisknout jeden ručně nakreslený kus a zjistit, jestli tahle konstrukce v PLA/PETG
    cvaká vůbec. Když ano, je to rám a rotační skořepina, zhruba hodina práce.
-2. **Organizér podle fotky, druhý režim:** předměty vyfocené na listu A4 → tác s kapsami podle jejich obrysů
-   (měřítko z listu, narovnání perspektivy, segmentace předmětů, vůle, výřez na prst, hloubka kapsy na předmět).
-   Samostatná práce, a bez skutečných fotek od lidí ji nejde poctivě ověřit.
+2. **Vložka do zásuvky podle fotky** (druhý režim „organizéru podle fotky“ ze zadání): nástroj je postavený, viz
+   níže, ale **mimo katalog** – ověřený je jen na kreslených fotkách. Do katalogu ho pustí až zkouška na skutečných
+   fotkách skutečných věcí; pak chybí už jen texty pro SEO, ukázky a karta.
 3. **Volná skladba vrstev** (`compose`): druhý režim společné stránky se seznamem vrstev a gizmem ve vieweru
    (posun, otočení, zvětšení, duplikovat, smazat), builder `compose_kind.py`. Zápich, jmenovka, klíčenka, ozdoba
    a velké písmeno jsou dnes formuláře s pevným rozvržením; fungují, ale prvek v nich nejde chytit a posunout.
