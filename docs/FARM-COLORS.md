@@ -187,3 +187,45 @@ dvou barvách na S1, G‑code druhé desky `?plate=2` s `T<slot červené>`), sk
 na kalkulaci a předvýběr první barvy podle dílu d564541), server slil jako 27fe92d, strom shodný. Odstávka 12 s, bez
 migrace, build prošel, 10 stránek 200, log bez chyby. V headless Chrome na produkci: kliknutí na text řádku otevře okno
 s 92 cívkami, /tools/nameplate je skladba s odkazem na starý formulář. Záloha `/root/matplace_app-20261008-1941.sql`.
+
+## 7. Katalog barev: ateliérové fotky, hex, nové PLA, rozložení do měničů (9. 10. 2026)
+
+- **Fotky**: 66 barev (druhá zásilka z Číny) dostalo ateliérovou fotku z Romanova Disku („Filamenty“, složky
+  pojmenované kódem); `farm:import-photos /root/filamenty --replace`. Druhá složka (e‑shopové fotky, „plaplus…“ =
+  PLA+, „silk…“ = Silk, ostatní PLA) dala **15 nových barev** s kódy bez čísla řady: `PLA_White`, `PLA_Beige`,
+  `PLA_Yellow`, `PLA_Orange`, `PLA_Brown`, `PLA_Blue`, `PLA_Light_Blue`, `PLA_Sky_Blue`, `PLA_Peacock_Blue`,
+  `PLA_Blue_Pink`, `PLA_Dark_Wood`, `PLA_Metallic_Copper`, `PLA+_Coffee`, `PLA+_Peacock`, `PLA_Silk_Sage_Green`.
+- **Hex**: `ColorCatalog::hexFromPhoto` (medián středu fotky) dává u ateliérových fotek šeď – filament je vlevo,
+  uprostřed je příruba cívky. Hex 66 + 15 barev se proto spočítal zvlášť: pozadí = barva rohů, „živé“ pixely
+  (sytost > 40) → medián nejsytější poloviny; duhy a duály = nejčastější hrubý odstín + poznámka „hex z fotky,
+  zkontrolovat“; bílá/černá/šedá/stříbrná/transparentní podle jména. Pět ručních oprav (svítící modrá, rose gold,
+  PETG hnědá, ABS hnědá, šalvějová). Kdo bude příště plnit hex z ateliérových fotek, ať tenhle postup přenese do
+  `hexFromPhoto` (parametr „kompozice“), zatím je jen ve skriptu řídící session.
+- **Nabídka farmy**: Roman 9. 10.: jen PETG, všechny druhy PLA a ASA (materiál ASA zapnut), nejvýš 2 typy
+  materiálu na stroj. ABS, ABS+, PC, TPU, TPE zůstávají vypnuté.
+
+### Návrh rozložení cívek (11 tiskáren × 4 sloty ACE)
+
+Zásady: bílá a černá na většině strojů (nejčastější barvy, dvoubarevné cedulky, QR = nefritová bílá + černá);
+nejprodávanější barvy (světle modrá, svítící zelená, silk měděná a zlatá) na dvou strojích nebo na stroji, kde se
+hodí do kombinace; silk, svítící a matné pohromadě (jiné teploty, jiný vzhled); PETG + ASA na uzavřené S1; na
+Kobře 3 Max (otevřená, 420 mm) jen PLA+ pro velké díly. Výměna barvy v jednom tisku jde jen v rodině PLA.
+
+| Stroj | Role | Slot 1 | Slot 2 | Slot 3 | Slot 4 |
+|---|---|---|---|---|---|
+| Farm B #1 | PLA+ základ A | 02 bílá | 01 černá | 05 červená | 14 světle modrá |
+| Farm B #2 | PLA+ cedulky a QR | 03 nefritová bílá | 01 černá | 11 modrá | 12 šedá |
+| Farm B #3 | PLA+ základ B | 02 bílá | 01 černá | 04 růžová | 08 oranžová |
+| Farm B #4 | PLA+ vánoční | 02 bílá | 05 červená | 06 zelená | 07 zlatá |
+| Farm B #5 | PLA+ perníčky a doplňky | 01 černá | 09 hnědá | 10 žlutá | 25 světle fialová |
+| Farm B #6 | Silk A (prodejní) | 39 silk zlatá | 40 silk měděná | 57 silk dual zlatá/červená | 44 silk červená |
+| Farm B #7 | Silk B | 24 silk bílá | 23 silk černá | 25 silk růžová | 54 silk nebesky modrá |
+| Farm B #8 | Svítící | 17 Luminous Green | 17_a Luminous Red | 34 svítící modrá | 33 svítící žlutá |
+| Farm U #1 (S1) | Matné a třpyt | 44 matte PLA+ bílá | 44_c matte PLA+ černá | 47_a twinkling červená | 44_a matte PLA+ sky blue |
+| Farm U #2 (S1) | PETG + ASA | 48 PETG černá | 51_b PETG oranžová | 72 ASA černá | 72 ASA bílá |
+| Farm U #3 (Max) | Velké díly PLA+ | 02 bílá | 01 černá | 12 šedá | 14 světle modrá |
+
+Tam, kde je stejná barva ve dvou dávkách (např. červená `05_PLA+_cerveny` a `9_PLA+_2.0_Red`), založit tu, které
+je víc, a druhou v adminu vypnout. Duhy, duály, PETG transparentní/fialová/hnědá, dřevo, mramor a nová řada PLA
+zůstávají „na objednávku“: při zakázce se na chvíli vymění slot. Po založení nastavit v adminu u každého slotu
+barvu a gramy; nabídka na webu se řídí sloty sama.
