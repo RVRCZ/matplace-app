@@ -321,7 +321,7 @@ function poll(token: string): void {
             const c = await getCalculation(token);
             if (state.calc?.token !== token) return; // superseded by a newer calculation
             state.calc = c;
-            if (c.file) state.file = c.file;
+            if (c.file) { state.file = c.file; showNearest(c.file); }
             if (c.status === 'done') {
                 setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false);
                 renderPrecise(c);
@@ -730,8 +730,27 @@ function showMold(file: FileInfo | null): void {
     };
 }
 
+/**
+ * Beside "print it with us": the spools of our farm nearest to the colours of the design, each once, with the photo of
+ * a print from it. A design is drawn in free colours; this is where the customer first sees what we would print from.
+ */
+function showNearest(file: FileInfo | null): void {
+    const el = document.getElementById('cta-farm-nearest');
+    if (!el) return;
+    const safe = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    const seen = new Set<string>();
+    const spools = (file?.nearest ?? []).map((n) => n.spool).filter((s) => (seen.has(s.code) ? false : Boolean(seen.add(s.code))));
+    el.classList.toggle('hidden', spools.length === 0); el.classList.toggle('flex', spools.length > 0);
+    if (!spools.length) { el.innerHTML = ''; return; }
+    const dot = 'inline-block h-5 w-5 shrink-0 rounded-full border border-slate-300 object-cover';
+    const list = spools.map((s) => `<span class="inline-flex items-center gap-1.5">${s.photo ? `<img src="${safe(s.photo)}" alt="" class="${dot}">` : `<span class="${dot}" style="background-color:${/^#[0-9a-f]{6}$/i.test(s.hex) ? s.hex : '#ffffff'}"></span>`}<span>${safe(s.name)} ${safe(s.material)}${s.in_stock ? '' : ` <span class="text-warn">${safe(t('farm.calc_nearest_out'))}</span>`}</span></span>`).join('');
+    const [before, after] = t('farm.calc_nearest', { list: ' ' }).split(' ');
+    el.innerHTML = `<span class="font-medium">${safe(before.trim())}</span>${list}${after?.trim() ? `<span>${safe(after.trim())}</span>` : ''}`;
+}
+
 /** Tool-specific line under the viewer: how this kind of model is meant to be printed. */
 function showKindTip(kind: string | undefined): void {
+    showNearest(state.file);
     const el = document.getElementById('kind-tip');
     if (!el) return;
     const key = `calc.tip.${kind ?? ''}`;

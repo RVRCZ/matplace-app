@@ -15,6 +15,7 @@ export interface FileInfo {
     parts?: string[];
     mold?: { parts?: number; pieces?: number; fill?: boolean; added_ml?: number; undercut_before_pct?: number; cast_url?: string; cast_flags_url?: string; type?: string; axis: string; angle_deg?: number | null; undercut_pct: number; verdict?: string; box: number[]; resin_ml: number; silicone_ml?: number; mold_cm3: number; wall: number; warnings: string[] } | null;
     tool?: { kind: string; params: Record<string, unknown>; url: string } | null;
+    nearest?: { hex: string; spool: { code: string; name: string; hex: string; material: string; finish: string; photo: string | null; in_stock: boolean } }[];
     check?: { status: string; items: { level: 'error' | 'advice' | 'ok'; code: string; params: Record<string, string> }[] };
 }
 
