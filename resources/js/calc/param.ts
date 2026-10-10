@@ -8,7 +8,7 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { Region, FILAMENT, Piece } from './viewer';
 import type { Stage, MenuItem, PriceConfig } from './tool_page';
 import { colorOf, spoolCode, paintSwatch, pickColor, recentColors, rememberColor, materialLabel } from './colors';
-import { pickArtwork, PickedArtwork } from './artwork';
+import { pickArtwork, uploadArtwork, PickedArtwork } from './artwork';
 import { icon } from '../site/icon';
 
 interface Cfg {
@@ -633,7 +633,8 @@ export function bootParam(stage: Stage): void {
         artworkShown = picked ? { name: picked.name, url: picked.url } : null;
         const state = document.getElementById('param-artwork-state'); const thumb = document.getElementById('param-artwork-thumb'); const open = document.getElementById('param-artwork-open');
         if (!state || !thumb || !open) return;
-        const label = open.lastChild; if (label) label.textContent = stage.t(picked ? 'toolpage.artwork.change' : 'toolpage.artwork.choose');
+        // (a tool that takes its photo right on the page names the button after what the window is still for)
+        const label = open.lastChild; if (label) label.textContent = open.dataset.label ?? stage.t(picked ? 'toolpage.artwork.change' : 'toolpage.artwork.choose');
         thumb.innerHTML = picked?.url ? `<img src="${picked.url.replace(/"/g, '&quot;')}" alt="" class="max-h-full max-w-full object-contain">` : '';
         thumb.classList.toggle('hidden', !picked?.url); thumb.classList.toggle('flex', !!picked?.url);
         adjustThumb();
@@ -645,6 +646,48 @@ export function bootParam(stage: Stage): void {
     };
     const artOpen = document.getElementById('param-artwork-open');
     if (artOpen) artOpen.onclick = async () => { const picked = await pickArtwork('library', cfg.kind === 'cookie' ? 'cookies' : ''); if (picked) { setArtwork(picked); if (papel) papelPicked(picked); void refresh().then(commit); } };
+
+    // ── a photo straight onto the page: the field of the first step, a drop anywhere, a paste from the clipboard ──
+    const dropZone = document.getElementById('param-artwork-drop');
+    const fileInput = document.getElementById('param-artwork-file') as HTMLInputElement | null;
+    if (dropZone && fileInput) {
+        const said = document.getElementById('param-artwork-msg');
+        const say = (text: string, bad = false): void => {
+            if (!said) return;
+            said.textContent = text;
+            said.className = text ? `text-sm ${bad ? 'text-danger' : 'text-muted'}` : 'hidden text-sm';
+        };
+        const sendFile = async (file: File | undefined | null): Promise<void> => {
+            if (!file) return;
+            say(t('param.artwork.uploading'));
+            try {
+                const picked = await uploadArtwork(file);
+                say('');
+                setArtwork(picked);
+                if (papel) papelPicked(picked);
+                void refresh().then(commit);
+            } catch (e) {
+                say((e as Error).message || t('param.artwork.failed'), true);
+            }
+            fileInput.value = '';
+        };
+        fileInput.onchange = () => { void sendFile(fileInput.files?.[0]); };
+        const brings = (e: DragEvent): boolean => [...(e.dataTransfer?.types ?? [])].includes('Files');
+        const lit = (on: boolean): void => { dropZone.classList.toggle('border-ink', on); dropZone.classList.toggle('bg-page', on); };
+        let over = 0;
+        window.addEventListener('dragenter', (e) => { if (brings(e)) { over++; lit(true); } });
+        window.addEventListener('dragleave', (e) => { if (brings(e) && --over <= 0) { over = 0; lit(false); } });
+        window.addEventListener('dragover', (e) => { if (brings(e)) e.preventDefault(); });
+        window.addEventListener('drop', (e) => {
+            if (!brings(e) || (e.target as HTMLElement | null)?.closest('dialog')) return;       // the picture window has its own field
+            e.preventDefault(); over = 0; lit(false);
+            void sendFile(e.dataTransfer?.files?.[0]);
+        });
+        window.addEventListener('paste', (e) => {
+            const file = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/'));
+            if (file && !(e.target as HTMLElement | null)?.closest('input, textarea, dialog')) { e.preventDefault(); void sendFile(file); }
+        });
+    }
 
     // ── modular organizer: bins on the customer's own grid ─────────────────
     const grid = document.getElementById('bin-grid');
