@@ -314,3 +314,13 @@ postupně; nový druh se zakládá jen v katalogu.
 - Nahrání fotky z řádku nové barvy v reálném prohlížeči (test posílá fake soubor; `enctype` je na formuláři).
 - CSV import (`ColorCatalog::import`) výrobce zatím nezná – sloupec `manufacturer` dodat, až bude potřeba.
 - Checklisty cívek (Desktop, `civky-farma-*.pdf`) výrobce neukazují.
+
+### Nasazeno pošesté (10. 10. 2026, 14:00 UTC)
+
+main 9e3bac2 = katalog (10e0825, migrace `farm_catalogue_manufacturer` proběhla: 15 druhů „Matplace“, 132 barev s null
+= výrobce druhu) + session D 2d4346a (barvy náhledu podle dílu oblasti u cedulky, korálků a stojícího loga, mřížka misek,
+`App\Support\PreviewMeta` – hlavička X-Model-Meta do 3000 B, zbytek přes `GET /api/tools/preview/{key}/meta`, trasa
+`api.tools.preview.meta`, cache na produkci `database`). Server 3b829d1, výpadek 12 s, záloha
+`/root/matplace_app-20261010-1400.sql`. Nasazeno až po skončení testu švu T26-000030 (skončil „failed“ ~13:59 UTC; S1 #1
+mezitím 110 minut „connection lost“). Po nasazení: stránky 200, 0 chyb v logu, agent farmy U se ozval do 2 s, průchod
+`scripts/check_preview_colors.mjs` proti produkci: 55 stránek, 0 bad (vrstvený obraz, který dřív padal na 502, OK).
