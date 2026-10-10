@@ -17,7 +17,8 @@ class PreviewMetaTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const MOST = 4096;
+    /** the header value alone: nginx fits all the headers of an answer into 4 kB, and the cookies and the rest take 1.6 kB of it */
+    private const MOST = 2048;
 
     public function test_a_small_meta_is_the_header_and_a_heavy_one_leaves_its_biggest_notes_beside_it(): void
     {
@@ -53,7 +54,7 @@ class PreviewMetaTest extends TestCase
         }
         $r = $this->postJson('/api/tools/art/preview', ['params' => ['artwork' => 'lib:colour/snowman', 'mode' => 'layered', 'frame' => 'round', 'width' => 160, 'colors_n' => 5], 'view' => 'use'])->assertOk();
         $header = (string) $r->headers->get('X-Model-Meta');
-        $this->assertLessThan(self::MOST, strlen($header));
+        $this->assertLessThanOrEqual(self::MOST, strlen($header));
         $sent = json_decode($header, true);
         $this->assertArrayNotHasKey('guide', $sent['notes']);
         $rest = $this->getJson('/api/tools/preview/'.$sent['more'].'/meta')->assertOk()->json();
