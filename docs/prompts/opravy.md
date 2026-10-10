@@ -8,6 +8,7 @@
 | 2 | 10. 10. | úvodní stránka + formuláře nástrojů | dlaždice náhradního dílu a odkaz „poskládat vlastní“ se řídí přepínačem nástroje | viz úkol #2 níže | 10. 10. (`ToolVisibility::canOpen`: host podle přepínače, správce vidí dál) | „Opravy #2“ na `feature/tool-fixes` |
 | 3 | 10. 10. | stránky návrhu všech nástrojů | tlačítko „Pokračovat k přesné ceně a tisku“ → „Pokračovat ke kalkulaci“; pod cenou se dvakrát říká totéž o dalším kroku | viz úkol #3 níže | 10. 10. (šest klíčů v `lang/src/tools_flow.json`, test v `ToolPageTest`) | „Opravy #3“ na `feature/tool-fixes` |
 | 4 | 10. 10. | všechny stránky nástrojů | jedno tlačítko „Pokračovat ke kalkulaci“ a jeden text pod cenou pro všechny nástroje (reliéf, figurka, úpravy souboru, kontrola, forma mají dnes jiné) | viz úkol #4 níže | 10. 10. (bez výjimek: i kontrola, oprava a forma otevírají kalkulačku; `toolpage.go*` smazáno) | „Opravy #4“ na `feature/tool-fixes` |
+| 5 | 10. 10. | všechny stránky nástrojů | krok „Materiál a počet kusů“ (dnes jen u parametrických nástrojů) na každé stránce nástroje, zvolený materiál a počet jdou do kalkulace; mrtvé texty tlačítek pryč | viz úkol #5 níže | | |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 
@@ -115,6 +116,40 @@ modelu.“ bez věty o dalším kroku, kontrola (`check.page.go`) a forma mají 
 
 **Hotovo =** na `/tools/relief`, `/tools/figure`, `/tools/split`, `/tools/letter-beads`, `/tools/filament-art` je stejné
 tlačítko „Pokračovat ke kalkulaci“ a stejná věta pod cenou. Testy zelené, `pint`, `tsc`, `build`. Bez migrace.
+
+## Úkol #5 · 10. 10. 2026 · krok „Materiál a počet kusů“ na každé stránce nástroje (koordinováno: `tools/page.blade.php`, `tools/param.blade.php`, `resources/js/calc/tool_page.ts`, `param.ts`, moduly `edit`, `relief`, `figure`, `art`, `mold`, `check`, `repair`, `picture`; `lang/src/*.json`)
+
+**Co Roman chce:** „prostředí a texty u nástrojů musí být stejné nebo podobné“ a funnel bez dvojího ptaní. Dnes má krok
+**„Tisk nebo stažení“** (výběr materiálu `#param-material` a počtu kusů `#param-qty`) jen `param.blade.php`
+(parametrické nástroje) a `spare`; ty při „Pokračovat ke kalkulaci“ posílají `?open=…&material=…&quantity=…` (`param.ts`,
+funkce `save`), kalkulace si je převezme (`calculator.ts` řádek ~829). Ostatní stránky (`edit` = split, hollow…,
+`relief`, `figure`, `filament_art`, `mold`, `check`, `repair`, `picture`) krok nemají, orientační cena u nich počítá
+s výchozím materiálem a `Stage.fileResult` (`tool_page.ts` ř. 272) posílá jen `?open=…`, takže materiál a počet kusů
+zákazník vybírá až v kalkulaci.
+
+**Udělat:**
+1. Krok s materiálem a počtem kusů přesunout do společné stránky: `tools/page.blade.php` vykreslí sekci
+   `print` (stejný markup jako dnes v `param.blade.php` ř. 462–470: select materiálů z `cfg.price.materials`,
+   číslo kusů 1–1000) pro **každý** nástroj, `param.blade.php` svou kopii přestane vykreslovat. Pořadí kroků a
+   navigace (`#tool-nav`) zůstává, u nástrojů bez kroku „Barvy“ je to krok 3.
+2. `Stage` (`tool_page.ts`): zná zvolený materiál a počet (`material()`, `quantity()`), orientační cena (`price()`)
+   je přepočítá při každé změně (jako dnes `param.ts`), `fileResult` staví odkaz `?open=uuid&material=…&quantity=…`
+   (+ `download=1` kde už je). `param.ts` použije totéž místo vlastního čtení `#param-material` / `#param-qty`
+   (pole `material`, `quantity` v `save`). Nic jiného v `param.ts` neměnit (soubor sdílí session 1).
+3. Název kroku: `param.step.inquiry.farm` i `.download` → **„Materiál a počet kusů“** / „Material and quantity“ /
+   „Material y cantidad“ (`lang/src/tools_flow.json` → `python scripts/lang_add.py …`). Tržištní `param.step.inquiry`
+   („Poptávka“) nechat.
+4. Mrtvé texty po #4 smazat: `check.page.go`, `check.page.go.farm`, `check.page.go.download`, `mold.page.go`,
+   `mold.page.go.download` – ručně z `lang/cs.json`, `en.json`, `es.json` a ze zdrojů `lang/src/stage2.json`,
+   `lang/src/tools_flow.json` (skript umí jen přidávat).
+5. Testy: `ToolPageTest` – každý nástroj z `config('tools')` má na stránce `id="param-material"` a `id="param-qty"`
+   a krok „Materiál a počet kusů“; jeden test (třeba relief nebo split) v headless režimu nejde, tak alespoň
+   jednotkově: `Stage.fileResult` sestaví odkaz s `material` a `quantity` (když je TS test harness; když ne, ověř ručně
+   v prohlížeči na `/tools/split` a napiš to do zprávy). `ToolsFlowTest`: nic se nerozbije.
+
+**Hotovo =** na `/tools/split`, `/tools/relief`, `/tools/figure` i `/tools/letter-beads` je stejný krok „Materiál a počet
+kusů“, orientační cena na něj reaguje, po „Pokračovat ke kalkulaci“ má kalkulace předvybraný ten materiál a počet.
+Testy, `pint`, `tsc`, `build`. Bez migrace. **Nerozšiřovat** o další volby (kvalita, výplň) – ty patří do kalkulace.
 
 ## Poznámky pro session 1 (z úkolu #1, předat až poběží)
 
