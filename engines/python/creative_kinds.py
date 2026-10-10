@@ -874,7 +874,7 @@ def _papel_drawing(path):
     """
     import numpy as np
     try:
-        picture, _ = S._svg_picture(path, int(1.5 * PAPEL_PX))     # as fine as the biggest portrait reads it
+        picture, _ = S._svg_picture(path, P.PORTRAIT_PX)           # as fine as a portrait is read
     except S.ArtworkError:
         return None                                          # the outline's own road says what is wrong with it
     a = np.asarray(picture)
@@ -909,7 +909,7 @@ def _papel_photo(M, path, win_w, win_h, darkness, soften, invert, look=None, pic
         rgba = img.convert("RGBA")
         alpha = rgba.getchannel("A")
         img = Image.alpha_composite(Image.new("RGBA", rgba.size, (255, 255, 255, 255)), rgba)
-    cell = max(win_w, win_h) / PAPEL_PX
+    cell = max(win_w, win_h) / (PAPEL_PX if look is None else P.PORTRAIT_PX)
     cols, rows = max(8, int(round(win_w / cell))), max(8, int(round(win_h / cell)))
     person = None
     if look is None:
@@ -927,7 +927,7 @@ def _papel_photo(M, path, win_w, win_h, darkness, soften, invert, look=None, pic
         # what a nozzle cannot print goes: specks of paper, pin holes, hairlines (an opening and a closing of one cell)
         small, pad, how = max(4, int(round((1.6 / cell) ** 2))), 3, {"iterations": 1}
     else:
-        mask, look["rembg"] = P.subject(img, alpha, path, look.get("isolate"))
+        mask, look["rembg"], look["rembg_error"] = P.subject(img, alpha, path, look.get("isolate"))
         dark_ground = mask is not None and look.get("backdrop") == "pattern"
         a, inside, person, where, look["crop"] = P.lay(img, mask, cols, rows, {"trim": look["trim"] / 100.0, "scale": look["scale"], "turn": look["turn"], "dx": look["x"] / cell, "dy": look["y"] / cell, "plain": not dark_ground})
         paper, small, thin = P.split(a, where, cell, darkness, look["detail"])
@@ -948,9 +948,9 @@ def _papel_photo(M, path, win_w, win_h, darkness, soften, invert, look=None, pic
         for keep in (True, False):
             labels, count = ndimage.label(picture == keep)
             if count:
-                sizes = ndimage.sum(picture == keep, labels, range(1, count + 1))
-                for i in np.flatnonzero(sizes < small):
-                    picture[labels == i + 1] = not keep
+                sizes = np.bincount(labels.ravel(), minlength=count + 1)
+                sizes[0] = small                             # (what is not of this kind is no speck of it)
+                picture[(sizes < small)[labels]] = not keep
         return picture
 
     paper = tidy(paper)
@@ -984,6 +984,12 @@ def _papel_unit(M, kind, u):
         for i in range(5):
             flower = flower + drop.rotate(90 + 72 * i)
         return flower
+    if kind == "burst":                                      # a starry blossom: eight narrow rays round a dot
+        ray = (C.circle(0.03 * u, 6).translate([0.17 * u, 0]) + C.circle(0.055 * u, 10).translate([0.36 * u, 0])).hull()
+        burst = C.circle(0.06 * u, 8)
+        for i in range(8):
+            burst = burst + ray.rotate(45 * i)
+        return burst
     if kind == "sprig":                                      # two leaves tip to tip: what grows between the folk flowers
         leaf = (C.circle(0.3 * u, 20).translate([0, 0.215 * u]) ^ C.circle(0.3 * u, 20).translate([0, -0.215 * u])).translate([0.26 * u, 0])
         return leaf.rotate(16) + leaf.rotate(196)
@@ -1051,24 +1057,21 @@ def _papel_ties(M, sheet, holes, plate, bridge):
     return frame, ties, len([c for c in pieces if c is not frame and c.area() >= 2.0])
 
 
-def _papel_colors(p):
-    """The two filaments of a portrait as (code, hex): the backing the lightest spool, the frame and the picture the darkest, unless the visitor chose."""
-    def light(spool):
-        v = str(spool[1]).lstrip("#")
-        return 0.2126 * int(v[0:2], 16) + 0.7152 * int(v[2:4], 16) + 0.0722 * int(v[4:6], 16)
+PAPEL_LIGHT, PAPEL_DARK = "#ede6d6", "#213d78"            # a portrait nobody chose colours for: cream paper under dark blue
 
-    spools = sorted([f for f in (p.get("palette") or []) if len(f) == 2 and len(str(f[1]).lstrip("#")) == 6], key=light)
+
+def _papel_colors(p):
+    """The two colours of a portrait as (code, hex): the backing cream, the frame and the picture dark blue, unless the visitor chose."""
     own = p.get("part_colors") if isinstance(p.get("part_colors"), dict) else {}
 
     def of(part, spare):
         c = own.get(part)
-        return (str(c.get("code") or ""), str(c["hex"])) if isinstance(c, dict) and c.get("hex") else spare
+        return (str(c.get("code") or ""), str(c["hex"])) if isinstance(c, dict) and c.get("hex") else (spare, spare)
 
-    lightest, darkest = ((str(spools[-1][0]), str(spools[-1][1])) if spools else ("", "#ede6d6")), ((str(spools[0][0]), str(spools[0][1])) if spools else ("", "#1f3a5f"))
-    body, details = of("body", lightest), of("details", darkest)
+    body, details = of("body", PAPEL_LIGHT), of("details", PAPEL_DARK)
     if body[1].lower() == details[1].lower() and ("body" in own) != ("details" in own):
-        # the visitor gave one part the very colour the other would get by itself (a black backing): the other takes the opposite end
-        body, details = (body, lightest) if "body" in own else (darkest, details)
+        # the visitor gave one part the very colour the other would get by itself (a dark blue backing): the other takes the opposite one
+        body, details = (body, (PAPEL_LIGHT, PAPEL_LIGHT)) if "body" in own else ((PAPEL_DARK, PAPEL_DARK), details)
     return body, details
 
 
@@ -1107,7 +1110,7 @@ def papel(M, Invalid, p):
         reach = lambda key, half: max(-half, min(half, n(key, 0)))      # noqa: E731 - the middle of the picture stays in the window
         look = {"detail": n("detail", 45), "trim": n("trim", 22), "isolate": bool(p.get("isolate", True)), "backdrop": _pick(Invalid, p, k, "backdrop") if border != "none" else "plain",
                 "scale": n("portrait_scale", 1), "x": reach("portrait_x", win_w / 2), "y": reach("portrait_y", win_h / 2), "turn": n("portrait_turn", 0),
-                "unit": max(7.0, min(16.0, 0.085 * min(win_w, win_h))), "density": density}
+                "unit": max(9.0, min(26.0, 0.125 * min(win_w, win_h))), "density": density}
     # a drawing in colours is a portrait like a photo: its dark colours are printed, the light ones are the backing
     drawn = _papel_drawing(path) if look and path and path.lower().endswith(".svg") else None
     try:
@@ -1200,8 +1203,10 @@ def _papel_portrait(M, Invalid, p, plate, holes, paper, look, border, band, win_
     picture = paper.translate([band, band]) ^ window         # the picture stays in the window, whatever was done to it
     if look.get("spots"):
         # the dark ground round the person, opened by the border's own cut-outs: the backing shows through them
-        unit, sprig = _papel_unit(M, border, look["unit"]), _papel_unit(M, "sprig" if border == "folk" else border, look["unit"] * 0.9)
-        cuts = [(sprig if size < 0.7 else unit).scale([size, size]).rotate(turn).translate([band + x, band + y]) for x, y, size, turn in look["spots"]]
+        # (a folk ground is a meadow: blossoms, starry ones and leaves, big and small; another border repeats its one cut-out)
+        kinds = ("folk", "folk", "burst", "sprig") if border == "folk" else (border,)
+        units = [_papel_unit(M, kind, look["unit"]) for kind in kinds]
+        cuts = [units[int(pick * len(units)) % len(units)].scale([size, size]).rotate(turn).translate([band + x, band + y]) for x, y, size, turn, pick in look["spots"]]
         picture = picture - C.batch_boolean(cuts, M.OpType.Add)
     x0, y0, x1, y1 = plate.bounds()
     move = [-x0, -y0]
@@ -1238,6 +1243,8 @@ def _papel_portrait(M, Invalid, p, plate, holes, paper, look, border, band, win_
         notes["color_change_mm"] = changes[0]["z"]
     if look.get("preview"):
         notes["preview"] = look["preview"]
+    if look.get("rembg_error"):
+        notes["rembg_error"] = look["rembg_error"]             # why the person could not be cut out: read in the response by whoever looks after the server
     return parts, notes
 
 

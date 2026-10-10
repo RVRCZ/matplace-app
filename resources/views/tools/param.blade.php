@@ -200,8 +200,10 @@
                 @endif
                 @if($artwork && $family !== 'shape')
                     {{-- a picture instead of the text: upload, our library of silhouettes, or one uploaded before --}}
+                    {{-- a tool about a photo takes it right here (its own block); the window with the library stays one button away --}}
+                    @includeIf('tools._'.$kind.'_upload')
                     <div class="mt-3 flex flex-wrap items-center gap-2">
-                        <button type="button" id="param-artwork-open" class="btn-quiet !min-h-10 gap-1.5 !px-3 !py-2 text-sm"><x-icon name="image" class="h-4 w-4" />{{ __('toolpage.artwork.choose') }}</button>
+                        <button type="button" id="param-artwork-open" class="btn-quiet !min-h-10 gap-1.5 !px-3 !py-2 text-sm" @if(\Illuminate\Support\Facades\Lang::has('param.'.$kind.'.library')) data-label="{{ __('param.'.$kind.'.library') }}" @endif><x-icon name="image" class="h-4 w-4" />{{ \Illuminate\Support\Facades\Lang::has('param.'.$kind.'.library') ? __('param.'.$kind.'.library') : __('toolpage.artwork.choose') }}</button>
                         <span id="param-artwork-thumb" class="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-line bg-white p-1"></span>
                         <p id="param-artwork-state" class="text-sm text-muted" aria-live="polite"></p>
                     </div>
@@ -283,8 +285,9 @@
         @if(($quickForm ?? null) === false)
             {{-- the address is the composer now; the quick form it used to be does what layers cannot (a picture in several colours, a plate that sizes itself) --}}
             <p class="hint !text-xs">{{ __('param.compose.form.'.$tool) }} <a href="{{ url()->current() }}?form=1" class="font-semibold text-action-dark underline" rel="nofollow">{{ __('param.compose.form.open') }}</a></p>
-        @elseif($composeAs ?? null)
+        @elseif(($composeAs ?? null) && (($quickForm ?? null) === true || \App\Domain\Tools\ToolVisibility::canOpen(auth()->user(), 'compose')))
             {{-- the form lays the thing out by itself; who wants more pieces or his own layout takes it to the composer --}}
+            {{-- (the composer of this very address, or the composer's own page where that one is open to the visitor) --}}
             <p class="hint !text-xs">{{ __('param.compose.more') }} <a href="{{ ($quickForm ?? null) === true ? url()->current() : route('tools.compose', ['preset' => $composeAs]) }}" class="font-semibold text-action-dark underline">{{ __('param.compose.open') }}</a></p>
         @endif
     </x-tool-section>

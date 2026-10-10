@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ModelCheck;
+use App\Domain\Tools\ToolVisibility;
 use App\Mail\CustomerInquiryVerify;
 use App\Models\Inquiry;
 use App\Models\ModelFile;
@@ -30,7 +31,7 @@ class ToolsCatalogTest extends TestCase
             $page->assertSee(__($k));
         }
         foreach (config('tools') as $key => $tool) {
-            if ($tool['available']) {
+            if (ToolVisibility::isPublic($key)) {
                 $this->assertTrue(Route::has($tool['route']), "available tool {$key} has no route");
                 $this->assertNotSame('tools.'.$key.'.title', __('tools.'.$key.'.title'), "tool {$key} has no title");
                 $this->assertNotSame('tools.'.$key.'.action', __('tools.'.$key.'.action'), "tool {$key} has no action text");
@@ -39,7 +40,7 @@ class ToolsCatalogTest extends TestCase
             }
         }
         // every listed tool has its product picture in both sizes (a missing one would fall back to the drawing)
-        foreach (array_keys(array_filter(config('tools'), fn ($t) => $t['available'])) + [99 => 'printer_tools'] as $key) {
+        foreach (array_keys(ToolVisibility::listed()) + [99 => 'printer_tools'] as $key) {
             foreach (['-480.webp', '-800.webp', '-800.jpg'] as $suffix) {
                 $this->assertFileExists(public_path('img/tools/'.$key.$suffix));
             }

@@ -23,6 +23,7 @@ import time
 HALO_MM = 1.2               # the light line between a dark head of hair and the dark ground
 LINE_MM = 0.9               # nothing of the picture is finer than about two printed lines
 PREVIEW_PX = 150            # the small picture of the result travels in a response header: it has to stay light
+PORTRAIT_PX = 480           # a portrait is read on a finer grid than a cut-out (creative_kinds.PAPEL_PX): a face is lines, not blots
 
 
 def otsu(np, a):
@@ -35,14 +36,46 @@ def otsu(np, a):
     return None if np.all(np.isnan(between)) else float(np.nanargmax(between))
 
 
+def _model():
+    """Where the u2net model lies: $U2NET_HOME, next to the interpreter (the server), the home directory (rembg's own place)."""
+    homes = [os.environ.get("U2NET_HOME"), os.path.join(sys.prefix, "u2net"), os.path.join(os.path.expanduser("~"), ".u2net")]
+    for home in homes:
+        for name in ("u2net.onnx", os.path.join("models", "u2net", "u2net.onnx")):
+            if home and os.path.isfile(os.path.join(home, name)):
+                return os.path.join(home, name)
+    return None
+
+
+def _u2net(img):
+    """
+    The person in a photo by the u2net network, run by onnxruntime alone. rembg is not imported: it pulls in numba,
+    which wants a cache it can write (the web server's user has none) and costs seconds on every call.
+    """
+    import numpy as np
+    import onnxruntime as ort
+    from PIL import Image
+    model = _model()
+    if not model:
+        raise FileNotFoundError("u2net.onnx not found (U2NET_HOME, <python>/u2net, ~/.u2net)")
+    quiet = ort.SessionOptions()
+    quiet.log_severity_level = 3
+    net = ort.InferenceSession(model, sess_options=quiet, providers=["CPUExecutionProvider"])
+    x = np.asarray(img.convert("RGB").resize((320, 320), Image.LANCZOS), dtype=np.float32)
+    x = x / max(float(x.max()), 1e-6)
+    x = ((x - np.array([0.485, 0.456, 0.406], dtype=np.float32)) / np.array([0.229, 0.224, 0.225], dtype=np.float32)).transpose(2, 0, 1)[None]
+    y = net.run(None, {net.get_inputs()[0].name: x.astype(np.float32)})[0][0, 0]
+    y = (y - y.min()) / max(float(y.max() - y.min()), 1e-6)
+    return Image.fromarray((y * 255).astype(np.uint8), "L").resize(img.size, Image.LANCZOS)
+
+
 def _cut_out(img, path):
     """
-    The person in a photo as a mask, by rembg. The answer is kept in the temporary directory under the file's name,
-    size and time: the sliders of the page ask for the same photo many times and the network takes a second or two.
+    The person in a photo as a mask. The answer is kept in the temporary directory under the file's name, size and
+    time: the sliders of the page ask for the same photo many times and the network takes a second.
     """
     from PIL import Image
     if os.environ.get("PAPEL_REMBG", "") == "off":           # the tests ask for a server without it, whatever this machine has
-        raise ImportError("rembg is switched off")
+        raise ImportError("switched off (PAPEL_REMBG)")
     st = os.stat(path)
     key = hashlib.sha1(("%s|%d|%d" % (os.path.abspath(path), st.st_size, int(st.st_mtime))).encode("utf-8")).hexdigest()
     folder = os.path.join(tempfile.gettempdir(), "matplace-papel")
@@ -52,12 +85,19 @@ def _cut_out(img, path):
             return Image.open(kept).convert("L").resize(img.size, Image.BILINEAR)
         except Exception:  # noqa: BLE001 - a half-written file: cut the person out again
             pass
-    if "U2NET_HOME" not in os.environ and os.path.isdir(os.path.join(sys.prefix, "u2net")):
-        os.environ["U2NET_HOME"] = os.path.join(sys.prefix, "u2net")      # the model lies next to the interpreter on the server
-    from rembg import new_session, remove
     small = img.convert("RGB")
     small.thumbnail((1024, 1024), Image.LANCZOS)
-    mask = remove(small, session=new_session("u2net"), only_mask=True).convert("L")
+    try:
+        mask = _u2net(small)
+    except Exception as first:  # noqa: BLE001 - no onnxruntime or no model where we look: rembg may still know its own way
+        try:
+            os.environ.setdefault("NUMBA_CACHE_DIR", os.path.join(tempfile.gettempdir(), "matplace-numba"))
+            if "U2NET_HOME" not in os.environ and os.path.isdir(os.path.join(sys.prefix, "u2net")):
+                os.environ["U2NET_HOME"] = os.path.join(sys.prefix, "u2net")
+            from rembg import new_session, remove
+            mask = remove(small, session=new_session("u2net"), only_mask=True).convert("L")
+        except Exception as second:  # noqa: BLE001
+            raise RuntimeError("onnxruntime: %s | rembg: %s" % (str(first)[:140], str(second)[:140]))
     try:
         os.makedirs(folder, exist_ok=True)
         mask.save(kept + ".tmp", "PNG")
@@ -73,24 +113,41 @@ def _cut_out(img, path):
 
 def subject(img, alpha, path, isolate):
     """
-    Who is in the picture: (mask "L" with the person white, or None; whether rembg answered, None when it was not asked).
-    A picture that brings its own transparency is its own mask. A photo is cut out by rembg when the visitor asks for
-    it and the server has it; a mask that holds nearly nothing or nearly everything says nothing and is dropped.
+    Who is in the picture: (mask "L" with the person white, or None; whether the cut-out answered, None when it was
+    not asked; why it did not). A picture that brings its own transparency is its own mask. A photo is cut out by
+    the u2net network when the visitor asks for it and the server has it; a mask that holds nearly nothing or
+    nearly everything says nothing and is dropped.
     """
     import numpy as np
-    mask, answered = None, None
+    mask, answered, why = None, None, ""
     if alpha is not None and float((np.asarray(alpha) < 128).mean()) > 0.01:
         mask = alpha
     elif isolate:
         try:
             mask, answered = _cut_out(img, path), True
-        except Exception:  # noqa: BLE001 - rembg or its model is not there: the photo is used whole
-            mask, answered = None, False
+        except Exception as e:  # noqa: BLE001 - the network or its model is not there: the photo is used whole
+            mask, answered, why = None, False, str(e)[:300]
     if mask is not None:
         share = float((np.asarray(mask) > 127).mean())
         if share < 0.03 or share > 0.97:
             mask = None
-    return mask, answered
+    return mask, answered, why
+
+
+def probe():
+    """What the server has for cutting a person out of a photo (python papel_portrait.py --probe)."""
+    import json
+    from PIL import Image
+    out = {"python": sys.prefix, "tmp": tempfile.gettempdir(), "model": _model(), "U2NET_HOME": os.environ.get("U2NET_HOME")}
+    try:
+        import onnxruntime
+        out["onnxruntime"] = onnxruntime.__version__
+        t = time.time()
+        mask = _u2net(Image.new("RGB", (64, 64), (128, 128, 128)))
+        out.update({"ok": True, "seconds": round(time.time() - t, 2), "mask": list(mask.size)})
+    except Exception as e:  # noqa: BLE001
+        out.update({"ok": False, "error": str(e)[:300]})
+    print(json.dumps(out))
 
 
 def lay(img, mask, cols, rows, o):
@@ -167,26 +224,48 @@ def lay(img, mask, cols, rows, o):
     return a, inside, person, read, crop
 
 
+def otsu3(np, a):
+    """
+    The two grey levels that split a picture into three kinds of grey best (dark, middle, light), as (low, high).
+    A face in even light has no dark half: its one best split runs through the skin. Of three, the lower one takes
+    only what is really dark (eyes, the rim of glasses, dark hair) and leaves the skin light.
+    """
+    hist, _ = np.histogram(a, bins=128, range=(0, 255))
+    hist = hist.astype(np.float64)
+    count, weight = np.cumsum(hist), np.cumsum(hist * (np.arange(128) * 2.0 + 1.0))
+    w = (count[:, None], count[None, :] - count[:, None], count[-1] - count[None, :])
+    m = (weight[:, None], weight[None, :] - weight[:, None], weight[-1] - weight[None, :])
+    with np.errstate(divide="ignore", invalid="ignore"):
+        between = m[0] ** 2 / w[0] + m[1] ** 2 / w[1] + m[2] ** 2 / w[2]
+    between[~np.isfinite(between)] = -1.0
+    between[np.tril_indices(128)] = -1.0
+    low, high = np.unravel_index(int(np.argmax(between)), between.shape)
+    return low * 2.0 + 1.0, high * 2.0 + 1.0
+
+
 def split(a, where, cell, darkness, detail):
     """
     Dark and light of a picture laid by lay(): True where the dark layer is printed, only within `where`.
 
     A plain threshold makes a face a blot (half of it lies in shadow). The picture is first sharpened against a wide
     blur of itself: where it is darker than its surroundings it gets darker still, so eyes, lips, glasses and strands
-    of hair come out as lines, while big dark areas stay filled. `detail` (0–100) is how fine the picture is read;
-    `darkness` moves the level from the one the picture splits itself at (50).
-    Returns (dark, the smallest piece kept in cells, the radius in cells below which nothing is printed).
+    of hair come out as lines, while big dark areas stay filled. The level it is split at is the lower one of three
+    kinds of grey (otsu3), drawn a little towards the split in two. `detail` (0–100) is how fine the picture is
+    read; `darkness` moves the level (50 = where the picture splits itself).
+    Returns (dark, the smallest piece kept in cells, the width in cells below which nothing is printed).
     """
     import numpy as np
     from scipy import ndimage
     d = max(0.0, min(1.0, detail / 100.0))
     thin = max(1, int(math.ceil(LINE_MM / cell - 0.05)))     # a pair of printed lines, in cells
-    sigma = max(2.4 - 1.8 * d, 0.5 * thin)                   # a small panel has small cells: never finer than it prints
+    sigma = max(3.2 - 2.3 * d, 0.35 * thin)                  # a small panel has small cells: never finer than it prints
     near, far = ndimage.gaussian_filter(a, sigma), ndimage.gaussian_filter(a, sigma * 3.5)
-    sharp = near + (6.0 + 14.0 * d) * (near - far)
-    level = otsu(np, near[where]) if where.any() else None
-    if level is None:
+    sharp = near + (14.0 + 20.0 * d) * (near - far)
+    two = otsu(np, near[where]) if where.any() else None
+    if two is None:
         return np.zeros(a.shape, dtype=bool), 4, thin
+    low = otsu3(np, near[where])[0]
+    level = min(two, low + 0.15 * (two - low))
     dark = (sharp <= level + (darkness - 50.0) * 2.0) & where
     small = max(4, int(round(((2.4 - 1.2 * d) / cell) ** 2)))           # specks under 2.4 mm (few details) … 1.2 mm (many) go
     return dark, small, thin
@@ -204,7 +283,8 @@ def ground(np, dark, person, cell):
 
 def scatter(np, field, cell, unit_mm, density):
     """
-    Where the cut-outs of the ground go: [(x, y in mm from the window's lower left corner, size factor, turn in degrees)].
+    Where the cut-outs of the ground go: [(x, y in mm from the window's lower left corner, size factor, turn in degrees,
+    a number from 0 to 1 the builder picks the kind of cut-out by)].
     A staggered grid, shaken a little, always the same one (the picture must not jump while a slider moves); a place
     is taken only where the ground is wide enough round it, a small cut-out where a big one has no room.
     """
@@ -216,16 +296,17 @@ def scatter(np, field, cell, unit_mm, density):
     spots = []
     for j in range(int(rows * cell / (pitch * 0.866)) + 2):
         for i in range(int(cols * cell / pitch) + 2):
-            sx, sy, k, turn, turn2 = rng.uniform(-0.16, 0.16), rng.uniform(-0.16, 0.16), rng.uniform(0.8, 1.25), rng.uniform(0.0, 360.0), rng.uniform(0.0, 360.0)
+            sx, sy, k, turn, turn2 = rng.uniform(-0.16, 0.16), rng.uniform(-0.16, 0.16), rng.uniform(0.7, 1.3), rng.uniform(0.0, 360.0), rng.uniform(0.0, 360.0)
+            pick, pick2 = rng.uniform(0.0, 1.0), rng.uniform(0.0, 1.0)
             shift = 0.5 if j % 2 else 0.0
             # a big cut-out on every place of the grid, a small one in the gap between three of them
-            for x, y, sizes, a in (((i + shift + sx) * pitch, (j * 0.866 + sy) * pitch, (k, 0.62), turn), ((i + shift + 0.5) * pitch, (j * 0.866 + 0.29) * pitch, (0.5,), turn2)):
+            for x, y, sizes, a, which in (((i + shift + sx) * pitch, (j * 0.866 + sy) * pitch, (k, 0.6), turn, pick), ((i + shift + 0.5) * pitch, (j * 0.866 + 0.29) * pitch, (0.45,), turn2, pick2)):
                 c, r = int(x / cell), rows - 1 - int(y / cell)
                 if not (0 <= c < cols and 0 <= r < rows):
                     continue
                 for size in sizes:
                     if free[r, c] >= 0.42 * unit_mm * size + 1.0:
-                        spots.append((x, y, size, a))
+                        spots.append((x, y, size, a, which))
                         break
     return spots
 
@@ -238,3 +319,8 @@ def preview(np, dark):
     out = io.BytesIO()
     im.point(lambda v: 255 if v > 127 else 0).convert("1").save(out, "PNG", optimize=True)
     return base64.b64encode(out.getvalue()).decode("ascii")
+
+
+if __name__ == "__main__":
+    if "--probe" in sys.argv:
+        probe()

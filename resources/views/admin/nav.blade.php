@@ -4,6 +4,7 @@
         'Statistiky' => ['admin.stats.funnel', ['admin.stats.*']],
         'Farma' => ['admin.farm.dashboard', ['admin.farm.*', 'admin.youtube.*']],
         'Katalog' => ['admin.catalog.index', ['admin.catalog.*']],
+        'Nástroje' => ['admin.tools.index', ['admin.tools.*']],
         'Kolekce' => ['admin.collections.index', ['admin.collections.*']],
         'Obsah' => ['admin.content.posts', ['admin.content.*']],
         'Meta' => ['admin.meta.index', ['admin.meta.*']],

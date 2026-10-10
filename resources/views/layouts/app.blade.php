@@ -3,7 +3,9 @@
     $toolSeo = ! empty($tool) ? \App\Support\ToolSeo::texts($tool) : null;
     $title = $toolSeo ? $toolSeo['title'].' · matplace' : ($title ?? 'matplace');
     $description = $toolSeo['description'] ?? ($description ?? __('app.subline'));
-    $noindex = ! empty($noindex) || \App\Support\Locales::noindex() || ! config('seo.indexable', true);
+    // a tool switched off for the public, opened by an admin (App\Http\Middleware\ToolGate): said on the page, kept out of search engines
+    $hiddenTool = request()->attributes->get('hidden_tool');
+    $noindex = ! empty($noindex) || $hiddenTool || \App\Support\Locales::noindex() || ! config('seo.indexable', true);
     $canonical = $canonical ?? \App\Support\Locales::canonical();
     $alternates = $noindex ? [] : \App\Support\Locales::alternates();
     $ogImage = $ogImage ?? ($toolSeo ? \App\Http\Controllers\OgController::url('tool', str_replace('_', '-', $tool)) : \App\Http\Controllers\OgController::url('site', 'home'));
@@ -84,6 +86,12 @@
             </nav>
         </div>
     </header>
+    @if($hiddenTool)
+        <div id="tool-hidden-bar" class="bg-warn-soft px-4 py-2 text-center text-sm text-warn" role="status">
+            <x-icon name="eye" class="mr-1 h-4 w-4" />{{ __('tools.admin.bar') }}
+            <a href="{{ route('admin.tools.index') }}#tool-{{ $hiddenTool }}" class="font-semibold underline">{{ __('tools.admin.bar.link') }}</a>
+        </div>
+    @endif
 
     {{-- a tool's page takes the width of the screen: the viewer is the main thing on it --}}
     <main class="mx-auto {{ empty($wide) ? 'max-w-6xl' : 'max-w-[1600px]' }} px-4 pb-16 pt-{{ empty($wide) ? '6' : '4' }}">

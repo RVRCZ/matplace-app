@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Domain\Tools\ToolVisibility;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -97,8 +99,15 @@ class ToolPageTest extends TestCase
         }
         // tools that take a picture open the picture window (upload, library, my pictures); `form` asks for the form
         // where the address opens the composer of layers now (the key ring)
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
         foreach (ParametricGenerator::ARTWORK as $kind) {
+            // a generator kept out of the catalogue has a page for an admin only (ToolVisibility)
+            if (! ToolVisibility::isPublic($kind)) {
+                $this->actingAs($admin);
+            }
             $this->get(route(config('tools.'.$kind.'.route'), ['form' => 1]))->assertOk()->assertSee('id="param-artwork-open"', false);
+            auth()->logout();
         }
         $this->get('/tools/box')->assertDontSee('id="param-artwork-open"', false);
     }

@@ -234,7 +234,7 @@ class FarmNozzleTest extends TestCase
         // the plate is a frame with ribs and a pad under every feature: built in 3D it grew non-manifold edges
         // wherever a rounded pad touched a rib tangentially, and the order then failed its check as not_watertight
         $out = sys_get_temp_dir().'/mp_calib_'.uniqid().'.stl';
-        foreach (['quick', 'detailed', 'ironing'] as $object) {
+        foreach (['quick', 'detailed', 'ironing', 'seam'] as $object) {
             foreach ([0.4, 0.2] as $nozzle) {
                 $python->runScript('calib_tool.py', [$object, $out, json_encode(['nozzle' => $nozzle])], 60);
                 $t = StlTopology::check($out);

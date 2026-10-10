@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Domain\Tools\ToolVisibility;
 use Illuminate\Support\Facades\Lang;
 
 /**
@@ -14,7 +15,7 @@ final class ToolSeo
     /** @return list<string> tools that are on offer and have a page of their own */
     public static function tools(): array
     {
-        return array_keys(array_filter((array) config('tools'), fn (array $t) => ! empty($t['available']) && isset($t['seo'])));
+        return array_keys(array_filter(ToolVisibility::listed(), fn (array $t) => isset($t['seo'])));
     }
 
     /**
