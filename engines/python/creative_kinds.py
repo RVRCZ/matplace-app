@@ -854,7 +854,7 @@ def _papel_trace(M, np, paper, smooth=False):
         if not paper.any():
             return M.CrossSection()                          # nothing of the face is dark where it lies now: an empty window
         # (with its edge repeated outwards: what reaches the window's edge must run out of it, not turn back along it)
-        return S.mask_outline(M, np.pad(paper, 4, mode="edge"), 0.8).translate([-4, -4]).simplify(0.12)
+        return S.mask_outline(M, np.pad(paper, 5, mode="edge"), 1.1).translate([-5, -5]).simplify(0.1)
     rects = []
     for r in range(rows):
         edges = np.flatnonzero(np.diff(np.concatenate(([0], paper[r].view(np.int8), [0]))))

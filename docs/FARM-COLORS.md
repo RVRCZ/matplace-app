@@ -396,3 +396,11 @@ tiskem. Teď jsou dva: registrace a karta.
 main b0755e9, server ee5de3b, výpadek 12 s, migrace `payments_for_an_order` proběhla, trasa `farm.orders.checkout`
 (i s `{locale}`), brána na produkci `stripe`. Předtím 15:30 UTC main 8a6f28d (E #4 + jedna nejbližší cívka, §9).
 Čeká na jeden ostrý test: zakázka zaplacená kartou ze stránky zakázky (Roman).
+
+### Nasazeno (10. 10. 2026, 17:04 UTC)
+
+main 178e4ac, server 87e304c, výpadek 12 s, bez migrace. Pro farmu: na /farm je blok **Barva** hned pod modelem (před
+velikostí, kvalitou, pevností, podpěrami a počtem kusů) – Romanovo „barvy dát nahoru“. Ve stejném nasazení: session E
+#7 (texty fází nástrojů pro úpravu souboru), session B papel kolo 4 (kvalita portrétu, panel podle fotky) a oprava
+hlavičky náhledu (PreviewMeta limit 2000 B – nginx má 4 kB na všechny hlavičky včetně cookies ~1,1 kB; náhled portrétu
+má teď celkem 2307 B). Nasazení čekalo na dotisk dvou testů švu (T26-000032 na S1 #1, T26-000033 na S1 #3).

@@ -244,34 +244,53 @@ def otsu3(np, a):
     return low * 2.0 + 1.0, high * 2.0 + 1.0
 
 
+def smoothed(np, I, r):
+    """
+    Edge-preserving smoothing (the guided filter of He et al., the picture its own guide): flat skin and hair become
+    flat, the edges of the features stay where they are. I in 0..1, r the radius in cells.
+    """
+    from scipy import ndimage
+    box = lambda x: ndimage.uniform_filter(x, 2 * r + 1, mode="reflect")       # noqa: E731
+    mean = box(I)
+    var = box(I * I) - mean * mean
+    gain = var / (var + 0.02)
+    return box(gain) * I + box(mean - gain * mean)
+
+
 def split(a, where, cell, darkness, detail):
     """
     Dark and light of a picture laid by lay(): True where the dark layer is printed, only within `where`.
 
-    A cut-paper portrait is lines, not areas: a threshold on the picture makes a face a blot. Two things are dark
-    here. Lines: where the picture is darker than its surroundings (a difference of Gaussians below -tau): brows,
-    eyes, the rim of glasses, lips, strands of hair, the shading of a cheek. Fill: what is really dark in itself
-    (dark hair, a coat, pupils): below the lowest of three levels of grey, and never above half of the one level
-    that splits the picture in two, so the hair of a fair face stays light. `detail` (0–100) is how fine the lines
-    are; `darkness` (50 = as the picture asks) draws more or fewer of them and fills more or less.
+    The look of a cut-paper portrait: smooth areas and a few clean lines, as if cut with a knife. The picture is
+    first smoothed without losing its edges (smoothed()), then its contrast is evened out locally (CLAHE), so the
+    lighting of the photo does not decide what is dark; the darkest share of the person is then the paper
+    (a share, so a fair face and a dark one get the same amount of drawing), and on top of it come the thin lines
+    where the picture is darker than its surroundings (a difference of Gaussians): brows, the rim of glasses,
+    strands of hair. `detail` (0–100) is how fine the lines and the smallest kept piece are; `darkness` (50 = as
+    the picture asks) moves the share and draws more or fewer lines.
     Returns (dark, the smallest piece kept in cells, the width in cells below which nothing is printed).
     """
     import numpy as np
     from scipy import ndimage
     d = max(0.0, min(1.0, detail / 100.0))
     thin = max(1, int(round(LINE_MM / cell)))                # the narrowest printed line, in cells
-    sigma = max(1.1 + 1.3 * (1.0 - d), 0.5 * thin)           # the width of a line; a small panel has small cells: never finer than it prints
+    if not where.any() or float(a[where].std()) < 2.0:      # a flat picture (nothing in it): nothing is dark, the builder says so
+        return np.zeros(a.shape, dtype=bool), 4, thin
+    try:
+        from skimage import exposure
+        soft = smoothed(np, a / 255.0, max(1, int(round(1.0 / cell))))
+        even = exposure.equalize_adapthist(np.clip(soft, 0.0, 1.0), kernel_size=max(8, a.shape[0] // 8), clip_limit=0.015)
+    except Exception:  # noqa: BLE001 - a scikit-image without CLAHE: the smoothed picture as it is
+        even = smoothed(np, a / 255.0, max(1, int(round(1.0 / cell))))
+    share = max(5.0, min(70.0, 30.0 + (darkness - 50.0) * 0.6))
+    level = float(np.percentile(even[where], share))
+    dark = (even <= level) & where
+    # the lines: where the picture is darker than its surroundings, as fine as the detail asks and never finer than a printed line
+    sigma = max(1.1 + 1.3 * (1.0 - d), 0.5 * thin)
     near, far = ndimage.gaussian_filter(a, sigma), ndimage.gaussian_filter(a, 2.0 * sigma)
-    if not where.any():
-        return np.zeros(a.shape, dtype=bool), 4, thin
-    tau = 7.0 * 2.0 ** ((50.0 - darkness) / 25.0)
-    lines = (near - far) < -tau
-    two = otsu(np, near[where])
-    if two is None:
-        return np.zeros(a.shape, dtype=bool), 4, thin
-    fill = min(otsu3(np, near[where])[0], 0.5 * two) + (darkness - 50.0)
-    dark = (lines | (near <= fill)) & where
-    small = max(4, int(round(((2.0 - 1.0 * d) / cell) ** 2)))           # specks under 2 mm (few details) … 1 mm (many) go
+    tau = 6.0 * 2.0 ** ((50.0 - darkness) / 25.0)
+    dark = dark | (((near - far) < -tau) & where)
+    small = max(4, int(round((1.5 - 1.2 * d) / cell ** 2)))           # pieces under 1.5 mm² (few details) … 0.3 mm² (many) go
     return dark, small, thin
 
 
