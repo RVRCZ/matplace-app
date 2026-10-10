@@ -1,7 +1,7 @@
 @php
     // the 3D map of a city or a landscape (session B, docs/W.md): a place, its area from above, the settings, the colours
     $unit = fn (string $k) => $k === 'exaggeration' ? '×' : ($k === 'default_h' ? 'm' : 'mm');
-    $i18n = collect(['param.working', 'param.failed', 'param.preview_failed', 'param.too_fast', 'param.creating', 'toolpage.color.pick', 'toolpage.color.out', 'toolpage.go'])->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k)])
+    $i18n = collect(['param.working', 'param.failed', 'param.preview_failed', 'param.too_fast', 'param.creating', 'toolpage.color.pick', 'toolpage.color.out', 'param.go'])->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k)])
         ->merge(collect(['place.searching', 'place.none', 'place.pick', 'place.chosen', 'place.preview.loading', 'place.preview.facts', 'place.preview.facts.landscape', 'scale', 'facts.city', 'facts.landscape',
             'part.base', 'part.roads', 'part.buildings', 'part.water', 'part.terrain', 'go', 'creating', 'queued', 'failed',
             'stage.queued', 'stage.osm', 'stage.terrain', 'stage.reading', 'stage.buildings', 'stage.roads', 'stage.terrain_mesh', 'stage.writing', 'stage.done',
@@ -125,6 +125,15 @@
                         <label class="tool-choice"><input type="radio" name="c-roads" data-choice="roads" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('map.o.roads.'.$o) }}</label>
                     @endforeach
                 </div>
+            </fieldset>
+            <fieldset>
+                <legend class="lbl">{{ __('map.c.roofs') }}</legend>
+                <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
+                    @foreach($choices['roofs'] as $i => $o)
+                        <label class="tool-choice"><input type="radio" name="c-roofs" data-choice="roofs" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('map.o.roofs.'.$o) }}</label>
+                    @endforeach
+                </div>
+                <p class="hint mt-1 !text-xs">{{ __('map.c.roofs.hint') }}</p>
             </fieldset>
         </div>
         <div class="space-y-4" data-when="type=landscape">

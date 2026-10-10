@@ -21,7 +21,7 @@ final class MapData
     public const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 
     /** the main Overpass server and the one that answers when it is down */
-    public const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.openstreetmap.fr/api/interpreter'];     // the main server first (2 slots per address), then the public mirrors (kumi.systems answered 500 on 10 Oct 2026, the French one took over)
+    public const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.openstreetmap.fr/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];     // the main server first (2 slots per address), then the public mirrors (the French one answered in 0.4 s from the server on 10 Oct 2026, kumi.systems 500 on everything)
 
     public const TERRARIUM = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/%d/%d/%d.png';
 
@@ -29,6 +29,14 @@ final class MapData
 
     /** no more height tiles than this for one map (a landscape of 20 km at zoom 12 needs about 16) */
     public const MAX_TILES = 36;
+
+    /** where the answers are kept (storage/app/maps); the tests point it elsewhere so they never wipe a real cache */
+    public static ?string $root = null;
+
+    public static function root(): string
+    {
+        return self::$root ?? storage_path('app/maps');
+    }
 
     public const ATTRIBUTION = 'Data © OpenStreetMap contributors (ODbL) · Výšky: Mapzen / AWS Open Data';
 
@@ -82,8 +90,8 @@ final class MapData
 
     /**
      * The OpenStreetMap elements of a square `sideM` across round a point, as the file of Overpass's JSON answer
-     * (kept 30 days under the square's own name). A city asks for everything it draws (buildings, every road, rail,
-     * water, green); a landscape only for what lies on its relief (water, the roads, the built-up areas), and over
+     * (kept 30 days under the square's own name). A city asks for everything it draws (buildings and their parts,
+     * towers, every road, rail, water, green); a landscape only for what lies on its relief (water, the roads, the built-up areas), and over
      * 6 km only for the main roads – a square of 20 km holds hundreds of thousands of buildings, which would be
      * fetched and thrown away. The main server first, the other when it is down.
      *
@@ -93,13 +101,14 @@ final class MapData
     {
         [$south, $west, $north, $east] = self::bbox($lat, $lon, $sideM);
         $kind = $kind === 'landscape' ? 'landscape' : 'city';
-        $path = storage_path('app/maps/osm/'.sha1(sprintf('%.5f|%.5f|%d%s', $lat, $lon, $sideM, $kind === 'city' ? '' : '|'.$kind)).'.json');
+        $path = self::root().'/osm/'.sha1(sprintf('%.5f|%.5f|%d|%s', $lat, $lon, $sideM, $kind === 'city' ? 'parts' : $kind)).'.json';     // the name says what the answer holds: a city since it has parts and towers
         if ($this->fresh($path)) {
             return $path;
         }
         $bbox = sprintf('%.6f,%.6f,%.6f,%.6f', $south, $west, $north, $east);
         $query = $kind === 'city' ? '[out:json][timeout:60];('
             .'way["building"]('.$bbox.');relation["building"]('.$bbox.');'
+            .'way["building:part"]('.$bbox.');way["man_made"="tower"]('.$bbox.');node["man_made"="tower"]('.$bbox.');'
             .'way["highway"]('.$bbox.');way["railway"]('.$bbox.');'
             .'way["waterway"]('.$bbox.');way["natural"~"^(water|wood|wetland)$"]('.$bbox.');relation["natural"="water"]('.$bbox.');'
             .'way["landuse"~"^(forest|grass|meadow|park|residential|reservoir|basin|orchard|village_green|recreation_ground|cemetery)$"]('.$bbox.');'
@@ -159,7 +168,7 @@ final class MapData
             throw new MapDataUnavailable('area_too_big', (string) count($tiles));
         }
         foreach ($tiles as $i => $t) {
-            $path = storage_path(sprintf('app/maps/dem/%d/%d/%d.png', $t['z'], $t['x'], $t['y']));
+            $path = self::root().sprintf('/dem/%d/%d/%d.png', $t['z'], $t['x'], $t['y']);
             if (! $this->fresh($path, 365)) {
                 $res = Http::timeout(60)->retry(2, 800, throw: false)->withHeaders(['User-Agent' => self::USER_AGENT])->get(sprintf(self::TERRARIUM, $t['z'], $t['x'], $t['y']));
                 if (! $res->ok() || strlen($res->body()) < 100) {

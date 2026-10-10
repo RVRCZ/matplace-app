@@ -179,4 +179,64 @@ limit tři mapy, nenabízená strana vrácena, špatné souřadnice 422; ukázky
 - **Stránka proklikána jen v headless Chromu** proti živým službám (10. 10.): hledat „Staroměstské náměstí“, náhled,
   Vytvořit mapu (město 500 m, 373 budov), stav `ready`, odkaz na Pokračovat. V běžném prohlížeči ještě ne.
 - **Limit `fastcgi` hlaviček**: `X-Map-Meta` je krátká (< 200 B); `X-Model-Meta` tu není (model jde přes soubor).
-- **Druhé kolo** (zadání 3.8.5): značky míst, popisky ulic v náhledu, export jen reliéfu – ne teď.
+- **Druhé kolo** (zadání 3.8.5): značky míst, popisky ulic v náhledu, export jen reliéfu – ne teď. Co z druhého
+  kola Roman zadal po první zkoušce (přestavba po změně, střechy, věže, pořadí serverů), je v sekci 7.
+
+## 7. Kolo 2 (10. 10. 2026 večer): přestavba po změně, střechy a věže, pořadí serverů
+
+**Přestavba po změně.** Chyba stránky: po prvním výsledku zůstal hlavnímu tlačítku odkaz na kalkulaci (`Stage.go`
+slučuje `href` a `run`, odkaz má při kliknutí přednost), takže změna místa ani parametru nevedla k nové mapě. Teď
+změna kteréhokoli parametru i volba jiného místa vrátí tlačítko do „Vytvořit mapu“ (`href: null`, `run: create`);
+starý model zůstane na scéně, dokud není nový; 2D náhled se obnovuje jako dřív. Proklikáno v headless Chromu proti
+živým službám: Staroměstské náměstí → mapa (1 142 budov, 616 se střechou, 73 věží) → volba Ploché → Tábor → tlačítko
+„Vytvořit mapu“ → druhá mapa (1 045 budov, 3 věže), stránka zůstala, bez chyb v konzoli.
+
+**Střechy a věže (`map_tool.py`).**
+- Data navíc z Overpassu (město): `way["building:part"]`, `way["man_made"="tower"]`, `node["man_made"="tower"]`.
+  Klíč cache města končí `|parts`, takže odpovědi z prvního kola (bez částí) se stáhnou znovu.
+- Druhy: **věž** = `man_made=tower`, nebo `building:part` s `tower:type`, `building:part=tower|steeple|bell_tower`,
+  nebo s jehlanovitým `roof:shape` (pyramidal, dome, onion, cone); **dům** = `building` ∈ house, residential, detached,
+  semidetached_house, farm, terrace, bungalow; jinak **budova**; **část** (`building:part`).
+- Výška: `height`, jinak `building:levels`×3, jinak výchozí z panelu; věž bez údaje 2,5× výška budovy, v níž stojí
+  (střed věže v jejím půdorysu), jinak 2,5× výchozí. Věž mapovaná jako bod = čtverec 5 m.
+- Střecha podle `roof:shape`: sedlová (gabled, gambrel, round, skillion, saltbox), valbová (hipped, half-hipped,
+  mansard), stanová (pyramidal, dome, onion, cone). Bez tagu: sedlová u domů ve volbě **Šikmé u domů** (výchozí),
+  žádná ve **Jen podle dat**, žádná nikde v **Ploché**; věž bez tagu dostane jehlan jen v Miniatuře. Výška střechy
+  `roof:height`, jinak `roof:levels`×3, jinak 35 % výšky stěn (špička věže 50 % stěn); celková výška zůstává `height`.
+- Geometrie: stěny jdou do pásem podle výšky jako dřív (sjednocení, zaoblení/odstranění úzkých), střecha je zvlášť
+  nad každou budovou: nejmenší obalový obdélník půdorysu (rotující kalibry nad konvexním obalem), půdorys posunutý do
+  jeho středu a otočený hřebenem podél delší strany, `CrossSection.extrude(h, scale_top=…)`: sedlová (1, 0) – vrch je
+  úsečka přes celý půdorys; valbová ((L−W)/L, 0) – hřeben kratší o kratší stranu, valby mají sklon jako okapy; stanová
+  (0, 0). Půdorys s dírou (dvůr) nebo užší než 0,8 mm střechu nemá. Sedlová nad půdorysem do L je jeden hřeben přes
+  obalový obdélník, ne dva – v měřítku to nevadí.
+- **Odchylka od zadání:** střecha nižší než 0,8 mm v tisku se nezplošťuje, ale zvedá na 0,8 mm. Při 1 km na 200 mm
+  vychází střecha domu na 0,6 mm a jinak by ji v Táboře mělo 3 domy z 982 (teď 547); výška domu tím stoupne nejvýš o
+  ~0,3 mm. Svah 0,8 mm nad domem 2,5 mm širokým je ~33°, čtyři vrstvy po 0,2 mm.
+- Výsledek: `notes.roofs` (šikmé střechy na budovách a částech) a `notes.towers`; stránka je říká ve faktech.
+- Volba na stránce: **Střechy** – Šikmé u domů / Jen podle dat / Ploché (`roofs`: houses/data/flat v `CHOICES`,
+  texty `map.c.roofs`, `map.o.roofs.*`, `map.c.roofs.hint`).
+
+| vstup (1 km, 200 mm) | budov | střech | věží | stavba |
+|---|---|---|---|---|
+| Praha, Staroměstské nám., Sleek, Šikmé u domů | 1 144 | 641 | 72 | 3,5 s (215 000 trojúhelníků) |
+| totéž, Miniatura | 1 144 | 641 | 72 | 5,7 s (357 000) |
+| totéž, Jen podle dat | 1 144 | 177 | 72 | 2,8 s |
+| Tábor, Sleek, Šikmé u domů | 982 | 547 | 3 | 1,8 s (102 000) |
+| Tábor, Miniatura | 982 | 547 | 3 | 2,1 s |
+| Tábor, Jen podle dat | 982 | 10 | 3 | 1,1 s |
+
+V Táboře má `roof:shape` 20 budov z 982, `building:levels` 500, `building:part` 0, `man_made=tower` 3, kostely 3 –
+proto výchozí sedlová u domů. Stažení s novým dotazem: Praha 4,7 s (3,8 MB), Tábor 1,5–13 s (1,7 MB).
+
+**Pořadí Overpass:** `overpass-api.de` → `overpass.openstreetmap.fr` → `overpass.kumi.systems`; cokoli jiného než
+200 s JSON a prvky (500, 504, HTML, prázdný výsledek s `remark`) = hned další server; odpověď každého serveru jde do
+logu i do `timings.failed_why` souboru. User-Agent jde na všechny (Francouzi bez něj vracejí 403).
+
+**Testy:** fixtura má navíc kostel (18 m) s věží jako `building:part` (42 m, pyramidal), kapli s věží jako bod a dům
+s valbovou střechou (`roof:height` 4) – 8 budov, 2 střechy, 2 věže, výška 4 + 42·k. Nový test střech: objem Ploché >
+Jen podle dat > Šikmé u domů, počty střech 2/1/0, věže stojí vždy, dotaz má `building:part` a `node["man_made"="tower"]`.
+Testy mají vlastní cache (`MapData::$root` → `storage/framework/testing/maps`), vývojová cache testy přežije.
+
+**Neověřeno:** nic z toho se netisklo (sklon střech, špičky věží 1–3 mm); věže bez údaje o výšce jsou odhad;
+Praha má 72 „věží“ (části s jehlanem, kostelní věže, komíny jako `man_made=tower`) – po tisku posoudit, zda komíny
+nevynechat (`tower:type=chimney`).
