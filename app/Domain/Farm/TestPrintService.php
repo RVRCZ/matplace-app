@@ -48,12 +48,18 @@ final class TestPrintService
     }
 
     /**
-     * The scarf joint a seam test switches on (Orca's "Contour", only on walls without a sharp corner), with the
-     * values the farm starts from; anything written into the test's own process field wins over these.
+     * The scarf joint a seam test switches on (Orca's "Contour", only on walls without a sharp corner); anything
+     * written into the test's own process field wins over these.
+     *
+     * Outer wall only, inner seams in one line and no scarf on a leaning wall: with the inner walls scarfed, the
+     * inner seams staggered and the overhang threshold at Orca's 40 % a cone leaning 25 degrees got a rough band
+     * 15 mm wide and a field of dots instead of one fine line (T26-000032, 10 Oct 2026); limited like this the cone
+     * stays clean and the seam ridge on a rounded box is gone (T26-000037).
      */
     public const SCARF = [
         'seam_slope_type' => 'external', 'seam_slope_conditional' => '1', 'seam_slope_start_height' => '0', 'seam_slope_min_length' => '20',
-        'seam_slope_steps' => '10', 'scarf_joint_speed' => '100%', 'seam_gap' => '15%', 'staggered_inner_seams' => '1',
+        'seam_slope_steps' => '10', 'scarf_joint_speed' => '100%', 'seam_gap' => '15%',
+        'seam_slope_inner_walls' => '0', 'staggered_inner_seams' => '0', 'scarf_overhang_threshold' => '5%',
     ];
 
     public const FLOOR_MM = 10.0;

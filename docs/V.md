@@ -63,7 +63,7 @@ Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hr
 | T26-000031 (B) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | dnešní (bez scarfu) | **hotovo 10. 10.** – kostka 14,96 × 14,95 (−0,04/−0,05), rohy ostré, stěny válce, hranolu i kužele hladké; na 8 fotkách z foto‑boxu (měkké čelní světlo, 3840 × 2160, výřezy v plném rozlišení) **šev jsem nenašel** (AI ho na válci našla, viz níže – můj výřez mířil jinam); horní plochy s viditelnými čarami (válec, kužel), žádné vlásky kromě prachu; nažloutlý nádech paty kužele = stín, ne vada | u testu v adminu |
 | T26-000032 (S) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | scarf (předpoklad podle pořadí, Roman potvrdí) | **hotovo 10. 10.** – 11 fotek kusů odlomených od sebe, **ostré boční světlo zleva** (jiné než u B). Válec: na jedné straně slabá svislá linka bez boule, ostatní strany čisté. Zaoblený hranol: nic vidět (osvětlená stěna přepálená). **Kužel: na jedné straně zřetelná rovná čára shora dolů a vedle ní asi 15 mm široký zdrsněný pás s drobnými značkami; na další straně pole teček v šikmé mřížce přes zhruba čtvrtinu obvodu**; zbylé dvě strany čisté | u testu v adminu |
 
-| T26-000037 (S2) | S1 #1, PLA+ bílá (slot 4) | scarf jen na svislých vnějších stěnách (zaškrtnutí + JSON; Roman potvrdí podle řádku testu) | tiskne se 10. 10. ~20:06; zkouška žehlení na S1 zrušena před tiskem | – |
+| T26-000037 (S2) | S1 #1, PLA+ bílá (slot 4) | scarf jen na svislých vnějších stěnách (zaškrtnutí + JSON, Roman potvrdil) | **hotovo 10. 10.** – 10 snímků při expozici −6, kusy odlomené (válec 1×, kužel 1×, hranol 4×, kostka 4×) | Camera Roll 20:57–20:59 |
 
 **Srovnání B × S ve stejném ostrém bočním světle** (Roman 10. 10. večer dofotil B stejně jako S, kusy odlomené;
 T26-000032 má u testu „šev: scarf external, délka 20 mm, mezera 15%“):
@@ -89,6 +89,20 @@ nahradí `SCARF` a jdou do řádku; jinak scarf pro PLA+ nezavádět a zkusit ho
 **Focení od 10. 10. 19:26**: kamera Trust Teza na ruční expozici −6 (automatika dávala osvětlenou stranu bílého
 PLA+ na 215–235 z 255, kde kamera kresbu slévá; s −6 je na 174 a šev i čáry horní plochy jsou vidět). Snímky
 z aplikace Fotoaparát jsou v `Obrázky\Camera Roll`. S2 a přefocení hranolu a válce z B a S už s touhle expozicí.
+
+**Výsledek S2 (T26-000037) proti B a S, stejné světlo, expozice −6:**
+
+| prvek | B (bez scarfu) | S (scarf podle zadání) | S2 (scarf jen na svislých vnějších stěnách) |
+|---|---|---|---|
+| zaoblený hranol | zřetelná svislá čára u rohu, mírně vystouplá | neposouzeno | **na čtyřech pohledech žádný hřebínek**, jen měkký přechod lesku |
+| válec | ostrá svislá čára | stejná čára | čára měkčí (jeden pohled) |
+| kužel | jedna tenká čistá čára | čára + zdrsněný pás + pole teček | **jedna tenká čistá čára jako u B** |
+| kostka | rohy ostré, 14,96 × 14,95 | rohy ostré | rohy ostré (neměřeno) |
+
+**S2 je první varianta, která je lepší než dnešní stav a nikde horší.** Proto od tohoto commitu
+`TestPrintService::SCARF` = hodnoty S2 (zaškrtávátko „Šikmý šev“ už dá přímo je, JSON netřeba). Meze důkazu: jeden
+tisk, jedna tiskárna, bílé PLA+, válec a kužel jen z jednoho pohledu, kostka S2 nezměřená. Do knihovny `kobra s1`
+zatím nejde – až řádek potvrdí druhý tisk (jiná barva nebo silk) a Roman šev nehtem.
 
 **AI hodnocení T26-000032** (10. 10. 17:04, 12 fotek, 3 přiblížení): *Šev: nelze posoudit – na válci a kuželu ho
 nenacházím, strana je přeexponovaná nebo rozmazaná*, rohy ok, sloní noha 0, podložka ok, 4/5; chce ostré nepřepálené
