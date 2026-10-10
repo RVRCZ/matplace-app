@@ -12,6 +12,18 @@ return [
     'processing' => 'Zpracovávám model…',
     'model_failed' => 'Model se nepodařilo zpracovat. Zkuste ho uložit znovu jako STL nebo 3MF.',
     'failed' => 'Nepodařilo se to. Zkuste to znovu.',
+    // what the tool is doing right now (engines/python/edit_tool.py `stage`): the same words for every tool, a tool may have its own
+    'stage.queued' => 'Čekám ve frontě…',
+    'stage.loading' => 'Načítám model…',
+    'stage.thinning' => 'Zjednodušuji síť…',
+    'stage.repairing' => 'Uzavírám model…',
+    'stage.measuring' => 'Měřím vzdálenosti od povrchu…',
+    'stage.hollowing' => 'Stavím dutinu…',
+    'stage.cutting' => 'Řežu…',
+    'stage.joints' => 'Dělám spoje…',
+    'stage.numbers' => 'Ryju čísla…',
+    'stage.layout' => 'Rozkládám díly na podložku…',
+    'stage.done' => 'Hotovo, zpracovávám soubor…',
     'again' => 'Změnit nastavení a udělat znovu',
     'glue' => 'Díly se lepí vteřinovým lepidlem nebo lepidlem na plasty; čísla jsou vyrytá v řezné ploše.',
 

@@ -12,6 +12,18 @@ return [
     'processing' => 'Processing the model…',
     'model_failed' => 'The model could not be processed. Try saving it again as STL or 3MF.',
     'failed' => 'That did not work. Please try again.',
+    // what the tool is doing right now (engines/python/edit_tool.py `stage`): the same words for every tool, a tool may have its own
+    'stage.queued' => 'Waiting in the queue…',
+    'stage.loading' => 'Loading the model…',
+    'stage.thinning' => 'Thinning the mesh…',
+    'stage.repairing' => 'Closing the model…',
+    'stage.measuring' => 'Measuring the distances from the surface…',
+    'stage.hollowing' => 'Building the cavity…',
+    'stage.cutting' => 'Cutting…',
+    'stage.joints' => 'Making the joints…',
+    'stage.numbers' => 'Engraving the numbers…',
+    'stage.layout' => 'Laying the pieces on the bed…',
+    'stage.done' => 'Done, processing the file…',
     'again' => 'Change the settings and do it again',
     'glue' => 'The pieces are glued with superglue or a glue for plastics; the numbers are engraved in the cut faces.',
 

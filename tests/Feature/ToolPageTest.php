@@ -132,6 +132,32 @@ class ToolPageTest extends TestCase
         $this->assertSame('Odhad z objemu modelu. V kalkulaci uvidíte přesnou dobu tisku a spotřebu materiálu a stáhnete si soubor nebo hotový projekt pro svou tiskárnu. Bez registrace.', $note('/tools/letter-beads'));
     }
 
+    public function test_a_tool_that_edits_a_file_says_what_it_is_doing_in_words_never_in_a_key(): void
+    {
+        // the phases the tools report while they work (engines/python/edit_tool.py `stage`), and "queued" before they start
+        preg_match_all('/stage\(dst, "([a-z_]+)"\)/', (string) file_get_contents(base_path('engines/python/edit_tool.py')), $reported);
+        $stages = array_values(array_unique(['queued', ...$reported[1]]));
+        $this->assertContains('repairing', $stages);
+        foreach (['cs', 'en', 'es'] as $locale) {
+            foreach ($stages as $stage) {
+                $this->assertNotSame('edit.stage.'.$stage, __('edit.stage.'.$stage, [], $locale), "edit.stage.{$stage} has no text in {$locale}");
+            }
+        }
+        // hollowing a statue said "edit.stage.repairing": only the splitter had words for the phases
+        $ops = ['holder_model' => 'holder', 'soap_model' => 'soap'];
+        foreach (array_keys(self::MODULES, 'edit', true) as $tool) {
+            $op = $ops[$tool] ?? $tool;
+            foreach (['', '/en', '/es'] as $prefix) {
+                $html = (string) $this->get($prefix.'/tools/'.basename(route(config('tools.'.$tool.'.route'))))->assertOk()->getContent();
+                foreach ($stages as $stage) {
+                    $this->assertStringContainsString('edit.'.$op.'.stage.'.$stage, $html, "{$tool}: no text for the phase {$stage}");
+                }
+                // no text the page hands its script is a key (in the page's data a text sits between " … ")
+                $this->assertDoesNotMatchRegularExpression('/:\\\\u0022edit\.[a-z0-9_.]+\\\\u0022/', $html, $prefix.' '.$tool);
+            }
+        }
+    }
+
     public function test_the_parametric_page_keeps_its_fields_and_adds_sliders_units_and_colours(): void
     {
         $html = (string) $this->get('/tools/box')->assertOk()->getContent();
