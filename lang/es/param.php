@@ -223,7 +223,7 @@ return [
     'papel.colors.hint' => 'El 3MF lleva los dos colores y la altura a la que cambian. El STL es un solo cuerpo para imprimir en un color.',
     'papel.swap' => 'Dos colores: el filamento se cambia una vez, a :z mm.',
     'papel.one' => 'Las dos partes tienen el mismo color, la impresión no necesita cambio de filamento.',
-    'warn.portrait_fine' => 'El retrato tiene mucho dibujo fino (el :n % de sus zonas es más estrecho que dos líneas de una boquilla de 0,4 mm). Baje «Detalle del retrato» o agrande el panel.',
+    'warn.portrait_fine' => 'El retrato tiene mucho dibujo fino (el :n % de sus zonas es más estrecho que 0,6 mm, que una boquilla de 0,4 mm quizá no imprima). Baje «Detalle del retrato» o agrande el panel.',
     'warn.portrait_whole' => 'No se pudo separar a la persona del fondo, se usa la foto entera.',
     'photo_organizer.lead' => 'Un organizador para lápices, maquillaje o cepillos de dientes con la forma de su imagen. El contorno hace la pared; dentro hay compartimentos en cuadrícula u orificios redondos.',
     'photo_organizer.tip' => 'Se imprime con el fondo hacia abajo y sin soportes. Para el baño elija PETG; el PLA se ablanda con el tiempo con la humedad y el calor. Un organizador con orificios es un bloque macizo: tarda más en imprimirse, pero no vuelca.',

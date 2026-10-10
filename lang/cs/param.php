@@ -223,7 +223,7 @@ return [
     'papel.colors.hint' => '3MF nese obě barvy a výšku, ve které se mění. STL je jedno těleso pro tisk jednou barvou.',
     'papel.swap' => 'Dvě barvy: filament se vymění jednou, ve výšce :z mm.',
     'papel.one' => 'Obě části mají stejnou barvu, tisk je bez výměny filamentu.',
-    'warn.portrait_fine' => 'Portrét má hodně jemné kresby (:n % ploch je užších než dvě stopy trysky 0,4 mm). Snižte „Kresba portrétu“, nebo zvětšete panel.',
+    'warn.portrait_fine' => 'Portrét má hodně jemné kresby (:n % ploch je užších než 0,6 mm, což tryska 0,4 mm nemusí vytisknout). Snižte „Kresba portrétu“, nebo zvětšete panel.',
     'warn.portrait_whole' => 'Postavu se nepodařilo oddělit od pozadí, fotka je použitá celá.',
     'photo_organizer.lead' => 'Stojánek na tužky, líčení nebo kartáčky ve tvaru vašeho obrázku. Obrys udělá stěnu, uvnitř jsou přihrádky v mřížce, nebo kulaté otvory.',
     'photo_organizer.tip' => 'Tiskne se dnem dolů, bez podpěr. Do koupelny volte PETG, PLA ve vlhku a teple časem měkne. Stojánek s otvory je plný blok: tiskne se déle, ale nepřevrhne se.',

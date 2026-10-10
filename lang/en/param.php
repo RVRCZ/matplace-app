@@ -223,7 +223,7 @@ return [
     'papel.colors.hint' => 'The 3MF carries both colours and the height where they change. The STL is one solid for a one-colour print.',
     'papel.swap' => 'Two colours: the filament changes once, at :z mm.',
     'papel.one' => 'Both parts have the same colour, the print needs no filament change.',
-    'warn.portrait_fine' => 'The portrait has a lot of fine drawing (:n % of its areas are narrower than two lines of a 0.4 mm nozzle). Lower "Portrait detail", or make the panel bigger.',
+    'warn.portrait_fine' => 'The portrait has a lot of fine drawing (:n % of its areas are narrower than 0.6 mm, which a 0.4 mm nozzle may not print). Lower "Portrait detail", or make the panel bigger.',
     'warn.portrait_whole' => 'The person could not be separated from the background, the whole photo is used.',
     'photo_organizer.lead' => 'A holder for pencils, make-up or toothbrushes in the shape of your picture. The outline makes the wall; inside are compartments in a grid, or round holes.',
     'photo_organizer.tip' => 'It prints bottom down, without supports. For a bathroom choose PETG; PLA softens in damp and heat over time. A holder with holes is a solid block: it takes longer to print but does not tip over.',

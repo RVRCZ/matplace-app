@@ -271,3 +271,29 @@ fotkou síť u2net (řídící session naměřila 1,4 s na načtení modelu), da
 (nahrání, přepnutí na portrét, miniatury, tmavé pozadí), přímé oddělení sítí ve zkušebním prostředí s onnxruntime 1.31.
 **Neověřeno:** oddělení sítí na serveru (onnxruntime 1.30 tam je a model taky, ale tenhle kód tam ještě neběžel),
 vložení ze schránky, mobil, a pořád nic netištěno.
+
+## 10. Třetí kolo (10. 10. 2026, Roman: „kresba musí být jemnější“)
+
+Roman poslal vedle sebe předlohu a náš výsledek po druhém kole se stejnou fotkou: u nás tmavé plochy s tlustými
+čarami (vlasy jako skvrny, obroučky brýlí 1 mm), u předlohy tenké čáry na světlé tváři.
+
+**Co bylo špatně.** Dělili jsme obraz prahem: tmavé bylo všechno pod úrovní, i středně tmavé vlasy, a zostření
+proti rozostření jen posouvalo, co pod úroveň spadne. Nejtenčí čára byla 0,9 mm (`LINE_MM`), tedy 3 buňky, a
+otevření 3 × 3 smazalo každou tenčí čáru, takže zbyly jen plochy.
+
+**Co se změnilo** (`papel_portrait.split`):
+
+- **Čáry a výplň zvlášť.** Čára je tam, kde je obraz tmavší než okolí (rozdíl dvou rozostření pod −τ, poměr
+  šířek 1 : 2): obočí, oči, obroučky, rty, prameny, stín tváře. Výplň je jen to, co je tmavé samo o sobě: pod
+  nejnižší ze tří úrovní šedi (`otsu3`), ale nikdy nad polovinou úrovně, která dělí obraz na dvě; světlé vlasy tak
+  zůstanou světlé, tmavé vlasy a kabát se vyplní.
+- **Posuvníky.** „Kresba portrétu“ řídí šířku čáry (σ od 2,4 do 1,1 buňky). „Světlo / stín“ řídí τ (7 při 50,
+  dvojnásobek na každých 25 dílků dolů) a posouvá úroveň výplně o dílek na dílek.
+- **Nejtenčí čára 0,7 mm** (jedna široká stopa trysky 0,4, jak to tiskne předloha): `LINE_MM = 0.7`, buňky se
+  zaokrouhlují místo zaokrouhlení nahoru, u panelu 190 mm je to 2 buňky. Varování `portrait_fine` měří plochy
+  užší než 0,6 mm (`FINE_MM`); po otevření nemůže nastat, zůstává jako pojistka a texty říkají 0,6 mm.
+- **Náhled** 200 px, práh 200 místo 128, aby čára široká jednu buňku v miniatuře nezmizela.
+
+Ověřeno na devíti fotkách (tři světlovlasé, tři tmavovlasé, jedna bez oddělení pozadí, kreslená tvář, panel
+100 mm) a testy `PapelPortraitTest` + `PapelPicadoTest`; ukázky a karta překresleny. Na Romanově fotce ne, tu
+nemám. Stavba 190 mm je lokálně 0,25–0,35 s bez startu interpretu (stejně jako před kolem).

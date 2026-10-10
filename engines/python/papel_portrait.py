@@ -21,8 +21,9 @@ import tempfile
 import time
 
 HALO_MM = 1.2               # the light line between a dark head of hair and the dark ground
-LINE_MM = 0.9               # nothing of the picture is finer than about two printed lines
-PREVIEW_PX = 150            # the small picture of the result travels in a response header: it has to stay light
+LINE_MM = 0.7               # the narrowest line of the picture: one wide extrusion of a 0.4 mm nozzle, as the reference prints them
+FINE_MM = 0.6               # below this a line is in doubt on a 0.4 mm nozzle: the page warns when much of the picture is that fine
+PREVIEW_PX = 200            # the small picture of the result travels in a response header: it has to stay light
 PORTRAIT_PX = 480           # a portrait is read on a finer grid than a cut-out (creative_kinds.PAPEL_PX): a face is lines, not blots
 
 
@@ -247,27 +248,30 @@ def split(a, where, cell, darkness, detail):
     """
     Dark and light of a picture laid by lay(): True where the dark layer is printed, only within `where`.
 
-    A plain threshold makes a face a blot (half of it lies in shadow). The picture is first sharpened against a wide
-    blur of itself: where it is darker than its surroundings it gets darker still, so eyes, lips, glasses and strands
-    of hair come out as lines, while big dark areas stay filled. The level it is split at is the lower one of three
-    kinds of grey (otsu3), drawn a little towards the split in two. `detail` (0–100) is how fine the picture is
-    read; `darkness` moves the level (50 = where the picture splits itself).
+    A cut-paper portrait is lines, not areas: a threshold on the picture makes a face a blot. Two things are dark
+    here. Lines: where the picture is darker than its surroundings (a difference of Gaussians below -tau): brows,
+    eyes, the rim of glasses, lips, strands of hair, the shading of a cheek. Fill: what is really dark in itself
+    (dark hair, a coat, pupils): below the lowest of three levels of grey, and never above half of the one level
+    that splits the picture in two, so the hair of a fair face stays light. `detail` (0–100) is how fine the lines
+    are; `darkness` (50 = as the picture asks) draws more or fewer of them and fills more or less.
     Returns (dark, the smallest piece kept in cells, the width in cells below which nothing is printed).
     """
     import numpy as np
     from scipy import ndimage
     d = max(0.0, min(1.0, detail / 100.0))
-    thin = max(1, int(math.ceil(LINE_MM / cell - 0.05)))     # a pair of printed lines, in cells
-    sigma = max(3.2 - 2.3 * d, 0.35 * thin)                  # a small panel has small cells: never finer than it prints
-    near, far = ndimage.gaussian_filter(a, sigma), ndimage.gaussian_filter(a, sigma * 3.5)
-    sharp = near + (14.0 + 20.0 * d) * (near - far)
-    two = otsu(np, near[where]) if where.any() else None
+    thin = max(1, int(round(LINE_MM / cell)))                # the narrowest printed line, in cells
+    sigma = max(1.1 + 1.3 * (1.0 - d), 0.5 * thin)           # the width of a line; a small panel has small cells: never finer than it prints
+    near, far = ndimage.gaussian_filter(a, sigma), ndimage.gaussian_filter(a, 2.0 * sigma)
+    if not where.any():
+        return np.zeros(a.shape, dtype=bool), 4, thin
+    tau = 7.0 * 2.0 ** ((50.0 - darkness) / 25.0)
+    lines = (near - far) < -tau
+    two = otsu(np, near[where])
     if two is None:
         return np.zeros(a.shape, dtype=bool), 4, thin
-    low = otsu3(np, near[where])[0]
-    level = min(two, low + 0.15 * (two - low))
-    dark = (sharp <= level + (darkness - 50.0) * 2.0) & where
-    small = max(4, int(round(((2.4 - 1.2 * d) / cell) ** 2)))           # specks under 2.4 mm (few details) … 1.2 mm (many) go
+    fill = min(otsu3(np, near[where])[0], 0.5 * two) + (darkness - 50.0)
+    dark = (lines | (near <= fill)) & where
+    small = max(4, int(round(((2.0 - 1.0 * d) / cell) ** 2)))           # specks under 2 mm (few details) … 1 mm (many) go
     return dark, small, thin
 
 
@@ -317,7 +321,8 @@ def preview(np, dark):
     im = Image.fromarray(np.where(dark, 0, 255).astype(np.uint8), "L")
     im.thumbnail((PREVIEW_PX, PREVIEW_PX), Image.LANCZOS)
     out = io.BytesIO()
-    im.point(lambda v: 255 if v > 127 else 0).convert("1").save(out, "PNG", optimize=True)
+    # (a line one cell wide covers a quarter of a small pixel: it stays dark in the small picture, as it is in the print)
+    im.point(lambda v: 255 if v > 200 else 0).convert("1").save(out, "PNG", optimize=True)
     return base64.b64encode(out.getvalue()).decode("ascii")
 
 
