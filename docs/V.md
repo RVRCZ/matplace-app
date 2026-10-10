@@ -60,8 +60,13 @@ Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hr
 | test | stroj, cívka | nastavení | výsledek | fotky |
 |---|---|---|---|---|
 | T26-000030 | S1 #1, PLA+ bílá (slot 4) | scarf | **nedoběhl** – tiskárna na 110 min ztratila spojení s agentem, Roman tisk vypnul, zakázka `failed`; nehodnotí se | – |
-| – | S1 #1, PLA+ bílá (slot 4) | dnešní (bez scarfu) | čeká na nový počítač farmy | – |
+| – | S1 #1, PLA+ bílá (slot 4) | dnešní (bez scarfu) | farma U online 10. 10. večer, Roman zakládá | – |
 | – | S1 #1, PLA+ bílá (slot 4) | scarf | čeká | – |
+
+Plán tisků po zprovoznění farmy U (10. 10. večer, filament jde přes ACE, Roman nemá konkrétní příznak – chce
+nejlepší nastavení): S1 #1 postupně `seam` bez scarfu (B), `seam` se scarfem (S), `quick` dnešní (Q16), `quick`
+s `{"filament_max_volumetric_speed":["12"]}` (Q12); Max souběžně `quick` s `{"top_surface_speed":"120"}` na modré PLA+.
+Každý výtisk zvážit (podtlak toku = nižší hmotnost než odhad), u Q16 poslouchat cvakání extruderu při výplni.
 
 **Co ukázal G-kód T26-000030** (serverová OrcaSlicer 2.4.0-beta, staženo z administrace): nastavení scarfu v něm je
 (`seam_slope_type = external`, délka 20, mezera 15 %, střídání vnitřních švů), šikmé pohyby na válci, hranolu
@@ -107,11 +112,46 @@ Vzhled dělá vnější stěna a horní plocha; vnitřní stěny a výplň vidě
 100–120 a `top_surface_speed` 100–150 na `quick` / `seam`, nejdřív u silku (lesk ukáže každou změnu rychlosti).
 Netestováno tiskem.
 
+### 3.1 Posun filamentu = objemový tok, ne rychlost (Romanův dojem 10. 10. večer)
+
+Z G-kódu T26-000030 (serverová Orca, PLA+ na S1, profil Standard): slicer už dnes **kapuje každý pohyb na
+`filament_max_volumetric_speed = 16 mm³/s`**. Nominální rychlosti se proto skoro nikde nedosáhnou:
+
+| prvek | v profilu | skutečně v G-kódu (medián) | tok (p95) | podíl času nad 12 mm³/s |
+|---|---|---|---|---|
+| vnější stěna | 200 mm/s | 193 | 14,8 | 69 % |
+| vnitřní stěna | 300 | 193 | 16,0 | 74 % |
+| řídká výplň | 270 | 193 | 16,0 | 100 % |
+| plná výplň | 250 | 216 | 16,0 | 100 % |
+| horní plocha | 200 | 200 | 15,2 | 100 % |
+
+Anycubic dává svému profilu PLA pro S1 **12 mm³/s** (`filament_pla.json`); knihovna farmy to zvedla na 16 (PLA+) a 18 (PLA).
+Snížení čísel rychlostí (300 → 250 u vnitřních stěn) tedy neudělá nic – ty se nedosahují; páka na podkluzování
+extruderu je ten jeden strop toku. Místní řez objektu `seam` (prvky 20 mm od sebe):
+
+| strop toku | čas | skutečná rychlost stěn / výplně |
+|---|---|---|
+| 16 mm³/s (dnes PLA+) | 27 min 5 s | 174–190 mm/s |
+| 12 (Anycubic) | 29 min 22 s (+8 %) | 150–162 |
+| 10 | 32 min 4 s (+18 %) | 125–135 |
+
+„Dynamické zpomalení malých stěn“ slicer dělá sám, per pohyb: strop toku, `small_perimeter_speed` 50 % (smyčky do
+~41 mm obvodu), `slow_down_layer_time` 8 s s `slow_down_min_speed` 20, rychlosti převisů a mostů, a v tiskárně
+Klipper pressure advance 0,035. Vlastní přepočet rychlostí v G-kódu by to dubloval a hádal se s pressure advance
+a plánovačem – nedělat. Další páka přímo na změny toku: `max_volumetric_extrusion_rate_slope` (dnes 0 = vypnuto).
+U S1 Combo může stejné příznaky dělat i odpor filamentu v hadičkách ACE – rozliší to tisk s cívkou z přímého vstupu.
+Kandidáti k testu (až Roman popíše příznak): `quick` s `t_filament = {"filament_max_volumetric_speed":"12"}` proti
+dnešku; případně nový objekt „věž toku“ (patra 10 → 20 mm³/s přepisem F v G-kódu jako u teplotní věže) pro zjištění
+skutečné hranice hotendu s danou cívkou.
+
 ## 4. Ruční testy Romana mimo farmu (část 6 zadání)
 
 | kdy | stroj, cívka | co | hodnota | výsledek |
 |---|---|---|---|---|
-| 10. 10. večer | Kobra 3 Max, PLA+ modrá | horní povrch, `top_solid_infill_flow_ratio` (řezáno v Orce na Romanově PC) | čeká na Romana | čeká |
+| 10. 10. večer | Kobra 3 Max, PLA+ modrá | horní povrch, `top_solid_infill_flow_ratio` (řezáno v Orce na Romanově PC) | nejlepší 1,0 (= dnešní hodnota) | Roman i tak nespokojen |
+
+Závěr: poměr toku horní plochy zůstává 1,0; podezřelý je tok – horní plocha jede 200 mm/s × 0,42 × 0,2 = 16,8 mm³/s,
+tedy na stropu 16 (viz 3.1), kde tryska nestíhá. Další test na Maxu: `quick` s `{"top_surface_speed":"120"}` (10 mm³/s).
 
 Hodnoty farmy pro Max dnes: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
 `top_surface_pattern = monotonicline`, `only_one_wall_top = 1`; Max jede s procesem S1 bez přepisů pro velkou
