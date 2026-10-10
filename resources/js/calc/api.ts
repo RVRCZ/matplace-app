@@ -67,6 +67,23 @@ export async function uploadFile(file: File, geometry?: { volume_mm3: number; ar
     });
 }
 
+/**
+ * What a preview says about its model: the header X-Model-Meta. A header has to stay small, so the heaviest notes (the
+ * guide of a layered picture, a long outline) may wait on the server; `more` is their key and one more request brings
+ * them back to where they belong. null when the response carries no meta.
+ */
+export async function modelMeta<T extends { notes?: unknown; parts?: unknown }>(res: Response): Promise<T | null> {
+    const meta = JSON.parse(res.headers.get('X-Model-Meta') ?? 'null') as (T & { more?: string }) | null;
+    if (!meta?.more) return meta;
+    const key = meta.more; delete meta.more;
+    try {
+        const rest = await json<{ notes?: Record<string, unknown>; parts?: unknown }>(await fetch(new URL(`/api/tools/preview/${key}/meta`, res.url || location.href), { credentials: 'same-origin', headers: { Accept: 'application/json' } }));
+        meta.notes = { ...(meta.notes as Record<string, unknown> | undefined), ...rest.notes };
+        if (rest.parts) meta.parts = rest.parts;
+    } catch { /* the rest is gone (an old page): the model is shown without it */ }
+    return meta;
+}
+
 export async function createCalculation(payload: Record<string, unknown>): Promise<CalcInfo> {
     const res = await fetch(routes().calculations, {
         method: 'POST',

@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\FarmTestPhotoController;
 use App\Http\Controllers\Admin\FarmTuningController;
 use App\Http\Controllers\Admin\MetaController as AdminMetaController;
 use App\Http\Controllers\Admin\StatsController as AdminStatsController;
+use App\Http\Controllers\Admin\ToolController as AdminToolController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\YouTubeController;
 use App\Http\Controllers\Api\AdviceController;
@@ -369,6 +370,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware(['file', 'throttle:30,1,part'])->name('tools.param.part');
     Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1,relief')->name('tools.relief');
     // filament art and the editing of a model file (session 3)
+    Route::get('tools/preview/{key}/meta', [ToolsApiController::class, 'previewMeta'])->where('key', '[A-Za-z0-9]{32}')->middleware('throttle:180,1,preview_meta')->name('tools.preview.meta');
     Route::post('tools/art/preview', [EditApiController::class, 'artPreview'])->middleware('throttle:90,1,art_preview')->name('tools.art.preview');
     Route::post('tools/art', [EditApiController::class, 'artCreate'])->middleware('throttle:20,1,art_create')->name('tools.art');
     Route::post('tools/art/zip', [EditApiController::class, 'artZip'])->middleware('throttle:12,1,art_zip')->name('tools.art.zip');
@@ -413,10 +415,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/materials', [$catalog, 'materials'])->name('materials');
     Route::post('/materials/new', [$catalog, 'saveMaterial'])->name('materials.create');
     Route::post('/materials/{material}', [$catalog, 'saveMaterial'])->name('materials.update');
+    Route::post('/materials/{material}/delete', [$catalog, 'deleteMaterial'])->name('materials.delete');
     Route::post('/colors/fill', [$catalog, 'fillColors'])->name('colors.fill');
     Route::post('/colors/import', [$catalog, 'importColors'])->name('colors.import');
     Route::post('/colors/new', [$catalog, 'saveColor'])->name('colors.create');
     Route::post('/colors/{color}', [$catalog, 'saveColor'])->name('colors.update');
+    Route::post('/colors/{color}/delete', [$catalog, 'deleteColor'])->name('colors.delete');
     Route::get('/settings', [$catalog, 'settings'])->name('settings');
     Route::post('/settings', [$catalog, 'saveSettings'])->name('settings.save');
     Route::get('/agents', [$catalog, 'agents'])->name('agents');
@@ -499,6 +503,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/stats/search', [AdminStatsController::class, 'search'])->name('stats.search');
     Route::get('/stats/speed', [AdminStatsController::class, 'speed'])->name('stats.speed');
     Route::get('/ai', [AdminStatsController::class, 'ai'])->name('ai.index');
+
+    // which tools of config/tools.php the public sees (an admin opens the hidden ones to try them)
+    Route::get('/tools', [AdminToolController::class, 'index'])->name('tools.index');
+    Route::post('/tools/{tool}', [AdminToolController::class, 'update'])->where('tool', '[a-z0-9_]+')->name('tools.update');
 
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
     Route::get('/users/{user}', [AdminUserController::class, 'show'])->whereNumber('user')->name('users.show');

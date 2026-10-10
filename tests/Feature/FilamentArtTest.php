@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\Palette;
 use App\Domain\Tools\ArtGenerator;
 use App\Engines\Project\ColorChange;
 use App\Models\ModelFile;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -27,7 +29,7 @@ class FilamentArtTest extends TestCase
 
     private function meta($response): array
     {
-        return json_decode((string) $response->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($response->headers->get('X-Model-Meta'));      // the heaviest notes wait beside the header
     }
 
     private function preview(array $params, string $view = 'use')
@@ -113,7 +115,11 @@ class FilamentArtTest extends TestCase
         // a change of filament at the top of the base and at every step above it, bottom to top
         $zs = array_column($n['color_changes'], 'z');
         $this->assertSame($zs, array_values(array_unique($zs)));
-        $this->assertSame($zs, (function (array $a) { sort($a); return $a; })($zs));
+        $this->assertSame($zs, (function (array $a) {
+            sort($a);
+
+            return $a;
+        })($zs));
         $this->assertLessThanOrEqual(3, count($zs));
         $this->assertGreaterThanOrEqual(1, count($zs));
         foreach ($n['color_changes'] as $c) {
@@ -128,7 +134,7 @@ class FilamentArtTest extends TestCase
         $base = ['artwork' => 'lib:colour/snowman', 'mode' => 'layered', 'frame' => 'none', 'width' => 150, 'colors_n' => 5];
         $plain = $this->meta($this->preview($base)->assertOk())['notes'];
         $first = $plain['colors'][0];
-        $other = collect(app(\App\Domain\Farm\Palette::class)->all())->first(fn ($c) => $c['code'] !== $first['code'])['code'];
+        $other = collect(app(Palette::class)->all())->first(fn ($c) => $c['code'] !== $first['code'])['code'];
         $own = $this->meta($this->preview($base + ['part_colors' => [$first['part'] => ['code' => $other]]])->assertOk())['notes'];
         $this->assertSame($other, $own['colors'][0]['code']);
         $this->assertSame($own['colors'][0]['hex'], $own['paint'][$first['part']]);

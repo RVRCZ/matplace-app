@@ -40,8 +40,18 @@ class FarmCatalogController extends Controller
             'printer' => $printer ?? new FarmPrinter(['mode' => FarmPrinter::MODE_MANUAL, 'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.4, 'time_factor' => 1, 'weight_factor' => 1, 'enabled' => true, 'machine_profile' => 'machine.json', 'process_profiles' => ['draft' => 'process_draft.json', 'standard' => 'process_standard.json', 'fine' => 'process_fine.json']]),
             'agents' => FarmAgent::whereNull('revoked_at')->orderBy('name')->get(),
             'colors' => FarmColor::with('material')->where('enabled', true)->get()->sortBy(fn ($c) => [$c->material->sort, $c->sort])->values(),
+            'materials' => FarmMaterial::orderBy('sort')->get(),   // for a spool that is not in the catalogue yet (a new colour of a known kind)
+            'makers' => $this->makers(),
             'calibration' => $printer ? ($this->calibration()[$printer->id] ?? null) : null,
         ]);
+    }
+
+    /** Every maker named so far, ours first: the suggestions under the "výrobce" fields. */
+    private function makers(): array
+    {
+        return collect([FarmMaterial::DEFAULT_MAKER])
+            ->merge(FarmMaterial::query()->pluck('manufacturer'))->merge(FarmColor::query()->whereNotNull('manufacturer')->pluck('manufacturer'))
+            ->map(fn ($m) => trim((string) $m))->filter()->unique()->values()->all();
     }
 
     public function savePrinter(Request $request, ?FarmPrinter $printer = null): RedirectResponse
@@ -76,12 +86,33 @@ class FarmCatalogController extends Controller
             'timelapse.crop_y' => ['nullable', 'integer', 'min:0', 'max:8000'],
             'timelapse.crop_size' => ['nullable', 'integer', 'min:100', 'max:8000'],
             'slots' => ['nullable', 'array', 'max:16'],
-            'slots.*.color' => ['nullable', 'exists:farm_colors,id'],
+            'slots.*.color' => ['nullable', function (string $attr, mixed $value, \Closure $fail) {
+                if ($value !== 'new' && ! FarmColor::whereKey($value)->exists()) {
+                    $fail(__('validation.exists', ['attribute' => $attr]));
+                }
+            }],
             'slots.*.remaining_g' => ['nullable', 'numeric', 'min:0', 'max:100000'],
             'slots.*.enabled' => ['nullable', 'boolean'],
+            // a spool that is not in the catalogue yet: a new colour of a known kind, made right here
+            'slots.*.new' => ['nullable', 'array'],
+            'slots.*.new.name' => ['nullable', 'string', 'max:80'],
+            'slots.*.new.name_en' => ['nullable', 'string', 'max:80'],
+            'slots.*.new.material' => ['nullable', 'exists:farm_materials,id'],
+            'slots.*.new.manufacturer' => ['nullable', 'string', 'max:80'],
+            'slots.*.new.hex' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'slots.*.new.photo' => ['nullable', 'image', 'max:8192'],
         ]);
         if ($data['mode'] === FarmPrinter::MODE_AGENT && empty($data['farm_agent_id'])) {
             throw ValidationException::withMessages(['farm_agent_id' => __('farm.admin.agent_needed')]);
+        }
+        foreach ($data['slots'] ?? [] as $index => $s) {
+            if (($s['color'] ?? null) !== 'new') {
+                continue;
+            }
+            if (trim((string) ($s['new']['name'] ?? '')) === '' || empty($s['new']['material'])) {
+                throw ValidationException::withMessages(["slots.$index.new.name" => __('farm.admin.new_color_needs')]);
+            }
+            $data['slots'][$index]['color'] = $this->newColor($request, $s['new'], (int) $index)->id;
         }
         foreach (['process_profiles', 'machine_overrides', 'process_overrides'] as $json) {
             $data[$json] = isset($data[$json]) && $data[$json] !== '' ? json_decode($data[$json], true) : null;
@@ -112,6 +143,29 @@ class FarmCatalogController extends Controller
     }
 
     /**
+     * The colour an admin types in at a slot while loading a spool that the catalogue does not know: name (Czech,
+     * English if given), kind, maker, hex and photo if given. It is offered at once (enabled, in stock) and prints
+     * with its kind's settings until it gets its own (/admin/farm/tuning or the colour's print_overrides).
+     */
+    private function newColor(Request $request, array $new, int $slot): FarmColor
+    {
+        $kind = FarmMaterial::findOrFail((int) $new['material']);
+        $maker = trim((string) ($new['manufacturer'] ?? ''));
+        $color = new FarmColor([
+            'farm_material_id' => $kind->id, 'name' => trim((string) $new['name']), 'name_en' => trim((string) ($new['name_en'] ?? '')) ?: null,
+            'manufacturer' => $maker !== '' && $maker !== $kind->maker() ? $maker : null,
+            'hex' => strtolower((string) ($new['hex'] ?? '')) ?: ColorCatalog::UNSET_HEX, 'enabled' => true, 'in_stock' => true, 'sort' => 100,
+        ]);
+        $color->code = ColorCatalog::codeFor($kind, $color->name_en ?: $color->name, $maker ?: null);
+        if ($photo = $request->file("slots.$slot.new.photo")) {
+            $color->photo_path = $photo->storeAs('farm/colors', Str::uuid().'.'.$photo->extension(), 'public');
+        }
+        $color->save();
+
+        return $color;
+    }
+
+    /**
      * Measured ÷ estimated over finished prints of each printer: the factor that would have made the estimates right.
      *
      * @return array<int, array{n: int, time: float|null, weight: float|null}>
@@ -135,17 +189,30 @@ class FarmCatalogController extends Controller
     }
 
     // ── materials and colours ────────────────────────────────────────────────
-    public function materials(): View
+    public function materials(Request $request): View
     {
-        return view('admin.farm.materials', ['materials' => FarmMaterial::with(['colors' => fn ($q) => $q->orderBy('sort')])->orderBy('sort')->get()]);
+        $materials = FarmMaterial::with(['colors' => fn ($q) => $q->orderBy('sort')])->orderBy('sort')->get();
+        // ?copy=<kind> prefills the "new kind" form with that kind's profile, temperatures and price ("založit podle")
+        $template = $request->integer('copy') ? $materials->firstWhere('id', $request->integer('copy'))?->copy() : null;
+        $used = FarmColor::query()->whereIn('id', fn ($q) => $q->select('farm_color_id')->from('farm_printer_slots')->whereNotNull('farm_color_id'))->pluck('id')
+            ->merge(FarmOrder::query()->whereNotNull('farm_color_id')->distinct()->pluck('farm_color_id'))
+            ->merge(FarmOrder::query()->whereNotNull('second_color_id')->distinct()->pluck('second_color_id'))->map(fn ($id) => (int) $id)->unique()->flip();
+
+        return view('admin.farm.materials', [
+            'materials' => $materials, 'template' => $template, 'makers' => $this->makers(),
+            'usedColors' => $used, 'usedKinds' => FarmOrder::query()->distinct()->pluck('farm_material_id')->map(fn ($id) => (int) $id)->flip(),
+        ]);
     }
 
     public function saveMaterial(Request $request, ?FarmMaterial $material = null): RedirectResponse
     {
+        $maker = trim((string) $request->input('manufacturer', '')) ?: FarmMaterial::DEFAULT_MAKER;
+        $request->merge(['code' => strtoupper(trim((string) $request->input('code', '')))]);   // the unique check sees the stored form
         $data = $request->validate([
-            'code' => ['required', 'regex:/^[A-Za-z0-9+\-]+$/', 'max:20', Rule::unique('farm_materials', 'code')->where('finish', $request->input('finish', 'solid'))->ignore($material?->id)],
+            'code' => ['required', 'regex:/^[A-Za-z0-9+\-]+$/', 'max:20', Rule::unique('farm_materials', 'code')->where('finish', $request->input('finish', 'solid'))->where('manufacturer', $maker)->ignore($material?->id)],
             'finish' => ['required', Rule::in(FarmMaterial::FINISHES)],
             'name' => ['required', 'string', 'max:80'],
+            'manufacturer' => ['nullable', 'string', 'max:80'],
             'filament_profile' => ['required', 'string', 'max:120'],
             'filament_overrides' => ['nullable', 'json'],
             'density' => ['required', 'numeric', 'min:0.5', 'max:5'],
@@ -157,13 +224,44 @@ class FarmCatalogController extends Controller
             'sort' => ['nullable', 'integer', 'min:0', 'max:1000'],
         ]);
         $data['code'] = strtoupper($data['code']);
+        $data['manufacturer'] = $maker;
         $data['filament_overrides'] = ! empty($data['filament_overrides']) ? json_decode($data['filament_overrides'], true) : null;
         $data['enabled'] = $request->boolean('enabled');
         ($material ?? new FarmMaterial)->fill($data)->save();
         // a new kind (or a re-enabled one) gets its tuning row on every machine with the best known starting values
         app(ProfileLibrary::class)->sync();
 
-        return back()->with('status', __('farm.admin.saved'));
+        return redirect()->route('admin.farm.materials')->with('status', __('farm.admin.saved'));
+    }
+
+    /** A kind goes only while no colour and no order points at it; otherwise the admin switches it off. */
+    public function deleteMaterial(FarmMaterial $material): RedirectResponse
+    {
+        if ($usage = $material->usage()) {
+            return back()->with('error', __('farm.admin.kind_in_use', ['kind' => $material->label(), 'where' => $this->usageText($usage)]));
+        }
+        $material->delete();   // its tuning rows (farm_printer_materials) go with it
+
+        return redirect()->route('admin.farm.materials')->with('status', __('farm.admin.deleted', ['what' => $material->label()]));
+    }
+
+    /** A colour goes only while it is in no slot, no order and no tuning row; otherwise the admin switches it off. */
+    public function deleteColor(FarmColor $color): RedirectResponse
+    {
+        if ($usage = $color->usage()) {
+            return back()->with('error', __('farm.admin.color_in_use', ['color' => $color->name, 'where' => $this->usageText($usage)]));
+        }
+        if ($color->photo_path) {
+            Storage::disk('public')->delete($color->photo_path);
+        }
+        $color->delete();
+
+        return back()->with('status', __('farm.admin.deleted', ['what' => $color->name]));
+    }
+
+    private function usageText(array $usage): string
+    {
+        return collect($usage)->map(fn ($n, $k) => __('farm.admin.usage.'.$k, ['n' => $n]))->implode(', ');
     }
 
     /** "Fill hex and English names": what `php artisan farm:colors-fill` does, from the admin. */
@@ -201,6 +299,7 @@ class FarmCatalogController extends Controller
             'farm_material_id' => ['required', 'exists:farm_materials,id'],
             'name' => ['required', 'string', 'max:80'],
             'name_en' => ['nullable', 'string', 'max:80'],
+            'manufacturer' => ['nullable', 'string', 'max:80'],
             'code' => ['nullable', 'string', 'max:80'],
             'hex' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],   // empty or the grey default = "not known yet": farm:colors-fill reads it from the photo
             'photo' => ['nullable', 'image', 'max:8192'],
@@ -209,9 +308,15 @@ class FarmCatalogController extends Controller
             'test_notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $color = $color ?? new FarmColor;
-        $color->fill(['farm_material_id' => $data['farm_material_id'], 'name' => $data['name'], 'name_en' => $data['name_en'] ?? null, 'code' => $data['code'] ?? null,
+        $kind = FarmMaterial::findOrFail((int) $data['farm_material_id']);
+        $maker = trim((string) ($data['manufacturer'] ?? ''));
+        $color->fill(['farm_material_id' => $kind->id, 'name' => $data['name'], 'name_en' => $data['name_en'] ?? null, 'code' => $data['code'] ?? null,
+            'manufacturer' => $maker !== '' && $maker !== $kind->maker() ? $maker : null,   // the kind's maker is not repeated on every colour
             'hex' => strtolower($data['hex'] ?? ColorCatalog::UNSET_HEX), 'enabled' => $request->boolean('enabled'), 'in_stock' => $request->boolean('in_stock', true),
             'print_overrides' => ! empty($data['print_overrides']) ? json_decode($data['print_overrides'], true) : null, 'test_notes' => $data['test_notes'] ?? null]);
+        if (! $color->code) {
+            $color->code = ColorCatalog::codeFor($kind, $color->name_en ?: $color->name, $maker ?: null);
+        }
         if (($request->boolean('remove_photo') || $request->hasFile('photo')) && $color->photo_path) {
             Storage::disk('public')->delete($color->photo_path);
             $color->photo_path = null;

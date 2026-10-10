@@ -11,7 +11,8 @@
 @section('content')
 @include('admin.farm.nav')
 
-<form method="post" action="{{ $printer->exists ? route('admin.farm.printers.update', $printer) : route('admin.farm.printers.create') }}" class="mt-4 space-y-4">
+<form method="post" enctype="multipart/form-data" action="{{ $printer->exists ? route('admin.farm.printers.update', $printer) : route('admin.farm.printers.create') }}" class="mt-4 space-y-4">
+    <datalist id="farm-makers">@foreach($makers as $mk)<option value="{{ $mk }}">@endforeach</datalist>
     @csrf
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
         <div class="grid gap-3 sm:grid-cols-3">
@@ -113,22 +114,43 @@
 
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 class="font-bold">Sloty (cívky)</h2>
-        <p class="text-xs text-slate-500">Zákazník vidí jen barvy v zapnutých slotech. Číslo slotu je číslo nástroje v G-code (slot 1 = T0).</p>
+        <p class="text-xs text-slate-500">Zákazník vidí jen barvy v zapnutých slotech. Číslo slotu je číslo nástroje v G-code (slot 1 = T0). {{ __('farm.admin.new_color_hint') }}</p>
         <div class="mt-2 space-y-2">
             @for($i = 0; $i < $slotCount; $i++)
-                @php $s = $slots->get($i); @endphp
+                @php $s = $slots->get($i); $isNew = old("slots.$i.color") === 'new'; @endphp
                 <div class="grid items-end gap-2 sm:grid-cols-[3rem_1fr_8rem_6rem]">
                     <span class="pb-2 text-sm font-bold">{{ $i + 1 }}</span>
                     <label class="{{ $lb }}">Barva
-                        <select name="slots[{{ $i }}][color]" class="{{ $in }}"><option value="">— prázdný —</option>
-                            @foreach($colors->groupBy(fn ($c) => $c->material->label()) as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected($s?->farm_color_id === $c->id)>{{ $c->name }}@if($c->name_en) / {{ $c->name_en }}@endif</option>@endforeach</optgroup>@endforeach
+                        <select name="slots[{{ $i }}][color]" data-slot-color="{{ $i }}" class="{{ $in }}"><option value="">— prázdný —</option>
+                            <option value="new" @selected($isNew)>{{ __('farm.admin.new_color') }}</option>
+                            @foreach($colors->groupBy(fn ($c) => $c->material->label()) as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected(! $isNew && (int) old("slots.$i.color", $s?->farm_color_id) === $c->id)>{{ $c->name }}@if($c->name_en) / {{ $c->name_en }}@endif {{ '' }}@if($c->manufacturer)· {{ $c->manufacturer }}@endif</option>@endforeach</optgroup>@endforeach
                         </select>
                     </label>
-                    <label class="{{ $lb }}">Zbývá (g)<input type="number" step="1" min="0" name="slots[{{ $i }}][remaining_g]" value="{{ $s ? round($s->remaining_g) : 0 }}" class="{{ $in }}"></label>
-                    <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="slots[{{ $i }}][enabled]" value="1" @checked($s?->enabled) class="h-4 w-4 accent-action"> nabízet</label>
+                    <label class="{{ $lb }}">Zbývá (g)<input type="number" step="1" min="0" name="slots[{{ $i }}][remaining_g]" value="{{ old("slots.$i.remaining_g", $s ? round($s->remaining_g) : 0) }}" class="{{ $in }}"></label>
+                    <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="slots[{{ $i }}][enabled]" value="1" @checked(old("slots.$i.enabled", $s?->enabled)) class="h-4 w-4 accent-action"> nabízet</label>
+                </div>
+                {{-- a spool the catalogue does not know: typed in right here, created with the printer (FarmCatalogController::newColor) --}}
+                <div data-slot-new="{{ $i }}" class="{{ $isNew ? '' : 'hidden' }} ml-0 grid gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:ml-[3.5rem] sm:grid-cols-[1fr_1fr_1fr_1fr_5rem_1fr]">
+                    <label class="{{ $lb }}">Název (česky)<input name="slots[{{ $i }}][new][name]" value="{{ old("slots.$i.new.name") }}" placeholder="bílá" class="{{ $in }}"></label>
+                    <label class="{{ $lb }}">Anglicky<input name="slots[{{ $i }}][new][name_en]" value="{{ old("slots.$i.new.name_en") }}" placeholder="white" class="{{ $in }}"></label>
+                    <label class="{{ $lb }}">Druh materiálu
+                        <select name="slots[{{ $i }}][new][material]" class="{{ $in }}"><option value="">—</option>@foreach($materials as $mm)<option value="{{ $mm->id }}" @selected((int) old("slots.$i.new.material") === $mm->id)>{{ $mm->label() }}{{ $mm->enabled ? '' : ' (vypnuto)' }}</option>@endforeach</select>
+                    </label>
+                    <label class="{{ $lb }}">{{ __('farm.admin.maker') }}<input name="slots[{{ $i }}][new][manufacturer]" list="farm-makers" value="{{ old("slots.$i.new.manufacturer") }}" placeholder="{{ \App\Models\FarmMaterial::DEFAULT_MAKER }}" class="{{ $in }}"></label>
+                    <label class="{{ $lb }}">Hex<input type="color" name="slots[{{ $i }}][new][hex]" value="{{ old("slots.$i.new.hex", '#cccccc') }}" class="mt-1 h-9 w-full rounded-lg border border-slate-300"></label>
+                    <label class="{{ $lb }}">Fotka výtisku<input type="file" name="slots[{{ $i }}][new][photo]" accept="image/*" class="mt-1 w-full text-xs"></label>
+                    @error("slots.$i.new.name")<p class="text-xs text-red-700 sm:col-span-6">{{ $message }}</p>@enderror
                 </div>
             @endfor
         </div>
+        <script>
+            document.querySelectorAll('[data-slot-color]').forEach((sel) => {
+                const box = document.querySelector(`[data-slot-new="${sel.dataset.slotColor}"]`);
+                const show = () => box.classList.toggle('hidden', sel.value !== 'new');
+                sel.addEventListener('change', show);
+                show();
+            });
+        </script>
     </section>
 
     <button class="btn-primary">Uložit</button>

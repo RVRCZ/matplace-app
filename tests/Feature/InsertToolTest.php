@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
@@ -16,12 +18,27 @@ class InsertToolTest extends TestCase
 {
     use RefreshDatabase;
 
+    private ?User $admin = null;
+
     protected function setUp(): void
     {
         parent::setUp();
         if (! app(ParametricGenerator::class)->available()) {
             $this->markTestSkipped('The model generator needs Python with manifold3d.');
         }
+        // held back in config/tools.php: only an admin gets to its page and its generator (ToolVisibility)
+        $this->admin = User::factory()->create();
+        $this->admin->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($this->admin);
+    }
+
+    protected function tearDown(): void
+    {
+        // the photos were uploaded as the admin: the next test's first user would find them among "my pictures"
+        if ($this->admin) {
+            File::deleteDirectory(storage_path('app/artwork/u'.$this->admin->id));
+        }
+        parent::tearDown();
     }
 
     /**
@@ -110,5 +127,8 @@ class InsertToolTest extends TestCase
             $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools|toolpage)\.[a-z_.]+\s*</', $html, $locale);
         }
         app()->setLocale('cs');
+        // and nobody but an admin opens it
+        auth()->logout();
+        $this->get('/tools/drawer-insert')->assertNotFound();
     }
 }

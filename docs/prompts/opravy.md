@@ -4,7 +4,8 @@
 
 | # | datum | nástroj | co | kde | hotovo | commit |
 |---|---|---|---|---|---|---|
-| 1 | 10. 10. | admin + katalog nástrojů | zapnutí/skrytí jednotlivých nástrojů v adminu; skrytý nástroj zůstává správci přístupný k testování | viz úkol #1 níže | | |
+| 1 | 10. 10. | admin + katalog nástrojů | zapnutí/skrytí jednotlivých nástrojů v adminu; skrytý nástroj zůstává správci přístupný k testování | viz úkol #1 níže | 10. 10. (popis v `docs/TOOLS-ADMIN.md`) | „Opravy #1“ na `feature/tool-fixes` |
+| 2 | 10. 10. | úvodní stránka + formuláře nástrojů | dlaždice náhradního dílu a odkaz „poskládat vlastní“ se řídí přepínačem nástroje | viz úkol #2 níže | 10. 10. (`ToolVisibility::canOpen`: host podle přepínače, správce vidí dál) | „Opravy #2“ na `feature/tool-fixes` |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 
@@ -48,3 +49,16 @@ správce stránku otevře s lištou, vyzkouší náhled, stažení i „Vytiskno
 
 **Nedělat:** neměnit `config/tools.php` hodnoty `available` ani `verified`; nepřidávat další pole do adminu (pořadí,
 kategorie) – to budou další úkoly.
+
+## Úkol #2 · 10. 10. 2026 · dva odkazy podle ToolVisibility (koordinováno: jen tyto dva soubory)
+
+`resources/views/calculator/home.blade.php` – dlaždice náhradního dílu se řídí jen tržištěm, ne přepínačem; `resources/views/tools/param.blade.php` –
+odkaz „poskládat vlastní“ vede na `/tools/compose` natvrdo (po skrytí compose je pro hosta 404). Obojí přes `ToolVisibility::isPublic`
+(správce vidí dál). Test v `ToolVisibilityTest`. Hotovo = skrytý compose/spare nemá na těchto místech odkaz pro hosta.
+
+## Poznámky pro session 1 (z úkolu #1, předat až poběží)
+
+- `HeldShapesTest`, `InsertToolTest` se přihlašují jako správce už v `setUp` (vypnuté nástroje straw/opener/insert jsou pro hosta 404,
+  v API i na stránce); `InsertToolTest` v `tearDown` maže fotky nahrané pod správcem; `ToolPageTest` otevírá straw/opener/insert jako správce.
+- `tools/param.blade.php`: odkaz „poskládat vlastní“ na `/tools/compose` natvrdo (řeší úkol #2).
+- Skrytý nástroj: `ToolGate` middleware (web) hlídá stránky i API; `config/tools.php` `available=false` = skryto pro veřejnost, správce otevře.

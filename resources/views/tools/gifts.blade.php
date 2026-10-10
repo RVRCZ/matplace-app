@@ -9,7 +9,9 @@
         'birthday' => ['name', 'door', 'keyring', 'nametag'],
     ];
     // gifts that have a tool of their own: a picture or a name in the colours of filaments (the ones that are in the catalogue)
-    $more = array_values(array_filter(['gingerbread', 'name_letter', 'topper', 'keychain', 'ornament', 'charm', 'earrings', 'magnet', 'coaster', 'cookie', 'tray', 'name_cup', 'beads', 'badge', 'bag_charm', 'medallion', 'photo_organizer', 'notes', 'hair_tie', 'candle_stand', 'nameplate', 'text'], fn ($key) => ! empty(config('tools.'.$key.'.available'))));
+    $more = array_values(array_filter(['gingerbread', 'name_letter', 'topper', 'keychain', 'ornament', 'charm', 'earrings', 'magnet', 'coaster', 'cookie', 'tray', 'name_cup', 'beads', 'badge', 'bag_charm', 'medallion', 'photo_organizer', 'notes', 'hair_tie', 'candle_stand', 'nameplate', 'text'], fn ($key) => \App\Domain\Tools\ToolVisibility::isPublic($key)));
+    // the occasions open the sign tool: with that tool switched off they would be links to nowhere
+    $sign = \App\Domain\Tools\ToolVisibility::isPublic('sign');
 @endphp
 
 @section('content')
@@ -18,6 +20,7 @@
     <h1 class="mt-1 text-3xl font-extrabold text-ink">{{ __('gifts.title') }}</h1>
     <p class="hint max-w-3xl">{{ __('gifts.lead') }}</p>
 
+    @if($sign)
     <div class="mt-5 grid items-center gap-5 rounded-2xl border border-line bg-card p-5 sm:grid-cols-[260px_1fr]">
         <div class="overflow-hidden rounded-2xl">@include('tools.picture', ['key' => 'sign', 'sizes' => '(min-width: 640px) 260px, 100vw', 'eager' => true])</div>
         <div>
@@ -45,6 +48,7 @@
             </div>
         </section>
     @endforeach
+    @endif
 
     @if($more)
         <section class="mt-8" aria-labelledby="gift-more">

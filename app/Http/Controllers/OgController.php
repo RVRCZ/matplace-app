@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Catalog\ModelPricing;
+use App\Domain\Tools\ToolVisibility;
 use App\Models\DesignerModel;
 use App\Models\DesignerProfile;
 use App\Models\Post;
@@ -93,7 +94,7 @@ class OgController extends Controller
     {
         $key = str_replace('-', '_', $tool);
         $seo = ToolSeo::texts($key, $locale);
-        abort_unless($seo !== null, 404);
+        abort_unless($seo !== null && ToolVisibility::isPublic($key), 404);
         $picture = public_path('img/tools/'.$key.'-800.jpg');
 
         // the short name the tools list uses as the headline, the page's own title under it

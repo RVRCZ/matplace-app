@@ -182,8 +182,8 @@ def beads(M, Invalid, p):
         parts["all"] = body + raised.translate([0, 0, -0.01])
         notes["parts"] = ["body", "text"]
         notes["color_change_mm"] = round(height, 2)
-        notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(height + 0.02, 2), "color": "orange", "exact": True},
-                            {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white", "exact": True}]
+        notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(height + 0.02, 2), "color": "orange", "exact": True, "part": "text"},
+                            {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white", "exact": True, "part": "body"}]
     x0, y0, z0, x1, y1, z1 = parts["all"].bounding_box()
     notes["outer"] = [round(x1 - x0, 1), round(y1 - y0, 1), round(z1 - z0, 1)]
     bx0, by0, _, bx1, by1, bz1 = blank.bounding_box()

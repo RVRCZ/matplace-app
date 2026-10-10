@@ -2,7 +2,8 @@
 
 @php
     // the spare-part inquiry needs printers to answer it: marketplace only, by the live switch (the admin toggles it at runtime)
-    $all = collect(config('tools'))->filter(fn ($t, $k) => $t['available'] && \Illuminate\Support\Facades\Route::has($t['route']) && ($k !== 'figure' || $generator) && ($k !== 'spare' || config('features.marketplace')));
+    // what is on offer: the config and the admin's switch (/admin/tools) together
+    $all = collect(\App\Domain\Tools\ToolVisibility::listed())->filter(fn ($t, $k) => \Illuminate\Support\Facades\Route::has($t['route']) && ($k !== 'figure' || $generator) && ($k !== 'spare' || config('features.marketplace')));
     $by = fn (string $intent) => $all->filter(fn ($t) => $t['intent'] === $intent);
     // the filter offers a category only when a listed tool is in it
     $cats = collect(['images', 'names', 'home', 'parts', 'toys', 'signs', 'craft', 'edit', 'sell'])->filter(fn ($c) => $all->contains(fn ($t) => in_array($c, $t['categories'], true)));

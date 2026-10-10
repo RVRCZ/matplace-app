@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Tools\ToolVisibility;
 use App\Support\Bots;
-use App\Support\Locales;
 use App\Support\Track;
 use Closure;
 use Illuminate\Http\Request;
@@ -37,16 +37,9 @@ class RecordVisit
     /** The tool whose page this is (config/tools.php), null for any other page. */
     private static function toolOf(Request $request): ?string
     {
-        $name = Locales::baseName((string) $request->route()?->getName());
-        if ($name === '') {
-            return null;
-        }
-        foreach ((array) config('tools') as $key => $tool) {
-            if (($tool['route'] ?? null) === $name && ! empty($tool['available'])) {
-                return (string) $key;
-            }
-        }
+        $tool = ToolVisibility::ofRoute((string) $request->route()?->getName());
 
-        return null;
+        // a tool switched off is opened by an admin only: not a view of the tool
+        return $tool !== null && ToolVisibility::isPublic($tool) ? $tool : null;
     }
 }

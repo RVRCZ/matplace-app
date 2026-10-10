@@ -14,9 +14,28 @@ class FarmColor extends Model
     /** Override keys that go into the finished G-code; every other key changes the slice itself. */
     public const TEMP_KEYS = ['nozzle_temp', 'nozzle_temp_first', 'bed_temp'];
 
-    protected $fillable = ['farm_material_id', 'code', 'name', 'name_en', 'hex', 'photo_path', 'drive_folder', 'print_overrides', 'test_notes', 'enabled', 'in_stock', 'sort'];
+    protected $fillable = ['farm_material_id', 'code', 'name', 'name_en', 'manufacturer', 'hex', 'photo_path', 'drive_folder', 'print_overrides', 'test_notes', 'enabled', 'in_stock', 'sort'];
 
     protected $casts = ['enabled' => 'bool', 'in_stock' => 'bool', 'sort' => 'int', 'print_overrides' => 'array'];
+
+    /** Who made this spool: its own maker, else its kind's. */
+    public function maker(): string
+    {
+        return trim((string) $this->manufacturer) ?: ($this->material?->maker() ?? FarmMaterial::DEFAULT_MAKER);
+    }
+
+    /**
+     * Where this colour is in use, by count: slots it is loaded in, orders that were printed from it, tuning rows of
+     * this very spool. A colour in use is switched off instead of removed (an order keeps pointing at what it was printed with).
+     */
+    public function usage(): array
+    {
+        return array_filter([
+            'slots' => $this->slots()->count(),
+            'orders' => FarmOrder::where('farm_color_id', $this->id)->orWhere('second_color_id', $this->id)->count(),
+            'tuning' => FarmPrinterMaterial::where('farm_color_id', $this->id)->count(),
+        ]);
+    }
 
     /** Temperatures this spool prints with: its own, else its kind's. Empty when neither says anything. */
     public function temps(): array

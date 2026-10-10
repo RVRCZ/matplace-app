@@ -8,6 +8,7 @@
 
 @section('content')
 @include('admin.farm.nav')
+<datalist id="farm-makers">@foreach($makers as $mk)<option value="{{ $mk }}">@endforeach</datalist>
 
 <p class="mt-4 text-sm text-slate-600">Druh materiálu nese teploty a slicer profil; barva je jeden filament toho druhu. Zákazník vidí barvy, které jsou <strong>zapnuté</strong> a založené v některém slotu tiskárny. Vypnutý druh (bez ověřeného profilu) se nenabízí, i když má barvy.</p>
 
@@ -36,18 +37,20 @@
 </section>
 
 <div class="mt-4 space-y-4">
-    @foreach($materials->concat([new \App\Models\FarmMaterial(['density' => 1.24, 'enabled' => true, 'finish' => 'solid'])]) as $m)
-        <section class="rounded-2xl border {{ $m->exists && ! $m->enabled ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white' }} p-4">
+    @foreach($materials->concat([$template ?? new \App\Models\FarmMaterial(['density' => 1.24, 'enabled' => true, 'finish' => 'solid'])]) as $m)
+        <section id="{{ $m->exists ? 'kind-'.$m->id : 'kind-new' }}" class="rounded-2xl border {{ $m->exists && ! $m->enabled ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white' }} p-4">
             <form method="post" action="{{ $m->exists ? route('admin.farm.materials.update', $m) : route('admin.farm.materials.create') }}">
                 @csrf
-                <details @if(! $m->exists) @else open @endif>
+                <details @if($m->exists || $template) open @endif>
                     <summary class="cursor-pointer font-bold">{{ $m->exists ? $m->label().' · '.$m->colors->count().' barev'.($m->enabled ? '' : ' · vypnuto') : '+ Nový druh materiálu' }}</summary>
+                    @if(! $m->exists && $template)<p class="mt-1 text-xs text-slate-500">{{ __('farm.admin.copy_kind_hint', ['kind' => $template->label()]) }}</p>@endif
                     <div class="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
                         <label class="{{ $lb }}">Kód<input name="code" required value="{{ $m->code }}" placeholder="PETG" class="{{ $in }}"></label>
                         <label class="{{ $lb }}">Povrch
                             <select name="finish" class="{{ $in }}">@foreach(\App\Models\FarmMaterial::FINISHES as $f)<option value="{{ $f }}" @selected($m->finish === $f)>{{ $f }}{{ __('farm.finish.'.$f) ? ' – '.__('farm.finish.'.$f) : '' }}</option>@endforeach</select>
                         </label>
                         <label class="{{ $lb }}">Název<input name="name" required value="{{ $m->name }}" class="{{ $in }}"></label>
+                        <label class="{{ $lb }}">{{ __('farm.admin.maker') }}<input name="manufacturer" list="farm-makers" value="{{ $m->manufacturer }}" placeholder="{{ \App\Models\FarmMaterial::DEFAULT_MAKER }}" class="{{ $in }}"></label>
                         <label class="{{ $lb }}">Profil filamentu<input name="filament_profile" required value="{{ $m->filament_profile }}" placeholder="filament_petg.json" class="{{ $in }}"></label>
                         <label class="{{ $lb }}">Hustota (g/cm³)<input type="number" step="0.001" name="density" required value="{{ $m->density }}" class="{{ $in }}"></label>
                         <label class="{{ $lb }}">Cena za gram (bez DPH)<input type="number" step="0.0001" name="price_per_gram" required value="{{ $m->price_per_gram }}" class="{{ $in }}"></label>
@@ -58,12 +61,23 @@
                         <label class="{{ $lb }} sm:col-span-2">Další přepisy profilu (JSON)<input name="filament_overrides" value="{{ $json($m->filament_overrides) }}" class="{{ $in }} font-mono text-xs"></label>
                         <label class="{{ $lb }} sm:col-span-3 lg:col-span-6">Poznámka pro obsluhu<input name="notes" value="{{ $m->notes }}" maxlength="500" class="{{ $in }}"></label>
                     </div>
-                    <div class="mt-2 flex items-center justify-between">
+                    <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="enabled" value="1" @checked($m->enabled) class="h-4 w-4 accent-action"> Nabízet zákazníkům (profil je ověřený)</label>
-                        <button class="btn-quiet text-sm">Uložit</button>
+                        <span class="flex items-center gap-3 text-sm">
+                            @if($m->exists)<a href="{{ route('admin.farm.materials', ['copy' => $m->id]) }}#kind-new" class="text-xs text-slate-500 underline">{{ __('farm.admin.copy_kind') }}</a>@endif
+                            <button class="btn-quiet text-sm">Uložit</button>
+                        </span>
                     </div>
                 </details>
             </form>
+            @if($m->exists)
+                @php $kindUsage = array_filter(['colors' => $m->colors->count(), 'orders' => isset($usedKinds[$m->id]) ? 1 : 0]); @endphp
+                @if($kindUsage)
+                    <p class="mt-1 text-right text-xs text-slate-400">{{ __('farm.admin.kind_in_use', ['kind' => $m->label(), 'where' => collect($kindUsage)->map(fn ($n, $k) => __('farm.admin.usage.'.$k, ['n' => $n]))->implode(', ')]) }}</p>
+                @else
+                    <form method="post" action="{{ route('admin.farm.materials.delete', $m) }}" class="mt-1 text-right" onsubmit="return confirm(@js(__('farm.admin.delete_confirm', ['what' => $m->label()])))">@csrf<button class="text-xs text-red-700 underline">{{ __('farm.admin.delete') }}</button></form>
+                @endif
+            @endif
 
             @if($m->exists)
                 <details class="mt-3" @if($m->colors->count() <= 8) open @endif>
@@ -84,21 +98,31 @@
                                 <button class="btn-quiet text-sm">Uložit</button>
                                 @if($c->code)<input type="hidden" name="code" value="{{ $c->code }}">@endif
                                 <details class="sm:col-span-8 text-xs">
-                                    <summary class="cursor-pointer text-slate-500">{{ $c->code ?? 'nastavení' }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif · vlastní nastavení tisku {{ $c->print_overrides ? '✓' : '–' }}@if($c->exists) · přeřadit / fotka @endif</summary>
-                                    @if($c->exists)
-                                        <div class="mt-1 grid gap-2 sm:grid-cols-2">
+                                    <summary class="cursor-pointer text-slate-500">{{ $c->code ?? 'nastavení' }}@if($c->exists && $c->manufacturer) · {{ $c->manufacturer }}@endif {{ '' }}@if($c->drive_folder) · <a class="underline" target="_blank" href="https://drive.google.com/drive/folders/{{ $c->drive_folder }}">fotky na Drive</a>@endif · vlastní nastavení tisku {{ $c->print_overrides ? '✓' : '–' }}@if($c->exists) · přeřadit / fotka @endif</summary>
+                                    <div class="mt-1 grid gap-2 sm:grid-cols-3">
+                                        @if($c->exists)
                                             <label class="{{ $lb }}">Druh materiálu (přeřazení špatně zařazené barvy)
                                                 <select name="farm_material_id" class="{{ $in }}">@foreach($materials as $mm)<option value="{{ $mm->id }}" @selected($mm->id === $c->farm_material_id)>{{ $mm->label() }}{{ $mm->enabled ? '' : ' (vypnuto)' }}</option>@endforeach</select>
                                             </label>
+                                        @endif
+                                        <label class="{{ $lb }}">{{ __('farm.admin.maker') }} <span class="font-normal">({{ __('farm.admin.maker_hint') }})</span><input name="manufacturer" list="farm-makers" value="{{ $c->manufacturer }}" placeholder="{{ $m->maker() }}" class="{{ $in }}"></label>
+                                        @if($c->exists)
                                             <label class="flex items-center gap-2 pt-5 text-sm"><input type="checkbox" name="remove_photo" value="1" class="h-4 w-4 accent-action"> smazat současnou fotku (nová se nahraje polem „Fotka výtisku“)</label>
-                                        </div>
-                                    @endif
+                                        @endif
+                                    </div>
                                     <div class="mt-1 grid gap-2 sm:grid-cols-2">
                                         <label class="{{ $lb }}">Vlastní nastavení tisku (JSON; nozzle_temp, nozzle_temp_first, bed_temp = do hotového G-code, "process"/"filament" = nové slicování)<input name="print_overrides" value="{{ $c->print_overrides ? json_encode($c->print_overrides, JSON_UNESCAPED_UNICODE) : '' }}" placeholder='{"nozzle_temp": 220, "bed_temp": 60}' class="{{ $in }} font-mono text-xs"></label>
                                         <label class="{{ $lb }}">Výsledky testů (co ukázal testovací objekt)<input name="test_notes" value="{{ $c->test_notes }}" maxlength="2000" class="{{ $in }}"></label>
                                     </div>
                                 </details>
                             </form>
+                            @if($c->exists)
+                                @if(isset($usedColors[$c->id]))
+                                    <p class="-mt-1 px-2 text-right text-[11px] text-slate-400">{{ __('farm.admin.color_in_use', ['color' => $c->name, 'where' => __('farm.admin.usage.slots_or_orders')]) }}</p>
+                                @else
+                                    <form method="post" action="{{ route('admin.farm.colors.delete', $c) }}" class="-mt-1 px-2 text-right" onsubmit="return confirm(@js(__('farm.admin.delete_confirm', ['what' => $c->name])))">@csrf<button class="text-[11px] text-red-700 underline">{{ __('farm.admin.delete') }} {{ $c->name }}</button></form>
+                                @endif
+                            @endif
                         @endforeach
                     </div>
                 </details>

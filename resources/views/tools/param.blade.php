@@ -285,8 +285,9 @@
         @if(($quickForm ?? null) === false)
             {{-- the address is the composer now; the quick form it used to be does what layers cannot (a picture in several colours, a plate that sizes itself) --}}
             <p class="hint !text-xs">{{ __('param.compose.form.'.$tool) }} <a href="{{ url()->current() }}?form=1" class="font-semibold text-action-dark underline" rel="nofollow">{{ __('param.compose.form.open') }}</a></p>
-        @elseif($composeAs ?? null)
+        @elseif(($composeAs ?? null) && (($quickForm ?? null) === true || \App\Domain\Tools\ToolVisibility::canOpen(auth()->user(), 'compose')))
             {{-- the form lays the thing out by itself; who wants more pieces or his own layout takes it to the composer --}}
+            {{-- (the composer of this very address, or the composer's own page where that one is open to the visitor) --}}
             <p class="hint !text-xs">{{ __('param.compose.more') }} <a href="{{ ($quickForm ?? null) === true ? url()->current() : route('tools.compose', ['preset' => $composeAs]) }}" class="font-semibold text-action-dark underline">{{ __('param.compose.open') }}</a></p>
         @endif
     </x-tool-section>
