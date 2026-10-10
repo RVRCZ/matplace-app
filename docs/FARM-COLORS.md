@@ -236,3 +236,10 @@ První ostrý tisk po dílech: zakázka F26‑000054, krabička s víkem na Farm
 (Fire copper – Spectrum), víko ze slotu 2 (měděná), dvě desky za sebou, obě hotové, zakázka `done`. Agent farmy U
 mezitím běží na novém počítači (Windows 10 Pro, Wi‑Fi farmy 5 GHz, Python 3.12, úloha `matplace-farm-agent`);
 zdejší agent je vypnutý včetně samospouštění.
+
+### Nasazeno potřetí (10. 10. 2026, 11:27 UTC)
+
+`main` = 86dedea: session D (volný výběr barvy na stránkách návrhu, cívky až na kalkulaci „U nás vytiskneme“ a na farmě),
+session B (portrét z fotky v papel picado), farma: jednobarevný návrh se na `/farm` předvybere na nejbližší cívku,
+`__pycache__` ze sledování pryč. Server 278506c, strom shodný, odstávka 12 s, bez migrace. Záloha
+`/root/matplace_app-20261010-1127.sql`. Farma byla při nasazení zapnutá (Roman ji zapnul kvůli testu švu), 0 běžících úloh.
