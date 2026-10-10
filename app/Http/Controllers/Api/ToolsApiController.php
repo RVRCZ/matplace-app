@@ -9,6 +9,7 @@ use App\Domain\Tools\SignGenerator;
 use App\Engines\Exceptions\EngineException;
 use App\Http\Controllers\Controller;
 use App\Models\ModelFile;
+use App\Support\PreviewMeta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -98,9 +99,18 @@ class ToolsApiController extends Controller
         return response()->file($built['path'], [
             'Content-Type' => 'model/stl',
             'Content-Disposition' => ($request->boolean('download') ? 'attachment' : 'inline').'; filename="'.$name.'"',
-            'X-Model-Meta' => json_encode($built['meta']),
+            'X-Model-Meta' => PreviewMeta::header($built['meta']),
             'Cache-Control' => 'no-store',
         ])->deleteFileAfterSend(true);
+    }
+
+    /** GET /api/tools/preview/{key}/meta → the notes of a preview that did not fit its header (see App\Support\PreviewMeta) */
+    public function previewMeta(string $key): JsonResponse
+    {
+        $rest = PreviewMeta::rest($key);
+        abort_if($rest === null, 404);
+
+        return response()->json($rest, 200, ['Cache-Control' => 'no-store']);
     }
 
     /** POST /api/tools/param/zip {kind, params} → every part of the design as its own STL, in one archive */

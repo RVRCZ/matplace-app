@@ -218,3 +218,92 @@ Místní poznámka k vývoji na Windows: vestavěný server PHP nepředá Python
 nenajde své balíčky a stránka nástroje hlásí „generátor není dostupný“. Pomohlo dát do místního `.env` `PYTHON_BIN`
 (plná cesta) a `PYTHONPATH` (uživatelské `site-packages`) a server pustit přímo: `php -S 127.0.0.1:8017` ve složce
 `public` s `vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php`.
+
+## 8. Oprava po nasazení (10. 10. 2026 odpoledne): náhled ukazuje zvolené barvy
+
+Nasazeno bylo `main` 86dedea. Roman na produkci našel: `/tools/sign`, „Dvoubarevně: deska a písmo zvlášť“, krok Barvy
+říká Deska stříbrná a Písmo zelená, náhled ale kreslí bílou desku a oranžové písmo.
+
+**Příčina.** Cedulka ve dvou barvách je jedno těleso. Náhled ji proto nebarví po dílech, ale po **oblastech**
+(`notes.regions`: nad deskou jedna barva, pod ní druhá) a nástroj do nich psal pevné barvy `white` a `orange`. Stránka
+barvy dílů do oblastí nikdy nepřenášela, takže zvolená barva se na náhledu neprojevila. Nebyla to chyba volné barvy:
+stejně se náhled choval i s cívkami, jen si toho nikdo nevšiml. Stejný vzor měly korálky s písmeny (`beads`) a
+stojící logo (`logo`, režim `standing`): tam se navíc celý model přebarvil barvou prvního dílu.
+
+**Oprava.**
+
+- Nástroje říkají u každé oblasti, **kterému dílu patří** (`regions[].part`): `creative_kinds.py` (cedulka obou
+  stavitelů `text`/`plate`, stojící logo `body`/`stand`), `name_kinds.py` (korálky `text`/`body`), `stand_kinds.py`
+  (držáky `body`/`stand`). Sedm řádků, ke každému slovníku přibyl jeden klíč.
+- `param.ts`: `tinted()` dá oblasti barvu, kterou má její díl, a to přesně (`exact`, tedy barva jako na kolečku a
+  ostrý přechod ve výšce desky). Stránka si drží poslední STL (`lastStl`), takže **změna barvy překreslí náhled hned,
+  bez nové stavby** (`repaintRegions()` v `setPartColor`). Kde nástroj maluje po oblastech, kusy se už nepřebarvují
+  (jediný kus je celý model). Díl zobrazený samostatně („Jen víčko“) má nově také svou barvu.
+- Po znovuotevření návrhu (`?from=<uuid>`) jdou barvy stejnou cestou: `applyValues` naplní `partColors`, první stavba
+  je už obarvená.
+
+**Dva další nálezy z téhož průchodu, oba opravené:**
+
+- **Mřížka sady misek** (`/tools/modular-organizer`, krok Rozměry) kreslila na produkci všechny misky krémově: barvu
+  buňky hledá v tabulce barev náhledu podle hodnoty a hex v ní nebyl. `colors.ts` teď každou volnou barvu, kterou
+  stránka uvidí, do tabulky zapíše (`learn`). 3D náhled misek byl správně.
+- **Vrstvený obraz vracel na produkci 502** (`POST /api/tools/art/preview`, režim `layered`; nginx: „upstream sent
+  too big header“). Hlavička `X-Model-Meta` měla 7,6 až 10,7 kB, z toho 9 kB návod desek (`notes.guide`, SVG obrysy).
+  S volnou barvou to nesouvisí. Nové `App\Support\PreviewMeta`: hlavička má nejvýš 3000 B; co se nevejde (nejtěžší
+  poznámky, případně seznam kusů), počká 15 minut v cache a hlavička nese jen klíč `more`. Stránka si zbytek vezme
+  jedním dotazem `GET /api/tools/preview/{key}/meta` (`modelMeta()` v `api.ts`, volá ho `art.ts` i `param.ts`).
+  Platí pro oba náhledy (`/api/tools/art/preview`, `/api/tools/param/preview`), takže ani sada 24 misek nebo obrázek
+  v osmi barvách hlavičku nepřeroste. **Na produkci musí být cache sdílená mezi procesy PHP** (`database`, `file`,
+  `redis`; ne `array`).
+
+**Průchod všemi nástroji** (`scripts/check_preview_colors.mjs`, Chrome bez okna, místní server). U každé stránky se
+každému ovladači barvy dá přes okno „Barva“ testovací barva do pole hex a porovná se náhled před a po. „Dřív“ je
+stejný průchod proti produkci s 86dedea.
+
+| stránka | co se barvilo | dřív (produkce) | teď |
+|---|---|---|---|
+| `/tools/sign` dvoubarevně (reliéf, obrys, jen jméno) | deska, písmo | náhled se nezměnil | **opraveno** |
+| `/tools/nameplate?form=1` | deska, písmo | náhled se nezměnil | **opraveno** |
+| `/tools/letter-beads` | korálky, písmena | písmena v barvě korálků | **opraveno** |
+| `/tools/logo` stojící | logo, podstavec | podstavec v barvě loga | **opraveno** |
+| `/tools/modular-organizer` | vybraná miska | 3D správně, mřížka krémová | **opraveno** (mřížka) |
+| `/tools/filament-art` vrstvený | 4 desky | 502, stránka bez náhledu | **opraveno** (hlavička) |
+| `/tools/filament-art` jeden tisk | 4 barvy, zadní deska | OK | OK |
+| `/tools/sign` jednobarevně, rytá, stojící | barva | OK | OK |
+| `/tools/nameplate`, `/tools/keychain`, `/tools/compose` (skladač) | barva vrstvy | OK | OK |
+| `/tools/text`, `/tools/svg-to-stl`, `/tools/logo` | barva | OK | OK |
+| `/tools/qr`, se stojánkem | destička, kód | OK | OK |
+| `/tools/box`, s víčkem | krabička, víčko | OK | OK |
+| `/tools/vase`, květináč s podmiskou | váza, podmiska | OK | OK |
+| `/tools/stamp`, s úchytem | razítko, držadlo | OK | OK |
+| `/tools/illuminated-sign` | tělo, maska, difuzor, kryt | OK | OK |
+| `/tools/papel-picado`, portrét (session B) | barva; rám a detaily, podklad | OK | OK |
+| `/tools/organizer`, `/phone-stand`, `/holder`, `/cap`, `/cable-holder`, `/cookie-cutter`, `/stencil`, `/name-organizer` | barva | OK | OK |
+| `/tools/sticky-notes`, `/hair-tie-holder`, `/candle-stand` | barva | OK | OK |
+| obrázek v barvách: `/ornament`, `/charm`, `/earrings`, `/magnet`, `/coaster`, `/badge-reel`, `/medallion`, `/bag-charm`, `/keychain?form=1` | barvy obrázku, podklad | OK | OK |
+| `/tools/gingerbread`, `/name-letter`, `/cake-topper` | jméno/poleva, tvar | OK | OK |
+| `/tools/shape-tray`, `/photo-organizer` | miska, stojánek | OK | OK |
+| `/tools/cookie` | barvy obrázku, těsto | OK | OK |
+| `/tools/cookie` „Barva polevy“ | pero pro další tah | model se nemění, tak to má být | beze změny |
+
+Celkem 55 stránek a variant, 0 chyb. Znovuotevření uloženého návrhu jsem ověřil zvlášť u cedulky ve dvou barvách,
+korálků, krabičky s víčkem, QR a magnetky: všechny ukážou barvy, se kterými byly uloženy.
+
+Co průchod **nepokrývá**: nástroje bez okna barev (reliéf z fotky, figurka, forma, oprava a kontrola modelu, úpravy
+modelu včetně malovaného 3MF, který ukazuje barvy ze souboru) a vypnuté nástroje (`insert`, `straw`, `opener`).
+
+**Kalkulace** téhož návrhu: `twoColorRegions()` ve `viewer.ts` teď vedle QR cedulky pozná i cedulku a korálky, jejichž
+dva díly dostaly barvu (`part_colors.plate`/`body` a `text` + `color_change_mm`), a namaluje je v nich. Ověřeno na oko
+u cedulky (stříbrná deska, zelené písmo) a korálků; jednobarevná cedulka se maluje jako dřív.
+
+**Testy.** `CustomColorTest::test_the_preview_knows_which_part_each_of_its_colours_belongs_to` hlídá smlouvu, ze které
+stránka maluje: cedulka (tři styly), korálky a stojící logo jmenují u každé oblasti díl a ten díl má řádek v kroku
+Barvy; u obrázku v barvách má každá barva z `paint` svůj kus. Nový `PreviewMetaTest` hlídá hlavičku pod 4096 B u
+vrstveného obrazu (5 barev, kulatý rám), portrétu papel picado, obrázku v osmi barvách, medaile s řetězem a šuplíku
+s 24 miskami, a že se nic neztratí. Samotné překreslení v prohlížeči PHPUnit nevidí: to hlídá
+`scripts/check_preview_colors.mjs` (potřebuje `puppeteer-core` a Chrome, není součástí buildu; jde pustit i proti
+produkci, `BASE=https://matplace.com`, jen se ptá na náhledy).
+
+**Nasazení:** bez migrace. Build, `view:clear`, `config:cache`, `route:cache`, pokud ji server používá (přibyla trasa
+`tools.preview.meta`). Po nasazení: `/tools/filament-art` ukáže náhled i návod desek; `/tools/sign` dvoubarevně.
+

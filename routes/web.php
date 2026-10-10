@@ -370,6 +370,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('tools/param/{modelFile}/{part}.stl', [ToolsApiController::class, 'paramPart'])->middleware(['file', 'throttle:30,1,part'])->name('tools.param.part');
     Route::post('tools/relief', [ToolsApiController::class, 'relief'])->middleware('throttle:12,1,relief')->name('tools.relief');
     // filament art and the editing of a model file (session 3)
+    Route::get('tools/preview/{key}/meta', [ToolsApiController::class, 'previewMeta'])->where('key', '[A-Za-z0-9]{32}')->middleware('throttle:180,1,preview_meta')->name('tools.preview.meta');
     Route::post('tools/art/preview', [EditApiController::class, 'artPreview'])->middleware('throttle:90,1,art_preview')->name('tools.art.preview');
     Route::post('tools/art', [EditApiController::class, 'artCreate'])->middleware('throttle:20,1,art_create')->name('tools.art');
     Route::post('tools/art/zip', [EditApiController::class, 'artZip'])->middleware('throttle:12,1,art_zip')->name('tools.art.zip');

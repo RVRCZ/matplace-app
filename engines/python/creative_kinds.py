@@ -236,8 +236,8 @@ def logo(M, Invalid, p):
         }
         notes = {"outer": [round(max(base_w, fw), 1), round(base_d, 1), round(base_h - sink + fh, 1)], "pieces": pieces, "needs": ["glue_optional"],
                  # preview colours: only what stands in the slot is the logo; the top face of the base belongs to the base
-                 "regions": [{"x0": -1, "y0": round((base_d - t) / 2 - 0.05, 2), "x1": 9999, "y1": round((base_d + t) / 2 + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange"},
-                             {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue"}]}
+                 "regions": [{"x0": -1, "y0": round((base_d - t) / 2 - 0.05, 2), "x1": 9999, "y1": round((base_d + t) / 2 + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange", "part": "body"},
+                             {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue", "part": "stand"}]}
         notes.update({"warnings": warn, "thin_pct": thin, "missing_chars": info.get("missing_chars", [])})
         return parts, notes
     if mode == "cutout":
@@ -440,8 +440,8 @@ def sign(M, Invalid, p):
     if style != "engrave":
         notes["color_change_mm"] = round(t, 2)             # above the plate everything is the text (and the rim)
     if two and style != "engrave":
-        notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(t + 0.05, 2), "color": "orange"},
-                            {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white"}]
+        notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(t + 0.05, 2), "color": "orange", "part": "text"},
+                            {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white", "part": "plate"}]
         notes["color_change_mm"] = round(t, 1)
     return parts, notes
 
@@ -541,8 +541,8 @@ def _sign_name(M, p, art, info, cap, t, relief, keyring, two, warn, ring_at="lef
              "missing_chars": info.get("missing_chars", []), "two_color": two, "color_change_mm": round(t, 2)}
     notes.update(tab_note)
     if two:
-        notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(t + 0.05, 2), "color": "orange"},
-                            {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white"}]
+        notes["regions"] = [{"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": round(t + 0.05, 2), "color": "orange", "part": "text"},
+                            {"x0": -9999, "y0": -9999, "x1": 9999, "y1": 9999, "z0": -1, "color": "white", "part": "plate"}]
         notes["color_change_mm"] = round(t, 1)
     return parts, notes
 

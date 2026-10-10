@@ -836,18 +836,21 @@ function paintByFaces(geom: BufferGeometry, paint: FacePaint): boolean {
 }
 
 /** exact: a real two-colour print — the colour as its swatch shows it, and a sharp change at z0 (see cutAtHeight) */
-export interface Region { x0: number; y0: number; x1: number; y1: number; z0: number; color: string; exact?: boolean }
+export interface Region { x0: number; y0: number; x1: number; y1: number; z0: number; color: string; exact?: boolean; part?: string }
 
 /**
- * A stored design with a plate and a code in two chosen filament colours (the QR sign): everything above the plate
- * in the colour of the code, the rest in the colour of the plate. null for every other model.
+ * A stored design that is one body in two colours, changed at one height: a QR sign (the plate and the code), a sign
+ * or beads whose two parts were given colours (the plate or the body, and the text raised on it). Everything above the
+ * change in the second colour, the rest in the first. null for every other model.
  */
 export function twoColorRegions(params: Record<string, unknown> | null | undefined): Region[] | null {
-    const p = (params ?? {}) as { color_change_mm?: number; plate_color?: string; code_color?: string; plate_color_hex?: string; code_color_hex?: string };
-    if (!p.color_change_mm || !p.plate_color || !p.code_color) return null;
-    const everywhere = { x0: -1e6, y0: -1e6, x1: 1e6, y1: 1e6, exact: true };
+    const p = (params ?? {}) as { color_change_mm?: number; plate_color?: string; code_color?: string; plate_color_hex?: string; code_color_hex?: string; part_colors?: Record<string, { hex?: string } | undefined> };
     // the look stored with the design wins: a free colour is its own hex, and a page without the catalogue knows no spool by its code
-    return [{ ...everywhere, z0: p.color_change_mm + 0.05, color: p.code_color_hex ?? p.code_color }, { ...everywhere, z0: -1e6, color: p.plate_color_hex ?? p.plate_color }];
+    const below = p.plate_color_hex ?? p.plate_color ?? p.part_colors?.plate?.hex ?? p.part_colors?.body?.hex;
+    const above = p.code_color_hex ?? p.code_color ?? p.part_colors?.text?.hex;
+    if (!p.color_change_mm || !below || !above) return null;
+    const everywhere = { x0: -1e6, y0: -1e6, x1: 1e6, y1: 1e6, exact: true };
+    return [{ ...everywhere, z0: p.color_change_mm + 0.05, color: above }, { ...everywhere, z0: -1e6, color: below }];
 }
 
 /**
