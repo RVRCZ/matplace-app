@@ -123,3 +123,15 @@ Scarf joint (šikmý přechod švu) šev na válcových a hladkých plochách sk
 Doma: S1 #1 má silky a mramor, S1 #2 jen PETG oranžovou, Max PLA+ (tyrkysová, černá, modrá, nefritová bílá).
 Pro test švu na S1 × PLA+ je potřeba **založit do S1 #1 jednu cívku PLA+** (černá nebo bílá ze skladu, slot 4 místo
 mramoru) a zapsat ji v adminu; pak jdou dva testy `quick` (2 × ~35 min) hned. Farma B je bez agenta (stěhuje se).
+
+## 6. Ruční testy Romana mimo farmu (zapisuj do řádků v adminu i do V.md)
+
+- **10. 10. večer, Kobra 3 Max, PLA+ modrá** – test horního povrchu kvůli **Top surface flow ratio**
+  (`top_solid_infill_flow_ratio`), řezáno v Orce na Romanově PC a posláno do tiskárny mimo farmu (test tedy není
+  v adminu). Hodnoty farmy pro Max dnes: `top_solid_infill_flow_ratio = 1`, `bottom_solid_infill_flow_ratio = 1`,
+  `print_flow_ratio = 1`, `bridge_flow = 1`, `top_surface_speed = 200` (!), `top_shell_layers = 5`,
+  `top_surface_pattern = monotonicline`, `only_one_wall_top = 1`, `ironing = no`, šířky čar 0,42 / vnitřní 0,45 /
+  první vrstva 0,5, vrstva 0,2. **Pozor:** Max používá proces S1 (`print_settings_id = 0.20mm Standard @Anycubic Kobra S1`)
+  s tiskárnou `Anycubic Kobra 3 Max` – pro velkou podložku není nic přepsané. Výsledek (hodnota, kterou Roman zkusil,
+  a jak povrch dopadl) ti Roman napíše; zapiš ho do řádku Max × PLA+ jako kandidáta a ověř ho testem `quick`
+  z farmy (horní plocha kostky), spolu s nižší `top_surface_speed` (100–150), která povrch ovlivní víc než poměr toku.
