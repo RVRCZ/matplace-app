@@ -7,6 +7,7 @@
 | 1 | 10. 10. | admin + katalog nástrojů | zapnutí/skrytí jednotlivých nástrojů v adminu; skrytý nástroj zůstává správci přístupný k testování | viz úkol #1 níže | 10. 10. (popis v `docs/TOOLS-ADMIN.md`) | „Opravy #1“ na `feature/tool-fixes` |
 | 2 | 10. 10. | úvodní stránka + formuláře nástrojů | dlaždice náhradního dílu a odkaz „poskládat vlastní“ se řídí přepínačem nástroje | viz úkol #2 níže | 10. 10. (`ToolVisibility::canOpen`: host podle přepínače, správce vidí dál) | „Opravy #2“ na `feature/tool-fixes` |
 | 3 | 10. 10. | stránky návrhu všech nástrojů | tlačítko „Pokračovat k přesné ceně a tisku“ → „Pokračovat ke kalkulaci“; pod cenou se dvakrát říká totéž o dalším kroku | viz úkol #3 níže | 10. 10. (šest klíčů v `lang/src/tools_flow.json`, test v `ToolPageTest`) | „Opravy #3“ na `feature/tool-fixes` |
+| 4 | 10. 10. | všechny stránky nástrojů | jedno tlačítko „Pokračovat ke kalkulaci“ a jeden text pod cenou pro všechny nástroje (reliéf, figurka, úpravy souboru, kontrola, forma mají dnes jiné) | viz úkol #4 níže | | |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 
@@ -89,6 +90,31 @@ zdvojená věta; `param.estimate.note.download` + `param.go.hint.download` stejn
 „Odhad z objemu modelu. V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si objednáte u nás, nebo si stáhnete
 soubor pro svou tiskárnu.“ Testy zelené, `pint`, `tsc`, `build` (JSON překlady jdou do bundle? – ne, čtou se v PHP;
 build přesto pustit). Bez migrace.
+
+## Úkol #4 · 10. 10. 2026 · jedno tlačítko a jeden text pod cenou pro všechny nástroje (koordinováno: `tools/page.blade.php`, `relief.blade.php`, `figure.blade.php`, `edit.blade.php`, `filament_art.blade.php`, `param.blade.php`, `check.blade.php`, `mold.blade.php`)
+
+**Co Roman chce:** „sjednotit u všech nástrojů, prostředí a texty u nástrojů musí být stejné nebo podobné.“ Po #3 mají
+reliéf a figurka z fotky na produkci dál „Vytisknout u nás“ (berou `toolpage.go`, jehož farmová varianta je
+`toolpage.go.farm`), nástroje pro úpravu souboru (`edit.blade.php`: split, hollow, …) mají pod cenou jen „Odhad z objemu
+modelu.“ bez věty o dalším kroku, kontrola (`check.page.go`) a forma mají vlastní popisky tlačítka.
+
+**Udělat:**
+1. `tools/page.blade.php`: výchozí popisek tlačítka = `NextStep::text('param.go')` (ne `toolpage.go`) a výchozí text
+   pod cenou = `NextStep::text('param.estimate.note')` + mezera + `NextStep::text('param.go.hint')` – tedy to, co má
+   po #3 `param.blade.php`. Stránky, které si dnes posílají `goLabel` nebo `@section('price-note')` jen proto, aby
+   dostaly totéž, to přestanou posílat (`relief`, `figure`, `param`, `filament_art`, `edit`). Vlastní `goLabel` zůstane
+   jen tam, kde další krok opravdu není kalkulace – projdi `check` („Zjistit cenu a objednat tisk“) a `mold`: pokud u nich
+   po tlačítku následuje kalkulace, sjednotit taky; pokud ne, napsat mi proč.
+2. `toolpage.go`, `toolpage.go.farm`, `toolpage.go.download` v `lang/*/toolpage.php`: pokud po bodu 1 nikdo nepoužívá,
+   smazat (všechny tři jazyky); pokud ano, nastavit stejné texty jako `param.go*`.
+3. Test v `ToolPageTest`: pro **každý** nástroj z `config('tools')` (ten cyklus na řádku 31) ve farmovém režimu
+   `assertSee('Pokračovat ke kalkulaci')` a `assertSee('Odhad z objemu modelu. V kalkulaci uvidíte přesnou cenu a dobu
+   tisku.')` (vyjma nástrojů, u kterých bod 1 výslovně nechá jiný text – vyjmenovat v testu s důvodem).
+4. Nic jiného v rozložení stránek neměnit; „prostředí“ (stejná struktura kroků, stejná lišta s cenou) je už dané
+   `tools/page.blade.php` – jen zkontroluj, že reliéf a figurka opravdu přes něj jdou (ano, `@extends('tools.page')`).
+
+**Hotovo =** na `/tools/relief`, `/tools/figure`, `/tools/split`, `/tools/letter-beads`, `/tools/filament-art` je stejné
+tlačítko „Pokračovat ke kalkulaci“ a stejná věta pod cenou. Testy zelené, `pint`, `tsc`, `build`. Bez migrace.
 
 ## Poznámky pro session 1 (z úkolu #1, předat až poběží)
 
