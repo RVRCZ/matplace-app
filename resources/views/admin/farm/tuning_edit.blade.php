@@ -43,6 +43,29 @@
             <button class="btn-primary mt-3 text-sm">Uložit jako novou verzi</button>
         </form>
 
+        @if(! $row->farm_color_id)
+            @php $spreadTo = $siblings->where('status', '!=', 'tuned')->count(); @endphp
+            <form method="post" action="{{ route('admin.farm.tuning.spread', $row) }}" class="rounded-2xl border border-slate-200 bg-white p-4 text-sm"
+                  data-confirm="{{ __('farm.admin.tuning.spread_confirm', ['n' => $spreadTo, 'kind' => $row->label()]) }}">
+                @csrf
+                <h2 class="font-bold">{{ __('farm.admin.tuning.spread_title') }}</h2>
+                @if($siblings->isEmpty())
+                    <p class="mt-1 text-xs text-slate-500">{{ __('farm.admin.tuning.spread_none') }}</p>
+                @else
+                    <p class="mt-1 text-xs text-slate-500">{{ __('farm.admin.tuning.spread_lead', ['kind' => $row->label()]) }}</p>
+                    <p class="mt-2 text-xs text-slate-600">{{ __('farm.admin.tuning.spread_targets') }}
+                        @foreach($siblings as $s)<a class="underline" href="{{ route('admin.farm.tuning.edit', $s) }}">{{ $s->printer->name }}</a> <span class="text-slate-400">(v{{ $s->version }}, {{ $label[$s->status] ?? $s->status }}{{ $s->status === 'tuned' ? ' – '.__('farm.admin.tuning.spread_skips') : '' }})</span>@if(! $loop->last), @endif @endforeach</p>
+                    <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+                        @foreach(['process' => true, 'filament' => false, 'temps' => false] as $what => $on)
+                            <label class="flex items-center gap-2"><input type="checkbox" name="what[]" value="{{ $what }}" @checked($on) class="h-4 w-4 accent-action"> {{ __('farm.admin.tuning.spread_'.$what) }}</label>
+                        @endforeach
+                    </div>
+                    <label class="{{ $lb }} mt-3">{{ __('farm.admin.tuning.spread_note') }}<input name="note" maxlength="200" class="{{ $in }}"></label>
+                    <button class="btn-quiet mt-3 text-sm" @disabled(! $spreadTo)>{{ __('farm.admin.tuning.spread_button', ['n' => $spreadTo]) }}</button>
+                @endif
+            </form>
+        @endif
+
         <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
             <h2 class="font-bold">Výsledné nastavení tisku <span class="text-xs font-normal text-slate-500">vrstvy: {{ implode(' → ', $effective->layers) }}</span></h2>
             <p class="mt-1 text-xs text-slate-600">Teploty do G-code: tryska {{ $effective->temps['nozzle'] ?? '—' }} / {{ $effective->temps['nozzle_first'] ?? '—' }} °C, podložka {{ $effective->temps['bed'] ?? '—' }} °C</p>
@@ -141,7 +164,7 @@
                             // the judge's reading prefills whatever the operator has not answered yet; saved only when the form is sent
                             $ai = (array) ($t->test_params['ai'] ?? []); $aiF = ($ai['status'] ?? null) === 'done' ? (array) ($ai['fields'] ?? []) : [];
                             if ($aiF) { foreach ($aiF as $k => $f) { if (! array_key_exists($k, $res) && ($f['value'] ?? null) !== null) { $res[$k] = $f['value']; } } if (! isset($res['score']) && ! empty($ai['score'])) { $res['score'] = $ai['score']; } if (! isset($res['note']) && ! empty($ai['note'])) { $res['note'] = $ai['note']; } }
-                            $photoList = (array) ($t->test_params['photos'] ?? []); $isSeam = ($t->test_params['object'] ?? '') === 'seam'; @endphp
+                            $photoList = (array) ($t->test_params['photos'] ?? []); $isSeam = ($t->test_params['object'] ?? '') === 'seam'; $isIroning = ($t->test_params['object'] ?? '') === 'ironing'; @endphp
                         @include('admin.farm.partials.test_photos', ['t' => $t, 'photoList' => $photoList, 'ai' => $ai, 'evaluated' => ! empty($t->test_params['result'])])
                         <details class="mt-2 rounded-lg bg-slate-50 p-2 text-xs" @if(! $adv) open @endif>
                             <summary class="cursor-pointer font-semibold">Vyhodnocení {{ $res ? '✓' : '' }}</summary>
@@ -149,6 +172,8 @@
                                 @csrf
                                 @if($temps)
                                     <label class="{{ $lb }}">Nejlepší patro<select name="best_floor" class="{{ $sel }} w-full"><option value="">—</option>@foreach($temps as $i => $v)<option value="{{ $i + 1 }}" @selected(($res['best_floor'] ?? null) == $i + 1)>{{ $i + 1 }}: {{ $v }} °C</option>@endforeach</select></label>
+                                @elseif($isIroning)
+                                    <label class="{{ $lb }}">Žehlená plocha{{ ! empty($t->test_params['ironing']) ? '' : ' (bez ironingu)' }}<select name="ironing" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'hladká, lesklá', 'lines' => 'viditelné čáry', 'bumps' => 'hrbolky, přebytek', 'rough' => 'hrubá, matná'] as $v => $l)<option value="{{ $v }}" @selected(($res['ironing'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
                                 @else
                                     <label class="{{ $lb }}">Rozměr X (mm)<input type="number" step="0.01" name="cube_x" value="{{ $res['cube_x'] ?? '' }}" placeholder="{{ $cubeMm }}" class="{{ $sel }} w-full"></label>
                                     <label class="{{ $lb }}">Rozměr Y (mm)<input type="number" step="0.01" name="cube_y" value="{{ $res['cube_y'] ?? '' }}" placeholder="{{ $cubeMm }}" class="{{ $sel }} w-full"></label>
@@ -170,7 +195,7 @@
                                     <label class="{{ $lb }}">Tenká stěna<select name="wall" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'celistvá', 'gaps' => 'děravá', 'missing' => 'chybí'] as $v => $l)<option value="{{ $v }}" @selected(($res['wall'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
                                     @endif
                                 @endif
-                                @if(! $isSeam)
+                                @if(! $isSeam && ! $isIroning)
                                 <label class="{{ $lb }}">Stringing<select name="stringing" class="{{ $sel }} w-full"><option value="">—</option>@foreach([0 => 'žádný', 1 => 'vlásky', 2 => 'zřetelný', 3 => 'silný'] as $v => $l)<option value="{{ $v }}" @selected(isset($res['stringing']) && $res['stringing'] == $v)>{{ $l }}</option>@endforeach</select></label>
                                 <label class="{{ $lb }}">Most<select name="bridge" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'rovný', 'sag' => 'prověšený', 'fail' => 'spadl'] as $v => $l)<option value="{{ $v }}" @selected(($res['bridge'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>
                                 <label class="{{ $lb }}">Spojení vrstev<select name="bond" class="{{ $sel }} w-full"><option value="">—</option>@foreach(['ok' => 'pevné', 'weak' => 'slabé, loupe se'] as $v => $l)<option value="{{ $v }}" @selected(($res['bond'] ?? null) === $v)>{{ $l }}</option>@endforeach</select></label>

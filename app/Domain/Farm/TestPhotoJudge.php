@@ -48,17 +48,23 @@ final class TestPhotoJudge
     /** What a seam test can show: its smooth walls, the control cube and the base plate. Nothing else is on it. */
     private const SEAM_FIELDS = ['seam', 'seam_fault', 'corners', 'elephant', 'warp'];
 
+    /** The ironing object is one plateau on a base barely larger than itself. */
+    private const IRONING_FIELDS = ['ironing', 'warp'];
+
     /**
-     * The fields one object can answer: the seam object has no pillars, fins, bridges or thin walls, and the other
-     * objects have no wall smooth enough to judge a seam on. Asking for them anyway only collects guesses.
+     * The fields one object can answer: the seam object has no pillars, fins, bridges or thin walls, the ironing object
+     * is one plateau, and the other objects have no wall smooth enough to judge a seam on. Asking for them anyway only
+     * collects guesses.
      *
      * @return array<string, array<int, string>>
      */
     public static function fieldsFor(string $object): array
     {
-        return $object === 'seam'
-            ? array_intersect_key(self::FIELDS, array_flip(self::SEAM_FIELDS))
-            : array_diff_key(self::FIELDS, ['seam' => 1, 'seam_fault' => 1]);
+        return match ($object) {
+            'seam' => array_intersect_key(self::FIELDS, array_flip(self::SEAM_FIELDS)),
+            'ironing' => array_intersect_key(self::FIELDS, array_flip(self::IRONING_FIELDS)),
+            default => array_diff_key(self::FIELDS, ['seam' => 1, 'seam_fault' => 1]),
+        };
     }
 
     /** What the farm has learned so far; grows with every test the operator corrects. */
@@ -288,7 +294,10 @@ TXT;
         if ($object === 'temp_tower') {
             $lines[] = 'This is a temperature tower; floors bottom first: '.implode(', ', (array) ($tp['temps'] ?? [])).' °C. Judge the fields for the tower as a whole.';
         }
-        if ($object !== 'detailed' && isset($fields['ironing'])) {
+        if ($object === 'ironing') {
+            // the object made for this one question was told it had no plateau and came back "unknown" (found 10 Oct 2026)
+            $lines[] = 'This is an ironing test: the whole object is one 30 x 30 mm plateau'.(! empty($tp['ironing']) ? ', ironed.' : ', printed without ironing: answer ironing "unknown".');
+        } elseif ($object !== 'detailed' && isset($fields['ironing'])) {
             $lines[] = 'There is no ironed plateau on this object: answer ironing "unknown".';
         }
         if ($object === 'seam') {
