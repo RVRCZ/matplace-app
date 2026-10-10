@@ -97,12 +97,36 @@ z aplikace Fotoaparát jsou v `Obrázky\Camera Roll`. S2 a přefocení hranolu a
 | zaoblený hranol | zřetelná svislá čára u rohu, mírně vystouplá | neposouzeno | **na čtyřech pohledech žádný hřebínek**, jen měkký přechod lesku |
 | válec | ostrá svislá čára | stejná čára | čára měkčí (jeden pohled) |
 | kužel | jedna tenká čistá čára | čára + zdrsněný pás + pole teček | **jedna tenká čistá čára jako u B** |
-| kostka | rohy ostré, 14,96 × 14,95 | rohy ostré | rohy ostré (neměřeno) |
+| kostka | rohy ostré, 14,96 × 14,95 | rohy ostré | rohy ostré, **14,96 × 14,97** – scarf rozměr nemění |
 
 **S2 je první varianta, která je lepší než dnešní stav a nikde horší.** Proto od tohoto commitu
 `TestPrintService::SCARF` = hodnoty S2 (zaškrtávátko „Šikmý šev“ už dá přímo je, JSON netřeba). Meze důkazu: jeden
-tisk, jedna tiskárna, bílé PLA+, válec a kužel jen z jednoho pohledu, kostka S2 nezměřená. Do knihovny `kobra s1`
+tisk, jedna tiskárna, bílé PLA+, válec a kužel jen z jednoho pohledu. Do knihovny `kobra s1`
 zatím nejde – až řádek potvrdí druhý tisk (jiná barva nebo silk) a Roman šev nehtem.
+
+**Rozhodnutí Romana 10. 10. večer:** nastavení S2 zapsat „globálně“ pro PLA+ na Kobra S1, stav nechat „testuje se“;
+nehtem je rozdíl švu mezi B a S2 „sotva“. Provedeno:
+
+- **Knihovna** `farm_profile_library.json` → `kobra s1` → `PLA+` → `*` → `process` = hodnoty S2 (stejné jako
+  `TestPrintService::SCARF`, hlídá to test). Přes `*` je dostane i PLA+ matný. **Max je dědí, ale scarf na něm nikdo
+  netiskl**, proto má jeho `PLA+` v knihovně výslovně hodnoty švu z profilu (`seam_slope_type = none`, mezera 10 % …).
+- **Knihovna platí jen pro nově zakládané řádky** (`ProfileLibrary::sync` existující řádky nikdy nemění). Stávající
+  řádky PLA+ na S1 je potřeba doplnit v administraci: *Přepisy procesu (JSON)* → přidat klíče S2 → *Uložit jako novou
+  verzi*, stav „testuje se“. Řádek ve stavu „vyladěno“ se bez testu nepřepisuje – tam nejdřív test `seam`.
+- Zápis do stávajících řádků na produkci: přímý zápis do databáze řídící session neprošel, Roman proto schválil
+  **tlačítko na stránce řádku „Použít i na ostatní tiskárny stejného typu s tímto druhem“** (kliká ho sám). Přidá
+  zaškrtnuté skupiny přepisů (výchozí jen proces; volitelně filament, teploty) k tomu, co cílové řádky mají – stejné
+  klíče přepíše, ostatní nechá –, jako novou verzi s historií a stavem „testuje se“. Cíl = řádky téhož druhu
+  (PLA+ a PLA+ matný zvlášť) na tiskárnách se stejným klíčem bez čísla (`kobra-s1-*`) a stejnou tryskou; Max se s S1
+  nikdy nemíchá. **Vyladěné řádky přeskočí a vypíše.** Před akcí potvrzení s počtem řádků, po ní výpis změn (v → v).
+  **Postup pro S2:** na řádku PLA+ Farm U #1 vložit klíče S2 do *Přepisy procesu*, uložit jako novou verzi, pak
+  tlačítko se zaškrtnutým jen „přepisy procesu“ → všechny ostatní S1. Pozor: přenese se **celý** proces zdrojového
+  řádku, ne jen šev – co na ostatní S1 nemá jít, do zdrojového řádku před kliknutím nedávat.
+- **Stav na produkci 10. 10. 19:49 UTC** (podle řídící session, ověřeno jí v DB): nasazen ac6aac3; Roman zapsal S2 ručně
+  do řádků druhu PLA+ i PLA+ matný na U #1 (v2) a U #2 (v5 / v4), stav „testuje se“, poznámka „šev S2 z testu
+  T26-000037“; Max beze změny. S1 farmy B dostanou S2 novým tlačítkem po nasazení.
+- Od chvíle, kdy řádek scarf má, tiskne test „Šev“ **bez zaškrtnutí** už se scarfem (šev podle řádku). Srovnávací tisk
+  bez scarfu jde přes *Proces navíc* `{"seam_slope_type":"none"}`.
 
 **AI hodnocení T26-000032** (10. 10. 17:04, 12 fotek, 3 přiblížení): *Šev: nelze posoudit – na válci a kuželu ho
 nenacházím, strana je přeexponovaná nebo rozmazaná*, rohy ok, sloní noha 0, podložka ok, 4/5; chce ostré nepřepálené
@@ -160,6 +184,15 @@ a **převis čistý do: žádný** (`null == 0` je v PHP pravda). Odeslání bez
 nedal, a z „žádný převis čistý“ poradce navrhne víc chlazení a podpěry pod vším plošším než 60°. Opraveno
 (`isset(...)`), test `test_a_test_nobody_has_judged_yet_shows_no_answer_as_chosen`. Starší hodnocení, která mají
 `overhang_ok = 0` bez důvodu, stojí za kontrolu.
+
+## 2a. Objekt „Žehlení“ se nedal vyhodnotit (opraveno 10. 10.)
+
+Objekt `ironing` vznikl jen kvůli žehlení, ale formulář u něj pole „Žehlená plocha“ neukazoval (jen u `detailed`)
+a nabízel rozměry kostky, otvor, převisy a stringing, které na něm nejsou; `TestPhotoJudge` mu navíc říkal „na tomhle
+objektu žehlená plošina není“ a AI odpověděla „nelze posoudit“. Teď: formulář u `ironing` má jen „Žehlená plocha“,
+celkové hodnocení a poznámku; AI se ptá na žehlení a podložku a ví, že celý objekt je žehlená plošina 30 × 30 mm.
+Testy ve `FarmTestPhotosTest`. První ostrý test žehlení na S1 #1 (bílá PLA+, výchozí 10 % / 30 mm/s / 0,15 mm)
+běží od 10. 10. večer.
 
 ## 3. Rychlost a kvalita (Romanova otázka 10. 10.)
 

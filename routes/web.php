@@ -445,6 +445,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/tuning/{row}', [$tuning, 'edit'])->name('tuning.edit');
     Route::post('/tuning/{row}', [$tuning, 'save'])->name('tuning.save');
     Route::post('/tuning/{row}/test', [$tuning, 'test'])->name('tuning.test');
+    Route::post('/tuning/{row}/spread', [$tuning, 'spread'])->name('tuning.spread');
     Route::post('/tuning/{row}/adopt/{order}', [$tuning, 'adopt'])->name('tuning.adopt');
     Route::post('/tuning/{row}/evaluate/{order}', [$tuning, 'evaluate'])->name('tuning.evaluate');
     Route::post('/tuning/{row}/apply/{order}', [$tuning, 'apply'])->name('tuning.apply');

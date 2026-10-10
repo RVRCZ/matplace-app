@@ -71,6 +71,17 @@ class FarmTuningTest extends TestCase
         $plaMax = FarmPrinterMaterial::where('farm_printer_id', $max->id)->where('farm_material_id', $pla->id)->firstOrFail();
         $this->assertSame('120', $plaMax->overrides['process']['outer_wall_speed']);
 
+        // the seam: every Kobra S1 starts PLA+ with the scarf joint the seam test printed well, the same values the
+        // test's switch uses; the Max inherits the S1 block but has not printed that test, so it keeps the profile's seam
+        $library = app(ProfileLibrary::class);
+        $s1Seam = $library->lookup('Anycubic Kobra S1 Combo', 'PLA+', 'solid')['process'];
+        $this->assertEquals(TestPrintService::SCARF, array_intersect_key($s1Seam, TestPrintService::SCARF));
+        $this->assertSame('external', $library->lookup('Anycubic Kobra S1 Combo', 'PLA+', 'matte')['process']['seam_slope_type']);
+        $this->assertArrayNotHasKey('process', $library->lookup('Anycubic Kobra S1 Combo', 'PLA', 'solid'));
+        $maxSeam = $library->lookup('Anycubic Kobra 3 Max Combo', 'PLA+', 'solid')['process'];
+        $this->assertSame(['none', '10%', '1', '0', '40%', '120'], [$maxSeam['seam_slope_type'], $maxSeam['seam_gap'], $maxSeam['seam_slope_inner_walls'],
+            $maxSeam['staggered_inner_seams'], $maxSeam['scarf_overhang_threshold'], $maxSeam['outer_wall_speed']]);
+
         // running it again changes nothing
         $this->assertSame(0, app(ProfileLibrary::class)->sync());
     }
@@ -289,6 +300,8 @@ class FarmTuningTest extends TestCase
         $row = FarmPrinterMaterial::where('farm_printer_id', $s1->id)->where('farm_material_id', $slot->color->farm_material_id)->whereNull('farm_color_id')->firstOrFail();
         $url = "/admin/farm/tuning/{$row->id}";
         $last = fn () => FarmOrder::where('kind', FarmOrder::KIND_TEST)->latest('id')->firstOrFail();
+        // a row that says nothing about the seam (the library gives PLA+ on an S1 the scarf from the start)
+        $row->forceFill(['overrides' => array_diff_key((array) $row->overrides, ['process' => 1])])->save();
 
         // the seam as the row prints it: the object has the smooth walls the other objects lack
         $this->actingAs($this->admin)->post($url.'/test', ['slot' => $slot->id, 'object' => 'seam'])->assertRedirect()->assertSessionMissing('error');
@@ -349,6 +362,63 @@ class FarmTuningTest extends TestCase
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/evaluate/{$test->token}", ['stringing' => 0, 'elephant' => 0])->assertRedirect()->assertSessionHasNoErrors();
         $html = $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()->getContent();
         $this->assertSame(2, substr_count($html, '<option value="0" selected'));
+    }
+
+    public function test_a_rows_settings_can_be_applied_to_the_other_machines_of_the_same_type(): void
+    {
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $plus = FarmMaterial::where('code', 'PLA+')->where('finish', 'solid')->firstOrFail();
+        $matte = FarmMaterial::where('code', 'PLA+')->where('finish', 'matte')->firstOrFail();
+        $rowOf = fn (string $key, FarmMaterial $kind) => FarmPrinterMaterial::where('farm_printer_id', FarmPrinter::where('key', $key)->value('id'))
+            ->where('farm_material_id', $kind->id)->whereNull('farm_color_id')->firstOrFail();
+        // two more S1 next to the seeded pair: one already tuned, one with a fine nozzle
+        foreach (['kobra-s1-03' => 0.4, 'kobra-s1-04' => 0.2] as $key => $nozzle) {
+            $copy = $s1->replicate()->fill(['key' => $key, 'name' => 'Kobra S1 '.$key, 'nozzle_mm' => $nozzle]);
+            $copy->save();
+            FarmPrinterMaterial::create(['farm_printer_id' => $copy->id, 'farm_material_id' => $plus->id, 'overrides' => ['process' => ['outer_wall_speed' => '150']]]);
+        }
+        $rowOf('kobra-s1-03', $plus)->update(['status' => FarmPrinterMaterial::STATUS_TUNED]);
+
+        $seam = ['seam_slope_type' => 'external', 'seam_gap' => '15%'];
+        $source = $rowOf('kobra-s1-01', $plus);
+        $source->update(['overrides' => ['nozzle_temp' => 222, 'process' => $seam + ['outer_wall_speed' => '180'], 'filament' => ['fan_max_speed' => ['90']]]]);
+        $second = $rowOf('kobra-s1-02', $plus);
+        $second->update(['overrides' => ['process' => ['outer_wall_speed' => '150', 'bridge_speed' => '40'], 'filament' => ['fan_max_speed' => ['100']]], 'status' => FarmPrinterMaterial::STATUS_UNTESTED]);
+        $before = ['max' => $rowOf('kobra-3-max-01', $plus)->overrides, 'matte' => $rowOf('kobra-s1-02', $matte)->overrides, 'fine' => $rowOf('kobra-s1-04', $plus)->overrides];
+        $url = "/admin/farm/tuning/{$source->id}";
+
+        // the page says where it would go: the other S1 with the same nozzle, the tuned one marked as skipped
+        $this->actingAs($this->admin)->get($url)->assertOk()->assertSee('Použít i na ostatní tiskárny stejného typu s tímto druhem')
+            ->assertSee('Kobra S1 #2')->assertSee('Kobra S1 kobra-s1-03')->assertSee('přeskočí se')->assertDontSee('Kobra S1 kobra-s1-04')->assertSee('Použít na ostatní (1)');
+
+        // process only: the keys are added to what the row holds, its own other keys and its filament stay
+        $this->actingAs($this->admin)->post($url.'/spread', ['what' => ['process'], 'note' => 'šev S2'])->assertRedirect()->assertSessionHasNoErrors()
+            ->assertSessionHas('status', fn ($s) => str_contains($s, 'Kobra S1 #2 PLA+ v1 → v2') && str_contains($s, 'Kobra S1 kobra-s1-03 PLA+ (vyladěno)'));
+        $second->refresh();
+        $this->assertSame(['seam_slope_type' => 'external', 'seam_gap' => '15%', 'outer_wall_speed' => '180', 'bridge_speed' => '40'], $second->overrides['process']);
+        $this->assertSame(['100'], $second->overrides['filament']['fan_max_speed'], 'filament was not ticked');
+        $this->assertArrayNotHasKey('nozzle_temp', $second->overrides, 'temperatures were not ticked');
+        $this->assertSame([2, FarmPrinterMaterial::STATUS_TESTING, 'manual'], [$second->version, $second->status, $second->source]);
+        $this->assertStringContainsString('podle řádku #'.$source->id.' (Kobra S1 #1), šev S2', $second->history[0]['note']);
+
+        // a tuned row, the Max, another kind and another nozzle are never touched
+        $tuned = $rowOf('kobra-s1-03', $plus);
+        $this->assertSame([1, FarmPrinterMaterial::STATUS_TUNED, ['outer_wall_speed' => '150']], [$tuned->version, $tuned->status, $tuned->overrides['process']]);
+        $this->assertSame($before, ['max' => $rowOf('kobra-3-max-01', $plus)->overrides, 'matte' => $rowOf('kobra-s1-02', $matte)->overrides, 'fine' => $rowOf('kobra-s1-04', $plus)->overrides]);
+
+        // once more: nothing new to write; with the other groups ticked they go too
+        $this->actingAs($this->admin)->post($url.'/spread', ['what' => ['process']])->assertSessionHas('status', fn ($s) => str_contains($s, 'Beze změny') && ! str_contains($s, 'Zapsáno'));
+        $this->assertSame(2, $second->fresh()->version);
+        $this->actingAs($this->admin)->post($url.'/spread', ['what' => ['filament', 'temps']])->assertSessionHasNoErrors();
+        $second->refresh();
+        $this->assertSame([222, ['90'], 3], [$second->overrides['nozzle_temp'], $second->overrides['filament']['fan_max_speed'], $second->version]);
+
+        // nothing ticked, or a group the row does not hold: refused; a spool row has no such action
+        $this->actingAs($this->admin)->post($url.'/spread', [])->assertSessionHasErrors('what');
+        $source->update(['overrides' => ['nozzle_temp' => 222]]);
+        $this->actingAs($this->admin)->post($url.'/spread', ['what' => ['process']])->assertSessionHas('error');
+        $spool = FarmPrinterMaterial::create(['farm_printer_id' => $s1->id, 'farm_material_id' => $plus->id, 'farm_color_id' => FarmColor::where('farm_material_id', $plus->id)->value('id')]);
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$spool->id}/spread", ['what' => ['process']])->assertNotFound();
     }
 
     /** A finished test of a row, printed with exactly what the row holds now. */

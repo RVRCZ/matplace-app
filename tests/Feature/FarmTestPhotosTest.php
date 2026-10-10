@@ -182,6 +182,35 @@ class FarmTestPhotosTest extends TestCase
         $this->assertSame(['stringing', 'overhang_ok', 'bridge', 'elephant', 'corners', 'ironing', 'top', 'wall', 'bond', 'warp'], array_keys(TestPhotoJudge::fieldsFor('quick')));
         $this->assertSame(array_keys(TestPhotoJudge::fieldsFor('quick')), array_keys(TestPhotoJudge::fieldsFor('temp_tower')));
         $this->assertEqualsCanonicalizing(['seam', 'seam_fault', 'corners', 'elephant', 'warp'], array_keys(TestPhotoJudge::fieldsFor('seam')));
+        $this->assertEqualsCanonicalizing(['ironing', 'warp'], array_keys(TestPhotoJudge::fieldsFor('ironing')));
+    }
+
+    public function test_the_ironing_object_is_judged_for_its_ironed_plateau(): void
+    {
+        config(['ai.anthropic.api_key' => 'test-key']);
+        $order = $this->makeTestOrder();
+        $order->forceFill(['test_params' => ['object' => 'ironing', 'ironing' => true, 'features' => [['name' => 'ironing', 'size' => [30.0, 30.0], 'checks' => ['ironing', 'top_surface']]]]
+            + $order->test_params])->save();
+        $this->actingAs($this->admin)->post("/admin/farm/orders/{$order->token}/photos", ['photos' => [$this->photo()], 'views' => ['top']]);
+        Http::fake(['api.anthropic.com/*' => Http::sequence()->push($this->toolUse('submit_evaluation', [
+            'ironing' => ['value' => 'lines', 'confidence' => 'high', 'reason' => 'jsou vidět tahy žehlení'],
+            'warp' => ['value' => 'ok', 'confidence' => 'medium', 'reason' => ''], 'score' => '3', 'note' => 'Tahy žehlení jsou vidět.', 'better_photos' => '',
+        ]))]);
+        $this->actingAs($this->admin)->post("/admin/farm/orders/{$order->token}/judge")->assertRedirect()->assertSessionHas('status');
+        $this->assertSame('lines', $order->fresh()->test_params['ai']['fields']['ironing']['value']);
+
+        // the object made for ironing is told it is ironed - not that it has no plateau
+        Http::assertSent(fn ($r) => array_keys($r['tools'][1]['input_schema']['properties']) === ['ironing', 'warp', 'score', 'note', 'better_photos']
+            && str_contains(json_encode($r['messages']), 'one 30 x 30 mm plateau, ironed') && ! str_contains(json_encode($r['messages']), 'no ironed plateau'));
+
+        // and its form asks about the plateau, not about a cube, a hole, strings or bridges
+        $row = FarmPrinterMaterial::findOrFail($order->farm_printer_material_id);
+        $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()
+            ->assertSee('name="ironing"', false)->assertSee('<option value="lines" selected>', false)
+            ->assertDontSee('name="cube_x"', false)->assertDontSee('name="hole"', false)->assertDontSee('name="stringing"', false);
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/evaluate/{$order->token}", ['ironing' => 'lines', 'score' => 3])->assertRedirect()->assertSessionHasNoErrors();
+        $advice = $order->fresh()->test_params['advice'];
+        $this->assertContains('process.ironing_spacing', array_column($advice['advice'], 'setting'), 'visible ironing lines: the advisor tightens the passes');
     }
 
     public function test_without_photos_or_a_key_nothing_is_sent(): void

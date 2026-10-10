@@ -15,6 +15,7 @@ use App\Models\FarmPrinterMaterial;
 use App\Models\FarmPrinterSlot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -63,6 +64,7 @@ class FarmTuningController extends Controller
             'showHidden' => $showHidden,
             'objects' => TestPrintService::OBJECTS,
             'generator' => $this->tests->available(),
+            'siblings' => $row->farm_color_id ? collect() : $this->siblings($row),
         ]);
     }
 
@@ -91,6 +93,80 @@ class FarmTuningController extends Controller
         }
 
         return redirect()->route('admin.farm.tuning.edit', $row)->with('status', __('farm.admin.saved'));
+    }
+
+    /**
+     * One row's settings onto the other machines of the same type with the same kind: the chosen groups are added to
+     * what each of those rows holds (the same keys are replaced, the rest stays), every changed row gets a new version
+     * and goes back to "testing". A tuned row is left alone - nothing overwrites it without a test print.
+     */
+    public function spread(Request $request, FarmPrinterMaterial $row): RedirectResponse
+    {
+        abort_if($row->farm_color_id !== null, 404);
+        $data = $request->validate([
+            'what' => ['required', 'array', 'min:1'],
+            'what.*' => [Rule::in(['process', 'filament', 'temps'])],
+            'note' => ['nullable', 'string', 'max:200'],
+        ]);
+        $source = (array) $row->overrides;
+        $take = [];
+        foreach (['process', 'filament'] as $group) {
+            if (in_array($group, $data['what'], true) && ! empty($source[$group])) {
+                $take[$group] = (array) $source[$group];
+            }
+        }
+        if (in_array('temps', $data['what'], true)) {
+            $take += array_intersect_key($source, array_flip(['nozzle_temp', 'nozzle_temp_first', 'bed_temp']));
+        }
+        if (! $take) {
+            return back()->with('error', __('farm.admin.tuning.spread_empty'));
+        }
+
+        $why = __('farm.admin.tuning.spread_history', ['id' => $row->id, 'printer' => $row->printer->name]).(! empty($data['note']) ? ', '.$data['note'] : '');
+        $done = $same = $skipped = [];
+        foreach ($this->siblings($row) as $target) {
+            $name = ['printer' => $target->printer->name, 'kind' => $target->label()];
+            if ($target->status === FarmPrinterMaterial::STATUS_TUNED) {
+                $skipped[] = __('farm.admin.tuning.spread_skipped_item', $name);
+
+                continue;
+            }
+            $overrides = (array) $target->overrides;
+            foreach ($take as $key => $value) {
+                $overrides[$key] = is_array($value) ? $value + (array) ($overrides[$key] ?? []) : $value;
+            }
+            $before = $target->version;
+            $target->revise($overrides, 'manual', $why, FarmPrinterMaterial::STATUS_TESTING);
+            if ($target->version === $before) {
+                $same[] = $target->printer->name;
+            } else {
+                $done[] = __('farm.admin.tuning.spread_item', $name + ['from' => $before, 'to' => $target->version]);
+            }
+        }
+        $said = array_filter([
+            $done ? __('farm.admin.tuning.spread_done', ['list' => implode(', ', $done)]) : null,
+            $same ? __('farm.admin.tuning.spread_same', ['list' => implode(', ', $same)]) : null,
+            $skipped ? __('farm.admin.tuning.spread_skipped', ['list' => implode(', ', $skipped)]) : null,
+        ]);
+
+        return redirect()->route('admin.farm.tuning.edit', $row)->with('status', $said ? implode(' ', $said) : __('farm.admin.tuning.spread_none'));
+    }
+
+    /**
+     * The same kind on the other machines of this row's type: the same printer key without its number
+     * (kobra-s1-01 and kobra-s1-07, never a kobra-3-max) and the same nozzle.
+     *
+     * @return Collection<int, FarmPrinterMaterial>
+     */
+    private function siblings(FarmPrinterMaterial $row): Collection
+    {
+        $type = fn (FarmPrinter $p) => preg_replace('/-\d+$/', '', (string) $p->key).'|'.number_format((float) $p->nozzle_mm, 2);
+        $own = $type($row->printer);
+
+        return FarmPrinterMaterial::with(['printer', 'material'])->whereNull('farm_color_id')
+            ->where('farm_material_id', $row->farm_material_id)->where('id', '!=', $row->id)->get()
+            ->filter(fn (FarmPrinterMaterial $r) => $r->printer && $type($r->printer) === $own)
+            ->sortBy(fn (FarmPrinterMaterial $r) => $r->printer->key)->values();
     }
 
     /** A spool that needs its own settings on this machine gets its own row, starting from the kind's row. */
