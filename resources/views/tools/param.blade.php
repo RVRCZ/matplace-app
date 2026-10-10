@@ -3,6 +3,8 @@
     $place = $place ?? [];
     $integer = fn (array $f) => $f[3] === 1;
     $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs', 'colors_n', 'bg_strength', 'spikes', 'links', 'soften'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : (in_array($k, ['flute', 'contrast', 'brightness', 'saturation', 'eye_pos', 'text_size', 'text_y', 'darkness'], true) ? '%' : 'mm'));
+    $unitOf = $unit;
+    $unit = fn (string $k) => ['density' => '', 'portrait_scale' => '×', 'portrait_turn' => '°', 'detail' => '%', 'trim' => '%'][$k] ?? $unitOf($k);
     $i18n = collect(['param.working', 'param.failed', 'param.too_fast', 'param.text_required', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
         'param.warn.stand_angle_45', 'param.warn.stand_angle_55', 'param.warn.stand_angle_70', 'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
         'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.cut', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.notes', 'param.part.stand.notes', 'param.part.body.hair_tie', 'param.part.stand.hair_tie', 'param.part.body.candle_stand', 'param.part.stand.candle_stand', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
@@ -14,6 +16,11 @@
             'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'warn.name_small', 'warn.name_no_room', 'warn.caption_photo', 'part.icing', 'thickened', 'magnet.fact', 'chain.fact', 'pockets.grid', 'pockets.holes', 'pin.fact', 'stand.fact',
             // a part may be called by what it is in this tool (the plate of a gingerbread is "the gingerbread")
             ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text(\Illuminate\Support\Facades\Lang::has('param.shape.'.$k.'.'.$kind) ? 'param.shape.'.$k.'.'.$kind : 'param.shape.'.$k)])->all();
+    }
+    if ($kind === 'papel') {
+        // the portrait: its two parts, its warnings, what the frame in the preview says while it is dragged
+        $i18n += collect(['part.body.papel', 'part.details.papel', 'warn.portrait_fine', 'warn.portrait_whole', 'papel.swap', 'papel.one', 'papel.place.at', 'papel.place.size'])
+            ->mapWithKeys(fn ($k) => ['param.'.$k => \App\Support\NextStep::text('param.'.$k)])->all();
     }
     if ($kind === 'compose') {
         $i18n += collect(['layer.text', 'layer.art', 'layer.shape', 'layer.up', 'layer.down', 'layer.hide', 'layer.show', 'layer.copy', 'layer.remove', 'limit', 'empty', 'unit'])->mapWithKeys(fn ($k) => ['compose.'.$k => __('param.compose.'.$k)])->all();
@@ -46,12 +53,25 @@
         'colors' => __('toolpage.section.colors'),
         'print' => \App\Support\NextStep::text('param.step.inquiry'),   // "print or download" / "download" / "inquiry": what this site offers
     ]);
+    // steps only this tool has (ParametricGenerator::SECTIONS: id → the step it follows), and its own names for the common ones
+    $extra = \App\Domain\Tools\ParametricGenerator::SECTIONS[$kind] ?? [];
+    if ($extra) {
+        $ordered = [];
+        foreach ($sections as $id => $title) {
+            $ordered[$id] = \Illuminate\Support\Facades\Lang::has('param.'.$kind.'.step.'.$id) ? __('param.'.$kind.'.step.'.$id) : $title;
+            foreach (array_keys($extra, $id, true) as $step) {
+                $ordered[$step] = __('param.'.$kind.'.step.'.$step);
+            }
+        }
+        $sections = $ordered;
+    }
+    $first = \App\Domain\Tools\ParametricGenerator::FIRST[$kind] ?? null;      // the choice the first step opens with
     // fields, flags and choices that belong to one choice only: the script hides them for the others
     $whenOf = fn (string $key) => isset($when[$key]) ? 'data-when="'.e($when[$key][0].'='.implode(',', $when[$key][1])).'"' : '';
     // which wall of the model a size moves when it is dragged in the viewer (x width, y depth, z height)
     $handles = \App\Domain\Tools\ParametricGenerator::HANDLES[$kind] ?? [];
     // which section a warning of the tool belongs to; everything else is about the size
-    $warnAt = ['cup_narrow' => 'input', 'thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'pieces_tied' => 'input', 'letters_tied' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors'];
+    $warnAt = ['portrait_fine' => 'input', 'portrait_whole' => 'input', 'cup_narrow' => 'input', 'thin_lines' => 'input', 'outlines_ignored' => 'input', 'missing_chars' => 'input', 'separate_pieces' => 'input', 'floating_pieces' => 'input', 'pieces_tied' => 'input', 'letters_tied' => 'input', 'qr_one_color' => 'colors', 'qr_low_contrast' => 'colors', 'qr_inverted' => 'colors'];
     $folded = \App\Domain\Tools\ParametricGenerator::FOLDED;
     $fieldsAt = fn (string $section) => collect($fields)->filter(fn ($f, $k) => $at($k, 'size') === $section);
     $flagsAt = fn (string $section) => collect($flags)->filter(fn ($flag) => $at($flag, 'size') === $section);
@@ -95,7 +115,21 @@
 <form id="param-form" novalidate>
     {{-- 1 · what it is made from: a preset to start with, the text, the picture, the kind of thing --}}
     @if($hasInput)
-    <x-tool-section id="input" :title="__('toolpage.section.input')">
+    <x-tool-section id="input" :title="$sections['input']">
+        @if($first && isset($plainChoices[$first]))
+            {{-- what is made of the picture comes before the picture: the rest of the step depends on it --}}
+            <fieldset>
+                <legend class="lbl">{{ $tr('c', $first) }}</legend>
+                <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
+                    @foreach($plainChoices[$first] as $i => $o)
+                        <label class="tool-choice">
+                            <input type="radio" name="c-{{ $first }}" data-choice="{{ $first }}" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ $tr('o', $o) }}
+                        </label>
+                    @endforeach
+                </div>
+                @if(\Illuminate\Support\Facades\Lang::has('param.c.'.$kind.'.'.$first.'.hint'))<p class="hint mt-1 !text-xs">{{ __('param.c.'.$kind.'.'.$first.'.hint') }}</p>@endif
+            </fieldset>
+        @endif
         @if($presets)
             <fieldset>
                 <legend class="lbl">{{ __('param.presets') }}</legend>
@@ -177,6 +211,12 @@
             </fieldset>
         @endif
 
+        @if($extra)
+            {{-- a tool with steps of its own: its block for this step (the two small pictures of a portrait), then what it placed here --}}
+            @includeIf('tools._'.$kind.'_input')
+            @include('tools._placed', ['step' => 'input'])
+        @endif
+
         @if($kind === 'compose')
             {{-- the layers of a composition, from the bottom up (the list shows the top one first, as they lie), and the fields of the chosen one --}}
             <fieldset class="min-w-0">
@@ -220,7 +260,7 @@
         @endif
 
         @foreach($plainChoices as $key => $options)
-            @continue($at($key, 'input') !== 'input')
+            @continue($at($key, 'input') !== 'input' || $key === $first)
             @if($key === 'typeface' && count($options) > 4)
                 @include('tools._fonts')
                 @continue
@@ -250,8 +290,12 @@
     </x-tool-section>
     @endif
 
+    @foreach(array_keys($extra, 'input', true) as $step)
+        @include('tools._section', ['step' => $step])
+    @endforeach
+
     {{-- 2 · sizes: the main ones with a slider (and a handle in the viewer), the rest under "more" --}}
-    <x-tool-section id="size" :title="__('toolpage.section.size')">
+    <x-tool-section id="size" :title="$sections['size']">
         @foreach($plainChoices as $key => $options)
             @continue($at($key, 'input') !== 'size')
             <fieldset {!! $whenOf($key) !!}>
@@ -335,6 +379,10 @@
         @endif
     </x-tool-section>
 
+    @foreach(array_keys($extra, 'size', true) as $step)
+        @include('tools._section', ['step' => $step])
+    @endforeach
+
     {{-- 3 · colours: every separately printed part with one swatch from the farm's spools (a click opens the window) --}}
     <x-tool-section id="colors" :title="__('toolpage.section.colors')">
         @if($family === 'shape')
@@ -384,6 +432,7 @@
         {{-- the parts of the design, filled by the script as the preview says which there are --}}
         <div id="tool-parts" class="space-y-2" data-own-colors="{{ $colorChoices->isNotEmpty() || in_array($kind, ['modular', 'compose'], true) ? '1' : '0' }}"></div>
         @if($kind === 'modular')<p class="hint !text-xs">{{ __('toolpage.color.bins') }}</p>@endif
+        @if($kind === 'papel')<p class="hint !text-xs" data-when="treatment=portrait">{{ \App\Support\NextStep::text('param.papel.colors.hint') }}</p>@endif
         <div id="tool-recent" class="hidden">
             <div class="text-xs text-muted">{{ __('toolpage.color.recent') }}</div>
             <div id="tool-recent-list" class="mt-1 flex flex-wrap gap-1.5"></div>
