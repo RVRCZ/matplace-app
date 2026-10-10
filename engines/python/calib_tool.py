@@ -14,7 +14,8 @@ kind:
                ironing settings alone (ironing is a setting of the whole print, so a big object would spend most of
                its time polishing its own base plate)
   seam         one plate, about 30 minutes: a 30 mm cylinder, a 20 mm box with rounded corners and a cone leaning out
-               25 degrees, all 20 mm tall - smooth walls where the seam has no corner to hide in - and the 15 mm cube
+               25 degrees, all 20 mm tall - smooth walls where the seam has no corner to hide in - and the 15 mm cube,
+               20 mm apart so every side can be photographed
   temp_tower   floors of 10 mm (params: floors 3-10); every floor carries a 14 mm bridge and a 45 degree overhang.
                The temperature per floor is written into the G-code by the web layer (App\\Domain\\Farm\\TowerGcode),
                floor 1 is the bottom one
@@ -233,6 +234,9 @@ def seam(M, p):
     z0 = plate_t
     h = 20.0
     solid = M.Manifold()
+    # 20 mm between neighbours: the slicer put three of the four seams on the sides facing the next feature, and
+    # in the first plate's 5 mm gaps no camera could see them (T26-000030, 10 Oct 2026)
+    gap = 20.0
 
     cyl_d = 30.0
     solid += M.Manifold.cylinder(h, cyl_d / 2, -1.0, 128).translate([18, 18, z0])
@@ -240,17 +244,19 @@ def seam(M, p):
 
     side, radius = 20.0, 6.0
     rounded = M.CrossSection.square([side - 2 * radius, side - 2 * radius]).offset(radius, M.JoinType.Round, 2.0, 96)
-    solid += rounded.extrude(h).translate([38 + radius, 8 + radius, z0])
-    features.append({"name": "rounded_box", "at": [38, 8], "size": [side, side, h], "corner_radius": radius, "checks": ["seam"]})
+    bx = 3 + cyl_d + gap
+    solid += rounded.extrude(h).translate([bx + radius, 8 + radius, z0])
+    features.append({"name": "rounded_box", "at": [bx, 8], "size": [side, side, h], "corner_radius": radius, "checks": ["seam"]})
 
     cube = 15.0
-    solid += box(M, 63, 10.5, z0, cube, cube, cube)
-    features.append({"name": "cube", "at": [63, 10.5], "size": [cube, cube, cube], "checks": ["dimensions", "corners", "seam_in_corner"]})
+    qx = bx + side + gap
+    solid += box(M, qx, 10.5, z0, cube, cube, cube)
+    features.append({"name": "cube", "at": [qx, 10.5], "size": [cube, cube, cube], "checks": ["dimensions", "corners", "seam_in_corner"]})
 
     # 25 degrees from the vertical: a tenth of a millimetre of overhang per 0.2 mm layer, a quarter of the wall's width
     low_d, lean = 16.0, 25.0
     top_d = round(low_d + 2 * h * math.tan(math.radians(lean)), 2)
-    cx = 83 + top_d / 2
+    cx = qx + cube + gap + top_d / 2
     solid += M.Manifold.cylinder(h, low_d / 2, top_d / 2, 128).translate([cx, 18, z0])
     features.append({"name": "cone", "at": [cx, 18], "diameters": [low_d, top_d], "lean": lean, "height": h, "checks": ["seam", "overhang"]})
 

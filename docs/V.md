@@ -26,7 +26,7 @@ Ověřeno řezem (Anycubic Slicer Next 2.0.0.3 z příkazové řádky, naše pro
 
 ![objekt seam](img/tuning-seam-object.png)
 
-`calib_tool.py seam` – jedna destička 116 × 35 × 21 mm, zleva:
+`calib_tool.py seam` – jedna destička 161 × 35 × 21 mm, prvky 20 mm od sebe, zleva:
 
 | prvek | rozměr | k čemu |
 |---|---|---|
@@ -59,8 +59,17 @@ Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hr
 
 | test | stroj, cívka | nastavení | výsledek | fotky |
 |---|---|---|---|---|
-| – | S1 #1, PLA+ (cívku je potřeba založit) | dnešní (bez scarfu) | čeká na nasazení objektu `seam` | – |
-| – | S1 #1, PLA+ | scarf | čeká | – |
+| T26-000030 | S1 #1, PLA+ bílá (slot 4) | scarf | **nedoběhl** – tiskárna na 110 min ztratila spojení s agentem, Roman tisk vypnul, zakázka `failed`; nehodnotí se | – |
+| – | S1 #1, PLA+ bílá (slot 4) | dnešní (bez scarfu) | čeká na nový počítač farmy | – |
+| – | S1 #1, PLA+ bílá (slot 4) | scarf | čeká | – |
+
+**Co ukázal G-kód T26-000030** (serverová OrcaSlicer 2.4.0-beta, staženo z administrace): nastavení scarfu v něm je
+(`seam_slope_type = external`, délka 20, mezera 15 %, střídání vnitřních švů), šikmé pohyby na válci, hranolu
+a kuželi, na kostce žádné; čas 28 min 10 s, 15,88 g (serverová Orca dává se scarfem stejný čas, jaký místní slicer
+bez něj – z času se scarf poznat nedá). **Šev `aligned` padl u tří prvků ze čtyř na stranu k sousedovi** (válec
+vpravo, hranol vpravo u předního rohu, kužel vlevo; kostka levý přední roh) – do 5mm mezer první verze destičky,
+kam se nedá fotit. Proto má objekt od druhého commitu rozestupy 20 mm (161 mm na délku, místní řez 29 min 22 s bez
+scarfu / 31 min 23 s se scarfem, 16,1 g).
 
 Stav 10. 10. večer podle řídící session: S1 #1 má silky a mramor, S1 #2 jen PETG oranžovou, PLA+ je jen na Maxu.
 Pro test je potřeba **založit do S1 #1 jednu cívku PLA+** (černá nebo bílá, slot 4 místo mramoru) a zapsat ji
@@ -83,7 +92,22 @@ nedal, a z „žádný převis čistý“ poradce navrhne víc chlazení a podp�
 (`isset(...)`), test `test_a_test_nobody_has_judged_yet_shows_no_answer_as_chosen`. Starší hodnocení, která mají
 `overhang_ok = 0` bez důvodu, stojí za kontrolu.
 
-## 3. Ruční testy Romana mimo farmu (část 6 zadání)
+## 3. Rychlost a kvalita (Romanova otázka 10. 10.)
+
+Profil S1 dnes: vnější stěna 200 mm/s, vnitřní 300, výplň 270, horní plocha 200, zrychlení 10 000 (vnější stěna
+5 000). Místní řez objektu `seam` (malý díl, kde vládne zrychlení a doba vrstvy; u velkých dílů bude rozdíl větší):
+
+| nastavení | čas |
+|---|---|
+| dnešní | 28 min 9 s |
+| vnější stěna a horní plocha 100 mm/s, zbytek beze změny | 30 min 14 s (+7 %) |
+| všechny tiskové rychlosti na polovinu | 31 min 37 s (+12 %) |
+
+Vzhled dělá vnější stěna a horní plocha; vnitřní stěny a výplň vidět nejsou. Kandidát k otestování: `outer_wall_speed`
+100–120 a `top_surface_speed` 100–150 na `quick` / `seam`, nejdřív u silku (lesk ukáže každou změnu rychlosti).
+Netestováno tiskem.
+
+## 4. Ruční testy Romana mimo farmu (část 6 zadání)
 
 | kdy | stroj, cívka | co | hodnota | výsledek |
 |---|---|---|---|---|
@@ -94,7 +118,7 @@ Hodnoty farmy pro Max dnes: `top_solid_infill_flow_ratio = 1`, `top_surface_spee
 podložku. Až Roman napíše výsledek: kandidát do řádku Max × PLA+ a ověření testem `quick` z farmy (horní plocha
 kostky) spolu s `top_surface_speed` 100–150.
 
-## 4. Testy
+## 5. Testy
 
 `FarmTuningTest` (+2: test švu od tisku po převzetí do řádku; nevyhodnocený formulář), `FarmNozzleTest` (objekt
 `seam` vodotěsný pro trysku 0,4 i 0,2), `FarmTestPhotosTest` (+2: test `seam` se ptá na šev a ne na to, co na
