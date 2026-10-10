@@ -2,7 +2,7 @@
 @php
     $views = ['top' => 'shora', 'left' => 'zleva', 'right' => 'zprava', 'phone' => 'mobil'];
     $conf = ['high' => 'jisté', 'medium' => 'spíš', 'low' => 'nejisté'];
-    $labels = ['stringing' => 'Stringing', 'overhang_ok' => 'Převis', 'bridge' => 'Most', 'elephant' => 'Sloní noha', 'corners' => 'Rohy', 'ironing' => 'Žehlená plocha', 'top' => 'Vrchní plocha', 'wall' => 'Tenká stěna', 'bond' => 'Spojení vrstev', 'warp' => 'Podložka'];
+    $labels = ['stringing' => 'Stringing', 'overhang_ok' => 'Převis', 'bridge' => 'Most', 'elephant' => 'Sloní noha', 'corners' => 'Rohy', 'ironing' => 'Žehlená plocha', 'top' => 'Vrchní plocha', 'wall' => 'Tenká stěna', 'bond' => 'Spojení vrstev', 'warp' => 'Podložka', 'seam' => 'Šev', 'seam_fault' => 'Vada na švu'];
     $status = $ai['status'] ?? null;
 @endphp
 <div class="mt-2 rounded-lg border border-slate-200 bg-white p-2 text-xs">
