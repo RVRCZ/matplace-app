@@ -64,7 +64,8 @@ Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hr
 | – | S1 #1, PLA+ bílá (slot 4) | scarf | čeká | – |
 
 Poučení z B: v měkkém světle foto‑boxu není vidět ani běžný `aligned` šev bílého matného PLA+; dvojici B/S je nutné
-porovnat **za stejných podmínek s bočním (ostrým) světlem**, nebo nehtem po obvodu válce a hranolu. Výsledek B sám
+porovnat **za stejných podmínek s bočním (ostrým) světlem** – Roman nemá lampu, stačí svítilna mobilu položená
+na stůl vedle kusu, nebo denní světlo z okna – nebo nehtem po obvodu válce a hranolu. Výsledek B sám
 o sobě neříká „šev 0“, říká „šev není vidět v tomhle světle“.
 
 Plán tisků po zprovoznění farmy U (10. 10. večer, filament jde přes ACE, Roman nemá konkrétní příznak – chce
@@ -73,7 +74,7 @@ s `{"filament_max_volumetric_speed":["12"]}` (Q12); Max souběžně `quick` s `{
 Každý výtisk zvážit (podtlak toku = nižší hmotnost než odhad), u Q16 poslouchat cvakání extruderu při výplni.
 Roman nemá dost přesnou váhu → místo hmotnosti **posuvka na tenké stěně** `quick` (2 čáry, nominálně 0,84 mm;
 podtlak toku = tenčí) a fotka horní plochy kostky. Extruder necvaká. **10. 10. večer Roman upravil přítlak
-podávacích koleček extruderu** (před testy) – všechny dřívější testy a vyladěný řádek PLA+ na S1 vznikly se starým
+podávacích koleček extruderu na S1 #1** (jen tam; S1 #2 a Max beze změny; před testy) – všechny dřívější testy a vyladěný řádek PLA+ na S1 vznikly se starým
 přítlakem; Q16 i Q12 už s novým, takže dvojice je srovnatelná.
 
 **Co ukázal G-kód T26-000030** (serverová OrcaSlicer 2.4.0-beta, staženo z administrace): nastavení scarfu v něm je
