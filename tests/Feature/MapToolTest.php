@@ -29,13 +29,15 @@ class MapToolTest extends TestCase
     {
         parent::setUp();
         Storage::fake('models');
-        File::deleteDirectory(storage_path('app/maps'));         // the answers of the services are kept on disk: a test starts without any
+        MapData::$root = storage_path('framework/testing/maps');  // the answers of the services are kept on disk: a test starts without any, away from the real cache
+        File::deleteDirectory(MapData::$root);
         Http::preventStrayRequests();
     }
 
     protected function tearDown(): void
     {
-        File::deleteDirectory(storage_path('app/maps'));
+        File::deleteDirectory(MapData::root());
+        MapData::$root = null;
         parent::tearDown();
     }
 
@@ -144,12 +146,13 @@ class MapToolTest extends TestCase
         $this->assertSame('map', $info['kind']);
         $this->assertEqualsWithDelta(150, $info['bbox']['x'], 0.05);
         $this->assertEqualsWithDelta(150, $info['bbox']['y'], 0.05);
-        $this->assertEqualsWithDelta(4 + 25 * 138 / 500, $info['bbox']['z'], 0.2, 'the plate and the tallest building (25 m) at 138 mm : 500 m');
+        $this->assertEqualsWithDelta(4 + 42 * 138 / 500, $info['bbox']['z'], 0.2, 'the plate and the church tower (42 m to the top of its spire) at 138 mm : 500 m');
         $this->assertGreaterThan(50000, $info['volume_mm3']);
         $p = $file->tool_params;
         $this->assertSame('city', $p['type']);
         $this->assertSame('500', $p['side']);
-        $this->assertSame(5, $p['notes']['buildings']);
+        $this->assertSame(8, $p['notes']['buildings'], 'the tower part and the tower node are not buildings');
+        $this->assertSame([2, 2], [$p['notes']['roofs'], $p['notes']['towers']], 'the house without a word gets a gabled roof, the hipped one is mapped; a tower as a part, a tower as a point');
         $this->assertGreaterThan(1000, $p['notes']['roads_m']);
         $this->assertSame('1 : 3 600', $p['notes']['scale']);
         $this->assertSame('2026-10-01', $p['notes']['osm_date']);
@@ -202,7 +205,7 @@ class MapToolTest extends TestCase
         $this->assertSame('landscape', $p['type']);
         // the tiles were fetched once each and kept
         Http::assertSent(fn ($request) => str_contains($request->url(), 'elevation-tiles-prod/terrarium/12/'));
-        $this->assertNotEmpty(File::glob(storage_path('app/maps/dem/12/*/*.png')));
+        $this->assertNotEmpty(File::glob(MapData::root().'/dem/12/*/*.png'));
         // 400 m of relief over 5 km at 1 : 41 700, twice: about 19 mm above the plate; a closed solid, as the mesh report says
         $relief = $p['notes']['relief_m'];
         $this->assertEqualsWithDelta(400, $relief, 40);
@@ -224,7 +227,7 @@ class MapToolTest extends TestCase
         $r = $this->postJson('/api/tools/map/preview', ['params' => ['type' => 'city', 'side' => '500', 'size' => 150] + self::CENTER])->assertOk();
         $this->assertSame('image/png', $r->headers->get('Content-Type'));
         $meta = json_decode((string) $r->headers->get('X-Map-Meta'), true);
-        $this->assertSame([5, 600], [$meta['buildings'], $meta['width']]);
+        $this->assertSame([8, 600], [$meta['buildings'], $meta['width']]);
         $this->assertSame('1 : 3 600', $meta['scale']);
         $png = imagecreatefromstring($r->getFile()->getContent());
         $this->assertSame(600, imagesx($png));
@@ -232,6 +235,24 @@ class MapToolTest extends TestCase
         $rgb = fn (int $x, int $y) => sprintf('#%06x', imagecolorat($png, $x, $y));
         $this->assertSame(MapBuilder::COLORS['base'], $rgb(300 + (int) round(-60 * 138 / 500 * 4), 300 + (int) round(60 * 138 / 500 * 4)), 'a spot with nothing on it');
         $this->assertSame(MapBuilder::COLORS['buildings'], $rgb(300 + (int) round(-105 * 138 / 500 * 4), 300 - (int) round(70 * 138 / 500 * 4)));
+    }
+
+    public function test_roofs_and_towers_follow_the_data_and_the_choice(): void
+    {
+        $this->needsPython();
+        $this->fakeServices();
+        [$houses, $a] = $this->make(['type' => 'city', 'side' => '500', 'size' => 150, 'frame' => false]);
+        [$data, $b] = $this->make(['type' => 'city', 'side' => '500', 'size' => 150, 'frame' => false, 'roofs' => 'data']);
+        [$flat, $c] = $this->make(['type' => 'city', 'side' => '500', 'size' => 150, 'frame' => false, 'roofs' => 'flat']);
+        $this->assertSame(['ready', 'ready', 'ready'], [$a['status'], $b['status'], $c['status']]);
+        // a roof takes material off a block of the same height: a flat town is the heaviest, houses with roofs the lightest
+        $this->assertLessThan($c['volume_mm3'], $b['volume_mm3'], 'the hipped roof and the spire are mapped');
+        $this->assertLessThan($b['volume_mm3'], $a['volume_mm3'], 'the house without a word has a roof only when houses get one');
+        $this->assertSame([2, 1, 0], [$houses->tool_params['notes']['roofs'], $data->tool_params['notes']['roofs'], $flat->tool_params['notes']['roofs']]);
+        $this->assertSame(2, $flat->tool_params['notes']['towers'], 'the towers stand whatever the roofs do');
+        $this->assertEqualsWithDelta(4 + 42 * 150 / 500, $c['bbox']['z'], 0.2, 'without its spire the tower is as tall: the walls take the whole height (no frame: 150 mm for 500 m)');
+        $this->assertSame('houses', $houses->tool_params['roofs']);
+        Http::assertSent(fn ($request) => str_contains((string) $request['data'], 'way["building:part"]') && str_contains((string) $request['data'], 'node["man_made"="tower"]'));
     }
 
     public function test_the_services_down_and_the_daily_limit_are_told_in_words(): void

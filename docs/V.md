@@ -60,13 +60,77 @@ Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hr
 | test | stroj, cívka | nastavení | výsledek | fotky |
 |---|---|---|---|---|
 | T26-000030 | S1 #1, PLA+ bílá (slot 4) | scarf | **nedoběhl** – tiskárna na 110 min ztratila spojení s agentem, Roman tisk vypnul, zakázka `failed`; nehodnotí se | – |
-| – | S1 #1, PLA+ bílá (slot 4) | dnešní (bez scarfu) | farma U online 10. 10. večer, Roman zakládá | – |
-| – | S1 #1, PLA+ bílá (slot 4) | scarf | čeká | – |
+| T26-000031 (B) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | dnešní (bez scarfu) | **hotovo 10. 10.** – kostka 14,96 × 14,95 (−0,04/−0,05), rohy ostré, stěny válce, hranolu i kužele hladké; na 8 fotkách z foto‑boxu (měkké čelní světlo, 3840 × 2160, výřezy v plném rozlišení) **šev jsem nenašel** (AI ho na válci našla, viz níže – můj výřez mířil jinam); horní plochy s viditelnými čarami (válec, kužel), žádné vlásky kromě prachu; nažloutlý nádech paty kužele = stín, ne vada | u testu v adminu |
+| T26-000032 (S) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | scarf (předpoklad podle pořadí, Roman potvrdí) | **hotovo 10. 10.** – 11 fotek kusů odlomených od sebe, **ostré boční světlo zleva** (jiné než u B). Válec: na jedné straně slabá svislá linka bez boule, ostatní strany čisté. Zaoblený hranol: nic vidět (osvětlená stěna přepálená). **Kužel: na jedné straně zřetelná rovná čára shora dolů a vedle ní asi 15 mm široký zdrsněný pás s drobnými značkami; na další straně pole teček v šikmé mřížce přes zhruba čtvrtinu obvodu**; zbylé dvě strany čisté | u testu v adminu |
+
+| T26-000037 (S2) | S1 #1, PLA+ bílá (slot 4) | scarf jen na svislých vnějších stěnách (zaškrtnutí + JSON, Roman potvrdil) | **hotovo 10. 10.** – 10 snímků při expozici −6, kusy odlomené (válec 1×, kužel 1×, hranol 4×, kostka 4×) | Camera Roll 20:57–20:59 |
+
+**Srovnání B × S ve stejném ostrém bočním světle** (Roman 10. 10. večer dofotil B stejně jako S, kusy odlomené;
+T26-000032 má u testu „šev: scarf external, délka 20 mm, mezera 15%“):
+
+| prvek | B = bez scarfu (T26-000031) | S = scarf (T26-000032) | lepší |
+|---|---|---|---|
+| válec (svislá stěna) | ostrá svislá čára (potvrzeno i při expozici −6, 19:32) | při expozici −6 (19:29) **stejně zřetelná svislá čára** se slabým schodkem; „měkčí linka“ z přepálených snímků byla klam expozice | žádný rozdíl |
+| zaoblený hranol | zřetelná svislá čára u rohu, mírně vystouplá (snímek s ruční expozicí −6, 19:26) | nic rozeznatelného (stěna přepálená, přefotit s −6) | nelze říct |
+| kužel (stěna 25° ven) | **jedna tenká čistá čára**, stěna kolem hladká | čára **+ asi 15 mm zdrsněný pás vedle ní + pole teček v šikmé mřížce** na další straně; při expozici −6 potvrzeno na třech snímcích (zdrsnění zabírá velkou část osvětlené strany) | **B, zřetelně** |
+| kostka | rohy ostré, 14,96 × 14,95 | rohy ostré (neměřeno) | stejné |
+
+**Závěr: scarf v téhle podobě (`TestPrintService::SCARF`) do řádku nepřebírat.** Na svislé stěně nepomůže viditelně, na
+šikmé stěně vymění tenkou čáru za široký zdrsněný pás. Pás = rampa scarfu tištěná na převisu (kužel má 22 % šířky
+stěny přes okraj, pod prahem `scarf_overhang_threshold = 40%`, takže se scarf použil); šikmá mřížka teček odpovídá
+`staggered_inner_seams` a scarfu na vnitřních stěnách prosvítajícím vnější stěnou – to druhé je domněnka.
+
+Další pokus **S2** (jeden tisk, zaškrtnutý scarf + *Proces navíc*):
+`{"seam_slope_inner_walls":"0","staggered_inner_seams":"0","scarf_overhang_threshold":"5%"}` – scarf jen na vnější
+stěně a jen na (skoro) svislých stěnách. Místní řez: válec a hranol mají šikmé pohyby jen na vnější stěně, kužel
+a kostka žádné, vnitřní stěny všude rovné; 29 min 42 s. Když S2 dá válec jako S a kužel jako B, tyhle hodnoty
+nahradí `SCARF` a jdou do řádku; jinak scarf pro PLA+ nezavádět a zkusit ho až na silku, kde je šev vidět nejvíc.
+
+**Focení od 10. 10. 19:26**: kamera Trust Teza na ruční expozici −6 (automatika dávala osvětlenou stranu bílého
+PLA+ na 215–235 z 255, kde kamera kresbu slévá; s −6 je na 174 a šev i čáry horní plochy jsou vidět). Snímky
+z aplikace Fotoaparát jsou v `Obrázky\Camera Roll`. S2 a přefocení hranolu a válce z B a S už s touhle expozicí.
+
+**Výsledek S2 (T26-000037) proti B a S, stejné světlo, expozice −6:**
+
+| prvek | B (bez scarfu) | S (scarf podle zadání) | S2 (scarf jen na svislých vnějších stěnách) |
+|---|---|---|---|
+| zaoblený hranol | zřetelná svislá čára u rohu, mírně vystouplá | neposouzeno | **na čtyřech pohledech žádný hřebínek**, jen měkký přechod lesku |
+| válec | ostrá svislá čára | stejná čára | čára měkčí (jeden pohled) |
+| kužel | jedna tenká čistá čára | čára + zdrsněný pás + pole teček | **jedna tenká čistá čára jako u B** |
+| kostka | rohy ostré, 14,96 × 14,95 | rohy ostré | rohy ostré (neměřeno) |
+
+**S2 je první varianta, která je lepší než dnešní stav a nikde horší.** Proto od tohoto commitu
+`TestPrintService::SCARF` = hodnoty S2 (zaškrtávátko „Šikmý šev“ už dá přímo je, JSON netřeba). Meze důkazu: jeden
+tisk, jedna tiskárna, bílé PLA+, válec a kužel jen z jednoho pohledu, kostka S2 nezměřená. Do knihovny `kobra s1`
+zatím nejde – až řádek potvrdí druhý tisk (jiná barva nebo silk) a Roman šev nehtem.
+
+**AI hodnocení T26-000032** (10. 10. 17:04, 12 fotek, 3 přiblížení): *Šev: nelze posoudit – na válci a kuželu ho
+nenacházím, strana je přeexponovaná nebo rozmazaná*, rohy ok, sloní noha 0, podložka ok, 4/5; chce ostré nepřepálené
+boční záběry. Zdrsněný pás na kuželi (foto 5, 6) nenašla – ve výřezu v plném rozlišení vidět je. Pokyn se tedy chová
+poctivě (nehádá), ale na přepálených fotkách bílého PLA+ vadu přehlédne; fotit s menší expozicí. Roman formulář
+odeslal se 4/5 bez pole švu. **Tlačítko „označit jako vyladěné“ u T26-000032 nemačkat** – přeneslo by scarf do řádku.
+
+**AI hodnocení T26-000031** (10. 10. 16:04, 11 fotek, 3 přiblížení) – první ostrý běh pokynu pro šev: *Šev 2 (spíš):
+na válci svislá čára uprostřed stěny (foto 9, 2)*, *Vada na švu: none – čára v rovině se stěnou, bez hrbolu a drážky*,
+rohy ok, sloní noha 0, podložka ok, celkem 4/5; k tomu poznámka o malém výstupku u okraje vršku kužele a drsném
+vršku, a žádost o fotky kužele a hranolu zblízka z boku při bočním světle. Pokyn tedy funguje: šev našlo, správně
+odlišilo rovný šev od boule/díry a řeklo si o správné světlo. Roman potvrdil formulář (10. 10.): **šev 1 (slabá
+linka), vada žádná, rohy ostré, 4/5**; rozměry kostky do formuláře nezapsal (14,96 × 14,95 jsou tady). Poradce:
+„není co měnit“. Řádek zůstává v1 (`tuned`); tlačítko „označit jako vyladěné“ u B nemačkat, dokud není porovnán S.
+
+Poučení z B: v měkkém světle foto‑boxu není vidět ani běžný `aligned` šev bílého matného PLA+; dvojici B/S je nutné
+porovnat **za stejných podmínek s bočním (ostrým) světlem** – Roman nemá lampu, stačí svítilna mobilu položená
+na stůl vedle kusu, nebo denní světlo z okna – nebo nehtem po obvodu válce a hranolu. Výsledek B sám
+o sobě neříká „šev 0“, říká „šev není vidět v tomhle světle“.
 
 Plán tisků po zprovoznění farmy U (10. 10. večer, filament jde přes ACE, Roman nemá konkrétní příznak – chce
 nejlepší nastavení): S1 #1 postupně `seam` bez scarfu (B), `seam` se scarfem (S), `quick` dnešní (Q16), `quick`
 s `{"filament_max_volumetric_speed":["12"]}` (Q12); Max souběžně `quick` s `{"top_surface_speed":"120"}` na modré PLA+.
 Každý výtisk zvážit (podtlak toku = nižší hmotnost než odhad), u Q16 poslouchat cvakání extruderu při výplni.
+Roman nemá dost přesnou váhu → místo hmotnosti **posuvka na tenké stěně** `quick` (2 čáry, nominálně 0,84 mm;
+podtlak toku = tenčí) a fotka horní plochy kostky. Extruder necvaká. **10. 10. večer Roman upravil přítlak
+podávacích koleček extruderu na S1 #1** (jen tam; S1 #2 a Max beze změny; před testy) – všechny dřívější testy a vyladěný řádek PLA+ na S1 vznikly se starým
+přítlakem; Q16 i Q12 už s novým, takže dvojice je srovnatelná.
 
 **Co ukázal G-kód T26-000030** (serverová OrcaSlicer 2.4.0-beta, staženo z administrace): nastavení scarfu v něm je
 (`seam_slope_type = external`, délka 20, mezera 15 %, střídání vnitřních švů), šikmé pohyby na válci, hranolu
@@ -153,7 +217,54 @@ skutečné hranice hotendu s danou cívkou.
 Závěr: poměr toku horní plochy zůstává 1,0; podezřelý je tok – horní plocha jede 200 mm/s × 0,42 × 0,2 = 16,8 mm³/s,
 tedy na stropu 16 (viz 3.1), kde tryska nestíhá. Další test na Maxu: `quick` s `{"top_surface_speed":"120"}` (10 mm³/s).
 
-Hodnoty farmy pro Max dnes: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
+**T26-000033 = M120** (10. 10. večer, Kobra 3 Max, PLA+ modrá, `quick` s `{"top_surface_speed":"120"}` – Roman
+potvrdil, že je z Maxu; „test s procesem navíc“ z 19:1x byl tenhle, **S2 na S1 se zatím netiskl**). Snímky: 7 z nízkého
+úhlu při expozici −6 (pro tmavě modrou málo) a jeden s deskou naklopenou ke kameře při −5 (19:44) – ten je čitelný.
+
+| co | nález |
+|---|---|
+| horní plocha kostky | uzavřená, bez děr, ale čáry stojí jako oddělené hřebínky s rýhami mezi sebou (ne slitá plocha) |
+| bok kostky | **nejvýraznější vada**: lesklé a matné pruhy po vrstvách, zřetelný vodorovný schodek asi ve 3/4 výšky, šikmý vzor – nerovnoměrné kladení vnější stěny |
+| pilíře | vodorovné prstence a hrbolky po výšce, bez vlásků mezi pilíři |
+| most, převisy | most rovný, lamely čisté |
+| tenká stěna | vodorovně pruhovaná |
+
+Pruhy a schodek sedí na výšky, kde na `quick` končí nižší prvky (lamely 10 mm, most 12 mm, kostka 15 mm): doba vrstvy
+se tam skokem zkrátí, slicer zpomalí (`slow_down_layer_time` 8 s) a vnější stěna jede jinou rychlostí → jiný lesk.
+Zčásti je to vlastnost zkušebního objektu, ale ukazuje, jak moc je vzhled stěny na Maxu citlivý na rychlost.
+Srovnávací tisk z Maxu s 200 mm/s z farmy není (Romanův ruční test byl mimo farmu), takže jestli 120 horní plochu
+zlepšilo, umí říct jen Roman. Další kroky na Maxu, po jedné změně: (1) `quick` s
+`{"top_surface_speed":"120","outer_wall_speed":"100"}` – bok kostky; (2) objekt `ironing` se zaškrtnutým žehlením –
+horní plocha (dnes `ironing = no`).
+
+**Oprava podle stránky řádku (screenshot 10. 10. večer):** řádek PLA+ na Farm U #3 (Max) je **verze 3, stav
+„testuje se“, 4/5** a už přepisuje: tryska 210 / 215 °C, `outer_wall_speed = 120`, žehlení 12 % / 30 mm/s / 0,1 mm,
+`support_threshold_angle = 25`, `max_bridge_length = 25`. T26-000033 tedy tiskl vnější stěnu nominálně 120, ne 200 –
+pruhy na boku kostky vznikly už při 120. Řádek PLA+ na Farm U #1 (S1) je **verze 1 z knihovny, stav „testuje se“**,
+ne vyladěný, jak psalo zadání.
+
+Spuštěno 10. 10. ~19:50: **Max** `quick` z cívky tyrkysová (ne modrá jako T26-000033 – jiná cívka, srovnání boku je
+jen orientační) s `{"top_surface_speed":"120","outer_wall_speed":"100"}`; **S1 #1** objekt `ironing` (bílá, žehlení
+zapnuté) s JSON pro S2 v poli procesu – ten u objektu `ironing` nic nedělá (bez `seam_slope_type` se scarf nezapne),
+je to tedy zkouška žehlení na S1, **ne S2**. S2 (objekt `seam` + zaškrtnutý scarf + JSON) zbývá.
+
+**T26-000035 – tyrkysový `quick` z Maxu** (10. 10. ~20:45; `{"top_surface_speed":"120",
+"outer_wall_speed":"100"}`; 3 snímky při expozici −5, jeden s deskou naklopenou):
+
+| co | nález | proti modrému T26-000033 (stěna 120) |
+|---|---|---|
+| horní plocha kostky | rovná, uzavřená, čáry jemné, nestojí jako hřebínky | lepší na pohled, ale jiná barva a lesk – ne čisté srovnání |
+| bok kostky | vodorovný schodek/rýhy asi ve 3/4 výšky zůstaly; pod horní hranou **pás svislých zoubků** vysoký asi 2 mm, zbytek stěny zrnitý | pruhy nezmizely |
+| pilíře | prstence a hrbolky, **jemné vlásky** mezi pilíři a na nich | vlásky u modré nebyly (jiná cívka) |
+| most, převisy | rovný, čisté | stejné |
+
+**Závěr: zpomalení vnější stěny 120 → 100 vady boku neodstranilo – nepřebírat.** Vady sedí na výškové pásy, kde na
+`quick` končí nižší prvky, tedy na skokovou změnu doby vrstvy (slicer tam zpomalí kvůli `slow_down_layer_time` 8 s),
+ne na jmenovitou rychlost stěny. `quick` je na posouzení stěny špatný objekt. Další krok: objekt `seam` **bez scarfu
+na Maxu** – válec a hranol mají po celé výšce stejný průřez, takže ukážou, jak stěna vypadá bez skoků v době vrstvy.
+Horní plocha při 120 vypadá dobře; když to Roman potvrdí, `top_surface_speed = 120` do řádku Maxu jako nová verze.
+
+Hodnoty Orca profilu, které řádek Maxu nepřepisuje: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
 `top_surface_pattern = monotonicline`, `only_one_wall_top = 1`; Max jede s procesem S1 bez přepisů pro velkou
 podložku. Až Roman napíše výsledek: kandidát do řádku Max × PLA+ a ověření testem `quick` z farmy (horní plocha
 kostky) spolu s `top_surface_speed` 100–150.

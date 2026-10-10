@@ -305,6 +305,8 @@ class FarmTuningTest extends TestCase
         $this->assertSame('1', $sliced['seam_slope_conditional']);
         $this->assertSame('20', $sliced['seam_slope_min_length']);
         $this->assertSame('12%', $sliced['seam_gap']);
+        // the scarf stays off the inner walls and off leaning walls: there it roughens the surface
+        $this->assertSame(['0', '0', '5%'], [$sliced['seam_slope_inner_walls'], $sliced['staggered_inner_seams'], $sliced['scarf_overhang_threshold']]);
         $this->assertSame('no_brim', $sliced['brim_type']);
 
         // the switch belongs to the seam object: a quick test never gets a scarf by a forgotten tick

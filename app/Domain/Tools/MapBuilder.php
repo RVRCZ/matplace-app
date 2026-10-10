@@ -32,7 +32,7 @@ final class MapBuilder
         'exaggeration' => [1, 3, 1.5, 0.1],     // a landscape's heights, times
     ];
 
-    public const CHOICES = ['type' => ['city', 'landscape'], 'style' => ['sleek', 'miniature'], 'side' => ['500', '1000', '2000', '5000', '10000', '20000'], 'roads' => ['raised', 'sunk']];
+    public const CHOICES = ['type' => ['city', 'landscape'], 'style' => ['sleek', 'miniature'], 'side' => ['500', '1000', '2000', '5000', '10000', '20000'], 'roads' => ['raised', 'sunk'], 'roofs' => ['houses', 'data', 'flat']];
 
     /** the sides a type offers, metres: a city 0.5–2 km, a landscape 2–20 km */
     public const SIDES = ['city' => [500, 1000, 2000], 'landscape' => [2000, 5000, 10000, 20000]];
