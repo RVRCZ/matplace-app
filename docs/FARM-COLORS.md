@@ -243,3 +243,13 @@ zdejší agent je vypnutý včetně samospouštění.
 session B (portrét z fotky v papel picado), farma: jednobarevný návrh se na `/farm` předvybere na nejbližší cívku,
 `__pycache__` ze sledování pryč. Server 278506c, strom shodný, odstávka 12 s, bez migrace. Záloha
 `/root/matplace_app-20261010-1127.sql`. Farma byla při nasazení zapnutá (Roman ji zapnul kvůli testu švu), 0 běžících úloh.
+
+### Nasazeno počtvrté a popáté (10. 10. 2026, 11:39 a 12:20 UTC)
+
+11:39 `main` 1c617e0: session F – zkušební objekt `seam`, volba šikmého švu, šev v hodnocení i v AI posouzení fotek (bez migrace).
+12:20 `main` 7819fe5: session B druhé kolo (oddělení postavy přes onnxruntime, nahrání fotky na stránce), session E
+úkol #1 (přepínač viditelnosti nástrojů v adminu `/admin/tools`, migrace `tool_flags`, skrytý nástroj pro hosta 404,
+správce otevře s lištou) a #2 (odkazy podle viditelnosti). Server ebaa875, výpadek 13 s, záloha
+`/root/matplace_app-20261010-1219.sql`. Při nasazení netiskl žádný stroj. Známá závada: náhled vrstveného obrazu
+vrací 502 (hlavička X‑Model‑Meta větší než buffer nginx) – oprava v kódu u session D, nebo zvětšení `fastcgi_buffer_size`
+v nginx (Roman, viz zpráva 10. 10.).
