@@ -23,6 +23,7 @@ return [
         'christmas-ball' => 'Christmas ball',
         'christmas-tree-colour' => 'Decorated Christmas tree',
         'smiling-star' => 'Smiling star',
+        'portrait-woman' => 'Face of a woman',
         // animals
         'cat' => 'Cat',
         'dog' => 'Dog',
@@ -212,6 +213,7 @@ return [
         'christmas-ball' => 'bauble ornament ball christmas xmas',
         'christmas-tree-colour' => 'christmas tree xmas fir spruce',
         'smiling-star' => 'star smiley smile',
+        'portrait-woman' => 'woman face portrait head girl lady',
         'cat' => 'kitten pet',
         'dog' => 'puppy pet',
         'paw' => 'paw footprint pet',
