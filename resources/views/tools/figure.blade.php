@@ -4,7 +4,7 @@
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-center text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action';
 @endphp
 
-@extends('tools.page', ['tool' => 'figure', 'module' => 'figure', 'lead' => __('figure.lead'), 'available' => $generator, 'unavailable' => __('figure.unavailable'), 'goLabel' => \App\Support\NextStep::text('toolpage.go'),
+@extends('tools.page', ['tool' => 'figure', 'module' => 'figure', 'lead' => __('figure.lead'), 'available' => $generator, 'unavailable' => __('figure.unavailable'),
     'sections' => ['photo' => __('toolpage.section.photo'), 'base' => __('toolpage.section.base'), 'print' => \App\Support\NextStep::text('param.step.inquiry')]])
 
 @push('head')

@@ -77,7 +77,7 @@
     $flagsAt = fn (string $section) => collect($flags)->filter(fn ($flag) => $at($flag, 'size') === $section);
 @endphp
 
-@extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).(($quickForm ?? null) === true ? '.lead_form' : '.lead')), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
+@extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).(($quickForm ?? null) === true ? '.lead_form' : '.lead')), 'sections' => $sections, 'available' => $available])
 
 @push('head')
 <script>
@@ -103,8 +103,6 @@
     };
 </script>
 @endpush
-
-@section('price-note'){{ \App\Support\NextStep::text('param.estimate.note') }} {{ \App\Support\NextStep::text('param.go.hint') }}@endsection
 
 @section('stage')
     <div id="param-bom" class="card hidden p-4 text-sm"></div>

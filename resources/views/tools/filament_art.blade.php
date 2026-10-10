@@ -10,7 +10,7 @@
     $warnAt = ['outlines_ignored' => 'input', 'pieces_tied' => 'input', 'thin_lines' => 'input', 'thin_merged' => 'colors', 'small_plate_flat' => 'size'];
 @endphp
 
-@extends('tools.page', ['tool' => 'filament_art', 'module' => 'art', 'lead' => __('edit.art.lead'), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
+@extends('tools.page', ['tool' => 'filament_art', 'module' => 'art', 'lead' => __('edit.art.lead'), 'sections' => $sections, 'available' => $available])
 
 @push('head')
 <script>
@@ -29,8 +29,6 @@
     };
 </script>
 @endpush
-
-@section('price-note'){{ \App\Support\NextStep::text('param.estimate.note') }} {{ \App\Support\NextStep::text('param.go.hint') }}@endsection
 
 @section('stage')
     {{-- the guide of a layered picture: the plates back to front, each drawn, with its filament and its spacers --}}

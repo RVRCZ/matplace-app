@@ -93,9 +93,22 @@ class ToolPageTest extends TestCase
             ->assertDontSee('spočítáme v dalším kroku');
         $said = 'Odhad z objemu modelu. V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si objednáte u nás, nebo si stáhnete soubor pro svou tiskárnu.';
         $this->assertSame($said, $note('/tools/letter-beads'));
-        $this->assertSame($said, $note('/tools/filament-art'));
-        $this->get('/tools/split')->assertOk()->assertSee('Pokračovat ke kalkulaci');
-        $this->assertSame('Odhad z objemu modelu.', $note('/tools/split'));
+        // every tool says the same: a picture, a photo, a file to edit, a check, a repair, a mold all go on to the calculator
+        // (the page opens it with the very file), so no tool has a button or a sentence of its own
+        $seen = 0;
+        foreach (config('tools') as $key => $tool) {
+            if (! $tool['available'] || ! Route::has($tool['route']) || (! isset(ParametricGenerator::FIELDS[$key]) && ! isset(self::MODULES[$key]))) {
+                continue;                                   // the calculator, the gifts page and the spare-part inquiry are pages of their own
+            }
+            $html = (string) $this->get(route($tool['route']))->assertOk()->getContent();
+            preg_match('/<span id="tool-go-label">(.*?)<\/span>/s', $html, $button);
+            preg_match('/<p class="w-full text-xs text-muted">(.*?)<\/p>/s', $html, $under);
+            $this->assertSame('Pokračovat ke kalkulaci', trim($button[1] ?? ''), $key);
+            $this->assertSame($said, html_entity_decode(trim($under[1] ?? '')), $key);
+            $seen++;
+        }
+        $this->assertGreaterThanOrEqual(50, $seen);
+        $this->get('/en/tools/relief')->assertOk()->assertSee('Continue to the calculation')->assertDontSee('Print it with us');
         $this->get('/en/tools/letter-beads')->assertOk()->assertSee('Continue to the calculation');
         $this->assertSame('An estimate from the model volume. The calculation shows the precise price and print time. Order the print from us, or download the file for your own printer.', $note('/en/tools/letter-beads'));
         $this->get('/es/tools/letter-beads')->assertOk()->assertSee('Continuar al cálculo');

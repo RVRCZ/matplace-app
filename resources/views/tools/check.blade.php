@@ -7,7 +7,7 @@
     $i18n = collect($keys)->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k)])->all();
 @endphp
 
-@extends('tools.page', ['tool' => 'check', 'module' => 'check', 'lead' => __('check.page.lead'), 'goLabel' => \App\Support\NextStep::text('check.page.go'),
+@extends('tools.page', ['tool' => 'check', 'module' => 'check', 'lead' => __('check.page.lead'),
     'sections' => ['file' => __('toolpage.section.file'), 'result' => __('toolpage.section.result')]])
 
 @push('head')

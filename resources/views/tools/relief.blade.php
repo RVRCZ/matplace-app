@@ -1,4 +1,4 @@
-@extends('tools.page', ['tool' => 'relief', 'module' => 'relief', 'lead' => __('relief.lead'), 'available' => $available, 'goLabel' => \App\Support\NextStep::text('toolpage.go'),
+@extends('tools.page', ['tool' => 'relief', 'module' => 'relief', 'lead' => __('relief.lead'), 'available' => $available,
     'sections' => ['photo' => __('toolpage.section.photo'), 'settings' => __('toolpage.section.settings'), 'print' => \App\Support\NextStep::text('param.step.inquiry')]])
 
 @push('head')

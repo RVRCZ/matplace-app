@@ -15,7 +15,7 @@
     $formats = $op === 'colors' ? ['3mf'] : $config['formats'];
 @endphp
 
-@extends('tools.page', ['tool' => ['holder' => 'holder_model', 'soap' => 'soap_model'][$op] ?? $op, 'module' => 'edit', 'lead' => __('edit.'.$op.'.lead'), 'available' => $available, 'unavailable' => __('edit.unavailable'), 'goLabel' => \App\Support\NextStep::text('param.go'),
+@extends('tools.page', ['tool' => ['holder' => 'holder_model', 'soap' => 'soap_model'][$op] ?? $op, 'module' => 'edit', 'lead' => __('edit.'.$op.'.lead'), 'available' => $available, 'unavailable' => __('edit.unavailable'),
     'sections' => $sections])
 
 @push('head')
@@ -32,8 +32,6 @@
 @endpush
 
 @section('viewer-empty'){{ __('edit.pick') }}@endsection
-
-@section('price-note'){{ \App\Support\NextStep::text('param.estimate.note') }}@endsection
 
 @section('stage')
     {{-- where the pieces of a split model sit in the whole: a map per level, with the numbers engraved on the pieces --}}

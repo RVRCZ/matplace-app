@@ -6,7 +6,7 @@
     A tool's own view extends this one and fills:
       @section('panel')        its sections, each <x-tool-section id="input" …> (resources/views/components/tool-section.blade.php)
       @section('stage')        optional extra blocks under the price (reports, a second viewer)
-      @section('price-note')   optional text under the price
+      @section('price-note')   optional text under the price (every tool has the same one today: what the estimate is, what the next step shows)
     and passes: tool (key in config/tools.php), module (which script drives the page: resources/js/calc/tool_page.ts),
     lead (one sentence), sections (id => label, in order), available + unavailable (the tool's engine is missing).
     Scripts: window.MP_TOOL (shared) next to the tool's own window.MP_<TOOL>.
@@ -113,9 +113,9 @@
                     <button type="button" id="tool-download" class="btn-secondary gap-1.5" aria-haspopup="menu" aria-expanded="false" aria-controls="tool-download-menu" disabled><x-icon name="download" class="h-4 w-4" />{{ __('toolpage.download') }}<x-icon name="chevron-down" class="h-4 w-4" /></button>
                     <div id="tool-download-menu" role="menu" class="absolute bottom-full right-0 z-20 mb-2 hidden w-72 rounded-xl border border-line bg-card p-1 text-sm shadow-sm"></div>
                 </div>
-                <button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><x-icon name="{{ $next === 'download' ? 'arrow-right' : 'printer' }}" class="h-4 w-4" /><span id="tool-go-label">{{ $goLabel ?? \App\Support\NextStep::text('toolpage.go') }}</span></button>
+                <button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><x-icon name="{{ $next === 'download' ? 'arrow-right' : 'printer' }}" class="h-4 w-4" /><span id="tool-go-label">{{ \App\Support\NextStep::text('param.go') }}</span></button>
             </div>
-            <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.estimate.note') }}@endif</p>
+            <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.estimate.note') }} {{ \App\Support\NextStep::text('param.go.hint') }}@endif</p>
         </div>
         @yield('stage')
     </div>
