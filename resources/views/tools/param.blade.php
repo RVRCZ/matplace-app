@@ -200,8 +200,10 @@
                 @endif
                 @if($artwork && $family !== 'shape')
                     {{-- a picture instead of the text: upload, our library of silhouettes, or one uploaded before --}}
+                    {{-- a tool about a photo takes it right here (its own block); the window with the library stays one button away --}}
+                    @includeIf('tools._'.$kind.'_upload')
                     <div class="mt-3 flex flex-wrap items-center gap-2">
-                        <button type="button" id="param-artwork-open" class="btn-quiet !min-h-10 gap-1.5 !px-3 !py-2 text-sm"><x-icon name="image" class="h-4 w-4" />{{ __('toolpage.artwork.choose') }}</button>
+                        <button type="button" id="param-artwork-open" class="btn-quiet !min-h-10 gap-1.5 !px-3 !py-2 text-sm" @if(\Illuminate\Support\Facades\Lang::has('param.'.$kind.'.library')) data-label="{{ __('param.'.$kind.'.library') }}" @endif><x-icon name="image" class="h-4 w-4" />{{ \Illuminate\Support\Facades\Lang::has('param.'.$kind.'.library') ? __('param.'.$kind.'.library') : __('toolpage.artwork.choose') }}</button>
                         <span id="param-artwork-thumb" class="hidden h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-line bg-white p-1"></span>
                         <p id="param-artwork-state" class="text-sm text-muted" aria-live="polite"></p>
                     </div>
