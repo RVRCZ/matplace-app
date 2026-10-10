@@ -35,8 +35,8 @@
     $label = fn (string $k) => $tr('f', $k);
     $at = fn (string $k, string $default) => $place[$k] ?? $default;      // the section a field, flag or choice is shown in
     $palette = $config['colors'];
-    // a built-in colour name as the code of the farm's spool nearest to it (the same name when there is no catalogue)
-    $spool = fn (string $name) => $palette['legacy'][$name] ?? $name;
+    // a colour field starts at a colour, never at a spool: the built-in name of its first option as the colour it stands for
+    $spool = fn (string $name) => $palette['named'][$name] ?? $name;
     $colorChoices = collect($choices)->filter(fn ($o, $k) => \App\Domain\Tools\ParametricGenerator::isColor($k));
     $plainChoices = collect($choices)->reject(fn ($o, $k) => \App\Domain\Tools\ParametricGenerator::isColor($k));
     $hasInput = $presets || $texts || $artwork || $plainChoices->isNotEmpty();
@@ -404,7 +404,6 @@
             {{-- how this design gets its colours in print: one filament, swaps by height, or a printer that changes filament itself --}}
             <p id="shape-print" class="rounded-lg bg-page p-3 text-sm text-ink" aria-live="polite"></p>
         @endif
-        @unless($palette['farm'])<p class="hint !text-xs">{{ __('toolpage.color.builtin') }}</p>@endunless
         {{-- the one colour the order starts from (the first part's); two-colour designs carry theirs in the design --}}
         <input type="hidden" id="param-color" value="">
     </x-tool-section>

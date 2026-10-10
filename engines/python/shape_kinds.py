@@ -344,7 +344,7 @@ def build(M, Invalid, p, product):
     options = {
         "n": int(n("colors_n", 4)), "background": "auto" if p.get("remove_bg", True) else "keep", "background_strength": n("bg_strength", 30), "smooth": n("smooth", 0.3),
         "contrast": n("contrast", 100) / 100, "brightness": n("brightness", 100) / 100, "saturation": n("saturation", 100) / 100,
-        "palette": p.get("palette") or [], "merge": p.get("merge") or [], "order": p.get("order") or [],
+        "palette": p.get("palette") or [], "merge": p.get("merge") or [], "order": p.get("order") or [], "free": bool(p.get("free_colors")),
         "assign": {part[6:]: c["code"] for part, c in (p.get("part_colors") or {}).items() if part.startswith("color_") and isinstance(c, dict) and c.get("code")},
     }
     art_w = width - 2 * edge
@@ -425,7 +425,7 @@ def build(M, Invalid, p, product):
         spools = p.get("palette") or []
         dough = min(spools, key=lambda f: float(((S.hex_lab(f[1]) - S.hex_lab(DOUGH)) ** 2).sum())) if spools else ("", DOUGH)
         # a silhouette is only the shape of the biscuit; of a picture in colours the part that is dough anyway is left out
-        if not is_text and (info["found"] == 1 or (layers and layers[0]["code"] == dough[0])):
+        if not is_text and (info["found"] == 1 or (layers and layers[0].get("near", layers[0]["code"]) == dough[0])):
             layers = layers[1:]
         clip = body2d.offset(-(ROUND + 0.3), J, 2.0, 24)       # icing stays off the rounded edge
         for layer in layers:

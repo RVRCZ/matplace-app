@@ -145,7 +145,9 @@ class ModelFile extends Model
             }
         }
         if (! $out && ($z = $this->colorChangeMm($scale))) {
-            $out[] = ['z' => $z, 'hex' => $this->codeColors()[1] ?? '#D97706', 'code' => null];
+            // one change above a plate: the code of a QR sign, else the colour the design gave its raised text
+            $text = $this->tool_params['part_colors']['text']['hex'] ?? null;
+            $out[] = ['z' => $z, 'hex' => $this->codeColors()[1] ?? (Palette::isCustom($text) ? strtolower($text) : '#D97706'), 'code' => null];
         }
 
         return $out;
@@ -168,6 +170,27 @@ class ModelFile extends Model
         $of = fn (string $key, string $default) => isset($this->tool_params[$key]) ? ($this->tool_params[$key.'_hex'] ?? $palette->hex($this->tool_params[$key]) ?? $hex[$default]) : $hex[$default];
 
         return [$of('plate_color', 'white'), $of('code_color', 'black')];
+    }
+
+    /**
+     * The colours a design names, each once: those of its parts, those the print changes to, the two of a QR sign.
+     * What the pages after the tool show the farm's nearest spools for.
+     *
+     * @return list<string> hex, lower case
+     */
+    public function designColors(): array
+    {
+        if ($this->origin !== 'tool' || ! is_array($this->tool_params)) {
+            return [];
+        }
+        $named = array_merge(
+            array_column(array_filter((array) ($this->tool_params['part_colors'] ?? []), 'is_array'), 'hex'),
+            array_column(array_filter((array) ($this->tool_params['color_changes'] ?? []), 'is_array'), 'hex'),
+            $this->codeColors() ?? [],
+        );
+        $hexes = array_filter($named, fn ($hex) => Palette::isCustom($hex));
+
+        return array_slice(array_values(array_unique(array_map('strtolower', $hexes))), 0, 8);
     }
 
     /** Made by one of our measured tools: the builder laid it the way it prints best, the farm must not turn it. */

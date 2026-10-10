@@ -573,9 +573,11 @@ def colors(M, path, width_mm, o=None):
     o: n (1–8 colours), background ("auto" removes it: the alpha channel when there is one, else what is connected to
     the edge and looks like it; "keep" leaves the picture whole), background_strength 0–100, smooth (mm),
     contrast / brightness / saturation (1 = as is), palette [[code, hex], …] the filaments to choose from,
-    assign {index: code} the visitor's own choice, merge [[from, into], …], order [index, …] bottom to top.
+    assign {index: code} the visitor's own choice, merge [[from, into], …], order [index, …] bottom to top,
+    free (true: no colour is matched to the palette; each keeps the colour it has in the picture, its hex is its code,
+    and the palette only says what the visitor's own choices look like. "near" then names the palette's nearest colour).
 
-    Returns (layers, info). layers bottom to top: {"index", "rgb" (hex of the picture), "code", "hex", "share",
+    Returns (layers, info). layers bottom to top: {"index", "rgb" (hex of the picture), "code", "hex", "near", "share",
     "own" (the area of this colour alone), "stack" (this colour and everything above it: what lies in its layer when the
     colours are printed one on another)}. All in millimetres, the silhouette's lower-left corner at the origin,
     width_mm wide, or fitted as o["fit"] says: ("box", w, h) inside a box, ("circle", d) inside a circle, ("cover", w, h)
@@ -712,13 +714,18 @@ def colors(M, path, width_mm, o=None):
         if str(k).isdigit() and isinstance(v, str):
             assign[int(k)] = v
     by_code = {code: hx for code, _, hx in palette}
-    chosen, used = {}, set()
+    free = bool(o.get("free"))
+    chosen, used, near = {}, set(), {}
     for n in present:                                        # biggest area first
         mean = lab[listed == n].mean(0)
         own = rgb[listed == n].mean(0)
         picture_hex = "#%02x%02x%02x" % tuple(int(round(float(v) * 255)) for v in own)
+        if free and palette:
+            near[n] = min(palette, key=lambda f: float(((f[1] - mean) ** 2).sum()))[0]
         if n in assign and (assign[n] in by_code or not palette):
             chosen[n] = (assign[n], by_code.get(assign[n], picture_hex), picture_hex)
+        elif free:
+            chosen[n] = (picture_hex, picture_hex, picture_hex)
         elif palette:
             ranked = sorted(palette, key=lambda f: float(((f[1] - mean) ** 2).sum()))
             pick = next((f for f in ranked if f[0] not in used), ranked[0])
@@ -745,7 +752,7 @@ def colors(M, path, width_mm, o=None):
         stack = stacks[n]
         own = stack - stacks[order[pos + 1]] if pos + 1 < len(order) else stack
         code, hx, picture_hex = chosen[n]
-        layers.append({"index": n, "rgb": picture_hex, "code": code, "hex": hx, "share": round(float((listed == n).sum()) / total, 4), "own": own, "stack": stack})
+        layers.append({"index": n, "rgb": picture_hex, "code": code, "hex": hx, "near": near.get(n, code), "share": round(float((listed == n).sum()) / total, 4), "own": own, "stack": stack})
     x0, y0, x1, y1 = silhouette.bounds()
     move = [-x0, -y0]
     for layer in layers:

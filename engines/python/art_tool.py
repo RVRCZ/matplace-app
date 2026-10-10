@@ -188,7 +188,7 @@ def build(M, p):
     options = {
         "n": int(n("colors_n", 5)), "background": "auto" if p.get("remove_bg", True) else "keep", "background_strength": n("bg_strength", 30), "smooth": n("smooth", 0.3),
         "contrast": n("contrast", 100) / 100, "brightness": n("brightness", 100) / 100, "saturation": n("saturation", 100) / 100,
-        "palette": p.get("palette") or [], "merge": p.get("merge") or [], "order": p.get("order") or [],
+        "palette": p.get("palette") or [], "merge": p.get("merge") or [], "order": p.get("order") or [], "free": bool(p.get("free_colors")),
         "assign": {part.split("_", 1)[1]: c["code"] for part, c in (p.get("part_colors") or {}).items() if (part.startswith("color_") or part.startswith("plate_")) and isinstance(c, dict) and c.get("code")},
     }
     # the frame's window: a round frame holds a disc, a square one a square; the picture is fitted into it

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Farm\Palette;
 use App\Domain\Tools\ModelCheck;
 use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\MoldGenerator;
@@ -74,6 +75,24 @@ class UploadController extends Controller
         return $f->origin === 'tool' ? (ParametricGenerator::partsOf((string) $f->origin_ref, (array) $f->tool_params) ?: ModelEditor::partsOf($f)) : [];
     }
 
+    /**
+     * For each colour of a design the spool of our farm nearest to it. Nothing is decided by it: the farm's own page
+     * ticks the spools and lets the customer change them. Empty on a site without the farm's catalogue.
+     *
+     * @return list<array{hex: string, spool: array<string, mixed>}>
+     */
+    private static function nearestOf(ModelFile $f): array
+    {
+        $out = [];
+        foreach ($f->designColors() as $hex) {
+            if ($spool = app(Palette::class)->nearestSpool($hex)) {
+                $out[] = ['hex' => $hex, 'spool' => $spool];
+            }
+        }
+
+        return $out;
+    }
+
     /** The tool page this design came from; the page reopens with the same settings. Our own geometry, so changing it costs nothing. */
     private static function toolOf(ModelFile $f): ?array
     {
@@ -117,6 +136,8 @@ class UploadController extends Controller
             'parts' => self::partsOf($f),
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => self::toolOf($f),
+            // the design is drawn in free colours: which of our spools each one would be printed from (shown beside "print it with us")
+            'nearest' => self::nearestOf($f),
             'stl_url' => $f->stl_path ? route('api.files.stl', $f->uuid) : null,
             'kind' => $f->kind(),
             'check' => ModelCheck::report($f),

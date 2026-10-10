@@ -55,10 +55,11 @@ class ColorsPayloadTest extends TestCase
         $this->assertSame('01_PLA+_cerny', $colors['legacy']['black']);
         $this->assertSame('02_PLA+_bily', $colors['legacy']['white']);
         $this->assertSame('60_Silk_gold', $colors['legacy']['yellow']);
-        // the page of a tool carries the palette, and its colour fields start at spools
+        // the page of a tool carries the catalogue (a design stored with a spool is still read), but its colour fields
+        // start at colours, never at spools: the window of a tool page offers free colours only
         $page = (string) $this->get('/tools/qr')->assertOk()->getContent();
         $this->assertStringContainsString('07_PLA+_modry', $page);
-        $this->assertStringContainsString('data-choice="plate_color" data-color value="02_PLA+_bily"', $page);
+        $this->assertStringContainsString('data-choice="plate_color" data-color value="#ede6d6"', $page);
         $this->assertSame('modrá', collect($this->getJson('/api/config')->json('colors.items'))->firstWhere('code', '07_PLA+_modry')['name']);
         app()->setLocale('en');
         app()->forgetScopedInstances();

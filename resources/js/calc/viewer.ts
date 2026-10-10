@@ -843,10 +843,11 @@ export interface Region { x0: number; y0: number; x1: number; y1: number; z0: nu
  * in the colour of the code, the rest in the colour of the plate. null for every other model.
  */
 export function twoColorRegions(params: Record<string, unknown> | null | undefined): Region[] | null {
-    const p = (params ?? {}) as { color_change_mm?: number; plate_color?: string; code_color?: string };
+    const p = (params ?? {}) as { color_change_mm?: number; plate_color?: string; code_color?: string; plate_color_hex?: string; code_color_hex?: string };
     if (!p.color_change_mm || !p.plate_color || !p.code_color) return null;
     const everywhere = { x0: -1e6, y0: -1e6, x1: 1e6, y1: 1e6, exact: true };
-    return [{ ...everywhere, z0: p.color_change_mm + 0.05, color: p.code_color }, { ...everywhere, z0: -1e6, color: p.plate_color }];
+    // the look stored with the design wins: a free colour is its own hex, and a page without the catalogue knows no spool by its code
+    return [{ ...everywhere, z0: p.color_change_mm + 0.05, color: p.code_color_hex ?? p.code_color }, { ...everywhere, z0: -1e6, color: p.plate_color_hex ?? p.plate_color }];
 }
 
 /**
@@ -900,7 +901,8 @@ function paintByRegion(geom: BufferGeometry, regions: Region[]): boolean {
         const r = regions.find((g) => cx >= g.x0 - 0.01 && cx <= g.x1 + 0.01 && cy >= g.y0 - 0.01 && cy <= g.y1 + 0.01 && cz >= g.z0);
         // vertex colours are taken as linear light and come out paler than the swatch (the look of the organizer bins);
         // a two-colour print is shown as the swatches are, black really black: the code has to stand out the way it will when printed
-        const c = r ? (r.exact ? deep(FILAMENT[r.color] ?? base) : FILAMENT[r.color] ?? base) : base;
+        const tone = r ? FILAMENT[r.color] ?? hexRgb(r.color) ?? base : base;     // a colour by its name or spool, or the colour itself ("#2a7fd5")
+        const c = r?.exact ? deep(tone) : tone;
         for (let k = 0; k < 3; k++) { colors[(t + k) * 3] = c[0]; colors[(t + k) * 3 + 1] = c[1]; colors[(t + k) * 3 + 2] = c[2]; }
     }
     geom.setAttribute('color', new Float32BufferAttribute(colors, 3));
