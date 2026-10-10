@@ -11,6 +11,7 @@
 | 5 | 10. 10. | všechny stránky nástrojů | krok „Materiál a počet kusů“ (dnes jen u parametrických nástrojů) na každé stránce nástroje, zvolený materiál a počet jdou do kalkulace; mrtvé texty tlačítek pryč | viz úkol #5 níže | 10. 10. (krok kreslí `tools/page.blade.php`; reliéf a figurka mají „Vytvořit“ na konci kroku 2; přenos ověřen v prohlížeči na split, letter-beads, filament-art) | „Opravy #5“ na `feature/tool-fixes` |
 | 6 | 10. 10. | krok „Materiál a počet kusů“ | v úzkém panelu (340 px) se název materiálu ve výběru ořízne („Běžný plast (PL“) | viz úkol #6 níže | 10. 10. (materiál přes celou šířku panelu, počet kusů pod ním; změřeno v prohlížeči při 340 px, cs/en/es) | „Opravy #6“ na `feature/tool-fixes` |
 | 7 | 10. 10. | nástroje pro úpravu souboru (hollow, life-size, puzzle, holder, potion, flexi-cut, colors, soap, wearable, slider) | pod souborem svítí syrový klíč fáze („edit.stage.repairing“) – společné texty fází chybí v lang/*/edit.php | viz úkol #7 níže | 10. 10. (11 společných textů fází cs/en/es; stránka neposílá skriptu klíč bez textu – na živé /tools/hollow jich bylo 69) | „Opravy #7“ na `feature/tool-fixes` |
+| 8 | 10. 10. | testy náhledu (brčko, otvírák, obrázek v barvách) | tři testy čtou notes.outline z hlavičky X-Model-Meta; po zkrácení hlavičky (PreviewMeta limit 2 kB) je outline v „more“ – testy i ověření stránky | viz úkol #8 níže | | |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 
@@ -171,6 +172,21 @@ loading, thinning, repairing, cutting, joints, numbers, layout, done.
 **Udělat:** společné texty fází `edit.stage.*` ve třech jazycích; blade neposílá klíče bez textu (záložní texty
 skriptu pak platí). Test v `ModelEditTest`/`ToolPageTest`: žádná stránka nástroje nenese v datech pro skript syrový
 klíč fáze. **Hotovo =** `/tools/hollow` při zpracování ukazuje českou/anglickou/španělskou fázi; testy, `pint`, `tsc`, `build`.
+
+## Úkol #8 · 10. 10. 2026 · testy, které čtou obrys z hlavičky náhledu (koordinováno: `tests/Feature/HeldShapesTest.php`, `tests/Feature/ShapeToolsTest.php`, `tests/Feature/PreviewMetaTest.php`, případně pomocná metoda v `tests/TestCase.php`)
+
+**Od session F** (celá sada na main 75c7f70): padají `HeldShapesTest::test_a_straw_topper_carries_a_clip_as_wide_as_the_straw_asks`
+(ř. 57), `HeldShapesTest::test_a_can_opener_has_a_tongue_that_thins_to_its_tip` (ř. 82),
+`ShapeToolsTest::test_a_picture_becomes_parts_in_the_colours_of_filaments` (ř. 136). Všechny čtou `notes.outline`
+přímo z hlavičky `X-Model-Meta`. Commit 7b09f31 (hlavička pod 2 kB, `App\Support\PreviewMeta::LIMIT`) těžké poznámky
+(120bodový outline je první z nich) přesouvá do cache a v hlavičce nechá klíč `more`; testy si zbytek nedotahují.
+**Udělat:** pomocná metoda v `tests/TestCase.php` (např. `previewMeta(TestResponse $r): array`), která hlavičku přečte
+a když má `more`, dotáhne `GET /api/tools/preview/{key}/meta` a sloučí (viz `PreviewMeta::whole`, jak to dělá
+`PapelPortraitTest`); tři testy přes ni. **Zároveň ověř v prohlížeči** (headless Chrome, místně), že stránky
+`/tools/straw-topper` a `/tools/can-opener` (jako správce – jsou skryté) a obrázek v barvách opravdu `more` dotahují:
+tažení očka po obrysu u brčka/otvíráku funguje a díly obrázku se obarví; když ne, napiš mi, neopravuj stránku
+(param.ts/art.ts jsou D/B). **Hotovo =** celá sada bez těchto tří pádů (`php -d memory_limit=2G vendor/bin/phpunit`
+jednou celá), `pint`.
 
 ## Poznámky pro session 1 (z úkolu #1, předat až poběží)
 
