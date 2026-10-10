@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
 use App\Models\User;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -82,7 +83,7 @@ class InsertToolTest extends TestCase
         // a bar of 20 × 160 mm, a red disc of 44 mm and a square of 50 mm, on a sheet that lies a little askew
         $photo = $this->photo([['box', [30, 40, 20, 160], [40, 40, 45]], ['disc', [130, 80, 22], [180, 50, 40]], ['box', [110, 180, 50, 50], [50, 70, 100]]], 0.06);
         $r = $this->preview(['artwork' => $photo, 'depth' => 15, 'gap' => 1.5, 'margin' => 5, 'floor' => 1.6])->assertOk();
-        $m = json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $m = PreviewMeta::whole($r->headers->get('X-Model-Meta'));
         $things = $m['notes']['things'];
         // three things, each within a millimetre and a half of what was drawn (the sheet is the ruler: 210 × 297)
         $this->assertSame([210, 297], $m['notes']['sheet']);
@@ -94,7 +95,7 @@ class InsertToolTest extends TestCase
         }
         // the tray: a floor and the pockets' depth high; without the finger notches, the things together plus play and margin wide
         $this->assertEqualsWithDelta(16.6, $m['bbox']['z'], 0.01);
-        $whole = json_decode((string) $this->preview(['artwork' => $photo, 'notch' => false])->assertOk()->headers->get('X-Model-Meta'), true);
+        $whole = PreviewMeta::whole($this->preview(['artwork' => $photo, 'notch' => false])->assertOk()->headers->get('X-Model-Meta'));
         $this->assertEqualsWithDelta(130 + 2 + 10, $whole['bbox']['x'], 3);
         $this->assertEqualsWithDelta(190 + 2 + 10, $whole['bbox']['y'], 3);
         // a notch is a bite of 9 mm beside its pocket: the tray grows by it where a pocket lies at its edge
@@ -102,7 +103,7 @@ class InsertToolTest extends TestCase
         $block = $m['bbox']['x'] * $m['bbox']['y'] * 16.6;
         $this->assertLessThan($block - (20 * 160 + M_PI * 22 * 22 + 50 * 50) * 15, $m['volume_mm3']);
         // more play is less plastic under the same things
-        $loose = json_decode((string) $this->preview(['artwork' => $photo, 'gap' => 3])->assertOk()->headers->get('X-Model-Meta'), true);
+        $loose = PreviewMeta::whole($this->preview(['artwork' => $photo, 'gap' => 3])->assertOk()->headers->get('X-Model-Meta'));
         $this->assertLessThan($m['volume_mm3'] / ($m['bbox']['x'] * $m['bbox']['y']), $loose['volume_mm3'] / ($loose['bbox']['x'] * $loose['bbox']['y']));
     }
 

@@ -6,6 +6,7 @@ use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Contracts\MeshRepair;
 use App\Engines\Mesh\StlFile;
 use App\Models\ModelFile;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -26,7 +27,7 @@ class CreativeToolsTest extends TestCase
 
     private function meta($response): array
     {
-        return json_decode((string) $response->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($response->headers->get('X-Model-Meta'));
     }
 
     private function preview(string $kind, array $params, string $part = 'all')

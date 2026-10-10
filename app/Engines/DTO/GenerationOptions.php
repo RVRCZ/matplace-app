@@ -8,5 +8,6 @@ final class GenerationOptions
         public readonly string $quality = 'draft',   // draft = fast/cheap preview, refined = slower
         public readonly ?float $targetSizeMm = null, // hint for scaling the result
         public readonly string $outputFormat = 'stl',
+        public readonly ?string $geometryQuality = null,   // standard | detailed; null = what the generator is configured for
     ) {}
 }

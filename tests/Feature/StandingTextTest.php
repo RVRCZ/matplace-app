@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Support\PreviewMeta;
 use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -25,7 +26,7 @@ class StandingTextTest extends TestCase
     {
         $r = $this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'view' => $view, 'params' => $params + ['style' => 'stand', 'line1' => 'HOME', 'typeface' => 'archivo', 'text_height' => 30, 'thickness' => 12]])->assertOk();
 
-        return json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($r->headers->get('X-Model-Meta'));
     }
 
     public function test_the_text_lies_for_printing_and_stands_in_use(): void
@@ -62,7 +63,7 @@ class StandingTextTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $one['notes']['links']);
         $this->assertNotContains('letters_tied', $one['notes']['warnings']);
         // the third line is a line of every sign, not only of the standing one
-        $plate = fn (array $p) => json_decode((string) $this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => $p])->assertOk()->headers->get('X-Model-Meta'), true);
+        $plate = fn (array $p) => PreviewMeta::whole($this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => $p])->assertOk()->headers->get('X-Model-Meta'));
         $this->assertGreaterThan($plate(['line1' => 'Jana', 'line2' => 'Nová'])['bbox']['y'] + 5, $plate(['line1' => 'Jana', 'line2' => 'Nová', 'line3' => 'byt 12'])['bbox']['y']);
     }
 

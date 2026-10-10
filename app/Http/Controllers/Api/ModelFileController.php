@@ -70,17 +70,19 @@ class ModelFileController extends Controller
     /** POST /api/files/{uuid}/pedestal — another base, name or front for a generated bust or figure; answers with the new file */
     public function pedestal(Request $request, ModelFile $modelFile, PedestalChanger $changer): JsonResponse
     {
-        abort_unless($modelFile->isReady() && $changer->state($modelFile) !== null, 404);
+        $pet = $changer->petState($modelFile) !== null;
+        abort_unless($modelFile->isReady() && ($pet || $changer->state($modelFile) !== null), 404);
         $data = $request->validate([
-            'type' => ['required', 'in:'.implode(',', PedestalChanger::TYPES)],
+            'type' => ['required', 'in:'.implode(',', $pet ? PedestalChanger::PET_TYPES : PedestalChanger::TYPES)],
             'name' => ['nullable', 'string', 'max:24'],
             'dedication' => ['nullable', 'string', 'max:40'],
+            'name_side' => ['nullable', 'in:'.implode(',', PedestalChanger::PET_NAME_SIDES)],
             'front' => ['nullable', 'in:'.implode(',', PedestalChanger::FRONTS)],
             'sink' => ['nullable', 'integer', 'in:'.implode(',', PedestalChanger::SINKS)],
             'tidy' => ['nullable', 'boolean'],
         ]);
         try {
-            $new = $changer->change($modelFile, $data, $data['front'] ?? 'keep', (int) ($data['sink'] ?? 0), (bool) ($data['tidy'] ?? true));
+            $new = $pet ? $changer->changePet($modelFile, $data) : $changer->change($modelFile, $data, $data['front'] ?? 'keep', (int) ($data['sink'] ?? 0), (bool) ($data['tidy'] ?? true));
         } catch (\RuntimeException) {
             return response()->json(['error' => 'pedestal_failed'], 422);
         }

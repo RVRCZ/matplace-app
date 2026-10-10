@@ -6,6 +6,7 @@ use App\Domain\Tools\Artwork;
 use App\Domain\Tools\ParametricGenerator;
 use App\Models\ModelFile;
 use App\Models\User;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -36,7 +37,7 @@ class ComposeToolTest extends TestCase
     /** @return array<string, mixed> */
     private function meta(array $params, string $part = 'all'): array
     {
-        return json_decode((string) $this->preview($params, $part)->assertOk()->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($this->preview($params, $part)->assertOk()->headers->get('X-Model-Meta'));
     }
 
     public function test_layers_lie_one_on_another_each_in_its_filament(): void

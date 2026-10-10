@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -76,7 +77,7 @@ class FontsTest extends TestCase
         $seen = [];
         foreach (array_keys(ParametricGenerator::FONTS) as $key) {
             $r = $this->preview('sign', ['line1' => 'Žluťoučký kůň', 'line2' => '¿Señor Ďáblík?', 'typeface' => $key, 'text_height' => 12])->assertOk();
-            $meta = json_decode((string) $r->headers->get('X-Model-Meta'), true);
+            $meta = PreviewMeta::whole($r->headers->get('X-Model-Meta'));
             $this->assertSame([], $meta['notes']['missing_chars'] ?? [], $key);
             $seen[$key] = round($meta['volume_mm3']);
         }

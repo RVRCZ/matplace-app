@@ -14,11 +14,15 @@ final class ModelNormalizer
 {
     public function __construct(private readonly PythonTool $python) {}
 
+    /** What the tool said about the last model it wrote (the base it got, the thinnest place of a pet figurine…). */
+    public array $report = [];
+
     /** @return string absolute path of the normalised binary STL */
     /** @param  string[]  $options  clean = drop dust fragments, pedestal = add a flat round base (figures, busts) */
     public function toPrintableStl(string $inPath, string $outPath, float $targetMaxMm, bool $yUp = true, array $options = [], array $extras = []): string
     {
         $targetMaxMm = max(5.0, min(1000.0, $targetMaxMm));
+        $this->report = [];
         $ext = strtolower(pathinfo($inPath, PATHINFO_EXTENSION));
 
         if ($this->python->available()) {
@@ -27,6 +31,8 @@ final class ModelNormalizer
             }
             $r = $this->python->run(['normalize', $inPath, $outPath, (string) $targetMaxMm, $yUp ? '1' : '0', implode(',', $options), json_encode((object) $extras, JSON_UNESCAPED_UNICODE)]);
             if (! empty($r['ok']) && is_file($outPath)) {
+                $this->report = $r;
+
                 return $outPath;
             }
             if ($ext !== 'stl') {

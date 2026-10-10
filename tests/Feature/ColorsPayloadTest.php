@@ -7,6 +7,7 @@ use App\Domain\Tools\ParametricGenerator;
 use App\Models\FarmColor;
 use App\Models\FarmMaterial;
 use App\Models\ModelFile;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -119,7 +120,7 @@ class ColorsPayloadTest extends TestCase
         $this->assertFalse($palette->inStock('07_PLA+_modry'));
         $this->assertTrue($palette->inStock('02_PLA+_bily'));
         // the preview paints by the code and warns about the contrast from the real colours
-        $meta = json_decode((string) $this->postJson('/api/tools/param/preview', ['kind' => 'qr', 'params' => ['url' => 'https://matplace.com', 'plate_color' => '02_PLA+_bily', 'code_color' => '02_PLA+_bily']])->assertOk()->headers->get('X-Model-Meta'), true);
+        $meta = PreviewMeta::whole($this->postJson('/api/tools/param/preview', ['kind' => 'qr', 'params' => ['url' => 'https://matplace.com', 'plate_color' => '02_PLA+_bily', 'code_color' => '02_PLA+_bily']])->assertOk()->headers->get('X-Model-Meta'));
         $this->assertContains('qr_one_color', $meta['notes']['warnings']);
         $this->assertSame('02_PLA+_bily', $meta['notes']['regions'][0]['color']);
         // the spool is deleted from the catalogue: the stored design still knows what it looked like

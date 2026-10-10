@@ -12,6 +12,7 @@ return [
     'section.photo' => 'Photo',
     'section.file' => 'File',
     'section.base' => 'Base',
+    'section.style' => 'Style',
     'history' => 'Undo and redo',
     'undo' => 'Undo',
     'redo' => 'Redo',

@@ -12,6 +12,7 @@ return [
     'section.photo' => 'Fotka',
     'section.file' => 'Soubor',
     'section.base' => 'Podstavec',
+    'section.style' => 'Styl',
     'history' => 'Zpět a vpřed',
     'undo' => 'Zpět',
     'redo' => 'Vpřed',

@@ -1284,6 +1284,22 @@ def main(argv):
                 m.apply_transform(trimesh.transformations.rotation_matrix(turns * np.pi / 2, [0, 0, 1]))
                 ped_note["turned"] = turns * 90
             m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+            pet = bool(extras.get("pet"))
+            if pet and m.is_watertight:
+                # a pet figurine (pet_kind.py): the tabletop miniature is grown and smoothed here, once; the stored
+                # figure below is the grown one, so another base later starts from it
+                import os
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                import pet_kind
+                try:
+                    if extras.get("style") == "miniature":
+                        m, grown = pet_kind.thicken(m, target, int(extras.get("roughness", 2) or 2))
+                        ped_note.update(grown)
+                        m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+                    else:
+                        ped_note["thinnest_mm"] = pet_kind.thinnest(m)
+                except Exception as e:  # noqa: BLE001 - the figure as it came is better than none
+                    ped_note["pet_error"] = str(e)[:120]
             if extras.get("source_out"):
                 # the figure alone, closed and facing the front: a different base later costs no new generation
                 m.export(str(extras["source_out"]), file_type="stl")
@@ -1307,6 +1323,24 @@ def main(argv):
                 except Exception:
                     pass
             kind = str(extras.get("pedestal", "round"))
+            if pet and "pedestal" in opts and m.is_watertight:
+                try:
+                    m, stood = pet_kind.stand(m, kind, extras, target)
+                    ped_note.update(stood)
+                    m.apply_translation([-m.bounds[0][0], -m.bounds[0][1], -m.bounds[0][2]])
+                    factor = target / float(max(m.extents))
+                    m.apply_scale(factor)
+                    # the figure got a little smaller to make room for its base: its thinnest place with it
+                    if "thinnest_mm" in ped_note:
+                        ped_note["thinnest_mm"] = round(float(ped_note["thinnest_mm"]) * factor, 1)
+                    ped_note["figure_scale"] = round(factor, 4)
+                    m.export(argv[3], file_type="stl")
+                    out(report(m, dict({"out": argv[3], "removed_fragments": removed}, **ped_note)))
+                except SystemExit:
+                    raise
+                except Exception as e:  # noqa: BLE001 - fall back to the plain round base below
+                    ped_note["stand_error"] = str(e)[:120]
+                    kind = "round"
             if "pedestal" in opts and kind != "none":
                 # base under the figure: flat first layer, no supports under a ragged cut, stands on a shelf
                 z_seat, cx, cy, r = seat_of(m)

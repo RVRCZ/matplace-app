@@ -28,7 +28,7 @@ final class VisionDescriber
      *
      * @return array{ok: bool, subject: string, reason: string}
      */
-    public function moderate(string $imagePath, string $view = 'front'): array
+    public function moderate(string $imagePath, string $view = 'front', ?string $want = null): array
     {
         if (! $this->available()) {
             return ['ok' => true, 'subject' => 'unknown', 'reason' => 'moderation_unavailable'];
@@ -40,6 +40,14 @@ final class VisionDescriber
             .'Answer ONLY with JSON: {"ok": <bool>, "subject": "person|pet|object|character|other", "reason": "<short English reason when ok=false, else empty>"}. '
             .'Set ok=false for nudity or sexual content, violence or gore, hate symbols, weapons presented as the main subject, '
             .'or when no clear single subject is visible. Ordinary portraits, pets, toys and objects are ok.';
+        if ($want === 'pet' && $view === 'front') {
+            // a pet figurine is made of one animal: a person in the picture would become part of the figure
+            $system .= ' This photo is for a figurine of a PET. Besides the content rules, set ok=false with exactly one of these words as the reason: '
+                .'"no_animal" when no animal is the subject; "person" when a person is in the picture as a subject or holds the animal '
+                .'(a hand on a leash at the edge is fine); "several" when there is more than one animal; '
+                .'"cropped" when the frame cuts off the legs or most of the body, or only the head is shown. '
+                .'A collar, a leash, a toy, grass or furniture are fine. One whole animal, sitting, standing or lying, is ok.';
+        }
         if ($view !== 'front') {
             $system .= ' This photo is an additional view of a subject whose front photo was already accepted: it shows the subject from the '
                 .$view.'. The face may be hidden or turned away, and a back view shows only hair, the back of a head or the back of an object. '

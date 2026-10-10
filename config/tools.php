@@ -75,6 +75,9 @@ return [
         ['preset' => 'pot', 'params' => ['saucer' => true, 'drainage' => true]],
     ]]],
     'figure' => ['route' => 'tools.figure', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => []]],
+    // session D (docs/X.md): a pet figurine from a photo, on top of the figure tool. A generator makes it, so it has no
+    // examples of its own (as the figure has none)
+    'pet' => ['route' => 'tools.pet', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => []]],
     'relief' => ['route' => 'tools.relief', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => []]],
     'gifts' => ['route' => 'tools.gifts', 'intent' => 'create', 'categories' => ['names'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['kind' => 'sign', 'preset' => 'keyring', 'params' => ['line1' => 'Ela']]],
