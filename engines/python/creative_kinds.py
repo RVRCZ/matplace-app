@@ -4,6 +4,7 @@ Each builder returns (parts, notes) like the ones in param_tool.py. Text, SVG an
 """
 import math
 
+import papel_portrait as P
 import shape2d as S
 
 LIMITS = {
@@ -13,7 +14,9 @@ LIMITS = {
     "stamp": {"width": (15, 120), "relief": (0.8, 4), "plate": (2, 6), "text_height": (4, 40)},
     "qr": {"size": (30, 150), "plate": (1.6, 4), "relief": (0.6, 2)},
     "stencil": {"width": (30, 250), "thickness": (0.8, 3), "margin": (5, 40), "bridge": (0.8, 3)},
-    "papel": {"width": (80, 250), "height": (80, 250), "thickness": (0.8, 2), "bridge": (0.8, 2.4), "darkness": (10, 90), "soften": (0, 3)},
+    "papel": {"width": (80, 250), "height": (80, 250), "thickness": (0.8, 2), "bridge": (0.8, 2.4), "darkness": (10, 90), "soften": (0, 3),
+              "detail": (0, 100), "trim": (0, 60), "density": (0.2, 1), "border_mm": (6, 30), "base": (1, 3), "relief": (0.3, 1.2),
+              "portrait_scale": (0.5, 1.5), "portrait_x": (-125, 125), "portrait_y": (-125, 125), "portrait_turn": (-45, 45)},
     "lightbox": {"width": (80, 300), "depth": (25, 80), "wall": (1.6, 4), "face": (0.8, 2), "margin": (6, 40), "bridge": (0.8, 3), "cable": (3, 10), "clearance": (0.1, 0.6)},
     "cutter": {"width": (30, 150), "height": (10, 30), "wall": (0.8, 1.6), "flange": (3, 10), "flange_t": (1, 2.5)},
 }
@@ -26,7 +29,7 @@ CHOICES = {
     "qr": {"plate_color": ("white", "yellow", "grey", "brown", "orange", "red", "green", "blue", "black"),
            "code_color": ("black", "blue", "green", "red", "brown", "orange", "grey", "yellow", "white")},
     "stencil": {},
-    "papel": {"border": ("flowers", "diamonds", "dots", "hearts", "leaves", "stars", "none")},
+    "papel": {"border": ("flowers", "diamonds", "dots", "hearts", "leaves", "stars", "folk", "none"), "treatment": ("cutout", "portrait"), "scallop_edge": ("bottom", "all"), "backdrop": ("plain", "pattern")},
     "lightbox": {"led": ("strip8", "strip10", "module"), "shape": ("rect", "round")},
     "cutter": {"edge": ("sharp", "straight"), "typeface": ("sans", "serif", "mono", "script")},
 }
@@ -838,55 +841,20 @@ def stencil(M, Invalid, p):
 # ── papel picado: a picture as a cut-out panel ──────────────────────────────
 
 PAPEL_PX = 280              # a photo is read on a grid of this many cells on the longer side of the window
-BORDERS = ("flowers", "diamonds", "dots", "hearts", "leaves", "stars", "none")
+BORDERS = ("flowers", "diamonds", "dots", "hearts", "leaves", "stars", "folk", "none")
 
 
-def _papel_photo(M, path, win_w, win_h, darkness, soften, invert):
+def _papel_trace(M, np, paper, smooth=False):
     """
-    A photo or a drawing → what stays as paper inside a window of win_w × win_h (corner at the origin): its dark parts.
-    The picture covers the whole window (cut to its proportions, not squeezed), is softened, split into dark and light
-    at the level asked for, and cleaned of what a nozzle cannot print.
+    A picture of cells → its outline, in cells: the rows as strips, joined, their corners rounded. A face (`smooth`) is
+    traced between the cells instead, so a slanted line is a line and not a staircase; what is one cell wide goes with it.
     """
-    import numpy as np
-    from PIL import Image, ImageFilter, ImageOps
-    from scipy import ndimage
-    try:
-        img = ImageOps.exif_transpose(Image.open(path))
-    except Exception:  # noqa: BLE001
-        raise S.ArtworkError("image_unreadable")
-    if img.mode in ("RGBA", "LA", "P") or "transparency" in img.info:
-        rgba = img.convert("RGBA")
-        img = Image.alpha_composite(Image.new("RGBA", rgba.size, (255, 255, 255, 255)), rgba)
-    cell = max(win_w, win_h) / PAPEL_PX
-    cols, rows = max(8, int(round(win_w / cell))), max(8, int(round(win_h / cell)))
-    g = ImageOps.autocontrast(ImageOps.fit(img.convert("L"), (cols, rows), Image.LANCZOS), cutoff=1)
-    if soften > 0:
-        g = g.filter(ImageFilter.GaussianBlur(soften * 0.9))
-    a = np.asarray(g, dtype=np.float32)
-    hist, _ = np.histogram(a, bins=256, range=(0, 255))
-    w = np.cumsum(hist).astype(np.float64)
-    m = np.cumsum(hist * np.arange(256)).astype(np.float64)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        between = (m[-1] * w - m * w[-1]) ** 2 / (w * (w[-1] - w))
-    if np.all(np.isnan(between)):
-        raise S.ArtworkError("image_blank", "0")
-    level = float(np.nanargmax(between)) + (darkness - 50.0) * 2.0       # the middle of the slider is the split the picture asks for itself
-    paper = a <= level
-    if invert:
-        paper = ~paper
-    share = float(paper.mean())
-    if share < 0.02 or share > 0.98:
-        raise S.ArtworkError("image_blank", "%d" % round(share * 100))
-    # what a nozzle cannot print goes: specks of paper, pin holes, hairlines (an opening and a closing of one cell)
-    small = max(4, int(round((1.6 / cell) ** 2)))
-    # (done on the picture with its edge repeated outwards: otherwise the closing eats the paper along the picture's edge)
-    paper = ndimage.binary_closing(ndimage.binary_opening(np.pad(paper, 3, mode="edge"), iterations=1), iterations=1)[3:-3, 3:-3].copy()
-    for keep in (True, False):
-        labels, count = ndimage.label(paper == keep)
-        if count:
-            sizes = ndimage.sum(paper == keep, labels, range(1, count + 1))
-            for i in np.flatnonzero(sizes < small):
-                paper[labels == i + 1] = not keep
+    rows = paper.shape[0]
+    if smooth:
+        if not paper.any():
+            return M.CrossSection()                          # nothing of the face is dark where it lies now: an empty window
+        # (with its edge repeated outwards: what reaches the window's edge must run out of it, not turn back along it)
+        return S.mask_outline(M, np.pad(paper, 4, mode="edge"), 0.8).translate([-4, -4]).simplify(0.12)
     rects = []
     for r in range(rows):
         edges = np.flatnonzero(np.diff(np.concatenate(([0], paper[r].view(np.int8), [0]))))
@@ -895,9 +863,105 @@ def _papel_photo(M, path, win_w, win_h, darkness, soften, invert):
             rects.append(np.array([(s0, y), (e0, y), (e0, y + 1.02), (s0, y + 1.02)], dtype=np.float64))
     if not rects:
         raise S.ArtworkError("image_blank", "0")
-    cs = M.CrossSection(rects, M.FillRule.NonZero)
-    cs = cs.offset(0.75, M.JoinType.Round, 2.0, 12).offset(-0.75, M.JoinType.Round, 2.0, 12).simplify(0.35)
-    return cs.scale([win_w / cols, win_h / rows])
+    J = M.JoinType.Round
+    return M.CrossSection(rects, M.FillRule.NonZero).offset(0.75, J, 2.0, 12).offset(-0.75, J, 2.0, 12).simplify(0.35)
+
+
+def _papel_drawing(path):
+    """
+    A drawing in colours (a face of the library, a logo) as a picture with its own transparency, to be read like a
+    photo; None for a drawing of one colour: that is a silhouette and stays the outline it is.
+    """
+    import numpy as np
+    try:
+        picture, _ = S._svg_picture(path, int(1.5 * PAPEL_PX))     # as fine as the biggest portrait reads it
+    except S.ArtworkError:
+        return None                                          # the outline's own road says what is wrong with it
+    a = np.asarray(picture)
+    seen = (a[a[:, :, 3] > 200][:, :3] // 32).astype(np.int32)
+    if not len(seen):
+        return None
+    _, counts = np.unique(seen[:, 0] * 64 + seen[:, 1] * 8 + seen[:, 2], return_counts=True)
+    return picture if int((counts >= 0.01 * len(seen)).sum()) >= 2 else None
+
+
+def _papel_photo(M, path, win_w, win_h, darkness, soften, invert, look=None, picture=None):
+    """
+    A photo or a drawing → what stays as paper inside a window of win_w × win_h (corner at the origin): its dark parts.
+    The picture covers the whole window (cut to its proportions, not squeezed), is softened, split into dark and light
+    at the level asked for, and cleaned of what a nozzle cannot print.
+
+    With `look` (the portrait mode, see papel_portrait.py) the photo is read as a face that will lie on a backing: its
+    lower part trimmed, the person cut out of the background, set where the visitor put it, and split so that eyes,
+    lips and hair stay lines. `look` comes back with what the builder and the page want to know: `rembg` (did the
+    cut-out answer), `isolated`, `preview`, and for a dark ground `spots`, the places of its cut-outs. `picture` is
+    a picture made already (a drawing in colours), read instead of the file.
+    """
+    import numpy as np
+    from PIL import Image, ImageFilter, ImageOps
+    from scipy import ndimage
+    try:
+        img = picture if picture is not None else ImageOps.exif_transpose(Image.open(path))
+    except Exception:  # noqa: BLE001
+        raise S.ArtworkError("image_unreadable")
+    alpha = None
+    if img.mode in ("RGBA", "LA", "P") or "transparency" in img.info:
+        rgba = img.convert("RGBA")
+        alpha = rgba.getchannel("A")
+        img = Image.alpha_composite(Image.new("RGBA", rgba.size, (255, 255, 255, 255)), rgba)
+    cell = max(win_w, win_h) / PAPEL_PX
+    cols, rows = max(8, int(round(win_w / cell))), max(8, int(round(win_h / cell)))
+    person = None
+    if look is None:
+        g = ImageOps.autocontrast(ImageOps.fit(img.convert("L"), (cols, rows), Image.LANCZOS), cutoff=1)
+        if soften > 0:
+            g = g.filter(ImageFilter.GaussianBlur(soften * 0.9))
+        a = np.asarray(g, dtype=np.float32)
+        level = P.otsu(np, a)
+        if level is None:
+            raise S.ArtworkError("image_blank", "0")
+        paper = a <= level + (darkness - 50.0) * 2.0       # the middle of the slider is the split the picture asks for itself
+        if invert:
+            paper = ~paper
+        share, most = float(paper.mean()), 0.98
+        # what a nozzle cannot print goes: specks of paper, pin holes, hairlines (an opening and a closing of one cell)
+        small, pad, how = max(4, int(round((1.6 / cell) ** 2))), 3, {"iterations": 1}
+    else:
+        mask, look["rembg"] = P.subject(img, alpha, path, look.get("isolate"))
+        dark_ground = mask is not None and look.get("backdrop") == "pattern"
+        a, inside, person, where, look["crop"] = P.lay(img, mask, cols, rows, {"trim": look["trim"] / 100.0, "scale": look["scale"], "turn": look["turn"], "dx": look["x"] / cell, "dy": look["y"] / cell, "plain": not dark_ground})
+        paper, small, thin = P.split(a, where, cell, darkness, look["detail"])
+        if invert:
+            paper = ~paper & where
+        share, most = (float(paper[where].mean()) if where.any() else 0.0), 0.90
+        look["dark_pct"] = int(round(share * 100))
+        pad, how = thin + 2, {"structure": np.ones((thin, thin), dtype=bool)}        # nothing narrower than a printed line pair
+        look["isolated"] = person is not None
+    # (a portrait pushed half out of its window may show nothing but a coat: that is the visitor's doing, not a bad photo)
+    moved = look is not None and (abs(look["scale"] - 1.0) > 1e-6 or abs(look["turn"]) > 1e-6 or abs(look["x"]) > 1e-6 or abs(look["y"]) > 1e-6)
+    if (share < 0.02 or share > most) and not moved:
+        raise S.ArtworkError("image_blank" if look is None else "portrait_blank", "%d" % round(share * 100))
+
+    def tidy(picture):
+        # (done on the picture with its edge repeated outwards: otherwise the closing eats the paper along the picture's edge)
+        picture = ndimage.binary_closing(ndimage.binary_opening(np.pad(picture, pad, mode="edge"), **how), **how)[pad:-pad, pad:-pad].copy()
+        for keep in (True, False):
+            labels, count = ndimage.label(picture == keep)
+            if count:
+                sizes = ndimage.sum(picture == keep, labels, range(1, count + 1))
+                for i in np.flatnonzero(sizes < small):
+                    picture[labels == i + 1] = not keep
+        return picture
+
+    paper = tidy(paper)
+    if look is not None:
+        look["thin_pct"] = int(round(100.0 * (1.0 - float(ndimage.binary_opening(paper, structure=np.ones((3, 3), dtype=bool)).sum()) / max(1.0, float(paper.sum())))))
+        if person is not None and look.get("backdrop") == "pattern":
+            field = P.ground(np, paper, person, cell)
+            look["spots"] = P.scatter(np, field, cell, look["unit"], look["density"])
+            paper = tidy(paper | field)
+        look["preview"] = P.preview(np, paper)
+    return _papel_trace(M, np, paper, look is not None).scale([win_w / cols, win_h / rows])
 
 
 def _papel_unit(M, kind, u):
@@ -914,11 +978,28 @@ def _papel_unit(M, kind, u):
         return (C.circle(0.42 * u, 48).translate([0.27 * u, 0]) ^ C.circle(0.42 * u, 48).translate([-0.27 * u, 0])).rotate(45)
     if kind == "stars":
         return C([[((0.42 if i % 2 == 0 else 0.19) * u * math.cos(math.pi / 2 + i * math.pi / 5), (0.42 if i % 2 == 0 else 0.19) * u * math.sin(math.pi / 2 + i * math.pi / 5)) for i in range(10)]], M.FillRule.NonZero)
+    if kind == "folk":                                       # a folk flower: five drops round a dot, each a chisel's cut of its own
+        drop = (C.circle(0.037 * u, 6).translate([0.185 * u, 0]) + C.circle(0.1 * u, 12).translate([0.31 * u, 0])).hull()
+        flower = C.circle(0.055 * u, 8)
+        for i in range(5):
+            flower = flower + drop.rotate(90 + 72 * i)
+        return flower
+    if kind == "sprig":                                      # two leaves tip to tip: what grows between the folk flowers
+        leaf = (C.circle(0.3 * u, 20).translate([0, 0.215 * u]) ^ C.circle(0.3 * u, 20).translate([0, -0.215 * u])).translate([0.26 * u, 0])
+        return leaf.rotate(16) + leaf.rotate(196)
     flower = C.circle(0.13 * u, 24)                          # flowers: petals round a dot, each a hole of its own
     for i in range(5):
         a = math.pi / 2 + 2 * math.pi * i / 5
         flower = flower + C.circle(0.12 * u, 24).translate([0.29 * u * math.cos(a), 0.29 * u * math.sin(a)])
     return flower
+
+
+def _papel_pitch(band, density):
+    """How far apart the cut-outs of a border lie: 0.5 is the border as it always was, 0.2 a loose one, 1 as tight as the paper between them allows."""
+    if density <= 0.5:
+        return band * (0.95 + (0.5 - density) / 0.3 * 1.25)
+    tight = min(0.95 * band, 0.62 * band + 1.0)
+    return 0.95 * band + (tight - 0.95 * band) * (density - 0.5) / 0.5
 
 
 def _papel_ties(M, sheet, holes, plate, bridge):
@@ -938,12 +1019,17 @@ def _papel_ties(M, sheet, holes, plate, bridge):
         size = lambda r: abs(float(np.sum(r[:, 0] * np.roll(r[:, 1], -1) - np.roll(r[:, 0], -1) * r[:, 1])))      # noqa: E731
         return C([max(rings, key=size)], M.FillRule.NonZero)
 
+    def span(cs):
+        """How much of the panel a piece reaches over: the border is the one that goes all the way round, however little paper a narrow one holds."""
+        bx0, by0, bx1, by1 = cs.bounds()
+        return (bx1 - bx0) * (by1 - by0)
+
     ties = 0
     for _ in range(4):                                       # a tie frees nothing new, but nested pieces take another look
         pieces = sheet.decompose()
         if len(pieces) <= 1:
             break
-        frame = max(pieces, key=lambda c: c.area())
+        frame = max(pieces, key=span)
         rims = [filled(c) for c in holes.decompose()]
         strips = []
         for piece in pieces:
@@ -961,8 +1047,29 @@ def _papel_ties(M, sheet, holes, plate, bridge):
             break
         sheet = sheet + M.CrossSection.batch_boolean(strips, M.OpType.Add)
     pieces = sheet.decompose()
-    frame = max(pieces, key=lambda c: c.area())
+    frame = max(pieces, key=span)
     return frame, ties, len([c for c in pieces if c is not frame and c.area() >= 2.0])
+
+
+def _papel_colors(p):
+    """The two filaments of a portrait as (code, hex): the backing the lightest spool, the frame and the picture the darkest, unless the visitor chose."""
+    def light(spool):
+        v = str(spool[1]).lstrip("#")
+        return 0.2126 * int(v[0:2], 16) + 0.7152 * int(v[2:4], 16) + 0.0722 * int(v[4:6], 16)
+
+    spools = sorted([f for f in (p.get("palette") or []) if len(f) == 2 and len(str(f[1]).lstrip("#")) == 6], key=light)
+    own = p.get("part_colors") if isinstance(p.get("part_colors"), dict) else {}
+
+    def of(part, spare):
+        c = own.get(part)
+        return (str(c.get("code") or ""), str(c["hex"])) if isinstance(c, dict) and c.get("hex") else spare
+
+    lightest, darkest = ((str(spools[-1][0]), str(spools[-1][1])) if spools else ("", "#ede6d6")), ((str(spools[0][0]), str(spools[0][1])) if spools else ("", "#1f3a5f"))
+    body, details = of("body", lightest), of("details", darkest)
+    if body[1].lower() == details[1].lower() and ("body" in own) != ("details" in own):
+        # the visitor gave one part the very colour the other would get by itself (a black backing): the other takes the opposite end
+        body, details = (body, lightest) if "body" in own else (darkest, details)
+    return body, details
 
 
 def papel(M, Invalid, p):
@@ -970,6 +1077,10 @@ def papel(M, Invalid, p):
     Papel picado, the cut-paper banner of Mexican feasts, as a thin printed panel: a picture cut out in a window (its dark
     parts stay as paper, the light ones are holes), a border pierced with flowers, a scalloped lower edge and two holes
     for the string. One flat outline pulled up to the thickness asked for.
+
+    As a portrait (treatment "portrait") nothing of the picture is cut through: the whole panel is a backing plate in a
+    light filament, and on it lie, in a dark one, the frame and the dark parts of the picture. The print changes
+    filament once, at the top of the backing (notes.color_changes); parts "body" and "details".
     """
     k = "papel"
     C = M.CrossSection
@@ -977,32 +1088,61 @@ def papel(M, Invalid, p):
     W, H, t, bridge = n("width", 150), n("height", 200), n("thickness", 1.2), n("bridge", 1.2)
     darkness, soften = n("darkness", 50), n("soften", 1)
     border = _pick(Invalid, p, k, "border")
+    portrait = _pick(Invalid, p, k, "treatment") == "portrait"
     invert, scallop, string = bool(p.get("invert", False)), bool(p.get("scallop", True)), bool(p.get("string_holes", True))
+    around = scallop and _pick(Invalid, p, k, "scallop_edge") == "all"
+    density = n("density", 0.5)
     path = p.get("artwork_path")
-    if not path:
+    if not path and not portrait:
         raise Invalid("no_text")
-    band = max(10.0, min(26.0, 0.13 * min(W, H))) if border != "none" else 6.0
+    tooth = max(3.5, min(5.5, min(W, H) / 40.0)) if around else 0.0
+    W, H = W - 2 * tooth, H - 2 * tooth                      # scallops all round are part of the size asked for; from here on W × H is the plate inside them
+    # the border is as wide as asked; a design from before the field has the 13 % of the shorter side it was made with
+    band = n("border_mm", 12) if p.get("border_mm") is not None else (max(10.0, min(26.0, 0.13 * min(W, H))) if border != "none" else 6.0)
     win_w, win_h = W - 2 * band, H - 2 * band
     if win_w < 30 or win_h < 30:
         raise Invalid("shape_too_small")
+    look = None
+    if portrait:
+        reach = lambda key, half: max(-half, min(half, n(key, 0)))      # noqa: E731 - the middle of the picture stays in the window
+        look = {"detail": n("detail", 45), "trim": n("trim", 22), "isolate": bool(p.get("isolate", True)), "backdrop": _pick(Invalid, p, k, "backdrop") if border != "none" else "plain",
+                "scale": n("portrait_scale", 1), "x": reach("portrait_x", win_w / 2), "y": reach("portrait_y", win_h / 2), "turn": n("portrait_turn", 0),
+                "unit": max(7.0, min(16.0, 0.085 * min(win_w, win_h))), "density": density}
+    # a drawing in colours is a portrait like a photo: its dark colours are printed, the light ones are the backing
+    drawn = _papel_drawing(path) if look and path and path.lower().endswith(".svg") else None
     try:
-        if path.lower().endswith(".svg"):
+        if not path:
+            paper = C()                                      # a frame with an empty window: a plate to write or stick on
+        elif drawn is not None:
+            look["trim"] = 0.0                               # (a drawing is used whole: nothing of it is trimmed)
+            paper = _papel_photo(M, path, win_w, win_h, darkness, soften, invert, look, drawn)
+        elif path.lower().endswith(".svg"):
             # a drawing: its filled shapes are the paper, set whole into the window
             art = S.svg(M, path, 100.0)[0]
             aw, ah = S.size(art)
             art = S.fit(art, width_mm=aw * min((win_w - 4) / aw, (win_h - 4) / ah))
             paper = S.centre_on(art, win_w, win_h)
+            if look:                                         # …and where the visitor put it: sized and turned about the middle of the window, then moved
+                paper = paper.translate([-win_w / 2, -win_h / 2]).scale([look["scale"], look["scale"]]).rotate(look["turn"]).translate([win_w / 2 + look["x"], win_h / 2 + look["y"]])
             if invert:
                 paper = C.square([win_w, win_h]) - paper
         else:
-            paper = _papel_photo(M, path, win_w, win_h, darkness, soften, invert)
+            paper = _papel_photo(M, path, win_w, win_h, darkness, soften, invert, look)
     except S.ArtworkError as e:
         raise Invalid(e.code, str(e).split(": ", 1)[1] if ": " in str(e) else "")
     # the window is a hair smaller than the picture, so paper that reaches the picture's edge is one with the border
     window = C.square([win_w - 1.0, win_h - 1.0]).translate([band + 0.5, band + 0.5])
-    holes = window - paper.translate([band, band])
+    holes = C() if portrait else window - paper.translate([band, band])      # a portrait is cut through nowhere but in its border
     plate = S.rounded_rect(M, W, H, 3)
-    if scallop:
+    if around:
+        # teeth on all four sides, one on every corner, a pin hole in each: the edge of a doily
+        nx, ny = max(2, int(round(W / (2.1 * tooth)))), max(2, int(round(H / (2.1 * tooth))))
+        at = [(W * i / nx, y, 0.0, s) for i in range(1, nx) for y, s in ((0.0, -1.0), (H, 1.0))]
+        at += [(x, H * j / ny, s, 0.0) for j in range(1, ny) for x, s in ((0.0, -1.0), (W, 1.0))]
+        at += [(x, y, sx * 0.72, sy * 0.72) for x, sx in ((0.0, -1.0), (W, 1.0)) for y, sy in ((0.0, -1.0), (H, 1.0))]
+        plate = plate + C.batch_boolean([C.circle(tooth, 20).translate([x, y]) for x, y, _, _ in at], M.OpType.Add)
+        holes = holes + C.batch_boolean([C.circle(tooth * 0.3, 8).translate([x + sx * tooth * 0.4, y + sy * tooth * 0.4]) for x, y, sx, sy in at], M.OpType.Add)
+    elif scallop:
         count = max(3, int(round(W / 26.0)))
         r = W / (2.0 * count)
         for i in range(count):
@@ -1010,16 +1150,30 @@ def papel(M, Invalid, p):
             holes = holes + C.circle(r * 0.3, 24).translate([r + 2 * r * i, -r * 0.35])
     if border != "none":
         unit = _papel_unit(M, border, band * 0.72)
-        pitch = band * 0.95
+        pitch = _papel_pitch(band, density) * (1.45 if border == "folk" else 1.0)       # a folk flower shares its place with the leaves next to it
         nx, ny = max(2, int((W - band) / pitch)), max(2, int((H - band) / pitch))
         spots = [(band / 2 + i * (W - band) / nx, y) for i in range(nx + 1) for y in (band / 2, H - band / 2)]
         spots += [(x, band / 2 + j * (H - band) / ny) for j in range(1, ny) for x in (band / 2, W - band / 2)]
         if string:
             spots = [s for s in spots if not (s[1] > H - band and (s[0] < band or s[0] > W - band))]      # the top corners are for the string
         holes = holes + M.CrossSection.batch_boolean([unit.translate(list(s)) for s in spots], M.OpType.Add)
+        if border == "folk":
+            # leaves between the flowers, along the side they lie on, where the flowers leave them room
+            for side, turn, gap in ((nx, 0, (W - band) / nx), (ny, 90, (H - band) / ny)):
+                room = gap - 0.6 * band - 2.0
+                if room < 2.5:
+                    continue
+                sprig = _papel_unit(M, "sprig", min(room, 0.62 * band) / 0.86).rotate(turn)
+                if turn == 0:
+                    mids = [(band / 2 + (i + 0.5) * gap, y) for i in range(side) for y in (band / 2, H - band / 2)]
+                else:
+                    mids = [(x, band / 2 + (j + 0.5) * gap) for j in range(side) for x in (band / 2, W - band / 2)]
+                holes = holes + M.CrossSection.batch_boolean([sprig.translate(list(s)) for s in mids], M.OpType.Add)
     if string:
         for x in (band / 2, W - band / 2):
             holes = holes + C.circle(2.0, 32).translate([x, H - band / 2])
+    if portrait:
+        return _papel_portrait(M, Invalid, p, plate, holes, paper, look, border, band, win_w, win_h)
     sheet, ties, lost = _papel_ties(M, plate - holes, holes, plate, bridge)
     warn = []
     if lost:
@@ -1033,6 +1187,58 @@ def papel(M, Invalid, p):
         warn.append("papel_airy")
     notes = {"outer": [round(x1 - x0, 1), round(y1 - y0, 1), round(t, 1)], "ties": ties, "open_pct": open_pct, "warnings": warn, "thin_pct": thin, "missing_chars": []}
     return {"all": sheet.translate([-x0, -y0]).extrude(t)}, notes
+
+
+def _papel_portrait(M, Invalid, p, plate, holes, paper, look, border, band, win_w, win_h):
+    """
+    The panel in two filaments: `body`, the whole plate with the border's holes, and on it `details`, the border and
+    what of the picture is dark. `paper` is the picture in the window's own millimetres, `holes` what is cut through.
+    """
+    C = M.CrossSection
+    base, relief = _num(Invalid, p, "papel", "base", 2.0), _num(Invalid, p, "papel", "relief", 0.6)
+    window = C.square([win_w, win_h]).translate([band, band])
+    picture = paper.translate([band, band]) ^ window         # the picture stays in the window, whatever was done to it
+    if look.get("spots"):
+        # the dark ground round the person, opened by the border's own cut-outs: the backing shows through them
+        unit, sprig = _papel_unit(M, border, look["unit"]), _papel_unit(M, "sprig" if border == "folk" else border, look["unit"] * 0.9)
+        cuts = [(sprig if size < 0.7 else unit).scale([size, size]).rotate(turn).translate([band + x, band + y]) for x, y, size, turn in look["spots"]]
+        picture = picture - C.batch_boolean(cuts, M.OpType.Add)
+    x0, y0, x1, y1 = plate.bounds()
+    move = [-x0, -y0]
+    light = window - picture                                 # where the backing shows
+    back, top = (plate - holes).translate(move), (plate - light - holes).translate(move)
+    body, details = back.extrude(base), top.extrude(relief).translate([0, 0, base])
+    if details.is_empty():
+        raise Invalid("empty_result")
+    # the one solid of a one-colour print and of the price: the panel at its full height with the light places sunk
+    # into it (three times quicker than joining the two layers, and no faces lie on one another)
+    parts = {"body": body, "details": details, "all": back.extrude(base + relief) - light.translate(move).extrude(relief + 1.0).translate([0, 0, base])}
+    parts["_pieces"] = {"all": [("body", body), ("details", details)]}
+    (body_code, body_hex), (dark_code, dark_hex) = _papel_colors(p)
+    changes = [{"z": round(base, 2), "part": "details", "code": dark_code, "hex": dark_hex}] if (dark_code, dark_hex) != (body_code, body_hex) else []
+    warn = []
+    if look.get("thin_pct", 0) > 25:
+        warn.append("portrait_fine")
+    if look.get("isolate") and look.get("rembg") is False:
+        warn.append("portrait_whole")
+    # the frame the visitor moves the picture by: the picture's own box, as wide as it lies after its turn
+    a = math.radians(look["turn"])
+    hw = 0.5 * look["scale"] * (abs(math.cos(a)) * win_w + abs(math.sin(a)) * win_h)
+    hh = 0.5 * look["scale"] * (abs(math.sin(a)) * win_w + abs(math.cos(a)) * win_h)
+    cx, cy = band + win_w / 2 + look["x"] + move[0], band + win_h / 2 + look["y"] + move[1]
+    notes = {
+        "outer": [round(x1 - x0, 1), round(y1 - y0, 1), round(base + relief, 1)], "parts": ["body", "details"],
+        "paint": {"body": body_hex, "details": dark_hex}, "part_colors": {"body": {"code": body_code, "hex": body_hex}, "details": {"code": dark_code, "hex": dark_hex}},
+        "color_changes": changes, "multi_material": False, "filaments": 2 if changes else 1,
+        "portrait": {"box": [round(v, 2) for v in (cx - hw, cy - hh, cx + hw, cy + hh)], "z": round(base + relief, 2), "window": [round(win_w, 1), round(win_h, 1)], "placed": bool(p.get("artwork_path")),
+                     "crop": list(look.get("crop") or []), "dark_pct": look.get("dark_pct")},
+        "rembg": look.get("rembg"), "isolated": bool(look.get("isolated")), "warnings": warn, "thin_pct": look.get("thin_pct", 0), "missing_chars": [],
+    }
+    if changes:
+        notes["color_change_mm"] = changes[0]["z"]
+    if look.get("preview"):
+        notes["preview"] = look["preview"]
+    return parts, notes
 
 
 # ── illuminated sign ────────────────────────────────────────────────────────

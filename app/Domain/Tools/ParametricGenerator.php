@@ -39,11 +39,22 @@ final class ParametricGenerator
 
     private const SHAPE_EYELET = ['eye_pos' => [0, 100, 0, 0.5], 'eye_hole' => [2, 6, 3, 0.5], 'eye_wall' => [1.5, 3, 2, 0.1]];
 
+    /** papel picado has steps of its own (SECTIONS): the photo and how it is read, the frame, where the portrait lies; a step shows them in the order they are written here */
+    private const PAPEL_PLACE = ['darkness' => 'input', 'detail' => 'input', 'soften' => 'input', 'trim' => 'input', 'isolate' => 'input', 'invert' => 'input',
+        'border' => 'frame', 'density' => 'frame', 'border_mm' => 'frame', 'scallop' => 'frame', 'scallop_edge' => 'frame', 'string_holes' => 'frame', 'backdrop' => 'frame',
+        'portrait_scale' => 'placement', 'portrait_x' => 'placement', 'portrait_y' => 'placement', 'portrait_turn' => 'placement'];
+
     /** family → field, flag or choice → the section of the tool page it belongs to (fields and flags: size, choices: input, when not named) */
-    public const PLACE = ['sign' => ['ring_at' => 'size'], 'shape' => [
+    public const PLACE = ['sign' => ['ring_at' => 'size'], 'papel' => self::PAPEL_PLACE, 'shape' => [
         'bg_strength' => 'input', 'smooth' => 'input', 'contrast' => 'input', 'brightness' => 'input', 'saturation' => 'input', 'remove_bg' => 'input',
         'colors_n' => 'colors', 'relief' => 'colors', 'flush' => 'colors', 'rim' => 'colors', 'body' => 'size', 'mount' => 'size', 'disc' => 'size', 'floor' => 'size', 'inside' => 'size',
     ]];
+
+    /** kind → a step of the tool page that only this tool has → the step it comes after (its name: param.<kind>.step.<id>) */
+    public const SECTIONS = ['papel' => ['frame' => 'input', 'placement' => 'size']];
+
+    /** kind → the choice the first step opens with, before the picture (what is made of the picture) */
+    public const FIRST = ['papel' => 'treatment'];
 
     /** fields of the input section that sit folded under "adjust the photo" */
     public const FOLDED = ['contrast', 'brightness', 'saturation'];
@@ -200,7 +211,11 @@ final class ParametricGenerator
         // a figure standing behind a post for hair ties: `post_d` and `post_h` are the post's
         'hair_tie' => ['width' => [50, 150, 90, 1], 'thickness' => [2.4, 5, 3, 0.2], 'post_d' => [10, 30, 14, 1], 'post_h' => [40, 150, 90, 1]],
         // papel picado: `darkness` is where a photo is split into paper and holes (50 = where the picture splits itself), `soften` how much detail is given up
-        'papel' => ['width' => [80, 250, 150, 1], 'height' => [80, 250, 200, 1], 'thickness' => [0.8, 2, 1.2, 0.2], 'bridge' => [0.8, 2.4, 1.2, 0.2], 'darkness' => [10, 90, 50, 1], 'soften' => [0, 3, 1, 0.5]],
+        'papel' => ['width' => [80, 250, 150, 1], 'height' => [80, 250, 200, 1], 'thickness' => [0.8, 2, 1.2, 0.2], 'bridge' => [0.8, 2.4, 1.2, 0.2], 'darkness' => [10, 90, 50, 1], 'soften' => [0, 3, 1, 0.5],
+            // the portrait (treatment = portrait): how fine the face is read and how much is cut off below the shoulders; the backing and
+            // the layer on it; the border; where the portrait lies in its window (size, shift in mm from the middle, turn)
+            'detail' => [0, 100, 45, 1], 'trim' => [0, 60, 22, 1], 'base' => [1, 3, 2, 0.2], 'relief' => [0.3, 1.2, 0.6, 0.1], 'density' => [0.2, 1, 0.5, 0.05], 'border_mm' => [6, 30, 12, 0.5],
+            'portrait_scale' => [0.5, 1.5, 1, 0.05], 'portrait_x' => [-125, 125, 0, 0.5], 'portrait_y' => [-125, 125, 0, 0.5], 'portrait_turn' => [-45, 45, 0, 1]],
         'lightbox' => [
             'width' => [80, 300, 180, 1], 'depth' => [25, 80, 35, 1], 'wall' => [1.6, 4, 2, 0.2], 'face' => [0.8, 2, 1.2, 0.2], 'margin' => [6, 40, 12, 1],
             'bridge' => [0.8, 3, 1.4, 0.2], 'cable' => [3, 10, 5, 0.5], 'clearance' => [0.1, 0.6, 0.25, 0.05],
@@ -215,7 +230,7 @@ final class ParametricGenerator
     public const CHOICES = [
         'compose' => ['base' => ['none', 'eyelet', 'sticks']],
         'notes' => ['typeface' => ['sans', 'serif', 'mono', 'script']], 'hair_tie' => ['typeface' => ['script', 'sans', 'serif', 'mono']], 'candle_stand' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
-        'papel' => ['border' => ['flowers', 'diamonds', 'dots', 'hearts', 'leaves', 'stars', 'none']],
+        'papel' => ['treatment' => ['cutout', 'portrait'], 'border' => ['flowers', 'diamonds', 'dots', 'hearts', 'leaves', 'stars', 'folk', 'none'], 'scallop_edge' => ['bottom', 'all'], 'backdrop' => ['plain', 'pattern']],
         'name_cup' => ['typeface' => ['script', 'sans', 'serif', 'mono']],
         'beads' => ['shape' => ['cube', 'ball', 'heart', 'star'], 'style' => ['raised', 'engraved'], 'typeface' => ['sans', 'serif', 'mono']],
         'charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -290,7 +305,7 @@ final class ParametricGenerator
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'straw_d', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'darkness', 'soften'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'base', 'relief', 'thickness'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
 
     /**
@@ -307,7 +322,7 @@ final class ParametricGenerator
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
 
-    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp',
+    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp', 'details',
         'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8', 'icing_1', 'icing_2', 'icing_3', 'icing_4', 'icing_5', 'icing_6',
         'layer_1', 'layer_2', 'layer_3', 'layer_4', 'layer_5', 'layer_6', 'layer_7', 'layer_8', 'layer_9', 'layer_10', 'layer_11', 'layer_12'];
 
@@ -318,11 +333,16 @@ final class ParametricGenerator
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
-        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'insert' => ['notch'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
+        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['isolate', 'invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'insert' => ['notch'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
         'beads' => ['relief' => ['style', ['raised']]],
+        // a cut-out is one thin sheet held by ties; a portrait lies on a backing and can be moved in its window
+        'papel' => ['soften' => ['treatment', ['cutout']], 'thickness' => ['treatment', ['cutout']], 'bridge' => ['treatment', ['cutout']],
+            'detail' => ['treatment', ['portrait']], 'trim' => ['treatment', ['portrait']], 'isolate' => ['treatment', ['portrait']], 'base' => ['treatment', ['portrait']], 'relief' => ['treatment', ['portrait']], 'backdrop' => ['treatment', ['portrait']],
+            'portrait_scale' => ['treatment', ['portrait']], 'portrait_x' => ['treatment', ['portrait']], 'portrait_y' => ['treatment', ['portrait']], 'portrait_turn' => ['treatment', ['portrait']],
+            'scallop_edge' => ['scallop', ['on']]],
         // a shape cut out or standing has no plate: what belongs to the plate shows only with it
         'logo' => ['bevel' => ['mode', ['cutout']], 'shape' => ['mode', ['relief', 'height']], 'plate' => ['mode', ['relief', 'height']], 'margin' => ['mode', ['relief', 'height']], 'base_h' => ['mode', ['standing']]],
         'cookie' => self::HANG_WHEN + self::SHAPE_WHEN, 'name_letter' => self::HANG_WHEN + self::SHAPE_WHEN,
@@ -365,7 +385,7 @@ final class ParametricGenerator
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides', 'scallop', 'string_holes', 'pen', 'notch'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides', 'scallop', 'string_holes', 'pen', 'notch', 'isolate'];
 
     /** things that hang only when asked to (a biscuit, a big letter): the eyelet's sizes show with the tick */
     private const HANG_WHEN = ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]];
@@ -488,6 +508,7 @@ final class ParametricGenerator
             'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
             'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
             'notes', 'hair_tie', 'candle_stand' => ['body', 'stand'],
+            'papel' => ($p['treatment'] ?? 'cutout') === 'portrait' ? ['body', 'details'] : [],             // the backing and what lies on it: two colours, one print
             'compose' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^layer_\d{1,2}$/', $part))),
             'sign' => ! empty($p['two_color']) && ! in_array($p['style'] ?? 'emboss', ['engrave', 'stand'], true) ? ['plate', 'text'] : [],
             'qr' => ! empty($p['stand']) ? ['body', 'stand'] : [],
@@ -596,6 +617,9 @@ final class ParametricGenerator
         }
         foreach (self::FLAGS[$kind] ?? [] as $flag) {
             $out[$flag] = filter_var($p[$flag] ?? in_array($flag, self::FLAGS_ON, true), FILTER_VALIDATE_BOOLEAN);
+        }
+        if ($kind === 'papel' && ! isset($p['border_mm'])) {
+            unset($out['border_mm']);       // a panel from before the field keeps the border it was made with (a share of its shorter side)
         }
         $palette = app(Palette::class);
         foreach (self::choicesOf($kind) as $key => $options) {
@@ -709,6 +733,10 @@ final class ParametricGenerator
     /** Adds what only the server knows: the font file and where the uploaded artwork lives. */
     private function forTool(string $kind, array $clean): array
     {
+        if ($kind === 'papel' && ($clean['treatment'] ?? '') === 'portrait') {
+            // what a portrait takes its two filaments from when the visitor named none: the lightest for the backing, the darkest for the frame
+            $clean['palette'] = self::spools();
+        }
         if (isset(self::TEXTS[$kind]) || in_array($kind, self::ARTWORK, true)) {
             $clean['font'] = self::fontPath($clean['typeface'] ?? null);
             $clean['lines'] = array_values(array_filter([$clean['line1'] ?? '', $clean['line2'] ?? '', $clean['line3'] ?? ''], fn ($l) => $l !== ''));
@@ -742,7 +770,8 @@ final class ParametricGenerator
             if (! $clean['artwork_path']) {
                 throw ValidationException::withMessages(['params' => [__('param.error.artwork_gone')]])->status(422);
             }
-        } elseif (in_array($kind, self::ARTWORK, true) && empty($clean['lines'])) {
+        } elseif (in_array($kind, self::ARTWORK, true) && empty($clean['lines']) && ! ($kind === 'papel' && ($clean['treatment'] ?? '') === 'portrait')) {
+            // (a portrait panel without a picture is a frame round an empty plate: something to write or stick on)
             throw ValidationException::withMessages(['params' => [__('param.error.no_text')]])->status(422);
         }
 
@@ -862,6 +891,17 @@ final class ParametricGenerator
             $clean['color_changes'] = array_values((array) ($notes['color_changes'] ?? []));
             $clean['multi_material'] = ! empty($notes['multi_material']);
         }
+        if ($kind === 'papel' && ($clean['treatment'] ?? '') === 'portrait') {
+            // the backing and the dark layer on it: the filaments the tool chose stay with the design, and so does the one
+            // height at which the print changes from the first to the second (the farm ticks its spools by it, the 3MF is cut there)
+            foreach ((array) ($built['meta']['notes']['part_colors'] ?? []) as $part => $color) {
+                if (! isset($clean['part_colors'][$part]) && ! empty($color['code'])) {
+                    $clean['part_colors'][$part] = ['code' => (string) $color['code'], 'hex' => (string) $color['hex']];
+                }
+            }
+            $clean['color_changes'] = array_values((array) ($built['meta']['notes']['color_changes'] ?? []));
+            $clean['multi_material'] = false;
+        }
         if ($kind === 'compose') {
             // layers lie one on another like the colours of a picture: the same notes for the farm and the slicer projects
             foreach ((array) ($built['meta']['notes']['layers'] ?? []) as $layer) {
@@ -872,7 +912,7 @@ final class ParametricGenerator
         }
         // what has to fit a printer is each part alone, not the plate they are laid out on: the check reads these sizes
         $parts = array_diff(self::partsOf($kind, $clean), ['all']);
-        if ($parts && ! in_array($kind, ['modular', 'compose'], true) && ! isset(self::FAMILY[$kind])) {       // the colours of a picture all lie on the one plate
+        if ($parts && ! in_array($kind, ['modular', 'compose', 'papel'], true) && ! isset(self::FAMILY[$kind])) {       // the colours of a picture all lie on the one plate
             foreach ($parts as $part) {
                 $one = $this->build($kind, $clean, $part);
                 @unlink($one['path']);
