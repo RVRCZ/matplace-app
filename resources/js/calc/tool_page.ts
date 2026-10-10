@@ -19,6 +19,7 @@ import { bootCheckPage } from './check';
 import { bootFigure } from './figure';
 import { bootArt } from './art';
 import { bootEdit } from './edit';
+import { bootMap } from './map';
 import { FileInfo } from './api';
 import { loadGeometryFromUrl } from './loaders';
 
@@ -427,6 +428,6 @@ export function bootToolPage(): void {
     const canvas = document.getElementById('tool-viewer') as HTMLCanvasElement | null;
     if (!cfg || !root || !canvas) return;
     const stage = new Stage(cfg, canvas);
-    const modules: Record<string, (stage: Stage) => void> = { param: bootParam, relief: bootRelief, mold: bootMoldPage, repair: bootRepairPage, check: bootCheckPage, figure: bootFigure, art: bootArt, edit: bootEdit };
+    const modules: Record<string, (stage: Stage) => void> = { param: bootParam, relief: bootRelief, mold: bootMoldPage, repair: bootRepairPage, check: bootCheckPage, figure: bootFigure, art: bootArt, edit: bootEdit, map: bootMap };
     modules[cfg.module]?.(stage);
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Domain\Farm\Palette;
+use App\Domain\Tools\MapBuilder;
 use App\Domain\Tools\ModelCheck;
 use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\MoldGenerator;
@@ -133,6 +134,8 @@ class UploadController extends Controller
             'repair' => $f->kind() === 'repaired' ? ($f->tool_params['report'] ?? null) : null,
             // a model edited here (split, scaled…): what the tool did, and while it works, the phase it is in
             'edit' => ModelEditor::report($f),
+            // a map made here: its notes (the scale, the data's date) and, while it is built, the phase it is in
+            'map' => MapBuilder::report($f),
             'parts' => self::partsOf($f),
             // lets the tool page reopen this design ("edit" from the calculator)
             'tool' => self::toolOf($f),

@@ -280,6 +280,13 @@ return [
         ['params' => ['artwork' => 'lib:colour/christmas-tree-colour', 'mode' => 'layered', 'frame' => 'none', 'width' => 150, 'height' => 150, 'colors_n' => 5]],
         ['params' => ['artwork' => 'lib:colour/gingerbread-man', 'mode' => 'stack', 'shape' => 'rect', 'width' => 120, 'height' => 140, 'colors_n' => 4]],
     ]]],
+    // session B (docs/W.md): a 3D map of a city or a landscape from open data. The examples are drawn from the fixture of
+    // the tests (tests/fixtures/maps), so that `matplace:tool-examples map` needs no network; `fixture` names it
+    'map' => ['route' => 'tools.map', 'intent' => 'create', 'categories' => ['home', 'craft'], 'available' => true, 'seo' => ['examples' => [
+        ['fixture' => 'mesto', 'params' => ['lat' => 50.0875, 'lon' => 14.4213, 'type' => 'city', 'style' => 'sleek', 'side' => '500', 'size' => 150, 'name' => 'Staré Město']],
+        ['fixture' => 'mesto', 'params' => ['lat' => 50.0875, 'lon' => 14.4213, 'type' => 'city', 'style' => 'miniature', 'side' => '500', 'size' => 150, 'name' => 'Staré Město', 'green' => true]],
+        ['fixture' => 'mesto', 'params' => ['lat' => 50.0875, 'lon' => 14.4213, 'type' => 'landscape', 'style' => 'sleek', 'side' => '5000', 'size' => 150, 'name' => 'Kopec', 'exaggeration' => 2]],
+    ]]],
     // the card of a file tool is its own output: a vase of the vase tool at 300 mm, cut for the farm's bed
     'split' => ['route' => 'tools.split', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'split', 'kind' => 'vase', 'preset' => 'smooth', 'params' => ['height' => 300, 'top_d' => 120, 'bottom_d' => 90], 'edit_params' => ['joint' => 'pins']]],

@@ -6,6 +6,7 @@ use App\Domain\Farm\Palette;
 use App\Domain\Generation\GenerationService;
 use App\Domain\Generation\PedestalChanger;
 use App\Domain\Tools\ArtGenerator;
+use App\Domain\Tools\MapBuilder;
 use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\ParametricGenerator;
 use Illuminate\Database\Eloquent\Model;
@@ -196,7 +197,7 @@ class ModelFile extends Model
     /** Made by one of our measured tools: the builder laid it the way it prints best, the farm must not turn it. */
     public function builtForPrinting(): bool
     {
-        return $this->origin === 'tool' && (array_key_exists($this->kind(), ParametricGenerator::FIELDS) || in_array($this->kind(), [ArtGenerator::KIND, ...ModelEditor::KINDS], true));
+        return $this->origin === 'tool' && (array_key_exists($this->kind(), ParametricGenerator::FIELDS) || in_array($this->kind(), [ArtGenerator::KIND, MapBuilder::KIND, ...ModelEditor::KINDS], true));
     }
 
     /** Organic AI meshes print best with tree supports. */

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Domain\Farm\Palette;
 use App\Domain\Tools\ArtGenerator;
+use App\Domain\Tools\MapBuilder;
 use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Repair\PythonTool;
@@ -46,7 +47,7 @@ class ToolExamples extends Command
         foreach ((array) config('tools') as $tool => $definition) {
             $examples = (array) ($definition['seo']['examples'] ?? []);
             $kind = (string) ($definition['seo']['kind'] ?? $tool);      // a tool that is another generator with a preset draws with that generator
-            if (! $examples || ($only && ! in_array($tool, $only, true)) || (! isset(ParametricGenerator::FIELDS[$kind]) && $tool !== ArtGenerator::KIND)) {
+            if (! $examples || ($only && ! in_array($tool, $only, true)) || (! isset(ParametricGenerator::FIELDS[$kind]) && ! in_array($tool, [ArtGenerator::KIND, MapBuilder::KIND], true))) {
                 continue;
             }
             foreach ($examples as $i => $example) {
@@ -59,7 +60,8 @@ class ToolExamples extends Command
                 try {
                     // "use": the product as it is used (a box with its lid on, a vase on its saucer), not laid out for printing
                     $built = $tool === ArtGenerator::KIND ? app(ArtGenerator::class)->build((array) ($example['params'] ?? []), 'use', true)
-                        : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', isset(ParametricGenerator::FAMILY[$kind]) || in_array($kind, ['compose', 'papel'], true));      // tools whose parts are colours: drawn in them
+                        : ($tool === MapBuilder::KIND ? self::mapExample($example)
+                        : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', isset(ParametricGenerator::FAMILY[$kind]) || in_array($kind, ['compose', 'papel'], true)));      // tools whose parts are colours: drawn in them
                 } catch (\Throwable $e) {
                     $this->warn(sprintf('%s #%d: the tool refused the parameters (%s)', $tool, $i + 1, mb_substr($e->getMessage(), 0, 160)));
                     $failed++;
@@ -74,6 +76,10 @@ class ToolExamples extends Command
                     $paintFile = $built['path'].'.json';
                     File::put($paintFile, json_encode(['color' => $own['body'] ?? '#888888', 'regions' => [],
                         'parts' => array_map(fn ($p) => ['tris' => $p['tris'], 'color' => $own[$p['name']] ?? '#888888'], (array) $built['meta']['parts'])]));
+                } elseif (! empty($built['meta']['notes']['regions'])) {
+                    // a map: its colours lie by height, as the viewer paints them
+                    $paintFile = $built['path'].'.json';
+                    File::put($paintFile, json_encode(['color' => $built['meta']['notes']['colors']['base'] ?? '#888888', 'regions' => $built['meta']['notes']['regions'], 'parts' => []]));
                 }
                 $result = $python->runScript('render_tool.py', [$built['path'], $target, '800', '600', ...($paintFile ? [$paintFile] : [])], 180);
                 @unlink($built['path']);
@@ -91,6 +97,22 @@ class ToolExamples extends Command
         $this->info("Drawn {$drawn}, kept {$kept}".($failed ? ", failed {$failed}" : '').'.');
 
         return $failed ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * A map of the examples: built over the fixture of the tests (and, for a landscape, over height tiles drawn here),
+     * so that the pictures need no network. `fixture` of the example names the Overpass file in tests/fixtures/maps.
+     *
+     * @return array{path: string, meta: array<string, mixed>}
+     */
+    private static function mapExample(array $example): array
+    {
+        $clean = MapBuilder::clean((array) ($example['params'] ?? []));
+        $dem = $clean['type'] === 'landscape' ? MapBuilder::demFixture((float) $clean['lat'], (float) $clean['lon'], (int) $clean['side']) : [];
+        $path = storage_path('app/tmp/map/example-'.Str::uuid().'.stl');
+        $meta = app(MapBuilder::class)->build(MapBuilder::sourcesOf($clean, MapBuilder::fixture((string) ($example['fixture'] ?? 'mesto')), $dem), $path);
+
+        return ['path' => $path, 'meta' => $meta];
     }
 
     /**
@@ -188,7 +210,7 @@ class ToolExamples extends Command
             $card = (array) ($definition['card'] ?? []);
             $kind = (string) ($card['kind'] ?? $tool);
             $example = $card ?: ((array) ($definition['seo']['examples'] ?? []))[0] ?? null;
-            if ((! isset(ParametricGenerator::FIELDS[$kind]) && $kind !== ArtGenerator::KIND) || $example === null) {
+            if ((! isset(ParametricGenerator::FIELDS[$kind]) && ! in_array($kind, [ArtGenerator::KIND, MapBuilder::KIND], true)) || $example === null) {
                 continue;
             }
             $base = public_path('img/tools/'.$tool);
@@ -198,9 +220,10 @@ class ToolExamples extends Command
                 continue;
             }
             try {
-                $built = ($card['edit'] ?? null) === 'colors' ? $this->recolored($python, $card)
+                $built = $tool === MapBuilder::KIND ? self::mapExample($example)
+                    : (($card['edit'] ?? null) === 'colors' ? $this->recolored($python, $card)
                     : ($kind === ArtGenerator::KIND ? app(ArtGenerator::class)->build((array) ($example['params'] ?? []), 'use', true)
-                    : ($card['edit'] ?? null ? $this->edited($generator, $python, $kind, $card) : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', true)));
+                    : ($card['edit'] ?? null ? $this->edited($generator, $python, $kind, $card) : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', true))));
             } catch (\Throwable $e) {
                 $this->warn(sprintf('%s: the tool refused the parameters (%s)', $tool, mb_substr($e->getMessage(), 0, 160)));
                 $failed++;
@@ -212,6 +235,9 @@ class ToolExamples extends Command
             $colors = (array) ($card['colors'] ?? []) + (count((array) ($built['meta']['parts'] ?? [])) > 1 ? [] : ['body' => $turn]) + self::CARD_COLORS;
             $regions = (array) ($built['meta']['notes']['regions'] ?? []);
             $parts = (array) ($built['meta']['parts'] ?? []);
+            if ($tool === MapBuilder::KIND) {
+                $colors = ['body' => $built['meta']['notes']['colors']['base'] ?? '#e8e4d8'] + $colors;
+            }
             // a set of separate pieces with a colour each (bins): a whole piece takes the colour of the region its middle
             // lies in, outer walls included; a plate in two colours is one piece and is split by its regions instead
             $ofRegion = function (array $p) use ($regions): ?string {

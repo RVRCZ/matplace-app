@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\EditApiController;
 use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
+use App\Http\Controllers\Api\MapApiController;
 use App\Http\Controllers\Api\ModelFileController;
 use App\Http\Controllers\Api\ModelPreviewController;
 use App\Http\Controllers\Api\SearchController;
@@ -48,6 +49,7 @@ use App\Http\Controllers\Farm\OrderController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\InspirationController;
 use App\Http\Controllers\LocaleRedirectController;
+use App\Http\Controllers\MapToolController;
 use App\Http\Controllers\ModelCatalogController;
 use App\Http\Controllers\OgController;
 use App\Http\Controllers\PageController;
@@ -178,6 +180,8 @@ $pages = function () {
     Route::get('/tools/soap-from-model', [EditToolsController::class, 'edit'])->defaults('op', 'soap')->name('tools.soap_model');
     Route::get('/tools/wearable', [EditToolsController::class, 'edit'])->defaults('op', 'wearable')->name('tools.wearable');
     Route::get('/tools/slider', [EditToolsController::class, 'edit'])->defaults('op', 'slider')->name('tools.slider');
+    // session B (docs/W.md): a 3D map of a city or a landscape from OpenStreetMap and the height tiles
+    Route::get('/tools/map', [MapToolController::class, 'show'])->name('tools.map');
 
     // ── Auth ─────────────────────────────────────────────────────────────────────
     Route::middleware('guest')->group(function () {
@@ -377,6 +381,9 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('tools/art/zip', [EditApiController::class, 'artZip'])->middleware('throttle:12,1,art_zip')->name('tools.art.zip');
     Route::get('tools/edit/{modelFile}/guide', [EditApiController::class, 'guide'])->middleware('file')->name('tools.edit.guide');
     Route::get('tools/edit/{modelFile}/{part}.stl', [EditApiController::class, 'part'])->middleware(['file', 'throttle:60,1,edit_part'])->name('tools.edit.part');
+    Route::post('tools/map/places', [MapApiController::class, 'places'])->middleware('throttle:30,1,map_places')->name('tools.map.places');
+    Route::post('tools/map/preview', [MapApiController::class, 'preview'])->middleware('throttle:20,1,map_preview')->name('tools.map.preview');
+    Route::post('tools/map', [MapApiController::class, 'create'])->middleware('throttle:10,1,map_create')->name('tools.map');
     Route::post('files/{modelFile}/edit/analysis', [EditApiController::class, 'analysis'])->middleware(['file', 'throttle:30,1,editanalysis'])->name('files.edit.analysis');
     Route::post('files/{modelFile}/edit', [EditApiController::class, 'edit'])->middleware(['file', 'throttle:12,1,edit'])->name('files.edit');
     Route::post('inquiries', [ApiInquiryController::class, 'store'])->middleware(['feature:marketplace', 'throttle:10,1,inquiry'])->name('inquiries.store');

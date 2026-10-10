@@ -21,6 +21,8 @@ class ToolGate
 
     private const EDIT = ['api.files.edit', 'api.files.edit.analysis'];
 
+    private const MAP = ['api.tools.map', 'api.tools.map.preview', 'api.tools.map.places'];
+
     public function handle(Request $request, Closure $next): Response
     {
         $name = Locales::baseName((string) $request->route()?->getName());
@@ -34,6 +36,7 @@ class ToolGate
                 in_array($name, self::ART, true) => ToolVisibility::canOpen($user, 'filament_art'),
                 $name === 'api.tools.relief' => ToolVisibility::canOpen($user, 'relief'),
                 in_array($name, self::EDIT, true) => ToolVisibility::canUseEdit($user, $asked('op')),
+                in_array($name, self::MAP, true) => ToolVisibility::canOpen($user, 'map'),
                 default => true,
             }, 404);
 

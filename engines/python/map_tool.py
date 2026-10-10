@@ -403,8 +403,192 @@ def scale_text(side_m, inner_mm):
 
 # ── the landscape ─────────────────────────────────────────────────────────────────────────────────────────────
 
+TOWN_LIFT = 3.0              # mm: a built-up area of a landscape as a low block on the relief
+GRID = (160, 320)            # the relief's grid: at least, at most (cells across the window)
+
+
+def heightmap(params, cols, rows, side_m):
+    """
+    The heights of the square (metres), on a grid of cols × rows (row 0 the northern edge), read from the Terrarium
+    tiles bilinearly: height = R·256 + G + B/256 − 32768.
+    """
+    import numpy as np
+    from PIL import Image
+    from scipy import ndimage
+    tiles = params.get("dem") or []
+    if not tiles:
+        raise Invalid("dem_missing")
+    z = int(tiles[0]["z"])
+    n = 2 ** z
+    lat0, lon0 = float(params["center"][0]), float(params["center"][1])
+    lat0r = math.radians(lat0)
+    cos0 = math.cos(lat0r)
+    m0 = math.log(math.tan(math.pi / 4 + lat0r / 2))
+    xs = np.linspace(-side_m / 2, side_m / 2, cols)
+    ys = np.linspace(side_m / 2, -side_m / 2, rows)
+    X, Y = np.meshgrid(xs, ys)
+    # local metres → latitude and longitude (the inverse of Area's projection) → pixels of the tiles at this zoom
+    lon = lon0 + np.degrees(X / (EARTH * cos0))
+    lat = np.degrees(np.arctan(np.sinh(m0 + Y / (EARTH * cos0))))
+    latr = np.radians(lat)
+    px = (lon + 180.0) / 360.0 * n * 256
+    py = (1.0 - np.log(np.tan(latr) + 1.0 / np.cos(latr)) / math.pi) / 2.0 * n * 256
+    xs_t, ys_t = [int(t["x"]) for t in tiles], [int(t["y"]) for t in tiles]
+    x_min, y_min = min(xs_t), min(ys_t)
+    mosaic = np.full(((max(ys_t) - y_min + 1) * 256, (max(xs_t) - x_min + 1) * 256), np.nan, dtype=np.float64)
+    for t in tiles:
+        try:
+            a = np.asarray(Image.open(t["path"]).convert("RGB"), dtype=np.float64)
+        except Exception as e:  # noqa: BLE001
+            raise Invalid("dem_unreadable", str(e)[:80])
+        h = a[:, :, 0] * 256.0 + a[:, :, 1] + a[:, :, 2] / 256.0 - 32768.0
+        ty, tx = (int(t["y"]) - y_min) * 256, (int(t["x"]) - x_min) * 256
+        mosaic[ty:ty + 256, tx:tx + 256] = h
+    if np.isnan(mosaic).all():
+        raise Invalid("dem_missing")
+    mosaic = np.where(np.isnan(mosaic), np.nanmin(mosaic), mosaic)
+    fy, fx = py - y_min * 256 - 0.5, px - x_min * 256 - 0.5
+    return ndimage.map_coordinates(mosaic, [fy, fx], order=1, mode="nearest")
+
+
+def relief_solid(M, Z, xs, ys):
+    """
+    The relief as a closed solid: the grid's surface, four walls down to z = 0 and a flat bottom, every face wound
+    outwards (the surface counter-clockwise from above, the walls along the clockwise rim, the floor as a fan seen
+    from below); (manifold, triangles).
+    """
+    import numpy as np
+    rows, cols = Z.shape
+    X, Y = np.meshgrid(xs, ys)
+    top = np.stack([X.ravel(), Y.ravel(), Z.ravel()], 1)
+    idx = np.arange(rows * cols).reshape(rows, cols)
+    a, b_, c, d = idx[:-1, :-1].ravel(), idx[:-1, 1:].ravel(), idx[1:, 1:].ravel(), idx[1:, :-1].ravel()
+    faces = [np.stack([a, c, b_], 1), np.stack([a, d, c], 1)]
+    # the rim of the surface, clockwise from the north-west corner, and the same points on the floor
+    rim = np.concatenate([idx[0, :], idx[1:, -1], idx[-1, -2::-1], idx[-2:0:-1, 0]])
+    base = rows * cols
+    floor = np.stack([top[rim, 0], top[rim, 1], np.zeros(len(rim))], 1)
+    r0, r1 = rim, np.roll(rim, -1)
+    f0, f1 = base + np.arange(len(rim)), base + (np.arange(len(rim)) + 1) % len(rim)
+    faces.append(np.stack([r0, f1, f0], 1))
+    faces.append(np.stack([r0, r1, f1], 1))
+    centre = base + len(rim)
+    faces.append(np.stack([f0, f1, np.full(len(rim), centre)], 1))
+    verts = np.concatenate([top, floor, [[0.0, 0.0, 0.0]]]).astype(np.float32)
+    tris = np.concatenate(faces).astype(np.uint32)
+    solid = M.Manifold(M.Mesh(vert_properties=verts, tri_verts=tris))
+    if solid.status() != M.Error.NoError or solid.volume() <= 0:
+        solid = M.Manifold(M.Mesh(vert_properties=verts, tri_verts=tris[:, [0, 2, 1]]))
+    if solid.status() != M.Error.NoError or solid.volume() <= 0:
+        raise Invalid("relief_failed", str(solid.status()))
+    return solid, int(len(tris))
+
+
+def landscape_layers(M, area, p):
+    """The 2D layers a landscape carries on its relief: water sunk in, roads and the built-up areas raised; all in plate millimetres."""
+    C = M.CrossSection
+    k, inner = area.k, area.inner
+    window = C.square([inner, inner]).translate([-inner / 2, -inner / 2])
+    water, roads, towns = C(), C(), C()
+    if p.get("water", True):
+        shapes = [_cs(M, rings) for rings, _ in area.polygons(lambda t: t.get("natural") == "water" or "water" in t or t.get("landuse") in ("reservoir", "basin"))]
+        for pts, tags in area.lines(lambda t: t.get("waterway") in ("river", "canal")):
+            shapes += _band(M, pts, max(THIN, WATERWAY_WIDTH[tags["waterway"]] * k))
+        water = _union(M, shapes) ^ window
+    if p.get("roads_on", True):
+        # on a landscape only the roads that matter at this scale: motorways to tertiary, and the rest when the square is small
+        big = {"motorway", "motorway_link", "trunk", "trunk_link", "primary", "primary_link", "secondary", "secondary_link", "tertiary"}
+        keep = (lambda t: t.get("highway") in big) if area.side_m > 6000 else (lambda t: "highway" in t and t["highway"] not in ROAD_SKIP and t["highway"] not in ("path", "footway", "steps", "cycleway", "bridleway", "track", "service"))
+        roads = _union(M, [s for pts, tags in area.lines(keep) for s in _band(M, pts, max(THIN, ROAD_WIDTH.get(tags["highway"], 5.0) * k * 2.0))]) ^ window
+    if p.get("towns", True):
+        towns = (_union(M, [_cs(M, rings) for rings, _ in area.polygons(lambda t: t.get("landuse") == "residential")]) ^ window) - roads - water
+    return {"window": window, "water": water, "roads": roads, "towns": towns}
+
+
+def grid_mask(cs, n, inner):
+    """A 2D shape in plate millimetres as a mask over the relief's grid (row 0 the northern edge): True where it lies."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    rings = [np.asarray(r, dtype=np.float64) for r in cs.to_polygons()]
+    if not rings:
+        return np.zeros((n, n), dtype=bool)
+    area_of = lambda r: 0.5 * float(np.sum(r[:, 0] * np.roll(r[:, 1], -1) - np.roll(r[:, 0], -1) * r[:, 1]))      # noqa: E731
+    im = Image.new("L", (n, n), 0)
+    d = ImageDraw.Draw(im)
+    f = (n - 1) / inner
+    for r in sorted(rings, key=lambda r: -abs(area_of(r))):
+        if len(r) >= 3:
+            d.polygon([((x + inner / 2) * f, (inner / 2 - y) * f) for x, y in r], fill=255 if area_of(r) > 0 else 0)
+    return np.asarray(im) > 127
+
+
 def build_landscape(M, params, dst):
-    raise Invalid("not_yet")
+    import numpy as np
+    p = params.get("params") or {}
+    size, base_h = float(p.get("size", 150)), float(p.get("base_h", 4))
+    frame_mm = float(p.get("frame_mm", 6.0)) if p.get("frame", True) else 0.0
+    inner = size - 2 * frame_mm
+    if inner < 40:
+        raise Invalid("frame_too_wide")
+    side_m = float(params["side_m"])
+    k = inner / side_m
+    ex = max(1.0, min(3.0, float(p.get("exaggeration", 1.5))))
+    miniature = p.get("style") == "miniature"
+    stage(dst, "reading")
+    area = Area(params["osm"], params["center"], side_m, inner)
+    L = landscape_layers(M, area, p)
+    stage(dst, "terrain_mesh")
+    n = int(max(GRID[0], min(GRID[1], inner * 2.0)))
+    H = heightmap(params, n, n, side_m)
+    lo, hi = float(np.percentile(H, 0.5)), float(np.percentile(H, 99.5))
+    relief_m = max(0.0, hi - lo)
+    Z = base_h + np.clip(H - lo, 0.0, None) * k * ex
+    xs = np.linspace(-inner / 2, inner / 2, n)
+    ys = np.linspace(inner / 2, -inner / 2, n)
+    stage(dst, "roads")
+    # the water sunk into the relief, the roads and the built-up areas raised on it: carved into the grid itself, so
+    # the relief stays one surface and no boolean has to chew through its hundred thousand triangles
+    ground = Z.copy()
+    if not L["water"].is_empty():
+        Z = np.where(grid_mask(L["water"], n, inner), ground - WATER_SINK, Z)
+    if not L["towns"].is_empty():
+        Z = np.where(grid_mask(L["towns"], n, inner), ground + TOWN_LIFT, Z)
+    if not L["roads"].is_empty():
+        Z = np.where(grid_mask(L["roads"], n, inner), ground + ROAD_LIFT, Z)
+    whole, tris = relief_solid(M, Z, xs, ys)
+    frame, name, written = frame_and_name(M, p, inner, size, base_h, params.get("font"), miniature)
+    solids = [whole] + [x for x in (frame, name) if x is not None]
+    stage(dst, "writing")
+    model = M.Manifold.batch_boolean(solids, M.OpType.Add) if len(solids) > 1 else whole
+    colors = {**COLORS, **{kk: v for kk, v in (p.get("colors") or {}).items() if isinstance(v, str)}}
+    far = 9999.0
+    changes = [{"z": round(base_h, 2), "hex": colors["terrain"]}]
+    regions = [{"x0": -far, "y0": -far, "x1": far, "y1": far, "z0": round(base_h + 0.01, 2), "color": colors["terrain"]},
+               {"x0": -far, "y0": -far, "x1": far, "y1": far, "z0": -1.0, "color": colors["base"]}]
+    warn = []
+    if relief_m * k * ex < 1.5:
+        warn.append("flat")
+    notes = {"type": "landscape", "scale": scale_text(side_m, inner), "scale_n": int(round(side_m * 1000.0 / inner)), "osm_date": area.date,
+             "relief_m": int(round(relief_m)), "low_m": int(round(lo)), "high_m": int(round(hi)), "relief_mm": round(relief_m * k * ex, 2), "grid": n, "name": written,
+             "water": not L["water"].is_empty(), "roads_m": 0, "buildings": 0, "top_mm": round(float(Z.max()), 2),
+             "color_changes": changes, "regions": regions, "colors": colors, "warnings": warn, "attribution": "Data © OpenStreetMap contributors (ODbL) · Mapzen / AWS Open Data"}
+    return model, notes
+
+
+def shaded(params, cols, rows, side_m, colors):
+    """The relief from above, lit from the north-west, in the colour of the terrain: the picture of a landscape."""
+    import numpy as np
+    from PIL import Image
+    H = heightmap(params, cols, rows, side_m)
+    cell_m = side_m / cols
+    gy, gx = np.gradient(H, cell_m)
+    nx, ny, nz = -gx * 2.0, gy * 2.0, np.ones_like(H)          # the slopes twice as steep, so a gentle country still reads
+    norm = np.sqrt(nx * nx + ny * ny + nz * nz)
+    light = (nx * -0.5 + ny * 0.5 + nz * 0.7071) / norm
+    shade = np.clip(0.45 + 0.55 * np.clip(light, 0, 1), 0.3, 1.1)
+    r, g, b = (int(colors["terrain"].lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+    rgb = np.stack([np.clip(r * shade, 0, 255), np.clip(g * shade, 0, 255), np.clip(b * shade, 0, 255)], 2).astype(np.uint8)
+    return Image.fromarray(rgb), float(np.percentile(H, 99.5) - np.percentile(H, 0.5))
 
 
 # ── output ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -454,11 +638,17 @@ def preview(params, dst):
     if inner < 40:
         raise Invalid("frame_too_wide")
     area = Area(params["osm"], params["center"], params["side_m"], inner)
-    L = city_layers(M, area, p)
+    landscape = p.get("type") == "landscape"
+    L = landscape_layers(M, area, p) if landscape else city_layers(M, area, p)
     colors = {**COLORS, **{k: v for k, v in (p.get("colors") or {}).items() if isinstance(v, str)}}
     px = 600
     s = px / size                                          # pixels per mm, the frame included
     im = Image.new("RGB", (px, px), colors["base"])
+    relief_m = 0.0
+    if landscape:
+        shade, relief_m = shaded(params, 300, 300, float(params["side_m"]), colors)
+        win = int(round(inner * s))
+        im.paste(shade.resize((win, win), Image.BILINEAR), ((px - win) // 2, (px - win) // 2))
     d = ImageDraw.Draw(im)
 
     def xy(pt):
@@ -468,27 +658,39 @@ def preview(params, dst):
         import numpy as np
         rings = [np.asarray(r, dtype=np.float64) for r in cs.to_polygons()]
         area_of = lambda r: 0.5 * float(np.sum(r[:, 0] * np.roll(r[:, 1], -1) - np.roll(r[:, 0], -1) * r[:, 1]))      # noqa: E731
+        under = im.copy() if landscape else None            # a hole in a shape shows what lies under it
         for r in sorted(rings, key=lambda r: -abs(area_of(r))):
-            if len(r) >= 3:
+            if len(r) < 3:
+                continue
+            if area_of(r) > 0 or under is None:
                 d.polygon([xy(pt) for pt in r], fill=color if area_of(r) > 0 else colors["base"])
+            else:
+                mask = Image.new("L", im.size, 0)
+                ImageDraw.Draw(mask).polygon([xy(pt) for pt in r], fill=255)
+                im.paste(under, (0, 0), mask)
 
     def shade(hexes, f):
         r, g, b = (int(hexes.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
         return "#%02x%02x%02x" % tuple(max(0, min(255, int(v * f))) for v in (r, g, b))
 
-    fill(L["green"], colors["green"])
-    fill(L["water"], colors["water"])
-    fill(L["rails"], shade(colors["base"], 0.75))
-    fill(L["roads"], colors["roads"])
-    for h_mm, shape in L["buildings"][::-1]:
-        fill(shape, colors["buildings"])
+    if landscape:
+        fill(L["towns"], shade(colors["terrain"], 1.35))
+        fill(L["water"], colors["water"])
+        fill(L["roads"], colors["roads"])
+    else:
+        fill(L["green"], colors["green"])
+        fill(L["water"], colors["water"])
+        fill(L["rails"], shade(colors["base"], 0.75))
+        fill(L["roads"], colors["roads"])
+        for h_mm, shape in L["buildings"][::-1]:
+            fill(shape, colors["buildings"])
     if frame_mm > 0:
         d.rectangle([0, 0, px - 1, px - 1], outline=colors["roads"], width=max(2, int(frame_mm * s)))
     # a scale bar in the lower left: a round number of metres that is about a fifth of the window
     metres = area.side_m / 5.0
     step = 10 ** int(math.log10(metres))
     metres = max(step, round(metres / step) * step)
-    bar = metres * L["k"] * s
+    bar = metres * area.k * s
     x, y = frame_mm * s + 14, px - frame_mm * s - 18
     d.rectangle([x, y, x + bar, y + 5], fill=colors["roads"], outline=colors["base"])
     try:
@@ -498,7 +700,7 @@ def preview(params, dst):
     label = ("%d km" % (metres / 1000)) if metres >= 1000 else ("%d m" % metres)
     d.text((x, y - 18), label, fill=colors["roads"], font=font)
     im.save(dst, "PNG", optimize=True)
-    return {"ok": True, "width": px, "height": px, "buildings": L["count"], "roads_m": int(round(L["roads_m"])), "scale": scale_text(area.side_m, inner)}
+    return {"ok": True, "width": px, "height": px, "buildings": L.get("count", 0), "roads_m": int(round(L.get("roads_m", 0))), "relief_m": int(round(relief_m)), "scale": scale_text(area.side_m, inner)}
 
 
 def main(argv):
