@@ -1,6 +1,6 @@
 # Zadání pro session B: 3D mapa města nebo krajiny (`/tools/map`)
 
-Předloha: printpal „3D Map Maker — AI City & Terrain Map Generator“ (snímek `docs/img/printpal-map-maker.png`): zadáš
+Předloha: printpal „3D Map Maker — AI City & Terrain Map Generator“ (snímek Roman poslal jen do chatu; popis v bodu 1 je úplný): zadáš
 název města nebo místa (nebo nahraješ snímek mapy), vybereš styl (Sleek Map / Miniature Style) a typ (City /
 Landscape), volitelně „landmarks“, výstup STL, „AI vygeneruje za 4–6 minut“, jen po přihlášení. Cíl stejný jako u všech
 našich nástrojů: **udělat to lépe než předloha** – bez AI, z otevřených dat (přesné budovy, cesty, voda, reliéf),
