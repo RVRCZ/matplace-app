@@ -234,7 +234,7 @@ jen orientační) s `{"top_surface_speed":"120","outer_wall_speed":"100"}`; **S1
 zapnuté) s JSON pro S2 v poli procesu – ten u objektu `ironing` nic nedělá (bez `seam_slope_type` se scarf nezapne),
 je to tedy zkouška žehlení na S1, **ne S2**. S2 (objekt `seam` + zaškrtnutý scarf + JSON) zbývá.
 
-**Tyrkysový `quick` z Maxu** (10. 10. ~20:45, číslo testu doplní Roman; `{"top_surface_speed":"120",
+**T26-000035 – tyrkysový `quick` z Maxu** (10. 10. ~20:45; `{"top_surface_speed":"120",
 "outer_wall_speed":"100"}`; 3 snímky při expozici −5, jeden s deskou naklopenou):
 
 | co | nález | proti modrému T26-000033 (stěna 120) |
