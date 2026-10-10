@@ -157,10 +157,10 @@ a promptem, stažení obrázku, `standard` 20 a `detailed` 40 kreditů, žádný
 (`MeshFixtures::tableStl`): realistická řekne pod 2,5 mm, miniatura je nad, vodotěsná, jedno těleso, kotouč aspoň
 40 mm, do 20 s; změna podstavce a jména bez nového generování; skrytý nástroj. `FigureToolTest` beze změny zelený.
 Celá sada před slitím s `main`: 574 testů, tři červené, žádný z této práce: `ShapeToolsTest` (1) a `HeldShapesTest`
-(2) četly `notes.outline` přímo z hlavičky náhledu, kam se od `PreviewMeta` (U.md §8) nevejde, jakmile náhled obrázku
-v barvách přeroste 3000 B. Všechny testy, které hlavičku `X-Model-Meta` rozebíraly ručně (30 míst v 19 souborech),
-teď čtou náhled přes `PreviewMeta::whole`, stejně jako stránka přes `modelMeta()`. Náhled obrázku v barvách jsem v této větvi neměnil, takže **ty tři
-testy musí být červené i na `main` 80aab4c** (na `main` jsem je nepouštěl); opravuje je commit 0dbe219 v této větvi.
+(2) četly `notes.outline` přímo z hlavičky náhledu, kam se od `PreviewMeta` (U.md §8) nevejde od chvíle, kdy mez
+hlavičky klesla na 2 kB (commit 7b09f31). Stejné tři testy našla session F na `main` 75c7f70 a řídící session je
+zadala session E jako úkol #8 v `docs/prompts/opravy.md`; tahle větev je už opravuje. Všechny testy, které hlavičku `X-Model-Meta` rozebíraly ručně (30 míst v 19 souborech),
+teď čtou náhled přes `PreviewMeta::whole`, stejně jako stránka přes `modelMeta()`. Opravuje je commit 0dbe219 v této větvi.
 Po slití s `main` 75c7f70: 31 dotčených sad, 217 testů zelených, `tsc` a build čisté. Celou sadu jsem po slití znovu
 nepouštěl.
 
