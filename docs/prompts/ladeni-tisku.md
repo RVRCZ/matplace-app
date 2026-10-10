@@ -82,3 +82,39 @@ PETG oranžová; vánoční sada = PLA+ a silk):
 - Výstup: na konci má `/admin/farm/tuning` zelené (vyladěné) řádky pro všechny kombinace z tabulky v části 1, `docs/V.md`
   s historií a čísly, knihovna profilů doplněná, poradce s pravidly podle druhu a testy. Co se nestihlo nebo nešlo,
   napiš s důvodem.
+
+## 5. První konkrétní úkol: šev (seam) – stav 10. 10. 2026
+
+Zjištěno řídící session z posledního ostrého G‑kódu (F26‑000054, S1, PLA+, proces „0.20mm Standard @Anycubic Kobra S1
+0.4 nozzle“): v našich profilech (`engines/orca/profiles/process_*.json`), v přepisech tiskáren ani v řádcích ladění
+**není žádné nastavení švu** – platí výchozí hodnoty Orcy/Anycubic:
+
+| klíč Orca | u nás | Roman viděl v Orce (video) |
+|---|---|---|
+| `seam_position` | aligned | Aligned |
+| `seam_gap` | 10 % | 15 % |
+| `staggered_inner_seams` | 0 (vypnuto) | zapnuto |
+| `seam_slope_type` (Scarf joint seam) | **none** (vypnuto) | **Contour** (= `external`) |
+| `seam_slope_conditional` | 1 | vypnuto |
+| `scarf_joint_speed` | 30 | 100 % |
+| `seam_slope_start_height` | 10 % | 0 |
+| `seam_slope_entire_loop` | 0 | vypnuto |
+| `seam_slope_min_length` (Scarf length) | 10 | 20 |
+| `seam_slope_steps` | 10 | 10 |
+| `seam_slope_inner_walls` | 1 | vypnuto |
+| `scarf_joint_flow_ratio` | 1 | – |
+| `scarf_overhang_threshold` | 40 % | – |
+| `role_based_wipe_speed` / `wipe_speed` | 1 / 80 % | zapnuto / 80 % |
+| `wipe_on_loops` | 0 | vypnuto |
+| `wall_sequence` | inner wall/outer wall | – |
+
+Scarf joint (šikmý přechod švu) šev na válcových a hladkých plochách skoro zneviditelní; u nás je vypnutý. Úkol:
+1. Na S1 s PLA+ vytisknout `quick` dvakrát: jednou dnešní nastavení, jednou s `seam_slope_type = external`,
+   `seam_slope_conditional = 1`, `seam_slope_start_height = 0`, `seam_slope_min_length = 20`, `seam_slope_steps = 10`,
+   `scarf_joint_speed = 100%`, `seam_gap = 15%`, `staggered_inner_seams = 1` (přepisy v řádku ladění, jen pro test –
+   pole `t_process` u testu). Porovnat fotky válcové části kostky / pilířů: viditelnost švu, boule, díry.
+2. Když je scarf lepší, zapsat do řádku PLA+ (nová verze → test → `tuned`) a do knihovny pro `kobra s1`; pak totéž
+   zvážit pro silk (lesk šev zvýrazňuje, scarf pomůže nejvíc), u PETG opatrně (stringing, `scarf_joint_speed` nižší),
+   u ASA otestovat až po základním ladění.
+3. Jestli má být scarf globálně v `process_standard.json` a `process_fine.json` (ne v `draft`), rozhodne výsledek;
+   změna profilu = commit + zpráva řídící session (nasazuje ona). Zapiš do `docs/V.md` fotky „před/po“.
