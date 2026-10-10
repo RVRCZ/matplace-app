@@ -70,14 +70,15 @@
             @if($materials)
                 {{-- the material and how many: the rough price counts with both, and the calculator opens with them (Stage.material, Stage.quantity) --}}
                 <x-tool-section id="print" :title="$sections['print']" class="!mt-3">
-                    <div class="grid grid-cols-2 gap-3">
+                    {{-- the material over the whole width of the panel: beside the number of pieces its name was cut off ("Běžný plast (PL") --}}
+                    <div class="grid gap-3">
                         <label class="lbl">{{ __('calc.material') }}
                             <select id="param-material" class="field">
                                 @foreach($materials as $m)<option value="{{ $m['code'] }}" @selected($m['code'] === ($config['default_material'] ?? null))>{{ $m['label'] }} ({{ $m['code'] }})</option>@endforeach
                             </select>
                         </label>
                         <label class="lbl">{{ __('calc.quantity') }}
-                            <input id="param-qty" type="number" inputmode="numeric" min="1" max="1000" value="1" class="field">
+                            <input id="param-qty" type="number" inputmode="numeric" min="1" max="1000" value="1" class="field block !w-24">
                         </label>
                     </div>
                 </x-tool-section>
