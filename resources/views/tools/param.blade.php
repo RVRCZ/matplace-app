@@ -51,8 +51,7 @@
         'input' => $hasInput ? __('toolpage.section.input') : null,
         'size' => __('toolpage.section.size'),
         'colors' => __('toolpage.section.colors'),
-        'print' => \App\Support\NextStep::text('param.step.inquiry'),   // "print or download" / "download" / "inquiry": what this site offers
-    ]);
+    ]);     // the last step, the material and the number of pieces, is the page's own (tools/page.blade.php)
     // steps only this tool has (ParametricGenerator::SECTIONS: id → the step it follows), and its own names for the common ones
     $extra = \App\Domain\Tools\ParametricGenerator::SECTIONS[$kind] ?? [];
     if ($extra) {
@@ -456,22 +455,9 @@
         @endif
         {{-- the one colour the order starts from (the first part's); two-colour designs carry theirs in the design --}}
         <input type="hidden" id="param-color" value="">
-    </x-tool-section>
-
-    {{-- 4 · the print: material and how many --}}
-    <x-tool-section id="print" :title="\App\Support\NextStep::text('param.step.inquiry')">
-        <div class="grid grid-cols-2 gap-3">
-            <label class="lbl">{{ __('calc.material') }}
-                <select id="param-material" class="field">
-                    @foreach($config['materials'] as $m)<option value="{{ $m['code'] }}" @selected($m['code'] === $config['default_material'])>{{ $m['label'] }} ({{ $m['code'] }})</option>@endforeach
-                </select>
-            </label>
-            <label class="lbl">{{ __('calc.quantity') }}
-                <input id="param-qty" type="number" inputmode="numeric" min="1" max="1000" value="1" class="field">
-            </label>
-        </div>
         {{-- the slicer project straight from here: the design is saved and the printer picker opens --}}
         <button id="param-3mf" type="button" class="hidden">{{ __('param.download.project') }}</button>
     </x-tool-section>
+    {{-- 4 · the print, material and how many: the last step of every tool, drawn by tools/page.blade.php --}}
 </form>
 @endsection

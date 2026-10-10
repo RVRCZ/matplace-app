@@ -85,7 +85,7 @@ class ToolsFlowTest extends TestCase
         $this->assertSame(__('calc.tip.mold'), NextStep::text('calc.tip.mold'));                     // no variant: the marketplace wording is fine for everyone
 
         foreach (['farm', 'download'] as $mode) {
-            foreach (['param.step.inquiry', 'param.go', 'param.go.hint', 'tools.create.lead', 'check.page.go', 'footer.promise', 'calc.tip.lightbox', 'calc.tip.modular', 'calc.tip.vase', 'check.disclaimer', 'calc.warn.not_watertight'] as $key) {
+            foreach (['param.step.inquiry', 'param.go', 'param.go.hint', 'tools.create.lead', 'footer.promise', 'calc.tip.lightbox', 'calc.tip.modular', 'calc.tip.vase', 'check.disclaimer', 'calc.warn.not_watertight'] as $key) {
                 foreach (['cs', 'en', 'es'] as $lang) {
                     app()->setLocale($lang);
                     $this->assertNotSame("{$key}.{$mode}", __("{$key}.{$mode}"), "{$key}.{$mode} missing in {$lang}");

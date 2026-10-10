@@ -105,6 +105,18 @@ class ToolPageTest extends TestCase
             preg_match('/<p class="w-full text-xs text-muted">(.*?)<\/p>/s', $html, $under);
             $this->assertSame('Pokračovat ke kalkulaci', trim($button[1] ?? ''), $key);
             $this->assertSame($said, html_entity_decode(trim($under[1] ?? '')), $key);
+            // and ends with the same step: the material and how many pieces, once, after the tool's own steps
+            $this->assertSame(1, substr_count($html, 'id="param-material"'), $key);
+            $this->assertSame(1, substr_count($html, 'id="param-qty"'), $key);
+            preg_match_all('/data-nav="([a-z]+)" class="tool-nav-item"><span class="tool-nav-no">\d+<\/span>([^<]*)</', $html, $steps);
+            preg_match_all('/data-section="([a-z]+)"/', $html, $sections);
+            $this->assertSame('print', end($steps[1]), $key);
+            $this->assertSame('Materiál a počet kusů', trim((string) end($steps[2])), $key);
+            $this->assertSame('print', end($sections[1]), $key);
+            $this->assertGreaterThanOrEqual(3, count($steps[1]), $key);
+            preg_match('/<section id="sec-print".*?<\/section>/s', $html, $step);
+            $this->assertStringContainsString('Materiál a počet kusů', $step[0] ?? '', $key);
+            $this->assertStringContainsString('max="1000"', $step[0] ?? '', $key);
             $seen++;
         }
         $this->assertGreaterThanOrEqual(50, $seen);

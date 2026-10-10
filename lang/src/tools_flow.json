@@ -3,8 +3,8 @@
     "param.too_fast": ["Příliš mnoho požadavků za sebou. Počkejte chvilku a zkuste to znovu.", "Too many requests in a row. Wait a moment and try again.", "Demasiadas solicitudes seguidas. Espere un momento e inténtelo de nuevo."],
     "param.text_required": ["Napište text.", "Type the text.", "Escriba el texto."],
 
-    "param.step.inquiry.farm": ["Tisk nebo stažení", "Print or download", "Impresión o descarga"],
-    "param.step.inquiry.download": ["Stažení pro tiskárnu", "Download for your printer", "Descarga para su impresora"],
+    "param.step.inquiry.farm": ["Materiál a počet kusů", "Material and quantity", "Material y cantidad"],
+    "param.step.inquiry.download": ["Materiál a počet kusů", "Material and quantity", "Material y cantidad"],
     "param.go.farm": ["Pokračovat ke kalkulaci", "Continue to the calculation", "Continuar al cálculo"],
     "param.go.download": ["Pokračovat ke kalkulaci", "Continue to the calculation", "Continuar al cálculo"],
     "param.go.hint.farm": ["V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si objednáte u nás, nebo si stáhnete soubor pro svou tiskárnu.", "The calculation shows the precise price and print time. Order the print from us, or download the file for your own printer.", "En el cálculo verá el precio exacto y el tiempo de impresión. Pida la impresión con nosotros o descargue el archivo para su propia impresora."],
@@ -13,9 +13,6 @@
     "param.estimate.note.download": ["Odhad z objemu modelu.", "An estimate from the model volume.", "Una estimación según el volumen del modelo."],
     "tools.create.lead.farm": ["Každý nástroj ukáže náhled a orientační cenu. Výtisk si objednáte u nás, nebo si stáhnete soubor pro svou tiskárnu.", "Every tool shows a preview and a rough price. Order the print from us, or download the file for your own printer.", "Cada herramienta muestra una vista previa y un precio orientativo. Pida la impresión con nosotros o descargue el archivo para su impresora."],
     "tools.create.lead.download": ["Každý nástroj ukáže náhled a orientační cenu a soubor si stáhnete pro svou tiskárnu.", "Every tool shows a preview and a rough price, and you download the file for your own printer.", "Cada herramienta muestra una vista previa y un precio orientativo, y el archivo se descarga para su impresora."],
-    "check.page.go.farm": ["Zjistit cenu a objednat tisk", "Get the price and order the print", "Ver el precio y pedir la impresión"],
-    "check.page.go.download": ["Zjistit cenu a stáhnout", "Get the price and download", "Ver el precio y descargar"],
-    "mold.page.go.download": ["Cena a stažení formy", "Price and download of the mold", "Precio y descarga del molde"],
     "footer.promise.farm": ["Model si stáhnete pro svou tiskárnu, nebo ho vytiskneme my. Bez provizí.", "Download the model for your printer, or we print it for you. No commissions.", "Descargue el modelo para su impresora o lo imprimimos nosotros. Sin comisiones."],
     "footer.promise.download": ["Cena, kontrola a soubor pro vaši tiskárnu. Zdarma.", "Price, check and a file for your printer. Free.", "Precio, revisión y archivo para su impresora. Gratis."],
 
