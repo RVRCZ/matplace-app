@@ -200,6 +200,29 @@ class ToolVisibilityTest extends TestCase
         $this->get('/')->assertOk()->assertDontSee('id="tool-hidden-bar"', false);
     }
 
+    public function test_links_written_into_pages_follow_the_switch(): void
+    {
+        config(['features.marketplace' => true, 'tools.spare.available' => true]);
+        $admin = $this->admin();
+        $spare = 'href="'.route('tools.spare').'"';
+        $composer = 'href="'.route('tools.compose', ['preset' => 'topper']).'"';
+        // the spare-part tile of the home page, and "take it to the composer" under a form the composer can start from
+        $this->get('/')->assertOk()->assertSee($spare, false);
+        $this->get('/tools/cake-topper')->assertOk()->assertSee($composer, false)->assertSee(__('param.compose.open'));
+
+        $this->switch($admin, 'spare', false)->assertOk();
+        $this->switch($admin, 'compose', false)->assertOk();
+        auth()->logout();
+        $this->get('/tools/spare-part')->assertNotFound();
+        $this->get('/')->assertOk()->assertDontSee($spare, false);
+        $this->get('/tools/cake-topper')->assertOk()->assertDontSee($composer, false)->assertDontSee(__('param.compose.open'));
+        // the nameplate's quick form leads to the composer of its own address, not to the composer's page: it stays
+        $this->get('/tools/nameplate?form=1')->assertOk()->assertSee(__('param.compose.open'));
+        // an admin gets to both pages, so both links are there for him
+        $this->actingAs($admin)->get('/')->assertOk()->assertSee($spare, false);
+        $this->actingAs($admin)->get('/tools/cake-topper')->assertOk()->assertSee($composer, false);
+    }
+
     public function test_the_admin_page_lists_every_tool_saves_a_row_and_filters(): void
     {
         $this->get('/admin/tools')->assertRedirect(route('login'));

@@ -11,6 +11,8 @@
     // without the marketplace the copy speaks about downloading or printing on the farm, never about other printers
     $mp = (bool) config('features.marketplace');
     $tx = fn (string $key) => __($mp ? $key : 'home.farm.'.$key);
+    // the spare-part inquiry is a tool of the catalogue too: no tile where its page would not open (/admin/tools)
+    $spare = $mp && \App\Domain\Tools\ToolVisibility::canOpen(auth()->user(), 'spare');
 @endphp
 
 <section id="hero">
@@ -47,11 +49,11 @@
 
     {{-- three ways in, each one a real action --}}
     {{-- a spare part is an inquiry to printers: only with the marketplace --}}
-    <nav aria-label="{{ __('tools.intents') }}" class="mt-10 grid divide-y divide-line border-y border-line {{ $mp ? 'sm:grid-cols-3' : 'sm:grid-cols-2' }} sm:divide-x sm:divide-y-0">
+    <nav aria-label="{{ __('tools.intents') }}" class="mt-10 grid divide-y divide-line border-y border-line {{ $spare ? 'sm:grid-cols-3' : 'sm:grid-cols-2' }} sm:divide-x sm:divide-y-0">
         @foreach(array_filter([
             ['file', 'M7 3h7l5 5v13H7zM14 3v5h5', '#', 'file'],
             ['idea', 'M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z', '#', 'idea'],
-            $mp ? ['spare', 'M14.7 6.3a4 4 0 00-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z', route('tools.spare'), null] : null,
+            $spare ? ['spare', 'M14.7 6.3a4 4 0 00-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z', route('tools.spare'), null] : null,
         ]) as [$k, $path, $href, $tile])
             <a href="{{ $href }}" @if($tile) data-tile="{{ $tile }}" @endif @if($k === 'file') onclick="document.getElementById('file-input').click();return false;" @endif
                class="group flex items-start gap-3 px-1 py-5 sm:px-5 sm:first:pl-0 sm:last:pr-0">

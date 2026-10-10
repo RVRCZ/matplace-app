@@ -46,8 +46,10 @@ Co se **nehlídá** a proč:
   si někdo vyrobil před skrytím, mu zůstává.
 - **Forma, oprava, kontrola, figurka z fotky** (`/api/files/{uuid}/mold`, `/repair`, `/api/generate`…): tahle API
   volá i kalkulačka. Skrytím zmizí stránka a karta nástroje, API běží dál.
-- **Odkazy psané natvrdo mimo katalog**: odkaz „poskládat vlastní“ ve formulářích (`tools/param.blade.php` →
-  `/tools/compose`) a dlaždice náhradního dílu na úvodní stránce. Po skrytí těch dvou nástrojů vedou na 404.
+- **Odkazy psané natvrdo mimo katalog** řeší úkol #2: odkaz „poskládat vlastní“ pod formuláři
+  (`tools/param.blade.php` → `/tools/compose`) a dlaždice náhradního dílu na úvodní stránce se ukážou jen tomu,
+  komu se cílová stránka otevře (`ToolVisibility::canOpen`, tedy správci i u skrytého nástroje). Odkaz z rychlého
+  formuláře jmenovky a klíčenky vede na skladbu na téže adrese, ne na `/tools/compose`, a zůstává.
 - **Statistiky v adminu**: filtr nástrojů ve Statistikách nabízí jen veřejné nástroje.
 - **Karty** (`matplace:tool-examples --card`) se kreslí podle configu jako dřív; obrázek skrytého nástroje zůstává.
 
