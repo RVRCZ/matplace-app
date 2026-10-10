@@ -75,17 +75,18 @@ final class GenerationService
      * deleted as soon as the generation ends; consent is recorded with the request.
      *
      * @param  array<string, string>  $views  extra sides of the same subject (left|back|right → relative path)
+     * @param  array<string, mixed>  $more  what else belongs to the order (a pet figurine: its style and roughness)
      */
-    public function fromPhoto(string $imageRelPath, string $kind, int $targetMm, ?string $ip, ?AnonymousSession $session, ?User $user, array $pedestal = [], array $views = []): GenerationRequest
+    public function fromPhoto(string $imageRelPath, string $kind, int $targetMm, ?string $ip, ?AnonymousSession $session, ?User $user, array $pedestal = [], array $views = [], array $more = []): GenerationRequest
     {
         $req = $this->make('image', $ip, $session, $user, [
             'image_path' => $imageRelPath,
             'views' => array_filter(array_intersect_key($views, array_flip(['left', 'back', 'right']))) ?: null,
             'image_sha256' => null,
             'prompt' => $kind,
-            'description' => ['kind' => $kind, 'name_en' => $kind === 'bust' ? 'bust' : 'figure', 'delete_photo' => true, 'consent_at' => now()->toIso8601String()] + array_filter([
+            'description' => ['kind' => $kind, 'name_en' => ['bust' => 'bust', 'pet' => 'pet figurine'][$kind] ?? 'figure', 'delete_photo' => true, 'consent_at' => now()->toIso8601String()] + array_filter([
                 'pedestal' => $pedestal['type'] ?? null, 'pedestal_name' => $pedestal['name'] ?? null, 'pedestal_dedication' => $pedestal['dedication'] ?? null,
-            ]),
+            ]) + array_filter($more, fn ($v) => $v !== null),
             'target_mm' => $targetMm,
         ]);
 
