@@ -67,6 +67,10 @@ Plán tisků po zprovoznění farmy U (10. 10. večer, filament jde přes ACE, R
 nejlepší nastavení): S1 #1 postupně `seam` bez scarfu (B), `seam` se scarfem (S), `quick` dnešní (Q16), `quick`
 s `{"filament_max_volumetric_speed":["12"]}` (Q12); Max souběžně `quick` s `{"top_surface_speed":"120"}` na modré PLA+.
 Každý výtisk zvážit (podtlak toku = nižší hmotnost než odhad), u Q16 poslouchat cvakání extruderu při výplni.
+Roman nemá dost přesnou váhu → místo hmotnosti **posuvka na tenké stěně** `quick` (2 čáry, nominálně 0,84 mm;
+podtlak toku = tenčí) a fotka horní plochy kostky. Extruder necvaká. **10. 10. večer Roman upravil přítlak
+podávacích koleček extruderu** (před testy) – všechny dřívější testy a vyladěný řádek PLA+ na S1 vznikly se starým
+přítlakem; Q16 i Q12 už s novým, takže dvojice je srovnatelná.
 
 **Co ukázal G-kód T26-000030** (serverová OrcaSlicer 2.4.0-beta, staženo z administrace): nastavení scarfu v něm je
 (`seam_slope_type = external`, délka 20, mezera 15 %, střídání vnitřních švů), šikmé pohyby na válci, hranolu
