@@ -12,6 +12,18 @@ return [
     'processing' => 'Procesando el modelo…',
     'model_failed' => 'No se pudo procesar el modelo. Guárdelo de nuevo como STL o 3MF.',
     'failed' => 'No ha funcionado. Inténtelo de nuevo.',
+    // what the tool is doing right now (engines/python/edit_tool.py `stage`): the same words for every tool, a tool may have its own
+    'stage.queued' => 'Esperando en la cola…',
+    'stage.loading' => 'Cargando el modelo…',
+    'stage.thinning' => 'Simplificando la malla…',
+    'stage.repairing' => 'Cerrando el modelo…',
+    'stage.measuring' => 'Midiendo las distancias a la superficie…',
+    'stage.hollowing' => 'Construyendo la cavidad…',
+    'stage.cutting' => 'Cortando…',
+    'stage.joints' => 'Haciendo las uniones…',
+    'stage.numbers' => 'Grabando los números…',
+    'stage.layout' => 'Colocando las piezas en la cama…',
+    'stage.done' => 'Listo, procesando el archivo…',
     'again' => 'Cambiar los ajustes y repetir',
     'glue' => 'Las piezas se pegan con cianoacrilato o pegamento para plásticos; los números van grabados en las caras de corte.',
 

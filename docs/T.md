@@ -271,3 +271,75 @@ fotkou síť u2net (řídící session naměřila 1,4 s na načtení modelu), da
 (nahrání, přepnutí na portrét, miniatury, tmavé pozadí), přímé oddělení sítí ve zkušebním prostředí s onnxruntime 1.31.
 **Neověřeno:** oddělení sítí na serveru (onnxruntime 1.30 tam je a model taky, ale tenhle kód tam ještě neběžel),
 vložení ze schránky, mobil, a pořád nic netištěno.
+
+## 10. Třetí kolo (10. 10. 2026, Roman: „kresba musí být jemnější“)
+
+Roman poslal vedle sebe předlohu a náš výsledek po druhém kole se stejnou fotkou: u nás tmavé plochy s tlustými
+čarami (vlasy jako skvrny, obroučky brýlí 1 mm), u předlohy tenké čáry na světlé tváři.
+
+**Co bylo špatně.** Dělili jsme obraz prahem: tmavé bylo všechno pod úrovní, i středně tmavé vlasy, a zostření
+proti rozostření jen posouvalo, co pod úroveň spadne. Nejtenčí čára byla 0,9 mm (`LINE_MM`), tedy 3 buňky, a
+otevření 3 × 3 smazalo každou tenčí čáru, takže zbyly jen plochy.
+
+**Co se změnilo** (`papel_portrait.split`):
+
+- **Čáry a výplň zvlášť.** Čára je tam, kde je obraz tmavší než okolí (rozdíl dvou rozostření pod −τ, poměr
+  šířek 1 : 2): obočí, oči, obroučky, rty, prameny, stín tváře. Výplň je jen to, co je tmavé samo o sobě: pod
+  nejnižší ze tří úrovní šedi (`otsu3`), ale nikdy nad polovinou úrovně, která dělí obraz na dvě; světlé vlasy tak
+  zůstanou světlé, tmavé vlasy a kabát se vyplní.
+- **Posuvníky.** „Kresba portrétu“ řídí šířku čáry (σ od 2,4 do 1,1 buňky). „Světlo / stín“ řídí τ (7 při 50,
+  dvojnásobek na každých 25 dílků dolů) a posouvá úroveň výplně o dílek na dílek.
+- **Nejtenčí čára 0,7 mm** (jedna široká stopa trysky 0,4, jak to tiskne předloha): `LINE_MM = 0.7`, buňky se
+  zaokrouhlují místo zaokrouhlení nahoru, u panelu 190 mm je to 2 buňky. Varování `portrait_fine` měří plochy
+  užší než 0,6 mm (`FINE_MM`); po otevření nemůže nastat, zůstává jako pojistka a texty říkají 0,6 mm.
+- **Náhled** 200 px, práh 200 místo 128, aby čára široká jednu buňku v miniatuře nezmizela.
+
+Ověřeno na devíti fotkách (tři světlovlasé, tři tmavovlasé, jedna bez oddělení pozadí, kreslená tvář, panel
+100 mm) a testy `PapelPortraitTest` + `PapelPicadoTest`; ukázky a karta překresleny. Na Romanově fotce ne, tu
+nemám. Stavba 190 mm je lokálně 0,25–0,35 s bez startu interpretu (stejně jako před kolem).
+
+## 11. Čtvrté kolo (10. 10. 2026 večer, Roman: „kvalita a detaily jsou stále bídné“, „po nahrání to hlásí ‚upravte rozměry‘“)
+
+Roman poslal svou fotku (zelva.jpg, 4284 × 5712) a snímek předlohy s touž fotkou (stlbuddy, Light/dark 50, Portrait
+detail 45, Trim 22, Isolate). Předloha: hladké souvislé tahy jednotné tloušťky, vlasy jako dlouhé prameny, brýle
+čisté křivky, stíny jako jednolité plochy. Náš výsledek po třetím kole: roztřepené okraje, rozpadlé čáry, skvrny.
+
+**Chyba po nahrání byla 502 od nginxu**, ne rozměry. Řídící session našla v error logu 12× „upstream sent too big
+header“ pro `POST /api/tools/param/preview` a změřila: hlavička `X-Model-Meta` 2 677 B + tři cookies 1 075 B + CSP
+a ostatní = 4 304 B > 4 kB (`fastcgi_buffer_size`, nelze měnit). Knihovní portrét prošel o fous, nahraná fotka s
+delšími poznámkami ne; stránka u 502 říkala obecný text „Tvar se nepodařilo vytvořit. Zkuste upravit rozměry.“
+Oprava (commit 7b09f31): `PreviewMeta::LIMIT` 3000 → 2000 B (těžší poznámky, tedy i miniatura portrétu, jdou do
+cache a stránka si je dotáhne druhým požadavkem, jak už to dělá obraz z filamentu), `PreviewMetaTest` hlídá 2 048 B,
+`PapelPortraitTest` hlídá ≤ 2 000 B u portrétu z nahrané fotky, a u 5xx nebo bez odpovědi stránka říká
+`param.preview_failed` („Náhled se nepodařilo načíst. Zkuste to znovu.“). Dřívější domněnky (rembg, stdout
+onnxruntime, timeout) byly vyloučeny logem: PHP žádnou chybu nezapsalo.
+
+**Kresba** (`papel_portrait.split`, čtvrtá podoba; viz sekce 10 pro předchozí):
+
+1. Vyhlazení se zachováním hran: **guided filter** (He et al., obraz je sám sobě vodítkem; poloměr 1 mm, ε 0,02)
+   místo bilaterálního (ten je v scikit-image 10× pomalejší a dává totéž). Pleť a vlasy jsou ploché, hrany rysů
+   zůstávají.
+2. **Lokální kontrast** CLAHE (`skimage.exposure.equalize_adapthist`, dlaždice 1/8, clip 0,015), aby o tmavém
+   nerozhodovalo osvětlení fotky.
+3. **Posterizace podílem**: tmavé je nejtmavších 30 % postavy (posuvník Světlo / stín posouvá podíl o 0,6 bodu na
+   dílek: 12 % při 20, 48 % při 80). Podíl, ne pevná úroveň: světlovlasá i tmavovlasá tvář dostanou stejně kresby.
+   Plochý obrázek (nic v něm) dává prázdno a chybu `portrait_blank` jako dřív.
+4. K tomu **tenké čáry** tam, kde je obraz tmavší než okolí (rozdíl rozostření, τ 6 při 50): obroučky, obočí,
+   prameny ve světlých vlasech. Bez nich chyběly brýle a prameny (vyzkoušeno, `C:\tmp\e5b.png`).
+5. Morfologie zůstává v `creative_kinds.tidy` (otevření a zavření čtvercem 0,7 mm, tedy 2 buňky), nejmenší
+   zachovaný kousek 1,5 → 0,3 mm² podle „Kresba portrétu“ (dřív 2,4 mm²).
+6. **Hladší obrysy**: trasování mezi buňkami s rozostřením σ 1,1 buňky (dřív 0,8) a zjednodušení 0,1 mm.
+
+Celé čtení trvá 0,15 s na mřížce 480 (guided filter 5 box filtrů, CLAHE 60 ms). Ověřeno na Romanově fotce
+(vedle předlohy: srovnatelné; tvář světlá s pár plochami stínu, brýle celé, prameny, kabát tmavý se světlými
+prameny), na čtyřech dalších fotkách, na kreslené tváři a sněhulákovi z knihovny (kresby drží) a na fotce bez
+oddělení pozadí. Testy `PapelPortraitTest` + `PapelPicadoTest` zelené; ukázky a karta překreslené.
+
+**Panel podle fotky** (`param.ts`, `papelFitPanel`): po nahrání fotky se po první stavbě přečte z `notes.portrait.crop`,
+jak server fotku ořízl (postava, ořez pod rameny), a výška panelu se dopočítá tak, aby okno mělo poměr fotky
+(šířka zůstává; okno = panel bez okraje a zoubků; v mezích 80–250 mm; jen když se liší o 4 mm a víc). Jednou, hned po
+nahrání; vlastní rozměry návštěvníka se nemění. Romanova fotka na výšku dá 190 × 240 mm místo 190 × 190, kde byla
+tvář seříznutá po stranách. Ověřeno v headless Chromu puštěním fotky na stránku.
+
+Co není ověřené: vzhled na webu po nasazení (nasazuje řídící session), tisk, posuvníky na jiných fotkách než na
+těch šesti.

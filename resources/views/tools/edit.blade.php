@@ -8,14 +8,16 @@
         'error.fits_already', 'error.too_heavy', 'error.too_small', 'error.too_big', 'error.not_watertight', 'error.edit_failed', 'error.too_tall', 'error.pieces_too_small', 'warn.wall_thin', 'error.too_short', 'warn.small_foot', 'warn.solid_bottle', 'warn.label_failed', 'warn.joint_no_room', 'warn.segment_split', 'error.segments_too_short',
         'found', 'none', 'not_3mf', 'majority', 'filament', 'report.parts', 'part.color', 'warn.inlay_failed', 'warn.recess_failed', 'warn.body_open', 'warn.many_colors', 'error.no_colors', 'error.not_3mf', 'error.empty', 'error.empty_result', 'report.drain.grooves', 'report.drain.grid', 'report.drain.ribs', 'report.drain.none', 'report.already', 'report.cuts', 'warn.no_opening', 'report.detents', 'error.too_thin', 'error.too_narrow'];
     $i18n = collect(['check.page.max', 'toolpage.status.empty', 'param.too_fast'])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb']])])
-        ->merge(collect($keys)->mapWithKeys(fn ($k) => ['edit.'.$op.'.'.$k => \Illuminate\Support\Facades\Lang::has('edit.'.$op.'.'.$k) ? \App\Support\NextStep::text('edit.'.$op.'.'.$k) : \App\Support\NextStep::text('edit.'.$k)]))->all();
+        ->merge(collect($keys)->mapWithKeys(fn ($k) => ['edit.'.$op.'.'.$k => \Illuminate\Support\Facades\Lang::has('edit.'.$op.'.'.$k) ? \App\Support\NextStep::text('edit.'.$op.'.'.$k) : \App\Support\NextStep::text('edit.'.$k)])
+            // a text nobody wrote goes nowhere: the script then says its general line ("working", "the edit failed") instead of the key
+            ->reject(fn ($text, $key) => $text === 'edit.'.\Illuminate\Support\Str::after($key, 'edit.'.$op.'.')))->all();
     $sections = ['file' => __('toolpage.section.file'), 'settings' => __('toolpage.section.settings'), 'result' => __('toolpage.section.result')];
     $icon = ['split' => 'scissors', 'hollow' => 'box', 'life_size' => 'maximize', 'scale' => 'maximize', 'puzzle' => 'grid-3x3', 'holder' => 'box', 'potion' => 'sparkles', 'flexi_cut' => 'link', 'colors' => 'palette', 'soap' => 'box', 'wearable' => 'person-standing', 'slider' => 'sliders-horizontal'][$op] ?? 'box';
     // only a 3MF carries colours: the splitter's page takes nothing else
     $formats = $op === 'colors' ? ['3mf'] : $config['formats'];
 @endphp
 
-@extends('tools.page', ['tool' => ['holder' => 'holder_model', 'soap' => 'soap_model'][$op] ?? $op, 'module' => 'edit', 'lead' => __('edit.'.$op.'.lead'), 'available' => $available, 'unavailable' => __('edit.unavailable'), 'goLabel' => \App\Support\NextStep::text('param.go'),
+@extends('tools.page', ['tool' => ['holder' => 'holder_model', 'soap' => 'soap_model'][$op] ?? $op, 'module' => 'edit', 'lead' => __('edit.'.$op.'.lead'), 'available' => $available, 'unavailable' => __('edit.unavailable'),
     'sections' => $sections])
 
 @push('head')
@@ -32,8 +34,6 @@
 @endpush
 
 @section('viewer-empty'){{ __('edit.pick') }}@endsection
-
-@section('price-note'){{ \App\Support\NextStep::text('param.estimate.note') }}@endsection
 
 @section('stage')
     {{-- where the pieces of a split model sit in the whole: a map per level, with the numbers engraved on the pieces --}}

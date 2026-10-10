@@ -19,6 +19,7 @@ import { bootCheckPage } from './check';
 import { bootFigure } from './figure';
 import { bootArt } from './art';
 import { bootEdit } from './edit';
+import { bootMap } from './map';
 import { FileInfo } from './api';
 import { loadGeometryFromUrl } from './loaders';
 
@@ -32,6 +33,7 @@ export interface ToolCfg {
 }
 export interface PriceConfig { rough: RoughConfig; orientation_profiles: Profile[]; round_to: number; materials: { code: string; density: number }[]; default_material?: string }
 export type MenuItem = { heading: string } | { label: string; hint?: string; icon?: string; href?: string; download?: string; run?: () => void | Promise<void> };
+export interface PriceOptions { material?: string; quantity?: number; vase?: boolean; infill?: number; supports?: boolean; subText?: (grams: number, time: string, qty: number) => string }
 export interface Shown { scale?: number; kind?: string | null; regions?: Region[] | null; faces?: FacePaint | null; pieces?: Piece[] | null }
 export interface Status { bbox: { x: number; y: number; z: number } | null; pieces?: number; colors?: number; each?: number[][]; extra?: string[] }
 type Replace = Record<string, string | number>;
@@ -47,6 +49,7 @@ export class Stage {
     private goAction: (() => void | Promise<void>) | null = null;
     private goHref: string | null = null;
     private history: { stack: string[]; at: number; io: TrackIo } | null = null;
+    private priced: { c: PriceConfig; g: { volume_mm3: number; area_mm2: number | null } | null; o: PriceOptions } | null = null;
 
     constructor(readonly cfg: ToolCfg, canvas: HTMLCanvasElement) {
         this.nf = new Intl.NumberFormat(cfg.locale, { maximumFractionDigits: 1 });
@@ -57,7 +60,10 @@ export class Stage {
         this.toolbar();
         this.menu();
         this.spy();
-        this.el('tool-go').addEventListener('click', () => { if (this.goHref) location.href = this.goHref; else void this.goAction?.(); });
+        this.el('tool-go').addEventListener('click', () => { if (this.goHref) location.href = this.ordered(this.goHref); else void this.goAction?.(); });
+        // the last step of every tool, the material and the number of pieces: the rough price follows them at once
+        document.getElementById('param-material')?.addEventListener('change', () => this.reprice());
+        document.getElementById('param-qty')?.addEventListener('input', () => this.reprice());
         // a row with a colour swatch (class tool-swatch-row): the whole row opens the colour window, not the small circle
         // alone – people click the words "pick a colour". The row's other buttons (move, join) keep their own work.
         document.addEventListener('click', (e) => {
@@ -167,12 +173,40 @@ export class Stage {
 
     // ── the price ───────────────────────────────────────────────────────────────────────────────────
 
-    /** The rough estimate, the same way the calculator counts it before the slicer has spoken. */
-    price(c: PriceConfig, g: { volume_mm3: number; area_mm2: number | null } | null, o: { material?: string; quantity?: number; vase?: boolean; infill?: number; supports?: boolean; subText?: (grams: number, time: string, qty: number) => string } = {}): void {
+    /** The material picked in the last step of the page (the default one on a page without that step). */
+    material(): string {
+        const picked = (document.getElementById('param-material') as HTMLSelectElement | null)?.value;
+        return picked || this.cfg.price?.default_material || this.cfg.price?.materials[0]?.code || 'PLA';
+    }
+
+    /** How many pieces the last step of the page asks for: 1 to 1000. */
+    quantity(): number {
+        return Math.max(1, Math.min(1000, Math.round(Number((document.getElementById('param-qty') as HTMLInputElement | null)?.value) || 1)));
+    }
+
+    /**
+     * An address of the calculator opening a file made here (…?open=<file>) with the material and the number of pieces
+     * of this page added; any other address as it is. Asked at the moment of the click: what was picked after the model
+     * was made counts too.
+     */
+    ordered(url: string): string {
+        const u = new URL(url, location.href);
+        if (!u.searchParams.has('open')) return url;
+        if (!u.searchParams.has('material')) u.searchParams.set('material', this.material());
+        if (!u.searchParams.has('quantity')) u.searchParams.set('quantity', String(this.quantity()));
+        return u.toString();
+    }
+
+    /**
+     * The rough estimate, the same way the calculator counts it before the slicer has spoken: for the material and the
+     * number of pieces of the page's last step unless the tool names its own. Counted again when either changes.
+     */
+    price(c: PriceConfig, g: { volume_mm3: number; area_mm2: number | null } | null, o: PriceOptions = {}): void {
+        this.priced = { c, g, o };
         const out = this.el('tool-price'); const sub = this.el('tool-price-sub');
         if (!g || !(g.volume_mm3 > 0)) { out.textContent = '—'; sub.textContent = ''; return; }
-        const code = o.material ?? c.default_material ?? c.materials[0]?.code ?? 'PLA';
-        const qty = Math.max(1, Math.min(1000, o.quantity ?? 1));
+        const code = o.material ?? this.material();
+        const qty = Math.max(1, Math.min(1000, o.quantity ?? this.quantity()));
         const density = c.materials.find((m) => m.code === code)?.density ?? 1.24;
         const est = estimate(c.rough, density, { volume_mm3: g.volume_mm3, area_mm2: g.area_mm2 as number }, { material: code, quality: 'standard', infill: o.infill ?? 15, supports: o.supports ?? false, scale: 1, quantity: qty, vase: o.vase });
         const totals = c.orientation_profiles.map((p) => price(c.round_to, p, est.grams, est.minutes, qty).total);
@@ -182,6 +216,8 @@ export class Stage {
         const time = h ? `${h} h ${min} min` : `${min} min`;
         sub.textContent = o.subText ? o.subText(est.grams * qty, time, qty) : `≈ ${this.nf.format(est.grams * qty)} g · ≈ ${time}`;
     }
+
+    private reprice(): void { if (this.priced) this.price(this.priced.c, this.priced.g, this.priced.o); }
 
     /** The main action: one orange button on the page. A link (a finished model) or a function (save the design first). */
     go(o: { label?: string; href?: string | null; run?: (() => void | Promise<void>) | null; disabled?: boolean }): void {
@@ -212,7 +248,11 @@ export class Stage {
             if ('heading' in item) { m.insertAdjacentHTML('beforeend', `<div class="px-3 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-muted">${esc(item.heading)}</div>`); return; }
             const row = document.createElement(item.href ? 'a' : 'button') as HTMLAnchorElement & HTMLButtonElement;
             row.className = 'tool-menu-item'; row.setAttribute('role', 'menuitem');
-            if (item.href) { row.href = item.href; if (item.download) row.setAttribute('download', item.download); row.dataset.track = 'download'; } else row.type = 'button';
+            if (item.href) {
+                row.href = item.href; if (item.download) row.setAttribute('download', item.download); row.dataset.track = 'download';
+                // a project for a slicer opens in the calculator: with the material and the number of pieces as they are now
+                row.addEventListener('click', () => { row.href = this.ordered(item.href!); });
+            } else row.type = 'button';
             row.innerHTML = `${icon(item.icon ?? 'download', 'mt-0.5 h-4 w-4')}<span><span class="block font-medium">${esc(item.label)}</span>${item.hint ? `<span class="block text-xs text-muted">${esc(item.hint)}</span>` : ''}</span>`;
             if (item.run) row.addEventListener('click', async () => { row.setAttribute('disabled', ''); try { await item.run!(); } catch { this.error(this.t('toolpage.download.failed')); } finally { row.removeAttribute('disabled'); } });
             m.appendChild(row);
@@ -260,7 +300,8 @@ export class Stage {
 
     /**
      * A finished model on the stage: in the viewer, its size and parts in the status line, the rough price, the
-     * downloads, and the main action leading to the exact price (the calculator opens the very same file).
+     * downloads, and the main action leading to the exact price (the calculator opens the very same file, with the
+     * material and the number of pieces picked here: `ordered` adds them when the button or a project is clicked).
      */
     async fileResult(file: FileInfo, o: Shown & { goLabel?: string; partLabel?: (part: string) => string; noPrice?: boolean } = {}): Promise<void> {
         if (file.stl_url) this.show(await loadGeometryFromUrl(file.stl_url), { kind: o.kind ?? file.kind ?? null, faces: o.faces ?? null, regions: o.regions ?? null });
@@ -387,6 +428,6 @@ export function bootToolPage(): void {
     const canvas = document.getElementById('tool-viewer') as HTMLCanvasElement | null;
     if (!cfg || !root || !canvas) return;
     const stage = new Stage(cfg, canvas);
-    const modules: Record<string, (stage: Stage) => void> = { param: bootParam, relief: bootRelief, mold: bootMoldPage, repair: bootRepairPage, check: bootCheckPage, figure: bootFigure, art: bootArt, edit: bootEdit };
+    const modules: Record<string, (stage: Stage) => void> = { param: bootParam, relief: bootRelief, mold: bootMoldPage, repair: bootRepairPage, check: bootCheckPage, figure: bootFigure, art: bootArt, edit: bootEdit, map: bootMap };
     modules[cfg.module]?.(stage);
 }

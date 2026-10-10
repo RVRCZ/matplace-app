@@ -3,6 +3,7 @@
 namespace App\Domain\Farm;
 
 use App\Models\FarmColor;
+use App\Models\FarmPrinterSlot;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -65,6 +66,9 @@ final class Palette
         if (config('farm.enabled') && Schema::hasTable('farm_colors')) {
             $colors = FarmColor::with('material')->where('enabled', true)->whereNotNull('code')->whereNotNull('hex')
                 ->whereHas('material', fn ($m) => $m->where('enabled', true))->orderBy('sort')->orderBy('id')->get();
+            // the spools sitting in a slot of a machine of the farm right now: what the farm's page can offer
+            $loaded = FarmPrinterSlot::query()->where('enabled', true)->whereNotNull('farm_color_id')
+                ->whereHas('printer', fn ($q) => $q->where('enabled', true))->pluck('farm_color_id')->map(fn ($id) => (int) $id)->flip();
             foreach ($colors as $c) {
                 if (! preg_match('/^#[0-9a-fA-F]{6}$/', (string) $c->hex)) {
                     continue;
@@ -73,6 +77,7 @@ final class Palette
                 $rows[] = [
                     'code' => (string) $c->code, 'name' => $c->displayName(), 'hex' => strtolower($c->hex),
                     'material' => (string) $c->material->code, 'finish' => $finish, 'photo' => $c->photoUrl(), 'in_stock' => (bool) $c->in_stock,
+                    'loaded' => isset($loaded[$c->id]),
                     'hue' => self::hue($c->hex, $finish, $c->name.' '.$c->name_en), 'light' => round(self::lab($c->hex)[0], 1),
                     // what the search of the colour window looks through: both names and the code, without accents
                     'search' => self::plain($c->name.' '.$c->name_en.' '.$c->code),
@@ -82,7 +87,7 @@ final class Palette
         $this->farm = $rows !== [];
         if (! $rows) {
             foreach (self::BUILT_IN as $name => $hex) {
-                $rows[] = ['code' => $name, 'name' => __('color.'.$name), 'hex' => strtolower($hex), 'material' => 'PLA', 'finish' => 'solid', 'photo' => null, 'in_stock' => true,
+                $rows[] = ['code' => $name, 'name' => __('color.'.$name), 'hex' => strtolower($hex), 'material' => 'PLA', 'finish' => 'solid', 'photo' => null, 'in_stock' => true, 'loaded' => false,
                     'hue' => self::hue($hex, 'solid', ''), 'light' => round(self::lab($hex)[0], 1), 'search' => self::plain(__('color.'.$name).' '.$name)];
             }
         }
@@ -173,7 +178,7 @@ final class Palette
         }
         foreach ($this->all() as $row) {
             if ($row['code'] === $code) {
-                return array_intersect_key($row, array_flip(['code', 'name', 'hex', 'material', 'finish', 'photo', 'in_stock']));
+                return array_intersect_key($row, array_flip(['code', 'name', 'hex', 'material', 'finish', 'photo', 'in_stock', 'loaded']));
             }
         }
 
@@ -240,21 +245,28 @@ final class Palette
     {
         $map = [];
         foreach (self::BUILT_IN as $name => $hex) {
-            $map[$name] = $this->nearest($hex) ?? $name;
+            $map[$name] = $this->nearest($hex, false) ?? $name;
         }
 
         return $map;
     }
 
-    /** The code of the colour nearest to a hex (CIE76 in Lab); spools in stock and of a plain finish come first. */
-    public function nearest(string $hex): ?string
+    /**
+     * The code of the colour nearest to a hex (CIE76 in Lab). Among the spools loaded in the machines when any is,
+     * so the calculation names the very spool the farm's page then ticks (both measure the same way: distance()); the
+     * whole catalogue only when nothing is loaded or when asked ($loadedFirst = false: a name for a stored design).
+     * Spools in stock and of a plain finish come first.
+     */
+    public function nearest(string $hex, bool $loadedFirst = true): ?string
     {
-        $want = self::lab($hex);
+        $rows = $this->all();
+        if ($loadedFirst && ($loaded = array_filter($rows, fn ($r) => ! empty($r['loaded'])))) {
+            $rows = $loaded;
+        }
         $best = null;
         $bestD = INF;
-        foreach ($this->all() as $row) {
-            [$l, $a, $b] = self::lab($row['hex']);
-            $d = sqrt(($l - $want[0]) ** 2 + ($a - $want[1]) ** 2 + ($b - $want[2]) ** 2);
+        foreach ($rows as $row) {
+            $d = self::distance($hex, $row['hex']);
             $d += ($row['in_stock'] ? 0 : 40) + ($row['hue'] === 'special' ? 25 : 0) + (in_array($row['finish'], ['solid', 'matte'], true) ? 0 : 6);
             if ($d < $bestD) {
                 [$best, $bestD] = [$row['code'], $d];
@@ -262,6 +274,16 @@ final class Palette
         }
 
         return $best;
+    }
+
+    /** How far two colours are apart as the eye sees it (CIE76 in Lab); a value that is not a hex counts as grey. */
+    public static function distance(?string $a, ?string $b): float
+    {
+        $hex = fn (?string $h) => preg_match('/^#?[0-9a-f]{6}$/i', (string) $h) ? '#'.ltrim((string) $h, '#') : '#808080';
+        [$l1, $a1, $b1] = self::lab($hex($a));
+        [$l2, $a2, $b2] = self::lab($hex($b));
+
+        return sqrt(($l1 - $l2) ** 2 + ($a1 - $a2) ** 2 + ($b1 - $b2) ** 2);
     }
 
     /** Which group of the colour window a colour belongs to. */

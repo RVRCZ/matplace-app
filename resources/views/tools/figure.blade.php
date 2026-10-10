@@ -4,8 +4,8 @@
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-center text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action';
 @endphp
 
-@extends('tools.page', ['tool' => 'figure', 'module' => 'figure', 'lead' => __('figure.lead'), 'available' => $generator, 'unavailable' => __('figure.unavailable'), 'goLabel' => \App\Support\NextStep::text('toolpage.go'),
-    'sections' => ['photo' => __('toolpage.section.photo'), 'base' => __('toolpage.section.base'), 'print' => \App\Support\NextStep::text('param.step.inquiry')]])
+@extends('tools.page', ['tool' => 'figure', 'module' => 'figure', 'lead' => __('figure.lead'), 'available' => $generator, 'unavailable' => __('figure.unavailable'),
+    'sections' => ['photo' => __('toolpage.section.photo'), 'base' => __('toolpage.section.base')]])
 
 @push('head')
 <script>
@@ -114,9 +114,8 @@
                 fields();
             })();
         </script>
-    </x-tool-section>
 
-    <x-tool-section id="print" :title="\App\Support\NextStep::text('param.step.inquiry')">
+        {{-- the step ends with the model being made; the material and the number of pieces follow as the page's last step --}}
         <label class="flex items-start gap-3 text-sm text-ink"><input id="figure-consent" type="checkbox" name="consent" value="1" class="mt-0.5 h-5 w-5 accent-ink"> <span>{{ __('figure.consent') }}</span></label>
         <p class="text-xs text-muted">{{ __('figure.privacy') }}</p>
 

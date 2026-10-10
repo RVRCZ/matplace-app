@@ -183,8 +183,8 @@ export function bootArt(stage: Stage): void {
 
     const renderPrice = (): void => {
         if (!lastMeta) return;
-        const qty = Math.max(1, Math.min(100, Number(($('art-qty') as HTMLInputElement).value) || 1));
-        stage.price(cfg.config, { volume_mm3: lastMeta.volume_mm3, area_mm2: lastMeta.area_mm2 }, { material: ($('art-material') as HTMLSelectElement).value, quantity: qty, subText: (g, time, q) => t('param.estimate', { g: nf.format(g), t: time, q }) });
+        // for the material and the number of pieces of the page's last step; the stage counts again when they change
+        stage.price(cfg.config, { volume_mm3: lastMeta.volume_mm3, area_mm2: lastMeta.area_mm2 }, { subText: (g, time, q) => t('param.estimate', { g: nf.format(g), t: time, q }) });
     };
 
     const refresh = async (): Promise<void> => {
@@ -217,7 +217,7 @@ export function bootArt(stage: Stage): void {
             const res = await post(cfg.create, { params: params() });
             if (!res.ok) { showError(await errorOf(res)); return; }
             const file = (await res.json()).file as FileInfo;
-            location.href = `${cfg.home}?open=${file.uuid}${slicer ? `&download=1&slicer=${slicer}` : ''}`;
+            location.href = stage.ordered(`${cfg.home}?open=${file.uuid}${slicer ? `&download=1&slicer=${slicer}` : ''}`);
         } catch {
             showError(t('param.failed'));
         } finally {
@@ -270,8 +270,6 @@ export function bootArt(stage: Stage): void {
     form.querySelectorAll<HTMLInputElement>('[data-range]').forEach((r) => r.addEventListener('input', () => { const num = form.querySelector<HTMLInputElement>(`[data-param="${r.dataset.range}"]`)!; num.value = r.value; adjustThumb(); soon(); }));
     form.querySelectorAll<HTMLInputElement>('[data-param]').forEach((i) => i.addEventListener('input', () => { syncRange(i); adjustThumb(); soon(); }));
     form.querySelectorAll<HTMLInputElement>('[data-flag], [data-choice]').forEach((i) => i.addEventListener('change', () => { applyWhen(); soon(100); }));
-    $('art-qty').addEventListener('input', renderPrice);
-    $('art-material').addEventListener('change', renderPrice);
 
     const applyValues = (set: Record<string, unknown>): void => {
         Object.entries(set).forEach(([k, v]) => {

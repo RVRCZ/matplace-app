@@ -6,11 +6,11 @@
             'art.guide', 'art.guide.hint', 'art.guide.back', 'art.guide.front', 'art.guide.posts', 'art.guide.flat', 'art.guide.frame', 'art.guide.led', 'art.guide.glue', 'art.frame.size',
             'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.picture',
             'warn.outlines_ignored', 'warn.pieces_tied', 'warn.thin_merged', 'warn.small_plate_flat', 'warn.thin_lines', 'download.plates'])->mapWithKeys(fn ($k) => ['edit.'.$k => \App\Support\NextStep::text('edit.'.$k)]))->all();
-    $sections = ['input' => __('toolpage.section.input'), 'size' => __('toolpage.section.size'), 'colors' => __('toolpage.section.colors'), 'print' => \App\Support\NextStep::text('param.step.inquiry')];
+    $sections = ['input' => __('toolpage.section.input'), 'size' => __('toolpage.section.size'), 'colors' => __('toolpage.section.colors')];
     $warnAt = ['outlines_ignored' => 'input', 'pieces_tied' => 'input', 'thin_lines' => 'input', 'thin_merged' => 'colors', 'small_plate_flat' => 'size'];
 @endphp
 
-@extends('tools.page', ['tool' => 'filament_art', 'module' => 'art', 'lead' => __('edit.art.lead'), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
+@extends('tools.page', ['tool' => 'filament_art', 'module' => 'art', 'lead' => __('edit.art.lead'), 'sections' => $sections, 'available' => $available])
 
 @push('head')
 <script>
@@ -29,8 +29,6 @@
     };
 </script>
 @endpush
-
-@section('price-note'){{ \App\Support\NextStep::text('param.estimate.note') }} {{ \App\Support\NextStep::text('param.go.hint') }}@endsection
 
 @section('stage')
     {{-- the guide of a layered picture: the plates back to front, each drawn, with its filament and its spacers --}}
@@ -139,18 +137,6 @@
         <p id="art-print" class="text-sm text-ink" aria-live="polite"></p>
     </x-tool-section>
 
-    {{-- 4 · the print: material and how many --}}
-    <x-tool-section id="print" :title="\App\Support\NextStep::text('param.step.inquiry')">
-        <div class="grid grid-cols-2 gap-3">
-            <label class="lbl">{{ __('calc.material') }}
-                <select id="art-material" class="field">
-                    @foreach($config['materials'] as $m)<option value="{{ $m['code'] }}" @selected($m['code'] === $config['default_material'])>{{ $m['label'] }} ({{ $m['code'] }})</option>@endforeach
-                </select>
-            </label>
-            <label class="lbl">{{ __('calc.quantity') }}
-                <input id="art-qty" type="number" inputmode="numeric" min="1" max="100" value="1" class="field">
-            </label>
-        </div>
-    </x-tool-section>
+    {{-- 4 · the print, material and how many: the last step of every tool, drawn by tools/page.blade.php --}}
 </form>
 @endsection

@@ -36,7 +36,7 @@ interface ShapeNotes {
 /** What the tool says about a papel picado portrait: its two parts and their filaments, where the picture lies in its window, the small picture of the result. */
 interface PapelNotes {
     parts?: string[]; paint?: Record<string, string>; part_colors?: Record<string, { code: string; hex: string }>; color_changes?: { z: number }[]; filaments?: number; outer?: number[];
-    portrait?: { box: [number, number, number, number]; z: number; window: [number, number]; placed: boolean }; preview?: string; rembg?: boolean | null; isolated?: boolean;
+    portrait?: { box: [number, number, number, number]; z: number; window: [number, number]; placed: boolean; crop?: number[] }; preview?: string; rembg?: boolean | null; isolated?: boolean;
 }
 /** A layer of a composition: a text, a picture (of the library or the visitor's own) or a shape; where its middle lies, how wide it is, how it is turned, its filament. */
 interface Layer { kind: string; text: string; typeface: string; art: string; art_name: string; shape: string; x: number; y: number; w: number; turn: number; code: string; hidden: boolean }
@@ -75,6 +75,7 @@ export function bootParam(stage: Stage): void {
     const papel = cfg.kind === 'papel';
     const papelNotes = (): PapelNotes => (lastMeta?.notes ?? {}) as PapelNotes;
     let papelTouched = false;               // the visitor chose cut-out or portrait himself: a new picture no longer chooses for him
+    let papelFit = false;                   // a photo was just uploaded: the panel takes the photo's proportions once it is known how the photo is cut
     let noCutOut = false;                   // the server cannot cut a person out of a photo: the tick stays off
     const layers: Layer[] = []; let chosen = 0;         // a composition: its layers from the bottom up, and which one is being edited
     const strokes: Stroke[] = [];
@@ -256,7 +257,8 @@ export function bootParam(stage: Stage): void {
 
     const post = (body: Record<string, unknown>) => fetch(cfg.preview, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) });
     // the server's first validation message, or our own words for a rate limit (Laravel's "Too Many Attempts." is English only)
-    const firstError = (b: { message?: string; errors?: Record<string, string[]> }, status = 0) => (status === 429 ? t('param.too_fast') : Object.values(b.errors ?? {})[0]?.[0] ?? b.message ?? t('param.failed'));
+    // 429: too fast; 5xx or no answer at all: the preview did not come back (a web server that dropped it), not the shape's fault
+    const firstError = (b: { message?: string; errors?: Record<string, string[]> }, status = 0) => (status === 429 ? t('param.too_fast') : Object.values(b.errors ?? {})[0]?.[0] ?? b.message ?? t(status >= 500 || status === 0 ? 'param.preview_failed' : 'param.failed'));
     const errorOf = async (res: Response): Promise<string> => { try { return firstError(await res.json(), res.status); } catch { return firstError({}, res.status); } };
 
     /** The pieces of the shown model that are the given part, as indexes into the viewer's list. */
@@ -531,7 +533,7 @@ export function bootParam(stage: Stage): void {
             if (papel) papelShow();
             if (cookie) { renderPen(); armDraw(); }
         } catch {
-            if (mine === seq) { valid = false; showError(t('param.failed')); }
+            if (mine === seq) { valid = false; showError(t('param.preview_failed')); }
         } finally {
             if (mine === seq) stage.busy(false);
         }
@@ -905,6 +907,26 @@ export function bootParam(stage: Stage): void {
         const to = photo ? 'portrait' : 'cutout';
         if (!papelTouched && params().treatment !== to) papelMode(to);
         applyValues({ portrait_scale: 1, portrait_x: 0, portrait_y: 0, portrait_turn: 0 });
+        papelFit = photo;
+    };
+    /**
+     * After an upload the panel takes the proportions of the photo (as the server cut it: the person, trimmed below
+     * the shoulders), so the face fills the window instead of being cut off at the sides or the top; the width stays,
+     * the height follows, within what the tool allows. Once, right after the upload; the visitor's own sizes stay his.
+     */
+    const papelFitPanel = (): void => {
+        const crop = papelNotes().portrait?.crop;
+        if (!papelFit || params().treatment !== 'portrait' || !crop || crop.length !== 4) return;
+        papelFit = false;
+        const aspect = (crop[3] - crop[1]) / Math.max(1, crop[2] - crop[0]);
+        const width = fieldOf('width'); const height = fieldOf('height');
+        if (!width || !height || !(aspect > 0)) return;
+        // the window is the panel less its border and its scallops: the photo's proportions belong to the window
+        const rim = 2 * (Number(fieldOf('border_mm')?.value ?? 12) + 5);
+        const wanted = Math.max(Number(height.min), Math.min(Number(height.max), Math.round(rim + (Number(width.value) - rim) * aspect)));
+        if (Math.abs(wanted - Number(height.value)) < 4) return;
+        height.value = String(wanted); syncRange(height);
+        soon(0);
     };
     /** The two small pictures of the step "Photo" (as it came, as it is printed) and the tick the server cannot keep. */
     const papelShow = (): void => {
@@ -920,6 +942,7 @@ export function bootParam(stage: Stage): void {
             box.classList.toggle('hidden', !on); box.classList.toggle('grid', on);
         }
         if (n.rembg === false) noCutOut = true;
+        papelFitPanel();
         const tick = form.querySelector<HTMLInputElement>('[data-flag="isolate"]');
         if (tick && noCutOut) {
             tick.checked = false; tick.disabled = true;
@@ -1218,7 +1241,7 @@ export function bootParam(stage: Stage): void {
             const note = [lastMeta ? bomText(lastMeta).join('; ') : '', colourNote ? `${stage.t('toolpage.color.note')}: ${colourNote}` : ''].filter(Boolean).join(' | ');
             const plate = params().plate_color;      // a two-colour design: the plate is "the colour", the second one travels with the design
             const q = new URLSearchParams({
-                ...(note ? { note: note.slice(0, 900) } : {}), open: body.file.uuid, material: ($('param-material') as HTMLSelectElement).value, quantity: ($('param-qty') as HTMLInputElement).value || '1',
+                ...(note ? { note: note.slice(0, 900) } : {}), open: body.file.uuid, material: stage.material(), quantity: String(stage.quantity()),
                 color: typeof plate === 'string' ? colorName(plate) : ($('param-color') as HTMLInputElement).value, ...(download ? { download: '1' } : {}), ...(slicer ? { slicer } : {}),
             });
             location.href = `${cfg.home}?${q}`;

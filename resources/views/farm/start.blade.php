@@ -72,44 +72,6 @@
             </div>
         @endif
 
-        {{-- the size as the calculator had it (or as uploaded); one dimension typed scales the whole model --}}
-        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span> <button id="farm-size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('farm.size.reset') }}</button></div>
-        <div id="farm-size" class="mt-2 grid grid-cols-3 gap-2" data-bbox="{{ json_encode($file?->bbox) }}" data-scale="{{ $scale }}" data-max="{{ $maxScale }}">
-            @foreach(['x', 'y', 'z'] as $axis)
-                <label class="text-xs font-semibold text-slate-600">{{ __('farm.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
-                    <input data-axis="{{ $axis }}" type="number" inputmode="decimal" min="1" step="any" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
-                </label>
-            @endforeach
-        </div>
-        <p class="mt-1 text-xs text-slate-500">{{ __('farm.size.hint') }}</p>
-        <input type="hidden" name="scale" id="farm-scale" value="{{ $scale }}">
-
-        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.quality.label') }}</div>
-        <div class="mt-2 grid grid-cols-3 gap-2">
-            @foreach($settings['qualities'] as $key => $q)
-                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="quality" value="{{ $key }}" class="sr-only" @checked($key === $quality || ($loop->first && ! array_key_exists($quality, $settings['qualities'])))>{{ __('farm.quality.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ $q['layer_mm'] }} mm</span></label>
-            @endforeach
-        </div>
-
-        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.strength.label') }}</div>
-        <div class="mt-2 grid grid-cols-3 gap-2">
-            @foreach($settings['strengths'] as $key => $s)
-                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="strength" value="{{ $key }}" class="sr-only" @checked($key === $strength || ($loop->first && ! array_key_exists($strength, $settings['strengths'])))>{{ __('farm.strength.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.strength.infill', ['n' => $s['infill']]) }}</span></label>
-            @endforeach
-        </div>
-
-        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.supports.label') }}</div>
-        <div class="mt-2 grid grid-cols-2 gap-2">
-            @foreach(['auto', 'off'] as $key)
-                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="supports" value="{{ $key }}" class="sr-only" @checked($key === ($supports ?? 'auto'))>{{ __('farm.supports.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.supports.'.$key.'_hint') }}</span></label>
-            @endforeach
-        </div>
-
-        <label class="mt-4 block text-sm font-semibold text-slate-700">{{ __('farm.copies.label') }}
-            <input name="copies" type="number" inputmode="numeric" min="1" max="{{ $maxCopies }}" value="{{ $copies }}" class="mt-1 w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
-        </label>
-        <p class="mt-1 text-xs text-slate-500">{{ __('farm.copies.hint') }}</p>
-
         {{-- the colour decides the machine: the order is sliced for the printer that holds this spool --}}
         <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.order.color') }}</div>
         <p class="text-xs text-slate-500">{{ __('farm.start.color_hint') }}</p>
@@ -186,6 +148,44 @@
                 </div>
             </div>
         @endif
+
+        {{-- the size as the calculator had it (or as uploaded); one dimension typed scales the whole model --}}
+        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span> <button id="farm-size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('farm.size.reset') }}</button></div>
+        <div id="farm-size" class="mt-2 grid grid-cols-3 gap-2" data-bbox="{{ json_encode($file?->bbox) }}" data-scale="{{ $scale }}" data-max="{{ $maxScale }}">
+            @foreach(['x', 'y', 'z'] as $axis)
+                <label class="text-xs font-semibold text-slate-600">{{ __('farm.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
+                    <input data-axis="{{ $axis }}" type="number" inputmode="decimal" min="1" step="any" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
+                </label>
+            @endforeach
+        </div>
+        <p class="mt-1 text-xs text-slate-500">{{ __('farm.size.hint') }}</p>
+        <input type="hidden" name="scale" id="farm-scale" value="{{ $scale }}">
+
+        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.quality.label') }}</div>
+        <div class="mt-2 grid grid-cols-3 gap-2">
+            @foreach($settings['qualities'] as $key => $q)
+                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="quality" value="{{ $key }}" class="sr-only" @checked($key === $quality || ($loop->first && ! array_key_exists($quality, $settings['qualities'])))>{{ __('farm.quality.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ $q['layer_mm'] }} mm</span></label>
+            @endforeach
+        </div>
+
+        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.strength.label') }}</div>
+        <div class="mt-2 grid grid-cols-3 gap-2">
+            @foreach($settings['strengths'] as $key => $s)
+                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="strength" value="{{ $key }}" class="sr-only" @checked($key === $strength || ($loop->first && ! array_key_exists($strength, $settings['strengths'])))>{{ __('farm.strength.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.strength.infill', ['n' => $s['infill']]) }}</span></label>
+            @endforeach
+        </div>
+
+        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.supports.label') }}</div>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+            @foreach(['auto', 'off'] as $key)
+                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="supports" value="{{ $key }}" class="sr-only" @checked($key === ($supports ?? 'auto'))>{{ __('farm.supports.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.supports.'.$key.'_hint') }}</span></label>
+            @endforeach
+        </div>
+
+        <label class="mt-4 block text-sm font-semibold text-slate-700">{{ __('farm.copies.label') }}
+            <input name="copies" type="number" inputmode="numeric" min="1" max="{{ $maxCopies }}" value="{{ $copies }}" class="mt-1 w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
+        </label>
+        <p class="mt-1 text-xs text-slate-500">{{ __('farm.copies.hint') }}</p>
 
         <button id="farm-continue" type="submit" class="mt-4 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" @disabled(! $file)>{{ __('farm.start.continue') }}</button>
         @if($slicesLeft !== null)<p class="mt-2 text-xs text-slate-500">{{ __('farm.slices_left', ['n' => $slicesLeft]) }}</p>@endif

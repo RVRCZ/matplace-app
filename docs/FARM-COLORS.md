@@ -324,3 +324,83 @@ main 9e3bac2 = katalog (10e0825, migrace `farm_catalogue_manufacturer` proběhla
 `/root/matplace_app-20261010-1400.sql`. Nasazeno až po skončení testu švu T26-000030 (skončil „failed“ ~13:59 UTC; S1 #1
 mezitím 110 minut „connection lost“). Po nasazení: stránky 200, 0 chyb v logu, agent farmy U se ozval do 2 s, průchod
 `scripts/check_preview_colors.mjs` proti produkci: 55 stránek, 0 bad (vrstvený obraz, který dřív padal na 502, OK).
+
+## 9. Jedna „nejbližší cívka“ pro kalkulaci i /farm (10. 10. 2026)
+
+Roman („vše ano“ k mému rozboru funnelu): zákazník viděl ve dvou krocích dvě různé „nejbližší“ barvy – kalkulace
+hledala v celém katalogu (Lab), /farm jen v založených cívkách (RGB).
+
+- `Palette::all()` zná u každé barvy `loaded` (je v zapnutém slotu zapnuté tiskárny). `Palette::nearest($hex)` hledá
+  **mezi založenými cívkami, když nějaká je**, jinak v celém katalogu; `nearest($hex, false)` (mapování starých
+  vestavěných jmen `legacy()`) hledá dál v celém katalogu. `nearestSpool()` vrací i `loaded`.
+- `Palette::distance($a, $b)` = CIE76 v Lab (ne-hex = šedá). `OrderController::hexDistance` a `nearestSet` (předvýběr
+  cívek na /farm: jedna barva, dvoubarevný návrh, díly) měří tímtéž místo RGB.
+- Výsledek: kalkulace jmenuje tu cívku, kterou /farm zaškrtne (dokud je tiskárna online a má dost filamentu).
+  Když není založené nic, kalkulace dál jmenuje katalogovou barvu (dev, prázdná farma).
+- Test v `CustomColorTest` (volná barva cedulky): bez založených cívek odpovídá katalog (`loaded=false`), po založení
+  bílé a černé odpovídá bližší z nich v Lab, `nearest($hex, false)` dál katalog.
+- Neověřené: text kalkulace `farm.calc_nearest` neříká „založená“; když je farma prázdná, hint je katalogový a /farm pak
+  nenabídne nic – stav stejný jako dřív.
+
+## 10. Platba kartou za zakázku (10. 10. 2026)
+
+Roman („vše ano“): platba jen kreditem = registrace, ověření e-mailu, dobití, zaplacení – čtyři kroky před prvním
+tiskem. Teď jsou dva: registrace a karta.
+
+### Co se změnilo
+
+- **Migrace `2026_10_17_100000_payments_for_an_order`**: `payments.farm_order_id` (FK, null = dobití účtu) a
+  `payments.context` (JSON: volby ze stránky zakázky – slot, doručení, adresa, poznámka, druhé cívky, díly, souhlas
+  s videem, IP, měna; po pokusu o zaplacení `result`). `Payment::PURPOSE_ORDER = 'order_pay'`, `Payment::order()`.
+- **Stránka zakázky**: když chybí kredit, hlavní tlačítko říká **„Zaplatit kartou X a spustit tisk“** (nebo „Doplatit
+  kartou X (Y máte v kreditu)“) a posílá tytéž volby na `POST /farm/orders/{order}/checkout`. Odkaz „Dobít kredit“
+  zůstává jako druhá cesta. Tlačítko je aktivní jen s vybranou cívkou, doručením a souhlasem (dřív vedlo na dobití
+  i bez nich).
+- **`OrderController::checkout`**: stejná validace jako `pay` (`payRules()`), pak `payFromRequest()` – když kredit
+  stačí, zaplatí se rovnou z kreditu (odpověď jako u `pay`); když chybí (`InsufficientCredit`), vznikne `Payment`
+  (`order_pay`, částka = chybějící zaokrouhlená nahoru na celé koruny/eura, měna zakázky, `context` = volby) a odpověď
+  je `{checkout_url}` – stránka na ni přesměruje. Návrat z brány: `/farm/orders/{token}?paid={payment}`. Odmítnutí
+  (cena se změnila, cívka pryč, podmínky) přijde před odesláním na bránu (422), takže se neplatí za nic, co by pak
+  neprošlo.
+- **Webhook** (`CreditController::webhook`): po `Wallet::topUp` (kredit se připíše jako dřív, účetnictví zůstává
+  v ledgeru) zavolá u `order_pay` **`OrderFlow::payFromCard($payment)`**: zakázka se zaplatí z právě připsaného
+  kreditu s volbami z `context` (vč. souhlasu s videem). Když to nejde (`FarmRefusal`: cena se mezitím změnila, cívka
+  je pryč, zakázka už není `sliced`; nebo `InsufficientCredit`), peníze zůstanou jako kredit a důvod se zapíše do
+  `context.result`; druhý webhook téže platby nic neopakuje.
+- **Stav zakázky** (`describe()`): `card = {status, result}` poslední karetní platby této zakázky. Stránka podle toho
+  ukazuje „Platba kartou se zpracovává…“ (po návratu z brány, dokud webhook nedorazí; status se obnovuje po 20 s) nebo
+  „Platba dorazila a je připsaná jako kredit, ale zakázku se nepodařilo spustit automaticky (důvod)“.
+- Texty `farm.order.pay_card`, `pay_card_rest`, `card_pending`, `card_kept` (cs/en/es). Trasa
+  `farm.orders.checkout` (verified.email, throttle jako `pay`).
+- Test `tests/Feature/FarmCardPaymentTest.php`: bez kreditu → checkout → platba `pending` s volbami, zakázka dál
+  `sliced`, `card.status = pending`; webhook → zakázka zaplacená s poznámkou, drobné zůstanou v kreditu, druhý webhook
+  nic nezdvojí; cena se změní mezi odesláním a webhookem → kredit zůstane, `result = price_changed`, stránka to ví;
+  s dostatečným kreditem checkout platí rovnou; nesouhlas/cizí cena/cizí zakázka se odmítnou před bránou.
+
+### Rozhodnutí
+
+- Peníze jdou vždy přes kredit (dobití + okamžitá úhrada), ne mimo ledger: vrácení, zrušení tisku i historie
+  fungují beze změny. Částka na bráně je zaokrouhlená nahoru na celé jednotky měny; zbytek vidí zákazník v kreditu.
+- Registrace a ověřený e-mail zůstávají (zakázka má majitele, e-maily o stavu). Platba hostem by byla další krok,
+  až bude potřeba.
+- `Track::event('order_paid')` a konverze pro sociální sítě se při zaplacení z webhooku neposílají (není request
+  zákazníka); zaplacení z kreditu je hlásí jako dřív.
+
+### Co není ověřené
+
+- Skutečná Stripe Checkout session pro `order_pay` (metadata nese `purpose`); fake brána v testech jen vrací
+  success URL. Po nasazení jednu zakázku zaplatit kartou naostro.
+
+### Nasazeno (10. 10. 2026, 15:37 UTC)
+
+main b0755e9, server ee5de3b, výpadek 12 s, migrace `payments_for_an_order` proběhla, trasa `farm.orders.checkout`
+(i s `{locale}`), brána na produkci `stripe`. Předtím 15:30 UTC main 8a6f28d (E #4 + jedna nejbližší cívka, §9).
+Čeká na jeden ostrý test: zakázka zaplacená kartou ze stránky zakázky (Roman).
+
+### Nasazeno (10. 10. 2026, 17:04 UTC)
+
+main 178e4ac, server 87e304c, výpadek 12 s, bez migrace. Pro farmu: na /farm je blok **Barva** hned pod modelem (před
+velikostí, kvalitou, pevností, podpěrami a počtem kusů) – Romanovo „barvy dát nahoru“. Ve stejném nasazení: session E
+#7 (texty fází nástrojů pro úpravu souboru), session B papel kolo 4 (kvalita portrétu, panel podle fotky) a oprava
+hlavičky náhledu (PreviewMeta limit 2000 B – nginx má 4 kB na všechny hlavičky včetně cookies ~1,1 kB; náhled portrétu
+má teď celkem 2307 B). Nasazení čekalo na dotisk dvou testů švu (T26-000032 na S1 #1, T26-000033 na S1 #3).

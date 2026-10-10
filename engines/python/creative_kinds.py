@@ -854,7 +854,7 @@ def _papel_trace(M, np, paper, smooth=False):
         if not paper.any():
             return M.CrossSection()                          # nothing of the face is dark where it lies now: an empty window
         # (with its edge repeated outwards: what reaches the window's edge must run out of it, not turn back along it)
-        return S.mask_outline(M, np.pad(paper, 4, mode="edge"), 0.8).translate([-4, -4]).simplify(0.12)
+        return S.mask_outline(M, np.pad(paper, 5, mode="edge"), 1.1).translate([-5, -5]).simplify(0.1)
     rects = []
     for r in range(rows):
         edges = np.flatnonzero(np.diff(np.concatenate(([0], paper[r].view(np.int8), [0]))))
@@ -934,7 +934,7 @@ def _papel_photo(M, path, win_w, win_h, darkness, soften, invert, look=None, pic
         if invert:
             paper = ~paper & where
         share, most = (float(paper[where].mean()) if where.any() else 0.0), 0.90
-        look["dark_pct"] = int(round(share * 100))
+        look["dark_pct"] = round(share * 100, 1)
         pad, how = thin + 2, {"structure": np.ones((thin, thin), dtype=bool)}        # nothing narrower than a printed line pair
         look["isolated"] = person is not None
     # (a portrait pushed half out of its window may show nothing but a coat: that is the visitor's doing, not a bad photo)
@@ -955,7 +955,8 @@ def _papel_photo(M, path, win_w, win_h, darkness, soften, invert, look=None, pic
 
     paper = tidy(paper)
     if look is not None:
-        look["thin_pct"] = int(round(100.0 * (1.0 - float(ndimage.binary_opening(paper, structure=np.ones((3, 3), dtype=bool)).sum()) / max(1.0, float(paper.sum())))))
+        fine = max(1, int(math.ceil(P.FINE_MM / cell)))     # what is narrower than this is in doubt on a 0.4 mm nozzle
+        look["thin_pct"] = int(round(100.0 * (1.0 - float(ndimage.binary_opening(paper, structure=np.ones((fine, fine), dtype=bool)).sum()) / max(1.0, float(paper.sum())))))
         if person is not None and look.get("backdrop") == "pattern":
             field = P.ground(np, paper, person, cell)
             look["spots"] = P.scatter(np, field, cell, look["unit"], look["density"])

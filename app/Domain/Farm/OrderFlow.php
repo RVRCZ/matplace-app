@@ -2,6 +2,7 @@
 
 namespace App\Domain\Farm;
 
+use App\Domain\YouTube\FarmVideos;
 use App\Engines\Shipping\ShippingCarrier;
 use App\Engines\Shipping\ShippingFailed;
 use App\Jobs\BuildFarmTimelapse;
@@ -12,6 +13,7 @@ use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinterSlot;
 use App\Models\FarmPrintJob;
+use App\Models\Payment;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -150,6 +152,48 @@ final class OrderFlow
         if ($order->status === FarmOrder::STATUS_PAID) {
             $this->move($order, FarmOrder::STATUS_QUEUED, 'admin', $adminId);
         }
+    }
+
+    /**
+     * A card payment made for an order from its page has arrived (the webhook has just topped the credit up): the order
+     * is paid with what the customer chose then. Whatever stops it (the price moved, the spool is gone, the order was
+     * paid from credit meanwhile) leaves the money as credit and is written into the payment, so the page can say so.
+     *
+     * @return string "paid", or the reason it did not happen
+     */
+    public function payFromCard(Payment $payment): string
+    {
+        $context = (array) $payment->context;
+        $order = $payment->order;
+        if ($payment->purpose !== Payment::PURPOSE_ORDER || ! $order) {
+            return 'no_order';
+        }
+        if (! empty($context['result'])) {
+            return (string) $context['result'];   // the gateway said it twice
+        }
+        try {
+            if ($order->status !== FarmOrder::STATUS_SLICED) {
+                throw new FarmRefusal('not_ready');
+            }
+            $slot = FarmPrinterSlot::find((int) ($context['slot'] ?? 0)) ?? throw new FarmRefusal('color_gone');
+            $this->pay($order, $slot, (string) ($context['delivery'] ?? ''), isset($context['address']) ? (array) $context['address'] : null, true, $context['ip'] ?? null,
+                isset($context['expected_total']) ? (float) $context['expected_total'] : null, $context['note'] ?? null, isset($context['second_slot']) ? (int) $context['second_slot'] : null,
+                $context['currency'] ?? null, isset($context['change_slots']) ? array_map('intval', array_values((array) $context['change_slots'])) : null,
+                isset($context['part_slots']) ? array_map('intval', (array) $context['part_slots']) : null);
+            if (! empty($context['video_consent'])) {
+                app(FarmVideos::class)->setConsent($order->refresh(), true);
+            }
+            $result = 'paid';
+        } catch (FarmRefusal $e) {
+            $result = $e->reason;
+            Log::warning('Card payment arrived but the order could not be paid', ['payment' => $payment->id, 'order' => $order->id, 'reason' => $result]);
+        } catch (InsufficientCredit $e) {
+            $result = 'credit';   // less arrived than the order costs now (another currency, a bigger price): the credit waits
+            Log::warning('Card payment arrived but does not cover the order', ['payment' => $payment->id, 'order' => $order->id, 'missing' => $e->missing()]);
+        }
+        $payment->update(['context' => array_merge($context, ['result' => $result])]);
+
+        return $result;
     }
 
     /** @throws \DomainException when the move is not allowed from the current status */

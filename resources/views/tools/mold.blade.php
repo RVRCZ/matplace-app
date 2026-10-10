@@ -6,7 +6,7 @@
     $select = 'field !mt-1 text-sm';
 @endphp
 
-@extends('tools.page', ['tool' => 'mold', 'module' => 'mold', 'lead' => __('mold.lead'), 'available' => $available, 'unavailable' => __('mold.unavailable'), 'goLabel' => \App\Support\NextStep::text('mold.page.go'),
+@extends('tools.page', ['tool' => 'mold', 'module' => 'mold', 'lead' => __('mold.lead'), 'available' => $available, 'unavailable' => __('mold.unavailable'),
     'sections' => ['file' => __('toolpage.section.file'), 'settings' => __('toolpage.section.settings'), 'result' => __('toolpage.section.result')]])
 
 @push('head')

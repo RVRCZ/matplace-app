@@ -5,7 +5,7 @@
     $unit = fn (string $k) => in_array($k, ['rows', 'cols', 'count', 'ribs', 'colors_n', 'bg_strength', 'spikes', 'links', 'soften'], true) ? '' : (in_array($k, ['angle', 'twist'], true) ? '°' : (in_array($k, ['flute', 'contrast', 'brightness', 'saturation', 'eye_pos', 'text_size', 'text_y', 'darkness'], true) ? '%' : 'mm'));
     $unitOf = $unit;
     $unit = fn (string $k) => ['density' => '', 'portrait_scale' => '×', 'portrait_turn' => '°', 'detail' => '%', 'trim' => '%'][$k] ?? $unitOf($k);
-    $i18n = collect(['param.working', 'param.failed', 'param.too_fast', 'param.text_required', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
+    $i18n = collect(['param.working', 'param.failed', 'param.preview_failed', 'param.too_fast', 'param.text_required', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
         'param.warn.stand_angle_45', 'param.warn.stand_angle_55', 'param.warn.stand_angle_70', 'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
         'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.cut', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.notes', 'param.part.stand.notes', 'param.part.body.hair_tie', 'param.part.stand.hair_tie', 'param.part.body.candle_stand', 'param.part.stand.candle_stand', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
         'color.white', 'color.black', 'color.grey', 'color.brown', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.part.plate', 'param.part.text', 'param.part.stamp', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
@@ -51,8 +51,7 @@
         'input' => $hasInput ? __('toolpage.section.input') : null,
         'size' => __('toolpage.section.size'),
         'colors' => __('toolpage.section.colors'),
-        'print' => \App\Support\NextStep::text('param.step.inquiry'),   // "print or download" / "download" / "inquiry": what this site offers
-    ]);
+    ]);     // the last step, the material and the number of pieces, is the page's own (tools/page.blade.php)
     // steps only this tool has (ParametricGenerator::SECTIONS: id → the step it follows), and its own names for the common ones
     $extra = \App\Domain\Tools\ParametricGenerator::SECTIONS[$kind] ?? [];
     if ($extra) {
@@ -77,7 +76,7 @@
     $flagsAt = fn (string $section) => collect($flags)->filter(fn ($flag) => $at($flag, 'size') === $section);
 @endphp
 
-@extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).(($quickForm ?? null) === true ? '.lead_form' : '.lead')), 'sections' => $sections, 'available' => $available, 'goLabel' => \App\Support\NextStep::text('param.go')])
+@extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).(($quickForm ?? null) === true ? '.lead_form' : '.lead')), 'sections' => $sections, 'available' => $available])
 
 @push('head')
 <script>
@@ -103,8 +102,6 @@
     };
 </script>
 @endpush
-
-@section('price-note'){{ \App\Support\NextStep::text('param.estimate.note') }} {{ \App\Support\NextStep::text('param.go.hint') }}@endsection
 
 @section('stage')
     <div id="param-bom" class="card hidden p-4 text-sm"></div>
@@ -458,22 +455,9 @@
         @endif
         {{-- the one colour the order starts from (the first part's); two-colour designs carry theirs in the design --}}
         <input type="hidden" id="param-color" value="">
-    </x-tool-section>
-
-    {{-- 4 · the print: material and how many --}}
-    <x-tool-section id="print" :title="\App\Support\NextStep::text('param.step.inquiry')">
-        <div class="grid grid-cols-2 gap-3">
-            <label class="lbl">{{ __('calc.material') }}
-                <select id="param-material" class="field">
-                    @foreach($config['materials'] as $m)<option value="{{ $m['code'] }}" @selected($m['code'] === $config['default_material'])>{{ $m['label'] }} ({{ $m['code'] }})</option>@endforeach
-                </select>
-            </label>
-            <label class="lbl">{{ __('calc.quantity') }}
-                <input id="param-qty" type="number" inputmode="numeric" min="1" max="1000" value="1" class="field">
-            </label>
-        </div>
         {{-- the slicer project straight from here: the design is saved and the printer picker opens --}}
         <button id="param-3mf" type="button" class="hidden">{{ __('param.download.project') }}</button>
     </x-tool-section>
+    {{-- 4 · the print, material and how many: the last step of every tool, drawn by tools/page.blade.php --}}
 </form>
 @endsection

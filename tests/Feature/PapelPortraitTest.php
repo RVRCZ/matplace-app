@@ -10,6 +10,7 @@ use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\ModelFile;
 use App\Models\User;
+use App\Support\PreviewMeta;
 use App\Support\ToolSeo;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,7 +63,7 @@ class PapelPortraitTest extends TestCase
     /** @return array<string, mixed> */
     private function meta(array $params, string $part = 'all'): array
     {
-        return json_decode((string) $this->preview($params, $part)->assertOk()->headers->get('X-Model-Meta'), true);
+        return (array) PreviewMeta::whole($this->preview($params, $part)->assertOk()->headers->get('X-Model-Meta'));      // the small picture of the result may wait beside the header
     }
 
     /**
@@ -167,10 +168,12 @@ class PapelPortraitTest extends TestCase
         $thick = $this->meta($face + ['base' => 3, 'relief' => 1.2]);
         $this->assertEqualsWithDelta(4.2, $thick['bbox']['z'], 0.01);
         $this->assertEqualsWithDelta(3.0, $thick['notes']['color_changes'][0]['z'], 0.001);
-        // the small picture of the result is a PNG light enough for a response header
+        // the small picture of the result is a PNG; the header of the answer stays under 2 kB whatever the notes hold
+        // (nginx fits all the headers into 4 kB: the rest of the notes waits beside the header, see PreviewMeta)
         [$w, $h, $share] = $this->seen($m);
         $this->assertLessThanOrEqual(300, max($w, $h));
         $this->assertLessThan(4000, strlen($m['notes']['preview']));
+        $this->assertLessThanOrEqual(2000, strlen((string) $this->preview($face)->assertOk()->headers->get('X-Model-Meta')));
         $this->assertGreaterThan(0.05, $share);
         $this->assertLessThan(0.9, $share);
         // a face needs no ties: nothing of it hangs in the air
@@ -367,7 +370,7 @@ class PapelPortraitTest extends TestCase
         $this->assertArrayNotHasKey('preview', $empty['notes']);
         // the cut-out learnt the new frames too, and keeps the border it always had when none is named
         $skull = ['kind' => 'papel', 'params' => ['artwork' => 'lib:holidays/sugar-skull', 'width' => 150, 'height' => 200]];
-        $volume = fn (array $more) => json_decode((string) $this->postJson('/api/tools/param/preview', ['kind' => 'papel', 'params' => $skull['params'] + $more])->assertOk()->headers->get('X-Model-Meta'), true);
+        $volume = fn (array $more) => (array) PreviewMeta::whole($this->postJson('/api/tools/param/preview', ['kind' => 'papel', 'params' => $skull['params'] + $more])->assertOk()->headers->get('X-Model-Meta'));
         $old = $volume([]);
         $this->assertEqualsWithDelta($old['volume_mm3'], $volume(['border_mm' => 19.5, 'density' => 0.5, 'scallop_edge' => 'bottom'])['volume_mm3'], 0.5, '13 % of the shorter side');
         $this->assertSame(1, $old['notes']['ties']);

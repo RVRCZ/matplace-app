@@ -4,6 +4,8 @@
 // Keys with dots are written flat ('shape.picture.hint'): a tool, its family ("shape" = pendant, earrings, ornament,
 // magnet, coaster) or every tool may own a text, see $tr in resources/views/tools/param.blade.php.
 return [
+    // a preview that did not come back at all (a 502 of the web server, a lost connection): not the shape's fault
+    'preview_failed' => 'No se pudo cargar la vista previa. Pruebe de nuevo.',
     'warn' => [
         // the phone stand: the angle that was asked for is outside what the chosen shape stands firmly at
         'stand_angle_45' => 'Esta forma de soporte solo es estable a partir de 45°. Por eso el modelo tiene un ángulo de 45°, no el indicado.',
@@ -223,7 +225,7 @@ return [
     'papel.colors.hint' => 'El 3MF lleva los dos colores y la altura a la que cambian. El STL es un solo cuerpo para imprimir en un color.',
     'papel.swap' => 'Dos colores: el filamento se cambia una vez, a :z mm.',
     'papel.one' => 'Las dos partes tienen el mismo color, la impresión no necesita cambio de filamento.',
-    'warn.portrait_fine' => 'El retrato tiene mucho dibujo fino (el :n % de sus zonas es más estrecho que dos líneas de una boquilla de 0,4 mm). Baje «Detalle del retrato» o agrande el panel.',
+    'warn.portrait_fine' => 'El retrato tiene mucho dibujo fino (el :n % de sus zonas es más estrecho que 0,6 mm, que una boquilla de 0,4 mm quizá no imprima). Baje «Detalle del retrato» o agrande el panel.',
     'warn.portrait_whole' => 'No se pudo separar a la persona del fondo, se usa la foto entera.',
     'photo_organizer.lead' => 'Un organizador para lápices, maquillaje o cepillos de dientes con la forma de su imagen. El contorno hace la pared; dentro hay compartimentos en cuadrícula u orificios redondos.',
     'photo_organizer.tip' => 'Se imprime con el fondo hacia abajo y sin soportes. Para el baño elija PETG; el PLA se ablanda con el tiempo con la humedad y el calor. Un organizador con orificios es un bloque macizo: tarda más en imprimirse, pero no vuelca.',

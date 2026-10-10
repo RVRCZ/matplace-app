@@ -4,6 +4,8 @@
 // Keys with dots are written flat ('shape.picture.hint'): a tool, its family ("shape" = pendant, earrings, ornament,
 // magnet, coaster) or every tool may own a text, see $tr in resources/views/tools/param.blade.php.
 return [
+    // a preview that did not come back at all (a 502 of the web server, a lost connection): not the shape's fault
+    'preview_failed' => 'Náhled se nepodařilo načíst. Zkuste to znovu.',
     'warn' => [
         // the phone stand: the angle that was asked for is outside what the chosen shape stands firmly at
         'stand_angle_45' => 'Tenhle tvar stojánku stojí pevně až od 45°. Model má proto úhel 45°, ne ten zadaný.',
@@ -223,7 +225,7 @@ return [
     'papel.colors.hint' => '3MF nese obě barvy a výšku, ve které se mění. STL je jedno těleso pro tisk jednou barvou.',
     'papel.swap' => 'Dvě barvy: filament se vymění jednou, ve výšce :z mm.',
     'papel.one' => 'Obě části mají stejnou barvu, tisk je bez výměny filamentu.',
-    'warn.portrait_fine' => 'Portrét má hodně jemné kresby (:n % ploch je užších než dvě stopy trysky 0,4 mm). Snižte „Kresba portrétu“, nebo zvětšete panel.',
+    'warn.portrait_fine' => 'Portrét má hodně jemné kresby (:n % ploch je užších než 0,6 mm, což tryska 0,4 mm nemusí vytisknout). Snižte „Kresba portrétu“, nebo zvětšete panel.',
     'warn.portrait_whole' => 'Postavu se nepodařilo oddělit od pozadí, fotka je použitá celá.',
     'photo_organizer.lead' => 'Stojánek na tužky, líčení nebo kartáčky ve tvaru vašeho obrázku. Obrys udělá stěnu, uvnitř jsou přihrádky v mřížce, nebo kulaté otvory.',
     'photo_organizer.tip' => 'Tiskne se dnem dolů, bez podpěr. Do koupelny volte PETG, PLA ve vlhku a teple časem měkne. Stojánek s otvory je plný blok: tiskne se déle, ale nepřevrhne se.',

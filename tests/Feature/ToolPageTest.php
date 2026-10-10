@@ -77,6 +77,87 @@ class ToolPageTest extends TestCase
         $this->get('/es/tools/vase')->assertOk()->assertSee('Rayos X')->assertSee('Descargar');
     }
 
+    public function test_the_button_leads_to_the_calculation_and_the_next_step_is_said_once(): void
+    {
+        // what stands under the rough price of a tool's page
+        $note = function (string $path): string {
+            preg_match('/<p class="w-full text-xs text-muted">(.*?)<\/p>/s', (string) $this->get($path)->assertOk()->getContent(), $m);
+
+            return html_entity_decode(trim($m[1] ?? ''));
+        };
+        // the farm prints for everybody: the site as it runs
+        config(['features.marketplace' => false, 'farm.enabled' => true, 'farm.open' => true, 'farm.public' => true]);
+        $this->get('/tools/letter-beads')->assertOk()->assertSee('Pokračovat ke kalkulaci')
+            ->assertDontSee('Pokračovat k přesné ceně a tisku')
+            ->assertDontSee('V dalším kroku uvidíte přesnou cenu a dobu tisku. V dalším kroku')
+            ->assertDontSee('spočítáme v dalším kroku');
+        $said = 'Odhad z objemu modelu. V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si objednáte u nás, nebo si stáhnete soubor pro svou tiskárnu.';
+        $this->assertSame($said, $note('/tools/letter-beads'));
+        // every tool says the same: a picture, a photo, a file to edit, a check, a repair, a mold all go on to the calculator
+        // (the page opens it with the very file), so no tool has a button or a sentence of its own
+        $seen = 0;
+        foreach (config('tools') as $key => $tool) {
+            if (! $tool['available'] || ! Route::has($tool['route']) || (! isset(ParametricGenerator::FIELDS[$key]) && ! isset(self::MODULES[$key]))) {
+                continue;                                   // the calculator, the gifts page and the spare-part inquiry are pages of their own
+            }
+            $html = (string) $this->get(route($tool['route']))->assertOk()->getContent();
+            preg_match('/<span id="tool-go-label">(.*?)<\/span>/s', $html, $button);
+            preg_match('/<p class="w-full text-xs text-muted">(.*?)<\/p>/s', $html, $under);
+            $this->assertSame('Pokračovat ke kalkulaci', trim($button[1] ?? ''), $key);
+            $this->assertSame($said, html_entity_decode(trim($under[1] ?? '')), $key);
+            // and ends with the same step: the material and how many pieces, once, after the tool's own steps
+            $this->assertSame(1, substr_count($html, 'id="param-material"'), $key);
+            $this->assertSame(1, substr_count($html, 'id="param-qty"'), $key);
+            preg_match_all('/data-nav="([a-z]+)" class="tool-nav-item"><span class="tool-nav-no">\d+<\/span>([^<]*)</', $html, $steps);
+            preg_match_all('/data-section="([a-z]+)"/', $html, $sections);
+            $this->assertSame('print', end($steps[1]), $key);
+            $this->assertSame('Materiál a počet kusů', trim((string) end($steps[2])), $key);
+            $this->assertSame('print', end($sections[1]), $key);
+            $this->assertGreaterThanOrEqual(3, count($steps[1]), $key);
+            preg_match('/<section id="sec-print".*?<\/section>/s', $html, $step);
+            $this->assertStringContainsString('Materiál a počet kusů', $step[0] ?? '', $key);
+            $this->assertStringContainsString('max="1000"', $step[0] ?? '', $key);
+            $seen++;
+        }
+        $this->assertGreaterThanOrEqual(50, $seen);
+        $this->get('/en/tools/relief')->assertOk()->assertSee('Continue to the calculation')->assertDontSee('Print it with us');
+        $this->get('/en/tools/letter-beads')->assertOk()->assertSee('Continue to the calculation');
+        $this->assertSame('An estimate from the model volume. The calculation shows the precise price and print time. Order the print from us, or download the file for your own printer.', $note('/en/tools/letter-beads'));
+        $this->get('/es/tools/letter-beads')->assertOk()->assertSee('Continuar al cálculo');
+        $this->assertSame(1, substr_count($note('/es/tools/letter-beads'), 'precio exacto'));
+
+        // the farm not open to the public yet: the same button, the calculation ends with a download
+        config(['farm.public' => false]);
+        $this->get('/tools/letter-beads')->assertOk()->assertSee('Pokračovat ke kalkulaci');
+        $this->assertSame('Odhad z objemu modelu. V kalkulaci uvidíte přesnou dobu tisku a spotřebu materiálu a stáhnete si soubor nebo hotový projekt pro svou tiskárnu. Bez registrace.', $note('/tools/letter-beads'));
+    }
+
+    public function test_a_tool_that_edits_a_file_says_what_it_is_doing_in_words_never_in_a_key(): void
+    {
+        // the phases the tools report while they work (engines/python/edit_tool.py `stage`), and "queued" before they start
+        preg_match_all('/stage\(dst, "([a-z_]+)"\)/', (string) file_get_contents(base_path('engines/python/edit_tool.py')), $reported);
+        $stages = array_values(array_unique(['queued', ...$reported[1]]));
+        $this->assertContains('repairing', $stages);
+        foreach (['cs', 'en', 'es'] as $locale) {
+            foreach ($stages as $stage) {
+                $this->assertNotSame('edit.stage.'.$stage, __('edit.stage.'.$stage, [], $locale), "edit.stage.{$stage} has no text in {$locale}");
+            }
+        }
+        // hollowing a statue said "edit.stage.repairing": only the splitter had words for the phases
+        $ops = ['holder_model' => 'holder', 'soap_model' => 'soap'];
+        foreach (array_keys(self::MODULES, 'edit', true) as $tool) {
+            $op = $ops[$tool] ?? $tool;
+            foreach (['', '/en', '/es'] as $prefix) {
+                $html = (string) $this->get($prefix.'/tools/'.basename(route(config('tools.'.$tool.'.route'))))->assertOk()->getContent();
+                foreach ($stages as $stage) {
+                    $this->assertStringContainsString('edit.'.$op.'.stage.'.$stage, $html, "{$tool}: no text for the phase {$stage}");
+                }
+                // no text the page hands its script is a key (in the page's data a text sits between " … ")
+                $this->assertDoesNotMatchRegularExpression('/:\\\\u0022edit\.[a-z0-9_.]+\\\\u0022/', $html, $prefix.' '.$tool);
+            }
+        }
+    }
+
     public function test_the_parametric_page_keeps_its_fields_and_adds_sliders_units_and_colours(): void
     {
         $html = (string) $this->get('/tools/box')->assertOk()->getContent();
