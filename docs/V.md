@@ -60,8 +60,12 @@ Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hr
 | test | stroj, cívka | nastavení | výsledek | fotky |
 |---|---|---|---|---|
 | T26-000030 | S1 #1, PLA+ bílá (slot 4) | scarf | **nedoběhl** – tiskárna na 110 min ztratila spojení s agentem, Roman tisk vypnul, zakázka `failed`; nehodnotí se | – |
-| – | S1 #1, PLA+ bílá (slot 4) | dnešní (bez scarfu) | farma U online 10. 10. večer, Roman zakládá | – |
+| T26-000031 (B) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | dnešní (bez scarfu) | **hotovo 10. 10.** – kostka 14,96 × 14,95 (−0,04/−0,05), rohy ostré, stěny válce, hranolu i kužele hladké; na 8 fotkách z foto‑boxu (měkké čelní světlo, 3840 × 2160, výřezy v plném rozlišení) **šev nenalezen** na žádné straně; horní plochy s viditelnými čarami (válec, kužel), žádné vlásky kromě prachu; nažloutlý nádech paty kužele = stín, ne vada | u testu v adminu |
 | – | S1 #1, PLA+ bílá (slot 4) | scarf | čeká | – |
+
+Poučení z B: v měkkém světle foto‑boxu není vidět ani běžný `aligned` šev bílého matného PLA+; dvojici B/S je nutné
+porovnat **za stejných podmínek s bočním (ostrým) světlem**, nebo nehtem po obvodu válce a hranolu. Výsledek B sám
+o sobě neříká „šev 0“, říká „šev není vidět v tomhle světle“.
 
 Plán tisků po zprovoznění farmy U (10. 10. večer, filament jde přes ACE, Roman nemá konkrétní příznak – chce
 nejlepší nastavení): S1 #1 postupně `seam` bez scarfu (B), `seam` se scarfem (S), `quick` dnešní (Q16), `quick`
