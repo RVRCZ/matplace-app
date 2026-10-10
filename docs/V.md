@@ -221,7 +221,18 @@ zlepšilo, umí říct jen Roman. Další kroky na Maxu, po jedné změně: (1) 
 `{"top_surface_speed":"120","outer_wall_speed":"100"}` – bok kostky; (2) objekt `ironing` se zaškrtnutým žehlením –
 horní plocha (dnes `ironing = no`).
 
-Hodnoty farmy pro Max dnes: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
+**Oprava podle stránky řádku (screenshot 10. 10. večer):** řádek PLA+ na Farm U #3 (Max) je **verze 3, stav
+„testuje se“, 4/5** a už přepisuje: tryska 210 / 215 °C, `outer_wall_speed = 120`, žehlení 12 % / 30 mm/s / 0,1 mm,
+`support_threshold_angle = 25`, `max_bridge_length = 25`. T26-000033 tedy tiskl vnější stěnu nominálně 120, ne 200 –
+pruhy na boku kostky vznikly už při 120. Řádek PLA+ na Farm U #1 (S1) je **verze 1 z knihovny, stav „testuje se“**,
+ne vyladěný, jak psalo zadání.
+
+Spuštěno 10. 10. ~19:50: **Max** `quick` z cívky tyrkysová (ne modrá jako T26-000033 – jiná cívka, srovnání boku je
+jen orientační) s `{"top_surface_speed":"120","outer_wall_speed":"100"}`; **S1 #1** objekt `ironing` (bílá, žehlení
+zapnuté) s JSON pro S2 v poli procesu – ten u objektu `ironing` nic nedělá (bez `seam_slope_type` se scarf nezapne),
+je to tedy zkouška žehlení na S1, **ne S2**. S2 (objekt `seam` + zaškrtnutý scarf + JSON) zbývá.
+
+Hodnoty Orca profilu, které řádek Maxu nepřepisuje: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
 `top_surface_pattern = monotonicline`, `only_one_wall_top = 1`; Max jede s procesem S1 bez přepisů pro velkou
 podložku. Až Roman napíše výsledek: kandidát do řádku Max × PLA+ a ověření testem `quick` z farmy (horní plocha
 kostky) spolu s `top_surface_speed` 100–150.
