@@ -234,6 +234,22 @@ jen orientační) s `{"top_surface_speed":"120","outer_wall_speed":"100"}`; **S1
 zapnuté) s JSON pro S2 v poli procesu – ten u objektu `ironing` nic nedělá (bez `seam_slope_type` se scarf nezapne),
 je to tedy zkouška žehlení na S1, **ne S2**. S2 (objekt `seam` + zaškrtnutý scarf + JSON) zbývá.
 
+**Tyrkysový `quick` z Maxu** (10. 10. ~20:45, číslo testu doplní Roman; `{"top_surface_speed":"120",
+"outer_wall_speed":"100"}`; 3 snímky při expozici −5, jeden s deskou naklopenou):
+
+| co | nález | proti modrému T26-000033 (stěna 120) |
+|---|---|---|
+| horní plocha kostky | rovná, uzavřená, čáry jemné, nestojí jako hřebínky | lepší na pohled, ale jiná barva a lesk – ne čisté srovnání |
+| bok kostky | vodorovný schodek/rýhy asi ve 3/4 výšky zůstaly; pod horní hranou **pás svislých zoubků** vysoký asi 2 mm, zbytek stěny zrnitý | pruhy nezmizely |
+| pilíře | prstence a hrbolky, **jemné vlásky** mezi pilíři a na nich | vlásky u modré nebyly (jiná cívka) |
+| most, převisy | rovný, čisté | stejné |
+
+**Závěr: zpomalení vnější stěny 120 → 100 vady boku neodstranilo – nepřebírat.** Vady sedí na výškové pásy, kde na
+`quick` končí nižší prvky, tedy na skokovou změnu doby vrstvy (slicer tam zpomalí kvůli `slow_down_layer_time` 8 s),
+ne na jmenovitou rychlost stěny. `quick` je na posouzení stěny špatný objekt. Další krok: objekt `seam` **bez scarfu
+na Maxu** – válec a hranol mají po celé výšce stejný průřez, takže ukážou, jak stěna vypadá bez skoků v době vrstvy.
+Horní plocha při 120 vypadá dobře; když to Roman potvrdí, `top_surface_speed = 120` do řádku Maxu jako nová verze.
+
 Hodnoty Orca profilu, které řádek Maxu nepřepisuje: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
 `top_surface_pattern = monotonicline`, `only_one_wall_top = 1`; Max jede s procesem S1 bez přepisů pro velkou
 podložku. Až Roman napíše výsledek: kandidát do řádku Max × PLA+ a ověření testem `quick` z farmy (horní plocha
