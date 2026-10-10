@@ -9,6 +9,7 @@
 | 3 | 10. 10. | stránky návrhu všech nástrojů | tlačítko „Pokračovat k přesné ceně a tisku“ → „Pokračovat ke kalkulaci“; pod cenou se dvakrát říká totéž o dalším kroku | viz úkol #3 níže | 10. 10. (šest klíčů v `lang/src/tools_flow.json`, test v `ToolPageTest`) | „Opravy #3“ na `feature/tool-fixes` |
 | 4 | 10. 10. | všechny stránky nástrojů | jedno tlačítko „Pokračovat ke kalkulaci“ a jeden text pod cenou pro všechny nástroje (reliéf, figurka, úpravy souboru, kontrola, forma mají dnes jiné) | viz úkol #4 níže | 10. 10. (bez výjimek: i kontrola, oprava a forma otevírají kalkulačku; `toolpage.go*` smazáno) | „Opravy #4“ na `feature/tool-fixes` |
 | 5 | 10. 10. | všechny stránky nástrojů | krok „Materiál a počet kusů“ (dnes jen u parametrických nástrojů) na každé stránce nástroje, zvolený materiál a počet jdou do kalkulace; mrtvé texty tlačítek pryč | viz úkol #5 níže | 10. 10. (krok kreslí `tools/page.blade.php`; reliéf a figurka mají „Vytvořit“ na konci kroku 2; přenos ověřen v prohlížeči na split, letter-beads, filament-art) | „Opravy #5“ na `feature/tool-fixes` |
+| 6 | 10. 10. | krok „Materiál a počet kusů“ | v úzkém panelu (340 px) se název materiálu ve výběru ořízne („Běžný plast (PL“) | viz úkol #6 níže | | |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 
@@ -150,6 +151,14 @@ zákazník vybírá až v kalkulaci.
 **Hotovo =** na `/tools/split`, `/tools/relief`, `/tools/figure` i `/tools/letter-beads` je stejný krok „Materiál a počet
 kusů“, orientační cena na něj reaguje, po „Pokračovat ke kalkulaci“ má kalkulace předvybraný ten materiál a počet.
 Testy, `pint`, `tsc`, `build`. Bez migrace. **Nerozšiřovat** o další volby (kvalita, výplň) – ty patří do kalkulace.
+
+## Úkol #6 · 10. 10. 2026 · celý název materiálu ve výběru kroku „Materiál a počet kusů“ (koordinováno: `tools/page.blade.php`)
+
+**Co:** tvůj postřeh z #5 – ve 340px panelu se text výběru materiálu ořízne („Běžný plast (PL“); dřív to bylo jen u
+generátorů, po #5 všude. **Udělat:** výběr materiálu na vlastní řádek přes celou šířku panelu a počet kusů pod něj
+(nebo vedle s pevnou šířkou ~6 rem), tak aby i „Běžný plast (PLA)“ a nejdelší název z `cfg.price.materials` byly vidět
+celé při 340 px; nic jiného v kroku neměnit. **Hotovo =** na `/tools/split` a `/tools/letter-beads` při šířce panelu
+340 px je celý název materiálu vidět; `ToolPageTest` zelený, `tsc`, `build`.
 
 ## Poznámky pro session 1 (z úkolu #1, předat až poběží)
 
