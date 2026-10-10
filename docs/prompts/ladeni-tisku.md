@@ -2,7 +2,7 @@
 
 Cíl: každá kombinace **typ stroje × druh filamentu**, kterou farma nabízí, má v administraci **vyladěný řádek**
 (`/admin/farm/tuning`, stav `tuned`), ověřený zkušebním tiskem a fotkami, a zapsaná pravidla, podle kterých poradce
-navrhuje úpravy. Dnes je vyladěné jen PLA+ na S1 a rozpracované PETG na S1 #2 (řádek #27, viz
+navrhuje úpravy. Dnes není vyladěné nic: řádky PLA+ na S1 jsou `untested v1` (S1 #2 `testing v4`), PETG na S1 #2 je rozpracované (řádek #27, viz
 `docs/prompts/petg-s1-02.md` ze 4. 10. – přečti si ho celý, část „Jak ladění ve farmě funguje“ je mapa kódu
 a administrace, platí beze změny).
 
@@ -31,12 +31,12 @@ a administrace, platí beze změny).
 
 | Stroj | Druhy filamentu k vyladění | Poznámka |
 |---|---|---|
-| Kobra S1 (10 ks, uzavřená, tryska 0,4) | **PLA+** (je vyladěné – ověř, že řádek sedí i pro řadu PLA+ 2.0), **PLA Silk**, **PLA svítící**, **PLA+ matný / PLA matný**, **PLA třpytivý**, **PETG** (řádek #27 dokončit), **ASA** | silk: nižší rychlost stěn, vyšší teplota, lesk; svítící: abrazivní (tryska), vyšší teplota; matný: slabší most; PETG: sušení, retrakce, ventilátor; ASA: uzavřený prostor, podložka 90–100 °C, bez ventilátoru |
+| Kobra S1 (10 ks, uzavřená, tryska 0,4) | **PLA+** (řádky jsou `untested` – první skutečné ladění, ověř i řadu PLA+ 2.0), **PLA Silk**, **PLA svítící**, **PLA+ matný / PLA matný**, **PLA třpytivý**, **PETG** (řádek #27 dokončit), **ASA** | silk: nižší rychlost stěn, vyšší teplota, lesk; svítící: abrazivní (tryska), vyšší teplota; matný: slabší most; PETG: sušení, retrakce, ventilátor; ASA: uzavřený prostor, podložka 90–100 °C, bez ventilátoru |
 | Kobra 3 Max (1 ks, otevřená, 420 mm) | **PLA+** (velké díly: průvan, deformace, adheze na velké ploše) | jen PLA+; PETG a ASA se na Max nenabízejí |
 
 Pořadí podle toho, co se bude tisknout nejdřív (prodeje: PLA+ světle modrá, svítící zelená a červená, silk měděná a zlatá,
 PETG oranžová; vánoční sada = PLA+ a silk):
-1. PLA+ na S1: ověřit, že vyladěný řádek platí pro nové cívky (PLA+ 2.0), jinak nová verze.
+1. PLA+ na S1: řádek je `untested v1` – vyladit (začni švem z části 5, pak zbytek `quick`), platí i pro cívky PLA+ 2.0.
 2. PLA Silk na S1 (Farm B #6, #7).
 3. PLA svítící na S1 (Farm B #8).
 4. PETG na S1 (Farm U #2) – dokončit řádek #27 podle starého zadání.
@@ -118,3 +118,8 @@ Scarf joint (šikmý přechod švu) šev na válcových a hladkých plochách sk
    u ASA otestovat až po základním ladění.
 3. Jestli má být scarf globálně v `process_standard.json` a `process_fine.json` (ne v `draft`), rozhodne výsledek;
    změna profilu = commit + zpráva řídící session (nasazuje ona). Zapiš do `docs/V.md` fotky „před/po“.
+
+**Stav 10. 10. večer (řídící session):** farma je v adminu vypnutá (zkušební tisky jdou i tak), agent farmy U běží.
+Doma: S1 #1 má silky a mramor, S1 #2 jen PETG oranžovou, Max PLA+ (tyrkysová, černá, modrá, nefritová bílá).
+Pro test švu na S1 × PLA+ je potřeba **založit do S1 #1 jednu cívku PLA+** (černá nebo bílá ze skladu, slot 4 místo
+mramoru) a zapsat ji v adminu; pak jdou dva testy `quick` (2 × ~35 min) hned. Farma B je bez agenta (stěhuje se).
