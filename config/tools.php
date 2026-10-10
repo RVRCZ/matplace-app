@@ -44,7 +44,7 @@ return [
             ['x' => 0, 'y' => 0, 'w' => 1, 'h' => 2, 'color' => 'green'], ['x' => 1, 'y' => 0, 'w' => 2, 'h' => 1, 'color' => 'white'], ['x' => 1, 'y' => 1, 'w' => 2, 'h' => 1, 'color' => 'white'], ['x' => 3, 'y' => 0, 'w' => 1, 'h' => 2, 'color' => 'green'],
         ]]],
     ]]],
-    'box' => ['route' => 'tools.box', 'intent' => 'create', 'categories' => ['home', 'parts'], 'available' => true, 'seo' => ['examples' => [
+    'box' => ['route' => 'tools.box', 'intent' => 'create', 'categories' => ['home', 'parts'], 'available' => true, 'verified' => '2026-10-10', 'seo' => ['examples' => [
         ['params' => ['inner_w' => 80, 'inner_d' => 50, 'inner_h' => 30, 'lid' => true]],
         ['params' => ['inner_w' => 120, 'inner_d' => 80, 'inner_h' => 40, 'lid' => true, 'cable_slot' => true, 'cable_d' => 8, 'radius' => 6]],
         ['params' => ['inner_w' => 40, 'inner_d' => 40, 'inner_h' => 20, 'lid' => false, 'radius' => 8]],
