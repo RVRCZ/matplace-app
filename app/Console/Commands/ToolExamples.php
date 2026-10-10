@@ -59,7 +59,7 @@ class ToolExamples extends Command
                 try {
                     // "use": the product as it is used (a box with its lid on, a vase on its saucer), not laid out for printing
                     $built = $tool === ArtGenerator::KIND ? app(ArtGenerator::class)->build((array) ($example['params'] ?? []), 'use', true)
-                        : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', isset(ParametricGenerator::FAMILY[$kind]) || $kind === 'compose');      // tools whose parts are colours: drawn in them
+                        : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', isset(ParametricGenerator::FAMILY[$kind]) || in_array($kind, ['compose', 'papel'], true));      // tools whose parts are colours: drawn in them
                 } catch (\Throwable $e) {
                     $this->warn(sprintf('%s #%d: the tool refused the parameters (%s)', $tool, $i + 1, mb_substr($e->getMessage(), 0, 160)));
                     $failed++;

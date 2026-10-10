@@ -23,6 +23,7 @@ return [
         'christmas-ball' => 'Bola de Navidad',
         'christmas-tree-colour' => 'Árbol de Navidad decorado',
         'smiling-star' => 'Estrella sonriente',
+        'portrait-woman' => 'Cara de mujer',
         // animals
         'cat' => 'Gato',
         'dog' => 'Perro',
@@ -212,6 +213,7 @@ return [
         'christmas-ball' => 'bola adorno esfera navidad',
         'christmas-tree-colour' => 'arbol árbol navidad abeto pino',
         'smiling-star' => 'estrella sonrisa carita',
+        'portrait-woman' => 'mujer cara retrato rostro cabeza chica',
         'cat' => 'gatito mascota',
         'dog' => 'perrito cachorro mascota',
         'paw' => 'pata huella mascota',

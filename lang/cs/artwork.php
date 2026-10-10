@@ -23,6 +23,7 @@ return [
         'christmas-ball' => 'Vánoční baňka',
         'christmas-tree-colour' => 'Ozdobený stromek',
         'smiling-star' => 'Usměvavá hvězda',
+        'portrait-woman' => 'Tvář ženy',
         // animals
         'cat' => 'Kočka',
         'dog' => 'Pes',
@@ -212,6 +213,7 @@ return [
         'christmas-ball' => 'banka ozdoba koule vánoce',
         'christmas-tree-colour' => 'stromecek vánoce jedlička smrk',
         'smiling-star' => 'hvezda hvězdička smajlík',
+        'portrait-woman' => 'zena tvar oblicej portret hlava dívka paní',
         'cat' => 'kocka kotě mazlíček',
         'dog' => 'pejsek štěně mazlíček',
         'paw' => 'tlapa stopa packa pes kočka',

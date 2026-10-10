@@ -65,6 +65,25 @@ def wave(x0, x1, y, amp, width, fill, humps=3):
     return poly(top + bottom[::-1], fill)
 
 
+def arc(cx, cy, rx, ry, a0, a1, width, fill, steps=24):
+    """A band along a piece of an ellipse (degrees, 0 = right, 90 = down): a brow, a lash line, a strand of hair."""
+    at = lambda r_x, r_y, a: (cx + r_x * math.cos(math.radians(a)), cy + r_y * math.sin(math.radians(a)))      # noqa: E731
+    outer = [at(rx, ry, a0 + (a1 - a0) * i / steps) for i in range(steps + 1)]
+    inner = [at(rx - width, ry - width, a1 - (a1 - a0) * i / steps) for i in range(steps + 1)]
+    return poly(outer + inner, fill)
+
+
+def blob(points, fill, steps=10):
+    """A closed smooth outline through the given points (Catmull-Rom): a head of hair, a face, shoulders."""
+    out, n = [], len(points)
+    for i in range(n):
+        p0, p1, p2, p3 = points[(i - 1) % n], points[i], points[(i + 1) % n], points[(i + 2) % n]
+        for s in range(steps):
+            t = s / steps
+            out.append(tuple(0.5 * (2 * p1[k] + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t * t + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t ** 3) for k in (0, 1)))
+    return poly(out, fill)
+
+
 PICTURES = {
     "happy-ghost": [
         circle(500, 400, 300, WHITE), rect(200, 400, 600, 380, WHITE),
@@ -112,6 +131,33 @@ PICTURES = {
         star(500, 520, 480, 250, YELLOW),
         circle(420, 470, 34, DARK), circle(580, 470, 34, DARK), smile(500, 500, 110, 28, DARK, 30, 150),
         ellipse(345, 560, 48, 30, PINK), ellipse(655, 560, 48, 30, PINK),
+    ],
+    # a face nobody owns: what the portrait mode of papel picado is shown with (docs/T.md)
+    "portrait-woman": [
+        # the hair behind the head, down to the shoulders
+        blob([(500, 40), (700, 90), (810, 260), (830, 500), (850, 700), (800, 860), (640, 900), (500, 880), (360, 900), (200, 860), (150, 700), (170, 500), (190, 260), (300, 90)], DARK),
+        # shoulders in a blouse, the neck, the collar, a string of beads
+        blob([(500, 800), (700, 830), (900, 900), (960, 1000), (500, 1000), (40, 1000), (100, 900), (300, 830)], YELLOW, 6),
+        poly([(425, 640), (575, 640), (590, 840), (500, 900), (410, 840)], CREAM),
+        poly([(410, 820), (500, 910), (590, 820), (650, 850), (500, 1000), (350, 850)], WHITE),
+        circle(432, 842, 15, RED), circle(462, 870, 15, RED), circle(500, 884, 15, RED), circle(538, 870, 15, RED), circle(568, 842, 15, RED),
+        circle(200, 930, 16, RED), circle(300, 960, 16, RED), circle(120, 975, 16, RED), circle(800, 930, 16, RED), circle(700, 960, 16, RED), circle(880, 975, 16, RED),
+        # the face
+        blob([(500, 150), (640, 190), (700, 330), (705, 470), (660, 610), (580, 710), (500, 740), (420, 710), (340, 610), (295, 470), (300, 330), (360, 190)], CREAM),
+        # the hair in front: a parting on the left, a sweep across the forehead
+        blob([(300, 420), (290, 260), (360, 130), (500, 90), (640, 120), (720, 250), (715, 430), (680, 330), (600, 240), (470, 200), (380, 250), (330, 330)], DARK),
+        # strands the light catches
+        arc(520, 330, 190, 170, 200, 262, 14, ORANGE), arc(560, 400, 250, 250, 215, 262, 12, ORANGE), arc(600, 420, 300, 300, 222, 255, 10, ORANGE),
+        arc(500, 520, 330, 360, 150, 178, 12, ORANGE), arc(500, 520, 330, 360, 2, 30, 12, ORANGE), arc(500, 540, 300, 330, 152, 172, 10, ORANGE), arc(500, 540, 300, 330, 8, 28, 10, ORANGE),
+        # brows, eyes with their lashes
+        arc(405, 452, 84, 62, 222, 318, 15, DARK), arc(595, 452, 84, 62, 222, 318, 15, DARK),
+        ellipse(405, 468, 52, 28, WHITE), ellipse(595, 468, 52, 28, WHITE),
+        arc(405, 486, 60, 46, 198, 342, 12, DARK), arc(595, 486, 60, 46, 198, 342, 12, DARK),
+        circle(405, 468, 25, DARK), circle(595, 468, 25, DARK), circle(414, 460, 8, WHITE), circle(604, 460, 8, WHITE),
+        # the nose, the mouth, earrings
+        arc(500, 528, 40, 44, 35, 145, 11, BROWN), poly([(490, 452), (502, 448), (494, 548), (480, 556)], BROWN),
+        blob([(424, 632), (470, 618), (500, 626), (530, 618), (576, 632), (540, 668), (500, 678), (460, 668)], RED, 6),
+        circle(292, 566, 24, YELLOW), circle(708, 566, 24, YELLOW),
     ],
 }
 

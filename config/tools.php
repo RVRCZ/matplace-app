@@ -129,10 +129,12 @@ return [
         ['params' => ['width' => 60, 'line1' => 'HAND', 'line2' => 'MADE', 'mode' => 'raised', 'handle' => 'knob']],
         ['params' => ['width' => 40, 'line1' => 'OK', 'mode' => 'recessed', 'handle' => 'none']],
     ]]],
+    // (docs/T.md) a portrait in two filaments from the drawn face of the library, the cut-out it always was, a frame alone;
+    // the built-in white and blue are the cream and the dark blue the pictures are drawn in, whatever spools a site has
     'papel' => ['route' => 'tools.papel', 'intent' => 'create', 'categories' => ['images', 'craft'], 'available' => true, 'seo' => ['examples' => [
+        ['params' => ['artwork' => 'lib:colour/portrait-woman', 'treatment' => 'portrait', 'width' => 190, 'height' => 190, 'border' => 'folk', 'border_mm' => 12, 'scallop_edge' => 'all', 'backdrop' => 'pattern', 'part_colors' => ['body' => 'white', 'details' => 'blue']]],
         ['params' => ['artwork' => 'lib:holidays/sugar-skull', 'width' => 150, 'height' => 200]],
-        ['params' => ['artwork' => 'lib:hearts-stars/heart', 'width' => 120, 'height' => 120, 'border' => 'hearts']],
-        ['params' => ['artwork' => 'lib:animals/butterfly', 'width' => 200, 'height' => 150, 'border' => 'diamonds', 'invert' => true]],
+        ['params' => ['treatment' => 'portrait', 'width' => 160, 'height' => 120, 'border' => 'folk', 'border_mm' => 20, 'scallop_edge' => 'all', 'part_colors' => ['body' => 'white', 'details' => 'blue']]],
     ]]],
     'notes' => ['route' => 'tools.notes', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:animals/cat', 'width' => 90]],

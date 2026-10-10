@@ -1,30 +1,30 @@
 <?php
 
 return [
-    'title' => 'Papel picado a partir de una foto o un dibujo, en 3D',
-    'description' => 'Suba una foto o un dibujo y obtenga un panel calado al estilo del papel picado mexicano, con cenefa de flores y orificios para el hilo.',
-    'h1' => 'Papel picado: un panel calado con su propia imagen',
+    'title' => 'Papel picado a partir de una foto: retrato o silueta en 3D',
+    'description' => 'Suba la foto de una cara y obtenga un retrato en dos colores con marco calado, o una silueta calada en un panel fino. Gratis, impreso por nosotros o descargado.',
+    'h1' => 'Papel picado: un retrato a partir de una foto o un panel calado con su imagen',
     'intro' => [
-        'El papel picado es la guirnalda mexicana de papel de colores en la que se calan figuras y adornos; se cuelga en fiestas, bodas y, sobre todo, en el Día de Muertos. La herramienta hace lo mismo en plástico: un panel fino de 80 a 250 mm de ancho y de alto, en el que su imagen queda calada como una ventana. Las partes oscuras de la imagen quedan como «papel» y las claras se calan; también se puede invertir. Puede subir una foto, un dibujo o una silueta (PNG, JPG, WebP, SVG), o elegir un motivo de la biblioteca, como una calavera de azúcar.',
-        'Alrededor de la ventana va una cenefa calada con uno de seis motivos: flores, rombos, puntos, corazones, hojas o estrellas. El borde inferior lleva ondas con un orificio y en las esquinas superiores hay dos orificios para el hilo. Las partes de la imagen que quedarían en el aire, como un rostro sobre un fondo calado o la pupila de un ojo, se sujetan con uniones finas que la herramienta añade sola. En una foto usted decide cuánto papel queda y cuánto se simplifica. El panel es una impresión de un color y sin soportes; una guirnalda se compone de varios paneles de distintos colores.',
+        'El papel picado es la guirnalda mexicana de papel de colores en la que se calan figuras y adornos; se cuelga en fiestas, bodas y, sobre todo, en el Día de Muertos. La herramienta hace lo mismo en plástico, de dos maneras. La silueta es un panel fino con la imagen calada como una ventana. El retrato es la foto de una cara convertida en un dibujo de dos colores que va sobre una base sólida, así que nada se cae ni se rompe. Puede subir una foto, un dibujo o una silueta (PNG, JPG, WebP, SVG), o elegir un motivo de la biblioteca.',
+        'En el retrato todo el panel es una base clara y sobre ella se imprimen, en un segundo color oscuro, el marco y las partes oscuras de la cara: pelo, ojos, labios, sombras. La herramienta sabe separar a la persona del fondo; el fondo queda claro, o bien oscuro y sembrado de flores por las que asoma la base. Con los deslizadores decide cuánto queda oscuro, lo fino que es el dibujo y cuánto se recorta bajo los hombros. El retrato se mueve, se agranda y se gira dentro de su ventana en la misma vista previa. Se imprime en plano, con un solo cambio de filamento a la altura de la base. Alrededor de la ventana va una cenefa calada con uno de siete motivos: flores populares, flores, rombos, puntos, corazones, hojas o estrellas. Usted fija su ancho y la densidad del motivo. Las ondas con orificio pueden ir solo abajo o en todo el contorno, y en las esquinas superiores hay dos orificios para el hilo. En la silueta la herramienta sujeta con uniones finas lo que quedaría en el aire, como un rostro sobre un fondo calado. El panel mide de 80 a 250 mm de ancho y de alto.',
     ],
     'steps' => [
-        ['name' => 'Elija una imagen', 'text' => 'Suba una foto o un dibujo, o elija un motivo de la biblioteca. Una imagen llena toda la ventana del panel; un dibujo SVG se coloca entero dentro.'],
-        ['name' => 'Ajuste el calado', 'text' => 'El deslizador «Cuánto papel queda» mueve el límite entre papel y huecos; «Simplificación de la foto» quita los detalles pequeños que no se imprimirían.'],
-        ['name' => 'Elija la cenefa y el tamaño', 'text' => 'Seis motivos de cenefa o un borde liso; las ondas inferiores y los orificios para el hilo se pueden quitar. Cambie el ancho y la altura con los deslizadores o arrastrando las flechas en la vista previa.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto, un paso después. El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
+        ['name' => 'Elija silueta o retrato y suba una imagen', 'text' => 'Al subir una foto la herramienta pasa a retrato; con un dibujo o un motivo de la biblioteca, a silueta. Puede cambiar la elección cuando quiera.'],
+        ['name' => 'Ajuste el dibujo', 'text' => '«Luz / sombra» mueve el límite entre oscuro y claro; «Detalle del retrato» decide lo finos que quedan los rasgos. Junto a la foto original ve el retrato tal como se imprimirá.'],
+        ['name' => 'Elija el marco, el tamaño y la colocación', 'text' => 'El motivo y el ancho de la cenefa, las ondas, los orificios para el hilo. Arrastre el marco de la vista previa para mover el retrato en su ventana; una esquina cambia el tamaño y el tirador lo gira.'],
+        ['name' => 'Escoja los colores y pida la impresión o descargue', 'text' => 'Los colores de la base y del marco salen de las bobinas que tenemos en la granja. La impresión con nosotros está a un paso; el proyecto 3MF de dos colores y el STL se descargan gratis y sin registro.'],
     ],
     'faq' => [
-        ['q' => '¿Qué foto funciona?', 'a' => 'Un retrato o un motivo con mucho contraste y un fondo tranquilo: pelo oscuro, rostro claro. Una foto con muchas zonas del mismo gris da una mancha sin forma; ayuda mover el límite del papel o simplificar más.'],
-        ['q' => '¿Por qué hay líneas verticales finas en la imagen?', 'a' => 'Son las uniones. Un trozo de papel que no sujetaría nada al calar lo que lo rodea queda unido con ellas al borde del hueco. Las uniones miden de 0,8 a 2,4 mm de ancho; bajo la vista previa se indica cuántas hay.'],
-        ['q' => '¿Qué grosor debe tener el panel?', 'a' => 'De 0,8 a 2 mm; por defecto, 1,2 mm. Más fino es más translúcido y flexible; más grueso conserva la forma en formatos mayores. Para un panel de 200 mm o más elija al menos 1,2 mm.'],
-        ['q' => '¿Aguanta en exteriores?', 'a' => 'El PLA soporta la lluvia, pero al sol directo un panel fino se comba y pierde color con el tiempo. Aguanta una fiesta en el jardín; para todo un verano elija PETG.'],
-        ['q' => '¿Cómo hago una guirnalda entera?', 'a' => 'Imprima paneles iguales o distintos en varios colores y ensártelos en un hilo por los orificios de las esquinas superiores. Los colores tradicionales son rosa, naranja, amarillo, verde, azul y morado.'],
+        ['q' => '¿Qué foto da un buen retrato?', 'a' => 'Una cara nítida y bien iluminada, de frente o de medio perfil. Un fondo tranquilo ayuda, pero no hace falta: separamos a la persona del fondo. Lo mejor es pelo oscuro sobre piel clara; con pelo claro elija el fondo oscuro alrededor de la persona y la cabeza tendrá un contorno claro.'],
+        ['q' => '¿Por qué el retrato va sobre una base y no calado?', 'a' => 'Una cara está llena de islas pequeñas: pupilas, el brillo de las gafas, mechones de pelo. Caladas, nada las sujetaría. Sobre una base cada detalle se sostiene y el dibujo puede ser mucho más fino.'],
+        ['q' => '¿Cómo se imprimen los dos colores?', 'a' => 'La base se imprime en el primer color y desde su parte alta la impresión sigue en el segundo. Es un cambio de filamento a una altura, 2 mm por defecto. Nuestra granja lo hace sola. El proyecto 3MF para OrcaSlicer y PrusaSlicer lleva el cambio, así que basta una impresora de una boquilla. De lado se ve el canto claro de la base. También vale un solo color: el STL es un solo cuerpo y el dibujo sobresale como relieve.'],
+        ['q' => '¿Por qué hay líneas verticales finas en la silueta?', 'a' => 'Son las uniones. Un trozo de papel que no sujetaría nada al calar lo que lo rodea queda unido con ellas al borde del hueco. Las uniones miden de 0,8 a 2,4 mm de ancho. El retrato no las necesita.'],
+        ['q' => '¿Qué grosor debe tener el panel?', 'a' => 'La silueta, de 0,8 a 2 mm; por defecto, 1,2 mm. El retrato tiene una base de 1 a 3 mm y sobre ella un dibujo de 0,3 a 1,2 mm; los 2 + 0,6 mm por defecto dan una placa firme que no se dobla.'],
         ['q' => '¿Cómo pago y cómo recibo el panel?', 'a' => 'Se paga con crédito prepago que se recarga con tarjeta; los precios se muestran en coronas checas o en euros. Enviamos la impresión con Packeta a un punto de recogida o a una dirección en la UE.'],
     ],
     'examples' => [
-        'Panel de 150 × 213 mm con la calavera de azúcar de la biblioteca y cenefa de flores.',
-        'Panel cuadrado de 120 × 132 mm con un corazón y cenefa de corazones.',
-        'Panel apaisado de 200 × 163 mm con una mariposa calada y cenefa de rombos.',
+        'Retrato de 190 × 190 mm con la cara dibujada de la biblioteca: base crema, marco azul oscuro con flores populares y ondas en todo el contorno.',
+        'Silueta de 150 × 213 mm con la calavera de azúcar de la biblioteca y cenefa de flores.',
+        'Marco de 160 × 120 mm con flores populares y la ventana vacía: una placa para su propio rótulo o una foto pegada.',
     ],
 ];

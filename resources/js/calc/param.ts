@@ -32,6 +32,11 @@ interface ShapeNotes {
     frame?: [number, number, number]; draw_z?: number;
     layers?: { part: string; index: number; box: [number, number, number, number]; z: number }[]; outer?: number[];
 }
+/** What the tool says about a papel picado portrait: its two parts and their filaments, where the picture lies in its window, the small picture of the result. */
+interface PapelNotes {
+    parts?: string[]; paint?: Record<string, string>; part_colors?: Record<string, { code: string; hex: string }>; color_changes?: { z: number }[]; filaments?: number; outer?: number[];
+    portrait?: { box: [number, number, number, number]; z: number; window: [number, number]; placed: boolean }; preview?: string; rembg?: boolean | null; isolated?: boolean;
+}
 /** A layer of a composition: a text, a picture (of the library or the visitor's own) or a shape; where its middle lies, how wide it is, how it is turned, its filament. */
 interface Layer { kind: string; text: string; typeface: string; art: string; art_name: string; shape: string; x: number; y: number; w: number; turn: number; code: string; hidden: boolean }
 
@@ -65,6 +70,11 @@ export function bootParam(stage: Stage): void {
     // a biscuit: the icing drawn on it by hand
     const cookie = cfg.kind === 'cookie';
     const compose = cfg.kind === 'compose';
+    // papel picado: as a portrait it has two parts in two filaments and a picture that can be moved in its window
+    const papel = cfg.kind === 'papel';
+    const papelNotes = (): PapelNotes => (lastMeta?.notes ?? {}) as PapelNotes;
+    let papelTouched = false;               // the visitor chose cut-out or portrait himself: a new picture no longer chooses for him
+    let noCutOut = false;                   // the server cannot cut a person out of a photo: the tick stays off
     const layers: Layer[] = []; let chosen = 0;         // a composition: its layers from the bottom up, and which one is being edited
     const strokes: Stroke[] = [];
     let drawing = false; let pen = spoolCode('white');
@@ -172,6 +182,7 @@ export function bootParam(stage: Stage): void {
     const partsNow = (): string[] => {
         const p = params();
         if (shape) return shapeNotes().parts ?? [];
+        if (papel) return papelNotes().parts ?? [];              // the backing and what lies on it, only as a portrait
         if (cfg.kind === 'box' && p.lid) return ['body', 'lid'];
         if (cfg.kind === 'vase' && p.purpose === 'pot' && p.saucer) return ['body', 'saucer'];
         if (cfg.kind === 'stamp' && p.handle === 'knob') return ['body', 'handle'];
@@ -200,7 +211,7 @@ export function bootParam(stage: Stage): void {
     const renderViews = (): void => {
         const box = document.getElementById('param-views');
         if (!box) return;
-        if (shape) { box.innerHTML = ''; viewPart = 'all'; return; }      // the colours lie on one plate: nothing to look at one by one
+        if (shape || papel) { box.innerHTML = ''; viewPart = 'all'; return; }      // the colours lie on one plate: nothing to look at one by one
         // a threaded cap: the thread is inside, a look at the cut model shows it
         const views = ['all', ...partsNow().filter((p) => !['plate', 'text'].includes(p)), ...(cfg.kind === 'stamp' ? ['imprint'] : []), ...(cfg.kind === 'cap' && params().style === 'thread' ? ['cut'] : [])];
         if (!views.includes(viewPart)) viewPart = 'all';
@@ -272,11 +283,15 @@ export function bootParam(stage: Stage): void {
         if (ownColors || viewPart !== 'all') return;
         const pieces = viewer.getPieces();
         const rows = partRows();
+        const own = papel ? (papelNotes().paint ?? {}) : {};      // a portrait comes with the filaments the tool gave it
         pieces.forEach((piece, i) => {
             const part = rows.includes(piece.name) ? piece.name : rows.length === 1 ? rows[0] : piece.name;
-            viewer.setPieceColor(i, partColors[part] ? colorOf(partColors[part])?.hex ?? null : null);
+            viewer.setPieceColor(i, partColors[part] ? colorOf(partColors[part])?.hex ?? null : own[part] ?? null);
         });
     };
+
+    /** The filament of a part: the visitor's own choice, else the one the tool gave it (a portrait: the backing light, the frame dark). */
+    const partCode = (part: string): string | null => partColors[part] ?? (papel ? papelNotes().part_colors?.[part]?.code || null : null);
 
     /** The rows of the colours section: the parts printed separately, or the one body. */
     const partRows = (): string[] => { const p = partsNow(); return p.length ? p : ['body']; };
@@ -364,10 +379,11 @@ export function bootParam(stage: Stage): void {
         const rows = partRows();
         Object.keys(partColors).forEach((p) => { if (!rows.includes(p)) delete partColors[p]; });
         box.innerHTML = '';
-        rows.forEach((part) => {
+        // (a portrait lists the frame and the picture first, the backing under them, as they lie)
+        (papel ? [...rows].reverse() : rows).forEach((part) => {
             const row = document.createElement('div');
             row.className = 'tool-swatch-row'; row.dataset.part = part;
-            const code = partColors[part] ?? null; const c = colorOf(code);
+            const code = partCode(part); const c = colorOf(code);
             row.innerHTML = `<button type="button" class="tool-swatch" aria-label="${rows.length > 1 ? partLabel(part) : stage.t('toolpage.color.one')}: ${stage.t('toolpage.color.pick')}"></button>
                 <span class="min-w-0 text-sm"><span class="block font-medium text-ink">${rows.length > 1 ? partLabel(part) : stage.t('toolpage.color.one')}</span><span class="block truncate text-muted">${c ? `${c.name} · ${materialLabel(c)}` : stage.t('toolpage.color.pick')}</span></span>`;
             const swatch = row.querySelector<HTMLElement>('.tool-swatch')!;
@@ -376,7 +392,15 @@ export function bootParam(stage: Stage): void {
             box.appendChild(row);
         });
         // the order starts from the colour of the first part
-        ($('param-color') as HTMLInputElement).value = partColors[rows[0]] ? colorName(partColors[rows[0]]) : '';
+        ($('param-color') as HTMLInputElement).value = partCode(rows[0]) ? colorName(partCode(rows[0])!) : '';
+        if (papel && rows.length > 1) {
+            // how the two filaments get into one print
+            const swap = papelNotes().color_changes?.[0]?.z;
+            const note = document.createElement('p');
+            note.className = 'rounded-lg bg-page p-3 text-sm text-ink';
+            note.textContent = swap ? t('param.papel.swap', { z: nf.format(swap) }) : t('param.papel.one');
+            box.appendChild(note);
+        }
         renderRecent();
     };
 
@@ -441,6 +465,12 @@ export function bootParam(stage: Stage): void {
             stage.status({ bbox: { x: e[0], y: e[1], z: e[2] }, pieces: n.copies ?? 1, colors: n.filaments ?? 1 });
             return;
         }
+        if (papel && partsNow().length) {
+            // one panel; its two parts are filaments, not pieces
+            const o = papelNotes().outer ?? [lastMeta.bbox.x, lastMeta.bbox.y, lastMeta.bbox.z];
+            stage.status({ bbox: { x: o[0], y: o[1], z: o[2] }, pieces: 1, colors: papelNotes().filaments ?? 1 });
+            return;
+        }
         const pieces = viewer.getPieces();
         const sizes = pieces.filter((p) => p.bbox).map((p) => [p.bbox![3] - p.bbox![0], p.bbox![4] - p.bbox![1], p.bbox![5] - p.bbox![2]]);
         const outer = (lastMeta.notes as { outer?: number[] }).outer;
@@ -471,6 +501,7 @@ export function bootParam(stage: Stage): void {
             if (lastMeta) { renderDims(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus();
             renderDownloads(); placeEyelet(); placeFrame();
+            if (papel) papelShow();
             if (cookie) { renderPen(); armDraw(); }
         } catch {
             if (mine === seq) { valid = false; showError(t('param.failed')); }
@@ -613,7 +644,7 @@ export function bootParam(stage: Stage): void {
         state.appendChild(b);
     };
     const artOpen = document.getElementById('param-artwork-open');
-    if (artOpen) artOpen.onclick = async () => { const picked = await pickArtwork('library', cfg.kind === 'cookie' ? 'cookies' : ''); if (picked) { setArtwork(picked); void refresh().then(commit); } };
+    if (artOpen) artOpen.onclick = async () => { const picked = await pickArtwork('library', cfg.kind === 'cookie' ? 'cookies' : ''); if (picked) { setArtwork(picked); if (papel) papelPicked(picked); void refresh().then(commit); } };
 
     // ── modular organizer: bins on the customer's own grid ─────────────────
     const grid = document.getElementById('bin-grid');
@@ -783,7 +814,78 @@ export function bootParam(stage: Stage): void {
         const v = document.querySelector<HTMLElement>(`#compose-edit [data-layer-value="${k}"]`);
         if (v) v.textContent = `${nf.format(l[k])} ${k === 'turn' ? '°' : t('compose.unit')}`;
     };
+    // ── papel picado as a portrait: the picture in its window, moved, sized and turned by the same frame ──
+    const PAPEL_MODES: Record<string, Record<string, number | string>> = {
+        cutout: { border: 'flowers', scallop_edge: 'bottom', backdrop: 'plain', border_mm: 20, width: 150, height: 200 },
+        portrait: { border: 'folk', scallop_edge: 'all', backdrop: 'pattern', border_mm: 12, width: 190, height: 190 },
+    };
+    /** Cut-out or portrait: what the visitor left as the other one starts with follows (the border, the scallops, the size). */
+    const papelMode = (to: string): void => {
+        const mine = PAPEL_MODES[to]; const other = PAPEL_MODES[to === 'portrait' ? 'cutout' : 'portrait'];
+        if (!mine) return;
+        const now = params();
+        const set: Record<string, number | string> = { treatment: to };
+        Object.keys(mine).forEach((k) => { if (String(now[k]) === String(other[k])) set[k] = mine[k]; });
+        applyValues(set);
+    };
+    /** A photo becomes a portrait, a drawing or a silhouette of the library a cut-out, until the visitor says otherwise; a new picture lies in the middle again. */
+    const papelPicked = (picked: PickedArtwork): void => {
+        // (the library's drawings in colours are read like photos: the face it has is there to try a portrait with)
+        const photo = picked.ref.startsWith('lib:colour/') || (!picked.ref.startsWith('lib:') && !/\.svg$/i.test(picked.name));
+        const to = photo ? 'portrait' : 'cutout';
+        if (!papelTouched && params().treatment !== to) papelMode(to);
+        applyValues({ portrait_scale: 1, portrait_x: 0, portrait_y: 0, portrait_turn: 0 });
+    };
+    /** The two small pictures of the step "Photo" (as it came, as it is printed) and the tick the server cannot keep. */
+    const papelShow = (): void => {
+        const n = papelNotes();
+        const box = document.getElementById('papel-thumbs'); const before = document.getElementById('papel-original'); const after = document.getElementById('papel-portrait');
+        if (box && before && after) {
+            const on = typeof n.preview === 'string' && /^[A-Za-z0-9+/=]+$/.test(n.preview);
+            if (on) {
+                before.innerHTML = artworkShown?.url ? `<img src="${artworkShown.url.replace(/"/g, '&quot;')}" alt="" class="max-h-full max-w-full object-contain">` : '';
+                before.parentElement?.classList.toggle('hidden', !artworkShown?.url);
+                after.innerHTML = `<img src="data:image/png;base64,${n.preview}" alt="" class="max-h-full max-w-full object-contain">`;
+            }
+            box.classList.toggle('hidden', !on); box.classList.toggle('grid', on);
+        }
+        if (n.rembg === false) noCutOut = true;
+        const tick = form.querySelector<HTMLInputElement>('[data-flag="isolate"]');
+        if (tick && noCutOut) {
+            tick.checked = false; tick.disabled = true;
+            tick.closest('label')?.classList.add('opacity-60');
+            document.getElementById('papel-isolate-off')?.classList.remove('hidden');
+        }
+    };
+    const placePortrait = (): void => {
+        const at = papelNotes().portrait;
+        if (!at || !at.placed || !valid || viewPart !== 'all') { viewer.setFrame(null, null); return; }
+        let from: { x: number; y: number; scale: number; turn: number } | null = null;
+        viewer.setFrame({ box: at.box, z: at.z }, (c, phase) => {
+            const [x, y, size, turn] = ['x', 'y', 'scale', 'turn'].map((k) => fieldOf(`portrait_${k}`));
+            if (!x || !y || !size || !turn) return undefined;
+            from ??= { x: Number(x.value), y: Number(y.value), scale: Number(size.value), turn: Number(turn.value) };
+            const put = (input: HTMLInputElement, v: number, reach = Infinity): void => {
+                input.value = String(Math.round(Math.max(Number(input.min), -reach, Math.min(Number(input.max), reach, v)) * 100) / 100);
+                syncRange(input);
+            };
+            // the middle of the picture stays in its window
+            put(x, Math.round((from.x + c.dx) * 2) / 2, Math.floor(at.window[0]) / 2);
+            put(y, Math.round((from.y + c.dy) * 2) / 2, Math.floor(at.window[1]) / 2);
+            put(size, Math.round(from.scale * c.scale * 20) / 20);
+            put(turn, Math.round(from.turn + c.turn));
+            const said = c.turn ? `${nf.format(Number(turn.value))}°` : c.scale !== 1 ? t('param.papel.place.size', { s: nf.format(Number(size.value)) }) : t('param.papel.place.at', { x: nf.format(Number(x.value)), y: nf.format(Number(y.value)) });
+            if (phase === 'end') { from = null; void refresh().then(commit); }
+            return said;
+        });
+    };
+    document.getElementById('papel-place-reset')?.addEventListener('click', () => {
+        applyValues({ portrait_scale: 1, portrait_x: 0, portrait_y: 0, portrait_turn: 0 });
+        soon(0);
+    });
+
     const placeFrame = (): void => {
+        if (papel) { placePortrait(); return; }
         const l = layers[chosen]; const n = shapeNotes();
         // the tool numbers the layers it built: the hidden ones are not among them
         const at = l && !l.hidden ? layers.slice(0, chosen).filter((x) => !x.hidden).length + 1 : 0;
@@ -996,6 +1098,7 @@ export function bootParam(stage: Stage): void {
     form.addEventListener('input', (e) => {
         const el = e.target as HTMLInputElement;
         if (el.dataset.choice && fills[el.dataset.choice]?.[el.value]) applyValues(fills[el.dataset.choice][el.value]);
+        if (papel && el.dataset.choice === 'treatment') { papelTouched = true; papelMode(el.value); }
         // what changes the colours the picture is read in also empties what was said about them
         if (shape && (['colors_n', 'bg_strength', 'contrast', 'brightness', 'saturation'].includes(el.dataset.param ?? '') || el.dataset.flag === 'remove_bg')) { forgetColours(); adjustThumb(); }
         if (el.dataset.param) {
@@ -1041,7 +1144,7 @@ export function bootParam(stage: Stage): void {
             // what the colours of the parts are travels on as a note: the farm and a printer read it with the order
             const rows = partRows();
             const colourNote = shape ? rows.filter((p) => shapeCode(p)).map((p) => `${partLabel(p)}: ${colorName(shapeCode(p)!)}`).join('; ')
-                : rows.length > 1 ? rows.filter((p) => partColors[p]).map((p) => `${partLabel(p)}: ${colorName(partColors[p])}`).join('; ') : '';
+                : rows.length > 1 ? rows.filter((p) => partCode(p)).map((p) => `${partLabel(p)}: ${colorName(partCode(p)!)}`).join('; ') : '';
             const note = [lastMeta ? bomText(lastMeta).join('; ') : '', colourNote ? `${stage.t('toolpage.color.note')}: ${colourNote}` : ''].filter(Boolean).join(' | ');
             const plate = params().plate_color;      // a two-colour design: the plate is "the colour", the second one travels with the design
             const q = new URLSearchParams({
@@ -1088,6 +1191,7 @@ export function bootParam(stage: Stage): void {
             form.querySelectorAll('[data-preset]').forEach((o) => o.classList.toggle('chip-on', (o as HTMLElement).dataset.preset === preset));
             applyWhen();
         }
+        if (papel) applyValues({ border_mm: PAPEL_MODES.cutout.border_mm });      // the page opens as a cut-out: a thin sheet wants the wider border it always had
         const typed: Record<string, string> = {};
         form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { const v = qs.get(i.dataset.text!); if (v) typed[i.dataset.text!] = v.slice(0, i.maxLength > 0 ? i.maxLength : 40); });
         if (Object.keys(typed).length) applyValues(typed);
