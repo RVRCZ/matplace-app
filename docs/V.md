@@ -201,12 +201,25 @@ skutečné hranice hotendu s danou cívkou.
 Závěr: poměr toku horní plochy zůstává 1,0; podezřelý je tok – horní plocha jede 200 mm/s × 0,42 × 0,2 = 16,8 mm³/s,
 tedy na stropu 16 (viz 3.1), kde tryska nestíhá. Další test na Maxu: `quick` s `{"top_surface_speed":"120"}` (10 mm³/s).
 
-**T26-000033** (10. 10. večer; modrý `quick` – podle barvy Max × PLA+ modrá, nastavení Roman potvrdí, čekáno
-`{"top_surface_speed":"120"}`): 7 snímků z nízkého úhlu, expozice −6 je pro tmavě modrou málo (od té doby −5 pro modrou,
-−6 pro bílou). Co je vidět: most rovný, mezi pilíři žádné vlásky, převisové lamely čisté; **na pilířích a na kostce
-vodorovné pruhy ve stejných výškách** (změna doby vrstvy, když nižší prvky skončí), na boku kostky u rohu jemné
-svislé vlnění, tenká stěna vodorovně pruhovaná. **Horní plocha kostky se z nízkého úhlu posoudit nedá** – k tomu
-snímek s deskou naklopenou ke kameře.
+**T26-000033 = M120** (10. 10. večer, Kobra 3 Max, PLA+ modrá, `quick` s `{"top_surface_speed":"120"}` – Roman
+potvrdil, že je z Maxu; „test s procesem navíc“ z 19:1x byl tenhle, **S2 na S1 se zatím netiskl**). Snímky: 7 z nízkého
+úhlu při expozici −6 (pro tmavě modrou málo) a jeden s deskou naklopenou ke kameře při −5 (19:44) – ten je čitelný.
+
+| co | nález |
+|---|---|
+| horní plocha kostky | uzavřená, bez děr, ale čáry stojí jako oddělené hřebínky s rýhami mezi sebou (ne slitá plocha) |
+| bok kostky | **nejvýraznější vada**: lesklé a matné pruhy po vrstvách, zřetelný vodorovný schodek asi ve 3/4 výšky, šikmý vzor – nerovnoměrné kladení vnější stěny |
+| pilíře | vodorovné prstence a hrbolky po výšce, bez vlásků mezi pilíři |
+| most, převisy | most rovný, lamely čisté |
+| tenká stěna | vodorovně pruhovaná |
+
+Pruhy a schodek sedí na výšky, kde na `quick` končí nižší prvky (lamely 10 mm, most 12 mm, kostka 15 mm): doba vrstvy
+se tam skokem zkrátí, slicer zpomalí (`slow_down_layer_time` 8 s) a vnější stěna jede jinou rychlostí → jiný lesk.
+Zčásti je to vlastnost zkušebního objektu, ale ukazuje, jak moc je vzhled stěny na Maxu citlivý na rychlost.
+Srovnávací tisk z Maxu s 200 mm/s z farmy není (Romanův ruční test byl mimo farmu), takže jestli 120 horní plochu
+zlepšilo, umí říct jen Roman. Další kroky na Maxu, po jedné změně: (1) `quick` s
+`{"top_surface_speed":"120","outer_wall_speed":"100"}` – bok kostky; (2) objekt `ironing` se zaškrtnutým žehlením –
+horní plocha (dnes `ironing = no`).
 
 Hodnoty farmy pro Max dnes: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
 `top_surface_pattern = monotonicline`, `only_one_wall_top = 1`; Max jede s procesem S1 bez přepisů pro velkou
