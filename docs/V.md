@@ -60,8 +60,16 @@ Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hr
 | test | stroj, cívka | nastavení | výsledek | fotky |
 |---|---|---|---|---|
 | T26-000030 | S1 #1, PLA+ bílá (slot 4) | scarf | **nedoběhl** – tiskárna na 110 min ztratila spojení s agentem, Roman tisk vypnul, zakázka `failed`; nehodnotí se | – |
-| T26-000031 (B) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | dnešní (bez scarfu) | **hotovo 10. 10.** – kostka 14,96 × 14,95 (−0,04/−0,05), rohy ostré, stěny válce, hranolu i kužele hladké; na 8 fotkách z foto‑boxu (měkké čelní světlo, 3840 × 2160, výřezy v plném rozlišení) **šev nenalezen** na žádné straně; horní plochy s viditelnými čarami (válec, kužel), žádné vlásky kromě prachu; nažloutlý nádech paty kužele = stín, ne vada | u testu v adminu |
+| T26-000031 (B) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | dnešní (bez scarfu) | **hotovo 10. 10.** – kostka 14,96 × 14,95 (−0,04/−0,05), rohy ostré, stěny válce, hranolu i kužele hladké; na 8 fotkách z foto‑boxu (měkké čelní světlo, 3840 × 2160, výřezy v plném rozlišení) **šev jsem nenašel** (AI ho na válci našla, viz níže – můj výřez mířil jinam); horní plochy s viditelnými čarami (válec, kužel), žádné vlásky kromě prachu; nažloutlý nádech paty kužele = stín, ne vada | u testu v adminu |
 | – | S1 #1, PLA+ bílá (slot 4) | scarf | čeká | – |
+
+**AI hodnocení T26-000031** (10. 10. 16:04, 11 fotek, 3 přiblížení) – první ostrý běh pokynu pro šev: *Šev 2 (spíš):
+na válci svislá čára uprostřed stěny (foto 9, 2)*, *Vada na švu: none – čára v rovině se stěnou, bez hrbolu a drážky*,
+rohy ok, sloní noha 0, podložka ok, celkem 4/5; k tomu poznámka o malém výstupku u okraje vršku kužele a drsném
+vršku, a žádost o fotky kužele a hranolu zblízka z boku při bočním světle. Pokyn tedy funguje: šev našlo, správně
+odlišilo rovný šev od boule/díry a řeklo si o správné světlo. Roman potvrdil formulář (10. 10.): **šev 1 (slabá
+linka), vada žádná, rohy ostré, 4/5**; rozměry kostky do formuláře nezapsal (14,96 × 14,95 jsou tady). Poradce:
+„není co měnit“. Řádek zůstává v1 (`tuned`); tlačítko „označit jako vyladěné“ u B nemačkat, dokud není porovnán S.
 
 Poučení z B: v měkkém světle foto‑boxu není vidět ani běžný `aligned` šev bílého matného PLA+; dvojici B/S je nutné
 porovnat **za stejných podmínek s bočním (ostrým) světlem** – Roman nemá lampu, stačí svítilna mobilu položená
