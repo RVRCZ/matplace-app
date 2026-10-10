@@ -9,6 +9,7 @@ use App\Domain\Farm\InsufficientCredit;
 use App\Domain\Farm\ModelValidator;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
+use App\Domain\Farm\Palette;
 use App\Domain\Farm\PlateLayout;
 use App\Domain\Farm\PrintSettings;
 use App\Domain\Farm\Shipping;
@@ -189,18 +190,15 @@ class OrderController extends Controller
      * @param  list<string>  $wanted  hex of every change, bottom to top
      * @return array{0: int, 1: list<int>}|null the first colour and a colour per change; null when nothing is loaded
      */
-    /** How far two colours are apart (RGB); a colour that is not a hex is grey. */
+    /** How far two colours are apart, the way the calculation measures it too (Palette::distance, CIE76 in Lab). */
     private static function hexDistance(string $a, string $b): float
     {
-        $rgb = fn (string $hex) => preg_match('/^#?([0-9a-f]{6})$/i', $hex, $m) ? array_map('hexdec', str_split($m[1], 2)) : [128, 128, 128];
-
-        return sqrt(array_sum(array_map(fn ($x, $y) => ($x - $y) ** 2, $rgb($a), $rgb($b))));
+        return Palette::distance($a, $b);
     }
 
     private static function nearestSet(array $colors, ?string $bodyHex, array $wanted): ?array
     {
-        $rgb = fn (?string $hex) => preg_match('/^#?([0-9a-f]{6})$/i', (string) $hex, $m) ? array_map('hexdec', str_split($m[1], 2)) : [128, 128, 128];
-        $far = fn (?string $a, string $b) => sqrt(array_sum(array_map(fn ($x, $y) => ($x - $y) ** 2, $rgb($a), $rgb($b))));
+        $far = fn (?string $a, string $b) => Palette::distance($a, $b);
         $best = null;
         foreach ($colors as $c) {
             if (! $c['enough']) {

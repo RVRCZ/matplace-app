@@ -324,3 +324,20 @@ main 9e3bac2 = katalog (10e0825, migrace `farm_catalogue_manufacturer` proběhla
 `/root/matplace_app-20261010-1400.sql`. Nasazeno až po skončení testu švu T26-000030 (skončil „failed“ ~13:59 UTC; S1 #1
 mezitím 110 minut „connection lost“). Po nasazení: stránky 200, 0 chyb v logu, agent farmy U se ozval do 2 s, průchod
 `scripts/check_preview_colors.mjs` proti produkci: 55 stránek, 0 bad (vrstvený obraz, který dřív padal na 502, OK).
+
+## 9. Jedna „nejbližší cívka“ pro kalkulaci i /farm (10. 10. 2026)
+
+Roman („vše ano“ k mému rozboru funnelu): zákazník viděl ve dvou krocích dvě různé „nejbližší“ barvy – kalkulace
+hledala v celém katalogu (Lab), /farm jen v založených cívkách (RGB).
+
+- `Palette::all()` zná u každé barvy `loaded` (je v zapnutém slotu zapnuté tiskárny). `Palette::nearest($hex)` hledá
+  **mezi založenými cívkami, když nějaká je**, jinak v celém katalogu; `nearest($hex, false)` (mapování starých
+  vestavěných jmen `legacy()`) hledá dál v celém katalogu. `nearestSpool()` vrací i `loaded`.
+- `Palette::distance($a, $b)` = CIE76 v Lab (ne-hex = šedá). `OrderController::hexDistance` a `nearestSet` (předvýběr
+  cívek na /farm: jedna barva, dvoubarevný návrh, díly) měří tímtéž místo RGB.
+- Výsledek: kalkulace jmenuje tu cívku, kterou /farm zaškrtne (dokud je tiskárna online a má dost filamentu).
+  Když není založené nic, kalkulace dál jmenuje katalogovou barvu (dev, prázdná farma).
+- Test v `CustomColorTest` (volná barva cedulky): bez založených cívek odpovídá katalog (`loaded=false`), po založení
+  bílé a černé odpovídá bližší z nich v Lab, `nearest($hex, false)` dál katalog.
+- Neověřené: text kalkulace `farm.calc_nearest` neříká „založená“; když je farma prázdná, hint je katalogový a /farm pak
+  nenabídne nic – stav stejný jako dřív.

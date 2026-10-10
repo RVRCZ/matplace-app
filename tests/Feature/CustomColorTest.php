@@ -160,6 +160,7 @@ class CustomColorTest extends TestCase
         $calc = $this->postJson('/api/calculations', ['file' => $uuid, 'material' => 'PLA', 'quality' => 'standard', 'infill' => 15, 'quantity' => 1])->assertCreated();
         $this->assertSame('07_PLA+_modry', $calc->json('calculation.file.nearest.0.spool.code'));
         $this->assertSame('07_PLA+_modry', $this->getJson('/api/calculations/'.$calc->json('calculation.token'))->assertOk()->json('calculation.file.nearest.0.spool.code'));
+        $this->assertFalse($nearest[0]['spool']['loaded'], 'nothing is loaded in a machine yet: the whole catalogue answers');
         // the calculator's page carries the words of that line
         $this->get('/')->assertOk()->assertSee('"farm.calc_nearest"', false)->assertSee('"farm.calc_nearest_out"', false);
 
@@ -173,6 +174,20 @@ class CustomColorTest extends TestCase
         $xml = (string) $this->entry($r->baseResponse->getFile()->getPathname(), 'Metadata/custom_gcode_per_layer.xml');
         $this->assertStringContainsString('gcode="M600"', $xml);
         $this->assertStringContainsString('color="#2a7fd5"', $xml);
+
+        // once spools sit in the machines, the calculation names the loaded one nearest to the colour - the very spool
+        // the farm's page then ticks - even when the catalogue holds a closer colour that is not loaded
+        $printer = FarmPrinter::create(['name' => 'S1', 'model' => 'Kobra S1', 'key' => 'k1', 'mode' => 'manual', 'enabled' => true, 'bed_x' => 250, 'bed_y' => 250, 'bed_z' => 250, 'nozzle_mm' => 0.4, 'machine_profile' => 'machine.json', 'process_profiles' => ['standard' => 'process_standard.json'], 'time_factor' => 1, 'weight_factor' => 1]);
+        $printer->slots()->create(['slot' => 0, 'farm_color_id' => FarmColor::where('code', '02_PLA+_bily')->value('id'), 'remaining_g' => 900, 'enabled' => true]);
+        $printer->slots()->create(['slot' => 1, 'farm_color_id' => FarmColor::where('code', '01_PLA+_cerny')->value('id'), 'remaining_g' => 900, 'enabled' => true]);
+        app()->forgetScopedInstances();
+        $loaded = $this->getJson('/api/files/'.$uuid)->assertOk()->json('file.nearest.0.spool');
+        $expect = collect(['02_PLA+_bily' => '#f4f4f2', '01_PLA+_cerny' => '#1b1b1d'])->sortBy(fn ($hex) => Palette::distance('#2a7fd5', $hex))->keys()->first();
+        $this->assertSame([$expect, true], [$loaded['code'], $loaded['loaded']], 'the blue is not loaded: of the loaded white and black the nearer one in Lab is named, as the farm page measures it');
+        // a design stored with a spool that is not loaded is told the same: the loaded spool it would be printed from
+        $this->assertSame($expect, $this->getJson('/api/files/'.$old->json('file.uuid'))->assertOk()->json('file.nearest.0.spool.code'));
+        $this->assertSame('07_PLA+_modry', app(Palette::class)->nearest('#2a7fd5', false), 'the whole catalogue still answers for the names of stored designs');
+        $this->assertLessThan(Palette::distance('#2a7fd5', '#1b1b1d'), Palette::distance('#2a7fd5', '#1f5fc0'));
     }
 
     public function test_the_nearest_spool_says_when_it_is_out_of_stock_and_a_site_without_a_farm_names_none(): void
