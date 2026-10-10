@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|
 | 1 | 10. 10. | admin + katalog nástrojů | zapnutí/skrytí jednotlivých nástrojů v adminu; skrytý nástroj zůstává správci přístupný k testování | viz úkol #1 níže | 10. 10. (popis v `docs/TOOLS-ADMIN.md`) | „Opravy #1“ na `feature/tool-fixes` |
 | 2 | 10. 10. | úvodní stránka + formuláře nástrojů | dlaždice náhradního dílu a odkaz „poskládat vlastní“ se řídí přepínačem nástroje | viz úkol #2 níže | 10. 10. (`ToolVisibility::canOpen`: host podle přepínače, správce vidí dál) | „Opravy #2“ na `feature/tool-fixes` |
-| 3 | 10. 10. | stránky návrhu všech nástrojů | tlačítko „Pokračovat k přesné ceně a tisku“ → „Pokračovat ke kalkulaci“; pod cenou se dvakrát říká totéž o dalším kroku | viz úkol #3 níže | | |
+| 3 | 10. 10. | stránky návrhu všech nástrojů | tlačítko „Pokračovat k přesné ceně a tisku“ → „Pokračovat ke kalkulaci“; pod cenou se dvakrát říká totéž o dalším kroku | viz úkol #3 níže | 10. 10. (šest klíčů v `lang/src/tools_flow.json`, test v `ToolPageTest`) | „Opravy #3“ na `feature/tool-fixes` |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 

@@ -77,6 +77,36 @@ class ToolPageTest extends TestCase
         $this->get('/es/tools/vase')->assertOk()->assertSee('Rayos X')->assertSee('Descargar');
     }
 
+    public function test_the_button_leads_to_the_calculation_and_the_next_step_is_said_once(): void
+    {
+        // what stands under the rough price of a tool's page
+        $note = function (string $path): string {
+            preg_match('/<p class="w-full text-xs text-muted">(.*?)<\/p>/s', (string) $this->get($path)->assertOk()->getContent(), $m);
+
+            return html_entity_decode(trim($m[1] ?? ''));
+        };
+        // the farm prints for everybody: the site as it runs
+        config(['features.marketplace' => false, 'farm.enabled' => true, 'farm.open' => true, 'farm.public' => true]);
+        $this->get('/tools/letter-beads')->assertOk()->assertSee('Pokračovat ke kalkulaci')
+            ->assertDontSee('Pokračovat k přesné ceně a tisku')
+            ->assertDontSee('V dalším kroku uvidíte přesnou cenu a dobu tisku. V dalším kroku')
+            ->assertDontSee('spočítáme v dalším kroku');
+        $said = 'Odhad z objemu modelu. V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si objednáte u nás, nebo si stáhnete soubor pro svou tiskárnu.';
+        $this->assertSame($said, $note('/tools/letter-beads'));
+        $this->assertSame($said, $note('/tools/filament-art'));
+        $this->get('/tools/split')->assertOk()->assertSee('Pokračovat ke kalkulaci');
+        $this->assertSame('Odhad z objemu modelu.', $note('/tools/split'));
+        $this->get('/en/tools/letter-beads')->assertOk()->assertSee('Continue to the calculation');
+        $this->assertSame('An estimate from the model volume. The calculation shows the precise price and print time. Order the print from us, or download the file for your own printer.', $note('/en/tools/letter-beads'));
+        $this->get('/es/tools/letter-beads')->assertOk()->assertSee('Continuar al cálculo');
+        $this->assertSame(1, substr_count($note('/es/tools/letter-beads'), 'precio exacto'));
+
+        // the farm not open to the public yet: the same button, the calculation ends with a download
+        config(['farm.public' => false]);
+        $this->get('/tools/letter-beads')->assertOk()->assertSee('Pokračovat ke kalkulaci');
+        $this->assertSame('Odhad z objemu modelu. V kalkulaci uvidíte přesnou dobu tisku a spotřebu materiálu a stáhnete si soubor nebo hotový projekt pro svou tiskárnu. Bez registrace.', $note('/tools/letter-beads'));
+    }
+
     public function test_the_parametric_page_keeps_its_fields_and_adds_sliders_units_and_colours(): void
     {
         $html = (string) $this->get('/tools/box')->assertOk()->getContent();
