@@ -390,3 +390,9 @@ tiskem. Teď jsou dva: registrace a karta.
 
 - Skutečná Stripe Checkout session pro `order_pay` (metadata nese `purpose`); fake brána v testech jen vrací
   success URL. Po nasazení jednu zakázku zaplatit kartou naostro.
+
+### Nasazeno (10. 10. 2026, 15:37 UTC)
+
+main b0755e9, server ee5de3b, výpadek 12 s, migrace `payments_for_an_order` proběhla, trasa `farm.orders.checkout`
+(i s `{locale}`), brána na produkci `stripe`. Předtím 15:30 UTC main 8a6f28d (E #4 + jedna nejbližší cívka, §9).
+Čeká na jeden ostrý test: zakázka zaplacená kartou ze stránky zakázky (Roman).
