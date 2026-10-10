@@ -168,10 +168,12 @@ class PapelPortraitTest extends TestCase
         $thick = $this->meta($face + ['base' => 3, 'relief' => 1.2]);
         $this->assertEqualsWithDelta(4.2, $thick['bbox']['z'], 0.01);
         $this->assertEqualsWithDelta(3.0, $thick['notes']['color_changes'][0]['z'], 0.001);
-        // the small picture of the result is a PNG light enough for a response header
+        // the small picture of the result is a PNG; the header of the answer stays under 2 kB whatever the notes hold
+        // (nginx fits all the headers into 4 kB: the rest of the notes waits beside the header, see PreviewMeta)
         [$w, $h, $share] = $this->seen($m);
         $this->assertLessThanOrEqual(300, max($w, $h));
         $this->assertLessThan(4000, strlen($m['notes']['preview']));
+        $this->assertLessThanOrEqual(2000, strlen((string) $this->preview($face)->assertOk()->headers->get('X-Model-Meta')));
         $this->assertGreaterThan(0.05, $share);
         $this->assertLessThan(0.9, $share);
         // a face needs no ties: nothing of it hangs in the air

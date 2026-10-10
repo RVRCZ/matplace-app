@@ -14,8 +14,13 @@ use Illuminate\Support\Str;
  */
 final class PreviewMeta
 {
-    /** The most a header value may weigh, in bytes: well under 4 kB, the other headers of the response need room too. */
-    public const LIMIT = 3000;
+    /**
+     * The most a header value may weigh, in bytes. nginx reads ALL the headers of an answer into one buffer of 4 kB
+     * (fastcgi_buffer_size) and answers 502 when they do not fit; three cookies of the site are 1.1 kB, the content
+     * security policy and the rest another 0.5 kB. Measured on matplace.com, 10 Oct 2026: a papel picado portrait with
+     * a 2.7 kB value made 4.3 kB of headers and every preview of an uploaded photo was a 502.
+     */
+    public const LIMIT = 2000;
 
     /** How long the rest of a preview waits for its page, in seconds. */
     private const KEEP = 900;

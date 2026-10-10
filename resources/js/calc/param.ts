@@ -256,7 +256,8 @@ export function bootParam(stage: Stage): void {
 
     const post = (body: Record<string, unknown>) => fetch(cfg.preview, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) });
     // the server's first validation message, or our own words for a rate limit (Laravel's "Too Many Attempts." is English only)
-    const firstError = (b: { message?: string; errors?: Record<string, string[]> }, status = 0) => (status === 429 ? t('param.too_fast') : Object.values(b.errors ?? {})[0]?.[0] ?? b.message ?? t('param.failed'));
+    // 429: too fast; 5xx or no answer at all: the preview did not come back (a web server that dropped it), not the shape's fault
+    const firstError = (b: { message?: string; errors?: Record<string, string[]> }, status = 0) => (status === 429 ? t('param.too_fast') : Object.values(b.errors ?? {})[0]?.[0] ?? b.message ?? t(status >= 500 || status === 0 ? 'param.preview_failed' : 'param.failed'));
     const errorOf = async (res: Response): Promise<string> => { try { return firstError(await res.json(), res.status); } catch { return firstError({}, res.status); } };
 
     /** The pieces of the shown model that are the given part, as indexes into the viewer's list. */
@@ -531,7 +532,7 @@ export function bootParam(stage: Stage): void {
             if (papel) papelShow();
             if (cookie) { renderPen(); armDraw(); }
         } catch {
-            if (mine === seq) { valid = false; showError(t('param.failed')); }
+            if (mine === seq) { valid = false; showError(t('param.preview_failed')); }
         } finally {
             if (mine === seq) stage.busy(false);
         }

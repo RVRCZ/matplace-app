@@ -4,6 +4,8 @@
 // Keys with dots are written flat ('shape.picture.hint'): a tool, its family ("shape" = pendant, earrings, ornament,
 // magnet, coaster) or every tool may own a text, see $tr in resources/views/tools/param.blade.php.
 return [
+    // a preview that did not come back at all (a 502 of the web server, a lost connection): not the shape's fault
+    'preview_failed' => 'Náhled se nepodařilo načíst. Zkuste to znovu.',
     'warn' => [
         // the phone stand: the angle that was asked for is outside what the chosen shape stands firmly at
         'stand_angle_45' => 'Tenhle tvar stojánku stojí pevně až od 45°. Model má proto úhel 45°, ne ten zadaný.',
