@@ -325,6 +325,112 @@
    "lon": 14.4180798
   },
   {
+   "type": "node",
+   "id": 1060,
+   "lat": 50.0856135,
+   "lon": 14.4235401
+  },
+  {
+   "type": "node",
+   "id": 1061,
+   "lat": 50.0856135,
+   "lon": 14.4241001
+  },
+  {
+   "type": "node",
+   "id": 1062,
+   "lat": 50.0857932,
+   "lon": 14.4241001
+  },
+  {
+   "type": "node",
+   "id": 1063,
+   "lat": 50.0857932,
+   "lon": 14.4235401
+  },
+  {
+   "type": "node",
+   "id": 1064,
+   "lat": 50.0856135,
+   "lon": 14.4235401
+  },
+  {
+   "type": "node",
+   "id": 1065,
+   "lat": 50.0856135,
+   "lon": 14.4236521
+  },
+  {
+   "type": "node",
+   "id": 1066,
+   "lat": 50.0856854,
+   "lon": 14.4236521
+  },
+  {
+   "type": "node",
+   "id": 1067,
+   "lat": 50.0856854,
+   "lon": 14.4235401
+  },
+  {
+   "type": "node",
+   "id": 1068,
+   "lat": 50.0857932,
+   "lon": 14.4197599
+  },
+  {
+   "type": "node",
+   "id": 1069,
+   "lat": 50.0857932,
+   "lon": 14.4201799
+  },
+  {
+   "type": "node",
+   "id": 1070,
+   "lat": 50.085928,
+   "lon": 14.4201799
+  },
+  {
+   "type": "node",
+   "id": 1071,
+   "lat": 50.085928,
+   "lon": 14.4197599
+  },
+  {
+   "type": "node",
+   "id": 1072,
+   "lat": 50.0863322,
+   "lon": 14.4180798
+  },
+  {
+   "type": "node",
+   "id": 1073,
+   "lat": 50.0863322,
+   "lon": 14.4182898
+  },
+  {
+   "type": "node",
+   "id": 1074,
+   "lat": 50.0864669,
+   "lon": 14.4182898
+  },
+  {
+   "type": "node",
+   "id": 1075,
+   "lat": 50.0864669,
+   "lon": 14.4180798
+  },
+  {
+   "type": "node",
+   "id": 1076,
+   "lat": 50.0864041,
+   "lon": 14.4181918,
+   "tags": {
+    "man_made": "tower",
+    "tower:type": "bell_tower"
+   }
+  },
+  {
    "type": "way",
    "id": 101,
    "nodes": [
@@ -526,6 +632,70 @@
     "type": "multipolygon",
     "building": "yes",
     "building:levels": "3"
+   }
+  },
+  {
+   "type": "way",
+   "id": 107,
+   "nodes": [
+    1060,
+    1061,
+    1062,
+    1063,
+    1060
+   ],
+   "tags": {
+    "building": "church",
+    "height": "18",
+    "name": "Kostel"
+   }
+  },
+  {
+   "type": "way",
+   "id": 108,
+   "nodes": [
+    1064,
+    1065,
+    1066,
+    1067,
+    1064
+   ],
+   "tags": {
+    "building:part": "yes",
+    "height": "42",
+    "roof:shape": "pyramidal"
+   }
+  },
+  {
+   "type": "way",
+   "id": 109,
+   "nodes": [
+    1068,
+    1069,
+    1070,
+    1071,
+    1068
+   ],
+   "tags": {
+    "building": "house",
+    "height": "10",
+    "roof:height": "4",
+    "roof:shape": "hipped"
+   }
+  },
+  {
+   "type": "way",
+   "id": 110,
+   "nodes": [
+    1072,
+    1073,
+    1074,
+    1075,
+    1072
+   ],
+   "tags": {
+    "building": "chapel",
+    "height": "10"
    }
   }
  ]

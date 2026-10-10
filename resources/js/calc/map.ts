@@ -12,7 +12,7 @@ import { loadGeometryFromUrl } from './loaders';
 
 interface Cfg { places: string; preview: string; create: string; home: string; files: string; from: string | null; sides: Record<string, number[]>; parts: Record<string, string[]>; colors: Record<string, string>; i18n: Record<string, string> }
 interface Place { name: string; kind: string; country: string; display: string; lat: number; lon: number }
-interface MapNotes { stage?: string; scale?: string; buildings?: number; roads_m?: number; osm_date?: string; relief_m?: number; warnings?: string[]; regions?: Region[]; parts?: string[]; type?: string }
+interface MapNotes { stage?: string; scale?: string; buildings?: number; roofs?: number; towers?: number; roads_m?: number; osm_date?: string; relief_m?: number; warnings?: string[]; regions?: Region[]; parts?: string[]; type?: string }
 type MapFile = FileInfo & { map?: MapNotes | null; tool?: { kind: string; params: Record<string, unknown>; url: string } | null };
 
 export function bootMap(stage: Stage): void {
@@ -117,7 +117,8 @@ export function bootMap(stage: Stage): void {
         const chosen = $('map-chosen'); chosen.textContent = t('map.place.chosen', { name: p.display || p.name }); chosen.classList.remove('hidden');
         const name = form.querySelector<HTMLInputElement>('[data-text="name"]');
         if (name && !name.dataset.typed) name.value = p.kind === 'point' ? '' : p.name;
-        stage.go({ disabled: false });
+        // another place after a map was made: the main action makes the next map again (a link would lead to the old one)
+        stage.go(made ? { run: create, href: null, disabled: false, label: t('map.go') } : { disabled: false });
         previewSoon(0);
     };
     const search = async (): Promise<void> => {
@@ -194,11 +195,11 @@ export function bootMap(stage: Stage): void {
         stage.status({ bbox: file.bbox, pieces: 1, colors: (n.parts ?? []).length });
         if (stage.cfg.price && file.volume_mm3) stage.price(stage.cfg.price, { volume_mm3: file.volume_mm3, area_mm2: file.area_mm2 }, {});
         stage.fileDownloads(file, (p) => t(`map.part.${p}`));
-        stage.go({ href: `${cfg.home}?open=${file.uuid}`, disabled: false, label: t('toolpage.go') });
+        stage.go({ href: `${cfg.home}?open=${file.uuid}`, disabled: false, label: t('param.go') });     // the page's own word for the next step (the calculator, or the farm)
         const facts = $('map-facts');
         facts.textContent = n.type === 'landscape'
             ? t('map.facts.landscape', { h: nf.format(n.relief_m ?? 0), e: nf.format(Number((file.tool?.params.exaggeration as number | undefined) ?? 1)), d: n.osm_date ?? '' })
-            : t('map.facts.city', { b: n.buildings ?? 0, r: nf.format(n.roads_m ?? 0), d: n.osm_date ?? '' });
+            : t('map.facts.city', { b: n.buildings ?? 0, s: n.roofs ?? 0, t: n.towers ?? 0, r: nf.format(n.roads_m ?? 0), d: n.osm_date ?? '' });
         facts.classList.remove('hidden');
         stage.warnings({ place: (n.warnings ?? []).map((w) => cfg.i18n[`map.warn.${w}`] ? t(`map.warn.${w}`) : w) });
     };
@@ -236,8 +237,8 @@ export function bootMap(stage: Stage): void {
             Object.keys(partColors).forEach((p) => { if (!parts.includes(p)) delete partColors[p]; });
         }
         applyWhen();
-        // a change after a map was made means another map: the main action makes it, the old result stays on show
-        if (made) stage.go({ run: create, disabled: !place, label: t('map.go') });
+        // a change after a map was made means another map: the main action makes it (the link to the old one goes), the old result stays on show
+        if (made) stage.go({ run: create, href: null, disabled: !place, label: t('map.go') });
         if (el.dataset.text !== 'name') previewSoon();
     });
     form.addEventListener('submit', (e) => e.preventDefault());
