@@ -260,7 +260,7 @@ $pages = function () {
         Route::post('/farm/orders/{order}/reslice', [OrderController::class, 'reslice'])->middleware('throttle:20,1,farm_reslice')->name('farm.orders.reslice');
         Route::post('/farm/orders/{order}/quote', [OrderController::class, 'quote'])->middleware('throttle:120,1,farm_quote')->name('farm.orders.quote');
         Route::post('/farm/orders/{order}/pay', [OrderController::class, 'pay'])->middleware(['verified.email', 'throttle:10,1,farm_pay'])->name('farm.orders.pay');
-        Route::post('/farm/orders/{order}/checkout', [OrderController::class, 'checkout'])->middleware(['verified.email', 'throttle:10,1,farm_pay'])->name('farm.orders.checkout');
+        Route::post('/farm/orders/{order}/checkout', [OrderController::class, 'checkout'])->middleware(['verified.email', 'throttle:10,1,farm_checkout'])->name('farm.orders.checkout');
         Route::post('/farm/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('farm.orders.cancel');
         Route::post('/farm/orders/{order}/video-consent', [OrderController::class, 'videoConsent'])->middleware('throttle:10,1,video-consent')->name('farm.orders.video_consent');
 
