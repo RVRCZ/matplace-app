@@ -606,3 +606,10 @@ celé zelené; `pint --dirty` čistý; `npm run build` prošel; `docs/<písmeno>
 nasazením; `main` slitý a větev pushnutá. Celkem: z 70 předloh má každá řádek v tabulce buď hotový nástroj,
 nebo rozhodnutí Romana, proč ne. Tohle zadání leží i v `docs/prompts/nastroje.md` v repozitáři (zatím
 necommitované v `C:\matplace-web-wt`) – první session ho commitne spolu se svou prací.
+
+10. **Barvy na stránkách návrhu (10. 10. 2026, Roman):** na stránkách nástrojů se naše cívky neukazují; zákazník volí
+    jakoukoli barvu volným výběrem (systémový color picker, hex, základní barvy). Naše cívky se ukážou až na kalkulaci
+    („U nás vytiskneme: nejbližší cívky“) a na úvodní stránce farmy. Staví session D (`docs/prompts/vlastni-barva.md`):
+    `pickColor()` vrací hex, `part_colors`/`color_changes` ukládají `code = hex`, validace přijme hex i kód cívky.
+    Nové nástroje píší proti tomuto API; mapování barev obrázku na cívky na stránce návrhu končí. Ruší to bod „farm_colors
+    jako jediná paleta“ ze session 0, pokud jde o stránky návrhu.
