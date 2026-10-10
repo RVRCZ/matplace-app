@@ -109,7 +109,7 @@ Zjištěno řídící session z posledního ostrého G‑kódu (F26‑000054, S1
 | `wall_sequence` | inner wall/outer wall | – |
 
 Scarf joint (šikmý přechod švu) šev na válcových a hladkých plochách skoro zneviditelní; u nás je vypnutý. Úkol:
-1. Na S1 s PLA+ vytisknout `quick` dvakrát: jednou dnešní nastavení, jednou s `seam_slope_type = external`,
+1. Na S1 s PLA+ vytisknout zkušební objekt **`seam`** (nový, session F: kužel a kontrolní kostka; na `quick` by se scarf uplatnil jen na pilířích) dvakrát: jednou dnešní nastavení, jednou s `seam_slope_type = external`,
    `seam_slope_conditional = 1`, `seam_slope_start_height = 0`, `seam_slope_min_length = 20`, `seam_slope_steps = 10`,
    `scarf_joint_speed = 100%`, `seam_gap = 15%`, `staggered_inner_seams = 1` (přepisy v řádku ladění, jen pro test –
    pole `t_process` u testu). Porovnat fotky válcové části kostky / pilířů: viditelnost švu, boule, díry.
