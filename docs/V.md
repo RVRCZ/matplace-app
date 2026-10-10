@@ -60,8 +60,13 @@ Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hr
 | test | stroj, cívka | nastavení | výsledek | fotky |
 |---|---|---|---|---|
 | T26-000030 | S1 #1, PLA+ bílá (slot 4) | scarf | **nedoběhl** – tiskárna na 110 min ztratila spojení s agentem, Roman tisk vypnul, zakázka `failed`; nehodnotí se | – |
-| – | S1 #1, PLA+ bílá (slot 4) | dnešní (bez scarfu) | čeká na nový počítač farmy | – |
+| – | S1 #1, PLA+ bílá (slot 4) | dnešní (bez scarfu) | farma U online 10. 10. večer, Roman zakládá | – |
 | – | S1 #1, PLA+ bílá (slot 4) | scarf | čeká | – |
+
+Plán tisků po zprovoznění farmy U (10. 10. večer, filament jde přes ACE, Roman nemá konkrétní příznak – chce
+nejlepší nastavení): S1 #1 postupně `seam` bez scarfu (B), `seam` se scarfem (S), `quick` dnešní (Q16), `quick`
+s `{"filament_max_volumetric_speed":["12"]}` (Q12); Max souběžně `quick` s `{"top_surface_speed":"120"}` na modré PLA+.
+Každý výtisk zvážit (podtlak toku = nižší hmotnost než odhad), u Q16 poslouchat cvakání extruderu při výplni.
 
 **Co ukázal G-kód T26-000030** (serverová OrcaSlicer 2.4.0-beta, staženo z administrace): nastavení scarfu v něm je
 (`seam_slope_type = external`, délka 20, mezera 15 %, střídání vnitřních švů), šikmé pohyby na válci, hranolu
@@ -143,7 +148,10 @@ skutečné hranice hotendu s danou cívkou.
 
 | kdy | stroj, cívka | co | hodnota | výsledek |
 |---|---|---|---|---|
-| 10. 10. večer | Kobra 3 Max, PLA+ modrá | horní povrch, `top_solid_infill_flow_ratio` (řezáno v Orce na Romanově PC) | čeká na Romana | čeká |
+| 10. 10. večer | Kobra 3 Max, PLA+ modrá | horní povrch, `top_solid_infill_flow_ratio` (řezáno v Orce na Romanově PC) | nejlepší 1,0 (= dnešní hodnota) | Roman i tak nespokojen |
+
+Závěr: poměr toku horní plochy zůstává 1,0; podezřelý je tok – horní plocha jede 200 mm/s × 0,42 × 0,2 = 16,8 mm³/s,
+tedy na stropu 16 (viz 3.1), kde tryska nestíhá. Další test na Maxu: `quick` s `{"top_surface_speed":"120"}` (10 mm³/s).
 
 Hodnoty farmy pro Max dnes: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
 `top_surface_pattern = monotonicline`, `only_one_wall_top = 1`; Max jede s procesem S1 bez přepisů pro velkou
