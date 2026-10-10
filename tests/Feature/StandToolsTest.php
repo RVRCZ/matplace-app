@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Support\PreviewMeta;
 use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -25,7 +26,7 @@ class StandToolsTest extends TestCase
     {
         $r = $this->postJson('/api/tools/param/preview', ['kind' => $kind, 'params' => $params, 'part' => $part, 'view' => $view])->assertOk();
 
-        return json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($r->headers->get('X-Model-Meta'));
     }
 
     public function test_the_notes_stand_is_a_tray_for_the_pad_and_a_figure_in_its_slot(): void

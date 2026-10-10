@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
 use App\Models\User;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -32,7 +33,7 @@ class HeldShapesTest extends TestCase
     {
         $r = $this->postJson('/api/tools/param/preview', ['kind' => $kind, 'params' => $params, 'pieces' => true])->assertOk();
 
-        return json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($r->headers->get('X-Model-Meta'));
     }
 
     public function test_a_straw_topper_carries_a_clip_as_wide_as_the_straw_asks(): void

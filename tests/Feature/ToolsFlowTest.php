@@ -10,6 +10,7 @@ use App\Engines\Farm\PythonPrintPreparer;
 use App\Engines\Mesh\StlTopology;
 use App\Models\ModelFile;
 use App\Support\NextStep;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Route;
@@ -142,7 +143,7 @@ class ToolsFlowTest extends TestCase
             $this->markTestSkipped('Python with manifold3d is not installed.');
         }
         Storage::fake('models');
-        $meta = fn ($r) => json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $meta = fn ($r) => PreviewMeta::whole($r->headers->get('X-Model-Meta'));
         $r = $this->postJson('/api/tools/param/preview', ['kind' => 'cutter', 'params' => ['line1' => 'O8', 'width' => 70, 'height' => 18, 'wall' => 1.0, 'flange' => 5, 'flange_t' => 1.6]])->assertOk();
         $m = $meta($r);
         $this->assertEqualsWithDelta(18, $m['bbox']['z'], 0.05);                         // the wall height, exactly
@@ -201,7 +202,7 @@ class ToolsFlowTest extends TestCase
             $this->markTestSkipped('Python with manifold3d is not installed.');
         }
         Storage::fake('models');
-        $meta = fn ($r) => json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $meta = fn ($r) => PreviewMeta::whole($r->headers->get('X-Model-Meta'));
         foreach (['cradle', 'pocket', 'hook'] as $style) {
             $r = $this->postJson('/api/tools/param/preview', ['kind' => 'holder', 'params' => ['style' => $style, 'obj_w' => 50, 'obj_d' => 25, 'height' => 60, 'wall' => 3, 'clearance' => 0.8, 'mount' => true]])->assertOk();
             $m = $meta($r);
@@ -286,7 +287,7 @@ class ToolsFlowTest extends TestCase
         if (! app(ParametricGenerator::class)->available()) {
             $this->markTestSkipped('Python with manifold3d is not installed.');
         }
-        $meta = fn ($r) => json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $meta = fn ($r) => PreviewMeta::whole($r->headers->get('X-Model-Meta'));
         $closed = function ($r, string $what): void {
             $stl = tempnam(sys_get_temp_dir(), 'shape').'.stl';
             file_put_contents($stl, $r->streamedContent());
@@ -338,7 +339,7 @@ class ToolsFlowTest extends TestCase
             $this->markTestSkipped('Python with manifold3d or GD is not installed.');
         }
         Storage::fake('local');
-        $meta = fn ($r) => json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $meta = fn ($r) => PreviewMeta::whole($r->headers->get('X-Model-Meta'));
         foreach (['filled', 'lines'] as $how) {
             $im = imagecreatetruecolor(400, 400);
             $white = imagecolorallocate($im, 255, 255, 255);
@@ -383,7 +384,7 @@ class ToolsFlowTest extends TestCase
             $this->markTestSkipped('Python with manifold3d is not installed.');
         }
         Storage::fake('models');
-        $meta = fn ($r) => json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $meta = fn ($r) => PreviewMeta::whole($r->headers->get('X-Model-Meta'));
         $closed = function ($r, string $what) {
             $stl = tempnam(sys_get_temp_dir(), 'cap').'.stl';
             file_put_contents($stl, $r->streamedContent());

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Tools\SignGenerator;
 use App\Engines\Mesh\StlTopology;
 use App\Models\ModelFile;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -58,7 +59,7 @@ class SignToolTest extends TestCase
         }
         Storage::fake('models');
         $this->get('/tools/sign')->assertOk()->assertSee('data-choice="style"', false);
-        $meta = fn ($r) => json_decode($r->headers->get('X-Model-Meta'), true);
+        $meta = fn ($r) => PreviewMeta::whole($r->headers->get('X-Model-Meta'));
         $full = $meta($this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => ['line1' => 'Žluťoučký kůň', 'style' => 'emboss', 'two_color' => true, 'keyring' => true, 'radius' => 8]])->assertOk());
         $this->assertEqualsWithDelta(3 + 1.2, $full['bbox']['z'], 0.05);                     // plate plus raised letters, exact
         $this->assertNotEmpty($full['notes']['regions']);                                      // the preview colours the letters
