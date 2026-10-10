@@ -253,3 +253,64 @@ správce otevře s lištou) a #2 (odkazy podle viditelnosti). Server ebaa875, v�
 `/root/matplace_app-20261010-1219.sql`. Při nasazení netiskl žádný stroj. Známá závada: náhled vrstveného obrazu
 vrací 502 (hlavička X‑Model‑Meta větší než buffer nginx) – oprava v kódu u session D, nebo zvětšení `fastcgi_buffer_size`
 v nginx (Roman, viz zpráva 10. 10.).
+
+## 8. Výrobce, nová barva u slotu, mazání z katalogu (10. 10. 2026)
+
+Zadání Romana po prvním zakládání cívek do S1 slot 4: „při přiřazení materiálu k slotu přidej možnost přidat nový
+materiál, pokud si z katalogu nevyberu; k barvě ještě druh a výrobce (bílá/white, PLA+, Matplace); do katalogu
+materiálů výrobce a možnost materiál smazat; prvotní vlastnosti tisku podle globálního nastavení druhu, pokud se
+nenastaví individuálně.“ Upřesnění: všechny dosavadní materiály jsou Matplace, výrobců bude mnoho a přibývají
+postupně; nový druh se zakládá jen v katalogu.
+
+### Co se změnilo
+
+- **Migrace `2026_10_16_100000_farm_catalogue_manufacturer`**: `farm_materials.manufacturer` (80 znaků, výchozí
+  „Matplace“), unikátní klíč druhu je nově `code + finish + manufacturer` (PETG od dvou výrobců = dva druhy s vlastními
+  teplotami a cenou); `farm_colors.manufacturer` nullable (null = výrobce druhu). Nic se nepřepisuje: všechny
+  dosavadní druhy dostanou výchozí „Matplace“, barvy zůstanou s null → `FarmColor::maker()` vrací výrobce druhu.
+- **`FarmMaterial`**: `DEFAULT_MAKER`, `maker()`, `label()` přidá výrobce jen když není náš („PLA+ Sunlu“; „PLA+“
+  zůstává „PLA+“), `usage()` (barvy, zakázky), `copy()` (nový druh podle stávajícího). **`FarmColor`**: `maker()`,
+  `usage()` (sloty, zakázky vč. druhé barvy, řádky ladění).
+- **`ColorCatalog::codeFor(druh, název, výrobce)`**: kód nové barvy `PLA+_White`, `PLA_Silk_Sage_Green`,
+  `PETG_Salmon_Pink_Prusament` (bez diakritiky, slova s velkým písmenem, náš výrobce se nepíše), obsazený kód dostane
+  `_2`, `_3`…
+- **/admin/farm/printers/{id}** (`printer_edit.blade.php`): v selectu slotu první volba **„+ nová barva (není v
+  katalogu)“** rozbalí řádek: název česky, anglicky, druh materiálu (select všech druhů), výrobce (text s našeptávačem
+  `<datalist>` všech dosud zapsaných výrobců), hex (volitelně), fotka (volitelně; formulář je teď `multipart`).
+  Uložení tiskárny barvu založí (`FarmCatalogController::newColor`: zapnutá, skladem, kód podle `codeFor`, výrobce
+  jen když se liší od výrobce druhu) a přiřadí do slotu. Bez názvu nebo druhu → chyba u pole, nic se nezaloží.
+  Tiskne s nastavením druhu, dokud nedostane vlastní (Ladění materiálů nebo `print_overrides` barvy) – to platilo už
+  dřív (`FarmColor::temps()` / `PrintProfile`), nic nového.
+- **/admin/farm/materials**: pole **Výrobce** u druhu (vedle názvu) i u barvy (v rozbalené části vedle přeřazení
+  druhu; placeholder = výrobce druhu); v shrnutí barvy se výrobce ukáže, jen když je její vlastní. **Smazat** u barvy
+  (pod jejím řádkem) a u druhu (pod jeho formulářem) – tlačítko je jen u nepoužité položky, jinak je místo něj text
+  „nelze smazat, používá se (…) – vypněte“. Barva je použitá, když je v některém slotu, na některé zakázce (hlavní
+  nebo druhá barva) nebo má řádek ladění; druh, když má barvy nebo zakázky. Mazání druhu smaže i jeho řádky ladění
+  (cascade, vznikají automaticky pro každý druh × tiskárnu). Smazání barvy smaže i její fotku.
+  **„založit podle“** u druhu = odkaz `?copy={id}#kind-new`: formulář nového druhu je předvyplněný profilem,
+  teplotami, cenou a přepisy podle vybraného druhu (vypnutý, stejný kód – admin kód/název/výrobce upraví a uloží).
+- Validace kódu druhu je unikátní v rámci `finish + manufacturer`; kód se před kontrolou převede na velká písmena
+  (dřív prošel „pla+“ validací a padl na DB).
+- Routy `POST /admin/farm/materials/{material}/delete`, `POST /admin/farm/colors/{color}/delete`. Texty v
+  `lang/*/farm.php` `admin.maker*`, `admin.new_color*`, `admin.copy_kind*`, `admin.delete*`, `admin.*_in_use`,
+  `admin.usage.*` (cs/en/es).
+- Test `tests/Feature/FarmCatalogAdminTest.php` (5 testů): výchozí výrobce a popisky, nová barva u slotu (kód,
+  výrobce, fotka, přiřazení, druhá se stejným jménem → `_2`, bez názvu odmítnuta), kódy, mazání (založená ve slotu /
+  na zakázce zůstane, omyl zmizí i s fotkou; druh s barvami zůstane, prázdný zmizí i s řádky ladění), „založit podle“.
+
+### Rozhodnutí
+
+- Výrobce barvy se **neopakuje**, když je stejný jako výrobce druhu (ukládá se null) – katalog 250 cívek nemá
+  250× „Matplace“. Zadá-li admin u barvy jiného výrobce než má druh, zůstane na barvě (cívka Prusament pod naším
+  druhem PLA+ tiskne s našimi teplotami, dokud nedostane vlastní).
+- Druh jiného výrobce se stejným kódem je **samostatný řádek** (vlastní teploty, profil, cena); v popisku pro
+  zákazníka i obsluhu se jmenuje „PLA+ Sunlu“. `OrderService::family()` (písmena kódu) ho řadí do stejné rodiny.
+- Mazání jen nepoužitého: zakázka drží barvu, kterou se tiskla (FK `nullOnDelete` by historii smazal), slot drží
+  cívku, řádek ladění drží výsledky testů. Všechno ostatní se **vypíná** (`enabled`), jak to bylo.
+- Nový druh jen v katalogu (ne u slotu): druh nese profil a teploty, to u zakládání cívky nikdo nevyplní správně.
+
+### Co není ověřené
+
+- Nahrání fotky z řádku nové barvy v reálném prohlížeči (test posílá fake soubor; `enctype` je na formuláři).
+- CSV import (`ColorCatalog::import`) výrobce zatím nezná – sloupec `manufacturer` dodat, až bude potřeba.
+- Checklisty cívek (Desktop, `civky-farma-*.pdf`) výrobce neukazují.

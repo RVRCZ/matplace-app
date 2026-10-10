@@ -6,6 +6,7 @@ use App\Engines\Translate\Translator;
 use App\Models\FarmColor;
 use App\Models\FarmMaterial;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * The routine of keeping about 250 spools in the catalogue, taken off the owner's hands: the hex of a colour is read
@@ -26,6 +27,25 @@ final class ColorCatalog
     public static function hexMissing(FarmColor $color): bool
     {
         return ! $color->hex || strtolower((string) $color->hex) === self::UNSET_HEX;
+    }
+
+    /**
+     * The catalogue code of a colour made up by an admin: kind, finish, the name's words, and the maker when it is
+     * not ours — `PLA+_White`, `PLA_Silk_Sage_Green`, `PETG_Black_Prusament`; a taken code gets a number.
+     */
+    public static function codeFor(FarmMaterial $kind, string $name, ?string $maker = null): string
+    {
+        $words = fn (string $s) => implode('_', array_map('ucfirst', preg_split('/[^A-Za-z0-9+]+/', Str::ascii(trim($s)), -1, PREG_SPLIT_NO_EMPTY) ?: []));
+        $base = implode('_', array_filter([
+            $kind->code, $kind->finish === 'solid' ? '' : ucfirst($kind->finish), $words($name) ?: 'Color',
+            trim((string) $maker) && trim((string) $maker) !== FarmMaterial::DEFAULT_MAKER ? $words((string) $maker) : '',
+        ]));
+        $code = $base;
+        for ($n = 2; FarmColor::where('code', $code)->exists(); $n++) {
+            $code = $base.'_'.$n;
+        }
+
+        return $code;
     }
 
     /**

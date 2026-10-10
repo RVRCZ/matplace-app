@@ -414,10 +414,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/materials', [$catalog, 'materials'])->name('materials');
     Route::post('/materials/new', [$catalog, 'saveMaterial'])->name('materials.create');
     Route::post('/materials/{material}', [$catalog, 'saveMaterial'])->name('materials.update');
+    Route::post('/materials/{material}/delete', [$catalog, 'deleteMaterial'])->name('materials.delete');
     Route::post('/colors/fill', [$catalog, 'fillColors'])->name('colors.fill');
     Route::post('/colors/import', [$catalog, 'importColors'])->name('colors.import');
     Route::post('/colors/new', [$catalog, 'saveColor'])->name('colors.create');
     Route::post('/colors/{color}', [$catalog, 'saveColor'])->name('colors.update');
+    Route::post('/colors/{color}/delete', [$catalog, 'deleteColor'])->name('colors.delete');
     Route::get('/settings', [$catalog, 'settings'])->name('settings');
     Route::post('/settings', [$catalog, 'saveSettings'])->name('settings.save');
     Route::get('/agents', [$catalog, 'agents'])->name('agents');

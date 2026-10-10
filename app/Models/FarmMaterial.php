@@ -9,16 +9,41 @@ class FarmMaterial extends Model
 {
     public const FINISHES = ['solid', 'matte', 'silk', 'luminous', 'glitter', 'special', 'flex', 'cf'];
 
-    protected $attributes = ['finish' => 'solid', 'sort' => 100];
+    /** The farm's own brand: every kind and colour of the first catalogue; a label names any other maker. */
+    public const DEFAULT_MAKER = 'Matplace';
 
-    protected $fillable = ['code', 'name', 'finish', 'filament_profile', 'filament_overrides', 'density', 'nozzle_temp', 'nozzle_temp_first', 'bed_temp', 'price_per_gram', 'notes', 'enabled', 'sort'];
+    protected $attributes = ['finish' => 'solid', 'manufacturer' => self::DEFAULT_MAKER, 'sort' => 100];
+
+    protected $fillable = ['code', 'name', 'manufacturer', 'finish', 'filament_profile', 'filament_overrides', 'density', 'nozzle_temp', 'nozzle_temp_first', 'bed_temp', 'price_per_gram', 'notes', 'enabled', 'sort'];
 
     protected $casts = ['filament_overrides' => 'array', 'density' => 'float', 'price_per_gram' => 'float', 'enabled' => 'bool', 'nozzle_temp' => 'int', 'nozzle_temp_first' => 'int', 'bed_temp' => 'int', 'sort' => 'int'];
 
-    /** "PLA+ matt" — what a person calls this kind. */
+    /** "PLA+ matt", "PETG Prusament" — what a person calls this kind; the maker is said only when it is not ours. */
     public function label(): string
     {
-        return $this->finish === 'solid' ? $this->name : $this->name.' '.__('farm.finish.'.$this->finish);
+        $l = $this->finish === 'solid' ? $this->name : $this->name.' '.__('farm.finish.'.$this->finish);
+
+        return $this->maker() === self::DEFAULT_MAKER ? $l : $l.' '.$this->maker();
+    }
+
+    public function maker(): string
+    {
+        return trim((string) $this->manufacturer) ?: self::DEFAULT_MAKER;
+    }
+
+    /** A kind can be removed only while nothing points at it: no colour, no order. Otherwise it is switched off. */
+    public function usage(): array
+    {
+        return array_filter([
+            'colors' => $this->colors()->count(),
+            'orders' => FarmOrder::where('farm_material_id', $this->id)->count(),
+        ]);
+    }
+
+    /** A new kind with this one's profile, temperatures and price, to be renamed by the admin. */
+    public function copy(): self
+    {
+        return new self($this->only(['name', 'manufacturer', 'finish', 'filament_profile', 'filament_overrides', 'density', 'nozzle_temp', 'nozzle_temp_first', 'bed_temp', 'price_per_gram', 'notes', 'sort']) + ['code' => $this->code, 'enabled' => false]);
     }
 
     /**
