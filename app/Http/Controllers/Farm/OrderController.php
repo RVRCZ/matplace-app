@@ -17,6 +17,7 @@ use App\Domain\Farm\Wallet;
 use App\Domain\Social\SocialPublisher;
 use App\Domain\Tools\ArtGenerator;
 use App\Domain\YouTube\FarmVideos;
+use App\Engines\Contracts\PaymentGateway;
 use App\Http\Controllers\Controller;
 use App\Models\Calculation;
 use App\Models\CatalogModel;
@@ -25,6 +26,7 @@ use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrinterSlot;
 use App\Models\ModelFile;
+use App\Models\Payment;
 use App\Support\Countries;
 use App\Support\Currency;
 use App\Support\Money;
@@ -32,6 +34,7 @@ use App\Support\Track;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -405,7 +408,56 @@ class OrderController extends Controller
     public function pay(Request $request, FarmOrder $order, OrderFlow $flow, FarmVideos $videos): JsonResponse
     {
         $this->authorizeOrder($request, $order);
-        $data = $request->validate([
+        $data = $request->validate(self::payRules(), ['terms.accepted' => __('farm.refuse.terms')]);
+
+        try {
+            return $this->payFromRequest($request, $order, $flow, $videos, $data);
+        } catch (InsufficientCredit $e) {
+            // the top-up page asks for what is missing, in the currency the order is priced in
+            return response()->json(['error' => 'credit', 'message' => __('farm.refuse.credit', ['missing' => $e->missingMoney()->format()]), 'missing' => $e->missing(), 'topup_url' => route('account.credit', ['need' => $e->missing(), 'back' => $order->token])], 402);
+        } catch (FarmRefusal $e) {
+            return response()->json(['error' => $e->reason, 'message' => $e->text()] + $e->data, 422);
+        }
+    }
+
+    /**
+     * "Pay by card": the same choices as a payment from credit. With enough credit the order is simply paid; otherwise
+     * what is missing is paid at the gateway (a Payment for this order that remembers the choices), the customer comes
+     * back to this page, and the webhook tops the credit up and pays the order with those choices (OrderFlow::payFromCard).
+     */
+    public function checkout(Request $request, FarmOrder $order, OrderFlow $flow, FarmVideos $videos, PaymentGateway $gateway): JsonResponse
+    {
+        $this->authorizeOrder($request, $order);
+        $data = $request->validate(self::payRules(), ['terms.accepted' => __('farm.refuse.terms')]);
+
+        try {
+            return $this->payFromRequest($request, $order, $flow, $videos, $data);
+        } catch (InsufficientCredit $e) {
+            $amount = (float) ceil($e->missing());   // whole crowns or euros; the odd heller stays as credit
+            $payment = Payment::create([
+                'user_id' => $request->user()->id, 'farm_order_id' => $order->id, 'gateway' => $gateway->name(), 'purpose' => Payment::PURPOSE_ORDER,
+                'amount' => $amount, 'currency' => $e->currency, 'status' => Payment::STATUS_PENDING,
+                'context' => array_filter($data, fn ($v) => $v !== null) + ['ip' => $request->ip(), 'currency' => $this->currencyFor($order, $request), 'video_consent' => $request->boolean('video_consent')],
+            ]);
+            try {
+                $url = $gateway->checkoutUrl($payment->load('user'), route('farm.orders.show', ['order' => $order, 'paid' => $payment->id]), route('farm.orders.show', $order));
+            } catch (\Throwable $ex) {
+                Log::error('Order checkout failed', ['payment' => $payment->id, 'error' => $ex->getMessage()]);
+                $payment->update(['status' => Payment::STATUS_FAILED]);
+
+                return response()->json(['error' => 'gateway', 'message' => __('farm.credit.gateway_down')], 503);
+            }
+
+            return response()->json(['checkout_url' => $url, 'amount' => $amount, 'currency' => $e->currency]);
+        } catch (FarmRefusal $e) {
+            return response()->json(['error' => $e->reason, 'message' => $e->text()] + $e->data, 422);
+        }
+    }
+
+    /** @return array<string, list<string>> */
+    private static function payRules(): array
+    {
+        return [
             'slot' => ['required', 'integer'],
             'second_slot' => ['nullable', 'integer'],
             'change_slots' => ['nullable', 'array', 'max:8'],
@@ -430,16 +482,18 @@ class OrderController extends Controller
             'address.point.carrier_id' => ['nullable', 'string', 'max:40'],
             'address.point.country' => ['nullable', 'string', 'size:2'],
             'video_consent' => ['nullable', 'boolean'],
-        ], ['terms.accepted' => __('farm.refuse.terms')]);
+        ];
+    }
 
-        try {
-            $flow->pay($order, FarmPrinterSlot::findOrFail($data['slot']), $data['delivery'], $data['address'] ?? null, true, $request->ip(), (float) $data['expected_total'], $data['note'] ?? null, isset($data['second_slot']) ? (int) $data['second_slot'] : null, $this->currencyFor($order, $request), isset($data['change_slots']) ? array_map('intval', array_values($data['change_slots'])) : null, isset($data['part_slots']) ? array_map('intval', (array) $data['part_slots']) : null);
-        } catch (InsufficientCredit $e) {
-            // the top-up page asks for what is missing, in the currency the order is priced in
-            return response()->json(['error' => 'credit', 'message' => __('farm.refuse.credit', ['missing' => $e->missingMoney()->format()]), 'missing' => $e->missing(), 'topup_url' => route('account.credit', ['need' => $e->missing(), 'back' => $order->token])], 402);
-        } catch (FarmRefusal $e) {
-            return response()->json(['error' => $e->reason, 'message' => $e->text()] + $e->data, 422);
-        }
+    /**
+     * Pays the order from credit with the validated choices and answers with its new state.
+     *
+     * @throws InsufficientCredit
+     * @throws FarmRefusal
+     */
+    private function payFromRequest(Request $request, FarmOrder $order, OrderFlow $flow, FarmVideos $videos, array $data): JsonResponse
+    {
+        $flow->pay($order, FarmPrinterSlot::findOrFail($data['slot']), $data['delivery'], $data['address'] ?? null, true, $request->ip(), (float) $data['expected_total'], $data['note'] ?? null, isset($data['second_slot']) ? (int) $data['second_slot'] : null, $this->currencyFor($order, $request), isset($data['change_slots']) ? array_map('intval', array_values($data['change_slots'])) : null, isset($data['part_slots']) ? array_map('intval', (array) $data['part_slots']) : null);
         if ($request->boolean('video_consent')) {
             $videos->setConsent($order, true);
         }
@@ -655,6 +709,8 @@ class OrderController extends Controller
             'destination' => $order->isParcel() ? $this->destinationText($order) : null,
             'tracking_url' => $order->tracking_url,
             'colors' => $colors,
+            // the last card payment made for this order from this page: the page waits for the bank, or says the money stayed as credit
+            'card' => ($card = Payment::where('farm_order_id', $order->id)->where('purpose', Payment::PURPOSE_ORDER)->latest('id')->first()) ? ['status' => $card->status, 'result' => $card->context['result'] ?? null] : null,
             'color' => $order->color ? ['name' => $order->color->material->label().' '.$order->color->displayName(), 'hex' => $order->color->hex] : null,
             'delivery' => $order->delivery,
             'balance' => $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user)->amount,

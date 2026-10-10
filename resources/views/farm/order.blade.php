@@ -3,6 +3,7 @@
 @php
     $keys = ['farm.stage.checking', 'farm.stage.loading', 'farm.stage.repairing', 'farm.stage.orienting', 'farm.stage.placing', 'farm.stage.slicing', 'farm.stage_step', 'farm.order.supports_yes', 'farm.order.supports_no',
         'farm.order.low_filament', 'farm.order.starts_now', 'farm.order.goes_to_queue', 'farm.order.no_colors', 'farm.order.paying', 'farm.order.pay', 'farm.order.pay_short',
+        'farm.order.pay_card', 'farm.order.pay_card_rest', 'farm.order.card_pending', 'farm.order.card_kept',
         'farm.order.queue_ahead', 'farm.order.queue_start', 'farm.order.queue_starting', 'farm.order.queue_finish', 'farm.order.blocked_plate', 'farm.order.blocked_offline',
         'farm.order.blocked_approval', 'farm.order.cancel_confirm', 'farm.order.b_time', 'farm.order.b_material', 'farm.order.b_fixed', 'farm.order.b_min',
         'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'models.price.to_author', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line', 'farm.order.second_color', 'farm.order.changes_title', 'farm.order.change_title', 'farm.order.change_same', 'farm.order.change_same_hint', 'farm.order.change_first', 'farm.order.change_line', 'farm.order.parts_title', 'farm.order.parts_hint', 'farm.order.part_main', 'farm.order.part_line',
@@ -13,12 +14,13 @@
         'prefill' => $prefill,
         'routes' => [
             'status' => route('farm.orders.status', $order), 'reslice' => route('farm.orders.reslice', $order), 'pay' => route('farm.orders.pay', $order),
-            'quote' => route('farm.orders.quote', $order),
+            'checkout' => route('farm.orders.checkout', $order), 'quote' => route('farm.orders.quote', $order),
             'cancel' => route('farm.orders.cancel', $order), 'credit' => route('account.credit'),
             // the top-up page comes back here; "need" (what is missing) is appended by the page
             'topup' => route('account.credit', ['back' => $order->token]),
         ],
         'csrf' => csrf_token(),
+        'paid' => (int) request()->query('paid'),   // back from the card payment of this order: the page waits for the webhook
         'i18n' => collect($keys)->mapWithKeys(fn ($k) => [$k => __($k)])->all(),
     ];
 @endphp
@@ -216,6 +218,7 @@
                 </label>
 
                 <p id="farm-pay-error" class="mt-2 hidden text-sm text-red-700" role="alert"></p>
+                <p id="farm-card-note" class="mt-2 hidden rounded-lg bg-amber-50 p-3 text-sm text-amber-900" aria-live="polite"></p>
                 <a id="farm-topup" href="#" class="btn-secondary mt-2 hidden w-full text-sm">{{ __('farm.top_up') }}</a>
                 <p id="farm-recolor-note" class="mt-3 hidden rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{{ __('farm.order.recolor_note') }}</p>
                 <button id="farm-recolor" type="button" class="mt-3 hidden w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('farm.order.recolor') }}</button>

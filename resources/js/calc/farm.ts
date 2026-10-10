@@ -34,13 +34,15 @@ interface FarmState {
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; cancel_keep: number | null;
     print: { status: string; progress: number; snapshot_url: string | null; snapshot_at: string | null } | null;
     timelapse_url?: string | null;
+    /** the last card payment made for this order from its page: what the gateway says and what the webhook did with it */
+    card?: { status: string; result: string | null } | null;
     short_url?: string | null;
     can_cancel: boolean; final: boolean;
 }
 /** What delivery is on offer: per country the price of a parcel to a pickup point and to the door (null = not offered there). */
 interface Shipping { weight_g: number; too_big: boolean; modes: string[]; countries: Record<string, { name: string; point: number | null; home: number | null; vendors: Record<string, string>[] }> }
 interface Prefill { name: string; phone: string; street: string; city: string; zip: string; country: string; point: { id: string; name: string; carrier_id: string; country: string } | null }
-interface FarmCfg { state: FarmState; prefill?: Prefill; routes: Record<string, string>; csrf: string; i18n: Record<string, string> }
+interface FarmCfg { state: FarmState; prefill?: Prefill; routes: Record<string, string>; csrf: string; paid?: number; i18n: Record<string, string> }
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;
 const show = (el: HTMLElement | null, on: boolean) => el?.classList.toggle('hidden', !on);
@@ -581,12 +583,20 @@ export function bootFarmOrder(): void {
         if (s.status === 'sliced') {
             renderColors();
             renderDelivery();
-            // short of credit: the button says by how much and leads to the top-up instead of a payment that would fail
+            // short of credit: the button pays what is missing by card (the order starts when the bank confirms it);
+            // a top-up of the account stays as the second way
             const payBtn = $('farm-pay-btn') as HTMLButtonElement;
             const short = total() !== null ? Math.max(0, total()! - s.balance) : 0;
             payBtn.dataset.need = short > 0.005 ? String(Math.ceil(short)) : '';
-            payBtn.textContent = payBtn.dataset.need ? tr('farm.order.pay_short', { missing: money(short) }) : tr('farm.order.pay');
-            payBtn.disabled = payBtn.dataset.need ? false : picked === null || total() === null || deliveryMissing() !== null || !($('farm-terms') as HTMLInputElement).checked;
+            payBtn.textContent = payBtn.dataset.need ? (s.balance > 0.005 ? tr('farm.order.pay_card_rest', { amount: money(Math.ceil(short)), balance: money(s.balance) }) : tr('farm.order.pay_card', { amount: money(Math.ceil(short)) })) : tr('farm.order.pay');
+            payBtn.disabled = picked === null || total() === null || deliveryMissing() !== null || !($('farm-terms') as HTMLInputElement).checked;
+            const topup = $<HTMLAnchorElement>('farm-topup');
+            if (topup && payBtn.dataset.need) { topup.href = `${cfg.routes.topup}&need=${payBtn.dataset.need}`; show(topup, true); } else show(topup, false);
+            // back from the card payment: the page waits for the bank's word; a payment that arrived but could not start the order says so
+            const note = $('farm-card-note');
+            const pending = (cfg.paid && !s.card) || s.card?.status === 'pending' || (s.card?.status === 'paid' && !s.card.result);
+            const kept = s.card?.status === 'paid' && s.card.result && s.card.result !== 'paid';
+            if (note) { note.textContent = kept ? tr('farm.order.card_kept', { reason: s.card!.result! }) : pending ? tr('farm.order.card_pending') : ''; show(note, !!(kept || pending)); }
             // another colour may mean another machine and another kind of filament: the numbers above must be computed again first
             const recolor = picked !== null && state.colors.find((c) => c.slot === picked)?.sliced === false;
             show($('farm-recolor'), recolor); show($('farm-recolor-note'), recolor); show($('farm-pay-btn'), !recolor);
@@ -697,7 +707,6 @@ export function bootFarmOrder(): void {
     $('farm-pay')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = $<HTMLButtonElement>('farm-pay-btn')!;
-        if (btn.dataset.need) { window.location.href = `${cfg.routes.topup}&need=${btn.dataset.need}`; return; }
         const errBox = $('farm-pay-error')!;
         const form = e.target as HTMLFormElement;
         const missing = deliveryMissing();
@@ -706,11 +715,13 @@ export function bootFarmOrder(): void {
         new FormData(form).forEach((v, k) => { const m = k.match(/^address\[(\w+)\]$/); if (m) address[m[1]] = String(v); });
         if (kind() === 'point') address.point = pointOf();
         btn.disabled = true; btn.textContent = tr('farm.order.paying'); show(errBox, false); show($('farm-topup'), false);
-        const r = await post(cfg.routes.pay, {
+        // short of credit: the gateway's page for what is missing; the webhook then pays the order with these very choices
+        const r = await post(btn.dataset.need ? cfg.routes.checkout : cfg.routes.pay, {
             slot: picked, change_slots: changes, part_slots: state.by_parts ? Object.fromEntries((state.parts ?? []).map((p) => [p.part, partSlots[p.part] ?? picked])) : undefined, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
             video_consent: ($('farm-video-consent') as HTMLInputElement | null)?.checked ?? false,
             note: (form.elements.namedItem('note') as HTMLTextAreaElement).value, address: kind() ? address : null,
         });
+        if (r.ok && r.json.checkout_url) { window.location.href = String(r.json.checkout_url); return; }
         btn.textContent = tr('farm.order.pay');
         if (r.ok) { state = r.json as unknown as FarmState; render(); poll(); return; }
         errBox.textContent = String(r.json.message ?? (r.json.errors ? Object.values(r.json.errors as Record<string, string[]>)[0][0] : ''));

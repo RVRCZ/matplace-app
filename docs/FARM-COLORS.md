@@ -341,3 +341,52 @@ hledala v celém katalogu (Lab), /farm jen v založených cívkách (RGB).
   bílé a černé odpovídá bližší z nich v Lab, `nearest($hex, false)` dál katalog.
 - Neověřené: text kalkulace `farm.calc_nearest` neříká „založená“; když je farma prázdná, hint je katalogový a /farm pak
   nenabídne nic – stav stejný jako dřív.
+
+## 10. Platba kartou za zakázku (10. 10. 2026)
+
+Roman („vše ano“): platba jen kreditem = registrace, ověření e-mailu, dobití, zaplacení – čtyři kroky před prvním
+tiskem. Teď jsou dva: registrace a karta.
+
+### Co se změnilo
+
+- **Migrace `2026_10_17_100000_payments_for_an_order`**: `payments.farm_order_id` (FK, null = dobití účtu) a
+  `payments.context` (JSON: volby ze stránky zakázky – slot, doručení, adresa, poznámka, druhé cívky, díly, souhlas
+  s videem, IP, měna; po pokusu o zaplacení `result`). `Payment::PURPOSE_ORDER = 'order_pay'`, `Payment::order()`.
+- **Stránka zakázky**: když chybí kredit, hlavní tlačítko říká **„Zaplatit kartou X a spustit tisk“** (nebo „Doplatit
+  kartou X (Y máte v kreditu)“) a posílá tytéž volby na `POST /farm/orders/{order}/checkout`. Odkaz „Dobít kredit“
+  zůstává jako druhá cesta. Tlačítko je aktivní jen s vybranou cívkou, doručením a souhlasem (dřív vedlo na dobití
+  i bez nich).
+- **`OrderController::checkout`**: stejná validace jako `pay` (`payRules()`), pak `payFromRequest()` – když kredit
+  stačí, zaplatí se rovnou z kreditu (odpověď jako u `pay`); když chybí (`InsufficientCredit`), vznikne `Payment`
+  (`order_pay`, částka = chybějící zaokrouhlená nahoru na celé koruny/eura, měna zakázky, `context` = volby) a odpověď
+  je `{checkout_url}` – stránka na ni přesměruje. Návrat z brány: `/farm/orders/{token}?paid={payment}`. Odmítnutí
+  (cena se změnila, cívka pryč, podmínky) přijde před odesláním na bránu (422), takže se neplatí za nic, co by pak
+  neprošlo.
+- **Webhook** (`CreditController::webhook`): po `Wallet::topUp` (kredit se připíše jako dřív, účetnictví zůstává
+  v ledgeru) zavolá u `order_pay` **`OrderFlow::payFromCard($payment)`**: zakázka se zaplatí z právě připsaného
+  kreditu s volbami z `context` (vč. souhlasu s videem). Když to nejde (`FarmRefusal`: cena se mezitím změnila, cívka
+  je pryč, zakázka už není `sliced`; nebo `InsufficientCredit`), peníze zůstanou jako kredit a důvod se zapíše do
+  `context.result`; druhý webhook téže platby nic neopakuje.
+- **Stav zakázky** (`describe()`): `card = {status, result}` poslední karetní platby této zakázky. Stránka podle toho
+  ukazuje „Platba kartou se zpracovává…“ (po návratu z brány, dokud webhook nedorazí; status se obnovuje po 20 s) nebo
+  „Platba dorazila a je připsaná jako kredit, ale zakázku se nepodařilo spustit automaticky (důvod)“.
+- Texty `farm.order.pay_card`, `pay_card_rest`, `card_pending`, `card_kept` (cs/en/es). Trasa
+  `farm.orders.checkout` (verified.email, throttle jako `pay`).
+- Test `tests/Feature/FarmCardPaymentTest.php`: bez kreditu → checkout → platba `pending` s volbami, zakázka dál
+  `sliced`, `card.status = pending`; webhook → zakázka zaplacená s poznámkou, drobné zůstanou v kreditu, druhý webhook
+  nic nezdvojí; cena se změní mezi odesláním a webhookem → kredit zůstane, `result = price_changed`, stránka to ví;
+  s dostatečným kreditem checkout platí rovnou; nesouhlas/cizí cena/cizí zakázka se odmítnou před bránou.
+
+### Rozhodnutí
+
+- Peníze jdou vždy přes kredit (dobití + okamžitá úhrada), ne mimo ledger: vrácení, zrušení tisku i historie
+  fungují beze změny. Částka na bráně je zaokrouhlená nahoru na celé jednotky měny; zbytek vidí zákazník v kreditu.
+- Registrace a ověřený e-mail zůstávají (zakázka má majitele, e-maily o stavu). Platba hostem by byla další krok,
+  až bude potřeba.
+- `Track::event('order_paid')` a konverze pro sociální sítě se při zaplacení z webhooku neposílají (není request
+  zákazníka); zaplacení z kreditu je hlásí jako dřív.
+
+### Co není ověřené
+
+- Skutečná Stripe Checkout session pro `order_pay` (metadata nese `purpose`); fake brána v testech jen vrací
+  success URL. Po nasazení jednu zakázku zaplatit kartou naostro.

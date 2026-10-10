@@ -110,6 +110,10 @@ class CreditController extends Controller
             }
             try {
                 $this->wallet->topUp($payment);   // idempotent; the first one fixes the currency of the account
+                if ($payment->purpose === Payment::PURPOSE_ORDER) {
+                    // paid from the order's page: the credit just arrived is spent on that order right away
+                    app(OrderFlow::class)->payFromCard($payment->fresh());
+                }
             } catch (CurrencyMismatch $e) {
                 // two checkouts in two currencies were open and both got paid: the money is at the gateway, the ledger
                 // stays clean, a person decides (refund at the gateway, or a correction by hand)
