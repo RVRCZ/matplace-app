@@ -81,6 +81,22 @@ final class Sitemaps
     }
 
     /**
+     * The files of the tools alone, rewritten in place: a tool the admin switched on or off is in or out at once,
+     * not after the nightly build. Nothing to do where no sitemap was built yet (the first request builds all of it).
+     */
+    public function refreshTools(): void
+    {
+        if (! is_file(self::dir().'/sitemap.xml')) {
+            return;
+        }
+        foreach (Locales::SUPPORTED as $locale) {
+            if ($urls = $this->pages($locale)) {
+                File::put(self::dir()."/sitemap-tools-{$locale}.xml", $this->urlset($urls));
+            }
+        }
+    }
+
+    /**
      * The home page, the lists, the tools and the static pages.
      *
      * @return list<array{loc: string, lastmod?: ?string, alternates?: array<string, string>}>

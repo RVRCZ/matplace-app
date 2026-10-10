@@ -9,6 +9,7 @@ use App\Domain\Designer\DesignerProfiles;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\Palette;
 use App\Domain\Mail\Outbox;
+use App\Domain\Tools\ToolVisibility;
 use App\Events\AccountErasing;
 use App\Models\Event as Visit;
 use App\Routing\LocalizedUrlGenerator;
@@ -34,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(FarmSettings::class);
         // the colour catalogue is read once per request: a page with twenty swatch fields asks it twenty times
         $this->app->scoped(Palette::class);
+        // which tools the admin switched off: read once per request (the catalogue asks for every tool)
+        $this->app->scoped(ToolVisibility::class);
 
         // route() follows the language of the page (App\Support\Locales): the framework's generator is swapped for ours
         $this->app->extend('url', function (UrlGenerator $url, $app) {
@@ -58,6 +61,9 @@ class AppServiceProvider extends ServiceProvider
             if (Schema::hasTable('farm_settings')) {
                 $s = $this->app->make(FarmSettings::class);
                 config(['features.marketplace' => (bool) $s->get('marketplace'), 'farm.open' => (bool) $s->get('farm_open'), 'farm.public' => (bool) $s->get('farm_public')]);
+                // the spare-part inquiry is the marketplace's tool: on offer when the marketplace is, by the same switch
+                // (its page would answer 404 to the visitors of a marketplace switched on here and not in .env: ToolGate)
+                config(['tools.spare.available' => (bool) $s->get('marketplace')]);
             }
         } catch (\Throwable) {
             // no database yet (first install, artisan key:generate…): the .env defaults stand

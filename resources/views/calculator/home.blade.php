@@ -66,7 +66,7 @@
     @php
         $homeTools = collect(config('home.tools'))
             ->mapWithKeys(fn ($key) => [$key => config('tools.'.$key)])
-            ->filter(fn ($t, $key) => $t && $t['available'] && \Illuminate\Support\Facades\Route::has($t['route']) && ($key !== 'figure' || ($config['generator'] ?? false)))
+            ->filter(fn ($t, $key) => $t && \App\Domain\Tools\ToolVisibility::isPublic($key) && \Illuminate\Support\Facades\Route::has($t['route']) && ($key !== 'figure' || ($config['generator'] ?? false)))
             ->take((int) config('home.tools_shown', 8));
     @endphp
     <section class="mt-14" aria-labelledby="home-tools">
@@ -80,7 +80,7 @@
                 @include('tools.card', ['key' => $key, 'tool' => $tool])
             @endforeach
         </div>
-        <p class="mt-6 text-center"><a href="{{ route('tools') }}" class="btn-secondary">{{ __('home.tools.all_count', ['n' => collect(config('tools'))->filter(fn ($t) => $t['available'])->count()]) }} →</a></p>
+        <p class="mt-6 text-center"><a href="{{ route('tools') }}" class="btn-secondary">{{ __('home.tools.all_count', ['n' => count(\App\Domain\Tools\ToolVisibility::listed())]) }} →</a></p>
     </section>
 
     {{-- how it goes --}}
