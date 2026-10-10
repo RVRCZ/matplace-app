@@ -233,3 +233,41 @@ jen při první stavbě s novou fotkou.
 - Jemnější mřížka pro portrét (420 buněk) s měřením, co to udělá s časem náhledu.
 - Maska připravená jednou v PHP (`BackgroundRemover`) a poslaná cestou, místo `rembg` v každém procesu.
 - Miniatura původní fotky i u uloženého návrhu.
+
+## 9. Druhé kolo po nasazení (10. 10. 2026, Roman: „náš výsledek je horší než předloha, nahrání dejme hned“)
+
+Roman poslal snímek z webu vedle předlohy: stejná fotka (světlé vlasy, brýle, rovnoměrné světlo) u nás vyšla jako
+hrubé černé skvrny na bílém okně, bez tmavého pozadí s květy, a fotka se nahrávala až na druhé záložce okna obrázků.
+
+**Proč to bylo horší a co se změnilo**
+
+1. **Oddělení postavy na serveru nefungovalo.** Diagnostika řídící session: `import rembg` padá pod `www-data`
+   (pymatting/numba chce zapisovatelnou cache, `HOME=/var/www` není zapisovatelný) a model je v
+   `/opt/matplace-py/u2net/models/u2net/u2net.onnx`, ne tam, kde ho rembg bez `U2NET_HOME` hledá. Postava se teď
+   odděluje **přímo sítí u2net přes onnxruntime** (`papel_portrait._u2net`, model hledá `_model()` v `$U2NET_HOME`,
+   `<python>/u2net` i `~/.u2net`, v obou rozloženích). rembg se neimportuje vůbec; zůstal jen jako záloha s
+   `NUMBA_CACHE_DIR` a `U2NET_HOME` nastavenými předem. Když neodpoví ani jedno, důvod je v `notes.rembg_error`
+   (vidět v hlavičce odpovědi). `python engines/python/papel_portrait.py --probe` vypíše, co server má.
+2. **Tvář v rovnoměrném světle se dělila napůl.** Práh na dvě třídy (Otsu) u fotky bez tmavých vlasů padne doprostřed
+   pleti. Úroveň se teď bere jako nižší ze tří tříd šedi (`otsu3`), s 15 % směrem k dělení na dvě: tmavé zůstane jen
+   to, co tmavé opravdu je, a rysy kreslí zostření (silnější než dřív).
+3. **Hrubá mřížka.** Portrét se čte na 480 buňkách místo 280 (`PORTRAIT_PX`; silueta dál na `PAPEL_PX = 280`).
+   U panelu 190 mm je buňka 0,35 mm a nejtenčí čára 1,0 mm.
+4. **Barvy.** Nikým nezvolený portrét je krémový podklad (`#ede6d6`) pod tmavě modrou (`#213d78`), ne bílá a černá
+   z kraje palety. `palette` z `forTool` se u portrétu už nepoužívá.
+5. **Pozadí jako louka.** U lidového vzoru se v tmavém poli střídají květy, hvězdicové květy a lístky, větší a menší
+   (jednotka 12,5 % okna místo 8,5 %).
+
+**Nahrání fotky hned** (`tools/_papel_upload.blade.php`, `param.ts`): v kroku 1 je pole „Nahrát fotku“ (klik otevře
+výběr souboru), fotku jde pustit kamkoli na stránku a vložit ze schránky. Okno s knihovnou a mými obrázky je pod tím
+jako tlačítko „Knihovna a moje obrázky“. Šablona `param.blade.php` umí `tools/_<kind>_upload` a text tlačítka
+`param.<kind>.library` pro kterýkoli nástroj.
+
+**Rychlost po změně** (lokálně, vytížený počítač): celé volání 1,15–1,3 s, z toho 0,57 s interpret a knihovny; samotná
+stavba 0,45 s. Cíl „pod 1 s“ tím lokálně neplatí, jemnost dostala přednost. Na serveru přibude při první stavbě s novou
+fotkou síť u2net (řídící session naměřila 1,4 s na načtení modelu), další stavby berou masku z mezipaměti.
+
+**Ověřeno:** testy `PapelPortraitTest` a `PapelPicadoTest` (11 testů), v headless Chromu puštění fotky na stránku
+(nahrání, přepnutí na portrét, miniatury, tmavé pozadí), přímé oddělení sítí ve zkušebním prostředí s onnxruntime 1.31.
+**Neověřeno:** oddělení sítí na serveru (onnxruntime 1.30 tam je a model taky, ale tenhle kód tam ještě neběžel),
+vložení ze schránky, mobil, a pořád nic netištěno.

@@ -160,6 +160,8 @@ class PapelPortraitTest extends TestCase
         $this->assertSame(['body', 'details'], array_keys($m['notes']['part_colors']));
         $light = fn (string $hex) => array_sum(sscanf($hex, '#%2x%2x%2x'));
         $this->assertGreaterThan($light($m['notes']['paint']['details']), $light($m['notes']['paint']['body']));
+        // nobody chose colours: cream paper under dark blue, the look the tool is shown in
+        $this->assertSame(['#ede6d6', '#213d78'], [strtolower($m['notes']['paint']['body']), strtolower($m['notes']['paint']['details'])]);
         $this->assertFalse($m['notes']['multi_material']);
         // other sizes of the two layers: the height follows, the change moves with the backing
         $thick = $this->meta($face + ['base' => 3, 'relief' => 1.2]);
@@ -233,6 +235,7 @@ class PapelPortraitTest extends TestCase
         $this->assertFalse($m['notes']['rembg']);
         $this->assertFalse($m['notes']['isolated']);
         $this->assertContains('portrait_whole', $m['notes']['warnings']);
+        $this->assertNotSame('', (string) ($m['notes']['rembg_error'] ?? ''), 'why it could not is told to whoever reads the answer');
         $asked = $this->meta($face + ['isolate' => false]);
         $this->assertNull($asked['notes']['rembg']);
         $this->assertNotContains('portrait_whole', $asked['notes']['warnings']);
@@ -410,6 +413,11 @@ class PapelPortraitTest extends TestCase
             foreach (['border', 'scallop_edge', 'backdrop'] as $choice) {
                 $this->assertStringContainsString('data-choice="'.$choice.'"', $html);
             }
+            // the photo goes in right in the first step: a field to click or drop on, before the button of the library
+            $this->assertLessThan(strpos($html, 'id="param-artwork-open"'), strpos($html, 'id="param-artwork-drop"'));
+            $this->assertStringContainsString('id="param-artwork-file" type="file"', $html);
+            $this->assertStringContainsString(e(__('param.papel.upload', [], $locale)), $html);
+            $this->assertStringContainsString(e(__('param.papel.library', [], $locale)), $html);
             foreach (['id="papel-thumbs"', 'id="papel-portrait"', 'id="papel-isolate-off"', 'id="papel-place-reset"'] as $hook) {
                 $this->assertStringContainsString($hook, $html);
             }
