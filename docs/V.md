@@ -201,6 +201,13 @@ skutečné hranice hotendu s danou cívkou.
 Závěr: poměr toku horní plochy zůstává 1,0; podezřelý je tok – horní plocha jede 200 mm/s × 0,42 × 0,2 = 16,8 mm³/s,
 tedy na stropu 16 (viz 3.1), kde tryska nestíhá. Další test na Maxu: `quick` s `{"top_surface_speed":"120"}` (10 mm³/s).
 
+**T26-000033** (10. 10. večer; modrý `quick` – podle barvy Max × PLA+ modrá, nastavení Roman potvrdí, čekáno
+`{"top_surface_speed":"120"}`): 7 snímků z nízkého úhlu, expozice −6 je pro tmavě modrou málo (od té doby −5 pro modrou,
+−6 pro bílou). Co je vidět: most rovný, mezi pilíři žádné vlásky, převisové lamely čisté; **na pilířích a na kostce
+vodorovné pruhy ve stejných výškách** (změna doby vrstvy, když nižší prvky skončí), na boku kostky u rohu jemné
+svislé vlnění, tenká stěna vodorovně pruhovaná. **Horní plocha kostky se z nízkého úhlu posoudit nedá** – k tomu
+snímek s deskou naklopenou ke kameře.
+
 Hodnoty farmy pro Max dnes: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
 `top_surface_pattern = monotonicline`, `only_one_wall_top = 1`; Max jede s procesem S1 bez přepisů pro velkou
 podložku. Až Roman napíše výsledek: kandidát do řádku Max × PLA+ a ověření testem `quick` z farmy (horní plocha
