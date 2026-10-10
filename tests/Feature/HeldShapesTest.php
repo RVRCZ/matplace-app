@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -20,6 +21,10 @@ class HeldShapesTest extends TestCase
         if (! app(ParametricGenerator::class)->available()) {
             $this->markTestSkipped('The model generator needs Python with manifold3d.');
         }
+        // held back in config/tools.php: only an admin gets to their pages and their generators (ToolVisibility)
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($admin);
     }
 
     /** @return array<string, mixed> */
@@ -94,5 +99,9 @@ class HeldShapesTest extends TestCase
             }
             app()->setLocale('cs');
         }
+        // and nobody but an admin opens them
+        auth()->logout();
+        $this->get('/tools/straw-topper')->assertNotFound();
+        $this->get('/tools/can-opener')->assertNotFound();
     }
 }

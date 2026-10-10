@@ -12,6 +12,7 @@ use App\Http\Middleware\RecordMissing;
 use App\Http\Middleware\RecordVisit;
 use App\Http\Middleware\RememberReferral;
 use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\ToolGate;
 use App\Models\AnonymousSession;
 use App\Support\Consent;
 use App\Support\Locales;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             SetLocale::class,
             EnsureAnonymousSession::class,
             RememberReferral::class,
+            ToolGate::class,
             RecordVisit::class,
             ForwardEvents::class,
         ]);
