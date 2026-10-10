@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Reads the photos of a printed test object and fills in the evaluation form the operator would fill in: stringing,
- * overhangs, bridges, first layer, corners, ironing, walls, layer bond, warping, an overall score and a note. The
+ * overhangs, bridges, first layer, corners, ironing, walls, layer bond, warping, the seam, an overall score and a note. The
  * operator confirms or corrects it; TuningAdvisor turns the confirmed result into setting changes.
  *
  * The model gets the object's real geometry (angles, spans, gaps, wall thicknesses from calib_tool.py), the settings
@@ -41,7 +41,25 @@ final class TestPhotoJudge
         'wall' => ['ok', 'gaps', 'missing'],
         'bond' => ['ok', 'weak'],
         'warp' => ['ok', 'lift'],
+        'seam' => ['0', '1', '2', '3'],
+        'seam_fault' => ['none', 'bulge', 'gap'],
     ];
+
+    /** What a seam test can show: its smooth walls, the control cube and the base plate. Nothing else is on it. */
+    private const SEAM_FIELDS = ['seam', 'seam_fault', 'corners', 'elephant', 'warp'];
+
+    /**
+     * The fields one object can answer: the seam object has no pillars, fins, bridges or thin walls, and the other
+     * objects have no wall smooth enough to judge a seam on. Asking for them anyway only collects guesses.
+     *
+     * @return array<string, array<int, string>>
+     */
+    public static function fieldsFor(string $object): array
+    {
+        return $object === 'seam'
+            ? array_intersect_key(self::FIELDS, array_flip(self::SEAM_FIELDS))
+            : array_diff_key(self::FIELDS, ['seam' => 1, 'seam_fault' => 1]);
+    }
 
     /** What the farm has learned so far; grows with every test the operator corrects. */
     private const KNOWLEDGE = <<<'TXT'
@@ -58,6 +76,11 @@ final class TestPhotoJudge
 - Layer bond bar (3 x 12 x 35 mm): weak = layers separating, cracks, or a rough, porous surface compared with the rest.
 - Warp: lift = a corner of the base plate curled up, the plate not flat.
 - A ring at the same height on several features comes from the layer time changing when lower features end; mention it in the note, it is not a defect of any single field.
+- Seam (seam test: cylinder, box with rounded corners, cone leaning out): the place where every wall loop starts and ends, stacked into a vertical line down the wall. Find it first - it is usually on one side only, often the back. seam: 0 = cannot be found even zoomed in, 1 = a faint line found only when zoomed in or in raking light, 2 = a clear line at normal view, 3 = rough: a ridge, a row of blobs or a groove that catches the eye. Answer for the worst of the three smooth features and name it in the reason.
+- seam_fault says what the seam is made of: none = flush with the wall, only a difference in sheen; bulge = raised ridge, blobs or zits along it; gap = holes, dents or a groove where the loop did not close.
+- A scarf joint replaces the sharp line by a ramp about 20 mm long where the end of the loop lies over its start. It shows, if at all, as a slanted or tapering band with a slightly different sheen: that is seam 1 at most. A band that stands proud of the wall is bulge, a thin under-filled band is gap. Do not guess from the settings whether a scarf was used; judge what the wall shows.
+- On the cone the wall leans out 25 degrees: a seam that sags or curls there is worth the note. On the control cube of a seam test the seam sits in a vertical corner; judge it under corners (bulge = the seam swells the edge).
+- A seam cannot be judged from the top or from the side it is not on: if no photo shows the seam side of the cylinder close and lit from the side, answer seam and seam_fault "unknown" and ask for that photo.
 - Photos may show other objects (props, earlier prints, hands): judge only the test object. Reflections and white-balance tints are not defects.
 TXT;
 
@@ -100,7 +123,8 @@ TXT;
             $content[] = ['type' => 'text', 'text' => sprintf('Photo %d (%s, %d x %d px):', $i + 1, $photo['view'], $r['w'], $r['h'])];
             $content[] = $this->imageBlock($target);
         }
-        $content[] = ['type' => 'text', 'text' => $this->brief($order)];
+        $fields = self::fieldsFor((string) ($order->test_params['object'] ?? 'quick'));
+        $content[] = ['type' => 'text', 'text' => $this->brief($order, $fields)];
 
         $messages = [['role' => 'user', 'content' => $content]];
         $crops = 0;
@@ -108,7 +132,7 @@ TXT;
         $model = (string) ($this->config['inspect_model'] ?? 'claude-opus-5');
 
         for ($turn = 0; $turn < self::MAX_TURNS; $turn++) {
-            $res = $this->call($model, $messages);
+            $res = $this->call($model, $messages, $fields);
             foreach ($usage as $k => $v) {
                 $usage[$k] = $v + (int) ($res['usage'][$k] ?? 0);
             }
@@ -122,7 +146,7 @@ TXT;
                     continue;
                 }
                 if ($block['name'] === 'submit_evaluation') {
-                    return $this->result((array) $block['input'], $model, $crops, $usage);
+                    return $this->result((array) $block['input'], $fields, $model, $crops, $usage);
                 }
                 if ($block['name'] === 'crop') {
                     $results[] = $this->crop((array) $block['input'], $block['id'], $sent, $work, ++$crops);
@@ -140,7 +164,7 @@ TXT;
         throw new EngineException('The model gave no evaluation within '.self::MAX_TURNS.' turns.');
     }
 
-    private function call(string $model, array $messages): array
+    private function call(string $model, array $messages, array $fields): array
     {
         $res = Http::timeout((int) ($this->config['inspect_timeout'] ?? 300))
             ->withHeaders([
@@ -157,7 +181,7 @@ TXT;
                 'output_config' => ['effort' => (string) ($this->config['inspect_effort'] ?? 'high')],
                 'cache_control' => ['type' => 'ephemeral'],   // the photos are resent every turn: read them from the cache
                 'system' => $this->system(),
-                'tools' => $this->tools(),
+                'tools' => $this->tools($fields),
                 'messages' => $messages,
             ]);
         if (! $res->ok()) {
@@ -172,13 +196,13 @@ TXT;
     {
         return "You inspect photos of FDM calibration prints for a 3D print farm and fill in the operator's evaluation form. "
             ."The operator confirms or corrects your answers, and a rule-based advisor turns them into slicer changes, so an honest 'unknown' is worth more than a guess.\n\n"
-            .'Look at the whole object first, then use the crop tool on every feature whose field you answer from a detail (the stringing pillars, the overhang fins, the bridges, the first layer at the cube, the ironed plateau, the thin walls, the bond bar). '
+            .'Look at the whole object first, then use the crop tool on every feature whose field you answer from a detail (the stringing pillars, the overhang fins, the bridges, the first layer at the cube, the ironed plateau, the thin walls, the bond bar, the seam on the cylinder and the rounded box). '
             ."Coordinates are pixels of the photo as you see it. Never estimate dimensions in millimetres.\n\n"
             ."What the farm has learned so far:\n".self::KNOWLEDGE."\n\n"
             .'Write every reason and the note in Czech, briefly, the way one printer operator tells another what they see.';
     }
 
-    private function tools(): array
+    private function tools(array $fields): array
     {
         $field = fn (array $values) => [
             'type' => 'object',
@@ -191,7 +215,7 @@ TXT;
             'additionalProperties' => false,
         ];
         $props = [];
-        foreach (self::FIELDS as $k => $values) {
+        foreach ($fields as $k => $values) {
             $props[$k] = $field($values);
         }
         $props['score'] = ['type' => 'string', 'enum' => ['1', '2', '3', '4', '5'], 'description' => '5 = print-ready, no defects; 4 = minor cosmetic; 3 = visible defects; 2 = serious problems; 1 = failed'];
@@ -248,7 +272,7 @@ TXT;
     }
 
     /** The test itself: object geometry, what it was printed with, and what earlier tests of this machine showed. */
-    private function brief(FarmOrder $order): string
+    private function brief(FarmOrder $order, array $fields): string
     {
         $tp = (array) $order->test_params;
         $object = (string) ($tp['object'] ?? 'quick');
@@ -264,8 +288,12 @@ TXT;
         if ($object === 'temp_tower') {
             $lines[] = 'This is a temperature tower; floors bottom first: '.implode(', ', (array) ($tp['temps'] ?? [])).' °C. Judge the fields for the tower as a whole.';
         }
-        if ($object !== 'detailed') {
+        if ($object !== 'detailed' && isset($fields['ironing'])) {
             $lines[] = 'There is no ironed plateau on this object: answer ironing "unknown".';
+        }
+        if ($object === 'seam') {
+            // which of the two prints this is (scarf joint or not) stays untold: the pair is compared, and a judge who knows expects
+            $lines[] = 'This is a seam test: three smooth walls 20 mm tall with no sharp corner to hide the seam in, and a 15 mm control cube. Find the seam on each smooth feature before answering.';
         }
 
         $earlier = FarmOrder::where('kind', FarmOrder::KIND_TEST)->where('farm_printer_id', $order->farm_printer_id)
@@ -284,10 +312,10 @@ TXT;
         return implode("\n", $lines);
     }
 
-    private function result(array $in, string $model, int $crops, array $usage): array
+    private function result(array $in, array $asked, string $model, int $crops, array $usage): array
     {
         $fields = [];
-        foreach (self::FIELDS as $k => $values) {
+        foreach ($asked as $k => $values) {
             $f = (array) ($in[$k] ?? []);
             $value = in_array($f['value'] ?? null, $values, true) ? $f['value'] : null;
             $fields[$k] = ['value' => $value, 'confidence' => in_array($f['confidence'] ?? '', ['low', 'medium', 'high'], true) ? $f['confidence'] : 'low', 'reason' => mb_substr((string) ($f['reason'] ?? ''), 0, 300)];

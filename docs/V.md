@@ -1,0 +1,103 @@
+# V: ladění tiskových parametrů farmy (session F)
+
+Větev `feature/print-tuning` (z `main` 95ea9d6, 10. 10. 2026), zadání `docs/prompts/ladeni-tisku.md`. Roman:
+začít částí 5 – šev (scarf joint). Tenhle dokument je průběžný: každý řádek ladění, každé kolo a výsledek sem.
+
+Vlastní soubory session: `TuningAdvisor.php`, `ProfileLibrary.php`, `TestPrintService.php`,
+`database/data/farm_profile_library.json`, `engines/orca/profiles/*`, `engines/python/calib_tool.py`,
+`tuning*.blade.php`, `FarmTuningController`, testy `FarmTuningTest`, `FarmNozzleTest`, `TuningAdvisorTest`.
+
+## 1. Šev (část 5 zadání)
+
+### 1.1 Proč ne objekt `quick`
+
+Zadání chtělo vytisknout `quick` dvakrát a porovnat „válcovou část kostky / pilířů“. Na `quick` ale šev není na čem
+posoudit:
+
+- kostka je hranatá, šev `aligned` jde do ostrého rohu a **podmíněný scarf** (`seam_slope_conditional = 1`,
+  `scarf_angle_threshold = 155°`) se na obvodu s ostrým rohem nepoužije vůbec,
+- pilíře na stringing mají Ø 4 mm, tedy obvod 12,6 mm – kratší než samotný scarf (20 mm).
+
+Ověřeno řezem (Anycubic Slicer Next 2.0.0.3 z příkazové řádky, naše profily `machine.json` + `process_standard.json`
++ `filament_pla.json`, podložka 250 mm, výplň 15 %): `quick` se scarfem má šikmé pohyby (G1 se Z uvnitř vrstvy)
+**jen na třech pilířích**, na kostce, převisech, mostu ani stěně žádný.
+
+### 1.2 Nový zkušební objekt `seam`
+
+![objekt seam](img/tuning-seam-object.png)
+
+`calib_tool.py seam` – jedna destička 116 × 35 × 21 mm, zleva:
+
+| prvek | rozměr | k čemu |
+|---|---|---|
+| válec | Ø 30 × 20 mm | šev je čára po stěně, nemá se kam schovat |
+| hranol se zaoblenými rohy | 20 × 20 × 20, R 6 | rovné plochy, ale žádný ostrý roh – scarf se použije |
+| kostka | 15 mm | kontrola: šev zůstává v rohu, rozměr a rohy se scarfem nesmí změnit |
+| kužel rozšířený nahoru | Ø 16 → 34,65, sklon 25° | scarf na převisu (0,09 mm na vrstvu ≈ 22 % šířky stěny, pod prahem 40 %) |
+
+V administraci: *Vytisknout test* → objekt **Šev**; zaškrtávátko **Šikmý šev (scarf joint)** přidá k nastavení řádku
+`TestPrintService::SCARF` (hodnoty ze zadání); pole *Proces navíc (JSON)* je přebije. Bez zaškrtnutí se tiskne šev
+podle řádku. U testu je napsáno, s čím se tiskl („šev: scarf external, délka 20 mm, mezera 15%“ / „bez scarfu“).
+Hodnocení testu `seam` se ptá na **šev** (není vidět / slabá linka / zřetelná linka / hrubý), **vadu na švu**
+(žádná / boule / díry), rozměry kostky a rohy; otvor, převisy, stringing, most a ostatní pole u něj nejsou.
+**Hodnocení z fotek (AI)** – `TestPhotoJudge` (po dohodě s řídící session, 10. 10.): pole `seam` a `seam_fault`,
+v pokynech popis švu, boule, díry a scarf přechodu. Každý objekt se ptá jen na to, co na něm je
+(`TestPhotoJudge::fieldsFor`): test `seam` na šev, rohy kostky, sloní nohu a podložku; ostatní objekty na šev nikdy.
+Model **neví, který z dvojice tisků má scarf** – nastavení švu se mu neposílá, aby nehodnotil podle očekávání.
+Bez fotky strany se švem zblízka a s bočním světlem odpoví „nelze posoudit“ a řekne si o ni.
+
+Řez téhož objektu dvakrát (místní Anycubic Slicer Next 2.0.0.3, ne serverová Orca – čísla jsou orientační):
+
+| | čas | filament | šikmé pohyby na stěnách (vrstvy 5–15 mm) |
+|---|---|---|---|
+| dnešní nastavení (`seam_slope_type = none`, `seam_gap = 10%`) | 28 min 9 s | 15,81 g | žádné |
+| scarf (`external`, podmíněný, délka 20, 10 kroků, rychlost 100 %, `seam_gap = 15%`, `staggered_inner_seams = 1`) | 30 min 17 s | 15,69 g | válec, zaoblený hranol, kužel: vnější i vnitřní stěna; **kostka žádné** |
+
+Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hranaté díly nechá být.
+
+### 1.3 Stav tisku
+
+| test | stroj, cívka | nastavení | výsledek | fotky |
+|---|---|---|---|---|
+| – | S1 #1, PLA+ (cívku je potřeba založit) | dnešní (bez scarfu) | čeká na nasazení objektu `seam` | – |
+| – | S1 #1, PLA+ | scarf | čeká | – |
+
+Stav 10. 10. večer podle řídící session: S1 #1 má silky a mramor, S1 #2 jen PETG oranžovou, PLA+ je jen na Maxu.
+Pro test je potřeba **založit do S1 #1 jednu cívku PLA+** (černá nebo bílá, slot 4 místo mramoru) a zapsat ji
+v adminu. Stav řádků a fronty na matplace.com jsem sám nečetl (čtení z produkce tahle session nepovolila).
+
+### 1.4 Co dál podle výsledku
+
+1. Scarf lepší → *3 · Test je dobrý* u scarf testu: řádek PLA+ na tom stroji dostane hodnoty testu (stav Vyladěno);
+   pak do knihovny `kobra s1` → PLA+ (`process`), ať je mají i ostatní S1.
+2. Silk (šev je na lesku nejvíc vidět) stejný pár testů; PETG s nižší `scarf_joint_speed`; ASA až po základním ladění.
+3. Globálně do `process_standard.json` / `process_fine.json` až po bodu 1 a 2.
+4. Když bude výsledek nejasný: scarf mění tři věci najednou (šikmý přechod, mezeru 10 → 15 %, střídání vnitřních
+   švů). Třetí tisk se scarfem a `{"seam_gap":"10%","staggered_inner_seams":"0"}` v poli procesu je oddělí.
+
+## 2. Oprava formuláře hodnocení
+
+U testu, který ještě nikdo nehodnotil, měl formulář předvybrané odpovědi **stringing: žádný**, **sloní noha: žádná**
+a **převis čistý do: žádný** (`null == 0` je v PHP pravda). Odeslání bez doteku tak zapsalo tři odpovědi, které nikdo
+nedal, a z „žádný převis čistý“ poradce navrhne víc chlazení a podpěry pod vším plošším než 60°. Opraveno
+(`isset(...)`), test `test_a_test_nobody_has_judged_yet_shows_no_answer_as_chosen`. Starší hodnocení, která mají
+`overhang_ok = 0` bez důvodu, stojí za kontrolu.
+
+## 3. Ruční testy Romana mimo farmu (část 6 zadání)
+
+| kdy | stroj, cívka | co | hodnota | výsledek |
+|---|---|---|---|---|
+| 10. 10. večer | Kobra 3 Max, PLA+ modrá | horní povrch, `top_solid_infill_flow_ratio` (řezáno v Orce na Romanově PC) | čeká na Romana | čeká |
+
+Hodnoty farmy pro Max dnes: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
+`top_surface_pattern = monotonicline`, `only_one_wall_top = 1`; Max jede s procesem S1 bez přepisů pro velkou
+podložku. Až Roman napíše výsledek: kandidát do řádku Max × PLA+ a ověření testem `quick` z farmy (horní plocha
+kostky) spolu s `top_surface_speed` 100–150.
+
+## 4. Testy
+
+`FarmTuningTest` (+2: test švu od tisku po převzetí do řádku; nevyhodnocený formulář), `FarmNozzleTest` (objekt
+`seam` vodotěsný pro trysku 0,4 i 0,2), `FarmTestPhotosTest` (+2: test `seam` se ptá na šev a ne na to, co na
+objektu není; ostatní objekty se na šev neptají), `TuningAdvisorTest` beze změny. Skutečné volání AI nad fotkou švu
+proběhne až s prvním tiskem – pokyny pro model jsou zatím neověřené na reálné fotce. Vzhled stránky v prohlížeči jsem neověřoval,
+jen obsah HTML v testech.

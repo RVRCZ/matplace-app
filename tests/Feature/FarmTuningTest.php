@@ -278,6 +278,77 @@ class FarmTuningTest extends TestCase
         $this->assertArrayNotHasKey('ironing_type', $row->overrides['process']);
     }
 
+    public function test_a_seam_test_prints_smooth_walls_with_or_without_the_scarf_joint_and_records_the_seam(): void
+    {
+        if (! app(TestPrintService::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $s1->update(['bed_clear' => true]);
+        $slot = $s1->slots()->where('slot', 2)->firstOrFail();
+        $row = FarmPrinterMaterial::where('farm_printer_id', $s1->id)->where('farm_material_id', $slot->color->farm_material_id)->whereNull('farm_color_id')->firstOrFail();
+        $url = "/admin/farm/tuning/{$row->id}";
+        $last = fn () => FarmOrder::where('kind', FarmOrder::KIND_TEST)->latest('id')->firstOrFail();
+
+        // the seam as the row prints it: the object has the smooth walls the other objects lack
+        $this->actingAs($this->admin)->post($url.'/test', ['slot' => $slot->id, 'object' => 'seam'])->assertRedirect()->assertSessionMissing('error');
+        $plain = $last();
+        $this->assertSame(FarmOrder::STATUS_QUEUED, $plain->status, (string) $plain->error);
+        $this->assertSame(['cylinder', 'rounded_box', 'cube', 'cone'], array_column($plain->test_params['features'], 'name'));
+        $this->assertArrayNotHasKey('seam_slope_type', $plain->slice_params['overrides']['process']);
+
+        // the same object with the scarf joint; what the operator writes into the process field wins over the start
+        $this->actingAs($this->admin)->post($url.'/test', ['slot' => $slot->id, 'object' => 'seam', 't_scarf' => 1, 't_process' => '{"seam_gap":"12%"}'])->assertRedirect()->assertSessionMissing('error');
+        $scarf = $last();
+        $sliced = $scarf->slice_params['overrides']['process'];
+        $this->assertSame('external', $sliced['seam_slope_type']);
+        $this->assertSame('1', $sliced['seam_slope_conditional']);
+        $this->assertSame('20', $sliced['seam_slope_min_length']);
+        $this->assertSame('12%', $sliced['seam_gap']);
+        $this->assertSame('no_brim', $sliced['brim_type']);
+
+        // the switch belongs to the seam object: a quick test never gets a scarf by a forgotten tick
+        $this->actingAs($this->admin)->post($url.'/test', ['slot' => $slot->id, 'object' => 'quick', 't_scarf' => 1])->assertRedirect()->assertSessionMissing('error');
+        $this->assertArrayNotHasKey('seam_slope_type', $last()->slice_params['overrides']['process']);
+
+        // printed: the form asks about the seam and the cube, not about holes, strings and bridges
+        $scarf->forceFill(['status' => FarmOrder::STATUS_DONE])->save();
+        $this->actingAs($this->admin)->get($url)->assertOk()->assertSee('name="seam"', false)->assertSee('name="cube_x"', false)->assertSee('scarf external, délka 20 mm')
+            ->assertDontSee('name="stringing"', false)->assertDontSee('name="hole"', false);
+        $this->actingAs($this->admin)->post($url."/evaluate/{$scarf->token}", ['seam' => 0, 'seam_fault' => 'none', 'cube_x' => 15.02, 'cube_y' => 15.0, 'corners' => 'ok', 'score' => 5])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $result = $scarf->fresh()->test_params['result'];
+        $this->assertSame(0, (int) $result['seam'], 'an invisible seam is an answer, not an empty field');
+        $this->assertSame('none', $result['seam_fault']);
+        $this->assertSame([], $scarf->fresh()->test_params['advice']['advice'], 'nothing to change');
+
+        // a good scarf test becomes the row: prints of this kind on this machine get the scarf joint
+        $this->actingAs($this->admin)->post($url."/adopt/{$scarf->token}", ['score' => 5])->assertRedirect()->assertSessionMissing('error');
+        $row->refresh();
+        $this->assertSame(FarmPrinterMaterial::STATUS_TUNED, $row->status);
+        $this->assertSame('external', $row->overrides['process']['seam_slope_type']);
+        $this->assertSame('external', PrintProfile::for($s1, $row->material, null)->process['seam_slope_type']);
+    }
+
+    public function test_a_test_nobody_has_judged_yet_shows_no_answer_as_chosen(): void
+    {
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $row = FarmPrinterMaterial::where('farm_printer_id', $s1->id)->whereNull('farm_color_id')->firstOrFail();
+        $test = $this->finishedTest($row, 'T26-000301');
+        $seam = $this->finishedTest($row, 'T26-000302');
+        $seam->forceFill(['test_params' => ['object' => 'seam'] + $seam->test_params])->save();
+
+        // "no stringing", "no elephant foot", "no overhang is clean" and "the seam does not show" are answers:
+        // sending the form untouched must not record them
+        $html = $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()->assertSee($test->number)->assertSee('name="seam"', false)->getContent();
+        $this->assertStringNotContainsString('<option value="0" selected', $html);
+
+        // a judged zero comes back as chosen
+        $this->actingAs($this->admin)->post("/admin/farm/tuning/{$row->id}/evaluate/{$test->token}", ['stringing' => 0, 'elephant' => 0])->assertRedirect()->assertSessionHasNoErrors();
+        $html = $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()->getContent();
+        $this->assertSame(2, substr_count($html, '<option value="0" selected'));
+    }
+
     /** A finished test of a row, printed with exactly what the row holds now. */
     private function finishedTest(FarmPrinterMaterial $row, string $number, string $status = FarmOrder::STATUS_DONE, ?int $rating = null): FarmOrder
     {

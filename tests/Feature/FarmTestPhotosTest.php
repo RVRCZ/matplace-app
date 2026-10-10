@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\TestPhotoJudge;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinterMaterial;
 use App\Models\ModelFile;
@@ -137,6 +138,50 @@ class FarmTestPhotosTest extends TestCase
         $tp = $order->fresh()->test_params;
         $this->assertSame(1, $tp['result']['stringing']);
         $this->assertSame('done', $tp['ai']['status']);
+    }
+
+    public function test_a_seam_test_is_asked_about_the_seam_and_not_about_what_the_object_lacks(): void
+    {
+        config(['ai.anthropic.api_key' => 'test-key']);
+        $order = $this->makeTestOrder();
+        $order->forceFill(['test_params' => ['object' => 'seam', 'ironing' => false, 'features' => [['name' => 'cylinder', 'diameter' => 30.0, 'checks' => ['seam']]],
+            'candidate' => ['nozzle_temp' => 220, 'process' => ['seam_slope_type' => 'external']]] + $order->test_params])->save();
+        $this->actingAs($this->admin)->post("/admin/farm/orders/{$order->token}/photos", ['photos' => [$this->photo()], 'views' => ['left']]);
+
+        $field = fn (string $v, string $why = 'vidět na fotce') => ['value' => $v, 'confidence' => 'medium', 'reason' => $why];
+        Http::fake(['api.anthropic.com/*' => Http::sequence()->push($this->toolUse('submit_evaluation', [
+            'seam' => $field('0', 'na válci šev nenajdu ani zblízka'), 'seam_fault' => $field('none'), 'corners' => $field('ok'), 'elephant' => $field('0'),
+            'warp' => ['value' => 'unknown', 'confidence' => 'low', 'reason' => ''], 'stringing' => $field('3', 'nikdo se neptal'),
+            'score' => '5', 'note' => 'Šev není vidět.', 'better_photos' => '',
+        ]))]);
+        $this->actingAs($this->admin)->post("/admin/farm/orders/{$order->token}/judge")->assertRedirect()->assertSessionHas('status');
+
+        $ai = $order->fresh()->test_params['ai'];
+        $this->assertSame('done', $ai['status'], $ai['error'] ?? '');
+        $this->assertEqualsCanonicalizing(['seam', 'seam_fault', 'corners', 'elephant', 'warp'], array_keys($ai['fields']), 'an answer nobody asked for is dropped');
+        $this->assertSame('0', $ai['fields']['seam']['value']);
+
+        // the call: seam fields, the cylinder, what a scarf looks like - and not which of the two prints this is
+        Http::assertSent(function ($r) {
+            $asked = array_keys($r['tools'][1]['input_schema']['properties']);
+            $told = json_encode($r['messages']);
+
+            return in_array('seam', $asked, true) && in_array('seam_fault', $asked, true) && ! in_array('stringing', $asked, true) && ! in_array('ironing', $asked, true)
+                && str_contains($told, 'cylinder') && str_contains($told, 'seam test') && ! str_contains($told, 'seam_slope_type') && ! str_contains($told, 'ironed plateau on this object')
+                && str_contains($r['system'], 'scarf joint');
+        });
+
+        // "the seam does not show" arrives in the form as a chosen answer, with the reading next to it
+        $row = FarmPrinterMaterial::findOrFail($order->farm_printer_material_id);
+        $this->actingAs($this->admin)->get("/admin/farm/tuning/{$row->id}")->assertOk()
+            ->assertSee('Šev:')->assertSee('na válci šev nenajdu ani zblízka')->assertSee('<option value="0" selected>není vidět', false);
+    }
+
+    public function test_the_other_objects_are_never_asked_about_the_seam(): void
+    {
+        $this->assertSame(['stringing', 'overhang_ok', 'bridge', 'elephant', 'corners', 'ironing', 'top', 'wall', 'bond', 'warp'], array_keys(TestPhotoJudge::fieldsFor('quick')));
+        $this->assertSame(array_keys(TestPhotoJudge::fieldsFor('quick')), array_keys(TestPhotoJudge::fieldsFor('temp_tower')));
+        $this->assertEqualsCanonicalizing(['seam', 'seam_fault', 'corners', 'elephant', 'warp'], array_keys(TestPhotoJudge::fieldsFor('seam')));
     }
 
     public function test_without_photos_or_a_key_nothing_is_sent(): void

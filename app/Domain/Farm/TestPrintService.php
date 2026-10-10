@@ -28,6 +28,9 @@ final class TestPrintService
         // ironing is a setting of the whole print, never of one surface: its own object keeps the big tests from
         // spending most of their time polishing their base plate (three quarters of an hour on a 0.2 nozzle)
         'ironing' => ['minutes' => 15, 'floors' => false, 'ironing' => true],
+        // the seam needs smooth walls: the cube of the other objects hides it in a corner, where a conditional scarf
+        // joint is never used, and a stringing pillar is shorter around than the scarf itself
+        'seam' => ['minutes' => 30, 'floors' => false, 'ironing' => false],
         'temp_tower' => ['minutes' => 60, 'floors' => true, 'ironing' => false],
     ];
 
@@ -43,6 +46,15 @@ final class TestPrintService
     {
         return ['ironing_spacing' => (string) round(0.375 * $nozzle, 3)] + self::IRONING;
     }
+
+    /**
+     * The scarf joint a seam test switches on (Orca's "Contour", only on walls without a sharp corner), with the
+     * values the farm starts from; anything written into the test's own process field wins over these.
+     */
+    public const SCARF = [
+        'seam_slope_type' => 'external', 'seam_slope_conditional' => '1', 'seam_slope_start_height' => '0', 'seam_slope_min_length' => '20',
+        'seam_slope_steps' => '10', 'scarf_joint_speed' => '100%', 'seam_gap' => '15%', 'staggered_inner_seams' => '1',
+    ];
 
     public const FLOOR_MM = 10.0;
 
