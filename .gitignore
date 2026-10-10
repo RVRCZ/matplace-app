@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Python byte-code (every run rewrites it)
+__pycache__/
+*.pyc
