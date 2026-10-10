@@ -149,7 +149,11 @@ okna). V náhledu: rámeček `Viewer.setFrame` kolem portrétu (jako vrstva ve s
 
 ### 3.5 Barvy a stažení
 
-Dva řádky dílů v kroku Barvy: **Rám a detaily** (`details`) a **Podklad portrétu** (`body`), okno palety jako jinde.
+Dva řádky dílů v kroku Barvy: **Rám a detaily** (`details`) a **Podklad portrétu** (`body`), výběr barvy přes
+`pickColor()` jako jinde. **Pozor (10. 10.):** session D (`docs/prompts/vlastni-barva.md`) mění okno barev na volný výběr
+(systémový color picker + hex; naše cívky se ukážou až na kalkulaci a farmě) – API `pickColor`/`colorOf`/`paintSwatch`
+zůstává, jen vrací hex místo kódu cívky. Piš proti tomu API, nic o cívkách na stránce neukazuj; výchozí barvy
+portrétu nastav hexem (podklad světlý `#f3efe4`, rám tmavý `#1f2a44`).
 Stažení: **3MF (dvě barvy)** výchozí, **STL (jedno těleso)**; názvy souborů jako u ostatních nástrojů. Tlačítko
 „Vytisknout u nás“ vede na farmu, která z `color_changes` předvybere cívky (nic na farmě neměníš; otestuj, že
 `/farm?file=<uuid>` ukáže blok „Druhá barva“ s předvybranou tmavou cívkou – vzor testu: `FarmOrderFlowTest`,
