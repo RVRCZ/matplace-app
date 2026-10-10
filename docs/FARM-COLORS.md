@@ -229,3 +229,10 @@ Tam, kde je stejná barva ve dvou dávkách (např. červená `05_PLA+_cerveny` 
 je víc, a druhou v adminu vypnout. Duhy, duály, PETG transparentní/fialová/hnědá, dřevo, mramor a nová řada PLA
 zůstávají „na objednávku“: při zakázce se na chvíli vymění slot. Po založení nastavit v adminu u každého slotu
 barvu a gramy; nabídka na webu se řídí sloty sama.
+
+### Ověřeno tiskem (10. 10. 2026)
+
+První ostrý tisk po dílech: zakázka F26‑000054, krabička s víkem na Farm U #1 (`kobra-s1-01`), tělo ze slotu 1
+(Fire copper – Spectrum), víko ze slotu 2 (měděná), dvě desky za sebou, obě hotové, zakázka `done`. Agent farmy U
+mezitím běží na novém počítači (Windows 10 Pro, Wi‑Fi farmy 5 GHz, Python 3.12, úloha `matplace-farm-agent`);
+zdejší agent je vypnutý včetně samospouštění.
