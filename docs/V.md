@@ -63,10 +63,32 @@ Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hr
 | T26-000031 (B) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | dnešní (bez scarfu) | **hotovo 10. 10.** – kostka 14,96 × 14,95 (−0,04/−0,05), rohy ostré, stěny válce, hranolu i kužele hladké; na 8 fotkách z foto‑boxu (měkké čelní světlo, 3840 × 2160, výřezy v plném rozlišení) **šev jsem nenašel** (AI ho na válci našla, viz níže – můj výřez mířil jinam); horní plochy s viditelnými čarami (válec, kužel), žádné vlásky kromě prachu; nažloutlý nádech paty kužele = stín, ne vada | u testu v adminu |
 | T26-000032 (S) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | scarf (předpoklad podle pořadí, Roman potvrdí) | **hotovo 10. 10.** – 11 fotek kusů odlomených od sebe, **ostré boční světlo zleva** (jiné než u B). Válec: na jedné straně slabá svislá linka bez boule, ostatní strany čisté. Zaoblený hranol: nic vidět (osvětlená stěna přepálená). **Kužel: na jedné straně zřetelná rovná čára shora dolů a vedle ní asi 15 mm široký zdrsněný pás s drobnými značkami; na další straně pole teček v šikmé mřížce přes zhruba čtvrtinu obvodu**; zbylé dvě strany čisté | u testu v adminu |
 
-**B a S zatím nejsou srovnatelné**: B je focený v měkkém světle foto‑boxu, S v ostrém bočním. Zdrsněný pás a tečky
-na kuželi S mohou být scarf na převisu (pás = rampa scarfu, šikmá mřížka teček = `staggered_inner_seams` prosvítající
-vnější stěnou), ale stejné světlo je mohlo ukázat i na B. Rozhodne až B vyfocený stejně jako S (kužel dokola, válec
-ze strany švu). Předběžně: na válci scarf šev viditelně nezlepšil (slabá linka u obou).
+**Srovnání B × S ve stejném ostrém bočním světle** (Roman 10. 10. večer dofotil B stejně jako S, kusy odlomené;
+T26-000032 má u testu „šev: scarf external, délka 20 mm, mezera 15%“):
+
+| prvek | B = bez scarfu (T26-000031) | S = scarf (T26-000032) | lepší |
+|---|---|---|---|
+| válec (svislá stěna) | ostrá svislá čára | slabá, měkčí linka, bez boule | S, o málo |
+| zaoblený hranol | ostrá čára u rohu | nic rozeznatelného (stěna přepálená) | nelze říct |
+| kužel (stěna 25° ven) | **jedna tenká čistá čára**, stěna kolem hladká | čára **+ asi 15 mm zdrsněný pás vedle ní + pole teček v šikmé mřížce** na další straně | **B, zřetelně** |
+| kostka | rohy ostré, 14,96 × 14,95 | rohy ostré (neměřeno) | stejné |
+
+**Závěr: scarf v téhle podobě (`TestPrintService::SCARF`) do řádku nepřebírat.** Na svislé stěně pomůže málo, na
+šikmé stěně vymění tenkou čáru za široký zdrsněný pás. Pás = rampa scarfu tištěná na převisu (kužel má 22 % šířky
+stěny přes okraj, pod prahem `scarf_overhang_threshold = 40%`, takže se scarf použil); šikmá mřížka teček odpovídá
+`staggered_inner_seams` a scarfu na vnitřních stěnách prosvítajícím vnější stěnou – to druhé je domněnka.
+
+Další pokus **S2** (jeden tisk, zaškrtnutý scarf + *Proces navíc*):
+`{"seam_slope_inner_walls":"0","staggered_inner_seams":"0","scarf_overhang_threshold":"5%"}` – scarf jen na vnější
+stěně a jen na (skoro) svislých stěnách. Místní řez: válec a hranol mají šikmé pohyby jen na vnější stěně, kužel
+a kostka žádné, vnitřní stěny všude rovné; 29 min 42 s. Když S2 dá válec jako S a kužel jako B, tyhle hodnoty
+nahradí `SCARF` a jdou do řádku; jinak scarf pro PLA+ nezavádět a zkusit ho až na silku, kde je šev vidět nejvíc.
+
+**AI hodnocení T26-000032** (10. 10. 17:04, 12 fotek, 3 přiblížení): *Šev: nelze posoudit – na válci a kuželu ho
+nenacházím, strana je přeexponovaná nebo rozmazaná*, rohy ok, sloní noha 0, podložka ok, 4/5; chce ostré nepřepálené
+boční záběry. Zdrsněný pás na kuželi (foto 5, 6) nenašla – ve výřezu v plném rozlišení vidět je. Pokyn se tedy chová
+poctivě (nehádá), ale na přepálených fotkách bílého PLA+ vadu přehlédne; fotit s menší expozicí. Roman formulář
+odeslal se 4/5 bez pole švu. **Tlačítko „označit jako vyladěné“ u T26-000032 nemačkat** – přeneslo by scarf do řádku.
 
 **AI hodnocení T26-000031** (10. 10. 16:04, 11 fotek, 3 přiblížení) – první ostrý běh pokynu pro šev: *Šev 2 (spíš):
 na válci svislá čára uprostřed stěny (foto 9, 2)*, *Vada na švu: none – čára v rovině se stěnou, bez hrbolu a drážky*,
