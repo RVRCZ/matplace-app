@@ -1,0 +1,50 @@
+[
+    {
+        "place_id": 1,
+        "osm_type": "relation",
+        "osm_id": 435514,
+        "lat": "50.0874654",
+        "lon": "14.4212535",
+        "category": "boundary",
+        "type": "administrative",
+        "place_rank": 16,
+        "importance": 0.8,
+        "addresstype": "city",
+        "name": "Praha",
+        "display_name": "Praha, Hlavní město Praha, Česko",
+        "address": {"city": "Praha", "state": "Hlavní město Praha", "country": "Česko", "country_code": "cz"},
+        "boundingbox": ["49.9419006", "50.1774301", "14.2244355", "14.7067869"]
+    },
+    {
+        "place_id": 2,
+        "osm_type": "node",
+        "osm_id": 2,
+        "lat": "50.0875",
+        "lon": "14.4213",
+        "category": "place",
+        "type": "square",
+        "place_rank": 25,
+        "importance": 0.5,
+        "addresstype": "square",
+        "name": "Staroměstské náměstí",
+        "display_name": "Staroměstské náměstí, Staré Město, Praha, Česko",
+        "address": {"square": "Staroměstské náměstí", "suburb": "Staré Město", "city": "Praha", "country": "Česko", "country_code": "cz"},
+        "boundingbox": ["50.0865", "50.0885", "14.4195", "14.4231"]
+    },
+    {
+        "place_id": 3,
+        "osm_type": "node",
+        "osm_id": 3,
+        "lat": "41.3851",
+        "lon": "2.1734",
+        "category": "place",
+        "type": "city",
+        "place_rank": 16,
+        "importance": 0.7,
+        "addresstype": "city",
+        "name": "Praha",
+        "display_name": "Praha, Comarca de Barcelona, Catalunya, España",
+        "address": {"city": "Praha", "country": "España", "country_code": "es"},
+        "boundingbox": ["41.38", "41.39", "2.17", "2.18"]
+    }
+]
