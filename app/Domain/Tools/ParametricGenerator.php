@@ -733,8 +733,9 @@ final class ParametricGenerator
     private function forTool(string $kind, array $clean): array
     {
         if ($kind === 'papel' && ($clean['treatment'] ?? '') === 'portrait') {
-            // what a portrait takes its two filaments from when the visitor named none: the lightest for the backing, the darkest for the frame
-            $clean['palette'] = self::spools();
+            // what a portrait takes its two colours from when the visitor named none: the lightest for the backing, the darkest
+            // for the frame – free colours, like every tool page since the colour window stopped showing spools (session D)
+            $clean['palette'] = self::freeColors($clean)['palette'];
         }
         if (isset(self::TEXTS[$kind]) || in_array($kind, self::ARTWORK, true)) {
             $clean['font'] = self::fontPath($clean['typeface'] ?? null);
