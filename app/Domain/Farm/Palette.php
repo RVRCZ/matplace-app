@@ -6,16 +6,31 @@ use App\Models\FarmColor;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * The filament colours every tool offers: one source of truth, the catalogue of the farm (farm_colors).
+ * What a colour of a design is, and which spool of the farm (farm_colors) is nearest to it.
  *
- * A colour is named by its catalogue `code`. The nine built-in names (white, black…) are what designs stored
- * before the catalogue carry and what a site without a farm (development, tests) offers; they stay valid values
- * and are mapped to the nearest spool in stock when an old design is opened again.
+ * A design is drawn in any colour: its value is the colour itself, a hex like "#2a7fd5" (the tool pages offer sixteen
+ * basic ones and a free choice). The farm's spools are shown later, on the calculation and on the farm's pages, where
+ * `nearest()` finds the spool for each colour of the design. Two older kinds of value stay valid, because stored
+ * designs carry them: the `code` of a spool of the catalogue, and the nine built-in names (white, black…).
  */
 final class Palette
 {
     /** The built-in colours as their swatches show them (the same values as FILAMENT in resources/js/calc/viewer.ts). */
     public const BUILT_IN = ['white' => '#EDE6D6', 'black' => '#17171A', 'grey' => '#8C9199', 'brown' => '#C2996B', 'red' => '#B8211F', 'blue' => '#213D78', 'green' => '#297345', 'yellow' => '#EBBD29', 'orange' => '#D1521F'];
+
+    /**
+     * The basic colours of the colour window, in the order they are shown. The one place that says what they look like:
+     * the browser gets them with their names from `payload()` (`colors.basic`), the tools take them as the colours a
+     * part gets by itself (the lightest for a plate, the darkest for letters…).
+     */
+    public const BASIC = [
+        'white' => '#ffffff', 'black' => '#1a1a1a', 'grey' => '#8c9199', 'red' => '#d62828', 'orange' => '#f77f00', 'yellow' => '#f6c915',
+        'green' => '#2e9e4f', 'turquoise' => '#1fb5a8', 'blue' => '#1f6fd6', 'violet' => '#7a3fb0', 'pink' => '#ef6aa7', 'brown' => '#7a4a2a',
+        'beige' => '#d9c3a0', 'gold' => '#c9a227', 'silver' => '#c0c4c8', 'copper' => '#b5683a',
+    ];
+
+    /** What a spool's code may look like when a stored design brings it back with its colour. */
+    private const CODE = '/^[\p{L}\p{N} +_.,()\/-]{1,40}$/u';
 
     /** Groups of the colour window, in the order they are shown. */
     public const HUES = ['white_grey', 'black', 'red', 'orange_yellow', 'green', 'blue_violet', 'brown_beige', 'special'];
@@ -75,10 +90,94 @@ final class Palette
         return $this->rows = $rows;
     }
 
-    /** What the browser gets: the colours, the built-in names as catalogue codes, and whether this is the real catalogue. */
+    /**
+     * What the browser gets: the basic colours of the colour window with their names, what the built-in names look like,
+     * and the catalogue (the farm's pages offer it; a tool page only reads it, to show a design stored with a spool).
+     */
     public function payload(): array
     {
-        return ['items' => $this->all(), 'legacy' => $this->legacy(), 'farm' => $this->fromFarm(), 'hues' => self::HUES];
+        return ['items' => $this->all(), 'legacy' => $this->legacy(), 'farm' => $this->fromFarm(), 'hues' => self::HUES,
+            'basic' => self::basic(), 'named' => array_map('strtolower', self::BUILT_IN)];
+    }
+
+    /** @return list<array{key: string, hex: string, name: string}> the basic colours, named in the visitor's language */
+    public static function basic(): array
+    {
+        return array_map(fn (string $key, string $hex) => ['key' => $key, 'hex' => $hex, 'name' => __('toolpage.color.basic.'.$key)], array_keys(self::BASIC), array_values(self::BASIC));
+    }
+
+    /** A colour chosen freely: the value is the colour itself. */
+    public static function isCustom(mixed $code): bool
+    {
+        return is_string($code) && preg_match('/^#[0-9a-f]{6}$/i', $code) === 1;
+    }
+
+    /** The one way a value is written: a free colour in lower case, a spool's code and a built-in name as they are. */
+    public static function canonical(string $code): string
+    {
+        return self::isCustom($code) ? strtolower($code) : $code;
+    }
+
+    /**
+     * The one rule of a colour field: a free colour ("#2a7fd5"), the code of a spool of the catalogue or a built-in name.
+     * A stored design sends its colours back as {code, hex}: that form passes too, and with a valid hex even when its
+     * spool has left the catalogue since (the design keeps the colour it was made in).
+     */
+    public static function rule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            $code = is_array($value) ? ($value['code'] ?? null) : $value;
+            $kept = is_array($value) && self::isCustom($value['hex'] ?? null) && is_string($code) && preg_match(self::CODE, $code) === 1;
+            if (! is_string($code) || ! ($kept || app(self::class)->has($code))) {
+                $fail(__('validation.in', ['attribute' => $attribute]));
+            }
+        };
+    }
+
+    /**
+     * The colours a tool chooses from by itself and knows the look of: the basic ones and what the visitor picked,
+     * each as [value, hex]. No spool is among them: a design is drawn in colours, the farm matches its spools later.
+     *
+     * @param  iterable<mixed>  $picked  values of the design (free colours, spool codes, built-in names; anything else is skipped)
+     * @return list<array{0: string, 1: string}>
+     */
+    public function free(iterable $picked = []): array
+    {
+        $out = [];
+        foreach (self::BASIC as $hex) {
+            $out[$hex] = [$hex, $hex];
+        }
+        foreach ($picked as $code) {
+            if (! is_string($code) || $code === '') {
+                continue;
+            }
+            $code = self::canonical($code);
+            $hex = $this->hex($code);
+            if (! isset($out[$code]) && $hex !== null) {
+                $out[$code] = [$code, strtolower($hex)];
+            }
+        }
+
+        return array_values($out);
+    }
+
+    /**
+     * The spool of the catalogue nearest to a colour, as a page shows it; null on a site without a catalogue.
+     *
+     * @return array{code: string, name: string, hex: string, material: string, finish: string, photo: ?string, in_stock: bool}|null
+     */
+    public function nearestSpool(?string $hex): ?array
+    {
+        if (! self::isCustom($hex) || ! $this->fromFarm() || ($code = $this->nearest($hex)) === null) {
+            return null;
+        }
+        foreach ($this->all() as $row) {
+            if ($row['code'] === $code) {
+                return array_intersect_key($row, array_flip(['code', 'name', 'hex', 'material', 'finish', 'photo', 'in_stock']));
+            }
+        }
+
+        return null;
     }
 
     /** @return list<string> every value a colour field may carry: catalogue codes and the built-in names */
@@ -87,16 +186,20 @@ final class Palette
         return array_values(array_unique(array_merge(array_column($this->all(), 'code'), array_keys(self::BUILT_IN))));
     }
 
+    /** True for every value a colour field may carry: a free colour, a spool of the catalogue, a built-in name. */
     public function has(string $code): bool
     {
-        return in_array($code, $this->codes(), true);
+        return self::isCustom($code) || in_array($code, $this->codes(), true);
     }
 
-    /** The swatch of a colour; a built-in name answers too, an unknown code gets null. */
+    /** The swatch of a colour; a free colour is its own, a built-in name answers too, an unknown code gets null. */
     public function hex(?string $code): ?string
     {
         if ($code === null || $code === '') {
             return null;
+        }
+        if (self::isCustom($code)) {
+            return strtolower($code);
         }
         // a built-in name keeps the value designs were stored and exported with
         if (isset(self::BUILT_IN[$code])) {
@@ -116,6 +219,9 @@ final class Palette
     /** False for a spool that is switched off or out of stock (the design keeps its colour, the page says so). */
     public function inStock(string $code): bool
     {
+        if (self::isCustom($code)) {
+            return true;                     // a free colour is no spool: nothing of it can be out of stock
+        }
         foreach ($this->all() as $row) {
             if ($row['code'] === $code) {
                 return $row['in_stock'];

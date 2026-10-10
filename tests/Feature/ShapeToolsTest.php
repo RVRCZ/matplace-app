@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\Palette;
 use App\Domain\Tools\ParametricGenerator;
 use App\Models\ModelFile;
 use App\Support\ToolSeo;
@@ -31,6 +32,22 @@ class ShapeToolsTest extends TestCase
     private function meta($response): array
     {
         return json_decode((string) $response->headers->get('X-Model-Meta'), true);
+    }
+
+    /**
+     * What a colour is called: a picture keeps its own colours (their hex is their value, no spool is matched to them),
+     * so a test names them by the basic colour nearest to them. A value that is no hex (a built-in name) stays as it is.
+     */
+    private function named(string $code): string
+    {
+        if (! Palette::isCustom($code)) {
+            return $code;
+        }
+        $near = fn (string $key) => array_sum(array_map(fn ($a, $b) => ($a - $b) ** 2, Palette::lab($code), Palette::lab(Palette::BASIC[$key])));
+        $keys = array_keys(Palette::BASIC);
+        usort($keys, fn ($a, $b) => $near($a) <=> $near($b));
+
+        return $keys[0];
     }
 
     private function preview(string $kind, array $params, string $part = 'all', bool $pieces = false)
@@ -98,15 +115,16 @@ class ShapeToolsTest extends TestCase
         $r = $this->preview('charm', ['artwork' => $art, 'width' => 60, 'frame' => 1, 'thickness' => 3, 'relief' => 0.6, 'colors_n' => 4], 'all', true)->assertOk();
         $m = $this->meta($r);
         $n = $m['notes'];
-        // the blue background is gone, three colours are left, each one the nearest filament of the palette
+        // the blue background is gone, three colours are left, each one the colour it has in the picture
         $this->assertSame('removed', $n['background']);
-        $this->assertSame(['white', 'black', 'red'], array_column($n['colors'], 'code'));
+        $this->assertSame(['white', 'black', 'red'], array_map($this->named(...), array_column($n['colors'], 'code')));
+        $this->assertSame(array_column($n['colors'], 'rgb'), array_column($n['colors'], 'code'));
         $this->assertSame(['body', 'color_1', 'color_2', 'color_3'], $n['parts']);
         $this->assertSame(array_column($m['parts'], 'name'), $n['parts']);
         $this->assertSame(count($m['parts']) ? $m['parts'][count($m['parts']) - 1]['tris'][1] : 0, $m['triangles']);
         $this->assertGreaterThan(0.7, $n['colors'][0]['share']);
         // the plate is the picture's lowest colour: three filaments, two changes, every layer of the print one filament
-        $this->assertSame('white', $n['body_color']['code']);
+        $this->assertSame($n['colors'][0]['code'], $n['body_color']['code']);
         $this->assertSame(3, $n['filaments']);
         $this->assertFalse($n['multi_material']);
         $this->assertSame([3.6, 4.2], array_column($n['color_changes'], 'z'));
@@ -116,7 +134,7 @@ class ShapeToolsTest extends TestCase
         $this->assertEqualsWithDelta(3 + 3 * 0.6, $m['bbox']['z'], 0.01);
         $this->assertGreaterThan($m['bbox']['x'], $m['bbox']['y']);
         $this->assertCount(120, $n['outline']);
-        $this->assertSame(strtolower(ParametricGenerator::COLOR_HEX['red']), strtolower($n['paint']['color_3']));
+        $this->assertSame('#be1e1e', $n['paint']['color_3']);          // the red of the nose as it was drawn (190, 30, 30)
 
         // one part alone is what a download of it holds
         $eyes = $this->meta($this->preview('charm', ['artwork' => $art, 'width' => 60], 'color_2')->assertOk());
@@ -254,8 +272,8 @@ class ShapeToolsTest extends TestCase
             $g = $this->meta($this->preview('gingerbread', ['line1' => 'Ela', 'cookie' => $cookie, 'width' => 90, 'thickness' => 3, 'relief' => 0.6], 'all', true)->assertOk());
             $this->assertEqualsWithDelta(90, $g['notes']['each'][0], 0.3, $cookie);
             $this->assertSame(['body', 'color_1'], $g['notes']['parts'], $cookie);
-            // brown under white: two filaments, one change at the top of the dough
-            $this->assertSame(['brown', 'white'], [$g['notes']['body_color']['code'], $g['notes']['colors'][0]['code']], $cookie);
+            // dough (the basic colour nearest to baked gingerbread) under white: two filaments, one change at the top of the dough
+            $this->assertSame(['copper', 'white'], array_map($this->named(...), [$g['notes']['body_color']['code'], $g['notes']['colors'][0]['code']]), $cookie);
             $this->assertEqualsWithDelta(3, $g['notes']['color_change_mm'], 0.001, $cookie);
             $this->assertFalse($g['notes']['multi_material']);
             $this->assertEqualsWithDelta(3.6, $g['bbox']['z'], 0.01);
@@ -287,7 +305,7 @@ class ShapeToolsTest extends TestCase
         $this->assertEqualsWithDelta(9, $e['bbox']['z'], 0.01);
         $this->assertSame(['body', 'color_1'], $e['notes']['parts']);
         $this->assertEqualsWithDelta(8, $e['notes']['color_change_mm'], 0.001);
-        $this->assertSame(['black', 'white'], [$e['notes']['body_color']['code'], $e['notes']['colors'][0]['code']]);
+        $this->assertSame(['black', 'white'], array_map($this->named(...), [$e['notes']['body_color']['code'], $e['notes']['colors'][0]['code']]));
         $this->assertSame([], $e['notes']['warnings']);
         // the name runs up the stem of the E: taller than wide, and well inside the letter
         $name = $this->meta($this->preview('name_letter', ['line1' => 'Ela', 'height' => 120], 'color_1')->assertOk());
@@ -320,7 +338,7 @@ class ShapeToolsTest extends TestCase
         // a silhouette is only the shape: dough with a rounded top edge, nothing on it
         $plain = $this->meta($this->preview('cookie', $star)->assertOk());
         $this->assertSame(['body'], $plain['notes']['parts']);
-        $this->assertSame('brown', $plain['notes']['body_color']['code']);
+        $this->assertSame('copper', $this->named($plain['notes']['body_color']['code']));
         $this->assertEqualsWithDelta(6, $plain['bbox']['z'], 0.01);
         $slab = $this->meta($this->preview('charm', ['artwork' => 'lib:hearts-stars/star', 'width' => 80, 'thickness' => 6, 'frame' => 2, 'colors_n' => 1, 'eyelet' => false], 'body')->assertOk());
         $this->assertLessThan($slab['volume_mm3'] - 80, $plain['volume_mm3']);            // the rounded edge takes a little off
@@ -352,8 +370,8 @@ class ShapeToolsTest extends TestCase
 
         // a picture in colours decorates itself: what is dough anyway is left out, the rest is icing
         $man = $this->meta($this->preview('cookie', ['artwork' => 'lib:colour/gingerbread-man', 'width' => 80])->assertOk())['notes'];
-        $this->assertSame('brown', $man['body_color']['code']);
-        $this->assertSame(['white', 'red'], array_column($man['colors'], 'code'));
+        $this->assertSame('copper', $this->named($man['body_color']['code']));
+        $this->assertSame(['white', 'red'], array_map($this->named(...), array_column($man['colors'], 'code')));
         // as an ornament it gets an eyelet
         $hung = $this->meta($this->preview('cookie', $star + ['hang' => true])->assertOk());
         $this->assertArrayHasKey('eyelet', $hung['notes']);
@@ -446,7 +464,7 @@ class ShapeToolsTest extends TestCase
         // a silhouette is only the outline: a plain dish in a light filament, whatever the floor was asked to be
         $heart = $this->meta($this->preview('tray', ['artwork' => 'lib:hearts-stars/heart', 'width' => 110, 'height' => 20])->assertOk());
         $this->assertSame(['body'], $heart['notes']['parts']);
-        $this->assertSame('white', $heart['notes']['body_color']['code']);
+        $this->assertSame('white', $this->named($heart['notes']['body_color']['code']));
         // a name instead of a picture is cut into the floor of a dish shaped like the name
         $name = $this->meta($this->preview('tray', ['line1' => 'Ela', 'typeface' => 'script', 'width' => 120])->assertOk());
         $this->assertSame(['body'], $name['notes']['parts']);
@@ -472,7 +490,7 @@ class ShapeToolsTest extends TestCase
         // it is written in the colour that reads best on the yellow star (black), in capitals of 3 to 7 mm
         $caption = $named['notes']['caption'];
         $ink = collect($named['notes']['colors'])->firstWhere('index', $caption['index']);
-        $this->assertSame('black', $ink['code']);
+        $this->assertSame('black', $this->named($ink['code']));
         $this->assertGreaterThanOrEqual(3, $caption['height']);
         $this->assertLessThanOrEqual(7, $caption['height']);
         $this->assertArrayNotHasKey('caption', $plain['notes']);
@@ -668,10 +686,10 @@ class ShapeToolsTest extends TestCase
         $this->assertStringContainsString('/tools/ornament?from=', $r->json('file.tool.url'));
         $file = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
         $p = $file->tool_params;
-        // every part with the filament it was shown in, the chosen one and the matched ones alike
-        $this->assertSame(['color_3' => 'orange', 'body' => 'white', 'color_1' => 'white', 'color_2' => 'black'], array_map(fn ($c) => $c['code'], $p['part_colors']));
+        // every part with the colour it was shown in, the chosen one and the picture's own alike
+        $this->assertSame(['color_3' => 'orange', 'body' => 'white', 'color_1' => 'white', 'color_2' => 'black'], array_map(fn ($c) => $this->named($c['code']), $p['part_colors']));
         $this->assertFalse($p['multi_material']);
-        $this->assertSame(['black', 'orange'], array_column($p['color_changes'], 'code'));
+        $this->assertSame(['black', 'orange'], array_map($this->named(...), array_column($p['color_changes'], 'code')));
         $changes = $file->colorChanges();
         $this->assertSame([3.6, 4.2], array_column($changes, 'z'));
         $this->assertSame(strtolower(ParametricGenerator::COLOR_HEX['orange']), strtolower($changes[1]['hex']));
@@ -683,7 +701,7 @@ class ShapeToolsTest extends TestCase
         $p = ['part_colors' => array_map(fn ($c) => $c['code'], $p['part_colors'])] + $p;
         $again = $this->meta($this->preview('ornament', $p)->assertOk());
         $this->assertEqualsWithDelta($file->bbox['x'], $again['bbox']['x'], 0.05);
-        $this->assertSame(['white', 'black', 'orange'], array_column($again['notes']['colors'], 'code'));
+        $this->assertSame(['white', 'black', 'orange'], array_map($this->named(...), array_column($again['notes']['colors'], 'code')));
         $this->get('/api/tools/param/'.$file->uuid.'/color_3.stl')->assertOk();
         $zip = $this->postJson('/api/tools/param/zip', ['kind' => 'ornament', 'params' => $p])->assertOk();
         $archive = new \ZipArchive;

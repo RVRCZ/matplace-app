@@ -2,6 +2,7 @@
 
 namespace App\Domain\Tools;
 
+use App\Domain\Farm\Palette;
 use App\Engines\Exceptions\EngineException;
 use App\Engines\Repair\PythonTool;
 use App\Jobs\ProcessModelFile;
@@ -68,8 +69,8 @@ final class ArtGenerator
         }
         $rules['params.artwork'] = ['required', 'string', 'max:120', 'regex:/^(lib:[a-z0-9-]+\/[a-z0-9-]+|file:[0-9a-f-]{36}|[0-9a-f-]{36})$/'];
         $rules['params.part_colors'] = ['nullable', 'array', 'max:16'];
-        $rules['params.part_colors.*.code'] = ['required', 'string', 'max:40'];
-        $rules['params.part_colors.*.hex'] = ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'];
+        // a colour as the page sends it ("#2a7fd5") or as a stored design brings it back ({code, hex}): the one rule of every tool
+        $rules['params.part_colors.*'] = ['nullable', Palette::rule()];
         $rules['params.merge'] = ['nullable', 'array', 'max:8'];
         $rules['params.merge.*'] = ['array', 'size:2'];
         $rules['params.merge.*.*'] = ['integer', 'min:1', 'max:8'];
@@ -94,13 +95,15 @@ final class ArtGenerator
             $out[$key] = in_array($p[$key] ?? null, $options, true) ? $p[$key] : $options[0];
         }
         $out['artwork'] = (string) ($p['artwork'] ?? '');
-        $palette = app(\App\Domain\Farm\Palette::class);
+        $palette = app(Palette::class);
         $colors = [];
         foreach ((array) ($p['part_colors'] ?? []) as $part => $c) {
-            $code = is_array($c) ? (string) ($c['code'] ?? '') : (string) $c;
+            $code = is_array($c) ? (is_string($c['code'] ?? null) ? $c['code'] : '') : (is_string($c) ? $c : '');
             if (is_string($part) && preg_match(self::PART, $part) && $code !== '') {
-                $hex = is_array($c) && preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($c['hex'] ?? '')) ? (string) $c['hex'] : ($palette->hex($code) ?? '#888888');
-                $colors[$part] = ['code' => $code, 'hex' => $hex];
+                // a free colour is its own look; a spool's code keeps the look the design was stored with
+                $hex = Palette::isCustom($code) ? strtolower($code)
+                    : (is_array($c) && preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($c['hex'] ?? '')) ? (string) $c['hex'] : ($palette->hex($code) ?? '#888888'));
+                $colors[$part] = ['code' => Palette::canonical($code), 'hex' => $hex];
             }
         }
         if ($colors) {
@@ -125,7 +128,12 @@ final class ArtGenerator
     {
         $clean = self::clean($params);
         $clean['view'] = $view === 'print' ? 'print' : 'use';
-        $clean['palette'] = ParametricGenerator::spools();
+        // the picture keeps its own colours; the plates the visitor recoloured bring their look with them
+        $clean['free_colors'] = true;
+        $clean['palette'] = array_values(array_column(array_merge(
+            app(Palette::class)->free(),
+            array_map(fn ($c) => [$c['code'], strtolower($c['hex'])], array_values($clean['part_colors'] ?? [])),
+        ), null, 0));
         $clean['artwork_path'] = $clean['artwork'] !== '' ? ParametricGenerator::artworkPath($clean['artwork']) : null;
         if (! $clean['artwork_path']) {
             throw ValidationException::withMessages(['params' => [__($clean['artwork'] === '' ? 'param.error.no_text' : 'param.error.artwork_gone')]])->status(422);

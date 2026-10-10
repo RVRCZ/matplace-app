@@ -511,16 +511,16 @@ final class ParametricGenerator
         foreach (self::FLAGS[$kind] ?? [] as $flag) {
             $rules['params.'.$flag] = ['nullable', 'boolean'];
         }
-        $palette = app(Palette::class);
+        $color = Palette::rule();            // a free colour, a spool's code or a built-in name: the one rule of every colour field
         foreach (self::choicesOf($kind) as $key => $options) {
-            $rules['params.'.$key] = ['nullable', Rule::in(self::isColor($key) ? $palette->codes() : $options)];
+            $rules['params.'.$key] = ['nullable', self::isColor($key) ? $color : Rule::in($options)];
         }
         foreach (self::TEXTS[$kind] ?? [] as $key => [$max, $required]) {
             $rules['params.'.$key] = [$required ? 'required' : 'nullable', 'string', 'max:'.$max];
         }
-        // which spool each separately printed part is meant for (the colours section of the tool page)
+        // the colour each separately printed part is meant to have (the colours section of the tool page)
         $rules['params.part_colors'] = ['nullable', 'array', 'max:16'];
-        $rules['params.part_colors.*'] = ['nullable', Rule::in($palette->codes())];
+        $rules['params.part_colors.*'] = ['nullable', $color];
         if (in_array($kind, self::ARTWORK, true)) {
             $rules['params.artwork'] = ['nullable', 'string', 'regex:'.Artwork::REF];
         }
@@ -535,7 +535,7 @@ final class ParametricGenerator
             // icing drawn by hand: every stroke a filament, a width, a nib and its points in shares of the picture's width
             $rules += [
                 'params.strokes' => ['nullable', 'array', 'max:'.self::MAX_STROKES],
-                'params.strokes.*.c' => ['required', Rule::in($palette->codes())],
+                'params.strokes.*.c' => ['required', $color],
                 'params.strokes.*.w' => ['required', 'numeric', 'min:1.5', 'max:4'],
                 'params.strokes.*.t' => ['required', 'in:round,flat,dots,candy,sprinkles'],
                 'params.strokes.*.p' => ['required', 'array', 'min:1', 'max:'.self::MAX_STROKE_POINTS],
@@ -550,7 +550,7 @@ final class ParametricGenerator
                 'params.bins.*.y' => ['required', 'integer', 'min:0', 'max:11'],
                 'params.bins.*.w' => ['required', 'integer', 'min:1', 'max:12'],
                 'params.bins.*.h' => ['required', 'integer', 'min:1', 'max:12'],
-                'params.bins.*.color' => ['nullable', Rule::in($palette->codes())],
+                'params.bins.*.color' => ['nullable', $color],
             ];
         }
         if ($kind === 'compose') {
@@ -567,7 +567,7 @@ final class ParametricGenerator
                 'params.layers.*.y' => ['nullable', 'numeric', 'min:-250', 'max:250'],
                 'params.layers.*.w' => ['nullable', 'numeric', 'min:5', 'max:250'],
                 'params.layers.*.turn' => ['nullable', 'numeric', 'min:-360', 'max:360'],
-                'params.layers.*.code' => ['nullable', Rule::in($palette->codes())],
+                'params.layers.*.code' => ['nullable', $color],
                 'params.layers.*.hidden' => ['nullable', 'boolean'],
             ];
         }
@@ -600,8 +600,8 @@ final class ParametricGenerator
         $palette = app(Palette::class);
         foreach (self::choicesOf($kind) as $key => $options) {
             if (self::isColor($key)) {
-                // the code of the spool and what it looks like: the preview stays right when the spool leaves the stock
-                $out[$key] = is_string($p[$key] ?? null) && $palette->has($p[$key]) ? $p[$key] : $options[0];
+                // the colour and what it looks like (a design stored with a spool keeps its look when the spool leaves the stock)
+                $out[$key] = is_string($p[$key] ?? null) && $palette->has($p[$key]) ? Palette::canonical($p[$key]) : $options[0];
                 $out[$key.'_hex'] = $palette->hex($out[$key]) ?? self::COLOR_HEX[$options[0]];
 
                 continue;
@@ -619,11 +619,11 @@ final class ParametricGenerator
         if (in_array($kind, self::ARTWORK, true) && ! empty($p['artwork'])) {
             $out['artwork'] = (string) $p['artwork'];
         }
-        // part → the code of its spool and what it looks like (a stored design comes back with both)
+        // part → its colour and what it looks like: a free colour is both ({code: hex, hex}); a stored design comes back with both
         foreach (array_slice((array) ($p['part_colors'] ?? []), 0, 16, true) as $part => $color) {
             $code = is_array($color) ? ($color['code'] ?? null) : $color;
             if (is_string($part) && preg_match('/^[a-z0-9_]{1,24}$/', $part) && is_string($code) && $palette->has($code)) {
-                $out['part_colors'][$part] = ['code' => $code, 'hex' => $palette->hex($code)];
+                $out['part_colors'][$part] = ['code' => Palette::canonical($code), 'hex' => $palette->hex($code)];
             }
         }
         if (isset(self::FAMILY[$kind])) {
@@ -631,8 +631,7 @@ final class ParametricGenerator
             $out['order'] = array_values(array_unique(array_map('intval', array_slice((array) ($p['order'] ?? []), 0, 8))));
         }
         if ($kind === 'compose') {
-            $spare = $palette->codes()[0] ?? '';
-            $named = $palette->legacy();             // "white", "blue"… as the spools the farm has for them
+            // a layer is drawn in a colour, never in a spool: a built-in name ("white", "blue"…) stays the name it is
             $out['layers'] = array_values(array_map(fn ($l) => [
                 'kind' => in_array($l['kind'] ?? '', ['text', 'art', 'shape'], true) ? $l['kind'] : 'shape',
                 'text' => mb_substr(trim((string) ($l['text'] ?? '')), 0, 40),
@@ -641,7 +640,7 @@ final class ParametricGenerator
                 'art_name' => mb_substr((string) ($l['art_name'] ?? ''), 0, 120),
                 'shape' => in_array($l['shape'] ?? '', self::LAYER_SHAPES, true) ? $l['shape'] : 'rounded',
                 'x' => round((float) ($l['x'] ?? 0), 2), 'y' => round((float) ($l['y'] ?? 0), 2), 'w' => round((float) ($l['w'] ?? 50), 2), 'turn' => round((float) ($l['turn'] ?? 0), 1),
-                'code' => is_string($l['code'] ?? null) && $palette->has($l['code']) ? ($named[$l['code']] ?? $l['code']) : $spare,
+                'code' => is_string($l['code'] ?? null) && $palette->has($l['code']) ? Palette::canonical($l['code']) : 'white',
                 'hidden' => filter_var($l['hidden'] ?? false, FILTER_VALIDATE_BOOLEAN),
             ], array_filter(array_slice((array) ($p['layers'] ?? []), 0, self::MAX_LAYERS), 'is_array')));
         }
@@ -652,14 +651,14 @@ final class ParametricGenerator
                     return null;
                 }
 
-                return ['c' => $s['c'], 'h' => $palette->hex($s['c']), 'w' => round(min(4, max(1.5, (float) ($s['w'] ?? 2.5))), 1),
+                return ['c' => Palette::canonical($s['c']), 'h' => $palette->hex($s['c']), 'w' => round(min(4, max(1.5, (float) ($s['w'] ?? 2.5))), 1),
                     't' => in_array($s['t'] ?? '', ['round', 'flat', 'dots', 'candy', 'sprinkles'], true) ? $s['t'] : 'round',
                     'p' => array_map(fn ($pt) => [round((float) array_values($pt)[0], 4), round((float) array_values($pt)[1], 4)], $points)];
             }, array_slice((array) ($p['strokes'] ?? []), 0, self::MAX_STROKES))));
         }
         if ($kind === 'modular') {
             $out['bins'] = array_values(array_map(function ($b) use ($palette) {
-                $color = is_string($b['color'] ?? null) && $palette->has($b['color']) ? $b['color'] : 'white';
+                $color = is_string($b['color'] ?? null) && $palette->has($b['color']) ? Palette::canonical($b['color']) : 'white';
 
                 return ['x' => (int) $b['x'], 'y' => (int) $b['y'], 'w' => (int) $b['w'], 'h' => (int) $b['h'], 'color' => $color]
                     + (isset(self::COLOR_HEX[$color]) ? [] : ['hex' => $palette->hex($color)]);   // a built-in name needs no hex: old designs stay as they were stored
@@ -718,7 +717,7 @@ final class ParametricGenerator
             }
         }
         if (isset(self::FAMILY[$kind])) {
-            $clean['palette'] = self::spools();
+            $clean += self::freeColors($clean);
         }
         if ($kind === 'compose') {
             $palette = app(Palette::class);
@@ -750,8 +749,23 @@ final class ParametricGenerator
     }
 
     /**
-     * The filaments a picture's colours are matched to by themselves: plain colours in stock, of the plastic most of them
-     * are made of (one print is one kind of plastic). The visitor can still give any spool of the catalogue to a colour.
+     * What a tool of a picture in colours gets about colours. The picture keeps its own colours (`free_colors`: none is
+     * matched to a spool; the farm does that later, on its own pages); `palette` is what the tool takes a colour from
+     * when it has to choose one by itself (the plate under a motif, the dough of a biscuit) and where it reads the look
+     * of the colours the visitor picked.
+     *
+     * @return array{palette: list<array{0: string, 1: string}>, free_colors: true}
+     */
+    public static function freeColors(array $clean): array
+    {
+        $picked = array_merge(array_column((array) ($clean['part_colors'] ?? []), 'code'), array_column((array) ($clean['strokes'] ?? []), 'c'));
+
+        return ['palette' => app(Palette::class)->free($picked), 'free_colors' => true];
+    }
+
+    /**
+     * The spools a picture's colours can be matched to: plain colours in stock, of the plastic most of them are made of
+     * (one print is one kind of plastic). The tools no longer match by themselves (see freeColors()).
      *
      * @return list<array{0: string, 1: string}> [code, hex]
      */
