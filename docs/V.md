@@ -208,6 +208,17 @@ Kandidáti k testu (až Roman popíše příznak): `quick` s `t_filament = {"fil
 dnešku; případně nový objekt „věž toku“ (patra 10 → 20 mm³/s přepisem F v G-kódu jako u teplotní věže) pro zjištění
 skutečné hranice hotendu s danou cívkou.
 
+### 3.2 Pruhy na výškách, kde končí nižší prvky (samostatná věc, otevřeno)
+
+Pozorováno na `quick` z Maxu (T26-000033 modrá, T26-000035 tyrkysová): na boku kostky vodorovný schodek asi ve 3/4
+výšky, pod horní hranou pás svislých zoubků, na pilířích prstence – vždy ve výškách, kde končí lamely (10 mm), most
+(12 mm) a kostka (15 mm). Jmenovitá rychlost stěny (120 → 100) na to vliv neměla. Vysvětlení k ověření: v těch vrstvách
+se skokem zkrátí doba vrstvy, slicer zpomalí (`slow_down_layer_time` 8 s, `slow_down_min_speed` 20) a vnější stěna
+jede úplně jinou rychlostí, tedy s jiným leskem a jinou šířkou čáry. Kandidáti na test, po jednom: `slow_down_layer_time`
+(8 → 5), `slow_down_min_speed` (20 → 40–60), případně `slow_down_for_layer_cooling`. Nejdřív ale objekt `seam` na
+Maxu (stálý průřez po výšce): ukáže, jestli je stěna bez skoků v době vrstvy čistá. Profily se kvůli tomu zatím nemění
+(dohodnuto s řídící session 10. 10.). U zákaznických modelů s více díly různé výšky na jedné podložce to bude vidět stejně.
+
 ## 4. Ruční testy Romana mimo farmu (část 6 zadání)
 
 | kdy | stroj, cívka | co | hodnota | výsledek |
