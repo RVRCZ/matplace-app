@@ -68,12 +68,12 @@ T26-000032 má u testu „šev: scarf external, délka 20 mm, mezera 15%“):
 
 | prvek | B = bez scarfu (T26-000031) | S = scarf (T26-000032) | lepší |
 |---|---|---|---|
-| válec (svislá stěna) | ostrá svislá čára | slabá, měkčí linka, bez boule | S, o málo |
+| válec (svislá stěna) | ostrá svislá čára | při expozici −6 (19:29) **stejně zřetelná svislá čára** se slabým schodkem; „měkčí linka“ z přepálených snímků byla klam expozice | žádný rozdíl |
 | zaoblený hranol | zřetelná svislá čára u rohu, mírně vystouplá (snímek s ruční expozicí −6, 19:26) | nic rozeznatelného (stěna přepálená, přefotit s −6) | nelze říct |
-| kužel (stěna 25° ven) | **jedna tenká čistá čára**, stěna kolem hladká | čára **+ asi 15 mm zdrsněný pás vedle ní + pole teček v šikmé mřížce** na další straně | **B, zřetelně** |
+| kužel (stěna 25° ven) | **jedna tenká čistá čára**, stěna kolem hladká | čára **+ asi 15 mm zdrsněný pás vedle ní + pole teček v šikmé mřížce** na další straně; při expozici −6 potvrzeno na třech snímcích (zdrsnění zabírá velkou část osvětlené strany) | **B, zřetelně** |
 | kostka | rohy ostré, 14,96 × 14,95 | rohy ostré (neměřeno) | stejné |
 
-**Závěr: scarf v téhle podobě (`TestPrintService::SCARF`) do řádku nepřebírat.** Na svislé stěně pomůže málo, na
+**Závěr: scarf v téhle podobě (`TestPrintService::SCARF`) do řádku nepřebírat.** Na svislé stěně nepomůže viditelně, na
 šikmé stěně vymění tenkou čáru za široký zdrsněný pás. Pás = rampa scarfu tištěná na převisu (kužel má 22 % šířky
 stěny přes okraj, pod prahem `scarf_overhang_threshold = 40%`, takže se scarf použil); šikmá mřížka teček odpovídá
 `staggered_inner_seams` a scarfu na vnitřních stěnách prosvítajícím vnější stěnou – to druhé je domněnka.
