@@ -63,6 +63,8 @@ Scarf tedy prodlouží tisk oblých dílů o jednotky procent (tady +7,5 %) a hr
 | T26-000031 (B) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | dnešní (bez scarfu) | **hotovo 10. 10.** – kostka 14,96 × 14,95 (−0,04/−0,05), rohy ostré, stěny válce, hranolu i kužele hladké; na 8 fotkách z foto‑boxu (měkké čelní světlo, 3840 × 2160, výřezy v plném rozlišení) **šev jsem nenašel** (AI ho na válci našla, viz níže – můj výřez mířil jinam); horní plochy s viditelnými čarami (válec, kužel), žádné vlásky kromě prachu; nažloutlý nádech paty kužele = stín, ne vada | u testu v adminu |
 | T26-000032 (S) | S1 #1, PLA+ bílá (slot 4), nový přítlak extruderu | scarf (předpoklad podle pořadí, Roman potvrdí) | **hotovo 10. 10.** – 11 fotek kusů odlomených od sebe, **ostré boční světlo zleva** (jiné než u B). Válec: na jedné straně slabá svislá linka bez boule, ostatní strany čisté. Zaoblený hranol: nic vidět (osvětlená stěna přepálená). **Kužel: na jedné straně zřetelná rovná čára shora dolů a vedle ní asi 15 mm široký zdrsněný pás s drobnými značkami; na další straně pole teček v šikmé mřížce přes zhruba čtvrtinu obvodu**; zbylé dvě strany čisté | u testu v adminu |
 
+| T26-000037 (S2) | S1 #1, PLA+ bílá (slot 4) | scarf jen na svislých vnějších stěnách (zaškrtnutí + JSON; Roman potvrdí podle řádku testu) | tiskne se 10. 10. ~20:06; zkouška žehlení na S1 zrušena před tiskem | – |
+
 **Srovnání B × S ve stejném ostrém bočním světle** (Roman 10. 10. večer dofotil B stejně jako S, kusy odlomené;
 T26-000032 má u testu „šev: scarf external, délka 20 mm, mezera 15%“):
 
