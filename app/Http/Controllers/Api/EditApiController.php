@@ -7,6 +7,7 @@ use App\Domain\Tools\ModelEditor;
 use App\Engines\Exceptions\EngineException;
 use App\Http\Controllers\Controller;
 use App\Models\ModelFile;
+use App\Support\PreviewMeta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -42,7 +43,7 @@ class EditApiController extends Controller
         return response()->file($built['path'], [
             'Content-Type' => 'model/stl',
             'Content-Disposition' => 'inline; filename="filament-art.stl"',
-            'X-Model-Meta' => json_encode($built['meta']),
+            'X-Model-Meta' => PreviewMeta::header($built['meta']),      // the guide of a layered picture does not fit a header: see PreviewMeta
             'Cache-Control' => 'no-store',
         ])->deleteFileAfterSend(true);
     }

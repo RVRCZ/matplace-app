@@ -10,7 +10,7 @@ import type { Stage, MenuItem, PriceConfig } from './tool_page';
 import { colorOf, spoolCode, paintSwatch, pickColor, rememberColor, materialLabel } from './colors';
 import { pickArtwork, PickedArtwork } from './artwork';
 import { icon } from '../site/icon';
-import { FileInfo } from './api';
+import { FileInfo, modelMeta } from './api';
 
 interface Cfg { preview: string; create: string; zip: string; home: string; files: string; parts: string; from: string | null; sample: string | null; config: PriceConfig & { currency: string }; warnAt: Record<string, string>; i18n: Record<string, string> }
 interface ArtColor { part: string; index: number; rgb: string; code: string; hex: string; share: number; area_mm2: number }
@@ -195,7 +195,7 @@ export function bootArt(stage: Stage): void {
             const res = await post(cfg.preview, { params: params(), view: 'use' });
             if (mine !== seq) return;
             if (!res.ok) { valid = false; showError(await errorOf(res)); return; }
-            lastMeta = JSON.parse(res.headers.get('X-Model-Meta') ?? 'null');
+            lastMeta = await modelMeta<Meta>(res);
             viewer.setSpreadAxis(mode() === 'layered' ? 'z' : null);
             stage.show(new STLLoader().parse(await res.arrayBuffer()), { kind: 'filament_art', pieces: lastMeta?.parts ?? null });
             valid = true; showError(null);

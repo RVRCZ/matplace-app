@@ -124,8 +124,8 @@ def notes(M, Invalid, p):
     notes_ = dict(said, outer=[round(max(base_w, size[0]), 1), round(base_d, 1), round(base_h - SINK + size[1], 1)], needs=["glue_optional"],
                   pad=[round(room, 1), round(depth, 1)],
                   # preview colours: what stands above the base behind the tray is the figure, the rest the base
-                  regions=[{"x0": -1, "y0": round(slot_at[1] + PLAY - 0.05, 2), "x1": 9999, "y1": round(slot_at[1] + PLAY + t + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange"},
-                           {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue"}])
+                  regions=[{"x0": -1, "y0": round(slot_at[1] + PLAY - 0.05, 2), "x1": 9999, "y1": round(slot_at[1] + PLAY + t + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange", "part": "body"},
+                           {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue", "part": "stand"}])
     return parts, notes_
 
 
@@ -152,8 +152,8 @@ def hair_tie(M, Invalid, p):
     parts = _together(M, flat, foot, size, t, base, slot_at, base_h)
     tall = max(base_h + post_h, base_h - SINK + size[1])
     notes_ = dict(said, outer=[round(max(base_w, size[0]), 1), round(base_d, 1), round(tall, 1)], needs=["glue_optional"], post=[round(post_d, 1), round(post_h, 1)],
-                  regions=[{"x0": -1, "y0": round(slot_at[1] + PLAY - 0.05, 2), "x1": 9999, "y1": round(slot_at[1] + PLAY + t + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange"},
-                           {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue"}])
+                  regions=[{"x0": -1, "y0": round(slot_at[1] + PLAY - 0.05, 2), "x1": 9999, "y1": round(slot_at[1] + PLAY + t + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange", "part": "body"},
+                           {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue", "part": "stand"}])
     return parts, notes_
 
 
@@ -184,8 +184,8 @@ def candle_stand(M, Invalid, p):
     base = base - _slot(M, foot, t).translate([slot_at[0], slot_at[1], base_h - SINK])
     parts = _together(M, flat, foot, size, t, base, slot_at, base_h)
     notes_ = dict(said, outer=[round(max(base_w, size[0]), 1), round(base_d, 1), round(base_h - SINK + size[1], 1)], needs=["glue_optional"], jar=[round(jar + 1.0, 1), lip],
-                  regions=[{"x0": -1, "y0": round(slot_at[1] + PLAY - 0.05, 2), "x1": 9999, "y1": round(slot_at[1] + PLAY + t + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange"},
-                           {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue"}])
+                  regions=[{"x0": -1, "y0": round(slot_at[1] + PLAY - 0.05, 2), "x1": 9999, "y1": round(slot_at[1] + PLAY + t + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange", "part": "body"},
+                           {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue", "part": "stand"}])
     return parts, notes_
 
 

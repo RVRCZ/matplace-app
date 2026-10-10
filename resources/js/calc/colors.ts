@@ -22,6 +22,10 @@ let byCode = new Map<string, PaletteColor>();
 let basic: (BasicColor & { lab: [number, number, number] })[] = [];
 let named: Record<string, string> = {};
 let t: Words = (k) => k;
+// free colours the preview's table of colours already holds: what paints by a colour's value (the grid and the bins of a
+// modular set) finds a free colour there like a name or a spool
+const known = new Set<string>();
+const learn = (value: string, hex: string): void => { if (!known.has(value)) { known.add(value); setPalette([{ code: value, hex }]); } };
 
 export function initPalette(payload: PalettePayload, words: Words, _finishNames: Record<string, string> = {}): void {
     palette = payload;
@@ -29,7 +33,7 @@ export function initPalette(payload: PalettePayload, words: Words, _finishNames:
     basic = (payload.basic ?? []).map((c) => ({ ...c, hex: c.hex.toLowerCase(), lab: lab(c.hex) }));
     named = payload.named ?? {};
     t = words;
-    setPalette(payload.items);      // a design stored with a spool is still painted by its code; a free colour needs no table
+    setPalette(payload.items);      // a design stored with a spool is still painted by its code
 }
 
 /** "#2A7FD5", "2a7fd5" → "#2a7fd5"; null for anything that is not six hex digits. */
@@ -68,6 +72,7 @@ export function colorOf(code: string | null | undefined): PaletteColor | null {
     if (!code) return null;
     const hex = lookOf(code);
     if (!hex) return null;
+    learn(hexOf(code) ?? code, hex);
     return { code: hexOf(code) ?? code, name: nearestBasic(hex)?.name ?? hex, hex, material: '', finish: '', photo: null, in_stock: true, hue: '', light: 0, search: '' };
 }
 
@@ -76,7 +81,9 @@ export function colorOf(code: string | null | undefined): PaletteColor | null {
  * code of a spool (a design stored before) stays, so the design is sent back as it was.
  */
 export function spoolCode(code: string): string {
-    return hexOf(code) ?? (named[code] ? hexOf(named[code]) : null) ?? code;
+    const value = hexOf(code) ?? (named[code] ? hexOf(named[code]) : null) ?? code;
+    if (HEX.test(value)) learn(value, value);
+    return value;
 }
 
 export function isFarmPalette(): boolean { return palette.farm; }

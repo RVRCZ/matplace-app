@@ -10,6 +10,7 @@ import type { Stage, MenuItem, PriceConfig } from './tool_page';
 import { colorOf, spoolCode, paintSwatch, pickColor, recentColors, rememberColor, materialLabel } from './colors';
 import { pickArtwork, PickedArtwork } from './artwork';
 import { icon } from '../site/icon';
+import { modelMeta } from './api';
 
 interface Cfg {
     kind: string; family: string | null; sample: string | null; preset: string | null; captioned: boolean; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
@@ -261,6 +262,22 @@ export function bootParam(stage: Stage): void {
     /** The pieces of the shown model that are the given part, as indexes into the viewer's list. */
     const piecesOf = (part: string): number[] => viewer.getPieces().map((p, i) => (p.name === part ? i : -1)).filter((i) => i >= 0);
 
+    /**
+     * A design that is one body in two colours (a sign: the plate and the text raised on it) is painted by regions, and
+     * the tool says which part each region is. A region whose part was given a colour is shown in exactly that colour.
+     * Such a design is not painted piece by piece: its one piece is the whole model (see paintParts).
+     */
+    const tinted = (regions: Region[] | null): Region[] | null => regions?.map((r) => {
+        const hex = r.part && partColors[r.part] ? colorOf(partColors[r.part])?.hex : null;
+        return hex ? { ...r, color: hex, exact: true } : r;
+    }) ?? null;
+    // the model on show and its regions, kept so that a new colour repaints it at once, without asking the server again
+    let lastStl: ArrayBuffer | null = null; let lastRegions: Region[] | null = null;
+    const repaintRegions = (): void => {
+        if (!lastStl || !lastRegions?.some((r) => r.part && partColors[r.part])) return;
+        stage.show(new STLLoader().parse(lastStl), { kind: cfg.kind, regions: tinted(lastRegions), pieces: lastMeta?.parts ?? null });
+    };
+
     /** Paints the pieces in the colours picked for their parts. A one-body design takes the colour of its only row. */
     const paintParts = (): void => {
         // a set of bins: each bin whole in its own colour (the region its middle lies in), outer walls included
@@ -280,7 +297,15 @@ export function bootParam(stage: Stage): void {
             });
             return;
         }
-        if (ownColors || viewPart !== 'all') return;
+        if (ownColors) return;
+        if (viewPart !== 'all') {
+            // one part shown on its own: in the colour it was given
+            const hex = partColors[viewPart] ? colorOf(partColors[viewPart])?.hex ?? null : null;
+            if (hex) viewer.getPieces().forEach((_, i) => viewer.setPieceColor(i, hex));
+            return;
+        }
+        // the regions already carry the colours of the parts (tinted): a piece painted over them would hide one of the two
+        if (lastRegions?.some((r) => r.part)) { viewer.getPieces().forEach((_, i) => viewer.setPieceColor(i, null)); return; }
         const pieces = viewer.getPieces();
         const rows = partRows();
         const own = papel ? (papelNotes().paint ?? {}) : {};      // a portrait comes with the filaments the tool gave it
@@ -406,6 +431,7 @@ export function bootParam(stage: Stage): void {
 
     const setPartColor = (part: string, code: string): void => {
         partColors[part] = code; rememberColor(code);
+        repaintRegions();
         renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus(); commit();
     };
 
@@ -493,10 +519,11 @@ export function bootParam(stage: Stage): void {
             const res = await post({ kind: cfg.kind, params: params(), view: 'use', part: viewPart, pieces: true });
             if (mine !== seq) return;                       // a newer change is already on its way
             if (!res.ok) { valid = false; showError(await errorOf(res)); return; }
-            lastMeta = JSON.parse(res.headers.get('X-Model-Meta') ?? 'null');
+            lastMeta = await modelMeta<Meta>(res);
             // the colours of a QR sign go by height alone, so they hold for the sign and the stand shown on their own too
             const regions = viewPart === 'all' || cfg.kind === 'qr' ? ((lastMeta?.notes as { regions?: Region[] } | undefined)?.regions ?? null) : null;
-            stage.show(new STLLoader().parse(await res.arrayBuffer()), { kind: cfg.kind, regions, pieces: lastMeta?.parts ?? null });
+            lastStl = await res.arrayBuffer(); lastRegions = regions;
+            stage.show(new STLLoader().parse(lastStl), { kind: cfg.kind, regions: tinted(regions), pieces: lastMeta?.parts ?? null });
             valid = true; showError(null);
             if (lastMeta) { renderDims(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus();

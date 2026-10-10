@@ -10,6 +10,7 @@ use App\Models\FarmMaterial;
 use App\Models\FarmPrinter;
 use App\Models\ModelFile;
 use App\Models\User;
+use App\Support\PreviewMeta;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -43,7 +44,7 @@ class CustomColorTest extends TestCase
 
     private function meta($response): array
     {
-        return json_decode((string) $response->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($response->headers->get('X-Model-Meta'));      // the heaviest notes wait beside the header
     }
 
     private function entry(string $file, string $name): ?string
@@ -228,6 +229,45 @@ class CustomColorTest extends TestCase
         $this->assertSame(['code' => '#2a7fd5', 'hex' => '#2a7fd5'], $stored['part_colors'][$part]);
         foreach ($stored['part_colors'] as $c) {
             $this->assertSame($c['code'], $c['hex']);
+        }
+    }
+
+    /**
+     * What the preview of a tool page paints from. A design that is one body in two colours (a sign: the plate and the
+     * text raised on it) is painted by regions; each region names its part, so the page can show the region in the
+     * colour that part was given. Without the name the preview keeps the tool's own white and orange (10 Oct 2026).
+     */
+    public function test_the_preview_knows_which_part_each_of_its_colours_belongs_to(): void
+    {
+        $this->python();
+        $notes = fn (string $kind, array $params) => $this->meta($this->postJson('/api/tools/param/preview', ['kind' => $kind, 'params' => $params, 'view' => 'use', 'pieces' => true])->assertOk());
+        $twoColours = [
+            'a sign, raised text' => ['sign', ['style' => 'emboss', 'line1' => 'Jana', 'two_color' => true], ['text', 'plate']],
+            'a sign, outlined text' => ['sign', ['style' => 'outline', 'line1' => 'Jana', 'two_color' => true], ['text', 'plate']],
+            'a sign, a name alone' => ['sign', ['style' => 'name', 'line1' => 'Jana', 'two_color' => true], ['text', 'plate']],
+            'letter beads' => ['beads', ['line1' => 'JANA'], ['text', 'body']],
+            'a standing logo' => ['logo', ['line1' => 'LOGO', 'mode' => 'standing', 'width' => 80], ['body', 'stand']],
+        ];
+        foreach ($twoColours as $what => [$kind, $params, $parts]) {
+            $m = $notes($kind, $params + ['part_colors' => [$parts[0] => '#8a2be2', $parts[1] => '#ff3fa4']]);
+            $regions = $m['notes']['regions'] ?? [];
+            $this->assertSame($parts, array_column($regions, 'part'), $what.': the upper region first, then the rest of the model');
+            // every part a region names has a row in the colours section, so a colour can be picked for it
+            $rows = ParametricGenerator::partsOf($kind, ParametricGenerator::clean($kind, $params) + ['parts' => $m['notes']['parts'] ?? []]);
+            $this->assertSame([], array_values(array_diff($parts, $rows)), $what.': '.implode(', ', $rows));
+        }
+        // a sign in one colour and an engraved one have no regions: the one row colours the one piece
+        $this->assertArrayNotHasKey('regions', $notes('sign', ['style' => 'emboss', 'line1' => 'Jana'])['notes']);
+        $this->assertArrayNotHasKey('regions', $notes('sign', ['style' => 'engrave', 'line1' => 'Jana', 'two_color' => true])['notes']);
+
+        // a picture in colours: every colour is a piece of its own and `paint` says what each piece looks like
+        $m = $notes('magnet', ['artwork' => 'lib:colour/snowman', 'width' => 60, 'colors_n' => 4]);
+        $part = $m['notes']['colors'][0]['part'];
+        $picked = $notes('magnet', ['artwork' => 'lib:colour/snowman', 'width' => 60, 'colors_n' => 4, 'part_colors' => [$part => '#8a2be2', 'body' => '#ff3fa4']]);
+        $this->assertSame(['#8a2be2', '#ff3fa4'], [$picked['notes']['paint'][$part], $picked['notes']['paint']['body']]);
+        $pieces = array_column($picked['parts'], 'name');
+        foreach (array_keys($picked['notes']['paint']) as $painted) {
+            $this->assertContains($painted, $pieces, 'a colour without a piece would never be seen');
         }
     }
 
