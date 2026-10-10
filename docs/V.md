@@ -69,7 +69,7 @@ T26-000032 má u testu „šev: scarf external, délka 20 mm, mezera 15%“):
 | prvek | B = bez scarfu (T26-000031) | S = scarf (T26-000032) | lepší |
 |---|---|---|---|
 | válec (svislá stěna) | ostrá svislá čára | slabá, měkčí linka, bez boule | S, o málo |
-| zaoblený hranol | ostrá čára u rohu | nic rozeznatelného (stěna přepálená) | nelze říct |
+| zaoblený hranol | zřetelná svislá čára u rohu, mírně vystouplá (snímek s ruční expozicí −6, 19:26) | nic rozeznatelného (stěna přepálená, přefotit s −6) | nelze říct |
 | kužel (stěna 25° ven) | **jedna tenká čistá čára**, stěna kolem hladká | čára **+ asi 15 mm zdrsněný pás vedle ní + pole teček v šikmé mřížce** na další straně | **B, zřetelně** |
 | kostka | rohy ostré, 14,96 × 14,95 | rohy ostré (neměřeno) | stejné |
 
@@ -83,6 +83,10 @@ Další pokus **S2** (jeden tisk, zaškrtnutý scarf + *Proces navíc*):
 stěně a jen na (skoro) svislých stěnách. Místní řez: válec a hranol mají šikmé pohyby jen na vnější stěně, kužel
 a kostka žádné, vnitřní stěny všude rovné; 29 min 42 s. Když S2 dá válec jako S a kužel jako B, tyhle hodnoty
 nahradí `SCARF` a jdou do řádku; jinak scarf pro PLA+ nezavádět a zkusit ho až na silku, kde je šev vidět nejvíc.
+
+**Focení od 10. 10. 19:26**: kamera Trust Teza na ruční expozici −6 (automatika dávala osvětlenou stranu bílého
+PLA+ na 215–235 z 255, kde kamera kresbu slévá; s −6 je na 174 a šev i čáry horní plochy jsou vidět). Snímky
+z aplikace Fotoaparát jsou v `Obrázky\Camera Roll`. S2 a přefocení hranolu a válce z B a S už s touhle expozicí.
 
 **AI hodnocení T26-000032** (10. 10. 17:04, 12 fotek, 3 přiblížení): *Šev: nelze posoudit – na válci a kuželu ho
 nenacházím, strana je přeexponovaná nebo rozmazaná*, rohy ok, sloní noha 0, podložka ok, 4/5; chce ostré nepřepálené
