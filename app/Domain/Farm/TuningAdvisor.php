@@ -13,7 +13,7 @@ use App\Models\FarmPrinterMaterial;
  * Result keys (from the evaluation form; missing = not judged):
  *   stringing 0-3 · overhang_ok 0|30|40|50|60|70 (steepest clean angle) · bridge ok|sag|fail · elephant 0-2 ·
  *   corners ok|bulge|round|gaps · top ok|pillow|gaps · wall ok|gaps|missing · bond ok|weak · warp ok|lift ·
- *   ironing ok|lines|bumps|rough ·
+ *   ironing ok|lines|bumps|rough · seam 0-3 (how much it shows) · seam_fault none|bulge|gap (recorded, no rule yet) ·
  *   cube_x cube_y cube_z hole (measured mm; the cube's edge depends on the object, the hole is the 8 mm one) · best_floor (tower)
  */
 final class TuningAdvisor
@@ -25,7 +25,7 @@ final class TuningAdvisor
     ];
 
     /** Edge of the dimension cube on each test object (calib_tool.py); the quick one when the object is not known. */
-    public const CUBE_MM = ['quick' => 15.0, 'detailed' => 20.0];
+    public const CUBE_MM = ['quick' => 15.0, 'detailed' => 20.0, 'seam' => 15.0];
 
     /** The measured hole: both objects carry an 8 mm one (the detailed plate has 3/5/8/10). */
     public const HOLE_MM = 8.0;

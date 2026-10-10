@@ -13,6 +13,8 @@ kind:
   ironing      one plate, about 10 minutes: a 30 x 30 mm plateau on a base barely larger than itself, for the
                ironing settings alone (ironing is a setting of the whole print, so a big object would spend most of
                its time polishing its own base plate)
+  seam         one plate, about 30 minutes: a 30 mm cylinder, a 20 mm box with rounded corners and a cone leaning out
+               25 degrees, all 20 mm tall - smooth walls where the seam has no corner to hide in - and the 15 mm cube
   temp_tower   floors of 10 mm (params: floors 3-10); every floor carries a 14 mm bridge and a 45 degree overhang.
                The temperature per floor is written into the G-code by the web layer (App\\Domain\\Farm\\TowerGcode),
                floor 1 is the bottom one
@@ -216,6 +218,47 @@ def ironing(M, p):
     return solid, features
 
 
+def seam(M, p):
+    """
+    Where the seam shows: smooth walls with nowhere to hide it.
+
+    The quick and detailed plates have none - their cube puts the seam into a sharp corner, where a conditional scarf
+    joint is never used, and a 4 mm stringing pillar is shorter around than the scarf itself. Here: a cylinder (the
+    seam is a line down its wall), a box with rounded corners (flat faces, still no sharp corner), a cone that leans
+    out (does the scarf sag on an overhang) and the 15 mm cube as the control, whose corners and size must not change.
+    """
+    features = []
+    n = nozzle_of(p)
+    plate_t = plate_of(n)
+    z0 = plate_t
+    h = 20.0
+    solid = M.Manifold()
+
+    cyl_d = 30.0
+    solid += M.Manifold.cylinder(h, cyl_d / 2, -1.0, 128).translate([18, 18, z0])
+    features.append({"name": "cylinder", "at": [18, 18], "diameter": cyl_d, "height": h, "checks": ["seam"]})
+
+    side, radius = 20.0, 6.0
+    rounded = M.CrossSection.square([side - 2 * radius, side - 2 * radius]).offset(radius, M.JoinType.Round, 2.0, 96)
+    solid += rounded.extrude(h).translate([38 + radius, 8 + radius, z0])
+    features.append({"name": "rounded_box", "at": [38, 8], "size": [side, side, h], "corner_radius": radius, "checks": ["seam"]})
+
+    cube = 15.0
+    solid += box(M, 63, 10.5, z0, cube, cube, cube)
+    features.append({"name": "cube", "at": [63, 10.5], "size": [cube, cube, cube], "checks": ["dimensions", "corners", "seam_in_corner"]})
+
+    # 25 degrees from the vertical: a tenth of a millimetre of overhang per 0.2 mm layer, a quarter of the wall's width
+    low_d, lean = 16.0, 25.0
+    top_d = round(low_d + 2 * h * math.tan(math.radians(lean)), 2)
+    cx = 83 + top_d / 2
+    solid += M.Manifold.cylinder(h, low_d / 2, top_d / 2, 128).translate([cx, 18, z0])
+    features.append({"name": "cone", "at": [cx, 18], "diameters": [low_d, top_d], "lean": lean, "height": h, "checks": ["seam", "overhang"]})
+
+    solid += skeleton_plate(M, solid, plate_t, ribs_y=(16.0,))
+
+    return solid, features
+
+
 def temp_tower(M, p):
     floors = int(p.get("floors", 5))
     if floors < 3 or floors > 10:
@@ -244,7 +287,7 @@ def main(argv):
         p = json.loads(argv[3] if len(argv) > 3 and argv[3] else "{}")
         if isinstance(p, list) and not p:
             p = {}                                   # PHP encodes an empty parameter array as []
-        builders = {"quick": quick, "detailed": detailed, "ironing": ironing, "temp_tower": temp_tower}
+        builders = {"quick": quick, "detailed": detailed, "ironing": ironing, "seam": seam, "temp_tower": temp_tower}
         if kind not in builders or not isinstance(p, dict):
             raise ValueError("unknown_kind")
         solid, features = builders[kind](M, p)
