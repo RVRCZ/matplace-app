@@ -240,3 +240,27 @@ Testy mají vlastní cache (`MapData::$root` → `storage/framework/testing/maps
 **Neověřeno:** nic z toho se netisklo (sklon střech, špičky věží 1–3 mm); věže bez údaje o výšce jsou odhad;
 Praha má 72 „věží“ (části s jehlanem, kostelní věže, komíny jako `man_made=tower`) – po tisku posoudit, zda komíny
 nevynechat (`tower:type=chimney`).
+
+## 8. Kolo 3 (10. 10. 2026 večer): panel nastavení po Romanově snímku (340 px)
+
+1. **Překryv u Střech** – příčina: sdílený styl `[data-when] { max-height: 20rem }` (app.css, nástroje session 0)
+   omezí každý podmíněný blok na 320 px a přetékající obsah se kreslí přes další blok. Blok „jen město“ (výška budov,
+   silnice, střechy) byl na telefonu vyšší. Teď má každý podmíněný blok `!max-h-none` (map.ts přepíná `hidden`, ne
+   `is-off`, takže sbalení funguje dál) a tlačítka i nápověda jsou běžné bloky (`flex-wrap`, nápověda `<p>` pod nimi).
+   Popisky střech zkrácené: Šikmé u domů / Podle dat / Ploché. Ověřeno snímkem při 340 px (headless Chrome).
+2. **Silnice jednou**: volba **Silnice a cesty: Vyvýšené (druhá barva) / Zapuštěné / Žádné** (`roads`: raised/sunk/none),
+   přepínač `roads_on` zrušen (stará uložená mapa s `roads_on=false` → `none` v `clean()`). „Žádné“: město nemá
+   díl v barvě silnic (`partsOf`, barvy na stránce, jedna výměna), žádné varování `no_roads`; krajina: vyvýšené
+   +0,6 mm, zapuštěné −0,6 mm do reliéfu, žádné nic.
+3. **Bloky nastavení** (nadpisy `legend.lbl` jako u ostatních nástrojů): Styl → **Podklad** (velikost, výška podkladu,
+   rám + šířka a název) → **Budovy** (výška bez údaje „skutečné metry“, střechy) / u krajiny **Reliéf** (převýšení,
+   obce) → **Co na mapě** (silnice a cesty, voda, železnice, zeleň, každé s nápovědou pod sebou). Jednotky mm, výška
+   budov m, převýšení ×.
+4. **Bílé plochy v náhledu** nejsou díry: 1 500 náhodných bodů nad reálnou Prahou 1 km má vždy povrch (podklad 4,0,
+   silnice 4,6, voda 3,2, koleje/zeleň 3,6, budovy výš), manifold hlásí uzavřené těleso bez chyby. Je to barva
+   podkladu `#e8e4d8` (světlá béžová) z `regions`; náměstí a plochy bez budov jsou podklad. Kdyby měla být tmavší,
+   stačí změnit výchozí `COLORS['base']` (a test `designColors`).
+5. **Fakta** v km: „16,3 km silnic“ (i v náhledu místa), `Intl.NumberFormat` s jedním desetinným místem.
+
+Testy: stránka ověřuje pořadí bloků a tři volby silnic (žádný `roads_on`); nový test „Žádné“ (roads_m 0, jedna
+výměna, díly base+buildings, bez varování, starý přepínač → none). Nic se dál netisklo.

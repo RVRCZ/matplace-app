@@ -107,6 +107,11 @@ class MapToolTest extends TestCase
             $this->assertStringContainsString('data-choice="side"', $html);
             $this->assertStringContainsString('data-param="size"', $html);
             $this->assertStringContainsString('data-text="name"', $html);
+            // the settings in blocks: the plate, then the buildings (a landscape: the relief), then what the map shows; the roads one choice
+            $at = array_map(fn ($k) => strpos($html, '<legend class="lbl mb-2">'.e(__("map.g.$k", [], $locale)).'</legend>'), ['plate', 'buildings', 'relief', 'features']);
+            $this->assertTrue($at[0] !== false && $at[0] < $at[1] && $at[1] < $at[2] && $at[2] < $at[3], "$locale blocks in order: ".json_encode($at));
+            $this->assertSame(3, substr_count($html, 'data-choice="roads"'), 'raised, sunk, none');
+            $this->assertStringNotContainsString('roads_on', $html);
             $this->assertStringContainsString('window.MP_MAP', $html);
             $this->assertDoesNotMatchRegularExpression('/>\s*(map|tools|toolpage|param)\.[a-z_.]+\s*</', $html, $locale);
         }
@@ -253,6 +258,24 @@ class MapToolTest extends TestCase
         $this->assertEqualsWithDelta(4 + 42 * 150 / 500, $c['bbox']['z'], 0.2, 'without its spire the tower is as tall: the walls take the whole height (no frame: 150 mm for 500 m)');
         $this->assertSame('houses', $houses->tool_params['roofs']);
         Http::assertSent(fn ($request) => str_contains((string) $request['data'], 'way["building:part"]') && str_contains((string) $request['data'], 'node["man_made"="tower"]'));
+    }
+
+    public function test_roads_can_be_left_out_and_then_only_the_buildings_change_the_colour(): void
+    {
+        $this->needsPython();
+        $this->fakeServices();
+        [$file, $info] = $this->make(['type' => 'city', 'side' => '500', 'size' => 150, 'frame' => false, 'roads' => 'none']);
+        $this->assertSame('ready', $info['status'], (string) ($info['error'] ?? ''));
+        $p = $file->tool_params;
+        $this->assertSame('none', $p['roads']);
+        $this->assertSame(0, $p['notes']['roads_m']);
+        $this->assertNotContains('no_roads', $p['notes']['warnings'], 'no roads by choice is no warning');
+        $this->assertCount(1, $p['color_changes'], 'only the buildings change the colour');
+        $this->assertSame(['base', 'buildings'], $info['map']['parts']);
+        $this->assertArrayNotHasKey('roads', $p['part_colors']);
+        // a design stored when the roads were a switch: off means none
+        $this->assertSame('none', MapBuilder::clean(['type' => 'city', 'roads_on' => false] + self::CENTER)['roads']);
+        $this->assertSame('raised', MapBuilder::clean(['type' => 'city', 'roads_on' => true] + self::CENTER)['roads']);
     }
 
     public function test_the_services_down_and_the_daily_limit_are_told_in_words(): void

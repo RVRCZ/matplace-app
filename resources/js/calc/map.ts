@@ -22,6 +22,7 @@ export function bootMap(stage: Stage): void {
     const t = (k: string, r: Record<string, string | number> = {}) => Object.entries(r).reduce((s, [a, b]) => s.split(`:${a}`).join(String(b)), cfg.i18n[k] ?? stage.t(k));
     const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const nf = stage.nf;
+    const km = (m: number): string => new Intl.NumberFormat(nf.resolvedOptions().locale, { maximumFractionDigits: 1 }).format(m / 1000);     // "16,3 km"
     const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
     const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
     const post = (url: string, body: Record<string, unknown>) => fetch(url, { method: 'POST', credentials: 'same-origin', headers, body: JSON.stringify(body) });
@@ -34,6 +35,9 @@ export function bootMap(stage: Stage): void {
     const partColors: Record<string, string> = {};
 
     const type = (): string => form.querySelector<HTMLInputElement>('[data-choice="type"]:checked')?.value ?? 'city';
+    const roads = (): string => form.querySelector<HTMLInputElement>('[data-choice="roads"]:checked')?.value ?? 'raised';
+    /** the parts of this kind of map, each in its own colour; a city without roads has no part in the roads' colour */
+    const partsNow = (): string[] => (cfg.parts[type()] ?? []).filter((part) => part !== 'roads' || roads() !== 'none');
     const params = (): Record<string, unknown> => {
         const p: Record<string, unknown> = {};
         form.querySelectorAll<HTMLInputElement>('[data-param]').forEach((i) => { p[i.dataset.param!] = Number(i.value); });
@@ -41,7 +45,7 @@ export function bootMap(stage: Stage): void {
         form.querySelectorAll<HTMLInputElement>('[data-choice]:checked').forEach((i) => { p[i.dataset.choice!] = i.value; });
         form.querySelectorAll<HTMLInputElement>('[data-text]').forEach((i) => { p[i.dataset.text!] = i.value; });
         if (place) { p.lat = place.lat; p.lon = place.lon; p.place = place.name; }
-        p.part_colors = Object.fromEntries((cfg.parts[type()] ?? []).map((part) => [part, partColors[part] ?? cfg.colors[part]]));
+        p.part_colors = Object.fromEntries(partsNow().map((part) => [part, partColors[part] ?? cfg.colors[part]]));
         return p;
     };
     const fieldOf = (id: string): HTMLInputElement | null => form.querySelector<HTMLInputElement>(`[data-param="${id}"]`);
@@ -91,7 +95,7 @@ export function bootMap(stage: Stage): void {
     const renderParts = (): void => {
         const box = $('map-parts');
         box.innerHTML = '';
-        (cfg.parts[type()] ?? []).forEach((part) => {
+        partsNow().forEach((part) => {
             const hex = partColors[part] ?? cfg.colors[part];
             const row = document.createElement('div');
             row.className = 'tool-swatch-row'; row.dataset.part = part;
@@ -164,7 +168,7 @@ export function bootMap(stage: Stage): void {
             img.src = url;
             $('map-preview-facts').textContent = type() === 'landscape'
                 ? t('map.place.preview.facts.landscape', { h: nf.format(meta.relief_m ?? 0), s: meta.scale ?? '' })
-                : t('map.place.preview.facts', { b: meta.buildings ?? 0, r: nf.format(meta.roads_m ?? 0), s: meta.scale ?? '' });
+                : t('map.place.preview.facts', { b: meta.buildings ?? 0, r: km(meta.roads_m ?? 0), s: meta.scale ?? '' });
             stage.error(null);
         } catch {
             if (mine === previewSeq) stage.error(t('param.preview_failed'));
@@ -199,7 +203,7 @@ export function bootMap(stage: Stage): void {
         const facts = $('map-facts');
         facts.textContent = n.type === 'landscape'
             ? t('map.facts.landscape', { h: nf.format(n.relief_m ?? 0), e: nf.format(Number((file.tool?.params.exaggeration as number | undefined) ?? 1)), d: n.osm_date ?? '' })
-            : t('map.facts.city', { b: n.buildings ?? 0, s: n.roofs ?? 0, t: n.towers ?? 0, r: nf.format(n.roads_m ?? 0), d: n.osm_date ?? '' });
+            : t('map.facts.city', { b: n.buildings ?? 0, s: n.roofs ?? 0, t: n.towers ?? 0, r: km(n.roads_m ?? 0), d: n.osm_date ?? '' });
         facts.classList.remove('hidden');
         stage.warnings({ place: (n.warnings ?? []).map((w) => cfg.i18n[`map.warn.${w}`] ? t(`map.warn.${w}`) : w) });
     };
@@ -232,8 +236,8 @@ export function bootMap(stage: Stage): void {
     form.addEventListener('input', (e) => {
         const el = e.target as HTMLInputElement;
         if (el.dataset.param) syncRange(el);
-        if (el.dataset.choice === 'type') {
-            const parts = cfg.parts[type()] ?? [];
+        if (el.dataset.choice === 'type' || el.dataset.choice === 'roads') {
+            const parts = partsNow();
             Object.keys(partColors).forEach((p) => { if (!parts.includes(p)) delete partColors[p]; });
         }
         applyWhen();

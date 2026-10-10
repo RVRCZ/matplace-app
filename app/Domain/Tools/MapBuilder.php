@@ -32,14 +32,14 @@ final class MapBuilder
         'exaggeration' => [1, 3, 1.5, 0.1],     // a landscape's heights, times
     ];
 
-    public const CHOICES = ['type' => ['city', 'landscape'], 'style' => ['sleek', 'miniature'], 'side' => ['500', '1000', '2000', '5000', '10000', '20000'], 'roads' => ['raised', 'sunk'], 'roofs' => ['houses', 'data', 'flat']];
+    public const CHOICES = ['type' => ['city', 'landscape'], 'style' => ['sleek', 'miniature'], 'side' => ['500', '1000', '2000', '5000', '10000', '20000'], 'roads' => ['raised', 'sunk', 'none'], 'roofs' => ['houses', 'data', 'flat']];
 
     /** the sides a type offers, metres: a city 0.5–2 km, a landscape 2–20 km */
     public const SIDES = ['city' => [500, 1000, 2000], 'landscape' => [2000, 5000, 10000, 20000]];
 
-    public const FLAGS = ['frame', 'water', 'roads_on', 'rail', 'green', 'towns'];
+    public const FLAGS = ['frame', 'water', 'rail', 'green', 'towns'];
 
-    public const FLAGS_ON = ['frame', 'water', 'roads_on', 'rail', 'towns'];
+    public const FLAGS_ON = ['frame', 'water', 'rail', 'towns'];
 
     public const TEXTS = ['name' => 40, 'place' => 120];
 
@@ -101,13 +101,16 @@ final class MapBuilder
         foreach (self::CHOICES as $key => $options) {
             $out[$key] = in_array($p[$key] ?? null, $options, true) ? $p[$key] : $options[0];
         }
+        if (isset($p['roads_on']) && ! filter_var($p['roads_on'], FILTER_VALIDATE_BOOLEAN)) {
+            $out['roads'] = 'none';                              // a design stored when the roads were a switch
+        }
         $sides = self::SIDES[$out['type']];
         $out['side'] = (string) (in_array((int) $out['side'], $sides, true) ? (int) $out['side'] : $sides[1] ?? $sides[0]);
         foreach (self::TEXTS as $key => $max) {
             $out[$key] = mb_substr(trim((string) ($p[$key] ?? '')), 0, $max);
         }
         // the colours of the parts, as the page sends them ({code: hex, hex} or a hex), each one kept with its look
-        foreach (self::PARTS[$out['type']] as $part) {
+        foreach (self::partsOf($out) as $part) {
             $given = $p['part_colors'][$part] ?? null;
             $hex = is_array($given) ? ($given['hex'] ?? $given['code'] ?? null) : $given;
             if (is_string($hex) && ! Palette::isCustom($hex)) {
@@ -123,7 +126,10 @@ final class MapBuilder
     /** @return list<string> the parts printed one above the other, bottom first */
     public static function partsOf(array $p): array
     {
-        return self::PARTS[$p['type'] ?? 'city'] ?? self::PARTS['city'];
+        $parts = self::PARTS[$p['type'] ?? 'city'] ?? self::PARTS['city'];
+
+        // a city without roads has no part in the roads' colour
+        return ($p['roads'] ?? 'raised') === 'none' ? array_values(array_diff($parts, ['roads'])) : $parts;
     }
 
     /**
