@@ -931,4 +931,30 @@ T2 ; slot chosen by matplace farm
         $this->assertSame($white->id, $ticked($html, 'color'));
         $this->assertMatchesRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $html);
     }
+
+    public function test_a_design_in_one_free_colour_starts_on_the_nearest_spool(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        // the S1 holds white; a blue spool joins it on another position
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $white = $s1->slots()->whereNotNull('farm_color_id')->firstOrFail()->color;
+        $white->update(['hex' => '#F4F4F0']);
+        $blue = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->where('id', '!=', $white->id)->firstOrFail();
+        $blue->update(['hex' => '#1E4FA0', 'enabled' => true]);
+        $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->firstOrFail()->update(['farm_color_id' => $blue->id, 'remaining_g' => 800, 'enabled' => true]);
+
+        // a plain box whose page gave it a free blue (the colour window of the tools returns hexes)
+        $uuid = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'box', 'params' => ['inner_w' => 30, 'inner_d' => 20, 'inner_h' => 12]])->assertCreated()->json('file.uuid');
+        $file = ModelFile::where('uuid', $uuid)->firstOrFail();
+        $file->forceFill(['tool_params' => ['part_colors' => ['body' => ['code' => '#2050b0', 'hex' => '#2050b0']]] + $file->tool_params])->save();
+
+        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->getContent();
+        $ticked = fn (string $html, string $name) => preg_match('/name="'.preg_quote($name, '/').'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
+        $this->assertSame($blue->id, $ticked($html, 'color'), 'the spool nearest to the design\'s colour is ticked');
+        // the customer\'s own choice in the address wins
+        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid.'&color='.$white->id)->assertOk()->getContent();
+        $this->assertSame($white->id, $ticked($html, 'color'));
+    }
 }

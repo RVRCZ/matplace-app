@@ -127,6 +127,13 @@ class OrderController extends Controller
         $partWanted = array_map('intval', (array) ($old['part_color'] ?? $request->query('part', [])));
         $partHex = array_map(fn ($part) => ($file->tool_params['part_colors'][$part]['hex'] ?? null) ?: null, array_combine($parts, $parts) ?: []);
         $byParts = $old ? ! empty($old['by_parts']) : ($request->query('by_parts') !== null ? $request->boolean('by_parts') : (count($parts) >= 2 && ($file->kind() === ArtGenerator::KIND || count(array_unique(array_filter($partHex))) >= 2)));
+        // a design in one colour chosen freely on its page (a blue box): the spool nearest to that colour is ticked;
+        // designs that name several colours (changes, parts, a QR code) pick theirs below
+        $oneHex = $file && ! $named && ! $byParts && ! $changes ? ((string) ($bodyHex ?: (collect((array) ($file->tool_params['part_colors'] ?? []))->first()['hex'] ?? '')) ?: null) : null;
+        if ($oneHex && ! $wantedColor && ! $old && ($offeredNow = array_filter($colors, fn ($c) => $c['enough']))) {
+            $preselect = collect($offeredNow)->sortBy(fn ($c) => self::hexDistance((string) $c['hex'], $oneHex))->first()['id'] ?? $preselect;
+            $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
+        }
         $partPreselect = [];
         if ($byParts && ! $wantedColor && ! $partWanted && count(array_filter($partHex)) >= 1 && ($near = self::nearestSet($colors, $partHex[$parts[0]] ?? null, array_values(array_map(fn ($h) => (string) ($h ?: ''), array_slice($partHex, 1)))))) {
             // nothing chosen yet: the first colour follows the first part (the box), the other parts take the spool of that
