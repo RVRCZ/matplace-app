@@ -8,7 +8,7 @@
 | 2 | 10. 10. | úvodní stránka + formuláře nástrojů | dlaždice náhradního dílu a odkaz „poskládat vlastní“ se řídí přepínačem nástroje | viz úkol #2 níže | 10. 10. (`ToolVisibility::canOpen`: host podle přepínače, správce vidí dál) | „Opravy #2“ na `feature/tool-fixes` |
 | 3 | 10. 10. | stránky návrhu všech nástrojů | tlačítko „Pokračovat k přesné ceně a tisku“ → „Pokračovat ke kalkulaci“; pod cenou se dvakrát říká totéž o dalším kroku | viz úkol #3 níže | 10. 10. (šest klíčů v `lang/src/tools_flow.json`, test v `ToolPageTest`) | „Opravy #3“ na `feature/tool-fixes` |
 | 4 | 10. 10. | všechny stránky nástrojů | jedno tlačítko „Pokračovat ke kalkulaci“ a jeden text pod cenou pro všechny nástroje (reliéf, figurka, úpravy souboru, kontrola, forma mají dnes jiné) | viz úkol #4 níže | 10. 10. (bez výjimek: i kontrola, oprava a forma otevírají kalkulačku; `toolpage.go*` smazáno) | „Opravy #4“ na `feature/tool-fixes` |
-| 5 | 10. 10. | všechny stránky nástrojů | krok „Materiál a počet kusů“ (dnes jen u parametrických nástrojů) na každé stránce nástroje, zvolený materiál a počet jdou do kalkulace; mrtvé texty tlačítek pryč | viz úkol #5 níže | | |
+| 5 | 10. 10. | všechny stránky nástrojů | krok „Materiál a počet kusů“ (dnes jen u parametrických nástrojů) na každé stránce nástroje, zvolený materiál a počet jdou do kalkulace; mrtvé texty tlačítek pryč | viz úkol #5 níže | 10. 10. (krok kreslí `tools/page.blade.php`; reliéf a figurka mají „Vytvořit“ na konci kroku 2; přenos ověřen v prohlížeči na split, letter-beads, filament-art) | „Opravy #5“ na `feature/tool-fixes` |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 

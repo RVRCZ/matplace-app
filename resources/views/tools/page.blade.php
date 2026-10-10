@@ -8,7 +8,8 @@
       @section('stage')        optional extra blocks under the price (reports, a second viewer)
       @section('price-note')   optional text under the price (every tool has the same one today: what the estimate is, what the next step shows)
     and passes: tool (key in config/tools.php), module (which script drives the page: resources/js/calc/tool_page.ts),
-    lead (one sentence), sections (id => label, in order), available + unavailable (the tool's engine is missing).
+    lead (one sentence), sections (id => label, in order: the tool's own steps; the last one, "print" = the material and
+    the number of pieces, is added here for every tool), available + unavailable (the tool's engine is missing).
     Scripts: window.MP_TOOL (shared) next to the tool's own window.MP_<TOOL>.
 --}}
 @extends('layouts.app', ['title' => __('tools.'.$tool.'.title').' · matplace', 'tool' => $tool, 'wide' => true])
@@ -17,6 +18,9 @@
     $available = $available ?? true;
     $next = \App\Support\NextStep::mode();
     $bed = config('pricing.bed_mm');
+    // the last step of every tool is the same: the material and how many pieces (the tool names only its own steps)
+    $materials = $config['materials'] ?? [];
+    $sections = ($sections ?? []) + ($materials ? ['print' => \App\Support\NextStep::text('param.step.inquiry')] : []);
     $shared = [
         'tool' => $tool, 'module' => $module, 'locale' => app()->getLocale(), 'next' => $next,
         'home' => route('home'), 'files' => url('/api/files'), 'tools' => route('tools'),
@@ -55,7 +59,7 @@
             <div class="note-warn mt-4 text-sm">{{ $unavailable ?? __('sign.unavailable') }}</div>
         @else
             {{-- the steps, as anchors: every section stays on the page, the one in view is marked --}}
-            {{-- four steps do not fit 340 px in one row ("Tisk nebo stažení"): they wrap, nothing is cut off --}}
+            {{-- four steps do not fit 340 px in one row ("Materiál a počet kusů"): they wrap, nothing is cut off --}}
             <nav id="tool-nav" class="sticky top-0 z-10 -mx-1 mt-3 flex flex-wrap gap-1 bg-page px-1 py-2" aria-label="{{ __('param.steps') }}">
                 @foreach($sections as $id => $label)
                     <a href="#sec-{{ $id }}" data-nav="{{ $id }}" class="tool-nav-item"><span class="tool-nav-no">{{ $loop->iteration }}</span>{{ $label }}</a>
@@ -63,6 +67,21 @@
             </nav>
             <button type="button" id="tool-restore" class="chip mb-2 hidden items-center gap-1.5 !py-1 text-xs"><x-icon name="rotate-ccw" class="h-3.5 w-3.5" />{{ __('toolpage.restore') }}</button>
             @yield('panel')
+            @if($materials)
+                {{-- the material and how many: the rough price counts with both, and the calculator opens with them (Stage.material, Stage.quantity) --}}
+                <x-tool-section id="print" :title="$sections['print']" class="!mt-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="lbl">{{ __('calc.material') }}
+                            <select id="param-material" class="field">
+                                @foreach($materials as $m)<option value="{{ $m['code'] }}" @selected($m['code'] === ($config['default_material'] ?? null))>{{ $m['label'] }} ({{ $m['code'] }})</option>@endforeach
+                            </select>
+                        </label>
+                        <label class="lbl">{{ __('calc.quantity') }}
+                            <input id="param-qty" type="number" inputmode="numeric" min="1" max="1000" value="1" class="field">
+                        </label>
+                    </div>
+                </x-tool-section>
+            @endif
         @endunless
     </div>
 

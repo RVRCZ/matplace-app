@@ -81,7 +81,6 @@
     "check.page.uploading": ["Nahrávám…", "Uploading…", "Subiendo…"],
     "check.page.checking": ["Kontroluji model…", "Checking the model…", "Revisando el modelo…"],
     "check.page.failed": ["Soubor se nepodařilo zpracovat. Zkuste ho uložit znovu jako STL nebo 3MF.", "The file could not be processed. Try saving it again as STL or 3MF.", "No se pudo procesar el archivo. Pruebe a guardarlo de nuevo como STL o 3MF."],
-    "check.page.go": ["Zjistit cenu a poptat tisk", "Get the price and request printing", "Ver el precio y solicitar impresión"],
     "check.title": ["Kontrola modelu", "Model check", "Revisión del modelo"],
     "check.head.error": ["Našli jsme chyby, které tisk pravděpodobně pokazí", "We found errors that will probably spoil the print", "Encontramos errores que probablemente arruinen la impresión"],
     "check.head.advice": ["Bez chyb, máme jen doporučení", "No errors, only advice", "Sin errores, solo recomendaciones"],

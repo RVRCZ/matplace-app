@@ -1,5 +1,5 @@
 @extends('tools.page', ['tool' => 'relief', 'module' => 'relief', 'lead' => __('relief.lead'), 'available' => $available,
-    'sections' => ['photo' => __('toolpage.section.photo'), 'settings' => __('toolpage.section.settings'), 'print' => \App\Support\NextStep::text('param.step.inquiry')]])
+    'sections' => ['photo' => __('toolpage.section.photo'), 'settings' => __('toolpage.section.settings')]])
 
 @push('head')
 <script>
@@ -113,9 +113,8 @@
             </label>
         </div>
         <p id="relief-shades" class="hint !text-xs"></p>
-    </x-tool-section>
 
-    <x-tool-section id="print" :title="\App\Support\NextStep::text('param.step.inquiry')">
+        {{-- the settings end with the model being made; the material and the number of pieces follow as the page's last step --}}
         <button class="btn-ink w-full gap-1.5"><x-icon name="sparkles" class="h-4 w-4" />{{ __('relief.submit') }}</button>
         <p id="relief-msg" class="hint" aria-live="polite"></p>
         <div id="relief-backlit" class="hidden">

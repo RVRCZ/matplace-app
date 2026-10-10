@@ -1218,7 +1218,7 @@ export function bootParam(stage: Stage): void {
             const note = [lastMeta ? bomText(lastMeta).join('; ') : '', colourNote ? `${stage.t('toolpage.color.note')}: ${colourNote}` : ''].filter(Boolean).join(' | ');
             const plate = params().plate_color;      // a two-colour design: the plate is "the colour", the second one travels with the design
             const q = new URLSearchParams({
-                ...(note ? { note: note.slice(0, 900) } : {}), open: body.file.uuid, material: ($('param-material') as HTMLSelectElement).value, quantity: ($('param-qty') as HTMLInputElement).value || '1',
+                ...(note ? { note: note.slice(0, 900) } : {}), open: body.file.uuid, material: stage.material(), quantity: String(stage.quantity()),
                 color: typeof plate === 'string' ? colorName(plate) : ($('param-color') as HTMLInputElement).value, ...(download ? { download: '1' } : {}), ...(slicer ? { slicer } : {}),
             });
             location.href = `${cfg.home}?${q}`;
