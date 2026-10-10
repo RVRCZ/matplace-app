@@ -10,6 +10,7 @@
 | 4 | 10. 10. | všechny stránky nástrojů | jedno tlačítko „Pokračovat ke kalkulaci“ a jeden text pod cenou pro všechny nástroje (reliéf, figurka, úpravy souboru, kontrola, forma mají dnes jiné) | viz úkol #4 níže | 10. 10. (bez výjimek: i kontrola, oprava a forma otevírají kalkulačku; `toolpage.go*` smazáno) | „Opravy #4“ na `feature/tool-fixes` |
 | 5 | 10. 10. | všechny stránky nástrojů | krok „Materiál a počet kusů“ (dnes jen u parametrických nástrojů) na každé stránce nástroje, zvolený materiál a počet jdou do kalkulace; mrtvé texty tlačítek pryč | viz úkol #5 níže | 10. 10. (krok kreslí `tools/page.blade.php`; reliéf a figurka mají „Vytvořit“ na konci kroku 2; přenos ověřen v prohlížeči na split, letter-beads, filament-art) | „Opravy #5“ na `feature/tool-fixes` |
 | 6 | 10. 10. | krok „Materiál a počet kusů“ | v úzkém panelu (340 px) se název materiálu ve výběru ořízne („Běžný plast (PL“) | viz úkol #6 níže | 10. 10. (materiál přes celou šířku panelu, počet kusů pod ním; změřeno v prohlížeči při 340 px, cs/en/es) | „Opravy #6“ na `feature/tool-fixes` |
+| 7 | 10. 10. | nástroje pro úpravu souboru (hollow, life-size, puzzle, holder, potion, flexi-cut, colors, soap, wearable, slider) | pod souborem svítí syrový klíč fáze („edit.stage.repairing“) – společné texty fází chybí v lang/*/edit.php | viz úkol #7 níže | | |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 
@@ -159,6 +160,17 @@ generátorů, po #5 všude. **Udělat:** výběr materiálu na vlastní řádek 
 (nebo vedle s pevnou šířkou ~6 rem), tak aby i „Běžný plast (PLA)“ a nejdelší název z `cfg.price.materials` byly vidět
 celé při 340 px; nic jiného v kroku neměnit. **Hotovo =** na `/tools/split` a `/tools/letter-beads` při šířce panelu
 340 px je celý název materiálu vidět; `ToolPageTest` zelený, `tsc`, `build`.
+
+## Úkol #7 · 10. 10. 2026 · texty fází u nástrojů pro úpravu souboru (koordinováno: `tools/edit.blade.php`, `lang/{cs,en,es}/edit.php` – soubory session 3, která neběží)
+
+**Od Romana** (snímek z `/tools/hollow` poslaný přímo session E): pod souborem je vidět „edit.stage.repairing“.
+**Příčina** (E): `tools/edit.blade.php` ř. 11 bere text nástroje `edit.<op>.<klíč>` a jinak společný `edit.<klíč>`;
+společné `edit.stage.*` v `lang/*/edit.php` nejsou (jen `edit.split.stage.*` a dvě `edit.hollow.stage.*`), do stránky
+jde syrový klíč a `edit.ts` ř. 219 ho bere jako text. Týká se všech nástrojů úpravy kromě split a fází queued,
+loading, thinning, repairing, cutting, joints, numbers, layout, done.
+**Udělat:** společné texty fází `edit.stage.*` ve třech jazycích; blade neposílá klíče bez textu (záložní texty
+skriptu pak platí). Test v `ModelEditTest`/`ToolPageTest`: žádná stránka nástroje nenese v datech pro skript syrový
+klíč fáze. **Hotovo =** `/tools/hollow` při zpracování ukazuje českou/anglickou/španělskou fázi; testy, `pint`, `tsc`, `build`.
 
 ## Poznámky pro session 1 (z úkolu #1, předat až poběží)
 
