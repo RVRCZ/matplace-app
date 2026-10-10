@@ -6,6 +6,7 @@
 |---|---|---|---|---|---|---|
 | 1 | 10. 10. | admin + katalog nástrojů | zapnutí/skrytí jednotlivých nástrojů v adminu; skrytý nástroj zůstává správci přístupný k testování | viz úkol #1 níže | 10. 10. (popis v `docs/TOOLS-ADMIN.md`) | „Opravy #1“ na `feature/tool-fixes` |
 | 2 | 10. 10. | úvodní stránka + formuláře nástrojů | dlaždice náhradního dílu a odkaz „poskládat vlastní“ se řídí přepínačem nástroje | viz úkol #2 níže | 10. 10. (`ToolVisibility::canOpen`: host podle přepínače, správce vidí dál) | „Opravy #2“ na `feature/tool-fixes` |
+| 3 | 10. 10. | stránky návrhu všech nástrojů | tlačítko „Pokračovat k přesné ceně a tisku“ → „Pokračovat ke kalkulaci“; pod cenou se dvakrát říká totéž o dalším kroku | viz úkol #3 níže | | |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 
@@ -55,6 +56,39 @@ kategorie) – to budou další úkoly.
 `resources/views/calculator/home.blade.php` – dlaždice náhradního dílu se řídí jen tržištěm, ne přepínačem; `resources/views/tools/param.blade.php` –
 odkaz „poskládat vlastní“ vede na `/tools/compose` natvrdo (po skrytí compose je pro hosta 404). Obojí přes `ToolVisibility::isPublic`
 (správce vidí dál). Test v `ToolVisibilityTest`. Hotovo = skrytý compose/spare nemá na těchto místech odkaz pro hosta.
+
+## Úkol #3 · 10. 10. 2026 · „Pokračovat ke kalkulaci“ a jedna věta o dalším kroku (jen texty)
+
+**Co Roman chce:** na stránce návrhu nástroje přejmenovat tlačítko **„Pokračovat k přesné ceně a tisku“** na
+**„Pokračovat ke kalkulaci“**. Při tom opravit, že pod orientační cenou se dvakrát řekne totéž: „Odhad z objemu modelu.
+Přesnou cenu a dobu tisku spočítáme v dalším kroku. V dalším kroku uvidíte přesnou cenu a dobu tisku. Výtisk si…“
+
+**Kde:** texty jsou v JSON překladech `lang/cs.json`, `lang/en.json`, `lang/es.json`; zdroj je `lang/src/tools_flow.json`
+(`{"klíč": ["cs", "en", "es"]}`), do JSONů se slévá `python scripts/lang_add.py lang/src/tools_flow.json` (uprav zdroj,
+pusť skript, commitni zdroj i všechny tři JSONy). Klíče: `param.go.farm` (tlačítko ve farmovém režimu – to je produkce),
+`param.go.download` (režim bez farmy), `param.estimate.note.farm` + `param.go.hint.farm` – ty dva se skládají za sebe v
+`resources/views/tools/param.blade.php` řádek 107 a `filament_art.blade.php` řádek 33 (`NextStep::text`), proto ta
+zdvojená věta; `param.estimate.note.download` + `param.go.hint.download` stejně.
+
+**Udělat (jen texty, žádný kód):**
+1. `param.go.farm`: „Pokračovat ke kalkulaci“ / „Continue to the calculation“ / „Continuar al cálculo“.
+   `param.go.download`: „Pokračovat ke kalkulaci“ / stejně / stejně (i bez farmy je další krok kalkulace).
+2. `param.estimate.note.farm` i `.download`: jen „Odhad z objemu modelu.“ / „An estimate from the model volume.“ /
+   „Una estimación según el volumen del modelo.“ – větu o dalším kroku z nich vyhodit, zůstane jen v `go.hint`.
+3. `param.go.hint.farm`: „V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si objednáte u nás, nebo si stáhnete
+   soubor pro svou tiskárnu.“ (en/es ve stejném duchu: „The calculation shows the precise price and print time…“);
+   `param.go.hint.download`: „V kalkulaci uvidíte přesnou dobu tisku a spotřebu materiálu a stáhnete si soubor nebo
+   hotový projekt pro svou tiskárnu. Bez registrace.“
+4. Ověřit, že `toolpage.go` v `lang/*/toolpage.php` (režim tržiště, „Pokračovat k přesné ceně“) nikdo na produkci
+   nevidí – nechat být. Ostatní výskyty „k přesné ceně“ v `lang/*/tools_seo/*.php` (SEO odstavce) **neměnit**, to je
+   další úkol, až Roman řekne.
+5. Test: v `ToolPageTest` (nebo kde se testuje stránka nástroje) jedno `assertSee('Pokračovat ke kalkulaci')` a
+   `assertDontSee('V dalším kroku uvidíte přesnou cenu a dobu tisku. V dalším kroku')` – ať se zdvojení nevrátí.
+
+**Hotovo =** na `/tools/letter-beads` (a každé stránce nástroje) je tlačítko „Pokračovat ke kalkulaci“ a pod cenou:
+„Odhad z objemu modelu. V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si objednáte u nás, nebo si stáhnete
+soubor pro svou tiskárnu.“ Testy zelené, `pint`, `tsc`, `build` (JSON překlady jdou do bundle? – ne, čtou se v PHP;
+build přesto pustit). Bez migrace.
 
 ## Poznámky pro session 1 (z úkolu #1, předat až poběží)
 
