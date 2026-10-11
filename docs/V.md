@@ -315,7 +315,7 @@ ne na jmenovitou rychlost stěny. `quick` je na posouzení stěny špatný objek
 na Maxu** – válec a hranol mají po celé výšce stejný průřez, takže ukážou, jak stěna vypadá bez skoků v době vrstvy.
 Horní plocha při 120 vypadá dobře; když to Roman potvrdí, `top_surface_speed = 120` do řádku Maxu jako nová verze.
 
-**Objekt `seam` bez scarfu na Maxu** (tyrkysová PLA+, 11. 10. dopoledne, číslo testu doplní Roman; nastavení řádku
+**T26-000038 – objekt `seam` bez scarfu na Maxu** (tyrkysová PLA+, 11. 10. dopoledne; nastavení řádku
 v3, tedy stěna 120, horní plocha 200; 21 snímků při expozici −5, kusy odlomené – tyrkysová ukazuje detail mnohem
 líp než bílá):
 
@@ -334,6 +334,12 @@ Co z toho plyne:
    Totéž ověřit na S1 (strop toku je stejný, 16 mm³/s, a horní plocha jede 16,8).
 3. **Šev na Maxu je bez scarfu výrazný.** Další test: `seam` se zaškrtnutým scarfem (od 10. 10. dává přímo S2) – zároveň
    druhý potvrzující tisk S2 v jiné barvě.
+
+**11. 10. – Roman dal session F právo rozhodovat o nastavení tisku filamentů** (profily filamentů, knihovna,
+přednastavení testů; potvrdil přímo v session). Pravidla: jedna změna = jeden commit s důkazem, sady zelené, nasazuje
+řídící session, řádky na produkci dál v administraci. První změna: knihovna `kobra 3 max` → `PLA+` → `process` dostala
+`top_surface_speed = 120` (důkaz T26-000038 při 200 proti T26-000035 při 120, stejná tyrkysová cívka). Platí jen pro
+nově zakládané řádky – zaplacené zakázky nepřeřezává; stávající řádek Maxu doplní Roman v administraci.
 
 Hodnoty Orca profilu, které řádek Maxu nepřepisuje: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
 `top_surface_pattern = monotonicline`, `only_one_wall_top = 1`; Max jede s procesem S1 bez přepisů pro velkou

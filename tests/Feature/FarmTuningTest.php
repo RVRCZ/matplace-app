@@ -81,6 +81,9 @@ class FarmTuningTest extends TestCase
         $maxSeam = $library->lookup('Anycubic Kobra 3 Max Combo', 'PLA+', 'solid')['process'];
         $this->assertSame(['none', '10%', '1', '0', '40%', '120'], [$maxSeam['seam_slope_type'], $maxSeam['seam_gap'], $maxSeam['seam_slope_inner_walls'],
             $maxSeam['staggered_inner_seams'], $maxSeam['scarf_overhang_threshold'], $maxSeam['outer_wall_speed']]);
+        // the Max lays its top surface slower than the profile: at 200 mm/s it came out ragged, at 120 even
+        $this->assertSame('120', $maxSeam['top_surface_speed']);
+        $this->assertArrayNotHasKey('top_surface_speed', $s1Seam);
 
         // running it again changes nothing
         $this->assertSame(0, app(ProfileLibrary::class)->sync());
