@@ -298,7 +298,13 @@ final class Palette
                 return 'special';
             }
         }
-        [$r, $g, $b] = array_map(fn ($h) => hexdec($h) / 255, str_split(ltrim($hex, '#'), 2));
+        // written plainly on purpose: with the tracing JIT of PHP 8.2 the former arrow function sharing the name of
+        // the hue variable and a match(true) left "$h" undefined under php-fpm once the trace got hot (every tool
+        // page answered 500, 11 Oct 2026); the CLI never showed it
+        $parts = str_split(ltrim($hex, '#'), 2);
+        $r = hexdec($parts[0]) / 255;
+        $g = hexdec($parts[1]) / 255;
+        $b = hexdec($parts[2]) / 255;
         $max = max($r, $g, $b);
         $min = min($r, $g, $b);
         $light = ($max + $min) / 2;
@@ -310,12 +316,15 @@ final class Palette
         if ($sat < 0.12 || $delta < 0.06) {
             return 'white_grey';
         }
-        $h = match (true) {
-            $max === $r => fmod(($g - $b) / $delta, 6) * 60,
-            $max === $g => (($b - $r) / $delta + 2) * 60,
-            default => (($r - $g) / $delta + 4) * 60,
-        };
-        $h = $h < 0 ? $h + 360 : $h;
+        $hue = 0.0;
+        if ($max === $r) {
+            $hue = fmod(($g - $b) / $delta, 6) * 60;
+        } elseif ($max === $g) {
+            $hue = (($b - $r) / $delta + 2) * 60;
+        } else {
+            $hue = (($r - $g) / $delta + 4) * 60;
+        }
+        $h = $hue < 0 ? $hue + 360 : $hue;
         // browns and beiges are dull or dark oranges
         if ($h >= 12 && $h < 50 && ($sat < 0.55 || $light < 0.4)) {
             return 'brown_beige';
