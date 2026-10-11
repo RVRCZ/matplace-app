@@ -3,7 +3,7 @@
 @section('content')
 @include('admin.farm.nav')
 
-<div class="mt-4 flex justify-end"><a href="{{ route('admin.farm.printers.new') }}" class="btn-primary text-sm">+ {{ __('farm.admin.nav.printers') }}</a></div>
+<div class="mt-4 flex justify-end gap-2"><a href="{{ route('admin.farm.printers.load') }}" class="btn-quiet text-sm">{{ __('farm.admin.slots_title') }}</a><a href="{{ route('admin.farm.printers.new') }}" class="btn-primary text-sm">+ {{ __('farm.admin.nav.printers') }}</a></div>
 
 <div class="mt-3 space-y-3">
     @foreach($printers as $p)

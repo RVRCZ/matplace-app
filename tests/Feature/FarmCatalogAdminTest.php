@@ -143,6 +143,33 @@ class FarmCatalogAdminTest extends TestCase
         $this->assertSame(0, FarmPrinterMaterial::where('farm_material_id', $tpu->id)->count());
     }
 
+    public function test_every_slot_of_every_printer_is_loaded_on_one_page_with_the_plan_as_a_prefill(): void
+    {
+        $page = $this->actingAs($this->admin)->get('/admin/farm/printers/load')->assertOk()
+            ->assertSee(__('farm.admin.slots_title'))->assertSee('id="slots-prefill"', false)->assertSee('data-printer="kobra-s1-01"', false);
+        // the plan names a code of the catalogue: the slot carries its id for the prefill
+        $white = FarmColor::where('code', '02_PLA+_bily')->value('id');
+        if ($white) {
+            $page->assertSee('data-plan-id="'.$white.'"', false);
+        }
+
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
+        $black = FarmColor::where('name', 'černá')->whereHas('material', fn ($q) => $q->where('code', 'PLA+'))->firstOrFail();
+        $white = FarmColor::where('name', 'bílá')->whereHas('material', fn ($q) => $q->where('code', 'PLA+'))->firstOrFail();
+        $this->actingAs($this->admin)->post('/admin/farm/printers/load', ['slots' => [
+            $s1->id => [0 => ['color' => $black->id, 'remaining_g' => 900, 'enabled' => 1], 1 => ['color' => '', 'remaining_g' => 0, 'enabled' => 1], 2 => ['color' => $white->id, 'remaining_g' => 650]],
+            $max->id => [0 => ['color' => $white->id, 'remaining_g' => 1000, 'enabled' => 1]],
+        ]])->assertRedirect('/admin/farm/printers')->assertSessionHas('status');
+        $slots = $s1->slots()->orderBy('slot')->get()->keyBy('slot');
+        $this->assertSame([$black->id, true, 900.0], [$slots[0]->farm_color_id, $slots[0]->enabled, $slots[0]->remaining_g]);
+        $this->assertSame([null, false], [$slots[1]->farm_color_id, $slots[1]->enabled], 'an empty slot is never offered');
+        $this->assertSame([$white->id, false], [$slots[2]->farm_color_id, $slots[2]->enabled], 'a spool without the tick is loaded but not offered');
+        $this->assertSame([$white->id, true, 1000.0], [$max->slots()->where('slot', 0)->firstOrFail()->farm_color_id, $max->slots()->where('slot', 0)->firstOrFail()->enabled, $max->slots()->where('slot', 0)->firstOrFail()->remaining_g]);
+        // a colour that is not in the catalogue is refused
+        $this->actingAs($this->admin)->post('/admin/farm/printers/load', ['slots' => [$s1->id => [0 => ['color' => 999999]]]])->assertSessionHasErrors();
+    }
+
     public function test_a_new_kind_can_be_started_from_an_existing_one(): void
     {
         $petg = FarmMaterial::where('code', 'PETG')->firstOrFail();

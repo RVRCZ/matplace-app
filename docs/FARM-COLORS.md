@@ -416,3 +416,16 @@ rovnoměrný). Tryska jiná než 0,4: rozteč podle `TestPrintService::ironingFo
 neurčí. Řádky ladění `ironing_type` nikdy nenesou – přepínač patří k zakázce. Zapnutí přeřeže zakázku (cena a čas se
 přepočítají; stránka to dělá přes „Přepočítat“ jako u ostatních nastavení). Validace `settings.ironing in:topmost,top`.
 Test v `PrintSettingsTest`. Texty `farm.advanced.ironing*` cs/en/es.
+
+## 12. Založení cívek do všech tiskáren na jedné stránce (11. 10. 2026)
+
+Roman: „všechny filamenty jsou založeny do tiskáren podle předpisu“ – fyzicky ano, v administraci ne (za 24 h změněny
+3 sloty ze 44, farma B měla většinu slotů prázdných a vypnutých, web tedy její barvy nenabízel). Zápis 44 polí po
+tiskárnách je zdlouhavý a skript do produkční DB mi klasifikátor nepovolí, proto **`/admin/farm/printers/load`**
+(odkaz „Založení cívek do všech tiskáren“ nad seznamem tiskáren): všechny sloty všech zapnutých strojů v jednom
+formuláři (barva, gramy, nabízet), tlačítko **„Předvyplnit podle rozpisu“** vezme plán z
+`database/data/farm_spool_plan.json` (= tabulka §7 s přesnými kódy katalogu; `KIND|název` tam, kde kód není, dnes ASA
+černá/bílá) – předvyplní jen sloty, které rozpis zná, zaškrtne „nabízet“ a prázdným dá 1 000 g; co rozpis nezná, zůstane.
+Uložení (`FarmCatalogController::saveSlots`) zapíše sloty všech strojů, prázdný slot nikdy nenabízí, pak
+`ProfileLibrary::sync`. Hláška říká počet změněných slotů. Test v `FarmCatalogAdminTest`. Texty `farm.admin.slots_*`.
+Před uložením je nutné porovnat se stroji – rozpis je návrh, ne skutečnost (např. U #1 má dnes Spectrum Silk, ne matné).

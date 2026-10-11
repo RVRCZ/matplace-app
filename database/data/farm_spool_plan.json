@@ -1,0 +1,14 @@
+{
+    "_comment": "The planned spools per printer and ACE slot (docs/FARM-COLORS.md section 7, 9 Oct 2026). A slot names a catalogue code, or 'KIND|name' when the code is not known. /admin/farm/printers/load prefills the form from it; the admin checks it against the machines and saves.",
+    "kobra-s1-d01": ["02_PLA+_bily", "01_PLA+_cerny", "05_PLA+_cerveny", "14_PLA+_svetle_modry"],
+    "kobra-s1-d02": ["03_PLA+_nefrit_bily_jade_White", "01_PLA+_cerny", "11_PLA+_modry", "12_PLA+_sedy"],
+    "kobra-s1-d03": ["02_PLA+_bily", "01_PLA+_cerny", "04_PLA+_ruzovy", "08_PLA+_oranzovy"],
+    "kobra-s1-d04": ["02_PLA+_bily", "05_PLA+_cerveny", "06_PLA+_zeleny", "07_PLA+_zlaty"],
+    "kobra-s1-d05": ["01_PLA+_cerny", "09_PLA+_hnedy", "10_PLA+_zluty", "25_PLA+_svetle_fialovy"],
+    "kobra-s1-d06": ["39_PLA_Silk_zlata_Silk_Gold", "40_PLA_Silk_medena_Silk_Copper", "57_PLA_Silk_dualni_zlata_cervena_Silk_Gold", "44_PLA_Silk_cervena_Silk_Red"],
+    "kobra-s1-d07": ["24_PLA_Silk_White", "23_PLA_SILKA_BLACK", "25_PLA_Silk_Pink", "54_PLA_Silk_nebesky_modra_Silk_Sky_Blue"],
+    "kobra-s1-d08": ["17_PLA_Lumious_Green", "17_PLA_Lumious_RED", "34_PLA_Luminous_fluorescencni_modry_svitici", "33_PLA_Luminous_fluorescencni_zluty_svitici"],
+    "kobra-s1-01": ["44_MATTE_PLA+_White", "44_c_MATTE_PLA+_BLACK", "47_a_PLA_TWINKLING_RED", "44_a_MATTE_PLA+_Sky_blue"],
+    "kobra-s1-02": ["48_PETG_2.0_SOLID_BLACK", "51_b_PETG_2.0_SOLID_ORANGE", "ASA|černá", "ASA|bílá"],
+    "kobra-3-max-01": ["02_PLA+_bily", "01_PLA+_cerny", "12_PLA+_sedy", "14_PLA+_svetle_modry"]
+}

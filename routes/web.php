@@ -419,6 +419,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::get('/printers', [$catalog, 'printers'])->name('printers');
     Route::get('/printers/new', [$catalog, 'editPrinter'])->name('printers.new');
     Route::post('/printers/new', [$catalog, 'savePrinter'])->name('printers.create');
+    Route::get('/printers/load', [$catalog, 'loadSlots'])->name('printers.load');
+    Route::post('/printers/load', [$catalog, 'saveSlots'])->name('printers.load.save');
     Route::get('/printers/{printer}', [$catalog, 'editPrinter'])->name('printers.edit');
     Route::post('/printers/{printer}', [$catalog, 'savePrinter'])->name('printers.update');
     Route::get('/materials', [$catalog, 'materials'])->name('materials');

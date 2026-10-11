@@ -46,6 +46,64 @@ class FarmCatalogController extends Controller
         ]);
     }
 
+    /**
+     * Every slot of every machine on one page: what is loaded after a spool change, written once instead of printer by
+     * printer. "Předvyplnit podle rozpisu" takes the planned layout (database/data/farm_spool_plan.json); the admin
+     * checks it against the machines and saves.
+     */
+    public function loadSlots(): View
+    {
+        $colors = FarmColor::with('material')->where('enabled', true)->get()->sortBy(fn ($c) => [$c->material->sort, $c->sort, $c->name])->values();
+        $byCode = $colors->keyBy('code');
+        $plan = [];
+        foreach ((array) json_decode((string) @file_get_contents(database_path('data/farm_spool_plan.json')), true) as $key => $slots) {
+            if (! is_array($slots)) {
+                continue;
+            }
+            foreach ($slots as $i => $want) {
+                // a catalogue code, or "KIND|name" for a spool whose code the plan does not know
+                $color = $byCode->get($want) ?? (str_contains((string) $want, '|') ? $colors->first(fn ($c) => strtoupper($c->material->code) === strtoupper(strtok((string) $want, '|')) && mb_strtolower($c->name) === mb_strtolower((string) strtok('|'))) : null);
+                $plan[$key][$i] = ['want' => $want, 'id' => $color?->id, 'label' => $color ? $color->name.' · '.$color->material->label() : null];
+            }
+        }
+
+        return view('admin.farm.slots', [
+            'printers' => FarmPrinter::with(['slots.color.material'])->where('enabled', true)->orderBy('id')->get(),
+            'colors' => $colors,
+            'plan' => $plan,
+        ]);
+    }
+
+    public function saveSlots(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'slots' => ['required', 'array', 'max:40'],
+            'slots.*' => ['array', 'max:16'],
+            'slots.*.*.color' => ['nullable', 'exists:farm_colors,id'],
+            'slots.*.*.remaining_g' => ['nullable', 'numeric', 'min:0', 'max:100000'],
+            'slots.*.*.enabled' => ['nullable', 'boolean'],
+        ]);
+        $changed = 0;
+        foreach ($data['slots'] as $printerId => $slots) {
+            $printer = FarmPrinter::find((int) $printerId);
+            if (! $printer) {
+                continue;
+            }
+            foreach ($slots as $index => $s) {
+                $slot = $printer->slots()->firstOrNew(['slot' => (int) $index]);
+                $before = [$slot->farm_color_id, (float) $slot->remaining_g, (bool) $slot->enabled];
+                $slot->fill(['farm_color_id' => $s['color'] ?: null, 'remaining_g' => (float) ($s['remaining_g'] ?? 0), 'enabled' => ! empty($s['enabled']) && ! empty($s['color'])]);
+                if ($before !== [$slot->farm_color_id, (float) $slot->remaining_g, (bool) $slot->enabled] || ! $slot->exists) {
+                    $changed++;
+                }
+                $slot->save();
+            }
+        }
+        app(ProfileLibrary::class)->sync();
+
+        return redirect()->route('admin.farm.printers')->with('status', __('farm.admin.slots_saved', ['n' => $changed]));
+    }
+
     /** Every maker named so far, ours first: the suggestions under the "výrobce" fields. */
     private function makers(): array
     {
