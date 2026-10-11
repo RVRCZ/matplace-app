@@ -191,8 +191,15 @@ Objekt `ironing` vznikl jen kvůli žehlení, ale formulář u něj pole „Žeh
 a nabízel rozměry kostky, otvor, převisy a stringing, které na něm nejsou; `TestPhotoJudge` mu navíc říkal „na tomhle
 objektu žehlená plošina není“ a AI odpověděla „nelze posoudit“. Teď: formulář u `ironing` má jen „Žehlená plocha“,
 celkové hodnocení a poznámku; AI se ptá na žehlení a podložku a ví, že celý objekt je žehlená plošina 30 × 30 mm.
-Testy ve `FarmTestPhotosTest`. První ostrý test žehlení na S1 #1 (bílá PLA+, výchozí 10 % / 30 mm/s / 0,15 mm)
-běží od 10. 10. večer.
+Testy ve `FarmTestPhotosTest`. Nasazeno 10. 10. 20:18 UTC.
+
+**T26-000036 – žehlení na S1 #1** (bílá PLA+, výchozí 10 % / 30 mm/s / 0,15 mm; 2 snímky 11. 10., druhý při expozici
+−6 s plošinou natočenou do odlesku): plocha rovná a uzavřená, bez hrbolků a děr; **lesk nerovnoměrný – Roman: „není
+dokonalý a je jen na polovině destičky“**; v lesklé části jemné rovnoběžné tahy žehlení a zrnitá kresba, zbytek matný;
+u jedné hrany tři až čtyři hřebínky rovnoběžné s okrajem. Čtení: žehlení plochu neuzavřelo celou – málo materiálu
+nebo příliš řídké tahy. Další test (jen pro test, řádek se nemění): `{"ironing_flow":"12%","ironing_spacing":"0.1"}`,
+tedy hodnoty, které má v řádku Max. Kamera se přes noc vrátila na automatickou expozici – před každým focením
+zkontrolovat a nastavit znovu.
 
 ## 3. Rychlost a kvalita (Romanova otázka 10. 10.)
 
