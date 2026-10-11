@@ -84,6 +84,11 @@ class FarmTuningTest extends TestCase
         // the Max lays its top surface slower than the profile: at 200 mm/s it came out ragged, at 120 even
         $this->assertSame('120', $maxSeam['top_surface_speed']);
         $this->assertArrayNotHasKey('top_surface_speed', $s1Seam);
+        // ironing: each model carries the values its own tests printed best with - and never the switch itself,
+        // a row must not iron every print
+        $this->assertSame(['10%', '30', '0.15'], [$s1Seam['ironing_flow'], $s1Seam['ironing_speed'], $s1Seam['ironing_spacing']]);
+        $this->assertSame(['12%', '30', '0.1'], [$maxSeam['ironing_flow'], $maxSeam['ironing_speed'], $maxSeam['ironing_spacing']]);
+        $this->assertArrayNotHasKey('ironing_type', $s1Seam + $maxSeam);
 
         // running it again changes nothing
         $this->assertSame(0, app(ProfileLibrary::class)->sync());

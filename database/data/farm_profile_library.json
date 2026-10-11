@@ -119,9 +119,12 @@
           "seam_gap": "15%",
           "seam_slope_inner_walls": "0",
           "staggered_inner_seams": "0",
-          "scarf_overhang_threshold": "5%"
+          "scarf_overhang_threshold": "5%",
+          "ironing_flow": "10%",
+          "ironing_speed": "30",
+          "ironing_spacing": "0.15"
         },
-        "_note": "seam: scarf joint on the outer wall of walls without a sharp corner, not on leaning walls - seam test T26-000037 on a Kobra S1 (white PLA+, 10 Oct 2026): no seam ridge on a rounded box, a 25 degree cone as clean as without the scarf. One print on one machine: rows stay 'testing'."
+        "_note": "seam: scarf joint on the outer wall of walls without a sharp corner, not on leaning walls - seam test T26-000037 on a Kobra S1 (white PLA+, 10 Oct 2026): no seam ridge on a rounded box, a 25 degree cone as clean as without the scarf. One print on one machine: rows stay 'testing'. Ironing (used only when a print switches ironing on; no ironing_type here): flow 10 % / 30 mm/s / spacing 0.15 mm is the better of the two settings tried on a Kobra S1 with white PLA+ on 11 Oct 2026 - T26-000036 against T26-000040 (12 % / 0.1: more visible passes, drops pushed over the edge, a slightly smaller glossy area). The gloss is still not even with either."
       },
       "matte": {
         "nozzle_temp": 220,
@@ -352,9 +355,12 @@
           "scarf_joint_speed": "30",
           "seam_gap": "10%",
           "seam_slope_inner_walls": "1",
-          "scarf_overhang_threshold": "40%"
+          "scarf_overhang_threshold": "40%",
+          "ironing_flow": "12%",
+          "ironing_speed": "30",
+          "ironing_spacing": "0.1"
         },
-        "_note": "top_surface_speed 120: at the profile's 200 mm/s (16.8 mm3/s, above the 16 mm3/s cap) the tops of the seam test T26-000038 (Max, 11 Oct 2026) came out with a ragged border and small gaps between an outer band and the middle; the quick test T26-000035 from the same turquoise spool at 120 had an even top. Seam values of the shipped profile on purpose: the scarf joint of the Kobra S1 block was not tested on the Max yet"
+        "_note": "top_surface_speed 120: at the profile's 200 mm/s (16.8 mm3/s, above the 16 mm3/s cap) the tops of the seam test T26-000038 (Max, 11 Oct 2026) came out with a ragged border and small gaps between an outer band and the middle; the quick test T26-000035 from the same turquoise spool at 120 had an even top. Seam values of the shipped profile on purpose: the scarf joint of the Kobra S1 block was not tested on the Max yet. Ironing 12 % / 30 mm/s / 0.1 mm as the Max's own production row holds them (version 3, earlier tuning); not printed again in October 2026"
       }
     },
     "PETG": {

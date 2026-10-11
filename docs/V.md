@@ -213,6 +213,20 @@ tahů naopak zřetelnější a na okraji přibyly kapky vytlačeného materiálu
 zůstává.** Nerovnoměrný lesk tedy není věc množství materiálu; další páka je rychlost žehlení (30 → 20 mm/s) nebo
 teplota, ne tok.
 
+**Rozhodnutí Romana 11. 10.:** zapsat nejlepší známé hodnoty žehlení; přidání žehlení do nastavení tisku zakázek
+zadá řídící session. Zapsáno do knihovny (jen hodnoty, nikdy přepínač `ironing_type` – řádek nesmí žehlit každý tisk):
+
+| stroj × druh | tok | rychlost | rozteč | odkud |
+|---|---|---|---|---|
+| Kobra S1 × PLA+ | 10 % | 30 mm/s | 0,15 mm | lepší ze dvou zkoušených (T26-000036 proti T26-000040); shodné s profilem Orca |
+| Kobra 3 Max × PLA+ | 12 % | 30 mm/s | 0,1 mm | z produkčního řádku Maxu (verze 3, dřívější ladění), znovu netištěno |
+
+„Nejlepší známé“, ne vyladěné: lesk na S1 není rovnoměrný s žádnou z obou sad. Pro zakázky: žehlení zapne
+`ironing_type = top` (všechny horní plochy) nebo `topmost` (jen nejvyšší) v procesu té zakázky; hodnoty si slicer
+vezme z řádku / knihovny / profilu. Tryska 0,2 mm: rozteč 0,375 × tryska (`TestPrintService::ironingFor`). Čas navíc
+≈ plocha / (rozteč × rychlost): 100 × 100 mm při 0,15 a 30 mm/s je asi 37 minut – odhad sliceru to započítá, cena jde
+za časem.
+
 Žehlení se dnes u zákaznických tisků **nepoužívá vůbec** (`ironing_type` nastavuje jen zkušební tisk); jeho ladění
 proto nemění žádnou zakázku, dokud ho někdo nezapne jako volbu. Priorita je nižší než strop toku a horní plocha na
 S1, které se týkají každého tisku.
