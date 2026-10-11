@@ -201,6 +201,12 @@ nebo příliš řídké tahy. Další test (jen pro test, řádek se nemění): 
 tedy hodnoty, které má v řádku Max. Kamera se přes noc vrátila na automatickou expozici – před každým focením
 zkontrolovat a nastavit znovu.
 
+**T26-000040 – žehlení na S1 #1 s `ironing_flow 12 %`, `ironing_spacing 0,1`** (bílá PLA+, 11. 10., 5 snímků při
+expozici −6, jeden s plošinou naklopenou): plocha působí rovnoměrněji – jednotná jemná kresba bez rozdělení na lesklou
+a matnou část, tahy žehlení jen slabě; u spodní hrany zůstávají hřebínky a na okraji základny přibyly drobné kapky
+vytlačeného materiálu. Snímek není ve stejném úhlu odlesku jako u T26-000036, takže rovnoměrnost lesku musí potvrdit
+Roman okem nebo společným snímkem obou destiček vedle sebe.
+
 ## 3. Rychlost a kvalita (Romanova otázka 10. 10.)
 
 Profil S1 dnes: vnější stěna 200 mm/s, vnitřní 300, výplň 270, horní plocha 200, zrychlení 10 000 (vnější stěna
