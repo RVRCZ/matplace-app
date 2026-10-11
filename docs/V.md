@@ -207,6 +207,16 @@ a matnou část, tahy žehlení jen slabě; u spodní hrany zůstávají hřebí
 vytlačeného materiálu. Snímek není ve stejném úhlu odlesku jako u T26-000036, takže rovnoměrnost lesku musí potvrdit
 Roman okem nebo společným snímkem obou destiček vedle sebe.
 
+**Srovnání T26-000036 × T26-000040** (společný snímek 11. 10. 10:57, obě destičky v odlesku; Roman: „plocha hladší
+není viditelně, plocha lesku je o málo menší“): víc materiálu a hustší tahy **nepomohly** – u 12 % / 0,1 je kresba
+tahů naopak zřetelnější a na okraji přibyly kapky vytlačeného materiálu. **Nepřevzato, výchozí 10 % / 30 / 0,15
+zůstává.** Nerovnoměrný lesk tedy není věc množství materiálu; další páka je rychlost žehlení (30 → 20 mm/s) nebo
+teplota, ne tok.
+
+Žehlení se dnes u zákaznických tisků **nepoužívá vůbec** (`ironing_type` nastavuje jen zkušební tisk); jeho ladění
+proto nemění žádnou zakázku, dokud ho někdo nezapne jako volbu. Priorita je nižší než strop toku a horní plocha na
+S1, které se týkají každého tisku.
+
 ## 3. Rychlost a kvalita (Romanova otázka 10. 10.)
 
 Profil S1 dnes: vnější stěna 200 mm/s, vnitřní 300, výplň 270, horní plocha 200, zrychlení 10 000 (vnější stěna
