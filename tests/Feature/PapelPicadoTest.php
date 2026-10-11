@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Support\PreviewMeta;
 use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -26,7 +27,7 @@ class PapelPicadoTest extends TestCase
     {
         $r = $this->postJson('/api/tools/param/preview', ['kind' => 'papel', 'params' => $params + ['width' => 150, 'height' => 200, 'thickness' => 1.2]])->assertOk();
 
-        return json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($r->headers->get('X-Model-Meta'));
     }
 
     /** A "photo": a light face with two dark eyes on a dark ground, soft at the edges as a camera would give it. */

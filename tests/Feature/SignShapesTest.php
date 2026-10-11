@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Support\PreviewMeta;
 use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -27,7 +28,7 @@ class SignShapesTest extends TestCase
     {
         $r = $this->postJson('/api/tools/param/preview', ['kind' => 'sign', 'params' => $params + ['line1' => 'Jana', 'text_height' => 14, 'margin' => 4, 'border' => false]])->assertOk();
 
-        return json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($r->headers->get('X-Model-Meta'));
     }
 
     public function test_every_drawn_shape_grows_round_the_text_until_it_lies_inside(): void

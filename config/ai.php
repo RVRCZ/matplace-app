@@ -37,6 +37,9 @@ return [
             'claude-opus' => ['in' => 5.0, 'out' => 25.0],
             'claude-sonnet' => ['in' => 2.0, 'out' => 10.0],
             'claude-haiku' => ['in' => 1.0, 'out' => 5.0],
+            // a redrawn photo (5 credits) and a model in standard geometry (20) come before the plain name: the first match counts
+            'tripo-image' => ['in' => 0, 'out' => 0, 'call' => 0.05],
+            'tripo-standard' => ['in' => 0, 'out' => 0, 'call' => 0.20],
             'tripo' => ['in' => 0, 'out' => 0, 'call' => 0.40],
             'gemini' => ['in' => 0, 'out' => 0, 'call' => 0.04],
         ],

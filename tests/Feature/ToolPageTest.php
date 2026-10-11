@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ToolVisibility;
 use App\Models\User;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -216,7 +217,7 @@ class ToolPageTest extends TestCase
     {
         $this->needsPython();
         $r = $this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['lid' => true], 'view' => 'use', 'pieces' => true])->assertOk();
-        $meta = json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $meta = PreviewMeta::whole($r->headers->get('X-Model-Meta'));
         $this->assertSame(['body', 'lid'], array_column($meta['parts'], 'name'));
         // the ranges follow each other and cover the file exactly
         $stl = file_get_contents($r->baseResponse->getFile()->getPathname());
@@ -232,11 +233,11 @@ class ToolPageTest extends TestCase
         }
         $this->assertSame($triangles, $at);
         // the same model as without the grouping: same size, same volume, same number of triangles
-        $plain = json_decode((string) $this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['lid' => true], 'view' => 'use'])->assertOk()->headers->get('X-Model-Meta'), true);
+        $plain = PreviewMeta::whole($this->postJson('/api/tools/param/preview', ['kind' => 'box', 'params' => ['lid' => true], 'view' => 'use'])->assertOk()->headers->get('X-Model-Meta'));
         $this->assertArrayNotHasKey('parts', $plain);
         $this->assertSame([$plain['bbox'], $plain['volume_mm3'], $plain['triangles']], [$meta['bbox'], $meta['volume_mm3'], $meta['triangles']]);
         // one body is one piece
-        $one = json_decode((string) $this->postJson('/api/tools/param/preview', ['kind' => 'organizer', 'params' => [], 'pieces' => true])->assertOk()->headers->get('X-Model-Meta'), true);
+        $one = PreviewMeta::whole($this->postJson('/api/tools/param/preview', ['kind' => 'organizer', 'params' => [], 'pieces' => true])->assertOk()->headers->get('X-Model-Meta'));
         $this->assertSame([[0, $one['triangles']]], array_column($one['parts'], 'tris'));
     }
 

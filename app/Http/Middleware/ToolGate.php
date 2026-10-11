@@ -37,6 +37,8 @@ class ToolGate
                 $name === 'api.tools.relief' => ToolVisibility::canOpen($user, 'relief'),
                 in_array($name, self::EDIT, true) => ToolVisibility::canUseEdit($user, $asked('op')),
                 in_array($name, self::MAP, true) => ToolVisibility::canOpen($user, 'map'),
+                // the generator serves several pages; a pet figurine is asked for by its kind
+                $name === 'api.generate.store' && $asked('kind') === 'pet' => ToolVisibility::canOpen($user, 'pet'),
                 default => true,
             }, 404);
 

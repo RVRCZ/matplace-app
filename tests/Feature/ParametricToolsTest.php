@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Mesh\StlFile;
 use App\Models\ModelFile;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -23,7 +24,7 @@ class ParametricToolsTest extends TestCase
 
     private function meta($response): array
     {
-        return json_decode((string) $response->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($response->headers->get('X-Model-Meta'));
     }
 
     public function test_pages_render_in_all_languages(): void

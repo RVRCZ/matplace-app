@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Lang;
 use Tests\TestCase;
@@ -24,7 +25,7 @@ class ToolFixesTest extends TestCase
     {
         $response = $this->postJson('/api/tools/param/preview', ['kind' => $kind, 'params' => $params])->assertOk();
 
-        return (array) json_decode((string) $response->headers->get('X-Model-Meta'), true)['notes'];
+        return (array) PreviewMeta::whole($response->headers->get('X-Model-Meta'))['notes'];
     }
 
     public function test_the_second_line_of_a_sign_is_smaller_as_its_label_says(): void
@@ -77,7 +78,7 @@ class ToolFixesTest extends TestCase
         $volume = function (string $part, float $cable): float {
             $response = $this->postJson('/api/tools/param/preview', ['kind' => 'lightbox', 'params' => ['line1' => 'OPEN', 'cable' => $cable], 'part' => $part])->assertOk();
 
-            return (float) json_decode((string) $response->headers->get('X-Model-Meta'), true)['volume_mm3'];
+            return (float) PreviewMeta::whole($response->headers->get('X-Model-Meta'))['volume_mm3'];
         };
         $this->assertLessThan($volume('body', 4), $volume('body', 8));
         $this->assertSame($volume('back', 4), $volume('back', 8));
@@ -89,7 +90,7 @@ class ToolFixesTest extends TestCase
         $meta = function (array $params): array {
             $response = $this->postJson('/api/tools/param/preview', ['kind' => 'qr', 'params' => $params])->assertOk();
 
-            return (array) json_decode((string) $response->headers->get('X-Model-Meta'), true);
+            return (array) PreviewMeta::whole($response->headers->get('X-Model-Meta'));
         };
         $plain = $meta($qr);
         $hole = $meta($qr + ['hole' => true]);

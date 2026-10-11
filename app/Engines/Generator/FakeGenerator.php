@@ -2,6 +2,7 @@
 
 namespace App\Engines\Generator;
 
+use App\Engines\Contracts\ImageRestyler;
 use App\Engines\Contracts\ModelGenerator;
 use App\Engines\DTO\GenerationHandle;
 use App\Engines\DTO\GenerationOptions;
@@ -10,7 +11,7 @@ use App\Engines\Mesh\StlFile;
 use Illuminate\Support\Str;
 
 /** Deterministic generator for tests and offline development: always "generates" a unit cube STL. */
-final class FakeGenerator implements ModelGenerator
+final class FakeGenerator implements ImageRestyler, ModelGenerator
 {
     public function name(): string
     {
@@ -29,7 +30,25 @@ final class FakeGenerator implements ModelGenerator
 
     public function fromImage(string $imagePath, ?string $hint, GenerationOptions $options): GenerationHandle
     {
-        return new GenerationHandle('fake', 'fake-'.Str::random(8));
+        // "credits" as the real engine counts them, so a test can tell which quality was asked for
+        return new GenerationHandle('fake', 'fake-'.Str::random(8), $options->geometryQuality ? ['credits' => $options->geometryQuality === 'detailed' ? 40 : 20] : []);
+    }
+
+    /** The photo "redrawn": a new little picture, so a test can tell the model was made of it and not of the photo. */
+    public function restyle(string $imagePath, string $prompt): GenerationHandle
+    {
+        return new GenerationHandle('fake', 'fake-image-'.Str::random(8), ['credits' => 5]);
+    }
+
+    public function pollImage(GenerationHandle $handle): GenerationStatus
+    {
+        $path = sys_get_temp_dir().'/mp_fakeimg_'.Str::random(8).'.png';
+        $img = imagecreatetruecolor(8, 8);
+        imagefill($img, 0, 0, imagecolorallocate($img, 240, 200, 120));
+        imagepng($img, $path);
+        imagedestroy($img);
+
+        return new GenerationStatus(GenerationStatus::DONE, previewPath: $path, progress: 100);
     }
 
     public function fromImages(array $views, ?string $hint, GenerationOptions $options): GenerationHandle

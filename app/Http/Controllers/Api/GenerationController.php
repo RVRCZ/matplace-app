@@ -20,6 +20,12 @@ use Illuminate\Validation\Rule;
 /** Rough 3D model from a photo (after /api/describe) or from text. Free, limited per day by count. */
 class GenerationController extends Controller
 {
+    /**
+     * The looks of a pet figurine: as the generator makes it, grown and smoothed like modelled clay (our own step), or
+     * made of the photo redrawn as a cartoon figure first (the generator's image model, then its model).
+     */
+    public const PET_STYLES = ['realistic', 'miniature', 'cartoon'];
+
     /** POST /api/generate {describe: token, target_mm?} | {prompt, target_mm?} */
     public function store(Request $request, GenerationService $service): JsonResponse
     {
@@ -34,8 +40,12 @@ class GenerationController extends Controller
             'image_left' => ['nullable', 'image', 'max:12288'],
             'image_back' => ['nullable', 'image', 'max:12288'],
             'image_right' => ['nullable', 'image', 'max:12288'],
-            'kind' => ['nullable', 'in:bust,figure', 'required_with:image'],
-            'pedestal' => ['nullable', Rule::in(PedestalChanger::TYPES)],
+            'kind' => ['nullable', 'in:bust,figure,pet', 'required_with:image'],
+            // a pet figurine: how it is to look, and how much clay the miniature gets (see engines/python/pet_kind.py)
+            'style' => ['nullable', 'in:'.implode(',', self::PET_STYLES)],
+            'roughness' => ['nullable', 'integer', 'min:1', 'max:3'],
+            'name_side' => ['nullable', Rule::in(PedestalChanger::PET_NAME_SIDES)],
+            'pedestal' => ['nullable', Rule::in([...PedestalChanger::TYPES, ...PedestalChanger::PET_TYPES])],
             'pedestal_name' => ['nullable', 'string', 'max:24'],
             'pedestal_dedication' => ['nullable', 'string', 'max:40'],
             'target_mm' => ['nullable', 'integer', 'min:5', 'max:1000'],
@@ -57,7 +67,7 @@ class GenerationController extends Controller
                     }
                     $rel = 'photos/figures/'.Str::uuid().'.'.(strtolower($request->file($field)->getClientOriginalExtension()) ?: 'jpg');
                     $disk->put($rel, file_get_contents($request->file($field)->getRealPath()));
-                    $check = app(VisionDescriber::class)->moderate($disk->path($rel), $view);
+                    $check = app(VisionDescriber::class)->moderate($disk->path($rel), $view, ($data['kind'] ?? null) === 'pet' ? 'pet' : null);
                     if ($check['ok']) {
                         $stored[$view] = $rel;
 
@@ -72,11 +82,17 @@ class GenerationController extends Controller
                     $skipped[] = $view;
                 }
                 try {
-                    $req = $service->fromPhoto($stored['front'], $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user, [
-                        'type' => $data['pedestal'] ?? 'round',
+                    $pet = $data['kind'] === 'pet';
+                    $style = $pet ? ($data['style'] ?? 'realistic') : null;
+                    // a miniature stands on its disc; every base of a pet carries the name, only the plinth a dedication
+                    $base = $pet ? ($style === 'miniature' ? 'round' : (in_array($data['pedestal'] ?? '', PedestalChanger::PET_TYPES, true) ? $data['pedestal'] : 'oval')) : null;
+                    $req = $service->fromPhoto($stored['front'], $data['kind'], (int) ($data['target_mm'] ?? config('ai.default_target_mm', 80)), $request->ip(), $session, $user, $pet ? [
+                        'type' => $base, 'name' => $data['pedestal_name'] ?? null, 'dedication' => $base === 'plaque' ? ($data['pedestal_dedication'] ?? null) : null,
+                    ] : [
+                        'type' => in_array($data['pedestal'] ?? '', PedestalChanger::TYPES, true) ? $data['pedestal'] : 'round',
                         'name' => in_array($data['pedestal'] ?? '', PedestalChanger::NAMED, true) ? ($data['pedestal_name'] ?? null) : null,
                         'dedication' => in_array($data['pedestal'] ?? '', PedestalChanger::DEDICATED, true) ? ($data['pedestal_dedication'] ?? null) : null,
-                    ], array_diff_key($stored, ['front' => 1]));
+                    ], array_diff_key($stored, ['front' => 1]), $pet ? ['style' => $style, 'roughness' => $style === 'miniature' ? (int) ($data['roughness'] ?? 2) : null, 'name_side' => ($data['name_side'] ?? 'auto') !== 'auto' ? $data['name_side'] : null] : []);
                 } catch (QuotaExceeded $e) {
                     $disk->delete(array_values($stored));
                     throw $e;
@@ -141,6 +157,8 @@ class GenerationController extends Controller
     {
         $file = $g->result_model_file_id ? $g->resultFile : null;
 
+        $d = (array) $g->description;
+
         return [
             'token' => $g->token,
             'status' => $g->status,
@@ -148,6 +166,11 @@ class GenerationController extends Controller
             'error' => $g->status === 'failed' ? ($g->error ?: 'failed') : null,
             'target_mm' => $g->target_mm,
             'file' => $file ? UploadController::describe($file) : null,
+            // what was asked for, so the tool page can show the same choices when it is opened again by its link
+            'options' => isset($d['kind']) ? array_filter([
+                'kind' => $d['kind'], 'style' => $d['style'] ?? null, 'roughness' => $d['roughness'] ?? null, 'pedestal' => $d['pedestal'] ?? null,
+                'pedestal_name' => $d['pedestal_name'] ?? null, 'pedestal_dedication' => $d['pedestal_dedication'] ?? null, 'name_side' => $d['name_side'] ?? null,
+            ], fn ($v) => $v !== null) : null,
         ];
     }
 }

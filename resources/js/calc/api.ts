@@ -11,7 +11,7 @@ export interface FileInfo {
     stl_url: string | null;
     kind?: string;
     hints?: { supports?: boolean; infill?: number; quality?: string; vase?: boolean };
-    generation?: { token: string; refinable: boolean; pedestal?: { type: string; name: string; dedication: string; sink?: number; tidy?: boolean } | null } | null;
+    generation?: { token: string; refinable: boolean; pedestal?: { type: string; name: string; dedication: string; sink?: number; tidy?: boolean } | null; pet?: { style: string; type: string; name: string; dedication: string; thinnest_mm: number | null; safe_mm: number } | null } | null;
     parts?: string[];
     /** a map made here (/tools/map): its notes, the regions the viewer paints by, and while it is built, the phase */
     map?: Record<string, unknown> | null;

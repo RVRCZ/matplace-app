@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Support\PreviewMeta;
 use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -25,7 +26,7 @@ class SvgToStlTest extends TestCase
     {
         $r = $this->postJson('/api/tools/param/preview', ['kind' => 'logo', 'params' => $params + ['mode' => 'cutout', 'line1' => '']])->assertOk();
 
-        return json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($r->headers->get('X-Model-Meta'));
     }
 
     public function test_the_page_is_the_logo_tool_opened_as_a_plain_extrusion(): void

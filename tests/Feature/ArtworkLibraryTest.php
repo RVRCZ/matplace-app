@@ -6,6 +6,7 @@ use App\Domain\Tools\Artwork;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\Repair\PythonTool;
 use App\Models\User;
+use App\Support\PreviewMeta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -117,7 +118,7 @@ class ArtworkLibraryTest extends TestCase
         }
         $ref = $this->getJson('/api/artwork/library?cat=hearts-stars')->assertOk()->json('items.0.ref');
         $r = $this->postJson('/api/tools/param/preview', ['kind' => 'logo', 'params' => ['artwork' => $ref, 'line1' => '', 'width' => 60]])->assertOk();
-        $meta = json_decode((string) $r->headers->get('X-Model-Meta'), true);
+        $meta = PreviewMeta::whole($r->headers->get('X-Model-Meta'));
         $this->assertGreaterThan(100, $meta['volume_mm3']);
         // a reference is a name inside the library, never a path
         $this->postJson('/api/tools/param/preview', ['kind' => 'logo', 'params' => ['artwork' => 'lib:../../.env', 'line1' => '']])->assertStatus(422);

@@ -116,6 +116,7 @@ $pages = function () {
     Route::get('/tools', [ToolsController::class, 'index'])->name('tools');
     Route::get('/gifts', [ToolsController::class, 'gifts'])->name('tools.gifts');
     Route::get('/tools/figure', [ToolsController::class, 'figure'])->name('tools.figure');
+    Route::get('/tools/pet-figurine', [ToolsController::class, 'pet'])->name('tools.pet');
     Route::get('/tools/sign', [ToolsController::class, 'param'])->defaults('kind', 'sign')->name('tools.sign');
     Route::get('/tools/relief', [ToolsController::class, 'relief'])->name('tools.relief');
     Route::get('/tools/spare-part', [ToolsController::class, 'spare'])->middleware('feature:marketplace')->name('tools.spare');

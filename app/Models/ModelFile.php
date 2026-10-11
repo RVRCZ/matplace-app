@@ -113,6 +113,8 @@ class ModelFile extends Model
             'token' => $req->token,
             'refinable' => app(GenerationService::class)->basePrompt($req) !== null,
             'pedestal' => app(PedestalChanger::class)->state($this),
+            // a pet figurine: its look, its base and its thinnest place (the tool page warns below 2.5 mm)
+            'pet' => app(PedestalChanger::class)->petState($this),
         ];
     }
 

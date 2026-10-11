@@ -86,7 +86,9 @@
         </div>
     </x-tool-section>
 
-    {{-- 2 · the settings: the style, the plate, the frame and its name, what the kind of map adds --}}
+    {{-- 2 · the settings: the style, then the plate, the buildings (a landscape: the relief), and what the map shows.
+         Each conditional block gets !max-h-none: the shared [data-when] style caps a block at 20rem, which a block of
+         several fields overflows on a phone (round 3). --}}
     <x-tool-section id="settings" :title="__('map.step.settings')">
         <fieldset>
             <legend class="lbl">{{ __('map.c.style') }}</legend>
@@ -99,53 +101,68 @@
                 @endforeach
             </div>
         </fieldset>
-        <div class="grid gap-3">
+
+        <fieldset class="space-y-3">
+            <legend class="lbl mb-2">{{ __('map.g.plate') }}</legend>
             @include('tools._num', ['key' => 'size', 'f' => $fields['size'], 'label' => __('map.f.size'), 'unit' => $unit('size'), 'when' => ''])
-            <p class="hint !-mt-2 !text-xs">{{ __('map.f.size.hint') }} <span id="map-scale" class="font-medium text-ink"></span></p>
+            <p class="hint !-mt-1 !text-xs">{{ __('map.f.size.hint') }} <span id="map-scale" class="font-medium text-ink"></span></p>
             @include('tools._num', ['key' => 'base_h', 'f' => $fields['base_h'], 'label' => __('map.f.base_h'), 'unit' => $unit('base_h'), 'when' => ''])
-        </div>
-        <label class="flex items-start gap-3 text-sm text-ink">
-            <input data-flag="frame" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" @checked(in_array('frame', $flagsOn, true))>
-            <span><span class="font-medium">{{ __('map.flag.frame') }}</span><br><span class="text-muted">{{ __('map.flag.frame.hint') }}</span></span>
-        </label>
-        <div class="grid gap-3" data-when="frame=on">
-            @include('tools._num', ['key' => 'frame_mm', 'f' => $fields['frame_mm'], 'label' => __('map.f.frame_mm'), 'unit' => $unit('frame_mm'), 'when' => ''])
-            <label class="text-sm font-medium text-ink">{{ __('map.t.name') }}
-                <input data-text="name" maxlength="40" class="field">
-                <span class="block text-xs font-normal text-muted">{{ __('map.t.name.hint') }}</span>
+            <label class="flex items-start gap-3 text-sm text-ink">
+                <input data-flag="frame" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" @checked(in_array('frame', $flagsOn, true))>
+                <span><span class="font-medium">{{ __('map.flag.frame') }}</span><br><span class="text-muted">{{ __('map.flag.frame.hint') }}</span></span>
             </label>
-        </div>
-        <div class="space-y-4" data-when="type=city">
+            <div class="space-y-3 !max-h-none" data-when="frame=on">
+                @include('tools._num', ['key' => 'frame_mm', 'f' => $fields['frame_mm'], 'label' => __('map.f.frame_mm'), 'unit' => $unit('frame_mm'), 'when' => ''])
+                <label class="block text-sm font-medium text-ink">{{ __('map.t.name') }}
+                    <input data-text="name" maxlength="40" class="field">
+                    <span class="block text-xs font-normal text-muted">{{ __('map.t.name.hint') }}</span>
+                </label>
+            </div>
+        </fieldset>
+
+        <fieldset class="space-y-3 !max-h-none" data-when="type=city">
+            <legend class="lbl mb-2">{{ __('map.g.buildings') }}</legend>
             @include('tools._num', ['key' => 'default_h', 'f' => $fields['default_h'], 'label' => __('map.f.default_h'), 'unit' => $unit('default_h'), 'when' => ''])
-            <p class="hint !-mt-3 !text-xs">{{ __('map.f.default_h.hint') }}</p>
-            <fieldset>
-                <legend class="lbl">{{ __('map.c.roads') }}</legend>
-                <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
-                    @foreach($choices['roads'] as $i => $o)
-                        <label class="tool-choice"><input type="radio" name="c-roads" data-choice="roads" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('map.o.roads.'.$o) }}</label>
-                    @endforeach
-                </div>
-            </fieldset>
-            <fieldset>
-                <legend class="lbl">{{ __('map.c.roofs') }}</legend>
-                <div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup">
+            <p class="hint !-mt-1 !text-xs">{{ __('map.f.default_h.hint') }}</p>
+            <div>
+                <div class="text-sm font-medium text-ink">{{ __('map.c.roofs') }}</div>
+                <div class="mt-1.5 flex flex-wrap gap-1.5" role="radiogroup" aria-label="{{ __('map.c.roofs') }}">
                     @foreach($choices['roofs'] as $i => $o)
                         <label class="tool-choice"><input type="radio" name="c-roofs" data-choice="roofs" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('map.o.roofs.'.$o) }}</label>
                     @endforeach
                 </div>
-                <p class="hint mt-1 !text-xs">{{ __('map.c.roofs.hint') }}</p>
-            </fieldset>
-        </div>
-        <div class="space-y-4" data-when="type=landscape">
+                <p class="hint mt-1.5 !text-xs">{{ __('map.c.roofs.hint') }}</p>
+            </div>
+        </fieldset>
+
+        <fieldset class="space-y-3 !max-h-none" data-when="type=landscape">
+            <legend class="lbl mb-2">{{ __('map.g.relief') }}</legend>
             @include('tools._num', ['key' => 'exaggeration', 'f' => $fields['exaggeration'], 'label' => __('map.f.exaggeration'), 'unit' => $unit('exaggeration'), 'when' => ''])
-            <p class="hint !-mt-3 !text-xs">{{ __('map.f.exaggeration.hint') }}</p>
-        </div>
-        @foreach(['water' => 'city,landscape', 'roads_on' => 'city,landscape', 'rail' => 'city', 'green' => 'city', 'towns' => 'landscape'] as $flag => $types)
-            <label class="flex items-start gap-3 text-sm text-ink" data-when="type={{ $types }}">
-                <input data-flag="{{ $flag }}" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" @checked(in_array($flag, $flagsOn, true))>
-                <span><span class="font-medium">{{ __('map.flag.'.$flag) }}</span><br><span class="text-muted">{{ __('map.flag.'.$flag.'.hint') }}</span></span>
+            <p class="hint !-mt-1 !text-xs">{{ __('map.f.exaggeration.hint') }}</p>
+            <label class="flex items-start gap-3 text-sm text-ink">
+                <input data-flag="towns" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" @checked(in_array('towns', $flagsOn, true))>
+                <span><span class="font-medium">{{ __('map.flag.towns') }}</span><br><span class="text-muted">{{ __('map.flag.towns.hint') }}</span></span>
             </label>
-        @endforeach
+        </fieldset>
+
+        <fieldset class="space-y-3">
+            <legend class="lbl mb-2">{{ __('map.g.features') }}</legend>
+            <div>
+                <div class="text-sm font-medium text-ink">{{ __('map.c.roads') }}</div>
+                <div class="mt-1.5 flex flex-wrap gap-1.5" role="radiogroup" aria-label="{{ __('map.c.roads') }}">
+                    @foreach($choices['roads'] as $i => $o)
+                        <label class="tool-choice"><input type="radio" name="c-roads" data-choice="roads" value="{{ $o }}" class="sr-only" @checked($i === 0)>{{ __('map.o.roads.'.$o) }}</label>
+                    @endforeach
+                </div>
+                <p class="hint mt-1.5 !text-xs">{{ __('map.c.roads.hint') }}</p>
+            </div>
+            @foreach(['water' => 'city,landscape', 'rail' => 'city', 'green' => 'city'] as $flag => $types)
+                <label class="flex items-start gap-3 text-sm text-ink !max-h-none" data-when="type={{ $types }}">
+                    <input data-flag="{{ $flag }}" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" @checked(in_array($flag, $flagsOn, true))>
+                    <span><span class="font-medium">{{ __('map.flag.'.$flag) }}</span><br><span class="text-muted">{{ __('map.flag.'.$flag.'.hint') }}</span></span>
+                </label>
+            @endforeach
+        </fieldset>
     </x-tool-section>
 
     {{-- 3 · the colours: one per part, printed one above the other by height --}}

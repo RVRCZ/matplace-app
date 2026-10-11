@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Farm\Palette;
 use App\Domain\Tools\ParametricGenerator;
 use App\Models\ModelFile;
+use App\Support\PreviewMeta;
 use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -31,7 +32,7 @@ class ShapeToolsTest extends TestCase
 
     private function meta($response): array
     {
-        return json_decode((string) $response->headers->get('X-Model-Meta'), true);
+        return PreviewMeta::whole($response->headers->get('X-Model-Meta'));
     }
 
     /**

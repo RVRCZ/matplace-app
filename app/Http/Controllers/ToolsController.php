@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Domain\Calculation\MaterialCatalog;
 use App\Domain\Generation\GenerationService;
+use App\Domain\Generation\PedestalChanger;
 use App\Domain\Tools\ModelRepair;
 use App\Domain\Tools\MoldGenerator;
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
+use App\Engines\Contracts\ImageRestyler;
+use App\Engines\Contracts\ModelGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Api\ConfigController;
+use App\Http\Controllers\Api\GenerationController;
 use App\Models\ModelFile;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -113,6 +117,20 @@ class ToolsController extends Controller
             'generator' => $generation->enabled(),
             'guestLimit' => (int) config('ai.daily_limits.generate_guest'),
             // the page explains the limits of accounts; the admin's own (none) is not what it is about
+            'userLimit' => max((int) config('ai.daily_limits.generate_user'), auth()->user()?->isAdmin() ? 0 : $generation->limitFor(auth()->user())),
+        ]);
+    }
+
+    /** A pet figurine from a photo: the figure tool again, with the looks and the bases of an animal. */
+    public function pet(GenerationService $generation, MaterialCatalog $materials, ConverterChain $converters): View
+    {
+        return view('tools.pet', [
+            'config' => ConfigController::payload($materials, $converters),
+            'generator' => $generation->enabled(),
+            // the cartoon figurine needs a generator that can redraw the photo first
+            'styles' => array_values(array_filter(GenerationController::PET_STYLES, fn ($style) => $style !== 'cartoon' || app(ModelGenerator::class) instanceof ImageRestyler)),
+            'bases' => PedestalChanger::PET_TYPES,
+            'guestLimit' => (int) config('ai.daily_limits.generate_guest'),
             'userLimit' => max((int) config('ai.daily_limits.generate_user'), auth()->user()?->isAdmin() ? 0 : $generation->limitFor(auth()->user())),
         ]);
     }

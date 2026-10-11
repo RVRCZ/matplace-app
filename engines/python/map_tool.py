@@ -418,7 +418,7 @@ def city_layers(M, area, p):
 
     # roads: a strip per way, as wide as its kind, never narrower than a nozzle prints
     strips, roads_m = [], 0.0
-    if p.get("roads_on", True):
+    if p.get("roads", "raised") != "none":
         for pts, tags in area.lines(lambda t: "highway" in t and t["highway"] not in ROAD_SKIP and t.get("area") != "yes"):
             w = ROAD_WIDTH.get(tags["highway"], 3.0) * (1.4 if miniature else 1.0)
             strips += _band(M, pts, max(THIN, w * k))
@@ -502,7 +502,7 @@ def build_city(M, params, dst):
         cuts.append(L["rails"].extrude(RAIL_SINK + 0.01).translate([0, 0, base_h - RAIL_SINK]))
     if not L["green"].is_empty():
         cuts.append(L["green"].extrude(GREEN_SINK + 0.01).translate([0, 0, base_h - GREEN_SINK]))
-    raised = p.get("roads", "raised") != "sunk"
+    raised = p.get("roads", "raised") == "raised"             # sunk roads, or none: the buildings' colour starts at the plate
     if not raised and not L["roads"].is_empty():
         cuts.append(L["roads"].extrude(ROAD_LIFT + 0.01).translate([0, 0, base_h - ROAD_LIFT]))
     if cuts:
@@ -534,7 +534,7 @@ def build_city(M, params, dst):
     warn = []
     if L["count"] == 0:
         warn.append("no_buildings")
-    if L["roads_m"] <= 0 and p.get("roads_on", True):
+    if L["roads_m"] <= 0 and p.get("roads", "raised") != "none":
         warn.append("no_roads")
     notes = {"type": "city", "scale": scale_text(area.side_m, inner), "scale_n": int(round(area.side_m * 1000.0 / inner)), "osm_date": area.date,
              "buildings": L["count"], "roofs": L["pitched"], "towers": L["towers"], "roads_m": int(round(L["roads_m"])), "water": not L["water"].is_empty(), "name": written,
@@ -644,7 +644,7 @@ def landscape_layers(M, area, p):
         for pts, tags in area.lines(lambda t: t.get("waterway") in ("river", "canal")):
             shapes += _band(M, pts, max(THIN, WATERWAY_WIDTH[tags["waterway"]] * k))
         water = _union(M, shapes) ^ window
-    if p.get("roads_on", True):
+    if p.get("roads", "raised") != "none":
         # on a landscape only the roads that matter at this scale: motorways to tertiary, and the rest when the square is small
         big = {"motorway", "motorway_link", "trunk", "trunk_link", "primary", "primary_link", "secondary", "secondary_link", "tertiary"}
         keep = (lambda t: t.get("highway") in big) if area.side_m > 6000 else (lambda t: "highway" in t and t["highway"] not in ROAD_SKIP and t["highway"] not in ("path", "footway", "steps", "cycleway", "bridleway", "track", "service"))
@@ -703,7 +703,7 @@ def build_landscape(M, params, dst):
     if not L["towns"].is_empty():
         Z = np.where(grid_mask(L["towns"], n, inner), ground + TOWN_LIFT, Z)
     if not L["roads"].is_empty():
-        Z = np.where(grid_mask(L["roads"], n, inner), ground + ROAD_LIFT, Z)
+        Z = np.where(grid_mask(L["roads"], n, inner), ground + (-ROAD_LIFT if (params.get("params") or {}).get("roads") == "sunk" else ROAD_LIFT), Z)
     whole, tris = relief_solid(M, Z, xs, ys)
     frame, name, written = frame_and_name(M, p, inner, size, base_h, params.get("font"), miniature)
     solids = [whole] + [x for x in (frame, name) if x is not None]

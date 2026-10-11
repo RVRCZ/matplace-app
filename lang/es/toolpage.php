@@ -12,6 +12,7 @@ return [
     'section.photo' => 'Foto',
     'section.file' => 'Archivo',
     'section.base' => 'Base',
+    'section.style' => 'Estilo',
     'history' => 'Deshacer y rehacer',
     'undo' => 'Deshacer',
     'redo' => 'Rehacer',
