@@ -123,7 +123,7 @@
                     <label class="{{ $lb }}">Barva
                         <select name="slots[{{ $i }}][color]" data-slot-color="{{ $i }}" class="{{ $in }}"><option value="">— prázdný —</option>
                             <option value="new" @selected($isNew)>{{ __('farm.admin.new_color') }}</option>
-                            @foreach($colors->groupBy(fn ($c) => $c->material->label()) as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected(! $isNew && (int) old("slots.$i.color", $s?->farm_color_id) === $c->id)>{{ $c->name }}@if($c->name_en) / {{ $c->name_en }}@endif {{ '' }}@if($c->manufacturer)· {{ $c->manufacturer }}@endif</option>@endforeach</optgroup>@endforeach
+                            @foreach($colors->groupBy(fn ($c) => $c->material->label()) as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected(! $isNew && (int) old("slots.$i.color", $s?->farm_color_id) === $c->id)>{{ $c->fullLabel() }}</option>@endforeach</optgroup>@endforeach
                         </select>
                     </label>
                     <label class="{{ $lb }}">Zbývá (g)<input type="number" step="1" min="0" name="slots[{{ $i }}][remaining_g]" value="{{ old("slots.$i.remaining_g", $s ? round($s->remaining_g) : 0) }}" class="{{ $in }}"></label>

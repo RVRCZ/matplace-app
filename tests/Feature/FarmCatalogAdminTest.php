@@ -102,7 +102,10 @@ class FarmCatalogAdminTest extends TestCase
         $this->actingAs($this->admin)->post("/admin/farm/printers/{$printer->id}", $this->printerForm($printer, $slots))->assertSessionHasErrors('slots.2.new.name');
         $this->assertSame(2, FarmColor::where('name', 'lososová')->count());
 
-        $this->actingAs($this->admin)->get("/admin/farm/printers/{$printer->id}")->assertOk()->assertSee('data-slot-new="3"', false)->assertSee('lososová / Salmon pink · Prusament');
+        // every list names a spool the same way: kind, both names, maker
+        $this->assertSame('PETG, lososová/Salmon pink, Prusament', $color->fresh()->fullLabel());
+        $this->actingAs($this->admin)->get("/admin/farm/printers/{$printer->id}")->assertOk()->assertSee('data-slot-new="3"', false)->assertSee('PETG, lososová/Salmon pink, Prusament');
+        $this->actingAs($this->admin)->get('/admin/farm/printers')->assertOk()->assertSee('4: PETG, lososová/Salmon pink, Prusament (950 g)');
     }
 
     public function test_codes_made_up_for_new_colours_follow_the_catalogue(): void

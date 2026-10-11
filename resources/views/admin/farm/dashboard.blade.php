@@ -126,7 +126,7 @@
 
             <p class="mt-3 text-xs text-slate-500">
                 @foreach($p->slots as $s)
-                    <span class="mr-2 inline-flex items-center gap-1 {{ $s->enabled ? '' : 'opacity-40' }}"><span class="inline-block h-3 w-3 rounded-full border border-slate-300" style="background: {{ $s->color?->hex ?? '#fff' }}"></span>{{ $s->slot + 1 }}: {{ $s->color?->name ?? '—' }} ({{ round($s->remaining_g) }} g)</span>
+                    <span class="mr-2 inline-flex items-center gap-1 {{ $s->enabled ? '' : 'opacity-40' }}"><span class="inline-block h-3 w-3 rounded-full border border-slate-300" style="background: {{ $s->color?->hex ?? '#fff' }}"></span>{{ $s->slot + 1 }}: {{ $s->color?->fullLabel() ?? '—' }} ({{ round($s->remaining_g) }} g)</span>
                 @endforeach
                 <a href="{{ route('admin.farm.printers.edit', $p) }}" class="underline">{{ __('farm.admin.nav.printers') }}</a>
             </p>

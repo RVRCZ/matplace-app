@@ -36,7 +36,7 @@ class FarmOrderController extends Controller
     /** Printers, what runs on them, what waits, and when each waiting order will get its turn. */
     public function dashboard(): View
     {
-        $printers = FarmPrinter::with(['slots.color', 'agent'])->orderBy('id')->get()->map(function (FarmPrinter $p) {
+        $printers = FarmPrinter::with(['slots.color.material', 'agent'])->orderBy('id')->get()->map(function (FarmPrinter $p) {
             $queue = $this->dispatcher->queue($p)->load(['user', 'color', 'modelFile']);
 
             return [

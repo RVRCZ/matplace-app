@@ -29,7 +29,7 @@ class FarmCatalogController extends Controller
     public function printers(): View
     {
         return view('admin.farm.printers', [
-            'printers' => FarmPrinter::with(['slots.color', 'agent'])->orderBy('id')->get(),
+            'printers' => FarmPrinter::with(['slots.color.material', 'agent'])->orderBy('id')->get(),
             'calibration' => $this->calibration(),
         ]);
     }

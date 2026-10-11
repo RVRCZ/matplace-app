@@ -18,6 +18,14 @@ class FarmColor extends Model
 
     protected $casts = ['enabled' => 'bool', 'in_stock' => 'bool', 'sort' => 'int', 'print_overrides' => 'array'];
 
+    /** "PLA+, modrá/blue, Matplace": kind, both names and the maker – how the admin tells spools apart in every list. */
+    public function fullLabel(): string
+    {
+        $names = trim((string) $this->name_en) !== '' && mb_strtolower((string) $this->name_en) !== mb_strtolower((string) $this->name) ? $this->name.'/'.$this->name_en : $this->name;
+
+        return ($this->material?->label() ?? '?').', '.$names.', '.$this->maker();
+    }
+
     /** Who made this spool: its own maker, else its kind's. */
     public function maker(): string
     {

@@ -33,7 +33,7 @@
                     <div class="rounded-xl bg-slate-50 p-2" data-slot="{{ $i }}" data-plan-id="{{ $want['id'] ?? '' }}">
                         <label class="{{ $lb }}">{{ $i + 1 }}
                             <select name="slots[{{ $p->id }}][{{ $i }}][color]" data-color class="{{ $in }}"><option value="">— {{ __('farm.admin.slots_empty') }} —</option>
-                                @foreach($groups as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected($s?->farm_color_id === $c->id)>{{ $c->name }}@if($c->name_en) / {{ $c->name_en }}@endif</option>@endforeach</optgroup>@endforeach
+                                @foreach($groups as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected($s?->farm_color_id === $c->id)>{{ $c->fullLabel() }}</option>@endforeach</optgroup>@endforeach
                             </select>
                         </label>
                         <div class="mt-1 grid grid-cols-[1fr_auto] items-end gap-2">

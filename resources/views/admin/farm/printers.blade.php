@@ -15,6 +15,8 @@
             </div>
             <p class="mt-1 text-sm text-slate-600">{{ (int) $p->bed_x }} × {{ (int) $p->bed_y }} × {{ (int) $p->bed_z }} mm · {{ $p->nozzle_mm }} mm · podložka {{ $p->bedTypeLabel() }} · čas × {{ $p->time_factor }} · hmotnost × {{ $p->weight_factor }}@if($p->hourly_rate) · @money($p->hourly_rate, 'CZK')/h @endif</p>
             <p class="mt-1 text-xs text-slate-500">{{ $cal ? __('farm.admin.calibration', ['n' => $cal['n'], 'time' => $cal['time'] ?? '—', 'weight' => $cal['weight'] ?? '—']) : __('farm.admin.calibration_none') }}</p>
+            {{-- what sits in the slots, as the admin tells spools apart: kind, names, maker --}}
+            <p class="mt-1 text-xs text-slate-600">@forelse($p->slots->sortBy('slot') as $s)<span class="{{ $s->enabled ? '' : 'opacity-50' }}">{{ $s->slot + 1 }}: {{ $s->color ? $s->color->fullLabel().' ('.round($s->remaining_g).' g)' : '—' }}</span>@if(! $loop->last) · @endif @empty —@endforelse</p>
         </a>
     @endforeach
 </div>

@@ -17,7 +17,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="font-bold">{{ $p->name }} <span class="text-xs font-normal text-slate-500">{{ $p->model }}@if(! $p->enabled) · vypnuta @endif</span></h2>
-                <span class="text-xs text-slate-500">v slotech: @foreach($p->slots->filter(fn ($s) => $s->color) as $s){{ $s->slot + 1 }}: {{ $s->color->material->label() }} {{ $s->color->name }}@if(! $loop->last), @endif @endforeach</span>
+                <span class="text-xs text-slate-500">v slotech: @foreach($p->slots->filter(fn ($s) => $s->color) as $s){{ $s->slot + 1 }}: {{ $s->color->fullLabel() }}@if(! $loop->last); @endif @endforeach</span>
             </div>
             <table class="mt-2 w-full text-sm">
                 <thead><tr class="text-left text-xs text-slate-500"><th class="py-1">Materiál</th><th>Stav</th><th>Původ</th><th>Verze</th><th>Testy</th><th>Hodnocení</th><th></th></tr></thead>
@@ -44,7 +44,7 @@
                     <input type="hidden" name="farm_printer_id" value="{{ $p->id }}">
                     <span class="text-slate-600">Vlastní nastavení pro jednu cívku:</span>
                     <select name="farm_color_id" class="rounded-lg border border-slate-300 px-2 py-1">
-                        @foreach($p->slots->filter(fn ($s) => $s->color) as $s)<option value="{{ $s->color->id }}">{{ $s->slot + 1 }}: {{ $s->color->material->label() }} {{ $s->color->name }}</option>@endforeach
+                        @foreach($p->slots->filter(fn ($s) => $s->color) as $s)<option value="{{ $s->color->id }}">{{ $s->slot + 1 }}: {{ $s->color->fullLabel() }}</option>@endforeach
                     </select>
                     <button class="btn-quiet !min-h-0 !py-1 text-xs">založit řádek cívky</button>
                 </form>
