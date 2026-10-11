@@ -404,3 +404,15 @@ velikostí, kvalitou, pevností, podpěrami a počtem kusů) – Romanovo „bar
 #7 (texty fází nástrojů pro úpravu souboru), session B papel kolo 4 (kvalita portrétu, panel podle fotky) a oprava
 hlavičky náhledu (PreviewMeta limit 2000 B – nginx má 4 kB na všechny hlavičky včetně cookies ~1,1 kB; náhled portrétu
 má teď celkem 2307 B). Nasazení čekalo na dotisk dvou testů švu (T26-000032 na S1 #1, T26-000033 na S1 #3).
+
+## 11. Žehlení v nastavení tisku zakázky (11. 10. 2026)
+
+Roman: „zadej přidání možnosti žehlení při nastavení tisku u zakázek“. V „Pokročilém nastavení“ na stránce zakázky je
+výběr **Žehlení horní plochy**: bez žehlení (předvolba) / jen nejvyšší plocha (`topmost`) / všechny horní plochy
+(`top`). `PrintSettings::CHOICES` (slova vedle čísel `FIELDS`), `clean()` a `process()` → `ironing_type` v procesu
+zakázky; tok, rychlost a rozteč si slicer bere z profilu a z řádku ladění (session F zapsala do knihovny hodnoty, se
+kterými S1 a Max žehlily nejlépe: S1 10 % / 30 / 0,15, Max 12 % / 30 / 0,1; „nejlepší známé“, ne vyladěné – lesk není
+rovnoměrný). Tryska jiná než 0,4: rozteč podle `TestPrintService::ironingFor` (0,375 × tryska), pokud ji řádek ladění
+neurčí. Řádky ladění `ironing_type` nikdy nenesou – přepínač patří k zakázce. Zapnutí přeřeže zakázku (cena a čas se
+přepočítají; stránka to dělá přes „Přepočítat“ jako u ostatních nastavení). Validace `settings.ironing in:topmost,top`.
+Test v `PrintSettingsTest`. Texty `farm.advanced.ironing*` cs/en/es.

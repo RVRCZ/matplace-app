@@ -88,6 +88,20 @@ class PrintSettingsTest extends TestCase
         // the cleaning itself
         $this->assertSame(['infill' => 100, 'walls' => 1], PrintSettings::clean(['infill' => 250, 'walls' => -2, 'top' => '', 'nozzle' => 0.6]));
         $this->assertNull(PrintSettings::clean(['top' => null]));
+
+        // ironing: a word, not a number; it reaches the slicer as ironing_type and goes away with the presets
+        $ironed = $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'settings' => ['ironing' => 'top', 'walls' => 2]])->assertOk()->json();
+        $this->assertSame(['walls' => 2, 'ironing' => 'top'], $ironed['settings']);
+        $this->assertSame('top', $order->fresh()->slice_params['overrides']['process']['ironing_type']);
+        $this->assertGreaterThanOrEqual($before['minutes'], $ironed['minutes'], 'ironing never makes a print shorter');
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'settings' => ['ironing' => 'solid']])->assertStatus(422);
+        $plain = $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'settings' => ['ironing' => '']])->assertOk()->json();
+        $this->assertNull($plain['settings']);
+        $this->assertArrayNotHasKey('ironing_type', $order->fresh()->slice_params['overrides']['process']);
+        $this->assertSame(['ironing' => 'topmost'], PrintSettings::clean(['ironing' => 'topmost', 'walls' => '']));
+        $this->assertNull(PrintSettings::clean(['ironing' => 'everything']));
+        $this->assertSame(['ironing_type' => 'topmost'], PrintSettings::process(['ironing' => 'topmost']));
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('data-setting="ironing"', false)->assertSee(__('farm.advanced.ironing_top'));
     }
 
     public function test_the_admin_writes_slicer_settings_onto_one_order_and_they_win(): void

@@ -272,6 +272,13 @@ class PrepareFarmOrder implements ShouldQueue
             $overrides['process']['enable_support'] = '0';
         }
         $overrides['process'] = PrintSettings::process($custom) + $overrides['process'];
+        if (isset($custom['ironing']) && abs((float) $printer->nozzle_mm - 0.4) > 0.001) {
+            // the profiles write the ironing pass for a 0.4 nozzle; a finer or coarser one irons at its own spacing
+            // unless the kind's row on this machine says otherwise (TestPrintService::ironingFor, as the test prints do)
+            $fine = TestPrintService::ironingFor((float) $printer->nozzle_mm);
+            $overrides['process'] = $overrides['process'] + $fine;
+            $overrides['process']['ironing_spacing'] = $profile->process['ironing_spacing'] ?? $fine['ironing_spacing'];
+        }
         $overrides['process'] = PrintSettings::adminOverrides($order) + $overrides['process'];
         $params = (new SliceParams(materialCode: $order->material->code, quality: $quality, infillPercent: $infill, supports: $order->isTest() || $noSupports ? false : null, treeSupports: true))
             ->withFarmProfile($profiles, $overrides);

@@ -47,6 +47,8 @@ return [
     'advanced' => [
         'label' => 'Advanced settings', 'hint' => '(infill %, perimeters, layers)', 'preset' => 'preset',
         'infill' => 'Infill (%)', 'walls' => 'Perimeters (walls)', 'top' => 'Top layers', 'bottom' => 'Bottom layers',
+        'ironing' => 'Ironing of the top surface', 'ironing_none' => 'no ironing (preset)', 'ironing_topmost' => 'the topmost surface only', 'ironing_top' => 'every top surface',
+        'ironing_hint' => 'Ironing passes the hot nozzle over the top surfaces almost without material and smooths them; the print takes minutes to tens of minutes longer depending on the area.',
         'note' => 'An empty field means the value of the presets above. Infill 5 to 100 %, 1 to 6 perimeters, 0 to 10 layers. The price is recalculated after a change.',
     ],
     'units' => [

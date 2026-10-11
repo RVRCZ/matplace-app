@@ -47,6 +47,8 @@ return [
     'advanced' => [
         'label' => 'Ajustes avanzados', 'hint' => '(relleno en %, perímetros, capas)', 'preset' => 'preajuste',
         'infill' => 'Relleno (%)', 'walls' => 'Perímetros (paredes)', 'top' => 'Capas superiores', 'bottom' => 'Capas inferiores',
+        'ironing' => 'Planchado de la superficie superior', 'ironing_none' => 'sin planchado (preajuste)', 'ironing_topmost' => 'solo la superficie más alta', 'ironing_top' => 'todas las superficies superiores',
+        'ironing_hint' => 'El planchado pasa la boquilla caliente por las superficies superiores casi sin material y las alisa; la impresión dura de minutos a decenas de minutos más según el área.',
         'note' => 'Un campo vacío significa el valor de los preajustes de arriba. Relleno de 5 a 100 %, de 1 a 6 perímetros, de 0 a 10 capas. El precio se recalcula tras el cambio.',
     ],
     'units' => [

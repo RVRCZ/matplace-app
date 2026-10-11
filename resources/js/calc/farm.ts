@@ -323,13 +323,13 @@ export function bootFarmOrder(): void {
         viewer.paint(geom && changeHeights().length && first ? multiTone(geom, changeHeights(), first, picks) : null);
     };
     let timer = 0;
-    const wanted = { quality: state.quality, strength: state.strength, supports: state.supports_mode || 'auto', unit: state.unit, copies: state.copies || 1, scale: state.scale || 1, settings: { ...(state.settings ?? {}) } as Record<string, number> };
-    // the "advanced" numbers: what the fields hold, only the filled ones
-    const settingInputs = [...document.querySelectorAll<HTMLInputElement>('#farm-advanced [data-setting]')];
-    const settingsOf = (s: Record<string, number> | null | undefined): string => JSON.stringify(Object.fromEntries(Object.entries(s ?? {}).filter(([, v]) => v !== null && v !== undefined).sort()));
-    settingInputs.forEach((i) => i.addEventListener('input', () => {
+    const wanted = { quality: state.quality, strength: state.strength, supports: state.supports_mode || 'auto', unit: state.unit, copies: state.copies || 1, scale: state.scale || 1, settings: { ...(state.settings ?? {}) } as Record<string, number | string> };
+    // the "advanced" numbers and choices: what the fields hold, only the filled ones (a select is a word, an input a number)
+    const settingInputs = [...document.querySelectorAll<HTMLInputElement | HTMLSelectElement>('#farm-advanced [data-setting]')];
+    const settingsOf = (s: Record<string, number | string> | null | undefined): string => JSON.stringify(Object.fromEntries(Object.entries(s ?? {}).filter(([, v]) => v !== null && v !== undefined).sort()));
+    settingInputs.forEach((i) => i.addEventListener(i instanceof HTMLSelectElement ? 'change' : 'input', () => {
         const v = i.value.trim();
-        if (v === '') delete wanted.settings[i.dataset.setting!]; else wanted.settings[i.dataset.setting!] = Math.round(Number(v));
+        if (v === '') delete wanted.settings[i.dataset.setting!]; else wanted.settings[i.dataset.setting!] = i instanceof HTMLSelectElement ? v : Math.round(Number(v));
         render();
     }));
     // the model's own millimetres (in the chosen unit) so a typed dimension gives a factor

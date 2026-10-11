@@ -135,8 +135,17 @@
                                 <input id="farm-adv-{{ $field }}" data-setting="{{ $field }}" type="number" inputmode="numeric" min="{{ $min }}" max="{{ $max }}" step="1" placeholder="{{ __('farm.advanced.preset') }}" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
                             </label>
                         @endforeach
+                        {{-- ironing: the slicer smooths the top surface with a hot, almost empty pass; minutes to tens of minutes more --}}
+                        @foreach(\App\Domain\Farm\PrintSettings::CHOICES as $field => $words)
+                            <label class="text-xs font-semibold text-slate-600 col-span-2">{{ __('farm.advanced.'.$field) }}
+                                <select id="farm-adv-{{ $field }}" data-setting="{{ $field }}" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
+                                    <option value="">{{ __('farm.advanced.'.$field.'_none') }}</option>
+                                    @foreach($words as $word)<option value="{{ $word }}">{{ __('farm.advanced.'.$field.'_'.$word) }}</option>@endforeach
+                                </select>
+                            </label>
+                        @endforeach
                     </div>
-                    <p class="mt-2 text-xs text-slate-500">{{ __('farm.advanced.note') }}</p>
+                    <p class="mt-2 text-xs text-slate-500">{{ __('farm.advanced.note') }} {{ __('farm.advanced.ironing_hint') }}</p>
                 </details>
                 <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span> <button id="farm-size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('farm.size.reset') }}</button></div>
                 <div class="mt-2 grid grid-cols-3 gap-2">

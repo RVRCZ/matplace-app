@@ -374,6 +374,7 @@ class OrderController extends Controller
             'settings.walls' => ['nullable', 'integer', 'min:1', 'max:6'],
             'settings.top' => ['nullable', 'integer', 'min:0', 'max:10'],
             'settings.bottom' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'settings.ironing' => ['nullable', 'in:'.implode(',', PrintSettings::CHOICES['ironing'])],
         ]);
         try {
             $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null, $data['supports'] ?? null, isset($data['slot']) ? (int) $data['slot'] : null,
