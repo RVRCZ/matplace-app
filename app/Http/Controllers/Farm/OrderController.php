@@ -103,7 +103,8 @@ class OrderController extends Controller
         $colors = $offered->map(fn ($r) => [
             'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex,
             'photo' => $r['color']->photoUrl(), 'printer' => $r['printer']->name, 'bed' => (int) $r['printer']->bed_x.' × '.(int) $r['printer']->bed_y.' mm', 'enough' => $r['slot']->availableGrams() > 50,
-            'seconds' => $twoColor || $parts ? $this->orders->secondSpools($r['slot'])->map(fn ($s) => ['id' => $s->color->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'photo' => $s->color->photoUrl()])->values()->all() : [],
+            // the second colours of every machine that holds this colour, not just the one the colour is listed with
+            'seconds' => $twoColor || $parts ? $this->orders->secondSpoolsAcross($r['slot'], null, $quality)->map(fn ($s) => ['id' => $s->color->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'photo' => $s->color->photoUrl()])->values()->all() : [],
         ])->sortBy(fn ($c) => [$c['code'] === $material ? 0 : 1, $c['name']])->values()->all();
         // the colour of the print being repeated when it is still loaded, else the first one on offer
         $preselect = collect($colors)->firstWhere('id', $wantedColor)['id'] ?? ($colors[0]['id'] ?? null);
@@ -390,8 +391,19 @@ class OrderController extends Controller
     public function quote(Request $request, FarmOrder $order): JsonResponse
     {
         $this->authorizeOrder($request, $order);
-        $data = $request->validate(['slot' => ['required', 'integer'], 'delivery' => ['required', 'string', 'max:20'], 'country' => ['nullable', 'string', 'size:2']]);
-        $offer = $order->status === FarmOrder::STATUS_SLICED ? $this->orders->availableColors($order)->first(fn ($r) => $r['slot']->id === (int) $data['slot']) : null;
+        $data = $request->validate([
+            'slot' => ['required', 'integer'], 'delivery' => ['required', 'string', 'max:20'], 'country' => ['nullable', 'string', 'size:2'],
+            // the second, change and part spools chosen so far: when they sit in another machine that holds the first
+            // colour too, the price is the one of that machine (the order goes there at payment)
+            'change_slots' => ['nullable', 'array', 'max:8'], 'change_slots.*' => ['nullable', 'integer'],
+            'part_slots' => ['nullable', 'array', 'max:16'], 'part_slots.*' => ['nullable', 'integer'],
+        ]);
+        try {
+            $first = $order->status === FarmOrder::STATUS_SLICED ? FarmPrinterSlot::find((int) $data['slot']) : null;
+            $offer = $first ? $this->orders->machineFor($order, $first, array_merge(array_values((array) ($data['change_slots'] ?? [])), array_values((array) ($data['part_slots'] ?? [])))) : null;
+        } catch (FarmRefusal $e) {
+            $offer = null;
+        }
         if (! $offer) {
             return response()->json(['error' => 'color_gone', 'message' => __('farm.refuse.color_gone')], 422);
         }
@@ -628,8 +640,10 @@ class OrderController extends Controller
                 'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'photo' => $r['color']->photoUrl(),
                 'enough' => $r['enough'], 'price' => $price = $this->orders->priceFor($order, $r['printer'], Shipping::PICKUP, $r['color']->material, null, $currency), 'total' => $price['total'],
                 'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
-                // a plate with a raised text: the colours the text can have next to this colour of the plate
-                'second' => $this->orders->secondColors($order, $r['slot'])->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'photo' => $s->color->photoUrl()])->all(),
+                // a plate with a raised text: the colours the text can have next to this colour of the plate – from every
+                // machine that holds this colour (the order goes where both spools are, machineFor)
+                'second' => ($order->wantedChanges() || $order->isByParts() ? $this->orders->secondSpoolsAcross($r['slot'], $order) : collect())
+                    ->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'photo' => $s->color->photoUrl(), 'main' => $s->main_slot_id])->all(),
                 // the time, the weight and the price on the page were computed for this colour's machine and kind
                 'sliced' => $r['printer']->id === $order->farm_printer_id && $r['color']->material->id === $order->farm_material_id
                     && ($order->farm_color_id === null || $order->farm_color_id === $r['color']->id),

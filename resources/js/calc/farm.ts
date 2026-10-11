@@ -297,12 +297,15 @@ export function bootFarmOrder(): void {
     // whenever colour, kind of delivery or country change; until the answer is here there is nothing to pay
     let quoted: { key: string; price: Price; total: number } | null = null;
     let quoting = '';
-    const quoteKey = (): string => `${picked}|${delivery}|${country}`;
+    // the price depends on the machine, and a second or part spool may move the order to another machine holding the
+    // same first colour: the quote carries those spools too
+    const otherSlots = (): { change_slots: (number | null)[]; part_slots: Record<string, number | null> | undefined } => ({ change_slots: changes, part_slots: state.by_parts ? Object.fromEntries((state.parts ?? []).map((p) => [p.part, partSlots[p.part] ?? null])) : undefined });
+    const quoteKey = (): string => `${picked}|${delivery}|${country}|${JSON.stringify(otherSlots())}`;
     const askQuote = async (): Promise<void> => {
         const key = quoteKey();
         if (!kind() || picked === null || quoted?.key === key || quoting === key) return;
         quoting = key;
-        const r = await post(cfg.routes.quote, { slot: picked, delivery, country });
+        const r = await post(cfg.routes.quote, { slot: picked, delivery, country, ...otherSlots() });
         if (quoting === key) quoting = '';
         if (r.ok && key === quoteKey()) { quoted = { key, price: r.json.price as unknown as Price, total: Number(r.json.total) }; render(); }
     };

@@ -59,7 +59,9 @@ final class OrderFlow
         if ($delivery === Shipping::POINT && $this->carrier->refusePoint(['id' => $destination['pickup_point_id'], 'carrier_id' => $destination['carrier_id']], $destination['country'], $this->shipping->parcelGrams($order) / 1000) !== null) {
             throw new FarmRefusal('delivery_point');
         }
-        $offer = $this->orders->availableColors($order)->first(fn ($r) => $r['slot']->id === $slot->id);
+        // the first colour as chosen – on the machine of the second or part spools when they sit elsewhere (the first
+        // colour is in several machines; the page offered the second colours of all of them)
+        $offer = $this->orders->machineFor($order, $slot, array_merge((array) $changeSlotIds, [$secondSlotId], array_values((array) $partSlotIds)));
         if (! $offer) {
             throw new FarmRefusal('color_gone');
         }

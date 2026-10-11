@@ -429,3 +429,22 @@ formuláři (barva, gramy, nabízet), tlačítko **„Předvyplnit podle rozpisu
 Uložení (`FarmCatalogController::saveSlots`) zapíše sloty všech strojů, prázdný slot nikdy nenabízí, pak
 `ProfileLibrary::sync`. Hláška říká počet změněných slotů. Test v `FarmCatalogAdminTest`. Texty `farm.admin.slots_*`.
 Před uložením je nutné porovnat se stroji – rozpis je návrh, ne skutečnost (např. U #1 má dnes Spectrum Silk, ne matné).
+
+## 13. Druhé barvy ze všech strojů, které mají první barvu (11. 10. 2026)
+
+Roman: „když je dvoubarevný tisk a vybere se první barva, která je i jinde, není nabídka ostatních barev ze strojů, které
+mají tu první.“ Příčina: nabídka barev je jedna položka na barvu (`offeredColors` / `availableColors` → jeden
+reprezentativní slot), a druhé barvy se braly jen z jeho stroje (`secondSpools`).
+
+- **`OrderService::secondSpoolsAcross($main, ?$order, $quality)`**: druhé cívky ze **všech** strojů, které mají první
+  barvu a zakázku zvládnou (online, podložka, kvalita), každá barva jednou, stroj hlavní cívky první; každá cívka
+  zná slot první barvy na svém stroji (`main_slot_id`). Používá ji /farm (start, `seconds`) i stránka zakázky
+  (`describe()`, `colors[].second[].main`).
+- **`OrderService::machineFor($order, $slot, $otherSlotIds)`**: stroj zakázky podle zvolených druhých/dílových cívek:
+  když sedí v jiném stroji, který má první barvu také, vezme se slot první barvy na tom stroji (stejná barva i druh;
+  při platbě se přeřeže, pokud se liší od stroje ceny). Cívky ze dvou různých strojů → `color_gone`. Používá
+  `OrderFlow::pay` a **`quote`** (stránka posílá i `change_slots`/`part_slots`, takže cena je stroje, kam zakázka půjde).
+- `availableColors` = `availableSlots` (všechny sloty, stroj po stroji) sjednocené na barvu.
+- Test ve `FarmOrderFlowTest`: bílá na S1 i Maxu, S1 má druhou barvu A, Max barvu B → start i zakázka nabízejí A i B;
+  platba s B přesune zakázku na Max (slot bílé Maxu), cívky ze dvou strojů odmítne.
+- Neověřené: ruční průchod na produkci (rozpis cívek má bílou a černou na většině strojů, takže to teď uvidíš hned).

@@ -300,6 +300,54 @@ class FarmOrderFlowTest extends TestCase
     }
 
     /** A picture in three filament colours one on another: two changes, each with its own spool of the first colour's machine. */
+    public function test_a_first_colour_held_by_two_machines_offers_the_second_colours_of_both_and_the_order_goes_where_both_spools_are(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        // S1 #1 holds white (seeded) and a second PLA colour; the Max holds the very same white and a third PLA colour
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
+        $whiteSlot = $s1->slots()->whereNotNull('farm_color_id')->whereHas('color.material', fn ($q) => $q->where('code', 'PLA+'))->firstOrFail();
+        $white = $whiteSlot->farm_color_id;
+        $pla = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->where('id', '!=', $white)->orderBy('id')->take(2)->get();
+        [$onS1, $onMax] = [$pla[0], $pla[1]];
+        $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->firstOrFail()->update(['farm_color_id' => $onS1->id, 'remaining_g' => 800, 'enabled' => true]);
+        $maxSlots = $max->slots()->orderBy('slot')->get();
+        $maxSlots[0]->update(['farm_color_id' => $white, 'remaining_g' => 900, 'enabled' => true]);
+        $maxSlots[1]->update(['farm_color_id' => $onMax->id, 'remaining_g' => 900, 'enabled' => true]);
+
+        $uuid = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'sign', 'params' => ['style' => 'emboss', 'thickness' => 3, 'relief' => 1.2, 'line1' => 'Emma']])->assertCreated()->json('file.uuid');
+        // the start page offers both second colours under the white, whichever machine lists it
+        $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->assertSee('data-second-for="'.$white.'"', false)
+            ->assertSee('value="'.$onS1->id.'"', false)->assertSee('value="'.$onMax->id.'"', false);
+
+        $order = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid])->assertCreated()->json('url')))->firstOrFail();
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $entry = collect($state['colors'])->first(fn ($c) => in_array($c['slot'], [$whiteSlot->id, $maxSlots[0]->id], true));
+        $this->assertNotNull($entry, 'the white is on offer once');
+        $seconds = collect($entry['second']);
+        $this->assertEqualsCanonicalizing([$onS1->id, $onMax->id], FarmPrinterSlot::whereIn('id', $seconds->pluck('slot'))->pluck('farm_color_id')->all(), 'the second colours of both machines');
+        $maxRed = $seconds->first(fn ($s) => FarmPrinterSlot::find($s['slot'])->farm_printer_id === $max->id);
+        $this->assertSame($maxSlots[0]->id, $maxRed['main'], 'a spool of the Max knows the white of the Max');
+
+        // the quote and the payment follow the machine of the chosen second spool
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/quote", ['slot' => $entry['slot'], 'delivery' => 'pickup', 'change_slots' => [$maxRed['slot']]])->assertOk();
+        $this->credit(20000);
+        $quoted = $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/quote", ['slot' => $entry['slot'], 'delivery' => 'pickup', 'change_slots' => [$maxRed['slot']]])->json('total');
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $entry['slot'], 'change_slots' => [$maxRed['slot']], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $quoted])->assertOk();
+        $order->refresh();
+        $this->assertSame($max->id, $order->farm_printer_id, 'the order went to the machine that holds both spools');
+        $this->assertSame($maxSlots[0]->id, $order->farm_printer_slot_id);
+        $this->assertSame($white, $order->farm_color_id);
+        $this->assertSame($maxRed['slot'], $order->second_slot_id);
+
+        // spools of two different machines cannot print one plate
+        $other = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid])->assertCreated()->json('url')))->firstOrFail();
+        $s1Second = $s1->slots()->where('farm_color_id', $onS1->id)->firstOrFail();
+        $this->actingAs($this->user)->postJson("/farm/orders/{$other->token}/quote", ['slot' => $entry['slot'], 'delivery' => 'pickup', 'change_slots' => [$maxRed['slot'], $s1Second->id]])->assertStatus(422);
+    }
+
     public function test_a_picture_in_three_colours_is_ordered_with_two_changes(): void
     {
         if (! app(ParametricGenerator::class)->available()) {
