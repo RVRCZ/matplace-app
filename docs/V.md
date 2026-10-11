@@ -335,6 +335,9 @@ Co z toho plyne:
 3. **Šev na Maxu je bez scarfu výrazný.** Další test: `seam` se zaškrtnutým scarfem (od 10. 10. dává přímo S2) – zároveň
    druhý potvrzující tisk S2 v jiné barvě.
 
+**T26-000041** – `seam` na Maxu se zaškrtnutým scarfem (S2), tyrkysová, spuštěno 11. 10. dopoledne; srovnává se
+s T26-000038 (stejná cívka, bez scarfu). Výsledek doplnit.
+
 **11. 10. – Roman dal session F právo rozhodovat o nastavení tisku filamentů** (profily filamentů, knihovna,
 přednastavení testů; potvrdil přímo v session). Pravidla: jedna změna = jeden commit s důkazem, sady zelené, nasazuje
 řídící session, řádky na produkci dál v administraci. První změna: knihovna `kobra 3 max` → `PLA+` → `process` dostala
