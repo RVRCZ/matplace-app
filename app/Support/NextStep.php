@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Domain\Farm\FarmGate;
 use Illuminate\Support\Facades\Lang;
 
 /**
@@ -21,7 +22,7 @@ final class NextStep
         if (config('features.marketplace')) {
             return self::INQUIRY;
         }
-        if (config('farm.enabled') && config('farm.open', true) && (config('farm.public') || auth()->user()?->isAdmin())) {
+        if (FarmGate::offered(auth()->user())) {
             return self::FARM;
         }
 

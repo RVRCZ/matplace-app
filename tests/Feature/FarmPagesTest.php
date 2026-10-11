@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\FarmGate;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\PlateLayout;
 use App\Domain\Farm\Wallet;
 use App\Models\FarmAgent;
 use App\Models\FarmColor;
@@ -92,7 +94,7 @@ class FarmPagesTest extends TestCase
             ->assertSee('name="supports" value="off" class="sr-only" checked', false)
             ->assertSee('name="quality" value="fine" class="sr-only" checked', false)
             ->assertSee('name="strength" value="high" class="sr-only" checked', false)
-            ->assertSee('max="'.\App\Domain\Farm\PlateLayout::MAX_COPIES.'" value="3"', false);
+            ->assertSee('max="'.PlateLayout::MAX_COPIES.'" value="3"', false);
     }
 
     public function test_calculator_offers_the_farm_and_the_start_page_takes_a_shared_calculation(): void
@@ -119,6 +121,23 @@ class FarmPagesTest extends TestCase
         $this->actingAs($this->user)->get('/')->assertOk()->assertDontSee('id="cta-farm"', false);
         $this->user->setRole(User::ROLE_ADMIN, true);
         $this->actingAs($this->user->fresh())->get('/')->assertOk()->assertSee('id="cta-farm"', false);
+    }
+
+    public function test_a_closed_farm_refuses_customers_but_an_admin_orders_anyway(): void
+    {
+        config(['farm.open' => false, 'farm.public' => true]);
+        $path = sys_get_temp_dir().'/mp_closed_'.uniqid().'.stl';
+        MeshFixtures::cubeStl($path, 20.0);
+        $uuid = $this->actingAs($this->user)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'part.stl', null, null, true)])->assertCreated()->json('file.uuid');
+        $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid])->assertStatus(422)->assertJsonPath('error', 'closed');
+        $this->actingAs($this->user)->get('/')->assertOk()->assertDontSee('id="cta-farm"', false);
+        $this->assertFalse(FarmGate::open($this->user));
+
+        // the owner tries the farm out while it is closed: the button is there and the order goes through
+        $this->assertTrue(FarmGate::open($this->admin));
+        $this->actingAs($this->admin)->get('/')->assertOk()->assertSee('id="cta-farm"', false);
+        $uuid = $this->actingAs($this->admin)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'part.stl', null, null, true)])->assertCreated()->json('file.uuid');
+        $this->actingAs($this->admin)->postJson('/farm/orders', ['file' => $uuid])->assertCreated();
     }
 
     public function test_admin_pages_render_and_are_closed_to_others(): void

@@ -35,8 +35,8 @@ final class OrderService
     public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
-        if (! config('farm.open', true)) {
-            throw new FarmRefusal('closed');
+        if (! FarmGate::open($user)) {
+            throw new FarmRefusal('closed');   // an admin orders on a closed farm; a customer waits
         }
         // whatever came in (STL, 3MF, STEP, OBJ…), the upload pipeline normalised it to an STL; only a file that failed
         // that or is still being processed cannot be printed
