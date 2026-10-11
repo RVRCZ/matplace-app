@@ -315,6 +315,26 @@ ne na jmenovitou rychlost stěny. `quick` je na posouzení stěny špatný objek
 na Maxu** – válec a hranol mají po celé výšce stejný průřez, takže ukážou, jak stěna vypadá bez skoků v době vrstvy.
 Horní plocha při 120 vypadá dobře; když to Roman potvrdí, `top_surface_speed = 120` do řádku Maxu jako nová verze.
 
+**Objekt `seam` bez scarfu na Maxu** (tyrkysová PLA+, 11. 10. dopoledne, číslo testu doplní Roman; nastavení řádku
+v3, tedy stěna 120, horní plocha 200; 21 snímků při expozici −5, kusy odlomené – tyrkysová ukazuje detail mnohem
+líp než bílá):
+
+| co | nález |
+|---|---|
+| stěny válce, hranolu, kužele i kostky | **rovnoměrné po celé výšce, bez vodorovných pruhů a schodků** |
+| šev na válci a hranolu | zřetelná ostrá svislá čára s jemným hřebínkem, vidět na první pohled |
+| šev na kuželi | zřetelná čára, asi ve 3/4 výšky drobná díra |
+| horní plochy (válec, hranol, kostka) | **nerovnoměrné**: vnější pás s hrubými oddělenými čarami, střed hladší, mezi nimi roztřepená hranice s drobnými mezerami |
+| kostka | rohy ostré |
+
+Co z toho plyne:
+1. **Pruhy z `quick` (3.2) jsou věc doby vrstvy, ne stroje** – při stálém průřezu je stěna Maxu čistá.
+2. **Horní plocha při 200 mm/s je vadná, při 120 (T26-000035, stejná cívka) byla rovná** – první přímé srovnání na
+   stejném stroji i cívce. `top_surface_speed = 120` patří do řádku Maxu jako nová verze (stav zůstává „testuje se“).
+   Totéž ověřit na S1 (strop toku je stejný, 16 mm³/s, a horní plocha jede 16,8).
+3. **Šev na Maxu je bez scarfu výrazný.** Další test: `seam` se zaškrtnutým scarfem (od 10. 10. dává přímo S2) – zároveň
+   druhý potvrzující tisk S2 v jiné barvě.
+
 Hodnoty Orca profilu, které řádek Maxu nepřepisuje: `top_solid_infill_flow_ratio = 1`, `top_surface_speed = 200`, `top_shell_layers = 5`,
 `top_surface_pattern = monotonicline`, `only_one_wall_top = 1`; Max jede s procesem S1 bez přepisů pro velkou
 podložku. Až Roman napíše výsledek: kandidát do řádku Max × PLA+ a ověření testem `quick` z farmy (horní plocha
