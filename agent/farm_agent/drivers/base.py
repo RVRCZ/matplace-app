@@ -83,3 +83,8 @@ class PrinterDriver(abc.ABC):
     async def dry(self, on: bool, temp: int = 45, minutes: int = 240) -> None:
         """Filament dryer of the spool unit (Anycubic ACE): start for `minutes` at `temp` °C, or stop. Raises DriverError."""
         raise DriverError("this printer has no filament dryer")
+
+    async def reset(self) -> None:
+        """Clear the error state the last print left behind so the printer reports idle again. Nothing moves, nothing
+        heats. Raises DriverError when the printer stays in error (its message goes to the operator)."""
+        raise DriverError("this printer cannot be reset from here")

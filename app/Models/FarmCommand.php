@@ -21,6 +21,9 @@ class FarmCommand extends Model
 
     public const TYPE_DRY = 'dry';        // filament dryer of the spool unit (ACE): payload on, temp, minutes
 
+    /** clears the "error" a failed print leaves behind (Klipper keeps it until told otherwise); needs no job, moves and heats nothing */
+    public const TYPE_RESET = 'reset';
+
     protected $fillable = ['farm_printer_id', 'farm_print_job_id', 'type', 'payload', 'status', 'result', 'created_by', 'sent_at', 'finished_at'];
 
     protected $casts = ['payload' => 'array', 'sent_at' => 'datetime', 'finished_at' => 'datetime'];

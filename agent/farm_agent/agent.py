@@ -311,6 +311,8 @@ class Agent:
                     await w.driver.resume()
                 elif kind == "cancel":
                     await w.driver.cancel()
+                elif kind == "reset":
+                    await w.driver.reset()
                 elif kind == "light":
                     await w.driver.light(bool((cmd.get("payload") or {}).get("on", True)))
                 elif kind == "dry":

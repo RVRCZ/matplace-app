@@ -5,6 +5,8 @@ Moonraker (Klipper) driver - Anycubic Kobra S1 with the Rinkhals firmware overla
   upload     POST /server/files/upload            (multipart, root=gcodes)
   start      POST /printer/print/start?filename=
   control    POST /printer/print/pause | resume | cancel
+  reset      POST /printer/gcode/script?script=SDCARD_RESET_FILE (+ /printer/firmware_restart after a Klipper shutdown,
+             /printer/print/cancel as the fallback on GoKlipper) - clears the "error" a failed print leaves behind
   changes    websocket /websocket, printer.objects.subscribe -> notify_status_update (instant state changes)
   camera     GET  <snapshot_url>                  (Rinkhals: http://<ip>/webcam/?action=snapshot)
 
@@ -54,6 +56,7 @@ class MoonrakerDriver(PrinterDriver):
         self.start_timeout = float(options.get("start_timeout", 120))
         self.start_wait = float(options.get("start_wait", 60))
         self.start_poll = float(options.get("start_poll", 5))
+        self.reset_settle = float(options.get("reset_settle", 5))
         self.headers = {"X-Api-Key": options["api_key"]} if options.get("api_key") else {}
         self.snapshot_url = options.get("snapshot_url")
         self.light_device = options.get("light_device", "chamber_light")
@@ -232,6 +235,35 @@ class MoonrakerDriver(PrinterDriver):
 
     async def cancel(self) -> None:
         await self._post("/printer/print/cancel")
+
+    async def reset(self) -> None:
+        """Clear the error the last print left behind, so the printer reports idle again and the queue may go on.
+        Klipper keeps print_stats.state = "error" until the next print or SDCARD_RESET_FILE; a shutdown of Klipper
+        itself (MCU, heater) needs FIRMWARE_RESTART. GoKlipper (the stock Anycubic firmware under Rinkhals) may not know
+        SDCARD_RESET_FILE; a cancel after a failed print takes it to "cancelled", which is idle for us. Nothing moves and
+        nothing heats on any of these."""
+        now = await self.status()
+        if now.state in (PRINTING, PAUSED):
+            raise DriverError("a print is running, nothing to reset")
+        if now.telemetry.get("klippy") in ("shutdown", "error"):
+            log.info("%s: Klipper is %s, FIRMWARE_RESTART", self.key, now.telemetry["klippy"])
+            await self._post("/printer/firmware_restart", timeout=aiohttp.ClientTimeout(total=60))
+            await asyncio.sleep(self.reset_settle)
+        try:
+            await self._post("/printer/gcode/script", params={"script": "SDCARD_RESET_FILE"}, timeout=aiohttp.ClientTimeout(total=60))
+        except DriverError as e:
+            log.info("%s: SDCARD_RESET_FILE refused (%s), trying a cancel", self.key, e)
+        now = await self.status()
+        if now.state == ERROR:
+            try:
+                await self._post("/printer/print/cancel")
+            except DriverError as e:
+                log.info("%s: cancel refused too: %s", self.key, e)
+            await asyncio.sleep(min(1.0, self.reset_settle))
+            now = await self.status()
+        if now.state == ERROR:
+            raise DriverError(f"the printer still reports an error: {now.telemetry.get('error') or 'no message'}")
+        log.info("%s: error cleared, the printer is %s", self.key, now.state)
 
     # -- plumbing ----------------------------------------------------------------------------------------------
     async def _get(self, path: str) -> dict:

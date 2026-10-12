@@ -67,6 +67,14 @@
                 </div>
                 <p class="mt-1 text-xs text-slate-600">{{ $busy ? __('farm.admin.bed_locked_hint') : __('farm.admin.bed_note') }}</p>
             </form>
+            @if($p->isAgentDriven() && in_array($state, ['error', 'unknown']))
+                {{-- a failed print leaves the printer in "error" until somebody clears it; the queue waits meanwhile --}}
+                <form method="post" action="{{ route('admin.farm.printers.command', $p) }}" data-ajax class="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-red-50 p-3 text-sm">
+                    @csrf
+                    <button name="type" value="reset" class="btn-quiet text-sm" onclick="return confirm(@js(__('farm.admin.reset_confirm')))">{{ __('farm.admin.reset_error') }}</button>
+                    <span class="text-xs text-slate-600">{{ __('farm.admin.reset_hint') }}</span>
+                </form>
+            @endif
             @if($p->isAgentDriven())
                 <form method="post" action="{{ route('admin.farm.printers.command', $p) }}" data-ajax class="mt-2 flex flex-wrap items-center gap-2 text-sm">
                     @csrf

@@ -506,3 +506,18 @@ Agent (`agent/farm_agent/drivers/moonraker.py`):
 - Testy `agent/tests/test_moonraker.py` (falešný Moonraker přes aiohttp): rychlý start, start přes limit s tisknoucí
   tiskárnou, mlčící start s chybou tiskárny, mlčící start s mlčící tiskárnou, text chyby ve stavu.
 - Balíček `C:\Users\roman\Desktop\matplace-farm-agent.zip` (bez config.yaml), verze 0.1.2; nainstalovat na oba PC.
+
+## 18. Tlačítko „Resetovat chybu“ na nástěnce, agent 0.1.3 (12. 10. 2026)
+
+Po chybě tisku zůstává Klipper ve stavu `error`, dokud ho něco nepřepne (další tisk, `SDCARD_RESET_FILE`); potvrzení na
+displeji Kobry to na U #2 nezměnilo a fronta čekala (`readyForAutoStart` chce `idle`). Teď:
+
+- karta stroje ve stavu „chyba“/„neznámý“ nabízí **Resetovat chybu** (potvrzení); příkaz `FarmCommand::TYPE_RESET`
+  bez úlohy, `POST /admin/farm/printers/{printer}/command` s `type=reset`; texty `farm.admin.reset_*` cs/en/es,
+- agent 0.1.3: `reset` → driver `reset()`: při Klipper shutdown `/printer/firmware_restart`, pak
+  `SDCARD_RESET_FILE` přes `/printer/gcode/script`; když ho GoKlipper nezná a stav je dál `error`, zkusí
+  `/printer/print/cancel` (po chybném tisku vede na `cancelled` = idle). Zůstane-li `error`, příkaz selže s textem
+  tiskárny. Běžící tisk reset odmítne. Nic se nehýbe ani nehřeje,
+- testy: `FarmPagesTest::test_the_admin_resets_a_printer_error_from_the_dashboard_and_the_agent_gets_the_command`,
+  agent `test_moonraker.py` (5 reset scénářů) a `test_agent.py` (mock), celkem 33 testů agenta,
+- starý agent (0.1.1/0.1.2) na `reset` odpoví „unknown command“ a příkaz se na nástěnce ukáže jako selhaný.

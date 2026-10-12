@@ -115,6 +115,19 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.server.jobs()[-1]["status"], "cancelled")
         self.assertEqual([r[:2] for r in self.server.results], [(1, True), (2, True), (3, True), (4, True)])
 
+    async def test_a_reset_command_clears_the_error_a_failed_print_left_behind(self):
+        agent = self.agent(fail_at=50)
+        driver = agent.workers["p1"].driver
+        self.server.queue.append(start_cmd())
+        await self.rounds(agent, 14)
+        self.assertEqual(self.server.jobs()[-1]["status"], "failed")
+        self.assertEqual(self.server.reports[-1][0]["state"], "error", "the printer stays in error until somebody clears it")
+        self.server.queue.append({"id": 2, "printer": "p1", "type": "reset", "job_id": None, "payload": {}})
+        await self.rounds(agent, 2)
+        self.assertEqual(self.server.results[-1][:2], (2, True))
+        self.assertEqual(self.server.reports[-1][0]["state"], "idle")
+        self.assertEqual(driver._state, "standby")
+
     async def test_light_is_on_while_printing_and_switchable_by_command(self):
         agent = self.agent(print_seconds=5)
         driver = agent.workers["p1"].driver
@@ -154,8 +167,8 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
     async def test_an_error_that_stays_is_a_failure_after_a_while(self):
         agent = self.agent(error_blip_at=10, error_blips=1000, print_seconds=5)
         self.server.queue.append(start_cmd())
-        await self.rounds(agent, 6)                                  # starts, heats, reaches the error
-        await self.rounds(agent, ERROR_AFTER_POLLS + 6, pause=0.01)  # the error stays poll after poll
+        await self.rounds(agent, 10)                                 # starts, heats, reaches the error (10 % of 5 s)
+        await self.rounds(agent, ERROR_AFTER_POLLS + 8, pause=0.01)  # the error stays poll after poll
         statuses = [j["status"] for j in self.server.jobs()]
         self.assertEqual(statuses[-1], "failed")
         self.assertGreaterEqual(statuses.count("unknown"), ERROR_AFTER_POLLS - 1)

@@ -139,6 +139,13 @@ class MockDriver(PrinterDriver):
     async def dry(self, on: bool, temp: int = 45, minutes: int = 240) -> None:
         self.dryer = {"on": on, "temp": temp, "minutes": minutes}
 
+    async def reset(self) -> None:
+        self._advance()
+        if self._state in ("printing", "paused"):
+            raise DriverError("a print is running, nothing to reset")
+        self._state, self._message, self._since = "standby", "", None
+        await self._changed()
+
     async def _changed(self) -> None:
         if self.on_change:
             await self.on_change()

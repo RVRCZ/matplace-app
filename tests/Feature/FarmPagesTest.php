@@ -251,6 +251,30 @@ class FarmPagesTest extends TestCase
         $this->actingAs($this->user)->post('/admin/farm/attention/clear')->assertRedirect();
     }
 
+    public function test_the_admin_resets_a_printer_error_from_the_dashboard_and_the_agent_gets_the_command(): void
+    {
+        [$agent, $token] = FarmAgent::issue('Agent 1');
+        $printer = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $printer->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $agent->id, 'state' => FarmPrinter::STATE_ERROR, 'last_seen_at' => now(),
+            'telemetry' => ['klipper_state' => 'error', 'error' => 'nozzle must be hot first']]);
+
+        // the card shows what the printer said and offers the reset
+        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertSee('nozzle must be hot first')->assertSee(__('farm.admin.reset_error'));
+        $this->actingAs($this->admin)->postJson("/admin/farm/printers/{$printer->id}/command", ['type' => 'reset'])->assertOk();
+        $this->assertDatabaseHas('farm_commands', ['farm_printer_id' => $printer->id, 'type' => FarmCommand::TYPE_RESET, 'farm_print_job_id' => null]);
+
+        // the agent takes it with its next sync, like any other command; once the printer is idle the card drops the button
+        $commands = $this->postJson('/api/agent/sync', ['version' => '0.1.3', 'printers' => [['key' => 'kobra-s1-01', 'state' => 'error', 'telemetry' => [], 'job' => null]]], ['Authorization' => 'Bearer '.$token])
+            ->assertOk()->json('commands');
+        $this->assertSame(['reset', 'kobra-s1-01'], [$commands[0]['type'], $commands[0]['printer']]);
+        $this->postJson('/api/agent/sync', ['version' => '0.1.3', 'printers' => [['key' => 'kobra-s1-01', 'state' => 'idle', 'telemetry' => ['klipper_state' => 'standby'], 'job' => null]]], ['Authorization' => 'Bearer '.$token])->assertOk();
+        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertDontSee(__('farm.admin.reset_error'));
+
+        // a manual printer has nobody to carry it out
+        $printer->update(['mode' => FarmPrinter::MODE_MANUAL, 'state' => FarmPrinter::STATE_ERROR]);
+        $this->actingAs($this->admin)->postJson("/admin/farm/printers/{$printer->id}/command", ['type' => 'reset'])->assertStatus(422);
+    }
+
     public function test_admin_moves_a_colour_to_another_kind_and_replaces_its_photo(): void
     {
         $printer = FarmPrinter::firstOrFail();

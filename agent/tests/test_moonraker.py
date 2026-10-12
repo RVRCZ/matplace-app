@@ -24,7 +24,9 @@ class FakeMoonraker:
         self.webhooks = {"state": "ready", "state_message": "Printer is ready"}
         self.start_delay = 0.0          # seconds print/start sleeps before it answers
         self.start_answers = True       # False: print/start never answers (the test moves the state itself)
-        self.uploaded, self.started = [], []
+        self.knows_reset = True         # False: GoKlipper, SDCARD_RESET_FILE is an unknown command
+        self.cancel_clears = True       # a cancel after a failed print goes to "cancelled" (False: stays in error)
+        self.uploaded, self.started, self.scripts, self.restarts, self.cancels = [], [], [], [], 0
         self.runner = None
         self.url = ""
 
@@ -34,6 +36,9 @@ class FakeMoonraker:
         app.router.add_post("/server/files/upload", self.upload)
         app.router.add_post("/printer/print/start", self.start)
         app.router.add_post("/machine/device_power/device", self.ok)
+        app.router.add_post("/printer/gcode/script", self.script)
+        app.router.add_post("/printer/firmware_restart", self.firmware_restart)
+        app.router.add_post("/printer/print/cancel", self.cancel)
         self.runner = web.AppRunner(app, shutdown_timeout=0.1)   # a start handler asleep "for ever" must not hold the test
         await self.runner.setup()
         site = web.TCPSite(self.runner, "127.0.0.1", 0)
@@ -71,6 +76,27 @@ class FakeMoonraker:
     async def ok(self, request):
         return web.json_response({"result": "ok"})
 
+    async def script(self, request):
+        script = request.query.get("script", "")
+        self.scripts.append(script)
+        if script == "SDCARD_RESET_FILE":
+            if not self.knows_reset:
+                return web.json_response({"error": {"code": 400, "message": "Unknown command:\"SDCARD_RESET_FILE\""}}, status=400)
+            self.print_stats.update(state="standby", filename="", message="")
+        return web.json_response({"result": "ok"})
+
+    async def firmware_restart(self, request):
+        self.restarts.append(1)
+        self.webhooks.update(state="ready", state_message="Printer is ready")
+        self.print_stats.update(state="standby", filename="", message="")
+        return web.json_response({"result": "ok"})
+
+    async def cancel(self, request):
+        self.cancels += 1
+        if self.print_stats["state"] == "error" and self.cancel_clears:
+            self.print_stats.update(state="cancelled")
+        return web.json_response({"result": "ok"})
+
 
 class MoonrakerDriverTest(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -82,8 +108,75 @@ class MoonrakerDriverTest(unittest.IsolatedAsyncioTestCase):
 
     def driver(self, fake, **options):
         d = MoonrakerDriver("p1", {"url": fake.url, "light_device": "", "timeout": 2,
-                                   "start_timeout": 0.3, "start_wait": 3, "start_poll": 0.1} | options)
+                                   "start_timeout": 0.3, "start_wait": 3, "start_poll": 0.1, "reset_settle": 0.05} | options)
         return d
+
+    async def test_reset_clears_the_error_a_failed_print_left_behind(self):
+        async with FakeMoonraker() as fake:
+            fake.print_stats.update(state="error", filename="x.gcode", message="nozzle must be hot first")
+            d = self.driver(fake)
+            await d.connect()
+            try:
+                self.assertEqual((await d.status()).state, ERROR)
+                await d.reset()
+                self.assertEqual((await d.status()).state, IDLE)
+            finally:
+                await d.close()
+            self.assertEqual(fake.scripts, ["SDCARD_RESET_FILE"])
+            self.assertEqual((fake.restarts, fake.cancels), ([], 0), "no restart, no cancel when the reset alone does it")
+
+    async def test_reset_falls_back_to_a_cancel_on_goklipper(self):
+        async with FakeMoonraker() as fake:
+            fake.print_stats.update(state="error", filename="x.gcode", message="filament runout")
+            fake.knows_reset = False
+            d = self.driver(fake)
+            await d.connect()
+            try:
+                await d.reset()
+                self.assertEqual((await d.status()).state, IDLE)
+            finally:
+                await d.close()
+            self.assertEqual(fake.cancels, 1)
+
+    async def test_reset_restarts_klipper_after_a_shutdown(self):
+        async with FakeMoonraker() as fake:
+            fake.print_stats.update(state="error", filename="x.gcode", message="Heater extruder not heating at expected rate")
+            fake.webhooks.update(state="shutdown", state_message="Heater extruder not heating at expected rate")
+            d = self.driver(fake)
+            await d.connect()
+            try:
+                await d.reset()
+                s = await d.status()
+                self.assertEqual(s.state, IDLE)
+                self.assertNotIn("klippy", s.telemetry)
+            finally:
+                await d.close()
+            self.assertEqual(fake.restarts, [1])
+
+    async def test_reset_says_what_the_printer_says_when_the_error_stays(self):
+        async with FakeMoonraker() as fake:
+            fake.print_stats.update(state="error", filename="x.gcode", message="Move out of range")
+            fake.knows_reset, fake.cancel_clears = False, False
+            d = self.driver(fake)
+            await d.connect()
+            try:
+                with self.assertRaises(DriverError) as caught:
+                    await d.reset()
+            finally:
+                await d.close()
+            self.assertIn("Move out of range", str(caught.exception))
+
+    async def test_reset_refuses_while_a_print_runs(self):
+        async with FakeMoonraker() as fake:
+            fake.print_stats.update(state="printing", filename="x.gcode")
+            d = self.driver(fake)
+            await d.connect()
+            try:
+                with self.assertRaises(DriverError):
+                    await d.reset()
+            finally:
+                await d.close()
+            self.assertEqual(fake.scripts, [])
 
     async def test_a_quick_start_is_simply_started(self):
         async with FakeMoonraker() as fake:

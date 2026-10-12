@@ -255,7 +255,7 @@ class FarmOrderController extends Controller
     public function command(Request $request, FarmPrinter $printer): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
-            'type' => ['required', 'in:pause,resume,cancel,light_on,light_off,dry_on,dry_off'],
+            'type' => ['required', 'in:pause,resume,cancel,light_on,light_off,dry_on,dry_off,reset'],
             'dry_temp' => ['nullable', 'integer', 'min:35', 'max:70'],
             'dry_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
         ]);
@@ -271,6 +271,13 @@ class FarmOrderController extends Controller
             // the ACE dries every spool in the box at once; PLA 45–50 °C, PETG 55 °C (the ACE Pro stops at 55)
             $payload = ['on' => $data['type'] === 'dry_on', 'temp' => (int) ($data['dry_temp'] ?? 50), 'minutes' => 60 * (int) ($data['dry_hours'] ?? 4)];
             FarmCommand::create(['farm_printer_id' => $printer->id, 'type' => FarmCommand::TYPE_DRY, 'payload' => $payload, 'created_by' => $request->user()->id]);
+
+            return $this->answer($request, true, __('farm.admin.command_sent'));
+        }
+        if ($data['type'] === 'reset') {
+            // a failed print leaves Klipper in "error" until somebody clears it, and the queue waits meanwhile; this
+            // does from the desk what the operator did on the printer's screen (U #2, 12 Oct 2026)
+            FarmCommand::create(['farm_printer_id' => $printer->id, 'type' => FarmCommand::TYPE_RESET, 'created_by' => $request->user()->id]);
 
             return $this->answer($request, true, __('farm.admin.command_sent'));
         }
