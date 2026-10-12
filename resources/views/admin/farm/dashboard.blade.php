@@ -15,10 +15,15 @@
 <div id="farm-dashboard" data-refresh="{{ route('admin.farm.dashboard') }}" data-every="30" data-error="{{ __('farm.admin.request_failed') }}">
 @if($attention->isNotEmpty())
     <section class="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4">
-        <h2 class="font-bold text-amber-900">{{ __('farm.admin.attention') }}</h2>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="font-bold text-amber-900">{{ __('farm.admin.attention') }}</h2>
+            {{-- clears the list only: the orders keep their state and nobody is mailed; an order comes back when something changes on it --}}
+            <form method="post" action="{{ route('admin.farm.attention.clear') }}" onsubmit="return confirm(@js(__('farm.admin.attention_clear_confirm', ['n' => $attention->count()])))">@csrf<button class="btn-quiet text-xs">{{ __('farm.admin.attention_clear') }}</button></form>
+        </div>
         <ul class="mt-2 space-y-1 text-sm">
             @foreach($attention as $o)
-                <li><a class="underline" href="{{ route('admin.farm.orders.show', $o) }}">{{ $o->number ?? $o->token }}</a> · {{ __('farm.status.'.$o->status) }} · {{ $o->modelFile?->original_name }} · {{ $o->user?->email }}</li>
+                <li class="flex items-center gap-2"><span><a class="underline" href="{{ route('admin.farm.orders.show', $o) }}">{{ $o->number ?? $o->token }}</a> · {{ __('farm.status.'.$o->status) }} · {{ $o->modelFile?->original_name }} · {{ $o->user?->email }}</span>
+                    <form method="post" action="{{ route('admin.farm.attention.clear.one', $o) }}" class="inline">@csrf<button class="text-xs text-slate-500 hover:text-slate-800" title="{{ __('farm.admin.attention_clear_one') }}" aria-label="{{ __('farm.admin.attention_clear_one') }}">×</button></form></li>
             @endforeach
         </ul>
     </section>

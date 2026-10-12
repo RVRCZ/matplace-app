@@ -20,6 +20,7 @@ use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrintJob;
 use App\Support\Money;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,10 +49,30 @@ class FarmOrderController extends Controller
 
         return view('admin.farm.dashboard', [
             'printers' => $printers,
-            'attention' => FarmOrder::with(['user', 'modelFile'])->where(fn ($q) => $q->where('status', FarmOrder::STATUS_PAID)->orWhere('status', FarmOrder::STATUS_DONE)
-                ->orWhere(fn ($f) => $f->where('status', FarmOrder::STATUS_FAILED)->whereNotNull('paid_at')))->latest('id')->limit(30)->get(),
+            'attention' => $this->attention()->with(['user', 'modelFile'])->latest('id')->limit(30)->get(),
             'requireApproval' => (bool) $this->settings->get('require_approval'),
         ]);
+    }
+
+    /**
+     * "Čeká na vás": orders waiting for the admin (to approve, to hand over, failed after payment), minus the ones the
+     * admin cleared from the list and nothing changed on since.
+     */
+    private function attention(): Builder
+    {
+        return FarmOrder::query()
+            ->where(fn ($q) => $q->where('status', FarmOrder::STATUS_PAID)->orWhere('status', FarmOrder::STATUS_DONE)
+                ->orWhere(fn ($f) => $f->where('status', FarmOrder::STATUS_FAILED)->whereNotNull('paid_at')))
+            ->where(fn ($q) => $q->whereNull('attention_cleared_at')->orWhereColumn('attention_cleared_at', '<', 'updated_at'));
+    }
+
+    /** The whole "Čeká na vás" list, or one order of it, cleared: the orders keep their state, nobody is mailed. */
+    public function clearAttention(?FarmOrder $order = null): RedirectResponse
+    {
+        // toBase(): an Eloquent update would bump updated_at and the comparison above would be a race
+        $n = ($order ? FarmOrder::whereKey($order->id) : $this->attention())->toBase()->update(['attention_cleared_at' => now()]);
+
+        return redirect()->route('admin.farm.dashboard')->with('status', __('farm.admin.attention_cleared', ['n' => $n]));
     }
 
     public function index(Request $request): View

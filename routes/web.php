@@ -400,6 +400,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     $catalog = FarmCatalogController::class;
 
     Route::get('/', [$orders, 'dashboard'])->name('dashboard');
+    Route::post('/attention/clear', [$orders, 'clearAttention'])->name('attention.clear');
+    Route::post('/orders/{order}/attention/clear', [$orders, 'clearAttention'])->name('attention.clear.one');
     Route::get('/orders', [$orders, 'index'])->name('orders');
     Route::get('/orders/{order}', [$orders, 'show'])->name('orders.show');
     Route::get('/orders/{order}/print.gcode', [$orders, 'gcode'])->name('orders.gcode');

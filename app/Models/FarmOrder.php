@@ -73,7 +73,7 @@ class FarmOrder extends Model
         'print_settings' => 'array', 'admin_overrides' => 'array', 'slice_params' => 'array', 'slice_result' => 'array', 'price' => 'array', 'est_minutes' => 'int', 'est_grams' => 'float',
         'est_meters' => 'float', 'supports_used' => 'bool', 'price_total' => 'float', 'actual_minutes' => 'int', 'actual_grams' => 'float',
         'terms_accepted_at' => 'datetime', 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'queued_at' => 'datetime',
-        'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime',
+        'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime', 'attention_cleared_at' => 'datetime',
         'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',
         'shipping_price' => 'float', 'shipped_at' => 'datetime', 'timings' => 'array', 'color_changes' => 'array', 'by_parts' => 'bool', 'part_plates' => 'array',
     ];

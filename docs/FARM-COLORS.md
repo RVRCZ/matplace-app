@@ -478,3 +478,13 @@ horká; když má ACE opravdu vyměnit cívku (v hlavě byl jiný slot), odmítn
 před první řádek `T` vkládá `M104 S<1. vrstva>` + `M109 S<1. vrstva>` (teplota druhu/cívky, jinak z `G9111`), přepis
 teplot je nechává (značka `; matplace slot`); kopie dostávají jméno `.hot.slot…`, staré kopie se nepoužijí. Test
 v `GcodeColorChangesTest`. Neověřené: ostrý start s výměnou slotu na U #2 (Roman).
+
+## 16. „Čeká na vás“ na nástěnce jde vyčistit (12. 10. 2026)
+
+Seznam na `/admin/farm` se skládá ze stavů zakázek (zaplaceno a čeká na schválení, hotovo a čeká na předání, selhalo po zaplacení); dřív z něj nešlo nic odstranit jinak než změnou stavu. Teď:
+
+- tlačítko **Vyčistit seznam** (po potvrzení) a křížek u každého řádku; obojí jen zapíše `farm_orders.attention_cleared_at = now()`, stav zakázky se nemění a zákazníkovi nic neodejde,
+- dotaz na seznam vynechá zakázky, kde `attention_cleared_at >= updated_at`; jakmile se na zakázce něco změní (stav, předání, poznámka), vrátí se,
+- zápis jde přes `toBase()->update()`, aby Eloquent nebumpnul `updated_at` a zakázka nezůstala v seznamu,
+- trasy `POST /admin/farm/attention/clear` a `POST /admin/farm/orders/{order}/attention/clear` (jen admin), texty `farm.admin.attention_clear*` cs/en/es,
+- test `FarmPagesTest::test_the_admin_clears_the_attention_list_without_touching_the_orders`.

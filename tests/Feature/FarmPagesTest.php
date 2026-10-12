@@ -220,6 +220,37 @@ class FarmPagesTest extends TestCase
         $this->actingAs($this->admin)->get('/admin/farm/printers')->assertOk()->assertSee('1 ');
     }
 
+    public function test_the_admin_clears_the_attention_list_without_touching_the_orders(): void
+    {
+        app(FarmSettings::class)->set('require_approval', true); // a paid order then waits for the admin: it is on the list
+        $order = $this->order();
+        app(Wallet::class)->adjust($this->user, 1000, 'test', $this->admin->id);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json();
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $state['colors'][0]['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $state['colors'][0]['total']])->assertOk();
+        $this->assertSame(FarmOrder::STATUS_PAID, $order->fresh()->status);
+        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertSee(__('farm.admin.attention'))->assertSee($order->fresh()->number);
+
+        // the whole list goes; the order keeps its state and no mail leaves
+        Mail::assertNothingSent();
+        $this->actingAs($this->admin)->post('/admin/farm/attention/clear')->assertRedirect('/admin/farm')->assertSessionHas('status');
+        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertDontSee(__('farm.admin.attention'));
+        $this->assertSame(FarmOrder::STATUS_PAID, $order->fresh()->status);
+        Mail::assertNothingSent();
+
+        // a change on the order brings it back, and one row can be hidden on its own
+        $this->travel(1)->seconds();
+        foreach (['queued', 'printing', 'done'] as $to) {
+            $this->actingAs($this->admin)->post("/admin/farm/orders/{$order->token}/status", ['to' => $to])->assertRedirect()->assertSessionMissing('error');
+        }
+        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertSee(__('farm.admin.attention'))->assertSee(__('farm.status.done'));
+        $this->actingAs($this->admin)->post("/admin/farm/orders/{$order->token}/attention/clear")->assertRedirect('/admin/farm');
+        $this->actingAs($this->admin)->get('/admin/farm')->assertOk()->assertDontSee(__('farm.admin.attention'));
+        $this->assertSame(FarmOrder::STATUS_DONE, $order->fresh()->status);
+
+        // customers cannot
+        $this->actingAs($this->user)->post('/admin/farm/attention/clear')->assertRedirect();
+    }
+
     public function test_admin_moves_a_colour_to_another_kind_and_replaces_its_photo(): void
     {
         $printer = FarmPrinter::firstOrFail();
