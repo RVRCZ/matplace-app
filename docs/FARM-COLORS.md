@@ -488,3 +488,21 @@ Seznam na `/admin/farm` se skládá ze stavů zakázek (zaplaceno a čeká na sc
 - zápis jde přes `toBase()->update()`, aby Eloquent nebumpnul `updated_at` a zakázka nezůstala v seznamu,
 - trasy `POST /admin/farm/attention/clear` a `POST /admin/farm/orders/{order}/attention/clear` (jen admin), texty `farm.admin.attention_clear*` cs/en/es,
 - test `FarmPagesTest::test_the_admin_clears_the_attention_list_without_touching_the_orders`.
+
+## 17. Agent 0.1.2: pomalý start tisku a chybový text z tiskárny (12. 10. 2026)
+
+Co se stalo: start ASA testu na U #2 (T26-000046, 20:14 UTC) skončil „/printer/print/start: TimeoutError“ po 15 s,
+tiskárna ale soubor vzala a skončila v chybě dřív, než položila první vrstvu; agent ji nesledoval (job na serveru
+„failed“, tiskárna „error“, text chyby jen na displeji). Stejný průběh 11. 10. 21:33 (B #2), 21:34 a 22:02 (U #2) –
+vždy start s výměnou cívky hned na začátku (slot 3/4), ale totéž jindy prošlo (12. 10. 12:09, 13:06, 17:47).
+
+Agent (`agent/farm_agent/drivers/moonraker.py`):
+- `print/start` má vlastní limit `start_timeout` (120 s, dřív společných 15 s). Když ani pak neodpoví, agent `start_wait`
+  (60 s) sleduje stav: tiskne-li tiskárna (náš soubor), start se bere jako povedený a úloha se sleduje; hlásí-li chybu,
+  příkaz selže s jejím textem („print start: the printer reports an error: …“); jinak až pak TimeoutError.
+- Telemetrie nese `error` = `print_stats.message` (tisk skončil chybou) nebo `webhooks.state_message` (Klipper
+  shutdown) a `klippy` = stav Klipperu, když není ready; nástěnka je vypíše na kartě stroje. Dotaz na objekty nově
+  zahrnuje `webhooks`.
+- Testy `agent/tests/test_moonraker.py` (falešný Moonraker přes aiohttp): rychlý start, start přes limit s tisknoucí
+  tiskárnou, mlčící start s chybou tiskárny, mlčící start s mlčící tiskárnou, text chyby ve stavu.
+- Balíček `C:\Users\roman\Desktop\matplace-farm-agent.zip` (bez config.yaml), verze 0.1.2; nainstalovat na oba PC.

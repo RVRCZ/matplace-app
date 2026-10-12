@@ -14,7 +14,8 @@ Moonraker (Klipper) driver - Anycubic Kobra S1 with the Rinkhals firmware overla
              only mirrors the state and the target)
 
 Options (config.yaml): url, api_key (optional), snapshot_url (optional), light_device (optional, default chamber_light
-on Rinkhals; "" = the printer has no light), timeout (seconds, default 15).
+on Rinkhals; "" = the printer has no light), timeout (seconds, default 15), start_timeout (seconds the print/start call
+may take, default 120), start_wait (seconds to watch the printer after a start call that gave no answer, default 60).
 """
 from __future__ import annotations
 
@@ -22,6 +23,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from typing import Optional
 
 import aiohttp
@@ -31,7 +33,7 @@ from .base import (ERROR, IDLE, JOB_CANCELLED, JOB_DONE, JOB_FAILED, JOB_PAUSED,
 
 log = logging.getLogger("farm_agent.moonraker")
 
-OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status&ota_filament_hub&filament_hub&mmu_machine"
+OBJECTS = "print_stats&virtual_sdcard&extruder&heater_bed&display_status&ota_filament_hub&filament_hub&mmu_machine&webhooks"
 
 # print_stats.state -> (printer state, job state)
 STATES = {
@@ -49,6 +51,9 @@ class MoonrakerDriver(PrinterDriver):
         super().__init__(key, options)
         self.url = str(options["url"]).rstrip("/")
         self.timeout = aiohttp.ClientTimeout(total=float(options.get("timeout", 15)))
+        self.start_timeout = float(options.get("start_timeout", 120))
+        self.start_wait = float(options.get("start_wait", 60))
+        self.start_poll = float(options.get("start_poll", 5))
         self.headers = {"X-Api-Key": options["api_key"]} if options.get("api_key") else {}
         self.snapshot_url = options.get("snapshot_url")
         self.light_device = options.get("light_device", "chamber_light")
@@ -82,6 +87,17 @@ class MoonrakerDriver(PrinterDriver):
             "bed_target": _num(s.get("heater_bed", {}).get("target")),
             "klipper_state": stats.get("state"),
         }
+        # what went wrong, in the printer's words: a print that ended in error leaves it in print_stats.message, a
+        # Klipper shutdown (MCU, heater, "nozzle must be hot first" from a macro) in webhooks.state_message. Without
+        # this the operator had to walk to the printer to read the screen (U #2, 12 Oct 2026).
+        hooks = s.get("webhooks") or {}
+        if hooks.get("state") and hooks["state"] != "ready":
+            telemetry["klippy"] = str(hooks["state"])
+        error = str(stats.get("message") or "") if printer_state == ERROR else ""
+        if not error and hooks.get("state") in ("shutdown", "error"):
+            error = str(hooks.get("state_message") or "")
+        if error:
+            telemetry["error"] = " ".join(error.split())[:160]
         # Rinkhals (Kobra S1) adds layers and the remaining time; plain Klipper has neither, both are optional
         info = stats.get("info") or {}
         if info.get("total_layer"):
@@ -187,7 +203,26 @@ class MoonrakerDriver(PrinterDriver):
             await self._post("/server/files/upload", data=form, timeout=aiohttp.ClientTimeout(total=600))
         # the G-code already selects the spool position (T<slot>); nothing to tell the printer separately
         log.info("%s: starting %s (slot %d)", self.key, filename, slot + 1)
-        await self._post("/printer/print/start", params={"filename": filename})
+        try:
+            await self._post("/printer/print/start", params={"filename": filename}, timeout=aiohttp.ClientTimeout(total=self.start_timeout))
+        except DriverError as e:
+            if "TimeoutError" not in str(e):
+                raise
+            # Seen on a Kobra S1 (U #2, 11-12 Oct 2026, four times): the call runs past the limit, yet the printer has
+            # taken the file - it is heating, or it has already failed on the start. Giving up here left the server with
+            # a "failed" job and the printer with a print nobody tracked, so look at what the printer does first.
+            log.warning("%s: print/start gave no answer in %.0f s, watching the printer", self.key, self.start_timeout)
+            deadline = time.monotonic() + self.start_wait
+            while time.monotonic() < deadline:
+                await asyncio.sleep(self.start_poll)
+                now = await self.status()
+                if now.state in (PRINTING, PAUSED) and (not now.job or now.job.filename == filename):
+                    log.info("%s: the printer took %s after all", self.key, filename)
+                    return
+                if now.state == ERROR:
+                    said = (now.job.message if now.job else "") or now.telemetry.get("error") or "no message"
+                    raise DriverError(f"print start: the printer reports an error: {said}") from e
+            raise
 
     async def pause(self) -> None:
         await self._post("/printer/print/pause")
