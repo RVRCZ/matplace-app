@@ -68,4 +68,22 @@ class GcodeColorChangesTest extends TestCase
         $this->assertStringStartsWith('T2 ; slot chosen', $tools[0][0]);
         $this->assertSame([['T3 ; colour change by matplace farm', 5]], array_slice($tools, 1), 'the first change goes to the running slot: no line for it');
     }
+
+    public function test_the_nozzle_is_heated_and_waited_for_before_the_first_spool_change(): void
+    {
+        // the ACE refuses a spool change on a cold nozzle ("nozzle must be hot first"): the kind's first-layer temperature
+        // is set and waited for right before the tool line, and the temperature rewrite leaves those two lines alone
+        $out = GcodeSlot::retarget($this->gcode(), 2, ['nozzle' => 250, 'nozzle_first' => 255, 'bed' => 100]);
+        $this->assertStringContainsString("M104 S255 ; matplace slot: heat before the spool change\nM109 S255 ; matplace slot: wait for it\nT2 ; slot chosen by matplace farm\n", $out);
+        $this->assertStringContainsString('G9111 bedTemp=100 extruderTemp=255', $out);
+        $this->assertSame(1, substr_count($out, 'T2 ; slot chosen'));
+
+        // without a kind of its own the heat comes from the start macro's first-layer value
+        $plain = GcodeSlot::retarget($this->gcode(), 3);
+        $this->assertStringContainsString("M109 S215 ; matplace slot: wait for it\nT3 ; slot chosen by matplace farm\n", $plain);
+
+        // a file without any tool line (a single-filament slice) gets the heat and the tool line after the start macro
+        $single = GcodeSlot::retarget("G9111 bedTemp=60 extruderTemp=220\nM117\nG90\n", 1, ['nozzle' => 215, 'nozzle_first' => 220, 'bed' => 60]);
+        $this->assertStringContainsString("M117\nM104 S220 ; matplace slot: heat before the spool change\nM109 S220 ; matplace slot: wait for it\nT1 ; slot chosen by matplace farm\nG90\n", $single);
+    }
 }

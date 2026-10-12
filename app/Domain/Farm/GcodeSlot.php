@@ -101,7 +101,15 @@ final class GcodeSlot
     {
         // written for slot 1 (T0) as well: a file without any tool line is refused by the firmware of the S1 + ACE
         // ("cannot parse the file", 23 Sep 2026, order F26-000002)
-        $line = 'T'.$slot.' ; slot chosen by matplace farm';
+        // The nozzle is heated and waited for before the tool line: when the ACE really has to change the spool (another
+        // slot was loaded last), its macro refuses a cold nozzle ("nozzle must be hot first", U #2, 12 Oct 2026; the
+        // start timeouts of 11 Oct were the same thing). A change in the middle of a print never saw it - the nozzle is hot.
+        $hot = (int) ($temps['nozzle_first'] ?: ($temps['nozzle'] ?? 0) + 5);
+        if ($hot < 100 && preg_match('/^G9111 bedTemp=\d+ extruderTemp=(\d+)/m', $gcode, $g)) {
+            $hot = (int) $g[1];
+        }
+        $heat = $hot >= 100 ? 'M104 S'.$hot." ; matplace slot: heat before the spool change\nM109 S".$hot." ; matplace slot: wait for it\n" : '';
+        $line = $heat.'T'.$slot.' ; slot chosen by matplace farm';
         $out = preg_replace('/^T0[ \t]*(;.*)?$/m', $line, $gcode, 1, $n);
         if ($n === 0) {
             // OrcaSlicer writes no tool line at all for a single-filament print: put one right after the start macro
@@ -114,8 +122,9 @@ final class GcodeSlot
             // the start macro heats to the first-layer values, then the slicer sets the printing values per layer
             $out = (string) preg_replace_callback('/^G9111 bedTemp=(\d+) extruderTemp=(\d+)/m',
                 fn ($m) => 'G9111 bedTemp='.($bed ?: $m[1]).' extruderTemp='.$first, $out, 1);
-            // every nozzle temperature except the per-floor lines of a temperature tower (TowerGcode)
-            $out = (string) preg_replace('/^(M10[49]) S(?!0\b)\d+(?=\s*(?:;(?! matplace tower)|$))/m', '$1 S'.(int) $temps['nozzle'], $out);
+            // every nozzle temperature except the per-floor lines of a temperature tower (TowerGcode) and the heating
+            // before the spool change above
+            $out = (string) preg_replace('/^(M10[49]) S(?!0\b)\d+(?=\s*(?:;(?! matplace (?:tower|slot))|$))/m', '$1 S'.(int) $temps['nozzle'], $out);
             if ($bed) {
                 $out = (string) preg_replace('/^(M1[49]0) S(?!0\b)\d+(?=\s*(?:;|$))/m', '$1 S'.$bed, $out);
             }
@@ -142,7 +151,8 @@ final class GcodeSlot
     public static function fileFor(string $gcodePath, int $slot, array $temps = [], ?array $changes = null): string
     {
         $changes = $changes === null ? [] : (isset($changes['slot']) ? [$changes] : array_values($changes));
-        $tag = '.slot'.$slot.(! empty($temps['nozzle']) ? '-'.$temps['nozzle'].'-'.(int) ($temps['bed'] ?? 0) : '')
+        // "hot": copies made before the heating-before-the-spool-change (12 Oct 2026) are not reused
+        $tag = '.hot.slot'.$slot.(! empty($temps['nozzle']) ? '-'.$temps['nozzle'].'-'.(int) ($temps['bed'] ?? 0) : '')
             .($changes ? '.then'.implode('_', array_map(fn ($c) => $c['slot'].'at'.str_replace('.', '_', (string) $c['z']), $changes)) : '');
         $target = preg_replace('/\.gcode$/', '', $gcodePath).$tag.'.gcode';
         if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {

@@ -468,3 +468,13 @@ a T26-000036 na U #1 (všechny bez zprávy, progress 0, 6–7 min po startu).
   1 %) zakázku ukončí jako dřív. Se starým agentem, který po prvním „failed“ úlohu zapomene, zůstane zakázka
   „tiskne se“ s úlohou „neznámý“ – obsluha ji po dotisku uzavře ručně (lepší než vrácený kredit a tisk bez dozoru).
   Test ve `FarmOrderFlowTest`.
+
+## 15. Zahřát trysku před výměnou cívky na startu (12. 10. 2026)
+
+U #2: test T26-000045 (ASA, slot 3) skončil hláškou tiskárny „nozzle must be hot first“; totéž byly včerejší timeouty
+startu na U #2 a B #2 (F26-000057). Náš `T<n>` stál hned za startovacím makrem `G9111`/`M117`, kdy tryska ještě není
+horká; když má ACE opravdu vyměnit cívku (v hlavě byl jiný slot), odmítne. Výměny uprostřed tisku to nikdy nepotkalo
+(tryska je horká) a start se stejným slotem také ne, proto to na U #1 a B #7 procházelo. `GcodeSlot::retarget` teď
+před první řádek `T` vkládá `M104 S<1. vrstva>` + `M109 S<1. vrstva>` (teplota druhu/cívky, jinak z `G9111`), přepis
+teplot je nechává (značka `; matplace slot`); kopie dostávají jméno `.hot.slot…`, staré kopie se nepoužijí. Test
+v `GcodeColorChangesTest`. Neověřené: ostrý start s výměnou slotu na U #2 (Roman).
