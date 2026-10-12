@@ -365,6 +365,8 @@ return [
             'failed' => 'Zakázka :number selhala: :reason',
             'start_failed' => 'Tisk se nepodařilo spustit (:printer)',
             'offline' => 'Tiskárna :printer je offline',
+            'error_pending' => 'Tiskárna :printer hlásí chybu u zakázky :number – čekám, zda zůstane',
+            'error_pending_text' => 'Tiskárna nahlásila chybu bez důvodu hned po startu, dřív než vytiskla první procento. Kobra S1 to na chvíli říká při zahřívání a rovnání a pak tiskne dál, proto zakázka zůstává otevřená a kredit držený. Když chyba potrvá, přijde zpráva o selhání; když tiskárna tiskne, nic nedělejte. Zkontrolujte ji prosím pohledem.',
             'offline_since' => 'Naposledy se ozvala: :time',
         ],
     ],

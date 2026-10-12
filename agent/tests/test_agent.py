@@ -10,7 +10,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from farm_agent.agent import LOST_AFTER_POLLS, Agent  # noqa: E402
+from farm_agent.agent import ERROR_AFTER_POLLS, LOST_AFTER_POLLS, Agent  # noqa: E402
 from farm_agent.config import Config, PrinterConfig, load  # noqa: E402
 from farm_agent.drivers import create  # noqa: E402
 from farm_agent.drivers.base import DriverError  # noqa: E402
@@ -139,6 +139,27 @@ class AgentTest(unittest.IsolatedAsyncioTestCase):
         last = self.server.jobs()[-1]
         self.assertEqual(last["status"], "failed")
         self.assertIn("simulated failure", last["message"])
+
+    async def test_an_error_the_printer_takes_back_is_not_a_failure(self):
+        # a Kobra S1 answers "error" for a poll or two while it heats and levels, then prints on: the job is reported
+        # unknown meanwhile, never failed, and ends done
+        agent = self.agent(error_blip_at=10, error_blips=2)
+        self.server.queue.append(start_cmd())
+        await self.rounds(agent, 14)
+        statuses = [j["status"] for j in self.server.jobs()]
+        self.assertNotIn("failed", statuses)
+        self.assertIn("unknown", statuses)
+        self.assertEqual(statuses[-1], "done")
+
+    async def test_an_error_that_stays_is_a_failure_after_a_while(self):
+        agent = self.agent(error_blip_at=10, error_blips=1000, print_seconds=5)
+        self.server.queue.append(start_cmd())
+        await self.rounds(agent, 6)                                  # starts, heats, reaches the error
+        await self.rounds(agent, ERROR_AFTER_POLLS + 6, pause=0.01)  # the error stays poll after poll
+        statuses = [j["status"] for j in self.server.jobs()]
+        self.assertEqual(statuses[-1], "failed")
+        self.assertGreaterEqual(statuses.count("unknown"), ERROR_AFTER_POLLS - 1)
+        self.assertNotIn("failed", statuses[:-1], "failed only once, at the end")
 
     async def test_a_busy_printer_refuses_a_second_start_and_says_why(self):
         agent = self.agent(print_seconds=5)

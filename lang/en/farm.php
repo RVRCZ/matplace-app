@@ -365,6 +365,8 @@ return [
             'failed' => 'Order :number failed: :reason',
             'start_failed' => 'The print could not be started (:printer)',
             'offline' => 'Printer :printer is offline',
+            'error_pending' => 'Printer :printer reports an error on order :number – waiting to see whether it stays',
+            'error_pending_text' => 'The printer reported an error without a reason right after the start, before the first per cent. A Kobra S1 says that for a moment while it heats and levels and then prints on, so the order stays open and the credit held. If the error stays, a failure message follows; if the printer prints, do nothing. Please have a look at it.',
             'offline_since' => 'Last heard from: :time',
         ],
     ],

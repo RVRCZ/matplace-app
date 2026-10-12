@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\AgentService;
 use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\OrderService;
@@ -791,6 +792,40 @@ T2 ; slot chosen by matplace farm
         $this->assertSame('print_failed', $order->error);
         $this->assertSame(1000.0, app(Wallet::class)->balance($this->user)->amount);
         Mail::assertQueued(FarmAdminAlert::class);
+    }
+
+    public function test_an_error_reported_for_a_moment_at_the_start_does_not_close_the_order(): void
+    {
+        [$printer, $auth] = $this->agentPrinter();
+        $this->sync($auth);
+        $order = $this->order();
+        $this->credit(1000);
+        $this->pay($order);
+        $printer->update(['bed_clear' => true]);
+        $cmd = $this->sync($auth)->json('commands.0');
+        $this->sync($auth, 'printing', ['id' => $cmd['job_id'], 'status' => 'printing', 'progress' => 0]);
+
+        // a Kobra S1 says "error" for a poll while it heats and levels: no reason, nothing printed yet, seconds after the start
+        $this->sync($auth, 'error', ['id' => $cmd['job_id'], 'status' => 'failed', 'progress' => 0]);
+        $order->refresh();
+        $this->assertSame(FarmOrder::STATUS_PRINTING, $order->status, 'the order stays open');
+        $this->assertEqualsWithDelta(1000.0 - (float) $order->price_total, app(Wallet::class)->balance($this->user)->amount, 0.001, 'the credit stays held');
+        $job = FarmPrintJob::findOrFail($cmd['job_id']);
+        $this->assertSame([FarmPrintJob::STATUS_UNKNOWN, AgentService::ERROR_PENDING], [$job->status, $job->message]);
+        Mail::assertQueued(FarmAdminAlert::class);
+
+        // said again right away: still the same moment; the printer prints on and the job is printing again
+        $this->sync($auth, 'error', ['id' => $cmd['job_id'], 'status' => 'failed', 'progress' => 0]);
+        $this->assertSame(FarmOrder::STATUS_PRINTING, $order->fresh()->status);
+        $this->sync($auth, 'printing', ['id' => $cmd['job_id'], 'status' => 'printing', 'progress' => 3, 'message' => '']);
+        $this->assertSame(FarmPrintJob::STATUS_PRINTING, $job->fresh()->status);
+
+        // an error that stays (reported again a minute later) is a failure
+        $this->sync($auth, 'error', ['id' => $cmd['job_id'], 'status' => 'failed', 'progress' => 3, 'message' => '']);
+        $this->assertSame(FarmOrder::STATUS_FAILED, $order->fresh()->status, 'past the first per cent the printer is believed at once');
+        $this->assertSame(1000.0, app(Wallet::class)->balance($this->user)->amount, 'and the credit comes back');
+
+        // an error with a reason is believed at once even at the start: test_failed_print_returns_the_credit_and_alerts_the_admin
     }
 
     public function test_agent_api_needs_a_valid_token_and_sees_only_its_own_printers(): void

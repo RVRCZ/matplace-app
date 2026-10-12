@@ -18,6 +18,18 @@ final class AgentService
     /** A start that nobody picked up for this long is withdrawn: the plate may not be empty any more. */
     public const START_EXPIRES_MINUTES = 10;
 
+    /** The message a job carries while a failure reported without a word, right after the start, waits to be confirmed. */
+    public const ERROR_PENDING = 'error reported by the printer, waiting for a second report';
+
+    /** A failure the printer gave no reason for, before the first per cent, in the first minutes of the job: a Kobra S1 says that for a moment while it starts. */
+    private function looksTransient(FarmPrintJob $job): bool
+    {
+        $message = (string) $job->message;
+
+        return (float) $job->progress < 1 && ($message === '' || $message === self::ERROR_PENDING)
+            && $job->started_at !== null && $job->started_at->gt(now()->subMinutes(15));
+    }
+
     private const PRINTER_STATES = [FarmPrinter::STATE_IDLE, FarmPrinter::STATE_PRINTING, FarmPrinter::STATE_PAUSED, FarmPrinter::STATE_ERROR, FarmPrinter::STATE_UNKNOWN];
 
     public function __construct(private readonly OrderFlow $flow, private readonly Dispatcher $dispatcher, private readonly FarmSettings $settings) {}
@@ -104,9 +116,24 @@ final class AgentService
 
             case 'failed':
             case 'cancelled':
+                // a failure without a word from the printer, before the first per cent, in the first minutes: a Kobra S1
+                // says "error" for a moment while it heats and levels and prints on (F26-000059, 12 Oct 2026). The order
+                // is not closed on that: the job waits as unknown, the admin is told, and only a failure reported again
+                // a minute later (or with a message) ends it. An agent from 0.1.1 keeps watching such a print itself.
+                if ($status === 'failed' && $this->looksTransient($job)) {
+                    $pending = $job->message === self::ERROR_PENDING;
+                    if (! $pending) {
+                        $job->fill(['status' => FarmPrintJob::STATUS_UNKNOWN, 'message' => self::ERROR_PENDING])->save();
+                        $this->flow->alertAdmin(__('farm.admin.mail.error_pending', ['number' => $order->number, 'printer' => $printer->name]), $order, [__('farm.admin.mail.error_pending_text')]);
+                        break;
+                    }
+                    if ($job->updated_at && $job->updated_at->gt(now()->subSeconds(60))) {
+                        break;   // said again too soon: still the same moment
+                    }
+                }
                 $job->fill(['status' => $status === 'failed' ? FarmPrintJob::STATUS_FAILED : FarmPrintJob::STATUS_CANCELLED, 'finished_at' => now()])->save();
                 if (in_array($order->status, [FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING], true)) {
-                    $this->flow->fail($order, $status === 'failed' ? 'print_failed' : 'print_cancelled', 'agent', detail: $job->message);
+                    $this->flow->fail($order, $status === 'failed' ? 'print_failed' : 'print_cancelled', 'agent', detail: $job->message === self::ERROR_PENDING ? null : $job->message);
                 }
                 break;
 

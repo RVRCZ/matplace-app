@@ -37,6 +37,11 @@ class MockDriver(PrinterDriver):
         self.print_seconds = float(options.get("print_seconds", 90))
         self.heat_seconds = float(options.get("heat_seconds", 5))
         self.fail_at = options.get("fail_at")
+        # error_blips: how many status calls in a row answer "error" once the print reaches error_blip_at per cent, after
+        # which the print goes on - what a Kobra S1 does for a moment while it heats and levels
+        self.error_blip_at = options.get("error_blip_at")
+        self._blips_left = int(options.get("error_blips", 2))
+        self._blipped = False
         self.filament_mm = float(options.get("filament_mm", 3600))
         self._file: Optional[str] = None
         self._state = "standby"          # Klipper's words: standby | printing | paused | complete | cancelled | error
@@ -61,6 +66,13 @@ class MockDriver(PrinterDriver):
 
     async def status(self) -> PrinterStatus:
         self._advance()
+        if self.error_blip_at is not None and self._state == "printing" and self._file and self._progress() >= float(self.error_blip_at):
+            if not self._blipped:
+                self._blipped = True
+            if self._blips_left > 0:
+                self._blips_left -= 1
+                job = JobStatus(filename=self._file, status=JOB_FAILED, progress=round(self._progress(), 2), print_duration=int(self._printed), filament_used=0.0, message="")
+                return PrinterStatus(ERROR, {"klipper_state": "error", "mock": True}, job)
         printer = {"standby": IDLE, "printing": PRINTING, "paused": PAUSED, "complete": IDLE, "cancelled": IDLE, "error": ERROR}[self._state]
         heating = self._state == "printing" and self._printed < self.heat_seconds
         hot = self._state in ("printing", "paused")

@@ -448,3 +448,23 @@ reprezentativní slot), a druhé barvy se braly jen z jeho stroje (`secondSpools
 - Test ve `FarmOrderFlowTest`: bílá na S1 i Maxu, S1 má druhou barvu A, Max barvu B → start i zakázka nabízejí A i B;
   platba s B přesune zakázku na Max (slot bílé Maxu), cívky ze dvou strojů odmítne.
 - Neověřené: ruční průchod na produkci (rozpis cívek má bílou a černou na většině strojů, takže to teď uvidíš hned).
+
+## 14. Chvilková „chyba“ tiskárny při startu nesmí zavřít zakázku (12. 10. 2026)
+
+F26-000059 (B #7, stojánek na telefon, černá): tiskárna po startu 6,5 min rovnala a zahřívala, Rinkhals v tu chvíli
+hlásil `print_stats.state = error`, agent to na jednom vzorku poslal jako „failed“, server zakázku označil za
+neúspěšnou a vrátil kredit – a tiskárna tiskla dál bez dozoru (vrstva 26/350 v 05:41 UTC). Totéž T26-000044 na B #1
+a T26-000036 na U #1 (všechny bez zprávy, progress 0, 6–7 min po startu).
+
+- **Agent 0.1.1** (`agent.py`): chyba našeho tisku bez zprávy od tiskárny se věří až po `ERROR_AFTER_POLLS` = 12
+  vzorcích v řadě (~1 min při 5 s); do té doby hlásí úlohu jako `unknown` se zprávou a dál sleduje; návrat do
+  „printing“ počítadlo nuluje. Chyba se zprávou (heater fault, runout) se věří hned. Mock driver umí
+  `error_blip_at` / `error_blips`, dva testy v `agent/tests`. **Agenty na obou počítačích farmy jedou 0.1.0 – je
+  třeba je aktualizovat** (balíček `C:\Users\roman\Desktop\matplace-farm-agent.zip`, rozbalit přes stávající složku,
+  `config.yaml` zůstává, restart naplánované úlohy).
+- **Server** (`AgentService`): „failed“ bez zprávy, pod 1 % a do 15 min od startu neuzavře zakázku: úloha dostane stav
+  `unknown` a zprávu `error reported by the printer, waiting for a second report`, správci přijde e-mail
+  (`farm.admin.mail.error_pending`), kredit zůstává držený; druhé „failed“ po víc než minutě (nebo se zprávou, nebo nad
+  1 %) zakázku ukončí jako dřív. Se starým agentem, který po prvním „failed“ úlohu zapomene, zůstane zakázka
+  „tiskne se“ s úlohou „neznámý“ – obsluha ji po dotisku uzavře ručně (lepší než vrácený kredit a tisk bez dozoru).
+  Test ve `FarmOrderFlowTest`.

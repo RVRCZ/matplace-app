@@ -365,6 +365,8 @@ return [
             'failed' => 'El pedido :number ha fallado: :reason',
             'start_failed' => 'No se pudo iniciar la impresión (:printer)',
             'offline' => 'La impresora :printer está desconectada',
+            'error_pending' => 'La impresora :printer informa de un error en el pedido :number – esperando a ver si persiste',
+            'error_pending_text' => 'La impresora informó de un error sin motivo justo tras el inicio, antes del primer por ciento. Una Kobra S1 lo dice un momento mientras calienta y nivela y luego sigue imprimiendo, por eso el pedido queda abierto y el crédito retenido. Si el error persiste, seguirá un aviso de fallo; si la impresora imprime, no haga nada. Compruébela, por favor.',
             'offline_since' => 'Última señal: :time',
         ],
     ],

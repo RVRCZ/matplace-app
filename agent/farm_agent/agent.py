@@ -30,6 +30,7 @@ log = logging.getLogger("farm_agent")
 
 # a tracked file the printer does not talk about for this many polls in a row is given up as failed
 LOST_AFTER_POLLS = 8
+ERROR_AFTER_POLLS = 12          # an "error" of our print is believed after this many polls in a row (about a minute at 5 s)
 
 TIMELAPSE_HEADER = "; matplace timelapse "
 PARK_TOLERANCE_MM = 1.0
@@ -92,6 +93,7 @@ class Tracked:
     filename: str
     seen_printing: bool = False     # terminal states are trusted only after we saw this very file printing
     misses: int = 0
+    errors: int = 0                 # polls in a row the printer called our print an error (a Kobra S1 says so for a moment while it starts)
     final: bool = False             # a terminal state was put into a report; forget the job once the server has it
     park: Optional[list] = None     # [x, y] when the G-code parks the head after every layer for a picture
 
@@ -119,7 +121,17 @@ class PrinterWorker:
         ours = j is not None and j.filename == t.filename
         if ours and j.status in (JOB_PRINTING, JOB_PAUSED):
             self.dirty = self.dirty or not t.seen_printing     # worth remembering across a restart
-            t.seen_printing, t.misses = True, 0
+            t.seen_printing, t.misses, t.errors = True, 0, 0
+        # "error" has to stay: a Kobra S1 (Rinkhals) reports print_stats.state "error" for a poll or two while it heats and
+        # levels, then prints on; a failure reported on that one sample closed the order, gave the credit back and left
+        # the print running unwatched (F26-000059, 12 Oct 2026)
+        # (an error the printer gives a reason for - a heater fault, a runout - is believed at once)
+        if ours and j.status == JOB_FAILED and t.seen_printing and not (j.message or "").strip():
+            t.errors += 1
+            if t.errors < ERROR_AFTER_POLLS:
+                out["job"] = {"id": t.job_id, "status": "unknown", "progress": j.progress, "print_duration": j.print_duration,
+                              "filament_used": j.filament_used, "message": "the printer reports an error; waiting to see whether it stays"}
+                return out
         terminal = ours and j.status in (JOB_DONE, JOB_CANCELLED, JOB_FAILED) and t.seen_printing
         if ours and (j.status in (JOB_PRINTING, JOB_PAUSED) or terminal):
             out["job"] = {"id": t.job_id, "status": j.status, "progress": j.progress, "print_duration": j.print_duration,
