@@ -12,8 +12,8 @@ import { loadGeometryFromUrl } from './loaders';
 import { money as moneyText } from '../site/money';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
-interface Color { slot: number; name: string; kind?: string; hex: string; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean; sliced: boolean; second?: Second[] }
-interface Second { slot: number; name: string; kind?: string; hex: string; photo: string | null }
+interface Color { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; enough: boolean; price: Price; total: number; starts_now: boolean; sliced: boolean; second?: Second[] }
+interface Second { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null }
 const UNIT_MM: Record<string, number> = { mm: 1, cm: 10, in: 25.4, m: 1000 };
 const clampScale = (v: number, max: number) => Math.max(0.25, Math.min(max || 4, v));
 
@@ -30,7 +30,7 @@ interface FarmState {
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
     shipping: Shipping | null; destination: string | null; tracking_url: string | null;
-    colors: Color[]; color: { name: string; hex: string } | null; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
+    colors: Color[]; color: { name: string; hex: string; finish?: string | null } | null; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; cancel_keep: number | null;
     print: { status: string; progress: number; snapshot_url: string | null; snapshot_at: string | null } | null;
     timelapse_url?: string | null;
@@ -431,7 +431,7 @@ export function bootFarmOrder(): void {
         box.querySelectorAll<HTMLButtonElement>('button[data-slot]').forEach((b) => b.addEventListener('click', () => { picked = Number(b.dataset.slot); render(); }));
         const c = state.colors.find((x) => x.slot === picked);
         $('farm-start-note')!.textContent = c ? tr(c.starts_now ? 'farm.order.starts_now' : 'farm.order.goes_to_queue') : '';
-        viewer.setColor(c?.hex ?? null);
+        viewer.setColor(c?.hex ?? null, c?.finish ?? null);   // the spool's finish: silk shines, matte does not
         const heading0 = $('farm-second')?.querySelector<HTMLElement>('div');
         const hint0 = $('farm-second')?.querySelector<HTMLElement>('p');
         const list0 = $('farm-second-colors');
@@ -650,7 +650,7 @@ export function bootFarmOrder(): void {
         show($('farm-repeat'), ['done', 'handed_over', 'cancelled', 'failed'].includes(s.status));
 
         // the model in the colour that will print it; once paid, the chosen colour
-        if (s.status !== 'sliced') viewer.setColor(s.color?.hex ?? null);
+        if (s.status !== 'sliced') viewer.setColor(s.color?.hex ?? null, s.color?.finish ?? null);
         if (s.model_url && s.model_url !== shownModel) {
             shownModel = s.model_url;
             shownSupports = '';
