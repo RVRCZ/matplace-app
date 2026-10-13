@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\ModelValidator;
 use App\Domain\Tools\MapBuilder;
 use App\Domain\Tools\MapData;
+use App\Engines\DTO\Dimensions;
+use App\Engines\Farm\PythonPrintPreparer;
+use App\Engines\Repair\PythonTool;
 use App\Models\ModelFile;
 use App\Models\User;
 use App\Support\ToolSeo;
@@ -54,11 +58,19 @@ class MapToolTest extends TestCase
         Http::fake([
             // the geocoder answers the first question and is down for the next one
             'nominatim.openstreetmap.org/*' => Http::sequence()->push(file_get_contents(base_path('tests/fixtures/maps/nominatim.json')), 200, ['Content-Type' => 'application/json'])->whenEmpty(Http::response('', 503)),
-            'overpass-api.de/*' => $overpass === 'down' ? Http::response('<html>502</html>', 502) : Http::response(file_get_contents(MapBuilder::fixture($overpass ?? 'mesto')), 200, ['Content-Type' => 'application/json']),
+            'overpass-api.de/*' => $overpass === 'down' ? Http::response('<html>502</html>', 502) : Http::response(self::overpass($overpass ?? 'mesto'), 200, ['Content-Type' => 'application/json']),
             'overpass.kumi.systems/*' => Http::response('<html>502</html>', 502),
             'overpass.openstreetmap.fr/*' => Http::response('<html>502</html>', 502),
             's3.amazonaws.com/*' => Http::response($this->tile(), 200, ['Content-Type' => 'image/png']),
         ]);
+    }
+
+    /** What Overpass answers: the fixture as it is, or unpacked when it is kept gzipped (the real Václavské náměstí, 2.3 MB). */
+    private static function overpass(string $name): string
+    {
+        $path = MapBuilder::fixture($name);
+
+        return is_file($path) ? (string) file_get_contents($path) : (string) gzdecode((string) file_get_contents($path.'.gz'));
     }
 
     /** A Terrarium tile of a hill: 256 × 256, height = (R·256 + G + B/256) − 32768 m, from 300 m at the rim to 700 m in the middle. */
@@ -223,6 +235,47 @@ class MapToolTest extends TestCase
         $sent = count(Http::recorded());
         $this->make(['type' => 'landscape', 'side' => '5000', 'size' => 120, 'exaggeration' => 1, 'frame' => false]);
         $this->assertSame($sent, count(Http::recorded()));
+    }
+
+    /**
+     * The farm refused the first real map (Václavské náměstí: 16 636 open edges, 17 486 shells): the union of a
+     * thousand touching parts left coincident faces and 1e-8 mm segments, which a slicer welds into open edges. Now
+     * the parts overlap by a hair, the outlines are cleaned and the export is welded: one closed body, as the farm
+     * itself measures it (docs/W.md section 9). The city is the real square, 1 km on 150 mm; the landscape the
+     * drawn hill with a frame and a name.
+     */
+    public function test_a_real_city_and_a_framed_landscape_are_one_closed_body_the_farm_takes(): void
+    {
+        $this->needsPython();
+        $this->fakeServices('vaclavske');
+        [$city, $info] = $this->make(['lat' => 50.081, 'lon' => 14.4275, 'type' => 'city', 'side' => '1000', 'size' => 150, 'name' => 'Václavské náměstí']);
+        $this->assertSame('ready', $info['status'], (string) ($info['error'] ?? ''));
+        $notes = $city->tool_params['notes'];
+        $this->assertGreaterThan(900, $notes['buildings'], 'the real square, not the hand-made town');
+        $this->assertGreaterThan(300, $notes['roofs']);
+        $this->assertSame(['closed' => true, 'shells' => 1], array_intersect_key($notes['mesh'], ['closed' => 1, 'shells' => 1]), json_encode($notes['mesh']));
+        $this->assertNotContains('open_mesh', $notes['warnings']);
+        $this->assertSame([], array_values(array_intersect($info['issues'], ['not_watertight', 'open_edges', 'multiple_shells'])));
+
+        [$land, $linfo] = $this->make(['type' => 'landscape', 'side' => '5000', 'size' => 120, 'exaggeration' => 2, 'frame' => true, 'name' => 'Krkonoše']);
+        $this->assertSame('ready', $linfo['status'], (string) ($linfo['error'] ?? ''));
+        $this->assertSame('Krkonoše', $land->tool_params['notes']['name']);
+        $this->assertSame(['closed' => true, 'shells' => 1], array_intersect_key($land->tool_params['notes']['mesh'], ['closed' => 1, 'shells' => 1]));
+
+        // the farm's own preparation and verdict, as for an upload: closed as it comes, nothing repaired, one shell, no error
+        $preparer = new PythonPrintPreparer(app(PythonTool::class));
+        $bed = new Dimensions(256, 256, 256);
+        foreach ([$city, $land] as $file) {
+            $out = sys_get_temp_dir().'/mp_map_farm_'.uniqid().'.stl';
+            $mesh = $preparer->prepare((string) $file->absoluteStlPath(), $out, 1.0, $bed, true);
+            @unlink($out);
+            $this->assertTrue($mesh->wasWatertight, $file->original_name);
+            $this->assertFalse($mesh->repaired);
+            $this->assertSame([0, 1], [$mesh->openEdges, $mesh->shells], $file->original_name);
+            $verdict = ModelValidator::judge($mesh, $bed, ['min_model_mm' => 5.0, 'bed_margin_mm' => 5.0]);
+            $this->assertSame([], $verdict['errors'], $file->original_name);
+            $this->assertSame([], array_column($verdict['warnings'], 'code'), $file->original_name);
+        }
     }
 
     public function test_the_picture_of_the_area_is_drawn_before_the_model(): void
