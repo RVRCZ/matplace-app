@@ -74,6 +74,12 @@
     $folded = \App\Domain\Tools\ParametricGenerator::FOLDED;
     $fieldsAt = fn (string $section) => collect($fields)->filter(fn ($f, $k) => $at($k, 'size') === $section);
     $flagsAt = fn (string $section) => collect($flags)->filter(fn ($flag) => $at($flag, 'size') === $section);
+    // "describe what it should look like": the tools that have a designer (config/tools.php `design`), for who may use it
+    $design = \App\Domain\Tools\DesignAgent::opensFor(auth()->user(), $tool ?? $kind);
+    $designText = fn (string $k) => \Illuminate\Support\Facades\Lang::has('param.design.'.($tool ?? $kind).'.'.$k) ? __('param.design.'.($tool ?? $kind).'.'.$k) : (\Illuminate\Support\Facades\Lang::has('param.design.'.$k) ? __('param.design.'.$k) : null);
+    if ($design) {
+        $i18n += collect(['working', 'unmet', 'limit', 'failed', 'chars'])->mapWithKeys(fn ($k) => ['param.design.'.$k => __('param.design.'.$k)])->all();
+    }
 @endphp
 
 @extends('tools.page', ['tool' => $tool ?? $kind, 'module' => 'param', 'lead' => __('param.'.($tool ?? $kind).(($quickForm ?? null) === true ? '.lead_form' : '.lead')), 'sections' => $sections, 'available' => $available])
@@ -88,6 +94,7 @@
         captioned: @json($captioned ?? false),
         preview: @json(route('api.tools.param.preview')),
         create: @json(route('api.tools.param')),
+        design: @json($design ? ['url' => route('api.tools.design'), 'tool' => $tool ?? $kind] : null),
         home: @json(route('home')),
         presets: {{ \Illuminate\Support\Js::from($presets) }},
         fills: {{ \Illuminate\Support\Js::from($fills) }},
@@ -279,6 +286,28 @@
                 </div>
             </fieldset>
         @endforeach
+        @if($design)
+            {{-- the thing in the customer's own words: the designer sets the type and the sizes, the preview shows what came of it.
+                 Hidden until the script is there: without it the page works as it always did. --}}
+            <fieldset id="param-design" hidden>
+                <legend class="lbl" id="param-design-lead">{{ $designText('lead') }}</legend>
+                <textarea id="param-design-text" rows="3" maxlength="{{ \App\Domain\Tools\DesignAgent::MAX_TEXT }}" class="field" placeholder="{{ $designText('placeholder') }}" aria-labelledby="param-design-lead" aria-describedby="param-design-hint param-design-count"></textarea>
+                <div class="mt-1 flex items-start justify-between gap-3 text-xs text-muted">
+                    <p id="param-design-hint">{{ __('param.design.hint') }}</p>
+                    <span id="param-design-count" class="num shrink-0"></span>
+                </div>
+                @if($designText('example1'))
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+                        <span>{{ __('param.design.examples') }}</span>
+                        @foreach(array_filter([$designText('example1'), $designText('example2')]) as $example)
+                            <button type="button" class="chip !py-1 text-left text-xs" data-design-example>{{ $example }}</button>
+                        @endforeach
+                    </div>
+                @endif
+                <button type="button" id="param-design-go" class="btn-quiet mt-3 w-full gap-2" data-label="{{ __('param.design.button') }}" disabled><x-icon name="sparkles" class="h-4 w-4" /><span>{{ __('param.design.button') }}</span></button>
+                <div id="param-design-result" class="mt-2 hidden rounded-lg bg-page p-3 text-sm text-ink" aria-live="polite"></div>
+            </fieldset>
+        @endif
         @if(($quickForm ?? null) === false)
             {{-- the address is the composer now; the quick form it used to be does what layers cannot (a picture in several colours, a plate that sizes itself) --}}
             <p class="hint !text-xs">{{ __('param.compose.form.'.$tool) }} <a href="{{ url()->current() }}?form=1" class="font-semibold text-action-dark underline" rel="nofollow">{{ __('param.compose.form.open') }}</a></p>
