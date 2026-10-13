@@ -3,6 +3,8 @@
  * with the colours as steps, or a layered picture of one plate per colour in a frame. The form, the preview (the exact
  * solid from the server, every plate a piece in its filament), the list of colours, the guide back to front, and the
  * downloads; the viewer, the status line and the price card are the page's (tool_page.ts).
+ * A photo or a painting gets its picture in the colours of the print first (a flat PNG from the server, there in a
+ * second or two) and the model a moment after the last change.
  */
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import type { Piece } from './viewer';
@@ -12,13 +14,19 @@ import { pickArtwork, PickedArtwork } from './artwork';
 import { icon } from '../site/icon';
 import { FileInfo, modelMeta } from './api';
 
-interface Cfg { preview: string; create: string; zip: string; home: string; files: string; parts: string; from: string | null; sample: string | null; config: PriceConfig & { currency: string }; warnAt: Record<string, string>; i18n: Record<string, string> }
+interface Cfg { preview: string; poster: string; create: string; zip: string; home: string; files: string; parts: string; from: string | null; sample: string | null; config: PriceConfig & { currency: string }; warnAt: Record<string, string>; i18n: Record<string, string> }
 interface ArtColor { part: string; index: number; rgb: string; code: string; hex: string; share: number; area_mm2: number }
 interface GuidePlate { part: string; index: number; code: string; hex: string; rgb: string; share: number; z: number; posts: [number, number][]; post_d: number; svg: string; own_svg: string }
 interface Notes {
     mode: 'stack' | 'layered'; shape: string; frame: string; warnings: string[]; found: number; wanted: number; colors: ArtColor[]; paint: Record<string, string>; parts: string[];
     body_color?: { code: string; hex: string }; frame_color?: { code: string; hex: string }; color_changes?: { z: number }[]; filaments: number; outer: number[]; each: number[][]; picture: number[];
     guide?: GuidePlate[]; plates?: number; depth?: number; frame_outer?: number[]; frame_depth?: number; merged_mm2?: number; thin_pct?: number;
+    look?: string; regions?: number; suggest?: string;
+}
+/** What the server says about the flat picture: its colours bottom to top, how many areas they fall into, what the picture looks like. */
+interface Poster {
+    colors: { index: number; hex: string; share: number }[]; regions: number; look: string; suggest: 'graphic' | 'painting'; found: number; wanted: number;
+    proposed?: { look: 'graphic' | 'painting'; remove_bg: boolean; shape: string; height?: number } | null;
 }
 interface Meta { bbox: { x: number; y: number; z: number }; volume_mm3: number; area_mm2: number; notes: Notes; parts?: Piece[] }
 
@@ -35,6 +43,8 @@ export function bootArt(stage: Stage): void {
     let merge: number[][] = []; let order: number[] = [];
     const partColors: Record<string, string> = {};
     let commit: () => void = () => undefined;
+    let lookChosen = false;                // the visitor said what the picture is: a new picture no longer says it for them
+    let posterSeq = 0; let posterTimer = 0; let posterUrl: string | null = null;
     const notes = (): Notes => (lastMeta?.notes ?? { mode: 'layered', colors: [], paint: {}, parts: [], warnings: [], filaments: 1, outer: [], each: [], picture: [] }) as Notes;
 
     const params = (): Record<string, unknown> => {
@@ -49,6 +59,7 @@ export function bootArt(stage: Stage): void {
         return p;
     };
     const mode = (): string => String(params().mode ?? 'layered');
+    const painting = (): boolean => params().look === 'painting';
 
     /** Fields that belong to one choice only (data-when="frame=round,square", "flat=off") show for it alone. */
     const applyWhen = (): void => {
@@ -133,6 +144,7 @@ export function bootArt(stage: Stage): void {
             box.appendChild(undo);
         }
         $('art-found').textContent = n.found && n.wanted && n.found < n.wanted ? t('edit.art.found', { n: n.found, w: n.wanted }) : '';
+        $('art-areas').textContent = n.look === 'painting' && n.regions ? t('edit.art.areas', { r: n.regions, c: colors.length }) : '';
         const swaps = (n.color_changes ?? []).length;
         $('art-print').textContent = n.mode === 'layered' ? t('edit.art.print.layered', { n: n.plates ?? colors.length }) : swaps > 1 ? t('edit.art.print.stack', { n: swaps }) : swaps ? t('edit.art.print.stack1') : t('edit.art.print.one');
     };
@@ -153,7 +165,7 @@ export function bootArt(stage: Stage): void {
                 <span class="block truncate text-muted">${spool ? `${esc(spool.name)} · ${esc(materialLabel(spool))}` : esc(g.hex)}${posts ? ` · ${esc(posts)}` : ''}</span></span></li>`;
         };
         const frame = n.frame !== 'none' && n.frame_outer ? `<li class="flex items-center gap-3"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold text-white">0</span><span class="text-sm"><span class="block font-medium text-ink">${esc(t('edit.art.part.frame'))}</span><span class="block text-muted">${esc(t('edit.art.guide.frame', { w: nf.format(n.frame_outer[0]), h: nf.format(n.frame_outer[1]), d: nf.format(n.frame_depth ?? 0) }))}${params().led ? ` · ${esc(t('edit.art.guide.led'))}` : ''}</span></span></li>` : '';
-        box.innerHTML = `<div class="font-semibold text-ink">${esc(t('edit.art.guide'))}</div><p class="mt-1 text-muted">${esc(t('edit.art.guide.hint'))}</p><ol class="mt-3 space-y-2">${frame}${n.guide.map(plate).join('')}</ol><p class="mt-2 text-xs text-muted">${esc(t('edit.art.guide.glue'))}</p>`;
+        box.innerHTML = `<div class="font-semibold text-ink">${esc(t('edit.art.guide'))}</div><p class="mt-1 text-muted">${esc(t('edit.art.guide.hint'))}</p><ol class="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">${frame}${n.guide.map(plate).join('')}</ol><p class="mt-2 text-xs text-muted">${esc(t('edit.art.guide.glue'))}</p>`;
         box.classList.remove('hidden');
     };
 
@@ -170,7 +182,7 @@ export function bootArt(stage: Stage): void {
         const by: Record<string, string[]> = {};
         const add = (section: string, line: string): void => { (by[section] = by[section] ?? []).push(line); };
         const n = notes();
-        n.warnings.forEach((w) => add(cfg.warnAt[w] ?? 'size', t(`edit.warn.${w}`, { n: n.thin_pct ?? 0, mm2: nf.format(n.merged_mm2 ?? 0) })));
+        n.warnings.forEach((w) => add(cfg.warnAt[w] ?? 'size', t(`edit.warn.${w}`, { n: n.thin_pct ?? 0, mm2: nf.format(n.merged_mm2 ?? 0), r: n.regions ?? 0 })));
         if (Object.values(partColors).some((code) => { const c = colorOf(code); return c !== null && !c.in_stock; })) add('colors', stage.t('toolpage.color.out'));
         stage.warnings(by);
     };
@@ -207,7 +219,70 @@ export function bootArt(stage: Stage): void {
             if (mine === seq) stage.busy(false);
         }
     };
-    const soon = (ms = 350): void => { window.clearTimeout(timer); timer = window.setTimeout(() => { void refresh().then(commit); }, ms); };
+    /**
+     * The picture in the colours of the print, flat: asked for at once, shown beside the original long before the model is
+     * there. It also says what the picture looks like (a drawing, or a photo / a painting). Resolves to that, or null.
+     */
+    const poster = async (propose = false): Promise<Poster | null> => {
+        if (!artwork) return null;
+        const mine = ++posterSeq;
+        const result = $<HTMLImageElement>('art-poster-result');
+        result.classList.add('opacity-50');
+        try {
+            const res = await post(cfg.poster, { params: params(), ...(propose ? { propose: true } : {}) });
+            if (mine !== posterSeq) return null;
+            if (!res.ok) { $('art-poster-areas').textContent = res.status === 429 ? t('param.too_fast') : t('edit.art.poster.failed'); return null; }
+            const info = JSON.parse(res.headers.get('X-Art-Poster') ?? '{}') as Poster;
+            const blob = await res.blob();
+            if (mine !== posterSeq) return null;
+            if (posterUrl) URL.revokeObjectURL(posterUrl);
+            posterUrl = URL.createObjectURL(blob);
+            result.src = posterUrl;
+            $('art-poster-areas').textContent = info.look === 'painting' ? t('edit.art.areas', { r: info.regions, c: info.colors.length }) : '';
+            return info;
+        } catch {
+            if (mine === posterSeq) $('art-poster-areas').textContent = t('edit.art.poster.failed');
+            return null;
+        } finally {
+            if (mine === posterSeq) result.classList.remove('opacity-50');
+        }
+    };
+    /** The card with the two pictures shows for a photo or a painting; a drawing is built so fast it needs none. */
+    const showPoster = (): void => {
+        const on = painting() && !!artwork;
+        $('art-poster').classList.toggle('hidden', !on);
+        if (!on) { posterSeq++; window.clearTimeout(posterTimer); }
+    };
+    /** After a change: a drawing is built at once; a photo gets its flat picture now and its model when the hand rests. */
+    const soon = (ms = 350): void => {
+        window.clearTimeout(timer); window.clearTimeout(posterTimer);
+        showPoster();
+        if (painting()) posterTimer = window.setTimeout(() => { void poster(); }, Math.min(ms, 250));
+        timer = window.setTimeout(() => { void refresh().then(commit); }, painting() ? 1500 : ms);
+    };
+    /**
+     * A new picture: the server looks at it, says whether it is a drawing or a photo and sends its flat picture made that
+     * way. Unless the visitor said what it is themselves, the form follows: a photo keeps its background and fills a
+     * rectangle, a drawing is cut out of its background as before.
+     */
+    const propose = async (): Promise<void> => {
+        const said = $('art-proposed');
+        said.textContent = '';
+        if (lookChosen) { showPoster(); if (painting()) await poster(); return; }
+        const was = params().look;
+        // a picture of our library is a drawing: nothing to ask the server, and its model is on its way at once
+        const ours = /^lib:/.test(artwork ?? '');
+        const now = ours ? { look: 'graphic' as const, remove_bg: true, shape: params().frame === 'round' ? String(params().shape) : 'image', height: undefined } : (await poster(true))?.proposed;
+        if (!now) { showPoster(); return; }
+        const set = (sel: string, on = true): void => { const el = form.querySelector<HTMLInputElement>(sel); if (el) el.checked = on; };
+        set(`[data-choice="look"][value="${now.look}"]`);
+        set('[data-flag="remove_bg"]', now.remove_bg);
+        set(`[data-choice="shape"][value="${now.shape}"]`);
+        const tall = form.querySelector<HTMLInputElement>('[data-param="height"]');
+        if (now.height && tall) { tall.value = String(now.height); syncRange(tall); }      // the plate in the proportions of the photo
+        if (now.look !== was) said.textContent = t(`edit.art.proposed.${now.look}`);
+        applyWhen(); showPoster();
+    };
 
     /** Saves the design as a model file and goes on to the calculator (the exact price, the farm, the project for a slicer). */
     const save = async (slicer: string | null = null): Promise<void> => {
@@ -250,6 +325,7 @@ export function bootArt(stage: Stage): void {
         const img = document.querySelector<HTMLImageElement>('#art-artwork-thumb img'); if (!img) return;
         const v = (k: string): number => Number(form.querySelector<HTMLInputElement>(`[data-param="${k}"]`)?.value ?? 100);
         img.style.filter = `contrast(${v('contrast')}%) brightness(${v('brightness')}%) saturate(${v('saturation')}%)`;
+        $('art-poster-original').style.filter = img.style.filter;
     };
     const setArtwork = (picked: PickedArtwork | null): void => {
         if ((picked?.ref ?? null) !== artwork) { merge = []; order = []; Object.keys(partColors).forEach((p) => { if (p !== 'frame') delete partColors[p]; }); }
@@ -260,16 +336,28 @@ export function bootArt(stage: Stage): void {
         const label = open.lastChild; if (label) label.textContent = stage.t(picked ? 'toolpage.artwork.change' : 'toolpage.artwork.choose');
         thumb.innerHTML = url ? `<img src="${url.replace(/"/g, '&quot;')}" alt="" class="max-h-full max-w-full object-contain">` : '';
         thumb.classList.toggle('hidden', !url); thumb.classList.toggle('flex', !!url);
+        const original = $<HTMLImageElement>('art-poster-original');
+        if (url) original.src = url; else original.removeAttribute('src');
         adjustThumb();
         state.textContent = picked ? stage.t('toolpage.artwork.used', { name: picked.name }) : '';
     };
-    $('art-artwork-open').onclick = async () => { const picked = await pickArtwork(); if (picked) { setArtwork(picked); void refresh().then(commit); } };
+    $('art-artwork-open').onclick = async () => {
+        const picked = await pickArtwork(); if (!picked) return;
+        setArtwork(picked);
+        lookChosen = false;                // a new picture: what it is is looked at again
+        await propose();
+        void refresh().then(commit);
+    };
+    $('art-poster-build').onclick = () => { window.clearTimeout(timer); void refresh().then(commit); };
 
     // ── the form ─────────────────────────────────────────────────────────────────────────────────────
     const syncRange = (num: HTMLInputElement): void => { const r = form.querySelector<HTMLInputElement>(`[data-range="${num.dataset.param}"]`); if (r) r.value = num.value; };
     form.querySelectorAll<HTMLInputElement>('[data-range]').forEach((r) => r.addEventListener('input', () => { const num = form.querySelector<HTMLInputElement>(`[data-param="${r.dataset.range}"]`)!; num.value = r.value; adjustThumb(); soon(); }));
     form.querySelectorAll<HTMLInputElement>('[data-param]').forEach((i) => i.addEventListener('input', () => { syncRange(i); adjustThumb(); soon(); }));
-    form.querySelectorAll<HTMLInputElement>('[data-flag], [data-choice]').forEach((i) => i.addEventListener('change', () => { applyWhen(); soon(100); }));
+    form.querySelectorAll<HTMLInputElement>('[data-flag], [data-choice]').forEach((i) => i.addEventListener('change', () => {
+        if (i.dataset.choice === 'look') { lookChosen = true; $('art-proposed').textContent = ''; }
+        applyWhen(); soon(100);
+    }));
 
     const applyValues = (set: Record<string, unknown>): void => {
         Object.entries(set).forEach(([k, v]) => {
@@ -286,7 +374,7 @@ export function bootArt(stage: Stage): void {
         }
         applyWhen();
     };
-    commit = stage.track({ read: () => ({ ...params(), _artwork_name: artworkName }), write: (s) => { applyValues(s); void refresh(); } }, !cfg.from);
+    commit = stage.track({ read: () => ({ ...params(), _artwork_name: artworkName }), write: (s) => { applyValues(s); lookChosen = true; showPoster(); if (painting()) void poster(); void refresh(); } }, !cfg.from);
     applyWhen();
 
     // a stored design opens again with its settings; a new visitor starts with a picture of the library
@@ -294,7 +382,7 @@ export function bootArt(stage: Stage): void {
         if (cfg.from) {
             try {
                 const file = await stage.fetchFile(cfg.from);
-                if (file.tool?.params) { applyValues(file.tool.params); void refresh(); return; }
+                if (file.tool?.params) { applyValues(file.tool.params); lookChosen = true; showPoster(); if (painting()) void poster(); void refresh(); return; }
             } catch { /* a design that is gone: start fresh */ }
         }
         if (cfg.sample) { setArtwork({ ref: cfg.sample, name: '', url: null }); void refresh(); }

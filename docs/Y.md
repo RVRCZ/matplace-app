@@ -194,6 +194,94 @@ Ověřeno: `StandToolsTest` (4), `StandPartsFarmTest` (2), `scripts/check_previe
 stand, post), notes a candle_stand (3 stránky, 0 chyb), ruční výběr tří barev v headless Chrome
 (`docs/img/hair-tie-parts.png`), tři velikosti sloupku (10/40, 14/90, 30/150 mm) se postaví ve všech dílech.
 
+## 9. Filament art z malby nebo fotky (větev `feature/art-painting`, 13.–14. 10. 2026)
+
+Zadání `docs/prompts/filament-art-obraz.md`: nahraný barevný obrázek rozložit na nejvýš 8 barevných vrstev, které se
+složí do obrazu; předloha je vytištěná Hvězdná noc. Dosavadní čtení obrázku (medián + k-means po pixelech) dávalo
+u malby tisíce ostrůvků, přes milion trojúhelníků a vybledlé akcenty.
+
+### Co se změnilo
+
+- **Nová volba `look`** (`graphic` | `painting`) a posuvník **`detail`** 1–5 mm (výchozí 2). `graphic` je čtení jako
+  dřív a je výchozí, takže uložené návrhy a kresby z knihovny se nemění. `painting` jde novou cestou
+  `shape2d._painted`:
+  1. obrázek se rozdělí na superpixely o něco menší než `detail` (SLIC drží hrany), každý dostane průměr své barvy;
+  2. barev se najde víc, než je žádáno (2n + 4), a nejbližší dvojice se slučují do n. Světlost váží méně než odstín
+     (odstíny jedné barvy splynou dřív než dvě různé barvy). **Akcent** – sytá, malá barva v kompaktních skvrnách,
+     odlišná od všech větších (měsíc, hvězdy) – se slučuje až jako poslední. Barva, která nemá nic tisknutelného
+     (roztroušené tenké tahy), jde pryč první;
+  3. plochy se vyhladí na milimetry: co je užší než `detail` a každý ostrůvek pod 2 × detail² připadne okolní barvě
+     (akcent smí být poloviční).
+- **Pořadí desek**: zezadu podle plochy; nejtmavší barva jde dopředu jako obrysová deska, pokud sama není největší
+  (pak je to pozadí a zůstává vzadu). Přetažení pořadí funguje jako dřív.
+- **Barva, kterou se plocha ukazuje**: průměr těch buněk plochy, které tu barvu opravdu mají, a z nich sytější
+  polovina. Sytost obrázku se tím nemění (posuvníky zůstávají), jen plocha není zašedlá tahy, které pohltila.
+  Rozhodnutí je moje; důvod: podle této barvy se pak hledá nejbližší cívka.
+- **Obrysy**: zaoblení přes čtvrtinu detailu, zjednodušení 0,15 mm a strop 28 000 bodů na všechny desky dohromady
+  (`shape2d.thinned`; při jemném detailu se tolerance zvedá, dokud se model nevejde).
+- **2D náhled barev**: `POST /api/tools/art/poster` vrací PNG obrazu v barvách tisku bez stavby modelu
+  (`art_tool.py --poster`) a hlavičku `X-Art-Poster` (barvy, počet ploch, `suggest`). S `propose: true` (právě
+  vybraný obrázek) server sám pozná fotku nebo malbu a vrátí `proposed` (`look`, `remove_bg`, `shape`, `height`)
+  a náhled už udělaný tímto způsobem – jeden dotaz místo dvou.
+- **Stránka**: volba „Kresba nebo logo / Fotka nebo malba“, u malby posuvník „Nejmenší detail“ a karta „Náhled
+  barev“ (předloha a obraz v barvách tisku) v levém panelu. Po nahrání fotky stránka přepne na malbu, vypne
+  odstranění pozadí, zvolí obdélník a nastaví výšku desky podle poměru stran fotky; řekne to větou pod volbou.
+  Když zákazník volbu přepne sám, další obrázek už ji nemění. U malby se 2D náhled obnoví hned a 3D model 1,5 s po
+  poslední změně (nebo tlačítkem „Sestavit model hned“). Kresba z knihovny se staví hned jako dřív.
+- Varování `many_areas`, když malba vyjde na víc než 300 ploch.
+- Vedlejší oprava: návod na sestavení má omezenou výšku s posuvníkem. U osmi desek vytlačil 3D náhled ze sloupce
+  na nulovou výšku (to platilo i před touto prací).
+
+### Čísla: Hvězdná noc, 8 barev, vrstvený obraz 160 × 127 mm
+
+| | dřív (`graphic`) | teď (`painting`, detail 2 mm) |
+|---|---|---|
+| ploch | tisíce (neměřeno) | 106 |
+| trojúhelníků | 1 108 448 | 27 548 |
+| stavba modelu (samotný nástroj) | 14,3 s | 2,1 s |
+| žlutá (měsíc, hvězdy) | #a8a558, vybledlá | vlastní deska #bba428, 1 % plochy |
+| nejtmavší (cypřiš) | splynulý s oblohou | přední deska #272d27 |
+
+Detail 1 mm: 508 ploch, 67 tisíc trojúhelníků, varování `many_areas`. Detail 3 mm: 77 ploch. Detail 5 mm: 38 ploch.
+Jeden tisk se schody (`stack`): stejné plochy, 23 tisíc trojúhelníků. Přes HTTP na místním serveru: model 2,5 s,
+2D náhled 2,2 s.
+
+**Cíl 0,5 s pro 2D náhled není splněn.** Z 2,2 s je asi sekunda start Pythonu a importy (numpy, scipy,
+scikit-image) a asi 1,2 s výpočet. Rychleji by to šlo jen náhledem na hrubší mřížce, který by se ale lišil od
+modelu; nechal jsem přesný. Na serveru (Linux) čekám kratší start procesu, neměřeno.
+
+Snímky: `docs/img/filament-art/po-8-barev-nahled.png` (2D náhled, 8 barev), `po-hvezdna-noc-stranka.png`,
+`po-pes-stranka.png` + `po-pes-nahled.png` (fotka bígla, 6 barev, 36 ploch), `po-logo-stranka.png` (kresba z
+knihovny, beze změny); pro srovnání `dnes-8-barev-vrstvene.png` z řídící session.
+
+![před](img/filament-art/dnes-8-barev-vrstvene.png)
+![po](img/filament-art/po-8-barev-nahled.png)
+
+### Grafika beze změny
+
+`shape2d.colors()` používají i přívěsky a podtácky. Čtení kresby jsem jen přesunul do `_flat_colors` a
+`_read_colors` (stejné řádky). Sněhulák vrstvený i se schody, duch v obdélníku se čtvercovým rámem a klíčenka
+dávají **bajt po bajtu stejné STL** jako před změnou (porovnání otisků SHA-256 před a po, místní skript). Test
+`ArtPaintingTest::test_a_drawing_is_read_exactly_as_before` drží objem a počet trojúhelníků tří případů.
+
+### Odchylky od zadání a co není ověřené
+
+- 2D náhled 2,2 s místo 0,5 s (viz výše).
+- Douglas–Peucker jsem nepsal vlastní: `CrossSection.simplify` z manifold3d dělá totéž a už se v nástroji používá.
+- Bilaterální filtr ne, jen superpixely (zadání dávalo na výběr).
+- Texty jsou v `lang/src/art_painting.json` (klíče `edit.*`), varování pod `edit.warn.many_areas` jako ostatní
+  varování nástroje, ne pod `edit.art.warn.*`.
+- Barvy Hvězdné noci zůstávají tlumené, protože taková je předloha (sken malby); měsíc je okrový, ne sytě žlutý.
+  Sytou žlutou dá zákazník volbou barvy desky.
+- Při pěti barvách (výchozí počet) měsíc není srpek, jen skvrna; srpek je vidět od osmi barev.
+- **Nic se netisklo.** Neověřeno: tisk desek malby, skládání s distančními sloupky u desek s mnoha ostrovy,
+  chování na mobilu, rychlost na serveru.
+- V headless Chrome se softwarovým vykreslováním trvaly dotazy 4–8 s (prohlížeč bere procesoru výkon); časy výše
+  jsou měřené přes curl.
+
+Testy: `ArtPaintingTest` (4), `FilamentArtTest` (7) a sdílené sady nástrojů, `check_preview_colors.mjs` na
+filament_art (2 stránky, 0 chyb), `tsc`, `build`, `pint`.
+
 ## 10. Návrhář stojánku, kolo 2: nové typy, výřez, tvary z knihovny (větev `feature/stand-designer-2`, 14. 10. 2026)
 
 Navazuje na geometrii od B (`docs/AA.md`, §6 „Pro D“). Po slití kola 2 do `main` byly testy návrháře červené:

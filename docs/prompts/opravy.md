@@ -261,3 +261,20 @@ nastavit tak, aby výchozí váza ani žádná předvolba nevarovala a tvar zůs
 samo zůstává pro ruční hodnoty. Zkontrolovat totéž u ostatních nástrojů: test v `ToolPageTest`, že žádná stránka
 nástroje s výchozími hodnotami (a žádná předvolba) nenese varování. **Hotovo =** váza bez rámečku po otevření,
 test, snímek do docs, `pint`, `tsc`, `build`.
+
+## Úkol #13 · 13. 10. 2026 · váza: poloha zúžení, více zúžení, kulaté vlnky (koordinováno: `engines/python/creative_kinds.py` – session 1 neběží; `ParametricGenerator` položky `vase`)
+
+**Od Romana:** „u vázy bych chtěl přidat možnost přemisťovat osu zúžení a přidat i více zúžení, vlnky ne jen ostré,
+ale i kulaté“.
+**Udělat:**
+1. **Profil vázy**: dnes je zúžení (pas) na pevném místě profilu; přidat `waist_at` (výška pasu v % výšky, 10–90,
+   výchozí jako dnes) a `waists` (počet zúžení 0–3; při 2–3 se rozloží rovnoměrně, nebo druhé pole `waist2_at`
+   – rozhodni podle toho, co jde v panelu 340 px ještě ovládat) + `waist` (síla zúžení v %, pokud už není). Profil
+   hladký (spline/cos přechody), žádné zlomy, stěna stále `wall`.
+2. **Vlnky**: volba `flute_shape` `sharp` (dnešní ostré hřebeny) | `round` (sinusový průřez, hřebeny i žlábky
+   zaoblené); u kulatých hlídat stejnou tenkou stěnu jako u ostrých (varování z #12 platí).
+3. Výchozí hodnoty a předvolby podle #12 (bez varování po otevření); nový příklad do `seo.examples` (váza se dvěma
+   pasy a kulatými vlnkami); texty `param.f.vase.*`, `param.choice.vase.flute_shape.*` cs/en/es přes lang/src.
+4. Testy `ParametricToolsTest`/`VaseTest`: dnešní výchozí váza bajt po bajtu stejná (sha1 před/po), váza s `waists=2`
+   a `round` je vodotěsná, objem a bbox v mezích, stěna ≥ wall; `ToolPageTest`; `tsc`, `build`, `pint`.
+**Hotovo =** na `/tools/vase` jde posunout pas, zvolit 1–3 zúžení a kulaté vlnky, náhled a cena; snímky do docs.

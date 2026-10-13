@@ -5,9 +5,10 @@
         ->merge(collect(['art.part.body', 'art.part.frame', 'art.part.plate', 'art.part.color', 'art.found', 'art.print.layered', 'art.print.stack', 'art.print.stack1', 'art.print.one', 'art.depth',
             'art.guide', 'art.guide.hint', 'art.guide.back', 'art.guide.front', 'art.guide.posts', 'art.guide.flat', 'art.guide.frame', 'art.guide.led', 'art.guide.glue', 'art.frame.size',
             'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.picture',
-            'warn.outlines_ignored', 'warn.pieces_tied', 'warn.thin_merged', 'warn.small_plate_flat', 'warn.thin_lines', 'download.plates'])->mapWithKeys(fn ($k) => ['edit.'.$k => \App\Support\NextStep::text('edit.'.$k)]))->all();
+            'warn.outlines_ignored', 'warn.pieces_tied', 'warn.thin_merged', 'warn.small_plate_flat', 'warn.thin_lines', 'warn.many_areas', 'download.plates',
+            'art.areas', 'art.proposed.painting', 'art.proposed.graphic', 'art.poster.failed'])->mapWithKeys(fn ($k) => ['edit.'.$k => \App\Support\NextStep::text('edit.'.$k)]))->all();
     $sections = ['input' => __('toolpage.section.input'), 'size' => __('toolpage.section.size'), 'colors' => __('toolpage.section.colors')];
-    $warnAt = ['outlines_ignored' => 'input', 'pieces_tied' => 'input', 'thin_lines' => 'input', 'thin_merged' => 'colors', 'small_plate_flat' => 'size'];
+    $warnAt = ['outlines_ignored' => 'input', 'pieces_tied' => 'input', 'thin_lines' => 'input', 'many_areas' => 'input', 'thin_merged' => 'colors', 'small_plate_flat' => 'size'];
 @endphp
 
 @extends('tools.page', ['tool' => 'filament_art', 'module' => 'art', 'lead' => __('edit.art.lead'), 'sections' => $sections, 'available' => $available])
@@ -16,6 +17,7 @@
 <script>
     window.MP_ART = {
         preview: @json(route('api.tools.art.preview')),
+        poster: @json(route('api.tools.art.poster')),
         create: @json(route('api.tools.art')),
         zip: @json(route('api.tools.art.zip')),
         home: @json(route('home')),
@@ -51,6 +53,42 @@
             </div>
             <p class="hint mt-1 !text-xs">{{ __('edit.art.picture.hint') }}</p>
         </fieldset>
+        {{-- how the picture is read: a drawing as it is, a photo or a painting simplified to areas that can be printed --}}
+        <fieldset>
+            <legend class="lbl">{{ __('edit.c.look') }}</legend>
+            <div class="mt-2 grid gap-2" role="radiogroup">
+                @foreach($choices['look'] as $i => $o)
+                    <label class="cursor-pointer rounded-lg border border-slate-300 bg-white p-3 text-sm has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink">
+                        <input type="radio" name="c-look" data-choice="look" value="{{ $o }}" class="sr-only" @checked($i === 0)>
+                        <span class="block font-medium text-ink">{{ __('edit.o.look.'.$o) }}</span>
+                        <span class="block text-xs text-muted">{{ __('edit.o.look.'.$o.'.hint') }}</span>
+                    </label>
+                @endforeach
+            </div>
+            <p id="art-proposed" class="hint mt-1 !text-xs" aria-live="polite"></p>
+        </fieldset>
+        {{-- a photo or a painting: the picture in the colours of the print beside the original, there before the model is.
+             In the panel, not under the viewer: the viewer keeps its room. --}}
+        <div id="art-poster" class="hidden rounded-xl border border-line bg-page p-3 text-sm">
+            <div class="font-semibold text-ink">{{ __('edit.art.poster') }}</div>
+            <div class="mt-2 grid grid-cols-2 gap-2">
+                <figure class="min-w-0">
+                    <div class="flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-line bg-white p-1"><img id="art-poster-original" alt="" class="max-h-full max-w-full object-contain"></div>
+                    <figcaption class="mt-1 text-xs text-muted">{{ __('edit.art.poster.original') }}</figcaption>
+                </figure>
+                <figure class="min-w-0">
+                    <div class="flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-line bg-white p-1"><img id="art-poster-result" alt="{{ __('edit.art.poster.result') }}" class="max-h-full max-w-full object-contain transition-opacity"></div>
+                    <figcaption class="mt-1 text-xs text-muted">{{ __('edit.art.poster.result') }}</figcaption>
+                </figure>
+            </div>
+            <p id="art-poster-areas" class="mt-2 text-ink" aria-live="polite"></p>
+            <p class="mt-1 text-xs text-muted">{{ __('edit.art.poster.hint') }}</p>
+            <button type="button" id="art-poster-build" class="chip mt-2 !py-1 text-sm">{{ __('edit.art.poster.build') }}</button>
+        </div>
+        <div data-when="look=painting" class="grid gap-1">
+            @include('tools._num', ['key' => 'detail', 'f' => $fields['detail'], 'label' => __('edit.f.detail'), 'unit' => 'mm', 'when' => ''])
+            <p class="hint !text-xs">{{ __('edit.art.detail.hint') }} {{ __('edit.art.painting.tip') }}</p>
+        </div>
         <label class="flex items-start gap-3 text-sm text-ink">
             <input data-flag="remove_bg" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" checked>
             <span><span class="font-medium">{{ __('edit.flag.remove_bg') }}</span><br><span class="text-muted">{{ __('edit.flag.remove_bg.hint') }}</span></span>
@@ -133,6 +171,7 @@
             @include('tools._num', ['key' => 'colors_n', 'f' => $fields['colors_n'], 'label' => __('edit.f.colors_n'), 'unit' => '', 'when' => ''])
         </div>
         <p id="art-found" class="hint !text-xs" aria-live="polite"></p>
+        <p id="art-areas" class="hint !text-xs" aria-live="polite"></p>
         <div id="tool-parts" class="space-y-2"></div>
         <p id="art-print" class="text-sm text-ink" aria-live="polite"></p>
     </x-tool-section>
