@@ -251,3 +251,13 @@ rámečku; text v `lang/*.json` je, klíč (a nejspíš `steep_twist` a další)
 posílají stejně) v jazykovém souboru; test v `ToolPageTest`: žádná stránka nástroje nenese v datech pro skript klíč
 bez textu a každé `param.warn.*`, které engine umí vrátit (`grep -o "warnings.*" engines/python/*.py` → seznam), má
 text ve třech jazycích. **Hotovo =** váza bez syrového klíče, test, `pint`, `tsc`, `build`.
+
+## Úkol #12 · 13. 10. 2026 · váza ve výchozím nastavení nemá hned varovat (koordinováno: `engines/python/creative_kinds.py` – session 1 neběží)
+
+**Od E (postřeh u #11):** `/tools/vase` s předvolbou Spirálová hned po otevření ukazuje žlutý rámeček „stěna mezi
+žlábky je tenká, váza bude křehká“ (hranice thin < 0,8 mm). První dojem návštěvníka je varování.
+**Udělat:** výchozí hodnoty (hloubka žlábků `flute`, počet žeber `ribs`, tloušťka stěny `wall`, případně zkroucení)
+nastavit tak, aby výchozí váza ani žádná předvolba nevarovala a tvar zůstal hezký; meze polí neměnit; varování
+samo zůstává pro ruční hodnoty. Zkontrolovat totéž u ostatních nástrojů: test v `ToolPageTest`, že žádná stránka
+nástroje s výchozími hodnotami (a žádná předvolba) nenese varování. **Hotovo =** váza bez rámečku po otevření,
+test, snímek do docs, `pint`, `tsc`, `build`.
