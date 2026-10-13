@@ -9,6 +9,27 @@ import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 /** Default colour of a previewed model: a calm, slightly desaturated blue, like a light-blue PLA spool. */
 export const MODEL_COLOR = 0x83a6d4;
 
+/**
+ * How a printed filament takes the light, by the finish of its spool (farm_colors.finish): [roughness, metalness].
+ * A plain PLA or PETG has a soft sheen, a silk one shines, a matte one does not; a colour picked freely is a plain one.
+ * The metalness stays low or none: it darkens the colour itself, and a part has to stay in the colour that was picked.
+ * The shine comes from the lamps alone, as on the bust: a room to mirror (RoomEnvironment) was tried and washed the
+ * colours out, flat walls most of all.
+ */
+const GLOSS: Record<string, [number, number]> = {
+    solid: [0.38, 0], silk: [0.26, 0.15], glitter: [0.32, 0.1], matte: [0.82, 0], cf: [0.78, 0], flex: [0.58, 0],
+};
+/** Faces that meet at less than this angle shade as one smooth surface; a sharper edge stays an edge (a box, raised letters). */
+const CREASE_DEGREES = 38;
+/** The finish of the spools of the farm's catalogue, by their code and by their hex ('#rrggbb'), lower case (see setPalette). */
+const FINISH: Record<string, string> = {};
+const finishKey = (color: string): string => (/^[0-9a-f]{6}$/i.test(color) ? `#${color}` : color).toLowerCase();
+/** The look (a key of GLOSS) of a colour given by its hex or the code of its spool; `finish` when the caller knows it. */
+const lookOf = (color: string | null | undefined, finish?: string | null): string => {
+    const key = finish || (color ? FINISH[finishKey(color)] : '') || 'solid';
+    return GLOSS[key] ? key : 'solid';
+};
+
 /** Small three.js viewer: one mesh, orbit controls, auto-fit, resize aware, touch friendly. */
 export class Viewer {
     private renderer: WebGLRenderer;
@@ -19,12 +40,18 @@ export class Viewer {
     private supports: LineSegments | null = null;
     private grid: GridHelper | null = null;
     private frontal = false;
-    // soft filament blue + flat shading: layer-like facets and embossed letters stay readable; sits well with the ink and orange of the site
-    private material = new MeshStandardMaterial({ color: MODEL_COLOR, roughness: 0.75, metalness: 0.0, flatShading: true });
+    // one look for every tool and the calculator: a filament with a soft sheen, shaded smooth where the surface is smooth
+    // (creaseNormals keeps every real edge sharp, so boxes and embossed letters stay readable)
+    private material = new MeshStandardMaterial({ color: MODEL_COLOR, roughness: GLOSS.solid[0], metalness: GLOSS.solid[1], flatShading: false });
+    // parts in their own filament colours (vertex colours): the same look, one material for every finish that is on show
+    private paints = new Map<string, MeshStandardMaterial>();
     // generated busts and figures: light bronze and smooth shading, so the preview reads as a small sculpture, not as facets
     private sculptureMaterial = new MeshStandardMaterial({ color: 0xc98f5a, roughness: 0.42, metalness: 0.25, flatShading: false });
     // plates (signs, reliefs, lithophanes): colour follows the height, so letters and pictures read like a two-colour print
     private plateMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0.0, flatShading: true, vertexColors: true });
+    private xray = false;
+    private look = 'solid';                             // the finish of the colours setGeometry or paint gave the model
+    private plainLook = 'solid';                        // the finish of the plain model's colour (setColor)
 
     // ── the tool page's additions (see "Tool page" below); every other page leaves them untouched ──
     private pieces: Piece[] = [];
@@ -32,6 +59,7 @@ export class Viewer {
     private baseCol: Float32Array | null = null;        // colours as setGeometry painted them, null = plain material
     private baseMaterial: Material | null = null;
     private pieceColors = new Map<number, [number, number, number]>();
+    private pieceLooks = new Map<number, string>();     // the finish of a piece's filament, where its colour is a spool's
     private selected = -1;
     private highlight: Mesh | null = null;
     private spread = 0;
@@ -100,9 +128,16 @@ export class Viewer {
         // a real two-colour print changes colour at one height: no triangle may reach across it
         const change = regions?.find((r) => r.exact);
         if (change && !painted) geom = cutAtHeight(geom, change.z0);
+        // in the colours of its filaments (faces, parts), or a plate whose colour follows the height, or plain
+        const filament = painted || (!!regions?.length && paintByRegion(geom, regions));
+        const plate = !filament && !regions?.length && paintByHeight(geom, kind === 'lithophane', kind === 'qr');
+        // the plate is drawn in facets, as it was; the bust got its smooth normals above
+        if (!plate && !sculpture) creaseNormals(geom, CREASE_DEGREES);
+        const looks = new Set((painted ? [] : regions ?? []).map((r) => lookOf(r.color)));
+        this.look = looks.size === 1 ? [...looks][0] : 'solid';
+        geom.clearGroups();
         // Z-up files (all print formats) → three.js Y-up
-        const plate = painted ? true : regions?.length ? paintByRegion(geom, regions) : paintByHeight(geom, kind === 'lithophane', kind === 'qr');
-        this.mesh = new Mesh(geom, plate ? this.plateMaterial : sculpture ? this.sculptureMaterial : this.material);
+        this.mesh = new Mesh(geom, filament ? this.paintOf(this.look) : plate ? this.plateMaterial : sculpture ? this.sculptureMaterial : this.material);
         this.frontal = sculpture;
         this.mesh.rotation.x = -Math.PI / 2;
         this.mesh.scale.setScalar(scale);
@@ -125,9 +160,33 @@ export class Viewer {
         this.mesh.scale.setScalar(scale);
     }
 
-    /** The plain model in a filament colour (CSS hex); null goes back to the default blue. */
-    setColor(hex: string | null): void {
+    /**
+     * The plain model in a filament colour (CSS hex); null goes back to the default blue. `finish` is the spool's
+     * (silk, matte…); left out, a colour of the farm's catalogue is known by its hex and any other one is a plain filament.
+     */
+    setColor(hex: string | null, finish: string | null = null): void {
         this.material.color.set(hex && /^#?[0-9a-f]{6}$/i.test(hex) ? (hex.startsWith('#') ? hex : `#${hex}`) : MODEL_COLOR);
+        this.plainLook = lookOf(hex, finish);
+        const [roughness, metalness] = GLOSS[this.plainLook];
+        this.material.roughness = roughness;
+        this.material.metalness = metalness;
+    }
+
+    /** The material of parts painted in their filament colours, for one finish. */
+    private paintOf(look: string): MeshStandardMaterial {
+        let m = this.paints.get(look);
+        if (!m) {
+            const [roughness, metalness] = GLOSS[look] ?? GLOSS.solid;
+            m = new MeshStandardMaterial({ color: 0xffffff, roughness, metalness, flatShading: false, vertexColors: true });
+            this.dim(m);
+            this.paints.set(look, m);
+        }
+        return m;
+    }
+
+    /** See-through or solid, as the x-ray switch says. */
+    private dim(m: Material): void {
+        m.transparent = this.xray; m.opacity = this.xray ? 0.35 : 1; m.depthWrite = !this.xray; m.needsUpdate = true;
     }
 
     /**
@@ -162,7 +221,11 @@ export class Viewer {
     paint(faces: FacePaint | null): boolean {
         if (!this.mesh) return false;
         const painted = !!faces && paintByFaces(this.mesh.geometry, faces);
-        this.mesh.material = painted ? this.plateMaterial : this.material;
+        // a plate was drawn in facets until now; in a filament's colours it is shaded like everything else
+        if (this.mesh.material !== this.sculptureMaterial) creaseNormals(this.mesh.geometry, CREASE_DEGREES);
+        this.mesh.geometry.clearGroups();
+        // the layers of one print in several filaments: the finish of the colour the model had as a whole
+        this.mesh.material = painted ? this.paintOf(this.look = this.plainLook) : this.material;
         return painted;
     }
 
@@ -231,7 +294,8 @@ export class Viewer {
         this.baseMaterial = this.mesh ? (this.mesh.material as Material) : null;
         if (this.mesh && !this.mesh.geometry.index) {
             const col = this.mesh.geometry.getAttribute('color');
-            this.baseCol = col && this.mesh.material === this.plateMaterial ? new Float32Array(col.array as Float32Array) : null;
+            const coloured = this.mesh.material !== this.material && this.mesh.material !== this.sculptureMaterial;
+            this.baseCol = col && coloured ? new Float32Array(col.array as Float32Array) : null;
         }
         if (this.bed) this.drawBed();
         this.placeHandles();
@@ -260,6 +324,7 @@ export class Viewer {
         const ok = !!pieces?.length && pieces[pieces.length - 1].tris[1] === count && pieces.every((p, i) => p.tris[0] === (i ? pieces[i - 1].tris[1] : 0));
         this.pieces = ok ? pieces! : count ? [{ name: 'body', tris: [0, count] }] : [];
         this.pieceColors.clear();
+        this.pieceLooks.clear();
         this.basePos = pos && count ? new Float32Array(pos.array as Float32Array) : null;
         if (this.spread) this.setSpread(this.spread);
     }
@@ -286,10 +351,10 @@ export class Viewer {
         this.mesh.add(this.highlight);
     }
 
-    /** One piece in a filament colour (CSS hex), or null to give it back the colour the model came with. */
-    setPieceColor(index: number, hex: string | null): void {
+    /** One piece in a filament colour (CSS hex), or null to give it back the colour the model came with; `finish` as in setColor. */
+    setPieceColor(index: number, hex: string | null, finish: string | null = null): void {
         const rgb = hex ? hexRgb(hex) : null;
-        if (rgb) this.pieceColors.set(index, deep(rgb)); else this.pieceColors.delete(index);
+        if (rgb) { this.pieceColors.set(index, deep(rgb)); this.pieceLooks.set(index, lookOf(hex, finish)); } else { this.pieceColors.delete(index); this.pieceLooks.delete(index); }
         this.repaint();
     }
 
@@ -300,6 +365,7 @@ export class Viewer {
         if (!mesh || !pos || mesh.geometry.index || !this.baseMaterial || this.baseMaterial === this.sculptureMaterial) return;
         const beyond = this.bed && this.bedCheck ? this.beyondBed() : null;
         this.over = !!beyond;
+        mesh.geometry.clearGroups();
         if (!this.pieceColors.size && !beyond) {
             if (this.baseCol) mesh.geometry.setAttribute('color', new Float32BufferAttribute(this.baseCol.slice(), 3)); else mesh.geometry.deleteAttribute('color');
             mesh.material = this.baseMaterial;
@@ -313,7 +379,17 @@ export class Viewer {
         });
         if (beyond) for (let t = 0; t < beyond.length; t++) if (beyond[t]) for (let k = 0; k < 3; k++) { col[(t * 3 + k) * 3] = 0.62; col[(t * 3 + k) * 3 + 1] = 0.03; col[(t * 3 + k) * 3 + 2] = 0.03; }
         mesh.geometry.setAttribute('color', new Float32BufferAttribute(col, 3));
-        mesh.material = this.plateMaterial;
+        // a plate coloured by its height stays the plate it was (only what hangs over the bed is marked on it);
+        // once its parts are given filaments of their own, it shines as they do, like everything else
+        if (this.baseMaterial === this.plateMaterial && !this.pieceColors.size) { mesh.material = this.plateMaterial; return; }
+        creaseNormals(mesh.geometry, CREASE_DEGREES);
+        const rest = this.baseCol ? this.look : this.plainLook;
+        const looks = this.pieces.map((_, i) => (this.pieceColors.has(i) ? this.pieceLooks.get(i) ?? 'solid' : rest));
+        const kinds = [...new Set(looks)];
+        if (kinds.length < 2) { mesh.material = this.paintOf(kinds[0] ?? rest); return; }
+        // filaments of several finishes side by side: each piece is drawn with the material of its own
+        this.pieces.forEach((piece, i) => mesh.geometry.addGroup(piece.tris[0] * 3, (piece.tris[1] - piece.tris[0]) * 3, kinds.indexOf(looks[i])));
+        mesh.material = kinds.map((k) => this.paintOf(k));
     }
 
     /** 0…1: the pieces move apart from the middle of the whole, so each can be seen and picked. */
@@ -387,7 +463,8 @@ export class Viewer {
 
     /** See-through walls (35 %): what is inside a hollow thing. */
     setXray(on: boolean): void {
-        [this.material, this.sculptureMaterial, this.plateMaterial].forEach((m) => { m.transparent = on; m.opacity = on ? 0.35 : 1; m.depthWrite = !on; m.needsUpdate = true; });
+        this.xray = on;
+        [this.material, this.sculptureMaterial, this.plateMaterial, ...this.paints.values()].forEach((m) => this.dim(m));
     }
 
     /** A fixed view, reached in 300 ms; the distance and what is looked at stay. */
@@ -816,8 +893,76 @@ export function hexRgb(hex: string): [number, number, number] | null {
  * The farm's colour catalogue joins the built-in filament colours: everything that paints by a colour name
  * (regions of a preview, bins of a modular set) then knows the spools by their code.
  */
-export function setPalette(items: { code: string; hex: string }[]): void {
-    items.forEach((c) => { const rgb = hexRgb(c.hex); if (rgb) FILAMENT[c.code] = rgb; });
+export function setPalette(items: { code: string; hex: string; finish?: string }[]): void {
+    items.forEach((c) => {
+        const rgb = hexRgb(c.hex);
+        if (rgb) FILAMENT[c.code] = rgb;
+        // the finish goes with the spool; two spools of one hex are told apart by nothing here, the first one is taken
+        if (rgb && c.finish) { FINISH[finishKey(c.code)] ??= c.finish; FINISH[finishKey(c.hex)] ??= c.finish; }
+    });
+}
+
+/**
+ * Normals for smooth shading that keep the edges: each corner of each triangle gets the sum of the normals of the faces
+ * round its point that lie within `degrees` of its own face, so a curved wall is smooth and the rim of a box stays
+ * sharp. The triangles stay as the file has them (pieces, picking and the paint by faces count on their order): the
+ * points are matched, not welded. Done once for a geometry.
+ */
+function creaseNormals(geom: BufferGeometry, degrees: number): void {
+    const pos = geom.getAttribute('position');
+    if (!pos || geom.index || geom.userData.creased || !(pos.array instanceof Float32Array) || pos.itemSize !== 3 || pos.array.length !== pos.count * 3) return;
+    const p = pos.array; const corners = pos.count - (pos.count % 3); const tris = corners / 3;    // the normal of each face: whole (as long as twice its area, so a large face weighs more) and of length one
+    const whole = new Float32Array(tris * 3); const unit = new Float32Array(tris * 3);
+    for (let t = 0, i = 0; t < tris; t++, i += 9) {
+        const ax = p[i + 3] - p[i]; const ay = p[i + 4] - p[i + 1]; const az = p[i + 5] - p[i + 2];
+        const bx = p[i + 6] - p[i]; const by = p[i + 7] - p[i + 1]; const bz = p[i + 8] - p[i + 2];
+        const x = ay * bz - az * by; const y = az * bx - ax * bz; const z = ax * by - ay * bx;
+        const len = Math.sqrt(x * x + y * y + z * z);
+        whole[t * 3] = x; whole[t * 3 + 1] = y; whole[t * 3 + 2] = z;
+        if (len > 0) { unit[t * 3] = x / len; unit[t * 3 + 1] = y / len; unit[t * 3 + 2] = z / len; }
+    }
+    // which corners are one point: a hash of the coordinates rounded to a ten-thousandth of a millimetre
+    let size = 1024; while (size < corners * 2) size *= 2;
+    const mask = size - 1;
+    const table = new Int32Array(size).fill(-1);
+    const at = new Int32Array(corners * 3);
+    const point = new Int32Array(corners);
+    let points = 0;
+    for (let c = 0; c < corners; c++) {
+        const x = Math.round(p[c * 3] * 1e4) | 0; const y = Math.round(p[c * 3 + 1] * 1e4) | 0; const z = Math.round(p[c * 3 + 2] * 1e4) | 0;
+        let h = (Math.imul(x, 73856093) ^ Math.imul(y, 19349663) ^ Math.imul(z, 83492791)) & mask;
+        for (;;) {
+            const v = table[h];
+            if (v < 0) { table[h] = points; at[points * 3] = x; at[points * 3 + 1] = y; at[points * 3 + 2] = z; point[c] = points++; break; }
+            if (at[v * 3] === x && at[v * 3 + 1] === y && at[v * 3 + 2] === z) { point[c] = v; break; }
+            h = (h + 1) & mask;
+        }
+    }
+    // the faces round each point, one after another
+    const start = new Int32Array(points + 1);
+    for (let c = 0; c < corners; c++) start[point[c] + 1]++;
+    for (let v = 0; v < points; v++) start[v + 1] += start[v];
+    const next = start.slice(0, points);
+    const round = new Int32Array(corners);
+    for (let c = 0; c < corners; c++) round[next[point[c]]++] = (c / 3) | 0;
+    const cos = Math.cos((degrees * Math.PI) / 180);
+    const out = new Float32Array(pos.count * 3);
+    for (let c = 0; c < corners; c++) {
+        const f = ((c / 3) | 0) * 3; const v = point[c];
+        const ux = unit[f]; const uy = unit[f + 1]; const uz = unit[f + 2];
+        let x = 0; let y = 0; let z = 0;
+        // the middle of a large fan (the lid of a cylinder) lies in one plane with its faces: its own normal will do
+        if (start[v + 1] - start[v] > 512) { x = ux; y = uy; z = uz; } else {
+            for (let k = start[v]; k < start[v + 1]; k++) {
+                const g = round[k] * 3;
+                if (g === f || ux * unit[g] + uy * unit[g + 1] + uz * unit[g + 2] >= cos) { x += whole[g]; y += whole[g + 1]; z += whole[g + 2]; }
+            }
+        }
+        const len = Math.sqrt(x * x + y * y + z * z);
+        if (len > 0) { out[c * 3] = x / len; out[c * 3 + 1] = y / len; out[c * 3 + 2] = z / len; } else { out[c * 3] = ux; out[c * 3 + 1] = uy; out[c * 3 + 2] = uz || 1; }
+    }
+    geom.setAttribute('normal', new Float32BufferAttribute(out, 3));
+    geom.userData.creased = true;
 }
 
 /** One number per triangle (in the order of the file) and the colour each number stands for, as [r, g, b] 0..1. */
