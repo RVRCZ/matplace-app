@@ -6,6 +6,7 @@ use App\Engines\Mesh\StlFile;
 use App\Engines\Mesh\StlTopology;
 use App\Engines\Repair\PythonTool;
 use App\Models\ModelFile;
+use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -26,6 +27,12 @@ class MoldToolTest extends TestCase
         }
     }
 
+    /** The bust of the fixtures (60 × 52 × 78 mm, undercuts under the chin and the ears): what the silicone molds are for. */
+    private function bust(): string
+    {
+        return $this->postJson('/api/uploads', ['file' => new UploadedFile(base_path('tests/fixtures/mold/bust.stl'), 'bust.stl', null, null, true)])->assertCreated()->json('file.uuid');
+    }
+
     private function cube(): string
     {
         $path = sys_get_temp_dir().'/mp_cube_'.uniqid().'.stl';
@@ -37,7 +44,12 @@ class MoldToolTest extends TestCase
     public function test_tool_page_renders_and_is_listed(): void
     {
         $this->get('/tools')->assertOk()->assertSee(route('tools.mold'));
-        $this->get('/tools/mold')->assertOk()->assertSee(__('mold.wall'))->assertSee('mold-drop', false)->assertSee('id="tool-viewer"', false)->assertSee(__('mold.type.silicone'));
+        $this->get('/tools/mold')->assertOk()->assertSee(__('mold.wall'))->assertSee('mold-drop', false)->assertSee('id="tool-viewer"', false)->assertSee(__('mold.type.silicone'))
+            // round 2: the gallery of the five kinds above the upload (a click sets the kind), the new choices, the advanced ones folded
+            ->assertSee('id="mold-gallery"', false)->assertSee('img/tool-examples/mold-1.png', false)->assertSee('data-variant="two_part"', false)->assertSee(__('mold.gallery.tray'))
+            ->assertSeeInOrder(['id="mold-gallery"', 'id="mold-drop"', 'id="mold-variant"', 'id="mold-vents"', 'id="mold-core"', '<details', 'id="mold-clearance"', 'id="mold-keys-type"', 'id="mold-funnel-at"'], false)
+            ->assertSee(__('tools.which.title'))->assertSee(ToolSeo::texts('mold')['which'][0]['kind'])
+            ->assertSee('#tool-panel { order: 1; }', false);
         $this->get('/en/tools/mold')->assertOk()->assertSee('Casting mold');
         $this->get('/tools/mold?from=not-a-uuid')->assertOk()->assertSee('from: null', false);
     }
@@ -193,5 +205,107 @@ class MoldToolTest extends TestCase
         $mold = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
         $this->assertTrue(StlTopology::check($mold->absoluteStlPath())['watertight']);
         $this->assertNotContains('multiple_shells', $r->json('file.issues'));
+    }
+
+    // ── round 2 (docs/AB.md) ────────────────────────────────────────────────────────────────────────────────────
+
+    /** Before anything is built: the casting in ml, the silicone a sleeve and a shell would take, where air would stay. */
+    public function test_analysis_says_the_volumes_and_the_pockets(): void
+    {
+        $uuid = $this->bust();
+        $a = $this->postJson('/api/files/'.$uuid.'/mold/analysis', ['parts' => 2])->assertOk()->json('analysis');
+        $this->assertEqualsWithDelta(80.6, $a['resin_ml'], 2.0);
+        $this->assertGreaterThan($a['silicone_shell_ml'], $a['silicone_sleeve_ml'], 'a shell takes less silicone than a sleeve');
+        $this->assertGreaterThan(150, $a['silicone_sleeve_ml']);
+        $this->assertGreaterThan(0, $a['pockets']);                                              // the nose, the chin, the ears
+        $this->assertArrayHasKey('verdict', $a);                                                  // the bust's undercuts are mild: the verdict stays the tool's
+    }
+
+    /** The printed mold of two parts gets vents in its parting plane, and its report says what the caster needs. */
+    public function test_rigid_mold_has_vents_from_the_pockets_and_a_funnel_where_asked(): void
+    {
+        $uuid = $this->bust();
+        $this->postJson('/api/files/'.$uuid.'/mold', ['wall' => 8, 'vents' => 'maybe'])->assertStatus(422);
+        $this->postJson('/api/files/'.$uuid.'/mold', ['wall' => 8, 'funnel_at' => 'back'])->assertStatus(422);
+        $this->postJson('/api/files/'.$uuid.'/mold', ['wall' => 8, 'keys_type' => 'pins'])->assertStatus(422);
+        $this->postJson('/api/files/'.$uuid.'/mold', ['wall' => 8, 'clearance' => '0.5'])->assertStatus(422);
+
+        $r = $this->postJson('/api/files/'.$uuid.'/mold', ['wall' => 8, 'parts' => 2, 'keys_type' => 'cone', 'clearance' => '0.2'])->assertCreated();
+        $m = $r->json('file.mold');
+        $this->assertSame(['rigid', 'bottom', 'cone'], [$m['variant'], $m['funnel_at'], $m['keys_type']]);
+        $this->assertGreaterThan(0, $m['vents'], 'air would stay in the pockets of the bust');
+        $this->assertEqualsWithDelta(80.6, $m['cast_ml'], 2.0);                                 // the casting alone; resin_ml adds the funnel
+        $this->assertGreaterThan($m['cast_ml'], $m['resin_ml']);
+        $mold = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertTrue(StlTopology::check($mold->absoluteStlPath())['watertight']);
+        $this->assertSame(0.2, $mold->tool_params['clearance']);
+
+        $off = $this->postJson('/api/files/'.$uuid.'/mold', ['wall' => 8, 'parts' => 2, 'vents' => 'off'])->assertCreated();
+        $this->assertSame(0, $off->json('file.mold.vents'));
+        $on = $this->postJson('/api/files/'.$uuid.'/mold', ['wall' => 8, 'parts' => 2])->assertCreated();
+        $volume = fn ($r) => ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail()->volume_mm3;
+        $this->assertGreaterThan($volume($on), $volume($off), 'the vents take material out of the mold');
+
+        $top = $this->postJson('/api/files/'.$uuid.'/mold', ['wall' => 8, 'parts' => 2, 'funnel_at' => 'top'])->assertCreated()->json('file.mold');
+        $this->assertSame('top', $top['funnel_at']);
+        $side = $this->postJson('/api/files/'.$uuid.'/mold', ['wall' => 8, 'parts' => 2, 'funnel_at' => 'side'])->assertCreated()->json('file.mold');
+        $this->assertSame('side', $side['funnel_at']);
+    }
+
+    /** The silicone mold as a shell: two halves that follow the bust, a base with the master and its vent pins; less silicone than the sleeve. */
+    public function test_silicone_shell_saves_silicone_and_prints_in_three_pieces(): void
+    {
+        $uuid = $this->bust();
+        $this->postJson('/api/files/'.$uuid.'/mold', ['type' => 'silicone', 'variant' => 'box'])->assertStatus(422);
+        $r = $this->postJson('/api/files/'.$uuid.'/mold', ['type' => 'silicone', 'variant' => 'shell', 'wall' => 8])->assertCreated();
+        $this->assertSame('bust-silicone-shell-mold.stl', $r->json('file.name'));
+        $m = $r->json('file.mold');
+        $this->assertSame('shell', $m['variant']);
+        $this->assertSame(3, $m['pieces']);
+        $this->assertGreaterThan(30, $m['saving_pct']);
+        $this->assertLessThan($m['silicone_box_ml'], $m['silicone_ml']);
+        $this->assertEqualsWithDelta(80.6, $m['resin_ml'], 2.0);
+        $this->assertContains('shell_supports', $m['warnings']);
+        $this->assertGreaterThan(0, $m['vents']);
+        $mold = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertTrue(StlTopology::check($mold->absoluteStlPath())['watertight']);
+    }
+
+    /** The tray: one piece, the model on its floor; the two-part mold: the box, the parting plate with cone keys, the master. */
+    public function test_silicone_tray_is_one_piece_and_two_part_has_a_plate_with_keys(): void
+    {
+        $uuid = $this->bust();
+        $tray = $this->postJson('/api/files/'.$uuid.'/mold', ['type' => 'silicone', 'variant' => 'tray', 'wall' => 8])->assertCreated();
+        $this->assertSame('bust-tray-mold.stl', $tray->json('file.name'));
+        $t = $tray->json('file.mold');
+        $this->assertSame(['tray', 1], [$t['variant'], $t['pieces']]);
+        $this->assertGreaterThan(100, $t['silicone_ml']);
+        $this->assertTrue(StlTopology::check(ModelFile::where('uuid', $tray->json('file.uuid'))->firstOrFail()->absoluteStlPath())['watertight']);
+
+        $two = $this->postJson('/api/files/'.$uuid.'/mold', ['type' => 'silicone', 'variant' => 'two_part', 'wall' => 8])->assertCreated();
+        $this->assertSame('bust-silicone-two-part-mold.stl', $two->json('file.name'));
+        $m = $two->json('file.mold');
+        $this->assertSame(['two_part', 3], [$m['variant'], $m['pieces']]);
+        $this->assertGreaterThanOrEqual(2, $m['keys']);
+        $this->assertGreaterThan($t['silicone_ml'], $m['silicone_ml'], 'two halves take more than one open tray');
+        $this->assertTrue(StlTopology::check(ModelFile::where('uuid', $two->json('file.uuid'))->firstOrFail()->absoluteStlPath())['watertight']);
+    }
+
+    /** A core makes the casting hollow: the core's volume comes off the material per casting, and the core is one more piece on the plate. */
+    public function test_core_makes_the_casting_hollow(): void
+    {
+        $uuid = $this->bust();
+        $this->postJson('/api/files/'.$uuid.'/mold', ['type' => 'silicone', 'core' => true, 'core_wall' => 7])->assertStatus(422);
+        $plain = $this->postJson('/api/files/'.$uuid.'/mold', ['type' => 'silicone', 'wall' => 8])->assertCreated()->json('file.mold');
+        $this->assertSame(0.0, (float) $plain['core_ml']);
+        $r = $this->postJson('/api/files/'.$uuid.'/mold', ['type' => 'silicone', 'wall' => 8, 'core' => true, 'core_wall' => 5])->assertCreated();
+        $m = $r->json('file.mold');
+        $this->assertGreaterThan(10, $m['core_ml']);
+        $this->assertEqualsWithDelta($m['resin_ml'] - $m['core_ml'], $m['cast_ml'], 0.15);
+        $this->assertNotContains('core_none', $m['warnings']);
+        $mold = ModelFile::where('uuid', $r->json('file.uuid'))->firstOrFail();
+        $this->assertTrue($mold->tool_params['core']);
+        $this->assertSame(5, $mold->tool_params['core_wall']);
+        $this->assertTrue(StlTopology::check($mold->absoluteStlPath())['watertight']);
     }
 }

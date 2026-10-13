@@ -3,7 +3,8 @@
         'mold.unavailable', 'mold.report', 'mold.report.parts', 'mold.report.filled', 'mold.page.analysing', 'mold.page.analysis.none', 'mold.page.analysis.rigid', 'mold.page.analysis.flexible', 'mold.page.analysis.silicone', 'mold.page.options', 'mold.page.building.fill', 'calc.tip.mold.parts', 'mold.page.cast', 'mold.report.silicone', 'mold.report.silicone.how', 'mold.report.angle', 'mold.report.large', 'mold.verdict.rigid', 'mold.verdict.flexible', 'mold.verdict.silicone',
         'calc.tip.mold', 'calc.tip.mold.silicone', 'mold.page.model', 'mold.page.cast.title', 'tools.mold.title',
         'mold.page.volumes', 'mold.report.volumes', 'mold.report.vents', 'mold.report.vents.none', 'mold.report.core', 'mold.report.shell', 'mold.report.tray', 'mold.report.tray.how', 'mold.report.two_part', 'mold.report.two_part.how',
-        'mold.warn.core_none', 'mold.warn.shell_supports'])
+        'mold.warn.core_none', 'mold.warn.shell_supports', 'mold.report.shell.how',
+        'mold.variant.sleeve.hint', 'mold.variant.shell.hint', 'mold.variant.tray.hint', 'mold.variant.two_part.hint'])
         ->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k, ['max' => $config['max_upload_mb']])])->all();
     $select = 'field !mt-1 text-sm';
 @endphp
@@ -25,7 +26,7 @@
 @section('panel')
 {{-- the kinds of mold, one picture each (the examples of the catalogue): a click sets the kind --}}
 @if($gallery)
-<div id="mold-gallery" class="mb-3 grid grid-cols-3 gap-1.5 sm:grid-cols-5" role="group" aria-label="{{ __('mold.gallery') }}">
+<div id="mold-gallery" class="mb-3 grid grid-cols-3 gap-1.5" role="group" aria-label="{{ __('mold.gallery') }}">
     @foreach($gallery as $i => $g)
         @php $key = (string) (config('tools.mold.seo.examples')[$i]['key'] ?? ''); $p = (array) (config('tools.mold.seo.examples')[$i]['params'] ?? []); @endphp
         <button type="button" class="mold-tile rounded-xl border border-line bg-card p-1 text-left transition hover:border-ink" data-type="{{ $p['type'] ?? 'rigid' }}" data-variant="{{ $p['variant'] ?? 'sleeve' }}" data-parts="{{ $p['parts'] ?? 2 }}" aria-pressed="false">

@@ -50,7 +50,7 @@ export function moldReport(m: Report, t: Words): { text: string; warn: boolean }
         m.warnings.includes('shell_supports') ? { text: t('mold.warn.shell_supports'), warn: false } : null,
         !silicone && (m.parts ?? 2) > 2 ? { text: t('mold.report.parts', { n: m.parts ?? 2 }), warn: false } : null,
         !silicone && m.fill ? { text: t('mold.report.filled', { ml: nf.format(m.added_ml ?? 0), before: nf.format(m.undercut_before_pct ?? 0), after: nf.format(m.undercut_pct) }), warn: false } : null,
-        silicone ? { text: t(variant === 'tray' ? 'mold.report.tray.how' : variant === 'two_part' ? 'mold.report.two_part.how' : 'mold.report.silicone.how'), warn: false } : { text: t(`mold.verdict.${verdict}`, pct), warn: verdict !== 'rigid' },
+        silicone ? { text: t(variant === 'tray' ? 'mold.report.tray.how' : variant === 'two_part' ? 'mold.report.two_part.how' : variant === 'shell' ? 'mold.report.shell.how' : 'mold.report.silicone.how'), warn: false } : { text: t(`mold.verdict.${verdict}`, pct), warn: verdict !== 'rigid' },
         !silicone && m.axis === 'angle' ? { text: t('mold.report.angle', { deg: m.angle_deg ?? 0 }), warn: false } : null,
         m.warnings.includes('large_mold') ? { text: t('mold.report.large'), warn: false } : null,
     ].filter((l): l is { text: string; warn: boolean } => !!l);

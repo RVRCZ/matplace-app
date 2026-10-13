@@ -1674,5 +1674,6 @@
     "tools.which.kind": "Tipo de molde",
     "tools.video.title": "Cómo se ve",
     "tools.video.play": "Ver el vídeo",
-    "tools.video.note": "El vídeo se reproduce desde YouTube solo tras hacer clic (sin cookies hasta entonces)."
+    "tools.video.note": "El vídeo se reproduce desde YouTube solo tras hacer clic (sin cookies hasta entonces).",
+    "mold.report.shell.how": "Cómo: imprima las dos mitades de la carcasa con soportes y la base con el modelo según lo pida el modelo. Cierre las mitades alrededor de la base (selle las juntas por fuera con plastilina o pistola de silicona), aplique desmoldeante al modelo y vierta la silicona por la chimenea superior hasta que salga por los respiraderos. Una vez curada, abra la carcasa y retire la silicona del modelo; la pieza se vierte por la abertura que deja la base del modelo."
 }

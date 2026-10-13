@@ -229,7 +229,7 @@ class ToolExamples extends Command
             $card = (array) ($definition['card'] ?? []);
             $kind = (string) ($card['kind'] ?? $tool);
             $example = $card ?: ((array) ($definition['seo']['examples'] ?? []))[0] ?? null;
-            if ((! isset(ParametricGenerator::FIELDS[$kind]) && ! in_array($kind, [ArtGenerator::KIND, MapBuilder::KIND], true)) || $example === null) {
+            if ((! isset(ParametricGenerator::FIELDS[$kind]) && ! in_array($kind, [ArtGenerator::KIND, MapBuilder::KIND, 'mold'], true)) || $example === null) {
                 continue;
             }
             $base = public_path('img/tools/'.$tool);
@@ -240,9 +240,10 @@ class ToolExamples extends Command
             }
             try {
                 $built = $tool === MapBuilder::KIND ? self::mapExample($example)
+                    : ($tool === 'mold' ? self::moldExample($python, $example)
                     : (($card['edit'] ?? null) === 'colors' ? $this->recolored($python, $card)
                     : ($kind === ArtGenerator::KIND ? app(ArtGenerator::class)->build((array) ($example['params'] ?? []), 'use', true)
-                    : ($card['edit'] ?? null ? $this->edited($generator, $python, $kind, $card) : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', true))));
+                    : ($card['edit'] ?? null ? $this->edited($generator, $python, $kind, $card) : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', true)))));
             } catch (\Throwable $e) {
                 $this->warn(sprintf('%s: the tool refused the parameters (%s)', $tool, mb_substr($e->getMessage(), 0, 160)));
                 $failed++;
