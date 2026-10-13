@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Domain\Tools\ArtGenerator;
 use App\Domain\Tools\ModelEditor;
+use App\Domain\Tools\ToolVisibility;
 use App\Engines\Exceptions\EngineException;
 use App\Http\Controllers\Controller;
 use App\Models\ModelFile;
@@ -44,6 +45,27 @@ class EditApiController extends Controller
             'Content-Type' => 'model/stl',
             'Content-Disposition' => 'inline; filename="filament-art.stl"',
             'X-Model-Meta' => PreviewMeta::header($built['meta']),      // the guide of a layered picture does not fit a header: see PreviewMeta
+            'Cache-Control' => 'no-store',
+        ])->deleteFileAfterSend(true);
+    }
+
+    /**
+     * POST /api/tools/art/poster {params, propose?} → PNG of the picture in its colours (no model is built) + X-Art-Poster:
+     * {colors, regions, look, suggest, found, wanted, size, picture, proposed}. With `propose` (a picture just chosen)
+     * the tool decides how the picture is read and says so in `proposed`: {look, remove_bg, shape}.
+     */
+    public function artPoster(Request $request, ArtGenerator $art): BinaryFileResponse|JsonResponse
+    {
+        abort_unless(ToolVisibility::canOpen($request->user(), ArtGenerator::KIND), 404);
+        if (! $art->available()) {
+            return response()->json(['error' => 'tool_unavailable'], 503);
+        }
+        [$params] = $this->artInput($request);
+        $poster = $art->poster($params, $request->boolean('propose'));
+
+        return response()->file($poster['path'], [
+            'Content-Type' => 'image/png',
+            'X-Art-Poster' => (string) json_encode($poster['meta'], JSON_UNESCAPED_SLASHES),
             'Cache-Control' => 'no-store',
         ])->deleteFileAfterSend(true);
     }

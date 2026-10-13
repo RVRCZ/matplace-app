@@ -381,6 +381,7 @@ Route::prefix('api')->name('api.')->group(function () {
     // filament art and the editing of a model file (session 3)
     Route::get('tools/preview/{key}/meta', [ToolsApiController::class, 'previewMeta'])->where('key', '[A-Za-z0-9]{32}')->middleware('throttle:180,1,preview_meta')->name('tools.preview.meta');
     Route::post('tools/art/preview', [EditApiController::class, 'artPreview'])->middleware('throttle:90,1,art_preview')->name('tools.art.preview');
+    Route::post('tools/art/poster', [EditApiController::class, 'artPoster'])->middleware('throttle:120,1,art_poster')->name('tools.art.poster');
     Route::post('tools/art', [EditApiController::class, 'artCreate'])->middleware('throttle:20,1,art_create')->name('tools.art');
     Route::post('tools/art/zip', [EditApiController::class, 'artZip'])->middleware('throttle:12,1,art_zip')->name('tools.art.zip');
     Route::get('tools/edit/{modelFile}/guide', [EditApiController::class, 'guide'])->middleware('file')->name('tools.edit.guide');

@@ -1,0 +1,20 @@
+{
+    "edit.c.look": ["Co je to za obrázek", "What kind of picture it is", "Qué tipo de imagen es"],
+    "edit.o.look.graphic": ["Kresba nebo logo", "A drawing or a logo", "Un dibujo o un logo"],
+    "edit.o.look.graphic.hint": ["Několik plných barev a ostré hrany. Barvy zůstanou přesně tak, jak jsou nakreslené.", "A few flat colours and sharp edges. The colours stay exactly as they are drawn.", "Unos pocos colores planos y bordes nítidos. Los colores quedan tal como están dibujados."],
+    "edit.o.look.painting": ["Fotka nebo malba", "A photo or a painting", "Una foto o una pintura"],
+    "edit.o.look.painting.hint": ["Mnoho odstínů a přechodů. Vybereme barvy, které obraz drží, i malé výrazné, a plochy zjednodušíme, aby šly vytisknout.", "Many shades and gradients. We choose the colours that carry the picture, small vivid ones too, and simplify the areas so they can be printed.", "Muchos tonos y degradados. Elegimos los colores que sostienen la imagen, también los pequeños y vivos, y simplificamos las zonas para que se puedan imprimir."],
+    "edit.f.detail": ["Nejmenší detail", "Smallest detail", "Detalle mínimo"],
+    "edit.art.detail.hint": ["Nic v obraze nebude menší. Větší hodnota dává větší a čistší plochy a rychlejší tisk.", "Nothing in the picture will be smaller. A larger value gives bigger, cleaner areas and a faster print.", "Nada en la imagen será más pequeño. Un valor mayor da zonas más grandes y limpias y una impresión más rápida."],
+    "edit.art.painting.tip": ["Fotky a malby vypadají nejlépe s 5–6 barvami a detailem 2–3 mm.", "Photos and paintings look best with 5–6 colours and a detail of 2–3 mm.", "Las fotos y las pinturas quedan mejor con 5–6 colores y un detalle de 2–3 mm."],
+    "edit.art.areas": ["Obraz má :r ploch v :c barvách.", "The picture has :r areas in :c colours.", "La imagen tiene :r zonas en :c colores."],
+    "edit.art.proposed.painting": ["Vypadá to jako fotka nebo malba, čteme ji tak. Pozadí zůstává a obraz vyplní celou plochu.", "This looks like a photo or a painting, so we read it that way. The background stays and the picture fills the whole plate.", "Parece una foto o una pintura, así que la leemos así. El fondo se queda y la imagen llena toda la placa."],
+    "edit.art.proposed.graphic": ["Vypadá to jako kresba, čteme ji tak.", "This looks like a drawing, so we read it that way.", "Parece un dibujo, así que lo leemos así."],
+    "edit.art.poster": ["Náhled barev", "Colour preview", "Vista previa de colores"],
+    "edit.art.poster.original": ["Předloha", "Original", "Original"],
+    "edit.art.poster.result": ["V barvách tisku", "In the colours of the print", "En los colores de la impresión"],
+    "edit.art.poster.hint": ["Náhled barev je hned, 3D model se sestaví chvíli po poslední změně.", "The colour preview is there at once; the 3D model is built a moment after your last change.", "La vista previa de colores aparece enseguida; el modelo 3D se construye un momento después del último cambio."],
+    "edit.art.poster.build": ["Sestavit model hned", "Build the model now", "Construir el modelo ahora"],
+    "edit.art.poster.failed": ["Náhled barev se nepodařilo připravit.", "The colour preview could not be prepared.", "No se pudo preparar la vista previa de colores."],
+    "edit.warn.many_areas": ["Obraz se rozpadl na :r ploch. S větším nejmenším detailem nebo méně barvami budou plochy čistší a tisk rychlejší.", "The picture falls into :r areas. With a larger smallest detail or fewer colours the areas are cleaner and the print faster.", "La imagen se divide en :r zonas. Con un detalle mínimo mayor o menos colores las zonas quedan más limpias y la impresión es más rápida."]
+}

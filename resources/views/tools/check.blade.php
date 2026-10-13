@@ -4,7 +4,8 @@
     foreach (['units_tiny', 'units_huge', 'very_small', 'exceeds_bed', 'size_ok', 'parts_fit', 'part_exceeds_bed', 'too_thin', 'watertight_ok', 'not_watertight', 'flipped_normals', 'multiple_shells', 'heavy_mesh', 'very_coarse'] as $c) {
         $keys[] = 'check.'.$c; $keys[] = 'check.'.$c.'.impact';
     }
-    $i18n = collect($keys)->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k)])->all();
+    // a finding that is good news has no "what it means" (an empty text comes back as its key): it is not handed over
+    $i18n = collect($keys)->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k)])->reject(fn ($text, $k) => $text === $k)->all();
 @endphp
 
 @extends('tools.page', ['tool' => 'check', 'module' => 'check', 'lead' => __('check.page.lead'),

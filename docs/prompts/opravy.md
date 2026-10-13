@@ -14,6 +14,8 @@
 | 8 | 10. 10. | testy náhledu (brčko, otvírák, obrázek v barvách) | tři testy čtou notes.outline z hlavičky X-Model-Meta; po zkrácení hlavičky (PreviewMeta limit 2 kB) je outline v „more“ – testy i ověření stránky | viz úkol #8 níže | 10. 10. – testy opravila session D (0dbe219, PreviewMeta::whole ve 30 místech); E ověřila v prohlížeči, že brčko, otvírák i obrázek v barvách `more` dotahují (tažení očka, barvy dílů) – bez změny | – |
 | 9 | 13. 10. | karty všech nástrojů | nové obrázky karet: studiové fotky v jednom stylu místo renderů na béžovém pozadí (Romanovo rozhodnutí A) | viz úkol #9 níže | 13. 10. – 65 karet (vše kromě personalize a mosaic), `scripts/card_images.py` + `card_retouch.py`; 91 volání Gemini ≈ 3,6 $; co se liší od renderu, je v commitech | „Opravy #9“ (tři commity: dávka 1, dávka 2, zbytek) na `feature/tool-fixes` |
 | 10 | 13. 10. | náhled modelu ve všech nástrojích a v kalkulaci | hladký, lesklý náhled podle druhu filamentu místo matného hranatého („jako u busty“) | viz úkol #10 níže | 13. 10. – jen `calc/viewer.ts`: hladké normály s prahem 38° bez `mergeVertices` (pořadí trojúhelníků drží díly), lesk podle `finish`, i pro díly ve vlastních barvách; `RoomEnvironment` zkoušen a nepřidán (bledly barvy); snímky a čísla v `docs/TOOLS-LOOK.md` | „Opravy #10“ na `feature/tool-fixes` |
+| 11 | 13. 10. | stránky parametrických nástrojů (váza a další) | syrový klíč varování ve žlutém rámečku („param.warn.thin_flutes“): text je, ale chyběl v ručním seznamu textů pro skript | viz úkol #11 níže | 13. 10. – seznam varování staví `App\Support\WarningTexts` ze všech `param.warn.*` a `param.shape.warn.*`, které mají text (JSON i `lang/*/param.php`); chyběly `thin_flutes` a `steep_twist`. Test našel a odstranil i mrtvé klíče jinde: `param.vase.facts`, u filament art `art.print.farm` a `art.posts`, u kontroly tři prázdné `.impact`. `param.error.*` překládá server, do skriptu nejdou | „Opravy #11“ na `feature/tool-fixes` |
+| 12 | 13. 10. | váza a ostatní parametrické nástroje | váza se otevírala se žlutým rámečkem „stěna mezi žlábky je tenká“; totéž zkontrolovat u všech nástrojů a předvoleb | viz úkol #12 níže | 13. 10. – váza 18 žlábků / 18 % (bylo 20 / 20), ozdoba u cedulky písmo 16 mm (bylo 12), ukázkové jméno stojánku „Anna“ (bylo „Jana“); test projde výchozí stav a každou předvolbu všech nástrojů; dál záměrně radí víčko s PET závitem a logo „jen obrys“ s textem; popis a snímek v `docs/TOOLS-DEFAULTS.md` | „Opravy #12“ na `feature/tool-fixes` |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 
@@ -250,3 +252,30 @@ rámečku; text v `lang/*.json` je, klíč (a nejspíš `steep_twist` a další)
 posílají stejně) v jazykovém souboru; test v `ToolPageTest`: žádná stránka nástroje nenese v datech pro skript klíč
 bez textu a každé `param.warn.*`, které engine umí vrátit (`grep -o "warnings.*" engines/python/*.py` → seznam), má
 text ve třech jazycích. **Hotovo =** váza bez syrového klíče, test, `pint`, `tsc`, `build`.
+
+## Úkol #12 · 13. 10. 2026 · váza ve výchozím nastavení nemá hned varovat (koordinováno: `engines/python/creative_kinds.py` – session 1 neběží)
+
+**Od E (postřeh u #11):** `/tools/vase` s předvolbou Spirálová hned po otevření ukazuje žlutý rámeček „stěna mezi
+žlábky je tenká, váza bude křehká“ (hranice thin < 0,8 mm). První dojem návštěvníka je varování.
+**Udělat:** výchozí hodnoty (hloubka žlábků `flute`, počet žeber `ribs`, tloušťka stěny `wall`, případně zkroucení)
+nastavit tak, aby výchozí váza ani žádná předvolba nevarovala a tvar zůstal hezký; meze polí neměnit; varování
+samo zůstává pro ruční hodnoty. Zkontrolovat totéž u ostatních nástrojů: test v `ToolPageTest`, že žádná stránka
+nástroje s výchozími hodnotami (a žádná předvolba) nenese varování. **Hotovo =** váza bez rámečku po otevření,
+test, snímek do docs, `pint`, `tsc`, `build`.
+
+## Úkol #13 · 13. 10. 2026 · váza: poloha zúžení, více zúžení, kulaté vlnky (koordinováno: `engines/python/creative_kinds.py` – session 1 neběží; `ParametricGenerator` položky `vase`)
+
+**Od Romana:** „u vázy bych chtěl přidat možnost přemisťovat osu zúžení a přidat i více zúžení, vlnky ne jen ostré,
+ale i kulaté“.
+**Udělat:**
+1. **Profil vázy**: dnes je zúžení (pas) na pevném místě profilu; přidat `waist_at` (výška pasu v % výšky, 10–90,
+   výchozí jako dnes) a `waists` (počet zúžení 0–3; při 2–3 se rozloží rovnoměrně, nebo druhé pole `waist2_at`
+   – rozhodni podle toho, co jde v panelu 340 px ještě ovládat) + `waist` (síla zúžení v %, pokud už není). Profil
+   hladký (spline/cos přechody), žádné zlomy, stěna stále `wall`.
+2. **Vlnky**: volba `flute_shape` `sharp` (dnešní ostré hřebeny) | `round` (sinusový průřez, hřebeny i žlábky
+   zaoblené); u kulatých hlídat stejnou tenkou stěnu jako u ostrých (varování z #12 platí).
+3. Výchozí hodnoty a předvolby podle #12 (bez varování po otevření); nový příklad do `seo.examples` (váza se dvěma
+   pasy a kulatými vlnkami); texty `param.f.vase.*`, `param.choice.vase.flute_shape.*` cs/en/es přes lang/src.
+4. Testy `ParametricToolsTest`/`VaseTest`: dnešní výchozí váza bajt po bajtu stejná (sha1 před/po), váza s `waists=2`
+   a `round` je vodotěsná, objem a bbox v mezích, stěna ≥ wall; `ToolPageTest`; `tsc`, `build`, `pint`.
+**Hotovo =** na `/tools/vase` jde posunout pas, zvolit 1–3 zúžení a kulaté vlnky, náhled a cena; snímky do docs.

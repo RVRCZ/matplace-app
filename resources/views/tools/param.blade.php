@@ -6,20 +6,22 @@
     $unitOf = $unit;
     $unit = fn (string $k) => ['density' => '', 'portrait_scale' => '×', 'portrait_turn' => '°', 'detail' => '%', 'trim' => '%', 'cutout_size' => '%'][$k] ?? $unitOf($k);
     $i18n = collect(['param.working', 'param.failed', 'param.preview_failed', 'param.too_fast', 'param.text_required', 'param.estimate', 'param.outer', 'param.inner', 'param.cell', 'param.slot', 'param.hole', 'param.hole.remove', 'param.creating', 'param.too_many_holes',
-        'param.warn.stand_angle_45', 'param.warn.stand_angle_55', 'param.warn.stand_angle_70', 'param.warn.stand_cutout_small', 'param.warn.stand_cutout_fine', 'param.warn.stand_silhouette_thin', 'param.warn.stand_silhouette_low', 'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
-        'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.cut', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.notes', 'param.part.stand.notes', 'param.part.stripe', 'param.part.body.phone_stand', 'param.part.stand.phone_stand', 'param.part.stripe.phone_stand', 'param.part.body.hair_tie', 'param.part.stand.hair_tie', 'param.part.post.hair_tie', 'param.part.body.candle_stand', 'param.part.stand.candle_stand', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.warn.floating_pieces', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
+        'param.wall.front', 'param.wall.back', 'param.wall.left', 'param.wall.right', 'param.shape.circle', 'param.shape.rect', 'param.hole.w', 'param.hole.d', 'param.hole.h', 'param.hole.x', 'param.hole.z',
+        'param.part.body', 'param.part.lid', 'param.part.all', 'param.part.saucer', 'param.part.handle', 'param.part.stand', 'param.part.imprint', 'param.part.cut', 'param.part.body.logo', 'param.part.stand.logo', 'param.part.body.notes', 'param.part.stand.notes', 'param.part.stripe', 'param.part.body.phone_stand', 'param.part.stand.phone_stand', 'param.part.stripe.phone_stand', 'param.part.body.hair_tie', 'param.part.stand.hair_tie', 'param.part.post.hair_tie', 'param.part.body.candle_stand', 'param.part.stand.candle_stand', 'param.part.body.vase', 'param.part.body.stamp', 'param.part.body.qr', 'param.part.body.lightbox', 'param.need.glue_optional', 'param.part.tray', 'param.part.bin', 'param.bom', 'param.bom.line', 'param.unit', 'param.bins.free', 'param.bins.pick_end', 'param.bins.taken', 'param.bins.bin', 'param.bins.empty',
         'color.white', 'color.black', 'color.grey', 'color.brown', 'color.red', 'color.blue', 'color.green', 'color.yellow', 'color.orange', 'param.part.face', 'param.part.diffuser', 'param.part.back', 'param.part.plate', 'param.part.text', 'param.part.stamp', 'param.bridges', 'param.lightbox.led', 'param.need.led_strip8', 'param.need.led_strip10', 'param.need.led_module', 'param.need.usb_power', 'param.need.tape', 'param.view', 'param.artwork.uploading', 'param.artwork.failed', 'param.artwork.remove',
-        'param.warn.cup_narrow', 'param.warn.pieces_tied', 'param.warn.letters_tied', 'param.warn.stand_tippy', 'param.warn.papel_airy', 'param.warn.papel_lost', 'param.papel.ties', 'param.warn.insert_big', 'param.insert.things', 'param.cup.pocket', 'param.beads.count', 'param.part.body.beads', 'param.part.text.beads', 'param.warn.thread_try', 'param.warn.seal_try', 'param.need.liner', 'param.fits', 'param.warn.thin_lines', 'param.warn.outlines_ignored', 'param.warn.missing_chars', 'param.warn.separate_pieces', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.warn.qr_one_color', 'param.warn.qr_low_contrast', 'param.warn.qr_inverted', 'param.vase.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
+        'param.papel.ties', 'param.insert.things', 'param.cup.pocket', 'param.beads.count', 'param.part.body.beads', 'param.part.text.beads', 'param.need.liner', 'param.fits', 'param.need.glue', 'param.needs', 'param.qr.facts', 'param.saucer'])->mapWithKeys(fn ($k) => [$k => __($k)])->all();
+    // the warnings are not listed by hand: every one that has a text is handed over (the vase once said "param.warn.thin_flutes")
+    $i18n += \App\Support\WarningTexts::forPage($kind, $family);
     if ($family === 'shape') {
         // the picture in colours: its list of colours, the notes on how it prints, the eyelet
         $i18n += collect(['part.body', 'part.rim', 'part.color', 'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.found', 'colors.picture', 'print.one', 'print.swap1', 'print.swap', 'print.many', 'print.multi',
-            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'warn.pieces_tied', 'warn.magnet_no_room', 'warn.magnet_shows', 'warn.name_small', 'warn.name_no_room', 'warn.caption_photo', 'part.icing', 'thickened', 'magnet.fact', 'chain.fact', 'pockets.grid', 'pockets.holes', 'pin.fact', 'stand.fact',
+            'eyelet.drag', 'eyelet.top', 'each', 'pair', 'part.icing', 'thickened', 'magnet.fact', 'chain.fact', 'pockets.grid', 'pockets.holes', 'pin.fact', 'stand.fact',
             // a part may be called by what it is in this tool (the plate of a gingerbread is "the gingerbread")
             ...array_filter(['part.body.'.$kind, 'part.color_1.'.$kind], fn ($k) => \Illuminate\Support\Facades\Lang::has('param.shape.'.$k))])->mapWithKeys(fn ($k) => ['shape.'.$k => \App\Support\NextStep::text(\Illuminate\Support\Facades\Lang::has('param.shape.'.$k.'.'.$kind) ? 'param.shape.'.$k.'.'.$kind : 'param.shape.'.$k)])->all();
     }
     if ($kind === 'papel') {
-        // the portrait: its two parts, its warnings, what the frame in the preview says while it is dragged
-        $i18n += collect(['part.body.papel', 'part.details.papel', 'warn.portrait_fine', 'warn.portrait_whole', 'papel.swap', 'papel.one', 'papel.place.at', 'papel.place.size'])
+        // the portrait: its two parts, what the frame in the preview says while it is dragged
+        $i18n += collect(['part.body.papel', 'part.details.papel', 'papel.swap', 'papel.one', 'papel.place.at', 'papel.place.size'])
             ->mapWithKeys(fn ($k) => ['param.'.$k => \App\Support\NextStep::text('param.'.$k)])->all();
     }
     if ($kind === 'compose') {
@@ -183,7 +185,8 @@
         @endif
 
         @if($texts || ($artwork && $family !== 'shape'))
-            <fieldset>
+            {{-- (the phone stand takes a picture only for a shape cut out of its rest or for the silhouette type) --}}
+            <fieldset @if($kind === 'phone_stand') data-when="cutout=shape|style=silhouette" @endif>
                 <legend class="lbl">{{ __($own('content')) }}</legend>
                 <div class="mt-2 grid gap-3">
                     @foreach($texts as $key => $t)

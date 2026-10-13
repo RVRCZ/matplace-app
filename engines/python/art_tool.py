@@ -3,6 +3,7 @@
 Filament art: a picture in the colours of the farm's filaments, as a thing to hang on the wall (manifold3d, exact mm).
 
     art_tool.py <out.stl> <params-json | @file> [parts] [<parts-dir>]
+    art_tool.py --poster <out.png> <params-json | @file>      the picture in its colours, flat and at once (no geometry)
 
 The picture is read by shape2d.colors (the same way the pendants and coasters of shape_kinds.py read theirs): the
 background goes, the colours are found, each one gets the nearest spool. Two ways to turn that into plastic:
@@ -33,9 +34,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 LIMITS = {
     "width": (50, 250), "height": (50, 250), "base": (0.8, 3), "step": (0.4, 1.2), "plate": (1.5, 3), "gap": (0, 5), "colors_n": (1, 8),
     "bg_strength": (0, 100), "smooth": (0, 1), "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "frame_w": (6, 20),
-    "margin": (0, 20),
+    "margin": (0, 20), "detail": (1, 5),
 }
 MODES = ("stack", "layered")
+LOOKS = ("graphic", "painting")       # a drawing in a few flat colours, or a photo / a painting whose areas are simplified to millimetres (shape2d._painted)
 SHAPES = ("image", "rect", "circle")
 FRAMES = ("none", "round", "square")
 POST_D = 6.0                 # spacer posts
@@ -46,6 +48,8 @@ SLOT_W, SLOT_H = 10.0, 4.0   # the hanging slot in the back of the frame's board
 LED_ROOM = 10.0              # with an LED strip the plates stand this much further from the board
 BED = 240.0                  # pieces are laid out in rows no wider than this
 MIN_LINE = 0.8               # a line of a plate narrower than this is given to the plate behind it
+MANY_AREAS = 300             # a painting in more areas than this is told so: the smallest detail is too small for it
+PAINTING_POINTS = 28000      # the outlines of a painting's plates together have at most this many points (about 110 000 triangles)
 
 
 class Invalid(Exception):
@@ -156,6 +160,100 @@ def _lay_out(pieces, gap=8.0):
     return laid
 
 
+def _picture(p, shape, frame, width, height, margin):
+    """How the picture is read (the options of shape2d.colors) and the window it is fitted into: (options, shape, height, inner_w, inner_h)."""
+    n = lambda key, d: _num(p, key, d)       # noqa: E731
+    look = p.get("look", "graphic")
+    if look not in LOOKS:
+        raise Invalid("bad_choice", "look")
+    options = {
+        "n": int(n("colors_n", 5)), "background": "auto" if p.get("remove_bg", True) else "keep", "background_strength": n("bg_strength", 30), "smooth": n("smooth", 0.3),
+        "contrast": n("contrast", 100) / 100, "brightness": n("brightness", 100) / 100, "saturation": n("saturation", 100) / 100,
+        "palette": p.get("palette") or [], "merge": p.get("merge") or [], "order": p.get("order") or [], "free": bool(p.get("free_colors")),
+        "assign": {part.split("_", 1)[1]: c["code"] for part, c in (p.get("part_colors") or {}).items() if (part.startswith("color_") or part.startswith("plate_")) and isinstance(c, dict) and c.get("code")},
+    }
+    if look == "painting":
+        options.update({"look": "painting", "detail": n("detail", 2)})
+    # the frame's window: a round frame holds a disc, a square one a square; the picture is fitted into it
+    window = width
+    if frame == "round":
+        shape = "circle"
+        window = width
+        height = width
+    elif frame == "square":
+        shape = "rect" if shape == "image" else shape
+        window = min(width, height) if shape == "circle" else None
+    inner_w, inner_h = width - 2 * margin, height - 2 * margin
+    if shape == "circle":
+        d = (window or min(width, height)) - 2 * margin
+        inner_w = inner_h = d
+    if min(inner_w, inner_h) < 20:
+        raise Invalid("shape_too_small")
+    return options, shape, height, inner_w, inner_h
+
+
+def _fit(shape, kept, inner_w, inner_h):
+    """A whole photo fills the body to its edge, a cut-out motif sits inside it with a little air."""
+    if shape == "image":
+        return ("box", inner_w, inner_h)
+    if shape == "circle":
+        return ("cover", inner_w, inner_h) if kept else ("circle", inner_w - 4.0)
+    return ("cover", inner_w, inner_h) if kept else ("box", inner_w - 4.0, inner_h - 4.0)
+
+
+def poster(p, dst):
+    """The picture in the colours it will be printed in, as a flat PNG cut to the window of the design. Returns what the page shows beside it."""
+    import numpy as np
+    import shape2d as S
+    shape, frame = p.get("shape", "image"), p.get("frame", "none")
+    if shape not in SHAPES or frame not in FRAMES:
+        raise Invalid("bad_choice", "shape")
+    art_path = p.get("artwork_path")
+    if not art_path:
+        raise Invalid("no_text")
+    proposed = None
+    if p.get("propose"):
+        # a picture just chosen: a photo or a painting keeps its background and fills a rectangle, a drawing is cut out
+        # of its background as it always was. The poster is made the way that is proposed, in the one request.
+        try:
+            look, cut_out, tall = S.looks_like(art_path)
+        except S.ArtworkError as e:
+            raise Invalid(e.code)
+        whole = look == "painting" and not cut_out
+        if frame != "round":
+            shape = "rect" if whole else "image"
+        proposed = {"look": look, "remove_bg": not whole, "shape": shape}
+        if whole and frame == "none":
+            # the plate takes the proportions of the photo, so nothing of it is cut away
+            lo, hi = LIMITS["height"]
+            proposed["height"] = int(max(lo, min(hi, round(_num(p, "width", 150) * tall))))
+        p = dict(p, **proposed)
+    width, height = _num(p, "width", 150), _num(p, "height", 150)
+    margin = _num(p, "margin", 0) if shape != "image" else 0.0
+    options, shape, height, inner_w, inner_h = _picture(p, shape, frame, width, height, margin)
+    try:
+        # (a picture whose background is not looked for is whole by definition: no need to read it twice)
+        kept = shape == "image" or options["background"] == "keep" or S._read_colors(art_path, 100.0, dict(options, fit=("circle", 100.0), n=1, look="graphic"))["background"] == "kept"
+        img, info = S.poster(art_path, inner_w, dict(options, fit=_fit(shape, kept, inner_w, inner_h)))
+    except S.ArtworkError as e:
+        raise Invalid(e.code, str(e).split(": ", 1)[1] if ": " in str(e) else "")
+    cell = info["cell_mm"]
+    if shape != "image":
+        # the window of the design: what lies outside it is not in the print
+        a = np.asarray(img).copy()
+        rows, cols = a.shape[:2]
+        w, h = min(cols, int(round(inner_w / cell))), min(rows, int(round(inner_h / cell)))
+        r0, c0 = (rows - h) // 2, (cols - w) // 2
+        a = a[r0:r0 + h, c0:c0 + w]
+        if shape == "circle":
+            yy, xx = np.ogrid[:a.shape[0], :a.shape[1]]
+            a[(xx - a.shape[1] / 2 + 0.5) ** 2 + (yy - a.shape[0] / 2 + 0.5) ** 2 > (min(a.shape[:2]) / 2) ** 2] = 0
+        from PIL import Image
+        img = Image.fromarray(a, "RGBA")
+    img.save(dst, "PNG", compress_level=3)
+    return dict(info, size=[img.size[0], img.size[1]], picture=[round(img.size[0] * cell, 1), round(img.size[1] * cell, 1)], shape=shape, proposed=proposed)
+
+
 def build(M, p):
     import numpy as np
     import shape2d as S
@@ -185,39 +283,14 @@ def build(M, p):
         raise Invalid("no_text")
 
     # ── the picture ─────────────────────────────────────────────────────────────────────────────────────────────
-    options = {
-        "n": int(n("colors_n", 5)), "background": "auto" if p.get("remove_bg", True) else "keep", "background_strength": n("bg_strength", 30), "smooth": n("smooth", 0.3),
-        "contrast": n("contrast", 100) / 100, "brightness": n("brightness", 100) / 100, "saturation": n("saturation", 100) / 100,
-        "palette": p.get("palette") or [], "merge": p.get("merge") or [], "order": p.get("order") or [], "free": bool(p.get("free_colors")),
-        "assign": {part.split("_", 1)[1]: c["code"] for part, c in (p.get("part_colors") or {}).items() if (part.startswith("color_") or part.startswith("plate_")) and isinstance(c, dict) and c.get("code")},
-    }
-    # the frame's window: a round frame holds a disc, a square one a square; the picture is fitted into it
-    window = width
-    if frame == "round":
-        shape = "circle"
-        window = width
-        height = width
-    elif frame == "square":
-        shape = "rect" if shape == "image" else shape
-        window = min(width, height) if shape == "circle" else None
-    inner_w, inner_h = width - 2 * margin, height - 2 * margin
-    if shape == "circle":
-        d = (window or min(width, height)) - 2 * margin
-        inner_w = inner_h = d
-    if min(inner_w, inner_h) < 20:
-        raise Invalid("shape_too_small")
+    options, shape, height, inner_w, inner_h = _picture(p, shape, frame, width, height, margin)
     try:
         if shape == "image":
-            layers, info = S.colors(M, art_path, inner_w, dict(options, fit=("box", inner_w, inner_h)))
+            layers, info = S.colors(M, art_path, inner_w, dict(options, fit=_fit(shape, True, inner_w, inner_h)))
         else:
-            probe = dict(options, fit=("circle", 100.0), n=1)
-            kept = S.colors(M, art_path, 100.0, probe)[1]["background"] == "kept"
-            # a whole photo fills the body to its edge, a cut-out motif sits inside it with a little air
-            if shape == "circle":
-                fit = ("cover", inner_w, inner_h) if kept else ("circle", inner_w - 4.0)
-            else:
-                fit = ("cover", inner_w, inner_h) if kept else ("box", inner_w - 4.0, inner_h - 4.0)
-            layers, info = S.colors(M, art_path, inner_w, dict(options, fit=fit))
+            probe = dict(options, fit=("circle", 100.0), n=1, look="graphic")
+            kept = options["background"] == "keep" or S.colors(M, art_path, 100.0, probe)[1]["background"] == "kept"
+            layers, info = S.colors(M, art_path, inner_w, dict(options, fit=_fit(shape, kept, inner_w, inner_h)))
     except S.ArtworkError as e:
         raise Invalid(e.code, str(e).split(": ", 1)[1] if ": " in str(e) else "")
     aw, ah = info["size"]
@@ -272,12 +345,19 @@ def build(M, p):
         layers[0]["own"] = layers[0]["stack"] - (layers[1]["stack"] if count > 1 else C())
         if merged_mm2 > 2.0:
             warn.append("thin_merged")
+    if info["look"] == "painting":
+        if info["regions"] > MANY_AREAS:
+            warn.append("many_areas")
+        # the plates of a painting together stay a model a browser turns easily and a slicer reads at once
+        for layer, stack in zip(layers, S.thinned([layer["stack"] for layer in layers], PAINTING_POINTS)):
+            layer["stack"] = stack
     count = len(layers)
 
     # ── colours of the parts ────────────────────────────────────────────────────────────────────────────────────
     spools = p.get("palette") or []
     parts, pieces, paint, listed = {}, [], {}, []
-    notes = {"mode": mode, "shape": shape, "frame": frame, "warnings": warn, "found": info["found"], "wanted": info["wanted"], "background": info["background"], "source": info["source"]}
+    notes = {"mode": mode, "shape": shape, "frame": frame, "warnings": warn, "found": info["found"], "wanted": info["wanted"], "background": info["background"], "source": info["source"],
+             "look": info["look"], "regions": info["regions"], "suggest": info["suggest"]}
     x0, y0, x1, y1 = body2d.bounds()
     span_w, span_h = x1 - x0, y1 - y0
 
@@ -478,6 +558,19 @@ def write_stl(path, tri):
 def main(argv):
     if len(argv) < 3:
         out({"ok": False, "error": "usage", "code": "usage"})
+    if argv[1] == "--poster":
+        try:
+            raw = argv[3] if len(argv) > 3 else "{}"
+            if raw.startswith("@"):
+                with open(raw[1:], encoding="utf-8") as fh:
+                    raw = fh.read()
+            out({"ok": True, "poster": poster(json.loads(raw), argv[2])})
+        except Invalid as e:
+            out({"ok": False, "code": e.code, "error": str(e)})
+        except SystemExit:
+            raise
+        except Exception as e:  # noqa: BLE001
+            out({"ok": False, "code": "failed", "error": str(e)})
     dst = argv[1]
     with_parts = len(argv) > 3 and argv[3] == "parts"
     parts_dir = argv[4] if len(argv) > 4 else None
