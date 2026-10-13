@@ -41,7 +41,8 @@ STYLE = (
 # said once more at the end of every prompt: about one picture in three came back with a made-up brand on the printer
 PLAIN_PRINTER = (
     "Once more about the background: the 3D printer there is far away and out of focus, a plain machine without any logo, "
-    "badge, sticker, label, lettering or readable screen."
+    "badge, sticker, label, lettering or readable screen. And about the size: the object is photographed from close by, "
+    "it is the largest thing in the picture."
 )
 FROM_RENDER = (
     "The attached picture is a plain render of the real object. Keep its shape, its proportions and every detail exactly "
@@ -53,7 +54,8 @@ FROM_CARD = (
     "The attached picture is a plain render of the real object in the colours of its filaments, on an empty beige "
     "background. Keep the object's shape, its proportions, its colours and every detail exactly as rendered: do not add, "
     "remove, recolour or reshape anything on it. Replace only the material (matte printed plastic), the light and the "
-    "surroundings; the beige background is not part of the object."
+    "surroundings; the beige background is not part of the object. Unless the scene below says otherwise, keep the "
+    "viewpoint of the render too, and the share of the picture the object fills in it."
 )
 # the last commit in which the cards of the generators were the tools' own renders (`php artisan matplace:tool-examples
 # --card`): the reference of every card marked CARD below is read from there, whatever lies in public/img/tools now
@@ -120,7 +122,7 @@ CARDS = {
 
     # ── tools that start from the customer's file or photo: a scene of what they do ──
     "pet": ("The object is a printed figurine of a sitting cat on a round base with a short name in raised letters along the rim of the base. Keep the cat, the base and the lettering exactly as rendered, in the same yellow. Beside it leans the photo it was made from: an ordinary colour photograph on paper of a tabby cat sitting in the same pose, flat, not a print in plastic.", CARD),
-    "map": ("The object is a printed map of a town: a square plate in a raised frame, with the streets as lines, a few buildings standing up as small blocks and a river, in cream, sand and dark brown as rendered. Show it lying on the desk, seen from above at an angle. No lettering anywhere on it.", CARD),
+    "map": ("The object is a printed map of a town: a square plate in a raised frame, with the streets as dark lines and a few buildings standing up as small blocks, in cream, sand and dark brown as rendered. Show it lying on the desk, seen from above at an angle. Exactly the lines and the blocks of the render, each where it is: no river, no building and no street is added.", CARD),
     "filament_art": ("The object is a picture for the wall made of printed plates laid one behind another in a round black frame: a snowman with a black top hat, a red scarf and an orange nose in front of a purple background. Show it standing upright, leaning against the wall at the back of the desk, facing the camera.", CARD),
     "split": ("The objects are the two pieces of one tall vase that was cut across to fit a small printer: the lower piece in brown and the upper piece in blue, standing side by side, each with a flat cut face. Show them as rendered, and three short wooden pins lying on the desk in front of them: the pins that hold the pieces together.", CARD),
     "hollow": ("Two copies of the same classical bust in grey plastic. The left one is whole. The right one is cut straight down through the middle and shows its inside: it is hollow, an even wall about two millimetres thick all around and nothing inside. A small round hole in the bottom of the cut one. Clean, technical look.", []),
@@ -140,7 +142,7 @@ CARDS = {
     "nameplate": ("The object is a printed nameplate: a black plate in the shape of a ribbon with pointed ends, a yellow star and a name in raised white letters. Show it lying on the desk, tilted a little towards the camera. Keep the lettering exactly as rendered.", CARD),
     "text": ("The object is a printed word in thick dark blue letters standing on a thin foot. Show it standing upright on the desk, seen from the front and slightly from the side. Keep the letters exactly as rendered.", CARD),
     "svg_to_stl": ("The object is a flat printed silhouette of a sitting cat in dark blue, as thick as a pencil. Show it lying on the desk. Beside it lies a sheet of white paper with the same cat drawn as a plain black shape: the drawing it was made from. No lettering on the paper.", CARD),
-    "papel": ("The object is a thin square printed panel in the manner of a Mexican papel picado: a dark blue pierced frame with a scalloped edge and, in its middle, the portrait of a woman in cream lines and areas. Show it standing upright on the desk, leaning against a small block, facing the camera.", CARD),
+    "papel": ("The object is a thin square printed panel in the manner of a Mexican papel picado: a dark blue pierced frame with a scalloped edge and, in its middle, the portrait of a woman in cream lines and areas. Show it lying flat on the desk, seen from the viewpoint of the render and as large as in the render. The portrait is not drawn anew: the same face turned slightly to the side, the same hair, the same necklace and the same dots as in the render.", CARD),
     "notes": ("The object is a printed stand for sticky notes: a dark blue square tray with the brown silhouette of a sitting cat standing behind it. Show it as rendered with a pad of plain yellow sticky notes lying in the tray and a pen lying in front of it. Nothing is written on the notes.", CARD),
     "hair_tie": ("The object is a printed holder for hair ties: a dark blue base with a round post and the brown silhouette of a crown standing behind the post. Show it as rendered with four colourful hair ties and a scrunchie slipped over the post.", CARD),
     "candle_stand": ("The object is a printed candle stand: a dark blue base with a round seat and the brown silhouette of a fir tree standing behind it. Show it as rendered with a small lit candle in a glass jar standing in the seat.", CARD),
@@ -152,7 +154,7 @@ CARDS = {
     "tray": ("The object is a printed trinket dish in beige: a shallow round dish with a low rim and the outline of a paw print cut into its floor. Show it as rendered with a bunch of keys and a ring lying in it.", CARD),
     "name_cup": ("The object is a printed pen holder whose walls are the letters of a name written in joined handwriting, in brown on a cream base; the room between the letters is open from above. Show it as rendered with pencils and crayons standing in it. Keep the lettering exactly as rendered.", CARD),
     "name_letter": ("The object is a big printed letter, flat and black, with a name in white handwriting across its upper corner. Show it standing upright on the desk, leaning against a small stack of books without titles, facing the camera. Keep the letter and the lettering exactly as rendered.", CARD),
-    "charm": ("The object is a printed charm in the shape of a little ghost: white, with black eyes and mouth and pink cheeks, and an eyelet at the top. Show it lying on the desk with a short ball chain through the eyelet.", CARD),
+    "charm": ("The object is a printed charm in the shape of a little ghost: white, with black eyes and mouth and pink cheeks, and an eyelet at the top. Show it lying on the desk with a short ball chain through the eyelet. Its outline is the one of the render: a wide round body with two short arms spread to the sides and a wavy lower edge; it is not drawn anew.", CARD),
     "keychain": ("The object is a printed key tag in the shape of a dog bone in dark blue, with a name in raised white letters and an eyelet. Show it lying on the desk with a metal key ring through the eyelet and one plain key on the ring. Keep the lettering exactly as rendered.", CARD),
     "earrings": ("The objects are a pair of printed earrings: two red hearts, each with a white highlight and an eyelet. Show them as rendered, lying on a small white ceramic dish, each with a silver ear hook through its eyelet.", CARD),
     "magnet": ("The object is a printed fridge magnet: a round beige disc with a brown paw print and a pink pad on it. Show it lying on the desk as rendered; beside it lie two small round silver magnets of the kind that is glued into its back.", CARD),
@@ -161,7 +163,7 @@ CARDS = {
     "photo_organizer": ("The object is a printed holder in the shape of a cloud, in grey: tall walls that follow the outline of a cloud, divided inside into compartments, open from above. Show it as rendered with pencils, a brush and a pair of scissors standing in the compartments.", CARD),
     "bag_charm": ("The objects are a printed charm for a bag with holes and its pin: a red heart with a white highlight, and a short red pin with a round head that is pushed through a hole of the bag and glued into the heart. Show both lying on the desk as rendered; behind them stands a rubber beach bag in pale blue with rows of round holes in its side.", CARD),
     "compose": ("The object is a printed plate in the shape of a cloud in white, with a small yellow star and a name in dark blue handwriting laid on it as raised layers. Show it lying on the desk, tilted a little towards the camera. Keep the lettering exactly as rendered.", CARD),
-    "coaster": ("The object is a printed round coaster in purple with a snowman on it: white, with a black top hat, a red scarf and an orange nose. Show it lying on the desk as rendered; a mug of cocoa stands beside it, not on it.", CARD),
+    "coaster": ("The object is a printed round coaster in purple with a snowman on it: white, with a black top hat, a red scarf and an orange nose. Show it lying on the desk, seen from the viewpoint of the render and as large as in the render, the snowman with every detail of the render; a white mug of cocoa stands behind it, not on it.", CARD),
     "straw": ("The object is a printed topper for a drinking straw: a flat smiling star with an open round clip at its side. Show it in yellow, clipped on a paper straw that stands in a glass of lemonade on the desk; the star faces the camera.",
               [("straw", {"artwork_path": "@lib:colour/smiling-star", "width": 35, "thickness": 3, "straw_d": 6}, "all", "use", "orange")]),
     "opener": ("The object is a printed opener for drink cans: a round badge with a paw print on it and a short flat tongue standing out of its edge, the tongue thinning to its tip. Show it in cream with a brown paw, lying on the desk beside a plain aluminium drink can without any print or lettering.",
@@ -417,6 +419,7 @@ def save_sizes(raw, folder, key):
     """3:2, cut from the middle when the model answered in another shape; 800 px jpg + webp and 480 px webp."""
     from PIL import Image
     im = Image.open(io.BytesIO(raw)).convert("RGB")
+    im.save(os.path.join(folder, key + "-raw.png"))      # as it came: scripts/card_retouch.py cuts a closer view out of it
     w, h = im.size
     if w / h > 1.5:
         nw = int(h * 1.5)
