@@ -194,3 +194,28 @@ jednou celá), `pint`.
   v API i na stránce); `InsertToolTest` v `tearDown` maže fotky nahrané pod správcem; `ToolPageTest` otevírá straw/opener/insert jako správce.
 - `tools/param.blade.php`: odkaz „poskládat vlastní“ na `/tools/compose` natvrdo (řeší úkol #2).
 - Skrytý nástroj: `ToolGate` middleware (web) hlídá stránky i API; `config/tools.php` `available=false` = skryto pro veřejnost, správce otevře.
+
+## Úkol #9 · 13. 10. 2026 · nové obrázky karet všech nástrojů (koordinováno: `scripts/card_images.py`, `public/img/tools/`)
+
+**Od Romana:** „zadej našim nástrojům vytvořit nové obrázky ke všem nástrojům“ – nové obrázky karet na `/tools` a na
+hlavní stránce (`public/img/tools/<key>-800.jpg`, `-800.webp`, `-480.webp`; kreslí je `tools/picture.blade.php`).
+**Stav:** 63 nástrojů kartu má – část z dřívějšího běhu `scripts/card_images.py` (Gemini, studiová fotka vyrobená
+z našeho renderu), část je jen holý render z `php artisan matplace:tool-examples --card` (viz docs/N.md „Šest karet
+zůstalo…“). Bez karty: `insert`, `straw`, `opener` (v configu vypnuté, udělat taky), `mosaic`; `personalize`
+(`available=false`) přeskočit.
+**Udělat:**
+1. `scripts/card_images.py`: klíč `GEMINI_API_KEY` z `.env` (když ve tvém worktree chybí, řekni Romanovi; klíč nejde
+   přes mě ani do gitu). Styl `STYLE` nechat, ať jsou karty jednotné (světlý stůl, tiskárna rozmazaně vzadu, bez nápisů,
+   log, rukou). Tabulku scén doplnit o nástroje, které tam nejsou (novější: map, pet, papel, filament_art, split, hollow,
+   life_size, puzzle, holder_model, potion, flexi_cut, colors, soap_model, wearable, slider, compose, coaster, mosaic…);
+   `--renders` ukáže, co skript umí vyrenderovat sám – u nástrojů, které začínají ze souboru/fotky, jde jen scéna.
+2. Pořadí: nejdřív nástroje hlavní stránky (`config/home.php` → qr, figure, gifts, relief, organizer, phone_stand,
+   cutter, vase, box, repair, holder, sign, lightbox), pak zbytek po dávkách ~10.
+3. Každý obrázek prohlédnout ve `storage/app/card_images/` (tvar musí odpovídat tomu, co nástroj opravdu dělá – viz
+   `FROM_RENDER`; nic s textem, logem, rukama) a teprve pak `--publish <key…>`. Co Gemini změnilo, vygenerovat znovu,
+   ne publikovat.
+4. Po každé dávce: `git add public/img/tools`, commit, push své větve a zpráva mně (nasazuji já). Na konci napsat
+   skutečnou spotřebu (odhad: 63 × 1–3 pokusy × ~0,04 $, do 10 $).
+**Nedělat:** `public/img/tool-examples` (SEO ukázky), `public/img/home` (hero), texty, `config/tools.php`.
+**Hotovo =** každý veřejný nástroj (a insert/straw/opener) má nové tři soubory ve stejném stylu, `ToolPageTest`/
+`CalculationFlowTest` zelené (test hlavní stránky hledá `img/tools/gifts-800`).

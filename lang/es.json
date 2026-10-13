@@ -1564,5 +1564,6 @@
     "pet.name_side.right": "A la derecha",
     "pet.name_side.back": "Detrás",
     "pet.name_side.left": "A la izquierda",
-    "pet.name_side.hint": "Los lados son los de la vista De frente en la vista previa. Si el nombre queda en otro sitio, lo cambia después sin generar de nuevo."
+    "pet.name_side.hint": "Los lados son los de la vista De frente en la vista previa. Si el nombre queda en otro sitio, lo cambia después sin generar de nuevo.",
+    "home.tools.popular": "Lo más impreso"
 }

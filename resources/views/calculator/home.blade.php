@@ -79,7 +79,7 @@
         </div>
         <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             @foreach($homeTools as $key => $tool)
-                @include('tools.card', ['key' => $key, 'tool' => $tool])
+                @include('tools.card', ['key' => $key, 'tool' => $tool, 'badge' => in_array($key, (array) config('home.popular'), true) ? __('home.tools.popular') : null])
             @endforeach
         </div>
         <p class="mt-6 text-center"><a href="{{ route('tools') }}" class="btn-secondary">{{ __('home.tools.all_count', ['n' => count(\App\Domain\Tools\ToolVisibility::listed())]) }} →</a></p>

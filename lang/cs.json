@@ -1564,5 +1564,6 @@
     "pet.name_side.right": "Vpravo",
     "pet.name_side.back": "Vzadu",
     "pet.name_side.left": "Vlevo",
-    "pet.name_side.hint": "Strany se počítají při pohledu Zepředu v náhledu. Když jméno vyjde jinde, než chcete, změníte ho pak bez nového generování."
+    "pet.name_side.hint": "Strany se počítají při pohledu Zepředu v náhledu. Když jméno vyjde jinde, než chcete, změníte ho pak bez nového generování.",
+    "home.tools.popular": "Nejčastěji tištěné"
 }

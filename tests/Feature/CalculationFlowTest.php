@@ -111,6 +111,11 @@ class CalculationFlowTest extends TestCase
             // the tools people use most, with their pictures, and the way to all of them
             $this->assertSame((int) config('home.tools_shown'), substr_count($page->getContent(), 'data-cats='));
             $page->assertSee('img/tools/gifts-800', false)->assertSee(route('tools'), false);
+            // what the farm prints most often comes first and says so (config/home.php `popular`)
+            $html = $page->getContent();
+            $this->assertLessThan(strpos($html, route('tools.gifts')), strpos($html, route('tools.qr')));
+            $this->assertGreaterThanOrEqual(1, substr_count($html, __('home.tools.popular')));
+            $this->assertLessThan(strpos($html, route('tools.gifts')), strpos($html, __('home.tools.popular')), 'the badge sits on the first cards');
             // the inputs the scripts bind to are all there, before any marketing section
             $html = $page->getContent();
             foreach (['id="dropzone"', 'id="file-input"', 'id="hero-text-btn"', 'id="search-form"', 'id="result"', 'data-tile="idea"'] as $needle) {

@@ -1564,5 +1564,6 @@
     "pet.name_side.right": "On the right",
     "pet.name_side.back": "At the back",
     "pet.name_side.left": "On the left",
-    "pet.name_side.hint": "The sides are those of the view From the front in the preview. Should the name end up elsewhere than you want, you change it afterwards without a new generation."
+    "pet.name_side.hint": "The sides are those of the view From the front in the preview. Should the name end up elsewhere than you want, you change it afterwards without a new generation.",
+    "home.tools.popular": "Printed most often"
 }
