@@ -25,5 +25,10 @@ return [
         'Marco en A con repisa, ancho 75 mm, respaldo a 65°, hueco para cable.',
         'Cuña baja para ver vídeo, ancho 80 mm, fondo 70 mm, ángulo de 60°.',
         'Bolsillo de pared para un móvil de 80 mm de ancho, cuatro agujeros para tornillos.',
+        'Marco en A con un gato recortado en el respaldo, ancho 80 mm; forma de la biblioteca o propia.',
+        'Chapa ondulada en S, ancho 70 mm, ángulo de 70°, una onda cada 6 mm.',
+        'Placa plana con corazones y pata encajable, ancho 70 mm, dos piezas impresas en plano.',
+        'Cinta en Z, banda de 10 mm con franja de un segundo color, ancho 70 mm.',
+        'Silueta de perro de la biblioteca, 100 mm de alto, asiento para el móvil delante.',
     ],
 ];

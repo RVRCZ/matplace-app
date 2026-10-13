@@ -26,7 +26,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 LIMITS = {
     "organizer": {"width": (30, 400), "depth": (30, 400), "height": (10, 150), "rows": (1, 8), "cols": (1, 8), "wall": (0.8, 4), "floor": (0.8, 4), "radius": (0, 20)},
     "box": {"inner_w": (10, 300), "inner_d": (10, 300), "inner_h": (8, 200), "wall": (1.2, 5), "floor": (1.0, 5), "clearance": (0.1, 0.6), "radius": (0, 30), "cable_d": (3, 30)},
-    "phone_stand": {"width": (50, 260), "device": (7, 20), "angle": (35, 80), "back": (60, 200), "thickness": (3, 8), "radius": (0, 4), "depth": (40, 120), "vent": (1, 4)},
+    "phone_stand": {"width": (50, 260), "device": (7, 20), "angle": (35, 80), "back": (60, 200), "thickness": (3, 8), "radius": (0, 4), "depth": (40, 120), "vent": (1, 4),
+                    "cutout_size": (30, 75), "rib_pitch": (4, 10), "band": (8, 14), "across": (15, 40)},
     "cable_holder": {"count": (1, 8), "cable": (3, 14), "depth": (10, 80), "wall": (2, 12), "radius": (0, 6)},
     "holder": {"obj_w": (10, 300), "obj_d": (5, 150), "height": (15, 150), "wall": (2, 6), "clearance": (0.3, 2), "radius": (0, 12),
                "hook_h": (10, 150), "bend": (0, 40), "edge": (0, 2)},
@@ -444,8 +445,10 @@ def _wave_profile(M, device, angle, back, t):
 
 def phone_stand(M, p):
     """
-    Four stands from one tool: A-frame for the desk, low wedge for watching, wall pocket, and a clip for a car vent.
-    Each is a side profile extruded across the width, printed lying on its side or on its back plate, no supports.
+    Ten stands from one tool: the A-frame, the wave, the plate with hooks, the low wedge, the wall pocket and the car
+    clip of round 1 (each a side profile extruded across the width, printed lying on its side or on its back plate,
+    no supports), and from round 2 (stand2.py) the corrugated S band, the flat plate with a slide-in leg, the Z band
+    with a stripe and the silhouette; the four with a rest can have a shape cut out of it (`cutout` = shape).
     """
     k = "phone_stand"
     style = str(p.get("style", "plate"))
@@ -455,6 +458,9 @@ def phone_stand(M, p):
     cable = bool(p.get("cable", True))
     C = M.CrossSection
     note = {}
+    # the cut-out in the rest: none, the A-frame's window (its default, and what the old `window` switch meant), or a shape
+    cutout = str(p.get("cutout") or ("window" if style == "desk" and bool(p.get("window", True)) else "none"))
+    import stand2
 
     def lean(lo=None, hi=None):
         """The angle that was asked for, kept to what this shape stands firmly at; a changed angle is told (param.warn.stand_angle_*)."""
@@ -466,10 +472,27 @@ def phone_stand(M, p):
         note["angle"] = used
         return used
 
+    if style == "ribbed":
+        angle, back = lean(lo=55.0), num(p, k, "back", 90)
+        return stand2.ribbed(M, num, p, note, width, device, t, angle, back, cable)
+    if style == "flatpack":
+        angle, back = lean(lo=45.0, hi=75.0), num(p, k, "back", 100)
+        return stand2.flatpack(M, Invalid, p, note, width, device, t, angle, back)
+    if style == "ribbon":
+        angle, back = lean(lo=55.0), num(p, k, "back", 100)
+        return stand2.ribbon(M, num, p, note, width, device, angle, back)
+    if style == "silhouette":
+        angle, back = lean(lo=60.0, hi=75.0), num(p, k, "back", 100)
+        return stand2.silhouette(M, Invalid, num, p, note, device, angle, back, t)
+
     if style == "wave":
         angle, back = lean(lo=55.0), num(p, k, "back", 90)
         profile, depth, height, seat_top, (sx0, sx1) = _wave_profile(M, device, angle, back, t)
         solid = profile.extrude(width)
+        if cutout == "shape":
+            cut = stand2.cut_rest(M, Invalid, num, p, note, "wave", {"width": width, "back": back, "t": t, "angle": angle, "h": t / 2, "r1": max(8.0, 1.6 * t)})
+            if cut is not None:
+                solid = solid - cut
         if cable:
             slot = min(16.0, width * 0.3)
             # through the seat only: the plug drops into the roll and the cable leaves at the side
@@ -490,6 +513,10 @@ def phone_stand(M, p):
         depth = y_foot + fin_d
         base = rounded_rect(M, width, depth, r).extrude(t)
         plate = rounded_rect(M, width, back, r).extrude(t).rotate([angle, 0, 0]).translate([0, y_foot, t - 0.01])
+        if cutout == "shape":
+            cut = stand2.cut_rest(M, Invalid, num, p, note, "plate", {"width": width, "back": back, "t": t, "angle": angle, "y_foot": y_foot})
+            if cut is not None:
+                plate = plate - cut                             # the plate only: the fin behind it stays whole
         fin_w = max(12.0, width * 0.25)
         apex = (y_foot + back * 0.6 * math.cos(a) - t * math.sin(a) * 0.5, t + back * 0.6 * math.sin(a))
         fin = C([[(y_foot - 1.0, t - 0.01), (depth - r, t - 0.01), apex]]).extrude(fin_w).rotate([90, 0, 90]).translate([(width - fin_w) / 2, 0, 0])
@@ -532,6 +559,10 @@ def phone_stand(M, p):
                 solid = solid - M.Manifold.cylinder(t + 2.0, 2.2, 2.2, 32).translate([x, plate_h - 10.0, -1.0])
                 solid = solid - M.Manifold.cylinder(t + 2.0, 2.2, 2.2, 32).translate([x, pocket_h + 8.0, -1.0])
             note["screws"] = 4
+        if cutout == "shape":
+            cut = stand2.cut_rest(M, Invalid, num, p, note, "wall", {"plate_w": inner_w + 2 * t, "plate_h": plate_h, "pocket_h": pocket_h, "t": t, "screws": bool(p.get("screws", False)), "inner_w": inner_w})
+            if cut is not None:
+                solid = solid - cut
         # printed flat on the back plate; on the wall the plate stands upright and the pocket faces the room
         use = solid.rotate([90, 0, 0]).translate([0, inner_d + 2 * t, 0])
         note["outer"] = [round(inner_w + 2 * t, 1), round(inner_d + 2 * t, 1), round(plate_h, 1)]
@@ -569,8 +600,12 @@ def phone_stand(M, p):
         return {"all": solid, "use": use}, note
 
     angle, back = lean(lo=45.0), num(p, k, "back", 100)
-    profile, fx, rear_x, top_y, shelf_h, lip_h = _desk_profile(M, device, angle, back, t, r, bool(p.get("window", True)))
+    profile, fx, rear_x, top_y, shelf_h, lip_h = _desk_profile(M, device, angle, back, t, r, cutout != "none")      # the A-frame stays open with a shape in its rest
     solid = profile.extrude(width)
+    if cutout == "shape":
+        cut = stand2.cut_rest(M, Invalid, num, p, note, "desk", {"width": width, "back": back, "t": t, "angle": angle, "fx": fx, "shelf_h": shelf_h, "r": r})
+        if cut is not None:
+            solid = solid - cut
     if cable:
         slot = min(16.0, width * 0.3)
         solid = solid - M.Manifold.cube([fx + 1.0, lip_h + t + 2.0, slot]).translate([-1.0, shelf_h - t - 1.0, width / 2 - slot / 2])

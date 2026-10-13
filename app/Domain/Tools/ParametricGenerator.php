@@ -135,7 +135,7 @@ final class ParametricGenerator
     /** Tools of the family whose text goes under the picture, not instead of it: a page opened with a name keeps its sample picture. */
     public const CAPTIONED = ['badge'];
 
-    public const SAMPLE = ['papel' => 'lib:holidays/sugar-skull', 'notes' => 'lib:animals/cat', 'hair_tie' => 'lib:hearts-stars/crown', 'candle_stand' => 'lib:holidays/christmas-tree', 'svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star', 'medallion' => 'lib:colour/smiling-star', 'photo_organizer' => 'lib:nature/cloud', 'bag_charm' => 'lib:colour/red-heart', 'straw' => 'lib:colour/smiling-star', 'opener' => 'lib:colour/paw-badge'];
+    public const SAMPLE = ['phone_stand' => 'lib:animals/cat', 'papel' => 'lib:holidays/sugar-skull', 'notes' => 'lib:animals/cat', 'hair_tie' => 'lib:hearts-stars/crown', 'candle_stand' => 'lib:holidays/christmas-tree', 'svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star', 'medallion' => 'lib:colour/smiling-star', 'photo_organizer' => 'lib:nature/cloud', 'bag_charm' => 'lib:colour/red-heart', 'straw' => 'lib:colour/smiling-star', 'opener' => 'lib:colour/paw-badge'];
 
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
@@ -183,6 +183,8 @@ final class ParametricGenerator
         ],
         'phone_stand' => [
             'width' => [50, 260, 70, 1], 'device' => [7, 20, 12, 1], 'angle' => [35, 80, 65, 1], 'back' => [60, 200, 100, 1], 'thickness' => [3, 8, 5, 0.5], 'radius' => [0, 4, 2, 0.1], 'depth' => [40, 120, 60, 1], 'vent' => [1, 4, 1.5, 0.1],
+            // round 2 (docs/AA.md): the cut-out's share of the rest's width, the corrugation's pitch, the Z band's thickness, the silhouette's width across the phone
+            'cutout_size' => [30, 75, 55, 1], 'rib_pitch' => [4, 10, 6, 0.5], 'band' => [8, 14, 10, 0.5], 'across' => [15, 40, 25, 1],
         ],
         'cable_holder' => [
             'count' => [1, 8, 4, 1], 'cable' => [3, 14, 6, 0.5], 'depth' => [10, 80, 45, 1], 'wall' => [2, 12, 7, 0.5], 'radius' => [0, 6, 3, 0.5],
@@ -251,7 +253,7 @@ final class ParametricGenerator
         'bag_charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'straw' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'opener' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
-        'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
+        'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car', 'ribbed', 'flatpack', 'ribbon', 'silhouette'], 'cutout' => ['none', 'window', 'shape'], 'pattern' => ['circles', 'hearts', 'squares', 'honeycomb']],
         'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
         // `shape`: a box, an oval, or a plate drawn as an outline (engines/shapes/<name>.svg); `motif_at`: where the picture stands against the text
         'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name', 'stand'], 'shape' => ['rounded', 'rect', 'oval', 'heart', 'star', 'cloud', 'bone', 'hexagon', 'banner', 'arrow', 'house', 'car', 'cat', 'candy', 'flower', 'shield', 'tag', 'bubble', 'circle', 'fish'],
@@ -297,14 +299,14 @@ final class ParametricGenerator
     /** Of the tools that take a picture: those where it stands next to the text, never instead of it (the text stays required). */
     public const BESIDE = ['sign'];
 
-    public const ARTWORK = ['sign', 'logo', 'stamp', 'stencil', 'papel', 'notes', 'hair_tie', 'candle_stand', 'insert', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm', 'straw', 'opener'];
+    public const ARTWORK = ['phone_stand', 'sign', 'logo', 'stamp', 'stencil', 'papel', 'notes', 'hair_tie', 'candle_stand', 'insert', 'lightbox', 'cutter', 'charm', 'keychain', 'earrings', 'ornament', 'magnet', 'coaster', 'cookie', 'tray', 'badge', 'medallion', 'photo_organizer', 'bag_charm', 'straw', 'opener'];
 
     /** the fields shown first; everything else sits under "more" */
     public const MAIN = [
         'name_cup' => ['width', 'height'], 'beads' => ['size', 'hole'],
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'straw_d', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
-        'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius'],
+        'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius', 'cutout_size', 'rib_pitch', 'band', 'across'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'base', 'relief', 'thickness'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
 
@@ -322,7 +324,7 @@ final class ParametricGenerator
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
 
-    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'post', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp', 'details',
+    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'post', 'stripe', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp', 'details',
         'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8', 'icing_1', 'icing_2', 'icing_3', 'icing_4', 'icing_5', 'icing_6',
         'layer_1', 'layer_2', 'layer_3', 'layer_4', 'layer_5', 'layer_6', 'layer_7', 'layer_8', 'layer_9', 'layer_10', 'layer_11', 'layer_12'];
 
@@ -333,7 +335,7 @@ final class ParametricGenerator
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
-        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'window', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['isolate', 'invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'insert' => ['notch'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
+        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['isolate', 'invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'insert' => ['notch'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
@@ -356,7 +358,12 @@ final class ParametricGenerator
         'tray' => ['relief' => ['floor', ['none']], 'colors_n' => ['floor', ['engraved', 'colors']]] + self::SHAPE_WHEN,
         'topper' => self::SHAPE_WHEN, 'gingerbread' => self::SHAPE_WHEN, 'charm' => self::SHAPE_WHEN, 'keychain' => self::SHAPE_WHEN, 'earrings' => self::SHAPE_WHEN, 'ornament' => self::SHAPE_WHEN, 'coaster' => self::SHAPE_WHEN,
         'magnet' => self::SHAPE_WHEN + ['disc' => ['mount', ['glue', 'press', 'through']], 'mag_d' => ['mount', ['glue', 'press', 'through']], 'mag_h' => ['mount', ['glue', 'press']], 'mag_gap' => ['mount', ['glue']]],
-        'phone_stand' => ['angle' => ['style', ['plate', 'wave', 'desk', 'wedge']], 'back' => ['style', ['plate', 'wave', 'desk']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']], 'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car']], 'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car']], 'window' => ['style', ['desk']], 'screws' => ['style', ['wall']]],
+        'phone_stand' => ['width' => ['style', ['plate', 'wave', 'desk', 'wedge', 'wall', 'car', 'ribbed', 'flatpack', 'ribbon']], 'angle' => ['style', ['plate', 'wave', 'desk', 'wedge', 'ribbed', 'flatpack', 'ribbon', 'silhouette']],
+            'back' => ['style', ['plate', 'wave', 'desk', 'ribbed', 'flatpack', 'ribbon', 'silhouette']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']],
+            'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car', 'ribbed', 'flatpack', 'silhouette']], 'radius' => ['style', ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
+            'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car', 'ribbed']], 'screws' => ['style', ['wall']],
+            'cutout' => ['style', ['plate', 'wave', 'desk', 'wall']], 'cutout_size' => ['style', ['plate', 'wave', 'desk', 'wall']],
+            'rib_pitch' => ['style', ['ribbed']], 'pattern' => ['style', ['flatpack']], 'band' => ['style', ['ribbon']], 'across' => ['style', ['silhouette']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
         'sign' => ['shape' => ['style', ['emboss', 'engrave', 'outline']], 'radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']], 'ring_at' => ['keyring', ['on']],
             'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']],
@@ -509,6 +516,10 @@ final class ParametricGenerator
             'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
             'notes', 'candle_stand' => ['body', 'stand'],
             'hair_tie' => ['body', 'stand', 'post'],                                                  // the figure, the base, and the post pushed through it from below
+            // the flat-pack stand is a plate and a leg, the Z band a band and its stripe (docs/AA.md)
+            'phone_stand' => match ($p['style'] ?? 'plate') {
+                'flatpack' => ['body', 'stand'], 'ribbon' => ['body', 'stripe'], default => []
+            },
             'papel' => ($p['treatment'] ?? 'cutout') === 'portrait' ? ['body', 'details'] : [],             // the backing and what lies on it: two colours, one print
             'compose' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^layer_\d{1,2}$/', $part))),
             'sign' => ! empty($p['two_color']) && ! in_array($p['style'] ?? 'emboss', ['engrave', 'stand'], true) ? ['plate', 'text'] : [],
@@ -644,6 +655,16 @@ final class ParametricGenerator
         if (in_array($kind, self::ARTWORK, true) && ! empty($p['artwork'])) {
             $out['artwork'] = (string) $p['artwork'];
         }
+        if ($kind === 'phone_stand') {
+            // the A-frame's window was a switch before round 2: it is the cut-out "window" now and still its default when
+            // nothing says otherwise; a cut-out shape and the silhouette need a picture, the library's cat when none came
+            if (! isset($p['cutout'])) {
+                $out['cutout'] = $out['style'] === 'desk' && filter_var($p['window'] ?? true, FILTER_VALIDATE_BOOLEAN) ? 'window' : 'none';
+            }
+            if (empty($out['artwork']) && ($out['style'] === 'silhouette' || $out['cutout'] === 'shape')) {
+                $out['artwork'] = self::SAMPLE['phone_stand'];
+            }
+        }
         // part → its colour and what it looks like: a free colour is both ({code: hex, hex}); a stored design comes back with both
         foreach (array_slice((array) ($p['part_colors'] ?? []), 0, 16, true) as $part => $color) {
             $code = is_array($color) ? ($color['code'] ?? null) : $color;
@@ -771,8 +792,9 @@ final class ParametricGenerator
             if (! $clean['artwork_path']) {
                 throw ValidationException::withMessages(['params' => [__('param.error.artwork_gone')]])->status(422);
             }
-        } elseif (in_array($kind, self::ARTWORK, true) && empty($clean['lines']) && ! ($kind === 'papel' && ($clean['treatment'] ?? '') === 'portrait')) {
-            // (a portrait panel without a picture is a frame round an empty plate: something to write or stick on)
+        } elseif (in_array($kind, self::ARTWORK, true) && empty($clean['lines']) && ! ($kind === 'papel' && ($clean['treatment'] ?? '') === 'portrait') && $kind !== 'phone_stand') {
+            // (a portrait panel without a picture is a frame round an empty plate: something to write or stick on;
+            // a phone stand needs a picture only for a cut-out shape or the silhouette, and clean() gives those the library's cat)
             throw ValidationException::withMessages(['params' => [__('param.error.no_text')]])->status(422);
         }
 

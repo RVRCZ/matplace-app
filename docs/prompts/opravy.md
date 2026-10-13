@@ -13,6 +13,8 @@
 | 7 | 10. 10. | nástroje pro úpravu souboru (hollow, life-size, puzzle, holder, potion, flexi-cut, colors, soap, wearable, slider) | pod souborem svítí syrový klíč fáze („edit.stage.repairing“) – společné texty fází chybí v lang/*/edit.php | viz úkol #7 níže | 10. 10. (11 společných textů fází cs/en/es; stránka neposílá skriptu klíč bez textu – na živé /tools/hollow jich bylo 69) | „Opravy #7“ na `feature/tool-fixes` |
 | 8 | 10. 10. | testy náhledu (brčko, otvírák, obrázek v barvách) | tři testy čtou notes.outline z hlavičky X-Model-Meta; po zkrácení hlavičky (PreviewMeta limit 2 kB) je outline v „more“ – testy i ověření stránky | viz úkol #8 níže | 10. 10. – testy opravila session D (0dbe219, PreviewMeta::whole ve 30 místech); E ověřila v prohlížeči, že brčko, otvírák i obrázek v barvách `more` dotahují (tažení očka, barvy dílů) – bez změny | – |
 | 9 | 13. 10. | karty všech nástrojů | nové obrázky karet: studiové fotky v jednom stylu místo renderů na béžovém pozadí (Romanovo rozhodnutí A) | viz úkol #9 níže | 13. 10. – 65 karet (vše kromě personalize a mosaic), `scripts/card_images.py` + `card_retouch.py`; 91 volání Gemini ≈ 3,6 $; co se liší od renderu, je v commitech | „Opravy #9“ (tři commity: dávka 1, dávka 2, zbytek) na `feature/tool-fixes` |
+| 10 | 13. 10. | náhled modelu ve všech nástrojích a v kalkulaci | hladký, lesklý náhled podle druhu filamentu místo matného hranatého („jako u busty“) | viz úkol #10 níže | 13. 10. – jen `calc/viewer.ts`: hladké normály s prahem 38° bez `mergeVertices` (pořadí trojúhelníků drží díly), lesk podle `finish`, i pro díly ve vlastních barvách; `RoomEnvironment` zkoušen a nepřidán (bledly barvy); snímky a čísla v `docs/TOOLS-LOOK.md` | „Opravy #10“ na `feature/tool-fixes` |
+| 11 | 13. 10. | stránky parametrických nástrojů (váza a další) | syrový klíč varování ve žlutém rámečku („param.warn.thin_flutes“): text je, ale chyběl v ručním seznamu textů pro skript | viz úkol #11 níže | 13. 10. – seznam varování staví `App\Support\WarningTexts` ze všech `param.warn.*` a `param.shape.warn.*`, které mají text (JSON i `lang/*/param.php`); chyběly `thin_flutes` a `steep_twist`. Test našel a odstranil i mrtvé klíče jinde: `param.vase.facts`, u filament art `art.print.farm` a `art.posts`, u kontroly tři prázdné `.impact`. `param.error.*` překládá server, do skriptu nejdou | „Opravy #11“ na `feature/tool-fixes` |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 
@@ -240,3 +242,22 @@ true (matný, hranatý vzhled); busta používá `sculptureMaterial` roughness 0
    cedulky, vázy, klíčenky do docs (E.md).
 **Nedělat:** materiál busty (`sculptureMaterial`) neměnit, jen z něj vyjít; nic v geometrii, nic v param.ts.
 **Hotovo =** všechny nástroje mají hladký, lesklý náhled podle druhu filamentu, snímky, testy, `pint`, `tsc`, `build`.
+
+## Úkol #11 · 13. 10. 2026 · syrové klíče varování na stránkách nástrojů (koordinováno: `tools/param.blade.php`)
+
+**Od E (postřeh u #10):** `/tools/vase` ve výchozím nastavení ukazuje syrový klíč `param.warn.thin_flutes` ve žlutém
+rámečku; text v `lang/*.json` je, klíč (a nejspíš `steep_twist` a další) chybí v seznamu i18n v `tools/param.blade.php`.
+**Udělat:** seznam textů pro skript nestavět ručně, ale ze všech klíčů `param.warn.*` (a `param.error.*`, pokud se
+posílají stejně) v jazykovém souboru; test v `ToolPageTest`: žádná stránka nástroje nenese v datech pro skript klíč
+bez textu a každé `param.warn.*`, které engine umí vrátit (`grep -o "warnings.*" engines/python/*.py` → seznam), má
+text ve třech jazycích. **Hotovo =** váza bez syrového klíče, test, `pint`, `tsc`, `build`.
+
+## Úkol #12 · 13. 10. 2026 · váza ve výchozím nastavení nemá hned varovat (koordinováno: `engines/python/creative_kinds.py` – session 1 neběží)
+
+**Od E (postřeh u #11):** `/tools/vase` s předvolbou Spirálová hned po otevření ukazuje žlutý rámeček „stěna mezi
+žlábky je tenká, váza bude křehká“ (hranice thin < 0,8 mm). První dojem návštěvníka je varování.
+**Udělat:** výchozí hodnoty (hloubka žlábků `flute`, počet žeber `ribs`, tloušťka stěny `wall`, případně zkroucení)
+nastavit tak, aby výchozí váza ani žádná předvolba nevarovala a tvar zůstal hezký; meze polí neměnit; varování
+samo zůstává pro ruční hodnoty. Zkontrolovat totéž u ostatních nástrojů: test v `ToolPageTest`, že žádná stránka
+nástroje s výchozími hodnotami (a žádná předvolba) nenese varování. **Hotovo =** váza bez rámečku po otevření,
+test, snímek do docs, `pint`, `tsc`, `build`.
