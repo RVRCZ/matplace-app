@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /** Every tool lives on the one tool page: panel of sections, viewer with its status line, price card, download menu. */
@@ -20,6 +21,9 @@ class ToolPageTest extends TestCase
 
     /** tool key → the script module that drives its page */
     private const MODULES = ['relief' => 'relief', 'mold' => 'mold', 'repair' => 'repair', 'check' => 'check', 'figure' => 'figure', 'filament_art' => 'art', 'split' => 'edit', 'hollow' => 'edit', 'life_size' => 'edit', 'puzzle' => 'edit', 'holder_model' => 'edit', 'potion' => 'edit', 'flexi_cut' => 'edit', 'colors' => 'edit', 'soap_model' => 'edit', 'wearable' => 'edit', 'slider' => 'edit'];
+
+    /** warnings that are advice on the technique, said whatever the numbers are: a thread and a sealing lip are tried on one piece first */
+    private const ADVICE = ['thread_try', 'seal_try'];
 
     private function needsPython(): void
     {
@@ -209,6 +213,61 @@ class ToolPageTest extends TestCase
         $this->get('/en/tools/phone-stand')->assertOk()->assertSee('param.warn.stand_angle_55'.$q.':'.$q.'This stand shape', false);
         $this->get('/tools/magnet')->assertOk()->assertSee('shape.warn.magnet_shows'.$q.':'.$q, false)->assertSee('param.warn.thin_lines'.$q.':'.$q, false);
         $this->get('/tools/papel-picado')->assertOk()->assertSee('param.warn.portrait_fine'.$q.':'.$q, false);
+    }
+
+    public function test_no_tool_opens_with_a_warning_and_no_preset_brings_one(): void
+    {
+        $this->needsPython();
+        // what a page of a parametric tool asks its first preview for (param.ts): the defaults of the fields, the preset
+        // its address starts with, the sample texts, one of our pictures; and the same with each preset it offers
+        $states = [];
+        foreach (config('tools') as $key => $tool) {
+            $route = Route::getRoutes()->getByName($tool['route']);
+            $kind = $route?->defaults['kind'] ?? null;
+            if (! is_string($kind) || ! isset(ParametricGenerator::FIELDS[$kind]) || $kind === 'modular') {
+                continue;                                   // the modular organizer opens empty: its bins are drawn by the visitor
+            }
+            $as = (string) ($route->defaults['as'] ?? $kind);
+            $texts = array_filter(array_map(fn (array $t) => $t[2], ParametricGenerator::TEXTS[$kind] ?? []), fn ($text) => $text !== '');
+            $sample = $kind === 'compose' ? null : (ParametricGenerator::SAMPLE[$as] ?? ParametricGenerator::SAMPLE[$kind] ?? null);
+            if (! $texts && ! $sample && in_array($kind, ParametricGenerator::ARTWORK, true)) {
+                continue;                                   // opens empty and waits for the visitor's picture (the drawer insert)
+            }
+            $given = $texts + ($sample ? ['artwork' => $sample] : []) + ($kind === 'papel' ? ['border_mm' => 20] : []);       // the panel opens as a cut-out
+            $presets = ParametricGenerator::PRESETS[$kind] ?? [];
+            $states[$key] = [$kind, ($presets[$route->defaults['preset'] ?? ''] ?? []) + $given];
+            foreach ($presets as $name => $preset) {
+                $states[$key.' · '.$name] = [$kind, $preset + $given];
+            }
+        }
+        $this->assertGreaterThanOrEqual(70, count($states));
+        $this->assertArrayHasKey('vase · spiral', $states);
+        $generator = app(ParametricGenerator::class);
+        $said = [];
+        $seen = [];
+        foreach ($states as $name => [$kind, $params]) {
+            $same = $kind.' '.json_encode($params);
+            if (isset($seen[$same])) {
+                continue;                                   // a page that opens with one of its presets
+            }
+            $seen[$same] = true;
+            try {
+                $built = $generator->build($kind, $params);
+                @unlink($built['path']);
+                $warnings = array_diff((array) ($built['meta']['notes']['warnings'] ?? []), self::ADVICE);
+                if ($warnings) {
+                    $said[$name] = implode(' ', $warnings);
+                }
+            } catch (ValidationException $e) {
+                $said[$name] = 'cannot be made: '.implode(' ', $e->validator->errors()->all());
+            }
+        }
+        // one note stays, because it is the answer to a choice: the word LOGO cut out alone is four loose letters, and the
+        // page says so when the visitor picks "the outline alone" for a text
+        $this->assertSame('separate_pieces', $said['logo · extrude'] ?? null);
+        unset($said['logo · extrude']);
+        // the first thing a visitor saw of the vase was a yellow frame: "the wall between the flutes is thin"
+        $this->assertSame([], $said, 'tools that warn before the visitor has changed anything');
     }
 
     public function test_no_tool_page_hands_its_script_a_key_instead_of_a_text(): void
