@@ -516,6 +516,10 @@ final class ParametricGenerator
             'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
             'notes', 'candle_stand' => ['body', 'stand'],
             'hair_tie' => ['body', 'stand', 'post'],                                                  // the figure, the base, and the post pushed through it from below
+            // the flat-pack stand is a plate and a leg, the Z band a band and its stripe (docs/AA.md)
+            'phone_stand' => match ($p['style'] ?? 'plate') {
+                'flatpack' => ['body', 'stand'], 'ribbon' => ['body', 'stripe'], default => []
+            },
             'papel' => ($p['treatment'] ?? 'cutout') === 'portrait' ? ['body', 'details'] : [],             // the backing and what lies on it: two colours, one print
             'compose' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^layer_\d{1,2}$/', $part))),
             'sign' => ! empty($p['two_color']) && ! in_array($p['style'] ?? 'emboss', ['engrave', 'stand'], true) ? ['plate', 'text'] : [],
