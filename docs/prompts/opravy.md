@@ -13,6 +13,7 @@
 | 7 | 10. 10. | nástroje pro úpravu souboru (hollow, life-size, puzzle, holder, potion, flexi-cut, colors, soap, wearable, slider) | pod souborem svítí syrový klíč fáze („edit.stage.repairing“) – společné texty fází chybí v lang/*/edit.php | viz úkol #7 níže | 10. 10. (11 společných textů fází cs/en/es; stránka neposílá skriptu klíč bez textu – na živé /tools/hollow jich bylo 69) | „Opravy #7“ na `feature/tool-fixes` |
 | 8 | 10. 10. | testy náhledu (brčko, otvírák, obrázek v barvách) | tři testy čtou notes.outline z hlavičky X-Model-Meta; po zkrácení hlavičky (PreviewMeta limit 2 kB) je outline v „more“ – testy i ověření stránky | viz úkol #8 níže | 10. 10. – testy opravila session D (0dbe219, PreviewMeta::whole ve 30 místech); E ověřila v prohlížeči, že brčko, otvírák i obrázek v barvách `more` dotahují (tažení očka, barvy dílů) – bez změny | – |
 | 9 | 13. 10. | karty všech nástrojů | nové obrázky karet: studiové fotky v jednom stylu místo renderů na béžovém pozadí (Romanovo rozhodnutí A) | viz úkol #9 níže | 13. 10. – 65 karet (vše kromě personalize a mosaic), `scripts/card_images.py` + `card_retouch.py`; 91 volání Gemini ≈ 3,6 $; co se liší od renderu, je v commitech | „Opravy #9“ (tři commity: dávka 1, dávka 2, zbytek) na `feature/tool-fixes` |
+| 10 | 13. 10. | náhled modelu ve všech nástrojích a v kalkulaci | hladký, lesklý náhled podle druhu filamentu místo matného hranatého („jako u busty“) | viz úkol #10 níže | 13. 10. – jen `calc/viewer.ts`: hladké normály s prahem 38° bez `mergeVertices` (pořadí trojúhelníků drží díly), lesk podle `finish`, i pro díly ve vlastních barvách; `RoomEnvironment` zkoušen a nepřidán (bledly barvy); snímky a čísla v `docs/TOOLS-LOOK.md` | „Opravy #10“ na `feature/tool-fixes` |
 
 ## Úkol #1 · 10. 10. 2026 · Zapnutí a skrytí nástrojů v adminu (koordinováno: dotýká se `config/tools.php`, `ToolsController`, sitemapy, `/gifts`)
 
@@ -220,3 +221,32 @@ zůstalo…“). Bez karty: `insert`, `straw`, `opener` (v configu vypnuté, ud�
 **Nedělat:** `public/img/tool-examples` (SEO ukázky), `public/img/home` (hero), texty, `config/tools.php`.
 **Hotovo =** každý veřejný nástroj (a insert/straw/opener) má nové tři soubory ve stejném stylu, `ToolPageTest`/
 `CalculationFlowTest` zelené (test hlavní stránky hledá `img/tools/gifts-800`).
+
+## Úkol #10 · 13. 10. 2026 · lesklejší náhled modelů u všech nástrojů (koordinováno: `resources/js/calc/viewer.ts`)
+
+**Od Romana:** „modely se zobrazují v nudných barvách, jde zobrazovat např. v lesklých, jako je to u busty, myslím pro
+všechny tools“. **Stav:** `calc/viewer.ts` má pro modely `MeshStandardMaterial` roughness 0,75, metalness 0, flatShading
+true (matný, hranatý vzhled); busta používá `sculptureMaterial` roughness 0,42, metalness 0,25, flatShading false.
+**Udělat:**
+1. Jeden vzhled pro všechny nástroje i kalkulaci: hladké stínování (po `mergeVertices` + `computeVertexNormals`, jinak
+   zůstane hranatý; u modelů se záměrně ostrými hranami držet úhlový práh, aby se neztratily) a lesk podle druhu
+   filamentu: silk/lesklý roughness ~0,3 + metalness ~0,3, běžný PLA/PETG ~0,45 + 0,1, matný ~0,8 + 0 – druh (`finish`)
+   je u barvy z farmy, u volné barvy z okna barev brát běžný. Barva dílu zůstává ta zvolená (žádné zabarvení
+   metalness). Deska (`plateMaterial`) beze změny.
+2. Světlo: pokud lesk bez prostředí vypadá ploše, přidat `RoomEnvironment` (three/examples) jako `scene.environment`
+   s mírnou intenzitou; ověřit na tmavých a bílých barvách, že nic nevyhoří.
+3. Výkon: velké modely (busta, mapa, reliéf 300 k trojúhelníků) nesmí po `mergeVertices` zpomalit načtení o víc
+   než ~0,3 s; měřit na /tools/relief a /tools/map (jako správce).
+4. `scripts/check_preview_colors.mjs` na všech stránkách (0 chyb), `tsc`, `build`; snímky před/po u busty, QR
+   cedulky, vázy, klíčenky do docs (E.md).
+**Nedělat:** materiál busty (`sculptureMaterial`) neměnit, jen z něj vyjít; nic v geometrii, nic v param.ts.
+**Hotovo =** všechny nástroje mají hladký, lesklý náhled podle druhu filamentu, snímky, testy, `pint`, `tsc`, `build`.
+
+## Úkol #11 · 13. 10. 2026 · syrové klíče varování na stránkách nástrojů (koordinováno: `tools/param.blade.php`)
+
+**Od E (postřeh u #10):** `/tools/vase` ve výchozím nastavení ukazuje syrový klíč `param.warn.thin_flutes` ve žlutém
+rámečku; text v `lang/*.json` je, klíč (a nejspíš `steep_twist` a další) chybí v seznamu i18n v `tools/param.blade.php`.
+**Udělat:** seznam textů pro skript nestavět ručně, ale ze všech klíčů `param.warn.*` (a `param.error.*`, pokud se
+posílají stejně) v jazykovém souboru; test v `ToolPageTest`: žádná stránka nástroje nenese v datech pro skript klíč
+bez textu a každé `param.warn.*`, které engine umí vrátit (`grep -o "warnings.*" engines/python/*.py` → seznam), má
+text ve třech jazycích. **Hotovo =** váza bez syrového klíče, test, `pint`, `tsc`, `build`.
