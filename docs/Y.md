@@ -135,3 +135,11 @@ odkaz na krabičku na úvodní stránce; od commitu 209bdee je krabička devát�
 Beze změny proti zadání: nové geometrie (nápis na podstavě, výřez v opěrce, druhý slot, přihrádka), stejný agent u
 dalších nástrojů. K tomu z této práce: přehled přání v administraci (data už jsou v `generation_requests`, typ
 `design`, včetně `unmet`) by ukázal, kterou geometrii zákazníci chtějí nejčastěji.
+
+## 7. Mimo zadání: dvě barvy u tří stojánků se siluetou (13. 10. 2026)
+
+Na Romanovu přímou žádost (`/tools/hair-tie-holder`): držák na gumičky, stojánek na lístečky a stojan na svíčku jsou
+dvoudílné (silueta se patkou zasouvá do drážky podstavce) a server to vždy říkal, jen `partsNow()` v `param.ts` je
+neuváděla, takže krok Barvy nabízel jednu barvu; od commitu 691b3ad (větev `feature/stand-two-colors`) má silueta i
+podstavec vlastní barvu, náhled ukazuje obě, díly jdou prohlédnout a stáhnout zvlášť. Geometrie se neměnila;
+neověřen zůstává průchod až do objednávky na farmě se dvěma barvami u těchto tří nástrojů.
