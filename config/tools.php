@@ -54,6 +54,11 @@ return [
         ['params' => ['style' => 'desk', 'width' => 75, 'angle' => 65]],
         ['params' => ['style' => 'wedge', 'width' => 80, 'angle' => 60, 'depth' => 70]],
         ['params' => ['style' => 'wall', 'width' => 80, 'screws' => true]],
+        ['params' => ['style' => 'desk', 'width' => 80, 'cutout' => 'shape', 'artwork' => 'lib:animals/cat']],
+        ['params' => ['style' => 'ribbed', 'width' => 70, 'angle' => 70]],
+        ['params' => ['style' => 'flatpack', 'width' => 70, 'pattern' => 'hearts']],
+        ['params' => ['style' => 'ribbon', 'width' => 70, 'band' => 10]],
+        ['params' => ['style' => 'silhouette', 'artwork' => 'lib:animals/dog', 'back' => 100]],
     ]]],
     'holder' => ['route' => 'tools.holder', 'intent' => 'create', 'categories' => ['home', 'parts'], 'available' => true, 'verified' => '2026-09-29', 'seo' => ['examples' => [
         ['preset' => 'remote'],

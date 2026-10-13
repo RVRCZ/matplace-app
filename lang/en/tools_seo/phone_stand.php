@@ -25,5 +25,10 @@ return [
         'Desk A-frame with a shelf, 75 mm wide, rest angle 65°, cable cut-out.',
         'Low wedge for watching video, 80 mm wide, 70 mm deep, angle 60°.',
         'Wall pocket for a phone 80 mm wide, four screw holes.',
+        'Desk A-frame with a cat cut out of its rest, 80 mm wide; a shape from the library or your own.',
+        'Corrugated S sheet, 70 mm wide, angle 70°, a rib every 6 mm.',
+        'Flat plate with hearts and a slide-in leg, 70 mm wide, two parts printed flat.',
+        'Z ribbon, a 10 mm band with a stripe in a second colour, 70 mm wide.',
+        'Dog silhouette from the library, 100 mm tall, a seat for the phone in front.',
     ],
 ];
