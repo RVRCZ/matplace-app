@@ -541,3 +541,6 @@ píšou ji `transform()` (place/scale), `writeTriangle()` (3MF převod, falešn�
 `StlFileTest::test_placed_copies_carry_unit_normals_so_the_slicer_takes_them_for_binary` (bajt > 127 za
 hlavičkou, jednotková normála, meze beze změny); `StlFileBlocksTest` porovnává s referenčním kódem, který teď normály
 píše také. Ověřeno na serveru nad kostkou z kalkulace 392 (viz níže).
+
+Ověření po nasazení (13. 10. 2026 06:57 UTC): kostka z kalkulace 392 přes aplikaci na serveru → přesný výpočet
+33 min, 19,9 g (dřív „can not be parsed“).
