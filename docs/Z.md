@@ -24,8 +24,8 @@ Tři důvody, proč člověk odejde, a co s tím:
 2. **Cesta k objednávce pro hosta končí u ceny.** V kalkulaci (po „Pokračovat ke kalkulaci“ i po nahrání souboru)
    je jen „Přepočítat“, „Mám tiskárnu, stáhnout“, „Sdílet odkaz“ – **tlačítko k tisku u nás není vůbec**, ač text
    o kus níž slibuje „Tlačítkem VYTISKNOUT přejdete k objednávce“. Obyčejná kostka navíc skončí „Přesný výpočet se
-   nepovedl, platí odhad.“ Trychtýř 4 → 2 je přesně tohle. → **Tlačítko „Vytisknout u nás“ i pro hosta (vede na
-   přihlášení/registraci s návratem do kalkulace, nebo poptávka e-mailem) a oprava přesného výpočtu.**
+   nepovedl, platí odhad.“ (to je od 13. 10. opravené, N4). Trychtýř 4 → 2 je přesně tohle. → **Tlačítko
+   „Vytisknout u nás“ i pro hosta (vede na přihlášení/registraci s návratem do kalkulace, nebo poptávka e-mailem).**
 3. **Hlavní stránka a katalog jsou dlouhé seznamy pro někoho jiného.** První obrazovka `/` mluví k tomu, kdo má
    soubor (menšina), nástroje a dárky jsou 3 obrazovky níž; `/` má na telefonu 7 400 px, `/tools` **22 800 px** (27
    obrazovek karet pod sebou); první položka menu „Modely“ vede na prázdnou stránku. → **Hero „vyberte, co chcete
@@ -84,7 +84,7 @@ kalkulace, layout, cookie), **E** (opravy nástrojů: stránka nástroje, katalo
   „Jak to jde“ a FAQ zkrátit na polovinu; SEO text pod patičku nebo rozbalovací.
 - Odhad: **M**. Vlastník: **řídící**.
 
-### N4 · Přesný výpočet selhává na obyčejné kostce
+### N4 · Přesný výpočet selhává na obyčejné kostce – **opraveno 13. 10. 2026** (řídící, commit 852d13a)
 
 - Snímky: `file-home-390-cs-1`, `file-home-390-cs-bin`, `calc-cube-390-cs-full`.
 - Kde: nahrání souboru na `/` (ASCII i binární STL, 40mm kostka, 12 trojúhelníků), čekáno 20–26 s. Stojánek z
@@ -93,7 +93,11 @@ kalkulace, layout, cookie), **E** (opravy nástrojů: stránka nástroje, katalo
 - Návrh: najít, proč slicer kostku odmítá, a když selže, psát „Cena je odhad“ bez slova „nepovedl“ a nabídnout
   přepočet. Hlášeno řídící session 13. 10.; ta na serveru našla „Loading of a model file failed“ ze sliceru nad
   `placed.stl` u všech čtyř kostek (kalkulace 388–390, 392), stojánek z nástroje projde – podezření na umístění či
-  orientaci souměrné kostky; řeší řídící session.
+  orientaci souměrné kostky. **Příčina a oprava (řídící, 13. 10. 06:57 UTC, commit 852d13a):** slicer (admesh)
+  pozná binární STL jen podle bajtu > 127 v prvních 128 bajtech za hlavičkou; náš zapisovač psal nulové normály a
+  kostka s kulatými souřadnicemi položená na 190–230 mm takový bajt neměla, četla se jako text. `StlFile` teď píše
+  jednotkové normály. Ověřeno znovu z produkce (nahrání z `/`, 390 px): „Přesný výpočet 33 min · 99 Kč“
+  (`/c/n7unfu7viatu`). Zbývá jen lidštější věta pro případ, kdy přesný výpočet selže.
 - Odhad: **S–M** (podle příčiny). Vlastník: **řídící** (kalkulace/slicer).
 
 ### N5 · Cookie lišta zabírá čtvrtinu telefonu a schovává hlavní akci
@@ -259,7 +263,7 @@ Rozdíl, který stojí za pojmenování: oni prodávají **výsledek** (obrázek
 |---|---|---|---|---|
 | 1 | Stránka nástroje na telefonu: název + věta nad prohlížečem, prohlížeč 50 vh s jedním tlačítkem „Pohled“, karta ceny s hlavní akcí hned pod ním; u fotkových nástrojů ukázkový výtisk místo prázdné plochy | N1, N8, N14 | M | E |
 | 2 | Kalkulace: hlavní akce „Vytisknout u nás“ i pro hosta (přihlášení/registrace s návratem), „Přepočítat“ inkoustové; na telefonu cena první | N2, N11, N14 | M | řídící |
-| 3 | Přesný výpočet: příčina selhání na kostce + lidská hláška | N4 | S–M | řídící |
+| 3 | ~~Přesný výpočet: příčina selhání na kostce~~ (hotovo 13. 10.) – zbývá lidská hláška při selhání | N4 | S | řídící |
 | 4 | Hlavní stránka: hero „Co chcete vyrobit?“ s 6 dlaždicemi (fotky karet), soubor jako jedna z nich, SEO text a FAQ zkrátit | N3 | M | řídící |
 | 5 | Cookie lišta na jeden řádek | N5 | S | řídící |
 | 6 | `/tools` na telefonu: kompaktní karty, sbalené kategorie s počty, chipy v jednom rolovacím řádku | N6 | M | E |
