@@ -241,3 +241,12 @@ true (matný, hranatý vzhled); busta používá `sculptureMaterial` roughness 0
    cedulky, vázy, klíčenky do docs (E.md).
 **Nedělat:** materiál busty (`sculptureMaterial`) neměnit, jen z něj vyjít; nic v geometrii, nic v param.ts.
 **Hotovo =** všechny nástroje mají hladký, lesklý náhled podle druhu filamentu, snímky, testy, `pint`, `tsc`, `build`.
+
+## Úkol #11 · 13. 10. 2026 · syrové klíče varování na stránkách nástrojů (koordinováno: `tools/param.blade.php`)
+
+**Od E (postřeh u #10):** `/tools/vase` ve výchozím nastavení ukazuje syrový klíč `param.warn.thin_flutes` ve žlutém
+rámečku; text v `lang/*.json` je, klíč (a nejspíš `steep_twist` a další) chybí v seznamu i18n v `tools/param.blade.php`.
+**Udělat:** seznam textů pro skript nestavět ručně, ale ze všech klíčů `param.warn.*` (a `param.error.*`, pokud se
+posílají stejně) v jazykovém souboru; test v `ToolPageTest`: žádná stránka nástroje nenese v datech pro skript klíč
+bez textu a každé `param.warn.*`, které engine umí vrátit (`grep -o "warnings.*" engines/python/*.py` → seznam), má
+text ve třech jazycích. **Hotovo =** váza bez syrového klíče, test, `pint`, `tsc`, `build`.
