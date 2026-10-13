@@ -16,7 +16,7 @@ class DesignApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const ANSWER = ['params' => ['style' => 'wall', 'width' => 78, 'device' => 12, 'angle' => 65, 'back' => 100, 'thickness' => 4, 'radius' => 2, 'depth' => 60, 'vent' => 1.5, 'cable' => true, 'window' => true, 'screws' => false],
+    private const ANSWER = ['params' => ['style' => 'wall', 'width' => 78, 'device' => 12, 'angle' => 65, 'back' => 100, 'thickness' => 4, 'radius' => 2, 'depth' => 60, 'vent' => 1.5, 'cable' => true, 'screws' => false, 'cutout' => 'none', 'pattern' => 'circles', 'cutout_size' => 55, 'rib_pitch' => 6, 'band' => 10, 'across' => 25, 'artwork' => 'keep'],
         'note' => 'Zvolil jsem kapsu na zeď na oboustrannou pásku.', 'unmet' => ['barva podle vypínače']];
 
     protected function setUp(): void

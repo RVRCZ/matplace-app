@@ -86,9 +86,9 @@ def vase(M, Invalid, p):
     h, top, bottom = n("height", 180), n("top_d", 62) / 2, n("bottom_d", 54) / 2
     wall, floor = n("wall", 1.6), n("floor", 1.6)
     profile, style, purpose = _pick(Invalid, p, k, "profile"), _pick(Invalid, p, k, "style"), _pick(Invalid, p, k, "purpose")
-    ribs = int(n("ribs", 20))
+    ribs = int(n("ribs", 18))
     twist = n("twist", 200) if style == "twist" else 0.0
-    amp = 0.0 if style == "smooth" else n("flute", 20) / 100.0
+    amp = 0.0 if style == "smooth" else n("flute", 18) / 100.0
     belly = max(top, bottom) * 1.38                       # the widest point of the necked shape
 
     def radius(t):                                        # t = 0 bottom … 1 top
