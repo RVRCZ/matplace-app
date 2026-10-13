@@ -1,0 +1,10 @@
+# TODO – co čeká na rozhodnutí nebo na čas (vede řídící session, Roman škrtá a přidává)
+
+| # | co | proč / stav | kdo | od |
+|---|---|---|---|---|
+| 1 | **Zkouška Meshy 7.1 proti Tripu** u busty z fotky: tři stejné fotky (člověk zpředu, pes, dítě) přes oba generátory, vytisknout, položit vedle sebe. Když vyhraje Meshy, přidat `MeshyGenerator` za stávající rozhraní `ModelGenerator` a přepínač `engines.generator`. | Meshy 7 (8/2026) a 7.1 (9/2026) slibují víc detailu v obličeji; naše busta stojí na Tripu v3.1. Náklad do 5 $ + dva výtisky. Potřebuje účet Meshy a klíč od Romana (do .env dává Roman). | D | 13. 10. 2026 |
+| 2 | Svítivé filamenty na farmě: vypnout v nabídce, nebo jen pro ruční tisk z přímo vedené cívky | Lámou se v ACE (F26-000065 zrušena 13. 10.); brusné – kalená tryska. | Roman rozhodne | 13. 10. 2026 |
+| 3 | Rozložení kopií na desce lépe než mřížka podle kvádru (půdorys/konvexní obal, střídání směrů, případně `arrange` sliceru pro desku s kopiemi) | Dnes mřížka podle obrysového obdélníku, u cedulek a přívěsků 20–40 % kusů navíc je možných; kalkulace musí slibovat totéž co farma. | řídící / E | 13. 10. 2026 |
+| 4 | Web očima návštěvníka, kolo 2 – výběr z deseti bodů v `docs/Z.md` §4 | Čeká na Romanův výběr (napsat čísla nebo „vše“). | B, E, řídící | 13. 10. 2026 |
+| 5 | Karty nástrojů: případné překreslení odchylek (beads „ANA“, odznak, papel zpříma, šuplera, lektvar); hustší ukázka centra města pro kartu mapy | Jedno volání Gemini na kartu; mapa = předloha v configu (B, kolo 2 mapy). | E / B | 13. 10. 2026 |
+| 6 | Nové fotky karet pro nové typy stojánku a výřezy (až budou nasazené) | Navazuje na kolo 2 stojánku. | E | 13. 10. 2026 |
