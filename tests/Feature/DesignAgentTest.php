@@ -38,7 +38,7 @@ class DesignAgentTest extends TestCase
 
     public function test_an_answer_outside_the_limits_is_cut_to_them_and_to_the_step(): void
     {
-        $this->answer(['style' => 'wedge', 'width' => 900, 'device' => 2, 'angle' => 61.4, 'back' => 100, 'thickness' => 5.26, 'radius' => -3, 'depth' => 70, 'vent' => 1.57, 'cable' => true, 'window' => false, 'screws' => false]);
+        $this->answer(['style' => 'wedge', 'width' => 900, 'device' => 2, 'angle' => 61.4, 'back' => 100, 'thickness' => 5.26, 'radius' => -3, 'depth' => 70, 'vent' => 1.57, 'cable' => true, 'screws' => false, 'cutout' => 'none', 'pattern' => 'hearts', 'cutout_size' => 99, 'band' => 9.3, 'rib_pitch' => 1, 'across' => 41]);
         $p = $this->design()['params'];
 
         [$min, $max] = ParametricGenerator::FIELDS['phone_stand']['width'];
@@ -50,7 +50,12 @@ class DesignAgentTest extends TestCase
         $this->assertSame(1.6, $p['vent']);
         $this->assertSame('wedge', $p['style']);
         $this->assertTrue($p['cable']);
-        $this->assertFalse($p['window']);
+        // the sizes of round 2 are cut the same way
+        $this->assertSame(75, $p['cutout_size']);
+        $this->assertSame(9.5, $p['band']);
+        $this->assertSame(4.0, $p['rib_pitch']);
+        $this->assertSame(40, $p['across']);
+        $this->assertSame('hearts', $p['pattern']);
         $this->assertGreaterThan($min, $p['width']);
     }
 
@@ -59,7 +64,7 @@ class DesignAgentTest extends TestCase
         $this->answer(['style' => 'wall', 'width' => 78, 'screws' => false, 'shape' => 'cat', 'engrave' => 'Jana', 'part_colors' => ['all' => '#ff0000']]);
         $design = $this->design(['style' => 'desk', 'width' => 70, 'device' => 14, 'angle' => 50, 'back' => 120, 'cable' => false, 'line1' => 'x']);
 
-        $keys = array_merge(['style'], array_keys(ParametricGenerator::FIELDS['phone_stand']), ParametricGenerator::FLAGS['phone_stand']);
+        $keys = array_merge(array_keys(ParametricGenerator::CHOICES['phone_stand']), array_keys(ParametricGenerator::FIELDS['phone_stand']), ParametricGenerator::FLAGS['phone_stand']);
         $this->assertEqualsCanonicalizing($keys, array_keys($design['params']));
         $this->assertSame('wall', $design['params']['style']);
         $this->assertSame(78, $design['params']['width']);
@@ -68,7 +73,41 @@ class DesignAgentTest extends TestCase
         $this->assertSame(120, $design['params']['back']);
         $this->assertFalse($design['params']['cable']);
         $this->assertSame(ParametricGenerator::FIELDS['phone_stand']['depth'][2], $design['params']['depth']);
-        $this->assertTrue($design['params']['window']);      // a flag nobody sent is as the page opens it, not switched off
+        $this->assertTrue(app(DesignAgent::class)->design('phone_stand', [], self::WISH, 'cs')['params']['cable']);      // a flag nobody sent is as the page opens it, not switched off
+        $this->assertArrayNotHasKey('artwork', $design['params']);      // no shape was named: the customer's picture is left alone
+    }
+
+    public function test_a_shape_comes_from_the_library_of_closed_outlines_or_not_at_all(): void
+    {
+        // the silhouette of a dog: the agent names a picture of the library and the page takes it
+        $this->answer(['style' => 'silhouette', 'artwork' => 'lib:animals/dog', 'back' => 110, 'across' => 30]);
+        $dog = $this->design()['params'];
+        $this->assertSame('silhouette', $dog['style']);
+        $this->assertSame('lib:animals/dog', $dog['artwork']);
+        $this->assertSame(30, $dog['across']);
+        // a heart cut out of the rest of an A-frame
+        $this->answer(['style' => 'desk', 'cutout' => 'shape', 'artwork' => 'lib:hearts-stars/heart', 'cutout_size' => 60]);
+        $heart = $this->design()['params'];
+        $this->assertSame(['shape', 'lib:hearts-stars/heart', 60], [$heart['cutout'], $heart['artwork'], $heart['cutout_size']]);
+        // "keep", a picture in colours, a file of the customer's or of anybody else, a path: none of them is taken from the agent
+        foreach (['keep', '', 'lib:colour/snowman', 'lib:cookies/star', 'lib:letters-numbers/a', 'lib:animals/unicorn', 'file:0b0e6f6e-1111-2222-3333-444444444444', '../../.env', 42] as $bad) {
+            $this->answer(['style' => 'silhouette', 'artwork' => $bad]);
+            $this->assertArrayNotHasKey('artwork', $this->design(['artwork' => 'lib:animals/cat'])['params'], json_encode($bad));
+        }
+        // a cut-out the tool does not have is no design
+        $this->answer(['style' => 'desk', 'cutout' => 'star-shaped']);
+        try {
+            $this->design();
+            $this->fail('a cut-out outside the choices was taken');
+        } catch (ValidationException) {
+            $this->addToAssertionCount(1);
+        }
+        // what the agent may choose from: the seven groups of closed outlines, each picture a file that exists
+        $shapes = DesignAgent::shapes('phone_stand');
+        $this->assertGreaterThan(80, count($shapes));
+        $this->assertContains('lib:animals/cat', $shapes);
+        $this->assertSame([], array_values(array_filter($shapes, fn ($ref) => preg_match('#^lib:(colour|cookies|letters-numbers)/#', $ref) || ParametricGenerator::artworkPath($ref) === null)));
+        $this->assertSame([], DesignAgent::shapes('box'));
     }
 
     public function test_a_type_the_generator_does_not_have_is_no_design(): void
@@ -101,8 +140,18 @@ class DesignAgentTest extends TestCase
             $this->assertStringContainsString($min.' to '.$max.', step '.$step.', default '.$default, $call['system'], $key);
         }
         foreach (ParametricGenerator::CHOICES['phone_stand']['style'] as $style) {
-            $this->assertStringContainsString('- '.$style.': ', $call['system']);
+            $this->assertStringContainsString('- '.$style.': ', $call['system']);      // every type the generator has is described to the agent
         }
+        // the other choices with their options, and the shapes of the library by name
+        $this->assertStringContainsString('`cutout`', $call['system']);
+        $this->assertStringContainsString('none (', $call['system']);
+        $this->assertStringContainsString('`pattern`', $call['system']);
+        $this->assertStringContainsString('honeycomb', $call['system']);
+        $this->assertStringContainsString('lib:<group>/<name>', $call['system']);
+        $this->assertStringContainsString('- animals: bear, bird, butterfly, cat', $call['system']);
+        $this->assertStringNotContainsString('snowman', $call['system']);
+        $this->assertStringContainsString('`cutout_size` — ', $call['system']);
+        $this->assertStringContainsString('whole number in %, 30 to 75', $call['system']);
         foreach (ParametricGenerator::FLAGS['phone_stand'] as $flag) {
             $this->assertStringContainsString('`'.$flag.'`', $call['system']);
         }
@@ -136,6 +185,9 @@ class DesignAgentTest extends TestCase
         $this->assertSame('integer', $params['properties']['width']['type']);
         $this->assertSame('number', $params['properties']['thickness']['type']);
         $this->assertSame('boolean', $params['properties']['screws']['type']);
+        $this->assertSame(ParametricGenerator::CHOICES['phone_stand']['cutout'], $params['properties']['cutout']['enum']);
+        $this->assertSame(['type' => 'string'], $params['properties']['artwork']);      // checked against the library on the server
+        $this->assertContains('artwork', $params['required']);
         // structured outputs know no numeric limits: none may be in the schema (the server cuts the numbers itself)
         $this->assertStringNotContainsString('minimum', (string) json_encode($schema));
         $this->assertStringNotContainsString('maximum', (string) json_encode($schema));
