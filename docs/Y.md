@@ -345,3 +345,68 @@ jazycích (viz přání 5); mobil. Nad a pod volbami typu zůstává na stránce
 
 Testy: `DesignAgentTest` (9, nový test tvarů z knihovny), `DesignApiTest` (8), `PhoneStandTest`,
 `ParametricToolsTest`, `ToolPageTest`, `ToolFixesTest` (45 zelených), `tsc`, `build`, `pint`.
+
+## 11. Příprava zkoušky Meshy 7.1 proti Tripu (větev `feature/meshy-trial`, 14. 10. 2026; `docs/TODO.md` #1)
+
+**Stav: napsáno podle dokumentace, skutečná služba nebyla zavolána ani jednou.** Klíč Meshy nemáme (dává Roman do
+`.env`). Dokud zkouška neproběhne, je to návrh ověřený jen proti popisu API, ne proti API.
+
+**Co je ve větvi**
+
+- `App\Engines\Generator\MeshyGenerator` za stávajícím rozhraním `ModelGenerator`; přepínač
+  `ENGINE_GENERATOR=meshy` (výchozí chování a produkce se nemění, tam je `tripo`).
+- `config/ai.php`: blok `meshy` (`MESHY_API_KEY`, `MESHY_MODEL` = `meshy-7.1`, `MESHY_GEOMETRY_QUALITY` = `detailed`,
+  `MESHY_DETAIL_RESOLUTION` = `2k`, `MESHY_CREDIT_CENTS` = 2) a ceny `meshy` / `meshy-fine` pro /admin/ai.
+- Příkaz `php artisan matplace:generator-trial foto1.jpg foto2.jpg foto3.jpg --engines=tripo,meshy`: každou fotku
+  pošle každému generátoru, výsledek udělá tisknutelný stejně jako busta na webu (řez přes hrudník, podstavec,
+  uzavřené těleso) a zapíše `<fotka>-<generátor>.stl`, syrový model vedle a `report.json` (doba, cena, co naměřila
+  normalizace) do `storage/app/trial/<čas>`. Před odesláním řekne, že fotky jdou oběma službám a že se platí
+  kredity, a zeptá se (`--yes` otázku přeskočí). Do tabulek webu nezapisuje.
+- `MeshyGeneratorTest` (7 testů, odpovědi služby jsou podvržené podle dokumentace): co se posílá, stavy úlohy,
+  stažení modelu, chyby, chybějící klíč, přepínač, zkušební příkaz s falešným generátorem.
+
+**Jak API podle dokumentace vypadá** (docs.meshy.ai/en/api, čteno 14. 10. 2026)
+
+| co | adresa | poznámka |
+|---|---|---|
+| fotka → model | `POST /openapi/v1/image-to-3d` | fotka jde v dotazu jako data URI (jpg, png, webp, do 20 MB), nic se předem nenahrává |
+| víc fotek | `POST /openapi/v1/multi-image-to-3d` | 1–4 obrázky; posílám v pořadí zpředu, zleva, zezadu, zprava, chybějící stranu vynechám |
+| text → model | `POST /openapi/v2/text-to-3d`, `mode: preview` | „preview“ je síť bez textury, víc tisk nepotřebuje |
+| stav úlohy | `GET <táž adresa>/<id>` | `PENDING`, `IN_PROGRESS`, `SUCCEEDED`, `FAILED`, `CANCELED`; model v `model_urls.glb` |
+
+Posílám `ai_model: meshy-7.1`, `should_texture: false`, `should_remesh: false` (zjednodušujeme sami),
+`target_formats: ["glb"]` a `geometry_resolution` `2k` u podrobné geometrie, jinak `standard`. Tři druhy úloh se
+ptají na třech adresách a požadavek si pamatuje jen generátor a jedno id, proto má id druh úlohy před sebou
+(`image-to-3d:018a…`). Chyby: 429 a 5xx se zkusí znovu, 401/402/404 požadavek ukončí.
+
+**Cena podle ceníku API**: jen geometrie 20 kreditů (meshy-7.1 i meshy-6), jemnější geometrie +5; `meshy-6-lite`
+5 kreditů. Zkouška tří fotek: Meshy 3 × 25 = 75 kreditů, Tripo 3 × 40 = 120 kreditů (1,20 $).
+
+**Co nevím a co je předpoklad**
+
+- **Cena kreditu Meshy v dokumentaci API není.** `MESHY_CREDIT_CENTS=2` (0,02 $) je můj předpoklad; podle něj by
+  75 kreditů bylo 1,50 $ a celá zkouška pod 3 $. Skutečnou cenu řekne Romanův tarif; do té doby /admin/ai u Meshy
+  ukazuje odhad.
+- Měřítko a natočení GLB od Meshy: počítám s Y nahoru (norma glTF) a s tím, že velikost dorovná normalizace jako u
+  Tripa. Neověřeno.
+- Jestli `should_texture: false` u meshy-7.1 opravdu stojí 20 kreditů a jak dlouho úloha trvá: ukáže
+  `consumed_credits` a `report.json`.
+- Limity podle dokumentace: 20 dotazů za sekundu a ve frontě nejvýš 10 úloh (tarif Pro), 20 (Studio), 30 (Premium);
+  při překročení 429. Zkouška jede po jedné úloze, limit se jí netýká. Jestli přístup k API vyžaduje placený tarif,
+  dokumentace výslovně neříká; tabulka limitů začíná tarifem Pro.
+- `image_enhancement` nechávám na výchozí hodnotě služby (zapnuto). U Tripa nám podobná volba pomáhala; u Meshy
+  nevím, co dělá s tvářemi.
+- Kreslená figurka mazlíčka potřebuje překreslení fotky (`ImageRestyler`), které Meshy v této třídě nemá. S
+  `ENGINE_GENERATOR=meshy` se styl „kreslená“ na stránce nenabídne (tak se stránka chová už dnes).
+
+**Než by šlo Meshy na produkci** (i kdyby zkoušku vyhrálo): fotky zákazníků by šly další službě, takže je potřeba
+doplnit zásady ochrany osobních údajů a texty u nahrání fotky. To je rozhodnutí pro Romana, ve větvi není.
+
+**Jak zkoušku pustit**: Roman doplní `MESHY_API_KEY` do `.env` (na stroji, kde je i `TRIPO_API_KEY` a Python), pak
+
+```
+php artisan matplace:generator-trial clovek.jpg pes.jpg dite.jpg --engines=tripo,meshy
+```
+
+a šest STL ze složky výsledků vytiskne vedle sebe. Stačí i jen `--engines=meshy` s jednou fotkou na první ověření,
+že adaptér se službou vůbec mluví (25 kreditů).
