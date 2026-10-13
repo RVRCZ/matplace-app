@@ -5,12 +5,14 @@ ties, a platform for a candle in a jar.
 The figure is a silhouette printed lying flat, clean on both faces, with a foot under it. The foot is pushed into a slot
 of the base, as the standing logo is (creative_kinds.logo): two parts, `body` and `stand`, each one colour, no supports.
 `all` lays both on the bed, `use` shows them put together.
+The post for hair ties is a part of its own too (`post`), so the base and the post can be two colours.
 """
 import math
 
 import shape2d as S
 
 SINK, SHOW, PLAY = 6.0, 1.5, 0.25      # how deep the foot sits in the slot, how much of it stays in sight, the play round it
+FLARE = 3.0                            # how much the foot of a post that is pushed through its base widens, and over what height
 
 LIMITS = {
     "notes": {"width": (50, 150), "thickness": (2.4, 5), "pad": (50, 105), "depth": (8, 30)},
@@ -131,8 +133,10 @@ def notes(M, Invalid, p):
 
 def hair_tie(M, Invalid, p):
     """
-    A post for hair ties and scrunchies on a base, a figure standing behind it. The post is one piece with the base and
-    is printed standing, its top rounded so that a tie slips over it; the figure goes into the slot behind.
+    A post for hair ties and scrunchies on a base, a figure standing behind it. Three parts, each one colour: the base,
+    the post and the figure. The post is pushed through the base from below: its foot widens into a cone that sits in
+    the base's countersunk hole, so pulling a tie off upwards only seats it tighter, and the table holds it from below.
+    It is printed standing on that foot, its top rounded so that a tie slips over it; the figure goes into the slot behind.
     """
     k = "hair_tie"
     n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
@@ -147,12 +151,21 @@ def hair_tie(M, Invalid, p):
     base = base - _slot(M, foot, t).translate([slot_at[0], slot_at[1], base_h - SINK])
     r = post_d / 2
     cx, cy = base_w / 2, (slot_at[1] - 4.0) / 2 + 2.0           # in the middle of what is left in front of the slot
-    post = M.Manifold.cylinder(post_h - r * 0.6, r, r, 64) + M.Manifold.sphere(r, 64).scale([1, 1, 0.6]).translate([0, 0, post_h - r * 0.6])
-    base = base + post.translate([cx, cy, base_h - 0.01])
+    # the post from the table up: the cone of its foot (45 degrees, no supports either way up), the shaft, the rounded top
+    tall = base_h + post_h
+    post = M.Manifold.cylinder(FLARE, r + FLARE, r, 64) + M.Manifold.cylinder(tall - r * 0.6, r, r, 64) + M.Manifold.sphere(r, 64).scale([1, 1, 0.6]).translate([0, 0, tall - r * 0.6])
+    # its hole: the same shape with play all round, so the cone meets the countersink when the post is lifted by that play
+    hole = M.Manifold.cylinder(base_h + 2.0, r + PLAY, r + PLAY, 64).translate([0, 0, -1.0]) + M.Manifold.cylinder(FLARE + 1.0, r + FLARE + PLAY + 1.0, r + PLAY, 64).translate([0, 0, -1.0])
+    base = base - hole.translate([cx, cy, 0])
     parts = _together(M, flat, foot, size, t, base, slot_at, base_h)
-    tall = max(base_h + post_h, base_h - SINK + size[1])
-    notes_ = dict(said, outer=[round(max(base_w, size[0]), 1), round(base_d, 1), round(tall, 1)], needs=["glue_optional"], post=[round(post_d, 1), round(post_h, 1)],
+    fw = size[0]
+    parts["post"] = post
+    parts["all"] = M.Manifold.compose([parts["all"], post.translate([fw + 8.0 + r + FLARE, base_d + 8.0 + r + FLARE, 0])])      # behind the base: the plate grows no wider
+    parts["use"] = M.Manifold.compose([parts["use"], post.translate([cx, cy, 0])])
+    notes_ = dict(said, outer=[round(max(base_w, size[0]), 1), round(base_d, 1), round(max(tall, base_h - SINK + size[1]), 1)], needs=["glue_optional"], post=[round(post_d, 1), round(post_h, 1)],
+                  # preview colours: the figure behind, the post above the base, the rest the base
                   regions=[{"x0": -1, "y0": round(slot_at[1] + PLAY - 0.05, 2), "x1": 9999, "y1": round(slot_at[1] + PLAY + t + 0.05, 2), "z0": round(base_h + 0.05, 2), "color": "orange", "part": "body"},
+                           {"x0": round(cx - r - 0.3, 2), "y0": round(cy - r - 0.3, 2), "x1": round(cx + r + 0.3, 2), "y1": round(cy + r + 0.3, 2), "z0": round(base_h + 0.05, 2), "color": "white", "part": "post"},
                            {"x0": -1, "y0": -1, "x1": 9999, "y1": 9999, "z0": -1, "color": "blue", "part": "stand"}])
     return parts, notes_
 

@@ -322,7 +322,7 @@ final class ParametricGenerator
         'cutter' => ['width' => 'x', 'height' => 'z'],
     ];
 
-    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp', 'details',
+    public const PARTS = ['all', 'body', 'lid', 'saucer', 'handle', 'stand', 'post', 'imprint', 'cut', 'face', 'diffuser', 'back', 'plate', 'text', 'stamp', 'details',
         'rim', 'color_1', 'color_2', 'color_3', 'color_4', 'color_5', 'color_6', 'color_7', 'color_8', 'icing_1', 'icing_2', 'icing_3', 'icing_4', 'icing_5', 'icing_6',
         'layer_1', 'layer_2', 'layer_3', 'layer_4', 'layer_5', 'layer_6', 'layer_7', 'layer_8', 'layer_9', 'layer_10', 'layer_11', 'layer_12'];
 
@@ -507,7 +507,8 @@ final class ParametricGenerator
             'vase' => ($p['purpose'] ?? '') === 'pot' && ! empty($p['saucer']) ? ['body', 'saucer'] : [],
             'stamp' => ($p['handle'] ?? '') === 'knob' ? ['body', 'handle'] : [],
             'logo' => ($p['mode'] ?? '') === 'standing' ? ['body', 'stand'] : [],
-            'notes', 'hair_tie', 'candle_stand' => ['body', 'stand'],
+            'notes', 'candle_stand' => ['body', 'stand'],
+            'hair_tie' => ['body', 'stand', 'post'],                                                  // the figure, the base, and the post pushed through it from below
             'papel' => ($p['treatment'] ?? 'cutout') === 'portrait' ? ['body', 'details'] : [],             // the backing and what lies on it: two colours, one print
             'compose' => array_values(array_filter((array) ($p['parts'] ?? []), fn ($part) => is_string($part) && preg_match('/^layer_\d{1,2}$/', $part))),
             'sign' => ! empty($p['two_color']) && ! in_array($p['style'] ?? 'emboss', ['engrave', 'stand'], true) ? ['plate', 'text'] : [],

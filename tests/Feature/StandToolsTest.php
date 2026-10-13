@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\OrderService;
 use App\Domain\Tools\ParametricGenerator;
+use App\Models\ModelFile;
 use App\Support\PreviewMeta;
 use App\Support\ToolSeo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,26 +63,67 @@ class StandToolsTest extends TestCase
         // a design is stored with both parts, each of which has to fit a printer by itself
         $created = $this->postJson('/api/tools/param', ['kind' => 'notes', 'params' => $cat])->assertCreated();
         $this->assertSame(['body', 'stand'], array_keys($created->json('file.tool.params.parts_bbox')));
+        // the tray is one body (see docs/Y.md): two parts, and the farm prints them by parts like a box and its lid
+        $this->assertSame(['body', 'stand'], OrderService::designParts(ModelFile::where('uuid', $created->json('file.uuid'))->firstOrFail()));
     }
 
     public function test_the_hair_tie_holder_is_a_post_on_a_base_with_a_figure_behind(): void
     {
         $rabbit = ['artwork' => 'lib:hearts-stars/crown', 'width' => 90, 'thickness' => 3, 'post_d' => 14, 'post_h' => 90];
+        // three parts, each one colour: the base (8 mm, wide and deep enough to stand), the post, the figure
         $base = $this->meta('hair_tie', $rabbit, 'stand');
-        // a base of 8 mm with the post on it: as tall as asked, one piece, wide and deep enough to stand
-        $this->assertEqualsWithDelta(8 + 90, $base['bbox']['z'], 0.05);
+        $this->assertEqualsWithDelta(8, $base['bbox']['z'], 0.05);
         $this->assertGreaterThanOrEqual(70, $base['bbox']['x']);
         $this->assertGreaterThanOrEqual(60, $base['bbox']['y']);
-        // a thicker and taller post is more plastic by about its cylinder
-        $thick = $this->meta('hair_tie', ['post_d' => 24, 'post_h' => 120] + $rabbit, 'stand');
+        // the post goes through the base from below: as tall as the base and what was asked for above it, and its foot
+        // is a cone 3 mm wider all round, which is what holds it when a tie is pulled off upwards
+        $post = $this->meta('hair_tie', $rabbit, 'post');
+        $this->assertEqualsWithDelta(8 + 90, $post['bbox']['z'], 0.05);
+        $this->assertEqualsWithDelta(14 + 2 * 3, $post['bbox']['x'], 0.05);
+        $this->assertEqualsWithDelta(14 + 2 * 3, $post['bbox']['y'], 0.05);
+        $this->assertEqualsWithDelta(M_PI * 49 * 98, $post['volume_mm3'], 0.08 * M_PI * 49 * 98);
+        // a thicker and taller post is more plastic by about its cylinder, and its hole takes more out of the base
+        $thick = $this->meta('hair_tie', ['post_d' => 24, 'post_h' => 120] + $rabbit, 'post');
         $this->assertEqualsWithDelta(8 + 120, $thick['bbox']['z'], 0.05);
-        $this->assertEqualsWithDelta(M_PI * 144 * 120 - M_PI * 49 * 90, $thick['volume_mm3'] - $base['volume_mm3'], 0.25 * M_PI * 144 * 120);
+        $this->assertEqualsWithDelta(M_PI * 144 * 128 - M_PI * 49 * 98, $thick['volume_mm3'] - $post['volume_mm3'], 0.1 * M_PI * 144 * 128);
+        $this->assertLessThan($base['volume_mm3'], $this->meta('hair_tie', ['post_d' => 24] + $rabbit, 'stand')['volume_mm3']);
+        // the hole is the post with a quarter of a millimetre of play all round (the base without it would be heavier by more than the post's part in it)
+        $inBase = M_PI * 49 * 8;
+        $solid = $base['bbox']['x'] * $base['bbox']['y'] * 8;
+        $this->assertGreaterThan($inBase, $solid - $base['volume_mm3']);
         // put together it is as tall as the taller of the two: the post or the figure in its slot
         $figure = $this->meta('hair_tie', $rabbit, 'body');
         $use = $this->meta('hair_tie', $rabbit, 'all', 'use');
         $this->assertEqualsWithDelta(max(98, 8 - 6 + $figure['bbox']['y']), $use['bbox']['z'], 0.05);
-        $created = $this->postJson('/api/tools/param', ['kind' => 'hair_tie', 'params' => $rabbit])->assertCreated();
-        $this->assertSame(['body', 'stand'], array_keys($created->json('file.tool.params.parts_bbox')));
+        // the preview says which piece is which part and where each colour lies: the figure, the post above the base, the base
+        $shown = PreviewMeta::whole($this->postJson('/api/tools/param/preview', ['kind' => 'hair_tie', 'params' => $rabbit, 'view' => 'use', 'pieces' => true])->assertOk()->headers->get('X-Model-Meta'));
+        $this->assertEqualsCanonicalizing(['body', 'stand', 'post'], array_values(array_unique(array_column($shown['parts'], 'name'))));
+        $this->assertSame(['body', 'post', 'stand'], array_column($shown['notes']['regions'], 'part'));
+        // laid out for printing the three lie apart on the bed: the post stands on its foot behind the base
+        $plate = PreviewMeta::whole($this->postJson('/api/tools/param/preview', ['kind' => 'hair_tie', 'params' => $rabbit, 'pieces' => true])->assertOk()->headers->get('X-Model-Meta'));
+        $this->assertCount(3, $plate['parts']);
+        $this->assertEqualsWithDelta(98, $plate['bbox']['z'], 0.05);
+        // a design is stored with its three parts, each of which has to fit a printer by itself, and with their colours
+        $created = $this->postJson('/api/tools/param', ['kind' => 'hair_tie', 'params' => $rabbit + ['part_colors' => ['body' => '#e91e63', 'stand' => '#222222', 'post' => '#f5f5f5']]])->assertCreated();
+        $this->assertSame(['body', 'stand', 'post'], array_keys($created->json('file.tool.params.parts_bbox')));
+        $this->assertSame(['body' => '#e91e63', 'stand' => '#222222', 'post' => '#f5f5f5'], array_map(fn ($c) => $c['hex'], $created->json('file.tool.params.part_colors')));
+        $this->assertSame(['body', 'stand', 'post'], $created->json('file.parts'));
+        // and every part comes in the ZIP
+        $zip = $this->postJson('/api/tools/param/zip', ['kind' => 'hair_tie', 'params' => $rabbit])->assertOk();
+        $archive = new \ZipArchive;
+        $this->assertTrue($archive->open($zip->baseResponse->getFile()->getPathname()));
+        $this->assertSame(['hair-tie.stl', 'hair-tie-body.stl', 'hair-tie-stand.stl', 'hair-tie-post.stl'], array_map(fn ($i) => $archive->getNameIndex($i), range(0, $archive->numFiles - 1)));
+        $archive->close();
+        // the farm prints such a design by parts, each from its own spool: it can build every part by itself
+        $file = ModelFile::where('uuid', $created->json('file.uuid'))->firstOrFail();
+        $this->assertSame(['body', 'stand', 'post'], OrderService::designParts($file));
+        foreach (['stand' => 8, 'post' => 98] as $part => $tall) {
+            $stl = app(OrderService::class)->partStl($file, $part);
+            $this->assertNotNull($stl, $part);
+            $this->assertGreaterThan(1000, filesize($stl['path']));
+            @unlink($stl['path']);
+        }
+        $this->assertSame(__('param.part.post.hair_tie'), OrderService::partLabel($file, 'post'));
         foreach (['cs' => '', 'en' => '/en', 'es' => '/es'] as $locale => $prefix) {
             $html = $this->get($prefix.'/tools/hair-tie-holder')->assertOk()->getContent();
             $this->assertStringContainsString(e(__('tools.hair_tie.title', [], $locale)), $html);
