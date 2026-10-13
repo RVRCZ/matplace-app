@@ -7,7 +7,7 @@ return [
     'slicer' => env('ENGINE_SLICER', 'orca'),        // orca | fake
     'project_exporter' => env('ENGINE_PROJECT_EXPORTER', env('ENGINE_SLICER', 'orca')), // orca | fake
     'repair' => env('ENGINE_REPAIR', 'trimesh'),     // trimesh | null
-    'generator' => env('ENGINE_GENERATOR', 'null'),  // null | tripo | meshy (later)
+    'generator' => env('ENGINE_GENERATOR', 'null'),  // null | tripo | meshy (written from its documentation, not tried yet: docs/Y.md §11) | fake
     'settlement' => env('ENGINE_SETTLEMENT', 'qr-manual'),
     'translator' => env('ENGINE_TRANSLATOR', 'claude'),   // claude | fake
     'shipping' => env('ENGINE_SHIPPING', 'packeta'),      // packeta | fake

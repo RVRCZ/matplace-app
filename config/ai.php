@@ -42,6 +42,10 @@ return [
             'tripo-image' => ['in' => 0, 'out' => 0, 'call' => 0.05],
             'tripo-standard' => ['in' => 0, 'out' => 0, 'call' => 0.20],
             'tripo' => ['in' => 0, 'out' => 0, 'call' => 0.40],
+            // Meshy, geometry only: 20 credits a task, 25 with the finer geometry. What a credit costs is not in its API
+            // documentation: 0.02 USD is an ASSUMPTION until Roman's plan says otherwise (also ai.meshy.credit_cents)
+            'meshy-fine' => ['in' => 0, 'out' => 0, 'call' => 0.50],
+            'meshy' => ['in' => 0, 'out' => 0, 'call' => 0.40],
             'gemini' => ['in' => 0, 'out' => 0, 'call' => 0.04],
         ],
     ],
@@ -68,6 +72,16 @@ return [
     ],
     // "describe what it should look like" on the tool pages: for everybody, or (false) for the admin alone, who tries the wishes first
     'design_public' => (bool) env('AI_DESIGN_PUBLIC', false),
+    // Meshy, the generator being tried against Tripo (docs/TODO.md #1): ENGINE_GENERATOR=meshy, or `matplace:generator-trial`
+    'meshy' => [
+        'api_key' => env('MESHY_API_KEY', ''),
+        'base_url' => env('MESHY_BASE_URL', 'https://api.meshy.ai'),
+        'model' => env('MESHY_MODEL', 'meshy-7.1'),
+        'geometry_quality' => env('MESHY_GEOMETRY_QUALITY', 'detailed'),      // detailed = the finer geometry below, 5 credits more
+        'detail_resolution' => env('MESHY_DETAIL_RESOLUTION', '2k'),          // 2k | 4k
+        'credit_cents' => (float) env('MESHY_CREDIT_CENTS', 2),               // an assumption: see prices.models above
+        'work_dir' => storage_path('app/generated'),
+    ],
     'default_target_mm' => 80,
     // photo size guess → volume: box volume × typical fill of a printed part (hollow-ish objects)
     'photo_fill_factor' => 0.35,

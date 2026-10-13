@@ -24,6 +24,7 @@ use App\Engines\Farm\CachedPrintPreparer;
 use App\Engines\Farm\PhpPrintPreparer;
 use App\Engines\Farm\PythonPrintPreparer;
 use App\Engines\Generator\FakeGenerator;
+use App\Engines\Generator\MeshyGenerator;
 use App\Engines\Generator\NullGenerator;
 use App\Engines\Generator\TripoGenerator;
 use App\Engines\Import\FakeSource;
@@ -118,6 +119,7 @@ class EngineServiceProvider extends ServiceProvider
 
         $this->app->singleton(ModelGenerator::class, fn () => match (config('engines.generator')) {
             'tripo' => new TripoGenerator(config('ai.tripo')),
+            'meshy' => new MeshyGenerator((array) config('ai.meshy')),
             'fake' => new FakeGenerator,
             default => new NullGenerator,
         });
