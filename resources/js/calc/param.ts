@@ -190,6 +190,7 @@ export function bootParam(stage: Stage): void {
         if (cfg.kind === 'vase' && p.purpose === 'pot' && p.saucer) return ['body', 'saucer'];
         if (cfg.kind === 'stamp' && p.handle === 'knob') return ['body', 'handle'];
         if (cfg.kind === 'logo' && p.mode === 'standing') return ['body', 'stand'];
+        if (['notes', 'hair_tie', 'candle_stand'].includes(cfg.kind)) return ['body', 'stand'];      // the silhouette and the base its foot is pushed into
         if (cfg.kind === 'sign' && p.two_color && p.style !== 'engrave') return ['plate', 'text'];
         if (cfg.kind === 'beads' && p.style === 'raised') return ['body', 'text'];
         if (cfg.kind === 'qr' && p.stand) return ['body', 'stand'];
