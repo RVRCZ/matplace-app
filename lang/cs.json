@@ -1624,5 +1624,11 @@
     "edit.art.poster.hint": "Náhled barev je hned, 3D model se sestaví chvíli po poslední změně.",
     "edit.art.poster.build": "Sestavit model hned",
     "edit.art.poster.failed": "Náhled barev se nepodařilo připravit.",
-    "edit.warn.many_areas": "Obraz se rozpadl na :r ploch. S větším nejmenším detailem nebo méně barvami budou plochy čistší a tisk rychlejší."
+    "edit.warn.many_areas": "Obraz se rozpadl na :r ploch. S větším nejmenším detailem nebo méně barvami budou plochy čistší a tisk rychlejší.",
+    "param.f.vase.waists": "Počet zúžení",
+    "param.f.vase.waist_at": "Výška horního zúžení",
+    "param.f.vase.waist": "Síla zúžení",
+    "param.c.vase.flute_shape": "Vlnky",
+    "param.o.vase.sharp": "Ostré",
+    "param.o.vase.round": "Kulaté"
 }

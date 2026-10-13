@@ -1,0 +1,8 @@
+{
+    "param.f.vase.waists": ["Počet zúžení", "Number of waists", "Número de estrechamientos"],
+    "param.f.vase.waist_at": ["Výška horního zúžení", "Height of the top waist", "Altura del estrechamiento superior"],
+    "param.f.vase.waist": ["Síla zúžení", "Depth of the waist", "Profundidad del estrechamiento"],
+    "param.c.vase.flute_shape": ["Vlnky", "Flutes", "Estrías"],
+    "param.o.vase.sharp": ["Ostré", "Sharp", "Afiladas"],
+    "param.o.vase.round": ["Kulaté", "Rounded", "Redondeadas"]
+}

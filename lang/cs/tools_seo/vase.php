@@ -5,7 +5,7 @@ return [
     'description' => 'Zvolíte výšku, průměry, tvar a povrch: hladký, žebrovaný nebo spirálový. Obal na květináč má drenáž a podmisku. Tisk u nás, nebo stažení zdarma.',
     'h1' => 'Váza a obal na květináč podle vašich rozměrů',
     'intro' => [
-        'Nástroj vytvoří vázu nebo obal na květináč podle výšky a průměrů, které zadáte. Vyberete jeden ze čtyř tvarů: úzké hrdlo, vypouklý, rovný kužel nebo tulipán. Povrch může být hladký, žebrovaný nebo spirálový. U žebrovaného a spirálového nastavíte počet žeber, hloubku žlábků a zkroucení. Obal na květináč může mít drenážní otvory ve dně a samostatnou podmisku.',
+        'Nástroj vytvoří vázu nebo obal na květináč podle výšky a průměrů, které zadáte. Vyberete jeden ze čtyř tvarů: úzké hrdlo, vypouklý, rovný kužel nebo tulipán. Povrch může být hladký, žebrovaný nebo spirálový. U žebrovaného a spirálového nastavíte počet žeber, hloubku žlábků a zkroucení a zvolíte vlnky ostré, nebo kulaté. U tvaru s úzkým hrdlem posunete zúžení výš nebo níž a můžete mít až tři nad sebou. Obal na květináč může mít drenážní otvory ve dně a samostatnou podmisku.',
         'Náhled se mění hned a ukazuje skutečné vnější rozměry, protože některé tvary jsou širší než zadané průměry. Vedle vidíte orientační cenu. Vázu vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. Model si také můžete zdarma stáhnout pro vlastní tiskárnu. Počítejte s tím, že vytištěná váza nemusí být vodotěsná.',
     ],
     'steps' => [
@@ -22,8 +22,9 @@ return [
         ['q' => 'Jak silná je stěna?', 'a' => 'Výchozí stěna i dno mají 1,6 mm. Stěnu změníte od 0,8 do 4 mm a dno od 0,8 do 5 mm pod volbou „Tloušťka stěn a další“. Tenká stěna mezi hlubokými žlábky je křehčí a hůř drží vodu.'],
     ],
     'examples' => [
-        'Spirálová váza s úzkým hrdlem, výška 180 mm, horní průměr 62 mm, 20 žeber.',
+        'Spirálová váza s úzkým hrdlem, výška 180 mm, horní průměr 62 mm, 18 žeber.',
         'Hladká váza s úzkým hrdlem, výška 160 mm, horní průměr 70 mm.',
         'Žebrovaný obal na květináč s podmiskou, výška 120 mm, horní průměr 130 mm.',
+        'Váza se dvěma zúženími a kulatými vlnkami, výška 200 mm, horní průměr 70 mm.',
     ],
 ];

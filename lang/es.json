@@ -1624,5 +1624,11 @@
     "edit.art.poster.hint": "La vista previa de colores aparece enseguida; el modelo 3D se construye un momento después del último cambio.",
     "edit.art.poster.build": "Construir el modelo ahora",
     "edit.art.poster.failed": "No se pudo preparar la vista previa de colores.",
-    "edit.warn.many_areas": "La imagen se divide en :r zonas. Con un detalle mínimo mayor o menos colores las zonas quedan más limpias y la impresión es más rápida."
+    "edit.warn.many_areas": "La imagen se divide en :r zonas. Con un detalle mínimo mayor o menos colores las zonas quedan más limpias y la impresión es más rápida.",
+    "param.f.vase.waists": "Número de estrechamientos",
+    "param.f.vase.waist_at": "Altura del estrechamiento superior",
+    "param.f.vase.waist": "Profundidad del estrechamiento",
+    "param.c.vase.flute_shape": "Estrías",
+    "param.o.vase.sharp": "Afiladas",
+    "param.o.vase.round": "Redondeadas"
 }

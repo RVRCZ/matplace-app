@@ -1624,5 +1624,11 @@
     "edit.art.poster.hint": "The colour preview is there at once; the 3D model is built a moment after your last change.",
     "edit.art.poster.build": "Build the model now",
     "edit.art.poster.failed": "The colour preview could not be prepared.",
-    "edit.warn.many_areas": "The picture falls into :r areas. With a larger smallest detail or fewer colours the areas are cleaner and the print faster."
+    "edit.warn.many_areas": "The picture falls into :r areas. With a larger smallest detail or fewer colours the areas are cleaner and the print faster.",
+    "param.f.vase.waists": "Number of waists",
+    "param.f.vase.waist_at": "Height of the top waist",
+    "param.f.vase.waist": "Depth of the waist",
+    "param.c.vase.flute_shape": "Flutes",
+    "param.o.vase.sharp": "Sharp",
+    "param.o.vase.round": "Rounded"
 }

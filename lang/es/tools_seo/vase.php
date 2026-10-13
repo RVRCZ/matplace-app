@@ -5,7 +5,7 @@ return [
     'description' => 'Elija la altura, los diámetros, la forma y la superficie: lisa, acanalada o en espiral. El cubremacetas lleva drenaje y plato. Impresión o descarga.',
     'h1' => 'Un jarrón o un cubremacetas con sus medidas',
     'intro' => [
-        'La herramienta crea un jarrón o un cubremacetas según la altura y los diámetros que indique. Se elige una de cuatro formas: cuello estrecho, abombado, cono recto o tulipán. La superficie puede ser lisa, acanalada o en espiral. En las dos últimas se ajustan el número de nervios, la profundidad de las estrías y la torsión. El cubremacetas puede llevar orificios de drenaje en el fondo y un plato aparte.',
+        'La herramienta crea un jarrón o un cubremacetas según la altura y los diámetros que indique. Se elige una de cuatro formas: cuello estrecho, abombado, cono recto o tulipán. La superficie puede ser lisa, acanalada o en espiral. En las dos últimas se ajustan el número de nervios, la profundidad de las estrías y la torsión, y se eligen estrías afiladas o redondeadas. En la forma de cuello estrecho el estrechamiento se sube o se baja y puede haber hasta tres. El cubremacetas puede llevar orificios de drenaje en el fondo y un plato aparte.',
         'La vista previa cambia al instante y muestra las medidas exteriores reales, porque algunas formas son más anchas que los diámetros indicados. Al lado aparece un precio orientativo. Imprimimos el jarrón en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. También puede descargar el modelo gratis para su impresora. Tenga en cuenta que un jarrón impreso puede no ser estanco.',
     ],
     'steps' => [
@@ -22,8 +22,9 @@ return [
         ['q' => '¿Qué grosor tiene la pared?', 'a' => 'Por defecto la pared y el fondo miden 1,6 mm. En «Grosor de paredes y más» la pared se cambia de 0,8 a 4 mm y el fondo de 0,8 a 5 mm. Una pared fina entre estrías profundas es más frágil y retiene peor el agua.'],
     ],
     'examples' => [
-        'Jarrón en espiral de cuello estrecho, altura 180 mm, diámetro superior 62 mm, 20 nervios.',
+        'Jarrón en espiral de cuello estrecho, altura 180 mm, diámetro superior 62 mm, 18 nervios.',
         'Jarrón liso de cuello estrecho, 160 mm de alto, diámetro superior 70 mm.',
         'Cubremacetas acanalado con plato, 120 mm de alto, diámetro superior 130 mm.',
+        'Jarrón con dos estrechamientos y estrías redondeadas, 200 mm de alto, diámetro superior 70 mm.',
     ],
 ];

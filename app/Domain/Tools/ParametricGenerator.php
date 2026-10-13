@@ -197,6 +197,9 @@ final class ParametricGenerator
             'height' => [40, 300, 180, 1], 'top_d' => [30, 250, 62, 1], 'bottom_d' => [30, 250, 54, 1], 'wall' => [0.8, 4, 1.6, 0.2], 'floor' => [0.8, 5, 1.6, 0.2],
             // 18 flutes 18 % deep leave the 1.6 mm wall 0.9 mm across a flute; 20 and 20 left 0.79 and the vase opened with a warning
             'ribs' => [6, 48, 18, 1], 'flute' => [0, 45, 18, 1], 'twist' => [0, 360, 200, 1],
+            // the necked shape: how many waists, how high the top one sits (% of the height), how much narrower than the mouth (%).
+            // One waist at 93 % and 18 % is the vase as it always was, to the last triangle: a stored design has no other
+            'waists' => [0, 3, 1, 1], 'waist_at' => [30, 95, 93, 1], 'waist' => [0, 45, 18, 1],
         ],
         'sign' => ['text_height' => [4, 80, 12, 1], 'thickness' => [1.2, 30, 3, 0.2], 'relief' => [0.4, 5, 1.2, 0.2], 'margin' => [2, 30, 5, 1], 'radius' => [0, 30, 6, 0.5]],
         'logo' => ['width' => [20, 250, 80, 1], 'thickness' => [0.6, 50, 2, 0.2], 'plate' => [0.8, 6, 2, 0.2], 'margin' => [0, 20, 5, 1], 'base_h' => [8, 40, 11, 1]],
@@ -255,7 +258,7 @@ final class ParametricGenerator
         'straw' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'opener' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'phone_stand' => ['style' => ['plate', 'wave', 'desk', 'wedge', 'wall', 'car', 'ribbed', 'flatpack', 'ribbon', 'silhouette'], 'cutout' => ['none', 'window', 'shape'], 'pattern' => ['circles', 'hearts', 'squares', 'honeycomb']],
-        'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth']],
+        'vase' => ['purpose' => ['vase', 'pot'], 'profile' => ['neck', 'belly', 'cone', 'tulip'], 'style' => ['twist', 'ribs', 'smooth'], 'flute_shape' => ['sharp', 'round']],
         // `shape`: a box, an oval, or a plate drawn as an outline (engines/shapes/<name>.svg); `motif_at`: where the picture stands against the text
         'sign' => ['style' => ['emboss', 'engrave', 'outline', 'name', 'stand'], 'shape' => ['rounded', 'rect', 'oval', 'heart', 'star', 'cloud', 'bone', 'hexagon', 'banner', 'arrow', 'house', 'car', 'cat', 'candy', 'flower', 'shield', 'tag', 'bubble', 'circle', 'fish'],
             'typeface' => ['sans', 'serif', 'mono', 'script'], 'motif_at' => ['left', 'right', 'above'], 'ring_at' => ['left', 'right', 'top']],
@@ -309,7 +312,7 @@ final class ParametricGenerator
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
         'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'straw_d', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius', 'cutout_size', 'rib_pitch', 'band', 'across'],
-        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'base', 'relief', 'thickness'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
+        'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'waists', 'waist_at', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'base', 'relief', 'thickness'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
 
     /**
@@ -366,7 +369,8 @@ final class ParametricGenerator
             'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car', 'ribbed']], 'screws' => ['style', ['wall']],
             'cutout' => ['style', ['plate', 'wave', 'desk', 'wall']], 'cutout_size' => ['cutout', ['shape']],      // (the page folds it away with the cut-out itself under the other types)
             'rib_pitch' => ['style', ['ribbed']], 'pattern' => ['style', ['flatpack']], 'band' => ['style', ['ribbon']], 'across' => ['style', ['silhouette']]],
-        'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
+        'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']],
+            'flute_shape' => ['style', ['twist', 'ribs']], 'waists' => ['profile', ['neck']], 'waist_at' => ['profile', ['neck']], 'waist' => ['profile', ['neck']]],
         'sign' => ['shape' => ['style', ['emboss', 'engrave', 'outline']], 'radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']], 'ring_at' => ['keyring', ['on']],
             'bevel' => ['style', ['emboss', 'engrave', 'outline']], 'margin' => ['style', ['emboss', 'engrave', 'outline']],
             // a text that stands is letters and a foot: nothing is raised on it and nothing hangs
