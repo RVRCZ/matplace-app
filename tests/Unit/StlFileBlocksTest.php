@@ -93,7 +93,7 @@ class StlFileBlocksTest extends TestCase
         $this->assertSame([false, true], $turns, 'both the plain and the turned grid are compared');
     }
 
-    // ── the code before, verbatim apart from names ─────────────────────────────
+    // ── the code before, verbatim apart from names and the normals (StlFile::normal, 13 Oct 2026) ──────────
 
     private static function oldScale(string $inPath, string $outPath, float $factor): int
     {
@@ -102,10 +102,13 @@ class StlFileBlocksTest extends TestCase
         fwrite($out, pack('V', 0));
         $n = 0;
         foreach (StlFile::triangles($inPath) as [$a, $b, $c]) {
-            fwrite($out, pack('f3', 0, 0, 0)
-                .pack('f3', $a[0] * $factor, $a[1] * $factor, $a[2] * $factor)
-                .pack('f3', $b[0] * $factor, $b[1] * $factor, $b[2] * $factor)
-                .pack('f3', $c[0] * $factor, $c[1] * $factor, $c[2] * $factor)
+            $sa = [$a[0] * $factor, $a[1] * $factor, $a[2] * $factor];
+            $sb = [$b[0] * $factor, $b[1] * $factor, $b[2] * $factor];
+            $sc = [$c[0] * $factor, $c[1] * $factor, $c[2] * $factor];
+            fwrite($out, pack('f3', ...StlFile::normal($sa, $sb, $sc))
+                .pack('f3', ...$sa)
+                .pack('f3', ...$sb)
+                .pack('f3', ...$sc)
                 .pack('v', 0));
             $n++;
         }

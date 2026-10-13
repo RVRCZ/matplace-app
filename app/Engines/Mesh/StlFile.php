@@ -148,7 +148,34 @@ final class StlFile
     /** @param  array{0:float,1:float,2:float}  $a */
     public static function writeTriangle($fh, array $a, array $b, array $c): void
     {
-        fwrite($fh, pack('f3', 0, 0, 0).pack('f3', ...$a).pack('f3', ...$b).pack('f3', ...$c).pack('v', 0));
+        fwrite($fh, pack('f3', ...self::normal($a, $b, $c)).pack('f3', ...$a).pack('f3', ...$b).pack('f3', ...$c).pack('v', 0));
+    }
+
+    /**
+     * Unit normal of a triangle (right-hand rule), [0, 0, 0] when it is degenerate. Written for more than form:
+     * admesh (OrcaSlicer, PrusaSlicer) takes a binary file for ASCII when none of the 128 bytes after the header is
+     * above 127, and zero normals with round coordinates - a 40 mm cube placed around 210 mm on the bed (13 Oct 2026)
+     * - are exactly that: "the input model file can not be parsed", the customer saw an estimate instead of a price.
+     *
+     * @param  array{0:float,1:float,2:float}  $a
+     * @param  array{0:float,1:float,2:float}  $b
+     * @param  array{0:float,1:float,2:float}  $c
+     * @return array{0:float,1:float,2:float}
+     */
+    public static function normal(array $a, array $b, array $c): array
+    {
+        $ux = $b[0] - $a[0];
+        $uy = $b[1] - $a[1];
+        $uz = $b[2] - $a[2];
+        $vx = $c[0] - $a[0];
+        $vy = $c[1] - $a[1];
+        $vz = $c[2] - $a[2];
+        $nx = $uy * $vz - $uz * $vy;
+        $ny = $uz * $vx - $ux * $vz;
+        $nz = $ux * $vy - $uy * $vx;
+        $len = sqrt($nx * $nx + $ny * $ny + $nz * $nz);
+
+        return $len > 0 ? [$nx / $len, $ny / $len, $nz / $len] : [0.0, 0.0, 0.0];
     }
 
     public static function endBinary($fh, int $count): void
@@ -247,14 +274,21 @@ final class StlFile
         $n = 0;
         foreach (self::records($inPath) as $block) {
             $out = '';
+            // every triangle gets its normal (see normal()): the slicer tells binary from ASCII by the bytes of the first few
             if ($move === null) {
                 foreach ($block as $v) {
-                    $out .= pack('f12v', 0, 0, 0, $v[4] * $f, $v[5] * $f, $v[6] * $f, $v[7] * $f, $v[8] * $f, $v[9] * $f, $v[10] * $f, $v[11] * $f, $v[12] * $f, 0);
+                    $a = [$v[4] * $f, $v[5] * $f, $v[6] * $f];
+                    $b = [$v[7] * $f, $v[8] * $f, $v[9] * $f];
+                    $c = [$v[10] * $f, $v[11] * $f, $v[12] * $f];
+                    $out .= pack('f12v', ...array_merge(self::normal($a, $b, $c), $a, $b, $c, [0]));
                 }
             } else {
                 [$mx, $my, $mz] = $move;
                 foreach ($block as $v) {
-                    $out .= pack('f12v', 0, 0, 0, $v[4] * $f + $mx, $v[5] * $f + $my, $v[6] * $f + $mz, $v[7] * $f + $mx, $v[8] * $f + $my, $v[9] * $f + $mz, $v[10] * $f + $mx, $v[11] * $f + $my, $v[12] * $f + $mz, 0);
+                    $a = [$v[4] * $f + $mx, $v[5] * $f + $my, $v[6] * $f + $mz];
+                    $b = [$v[7] * $f + $mx, $v[8] * $f + $my, $v[9] * $f + $mz];
+                    $c = [$v[10] * $f + $mx, $v[11] * $f + $my, $v[12] * $f + $mz];
+                    $out .= pack('f12v', ...array_merge(self::normal($a, $b, $c), $a, $b, $c, [0]));
                 }
             }
             fwrite($fh, $out);

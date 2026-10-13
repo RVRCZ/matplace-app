@@ -81,19 +81,17 @@ final class PlateLayout
                 foreach (StlFile::records($piece->path) as $block) {
                     $out = '';
                     foreach ($block as $v) {
-                        $t = [0.0, 0.0, 0.0];
+                        $t = [];
                         for ($k = 4; $k <= 12; $k += 3) {
                             $x = $v[$k] - $mx;
                             $y = $v[$k + 1] - $my;
                             $z = $v[$k + 2] - $mz;
                             // a quarter turn about Z: (x, y) → (y_max - y, x)
-                            if ($rotated) {
-                                array_push($t, $ox + ($dy - $y), $oy + $x, $z);
-                            } else {
-                                array_push($t, $ox + $x, $oy + $y, $z);
-                            }
+                            $t[] = $rotated ? [$ox + ($dy - $y), $oy + $x, $z] : [$ox + $x, $oy + $y, $z];
                         }
-                        $out .= pack('f12v', ...[...$t, 0]);
+                        // the normal of the copy as it lies (a turned copy has a turned normal); the slicer tells
+                        // binary from ASCII by these bytes (StlFile::normal)
+                        $out .= pack('f12v', ...array_merge(StlFile::normal($t[0], $t[1], $t[2]), $t[0], $t[1], $t[2], [0]));
                     }
                     fwrite($fh, $out);
                     $n += count($block);

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Engines\DTO\Dimensions;
 use App\Engines\Mesh\StlFile;
 use PHPUnit\Framework\TestCase;
 use Tests\Support\MeshFixtures;
@@ -45,6 +46,36 @@ class StlFileTest extends TestCase
         $this->assertEqualsWithDelta(8000.0, $r->volumeMm3, 0.01);
     }
 
+    public function test_placed_copies_carry_unit_normals_so_the_slicer_takes_them_for_binary(): void
+    {
+        // admesh (OrcaSlicer) calls a file ASCII when no byte of the 128 after the header is above 127: zero normals
+        // and round coordinates (a 40 mm cube placed around 210 mm, 13 Oct 2026) were read as text and refused
+        $in = sys_get_temp_dir().'/mp_cube_in_'.uniqid().'.stl';
+        $out = sys_get_temp_dir().'/mp_cube_out_'.uniqid().'.stl';
+        StlFile::writeBox($in, 40, 40, 40);
+        $size = StlFile::place($in, $out, 1.0, 210, 210);
+        $this->assertEqualsWithDelta([40.0, 40.0, 40.0], $size, 1e-6);
+        $bytes = (string) file_get_contents($out);
+        $this->assertSame(84 + 12 * 50, strlen($bytes));
+        $high = 0;
+        foreach (str_split(substr($bytes, 80, 128)) as $ch) {
+            if (ord($ch) > 127) {
+                $high++;
+            }
+        }
+        $this->assertGreaterThan(0, $high, 'a byte above 127 among the 128 after the header, or the slicer reads the file as text');
+        // the first triangle's normal is a unit vector
+        $n = array_values(unpack('f3', substr($bytes, 84, 12)));
+        $this->assertEqualsWithDelta(1.0, sqrt($n[0] ** 2 + $n[1] ** 2 + $n[2] ** 2), 1e-5);
+        [$lo, $hi] = StlFile::bounds($out);
+        $this->assertEqualsWithDelta([190.0, 190.0, 0.0], $lo, 1e-4);
+        $this->assertEqualsWithDelta([230.0, 230.0, 40.0], $hi, 1e-4);
+        // a degenerate triangle gets no normal, nothing divides by zero
+        $this->assertSame([0.0, 0.0, 0.0], StlFile::normal([0, 0, 0], [1, 1, 1], [2, 2, 2]));
+        @unlink($in);
+        @unlink($out);
+    }
+
     public function test_scale_writes_scaled_copy(): void
     {
         MeshFixtures::cubeStl($this->dir.'/cube.stl', 10);
@@ -58,7 +89,7 @@ class StlFileTest extends TestCase
 
     public function test_dimensions_fit_allows_rotation(): void
     {
-        $d = new \App\Engines\DTO\Dimensions(300, 20, 20);
+        $d = new Dimensions(300, 20, 20);
         $this->assertTrue($d->fits(250, 250, 300));
         $this->assertFalse($d->fits(250, 250, 250));
     }

@@ -521,3 +521,23 @@ displeji Kobry to na U #2 nezměnilo a fronta čekala (`readyForAutoStart` chce 
 - testy: `FarmPagesTest::test_the_admin_resets_a_printer_error_from_the_dashboard_and_the_agent_gets_the_command`,
   agent `test_moonraker.py` (5 reset scénářů) a `test_agent.py` (mock), celkem 33 testů agenta,
 - starý agent (0.1.1/0.1.2) na `reset` odpoví „unknown command“ a příkaz se na nástěnce ukáže jako selhaný.
+
+## 19. Přesný výpočet kostky: binární STL bez normál četl slicer jako text (13. 10. 2026)
+
+Nález session B: nahraná kostka 40 mm (12 trojúhelníků) končila v kalkulaci „Přesný výpočet se nepovedl, platí odhad“
+(kalkulace 388–390, 392), stojánek z nástroje prošel. Slicer hlásil „placed.stl: Loading of a model file failed“
+(CLI −6, „can not be parsed“). Ručně nad stejným souborem položeným na 125 mm prošel, nad souborem z úlohy
+(položeným na střed desky 420 → 190–230 mm) ne.
+
+Příčina: admesh (OrcaSlicer, PrusaSlicer) pozná binární STL jen podle toho, že mezi 128 bajty za 80bajtovou hlavičkou
+je nějaký bajt > 127. Náš zapisovač (`StlFile::transform`, `writeTriangle`, `PlateLayout::replicate`) psal nulové
+normály, a kulaté souřadnice (190.0 = 00 00 3E 43, 230.0 = 00 00 66 43, 40.0 = 00 00 20 42) žádný takový bajt
+nemají – soubor se četl jako ASCII a selhal. Skutečné modely s „neokrouhlými“ souřadnicemi se tomu vyhnou náhodou;
+CAD krabičky a zkušební kostky ne (a týká se i desek s kopiemi na farmě).
+
+Oprava: `StlFile::normal()` – jednotková normála z vrcholů (pravidlo pravé ruky, degenerovaný trojúhelník = nuly);
+píšou ji `transform()` (place/scale), `writeTriangle()` (3MF převod, falešný generátor, writeBox) a
+`PlateLayout::replicate()` (normála otočené kopie je otočená). Test
+`StlFileTest::test_placed_copies_carry_unit_normals_so_the_slicer_takes_them_for_binary` (bajt > 127 za
+hlavičkou, jednotková normála, meze beze změny); `StlFileBlocksTest` porovnává s referenčním kódem, který teď normály
+píše také. Ověřeno na serveru nad kostkou z kalkulace 392 (viz níže).
