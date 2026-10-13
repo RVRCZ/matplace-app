@@ -1,0 +1,152 @@
+{
+    "param.o.phone_stand.ribbed": [
+        "Vlnitý plech",
+        "Corrugated sheet",
+        "Chapa ondulada"
+    ],
+    "param.o.phone_stand.flatpack": [
+        "Deska se vzorem a nohou",
+        "Patterned plate with a leg",
+        "Placa con dibujo y pata"
+    ],
+    "param.o.phone_stand.ribbon": [
+        "Stuha do Z, dvě barvy",
+        "Z ribbon, two colours",
+        "Cinta en Z, dos colores"
+    ],
+    "param.o.phone_stand.silhouette": [
+        "Silueta zvířete",
+        "Animal silhouette",
+        "Silueta de animal"
+    ],
+    "param.c.phone_stand.cutout": [
+        "Výřez v opěrce",
+        "Cut-out in the rest",
+        "Recorte en el respaldo"
+    ],
+    "param.o.phone_stand.none": [
+        "Bez výřezu",
+        "None",
+        "Sin recorte"
+    ],
+    "param.o.phone_stand.window": [
+        "Odlehčovací okno",
+        "A window",
+        "Ventana"
+    ],
+    "param.o.phone_stand.shape": [
+        "Tvar z knihovny nebo vlastní",
+        "A shape from the library or your own",
+        "Una forma de la biblioteca o propia"
+    ],
+    "param.f.phone_stand.cutout_size": [
+        "Velikost výřezu",
+        "Size of the cut-out",
+        "Tamaño del recorte"
+    ],
+    "param.c.phone_stand.pattern": [
+        "Vzor desky",
+        "Pattern of the plate",
+        "Dibujo de la placa"
+    ],
+    "param.o.phone_stand.circles": [
+        "Kruhy",
+        "Circles",
+        "Círculos"
+    ],
+    "param.o.phone_stand.hearts": [
+        "Srdíčka",
+        "Hearts",
+        "Corazones"
+    ],
+    "param.o.phone_stand.squares": [
+        "Čtverce",
+        "Squares",
+        "Cuadrados"
+    ],
+    "param.o.phone_stand.honeycomb": [
+        "Plástev",
+        "Honeycomb",
+        "Panal"
+    ],
+    "param.f.phone_stand.rib_pitch": [
+        "Rozteč vln",
+        "Pitch of the ribs",
+        "Paso de las ondas"
+    ],
+    "param.f.phone_stand.band": [
+        "Tloušťka pásu",
+        "Thickness of the band",
+        "Grosor de la cinta"
+    ],
+    "param.f.phone_stand.across": [
+        "Šířka siluety (napříč telefonu)",
+        "Width of the silhouette (across the phone)",
+        "Ancho de la silueta (a lo ancho del teléfono)"
+    ],
+    "param.phone_stand.content": [
+        "Tvar výřezu nebo siluety",
+        "The shape of the cut-out or the silhouette",
+        "Forma del recorte o de la silueta"
+    ],
+    "param.phone_stand.artwork.hint": [
+        "Platí pro výřez „Tvar“ a pro siluetu: jen vnější obrys, oči a vnitřní detaily se vynechají. Kočka z knihovny je výchozí.",
+        "Used by the cut-out “shape” and by the silhouette: the outer outline only, eyes and inner details are left out. The library's cat is the default.",
+        "Se usa para el recorte «forma» y para la silueta: solo el contorno exterior, los ojos y detalles interiores se omiten. El gato de la biblioteca es el predeterminado."
+    ],
+    "param.warn.stand_cutout_small": [
+        "Výřez jsme zmenšili, aby kolem něj zůstal rám aspoň 6 mm (nebo dvojnásobek tloušťky) a nepřesáhl 70 % výšky opěrky.",
+        "The cut-out was made smaller to keep a frame of at least 6 mm (or twice the thickness) round it and under 70 % of the rest's height.",
+        "El recorte se redujo para dejar un marco de al menos 6 mm (o el doble del grosor) y no superar el 70 % de la altura del respaldo."
+    ],
+    "param.warn.stand_cutout_fine": [
+        "Tvar má tenké části (ocas, tlapky) užší než 0,8 mm: ve výřezu se slijí nebo nevytisknou čistě. Zvolte větší výřez nebo jednodušší tvar.",
+        "The shape has thin parts (a tail, paws) narrower than 0.8 mm: in a cut-out they close up or print roughly. Choose a bigger cut-out or a simpler shape.",
+        "La forma tiene partes finas (cola, patas) de menos de 0,8 mm: en el recorte se cierran o salen mal. Elija un recorte mayor o una forma más simple."
+    ],
+    "param.warn.stand_silhouette_thin": [
+        "Část obrysu je užší než prstenec: tam je silueta plná. Pro čistší kresbu zvolte větší výšku nebo jednodušší tvar.",
+        "Part of the outline is narrower than the ring: the silhouette is solid there. For a cleaner line choose a bigger height or a simpler shape.",
+        "Parte del contorno es más estrecha que el anillo: ahí la silueta queda maciza. Para una línea más limpia elija más altura o una forma más simple."
+    ],
+    "param.warn.stand_silhouette_low": [
+        "Silueta nižší než 60 mm telefon neopře: drží ho jen sedlo. Zvolte větší výšku opěrky.",
+        "A silhouette under 60 mm gives the phone nothing to lean on: only the seat holds it. Choose a bigger rest height.",
+        "Una silueta de menos de 60 mm no sujeta el teléfono: solo lo sostiene el asiento. Elija más altura."
+    ],
+    "param.part.stripe": [
+        "Proužek",
+        "Stripe",
+        "Franja"
+    ],
+    "param.part.body.phone_stand": [
+        "Hlavní díl",
+        "Main part",
+        "Pieza principal"
+    ],
+    "param.part.stand.phone_stand": [
+        "Noha",
+        "Leg",
+        "Pata"
+    ],
+    "param.part.stripe.phone_stand": [
+        "Proužek (druhá barva)",
+        "Stripe (second colour)",
+        "Franja (segundo color)"
+    ],
+    "tools.phone_stand.hint": [
+        "Deska s háčky, vlnka, A-rám, klín, kapsa na zeď, klip do auta, vlnitý plech, deska s nohou, stuha do Z nebo silueta zvířete. Do opěrky jde vyříznout tvar.",
+        "A plate with hooks, a wave, an A-frame, a wedge, a wall pocket, a car clip, a corrugated sheet, a plate with a leg, a Z ribbon or an animal silhouette. A shape can be cut out of the rest.",
+        "Placa con ganchos, onda, caballete, cuña, bolsillo de pared, clip para el coche, chapa ondulada, placa con pata, cinta en Z o silueta de animal. En el respaldo se puede recortar una forma."
+    ],
+    "param.phone_stand.tip": [
+        "Deska s háčky se tiskne nastojato na podstavě, ostatní stojánky naležato bez podpěr: vlnitý plech a stuha na boku, deska se vzorem i noha naplocho (noha se zasune do drážky), silueta na čelní ploše, kapsa na zeď zadní deskou dolů. Klip do auta tiskněte z PETG.",
+        "The plate with hooks prints upright on its base, the other stands lie down without supports: the corrugated sheet and the ribbon on their side, the patterned plate and its leg flat (the leg slides into the slot), the silhouette on its face, the wall pocket back plate down. Print the car clip in PETG.",
+        "La placa con ganchos se imprime de pie sobre su base; los demás tumbados sin soportes: la chapa ondulada y la cinta de lado, la placa con dibujo y la pata en plano (la pata se encaja en la ranura), la silueta sobre su cara, el bolsillo de pared con la placa trasera abajo. El clip para el coche, en PETG."
+    ],
+    "calc.tip.phone_stand": [
+        "Deska s háčky se tiskne nastojato, ostatní stojánky naležato bez podpěr; vlnitý plech a stuha na boku, deska se vzorem a noha naplocho, silueta na čelní ploše; kapsa na zeď zadní deskou dolů, klip do auta z PETG.",
+        "The plate with hooks prints upright, the other stands lying down without supports; the corrugated sheet and the ribbon on their side, the patterned plate and its leg flat, the silhouette on its face; the wall pocket back plate down, the car clip in PETG.",
+        "La placa con ganchos se imprime de pie, los demás tumbados sin soportes; la chapa ondulada y la cinta de lado, la placa con dibujo y la pata en plano, la silueta sobre su cara; el bolsillo de pared con la placa trasera abajo, el clip para el coche en PETG."
+    ]
+}

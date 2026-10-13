@@ -25,5 +25,10 @@ return [
         'Stolní A-rám s poličkou, šířka 75 mm, sklon opěrky 65°, výřez na kabel.',
         'Nízký klín na sledování videa, šířka 80 mm, hloubka 70 mm, sklon 60°.',
         'Kapsa na zeď pro telefon široký 80 mm, čtyři otvory na šrouby.',
+        'Stolní A-rám s vyříznutou kočkou v opěrce, šířka 80 mm; tvar z knihovny nebo vlastní.',
+        'Vlnitý plech do S, šířka 70 mm, sklon 70°, žebra každých 6 mm.',
+        'Plochá deska se srdíčky a zásuvnou nohou, šířka 70 mm, dva díly naplocho.',
+        'Stuha do Z, pás 10 mm s proužkem druhé barvy, šířka 70 mm.',
+        'Silueta psa z knihovny, výška 100 mm, sedlo na telefon vpředu.',
     ],
 ];
