@@ -30,11 +30,18 @@ final class ArtGenerator
         'width' => [50, 250, 150, 1], 'height' => [50, 250, 150, 1], 'margin' => [0, 20, 6, 1],
         // the picture: how many colours, how much of the background goes, how smooth the edges are, the photo's own sliders
         'colors_n' => [1, 8, 5, 1], 'bg_strength' => [0, 100, 30, 1], 'smooth' => [0, 1, 0.3, 0.05], 'contrast' => [50, 150, 100, 1], 'brightness' => [50, 150, 100, 1], 'saturation' => [0, 200, 100, 1],
+        // a photo or a painting: nothing of the picture is smaller than this many millimetres (shape2d._painted)
+        'detail' => [1, 5, 2, 0.5],
         // one print: the base plate and the step of every colour (whole 0.2 mm layers); layered: the plates and the air between them
         'base' => [0.8, 3, 1.2, 0.2], 'step' => [0.4, 1.2, 0.4, 0.2], 'plate' => [1.5, 3, 2, 0.5], 'gap' => [0, 5, 3, 0.5], 'frame_w' => [6, 20, 10, 1],
     ];
 
-    public const CHOICES = ['mode' => ['layered', 'stack'], 'shape' => ['image', 'rect', 'circle'], 'frame' => ['none', 'round', 'square']];
+    /**
+     * `look`: how the picture is read. `graphic` is a drawing in a few flat colours (the library, a logo), read as it
+     * always was; `painting` is a photo or a painting, whose colours are chosen so that small saturated ones survive
+     * and whose areas are simplified to millimetres. The page proposes one when a picture is chosen (poster()).
+     */
+    public const CHOICES = ['mode' => ['layered', 'stack'], 'shape' => ['image', 'rect', 'circle'], 'frame' => ['none', 'round', 'square'], 'look' => ['graphic', 'painting']];
 
     public const FLAGS = ['remove_bg', 'flat', 'led'];
 
@@ -121,13 +128,10 @@ final class ArtGenerator
         return $out;
     }
 
-    /**
-     * @return array{path: string, meta: array<string, mixed>} temporary STL (caller deletes) + size, volume, notes, parts
-     */
-    public function build(array $params, string $view = 'use', bool $pieces = true, ?string $partsDir = null): array
+    /** The parameters as the tool takes them: cleaned, with the picture's file and the colours it may choose from. */
+    private static function forTool(array $params): array
     {
         $clean = self::clean($params);
-        $clean['view'] = $view === 'print' ? 'print' : 'use';
         // the picture keeps its own colours; the plates the visitor recoloured bring their look with them
         $clean['free_colors'] = true;
         $clean['palette'] = array_values(array_column(array_merge(
@@ -138,6 +142,47 @@ final class ArtGenerator
         if (! $clean['artwork_path']) {
             throw ValidationException::withMessages(['params' => [__($clean['artwork'] === '' ? 'param.error.no_text' : 'param.error.artwork_gone')]])->status(422);
         }
+
+        return $clean;
+    }
+
+    /**
+     * The picture in the colours it will be made of, flat: a PNG that is there in a second or two, long before the
+     * model. What the page shows beside the original while the plates are being built.
+     *
+     * `$propose`: the picture was just chosen. The tool looks at it, says how it should be read (`proposed`: look,
+     * remove_bg, shape) and makes the poster that way, so the page needs one request, not two.
+     *
+     * @return array{path: string, meta: array<string, mixed>} temporary PNG (caller deletes) + colours, areas, the look proposed
+     */
+    public function poster(array $params, bool $propose = false): array
+    {
+        $clean = self::forTool($params) + ($propose ? ['propose' => true] : []);
+        $dir = storage_path('app/tmp/param');
+        File::ensureDirectoryExists($dir);
+        $path = $dir.'/'.Str::uuid().'.png';
+        $json = $dir.'/'.Str::uuid().'.json';
+        File::put($json, (string) json_encode($clean, JSON_UNESCAPED_UNICODE));
+        try {
+            $r = $this->python->runScript('art_tool.py', ['--poster', $path, '@'.$json], 30);
+        } finally {
+            @unlink($json);
+        }
+        if (empty($r['ok']) || ! is_file($path)) {
+            @unlink($path);
+            throw ValidationException::withMessages(['params' => [ParametricGenerator::explain((string) ($r['code'] ?? 'failed'), (string) ($r['error'] ?? ''))]])->status(422);
+        }
+
+        return ['path' => $path, 'meta' => (array) ($r['poster'] ?? [])];
+    }
+
+    /**
+     * @return array{path: string, meta: array<string, mixed>} temporary STL (caller deletes) + size, volume, notes, parts
+     */
+    public function build(array $params, string $view = 'use', bool $pieces = true, ?string $partsDir = null): array
+    {
+        $clean = self::forTool($params);
+        $clean['view'] = $view === 'print' ? 'print' : 'use';
         $dir = storage_path('app/tmp/param');
         File::ensureDirectoryExists($dir);
         $path = $dir.'/'.Str::uuid().'.stl';
@@ -197,7 +242,7 @@ final class ArtGenerator
         $clean['parts_bbox'] = array_map(fn ($p) => [round($p['bbox'][3] - $p['bbox'][0], 2), round($p['bbox'][4] - $p['bbox'][1], 2), round($p['bbox'][5] - $p['bbox'][2], 2)], array_column((array) ($built['meta']['parts'] ?? []), null, 'name'));
         $clean['pieces'] = array_values((array) ($built['meta']['parts'] ?? []));
         $clean['each'] = (array) ($notes['each'] ?? []);
-        $clean['report'] = array_intersect_key($notes, array_flip(['mode', 'shape', 'frame', 'plates', 'depth', 'filaments', 'outer', 'picture', 'warnings', 'found', 'wanted', 'frame_outer', 'frame_depth']));
+        $clean['report'] = array_intersect_key($notes, array_flip(['mode', 'shape', 'frame', 'plates', 'depth', 'filaments', 'outer', 'picture', 'warnings', 'found', 'wanted', 'frame_outer', 'frame_depth', 'look', 'regions']));
         // the guide with its drawings is bigger than a row should carry: it lives beside the model
         File::put(dirname($abs).'/guide.json', (string) json_encode(['guide' => $notes['guide'] ?? [], 'colors' => $notes['colors'] ?? [], 'paint' => $notes['paint'] ?? []]));
 
