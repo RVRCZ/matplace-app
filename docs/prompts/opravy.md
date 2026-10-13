@@ -220,3 +220,23 @@ zůstalo…“). Bez karty: `insert`, `straw`, `opener` (v configu vypnuté, ud�
 **Nedělat:** `public/img/tool-examples` (SEO ukázky), `public/img/home` (hero), texty, `config/tools.php`.
 **Hotovo =** každý veřejný nástroj (a insert/straw/opener) má nové tři soubory ve stejném stylu, `ToolPageTest`/
 `CalculationFlowTest` zelené (test hlavní stránky hledá `img/tools/gifts-800`).
+
+## Úkol #10 · 13. 10. 2026 · lesklejší náhled modelů u všech nástrojů (koordinováno: `resources/js/calc/viewer.ts`)
+
+**Od Romana:** „modely se zobrazují v nudných barvách, jde zobrazovat např. v lesklých, jako je to u busty, myslím pro
+všechny tools“. **Stav:** `calc/viewer.ts` má pro modely `MeshStandardMaterial` roughness 0,75, metalness 0, flatShading
+true (matný, hranatý vzhled); busta používá `sculptureMaterial` roughness 0,42, metalness 0,25, flatShading false.
+**Udělat:**
+1. Jeden vzhled pro všechny nástroje i kalkulaci: hladké stínování (po `mergeVertices` + `computeVertexNormals`, jinak
+   zůstane hranatý; u modelů se záměrně ostrými hranami držet úhlový práh, aby se neztratily) a lesk podle druhu
+   filamentu: silk/lesklý roughness ~0,3 + metalness ~0,3, běžný PLA/PETG ~0,45 + 0,1, matný ~0,8 + 0 – druh (`finish`)
+   je u barvy z farmy, u volné barvy z okna barev brát běžný. Barva dílu zůstává ta zvolená (žádné zabarvení
+   metalness). Deska (`plateMaterial`) beze změny.
+2. Světlo: pokud lesk bez prostředí vypadá ploše, přidat `RoomEnvironment` (three/examples) jako `scene.environment`
+   s mírnou intenzitou; ověřit na tmavých a bílých barvách, že nic nevyhoří.
+3. Výkon: velké modely (busta, mapa, reliéf 300 k trojúhelníků) nesmí po `mergeVertices` zpomalit načtení o víc
+   než ~0,3 s; měřit na /tools/relief a /tools/map (jako správce).
+4. `scripts/check_preview_colors.mjs` na všech stránkách (0 chyb), `tsc`, `build`; snímky před/po u busty, QR
+   cedulky, vázy, klíčenky do docs (E.md).
+**Nedělat:** materiál busty (`sculptureMaterial`) neměnit, jen z něj vyjít; nic v geometrii, nic v param.ts.
+**Hotovo =** všechny nástroje mají hladký, lesklý náhled podle druhu filamentu, snímky, testy, `pint`, `tsc`, `build`.
