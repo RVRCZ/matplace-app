@@ -264,3 +264,61 @@ nevynechat (`tower:type=chimney`).
 
 Testy: stránka ověřuje pořadí bloků a tři volby silnic (žádný `roads_on`); nový test „Žádné“ (roads_m 0, jedna
 výměna, díly base+buildings, bez varování, starý přepínač → none). Nic se dál netisklo.
+
+## 9. Kolo 4 (13. 10. 2026): jedno uzavřené těleso pro farmu
+
+**Co se stalo.** Roman poslal na farmu `map-vaclavske-namesti-150.stl` (1 km na 150 mm, 148 430 trojúhelníků) a farma
+ho odmítla: 16 636 otevřených hran, 17 486 těles, pymeshfix neopravil. Reprodukováno lokálně na cache Václavského
+náměstí (`storage/app/maps/osm/af0d648a…`): `trimesh` po svaření vrcholů hlásil 13 423 hran se čtyřmi stěnami a
+14 677 „těles“.
+
+**Příčiny** (všechny v tom, jak se sjednocení tisíce dílů čte jako STL):
+
+1. **Mikrosegmenty 1e-8 mm.** Clipper (CrossSection) počítá na mřížce 1e-8 mm; po offsetech a booleovských operacích
+   zůstávají v obrysech úsečky 1–4·1e-8 mm. Manifold je vytáhne do trojúhelníků (8 428 z 56 300 u Prahy 500 m),
+   které ve float32 STL mají dva vrcholy na stejném místě. Slicer i farma vrcholy svaří, trojúhelník zdegeneruje a
+   jeho hrany mají tři stěny. `Manifold.simplify` je neodstranil.
+2. **Dotyky bez překryvu.** Silnice těsně u zdi (`roads − footprint`), nízký dům u vyššího (`shape − footprint`), rám
+   u desky, střecha na zdech, střechy sousedů na společné zdi: stěny v jedné rovině, hrany na jedné přímce. Manifold
+   dá topologicky správný výsledek s dvěma kopiemi vrcholu; po svaření podle polohy má hrana čtyři stěny.
+3. **Střecha jako extruze se `scale_top = (1, 0)`** má nahoře zdegenerovaný uzávěr (všechny vrcholy na hřebenu): plátky
+   nulové plochy, po svaření hrany se čtyřmi stěnami přímo na hřebeni.
+
+**Řešení** (`map_tool.py`, konstanty `OVERLAP 0.02`, `SINK 0.05`, `GAP 0.05`, `EPS 0.002` mm):
+
+- `_clean(cs) = cs.simplify(EPS)` po každém offsetu/booleanu před extruzí (pásy budov, silnice, koleje, voda, zeleň,
+  rám, text, půdorys střechy).
+- Vyvýšené díly se **překrývají o vlásek**: pásy budov `offset(+OVERLAP)` (do vyššího souseda i přes roh, kde se
+  dotýkaly), vyvýšené silnice `offset(+OVERLAP)` do zdí, budovy i silnice začínají `SINK` pod horní plochou desky,
+  rám přesahuje `OVERLAP` do desky, název je `SINK` zapuštěný do rámu. Co se do desky **vrývá** (koleje, voda, zeleň),
+  drží `GAP` od budov, silnic i od sebe (`away`), takže žádné dvě stěny neleží v jedné rovině.
+- Zbytek po odečtení vyššího souseda projde znovu otevřením `_no_slivers` (vlasové proužky pryč).
+- **Střechy jinak**: `_roof` vrací jen plán (prstenec + OBB), `roof_solids` je staví až když jsou pásy hotové: hranol
+  půdorysu (`+OVERLAP`, oříznutý na obrys pásu zmenšený o 0,01 mm, takže pata nikdy nekouká) řezaný rovinami přes
+  hřeben (`trim_by_plane`): sedlová dvě, valbová čtyři se stejným sklonem, jehlanová čtyři do bodu. Hřeben i okapy
+  ve stejné výšce jako dřív; žádný zdegenerovaný uzávěr.
+- **Export** (`closed_mesh`): vrcholy ve float32 svařené, trojúhelníky se dvěma stejnými vrcholy a „ploutve“ (dva
+  trojúhelníky na týchž třech vrcholech proti sobě) vyhozené, spočítané hrany bez právě dvou stěn a počet těles
+  (union-find). Když výsledek není uzavřený, zkusí se ještě `model.simplify(0.005)`. Do `notes.mesh` jde
+  `{closed, bad_edges, shells, dropped}`, při problému varování `open_mesh`.
+
+**Výsledek lokálně** (farm_tool.py prepare, tj. přesně farma):
+
+| mapa | před: trojúhelníky / hrany 4 stěn / těles | po: trojúhelníky / otevřené hrany / těles | stavba |
+|---|---|---|---|
+| Václavské nám. 1 km / 150 (Romanův soubor na serveru) | 148 430 / 16 636 otevřených hran / 17 486 | 98 714 / 0 / 1, watertight, bez opravy | 2,8 → 5,1 s |
+| Praha centrum 1 km / 150 | 108 258 / 13 423 (+16 716 zdegenerovaných) / 14 677 | 74 720 / 0 / 1 | 2,2 → 3,6 s |
+| Praha centrum 500 m / 150 | 56 300 / 6 786 (+8 674) / 7 820 | 40 700 / 0 / 1 | 1,2 → 2,0 s |
+
+Stavba je o 1–2 s delší (řezy rovinami u ~500 střech), soubor o 13–30 % menší.
+
+**Test** (`test_a_real_city_and_a_framed_landscape_are_one_closed_body_the_farm_takes`): fixture
+`tests/fixtures/maps/vaclavske.json.gz` (skutečný Overpass výpis Václavského náměstí 1 km, 23 283 prvků, 366 kB
+gzip; `fakeServices('vaclavske')` ho rozbalí), město 1 km / 150 mm (> 900 budov, > 300 střech) a krajina 5 km / 120 mm
+s rámem a názvem „Krkonoše“ (nakreslený kopec; reálné dlaždice Krkonoš test nemá, uzavřenost reliéfu na datech
+nezávisí): `notes.mesh.closed`, `shells 1`, bez `open_mesh`; pak `PythonPrintPreparer::prepare` + `ModelValidator::judge`
+jako farma: `wasWatertight`, bez opravy, 0 otevřených hran, 1 těleso, žádná chyba ani varování.
+
+**Neověřené:** tisk. Mapy s obcemi/zelení přes celé okno (krajina) mají `grid_mask`, ne booleany, takže se jich změna
+netýká. Miniatura bez rámu: budovy u zaoblených rohů mohou desku přečnívat (jako dřív).
+

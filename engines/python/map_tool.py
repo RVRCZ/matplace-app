@@ -52,6 +52,14 @@ FRAME_LIFT = 1.2             # mm: the frame above the plate
 NAME_LIFT = 0.6              # mm: the name raised on the frame
 WATER_SINK, RAIL_SINK, GREEN_SINK = 0.8, 0.4, 0.4
 THIN = 0.8                   # mm: the narrowest road or building wall a nozzle of 0.4 mm prints well
+# One closed body (docs/W.md section 9): parts that merely touched (a road along a wall, a low house against a tall one,
+# the frame against the plate, a roof on its walls) left the union with coincident faces and edges, and the farm read
+# the file as thousands of open shells. So every part now overlaps its neighbour by a hair, what is cut keeps a hair
+# away from what is raised, and every outline is rid of the 1e-8 mm segments Clipper leaves behind.
+OVERLAP = 0.02               # mm: a raised part grows into its neighbour by this
+SINK = 0.05                  # mm: a part standing on another starts this deep inside it
+GAP = 0.05                   # mm: a sunk part stays this far from a raised one
+EPS = 0.002                  # mm: vertices closer to the line through their neighbours than this leave the outline
 COLORS = {"base": "#e8e4d8", "roads": "#2b2b2b", "buildings": "#c9a96b", "water": "#3b82c4", "terrain": "#2d6a4f", "green": "#8fbf7a"}
 
 
@@ -230,6 +238,16 @@ def _union(M, shapes):
     return M.CrossSection.batch_boolean(shapes, M.OpType.Add)
 
 
+def _clean(cs):
+    """The outline without its spurious micro-segments (Clipper's rounding to 1e-8 mm after an offset or a boolean)."""
+    return cs.simplify(EPS)
+
+
+def _grown(M, cs, d):
+    """The outline grown by d (sharp corners kept), cleaned."""
+    return _clean(cs.offset(d, M.JoinType.Miter, 2.0, 8))
+
+
 def _rounded(M, cs, r):
     """Corners rounded both ways (an opening, then a closing): a toy town of soft blocks."""
     J = M.JoinType.Round
@@ -295,16 +313,15 @@ def _obb(pts):
 
 def _roof(M, cs, kind, roof_mm):
     """
-    The roof over a footprint, `roof_mm` high: the ridge along the longer side of the ring's smallest bounding
-    rectangle (gabled: the top a line as long as the ring; hipped: shorter by the short side, so the hips slope like
-    the sides; pyramidal: a point in the middle). A ring with a hole or narrower than a nozzle's line gets none.
-    Returns the solids (the footprint may be in pieces at the window's edge) or None.
+    The plan of a roof over a footprint: for every outer ring its smallest bounding rectangle (centre, angle, long,
+    short), the ridge to run along the long side. A ring with a hole or narrower than a nozzle's line gets none.
+    Returns [(ring, rectangle)] or None; the solids are made by roof_solids once the walls under them are known.
     """
-    polys = cs.to_polygons()
+    polys = _clean(cs).to_polygons()
     outers = [p for p in polys if _area(p) > 0]
     if not outers or any(_area(p) < 0 for p in polys):
         return None
-    solids = []
+    plan = []
     for ring in outers:
         box = _obb(ring)
         if box is None:
@@ -312,14 +329,43 @@ def _roof(M, cs, kind, roof_mm):
         cx, cy, th, long, short = box
         if short < THIN or long < THIN:
             continue
-        c, s = math.cos(-th), math.sin(-th)
-        local = [((x - cx) * c - (y - cy) * s, (x - cx) * s + (y - cy) * c) for x, y in np.asarray(ring, float).tolist()]
-        scale = (1.0, 0.0) if kind == "gabled" else (max(0.0, (long - short) / long), 0.0) if kind == "hipped" else (0.0, 0.0)
-        try:
-            solids.append(M.CrossSection([local]).extrude(roof_mm, 0, 0.0, scale).rotate([0.0, 0.0, math.degrees(th)]).translate([cx, cy, 0.0]))
-        except Exception:  # noqa: BLE001 - a ring the library will not raise: that piece stays flat
+        plan.append((ring, box))
+    return plan or None
+
+
+def roof_solids(M, plan, kind, roof_mm, walls):
+    """
+    The solids of a roof from its plan, over the walls that exist (`walls`: the band's outline a hair inside, so
+    the roof's foot never shows): the footprint's prism cut by the slope planes through the ridge. Gabled: the two
+    sides, the ridge as long as the rectangle; hipped: two more over the ends at the same pitch, so the ridge is
+    shorter by the short side; pyramidal: four planes meeting in a point. The foot starts SINK inside the walls, the
+    eaves lie on the rectangle's long sides at the walls' top, the ridge stands roof_mm above them. Planes instead of
+    an extrusion scaled to a line: that left a degenerate cap along the ridge, which slicers read as open edges.
+    """
+    solids = []
+    top = SINK + roof_mm
+    for ring, (cx, cy, th, long, short) in plan:
+        foot = _grown(M, M.CrossSection([ring]), OVERLAP) ^ walls     # into the roof next door, never past the walls
+        if foot.is_empty():
             continue
-    return solids or None
+        a = roof_mm / (short / 2.0)                                 # the pitch of the sides
+        planes = [((0.0, -a, -1.0), (0.0, 0.0, top)), ((0.0, a, -1.0), (0.0, 0.0, top))]
+        if kind == "hipped":
+            r = max(0.0, (long - short) / 2.0)
+            planes += [((-a, 0.0, -1.0), (r, 0.0, top)), ((a, 0.0, -1.0), (-r, 0.0, top))]
+        elif kind == "pyramidal":
+            b = roof_mm / (long / 2.0)
+            planes += [((-b, 0.0, -1.0), (0.0, 0.0, top)), ((b, 0.0, -1.0), (0.0, 0.0, top))]
+        c, sn = math.cos(th), math.sin(th)
+        solid = foot.extrude(top + 1.0)
+        for (nx, ny, nz), (px, py, pz) in planes:                   # the plane in the plate's coordinates
+            n = np.array([nx * c - ny * sn, nx * sn + ny * c, nz], float)
+            n /= np.linalg.norm(n)
+            p0 = np.array([cx + px * c - py * sn, cy + px * sn + py * c, pz], float)
+            solid = solid.trim_by_plane(n.tolist(), float(np.dot(p0, n)))
+        if not solid.is_empty():
+            solids.append(solid)
+    return solids
 
 
 def city_layers(M, area, p):
@@ -403,7 +449,7 @@ def city_layers(M, area, p):
         h_mm = round(max(BUILDING_MIN, walls * k * lift), 1)
         bands.setdefault(h_mm, []).append(cs)
         if made is not None:
-            roofs.append((h_mm, made))
+            roofs.append((h_mm, made, roof, roof_mm))
             pitched += kind != "tower"
         top = max(top, h_mm + roof_mm)
     footprint = C()
@@ -411,10 +457,14 @@ def city_layers(M, area, p):
     for h_mm in sorted(bands, reverse=True):
         shape = _union(M, bands[h_mm])
         shape = _rounded(M, shape, max(0.4, min(1.0, 0.6 * k))) if miniature else _no_slivers(M, shape, THIN / 2)
-        shape = shape - footprint
+        shape = _no_slivers(M, shape - footprint, THIN / 2)   # what a taller neighbour leaves may be a hairline
         if not shape.is_empty():
+            shape = _grown(M, shape, OVERLAP)                 # into the taller neighbour and over a corner it touched
             buildings.append((h_mm, shape))
             footprint = footprint + shape
+    # the roofs over the walls that are left (a hair inside them), each a solid of its own
+    inset = {h_mm: _clean(shape.offset(-0.01, M.JoinType.Miter, 2.0, 8)) for h_mm, shape in buildings}
+    roofs = [(h_mm, made) for h_mm, made in ((h_mm, roof_solids(M, plan, kind, roof_mm, inset[h_mm])) for h_mm, plan, kind, roof_mm in roofs if h_mm in inset) if made]
 
     # roads: a strip per way, as wide as its kind, never narrower than a nozzle prints
     strips, roads_m = [], 0.0
@@ -423,23 +473,32 @@ def city_layers(M, area, p):
             w = ROAD_WIDTH.get(tags["highway"], 3.0) * (1.4 if miniature else 1.0)
             strips += _band(M, pts, max(THIN, w * k))
             roads_m += sum(math.hypot(x1 - x0, y1 - y0) for (x0, y0), (x1, y1) in zip(pts, pts[1:])) / k
-    roads = (_union(M, strips) ^ window) - footprint
+    roads = _clean((_union(M, strips) ^ window) - footprint)
+    # what is sunk into the plate (rails, water, green) stays a hair from the buildings, the roads and each other:
+    # no two walls in one plane, no two rims on one line
+    away = [_grown(M, footprint, GAP), _grown(M, roads, GAP)]
 
     rails = C()
     if p.get("rail", True):
-        rails = (_union(M, [s for pts, _ in area.lines(lambda t: t.get("railway") in RAIL_KIND) for s in _band(M, pts, max(THIN, RAIL_WIDTH * k))]) ^ window) - footprint - roads
+        rails = _clean((_union(M, [s for pts, _ in area.lines(lambda t: t.get("railway") in RAIL_KIND) for s in _band(M, pts, max(THIN, RAIL_WIDTH * k))]) ^ window) - away[0] - away[1])
+        away.append(_grown(M, rails, GAP))
 
     water = C()
     if p.get("water", True):
         shapes = [_cs(M, rings) for rings, _ in area.polygons(lambda t: t.get("natural") == "water" or "water" in t or t.get("landuse") in ("reservoir", "basin"))]
         for pts, tags in area.lines(lambda t: t.get("waterway") in WATERWAY_WIDTH):
             shapes += _band(M, pts, max(THIN, WATERWAY_WIDTH[tags["waterway"]] * k))
-        water = (_union(M, shapes) ^ window) - footprint - roads - rails
+        water = _clean(_union(M, shapes) ^ window)
+        for a in away:
+            water = water - a
+        away.append(_grown(M, water, GAP))
 
     green = C()
     if p.get("green", False):
         shapes = [_cs(M, rings) for rings, _ in area.polygons(lambda t: t.get("landuse") in ("forest", "grass", "meadow", "orchard", "village_green", "recreation_ground", "cemetery") or t.get("leisure") in ("park", "garden", "pitch", "playground") or t.get("natural") in ("wood", "grassland", "scrub", "heath"))]
-        green = (_union(M, shapes) ^ window) - footprint - roads - rails - water
+        green = _clean(_union(M, shapes) ^ window)
+        for a in away:
+            green = green - a
 
     return {"window": window, "buildings": buildings, "roofs": roofs, "footprint": footprint, "roads": roads, "rails": rails, "water": water, "green": green,
             "count": count, "towers": towers, "pitched": pitched, "top": top, "roads_m": roads_m, "k": k, "inner": inner, "miniature": miniature}
@@ -454,7 +513,7 @@ def frame_and_name(M, p, inner, size, base_h, font, miniature):
     outer = C.square([size, size]).translate([-size / 2, -size / 2])
     if miniature:
         outer = outer.offset(-3.0, M.JoinType.Round, 2.0, 12).offset(3.0, M.JoinType.Round, 2.0, 12)
-    ring = outer - C.square([inner, inner]).translate([-inner / 2, -inner / 2])
+    ring = _clean(outer - C.square([inner - 2 * OVERLAP, inner - 2 * OVERLAP]).translate([-inner / 2 + OVERLAP, -inner / 2 + OVERLAP]))
     frame = ring.extrude(base_h + FRAME_LIFT)
     name = str(p.get("name") or "").strip()[:40]
     if not name or not font:
@@ -473,8 +532,8 @@ def frame_and_name(M, p, inner, size, base_h, font, miniature):
             return frame, None, ""
         cs = cs.scale([f, f])
         x0, y0, x1, y1 = cs.bounds()
-    cs = cs.translate([-(x0 + x1) / 2, -inner / 2 - frame_mm / 2 - (y0 + y1) / 2])
-    return frame, cs.extrude(NAME_LIFT).translate([0, 0, base_h + FRAME_LIFT]), name
+    cs = _clean(cs.translate([-(x0 + x1) / 2, -inner / 2 - frame_mm / 2 - (y0 + y1) / 2]))
+    return frame, cs.extrude(NAME_LIFT + SINK).translate([0, 0, base_h + FRAME_LIFT - SINK]), name
 
 
 def build_city(M, params, dst):
@@ -508,12 +567,12 @@ def build_city(M, params, dst):
     if cuts:
         base = base - M.Manifold.batch_boolean(cuts, M.OpType.Add)
     solids = [base]
-    if raised and not L["roads"].is_empty():
-        solids.append(L["roads"].extrude(ROAD_LIFT).translate([0, 0, base_h]))
+    if raised and not L["roads"].is_empty():                  # grown into the walls beside them, sunk into the plate
+        solids.append(_grown(M, L["roads"], OVERLAP).extrude(ROAD_LIFT + SINK).translate([0, 0, base_h - SINK]))
     for h_mm, shape in L["buildings"]:
-        solids.append(shape.extrude(h_mm).translate([0, 0, base_h]))
-    for h_mm, pieces in L["roofs"]:                           # each roof on its own walls
-        solids += [r.translate([0, 0, base_h + h_mm]) for r in pieces]
+        solids.append(shape.extrude(h_mm + SINK).translate([0, 0, base_h - SINK]))
+    for h_mm, pieces in L["roofs"]:                           # each roof on its own walls, its foot a hair inside them
+        solids += [r.translate([0, 0, base_h + h_mm - SINK]) for r in pieces]
     frame, name, written = frame_and_name(M, p, inner, size, base_h, params.get("font"), miniature)
     if frame is not None:
         solids.append(frame)
@@ -742,11 +801,67 @@ def shaded(params, cols, rows, side_m, colors):
 
 # ── output ────────────────────────────────────────────────────────────────────────────────────────────────────
 
+def closed_mesh(model):
+    """
+    The manifold's triangles as a slicer reads them: the vertices in single precision and welded where they coincide
+    in it, the triangles that collapse by that weld dropped. Returns (vertices float32, triangles int64, report) where
+    the report says whether every edge then has exactly two triangles and how many bodies hang together.
+    """
+    import numpy as np
+    mesh = model.to_mesh64() if hasattr(model, "to_mesh64") else model.to_mesh()
+    verts = np.asarray(mesh.vert_properties, dtype=np.float64)[:, :3].astype(np.float32)
+    tris = np.asarray(mesh.tri_verts, dtype=np.int64)
+    uniq, inv = np.unique(verts, axis=0, return_inverse=True)
+    tris = inv.reshape(-1)[tris]
+    keep = (tris[:, 0] != tris[:, 1]) & (tris[:, 1] != tris[:, 2]) & (tris[:, 0] != tris[:, 2])
+    tris = tris[keep]
+    dropped = int((~keep).sum())
+    key = np.sort(tris, axis=1)
+    _, group, times = np.unique(key, axis=0, return_inverse=True, return_counts=True)
+    group = group.reshape(-1)
+    # the two must face each other: the parity of the vertex order tells the orientation
+    parity = ((tris[:, 0] > tris[:, 1]).astype(int) + (tris[:, 0] > tris[:, 2]) + (tris[:, 1] > tris[:, 2])) % 2
+    facing = np.bincount(group, weights=parity, minlength=len(times)) == 1
+    fin = (times[group] == 2) & facing[group]
+    if fin.any():
+        tris = tris[~fin]
+        dropped += int(fin.sum())
+    n = len(tris)
+    edges = np.sort(np.concatenate([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), axis=1)
+    _, edge_id, counts = np.unique(edges, axis=0, return_inverse=True, return_counts=True)
+    edge_id = edge_id.reshape(-1)
+    bad = int((counts != 2).sum())
+    # the bodies: triangles joined over their shared edges (a union-find over the pairs an edge joins)
+    parent = np.arange(n)
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+    owner = np.tile(np.arange(n), 3)
+    order = np.argsort(edge_id, kind="stable")
+    e_sorted, t_sorted = edge_id[order], owner[order]
+    same = e_sorted[1:] == e_sorted[:-1]
+    for a, b in zip(t_sorted[:-1][same].tolist(), t_sorted[1:][same].tolist()):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+    shells = int(len(set(find(i) for i in range(n)))) if n else 0
+    return uniq, tris, {"closed": bad == 0, "bad_edges": bad, "shells": shells, "dropped": dropped}
+
+
 def write_stl(model, path):
     import numpy as np
-    mesh = model.to_mesh()
-    verts = np.asarray(mesh.vert_properties, dtype=np.float32)[:, :3]
-    tris = np.asarray(mesh.tri_verts, dtype=np.int64)
+    verts, tris, report = closed_mesh(model)
+    if not report["closed"] or report["shells"] != 1:
+        try:
+            again = closed_mesh(model.simplify(0.005))
+            if again[2]["closed"] and again[2]["shells"] <= report["shells"]:
+                verts, tris, report = again
+                report["simplified"] = True
+        except Exception:  # noqa: BLE001 - the first export stands
+            pass
     tri = verts[tris]
     normals = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
     lens = np.linalg.norm(normals, axis=1, keepdims=True)
@@ -757,7 +872,7 @@ def write_stl(model, path):
         fh.write(b"matplace map".ljust(80, b" "))
         fh.write(np.uint32(len(tris)).tobytes())
         fh.write(rec.tobytes())
-    return int(len(tris))
+    return int(len(tris)), report
 
 
 def build(params, dst):
@@ -769,9 +884,12 @@ def build(params, dst):
         raise Invalid("empty_result")
     x0, y0, z0, x1, y1, z1 = model.bounding_box()
     model = model.translate([-x0, -y0, -z0])
-    tris = write_stl(model, dst)
+    tris, mesh = write_stl(model, dst)
     stage(dst, "done")
     notes["seconds"] = round(time.time() - t, 2)
+    notes["mesh"] = mesh                                      # closed, bad_edges, shells: what the farm will find
+    if not mesh["closed"] or mesh["shells"] != 1:
+        notes["warnings"].append("open_mesh")
     return {"ok": True, "bbox": {"x": round(x1 - x0, 2), "y": round(y1 - y0, 2), "z": round(z1 - z0, 2)}, "volume_mm3": round(model.volume(), 1),
             "area_mm2": round(model.surface_area(), 1), "triangles": tris, "notes": notes}
 
