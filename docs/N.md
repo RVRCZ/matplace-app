@@ -92,6 +92,14 @@ u původních obrázků** – `calc`, `repair`, `check`, `mold`, `figure`, `reli
 vstupu od člověka (soubor, fotka) nebo bez Tripa, a vymyšlený render by nebyl „skutečný výstup“. Fotka výtisku
 položená na stejnou cestu má přednost: bez `--force` se nikdy nepřepíše.
 
+**Od 13. 10. 2026 jsou karty studiové fotky** (Romanovo rozhodnutí, úkol Opravy #9: jednotný vzhled katalogu).
+Kreslí je `scripts/card_images.py`: render nástroje (jeho vlastní karta z commitu 209bdee, nebo model postavený
+skriptem) jde jako předloha do Gemini s popisem scény, výsledek se prohlédne ve `storage/app/card_images/` a teprve
+pak `--publish` zkopíruje do `public/img/tools/`. Drobnou vadu v pozadí (vymyšlené logo na tiskárně) přemaluje
+`scripts/card_retouch.py`. **Pozor:** `php artisan matplace:tool-examples --card --force` by fotky přepsal zpět
+rendery; bez `--force` je nechá být. Náhled na stránce nástroje a ukázky v `public/img/tool-examples/` zůstávají
+skutečné rendery výstupu.
+
 ## 2. Před a po
 
 | | před | po |
