@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Tools\ParametricGenerator;
 use Tests\TestCase;
 
-/** Every tool of the catalogue has the picture of its card; the generators' cards are renders of their own output. */
+/**
+ * Every tool of the catalogue has the picture of its card. Since 13 Oct 2026 the cards are studio photographs in one
+ * style (scripts/card_images.py: the tool's own render taken into a photo by Gemini, reviewed by a person before it is
+ * published); until then the generators' cards were their plain renders on a beige backdrop.
+ */
 class ToolCardsTest extends TestCase
 {
     public function test_every_listed_tool_has_a_card_picture_in_three_files(): void
@@ -26,26 +29,19 @@ class ToolCardsTest extends TestCase
         }
     }
 
-    public function test_cards_of_the_generators_are_renders_on_the_studio_backdrop(): void
+    public function test_the_tools_kept_out_of_the_catalogue_have_their_cards_ready(): void
     {
-        if (! function_exists('imagecreatefromjpeg')) {
-            $this->markTestSkipped('PHP GD is not installed.');
-        }
-        // every generator that is in the catalogue: one kept out until its print was tried has no card yet
-        $drawn = array_values(array_filter(array_keys(ParametricGenerator::FIELDS), fn ($kind) => config('tools.'.$kind.'.available') !== false));
-        $drawn[] = 'gifts';                                                   // borrows the sign generator (config/tools.php `card`)
-        foreach ($drawn as $key) {
-            $im = imagecreatefromjpeg(public_path('img/tools/'.$key.'-800.jpg'));
-            // the corners are the backdrop #F3EEE6, a touch darker towards the edges: no room, no desk, no photo studio props
-            foreach ([[6, 6], [793, 6], [6, 526], [793, 526]] as [$x, $y]) {
-                $c = imagecolorat($im, $x, $y);
-                $rgb = [($c >> 16) & 255, ($c >> 8) & 255, $c & 255];
-                foreach ([243, 238, 230] as $i => $want) {
-                    $this->assertEqualsWithDelta($want, $rgb[$i], 30, "{$key} at {$x},{$y}");
-                }
-                $this->assertGreaterThanOrEqual($rgb[2], $rgb[0], $key);        // warm, not grey
+        // a generator whose print is still to be tried is shown to an admin only; its card waits for the day it goes public
+        foreach (['straw', 'opener', 'insert'] as $key) {
+            if (! is_file(public_path('img/tools/'.$key.'-800.jpg'))) {
+                $this->markTestSkipped("The card of {$key} is not made yet (scripts/card_images.py).");
             }
+            foreach (['-800.jpg', '-800.webp', '-480.webp'] as $suffix) {
+                $this->assertFileExists(public_path('img/tools/'.$key.$suffix), $key);
+            }
+            [$w, $h] = getimagesize(public_path('img/tools/'.$key.'-800.jpg'));
+            $this->assertSame([800, 533], [$w, $h], $key);
         }
-        $this->assertNotEmpty(config('tools.gifts.card'));
+        $this->assertNotEmpty(config('tools.gifts.card'));      // the gifts page borrows the sign generator for its examples
     }
 }
