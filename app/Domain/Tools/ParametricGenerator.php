@@ -195,7 +195,8 @@ final class ParametricGenerator
         ],
         'vase' => [
             'height' => [40, 300, 180, 1], 'top_d' => [30, 250, 62, 1], 'bottom_d' => [30, 250, 54, 1], 'wall' => [0.8, 4, 1.6, 0.2], 'floor' => [0.8, 5, 1.6, 0.2],
-            'ribs' => [6, 48, 20, 1], 'flute' => [0, 45, 20, 1], 'twist' => [0, 360, 200, 1],
+            // 18 flutes 18 % deep leave the 1.6 mm wall 0.9 mm across a flute; 20 and 20 left 0.79 and the vase opened with a warning
+            'ribs' => [6, 48, 18, 1], 'flute' => [0, 45, 18, 1], 'twist' => [0, 360, 200, 1],
         ],
         'sign' => ['text_height' => [4, 80, 12, 1], 'thickness' => [1.2, 30, 3, 0.2], 'relief' => [0.4, 5, 1.2, 0.2], 'margin' => [2, 30, 5, 1], 'radius' => [0, 30, 6, 0.5]],
         'logo' => ['width' => [20, 250, 80, 1], 'thickness' => [0.6, 50, 2, 0.2], 'plate' => [0.8, 6, 2, 0.2], 'margin' => [0, 20, 5, 1], 'base_h' => [8, 40, 11, 1]],
@@ -271,7 +272,8 @@ final class ParametricGenerator
 
     /** kind → text input → [max length, required, default] */
     public const TEXTS = [
-        'name_cup' => ['line1' => [14, true, 'Jana']],
+        // a name whose handwritten letters all touch: "Jana" had to be tied by a bar, and the page opened with a note on it
+        'name_cup' => ['line1' => [14, true, 'Anna']],
         'beads' => ['line1' => [16, true, 'JANA']],
         'charm' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'keychain' => ['line1' => [24, false, 'Jana'], 'line2' => [24, false, '']], 'earrings' => ['line1' => [12, false, ''], 'line2' => [12, false, '']],
         'ornament' => ['line1' => [24, false, ''], 'line2' => [24, false, '']], 'magnet' => ['line1' => [24, false, ''], 'line2' => [24, false, '']],
@@ -439,7 +441,7 @@ final class ParametricGenerator
         // the outline alone, pulled up: what "SVG to STL" means (its page /tools/svg-to-stl opens the logo tool with this)
         'logo' => ['extrude' => ['mode' => 'cutout', 'thickness' => 5, 'bevel' => false]],
         'vase' => [
-            'spiral' => ['style' => 'twist', 'profile' => 'neck', 'height' => 180, 'top_d' => 62, 'bottom_d' => 54, 'ribs' => 20, 'flute' => 20, 'twist' => 200],
+            'spiral' => ['style' => 'twist', 'profile' => 'neck', 'height' => 180, 'top_d' => 62, 'bottom_d' => 54, 'ribs' => 18, 'flute' => 18, 'twist' => 200],
             'ribs' => ['style' => 'ribs', 'profile' => 'neck', 'height' => 170, 'top_d' => 70, 'bottom_d' => 60, 'ribs' => 18, 'flute' => 16],
             'smooth' => ['style' => 'smooth', 'profile' => 'neck', 'height' => 160, 'top_d' => 70, 'bottom_d' => 58],
             'pot' => ['purpose' => 'pot', 'style' => 'ribs', 'profile' => 'cone', 'height' => 120, 'top_d' => 130, 'bottom_d' => 100, 'ribs' => 16, 'flute' => 10],
@@ -454,7 +456,8 @@ final class ParametricGenerator
             'keyring' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 8, 'thickness' => 3, 'relief' => 1, 'margin' => 4, 'radius' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
             'door' => ['style' => 'emboss', 'shape' => 'rounded', 'text_height' => 22, 'thickness' => 3, 'relief' => 1.4, 'margin' => 8, 'radius' => 8, 'keyring' => false, 'border' => true, 'bevel' => false, 'two_color' => true],
             'nametag' => ['style' => 'engrave', 'shape' => 'rect', 'text_height' => 10, 'thickness' => 2.4, 'relief' => 0.8, 'margin' => 4, 'keyring' => false, 'border' => false, 'bevel' => true, 'two_color' => false],
-            'ornament' => ['style' => 'outline', 'shape' => 'oval', 'text_height' => 12, 'thickness' => 3, 'relief' => 1.2, 'margin' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
+            // letters 16 mm tall: at 12 the outline round them was thinner than a printer draws cleanly, and the preset warned
+            'ornament' => ['style' => 'outline', 'shape' => 'oval', 'text_height' => 16, 'thickness' => 3, 'relief' => 1.2, 'margin' => 6, 'keyring' => true, 'border' => true, 'bevel' => false, 'two_color' => true],
         ],
         'cap' => [
             // PCO 1881: 27.4 over the thread, 21.7 inside the mouth; the lip seals, the thread only holds
