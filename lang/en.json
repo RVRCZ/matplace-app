@@ -1565,5 +1565,19 @@
     "pet.name_side.back": "At the back",
     "pet.name_side.left": "On the left",
     "pet.name_side.hint": "The sides are those of the view From the front in the preview. Should the name end up elsewhere than you want, you change it afterwards without a new generation.",
-    "home.tools.popular": "Printed most often"
+    "home.tools.popular": "Printed most often",
+    "param.design.lead": "Describe what you want",
+    "param.design.placeholder": "Say in your own words what it should look like and what it is for.",
+    "param.design.phone_stand.lead": "Describe the stand you want",
+    "param.design.phone_stand.placeholder": "For example: a stand for the night table that lets the phone charge",
+    "param.design.phone_stand.example1": "a low wedge for a tablet on the kitchen counter, with room for the cable",
+    "param.design.phone_stand.example2": "on the wall next to the light switch, no screws",
+    "param.design.hint": "AI sets the type and the sizes from your description. You see the result in the preview at once and can change anything afterwards.",
+    "param.design.examples": "Try for example:",
+    "param.design.button": "Design from the description",
+    "param.design.working": "Designing…",
+    "param.design.unmet": "The generator cannot do this:",
+    "param.design.limit": "Today's limit for designs from a description is used up. You can set the sizes by hand, or try again tomorrow.",
+    "param.design.failed": "The design could not be prepared. The form stayed as it was. Please try again.",
+    "param.design.chars": ":n of :max characters"
 }

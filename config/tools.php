@@ -49,7 +49,8 @@ return [
         ['params' => ['inner_w' => 120, 'inner_d' => 80, 'inner_h' => 40, 'lid' => true, 'cable_slot' => true, 'cable_d' => 8, 'radius' => 6]],
         ['params' => ['inner_w' => 40, 'inner_d' => 40, 'inner_h' => 20, 'lid' => false, 'radius' => 8]],
     ]]],
-    'phone_stand' => ['route' => 'tools.phone_stand', 'intent' => 'create', 'categories' => ['home'], 'available' => true, 'seo' => ['examples' => [
+    // `design`: the page has the field "describe what it should look like" (App\Domain\Tools\DesignAgent)
+    'phone_stand' => ['route' => 'tools.phone_stand', 'intent' => 'create', 'categories' => ['home'], 'available' => true, 'design' => true, 'seo' => ['examples' => [
         ['params' => ['style' => 'desk', 'width' => 75, 'angle' => 65]],
         ['params' => ['style' => 'wedge', 'width' => 80, 'angle' => 60, 'depth' => 70]],
         ['params' => ['style' => 'wall', 'width' => 80, 'screws' => true]],
