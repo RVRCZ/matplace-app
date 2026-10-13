@@ -193,3 +193,67 @@ jejich uložený soubor (`all`) je původní jednodílný podstavec a tak se i v
 Ověřeno: `StandToolsTest` (4), `StandPartsFarmTest` (2), `scripts/check_preview_colors.mjs` na hair_tie (body,
 stand, post), notes a candle_stand (3 stránky, 0 chyb), ruční výběr tří barev v headless Chrome
 (`docs/img/hair-tie-parts.png`), tři velikosti sloupku (10/40, 14/90, 30/150 mm) se postaví ve všech dílech.
+
+## 10. Návrhář stojánku, kolo 2: nové typy, výřez, tvary z knihovny (větev `feature/stand-designer-2`, 14. 10. 2026)
+
+Navazuje na geometrii od B (`docs/AA.md`, §6 „Pro D“). Po slití kola 2 do `main` byly testy návrháře červené:
+agent neznal čtyři nové typy, nové volby (`cutout`, `pattern`) ani nová pole, a zmizel přepínač `window`.
+
+**Agent (`DesignAgent`)**
+
+- `KNOW['phone_stand']`: čtyři nové typy (vlnitý plech, deska se vzorem a nohou, stuha do Z, silueta) – co jsou, kdy
+  se hodí, úhly a jak se tisknou; pravidla výřezu (jen deska s háčky, vlnka, A-rám a kapsa na zeď; A-rám má
+  normálně `window`, ostatní `none`); kdy silueta a kdy výřez; dvě barvy = stuha s proužkem nebo deska s nohou.
+- Nová volby a pole (`cutout`, `pattern`, `cutout_size`, `rib_pitch`, `band`, `across`) jsou v promptu i ve schématu
+  samy, protože se obojí skládá z `ParametricGenerator`. Jednotka `cutout_size` je v promptu `%`.
+- **Tvary z knihovny**: `DesignAgent::shapes()` vrací odkazy `lib:<skupina>/<název>` jen ze skupin uzavřených siluet
+  (animals, hearts-stars, nature, holidays, transport, sport, jobs; dnes 114 tvarů), prompt je vypíše jménem.
+  Odpověď má nové pole `artwork`: tvar z tohoto seznamu, nebo `keep`. Server vezme jen odkaz, který v seznamu je;
+  cokoli jiného (`keep`, obrázek z `colour`, cizí soubor, cesta) se zahodí a zákazníkův obrázek zůstane. Ve
+  schématu je `artwork` prostý text, ne výčet 114 hodnot; hlídá ho server.
+- Z „co generátor neumí“ zmizel „tvar zvířete“; zůstává „tvar, který v knihovně není (vlastní obrázek jde nahrát
+  na stránce)“.
+
+**Stránka (`param.ts`, `param.blade.php`)**
+
+1. `partsNow()`: deska s nohou = `body` + `stand`, stuha = `body` + `stripe`. Krok Barvy má u nich dva řádky, jsou
+   pohledy po dílech a ZIP.
+2. Předvolba výřezu: při přepnutí typu dostane A-rám `window` a ostatní typy `none`, dokud zákazník výřez sám
+   nezvolil (nebo ho nenastavil návrh podle popisu, uložený návrh či krok zpět).
+3. Výběr tvaru (knihovna / nahrání) je vidět jen při `cutout = shape` nebo u siluety. `data-when` nově umí „nebo“
+   (`cutout=shape|style=silhouette`) a volba, která je sama schovaná, se nepočítá: výřez tvaru zvolený u A-rámu
+   nežádá obrázek, když zákazník přepne na klín.
+4. Velikost výřezu se ukazuje jen s výřezem tvaru. Kvůli tomu jsem v `ParametricGenerator::WHEN` změnil jeden
+   řádek (`cutout_size` závisí na `cutout = shape` místo na typu); soubor patří session 1/B, změna je jen pro stránku
+   a prompt, geometrie se netýká.
+
+**Zkouška šesti přání** (stejná metoda a stejná výhrada jako v oddíle 4: odpovědi psali podagenti Claude Code na
+Sonnetu se stejným promptem a schématem, ne naše API; stránkou prošly přes `DesignAgent::fit`):
+
+| # | přání | co vyšlo | neumí |
+|---|---|---|---|
+| 1 | chci stojánek, který vypadá jako pes, na stůl do dětského pokoje | silueta, tvar `lib:animals/dog`, napříč 30 mm | nic (podagent vynechal `note`; se schématem v API se to stát nemůže) |
+| 2 | klasický stojánek na stůl se srdíčkem vyříznutým v opěrce, ať se dá nabíjet | A-rám, výřez tvaru `lib:hearts-stars/heart`, kabel ano | nic |
+| 3 | něco masivního ve dvou barvách, černá s oranžovým proužkem | stuha do Z, pás 13 mm; „barvy si vyberete níže na stránce“ | nic |
+| 4 | a flat gift I can post in an envelope, with a honeycomb pattern, for a tablet | deska s nohou, plástev, 160 × 150 mm, 60° | nic |
+| 5 | un soporte ondulado, decorativo, para el salón | **vlnka**, ne vlnitý plech („ondulado“ sedí na obojí) | nic |
+| 6 | ve tvaru jednorožce, na zeď | kapsa na zeď s výřezem koně | „tvar jednorožce s rohem (v knihovně není, použit kůň)“ |
+
+![1](img/stand-design2-1.png)
+![2](img/stand-design2-2.png)
+![3](img/stand-design2-3.png)
+![4](img/stand-design2-4.png)
+![5](img/stand-design2-5.png)
+![6](img/stand-design2-6.png)
+
+V prohlížeči ověřeno: návrh se siluetou nebo výřezem tvaru zapne výběr tvaru a ukáže zvolený obrázek z knihovny;
+stuha a deska s nohou mají dva řádky barev; klikání typ ↔ výřez (start `none`, A-rám `window`, vlnka `none`, ruční
+`shape` zůstává i po změně typu, ruční `none` zůstává i u A-rámu).
+
+**Neověřeno**: odpovědi skutečného modelu přes API s novým promptem (systémový prompt narostl z 6 200 na 10 900
+znaků, odhad ceny z oddílu 3 tedy asi na 0,012 $ ≈ 0,28 Kč za návrh); rozlišení „vlnka / vlnitý plech“ v jiných
+jazycích (viz přání 5); mobil. Nad a pod volbami typu zůstává na stránce prázdné místo po schovaných volbách
+(`cutout`, `pattern`) – chování `is-off` z dřívějška, neřešil jsem.
+
+Testy: `DesignAgentTest` (9, nový test tvarů z knihovny), `DesignApiTest` (8), `PhoneStandTest`,
+`ParametricToolsTest`, `ToolPageTest`, `ToolFixesTest` (45 zelených), `tsc`, `build`, `pint`.
