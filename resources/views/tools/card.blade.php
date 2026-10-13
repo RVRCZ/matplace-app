@@ -11,9 +11,7 @@
             {{-- "printed most often": the home page marks what the farm prints most --}}
             <span class="absolute right-2 top-2 inline-flex items-center rounded-full bg-action px-2 py-0.5 text-xs font-bold text-white shadow-sm">{{ $badge }}</span>
         @endif
-        @if(! empty($tool['verified']))
-            <span class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-card/95 px-2 py-0.5 text-xs font-medium text-ok shadow-sm"><x-icon name="badge-check" class="h-3.5 w-3.5" />{{ __('tools.verified', ['date' => \Illuminate\Support\Carbon::parse($tool['verified'])->isoFormat('l')]) }}</span>
-        @endif
+        {{-- the "verified by printing" badge left the cards on 13 Oct 2026 (Roman); the date stays in config/tools.php --}}
     </span>
     <span class="flex flex-1 flex-col p-4">
         <span class="text-lg font-semibold text-ink">{{ __('tools.'.$key.'.title') }}</span>

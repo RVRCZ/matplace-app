@@ -273,13 +273,14 @@ class ToolPageTest extends TestCase
         $this->assertSame(['body' => ['code' => 'blue', 'hex' => '#213D78'], 'lid' => ['code' => 'orange', 'hex' => '#D1521F']], $tool['params']['part_colors']);
     }
 
-    public function test_verified_by_printing_shows_on_the_card_and_on_the_page(): void
+    public function test_verified_by_printing_shows_on_the_page_but_not_on_the_card(): void
     {
         // the catalogue as it was before anything was printed (config/tools.php carries the real dates since 7 Oct 2026)
         config(['tools' => array_map(fn (array $tool) => array_diff_key($tool, ['verified' => true]), config('tools'))]);
         $this->get('/tools')->assertOk()->assertDontSee('ověřeno tiskem');
         config(['tools.box.verified' => '2026-10-01']);
-        $this->get('/tools')->assertOk()->assertSee('ověřeno tiskem')->assertSee('1. 10. 2026');
+        // the cards stopped carrying the badge on 13 Oct 2026 (Roman); the tool's own page still says it
+        $this->get('/tools')->assertOk()->assertDontSee('ověřeno tiskem');
         $this->get('/tools/box')->assertOk()->assertSee('ověřeno tiskem');
         $this->get('/en/tools/box')->assertOk()->assertSee('verified by printing');
         $this->get('/tools/vase')->assertOk()->assertDontSee('ověřeno tiskem');
