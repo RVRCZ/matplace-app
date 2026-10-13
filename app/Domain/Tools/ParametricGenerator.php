@@ -362,7 +362,7 @@ final class ParametricGenerator
             'back' => ['style', ['plate', 'wave', 'desk', 'ribbed', 'flatpack', 'ribbon', 'silhouette']], 'depth' => ['style', ['wedge']], 'vent' => ['style', ['car']],
             'thickness' => ['style', ['plate', 'wave', 'desk', 'wall', 'car', 'ribbed', 'flatpack', 'silhouette']], 'radius' => ['style', ['plate', 'wave', 'desk', 'wedge', 'wall', 'car']],
             'cable' => ['style', ['wave', 'desk', 'wedge', 'wall', 'car', 'ribbed']], 'screws' => ['style', ['wall']],
-            'cutout' => ['style', ['plate', 'wave', 'desk', 'wall']], 'cutout_size' => ['style', ['plate', 'wave', 'desk', 'wall']],
+            'cutout' => ['style', ['plate', 'wave', 'desk', 'wall']], 'cutout_size' => ['cutout', ['shape']],      // (the page folds it away with the cut-out itself under the other types)
             'rib_pitch' => ['style', ['ribbed']], 'pattern' => ['style', ['flatpack']], 'band' => ['style', ['ribbon']], 'across' => ['style', ['silhouette']]],
         'vase' => ['drainage' => ['purpose', ['pot']], 'saucer' => ['purpose', ['pot']], 'ribs' => ['style', ['twist', 'ribs']], 'flute' => ['style', ['twist', 'ribs']], 'twist' => ['style', ['twist']]],
         'sign' => ['shape' => ['style', ['emboss', 'engrave', 'outline']], 'radius' => ['shape', ['rounded']], 'border' => ['style', ['emboss', 'outline']], 'two_color' => ['style', ['emboss', 'outline', 'name']], 'ring_at' => ['keyring', ['on']],

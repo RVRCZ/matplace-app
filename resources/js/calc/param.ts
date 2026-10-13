@@ -78,6 +78,7 @@ export function bootParam(stage: Stage): void {
     let papelTouched = false;               // the visitor chose cut-out or portrait himself: a new picture no longer chooses for him
     let papelFit = false;                   // a photo was just uploaded: the panel takes the photo's proportions once it is known how the photo is cut
     let noCutOut = false;                   // the server cannot cut a person out of a photo: the tick stays off
+    let cutoutChosen = false;               // the phone stand: the visitor (or a design they asked for) said what is cut out of the rest
     const layers: Layer[] = []; let chosen = 0;         // a composition: its layers from the bottom up, and which one is being edited
     const strokes: Stroke[] = [];
     let drawing = false; let pen = spoolCode('white');
@@ -191,6 +192,8 @@ export function bootParam(stage: Stage): void {
         if (cfg.kind === 'stamp' && p.handle === 'knob') return ['body', 'handle'];
         if (cfg.kind === 'logo' && p.mode === 'standing') return ['body', 'stand'];
         if (['notes', 'candle_stand'].includes(cfg.kind)) return ['body', 'stand'];      // the silhouette and the base its foot is pushed into
+        if (cfg.kind === 'phone_stand' && p.style === 'flatpack') return ['body', 'stand'];     // the patterned plate and the leg pushed through it
+        if (cfg.kind === 'phone_stand' && p.style === 'ribbon') return ['body', 'stripe'];      // the Z band and the stripe pressed into its groove
         if (cfg.kind === 'hair_tie') return ['body', 'stand', 'post'];                   // … and the post for the ties, pushed through the base from below
         if (cfg.kind === 'sign' && p.two_color && p.style !== 'engrave') return ['plate', 'text'];
         if (cfg.kind === 'beads' && p.style === 'raised') return ['body', 'text'];
@@ -625,6 +628,7 @@ export function bootParam(stage: Stage): void {
             const choice = form.querySelector<HTMLInputElement>(`[data-choice="${k}"][value="${String(v)}"]`); if (choice) choice.checked = true;
         });
         if ('typeface' in set) showFace();
+        if ('cutout' in set) cutoutChosen = true;      // a stored design, a step back or a design from a description says what is cut out of the rest
         if (compose && Array.isArray(set.layers)) {
             layers.splice(0, layers.length, ...(set.layers as Partial<Layer>[]).map((l) => ({
                 kind: String(l.kind ?? 'shape'), text: String(l.text ?? ''), typeface: String(l.typeface ?? 'sans'), art: String(l.art ?? ''), art_name: String(l.art_name ?? ''), shape: String(l.shape ?? 'rounded'),
@@ -1176,16 +1180,24 @@ export function bootParam(stage: Stage): void {
     }
 
     // fields and flags that belong to one choice only ("data-when=style=desk,wedge") fold away for the other choices;
-    // the key may be a flag too ("data-when=mount=on")
+    // the key may be a flag too ("data-when=mount=on"), and one of several conditions is enough ("cutout=shape|style=silhouette").
+    // A choice that is itself folded away says nothing: a cut-out picked for one type asks for no picture under another.
     const applyWhen = (): void => {
-        form.querySelectorAll<HTMLElement>('[data-when]').forEach((el) => {
-            const [key, list] = (el.dataset.when ?? '').split('=');
+        const holds = (rule: string): boolean => {
+            const [key, list] = rule.split('=');
             const flag = form.querySelector<HTMLInputElement>(`[data-flag="${key}"]`);
-            const current = form.querySelector<HTMLInputElement>(`[data-choice="${key}"]:checked`)?.value ?? (flag ? (flag.checked ? 'on' : 'off') : '');
-            const off = !list.split(',').includes(current);
-            el.classList.toggle('is-off', off);
-            el.toggleAttribute('inert', off);
-        });
+            const choice = form.querySelector<HTMLInputElement>(`[data-choice="${key}"]:checked`);
+            if ((choice ?? flag)?.closest('.is-off')) return false;
+            return (list ?? '').split(',').includes(choice?.value ?? (flag ? (flag.checked ? 'on' : 'off') : ''));
+        };
+        // twice: what a choice folds away may itself be a choice others depend on, whatever their order on the page
+        for (let pass = 0; pass < 2; pass++) {
+            form.querySelectorAll<HTMLElement>('[data-when]').forEach((el) => {
+                const off = !(el.dataset.when ?? '').split('|').some(holds);
+                el.classList.toggle('is-off', off);
+                el.toggleAttribute('inert', off);
+            });
+        }
         setHandles();
     };
     applyWhen();
@@ -1195,6 +1207,11 @@ export function bootParam(stage: Stage): void {
         const el = e.target as HTMLInputElement;
         if (el.dataset.choice && fills[el.dataset.choice]?.[el.value]) applyValues(fills[el.dataset.choice][el.value]);
         if (papel && el.dataset.choice === 'treatment') { papelTouched = true; papelMode(el.value); }
+        if (cfg.kind === 'phone_stand' && el.dataset.choice === 'cutout') cutoutChosen = true;
+        if (cfg.kind === 'phone_stand' && el.dataset.choice === 'style' && !cutoutChosen) {
+            const now = form.querySelector<HTMLInputElement>(`[data-choice="cutout"][value="${el.value === 'desk' ? 'window' : 'none'}"]`);
+            if (now) now.checked = true;
+        }
         // what changes the colours the picture is read in also empties what was said about them
         if (shape && (['colors_n', 'bg_strength', 'contrast', 'brightness', 'saturation'].includes(el.dataset.param ?? '') || el.dataset.flag === 'remove_bg')) { forgetColours(); adjustThumb(); }
         if (el.dataset.param) {

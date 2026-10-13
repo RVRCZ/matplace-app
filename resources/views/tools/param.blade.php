@@ -185,7 +185,8 @@
         @endif
 
         @if($texts || ($artwork && $family !== 'shape'))
-            <fieldset>
+            {{-- (the phone stand takes a picture only for a shape cut out of its rest or for the silhouette type) --}}
+            <fieldset @if($kind === 'phone_stand') data-when="cutout=shape|style=silhouette" @endif>
                 <legend class="lbl">{{ __($own('content')) }}</legend>
                 <div class="mt-2 grid gap-3">
                     @foreach($texts as $key => $t)
