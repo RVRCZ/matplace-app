@@ -2,7 +2,7 @@
     $integer = fn (array $f) => $f[3] === 1;
     $unit = fn (string $k) => in_array($k, ['colors_n', 'bg_strength'], true) ? '' : (in_array($k, ['contrast', 'brightness', 'saturation'], true) ? '%' : 'mm');
     $i18n = collect(['param.working', 'param.failed', 'param.too_fast', 'param.estimate', 'param.creating', 'param.artwork.failed', 'toolpage.color.out'])->mapWithKeys(fn ($k) => [$k => __($k)])
-        ->merge(collect(['art.part.body', 'art.part.frame', 'art.part.plate', 'art.part.color', 'art.found', 'art.print.layered', 'art.print.stack', 'art.print.stack1', 'art.print.one', 'art.print.farm', 'art.depth', 'art.posts',
+        ->merge(collect(['art.part.body', 'art.part.frame', 'art.part.plate', 'art.part.color', 'art.found', 'art.print.layered', 'art.print.stack', 'art.print.stack1', 'art.print.one', 'art.depth',
             'art.guide', 'art.guide.hint', 'art.guide.back', 'art.guide.front', 'art.guide.posts', 'art.guide.flat', 'art.guide.frame', 'art.guide.led', 'art.guide.glue', 'art.frame.size',
             'colors.share', 'colors.up', 'colors.down', 'colors.merge', 'colors.merge.into', 'colors.split', 'colors.picture',
             'warn.outlines_ignored', 'warn.pieces_tied', 'warn.thin_merged', 'warn.small_plate_flat', 'warn.thin_lines', 'download.plates'])->mapWithKeys(fn ($k) => ['edit.'.$k => \App\Support\NextStep::text('edit.'.$k)]))->all();
