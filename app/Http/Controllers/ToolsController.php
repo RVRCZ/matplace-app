@@ -7,6 +7,7 @@ use App\Domain\Generation\GenerationService;
 use App\Domain\Generation\PedestalChanger;
 use App\Domain\Tools\ModelRepair;
 use App\Domain\Tools\MoldGenerator;
+use App\Support\ToolSeo;
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
 use App\Engines\Contracts\ImageRestyler;
@@ -89,6 +90,10 @@ class ToolsController extends Controller
             'config' => ConfigController::payload($materials, $converters),
             'from' => is_string($from) && preg_match('/^[0-9a-f-]{36}$/', $from) ? $from : null,
             'types' => MoldGenerator::TYPES, 'parts' => MoldGenerator::PARTS, 'walls' => MoldGenerator::WALLS, 'axes' => MoldGenerator::AXES, 'splits' => MoldGenerator::SPLITS,
+            'variants' => MoldGenerator::VARIANTS, 'vents' => MoldGenerator::VENTS, 'keyTypes' => MoldGenerator::KEY_TYPES, 'funnels' => MoldGenerator::FUNNELS,
+            'coreWalls' => MoldGenerator::CORE_WALLS, 'clearances' => MoldGenerator::CLEARANCES,
+            // the gallery of the kinds of mold at the top of the page: the examples of the catalogue, one per kind
+            'gallery' => ToolSeo::examples('mold'),
         ]);
     }
 

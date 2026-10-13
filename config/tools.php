@@ -25,7 +25,14 @@ return [
     'calc' => ['route' => 'home', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []]],
     'repair' => ['route' => 'tools.repair', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []]],
     'check' => ['route' => 'tools.check', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []]],
-    'mold' => ['route' => 'tools.mold', 'intent' => 'file', 'categories' => ['edit', 'craft'], 'available' => true, 'seo' => ['examples' => []]],
+    'mold' => ['route' => 'tools.mold', 'intent' => 'file', 'categories' => ['edit', 'craft'], 'available' => true, 'seo' => ['examples' => [
+        // drawn on tests/fixtures/mold/bust.stl (matplace:tool-examples mold); the keys match the gallery of tools/mold.blade.php
+        ['key' => 'rigid2', 'params' => ['type' => 'rigid', 'parts' => 2]],
+        ['key' => 'rigid4', 'params' => ['type' => 'rigid', 'parts' => 4]],
+        ['key' => 'shell', 'params' => ['type' => 'silicone', 'variant' => 'shell']],
+        ['key' => 'tray', 'params' => ['type' => 'silicone', 'variant' => 'tray']],
+        ['key' => 'two_part', 'params' => ['type' => 'silicone', 'variant' => 'two_part']],
+    ]]],
     'personalize' => ['route' => 'tools.personalize', 'intent' => 'file', 'categories' => ['edit', 'names'], 'available' => false],
 
     'organizer' => ['route' => 'tools.organizer', 'intent' => 'create', 'categories' => ['home'], 'available' => true, 'seo' => ['examples' => [

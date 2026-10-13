@@ -11,7 +11,7 @@ import { loadGeometryFromUrl } from './loaders';
 import { FileInfo } from './api';
 
 interface MoldCfg { upload: string; files: string; home: string; from: string | null; formats: string[]; maxMb: number }
-interface Analysis { parts: number; undercut_pct: number; verdict: string; options: Record<string, number>; faces: number; flags: string }
+interface Analysis { parts: number; undercut_pct: number; verdict: string; options: Record<string, number>; faces: number; flags: string; resin_ml?: number; silicone_sleeve_ml?: number; silicone_shell_ml?: number; pockets?: number }
 type Report = NonNullable<FileInfo['mold']>;
 type Words = (k: string, p?: Record<string, string | number>) => string;
 type Rgb = [number, number, number];
@@ -35,11 +35,22 @@ export function moldReport(m: Report, t: Words): { text: string; warn: boolean }
     const pct = { pct: nf.format(m.undercut_pct) };
     const silicone = m.type === 'silicone';
     const verdict = m.verdict ?? (m.warnings.includes('undercuts') ? 'flexible' : 'rigid');
+    const variant = m.variant ?? (silicone ? 'sleeve' : 'rigid');
+    const ml = { cast: nf.format(m.cast_ml ?? m.resin_ml), mold: nf.format(m.mold_cm3 ?? 0), core: nf.format(m.core_ml ?? 0), sil: nf.format(m.silicone_ml ?? 0), box: nf.format(m.silicone_box_ml ?? 0), pct: m.saving_pct ?? 0 };
     return [
-        { text: silicone ? t('mold.report.silicone', { ...size, sil: nf.format(m.silicone_ml ?? 0) }) : t('mold.report', size), warn: false },
+        variant === 'shell' ? { text: t('mold.report.shell', { ...size, ...ml }), warn: false }
+            : variant === 'tray' ? { text: t('mold.report.tray', { ...size, ...ml }), warn: false }
+                : variant === 'two_part' ? { text: t('mold.report.two_part', { ...size, ...ml, keys: m.keys ?? 0 }), warn: false }
+                    : { text: silicone ? t('mold.report.silicone', { ...size, sil: nf.format(m.silicone_ml ?? 0) }) : t('mold.report', size), warn: false },
+        // the volumes a caster works with: the casting, the printed mold; the core when there is one
+        { text: t('mold.report.volumes', ml), warn: false },
+        m.core_ml ? { text: t('mold.report.core', ml), warn: false } : null,
+        m.warnings.includes('core_none') ? { text: t('mold.warn.core_none'), warn: true } : null,
+        m.vents ? { text: t('mold.report.vents', { n: m.vents }), warn: false } : { text: t('mold.report.vents.none'), warn: false },
+        m.warnings.includes('shell_supports') ? { text: t('mold.warn.shell_supports'), warn: false } : null,
         !silicone && (m.parts ?? 2) > 2 ? { text: t('mold.report.parts', { n: m.parts ?? 2 }), warn: false } : null,
         !silicone && m.fill ? { text: t('mold.report.filled', { ml: nf.format(m.added_ml ?? 0), before: nf.format(m.undercut_before_pct ?? 0), after: nf.format(m.undercut_pct) }), warn: false } : null,
-        silicone ? { text: t('mold.report.silicone.how'), warn: false } : { text: t(`mold.verdict.${verdict}`, pct), warn: verdict !== 'rigid' },
+        silicone ? { text: t(variant === 'tray' ? 'mold.report.tray.how' : variant === 'two_part' ? 'mold.report.two_part.how' : 'mold.report.silicone.how'), warn: false } : { text: t(`mold.verdict.${verdict}`, pct), warn: verdict !== 'rigid' },
         !silicone && m.axis === 'angle' ? { text: t('mold.report.angle', { deg: m.angle_deg ?? 0 }), warn: false } : null,
         m.warnings.includes('large_mold') ? { text: t('mold.report.large'), warn: false } : null,
     ].filter((l): l is { text: string; warn: boolean } => !!l);
@@ -55,6 +66,9 @@ export function bootMoldPage(stage: Stage): void {
     const type = $('mold-type') as HTMLSelectElement; const toSilicone = $('mold-to-silicone') as HTMLButtonElement;
     const parts = $('mold-parts') as HTMLSelectElement; const axis = $('mold-axis') as HTMLSelectElement; const split = $('mold-split') as HTMLSelectElement;
     const fill = $('mold-fill') as HTMLInputElement; const cast = $('mold-cast');
+    const variant = $('mold-variant') as HTMLSelectElement; const vents = $('mold-vents') as HTMLSelectElement;
+    const core = $('mold-core') as HTMLInputElement; const coreWall = $('mold-core-wall') as HTMLSelectElement;
+    const clearance = $('mold-clearance') as HTMLSelectElement; const keysType = $('mold-keys-type') as HTMLSelectElement; const funnelAt = $('mold-funnel-at') as HTMLSelectElement;
     const nf = new Intl.NumberFormat(document.documentElement.lang || 'cs', { maximumFractionDigits: 1 });
     let model: FileInfo | null = null;
     let mold: FileInfo | null = null;
@@ -68,8 +82,21 @@ export function bootMoldPage(stage: Stage): void {
     const division = () => ({ parts: Number(parts.value), axis: parts.value === '2' ? axis.value : 'auto', split: parts.value === '2' && split.value ? Number(split.value) : null });
     // the number of parts, the plane and the filling belong to the printed mold only; the plane to two parts only
     const applyType = (): void => {
-        document.querySelectorAll<HTMLElement>('[data-mold-rigid]').forEach((e) => e.classList.toggle('hidden', type.value !== 'rigid'));
-        document.querySelectorAll<HTMLElement>('[data-mold-two]').forEach((e) => e.classList.toggle('hidden', type.value !== 'rigid' || parts.value !== '2'));
+        const silicone = type.value === 'silicone';
+        document.querySelectorAll<HTMLElement>('[data-mold-rigid]').forEach((e) => e.classList.toggle('hidden', silicone));
+        document.querySelectorAll<HTMLElement>('[data-mold-two]').forEach((e) => e.classList.toggle('hidden', silicone || parts.value !== '2'));
+        document.querySelectorAll<HTMLElement>('[data-mold-silicone]').forEach((e) => e.classList.toggle('hidden', !silicone));
+        // a core goes into a silicone mold that is poured through the foot: every kind but the open tray
+        document.querySelectorAll<HTMLElement>('[data-mold-core]').forEach((e) => e.classList.toggle('hidden', !silicone || variant.value === 'tray'));
+        document.querySelectorAll<HTMLElement>('[data-mold-core-wall]').forEach((e) => e.classList.toggle('hidden', !silicone || variant.value === 'tray' || !core.checked));
+        $('mold-variant-hint').textContent = silicone ? tr(`mold.variant.${variant.value}.hint`) : '';
+        document.querySelectorAll<HTMLElement>('.mold-tile').forEach((tile) => {
+            const on = tile.dataset.type === type.value && (type.value === 'rigid' ? tile.dataset.parts === parts.value : tile.dataset.variant === variant.value);
+            tile.setAttribute('aria-pressed', on ? 'true' : 'false');
+            tile.classList.toggle('!border-ink', on);
+            tile.classList.toggle('ring-1', on);
+            tile.classList.toggle('ring-ink', on);
+        });
     };
 
     /** Model · mold · casting: buttons over the viewer for what there is to see. */
@@ -115,6 +142,8 @@ export function bootMoldPage(stage: Stage): void {
             text.classList.toggle('text-warn', a.verdict !== 'rigid');
             text.classList.toggle('font-medium', a.verdict !== 'rigid');
             $('mold-options').textContent = tr('mold.page.options', { a: nf.format(a.options['2'] ?? 0), b: nf.format(a.options['3'] ?? 0), c: nf.format(a.options['4'] ?? 0) });
+            // what a caster asks first: how much the casting takes, how much silicone a sleeve or a shell would, and where air would stay
+            $('mold-volumes').textContent = a.resin_ml ? tr('mold.page.volumes', { cast: nf.format(a.resin_ml), sleeve: nf.format(a.silicone_sleeve_ml ?? 0), shell: nf.format(a.silicone_shell_ml ?? 0), n: a.pockets ?? 0 }) : '';
         } catch {
             if (mine !== asked) return;
             shown.model.faces = null;
@@ -193,7 +222,9 @@ export function bootMoldPage(stage: Stage): void {
         say(fill.checked && type.value === 'rigid' ? 'mold.page.building.fill' : 'mold.page.building');
         stage.busy(true);
         try {
-            const body = { type: type.value, wall: Number(($('mold-wall') as HTMLSelectElement).value), fill: fill.checked && type.value === 'rigid', ...division() };
+            const body = { type: type.value, wall: Number(($('mold-wall') as HTMLSelectElement).value), fill: fill.checked && type.value === 'rigid', ...division(),
+                variant: variant.value, vents: vents.value, core: core.checked && type.value === 'silicone' && variant.value !== 'tray', core_wall: Number(coreWall.value),
+                clearance: clearance.value, keys_type: keysType.value, funnel_at: funnelAt.value };
             const res = await fetch(`${cfg.files}/${model.uuid}/mold`, { method: 'POST', credentials: 'same-origin', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             if (res.status === 503) { say('mold.unavailable'); go.disabled = false; return; }
             const answer = await res.json();
@@ -227,7 +258,18 @@ export function bootMoldPage(stage: Stage): void {
     stage.dropZone($('mold-drop'), input, (f) => { void upload(f); });
     ($('mold-form') as HTMLFormElement).onsubmit = (e) => { e.preventDefault(); void build(); };
     type.onchange = applyType;
+    [variant, core].forEach((el) => { el.onchange = applyType; });
     [parts, axis, split].forEach((el) => { el.onchange = () => { applyType(); void analyse(); }; });
+    // the gallery at the top: a tile is a kind of mold
+    document.querySelectorAll<HTMLElement>('.mold-tile').forEach((tile) => {
+        tile.onclick = () => {
+            type.value = tile.dataset.type ?? 'rigid';
+            if (type.value === 'rigid') parts.value = tile.dataset.parts ?? '2';
+            else variant.value = tile.dataset.variant ?? 'sleeve';
+            applyType();
+            if (model) void analyse(); else stage.reveal('file', $('mold-drop'));
+        };
+    });
     toSilicone.onclick = () => { type.value = 'silicone'; applyType(); void build(); };
     applyType();
     void mold;

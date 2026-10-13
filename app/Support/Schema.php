@@ -84,6 +84,16 @@ final class Schema
         ];
     }
 
+    /** A tool's video: what search engines show as a video result (the YouTube player lives on the page, no cookies before a click). */
+    public static function video(string $name, string $description, string $thumbnail, string $youtubeId, string $uploaded = '', int $seconds = 60): array
+    {
+        return [
+            '@type' => 'VideoObject', 'name' => $name, 'description' => $description, 'thumbnailUrl' => [$thumbnail], 'inLanguage' => app()->getLocale(),
+            'uploadDate' => $uploaded !== '' ? $uploaded : null, 'duration' => sprintf('PT%dM%dS', intdiv($seconds, 60), $seconds % 60),
+            'embedUrl' => 'https://www.youtube-nocookie.com/embed/'.$youtubeId, 'contentUrl' => 'https://www.youtube.com/watch?v='.$youtubeId,
+        ];
+    }
+
     /** @param  list<array{q: string, a: string}>  $items */
     public static function faq(array $items): array
     {

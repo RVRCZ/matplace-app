@@ -47,7 +47,7 @@ class ToolExamples extends Command
         foreach ((array) config('tools') as $tool => $definition) {
             $examples = (array) ($definition['seo']['examples'] ?? []);
             $kind = (string) ($definition['seo']['kind'] ?? $tool);      // a tool that is another generator with a preset draws with that generator
-            if (! $examples || ($only && ! in_array($tool, $only, true)) || (! isset(ParametricGenerator::FIELDS[$kind]) && ! in_array($tool, [ArtGenerator::KIND, MapBuilder::KIND], true))) {
+            if (! $examples || ($only && ! in_array($tool, $only, true)) || (! isset(ParametricGenerator::FIELDS[$kind]) && ! in_array($tool, [ArtGenerator::KIND, MapBuilder::KIND, 'mold'], true))) {
                 continue;
             }
             foreach ($examples as $i => $example) {
@@ -60,8 +60,9 @@ class ToolExamples extends Command
                 try {
                     // "use": the product as it is used (a box with its lid on, a vase on its saucer), not laid out for printing
                     $built = $tool === ArtGenerator::KIND ? app(ArtGenerator::class)->build((array) ($example['params'] ?? []), 'use', true)
+                        : ($tool === 'mold' ? self::moldExample($python, $example)
                         : ($tool === MapBuilder::KIND ? self::mapExample($example)
-                        : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', isset(ParametricGenerator::FAMILY[$kind]) || in_array($kind, ['compose', 'papel'], true)));      // tools whose parts are colours: drawn in them
+                        : $generator->build($kind, ToolSeo::exampleParams($kind, $example), 'all', 'use', isset(ParametricGenerator::FAMILY[$kind]) || in_array($kind, ['compose', 'papel'], true))));      // tools whose parts are colours: drawn in them
                 } catch (\Throwable $e) {
                     $this->warn(sprintf('%s #%d: the tool refused the parameters (%s)', $tool, $i + 1, mb_substr($e->getMessage(), 0, 160)));
                     $failed++;
@@ -97,6 +98,24 @@ class ToolExamples extends Command
         $this->info("Drawn {$drawn}, kept {$kept}".($failed ? ", failed {$failed}" : '').'.');
 
         return $failed ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * A mold of the examples: engines/python/mold_tool.py over the bust of the tests (tests/fixtures/mold/bust.stl), laid out
+     * for printing as the tool hands it to the visitor.
+     *
+     * @return array{path: string, meta: array<string, mixed>}
+     */
+    private static function moldExample(PythonTool $python, array $example): array
+    {
+        $path = storage_path('app/tmp/mold/example-'.Str::uuid().'.stl');
+        File::ensureDirectoryExists(dirname($path));
+        $r = $python->runScript('mold_tool.py', [str_replace('\\', '/', base_path('tests/fixtures/mold/bust.stl')), $path, json_encode((array) ($example['params'] ?? []))], 300);
+        if (empty($r['ok']) || ! is_file($path)) {
+            throw new \RuntimeException((string) ($r['error'] ?? 'mold_failed'));
+        }
+
+        return ['path' => $path, 'meta' => ['notes' => []]];
     }
 
     /**

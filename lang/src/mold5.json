@@ -1,0 +1,252 @@
+{
+    "mold.gallery": [
+        "Druhy forem",
+        "Kinds of mold",
+        "Tipos de molde"
+    ],
+    "mold.gallery.rigid2": [
+        "Tištěná, 2 díly",
+        "Printed, 2 parts",
+        "Impreso, 2 piezas"
+    ],
+    "mold.gallery.rigid4": [
+        "Tištěná, 4 díly",
+        "Printed, 4 parts",
+        "Impreso, 4 piezas"
+    ],
+    "mold.gallery.shell": [
+        "Silikon: skořepina",
+        "Silicone: shell",
+        "Silicona: carcasa"
+    ],
+    "mold.gallery.tray": [
+        "Silikon: vanička",
+        "Silicone: tray",
+        "Silicona: bandeja"
+    ],
+    "mold.gallery.two_part": [
+        "Silikon: dvoudílná",
+        "Silicone: two-part",
+        "Silicona: dos piezas"
+    ],
+    "mold.variant": [
+        "Provedení formy na silikon",
+        "Kind of silicone mold",
+        "Tipo de molde de silicona"
+    ],
+    "mold.variant.sleeve": [
+        "Objímka (silikon kolem celého obrysu)",
+        "Sleeve (silicone round the whole outline)",
+        "Manguito (silicona alrededor de todo el contorno)"
+    ],
+    "mold.variant.shell": [
+        "Skořepina (stěna kopíruje model, méně silikonu)",
+        "Shell (the wall follows the model, less silicone)",
+        "Carcasa (la pared sigue el modelo, menos silicona)"
+    ],
+    "mold.variant.tray": [
+        "Vanička (plochá zadní strana, jednodílná)",
+        "Tray (flat back, one piece)",
+        "Bandeja (dorso plano, una pieza)"
+    ],
+    "mold.variant.two_part": [
+        "Dvoudílná (dělicí deska s klíči)",
+        "Two-part (parting plate with keys)",
+        "Dos piezas (placa de partición con llaves)"
+    ],
+    "mold.variant.sleeve.hint": [
+        "Podstavec s modelem a objímka; silikon se lije shora. Nejjednodušší.",
+        "A base with the model and a sleeve; silicone is poured from above. The simplest.",
+        "Base con el modelo y manguito; la silicona se vierte desde arriba. La más sencilla."
+    ],
+    "mold.variant.shell.hint": [
+        "Tištěná skořepina ve dvou půlkách v odstupu stěny od modelu: ušetří silikon, tiskne se s podpěrami.",
+        "A printed shell in two halves a wall away from the model: saves silicone, prints with supports.",
+        "Carcasa impresa en dos mitades a la distancia de la pared del modelo: ahorra silicona, se imprime con soportes."
+    ],
+    "mold.variant.tray.hint": [
+        "Pro reliéfy, cedulky, podtácky: model leží zadní stranou dolů, forma je jeden kus, odlitek se lije otevřenou zadní stranou.",
+        "For reliefs, signs, coasters: the model lies back down, the mold is one piece, the casting is poured through the open back.",
+        "Para relieves, placas, posavasos: el modelo descansa sobre el dorso, el molde es una pieza y se vierte por el dorso abierto."
+    ],
+    "mold.variant.two_part.hint": [
+        "Model, dělicí deska s vyříznutým obrysem a kuželovými klíči, box: první půlka se lije na desku, pak se otočí a lije druhá.",
+        "The model, a parting plate with its outline cut out and cone keys, a box: the first half is poured onto the plate, then turned over for the second.",
+        "El modelo, una placa de partición con su contorno recortado y llaves cónicas, una caja: la primera mitad se vierte sobre la placa, luego se gira para la segunda."
+    ],
+    "mold.vents": [
+        "Odvzdušnění",
+        "Vents",
+        "Respiraderos"
+    ],
+    "mold.vents.auto": [
+        "Automaticky z míst, kde by zůstal vzduch",
+        "Automatic, from where air would stay",
+        "Automático, desde donde quedaría aire"
+    ],
+    "mold.vents.off": [
+        "Bez odvzdušnění",
+        "None",
+        "Sin respiraderos"
+    ],
+    "mold.vents.hint": [
+        "Kanálky 2,5 mm z kapes dutiny ven: u dělené formy v dělicí rovině, u silikonové jako kolíky na modelu. Bez nich mají odlitky vzduchové bubliny.",
+        "Channels of 2.5 mm from the pockets of the cavity to the outside: in the parting plane of a printed mold, as pins on the master of a silicone one. Without them castings get air bubbles.",
+        "Canales de 2,5 mm desde las bolsas de la cavidad hacia fuera: en el plano de partición de un molde impreso, como pines en el modelo de uno de silicona. Sin ellos las piezas tienen burbujas."
+    ],
+    "mold.core": [
+        "Vnitřní jádro (dutý odlitek)",
+        "Core (hollow casting)",
+        "Núcleo (pieza hueca)"
+    ],
+    "mold.core.hint": [
+        "Tištěné jádro = model zmenšený o stěnu, se stopkou do nalévacího otvoru. Odlitek je skořepina: méně pryskyřice, vosku nebo mýdla.",
+        "A printed core = the model shrunk by the wall, with a stem into the pouring opening. The casting is a shell: less resin, wax or soap.",
+        "Un núcleo impreso = el modelo reducido en el grosor de pared, con un vástago hacia la abertura. La pieza sale hueca: menos resina, cera o jabón."
+    ],
+    "mold.core_wall": [
+        "Stěna odlitku",
+        "Wall of the casting",
+        "Pared de la pieza"
+    ],
+    "mold.advanced": [
+        "Pro pokročilé",
+        "Advanced",
+        "Avanzado"
+    ],
+    "mold.clearance": [
+        "Vůle klíčů",
+        "Play of the keys",
+        "Holgura de las llaves"
+    ],
+    "mold.keys_type": [
+        "Typ klíčů",
+        "Kind of keys",
+        "Tipo de llaves"
+    ],
+    "mold.keys_type.auto": [
+        "Automaticky (kulové u dvou dílů, kuželové u klínů)",
+        "Automatic (balls for two parts, cones for wedges)",
+        "Automático (bolas con dos piezas, conos con cuñas)"
+    ],
+    "mold.keys_type.ball": [
+        "Kulové",
+        "Balls",
+        "Bolas"
+    ],
+    "mold.keys_type.cone": [
+        "Kuželové",
+        "Cones",
+        "Conos"
+    ],
+    "mold.funnel_at": [
+        "Poloha nálevky",
+        "Pouring opening",
+        "Abertura de vertido"
+    ],
+    "mold.funnel_at.bottom": [
+        "Dole (u paty modelu)",
+        "At the bottom (the model's foot)",
+        "Abajo (en la base del modelo)"
+    ],
+    "mold.funnel_at.top": [
+        "Nahoře",
+        "At the top",
+        "Arriba"
+    ],
+    "mold.funnel_at.side": [
+        "Z boku",
+        "At the side",
+        "En el lateral"
+    ],
+    "mold.page.volumes": [
+        "Odlitek ≈ :cast ml. Silikon: objímka ≈ :sleeve ml, skořepina ≈ :shell ml. Míst, kde by zůstal vzduch: :n.",
+        "Casting ≈ :cast ml. Silicone: sleeve ≈ :sleeve ml, shell ≈ :shell ml. Places where air would stay: :n.",
+        "Pieza ≈ :cast ml. Silicona: manguito ≈ :sleeve ml, carcasa ≈ :shell ml. Lugares donde quedaría aire: :n."
+    ],
+    "mold.report.volumes": [
+        "Na jeden odlitek je potřeba asi :cast ml hmoty; tištěná forma má :mold cm³ plastu.",
+        "One casting takes about :cast ml of material; the printed mold has :mold cm³ of plastic.",
+        "Una pieza necesita unos :cast ml de material; el molde impreso tiene :mold cm³ de plástico."
+    ],
+    "mold.report.core": [
+        "S jádrem je odlitek dutý: jádro :core ml, hmoty na odlitek :cast ml.",
+        "With the core the casting is hollow: core :core ml, material per casting :cast ml.",
+        "Con el núcleo la pieza es hueca: núcleo :core ml, material por pieza :cast ml."
+    ],
+    "mold.report.vents": [
+        "Odvzdušnění: :n kanálků z míst, kde by jinak zůstal vzduch.",
+        "Vents: :n channels from the places where air would otherwise stay.",
+        "Respiraderos: :n canales desde los lugares donde quedaría aire."
+    ],
+    "mold.report.vents.none": [
+        "Odvzdušnění není třeba: v dutině nezůstane vzduch.",
+        "No vents needed: no air stays in the cavity.",
+        "No hacen falta respiraderos: no queda aire en la cavidad."
+    ],
+    "mold.report.shell": [
+        "Skořepina :w × :d × :h mm ve dvou půlkách a podstavec s modelem. Silikonu asi :sil ml – o :pct % méně než objímka (:box ml).",
+        "A shell :w × :d × :h mm in two halves and a base with the model. About :sil ml of silicone, :pct % less than a sleeve (:box ml).",
+        "Carcasa de :w × :d × :h mm en dos mitades y base con el modelo. Unos :sil ml de silicona, un :pct % menos que el manguito (:box ml)."
+    ],
+    "mold.report.tray": [
+        "Vanička :w × :d × :h mm v jednom kuse s modelem na dně. Silikonu asi :sil ml.",
+        "A tray :w × :d × :h mm in one piece with the model on its floor. About :sil ml of silicone.",
+        "Bandeja de :w × :d × :h mm de una pieza con el modelo en el fondo. Unos :sil ml de silicona."
+    ],
+    "mold.report.tray.how": [
+        "Postup: vaničku vytiskněte, model v ní zalijte silikonem po okraj, po vytvrzení formu vyklopte. Odlitek lijete otevřenou zadní stranou.",
+        "How: print the tray, pour silicone over the model up to the rim, turn the set mold out. The casting is poured through the open back.",
+        "Cómo: imprima la bandeja, vierta silicona sobre el modelo hasta el borde y saque el molde una vez curado. La pieza se vierte por el dorso abierto."
+    ],
+    "mold.report.two_part": [
+        "Dvoudílná forma: box :w × :d × :h mm, dělicí deska s :keys klíči a model. Silikonu na obě půlky asi :sil ml.",
+        "A two-part mold: a box :w × :d × :h mm, a parting plate with :keys keys and the model. About :sil ml of silicone for both halves.",
+        "Molde de dos piezas: caja de :w × :d × :h mm, placa de partición con :keys llaves y el modelo. Unos :sil ml de silicona para las dos mitades."
+    ],
+    "mold.report.two_part.how": [
+        "Postup: model vsaďte do desky, box nasaďte do drážky, spáry utěsněte plastelínou a lijte první půlku. Po vytvrzení otočte, desku sundejte, silikon natřete separátorem a lijte druhou půlku. Klíče v silikonu drží půlky v zákrytu.",
+        "How: set the model in the plate, the box in its groove, seal the seams with clay and pour the first half. When set, turn it over, take the plate away, coat the silicone with release agent and pour the second half. The keys in the silicone keep the halves aligned.",
+        "Cómo: coloque el modelo en la placa y la caja en su ranura, selle las juntas con plastilina y vierta la primera mitad. Una vez curada, gírela, retire la placa, aplique desmoldeante a la silicona y vierta la segunda mitad. Las llaves mantienen las mitades alineadas."
+    ],
+    "mold.warn.core_none": [
+        "Jádro nevzniklo: model je na zvolenou stěnu moc tenký nebo má moc malou patu. Zmenšete stěnu odlitku.",
+        "No core was made: the model is too thin for the chosen wall or its foot is too small. Make the casting's wall thinner.",
+        "No se creó el núcleo: el modelo es demasiado fino para la pared elegida o su base es muy pequeña. Reduzca la pared de la pieza."
+    ],
+    "mold.warn.shell_supports": [
+        "Půlky skořepiny tiskněte s podpěrami (kopírují model i tam, kde přečnívá).",
+        "Print the halves of the shell with supports (they follow the model where it overhangs).",
+        "Imprima las mitades de la carcasa con soportes (siguen el modelo también donde sobresale)."
+    ],
+    "tools.which.title": [
+        "Který typ formy zvolit",
+        "Which kind of mold to choose",
+        "Qué tipo de molde elegir"
+    ],
+    "tools.which.shape": [
+        "Tvar odlitku",
+        "Shape of the casting",
+        "Forma de la pieza"
+    ],
+    "tools.which.kind": [
+        "Typ formy",
+        "Kind of mold",
+        "Tipo de molde"
+    ],
+    "tools.video.title": [
+        "Jak to vypadá",
+        "How it looks",
+        "Cómo se ve"
+    ],
+    "tools.video.play": [
+        "Přehrát video",
+        "Play the video",
+        "Ver el vídeo"
+    ],
+    "tools.video.note": [
+        "Video se přehraje z YouTube až po klepnutí (bez cookies, dokud nekliknete).",
+        "The video plays from YouTube only after a click (no cookies until then).",
+        "El vídeo se reproduce desde YouTube solo tras hacer clic (sin cookies hasta entonces)."
+    ]
+}

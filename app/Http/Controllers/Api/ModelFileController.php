@@ -104,6 +104,13 @@ class ModelFileController extends Controller
             'wall' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::WALLS)],
             'axis' => ['nullable', 'in:'.implode(',', MoldGenerator::AXES)],
             'split' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::SPLITS)],
+            'variant' => ['nullable', 'in:'.implode(',', MoldGenerator::VARIANTS)],
+            'vents' => ['nullable', 'in:'.implode(',', MoldGenerator::VENTS)],
+            'core' => ['nullable', 'boolean'],
+            'core_wall' => ['nullable', 'integer', 'in:'.implode(',', MoldGenerator::CORE_WALLS)],
+            'keys_type' => ['nullable', 'in:'.implode(',', MoldGenerator::KEY_TYPES)],
+            'funnel_at' => ['nullable', 'in:'.implode(',', MoldGenerator::FUNNELS)],
+            'clearance' => ['nullable', 'in:'.implode(',', MoldGenerator::CLEARANCES)],
         ]);
         try {
             $new = $molds->make($modelFile, $data);

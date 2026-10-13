@@ -6,7 +6,9 @@ Casting molds around a printable model (manifold3d, exact solids).
   mold_tool.py analyse <in.stl> <faces.bin> <params-json>    only measures, and marks every triangle of <in.stl>
 
   params: {"type": "rigid|silicone", "parts": 2|3|4, "fill": false, "cast": "<path of cast.stl>", "wall": 8,
-           "axis": "auto|x|y|z", "split": "auto"|0..1, "clearance": 0.15, "keys": true, "funnel": true}
+           "axis": "auto|x|y|z", "split": "auto"|0..1, "clearance": 0.15, "keys": true, "funnel": true,
+           round 2 (mold2.py, docs/AB.md): "vents": "auto|off", "variant": "sleeve|shell|tray|two_part" (silicone),
+           "core": false, "core_wall": 5, "keys_type": "auto|ball|cone", "funnel_at": "bottom|top|side"}
 
 rigid     The model (mm, Z-up, standing on the bed) is wrapped in a box of `wall` millimetres and the box is cut into
           pieces. The model plus a pouring funnel through the bottom wall are taken out of them, keys on the parting
@@ -43,6 +45,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mesh_tool as T  # noqa: E402  (load, solidify, as_manifold, from_manifold)
+import mold2  # noqa: E402  (round 2: vents, the shell, the tray, the two-part silicone mold, the core, the volumes)
 
 FLEXIBLE_FROM = 3.0        # per cent of the surface hidden from the pull: below it a hard mold comes apart
 SILICONE_FROM = 10.0       # above it not even a flexible printed mold lets go
@@ -414,8 +417,8 @@ def fill_undercuts(M, man, surface, split):
     return cast, changed
 
 
-def silicone(M, man, ex, ey, h, wall):
-    """The base with the master on it and the sleeve beside it; (plate, report)."""
+def silicone(M, man, ex, ey, h, wall, pins=None):
+    """The base with the master on it (and the vent pins, when there are pockets) and the sleeve beside it; (plate, report)."""
     J = M.JoinType.Round
     # the sleeve follows the outline of the model seen from above, `wall` away from it; hollows of the outline are
     # bridged (silicone costs more than the print, but a narrow bay would be hard to fill and to peel)
@@ -427,6 +430,8 @@ def silicone(M, man, ex, ey, h, wall):
     base = inner.offset(SLEEVE + rim, J, 2.0, 48).simplify(0.05).extrude(BASE).translate([0, 0, -BASE + 0.01])
     groove = (inner.offset(SLEEVE + fit, J, 2.0, 48) - inner.offset(-fit, J, 2.0, 48)).simplify(0.05).extrude(GROOVE + 1.0).translate([0, 0, -GROOVE])
     master = (base - groove) + man                                             # the master's foot sinks 0.01 mm into the base
+    if pins is not None:
+        master = master + pins
     foot = man.slice(0.6)
     if foot.is_empty() or foot.area() < 30:
         # a ball touches the base in one point: a short neck holds it and leaves an opening to pour through
@@ -522,6 +527,13 @@ def read_params(raw):
         "fraction": None if split in ("auto", None, "") else max(0.1, min(0.9, float(split))),
         "keys": bool(p.get("keys", True)),
         "funnel": bool(p.get("funnel", True)),
+        # round 2
+        "vents": "off" if str(p.get("vents", "auto")) == "off" else "auto",
+        "variant": str(p.get("variant", "sleeve")) if str(p.get("variant", "sleeve")) in ("sleeve", "shell", "tray", "two_part") else "sleeve",
+        "core": bool(p.get("core", False)),
+        "core_wall": max(3.0, min(8.0, float(p.get("core_wall", 5)))),
+        "keys_type": str(p.get("keys_type", "auto")) if str(p.get("keys_type", "auto")) in ("auto", "ball", "cone") else "auto",
+        "funnel_at": str(p.get("funnel_at", "bottom")) if str(p.get("funnel_at", "bottom")) in ("bottom", "top", "side") else "bottom",
     }
 
 
@@ -579,6 +591,21 @@ def analyse(src, dst, raw):
         fh.write(flags.tobytes())
     answer = described(chosen)
     answer.update({"ok": True, "options": options, "faces": int(len(flags)), "hidden_faces": int((~seen).sum())})
+    # what a caster wants to know before anything is built: the casting's volume, the silicone a sleeve and a shell
+    # would take at the usual 8 mm, and how many pockets would hold air
+    try:
+        import manifold3d as M
+        man = T.as_manifold(mesh)
+        ex, ey, h = (float(v) for v in mesh.extents)
+        resin = float(man.volume())
+        sleeve_ml = (float(mold2.outline(M, man, 8.0).area()) * (h + 8.0) - resin) / 1000.0
+        grown = mold2.offset_solid(M, mesh, 8.0)
+        floor = M.Manifold.cube([2000.0, 2000.0, 2000.0]).translate([-1000.0, -1000.0, 0.0])
+        shell_ml = (float((grown ^ floor).volume()) - resin) / 1000.0 if not grown.is_empty() else sleeve_ml
+        answer.update({"resin_ml": round(resin / 1000.0, 1), "silicone_sleeve_ml": round(sleeve_ml, 1), "silicone_shell_ml": round(shell_ml, 1),
+                       "pockets": len(mold2.pockets(surface, h, -1))})
+    except Exception:  # noqa: BLE001 - the measurement is the answer; the volumes are a courtesy
+        pass
     out(answer)
 
 
@@ -620,8 +647,41 @@ def build(src, dst, raw):
         out({"ok": False, "error": "solid: %s" % e})
 
     warnings = []
+    # round 2: where air would stay (the mold is poured with the opening up), and what is asked for on top of round 1
+    pour_up = 1 if (kind == "rigid" and p["funnel_at"] in ("top", "side")) else -1
+    pocket_points = mold2.pockets(surface, h, pour_up) if p["vents"] == "auto" else []
+    core_piece, core_ml = None, 0.0
     if kind == "silicone":
-        plate, report = silicone(M, man, ex, ey, h, wall)
+        pins = mold2.vent_pins(M, pocket_points) if pocket_points else None
+        if p["variant"] == "shell":
+            pieces, report = mold2.shell_mold(M, mesh, man, h, wall, pins, split)
+        elif p["variant"] == "tray":
+            pieces, report = mold2.tray_mold(M, man, h, wall, pins)
+        elif p["variant"] == "two_part":
+            pieces, report = mold2.two_part_mold(M, man, split, h, wall, pocket_points)
+        else:
+            pieces, report = None, None
+        if p["core"]:
+            core_piece, core_ml = mold2.core_piece(M, mesh, man, p["core_wall"])
+            if core_piece is None:
+                warnings.append("core_none")
+        if pieces is None:
+            plate, report = silicone(M, man, ex, ey, h, wall, pins)
+            report["variant"] = "sleeve"
+            if core_piece is not None:
+                _, _, _, px1, _, _ = plate.bounding_box()
+                plate = M.Manifold.compose([plate, on_plate(core_piece).translate([px1 + 10.0, 0.0, 0.0])])
+        else:
+            if core_piece is not None:
+                pieces.append(core_piece)
+                report["pieces"] = report.get("pieces", len(pieces) - 1) + 1
+            plate = lay_out(M, [on_plate(x) for x in pieces])
+        report["resin_ml"] = round(float(man.volume()) / 1000.0, 1)
+        report["core_ml"] = round(core_ml, 1)
+        report["cast_ml"] = round(float(man.volume()) / 1000.0 - core_ml, 1)
+        report["vents"] = len(pocket_points)
+        if p["variant"] == "shell":
+            warnings.append("shell_supports")
     else:
         cast, filled = man, False
         if p["fill"] and split.pct > 0.5:
@@ -655,14 +715,25 @@ def build(src, dst, raw):
         cavity = cast
         resin_mm3 = float(cast.volume())
         if p["funnel"]:
-            funnel, extra = pour_opening(M, man, h, wall)
+            if p["funnel_at"] == "top":
+                # the same opening, cut at the top: the model is mirrored, the opening made at its (mirrored) foot, mirrored back
+                funnel, extra = pour_opening(M, man.scale([1, 1, -1]).translate([0, 0, h]), h, wall)
+                funnel = funnel.scale([1, 1, -1]).translate([0, 0, h])
+            elif p["funnel_at"] == "side":
+                funnel, extra = mold2.side_opening(M, man, ex, h, wall)
+            else:
+                funnel, extra = pour_opening(M, man, h, wall)
             cavity = cavity + funnel
             resin_mm3 += extra
         shell = box - cavity
+        vents = mold2.vents_rigid(M, pocket_points, split, h, wall, pour_up) if pocket_points else None
+        if vents is not None:
+            shell = shell - vents
         pieces = [trimmed(shell, split.planes(k)) for k in range(split.parts)]
         keys = 0
         if p["keys"]:
-            pieces, keys = (ball_keys if split.parts == 2 else cone_keys)(M, pieces, split, ex, ey, h, wall, p["clearance"])
+            keyer = cone_keys if split.parts > 2 else (mold2.cone_keys_two if p["keys_type"] == "cone" else ball_keys)
+            pieces, keys = keyer(M, pieces, split, ex, ey, h, wall, p["clearance"])
         volume = sum(float(x.volume()) for x in pieces)
         if split.parts == 2:
             # as before: the first half with its parting face (towards +pull) up, the second turned the other way
@@ -678,6 +749,11 @@ def build(src, dst, raw):
             "mold_cm3": round(volume / 1000.0, 1),
             "keys": keys,
             "pieces": len(laid),
+            "variant": "rigid",
+            "cast_ml": round(float(cast.volume()) / 1000.0, 1),
+            "vents": len(pocket_points),
+            "funnel_at": p["funnel_at"],
+            "keys_type": "cone" if split.parts > 2 or p["keys_type"] == "cone" else "ball",
         }
         if answer["verdict"] != "rigid":
             warnings.append("undercuts")
