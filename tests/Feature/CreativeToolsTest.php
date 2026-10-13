@@ -87,6 +87,144 @@ class CreativeToolsTest extends TestCase
         $this->preview('vase', $shape + ['style' => 'twist', 'flute' => 45, 'ribs' => 48, 'wall' => 0.8])->assertStatus(422);
     }
 
+    /**
+     * The outer radius of a smooth vase at every 4 mm of its height (from the preview's file): [z => radius]. The rings
+     * of the wall lie a little under 2 mm apart, the inner ones between the outer: a band of 4 mm always holds an outer one.
+     */
+    private function silhouette($response): array
+    {
+        // the file is read twice and nothing of it is kept: a vase has some 120 thousand corners
+        $path = $response->baseResponse->getFile()->getPathname();
+        [$x0, $x1, $y0, $y1] = [INF, -INF, INF, -INF];
+        foreach (StlFile::triangles($path) as $triangle) {
+            foreach ($triangle as [$x, $y]) {
+                [$x0, $x1, $y0, $y1] = [min($x0, $x), max($x1, $x), min($y0, $y), max($y1, $y)];
+            }
+        }
+        [$cx, $cy] = [($x0 + $x1) / 2, ($y0 + $y1) / 2];
+        $at = [];
+        foreach (StlFile::triangles($path) as $triangle) {
+            foreach ($triangle as [$x, $y, $z]) {
+                $band = 4 * (int) round($z / 4);
+                $at[$band] = max($at[$band] ?? 0.0, hypot($x - $cx, $y - $cy));
+            }
+        }
+        ksort($at);
+
+        return $at;
+    }
+
+    public function test_the_waist_of_a_vase_moves_and_multiplies_and_the_vase_of_before_stays_what_it_was(): void
+    {
+        // the vases there were before the waist could be moved, by the numbers taken then: the default one, and a design
+        // stored with the 20 flutes of old (it carries no waist at all)
+        $default = $this->meta($this->preview('vase', [])->assertOk());
+        $this->assertSame(39956, $default['triangles']);
+        $this->assertEqualsWithDelta(68443.1, $default['volume_mm3'], 0.2);
+        $this->assertEqualsWithDelta(100.61, $default['bbox']['x'], 0.01);
+        $old = $this->meta($this->preview('vase', ['profile' => 'neck', 'style' => 'twist', 'height' => 180, 'top_d' => 62, 'bottom_d' => 54, 'wall' => 1.6, 'floor' => 1.6, 'ribs' => 20, 'flute' => 20, 'twist' => 200])->assertOk());
+        $this->assertSame(44396, $old['triangles']);
+        $this->assertEqualsWithDelta(68994.8, $old['volume_mm3'], 0.2);
+        $this->assertEqualsWithDelta(102.44, $old['bbox']['x'], 0.01);
+        $said = $this->meta($this->preview('vase', ['waists' => 1, 'waist_at' => 93, 'waist' => 18, 'flute_shape' => 'sharp'])->assertOk());
+        $this->assertSame([$default['triangles'], $default['volume_mm3'], $default['area_mm2']], [$said['triangles'], $said['volume_mm3'], $said['area_mm2']]);
+
+        // a smooth vase 180 mm tall, its mouth 62 mm: the waist is 18 % narrower than the mouth, a radius of 25.4 mm
+        $smooth = ['style' => 'smooth', 'height' => 180, 'top_d' => 62, 'bottom_d' => 54];
+        $narrowest = function (array $r, float $from, float $to): array {
+            $part = array_filter($r, fn ($z) => $z >= $from && $z <= $to, ARRAY_FILTER_USE_KEY);
+            $z = array_search(min($part), $part, true);
+
+            return [$z, $part[$z]];
+        };
+        $gentle = function (array $r, string $what): void {
+            $zs = array_keys($r);
+            for ($i = 1; $i < count($zs); $i++) {
+                // no wall leans more than 50° off the vertical: it prints without supports
+                $this->assertLessThan(tan(deg2rad(50)), abs($r[$zs[$i]] - $r[$zs[$i - 1]]) / ($zs[$i] - $zs[$i - 1]), "{$what} at {$zs[$i]} mm");
+            }
+        };
+        $before = $this->silhouette($this->preview('vase', $smooth)->assertOk());
+        $this->assertEqualsWithDelta(0.92 * 180, $narrowest($before, 90, 176)[0], 8);        // under the rim, where it always was
+
+        $moved = $this->preview('vase', $smooth + ['waist_at' => 60])->assertOk();
+        $r = $this->silhouette($moved);
+        [$z, $radius] = $narrowest($r, 60, 176);
+        $this->assertEqualsWithDelta(108, $z, 4);                                           // 60 % of 180 mm
+        $this->assertEqualsWithDelta(25.4, $radius, 0.5);
+        $this->assertGreaterThan(38, max($r));                                              // the belly under it is still a belly
+        $gentle($r, 'waist at 60 %');
+        $this->assertTrue(app(MeshRepair::class)->check($moved->baseResponse->getFile()->getPathname())->watertight);
+
+        $deep = $this->silhouette($this->preview('vase', $smooth + ['waist_at' => 60, 'waist' => 40])->assertOk());
+        $this->assertEqualsWithDelta(31 * 0.6, $narrowest($deep, 60, 176)[1], 0.5);
+        $gentle($deep, 'a waist 40 % deep');
+
+        // two waists: the upper one where it is asked for, the other half way under it, a second belly between them
+        $two = $this->silhouette($this->preview('vase', $smooth + ['waists' => 2])->assertOk());
+        $this->assertEqualsWithDelta(25.4, $two[84], 0.8);
+        $this->assertEqualsWithDelta(25.4, $two[168], 0.8);
+        $this->assertGreaterThan(30, $two[128]);
+        $this->assertGreaterThan(38, $two[32]);
+        $gentle($two, 'two waists');
+        $three = $this->silhouette($this->preview('vase', $smooth + ['waists' => 3, 'waist_at' => 90])->assertOk());
+        foreach ([56, 108, 160] as $z) {
+            $this->assertEqualsWithDelta(25.4, $three[$z], 0.8, "the waist near {$z} mm");
+        }
+        $gentle($three, 'three waists');
+        // none: from the belly the vase only narrows to its mouth
+        $none = $this->silhouette($this->preview('vase', $smooth + ['waists' => 0])->assertOk());
+        $this->assertGreaterThanOrEqual(176, $narrowest($none, 70, 180)[0]);
+        $gentle($none, 'no waist');
+        // a small vase has no height for deep waists: they come out shallower, not steeper
+        $gentle($this->silhouette($this->preview('vase', ['style' => 'smooth', 'height' => 60, 'top_d' => 40, 'bottom_d' => 40, 'waists' => 3, 'waist' => 45])->assertOk()), 'three waists on 60 mm');
+
+        // the waists belong to the necked shape: the others have none to move
+        $belly = $this->meta($this->preview('vase', ['profile' => 'belly', 'style' => 'smooth'])->assertOk());
+        $this->assertSame($belly['volume_mm3'], $this->meta($this->preview('vase', ['profile' => 'belly', 'style' => 'smooth', 'waists' => 3, 'waist_at' => 40, 'waist' => 40])->assertOk())['volume_mm3']);
+        $this->preview('vase', ['waists' => 4])->assertStatus(422);
+        $this->preview('vase', ['waist_at' => 20])->assertStatus(422);
+    }
+
+    public function test_the_flutes_of_a_vase_may_be_round(): void
+    {
+        $sharp = $this->meta($this->preview('vase', [])->assertOk());
+        $round = $this->preview('vase', ['flute_shape' => 'round'])->assertOk();
+        $m = $this->meta($round);
+        $this->assertEqualsWithDelta($sharp['bbox']['x'], $m['bbox']['x'], 0.1);            // the ridges reach as far out
+        $this->assertGreaterThan($sharp['volume_mm3'] * 1.01, $m['volume_mm3']);            // and are wider: a wave, not a blade
+        $this->assertGreaterThanOrEqual($sharp['notes']['wall_min'], $m['notes']['wall_min']);
+        $this->assertArrayNotHasKey('warnings', $m['notes']);
+        $this->assertTrue(app(MeshRepair::class)->check($round->baseResponse->getFile()->getPathname())->watertight);
+        // on every shape that has flutes; a smooth vase has none to round
+        foreach (['belly', 'cone', 'tulip'] as $profile) {
+            $ribbed = $this->meta($this->preview('vase', ['profile' => $profile, 'style' => 'ribs'])->assertOk());
+            $this->assertGreaterThan($ribbed['volume_mm3'] * 1.01, $this->meta($this->preview('vase', ['profile' => $profile, 'style' => 'ribs', 'flute_shape' => 'round'])->assertOk())['volume_mm3'], $profile);
+        }
+        $plain = $this->meta($this->preview('vase', ['style' => 'smooth'])->assertOk());
+        $this->assertSame($plain['volume_mm3'], $this->meta($this->preview('vase', ['style' => 'smooth', 'flute_shape' => 'round'])->assertOk())['volume_mm3']);
+        // round flutes too deep and too many leave a thin wall between them, and the page says so
+        $thin = $this->meta($this->preview('vase', ['flute_shape' => 'round', 'ribs' => 30, 'flute' => 25])->assertOk());
+        $this->assertContains('thin_flutes', $thin['notes']['warnings']);
+        $this->preview('vase', ['flute_shape' => 'square'])->assertStatus(422);
+
+        // the example of the tool's page: two waists, round flutes; it holds water and warns of nothing
+        $example = (array) config('tools.vase.seo.examples.3.params');
+        $this->assertSame(['round', 2], [$example['flute_shape'], $example['waists']]);
+        $shown = $this->preview('vase', $example)->assertOk();
+        $this->assertEqualsWithDelta(200, $this->meta($shown)['bbox']['z'], 0.01);
+        $this->assertArrayNotHasKey('warnings', $this->meta($shown)['notes']);
+        $this->assertGreaterThanOrEqual(1.2, $this->meta($shown)['notes']['wall_min']);
+        $this->assertTrue(app(MeshRepair::class)->check($shown->baseResponse->getFile()->getPathname())->watertight);
+
+        // the page offers both: the choice of the flutes with the surfaces that have them, the waists with the necked shape
+        $page = $this->get('/tools/vase')->assertOk();
+        $page->assertSee('data-choice="flute_shape"', false)->assertSee('Kulaté')->assertSee('Počet zúžení')->assertSee('Výška horního zúžení')->assertSee('Síla zúžení')
+            ->assertSee('data-when="profile=neck"', false)->assertSee('data-when="style=twist,ribs"', false);
+        $this->get('/en/tools/vase')->assertOk()->assertSee('Number of waists')->assertSee('Rounded');
+        $this->get('/es/tools/vase')->assertOk()->assertSee('Número de estrechamientos')->assertSee('Redondeadas');
+    }
+
     public function test_a_plain_vase_prints_in_vase_mode_but_a_plant_pot_does_not(): void
     {
         $vase = new ModelFile(['origin' => 'tool', 'origin_ref' => 'vase', 'tool_params' => ['purpose' => 'vase']]);

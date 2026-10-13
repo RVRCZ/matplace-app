@@ -1675,5 +1675,11 @@
     "tools.video.title": "How it looks",
     "tools.video.play": "Play the video",
     "tools.video.note": "The video plays from YouTube only after a click (no cookies until then).",
-    "mold.report.shell.how": "How: print both halves of the shell with supports, the base with the model as the model needs. Close the halves round the base (seal the seams outside with clay or a glue gun), coat the model with release agent and pour the silicone through the chimney at the top until it comes out of the vents. When set, open the shell and peel the silicone off the model; the casting is poured through the opening left by the model's foot."
+    "mold.report.shell.how": "How: print both halves of the shell with supports, the base with the model as the model needs. Close the halves round the base (seal the seams outside with clay or a glue gun), coat the model with release agent and pour the silicone through the chimney at the top until it comes out of the vents. When set, open the shell and peel the silicone off the model; the casting is poured through the opening left by the model's foot.",
+    "param.f.vase.waists": "Number of waists",
+    "param.f.vase.waist_at": "Height of the top waist",
+    "param.f.vase.waist": "Depth of the waist",
+    "param.c.vase.flute_shape": "Flutes",
+    "param.o.vase.sharp": "Sharp",
+    "param.o.vase.round": "Rounded"
 }

@@ -86,6 +86,7 @@ return [
         ['preset' => 'spiral'],
         ['preset' => 'smooth'],
         ['preset' => 'pot', 'params' => ['saucer' => true, 'drainage' => true]],
+        ['params' => ['profile' => 'neck', 'style' => 'ribs', 'flute_shape' => 'round', 'waists' => 2, 'height' => 200, 'top_d' => 70, 'bottom_d' => 64, 'ribs' => 14, 'flute' => 14]],
     ]]],
     'figure' => ['route' => 'tools.figure', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => []]],
     // session D (docs/X.md): a pet figurine from a photo, on top of the figure tool. A generator makes it, so it has no

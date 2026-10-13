@@ -5,7 +5,7 @@ return [
     'description' => 'Choose the height, diameters, shape and surface: smooth, ribbed or spiral. A pot cover has drainage and a saucer. We print it, or download it free.',
     'h1' => 'A vase or a plant pot cover in your own size',
     'intro' => [
-        'The tool builds a vase or a plant pot cover from the height and the diameters you enter. You pick one of four shapes: narrow neck, bellied, straight cone or tulip. The surface can be smooth, ribbed or spiral. For ribbed and spiral surfaces you set the number of ribs, the flute depth and the twist. A pot cover can have drainage holes in the floor and a separate saucer.',
+        'The tool builds a vase or a plant pot cover from the height and the diameters you enter. You pick one of four shapes: narrow neck, bellied, straight cone or tulip. The surface can be smooth, ribbed or spiral. For ribbed and spiral surfaces you set the number of ribs, the flute depth and the twist, and choose sharp or rounded flutes. On the narrow-neck shape you move the waist up or down and can have up to three of them. A pot cover can have drainage holes in the floor and a separate saucer.',
         'The preview changes at once and shows the real outer size, because some shapes are wider than the diameters you entered. A rough price is next to it. We print the vase on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. You can also download the model free for your own printer. Note that a printed vase may not be watertight.',
     ],
     'steps' => [
@@ -22,8 +22,9 @@ return [
         ['q' => 'How thick is the wall?', 'a' => 'By default the wall and the floor are 1.6 mm. Under "Wall thickness and more" you change the wall from 0.8 to 4 mm and the floor from 0.8 to 5 mm. A thin wall between deep flutes is more fragile and holds water less well.'],
     ],
     'examples' => [
-        'Spiral vase with a narrow neck, 180 mm high, top diameter 62 mm, 20 ribs.',
+        'Spiral vase with a narrow neck, 180 mm high, top diameter 62 mm, 18 ribs.',
         'Smooth vase with a narrow neck, 160 mm high, top diameter 70 mm.',
         'Ribbed plant pot cover with a saucer, 120 mm high, top diameter 130 mm.',
+        'Vase with two waists and rounded flutes, 200 mm high, top diameter 70 mm.',
     ],
 ];

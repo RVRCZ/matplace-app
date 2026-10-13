@@ -8,7 +8,8 @@ import papel_portrait as P
 import shape2d as S
 
 LIMITS = {
-    "vase": {"height": (40, 300), "top_d": (30, 250), "bottom_d": (30, 250), "wall": (0.8, 4), "floor": (0.8, 5), "ribs": (6, 48), "twist": (0, 360), "flute": (0, 45)},
+    "vase": {"height": (40, 300), "top_d": (30, 250), "bottom_d": (30, 250), "wall": (0.8, 4), "floor": (0.8, 5), "ribs": (6, 48), "twist": (0, 360), "flute": (0, 45),
+             "waists": (0, 3), "waist_at": (30, 95), "waist": (0, 45)},
     "logo": {"width": (20, 250), "thickness": (0.6, 50), "plate": (0.8, 6), "margin": (0, 20), "base_h": (8, 40)},
     "sign": {"text_height": (4, 80), "thickness": (1.2, 30), "relief": (0.4, 5), "margin": (2, 30), "radius": (0, 30)},
     "stamp": {"width": (15, 120), "relief": (0.8, 4), "plate": (2, 6), "text_height": (4, 40)},
@@ -21,7 +22,7 @@ LIMITS = {
     "cutter": {"width": (30, 150), "height": (10, 30), "wall": (0.8, 1.6), "flange": (3, 10), "flange_t": (1, 2.5)},
 }
 CHOICES = {
-    "vase": {"profile": ("neck", "belly", "cone", "tulip"), "style": ("twist", "ribs", "smooth"), "purpose": ("vase", "pot")},
+    "vase": {"profile": ("neck", "belly", "cone", "tulip"), "style": ("twist", "ribs", "smooth"), "purpose": ("vase", "pot"), "flute_shape": ("sharp", "round")},
     "logo": {"mode": ("relief", "height", "cutout", "standing"), "shape": ("rounded", "rect", "circle")},
     "sign": {"shape": ("rounded", "rect", "oval", "heart", "star", "cloud", "bone", "hexagon", "banner", "arrow", "house", "car", "cat", "candy", "flower", "shield", "tag", "bubble", "circle", "fish"),
              "motif_at": ("left", "right", "above"), "ring_at": ("left", "right", "top"), "style": ("emboss", "engrave", "outline", "name", "stand"), "typeface": ("sans", "serif", "mono", "script")},
@@ -79,6 +80,56 @@ def _through(np, ts, keys, values):
     return out
 
 
+def _monotone(np, ts, keys, values):
+    """A smooth curve through the points that never goes beyond them (Fritsch-Carlson): a belly is as wide as asked, a waist as narrow."""
+    ts = np.asarray(ts, dtype=float)
+    x, y = np.asarray(keys, dtype=float), np.asarray(values, dtype=float)
+    step = np.diff(x)
+    rise = np.diff(y) / step
+    lean = np.zeros_like(y)
+    lean[0], lean[-1] = rise[0], rise[-1]
+    for i in range(1, len(y) - 1):
+        if rise[i - 1] * rise[i] > 0:                     # a belly or a waist lies flat; between two of them the slopes are blended
+            a, b = 2 * step[i] + step[i - 1], step[i] + 2 * step[i - 1]
+            lean[i] = (a + b) / (a / rise[i - 1] + b / rise[i])
+    seg = np.clip(np.searchsorted(x, ts) - 1, 0, len(x) - 2)
+    u = (ts - x[seg]) / step[seg]
+    return ((2 * u ** 3 - 3 * u ** 2 + 1) * y[seg] + (u ** 3 - 2 * u ** 2 + u) * step[seg] * lean[seg]
+            + (-2 * u ** 3 + 3 * u ** 2) * y[seg + 1] + (u ** 3 - u ** 2) * step[seg] * lean[seg + 1])
+
+
+VASE_LEAN = 1.4             # between a belly and a waist the wall gains on average 1 mm of radius per this many mm of height at most: the
+#                             steepest place then leans some 44° off the vertical, which prints without supports
+
+
+def _waisted(np, t, h, top, bottom, belly, waists, at, deep):
+    """
+    The necked vase with its waists where the visitor wants them: `waists` of them, the highest at `at` of the height
+    (0…1), the others spread evenly under it, each narrower than the mouth by `deep` (0…1). Between two waists the vase
+    swells, less the higher it is. Where there is too little height for the swell or the flare of the mouth, they are
+    made smaller, so no wall leans further than a printer lays without supports.
+    """
+    if waists == 0:
+        wide = min(belly, bottom + .33 * h / VASE_LEAN, top + .67 * h / VASE_LEAN)
+        return _monotone(np, t, [0, .33, 1.0], [bottom, wide, top]) if wide > max(top, bottom) else _monotone(np, t, [0, 1.0], [bottom, top])
+    narrow = max(top * (1 - deep), top - (1 - at) * h / VASE_LEAN)
+    keys, values = [0.0], [bottom]
+    for i in range(1, waists + 1):
+        low, high = at * (i - 1) / waists, at * i / waists
+        span = (high - low) * h
+        if i == 1:                                        # from the foot: the low belly and the shoulder the shape has always had
+            wide = min(belly, bottom + .355 * span / VASE_LEAN, narrow + .645 * span / VASE_LEAN)
+            if wide > max(bottom, narrow):
+                keys += [low + (high - low) * .355, low + (high - low) * .667]
+                values += [wide, (wide + narrow) / 2]
+        else:
+            keys.append((low + high) / 2)
+            values.append(narrow + min((belly - narrow) * 0.72 ** (i - 1), .5 * span / VASE_LEAN))
+        keys.append(high)
+        values.append(narrow)
+    return _monotone(np, t, keys + [1.0], values + [top])
+
+
 def vase(M, Invalid, p):
     import numpy as np
     k = "vase"
@@ -89,13 +140,19 @@ def vase(M, Invalid, p):
     ribs = int(n("ribs", 18))
     twist = n("twist", 200) if style == "twist" else 0.0
     amp = 0.0 if style == "smooth" else n("flute", 18) / 100.0
+    # a sharp ridge over a wide valley, the flutes of a spun vase; or ridge and valley both round, a plain wave
+    ridge = 1.0 if _pick(Invalid, p, k, "flute_shape") == "round" else 1.8
+    waists, waist_at, waist = int(n("waists", 1)), n("waist_at", 93), n("waist", 18)
     belly = max(top, bottom) * 1.38                       # the widest point of the necked shape
 
     def radius(t):                                        # t = 0 bottom … 1 top
         base = bottom + (top - bottom) * t
-        if profile == "neck":                             # low belly, a waist under the rim, a flared mouth
+        if profile == "neck" and (waists, waist_at, waist) == (1, 93, 18):
+            # low belly, a waist under the rim, a flared mouth: the vase as it has always been, to the last triangle
             return _through(np, t, [0, .10, .33, .62, .84, .93, 1.0],
                             [bottom, bottom * 1.25, belly, belly * .80, top * .84, top * .82, top])
+        if profile == "neck":
+            return _waisted(np, t, h, top, bottom, belly, waists, waist_at / 100.0, waist / 100.0)
         if profile == "belly":
             return base + 0.22 * max(top, bottom) * np.sin(np.pi * t)
         if profile == "tulip":
@@ -108,7 +165,7 @@ def vase(M, Invalid, p):
         raise Invalid("vase_too_narrow")
     seg = int(min(216, max(96, 6 * ribs))) if amp else 120
     ang = np.linspace(0, 2 * np.pi, seg, endpoint=False)
-    wave = 1 + amp * (0.5 * (1 + np.cos(ribs * ang))) ** 1.8      # sharp ridge, wide valley: the flutes of a spun vase
+    wave = 1 + amp * (0.5 * (1 + np.cos(ribs * ang))) ** ridge
     # across a flute the wall is thinner than its radial thickness; too steep a flank and the slicer has nothing to print
     slope = np.max(np.abs(np.gradient(wave, ang)) / wave) if amp else 0.0
     thin = wall * math.cos(math.atan(slope))
