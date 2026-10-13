@@ -143,3 +143,53 @@ dvoudílné (silueta se patkou zasouvá do drážky podstavce) a server to vždy
 neuváděla, takže krok Barvy nabízel jednu barvu; od commitu 691b3ad (větev `feature/stand-two-colors`) má silueta i
 podstavec vlastní barvu, náhled ukazuje obě, díly jdou prohlédnout a stáhnout zvlášť. Geometrie se neměnila;
 neověřen zůstává průchod až do objednávky na farmě se dvěma barvami u těchto tří nástrojů.
+
+## 8. Držák na gumičky: sloupek jako vlastní díl, tři barvy (větev `feature/hair-tie-parts`, 13. 10. 2026)
+
+Zadání od Romana přes řídící session: barvy po dílech „jako u QR kódu“, silueta zvlášť, podstavec jednou barvou a
+sloupek druhou.
+
+**Co se změnilo**
+
+- `stand_kinds.hair_tie` staví tři díly: `body` (silueta), `stand` (podstavec), `post` (sloupek). Rozměry držáku se
+  nemění: podstavec 8 mm, sloupek stejně vysoký nad podstavcem, stejné místo.
+- `ParametricGenerator::PARTS` a `partsOf` znají `post`; `partsNow()` v `param.ts` vrací tři díly. Krok Barvy má tři
+  řádky, nad náhledem jsou pohledy „Jen silueta / Jen podstavec / Jen sloupek“, ZIP má čtyři STL, uložený návrh nese
+  `parts_bbox` a `part_colors` pro všechny tři.
+- Texty: `param.part.post.hair_tie`, „Jen podstavec“ místo „Jen podstavec se sloupkem“, tip pod náhledem a tři věty
+  v `tools_seo/hair_tie.php` (cs, en, es) mluví o třech dílech.
+
+**Spoj sloupku s podstavcem: odchylka od zadání.** Zadání počítalo s tím, že sloupek jen sedí na podstavci. Farma
+ale tiskne díl z jiné cívky jako samostatnou desku, takže sloupek přijde zákazníkovi volně a na rovné ploše by ho
+nedrželo nic než lepidlo, navíc proti směru, kterým se gumičky stahují. Proto se sloupek **prostrkuje podstavcem
+zespodu**: dole se rozšiřuje do kužele (o 3 mm na 3 mm výšky, 45°) a podstavec má stejně zahloubený otvor s vůlí
+0,25 mm. Tah nahoru kužel jen víc usadí, zespodu sloupek drží stůl. Oba díly se tisknou bez podpěr (sloupek stojí na
+široké patce, zahloubení v podstavci je převis 45°). Bez lepidla má sloupek v otvoru vůli: vedení je jen 8 mm
+vysoké, takže se sloupek 90 mm může nahoře vychýlit až asi o 5 mm. Kapka lepidla to odstraní; stránka to říká stejně jako u siluety.
+**Neověřeno tiskem**: vůle 0,25 mm je převzatá od patky siluety, na skutečném výtisku ji nikdo nezkoušel.
+
+**Rozložení pro tisk (`all`)**: silueta naležato, vedle podstavec, sloupek stojí za podstavcem, takže deska není
+širší než dřív. `use` ukazuje sestavený držák.
+
+**Farma: nález a oprava.** `OrderService::ASSEMBLED` (seznam nástrojů, které farma tiskne po dílech) tři stojánky
+se siluetou neobsahoval. Dvě barvy z oddílu 7 proto platily jen na stránce nástroje a v kalkulaci; na `/farm` se
+díly nenabízely a objednávka šla jako jedna deska v jedné barvě, přestože texty stránky slibovaly barvu pro každý
+díl. Přidal jsem `notes`, `hair_tie`, `candle_stand` do `ASSEMBLED` (jeden řádek v souboru farmy, samostatný
+commit). `StandPartsFarmTest`: návrh držáku s třemi barvami → `/farm` nabídne tři díly a má je zaškrtnuté →
+objednávka po dílech má tři desky, každou ze své cívky; v jedné barvě zůstává jedna deska. Stojánek na lístečky a
+stojan na svíčku dávají dvě desky.
+
+**Stojánek na lístečky a stojan na svíčku se dál nedělí** (silueta + podstavec, dvě barvy). U obou je podstavec jedno
+funkční těleso: miska na bloček s blokem pro drážku, resp. plošina s lemem na sklenici. Není tam druhý kus, který by
+dával smysl jinou barvou; dělení by přidalo spoj a skládání bez užitku, u misky do stěn silných 2 mm a u svíčky pod
+sklenici s plamenem.
+
+**Náhled**: sloupek se barví oblastí nad podstavcem. Jeho patka je při pohledu zespodu v barvě podstavce (oblasti
+náhledu neumí kruh ve spodní ploše odlišit); na tisk to nemá vliv.
+
+**Starší uložené návrhy** držáku se při tisku po dílech postaví znovu z parametrů, tedy už s prostrčeným sloupkem;
+jejich uložený soubor (`all`) je původní jednodílný podstavec a tak se i vytiskne, když si zákazník vybere jednu barvu.
+
+Ověřeno: `StandToolsTest` (4), `StandPartsFarmTest` (2), `scripts/check_preview_colors.mjs` na hair_tie (body,
+stand, post), notes a candle_stand (3 stránky, 0 chyb), ruční výběr tří barev v headless Chrome
+(`docs/img/hair-tie-parts.png`), tři velikosti sloupku (10/40, 14/90, 30/150 mm) se postaví ve všech dílech.
