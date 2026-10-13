@@ -14,6 +14,7 @@ import { modelMeta } from './api';
 
 interface Cfg {
     kind: string; family: string | null; sample: string | null; preset: string | null; captioned: boolean; preview: string; create: string; home: string; locale: string; artworkUrl: string; files: string; from: string | null;
+    design: { url: string; tool: string } | null;      // the page has the field "describe what it should look like"
     presets: Record<string, Record<string, number | string>>;
     fills: Record<string, Record<string, Record<string, number | string>>>;
     config: PriceConfig & { currency: string };
@@ -1203,8 +1204,65 @@ export function bootParam(stage: Stage): void {
             });
         }
     });
-    form.addEventListener('input', (e) => { if ((e.target as HTMLElement).closest('#holes')) return; applyWhen(); soon(); renderPrice(); });
+    // (a wish being typed is no change of the design yet: the preview waits for what the designer makes of it)
+    form.addEventListener('input', (e) => { if ((e.target as HTMLElement).closest('#holes, #param-design')) return; applyWhen(); soon(); renderPrice(); });
     form.addEventListener('submit', (e) => e.preventDefault());
+
+    // ── the design in the customer's own words: the designer answers with the values of the form ──
+    const wish = document.getElementById('param-design');
+    if (wish && cfg.design) {
+        const design = cfg.design;
+        const text = $<HTMLTextAreaElement>('param-design-text'); const go = $<HTMLButtonElement>('param-design-go'); const out = $('param-design-result');
+        const label = go.querySelector('span')!;
+        let busy = false;
+        const counted = (): void => {
+            $('param-design-count').textContent = t('param.design.chars', { n: text.value.length, max: text.maxLength });
+            go.disabled = busy || text.value.trim().length < 3;
+        };
+        /** What the designer says under the field: why it chose what it chose, and what the generator cannot do. */
+        const say = (note: string, unmet: string[] = [], failed = false): void => {
+            out.replaceChildren();
+            out.classList.toggle('hidden', !note && !unmet.length);
+            out.classList.toggle('text-red-700', failed);
+            if (note) { const p = document.createElement('p'); p.textContent = note; out.appendChild(p); }
+            if (unmet.length) {
+                const head = document.createElement('p'); head.className = `font-medium${note ? ' mt-2' : ''}`; head.textContent = t('param.design.unmet');
+                const list = document.createElement('ul'); list.className = 'mt-1 list-disc pl-5';
+                unmet.forEach((u) => { const li = document.createElement('li'); li.textContent = u; list.appendChild(li); });
+                out.append(head, list);
+            }
+        };
+        const ask = async (): Promise<void> => {
+            if (busy || text.value.trim().length < 3) return;
+            busy = true; label.textContent = t('param.design.working'); counted();
+            try {
+                const res = await fetch(design.url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ tool: design.tool, text: text.value.trim(), params: params() }) });
+                const body = await res.json().catch(() => ({})) as { params?: Record<string, unknown>; note?: string; unmet?: string[]; error?: string; message?: string; errors?: Record<string, string[]> };
+                if (!res.ok || !body.params) {
+                    // the day's limit and a failed design say so themselves; too many clicks in a minute is the page's usual "slow down"
+                    const own = body.error ? body.message : Object.values(body.errors ?? {})[0]?.[0];
+                    say(own ?? t(res.status === 429 ? 'param.too_fast' : 'param.design.failed'), [], true);
+                    return;
+                }
+                applyValues(body.params);       // like a preset: the form takes the values, the fields of the chosen type show
+                form.querySelectorAll('[data-preset]').forEach((o) => o.classList.remove('chip-on'));
+                say(body.note ?? '', Array.isArray(body.unmet) ? body.unmet : []);
+                renderPrice();
+                await refresh(); commit();
+            } catch {
+                say(t('param.design.failed'), [], true);
+            } finally {
+                busy = false; label.textContent = go.dataset.label ?? ''; counted();
+            }
+        };
+        text.addEventListener('input', counted);
+        // Ctrl+Enter sends the wish; a plain Enter is a new line of it
+        text.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void ask(); } });
+        go.addEventListener('click', () => { void ask(); });
+        wish.querySelectorAll<HTMLButtonElement>('[data-design-example]').forEach((b) => b.addEventListener('click', () => { text.value = b.textContent ?? ''; counted(); text.focus(); }));
+        counted();
+        wish.hidden = false;
+    }
 
     // a click on a piece in the viewer: the panel jumps to what belongs to it
     viewer.onPiecePicked((index, piece) => {

@@ -1565,5 +1565,19 @@
     "pet.name_side.back": "Vzadu",
     "pet.name_side.left": "Vlevo",
     "pet.name_side.hint": "Strany se počítají při pohledu Zepředu v náhledu. Když jméno vyjde jinde, než chcete, změníte ho pak bez nového generování.",
-    "home.tools.popular": "Nejčastěji tištěné"
+    "home.tools.popular": "Nejčastěji tištěné",
+    "param.design.lead": "Popište, co chcete vyrobit",
+    "param.design.placeholder": "Napište vlastními slovy, jak to má vypadat a k čemu to bude.",
+    "param.design.phone_stand.lead": "Popište, jak má stojánek vypadat",
+    "param.design.phone_stand.placeholder": "Třeba: stojánek na noční stolek, ať se dá telefon nabíjet",
+    "param.design.phone_stand.example1": "nízký klín pro tablet na kuchyňskou linku, s průchodem pro kabel",
+    "param.design.phone_stand.example2": "na zeď vedle vypínače, bez šroubů",
+    "param.design.hint": "AI podle popisu nastaví typ a rozměry. Výsledek uvidíte hned v náhledu a všechno můžete dál upravit.",
+    "param.design.examples": "Zkuste třeba:",
+    "param.design.button": "Navrhnout podle popisu",
+    "param.design.working": "Navrhuji…",
+    "param.design.unmet": "Tohle generátor neumí:",
+    "param.design.limit": "Dnešní limit návrhů podle popisu je vyčerpaný. Rozměry můžete nastavit ručně, nebo to zkuste zítra.",
+    "param.design.failed": "Návrh se nepodařilo připravit. Formulář zůstal, jak byl. Zkuste to prosím znovu.",
+    "param.design.chars": ":n z :max znaků"
 }

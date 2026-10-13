@@ -104,7 +104,7 @@ final class GcodeSlot
         // The nozzle is heated and waited for before the tool line: when the ACE really has to change the spool (another
         // slot was loaded last), its macro refuses a cold nozzle ("nozzle must be hot first", U #2, 12 Oct 2026; the
         // start timeouts of 11 Oct were the same thing). A change in the middle of a print never saw it - the nozzle is hot.
-        $hot = (int) ($temps['nozzle_first'] ?: ($temps['nozzle'] ?? 0) + 5);
+        $hot = (int) (($temps['nozzle_first'] ?? 0) ?: (($temps['nozzle'] ?? 0) ? $temps['nozzle'] + 5 : 0));
         if ($hot < 100 && preg_match('/^G9111 bedTemp=\d+ extruderTemp=(\d+)/m', $gcode, $g)) {
             $hot = (int) $g[1];
         }
@@ -117,7 +117,7 @@ final class GcodeSlot
         }
         $out = $n > 0 ? (string) $out : $gcode;
         if (! empty($temps['nozzle'])) {
-            $first = (int) ($temps['nozzle_first'] ?: $temps['nozzle'] + 5);
+            $first = (int) (($temps['nozzle_first'] ?? 0) ?: $temps['nozzle'] + 5);
             $bed = (int) ($temps['bed'] ?? 0);
             // the start macro heats to the first-layer values, then the slicer sets the printing values per layer
             $out = (string) preg_replace_callback('/^G9111 bedTemp=(\d+) extruderTemp=(\d+)/m',

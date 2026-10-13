@@ -1565,5 +1565,19 @@
     "pet.name_side.back": "Detrás",
     "pet.name_side.left": "A la izquierda",
     "pet.name_side.hint": "Los lados son los de la vista De frente en la vista previa. Si el nombre queda en otro sitio, lo cambia después sin generar de nuevo.",
-    "home.tools.popular": "Lo más impreso"
+    "home.tools.popular": "Lo más impreso",
+    "param.design.lead": "Describa lo que quiere",
+    "param.design.placeholder": "Escriba con sus palabras cómo debe ser y para qué servirá.",
+    "param.design.phone_stand.lead": "Describa el soporte que quiere",
+    "param.design.phone_stand.placeholder": "Por ejemplo: un soporte para la mesilla que deje cargar el teléfono",
+    "param.design.phone_stand.example1": "una cuña baja para la tableta en la encimera, con paso para el cable",
+    "param.design.phone_stand.example2": "en la pared junto al interruptor, sin tornillos",
+    "param.design.hint": "La IA ajusta el tipo y las medidas según su descripción. El resultado se ve enseguida en la vista previa y todo se puede cambiar después.",
+    "param.design.examples": "Pruebe por ejemplo:",
+    "param.design.button": "Diseñar según la descripción",
+    "param.design.working": "Diseñando…",
+    "param.design.unmet": "Esto el generador no lo sabe hacer:",
+    "param.design.limit": "Se ha agotado el límite de hoy para diseños a partir de una descripción. Puede ajustar las medidas a mano o intentarlo mañana.",
+    "param.design.failed": "No se pudo preparar el diseño. El formulario quedó como estaba. Inténtelo de nuevo.",
+    "param.design.chars": ":n de :max caracteres"
 }

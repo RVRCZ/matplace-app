@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\AdviceController;
 use App\Http\Controllers\Api\ArtworkController;
 use App\Http\Controllers\Api\CalculationController;
 use App\Http\Controllers\Api\ConfigController;
+use App\Http\Controllers\Api\DesignController;
 use App\Http\Controllers\Api\EditApiController;
 use App\Http\Controllers\Api\GenerationController;
 use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
@@ -368,6 +369,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('tools/param/preview', [ToolsApiController::class, 'paramPreview'])->middleware('throttle:90,1,preview')->name('tools.param.preview');
     Route::post('tools/param', [ToolsApiController::class, 'paramCreate'])->middleware('throttle:20,1,create')->name('tools.param');
     Route::post('tools/param/zip', [ToolsApiController::class, 'paramZip'])->middleware('throttle:12,1,zip')->name('tools.param.zip');
+    // a wish in the customer's words → the values of a tool's form (the phone stand)
+    Route::post('tools/design', [DesignController::class, 'store'])->middleware('throttle:20,1,design')->name('tools.design');
     // the picture window of the tools: our library of silhouettes (CC0) and the visitor's own uploads
     Route::get('artwork/library', [ArtworkController::class, 'library'])->middleware('throttle:120,1,artlib')->name('artwork.library');
     Route::get('artwork/library/{category}/{slug}.svg', [ArtworkController::class, 'item'])->where(['category' => '[a-z-]+', 'slug' => '[a-z0-9-]+'])->name('artwork.item');

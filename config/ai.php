@@ -22,7 +22,8 @@ return [
         'assistant_model' => env('ANTHROPIC_ASSISTANT_MODEL', 'claude-opus-5-5'),
         'assistant_effort' => env('ANTHROPIC_ASSISTANT_EFFORT', 'low'),
         // a cheaper model for one kind of the assistant's work (empty = assistant_model); classifying 8 000 catalogue models adds up
-        'kind_models' => ['classify' => env('ANTHROPIC_CLASSIFY_MODEL')],
+        // the designer of the tool pages (a wish in words → the values of the form) understands vague wishes fast and cheaply on a Sonnet
+        'kind_models' => ['classify' => env('ANTHROPIC_CLASSIFY_MODEL'), 'design' => env('ANTHROPIC_DESIGN_MODEL', 'claude-sonnet-5-5')],
     ],
 
     /*
@@ -48,6 +49,8 @@ return [
         'describe' => (int) env('AI_LIMIT_DESCRIBE', 20),   // photo identifications per visitor per day
         'advise' => (int) env('AI_LIMIT_ADVISE', 10),        // print advice per visitor per day
         'advise_global' => (int) env('AI_LIMIT_ADVISE_GLOBAL', 300), // … for the whole site per day
+        'design' => (int) env('AI_LIMIT_DESIGN', 20),        // designs from a description (tool pages) per visitor per day
+        'design_global' => (int) env('AI_LIMIT_DESIGN_GLOBAL', 500), // … for the whole site per day
         'generate_guest' => (int) env('AI_LIMIT_GENERATE_GUEST', 1),     // 3D generations per anonymous visitor per day
         'generate_user' => (int) env('AI_LIMIT_GENERATE_USER', 3),       // … per signed-in account per day
         'generate_printer' => (int) env('AI_LIMIT_GENERATE_PRINTER', 15), // … per signed-in printer per day (they prepare models for customers)
@@ -63,6 +66,8 @@ return [
         'image_autofix' => (bool) env('TRIPO_IMAGE_AUTOFIX', true),
         'work_dir' => storage_path('app/generated'),
     ],
+    // "describe what it should look like" on the tool pages: for everybody, or (false) for the admin alone, who tries the wishes first
+    'design_public' => (bool) env('AI_DESIGN_PUBLIC', false),
     'default_target_mm' => 80,
     // photo size guess → volume: box volume × typical fill of a printed part (hollow-ish objects)
     'photo_fill_factor' => 0.35,

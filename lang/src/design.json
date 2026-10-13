@@ -1,0 +1,16 @@
+{
+    "param.design.lead": ["Popište, co chcete vyrobit", "Describe what you want", "Describa lo que quiere"],
+    "param.design.placeholder": ["Napište vlastními slovy, jak to má vypadat a k čemu to bude.", "Say in your own words what it should look like and what it is for.", "Escriba con sus palabras cómo debe ser y para qué servirá."],
+    "param.design.phone_stand.lead": ["Popište, jak má stojánek vypadat", "Describe the stand you want", "Describa el soporte que quiere"],
+    "param.design.phone_stand.placeholder": ["Třeba: stojánek na noční stolek, ať se dá telefon nabíjet", "For example: a stand for the night table that lets the phone charge", "Por ejemplo: un soporte para la mesilla que deje cargar el teléfono"],
+    "param.design.phone_stand.example1": ["nízký klín pro tablet na kuchyňskou linku, s průchodem pro kabel", "a low wedge for a tablet on the kitchen counter, with room for the cable", "una cuña baja para la tableta en la encimera, con paso para el cable"],
+    "param.design.phone_stand.example2": ["na zeď vedle vypínače, bez šroubů", "on the wall next to the light switch, no screws", "en la pared junto al interruptor, sin tornillos"],
+    "param.design.hint": ["AI podle popisu nastaví typ a rozměry. Výsledek uvidíte hned v náhledu a všechno můžete dál upravit.", "AI sets the type and the sizes from your description. You see the result in the preview at once and can change anything afterwards.", "La IA ajusta el tipo y las medidas según su descripción. El resultado se ve enseguida en la vista previa y todo se puede cambiar después."],
+    "param.design.examples": ["Zkuste třeba:", "Try for example:", "Pruebe por ejemplo:"],
+    "param.design.button": ["Navrhnout podle popisu", "Design from the description", "Diseñar según la descripción"],
+    "param.design.working": ["Navrhuji…", "Designing…", "Diseñando…"],
+    "param.design.unmet": ["Tohle generátor neumí:", "The generator cannot do this:", "Esto el generador no lo sabe hacer:"],
+    "param.design.limit": ["Dnešní limit návrhů podle popisu je vyčerpaný. Rozměry můžete nastavit ručně, nebo to zkuste zítra.", "Today's limit for designs from a description is used up. You can set the sizes by hand, or try again tomorrow.", "Se ha agotado el límite de hoy para diseños a partir de una descripción. Puede ajustar las medidas a mano o intentarlo mañana."],
+    "param.design.failed": ["Návrh se nepodařilo připravit. Formulář zůstal, jak byl. Zkuste to prosím znovu.", "The design could not be prepared. The form stayed as it was. Please try again.", "No se pudo preparar el diseño. El formulario quedó como estaba. Inténtelo de nuevo."],
+    "param.design.chars": [":n z :max znaků", ":n of :max characters", ":n de :max caracteres"]
+}
