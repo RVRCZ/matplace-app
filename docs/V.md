@@ -418,6 +418,11 @@ za `M117` stejně jako S1 s Rinkhals a zda soubor nahraný přes USB / LAN spust
 | kostka 20 mm | 14 min 38 s | 14 min 54 s | 3,47 g |
 | stojánek na telefon (výchozí parametry, 70 × 63 × 98 mm) | 1 h 25 min 42 s | 1 h 29 min 31 s | 35,29 g |
 
-**Neověřeno na serveru:** OrcaSlicer 2.4.0-beta Kobra X nezná; klíče profilu stroje jsou ale tytéž jako u našeho
+**Ověřeno na serveru (řídící session, 14. 10.):** OrcaSlicer 2.4.0-beta odmítl z profilu stroje jedinou hodnotu,
+`retraction_distances_when_cut ["0"]` od Anycubicu („Invalid parameter value(s)“, CLI −18, nalezeno bisekcí proti S1) –
+opraveno na `["10"]` jako u S1 (commit 1a8a698), test to hlídá. Pak řez kostky prošel: PLA 34 min, PETG 42 min.
+Celá sada s profily Kobra X: 633 testů, 0 chyb, 2 přeskočené (ffmpeg).
+
+Původní poznámka: OrcaSlicer 2.4.0-beta Kobra X nezná; klíče profilu stroje jsou ale tytéž jako u našeho
 `machine.json` (S1) a filamentové profily nesou stejné druhy klíčů navíc (`*_HS`, `*_BRASS`) jako ty, které server dnes
 čte. První tisk na Kobra X (test `quick` po založení řádku) ukáže, jestli řez na serveru projde.

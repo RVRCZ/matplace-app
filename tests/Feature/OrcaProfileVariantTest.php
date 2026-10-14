@@ -41,6 +41,9 @@ class OrcaProfileVariantTest extends TestCase
         $x = json_decode(file_get_contents(base_path('engines/orca/profiles/machine_kobrax.json')), true);
         $this->assertSame('Anycubic Kobra X 0.4 nozzle', $x['name']);
         $this->assertSame(['0x0', '260x0', '260x260', '0x260'], $x['printable_area']);
+        // OrcaSlicer 2.4 on the server refuses Anycubic's ["0"] here ("Invalid parameter value(s)", CLI -18, 14 Oct 2026)
+        $s1 = json_decode(file_get_contents(base_path('engines/orca/profiles/machine.json')), true);
+        $this->assertSame($s1['retraction_distances_when_cut'], $x['retraction_distances_when_cut']);
         $this->assertEquals(260, $x['printable_height']);
         // the start is the S1's: the macro heats with these two values and M117 follows - what the spool rewrite expects
         $this->assertStringStartsWith("G9111 bedTemp=[first_layer_bed_temperature] extruderTemp=[first_layer_temperature[initial_tool]]\nM117\n", $x['machine_start_gcode']);
