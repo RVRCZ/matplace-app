@@ -386,3 +386,38 @@ kostky) spolu s `top_surface_speed` 100–150.
 objektu není; ostatní objekty se na šev neptají), `TuningAdvisorTest` beze změny. Skutečné volání AI nad fotkou švu
 proběhne až s prvním tiskem – pokyny pro model jsou zatím neověřené na reálné fotce. Vzhled stránky v prohlížeči jsem neověřoval,
 jen obsah HTML v testech.
+
+## 6. Kobra X – profily pro náš řez (zadání `docs/prompts/kobra-x.md`, oddíl 1, 14. 10. 2026)
+
+**Zdroj:** profily Kobra X z Anycubic Slicer Next (verze balíku 1.3.2609.02, místně v `C:\Program Files\AnycubicSlicerNext`).
+Profil stroje i filamentů pro Kobra X je tam plochý (bez `inherits`), takže ho stačilo převzít.
+
+| soubor | co obsahuje |
+|---|---|
+| `machine_kobrax.json` | profil „Anycubic Kobra X 0.4 nozzle“ beze změny (260 × 260 × 260, kalená tryska, max. 450 mm/s, zrychlení 10 000, retrakce 0,8 / 30 mm/s, z-hop 0,4, bez přídavného ventilátoru) **kromě šablony výměny cívky**: ta Anycubicu volá proměnné `ace_t_box_vector`, `ace_t_slot_vector`, `flush_length_4`, které OrcaSlicer 2.4 na serveru nezná – nahrazena šablonou S1 (`T[next_extruder]`, `flush_length`, `toolchange_z`), se kterou server dnes řeže dvoubarevné tisky |
+| `filament_pla_kobrax.json` | „Anycubic PLA @Anycubic Kobra X 0.4 nozzle“: tok 0,96, PA 0,036, strop 13 mm³/s, retrakce 1,3, ventilátor 80–100 %, bez přídavného ventilátoru; platí pro všechny druhy s profilem PLA (PLA, PLA+, silk, matný, svítící…) |
+| `filament_petg_kobrax.json` | „Anycubic PETG @Anycubic Kobra X 0.4 nozzle“: strop 8 mm³/s, ventilátor 15–80 % |
+| ASA, TPU | **sdílené profily S1** – Anycubic pro Kobra X TPU nemá a jeho ASA má 205 / 215 °C a ventilátor 80–100 % (zjevně kopie PLA); teploty stejně určuje druh / řádek |
+
+Proces zůstává náš sdílený (`process_*.json`), spárovaný přes `compatible_printers` jako u Maxu. Knihovna
+`farm_profile_library.json` blok pro Kobra X nemá – řádky ladění na ní začnou jako „generic“ (hodnoty profilu + teploty
+druhu), dokud je nevyladí testy; S2 scarf ani horní plocha 120 se na ni nepřenášejí.
+
+**Začátek tisku (otázka zadání):** Anycubic Slicer Next pro Kobra X píše **stejný začátek jako pro S1** –
+`G9111 bedTemp=60 extruderTemp=220`, hned `M117`, a u jednobarevného tisku žádný řádek `T` (ověřeno na jeho vlastním
+řezu kostky s jeho profily). `GcodeSlot::retarget` tedy **úpravu nepotřebuje**: na našem řezu kostky pro Kobra X přepsal
+`G9111` na teploty cívky a hned za `M117` vložil `M104 S225` / `M109 S225` / `T2` (spuštěno přímo nad G-kódem). Značky
+`; AFTER_LAYER_CHANGE` jsou v G-kódu (časosběr po vrstvách by šel). **Neověřeno na stroji:** zda K4 přijme náš `T<n>`
+za `M117` stejně jako S1 s Rinkhals a zda soubor nahraný přes USB / LAN spustí – ukáže první tisk.
+
+**Zkušební řezy** (místní Anycubic Slicer Next CLI, výplň 15 %, bez podpěr a límce; „náš“ = `machine_kobrax` +
+`process_standard` + `filament_pla_kobrax`, „Anycubic“ = jeho stroj + „0.20mm Standard @Kobra X“ + „Anycubic PLA @Kobra X“):
+
+| model | náš | Anycubic | hmotnost (oba) |
+|---|---|---|---|
+| kostka 20 mm | 14 min 38 s | 14 min 54 s | 3,47 g |
+| stojánek na telefon (výchozí parametry, 70 × 63 × 98 mm) | 1 h 25 min 42 s | 1 h 29 min 31 s | 35,29 g |
+
+**Neověřeno na serveru:** OrcaSlicer 2.4.0-beta Kobra X nezná; klíče profilu stroje jsou ale tytéž jako u našeho
+`machine.json` (S1) a filamentové profily nesou stejné druhy klíčů navíc (`*_HS`, `*_BRASS`) jako ty, které server dnes
+čte. První tisk na Kobra X (test `quick` po založení řádku) ukáže, jestli řez na serveru projde.
