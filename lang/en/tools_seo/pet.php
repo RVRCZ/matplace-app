@@ -13,7 +13,7 @@ return [
         ['name' => 'Pick a style', 'text' => 'Realistic, a tabletop miniature, or a cartoon. For the miniature you choose how much material to add.'],
         ['name' => 'Choose the size and the base', 'text' => 'The size goes from 30 to 250 mm. The base is oval, round, or a taller plinth with a name. The name is optional.'],
         ['name' => 'Make the figurine', 'text' => 'Tick the consent and press "Make the figurine". It takes 1 to 3 minutes; meanwhile you can leave and come back by the link in the address bar.'],
-        ['name' => 'Check it and order the print', 'text' => 'Turn the figurine, see its thinnest place and a rough price. The base and the name can be changed without a new generation. Then order the print, or download the model.'],
+        ['name' => 'Check it and order the print', 'text' => 'Turn the figurine and see its thinnest place. The base and the name can be changed without a new generation. Then order the print, or download the model.'],
     ],
     'faq' => [
         ['q' => 'Which photo works best?', 'a' => 'The whole animal from the side or at a three-quarter angle, taken at its own height, calm, sitting or standing, in front of a plain background. There should be no person in the photo: a hand holding the animal would become part of the figurine. A leash and a collar do not matter.'],

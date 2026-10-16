@@ -6,13 +6,13 @@ return [
     'h1' => 'Un fidget deslizante recortado en su placa, impreso de una vez',
     'intro' => [
         'La herramienta toma un modelo plano, un logo, una placa con nombre, un colgante, cualquier cosa de al menos 6 mm de grosor, y recorta una ranura en cola de milano a lo largo de su lado más largo (o del que elija), con un margen en los extremos para que el cursor no se salga. Dentro va un cursor: una barra en cola de milano 0,3 mm menor por todos los lados, con un botón de Ø 10 mm encima y un hoyuelo debajo que hace clic en las bolas de los topes del fondo de la ranura. Todo se imprime de una vez, montado, sin soportes.',
-        'Usted ajusta el ancho y la profundidad de la ranura, el margen, el desplazamiento transversal, la longitud del cursor, el número de topes (0 a 5) y la holgura; el botón se puede quitar y el cursor queda a ras de la superficie. El modelo tarda unos segundos y se abre en la vista previa con la placa y el cursor en colores distintos, las medidas y el precio de impresión; lo descarga gratis o nos encarga la impresión.',
+        'Usted ajusta el ancho y la profundidad de la ranura, el margen, el desplazamiento transversal, la longitud del cursor, el número de topes (0 a 5) y la holgura; el botón se puede quitar y el cursor queda a ras de la superficie. El modelo tarda unos segundos y se abre en la vista previa con la placa y el cursor en colores distintos y con las medidas; lo descarga gratis o, tras «Continuar», ve el precio y nos encarga la impresión.',
     ],
     'steps' => [
         ['name' => 'Suba una placa plana', 'text' => 'Un STL o 3MF de un logo, una placa con nombre u otra placa de al menos 6 mm de grosor. También vale la salida de nuestros generadores.'],
         ['name' => 'Ajuste la ranura', 'text' => 'Su dirección, ancho y profundidad, el margen desde los extremos y el desplazamiento transversal, para que no pase por el texto.'],
         ['name' => 'Ajuste el cursor', 'text' => 'Su longitud, el número de topes, la holgura y si lleva botón.'],
-        ['name' => 'Cree el modelo', 'text' => 'Pulse «Hacer el fidget deslizante». En unos segundos se abre con la placa y el cursor, las medidas y el precio de impresión.'],
+        ['name' => 'Cree el modelo', 'text' => 'Pulse «Hacer el fidget deslizante». En unos segundos se abre con la placa, el cursor y las medidas.'],
     ],
     'faq' => [
         ['q' => '¿Por qué cola de milano y no una ranura simple?', 'a' => 'Los flancos inclinados 15 grados sujetan el cursor en la ranura; no puede salirse hacia arriba. La ranura está cerrada en ambos extremos, así que tampoco se sale de lado.'],

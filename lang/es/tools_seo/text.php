@@ -12,7 +12,7 @@ return [
         ['name' => 'Escriba el texto', 'text' => 'De una a tres líneas; la primera es la mayor. Los símbolos bajo los campos se insertan en el texto con un toque.'],
         ['name' => 'Elija la tipografía', 'text' => 'Las treinta tipografías se muestran como casillas con su nombre compuesto en la propia letra. Las sin serifa en negrita son las más estables; las manuscritas, las más decorativas.'],
         ['name' => 'Ajuste la altura y el grosor', 'text' => 'La altura de letra fija el tamaño del texto y el grosor, su fondo. Para sostenerse, el texto debe tener de fondo al menos una quinta parte de su altura.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto, un paso después. El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto lo muestra el cálculo tras «Continuar». El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Qué tamaño tendrá el texto?', 'a' => 'La palabra HOME con letras de 30 mm sale de 144 mm de largo, 34 mm de alto y 12 mm de fondo. El largo crece con el número de letras; en la bandeja de impresión cabe un texto de hasta 250 mm.'],

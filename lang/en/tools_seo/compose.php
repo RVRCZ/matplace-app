@@ -12,7 +12,7 @@ return [
         ['name' => 'Start from a preset', 'text' => 'A name on a cloud, a cake topper, or a pendant with a name. Then put your own texts and colours in.'],
         ['name' => 'Edit the layers', 'text' => 'Tap a layer in the list or in the preview and change its text, typeface, picture, shape and colour. In the preview you drag it to move it, drag a corner of its frame to resize it and the knob to turn it. The arrows change what lies on what.'],
         ['name' => 'Add more', 'text' => 'The buttons add a text, a picture (from the library or your own) or a shape. A layer can be duplicated, hidden and removed.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price, the precise price one step further. The model and the slicer project with the colour changes are free to download without an account.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions; the calculation after "Continue" shows the precise price. The model and the slicer project with the colour changes are free to download without an account.'],
     ],
     'faq' => [
         ['q' => 'Can I grab a layer and drag it with the mouse?', 'a' => 'Not yet. You set the position, the width and the turn with the sliders of the chosen layer, and the preview is recomputed after every change. Dragging in the preview itself is in the works.'],

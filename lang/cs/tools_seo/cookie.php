@@ -12,7 +12,7 @@ return [
         ['name' => 'Vyberte tvar', 'text' => 'Siluetu z knihovny, vlastní obrázek, nebo krátký nápis. U obrázku se pozadí odstraní samo a kolem motivu zůstane okraj těsta, který si nastavíte.'],
         ['name' => 'Nakreslete polevu', 'text' => 'Zapněte kreslení: náhled se otočí shora a tah myší je tah zdobicího sáčku. Hrot je kulatý, plochý, nebo dělá řadu teček; šířka tahu je 1,5 až 4 mm.'],
         ['name' => 'Dolaďte barvy a tloušťku', 'text' => 'Každé barvě polevy můžete dát jiný filament, poslední tah odebrat, nebo polevu smazat a začít znovu. Zaškrtnutím přidáte očko na stužku.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu. Model, STL po barvách i projekt s výměnami filamentu stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Model, STL po barvách i projekt s výměnami filamentu stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Je sušenka k jídlu?', 'a' => 'Ne. Je to plastová hračka do dětské kuchyňky nebo ozdoba. Doporučujeme PLA; pro malé děti zvolte větší rozměr bez očka a drobných dílů.'],

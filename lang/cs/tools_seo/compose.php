@@ -12,7 +12,7 @@ return [
         ['name' => 'Začněte od předvolby', 'text' => 'Jméno na mraku, zápich do dortu, nebo přívěsek se jménem. Texty a barvy pak přepíšete na své.'],
         ['name' => 'Upravte vrstvy', 'text' => 'Klepněte na vrstvu v seznamu nebo v náhledu a změňte její text, písmo, obrázek, tvar a barvu. V náhledu ji tažením posunete, rohem rámečku zvětšíte a kolečkem otočíte. Šipkami měníte, co leží na čem.'],
         ['name' => 'Přidejte další', 'text' => 'Tlačítky přidáte text, obrázek (z knihovny nebo vlastní) nebo tvar. Vrstvu lze zdvojit, skrýt a smazat.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu o krok dál. Model i projekt pro slicer s výměnami barev stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer s výměnami barev stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jde vrstvu chytit a posunout myší?', 'a' => 'Zatím ne. Polohu, šířku a otočení nastavujete posuvníky u vybrané vrstvy a náhled se po každé změně přepočítá. Tažení přímo v náhledu připravujeme.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Suba una foto o un dibujo', 'text' => 'Suba una imagen, elíjala de la biblioteca o reutilice una que subió antes. Para una foto entera desactive la eliminación del fondo; si la deja activada, solo queda el motivo en el centro.'],
         ['name' => 'Elija la forma y las medidas', 'text' => 'Un círculo, un cuadrado o un hexágono. Ajuste el ancho, el grosor y un marco de hasta 4 mm alrededor de la imagen, y si quiere un borde biselado y ranuras por debajo.'],
         ['name' => 'Afine los colores', 'text' => 'Elija el número de colores y asigne a cada uno un filamento en la ventana de colores. Fije cuánto sube cada color (de 0,2 a 0,8 mm); también puede unir dos colores en uno.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso más allá. Para un juego basta indicar la cantidad. El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». Para un juego basta indicar la cantidad. El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Queda el vaso recto sobre el posavasos?', 'a' => 'Sí. Por defecto los colores van escalonados de 0,4 mm en 0,4 mm y un vaso se apoya en ellos sin problema. Para una parte superior totalmente plana use la opción «Colores a ras de la superficie», que solo imprime una impresora que cambie el filamento sola (AMS, MMU, ACE).'],

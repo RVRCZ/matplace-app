@@ -2,16 +2,16 @@
 
 return [
     'title' => 'Organizador de cajón a medida: diseño e impresión 3D',
-    'description' => 'Indique las medidas del cajón y el número de compartimentos y verá la vista previa y un precio orientativo. Lo imprimimos o descarga el modelo gratis.',
+    'description' => 'Indique las medidas del cajón y el número de compartimentos y verá la vista previa y las medidas. Lo imprimimos o descarga el modelo gratis.',
     'h1' => 'Un organizador con compartimentos a la medida de su cajón',
     'intro' => [
         'La herramienta crea un organizador con compartimentos según las medidas que indique en milímetros. Sirve para un cajón de la cocina, del taller o del baño, y también para la mesa con material de oficina. Se ajustan el ancho, el fondo y el alto, el número de filas y columnas y el redondeo de esquinas. Todos los compartimentos son iguales y el organizador es una sola pieza sin tapa.',
-        'La vista previa se redibuja con cada cambio y muestra las medidas exteriores y el tamaño de un compartimento, con un precio orientativo al lado. Imprimimos el organizador en nuestra granja de impresión en Chequia: se lo enviamos con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga el modelo gratis como proyecto listo para su impresora o como archivo STL.',
+        'La vista previa se redibuja con cada cambio y muestra las medidas exteriores y el tamaño de un compartimento; el precio exacto y el tiempo de impresión los calcula el paso siguiente, tras «Continuar». Imprimimos el organizador en nuestra granja de impresión en Chequia: se lo enviamos con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga el modelo gratis como proyecto listo para su impresora o como archivo STL.',
     ],
     'steps' => [
         ['name' => 'Mida el cajón', 'text' => 'Mida el ancho, el fondo y el alto interiores del cajón. Deje de 1 a 2 mm de holgura por lado, los cajones rara vez son perfectamente rectos.'],
         ['name' => 'Indique medidas y compartimentos', 'text' => 'Rellene el ancho, el fondo, el alto, las filas y las columnas. Puede empezar con el ajuste «Cajón», «Material de oficina» o «Piezas pequeñas».'],
-        ['name' => 'Revise vista previa y precio', 'text' => 'La vista previa giratoria muestra la forma, las medidas exteriores y el tamaño de un compartimento. El precio orientativo se recalcula con cada cambio.'],
+        ['name' => 'Revise la vista previa', 'text' => 'La vista previa giratoria muestra la forma, las medidas exteriores y el tamaño de un compartimento. Se redibuja con cada cambio.'],
         ['name' => 'Pida la impresión o descargue', 'text' => 'Elija material, color y cantidad y continúe al precio exacto; la impresión con nosotros se paga con crédito recargado con tarjeta. O use «Tengo impresora, descargar el modelo».'],
     ],
     'faq' => [

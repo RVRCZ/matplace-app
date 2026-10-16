@@ -12,7 +12,7 @@ return [
         ['name' => 'Napište jméno nebo slovo', 'text' => 'Až 16 znaků včetně číslic a symbolů, třeba srdíčka. Každý znak je jeden korálek, mezera je korálek prázdný.'],
         ['name' => 'Vyberte tvar a písmeno', 'text' => 'Kostka, kulička, srdce nebo hvězda. Písmeno vyvýšené jinou barvou, nebo vyryté; písmo bezpatkové, patkové či strojové, vždy tučné.'],
         ['name' => 'Nastavte velikost a otvor', 'text' => 'Velikost korálku a průměr otvoru podle šňůrky. Pod náhledem vidíte, kolik korálků vzniklo a jak je každý velký.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Model i projekt s výměnou filamentu stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Model i projekt s výměnou filamentu stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jak velký otvor zvolit?', 'a' => 'Na gumičku nebo tenkou šňůrku stačí 2 mm, na kůži a silnější provázek 3 až 4 mm. Nad otvorem i pod ním musí zůstat aspoň 1,2 mm plastu; když se to do korálku nevejde, nástroj to řekne.'],

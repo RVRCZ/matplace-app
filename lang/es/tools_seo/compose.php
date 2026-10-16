@@ -12,7 +12,7 @@ return [
         ['name' => 'Empiece con una plantilla', 'text' => 'Un nombre sobre una nube, un topper de tarta o un colgante con nombre. Luego ponga sus propios textos y colores.'],
         ['name' => 'Edite las capas', 'text' => 'Toque una capa en la lista o en la vista previa y cambie su texto, tipografía, imagen, forma y color. En la vista previa la arrastra para moverla, arrastra una esquina del marco para cambiar su tamaño y el punto para girarla. Las flechas cambian qué queda sobre qué.'],
         ['name' => 'Añada más', 'text' => 'Los botones añaden un texto, una imagen (de la biblioteca o suya) o una forma. Una capa se puede duplicar, ocultar y quitar.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto, un paso después. El modelo y el proyecto para el laminador con los cambios de color se descargan gratis y sin registro.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto lo muestra el cálculo tras «Continuar». El modelo y el proyecto para el laminador con los cambios de color se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Puedo coger una capa y arrastrarla con el ratón?', 'a' => 'Todavía no. La posición, el ancho y el giro se ajustan con los deslizadores de la capa elegida, y la vista previa se recalcula tras cada cambio. Estamos preparando el arrastre en la propia vista previa.'],

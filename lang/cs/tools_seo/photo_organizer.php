@@ -12,7 +12,7 @@ return [
         ['name' => 'Vyberte obrázek nebo siluetu', 'text' => 'Nahrajte vlastní obrázek, nebo vyberte motiv z knihovny. Pozadí se odstraní samo a obrys se vyhladí.'],
         ['name' => 'Zvolte vnitřek', 'text' => 'Přihrádky v mřížce, kulaté otvory, nebo jedna kapsa. Velikost přihrádky a průměr otvoru nastavíte posuvníkem.'],
         ['name' => 'Nastavte rozměry', 'text' => 'Šířku a výšku měníte posuvníky nebo tažením šipek v náhledu. Pod náhledem čtete, kolik přihrádek či otvorů vyšlo a jak jsou hluboké.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jaký obrázek se na stojánek hodí?', 'a' => 'Tvar s jasným obrysem bez tenkých výběžků: mrak, srdce, jablko, hlava zvířete. Do úzkých cípů se přihrádka nevejde a tenká stěna je tam křehčí.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Choose a picture or type a name', 'text' => 'A silhouette from the library, your own SVG or image, or a name of up to 16 characters. An uploaded picture takes precedence over the name.'],
         ['name' => 'Enter the size of the pad', 'text' => 'The side of the pad and the depth of the tray. For a hundred notes 12 mm is enough; two pads on top of one another need 22 to 25 mm.'],
         ['name' => 'Set the silhouette', 'text' => 'Change its width with the slider or by dragging the arrow in the preview, its thickness from 2.4 to 5 mm. The groove for a pen can be turned on or off.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price. When ordering you pick the colour of the tray and of the silhouette; the model and the slicer project are free to download.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions; the calculation after "Continue" shows the precise price. When ordering you pick the colour of the tray and of the silhouette; the model and the slicer project are free to download.'],
     ],
     'faq' => [
         ['q' => 'Which pads does the stand take?', 'a' => 'Square pads of sticky notes. The most common size is 76 × 76 mm, small ones are 51 mm and big ones 101 mm; measure yours and enter the side. Rectangular pads are not supported yet.'],

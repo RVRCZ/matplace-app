@@ -13,7 +13,7 @@ return [
         ['name' => 'Vyberte styl', 'text' => 'Realistická, miniatura na stůl, nebo kreslená. U miniatury zvolíte, kolik materiálu přidat.'],
         ['name' => 'Zvolte velikost a podstavec', 'text' => 'Velikost nastavíte od 30 do 250 mm. Podstavec je oválný, kulatý, nebo vyšší sokl se jmenovkou. Jméno mazlíčka je nepovinné.'],
         ['name' => 'Vytvořte figurku', 'text' => 'Zaškrtněte souhlas a klepněte na „Vytvořit figurku“. Trvá to 1 až 3 minuty, mezitím můžete odejít a vrátit se odkazem z adresního řádku.'],
-        ['name' => 'Zkontrolujte ji a objednejte tisk', 'text' => 'Figurku si otočíte, uvidíte nejtenčí místo a orientační cenu. Podstavec a jméno změníte bez nového generování. Pak objednáte tisk, nebo model stáhnete.'],
+        ['name' => 'Zkontrolujte ji a objednejte tisk', 'text' => 'Figurku si otočíte a uvidíte její nejtenčí místo. Podstavec a jméno změníte bez nového generování. Pak objednáte tisk, nebo model stáhnete.'],
     ],
     'faq' => [
         ['q' => 'Jaká fotka je nejlepší?', 'a' => 'Celé zvíře z boku nebo z tříčtvrtečního úhlu, focené z jeho výšky, v klidu vsedě nebo ve stoje, před jednobarevným pozadím. Na fotce nemá být člověk, ruka držící zvíře by se stala součástí figurky. Vodítko a obojek nevadí.'],

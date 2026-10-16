@@ -12,7 +12,7 @@ return [
         ['name' => 'Začněte od jmenovky', 'text' => 'Stránka se otevře s destičkou, jménem Adéla a hvězdou. Přepište jméno a vyberte jiný tvar destičky.'],
         ['name' => 'Upravte vrstvy', 'text' => 'Klepněte na vrstvu v seznamu nebo v náhledu a změňte text, písmo, tvar, obrázek a barvu. V náhledu ji tažením posunete, rohem rámečku zvětšíte a kolečkem otočíte.'],
         ['name' => 'Přidejte další', 'text' => 'Tlačítky přidáte druhý řádek textu, obrázek nebo další tvar, nejvýš dvanáct vrstev. Šipky mění, co leží na čem.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Model i projekt pro slicer s výměnami filamentu stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer s výměnami filamentu stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jak velká jmenovka vyjde?', 'a' => 'Jak ji nastavíte: šířku každé vrstvy měníte od 5 do 250 mm. Jmenovka, se kterou se stránka otevře, má 120 × 60 mm a tloušťku 4,6 mm.'],

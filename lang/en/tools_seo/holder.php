@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Custom wall holder: cradle, pocket, hook or clip',
-    'description' => 'Measure the thing, choose how the holder should hold it, and it is made to fit. Preview and rough price at once. We print it, or download it free.',
+    'description' => 'Measure the thing, choose how the holder should hold it, and it is made to fit. Preview and size at once. We print it, or download it free.',
     'h1' => 'A holder for a remote, a bottle, headphones or a broom',
     'intro' => [
         'The tool builds a holder from the size of the thing you want to put away. You choose one of four types: a cradle with a low front, a closed pocket, a hook or a clip for a round handle. It suits a remote control, a bottle, tools, headphones or a broom. You enter the real size of the thing, and the tool adds the clearance around it.',
-        'The holder is fixed with wall screws or double-sided tape. The preview shows the shape with its holes, next to a rough price. We print the holder on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. For your own printer you download the model free; it prints without supports. Screws, wall plugs and tape are not part of the print.',
+        'The holder is fixed with wall screws or double-sided tape. The preview shows the shape with its holes and its size; the calculation one step further works out the precise price. We print the holder on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. For your own printer you download the model free; it prints without supports. Screws, wall plugs and tape are not part of the print.',
     ],
     'steps' => [
         ['name' => 'Measure the thing', 'text' => 'Measure the width and thickness of the thing, or the diameter of a handle. Enter the real size with no extra room.'],
         ['name' => 'Choose how it holds', 'text' => 'The cradle and the pocket wrap around the thing, the hook is for anything with a loop or a strap, and the clip grips a round handle. You can start from a preset such as "Remote control" or "Headphones".'],
         ['name' => 'Choose the fixing', 'text' => 'Leave the holes for wall screws on, or switch them off and stick the holder with double-sided tape. The holes can be round, or keyholes that hang on a screw in the wall.'],
-        ['name' => 'Order the print or download', 'text' => 'Check the preview and the rough price and continue to the precise price; a print from us is paid from credit topped up by card. Or download the model for your own printer.'],
+        ['name' => 'Order the print or download', 'text' => 'Check the preview and press "Continue" for the precise price; a print from us is paid from credit topped up by card. Or download the model for your own printer.'],
     ],
     'faq' => [
         ['q' => 'How big a thing can the holder take?', 'a' => 'The thing can be 10 to 300 mm wide and 5 to 150 mm thick. The clip is only for round handles up to 60 mm in diameter.'],

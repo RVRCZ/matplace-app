@@ -6,13 +6,13 @@ return [
     'h1' => 'A vase or a plant pot cover in your own size',
     'intro' => [
         'The tool builds a vase or a plant pot cover from the height and the diameters you enter. You pick one of four shapes: narrow neck, bellied, straight cone or tulip. The surface can be smooth, ribbed or spiral. For ribbed and spiral surfaces you set the number of ribs, the flute depth and the twist, and choose sharp or rounded flutes. On the narrow-neck shape you move the waist up or down and can have up to three of them. A pot cover can have drainage holes in the floor and a separate saucer.',
-        'The preview changes at once and shows the real outer size, because some shapes are wider than the diameters you entered. A rough price is next to it. We print the vase on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. You can also download the model free for your own printer. Note that a printed vase may not be watertight.',
+        'The preview changes at once and shows the real outer size, because some shapes are wider than the diameters you entered. The calculation one step further works out the precise price. We print the vase on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. You can also download the model free for your own printer. Note that a printed vase may not be watertight.',
     ],
     'steps' => [
         ['name' => 'Choose purpose and shape', 'text' => 'Pick a vase or a plant pot cover and one of the four shapes. You can start from the preset "Spiral", "Ribbed", "Smooth" or "Plant pot".'],
         ['name' => 'Enter the dimensions', 'text' => 'Set the height, the top diameter and the bottom diameter. For a pot cover measure the pot that goes inside and add some room.'],
         ['name' => 'Tune the surface', 'text' => 'For the ribbed and the spiral surface set the number of ribs, the flute depth and the twist. The tool warns you when the wall between the flutes would come out too thin.'],
-        ['name' => 'Order the print or download', 'text' => 'Check the preview and the rough price and continue to the precise price; a print from us is paid from credit topped up by card. Or download the model for your own printer.'],
+        ['name' => 'Order the print or download', 'text' => 'Check the preview and press "Continue" for the precise price; a print from us is paid from credit topped up by card. Or download the model for your own printer.'],
     ],
     'faq' => [
         ['q' => 'Will a printed vase hold water?', 'a' => 'It may not. Microscopic gaps can remain between the layers. For cut flowers put a glass inside the vase, or seal the inside with varnish.'],

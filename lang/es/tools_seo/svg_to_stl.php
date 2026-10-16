@@ -11,7 +11,7 @@ return [
     'steps' => [
         ['name' => 'Suba un SVG', 'text' => 'Elija un archivo SVG de hasta 400 kB, o una imagen PNG, JPG o WebP de hasta 5 MB. Para probar, ya hay elegido un motivo de la biblioteca.'],
         ['name' => 'Indique el ancho y la altura', 'text' => 'El ancho de la forma se ajusta con el deslizador o arrastrando la flecha en la vista previa; el grosor, de 0,6 a 50 mm. El bisel del borde superior se activa con una casilla.'],
-        ['name' => 'Revise la vista previa', 'text' => 'Junto a la vista previa lee las medidas exteriores y un precio orientativo; debajo, los avisos sobre líneas finas o piezas sueltas.'],
+        ['name' => 'Revise la vista previa', 'text' => 'Junto a la vista previa lee las medidas exteriores; debajo, los avisos sobre líneas finas o piezas sueltas.'],
         ['name' => 'Descargue el STL o encargue la impresión', 'text' => 'El modelo se descarga gratis y sin registro, como STL o como proyecto para el laminador. La impresión en nuestra granja se paga con crédito prepago.'],
     ],
     'faq' => [

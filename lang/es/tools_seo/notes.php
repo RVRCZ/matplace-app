@@ -12,7 +12,7 @@ return [
         ['name' => 'Elija una imagen o escriba un nombre', 'text' => 'Una silueta de la biblioteca, su propio SVG o imagen, o un nombre de hasta 16 caracteres. Una imagen subida tiene prioridad sobre el nombre.'],
         ['name' => 'Indique la medida del taco', 'text' => 'El lado del taco y el fondo de la bandeja. Para cien notas bastan 12 mm; dos tacos apilados necesitan de 22 a 25 mm.'],
         ['name' => 'Ajuste la silueta', 'text' => 'Cambie su ancho con el deslizador o arrastrando la flecha en la vista previa, y su grosor de 2,4 a 5 mm. La ranura para el bolígrafo se activa o se quita.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo. Al encargar elige el color de la bandeja y el de la silueta; el modelo y el proyecto para el laminador se descargan gratis.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto lo muestra el cálculo tras «Continuar». Al encargar elige el color de la bandeja y el de la silueta; el modelo y el proyecto para el laminador se descargan gratis.'],
     ],
     'faq' => [
         ['q' => '¿Para qué tacos sirve el soporte?', 'a' => 'Para tacos cuadrados de notas adhesivas. La medida más común es 76 × 76 mm; los pequeños miden 51 mm y los grandes 101 mm. Mida el suyo e indique el lado. Los tacos rectangulares aún no se admiten.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Změřte tašku', 'text' => 'Posuvkou nebo pravítkem změřte průměr otvoru a tloušťku stěny tašky v místě otvoru. Obě čísla zadáte do nástroje.'],
         ['name' => 'Vyberte obrázek nebo napište jméno', 'text' => 'Nahrajte obrázek, vyberte motiv z knihovny, nebo napište jméno a zvolte jedno ze třiceti písem.'],
         ['name' => 'Nastavte velikost a barvy', 'text' => 'Šířku měníte posuvníkem nebo tažením šipky v náhledu. V seznamu barev vidíte, které cívky se použijí, a můžete je změnit.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu o krok dál. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Na jaké tašky ozdoba pasuje?', 'a' => 'Na každou tašku, která má ve stěně kulaté otvory: nástroj se neřídí značkou, ale rozměry, které zadáte. Otvor může mít 6 až 20 mm a stěna 1 až 10 mm.'],

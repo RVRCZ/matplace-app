@@ -12,7 +12,7 @@ return [
         ['name' => 'Elija qué fabricar', 'text' => 'Un panel de foto para la ventana o un soporte, una lámpara con la foto alrededor, o un relieve de pared sin luz detrás.'],
         ['name' => 'Suba una foto', 'text' => 'Elija o tome una imagen (JPG, PNG, WebP). Los controles ajustan brillo, contraste y medios tonos; una casilla invierte claros y oscuros.'],
         ['name' => 'Elija forma y medidas', 'text' => 'En el panel, la forma de la placa, el ancho, el alto y el marco; en la lámpara, el perímetro, la altura y el portalámparas. Extras: agujero o anilla para colgar, soporte de mesa.'],
-        ['name' => 'Cree el modelo', 'text' => 'Pulse «Crear el modelo y ver precios». En unos segundos el modelo se abre en la página con la vista a contraluz, el precio y la descarga.'],
+        ['name' => 'Cree el modelo', 'text' => 'Pulse «Crear el modelo». En unos segundos el modelo se abre en la página con la vista a contraluz y la descarga; el precio exacto lo muestra el cálculo.'],
     ],
     'faq' => [
         ['q' => '¿Qué diferencia hay entre litofanía y relieve?', 'a' => 'La litofanía muestra la imagen solo a contraluz, por ejemplo en una ventana o ante una lámpara. El relieve se ve sin luz, porque las zonas claras de la foto sobresalen de la placa.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Vyberte obrázek, nebo napište číslo', 'text' => 'Nahrajte obrázek, vyberte motiv z knihovny, nebo napište třeba „1“ či jméno vítěze a zvolte jedno ze třiceti písem.'],
         ['name' => 'Zvolte tvar a velikost', 'text' => 'Kruh, hvězda nebo šestiúhelník. Šířku měníte posuvníkem nebo tažením šipky v náhledu, očko posunete po obvodu.'],
         ['name' => 'Nastavte délku řetězu', 'text' => 'Počet článků od 0 do 40. Pod náhledem čtete, jak dlouhý řetěz z nich vyjde.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu o krok dál. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jak dlouhý řetěz potřebuju?', 'a' => 'Pro dítě stačí 60 až 70 cm, tedy 28 až 32 článků; pro dospělého 80 až 90 cm, tedy 36 až 40 článků. Řetěz se přetahuje přes hlavu, nemá zapínání.'],

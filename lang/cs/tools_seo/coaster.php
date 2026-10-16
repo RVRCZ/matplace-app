@@ -12,7 +12,7 @@ return [
         ['name' => 'Nahrajte fotku nebo kresbu', 'text' => 'Obrázek nahrajete, vyberete z knihovny, nebo použijete dříve nahraný. Pro celou fotku vypněte odstranění pozadí; když ho necháte zapnuté, zůstane jen motiv uprostřed.'],
         ['name' => 'Vyberte tvar a rozměry', 'text' => 'Kruh, čtverec nebo šestiúhelník. Nastavíte šířku, tloušťku a okraj kolem obrázku do 4 mm, případně zkosenou hranu a drážky zespodu.'],
         ['name' => 'Dolaďte barvy', 'text' => 'Zvolíte počet barev a v okně barev každé přiřadíte filament. Určíte, o kolik je každá barva výš (0,2 až 0,8 mm), a dvě barvy můžete sloučit v jednu.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Pro sadu stačí nastavit počet kusů. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Pro sadu stačí nastavit počet kusů. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Bude na podtácku sklenice stát rovně?', 'a' => 'Ano. Barvy jsou ve výchozím nastavení odstupňované po 0,4 mm a sklenice na nich stojí bez potíží. Úplně rovný vršek získáte volbou „Barvy zarovno s povrchem“, kterou vytiskne jen tiskárna, která mění filament sama (AMS, MMU, ACE).'],

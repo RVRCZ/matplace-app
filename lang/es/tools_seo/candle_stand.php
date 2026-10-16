@@ -12,7 +12,7 @@ return [
         ['name' => 'Mida el vaso', 'text' => 'Mida con una regla el diámetro del fondo del vaso de la vela. El rebaje sale un milímetro más ancho.'],
         ['name' => 'Elija una imagen o escriba un nombre', 'text' => 'Una silueta de la biblioteca, su propio SVG o imagen, o un nombre de hasta 16 caracteres. Una imagen subida tiene prioridad sobre el nombre.'],
         ['name' => 'Ajuste la silueta', 'text' => 'Cambie su ancho con el deslizador o arrastrando la flecha en la vista previa, y su grosor de 2,4 a 5 mm.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo. Al encargar elige el material y el color de la base y de la silueta; el modelo y el proyecto para el laminador se descargan gratis.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto lo muestra el cálculo tras «Continuar». Al encargar elige el material y el color de la base y de la silueta; el modelo y el proyecto para el laminador se descargan gratis.'],
     ],
     'faq' => [
         ['q' => '¿Es segura una base de plástico junto a una vela?', 'a' => 'Solo para una vela en vaso o una vela LED. El vidrio mantiene la llama lejos del plástico, pero el fondo del vaso se calienta; por eso recomendamos PETG, que se ablanda hacia los 80 °C, y no PLA (55 °C). Una vela desnuda o una vela de té sin vidrio no deben ponerse sobre una base de plástico, y nunca deje una vela encendida sin vigilancia.'],

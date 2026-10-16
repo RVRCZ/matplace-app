@@ -12,7 +12,7 @@ return [
         ['name' => 'Pick a picture or a silhouette', 'text' => 'Upload your own picture, choose a motif from the library, or type a name. The background is removed automatically and the outline is smoothed.'],
         ['name' => 'Set the size', 'text' => 'Change the width and the height of the dish with the sliders or by dragging the arrows in the preview. The distance of the picture from the wall decides how much room stays round the drawing.'],
         ['name' => 'Choose what goes into the floor', 'text' => 'The drawing cut two layers deep, the drawing in colours, or a plain floor. With a one-colour silhouette the floor is always plain.'],
-        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size and a rough price, the exact price and print time one step further. The model and the slicer project are free to download, without registration.'],
+        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size; the calculation after "Continue" shows the exact price and print time. The model and the slicer project are free to download, without registration.'],
     ],
     'faq' => [
         ['q' => 'What kind of picture suits a dish?', 'a' => 'A shape with a clear outline and no thin spikes: an animal paw, a heart, a leaf, a cloud, a star. Nothing fits into narrow tips, and the wall is weaker there.'],

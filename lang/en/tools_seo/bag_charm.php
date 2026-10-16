@@ -12,7 +12,7 @@ return [
         ['name' => 'Measure the bag', 'text' => 'With callipers or a ruler measure the diameter of a hole and the thickness of the wall of the bag at the hole. Both numbers go into the tool.'],
         ['name' => 'Choose a picture or type a name', 'text' => 'Upload a picture, pick a motif from the library, or type a name and choose one of thirty typefaces.'],
         ['name' => 'Set the size and the colours', 'text' => 'Change the width with the slider or by dragging the arrow in the preview. The list of colours shows which spools will be used, and you can change them.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price, the precise price one step further. The model and the slicer project are free to download without an account.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions; the calculation after "Continue" shows the precise price. The model and the slicer project are free to download without an account.'],
     ],
     'faq' => [
         ['q' => 'Which bags does the charm fit?', 'a' => 'Any bag with round holes in its wall: the tool goes by the dimensions you enter, not by a brand. The hole can be 6 to 20 mm across and the wall 1 to 10 mm thick.'],

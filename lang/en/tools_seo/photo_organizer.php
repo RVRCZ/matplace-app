@@ -12,7 +12,7 @@ return [
         ['name' => 'Choose a picture or a silhouette', 'text' => 'Upload your own picture or pick a motif from the library. The background is removed by itself and the outline is smoothed.'],
         ['name' => 'Choose the inside', 'text' => 'Compartments in a grid, round holes, or one pocket. The size of a compartment and the diameter of a hole are set with a slider.'],
         ['name' => 'Set the dimensions', 'text' => 'Change the width and the height with the sliders or by dragging the arrows in the preview. Below the preview you read how many compartments or holes came out and how deep they are.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price, the precise price and print time one step further. The model and the slicer project are free to download without an account.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions; the calculation after "Continue" shows the precise price and print time. The model and the slicer project are free to download without an account.'],
     ],
     'faq' => [
         ['q' => 'What picture suits a holder?', 'a' => 'A shape with a clear outline and no thin spikes: a cloud, a heart, an apple, the head of an animal. A compartment does not fit into a narrow tip, and a thin wall is more fragile there.'],

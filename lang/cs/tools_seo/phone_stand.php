@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Stojánek na telefon na míru: šest typů k tisku',
-    'description' => 'Vyberete typ stojánku, zadáte tloušťku telefonu s obalem a sklon. Hned uvidíte náhled a orientační cenu. Vytiskneme ho, nebo si model stáhnete.',
+    'description' => 'Vyberete typ stojánku, zadáte tloušťku telefonu s obalem a sklon. Hned uvidíte náhled a rozměry. Vytiskneme ho, nebo si model stáhnete.',
     'h1' => 'Stojánek podle vašeho telefonu i s obalem',
     'intro' => [
         'Nástroj nabízí šest typů držáku: desku s háčky, vlnku, A-rám s poličkou, nízký klín, kapsu na zeď a klip do auta na mřížku ventilace. Stojánek se počítá podle tloušťky telefonu i s obalem, kterou zadáte v milimetrech. U stolních typů nastavíte šířku, sklon a výšku opěrky. Klín a široké stolní typy poslouží i tabletu.',
-        'Po každé změně se překreslí náhled a přepočítá orientační cena. Stojánek vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. S vlastní tiskárnou si model stáhnete zdarma jako projekt pro svou tiskárnu nebo jako soubor STL. Sklon je daný návrhem, po vytištění se nedá měnit. Stojánek telefon jen drží, nabíječku v sobě nemá.',
+        'Po každé změně se překreslí náhled s rozměry; přesnou cenu spočítá kalkulace o krok dál. Stojánek vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. S vlastní tiskárnou si model stáhnete zdarma jako projekt pro svou tiskárnu nebo jako soubor STL. Sklon je daný návrhem, po vytištění se nedá měnit. Stojánek telefon jen drží, nabíječku v sobě nemá.',
     ],
     'steps' => [
         ['name' => 'Vyberte typ držáku', 'text' => 'Na stůl se hodí deska s háčky, vlnka, A-rám s poličkou nebo nízký klín. Kapsa patří na zeď a klip na mřížku ventilace v autě.'],
         ['name' => 'Změřte telefon s obalem', 'text' => 'Zadejte tloušťku telefonu i s obalem, od 7 do 20 mm, a šířku.'],
         ['name' => 'Upravte sklon a doplňky', 'text' => 'Nastavte sklon a výšku opěrky. Podle typu přidáte výřez na nabíjecí kabel, odlehčovací okno v opěrce nebo upevnění na šrouby.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Zkontrolujte náhled a orientační cenu a pokračujte k přesné ceně; tisk u nás platíte kreditem dobitým kartou. Nebo si model stáhněte pro svou tiskárnu.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Zkontrolujte náhled a tlačítkem „Pokračovat“ přejděte k přesné ceně; tisk u nás platíte kreditem dobitým kartou. Nebo si model stáhněte pro svou tiskárnu.'],
     ],
     'faq' => [
         ['q' => 'Vejde se do stojánku telefon s obalem?', 'a' => 'Ano, když zadáte tloušťku telefonu i s obalem. Nástroj počítá s tloušťkou od 7 do 20 mm a malou rezervu přidá sám.'],

@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Regalo con nombre impreso en 3D: llavero, etiqueta',
-    'description' => 'Escriba un nombre o un mensaje corto, elija la forma y la letra y vea al instante la vista 3D y el precio. Lo imprimimos o descarga el modelo.',
+    'description' => 'Escriba un nombre o un mensaje corto, elija la forma y la letra y vea al instante la vista 3D y las medidas. Lo imprimimos o descarga el modelo.',
     'h1' => 'Regalos con nombre: colgante, llavero, etiqueta, cartel',
     'intro' => [
         'Esta página es para quien busca un pequeño regalo personal con nombre. Usted elige la ocasión y el producto: un colgante con la forma del nombre en letra manuscrita, un llavero, una etiqueta, un cartel de puerta o un adorno con ojal. El enlace abre la herramienta de carteles con un texto de muestra, que usted sustituye por el suyo.',
-        'En la herramienta elige la forma, la letra y el acabado y ve al instante la vista 3D, las medidas exactas y el precio. Tras el nombre puede añadir un símbolo, por ejemplo un corazón o una estrella. Puede pedirnos la impresión del diseño o descargar gratis el modelo para su impresora. El texto admite hasta tres líneas de hasta 40 caracteres cada una.',
+        'En la herramienta elige la forma, la letra y el acabado y ve al instante la vista 3D y las medidas exactas; el precio lo muestra el cálculo, un paso después. Tras el nombre puede añadir un símbolo, por ejemplo un corazón o una estrella. Puede pedirnos la impresión del diseño o descargar gratis el modelo para su impresora. El texto admite hasta tres líneas de hasta 40 caracteres cada una.',
     ],
     'steps' => [
         ['name' => 'Elija un regalo', 'text' => 'Los productos están ordenados por ocasión: Navidad, San Valentín y aniversarios, vuelta al cole, cumpleaños y casa nueva.'],
         ['name' => 'Escriba su propio texto', 'text' => 'Haga clic en «Probar con su texto» y sustituya la muestra por un nombre, una fecha o un mensaje corto.'],
         ['name' => 'Ajuste el aspecto', 'text' => 'Elija la forma, la letra y si el texto va en otro color. La vista previa cambia al instante.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Verá las medidas exactas y el precio. Puede pedirnos la impresión o descargar el modelo.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Verá las medidas exactas y, tras «Continuar», el precio exacto. Puede pedirnos la impresión o descargar el modelo.'],
     ],
     'faq' => [
         ['q' => '¿Qué regalos con nombre puedo crear?', 'a' => 'Un colgante con la forma del nombre, un llavero con ojal, una etiqueta con letras grabadas, un cartel de puerta y un adorno ovalado con ojal para una cinta.'],

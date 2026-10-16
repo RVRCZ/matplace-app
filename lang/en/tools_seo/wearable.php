@@ -12,7 +12,7 @@ return [
         ['name' => 'Upload a model', 'text' => 'An STL or 3MF of a helmet, mask or armour you want printed to your size.'],
         ['name' => 'Enter the measure', 'text' => 'Choose what the model goes round (head, chest, arm…) and enter the girth in centimetres; the tool shows at once how much it scales and how big the result is.'],
         ['name' => 'Windows, strap, splitting', 'text' => 'Add windows (side, shape, size, offset) and strap slots if you like. Choose your printer\'s bed and the joints of the pieces.'],
-        ['name' => 'Create the model', 'text' => 'Click "Make it to measure". A few seconds later it opens with its size, inner girth, pieces and print price.'],
+        ['name' => 'Create the model', 'text' => 'Click "Make it to measure". A few seconds later it opens with its size, inner girth and pieces.'],
     ],
     'faq' => [
         ['q' => 'How is the model scaled?', 'a' => 'Evenly in all directions. The tool finds the widest horizontal section of the model, measures its inner girth (for a solid model it subtracts the wall) and picks the scale so the girth matches your measure plus play, 10 mm by default.'],

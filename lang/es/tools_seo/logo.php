@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Logo para impresión 3D a partir de un SVG o una imagen',
-    'description' => 'Suba un SVG o una imagen sencilla, o escriba un texto. Obtendrá un relieve sobre placa, una forma recortada o un logo de pie, y verá el precio al instante.',
+    'description' => 'Suba un SVG o una imagen sencilla, o escriba un texto. Obtendrá un relieve sobre placa, una forma recortada o un logo de pie, y lo verá en 3D al instante.',
     'h1' => 'Logo o texto como relieve, forma recortada o rótulo de pie',
     'intro' => [
         'La herramienta convierte un logo, una imagen o un texto en un modelo para impresión 3D. Suba un SVG con formas rellenas o una imagen sencilla y contrastada (PNG, JPG o WebP), o escriba hasta dos líneas de texto. Hay cuatro versiones: relieve sobre placa, relieve modelado según la imagen, forma recortada o logo de pie sobre una base. El motivo mide de 20 a 250 mm de ancho.',
-        'La vista previa muestra exactamente la forma que se imprimirá, sus medidas exteriores y un precio orientativo. La herramienta avisa de las líneas de menos de 0,8 mm, que no se imprimirían bien, y de las partes que quedarían sueltas. Puede pedir el modelo impreso en nuestra granja de impresión o descargarlo gratis para su impresora. En el relieve sobre placa, el motivo puede imprimirse en un segundo color.',
+        'La vista previa muestra exactamente la forma que se imprimirá y sus medidas exteriores. La herramienta avisa de las líneas de menos de 0,8 mm, que no se imprimirían bien, y de las partes que quedarían sueltas. Puede pedir el modelo impreso en nuestra granja de impresión o descargarlo gratis para su impresora. En el relieve sobre placa, el motivo puede imprimirse en un segundo color.',
     ],
     'steps' => [
         ['name' => 'Suba el diseño o texto', 'text' => 'Suba un SVG o una imagen, o escriba un texto en una o dos líneas de hasta 30 caracteres. El diseño subido tiene prioridad sobre el texto.'],
         ['name' => 'Elija la versión', 'text' => 'Elija el relieve sobre placa, el relieve modelado según la imagen, la forma recortada o el logo de pie. Para la placa elija también su forma: redondeada, rectangular o circular.'],
         ['name' => 'Ajuste el tamaño', 'text' => 'Indique el ancho del motivo y su grosor. El alto se calcula según las proporciones del diseño.'],
-        ['name' => 'Revise vista previa y avisos', 'text' => 'Bajo la vista previa verá las medidas, un precio orientativo y los avisos sobre líneas finas o piezas sueltas. Según ellos, amplíe el motivo o cambie de versión.'],
+        ['name' => 'Revise vista previa y avisos', 'text' => 'Bajo la vista previa verá las medidas y los avisos sobre líneas finas o piezas sueltas. Según ellos, amplíe el motivo o cambie de versión.'],
         ['name' => 'Pida la impresión o descargue', 'text' => 'Pida la impresión a nuestra granja de impresión y páguela con crédito prepagado. O descargue el modelo gratis como archivo STL o como proyecto listo para su impresora.'],
     ],
     'faq' => [

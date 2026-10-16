@@ -12,7 +12,7 @@ return [
         ['name' => 'Nahrajte obrázek', 'text' => 'Obrázek nahrajete, vyberete z knihovny, nebo použijete dříve nahraný. Pozadí se odstraní samo; u fotky, která má vyplnit celou plochu, odstranění vypněte.'],
         ['name' => 'Zvolte, jak to vyrobit', 'text' => 'Vrstvený obraz z desek s rámem, nebo jeden tisk s barvami nad sebou. Nastavíte šířku, tloušťku desek a mezeru mezi nimi, případně rám a místo na LED pásek.'],
         ['name' => 'Dolaďte barvy', 'text' => 'Zvolíte počet barev a každé přiřadíte filament z našeho katalogu. Barvy můžete posunout dopředu či dozadu, nebo dvě sloučit v jednu.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu o krok dál. Desky si stáhnete každou zvlášť jako STL, nebo celý návrh jako projekt pro slicer, zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Desky si stáhnete každou zvlášť jako STL, nebo celý návrh jako projekt pro slicer, zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jak se vrstvený obraz skládá?', 'a' => 'Každou desku vytisknete v její barvě a pak je lepíte podle návodu od zadní k přední. Distanční sloupky jsou součástí desky a zapadnou pod desku před ní. Stačí vteřinové lepidlo. Rám se tiskne dnem dolů a desky se vlepí dovnitř.'],

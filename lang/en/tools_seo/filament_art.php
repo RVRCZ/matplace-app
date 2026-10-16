@@ -12,7 +12,7 @@ return [
         ['name' => 'Upload a picture', 'text' => 'Upload a picture, pick one from the library, or reuse one you uploaded earlier. The background goes by itself; for a photo that is to fill the whole area, switch the removal off.'],
         ['name' => 'Choose how it is made', 'text' => 'A layered picture of plates with a frame, or one print with the colours one above another. Set the width, the thickness of the plates and the gap between them, the frame and room for an LED strip if you want it.'],
         ['name' => 'Fine-tune the colours', 'text' => 'Choose how many colours and give each one a filament from our catalogue. Colours can be moved forward or back, or two merged into one.'],
-        ['name' => 'Order the print, or download', 'text' => 'Next to the preview you see the size and a rough price, the exact price one step on. Download every plate as its own STL, or the whole design as a project for your slicer, free and without registration.'],
+        ['name' => 'Order the print, or download', 'text' => 'Next to the preview you see the size; the calculation after "Continue" shows the exact price. Download every plate as its own STL, or the whole design as a project for your slicer, free and without registration.'],
     ],
     'faq' => [
         ['q' => 'How is a layered picture assembled?', 'a' => 'Print every plate in its colour, then glue them by the guide from the back to the front. The spacer posts are part of the plate and go under the plate in front of them. Superglue is enough. The frame prints bottom down and the plates are glued inside it.'],

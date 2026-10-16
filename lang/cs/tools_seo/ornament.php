@@ -12,7 +12,7 @@ return [
         ['name' => 'Nahrajte obrázek nebo napište jméno', 'text' => 'Obrázek nahrajete, vyberete z knihovny asi 137 motivů (8 z nich je barevných), nebo použijete ten, který jste nahráli dřív. Jméno či krátký text může mít jeden nebo dva řádky a vyberete k němu jedno ze třiceti písem.'],
         ['name' => 'Vyberte tvar, velikost a očko', 'text' => 'Ozdoba kopíruje obrázek, nebo je to kruh či hvězda. Nastavíte šířku, tloušťku a okraj kolem obrázku do 3 mm. Očko s otvorem 3 až 6 mm posunete posuvníkem nebo tažením v náhledu kamkoli po obrysu; tlačítko ho vrátí nahoru.'],
         ['name' => 'Upravte barvy', 'text' => 'Zvolíte počet barev a každé můžete v okně barev přiřadit jiný filament. Změníte, která barva leží na které, nebo dvě barvy sloučíte v jednu. Náhled ve 3D ukazuje ozdobu v barvách filamentů a rozměry v milimetrech.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte orientační cenu, přesnou cenu a dobu tisku o krok dál. Tisk zaplatíte z předplaceného kreditu. Nebo si zdarma a bez registrace stáhnete STL, ZIP s jedním STL pro každou barvu či projekt pro slicer.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Tisk zaplatíte z předplaceného kreditu. Nebo si zdarma a bez registrace stáhnete STL, ZIP s jedním STL pro každou barvu či projekt pro slicer.'],
     ],
     'faq' => [
         ['q' => 'Jaký obrázek se na ozdobu hodí?', 'a' => 'Nejlépe kresba s několika plnými barvami, například perníček nebo stromek. Z fotky nástroj vybere hlavní barvy; kontrast, jas a sytost doladíte posuvníky. Když má být vidět celá fotka, vypněte odstranění pozadí.'],

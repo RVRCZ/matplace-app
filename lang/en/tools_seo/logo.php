@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Logo for 3D printing from an SVG or a picture',
-    'description' => 'Upload an SVG or a simple picture, or type a text. You get a relief on a plate, a cut-out shape or a standing logo, and you see the price at once.',
+    'description' => 'Upload an SVG or a simple picture, or type a text. You get a relief on a plate, a cut-out shape or a standing logo, and you see the preview at once.',
     'h1' => 'A logo or lettering as a relief, a cut-out or a standing sign',
     'intro' => [
         'The tool turns a logo, picture or text into a model for 3D printing. Upload an SVG with filled shapes or a simple high-contrast picture (PNG, JPG or WebP), or type up to two lines of text. Four versions are on offer: relief on a plate, shaded relief from a picture, cut-out shape, or logo standing on a base. The motif can be 20 to 250 mm wide.',
-        'The preview shows the exact shape to be printed, its outer size and a rough price. The tool warns about lines thinner than 0.8 mm, which would not print cleanly, and parts that would fall apart. Order the model as a print from our print farm, or download it free for your own printer. With the relief on a plate the motif can be printed in a second colour.',
+        'The preview shows the exact shape to be printed and its outer size. The tool warns about lines thinner than 0.8 mm, which would not print cleanly, and parts that would fall apart. Order the model as a print from our print farm, or download it free for your own printer. With the relief on a plate the motif can be printed in a second colour.',
     ],
     'steps' => [
         ['name' => 'Upload artwork or type text', 'text' => 'Upload an SVG or a picture, or type a text in one or two lines of up to 30 characters. Uploaded artwork takes precedence over the text.'],
         ['name' => 'Pick the version', 'text' => 'Choose the relief on a plate, the shaded relief from a picture, the cut-out shape or the standing logo. For a plate you also pick its shape: rounded, square-cornered or round.'],
         ['name' => 'Set the size', 'text' => 'Enter the width of the motif and its thickness. The height follows from the proportions of the artwork.'],
-        ['name' => 'Check preview and warnings', 'text' => 'Below the preview you read the size, a rough price and any warnings about thin lines or separate pieces. Use them to make the motif bigger or to change the version.'],
+        ['name' => 'Check preview and warnings', 'text' => 'Below the preview you read the size and any warnings about thin lines or separate pieces. Use them to make the motif bigger or to change the version.'],
         ['name' => 'Order the print or download', 'text' => 'Order the print from our print farm and pay from prepaid credit. Or download the model free as an STL file or a ready project for your own printer.'],
     ],
     'faq' => [

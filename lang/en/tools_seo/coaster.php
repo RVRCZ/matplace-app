@@ -12,7 +12,7 @@ return [
         ['name' => 'Upload a photo or a drawing', 'text' => 'Upload a picture, pick one from the library, or reuse one you uploaded earlier. For a whole photo switch the background removal off; if you leave it on, only the motif in the middle stays.'],
         ['name' => 'Pick the shape and size', 'text' => 'A circle, a square or a hexagon. Set the width, the thickness and a frame of up to 4 mm round the picture, plus a bevelled edge and grooves underneath if you want them.'],
         ['name' => 'Tune the colours', 'text' => 'Choose the number of colours and give each a filament in the colour window. Set how much higher each colour is (0.2 to 0.8 mm); you can also join two colours into one.'],
-        ['name' => 'Order the print or download', 'text' => 'The size and a rough price are shown next to the preview, the exact price and print time one step further. For a set, just set the quantity. The model and the slicer project download free, without registration.'],
+        ['name' => 'Order the print or download', 'text' => 'The size is shown next to the preview; the calculation after "Continue" shows the exact price and print time. For a set, just set the quantity. The model and the slicer project download free, without registration.'],
     ],
     'faq' => [
         ['q' => 'Will a glass stand level on the coaster?', 'a' => 'Yes. By default the colours are stepped by 0.4 mm and a glass stands on them without trouble. For a fully flat top use the option "Colours flush with the surface", which only a printer that changes filament by itself (AMS, MMU, ACE) can print.'],

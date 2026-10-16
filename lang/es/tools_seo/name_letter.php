@@ -12,7 +12,7 @@ return [
         ['name' => 'Escriba el nombre', 'text' => 'La letra grande es la primera del nombre. Si quiere otra, por ejemplo la inicial del apellido, escríbala en el segundo campo.'],
         ['name' => 'Elija los tipos de letra', 'text' => 'Para la letra grande, sin serifa, con serifa o monoespaciada, siempre en negrita. Para el nombre, cualquiera de los treinta tipos de letra.'],
         ['name' => 'Ajuste la altura, el grosor y los colores', 'text' => 'La vista previa muestra dónde ha quedado el nombre y qué tamaño tiene. Asigne a la letra y al nombre un filamento de los que tenemos en stock.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». El modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿En qué parte de la letra se escribe el nombre?', 'a' => 'Donde la letra tiene más espacio. En las letras con asta vertical (E, T, L, I, K) el nombre va en vertical a lo largo de ella; en los trazos horizontales anchos, a lo ancho. La herramienta encuentra el sitio y la vista previa lo muestra al momento.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Nahrajte model', 'text' => 'STL nebo 3MF přilby, masky nebo brnění, které si chcete vytisknout na míru.'],
         ['name' => 'Zadejte míru', 'text' => 'Zvolte, co model obepíná (hlava, hruď, paže…), a zadejte obvod v centimetrech; nástroj hned ukáže, kolikrát model zvětší a jak bude velký.'],
         ['name' => 'Průzory, popruh, dělení', 'text' => 'Přidejte průzory (strana, tvar, rozměr, posun), případně drážky na popruh. Zvolte podložku tiskárny a spoje dílů.'],
-        ['name' => 'Vytvořte model', 'text' => 'Klepněte na „Udělat na míru“. Za pár vteřin se otevře s rozměry, vnitřním obvodem, díly a cenou tisku.'],
+        ['name' => 'Vytvořte model', 'text' => 'Klepněte na „Udělat na míru“. Za pár vteřin se otevře s rozměry, vnitřním obvodem a díly.'],
     ],
     'faq' => [
         ['q' => 'Jak se model zvětšuje?', 'a' => 'Rovnoměrně ve všech směrech. Nástroj najde nejširší vodorovný řez modelu, změří jeho vnitřní obvod (u plného modelu odečte stěnu) a zvolí měřítko tak, aby obvod odpovídal zadané míře plus vůli, výchozí 10 mm.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Choose a picture or type a number', 'text' => 'Upload a picture, pick a motif from the library, or type "1" or the winner\'s name and choose one of thirty typefaces.'],
         ['name' => 'Choose the shape and the size', 'text' => 'A circle, a star or a hexagon. Change the width with the slider or by dragging the arrow in the preview; the eyelet moves along the outline.'],
         ['name' => 'Set the length of the chain', 'text' => 'From 0 to 40 links. Below the preview you read how long a chain they make.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price, the precise price one step further. The model and the slicer project are free to download without an account.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions; the calculation after "Continue" shows the precise price. The model and the slicer project are free to download without an account.'],
     ],
     'faq' => [
         ['q' => 'How long a chain do I need?', 'a' => 'For a child 60 to 70 cm is enough, that is 28 to 32 links; for an adult 80 to 90 cm, 36 to 40 links. The chain goes over the head; it has no clasp.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Upload a coloured 3MF', 'text' => 'A file saved from a slicer with its colours, or a 3MF with materials from a CAD program. The tool shows the colours it found and their shares at once.'],
         ['name' => 'Choose the depth of the inlays', 'text' => 'How deep a painted colour reaches into the model, 0.6 to 3 mm. Separate bodies do not care.'],
         ['name' => 'Split', 'text' => 'Click "Split by colour". A few seconds later it is done: the parts in the preview in their colours, a list with names and shares.'],
-        ['name' => 'Download or order', 'text' => 'Every part on its own as STL, or the whole for printing in one go. The price of a print from us shows right away.'],
+        ['name' => 'Download or order', 'text' => 'Every part on its own as STL, or the whole for printing in one go. The calculation after "Continue" shows the price of a print from us.'],
     ],
     'faq' => [
         ['q' => 'Which colours does the tool recognise?', 'a' => '3MF materials (basematerials, colour groups), colours on an object and on single triangles, the extruder assigned to an object or part in Bambu Studio, Orca and PrusaSlicer, and brush painting (paint_color, mmu_segmentation). Filament colours come from the project; without them a fixed palette is used.'],

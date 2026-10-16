@@ -12,7 +12,7 @@ return [
         ['name' => 'Suba una imagen o escriba un nombre', 'text' => 'Suba una imagen, elíjala de la biblioteca o reutilice una que subió antes. En lugar de la imagen puede escribir un nombre o un texto corto en una o dos líneas.'],
         ['name' => 'Afine el contorno y los colores', 'text' => 'Un control deslizante de 0 a 100 fija cuánto fondo se quita; los bordes se pueden suavizar hasta 1 mm. Elija el número de colores, asigne a cada uno un filamento en la ventana de colores y, si quiere, una dos colores en uno.'],
         ['name' => 'Ajuste el tamaño y el ojal', 'text' => 'Indique el ancho, el grosor y un marco de hasta 3 mm alrededor de la imagen, con borde biselado si lo desea. Agarre el ojal en la vista previa y arrástrelo al punto del que debe colgar el colgante.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'El precio orientativo aparece junto a la vista previa; el precio exacto y el tiempo de impresión, un paso más allá. También puede descargar el modelo gratis y sin registro como STL, como ZIP con un STL por color o como proyecto para el laminador.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». También puede descargar el modelo gratis y sin registro como STL, como ZIP con un STL por color o como proyecto para el laminador.'],
     ],
     'faq' => [
         ['q' => '¿Puedo usar solo un nombre en lugar de una imagen?', 'a' => 'Sí. Escriba una o dos líneas y elija una de treinta tipografías, de las sin serifa en negrita a las manuscritas. La herramienta une los trozos sueltos con un pequeño puente para que el colgante no se separe, y le avisa de ello.'],

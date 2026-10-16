@@ -12,7 +12,7 @@ return [
         ['name' => 'Mida el bolso', 'text' => 'Con un calibre o una regla mida el diámetro de un agujero y el grosor de la pared del bolso junto al agujero. Ambos números se introducen en la herramienta.'],
         ['name' => 'Elija una imagen o escriba un nombre', 'text' => 'Suba una imagen, elija un motivo de la biblioteca, o escriba un nombre y elija una de treinta tipografías.'],
         ['name' => 'Ajuste el tamaño y los colores', 'text' => 'Cambie el ancho con el deslizador o arrastrando la flecha en la vista previa. La lista de colores muestra qué bobinas se usarán, y puede cambiarlas.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto, un paso después. El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto lo muestra el cálculo tras «Continuar». El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿A qué bolsos se adapta el adorno?', 'a' => 'A cualquier bolso con agujeros redondos en la pared: la herramienta se guía por las medidas que usted indica, no por una marca. El agujero puede medir de 6 a 20 mm y la pared de 1 a 10 mm.'],

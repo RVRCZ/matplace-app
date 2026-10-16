@@ -12,7 +12,7 @@ return [
         ['name' => 'Nahrajte obrázek nebo napište text', 'text' => 'Obrázek nahrajete, vyberete z knihovny, nebo použijete dříve nahraný. Pozadí se odstraní samo; posuvníkem určíte, kolik ho zmizí.'],
         ['name' => 'Zvolte pár a velikost', 'text' => 'Vyberete stejné, nebo zrcadlové náušnice a tvar podle obrázku či kruh. Nastavíte šířku jedné náušnice, tloušťku a okraj kolem obrázku do 2 mm.'],
         ['name' => 'Umístěte očko a vyberte barvy', 'text' => 'Očko posunete posuvníkem nebo tažením v náhledu. Každé barvě můžete v okně barev dát jiný filament, změnit pořadí barev nebo dvě barvy sloučit.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Náhled ukazuje obě náušnice v barvách filamentů, rozměry v milimetrech a orientační cenu. Přesnou cenu a dobu tisku uvidíte o krok dál. STL i projekt pro slicer stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Náhled ukazuje obě náušnice v barvách filamentů a rozměry v milimetrech. Přesnou cenu a dobu tisku uvidíte o krok dál, v kalkulaci. STL i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jsou háčky součástí náušnic?', 'a' => 'Ne. Dostanete jen plastové díly s očkem. Háčky a spojovací kroužky koupíte v galanterii a do očka je navléknete sami.'],

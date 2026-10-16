@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Modulární organizér z misek na míru zásuvky',
-    'description' => 'Rozdělíte vnitřek zásuvky na mřížku a poskládáte misky různých velikostí. Uvidíte náhled, seznam dílů a cenu. Tisk u nás, nebo stažení zdarma.',
+    'description' => 'Rozdělíte vnitřek zásuvky na mřížku a poskládáte misky různých velikostí. Uvidíte náhled a seznam dílů. Tisk u nás, nebo stažení zdarma.',
     'h1' => 'Sada volných misek, která vyplní vaši zásuvku',
     'intro' => [
         'Modulární organizér se skládá ze samostatných misek, které vedle sebe přesně vyplní zásuvku. Zadáte vnitřní rozměry zásuvky, rozdělíte je na mřížku a do polí naskládáte misky různých velikostí. Každá miska se tiskne zvlášť, takže ji můžete kdykoli vyndat, přeskládat nebo umýt. Když misky nepatří do zásuvky, ale na stůl, přidáte k nim vnější tác.',
-        'Nástroj ukáže rozložení v náhledu, vypíše, co se vytiskne, a spočítá orientační cenu celé sady. Sadu vám vytiskneme na naší tiskové farmě v Česku: pošleme vám ji Zásilkovnou na výdejní místo nebo až domů. Máte-li tiskárnu, stáhnete si zdarma jednotlivé díly nebo hotový projekt pro svou tiskárnu. Misky se tisknou dnem dolů a bez podpěr.',
+        'Nástroj ukáže rozložení v náhledu a vypíše, co se vytiskne; cenu celé sady spočítá kalkulace o krok dál. Sadu vám vytiskneme na naší tiskové farmě v Česku: pošleme vám ji Zásilkovnou na výdejní místo nebo až domů. Máte-li tiskárnu, stáhnete si zdarma jednotlivé díly nebo hotový projekt pro svou tiskárnu. Misky se tisknou dnem dolů a bez podpěr.',
     ],
     'steps' => [
         ['name' => 'Změřte vnitřek zásuvky', 'text' => 'Zadejte šířku a hloubku uvnitř zásuvky a výšku misek. Od změřených rozměrů odečtěte 1 až 2 mm, stěny zásuvky nebývají přesně rovné.'],
         ['name' => 'Rozdělte ji na mřížku', 'text' => 'Zvolte počet sloupců a řad. Nástroj ukáže, kolik milimetrů měří jedno pole mřížky; musí mít aspoň 15 mm.'],
         ['name' => 'Naskládejte misky', 'text' => 'Klepněte na prázdné pole a potom na protější roh misky. Klepnutím na hotovou misku ji vyberete a změníte jí barvu nebo ji odeberete.'],
-        ['name' => 'Zkontrolujte seznam a cenu', 'text' => 'Pod náhledem je seznam „Co se vytiskne“ s rozměry jednotlivých misek. Orientační cena platí pro celou sadu.'],
+        ['name' => 'Zkontrolujte seznam', 'text' => 'Pod náhledem je seznam „Co se vytiskne“ s rozměry jednotlivých misek. Přesná cena celé sady je o krok dál, v kalkulaci.'],
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Pokračujte k přesné ceně a sadu objednejte u nás; platí se kreditem dobitým kartou. Nebo si pod „Mám tiskárnu, stáhnout model“ stáhněte jednotlivé díly.'],
     ],
     'faq' => [

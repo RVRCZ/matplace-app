@@ -12,7 +12,7 @@ return [
         ['name' => 'Escriba un nombre o una palabra', 'text' => 'Hasta 16 caracteres, incluidos números y símbolos, por ejemplo un corazón. Cada carácter es una cuenta; un espacio es una cuenta vacía.'],
         ['name' => 'Elija la forma y la letra', 'text' => 'Cubo, bola, corazón o estrella. La letra en relieve de otro color o grabada; el tipo de letra sin serifa, con serifa o monoespaciado, siempre en negrita.'],
         ['name' => 'Ajuste el tamaño y el orificio', 'text' => 'El tamaño de la cuenta y el diámetro del orificio según su cordón. Bajo la vista previa aparece cuántas cuentas hay y cuánto mide cada una.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». El modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Qué orificio elegir?', 'a' => 'Para goma elástica o un cordón fino bastan 2 mm; para cuero y cordel más grueso, de 3 a 4 mm. Por encima y por debajo del orificio debe quedar al menos 1,2 mm de plástico; si no cabe en la cuenta, la herramienta lo indica.'],

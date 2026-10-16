@@ -7,7 +7,7 @@
     "gifts.how.title": ["Za minutu hotovo", "Done in a minute", "Listo en un minuto"],
     "gifts.how.text": ["Napište text, třeba jméno nebo číslo bytu.", "Type the text, a name or a flat number for example.", "Escriba el texto, por ejemplo un nombre o un número de piso."],
     "gifts.how.look": ["Vyberte tvar, písmo a jestli má být písmo jinou barvou.", "Pick the shape, the typeface and whether the letters come in another colour.", "Elija la forma, la letra y si el texto va en otro color."],
-    "gifts.how.price": ["Uvidíte přesné rozměry a cenu; tisk objednáte, nebo si model stáhnete.", "You see the exact size and the price; order the print or download the model.", "Verá las medidas exactas y el precio; pida la impresión o descargue el modelo."],
+    "gifts.how.price": ["Uvidíte přesné rozměry, cenu spočítá kalkulace; tisk objednáte, nebo si model stáhnete.", "You see the exact size, the calculation gives the price; order the print or download the model.", "Verá las medidas exactas, el cálculo da el precio; pida la impresión o descargue el modelo."],
     "gifts.start": ["Začít s vlastním textem", "Start with your own text", "Empezar con su propio texto"],
     "gifts.try": ["Vyzkoušet s vlastním textem", "Try it with your text", "Probar con su texto"],
     "gifts.after": ["Každý návrh končí stejně: náhled, rozměry, cena, stažení nebo tisk u tiskaře.", "Every design ends the same way: preview, size, price, download or printing by a printer.", "Cada diseño termina igual: vista previa, medidas, precio, descarga o impresión."],

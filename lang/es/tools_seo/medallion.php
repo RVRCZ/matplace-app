@@ -12,7 +12,7 @@ return [
         ['name' => 'Elija una imagen o escriba un número', 'text' => 'Suba una imagen, elija un motivo de la biblioteca, o escriba «1» o el nombre del ganador y elija una de treinta tipografías.'],
         ['name' => 'Elija la forma y el tamaño', 'text' => 'Círculo, estrella o hexágono. Cambie el ancho con el deslizador o arrastrando la flecha en la vista previa; la argolla se desplaza por el contorno.'],
         ['name' => 'Ajuste el largo de la cadena', 'text' => 'De 0 a 40 eslabones. Bajo la vista previa lee qué largo de cadena dan.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto, un paso después. El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto lo muestra el cálculo tras «Continuar». El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Qué largo de cadena necesito?', 'a' => 'Para un niño bastan de 60 a 70 cm, es decir, de 28 a 32 eslabones; para un adulto, de 80 a 90 cm, de 36 a 40 eslabones. La cadena se pasa por la cabeza; no tiene cierre.'],

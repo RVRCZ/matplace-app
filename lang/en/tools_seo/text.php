@@ -12,7 +12,7 @@ return [
         ['name' => 'Type the text', 'text' => 'One to three lines; the first is the biggest. The symbols below the fields go into the text with one tap.'],
         ['name' => 'Pick the typeface', 'text' => 'Thirty typefaces are shown as tiles with their names set in the face itself. Bold sans serifs stand most firmly, handwritten ones are more decorative.'],
         ['name' => 'Set the height and the thickness', 'text' => 'The letter height sets the size of the text, the thickness its depth. To stand, the text should be at least a fifth as deep as it is tall.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price, the precise price one step further. The model and the slicer project are free to download without an account.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions; the calculation after "Continue" shows the precise price. The model and the slicer project are free to download without an account.'],
     ],
     'faq' => [
         ['q' => 'How big will the text be?', 'a' => 'The word HOME in 30 mm letters comes out 144 mm long, 34 mm tall and 12 mm deep. The length grows with the number of letters; a text of up to 250 mm fits on the print bed.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Suba un 3MF de colores', 'text' => 'Un archivo guardado desde el slicer con sus colores, o un 3MF con materiales de un programa CAD. La herramienta muestra enseguida los colores encontrados y su proporción.'],
         ['name' => 'Elija la profundidad de las incrustaciones', 'text' => 'Cuánto entra un color pintado en el modelo, de 0,6 a 3 mm. A los cuerpos separados no les afecta.'],
         ['name' => 'Divida', 'text' => 'Pulse «Dividir por colores». En unos segundos está listo: las piezas en la vista previa con sus colores y una lista con nombres y proporciones.'],
-        ['name' => 'Descargue o encargue', 'text' => 'Cada pieza por separado como STL, o el conjunto para imprimir de una vez. El precio de la impresión con nosotros se ve al momento.'],
+        ['name' => 'Descargue o encargue', 'text' => 'Cada pieza por separado como STL, o el conjunto para imprimir de una vez. El precio de la impresión con nosotros lo muestra el cálculo tras «Continuar».'],
     ],
     'faq' => [
         ['q' => '¿Qué colores reconoce la herramienta?', 'a' => 'Materiales 3MF (basematerials, grupos de colores), colores en el objeto y en triángulos sueltos, el extrusor asignado a un objeto o pieza en Bambu Studio, Orca y PrusaSlicer, y el pintado con pincel (paint_color, mmu_segmentation). Los colores de los filamentos salen del proyecto; sin ellos se usa una paleta fija.'],

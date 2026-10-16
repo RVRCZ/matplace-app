@@ -12,7 +12,7 @@ return [
         ['name' => 'Type the name', 'text' => 'The name can have up to 16 characters. The tool scales it down so that it fits the gingerbread; a short name comes out bigger.'],
         ['name' => 'Choose the shape and the icing', 'text' => 'The man has a face, buttons and icing on his legs, the heart and the star have icing round the edge, the tree two garlands. The icing can be a wavy line, a plain line or none.'],
         ['name' => 'Set the size, the eyelet and the colours', 'text' => 'Enter the width and the thickness, move the eyelet along the outline and give both parts a filament. Brown and white are preset, but the gingerbread can just as well be red with golden icing.'],
-        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size and a rough price, the exact price and print time one step further. The model and the project with the filament change are free to download, without registration.'],
+        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size; the calculation after "Continue" shows the exact price and print time. The model and the project with the filament change are free to download, without registration.'],
     ],
     'faq' => [
         ['q' => 'How long a name fits on the gingerbread?', 'a' => 'Up to 16 characters. A longer name comes out smaller; if the letters would be lower than 3 mm, the tool says so and suggests a wider gingerbread or a shorter name. A man 90 mm wide comfortably takes 6 to 8 letters.'],
