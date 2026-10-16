@@ -7,7 +7,7 @@
     "tools.intent.create.hint": ["Bez modelování, stačí pár čísel nebo fotka.", "No modelling, a few numbers or a photo are enough.", "Sin modelar, bastan unas medidas o una foto."],
     "tools.intent.spare": ["Potřebuji náhradní díl", "I need a spare part", "Necesito un recambio"],
     "tools.intent.spare.hint": ["Popíšete a vyfotíte, tiskař ho vymodeluje a vyrobí.", "Describe and photograph it, a printer models and makes it.", "Descríbalo y fotografíelo, un impresor lo modela y fabrica."],
-    "tools.create.lead": ["Každý nástroj ukáže náhled a orientační cenu a pokračuje k poptávce u tiskaře.", "Every tool shows a preview and a rough price and continues to an inquiry with a printer.", "Cada herramienta muestra una vista previa y un precio orientativo y continúa a la solicitud."],
+    "tools.create.lead": ["Každý nástroj ukáže náhled a rozměry, přesnou cenu spočítá kalkulace a pokračuje k poptávce u tiskaře.", "Every tool shows a preview and the size; the calculation gives the precise price and continues to an inquiry with a printer.", "Cada herramienta muestra una vista previa y las medidas; el cálculo da el precio exacto y continúa a la solicitud."],
     "tools.filter": ["Filtr nástrojů", "Tool filter", "Filtro de herramientas"],
     "tools.cat.all": ["Vše", "All", "Todo"],
     "tools.cat.gifts": ["Dárky a fotografie", "Gifts and photos", "Regalos y fotos"],

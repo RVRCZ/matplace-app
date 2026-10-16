@@ -12,7 +12,7 @@ return [
         ['name' => 'Choose what to make', 'text' => 'A photo panel for a window or a stand, a lamp with the photo all round, or a relief for the wall without a backlight.'],
         ['name' => 'Upload a photo', 'text' => 'Choose or take a picture (JPG, PNG, WebP). Sliders adjust brightness, contrast and midtones; a tick swaps bright and dark.'],
         ['name' => 'Pick the shape and size', 'text' => 'For a panel the plate\'s shape, width, height and frame; for the lamp its circumference, height and socket. Extras: a hole or an eyelet for hanging, a desk stand.'],
-        ['name' => 'Create the model', 'text' => 'Click "Create the model and show prices". A few seconds later the model opens on the page with a backlit preview, the price and the download.'],
+        ['name' => 'Create the model', 'text' => 'Click "Create the model". A few seconds later the model opens on the page with a backlit preview and the download; the calculation shows the precise price.'],
     ],
     'faq' => [
         ['q' => 'What is the difference between a lithophane and a relief?', 'a' => 'A lithophane shows the picture only against light, in a window or in front of a lamp for example. A relief is visible without light, because the bright areas of the photo rise above the plate.'],

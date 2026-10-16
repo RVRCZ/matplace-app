@@ -12,7 +12,7 @@ return [
         ['name' => 'Napište text', 'text' => 'Jeden až tři řádky; první je největší. Symboly pod poli vložíte do textu jedním klepnutím.'],
         ['name' => 'Vyberte písmo', 'text' => 'Třicet písem vidíte jako dlaždice s názvem vysázeným v daném písmu. Tučná bezpatková stojí nejjistěji, psaná jsou zdobnější.'],
         ['name' => 'Nastavte výšku a tloušťku', 'text' => 'Výška písma určuje velikost nápisu, tloušťka jeho hloubku. Aby nápis stál, má být hluboký aspoň pětinu své výšky.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu o krok dál. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jak velký nápis vyjde?', 'a' => 'Slovo HOME s písmem vysokým 30 mm vyjde 144 mm dlouhé, 34 mm vysoké a 12 mm hluboké. Délka roste s počtem písmen; na tiskovou plochu se vejde nápis do 250 mm.'],

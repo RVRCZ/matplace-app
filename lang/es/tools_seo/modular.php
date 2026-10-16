@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Organizador modular de cubetas a medida del cajón',
-    'description' => 'Divida el interior del cajón en una cuadrícula y coloque cubetas de varios tamaños. Verá vista previa, piezas y precio. Impresión o descarga gratis.',
+    'description' => 'Divida el interior del cajón en una cuadrícula y coloque cubetas de varios tamaños. Verá vista previa y piezas. Impresión o descarga gratis.',
     'h1' => 'Un juego de cubetas sueltas que llena su cajón',
     'intro' => [
         'El organizador modular es un juego de cubetas sueltas que llenan el cajón con exactitud. Usted indica las medidas interiores del cajón, las divide en una cuadrícula y coloca en las celdas cubetas de distintos tamaños. Cada cubeta se imprime aparte, así que puede sacarla, recolocarla o lavarla cuando quiera. Si las cubetas van sobre la mesa y no en un cajón, se añade una bandeja exterior.',
-        'La herramienta muestra la distribución en la vista previa, enumera qué se imprime y calcula un precio orientativo de todo el juego. Imprimimos el juego en nuestra granja de impresión en Chequia: se lo enviamos con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga gratis las piezas sueltas o un proyecto listo para su impresora. Las cubetas se imprimen con el fondo hacia abajo y sin soportes.',
+        'La herramienta muestra la distribución en la vista previa y enumera qué se imprime; el precio de todo el juego lo calcula el paso siguiente. Imprimimos el juego en nuestra granja de impresión en Chequia: se lo enviamos con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga gratis las piezas sueltas o un proyecto listo para su impresora. Las cubetas se imprimen con el fondo hacia abajo y sin soportes.',
     ],
     'steps' => [
         ['name' => 'Mida el interior del cajón', 'text' => 'Indique el ancho y el fondo interiores del cajón y el alto de las cubetas. Reste de 1 a 2 mm a la medida tomada, las paredes del cajón rara vez son rectas.'],
         ['name' => 'Divídalo en una cuadrícula', 'text' => 'Elija el número de columnas y filas. La herramienta indica cuántos milímetros mide una celda de la cuadrícula; necesita al menos 15 mm.'],
         ['name' => 'Coloque las cubetas', 'text' => 'Toque una celda vacía y luego la esquina opuesta de la cubeta. Toque una cubeta ya colocada para seleccionarla y cambiar su color o quitarla.'],
-        ['name' => 'Revise lista y precio', 'text' => 'Bajo la vista previa está la lista «Qué se imprime» con las medidas de cada cubeta. El precio orientativo es el de todo el juego.'],
+        ['name' => 'Revise la lista', 'text' => 'Bajo la vista previa está la lista «Qué se imprime» con las medidas de cada cubeta. El precio exacto de todo el juego aparece un paso después, en el cálculo.'],
         ['name' => 'Pida la impresión o descargue', 'text' => 'Continúe al precio exacto y pídanos el juego; se paga con crédito recargado con tarjeta. O descargue las piezas sueltas en «Tengo impresora, descargar el modelo».'],
     ],
     'faq' => [

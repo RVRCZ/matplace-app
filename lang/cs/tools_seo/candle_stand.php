@@ -12,7 +12,7 @@ return [
         ['name' => 'Změřte sklenici', 'text' => 'Průměr dna sklenice svíčky změřte pravítkem. Lůžko vyjde o milimetr širší.'],
         ['name' => 'Vyberte obrázek, nebo napište jméno', 'text' => 'Silueta z knihovny, vlastní SVG či obrázek, nebo jméno do 16 znaků. Nahraný obrázek má přednost před jménem.'],
         ['name' => 'Nastavte siluetu', 'text' => 'Šířku měníte posuvníkem nebo tažením šipky v náhledu, tloušťku od 2,4 do 5 mm.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu. Při objednávce vyberete materiál a barvu podstavce i siluety; model i projekt pro slicer stáhnete zdarma.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Při objednávce vyberete materiál a barvu podstavce i siluety; model i projekt pro slicer stáhnete zdarma.'],
     ],
     'faq' => [
         ['q' => 'Je plastový stojan u svíčky bezpečný?', 'a' => 'Jen pro svíčku ve skle nebo LED svíčku. Sklo drží plamen daleko od plastu, dno sklenice je ale teplé; proto doporučujeme PETG, který měkne až kolem 80 °C, ne PLA (55 °C). Holá svíčka ani čajová svíčka bez skla na plastový stojan nepatří, a hořící svíčku nenechávejte bez dozoru.'],

@@ -13,7 +13,7 @@ return [
         ['name' => 'Elija el estilo', 'text' => 'Realista, miniatura de mesa o dibujo animado. En la miniatura elige cuánto material añadir.'],
         ['name' => 'Elija el tamaño y la base', 'text' => 'El tamaño va de 30 a 250 mm. La base es ovalada, redonda o una peana más alta con nombre. El nombre es opcional.'],
         ['name' => 'Cree la figura', 'text' => 'Marque el consentimiento y pulse «Crear la figura». Tarda de 1 a 3 minutos; mientras tanto puede salir y volver con el enlace de la barra de direcciones.'],
-        ['name' => 'Revísela y encargue la impresión', 'text' => 'Gire la figura, vea su punto más fino y un precio orientativo. La base y el nombre se cambian sin generar de nuevo. Después encargue la impresión o descargue el modelo.'],
+        ['name' => 'Revísela y encargue la impresión', 'text' => 'Gire la figura y vea su punto más fino. La base y el nombre se cambian sin generar de nuevo. Después encargue la impresión o descargue el modelo.'],
     ],
     'faq' => [
         ['q' => '¿Qué foto funciona mejor?', 'a' => 'El animal entero de lado o en ángulo de tres cuartos, tomada a su altura, tranquilo, sentado o de pie, delante de un fondo liso. No debe aparecer ninguna persona: una mano que sujete al animal pasaría a formar parte de la figura. La correa y el collar no importan.'],

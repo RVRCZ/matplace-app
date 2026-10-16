@@ -6,13 +6,13 @@ return [
     'h1' => 'A soap dish or tray made to the footprint of your model',
     'intro' => [
         'The tool takes the model you upload, measures its outline seen from above (or its bottom, as it stands) and builds a dish round it: a pocket of the outline grown by the play, a wall of the thickness and height you set, and a floor with a drain. It suits a bar of soap from a mould, an odd-shaped bar, but just as well a phone, a remote control or stones; the model itself is not part of the result.',
-        'You choose the drain: grooves or a grid through the floor, ribs the bar lies on above the floor with the water running to holes in the corners, or a solid floor for small things. Play 0.5 to 6 mm, wall 1.2 to 6 mm, wall height 8 to 60 mm. The dish takes a few seconds and opens in the preview with its size and the print price; download it for free or order the print from us.',
+        'You choose the drain: grooves or a grid through the floor, ribs the bar lies on above the floor with the water running to holes in the corners, or a solid floor for small things. Play 0.5 to 6 mm, wall 1.2 to 6 mm, wall height 8 to 60 mm. The dish takes a few seconds and opens in the preview with its size; download it for free, or after "Continue" see the price and order the print from us.',
     ],
     'steps' => [
         ['name' => 'Upload a model', 'text' => 'STL, 3MF or OBJ of what is to lie in the dish. The tool stands it on the bed.'],
         ['name' => 'Choose the footprint and the drain', 'text' => 'The whole model\'s outline from above, or its bottom only. Grooves, a grid, ribs, or a solid floor.'],
         ['name' => 'Set the play, the wall and the height', 'text' => 'The play round the model, the thickness of the wall and the floor, the wall\'s height above the floor.'],
-        ['name' => 'Create the dish', 'text' => 'Click "Make the dish". A few seconds later it opens with its size, its drain and the print price.'],
+        ['name' => 'Create the dish', 'text' => 'Click "Make the dish". A few seconds later it opens with its size and its drain.'],
     ],
     'faq' => [
         ['q' => 'Which model do I upload?', 'a' => 'A model of the thing that is to lie in the dish: a bar of soap (scanned or from a mould), a die, a phone. The tool only uses its outline; the model itself is not printed.'],

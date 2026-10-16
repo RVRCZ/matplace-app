@@ -12,7 +12,7 @@ return [
         ['name' => 'Suba una imagen o una foto', 'text' => 'El fondo se quita solo y la forma sigue entonces el contorno del motivo. Para conservar la foto entera, desactive la eliminación del fondo. El contraste, el brillo y la saturación de la foto se ajustan con controles deslizantes.'],
         ['name' => 'Elija la forma y las medidas', 'text' => 'La forma sigue la imagen, o es un círculo o un rectángulo. Ajuste el ancho, el grosor, un marco de hasta 3 mm alrededor de la imagen y, si quiere, un borde biselado.'],
         ['name' => 'Elija el imán y su fijación', 'text' => 'Elija la medida del imán y cómo se sujeta: un hueco para pegar con holgura de 0,1 a 0,3 mm, un hueco a presión, un agujero pasante o ningún hueco.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparece un precio orientativo; el precio exacto y el tiempo de impresión, un paso más allá. El STL, un ZIP con un STL por color y los proyectos para el laminador se descargan gratis y sin registro.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». El STL, un ZIP con un STL por color y los proyectos para el laminador se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Qué imanes caben en el hueco?', 'a' => 'Hay medidas predefinidas para los imanes de disco corrientes de Ø 6 × 2, 8 × 3, 10 × 2, 12 × 3, 15 × 3 y 20 × 3 mm. Una medida propia puede tener de 4 a 30 mm de diámetro y de 1 a 6 mm de altura. Los imanes no vienen con la impresión.'],

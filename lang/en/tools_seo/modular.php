@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Modular drawer organizer from bins, made to measure',
-    'description' => 'Divide the inside of your drawer into a grid and lay out bins of different sizes. See a preview, a parts list and a price. We print it, or download free.',
+    'description' => 'Divide the inside of your drawer into a grid and lay out bins of different sizes. See a preview and a parts list. We print it, or download free.',
     'h1' => 'A set of loose bins that fills your drawer',
     'intro' => [
         'A modular organizer is a set of separate bins that fill a drawer exactly. You enter the inside size of the drawer, divide it into a grid and lay out bins of different sizes on the cells. Every bin prints separately, so you can lift it out, rearrange it or wash it. When the bins go on a desk, not into a drawer, you add an outer tray.',
-        'The tool shows the layout in the preview, lists what gets printed and works out a rough price for the whole set. We print the set on our print farm in Czechia: we send it by Packeta to a pickup point or to your door. If you have a printer, you download the single parts or a ready project for your printer free. The bins print floor down and without supports.',
+        'The tool shows the layout in the preview and lists what gets printed; the calculation one step further prices the whole set. We print the set on our print farm in Czechia: we send it by Packeta to a pickup point or to your door. If you have a printer, you download the single parts or a ready project for your printer free. The bins print floor down and without supports.',
     ],
     'steps' => [
         ['name' => 'Measure inside the drawer', 'text' => 'Enter the width and depth inside the drawer and the height of the bins. Take 1 to 2 mm off the measured size, drawer walls are rarely perfectly straight.'],
         ['name' => 'Divide it into a grid', 'text' => 'Choose the number of columns and rows. The tool shows how many millimetres one grid cell measures; it needs to be at least 15 mm.'],
         ['name' => 'Lay out the bins', 'text' => 'Tap an empty cell and then the opposite corner of the bin. Tap a finished bin to select it and change its colour or remove it.'],
-        ['name' => 'Check the list and price', 'text' => 'Under the preview is the list "What gets printed" with the size of each bin. The rough price is for the whole set.'],
+        ['name' => 'Check the list', 'text' => 'Under the preview is the list "What gets printed" with the size of each bin. The precise price of the whole set is one step further, in the calculation.'],
         ['name' => 'Order the print or download', 'text' => 'Continue to the precise price and order the set from us; you pay from credit topped up by card. Or download the single parts under "I have a printer, download the model".'],
     ],
     'faq' => [

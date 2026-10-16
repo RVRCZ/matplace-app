@@ -12,7 +12,7 @@ return [
         ['name' => 'Elija una imagen o una silueta', 'text' => 'Suba su propia imagen o elija un motivo de la biblioteca. El fondo se quita solo y el contorno se suaviza.'],
         ['name' => 'Elija el interior', 'text' => 'Compartimentos en cuadrícula, orificios redondos o un solo hueco. El tamaño del compartimento y el diámetro del orificio se ajustan con un deslizador.'],
         ['name' => 'Ajuste las medidas', 'text' => 'Cambie el ancho y la altura con los deslizadores o arrastrando las flechas en la vista previa. Debajo lee cuántos compartimentos u orificios han salido y qué fondo tienen.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Qué imagen sirve para un organizador?', 'a' => 'Una forma de contorno claro y sin salientes finos: una nube, un corazón, una manzana, la cabeza de un animal. En una punta estrecha no cabe un compartimento, y una pared fina es ahí más frágil.'],

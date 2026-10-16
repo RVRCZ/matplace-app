@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Držák na zeď na míru: kolébka, kapsa, hák, klip',
-    'description' => 'Změříte věc, vyberete způsob držení a držák je na míru. Náhled a orientační cenu vidíte hned. Vytiskneme ho, nebo si model stáhnete zdarma.',
+    'description' => 'Změříte věc, vyberete způsob držení a držák je na míru. Náhled a rozměry vidíte hned. Vytiskneme ho, nebo si model stáhnete zdarma.',
     'h1' => 'Držák na ovladač, lahev, sluchátka nebo koště',
     'intro' => [
         'Nástroj vytvoří držák podle rozměrů věci, kterou chcete uklidit. Vyberete jeden ze čtyř typů: kolébku s nízkou přední stranou, uzavřenou kapsu, hák nebo klip na kulatou násadu. Hodí se na dálkový ovladač, lahev, nářadí, sluchátka nebo koště. Zadáváte skutečné rozměry věci, vůli kolem ní přidá nástroj sám.',
-        'Držák se připevní šrouby do zdi nebo oboustrannou páskou. Náhled ukáže tvar i s otvory a vedle něj je orientační cena. Držák vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. Pro vlastní tiskárnu si model stáhnete zdarma, tiskne se bez podpěr. Šrouby, hmoždinky ani páska nejsou součástí výtisku.',
+        'Držák se připevní šrouby do zdi nebo oboustrannou páskou. Náhled ukáže tvar i s otvory a rozměry, přesnou cenu spočítá kalkulace o krok dál. Držák vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. Pro vlastní tiskárnu si model stáhnete zdarma, tiskne se bez podpěr. Šrouby, hmoždinky ani páska nejsou součástí výtisku.',
     ],
     'steps' => [
         ['name' => 'Změřte věc', 'text' => 'Změřte šířku a tloušťku věci, u násady její průměr. Zadávejte skutečné rozměry bez rezervy.'],
         ['name' => 'Vyberte, jak má držet', 'text' => 'Kolébka a kapsa věc obejmou, hák je na vše s uchem nebo popruhem a klip sevře kulatou násadu. Můžete začít od předvolby, například „Dálkový ovladač“ nebo „Sluchátka“.'],
         ['name' => 'Zvolte upevnění', 'text' => 'Nechte zapnuté otvory na šrouby do zdi, nebo je vypněte a držák přilepte oboustrannou páskou. Otvory mohou být kulaté, nebo pro zavěšení na šroub ve zdi.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Zkontrolujte náhled a orientační cenu a pokračujte k přesné ceně; tisk u nás platíte kreditem dobitým kartou. Nebo si model stáhněte pro svou tiskárnu.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Zkontrolujte náhled a tlačítkem „Pokračovat“ přejděte k přesné ceně; tisk u nás platíte kreditem dobitým kartou. Nebo si model stáhněte pro svou tiskárnu.'],
     ],
     'faq' => [
         ['q' => 'Jak velkou věc držák pojme?', 'a' => 'Šířka věci může být od 10 do 300 mm a tloušťka od 5 do 150 mm. Klip je jen pro kulaté násady do průměru 60 mm.'],

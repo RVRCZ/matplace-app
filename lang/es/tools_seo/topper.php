@@ -12,7 +12,7 @@ return [
         ['name' => 'Escriba el nombre y el número', 'text' => 'Un nombre o un texto corto y, con él, un número, por ejemplo la edad de quien cumple años. Para el corazón, la estrella y el círculo no hace falta número.'],
         ['name' => 'Elija la forma y el tipo de letra', 'text' => 'Número, corazón, estrella, círculo o solo el texto. El nombre tiene treinta tipos de letra; una manuscrita cuyas letras se tocan se sostiene sola y con las demás la herramienta une las letras.'],
         ['name' => 'Ajuste el tamaño y las varillas', 'text' => 'Con los controles deslizantes se cambia el ancho de la forma, el ancho del nombre y su posición, y la vista previa se actualiza al momento. Puede haber una varilla o dos; elija unas más largas para una tarta alta.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». El modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Puede el adorno impreso tocar la tarta?', 'a' => 'El plástico impreso no está pensado para tocar alimentos. Envuelva las varillas en film alimentario o métalas en una pajita antes de clavarlas. La forma con el nombre queda por encima de la tarta y no toca la crema.'],

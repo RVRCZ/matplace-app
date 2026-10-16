@@ -12,7 +12,7 @@ return [
         ['name' => 'Suba una imagen', 'text' => 'Suba una imagen, elija una de la biblioteca o reutilice una subida antes. El fondo se quita solo; para una foto que deba llenar toda la superficie, desactive la eliminación.'],
         ['name' => 'Elija cómo se fabrica', 'text' => 'Un cuadro de placas en capas con marco, o una impresión con los colores uno sobre otro. Ajuste el ancho, el grosor de las placas y la separación entre ellas, el marco y el sitio para la tira LED si lo quiere.'],
         ['name' => 'Afine los colores', 'text' => 'Elija cuántos colores y asigne a cada uno un filamento de nuestro catálogo. Los colores se pueden mover adelante o atrás, o fusionar dos en uno.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto, un paso más adelante. Descargue cada placa como STL propio o todo el diseño como proyecto para su laminador, gratis y sin registro.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto lo muestra el cálculo tras «Continuar». Descargue cada placa como STL propio o todo el diseño como proyecto para su laminador, gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Cómo se monta el cuadro en capas?', 'a' => 'Imprima cada placa en su color y péguelas siguiendo la guía, de la trasera a la delantera. Los separadores forman parte de la placa y quedan bajo la placa de delante. Basta con cianoacrilato. El marco se imprime con el fondo abajo y las placas se pegan dentro.'],

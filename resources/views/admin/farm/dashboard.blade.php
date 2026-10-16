@@ -40,7 +40,7 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-4">
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                    <h2 class="text-lg font-bold">{{ $p->name }}</h2>
+                    <h2 class="text-lg font-bold"><span class="mr-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-sm">{{ $p->shortCode() }}</span>{{ $p->name }}</h2>
                     <p class="text-xs text-slate-500">{{ $p->model }} · {{ __('farm.admin.mode.'.$p->mode) }}@if($p->agent) · {{ $p->agent->name }}@endif · {{ $p->bedTypeLabel() }}</p>
                 </div>
                 <span class="rounded-full px-3 py-1 text-xs font-bold {{ in_array($state, ['offline', 'error', 'unknown']) ? 'bg-red-100 text-red-800' : ($state === 'printing' ? 'bg-action-soft text-action-dark' : 'bg-ok-soft text-ok') }}">{{ __('farm.admin.state.'.$state) }}</span>
@@ -112,6 +112,8 @@
                 @php $job = $row['job']; @endphp
                 <div class="mt-3 rounded-xl border border-slate-200 p-3">
                     <div class="text-sm font-semibold">{{ __('farm.admin.running') }}: <a class="underline" href="{{ route('admin.farm.orders.show', $job->order) }}">{{ $job->order->number }}</a> · {{ $job->order->modelFile?->original_name }}</div>
+                    {{-- which spools the job takes: farm, printer, slot ("U33") --}}
+                    @if($spools = $job->order->spoolText())<div class="mt-0.5 text-xs text-slate-600">{{ $spools }}</div>@endif
                     <div class="mt-1 text-xs text-slate-600">{{ $job->status }} · {{ round($job->progress) }} % @if($job->message)· {{ $job->message }}@endif</div>
                     <div class="mt-1 h-2 overflow-hidden rounded-full bg-slate-200"><div class="h-full bg-action" style="width: {{ min(100, $job->progress) }}%"></div></div>
                     @if($p->isAgentDriven())
@@ -129,7 +131,7 @@
             <ol class="mt-1 space-y-1 text-sm">
                 @forelse($row['queue'] as $q)
                     <li class="flex flex-wrap justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2">
-                        <span><a class="underline" href="{{ route('admin.farm.orders.show', $q['order']) }}">{{ $q['order']->number }}</a> · {{ $q['order']->modelFile?->original_name }} · {{ $q['order']->color?->name }}</span>
+                        <span><a class="underline" href="{{ route('admin.farm.orders.show', $q['order']) }}">{{ $q['order']->number }}</a> · {{ $q['order']->modelFile?->original_name }} · {{ $q['order']->spoolText() ?: $q['order']->color?->name }}</span>
                         @if($q['eta'])<span class="text-xs text-slate-600">{{ __('farm.admin.eta', ['start' => $dur($q['eta']['start_in']), 'finish' => $dur($q['eta']['finish_in'])]) }}</span>@endif
                     </li>
                 @empty
@@ -139,7 +141,7 @@
 
             <p class="mt-3 text-xs text-slate-500">
                 @foreach($p->slots as $s)
-                    <span class="mr-2 inline-flex items-center gap-1 {{ $s->enabled ? '' : 'opacity-40' }}"><span class="inline-block h-3 w-3 rounded-full border border-slate-300" style="background: {{ $s->color?->hex ?? '#fff' }}"></span>{{ $s->slot + 1 }}: {{ $s->color?->fullLabel() ?? '—' }} ({{ round($s->remaining_g) }} g)</span>
+                    <span class="mr-2 inline-flex items-center gap-1 {{ $s->enabled ? '' : 'opacity-40' }}"><span class="inline-block h-3 w-3 rounded-full border border-slate-300" style="background: {{ $s->color?->hex ?? '#fff' }}"></span><span class="font-mono">{{ $s->code() }}</span>: {{ $s->color?->fullLabel() ?? '—' }} ({{ round($s->remaining_g) }} g)</span>
                 @endforeach
                 <a href="{{ route('admin.farm.printers.edit', $p) }}" class="underline">{{ __('farm.admin.nav.printers') }}</a>
             </p>

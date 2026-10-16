@@ -12,7 +12,7 @@ return [
         ['name' => 'Type the name', 'text' => 'The big letter is the first letter of the name. If you want another one, the initial of a surname for example, type it into the second field.'],
         ['name' => 'Choose the typefaces', 'text' => 'Sans, serif or monospace for the big letter, always bold. Any of the thirty typefaces for the name.'],
         ['name' => 'Set the height, the thickness and the colours', 'text' => 'The preview shows where the name went and how big it is. Give the letter and the name a filament from those we have in stock.'],
-        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size and a rough price, the exact price and print time one step further. The model and the project with the filament change are free to download, without registration.'],
+        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size; the calculation after "Continue" shows the exact price and print time. The model and the project with the filament change are free to download, without registration.'],
     ],
     'faq' => [
         ['q' => 'Where on the letter is the name written?', 'a' => 'Where the letter has the most room. On letters with a vertical stem (E, T, L, I, K) the name runs upright along it, on wide horizontal bars across. The tool finds the place itself and the preview shows it at once.'],

@@ -27,12 +27,14 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\MeshFixtures;
+use Tests\Support\StartsOrders;
 use Tests\TestCase;
 
 /** Rent a printer, end to end: upload → slice → credit → pay → queue → agent prints → done. Fake slicer, fake gateway, sync queue. */
 class FarmOrderFlowTest extends TestCase
 {
     use RefreshDatabase;
+    use StartsOrders;
 
     private User $user;
 
@@ -73,9 +75,11 @@ class FarmOrderFlowTest extends TestCase
     private function pay(FarmOrder $order, array $over = [])
     {
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json();
+        // the colour the page ticks first: the one the order was computed for (the list itself runs by hue)
+        $color = collect($state['colors'])->firstWhere('slot', $state['slot']) ?? collect($state['colors'])->firstWhere('sliced', true) ?? $state['colors'][0];
 
         return $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", $over + [
-            'slot' => $state['colors'][0]['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $state['colors'][0]['total'],
+            'slot' => $color['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $color['total'],
         ]);
     }
 
@@ -119,12 +123,14 @@ class FarmOrderFlowTest extends TestCase
 
     public function test_a_spool_with_its_own_slicer_settings_is_resliced_after_payment_at_the_paid_price(): void
     {
-        $white = FarmPrinter::firstOrFail()->slots()->where('slot', 2)->firstOrFail()->color;
+        $spool = FarmPrinter::firstOrFail()->slots()->where('slot', 2)->firstOrFail();
+        $white = $spool->color;
         $white->update(['print_overrides' => ['nozzle_temp' => 222, 'process' => ['sparse_infill_density' => '25%']]]);
 
         $order = $this->order();
         $this->credit(1000);
-        $paid = $this->pay($order)->assertOk()->json();
+        $offer = collect($this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->json('colors'))->firstWhere('slot', $spool->id);
+        $paid = $this->pay($order, ['slot' => $spool->id, 'expected_total' => $offer['total']])->assertOk()->json();
         $order->refresh();
         // sync queue: the re-slice already ran; the order went uploaded → sliced → paid → queued again
         $this->assertSame(FarmOrder::STATUS_QUEUED, $order->status);
@@ -263,11 +269,10 @@ class FarmOrderFlowTest extends TestCase
         $uuid = $created->json('file.uuid');
         $this->assertEqualsWithDelta(3.0, ModelFile::where('uuid', $uuid)->firstOrFail()->tool_params['color_change_mm'], 0.001);
 
-        // the start page already offers the second colour, only from the machine of the first one
+        // the start page offers no colours any more: they are chosen once, on the order page (below)
         $start = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk();
-        $start->assertSee('farm-second-start', false)->assertSee('Druhá barva: kód nebo písmo')->assertSee('data-second-for="'.$same->id.'"', false)->assertSee('data-change="3"', false);
-        $this->actingAs($this->user)->get('/farm')->assertOk()->assertDontSee('farm-second-start', false);
-        // chosen there, the second spool is on the order from the start and the order page shows it preselected
+        $start->assertDontSee('farm-second-start', false)->assertDontSee('name="color"', false)->assertSee('id="farm-file" value="'.$uuid.'"', false);
+        // asked for when the order is made ("print again"), the second spool is on the order from the start and the order page shows it preselected
         $firstColor = $s1->slots()->whereNotNull('farm_color_id')->where('id', '!=', $free[0]->id)->whereHas('color.material', fn ($q) => $q->where('code', 'like', 'PLA%'))->firstOrFail()->farm_color_id;
         $early = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $firstColor, 'second_color' => $same->id])->assertCreated();
         $earlyOrder = FarmOrder::where('token', basename($early->json('url')))->firstOrFail();
@@ -319,14 +324,13 @@ class FarmOrderFlowTest extends TestCase
         $maxSlots[1]->update(['farm_color_id' => $onMax->id, 'remaining_g' => 900, 'enabled' => true]);
 
         $uuid = $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'sign', 'params' => ['style' => 'emboss', 'thickness' => 3, 'relief' => 1.2, 'line1' => 'Emma']])->assertCreated()->json('file.uuid');
-        // the start page offers both second colours under the white, whichever machine lists it
-        $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->assertSee('data-second-for="'.$white.'"', false)
-            ->assertSee('value="'.$onS1->id.'"', false)->assertSee('value="'.$onMax->id.'"', false);
-
         $order = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid])->assertCreated()->json('url')))->firstOrFail();
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
         $entry = collect($state['colors'])->first(fn ($c) => in_array($c['slot'], [$whiteSlot->id, $maxSlots[0]->id], true));
         $this->assertNotNull($entry, 'the white is on offer once');
+        $this->assertSame(1, collect($state['colors'])->where('name', $entry['name'])->where('kind', $entry['kind'])->count(), 'one card for a colour in two machines');
+        $this->assertEqualsCanonicalizing([$whiteSlot->fresh()->code(), $maxSlots[0]->fresh()->code()], $entry['codes'], 'with the codes of both spools');
+        $this->assertSame($entry['codes'][0], $entry['code']);
         $seconds = collect($entry['second']);
         $this->assertEqualsCanonicalizing([$onS1->id, $onMax->id], FarmPrinterSlot::whereIn('id', $seconds->pluck('slot'))->pluck('farm_color_id')->all(), 'the second colours of both machines');
         $maxRed = $seconds->first(fn ($s) => FarmPrinterSlot::find($s['slot'])->farm_printer_id === $max->id);
@@ -376,17 +380,12 @@ class FarmOrderFlowTest extends TestCase
         $this->assertNull($file->fresh()->colorChangeMm());
         $this->assertCount(2, $file->fresh()->colorChanges());
 
-        // the start page: a block of spools per change, the nearest spools ticked (red, then black), the plate white
-        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->getContent();
-        $this->assertStringContainsString('id="farm-second-start"', $html);
-        $this->assertStringContainsString('id="farm-change-1"', $html);
-        $this->assertStringContainsString('name="change_color[1]"', $html);
-        $this->assertStringContainsString('Barva 3 (od 3,4 mm)', $html);
-        $this->assertStringContainsString('data-changes="[3,3.4]"', $html);
-        $ticked = fn (string $name) => preg_match('/name="'.preg_quote($name, '/').'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
-        $this->assertSame($white->id, $ticked('color'));
-        $this->assertSame($red->id, $ticked('change_color[0]'));
-        $this->assertSame($black->id, $ticked('change_color[1]'));
+        // made from the start page (no colours there): the order starts with the nearest spools, red then black, the plate white
+        $auto = $this->startOrder($this->user, 'file='.$uuid);
+        $this->assertSame($white->id, self::picked($auto, 'color'));
+        $this->assertSame($red->id, self::picked($auto, 'change_color[0]'));
+        $this->assertSame($black->id, self::picked($auto, 'change_color[1]'));
+        $this->assertEquals([3.0, 3.4], array_column($this->actingAs($this->user)->getJson("/farm/orders/{$auto->token}/status")->json('changes'), 'z'));
 
         // created with both colours: every change knows its spool, the first one doubles as the second colour of older code
         $r = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $white->id, 'change_color' => [$red->id, $black->id]])->assertCreated();
@@ -443,16 +442,11 @@ class FarmOrderFlowTest extends TestCase
         $free[1]->update(['farm_color_id' => $black->id, 'remaining_g' => 800, 'enabled' => true]);
 
         $design = fn (array $colors) => $this->actingAs($this->user)->postJson('/api/tools/param', ['kind' => 'qr', 'params' => ['url' => 'https://matplace.com'] + $colors])->assertCreated()->json('file.uuid');
-        $ticked = function (string $query, string $name): ?int {
-            $html = $this->actingAs($this->user)->get('/farm?'.$query)->assertOk()->getContent();
-
-            return preg_match('/name="'.preg_quote($name, '/').'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
-        };
+        $ticked = fn (string $query, string $name): ?int => self::picked($this->startOrder($this->user, $query), $name);
 
         $plain = $design([]);
         $this->assertSame($white->id, $ticked('file='.$plain, 'color'), 'the plate in the lightest spool');
         $this->assertSame($black->id, $ticked('file='.$plain, 'change_color[0]'), 'the code in the darkest spool of that machine');
-        $this->actingAs($this->user)->get('/farm?file='.$plain)->assertSee('data-want="'.ParametricGenerator::COLOR_HEX['black'].'"', false);
 
         $redCode = $design(['code_color' => 'red']);
         $this->assertSame($red->id, $ticked('file='.$redCode, 'change_color[0]'), 'the design asked for a red code');
@@ -479,7 +473,8 @@ class FarmOrderFlowTest extends TestCase
         $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'supports' => 'auto'])->assertOk()->assertJsonPath('supports_mode', 'auto');
         $this->assertNotSame('0', $order->refresh()->slice_params['overrides']['process']['enable_support'] ?? null);
         $this->actingAs($this->user)->get('/farm/orders/'.$order->token.'/repeat')->assertRedirect();
-        $this->actingAs($this->user)->get('/farm?supports=off')->assertOk()->assertSee('Bez podpěr');
+        // "print again" hands "no supports" over to the order it makes
+        $this->actingAs($this->user)->get('/farm?supports=off')->assertOk()->assertSee('name="supports" value="off"', false);
     }
 
     /** A model from one of our tools built to print without supports (a cap) is sliced without them unless the customer asks. */
@@ -549,10 +544,12 @@ class FarmOrderFlowTest extends TestCase
         }
         $this->assertStringContainsString('plate 2/3', $many->events->pluck('note')->implode(' '));
 
-        // the calculator hands its quantity over to the start page
+        // the calculator hands its quantity over to the order, made straight from it or through the start page
         $file = $this->upload(20.0);
         $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $file, 'material' => 'PLA', 'quantity' => 6])->assertCreated()->json('calculation.token');
-        $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()->assertSee('name="copies"', false)->assertSee('value="6"', false);
+        $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()->assertSee('name="calc" value="'.$calc.'"', false);
+        $this->assertSame(6, $this->startOrder($this->user, 'calc='.$calc)->copies);
+        $this->assertSame(6, FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['calc' => $calc])->assertCreated()->json('url')))->firstOrFail()->copies);
     }
 
     public function test_the_size_and_the_colour_chosen_before_the_order_decide_the_piece_and_the_machine(): void
@@ -581,20 +578,21 @@ class FarmOrderFlowTest extends TestCase
         $state = $this->actingAs($this->user)->getJson("/farm/orders/{$chosen->token}/status")->assertOk()->json();
         $this->assertSame($chosen->farm_printer_slot_id, $state['slot']);
 
-        // the start page offers the loaded colours and carries size and copies over from the calculation
+        // the start page offers no colours; the order it makes carries size and copies over from the calculation
         $file = $this->upload(20.0);
         $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $file, 'material' => 'PLA', 'quantity' => 3, 'scale' => 1.5])->assertCreated()->json('calculation.token');
-        $page = $this->actingAs($this->user)->get('/en/farm?calc='.$calc)->assertOk();
-        $page->assertSee('name="color"', false)->assertSee('name="scale"', false)->assertSee('value="1.5"', false)->assertSee('value="3"', false)->assertSee('light blue');   // the English page
+        $this->actingAs($this->user)->get('/en/farm?calc='.$calc)->assertOk()->assertDontSee('name="color"', false)->assertSee('name="calc" value="'.$calc.'"', false);
+        $fromCalc = $this->startOrder($this->user, 'calc='.$calc);
+        $this->assertSame([3, 1.5], [$fromCalc->copies, (float) $fromCalc->scale]);
 
-        // "print again": the start page with the order's settings; the colour is preselected when it is still loaded
+        // "print again": the start page with the order's settings; the order starts in the colour when it is still loaded
         $again = $this->actingAs($this->user)->get("/farm/orders/{$chosen->token}/repeat")->assertRedirect();
-        $target = $again->headers->get('Location');
+        $target = (string) $again->headers->get('Location');
         $this->assertStringContainsString('file='.$chosen->modelFile->uuid, $target);
         $this->assertStringContainsString('color='.$blue->id, $target);
-        $this->actingAs($this->user)->get($target)->assertOk()->assertSee('value="'.$blue->id.'" class="sr-only" checked', false);
-        $max->slots()->where('slot', 0)->update(['enabled' => false]);                     // the spool is gone: another colour is offered first, nothing breaks
-        $this->actingAs($this->user)->get($target)->assertOk()->assertDontSee('value="'.$blue->id.'"', false);
+        $this->assertSame($blue->id, $this->startOrder($this->user, (string) parse_url($target, PHP_URL_QUERY))->farm_color_id);
+        $max->slots()->where('slot', 0)->update(['enabled' => false]);                     // the spool is gone: the order starts without it, nothing breaks
+        $this->assertNotSame($blue->id, $this->startOrder($this->user, (string) parse_url($target, PHP_URL_QUERY))->farm_color_id);
 
         // resizing on the order page is a preset like the others: sliced again at the new size
         $this->actingAs($this->user)->postJson("/farm/orders/{$half->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'scale' => 2])->assertOk()->assertJsonPath('scale', 2);
@@ -890,12 +888,8 @@ T2 ; slot chosen by matplace farm
         $file = ModelFile::where('uuid', $uuid)->firstOrFail();
         $this->assertSame(['body', 'lid'], OrderService::designParts($file));
 
-        // the start page offers the parts, off by default (the design names no colours for them); the lid under its own name
-        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->getContent();
-        $this->assertStringContainsString('id="farm-parts"', $html);
-        $this->assertStringContainsString('name="part_color[lid]"', $html);
-        $this->assertStringContainsString(e(__('param.part.lid')), $html);
-        $this->assertDoesNotMatchRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $html);
+        // made from the start page, the box is not printed by parts (the design names no colours for them)
+        $this->assertFalse($this->startOrder($this->user, 'file='.$uuid)->isByParts());
 
         // without the tick the box prints as it always did: one plate, both parts in one colour
         $plain = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $white->id])->assertCreated()->json('url')))->firstOrFail();
@@ -975,9 +969,16 @@ T2 ; slot chosen by matplace farm
         // "print again" keeps the parts and their colours
         $location = $this->actingAs($this->user)->get("/farm/orders/{$order->token}/repeat")->assertRedirect()->headers->get('Location');
         $this->assertStringContainsString('by_parts=1', $location);
-        $again = $this->actingAs($this->user)->get($location)->assertOk()->getContent();
-        $this->assertMatchesRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $again);
-        $this->assertMatchesRegularExpression('/name="part_color\[lid\]" value="'.$red->id.'"[^>]*\schecked/', $again);
+        $again = $this->startOrder($this->user, (string) parse_url($location, PHP_URL_QUERY));
+        $this->assertTrue($again->isByParts());
+        $this->assertSame($red->id, self::picked($again, 'part_color[lid]'));
+
+        // on the order page the customer prints the parts together again, and apart once more: sliced again each time
+        $this->actingAs($this->user)->postJson("/farm/orders/{$again->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'by_parts' => false])->assertOk()->assertJsonPath('by_parts', false)->assertJsonPath('part_count', 2);
+        $this->assertSame(1, $again->refresh()->plates);
+        $this->actingAs($this->user)->postJson("/farm/orders/{$again->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'by_parts' => true])->assertOk()->assertJsonPath('by_parts', true);
+        $this->assertSame(['body', 'lid'], array_column($again->refresh()->partPlates(), 'part'));
+        $this->assertSame(2, $again->plates);
     }
 
     public function test_a_box_whose_parts_have_colours_starts_by_parts_with_the_nearest_spools(): void
@@ -1001,18 +1002,17 @@ T2 ; slot chosen by matplace farm
         $file = ModelFile::where('uuid', $uuid)->firstOrFail();
         $file->forceFill(['tool_params' => ['part_colors' => ['body' => ['code' => 'green', 'hex' => '#30a040'], 'lid' => ['code' => 'blue', 'hex' => '#2050b0']]] + $file->tool_params])->save();
 
-        // the start page starts by parts: the first colour follows the body, the lid takes the blue spool of that machine
-        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->getContent();
-        $this->assertMatchesRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $html);
-        $ticked = fn (string $html, string $name) => preg_match('/name="'.preg_quote($name, '/').'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
-        $this->assertSame($green->id, $ticked($html, 'color'));
-        $this->assertSame($blue->id, $ticked($html, 'part_color[lid]'));
-        $this->assertSame(0, $ticked($html, 'part_color[body]'), 'the body is the main colour itself');
+        // the order starts by parts: the first colour follows the body, the lid takes the blue spool of that machine
+        $order = $this->startOrder($this->user, 'file='.$uuid);
+        $this->assertTrue($order->isByParts());
+        $this->assertSame($green->id, self::picked($order, 'color'));
+        $this->assertSame($blue->id, self::picked($order, 'part_color[lid]'));
+        $this->assertSame(0, self::picked($order, 'part_color[body]'), 'the body is the main colour itself');
 
-        // the colour the customer chose by hand wins over the design; the lid still takes the blue spool of that machine
-        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid.'&color='.$white->id)->assertOk()->getContent();
-        $this->assertSame($white->id, $ticked($html, 'color'));
-        $this->assertMatchesRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $html);
+        // the colour asked for in the address ("print again") wins over the design; still by parts
+        $order = $this->startOrder($this->user, 'file='.$uuid.'&color='.$white->id);
+        $this->assertSame($white->id, self::picked($order, 'color'));
+        $this->assertTrue($order->isByParts());
     }
 
     public function test_a_design_in_one_free_colour_starts_on_the_nearest_spool(): void
@@ -1033,11 +1033,8 @@ T2 ; slot chosen by matplace farm
         $file = ModelFile::where('uuid', $uuid)->firstOrFail();
         $file->forceFill(['tool_params' => ['part_colors' => ['body' => ['code' => '#2050b0', 'hex' => '#2050b0']]] + $file->tool_params])->save();
 
-        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->getContent();
-        $ticked = fn (string $html, string $name) => preg_match('/name="'.preg_quote($name, '/').'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
-        $this->assertSame($blue->id, $ticked($html, 'color'), 'the spool nearest to the design\'s colour is ticked');
-        // the customer\'s own choice in the address wins
-        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid.'&color='.$white->id)->assertOk()->getContent();
-        $this->assertSame($white->id, $ticked($html, 'color'));
+        $this->assertSame($blue->id, self::picked($this->startOrder($this->user, 'file='.$uuid), 'color'), 'the order starts on the spool nearest to the design\'s colour');
+        // the colour named in the address wins
+        $this->assertSame($white->id, self::picked($this->startOrder($this->user, 'file='.$uuid.'&color='.$white->id), 'color'));
     }
 }

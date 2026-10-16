@@ -1,0 +1,5 @@
+{
+    "relief.lead": ["Nahrajte fotku a hned uvidíte model. Fotku nikam neukládáme.", "Upload a photo and see the model right away. We do not keep the photo.", "Suba una foto y verá el modelo al instante. No guardamos la foto."],
+    "relief.submit": ["Vytvořit model", "Create the model", "Crear el modelo"],
+    "sign.lead": ["Napiš text, vyber tvar a máš model přesně na milimetr. Přesnou cenu ukáže kalkulace a můžeš ho nechat vytisknout.", "Type the text, pick a shape and get a model exact to the millimetre. The calculation shows the precise price and you can have it printed.", "Escribe el texto, elige la forma y obtén un modelo exacto al milímetro. El cálculo muestra el precio exacto y puedes encargarlo."]
+}

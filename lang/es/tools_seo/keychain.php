@@ -12,7 +12,7 @@ return [
         ['name' => 'Empiece con un llavero', 'text' => 'La página se abre con un hueso y el nombre Rex. Escriba su nombre, cambie la forma o elija otra plantilla, por ejemplo un corazón con nombre.'],
         ['name' => 'Edite las capas', 'text' => 'Toque una capa en la lista o en la vista previa y cambie su texto, tipografía, forma, imagen y color. En la vista previa la arrastra para moverla, arrastra una esquina del marco para cambiar su tamaño y el punto para girarla.'],
         ['name' => 'Añada más y ajuste el ojal', 'text' => 'Los botones añaden un texto, una imagen o una forma, doce capas como máximo. En las medidas ajusta el grosor y el orificio del ojal según su anilla.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto para el laminador con los cambios de filamento se descargan gratis y sin registro.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». El modelo y el proyecto para el laminador con los cambios de filamento se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Qué orificio necesita la anilla del llavero?', 'a' => 'Para una anilla corriente de 25 a 30 mm basta un orificio de 4 a 5 mm; vienen 4 mm. Para un mosquetón o una anilla más gruesa amplíelo hasta 8 mm. La anilla no forma parte de la pieza.'],

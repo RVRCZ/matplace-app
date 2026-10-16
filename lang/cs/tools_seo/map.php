@@ -12,7 +12,7 @@ return [
         ['name' => 'Zadejte místo', 'text' => 'Název města, čtvrti, ulice nebo památky; nebo souřadnice. Vyberte, které místo myslíte, a zvolte město nebo krajinu a rozsah: město 500 m až 2 km, krajina 2 až 20 km.'],
         ['name' => 'Prohlédněte si náhled a nastavte mapu', 'text' => 'Náhled oblasti ukazuje budovy, silnice, vodu a zeleň, jak se vytisknou. Zvolte styl, velikost desky, rám s názvem, u města výšku budov bez údaje a silnice vyvýšené nebo zapuštěné, u krajiny převýšení.'],
         ['name' => 'Vyberte barvy', 'text' => 'Podklad, silnice a budovy, nebo podklad a terén, každý svou barvou. Barvy leží nad sebou podle výšky, takže je zvládne každá tiskárna s výměnou filamentu.'],
-        ['name' => 'Vytvořte mapu a tiskněte nebo stáhněte', 'text' => 'Model se staví na serveru, město 1 km do půl minuty. Pak vidíte rozměry a orientační cenu; tisk u nás objednáte dál, STL a projekt 3MF s výměnami stáhnete zdarma.'],
+        ['name' => 'Vytvořte mapu a tiskněte nebo stáhněte', 'text' => 'Model se staví na serveru, město 1 km do půl minuty. Pak vidíte rozměry; přesnou cenu a tisk u nás najdete o krok dál, STL a projekt 3MF s výměnami stáhnete zdarma.'],
     ],
     'faq' => [
         ['q' => 'Odkud jsou data a jak jsou přesná?', 'a' => 'Budovy, ulice, voda a železnice z OpenStreetMap, tedy z mapy, kterou doplňují lidé po celém světě; ve městech je velmi úplná, výšky budov tam, kde je někdo zapsal (jinak platí výška, kterou zadáte). Výšky terénu z dat Mapzen (AWS Open Data) s rozlišením kolem 30 m. Na mapě je datum dat.'],

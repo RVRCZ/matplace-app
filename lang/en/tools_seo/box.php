@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Custom box with a lid and openings for 3D printing',
-    'description' => 'Enter the inside size, add a lid, openings in the walls or a cable slot. The preview and a rough price show at once. We print it, or download it free.',
+    'description' => 'Enter the inside size, add a lid, openings in the walls or a cable slot. The preview and the sizes show at once. We print it, or download it free.',
     'h1' => 'A box sized to what has to fit inside',
     'intro' => [
         'The tool builds a box from its inside size, that is, from the thing that has to fit in it. It works out the outer size itself. The box suits electronics, small parts or a gift. You can add a slip-on lid with a lip, up to eight round or rectangular openings in the walls and a cable slot that runs from the top rim.',
-        'The rotatable preview shows the box and the lid, with the inner and outer size below it. The rough price is recalculated after every change. We print the box on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. You can also print it yourself, the model is free to download. The box and the lid print side by side without supports.',
+        'The rotatable preview shows the box and the lid, with the inner and outer size below it. The calculation after "Continue" works out the precise price and print time. We print the box on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. You can also print it yourself, the model is free to download. The box and the lid print side by side without supports.',
     ],
     'steps' => [
         ['name' => 'Measure what goes inside', 'text' => 'Enter the width, depth and height inside the box. Leave a few millimetres of room around the thing.'],
         ['name' => 'Choose lid and rounding', 'text' => 'Tick "With a slip-on lid" if you want a lid, and set the corner rounding. For a cable add "With a slot for the cable".'],
         ['name' => 'Add openings in the walls', 'text' => 'For each opening you choose the wall, the shape, the size and where its centre is. The position is measured from the bottom-left corner of the wall seen from outside.'],
-        ['name' => 'Check preview and price', 'text' => 'The preview shows the box, the lid, the sizes and a rough price. If an opening reaches outside the wall or two of them overlap, the tool tells you.'],
+        ['name' => 'Check the preview', 'text' => 'The preview shows the box, the lid and the sizes. If an opening reaches outside the wall or two of them overlap, the tool tells you.'],
         ['name' => 'Order the print or download', 'text' => 'Continue to the precise price and order the print from us; you pay from credit topped up by card. Or download the box and the lid for your own printer.'],
     ],
     'faq' => [

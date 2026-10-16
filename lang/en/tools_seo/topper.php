@@ -12,7 +12,7 @@ return [
         ['name' => 'Type the name and the number', 'text' => 'A name or a short text and a number with it, the age of the birthday child for example. For the heart, the star and the circle no number is needed.'],
         ['name' => 'Choose the shape and the typeface', 'text' => 'A number, a heart, a star, a circle, or the text alone. The name has thirty typefaces; a script whose letters touch holds together by itself, with the others the tool joins the letters.'],
         ['name' => 'Set the size and the sticks', 'text' => 'Sliders change the width of the shape, the width of the name and its place, and the preview follows at once. There can be one stick or two; choose longer ones for a tall cake.'],
-        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size and a rough price, the exact price and print time one step further. The model and the project with the filament change are free to download, without registration.'],
+        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size; the calculation after "Continue" shows the exact price and print time. The model and the project with the filament change are free to download, without registration.'],
     ],
     'faq' => [
         ['q' => 'May a printed topper touch the cake?', 'a' => 'Printed plastic is not meant to touch food. Wrap the sticks in food-safe film or slide them into a straw before you push them in. The shape with the name stays above the cake and does not touch the cream.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Vyberte, co vyrobit', 'text' => 'Fotopanel do okna nebo na stojánek, lampu s fotkou kolem dokola, nebo reliéf na zeď bez podsvícení.'],
         ['name' => 'Nahrajte fotku', 'text' => 'Vyberte nebo vyfoťte obrázek (JPG, PNG, WebP). Jas, kontrast a střední tóny upravíte posuvníky, obrácení světlých a tmavých míst zaškrtnutím.'],
         ['name' => 'Zvolte tvar a rozměry', 'text' => 'U panelu tvar destičky, šířku, výšku a rámeček; u lampy obvod a výšku a objímku. Doplňky: otvor nebo očko na zavěšení, stolní stojánek.'],
-        ['name' => 'Vytvořte model', 'text' => 'Klepněte na „Vytvořit model a ukázat ceny“. Model se za pár vteřin otevře na stránce s náhledem proti světlu, cenou a stažením.'],
+        ['name' => 'Vytvořte model', 'text' => 'Klepněte na „Vytvořit model“. Model se za pár vteřin otevře na stránce s náhledem proti světlu a stažením; přesnou cenu ukáže kalkulace.'],
     ],
     'faq' => [
         ['q' => 'Jaký je rozdíl mezi litofanií a reliéfem?', 'a' => 'Litofanie ukáže obrázek až proti světlu, třeba v okně nebo před lampou. Reliéf je vidět i bez světla, protože světlá místa fotky vystupují nad desku.'],

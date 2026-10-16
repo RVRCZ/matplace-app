@@ -21,12 +21,14 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\MeshFixtures;
+use Tests\Support\StartsOrders;
 use Tests\TestCase;
 
 /** Every farm page renders, in every language, and the admin desk is closed to everybody but admins. */
 class FarmPagesTest extends TestCase
 {
     use RefreshDatabase;
+    use StartsOrders;
 
     private User $user;
 
@@ -90,11 +92,13 @@ class FarmPagesTest extends TestCase
 
         $this->actingAs($this->user)->from($start)->post('/farm/orders', ['file' => $file->uuid, 'quality' => 'fine', 'strength' => 'high', 'supports' => 'off', 'copies' => 3])
             ->assertRedirect($start)->assertSessionHas('error');
+        // the start page has no settings of its own: what was sent rides along to the next try
         $this->actingAs($this->user)->get($start)->assertOk()
-            ->assertSee('name="supports" value="off" class="sr-only" checked', false)
-            ->assertSee('name="quality" value="fine" class="sr-only" checked', false)
-            ->assertSee('name="strength" value="high" class="sr-only" checked', false)
-            ->assertSee('max="'.PlateLayout::MAX_COPIES.'" value="3"', false);
+            ->assertSee('name="supports" value="off"', false)
+            ->assertSee('name="quality" value="fine"', false)
+            ->assertSee('name="strength" value="high"', false)
+            ->assertSee('name="copies" value="3"', false);
+        $this->assertLessThanOrEqual(PlateLayout::MAX_COPIES, 3);
     }
 
     public function test_calculator_offers_the_farm_and_the_start_page_takes_a_shared_calculation(): void
@@ -105,13 +109,17 @@ class FarmPagesTest extends TestCase
 
         $order = $this->order();
         $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $order->modelFile->uuid, 'material' => 'PLA', 'quality' => 'fine', 'infill' => 15])->json('calculation.token');
-        $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()->assertSee('part.stl')->assertSee('value="fine" class="sr-only" checked', false);
+        // signed in, the calculator's button makes the order right away; a guest goes through the start page
+        $this->actingAs($this->user)->get('/c/'.$calc)->assertOk()->assertSee('data-store="'.route('farm.orders.store').'"', false);
+        $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()->assertSee('part.stl')->assertSee('name="calc" value="'.$calc.'"', false)->assertDontSee('name="color"', false);
+        $this->assertSame('fine', $this->startOrder($this->user, 'calc='.$calc)->quality);
 
         // "no supports" and the infill chosen in the calculator come along too
         $calc = $this->actingAs($this->user)->postJson('/api/calculations', ['file' => $order->modelFile->uuid, 'material' => 'PLA', 'quality' => 'standard', 'infill' => 35, 'supports' => 0])->json('calculation.token');
-        $this->actingAs($this->user)->get('/farm?calc='.$calc)->assertOk()
-            ->assertSee('name="supports" value="off" class="sr-only" checked', false)
-            ->assertSee('name="strength" value="high" class="sr-only" checked', false);
+        $made = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['calc' => $calc])->assertCreated()->json('url')))->firstOrFail();
+        $this->assertSame(['off', 'high'], [$made->supports, $made->strength]);
+        // a calculation that does not exist makes no order
+        $this->actingAs($this->user)->postJson('/farm/orders', ['calc' => 'nothing-like-this'])->assertNotFound();
     }
 
     public function test_until_the_farm_is_public_only_admins_see_the_button(): void

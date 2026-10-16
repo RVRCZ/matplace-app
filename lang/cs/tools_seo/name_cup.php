@@ -12,7 +12,7 @@ return [
         ['name' => 'Napište jméno', 'text' => 'Krátké jméno vyjde s širší kapsou. U delšího zvětšete šířku, aby zůstalo místo na tužky.'],
         ['name' => 'Vyberte písmo', 'text' => 'Písmo vyberete ze třiceti. Psané, ve kterém se písmena spojují, dává jednu souvislou kapsu. U ostatních jsou písmena samostatné kapsy; kde se nedotýkají, spojí je příčka.'],
         ['name' => 'Nastavte rozměry a podstavec', 'text' => 'Šířku a výšku měníte posuvníky nebo tažením šipek v náhledu. Pod rozměry vidíte šířku kapsy; když je pro tužku úzká, nástroj upozorní.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Vejdou se do stojánku tužky?', 'a' => 'Tužka má 7 až 8 mm, potřebuje tedy kapsu širokou aspoň 9 mm. Nástroj šířku nejširšího místa kapsy vypíše a na úzkou kapsu upozorní. U jména Jana o šířce 160 mm má nejširší místo kapsy přes 30 mm.'],

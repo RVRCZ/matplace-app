@@ -193,12 +193,6 @@ export function bootArt(stage: Stage): void {
         stage.status({ bbox: { x: o[0], y: o[1], z: o[2] }, pieces: n.parts.length, colors: n.filaments, each: n.each.length > 1 ? n.each : undefined });
     };
 
-    const renderPrice = (): void => {
-        if (!lastMeta) return;
-        // for the material and the number of pieces of the page's last step; the stage counts again when they change
-        stage.price(cfg.config, { volume_mm3: lastMeta.volume_mm3, area_mm2: lastMeta.area_mm2 }, { subText: (g, time, q) => t('param.estimate', { g: nf.format(g), t: time, q }) });
-    };
-
     const refresh = async (): Promise<void> => {
         if (!artwork) { valid = false; stage.go({ disabled: true }); stage.downloads([]); return; }
         const mine = ++seq;
@@ -211,7 +205,7 @@ export function bootArt(stage: Stage): void {
             viewer.setSpreadAxis(mode() === 'layered' ? 'z' : null);
             stage.show(new STLLoader().parse(await res.arrayBuffer()), { kind: 'filament_art', pieces: lastMeta?.parts ?? null });
             valid = true; showError(null);
-            paintParts(); renderColors(); renderGuide(); renderDims(); renderWarnings(); renderStatus(); renderPrice(); renderDownloads();
+            paintParts(); renderColors(); renderGuide(); renderDims(); renderWarnings(); renderStatus(); renderDownloads();
             stage.go({ disabled: false, run: () => save() });
         } catch {
             if (mine === seq) { valid = false; showError(t('param.failed')); }

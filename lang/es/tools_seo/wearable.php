@@ -12,7 +12,7 @@ return [
         ['name' => 'Suba un modelo', 'text' => 'Un STL o 3MF de un casco, una máscara o una armadura que quiera imprimir a su talla.'],
         ['name' => 'Indique la medida', 'text' => 'Elija qué rodea el modelo (cabeza, pecho, brazo…) e indique el contorno en centímetros; la herramienta muestra enseguida cuánto lo escala y qué tamaño tendrá.'],
         ['name' => 'Visores, correa, división', 'text' => 'Añada visores (lado, forma, tamaño, desplazamiento) y, si quiere, ranuras de correa. Elija la cama de su impresora y las uniones de las piezas.'],
-        ['name' => 'Cree el modelo', 'text' => 'Pulse «Hacer a medida». En unos segundos se abre con sus medidas, el contorno interior, las piezas y el precio de impresión.'],
+        ['name' => 'Cree el modelo', 'text' => 'Pulse «Hacer a medida». En unos segundos se abre con sus medidas, el contorno interior y las piezas.'],
     ],
     'faq' => [
         ['q' => '¿Cómo se escala el modelo?', 'a' => 'Por igual en todas las direcciones. La herramienta busca la sección horizontal más ancha del modelo, mide su contorno interior (en un modelo macizo resta la pared) y elige la escala para que el contorno coincida con su medida más la holgura, 10 mm por defecto.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Measure the jar', 'text' => 'Measure the diameter of the bottom of the candle jar with a ruler. The seat comes out a millimetre wider.'],
         ['name' => 'Choose a picture or type a name', 'text' => 'A silhouette from the library, your own SVG or image, or a name of up to 16 characters. An uploaded picture takes precedence over the name.'],
         ['name' => 'Set the silhouette', 'text' => 'Change its width with the slider or by dragging the arrow in the preview, its thickness from 2.4 to 5 mm.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price. When ordering you pick the material and the colour of the base and of the silhouette; the model and the slicer project are free to download.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions; the calculation after "Continue" shows the precise price. When ordering you pick the material and the colour of the base and of the silhouette; the model and the slicer project are free to download.'],
     ],
     'faq' => [
         ['q' => 'Is a plastic stand safe next to a candle?', 'a' => 'Only for a candle in a jar or an LED candle. The glass keeps the flame away from the plastic, but the bottom of the jar is warm; that is why we recommend PETG, which softens at about 80 °C, not PLA (55 °C). A bare candle or a tea light without glass does not belong on a plastic stand, and never leave a burning candle unattended.'],

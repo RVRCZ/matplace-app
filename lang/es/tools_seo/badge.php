@@ -12,7 +12,7 @@ return [
         ['name' => 'Elija una imagen', 'text' => 'Suba su propia imagen o elija un motivo de la biblioteca. El fondo se quita solo y la lista de colores muestra qué bobinas se usarán.'],
         ['name' => 'Añada un nombre', 'text' => 'Un nombre de hasta 16 caracteres aparece bajo la imagen. Se ajusta para no ser más ancho que la imagen, con mayúsculas de 7 mm como máximo.'],
         ['name' => 'Ajuste el tamaño y la parte trasera', 'text' => 'Cambie el ancho con el deslizador o arrastrando la flecha en la vista previa. El rebaje trasero mide de 10 a 30 mm de diámetro y de 0,4 a 2 mm de fondo; se puede quitar.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto, un paso después. El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto lo muestra el cálculo tras «Continuar». El modelo y el proyecto para el laminador se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Qué tamaño debe tener el adorno?', 'a' => 'La cara de un yoyó corriente mide unos 32 mm. Un adorno de 35 a 45 mm de ancho la cubre sin estorbar; por encima de 50 mm se engancha en la ropa.'],

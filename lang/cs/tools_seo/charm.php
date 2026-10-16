@@ -12,7 +12,7 @@ return [
         ['name' => 'Nahrajte obrázek nebo napište jméno', 'text' => 'Obrázek nahrajete, vyberete z knihovny, nebo použijete některý z dříve nahraných. Místo obrázku můžete napsat jméno či krátký text na jeden nebo dva řádky.'],
         ['name' => 'Dolaďte obrys a barvy', 'text' => 'Posuvník od 0 do 100 určuje, kolik pozadí zmizí; hrany lze vyhladit až o 1 mm. Zvolíte počet barev, v okně barev každé přiřadíte filament a případně dvě barvy sloučíte v jednu.'],
         ['name' => 'Nastavte velikost a očko', 'text' => 'Zadáte šířku, tloušťku a okraj kolem obrázku do 3 mm, případně zkosenou hranu. Očko chytíte v náhledu a přetáhnete tam, odkud má přívěsek viset.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Orientační cenu vidíte hned vedle náhledu, přesnou cenu a dobu tisku o krok dál. Model si také zdarma a bez registrace stáhnete jako STL, ZIP s jedním STL pro každou barvu nebo projekt pro slicer.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Model si také zdarma a bez registrace stáhnete jako STL, ZIP s jedním STL pro každou barvu nebo projekt pro slicer.'],
     ],
     'faq' => [
         ['q' => 'Můžu místo obrázku použít jen jméno?', 'a' => 'Ano. Napíšete jeden nebo dva řádky a vyberete jedno ze třiceti písem, od tučných bezpatkových po psaná rukou. Oddělené kousky nástroj spojí malým můstkem, aby přívěsek držel pohromadě, a upozorní na to.'],

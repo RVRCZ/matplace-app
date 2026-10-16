@@ -12,7 +12,7 @@ return [
         ['name' => 'Nahrajte barevný 3MF', 'text' => 'Soubor uložený ze sliceru s barvami, nebo 3MF s materiály z CAD programu. Nástroj hned ukáže nalezené barvy a jejich podíl.'],
         ['name' => 'Zvolte hloubku vložek', 'text' => 'Jak hluboko má namalovaná barva do modelu sahat, 0,6 až 3 mm. U samostatných těles na tom nezáleží.'],
         ['name' => 'Rozdělte', 'text' => 'Klepněte na „Rozdělit podle barev“. Za pár vteřin je hotovo: díly v náhledu v barvách, seznam s názvy a podíly.'],
-        ['name' => 'Stáhněte nebo objednejte', 'text' => 'Každý díl zvlášť jako STL, nebo celek pro tisk najednou. Cenu tisku u nás vidíte hned.'],
+        ['name' => 'Stáhněte nebo objednejte', 'text' => 'Každý díl zvlášť jako STL, nebo celek pro tisk najednou. Cenu tisku u nás ukáže kalkulace po „Pokračovat“.'],
     ],
     'faq' => [
         ['q' => 'Jaké barvy nástroj pozná?', 'a' => 'Materiály 3MF (basematerials, skupiny barev), barvy na objektu i na jednotlivých trojúhelnících, extruder přiřazený objektu nebo dílu v Bambu Studiu, Orce a PrusaSliceru a malování štětcem (paint_color, mmu_segmentation). Barvy filamentů bere z projektu; bez nich použije pevnou paletu.'],

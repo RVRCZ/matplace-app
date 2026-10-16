@@ -12,7 +12,7 @@ return [
         ['name' => 'Start from a nameplate', 'text' => 'The page opens with a plate, the name Adéla and a star. Type your name and pick another shape of the plate.'],
         ['name' => 'Edit the layers', 'text' => 'Tap a layer in the list or in the preview and change its text, typeface, shape, picture and colour. In the preview you drag it to move it, drag a corner of its frame to resize it and the knob to turn it.'],
         ['name' => 'Add more', 'text' => 'The buttons add a second line of text, a picture or another shape, twelve layers at most. The arrows change what lies on what.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price, the precise price and print time one step further. The model and the slicer project with the filament changes are free to download without an account.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions; the calculation after "Continue" shows the precise price and print time. The model and the slicer project with the filament changes are free to download without an account.'],
     ],
     'faq' => [
         ['q' => 'How big will the nameplate be?', 'a' => 'As big as you set it: the width of every layer goes from 5 to 250 mm. The nameplate the page opens with is 120 × 60 mm and 4.6 mm thick.'],

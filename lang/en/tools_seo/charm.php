@@ -12,7 +12,7 @@ return [
         ['name' => 'Upload a picture or type a name', 'text' => 'Upload a picture, pick one from the library, or reuse one you uploaded earlier. Instead of a picture you can type a name or a short text on one or two lines.'],
         ['name' => 'Tune the outline and colours', 'text' => 'A slider from 0 to 100 sets how much of the background goes; edges can be smoothed by up to 1 mm. Choose the number of colours, give each a filament in the colour window and, if you like, join two colours into one.'],
         ['name' => 'Set the size and the eyelet', 'text' => 'Enter the width, the thickness and a frame of up to 3 mm round the picture, with a bevelled edge if you want one. Grab the eyelet in the preview and drag it to the point the charm should hang from.'],
-        ['name' => 'Order the print or download', 'text' => 'A rough price is shown right next to the preview, the exact price and print time one step further. You can also download the model as an STL, a ZIP with one STL per colour or a slicer project, free and without registration.'],
+        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size; the calculation after "Continue" shows the exact price and print time. You can also download the model as an STL, a ZIP with one STL per colour or a slicer project, free and without registration.'],
     ],
     'faq' => [
         ['q' => 'Can I use just a name instead of a picture?', 'a' => 'Yes. Type one or two lines and pick one of thirty typefaces, from bold sans serifs to handwriting. The tool ties loose pieces together with a small bridge so that the charm holds together, and tells you so.'],

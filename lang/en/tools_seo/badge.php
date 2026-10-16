@@ -12,7 +12,7 @@ return [
         ['name' => 'Choose a picture', 'text' => 'Upload your own picture or pick a motif from the library. The background is removed by itself and the list of colours shows which spools will be used.'],
         ['name' => 'Add a name', 'text' => 'A name of up to 16 characters appears under the picture. It is scaled so that it is no wider than the picture, with capitals of 7 mm at most.'],
         ['name' => 'Set the size and the back', 'text' => 'Change the width with the slider or by dragging the arrow in the preview. The pocket in the back is 10 to 30 mm across and 0.4 to 2 mm deep; it can be turned off.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price, the precise price one step further. The model and the slicer project are free to download without an account.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions; the calculation after "Continue" shows the precise price. The model and the slicer project are free to download without an account.'],
     ],
     'faq' => [
         ['q' => 'How big should the topper be?', 'a' => 'The face of a common badge reel is about 32 mm across. A topper 35 to 45 mm wide covers it and stays out of the way; over 50 mm it catches on clothes.'],

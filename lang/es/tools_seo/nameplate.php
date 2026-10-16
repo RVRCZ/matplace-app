@@ -12,7 +12,7 @@ return [
         ['name' => 'Empiece con una placa', 'text' => 'La página se abre con una placa, el nombre Adéla y una estrella. Escriba su nombre y elija otra forma de placa.'],
         ['name' => 'Edite las capas', 'text' => 'Toque una capa en la lista o en la vista previa y cambie su texto, tipografía, forma, imagen y color. En la vista previa la arrastra para moverla, arrastra una esquina del marco para cambiar su tamaño y el punto para girarla.'],
         ['name' => 'Añada más', 'text' => 'Los botones añaden una segunda línea de texto, una imagen u otra forma, doce capas como máximo. Las flechas cambian qué queda sobre qué.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto para el laminador con los cambios de filamento se descargan gratis y sin registro.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». El modelo y el proyecto para el laminador con los cambios de filamento se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Qué tamaño tendrá la placa?', 'a' => 'El que usted le dé: el ancho de cada capa va de 5 a 250 mm. La placa con la que se abre la página mide 120 × 60 mm y 4,6 mm de grosor.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Vyberte obrázek, nebo napište jméno', 'text' => 'Silueta z knihovny, vlastní SVG či obrázek, nebo jméno do 16 znaků. Nahraný obrázek má přednost před jménem.'],
         ['name' => 'Zadejte rozměr bločku', 'text' => 'Strana bločku a hloubka misky. Na sto lístečků stačí 12 mm, na dva bločky na sobě 22 až 25 mm.'],
         ['name' => 'Nastavte siluetu', 'text' => 'Šířku měníte posuvníkem nebo tažením šipky v náhledu, tloušťku od 2,4 do 5 mm. Drážku na tužku zapnete nebo vypnete.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu. Při objednávce vyberete barvu misky i siluety; model i projekt pro slicer stáhnete zdarma.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Při objednávce vyberete barvu misky i siluety; model i projekt pro slicer stáhnete zdarma.'],
     ],
     'faq' => [
         ['q' => 'Na jaké bločky stojánek je?', 'a' => 'Na čtvercové samolepicí bločky. Nejčastější rozměr je 76 × 76 mm, menší mají 51 mm a velké 101 mm; změřte ten svůj a zadejte stranu. Obdélníkové bločky nástroj zatím neumí.'],

@@ -42,7 +42,7 @@ class FarmPrinter extends Model
     ];
 
     protected $fillable = [
-        'name', 'model', 'key', 'farm_agent_id', 'mode', 'enabled', 'bed_x', 'bed_y', 'bed_z', 'nozzle_mm',
+        'name', 'code', 'model', 'key', 'farm_agent_id', 'mode', 'enabled', 'bed_x', 'bed_y', 'bed_z', 'nozzle_mm',
         'machine_profile', 'process_profiles', 'machine_overrides', 'process_overrides', 'time_factor', 'weight_factor',
         'hourly_rate', 'bed_clear', 'bed_cleared_at', 'state', 'telemetry', 'last_seen_at', 'snapshot_path', 'snapshot_at',
         'offline_notified_at', 'offline_alerted_at', 'timelapse',
@@ -176,6 +176,47 @@ class FarmPrinter extends Model
         $margin = 2 * (float) app(FarmSettings::class)->get('bed_margin_mm');
 
         return $d->fits($this->bed_x - $margin, $this->bed_y - $margin, $this->bed_z);
+    }
+
+    /** What a code looks like: the farm's letter and the printer's number ("U3", "B7", "X1"); a spool adds its slot. */
+    public const CODE_PATTERN = '/^[A-Z][0-9]{1,3}$/';
+
+    /**
+     * The code a machine's name suggests: "Farm U #3" → U3, otherwise the first letter of the name and the next
+     * number free for that letter ("Kobra X" → K1, a second Kobra → K2; a taken "Farm U #3" → the next free U).
+     *
+     * @param  list<string>  $taken  codes already in use
+     */
+    public static function suggestCode(string $name, array $taken = []): string
+    {
+        $taken = array_map('strtoupper', $taken);
+        $farm = preg_match('/^\s*farm\s+([a-z])\s*#?\s*([0-9]{1,3})(?![0-9])/i', $name, $m);
+        if ($farm && ! in_array($code = strtoupper($m[1]).(int) $m[2], $taken, true)) {
+            return $code;
+        }
+        $ascii = (string) @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
+        $letter = $farm ? strtoupper($m[1]) : (preg_match('/[A-Za-z]/', $ascii, $l) ? strtoupper($l[0]) : 'P');
+        for ($n = 1; in_array($letter.$n, $taken, true); $n++);
+
+        return $letter.$n;
+    }
+
+    protected static function booted(): void
+    {
+        // every machine has a code of its own from the start (a copy of another machine gets a new one); the admin may
+        // change it on the printer's page
+        static::creating(function (FarmPrinter $printer): void {
+            $taken = self::whereNotNull('code')->pluck('code')->all();
+            if (! $printer->code || in_array($printer->code, $taken, true)) {
+                $printer->code = self::suggestCode((string) $printer->name, $taken);
+            }
+        });
+    }
+
+    /** The machine's code ("U3"): the one the admin set, else the one its name suggests. */
+    public function shortCode(): string
+    {
+        return $this->code ?: self::suggestCode((string) $this->name);
     }
 
     /** Plate volume: the bigger machine wins a model the small one cannot take. */

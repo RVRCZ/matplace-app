@@ -54,7 +54,8 @@ class ToolPageTest extends TestCase
             $page->assertSee('id="tool-page" data-tool="'.$key.'" data-module="'.$module.'"', false)
                 ->assertSee('id="tool-nav"', false)->assertSee('data-nav="', false)->assertSee('data-section="', false)   // the numbered sections
                 ->assertSee('id="tool-status"', false)                                                                      // the status line
-                ->assertSee('id="tool-price-card"', false)->assertSee('id="tool-go"', false)                                // price and the one main action
+                ->assertSee('id="tool-go-card"', false)->assertSee('id="tool-go"', false)                                   // the one main action
+                ->assertDontSee('id="tool-price"', false)->assertDontSee('Orientační cena')                                 // no estimate: the price shows first in the calculation
                 ->assertSee('id="tool-download"', false)->assertSee('id="tool-download-menu"', false)                       // the download menu
                 ->assertSee('data-view="top"', false)->assertSee('id="tool-xray"', false)->assertSee('id="tool-bed"', false)->assertSee('id="tool-spread"', false)
                 ->assertSee('id="tool-undo"', false)->assertSee('id="tool-restore"', false)
@@ -86,7 +87,7 @@ class ToolPageTest extends TestCase
 
     public function test_the_button_leads_to_the_calculation_and_the_next_step_is_said_once(): void
     {
-        // what stands under the rough price of a tool's page
+        // what stands under the buttons of a tool's page
         $note = function (string $path): string {
             preg_match('/<p class="w-full text-xs text-muted">(.*?)<\/p>/s', (string) $this->get($path)->assertOk()->getContent(), $m);
 
@@ -94,11 +95,12 @@ class ToolPageTest extends TestCase
         };
         // the farm prints for everybody: the site as it runs
         config(['features.marketplace' => false, 'farm.enabled' => true, 'farm.open' => true, 'farm.public' => true]);
-        $this->get('/tools/letter-beads')->assertOk()->assertSee('Pokračovat ke kalkulaci')
+        $this->get('/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Pokračovat</span>', false)
+            ->assertDontSee('Pokračovat ke kalkulaci')->assertDontSee('Odhad z objemu')->assertDontSee('Orientační cena')
             ->assertDontSee('Pokračovat k přesné ceně a tisku')
             ->assertDontSee('V dalším kroku uvidíte přesnou cenu a dobu tisku. V dalším kroku')
             ->assertDontSee('spočítáme v dalším kroku');
-        $said = 'Odhad z objemu modelu. V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si objednáte u nás, nebo si stáhnete soubor pro svou tiskárnu.';
+        $said = 'V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si objednáte u nás, nebo si stáhnete soubor pro svou tiskárnu.';
         $this->assertSame($said, $note('/tools/letter-beads'));
         // every tool says the same: a picture, a photo, a file to edit, a check, a repair, a mold all go on to the calculator
         // (the page opens it with the very file), so no tool has a button or a sentence of its own
@@ -110,7 +112,7 @@ class ToolPageTest extends TestCase
             $html = (string) $this->get(route($tool['route']))->assertOk()->getContent();
             preg_match('/<span id="tool-go-label">(.*?)<\/span>/s', $html, $button);
             preg_match('/<p class="w-full text-xs text-muted">(.*?)<\/p>/s', $html, $under);
-            $this->assertSame('Pokračovat ke kalkulaci', trim($button[1] ?? ''), $key);
+            $this->assertSame('Pokračovat', trim($button[1] ?? ''), $key);
             $this->assertSame($said, html_entity_decode(trim($under[1] ?? '')), $key);
             // and ends with the same step: the material and how many pieces, once, after the tool's own steps
             $this->assertSame(1, substr_count($html, 'id="param-material"'), $key);
@@ -127,16 +129,16 @@ class ToolPageTest extends TestCase
             $seen++;
         }
         $this->assertGreaterThanOrEqual(50, $seen);
-        $this->get('/en/tools/relief')->assertOk()->assertSee('Continue to the calculation')->assertDontSee('Print it with us');
-        $this->get('/en/tools/letter-beads')->assertOk()->assertSee('Continue to the calculation');
-        $this->assertSame('An estimate from the model volume. The calculation shows the precise price and print time. Order the print from us, or download the file for your own printer.', $note('/en/tools/letter-beads'));
-        $this->get('/es/tools/letter-beads')->assertOk()->assertSee('Continuar al cálculo');
+        $this->get('/en/tools/relief')->assertOk()->assertSee('<span id="tool-go-label">Continue</span>', false)->assertDontSee('Print it with us')->assertDontSee('Rough price');
+        $this->get('/en/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Continue</span>', false);
+        $this->assertSame('The calculation shows the precise price and print time. Order the print from us, or download the file for your own printer.', $note('/en/tools/letter-beads'));
+        $this->get('/es/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Continuar</span>', false)->assertDontSee('Precio orientativo');
         $this->assertSame(1, substr_count($note('/es/tools/letter-beads'), 'precio exacto'));
 
         // the farm not open to the public yet: the same button, the calculation ends with a download
         config(['farm.public' => false]);
-        $this->get('/tools/letter-beads')->assertOk()->assertSee('Pokračovat ke kalkulaci');
-        $this->assertSame('Odhad z objemu modelu. V kalkulaci uvidíte přesnou dobu tisku a spotřebu materiálu a stáhnete si soubor nebo hotový projekt pro svou tiskárnu. Bez registrace.', $note('/tools/letter-beads'));
+        $this->get('/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Pokračovat</span>', false);
+        $this->assertSame('V kalkulaci uvidíte přesnou dobu tisku a spotřebu materiálu a stáhnete si soubor nebo hotový projekt pro svou tiskárnu. Bez registrace.', $note('/tools/letter-beads'));
     }
 
     public function test_a_tool_that_edits_a_file_says_what_it_is_doing_in_words_never_in_a_key(): void

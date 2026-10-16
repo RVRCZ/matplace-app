@@ -2,11 +2,11 @@
 
 return [
     'title' => 'Tapa, tapón o tapa roscada a medida para imprimir en 3D',
-    'description' => 'Mida el cuello o la abertura y elija cómo sujeta la pieza: encajada, introducida o enroscada. Vista previa y precio al momento. Impresión o descarga.',
+    'description' => 'Mida el cuello o la abertura y elija cómo sujeta la pieza: encajada, introducida o enroscada. Vista previa y medidas al momento. Impresión o descarga.',
     'h1' => 'Una tapa de repuesto, un tapón de tubo o una tapa de perfil',
     'intro' => [
         'La herramienta crea la tapa, el tapón o la cubierta que falta según lo que usted mide. La pieza se encaja sobre el borde, se introduce en la abertura o se enrosca. Puede ser redonda, rectangular o hexagonal. Para la rosca se elige botella PET de 28 mm, métrica de M6 a M30 o diámetro y paso propios. La holgura la añade la herramienta; usted indica la medida real.',
-        'La vista previa muestra la pieza por fuera y en corte, e indica en qué medida encaja. El precio orientativo aparece al momento. Imprimimos la pieza en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga el modelo gratis; se imprime sin soportes. Con una rosca que no conoce, pruebe primero una pieza y pida más solo después.',
+        'La vista previa muestra la pieza por fuera y en corte, e indica en qué medida encaja. El precio exacto lo muestra el cálculo, un paso después. Imprimimos la pieza en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga el modelo gratis; se imprime sin soportes. Con una rosca que no conoce, pruebe primero una pieza y pida más solo después.',
     ],
     'steps' => [
         ['name' => 'Elija cómo sujeta', 'text' => 'Encajada sobre el borde, introducida en la abertura o enroscada. Puede empezar con un ajuste, por ejemplo «Botella PET (28 mm)» o «Tapón de tubo».'],

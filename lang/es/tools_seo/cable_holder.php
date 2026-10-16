@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Sujetacables de mesa a medida: diseño e impresión 3D',
-    'description' => 'Indique el diámetro del cable y el número de ranuras. Los cables encajan y no se caen detrás de la mesa. Vista previa y precio. Impresión o descarga.',
+    'description' => 'Indique el diámetro del cable y el número de ranuras. Los cables encajan y no se caen detrás de la mesa. Vista previa y medidas. Impresión o descarga.',
     'h1' => 'Un sujetacables que mantiene los cables a mano',
     'intro' => [
         'El sujetacables es un bloque pequeño con ranuras que se pega o atornilla a la mesa. El cable encaja en la ranura desde arriba y queda en su sitio aunque lo desconecte del aparato. Usted indica el número de cables y su diámetro en milímetros. La hendidura superior es algo más estrecha que el cable, por eso este no se sale. Sirve para cargadores, cables de monitor o de auriculares.',
-        'La vista previa muestra el sujetacables con sus medidas exteriores y el ancho de la ranura, junto a un precio orientativo. Lo imprimimos en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga el modelo gratis como proyecto listo o como archivo STL. Se imprime sin soportes. La cinta y los tornillos no forman parte de la impresión.',
+        'La vista previa muestra el sujetacables con sus medidas exteriores y el ancho de la ranura; el precio exacto lo calcula el paso siguiente. Lo imprimimos en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. Si tiene impresora, descarga el modelo gratis como proyecto listo o como archivo STL. Se imprime sin soportes. La cinta y los tornillos no forman parte de la impresión.',
     ],
     'steps' => [
         ['name' => 'Mida el diámetro del cable', 'text' => 'Mida el diámetro del cable, no el del conector. Se puede indicar un diámetro de 3 a 14 mm.'],
         ['name' => 'Elija el número de cables', 'text' => 'El sujetacables puede tener de 1 a 8 ranuras. Todas las ranuras tienen el mismo diámetro.'],
         ['name' => 'Elija la fijación', 'text' => 'Sin orejetas, el sujetacables se pega con cinta de doble cara. Con la opción «Con orejetas para tornillos» lleva dos orejetas con agujero a los lados.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Revise la vista previa y el precio orientativo y continúe al precio exacto; la impresión con nosotros se paga con crédito recargado con tarjeta. O descargue el modelo para su impresora.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Revise la vista previa y pulse «Continuar» para ver el precio exacto; la impresión con nosotros se paga con crédito recargado con tarjeta. O descargue el modelo para su impresora.'],
     ],
     'faq' => [
         ['q' => '¿Qué grosor de cable admite?', 'a' => 'Cables de 3 a 14 mm de diámetro. El orificio es 0,6 mm mayor que el cable para que este se deslice con libertad, y la hendidura de encima es más estrecha para que no se salga.'],

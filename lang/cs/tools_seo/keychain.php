@@ -12,7 +12,7 @@ return [
         ['name' => 'Začněte od klíčenky', 'text' => 'Stránka se otevře s kostí a jménem Rex. Přepište jméno, změňte tvar, nebo vyberte jinou předvolbu, třeba srdce se jménem.'],
         ['name' => 'Upravte vrstvy', 'text' => 'Klepněte na vrstvu v seznamu nebo v náhledu a změňte text, písmo, tvar, obrázek a barvu. V náhledu ji tažením posunete, rohem rámečku zvětšíte a kolečkem otočíte.'],
         ['name' => 'Přidejte další a nastavte očko', 'text' => 'Tlačítky přidáte text, obrázek nebo tvar, nejvýš dvanáct vrstev. V rozměrech nastavíte tloušťku a otvor očka podle kroužku.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Model i projekt pro slicer s výměnami filamentu stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer s výměnami filamentu stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jak velký otvor potřebuje kroužek na klíče?', 'a' => 'Na běžný kroužek o průměru 25 až 30 mm stačí otvor 4 až 5 mm; přednastavené jsou 4 mm. Na karabinu nebo tlustší kroužek ho zvětšete až na 8 mm. Kroužek není součástí výtisku.'],

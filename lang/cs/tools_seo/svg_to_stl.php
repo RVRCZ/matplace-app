@@ -11,7 +11,7 @@ return [
     'steps' => [
         ['name' => 'Nahrajte SVG', 'text' => 'Vyberete soubor SVG do 400 kB, nebo obrázek PNG, JPG či WebP do 5 MB. Na vyzkoušení je předvybraný motiv z knihovny.'],
         ['name' => 'Zadejte šířku a výšku vytažení', 'text' => 'Šířku tvaru nastavíte posuvníkem nebo tažením šipky v náhledu, tloušťku od 0,6 do 50 mm. Zkosení horní hrany zapnete jedním zaškrtnutím.'],
-        ['name' => 'Zkontrolujte náhled', 'text' => 'Vedle náhledu čtete vnější rozměry a orientační cenu, pod ním upozornění na tenké čáry nebo oddělené kousky.'],
+        ['name' => 'Zkontrolujte náhled', 'text' => 'Vedle náhledu čtete vnější rozměry, pod ním upozornění na tenké čáry nebo oddělené kousky.'],
         ['name' => 'Stáhněte STL, nebo objednejte tisk', 'text' => 'Model stáhnete zdarma a bez registrace jako STL nebo jako projekt pro slicer. Výtisk z naší farmy zaplatíte z předplaceného kreditu.'],
     ],
     'faq' => [

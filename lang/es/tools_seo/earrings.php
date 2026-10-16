@@ -12,7 +12,7 @@ return [
         ['name' => 'Suba una imagen o escriba un texto', 'text' => 'Suba una imagen, elíjala de la biblioteca o reutilice una que subió antes. El fondo se quita solo; un control deslizante fija cuánto se quita.'],
         ['name' => 'Elija el par y el tamaño', 'text' => 'Elija pendientes iguales o en espejo, y la forma según la imagen o un círculo. Ajuste el ancho de un pendiente, el grosor y un marco de hasta 2 mm alrededor de la imagen.'],
         ['name' => 'Coloque el ojal y elija colores', 'text' => 'Mueva el ojal con un control deslizante o arrastrándolo en la vista previa. En la ventana de colores puede dar a cada color otro filamento, cambiar el orden de los colores o unir dos de ellos.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'La vista previa muestra los dos pendientes en los colores de los filamentos, las medidas en milímetros y un precio orientativo. El precio exacto y el tiempo de impresión aparecen un paso más allá. El STL y el proyecto para el laminador se descargan gratis y sin registro.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'La vista previa muestra los dos pendientes en los colores de los filamentos y las medidas en milímetros. El precio exacto y el tiempo de impresión aparecen un paso más allá, en el cálculo. El STL y el proyecto para el laminador se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Los ganchos están incluidos?', 'a' => 'No. Usted recibe solo las piezas de plástico con ojal. Los ganchos y las anillas se compran en una tienda de manualidades y usted mismo los pasa por el ojal.'],

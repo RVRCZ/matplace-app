@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Custom phone stand: six styles to 3D print',
-    'description' => 'Pick the type of stand, enter the thickness of your phone with its case and the angle. See a preview and a rough price. We print it, or you download it.',
+    'description' => 'Pick the type of stand, enter the thickness of your phone with its case and the angle. See a preview and the size. We print it, or you download it.',
     'h1' => 'A stand sized to your phone with its case',
     'intro' => [
         'The tool offers six types of holder: a plate with hooks, a wave, an A-frame with a shelf, a low wedge, a wall pocket and a car vent clip. The stand is sized to the thickness of your phone with its case, entered in millimetres. For the desk types you set the width, rest angle and rest height. The wedge and the wide desk types suit a tablet too.',
-        'Every change redraws the preview and recalculates the rough price. We print the stand on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. With your own printer you download the model free as a project or as an STL file. The angle is fixed by the design and cannot be changed later. The stand only holds the phone, it has no charger.',
+        'Every change redraws the preview with its size; the calculation one step further works out the precise price. We print the stand on our print farm in Czechia: it comes by Packeta to a pickup point or to your door. With your own printer you download the model free as a project or as an STL file. The angle is fixed by the design and cannot be changed later. The stand only holds the phone, it has no charger.',
     ],
     'steps' => [
         ['name' => 'Pick the type of holder', 'text' => 'For a desk choose the plate with hooks, the wave, the A-frame with a shelf or the low wedge. The pocket goes on a wall and the clip on a car vent.'],
         ['name' => 'Measure phone with case', 'text' => 'Enter the thickness of the phone with its case, from 7 to 20 mm, and the width.'],
         ['name' => 'Adjust angle and extras', 'text' => 'Set the rest angle and the rest height. Depending on the type you add a cut-out for the charging cable, a window in the back rest or fixing with screws.'],
-        ['name' => 'Order the print or download', 'text' => 'Check the preview and the rough price and continue to the precise price; a print from us is paid from credit topped up by card. Or download the model for your own printer.'],
+        ['name' => 'Order the print or download', 'text' => 'Check the preview and press "Continue" for the precise price; a print from us is paid from credit topped up by card. Or download the model for your own printer.'],
     ],
     'faq' => [
         ['q' => 'Will a phone in a case fit the stand?', 'a' => 'Yes, if you enter the thickness of the phone with its case. The tool accepts a thickness from 7 to 20 mm and adds a little room itself.'],

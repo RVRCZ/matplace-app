@@ -12,7 +12,7 @@ return [
         ['name' => 'Escriba el nombre', 'text' => 'El nombre puede tener hasta 16 caracteres. La herramienta lo reduce para que quepa en la galleta; un nombre corto sale más grande.'],
         ['name' => 'Elija la forma y el glaseado', 'text' => 'El muñeco tiene cara, botones y glaseado en las piernas; el corazón y la estrella, glaseado por el borde; el árbol, dos guirnaldas. El glaseado puede ser una línea ondulada, una línea recta o ninguno.'],
         ['name' => 'Ajuste el tamaño, el ojal y los colores', 'text' => 'Indique el ancho y el grosor, mueva el ojal por el contorno y asigne un filamento a cada parte. Marrón y blanco vienen predefinidos, pero la galleta también puede ser roja con glaseado dorado.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». El modelo y el proyecto con el cambio de filamento se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Qué longitud de nombre cabe en la galleta?', 'a' => 'Hasta 16 caracteres. Un nombre más largo sale más pequeño; si las letras quedaran por debajo de 3 mm, la herramienta avisa y propone una galleta más ancha o un nombre más corto. En un muñeco de 90 mm de ancho caben cómodamente de 6 a 8 letras.'],

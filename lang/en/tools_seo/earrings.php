@@ -12,7 +12,7 @@ return [
         ['name' => 'Upload a picture or type a text', 'text' => 'Upload a picture, pick one from the library, or reuse one you uploaded earlier. The background is removed automatically; a slider sets how much of it goes.'],
         ['name' => 'Choose the pair and the size', 'text' => 'Pick identical or mirrored earrings, and a shape that follows the picture or a circle. Set the width of one earring, the thickness and a frame of up to 2 mm round the picture.'],
         ['name' => 'Place the eyelet, pick colours', 'text' => 'Move the eyelet by a slider or by dragging it in the preview. In the colour window you can give each colour another filament, change the order of the colours or join two of them.'],
-        ['name' => 'Order the print or download', 'text' => 'The preview shows both earrings in the filament colours, the size in millimetres and a rough price. The exact price and print time come one step further. The STL and the slicer project download free, without registration.'],
+        ['name' => 'Order the print or download', 'text' => 'The preview shows both earrings in the filament colours and the size in millimetres. The exact price and print time come one step further, in the calculation. The STL and the slicer project download free, without registration.'],
     ],
     'faq' => [
         ['q' => 'Are the hooks included?', 'a' => 'No. You get only the plastic parts with an eyelet. Hooks and jump rings are sold at craft shops and you thread them through the eyelet yourself.'],

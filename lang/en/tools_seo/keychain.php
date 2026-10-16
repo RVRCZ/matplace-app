@@ -12,7 +12,7 @@ return [
         ['name' => 'Start from a key ring', 'text' => 'The page opens with a bone and the name Rex. Type your name, change the shape, or pick another preset, a heart with a name for instance.'],
         ['name' => 'Edit the layers', 'text' => 'Tap a layer in the list or in the preview and change its text, typeface, shape, picture and colour. In the preview you drag it to move it, drag a corner of its frame to resize it and the knob to turn it.'],
         ['name' => 'Add more and set the eyelet', 'text' => 'The buttons add a text, a picture or a shape, twelve layers at most. Among the sizes you set the thickness and the hole of the eyelet to fit your ring.'],
-        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions and a rough price, the precise price and print time one step further. The model and the slicer project with the filament changes are free to download without an account.'],
+        ['name' => 'Order a print or download', 'text' => 'Next to the preview you see the dimensions; the calculation after "Continue" shows the precise price and print time. The model and the slicer project with the filament changes are free to download without an account.'],
     ],
     'faq' => [
         ['q' => 'How big a hole does a key ring need?', 'a' => 'For a common split ring of 25 to 30 mm a hole of 4 to 5 mm is enough; 4 mm is preset. For a carabiner or a thicker ring make it up to 8 mm. The ring itself is not part of the print.'],

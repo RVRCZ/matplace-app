@@ -199,7 +199,7 @@ return [
     'warn.coarse_grid' => 'Model je velký: měříme ho na hrubší mřížce, stěna může být místy o desetinu až půl milimetru jiná.',
 
     // ── life size ───────────────────────────────────────────────────────────────────────────────────
-    'life_size.lead' => 'Zadejte, jak vysoký má model být, a nástroj ho zvětší, u velkých kusů vydutí (stěna 2–5 mm podle velikosti) a rozřeže na díly s kolíky, které se vejdou na tiskárnu. Dostanete díly, gramy a cenu.',
+    'life_size.lead' => 'Zadejte, jak vysoký má model být, a nástroj ho zvětší, u velkých kusů vydutí (stěna 2–5 mm podle velikosti) a rozřeže na díly s kolíky, které se vejdou na tiskárnu. Dostanete díly a gramy; přesnou cenu ukáže kalkulace.',
     'life_size.tip' => 'Díly se tisknou řeznou plochou dolů; v okolí řezů zůstává model plný, aby kolíky měly v čem sedět. Odtokové otvory jsou ve dně nejnižšího dílu. Slepte podle čísel a mapy.',
     'life_size.hint' => 'Zdarma, u velkých modelů do minuty. Model zůstane, díly se otevřou jako nový soubor.',
     'life_size.apply' => 'Zvětšit a rozdělit',

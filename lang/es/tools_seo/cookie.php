@@ -12,7 +12,7 @@ return [
         ['name' => 'Elija la forma', 'text' => 'Una silueta de la biblioteca, su propia imagen o un texto corto. El fondo de la imagen se elimina automáticamente y alrededor del motivo queda un borde de masa que puede ajustar.'],
         ['name' => 'Dibuje el glaseado', 'text' => 'Active el dibujo: la vista previa pasa a la vista desde arriba y un trazo del ratón es un trazo de la manga pastelera. La boquilla es redonda, plana o hace una fila de puntos; el trazo mide de 1,5 a 4 mm de ancho.'],
         ['name' => 'Ajuste los colores y el grosor', 'text' => 'Puede dar otro filamento a cada color de glaseado, quitar el último trazo o borrar el glaseado y empezar de nuevo. Una casilla añade un ojal para la cinta.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas y un precio orientativo. El modelo, un STL por color y el proyecto con los cambios de filamento se descargan gratis y sin registro.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas; el precio exacto lo muestra el cálculo tras «Continuar». El modelo, un STL por color y el proyecto con los cambios de filamento se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿La galleta se puede comer?', 'a' => 'No. Es un juguete de plástico para la cocinita o un adorno. Recomendamos PLA; para niños pequeños elija un tamaño mayor, sin ojal ni piezas pequeñas.'],

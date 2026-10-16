@@ -6,13 +6,13 @@ return [
     'h1' => 'Posuvný fidget vyříznutý do vaší desky, tištěný najednou',
     'intro' => [
         'Nástroj vezme plochý model – logo, jmenovku, přívěsek, cokoli aspoň 6 mm silné – a vyřízne do něj rybinovou drážku podél delší strany (nebo podle volby), s okrajem od konců, aby jezdec nevypadl. Do drážky vloží jezdec: rybinový hranol o 0,3 mm menší ze všech stran, s knoflíkem Ø 10 mm nahoře a důlkem zespodu, který cvaká na kuličkách zarážek na dně drážky. Vše se tiskne najednou v složeném stavu, bez podpěr.',
-        'Nastavíte šířku a hloubku drážky, okraj, posun napříč deskou, délku jezdce, počet zarážek (0–5) a vůli; knoflík můžete vypnout, pak je jezdec zároveň s povrchem. Model vzniká za pár vteřin a otevře se v náhledu s deskou a jezdcem v různých barvách, rozměry a cenou tisku; stáhnete ho zdarma, nebo tisk objednáte u nás.',
+        'Nastavíte šířku a hloubku drážky, okraj, posun napříč deskou, délku jezdce, počet zarážek (0–5) a vůli; knoflík můžete vypnout, pak je jezdec zároveň s povrchem. Model vzniká za pár vteřin a otevře se v náhledu s deskou a jezdcem v různých barvách a s rozměry; stáhnete ho zdarma, nebo po „Pokračovat“ zjistíte cenu a objednáte tisk u nás.',
     ],
     'steps' => [
         ['name' => 'Nahrajte plochou desku', 'text' => 'STL nebo 3MF loga, jmenovky nebo jiné desky aspoň 6 mm silné. Hodí se i výstup z našich generátorů.'],
         ['name' => 'Nastavte drážku', 'text' => 'Směr, šířku a hloubku drážky, okraj od konců a posun napříč, aby drážka nešla přes text.'],
         ['name' => 'Nastavte jezdec', 'text' => 'Délku jezdce, počet zarážek, vůli a zda má mít knoflík.'],
-        ['name' => 'Vytvořte model', 'text' => 'Klepněte na „Udělat posuvný fidget“. Za pár vteřin se otevře s deskou a jezdcem, rozměry a cenou tisku.'],
+        ['name' => 'Vytvořte model', 'text' => 'Klepněte na „Udělat posuvný fidget“. Za pár vteřin se otevře s deskou, jezdcem a rozměry.'],
     ],
     'faq' => [
         ['q' => 'Proč rybina a ne obyčejná drážka?', 'a' => 'Rybinové boky se sklonem 15° jezdec drží v drážce, nemůže vypadnout nahoru. Drážka je uzavřená na obou koncích, takže nevypadne ani do strany.'],

@@ -12,7 +12,7 @@ return [
         ['name' => 'Vyberte obrázek', 'text' => 'Nahrajte vlastní obrázek, nebo vyberte motiv z knihovny. Pozadí se odstraní samo a v seznamu barev vidíte, které cívky se použijí.'],
         ['name' => 'Připište jméno', 'text' => 'Jméno do 16 znaků se objeví pod obrázkem. Zmenší se tak, aby nebylo širší než obrázek, velká písmena mají nejvýš 7 mm.'],
         ['name' => 'Nastavte velikost a zadní stranu', 'text' => 'Šířku měníte posuvníkem nebo tažením šipky v náhledu. Prohlubeň vzadu má průměr 10 až 30 mm a hloubku 0,4 až 2 mm; jde i vypnout.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu o krok dál. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jak velká má ozdoba být?', 'a' => 'Čelo běžného navíjecího držáku mívá kolem 32 mm. Ozdoba široká 35 až 45 mm ho zakryje a nepřekáží; větší než 50 mm se o oblečení zachytává.'],

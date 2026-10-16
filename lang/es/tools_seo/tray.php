@@ -12,7 +12,7 @@ return [
         ['name' => 'Elija una imagen o una silueta', 'text' => 'Suba su propia imagen, elija un motivo de la biblioteca o escriba un nombre. El fondo se elimina automáticamente y el contorno se suaviza.'],
         ['name' => 'Ajuste las medidas', 'text' => 'Cambie el ancho y la altura con los controles deslizantes o arrastrando las flechas en la vista previa. La separación entre la imagen y la pared decide cuánto espacio queda alrededor del dibujo.'],
         ['name' => 'Elija qué va en el fondo', 'text' => 'El dibujo grabado a dos capas de profundidad, el dibujo en colores o un fondo liso. Con una silueta de un solo color el fondo siempre es liso.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas y un precio orientativo; el precio exacto y el tiempo de impresión, un paso después. El modelo y el proyecto del laminador se descargan gratis y sin registro.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Junto a la vista previa aparecen las medidas; el precio exacto y el tiempo de impresión los muestra el cálculo tras «Continuar». El modelo y el proyecto del laminador se descargan gratis y sin registro.'],
     ],
     'faq' => [
         ['q' => '¿Qué imagen conviene para una bandejita?', 'a' => 'Una forma con un contorno claro y sin puntas finas: una huella de animal, un corazón, una hoja, una nube, una estrella. En las puntas estrechas no cabe nada y la pared es más frágil.'],

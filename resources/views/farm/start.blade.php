@@ -1,7 +1,6 @@
 @extends('layouts.app', ['title' => __('farm.title').' · matplace', 'noindex' => true])
 
 @php
-    $printer = \App\Models\FarmPrinter::where('enabled', true)->orderBy('id')->first();
     $startCfg = [
         'upload' => route('api.uploads.store'), 'files' => url('/api/files'), 'maxMb' => (int) $settings['max_upload_mb'],
         'text' => [
@@ -34,11 +33,22 @@
         @endforeach
     </ol>
 
+    {{-- the way in: the model (handed over, or uploaded here) and one button. Material, settings and colours are chosen
+         once, on the order page, next to the price; what the address handed over (a calculation, the settings and
+         colours of a print made before) rides along in hidden fields --}}
     <form id="farm-start" method="post" action="{{ route('farm.orders.store') }}" class="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
         @csrf
         <input type="hidden" name="file" id="farm-file" value="{{ $file?->uuid }}">
+        @if($calc)<input type="hidden" name="calc" value="{{ $calc->token }}">@endif
         @if($card)<input type="hidden" name="designer_model" value="{{ $card->id }}">@endif
         @if($inspiration)<input type="hidden" name="catalog_model" value="{{ $inspiration->id }}">@endif
+        @foreach($carry as $name => $value)
+            @if(is_array($value))
+                @foreach($value as $k => $v)<input type="hidden" name="{{ $name }}[{{ $k }}]" value="{{ $v }}">@endforeach
+            @else
+                <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+            @endif
+        @endforeach
 
         <div class="text-sm font-semibold text-slate-700">{{ __('farm.start.model') }}</div>
         @if($card)
@@ -63,7 +73,7 @@
             <p id="farm-upload-status" class="mt-1 hidden text-sm text-slate-600" role="status"></p>
         @endif
         <div id="farm-preview-box" class="mt-3 {{ $file && ($previewUrl || ! $card) ? '' : 'hidden' }} overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-            <canvas id="farm-preview" class="block h-64 w-full touch-none" data-model="{{ $previewUrl ?? '' }}" data-change="{{ $twoColor ?? '' }}" data-changes="{{ json_encode(array_map(fn ($c) => round((float) $c['z'], 3), $changes ?? [])) }}"></canvas>
+            <canvas id="farm-preview" class="block h-64 w-full touch-none" data-model="{{ $previewUrl ?? '' }}" data-scale="{{ (float) ($carry['scale'] ?? 1) }}"></canvas>
         </div>
         @if($inspiration)
             <div class="mt-3 rounded-xl bg-action-soft p-3 text-sm">
@@ -71,124 +81,9 @@
                 <p class="text-slate-700">{{ __('models.farm.source_text', ['line' => $inspiration->attribution()]) }}</p>
             </div>
         @endif
+        <p class="mt-3 text-xs text-slate-500">{{ __('farm.start.next_hint') }}</p>
 
-        {{-- the colour decides the machine: the order is sliced for the printer that holds this spool --}}
-        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.order.color') }}</div>
-        <p class="text-xs text-slate-500">{{ __('farm.start.color_hint') }}</p>
-        <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.color') }}">
-            @forelse($colors as $c)
-                <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action {{ $c['enough'] ? '' : 'opacity-50' }}">
-                    <input type="radio" name="color" value="{{ $c['id'] }}" class="sr-only" @checked($c['id'] === $preselect) @disabled(! $c['enough']) data-hex="{{ $c['hex'] }}">
-                    @if($c['photo'])<img src="{{ $c['photo'] }}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">@else<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:{{ $c['hex'] }}"></span>@endif
-                    {{-- the kind only: which machine holds the spool is the farm's business, not the customer's (the city of the farm comes once there are farms in several) --}}
-                    <span><span class="font-semibold">{{ $c['name'] }}</span><br><span class="text-xs text-slate-500">{{ $c['kind'] }}</span></span>
-                </label>
-            @empty
-                <p class="col-span-full text-sm text-slate-600">{{ __('farm.order.no_colors') }}</p>
-            @endforelse
-        </div>
-
-        @php($one = count($changes ?? []) === 1)
-        @foreach($changes ?? [] as $i => $change)
-            {{-- a plate with a text, a picture in filament colours: every change of the design takes a spool of the machine of
-                 the first colour (its ACE changes the spool). data-want: the colour the design was made in, the nearest spool is ticked --}}
-            <div id="{{ $i === 0 ? 'farm-second-start' : 'farm-change-'.$i }}" class="farm-change mt-4" data-change-index="{{ $i }}" data-want="{{ $change['hex'] }}">
-                <div class="text-sm font-semibold text-slate-700">{{ $one ? __('farm.start.second_title') : __('farm.start.change_title', ['n' => $i + 2, 'z' => number_format($change['z'] * ($scaleNow ?? 1), 1, ',', ' ')]) }}</div>
-                @if($i === 0)<p class="text-xs text-slate-500">{{ $one ? __('farm.start.second_hint') : __('farm.start.changes_hint', ['n' => count($changes) + 1, 'max' => \App\Models\FarmOrder::MAX_COLORS]) }}</p>@endif
-                <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ $one ? __('farm.start.second_title') : __('farm.start.change_title', ['n' => $i + 2, 'z' => number_format($change['z'] * ($scaleNow ?? 1), 1, ',', ' ')]) }}">
-                    <label data-second-for="*" class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
-                        <input type="radio" name="change_color[{{ $i }}]" value="" class="sr-only" data-hex="" @checked(! ($changePreselect[$i] ?? 0))>
-                        <span class="h-10 w-10 shrink-0 rounded-lg border border-dashed border-slate-300"></span>
-                        <span><span class="font-semibold">{{ $i === 0 ? __('farm.order.second_same') : __('farm.order.change_same') }}</span><br><span class="text-xs text-slate-500">{{ $i === 0 ? __('farm.start.second_same_hint') : __('farm.order.change_same_hint') }}</span></span>
-                    </label>
-                    @foreach($colors as $c)
-                        @foreach($i === 0 ? $c['seconds'] : array_merge([$c + ['own' => true]], $c['seconds']) as $s)
-                            <label data-second-for="{{ $c['id'] }}" class="hidden cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
-                                <input type="radio" name="change_color[{{ $i }}]" value="{{ $s['id'] }}" class="sr-only" data-hex="{{ $s['hex'] }}" @checked($s['id'] === ($changePreselect[$i] ?? 0) && $c['id'] === $preselect)>
-                                @if($s['photo'])<img src="{{ $s['photo'] }}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">@else<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:{{ $s['hex'] }}"></span>@endif
-                                <span><span class="font-semibold">{{ $s['name'] }}</span><br><span class="text-xs text-slate-500">{{ ! empty($s['own']) ? __('farm.order.change_first') : $s['kind'] }}</span></span>
-                            </label>
-                        @endforeach
-                    @endforeach
-                </div>
-                <p class="farm-change-none mt-2 hidden text-xs text-amber-800">{{ __('farm.start.second_none') }}</p>
-            </div>
-        @endforeach
-
-        @if(count($parts ?? []) >= 2)
-            {{-- a design of several separately printed parts (a box and its lid, the plates of a layered picture): each part
-                 may print from its own spool of the machine of the first colour, one plate after another --}}
-            <div id="farm-parts" class="mt-4 rounded-xl border border-slate-200 bg-white p-3">
-                <label class="flex cursor-pointer items-start gap-2 text-sm">
-                    <input type="checkbox" id="farm-by-parts" name="by_parts" value="1" class="mt-1 h-4 w-4 accent-action" @checked($byParts ?? false)>
-                    <span><span class="font-semibold text-slate-700">{{ __('farm.start.parts_title', ['n' => count($parts)]) }}</span><br><span class="text-xs text-slate-500">{{ __('farm.start.parts_hint', ['max' => \App\Models\FarmOrder::MAX_COLORS]) }}</span></span>
-                </label>
-                <div id="farm-part-rows" class="mt-3 space-y-3 {{ ($byParts ?? false) ? '' : 'hidden' }}">
-                    @foreach($parts as $part)
-                        <div class="farm-part" data-part="{{ $part['name'] }}" data-want="{{ $part['hex'] ?? '' }}">
-                            <div class="text-xs font-semibold text-slate-700">{{ $part['label'] }}</div>
-                            <div class="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ $part['label'] }}">
-                                <label data-second-for="*" class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
-                                    <input type="radio" name="part_color[{{ $part['name'] }}]" value="" class="sr-only" data-hex="" @checked(! $part['preselect'])>
-                                    <span class="h-10 w-10 shrink-0 rounded-lg border border-dashed border-slate-300"></span>
-                                    <span><span class="font-semibold">{{ __('farm.start.part_main') }}</span><br><span class="text-xs text-slate-500">{{ __('farm.start.part_main_hint') }}</span></span>
-                                </label>
-                                @foreach($colors as $c)
-                                    @foreach($c['seconds'] as $s)
-                                        <label data-second-for="{{ $c['id'] }}" class="hidden cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white p-2 text-left text-sm has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
-                                            <input type="radio" name="part_color[{{ $part['name'] }}]" value="{{ $s['id'] }}" class="sr-only" data-hex="{{ $s['hex'] }}" @checked($s['id'] === $part['preselect'] && $c['id'] === $preselect)>
-                                            @if($s['photo'])<img src="{{ $s['photo'] }}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">@else<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:{{ $s['hex'] }}"></span>@endif
-                                            <span><span class="font-semibold">{{ $s['name'] }}</span><br><span class="text-xs text-slate-500">{{ $s['kind'] }}</span></span>
-                                        </label>
-                                    @endforeach
-                                @endforeach
-                            </div>
-                            <p class="farm-change-none mt-2 hidden text-xs text-amber-800">{{ __('farm.start.second_none') }}</p>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
-        {{-- the size as the calculator had it (or as uploaded); one dimension typed scales the whole model --}}
-        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span> <button id="farm-size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('farm.size.reset') }}</button></div>
-        <div id="farm-size" class="mt-2 grid grid-cols-3 gap-2" data-bbox="{{ json_encode($file?->bbox) }}" data-scale="{{ $scale }}" data-max="{{ $maxScale }}">
-            @foreach(['x', 'y', 'z'] as $axis)
-                <label class="text-xs font-semibold text-slate-600">{{ __('farm.size.'.$axis) }} <span class="font-normal text-slate-500">mm</span>
-                    <input data-axis="{{ $axis }}" type="number" inputmode="decimal" min="1" step="any" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
-                </label>
-            @endforeach
-        </div>
-        <p class="mt-1 text-xs text-slate-500">{{ __('farm.size.hint') }}</p>
-        <input type="hidden" name="scale" id="farm-scale" value="{{ $scale }}">
-
-        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.quality.label') }}</div>
-        <div class="mt-2 grid grid-cols-3 gap-2">
-            @foreach($settings['qualities'] as $key => $q)
-                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="quality" value="{{ $key }}" class="sr-only" @checked($key === $quality || ($loop->first && ! array_key_exists($quality, $settings['qualities'])))>{{ __('farm.quality.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ $q['layer_mm'] }} mm</span></label>
-            @endforeach
-        </div>
-
-        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.strength.label') }}</div>
-        <div class="mt-2 grid grid-cols-3 gap-2">
-            @foreach($settings['strengths'] as $key => $s)
-                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="strength" value="{{ $key }}" class="sr-only" @checked($key === $strength || ($loop->first && ! array_key_exists($strength, $settings['strengths'])))>{{ __('farm.strength.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.strength.infill', ['n' => $s['infill']]) }}</span></label>
-            @endforeach
-        </div>
-
-        <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.supports.label') }}</div>
-        <div class="mt-2 grid grid-cols-2 gap-2">
-            @foreach(['auto', 'off'] as $key)
-                <label class="seg block cursor-pointer text-center has-[:checked]:border-action has-[:checked]:bg-action-soft has-[:checked]:text-action-dark has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action"><input type="radio" name="supports" value="{{ $key }}" class="sr-only" @checked($key === ($supports ?? 'auto'))>{{ __('farm.supports.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ __('farm.supports.'.$key.'_hint') }}</span></label>
-            @endforeach
-        </div>
-
-        <label class="mt-4 block text-sm font-semibold text-slate-700">{{ __('farm.copies.label') }}
-            <input name="copies" type="number" inputmode="numeric" min="1" max="{{ $maxCopies }}" value="{{ $copies }}" class="mt-1 w-32 rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal">
-        </label>
-        <p class="mt-1 text-xs text-slate-500">{{ __('farm.copies.hint') }}</p>
-
-        <button id="farm-continue" type="submit" class="mt-4 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" @disabled(! $file)>{{ __('farm.start.continue') }}</button>
+        <button id="farm-continue" type="submit" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" @disabled(! $file)>{{ __('farm.start.continue') }}<x-icon name="arrow-right" class="h-4 w-4" /></button>
         @if($slicesLeft !== null)<p class="mt-2 text-xs text-slate-500">{{ __('farm.slices_left', ['n' => $slicesLeft]) }}</p>@endif
     </form>
 </div>

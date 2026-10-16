@@ -6,13 +6,13 @@ return [
     'h1' => 'Váza a obal na květináč podle vašich rozměrů',
     'intro' => [
         'Nástroj vytvoří vázu nebo obal na květináč podle výšky a průměrů, které zadáte. Vyberete jeden ze čtyř tvarů: úzké hrdlo, vypouklý, rovný kužel nebo tulipán. Povrch může být hladký, žebrovaný nebo spirálový. U žebrovaného a spirálového nastavíte počet žeber, hloubku žlábků a zkroucení a zvolíte vlnky ostré, nebo kulaté. U tvaru s úzkým hrdlem posunete zúžení výš nebo níž a můžete mít až tři nad sebou. Obal na květináč může mít drenážní otvory ve dně a samostatnou podmisku.',
-        'Náhled se mění hned a ukazuje skutečné vnější rozměry, protože některé tvary jsou širší než zadané průměry. Vedle vidíte orientační cenu. Vázu vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. Model si také můžete zdarma stáhnout pro vlastní tiskárnu. Počítejte s tím, že vytištěná váza nemusí být vodotěsná.',
+        'Náhled se mění hned a ukazuje skutečné vnější rozměry, protože některé tvary jsou širší než zadané průměry. Přesnou cenu spočítá kalkulace o krok dál. Vázu vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. Model si také můžete zdarma stáhnout pro vlastní tiskárnu. Počítejte s tím, že vytištěná váza nemusí být vodotěsná.',
     ],
     'steps' => [
         ['name' => 'Zvolte účel a tvar', 'text' => 'Vyberte vázu, nebo obal na květináč, a jeden ze čtyř tvarů. Můžete začít od předvolby „Spirálová“, „Žebrovaná“, „Hladká“ nebo „Květináč“.'],
         ['name' => 'Zadejte rozměry', 'text' => 'Nastavte výšku, horní průměr a spodní průměr. U obalu změřte květináč, který do něj vložíte, a přidejte rezervu.'],
         ['name' => 'Dolaďte povrch', 'text' => 'U žebrovaného a spirálového povrchu nastavte počet žeber, hloubku žlábků a zkroucení. Nástroj upozorní, když by stěna mezi žlábky vyšla příliš tenká.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Zkontrolujte náhled a orientační cenu a pokračujte k přesné ceně; tisk u nás platíte kreditem dobitým kartou. Nebo si model stáhněte pro svou tiskárnu.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Zkontrolujte náhled a tlačítkem „Pokračovat“ přejděte k přesné ceně; tisk u nás platíte kreditem dobitým kartou. Nebo si model stáhněte pro svou tiskárnu.'],
     ],
     'faq' => [
         ['q' => 'Udrží vytištěná váza vodu?', 'a' => 'Nemusí. Mezi vrstvami mohou zůstat mikroskopické netěsnosti. Na řezané květiny vložte do vázy sklenici, nebo vnitřek utěsněte lakem.'],

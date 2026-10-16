@@ -12,7 +12,7 @@ return [
         ['name' => 'Nahrajte obrázek nebo fotku', 'text' => 'Pozadí se odstraní samo a tvar pak kopíruje obrys motivu. Když má být vidět celá fotka, odstranění pozadí vypnete. Kontrast, jas a sytost fotky doladíte posuvníky.'],
         ['name' => 'Zvolte tvar a rozměry', 'text' => 'Tvar je podle obrázku, kruh nebo obdélník. Nastavíte šířku, tloušťku, okraj kolem obrázku do 3 mm a případně zkosenou hranu.'],
         ['name' => 'Vyberte magnet a uchycení', 'text' => 'Zvolíte rozměr magnetu a způsob uchycení: kapsu na lepení s vůlí 0,1 až 0,3 mm, kapsu na nalisování, otvor skrz, nebo žádnou kapsu.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu je orientační cena, přesnou cenu a dobu tisku uvidíte o krok dál. STL, ZIP s jedním STL pro každou barvu a projekty pro slicer stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. STL, ZIP s jedním STL pro každou barvu a projekty pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jaké magnety do kapsy pasují?', 'a' => 'Předvolby jsou pro běžné kulaté magnety Ø 6 × 2, 8 × 3, 10 × 2, 12 × 3, 15 × 3 a 20 × 3 mm. Vlastní rozměr zadáte v rozsahu průměru 4 až 30 mm a výšky 1 až 6 mm. Magnety nejsou součástí výtisku.'],

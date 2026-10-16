@@ -6,13 +6,13 @@ return [
     'h1' => 'A sliding fidget cut into your plate, printed in one go',
     'intro' => [
         'The tool takes a flat model, a logo, a name tag, a pendant, anything at least 6 mm thick, and cuts a dovetail groove along its longer side (or the side you choose), with a margin at the ends so the slider cannot fall out. A slider goes in: a dovetail bar 0.3 mm smaller on every side, with a knob of Ø 10 mm on top and a dimple underneath that clicks on the balls of the detents in the groove\'s floor. All of it prints in one go, assembled, without supports.',
-        'You set the groove\'s width and depth, the margin, the offset across the plate, the slider\'s length, the number of detents (0 to 5) and the play; the knob can be left off, the slider is then flush with the surface. The model takes a few seconds and opens in the preview with the plate and the slider in different colours, the size and the print price; download it for free or order the print from us.',
+        'You set the groove\'s width and depth, the margin, the offset across the plate, the slider\'s length, the number of detents (0 to 5) and the play; the knob can be left off, the slider is then flush with the surface. The model takes a few seconds and opens in the preview with the plate and the slider in different colours and the size; download it for free, or after "Continue" see the price and order the print from us.',
     ],
     'steps' => [
         ['name' => 'Upload a flat plate', 'text' => 'An STL or 3MF of a logo, a name tag or any other plate at least 6 mm thick. The output of our generators does too.'],
         ['name' => 'Set the groove', 'text' => 'Its direction, width and depth, the margin from the ends and the offset across, so it does not run through the text.'],
         ['name' => 'Set the slider', 'text' => 'Its length, the number of detents, the play and whether it gets a knob.'],
-        ['name' => 'Create the model', 'text' => 'Click "Make the sliding fidget". A few seconds later it opens with the plate and the slider, the size and the print price.'],
+        ['name' => 'Create the model', 'text' => 'Click "Make the sliding fidget". A few seconds later it opens with the plate, the slider and the size.'],
     ],
     'faq' => [
         ['q' => 'Why a dovetail and not a plain groove?', 'a' => 'The flanks lean 15 degrees and hold the slider in the groove; it cannot lift out. The groove is closed at both ends, so it cannot slip out sideways either.'],

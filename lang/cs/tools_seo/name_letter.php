@@ -12,7 +12,7 @@ return [
         ['name' => 'Napište jméno', 'text' => 'Velké písmeno je první písmeno jména. Když chcete jiné, třeba iniciálu příjmení, napište ho do druhého pole.'],
         ['name' => 'Vyberte písma', 'text' => 'Pro velké písmeno bezpatkové, patkové nebo strojové, vždy tučné. Pro jméno kterékoli ze třiceti písem.'],
         ['name' => 'Nastavte výšku, tloušťku a barvy', 'text' => 'Náhled ukazuje, kam se jméno vešlo a jak je velké. Písmenu i jménu přiřadíte filament z těch, které máme skladem.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Model i projekt s výměnou filamentu stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Model i projekt s výměnou filamentu stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Kam se jméno na písmeno napíše?', 'a' => 'Tam, kde má písmeno nejvíc místa. U písmen se svislým tahem (E, T, L, I, K) jde jméno nastojato podél něj, u širokých vodorovných tahů napříč. Místo najde nástroj sám a náhled ho hned ukáže.'],

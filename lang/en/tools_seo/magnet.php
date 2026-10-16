@@ -12,7 +12,7 @@ return [
         ['name' => 'Upload a picture or a photo', 'text' => 'The background is removed automatically and the shape then follows the outline of the motif. To keep the whole photo, switch the background removal off. Sliders adjust the contrast, brightness and saturation of a photo.'],
         ['name' => 'Choose the shape and size', 'text' => 'The shape follows the picture, or is a circle or a rectangle. Set the width, the thickness, a frame of up to 3 mm round the picture and, if you like, a bevelled edge.'],
         ['name' => 'Pick the magnet and its mount', 'text' => 'Choose the magnet size and how it is held: a pocket for gluing with a clearance of 0.1 to 0.3 mm, a press-fit pocket, a hole right through, or no pocket.'],
-        ['name' => 'Order the print or download', 'text' => 'A rough price is shown next to the preview, the exact price and print time one step further. The STL, a ZIP with one STL per colour and the slicer projects download free, without registration.'],
+        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size; the calculation after "Continue" shows the exact price and print time. The STL, a ZIP with one STL per colour and the slicer projects download free, without registration.'],
     ],
     'faq' => [
         ['q' => 'Which magnets fit the pocket?', 'a' => 'There are presets for the common disc magnets Ø 6 × 2, 8 × 3, 10 × 2, 12 × 3, 15 × 3 and 20 × 3 mm. Your own size can be 4 to 30 mm in diameter and 1 to 6 mm high. Magnets are not part of the print.'],

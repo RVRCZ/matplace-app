@@ -17,6 +17,7 @@
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
         <div class="grid gap-3 sm:grid-cols-3">
             <label class="{{ $lb }}">Název<input name="name" required value="{{ old('name', $printer->name) }}" class="{{ $in }}"></label>
+            <label class="{{ $lb }}">Kód <span class="font-normal">(farma + číslo tiskárny, např. U3, B7, X1; cívka přidá slot: U33 = farma U, tiskárna 3, slot 3; prázdné = podle názvu)</span><input name="code" value="{{ old('code', $printer->code) }}" maxlength="4" pattern="[A-Za-z][0-9]{1,3}" class="{{ $in }} font-mono uppercase"></label>
             <label class="{{ $lb }}">Model<input name="model" required value="{{ old('model', $printer->model) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">Klíč (v konfiguraci agenta)<input name="key" required value="{{ old('key', $printer->key) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">Režim

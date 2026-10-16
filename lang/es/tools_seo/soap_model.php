@@ -6,13 +6,13 @@ return [
     'h1' => 'Una jabonera o bandeja a medida de la huella de su modelo',
     'intro' => [
         'La herramienta toma el modelo que suba, mide su contorno visto desde arriba (o su base, tal como está) y construye una bandeja alrededor: un hueco con el contorno ampliado por la holgura, una pared del grosor y la altura que indique y un fondo con desagüe. Sirve para una pastilla de jabón de molde, una pastilla de forma irregular, pero igual para un teléfono, un mando a distancia o piedras; el modelo en sí no forma parte del resultado.',
-        'Usted elige el desagüe: ranuras o una rejilla a través del fondo, nervios sobre los que reposa el jabón mientras el agua corre a los agujeros de las esquinas, o un fondo macizo para objetos pequeños. Holgura de 0,5 a 6 mm, pared de 1,2 a 6 mm, altura de la pared de 8 a 60 mm. La bandeja tarda unos segundos y se abre en la vista previa con sus medidas y el precio de impresión; la descarga gratis o nos encarga la impresión.',
+        'Usted elige el desagüe: ranuras o una rejilla a través del fondo, nervios sobre los que reposa el jabón mientras el agua corre a los agujeros de las esquinas, o un fondo macizo para objetos pequeños. Holgura de 0,5 a 6 mm, pared de 1,2 a 6 mm, altura de la pared de 8 a 60 mm. La bandeja tarda unos segundos y se abre en la vista previa con sus medidas; la descarga gratis o, tras «Continuar», ve el precio y nos encarga la impresión.',
     ],
     'steps' => [
         ['name' => 'Suba un modelo', 'text' => 'STL, 3MF u OBJ de lo que debe reposar en la bandeja. La herramienta lo apoya sobre la cama.'],
         ['name' => 'Elija la huella y el desagüe', 'text' => 'El contorno de todo el modelo desde arriba, o solo su base. Ranuras, rejilla, nervios o fondo macizo.'],
         ['name' => 'Ajuste holgura, pared y altura', 'text' => 'La holgura alrededor del modelo, el grosor de la pared y del fondo, la altura de la pared sobre el fondo.'],
-        ['name' => 'Cree la bandeja', 'text' => 'Pulse «Hacer la jabonera». En unos segundos se abre con sus medidas, el desagüe y el precio de impresión.'],
+        ['name' => 'Cree la bandeja', 'text' => 'Pulse «Hacer la jabonera». En unos segundos se abre con sus medidas y el desagüe.'],
     ],
     'faq' => [
         ['q' => '¿Qué modelo subo?', 'a' => 'El modelo del objeto que debe reposar en la bandeja: una pastilla de jabón (escaneada o de molde), un dado, un teléfono. La herramienta solo usa su contorno; el modelo en sí no se imprime.'],

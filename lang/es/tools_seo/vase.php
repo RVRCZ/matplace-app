@@ -6,13 +6,13 @@ return [
     'h1' => 'Un jarrón o un cubremacetas con sus medidas',
     'intro' => [
         'La herramienta crea un jarrón o un cubremacetas según la altura y los diámetros que indique. Se elige una de cuatro formas: cuello estrecho, abombado, cono recto o tulipán. La superficie puede ser lisa, acanalada o en espiral. En las dos últimas se ajustan el número de nervios, la profundidad de las estrías y la torsión, y se eligen estrías afiladas o redondeadas. En la forma de cuello estrecho el estrechamiento se sube o se baja y puede haber hasta tres. El cubremacetas puede llevar orificios de drenaje en el fondo y un plato aparte.',
-        'La vista previa cambia al instante y muestra las medidas exteriores reales, porque algunas formas son más anchas que los diámetros indicados. Al lado aparece un precio orientativo. Imprimimos el jarrón en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. También puede descargar el modelo gratis para su impresora. Tenga en cuenta que un jarrón impreso puede no ser estanco.',
+        'La vista previa cambia al instante y muestra las medidas exteriores reales, porque algunas formas son más anchas que los diámetros indicados. El precio exacto lo calcula el paso siguiente. Imprimimos el jarrón en nuestra granja de impresión en Chequia: le llega con Packeta a un punto de recogida o a domicilio. También puede descargar el modelo gratis para su impresora. Tenga en cuenta que un jarrón impreso puede no ser estanco.',
     ],
     'steps' => [
         ['name' => 'Elija uso y forma', 'text' => 'Elija jarrón o cubremacetas y una de las cuatro formas. Puede empezar con el ajuste «En espiral», «Acanalada», «Lisa» o «Maceta».'],
         ['name' => 'Indique las medidas', 'text' => 'Ajuste la altura, el diámetro superior y el diámetro inferior. Para un cubremacetas mida la maceta que irá dentro y añada un margen.'],
         ['name' => 'Ajuste la superficie', 'text' => 'En la superficie acanalada y en la espiral ajuste el número de nervios, la profundidad de las estrías y la torsión. La herramienta avisa cuando la pared entre las estrías quedaría demasiado fina.'],
-        ['name' => 'Pida la impresión o descargue', 'text' => 'Revise la vista previa y el precio orientativo y continúe al precio exacto; la impresión con nosotros se paga con crédito recargado con tarjeta. O descargue el modelo para su impresora.'],
+        ['name' => 'Pida la impresión o descargue', 'text' => 'Revise la vista previa y pulse «Continuar» para ver el precio exacto; la impresión con nosotros se paga con crédito recargado con tarjeta. O descargue el modelo para su impresora.'],
     ],
     'faq' => [
         ['q' => '¿Retiene el agua un jarrón impreso?', 'a' => 'Puede que no. Entre las capas pueden quedar huecos microscópicos. Para flores cortadas ponga un vaso dentro del jarrón o selle el interior con barniz.'],

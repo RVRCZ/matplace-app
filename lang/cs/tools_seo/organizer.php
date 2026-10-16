@@ -2,16 +2,16 @@
 
 return [
     'title' => 'Organizér do šuplíku na míru: návrh a 3D tisk',
-    'description' => 'Zadáte rozměry zásuvky a počet přihrádek, hned uvidíte náhled a orientační cenu. Organizér vám vytiskneme, nebo si model zdarma stáhnete.',
+    'description' => 'Zadáte rozměry zásuvky a počet přihrádek, hned uvidíte 3D náhled. Organizér vám vytiskneme, nebo si model zdarma stáhnete.',
     'h1' => 'Organizér s přihrádkami přesně podle vaší zásuvky',
     'intro' => [
         'Nástroj vytvoří organizér s přihrádkami podle rozměrů, které zadáte v milimetrech. Hodí se do zásuvky v kuchyni, v dílně nebo v koupelně a také na stůl na kancelářské potřeby. Nastavíte šířku, hloubku a výšku, počet řad a sloupců a zaoblení rohů. Všechny přihrádky jsou stejně velké a organizér je jeden kus bez víka.',
-        'Náhled se po každé změně překreslí a ukáže vnější rozměry i velikost jedné přihrádky. Vedle něj vidíte orientační cenu. Organizér vám vytiskneme na naší tiskové farmě v Česku: pošleme vám ho Zásilkovnou na výdejní místo nebo až domů. Kdo má vlastní tiskárnu, stáhne si model zdarma jako hotový projekt pro svou tiskárnu nebo jako soubor STL.',
+        'Náhled se po každé změně překreslí a ukáže vnější rozměry i velikost jedné přihrádky. Přesnou cenu a dobu tisku spočítá kalkulace po „Pokračovat“. Organizér vám vytiskneme na naší tiskové farmě v Česku: pošleme vám ho Zásilkovnou na výdejní místo nebo až domů. Kdo má vlastní tiskárnu, stáhne si model zdarma jako hotový projekt pro svou tiskárnu nebo jako soubor STL.',
     ],
     'steps' => [
         ['name' => 'Změřte zásuvku', 'text' => 'Změřte vnitřní šířku, hloubku a výšku zásuvky. Na každé straně si nechte 1 až 2 mm vůle, zásuvky nebývají přesně pravoúhlé.'],
         ['name' => 'Zadejte rozměry a přihrádky', 'text' => 'Vyplňte šířku, hloubku, výšku, řady a sloupce. Můžete začít od předvolby „Zásuvka“, „Kancelářské potřeby“ nebo „Drobné součástky“.'],
-        ['name' => 'Zkontrolujte náhled a cenu', 'text' => 'Otočný náhled ukáže tvar, vnější rozměry a velikost jedné přihrádky. Orientační cena se přepočítá s každou změnou.'],
+        ['name' => 'Zkontrolujte náhled', 'text' => 'Otočný náhled ukáže tvar, vnější rozměry a velikost jedné přihrádky. Překreslí se s každou změnou.'],
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vyberte materiál, barvu a počet kusů a pokračujte k přesné ceně; tisk u nás platíte kreditem dobitým kartou. Nebo zvolte „Mám tiskárnu, stáhnout model“.'],
     ],
     'faq' => [

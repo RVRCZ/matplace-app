@@ -12,7 +12,7 @@ return [
         ['name' => 'Pick the shape', 'text' => 'A silhouette from the library, your own picture or a short text. The background of a picture is removed automatically and an edge of dough, which you can set, stays round the motif.'],
         ['name' => 'Draw the icing', 'text' => 'Switch drawing on: the preview turns to the view from above and a stroke of the mouse is a stroke of the piping bag. The nib is round, flat, or makes a row of dots; a stroke is 1.5 to 4 mm wide.'],
         ['name' => 'Adjust the colours and the thickness', 'text' => 'Give every colour of icing another filament, remove the last stroke, or clear the icing and start again. A tick adds an eyelet for a ribbon.'],
-        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size and a rough price. The model, an STL for each colour and the project with the filament changes are free to download, without registration.'],
+        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size; the calculation after "Continue" shows the exact price. The model, an STL for each colour and the project with the filament changes are free to download, without registration.'],
     ],
     'faq' => [
         ['q' => 'Can the biscuit be eaten?', 'a' => 'No. It is a plastic toy for a play kitchen or an ornament. We recommend PLA; for small children choose a bigger size without the eyelet and small parts.'],

@@ -2,11 +2,11 @@
 
 return [
     'title' => 'Víčko, zátka nebo krytka na míru: návrh a 3D tisk',
-    'description' => 'Změříte hrdlo nebo otvor a vyberete, jak má díl držet: nasadit, zasunout, nebo našroubovat. Náhled a cenu vidíte hned. Tisk u nás, nebo stažení.',
+    'description' => 'Změříte hrdlo nebo otvor a vyberete, jak má díl držet: nasadit, zasunout, nebo našroubovat. Náhled a rozměry vidíte hned. Tisk u nás, nebo stažení.',
     'h1' => 'Náhradní víčko, zátka do trubky nebo krytka profilu',
     'intro' => [
         'Nástroj vytvoří chybějící víčko, zátku nebo krytku podle toho, co naměříte. Díl se buď nasadí na hrdlo, zasune do otvoru, nebo našroubuje na závit. Může být kulatý, obdélníkový nebo šestihranný. U závitu vyberete PET lahev 28 mm, metrický závit M6 až M30, nebo zadáte vlastní průměr a stoupání. Vůli přidá nástroj sám, zadáváte skutečný rozměr.',
-        'Náhled ukazuje díl zvenku i v řezu a píše, na jaký rozměr pasuje. Orientační cenu vidíte hned. Díl vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. S vlastní tiskárnou si model stáhnete zdarma, tiskne se bez podpěr. U závitu, který neznáte, si nejdřív vyzkoušejte jeden kus a teprve potom objednejte víc.',
+        'Náhled ukazuje díl zvenku i v řezu a píše, na jaký rozměr pasuje. Přesnou cenu ukáže kalkulace o krok dál. Díl vám vytiskneme na naší tiskové farmě v Česku: přijde vám Zásilkovnou na výdejní místo nebo až domů. S vlastní tiskárnou si model stáhnete zdarma, tiskne se bez podpěr. U závitu, který neznáte, si nejdřív vyzkoušejte jeden kus a teprve potom objednejte víc.',
     ],
     'steps' => [
         ['name' => 'Vyberte, jak má držet', 'text' => 'Nasazení na hrdlo, zasunutí do otvoru, nebo našroubování na závit. Můžete začít od předvolby, například „PET lahev (28 mm)“ nebo „Zátka do trubky“.'],

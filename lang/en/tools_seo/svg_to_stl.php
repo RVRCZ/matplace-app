@@ -11,7 +11,7 @@ return [
     'steps' => [
         ['name' => 'Upload an SVG', 'text' => 'Choose an SVG file up to 400 kB, or a PNG, JPG or WebP picture up to 5 MB. A motif from the library is there to try the tool with.'],
         ['name' => 'Enter the width and the height', 'text' => 'Set the width of the shape with the slider or by dragging the arrow in the preview, the thickness from 0.6 to 50 mm. One tick bevels the top edge.'],
-        ['name' => 'Check the preview', 'text' => 'Next to the preview you read the outer dimensions and an approximate price, below it the warnings about thin lines or separate pieces.'],
+        ['name' => 'Check the preview', 'text' => 'Next to the preview you read the outer dimensions, below it the warnings about thin lines or separate pieces.'],
         ['name' => 'Download the STL or order a print', 'text' => 'The model is free to download without an account, as an STL or as a slicer project. A print from our farm is paid from prepaid credit.'],
     ],
     'faq' => [

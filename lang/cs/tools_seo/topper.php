@@ -12,7 +12,7 @@ return [
         ['name' => 'Napište jméno a číslo', 'text' => 'Jméno nebo krátký nápis a k němu číslo, například věk oslavence. Pro srdce, hvězdu a kruh číslo nepotřebujete.'],
         ['name' => 'Vyberte tvar a písmo', 'text' => 'Číslo, srdce, hvězda, kruh, nebo jen nápis. Jméno má třicet písem; psané, kde se písmena dotýkají, drží pohromadě samo, u ostatních nástroj písmena spojí.'],
         ['name' => 'Nastavte velikost a hroty', 'text' => 'Šířku tvaru, šířku jména a jeho polohu měníte posuvníky a náhled se hned překreslí. Hroty mohou být jeden nebo dva; pro vysoký dort zvolte delší.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Model i projekt s výměnou filamentu stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Model i projekt s výměnou filamentu stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Může se tištěný zápich dotýkat dortu?', 'a' => 'Tištěný plast není určený pro styk s potravinou. Hroty proto před zapíchnutím obalte potravinářskou fólií, nebo je zasuňte do brčka. Samotný tvar se jménem je nad dortem a krému se nedotýká.'],

@@ -2,17 +2,17 @@
 
 return [
     'title' => 'Logo na 3D tisk z SVG nebo obrázku',
-    'description' => 'Nahrajete SVG nebo jednoduchý obrázek, případně napíšete text. Vznikne reliéf na destičce, vyříznutý tvar nebo stojící logo a cenu vidíte hned.',
+    'description' => 'Nahrajete SVG nebo jednoduchý obrázek, případně napíšete text. Vznikne reliéf na destičce, vyříznutý tvar nebo stojící logo a náhled vidíte hned.',
     'h1' => 'Logo nebo nápis jako reliéf, vyříznutý tvar či stojící cedule',
     'intro' => [
         'Nástroj převede logo, obrázek nebo text na model pro 3D tisk. Nahrát můžete SVG s vyplněnými tvary nebo jednoduchý kontrastní obrázek PNG, JPG či WebP, případně napíšete až dva řádky textu. Vyberete jedno ze čtyř provedení: reliéf na destičce, plastický reliéf z obrázku, vyříznutý tvar, nebo logo stojící na podstavci. Šířku motivu nastavíte od 20 do 250 mm.',
-        'V náhledu vidíte přesně ten tvar, který se vytiskne, s vnějšími rozměry a orientační cenou. Nástroj upozorní na čáry tenčí než 0,8 mm, které by tiskárna nevytiskla čistě, a na části, které by nedržely pohromadě. Model si objednáte jako výtisk z naší tiskové farmy, nebo si ho zdarma stáhnete pro svou tiskárnu. U reliéfu na destičce lze motiv vytisknout druhou barvou.',
+        'V náhledu vidíte přesně ten tvar, který se vytiskne, s vnějšími rozměry. Nástroj upozorní na čáry tenčí než 0,8 mm, které by tiskárna nevytiskla čistě, a na části, které by nedržely pohromadě. Model si objednáte jako výtisk z naší tiskové farmy, nebo si ho zdarma stáhnete pro svou tiskárnu. U reliéfu na destičce lze motiv vytisknout druhou barvou.',
     ],
     'steps' => [
         ['name' => 'Nahrajte předlohu nebo text', 'text' => 'Nahrajete SVG nebo obrázek, nebo napíšete text do jednoho či dvou řádků po 30 znacích. Nahraná předloha má přednost před textem.'],
         ['name' => 'Vyberte provedení', 'text' => 'Zvolíte reliéf na destičce, plastický reliéf z obrázku, vyříznutý tvar, nebo stojící logo. U destičky vyberete tvar: zaoblená, pravoúhlá, nebo kruhová.'],
         ['name' => 'Nastavte velikost', 'text' => 'Zadáte šířku motivu a jeho tloušťku. Výška se dopočítá podle poměru stran předlohy.'],
-        ['name' => 'Zkontrolujte náhled a upozornění', 'text' => 'Pod náhledem čtete rozměry, orientační cenu a případná upozornění na tenké čáry nebo samostatné kousky. Podle nich motiv zvětšíte, nebo změníte provedení.'],
+        ['name' => 'Zkontrolujte náhled a upozornění', 'text' => 'Pod náhledem čtete rozměry a případná upozornění na tenké čáry nebo samostatné kousky. Podle nich motiv zvětšíte, nebo změníte provedení.'],
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Tisk objednáte z naší tiskové farmy a zaplatíte z předplaceného kreditu. Nebo si model zdarma stáhnete jako soubor STL či hotový projekt pro svou tiskárnu.'],
     ],
     'faq' => [

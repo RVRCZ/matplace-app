@@ -12,7 +12,7 @@ return [
         ['name' => 'Elija una imagen o escriba un nombre', 'text' => 'Una silueta de la biblioteca, su propio SVG o imagen, o un nombre de hasta 16 caracteres. Una imagen subida tiene prioridad sobre el nombre.'],
         ['name' => 'Ajuste el poste', 'text' => 'La altura según cuántas gomas deba llevar y el diámetro según su tamaño. Para gomas finas bastan 14 mm; para coleteros, de 20 a 25 mm.'],
         ['name' => 'Ajuste la silueta', 'text' => 'Cambie su ancho con el deslizador o arrastrando la flecha en la vista previa, y su grosor de 2,4 a 5 mm.'],
-        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas y un precio orientativo. Al encargar elige el color de la base y el de la silueta; el modelo y el proyecto para el laminador se descargan gratis.'],
+        ['name' => 'Encargue la impresión o descargue', 'text' => 'Junto a la vista previa ve las medidas; el precio exacto lo muestra el cálculo tras «Continuar». Al encargar elige el color de la base y el de la silueta; el modelo y el proyecto para el laminador se descargan gratis.'],
     ],
     'faq' => [
         ['q' => '¿Cuántas gomas caben en el poste?', 'a' => 'Una goma fina ocupa unos 4 mm de altura; un coletero, de 15 a 20 mm. Un poste de 90 mm lleva, por tanto, unas veinte gomas finas o cinco coleteros.'],

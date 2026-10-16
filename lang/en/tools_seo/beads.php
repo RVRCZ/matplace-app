@@ -12,7 +12,7 @@ return [
         ['name' => 'Type a name or a word', 'text' => 'Up to 16 characters including digits and symbols, a heart for example. Every character is one bead; a space is an empty bead.'],
         ['name' => 'Choose the shape and the letter', 'text' => 'A cube, a ball, a heart or a star. The letter raised in another colour, or engraved; the typeface sans, serif or monospace, always bold.'],
         ['name' => 'Set the size and the hole', 'text' => 'The size of the bead and the diameter of the hole to suit your cord. Under the preview you see how many beads there are and how big each one is.'],
-        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size and a rough price, the exact price and print time one step further. The model and the project with the filament change are free to download, without registration.'],
+        ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the size; the calculation after "Continue" shows the exact price and print time. The model and the project with the filament change are free to download, without registration.'],
     ],
     'faq' => [
         ['q' => 'How big a hole should I choose?', 'a' => 'For elastic or a thin cord 2 mm is enough, for leather and thicker string 3 to 4 mm. At least 1.2 mm of plastic must stay above and below the hole; if that does not fit the bead, the tool says so.'],

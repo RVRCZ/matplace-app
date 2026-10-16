@@ -32,7 +32,7 @@ final class OrderService
     /**
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null): FarmOrder
+    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null, ?string $materialCode = null): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! FarmGate::open($user)) {
@@ -65,7 +65,7 @@ final class OrderService
         $quality = $this->knownQuality($quality);
         // the model may fit no plate at all: start on the biggest machine that takes this quality and let the check say so
         $fallback = $this->printers()->filter(fn (FarmPrinter $p) => $p->takesQuality($quality))->sortByDesc(fn (FarmPrinter $p) => $p->bedVolume())->first();
-        [$printer, $material] = $this->printerAndMaterialFor($dims, $quality) ?? [$fallback, $fallback ? $this->loadedMaterials($fallback)->first() : null];
+        [$printer, $material] = $this->printerAndMaterialFor($dims, $quality, $materialCode) ?? [$fallback, $fallback ? $this->loadedMaterials($fallback)->first() : null];
         // the customer already chose a colour: the order goes to the machine that holds that spool and takes the model
         $chosen = $colorId ? $this->offeredColors($quality)->first(fn ($r) => $r['color']->id === $colorId && ($dims === null || $r['printer']->fits($dims))) : null;
         if ($chosen) {
@@ -118,8 +118,9 @@ final class OrderService
     /** Another quality, strength or unit: slice again (counts towards the daily limit, like a new order). */
     /**
      * @param  array<string, mixed>|null  $settings  the "advanced" numbers (PrintSettings::FIELDS); null = leave as they are, [] = back to the presets
+     * @param  bool|null  $byParts  print the parts of the design separately (each from its own spool) or together; null = leave as it is
      */
-    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null, ?int $slotId = null, ?array $settings = null): FarmOrder
+    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null, ?int $slotId = null, ?array $settings = null, ?bool $byParts = null): FarmOrder
     {
         if (! in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED], true) || $order->paid_at !== null) {
             throw new FarmRefusal('locked');
@@ -145,6 +146,12 @@ final class OrderService
                 'farm_color_id' => $chosen['color']->id, 'farm_printer_slot_id' => $chosen['slot']->id,
             ]);
             $order->unsetRelation('printer')->unsetRelation('material')->unsetRelation('color');
+        }
+        // the parts of the design printed separately or together (chosen on the order page since the start page has no
+        // colours): a plate per part, every part on the first colour until the customer picks its spool
+        $parts = $byParts !== null && $byParts !== $order->isByParts() ? self::designParts($order->modelFile) : [];
+        if (count($parts) >= 2) {
+            $order->fill(['by_parts' => $byParts, 'part_plates' => $byParts ? $this->spoolsForParts($order->slot()->first(), $parts, []) : null, 'color_changes' => $byParts ? null : $order->color_changes]);
         }
         // a machine kept for fine work hands the order back when the customer asks for a coarser quality
         if ($order->printer && ! $order->printer->takesQuality($quality)) {
@@ -246,7 +253,7 @@ final class OrderService
             }
         }
 
-        return $out->values();
+        return $out->sortBy(fn (FarmPrinterSlot $s) => self::colorOrder($s->color))->values();
     }
 
     /**
@@ -429,9 +436,30 @@ final class OrderService
             ->values();
     }
 
+    /** A spool with less than this left is not offered at all (a print that needs more sees its colour greyed). */
+    public const MIN_SPOOL_G = 50;
+
+    /** The groups of the colour window in the order a list of colours shows them: colours, then white, grey, black. */
+    private const HUE_ORDER = ['red', 'orange_yellow', 'brown_beige', 'green', 'blue_violet', 'special', 'white_grey', 'black'];
+
+    /**
+     * Where a colour stands in a list: by hue (Palette::hue), within a hue from light to dark, white, grey and black
+     * at the end; the name decides between equals.
+     *
+     * @return array{0: int, 1: float, 2: string}
+     */
+    public static function colorOrder(FarmColor $color): array
+    {
+        $hex = preg_match('/^#?[0-9a-f]{6}$/i', (string) $color->hex) ? '#'.ltrim((string) $color->hex, '#') : '#808080';
+        $hue = Palette::hue($hex, (string) $color->material?->finish, (string) $color->name);
+
+        return [(int) array_search($hue, self::HUE_ORDER, true), -round(Palette::lab($hex)[0], 3), Str::lower((string) $color->displayName())];
+    }
+
     /**
      * Colours on offer before an order exists: every enabled colour loaded in an enabled slot of an enabled, online
-     * printer that takes this quality; one entry per colour (a machine ready to start first, then the smaller plate).
+     * printer that takes this quality, with at least MIN_SPOOL_G left; one entry per colour (a machine ready to start
+     * first, then the smaller plate), in the order of the colour window (colorOrder).
      *
      * @return Collection<int, array{slot: FarmPrinterSlot, color: FarmColor, printer: FarmPrinter}>
      */
@@ -444,9 +472,10 @@ final class OrderService
             ->whereHas('printer', fn ($q) => $q->where('enabled', true))
             ->whereHas('color', fn ($q) => $q->where('enabled', true)->whereHas('material', fn ($m) => $m->where('enabled', true)))
             ->get()
-            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->takesQuality($quality))
+            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->takesQuality($quality) && $s->availableGrams() >= self::MIN_SPOOL_G)
             ->sortBy(fn (FarmPrinterSlot $s) => [$s->printer->readyForAutoStart() ? 0 : 1, $s->printer->bedVolume(), $s->id])
             ->unique('farm_color_id')
+            ->sortBy(fn (FarmPrinterSlot $s) => self::colorOrder($s->color))
             ->map(fn (FarmPrinterSlot $s) => ['slot' => $s, 'color' => $s->color, 'printer' => $s->printer])
             ->values();
     }
@@ -455,21 +484,29 @@ final class OrderService
      * Colours the customer can have right now: every enabled kind loaded in an enabled slot of an online printer that
      * prints this order's G-code (same machine profile), with enough filament left after what is already promised.
      * The kind's temperatures go into the G-code when the print is sent (GcodeSlot), so PLA, PLA+ and PETG mix freely.
+     * One entry per colour – the customer picks a colour, the farm the machine (machineFor) – with the codes of every
+     * spool of that colour that could print it ("U33", the entry's own first), in the order of the colour window.
      *
-     * @return Collection<int, array{slot: FarmPrinterSlot, color: FarmColor, printer: FarmPrinter, enough: bool}>
+     * @return Collection<int, array{slot: FarmPrinterSlot, color: FarmColor, printer: FarmPrinter, enough: bool, codes: list<string>}>
      */
     public function availableColors(FarmOrder $order): Collection
     {
         // one entry per colour: prefer a slot with enough filament, the machine the order is sliced for, then the one
         // that can start soonest
-        return $this->availableSlots($order)
+        $slots = $this->availableSlots($order)
             ->sortBy(fn ($r) => [$r['enough'] ? 0 : 1, $r['printer']->id === $order->farm_printer_id ? 0 : 1, $r['printer']->readyForAutoStart() ? 0 : 1, $r['slot']->id])
-            ->unique(fn ($r) => $r['color']->id)
+            ->values();
+        $codes = $slots->groupBy(fn ($r) => $r['color']->id)->map(fn ($rows) => $rows->map(fn ($r) => $r['slot']->code())->unique()->values()->all());
+
+        return $slots->unique(fn ($r) => $r['color']->id)
+            ->sortBy(fn ($r) => self::colorOrder($r['color']))
+            ->map(fn ($r) => $r + ['codes' => $codes[$r['color']->id]])
             ->values();
     }
 
     /**
-     * Every slot that could print this order, machine by machine (a colour loaded in two machines is here twice).
+     * Every slot that could print this order, machine by machine (a colour loaded in two machines is here twice); a
+     * spool with less than MIN_SPOOL_G left is not among them.
      *
      * @return Collection<int, array{slot: FarmPrinterSlot, color: FarmColor, printer: FarmPrinter, enough: bool}>
      */
@@ -488,7 +525,7 @@ final class OrderService
             ->get()
             // any machine of the farm the model goes on and that takes this quality: a colour on another machine means
             // slicing again for it at payment
-            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->fits($dims) && $s->printer->takesQuality((string) $order->quality))
+            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->fits($dims) && $s->printer->takesQuality((string) $order->quality) && $s->availableGrams() >= self::MIN_SPOOL_G)
             ->map(fn (FarmPrinterSlot $s) => ['slot' => $s, 'color' => $s->color, 'printer' => $s->printer, 'enough' => $s->availableGrams() >= $need])
             ->values();
     }
@@ -638,17 +675,17 @@ final class OrderService
 
     /**
      * The machine and kind an order starts on: the cheapest loaded kind on a machine that takes the model (the raw
-     * size, before orientation, so a loose fit) and this quality, online ones first; null when the model fits no
-     * machine at all.
+     * size, before orientation, so a loose fit) and this quality, online ones first; the kind the calculation was
+     * made for (PLA, PETG…) before the others when it is loaded; null when the model fits no machine at all.
      *
      * @return array{0: FarmPrinter, 1: FarmMaterial}|null
      */
-    private function printerAndMaterialFor(?Dimensions $dims, string $quality): ?array
+    private function printerAndMaterialFor(?Dimensions $dims, string $quality, ?string $materialCode = null): ?array
     {
         $printers = $this->printers()
             ->filter(fn (FarmPrinter $p) => $dims === null || $p->fits($dims))
             ->filter(fn (FarmPrinter $p) => $p->takesQuality($quality));
-        foreach ($this->loadedMaterials() as $material) {
+        foreach ($this->loadedMaterials()->sortBy(fn (FarmMaterial $m) => $materialCode !== null && $m->code === $materialCode ? 0 : 1) as $material) {
             $printer = $printers
                 ->filter(fn (FarmPrinter $p) => $p->slots()->where('enabled', true)->whereHas('color', fn ($c) => $c->where('farm_material_id', $material->id))->exists())
                 ->sortBy(fn (FarmPrinter $p) => [$p->isOnline() ? 0 : 1, $p->bedVolume(), $p->id])

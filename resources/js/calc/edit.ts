@@ -348,7 +348,6 @@ export function bootEdit(stage: Stage): void {
         }
         const each = (file.tool?.params?.each ?? []) as number[][];
         stage.status({ bbox: file.bbox, pieces: (file.parts ?? []).length || 1, each: each.length > 1 ? each : undefined });
-        if (stage.cfg.price && file.volume_mm3) stage.price(stage.cfg.price, { volume_mm3: file.volume_mm3, area_mm2: file.area_mm2 }, { supports: file.hints?.supports });
         renderMap(r);
         const open = `${cfg.home}?open=${file.uuid}&download=1`;
         const items: MenuItem[] = [

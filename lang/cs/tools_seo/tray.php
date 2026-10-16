@@ -12,7 +12,7 @@ return [
         ['name' => 'Vyberte obrázek nebo siluetu', 'text' => 'Nahrajte vlastní obrázek, vyberte motiv z knihovny, nebo napište jméno. Pozadí se odstraní samo a obrys se vyhladí.'],
         ['name' => 'Nastavte rozměry', 'text' => 'Šířku a výšku misky měníte posuvníky nebo tažením šipek v náhledu. Odstup obrázku od stěny určuje, kolik místa zůstane kolem kresby.'],
         ['name' => 'Zvolte, co bude ve dně', 'text' => 'Kresba vyrytá dvě vrstvy hluboko, kresba v barvách, nebo hladké dno. U jednobarevné siluety je dno vždy hladké.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu, přesnou cenu a dobu tisku o krok dál. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu a dobu tisku ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
         ['q' => 'Jaký obrázek se na misku hodí?', 'a' => 'Tvar s jasným obrysem bez tenkých výběžků: zvířecí tlapka, srdce, list, mrak, hvězda. Do úzkých cípů se nic nevejde a stěna je v nich křehčí.'],

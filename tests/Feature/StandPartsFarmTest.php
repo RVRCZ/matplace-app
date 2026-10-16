@@ -13,6 +13,7 @@ use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\StartsOrders;
 use Tests\TestCase;
 
 /**
@@ -22,6 +23,7 @@ use Tests\TestCase;
 class StandPartsFarmTest extends TestCase
 {
     use RefreshDatabase;
+    use StartsOrders;
 
     private User $user;
 
@@ -62,17 +64,15 @@ class StandPartsFarmTest extends TestCase
         $file = ModelFile::where('uuid', $uuid)->firstOrFail();
         $this->assertSame(['body', 'stand', 'post'], OrderService::designParts($file));
 
-        // the start page offers the three parts under their own names, ticked on: the design names a colour for each
-        $html = $this->actingAs($this->user)->get('/farm?file='.$uuid)->assertOk()->getContent();
-        $this->assertStringContainsString('id="farm-parts"', $html);
-        foreach (['body', 'stand', 'post'] as $part) {
-            $this->assertStringContainsString('name="part_color['.$part.']"', $html);
-            $this->assertStringContainsString(e(__('param.part.'.$part.'.hair_tie')), $html);
-        }
-        $this->assertMatchesRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $html);
+        // made from the start page, the order is printed by parts: the design names a colour for each; the order page
+        // names the three parts as the tool does
+        $started = $this->startOrder($this->user, 'file='.$uuid);
+        $this->assertTrue($started->isByParts());
+        $labels = array_column($this->actingAs($this->user)->getJson("/farm/orders/{$started->token}/status")->json('parts'), 'label');
+        $this->assertSame(array_map(fn ($part) => __('param.part.'.$part.'.hair_tie'), ['body', 'stand', 'post']), $labels);
 
         // one colour: one plate, the three parts next to each other as the tool lays them out
-        $plain = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $first->id])->assertCreated()->json('url')))->firstOrFail();
+        $plain = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $first->id, 'by_parts' => 0])->assertCreated()->json('url')))->firstOrFail();
         $this->assertFalse($plain->isByParts());
         $this->assertSame(1, $plain->plates);
 

@@ -12,7 +12,7 @@ return [
         ['name' => 'Vyberte obrázek, nebo napište jméno', 'text' => 'Silueta z knihovny, vlastní SVG či obrázek, nebo jméno do 16 znaků. Nahraný obrázek má přednost před jménem.'],
         ['name' => 'Nastavte sloupek', 'text' => 'Výšku podle toho, kolik gumiček má pojmout, a průměr podle jejich velikosti. Na tenké gumičky stačí 14 mm, na scrunchies 20 až 25 mm.'],
         ['name' => 'Nastavte siluetu', 'text' => 'Šířku měníte posuvníkem nebo tažením šipky v náhledu, tloušťku od 2,4 do 5 mm.'],
-        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry a orientační cenu. Při objednávce vyberete barvu podstavce i siluety; model i projekt pro slicer stáhnete zdarma.'],
+        ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Při objednávce vyberete barvu podstavce i siluety; model i projekt pro slicer stáhnete zdarma.'],
     ],
     'faq' => [
         ['q' => 'Kolik gumiček se na sloupek vejde?', 'a' => 'Tenká gumička zabere asi 4 mm výšky, scrunchie 15 až 20 mm. Sloupek vysoký 90 mm tedy pojme kolem dvaceti tenkých gumiček nebo pět scrunchies.'],
