@@ -110,8 +110,10 @@ export function bootFigure(stage: Stage): void {
         msg.textContent = done;
         const ready = await stage.untilReady(file);
         if (ready.status !== 'ready') return idle(say('figure.failed', 'figure.failed'));
+        // the model is downloaded and drawn under the dots (seconds for a big mesh); they fade only when it is there
+        dots?.say(done, 100);
+        try { await stage.fileResult(ready); } catch { return idle(t('figure.failed')); }
         await dots?.finish(); dots = null;
-        await stage.fileResult(ready);
         made = ready;
         measured(ready);
         btn.disabled = false; $('figure-progress').classList.add('hidden');

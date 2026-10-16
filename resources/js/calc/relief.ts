@@ -169,11 +169,12 @@ export function bootRelief(stage: Stage): void {
             if (!res.ok) throw new Error(cfg.i18n[String(body.reason ?? '')] ?? body.message ?? 'relief');
             const file = await stage.untilReady(body.file as FileInfo);
             if (file.status !== 'ready') throw new Error('relief');
-            await dots?.finish();
             made = file;
             const backlit = file.kind === 'lithophane' && make() !== 'lamp';
             // the model stays on this page: seen from all sides, with its size and a first price; the calculator is one click on
+            // (it is downloaded and drawn under the dots, which fade only when it is there)
             await stage.fileResult(file, { kind: make() === 'lamp' ? 'lamp' : backlit && lit ? 'lithophane' : 'relief' });
+            await dots?.finish();
             const r = (file.tool?.params ?? {}) as { report?: { width: number; height: number; thickness: number; min_thickness: number; shades: number; diameter?: number; circumference?: number } };
             if (r.report) stage.note(make() === 'lamp' ? t('fact_lamp', { d: nf.format(r.report.diameter ?? 0), h: nf.format(r.report.height), c: nf.format(r.report.circumference ?? 0), a: nf.format(r.report.min_thickness), t: nf.format(r.report.thickness), s: r.report.shades }) : t('fact', { w: nf.format(r.report.width), h: nf.format(r.report.height), t: nf.format(r.report.thickness), s: r.report.shades }));
             $('relief-backlit').classList.toggle('hidden', !backlit);
