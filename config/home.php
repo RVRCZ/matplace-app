@@ -6,7 +6,7 @@
  * is switched off or has no page is left out, the next one takes its place, at most `tools_shown` cards are shown.
  */
 return [
-    'tools' => ['qr', 'figure', 'gifts', 'relief', 'organizer', 'box', 'phone_stand', 'cutter', 'vase', 'repair', 'holder', 'sign', 'lightbox'],
+    'tools' => ['qr', 'figure', 'gifts', 'relief', 'organizer', 'pet', 'phone_stand', 'cutter', 'vase', 'repair', 'holder', 'sign', 'lightbox'],
     'tools_shown' => 8,
     // what the farm prints most often (Roman, 13 Oct 2026): first on the page, with a badge saying so
     'popular' => ['qr', 'figure'],

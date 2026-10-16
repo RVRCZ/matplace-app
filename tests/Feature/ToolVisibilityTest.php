@@ -60,6 +60,7 @@ class ToolVisibilityTest extends TestCase
     {
         $admin = $this->admin();
         app(Sitemaps::class)->build();
+        config(['home.tools' => array_merge(['box'], config('home.tools'))]);   // the box left the home page on 16 Oct 2026; the test puts it back to watch it go
         $box = 'href="'.route('tools.box').'"';
         $ornament = 'href="'.route('tools.ornament').'"';
         $organizer = route('tools.organizer');

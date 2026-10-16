@@ -16,12 +16,13 @@
 @endphp
 
 <section id="hero">
-    <div class="grid items-center gap-8 pt-2 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:pt-8">
+    {{-- one centred column: the file, the photo and the words are the page (the illustration left on 16 Oct 2026) --}}
+    <div class="mx-auto max-w-2xl pt-2 text-center lg:pt-8">
         <div class="min-w-0">
-            <p class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-action"><span class="h-1.5 w-1.5 rounded-full bg-action" aria-hidden="true"></span>{{ __('home.eyebrow') }}</p>
+            <p class="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-action"><span class="h-1.5 w-1.5 rounded-full bg-action" aria-hidden="true"></span>{{ __('home.eyebrow') }}</p>
             <h1 class="mt-4 text-[2.6rem] font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">{{ __('home.title.a') }}<br><span class="text-action">{{ __('home.title.c') }}</span></h1>
-            <p class="mt-4 max-w-md text-base leading-relaxed text-muted sm:text-lg">{{ $tx('home.lead') }}</p>
-            <ol class="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-ink" aria-label="{{ __('home.path') }}">
+            <p class="mx-auto mt-4 max-w-md text-base leading-relaxed text-muted sm:text-lg">{{ $tx('home.lead') }}</p>
+            <ol class="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm font-semibold text-ink" aria-label="{{ __('home.path') }}">
                 @foreach(['idea', 'design', 'product'] as $i => $stage)
                     @if($i)<li class="text-action" aria-hidden="true">→</li>@endif
                     <li class="rounded-full border border-line bg-card px-3 py-1">{{ __('home.path.'.$stage) }}</li>
@@ -29,20 +30,15 @@
             </ol>
 
             <div class="mt-5">
-                @include('calculator.inputs')
+                @include('calculator.inputs', ['centered' => true])
             </div>
 
-            <ul class="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
+            <ul class="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-muted">
                 @foreach($mp ? ['real_prices', 'no_signup', 'share'] : ['free_tools', 'download', 'farm'] as $b)
                     <li class="flex items-center gap-1.5"><svg class="h-3.5 w-3.5 text-action" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ __('home.benefit.'.$b) }}</li>
                 @endforeach
             </ul>
         </div>
-
-        <figure class="m-0 min-w-0">
-            <div class="overflow-hidden rounded-3xl bg-[#F3EEE6]">{!! $pic('hero', __('home.hero_alt'), '(min-width: 1024px) 560px, 100vw', true) !!}</div>
-            <figcaption class="mt-3 flex items-center justify-between gap-3 text-xs text-muted"><span class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-action" aria-hidden="true"></span>{{ __('home.caption') }}</span><span>{{ __('home.caption_note') }}</span></figcaption>
-        </figure>
     </div>
 
     @include('calculator.search_results')
@@ -68,7 +64,7 @@
     @php
         $homeTools = collect(config('home.tools'))
             ->mapWithKeys(fn ($key) => [$key => config('tools.'.$key)])
-            ->filter(fn ($t, $key) => $t && \App\Domain\Tools\ToolVisibility::isPublic($key) && \Illuminate\Support\Facades\Route::has($t['route']) && ($key !== 'figure' || ($config['generator'] ?? false)))
+            ->filter(fn ($t, $key) => $t && \App\Domain\Tools\ToolVisibility::isPublic($key) && \Illuminate\Support\Facades\Route::has($t['route']) && (! in_array($key, ['figure', 'pet'], true) || ($config['generator'] ?? false)))
             ->take((int) config('home.tools_shown', 8));
     @endphp
     <section class="mt-14" aria-labelledby="home-tools">
