@@ -35,7 +35,7 @@
     "param.part.body": ["Jen krabička", "Box only", "Solo la caja"],
     "param.part.lid": ["Jen víčko", "Lid only", "Solo la tapa"],
 
-    "param.organizer.lead": ["Změřte zásuvku nebo místo na stole, zvolte počet přihrádek a uvidíte výsledek i cenu.", "Measure the drawer or the spot on your desk, pick the compartments and see the result and price.", "Mida el cajón o el hueco de la mesa, elija los compartimentos y verá el resultado y el precio."],
+    "param.organizer.lead": ["Změřte zásuvku nebo místo na stole, zvolte počet přihrádek a hned uvidíte výsledek.", "Measure the drawer or the spot on your desk, pick the compartments and see the result at once.", "Mida el cajón o el hueco de la mesa, elija los compartimentos y verá el resultado al instante."],
     "param.organizer.size": ["Vnější rozměry a přihrádky", "Outer size and compartments", "Medidas exteriores y compartimentos"],
     "param.organizer.tip": ["Tip: nechte si na každé straně 1–2 mm vůle, zásuvky nebývají přesně pravoúhlé. Tiskne se bez podpěr.", "Tip: leave 1–2 mm of play on each side, drawers are rarely perfectly square. Prints without supports.", "Consejo: deje 1–2 mm de holgura por lado, los cajones rara vez son perfectamente rectos. Se imprime sin soportes."],
     "param.box.lead": ["Zadejte, jak velká věc se má vejít dovnitř. Vnější rozměry dopočítáme.", "Enter how big a thing has to fit inside. We work out the outer size.", "Indique el tamaño de lo que debe caber dentro. Calculamos las medidas exteriores."],

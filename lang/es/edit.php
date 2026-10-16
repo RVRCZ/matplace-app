@@ -199,7 +199,7 @@ return [
     'warn.coarse_grid' => 'El modelo es grande: se mide en una rejilla más gruesa y la pared puede variar entre una décima y medio milímetro.',
 
     // ── tamaño real ─────────────────────────────────────────────────────────────────────────────────
-    'life_size.lead' => 'Diga qué altura debe tener el modelo y la herramienta lo amplía, vacía los grandes (pared de 2–5 mm según el tamaño) y lo corta en piezas con pasadores que caben en la impresora. Recibe las piezas, los gramos y el precio.',
+    'life_size.lead' => 'Diga qué altura debe tener el modelo y la herramienta lo amplía, vacía los grandes (pared de 2–5 mm según el tamaño) y lo corta en piezas con pasadores que caben en la impresora. Recibe las piezas y los gramos; el cálculo muestra el precio exacto.',
     'life_size.tip' => 'Las piezas se imprimen con la cara de corte hacia abajo; alrededor de los cortes el modelo queda macizo para que los pasadores tengan dónde asentarse. Los agujeros de drenaje están en la base de la pieza más baja. Pegue según los números y el mapa.',
     'life_size.hint' => 'Gratis, en menos de un minuto para modelos grandes. El modelo se conserva; las piezas se abren como un archivo nuevo.',
     'life_size.apply' => 'Ampliar y dividir',

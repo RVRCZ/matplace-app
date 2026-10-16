@@ -199,7 +199,7 @@ return [
     'warn.coarse_grid' => 'The model is big: it is measured on a coarser grid, the wall may differ by a tenth to half a millimetre in places.',
 
     // ── life size ───────────────────────────────────────────────────────────────────────────────────
-    'life_size.lead' => 'Say how tall the model is to stand and the tool scales it, hollows big ones (a wall of 2–5 mm by size) and cuts it into pinned pieces that fit the printer. You get the pieces, the grams and the price.',
+    'life_size.lead' => 'Say how tall the model is to stand and the tool scales it, hollows big ones (a wall of 2–5 mm by size) and cuts it into pinned pieces that fit the printer. You get the pieces and the grams; the calculation shows the precise price.',
     'life_size.tip' => 'The pieces print cut face down; round the cuts the model stays solid so the pins have something to sit in. The drain holes are in the bottom of the lowest piece. Glue by the numbers and the map.',
     'life_size.hint' => 'Free, within a minute for big models. The model stays, the pieces open as a new file.',
     'life_size.apply' => 'Scale and split',
