@@ -6,7 +6,7 @@
         'farm.order.pay_card', 'farm.order.pay_card_rest', 'farm.order.card_pending', 'farm.order.card_kept',
         'farm.order.queue_ahead', 'farm.order.queue_start', 'farm.order.queue_starting', 'farm.order.queue_finish', 'farm.order.blocked_plate', 'farm.order.blocked_offline',
         'farm.order.blocked_approval', 'farm.order.cancel_confirm', 'farm.order.b_time', 'farm.order.b_material', 'farm.order.b_fixed', 'farm.order.b_min',
-        'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'models.price.to_author', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line', 'farm.order.second_color', 'farm.order.changes_title', 'farm.order.change_title', 'farm.order.change_same', 'farm.order.change_same_hint', 'farm.order.change_first', 'farm.order.change_line', 'farm.order.parts_title', 'farm.order.parts_hint', 'farm.order.part_main', 'farm.order.part_line',
+        'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'models.price.to_author', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line', 'farm.order.second_color', 'farm.order.changes_title', 'farm.order.change_title', 'farm.order.change_same', 'farm.order.change_same_hint', 'farm.order.change_first', 'farm.order.change_line', 'farm.order.parts_title', 'farm.order.parts_hint', 'farm.order.part_main', 'farm.order.part_line', 'farm.order.kind_all', 'farm.order.codes_hint', 'farm.order.by_parts',
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m', 'farm.order.cancel_running_confirm', 'farm.order.supports_hide', 'farm.order.supports_show',
         'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.too_big_pickup', 'farm.delivery.none', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track'];
     $farmCfg = [
@@ -106,9 +106,33 @@
                 <p id="farm-destination" class="mt-3 hidden text-sm text-slate-600"></p>
             </div>
 
-            {{-- presets (until paid) --}}
+            {{-- step 2 of 3, until paid: material and colours (one list, chosen once), quality and the print settings --}}
             <form id="farm-presets" class="hidden rounded-2xl border border-slate-200 bg-white p-4">
-                <div class="text-sm font-semibold text-slate-700">{{ __('farm.quality.label') }}</div>
+                <h2 class="text-base font-bold text-slate-800">{{ __('farm.order.step_material') }}</h2>
+                <div id="farm-material" class="mt-3 hidden scroll-mt-4">
+                    {{-- the kinds loaded right now (PLA, PLA+, PETG…): a filter over the colours below, the colour sets the kind --}}
+                    <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.material') }}</div>
+                    <div id="farm-kinds" class="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="{{ __('farm.order.material') }}"></div>
+                    <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.order.color') }}</div>
+                    <p class="text-xs text-slate-600">{{ __('farm.order.colors_now') }}</p>
+                    <p class="text-xs text-slate-500">{{ __('farm.order.codes_hint') }}</p>
+                    <div id="farm-colors" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.color') }}"></div>
+                    {{-- a design of several separately printed parts (a box and its lid): together in one colour, or each part
+                         its own print from its own spool of the machine, one plate after another (sliced again when changed) --}}
+                    <label id="farm-by-parts-box" class="mt-3 hidden cursor-pointer items-start gap-2 rounded-xl border border-slate-200 p-3 text-sm">
+                        <input type="checkbox" id="farm-by-parts" class="mt-1 h-4 w-4 accent-action">
+                        <span><span id="farm-by-parts-title" class="font-semibold text-slate-700"></span><br><span class="text-xs text-slate-500">{{ __('farm.order.by_parts_hint', ['max' => \App\Models\FarmOrder::MAX_COLORS]) }}</span></span>
+                    </label>
+                    <div id="farm-second" class="mt-3 hidden">
+                        <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.second_color') }}</div>
+                        <p class="text-xs text-slate-600">{{ __('farm.order.second_color_hint') }}</p>
+                        <div id="farm-second-colors" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.second_color') }}"></div>
+                    </div>
+                    <p id="farm-start-note" class="mt-2 text-xs text-slate-600"></p>
+                    <p id="farm-recolor-note" class="mt-3 hidden rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{{ __('farm.order.recolor_note') }}</p>
+                    <button id="farm-recolor" type="button" class="mt-3 hidden w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('farm.order.recolor') }}</button>
+                </div>
+                <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.quality.label') }}</div>
                 <div class="mt-2 grid grid-cols-3 gap-2" data-group="quality">
                     @foreach($settings['qualities'] as $key => $q)
                         <button type="button" data-value="{{ $key }}" class="seg">{{ __('farm.quality.'.$key) }}<span class="block text-xs font-normal text-slate-500">{{ $q['layer_mm'] }} mm</span></button>
@@ -168,17 +192,12 @@
                 <button id="farm-reslice" type="submit" class="btn-secondary mt-3 hidden w-full text-sm">{{ __('farm.recalculate') }}</button>
             </form>
 
-            {{-- colour, delivery, terms, pay --}}
+            {{-- step 3 of 3: the order – what was chosen above (only shown here), delivery, terms, pay --}}
             <form id="farm-pay" class="hidden rounded-2xl border border-line bg-action-soft p-4">
-                <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.color') }}</div>
-                <p class="text-xs text-slate-600">{{ __('farm.order.colors_now') }}</p>
-                <div id="farm-colors" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.color') }}"></div>
-                <div id="farm-second" class="mt-3 hidden">
-                    <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.second_color') }}</div>
-                    <p class="text-xs text-slate-600">{{ __('farm.order.second_color_hint') }}</p>
-                    <div id="farm-second-colors" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.second_color') }}"></div>
-                </div>
-                <p id="farm-start-note" class="mt-2 text-xs text-slate-600"></p>
+                <h2 class="text-base font-bold text-slate-800">{{ __('farm.order.step_order') }}</h2>
+                <div class="mt-2 flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">{{ __('farm.order.summary_colors') }}
+                    <a href="#farm-material" id="farm-change-colors" class="text-xs font-semibold text-action-dark underline">{{ __('farm.order.change') }}</a></div>
+                <ul id="farm-summary" class="mt-2 flex flex-wrap gap-2 text-sm" aria-live="polite"></ul>
 
                 {{-- delivery is chosen before the payment: it changes the price (resources/js/calc/farm.ts asks the server for it) --}}
                 <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.order.delivery') }}</div>
@@ -229,8 +248,7 @@
                 <p id="farm-pay-error" class="mt-2 hidden text-sm text-red-700" role="alert"></p>
                 <p id="farm-card-note" class="mt-2 hidden rounded-lg bg-amber-50 p-3 text-sm text-amber-900" aria-live="polite"></p>
                 <a id="farm-topup" href="#" class="btn-secondary mt-2 hidden w-full text-sm">{{ __('farm.top_up') }}</a>
-                <p id="farm-recolor-note" class="mt-3 hidden rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{{ __('farm.order.recolor_note') }}</p>
-                <button id="farm-recolor" type="button" class="mt-3 hidden w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('farm.order.recolor') }}</button>
+                <p id="farm-pay-recolor" class="mt-3 hidden text-sm text-amber-900">{{ __('farm.order.recolor_first') }}</p>
                 <button id="farm-pay-btn" type="submit" class="mt-3 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" disabled>{{ __('farm.order.pay') }}</button>
             </form>
 

@@ -18,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\StartsOrders;
 use Tests\TestCase;
 
 /**
@@ -27,6 +28,7 @@ use Tests\TestCase;
 class PapelPortraitTest extends TestCase
 {
     use RefreshDatabase;
+    use StartsOrders;
 
     /** a square panel with scallops all round: exactly as big as asked */
     private const PANEL = ['treatment' => 'portrait', 'width' => 150, 'height' => 150, 'border' => 'folk', 'border_mm' => 12, 'scallop_edge' => 'all'];
@@ -455,11 +457,9 @@ class PapelPortraitTest extends TestCase
         $file = ModelFile::where('uuid', $uuid)->firstOrFail();
         $this->assertSame($white->code, $file->tool_params['part_colors']['body']['code']);
         $this->assertSame($black->code, $file->tool_params['color_changes'][0]['code']);
-        $html = $this->actingAs($user)->get('/farm?file='.$uuid)->assertOk()->getContent();
-        $ticked = fn (string $name) => preg_match('/name="'.preg_quote($name, '/').'" value="(\d*)"[^>]*\schecked/', $html, $found) ? (int) $found[1] : null;
-        $this->assertSame($white->id, $ticked('color'), 'the backing in the light spool');
-        $this->assertSame($black->id, $ticked('change_color[0]'), 'the frame and the face in the dark spool of that machine');
-        $this->assertStringContainsString('data-want="'.strtolower($file->tool_params['color_changes'][0]['hex']).'"', strtolower($html));
+        $started = $this->startOrder($user, 'file='.$uuid);
+        $this->assertSame($white->id, self::picked($started, 'color'), 'the backing in the light spool');
+        $this->assertSame($black->id, self::picked($started, 'change_color[0]'), 'the frame and the face in the dark spool of that machine');
         // the order carries the change to the printer: the slot of the black spool, at the top of the backing
         $order = FarmOrder::where('token', basename($this->actingAs($user)->postJson('/farm/orders', ['file' => $uuid, 'color' => $white->id, 'change_color' => [$black->id]])->assertCreated()->json('url')))->firstOrFail();
         $this->assertSame([['slot' => (int) $free[1]->slot, 'z' => 2.0]], $order->colorChanges());

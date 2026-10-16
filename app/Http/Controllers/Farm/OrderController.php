@@ -44,7 +44,17 @@ class OrderController extends Controller
 {
     public function __construct(private readonly OrderService $orders, private readonly FarmSettings $settings, private readonly Wallet $wallet, private readonly Shipping $shipping) {}
 
-    /** Entrance: from the calculator with ?file=<uuid>, or empty with an upload field. */
+    /** What rides from the start page to the order (a repeated print, a refused order), under the names the store takes. */
+    private const CARRIED = ['quality' => 'quality', 'strength' => 'strength', 'supports' => 'supports', 'copies' => 'copies', 'scale' => 'scale',
+        'color' => 'color', 'second' => 'second_color', 'second_color' => 'second_color', 'change' => 'change_color', 'change_color' => 'change_color',
+        'by_parts' => 'by_parts', 'part' => 'part_color', 'part_color' => 'part_color'];
+
+    /**
+     * The entrance for whatever does not come from the calculator with a signed-in customer: an own upload, a
+     * designer's card, an inspiration page, "print again", a guest back from the login, a refused order. No colours
+     * and no settings here: both are chosen once, on the order page. What the address hands over (the calculation,
+     * the settings and colours of a repeated print) rides along to the order in hidden fields.
+     */
     public function start(Request $request): View
     {
         $file = $request->query('file') ? ModelFile::where('uuid', $request->query('file'))->first() : null;
@@ -56,90 +66,117 @@ class OrderController extends Controller
         }
         // the customer's own file of a model seen in the inspiration catalogue (any licence: they rent the printer and print for themselves)
         $inspiration = $request->query('source') ? CatalogModel::shown()->find((int) $request->query('source')) : null;
-        $quality = (string) $request->query('quality', 'standard');
-        $strength = (string) $request->query('strength', 'standard');
-        $supports = $request->query('supports') === 'off' ? 'off' : 'auto';
-        // a repeated print hands its settings over in the address (OrderController::repeat)
-        $copies = max(1, min(PlateLayout::MAX_COPIES, (int) $request->query('copies', 1)));
-        $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) $request->query('scale', 1)));
-        $wantedColor = (int) $request->query('color', 0);
-        $material = null;
-        // from the calculator: the shared calculation knows the model, the quality and how many pieces the customer wanted
-        if (! $file && $request->query('calc') && ($calc = Calculation::with('modelFile')->where('token', $request->query('calc'))->first())) {
-            $file = $calc->modelFile;
-            $quality = (string) ($calc->params['quality'] ?? $quality);
-            $copies = max(1, min(PlateLayout::MAX_COPIES, (int) ($calc->params['quantity'] ?? 1)));
-            $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) ($calc->params['scale'] ?? 1)));
-            $material = $calc->params['material'] ?? null;
-            // "no supports" stays "no"; the farm has no forced "yes", that one is left to the slicer
-            $supports = ($calc->params['supports'] ?? null) === false ? 'off' : $supports;
-            // the infill slider becomes the nearest strength preset
-            if (isset($calc->params['infill']) && ($presets = collect($this->settings->get('strengths'))->map(fn ($s) => abs((int) $s['infill'] - (int) $calc->params['infill']))->sort())->isNotEmpty()) {
-                $strength = (string) $presets->keys()->first();
+        // a refused order (too big, daily limit…) comes back with what the customer had sent
+        $old = (array) $request->session()->getOldInput();
+        $calcToken = (string) ($old['calc'] ?? $request->query('calc', ''));
+        // from the calculator (a guest who had to sign in first): the calculation knows the model and the settings
+        $calc = ! $file && $calcToken !== '' ? Calculation::with('modelFile')->where('token', $calcToken)->first() : null;
+        $file ??= $calc?->modelFile;
+        if ($old && ! $card) {
+            $file ??= isset($old['file']) ? ModelFile::where('uuid', (string) $old['file'])->first() : null;
+        }
+        $carry = [];
+        foreach (self::CARRIED as $from => $to) {
+            $value = $old ? ($old[$from] ?? null) : $request->query($from);
+            if ($value !== null && $value !== '' && $value !== []) {
+                $carry[$to] = $value;
             }
         }
-        // a refused order (too big, daily limit…) comes back with what the customer had chosen, not with the defaults
-        $old = (array) $request->session()->getOldInput();
-        if ($old) {
-            $file ??= isset($old['file']) && ! $card ? ModelFile::where('uuid', (string) $old['file'])->first() : null;
-            $quality = (string) ($old['quality'] ?? $quality);
-            $strength = (string) ($old['strength'] ?? $strength);
-            $supports = ($old['supports'] ?? $supports) === 'off' ? 'off' : 'auto';
-            $copies = max(1, min(PlateLayout::MAX_COPIES, (int) ($old['copies'] ?? $copies)));
-            $scale = max(0.25, min((float) config('pricing.max_scale', 4), (float) ($old['scale'] ?? $scale)));
-            $wantedColor = (int) ($old['color'] ?? $wantedColor);
+
+        return view('farm.start', [
+            'file' => $file,
+            'card' => $card,
+            'inspiration' => $inspiration,
+            'calc' => $calc,
+            'carry' => $carry,
+            // no 3D preview of a designer's file that is not offered for download
+            'previewUrl' => $file && (! $card || $card->download_allowed || $request->user()->isAdmin() || $request->user()->id === $card->profile->user_id) ? route('api.files.stl', $file) : null,
+            'bed' => $this->orders->largestBed(),
+            'settings' => $this->settings->all(),
+            'balance' => $this->wallet->balance($request->user()),
+            // null = no daily count (the admin, or the limit switched off in the settings)
+            'slicesLeft' => $this->settings->get('daily_slices_per_user') > 0 && ! $request->user()->isAdmin() ? max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())) : null,
+        ]);
+    }
+
+    /**
+     * What a calculation hands over to its order: the quality, how many pieces, the size, the kind of plastic (PLA,
+     * PETG… the order starts on it when it is loaded), "no supports", and the infill as the nearest strength preset.
+     *
+     * @return array{quality: ?string, strength: ?string, supports: ?string, copies: int, scale: float, material: ?string}
+     */
+    private function fromCalculation(Calculation $calc): array
+    {
+        $p = (array) $calc->params;
+        $strength = null;
+        if (isset($p['infill']) && ($presets = collect($this->settings->get('strengths'))->map(fn ($s) => abs((int) $s['infill'] - (int) $p['infill']))->sort())->isNotEmpty()) {
+            $strength = (string) $presets->keys()->first();
         }
-        // the colours loaded right now; those of the calculator's material kind come first
-        $offered = $this->orders->offeredColors($quality);
+
+        return [
+            'quality' => isset($p['quality']) ? (string) $p['quality'] : null,
+            'strength' => $strength,
+            // "no supports" stays "no"; the farm has no forced "yes", that one is left to the slicer
+            'supports' => ($p['supports'] ?? null) === false ? 'off' : null,
+            'copies' => max(1, min(PlateLayout::MAX_COPIES, (int) ($p['quantity'] ?? 1))),
+            'scale' => max(0.25, min((float) config('pricing.max_scale', 4), (float) ($p['scale'] ?? 1))),
+            'material' => isset($p['material']) ? (string) $p['material'] : null,
+        ];
+    }
+
+    /**
+     * The colours a new order starts with, so that it is sliced and priced for the right machine at once; the
+     * customer changes them on the order page. What was asked for (a repeated print, a refused order) wins while it
+     * is still loaded; else a design that names its colours (a picture in filament colours, a QR code, a box and its
+     * lid in two colours) gets the spools of one machine nearest to them, a design in one freely chosen colour (a blue
+     * box) the spool nearest to it, and anything else the first colour of the calculation's kind.
+     *
+     * @param  array{color?: int|null, changes?: list<int|null>|null, by_parts?: bool|null, parts?: array<string, int|null>|null}  $wish
+     * @return array{color: ?int, changes: list<int>, by_parts: bool, parts: array<string, int>}
+     */
+    private function preselect(ModelFile $file, string $quality, ?string $material, array $wish): array
+    {
         // a plate with a code or a text prints in two colours: the second one has to sit in the same machine (its ACE
         // changes the spool), so every colour lists the other spools of its machine that go with it
-        $twoColor = $file?->colorChangeMm();
-        // every change of the design (one for a plate with a text, one per colour for a picture in filament colours)
-        $changes = $file ? $file->colorChanges() : [];
-        $twoColor = $twoColor ?? ($changes[0]['z'] ?? null);
+        $changes = $file->colorChanges();
+        $twoColor = $file->colorChangeMm() ?? ($changes[0]['z'] ?? null);
         // the separately printed parts of the design (a box and its lid, the plates of a layered picture): each may
         // take its own spool of the machine, printed one after another
-        $parts = $file ? OrderService::designParts($file) : [];
-        $colors = $offered->map(fn ($r) => [
-            'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex, 'finish' => $r['color']->material->finish,
-            'photo' => $r['color']->photoUrl(), 'printer' => $r['printer']->name, 'bed' => (int) $r['printer']->bed_x.' × '.(int) $r['printer']->bed_y.' mm', 'enough' => $r['slot']->availableGrams() > 50,
+        $parts = OrderService::designParts($file);
+        $colors = $this->orders->offeredColors($quality)->map(fn ($r) => [
+            'id' => $r['color']->id, 'name' => $r['color']->displayName(), 'code' => $r['color']->material->code, 'hex' => $r['color']->hex,
+            'enough' => $r['slot']->availableGrams() > 50,
             // the second colours of every machine that holds this colour, not just the one the colour is listed with
-            'seconds' => $twoColor || $parts ? $this->orders->secondSpoolsAcross($r['slot'], null, $quality)->map(fn ($s) => ['id' => $s->color->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl()])->values()->all() : [],
+            'seconds' => $twoColor || $parts ? $this->orders->secondSpoolsAcross($r['slot'], null, $quality)->map(fn ($s) => ['id' => $s->color->id, 'hex' => $s->color->hex])->values()->all() : [],
         ])->sortBy(fn ($c) => [$c['code'] === $material ? 0 : 1, $c['name']])->values()->all();
-        // the colour of the print being repeated when it is still loaded, else the first one on offer
-        $preselect = collect($colors)->firstWhere('id', $wantedColor)['id'] ?? ($colors[0]['id'] ?? null);
-        // a QR code reads only in two colours: unless the address names the colours, the pair of spools nearest to the
-        // design is ticked (a light plate, a dark code), never "one colour"
-        // what the customer had ticked (a refused order, "print again"), else the spools nearest to the design's colours
-        $wantedChanges = array_values(array_map('intval', (array) ($old['change_color'] ?? $request->query('change', []))));
-        if (! $wantedChanges && ($one = (int) ($old['second_color'] ?? $request->query('second')))) {
-            $wantedChanges = [$one];
-        }
-        $bodyHex = $file ? (($file->tool_params['part_colors']['body']['hex'] ?? null) ?: ($file->codeColors()[0] ?? null)) : null;
+        $wantedColor = (int) ($wish['color'] ?? 0);
+        $wantedChanges = array_values(array_map('intval', (array) ($wish['changes'] ?? [])));
+        $partWanted = array_map('intval', (array) ($wish['parts'] ?? []));
+        $said = $wantedColor || $wantedChanges || $partWanted || ($wish['by_parts'] ?? null) !== null;
+        // the colour asked for when it is still loaded; else none yet (below: a design that names its colours): the
+        // order starts on the cheapest kind loaded, or the calculation's, and the order page offers that machine's colours first
+        $preselect = collect($colors)->firstWhere('id', $wantedColor)['id'] ?? null;
+        $bodyHex = ($file->tool_params['part_colors']['body']['hex'] ?? null) ?: ($file->codeColors()[0] ?? null);
         // only a design that names its colours (a picture in filament colours, a QR code) has them ticked in advance;
-        // a plate with a raised text is fine in one colour and starts that way, as it always did
-        $named = $file && (! empty($file->tool_params['color_changes']) || $file->codeColors() !== null);
+        // a plate with a raised text is fine in one colour and starts that way, as it always did. A QR code reads only
+        // in two colours: the pair of spools nearest to the design is ticked (a light plate, a dark code)
+        $named = ! empty($file->tool_params['color_changes']) || $file->codeColors() !== null;
         if ($named && $changes && ! $wantedColor && ! $wantedChanges && ($near = self::nearestSet($colors, $bodyHex, array_column($changes, 'hex')))) {
             [$preselect, $wantedChanges] = $near;
         }
         // a change is ticked only when the machine of the first colour really holds the spool (or it is that very colour)
         $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
-        $changePreselect = array_map(fn ($i) => $machine->contains($wantedChanges[$i] ?? 0) ? (int) $wantedChanges[$i] : 0, array_keys($changes));
-        $secondPreselect = $changePreselect[0] ?? 0;
-        // by parts: what the customer had ticked ("print again", a refused order), else the spool of the machine nearest
-        // to the colour the design names for the part (the first colour itself counts); ticked on from the start when
-        // the design names different colours for its parts or is a picture of stacked plates
-        $partWanted = array_map('intval', (array) ($old['part_color'] ?? $request->query('part', [])));
+        $changePick = array_map(fn ($i) => ($want = (int) ($wantedChanges[$i] ?? 0)) && $machine->contains($want) ? $want : 0, array_keys($changes));
+        // by parts: ticked on from the start when the design names different colours for its parts or is a picture of stacked plates
         $partHex = array_map(fn ($part) => ($file->tool_params['part_colors'][$part]['hex'] ?? null) ?: null, array_combine($parts, $parts) ?: []);
-        $byParts = $old ? ! empty($old['by_parts']) : ($request->query('by_parts') !== null ? $request->boolean('by_parts') : (count($parts) >= 2 && ($file->kind() === ArtGenerator::KIND || count(array_unique(array_filter($partHex))) >= 2)));
-        // a design in one colour chosen freely on its page (a blue box): the spool nearest to that colour is ticked;
-        // designs that name several colours (changes, parts, a QR code) pick theirs below
-        $oneHex = $file && ! $named && ! $byParts && ! $changes ? ((string) ($bodyHex ?: (collect((array) ($file->tool_params['part_colors'] ?? []))->first()['hex'] ?? '')) ?: null) : null;
-        if ($oneHex && ! $wantedColor && ! $old && ($offeredNow = array_filter($colors, fn ($c) => $c['enough']))) {
+        $byParts = ($wish['by_parts'] ?? null) !== null ? (bool) $wish['by_parts'] : (count($parts) >= 2 && ($file->kind() === ArtGenerator::KIND || count(array_unique(array_filter($partHex))) >= 2));
+        // a design in one colour chosen freely on its page (a blue box): the spool nearest to that colour; designs that
+        // name several colours (changes, parts, a QR code) pick theirs above and below
+        $oneHex = ! $named && ! $byParts && ! $changes ? ((string) ($bodyHex ?: (collect((array) ($file->tool_params['part_colors'] ?? []))->first()['hex'] ?? '')) ?: null) : null;
+        if ($oneHex && ! $said && ($offeredNow = array_filter($colors, fn ($c) => $c['enough']))) {
             $preselect = collect($offeredNow)->sortBy(fn ($c) => self::hexDistance((string) $c['hex'], $oneHex))->first()['id'] ?? $preselect;
             $machine = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->pluck('id')->push($preselect);
         }
-        $partPreselect = [];
         if ($byParts && ! $wantedColor && ! $partWanted && count(array_filter($partHex)) >= 1 && ($near = self::nearestSet($colors, $partHex[$parts[0]] ?? null, array_values(array_map(fn ($h) => (string) ($h ?: ''), array_slice($partHex, 1)))))) {
             // nothing chosen yet: the first colour follows the first part (the box), the other parts take the spool of that
             // machine nearest to their own colour (the first colour itself counts: "the main colour")
@@ -149,57 +186,29 @@ class OrderController extends Controller
                 $partWanted[$part] = $partHex[$part] ? (int) ($picks[$i] ?? 0) : 0;
             }
         }
-        $spools = collect(collect($colors)->firstWhere('id', $preselect)['seconds'] ?? [])->push(['id' => $preselect, 'hex' => collect($colors)->firstWhere('id', $preselect)['hex'] ?? null]);
+        $partPick = [];
         foreach ($parts as $part) {
             $want = (int) ($partWanted[$part] ?? 0);
-            $partPreselect[$part] = $machine->contains($want) && $want !== $preselect ? $want : 0;
+            $partPick[$part] = $want && $machine->contains($want) && $want !== $preselect ? $want : 0;
         }
 
-        return view('farm.start', [
-            'file' => $file,
-            'card' => $card,
-            'inspiration' => $inspiration,
-            // no 3D preview of a designer's file that is not offered for download
-            'previewUrl' => $file && (! $card || $card->download_allowed || $request->user()->isAdmin() || $request->user()->id === $card->profile->user_id) ? route('api.files.stl', $file) : null,
-            'bed' => $this->orders->largestBed(),
-            'quality' => $quality,
-            'strength' => $strength,
-            'supports' => $supports,
-            'preselect' => $preselect,
-            'copies' => $copies,
-            'maxCopies' => PlateLayout::MAX_COPIES,
-            'scale' => $scale,
-            'maxScale' => (float) config('pricing.max_scale', 4),
-            'colors' => $colors,
-            'twoColor' => $twoColor,
-            'changes' => $changes,
-            'changePreselect' => $changePreselect,
-            'secondPreselect' => $secondPreselect,
-            'codeColor' => $changes[0]['hex'] ?? null,
-            'parts' => count($parts) >= 2 ? array_map(fn ($part) => ['name' => $part, 'label' => OrderService::partLabel($file, $part), 'hex' => $partHex[$part], 'preselect' => $partPreselect[$part]], $parts) : [],
-            'byParts' => $byParts,
-            'scaleNow' => $scale,
-            'settings' => $this->settings->all(),
-            'balance' => $this->wallet->balance($request->user()),
-            // null = no daily count (the admin, or the limit switched off in the settings)
-            'slicesLeft' => $this->settings->get('daily_slices_per_user') > 0 && ! $request->user()->isAdmin() ? max(0, (int) $this->settings->get('daily_slices_per_user') - $this->orders->slicesToday($request->user())) : null,
-        ]);
+        return ['color' => $preselect, 'changes' => $changePick, 'by_parts' => $byParts && count($parts) >= 2, 'parts' => $partPick];
     }
 
-    /**
-     * The first colour (its machine) and a spool of that machine for every change, together nearest to the colours the
-     * design was made in. A spool may serve several changes; the first colour itself may be one of them (A, B, A).
-     *
-     * @param  list<array<string, mixed>>  $colors  the offer of the start page, every colour with its `seconds`
-     * @param  list<string>  $wanted  hex of every change, bottom to top
-     * @return array{0: int, 1: list<int>}|null the first colour and a colour per change; null when nothing is loaded
-     */
     /** How far two colours are apart, the way the calculation measures it too (Palette::distance, CIE76 in Lab). */
     private static function hexDistance(string $a, string $b): float
     {
         return Palette::distance($a, $b);
     }
 
+    /**
+     * The first colour (its machine) and a spool of that machine for every change, together nearest to the colours the
+     * design was made in. A spool may serve several changes; the first colour itself may be one of them (A, B, A).
+     *
+     * @param  list<array<string, mixed>>  $colors  the colours on offer (preselect), every colour with its `seconds`
+     * @param  list<string>  $wanted  hex of every change, bottom to top
+     * @return array{0: int, 1: list<int>}|null the first colour and a colour per change; null when nothing is loaded
+     */
     private static function nearestSet(array $colors, ?string $bodyHex, array $wanted): ?array
     {
         $far = fn (?string $a, string $b) => Palette::distance($a, $b);
@@ -232,7 +241,7 @@ class OrderController extends Controller
         return $best ? [$best[1], $best[2]] : null;
     }
 
-    /** "Print again": the start page with this order's model and settings; the colour is offered again when it is still loaded. */
+    /** "Print again": the start page with this order's model, settings and colours; a colour no longer loaded is replaced on the order page. */
     public function repeat(Request $request, FarmOrder $order): RedirectResponse
     {
         $this->authorizeOrder($request, $order);
@@ -264,10 +273,16 @@ class OrderController extends Controller
         ]);
     }
 
+    /**
+     * A new order, sliced at once. From the calculator ("Print with us": `calc`, the calculation's settings and kind
+     * of plastic), from the start page (`file`, or a designer's card), with the colours asked for or preselected
+     * (preselect); the customer then picks material, settings and colours once, on the order page.
+     */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
-            'file' => ['required', 'uuid'],
+            'calc' => ['nullable', 'string', 'max:64'],
+            'file' => ['required_without_all:calc,designer_model', 'nullable', 'uuid'],
             'quality' => ['nullable', 'string', 'max:12'],
             'strength' => ['nullable', 'string', 'max:12'],
             'unit' => ['nullable', 'in:'.implode(',', array_keys(ModelValidator::UNITS))],
@@ -285,18 +300,32 @@ class OrderController extends Controller
             'catalog_model' => ['nullable', 'integer'],
         ]);
         $card = isset($data['designer_model']) ? DesignerModel::with('profile')->find((int) $data['designer_model']) : null;
+        $calc = isset($data['calc']) && ! $card ? Calculation::with('modelFile')->where('token', $data['calc'])->first() : null;
         if (isset($data['designer_model'])) {
             // the card's own file, whatever uuid the form carries; a card that is no longer printable cannot be ordered
             abort_unless($card && $card->isPrintable(), 404);
             $file = $card->modelFile;
         } else {
-            $file = ModelFile::where('uuid', $data['file'])->firstOrFail();
+            // the calculation's own model, whatever uuid the form carries
+            abort_if(isset($data['calc']) && ! $calc?->modelFile, 404);
+            $file = $calc?->modelFile ?? ModelFile::where('uuid', (string) $data['file'])->firstOrFail();
             $this->claim($request, $file);
         }
         $inspiration = isset($data['catalog_model']) && ! $card ? CatalogModel::shown()->find((int) $data['catalog_model']) : null;
+        // what the calculation was made with, unless the form names it
+        $from = $calc ? $this->fromCalculation($calc) : [];
+        $quality = (string) ($data['quality'] ?? $from['quality'] ?? 'standard');
+        $pick = $this->preselect($file, $quality, $from['material'] ?? null, [
+            'color' => $data['color'] ?? null,
+            'changes' => $data['change_color'] ?? (isset($data['second_color']) ? [$data['second_color']] : null),
+            'by_parts' => $request->has('by_parts') ? $request->boolean('by_parts') : null,
+            'parts' => $data['part_color'] ?? null,
+        ]);
 
         try {
-            $order = $this->orders->create($request->user(), $file, $data['quality'] ?? 'standard', $data['strength'] ?? 'standard', $data['unit'] ?? null, (int) ($data['copies'] ?? 1), (float) ($data['scale'] ?? 1), isset($data['color']) ? (int) $data['color'] : null, $data['supports'] ?? 'auto', isset($data['second_color']) ? (int) $data['second_color'] : null, $card, $inspiration, isset($data['change_color']) ? array_map('intval', array_values($data['change_color'])) : null, $request->boolean('by_parts') ? array_map('intval', (array) ($data['part_color'] ?? [])) : null);
+            $order = $this->orders->create($request->user(), $file, $quality, (string) ($data['strength'] ?? $from['strength'] ?? 'standard'), $data['unit'] ?? null,
+                (int) ($data['copies'] ?? $from['copies'] ?? 1), (float) ($data['scale'] ?? $from['scale'] ?? 1), $pick['color'], (string) ($data['supports'] ?? $from['supports'] ?? 'auto'), null, $card, $inspiration,
+                $pick['changes'] ?: null, $pick['by_parts'] ? $pick['parts'] : null, $from['material'] ?? null);
             Track::event('order_created', $card ?? $order->modelFile, array_filter(['order' => $order->id, 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null]));
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
@@ -376,10 +405,12 @@ class OrderController extends Controller
             'settings.top' => ['nullable', 'integer', 'min:0', 'max:10'],
             'settings.bottom' => ['nullable', 'integer', 'min:0', 'max:10'],
             'settings.ironing' => ['nullable', 'in:'.implode(',', PrintSettings::CHOICES['ironing'])],
+            'by_parts' => ['nullable', 'boolean'],
         ]);
         try {
             $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null, $data['supports'] ?? null, isset($data['slot']) ? (int) $data['slot'] : null,
-                $request->exists('settings') ? (array) $request->input('settings', []) : null);   // [] = back to the presets, absent = leave as they are
+                $request->exists('settings') ? (array) $request->input('settings', []) : null,   // [] = back to the presets, absent = leave as they are
+                $request->has('by_parts') && $data['by_parts'] !== null ? (bool) $data['by_parts'] : null);
         } catch (FarmRefusal $e) {
             return response()->json(['error' => $e->reason, 'message' => $e->text()], 422);
         }
@@ -630,7 +661,7 @@ class OrderController extends Controller
     /** Everything the order page needs, in one JSON object. */
     private function describe(FarmOrder $order, Request $request): array
     {
-        $order->loadMissing(['color', 'printer', 'material', 'modelFile']);
+        $order->loadMissing(['color', 'printer', 'material', 'modelFile', 'slot.printer']);
         $currency = $this->currencyFor($order, $request);
         $this->orders->alignCurrency($order, $currency);
         $job = $order->latestJob();
@@ -638,12 +669,14 @@ class OrderController extends Controller
         $colors = $order->status === FarmOrder::STATUS_SLICED
             ? $this->orders->availableColors($order)->map(fn ($r) => [
                 'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'finish' => $r['color']->material->finish, 'photo' => $r['color']->photoUrl(),
+                // the spools of this colour that could print the order, this entry's own first ("U33"): farm, printer, slot
+                'code' => $r['codes'][0] ?? null, 'codes' => $r['codes'],
                 'enough' => $r['enough'], 'price' => $price = $this->orders->priceFor($order, $r['printer'], Shipping::PICKUP, $r['color']->material, null, $currency), 'total' => $price['total'],
                 'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
                 // a plate with a raised text: the colours the text can have next to this colour of the plate – from every
                 // machine that holds this colour (the order goes where both spools are, machineFor)
                 'second' => ($order->wantedChanges() || $order->isByParts() ? $this->orders->secondSpoolsAcross($r['slot'], $order) : collect())
-                    ->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'main' => $s->main_slot_id])->all(),
+                    ->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'main' => $s->main_slot_id, 'code' => $s->code()])->values()->all(),
                 // the time, the weight and the price on the page were computed for this colour's machine and kind
                 'sliced' => $r['printer']->id === $order->farm_printer_id && $r['color']->material->id === $order->farm_material_id
                     && ($order->farm_color_id === null || $order->farm_color_id === $r['color']->id),
@@ -652,24 +685,26 @@ class OrderController extends Controller
 
         // every change of the design: where, the colour it was designed in, and the spool chosen for it so far
         $stored = $order->colorSlots();
-        $spools = $stored ? FarmPrinterSlot::with('color')->whereIn('id', array_column($stored, 'slot_id'))->get()->keyBy('id') : collect();
+        $spools = $stored ? FarmPrinterSlot::with(['color', 'printer'])->whereIn('id', array_column($stored, 'slot_id'))->get()->keyBy('id') : collect();
         $changes = array_map(function (array $c) use ($stored, $spools): array {
             foreach ($stored as $s) {
                 if (abs($s['z'] - $c['z']) < 0.005) {
-                    return $c + ['slot_id' => $s['slot_id'], 'name' => $spools->get($s['slot_id'])?->color?->displayName()];
+                    $spool = $spools->get($s['slot_id']);
+
+                    return $c + ['slot_id' => $s['slot_id'], 'name' => $spool?->color?->displayName(), 'slot_code' => $spool?->code()];
                 }
             }
 
-            return $c + ['slot_id' => null, 'name' => null];
+            return $c + ['slot_id' => null, 'name' => null, 'slot_code' => null];
         }, $order->wantedChanges());
 
         // an order printed by parts: every part, the colour the design names for it, and the spool chosen so far
         $partPlates = $order->partPlates();
-        $partSpools = $partPlates ? FarmPrinterSlot::with('color')->whereIn('id', array_filter(array_column($partPlates, 'slot_id')))->get()->keyBy('id') : collect();
+        $partSpools = $partPlates ? FarmPrinterSlot::with(['color', 'printer'])->whereIn('id', array_filter(array_column($partPlates, 'slot_id')))->get()->keyBy('id') : collect();
         $parts = array_map(fn ($p, $i) => [
             'part' => $p['part'], 'plate' => $i + 1, 'label' => OrderService::partLabel($order->modelFile, (string) $p['part']),
             'hex' => ($order->modelFile?->tool_params['part_colors'][$p['part']]['hex'] ?? null) ?: null,
-            'slot_id' => ($p['slot_id'] ?? null) ?: null, 'name' => $partSpools->get($p['slot_id'] ?? 0)?->color?->displayName(),
+            'slot_id' => ($p['slot_id'] ?? null) ?: null, 'name' => $partSpools->get($p['slot_id'] ?? 0)?->color?->displayName(), 'slot_code' => $partSpools->get($p['slot_id'] ?? 0)?->code(),
             'copies' => (int) ($p['copies'] ?? $order->copies), 'minutes' => $p['minutes'] ?? null, 'grams' => $p['grams'] ?? null,
         ], $partPlates, array_keys($partPlates));
 
@@ -679,6 +714,8 @@ class OrderController extends Controller
             'changes' => $parts ? [] : $changes,
             'by_parts' => $order->isByParts(),
             'parts' => $parts,
+            // how many separately printed parts the design has: two or more, and the order page offers "print them apart"
+            'part_count' => $order->status === FarmOrder::STATUS_SLICED && $order->modelFile ? count(OrderService::designParts($order->modelFile)) : 0,
             'max_colors' => FarmOrder::MAX_COLORS,
             'status' => $order->status,
             'status_text' => $order->statusText(),
@@ -726,7 +763,9 @@ class OrderController extends Controller
             'colors' => $colors,
             // the last card payment made for this order from this page: the page waits for the bank, or says the money stayed as credit
             'card' => ($card = Payment::where('farm_order_id', $order->id)->where('purpose', Payment::PURPOSE_ORDER)->latest('id')->first()) ? ['status' => $card->status, 'result' => $card->context['result'] ?? null] : null,
-            'color' => $order->color ? ['name' => $order->color->material->label().' '.$order->color->displayName(), 'hex' => $order->color->hex, 'finish' => $order->color->material->finish] : null,
+            'color' => $order->color ? ['name' => $order->color->material->label().' '.$order->color->displayName(), 'hex' => $order->color->hex, 'finish' => $order->color->material->finish, 'code' => $order->slot?->code()] : null,
+            // every spool of the order as chosen so far, with its code: the summary over the payment, the line under the number
+            'spools' => $order->spoolLines(),
             'delivery' => $order->delivery,
             'balance' => $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user)->amount,
             'model_url' => ($order->print_stl_path || $order->modelFile?->stl_path) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,

@@ -203,9 +203,13 @@ class FarmPrinter extends Model
 
     protected static function booted(): void
     {
-        // every machine has a code from the start; the admin may change it on the printer's page
+        // every machine has a code of its own from the start (a copy of another machine gets a new one); the admin may
+        // change it on the printer's page
         static::creating(function (FarmPrinter $printer): void {
-            $printer->code ??= self::suggestCode((string) $printer->name, self::whereNotNull('code')->pluck('code')->all());
+            $taken = self::whereNotNull('code')->pluck('code')->all();
+            if (! $printer->code || in_array($printer->code, $taken, true)) {
+                $printer->code = self::suggestCode((string) $printer->name, $taken);
+            }
         });
     }
 

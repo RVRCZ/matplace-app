@@ -14,6 +14,7 @@ use App\Support\PreviewMeta;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\StartsOrders;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,7 @@ use Tests\TestCase;
 class CustomColorTest extends TestCase
 {
     use RefreshDatabase;
+    use StartsOrders;
 
     /** A small catalogue: white, black, blue and red PLA+ in stock, a green one out of stock. */
     private function spools(): void
@@ -328,19 +330,17 @@ class CustomColorTest extends TestCase
         foreach ([$red, $green, $blue] as $i => $color) {
             $free[$i]->update(['farm_color_id' => $color->id, 'remaining_g' => 800, 'enabled' => true]);
         }
-        $ticked = fn (string $html, string $name) => preg_match('/name="'.preg_quote($name, '/').'" value="(\d*)"[^>]*\schecked/', $html, $m) ? (int) $m[1] : null;
-
-        // a QR sign whose code was given a free red: the white plate and the red spool of that machine
+        // a QR sign whose code was given a free red: the order starts on the white plate and the red spool of that machine
         $qr = $this->actingAs($user)->postJson('/api/tools/param', ['kind' => 'qr', 'params' => ['url' => 'https://matplace.com', 'plate_color' => '#fafaf5', 'code_color' => '#d01f1f']])->assertCreated()->json('file.uuid');
-        $html = $this->actingAs($user)->get('/farm?file='.$qr)->assertOk()->getContent();
-        $this->assertSame([$white->id, $red->id], [$ticked($html, 'color'), $ticked($html, 'change_color[0]')]);
-        $this->assertStringContainsString('data-want="#d01f1f"', $html);
+        $order = $this->startOrder($user, 'file='.$qr);
+        $this->assertSame([$white->id, $red->id], [self::picked($order, 'color'), self::picked($order, 'change_color[0]')]);
+        $this->assertSame('#d01f1f', strtolower($this->actingAs($user)->getJson("/farm/orders/{$order->token}/status")->json('changes.0.hex')));
 
         // a box whose body and lid were given free colours on the tool's page: by parts, each from the nearest spool
         $box = $this->actingAs($user)->postJson('/api/tools/param', ['kind' => 'box', 'params' => ['lid' => 1, 'inner_w' => 30, 'inner_d' => 20, 'inner_h' => 12, 'part_colors' => ['body' => '#30a040', 'lid' => '#2050b0']]])->assertCreated();
         $this->assertSame(['body' => ['code' => '#30a040', 'hex' => '#30a040'], 'lid' => ['code' => '#2050b0', 'hex' => '#2050b0']], $box->json('file.tool.params.part_colors'));
-        $html = $this->actingAs($user)->get('/farm?file='.$box->json('file.uuid'))->assertOk()->getContent();
-        $this->assertMatchesRegularExpression('/id="farm-by-parts"[^>]*\schecked/', $html);
-        $this->assertSame([$green->id, $blue->id], [$ticked($html, 'color'), $ticked($html, 'part_color[lid]')]);
+        $order = $this->startOrder($user, 'file='.$box->json('file.uuid'));
+        $this->assertTrue($order->isByParts());
+        $this->assertSame([$green->id, $blue->id], [self::picked($order, 'color'), self::picked($order, 'part_color[lid]')]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Farm\OrderService;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -177,6 +178,54 @@ class FarmOrder extends Model
         $z = $file && $file->builtForPrinting() ? ($file->tool_params['color_change_mm'] ?? null) : null;
 
         return $z ? round((float) $z * (float) ($this->unit_scale ?: 1) * (float) ($this->scale ?: 1), 3) : null;
+    }
+
+    /**
+     * The spools of the order as people read them: the first colour, then the spool of every change of the design or
+     * of every part printed separately, each with its code ("U33" = farm U, printer 3, slot 3) so the operator finds
+     * machine and spool and the customer sees what was chosen. A change or part on the first colour is left out.
+     *
+     * @return list<array{role: string, n: ?int, part: ?string, name: string, kind: string, hex: ?string, code: ?string}>
+     */
+    public function spoolLines(): array
+    {
+        $ids = array_filter(array_merge([(int) $this->farm_printer_slot_id], array_column($this->colorSlots(), 'slot_id'), array_map('intval', array_column($this->partPlates(), 'slot_id'))));
+        $slots = $ids ? FarmPrinterSlot::with(['color.material', 'printer'])->whereIn('id', $ids)->get()->keyBy('id') : collect();
+        $line = function (?FarmPrinterSlot $slot, ?FarmColor $color, string $role, ?int $n = null, ?string $part = null): array {
+            $color ??= $slot?->color;
+
+            return ['role' => $role, 'n' => $n, 'part' => $part, 'name' => (string) $color?->displayName(), 'kind' => (string) $color?->material?->label(), 'hex' => $color?->hex, 'code' => $slot?->code()];
+        };
+        if (! $this->color && ! $slots->get((int) $this->farm_printer_slot_id)) {
+            return [];
+        }
+        $out = [$line($slots->get((int) $this->farm_printer_slot_id), $this->color, 'main')];
+        // one change (a plate with a text) is "the second colour", several are numbered from the bottom
+        $one = count($this->colorSlots()) === 1;
+        foreach ($this->colorSlots() as $i => $c) {
+            if ((int) $c['slot_id'] !== (int) $this->farm_printer_slot_id && ($slot = $slots->get($c['slot_id']))) {
+                $out[] = $line($slot, null, $one ? 'second' : 'change', $i + 2);
+            }
+        }
+        foreach ($this->partPlates() as $p) {
+            $slot = $slots->get((int) ($p['slot_id'] ?? 0));
+            if ($slot && (int) $slot->id !== (int) $this->farm_printer_slot_id) {
+                $out[] = $line($slot, null, 'part', null, OrderService::partLabel($this->modelFile, (string) $p['part']));
+            }
+        }
+
+        return $out;
+    }
+
+    /** The spools in one line, for a mail or the operator: "PLA+ modrá (U33), barva 2: bílá (U31)". */
+    public function spoolText(): string
+    {
+        return implode(', ', array_map(fn (array $l) => match ($l['role']) {
+            'second' => __('farm.order.second_line', ['name' => $l['name']]),
+            'change' => __('farm.order.change_line', ['n' => $l['n'], 'name' => $l['name']]),
+            'part' => __('farm.order.part_line', ['part' => $l['part'], 'name' => $l['name']]),
+            default => trim($l['kind'].' '.$l['name']),
+        }.($l['code'] ? ' ('.$l['code'].')' : ''), $this->spoolLines()));
     }
 
     /** The most spools one print may use, the first one counted: one ACE holds four. */
