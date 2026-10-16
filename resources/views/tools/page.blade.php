@@ -1,12 +1,12 @@
 {{--
     The one page every tool lives on: a 340 px panel of numbered sections on the left (all visible, the current one
     is marked as the page scrolls), the viewer over the full height on the right with its views, x-ray, spread view,
-    print bed and status line, and under it the price with the two ways on: print it with us / download.
+    print bed and status line, and under it the two ways on: continue to the calculation / download.
 
     A tool's own view extends this one and fills:
       @section('panel')        its sections, each <x-tool-section id="input" …> (resources/views/components/tool-section.blade.php)
-      @section('stage')        optional extra blocks under the price (reports, a second viewer)
-      @section('price-note')   optional text under the price (every tool has the same one today: what the estimate is, what the next step shows)
+      @section('stage')        optional extra blocks under the buttons (reports, a second viewer)
+      @section('price-note')   optional text under the buttons (every tool has the same one today: what the next step shows)
     and passes: tool (key in config/tools.php), module (which script drives the page: resources/js/calc/tool_page.ts),
     lead (one sentence), sections (id => label, in order: the tool's own steps; the last one, "print" = the material and
     the number of pieces, is added here for every tool), available + unavailable (the tool's engine is missing).
@@ -68,7 +68,7 @@
             <button type="button" id="tool-restore" class="chip mb-2 hidden items-center gap-1.5 !py-1 text-xs"><x-icon name="rotate-ccw" class="h-3.5 w-3.5" />{{ __('toolpage.restore') }}</button>
             @yield('panel')
             @if($materials)
-                {{-- the material and how many: the rough price counts with both, and the calculator opens with them (Stage.material, Stage.quantity) --}}
+                {{-- the material and how many: the calculator opens with them (Stage.material, Stage.quantity) --}}
                 <x-tool-section id="print" :title="$sections['print']" class="!mt-3">
                     {{-- the material over the whole width of the panel: beside the number of pieces its name was cut off ("Běžný plast (PL") --}}
                     <div class="grid gap-3">
@@ -86,7 +86,7 @@
         @endunless
     </div>
 
-    {{-- ── the stage: viewer, status, price ── --}}
+    {{-- ── the stage: viewer, status, the ways on ── --}}
     <div id="tool-stage" class="order-1 flex min-w-0 flex-col gap-3 lg:sticky lg:top-3 lg:order-2 lg:h-[calc(100vh-1.5rem)] lg:min-h-[560px]">
         <div class="card relative flex min-h-0 flex-1 flex-col overflow-hidden">
             <div class="relative min-h-0 flex-1">
@@ -121,21 +121,16 @@
 
         <div id="tool-error" class="note-error hidden text-sm" role="alert"></div>
 
-        {{-- the price and the two ways on --}}
-        <div id="tool-price-card" class="card flex flex-wrap items-center gap-x-6 gap-y-3 p-4">
-            <div class="min-w-[11rem] flex-1">
-                <div class="text-xs font-medium uppercase tracking-wide text-muted">{{ __('param.estimate.title') }}</div>
-                <div id="tool-price" class="num text-2xl font-semibold text-ink" aria-live="polite">—</div>
-                <div id="tool-price-sub" class="num text-sm text-muted"></div>
-            </div>
+        {{-- the two ways on; the price shows first in the calculation (no estimate here: Roman, 16 Oct 2026) --}}
+        <div id="tool-go-card" class="card flex flex-wrap items-center justify-end gap-x-6 gap-y-3 p-4">
             <div class="flex flex-wrap items-center gap-2">
                 <div class="relative">
                     <button type="button" id="tool-download" class="btn-secondary gap-1.5" aria-haspopup="menu" aria-expanded="false" aria-controls="tool-download-menu" disabled><x-icon name="download" class="h-4 w-4" />{{ __('toolpage.download') }}<x-icon name="chevron-down" class="h-4 w-4" /></button>
                     <div id="tool-download-menu" role="menu" class="absolute bottom-full right-0 z-20 mb-2 hidden w-72 rounded-xl border border-line bg-card p-1 text-sm shadow-sm"></div>
                 </div>
-                <button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><x-icon name="{{ $next === 'download' ? 'arrow-right' : 'printer' }}" class="h-4 w-4" /><span id="tool-go-label">{{ \App\Support\NextStep::text('param.go') }}</span></button>
+                <button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ __('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button>
             </div>
-            <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.estimate.note') }} {{ \App\Support\NextStep::text('param.go.hint') }}@endif</p>
+            <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.go.hint') }}@endif</p>
         </div>
         @yield('stage')
     </div>

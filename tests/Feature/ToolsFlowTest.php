@@ -70,23 +70,23 @@ class ToolsFlowTest extends TestCase
         $page = $this->get('/tools')->assertOk();
         $page->assertSee(__('tools.create.lead.download'))->assertDontSee('#spare', false)->assertDontSee(__('tools.intent.spare'));
         $page->assertSee(__('footer.promise.download'))->assertDontSee(__('footer.promise'));
-        $this->get('/tools/organizer')->assertOk()->assertSee(__('param.step.inquiry.download'))->assertSee(__('param.go.download'))->assertDontSee(__('param.go.hint'));
-        $this->get('/tools/check')->assertOk()->assertSee(__('param.go.download'));
+        $this->get('/tools/organizer')->assertOk()->assertSee(__('param.step.inquiry.download'))->assertSee(__('param.go'))->assertDontSee(__('param.go.hint'));
+        $this->get('/tools/check')->assertOk()->assertSee(__('param.go'));
         $this->assertSame(__('check.disclaimer.download'), NextStep::text('check.disclaimer'));      // goes to the browser through the JSON dictionary
-        $this->get('/tools/mold')->assertOk()->assertSee(__('param.go.download'));
+        $this->get('/tools/mold')->assertOk()->assertSee(__('param.go'));
         $this->get('/tools/vase')->assertOk()->assertSee(__('param.vase.tip.download'))->assertDontSee(__('param.vase.tip'));
         $this->get('/tools/relief')->assertOk()->assertSee(__('param.step.inquiry.download'));
         $this->get('/tools/figure')->assertOk()->assertSee(__('param.step.inquiry.download'));
 
         config(['farm.public' => true]);
         $this->assertSame(NextStep::FARM, NextStep::mode());
-        $this->get('/tools/organizer')->assertOk()->assertSee(__('param.go.farm'))->assertSee(__('param.step.inquiry.farm'));
-        $this->get('/tools/check')->assertOk()->assertSee(__('param.go.farm'));
+        $this->get('/tools/organizer')->assertOk()->assertSee(__('param.go'))->assertSee(__('param.step.inquiry.farm'));
+        $this->get('/tools/check')->assertOk()->assertSee(__('param.go'));
         $this->assertSame(__('calc.tip.modular.farm'), NextStep::text('calc.tip.modular'));
         $this->assertSame(__('calc.tip.mold'), NextStep::text('calc.tip.mold'));                     // no variant: the marketplace wording is fine for everyone
 
         foreach (['farm', 'download'] as $mode) {
-            foreach (['param.step.inquiry', 'param.go', 'param.go.hint', 'tools.create.lead', 'footer.promise', 'calc.tip.lightbox', 'calc.tip.modular', 'calc.tip.vase', 'check.disclaimer', 'calc.warn.not_watertight'] as $key) {
+            foreach (['param.step.inquiry', 'param.go.hint', 'tools.create.lead', 'footer.promise', 'calc.tip.lightbox', 'calc.tip.modular', 'calc.tip.vase', 'check.disclaimer', 'calc.warn.not_watertight'] as $key) {
                 foreach (['cs', 'en', 'es'] as $lang) {
                     app()->setLocale($lang);
                     $this->assertNotSame("{$key}.{$mode}", __("{$key}.{$mode}"), "{$key}.{$mode} missing in {$lang}");

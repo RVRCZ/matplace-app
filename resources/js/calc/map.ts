@@ -197,7 +197,6 @@ export function bootMap(stage: Stage): void {
         const n = file.map ?? {};
         if (file.stl_url) stage.show(await loadGeometryFromUrl(file.stl_url), { kind: 'map', regions: n.regions ?? null });
         stage.status({ bbox: file.bbox, pieces: 1, colors: (n.parts ?? []).length });
-        if (stage.cfg.price && file.volume_mm3) stage.price(stage.cfg.price, { volume_mm3: file.volume_mm3, area_mm2: file.area_mm2 }, {});
         stage.fileDownloads(file, (p) => t(`map.part.${p}`));
         stage.go({ href: `${cfg.home}?open=${file.uuid}`, disabled: false, label: t('param.go') });     // the page's own word for the next step (the calculator, or the farm)
         const facts = $('map-facts');

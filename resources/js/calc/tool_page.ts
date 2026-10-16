@@ -1,14 +1,13 @@
 /**
  * The one page every tool lives on (resources/views/tools/page.blade.php). What all tools share is here: the viewer
- * with its views, x-ray, spread view, print bed and picking; the status line; the price card with the main action
- * and the download menu; warnings shown in the section they belong to; the marked step as the panel scrolls;
+ * with its views, x-ray, spread view, print bed and picking; the status line; the main action and the download menu;
+ * warnings shown in the section they belong to; the marked step as the panel scrolls;
  * undo / redo and the settings kept in this browser. What differs is the input of each tool: a text, a file,
  * a photo. That part is a module (param.ts, relief.ts, mold.ts, repair.ts, check.ts, figure.ts) handed this Stage.
  */
 import { BufferGeometry } from 'three';
 import { Viewer, Region, FacePaint, Piece, ViewName } from './viewer';
-import { price as priceText } from '../site/money';
-import { estimate, price, range, RoughConfig, Profile } from './rough';
+import type { RoughConfig, Profile } from './rough';
 import { initPalette, PalettePayload } from './colors';
 import { initArtwork } from './artwork';
 import { bootParam } from './param';
@@ -49,7 +48,6 @@ export class Stage {
     private goAction: (() => void | Promise<void>) | null = null;
     private goHref: string | null = null;
     private history: { stack: string[]; at: number; io: TrackIo } | null = null;
-    private priced: { c: PriceConfig; g: { volume_mm3: number; area_mm2: number | null } | null; o: PriceOptions } | null = null;
 
     constructor(readonly cfg: ToolCfg, canvas: HTMLCanvasElement) {
         this.nf = new Intl.NumberFormat(cfg.locale, { maximumFractionDigits: 1 });
@@ -61,9 +59,6 @@ export class Stage {
         this.menu();
         this.spy();
         this.el('tool-go').addEventListener('click', () => { if (this.goHref) location.href = this.ordered(this.goHref); else void this.goAction?.(); });
-        // the last step of every tool, the material and the number of pieces: the rough price follows them at once
-        document.getElementById('param-material')?.addEventListener('change', () => this.reprice());
-        document.getElementById('param-qty')?.addEventListener('input', () => this.reprice());
         // a row with a colour swatch (class tool-swatch-row): the whole row opens the colour window, not the small circle
         // alone – people click the words "pick a colour". The row's other buttons (move, join) keep their own work.
         document.addEventListener('click', (e) => {
@@ -171,7 +166,7 @@ export class Stage {
         el.insertAdjacentHTML('beforeend', `<span data-note class="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-xs">${esc(text)}</span>`);
     }
 
-    // ── the price ───────────────────────────────────────────────────────────────────────────────────
+    // ── what the calculator opens with ──────────────────────────────────────────────────────────────
 
     /** The material picked in the last step of the page (the default one on a page without that step). */
     material(): string {
@@ -198,26 +193,10 @@ export class Stage {
     }
 
     /**
-     * The rough estimate, the same way the calculator counts it before the slicer has spoken: for the material and the
-     * number of pieces of the page's last step unless the tool names its own. Counted again when either changes.
+     * Was the rough price of the model. The tool pages show no estimate any more (Roman, 16 Oct 2026: the price shows
+     * first in the calculation); kept as a no-op for the modules that still call it (param.ts).
      */
-    price(c: PriceConfig, g: { volume_mm3: number; area_mm2: number | null } | null, o: PriceOptions = {}): void {
-        this.priced = { c, g, o };
-        const out = this.el('tool-price'); const sub = this.el('tool-price-sub');
-        if (!g || !(g.volume_mm3 > 0)) { out.textContent = '—'; sub.textContent = ''; return; }
-        const code = o.material ?? this.material();
-        const qty = Math.max(1, Math.min(1000, o.quantity ?? this.quantity()));
-        const density = c.materials.find((m) => m.code === code)?.density ?? 1.24;
-        const est = estimate(c.rough, density, { volume_mm3: g.volume_mm3, area_mm2: g.area_mm2 as number }, { material: code, quality: 'standard', infill: o.infill ?? 15, supports: o.supports ?? false, scale: 1, quantity: qty, vase: o.vase });
-        const totals = c.orientation_profiles.map((p) => price(c.round_to, p, est.grams, est.minutes, qty).total);
-        const [lo, hi] = range(c.rough, c.round_to, totals, true);
-        out.textContent = hi > 0 ? `≈ ${priceText(lo)} – ${priceText(hi)}` : '—';
-        const h = Math.floor((est.minutes * qty) / 60); const min = Math.round((est.minutes * qty) % 60);
-        const time = h ? `${h} h ${min} min` : `${min} min`;
-        sub.textContent = o.subText ? o.subText(est.grams * qty, time, qty) : `≈ ${this.nf.format(est.grams * qty)} g · ≈ ${time}`;
-    }
-
-    private reprice(): void { if (this.priced) this.price(this.priced.c, this.priced.g, this.priced.o); }
+    price(_c: PriceConfig, _g: { volume_mm3: number; area_mm2: number | null } | null, _o: PriceOptions = {}): void { /* no estimate on the tool page */ }
 
     /** The main action: one orange button on the page. A link (a finished model) or a function (save the design first). */
     go(o: { label?: string; href?: string | null; run?: (() => void | Promise<void>) | null; disabled?: boolean }): void {
@@ -299,16 +278,13 @@ export class Stage {
     }
 
     /**
-     * A finished model on the stage: in the viewer, its size and parts in the status line, the rough price, the
-     * downloads, and the main action leading to the exact price (the calculator opens the very same file, with the
+     * A finished model on the stage: in the viewer, its size and parts in the status line, the downloads, and the
+     * main action leading to the exact price (the calculator opens the very same file, with the
      * material and the number of pieces picked here: `ordered` adds them when the button or a project is clicked).
      */
-    async fileResult(file: FileInfo, o: Shown & { goLabel?: string; partLabel?: (part: string) => string; noPrice?: boolean } = {}): Promise<void> {
+    async fileResult(file: FileInfo, o: Shown & { goLabel?: string; partLabel?: (part: string) => string } = {}): Promise<void> {
         if (file.stl_url) this.show(await loadGeometryFromUrl(file.stl_url), { kind: o.kind ?? file.kind ?? null, faces: o.faces ?? null, regions: o.regions ?? null });
         this.status({ bbox: file.bbox, pieces: (file.parts ?? []).length || 1 });
-        if (this.cfg.price && !o.noPrice && file.volume_mm3) {
-            this.price(this.cfg.price, { volume_mm3: file.volume_mm3, area_mm2: file.area_mm2 }, { infill: file.hints?.infill, supports: file.hints?.supports, vase: file.hints?.vase });
-        }
         this.fileDownloads(file, o.partLabel);
         this.go({ href: `${this.cfg.home}?open=${file.uuid}`, disabled: false, ...(o.goLabel ? { label: o.goLabel } : {}) });
     }
