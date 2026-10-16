@@ -410,3 +410,48 @@ php artisan matplace:generator-trial clovek.jpg pes.jpg dite.jpg --engines=tripo
 
 a šest STL ze složky výsledků vytiskne vedle sebe. Stačí i jen `--engines=meshy` s jednou fotkou na první ověření,
 že adaptér se službou vůbec mluví (25 kreditů).
+
+## 12. Částicová animace loga při generování (větev `feature/logo-particles`, 16. 10. 2026)
+
+Zadání `docs/prompts/animace-loga.md` (Romanovy odpovědi: celé logo, i u busty a reliéfu, body z `logo.png`).
+
+**Co je ve větvi**
+
+- `resources/js/calc/particles_points.ts`: body loga z jeho pixelů – mřížka jako plástev (každá druhá řada posunutá
+  o půl buňky), v každé buňce s neprůhledným středem jedna tečka v barvě pixelu; oranžové vlákno dostane v každé
+  buňce tečku navíc. Bez DOM, otestované v Node (`node scripts/test_particles.mjs`, 15 kontrol na malém obrázku i na
+  skutečném `logo.png`, vzorkování 3 000 bodů trvá ~16 ms).
+- `resources/js/calc/particles.ts`: jedna komponenta, 2D canvas přes plochu prohlížeče. Kolo trvá 7 s: tečky
+  přiletí a víří kolem středu, mezi 1,6 a 3,9 s se usadí do loga (každá trochu jindy, logo roste zdola), drží s
+  lehkým dechem ±1 px, po vláknu z trysky do písma běží světlejší vlna a od 5,6 s se tečky rozletí zpátky do víru.
+  Tečky se kreslí z předkreslených spritů (jeden na barvu, s jemným stínem). Animace má vlastní hodiny, takže se
+  skrytou kartou stojí a po návratu pokračuje, kde přestala. Při `prefers-reduced-motion` se ukáže nehybné logo.
+  Pod animací je text fáze, který stránka už píše, a procenta, když je server posílá.
+- `figure.ts` (busta, figurka, figurka mazlíčka): animace začne s generováním (i po otevření stránky adresou
+  běžícího generování a při výměně podstavce). Když dorazí model, tečky se 400 ms rozplývají a pak se ukáže
+  prohlížeč s modelem. Při chybě se tečky rozletí a zůstane text chyby.
+- `relief.ts`: totéž během zpracování reliéfu (místo malého odznaku „Pracuji…“).
+- Nic v enginu ani v API, texty beze změny.
+
+**Rozhodnutí: tmavý obrys loga v tečkách není.** S tečkami i v tmavě zeleném obrysu splývala písmena do jednoho
+pásu a nápis nebyl čitelný ani na 1366 px. Bez obrysu je mezi písmeny bílá mezera a „Matplace“ se čte i na
+telefonu. Tečky jsou tyrkysové (tryska, písmo) a oranžové (vlákno), barvy berou z pixelů loga. Kdyby Roman obrys
+chtěl, vrací ho jedna konstanta (`PARTS` v `particles.ts`).
+
+**Velikost**: logo zabírá 60 % šířky plochy, na telefonu (plocha užší než 520 px) 88 %, jinak by písmena měla na
+výšku pár teček. Teček je 2 400 na telefonu až 3 000 na široké obrazovce a velikost tečky se řídí jejich
+rozestupem.
+
+**Snímky** (`docs/img/particles/`): `figure-1366-vir`, `-logo`, `-vlakno`, `-rozpad`; `pet-figurine-390-vir`,
+`-logo`, `-rozpad`; `figure-1366-still-logo` (omezený pohyb); `figure-1366-model` a `relief-1366-model` (po
+příchodu modelu tečky zmizely a prohlížeč ukazuje model).
+
+**Ověřeno**: headless Chrome na místním serveru s podvrženým během generování (fáze, procenta, chyba) i se
+skutečným falešným generátorem (busta) a reliéfem (tečky se objevily, pak zmizely a ukázal se model); `tsc`,
+`build`, `scripts/test_particles.mjs`, `check_preview_colors.mjs` na pěti stránkách beze změny (0 chyb).
+
+**Neověřeno**
+
+- **60 fps na skutečném telefonu.** Headless Chrome kreslí bez grafické karty: na 1366 px (3 000 teček) 25–37 snímků
+  za sekundu, na emulovaném telefonu 390 px s DPR 3 (2 400 teček) 35–53. Je to dolní odhad, ne měření na telefonu.
+- Figurka mazlíčka na produkci (dlouhé generování přes Tripo), Safari, starší Android.

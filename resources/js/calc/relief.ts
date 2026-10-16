@@ -9,6 +9,7 @@ import type { Stage } from './tool_page';
 import { FileInfo } from './api';
 import { pickArtwork } from './artwork';
 import { loadGeometryFromUrl } from './loaders';
+import { startParticles, viewerBox } from './particles';
 
 interface ReliefCfg { url: string; home: string; files: string; i18n: Record<string, string> }
 type Make = 'panel' | 'lamp' | 'wall';
@@ -152,7 +153,12 @@ export function bootRelief(stage: Stage): void {
         if (make() !== 'lamp' && shapePick() === 'custom' && !form.querySelector<HTMLInputElement>('[name="silhouette"]')!.value) { msg.textContent = t('silhouette'); return; }
         btn.disabled = true;
         msg.textContent = cfg.i18n.working;
-        stage.busy(true); stage.error(null);
+        stage.error(null);
+        // the logo of dots over the viewer while the relief is being made (the small busy badge where there is no viewer box)
+        const box = viewerBox();
+        const dots = box ? startParticles(box) : null;
+        dots?.say(cfg.i18n.working);
+        if (!dots) stage.busy(true);
         const fd = new FormData(form);
         fd.delete('shape-pick'); fd.delete('make');
         fd.set('invert', fd.has('invert') ? '1' : '0');
@@ -163,6 +169,7 @@ export function bootRelief(stage: Stage): void {
             if (!res.ok) throw new Error(cfg.i18n[String(body.reason ?? '')] ?? body.message ?? 'relief');
             const file = await stage.untilReady(body.file as FileInfo);
             if (file.status !== 'ready') throw new Error('relief');
+            await dots?.finish();
             made = file;
             const backlit = file.kind === 'lithophane' && make() !== 'lamp';
             // the model stays on this page: seen from all sides, with its size and a first price; the calculator is one click on
@@ -174,6 +181,7 @@ export function bootRelief(stage: Stage): void {
             stage.reveal('print');
         } catch (err) {
             msg.textContent = (err as Error).message && (err as Error).message !== 'relief' ? (err as Error).message : cfg.i18n.failed;
+            void dots?.fail();
         } finally {
             btn.disabled = false;
             stage.busy(false);
