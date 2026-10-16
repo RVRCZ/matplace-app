@@ -22,6 +22,15 @@ class FarmPrinterSlot extends Model
         return $this->belongsTo(FarmColor::class, 'farm_color_id');
     }
 
+    /**
+     * The spool's code: the machine's code and the slot counted from 1 ("U33" = farm U, printer 3, slot 3). What the
+     * customer sees next to a colour and the operator next to a job, to find the machine and the spool.
+     */
+    public function code(): string
+    {
+        return $this->printer->shortCode().($this->slot + 1);
+    }
+
     /** Filament already promised to orders that have not finished printing. */
     public function reservedGrams(): float
     {

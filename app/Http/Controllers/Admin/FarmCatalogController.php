@@ -114,8 +114,11 @@ class FarmCatalogController extends Controller
 
     public function savePrinter(Request $request, ?FarmPrinter $printer = null): RedirectResponse
     {
+        // the code as the customer reads it: upper case; empty = the one the name suggests (FarmPrinter::suggestCode)
+        $request->merge(['code' => strtoupper(trim((string) $request->input('code'))) ?: null]);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80'],
+            'code' => ['nullable', 'regex:'.FarmPrinter::CODE_PATTERN, Rule::unique('farm_printers', 'code')->ignore($printer?->id)],
             'model' => ['required', 'string', 'max:80'],
             'key' => ['required', 'alpha_dash', 'max:40', Rule::unique('farm_printers', 'key')->ignore($printer?->id)],
             'farm_agent_id' => ['nullable', 'exists:farm_agents,id'],
@@ -188,6 +191,7 @@ class FarmCatalogController extends Controller
             $data['timelapse'] = collect((array) $data['timelapse'])->map(fn ($v, $k) => $v === null || $v === '' ? null : ($k === 'mode' ? $v : $v + 0))->all();
         }
 
+        $data['code'] ??= FarmPrinter::suggestCode($data['name'], FarmPrinter::when($printer?->id, fn ($q, $id) => $q->whereKeyNot($id))->whereNotNull('code')->pluck('code')->all());
         $printer = $printer ?? new FarmPrinter;
         $printer->fill($data)->save();
         foreach ($slots as $index => $s) {

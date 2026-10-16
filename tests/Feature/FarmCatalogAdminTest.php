@@ -108,6 +108,32 @@ class FarmCatalogAdminTest extends TestCase
         $this->actingAs($this->admin)->get('/admin/farm/printers')->assertOk()->assertSee('4: PETG, lososová/Salmon pink, Prusament (950 g)');
     }
 
+    public function test_every_printer_has_a_code_of_its_own_and_a_spool_adds_its_slot(): void
+    {
+        // the seeded machines took the code their names suggest: first letter and the next free number
+        $this->assertSame(['K1', 'K2', 'K3'], FarmPrinter::orderBy('id')->pluck('code')->all());
+        $this->assertSame('U3', FarmPrinter::suggestCode('Farm U #3'));
+        $this->assertSame('U4', FarmPrinter::suggestCode('Farm U #3', ['U1', 'U2', 'U3']), 'a taken farm number goes to the next free one of that farm');
+        $this->assertSame('X1', FarmPrinter::suggestCode('Xanadu'));
+
+        $printer = FarmPrinter::orderBy('id')->firstOrFail();
+        $slots = $printer->slots->keyBy('slot')->map(fn (FarmPrinterSlot $s) => ['color' => $s->farm_color_id, 'remaining_g' => $s->remaining_g, 'enabled' => $s->enabled ? 1 : 0])->all();
+        // typed in lower case: kept in capitals; the spool code is the machine's code and the slot counted from 1
+        $this->actingAs($this->admin)->post("/admin/farm/printers/{$printer->id}", ['code' => ' u3 '] + $this->printerForm($printer, $slots))->assertRedirect('/admin/farm/printers');
+        $this->assertSame('U3', $printer->fresh()->code);
+        $this->assertSame('U33', $printer->fresh()->slots()->where('slot', 2)->firstOrFail()->code());
+        $this->actingAs($this->admin)->get("/admin/farm/printers/{$printer->id}")->assertOk()->assertSee('name="code" value="U3"', false);
+        $this->actingAs($this->admin)->get('/admin/farm/printers')->assertOk()->assertSee('>U3</span>', false);
+
+        // one code per machine; something that is not a letter and a number is refused
+        $other = FarmPrinter::orderBy('id')->skip(1)->firstOrFail();
+        $this->actingAs($this->admin)->post("/admin/farm/printers/{$other->id}", ['code' => 'U3'] + $this->printerForm($other, []))->assertSessionHasErrors('code');
+        $this->actingAs($this->admin)->post("/admin/farm/printers/{$other->id}", ['code' => 'U-3'] + $this->printerForm($other, []))->assertSessionHasErrors('code');
+        // emptied: the name suggests one again, the first one free (the first machine left K1 for U3)
+        $this->actingAs($this->admin)->post("/admin/farm/printers/{$other->id}", ['code' => ''] + $this->printerForm($other, []))->assertRedirect('/admin/farm/printers');
+        $this->assertSame('K1', $other->fresh()->code);
+    }
+
     public function test_codes_made_up_for_new_colours_follow_the_catalogue(): void
     {
         $silk = FarmMaterial::where('code', 'PLA')->where('finish', 'silk')->firstOrFail();
