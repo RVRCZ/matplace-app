@@ -6,9 +6,11 @@
  *
  * What only a pet figurine has (its page gives the elements, this script skips what is not there): the thinnest place
  * of the figure with a warning under 2.5 mm, and another base under the same figure without a new generation.
+ * While a model is being made the viewer shows the logo of dots (particles.ts) with the phase and the percent.
  */
 import type { Stage } from './tool_page';
 import { FileInfo } from './api';
+import { startParticles, viewerBox, type Particles } from './particles';
 
 interface FigureCfg { generate: string; show: string; home: string; files?: string; i18n: Record<string, string> }
 interface Generation { token: string; status: string; progress: number; file: FileInfo | null; target_mm?: number | null; options?: Record<string, string | number> | null }
@@ -71,8 +73,17 @@ export function bootFigure(stage: Stage): void {
     window.addEventListener('pageshow', sync);
     window.addEventListener('load', sync);
 
-    const idle = (text: string): void => { msg.textContent = text; btn.disabled = false; $('figure-progress').classList.add('hidden'); bar.style.width = '0'; };
-    const working = (text: string): void => { btn.disabled = true; $('figure-progress').classList.remove('hidden'); msg.textContent = text; };
+    // the logo of dots over the viewer while the model is on its way; it scatters on an error, fades when the model comes
+    let dots: Particles | null = null;
+    const idle = (text: string): void => {
+        msg.textContent = text; btn.disabled = false; $('figure-progress').classList.add('hidden'); bar.style.width = '0';
+        void dots?.fail(); dots = null;
+    };
+    const working = (text: string): void => {
+        btn.disabled = true; $('figure-progress').classList.remove('hidden'); msg.textContent = text;
+        const box = viewerBox();
+        if (box) { dots ??= startParticles(box); dots.say(text); }
+    };
     const fetchGeneration = async (token: string): Promise<Generation | null> => {
         const res = await fetch(`${cfg.show}/${token}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
         return res.ok ? (await res.json()).generation as Generation : null;
@@ -99,6 +110,7 @@ export function bootFigure(stage: Stage): void {
         msg.textContent = done;
         const ready = await stage.untilReady(file);
         if (ready.status !== 'ready') return idle(say('figure.failed', 'figure.failed'));
+        await dots?.finish(); dots = null;
         await stage.fileResult(ready);
         made = ready;
         measured(ready);
@@ -111,6 +123,7 @@ export function bootFigure(stage: Stage): void {
         let g: Generation | null = first;
         while (g && g.status !== 'done' && g.status !== 'failed') {
             bar.style.width = `${Math.max(5, g.progress)}%`;
+            dots?.say(msg.textContent ?? '', g.progress);
             await new Promise((r) => setTimeout(r, 3000));
             g = await fetchGeneration(g.token);
         }
