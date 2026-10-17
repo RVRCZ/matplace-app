@@ -144,8 +144,11 @@ jako člověk. 13. 10. tak bylo 98 „lidí“, většinou průchody session B.
   - **`Track::clean`**: zahodí text, e-mail, pole a HTML, nechá čísla, kódy a cestu.
   - **Dělení**: mobil / počítač, nový / vracející se, vstupní cesta, podíly s n, chyby v krocích a stránka
     `/admin/stats` se vykreslí.
-- Celá sada testů, `pint --dirty`, `npx tsc --noEmit -p .` a `npm run build` – výsledky jsou ve zprávě řídící
-  session a v commitu.
+- Celá sada (`php -d memory_limit=2G vendor/bin/phpunit`; `artisan test` při 128 MB spadne na paměti): 664 testů,
+  634 prošlo, 30 selhalo. Těch 30 selže stejně i na `main` 10245aa (porovnáno na stejných třídách, 30 = 30):
+  503 „nástroj není dostupný“ a stránky nástrojů bez enginu, protože tenhle worktree nemá v `.env` `PYTHON_BIN`.
+  Nové testy, `StatsTest`, `FarmCardPaymentTest` a `FarmOrderFlowTest` prošly. `pint --dirty` je bez nálezů,
+  `npx tsc --noEmit -p .` bez chyb a `npm run build` proběhl v pořádku.
 
 ## 6. Nasazení a co zbývá
 
