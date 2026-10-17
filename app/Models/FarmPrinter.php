@@ -201,6 +201,35 @@ class FarmPrinter extends Model
         return $letter.$n;
     }
 
+    /**
+     * The machine as its slicer profile names it ("Anycubic Kobra S1", "Anycubic Kobra 3 Max"): what the profile
+     * library, the inheritance of tuned rows and the spreading of settings go by. The free text in `model` is what
+     * somebody typed into the form (on 17 Oct 2026 eleven machines said "Printer Cr"); the profile is what slices.
+     */
+    public function machineName(): string
+    {
+        static $names = [];
+        $file = (string) $this->machine_profile;
+        if ($file !== '' && ! array_key_exists($file, $names)) {
+            $names[$file] = null;
+            foreach ([config('farm.profiles_dir').'/'.$file, config('engines.orca.profiles').'/'.$file] as $path) {
+                if (is_file($path)) {
+                    $json = json_decode((string) file_get_contents($path), true);
+                    $names[$file] = is_array($json) && ! empty($json['printer_model']) ? (string) $json['printer_model'] : null;
+                    break;
+                }
+            }
+        }
+
+        return $names[$file] ?? (string) $this->model;
+    }
+
+    /** The same machine for tuning: the same slicer machine profile and the same nozzle. */
+    public function sameMachineAs(self $other): bool
+    {
+        return (string) $this->machine_profile === (string) $other->machine_profile && abs((float) $this->nozzle_mm - (float) $other->nozzle_mm) < 0.001;
+    }
+
     protected static function booted(): void
     {
         // every machine has a code of its own from the start (a copy of another machine gets a new one); the admin may

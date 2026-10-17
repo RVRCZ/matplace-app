@@ -160,12 +160,13 @@ class FarmTuningController extends Controller
      */
     private function siblings(FarmPrinterMaterial $row): Collection
     {
-        $type = fn (FarmPrinter $p) => preg_replace('/-\d+$/', '', (string) $p->key).'|'.number_format((float) $p->nozzle_mm, 2);
-        $own = $type($row->printer);
+        // the same machine = the same slicer machine profile and nozzle; the key is not trusted for that any more
+        // (the B farm's keys are kobra-s1-d01…, so "the key without its number" never reached them: 17 Oct 2026)
+        $own = $row->printer;
 
         return FarmPrinterMaterial::with(['printer', 'material'])->whereNull('farm_color_id')
             ->where('farm_material_id', $row->farm_material_id)->where('id', '!=', $row->id)->get()
-            ->filter(fn (FarmPrinterMaterial $r) => $r->printer && $type($r->printer) === $own)
+            ->filter(fn (FarmPrinterMaterial $r) => $own && $r->printer && $r->printer->sameMachineAs($own))
             ->sortBy(fn (FarmPrinterMaterial $r) => $r->printer->key)->values();
     }
 

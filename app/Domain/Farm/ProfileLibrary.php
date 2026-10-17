@@ -47,16 +47,18 @@ final class ProfileLibrary
     /** @return array{0: array, 1: string, 2: string|null} */
     public function startingValues(FarmPrinter $printer, FarmMaterial $material): array
     {
-        // the same machine with a different nozzle is a different machine as far as tuning goes
+        // the same machine = the same slicer machine profile and nozzle; the free text in `model` is not trusted
+        // (17 Oct 2026: eleven machines said "Printer Cr", an S1 and the Max alike) and a different nozzle is a
+        // different machine as far as tuning goes
         $tuned = FarmPrinterMaterial::whereNull('farm_color_id')->where('farm_material_id', $material->id)
             ->where('status', FarmPrinterMaterial::STATUS_TUNED)->where('farm_printer_id', '!=', $printer->id)
-            ->whereHas('printer', fn ($q) => $q->where('model', $printer->model)->where('nozzle_mm', $printer->nozzle_mm))
+            ->whereHas('printer', fn ($q) => $q->where('machine_profile', $printer->machine_profile)->where('nozzle_mm', $printer->nozzle_mm))
             ->latest('tested_at')->first();
         if ($tuned) {
             return [(array) $tuned->overrides, 'inherited', 'Převzato z '.$tuned->printer->name.' (verze '.$tuned->version.').'];
         }
 
-        $lib = $this->lookup($printer->model, $material->code, $material->finish, (float) $printer->nozzle_mm);
+        $lib = $this->lookup($printer->machineName(), $material->code, $material->finish, (float) $printer->nozzle_mm);
         if ($lib !== null) {
             $lib = FarmPrinterMaterial::clean($lib);
             // the kind's own temperatures stay the kind's business
@@ -66,7 +68,7 @@ final class ProfileLibrary
                 }
             }
 
-            return [$lib, 'library', 'Výchozí hodnoty z knihovny pro '.$printer->model.'.'];
+            return [$lib, 'library', 'Výchozí hodnoty z knihovny pro '.$printer->machineName().'.'];
         }
 
         return [[], 'generic', null];
@@ -137,6 +139,67 @@ final class ProfileLibrary
         }
 
         return $base;
+    }
+
+    /**
+     * Rows nobody has touched (status untested, source generic or library) brought up to what the library and the
+     * tuned rows say today. sync() only creates rows that are missing, so a row made while its machine's model said
+     * "Printer Cr" stayed empty for good (B #6 and B #7 on 17 Oct 2026). A row that was tested, tuned or edited by
+     * hand is never touched: the spread button on the tuning page is for those. Dry by default.
+     *
+     * @return array{changed: list<string>, same: int, skipped: int}
+     */
+    public function refresh(bool $write = false): array
+    {
+        $changed = [];
+        $same = $skipped = 0;
+        $rows = FarmPrinterMaterial::with(['printer', 'material'])->whereNull('farm_color_id')->orderBy('farm_printer_id')->orderBy('farm_material_id')->get();
+        foreach ($rows as $row) {
+            if (! $row->printer || ! $row->material || ! $row->printer->enabled || ! $row->material->enabled) {
+                continue;
+            }
+            if ($row->status !== FarmPrinterMaterial::STATUS_UNTESTED || ! in_array($row->source, ['generic', 'library'], true)) {
+                $skipped++;
+
+                continue;
+            }
+            [$overrides, $source, $note] = $this->startingValues($row->printer, $row->material);
+            $overrides = FarmPrinterMaterial::clean($overrides);
+            if ($overrides == FarmPrinterMaterial::clean((array) $row->overrides)) {
+                $same++;
+
+                continue;
+            }
+            $changed[] = $row->printer->name.' '.$row->label().' ('.$row->source.' v'.$row->version.' → '.$source.')';
+            if ($write) {
+                $row->revise($overrides, $source, 'farm:library-refresh: '.($note ?? 'stroj bez bloku v knihovně'), FarmPrinterMaterial::STATUS_UNTESTED);
+            }
+        }
+
+        return compact('changed', 'same', 'skipped');
+    }
+
+    /**
+     * Printers whose free-text model does not say what their slicer profile says get the profile's name
+     * ("Printer Cr" → "Anycubic Kobra S1"). The text is only what people read; nothing else goes by it any more.
+     *
+     * @return list<string>
+     */
+    public function fixModels(bool $write = false): array
+    {
+        $fixed = [];
+        foreach (FarmPrinter::orderBy('id')->get() as $printer) {
+            $name = $printer->machineName();
+            if ($name === '' || str_contains(strtolower((string) $printer->model), strtolower($name))) {
+                continue;
+            }
+            $fixed[] = $printer->name.': "'.$printer->model.'" → "'.$name.'"';
+            if ($write) {
+                $printer->update(['model' => $name]);
+            }
+        }
+
+        return $fixed;
     }
 
     private function library(): array

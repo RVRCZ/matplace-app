@@ -92,6 +92,22 @@ class FarmTuningTest extends TestCase
 
         // running it again changes nothing
         $this->assertSame(0, app(ProfileLibrary::class)->sync());
+
+        // the library goes by the slicer's machine profile, not by what someone typed as the model: a Kobra S1 whose
+        // model says "Printer Cr" (eleven machines of the farm on 17 Oct 2026) still starts with the S1 block, and a
+        // Max saying the same with the Max's
+        foreach (['kobra-s1-d01' => 'machine.json', 'kobra-3-max-02' => 'machine_kobra3max.json'] as $key => $profile) {
+            $copy = $s1->replicate()->fill(['key' => $key, 'name' => 'Printer '.$key, 'model' => 'Printer Cr', 'machine_profile' => $profile]);
+            $copy->save();
+        }
+        $this->assertSame(2 * $enabledKinds, app(ProfileLibrary::class)->sync());
+        $rowOf = fn (string $key, FarmMaterial $kind) => FarmPrinterMaterial::where('farm_printer_id', FarmPrinter::where('key', $key)->value('id'))
+            ->where('farm_material_id', $kind->id)->whereNull('farm_color_id')->firstOrFail();
+        $this->assertSame('library', $rowOf('kobra-s1-d01', $petg)->source);
+        $this->assertSame(['60'], $rowOf('kobra-s1-d01', $petg)->overrides['filament']['fan_max_speed']);
+        $this->assertArrayNotHasKey('process', $rowOf('kobra-s1-d01', $pla)->overrides);
+        $this->assertSame('120', $rowOf('kobra-3-max-02', $pla)->overrides['process']['outer_wall_speed']);
+        $this->assertStringContainsString('Anycubic Kobra 3 Max', (string) $rowOf('kobra-3-max-02', $pla)->notes);
     }
 
     public function test_a_new_kind_inherits_a_tuned_row_of_the_same_printer_model_before_the_library(): void
@@ -112,6 +128,18 @@ class FarmTuningTest extends TestCase
         $this->assertSame('inherited', $row->source);
         $this->assertSame(80, $row->overrides['bed_temp']);
         $this->assertSame(['45'], $row->overrides['filament']['fan_max_speed']);
+
+        // a Max with the very same model text is another machine: it takes nothing from the S1's tuned row
+        $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
+        $this->actingAs($this->admin)->post('/admin/farm/printers/new', [
+            'name' => 'Kobra 3 Max #2', 'model' => $s1->model, 'key' => 'kobra-3-max-02', 'mode' => 'manual', 'enabled' => 1,
+            'bed_x' => $max->bed_x, 'bed_y' => $max->bed_y, 'bed_z' => $max->bed_z, 'nozzle_mm' => 0.4, 'machine_profile' => 'machine_kobra3max.json',
+            'process_profiles' => json_encode($max->process_profiles), 'time_factor' => 1, 'weight_factor' => 1,
+        ])->assertRedirect('/admin/farm/printers');
+        $rowMax = FarmPrinterMaterial::where('farm_printer_id', FarmPrinter::where('key', 'kobra-3-max-02')->value('id'))->where('farm_material_id', $petg->id)->firstOrFail();
+        $this->assertSame('library', $rowMax->source);
+        $this->assertSame(['60'], $rowMax->overrides['filament']['fan_max_speed']);
+        $this->assertArrayNotHasKey('bed_temp', $rowMax->overrides);
     }
 
     public function test_the_machine_row_and_the_spool_reach_the_slice_and_the_gcode_temperatures(): void
@@ -379,9 +407,10 @@ class FarmTuningTest extends TestCase
         $matte = FarmMaterial::where('code', 'PLA+')->where('finish', 'matte')->firstOrFail();
         $rowOf = fn (string $key, FarmMaterial $kind) => FarmPrinterMaterial::where('farm_printer_id', FarmPrinter::where('key', $key)->value('id'))
             ->where('farm_material_id', $kind->id)->whereNull('farm_color_id')->firstOrFail();
-        // two more S1 next to the seeded pair: one already tuned, one with a fine nozzle
-        foreach (['kobra-s1-03' => 0.4, 'kobra-s1-04' => 0.2] as $key => $nozzle) {
-            $copy = $s1->replicate()->fill(['key' => $key, 'name' => 'Kobra S1 '.$key, 'nozzle_mm' => $nozzle]);
+        // three more S1 next to the seeded pair: one already tuned, one with a fine nozzle, one of the B farm (its key
+        // has no plain number at the end and its model says "Printer Cr", as on the farm on 17 Oct 2026)
+        foreach (['kobra-s1-03' => 0.4, 'kobra-s1-04' => 0.2, 'kobra-s1-d01' => 0.4] as $key => $nozzle) {
+            $copy = $s1->replicate()->fill(['key' => $key, 'name' => 'Kobra S1 '.$key, 'nozzle_mm' => $nozzle, 'model' => 'Printer Cr']);
             $copy->save();
             FarmPrinterMaterial::create(['farm_printer_id' => $copy->id, 'farm_material_id' => $plus->id, 'overrides' => ['process' => ['outer_wall_speed' => '150']]]);
         }
@@ -397,11 +426,13 @@ class FarmTuningTest extends TestCase
 
         // the page says where it would go: the other S1 with the same nozzle, the tuned one marked as skipped
         $this->actingAs($this->admin)->get($url)->assertOk()->assertSee('Použít i na ostatní tiskárny stejného typu s tímto druhem')
-            ->assertSee('Kobra S1 #2')->assertSee('Kobra S1 kobra-s1-03')->assertSee('přeskočí se')->assertDontSee('Kobra S1 kobra-s1-04')->assertSee('Použít na ostatní (1)');
+            ->assertSee('Kobra S1 #2')->assertSee('Kobra S1 kobra-s1-03')->assertSee('přeskočí se')->assertDontSee('Kobra S1 kobra-s1-04')
+            ->assertSee('Kobra S1 kobra-s1-d01')->assertSee('Použít na ostatní (2)');
 
         // process only: the keys are added to what the row holds, its own other keys and its filament stay
         $this->actingAs($this->admin)->post($url.'/spread', ['what' => ['process'], 'note' => 'šev S2'])->assertRedirect()->assertSessionHasNoErrors()
-            ->assertSessionHas('status', fn ($s) => str_contains($s, 'Kobra S1 #2 PLA+ v1 → v2') && str_contains($s, 'Kobra S1 kobra-s1-03 PLA+ (vyladěno)'));
+            ->assertSessionHas('status', fn ($s) => str_contains($s, 'Kobra S1 #2 PLA+ v1 → v2') && str_contains($s, 'Kobra S1 kobra-s1-03 PLA+ (vyladěno)') && str_contains($s, 'Kobra S1 kobra-s1-d01 PLA+ v1 → v2'));
+        $this->assertSame(['seam_slope_type' => 'external', 'seam_gap' => '15%', 'outer_wall_speed' => '180'], $rowOf('kobra-s1-d01', $plus)->overrides['process']);
         $second->refresh();
         $this->assertSame(['seam_slope_type' => 'external', 'seam_gap' => '15%', 'outer_wall_speed' => '180', 'bridge_speed' => '40'], $second->overrides['process']);
         $this->assertSame(['100'], $second->overrides['filament']['fan_max_speed'], 'filament was not ticked');
@@ -427,6 +458,41 @@ class FarmTuningTest extends TestCase
         $this->actingAs($this->admin)->post($url.'/spread', ['what' => ['process']])->assertSessionHas('error');
         $spool = FarmPrinterMaterial::create(['farm_printer_id' => $s1->id, 'farm_material_id' => $plus->id, 'farm_color_id' => FarmColor::where('farm_material_id', $plus->id)->value('id')]);
         $this->actingAs($this->admin)->post("/admin/farm/tuning/{$spool->id}/spread", ['what' => ['process']])->assertNotFound();
+    }
+
+    public function test_the_refresh_command_fills_the_rows_the_library_left_empty_and_leaves_tested_rows_alone(): void
+    {
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        $pla = FarmMaterial::where('code', 'PLA')->where('finish', 'solid')->firstOrFail();
+        $petg = FarmMaterial::where('code', 'PETG')->where('finish', 'solid')->firstOrFail();
+        $matte = FarmMaterial::where('code', 'PLA+')->where('finish', 'matte')->firstOrFail();
+        // a machine added while its model said "Printer Cr": every row empty, the way the farm's B #6 and B #7 were
+        $copy = $s1->replicate()->fill(['key' => 'kobra-s1-d06', 'name' => 'Farm B #6', 'model' => 'Printer Cr']);
+        $copy->save();
+        foreach (FarmMaterial::where('enabled', true)->get() as $kind) {
+            FarmPrinterMaterial::create(['farm_printer_id' => $copy->id, 'farm_material_id' => $kind->id, 'source' => 'generic']);
+        }
+        $rowOf = fn (FarmMaterial $kind) => FarmPrinterMaterial::where('farm_printer_id', $copy->id)->where('farm_material_id', $kind->id)->whereNull('farm_color_id')->firstOrFail();
+        // one of them was tested, one edited by hand: those stay as they are
+        $rowOf($petg)->revise(['bed_temp' => 80], 'test', 'tower', FarmPrinterMaterial::STATUS_TESTING);
+        $rowOf($matte)->revise(['nozzle_temp' => 222], 'manual', 'ručně');
+
+        // a dry run says what it would do and writes nothing
+        $this->artisan('farm:library-refresh', ['--models' => true])->expectsOutputToContain('Farm B #6: "Printer Cr" → "Anycubic Kobra S1"')
+            ->expectsOutputToContain('[dry-run]')->assertSuccessful();
+        $this->assertNull($rowOf($pla)->overrides);
+        $this->assertSame('Printer Cr', $copy->fresh()->model);
+
+        $this->artisan('farm:library-refresh', ['--write' => true, '--models' => true])->assertSuccessful();
+        $this->assertSame('Anycubic Kobra S1', $copy->fresh()->model);
+        $plaRow = $rowOf($pla);
+        $this->assertSame(['library', 2, FarmPrinterMaterial::STATUS_UNTESTED], [$plaRow->source, $plaRow->version, $plaRow->status]);
+        $this->assertSame(['18'], $plaRow->overrides['filament']['filament_max_volumetric_speed']);
+        $this->assertSame([80, FarmPrinterMaterial::STATUS_TESTING], [$rowOf($petg)->overrides['bed_temp'], $rowOf($petg)->status]);
+        $this->assertSame(['nozzle_temp' => 222], $rowOf($matte)->overrides);
+        // the seeded rows were current already, and a second run finds nothing to do
+        $this->assertSame(1, FarmPrinterMaterial::where('farm_printer_id', $s1->id)->where('farm_material_id', $pla->id)->value('version'));
+        $this->artisan('farm:library-refresh', ['--write' => true])->expectsOutputToContain('0 changed')->assertSuccessful();
     }
 
     /** A finished test of a row, printed with exactly what the row holds now. */

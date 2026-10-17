@@ -544,3 +544,34 @@ píše také. Ověřeno na serveru nad kostkou z kalkulace 392 (viz níže).
 
 Ověření po nasazení (13. 10. 2026 06:57 UTC): kostka z kalkulace 392 přes aplikaci na serveru → přesný výpočet
 33 min, 19,9 g (dřív „can not be parsed“).
+
+## 20. Knihovna ladění podle profilu stroje, ne podle textu modelu; rozprostření na farmu B (17. 10. 2026)
+
+Roman se ptal, jestli jsou vyladěné profily PLA+, PETG a PLA silk nasazené všude. Nejsou, a dvě chyby bránily tomu, aby
+mohly být:
+
+- Jedenáct tiskáren (U #1–#3, B #1–#8) má ve sloupci `model` text „Printer Cr“ (ruční formulář tiskárny, kopie to
+  zdědily). Knihovna `database/data/farm_profile_library.json` hledala svůj blok podle tohoto textu (`kobra s1`,
+  `kobra 3 max`), takže řádky založené po přejmenování zůstaly prázdné (B #6 a B #7 nemají ani ventilátor, ani tok;
+  K3M, druhý Max, totéž) a dědění vyladěného řádku bralo S1 a Max za stejný stroj.
+- Tlačítko „Použít i na ostatní tiskárny stejného typu“ hledalo sourozence podle klíče bez koncového čísla; klíče
+  farmy B jsou `kobra-s1-d01…d08`, takže z U #1 dosáhlo jen na U #2. Proto šev S2 nikdy nedoputoval na farmu B.
+
+Oprava: stroj určuje jeho profil sliceru a tryska. `FarmPrinter::machineName()` čte `printer_model` z `machine*.json`
+(`machine.json` = Anycubic Kobra S1, `machine_kobra3max.json` = Anycubic Kobra 3 Max, `machine_kobrax.json` = Anycubic
+Kobra X); knihovna, dědění vyladěných řádků (`ProfileLibrary::startingValues`) i sourozenci pro rozprostření
+(`FarmTuningController::siblings`, `FarmPrinter::sameMachineAs`) jdou podle něj. Nový příkaz
+`php artisan farm:library-refresh [--write] [--models]` doplní řádky, kterých se nikdo nedotkl (stav netestováno, zdroj
+generic nebo library), podle dnešní knihovny, a s `--models` přepíše text modelu z profilu; řádky testované, vyladěné
+nebo ručně upravené nechá být. Bez `--write` jen vypíše, co by udělal.
+
+Stav řádků na produkci 17. 10. ráno (před opravou, 132 řádků): šev S2 u PLA+ jen U #1 (v4) a U #2 (v5), hodnoty žehlení
+z knihovny nemá žádný řádek S1 (knihovna platí jen pro nové řádky); Max U #3 PLA+ v4 má horní plochu 120 a žehlení
+12 % / 30 / 0,1, jeho řádek cívky (barva 14) horní plochu nemá, ale vrstvení `PrintProfile` ji vezme z řádku druhu;
+PETG vyladěno jen na U #2 (v5: T230, ventilátor 30–90, retrakce 1,3) a na jeho oranžové cívce (T250/80, tok 12,
+průtok 0,98); PLA silk vyladěno jen na U #1 (v2: tok 9,6, ventilátor 50–85, retrakce 1,2), K3M má silk T205; farma B má
+všude knihovnu v1 (B #6 a B #7 nic), Cobra X nic (knihovna pro ni blok nemá, hodnoty nese její profil). Session F silk
+ani PETG neladila (jen plán v docs/V.md).
+
+Co dál po nasazení: `farm:library-refresh --write --models`, pak v administraci ladění rozprostřít U #1 PLA+ (process)
+na S1 a U #3 PLA+ na K3M; PETG z U #2 a silk z U #1 podle Romana.
