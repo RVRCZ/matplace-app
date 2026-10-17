@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Litofanie z fotky: panel, lampa nebo reliéf, model online',
-    'description' => 'Z fotky vytvoříte litofanii v sedmi tvarech, lampu s fotkou kolem dokola nebo reliéf na zeď. Model je hotový za pár vteřin a fotku neukládáme.',
+    'description' => 'Z fotky vytvoříte litofanii v sedmi tvarech, lampu s fotkou kolem dokola nebo reliéf na zeď. Model je hotový asi za minutu a fotku neukládáme.',
     'h1' => 'Fotka jako litofanie, lampa nebo plastický reliéf',
     'intro' => [
         'Nástroj převede fotku na 3D model. Litofanie je tenká destička, na které se obrázek objeví, když za ni dáte světlo: tmavá místa fotky jsou silnější, světlá tenčí. Lampa je ta samá fotka obtočená kolem válce se dnem na objímku E27 nebo E14. Reliéf je plastický obrázek na zeď, u kterého světlá místa vystupují nahoru. Nejlépe vycházejí portréty a fotky s výrazným kontrastem.',
@@ -12,7 +12,7 @@ return [
         ['name' => 'Vyberte, co vyrobit', 'text' => 'Fotopanel do okna nebo na stojánek, lampu s fotkou kolem dokola, nebo reliéf na zeď bez podsvícení.'],
         ['name' => 'Nahrajte fotku', 'text' => 'Vyberte nebo vyfoťte obrázek (JPG, PNG, WebP). Jas, kontrast a střední tóny upravíte posuvníky, obrácení světlých a tmavých míst zaškrtnutím.'],
         ['name' => 'Zvolte tvar a rozměry', 'text' => 'U panelu tvar destičky, šířku, výšku a rámeček; u lampy obvod a výšku a objímku. Doplňky: otvor nebo očko na zavěšení, stolní stojánek.'],
-        ['name' => 'Vytvořte model', 'text' => 'Klepněte na „Vytvořit model“. Model se za pár vteřin otevře na stránce s náhledem proti světlu a stažením; přesnou cenu ukáže kalkulace.'],
+        ['name' => 'Vytvořte model', 'text' => 'Klepněte na „Vytvořit model“. Model se asi za minutu otevře na stránce s náhledem proti světlu a stažením; přesnou cenu ukáže kalkulace.'],
     ],
     'faq' => [
         ['q' => 'Jaký je rozdíl mezi litofanií a reliéfem?', 'a' => 'Litofanie ukáže obrázek až proti světlu, třeba v okně nebo před lampou. Reliéf je vidět i bez světla, protože světlá místa fotky vystupují nad desku.'],

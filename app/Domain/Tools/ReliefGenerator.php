@@ -34,6 +34,9 @@ final class ReliefGenerator
     /** What the engine can refuse with a word the page knows a text for (lang/<locale>/relief.php, 'warn.*'). */
     public const REASONS = ['frame_too_wide', 'socket_too_big', 'silhouette'];
 
+    /** The largest photo taken, in MB: the page says it at the field and checks it before sending (resources/js/calc/photo.ts). */
+    public const PHOTO_MB = 15;
+
     public function __construct(private readonly PythonTool $python) {}
 
     public function available(): bool
@@ -45,7 +48,7 @@ final class ReliefGenerator
     public static function rules(): array
     {
         return [
-            'photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
+            'photo' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:'.(self::PHOTO_MB * 1024)],
             'mode' => ['nullable', 'in:'.implode(',', self::MODES)],
             'shape' => ['nullable', 'in:'.implode(',', self::SHAPES)],
             'silhouette' => ['nullable', 'string', 'max:120', 'regex:'.Artwork::REF],
@@ -62,6 +65,14 @@ final class ReliefGenerator
             'contrast' => ['nullable', 'numeric', 'min:-50', 'max:50'],
             'gamma' => ['nullable', 'numeric', 'min:0.5', 'max:2'],
         ];
+    }
+
+    /** What the page says when the photo is refused: in the visitor's language, never Laravel's English sentence. */
+    public static function messages(): array
+    {
+        $big = __('photo.too_big', ['mb' => self::PHOTO_MB]);
+
+        return ['photo.max' => $big, 'photo.uploaded' => $big, 'photo.mimes' => __('photo.not_image'), 'photo.file' => __('photo.not_image'), 'photo.required' => __('figure.need_photo')];
     }
 
     /** The form's values as the engine takes them (and as they are kept with the model so the page can reopen it). */

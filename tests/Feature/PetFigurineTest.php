@@ -79,10 +79,10 @@ class PetFigurineTest extends TestCase
             }
         }
         app()->setLocale('cs');
-        // the styles of a pet are not the bust's finishes, and a pet always stands on a base
+        // the styles of a pet are not the bust's finishes; "no base" is one of its four bases since 17 Oct 2026 (Roman)
         $html = $this->get('/tools/pet-figurine')->getContent();
         $this->assertStringNotContainsString('value="socle"', $html);
-        $this->assertStringNotContainsString('value="none"', $html);
+        $this->assertSame(1, substr_count($html, 'name="pedestal" value="none"'));
         $this->assertStringContainsString('placeholder="'.__('pet.name_ph').'"', $html);
         // the catalogue and the search know it
         $this->get('/tools')->assertOk()->assertSee(route('tools.pet'), false)->assertSee(__('tools.pet.title'));
@@ -277,6 +277,52 @@ class PetFigurineTest extends TestCase
         $this->assertGreaterThan($oval['pedestal_height'], $n->report['pedestal_height']);
         $this->assertTrue($check->check($dir.'/plaque.stl')->watertight);
         File::deleteDirectory($dir);
+    }
+
+    public function test_without_a_base_the_figure_stands_on_its_own_paws_cut_flat(): void
+    {
+        $this->python();
+        $dir = sys_get_temp_dir().'/mp_pet_'.uniqid();
+        File::ensureDirectoryExists($dir);
+        MeshFixtures::tableStl($dir.'/in.stl', 4.0);
+        $n = app(ModelNormalizer::class);
+        config(['engines.repair' => 'trimesh']);
+        $n->toPrintableStl($dir.'/in.stl', $dir.'/none.stl', 80, false, ['clean', 'pedestal', 'solid'], ['pet' => true, 'pedestal' => 'none', 'name' => 'Rex', 'style' => 'realistic']);
+        $r = $n->report;
+        // no base and no name on it: the soles cut flat by at most a millimetre, one closed body as tall as asked
+        $this->assertSame('none', $r['pedestal']);
+        $this->assertArrayNotHasKey('engraved_lines', $r);
+        $this->assertArrayNotHasKey('stand_error', $r);
+        $this->assertGreaterThan(0, $r['flat_cut_mm']);
+        $this->assertLessThanOrEqual(1.0, $r['flat_cut_mm']);
+        $this->assertSame(0.0, (float) $r['pedestal_height']);
+        $solid = app(MeshRepair::class)->check($dir.'/none.stl');
+        $this->assertTrue($solid->watertight);
+        $this->assertSame(1, $solid->shells);
+        $this->assertEqualsWithDelta(80.0, max($solid->bbox->x, $solid->bbox->y, $solid->bbox->z), 0.5);
+        // the four soles lie in one plane: every vertex at the bottom is at z = 0
+        $low = $this->lowest($dir.'/none.stl');
+        $this->assertGreaterThanOrEqual(12, $low, 'four flat soles, not four points');
+        // the page offers it, with what it means
+        $this->get('/tools/pet-figurine')->assertSee('value="none"', false)->assertSee(__('pet.base.none'))->assertSee(__('pet.base.none.hint'));
+        File::deleteDirectory($dir);
+    }
+
+    /** How many corners of a binary STL lie on its lowest plane (within 0.01 mm). */
+    private function lowest(string $stl): int
+    {
+        $data = (string) file_get_contents($stl);
+        $n = unpack('V', substr($data, 80, 4))[1];
+        $z = [];
+        for ($i = 0; $i < $n; $i++) {
+            $tri = unpack('f12', substr($data, 84 + $i * 50, 48));
+            $z[] = $tri[6];
+            $z[] = $tri[9];
+            $z[] = $tri[12];
+        }
+        $min = min($z);
+
+        return count(array_filter($z, fn ($v) => $v <= $min + 0.01));
     }
 
     public function test_the_base_and_the_name_change_without_a_new_generation(): void

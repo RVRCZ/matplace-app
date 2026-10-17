@@ -101,6 +101,9 @@ export class Stage {
     }
 
     private toolbar(): void {
+        // under lg the bar is folded under one button (the CSS hides #tool-viewbar until it is open)
+        const fold = this.el('tool-view-toggle'); const bar = this.el('tool-viewbar');
+        fold.addEventListener('click', () => { const on = !bar.hasAttribute('data-open'); bar.toggleAttribute('data-open', on); fold.setAttribute('aria-expanded', on ? 'true' : 'false'); });
         const views = this.el('tool-views');
         views.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) => b.addEventListener('click', () => {
             this.viewer.setView(b.dataset.view as ViewName);
@@ -117,6 +120,33 @@ export class Stage {
         toggle('tool-xray', (on) => this.viewer.setXray(on));
         toggle('tool-bed', (on) => this.viewer.setBed(on ? { x: this.cfg.bed.x, y: this.cfg.bed.y, margin: this.cfg.bed.margin } : null));
         this.el<HTMLInputElement>('tool-spread').addEventListener('input', (e) => this.viewer.setSpread(Number((e.target as HTMLInputElement).value) / 100));
+    }
+
+    /**
+     * The model on the stage no longer matches the form (a required text was emptied): it fades with its numbers and
+     * cannot be downloaded or taken on, until the form is whole again.
+     */
+    stale(on: boolean): void {
+        const stage = this.el('tool-stage');
+        if (stage.hasAttribute('data-stale') === on) return;
+        stage.toggleAttribute('data-stale', on);
+        const dl = this.el<HTMLButtonElement>('tool-download');
+        dl.disabled = on || this.el('tool-download-menu').childElementCount === 0;
+    }
+
+    /**
+     * A model made after a wait (a photo tool): on a phone the stage is above the form, so the page goes up to the
+     * model and the way on; on lg both are in view and the panel moves on to its last step.
+     */
+    revealResult(): void {
+        if (!this.revealStage()) this.reveal('print');
+    }
+
+    /** On a phone (under lg) the page goes up to the viewer: where a model is being made or shown. False on lg. */
+    revealStage(): boolean {
+        if (window.matchMedia('(min-width: 64rem)').matches) return false;
+        this.el('tool-stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
     }
 
     busy(on: boolean): void { const b = this.el('tool-busy'); b.classList.toggle('hidden', !on); b.classList.toggle('flex', on); }
@@ -221,7 +251,7 @@ export class Stage {
     /** What can be downloaded, the slicer project with colours first; an empty list switches the button off. */
     downloads(items: MenuItem[]): void {
         const b = this.el<HTMLButtonElement>('tool-download'); const m = this.el('tool-download-menu');
-        b.disabled = items.length === 0;
+        b.disabled = items.length === 0 || this.el('tool-stage').hasAttribute('data-stale');
         m.innerHTML = '';
         items.forEach((item) => {
             if ('heading' in item) { m.insertAdjacentHTML('beforeend', `<div class="px-3 pb-1 pt-2 text-xs font-medium uppercase tracking-wide text-muted">${esc(item.heading)}</div>`); return; }

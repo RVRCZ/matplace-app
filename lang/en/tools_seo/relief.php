@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Lithophane from a photo: panel, lamp or relief, 3D model',
-    'description' => 'Turn a photo into a lithophane in seven shapes, a lamp with the photo all round, or a relief for the wall. Ready in seconds; we do not keep the photo.',
+    'description' => 'Turn a photo into a lithophane in seven shapes, a lamp with the photo all round, or a relief for the wall. Ready in about a minute; we keep no photo.',
     'h1' => 'Your photo as a lithophane, a lamp or a raised relief',
     'intro' => [
         'The tool turns a photo into a 3D model. A lithophane is a thin plate on which the picture appears when you put a light behind it: dark areas of the photo are thicker, bright ones thinner. The lamp is the same photo wrapped round a tube, with a floor for an E27 or E14 socket. A relief is a raised picture for the wall, where the bright areas rise up. Portraits and high-contrast photos work best.',
@@ -12,7 +12,7 @@ return [
         ['name' => 'Choose what to make', 'text' => 'A photo panel for a window or a stand, a lamp with the photo all round, or a relief for the wall without a backlight.'],
         ['name' => 'Upload a photo', 'text' => 'Choose or take a picture (JPG, PNG, WebP). Sliders adjust brightness, contrast and midtones; a tick swaps bright and dark.'],
         ['name' => 'Pick the shape and size', 'text' => 'For a panel the plate\'s shape, width, height and frame; for the lamp its circumference, height and socket. Extras: a hole or an eyelet for hanging, a desk stand.'],
-        ['name' => 'Create the model', 'text' => 'Click "Create the model". A few seconds later the model opens on the page with a backlit preview and the download; the calculation shows the precise price.'],
+        ['name' => 'Create the model', 'text' => 'Click "Create the model". About a minute later the model opens on the page with a backlit preview and the download; the calculation shows the precise price.'],
     ],
     'faq' => [
         ['q' => 'What is the difference between a lithophane and a relief?', 'a' => 'A lithophane shows the picture only against light, in a window or in front of a lamp for example. A relief is visible without light, because the bright areas of the photo rise above the plate.'],

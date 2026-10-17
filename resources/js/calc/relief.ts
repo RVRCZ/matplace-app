@@ -10,8 +10,9 @@ import { FileInfo } from './api';
 import { pickArtwork } from './artwork';
 import { loadGeometryFromUrl } from './loaders';
 import { startParticles, viewerBox } from './particles';
+import { shrinkPhoto, overLimit } from './photo';
 
-interface ReliefCfg { url: string; home: string; files: string; i18n: Record<string, string> }
+interface ReliefCfg { url: string; home: string; files: string; maxMb: number; i18n: Record<string, string> }
 type Make = 'panel' | 'lamp' | 'wall';
 
 /** "?from=<uuid>": put the saved settings of an earlier design back into the form. */
@@ -150,6 +151,9 @@ export function bootRelief(stage: Stage): void {
     form.onsubmit = async (e) => {
         e.preventDefault();
         if (!photo.files?.[0]) { photo.click(); return; }
+        // a phone's photo of 8 to 12 MB goes as 2 000 px; what is still over the server's limit is said here, in words
+        const sent = await shrinkPhoto(photo.files[0]);
+        if (overLimit(sent, cfg.maxMb)) { msg.textContent = cfg.i18n.too_big; return; }
         if (make() !== 'lamp' && shapePick() === 'custom' && !form.querySelector<HTMLInputElement>('[name="silhouette"]')!.value) { msg.textContent = t('silhouette'); return; }
         btn.disabled = true;
         msg.textContent = cfg.i18n.working;
@@ -158,9 +162,11 @@ export function bootRelief(stage: Stage): void {
         const box = viewerBox();
         const dots = box ? startParticles(box) : null;
         dots?.say(cfg.i18n.working);
+        stage.revealStage();
         if (!dots) stage.busy(true);
         const fd = new FormData(form);
         fd.delete('shape-pick'); fd.delete('make');
+        fd.set('photo', sent);
         fd.set('invert', fd.has('invert') ? '1' : '0');
         fd.set('stand', fd.has('stand') && make() !== 'lamp' ? '1' : '0');
         try {
@@ -179,7 +185,7 @@ export function bootRelief(stage: Stage): void {
             if (r.report) stage.note(make() === 'lamp' ? t('fact_lamp', { d: nf.format(r.report.diameter ?? 0), h: nf.format(r.report.height), c: nf.format(r.report.circumference ?? 0), a: nf.format(r.report.min_thickness), t: nf.format(r.report.thickness), s: r.report.shades }) : t('fact', { w: nf.format(r.report.width), h: nf.format(r.report.height), t: nf.format(r.report.thickness), s: r.report.shades }));
             $('relief-backlit').classList.toggle('hidden', !backlit);
             msg.textContent = make() === 'lamp' && file.kind === 'lithophane' ? t('backlit_lamp') : '';
-            stage.reveal('print');
+            stage.revealResult();
         } catch (err) {
             msg.textContent = (err as Error).message && (err as Error).message !== 'relief' ? (err as Error).message : cfg.i18n.failed;
             void dots?.fail();

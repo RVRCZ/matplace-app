@@ -9,13 +9,16 @@
       @section('price-note')   optional text under the buttons (every tool has the same one today: what the next step shows)
     and passes: tool (key in config/tools.php), module (which script drives the page: resources/js/calc/tool_page.ts),
     lead (one sentence), sections (id => label, in order: the tool's own steps; the last one, "print" = the material and
-    the number of pieces, is added here for every tool), available + unavailable (the tool's engine is missing).
+    the number of pieces, is added here for every tool), available + unavailable (the tool's engine is missing),
+    sample (a tool that starts from a photo: the sentence shown over a printed piece of it until there is a model);
+    with @section('viewer-drop') the photos are picked right there, over the printed piece.
     Scripts: window.MP_TOOL (shared) next to the tool's own window.MP_<TOOL>.
 --}}
 @extends('layouts.app', ['title' => __('tools.'.$tool.'.title').' · matplace', 'tool' => $tool, 'wide' => true])
 
 @php
     $available = $available ?? true;
+    $sampleDrop = ! empty($sample) && trim($__env->yieldContent('viewer-drop')) !== '';
     $next = \App\Support\NextStep::mode();
     $bed = config('pricing.bed_mm');
     // the last step of every tool is the same: the material and how many pieces (the tool names only its own steps)
@@ -39,9 +42,12 @@
 @endpush
 
 @section('content')
-<div id="tool-page" data-tool="{{ $tool }}" data-module="{{ $module }}" class="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
-    {{-- ── the panel ── --}}
-    <div id="tool-panel" class="order-2 min-w-0 lg:order-1">
+{{-- Under lg one column in the order a visitor from a search needs it: the name and the sentence, the model, the way on,
+     then the steps (docs/AF.md §1). On lg the name and the panel on the left, the stage over both rows on the right.
+     The DOM keeps the panel before the stage, so the keyboard still goes through the form before the buttons. --}}
+<div id="tool-page" data-tool="{{ $tool }}" data-module="{{ $module }}" class="grid gap-3 lg:grid-cols-[340px_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-4 lg:gap-y-0">
+    {{-- ── the name and what it is ── --}}
+    <header id="tool-head" class="order-1 min-w-0 lg:col-start-1 lg:row-start-1">
         <a href="{{ route('tools') }}" class="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"><x-icon name="arrow-left" class="h-4 w-4" />{{ __('tools.title') }}</a>
         <div class="mt-1 flex items-start justify-between gap-2">
             <h1 class="text-2xl font-semibold leading-tight text-ink">{{ __('tools.'.$tool.'.title') }}</h1>
@@ -50,17 +56,20 @@
                 <button type="button" id="tool-redo" class="tool-icon-btn" title="{{ __('toolpage.redo') }} (Ctrl+Shift+Z)" aria-label="{{ __('toolpage.redo') }}" disabled><x-icon name="redo-2" class="h-4 w-4" /></button>
             </div>
         </div>
-        <p class="mt-1 text-sm text-muted">{{ $lead }}</p>
+        <p id="tool-lead" class="mt-1 text-sm text-muted">{{ $lead }}</p>
         @if($verified = config('tools.'.$tool.'.verified'))
             <p class="mt-2 inline-flex items-center gap-1 rounded-full bg-ok-soft px-2.5 py-1 text-xs font-medium text-ok"><x-icon name="badge-check" class="h-3.5 w-3.5" />{{ __('toolpage.verified', ['date' => \Illuminate\Support\Carbon::parse($verified)->isoFormat('LL')]) }}</p>
         @endif
+    </header>
 
+    {{-- ── the panel ── --}}
+    <div id="tool-panel" class="order-3 min-w-0 lg:col-start-1 lg:row-start-2">
         @unless($available)
-            <div class="note-warn mt-4 text-sm">{{ $unavailable ?? __('sign.unavailable') }}</div>
+            <div class="note-warn text-sm lg:mt-4">{{ $unavailable ?? __('sign.unavailable') }}</div>
         @else
             {{-- the steps, as anchors: every section stays on the page, the one in view is marked --}}
             {{-- four steps do not fit 340 px in one row ("Materiál a počet kusů"): they wrap, nothing is cut off --}}
-            <nav id="tool-nav" class="sticky top-0 z-10 -mx-1 mt-3 flex flex-wrap gap-1 bg-page px-1 py-2" aria-label="{{ __('param.steps') }}">
+            <nav id="tool-nav" class="sticky top-0 z-10 -mx-1 flex lg:mt-3 flex-wrap gap-1 bg-page px-1 py-2" aria-label="{{ __('param.steps') }}">
                 @foreach($sections as $id => $label)
                     <a href="#sec-{{ $id }}" data-nav="{{ $id }}" class="tool-nav-item"><span class="tool-nav-no">{{ $loop->iteration }}</span>{{ $label }}</a>
                 @endforeach
@@ -87,29 +96,49 @@
     </div>
 
     {{-- ── the stage: viewer, status, the ways on ── --}}
-    <div id="tool-stage" class="order-1 flex min-w-0 flex-col gap-3 lg:sticky lg:top-3 lg:order-2 lg:h-[calc(100vh-1.5rem)] lg:min-h-[560px]">
+    <div id="tool-stage" class="order-2 flex min-w-0 scroll-mt-3 flex-col gap-3 lg:sticky lg:top-3 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100vh-1.5rem)] lg:min-h-[560px]">
         <div class="card relative flex min-h-0 flex-1 flex-col overflow-hidden">
             <div class="relative min-h-0 flex-1">
-                <canvas id="tool-viewer" class="block h-[55vh] w-full touch-none lg:absolute lg:inset-0 lg:h-full" role="img" aria-label="{{ __('param.viewer') }}"></canvas>
-                <div id="tool-empty" class="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted">@yield('viewer-empty')</div>
-                <div class="pointer-events-none absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2">
-                    <div class="pointer-events-auto flex flex-col items-start gap-2">
-                        <div id="tool-views" class="tool-bar" role="group" aria-label="{{ __('toolpage.views') }}">
-                            @foreach(['iso', 'top', 'front', 'side', 'bottom'] as $v)
-                                <button type="button" data-view="{{ $v }}" class="tool-bar-btn" @if($v === 'iso') aria-pressed="true" @endif>{{ __('toolpage.view.'.$v) }}</button>
-                            @endforeach
-                        </div>
-                        {{-- what the preview shows: the whole set, one part, the imprint of a stamp… (filled by the tool) --}}
-                        <div id="param-views" class="flex flex-wrap gap-1" role="group" aria-label="{{ __('param.view') }}"></div>
+                <canvas id="tool-viewer" class="block h-[46vh] w-full touch-none lg:absolute lg:inset-0 lg:h-full" role="img" aria-label="{{ __('param.viewer') }}"></canvas>
+                @if(! empty($sample))
+                    {{-- a tool that starts from a photo has no model yet: a printed piece of it instead of an empty box,
+                         and when the model comes. The first model hides it (Stage.show), the logo of dots too. --}}
+                    <div id="tool-empty" class="@unless($sampleDrop) pointer-events-none @endunless absolute inset-0 bg-studio">
+                        <div id="tool-sample" class="tool-sample h-full">@include('tools.picture', ['key' => $tool, 'eager' => true, 'sizes' => '(min-width: 1024px) 60vw, 100vw'])</div>
+                        @if($sampleDrop)
+                            {{-- the photos go in right here (a tool's own @section('viewer-drop'): the bust, the pet) --}}
+                            <div class="absolute inset-0 flex items-center justify-center p-4 pt-16">@yield('viewer-drop')</div>
+                        @else
+                            <p class="absolute inset-x-3 bottom-3 mx-auto max-w-md rounded-lg bg-card/95 px-3 py-2 text-center text-sm text-ink shadow-sm"><span class="block text-xs text-muted">{{ __('toolpage.sample') }}</span>{{ $sample }}</p>
+                        @endif
                     </div>
-                    <div class="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
-                        <label id="tool-spread-wrap" class="tool-bar hidden items-center gap-2 px-2.5 text-xs font-medium text-ink"><x-icon name="layers" class="h-4 w-4" />{{ __('toolpage.spread') }}
-                            <input id="tool-spread" type="range" min="0" max="100" value="0" class="w-24 accent-ink" aria-label="{{ __('toolpage.spread') }}">
-                        </label>
-                        <div class="tool-bar" role="group" aria-label="{{ __('toolpage.display') }}">
-                            <button type="button" id="tool-fit" class="tool-bar-btn" title="{{ __('toolpage.fit') }}"><x-icon name="maximize" class="h-4 w-4" /><span class="hidden xl:inline">{{ __('toolpage.fit') }}</span></button>
-                            <button type="button" id="tool-xray" class="tool-bar-btn" aria-pressed="false" title="{{ __('toolpage.xray') }}"><x-icon name="scan" class="h-4 w-4" /><span class="hidden xl:inline">{{ __('toolpage.xray') }}</span></button>
-                            <button type="button" id="tool-bed" class="tool-bar-btn" aria-pressed="true" title="{{ __('toolpage.bed', ['x' => (int) $bed['x'], 'y' => (int) $bed['y']]) }}"><x-icon name="grid-3x3" class="h-4 w-4" /><span class="hidden xl:inline">{{ __('toolpage.bed.short') }}</span></button>
+                @else
+                    <div id="tool-empty" class="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted">@yield('viewer-empty')</div>
+                @endif
+                <div class="pointer-events-none absolute inset-x-3 top-3">
+                    {{-- under lg the bar of views folds into one button: on a phone eight buttons over the model read as a tool for experts --}}
+                    <div class="tool-bar pointer-events-auto w-fit lg:hidden">
+                        <button type="button" id="tool-view-toggle" class="tool-bar-btn" aria-expanded="false" aria-controls="tool-viewbar"><x-icon name="eye" class="h-4 w-4" />{{ __('toolpage.views') }}<x-icon name="chevron-down" class="h-4 w-4" /></button>
+                    </div>
+                    <div id="tool-viewbar" class="flex flex-wrap items-start justify-between gap-2 max-lg:mt-2">
+                        <div class="pointer-events-auto flex flex-col items-start gap-2">
+                            <div id="tool-views" class="tool-bar" role="group" aria-label="{{ __('toolpage.views') }}">
+                                @foreach(['iso', 'top', 'front', 'side', 'bottom'] as $v)
+                                    <button type="button" data-view="{{ $v }}" class="tool-bar-btn" @if($v === 'iso') aria-pressed="true" @endif>{{ __('toolpage.view.'.$v) }}</button>
+                                @endforeach
+                            </div>
+                            {{-- what the preview shows: the whole set, one part, the imprint of a stamp… (filled by the tool) --}}
+                            <div id="param-views" class="flex flex-wrap gap-1" role="group" aria-label="{{ __('param.view') }}"></div>
+                        </div>
+                        <div class="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
+                            <label id="tool-spread-wrap" class="tool-bar hidden items-center gap-2 px-2.5 text-xs font-medium text-ink"><x-icon name="layers" class="h-4 w-4" />{{ __('toolpage.spread') }}
+                                <input id="tool-spread" type="range" min="0" max="100" value="0" class="w-24 accent-ink" aria-label="{{ __('toolpage.spread') }}">
+                            </label>
+                            <div class="tool-bar" role="group" aria-label="{{ __('toolpage.display') }}">
+                                <button type="button" id="tool-fit" class="tool-bar-btn" title="{{ __('toolpage.fit') }}"><x-icon name="maximize" class="h-4 w-4" /><span class="hidden max-lg:inline xl:inline">{{ __('toolpage.fit') }}</span></button>
+                                <button type="button" id="tool-xray" class="tool-bar-btn" aria-pressed="false" title="{{ __('toolpage.xray') }}"><x-icon name="scan" class="h-4 w-4" /><span class="hidden max-lg:inline xl:inline">{{ __('toolpage.xray') }}</span></button>
+                                <button type="button" id="tool-bed" class="tool-bar-btn" aria-pressed="true" title="{{ __('toolpage.bed', ['x' => (int) $bed['x'], 'y' => (int) $bed['y']]) }}"><x-icon name="grid-3x3" class="h-4 w-4" /><span class="hidden max-lg:inline xl:inline">{{ __('toolpage.bed.short') }}</span></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -123,12 +152,13 @@
 
         {{-- the two ways on; the price shows first in the calculation (no estimate here: Roman, 16 Oct 2026) --}}
         <div id="tool-go-card" class="card flex flex-wrap items-center justify-end gap-x-6 gap-y-3 p-4">
-            <div class="flex flex-wrap items-center gap-2">
-                <div class="relative">
-                    <button type="button" id="tool-download" class="btn-secondary gap-1.5" aria-haspopup="menu" aria-expanded="false" aria-controls="tool-download-menu" disabled><x-icon name="download" class="h-4 w-4" />{{ __('toolpage.download') }}<x-icon name="chevron-down" class="h-4 w-4" /></button>
+            {{-- on a phone the two share the width of the card, the main one on the right (under the thumb) --}}
+            <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                <div class="relative max-sm:flex-1">
+                    <button type="button" id="tool-download" class="btn-secondary w-full gap-1.5" aria-haspopup="menu" aria-expanded="false" aria-controls="tool-download-menu" disabled><x-icon name="download" class="h-4 w-4" />{{ __('toolpage.download') }}<x-icon name="chevron-down" class="h-4 w-4" /></button>
                     <div id="tool-download-menu" role="menu" class="absolute bottom-full right-0 z-20 mb-2 hidden w-72 rounded-xl border border-line bg-card p-1 text-sm shadow-sm"></div>
                 </div>
-                <button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ __('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button>
+                <button type="button" id="tool-go" class="btn-primary gap-1.5 max-sm:flex-1" disabled><span id="tool-go-label">{{ __('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button>
             </div>
             <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.go.hint') }}@endif</p>
         </div>

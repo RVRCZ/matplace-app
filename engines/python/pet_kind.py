@@ -3,7 +3,7 @@ A pet figurine (the tool /tools/pet-figurine): what is done to the generated ani
 
     thinnest(m)                  the thinnest carrying place of the figure (a leg, the tail), in millimetres
     thicken(m, target, level)    the "tabletop miniature" look: everything a little fatter and smoother, like modelled clay
-    stand(m, kind, extras, target)   the base under the paws, with the pet's name on it
+    stand(m, kind, extras, target)   the base under the paws, with the pet's name on it (or none: the sole cut flat)
 
 All sizes are millimetres of the print. The animal comes from the generator standing on its feet. Its front (-Y) is
 the side the photo was taken from, which is not always where the head points: a dog photographed from the side shows
@@ -146,6 +146,8 @@ def stand(m, kind, extras, target):
     and carry the name raised on their top, on a strip the base is widened by. extras["name_side"] says where the name
     stands: "front" (-Y), "right" (+X), "back" (+Y) or "left" (-X); without it a long footprint gets it along the +X
     flank and a compact one in front. The paws sink a millimetre into the base, so an uneven sole never shows.
+    "none" is no base at all (Roman, 17 Oct 2026): the figure stands on its own paws, their soles cut flat by at most
+    1 mm so they sit on the bed. It prints with supports and tips over more easily; the page says so.
     """
     import manifold3d as M
     import trimesh
@@ -153,9 +155,18 @@ def stand(m, kind, extras, target):
     import shape2d as S
     from mesh_tool import as_manifold, from_manifold
 
-    kind = kind if kind in ("oval", "round", "plaque") else "oval"
+    kind = kind if kind in ("oval", "round", "plaque", "none") else "oval"
     note = {"pedestal": kind}
     z0, h = float(m.bounds[0][2]), float(m.extents[2])
+    if kind == "none":
+        cut = min(1.0, max(0.3, 0.012 * target))
+        flat = from_manifold(as_manifold(m).trim_by_plane([0, 0, 1], z0 + cut))
+        if not len(flat.faces) or not flat.is_watertight:
+            raise ValueError("stand_not_joined")
+        sole = flat.vertices[flat.vertices[:, 2] <= float(flat.bounds[0][2]) + 0.01]
+        note.update({"pedestal_height": 0.0, "flat_cut_mm": round(cut, 2),
+                     "base_mm": [round(float(np.ptp(sole[:, 0])), 1), round(float(np.ptp(sole[:, 1])), 1)]})
+        return flat, note
     v = m.vertices
     low = v[v[:, 2] <= z0 + 0.12 * h]                                    # the paws, or whatever the animal sits on
     x0, y0 = float(low[:, 0].min()), float(low[:, 1].min())

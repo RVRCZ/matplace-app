@@ -17,6 +17,10 @@ return [
     'undo' => 'Deshacer',
     'redo' => 'Rehacer',
     'restore' => 'Recuperar mis últimos ajustes',
+    // a tool that starts from a photo shows a printed piece of it until there is a model (tools/page.blade.php)
+    'sample' => 'Ejemplo de una pieza impresa',
+    'sample.minute' => 'Suba una foto y verá el modelo en un minuto.',
+    'sample.minutes' => 'Suba una foto y verá el modelo en 1 a 3 minutos.',
     'views' => 'Vista',
     'view.iso' => '3D',
     'view.top' => 'Arriba',

@@ -26,6 +26,21 @@ class GenerationController extends Controller
      */
     public const PET_STYLES = ['realistic', 'miniature', 'cartoon'];
 
+    /** The largest photo taken, in MB: the page says it at the field and checks it before sending (resources/js/calc/photo.ts). */
+    public const PHOTO_MB = 12;
+
+    /** A refused photo in the visitor's language, never Laravel's English sentence ("The image field must not be greater than…"). */
+    public static function photoMessages(): array
+    {
+        $big = __('photo.too_big', ['mb' => self::PHOTO_MB]);
+        $out = [];
+        foreach (['image', 'image_left', 'image_back', 'image_right'] as $field) {
+            $out += [$field.'.max' => $big, $field.'.uploaded' => $big, $field.'.image' => __('photo.not_image')];
+        }
+
+        return $out;
+    }
+
     /** POST /api/generate {describe: token, target_mm?} | {prompt, target_mm?} */
     public function store(Request $request, GenerationService $service): JsonResponse
     {
@@ -35,11 +50,11 @@ class GenerationController extends Controller
         $data = $request->validate([
             'describe' => ['nullable', 'string', 'max:16', 'required_without_all:prompt,image'],
             'prompt' => ['nullable', 'string', 'min:3', 'max:500', 'required_without_all:describe,image'],
-            'image' => ['nullable', 'image', 'max:12288'],
+            'image' => ['nullable', 'image', 'max:'.(self::PHOTO_MB * 1024)],
             // more sides of the same subject (optional): the model then matches the likeness from all of them
-            'image_left' => ['nullable', 'image', 'max:12288'],
-            'image_back' => ['nullable', 'image', 'max:12288'],
-            'image_right' => ['nullable', 'image', 'max:12288'],
+            'image_left' => ['nullable', 'image', 'max:'.(self::PHOTO_MB * 1024)],
+            'image_back' => ['nullable', 'image', 'max:'.(self::PHOTO_MB * 1024)],
+            'image_right' => ['nullable', 'image', 'max:'.(self::PHOTO_MB * 1024)],
             'kind' => ['nullable', 'in:bust,figure,pet', 'required_with:image'],
             // a pet figurine: how it is to look, and how much clay the miniature gets (see engines/python/pet_kind.py)
             'style' => ['nullable', 'in:'.implode(',', self::PET_STYLES)],
@@ -50,7 +65,7 @@ class GenerationController extends Controller
             'pedestal_dedication' => ['nullable', 'string', 'max:40'],
             'target_mm' => ['nullable', 'integer', 'min:5', 'max:1000'],
             'consent' => $request->hasFile('image') ? ['accepted'] : ['nullable'],
-        ]);
+        ], self::photoMessages());
         $session = $request->attributes->get('anon_session');
         $user = $request->user();
 

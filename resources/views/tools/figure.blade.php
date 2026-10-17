@@ -1,19 +1,21 @@
 @php
-    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent'])
-        ->mapWithKeys(fn ($k) => [$k => __($k, ['n' => ':n', 'm' => ':m'])])->all();
+    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent', 'figure.limit.register'])
+        ->mapWithKeys(fn ($k) => [$k => __($k, ['n' => ':n', 'm' => ':m'])])->all() + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB]), 'photo.add' => __('photo.add'), 'photo.add.more' => __('photo.add.more'), 'figure.view.front' => __('figure.view.front')];
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-center text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action';
 @endphp
 
-@extends('tools.page', ['tool' => 'figure', 'module' => 'figure', 'lead' => __('figure.lead'), 'available' => $generator, 'unavailable' => __('figure.unavailable'),
+@extends('tools.page', ['tool' => 'figure', 'module' => 'figure', 'lead' => __('figure.lead'), 'available' => $generator, 'unavailable' => __('figure.unavailable'), 'sample' => __('toolpage.sample.minutes'),
     'sections' => ['photo' => __('toolpage.section.photo'), 'base' => __('toolpage.section.base')]])
 
 @push('head')
 <script>
-    window.MP_FIGURE = { generate: @json(route('api.generate.store')), show: @json(url('/api/generate')), home: @json(route('home')), i18n: @json($i18n) };
+    window.MP_FIGURE = { generate: @json(route('api.generate.store')), show: @json(url('/api/generate')), home: @json(route('home')), maxMb: {{ \App\Http\Controllers\Api\GenerationController::PHOTO_MB }}, register: @json(auth()->guest() && \Illuminate\Support\Facades\Route::has('register') ? route('register') : null), i18n: @json($i18n) };
 </script>
 @endpush
 
 @section('viewer-empty'){{ __('figure.step.model') }}@endsection
+
+@section('viewer-drop')@include('tools._figure_drop', ['sample' => __('toolpage.sample.minutes')])@endsection
 
 @section('panel')
 <form id="figure-form" novalidate>
@@ -89,10 +91,11 @@
         <label class="flex items-start gap-3 text-sm text-ink"><input id="figure-consent" type="checkbox" name="consent" value="1" required class="mt-0.5 h-5 w-5 accent-ink"> <span>{{ __('figure.consent') }}</span></label>
         <p class="text-xs text-muted">{{ __('figure.privacy') }}</p>
 
+        {{-- before the click: the free models a day and how long one takes (docs/AF.md §3) --}}
+        <p class="text-xs text-muted">{{ __('figure.limits', ['n' => $guestLimit, 'm' => $userLimit]) }}</p>
         <button id="figure-submit" type="submit" class="btn-ink w-full gap-1.5"><x-icon name="sparkles" class="h-4 w-4" />{{ __('figure.submit') }}</button>
         <div id="figure-progress" class="hidden"><div class="h-2 w-full overflow-hidden rounded-full bg-slate-200"><div id="figure-bar" class="h-2 w-0 bg-ink transition-all"></div></div><p class="mt-1 text-xs text-muted">{{ __('figure.step.wait') }}</p></div>
         <p id="figure-msg" class="hint" aria-live="polite"></p>
-        <p class="text-xs text-muted">{{ __('figure.limits', ['n' => $guestLimit, 'm' => $userLimit]) }}</p>
     </x-tool-section>
 </form>
 @endsection

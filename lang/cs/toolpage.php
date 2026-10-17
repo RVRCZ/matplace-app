@@ -17,6 +17,10 @@ return [
     'undo' => 'Zpět',
     'redo' => 'Vpřed',
     'restore' => 'Obnovit poslední nastavení',
+    // a tool that starts from a photo shows a printed piece of it until there is a model (tools/page.blade.php)
+    'sample' => 'Ukázka hotového výtisku',
+    'sample.minute' => 'Nahrajte fotku, model uvidíte asi za minutu.',
+    'sample.minutes' => 'Nahrajte fotku, model uvidíte za 1 až 3 minuty.',
     'views' => 'Pohled',
     'view.iso' => '3D',
     'view.top' => 'Shora',

@@ -1,0 +1,97 @@
+{
+    "figure.done": [
+        "Hotovo. Model je v náhledu, cenu ukáže tlačítko Pokračovat.",
+        "Done. The model is in the preview; Continue shows the price.",
+        "Listo. El modelo está en la vista previa; Continuar muestra el precio."
+    ],
+    "figure.generating": [
+        "Vytvářím model, obvykle to trvá 1 až 3 minuty…",
+        "Creating the model, it usually takes 1 to 3 minutes…",
+        "Creando el modelo, suele tardar de 1 a 3 minutos…"
+    ],
+    "figure.step.wait": [
+        "Model vzniká 1 až 3 minuty. Můžete odejít a vrátit se odkazem, který je teď v adresním řádku.",
+        "The model takes 1 to 3 minutes. You can leave and come back by the link that is in the address bar now.",
+        "El modelo tarda de 1 a 3 minutos. Puede salir y volver con el enlace que ahora está en la barra de direcciones."
+    ],
+    "figure.limits": [
+        "Zdarma :n model denně bez účtu, :m s účtem. Model vzniká 1 až 3 minuty.",
+        "Free: :n model a day without an account, :m with one. The model takes 1 to 3 minutes.",
+        "Gratis: :n modelo al día sin cuenta, :m con cuenta. El modelo tarda de 1 a 3 minutos."
+    ],
+    "figure.limit.register": [
+        "Založit účet zdarma",
+        "Create a free account",
+        "Crear una cuenta gratis"
+    ],
+    "relief.working": [
+        "Vytvářím model, trvá to asi minutu…",
+        "Creating the model, it takes about a minute…",
+        "Creando el modelo, tarda alrededor de un minuto…"
+    ],
+    "relief.before": [
+        "Zdarma a bez registrace. Model vzniká asi minutu.",
+        "Free, no account needed. The model takes about a minute.",
+        "Gratis y sin registro. El modelo tarda alrededor de un minuto."
+    ],
+    "photo.limit": [
+        "JPG, PNG nebo WebP do :mb MB. Velkou fotku z telefonu před odesláním zmenšíme.",
+        "JPG, PNG or WebP up to :mb MB. A big photo from a phone is made smaller before it is sent.",
+        "JPG, PNG o WebP de hasta :mb MB. Una foto grande del móvil se reduce antes de enviarla."
+    ],
+    "photo.too_big": [
+        "Fotka je větší než :mb MB, zmenšete ji prosím.",
+        "The photo is larger than :mb MB, please make it smaller.",
+        "La foto supera los :mb MB, redúzcala, por favor."
+    ],
+    "photo.not_image": [
+        "Tohle není fotka. Vyberte JPG, PNG nebo WebP.",
+        "This is not a photo. Choose a JPG, PNG or WebP.",
+        "Esto no es una foto. Elija un JPG, PNG o WebP."
+    ],
+    "tools.figure.hint": [
+        "Nahrajte fotku, za 1 až 3 minuty máte 3D model a cenu výtisku.",
+        "Upload a photo; 1 to 3 minutes later you have a 3D model and the print price.",
+        "Suba una foto; en 1 a 3 minutos tiene el modelo 3D y el precio."
+    ],
+    "relief.lead": [
+        "Nahrajte fotku a asi za minutu uvidíte model. Fotku nikam neukládáme.",
+        "Upload a photo and see the model in about a minute. We do not keep the photo.",
+        "Suba una foto y verá el modelo en un minuto. No guardamos la foto."
+    ],
+    "pet.base.none": [
+        "Bez podstavce",
+        "No base",
+        "Sin base"
+    ],
+    "pet.base.none.hint": [
+        "Tiskne se s podpěrami a snáz se převrhne.",
+        "It prints with supports and tips over more easily.",
+        "Se imprime con soportes y se vuelca con más facilidad."
+    ],
+    "pet.base.hint": [
+        "Oválný podstavec sleduje tlapky, kulatý je stabilnější, sokl je vyšší a má jméno na boku. Bez podstavce stojí figurka na vlastních tlapkách.",
+        "The oval base follows the paws, the round one is steadier, the plinth is taller and has the name on its side. Without a base the figurine stands on its own paws.",
+        "La base ovalada sigue las patas, la redonda es más estable, la peana es más alta y lleva el nombre en el lateral. Sin base, la figura se apoya en sus propias patas."
+    ],
+    "photo.add": [
+        "Přidat fotky",
+        "Add photos",
+        "Añadir fotos"
+    ],
+    "photo.add.hint": [
+        "Klepněte nebo sem fotky přetáhněte. Stačí jedna zepředu, další strany podobu zpřesní.",
+        "Tap or drop the photos here. One from the front is enough; more sides make the likeness closer.",
+        "Toque o arrastre aquí las fotos. Basta una de frente; más lados hacen el parecido más fiel."
+    ],
+    "photo.add.more": [
+        "Přidat další stranu",
+        "Add another side",
+        "Añadir otro lado"
+    ],
+    "figure.view.front": [
+        "Zepředu",
+        "Front",
+        "De frente"
+    ]
+}
