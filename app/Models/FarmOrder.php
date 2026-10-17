@@ -64,7 +64,7 @@ class FarmOrder extends Model
         'print_settings', 'admin_overrides', 'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'rest_gcode_path', 'slice_params', 'slice_result', 'est_minutes',
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
         'terms_ip', 'paid_at', 'approved_at', 'approved_by', 'queued_at', 'started_at', 'finished_at', 'handed_at', 'tracking',
-        'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at', 'timelapse_short_path',
+        'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at', 'timelapse_short_path', 'timelapse_wide_path',
         'designer_model_id', 'royalty_czk', 'catalog_model_id',
         'shipping_price', 'packeta_packet_id', 'packeta_barcode', 'tracking_url', 'shipped_at', 'timings',
     ];
@@ -327,10 +327,16 @@ class FarmOrder extends Model
         return $this->hasMany(FarmPrintJob::class)->orderBy('id');
     }
 
-    /** The time-lapse on YouTube, when the customer agreed to share it. */
+    /** The square Short on YouTube, when the customer agreed to share it. */
     public function video(): HasOne
     {
-        return $this->hasOne(FarmVideo::class);
+        return $this->hasOne(FarmVideo::class)->where('kind', FarmVideo::KIND_SHORT);
+    }
+
+    /** Every video of the print on YouTube: the Short and the 16:9. */
+    public function videos(): HasMany
+    {
+        return $this->hasMany(FarmVideo::class);
     }
 
     public function latestJob(): ?FarmPrintJob

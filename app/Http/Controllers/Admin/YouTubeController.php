@@ -42,16 +42,19 @@ class YouTubeController extends Controller
 
     public function index(): View
     {
-        $videos = FarmVideo::with(['order.color.material', 'order.printer', 'order.user'])->latest('id')->limit(200)->get();
+        $videos = FarmVideo::with(['order.color.material', 'order.printer', 'order.user'])->latest('id')->limit(300)->get();
+        $waiting = $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED])->sortByDesc(fn ($v) => $v->score ?? -1)->values();
 
         return view('admin.youtube.index', [
             'configured' => $this->youtube->configured(),
             'account' => YouTubeAccount::current(),
-            // the likely hits first (FarmVideos::score)
-            'waiting' => $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_UPLOADING, FarmVideo::STATUS_FAILED])->sortByDesc(fn ($v) => $v->score ?? -1)->values(),
+            // the likely hits first (FarmVideos::score); the Short and the 16:9 of one print side by side
+            'waiting' => $waiting->groupBy(fn ($v) => $v->farm_order_id ? 'order'.$v->farm_order_id : 'video'.$v->id)
+                ->map(fn ($group) => $group->sortBy(fn ($v) => array_search($v->kind, FarmVideo::KINDS, true))->values()),
             // what the end of each waiting video shows (the cleaned piece from the photo box), by order id
-            'finish' => $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED])
+            'finish' => $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED])->whereNotNull('farm_order_id')
                 ->mapWithKeys(fn ($v) => [$v->farm_order_id => $v->order ? $this->photos->finishIndex($v->order) : null])->all(),
+            'kinds' => $this->byKind(),
             'done' => $videos->whereIn('status', [FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN]),
             'nextSlot' => $this->videos->nextSlot()->timezone((string) config('youtube.publish_timezone', 'Europe/Prague')),
             // the Facebook page / Instagram: offered at the approval when Meta is connected, and what came of it per video
@@ -66,14 +69,37 @@ class YouTubeController extends Controller
                 'published' => $videos->where('status', FarmVideo::STATUS_PUBLISHED)->count(), 'at' => $videos->max('stats_at')],
             // agreed and filmed, but never queued (e.g. finished before the channel was connected)
             'missing' => FarmOrder::with(['color.material'])->where('kind', FarmOrder::KIND_PRINT)->where('video_consent', true)
-                ->whereNotNull('timelapse_path')->whereDoesntHave('video')->latest('id')->limit(50)->get(),
+                ->whereNotNull('timelapse_path')->whereDoesntHave('videos')->latest('id')->limit(50)->get(),
         ]);
     }
 
-    /** The file that goes to YouTube for this order (the square Short when there is one). */
-    public function file(FarmOrder $order): BinaryFileResponse
+    /**
+     * What each kind of video brings (Shorts, 16:9, the weekly cut), from the numbers the hourly stats run keeps: the
+     * videos published in the last 7 and 30 days with their views and likes so far, and all of them.
+     *
+     * @return array<string, array<string, array{videos: int, views: int, likes: int}>>
+     */
+    private function byKind(): array
     {
-        $path = $this->videos->file($order);
+        $published = FarmVideo::where('status', FarmVideo::STATUS_PUBLISHED)->get(['kind', 'views', 'likes', 'published_at']);
+        $sum = fn ($rows) => ['videos' => $rows->count(), 'views' => (int) $rows->sum('views'), 'likes' => (int) $rows->sum('likes')];
+        $out = [];
+        foreach (FarmVideo::KINDS as $kind) {
+            $rows = $published->where('kind', $kind);
+            $out[$kind] = [
+                '7' => $sum($rows->filter(fn ($v) => $v->published_at?->gte(now()->subDays(7)))),
+                '30' => $sum($rows->filter(fn ($v) => $v->published_at?->gte(now()->subDays(30)))),
+                'all' => $sum($rows),
+            ];
+        }
+
+        return $out;
+    }
+
+    /** The file that goes to YouTube for this video: the Short, the 16:9 or the weekly cut. */
+    public function file(FarmVideo $video): BinaryFileResponse
+    {
+        $path = $this->videos->pathOf($video);
         abort_unless($path !== '' && Storage::disk(config('farm.disk'))->exists($path), 404);
 
         // a rebuilt video keeps its name: the browser has to ask every time (farm:timelapse)

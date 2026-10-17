@@ -8,6 +8,8 @@ Schedule::command('matplace:prune')->dailyAt('03:30');
 Schedule::command('farm:watch')->everyMinute()->withoutOverlapping();
 Schedule::command('youtube:stats')->hourlyAt(20);   // numbers, and scheduled videos YouTube made public meanwhile (1 quota unit)
 Schedule::command('social:videos')->everyFiveMinutes()->withoutOverlapping();   // approved videos to the Facebook page / Instagram at their slot
+// "Tento týden na farmě": the week's prints in one video, waiting for the admin in /admin/youtube (never published by itself)
+Schedule::command('farm:weekly-video')->weeklyOn(0, '18:00')->timezone('Europe/Prague')->withoutOverlapping()->runInBackground();
 Schedule::command('matplace:sitemap')->dailyAt('04:40');
 // events older than 13 months (pages fetched by robots: 30 days) are folded into a daily summary and deleted
 Schedule::command('matplace:events-rollup')->dailyAt('03:50');

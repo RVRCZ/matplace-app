@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -30,36 +31,98 @@ class FarmVideos
 
     public function __construct(private readonly YouTubeClient $youtube) {}
 
-    /** A finished customer print with a time-lapse whose owner agreed to share it. */
-    public function eligible(FarmOrder $order): bool
+    /** A finished customer print whose owner agreed to share it, with the file of that kind (Short or 16:9) built. */
+    public function eligible(FarmOrder $order, string $kind = FarmVideo::KIND_SHORT): bool
     {
+        $path = $kind === FarmVideo::KIND_WIDE ? $order->timelapse_wide_path : $order->timelapse_path;
+
         return in_array($order->kind, [FarmOrder::KIND_PRINT, FarmOrder::KIND_SHOWCASE], true)
             && $order->video_consent
-            && $order->timelapse_path
-            && Storage::disk(config('farm.disk'))->exists($order->timelapse_path);
+            && $path
+            && Storage::disk(config('farm.disk'))->exists($path);
     }
 
-    /** Called when the time-lapse is ready and when the customer agrees later. Rejected videos stay rejected. */
+    /**
+     * Called when the videos are ready and when the customer agrees later: the Short and the 16:9 each wait for the
+     * admin as their own video. Rejected videos stay rejected. Returns the Short's row (the 16:9's when there is no Short).
+     */
     public function queueFor(FarmOrder $order): ?FarmVideo
     {
-        if (! $this->eligible($order) || ! YouTubeAccount::current()) {
+        if (! YouTubeAccount::current()) {
             return null;
         }
-        $video = $order->video()->first();
-        if ($video && ! in_array($video->status, [FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_FAILED], true)) {
-            return $video;
+        $rows = [];
+        $fresh = false;
+        foreach ([FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE] as $kind) {
+            if (! $this->eligible($order, $kind)) {
+                continue;
+            }
+            $video = $order->videos()->where('kind', $kind)->first();
+            if ($video && ! in_array($video->status, [FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_FAILED], true)) {
+                $rows[$kind] = $video;
+
+                continue;
+            }
+            $video ??= new FarmVideo(['farm_order_id' => $order->id, 'kind' => $kind]);
+            $video->fill([
+                'status' => FarmVideo::STATUS_PENDING, 'youtube_id' => null, 'error' => null, 'approved_at' => null,
+                'title' => $video->title ?: $this->defaultTitle($order, $kind),
+                'score' => $video->score ?? $this->score($order),
+                // one track for all versions of the order: the one the videos were built with
+                'music' => $music = $video->music ?? $order->videos()->whereNotNull('music')->value('music') ?? $this->pickMusic($order),
+                'description' => $video->description ?: $this->defaultDescription($order, $music, $kind),
+            ])->save();
+            $rows[$kind] = $video;
+            $fresh = true;
         }
-        $video ??= new FarmVideo(['farm_order_id' => $order->id]);
-        $video->fill([
-            'status' => FarmVideo::STATUS_PENDING, 'youtube_id' => null, 'error' => null, 'approved_at' => null,
-            'title' => $video->title ?: $this->defaultTitle($order),
-            'score' => $video->score ?? $this->score($order),
-            'music' => $music = $video->music ?? $this->pickMusic($order),
-            'description' => $video->description ?: $this->defaultDescription($order, $music),
-        ])->save();
-        $this->tellAdmin($video, $order);
+        $video = $rows[FarmVideo::KIND_SHORT] ?? $rows[FarmVideo::KIND_WIDE] ?? null;
+        if ($video && $fresh) {
+            $this->tellAdmin($video, $order);
+        }
 
         return $video;
+    }
+
+    /**
+     * The week's cut (farm:weekly-video) waits for the admin like any other video. Built again for the same week, it
+     * takes the new file while it is not on YouTube yet; one already there stays (the admin replaces it).
+     *
+     * @param  list<int>  $orders  the orders in it (a withdrawn consent marks the cut)
+     */
+    public function queueWeekly(string $week, string $path, array $orders, string $title, string $description, ?string $music): FarmVideo
+    {
+        $video = FarmVideo::where('kind', FarmVideo::KIND_WEEKLY)->get()->first(fn (FarmVideo $v) => ($v->meta['week'] ?? null) === $week)
+            ?? new FarmVideo(['kind' => FarmVideo::KIND_WEEKLY, 'status' => FarmVideo::STATUS_PENDING]);
+        if ($video->youtube_id) {
+            return $video;
+        }
+        $video->fill(['path' => $path, 'title' => $title, 'description' => $description, 'music' => $music, 'meta' => ['week' => $week, 'orders' => $orders],
+            'status' => FarmVideo::STATUS_PENDING, 'error' => null, 'approved_at' => null])->save();
+        $this->tellAdmin($video, null);
+
+        return $video;
+    }
+
+    /** Every customer in it still agrees: the order's consent, for the weekly cut every order in it. */
+    public function consented(FarmVideo $video): bool
+    {
+        if ($video->kind === FarmVideo::KIND_WEEKLY) {
+            $ids = (array) ($video->meta['orders'] ?? []);
+
+            return FarmOrder::whereIn('id', $ids)->where('video_consent', true)->count() === count($ids);
+        }
+
+        return (bool) $video->order?->video_consent;
+    }
+
+    /** May go up: the file is there and everybody in it agrees. */
+    private function allowed(FarmVideo $video): bool
+    {
+        if ($video->kind === FarmVideo::KIND_WEEKLY) {
+            return $video->path && Storage::disk(config('farm.disk'))->exists($video->path) && $this->consented($video);
+        }
+
+        return $video->order && $this->eligible($video->order, $video->kind ?? FarmVideo::KIND_SHORT);
     }
 
     /** The queue job: send an approved time-lapse to YouTube and make it public. */
@@ -70,7 +133,7 @@ class FarmVideos
         if ($video->status !== FarmVideo::STATUS_QUEUED) {
             return;
         }
-        if (! $order || ! $this->eligible($order)) {
+        if (! $this->allowed($video)) {
             $video->update(['status' => FarmVideo::STATUS_WITHDRAWN]);
 
             return;
@@ -80,8 +143,8 @@ class FarmVideos
         $at = $video->approved_at && $video->scheduled_at ? ($video->scheduled_at->gt(now()->addMinutes(5)) ? $video->scheduled_at : $this->nextSlot()) : null;
 
         try {
-            $withMusic = $this->withMusic($order, $video->music);
-            $id = $this->youtube->upload($withMusic ?? Storage::disk(config('farm.disk'))->path($this->file($order)), $video->title, (string) $video->description, $at);
+            // the music is in the file already (TimelapseCutter)
+            $id = $this->youtube->upload(Storage::disk(config('farm.disk'))->path($this->pathOf($video)), $video->title, (string) $video->description, $at);
         } catch (YouTubeError $e) {
             if ($e->isQuota()) {
                 // YouTube's own limit (a young channel takes only a few videos a day): the admin reads when the next try is
@@ -95,13 +158,10 @@ class FarmVideos
 
             return;
         }
-        if ($withMusic) {
-            @unlink($withMusic);
-        }
         $video->update(['status' => FarmVideo::STATUS_UPLOADED, 'youtube_id' => $id, 'uploaded_at' => now()]);
 
         // the customer changed their mind while the upload ran
-        if (! $order->refresh()->video_consent) {
+        if ($order && ! $order->refresh()->video_consent) {
             $this->withdraw($order);
 
             return;
@@ -146,7 +206,7 @@ class FarmVideos
         if (! in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED], true) || ! $video->youtube_id) {
             throw new YouTubeError('not_uploaded', 'The video is not on YouTube yet.');
         }
-        if (! $video->order?->video_consent) {
+        if (! $this->consented($video)) {
             throw new YouTubeError('no_consent', 'The customer has taken the consent back.');
         }
         if (! $now && $video->status === FarmVideo::STATUS_UPLOADED) {
@@ -222,39 +282,47 @@ class FarmVideos
         $consent ? $this->queueFor($order) : $this->withdraw($order);
     }
 
-    /** Consent taken back: the YouTube copy goes away at once. */
+    /**
+     * Consent taken back: the YouTube copies (Short and 16:9) go away at once. A weekly cut with the print in it is
+     * marked for the admin: built again without it (farm:weekly-video), or taken down.
+     */
     private function withdraw(FarmOrder $order): void
     {
-        $video = $order->video()->first();
-        if (! $video || in_array($video->status, [FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_REJECTED], true)) {
-            return;
-        }
-        if ($video->youtube_id) {
-            try {
-                $this->youtube->delete($video->youtube_id);
-            } catch (YouTubeError $e) {
-                // keep the id so an admin sees the video still has to be removed by hand
-                $video->update(['status' => FarmVideo::STATUS_WITHDRAWN, 'error' => 'Delete on YouTube failed: '.$e->getMessage()]);
-                Log::error('YouTube delete after withdrawn consent failed', ['video' => $video->id, 'youtube_id' => $video->youtube_id, 'error' => $e->getMessage()]);
-
-                return;
+        foreach ($order->videos()->get() as $video) {
+            if (in_array($video->status, [FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_REJECTED], true)) {
+                continue;
             }
+            if ($video->youtube_id) {
+                try {
+                    $this->youtube->delete($video->youtube_id);
+                } catch (YouTubeError $e) {
+                    // keep the id so an admin sees the video still has to be removed by hand
+                    $video->update(['status' => FarmVideo::STATUS_WITHDRAWN, 'error' => 'Delete on YouTube failed: '.$e->getMessage()]);
+                    Log::error('YouTube delete after withdrawn consent failed', ['video' => $video->id, 'youtube_id' => $video->youtube_id, 'error' => $e->getMessage()]);
+
+                    continue;
+                }
+            }
+            $video->update(['status' => FarmVideo::STATUS_WITHDRAWN, 'youtube_id' => null, 'published_at' => null]);
         }
-        $video->update(['status' => FarmVideo::STATUS_WITHDRAWN, 'youtube_id' => null, 'published_at' => null]);
+        FarmVideo::where('kind', FarmVideo::KIND_WEEKLY)->whereNotIn('status', [FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_REJECTED])->get()
+            ->filter(fn (FarmVideo $v) => in_array($order->id, (array) ($v->meta['orders'] ?? []), true))
+            ->each(fn (FarmVideo $v) => $v->update(['error' => 'Zákazník zakázky '.$order->number.' odvolal souhlas: sestavte týden znovu (php artisan farm:weekly-video --week='.($v->meta['week'] ?? '?').') nebo video stáhněte.']));
     }
 
     /** The farm admin hears that a video waits in /admin/youtube (farm setting admin_email; empty = nobody). */
-    private function tellAdmin(FarmVideo $video, FarmOrder $order): void
+    private function tellAdmin(FarmVideo $video, ?FarmOrder $order): void
     {
         $to = (string) app(FarmSettings::class)->get('admin_email');
         if ($to === '') {
             return;
         }
+        $what = $order ? 'Časosběr zakázky '.$order->number : 'Týdenní sestřih '.($video->meta['week'] ?? '');
         try {
-            Mail::to($to)->queue(new FarmAdminAlert('Video ke schválení: '.$order->number, [
+            Mail::to($to)->queue(new FarmAdminAlert('Video ke schválení: '.($order->number ?? $video->title), [
                 $video->youtube_id
-                    ? 'Časosběr zakázky '.$order->number.' je na YouTube jako soukromé video a čeká na schválení.'
-                    : 'Časosběr zakázky '.$order->number.' čeká na schválení; na YouTube se nahraje až po něm.',
+                    ? $what.' je na YouTube jako soukromé video a čeká na schválení.'
+                    : $what.' čeká na schválení; na YouTube se nahraje až po něm.',
                 'Název: '.$video->title,
             ], route('admin.youtube.index')));
         } catch (\Throwable $e) {
@@ -286,7 +354,7 @@ class FarmVideos
                 $fill['score'] = $this->score($video->order);
             }
             // made public by hand in Studio, or by YouTube at the scheduled time
-            if ($s['privacy'] === 'public' && in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED], true) && $video->order?->video_consent) {
+            if ($s['privacy'] === 'public' && in_array($video->status, [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED], true) && $this->consented($video)) {
                 $fill += ['status' => FarmVideo::STATUS_PUBLISHED, 'published_at' => $video->scheduled_at ?? now(), 'error' => null];
             }
             $video->update($fill);
@@ -379,37 +447,7 @@ class FarmVideos
         return $tracks ? $tracks[$order->id % count($tracks)] : null;
     }
 
-    /**
-     * The YouTube copy with the track under it: the picture copied as it is, the track cut to the video, faded in and
-     * out. Returns a temporary file (deleted after the upload), null when there is no music or ffmpeg fails.
-     */
-    public function withMusic(FarmOrder $order, ?string $track): ?string
-    {
-        $mp3 = $track ? rtrim((string) config('youtube.music_dir'), '/\\').'/'.$track : null;
-        $seconds = $this->videoSeconds($order);
-        if (! $mp3 || ! is_file($mp3) || ! $seconds) {
-            return null;
-        }
-        $disk = Storage::disk(config('farm.disk'));
-        $out = $disk->path($order->dir().'/youtube-music.mp4');
-        $fadeOut = max(0, $seconds - 1.5);
-        $r = Process::timeout(120)->run([
-            (string) config('farm.ffmpeg', 'ffmpeg'), '-y', '-loglevel', 'error',
-            '-i', $disk->path($this->file($order)), '-i', $mp3,
-            '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k',
-            '-af', sprintf('volume=%s,afade=t=in:st=0:d=0.5,afade=t=out:st=%s:d=1.5', (float) config('youtube.music_volume', 0.8), $fadeOut),
-            '-t', (string) $seconds, '-movflags', '+faststart', $out,
-        ]);
-        if (! $r->successful() || ! is_file($out)) {
-            Log::warning('YouTube music mix failed', ['order' => $order->id, 'error' => mb_substr($r->errorOutput(), 0, 300)]);
-
-            return null;
-        }
-
-        return $out;
-    }
-
-    /** The square Short when it was built (it grows the channel), else the landscape time-lapse. */
+    /** The square Short when it was built (it grows the channel), else the customer's time-lapse. */
     public function file(FarmOrder $order): string
     {
         $short = $order->timelapse_short_path;
@@ -417,13 +455,69 @@ class FarmVideos
         return $short && Storage::disk(config('farm.disk'))->exists($short) ? $short : (string) $order->timelapse_path;
     }
 
+    /** The file that goes to YouTube for this video (relative to the farm disk): the Short, the 16:9 or the week's cut. */
+    public function pathOf(FarmVideo $video): string
+    {
+        return match ($video->kind) {
+            FarmVideo::KIND_WEEKLY => (string) $video->path,
+            FarmVideo::KIND_WIDE => (string) $video->order?->timelapse_wide_path,
+            default => $video->order ? $this->file($video->order) : '',
+        };
+    }
+
+    /** The page of the tool that made the model (a photo figure: the figure tool), else the home page; absolute, without marks. */
+    public function toolUrl(?FarmOrder $order): string
+    {
+        $base = rtrim((string) config('app.url'), '/');
+        $file = $order?->modelFile;
+        $route = match (true) {
+            $file === null => null,
+            $file->origin === 'generated' => 'tools.figure',
+            $file->origin === 'tool' => 'tools.'.(in_array($file->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : $file->origin_ref),
+            default => null,
+        };
+
+        return $route && Route::has($route) ? $base.route($route, [], false) : $base;
+    }
+
+    /** "matplace.com/tools/vase": the address as the end card shows it. */
+    public function address(?FarmOrder $order): string
+    {
+        return rtrim((string) preg_replace('#^https?://(www\.)?#', '', $this->toolUrl($order)), '/');
+    }
+
+    /** The tool's page marked with the video's campaign (video_short, video_wide, video_weekly), so the visits can be counted. */
+    public function link(?FarmOrder $order, string $kind): string
+    {
+        $url = $this->toolUrl($order);
+
+        return ($url === rtrim((string) config('app.url'), '/') ? $url.'/' : $url).'?'.http_build_query(['utm_source' => 'youtube', 'utm_medium' => 'social', 'utm_campaign' => 'video_'.$kind]);
+    }
+
+    /**
+     * The words on the title card of the 16:9 and under a print in the weekly cut: the model's name (or the material
+     * and colour) and "PLA+ Červená · 6 h 10 min tisku".
+     *
+     * @return array{name: string, line: string}
+     */
+    public function cardFacts(FarmOrder $order, ?string $locale = null): array
+    {
+        $facts = $this->facts($order);
+        $material = trim($facts['material'].' '.$facts['color']);
+        $name = $this->modelName($order, $locale);
+
+        // without a readable name the material is the name: the line under it says only the time
+        return ['name' => $name ?? ($material ?: 'Matplace'),
+            'line' => __($name !== null && $material !== '' ? 'youtube.video.card' : 'youtube.video.card_time', ['material' => $material, 'time' => $facts['time']], $locale)];
+    }
+
     /** "Louskáček – 6 h 10 min tisku za 25 s": what was printed, how long it took, how short the video is. */
-    public function defaultTitle(FarmOrder $order): string
+    public function defaultTitle(FarmOrder $order, string $kind = FarmVideo::KIND_SHORT): string
     {
         $locale = config('youtube.language');
         $facts = $this->facts($order);
         $what = $this->modelName($order, $locale) ?? trim($facts['material'].' '.$facts['color']);
-        $seconds = $this->videoSeconds($order);
+        $seconds = $this->videoSeconds($kind === FarmVideo::KIND_WIDE ? (string) $order->timelapse_wide_path : $this->file($order));
         $tail = $seconds
             ? __('youtube.video.tail', ['time' => $facts['time'], 'seconds' => $seconds], $locale)
             : __('youtube.video.tail_plain', ['time' => $facts['time']], $locale);
@@ -461,10 +555,9 @@ class FarmVideos
         return mb_strlen($clean) >= 3 ? mb_strtoupper(mb_substr($clean, 0, 1)).mb_substr($clean, 1, 60) : null;
     }
 
-    /** Length of the video that goes to YouTube, in whole seconds (ffmpeg reads it), null when unknown. */
-    private function videoSeconds(FarmOrder $order): ?int
+    /** Length of a video on the farm disk in whole seconds (ffmpeg reads it), null when unknown. */
+    private function videoSeconds(string $path): ?int
     {
-        $path = $this->file($order);
         if ($path === '' || ! Storage::disk(config('farm.disk'))->exists($path)) {
             return null;
         }
@@ -476,17 +569,36 @@ class FarmVideos
         return (int) round($m[1] * 3600 + $m[2] * 60 + (float) $m[3]);
     }
 
-    public function defaultDescription(FarmOrder $order, ?string $music = null): string
+    /** What was printed and how, the link with the kind's campaign, the music credit; the Short gets its hashtags. */
+    public function defaultDescription(FarmOrder $order, ?string $music = null, string $kind = FarmVideo::KIND_SHORT): string
     {
-        $text = __('youtube.video.description', $this->facts($order), config('youtube.language'));
+        $text = __('youtube.video.description', $this->facts($order, $kind), config('youtube.language'));
         if ($music) {
             $text .= "\n\n".__('youtube.video.music', ['track' => pathinfo($music, PATHINFO_FILENAME)], config('youtube.language'));
         }
 
-        return $order->timelapse_short_path ? $text."\n\n#Shorts #3Dprinting #timelapse" : $text;
+        return $kind === FarmVideo::KIND_SHORT && $order->timelapse_short_path ? $text."\n\n#Shorts #3Dprinting #timelapse" : $text;
     }
 
-    private function facts(FarmOrder $order): array
+    /**
+     * The weekly cut's description: one chapter per print (YouTube makes chapters from a list starting at 0:00), each
+     * with its tool's page, then the music credit.
+     *
+     * @param  list<array{0: float, 1: string, 2: ?string}>  $chapters
+     */
+    public function weeklyDescription(string $dates, array $chapters, ?string $music): string
+    {
+        $locale = config('youtube.language');
+        $lines = array_map(fn ($c) => sprintf('%d:%02d %s', intdiv((int) $c[0], 60), (int) $c[0] % 60, $c[1]).($c[2] ? ' – '.$c[2] : ''), $chapters);
+        $text = __('youtube.weekly.description', ['dates' => $dates, 'count' => count($chapters), 'url' => $this->link(null, FarmVideo::KIND_WEEKLY)], $locale)."\n\n".implode("\n", $lines);
+        if ($music) {
+            $text .= "\n\n".__('youtube.video.music', ['track' => pathinfo($music, PATHINFO_FILENAME)], $locale);
+        }
+
+        return $text."\n\n#3Dprinting #timelapse";
+    }
+
+    private function facts(FarmOrder $order, string $kind = FarmVideo::KIND_SHORT): array
     {
         $order->loadMissing(['color.material', 'printer']);
         $minutes = (int) ($order->actual_minutes ?: $order->est_minutes);
@@ -496,8 +608,8 @@ class FarmVideos
             'color' => $order->color?->displayName() ?? '',
             'printer' => $order->printer?->model ?: ($order->printer?->name ?? ''),
             'time' => $minutes >= 60 ? intdiv($minutes, 60).' h '.($minutes % 60).' min' : $minutes.' min',
-            // marked, so the people a video brings can be counted (YouTube often sends no referrer)
-            'url' => rtrim((string) config('app.url'), '/').'/?utm_source=youtube&utm_medium=social&utm_campaign=video',
+            // marked, so the people a video brings can be counted (YouTube often sends no referrer), per kind of video
+            'url' => $this->link(null, $kind),
         ];
     }
 }

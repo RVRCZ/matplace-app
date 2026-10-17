@@ -6,12 +6,12 @@ use App\Jobs\BuildFarmTimelapse;
 use App\Models\FarmOrder;
 use Illuminate\Console\Command;
 
-/** Builds the time-lapse and the Short of an order again, from the frames kept for BuildFarmTimelapse::KEEP_FRAMES_DAYS days. */
+/** Builds the videos of an order again (customer's, Short, 16:9), from the frames kept for BuildFarmTimelapse::KEEP_FRAMES_DAYS days. */
 class FarmTimelapse extends Command
 {
     protected $signature = 'farm:timelapse {number : order number, e.g. F26-000013}';
 
-    protected $description = 'Build the time-lapse video and the square Short of a farm order again';
+    protected $description = 'Build the videos of a farm order again: the customer\'s time-lapse, the square Short and the 16:9';
 
     public function handle(): int
     {
@@ -21,7 +21,6 @@ class FarmTimelapse extends Command
 
             return self::FAILURE;
         }
-        $before = [$order->timelapse_path, $order->timelapse_short_path];
         (new BuildFarmTimelapse($order->id, rebuild: true))->handle();
         $order->refresh();
         if (! $order->timelapse_path) {
@@ -29,8 +28,8 @@ class FarmTimelapse extends Command
 
             return self::FAILURE;
         }
-        $this->info('time-lapse: '.$order->timelapse_path.' | Short: '.($order->timelapse_short_path ?: '-'));
-        if ($order->video()->whereNotNull('youtube_id')->exists()) {
+        $this->info('time-lapse: '.$order->timelapse_path.' | Short: '.($order->timelapse_short_path ?: '-').' | 16:9: '.($order->timelapse_wide_path ?: '-'));
+        if ($order->videos()->whereNotNull('youtube_id')->exists()) {
             $this->warn('The video on YouTube is the old one: /admin/youtube -> "Nahradit novou verzí" puts the new one there.');
         }
 

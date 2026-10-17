@@ -550,7 +550,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/youtube')->name('admin.
     Route::get('/callback', [$yt, 'callback'])->name('callback');
     Route::post('/disconnect', [$yt, 'disconnect'])->name('disconnect');
     Route::post('/orders/{order}/queue', [$yt, 'queue'])->name('queue');
-    Route::get('/orders/{order}/video.mp4', [$yt, 'file'])->name('file');
+    Route::get('/videos/{video}/video.mp4', [$yt, 'file'])->name('file');
     Route::post('/videos/{video}/publish', [$yt, 'publish'])->name('publish');
     Route::post('/videos/{video}/reject', [$yt, 'reject'])->name('reject');
     Route::post('/videos/{video}/retry', [$yt, 'retry'])->name('retry');
