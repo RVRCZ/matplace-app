@@ -348,9 +348,10 @@ class CreativeToolsTest extends TestCase
         $this->assertGreaterThan(70 + 5, $q['bbox']['y']);                                   // caption under the code
 
         $dense = $this->preview('qr', ['url' => 'https://matplace.com/'.str_repeat('a', 200), 'size' => 40])->assertStatus(422);
-        $this->assertMatchesRegularExpression('/\d{2,3} mm/', $dense->json('errors.params.0')); // says which size would work
-        $this->preview('qr', ['url' => 'x'])->assertStatus(422);
-        $this->preview('qr', ['size' => 70])->assertStatus(422);                              // the link is required
+        $this->assertMatchesRegularExpression('/\d{2,3} mm/', (string) collect($dense->json('errors'))->flatten()->first()); // says which size would work (at the link's field since docs/AI.md)
+        $this->preview('qr', ['content' => 'web', 'url' => 'x'])->assertStatus(422);         // not a web address
+        $this->preview('qr', ['content' => 'web', 'url' => '', 'size' => 70])->assertStatus(422);   // the link is required
+        $this->preview('qr', ['url' => 'x'])->assertOk();                                     // a call from before the kinds of content: a one-letter text
 
         $stand = $this->meta($this->preview('qr', ['url' => 'https://matplace.com', 'stand' => true], 'stand')->assertOk());
         $this->assertGreaterThan(30, $stand['bbox']['x']);

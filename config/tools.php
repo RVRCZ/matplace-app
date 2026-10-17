@@ -121,7 +121,7 @@ return [
         ]]],
     'qr' => ['route' => 'tools.qr', 'intent' => 'create', 'categories' => ['signs', 'sell'], 'available' => true, 'verified' => '2026-10-04', 'seo' => ['examples' => [
         ['params' => ['size' => 70, 'url' => 'https://matplace.com', 'label' => 'matplace.com']],
-        ['params' => ['size' => 90, 'url' => 'WIFI:T:WPA;S:Kavarna;P:dobrakava;;', 'label' => 'Wi-Fi', 'stand' => true]],
+        ['params' => ['size' => 90, 'content' => 'wifi', 'ssid' => 'Kavarna', 'password' => 'dobrakava', 'label' => 'Wi-Fi', 'stand' => true]],
         ['params' => ['size' => 40, 'url' => 'https://matplace.com/models', 'label' => '', 'hole' => true]],
     ]]],
     'logo' => ['route' => 'tools.logo', 'intent' => 'create', 'categories' => ['images', 'signs'], 'available' => true, 'seo' => ['examples' => [

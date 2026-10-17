@@ -15,7 +15,7 @@ return [
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Tisk objednáte z naší tiskové farmy, vyberete barvu destičky i kódu a zaplatíte z předplaceného kreditu. Nebo si model zdarma stáhnete jako soubor STL či hotový projekt pro svou tiskárnu.'],
     ],
     'faq' => [
-        ['q' => 'Jak udělám QR kód na Wi-Fi?', 'a' => 'Do pole pro odkaz napíšete text ve tvaru WIFI:T:WPA;S:název sítě;P:heslo;; a telefon po načtení nabídne připojení. Samostatný formulář na Wi-Fi nástroj nemá.'],
+        ['q' => 'Jak udělám QR kód na Wi-Fi?', 'a' => 'Nahoře zvolíte „Wi‑Fi“ a vyplníte název sítě, heslo a zabezpečení (WPA/WPA2, WEP, nebo bez hesla); skrytou síť zaškrtnete. Telefon po načtení kódu nabídne připojení. Heslo zůstává jen v kódu a v uloženém návrhu.'],
         ['q' => 'Jde vytištěný kód později změnit?', 'a' => 'Ne. Kód je součástí výtisku, proto odkaz před objednávkou vyzkoušejte. Pokud se cíl může změnit, vložte adresu, kterou máte pod kontrolou a umíte ji přesměrovat.'],
         ['q' => 'Proč musí být cedulka dvoubarevná?', 'a' => 'Telefon potřebuje kontrast mezi kódem a pozadím. Vystouplý kód vytištěný jednou barvou nepřečte. Doporučujeme světlou destičku a tmavý kód.'],
         ['q' => 'Jak drží cedulka ve stojánku?', 'a' => 'Stojánek je samostatný díl s drážkou. Cedulka dostane dole prázdný pruh 10 mm, kterým se do drážky zasune, a stojí zakloněná asi o 12 stupňů.'],

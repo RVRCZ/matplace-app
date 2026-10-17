@@ -45,7 +45,7 @@ final class ParametricGenerator
         'portrait_scale' => 'placement', 'portrait_x' => 'placement', 'portrait_y' => 'placement', 'portrait_turn' => 'placement'];
 
     /** family → field, flag or choice → the section of the tool page it belongs to (fields and flags: size, choices: input, when not named) */
-    public const PLACE = ['sign' => ['ring_at' => 'size'], 'papel' => self::PAPEL_PLACE, 'shape' => [
+    public const PLACE = ['sign' => ['ring_at' => 'size'], 'qr' => ['hidden' => 'input'], 'papel' => self::PAPEL_PLACE, 'shape' => [
         'bg_strength' => 'input', 'smooth' => 'input', 'contrast' => 'input', 'brightness' => 'input', 'saturation' => 'input', 'remove_bg' => 'input',
         'colors_n' => 'colors', 'relief' => 'colors', 'flush' => 'colors', 'rim' => 'colors', 'body' => 'size', 'mount' => 'size', 'disc' => 'size', 'floor' => 'size', 'inside' => 'size',
     ]];
@@ -54,7 +54,7 @@ final class ParametricGenerator
     public const SECTIONS = ['papel' => ['frame' => 'input', 'placement' => 'size']];
 
     /** kind → the choice the first step opens with, before the picture (what is made of the picture) */
-    public const FIRST = ['papel' => 'treatment'];
+    public const FIRST = ['papel' => 'treatment', 'qr' => 'content'];
 
     /** fields of the input section that sit folded under "adjust the photo" */
     public const FOLDED = ['contrast', 'brightness', 'saturation'];
@@ -265,7 +265,7 @@ final class ParametricGenerator
         'logo' => ['mode' => ['relief', 'height', 'cutout', 'standing'], 'shape' => ['rounded', 'rect', 'circle']],
         'stamp' => ['mode' => ['raised', 'recessed'], 'handle' => ['knob', 'none']],
         // a code is read only in two colours: the plate (light ones first) and the code with its caption (dark ones first)
-        'qr' => ['plate_color' => ['white', 'yellow', 'grey', 'brown', 'orange', 'red', 'green', 'blue', 'black'], 'code_color' => ['black', 'blue', 'green', 'red', 'brown', 'orange', 'grey', 'yellow', 'white']],
+        'qr' => ['content' => ['web', 'wifi', 'text'], 'security' => ['wpa', 'wep', 'nopass'], 'plate_color' => ['white', 'yellow', 'grey', 'brown', 'orange', 'red', 'green', 'blue', 'black'], 'code_color' => ['black', 'blue', 'green', 'red', 'brown', 'orange', 'grey', 'yellow', 'white']],
         'lightbox' => ['shape' => ['rect', 'round'], 'led' => ['strip8', 'strip10', 'module']],
         'cutter' => ['edge' => ['sharp', 'straight'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'holder' => ['style' => ['cradle', 'pocket', 'hook', 'clip'], 'holes' => ['round', 'keyhole']],
@@ -293,7 +293,7 @@ final class ParametricGenerator
         'sign' => ['line1' => [40, true, 'Jana'], 'line2' => [40, false, ''], 'line3' => [40, false, '']],
         'logo' => ['line1' => [30, false, 'LOGO'], 'line2' => [30, false, '']],
         'stamp' => ['line1' => [20, false, 'EVA'], 'line2' => [20, false, '']],
-        'qr' => ['url' => [300, true, 'https://matplace.com'], 'label' => [40, false, 'matplace.com']],
+        'qr' => ['url' => [300, false, 'https://matplace.com'], 'text' => [300, false, ''], 'ssid' => [32, false, ''], 'password' => [63, false, ''], 'label' => [40, false, 'matplace.com']],
         'stencil' => ['line1' => [24, false, 'BOA 8'], 'line2' => [24, false, '']],
         'notes' => ['line1' => [16, false, '']], 'hair_tie' => ['line1' => [16, false, '']], 'candle_stand' => ['line1' => [16, false, '']],
         'lightbox' => ['line1' => [16, false, 'OPEN'], 'line2' => [16, false, '']],
@@ -340,10 +340,11 @@ final class ParametricGenerator
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
         'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
-        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['isolate', 'invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'insert' => ['notch'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
+        'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['isolate', 'invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'insert' => ['notch'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole', 'hidden'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
     public const WHEN = [
+        'qr' => ['url' => ['content', ['web']], 'text' => ['content', ['text']], 'ssid' => ['content', ['wifi']], 'security' => ['content', ['wifi']], 'password' => ['security', ['wpa', 'wep']], 'hidden' => ['content', ['wifi']]],
         'beads' => ['relief' => ['style', ['raised']]],
         // a cut-out is one thin sheet held by ties; a portrait lies on a backing and can be moved in its window
         'papel' => ['soften' => ['treatment', ['cutout']], 'thickness' => ['treatment', ['cutout']], 'bridge' => ['treatment', ['cutout']],
@@ -662,6 +663,14 @@ final class ParametricGenerator
         if (in_array($kind, self::ARTWORK, true) && ! empty($p['artwork'])) {
             $out['artwork'] = (string) $p['artwork'];
         }
+        if ($kind === 'qr' && ! array_key_exists('content', $p)) {
+            // a design from before the kinds of content (17 Oct 2026): a link stays a link, anything else typed into the
+            // one field there was (a Wi-Fi string written by hand) is a text and comes out of the code as it went in
+            $out['content'] = self::webAddress($out['url']) !== null ? 'web' : 'text';
+            if ($out['content'] === 'text') {
+                [$out['text'], $out['url']] = [$out['url'], ''];
+            }
+        }
         if ($kind === 'phone_stand') {
             // the A-frame's window was a switch before round 2: it is the cut-out "window" now and still its default when
             // nothing says otherwise; a cut-out shape and the silhouette need a picture, the library's cat when none came
@@ -777,6 +786,9 @@ final class ParametricGenerator
         if (isset(self::FAMILY[$kind])) {
             $clean += self::freeColors($clean);
         }
+        if ($kind === 'qr') {
+            $clean['payload'] = self::qrPayload($clean);
+        }
         if ($kind === 'compose') {
             $palette = app(Palette::class);
             foreach ($clean['layers'] ?? [] as $i => $layer) {
@@ -806,6 +818,122 @@ final class ParametricGenerator
         }
 
         return $clean;
+    }
+
+    /**
+     * What the QR code carries, from the fields of the kind of content chosen: a web address made whole (https:// when
+     * the scheme is missing), a Wi-Fi string, or the text as typed. The code's modules must stay printable at the chosen
+     * size, so the string may not be longer than qrCapacity() allows. A missing or wrong field is a validation error on
+     * that field (params.url, params.ssid, params.password, params.text).
+     */
+    public static function qrPayload(array $clean): string
+    {
+        $fail = fn (string $field, string $code, array $r = []) => throw ValidationException::withMessages(['params.'.$field => [__('param.error.'.$code, $r)]])->status(422);
+        $content = (string) ($clean['content'] ?? 'web');
+        $field = ['wifi' => 'ssid', 'text' => 'text'][$content] ?? 'url';
+        if ($content === 'wifi') {
+            $ssid = trim((string) ($clean['ssid'] ?? ''));
+            if ($ssid === '') {
+                $fail('ssid', 'qr_no_ssid');
+            }
+            $security = (string) ($clean['security'] ?? 'wpa');
+            $password = (string) ($clean['password'] ?? '');
+            if ($security !== 'nopass' && $password === '') {
+                $fail('password', 'qr_no_password');
+            }
+            $payload = self::wifiString($ssid, $security === 'nopass' ? null : $password, $security, ! empty($clean['hidden']));
+        } elseif ($content === 'text') {
+            $payload = trim((string) ($clean['text'] ?? ''));
+            if ($payload === '') {
+                $fail('text', 'qr_no_text');
+            }
+        } else {
+            $payload = self::webAddress((string) ($clean['url'] ?? '')) ?? $fail('url', 'qr_bad_url');
+        }
+        $room = self::qrCapacity((float) ($clean['size'] ?? self::FIELDS['qr']['size'][2]));
+        if (strlen($payload) > $room) {
+            // what fits at this size, and the size this content would need (a link cannot be shortened at will)
+            $fail($field, 'qr_too_long', ['n' => $room, 'm' => self::qrSizeFor(strlen($payload)) ?? self::FIELDS['qr']['size'][1]]);
+        }
+
+        return $payload;
+    }
+
+    /** The smallest code (mm, quiet zone included) whose 0.9 mm modules hold this many bytes; null beyond version 40. */
+    public static function qrSizeFor(int $bytes): ?int
+    {
+        foreach (self::QR_BYTES_M as $i => $room) {
+            if ($room >= $bytes) {
+                return (int) ceil((17 + 4 * ($i + 1) + 8) * 0.9);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The Wi-Fi string phones understand (ZXing's form): WIFI:T:<WPA|WEP|nopass>;S:<network>;P:<password>;H:true;;
+     * Backslash, semicolon, comma, colon and the double quote are escaped with a backslash; a network name or password
+     * made of hex digits only goes in double quotes, or a reader takes it for hex; an open network has no P: part.
+     */
+    public static function wifiString(string $ssid, ?string $password, string $security = 'wpa', bool $hidden = false): string
+    {
+        $esc = function (string $s): string {
+            $out = addcslashes($s, '\\;,:"');
+
+            return preg_match('/^[0-9a-f]+$/i', $s) ? '"'.$out.'"' : $out;
+        };
+        $type = ['wpa' => 'WPA', 'wep' => 'WEP', 'nopass' => 'nopass'][$security] ?? 'WPA';
+
+        return 'WIFI:T:'.$type.';S:'.$esc($ssid).';'.($password !== null && $password !== '' ? 'P:'.$esc($password).';' : '').($hidden ? 'H:true;' : '').';';
+    }
+
+    /**
+     * A web address as the code should carry it: https:// put in front when no scheme was typed, the host made ASCII
+     * (an accented domain in punycode). Null when it is not an http(s) address of a named host (a dotted name, an IP
+     * number or localhost) - a mailto: or a bare word is not a web address.
+     */
+    public static function webAddress(string $raw): ?string
+    {
+        $raw = trim($raw);
+        if ($raw === '' || preg_match('/\s/u', $raw)) {
+            return null;
+        }
+        $url = preg_match('~^[a-z][a-z0-9+.-]*:~i', $raw) ? $raw : 'https://'.$raw;
+        $u = parse_url($url);
+        if (! is_array($u) || ! in_array(strtolower($u['scheme'] ?? ''), ['http', 'https'], true) || ($u['host'] ?? '') === '') {
+            return null;
+        }
+        $host = $u['host'];
+        if (preg_match('/[^\x00-\x7F]/', $host)) {
+            $ascii = function_exists('idn_to_ascii') ? idn_to_ascii($host) : false;
+            if ($ascii === false) {
+                return null;
+            }
+            $host = $ascii;
+        }
+        if (! preg_match('/^([a-z0-9-]+\.)+[a-z0-9-]{2,}$/i', $host) && ! filter_var($host, FILTER_VALIDATE_IP) && strtolower($host) !== 'localhost') {
+            return null;
+        }
+
+        return strtolower($u['scheme']).'://'.(isset($u['user']) ? $u['user'].(isset($u['pass']) ? ':'.$u['pass'] : '').'@' : '').$host.(isset($u['port']) ? ':'.$u['port'] : '')
+            .($u['path'] ?? '').(isset($u['query']) ? '?'.$u['query'] : '').(isset($u['fragment']) ? '#'.$u['fragment'] : '');
+    }
+
+    /** bytes a code of version 1-40 holds at error level M in byte mode (ISO/IEC 18004, table 7) */
+    private const QR_BYTES_M = [14, 26, 42, 62, 84, 106, 122, 152, 180, 213, 251, 287, 331, 362, 412, 450, 504, 560, 624, 666, 711, 779, 857, 911, 997, 1059, 1125, 1190, 1264, 1370, 1452, 1538, 1628, 1722, 1809, 1911, 1989, 2099, 2213, 2331];
+
+    /**
+     * How many bytes a code of the given size (mm, quiet zone of 4 modules included) can carry with modules of at
+     * least 0.9 mm, the smallest the printer makes readable (the engine's own check, qr_too_dense): the biggest version
+     * that fits, in byte mode at level M, at most the 300 characters of the fields. A size too small for version 1 holds 0.
+     */
+    public static function qrCapacity(float $size): int
+    {
+        $cells = (int) floor($size / 0.9 + 1e-9);
+        $version = min(40, intdiv($cells - 25, 4));   // 17 + 4v modules a side plus the quiet zone on both sides
+
+        return $version < 1 ? 0 : min(300, self::QR_BYTES_M[$version - 1]);
     }
 
     /**

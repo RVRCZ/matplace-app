@@ -749,8 +749,10 @@ def qr(M, Invalid, p):
     k = "qr"
     n = lambda key, d: _num(Invalid, p, k, key, d)       # noqa: E731
     size, plate_t, relief = n("size", 70), n("plate", 2.4), n("relief", 1.0)
-    url = str(p.get("url", "")).strip()
-    if len(url) < 4 or len(url) > 300:
+    # what the code carries: the string the server composed from the kind of content (a web address made whole, a
+    # Wi-Fi string, a text); the one field of before as it was, for a design stored then
+    url = str(p.get("payload") or p.get("url", "")).strip()
+    if len(url) < 1 or len(url) > 300:
         raise Invalid("qr_bad_text")
     try:
         code = segno.make(url, error="m", micro=False)

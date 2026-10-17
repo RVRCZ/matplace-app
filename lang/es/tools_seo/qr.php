@@ -15,7 +15,7 @@ return [
         ['name' => 'Pida la impresión o descargue', 'text' => 'Pida la impresión a nuestra granja de impresión, elija los colores de la placa y del código y pague con crédito prepagado. O descargue el modelo gratis como archivo STL o como proyecto listo para su impresora.'],
     ],
     'faq' => [
-        ['q' => '¿Cómo hago un código QR para el Wi-Fi?', 'a' => 'Escriba en el campo del enlace un texto con la forma WIFI:T:WPA;S:nombre de la red;P:contraseña;; y el móvil que lo lea ofrecerá conectarse. La herramienta no tiene un formulario aparte para el Wi-Fi.'],
+        ['q' => '¿Cómo hago un código QR para el Wi-Fi?', 'a' => 'Elija «Wi‑Fi» arriba y rellene el nombre de la red, la contraseña y la seguridad (WPA/WPA2, WEP o ninguna); marque la red oculta si lo es. El móvil que lea el código ofrecerá conectarse. La contraseña queda solo en el código y en el diseño guardado.'],
         ['q' => '¿Se puede cambiar después un código impreso?', 'a' => 'No. El código forma parte de la pieza, así que pruebe el enlace antes de hacer el pedido. Si el destino puede cambiar, use una dirección que usted controle y pueda redirigir.'],
         ['q' => '¿Por qué el cartel debe ser de dos colores?', 'a' => 'El móvil necesita contraste entre el código y el fondo. No puede leer un código en relieve impreso en un solo color. Recomendamos una placa clara y un código oscuro.'],
         ['q' => '¿Cómo se sujeta el cartel en el soporte?', 'a' => 'El soporte es una pieza aparte con una ranura. El cartel recibe abajo una franja lisa de 10 mm que entra en la ranura, y queda inclinado hacia atrás unos 12 grados.'],
