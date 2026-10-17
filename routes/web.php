@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\InquiryController as ApiInquiryController;
 use App\Http\Controllers\Api\MapApiController;
 use App\Http\Controllers\Api\ModelFileController;
 use App\Http\Controllers\Api\ModelPreviewController;
+use App\Http\Controllers\Api\PlateController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SeenController;
 use App\Http\Controllers\Api\ThreadController;
@@ -362,6 +363,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('models/{designerModel}/quote', [ModelCatalogController::class, 'quote'])->middleware('throttle:120,1,model-quote')->name('models.quote');
     Route::post('calculations', [CalculationController::class, 'store'])->middleware('throttle:calculations')->name('calculations.store');
     Route::get('calculations/{calculation}', [CalculationController::class, 'show'])->name('calculations.show');
+    // how many pieces fit one plate by the model's shadow (the same PlateLayout as the farm's plate)
+    Route::post('calc/plate', [PlateController::class, 'show'])->middleware('throttle:60,1,plate')->name('calc.plate');
     // the page's script confirms that a browser really showed the page (our own statistics: people, not robots)
     Route::post('seen', SeenController::class)->middleware('throttle:120,1,seen')->name('seen');
     Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1,search')->name('search');

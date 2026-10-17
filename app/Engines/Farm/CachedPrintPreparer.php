@@ -2,6 +2,7 @@
 
 namespace App\Engines\Farm;
 
+use App\Domain\Farm\Footprint;
 use App\Engines\Contracts\PrintPreparer;
 use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\PreparedMesh;
@@ -34,7 +35,7 @@ final class CachedPrintPreparer implements PrintPreparer
 
             return new PreparedMesh($outPath, $m['watertight'], (bool) $m['was_watertight'], (bool) $m['repaired'], (int) $m['open_edges'],
                 Dimensions::fromArray($m['bbox']), (float) $m['volume_mm3'], (float) $m['area_mm2'], (int) $m['triangles'], (int) $m['shells'],
-                (array) $m['orientation'] + ['reused' => true], (string) $m['engine']);
+                (array) $m['orientation'] + ['reused' => true], (string) $m['engine'], Footprint::fromArray($m['footprint'] ?? null)?->toArray());
         }
 
         $mesh = $this->inner->prepare($stlPath, $outPath, $unitScale, $bed, $keepPose);

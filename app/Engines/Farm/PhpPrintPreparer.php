@@ -2,6 +2,7 @@
 
 namespace App\Engines\Farm;
 
+use App\Domain\Farm\Footprint;
 use App\Engines\Contracts\PrintPreparer;
 use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\PreparedMesh;
@@ -38,6 +39,7 @@ final class PhpPrintPreparer implements PrintPreparer
             shells: 1,
             orientation: ['method' => 'none', 'changed' => false],
             engine: $this->name(),
+            footprint: Footprint::fromStl($outPath)?->toArray(),
         );
     }
 }
