@@ -345,15 +345,16 @@ export function bootFarmOrder(): void {
         const kindsBox = $('farm-kinds');
         if (!state.colors.length) { box.innerHTML = `<p class="col-span-full text-sm text-slate-600">${esc(tr('farm.order.no_colors'))}</p>`; if (kindsBox) kindsBox.innerHTML = ''; picked = null; return; }
         if (picked === null || !state.colors.some((c) => c.slot === picked && c.enough)) picked = (state.colors.find((c) => c.enough && c.sliced) ?? state.colors.find((c) => c.enough))?.slot ?? null;
-        // the kinds loaded right now, the most colours first; the list opens on the kind of the chosen colour
+        // the kinds loaded right now, the most colours first; the list opens on ALL colours and the kinds only narrow it
+        // (Roman, 17 Oct 2026: the customer picks a colour first, the kind of plastic is a filter)
         const count: Record<string, number> = {};
         state.colors.forEach((c) => { const k = c.kind ?? ''; count[k] = (count[k] ?? 0) + 1; });
         const kinds = Object.keys(count).sort((a, b) => count[b] - count[a] || a.localeCompare(b));
-        if (kindShown === null || (kindShown !== '*' && !kinds.includes(kindShown))) kindShown = state.colors.find((c) => c.slot === picked)?.kind ?? '*';
+        if (kindShown === null || (kindShown !== '*' && !kinds.includes(kindShown))) kindShown = '*';
         if (kindsBox) {
             const chip = (value: string, label: string): string => `<button type="button" role="radio" aria-checked="${kindShown === value}" data-kind="${esc(value)}" class="seg min-h-0 px-3 py-1.5 text-sm ${kindShown === value ? 'seg-on' : ''}">${esc(label)}</button>`;
             kindsBox.innerHTML = kinds.length > 1
-                ? kinds.map((k) => chip(k, `${k} (${count[k]})`)).join('') + chip('*', tr('farm.order.kind_all', { n: state.colors.length }))
+                ? chip('*', tr('farm.order.kind_all', { n: state.colors.length })) + kinds.map((k) => chip(k, `${k} (${count[k]})`)).join('')
                 : `<span class="rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold">${esc(kinds[0] || '')}</span>`;
             kindsBox.querySelectorAll<HTMLButtonElement>('button[data-kind]').forEach((b) => b.addEventListener('click', () => {
                 kindShown = b.dataset.kind ?? '*';
