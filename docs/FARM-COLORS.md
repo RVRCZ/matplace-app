@@ -605,3 +605,9 @@ a Bambu Studia (`C:\Program Files\Bambu Studio\resources\profiles\BBL\filament`)
    255 zůstává pro Max), `php artisan farm:spread U1 PLA/silk --write`, `php artisan farm:spread U1 PLA+ --what=process --write`
    (jen šev S2), `php artisan farm:spread U3 PLA+ --write` (Max → K3M).
 3. Zapsat výsledek sem.
+
+**Zapsáno na produkci 17. 10. 2026 ~13:40 UTC** (nasazení c242451, farma netiskla): `farm:library-refresh --write --models --kinds`
+→ 12 modelů opraveno („Printer Cr“ → Anycubic Kobra S1 / Kobra 3 Max, K3M → Kobra 3 Max), 9 druhů dostalo nové teploty,
+106 řádků podle knihovny, 10 beze změny (Cobra X), 14 odladěných nedotčeno. `farm:spread U2 PETG` → U #1, B #1–#8 (9);
+`U1 PLA/silk` → U #2, B #1–#8 (9); `U1 PLA+ --what=process` → jen B #1 (ostatní S1 už měly šev S2 z knihovny);
+`U3 PLA+` → K3M. Všechny změněné řádky jsou ve stavu „testuje se“ s poznámkou v historii.
