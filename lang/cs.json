@@ -22,7 +22,7 @@
     "calc.status.uploading": "Nahrávám…",
     "calc.status.queued": "Počítám přesně…",
     "calc.status.done": "Přesná cena",
-    "calc.status.failed": "Přesný výpočet se nepovedl, platí odhad.",
+    "calc.status.failed": "Cena je odhad: přesný výpočet teď není k dispozici. Zkuste Přepočítat.",
     "calc.status.converting": "Převádím formát…",
     "calc.material": "Materiál",
     "calc.quality": "Kvalita",

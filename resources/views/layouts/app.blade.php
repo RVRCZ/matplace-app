@@ -57,7 +57,10 @@
         <div class="mx-auto flex {{ empty($wide) ? 'max-w-6xl' : 'max-w-[1600px]' }} items-center justify-between gap-2 px-4 py-2">
             <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2" aria-label="matplace"><img src="/img/logo-header.webp" alt="matplace" width="299" height="180" class="h-10 w-auto sm:h-12" fetchpriority="high"></a>
             <nav class="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm text-slate-600 sm:gap-x-4">
+                {{-- the designers' catalogue leads the menu only once it has something to show (Z.md N7: it opened on "no model yet") --}}
+                @if(\Illuminate\Support\Facades\Cache::remember('nav.models', 600, fn () => \App\Models\DesignerModel::printable()->count()) >= 6)
                 <a href="{{ route('models.index') }}" class="hover:text-slate-900">{{ __('models.nav') }}</a>
+                @endif
                 <a href="{{ route('tools') }}" class="hover:text-slate-900">{{ __('footer.tools') }}</a>
                 <a href="{{ route('home') }}" class="hover:text-slate-900">{{ __('nav.price') }}</a>
                 @auth

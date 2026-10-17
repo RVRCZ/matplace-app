@@ -22,7 +22,7 @@
     "calc.status.uploading": "Uploading…",
     "calc.status.queued": "Calculating precisely…",
     "calc.status.done": "Exact price",
-    "calc.status.failed": "Precise calculation failed, the estimate stands.",
+    "calc.status.failed": "The price is an estimate: the exact calculation is not available right now. Try Recalculate.",
     "calc.status.converting": "Converting format…",
     "calc.material": "Material",
     "calc.quality": "Quality",

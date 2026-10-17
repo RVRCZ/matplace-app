@@ -300,3 +300,27 @@ kde se lišta už řešila), 5 s po navigaci skript: LCP (`PerformanceObserver`,
 (webp 78 %, celá stránka 55 % v poloviční velikosti). Interaktivní cesty: `DataTransfer` na `input[type=file]`,
 klik na `#tool-go`, `then` skript po navigaci. Soubory: `C:\tmp\review_out\facts.json` + webp; vybrané snímky v
 `docs/img/review/` (53 souborů, každý ≤ 300 kB, většina pod 100 kB).
+
+## 7. Kolo 2: stav 17. 10. 2026 (řídící session)
+
+Roman: „pusťme se do #4“. Body 1, 6, 8 a N9, N10, N14 (část nástroje), N15 dělá session 3 podle
+`docs/prompts/web-kolo2.md` (větev `feature/web-round2`, docs/AF.md). Řídící session udělala:
+
+- **N4 / bod 3**: hláška při selhání přesného výpočtu: „Cena je odhad: přesný výpočet teď není k dispozici. Zkuste
+  Přepočítat.“ (cs/en/es, `lang/src/web_round2.json`).
+- **N5 / bod 5**: cookie lišta na jeden řádek: věta, „Jen nezbytné“, „Povolit vše“ (inkoustové), „Nastavit“ rozbalí
+  volby, dlouhý text zůstal na `/cookies`. Stejné prvky pro `measure.ts`.
+- **N7 / bod 7**: „Modely“ v menu jen od 6 modelů v katalogu (`DesignerModel::printable()`, keš 10 min); dnes je 0.
+- **N12 / bod 9**: tři obálky blogu z PNG (1,7 MB, 7,5 MB, 0,6 MB) na webp (101, 164, 66 kB) přímo na serveru, články
+  2, 4, 6 přepnuté; první článek (PrintPal.io) zůstává: Roman rozhodne, jestli nahradit vlastním, nebo schovat.
+- **N17 / bod 10 (část)**: `/signup`, `/signin`, `/dashboard` → `/login`, `/info` → `/about`, `/wp…` → `/blog` (301).
+- **N2, N11, N14 / bod 2 (část)**: „Přepočítat“ a tlačítka „Použít“ v kalkulaci inkoustové, oranžová zůstává jen
+  „Vytisknout u nás“; na telefonu je karta ceny nad prohlížečem (`max-lg:contents` + `order-first`). Tlačítko
+  „Vytisknout u nás“ pro hosta: dnes ho nevidí nikdo kromě správce, protože `farm.public` je `false`
+  (`FarmGate::offered`); tok hosta přes přihlášení a `/farm` už od 17. 10. existuje (docs/AC.md), stačí `FARM_PUBLIC=true`
+  v `.env` na serveru, až Roman farmu otevře.
+- **Bod 4** (hlavní stránka s dlaždicemi) odpadá: Roman 16. 10. zvolil jeden sloupec bez obrázku.
+- **N13 / bod 10 (zbytek)** čeká na Romana: 3 fotky z farmy na O nás, věta kdo jsme, řádek do patičky (město,
+  doba dodání). N16 (skript a písmo i na 404) má nízkou prioritu, nechává se.
+
+Testy: `tests/Feature/WebRound2Test.php` (přesměrování, menu, lišta, inkoustové Přepočítat, text hlášky).

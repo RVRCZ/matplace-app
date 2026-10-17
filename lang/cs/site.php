@@ -42,6 +42,7 @@ return [
     ],
     'consent' => [
         'title' => 'Cookies a měření',
+        'short' => 'Nezbytné cookies jsou vždy; měření návštěvnosti a reklamy jen s vaším souhlasem.',
         'text' => 'Nezbytné cookies potřebujeme k přihlášení a k objednávce. S vaším souhlasem navíc měříme návštěvnost (Google Analytics) a úspěšnost reklamy (Meta). Bez souhlasu se nic z toho nenačte.',
         'more' => 'Víc o cookies',
         'necessary' => 'Nezbytné.',

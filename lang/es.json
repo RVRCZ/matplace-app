@@ -22,7 +22,7 @@
     "calc.status.uploading": "Subiendo…",
     "calc.status.queued": "Calculando con precisión…",
     "calc.status.done": "Precio exacto",
-    "calc.status.failed": "El cálculo exacto ha fallado, vale la estimación.",
+    "calc.status.failed": "El precio es una estimación: el cálculo exacto no está disponible ahora. Pruebe Recalcular.",
     "calc.status.converting": "Convirtiendo formato…",
     "calc.material": "Material",
     "calc.quality": "Calidad",
