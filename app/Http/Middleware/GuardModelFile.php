@@ -33,8 +33,12 @@ class GuardModelFile
         $response = $next($request);
 
         // "project" always is a download; the plain STL only when the link says so (the 3D preview fetches it too)
-        if ($file instanceof ModelFile && $response->isSuccessful() && ($counts === 'project' || ($counts === 'stl' && $request->boolean('download')))) {
-            Track::event('download', $card ?? $file, array_filter(['kind' => $counts === 'project' ? '3mf' : 'stl', 'tool' => $file->origin === 'tool' ? $file->kind() : null, 'printer' => $request->query('printer')]));
+        if ($file instanceof ModelFile && ($counts === 'project' || ($counts === 'stl' && $request->boolean('download')))) {
+            $meta = array_filter(['kind' => $counts === 'project' ? '3mf' : 'stl', 'tool' => $file->origin === 'tool' ? $file->kind() : null, 'printer' => $request->query('printer')]);
+            // a download that did not go through (the project could not be made, the file is not ready) counts as a failure
+            $response->isSuccessful()
+                ? Track::event('download', $card ?? $file, $meta)
+                : Track::event('failed', $card ?? $file, ['step' => 'download', 'code' => $response->getStatusCode()] + $meta);
         }
 
         return $response;

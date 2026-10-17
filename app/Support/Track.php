@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\DesignerModel;
 use App\Models\DesignerProfile;
 use App\Models\Event;
+use App\Models\FarmOrder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route as MatchedRoute;
@@ -20,7 +21,11 @@ use Illuminate\Support\Str;
  *   robots   are no visitors: a page they fetch is one `crawl` (which robot, which page), nothing else (App\Support\Bots);
  *   a visit  is a person's once the browser confirmed it — the page's script called home (`meta.js`), or the
  *            visitor did something only a person does (`meta.act`); a robot dressed as a browser does neither;
- *   staff    a browser an admin signed in from is left out for good, signed in or not.
+ *   staff    a browser an admin signed in from is left out for good, signed in or not; so is a browser that says it
+ *            runs our test (cookie mp_test=1 or header X-Matplace-Test: our scripts, a tester's own browser, docs/AJ.md).
+ *
+ * What an event keeps (`meta`) is numbers and codes only, never a text somebody typed, a photo or an address
+ * (self::META): anything else is dropped before the line is written.
  *
  * Where a visit came from is decided once per browser session (first page) and remembered in the PHP session:
  *   designer  — arrived through a designer's ?ref= link (the cookie `ref` lasts 30 days)
@@ -44,6 +49,17 @@ final class Track
     private const SHARED_META = ['kind', 'tool', 'value', 'currency', 'order', 'results', 'event_id'];
 
     public const REF_DAYS = 30;
+
+    /** The marker of our own test runs: this cookie set to 1, or the header with any value. */
+    public const TEST_COOKIE = 'mp_test';
+
+    public const TEST_HEADER = 'X-Matplace-Test';
+
+    /**
+     * The keys an event's `meta` may have. Values are numbers, true/false, or short codes; `path` is an address of
+     * ours already masked (self::pathOf). The markers bot/staff/js/act are set by this class itself.
+     */
+    public const META = ['kind', 'tool', 'value', 'currency', 'order', 'results', 'event_id', 'path', 'printer', 'step', 'code', 'bot', 'staff', 'js', 'act'];
 
     private const SITES = [
         'google' => ['google.'], 'seznam' => ['seznam.cz'], 'bing' => ['bing.com'],
@@ -70,6 +86,7 @@ final class Track
             if (self::staff($request)) {
                 return null;
             }
+            $meta = self::clean($meta);
             $origin = self::origin($request);
             if (in_array($type, self::ACTIONS, true)) {
                 self::confirm($request, 'act');
@@ -187,7 +204,7 @@ final class Track
         if ($anon?->staff) {
             return true;
         }
-        if (! $request->user()?->isAdmin()) {
+        if (! self::test($request) && ! $request->user()?->isAdmin()) {
             return false;
         }
         if ($anon) {
@@ -198,6 +215,93 @@ final class Track
         }
 
         return true;
+    }
+
+    /** The request says it is one of our test runs (TODO #10): it is left out like the staff. */
+    public static function test(Request $request): bool
+    {
+        return $request->cookie(self::TEST_COOKIE) === '1' || (string) $request->headers->get(self::TEST_HEADER, '') !== '';
+    }
+
+    /**
+     * What a visitor was just shown as the result of something they started (their model is ready, their price is
+     * computed, it failed): written once per subject and only for its owner, so polling and a shared link add nothing.
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    public static function outcome(string $type, Model $subject, array $meta = []): ?Event
+    {
+        try {
+            $request = request();
+            $anon = $request->attributes->get('anon_session')?->id;
+            $user = $request->user()?->id;
+            $session = $subject->getAttribute('anonymous_session_id');
+            $owner = $subject->getAttribute('owner_user_id');
+            if (! (($anon && $session === $anon) || ($user && $owner === $user))) {
+                return null;
+            }
+            $done = Event::where('type', $type)->where('subject_type', self::typeOf($subject))->where('subject_id', $subject->getKey())
+                ->when(isset($meta['step']), fn ($q) => $q->where('meta->step', $meta['step']))->exists();
+
+            return $done ? null : self::event($type, $subject, $meta);
+        } catch (\Throwable $e) {
+            Log::warning('Outcome was not recorded', ['type' => $type, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * An order paid by card: the bank's webhook confirmed the money and the order was paid from it (OrderFlow::payFromCard).
+     * The webhook is no visitor's request, so the line joins the visit that created the order. An order without its
+     * `order_created` was made by the staff or by a test run, and is not counted now either.
+     */
+    public static function paidByCard(FarmOrder $order): ?Event
+    {
+        try {
+            $created = Event::where('type', 'order_created')->where('meta->order', $order->id)->latest('id')->first();
+            if (! $created || Event::where('type', 'order_paid')->where('meta->order', $order->id)->exists()) {
+                return null;
+            }
+            $subject = $order->designer_model_id ? $order->designerModel : $order->modelFile;
+
+            return Event::create([
+                'session_id' => $created->session_id, 'user_id' => $order->user_id, 'locale' => $created->locale, 'type' => 'order_paid',
+                'subject_type' => $subject ? self::typeOf($subject) : null, 'subject_id' => $subject?->getKey(),
+                'source' => $created->source, 'ref_slug' => $created->ref_slug, 'utm' => $created->utm,
+                'meta' => self::clean(array_filter(['order' => $order->id, 'value' => (float) $order->price_total, 'currency' => (string) $order->currency, 'kind' => 'card',
+                    'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null, 'event_id' => 'order-'.$order->id])),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Card payment was not recorded', ['order' => $order->id, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * An event's details as they may be kept (self::META): numbers, true/false and short codes. A key or a value of any
+     * other shape (a text, an address, an array) is dropped.
+     *
+     * @param  array<string, mixed>  $meta
+     * @return array<string, mixed>
+     */
+    public static function clean(array $meta): array
+    {
+        $out = [];
+        foreach (array_intersect_key($meta, array_flip(self::META)) as $key => $value) {
+            $ok = match (true) {
+                is_int($value), is_float($value), is_bool($value) => true,
+                is_string($value) && $key === 'path' => (bool) preg_match('#^/\S{0,189}$#u', $value),
+                is_string($value) => (bool) preg_match('/^[A-Za-z0-9_.:\-]{1,64}$/', $value),
+                default => false,
+            };
+            if ($ok) {
+                $out[$key] = $value;
+            }
+        }
+
+        return $out;
     }
 
     /** The address of the page being shown, as the statistics keep it. */

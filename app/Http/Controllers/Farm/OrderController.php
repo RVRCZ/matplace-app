@@ -82,6 +82,8 @@ class OrderController extends Controller
                 $carry[$to] = $value;
             }
         }
+        // the customer starts an order here (the calculator's signed-in way goes straight to store: order_created)
+        Track::event('order_started', $card ?? $file, array_filter(['tool' => $file?->origin === 'tool' ? $file->kind() : null, 'kind' => $card ? 'card' : ($inspiration ? 'inspiration' : ($calc ? 'calculation' : 'file'))]));
 
         return view('farm.start', [
             'file' => $file,
@@ -453,6 +455,7 @@ class OrderController extends Controller
     {
         $this->authorizeOrder($request, $order);
         $data = $request->validate(self::payRules(), ['terms.accepted' => __('farm.refuse.terms')]);
+        Track::event('checkout_started', $order->modelFile, ['order' => $order->id, 'kind' => 'credit']);
 
         try {
             return $this->payFromRequest($request, $order, $flow, $videos, $data);
@@ -460,6 +463,8 @@ class OrderController extends Controller
             // the top-up page asks for what is missing, in the currency the order is priced in
             return response()->json(['error' => 'credit', 'message' => __('farm.refuse.credit', ['missing' => $e->missingMoney()->format()]), 'missing' => $e->missing(), 'topup_url' => route('account.credit', ['need' => $e->missing(), 'back' => $order->token])], 402);
         } catch (FarmRefusal $e) {
+            Track::event('failed', $order->modelFile, ['step' => 'checkout', 'code' => $e->reason, 'order' => $order->id]);
+
             return response()->json(['error' => $e->reason, 'message' => $e->text()] + $e->data, 422);
         }
     }
@@ -473,6 +478,7 @@ class OrderController extends Controller
     {
         $this->authorizeOrder($request, $order);
         $data = $request->validate(self::payRules(), ['terms.accepted' => __('farm.refuse.terms')]);
+        Track::event('checkout_started', $order->modelFile, ['order' => $order->id, 'kind' => 'card']);
 
         try {
             return $this->payFromRequest($request, $order, $flow, $videos, $data);
@@ -488,12 +494,15 @@ class OrderController extends Controller
             } catch (\Throwable $ex) {
                 Log::error('Order checkout failed', ['payment' => $payment->id, 'error' => $ex->getMessage()]);
                 $payment->update(['status' => Payment::STATUS_FAILED]);
+                Track::event('failed', $order->modelFile, ['step' => 'checkout', 'code' => 'gateway', 'order' => $order->id]);
 
                 return response()->json(['error' => 'gateway', 'message' => __('farm.credit.gateway_down')], 503);
             }
 
             return response()->json(['checkout_url' => $url, 'amount' => $amount, 'currency' => $e->currency]);
         } catch (FarmRefusal $e) {
+            Track::event('failed', $order->modelFile, ['step' => 'checkout', 'code' => $e->reason, 'order' => $order->id]);
+
             return response()->json(['error' => $e->reason, 'message' => $e->text()] + $e->data, 422);
         }
     }
@@ -542,7 +551,7 @@ class OrderController extends Controller
             $videos->setConsent($order, true);
         }
         $order->refresh();
-        Track::event('order_paid', $order->designer_model_id ? $order->designerModel : $order->modelFile, array_filter(['order' => $order->id, 'value' => (float) $order->price_total, 'currency' => (string) $order->currency, 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null, 'event_id' => 'order-'.$order->id]));
+        Track::event('order_paid', $order->designer_model_id ? $order->designerModel : $order->modelFile, array_filter(['order' => $order->id, 'value' => (float) $order->price_total, 'currency' => (string) $order->currency, 'kind' => 'credit', 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null, 'event_id' => 'order-'.$order->id]));
         app(SocialPublisher::class)->conversion('order_paid', 'order-'.$order->id, $request, $request->user()->email, ['value' => (float) $order->price_total, 'currency' => (string) $order->currency]);
 
         return response()->json($this->describe($order->refresh(), $request));

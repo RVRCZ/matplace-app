@@ -164,6 +164,12 @@ class GenerationController extends Controller
     public function show(GenerationRequest $generation): JsonResponse
     {
         abort_unless(in_array($generation->type, ['image', 'text'], true), 404);
+        // its owner sees the generated model or the failure: measured once (docs/AJ.md)
+        if ($generation->status === 'failed') {
+            Track::outcome('failed', $generation, ['step' => 'generate', 'kind' => $generation->type]);
+        } elseif ($generation->resultFile) {
+            UploadController::measure($generation->resultFile);
+        }
 
         return response()->json(['generation' => self::describe($generation)]);
     }

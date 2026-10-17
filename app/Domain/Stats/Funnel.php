@@ -2,6 +2,7 @@
 
 namespace App\Domain\Stats;
 
+use App\Models\AnonymousSession;
 use App\Models\DesignerProfile;
 use App\Models\Event;
 
@@ -25,18 +26,36 @@ final class Funnel
 
     public const SOURCES = ['google', 'seznam', 'bing', 'facebook', 'instagram', 'youtube', 'designer', 'direct', 'other'];
 
-    /** path → steps; a step is the marks that satisfy it */
+    /**
+     * path → steps; a step is the marks that satisfy it. "order" is the audit's way (docs/AUDIT.md bod 12, docs/AJ.md):
+     * the model is ready, the price was shown, an order was started, the customer went to pay, the bank confirmed it.
+     */
     public const PATHS = [
         'customer' => [['visit'], ['upload', 'generate'], ['calculation'], ['order_paid']],
         'owner' => [['visit'], ['model_view', 'tool_view', 'calculation', 'generate'], ['download']],
         'designer' => [['visit'], ['register'], ['designer_enabled'], ['designer_import'], ['designer_file_uploaded']],
+        'order' => [['visit'], ['model_ready'], ['price_shown'], ['order_started', 'order_created'], ['checkout_started'], ['order_paid']],
     ];
+
+    /** How visitors are split for the audit: by the kind of device, new or returning, and the way they came in. */
+    public const SPLITS = ['device' => ['mobile', 'desktop', 'unknown'], 'visitor' => ['new', 'returning'], 'entry' => ['file', 'photo', 'text', 'tool', 'model', 'none']];
+
+    /** Where failures are counted, and what counts as an attempt of that step. */
+    public const ATTEMPTS = [
+        'model' => ['upload', 'generate', 'model_ready', 'failed:model', 'failed:generate'],
+        'calculation' => ['calculation', 'price_shown', 'failed:calculation'],
+        'checkout' => ['checkout_started', 'failed:checkout'],
+        'download' => ['download', 'failed:download'],
+    ];
+
+    /** A browser of a phone or a tablet, from the user agent its anonymous session was started with. */
+    private const MOBILE = '/Mobi|Android|iPhone|iPad|iPod|Tablet|Opera Mini|IEMobile|Silk/i';
 
     /** what each path ends in */
     public const RESULTS = ['customer' => 'order_paid', 'owner' => 'download', 'designer' => 'designer_file_uploaded'];
 
     /**
-     * @return array{days: int, sessions: int, paths: array<string, list<array{step: string, sessions: int, rate: ?float}>>, by_source: array<string, array<string, int>>, by_locale: array<string, array<string, int>>, tools: array<string, array{visits: int, outputs: int, downloads: int, orders: int}>, designers: list<array<string, mixed>>, daily: array<string, array<string, int>>}
+     * @return array{days: int, sessions: int, paths: array<string, list<array{step: string, sessions: int, rate: ?float}>>, by_source: array<string, array<string, int>>, by_locale: array<string, array<string, int>>, tools: array<string, array{visits: int, outputs: int, downloads: int, orders: int}>, designers: list<array<string, mixed>>, audit: array<string, mixed>}
      */
     public function compute(int $days = 30, ?string $source = null, ?string $locale = null, ?string $tool = null): array
     {
@@ -90,7 +109,7 @@ final class Funnel
         return [
             'days' => $days, 'sessions' => count($sessions), 'paths' => $paths,
             'by_source' => $breakdown('source'), 'by_locale' => $breakdown('locale'),
-            'tools' => $tools, 'designers' => $this->designers($days),
+            'tools' => $tools, 'designers' => $this->designers($days), 'audit' => $this->audit($sessions),
         ];
     }
 
@@ -150,13 +169,29 @@ final class Funnel
                     }
                     $s = &$sessions[$key];
                     // where the visit came from and its language are those of its first event
-                    $s ??= ['source' => (string) ($e->source ?: 'other'), 'locale' => (string) ($e->locale ?: 'cs'), 'marks' => ['visit' => true], 'tools' => []];
+                    $s ??= ['source' => (string) ($e->source ?: 'other'), 'locale' => (string) ($e->locale ?: 'cs'), 'marks' => ['visit' => true], 'tools' => [], 'visits' => 0, 'entry' => null, 'looked' => null];
                     $mark = match (true) {
                         $e->type === Event::VIEW && in_array($e->subject_type, ['designer_model', 'catalog_model'], true) => 'model_view',
                         $e->type === Event::VIEW && $e->subject_type === 'tool' => 'tool_view',
+                        $e->type === 'failed' => 'failed:'.($meta['step'] ?? 'other'),
                         default => $e->type,
                     };
                     $s['marks'][$mark] = true;
+                    $s['visits'] += $e->type === Event::VISIT ? 1 : 0;
+                    // the way in: the first thing the visitor did towards a model; only who did nothing is told by
+                    // the first page of a tool or of a model they looked at
+                    $s['entry'] ??= match (true) {
+                        $e->type === 'upload' => 'file',
+                        $e->type === 'generate' => ($meta['kind'] ?? '') === 'text' ? 'text' : 'photo',
+                        in_array($e->type, ['calculation', 'download', 'order_started'], true) && ! empty($meta['tool']) => 'tool',
+                        $e->type === 'download' || $e->type === 'order_started' => 'model',
+                        default => null,
+                    };
+                    $s['looked'] ??= match ($mark) {
+                        'tool_view' => 'tool',
+                        'model_view' => 'model',
+                        default => null,
+                    };
                     $tool = is_array($e->meta) ? ($e->meta['tool'] ?? null) : null;
                     if (is_string($tool) && $tool !== '') {
                         $s['tools'][$tool][$e->type] = true;
@@ -165,6 +200,73 @@ final class Funnel
                 }
             });
 
-        return array_diff_key($sessions, $out);
+        $sessions = array_diff_key($sessions, $out);
+
+        // the device from the user agent the anonymous session began with; returning = an earlier visit of the browser
+        $ids = array_filter(array_keys($sessions), 'is_int');
+        $agents = [];
+        $before = [];
+        foreach (array_chunk($ids, 1000) as $chunk) {
+            $agents += AnonymousSession::whereIn('id', $chunk)->pluck('user_agent', 'id')->all();
+            $before += array_fill_keys(Event::where('type', Event::VISIT)->where('created_at', '<', $since)->whereIn('session_id', $chunk)->distinct()->pluck('session_id')->all(), true);
+        }
+        foreach ($sessions as $key => &$s) {
+            $agent = (string) ($agents[$key] ?? '');
+            $s['device'] = $agent === '' ? 'unknown' : (preg_match(self::MOBILE, $agent) ? 'mobile' : 'desktop');
+            $s['visitor'] = $s['visits'] > 1 || isset($before[$key]) ? 'returning' : 'new';
+            $s['entry'] ??= $s['looked'] ?? 'none';
+        }
+        unset($s);
+
+        return $sessions;
+    }
+
+    /**
+     * The audit's numbers (docs/AJ.md): the order way split by device, new or returning and the way in, and the shares
+     * it asks for. Every share carries its sample size: today 6 to 12 people a day, so a conclusion needs weeks.
+     *
+     * @param  array<int|string, array<string, mixed>>  $sessions
+     * @return array{splits: array<string, array<string, array<string, int>>>, shares: array<string, array{n: int, k: int, rate: ?float}>, errors: array<string, array{n: int, k: int, rate: ?float}>}
+     */
+    private function audit(array $sessions): array
+    {
+        $has = fn (array $s, array $marks): bool => (bool) array_intersect_key(array_flip($marks), $s['marks']);
+        $share = function (callable $base, callable $hit) use ($sessions): array {
+            $n = count(array_filter($sessions, $base));
+            $k = count(array_filter($sessions, fn ($s) => $base($s) && $hit($s)));
+
+            return ['n' => $n, 'k' => $k, 'rate' => $n > 0 ? round(100 * $k / $n, 1) : null];
+        };
+
+        $splits = [];
+        foreach (self::SPLITS as $by => $keys) {
+            $splits[$by] = array_fill_keys($keys, ['sessions' => 0, 'model' => 0, 'price' => 0, 'started' => 0, 'paid' => 0, 'download' => 0, 'failed' => 0]);
+            foreach ($sessions as $s) {
+                $row = &$splits[$by][$s[$by]];
+                $row['sessions']++;
+                $row['model'] += $has($s, ['model_ready']) ? 1 : 0;
+                $row['price'] += $has($s, ['price_shown']) ? 1 : 0;
+                $row['started'] += $has($s, ['order_started', 'order_created']) ? 1 : 0;
+                $row['paid'] += $has($s, ['order_paid']) ? 1 : 0;
+                $row['download'] += $has($s, ['download']) ? 1 : 0;
+                $row['failed'] += (bool) array_filter(array_keys($s['marks']), fn ($m) => str_starts_with($m, 'failed:')) ? 1 : 0;
+                unset($row);
+            }
+        }
+
+        $errors = [];
+        foreach (self::ATTEMPTS as $step => $marks) {
+            $errors[$step] = $share(fn ($s) => $has($s, $marks), fn ($s) => isset($s['marks']['failed:'.$step]) || ($step === 'model' && isset($s['marks']['failed:generate'])));
+        }
+
+        return [
+            'splits' => $splits,
+            'shares' => [
+                'price' => $share(fn () => true, fn ($s) => $has($s, ['price_shown'])),
+                'paid_of_started' => $share(fn ($s) => $has($s, ['order_started', 'order_created']), fn ($s) => $has($s, ['order_paid'])),
+                'download' => $share(fn ($s) => $has($s, self::ATTEMPTS['download']), fn ($s) => $has($s, ['download'])),
+            ],
+            'errors' => $errors,
+        ];
     }
 }

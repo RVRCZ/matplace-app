@@ -16,6 +16,7 @@ use App\Http\Middleware\ToolGate;
 use App\Models\AnonymousSession;
 use App\Support\Consent;
 use App\Support\Locales;
+use App\Support\Track;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -54,6 +55,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(AuthenticatesRequests::class, SetLocale::class);
         // lang_seen only says "this browser has been here": a plain value, readable without the app key
         $middleware->encryptCookies(except: [Locales::SEEN_COOKIE]);
+        // mp_test=1 marks our own test runs (TODO #10, docs/AJ.md): set by scripts and by hand, so a plain value
+        $middleware->encryptCookies(except: [Track::TEST_COOKIE]);
         $middleware->alias(['role' => EnsureRole::class, 'farm.agent' => AuthenticateFarmAgent::class, 'feature' => EnsureFeature::class, 'verified.email' => EnsureEmailVerified::class, 'file' => GuardModelFile::class]);
         $middleware->redirectGuestsTo(fn () => route('login'));
         // JSON API used by the calculator page (same-origin, cookie session); CSRF is enforced by SameSite cookies.

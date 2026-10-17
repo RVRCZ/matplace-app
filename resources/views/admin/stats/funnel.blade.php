@@ -6,8 +6,9 @@
         'visit' => 'Návštěva', 'upload|generate' => 'Nahrál nebo vygeneroval model', 'calculation' => 'Spočítal cenu', 'order_paid' => 'Zaplatil tisk',
         'model_view|tool_view|calculation|generate' => 'Stránka modelu nebo výstup nástroje', 'download' => 'Stáhl model',
         'register' => 'Registrace', 'designer_enabled' => 'Zapnul designérský profil', 'designer_import' => 'Import portfolia', 'designer_file_uploaded' => 'Nahrál soubor pro farmu',
+        'model_ready' => 'Model hotový', 'price_shown' => 'Viděl přesnou cenu', 'order_started|order_created' => 'Začal objednávku', 'checkout_started' => 'Šel zaplatit',
     ];
-    $paths = ['customer' => 'Zákazník', 'owner' => 'Majitel tiskárny', 'designer' => 'Designér'];
+    $paths = ['customer' => 'Zákazník', 'owner' => 'Majitel tiskárny', 'designer' => 'Designér', 'order' => 'Objednávka (audit)'];
     $sources = ['google' => 'Google', 'seznam' => 'Seznam', 'bing' => 'Bing', 'facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube' => 'YouTube', 'designer' => 'Odkaz designéra', 'direct' => 'Přímo', 'other' => 'Ostatní'];
 @endphp
 
@@ -42,7 +43,7 @@
 </div>
 <p class="mt-1 text-xs text-slate-500">Z vlastních událostí webu (bez cookies třetích stran, i bez souhlasu), jen lidé. Krok počítá návštěvníky, kteří udělali jeho i všechny předchozí kroky. Stažení je plnohodnotný výsledek, ne mezikrok.</p>
 
-<div class="mt-4 grid gap-4 lg:grid-cols-3">
+<div class="mt-4 grid gap-4 lg:grid-cols-2">
     @foreach($paths as $key => $name)
         <section class="rounded-2xl border border-slate-200 bg-white p-4">
             <h2 class="font-bold">{{ $name }}</h2>
@@ -58,6 +59,47 @@
         </section>
     @endforeach
 </div>
+
+@php
+    $audit = $stats['audit'];
+    $pct = fn (array $x) => $x['rate'] === null ? '–' : str_replace('.', ',', (string) $x['rate']).' %';
+    $splitNames = [
+        'device' => ['Podle zařízení', ['mobile' => 'Mobil', 'desktop' => 'Počítač', 'unknown' => 'Neznámé']],
+        'visitor' => ['Nový nebo vracející se', ['new' => 'Nový', 'returning' => 'Vracející se']],
+        'entry' => ['Podle vstupní cesty', ['file' => 'Soubor', 'photo' => 'Fotka', 'text' => 'Text', 'tool' => 'Nástroj', 'model' => 'Model ke stažení', 'none' => 'Nic z toho']],
+    ];
+@endphp
+<h2 class="mt-6 font-bold">Měření podle auditu</h2>
+<p class="mt-1 text-xs text-slate-500">Události „model hotový“, „viděl cenu“, „začal objednávku“, „šel zaplatit“ a chyby se zapisují od nasazení měření (docs/AJ.md); starší návštěvy je nemají. U každého podílu je velikost vzorku n: při 6 až 12 lidech denně jsou závěry o konverzi možné až po týdnech.</p>
+<div class="mt-2 grid gap-3 sm:grid-cols-3">
+    @foreach(['price' => 'Návštěvníci s cenou', 'paid_of_started' => 'Zahájené objednávky zaplacené', 'download' => 'Úspěšná stažení'] as $key => $label)
+        <div class="rounded-2xl border border-slate-200 bg-white p-3"><div class="text-xs text-slate-500">{{ $label }}</div><div class="text-lg font-bold">{{ $pct($audit['shares'][$key]) }}</div><div class="text-xs text-slate-500">{{ $audit['shares'][$key]['k'] }} z n = {{ $audit['shares'][$key]['n'] }}</div></div>
+    @endforeach
+</div>
+<div class="mt-3 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+    <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2">Chyby v kroku</th><th class="px-3 py-2 text-right">Zkusili (n)</th><th class="px-3 py-2 text-right">S chybou</th><th class="px-3 py-2 text-right">Podíl</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+            @foreach(['model' => 'Model (nahrání, nástroj, generování)', 'calculation' => 'Výpočet ceny', 'checkout' => 'Platba', 'download' => 'Stažení'] as $step => $label)
+                <tr><td class="px-3 py-2 font-semibold">{{ $label }}</td><td class="px-3 py-2 text-right">{{ $audit['errors'][$step]['n'] }}</td><td class="px-3 py-2 text-right">{{ $audit['errors'][$step]['k'] }}</td><td class="px-3 py-2 text-right">{{ $pct($audit['errors'][$step]) }}</td></tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+@foreach($splitNames as $by => [$title, $names])
+    <h3 class="mt-4 text-sm font-bold">{{ $title }}</h3>
+    <div class="mt-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2"></th><th class="px-3 py-2 text-right">Návštěvníků (n)</th><th class="px-3 py-2 text-right">Model</th><th class="px-3 py-2 text-right">Cena</th><th class="px-3 py-2 text-right">Začali objednávku</th><th class="px-3 py-2 text-right">Zaplatili</th><th class="px-3 py-2 text-right">Stáhli</th><th class="px-3 py-2 text-right">S chybou</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach($audit['splits'][$by] as $key => $row)
+                    @continue($row['sessions'] === 0 && in_array($key, ['unknown', 'none'], true))
+                    <tr><td class="px-3 py-2 font-semibold">{{ $names[$key] ?? $key }}</td>@foreach(['sessions', 'model', 'price', 'started', 'paid', 'download', 'failed'] as $col)<td class="px-3 py-2 text-right">{{ $row[$col] }}</td>@endforeach</tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+@endforeach
 
 @foreach(['by_source' => ['Podle zdroje návštěvy', $sources], 'by_locale' => ['Podle jazyka', ['cs' => 'čeština', 'en' => 'angličtina', 'es' => 'španělština']]] as $key => [$title, $names])
     <h2 class="mt-6 font-bold">{{ $title }}</h2>

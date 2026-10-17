@@ -61,13 +61,27 @@ class UploadController extends Controller
 
         ProcessModelFile::dispatch($file->id);
         Track::event('upload', $file, ['kind' => $ext]);
+        self::measure($file->refresh());
 
         return response()->json(['file' => self::describe($file)], 201);
     }
 
     public function show(ModelFile $modelFile): JsonResponse
     {
+        self::measure($modelFile);
+
         return response()->json(['file' => self::describe($modelFile)]);
+    }
+
+    /** Its owner sees the model ready (an upload, a tool's output, a generated model) or failed: measured once (docs/AJ.md). */
+    public static function measure(ModelFile $file): void
+    {
+        $kind = $file->origin === 'tool' ? 'tool' : $file->kind();
+        if ($file->status === ModelFile::STATUS_READY) {
+            Track::outcome('model_ready', $file, array_filter(['kind' => $kind, 'tool' => $file->origin === 'tool' ? $file->kind() : null]));
+        } elseif ($file->status === ModelFile::STATUS_FAILED) {
+            Track::outcome('failed', $file, ['step' => 'model', 'kind' => $kind]);
+        }
     }
 
     /** Products that consist of several printed parts offer each one as its own download. */
