@@ -611,3 +611,12 @@ a Bambu Studia (`C:\Program Files\Bambu Studio\resources\profiles\BBL\filament`)
 106 řádků podle knihovny, 10 beze změny (Cobra X), 14 odladěných nedotčeno. `farm:spread U2 PETG` → U #1, B #1–#8 (9);
 `U1 PLA/silk` → U #2, B #1–#8 (9); `U1 PLA+ --what=process` → jen B #1 (ostatní S1 už měly šev S2 z knihovny);
 `U3 PLA+` → K3M. Všechny změněné řádky jsou ve stavu „testuje se“ s poznámkou v historii.
+
+### 20b. Výpadek kalkulací 17. 10. 2026 14:00 až 15:05 UTC (řídící)
+
+Po nasazení knihovny (13:40 UTC) selhávala každá kalkulace na webu: „Slice failed (no gcode): run found error, return
+-5“. Příčina: úprava `engines/orca/profiles/filament_pla.json` (tok PLA 12 → 16) regexem utrhla koncovou uvozovku
+(`"16` místo `"16"`), soubor nebyl platný JSON a OrcaSlicer ho odmítl (-5 = chyba konfiguračního souboru). Testy to
+neviděly, protože řežou falešným slicerem. Nahlásila session 4 (14:50 UTC), hotfix ce7d49c nasazen 15:05 UTC, ověřeno
+kalkulací přes API (busta: 61 min, 26,9 g). Od teď `tests/Unit/OrcaProfilesJsonTest.php` načítá každý profil a knihovnu;
+po nasazení, které sahá na profily, se spouští jedna kalkulace na produkci.
