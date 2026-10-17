@@ -151,6 +151,11 @@ známá omezení; u plateb popis stavů a návrat při problému.
 
 ## Rozhodnutí a podklady od Romana
 
+**Odpovědi 17. 10. 2026 večer:** 1. platí audit (popisky říkají, co se stane: „Spočítat cenu a možnosti tisku“,
+„Stáhnout model“, „Objednat tisk“); 2. fotky výtisků a farmy dodá; 3. expedice: zakázka se odesílá v den dotištění,
+v pracovní dny (víkend → pondělí); 4. štítek „Nejčastěji tištěné“ → „Náš výběr“. Farma pro hosty zůstává zavřená.
+
+
 1. „Pokračovat“ (16. 10.) vs. „Spočítat cenu a možnosti tisku“ (audit): které platí?
 2. Fotky skutečných výtisků a farmy, lidé, doba odpovědi: bez nich zůstávají body 3 (příklad), 6 (příklady cen)
    a 10 otevřené.
