@@ -1525,7 +1525,7 @@
     "pet.base.oval": "Oval",
     "pet.base.round": "Round",
     "pet.base.plaque": "Plinth with a name",
-    "pet.base.hint": "The figurine always stands on a base: on its own legs it would print badly and tip over easily. The oval one follows the paws, the plinth is taller and has the name on its side.",
+    "pet.base.hint": "The oval base follows the paws, the round one is steadier, the plinth is taller and has the name on its side. Without a base the figurine stands on its own paws.",
     "pet.base.miniature": "The miniature stands on a round base.",
     "pet.name": "Your pet's name",
     "pet.name_ph": "e.g. Rex",
@@ -1680,5 +1680,11 @@
     "relief.before": "Free, no account needed. The model takes about a minute.",
     "photo.limit": "JPG, PNG or WebP up to :mb MB. A big photo from a phone is made smaller before it is sent.",
     "photo.too_big": "The photo is larger than :mb MB, please make it smaller.",
-    "photo.not_image": "This is not a photo. Choose a JPG, PNG or WebP."
+    "photo.not_image": "This is not a photo. Choose a JPG, PNG or WebP.",
+    "pet.base.none": "No base",
+    "pet.base.none.hint": "It prints with supports and tips over more easily.",
+    "photo.add": "Add photos",
+    "photo.add.hint": "Tap or drop the photos here. One from the front is enough; more sides make the likeness closer.",
+    "photo.add.more": "Add another side",
+    "figure.view.front": "Front"
 }

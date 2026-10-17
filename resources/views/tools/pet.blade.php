@@ -10,7 +10,7 @@
         'rebase.working' => 'pet.rebase.working', 'rebase.failed' => 'pet.rebase.failed',
         'rejected.no_animal' => 'pet.rejected.no_animal', 'rejected.person' => 'pet.rejected.person', 'rejected.several' => 'pet.rejected.several', 'rejected.cropped' => 'pet.rejected.cropped'];
     $i18n = collect($say)->mapWithKeys(fn ($key, $as) => ['figure.'.$as => __($key, ['n' => ':n', 'm' => ':m', 'mm' => ':mm', 'view' => ':view'])])->all()
-        + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB])];
+        + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB]), 'photo.add' => __('photo.add'), 'photo.add.more' => __('photo.add.more'), 'figure.view.front' => __('figure.view.front')];
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50';
 @endphp
 
@@ -24,6 +24,8 @@
 @endpush
 
 @section('viewer-empty'){{ __('pet.step.model') }}@endsection
+
+@section('viewer-drop')@include('tools._figure_drop', ['sample' => __('toolpage.sample.minutes')])@endsection
 
 @section('panel')
 <form id="figure-form" data-kind="pet" novalidate>
@@ -76,14 +78,16 @@
 
         <fieldset>
             <legend class="lbl">{{ __('pet.base') }}</legend>
-            <div class="mt-2 grid grid-cols-3 gap-1.5 text-sm" role="radiogroup">
+            <div class="mt-2 grid grid-cols-2 gap-1.5 text-sm" role="radiogroup">
                 @foreach($bases as $i => $base)
                     <label class="{{ $choice }} px-2 py-1.5 text-center"><input type="radio" name="pedestal" value="{{ $base }}" class="sr-only" @checked($i === 0)>{{ __('pet.base.'.$base) }}</label>
                 @endforeach
             </div>
             <p id="pet-base-note" class="mt-2 hidden text-xs text-ink">{{ __('pet.base.miniature') }}</p>
+            <p id="pet-base-none" class="tool-warn mt-2 hidden text-sm">{{ __('pet.base.none.hint') }}</p>
             <p class="mt-2 text-xs text-muted">{{ __('pet.base.hint') }}</p>
-            <div class="mt-3 grid gap-3">
+            {{-- the name and the dedication live on a base: without one there is nothing to write them on --}}
+            <div id="pet-name-box" class="mt-3 grid gap-3">
                 <label class="lbl">{{ __('pet.name') }}<input name="pedestal_name" maxlength="24" class="field" placeholder="{{ __('pet.name_ph') }}" autocomplete="off"></label>
                 <label class="lbl">{{ __('pet.name_side') }}
                     <select name="name_side" class="field">
@@ -107,6 +111,8 @@
                     form.querySelectorAll('input[name=pedestal]').forEach((r) => { r.disabled = miniature && r.value !== 'round'; });
                     if (miniature) form.querySelector('input[name=pedestal][value=round]').checked = true;
                     document.getElementById('pet-dedication').classList.toggle('hidden', picked('pedestal') !== 'plaque');
+                    document.getElementById('pet-name-box').classList.toggle('hidden', picked('pedestal') === 'none');
+                    document.getElementById('pet-base-none').classList.toggle('hidden', picked('pedestal') !== 'none');
                 };
                 form.querySelectorAll('input[name=style], input[name=pedestal]').forEach((r) => r.addEventListener('change', fields));
                 form.addEventListener('figure:filled', fields);

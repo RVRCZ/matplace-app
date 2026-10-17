@@ -162,6 +162,7 @@ export function bootRelief(stage: Stage): void {
         const box = viewerBox();
         const dots = box ? startParticles(box) : null;
         dots?.say(cfg.i18n.working);
+        stage.revealStage();
         if (!dots) stage.busy(true);
         const fd = new FormData(form);
         fd.delete('shape-pick'); fd.delete('make');

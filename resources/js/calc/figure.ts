@@ -48,7 +48,46 @@ export function bootFigure(stage: Stage): void {
             img.classList.toggle('hidden', !f);
         }
         part('data-view-remove', view)?.classList.toggle('hidden', !f);
+        dropped();
     };
+    // the photos picked in the empty viewer (tools/_figure_drop.blade.php): the same inputs, small pictures of them there
+    const drop = document.getElementById('figure-drop');
+    const dropped = (): void => {
+        const thumbs = document.getElementById('figure-drop-thumbs');
+        if (!drop || !thumbs) return;
+        const chosen = inputs.filter((i) => i.files?.length);
+        thumbs.innerHTML = '';
+        chosen.forEach((i) => {
+            const view = i.dataset.view ?? '';
+            const src = part<HTMLImageElement>('data-view-preview', view)?.getAttribute('src');
+            if (!src) return;
+            const box = document.createElement('span');
+            box.className = 'flex flex-col items-center gap-0.5 text-xs text-muted';
+            const img = document.createElement('img');
+            img.src = src; img.alt = ''; img.className = 'h-14 w-14 rounded-lg object-cover';
+            box.append(img, t(`figure.view.${view}`));
+            thumbs.appendChild(box);
+        });
+        thumbs.classList.toggle('hidden', chosen.length === 0); thumbs.classList.toggle('flex', chosen.length > 0);
+        const title = drop.querySelector('[data-drop-title]');
+        if (title) title.textContent = t(chosen.length ? 'photo.add.more' : 'photo.add');
+    };
+    // a tap asks for the front first, then for the sides still free; a drop fills them in the same order
+    const free = (): HTMLInputElement => inputs.find((i) => !i.files?.length) ?? inputs[0];
+    const put = (input: HTMLInputElement, f: File): void => {
+        const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files;
+        input.dispatchEvent(new Event('change'));
+    };
+    if (drop) {
+        drop.addEventListener('click', () => free().click());
+        const area = document.getElementById('tool-empty') ?? drop;
+        area.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('border-ink'); });
+        area.addEventListener('dragleave', () => drop.classList.remove('border-ink'));
+        area.addEventListener('drop', (e) => {
+            e.preventDefault(); drop.classList.remove('border-ink');
+            [...(e.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith('image/')).slice(0, inputs.length).forEach((f) => put(free(), f));
+        });
+    }
     const mark = (view: string, bad: boolean) => {
         const box = part('data-view-box', view);
         box?.classList.toggle('border-red-600', bad);
@@ -174,6 +213,8 @@ export function bootFigure(stage: Stage): void {
             data.set(input.name, sent);
         }
         working(t('figure.generating'));
+        // on a phone the panel is under the viewer: the page goes up to where the model is being made
+        stage.revealStage();
         try {
             const res = await fetch(cfg.generate, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: data });
             const body = await res.json();

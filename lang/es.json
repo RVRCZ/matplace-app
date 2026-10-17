@@ -1525,7 +1525,7 @@
     "pet.base.oval": "Ovalada",
     "pet.base.round": "Redonda",
     "pet.base.plaque": "Peana con nombre",
-    "pet.base.hint": "La figura siempre se apoya en una base: sobre sus propias patas se imprimiría mal y se volcaría con facilidad. La ovalada sigue las patas, la peana es más alta y lleva el nombre en el lateral.",
+    "pet.base.hint": "La base ovalada sigue las patas, la redonda es más estable, la peana es más alta y lleva el nombre en el lateral. Sin base, la figura se apoya en sus propias patas.",
     "pet.base.miniature": "La miniatura se apoya en una base redonda.",
     "pet.name": "Nombre de su mascota",
     "pet.name_ph": "p. ej. Rex",
@@ -1680,5 +1680,11 @@
     "relief.before": "Gratis y sin registro. El modelo tarda alrededor de un minuto.",
     "photo.limit": "JPG, PNG o WebP de hasta :mb MB. Una foto grande del móvil se reduce antes de enviarla.",
     "photo.too_big": "La foto supera los :mb MB, redúzcala, por favor.",
-    "photo.not_image": "Esto no es una foto. Elija un JPG, PNG o WebP."
+    "photo.not_image": "Esto no es una foto. Elija un JPG, PNG o WebP.",
+    "pet.base.none": "Sin base",
+    "pet.base.none.hint": "Se imprime con soportes y se vuelca con más facilidad.",
+    "photo.add": "Añadir fotos",
+    "photo.add.hint": "Toque o arrastre aquí las fotos. Basta una de frente; más lados hacen el parecido más fiel.",
+    "photo.add.more": "Añadir otro lado",
+    "figure.view.front": "De frente"
 }

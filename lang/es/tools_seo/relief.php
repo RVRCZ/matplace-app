@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Litofanía de una foto: panel, lámpara o relieve, modelo 3D',
-    'description' => 'Convierta una foto en una litofanía de siete formas, una lámpara con la foto alrededor o un relieve de pared. Listo en segundos; no guardamos la foto.',
+    'description' => 'Convierta una foto en una litofanía de siete formas, una lámpara con la foto alrededor o un relieve de pared. Listo en un minuto; no guardamos la foto.',
     'h1' => 'Su foto como litofanía, lámpara o cuadro en relieve',
     'intro' => [
         'La herramienta convierte una foto en un modelo 3D. La litofanía es una placa fina en la que la imagen aparece al poner una luz detrás: las zonas oscuras de la foto son más gruesas y las claras, más finas. La lámpara es la misma foto enrollada en un tubo, con un fondo para un portalámparas E27 o E14. El relieve es un cuadro para la pared en el que las zonas claras sobresalen. Los retratos y las fotos con buen contraste quedan mejor.',
@@ -12,7 +12,7 @@ return [
         ['name' => 'Elija qué fabricar', 'text' => 'Un panel de foto para la ventana o un soporte, una lámpara con la foto alrededor, o un relieve de pared sin luz detrás.'],
         ['name' => 'Suba una foto', 'text' => 'Elija o tome una imagen (JPG, PNG, WebP). Los controles ajustan brillo, contraste y medios tonos; una casilla invierte claros y oscuros.'],
         ['name' => 'Elija forma y medidas', 'text' => 'En el panel, la forma de la placa, el ancho, el alto y el marco; en la lámpara, el perímetro, la altura y el portalámparas. Extras: agujero o anilla para colgar, soporte de mesa.'],
-        ['name' => 'Cree el modelo', 'text' => 'Pulse «Crear el modelo». En unos segundos el modelo se abre en la página con la vista a contraluz y la descarga; el precio exacto lo muestra el cálculo.'],
+        ['name' => 'Cree el modelo', 'text' => 'Pulse «Crear el modelo». En un minuto el modelo se abre en la página con la vista a contraluz y la descarga; el precio exacto lo muestra el cálculo.'],
     ],
     'faq' => [
         ['q' => '¿Qué diferencia hay entre litofanía y relieve?', 'a' => 'La litofanía muestra la imagen solo a contraluz, por ejemplo en una ventana o ante una lámpara. El relieve se ve sin luz, porque las zonas claras de la foto sobresalen de la placa.'],

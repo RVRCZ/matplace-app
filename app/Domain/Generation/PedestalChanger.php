@@ -29,9 +29,10 @@ final class PedestalChanger
 
     /**
      * The bases of a pet figurine (engines/python/pet_kind.py): they follow the footprint of four paws, not the
-     * circle round a chest. All three carry the pet's name; the plinth has room for a dedication too.
+     * circle round a chest. The three bases carry the pet's name, the plinth a dedication too; "none" is the figure on
+     * its own paws, the soles cut flat (Roman, 17 Oct 2026).
      */
-    public const PET_TYPES = ['oval', 'round', 'plaque'];
+    public const PET_TYPES = ['oval', 'round', 'plaque', 'none'];
 
     /**
      * Where the name stands on the base of a pet: the generator's front is the side the photo was taken from, not always

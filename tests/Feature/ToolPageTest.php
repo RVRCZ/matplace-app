@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
+use App\Domain\Tools\ReliefGenerator;
 use App\Domain\Tools\ToolVisibility;
+use App\Http\Controllers\Api\GenerationController;
 use App\Models\User;
 use App\Support\PreviewMeta;
 use App\Support\WarningTexts;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -463,5 +466,105 @@ class ToolPageTest extends TestCase
         // (whichever tools are in it today: the category is taken from all of them)
         config(['tools' => array_map(fn (array $tool) => ['categories' => array_values(array_diff($tool['categories'], ['toys']))] + $tool, config('tools'))]);
         $this->get('/tools')->assertOk()->assertDontSee('data-filter="toys"', false);
+    }
+
+    /** docs/AF.md §1: on a phone the name and its sentence come first, then the model with one "View" button, then the way on. */
+    public function test_on_a_phone_the_name_and_the_sentence_come_before_the_model_and_the_bar_folds(): void
+    {
+        foreach (['qr', 'sign', 'box', 'relief'] as $tool) {
+            $html = (string) $this->get(route(config('tools.'.$tool.'.route')))->assertOk()->getContent();
+            if (! str_contains($html, 'id="tool-viewer"')) {
+                continue;
+            }
+            $h1 = strpos($html, '<h1');
+            $lead = strpos($html, 'id="tool-lead"');
+            $viewer = strpos($html, 'id="tool-viewer"');
+            $go = strpos($html, 'id="tool-go-card"');
+            $this->assertTrue($h1 < $lead && $lead < $viewer && $viewer < $go, "{$tool}: h1, sentence, viewer, action card");
+            // the order on the screen under lg: the head, the stage, the panel (the panel stays first in the DOM on lg)
+            foreach (['tool-head' => 'order-1', 'tool-stage' => 'order-2', 'tool-panel' => 'order-3'] as $id => $order) {
+                $this->assertMatchesRegularExpression('/id="'.$id.'"[^>]*class="[^"]*\b'.$order.'\b/', $html, "{$tool} {$id}");
+            }
+            // one button "View" opens the bar of views, which stays as it was on lg
+            $this->assertMatchesRegularExpression('/id="tool-view-toggle"[^>]*aria-controls="tool-viewbar"[^>]*>.*?'.preg_quote(__('toolpage.views'), '/').'/s', $html);
+            $this->assertStringContainsString('id="tool-viewbar"', $html);
+        }
+        $this->get('/en/tools/box')->assertOk()->assertSee('id="tool-view-toggle"', false)->assertSee('View');
+    }
+
+    /** docs/AF.md §1, §3 and §7: a tool that starts from a photo shows a printed piece and says the time and the size before the upload. */
+    public function test_a_photo_tool_shows_a_printed_piece_and_says_time_and_size_before_the_upload(): void
+    {
+        $html = (string) $this->get('/tools/relief')->assertOk()->getContent();
+        if (str_contains($html, 'id="tool-viewer"')) {
+            $this->assertStringContainsString('id="tool-sample"', $html);
+            if (is_file(public_path('img/tools/relief-800.jpg'))) {
+                $this->assertStringContainsString('img/tools/relief-800.jpg', $html);
+            }
+            $this->assertStringContainsString(e(__('toolpage.sample.minute')), $html);
+            $this->assertStringContainsString(e(__('photo.limit', ['mb' => ReliefGenerator::PHOTO_MB])), $html);
+            $this->assertStringContainsString(e(__('relief.before')), $html);
+            $this->assertStringNotContainsString('pár vteřin', $html);
+        }
+        // a tool with a model from the start has no sample
+        $this->assertStringNotContainsString('id="tool-sample"', (string) $this->get('/tools/box')->getContent());
+        // the bust and the pet: the photos go in right in the empty viewer, the limit and the time over the button
+        config(['ai.daily_limits.generate_guest' => 1, 'ai.daily_limits.generate_user' => 3]);
+        foreach (['/tools/figure', '/tools/pet-figurine'] as $url) {
+            $page = (string) $this->get($url)->getContent();
+            if (! str_contains($page, 'id="tool-viewer"') || ! str_contains($page, 'id="figure-form"')) {
+                continue;                                   // the generator is off here
+            }
+            $this->assertStringContainsString('id="figure-drop"', $page, $url);
+            $this->assertStringContainsString(e(__('photo.add')), $page, $url);
+            $this->assertStringContainsString(e(__('toolpage.sample.minutes')), $page, $url);
+            $limits = strpos($page, e(__('figure.limits', ['n' => 1, 'm' => 3])));
+            $this->assertNotFalse($limits, $url);
+            $this->assertLessThan(strpos($page, 'id="figure-submit"'), $limits, "{$url}: the limit and the time come before the button");
+            $this->assertStringNotContainsString('otevírám kalkulaci', $page, $url);
+        }
+    }
+
+    /** docs/AF.md §2: on a phone the catalogue is folded by category, each with its count, the first one open. */
+    public function test_the_catalogue_on_a_phone_folds_the_categories_with_their_counts(): void
+    {
+        $html = (string) $this->get('/tools')->assertOk()->getContent();
+        $this->assertStringContainsString('id="tool-cats"', $html);
+        $phone = substr($html, (int) strpos($html, 'id="tool-cats"'));
+        $phone = substr($phone, 0, (int) strpos($phone, 'class="hidden lg:block"'));
+        $parts = explode('<section data-tool-section data-cat="', $phone);
+        array_shift($parts);
+        $this->assertGreaterThanOrEqual(5, count($parts));
+        foreach ($parts as $i => $part) {
+            preg_match('/^([a-z]+)"/', $part, $cat);
+            preg_match('/data-total="(\d+)"/', $part, $total);
+            // the count says how many rows the fold holds, and every row is a tool of that category
+            $this->assertSame((int) $total[1], substr_count($part, 'data-key="'), $cat[1]);
+            $this->assertSame((int) $total[1], preg_match_all('/data-cats="[^"]*\b'.$cat[1].'\b[^"]*"/', $part), $cat[1]);
+            $this->assertStringContainsString(e(__('tools.cats.'.$cat[1])), $part);
+            $this->assertStringContainsString('aria-expanded="'.($i === 0 ? 'true' : 'false').'"', $part, $cat[1]);
+        }
+        // the chips in one row that scrolls sideways on a phone, wrapping on lg
+        $this->assertMatchesRegularExpression('/class="[^"]*overflow-x-auto[^"]*lg:flex-wrap[^"]*" role="group"/', $html);
+        // lg keeps its three columns of big cards by what the visitor comes with
+        $this->assertStringContainsString('lg:grid-cols-3', $html);
+    }
+
+    /** docs/AF.md §3: a photo over the limit is refused in the visitor's language, never in Laravel's English. */
+    public function test_a_photo_over_the_limit_is_refused_in_the_visitors_language(): void
+    {
+        $big = UploadedFile::fake()->create('big.jpg', ReliefGenerator::PHOTO_MB * 1024 + 500, 'image/jpeg');
+        $res = $this->post('/api/tools/relief', ['photo' => $big], ['Accept' => 'application/json'])->assertStatus(422);
+        $this->assertSame(__('photo.too_big', ['mb' => ReliefGenerator::PHOTO_MB]), $res->json('message'));
+        $this->assertStringContainsString('15 MB', (string) $res->json('message'));
+        $this->assertStringNotContainsString('must not be greater', (string) $res->getContent());
+        $this->assertStringNotContainsString('kilobytes', (string) $res->getContent());
+        // not a photo at all
+        $txt = UploadedFile::fake()->create('notes.txt', 3, 'text/plain');
+        $res = $this->post('/api/tools/relief', ['photo' => $txt], ['Accept' => 'application/json'])->assertStatus(422);
+        $this->assertSame(__('photo.not_image'), $res->json('message'));
+        // the bust and the pet: their own limit, the same words
+        $this->assertSame(__('photo.too_big', ['mb' => GenerationController::PHOTO_MB]), GenerationController::photoMessages()['image.max']);
+        $this->assertSame(__('photo.too_big', ['mb' => GenerationController::PHOTO_MB]), GenerationController::photoMessages()['image_left.uploaded']);
     }
 }

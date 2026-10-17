@@ -139,8 +139,14 @@ export class Stage {
      * model and the way on; on lg both are in view and the panel moves on to its last step.
      */
     revealResult(): void {
-        if (window.matchMedia('(min-width: 64rem)').matches) { this.reveal('print'); return; }
+        if (!this.revealStage()) this.reveal('print');
+    }
+
+    /** On a phone (under lg) the page goes up to the viewer: where a model is being made or shown. False on lg. */
+    revealStage(): boolean {
+        if (window.matchMedia('(min-width: 64rem)').matches) return false;
         this.el('tool-stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
     }
 
     busy(on: boolean): void { const b = this.el('tool-busy'); b.classList.toggle('hidden', !on); b.classList.toggle('flex', on); }

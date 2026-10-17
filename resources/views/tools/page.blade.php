@@ -10,13 +10,15 @@
     and passes: tool (key in config/tools.php), module (which script drives the page: resources/js/calc/tool_page.ts),
     lead (one sentence), sections (id => label, in order: the tool's own steps; the last one, "print" = the material and
     the number of pieces, is added here for every tool), available + unavailable (the tool's engine is missing),
-    sample (a tool that starts from a photo: the sentence shown over a printed piece of it until there is a model).
+    sample (a tool that starts from a photo: the sentence shown over a printed piece of it until there is a model);
+    with @section('viewer-drop') the photos are picked right there, over the printed piece.
     Scripts: window.MP_TOOL (shared) next to the tool's own window.MP_<TOOL>.
 --}}
 @extends('layouts.app', ['title' => __('tools.'.$tool.'.title').' · matplace', 'tool' => $tool, 'wide' => true])
 
 @php
     $available = $available ?? true;
+    $sampleDrop = ! empty($sample) && trim($__env->yieldContent('viewer-drop')) !== '';
     $next = \App\Support\NextStep::mode();
     $bed = config('pricing.bed_mm');
     // the last step of every tool is the same: the material and how many pieces (the tool names only its own steps)
@@ -101,9 +103,14 @@
                 @if(! empty($sample))
                     {{-- a tool that starts from a photo has no model yet: a printed piece of it instead of an empty box,
                          and when the model comes. The first model hides it (Stage.show), the logo of dots too. --}}
-                    <div id="tool-empty" class="pointer-events-none absolute inset-0 bg-studio">
+                    <div id="tool-empty" class="@unless($sampleDrop) pointer-events-none @endunless absolute inset-0 bg-studio">
                         <div id="tool-sample" class="tool-sample h-full">@include('tools.picture', ['key' => $tool, 'eager' => true, 'sizes' => '(min-width: 1024px) 60vw, 100vw'])</div>
-                        <p class="absolute inset-x-3 bottom-3 mx-auto max-w-md rounded-lg bg-card/95 px-3 py-2 text-center text-sm text-ink shadow-sm"><span class="block text-xs text-muted">{{ __('toolpage.sample') }}</span>{{ $sample }}</p>
+                        @if($sampleDrop)
+                            {{-- the photos go in right here (a tool's own @section('viewer-drop'): the bust, the pet) --}}
+                            <div class="absolute inset-0 flex items-center justify-center p-4 pt-16">@yield('viewer-drop')</div>
+                        @else
+                            <p class="absolute inset-x-3 bottom-3 mx-auto max-w-md rounded-lg bg-card/95 px-3 py-2 text-center text-sm text-ink shadow-sm"><span class="block text-xs text-muted">{{ __('toolpage.sample') }}</span>{{ $sample }}</p>
+                        @endif
                     </div>
                 @else
                     <div id="tool-empty" class="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted">@yield('viewer-empty')</div>

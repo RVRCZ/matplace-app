@@ -58,5 +58,40 @@
         "Nahrajte fotku a asi za minutu uvidíte model. Fotku nikam neukládáme.",
         "Upload a photo and see the model in about a minute. We do not keep the photo.",
         "Suba una foto y verá el modelo en un minuto. No guardamos la foto."
+    ],
+    "pet.base.none": [
+        "Bez podstavce",
+        "No base",
+        "Sin base"
+    ],
+    "pet.base.none.hint": [
+        "Tiskne se s podpěrami a snáz se převrhne.",
+        "It prints with supports and tips over more easily.",
+        "Se imprime con soportes y se vuelca con más facilidad."
+    ],
+    "pet.base.hint": [
+        "Oválný podstavec sleduje tlapky, kulatý je stabilnější, sokl je vyšší a má jméno na boku. Bez podstavce stojí figurka na vlastních tlapkách.",
+        "The oval base follows the paws, the round one is steadier, the plinth is taller and has the name on its side. Without a base the figurine stands on its own paws.",
+        "La base ovalada sigue las patas, la redonda es más estable, la peana es más alta y lleva el nombre en el lateral. Sin base, la figura se apoya en sus propias patas."
+    ],
+    "photo.add": [
+        "Přidat fotky",
+        "Add photos",
+        "Añadir fotos"
+    ],
+    "photo.add.hint": [
+        "Klepněte nebo sem fotky přetáhněte. Stačí jedna zepředu, další strany podobu zpřesní.",
+        "Tap or drop the photos here. One from the front is enough; more sides make the likeness closer.",
+        "Toque o arrastre aquí las fotos. Basta una de frente; más lados hacen el parecido más fiel."
+    ],
+    "photo.add.more": [
+        "Přidat další stranu",
+        "Add another side",
+        "Añadir otro lado"
+    ],
+    "figure.view.front": [
+        "Zepředu",
+        "Front",
+        "De frente"
     ]
 }

@@ -1525,7 +1525,7 @@
     "pet.base.oval": "Oválný",
     "pet.base.round": "Kulatý",
     "pet.base.plaque": "Sokl se jmenovkou",
-    "pet.base.hint": "Figurka stojí vždy na podstavci: sama na nohách by se tiskla špatně a snadno by se převrhla. Oválný sleduje tlapky, sokl je vyšší a má jméno na boku.",
+    "pet.base.hint": "Oválný podstavec sleduje tlapky, kulatý je stabilnější, sokl je vyšší a má jméno na boku. Bez podstavce stojí figurka na vlastních tlapkách.",
     "pet.base.miniature": "Miniatura stojí na kulatém podstavci.",
     "pet.name": "Jméno mazlíčka",
     "pet.name_ph": "např. Rex",
@@ -1680,5 +1680,11 @@
     "relief.before": "Zdarma a bez registrace. Model vzniká asi minutu.",
     "photo.limit": "JPG, PNG nebo WebP do :mb MB. Velkou fotku z telefonu před odesláním zmenšíme.",
     "photo.too_big": "Fotka je větší než :mb MB, zmenšete ji prosím.",
-    "photo.not_image": "Tohle není fotka. Vyberte JPG, PNG nebo WebP."
+    "photo.not_image": "Tohle není fotka. Vyberte JPG, PNG nebo WebP.",
+    "pet.base.none": "Bez podstavce",
+    "pet.base.none.hint": "Tiskne se s podpěrami a snáz se převrhne.",
+    "photo.add": "Přidat fotky",
+    "photo.add.hint": "Klepněte nebo sem fotky přetáhněte. Stačí jedna zepředu, další strany podobu zpřesní.",
+    "photo.add.more": "Přidat další stranu",
+    "figure.view.front": "Zepředu"
 }
