@@ -22,6 +22,8 @@
             <p class="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-action"><span class="h-1.5 w-1.5 rounded-full bg-action" aria-hidden="true"></span>{{ __('home.eyebrow') }}</p>
             <h1 class="mt-4 text-[2.6rem] font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">{{ __('home.title.a') }}<br><span class="text-action">{{ __('home.title.c') }}</span></h1>
             <p class="mx-auto mt-4 max-w-md text-base leading-relaxed text-muted sm:text-lg">{{ $tx('home.lead') }}</p>
+            {{-- the quieter second way (audit 10/2026, bod 3): the model can be downloaded for one's own printer --}}
+            <p class="mx-auto mt-2 max-w-md text-sm text-muted">{{ __('home.printer_note') }}</p>
             <ol class="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm font-semibold text-ink" aria-label="{{ __('home.path') }}">
                 @foreach(['idea', 'design', 'product'] as $i => $stage)
                     @if($i)<li class="text-action" aria-hidden="true">→</li>@endif

@@ -1,0 +1,13 @@
+{
+    "home.title.a": ["Váš nápad", "Your idea", "Su idea"],
+    "home.title.c": ["vytiskneme ve 3D.", "printed in 3D.", "impresa en 3D."],
+    "home.farm.home.lead": ["Nahrajte soubor nebo si výrobek vytvořte z fotky, textu či rozměrů. Cenu zjistíte před objednáním.", "Upload a file or create your product from a photo, text or dimensions. You see the price before you order.", "Suba un archivo o cree su producto a partir de una foto, un texto o unas medidas. Verá el precio antes de pedir."],
+    "home.printer_note": ["Máte vlastní tiskárnu? Model si můžete stáhnout.", "Have your own printer? You can download the model.", "¿Tiene su propia impresora? Puede descargar el modelo."],
+    "home.tools.popular": ["Náš výběr", "Our picks", "Nuestra selección"],
+    "tools.figure.hint": ["Nahrajte fotku, za 2 až 4 minuty máte 3D model a cenu výtisku.", "Upload a photo; 2 to 4 minutes later you have a 3D model and the print price.", "Suba una foto; en 2 a 4 minutos tiene el modelo 3D y el precio."],
+    "figure.limits": ["Zdarma :n model denně bez účtu, :m s účtem. Model vzniká 2 až 4 minuty.", "Free: :n model a day without an account, :m with one. The model takes 2 to 4 minutes.", "Gratis: :n modelo al día sin cuenta, :m con cuenta. El modelo tarda de 2 a 4 minutos."],
+    "figure.generating": ["Vytvářím model, obvykle to trvá 2 až 4 minuty…", "Creating the model, it usually takes 2 to 4 minutes…", "Creando el modelo, suele tardar de 2 a 4 minutos…"],
+    "figure.step.wait": ["Model vzniká 2 až 4 minuty. Můžete odejít a vrátit se odkazem, který je teď v adresním řádku.", "The model takes 2 to 4 minutes. You can leave and come back by the link that is in the address bar now.", "El modelo tarda de 2 a 4 minutos. Puede salir y volver con el enlace que ahora está en la barra de direcciones."],
+    "pet.wait": ["Obvykle to trvá 2 až 4 minuty. Můžete odejít a vrátit se odkazem, který je teď v adresním řádku.", "It usually takes 2 to 4 minutes. You can leave and come back by the link that is in the address bar now.", "Suele tardar de 2 a 4 minutos. Puede salir y volver con el enlace que ahora está en la barra de direcciones."],
+    "pet.generating": ["Vytvářím figurku, obvykle to trvá 2 až 4 minuty…", "Making the figurine, it usually takes 2 to 4 minutes…", "Creando la figura, suele tardar de 2 a 4 minutos…"]
+}
