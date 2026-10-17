@@ -1,0 +1,62 @@
+{
+    "figure.done": [
+        "Hotovo. Model je v náhledu, cenu ukáže tlačítko Pokračovat.",
+        "Done. The model is in the preview; Continue shows the price.",
+        "Listo. El modelo está en la vista previa; Continuar muestra el precio."
+    ],
+    "figure.generating": [
+        "Vytvářím model, obvykle to trvá 1 až 3 minuty…",
+        "Creating the model, it usually takes 1 to 3 minutes…",
+        "Creando el modelo, suele tardar de 1 a 3 minutos…"
+    ],
+    "figure.step.wait": [
+        "Model vzniká 1 až 3 minuty. Můžete odejít a vrátit se odkazem, který je teď v adresním řádku.",
+        "The model takes 1 to 3 minutes. You can leave and come back by the link that is in the address bar now.",
+        "El modelo tarda de 1 a 3 minutos. Puede salir y volver con el enlace que ahora está en la barra de direcciones."
+    ],
+    "figure.limits": [
+        "Zdarma :n model denně bez účtu, :m s účtem. Model vzniká 1 až 3 minuty.",
+        "Free: :n model a day without an account, :m with one. The model takes 1 to 3 minutes.",
+        "Gratis: :n modelo al día sin cuenta, :m con cuenta. El modelo tarda de 1 a 3 minutos."
+    ],
+    "figure.limit.register": [
+        "Založit účet zdarma",
+        "Create a free account",
+        "Crear una cuenta gratis"
+    ],
+    "relief.working": [
+        "Vytvářím model, trvá to asi minutu…",
+        "Creating the model, it takes about a minute…",
+        "Creando el modelo, tarda alrededor de un minuto…"
+    ],
+    "relief.before": [
+        "Zdarma a bez registrace. Model vzniká asi minutu.",
+        "Free, no account needed. The model takes about a minute.",
+        "Gratis y sin registro. El modelo tarda alrededor de un minuto."
+    ],
+    "photo.limit": [
+        "JPG, PNG nebo WebP do :mb MB. Velkou fotku z telefonu před odesláním zmenšíme.",
+        "JPG, PNG or WebP up to :mb MB. A big photo from a phone is made smaller before it is sent.",
+        "JPG, PNG o WebP de hasta :mb MB. Una foto grande del móvil se reduce antes de enviarla."
+    ],
+    "photo.too_big": [
+        "Fotka je větší než :mb MB, zmenšete ji prosím.",
+        "The photo is larger than :mb MB, please make it smaller.",
+        "La foto supera los :mb MB, redúzcala, por favor."
+    ],
+    "photo.not_image": [
+        "Tohle není fotka. Vyberte JPG, PNG nebo WebP.",
+        "This is not a photo. Choose a JPG, PNG or WebP.",
+        "Esto no es una foto. Elija un JPG, PNG o WebP."
+    ],
+    "tools.figure.hint": [
+        "Nahrajte fotku, za 1 až 3 minuty máte 3D model a cenu výtisku.",
+        "Upload a photo; 1 to 3 minutes later you have a 3D model and the print price.",
+        "Suba una foto; en 1 a 3 minutos tiene el modelo 3D y el precio."
+    ],
+    "relief.lead": [
+        "Nahrajte fotku a asi za minutu uvidíte model. Fotku nikam neukládáme.",
+        "Upload a photo and see the model in about a minute. We do not keep the photo.",
+        "Suba una foto y verá el modelo en un minuto. No guardamos la foto."
+    ]
+}

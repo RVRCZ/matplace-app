@@ -6,19 +6,20 @@
 @php
     $say = ['generating' => 'pet.generating', 'done' => 'pet.done', 'failed' => 'pet.failed', 'rejected' => 'pet.rejected', 'skipped_view' => 'figure.skipped_view',
         'view.left' => 'figure.view.left', 'view.back' => 'figure.view.back', 'view.right' => 'figure.view.right', 'limit' => 'figure.limit', 'global_limit' => 'figure.global_limit',
-        'need_photo' => 'figure.need_photo', 'need_consent' => 'figure.need_consent', 'back' => 'pet.back', 'gone' => 'pet.gone', 'thin' => 'pet.thin', 'thin.ok' => 'pet.thin.ok',
+        'need_photo' => 'figure.need_photo', 'need_consent' => 'figure.need_consent', 'limit.register' => 'figure.limit.register', 'back' => 'pet.back', 'gone' => 'pet.gone', 'thin' => 'pet.thin', 'thin.ok' => 'pet.thin.ok',
         'rebase.working' => 'pet.rebase.working', 'rebase.failed' => 'pet.rebase.failed',
         'rejected.no_animal' => 'pet.rejected.no_animal', 'rejected.person' => 'pet.rejected.person', 'rejected.several' => 'pet.rejected.several', 'rejected.cropped' => 'pet.rejected.cropped'];
-    $i18n = collect($say)->mapWithKeys(fn ($key, $as) => ['figure.'.$as => __($key, ['n' => ':n', 'm' => ':m', 'mm' => ':mm', 'view' => ':view'])])->all();
+    $i18n = collect($say)->mapWithKeys(fn ($key, $as) => ['figure.'.$as => __($key, ['n' => ':n', 'm' => ':m', 'mm' => ':mm', 'view' => ':view'])])->all()
+        + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB])];
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50';
 @endphp
 
-@extends('tools.page', ['tool' => 'pet', 'module' => 'figure', 'lead' => __('pet.lead'), 'available' => $generator, 'unavailable' => __('figure.unavailable'),
+@extends('tools.page', ['tool' => 'pet', 'module' => 'figure', 'lead' => __('pet.lead'), 'available' => $generator, 'unavailable' => __('figure.unavailable'), 'sample' => __('toolpage.sample.minutes'),
     'sections' => ['photo' => __('toolpage.section.photo'), 'style' => __('toolpage.section.style'), 'base' => __('toolpage.section.base')]])
 
 @push('head')
 <script>
-    window.MP_FIGURE = { generate: @json(route('api.generate.store')), show: @json(url('/api/generate')), home: @json(route('home')), files: @json(url('/api/files')), i18n: @json($i18n) };
+    window.MP_FIGURE = { generate: @json(route('api.generate.store')), show: @json(url('/api/generate')), home: @json(route('home')), maxMb: {{ \App\Http\Controllers\Api\GenerationController::PHOTO_MB }}, register: @json(auth()->guest() && \Illuminate\Support\Facades\Route::has('register') ? route('register') : null), files: @json(url('/api/files')), i18n: @json($i18n) };
 </script>
 @endpush
 
@@ -116,6 +117,8 @@
         <label class="flex items-start gap-3 text-sm text-ink"><input id="figure-consent" type="checkbox" name="consent" value="1" required class="mt-0.5 h-5 w-5 accent-ink"> <span>{{ __('pet.consent') }}</span></label>
         <p class="text-xs text-muted">{{ __('pet.privacy') }}</p>
 
+        {{-- before the click: the free models a day and how long one takes (docs/AF.md §3) --}}
+        <p class="text-xs text-muted">{{ __('figure.limits', ['n' => $guestLimit, 'm' => $userLimit]) }}</p>
         <button id="figure-submit" type="submit" class="btn-ink w-full gap-1.5"><x-icon name="sparkles" class="h-4 w-4" />{{ __('pet.submit') }}</button>
         <div id="figure-progress" class="hidden"><div class="h-2 w-full overflow-hidden rounded-full bg-slate-200"><div id="figure-bar" class="h-2 w-0 bg-ink transition-all"></div></div><p class="mt-1 text-xs text-muted">{{ __('pet.wait') }}</p></div>
         <p id="figure-msg" class="hint" aria-live="polite"></p>
@@ -125,7 +128,6 @@
             <button id="figure-rebase" type="button" class="btn-quiet w-full">{{ __('pet.rebase') }}</button>
             <p class="mt-1 text-xs text-muted">{{ __('pet.rebase.hint') }}</p>
         </div>
-        <p class="text-xs text-muted">{{ __('figure.limits', ['n' => $guestLimit, 'm' => $userLimit]) }}</p>
     </x-tool-section>
 </form>
 @endsection

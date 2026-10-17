@@ -10,6 +10,7 @@
             </label>
             <button type="button" data-view-remove="front" class="tool-icon-btn absolute right-2 top-2 hidden" aria-label="{{ __('figure.remove') }}" title="{{ __('figure.remove') }}"><x-icon name="x" class="h-4 w-4" /></button>
         </div>
+        <p class="text-xs text-muted">{{ __('photo.limit', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB]) }}</p>
 
         {{-- more sides are always on the screen: the likeness is clearly better with them --}}
         <fieldset id="figure-views" class="rounded-lg border border-line p-3">

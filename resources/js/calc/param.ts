@@ -125,6 +125,7 @@ export function bootParam(stage: Stage): void {
             if (bad) { ok = false; textMissing = true; }
         });
         if (textMissing) showError(t('param.text_required')); else if ($('tool-error').textContent === t('param.text_required')) showError(null);
+        stage.stale(textMissing);      // the model of the old text fades, not just the button (docs/AF.md §4)
         return ok;
     };
 

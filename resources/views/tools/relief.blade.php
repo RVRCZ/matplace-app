@@ -1,10 +1,10 @@
-@extends('tools.page', ['tool' => 'relief', 'module' => 'relief', 'lead' => __('relief.lead'), 'available' => $available,
+@extends('tools.page', ['tool' => 'relief', 'module' => 'relief', 'lead' => __('relief.lead'), 'available' => $available, 'sample' => __('toolpage.sample.minute'),
     'sections' => ['photo' => __('toolpage.section.photo'), 'settings' => __('toolpage.section.settings')]])
 
 @push('head')
 <script>
-    window.MP_RELIEF = { url: @json(route('api.tools.relief')), home: @json(route('home')), files: @json(url('/api/files')),
-        i18n: { working: @json(__('relief.working')), failed: @json(__('relief.failed')), not_image: @json(__('search.not_image')), photo_again: @json(__('relief.photo_again')),
+    window.MP_RELIEF = { url: @json(route('api.tools.relief')), home: @json(route('home')), files: @json(url('/api/files')), maxMb: {{ \App\Domain\Tools\ReliefGenerator::PHOTO_MB }},
+        i18n: { working: @json(__('relief.working')), failed: @json(__('relief.failed')), not_image: @json(__('search.not_image')), too_big: @json(__('photo.too_big', ['mb' => \App\Domain\Tools\ReliefGenerator::PHOTO_MB])), photo_again: @json(__('relief.photo_again')),
             shades: @json(__('relief.shades')), fact: @json(__('relief.fact')), fact_lamp: @json(__('relief.fact.lamp')), backlit_lamp: @json(__('relief.backlit.lamp')), silhouette: @json(__('relief.warn.silhouette')),
             frame_too_wide: @json(__('relief.warn.frame_too_wide')), socket_too_big: @json(__('relief.warn.socket_too_big')), height_auto: @json(__('relief.height.auto')) } };
 </script>
@@ -36,7 +36,7 @@
             <img id="relief-preview" alt="" class="mx-auto hidden max-h-48 rounded-lg">
             <div id="relief-pick" class="text-ink"><x-icon name="camera" class="mx-auto h-7 w-7 text-muted" /><span class="mt-1 block font-medium">{{ __('relief.pick') }}</span></div>
         </label>
-        <p class="text-xs text-muted">{{ __('relief.privacy') }}</p>
+        <p class="text-xs text-muted">{{ __('photo.limit', ['mb' => \App\Domain\Tools\ReliefGenerator::PHOTO_MB]) }} {{ __('relief.privacy') }}</p>
 
         {{-- light and detail: the photo's own sliders change the small picture at once, the model follows on the next build --}}
         <details class="text-sm" open>
@@ -115,6 +115,8 @@
         <p id="relief-shades" class="hint !text-xs"></p>
 
         {{-- the settings end with the model being made; the material and the number of pieces follow as the page's last step --}}
+        {{-- before the click: what it costs and how long it takes (docs/AF.md §3) --}}
+        <p class="text-xs text-muted">{{ __('relief.before') }}</p>
         <button class="btn-ink w-full gap-1.5"><x-icon name="sparkles" class="h-4 w-4" />{{ __('relief.submit') }}</button>
         <p id="relief-msg" class="hint" aria-live="polite"></p>
         <div id="relief-backlit" class="hidden">

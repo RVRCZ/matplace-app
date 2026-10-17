@@ -151,6 +151,8 @@
     .tool-menu-item { @apply flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-ink transition hover:bg-slate-100 disabled:opacity-50; }
     /* windows (colour, picture): a native <dialog> */
     .tool-dialog { @apply m-auto w-[min(56rem,calc(100vw-1.5rem))] max-w-none rounded-xl border border-line bg-card p-0 text-ink shadow-sm; max-height: min(44rem, calc(100vh - 2rem)); }
+    /* a required text left empty: the model and its numbers fade, they are the old text's (Stage.stale) */
+    #tool-stage[data-stale] #tool-viewer, #tool-stage[data-stale] #tool-status, #tool-stage[data-stale] #param-dims { @apply opacity-35 grayscale; transition: opacity 0.2s; }
     .tool-dialog::backdrop { background: rgb(23 43 77 / 0.45); }
     /* the colour window is a small one: sixteen basic colours, a free colour, the colours used last */
     .tool-dialog-color { width: min(36rem, calc(100vw - 1.5rem)); }
@@ -161,6 +163,22 @@
     .tool-tab[aria-selected='true'] { @apply bg-ink text-white; }
     .tool-tile { @apply flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-line bg-card p-2 text-center text-xs text-ink transition hover:border-ink; }
     .tool-tile[aria-pressed='true'] { @apply border-ink ring-2 ring-ink; }
+}
+
+/*
+ * The tool page under lg (docs/AF.md §1): the bar of views folded under one button "Pohled" (tool_page.ts opens it),
+ * and the long notes under the status line (the size of a QR module, what a lamp needs…, written by param.ts as
+ * div.text-muted) left for the wide page; the rows with numbers (inner size, cell) stay.
+ */
+/* the printed piece in the viewer of a photo tool before its model: the card photo over the whole box (outside the
+   layers: the picture's own utilities, h-auto and aspect-[3/2], would win inside them) */
+.tool-sample picture, .tool-sample img { display: block; width: 100%; height: 100%; aspect-ratio: auto; object-fit: cover; }
+
+@media (width < 64rem) {
+    #tool-viewbar:not([data-open]) { display: none; }
+    #tool-view-toggle[aria-expanded='true'] svg:last-child { rotate: 180deg; }
+    #param-dims > div.text-muted { display: none; }
+    #param-dims:not(:has(> div.flex)) { display: none; }
 }
 
 /* the symbol face of the text tools (engines/fonts/NotoEmoji, OFL): the same outlines the model is made from */

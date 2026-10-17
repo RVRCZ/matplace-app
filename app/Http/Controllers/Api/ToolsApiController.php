@@ -153,7 +153,7 @@ class ToolsApiController extends Controller
     /** POST /api/tools/relief (multipart: photo + options) → lithophane, relief plaque or lamp; the photo is not stored */
     public function relief(Request $request, ReliefGenerator $reliefs): JsonResponse
     {
-        $data = $request->validate(ReliefGenerator::rules());
+        $data = $request->validate(ReliefGenerator::rules(), ReliefGenerator::messages());
         if (! $reliefs->available()) {
             return response()->json(['error' => 'tool_unavailable'], 503);
         }

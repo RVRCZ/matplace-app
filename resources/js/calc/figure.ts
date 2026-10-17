@@ -11,8 +11,9 @@
 import type { Stage } from './tool_page';
 import { FileInfo } from './api';
 import { startParticles, viewerBox, type Particles } from './particles';
+import { shrinkPhoto, overLimit } from './photo';
 
-interface FigureCfg { generate: string; show: string; home: string; files?: string; i18n: Record<string, string> }
+interface FigureCfg { generate: string; show: string; home: string; files?: string; maxMb: number; register: string | null; i18n: Record<string, string> }
 interface Generation { token: string; status: string; progress: number; file: FileInfo | null; target_mm?: number | null; options?: Record<string, string | number> | null }
 
 export function bootFigure(stage: Stage): void {
@@ -117,7 +118,7 @@ export function bootFigure(stage: Stage): void {
         made = ready;
         measured(ready);
         btn.disabled = false; $('figure-progress').classList.add('hidden');
-        stage.reveal('print');
+        stage.revealResult();
     };
 
     /** Waits for a generation to end and shows its model. */
@@ -163,12 +164,31 @@ export function bootFigure(stage: Stage): void {
         if (!($('figure-consent') as HTMLInputElement).checked) { msg.textContent = t('figure.need_consent'); return; }
         calm();
         inputs.forEach((i) => mark(i.dataset.view ?? '', false));
-        working(t('figure.generating'));
+        // the photos go as 2 000 px at most (a phone's 8 to 12 MB would be slow and over the limit); what is still too big is said now
         const data = new FormData(form);
+        for (const input of inputs) {
+            const f = input.files?.[0];
+            if (!f) continue;
+            const sent = await shrinkPhoto(f);
+            if (overLimit(sent, cfg.maxMb)) { mark(input.dataset.view ?? '', true); msg.textContent = t('photo.too_big'); return; }
+            data.set(input.name, sent);
+        }
+        working(t('figure.generating'));
         try {
             const res = await fetch(cfg.generate, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: data });
             const body = await res.json();
-            if (res.status === 429) return idle(t(body.error === 'global_limit' ? 'figure.global_limit' : 'figure.limit', { n: body.limit, m: body.login_limit }));
+            if (res.status === 429) {
+                idle(t(body.error === 'global_limit' ? 'figure.global_limit' : 'figure.limit', { n: body.limit, m: body.login_limit }));
+                // a visitor without an account gets more models with one: the way there is in the message itself
+                if (body.error !== 'global_limit' && cfg.register) {
+                    const a = document.createElement('a');
+                    a.href = cfg.register; a.className = 'font-medium text-ink underline'; a.textContent = t('figure.limit.register');
+                    msg.append(' ', a);
+                }
+                return;
+            }
+            // the server's own refusal of a field (a photo too big, not a picture) is a sentence in the page's language
+            if (res.status === 422 && body.error !== 'photo_rejected' && typeof body.message === 'string') return idle(body.message);
             if (res.status === 422 && body.error === 'photo_rejected') {
                 // only the front photo stops the work; it leaves the form, so the next try does not send it again
                 clear('front');
