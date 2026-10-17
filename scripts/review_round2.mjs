@@ -104,7 +104,9 @@ async function shoot(page, width, lang, port) {
         await cdp('Emulation.setDeviceMetricsOverride', { width, height: mobile ? 844 : 768, deviceScaleFactor: mobile ? 2 : 1, mobile });
         if (mobile) await cdp('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
         await cdp('Network.setUserAgentOverride', { userAgent: UA[mobile ? 390 : 1366], acceptLanguage: lang });
+        // our own test run: left out of the statistics (TODO #10, docs/AJ.md)
         await cdp('Network.setExtraHTTPHeaders', { headers: { 'Accept-Language': lang } });
+        await cdp('Network.setCookie', { name: 'mp_test', value: '1', url: BASE });
         if (!arg('bar', false)) await cdp('Network.setCookie', { name: 'consent', value: 'a0m0', url: BASE });
         const loaded = once('Page.loadEventFired');
         await cdp('Page.navigate', { url: BASE + pathOf(page, lang) });

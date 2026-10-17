@@ -40,13 +40,30 @@ class CalculationController extends Controller
         );
         Track::event('calculation', $file, array_filter(['tool' => $file->origin === 'tool' ? $file->kind() : null]));
 
-        return response()->json(['calculation' => self::describe($calc->load('modelFile'))], 201);
+        return response()->json(['calculation' => self::measured($calc->load('modelFile'))], 201);
     }
 
     /** GET /api/calculations/{token} */
     public function show(Calculation $calculation): JsonResponse
     {
-        return response()->json(['calculation' => self::describe($calculation->load('modelFile'))]);
+        return response()->json(['calculation' => self::measured($calculation->load('modelFile'))]);
+    }
+
+    /**
+     * The answer the browser gets. When it carries the result, its owner has seen the exact price (from the slicer) or
+     * the failure: measured once (docs/AJ.md). A rough estimate shows no price while the marketplace is off: no event.
+     */
+    private static function measured(Calculation $calculation): array
+    {
+        $described = self::describe($calculation);
+        $tool = $calculation->modelFile?->origin === 'tool' ? $calculation->modelFile->kind() : null;
+        if ($calculation->status === Calculation::STATUS_DONE && ! empty($described['prices'])) {
+            Track::outcome('price_shown', $calculation, array_filter(['kind' => 'exact', 'tool' => $tool]));
+        } elseif ($calculation->status === Calculation::STATUS_FAILED) {
+            Track::outcome('failed', $calculation, array_filter(['step' => 'calculation', 'tool' => $tool]));
+        }
+
+        return $described;
     }
 
     /**

@@ -88,6 +88,8 @@ let bad = 0;
 for (const v of chosen) {
     const page = await browser.newPage();
     await page.setViewport({ width: 1400, height: 1000 });
+    // our own test run: left out of the statistics (TODO #10, docs/AJ.md)
+    await page.setCookie({ name: 'mp_test', value: '1', url: BASE });
     const errors = []; const lines = [];
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     page.on('response', (res) => { if (res.status() >= 400 && !res.url().includes('favicon')) errors.push(`http ${res.status()} ${res.url().replace(BASE, '')}`); });

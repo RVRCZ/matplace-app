@@ -26,6 +26,7 @@ Mezi lidi se počítá návštěva, která má `js` nebo `act` a nemá značku `
 | neznámý robot, skript | slovo bot/crawl/spider/curl/python…, chybějící „Mozilla/“, prázdný User‑Agent, požadavek `HEAD`, nebo stránka vyžádaná bez `Accept: text/html` | `crawl`, robot `other` |
 | robot převlečený za prohlížeč | návštěvu nikdy nepotvrdí skript ani akce | `visit` bez `js` – v přehledu „roboti v převleku“ |
 | my (admin) | prohlížeč, ze kterého se někdy přihlásil admin (`anonymous_sessions.staff`) | nic; co ten prohlížeč udělal za posledních 30 dní, dostane `meta.staff` a z čísel zmizí |
+| naše zkušební průchody (skripty, testovací prohlížeč; TODO #10, `docs/AJ.md`) | cookie `mp_test=1` nebo hlavička `X-Matplace-Test` | jako admin: prohlížeč se zapamatuje (`anonymous_sessions.staff`), nic se nezapíše a co udělal dřív, dostane `meta.staff` |
 | stránky `/admin` | adresa | nic |
 
 Robot, který umí spustit JavaScript a tváří se jako běžný Chrome, projde jako člověk. Takových je málo a nejdou

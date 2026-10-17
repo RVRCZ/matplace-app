@@ -15,6 +15,7 @@ use App\Models\FarmPrinterSlot;
 use App\Models\FarmPrintJob;
 use App\Models\Payment;
 use App\Support\Money;
+use App\Support\Track;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -186,6 +187,8 @@ final class OrderFlow
                 app(FarmVideos::class)->setConsent($order->refresh(), true);
             }
             $result = 'paid';
+            // the bank confirmed the money and the order is paid: the conversion of our statistics (docs/AJ.md)
+            Track::paidByCard($order->refresh());
         } catch (FarmRefusal $e) {
             $result = $e->reason;
             Log::warning('Card payment arrived but the order could not be paid', ['payment' => $payment->id, 'order' => $order->id, 'reason' => $result]);
