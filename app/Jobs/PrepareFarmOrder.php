@@ -111,12 +111,12 @@ class PrepareFarmOrder implements ShouldQueue
             $piece = $mesh;
             $margin = 2 * (float) $settings->get('bed_margin_mm');
             $usable = new Dimensions($bed->x - $margin, $bed->y - $margin, $bed->z);
-            $capacity = PlateLayout::capacity($piece->bbox, $usable);
+            $capacity = PlateLayout::capacityOf($piece, $usable);
             $plates = 1;
             $perPlate = $order->copies;
             $rest = null;
             if ($order->copies > 1 && ! $order->isTest() && $capacity['max'] >= 1) {
-                // several copies on one plate: the oriented piece repeated in a grid, sliced and priced as one print;
+                // several copies on one plate: the oriented piece repeated in a grid or in rows by its shadow, sliced and priced as one print;
                 // more than a plate takes → full plates one after another, the last one holding what is left
                 if ($order->copies > $capacity['max']) {
                     $plates = (int) ceil($order->copies / $capacity['max']);
@@ -352,7 +352,7 @@ class PrepareFarmOrder implements ShouldQueue
             }
             @unlink($disk->path($stlRel).'.stage');
             $piece = $mesh;
-            $capacity = PlateLayout::capacity($piece->bbox, $usable);
+            $capacity = PlateLayout::capacityOf($piece, $usable);
             $maxCopies = $maxCopies === null ? $capacity['max'] : min($maxCopies, $capacity['max']);
             if ($order->copies > 1 && $capacity['max'] >= $order->copies) {
                 $plateRel = $order->dir().'/part-'.$n.'-plate.stl';

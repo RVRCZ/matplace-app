@@ -28,7 +28,7 @@
     window.MP_INITIAL = @json($initial);
     window.MP_MODE = @json($mode);
     window.MP_OWN_PROFILE_ID = @json($ownProfileId ?? null);
-    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), inquiries: @json(route('api.inquiries.store')), generate: @json(route('api.generate.store')), generateShow: @json(url('/api/generate')), paramPart: @json(url('/api/tools/param')), printers: @json(route('api.printers')), printerShow: @json(url('/printers/id')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
+    window.MP_ROUTES = { uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), plate: @json(route('api.calc.plate')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), inquiries: @json(route('api.inquiries.store')), generate: @json(route('api.generate.store')), generateShow: @json(url('/api/generate')), paramPart: @json(url('/api/tools/param')), printers: @json(route('api.printers')), printerShow: @json(url('/printers/id')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
 </script>
 @endpush
 

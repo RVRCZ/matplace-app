@@ -128,6 +128,39 @@ def footprint(vertices, down):
     return float(abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))) / 2)
 
 
+def plate_shadow(vertices, limit=64):
+    """The piece's shadow on the plate as it prints: convex hull of the vertices seen from above, counter-clockwise,
+    at most `limit` corners (a rounder hull becomes the polygon of `limit` directions around it, never smaller),
+    rounded to 0.1 mm. PlateLayout lays the copies by it (app/Domain/Farm/Footprint.php)."""
+    import numpy as np
+    p = np.unique(np.round(np.asarray(vertices)[:, :2], 3), axis=0)
+    if len(p) < 3:
+        return None
+
+    def hull(pts):
+        pts = sorted(map(tuple, pts))
+
+        def half(seq):
+            h = []
+            for q in seq:
+                while len(h) >= 2 and (h[-1][0] - h[-2][0]) * (q[1] - h[-2][1]) - (h[-1][1] - h[-2][1]) * (q[0] - h[-2][0]) <= 0:
+                    h.pop()
+                h.append(q)
+            return h
+        return half(pts)[:-1] + half(pts[::-1])[:-1]
+
+    h = np.array(hull(p))
+    if len(h) > limit:
+        a = 2 * np.pi * np.arange(limit) / limit
+        n = np.stack([np.cos(a), np.sin(a)], 1)
+        d = (h @ n.T).max(axis=0)
+        n2, d2 = np.roll(n, -1, 0), np.roll(d, -1)
+        det = n[:, 0] * n2[:, 1] - n[:, 1] * n2[:, 0]
+        h = np.stack([(d * n2[:, 1] - n[:, 1] * d2) / det, (n[:, 0] * d2 - d * n2[:, 0]) / det], 1)
+    h = hull(np.round(h, 1))
+    return [[round(float(x), 1), round(float(y), 1)] for x, y in h] if len(h) >= 3 else None
+
+
 def rate(m, down, cos_limit, bed):
     """Lower is better. Areas are relative to the whole surface so small and large models score alike."""
     import numpy as np
@@ -235,6 +268,7 @@ def prepare(src, dst, unit_scale, bed, overhang_deg, keep_pose=False):
         "area_mm2": float(m.area),
         "triangles": int(len(m.faces)),
         "shells": int(shells),
+        "footprint": plate_shadow(m.vertices),
         "orientation": {
             "method": "as-built" if keep_pose else "hull-facets",
             "matrix": [[round(float(v), 6) for v in row[:3]] for row in rot[:3]],

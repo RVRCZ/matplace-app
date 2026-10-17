@@ -93,7 +93,10 @@ function renderSize(): void {
     document.getElementById('size-reset')?.classList.toggle('hidden', Math.abs(s - 1) < 0.0005);   // back to the file's own size, once it was changed
     const fit = document.getElementById('bed-fit');
     if (fit) {
-        const n = b ? piecesOnBed({ x: b.x * s, y: b.y * s, z: b.z * s }) : null;
+        // the server's count by the model's shadow once it has answered for this file and size, the rectangle before
+        const key = plateKey();
+        if (key && key !== plate.asked) askPlate(key);
+        const n = b ? (key && plate.answers.has(key) ? plate.answers.get(key)! : piecesOnBed({ x: b.x * s, y: b.y * s, z: b.z * s })) : null;
         const bed = cfg.bed_mm ? `${fmt.format(cfg.bed_mm.x)} × ${fmt.format(cfg.bed_mm.y)} mm` : '';
         const q = state.params.quantity;
         // more pieces than one plate takes: the farm prints them on several plates one after another
@@ -104,8 +107,9 @@ function renderSize(): void {
 }
 
 /**
- * How many copies fit on the smaller farm printer's plate at once: 5 mm apart, either way round, and inside the edge
- * the farm keeps clear (the same rule as App\Domain\Farm\PlateLayout, so the order page never says fewer). 0 when one does not fit.
+ * How many copies fit on the smaller farm printer's plate at once by the rectangle: 5 mm apart, either way round, and
+ * inside the edge the farm keeps clear (the grid of App\Domain\Farm\PlateLayout, so never more than the farm lays).
+ * 0 when one does not fit. Shown until the server's count by the shadow (askPlate) is in.
  */
 function piecesOnBed(d: { x: number; y: number; z: number }): number | null {
     const bed = cfg.bed_mm;
@@ -115,6 +119,41 @@ function piecesOnBed(d: { x: number; y: number; z: number }): number | null {
     const margin = 2 * (cfg.bed_margin_mm ?? 0);
     const along = (size: number, room: number) => Math.floor((room - margin + gap) / (size + gap));
     return Math.max(along(d.x, bed.x) * along(d.y, bed.y), along(d.y, bed.x) * along(d.x, bed.y));
+}
+
+/**
+ * How many pieces fit by the model's shadow (POST /api/calc/plate, App\Domain\Farm\PlateLayout: the farm lays the
+ * plate with the same code). Never fewer than piecesOnBed; asked once per file and size, a slider move waits 300 ms.
+ */
+const plate = { answers: new Map<string, number>(), asked: '', timer: 0 };
+
+function plateKey(): string | null {
+    const f = state.file;
+    return f && f.status === 'ready' && f.bbox ? `${f.uuid}|${Math.round(state.params.scale * 1000)}` : null;
+}
+
+function askPlate(key: string): void {
+    plate.asked = key;
+    window.clearTimeout(plate.timer);
+    plate.timer = window.setTimeout(async () => {
+        const [file, scale] = key.split('|');
+        const url = routes().plate;
+        if (!url) return;
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ file, scale: Number(scale) / 1000 }),
+            });
+            if (!res.ok) return;
+            const body = (await res.json()) as { max?: number };
+            if (typeof body.max === 'number') {
+                plate.answers.set(key, body.max);
+                if (plateKey() === key) renderSize();
+            }
+        } catch { /* the rectangle's count stays */ }
+    }, 300);
 }
 
 /** One dimension typed in millimetres → the whole model scales to it (within the allowed range). */

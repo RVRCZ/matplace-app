@@ -2,6 +2,7 @@
 
 namespace App\Engines\Farm;
 
+use App\Domain\Farm\Footprint;
 use App\Engines\Contracts\PrintPreparer;
 use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\PreparedMesh;
@@ -40,6 +41,7 @@ final class PythonPrintPreparer implements PrintPreparer
             shells: (int) $r['shells'],
             orientation: (array) $r['orientation'] + ['repair_method' => $r['repair_method'] ?? null],
             engine: $this->name(),
+            footprint: Footprint::fromArray($r['footprint'] ?? null)?->toArray(),
         );
     }
 }
