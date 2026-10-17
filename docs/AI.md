@@ -39,8 +39,9 @@ pro staré návrhy `p["url"]`). Prohlížeč nic neskládá.
 - **Limit délky** (`qrCapacity(size)`): moduly musí mít aspoň 0,9 mm (hranice tiskárny, stejná jako `qr_too_dense`),
   tedy `cells = floor(size / 0.9)`, verze `v = (cells − 25) / 4` (17 + 4v modulů + 2 × 4 tichá zóna), kapacita
   byte‑módu při úrovni M (ISO 18004, tab. 7), nejvýš 300 znaků polí. 30 mm → 26 B, 40 mm → 62 B, 70 mm → 300.
-  Delší obsah → `qr_too_long` s číslem u pole druhu obsahu. Je to dolní odhad (segno pro čísla a velká písmena umí
-  hustší mód), konečným soudcem zůstává kontrola hustoty v enginu.
+  Delší obsah → `qr_too_long` u pole druhu obsahu: kolik znaků se vejde teď a na kolik mm kód zvětšit
+  (`qrSizeFor(bytes)`: nejmenší verze, která obsah pojme, × 0,9 mm; 70 znaků → 41 mm). Je to dolní odhad (segno
+  pro čísla a velká písmena umí hustší mód), konečným soudcem zůstává kontrola hustoty v enginu.
 - Chyby jsou `ValidationException` s klíčem `params.<pole>`; `param.ts` (`markNamed`) označí pole, které server
   jmenuje, červeným rámečkem a text ukáže v obvyklém místě; po úspěšném náhledu se značka sundá.
 

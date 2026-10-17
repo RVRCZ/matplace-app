@@ -1710,5 +1710,5 @@
     "param.error.qr_no_ssid": "Zadejte název sítě.",
     "param.error.qr_no_password": "Zadejte heslo sítě, nebo zvolte „Bez hesla“.",
     "param.error.qr_no_text": "Zadejte text, který má kód nést.",
-    "param.error.qr_too_long": "Při této velikosti se do kódu vejde nejvýš :n znaků. Zkraťte text, nebo zvětšete kód."
+    "param.error.qr_too_long": "Při této velikosti se do kódu vejde nejvýš :n znaků. Zkraťte obsah, nebo zvětšete kód aspoň na :m mm."
 }

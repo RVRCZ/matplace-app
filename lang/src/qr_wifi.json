@@ -125,9 +125,9 @@
         "Introduzca el texto que debe llevar el código."
     ],
     "param.error.qr_too_long": [
-        "Při této velikosti se do kódu vejde nejvýš :n znaků. Zkraťte text, nebo zvětšete kód.",
-        "At this size the code holds at most :n characters. Shorten the text or enlarge the code.",
-        "Con este tamaño el código admite como máximo :n caracteres. Acorte el texto o agrande el código."
+        "Při této velikosti se do kódu vejde nejvýš :n znaků. Zkraťte obsah, nebo zvětšete kód aspoň na :m mm.",
+        "At this size the code holds at most :n characters. Shorten the content or enlarge the code to at least :m mm.",
+        "Con este tamaño el código admite como máximo :n caracteres. Acorte el contenido o agrande el código al menos a :m mm."
     ],
     "param.error.qr_bad_text": [
         "Zadejte text o délce 1 až 300 znaků.",

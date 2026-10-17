@@ -85,7 +85,7 @@ class QrWifiTest extends TestCase
                 $this->fail("$code was not raised");
             } catch (ValidationException $e) {
                 $this->assertArrayHasKey('params.'.$field, $e->errors(), $code);
-                $this->assertSame(__('param.error.'.$code, ['n' => 62]), $e->errors()['params.'.$field][0]);
+                $this->assertSame(__('param.error.'.$code, ['n' => 62, 'm' => 41]), $e->errors()['params.'.$field][0]);   // 70 bytes need version 5: 45 modules of 0.9 mm
             }
         }
         $this->assertSame(62, ParametricGenerator::qrCapacity(40));          // version 4 at 0.9 mm modules
@@ -112,7 +112,10 @@ class QrWifiTest extends TestCase
         $this->assertSame(__('param.error.qr_bad_url'), $at(['content' => 'web', 'url' => 'x'], 'url'));
         $this->assertSame(__('param.error.qr_no_ssid'), $at(['content' => 'wifi', 'ssid' => '', 'password' => 'x'], 'ssid'));
         $this->assertSame(__('param.error.qr_no_password'), $at(['content' => 'wifi', 'ssid' => 'Doma', 'password' => ''], 'password'));
-        $this->assertSame(__('param.error.qr_too_long', ['n' => 62]), $at(['content' => 'text', 'text' => str_repeat('a', 70), 'size' => 40], 'text'));
+        $this->assertSame(__('param.error.qr_too_long', ['n' => 62, 'm' => 41]), $at(['content' => 'text', 'text' => str_repeat('a', 70), 'size' => 40], 'text'));
+        $this->assertSame(41, ParametricGenerator::qrSizeFor(70));
+        $this->assertSame(30, ParametricGenerator::qrSizeFor(20));
+        $this->assertNull(ParametricGenerator::qrSizeFor(3000));
         $this->preview(['content' => 'wifi', 'ssid' => 'Doma', 'security' => 'nopass'])->assertOk();
 
         // the kind of content changes nothing but the code: the same plate, stand, hole, colours and caption

@@ -852,10 +852,23 @@ final class ParametricGenerator
         }
         $room = self::qrCapacity((float) ($clean['size'] ?? self::FIELDS['qr']['size'][2]));
         if (strlen($payload) > $room) {
-            $fail($field, 'qr_too_long', ['n' => $room]);
+            // what fits at this size, and the size this content would need (a link cannot be shortened at will)
+            $fail($field, 'qr_too_long', ['n' => $room, 'm' => self::qrSizeFor(strlen($payload)) ?? self::FIELDS['qr']['size'][1]]);
         }
 
         return $payload;
+    }
+
+    /** The smallest code (mm, quiet zone included) whose 0.9 mm modules hold this many bytes; null beyond version 40. */
+    public static function qrSizeFor(int $bytes): ?int
+    {
+        foreach (self::QR_BYTES_M as $i => $room) {
+            if ($room >= $bytes) {
+                return (int) ceil((17 + 4 * ($i + 1) + 8) * 0.9);
+            }
+        }
+
+        return null;
     }
 
     /**

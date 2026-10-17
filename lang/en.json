@@ -1710,5 +1710,5 @@
     "param.error.qr_no_ssid": "Enter the network name.",
     "param.error.qr_no_password": "Enter the network password, or choose “No password”.",
     "param.error.qr_no_text": "Enter the text the code should carry.",
-    "param.error.qr_too_long": "At this size the code holds at most :n characters. Shorten the text or enlarge the code."
+    "param.error.qr_too_long": "At this size the code holds at most :n characters. Shorten the content or enlarge the code to at least :m mm."
 }

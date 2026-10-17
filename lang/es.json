@@ -1710,5 +1710,5 @@
     "param.error.qr_no_ssid": "Introduzca el nombre de la red.",
     "param.error.qr_no_password": "Introduzca la contraseña de la red o elija «Sin contraseña».",
     "param.error.qr_no_text": "Introduzca el texto que debe llevar el código.",
-    "param.error.qr_too_long": "Con este tamaño el código admite como máximo :n caracteres. Acorte el texto o agrande el código."
+    "param.error.qr_too_long": "Con este tamaño el código admite como máximo :n caracteres. Acorte el contenido o agrande el código al menos a :m mm."
 }
