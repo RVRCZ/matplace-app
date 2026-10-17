@@ -28,5 +28,10 @@
         "Nepovedlo se to. Fotka i nastavení zůstaly: zkuste to znovu, nebo jinou fotku.",
         "That did not work. The photo and the settings are still here: try again, or another photo.",
         "No ha funcionado. La foto y los ajustes siguen aquí: inténtelo de nuevo o con otra foto."
+    ],
+    "relief.photo_again": [
+        "Nastavení i model jsou zpět. Fotku neukládáme: pro nový model ji vyberte prosím znovu.",
+        "The settings and the model are back. We do not keep the photo: choose it again for a new model.",
+        "Los ajustes y el modelo han vuelto. No guardamos la foto: elíjala de nuevo para un modelo nuevo."
     ]
 }

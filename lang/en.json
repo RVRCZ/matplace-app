@@ -1017,7 +1017,7 @@
     "param.download.project": "Project for my printer (.3mf)",
     "param.download.project.hint": "The design is saved, you pick your printer and download a ready project with print settings.",
     "calc.edit_design.hint": "Free. We compute this model ourselves, changes cost no AI credits.",
-    "relief.photo_again": "Your settings are back. We do not keep the photo, please choose it again.",
+    "relief.photo_again": "The settings and the model are back. We do not keep the photo: choose it again for a new model.",
     "calc.mode.normal": "Normal",
     "calc.mode.silent": "Silent",
     "calc.mode.sport": "Sport",

@@ -7,7 +7,7 @@
     $i18n = collect($keys)->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb']])])->all();
 @endphp
 
-@extends('tools.page', ['tool' => 'repair', 'module' => 'repair', 'lead' => __('repair.lead'), 'available' => $available, 'unavailable' => __('repair.unavailable'),
+@extends('tools.page', ['fileInput' => 'repair-file', 'tool' => 'repair', 'module' => 'repair', 'lead' => __('repair.lead'), 'available' => $available, 'unavailable' => __('repair.unavailable'),
     'sections' => ['file' => __('toolpage.section.file'), 'result' => __('toolpage.section.result')]])
 
 @push('head')

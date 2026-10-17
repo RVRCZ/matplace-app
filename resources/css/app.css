@@ -109,9 +109,18 @@
 /* ── the tool page (resources/views/tools/page.blade.php) ── */
 @layer components {
     #tool-panel { counter-reset: tool-section; }
+    /* a long word in a narrow box (a choice card, a label) breaks instead of pushing the page wider: with the text at 200 % it did */
+    #tool-panel, #tool-head { overflow-wrap: anywhere; }
+    #tool-panel button { max-width: 100%; }
+    /* a fieldset is as wide as its widest line by default (min-width: min-content): with big text it pushed the card out */
+    #tool-panel fieldset { min-width: 0; }
+    /* the rows of a composition (param.ts) wrap their small buttons; the tables of the text under a tool scroll inside */
+    #compose-layers > div { flex-wrap: wrap; }
+    #about-tool table { @apply block max-w-full overflow-x-auto; }
+    #tool-panel table { @apply block max-w-full overflow-x-auto; }
     .tool-sec-no { @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white; counter-increment: tool-section; }
     .tool-sec-no::before { content: counter(tool-section); }
-    .tool-nav-item { @apply flex shrink-0 items-center gap-1.5 rounded-full border border-transparent px-2.5 py-1 text-sm text-muted transition hover:text-ink; }
+    .tool-nav-item { @apply flex max-w-full shrink-0 items-center gap-1.5 rounded-full border border-transparent px-2.5 py-1 text-sm text-muted transition hover:text-ink; }
     .tool-nav-no { @apply flex h-5 w-5 items-center justify-center rounded-full border border-line bg-card text-[0.7rem] font-semibold; }
     .tool-nav-item[aria-current='true'] { @apply border-line bg-card font-medium text-ink shadow-sm; }
     .tool-nav-item[aria-current='true'] .tool-nav-no { @apply border-ink bg-ink text-white; }
@@ -131,7 +140,7 @@
     .shape-tile img { @apply h-full w-full object-contain opacity-80; }
     .shape-tile:has(:checked) img { filter: invert(1); opacity: 1; }
     /* a number with its unit inside the field, on the right */
-    .tool-unit { @apply relative block w-28 shrink-0; }
+    .tool-unit { @apply relative block w-28 max-w-[40vw] shrink-0; }   /* max: with the text at 200 % the field may not push the row off the screen */
     .tool-unit::after { content: attr(data-unit); @apply pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted; }
     .tool-unit .field { @apply min-h-10 pr-9 text-right; }
     .tool-unit[data-unit=''] .field { @apply pr-3; }

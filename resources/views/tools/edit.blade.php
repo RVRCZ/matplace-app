@@ -17,7 +17,7 @@
     $formats = $op === 'colors' ? ['3mf'] : $config['formats'];
 @endphp
 
-@extends('tools.page', ['tool' => ['holder' => 'holder_model', 'soap' => 'soap_model'][$op] ?? $op, 'module' => 'edit', 'lead' => __('edit.'.$op.'.lead'), 'available' => $available, 'unavailable' => __('edit.unavailable'),
+@extends('tools.page', ['fileInput' => 'edit-file', 'tool' => ['holder' => 'holder_model', 'soap' => 'soap_model'][$op] ?? $op, 'module' => 'edit', 'lead' => __('edit.'.$op.'.lead'), 'available' => $available, 'unavailable' => __('edit.unavailable'),
     'sections' => $sections])
 
 @push('head')

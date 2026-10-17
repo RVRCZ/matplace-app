@@ -135,6 +135,8 @@ async function openChrome(port) {
 /** What is on the first screen, read in the page. */
 const FACTS = `(() => {
     const H = innerHeight, W = innerWidth;
+    // the width asked for (a phone's layout viewport grows with what sticks out, so innerWidth would hide it)
+    const W0 = window.__mpWidth || W;
     const seen = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width > 0 && r.height > 0 && r.top < H && r.bottom > 0 && r.left < W && s.visibility !== 'hidden' && s.display !== 'none'; };
     const whole = (el) => { if (!seen(el)) return false; const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= H; };
     const q = (s) => document.querySelector(s);
@@ -168,7 +170,10 @@ const FACTS = `(() => {
         viewerSeen: seen(viewer), viewerHeight: viewer ? Math.round(viewer.getBoundingClientRect().height) : null,
         sampleSeen: seen(q('#tool-sample')), viewButtonsSeen: views ? [...views.querySelectorAll('button')].filter(seen).length : null,
         cardsSeen: cards.length, firstCard: cards[0] ? cards[0].textContent.trim().replace(/\\s+/g, ' ').slice(0, 60) : null,
-        hScroll: document.documentElement.scrollWidth > W + 1, scrollWidth: document.documentElement.scrollWidth,
+        hScroll: document.documentElement.scrollWidth > W0 + 1, scrollWidth: document.documentElement.scrollWidth,
+        // what sticks out: the innermost elements whose right edge is past the width
+        wide: [...document.querySelectorAll('body *')].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.right > W0 + 1 && ![...el.children].some((c) => c.getBoundingClientRect().right > W0 + 1); })
+            .slice(0, 6).map((el) => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + ' ' + (el.getAttribute('class') || '').split(' ').slice(0, 3).join('.') + ' ' + Math.round(el.getBoundingClientRect().right)),
         small: small.slice(0, 12), smallCount: small.length, bar: covers, says: alert.slice(0, 4),
         // a tool page: empty (nothing yet), loading (busy badge or the logo of dots), a model (its size in the status line) or an error
         state: !q('#tool-status') ? null : [...document.querySelectorAll('#tool-error, .note-error')].some(seen) ? 'error'
@@ -199,7 +204,8 @@ async function prepare(cdp, width, lang) {
 
 const evaluate = async (cdp, expression) => (await cdp('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })).result.value;
 
-async function measure(cdp) {
+async function measure(cdp, width) {
+    await evaluate(cdp, `window.__mpWidth = ${width}`);
     if (ZOOM) await evaluate(cdp, `document.documentElement.style.fontSize = '${ZOOM}%'`);
     const facts = await evaluate(cdp, FACTS);
     if (TABS) {
@@ -236,7 +242,7 @@ async function shoot(page, width, lang, port) {
         await sleep(WAIT);
         if (THEN) { await evaluate(cdp, String(THEN)); await sleep(WAIT); }
         const name = `${page.replace(/[^a-z0-9-]+/gi, '-').replace(/^-|-$/g, '') || 'home'}-${width}-${lang}-${SUFFIX}${ZOOM ? `-zoom${ZOOM}` : ''}${BAR ? '-bar' : ''}`;
-        const facts = await measure(cdp);
+        const facts = await measure(cdp, width);
         await shotTo(cdp, `${name}.webp`, width);
         if (arg('full', false)) await shotTo(cdp, `${name.replace(/-[^-]+$/, '')}-full.webp`, width, true, facts.pageHeight);
         return { name, url: BASE + pathOf(page, lang), ...facts, errors };
@@ -273,7 +279,7 @@ async function walk(flow, width, lang, port) {
                 if (navigation) { await navigation; navigation = null; await sleep(2000); }
                 n++;
                 const name = `flow-${flow}-${width}-${lang}-${n}`;
-                const facts = await measure(cdp);
+                const facts = await measure(cdp, width);
                 await shotTo(cdp, `${name}.webp`, width);
                 steps.push({ step: `shot ${n}`, name, ...facts });
             }

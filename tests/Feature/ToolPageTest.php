@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
+use App\Domain\Tools\ToolInput;
 use App\Domain\Tools\ToolVisibility;
 use App\Http\Controllers\Api\GenerationController;
 use App\Models\User;
@@ -611,5 +612,63 @@ class ToolPageTest extends TestCase
             }
         }
         $this->assertSame([], $missing);
+    }
+
+    /** docs/AH.md §3 (the audit, point 8): our picks first, every card says what is entered, words that mean the same find the same tools. */
+    public function test_the_catalogue_starts_with_our_picks_and_says_what_each_tool_asks_for(): void
+    {
+        $html = (string) $this->get('/tools')->assertOk()->getContent();
+        preg_match('/<section id="tool-picks".*?<\/section>/s', $html, $picks);
+        $this->assertNotEmpty($picks, 'our picks are on the page');
+        $this->assertStringContainsString(e(__('tools.picks')), $picks[0]);
+        $this->assertStringContainsString('data-when-unfiltered', $picks[0], 'they step aside while a filter or a search is on');
+        foreach (['organizer', 'box', 'qr'] as $key) {
+            $this->assertStringContainsString('data-key="'.$key.'"', $picks[0], $key);
+        }
+        $this->assertStringNotContainsString('data-cats=', $picks[0], 'the picks are not counted twice by the filter');
+        // the picks come before the categories and the big cards
+        $this->assertLessThan(strpos($html, 'id="tool-cats"'), strpos($html, 'id="tool-picks"'));
+        // every tool says what it asks for, in all three languages
+        foreach (ToolVisibility::listed() as $key => $tool) {
+            $input = ToolInput::of($key, $tool);
+            $this->assertContains($input, ToolInput::KINDS, $key);
+            foreach (['cs', 'en', 'es'] as $locale) {
+                $this->assertNotSame('tools.input.'.$input, __('tools.input.'.$input, [], $locale), "{$key} {$locale}");
+            }
+        }
+        $this->assertSame('photo', ToolInput::of('figure'));
+        $this->assertSame('file', ToolInput::of('hollow', ['intent' => 'file']));
+        $this->assertSame('link', ToolInput::of('qr'));
+        $this->assertSame('sizes', ToolInput::of('box', ['intent' => 'create']));
+        $this->assertStringContainsString('Zadáte: rozměry', $html);
+        $this->assertStringContainsString('Zadáte: fotku', $html);
+        $this->get('/en/tools')->assertOk()->assertSee('You enter: sizes')->assertSee('Our picks');
+        // the home page keeps its cards as they were
+        $this->assertStringNotContainsString('Zadáte:', (string) $this->get('/')->getContent());
+        // the search knows words that mean the same, and an empty result has a way back
+        $this->assertStringContainsString('\u0022jmenovka\u0022,\u0022cedulka\u0022,\u0022stitek\u0022', $html);
+        $this->assertStringContainsString('id="tool-none-clear"', $html);
+        $this->assertStringContainsString(e(__('tools.search.clear')), $html);
+        $this->assertStringContainsString('id="tool-none-related"', $html);
+        foreach (['cs', 'en', 'es'] as $locale) {
+            $groups = trans('tools.synonyms', [], $locale);
+            $this->assertIsArray($groups, $locale);
+            $this->assertGreaterThanOrEqual(8, count($groups), $locale);
+        }
+    }
+
+    /** docs/AH.md §4: the empty viewer of a tool that takes a model is where the model goes (it said "tap" and did nothing). */
+    public function test_the_empty_viewer_of_a_file_tool_takes_the_file(): void
+    {
+        foreach (['/tools/hollow' => 'edit-file', '/tools/mold' => 'mold-file', '/tools/repair' => 'repair-file', '/tools/check' => 'check-file'] as $url => $input) {
+            $html = (string) $this->get($url)->assertOk()->getContent();
+            if (! str_contains($html, 'id="tool-viewer"')) {
+                continue;                                   // the engine is not installed here
+            }
+            $this->assertStringContainsString('<label id="tool-empty" for="'.$input.'" data-file-for="'.$input.'"', $html, $url);
+            $this->assertStringContainsString('id="'.$input.'"', $html, $url);
+        }
+        // a tool with a model from the start keeps the plain empty line
+        $this->assertStringNotContainsString('data-file-for=', (string) $this->get('/tools/box')->getContent());
     }
 }

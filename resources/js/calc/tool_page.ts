@@ -57,6 +57,7 @@ export class Stage {
         initArtwork(cfg.artwork, this.t);
         this.toolbar();
         this.menu();
+        this.emptyTakesFile();
         this.spy();
         this.el('tool-go').addEventListener('click', () => { if (this.goHref) location.href = this.ordered(this.goHref); else void this.goAction?.(); });
         // a row with a colour swatch (class tool-swatch-row): the whole row opens the colour window, not the small circle
@@ -147,6 +148,22 @@ export class Stage {
         if (window.matchMedia('(min-width: 64rem)').matches) return false;
         this.el('tool-stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
         return true;
+    }
+
+    /** The empty viewer of a tool that takes a model: a file dropped on it goes into the panel's field (a tap is the label's). */
+    private emptyTakesFile(): void {
+        const zone = document.querySelector<HTMLElement>('#tool-empty[data-file-for]');
+        const input = zone ? document.getElementById(zone.dataset.fileFor!) as HTMLInputElement | null : null;
+        if (!zone || !input) return;
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('border-ink'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('border-ink'));
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault(); zone.classList.remove('border-ink');
+            const f = e.dataTransfer?.files?.[0];
+            if (!f) return;
+            const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
     }
 
     busy(on: boolean): void { const b = this.el('tool-busy'); b.classList.toggle('hidden', !on); b.classList.toggle('flex', on); }
