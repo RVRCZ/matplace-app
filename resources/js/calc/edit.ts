@@ -8,8 +8,7 @@ import type { BufferGeometry } from 'three';
 import type { Piece } from './viewer';
 import type { Stage, MenuItem, PriceConfig } from './tool_page';
 import { loadGeometryFromUrl } from './loaders';
-import { estimate, price, range } from './rough';
-import { price as priceText } from '../site/money';
+import { estimate } from './rough';
 import { FileInfo } from './api';
 
 interface Cfg { op: string; upload: string; files: string; parts: string; home: string; from: string | null; formats: string[]; maxMb: number; beds: Record<string, number[] | null>; margin: number; farmMargin: number; config: PriceConfig & { bed_mm: { x: number; y: number; z: number } }; i18n: Record<string, string> }
@@ -258,14 +257,12 @@ export function bootEdit(stage: Stage): void {
         box.classList.remove('hidden');
     };
 
-    /** What a volume of PLA costs, the way the price card counts it (the lower end of the range). */
-    const priceOf = (volume: number): number => {
+    /** How long a volume of PLA prints, the way the rough estimate counts it (standard quality, 15 % infill). */
+    const minutesOf = (volume: number): number => {
         const c = stage.cfg.price; if (!c || !(volume > 0)) return 0;
         const code = c.default_material ?? c.materials[0]?.code ?? 'PLA';
         const density = c.materials.find((m) => m.code === code)?.density ?? 1.24;
-        const est = estimate(c.rough, density, { volume_mm3: volume, area_mm2: 0 }, { material: code, quality: 'standard', infill: 15, supports: false, scale: 1, quantity: 1 });
-        const totals = c.orientation_profiles.map((p) => price(c.round_to, p, est.grams, est.minutes, 1).total);
-        return range(c.rough, c.round_to, totals, true)[0];
+        return estimate(c.rough, density, { volume_mm3: volume, area_mm2: 0 }, { material: code, quality: 'standard', infill: 15, supports: false, scale: 1, quantity: 1 }).minutes;
     };
 
     const showMade = async (file: Edited): Promise<void> => {
@@ -283,8 +280,9 @@ export function bootEdit(stage: Stage): void {
             lines.push(t('report.cuts', { n: (r.windows ?? []).length, s: r.straps ?? 0 }));
         }
         if (cfg.op === 'hollow' && r.hollow) {
-            const saved = priceOf(r.volume_in_mm3 ?? 0) - priceOf((r.volume_in_mm3 ?? 0) - r.hollow.cavity_mm3);
-            lines.push(t('report', { w: nf.format(r.hollow.wall), c: nf.format(Math.round(r.hollow.cavity_mm3 / 1000)), g: nf.format(r.hollow.saved_g), p: saved > 0 ? priceText(saved) : '—' }));
+            // grams and minutes saved, not crowns: the price shows first in the calculation (Roman, 17 Oct 2026)
+            const saved = minutesOf(r.volume_in_mm3 ?? 0) - minutesOf((r.volume_in_mm3 ?? 0) - r.hollow.cavity_mm3);
+            lines.push(t('report', { w: nf.format(r.hollow.wall), c: nf.format(Math.round(r.hollow.cavity_mm3 / 1000)), g: nf.format(r.hollow.saved_g), m: nf.format(Math.max(0, Math.round(saved))) }));
             lines.push(r.hollow.drains ? t('report.drains', { d: nf.format(r.hollow.drain_d), n: r.hollow.drains }) : t('report.none'));
             if ((r.warnings ?? []).includes('coarse_grid')) lines.push(t('report.coarse', { p: nf.format(r.hollow.pitch) }));
         }

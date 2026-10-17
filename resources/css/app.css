@@ -146,6 +146,8 @@
     .tool-swatch-row { @apply -mx-2 flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1 transition hover:bg-slate-100; }
     .tool-swatch-sm { @apply h-7 w-7 shrink-0 cursor-pointer rounded-full border border-slate-300 bg-cover bg-center transition hover:scale-105; }
     .tool-warn { @apply flex items-start gap-2 rounded-lg bg-warn-soft px-3 py-2 text-warn; }
+    /* a required box left empty: the browser's own check after a try to send (:user-invalid), or the page's script (.check-missing) */
+    input[type='checkbox']:user-invalid, input[type='checkbox'].check-missing { @apply rounded-sm outline outline-2 outline-offset-2 outline-red-600; }
     .tool-menu-item { @apply flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-ink transition hover:bg-slate-100 disabled:opacity-50; }
     /* windows (colour, picture): a native <dialog> */
     .tool-dialog { @apply m-auto w-[min(56rem,calc(100vw-1.5rem))] max-w-none rounded-xl border border-line bg-card p-0 text-ink shadow-sm; max-height: min(44rem, calc(100vh - 2rem)); }

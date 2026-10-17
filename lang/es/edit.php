@@ -178,14 +178,14 @@ return [
     'split.part.piece' => 'Pieza :n',
 
     // ── vaciar ──────────────────────────────────────────────────────────────────────────────────────
-    'hollow.lead' => 'Un modelo macizo se convierte en hueco con la pared que elija y agujeros de drenaje en la base. Ahorra material, horas de impresión y dinero; la herramienta dice cuánto.',
+    'hollow.lead' => 'Un modelo macizo se convierte en hueco con la pared que elija y agujeros de drenaje en la base. Ahorra material y horas de impresión; la herramienta dice cuánto.',
     'hollow.tip' => 'Un modelo hueco se imprime como uno macizo; ponga el relleno que quiera en el laminador, la pared ya está en el modelo. Los agujeros de drenaje son para la impresión en resina y para sacar los soportes; en FDM puede taparlos.',
     'hollow.hint' => 'Gratis, de unos segundos a un minuto. El modelo se conserva; el hueco se abre como un archivo nuevo.',
     'hollow.apply' => 'Vaciar el modelo',
     'hollow.working' => 'Midiendo y vaciando…',
     'hollow.stage.measuring' => 'Midiendo las distancias a la superficie…',
     'hollow.stage.hollowing' => 'Construyendo la cavidad…',
-    'hollow.report' => 'Pared de :w mm. Cavidad de :c cm³: ahorra unos :g g de material (PLA) y :p del precio de impresión.',
+    'hollow.report' => 'Pared de :w mm. Cavidad de :c cm³: ahorra unos :g g de material (PLA) y :m min de impresión.',
     'hollow.report.drains' => 'Agujeros de drenaje Ø :d mm en la base: :n.',
     'hollow.report.none' => 'Sin agujeros de drenaje: la cavidad está cerrada.',
     'hollow.report.coarse' => 'El modelo es grande; la rejilla de medición es de :p mm y la pared puede variar en esa medida.',

@@ -178,14 +178,14 @@ return [
     'split.part.piece' => 'Piece :n',
 
     // ── hollow ──────────────────────────────────────────────────────────────────────────────────────
-    'hollow.lead' => 'A solid model becomes a hollow one with the wall you choose and drain holes in the bottom. It saves material, hours of printing and money; the tool says how much.',
+    'hollow.lead' => 'A solid model becomes a hollow one with the wall you choose and drain holes in the bottom. It saves material and hours of printing; the tool says how much.',
     'hollow.tip' => 'A hollow model prints like a solid one; set the infill in your slicer as you like, the wall is in the model already. The drain holes are for resin printing and for shaking supports out; for FDM you may plug them.',
     'hollow.hint' => 'Free, a few seconds to a minute. The model stays, the hollow one opens as a new file.',
     'hollow.apply' => 'Hollow the model',
     'hollow.working' => 'Measuring and hollowing…',
     'hollow.stage.measuring' => 'Measuring the distances from the surface…',
     'hollow.stage.hollowing' => 'Building the cavity…',
-    'hollow.report' => 'Wall :w mm. Cavity :c cm³: saves about :g g of material (PLA) and :p of the print price.',
+    'hollow.report' => 'Wall :w mm. Cavity :c cm³: saves about :g g of material (PLA) and :m min of printing.',
     'hollow.report.drains' => 'Drain holes Ø :d mm in the bottom: :n.',
     'hollow.report.none' => 'No drain holes: the cavity is closed.',
     'hollow.report.coarse' => 'The model is big, the measuring grid is :p mm; the wall may vary by that much.',

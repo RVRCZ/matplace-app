@@ -178,14 +178,14 @@ return [
     'split.part.piece' => 'Díl :n',
 
     // ── hollow ──────────────────────────────────────────────────────────────────────────────────────
-    'hollow.lead' => 'Z plného modelu uděláme dutý se stěnou, jakou si zvolíte, a s odtokovými otvory ve dně. Ušetří to materiál, hodiny tisku i peníze; nástroj řekne kolik.',
+    'hollow.lead' => 'Z plného modelu uděláme dutý se stěnou, jakou si zvolíte, a s odtokovými otvory ve dně. Ušetří to materiál a hodiny tisku; nástroj řekne kolik.',
     'hollow.tip' => 'Dutý model se tiskne stejně jako plný; ve sliceru dejte výplň podle potřeby, stěna už je v modelu. Odtokové otvory jsou pro pryskyřicový tisk a pro vysypání podpěr; u FDM je můžete nechat zaslepit.',
     'hollow.hint' => 'Zdarma, pár vteřin až minuta. Model zůstane, dutý se otevře jako nový soubor.',
     'hollow.apply' => 'Vydutit model',
     'hollow.working' => 'Měřím a vydutím model…',
     'hollow.stage.measuring' => 'Měřím vzdálenosti od povrchu…',
     'hollow.stage.hollowing' => 'Stavím dutinu…',
-    'hollow.report' => 'Stěna :w mm. Dutina :c cm³: ušetří asi :g g materiálu (PLA) a :p na ceně tisku.',
+    'hollow.report' => 'Stěna :w mm. Dutina :c cm³: ušetří asi :g g materiálu (PLA) a :m min tisku.',
     'hollow.report.drains' => 'Odtokové otvory Ø :d mm ve dně: :n.',
     'hollow.report.none' => 'Bez odtokových otvorů: dutina je uzavřená.',
     'hollow.report.coarse' => 'Model je velký, mřížka měření má :p mm; stěna může být o tolik nerovnoměrná.',
