@@ -575,3 +575,33 @@ ani PETG neladila (jen plán v docs/V.md).
 
 Co dál po nasazení: `farm:library-refresh --write --models`, pak v administraci ladění rozprostřít U #1 PLA+ (process)
 na S1 a U #3 PLA+ na K3M; PETG z U #2 a silk z U #1 podle Romana.
+
+### 20a. Rozhodnutí 17. 10. 2026: materiál dává teploty, stroj chlazení a tok; rozprostření z příkazové řádky
+
+Roman srovnal profily Anycubic Slicer Next (7/2026, `C:\Program Files\AnycubicSlicerNext\resources\profiles\Anycubic\filament`)
+a Bambu Studia (`C:\Program Files\Bambu Studio\resources\profiles\BBL\filament`) a rozhodl: cívky Matplace tisknou blíž
+číslům Bambu Lab. Pravidlo od teď:
+
+- **Materiál určuje** teplotu trysky a desky a průtok: PLA 220, PLA+ 220, PLA+ matný 225, silk 230, matný 220,
+  svítivý 215 (necháno), glitter a special 220, PETG 255, ASA 270 (S1) / 250 (Max, profil V2). Deska S1 55 (PLA+ 60,
+  PETG 75), Max 65 (PETG 75, ASA 95).
+- **Stroj určuje** ventilátor, strop objemového toku, retrakci a pressure advance, podle profilů Anycubic pro Kobra S1
+  a Kobra 3 Max: PLA 16 / 13 mm³/s, PLA+ 15 / 14, silk, matný, glitter 12 / 13 (special 12), PETG 12 / 8, ASA 16 / 5;
+  ventilátor PLA 100/100 (uzavřený stroj, Anycubic i Bambu X1C), PETG 30–90 (S1) a 50–80 (Max), matný retrakce 0,5 (S1).
+- Knihovna `farm_profile_library.json` nese jen to, co se liší od profilu sliceru daného stroje; **teploty knihovny
+  vítězí nad teplotami druhu** (`ProfileLibrary::startingValues` je už neodstraňuje), protože stejný druh jede na Maxu
+  s teplejší deskou. Blok `_materials` nese teploty druhů pro `farm:library-refresh --kinds` (druh platí pro Kobra X
+  a pro administraci).
+- Profily sliceru jsou s Anycubicem 7/2026 shodné až na tok PLA na S1 (`filament_pla.json` 12 → 16); u Maxu se liší
+  jen teploty a hustota, což nesou řádky a druh.
+- Nový příkaz `php artisan farm:spread <kód nebo klíč tiskárny> <druh[/povrch]> [--what=process,filament,temps]
+  [--note=…] [--write]` dělá totéž co tlačítko na stránce ladění (`ProfileLibrary::spread`, kontroler ho volá taky);
+  teploty jdou jako jedna sada, takže zdroj, který má jen trysku, nenechá u cíle první vrstvu z knihovny.
+
+**Postup po nasazení** (řídící, po Romanově „nasaď“):
+1. `php artisan farm:library-refresh --write --models --kinds` (prázdné a netknuté řádky podle knihovny, model
+   „Printer Cr“ → „Anycubic Kobra S1“ / „Anycubic Kobra 3 Max“, teploty druhů).
+2. `php artisan farm:spread U2 PETG --write` (celý řádek, 230 °C: Roman 17. 10. „PETG z U2 ke všem S1“; knihovna
+   255 zůstává pro Max), `php artisan farm:spread U1 PLA/silk --write`, `php artisan farm:spread U1 PLA+ --what=process --write`
+   (jen šev S2), `php artisan farm:spread U3 PLA+ --write` (Max → K3M).
+3. Zapsat výsledek sem.

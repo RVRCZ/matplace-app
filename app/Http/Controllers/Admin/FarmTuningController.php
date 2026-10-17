@@ -108,41 +108,15 @@ class FarmTuningController extends Controller
             'what.*' => [Rule::in(['process', 'filament', 'temps'])],
             'note' => ['nullable', 'string', 'max:200'],
         ]);
-        $source = (array) $row->overrides;
-        $take = [];
-        foreach (['process', 'filament'] as $group) {
-            if (in_array($group, $data['what'], true) && ! empty($source[$group])) {
-                $take[$group] = (array) $source[$group];
-            }
-        }
-        if (in_array('temps', $data['what'], true)) {
-            $take += array_intersect_key($source, array_flip(['nozzle_temp', 'nozzle_temp_first', 'bed_temp']));
-        }
-        if (! $take) {
+        $why = __('farm.admin.tuning.spread_history', ['id' => $row->id, 'printer' => $row->printer->name]).(! empty($data['note']) ? ', '.$data['note'] : '');
+        $r = $this->library->spread($row, $data['what'], $why);
+        if (! $r['take']) {
             return back()->with('error', __('farm.admin.tuning.spread_empty'));
         }
-
-        $why = __('farm.admin.tuning.spread_history', ['id' => $row->id, 'printer' => $row->printer->name]).(! empty($data['note']) ? ', '.$data['note'] : '');
-        $done = $same = $skipped = [];
-        foreach ($this->siblings($row) as $target) {
-            $name = ['printer' => $target->printer->name, 'kind' => $target->label()];
-            if ($target->status === FarmPrinterMaterial::STATUS_TUNED) {
-                $skipped[] = __('farm.admin.tuning.spread_skipped_item', $name);
-
-                continue;
-            }
-            $overrides = (array) $target->overrides;
-            foreach ($take as $key => $value) {
-                $overrides[$key] = is_array($value) ? $value + (array) ($overrides[$key] ?? []) : $value;
-            }
-            $before = $target->version;
-            $target->revise($overrides, 'manual', $why, FarmPrinterMaterial::STATUS_TESTING);
-            if ($target->version === $before) {
-                $same[] = $target->printer->name;
-            } else {
-                $done[] = __('farm.admin.tuning.spread_item', $name + ['from' => $before, 'to' => $target->version]);
-            }
-        }
+        $name = fn (FarmPrinterMaterial $t) => ['printer' => $t->printer->name, 'kind' => $t->label()];
+        $done = array_map(fn (array $d) => __('farm.admin.tuning.spread_item', $name($d['row']) + ['from' => $d['from'], 'to' => $d['to']]), $r['done']);
+        $same = array_map(fn (FarmPrinterMaterial $t) => $t->printer->name, $r['same']);
+        $skipped = array_map(fn (FarmPrinterMaterial $t) => __('farm.admin.tuning.spread_skipped_item', $name($t)), $r['skipped']);
         $said = array_filter([
             $done ? __('farm.admin.tuning.spread_done', ['list' => implode(', ', $done)]) : null,
             $same ? __('farm.admin.tuning.spread_same', ['list' => implode(', ', $same)]) : null,
@@ -153,21 +127,14 @@ class FarmTuningController extends Controller
     }
 
     /**
-     * The same kind on the other machines of this row's type: the same printer key without its number
-     * (kobra-s1-01 and kobra-s1-07, never a kobra-3-max) and the same nozzle.
+     * The same kind on the other machines of this row's type (ProfileLibrary::siblings: the same slicer machine
+     * profile and nozzle).
      *
      * @return Collection<int, FarmPrinterMaterial>
      */
     private function siblings(FarmPrinterMaterial $row): Collection
     {
-        // the same machine = the same slicer machine profile and nozzle; the key is not trusted for that any more
-        // (the B farm's keys are kobra-s1-d01…, so "the key without its number" never reached them: 17 Oct 2026)
-        $own = $row->printer;
-
-        return FarmPrinterMaterial::with(['printer', 'material'])->whereNull('farm_color_id')
-            ->where('farm_material_id', $row->farm_material_id)->where('id', '!=', $row->id)->get()
-            ->filter(fn (FarmPrinterMaterial $r) => $own && $r->printer && $r->printer->sameMachineAs($own))
-            ->sortBy(fn (FarmPrinterMaterial $r) => $r->printer->key)->values();
+        return $this->library->siblings($row);
     }
 
     /** A spool that needs its own settings on this machine gets its own row, starting from the kind's row. */
@@ -273,15 +240,14 @@ class FarmTuningController extends Controller
                 .$row->label().' na '.$row->printer->name.' už pojedou s nimi – vytiskněte další test, ať víte, jestli pomohly.');
     }
 
-    /** Values the kind already states stay the kind's: only what differs lives on the row. */
+    /**
+     * Filament values the kind already states stay the kind's: only what differs lives on the row. The temperatures
+     * stay on the row even when they equal the kind's: since 17 Oct 2026 the row carries its machine's temperatures
+     * (the library writes them), so a test that confirms the row must not look like a change.
+     */
     private function ownValues(FarmPrinterMaterial $row, array $candidate): array
     {
         $material = $row->material;
-        foreach (['nozzle_temp', 'nozzle_temp_first', 'bed_temp'] as $k) {
-            if (isset($candidate[$k]) && (int) $candidate[$k] === (int) $material->{$k}) {
-                unset($candidate[$k]);
-            }
-        }
         $candidate['filament'] = array_diff_key((array) ($candidate['filament'] ?? []), $material->sliceOverrides());
         // a test switches ironing on to judge it; the row keeps the tuned ironing values but must not iron every print
         if (! isset(((array) $row->overrides)['process']['ironing_type'])) {

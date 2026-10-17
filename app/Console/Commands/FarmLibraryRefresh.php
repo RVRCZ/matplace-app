@@ -16,12 +16,14 @@ use Illuminate\Console\Command;
  *   php artisan farm:library-refresh --write    write it (missing rows are created first)
  *   php artisan farm:library-refresh --models   also put the slicer profile's machine name into `model` where the
  *                                               free text does not say it ("Printer Cr" → "Anycubic Kobra S1")
+ *   php artisan farm:library-refresh --kinds    also put the library's kind-level temperatures (`_materials`) onto
+ *                                               the kinds (what the Kobra X and the admin page go by)
  */
 class FarmLibraryRefresh extends Command
 {
-    protected $signature = 'farm:library-refresh {--write : write the changes (default: dry run)} {--models : also correct the free-text model of the printers from their slicer profile}';
+    protected $signature = 'farm:library-refresh {--write : write the changes (default: dry run)} {--models : also correct the free-text model of the printers from their slicer profile} {--kinds : also put the library\'s kind-level temperatures (_materials) onto the kinds}';
 
-    protected $description = 'Bring the untested, unedited tuning rows up to the profile library; optionally correct the printers\' model text';
+    protected $description = 'Bring the untested, unedited tuning rows up to the profile library; optionally correct the printers\' model text and the kinds\' temperatures';
 
     public function handle(ProfileLibrary $library): int
     {
@@ -33,6 +35,13 @@ class FarmLibraryRefresh extends Command
                 $this->line('model    '.$line);
             }
             $this->info($tag.sprintf('models: %d corrected', count($fixed)));
+        }
+        if ($this->option('kinds')) {
+            $fixed = $library->fixKinds($write);
+            foreach ($fixed as $line) {
+                $this->line('kind     '.$line);
+            }
+            $this->info($tag.sprintf('kinds: %d with new temperatures', count($fixed)));
         }
         $created = $write ? $library->sync() : 0;
         $report = $library->refresh($write);

@@ -58,15 +58,16 @@ class FarmTuningTest extends TestCase
         $row = FarmPrinterMaterial::where('farm_printer_id', $s1->id)->where('farm_material_id', $petg->id)->firstOrFail();
         $this->assertSame('library', $row->source);
         $this->assertSame(FarmPrinterMaterial::STATUS_UNTESTED, $row->status);
-        $this->assertSame(['60'], $row->overrides['filament']['fan_max_speed']);
+        $this->assertSame(['12'], $row->overrides['filament']['filament_max_volumetric_speed']);
         $this->assertSame('30', $row->overrides['process']['bridge_speed']);
-        // the kind states its temperatures itself: the row does not repeat them
-        $this->assertArrayNotHasKey('nozzle_temp', $row->overrides);
+        // the material decides the temperatures, per machine (Roman, 17 Oct 2026): the row carries them and they
+        // win over the kind's own
+        $this->assertSame([255, 255, 75], [$row->overrides['nozzle_temp'], $row->overrides['nozzle_temp_first'], $row->overrides['bed_temp']]);
 
-        // the Kobra 3 Max inherits the S1 block and adds its own speeds
+        // the Kobra 3 Max inherits the S1 block and adds its own cap, bed and speeds
         $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
         $rowMax = FarmPrinterMaterial::where('farm_printer_id', $max->id)->where('farm_material_id', $petg->id)->firstOrFail();
-        $this->assertSame(['60'], $rowMax->overrides['filament']['fan_max_speed']);
+        $this->assertSame([['8'], 75], [$rowMax->overrides['filament']['filament_max_volumetric_speed'], $rowMax->overrides['bed_temp']]);
         $pla = FarmMaterial::where('code', 'PLA')->where('finish', 'solid')->firstOrFail();
         $plaMax = FarmPrinterMaterial::where('farm_printer_id', $max->id)->where('farm_material_id', $pla->id)->firstOrFail();
         $this->assertSame('120', $plaMax->overrides['process']['outer_wall_speed']);
@@ -104,7 +105,7 @@ class FarmTuningTest extends TestCase
         $rowOf = fn (string $key, FarmMaterial $kind) => FarmPrinterMaterial::where('farm_printer_id', FarmPrinter::where('key', $key)->value('id'))
             ->where('farm_material_id', $kind->id)->whereNull('farm_color_id')->firstOrFail();
         $this->assertSame('library', $rowOf('kobra-s1-d01', $petg)->source);
-        $this->assertSame(['60'], $rowOf('kobra-s1-d01', $petg)->overrides['filament']['fan_max_speed']);
+        $this->assertSame(['12'], $rowOf('kobra-s1-d01', $petg)->overrides['filament']['filament_max_volumetric_speed']);
         $this->assertArrayNotHasKey('process', $rowOf('kobra-s1-d01', $pla)->overrides);
         $this->assertSame('120', $rowOf('kobra-3-max-02', $pla)->overrides['process']['outer_wall_speed']);
         $this->assertStringContainsString('Anycubic Kobra 3 Max', (string) $rowOf('kobra-3-max-02', $pla)->notes);
@@ -138,8 +139,33 @@ class FarmTuningTest extends TestCase
         ])->assertRedirect('/admin/farm/printers');
         $rowMax = FarmPrinterMaterial::where('farm_printer_id', FarmPrinter::where('key', 'kobra-3-max-02')->value('id'))->where('farm_material_id', $petg->id)->firstOrFail();
         $this->assertSame('library', $rowMax->source);
-        $this->assertSame(['60'], $rowMax->overrides['filament']['fan_max_speed']);
-        $this->assertArrayNotHasKey('bed_temp', $rowMax->overrides);
+        $this->assertSame([['8'], 75], [$rowMax->overrides['filament']['filament_max_volumetric_speed'], $rowMax->overrides['bed_temp']]);
+    }
+
+    public function test_the_spread_command_does_what_the_button_does(): void
+    {
+        $petg = FarmMaterial::where('code', 'PETG')->where('finish', 'solid')->firstOrFail();
+        $rowOf = fn (string $key) => FarmPrinterMaterial::where('farm_printer_id', FarmPrinter::where('key', $key)->value('id'))
+            ->where('farm_material_id', $petg->id)->whereNull('farm_color_id')->firstOrFail();
+        // the tuned PETG of the first S1 names only the nozzle: the other S1 must not keep the library's first layer next to it
+        $rowOf('kobra-s1-01')->update(['overrides' => ['nozzle_temp' => 230, 'filament' => ['fan_max_speed' => ['90'], 'filament_retraction_length' => ['1.3']]], 'status' => FarmPrinterMaterial::STATUS_TESTING, 'source' => 'test']);
+
+        $this->artisan('farm:spread', ['printer' => 'kobra-s1-01', 'kind' => 'PETG', '--what' => 'filament,temps'])
+            ->expectsOutputToContain('[dry-run]')->expectsOutputToContain('Kobra S1 #2')->assertSuccessful();
+        $this->assertSame(1, $rowOf('kobra-s1-02')->version);
+
+        $this->artisan('farm:spread', ['printer' => 'kobra-s1-01', 'kind' => 'PETG', '--what' => 'filament,temps', '--write' => true, '--note' => 'PETG podle U2'])->assertSuccessful();
+        $second = $rowOf('kobra-s1-02');
+        $this->assertSame([2, FarmPrinterMaterial::STATUS_TESTING, 'manual'], [$second->version, $second->status, $second->source]);
+        $this->assertSame(230, $second->overrides['nozzle_temp']);
+        $this->assertArrayNotHasKey('nozzle_temp_first', $second->overrides);
+        $this->assertArrayNotHasKey('bed_temp', $second->overrides);
+        $this->assertSame([['90'], ['1.3'], ['12']], [$second->overrides['filament']['fan_max_speed'], $second->overrides['filament']['filament_retraction_length'], $second->overrides['filament']['filament_max_volumetric_speed']], 'its own other keys stay');
+        $this->assertStringContainsString('PETG podle U2', $second->history[0]['note']);
+        // the Max is another machine; an unknown printer or kind is refused
+        $this->assertSame(1, $rowOf('kobra-3-max-01')->version);
+        $this->artisan('farm:spread', ['printer' => 'Z9', 'kind' => 'PETG'])->assertFailed();
+        $this->artisan('farm:spread', ['printer' => 'kobra-s1-01', 'kind' => 'PLA/velvet'])->assertFailed();
     }
 
     public function test_the_machine_row_and_the_spool_reach_the_slice_and_the_gcode_temperatures(): void
@@ -293,7 +319,9 @@ class FarmTuningTest extends TestCase
         $this->assertSame('40', $row->overrides['process']['bridge_speed']);
         $this->assertSame('25', $row->overrides['process']['support_threshold_angle']);
         $this->assertSame('25', PrintProfile::for($s1, $row->material, $slot->color)->process['support_threshold_angle'], 'the farm slices with it');
-        $this->assertArrayNotHasKey('nozzle_temp', $row->overrides, '215 is what the PLA+ kind says anyway: the row keeps only what differs');
+        // the row carries its machine's temperature even when the kind says the same (since 17 Oct 2026 the library
+        // writes them per machine), and the farm slices with it
+        $this->assertSame(215, $row->overrides['nozzle_temp']);
         $this->assertSame(215, PrintProfile::for($s1, $row->material, $slot->color)->temps['nozzle']);
 
         // a poor test cannot be adopted as tuned (the operator clicked that on a 2/5 test once)
@@ -478,16 +506,19 @@ class FarmTuningTest extends TestCase
         $rowOf($matte)->revise(['nozzle_temp' => 222], 'manual', 'ručně');
 
         // a dry run says what it would do and writes nothing
-        $this->artisan('farm:library-refresh', ['--models' => true])->expectsOutputToContain('Farm B #6: "Printer Cr" → "Anycubic Kobra S1"')
-            ->expectsOutputToContain('[dry-run]')->assertSuccessful();
+        $this->artisan('farm:library-refresh', ['--models' => true, '--kinds' => true])->expectsOutputToContain('Farm B #6: "Printer Cr" → "Anycubic Kobra S1"')
+            ->expectsOutputToContain('255/255/75')->expectsOutputToContain('[dry-run]')->assertSuccessful();
         $this->assertNull($rowOf($pla)->overrides);
         $this->assertSame('Printer Cr', $copy->fresh()->model);
+        $this->assertSame(240, (int) $petg->fresh()->nozzle_temp);
 
-        $this->artisan('farm:library-refresh', ['--write' => true, '--models' => true])->assertSuccessful();
+        $this->artisan('farm:library-refresh', ['--write' => true, '--models' => true, '--kinds' => true])->assertSuccessful();
         $this->assertSame('Anycubic Kobra S1', $copy->fresh()->model);
+        $this->assertSame([255, 255, 75], [(int) $petg->fresh()->nozzle_temp, (int) $petg->fresh()->nozzle_temp_first, (int) $petg->fresh()->bed_temp]);
         $plaRow = $rowOf($pla);
         $this->assertSame(['library', 2, FarmPrinterMaterial::STATUS_UNTESTED], [$plaRow->source, $plaRow->version, $plaRow->status]);
-        $this->assertSame(['18'], $plaRow->overrides['filament']['filament_max_volumetric_speed']);
+        $this->assertSame(['16'], $plaRow->overrides['filament']['filament_max_volumetric_speed']);
+        $this->assertSame([220, 55], [$plaRow->overrides['nozzle_temp'], $plaRow->overrides['bed_temp']]);
         $this->assertSame([80, FarmPrinterMaterial::STATUS_TESTING], [$rowOf($petg)->overrides['bed_temp'], $rowOf($petg)->status]);
         $this->assertSame(['nozzle_temp' => 222], $rowOf($matte)->overrides);
         // the seeded rows were current already, and a second run finds nothing to do

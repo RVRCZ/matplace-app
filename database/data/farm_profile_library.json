@@ -1,68 +1,51 @@
 {
-  "_about": "Best known starting values per printer model and filament kind. Keys: printer model substring (lower case) -> kind code -> finish (or '*'). Values have the shape of farm_printer_materials.overrides. Taken from Anycubic's OrcaSlicer presets for the Kobra S1 / Kobra 3 Max and the farm's own prints; a tuned row on the same printer model with the same nozzle beats these. Everything here is written for a 0.4 mm nozzle: a machine with another nozzle takes its flow rates and speeds from its own slicer profiles (engines/orca/profiles) instead.",
+  "_about": "Best known starting values per printer model and filament kind. Keys: the machine as its slicer profile names it (FarmPrinter::machineName(), lower case substring) -> kind code -> finish (or '*'). Values have the shape of farm_printer_materials.overrides. Since 17 Oct 2026 (Roman): the material decides the temperatures and the flow (Matplace spools print close to Bambu Lab's numbers: PLA 220, PLA+ 220, silk 230, matte 220, PETG 255), the machine decides the cooling, the volumetric cap, the retraction and the pressure advance (Anycubic Slicer Next 7/2026 profiles for the Kobra S1 and the Kobra 3 Max). Temperatures here win over the kind's own: the same kind runs hotter beds on the Max. Only what differs from the machine's own filament profile (engines/orca/profiles) is written here. A tuned row on the same machine profile with the same nozzle beats these. Everything is written for a 0.4 mm nozzle: a machine with another nozzle takes its flow rates and speeds from its own slicer profiles instead. `_materials` carries the kind-level temperatures (the S1 numbers) for farm:library-refresh --kinds.",
+  "_materials": {
+    "PLA/solid": { "nozzle_temp": 220, "nozzle_temp_first": 225, "bed_temp": 55 },
+    "PLA/silk": { "nozzle_temp": 230, "nozzle_temp_first": 230, "bed_temp": 55 },
+    "PLA/matte": { "nozzle_temp": 220, "nozzle_temp_first": 225, "bed_temp": 55 },
+    "PLA/luminous": { "nozzle_temp": 215, "nozzle_temp_first": 220, "bed_temp": 55 },
+    "PLA/glitter": { "nozzle_temp": 220, "nozzle_temp_first": 225, "bed_temp": 55 },
+    "PLA/special": { "nozzle_temp": 220, "nozzle_temp_first": 225, "bed_temp": 55 },
+    "PLA+/solid": { "nozzle_temp": 220, "nozzle_temp_first": 225, "bed_temp": 60 },
+    "PLA+/matte": { "nozzle_temp": 225, "nozzle_temp_first": 230, "bed_temp": 60 },
+    "PETG/solid": { "nozzle_temp": 255, "nozzle_temp_first": 255, "bed_temp": 75 },
+    "ASA/solid": { "nozzle_temp": 270, "nozzle_temp_first": 270, "bed_temp": 100 }
+  },
   "kobra s1": {
     "PLA": {
       "*": {
-        "nozzle_temp": 215,
-        "nozzle_temp_first": 220,
-        "bed_temp": 55,
-        "filament": {
-          "fan_min_speed": [
-            "60"
-          ],
-          "fan_max_speed": [
-            "100"
-          ],
-          "overhang_fan_speed": [
-            "100"
-          ],
-          "slow_down_min_speed": [
-            "20"
-          ],
-          "filament_max_volumetric_speed": [
-            "18"
-          ],
-          "filament_retraction_length": [
-            "0.8"
-          ]
-        }
-      },
-      "silk": {
         "nozzle_temp": 220,
         "nozzle_temp_first": 225,
         "bed_temp": 55,
         "filament": {
-          "fan_min_speed": [
-            "50"
-          ],
-          "fan_max_speed": [
-            "90"
-          ],
-          "filament_max_volumetric_speed": [
-            "12"
-          ],
-          "filament_retraction_length": [
-            "0.8"
-          ]
+          "filament_max_volumetric_speed": ["16"],
+          "filament_retraction_length": ["0.8"]
+        },
+        "_note": "Anycubic PLA @Kobra S1 (7/2026): fan 100/100 and PA 0.035 come from the profile file; the farm's own 60/100 and 18 mm3/s of 9/2026 are gone (Roman, 17 Oct 2026)"
+      },
+      "silk": {
+        "nozzle_temp": 230,
+        "nozzle_temp_first": 230,
+        "bed_temp": 55,
+        "filament": {
+          "filament_max_volumetric_speed": ["12"],
+          "filament_retraction_length": ["0.8"],
+          "pressure_advance": ["0.024"]
         },
         "process": {
           "outer_wall_speed": "80"
-        }
+        },
+        "_note": "230 like Bambu PLA Silk and Anycubic PLA Silk @Kobra S1; the tuned row of Farm U #1 (fan 50/85, 9.6 mm3/s, retraction 1.2) is spread over the other S1 by hand"
       },
       "matte": {
-        "nozzle_temp": 215,
-        "nozzle_temp_first": 220,
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
         "bed_temp": 55,
         "filament": {
-          "fan_min_speed": [
-            "60"
-          ],
-          "fan_max_speed": [
-            "100"
-          ],
-          "filament_max_volumetric_speed": [
-            "14"
-          ]
+          "filament_max_volumetric_speed": ["12"],
+          "filament_retraction_length": ["0.5"],
+          "pressure_advance": ["0.032"]
         }
       },
       "luminous": {
@@ -70,20 +53,25 @@
         "nozzle_temp_first": 220,
         "bed_temp": 55,
         "filament": {
-          "filament_max_volumetric_speed": [
-            "12"
-          ]
+          "filament_max_volumetric_speed": ["12"],
+          "pressure_advance": ["0.03"]
         },
-        "_note": "abrasive: hardened nozzle in the long run"
+        "_note": "abrasive: hardened nozzle in the long run; Anycubic prints its Glow at 190, Bambu at 220, the farm stays at 215"
       },
       "glitter": {
-        "nozzle_temp": 215,
-        "nozzle_temp_first": 220,
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
         "bed_temp": 55,
         "filament": {
-          "filament_max_volumetric_speed": [
-            "12"
-          ]
+          "filament_max_volumetric_speed": ["12"]
+        }
+      },
+      "special": {
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
+        "bed_temp": 55,
+        "filament": {
+          "filament_max_volumetric_speed": ["12"]
         }
       }
     },
@@ -93,21 +81,9 @@
         "nozzle_temp_first": 225,
         "bed_temp": 60,
         "filament": {
-          "fan_min_speed": [
-            "50"
-          ],
-          "fan_max_speed": [
-            "100"
-          ],
-          "overhang_fan_speed": [
-            "100"
-          ],
-          "filament_max_volumetric_speed": [
-            "16"
-          ],
-          "filament_retraction_length": [
-            "0.8"
-          ]
+          "filament_max_volumetric_speed": ["15"],
+          "filament_retraction_length": ["0.8"],
+          "pressure_advance": ["0.04"]
         },
         "process": {
           "seam_slope_type": "external",
@@ -124,57 +100,35 @@
           "ironing_speed": "30",
           "ironing_spacing": "0.15"
         },
-        "_note": "seam: scarf joint on the outer wall of walls without a sharp corner, not on leaning walls - seam test T26-000037 on a Kobra S1 (white PLA+, 10 Oct 2026): no seam ridge on a rounded box, a 25 degree cone as clean as without the scarf. One print on one machine: rows stay 'testing'. Ironing (used only when a print switches ironing on; no ironing_type here): flow 10 % / 30 mm/s / spacing 0.15 mm is the better of the two settings tried on a Kobra S1 with white PLA+ on 11 Oct 2026 - T26-000036 against T26-000040 (12 % / 0.1: more visible passes, drops pushed over the edge, a slightly smaller glossy area). The gloss is still not even with either."
+        "_note": "220 like Bambu PLA Tough (Roman, 17 Oct 2026: Matplace PLA+ prints at 220); 15 mm3/s and PA 0.04 from Anycubic PLA+ @Kobra S1. seam: scarf joint on the outer wall of walls without a sharp corner, not on leaning walls - seam test T26-000037 on a Kobra S1 (white PLA+, 10 Oct 2026): no seam ridge on a rounded box, a 25 degree cone as clean as without the scarf. Ironing (used only when a print switches ironing on; no ironing_type here): flow 10 % / 30 mm/s / spacing 0.15 mm is the better of the two settings tried on a Kobra S1 with white PLA+ on 11 Oct 2026 - T26-000036 against T26-000040."
       },
       "matte": {
-        "nozzle_temp": 220,
-        "nozzle_temp_first": 225,
+        "nozzle_temp": 225,
+        "nozzle_temp_first": 230,
         "bed_temp": 60,
         "filament": {
-          "fan_min_speed": [
-            "50"
-          ],
-          "fan_max_speed": [
-            "100"
-          ],
-          "filament_max_volumetric_speed": [
-            "14"
-          ]
-        }
+          "filament_max_volumetric_speed": ["12"],
+          "filament_retraction_length": ["0.5"],
+          "pressure_advance": ["0.032"]
+        },
+        "_note": "225 (Roman, 17 Oct 2026); the rest as Anycubic PLA Matte @Kobra S1, Anycubic has no PLA+ Matte"
       }
     },
     "PETG": {
       "*": {
-        "nozzle_temp": 240,
-        "nozzle_temp_first": 245,
+        "nozzle_temp": 255,
+        "nozzle_temp_first": 255,
         "bed_temp": 75,
         "filament": {
-          "fan_min_speed": [
-            "30"
-          ],
-          "fan_max_speed": [
-            "60"
-          ],
-          "overhang_fan_speed": [
-            "80"
-          ],
-          "slow_down_min_speed": [
-            "15"
-          ],
-          "filament_max_volumetric_speed": [
-            "10"
-          ],
-          "filament_retraction_length": [
-            "1.2"
-          ],
-          "filament_z_hop": [
-            "0.4"
-          ]
+          "filament_max_volumetric_speed": ["12"],
+          "filament_retraction_length": ["0.8"],
+          "filament_z_hop": ["0.4"]
         },
         "process": {
           "outer_wall_speed": "60",
           "bridge_speed": "30"
-        }
+        },
+        "_note": "255 like Bambu PETG Basic (Roman, 17 Oct 2026); fan 30/90, 12 mm3/s, PA 0.04 as Anycubic PETG @Kobra S1 (the fan is in the profile file). The tuned row of Farm U #2 (230, fan 30/90, retraction 1.3, 10 mm3/s) is spread over the other S1 by hand."
       }
     },
     "PETG-CF": {
@@ -183,18 +137,10 @@
         "nozzle_temp_first": 255,
         "bed_temp": 80,
         "filament": {
-          "fan_min_speed": [
-            "20"
-          ],
-          "fan_max_speed": [
-            "50"
-          ],
-          "filament_max_volumetric_speed": [
-            "8"
-          ],
-          "filament_retraction_length": [
-            "1.0"
-          ]
+          "fan_min_speed": ["20"],
+          "fan_max_speed": ["50"],
+          "filament_max_volumetric_speed": ["8"],
+          "filament_retraction_length": ["1.0"]
         }
       }
     },
@@ -204,21 +150,11 @@
         "nozzle_temp_first": 255,
         "bed_temp": 100,
         "filament": {
-          "fan_min_speed": [
-            "10"
-          ],
-          "fan_max_speed": [
-            "30"
-          ],
-          "overhang_fan_speed": [
-            "50"
-          ],
-          "close_fan_the_first_x_layers": [
-            "3"
-          ],
-          "filament_max_volumetric_speed": [
-            "12"
-          ]
+          "fan_min_speed": ["10"],
+          "fan_max_speed": ["30"],
+          "overhang_fan_speed": ["50"],
+          "close_fan_the_first_x_layers": ["3"],
+          "filament_max_volumetric_speed": ["12"]
         },
         "process": {
           "brim_type": "outer_only",
@@ -232,21 +168,11 @@
         "nozzle_temp_first": 255,
         "bed_temp": 100,
         "filament": {
-          "fan_min_speed": [
-            "10"
-          ],
-          "fan_max_speed": [
-            "30"
-          ],
-          "overhang_fan_speed": [
-            "50"
-          ],
-          "close_fan_the_first_x_layers": [
-            "3"
-          ],
-          "filament_max_volumetric_speed": [
-            "12"
-          ]
+          "fan_min_speed": ["10"],
+          "fan_max_speed": ["30"],
+          "overhang_fan_speed": ["50"],
+          "close_fan_the_first_x_layers": ["3"],
+          "filament_max_volumetric_speed": ["12"]
         },
         "process": {
           "brim_type": "outer_only",
@@ -256,30 +182,14 @@
     },
     "ASA": {
       "*": {
-        "nozzle_temp": 250,
-        "nozzle_temp_first": 255,
+        "nozzle_temp": 270,
+        "nozzle_temp_first": 270,
         "bed_temp": 100,
-        "filament": {
-          "fan_min_speed": [
-            "10"
-          ],
-          "fan_max_speed": [
-            "30"
-          ],
-          "overhang_fan_speed": [
-            "50"
-          ],
-          "close_fan_the_first_x_layers": [
-            "3"
-          ],
-          "filament_max_volumetric_speed": [
-            "12"
-          ]
-        },
         "process": {
           "brim_type": "outer_only",
           "brim_width": "5"
-        }
+        },
+        "_note": "Anycubic ASA @Kobra S1 = the profile file (270, fan 10/20, 16 mm3/s), Bambu ASA 270 too"
       }
     },
     "TPU": {
@@ -288,21 +198,11 @@
         "nozzle_temp_first": 225,
         "bed_temp": 50,
         "filament": {
-          "fan_min_speed": [
-            "30"
-          ],
-          "fan_max_speed": [
-            "60"
-          ],
-          "filament_max_volumetric_speed": [
-            "3.5"
-          ],
-          "filament_retraction_length": [
-            "1.5"
-          ],
-          "filament_retraction_speed": [
-            "20"
-          ]
+          "fan_min_speed": ["30"],
+          "fan_max_speed": ["60"],
+          "filament_max_volumetric_speed": ["3.5"],
+          "filament_retraction_length": ["1.5"],
+          "filament_retraction_speed": ["20"]
         },
         "process": {
           "outer_wall_speed": "25",
@@ -318,15 +218,9 @@
         "nozzle_temp_first": 275,
         "bed_temp": 100,
         "filament": {
-          "fan_min_speed": [
-            "0"
-          ],
-          "fan_max_speed": [
-            "20"
-          ],
-          "filament_max_volumetric_speed": [
-            "8"
-          ]
+          "fan_min_speed": ["0"],
+          "fan_max_speed": ["20"],
+          "filament_max_volumetric_speed": ["8"]
         },
         "process": {
           "brim_type": "outer_only",
@@ -339,13 +233,74 @@
     "_inherits": "kobra s1",
     "PLA": {
       "*": {
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
+        "bed_temp": 65,
+        "filament": {
+          "filament_max_volumetric_speed": ["13"],
+          "filament_retraction_length": ["0.8"]
+        },
         "process": {
           "outer_wall_speed": "120"
+        },
+        "_note": "bed 65 and 13 mm3/s as Anycubic PLA @Kobra 3 Max (7/2026); flow 0.965 and PA 0.036 are in filament_pla_kobra3max.json"
+      },
+      "silk": {
+        "nozzle_temp": 230,
+        "nozzle_temp_first": 230,
+        "bed_temp": 65,
+        "filament": {
+          "filament_max_volumetric_speed": ["12"],
+          "filament_retraction_length": ["0.8"],
+          "pressure_advance": ["0.04"]
+        }
+      },
+      "matte": {
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
+        "bed_temp": 65,
+        "filament": {
+          "filament_max_volumetric_speed": ["13"],
+          "filament_retraction_length": ["0.8"],
+          "pressure_advance": ["0.03"]
+        }
+      },
+      "luminous": {
+        "nozzle_temp": 215,
+        "nozzle_temp_first": 220,
+        "bed_temp": 65,
+        "filament": {
+          "filament_max_volumetric_speed": ["13"],
+          "pressure_advance": ["0.03"]
+        }
+      },
+      "glitter": {
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
+        "bed_temp": 65,
+        "filament": {
+          "filament_max_volumetric_speed": ["13"]
+        }
+      },
+      "special": {
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
+        "bed_temp": 65,
+        "filament": {
+          "filament_max_volumetric_speed": ["12"]
         }
       }
     },
     "PLA+": {
       "*": {
+        "nozzle_temp": 220,
+        "nozzle_temp_first": 225,
+        "bed_temp": 65,
+        "filament": {
+          "filament_max_volumetric_speed": ["14"],
+          "filament_retraction_length": ["0.8"],
+          "pressure_advance": ["0.03"]
+        },
         "process": {
           "outer_wall_speed": "120",
           "top_surface_speed": "120",
@@ -360,20 +315,49 @@
           "ironing_speed": "30",
           "ironing_spacing": "0.1"
         },
-        "_note": "top_surface_speed 120: at the profile's 200 mm/s (16.8 mm3/s, above the 16 mm3/s cap) the tops of the seam test T26-000038 (Max, 11 Oct 2026) came out with a ragged border and small gaps between an outer band and the middle; the quick test T26-000035 from the same turquoise spool at 120 had an even top. Seam values of the shipped profile on purpose: the scarf joint of the Kobra S1 block was not tested on the Max yet. Ironing 12 % / 30 mm/s / 0.1 mm as the Max's own production row holds them (version 3, earlier tuning); not printed again in October 2026"
+        "_note": "14 mm3/s and PA 0.03 as Anycubic PLA+ @Kobra 3 Max. top_surface_speed 120: at the profile's 200 mm/s (16.8 mm3/s, above the cap) the tops of the seam test T26-000038 (Max, 11 Oct 2026) came out with a ragged border and small gaps between an outer band and the middle; the quick test T26-000035 from the same turquoise spool at 120 had an even top. Seam values of the shipped profile on purpose: the scarf joint of the Kobra S1 block was not tested on the Max yet. Ironing 12 % / 30 mm/s / 0.1 mm as the Max's own production row holds them (version 3, earlier tuning); not printed again in October 2026"
+      },
+      "matte": {
+        "nozzle_temp": 225,
+        "nozzle_temp_first": 230,
+        "bed_temp": 65,
+        "filament": {
+          "filament_max_volumetric_speed": ["13"],
+          "filament_retraction_length": ["0.8"],
+          "pressure_advance": ["0.03"]
+        }
       }
     },
     "PETG": {
       "*": {
+        "nozzle_temp": 255,
+        "nozzle_temp_first": 255,
+        "bed_temp": 75,
         "filament": {
-          "filament_z_hop": [
-            "0.4"
-          ]
+          "filament_max_volumetric_speed": ["8"],
+          "filament_retraction_length": ["0.8"],
+          "filament_z_hop": ["0.4"]
         },
         "process": {
           "outer_wall_speed": "60",
           "bridge_speed": "30"
-        }
+        },
+        "_note": "255 (Roman, 17 Oct 2026); fan 50/80, 8 mm3/s, PA 0.05 as Anycubic PETG @Kobra 3 Max (the fan and PA are in filament_petg_kobra3max.json)"
+      }
+    },
+    "ASA": {
+      "*": {
+        "nozzle_temp": 250,
+        "nozzle_temp_first": 260,
+        "bed_temp": 95,
+        "filament": {
+          "fan_min_speed": ["1"],
+          "fan_max_speed": ["15"],
+          "filament_max_volumetric_speed": ["5"],
+          "filament_retraction_length": ["0.8"],
+          "pressure_advance": ["0.03"]
+        },
+        "_note": "Anycubic has ASA for the Kobra 3 Max only as the V2 profile at 0.4 mm: these are its numbers (the Max slices ASA with the S1 file filament_asa.json, so the fan and the cap are written here)"
       }
     }
   }
