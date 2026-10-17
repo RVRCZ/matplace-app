@@ -25,7 +25,7 @@
 @section('viewer-empty'){{ __('pet.step.model') }}@endsection
 
 @section('panel')
-<form id="figure-form" data-kind="pet">
+<form id="figure-form" data-kind="pet" novalidate>
     <input type="hidden" name="kind" value="pet">
 
     <x-tool-section id="photo" :title="__('toolpage.section.photo')">
@@ -113,7 +113,7 @@
             })();
         </script>
 
-        <label class="flex items-start gap-3 text-sm text-ink"><input id="figure-consent" type="checkbox" name="consent" value="1" class="mt-0.5 h-5 w-5 accent-ink"> <span>{{ __('pet.consent') }}</span></label>
+        <label class="flex items-start gap-3 text-sm text-ink"><input id="figure-consent" type="checkbox" name="consent" value="1" required class="mt-0.5 h-5 w-5 accent-ink"> <span>{{ __('pet.consent') }}</span></label>
         <p class="text-xs text-muted">{{ __('pet.privacy') }}</p>
 
         <button id="figure-submit" type="submit" class="btn-ink w-full gap-1.5"><x-icon name="sparkles" class="h-4 w-4" />{{ __('pet.submit') }}</button>

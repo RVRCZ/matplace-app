@@ -569,10 +569,7 @@ export function bootFarmOrder(): void {
             const short = total() !== null ? Math.max(0, total()! - s.balance) : 0;
             payBtn.dataset.need = short > 0.005 ? String(Math.ceil(short)) : '';
             payBtn.textContent = payBtn.dataset.need ? (s.balance > 0.005 ? tr('farm.order.pay_card_rest', { amount: money(Math.ceil(short)), balance: money(s.balance) }) : tr('farm.order.pay_card', { amount: money(Math.ceil(short)) })) : tr('farm.order.pay');
-            const terms = $('farm-terms') as HTMLInputElement;
-            payBtn.disabled = picked === null || total() === null || deliveryMissing() !== null || !terms.checked;
-            // when the terms are the only thing between the customer and the button, the box gets a red frame
-            terms.classList.toggle('check-missing', !terms.checked && picked !== null && total() !== null && deliveryMissing() === null);
+            payBtn.disabled = picked === null || total() === null || deliveryMissing() !== null || !($('farm-terms') as HTMLInputElement).checked;
             const topup = $<HTMLAnchorElement>('farm-topup');
             if (topup && payBtn.dataset.need) { topup.href = `${cfg.routes.topup}&need=${payBtn.dataset.need}`; show(topup, true); } else show(topup, false);
             // back from the card payment: the page waits for the bank's word; a payment that arrived but could not start the order says so

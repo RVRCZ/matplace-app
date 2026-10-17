@@ -16,7 +16,7 @@
 @section('viewer-empty'){{ __('figure.step.model') }}@endsection
 
 @section('panel')
-<form id="figure-form">
+<form id="figure-form" novalidate>
     <x-tool-section id="photo" :title="__('toolpage.section.photo')">
         <fieldset>
             <legend class="sr-only">{{ __('figure.kind.bust') }} / {{ __('figure.kind.figure') }}</legend>
@@ -86,7 +86,7 @@
         </script>
 
         {{-- the step ends with the model being made; the material and the number of pieces follow as the page's last step --}}
-        <label class="flex items-start gap-3 text-sm text-ink"><input id="figure-consent" type="checkbox" name="consent" value="1" class="mt-0.5 h-5 w-5 accent-ink"> <span>{{ __('figure.consent') }}</span></label>
+        <label class="flex items-start gap-3 text-sm text-ink"><input id="figure-consent" type="checkbox" name="consent" value="1" required class="mt-0.5 h-5 w-5 accent-ink"> <span>{{ __('figure.consent') }}</span></label>
         <p class="text-xs text-muted">{{ __('figure.privacy') }}</p>
 
         <button id="figure-submit" type="submit" class="btn-ink w-full gap-1.5"><x-icon name="sparkles" class="h-4 w-4" />{{ __('figure.submit') }}</button>

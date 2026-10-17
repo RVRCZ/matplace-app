@@ -160,14 +160,7 @@ export function bootFigure(stage: Stage): void {
         sync();
         const file = photo.files?.[0];
         if (!file) { msg.textContent = t('figure.need_photo'); return; }
-        const consent = $('figure-consent') as HTMLInputElement;
-        if (!consent.checked) {
-            // the box that is missing gets a red frame until it is ticked
-            consent.classList.add('check-missing');
-            consent.addEventListener('change', () => consent.classList.remove('check-missing'), { once: true });
-            msg.textContent = t('figure.need_consent');
-            return;
-        }
+        if (!($('figure-consent') as HTMLInputElement).checked) { msg.textContent = t('figure.need_consent'); return; }
         calm();
         inputs.forEach((i) => mark(i.dataset.view ?? '', false));
         working(t('figure.generating'));

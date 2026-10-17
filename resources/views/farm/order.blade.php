@@ -236,7 +236,7 @@
                 <textarea name="note" rows="2" maxlength="500" placeholder="{{ __('farm.order.note') }}" aria-label="{{ __('farm.order.note') }}" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"></textarea>
 
                 <label class="mt-3 flex items-start gap-2 text-sm text-slate-700">
-                    <input type="checkbox" id="farm-terms" class="mt-1 h-4 w-4 accent-action">
+                    <input type="checkbox" id="farm-terms" required class="mt-1 h-4 w-4 accent-action">
                     <span>{!! __('farm.order.terms', ['url' => route('farm.terms')]) !!}</span>
                 </label>
                 <label class="mt-2 flex items-start gap-2 text-sm text-slate-700">
