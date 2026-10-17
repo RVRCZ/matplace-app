@@ -30,6 +30,10 @@
     if ($kind === 'cookie') {
         $i18n += collect(['draw', 'draw.on', 'count', 'hint', 'limit', 'stroke', 'stroke.move', 'stroke.remove', 'nib.round', 'nib.flat', 'nib.dots', 'nib.candy', 'nib.sprinkles'])->mapWithKeys(fn ($k) => ['cookie.'.$k => __('param.cookie.'.$k)])->all();
     }
+    if ($kind === 'qr') {
+        // the address the code will open as the form reads it, the password's show/hide button
+        $i18n += collect(['url.result', 'password.show', 'password.hide'])->mapWithKeys(fn ($k) => ['param.qr.'.$k => __('param.qr.'.$k)])->all();
+    }
     // a text may be written for one tool, for its family (pendant, earrings… are all "shape") or for every tool
     $tr = function (string $prefix, string $k) use ($kind, $family): string {
         foreach (array_filter([$kind, $family]) as $owner) {
@@ -190,8 +194,16 @@
                 <legend class="lbl">{{ __($own('content')) }}</legend>
                 <div class="mt-2 grid gap-3">
                     @foreach($texts as $key => $t)
-                        <label class="text-sm font-medium text-ink">{{ $tr('t', $key) }}
-                            <input data-text="{{ $key }}" maxlength="{{ $t[0] }}" value="{{ $t[2] }}" @if($t[1]) required @endif class="field" @if($key === 'url') inputmode="url" autocapitalize="off" spellcheck="false" @endif>
+                        {{-- a field of one kind of content only (the QR sign's address, network or text) folds away for the others --}}
+                        <label class="text-sm font-medium text-ink" {!! $whenOf($key) !!}>{{ $tr('t', $key) }}
+                            @if($key === 'password')
+                                {{-- a network's password: hidden as typed, shown on request, never offered by the browser --}}
+                                <span class="mt-1 flex items-center gap-2"><input data-text="{{ $key }}" type="password" maxlength="{{ $t[0] }}" value="{{ $t[2] }}" class="field !mt-0 min-w-0 flex-1" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" class="btn-quiet !min-h-10 shrink-0 !px-3 !py-2 text-sm" data-reveal="{{ $key }}" aria-pressed="false">{{ __('param.'.$kind.'.password.show') }}</button></span>
+                            @else
+                                <input data-text="{{ $key }}" maxlength="{{ $t[0] }}" value="{{ $t[2] }}" @if($t[1]) required @endif class="field" @if(in_array($key, ['url', 'ssid'], true)) autocapitalize="off" spellcheck="false" @endif @if($key === 'url') inputmode="url" @endif @if($key === 'ssid') autocomplete="off" @endif>
+                            @endif
+                            @if(\Illuminate\Support\Facades\Lang::has('param.'.$kind.'.'.$key.'.hint'))<span class="hint mt-1 block !text-xs font-normal">{{ __('param.'.$kind.'.'.$key.'.hint') }}</span>@endif
+                            @if($key === 'url' && $kind === 'qr')<span class="hint mt-1 block !text-xs font-normal" id="qr-url-result" hidden></span>@endif
                         </label>
                     @endforeach
                 </div>
@@ -218,6 +230,15 @@
                     <input id="param-artwork" type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" class="sr-only" tabindex="-1" aria-hidden="true">
                 @endif
             </fieldset>
+        @endif
+        @if($kind === 'qr')
+            {{-- a tick of the input step after the fields it goes with (the hidden network; the picture tools draw theirs above) --}}
+            @foreach($flagsAt('input') as $flag)
+                <label class="flex items-start gap-3 text-sm text-ink" {!! $whenOf($flag) !!}>
+                    <input data-flag="{{ $flag }}" type="checkbox" class="mt-0.5 h-5 w-5 accent-ink" @checked(in_array($flag, $flagsOn, true))>
+                    <span><span class="font-medium">{{ $tr('flag', $flag) }}</span><br><span class="text-muted">{{ $tr('flag', $flag.'.hint') }}</span></span>
+                </label>
+            @endforeach
         @endif
 
         @if($extra)

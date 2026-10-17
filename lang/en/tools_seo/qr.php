@@ -15,7 +15,7 @@ return [
         ['name' => 'Order the print or download', 'text' => 'Order the print from our print farm, choose the colours of the plate and the code and pay from prepaid credit. Or download the model free as an STL file or a ready project for your own printer.'],
     ],
     'faq' => [
-        ['q' => 'How do I make a QR code for Wi-Fi?', 'a' => 'Type a text in the form WIFI:T:WPA;S:network name;P:password;; into the link field, and a phone that scans it offers to connect. The tool has no separate Wi-Fi form.'],
+        ['q' => 'How do I make a QR code for Wi-Fi?', 'a' => 'Choose “Wi‑Fi” at the top and fill in the network name, the password and the security (WPA/WPA2, WEP or none); tick a hidden network. A phone that scans the code offers to connect. The password stays only in the code and in the saved design.'],
         ['q' => 'Can a printed code be changed later?', 'a' => 'No. The code is part of the print, so test the link before you order. If the target may change, use an address you control and can redirect.'],
         ['q' => 'Why must the sign be in two colours?', 'a' => 'A phone needs contrast between the code and the background. It cannot read a raised code printed in one colour. We recommend a light plate and a dark code.'],
         ['q' => 'How does the sign sit in the stand?', 'a' => 'The stand is a separate part with a slot. The sign gets a blank strip of 10 mm at the bottom that slides into the slot, and it leans back by about 12 degrees.'],

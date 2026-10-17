@@ -1,0 +1,137 @@
+{
+    "param.qr.lead": [
+        "Webová adresa, Wi‑Fi nebo text. Vytvoříme cedulku s kódem, který jde opravdu přečíst.",
+        "A web address, a Wi‑Fi network or a text. We make a sign with a code that really scans.",
+        "Una dirección web, una red Wi‑Fi o un texto. Creamos un cartel con un código que realmente se lee."
+    ],
+    "param.c.qr.content": [
+        "Druh obsahu",
+        "Kind of content",
+        "Tipo de contenido"
+    ],
+    "param.o.qr.web": [
+        "Web",
+        "Web",
+        "Web"
+    ],
+    "param.o.qr.wifi": [
+        "Wi‑Fi",
+        "Wi‑Fi",
+        "Wi‑Fi"
+    ],
+    "param.o.qr.text": [
+        "Text",
+        "Text",
+        "Texto"
+    ],
+    "param.t.qr.url": [
+        "Adresa webu",
+        "Web address",
+        "Dirección web"
+    ],
+    "param.qr.url.result": [
+        "Kód otevře :u",
+        "The code opens :u",
+        "El código abre :u"
+    ],
+    "param.t.qr.text": [
+        "Text",
+        "Text",
+        "Texto"
+    ],
+    "param.qr.text.hint": [
+        "Kratší text znamená větší pole kódu a spolehlivější čtení. Kolik znaků se vejde, hlídáme podle velikosti kódu.",
+        "A shorter text means bigger modules and more reliable scanning. How many characters fit depends on the size of the code; we check it.",
+        "Un texto más corto significa módulos más grandes y una lectura más fiable. Cuántos caracteres caben depende del tamaño del código; lo comprobamos."
+    ],
+    "param.t.qr.ssid": [
+        "Název sítě (SSID)",
+        "Network name (SSID)",
+        "Nombre de la red (SSID)"
+    ],
+    "param.t.qr.password": [
+        "Heslo sítě",
+        "Network password",
+        "Contraseña de la red"
+    ],
+    "param.qr.password.show": [
+        "Ukázat",
+        "Show",
+        "Mostrar"
+    ],
+    "param.qr.password.hide": [
+        "Skrýt",
+        "Hide",
+        "Ocultar"
+    ],
+    "param.qr.password.hint": [
+        "Heslo je jen v kódu a v uloženém návrhu. Nikam ho nezapisujeme ani ho neměříme.",
+        "The password is only in the code and in the saved design. We do not log or measure it.",
+        "La contraseña está solo en el código y en el diseño guardado. No la registramos ni la medimos."
+    ],
+    "param.c.qr.security": [
+        "Zabezpečení",
+        "Security",
+        "Seguridad"
+    ],
+    "param.o.qr.wpa": [
+        "WPA / WPA2 / WPA3",
+        "WPA / WPA2 / WPA3",
+        "WPA / WPA2 / WPA3"
+    ],
+    "param.o.qr.wep": [
+        "WEP",
+        "WEP",
+        "WEP"
+    ],
+    "param.o.qr.nopass": [
+        "Bez hesla",
+        "No password",
+        "Sin contraseña"
+    ],
+    "param.c.qr.security.hint": [
+        "Domácí a firemní sítě mají dnes WPA2 nebo WPA3; WEP je zastaralé. Otevřená síť nemá heslo.",
+        "Home and office networks use WPA2 or WPA3 today; WEP is outdated. An open network has no password.",
+        "Las redes domésticas y de empresa usan hoy WPA2 o WPA3; WEP está anticuado. Una red abierta no tiene contraseña."
+    ],
+    "param.flag.qr.hidden": [
+        "Skrytá síť",
+        "Hidden network",
+        "Red oculta"
+    ],
+    "param.flag.qr.hidden.hint": [
+        "Síť nevysílá svůj název; telefon ho z kódu zadá sám.",
+        "The network does not broadcast its name; the phone takes it from the code.",
+        "La red no anuncia su nombre; el móvil lo toma del código."
+    ],
+    "param.error.qr_bad_url": [
+        "Zadejte platnou adresu webu, například matplace.com nebo https://matplace.com/menu.",
+        "Enter a valid web address, for example matplace.com or https://matplace.com/menu.",
+        "Introduzca una dirección web válida, por ejemplo matplace.com o https://matplace.com/menu."
+    ],
+    "param.error.qr_no_ssid": [
+        "Zadejte název sítě.",
+        "Enter the network name.",
+        "Introduzca el nombre de la red."
+    ],
+    "param.error.qr_no_password": [
+        "Zadejte heslo sítě, nebo zvolte „Bez hesla“.",
+        "Enter the network password, or choose “No password”.",
+        "Introduzca la contraseña de la red o elija «Sin contraseña»."
+    ],
+    "param.error.qr_no_text": [
+        "Zadejte text, který má kód nést.",
+        "Enter the text the code should carry.",
+        "Introduzca el texto que debe llevar el código."
+    ],
+    "param.error.qr_too_long": [
+        "Při této velikosti se do kódu vejde nejvýš :n znaků. Zkraťte text, nebo zvětšete kód.",
+        "At this size the code holds at most :n characters. Shorten the text or enlarge the code.",
+        "Con este tamaño el código admite como máximo :n caracteres. Acorte el texto o agrande el código."
+    ],
+    "param.error.qr_bad_text": [
+        "Zadejte text o délce 1 až 300 znaků.",
+        "Enter a text of 1 to 300 characters.",
+        "Introduzca un texto de 1 a 300 caracteres."
+    ]
+}

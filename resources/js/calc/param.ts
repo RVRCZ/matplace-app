@@ -266,7 +266,14 @@ export function bootParam(stage: Stage): void {
     // the server's first validation message, or our own words for a rate limit (Laravel's "Too Many Attempts." is English only)
     // 429: too fast; 5xx or no answer at all: the preview did not come back (a web server that dropped it), not the shape's fault
     const firstError = (b: { message?: string; errors?: Record<string, string[]> }, status = 0) => (status === 429 ? t('param.too_fast') : Object.values(b.errors ?? {})[0]?.[0] ?? b.message ?? t(status >= 500 || status === 0 ? 'param.preview_failed' : 'param.failed'));
-    const errorOf = async (res: Response): Promise<string> => { try { return firstError(await res.json(), res.status); } catch { return firstError({}, res.status); } };
+    /** The text field the server's first error names ("params.url"), marked the way a bad number is; the mark goes when no field is named. */
+    const markNamed = (errors?: Record<string, string[]>): void => {
+        form.querySelectorAll<HTMLInputElement>('[data-text][data-named]').forEach((i) => { i.removeAttribute('data-named'); i.setAttribute('aria-invalid', 'false'); i.classList.remove('border-red-600'); });
+        const key = Object.keys(errors ?? {})[0]?.replace(/^params\./, '') ?? '';
+        const el = key ? form.querySelector<HTMLInputElement>(`[data-text="${key}"]`) : null;
+        if (el) { el.setAttribute('data-named', ''); el.setAttribute('aria-invalid', 'true'); el.classList.add('border-red-600'); }
+    };
+    const errorOf = async (res: Response): Promise<string> => { try { const b = await res.json() as { message?: string; errors?: Record<string, string[]> }; markNamed(b.errors); return firstError(b, res.status); } catch { markNamed(); return firstError({}, res.status); } };
 
     /** The pieces of the shown model that are the given part, as indexes into the viewer's list. */
     const piecesOf = (part: string): number[] => viewer.getPieces().map((p, i) => (p.name === part ? i : -1)).filter((i) => i >= 0);
@@ -533,7 +540,7 @@ export function bootParam(stage: Stage): void {
             const regions = viewPart === 'all' || cfg.kind === 'qr' ? ((lastMeta?.notes as { regions?: Region[] } | undefined)?.regions ?? null) : null;
             lastStl = await res.arrayBuffer(); lastRegions = regions;
             stage.show(new STLLoader().parse(lastStl), { kind: cfg.kind, regions: tinted(regions), pieces: lastMeta?.parts ?? null });
-            valid = true; showError(null);
+            valid = true; showError(null); markNamed();
             if (lastMeta) { renderDims(lastMeta); renderBom(lastMeta); if (viewPart === 'all') renderPrice(); }
             renderParts(); paintParts(); renderWarnings(lastMeta); renderStatus();
             renderDownloads(); placeEyelet(); placeFrame();
@@ -1202,6 +1209,34 @@ export function bootParam(stage: Stage): void {
         setHandles();
     };
     applyWhen();
+    if (cfg.kind === 'qr') {
+        // the kind of content says which field has to be filled; the address shows under its field as the code will carry it
+        const need = (): void => {
+            const c = form.querySelector<HTMLInputElement>('[data-choice="content"]:checked')?.value ?? 'web';
+            (['url', 'text', 'ssid'] as const).forEach((k) => form.querySelector<HTMLInputElement>(`[data-text="${k}"]`)?.toggleAttribute('required', (k === 'url' && c === 'web') || (k === 'text' && c === 'text') || (k === 'ssid' && c === 'wifi')));
+        };
+        const urlIn = form.querySelector<HTMLInputElement>('[data-text="url"]');
+        const result = document.getElementById('qr-url-result');
+        const whole = (): void => {
+            if (!urlIn || !result) return;
+            const v = urlIn.value.trim();
+            const full = v && !/^[a-z][a-z0-9+.-]*:/i.test(v) ? `https://${v}` : v;
+            result.hidden = !full;
+            result.textContent = full ? t('param.qr.url.result', { u: full }) : '';
+        };
+        form.querySelectorAll<HTMLInputElement>('[data-choice="content"]').forEach((r) => r.addEventListener('input', need));
+        urlIn?.addEventListener('input', whole);
+        need(); whole();
+        // the password stays hidden as typed; one button shows it
+        form.querySelectorAll<HTMLButtonElement>('[data-reveal]').forEach((b) => b.addEventListener('click', () => {
+            const i = form.querySelector<HTMLInputElement>(`[data-text="${b.dataset.reveal}"]`);
+            if (!i) return;
+            const show = i.type === 'password';
+            i.type = show ? 'text' : 'password';
+            b.setAttribute('aria-pressed', show ? 'true' : 'false');
+            b.textContent = t(show ? 'param.qr.password.hide' : 'param.qr.password.show');
+        }));
+    }
     // a standard picked by name (an M10 thread) writes its numbers into the fields; a number edited by hand means "custom"
     const fills = cfg.fills ?? {};
     form.addEventListener('input', (e) => {
