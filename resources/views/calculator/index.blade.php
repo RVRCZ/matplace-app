@@ -73,8 +73,10 @@
                 </div>
             </div>
 
-            <div class="flex flex-col gap-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+            {{-- on a phone the price card comes first and the viewer under it (Z.md N11: the price was on the second
+                 screen); the column dissolves into the grid there, so the card can be ordered before the viewer --}}
+            <div class="flex flex-col gap-4 max-lg:contents">
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 max-lg:order-first">
                     <div class="flex items-center justify-between text-sm">
                         <span id="status" class="font-medium text-slate-600">{{ __('calc.status.reading') }}</span>
                         <span id="status-spinner" class="h-4 w-4 animate-spin rounded-full border-2 border-action border-t-transparent"></span>
@@ -126,7 +128,7 @@
                         <label class="block text-sm font-semibold text-slate-700" for="refine-text">{{ __('refine.title') }}</label>
                         <div class="mt-1 flex gap-2">
                             <input id="refine-text" maxlength="300" placeholder="{{ __('refine.placeholder') }}" class="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                            <button class="rounded-lg bg-action px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{{ __('refine.submit') }}</button>
+                            <button class="btn-ink min-h-0 px-3 py-2 text-sm">{{ __('refine.submit') }}</button>
                         </div>
                         <p id="refine-msg" class="mt-1 text-xs text-slate-500">{{ __('refine.hint') }}</p>
                     </form>
@@ -158,7 +160,7 @@
                             </label>
                         </div>
                         <div class="mt-2 flex items-center gap-3">
-                            <button class="rounded-lg bg-action px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{{ __('pedestal.apply') }}</button>
+                            <button class="btn-ink min-h-0 px-3 py-2 text-sm">{{ __('pedestal.apply') }}</button>
                             <p id="pedestal-msg" class="text-xs text-slate-500" role="status">{{ __('pedestal.hint') }}</p>
                         </div>
                     </form>
@@ -187,7 +189,7 @@
                             </label>
                         </div>
                         <div class="mt-2 flex items-center gap-3">
-                            <button class="rounded-lg bg-action px-3 py-2 text-sm font-semibold text-white disabled:opacity-60">{{ __('mold.apply') }}</button>
+                            <button class="btn-ink min-h-0 px-3 py-2 text-sm">{{ __('mold.apply') }}</button>
                             <p id="mold-msg" class="text-xs text-slate-500" role="status">{{ __('mold.hint') }}</p>
                         </div>
                         </details>
@@ -234,7 +236,8 @@
                     </details>
                     {{-- settings change the model at once, the numbers on request: a slice is real work for the server.
                          Under the last setting, so nobody scrolls back up for it --}}
-                    <button id="cta-recalc" type="button" class="btn-primary mt-4 w-full">{{ __('calc.recalc') }}</button>
+                    {{-- ink, not orange: the orange belongs to "print it with us" (Z.md N2, N14) --}}
+                    <button id="cta-recalc" type="button" class="btn-ink mt-4 w-full">{{ __('calc.recalc') }}</button>
                     <p class="mt-1 text-xs text-slate-500">{{ __('calc.recalc.hint') }}</p>
                 </div>
 

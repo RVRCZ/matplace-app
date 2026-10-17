@@ -356,7 +356,7 @@ class ToolPageTest extends TestCase
         $this->assertDoesNotMatchRegularExpression($emoji, $withoutSymbols);
         // one typeface from our own server, the header has the four entries
         $home = $this->get('/')->assertOk();
-        $home->assertSee(__('nav.price'))->assertSee(__('models.nav'))->assertSee(__('footer.tools'))->assertDontSee('fonts.googleapis.com', false);
+        $home->assertSee(__('nav.price'))->assertDontSee(__('models.nav'))->assertSee(__('footer.tools'))->assertDontSee('fonts.googleapis.com', false);
     }
 
     public function test_the_preview_says_which_triangles_are_which_piece(): void

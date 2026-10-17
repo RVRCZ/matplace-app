@@ -42,6 +42,7 @@ return [
     ],
     'consent' => [
         'title' => 'Cookies y medición',
+        'short' => 'Las cookies necesarias están siempre; la medición de visitas y la publicidad solo con su consentimiento.',
         'text' => 'Necesitamos las cookies necesarias para iniciar sesión y para pedir. Con su consentimiento medimos además las visitas (Google Analytics) y el resultado de la publicidad (Meta). Sin consentimiento no se carga nada de eso.',
         'more' => 'Más sobre las cookies',
         'necessary' => 'Necesarias.',

@@ -42,6 +42,7 @@ return [
     ],
     'consent' => [
         'title' => 'Cookies and measurement',
+        'short' => 'The necessary cookies are always on; visit measurement and ads only with your consent.',
         'text' => 'We need the necessary cookies for signing in and for ordering. With your consent we also measure visits (Google Analytics) and how our advertising works (Meta). Without consent none of that is loaded.',
         'more' => 'More about cookies',
         'necessary' => 'Necessary.',

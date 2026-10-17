@@ -101,6 +101,11 @@ $pages = function () {
     // The blog (old addresses kept) and the static pages
     Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
     Route::get('/blog/{post}', [BlogController::class, 'show'])->name('blog.show');
+    // addresses of the old matplace.cz that people and search engines still type (Z.md N17): somewhere useful, not a 404
+    foreach (['/signup' => '/login', '/signin' => '/login', '/dashboard' => '/login', '/info' => '/about', '/wp' => '/blog'] as $old => $new) {
+        Route::redirect($old, $new, 301);
+    }
+    Route::get('/wp/{any}', fn () => redirect('/blog', 301))->where('any', '.*');
     Route::get('/materials', [PageController::class, 'materials'])->name('materials');
     foreach (PageController::PAGES as $page => $path) {
         Route::get('/'.$path, PageController::class)->defaults('page', $page)->name('pages.'.$page);

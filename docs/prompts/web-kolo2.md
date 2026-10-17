@@ -76,3 +76,20 @@ dělá řídící session.
 
 Kalkulace a host (N2, N11), hlavní stránka (N3), cookie lišta (N5), menu (N7), blog (N12), důvěra (N13), skripty a
 písmo na 404 (N16), přesměrování (N17): dělá řídící session nebo počká.
+
+## 7. Doplněk 17. 10. 2026 (Roman, „jde o uživatelský komfort“): busta a mazlíček
+
+1. **Nahrávání fotek přímo v prázdné ploše.** Když návštěvník přijde na `/tools/figure` nebo `/tools/pet-figurine`,
+   vidí místo prázdného prohlížeče velkou plochu „Přidat fotky“ (klepnutí nebo přetažení, zepředu + volitelně z boku,
+   na telefonu rovnou fotoaparát), tedy ne jen ukázkový obrázek z bodu 1. Vybrané fotky se ukážou jako náhledy v
+   téže ploše; pole fotek v panelu zůstává propojené (stejný `input`, ne druhý). Po vytvoření modelu plochu
+   nahradí prohlížeč.
+2. **Mazlíček bez podstavce.** K `oval`, `round`, `plaque` přidat čtvrtou volbu **„Bez podstavce“** (`none`):
+   `PedestalChanger::PET_TYPES`, `GenerationController` (validace, `$base`), engine `pet_kind.stand` (bez
+   podstavce figurka stojí na vlastních tlapkách: spodek srovnat do roviny řezem nejvýš 1 mm, ať sedí na desce),
+   `pet.blade.php`, texty `pet.base.none` cs/en/es, nápověda u volby: „Tiskne se s podpěrami a snáz se převrhne.“
+   Jméno a věnování jsou jen u podstavců, které je mají. Tabletop miniatura zůstává jen `round`. Test v
+   `PetFigurineTest` (nebo kde jsou testy mazlíčka): `none` projde, model je vodotěsný a spodek rovný.
+3. **Po „Vytvořit“ odskrolovat na místo, kde se model dělá.** Hned po klepnutí na „Vytvořit figurku“ (busta i
+   mazlíček) se stránka na `< lg` posune na prohlížeč s tečkovým logem (`scrollIntoView`, `block: 'start'`, pod
+   lištou stránky), aby člověk viděl, že se něco děje; po dokončení totéž na prohlížeč a kartu akce (bod 3).
