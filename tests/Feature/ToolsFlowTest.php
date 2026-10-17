@@ -50,7 +50,8 @@ class ToolsFlowTest extends TestCase
         // the visitor's language comes from the request (?lang, cookie, Accept-Language), so the expectation names it too
         $first = fn (array $body, string $field, string $lang = 'cs') => $this->postJson('/api/tools/param/preview', $body, ['X-Locale' => $lang])->assertStatus(422)->json('errors')[$field][0] ?? null;
         $this->assertSame(__('param.text_required', [], 'cs'), $first(['kind' => 'sign', 'params' => ['line1' => '']], 'params.line1'));
-        $this->assertSame(__('param.error.qr_bad_text', [], 'es'), $first(['kind' => 'qr', 'params' => []], 'params.url', 'es'));
+        // the QR has kinds of content since 17 Oct 2026 (an empty request shows the sample link): an empty text is the error
+        $this->assertSame(__('param.error.qr_no_text', [], 'es'), $first(['kind' => 'qr', 'params' => ['content' => 'text', 'text' => '']], 'params.text', 'es'));
         $this->assertSame(__('param.error.text_too_long', ['n' => 40], 'en'), $first(['kind' => 'sign', 'params' => ['line1' => str_repeat('x', 41)]], 'params.line1', 'en'));
         $this->assertSame(__('param.error.out_of_range', ['n' => __('param.f.width', [], 'cs')], 'cs'), $first(['kind' => 'organizer', 'params' => ['width' => 5000]], 'params.width'));
         $this->assertStringNotContainsString('field', (string) $first(['kind' => 'sign', 'params' => ['line1' => '']], 'params.line1', 'en'));
@@ -486,7 +487,7 @@ class ToolsFlowTest extends TestCase
     {
         $this->get('/tools/figure')->assertOk()->assertSee('Vyberte nebo vyfoťte fotku')->assertDontSee('Zkus ');
         $this->get('/tools/mold')->assertOk()->assertSee('Přetáhněte sem model')->assertDontSee('Přetáhni');
-        $this->get('/tools')->assertOk()->assertSee('Nahrajte fotku, za 1 až 3 minuty máte 3D model');
+        $this->get('/tools')->assertOk()->assertSee('Nahrajte fotku, za 2 až 4 minuty máte 3D model');
         $this->get('/es/tools/figure')->assertOk()->assertSee('Elija o haga una foto');
     }
 }
