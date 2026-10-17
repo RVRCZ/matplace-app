@@ -15,15 +15,24 @@ return [
         'withdraw_confirm' => 'Take the consent back? If the video is already on YouTube, we will delete it.',
         'published' => 'The video is published:',
         'watch' => 'Watch on YouTube',
+        'watch_wide' => 'Classic video (16:9)',
         'saved_on' => 'Thank you, the consent is saved.',
         'saved_off' => 'The consent is taken back. The video will not be on YouTube.',
     ],
 
     'video' => [
         'music' => 'Music: :track (YouTube Audio Library)',
+        'card' => ':material · :time of printing',
+        'card_time' => ':time of printing',
         'tail' => ':time of printing in :seconds s',
         'tail_plain' => ':time of 3D printing',
         'title' => '3D print time-lapse – :material :color',
         'description' => "Time-lapse of a print from our 3D print farm.\n\nMaterial: :material :color\nPrinter: :printer\nPrint time: :time\n\nWant something printed too? Upload a model, take a photo or describe it in words and see the price right away: :url\n\nPublished with the customer's consent.",
+    ],
+
+    'weekly' => [
+        'card' => 'This week on the farm',
+        'title' => 'This week on the farm – :dates',
+        'description' => "What our 3D print farm printed this week (:dates): :count prints in time-lapse. Every piece has a chapter with a link to the tool it was made in.\n\nWant something printed too? Upload a model, take a photo of an object or describe it in words and see the price right away: :url\n\nWe publish the videos with our customers' consent.",
     ],
 ];

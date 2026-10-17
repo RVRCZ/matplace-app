@@ -96,7 +96,7 @@
                         <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.camera') }} <span id="farm-camera-at"></span></figcaption>
                     </figure>
                     <figure class="mt-3 hidden">
-                        <video id="farm-timelapse" controls muted playsinline loop class="w-full rounded-xl border border-slate-200"></video>
+                        <video id="farm-timelapse" controls playsinline loop class="w-full rounded-xl border border-slate-200"></video>
                         <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.timelapse') }}
                             <a id="farm-short" href="#" download class="ml-2 hidden font-semibold text-action-dark underline">{{ __('youtube.order.short_download') }}</a></figcaption>
                     </figure>
@@ -260,8 +260,12 @@
                     @include('partials.flash')
                     @include('partials.verify_banner')
                     <p class="mt-1 text-slate-600">{{ __($order->video_consent ? 'youtube.order.on' : 'youtube.order.off') }}</p>
+                    @php($wide = $order->videos->firstWhere('kind', 'wide'))
                     @if($order->video_consent && $video?->status === 'published' && $video->watchUrl())
-                        <p class="mt-1">{{ __('youtube.order.published') }} <a href="{{ $video->watchUrl() }}" target="_blank" rel="noopener" class="text-action-dark underline">{{ __('youtube.order.watch') }}</a></p>
+                        <p class="mt-1">{{ __('youtube.order.published') }} <a href="{{ $video->watchUrl() }}" target="_blank" rel="noopener" class="text-action-dark underline">{{ __('youtube.order.watch') }}</a>
+                            @if($wide?->status === 'published' && $wide->watchUrl()) · <a href="{{ $wide->watchUrl() }}" target="_blank" rel="noopener" class="text-action-dark underline">{{ __('youtube.order.watch_wide') }}</a>@endif</p>
+                    @elseif($order->video_consent && $wide?->status === 'published' && $wide->watchUrl())
+                        <p class="mt-1">{{ __('youtube.order.published') }} <a href="{{ $wide->watchUrl() }}" target="_blank" rel="noopener" class="text-action-dark underline">{{ __('youtube.order.watch_wide') }}</a></p>
                     @endif
                     <form method="post" action="{{ route('farm.orders.video_consent', $order) }}" class="mt-2"
                           @if($order->video_consent) onsubmit="return confirm(@js(__('youtube.order.withdraw_confirm')))" @endif>

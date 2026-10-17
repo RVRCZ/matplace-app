@@ -1,0 +1,39 @@
+{
+    "weekly": {
+        "seconds": 40,
+        "width": 1920,
+        "height": 1080,
+        "audio": true,
+        "kb": 1296
+    },
+    "customer": {
+        "seconds": 35,
+        "width": 1280,
+        "height": 720,
+        "audio": true,
+        "kb": 713,
+        "planned": 35,
+        "growth": 20,
+        "frames": 200
+    },
+    "short": {
+        "seconds": 16.5,
+        "width": 720,
+        "height": 720,
+        "audio": true,
+        "kb": 279,
+        "planned": 16.5,
+        "growth": 14,
+        "frames": 202
+    },
+    "wide": {
+        "seconds": 26.5,
+        "width": 1920,
+        "height": 1080,
+        "audio": true,
+        "kb": 727,
+        "planned": 26.5,
+        "growth": 20,
+        "frames": 200
+    }
+}

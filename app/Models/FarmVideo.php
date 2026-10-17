@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * The time-lapse of one farm order on YouTube. Moves only through App\Domain\YouTube\FarmVideos:
+ * A print video on YouTube: the Short or the 16:9 of one farm order, or the weekly cut (no order). Moves only through App\Domain\YouTube\FarmVideos:
  *
  *   pending (waits for an admin, nothing on YouTube yet) → queued (approved) → uploading → scheduled → published | rejected
  *   scheduled: on YouTube, private until `scheduled_at` when YouTube makes it public (the stats run notices)
@@ -33,9 +33,20 @@ class FarmVideo extends Model
 
     public const STATUS_FAILED = 'failed';
 
-    protected $fillable = ['farm_order_id', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'approved_at', 'scheduled_at', 'share', 'views', 'likes', 'comments', 'stats_at', 'score', 'music'];
+    /** The square Short (Reels and the Facebook page take it too) */
+    public const KIND_SHORT = 'short';
 
-    protected $casts = ['uploaded_at' => 'datetime', 'published_at' => 'datetime', 'decided_at' => 'datetime', 'approved_at' => 'datetime', 'scheduled_at' => 'datetime', 'share' => 'array', 'stats_at' => 'datetime',
+    /** The classic 16:9 of the same print, its own video on the channel */
+    public const KIND_WIDE = 'wide';
+
+    /** "Tento týden na farmě": the prints of a week, no order (path, meta: week and orders) */
+    public const KIND_WEEKLY = 'weekly';
+
+    public const KINDS = [self::KIND_SHORT, self::KIND_WIDE, self::KIND_WEEKLY];
+
+    protected $fillable = ['farm_order_id', 'kind', 'path', 'meta', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'approved_at', 'scheduled_at', 'share', 'views', 'likes', 'comments', 'stats_at', 'score', 'music'];
+
+    protected $casts = ['uploaded_at' => 'datetime', 'published_at' => 'datetime', 'decided_at' => 'datetime', 'approved_at' => 'datetime', 'scheduled_at' => 'datetime', 'share' => 'array', 'meta' => 'array', 'stats_at' => 'datetime',
         'views' => 'int', 'likes' => 'int', 'comments' => 'int', 'score' => 'int'];
 
     public function order(): BelongsTo

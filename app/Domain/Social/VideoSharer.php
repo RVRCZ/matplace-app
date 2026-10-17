@@ -31,7 +31,8 @@ final class VideoSharer
         if (! $this->meta->available()) {
             return 0;
         }
-        $videos = FarmVideo::with('order')->whereNotNull('share')->where(fn ($q) => $q->where('status', FarmVideo::STATUS_PUBLISHED)
+        // only the Short: the 16:9 of the same print stays on YouTube (one video per print on the page and Instagram)
+        $videos = FarmVideo::with('order')->where('kind', FarmVideo::KIND_SHORT)->whereNotNull('share')->where(fn ($q) => $q->where('status', FarmVideo::STATUS_PUBLISHED)
             ->orWhere(fn ($q) => $q->where('status', FarmVideo::STATUS_SCHEDULED)->where('scheduled_at', '<=', now())))->get();
         $n = 0;
         foreach ($videos as $video) {

@@ -5,6 +5,7 @@
     $tz = config('youtube.publish_timezone', 'Europe/Prague');
     $when = fn ($t) => ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'][$t->dayOfWeek].' '.$t->format('j. n. H:i');
     $viewNames = ['top' => 'shora', 'left' => 'zleva', 'right' => 'zprava', 'phone' => 'z mobilu'];
+    $kindNames = ['short' => 'Short (čtverec)', 'wide' => 'Klasické video 16:9', 'weekly' => 'Týdenní sestřih'];
 @endphp
 
 @section('content')
@@ -23,7 +24,7 @@
         <p class="mt-1 text-sm text-slate-600">Kanál není připojený. Přihlaste se účtem, pod kterým kanál je (r.v@matplace.cz), a povolte přístup.</p>
         <form method="post" action="{{ route('admin.youtube.connect') }}" class="mt-2">@csrf<button class="btn-primary text-sm">Připojit YouTube kanál</button></form>
     @endif
-    <p class="mt-2 text-xs text-slate-500">Video čeká tady, jen u zakázek, kde zákazník dal souhlas. Na YouTube se nahraje až po schválení a hned je veřejné; co zamítnete, se nikam nenahrává (YouTube počítá každé nahrání do denního limitu kanálu).</p>
+    <p class="mt-2 text-xs text-slate-500">Z každého tisku vzniká čtvercový Short a klasické video 16:9, každou neděli v 18:00 týdenní sestřih; všechna mají hudbu. Video čeká tady, jen u zakázek, kde zákazník dal souhlas. Na YouTube se nahraje až po schválení a hned je veřejné; co zamítnete, se nikam nenahrává (YouTube počítá každé nahrání do denního limitu kanálu).</p>
 </section>
 
 {{-- how the channel does --}}
@@ -40,12 +41,31 @@
             <div><dt class="text-xs text-slate-500">Komentáře</dt><dd class="text-2xl font-extrabold">{{ $n($totals['comments']) }}</dd></div>
             <div><dt class="text-xs text-slate-500">Zveřejněná videa</dt><dd class="text-2xl font-extrabold">{{ $totals['published'] }}</dd></div>
         </dl>
+        <h3 class="mt-4 text-sm font-semibold">Podle druhu videa</h3>
+        <div class="mt-1 overflow-x-auto">
+            <table class="w-full min-w-[32rem] text-sm">
+                <thead class="text-left text-xs text-slate-500">
+                    <tr><th class="py-1 font-normal"></th><th class="py-1 font-normal">za 7 dní</th><th class="py-1 font-normal">za 30 dní</th><th class="py-1 font-normal">celkem</th></tr>
+                </thead>
+                <tbody>
+                    @foreach($kinds as $kind => $row)
+                        <tr class="border-t border-slate-100">
+                            <td class="py-1 font-semibold">{{ $kindNames[$kind] ?? $kind }}</td>
+                            @foreach(['7', '30', 'all'] as $span)
+                                <td class="py-1 text-slate-700">{{ $row[$span]['videos'] }} vid. · {{ $n($row[$span]['views']) }} zhl. · {{ $n($row[$span]['likes']) }} lajků</td>
+                            @endforeach
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        <p class="mt-1 text-xs text-slate-500">Videa zveřejněná v daném období a jejich dosavadní zhlédnutí a lajky.</p>
         @if($top->isNotEmpty())
             <h3 class="mt-4 text-sm font-semibold">Nejsledovanější</h3>
             <ol class="mt-1 space-y-1 text-sm">
                 @foreach($top as $v)
                     <li class="flex flex-wrap justify-between gap-2">
-                        <span><a href="{{ $v->watchUrl() }}" target="_blank" rel="noopener" class="underline">{{ $v->title }}</a> <span class="text-xs text-slate-500">· {{ $v->order?->number }}</span></span>
+                        <span><a href="{{ $v->watchUrl() }}" target="_blank" rel="noopener" class="underline">{{ $v->title }}</a> <span class="text-xs text-slate-500">· {{ $v->order?->number ?? $kindNames[$v->kind] }}</span></span>
                         <span class="text-slate-600">{{ $n($v->views) }} zhlédnutí · {{ $n($v->likes) }} lajků</span>
                     </li>
                 @endforeach
@@ -85,77 +105,35 @@
     </section>
 @endif
 
-{{-- waiting for a decision --}}
+{{-- waiting for a decision: the Short and the 16:9 of one print side by side, each approved on its own --}}
 <h2 class="mt-6 text-lg font-bold">Ke schválení</h2>
-@forelse($waiting as $v)
-    @php($o = $v->order)
-    <section class="mt-3 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-        <div>
-            @if($o?->timelapse_path)
-                <video src="{{ route('admin.youtube.file', $o) }}?v={{ @filemtime(Storage::disk(config('farm.disk'))->path($o->timelapse_short_path ?: $o->timelapse_path)) }}" controls muted playsinline preload="metadata" class="w-full rounded-xl border border-slate-200 {{ $o->timelapse_short_path ? 'mx-auto max-w-sm' : '' }}"></video>
-                @if($o->timelapse_short_path)<p class="mt-1 text-xs text-slate-500">Čtvercový Short · <a href="{{ route('admin.farm.orders.timelapse', $o) }}?v={{ @filemtime(Storage::disk(config('farm.disk'))->path($o->timelapse_path)) }}" target="_blank" class="underline">širokoúhlá verze pro zákazníka</a></p>@endif
-            @endif
-            <p class="mt-2 text-xs text-slate-500">
+@forelse($waiting as $group)
+    @php($o = $group->first()->order)
+    <section class="mt-3 rounded-2xl border border-slate-200 bg-white p-4">
+        @if($o)
+            <p class="text-xs text-slate-500">
                 <a href="{{ route('admin.farm.orders.show', $o) }}" class="underline">{{ $o->number }}</a>
                 · {{ $o->color?->material?->label() }} {{ $o->color?->displayName() }} · {{ $o->user?->email }}
                 · souhlas {{ $o->video_consent_at?->format('j. n. Y H:i') }}
             </p>
-        </div>
-        <div>
-            @if($v->score !== null)
-                <span class="float-right rounded-full px-2 py-0.5 text-xs font-bold {{ $v->score >= 60 ? 'bg-ok-soft text-ok' : ($v->score >= 35 ? 'bg-action-soft text-action-dark' : 'bg-slate-100 text-slate-500') }}"
-                      title="Odhad zajímavosti z délky tisku, počtu vrstev a detailu (0–100)">zajímavost {{ $v->score }}</span>
-            @endif
-            <p class="text-sm font-semibold">{{ $label[$v->status] ?? $v->status }}
-                @if($v->studioUrl())<a href="{{ $v->studioUrl() }}" target="_blank" rel="noopener" class="ml-2 text-xs font-normal underline">otevřít v YouTube Studiu</a>@endif
-            </p>
-            @if($v->error)<p class="mt-1 text-xs text-red-700">{{ $v->error }}</p>@endif
-            @if($v->music)<p class="mt-1 text-xs text-slate-500">♪ {{ pathinfo($v->music, PATHINFO_FILENAME) }} (jen na YouTube; zákazník má video bez hudby)</p>@endif
-            @if($o && array_key_exists($o->id, $finish))
+            @if(array_key_exists($o->id, $finish))
                 @php($fi = $finish[$o->id])
                 <p class="mt-1 text-xs text-slate-500">
                     @if($fi !== null)
-                        Na konci videa: fotka {{ $fi + 1 }} ({{ $viewNames[$o->test_params['photos'][$fi]['view'] ?? ''] ?? '' }}) z <a href="{{ route('admin.farm.photobox', ['order' => $o->token]) }}" class="underline">foto-boxu</a>
+                        Na konci videí: fotka {{ $fi + 1 }} ({{ $viewNames[$o->test_params['photos'][$fi]['view'] ?? ''] ?? '' }}) z <a href="{{ route('admin.farm.photobox', ['order' => $o->token]) }}" class="underline">foto-boxu</a>
                         <a href="{{ route('admin.farm.photos.show', [$o, $fi]) }}" target="_blank" rel="noopener"><img src="{{ route('admin.farm.photos.show', [$o, $fi]) }}?thumb=1" alt="" class="ml-1 inline-block h-10 w-10 rounded object-cover align-middle"></a>
                     @else
-                        Bez fotky hotového kusu: <a href="{{ route('admin.farm.photobox', ['order' => $o->token]) }}" class="underline">vyfotit ve foto-boxu</a>, video se pak přestaví samo.
+                        Bez fotky hotového kusu: <a href="{{ route('admin.farm.photobox', ['order' => $o->token]) }}" class="underline">vyfotit ve foto-boxu</a>, videa se pak přestaví sama.
                     @endif
                 </p>
             @endif
-
-            @if(in_array($v->status, ['pending', 'uploaded'], true))
-                <form method="post" action="{{ route('admin.youtube.publish', $v) }}" class="mt-2 space-y-2">
-                    @csrf
-                    <label class="block text-xs font-semibold text-slate-600">Název (max. 100 znaků)
-                        <input name="title" value="{{ old('title', $v->title) }}" required maxlength="100" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal"></label>
-                    <label class="block text-xs font-semibold text-slate-600">Popis
-                        <textarea name="description" rows="7" maxlength="5000" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal">{{ old('description', $v->description) }}</textarea></label>
-                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-700">
-                        <label class="flex items-center gap-1"><input type="radio" name="when" value="slot" checked class="accent-action"> zveřejnit v nejbližším volném termínu: <strong>{{ $when($nextSlot) }}</strong></label>
-                        <label class="flex items-center gap-1"><input type="radio" name="when" value="now" class="accent-action"> hned</label>
-                    </div>
-                    @if($metaAvailable)
-                        @php($chosen = $v->share ?? ['facebook', 'facebook_link', 'instagram'])
-                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-700">
-                            <input type="hidden" name="share_choice" value="1">
-                            <span class="text-slate-500">Ve stejný čas také:</span>
-                            <label class="flex items-center gap-1"><input type="checkbox" name="share[]" value="facebook" @checked(in_array('facebook', $chosen, true)) class="accent-action"> Facebook stránka (video)</label>
-                            <label class="flex items-center gap-1"><input type="checkbox" name="share[]" value="facebook_link" @checked(in_array('facebook_link', $chosen, true)) class="accent-action"> Facebook příspěvek s odkazem na matplace.com</label>
-                            <label class="flex items-center gap-1"><input type="checkbox" name="share[]" value="instagram" @checked(in_array('instagram', $chosen, true)) class="accent-action"> Instagram (Reel)</label>
-                        </div>
-                    @endif
-                    <button class="btn-primary text-sm">{{ $v->status === 'pending' ? 'Nahrát na YouTube a zveřejnit' : 'Zveřejnit na YouTube' }}</button>
-                </form>
-            @endif
-            <div class="mt-2 flex flex-wrap gap-2">
-                @if($v->status === 'uploaded')
-                    <form method="post" action="{{ route('admin.youtube.replace', $v) }}" onsubmit="return confirm('Smazat soukromou verzi z YouTube a nahrát aktuální video?')">@csrf<button class="btn-quiet text-sm" title="po přestavění videa (php artisan farm:timelapse)">Nahradit novou verzí</button></form>
-                @endif
-                @if(in_array($v->status, ['failed', 'uploading', 'queued'], true))
-                    <form method="post" action="{{ route('admin.youtube.retry', $v) }}">@csrf<button class="btn-quiet text-sm">Nahrát znovu</button></form>
-                @endif
-                <form method="post" action="{{ route('admin.youtube.reject', $v) }}" onsubmit="return confirm('Zamítnout video? Z YouTube se smaže.')">@csrf<button class="btn-quiet text-sm text-red-700">Zamítnout</button></form>
-            </div>
+        @else
+            <p class="text-xs text-slate-500">Týden {{ $group->first()->meta['week'] ?? '' }} · {{ count($group->first()->meta['orders'] ?? []) }} tisků · sestaveno {{ $group->first()->updated_at?->timezone($tz)->format('j. n. Y H:i') }}</p>
+        @endif
+        <div class="mt-3 grid gap-6 {{ $group->count() > 1 ? 'lg:grid-cols-2' : 'md:max-w-2xl' }}">
+            @foreach($group as $v)
+                @include('admin.youtube._video', ['v' => $v])
+            @endforeach
         </div>
     </section>
 @empty
@@ -180,7 +158,8 @@
     @forelse($done as $v)
         <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm">
             <span>
-                <a href="{{ route('admin.farm.orders.show', $v->order) }}" class="underline">{{ $v->order?->number }}</a> · {{ $v->title }}
+                @if($v->order)<a href="{{ route('admin.farm.orders.show', $v->order) }}" class="underline">{{ $v->order->number }}</a> ·@endif
+                <span class="text-xs font-semibold text-slate-500">{{ $kindNames[$v->kind] ?? $v->kind }}</span> · {{ $v->title }}
                 @if($v->status === 'scheduled')
                     <span class="text-xs font-semibold text-action-dark">· Naplánováno na {{ $v->scheduled_at ? $when($v->scheduled_at->timezone($tz)) : '?' }}</span>
                 @else

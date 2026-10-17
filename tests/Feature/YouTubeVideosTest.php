@@ -295,35 +295,94 @@ class YouTubeVideosTest extends TestCase
         $this->assertLessThanOrEqual(100, $complex);
     }
 
-    public function test_the_youtube_copy_gets_a_track_the_customer_copy_stays_silent(): void
+    public function test_the_short_and_the_wide_wait_side_by_side_carry_their_own_campaign_and_go_up_as_they_were_built(): void
     {
-        $ffmpeg = (string) env('FFMPEG_BIN', '');
-        if ($ffmpeg === '' || ! is_file($ffmpeg)) {
-            $this->markTestSkipped('FFMPEG_BIN not set: mixing needs a real ffmpeg');
-        }
-        config(['farm.ffmpeg' => $ffmpeg]);
+        $this->connectedChannel();
+        $this->fakeGoogle();
         $dir = sys_get_temp_dir().'/mp_music_'.uniqid();
         mkdir($dir);
-        Process::run([$ffmpeg, '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=20', $dir.'/Artist - Song.mp3'])->throw();
+        touch($dir.'/Artist - Song.mp3');
         config(['youtube.music_dir' => $dir]);
-
         $order = $this->paidOrder(consent: true);
-        Storage::disk('farm')->makeDirectory($order->dir());
-        $short = Storage::disk('farm')->path($order->dir().'/short.mp4');
-        Process::run([$ffmpeg, '-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc=size=320x320:rate=24:duration=4', '-pix_fmt', 'yuv420p', $short])->throw();
-        $order->forceFill(['status' => FarmOrder::STATUS_DONE, 'timelapse_path' => $order->dir().'/short.mp4', 'timelapse_short_path' => $order->dir().'/short.mp4'])->save();
+        $this->filmed($order);
+        foreach (['short', 'wide'] as $name) {
+            Storage::disk('farm')->put($order->dir()."/{$name}.mp4", str_repeat("\0", 2048));
+        }
+        $order->forceFill(['timelapse_short_path' => $order->dir().'/short.mp4', 'timelapse_wide_path' => $order->dir().'/wide.mp4'])->save();
 
-        $videos = app(FarmVideos::class);
-        $this->assertSame('Artist - Song.mp3', $videos->pickMusic($order));
-        $this->assertStringContainsString('Hudba: Artist - Song', $videos->defaultDescription($order, 'Artist - Song.mp3'));
-        $mixed = $videos->withMusic($order, 'Artist - Song.mp3');
-        $info = Process::run([$ffmpeg, '-hide_banner', '-i', $mixed])->errorOutput();
-        $this->assertStringContainsString('Audio: aac', $info);
-        $this->assertMatchesRegularExpression('/Duration: 00:00:0[34]/', $info, 'cut to the video');
-        $this->assertStringNotContainsString('Audio:', Process::run([$ffmpeg, '-hide_banner', '-i', $short])->errorOutput(), 'the customer copy stays silent');
-        @unlink($mixed);
+        $short = app(FarmVideos::class)->queueFor($order)->refresh();
+        $wide = $order->videos()->where('kind', FarmVideo::KIND_WIDE)->firstOrFail();
+        $this->assertSame([FarmVideo::KIND_SHORT, FarmVideo::STATUS_PENDING, FarmVideo::STATUS_PENDING], [$short->kind, $short->status, $wide->status]);
+        $this->assertSame(['Artist - Song.mp3', 'Artist - Song.mp3'], [$short->music, $wide->music], 'one track for both versions');
+        $this->assertStringContainsString('utm_campaign=video_short', (string) $short->description);
+        $this->assertStringContainsString('#Shorts', (string) $short->description);
+        $this->assertStringContainsString('utm_campaign=video_wide', (string) $wide->description);
+        $this->assertStringNotContainsString('#Shorts', (string) $wide->description);
+        $this->assertCount(1, Mail::queued(FarmAdminAlert::class, fn ($m) => str_contains($m->subjectLine, 'Video ke schválení')), 'one mail for the print, not one per version');
+
+        // side by side on the approval page, one button each; the page and Instagram only for the Short
+        $page = $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Short (čtverec)')->assertSee('Klasické video 16:9');
+        $this->assertSame(2, substr_count($page->getContent(), 'Nahrát na YouTube a zveřejnit'));
+        $this->actingAs($this->admin)->get("/admin/youtube/videos/{$wide->id}/video.mp4")->assertOk()->assertHeader('Content-Type', 'video/mp4');
+
+        // the files carry their music already: the upload sends them as they are, ffmpeg does not run
+        Process::fake();
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$wide->id}/publish", ['title' => 'Široké', 'description' => 'Popis', 'when' => 'now'])->assertRedirect();
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$short->id}/publish", ['title' => 'Short', 'description' => 'Popis', 'when' => 'now'])->assertRedirect();
+        Process::assertNothingRan();
+        $this->assertSame([FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_PUBLISHED], [$wide->refresh()->status, $short->refresh()->status]);
+        $this->assertCount(2, Http::recorded(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable')));
+
+        // the customer sees both; taking the consent back removes both
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}")->assertOk()->assertSee(__('youtube.order.watch_wide'));
+        $this->actingAs($this->user)->post("/farm/orders/{$order->token}/video-consent", ['consent' => 0])->assertRedirect();
+        $this->assertSame([FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_WITHDRAWN], [$short->refresh()->status, $wide->refresh()->status]);
         array_map('unlink', glob($dir.'/*'));
         rmdir($dir);
+    }
+
+    public function test_rows_from_before_the_kinds_are_shorts_and_the_summary_counts_by_kind(): void
+    {
+        $this->connectedChannel();
+        $order = $this->paidOrder(consent: true);
+        DB::table('farm_videos')->insert(['farm_order_id' => $order->id, 'status' => 'published', 'title' => 'Staré', 'youtube_id' => 'old1', 'views' => 900, 'likes' => 40,
+            'published_at' => now()->subDays(20), 'created_at' => now(), 'updated_at' => now()]);
+        $this->assertSame(FarmVideo::KIND_SHORT, $order->video()->firstOrFail()->kind, 'an old row is a Short');
+        FarmVideo::create(['farm_order_id' => $order->id, 'kind' => 'wide', 'status' => 'published', 'title' => 'Nové', 'youtube_id' => 'new1', 'views' => 120, 'likes' => 7, 'published_at' => now()->subDays(2)]);
+        FarmVideo::create(['kind' => 'weekly', 'status' => 'published', 'title' => 'Týden', 'youtube_id' => 'wk1', 'views' => 55, 'likes' => 3, 'published_at' => now()->subDays(40), 'path' => 'weekly/2026-W38.mp4', 'meta' => ['week' => '2026-W38', 'orders' => [$order->id]]]);
+
+        $page = $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Podle druhu videa')->getContent();
+        $row = fn (string $name) => preg_match('/'.preg_quote($name, '/').'<\/td>(.*?)<\/tr>/s', $page, $m) ? preg_replace('/\s+/', ' ', strip_tags($m[1])) : '';
+        $this->assertSame(' 0 vid. · 0 zhl. · 0 lajků 1 vid. · 900 zhl. · 40 lajků 1 vid. · 900 zhl. · 40 lajků ', $row('Short (čtverec)'));
+        $this->assertSame(' 1 vid. · 120 zhl. · 7 lajků 1 vid. · 120 zhl. · 7 lajků 1 vid. · 120 zhl. · 7 lajků ', $row('Klasické video 16:9'));
+        $this->assertSame(' 0 vid. · 0 zhl. · 0 lajků 0 vid. · 0 zhl. · 0 lajků 1 vid. · 55 zhl. · 3 lajků ', $row('Týdenní sestřih'));
+    }
+
+    public function test_a_weekly_cut_goes_up_only_while_every_customer_in_it_agrees(): void
+    {
+        $this->connectedChannel();
+        $this->fakeGoogle();
+        $a = $this->paidOrder(consent: true);
+        $b = $this->paidOrder(consent: true);
+        Storage::disk('farm')->put('weekly/2026-W42.mp4', str_repeat("\0", 2048));
+        $videos = app(FarmVideos::class);
+        $video = $videos->queueWeekly('2026-W42', 'weekly/2026-W42.mp4', [$a->id, $b->id], 'Tento týden na farmě', "0:00 A\n0:13 B\n0:24 C", null);
+        $this->assertSame([FarmVideo::KIND_WEEKLY, null], [$video->kind, $video->farm_order_id]);
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Týdenní sestřih')->assertSee('Týden 2026-W42');
+
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Tento týden na farmě', 'description' => 'Kapitoly', 'when' => 'now'])->assertRedirect();
+        $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->refresh()->status);
+        Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), 'uploadType=resumable') && $r['snippet']['title'] === 'Tento týden na farmě');
+        $this->actingAs($this->admin)->get('/admin/youtube')->assertOk()->assertSee('Týdenní sestřih');
+
+        // a second week, and one customer changes their mind before the approval: it does not go up
+        Storage::disk('farm')->put('weekly/2026-W43.mp4', str_repeat("\0", 2048));
+        $next = $videos->queueWeekly('2026-W43', 'weekly/2026-W43.mp4', [$a->id, $b->id], 'Další týden', '', null);
+        $this->actingAs($this->user)->post("/farm/orders/{$b->token}/video-consent", ['consent' => 0])->assertRedirect();
+        $this->assertStringContainsString('odvolal souhlas', (string) $next->refresh()->error);
+        $this->assertStringContainsString('odvolal souhlas', (string) $video->refresh()->error, 'the published week is marked for the admin too');
+        $videos->publish($next, 'Další týden', '', $this->admin->id, now: true);
+        $this->assertSame(FarmVideo::STATUS_WITHDRAWN, $next->refresh()->status);
     }
 
     public function test_somebody_else_cannot_change_the_consent(): void
