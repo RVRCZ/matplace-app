@@ -15,17 +15,18 @@ import { shrinkPhoto, overLimit } from './photo';
 interface ReliefCfg { url: string; home: string; files: string; maxMb: number; i18n: Record<string, string> }
 type Make = 'panel' | 'lamp' | 'wall';
 
-/** "?from=<uuid>": put the saved settings of an earlier design back into the form. */
-async function restoreForm(form: HTMLFormElement, filesUrl: string): Promise<boolean> {
+/** "?from=<uuid>": put the saved settings of an earlier design back into the form; the design itself comes with them. */
+async function restoreForm(form: HTMLFormElement, filesUrl: string): Promise<FileInfo | null> {
     const from = new URLSearchParams(location.search).get('from');
-    if (!from || !/^[0-9a-f-]{36}$/.test(from)) return false;
+    if (!from || !/^[0-9a-f-]{36}$/.test(from)) return null;
     try {
         const res = await fetch(`${filesUrl}/${from}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-        const p = ((await res.json()).file?.tool?.params ?? null) as Record<string, unknown> | null;
-        if (!p) return false;
+        const file = ((await res.json()).file ?? null) as FileInfo | null;
+        const p = (file?.tool?.params ?? null) as Record<string, unknown> | null;
+        if (!file || !p) return null;
         writeForm(form, p);
-        return true;
-    } catch { return false; }
+        return file;
+    } catch { return null; }
 }
 
 function writeForm(form: HTMLFormElement, p: Record<string, unknown>): void {
@@ -139,7 +140,14 @@ export function bootRelief(stage: Stage): void {
     form.addEventListener('input', apply);
     form.addEventListener('change', () => { apply(); commit(); });
     apply();
-    void restoreForm(form, cfg.files).then((ok) => { if (ok) msg.textContent = cfg.i18n.photo_again; });
+    // back from the calculator or a reload (the result is in the address): the same settings and the same model on the stage
+    void restoreForm(form, cfg.files).then(async (file) => {
+        if (!file) return;
+        msg.textContent = cfg.i18n.photo_again;
+        if (file.status !== 'ready' || !file.stl_url) return;
+        made = file;
+        try { await stage.fileResult(file, { kind: make() === 'lamp' ? 'lamp' : file.kind === 'lithophane' ? 'lithophane' : 'relief' }); } catch { /* the settings are back; the model is made again by a click */ }
+    });
 
     // backlit or surface: the same model painted two ways
     $('relief-backlit').querySelectorAll<HTMLButtonElement>('[data-lit]').forEach((b) => b.addEventListener('click', async () => {
@@ -172,10 +180,12 @@ export function bootRelief(stage: Stage): void {
         try {
             const res = await fetch(cfg.url, { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: fd });
             const body = await res.json();
-            if (!res.ok) throw new Error(cfg.i18n[String(body.reason ?? '')] ?? body.message ?? 'relief');
+            // a reason the page has words for, a refused photo (422, in the page's language), never a server's own words
+            if (!res.ok) throw new Error(cfg.i18n[String(body.reason ?? '')] ?? (res.status === 422 ? body.message : undefined) ?? 'relief');
             const file = await stage.untilReady(body.file as FileInfo);
             if (file.status !== 'ready') throw new Error('relief');
             made = file;
+            stage.keep(file.uuid);         // a step back or a reload brings the settings and this model back
             const backlit = file.kind === 'lithophane' && make() !== 'lamp';
             // the model stays on this page: seen from all sides, with its size and a first price; the calculator is one click on
             // (it is downloaded and drawn under the dots, which fade only when it is there)

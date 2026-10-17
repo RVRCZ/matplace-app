@@ -4,7 +4,7 @@
     // what the search of the page looks through: the name, the sentence under it and the tool's own keywords
     $words = __('tools.'.$key.'.title').' '.__('tools.'.$key.'.hint').' '.($keywords === 'tools.keywords.'.$key ? '' : $keywords);
 @endphp
-<a href="{{ route($tool['route']) }}" data-cats="{{ implode(' ', $tool['categories']) }}" data-words="{{ \App\Domain\Farm\Palette::plain($words) }}" class="card group flex flex-col overflow-hidden transition hover:border-ink">
+<a href="{{ route($tool['route']) }}" data-key="{{ $key }}" data-title="{{ __('tools.'.$key.'.title') }}" data-cats="{{ implode(' ', $tool['categories']) }}" data-words="{{ \App\Domain\Farm\Palette::plain($words) }}" class="card group flex flex-col overflow-hidden transition hover:border-ink">
     <span class="relative block overflow-hidden bg-studio">
         @include('tools.picture', ['key' => $key])
         @if(! empty($badge))
@@ -15,6 +15,10 @@
     </span>
     <span class="flex flex-1 flex-col p-4">
         <span class="text-lg font-semibold text-ink">{{ __('tools.'.$key.'.title') }}</span>
+        @if(! empty($input))
+            {{-- the catalogue says what the tool asks for (docs/AH.md §3); the home page keeps its cards as they are --}}
+            <span class="mt-1 text-sm font-medium text-ink">{{ __('tools.input.label') }}: {{ __('tools.input.'.\App\Domain\Tools\ToolInput::of($key, $tool)) }}</span>
+        @endif
         <span class="mt-1 flex-1 text-sm text-muted">{{ __('tools.'.$key.'.hint') }}</span>
         <span class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-ink group-hover:underline">{{ __('tools.'.$key.'.action') }}<x-icon name="arrow-right" class="h-4 w-4" /></span>
     </span>

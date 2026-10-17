@@ -171,6 +171,7 @@ export function bootEdit(stage: Stage): void {
 
     const haveModel = async (info: FileInfo): Promise<void> => {
         model = info; made = null; analysis = null; planes = null;
+        stage.keep(info.uuid);         // a step back or a reload opens the same model again
         source.textContent = `${info.name} · ${info.bbox ? [info.bbox.x, info.bbox.y, info.bbox.z].map((v) => Math.round(v)).join(' × ') + ' mm' : ''}`;
         source.classList.remove('hidden');
         say(null);
@@ -267,6 +268,7 @@ export function bootEdit(stage: Stage): void {
 
     const showMade = async (file: Edited): Promise<void> => {
         made = file;
+        stage.keep(file.uuid);         // the result reopens with its source (see `cfg.from` below)
         const r = file.edit ?? { op: cfg.op };
         const lines: string[] = [];
         const cuts = Object.values(r.planes ?? {}).reduce((n, l) => n + l.length, 0);

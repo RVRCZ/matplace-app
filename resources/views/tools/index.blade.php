@@ -8,8 +8,11 @@
     // the filter offers a category only when a listed tool is in it
     $cats = collect(['images', 'names', 'home', 'parts', 'toys', 'signs', 'craft', 'edit', 'sell'])->filter(fn ($c) => $all->contains(fn ($t) => in_array($c, $t['categories'], true)));
     $card = function (string $key, array $t) {
-        return view('tools.card', ['key' => $key, 'tool' => $t])->render();
+        return view('tools.card', ['key' => $key, 'tool' => $t, 'input' => true])->render();
     };
+    // "our picks" (Roman, 17 Oct 2026, the audit point 8): chosen by hand until there are data on what people use;
+    // the ones that are not on offer here are left out
+    $picks = collect(['gifts', 'organizer', 'box', 'qr', 'figure'])->filter(fn ($k) => $all->has($k));
     $sections = ['file' => 'have-file', 'create' => 'create', 'spare' => 'spare'];
 @endphp
 
@@ -30,7 +33,23 @@
             <button type="button" class="chip shrink-0 whitespace-nowrap" data-filter="{{ $c }}" aria-pressed="false">{{ __('tools.cats.'.$c) }}</button>
         @endforeach
     </div>
-    <p id="tool-none" class="note-warn mt-4 hidden text-sm" role="status">{{ __('tools.search.none') }}</p>
+    {{-- nothing found: say so, offer the way back and the tools the words come closest to (tools/index script) --}}
+    <div id="tool-none" class="note-warn mt-4 hidden text-sm" role="status">
+        <p>{{ __('tools.search.none') }}</p>
+        <button type="button" id="tool-none-clear" class="btn-secondary mt-3 !min-h-11 !py-2 text-sm">{{ __('tools.search.clear') }}</button>
+        <p class="mt-3 font-medium">{{ __('tools.search.related') }}</p>
+        <ul id="tool-none-related" class="mt-1 flex flex-wrap gap-2"></ul>
+    </div>
+
+    @if($picks->isNotEmpty())
+        <section id="tool-picks" class="mt-5" aria-labelledby="tool-picks-h" data-when-unfiltered>
+            <h2 id="tool-picks-h" class="text-xl font-semibold text-ink">{{ __('tools.picks') }}</h2>
+            <p class="hint">{{ __('tools.picks.note') }}</p>
+            <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach($picks as $key)@include('tools.card_row', ['key' => $key, 'tool' => $all[$key], 'pick' => true])@endforeach
+            </div>
+        </section>
+    @endif
 
     {{-- a phone: the categories folded, each with its count, the first one open; a row per tool (docs/AF.md §2).
          A tool is in every category it has, as the chips filter it; the search shows it once. --}}
@@ -78,6 +97,9 @@
 (() => {
     // one filter for the whole page: a category (also as /tools#<category>) and the words typed into the search
     const plain = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    // words that mean the same here (jmenovka = cedulka = štítek, krabička = box…): a word typed finds the tools of all of them
+    const same = {{ \Illuminate\Support\Js::from(collect((array) trans('tools.synonyms'))->map(fn ($g) => collect($g)->map(fn ($w) => \App\Domain\Farm\Palette::plain($w))->values())->values()) }};
+    const alike = (w) => (w.length < 3 ? [w] : [w, ...same.filter((g) => g.some((s) => s.startsWith(w) || (s.length > 3 && w.startsWith(s)))).flat()]);
     const chips = [...document.querySelectorAll('[data-filter]')];
     const cards = [...document.querySelectorAll('[data-tool-section] [data-cats]')];
     const search = document.getElementById('tool-search');
@@ -101,8 +123,9 @@
         const filtered = cat !== 'all' || words.length > 0;
         let shown = 0;
         const once = new Set();      // a phone row of a tool already shown in an earlier category (while searching)
+        const wanted = words.map(alike);
         cards.forEach((c) => {
-            let on = (cat === 'all' || c.dataset.cats.split(' ').includes(cat)) && words.every((w) => c.dataset.words.includes(w));
+            let on = (cat === 'all' || c.dataset.cats.split(' ').includes(cat)) && wanted.every((alts) => alts.some((w) => c.dataset.words.includes(w)));
             const group = c.closest('[data-cat]');
             if (group && cat !== 'all' && group.dataset.cat !== cat) on = false;
             if (group && on && words.length) { if (once.has(c.dataset.key)) on = false; else once.add(c.dataset.key); }
@@ -117,15 +140,38 @@
         });
         document.querySelectorAll('[data-when-unfiltered]').forEach((n) => { n.hidden = cat !== 'all' || words.length > 0; });
         document.getElementById('tool-none').classList.toggle('hidden', shown > 0);
+        if (shown === 0) related(wanted);
         chips.forEach((o) => { const on = o.dataset.filter === cat; o.classList.toggle('chip-on', on); o.setAttribute('aria-pressed', on ? 'true' : 'false'); });
     };
-    const pick = (to, remember = true) => {
+    // nothing found: the tools that match any one of the words (any category), else our picks
+    const related = (wanted) => {
+        const list = document.getElementById('tool-none-related');
+        const big = cards.filter((c) => !c.closest('[data-cat]'));
+        let near = big.filter((c) => wanted.some((alts) => alts.some((w) => w.length > 2 && c.dataset.words.includes(w))));
+        if (!near.length) near = [...document.querySelectorAll('#tool-picks [data-key]')].map((p) => big.find((c) => c.dataset.key === p.dataset.key)).filter(Boolean);
+        list.innerHTML = '';
+        near.slice(0, 5).forEach((c) => {
+            const a = document.createElement('a');
+            a.href = c.getAttribute('href'); a.className = 'chip inline-flex min-h-11 items-center';
+            a.textContent = c.dataset.title;
+            const li = document.createElement('li'); li.appendChild(a); list.appendChild(li);
+        });
+    };
+    // the category and the words live in the address (#names, ?q=box): the step back from a tool finds the list as it was left
+    const remember = () => {
+        const q = search.value.trim();
+        history.replaceState(null, '', location.pathname + (q ? '?q=' + encodeURIComponent(q) : '') + (cat === 'all' ? '' : '#' + cat));
+    };
+    const pick = (to, keep = true) => {
         cat = chips.some((o) => o.dataset.filter === to) ? to : 'all';
-        if (remember) history.replaceState(null, '', cat === 'all' ? location.pathname + location.search : '#' + cat);
+        if (keep) remember();
         apply();
     };
     chips.forEach((b) => b.addEventListener('click', () => pick(b.dataset.filter)));
-    search.addEventListener('input', apply);
+    search.addEventListener('input', () => { apply(); remember(); });
+    document.getElementById('tool-none-clear').addEventListener('click', () => { search.value = ''; pick('all'); search.focus(); });
+    const asked = new URLSearchParams(location.search).get('q');
+    if (asked) { search.value = asked.slice(0, 80); apply(); }
     const fromHash = () => { const h = location.hash.slice(1); if (chips.some((o) => o.dataset.filter === h)) pick(h, false); };
     window.addEventListener('hashchange', fromHash);
     fromHash();

@@ -372,11 +372,23 @@ export class Stage {
     // ── undo, redo, and the settings kept in this browser ───────────────────────────────────────────
 
     /**
+     * The model this page works on, in its address (?from=<uuid>): back from the calculator and a reload open it
+     * again (every tool that takes a file reads `from`). null takes it out.
+     */
+    keep(uuid: string | null): void {
+        const url = new URL(location.href);
+        if (uuid) url.searchParams.set('from', uuid); else url.searchParams.delete('from');
+        history.replaceState(history.state, '', url);
+    }
+
+    /**
      * read: the settings as plain data; write: put such data back into the form (the module then refreshes itself).
      * commit() is called by the module whenever a change has settled. `offerSaved`: show "restore my last settings"
      * when this browser holds some (not when the page was opened with a design or a preset in its address).
+     * `onReturn`: a visitor coming back to the page (the step back from the calculator, a reload) finds what they
+     * had set, without a click (docs/AH.md §2); a page that rebuilds itself from its address says false.
      */
-    track(io: TrackIo, offerSaved = true): () => void {
+    track(io: TrackIo, offerSaved = true, onReturn = true): () => void {
         const key = `mp_tool_${this.cfg.tool}`;
         const start = JSON.stringify(io.read());
         this.history = { stack: [start], at: 0, io };
@@ -403,7 +415,11 @@ export class Stage {
         let saved: string | null = null;
         try { saved = localStorage.getItem(key); } catch { /* private mode */ }
         const chip = this.el('tool-restore');
-        if (offerSaved && saved && saved !== start) {
+        const nav = (performance.getEntriesByType?.('navigation')[0] as PerformanceNavigationTiming | undefined)?.type;
+        if (onReturn && (nav === 'back_forward' || nav === 'reload') && saved && saved !== start) {
+            // after the module has set itself up (presets, samples), so the visitor's own settings win
+            window.setTimeout(() => { try { io.write(JSON.parse(saved!)); } catch { return; } commit(); }, 0);
+        } else if (offerSaved && saved && saved !== start) {
             chip.classList.remove('hidden'); chip.classList.add('inline-flex');
             chip.addEventListener('click', () => {
                 chip.classList.add('hidden'); chip.classList.remove('inline-flex');

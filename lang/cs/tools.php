@@ -168,6 +168,35 @@ return [
     'slider.hint' => 'Do ploché desky vyřízneme rybinovou drážku s jezdcem a zarážkami; tiskne se najednou a po sejmutí jezdí a cvaká.',
     'slider.action' => 'Udělat posuvný fidget',
 
+    // the catalogue (docs/AH.md §3): our picks at the top, what a card asks for, words that mean the same in the search
+    'picks' => 'Náš výběr',
+    'picks.note' => 'Vybrali jsme je ručně: s nimi se dobře začíná.',
+    'input.label' => 'Zadáte',
+    'input' => [
+        'file' => '3D soubor',
+        'photo' => 'fotku',
+        'picture' => 'obrázek nebo logo',
+        'text' => 'text',
+        'text_or_picture' => 'text nebo obrázek',
+        'link' => 'odkaz nebo text',
+        'sizes' => 'rozměry',
+        'place' => 'místo na mapě',
+    ],
+    'search.clear' => 'Zrušit hledání a filtr',
+    'search.related' => 'Možná hledáte:',
+    'synonyms' => [
+        ['jmenovka', 'cedulka', 'stitek', 'visacka', 'tabulka'],
+        ['krabicka', 'box', 'krabice', 'pouzdro', 'skatulka', 'kazeta'],
+        ['organizer', 'organizér', 'poradac', 'prihradky', 'ulozne', 'tacek'],
+        ['klicenka', 'privesek', 'privesky'],
+        ['stojanek', 'stojan', 'drzak'],
+        ['fotka', 'foto', 'fotografie', 'obrazek', 'portret'],
+        ['qr', 'kod'],
+        ['darek', 'darecek', 'dárek'],
+        ['busta', 'figurka', 'socha', 'soska'],
+        ['hrnek', 'kelimek', 'hrnicek'],
+    ],
+
     'cats' => [
         'images' => 'Obrázky a loga',
         'names' => 'Jména a dárky',

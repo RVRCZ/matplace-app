@@ -168,6 +168,35 @@ return [
     'slider.hint' => 'Una ranura en cola de milano con cursor y topes recortada en una placa plana; se imprime de una vez y, al retirarla, se desliza y hace clic.',
     'slider.action' => 'Hacer el fidget deslizante',
 
+    // the catalogue (docs/AH.md §3): our picks at the top, what a card asks for, words that mean the same in the search
+    'picks' => 'Nuestra selección',
+    'picks.note' => 'Elegidas a mano: buenas herramientas para empezar.',
+    'input.label' => 'Usted introduce',
+    'input' => [
+        'file' => 'un archivo 3D',
+        'photo' => 'una foto',
+        'picture' => 'una imagen o logo',
+        'text' => 'un texto',
+        'text_or_picture' => 'un texto o una imagen',
+        'link' => 'un enlace o texto',
+        'sizes' => 'medidas',
+        'place' => 'un lugar en el mapa',
+    ],
+    'search.clear' => 'Quitar la búsqueda y el filtro',
+    'search.related' => 'Quizá busca:',
+    'synonyms' => [
+        ['placa', 'cartel', 'etiqueta', 'letrero', 'chapa'],
+        ['caja', 'estuche', 'cajita', 'contenedor'],
+        ['organizador', 'bandeja', 'compartimentos'],
+        ['llavero', 'colgante'],
+        ['soporte', 'base', 'atril'],
+        ['foto', 'fotografia', 'imagen', 'retrato'],
+        ['qr', 'codigo'],
+        ['regalo', 'obsequio'],
+        ['busto', 'figura', 'estatua', 'figurita'],
+        ['taza', 'vaso'],
+    ],
+
     'cats' => [
         'images' => 'Imágenes y logos',
         'names' => 'Nombres y regalos',

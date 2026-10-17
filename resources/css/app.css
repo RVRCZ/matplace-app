@@ -115,7 +115,7 @@
     .tool-nav-no { @apply flex h-5 w-5 items-center justify-center rounded-full border border-line bg-card text-[0.7rem] font-semibold; }
     .tool-nav-item[aria-current='true'] { @apply border-line bg-card font-medium text-ink shadow-sm; }
     .tool-nav-item[aria-current='true'] .tool-nav-no { @apply border-ink bg-ink text-white; }
-    .tool-icon-btn { @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-card text-ink transition hover:border-muted disabled:cursor-not-allowed disabled:opacity-40; }
+    .tool-icon-btn { @apply inline-flex h-11 w-11 items-center justify-center rounded-lg border border-line bg-card text-ink transition lg:h-9 lg:w-9 hover:border-muted disabled:cursor-not-allowed disabled:opacity-40; }
     .tool-bar { @apply flex overflow-hidden rounded-lg border border-line bg-card/95 shadow-sm; }
     .tool-bar-btn { @apply inline-flex min-h-9 items-center gap-1.5 border-l border-line px-2.5 text-xs font-medium text-ink transition first:border-l-0 hover:bg-slate-100; }
     .tool-bar-btn[aria-pressed='true'] { @apply bg-ink text-white hover:bg-ink; }

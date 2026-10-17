@@ -163,7 +163,12 @@ class ToolsApiController extends Controller
             // a reason the page has a text for (the frame too wide, the socket too big, no silhouette), else the engine's words
             $reason = in_array($e->getMessage(), ReliefGenerator::REASONS, true) ? $e->getMessage() : null;
 
-            return response()->json(['error' => 'generation_failed', 'reason' => $reason, 'message' => $reason ? __('relief.warn.'.$reason) : $e->getMessage()], 422);
+            // the engine's own words stay in the log: the visitor reads what to do (docs/AH.md §2)
+            if ($reason === null) {
+                report($e);
+            }
+
+            return response()->json(['error' => 'generation_failed', 'reason' => $reason, 'message' => $reason ? __('relief.warn.'.$reason) : __('relief.failed')], 422);
         }
 
         return response()->json(['file' => UploadController::describe($file)], 201);

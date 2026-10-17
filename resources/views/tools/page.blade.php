@@ -152,13 +152,14 @@
 
         {{-- the two ways on; the price shows first in the calculation (no estimate here: Roman, 16 Oct 2026) --}}
         <div id="tool-go-card" class="card flex flex-wrap items-center justify-end gap-x-6 gap-y-3 p-4">
-            {{-- on a phone the two share the width of the card, the main one on the right (under the thumb) --}}
-            <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-                <div class="relative max-sm:flex-1">
+            {{-- on a phone one under the other over the whole card, the main one first: "Get the price and print options" does
+                 not fit beside "Download the model" at 390 px; side by side on wider screens as before --}}
+            <div class="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+                <div class="relative">
                     <button type="button" id="tool-download" class="btn-secondary w-full gap-1.5" aria-haspopup="menu" aria-expanded="false" aria-controls="tool-download-menu" disabled><x-icon name="download" class="h-4 w-4" />{{ __('toolpage.download') }}<x-icon name="chevron-down" class="h-4 w-4" /></button>
                     <div id="tool-download-menu" role="menu" class="absolute bottom-full right-0 z-20 mb-2 hidden w-72 rounded-xl border border-line bg-card p-1 text-sm shadow-sm"></div>
                 </div>
-                <button type="button" id="tool-go" class="btn-primary gap-1.5 max-sm:flex-1" disabled><span id="tool-go-label">{{ __('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button>
+                <button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ __('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button>
             </div>
             <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.go.hint') }}@endif</p>
         </div>
