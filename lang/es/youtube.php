@@ -21,7 +21,7 @@ return [
     ],
 
     'video' => [
-        'music' => 'Música: :track (YouTube Audio Library)',
+        'music' => 'Música: :track',
         'card' => ':material · :time de impresión',
         'card_time' => ':time de impresión',
         'tail' => ':time de impresión en :seconds s',

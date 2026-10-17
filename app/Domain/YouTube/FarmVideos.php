@@ -569,12 +569,30 @@ class FarmVideos
         return (int) round($m[1] * 3600 + $m[2] * 60 + (float) $m[3]);
     }
 
+    /**
+     * The credit line of a track from the file's name: the YouTube Audio Library names "Title - Author.mp3", Pixabay
+     * "author-title-words-123456.mp3" (the author's slug, the title in dashes, the track's number). Pixabay's licence
+     * asks for no credit, Roman wants the author named anyway (17 Oct 2026); anything else keeps its file name.
+     */
+    public static function musicCredit(string $file): string
+    {
+        $name = pathinfo($file, PATHINFO_FILENAME);
+        if (preg_match('/^(.+?) - (.+)$/', $name, $m)) {
+            return $m[1].' – '.$m[2].' (YouTube Audio Library)';
+        }
+        if (preg_match('/^([a-z0-9_.]+)-(.+?)-(\d{3,})$/i', $name, $m)) {
+            return ucwords(str_replace(['-', '_'], ' ', $m[2])).' – '.$m[1].' (Pixabay)';
+        }
+
+        return $name;
+    }
+
     /** What was printed and how, the link with the kind's campaign, the music credit; the Short gets its hashtags. */
     public function defaultDescription(FarmOrder $order, ?string $music = null, string $kind = FarmVideo::KIND_SHORT): string
     {
         $text = __('youtube.video.description', $this->facts($order, $kind), config('youtube.language'));
         if ($music) {
-            $text .= "\n\n".__('youtube.video.music', ['track' => pathinfo($music, PATHINFO_FILENAME)], config('youtube.language'));
+            $text .= "\n\n".__('youtube.video.music', ['track' => self::musicCredit($music)], config('youtube.language'));
         }
 
         return $kind === FarmVideo::KIND_SHORT && $order->timelapse_short_path ? $text."\n\n#Shorts #3Dprinting #timelapse" : $text;
@@ -592,7 +610,7 @@ class FarmVideos
         $lines = array_map(fn ($c) => sprintf('%d:%02d %s', intdiv((int) $c[0], 60), (int) $c[0] % 60, $c[1]).($c[2] ? ' – '.$c[2] : ''), $chapters);
         $text = __('youtube.weekly.description', ['dates' => $dates, 'count' => count($chapters), 'url' => $this->link(null, FarmVideo::KIND_WEEKLY)], $locale)."\n\n".implode("\n", $lines);
         if ($music) {
-            $text .= "\n\n".__('youtube.video.music', ['track' => pathinfo($music, PATHINFO_FILENAME)], $locale);
+            $text .= "\n\n".__('youtube.video.music', ['track' => self::musicCredit($music)], $locale);
         }
 
         return $text."\n\n#3Dprinting #timelapse";

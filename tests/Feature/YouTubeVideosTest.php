@@ -574,4 +574,12 @@ class YouTubeVideosTest extends TestCase
         $this->actingAs($this->user)->post('/admin/youtube/connect')->assertRedirect();
         $this->assertNull(session('youtube_oauth_state'));
     }
+
+    public function test_the_music_credit_names_the_author_of_a_library_track_and_of_a_pixabay_track(): void
+    {
+        $this->assertSame('Sly Sky – Telecasted (YouTube Audio Library)', FarmVideos::musicCredit('Sly Sky - Telecasted.mp3'));
+        $this->assertSame('Pop Party – alex_makemusic (Pixabay)', FarmVideos::musicCredit('/srv/music/alex_makemusic-pop-party-232332.mp3'));
+        $this->assertSame('Melodic Techno 03 Extended Version Moogify – taureon (Pixabay)', FarmVideos::musicCredit('taureon-melodic-techno-03-extended-version-moogify-9867.mp3'));
+        $this->assertSame('nameless', FarmVideos::musicCredit('nameless.mp3'));
+    }
 }

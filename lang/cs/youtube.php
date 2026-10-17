@@ -21,7 +21,7 @@ return [
     ],
 
     'video' => [
-        'music' => 'Hudba: :track (YouTube Audio Library)',
+        'music' => 'Hudba: :track',
         'card' => ':material · :time tisku',
         'card_time' => ':time tisku',
         'tail' => ':time tisku za :seconds s',
