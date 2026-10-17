@@ -168,6 +168,35 @@ return [
     'slider.hint' => 'A dovetail groove with a slider and detents cut into a flat plate; prints in one go and slides and clicks once off the bed.',
     'slider.action' => 'Make the sliding fidget',
 
+    // the catalogue (docs/AH.md §3): our picks at the top, what a card asks for, words that mean the same in the search
+    'picks' => 'Our picks',
+    'picks.note' => 'Chosen by hand: good tools to start with.',
+    'input.label' => 'You enter',
+    'input' => [
+        'file' => 'a 3D file',
+        'photo' => 'a photo',
+        'picture' => 'a picture or logo',
+        'text' => 'a text',
+        'text_or_picture' => 'a text or a picture',
+        'link' => 'a link or text',
+        'sizes' => 'sizes',
+        'place' => 'a place on the map',
+    ],
+    'search.clear' => 'Clear the search and the filter',
+    'search.related' => 'Perhaps you are looking for:',
+    'synonyms' => [
+        ['nameplate', 'sign', 'label', 'tag'],
+        ['box', 'case', 'container', 'casket'],
+        ['organizer', 'organiser', 'tray', 'compartments', 'storage'],
+        ['keychain', 'keyring', 'charm', 'pendant'],
+        ['stand', 'holder', 'dock'],
+        ['photo', 'picture', 'image', 'portrait'],
+        ['qr', 'code'],
+        ['gift', 'present'],
+        ['bust', 'figure', 'figurine', 'statue'],
+        ['mug', 'cup'],
+    ],
+
     'cats' => [
         'images' => 'Pictures and logos',
         'names' => 'Names and gifts',

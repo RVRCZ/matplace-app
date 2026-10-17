@@ -169,7 +169,8 @@ export function bootFigure(stage: Stage): void {
             await new Promise((r) => setTimeout(r, 3000));
             g = await fetchGeneration(g.token);
         }
-        if (!g || g.status === 'failed' || !g.file) return idle(t('figure.failed'));
+        // a failed model leaves the address: a reload starts from the form (kept), not from the failure
+        if (!g || g.status === 'failed' || !g.file) { address(null); return idle(say('figure.failed', 'figure.failed')); }
         await present(g.file, note ? `${note} ${t('figure.done')}` : t('figure.done'));
     };
 
@@ -274,8 +275,30 @@ export function bootFigure(stage: Stage): void {
         };
     }
 
-    // opened by the address of a figurine: the same choices, and the model as soon as it is there
+    // the choices (not the photos, not the consent) are kept like every tool's settings: a reload or the step back from
+    // the calculator finds them (docs/AH.md §2); a page opened by the address of a figurine takes them from the figurine
     const token = new URLSearchParams(location.search).get('generation');
+    const choices = (): Record<string, string> => {
+        const out: Record<string, string> = {};
+        new FormData(form).forEach((v, k) => { if (typeof v === 'string' && k !== 'consent') out[k] = v; });
+        return out;
+    };
+    const commit = stage.track({
+        read: choices,
+        write: (s) => {
+            Object.entries(s).forEach(([k, v]) => {
+                const radio = form.querySelector<HTMLInputElement>(`input[type=radio][name="${k}"][value="${String(v)}"]`);
+                if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change', { bubbles: true })); return; }
+                const el = form.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${k}"]:not([type=file]):not([type=radio]):not([type=hidden])`);
+                if (el) el.value = String(v);
+            });
+            sized();
+            form.dispatchEvent(new Event('figure:filled'));
+        },
+    }, !token, !token);
+    form.addEventListener('change', (e) => { if (!(e.target as HTMLInputElement).matches('[type=file], [name=consent]')) commit(); });
+
+    // opened by the address of a figurine: the same choices, and the model as soon as it is there
     if (token && /^[a-z0-9]{6,40}$/.test(token)) {
         void (async () => {
             working(say('figure.back', 'figure.generating'));

@@ -57,6 +57,7 @@ export class Stage {
         initArtwork(cfg.artwork, this.t);
         this.toolbar();
         this.menu();
+        this.emptyTakesFile();
         this.spy();
         this.el('tool-go').addEventListener('click', () => { if (this.goHref) location.href = this.ordered(this.goHref); else void this.goAction?.(); });
         // a row with a colour swatch (class tool-swatch-row): the whole row opens the colour window, not the small circle
@@ -147,6 +148,22 @@ export class Stage {
         if (window.matchMedia('(min-width: 64rem)').matches) return false;
         this.el('tool-stage').scrollIntoView({ behavior: 'smooth', block: 'start' });
         return true;
+    }
+
+    /** The empty viewer of a tool that takes a model: a file dropped on it goes into the panel's field (a tap is the label's). */
+    private emptyTakesFile(): void {
+        const zone = document.querySelector<HTMLElement>('#tool-empty[data-file-for]');
+        const input = zone ? document.getElementById(zone.dataset.fileFor!) as HTMLInputElement | null : null;
+        if (!zone || !input) return;
+        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('border-ink'); });
+        zone.addEventListener('dragleave', () => zone.classList.remove('border-ink'));
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault(); zone.classList.remove('border-ink');
+            const f = e.dataTransfer?.files?.[0];
+            if (!f) return;
+            const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
     }
 
     busy(on: boolean): void { const b = this.el('tool-busy'); b.classList.toggle('hidden', !on); b.classList.toggle('flex', on); }
@@ -372,11 +389,23 @@ export class Stage {
     // ── undo, redo, and the settings kept in this browser ───────────────────────────────────────────
 
     /**
+     * The model this page works on, in its address (?from=<uuid>): back from the calculator and a reload open it
+     * again (every tool that takes a file reads `from`). null takes it out.
+     */
+    keep(uuid: string | null): void {
+        const url = new URL(location.href);
+        if (uuid) url.searchParams.set('from', uuid); else url.searchParams.delete('from');
+        history.replaceState(history.state, '', url);
+    }
+
+    /**
      * read: the settings as plain data; write: put such data back into the form (the module then refreshes itself).
      * commit() is called by the module whenever a change has settled. `offerSaved`: show "restore my last settings"
      * when this browser holds some (not when the page was opened with a design or a preset in its address).
+     * `onReturn`: a visitor coming back to the page (the step back from the calculator, a reload) finds what they
+     * had set, without a click (docs/AH.md §2); a page that rebuilds itself from its address says false.
      */
-    track(io: TrackIo, offerSaved = true): () => void {
+    track(io: TrackIo, offerSaved = true, onReturn = true): () => void {
         const key = `mp_tool_${this.cfg.tool}`;
         const start = JSON.stringify(io.read());
         this.history = { stack: [start], at: 0, io };
@@ -403,7 +432,11 @@ export class Stage {
         let saved: string | null = null;
         try { saved = localStorage.getItem(key); } catch { /* private mode */ }
         const chip = this.el('tool-restore');
-        if (offerSaved && saved && saved !== start) {
+        const nav = (performance.getEntriesByType?.('navigation')[0] as PerformanceNavigationTiming | undefined)?.type;
+        if (onReturn && (nav === 'back_forward' || nav === 'reload') && saved && saved !== start) {
+            // after the module has set itself up (presets, samples), so the visitor's own settings win
+            window.setTimeout(() => { try { io.write(JSON.parse(saved!)); } catch { return; } commit(); }, 0);
+        } else if (offerSaved && saved && saved !== start) {
             chip.classList.remove('hidden'); chip.classList.add('inline-flex');
             chip.addEventListener('click', () => {
                 chip.classList.add('hidden'); chip.classList.remove('inline-flex');

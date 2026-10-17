@@ -486,7 +486,7 @@ class ToolsFlowTest extends TestCase
     {
         $this->get('/tools/figure')->assertOk()->assertSee('Vyberte nebo vyfoťte fotku')->assertDontSee('Zkus ');
         $this->get('/tools/mold')->assertOk()->assertSee('Přetáhněte sem model')->assertDontSee('Přetáhni');
-        $this->get('/tools')->assertOk()->assertSee('Nahrajte fotku, za minutu máte 3D model');
+        $this->get('/tools')->assertOk()->assertSee('Nahrajte fotku, za 1 až 3 minuty máte 3D model');
         $this->get('/es/tools/figure')->assertOk()->assertSee('Elija o haga una foto');
     }
 }

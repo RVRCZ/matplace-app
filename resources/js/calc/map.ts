@@ -26,7 +26,7 @@ export function bootMap(stage: Stage): void {
     const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
     const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
     const post = (url: string, body: Record<string, unknown>) => fetch(url, { method: 'POST', credentials: 'same-origin', headers, body: JSON.stringify(body) });
-    const firstError = (b: { message?: string; errors?: Record<string, string[]> }, status = 0) => (status === 429 ? (b.message ?? t('param.too_fast')) : Object.values(b.errors ?? {})[0]?.[0] ?? b.message ?? t(status >= 500 || status === 0 ? 'param.preview_failed' : 'param.failed'));
+    const firstError = (b: { message?: string; errors?: Record<string, string[]> }, status = 0) => (status === 429 ? (b.message ?? t('param.too_fast')) : Object.values(b.errors ?? {})[0]?.[0] ?? (status >= 500 ? undefined : b.message) ?? t(status >= 500 || status === 0 ? 'param.preview_failed' : 'param.failed'));
     const errorOf = async (res: Response): Promise<string> => { try { return firstError(await res.json(), res.status); } catch { return firstError({}, res.status); } };
 
     let place: Place | null = null;
@@ -193,6 +193,7 @@ export function bootMap(stage: Stage): void {
     };
     const showResult = async (file: MapFile): Promise<void> => {
         made = file;
+        stage.keep(file.uuid);         // a step back or a reload opens the same map again (docs/AH.md §2)
         wait(null);
         const n = file.map ?? {};
         if (file.stl_url) stage.show(await loadGeometryFromUrl(file.stl_url), { kind: 'map', regions: n.regions ?? null });

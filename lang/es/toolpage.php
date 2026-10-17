@@ -44,7 +44,7 @@ return [
     'status.nofit' => 'no cabe: :mm mm',
     'status.nofit.hint' => 'La cama de la granja mide :bed mm. Redúzcalo o descargue el archivo para una impresora mayor.',
     'status.piece' => 'Pieza seleccionada: :name',
-    'download' => 'Descargar',
+    'download' => 'Descargar el modelo',
     'download.orca' => 'Proyecto para OrcaSlicer y Bambu Studio (3MF)',
     'download.prusa' => 'Proyecto para PrusaSlicer (3MF)',
     'download.project.hint' => 'El diseño se guarda y usted elige su impresora.',

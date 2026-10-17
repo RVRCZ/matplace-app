@@ -265,7 +265,7 @@ export function bootParam(stage: Stage): void {
     const post = (body: Record<string, unknown>) => fetch(cfg.preview, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) });
     // the server's first validation message, or our own words for a rate limit (Laravel's "Too Many Attempts." is English only)
     // 429: too fast; 5xx or no answer at all: the preview did not come back (a web server that dropped it), not the shape's fault
-    const firstError = (b: { message?: string; errors?: Record<string, string[]> }, status = 0) => (status === 429 ? t('param.too_fast') : Object.values(b.errors ?? {})[0]?.[0] ?? b.message ?? t(status >= 500 || status === 0 ? 'param.preview_failed' : 'param.failed'));
+    const firstError = (b: { message?: string; errors?: Record<string, string[]> }, status = 0) => (status === 429 ? t('param.too_fast') : Object.values(b.errors ?? {})[0]?.[0] ?? (status >= 500 ? undefined : b.message) ?? t(status >= 500 || status === 0 ? 'param.preview_failed' : 'param.failed'));
     /** The text field the server's first error names ("params.url"), marked the way a bad number is; the mark goes when no field is named. */
     const markNamed = (errors?: Record<string, string[]>): void => {
         form.querySelectorAll<HTMLInputElement>('[data-text][data-named]').forEach((i) => { i.removeAttribute('data-named'); i.setAttribute('aria-invalid', 'false'); i.classList.remove('border-red-600'); });

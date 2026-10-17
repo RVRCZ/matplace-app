@@ -1,0 +1,37 @@
+{
+    "param.go": [
+        "Spočítat cenu a možnosti tisku",
+        "Get the price and print options",
+        "Calcular precio y opciones de impresión"
+    ],
+    "param.go.hint.download": [
+        "V kalkulaci uvidíte přesnou cenu a dobu tisku a stáhnete si model nebo projekt pro svou tiskárnu. Bez registrace.",
+        "The calculation shows the exact price and print time, and you can download the model or a project for your printer. No sign-up.",
+        "En el cálculo verá el precio y el tiempo de impresión exactos y podrá descargar el modelo o un proyecto para su impresora. Sin registro."
+    ],
+    "param.go.hint.farm": [
+        "V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si pak objednáte u nás, nebo stáhnete model pro svou tiskárnu.",
+        "The calculation shows the exact price and print time. Then order the print from us, or download the model for your own printer.",
+        "En el cálculo verá el precio y el tiempo de impresión exactos. Después pida la impresión con nosotros o descargue el modelo para su propia impresora."
+    ],
+    "figure.failed": [
+        "Nepovedlo se. Vaše volby zůstaly: zkuste to znovu, nebo jinou fotku (jeden objekt, světlé pozadí).",
+        "That did not work. Your choices are still here: try again, or another photo (one subject, plain background).",
+        "No ha funcionado. Sus opciones siguen aquí: inténtelo de nuevo o con otra foto (un sujeto, fondo claro)."
+    ],
+    "pet.failed": [
+        "Nepovedlo se. Vaše volby zůstaly: zkuste to znovu, nebo jinou fotku (jedno zvíře, celé tělo, jednobarevné pozadí).",
+        "It did not work. Your choices are still here: try again, or another photo (one animal, the whole body, a plain background).",
+        "No ha salido. Sus opciones siguen aquí: inténtelo de nuevo o con otra foto (un solo animal, el cuerpo entero, fondo liso)."
+    ],
+    "relief.failed": [
+        "Nepovedlo se to. Fotka i nastavení zůstaly: zkuste to znovu, nebo jinou fotku.",
+        "That did not work. The photo and the settings are still here: try again, or another photo.",
+        "No ha funcionado. La foto y los ajustes siguen aquí: inténtelo de nuevo o con otra foto."
+    ],
+    "relief.photo_again": [
+        "Nastavení i model jsou zpět. Fotku neukládáme: pro nový model ji vyberte prosím znovu.",
+        "The settings and the model are back. We do not keep the photo: choose it again for a new model.",
+        "Los ajustes y el modelo han vuelto. No guardamos la foto: elíjala de nuevo para un modelo nuevo."
+    ]
+}

@@ -154,6 +154,7 @@ export function bootMoldPage(stage: Stage): void {
 
     const haveModel = async (info: FileInfo): Promise<void> => {
         model = info; mold = null;
+        stage.keep(info.uuid);         // a step back or a reload opens the same model again (docs/AH.md §2)
         delete shown.mold; delete shown.cast;
         source.textContent = `${info.name} · ${info.bbox ? [info.bbox.x, info.bbox.y, info.bbox.z].map((v) => Math.round(v)).join(' × ') + ' mm' : ''}`;
         source.classList.remove('hidden');

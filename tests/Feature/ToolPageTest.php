@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
+use App\Domain\Tools\ToolInput;
 use App\Domain\Tools\ToolVisibility;
 use App\Http\Controllers\Api\GenerationController;
 use App\Models\User;
@@ -98,12 +99,14 @@ class ToolPageTest extends TestCase
         };
         // the farm prints for everybody: the site as it runs
         config(['features.marketplace' => false, 'farm.enabled' => true, 'farm.open' => true, 'farm.public' => true]);
-        $this->get('/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Pokračovat</span>', false)
+        // the button says what happens (the audit, Roman 17 Oct 2026; "Pokračovat" from 16 Oct said nothing)
+        $this->get('/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Spočítat cenu a možnosti tisku</span>', false)
+            ->assertDontSee('<span id="tool-go-label">Pokračovat</span>', false)->assertSee('Stáhnout model')
             ->assertDontSee('Pokračovat ke kalkulaci')->assertDontSee('Odhad z objemu')->assertDontSee('Orientační cena')
             ->assertDontSee('Pokračovat k přesné ceně a tisku')
             ->assertDontSee('V dalším kroku uvidíte přesnou cenu a dobu tisku. V dalším kroku')
             ->assertDontSee('spočítáme v dalším kroku');
-        $said = 'V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si objednáte u nás, nebo si stáhnete soubor pro svou tiskárnu.';
+        $said = 'V kalkulaci uvidíte přesnou cenu a dobu tisku. Výtisk si pak objednáte u nás, nebo stáhnete model pro svou tiskárnu.';
         $this->assertSame($said, $note('/tools/letter-beads'));
         // every tool says the same: a picture, a photo, a file to edit, a check, a repair, a mold all go on to the calculator
         // (the page opens it with the very file), so no tool has a button or a sentence of its own
@@ -115,7 +118,7 @@ class ToolPageTest extends TestCase
             $html = (string) $this->get(route($tool['route']))->assertOk()->getContent();
             preg_match('/<span id="tool-go-label">(.*?)<\/span>/s', $html, $button);
             preg_match('/<p class="w-full text-xs text-muted">(.*?)<\/p>/s', $html, $under);
-            $this->assertSame('Pokračovat', trim($button[1] ?? ''), $key);
+            $this->assertSame('Spočítat cenu a možnosti tisku', trim($button[1] ?? ''), $key);
             $this->assertSame($said, html_entity_decode(trim($under[1] ?? '')), $key);
             // and ends with the same step: the material and how many pieces, once, after the tool's own steps
             $this->assertSame(1, substr_count($html, 'id="param-material"'), $key);
@@ -132,16 +135,16 @@ class ToolPageTest extends TestCase
             $seen++;
         }
         $this->assertGreaterThanOrEqual(50, $seen);
-        $this->get('/en/tools/relief')->assertOk()->assertSee('<span id="tool-go-label">Continue</span>', false)->assertDontSee('Print it with us')->assertDontSee('Rough price');
-        $this->get('/en/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Continue</span>', false);
-        $this->assertSame('The calculation shows the precise price and print time. Order the print from us, or download the file for your own printer.', $note('/en/tools/letter-beads'));
-        $this->get('/es/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Continuar</span>', false)->assertDontSee('Precio orientativo');
-        $this->assertSame(1, substr_count($note('/es/tools/letter-beads'), 'precio exacto'));
+        $this->get('/en/tools/relief')->assertOk()->assertSee('<span id="tool-go-label">Get the price and print options</span>', false)->assertDontSee('Print it with us')->assertDontSee('Rough price');
+        $this->get('/en/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Get the price and print options</span>', false)->assertSee('Download the model');
+        $this->assertSame('The calculation shows the exact price and print time. Then order the print from us, or download the model for your own printer.', $note('/en/tools/letter-beads'));
+        $this->get('/es/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Calcular precio y opciones de impresión</span>', false)->assertDontSee('Precio orientativo');
+        $this->assertSame(1, substr_count($note('/es/tools/letter-beads'), 'el precio y el tiempo de impresión exactos'));
 
         // the farm not open to the public yet: the same button, the calculation ends with a download
         config(['farm.public' => false]);
-        $this->get('/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Pokračovat</span>', false);
-        $this->assertSame('V kalkulaci uvidíte přesnou dobu tisku a spotřebu materiálu a stáhnete si soubor nebo hotový projekt pro svou tiskárnu. Bez registrace.', $note('/tools/letter-beads'));
+        $this->get('/tools/letter-beads')->assertOk()->assertSee('<span id="tool-go-label">Spočítat cenu a možnosti tisku</span>', false);
+        $this->assertSame('V kalkulaci uvidíte přesnou cenu a dobu tisku a stáhnete si model nebo projekt pro svou tiskárnu. Bez registrace.', $note('/tools/letter-beads'));
     }
 
     public function test_a_tool_that_edits_a_file_says_what_it_is_doing_in_words_never_in_a_key(): void
@@ -566,5 +569,106 @@ class ToolPageTest extends TestCase
         // the bust and the pet: their own limit, the same words
         $this->assertSame(__('photo.too_big', ['mb' => GenerationController::PHOTO_MB]), GenerationController::photoMessages()['image.max']);
         $this->assertSame(__('photo.too_big', ['mb' => GenerationController::PHOTO_MB]), GenerationController::photoMessages()['image_left.uploaded']);
+    }
+
+    /**
+     * docs/AH.md §2 (the audit, point 11): every text a tool page asks for exists in Czech, English and Spanish, those in
+     * the templates and those in the lists the pages hand to their scripts.
+     *
+     * @return array<string, list<string>> file => keys
+     */
+    public static function toolPageKeys(): array
+    {
+        $out = [];
+        foreach (array_merge(glob(resource_path('views/tools/*.blade.php')), glob(resource_path('views/components/tool-*.blade.php'))) as $file) {
+            $src = (string) file_get_contents($file);
+            preg_match_all('/(?:__|trans|NextStep::text)\(\s*\'([a-z0-9_.\-]+)\'\s*[,)]/i', $src, $direct);
+            preg_match_all('/collect\(\[([^\]]*)\]\)\s*->mapWithKeys\(fn \(\$k\) => \[\$k => (?:__|\\\\App\\\\Support\\\\NextStep::text)\(\$k/', $src, $lists);
+            $keys = $direct[1];
+            foreach ($lists[1] as $list) {
+                preg_match_all('/\'([a-z0-9_.\-]+)\'/i', $list, $more);
+                $keys = array_merge($keys, $more[1]);
+            }
+            $out[basename($file)] = array_values(array_unique(array_filter($keys, fn ($k) => str_contains($k, '.') && ! str_ends_with($k, '.'))));
+        }
+
+        return $out;
+    }
+
+    public function test_every_text_of_the_tool_pages_exists_in_all_three_languages(): void
+    {
+        $all = self::toolPageKeys();
+        $count = array_sum(array_map('count', $all));
+        $this->assertGreaterThan(450, $count, 'the scan finds the texts of the templates');
+        $this->assertContains('figure.generating', $all['figure.blade.php'], 'and those of the lists for the scripts');
+        $missing = [];
+        foreach ($all as $file => $keys) {
+            foreach ($keys as $key) {
+                foreach (['cs', 'en', 'es'] as $locale) {
+                    if (trans($key, [], $locale) === $key) {
+                        $missing[] = "{$file}: {$key} ({$locale})";
+                    }
+                }
+            }
+        }
+        $this->assertSame([], $missing);
+    }
+
+    /** docs/AH.md §3 (the audit, point 8): our picks first, every card says what is entered, words that mean the same find the same tools. */
+    public function test_the_catalogue_starts_with_our_picks_and_says_what_each_tool_asks_for(): void
+    {
+        $html = (string) $this->get('/tools')->assertOk()->getContent();
+        preg_match('/<section id="tool-picks".*?<\/section>/s', $html, $picks);
+        $this->assertNotEmpty($picks, 'our picks are on the page');
+        $this->assertStringContainsString(e(__('tools.picks')), $picks[0]);
+        $this->assertStringContainsString('data-when-unfiltered', $picks[0], 'they step aside while a filter or a search is on');
+        foreach (['organizer', 'box', 'qr'] as $key) {
+            $this->assertStringContainsString('data-key="'.$key.'"', $picks[0], $key);
+        }
+        $this->assertStringNotContainsString('data-cats=', $picks[0], 'the picks are not counted twice by the filter');
+        // the picks come before the categories and the big cards
+        $this->assertLessThan(strpos($html, 'id="tool-cats"'), strpos($html, 'id="tool-picks"'));
+        // every tool says what it asks for, in all three languages
+        foreach (ToolVisibility::listed() as $key => $tool) {
+            $input = ToolInput::of($key, $tool);
+            $this->assertContains($input, ToolInput::KINDS, $key);
+            foreach (['cs', 'en', 'es'] as $locale) {
+                $this->assertNotSame('tools.input.'.$input, __('tools.input.'.$input, [], $locale), "{$key} {$locale}");
+            }
+        }
+        $this->assertSame('photo', ToolInput::of('figure'));
+        $this->assertSame('file', ToolInput::of('hollow', ['intent' => 'file']));
+        $this->assertSame('link', ToolInput::of('qr'));
+        $this->assertSame('sizes', ToolInput::of('box', ['intent' => 'create']));
+        $this->assertStringContainsString('Zadáte: rozměry', $html);
+        $this->assertStringContainsString('Zadáte: fotku', $html);
+        $this->get('/en/tools')->assertOk()->assertSee('You enter: sizes')->assertSee('Our picks');
+        // the home page keeps its cards as they were
+        $this->assertStringNotContainsString('Zadáte:', (string) $this->get('/')->getContent());
+        // the search knows words that mean the same, and an empty result has a way back
+        $this->assertStringContainsString('\u0022jmenovka\u0022,\u0022cedulka\u0022,\u0022stitek\u0022', $html);
+        $this->assertStringContainsString('id="tool-none-clear"', $html);
+        $this->assertStringContainsString(e(__('tools.search.clear')), $html);
+        $this->assertStringContainsString('id="tool-none-related"', $html);
+        foreach (['cs', 'en', 'es'] as $locale) {
+            $groups = trans('tools.synonyms', [], $locale);
+            $this->assertIsArray($groups, $locale);
+            $this->assertGreaterThanOrEqual(8, count($groups), $locale);
+        }
+    }
+
+    /** docs/AH.md §4: the empty viewer of a tool that takes a model is where the model goes (it said "tap" and did nothing). */
+    public function test_the_empty_viewer_of_a_file_tool_takes_the_file(): void
+    {
+        foreach (['/tools/hollow' => 'edit-file', '/tools/mold' => 'mold-file', '/tools/repair' => 'repair-file', '/tools/check' => 'check-file'] as $url => $input) {
+            $html = (string) $this->get($url)->assertOk()->getContent();
+            if (! str_contains($html, 'id="tool-viewer"')) {
+                continue;                                   // the engine is not installed here
+            }
+            $this->assertStringContainsString('<label id="tool-empty" for="'.$input.'" data-file-for="'.$input.'"', $html, $url);
+            $this->assertStringContainsString('id="'.$input.'"', $html, $url);
+        }
+        // a tool with a model from the start keeps the plain empty line
+        $this->assertStringNotContainsString('data-file-for=', (string) $this->get('/tools/box')->getContent());
     }
 }
