@@ -85,6 +85,9 @@ export function bootFigure(stage: Stage): void {
         if (title) title.textContent = t(front ? 'photo.add.more' : 'photo.add');
         drop.querySelector('[data-drop-hint]')?.classList.toggle('hidden', front);     // room for the rest once the front photo is there
         if (create) create.disabled = !front;
+        // the consent, the limit and the button only once there is a photo to make the model from
+        const go = document.getElementById('figure-drop-go');
+        go?.classList.toggle('hidden', !front); go?.classList.toggle('flex', front);
     };
     // a tap asks for the front first, then for the sides still free; a drop fills them in the same order
     const free = (): HTMLInputElement => inputs.find((i) => !i.files?.length) ?? inputs[0];

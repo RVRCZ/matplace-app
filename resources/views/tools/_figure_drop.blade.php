@@ -10,9 +10,12 @@
         <span data-drop-hint class="text-xs text-muted">{{ __('photo.add.hint') }}</span>
     </button>
     <div id="figure-drop-thumbs" class="hidden flex-wrap justify-center gap-2"></div>
-    {{-- the same consent as in the panel (mirrored both ways, figure.ts); its red frame stays until it is ticked --}}
-    <label class="flex items-start gap-2 text-left text-xs text-ink"><input id="figure-drop-consent" type="checkbox" required class="mt-0.5 h-5 w-5 shrink-0 accent-ink"><span>{{ $consent }}</span></label>
-    <p class="text-xs text-muted">{{ $limits }}</p>
-    <button type="button" id="figure-create" class="btn-primary w-full gap-1.5" disabled><x-icon name="sparkles" class="h-4 w-4" />{{ $submit }}</button>
+    {{-- the consent (mirrored from the panel, figure.ts; its red frame stays until it is ticked), the limit and the button
+         show up once the front photo is there: an empty dialog only asks for the photo (Roman, 18 Oct 2026) --}}
+    <div id="figure-drop-go" class="hidden w-full flex-col gap-2">
+        <label class="flex items-start gap-2 text-left text-xs text-ink"><input id="figure-drop-consent" type="checkbox" required class="mt-0.5 h-5 w-5 shrink-0 accent-ink"><span>{{ $consent }}</span></label>
+        <p class="text-xs text-muted">{{ $limits }}</p>
+        <button type="button" id="figure-create" class="btn-primary w-full gap-1.5" disabled><x-icon name="sparkles" class="h-4 w-4" />{{ $submit }}</button>
+    </div>
     <p id="figure-drop-msg" class="hidden text-xs font-medium text-danger" role="alert"></p>
 </div>
