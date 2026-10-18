@@ -489,3 +489,16 @@ náhradní font a přednačtení. Běh: `LandingPagesTest`, `ToolPageTest`, `Web
   800 × 800 px na neutrálním pozadí). Cesta do `photo` u položky v `config/site.php`, pak `SITE_EXAMPLES=true`.
 - Otevření farmy (`farm.public`): do té doby návštěvník neuvidí otázky o objednávce, dopravě a reklamaci.
 - Potvrzení „Zásilkovna 1 až 2 pracovní dny“ (stejné jako v zakázce, AH §9.3).
+
+### 11.x Produkce po nasazení (řídící, 19. 10. 2026 ~04:00 UTC, `scripts/lighthouse_landing.mjs https://matplace.com prod-after`, data `docs/img/landing/cwv-prod-after.json`)
+
+| stránka | mobil skóre | LCP | FCP | CLS | TBT | desktop skóre | LCP |
+|---|---|---|---|---|---|---|---|
+| / | 91 (před 63–74) | 2,99 s (před 3,9–4,8) | 1,89 s | 0 (před 0,243) | 69 ms | 100 | 0,61 s |
+| /tools/figure | 88 | 3,15 s | 2,27 s | 0 | 47 ms | 100 | 0,65 s |
+| /tools/pet-figurine | 88 | 3,16 s | 2,29 s | 0 | 48 ms | 99 | 0,72 s |
+| /tools/qr | 83 | 3,53 s | 2,32 s | 0 | 164 ms | 99 | 0,78 s |
+| /tools/organizer | 86 | 3,25 s | 2,32 s | 0 | 159 ms | 100 | 0,66 s |
+| /tools/box | 84 | 3,31 s | 2,45 s | 0 | 196 ms | 100 | 0,66 s |
+
+Přenos na mobilu 415–518 kB (JS 242 kB, písmo 112 kB, CSS 14 kB). Zbývající rezerva na mobilu: LCP 3–3,5 s (největší obrázek karty nástroje / logo), TBT u QR, organizéru a krabičky 160–200 ms (kalkulačka a nástroje v samostatném chunku se načítají hned).
