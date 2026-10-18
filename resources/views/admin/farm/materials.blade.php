@@ -41,7 +41,8 @@
         <section id="{{ $m->exists ? 'kind-'.$m->id : 'kind-new' }}" class="rounded-2xl border {{ $m->exists && ! $m->enabled ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white' }} p-4">
             <form method="post" action="{{ $m->exists ? route('admin.farm.materials.update', $m) : route('admin.farm.materials.create') }}">
                 @csrf
-                <details @if($m->exists || $template) open @endif>
+                {{-- everything folded on arrival (Roman, 18 Oct 2026); the kind the address points at opens (script below) --}}
+                <details @if(! $m->exists && $template) open @endif>
                     <summary class="cursor-pointer font-bold">{{ $m->exists ? $m->label().' · '.$m->colors->count().' barev'.($m->enabled ? '' : ' · vypnuto') : '+ Nový druh materiálu' }}</summary>
                     @if(! $m->exists && $template)<p class="mt-1 text-xs text-slate-500">{{ __('farm.admin.copy_kind_hint', ['kind' => $template->label()]) }}</p>@endif
                     <div class="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -80,7 +81,7 @@
             @endif
 
             @if($m->exists)
-                <details class="mt-3" @if($m->colors->count() <= 8) open @endif>
+                <details class="mt-3">
                     <summary class="cursor-pointer text-sm font-bold">Barvy ({{ $m->colors->count() }})</summary>
                     <div class="mt-2 space-y-2">
                         @foreach($m->colors->concat([new \App\Models\FarmColor(['hex' => '#cccccc', 'enabled' => true, 'in_stock' => true])]) as $c)
@@ -130,4 +131,14 @@
         </section>
     @endforeach
 </div>
+{{-- the kind (and its colours) the address points at opens, the rest stays folded --}}
+<script>
+    (function () {
+        var id = location.hash.replace('#', '');
+        var box = id ? document.getElementById(id) : null;
+        if (!box) return;
+        box.querySelectorAll('details').forEach(function (d) { d.open = true; });
+        box.scrollIntoView({ block: 'start' });
+    })();
+</script>
 @endsection

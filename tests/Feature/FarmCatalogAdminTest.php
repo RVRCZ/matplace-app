@@ -59,7 +59,7 @@ class FarmCatalogAdminTest extends TestCase
         $this->assertNull($color->fresh()->manufacturer);
 
         // a kind of another maker with the same code and finish is a kind of its own, and its label says who made it
-        $this->actingAs($this->admin)->post('/admin/farm/materials/new', ['code' => 'PLA+', 'finish' => 'solid', 'name' => 'PLA+', 'manufacturer' => 'Sunlu', 'filament_profile' => 'filament_pla.json', 'density' => 1.24, 'price_per_gram' => 1.1, 'enabled' => 1])->assertRedirect('/admin/farm/materials');
+        $this->actingAs($this->admin)->post('/admin/farm/materials/new', ['code' => 'PLA+', 'finish' => 'solid', 'name' => 'PLA+', 'manufacturer' => 'Sunlu', 'filament_profile' => 'filament_pla.json', 'density' => 1.24, 'price_per_gram' => 1.1, 'enabled' => 1])->assertRedirectContains('/admin/farm/materials');
         $sunlu = FarmMaterial::where('code', 'PLA+')->where('manufacturer', 'Sunlu')->firstOrFail();
         $this->assertSame('PLA+ Sunlu', $sunlu->label());
         // the same kind of the same maker twice is refused

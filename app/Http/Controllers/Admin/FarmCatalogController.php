@@ -289,11 +289,13 @@ class FarmCatalogController extends Controller
         $data['manufacturer'] = $maker;
         $data['filament_overrides'] = ! empty($data['filament_overrides']) ? json_decode($data['filament_overrides'], true) : null;
         $data['enabled'] = $request->boolean('enabled');
-        ($material ?? new FarmMaterial)->fill($data)->save();
+        $kind = $material ?? new FarmMaterial;
+        $kind->fill($data)->save();
         // a new kind (or a re-enabled one) gets its tuning row on every machine with the best known starting values
         app(ProfileLibrary::class)->sync();
 
-        return redirect()->route('admin.farm.materials')->with('status', __('farm.admin.saved'));
+        // the page arrives folded; the address names the kind just saved, so that one opens
+        return redirect()->route('admin.farm.materials')->withFragment('kind-'.$kind->id)->with('status', __('farm.admin.saved'));
     }
 
     /** A kind goes only while no colour and no order points at it; otherwise the admin switches it off. */
@@ -388,7 +390,8 @@ class FarmCatalogController extends Controller
         }
         $color->save();
 
-        return back()->with('status', __('farm.admin.saved'));
+        // back to the folded page with this colour's kind open (the address names it)
+        return redirect()->route('admin.farm.materials')->withFragment('kind-'.$kind->id)->with('status', __('farm.admin.saved'));
     }
 
     // ── settings ─────────────────────────────────────────────────────────────
