@@ -161,7 +161,7 @@ $pages = function () {
     Route::get('/tools/ornament', [ToolsController::class, 'param'])->defaults('kind', 'ornament')->name('tools.ornament');
     Route::get('/tools/magnet', [ToolsController::class, 'param'])->defaults('kind', 'magnet')->name('tools.magnet');
     Route::get('/tools/badge-reel', [ToolsController::class, 'param'])->defaults('kind', 'badge')->name('tools.badge');
-    Route::get('/tools/medallion', [ToolsController::class, 'param'])->defaults('kind', 'medallion')->name('tools.medallion');
+    Route::get('/tools/medallion', [ToolsController::class, 'param'])->defaults('kind', 'medallion')->defaults('preset', 'place1')->name('tools.medallion');
     Route::get('/tools/bag-charm', [ToolsController::class, 'param'])->defaults('kind', 'bag_charm')->name('tools.bag_charm');
     Route::get('/tools/straw-topper', [ToolsController::class, 'param'])->defaults('kind', 'straw')->name('tools.straw');
     Route::get('/tools/can-opener', [ToolsController::class, 'param'])->defaults('kind', 'opener')->name('tools.opener');

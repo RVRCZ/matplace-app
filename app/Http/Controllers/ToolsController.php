@@ -7,7 +7,6 @@ use App\Domain\Generation\GenerationService;
 use App\Domain\Generation\PedestalChanger;
 use App\Domain\Tools\ModelRepair;
 use App\Domain\Tools\MoldGenerator;
-use App\Support\ToolSeo;
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
 use App\Engines\Contracts\ImageRestyler;
@@ -16,6 +15,7 @@ use App\Engines\Converter\ConverterChain;
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\GenerationController;
 use App\Models\ModelFile;
+use App\Support\ToolSeo;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -61,7 +61,7 @@ class ToolsController extends Controller
             'texts' => ParametricGenerator::TEXTS[$kind] ?? [],
             'artwork' => in_array($kind, ParametricGenerator::ARTWORK, true),
             'main' => ParametricGenerator::MAIN[$kind],
-            'presets' => ParametricGenerator::PRESETS[$kind] ?? [],
+            'presets' => ParametricGenerator::presets($kind),
             'fills' => ParametricGenerator::FILLS[$kind] ?? [],
             'family' => ParametricGenerator::FAMILY[$kind] ?? null,
             'place' => ParametricGenerator::PLACE[ParametricGenerator::FAMILY[$kind] ?? $kind] ?? [],

@@ -8,19 +8,25 @@ use App\Domain\Tools\ParametricGenerator;
 use App\Engines\DTO\Dimensions;
 use App\Engines\Farm\PythonPrintPreparer;
 use App\Engines\Mesh\StlTopology;
+use App\Models\FarmColor;
+use App\Models\FarmPrinter;
 use App\Models\ModelFile;
+use App\Models\User;
 use App\Support\NextStep;
 use App\Support\PreviewMeta;
+use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\StartsOrders;
 use Tests\TestCase;
 
 /** The flow of a tool: rate limits that do not trip each other, errors in the visitor's language, the next step named truthfully. */
 class ToolsFlowTest extends TestCase
 {
     use RefreshDatabase;
+    use StartsOrders;
 
     public function test_every_inline_rate_limit_has_its_own_counter(): void
     {
@@ -459,6 +465,37 @@ class ToolsFlowTest extends TestCase
         $closed($round, 'round edge');
         $this->get('/tools/cap')->assertSee('Zaoblení horní hrany')->assertSee('data-when="head=flat"', false);
         $this->assertSame('cap', $this->postJson('/api/tools/param', ['kind' => 'cap', 'params' => $base + ['style' => 'plug']])->assertCreated()->json('file.kind'));
+    }
+
+    public function test_a_medal_goes_to_the_farm_by_parts_number_and_plate_from_two_spools(): void
+    {
+        if (! app(ParametricGenerator::class)->available()) {
+            $this->markTestSkipped('Python with manifold3d is not installed.');
+        }
+        $this->seed(FarmSeeder::class);
+        $user = User::factory()->create();
+        // the S1 holds white; a gold and a black spool join it
+        $s1 = FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail();
+        [$gold, $black] = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->take(2)->get()->all();
+        $gold->update(['hex' => '#D4A531', 'enabled' => true]);
+        $black->update(['hex' => '#1B1B1D', 'enabled' => true]);
+        $free = $s1->slots()->whereNull('farm_color_id')->orderBy('slot')->get();
+        $free[0]->update(['farm_color_id' => $gold->id, 'remaining_g' => 800, 'enabled' => true]);
+        $free[1]->update(['farm_color_id' => $black->id, 'remaining_g' => 800, 'enabled' => true]);
+
+        // first place: a gold one on a black plate, face down, forty links
+        $made = $this->actingAs($user)->postJson('/api/tools/param', ['kind' => 'medallion', 'params' => ['line1' => '1', 'part_colors' => ['color_1' => '#d4a531', 'body' => '#1b1b1d']]])->assertCreated();
+        $file = ModelFile::where('uuid', $made->json('file.uuid'))->firstOrFail();
+        $this->assertSame(['body', 'color_1'], $file->tool_params['parts']);
+        $this->assertTrue((bool) ($file->tool_params['multi_material'] ?? false), 'two colours in the same layers');
+        $this->assertSame([], (array) ($file->tool_params['color_changes'] ?? []), 'never a change by height');
+
+        // the order starts by parts: the plate from the black spool, the number from the gold one
+        $order = $this->startOrder($user, 'file='.$file->uuid);
+        $this->assertTrue($order->isByParts());
+        $this->assertSame($black->id, self::picked($order, 'color'));
+        $this->assertSame($gold->id, self::picked($order, 'part_color[color_1]'));
+        $this->assertSame([], (array) $order->color_changes);
     }
 
     public function test_calculator_compares_materials_for_the_model(): void

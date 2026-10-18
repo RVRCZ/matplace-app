@@ -1781,5 +1781,14 @@
     "auth.guard.turnstile": "Potvrďte prosím ověření pod formulářem a odešlete ho znovu.",
     "site.examples.item.qr": "QR cedulka se stojánkem, :size",
     "site.examples.item.organizer": "Organizér do zásuvky, :size",
-    "site.examples.item.box": "Krabička s víčkem, :size"
+    "site.examples.item.box": "Krabička s víčkem, :size",
+    "param.preset.place1": "1. místo",
+    "param.preset.place2": "2. místo",
+    "param.preset.place3": "3. místo",
+    "param.o.shape.shield": "Štít",
+    "param.o.shape.octagon": "Osmiúhelník",
+    "param.o.shape.rosette": "Rozeta",
+    "param.o.shape.heart": "Srdce",
+    "param.f.medallion.depth": "Hloubka motivu",
+    "param.shape.warn.links_cut": "Na jednu podložku 220 × 220 mm se všechny články nevejdou. Vytiskne se jich tolik, kolik ukazuje počet u řetězu. Na delší řetěz zmenšete medaili, nebo objednejte druhou medaili se zbývajícími články."
 }

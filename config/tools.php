@@ -264,9 +264,10 @@ return [
         ['params' => ['artwork' => 'lib:colour/paw-badge', 'line1' => 'Petr', 'width' => 45, 'body' => 'rect']],
     ]]],
     'medallion' => ['route' => 'tools.medallion', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
-        ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 80, 'links' => 20]],
-        ['params' => ['line1' => '1', 'typeface' => 'archivo', 'width' => 70, 'body' => 'star', 'links' => 24]],
-        ['params' => ['artwork' => 'lib:colour/paw-badge', 'width' => 90, 'body' => 'hex', 'links' => 0]],
+        // first, second and third place (ParametricGenerator::PRESETS), each in another shape; the first is the card
+        ['preset' => 'place1', 'params' => ['body' => 'circle', 'links' => 40]],
+        ['preset' => 'place2', 'params' => ['body' => 'shield', 'links' => 40]],
+        ['preset' => 'place3', 'params' => ['body' => 'rosette', 'links' => 40]],
     ]]],
     'photo_organizer' => ['route' => 'tools.photo_organizer', 'intent' => 'create', 'categories' => ['images', 'home'], 'available' => true, 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:nature/cloud', 'width' => 120, 'height' => 80, 'cell' => 40]],

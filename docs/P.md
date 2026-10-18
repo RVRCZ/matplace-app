@@ -570,3 +570,115 @@ a další nasazení. Podle zprávy koordinující session běží na
 matplace.com od 8. 10. 2026 18:02 UTC `main` 9d6a49a, tedy všechno až po skladbu s tažením a vlastním obrázkem;
 tři nástroje mimo katalog tam zůstávají skryté. Co je ve větvi potom (předvolby produktů ve skladbě, karty jmenovky
 a klíčenky na skladbě), nasazené není.
+
+## 8. Medaile, kolo 2: pro vítěze (18. 10. 2026)
+
+Zadání: `docs/prompts/medaile.md` (TODO #29) a doplněk k bodu 4 (kulatý průřez článku). Větev
+`feature/medallion-winners` z `main` d4f46b1.
+
+Od Romana podle ohlasu na YouTube (video „Medaile s řetězem“, 933 zhlédnutí, nejvíc ze všech):
+- medaile byla moc velká,
+- článků bylo málo,
+- číslo má být zlaté a hladké na podložce,
+- články mají být kulaté,
+- do návrhu patří 2. a 3. místo a různé tvary.
+
+### Co se změnilo
+
+- **Výchozí hodnoty**:
+  - šířka 60 mm (rozsah 40–120),
+  - 40 článků (rozsah 0–80),
+  - destička 3 mm,
+  - hloubka motivu 0,6 mm, tj. 3 vrstvy (pole „Hloubka motivu“ 0,4–1,0).
+- **Předvolby 1., 2. a 3. místo** (`ParametricGenerator::PRESETS['medallion']`, čipy nad formulářem, stránka
+  `/tools/medallion` otevírá 1. místo):
+  - Předvolba nastaví číslo 1/2/3, písmo Archivo Black a barvy dílů. Dál jde všechno měnit.
+  - Barva v předvolbě je seznam cívek a stránka dostane první, kterou paleta má (`ParametricGenerator::presets()`,
+    používá ji `ToolsController` i `ToolSeo` pro ukázky).
+
+  | místo | číslo | když paleta nic z toho nemá |
+  |---|---|---|
+  | 1. | zlatá `39_PLA_Silk_zlata_Silk_Gold` | `yellow` |
+  | 2. | stříbrná `43_PLA_Silk_stribrna_Silk_Silver` | `grey` |
+  | 3. | metalická marrákešská bronzová SUNLU (hledá se jménem „marrakech“ / „marrákeš“), jinak měděná `40_PLA_Silk_medena_Silk_Copper` | `orange` |
+  | deska | `01_PLA+_cerny`, `44_c_MATTE_PLA+_BLACK`, cokoli s „black“ ve jménu | `black` |
+
+  Marrákešská bronzová v katalogu (`database/data/farm_filaments.json`) zatím není, proto dnes vychází měděná. Jakmile
+  ji správa farmy přidá s „Marrakech“ v názvu, 3. místo ji vezme samo.
+- **Líc dolů** (rodina `shape`, `face_down` v `shape_kinds.build` jen pro `medallion`):
+  - Motiv leží ve spodních vrstvách, vlastní díl `color_<n>` vedle desky (deska má v těch vrstvách kapsu).
+  - Číslo, jméno i obrázek jsou zrcadlené zleva doprava, takže po otočení čtou správně (test: těžiště písmene L leží
+    vpravo).
+  - V prvních vrstvách jsou dvě barvy vedle sebe: `multi_material`, žádná `color_changes`.
+  - Nad motivem je už jen deska, očko a řetěz v barvě těla.
+  - Nahoře na rubu je lem 2 mm široký a 0,8 mm vysoký, ve stejné barvě.
+  - Očko je vždy nahoře na ose (pole „poloha očka“ medaile už nemá).
+  - Náhled a ukázky (`view=use`) ukazují medaili otočenou lícem nahoru: `parts["use"]` je tisk otočený kolem osy Y.
+- **Tisk po dílech**:
+  - Medaile je nově v `OrderService::ASSEMBLED` (jediná změna ve farmě, samostatný commit, se souhlasem řídící
+    session).
+  - Objednávka tedy startuje `by_parts`: deska z tmavé cívky, číslo ze zlaté. Test `ToolsFlowTest` to ověřuje.
+  - Bez toho by se `body` a `color_1` slily a tisklo by se jednou barvou.
+- **Články s kulatým průřezem** (`_link`, `_link_profile`):
+  - Průřez má ⌀ 4 mm, dole plošku 1 mm a od plošky šikmý náběh 45° od svislice až k tečně kružnice.
+  - Výška článku je 4,33 mm. Ovál 30 × 18 mm zůstal.
+  - Mezera je o 0,4 mm užší než průřez, zacvaknutí se nemění.
+  - Článek je postavený rotací profilu o 180° kolem obou konců a vytažením profilu podél rovných stran. Má 3 650
+    trojúhelníků.
+  - Krokování po vrstvách mělo 16 tisíc trojúhelníků na článek; 40 článků pak bylo přes limit kreslení (650 tisíc).
+- **Filament řetězu**: jeden článek má 838 mm³, předtím (hranatý 4 × 4 mm, výška destičky 4 mm) asi 1 030 mm³. Na 40
+  článků je to 33,5 cm³ místo 41,2 cm³, tedy o 7,7 cm³ (asi 9,5 g plného PLA) **méně**.
+- **Úhel**: 45° od svislice je 45° od vodorovné. Orca v profilu farmy dává podpěry pod 30° od vodorovné
+  (`support_threshold_angle` 30), rezerva je tedy 15°.
+- **Podložka 220 × 220 mm**:
+  - Články leží vedle medaile a nad ní, nejvýš 6 v řadě.
+  - Medaile 60 mm se 40 články zabere 195 × 176 mm.
+  - Medaile 120 mm se 40 články zabere 220 × 215 mm.
+  - Víc článků, než se vejde, se vytiskne jen do počtu, který se vejde, s varováním `links_cut` (při 80 požadovaných
+    je to 54). V notes je pak `chain.asked`.
+  - Druhá podložka jen s články by znamenala nový druh výrobku. Neudělal jsem ji.
+- **Sedm tvarů**:
+  - kruh, hvězda a šestiúhelník jako dřív,
+  - nově osmiúhelník (plochý nahoře, 60 mm přes plochy), štít (rovný vršek, rovné boky do půlky a oblouky do
+    špičky), rozeta (kruh s 18 vroubky) a srdce,
+  - Motiv u štítu a srdce sedí ve středu největšího vepsaného kruhu (`_roomiest`).
+- **Texty**:
+  - V cs/en/es se změnily titulek a hint karty („Medaile pro vítěze: 1., 2. a 3. místo, s řetězem, tiskneme ve
+    zlaté, stříbrné a bronzové“), klíčová slova (vítěz, závody, turnaj, škola, oslava, dětský den…), lead a tip
+    stránky a stránka pro vyhledávače (`lang/*/tools_seo/medallion.php`).
+  - Nové klíče jsou v `lang/src/medallion2.json`: předvolby, tvary, „Hloubka motivu“ a varování `links_cut`.
+- **Ukázky** (`public/img/tool-examples/medallion-{1,2,3}.png`, `matplace:tool-examples medallion --force`, bez
+  `--card`):
+  1. kruh se zlatou jedničkou,
+  2. štít se stříbrnou dvojkou,
+  3. rozeta s bronzovou (měděnou) trojkou,
+  vše po 40 článcích.
+- **Karta** (`public/img/tools/medallion-800.jpg`) je studiová fotka ze session E. Nepřepsal jsem ji renderem. Nová
+  karta (zlatá jednička s řetězem) chce novou studiovou fotku, předlohou je ukázka 1.
+
+### Ověřeno
+
+- **Engine** (`ShapeToolsTest`):
+  - výchozí 60/40,
+  - motiv jako vlastní díl ve vrstvách 0–0,6 (i 0–1,0 při hloubce 1),
+  - zrcadlení,
+  - očko na ose, lem,
+  - objem článků,
+  - sedm tvarů na Z = 0,
+  - 220 × 220 i pro 120 mm a pro 80 článků,
+  - obrázek v barvách také lícem dolů.
+- **Stránka** (`ToolPageTest`): předvolby bez farmy i s katalogem farmy, texty v cs/en/es. Úvodní stav ani žádná
+  předvolba nevarují.
+- **Farma** (`ToolsFlowTest`): objednávka startuje po dílech.
+- **Lokální řez**:
+  - Kde: AnycubicSlicerNext 2.0 (fork Orcy), profily farmy `machine.json` (Kobra S1, tryska 0,4),
+    `process_standard.json` se zapnutými podpěrami `tree(auto)` a prahem 30°, `filament_pla.json`.
+  - Výsledek pro 60 mm „1“ se 40 články: žádná podpěra (v G-kódu není `;TYPE:Support`), 38,6 g, 1 h 26 min,
+    22 vrstev.
+
+### Co ověří až tisk
+
+- Jestli články zacvaknou a nepraskají: přesah 0,4 mm, nově na kulatém průřezu.
+- Jestli je líc s číslem hladký a barvy vedle sebe se nepřetírají: číslo v první vrstvě musí tiskárna tisknout druhou
+  tryskou nebo z druhé cívky (Kobra S1 s ACE, Kobra X).
+- Jestli ploška 1 mm drží článek na podložce, nebo se kraj první vrstvy zvedá.
