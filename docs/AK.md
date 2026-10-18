@@ -216,3 +216,124 @@ Skutečné volání neproběhlo, testy mají Google podvržený. Kroky k zapnut�
    s rozšířeným rozsahem.
 4. Od té chvíle dostane každé nově zveřejněné video komentář. Připnout ho Roman musí ve Studiu.
 5. Pro už zveřejněná videa se dá komentář dopsat ručně, `commentLink()` je veřejná metoda (tinker).
+
+## 5. Blog podle dnešního webu (TODO #24, větev `feature/blog-refresh`)
+
+Zadání: `docs/prompts/blog-sjednoceni.md`. Šest článků z WordPressu popisovalo původní tržiště a odkazovalo na
+`/tiskarny`, `/tiskar/poptat` a `/katalog`. Psaly o nabídkách do několika hodin, tiskařích z okolí a poptávce. Nově
+popisují dnešní web: kalkulaci z modelu, tisk na naší farmě, nástroje a naše materiály. Podklad byla těla
+z produkce (`resources/blog/cs/_import/`, export fa423a8) a veřejné stránky článků.
+
+### 5.1 Soubory a příkaz
+
+**Články**:
+- Každý článek je v souboru `resources/blog/cs/<slug>.md`: hlavička mezi řádky `---` (`title`, `excerpt`,
+  `cover`, `published_at`, `updated_at`, časy v UTC jako v databázi), pak tělo v Markdownu.
+- Slugy jsou zachované. Složka `_import/` je jen export a příkaz ji nečte.
+
+**`php artisan blog:sync [--dry-run]`** (`app/Console/Commands/BlogSync.php`):
+- **Párování**: podle slugu, chybějící článek založí.
+- **Co zapíše**:
+  - český `title`, `excerpt` a `body`, `format` = markdown,
+  - `cover_path`, jen když ho hlavička uvádí (prázdný `cover` nechá obálku z databáze),
+  - `updated_at` z hlavičky. Používá se jako `dateModified` v JSON-LD a jako `lastmod` v sitemap.
+- **Datum zveřejnění**: `published_at` z hlavičky dostane jen nově založený článek. U existujícího zůstane to
+  z databáze, sync tedy nikdy nezveřejní ani neschová článek, který už je v databázi.
+- **Co nikdy nedělá**:
+  - nic nemaže,
+  - nesahá na ostatní jazyky,
+  - přeskočí s varováním článek, který má jiný jazyk v HTML: `format` je jeden na článek a Markdown by takový
+    překlad rozbil.
+- **Výpis**: u každého článku napíše, co by změnil (`--dry-run`), nebo co změnil. Druhé spuštění vypíše
+  „Changed 0“.
+- **Po nasazení**: `blog:sync --dry-run`, pak `blog:sync`. Na produkci by měl ohlásit 5× update (title,
+  excerpt, body, format, u tří i cover) a printpal jako update bez data zveřejnění.
+
+**Testy** (`tests/Feature/BlogSyncTest.php`, 7 testů):
+- `--dry-run` nic nezapíše,
+- založení a aktualizace podle slugu, druhé spuštění beze změny,
+- článek s HTML překladem přeskočí,
+- ostatní jazyky Markdown článku zůstanou,
+- v žádném článku nejsou staré adresy (`/tiskarny`, `/tiskar/`, `/katalog`, `legacy.`) ani slova starého
+  tržiště (poptávka, tiskař, do 24 hodin),
+- každý článek končí oddílem „Co dál“ s 1–3 odkazy,
+- každý interní odkaz vede na existující route nebo článek,
+- stránka článku blok „Co dál“ ukáže a koncept (printpal) je 404.
+
+### 5.2 Co se v článcích změnilo
+
+Všechny články mají:
+- blok **„Co dál“** na konci, Markdown nadpis `## Co dál` s jedním až třemi odkazy na nástroj nebo kalkulaci
+  a větou, co tam člověk udělá. Šablona blogu se neměnila, pod článkem dál zůstává její obecná výzva,
+- odkazy mezi sebou: cena ↔ materiály ↔ příprava STL ↔ busta ↔ AI články,
+- `updated_at` 18. 10. 2026 a oslovení „vy“.
+
+| článek | dřív | teď |
+|---|---|---|
+| Kolik stojí 3D tisk na zakázku | orientační tabulka 50–5000 Kč, „cenu do pár hodin“, odkazy na katalog a tiskárny | postup v kalkulaci; skutečné ceny 5 modelů a bust; z čeho se cena skládá (gramy, hodiny, příprava, minimum 99 Kč, zaokrouhlení); příplatky materiálů; doprava Zásilkovnou; jak ušetřit (měřítko, vydutí, víc kusů); FAQ |
+| PLA vs. PETG vs. ASA | tři materiály, „naši tiskaři“, asistentka Matty, platba při převzetí | PLA+, PETG, ASA, TPU s údaji ze stránky `/materials` (teplota, venku, potraviny, cena proti PLA+); provedení PLA z farmy (matné, Silk, metalické, třpytivé, svítící); doba tisku jednoho modelu v různých materiálech; nylon a pryskyřice jen odhad |
+| Jak připravit STL | export z CAD (zachován), opravy v cizích programech, „poptejte přípravu u tiskárny“ | export z CAD zůstal; kontrola a oprava v `/tools/check` a `/tools/repair`; oprava v kalkulaci; rozdělení, životní velikost, vydutí; slicer řeší kalkulace (0,2 mm, 15 %); 3MF na barvy, model z G‑kódu |
+| Vytvoření STL z fotek | fotogrammetrie a cizí aplikace s cenami | dvě cesty: AI z jedné fotky (busta, mazlíček, litofanie, hrubý model na hlavní stránce) a fotogrammetrie (cizí aplikace bez cen); jak fotit pro obě; z modelu výtisk |
+| Generování 3D modelů pomocí AI | propagace STLBuddy (čísla, tarify), „marketplace tiskařů, nabídky do pár hodin“ | jak generování funguje a co od něj čekat; AI na matplace (hlavní stránka, busta, mazlíček); kdy AI nepotřebujete (parametrické nástroje); postup a ceny; co AI neumí (náhradní díl) |
+| PrintPal.io a 4 další AI nástroje (koncept) | „síť 100+ tiskáren, 5–15 nabídek do 24 h“, odkaz `/poptat` | pět cizích nástrojů bez čísel, která nejdou ověřit; tabulka „stejná úloha na matplace.com“; příprava; tisk u nás s cenou |
+
+**Rozhodnutí pro Romana**:
+- **printpal-io-…** byl na produkci nezveřejněný (`published_at` prázdné). Přepsaný je, ale zveřejněný zůstane jen
+  koncept. Zveřejnit se dá nastavením `published_at` v databázi.
+- **Generování 3D modelů pomocí AI** dřív propagovalo STLBuddy, tedy nástroje, které dnes máme sami. Propagace
+  je pryč a článek vede na naše nástroje. Odkaz na stlbuddy.com v článku není.
+- U cizích nástrojů (Meshy, Polycam, PrintPal…) jsem vynechal ceny, počty kreditů a statistiky. Nejdou ověřit
+  a rychle stárnou.
+- „Jak vzniká busta z fotky“ se nepřepisovala. Je v databázi ve třech jazycích (zdroj `docs/blog/`) a sync na ni
+  nesahá. Odkazy na ni z ostatních článků test hlídá jako na známý článek.
+
+### 5.3 Čísla a odkud jsou
+
+**Ceny tisku** jsou z produkční kalkulace, 18. 10. 2026 kolem 17:20 UTC, materiál PLA+, standard (vrstva 0,2 mm,
+výplň 15 %). Testovací soubory šly do kalkulace na matplace.com bez objednávky: 6 nahrání (4 různé soubory) a 15 výpočtů,
+User-Agent obsahuje `matplace-session1-blog`.
+
+| model | rozměry | g | doba | cena | rozpad (materiál + čas za kus, příprava) |
+|---|---|---|---|---|---|
+| kostka (vygenerovaná) | 20 mm | 3,6 | 15 min | 99 Kč | 4,67 + 6,67, příprava 30 → 41,33 → minimum 99 |
+| kostka | 40 mm | 19,9 | 33 min | 99 Kč | 70,44 → 99 |
+| stojánek na telefon (3MF z Romanových Stažených) | 87 × 91 × 75 mm | 32,9 | 1 h 38 min | 120 Kč | 116,47 |
+| plný váleček | ⌀ 60 × 100 mm | 74,4 | 1 h 27 min | 170 Kč | 165,47 |
+| tentýž, měřítko 2 | ⌀ 120 × 200 mm | 503,4 | 8 h 14 min | 910 Kč | 654,36 + 220,42 + 30 = 904,78 |
+| 10 × kostka 20 mm | | | | 150 Kč | 10 × 11,34 + 30 = 143,4 |
+
+**Z rozpadu plyne**:
+- PLA+ ≈ 1,30 Kč/g a ≈ 27 Kč za hodinu tisku,
+- příprava 30 Kč za zakázku,
+- nejnižší cena 99 Kč,
+- cena se zaokrouhluje nahoru na desetikoruny.
+
+**Další zdroje**:
+- **Busty** (99/130/200 Kč) jsou z článku o bustě.
+- **Doprava**: `config/farm.php` `shipping` (ceník Zásilkovny od 30. 9. 2026). CZ výdejní místo 99 Kč, domů 149 Kč;
+  SK 149/175 Kč; EU od 199 Kč; do 2 kg bez příplatku, 2–5 kg +50 Kč.
+- **Výroba 2 dny**: `lead_time_days` farmy v kalkulaci.
+- **Materiály**: veřejná stránka `/materials`. Odtud jsou teploty, venku, potraviny, poměr cen (PETG +5 %,
+  ASA +30 %, TPU +50 %) a seznam „Co je právě v tiskárnách“.
+
+**Pozor, nesoulad v kalkulaci**:
+- U PETG, ASA i TPU má cena farmy v kalkulaci popisek „Tisk u nás (PLA+)“.
+- ASA vychází levnější než PLA+: stojánek 110 Kč proti 120 Kč, váleček 150 Kč proti 170 Kč. Stránka `/materials`
+  přitom uvádí ASA o 30 % dražší.
+- Proto články uvádějí absolutní ceny jen pro PLA+ a u ostatních materiálů poměr ze stránky `/materials`.
+- Ověřit by se to mělo v ceníku farmy (`price_per_gram` materiálů farmy a jejich párování s materiálem kalkulace).
+
+### 5.4 Angličtina a španělština
+
+**Jak blog jazyky řeší**:
+- Jazyky jsou v jednom řádku `posts`: `title`, `excerpt` a `body` jsou JSON pole podle jazyka a slug je společný.
+- Článek existuje v jazyce, ve kterém má název i tělo (`Post::locales()`).
+- `sitemap-blog-{cs,en,es}.xml` (`App\Support\Sitemaps::blog`) bere zveřejněné články, které daný jazyk mají,
+  s `lastmod` = `updated_at`.
+- Výpis blogu v jazyce ukazuje jen články v tom jazyce.
+
+**Co z toho plyne**:
+- Překlady blog umí. Dnes je má jen článek o bustě (cs, en, es v Markdownu).
+- Šest článků z WordPressu je jen česky, proto jsem je jen česky přepsal. Sync na ostatní jazyky nesahá.
+- Překlad by znamenal doplnit `en`/`es` do téhož řádku. Příkaz se dá rozšířit o `resources/blog/en|es/`, až to
+  bude potřeba.
