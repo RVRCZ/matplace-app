@@ -39,10 +39,12 @@ class EditModel implements ShouldQueue
         $op = $file->kind();
         $params = (array) $file->tool_params;
         $src = ModelFile::where('uuid', (string) ($params['source'] ?? ''))->first();
+        // a model out of G-code has no source model: its source is the G-code file kept beside it (ModelEditor::fromGcode)
+        $gcode = $op === 'gcode' && ! empty($params['gcode']) ? dirname(Storage::disk(ModelFile::DISK)->path($file->storage_path)).'/'.basename((string) $params['gcode']) : null;
         $clock = (new Stopwatch)->note('started', round(microtime(true), 1))->since('queue', $file->created_at?->getTimestamp());
         $dst = Storage::disk(ModelFile::DISK)->path($file->storage_path);
         try {
-            if (! $src || ! $src->isReady() || ! in_array($op, ModelEditor::KINDS, true)) {
+            if ($gcode ? ! is_file($gcode) : (! $src || ! $src->isReady() || ! in_array($op, ModelEditor::KINDS, true))) {
                 throw new \RuntimeException('source_gone');
             }
             $file->status = ModelFile::STATUS_PROCESSING;
@@ -50,7 +52,9 @@ class EditModel implements ShouldQueue
             File::ensureDirectoryExists(dirname($dst));
             $json = dirname($dst).'/edit.json';
             File::put($json, (string) json_encode(ModelEditor::forTool($op, array_diff_key($params, ['source' => 1]))));
-            $r = $clock->measure('edit', fn () => $python->runScript('edit_tool.py', [$op, ModelEditor::sourceOf($src, $op), $dst, '@'.$json, dirname($dst).'/parts'], 840));
+            $r = $clock->measure('edit', fn () => $gcode
+                ? $python->runScript('gcode_tool.py', ['gcode', $gcode, $dst, '@'.$json, dirname($dst).'/parts'], 840)
+                : $python->runScript('edit_tool.py', [$op, ModelEditor::sourceOf($src, $op), $dst, '@'.$json, dirname($dst).'/parts'], 840));
             @unlink($json);
             @unlink($dst.'.stage');
             if (empty($r['ok']) || ! is_file($dst)) {
@@ -61,7 +65,13 @@ class EditModel implements ShouldQueue
             $params['parts_bbox'] = array_map(fn ($p) => [round($p['bbox'][3] - $p['bbox'][0], 2), round($p['bbox'][4] - $p['bbox'][1], 2), round($p['bbox'][5] - $p['bbox'][2], 2)], array_column((array) ($r['parts'] ?? []), null, 'name'));
             $params['pieces'] = array_values((array) ($r['parts'] ?? []));
             $params['each'] = (array) ($notes['each'] ?? []);
-            $params['report'] = array_diff_key($notes, ['parts' => 1, 'each' => 1]) + ['triangles' => (int) ($r['triangles'] ?? 0)];
+            $params['report'] = array_diff_key($notes, ['parts' => 1, 'each' => 1, 'part_colors' => 1, 'color_changes' => 1]) + ['triangles' => (int) ($r['triangles'] ?? 0)];
+            // the colours of the parts and the spool changes by height, the way every coloured design keeps them for the farm and the projects
+            foreach (['part_colors', 'color_changes', 'multi_material', 'color_change_mm'] as $key) {
+                if (array_key_exists($key, $notes)) {
+                    $params[$key] = $notes[$key];
+                }
+            }
             $file->tool_params = $params;
             $file->size_bytes = filesize($dst);
             $file->sha256 = hash_file('sha256', $dst);

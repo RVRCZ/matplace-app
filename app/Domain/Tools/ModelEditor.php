@@ -9,6 +9,7 @@ use App\Jobs\EditModel;
 use App\Models\AnonymousSession;
 use App\Models\ModelFile;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -20,7 +21,12 @@ use Illuminate\Support\Str;
  */
 final class ModelEditor
 {
-    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'soap', 'wearable', 'slider', 'scale'];
+    public const KINDS = ['split', 'hollow', 'life_size', 'puzzle', 'holder', 'potion', 'flexi_cut', 'colors', 'soap', 'wearable', 'slider', 'scale', 'gcode'];
+
+    /** a G-code file is read, not edited: the biggest one taken, and the lines of it the tool reads (docs/AL.md) */
+    public const GCODE_MAX_MB = 150;
+
+    public const GCODE_MAX_LINES = 1500000;
 
     /** body girths in cm a wearable starts from, by what the model goes round */
     public const MEASURES = ['head' => 56, 'chest' => 95, 'waist' => 80, 'arm' => 30, 'forearm' => 26, 'wrist' => 17, 'thigh' => 55, 'calf' => 37];
@@ -291,7 +297,7 @@ final class ModelEditor
      */
     public function make(ModelFile $src, string $op, array $p, ?AnonymousSession $session, ?User $user): ModelFile
     {
-        if (! in_array($op, self::KINDS, true)) {
+        if (! in_array($op, self::KINDS, true) || $op === 'gcode') {       // a model out of G-code starts from a G-code file (fromGcode), not from a model
             throw new EngineException('edit_failed');
         }
         if (! $src->isReady() || ! $src->absoluteStlPath()) {
@@ -311,6 +317,38 @@ final class ModelEditor
         EditModel::dispatch($file->id);
 
         return $file->refresh();
+    }
+
+    /**
+     * A model out of an uploaded G-code file (engines/python/gcode_tool.py, docs/AL.md): the file is kept beside the
+     * model as source.gcode, the queue (App\Jobs\EditModel) reads it into the STL, its parts by colour and its report.
+     */
+    public function fromGcode(UploadedFile $upload, ?AnonymousSession $session, ?User $user): ModelFile
+    {
+        $uuid = (string) Str::uuid();
+        $dir = 'files/'.$uuid;
+        Storage::disk(ModelFile::DISK)->putFileAs($dir, $upload, 'source.gcode');
+        $name = Str::slug(pathinfo($upload->getClientOriginalName(), PATHINFO_FILENAME)) ?: 'model';
+        $file = ModelFile::create([
+            'uuid' => $uuid, 'owner_user_id' => $user?->id, 'anonymous_session_id' => $session?->id,
+            'original_name' => mb_substr($name, 0, 200).'.stl', 'ext' => 'stl', 'mime' => 'model/stl', 'size_bytes' => 0, 'sha256' => '',
+            'storage_path' => $dir.'/original.stl', 'origin' => 'tool', 'origin_ref' => 'gcode', 'status' => ModelFile::STATUS_UPLOADED,
+            'tool_params' => ['gcode' => 'source.gcode', 'gcode_name' => mb_substr($upload->getClientOriginalName(), 0, 120), 'gcode_bytes' => (int) $upload->getSize(), 'max_lines' => self::GCODE_MAX_LINES],
+        ]);
+        EditModel::dispatch($file->id);
+
+        return $file->refresh();
+    }
+
+    /** The plain 3MF of a model out of G-code with an object per colour, when the print had colours side by side. */
+    public static function colors3mf(ModelFile $f): ?string
+    {
+        if ($f->kind() !== 'gcode' || ! $f->isReady()) {
+            return null;
+        }
+        $path = dirname(Storage::disk(ModelFile::DISK)->path($f->storage_path)).'/parts/colors.3mf';
+
+        return is_file($path) ? $path : null;
     }
 
     /** The pieces a design made here consists of, as the tool listed them. */

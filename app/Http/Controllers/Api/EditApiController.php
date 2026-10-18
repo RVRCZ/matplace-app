@@ -12,6 +12,7 @@ use App\Support\PreviewMeta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /** The tools of session 3: filament art (a picture → plates), and the editing of a model file (split, hollow, scale…). */
@@ -102,6 +103,34 @@ class EditApiController extends Controller
         abort_unless(is_file($path), 404);
 
         return response()->download($path, pathinfo($modelFile->original_name, PATHINFO_FILENAME).'-'.$part.'.stl', ['Content-Type' => 'model/stl']);
+    }
+
+    /**
+     * POST /api/tools/gcode (multipart: file) → a model file made out of the G-code in the queue (ask /api/files/{uuid}
+     * for its state): the model, its parts by colour and what the header said (docs/AL.md)
+     */
+    public function gcode(Request $request, ModelEditor $editor): JsonResponse
+    {
+        if (! $editor->available()) {
+            return response()->json(['error' => 'edit_unavailable'], 503);
+        }
+        $request->validate(['file' => ['required', 'file', 'max:'.(ModelEditor::GCODE_MAX_MB * 1024)]]);
+        $upload = $request->file('file');
+        if (strtolower($upload->getClientOriginalExtension()) !== 'gcode') {
+            throw ValidationException::withMessages(['file' => __('edit.gcode.bad_format')]);
+        }
+        $file = $editor->fromGcode($upload, $request->attributes->get('anon_session'), $request->user());
+
+        return response()->json(['file' => UploadController::describe($file)], 201);
+    }
+
+    /** GET /api/tools/edit/{uuid}/colors.3mf → a model out of G-code with an object per colour, for the visitor's own slicer */
+    public function colors3mf(ModelFile $modelFile): BinaryFileResponse
+    {
+        $path = ModelEditor::colors3mf($modelFile);
+        abort_unless($path !== null, 404);
+
+        return response()->download($path, pathinfo($modelFile->original_name, PATHINFO_FILENAME).'-colors.3mf', ['Content-Type' => 'model/3mf']);
     }
 
     /** GET /api/tools/edit/{uuid}/guide → the plates of a layered picture, back to front, with their drawings */
