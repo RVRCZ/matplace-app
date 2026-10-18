@@ -14,6 +14,7 @@ use App\Engines\Search\MakerWorldSearch;
 use App\Engines\Search\PrintablesSearch;
 use App\Http\Controllers\Controller;
 use App\Jobs\ClassifyModel;
+use App\Jobs\EnrichCatalogModel;
 use App\Jobs\PrepareDesignerFile;
 use App\Models\CatalogCategory;
 use App\Models\CatalogModel;
@@ -43,14 +44,33 @@ class CatalogController extends Controller
             ->when(is_numeric($request->query('category')), fn ($w) => $w->where('category_id', (int) $request->query('category')))
             ->when(in_array($request->query('visible'), ['0', '1'], true), fn ($w) => $w->where('visible', $request->query('visible') === '1'))
             ->when($request->query('source'), fn ($w) => $w->where('source', (string) $request->query('source')))
+            // a text of ours, and whether search engines get the page (CatalogModel::scopeIndexable)
+            ->when(in_array($request->query('enriched'), ['0', '1'], true), fn ($w) => $request->query('enriched') === '1' ? $w->whereNotNull('enriched_at') : $w->whereNull('enriched_at'))
+            ->when($request->query('index') === '1', fn ($w) => $w->whereIn('catalog_models.id', CatalogModel::indexable()->select('catalog_models.id')))
+            ->when($request->query('index') === '0', fn ($w) => $w->whereNotIn('catalog_models.id', CatalogModel::indexable()->select('catalog_models.id')))
+            ->when($request->query('sort') === 'views', fn ($w) => $w->orderByDesc('view_count'))
             ->orderByDesc('id')->paginate(40)->withQueryString();
 
         return view('admin.catalog.index', [
             'models' => $models, 'q' => $q,
             'categories' => CatalogCategory::orderBy('parent_id')->orderBy('position')->get(),
             'sources' => CatalogModel::query()->distinct()->orderBy('source')->pluck('source')->filter()->values(),
-            'counts' => ['all' => CatalogModel::count(), 'hidden' => CatalogModel::where('visible', false)->count(), 'uncategorised' => CatalogModel::whereNull('category_id')->count(), 'review' => $this->reviewQuery()->count()],
+            'counts' => [
+                'all' => CatalogModel::count(), 'hidden' => CatalogModel::where('visible', false)->count(), 'uncategorised' => CatalogModel::whereNull('category_id')->count(), 'review' => $this->reviewQuery()->count(),
+                'enriched' => CatalogModel::whereNotNull('enriched_at')->count(), 'indexable' => CatalogModel::indexable()->count(), 'shown' => CatalogModel::shown()->count(),
+            ],
+            'indexNeeds' => CatalogModel::indexNeeds(),
         ]);
+    }
+
+    /** "Obohatit vybrané": a text of ours for the ticked models, written by the queue (EnrichCatalogModel, Gemini). */
+    public function enrich(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['ids' => ['required', 'array', 'min:1', 'max:500'], 'ids.*' => ['integer'], 'force' => ['nullable', 'boolean']]);
+        $ids = CatalogModel::shown()->whereIn('id', $data['ids'])->pluck('id');
+        $ids->each(fn (int $id) => EnrichCatalogModel::dispatch($id, $request->boolean('force')));
+
+        return back()->with('status', 'Do fronty zařazeno '.$ids->count().' modelů. Texty píše Gemini ve frontě „ai“; každé volání je v ai_calls, hotové modely dostanou datum v „Obohaceno“.');
     }
 
     /** Search Printables, MakerWorld and MakerOnline; the results can be ticked and added to the inspiration catalogue. */

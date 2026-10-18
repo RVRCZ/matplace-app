@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Catalog\ModelPricing;
 use App\Models\CatalogCategory;
 use App\Models\CatalogModel;
 use App\Models\DesignerModel;
@@ -33,7 +34,7 @@ class InspirationController extends Controller
         ]);
     }
 
-    public function show(Request $request, CatalogModel $catalogModel): View
+    public function show(Request $request, CatalogModel $catalogModel, ModelPricing $pricing): View
     {
         $model = $catalogModel;
         abort_unless($model->getAttribute('visible'), 404);
@@ -51,6 +52,10 @@ class InspirationController extends Controller
             'category' => $model->categoryRow,
             'card' => $printable,                                   // the author's own card the farm can print
             'author' => $author?->getAttribute('visible') ? $author : null,   // "the author is on matplace"
+            // the price of one piece as far as it can be named, and whether search engines may index the page
+            // (only pages with something of their own: config/catalog.php `index_requires`; the rest say noindex, follow)
+            'quote' => $pricing->quoteCatalog($model, $printable),
+            'indexable' => $model->isIndexable(),
             'similar' => $model->category_id
                 ? CatalogModel::shown()->where('category_id', $model->category_id)->whereKeyNot($model->id)->orderByDesc('view_count')->limit(8)->get()
                 : collect(),

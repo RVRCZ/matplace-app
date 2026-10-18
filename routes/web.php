@@ -492,6 +492,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/catalog/review', [$catalog, 'review'])->name('catalog.review');
     Route::post('/catalog/review', [$catalog, 'resolve'])->name('catalog.resolve');
     Route::post('/catalog/classify', [$catalog, 'classifyBatch'])->name('catalog.classify');
+    Route::post('/catalog/enrich', [$catalog, 'enrich'])->name('catalog.enrich');
     Route::get('/catalog/cards', [$catalog, 'cards'])->name('catalog.cards');
     Route::post('/catalog/cards/{card:id}', [$catalog, 'updateCard'])->whereNumber('card')->name('catalog.cards.update');
     Route::post('/catalog/cards/{card:id}/reslice', [$catalog, 'reslice'])->whereNumber('card')->name('catalog.cards.reslice');

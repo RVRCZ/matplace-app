@@ -1,5 +1,10 @@
 @php
     $text = $model->describe();
+    // a text of ours (catalog:enrich) in this language: shown first, the source's own text folded under it
+    $ours = $model->isEnriched() && trim((string) (((array) $model->description)[app()->getLocale()] ?? '')) !== '';
+    $original = $ours ? $model->original() : null;
+    $quote = $quote ?? ['available' => false];
+    $dur = fn (int $m) => $m >= 60 ? intdiv($m, 60).' h '.($m % 60).' min' : $m.' min';
     $images = $model->imageUrls();
     $sourceName = __('models.source.'.(\Illuminate\Support\Facades\Lang::has('models.source.'.$model->source) ? $model->source : 'other'));
     $licenseName = $model->license && \Illuminate\Support\Facades\Lang::has('models.license.'.$model->license) ? __('models.license.'.$model->license) : __('models.license.unknown');
@@ -16,6 +21,8 @@
     'title' => $model->title.' · '.__('models.inspiration.title_suffix').' · matplace',
     'description' => $text !== '' ? \Illuminate\Support\Str::limit(preg_replace('/\s+/', ' ', $text), 155) : __('models.inspiration.description_one', ['title' => $model->title]),
     'ogImage' => $images[0] ?? null,
+    // only a page with something of its own is for search engines; the rest stays reachable and keeps its links followed
+    'robots' => ($indexable ?? false) ? null : 'noindex, follow',
 ])
 
 @push('head')
@@ -79,6 +86,16 @@
                     <div><dt class="text-muted">{{ __('models.facts.origin') }}</dt><dd><a href="{{ $model->external_url }}" rel="nofollow noopener" target="_blank" class="font-semibold underline">{{ __('models.inspiration.open_at', ['source' => $sourceName]) }} ↗</a></dd></div>
                 @endif
                 <div><dt class="text-muted">{{ __('models.facts.license') }}</dt><dd class="font-semibold">{{ $licenseName }}</dd></div>
+                {{-- what we know of the thing itself: the size, the slicer's estimate, the price of one piece with us --}}
+                @if($model->max_mm)
+                    <div><dt class="text-muted">{{ __('models.inspiration.size') }}</dt><dd class="font-semibold">{{ __('models.inspiration.size_value', ['mm' => $model->max_mm]) }}</dd></div>
+                @endif
+                @if($model->est_grams && $model->est_minutes)
+                    <div><dt class="text-muted">{{ __('models.inspiration.estimate') }}</dt><dd class="font-semibold">{{ __('models.inspiration.estimate_value', ['grams' => $model->est_grams, 'time' => $dur((int) $model->est_minutes)]) }}</dd></div>
+                @endif
+                @if($quote['available'])
+                    <div data-price><dt class="text-muted">{{ __('models.inspiration.price') }}</dt><dd class="font-semibold">{{ __('models.inspiration.price_value', ['price' => $quote['total_text'], 'material' => $quote['material']]) }}<span class="block text-xs font-normal text-muted">{{ __('models.inspiration.price_note') }}</span></dd></div>
+                @endif
                 @if($model->tags)
                     <div><dt class="text-muted">{{ __('models.inspiration.tags') }}</dt>
                         <dd class="mt-1 flex flex-wrap gap-1.5">
@@ -91,9 +108,15 @@
     </div>
 
     @if($text !== '')
-        <section class="mt-8 max-w-3xl">
+        <section class="mt-8 max-w-3xl" @if($ours) data-our-text @endif>
             <h2 class="text-lg font-bold">{{ __('models.about') }}</h2>
             <p class="mt-2 whitespace-pre-line leading-relaxed text-slate-700" lang="{{ $model->describedIn() }}">{{ $text }}</p>
+            @if($original)
+                <details class="mt-4 rounded-xl border border-line p-3 text-sm" data-original-text>
+                    <summary class="cursor-pointer font-semibold text-slate-700">{{ __('models.inspiration.original', ['language' => \Illuminate\Support\Facades\Lang::has('site.languages.'.$original['locale']) ? __('site.languages.'.$original['locale']) : strtoupper($original['locale'])]) }}</summary>
+                    <p class="mt-2 whitespace-pre-line leading-relaxed text-slate-600" lang="{{ $original['locale'] }}">{{ $original['text'] }}</p>
+                </details>
+            @endif
         </section>
     @endif
 

@@ -287,3 +287,187 @@ mail „zaplaceno“ (a u agentní tiskárny „tiskne se“ a „dotištěno“
 (`kind`, `attachment`), `config/farm.php` (čtyři `notify_*`), `app/Http/Controllers/Admin/FarmCatalogController.php`
 (`saveSettings`), `resources/views/admin/farm/settings.blade.php`, `lang/{cs,en,es}/farm.php` (`admin.mail`),
 `tests/Feature/FarmAdminNotifyTest.php`.
+
+---
+
+# Inspirační katalog a vyhledávače: co indexovat, co obohatit (TODO #25)
+
+Session 2, větev `feature/catalog-seo` (z `main` 874ce6c), 18. 10. 2026. Zadání: `docs/prompts/katalog-seo.md`.
+Nemergováno, nenasazeno. Gemini bylo voláno jen místně na pět modelů místní kopie katalogu (0,07 Kč), na produkci nic.
+
+## 9. Co a proč
+
+Katalog (`/model/{slug}`) jsou šablonové stránky s cizím anglickým textem; Roman 18. 10.: **indexovat jen modely,
+které mají něco navíc; zbytek nechat dostupný s `noindex`; vybrané postupně obohatit.** Návštěvníkům se nic neskrývá
+(`shown()` beze změny), mění se jen `robots`, sitemapa a text stránky.
+
+### 9.1 Pravidlo „má něco navíc“ a čísla, na která si dát pozor
+
+`CatalogModel::scopeIndexable()` = `shown()` + vše, co žádá `config('catalog.index_requires')`
+(`CATALOG_INDEX_REQUIRES`, výchozí **`enriched,price,file`** přesně podle zadání):
+
+| podmínka | co znamená | jak se pozná |
+|---|---|---|
+| `enriched` | text napsaný u nás | `enriched_at` (plní `catalog:enrich` nebo tlačítko v adminu) |
+| `price` | skutečná cena z kalkulace | karta autora k tisku (`designerModels` `printable()` se `slice_summary`), **nebo** `est_minutes > 0 ∧ est_grams > 0` (čísla sliceru převzatá ze starého webu) – a na farmě musí být založený aspoň jeden druh (`ModelPricing::anyMaterial()`), jinak cenu nejde říct nikomu |
+| `file` | soubor máme | `file_available`, `model_file_id`, nebo karta autora k tisku |
+
+`isIndexable()` se ptá téhož dotazu pro jeden model (stránka), `indexGaps()` říká, co chybí (admin). Stránka bez toho
+dostane `<meta name="robots" content="noindex, follow">` (nový parametr layoutu `$robots`; `noindex` samotný dál
+znamená `noindex, nofollow` pro admin a účty), **bez canonicalu** (canonical + noindex si odporují), jazykové
+dvojčata `hreflang` zůstávají (jsou i pro lidi; `CatalogTest` je čeká). Kategorie a seznamy indexované dál.
+
+**Pozor na čísla.** Místní kopie katalogu (2 498 modelů ze stejného importu jako produkce): **0 se souborem,
+2 s odhadem minut**, karty autorů k tisku jednotky. Import nikdy `file_available` neplnil
+(`CatalogImporter` zapisuje `false`, `matplace:import-catalog` sloupec nebere) a `print_time_min` starého webu
+byl vyplněný výjimečně. S výchozím pravidlem by tedy po nasazení **zůstalo v sitemapě 0 katalogových adres a nic by
+se tam nevrátilo ani po obohacení 300 modelů**, protože text soubor ani cenu nepřidá. Proto:
+
+- `catalog:enrich` vybírá jen modely, které by se po obohacení daly indexovat (`scopeIndexReady`), a říká, kolik
+  z top N vynechal; `--any` bere i ostatní.
+- `matplace:sitemap` i `catalog:enrich --dry-run` vypisují: zobrazených / s naším textem / indexovatelných / kolik
+  by šlo indexovat po obohacení – **spusťte na produkci `php artisan catalog:enrich --dry-run` a rozhodněte podle
+  čísel.** Pravděpodobný závěr: nastavit `CATALOG_INDEX_REQUIRES=enriched` (text náš + cena, když ji lze říct, se
+  na stránce ukáže sama) a soubor/cenu nechat jako „navíc“, dokud nebudou data. Přepínač je v `.env`, bez nasazení.
+
+### 9.2 Stránka modelu
+
+`InspirationController::show` předává `quote` (`ModelPricing::quoteCatalog`: cena 1 ks z karty autora, jinak
+z `est_*` v nejlevnějším založeném druhu, částka v měně návštěvníka) a `indexable`. `inspiration/show.blade.php`:
+
+- u výzvy k tisku v `<dl>` nové řádky **Největší rozměr** (`max_mm`), **Odhad tisku** (`est_grams`, `est_minutes`
+  jako „1 h 30 min“) a **Cena u nás** „od 189 Kč (PLA+, 1 ks)“ + „Přesnou cenu spočítá kalkulace…“ (jen když jsou);
+- u obohaceného modelu je **náš text** v jazyce stránky nahoře (`data-our-text`, `lang` = jazyk stránky) a pod ním
+  **„Původní popis autora (English)“ sbalený** v `<details data-original-text>` (`description.original`,
+  `source_locale`); neobohacený model vypadá jako dřív (zdrojový text jako hlavní, `lang="en"`);
+- en/es stránka ukazuje svůj náš text; existuje dál jen tam, kde text je (`locales()` beze změny). Titulky a popisy
+  stránek se mezi jazyky neliší jinak než jazykem (beze změny).
+
+### 9.3 `catalog:enrich` (Gemini)
+
+`App\Engines\Ai\GeminiText` – nový malý klient (`generateContent`, `responseMimeType: application/json` +
+`responseSchema`, teplota 0,5, bez přemýšlení: `thinkingBudget: 0` u Flash; Lite modely ho odmítají HTTP 400 a
+nepřemýšlí samy, proto se jim neposílá a každé 400 se jednou zkusí bez něj); každé volání do `ai_calls` (`kind`
+`enrich`, `engine` = `modelVersion`, tokeny odpovědi + případné myšlenkové), ceny v `config/ai.php` `prices`.
+Config `ai.gemini` (`GEMINI_API_KEY` už je, `GEMINI_TEXT_MODEL`). **Gemini 2.5 Flash je pro novější účty zavřený**
+(HTTP 404 „no longer available to new users“, API radí `gemini-3.8-flash`); na klíči jsou k dispozici
+`gemini-3.8-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite` aj. Výchozí **`gemini-3.8-flash`**; ceny 3.x
+v configu jsou **předpoklad** opsaný z řady 2.5 (0,30/2,50 USD za milion vstup/výstup, Lite 0,10/0,40) –
+ověřit v Google AI konzoli a opravit, tokeny v `ai_calls` jsou skutečné.
+
+`App\Domain\Catalog\CatalogEnricher`: materiál pro model = název, autor, zdroj, licence (komerční / jen pro sebe),
+kategorie, štítky, největší rozměr, odhad tisku, **druhy založené na farmě teď**, žádané jazyky (`locales()` stránky)
+a zdrojový text do 3 000 znaků; pravidla: vlastními slovy, dva krátké odstavce (`p1` co to je a k čemu, `p2` na co
+si dát pozor při tisku a jaké provedení z našich druhů doporučit), nic nevymýšlet (rozměry jen z materiálu),
+bez superlativů, odkazů, cen a cizích webů, vykání. Zápis: `description.<jazyk>` = `p1\n\np2` pro každý jazyk
+stránky, zdrojový text **jednou** do `description.original`, `enriched_at = now()`, `enriched_price_czk` = cena 1 ks
+(když ji lze říct). Příkaz:
+
+```
+php artisan catalog:enrich --dry-run              # kdo by dostal text, co chybí, odhad ceny; nic nevolá
+php artisan catalog:enrich --top=5                # prvních pět naostro, texty vypíše (ukázky pro Romana)
+php artisan catalog:enrich                        # top 300 podle view_count, jen ty, co by šly indexovat
+php artisan catalog:enrich --any --top=300        # i modely bez souboru/ceny
+php artisan catalog:enrich --ids=12,345 --force   # vybrané, i přes existující text (original se nepřepíše)
+```
+
+Úloha `EnrichCatalogModel` (fronta `ai`, jako překlady) pro tlačítko v adminu. **Cena**: odhad před během
+(`estimate`: znaky prompt/3,5 + 240 tokenů odpovědi na jazyk) a skutečnost z místního běhu na pěti modelech
+s `gemini-3.8-flash`: **392 + 198 tokenů, 0,011–0,015 Kč na volání** (při předpokládaných cenách) → **300 modelů
+≈ 4–5 Kč**, i kdyby byly ceny 3.8 dvojnásobné, pod 10 Kč. Ukázky níže.
+
+### 9.4 Ukázky (místní kopie katalogu, `gemini-3.8-flash`, 18. 10. 2026) – ke schválení Romanem
+
+Jen česká stránka (místní modely nemají en/es text), bez ceny a souboru (viz 9.1), založený druh jen PLA+ (proto
+všude „PLA+“ – na produkci bude z nabídky vybírat).
+
+1. **Tabletop Mouse Player Token** (324 zobrazení) – „Tento model představuje herní žeton s motivem myši, určený pro
+   stolní deskové hry. Slouží hráčům jako ukazatel nebo herní figurka při deskovém hraní. Autorem předlohy je Thoren66
+   a model je publikován na serveru Printables pod licencí CC BY NC SA pro osobní použití. ¶ Při přípravě tisku
+   doporučujeme umístit model naplocho na tiskovou podložku a zvolit nižší výšku vrstvy, aby dobře vynikly veškeré
+   detaily žetonu. V závislosti na geometrii zvažte použití podpěr pro převislé části. Z nabídky matplace zvolte
+   materiál PLA+, který zajistí dostatečnou pevnost a přesné vykreslení.“
+2. **Fuel Tank – Model Science Fiction** (253) – „Tento model představuje sci-fi palivovou nádrž od autora
+   RobertusMaximus, zařazenou v kategorii vozidel. Slouží jako tematický doplněk pro modely vědeckofantastické techniky
+   nebo jako součást dioramat a herních scenérií. ¶ Při tisku dbejte na správnou orientaci na podložce a podle
+   geometrie zvažte použití podpěr pro převislé části. Z materiálů aktuálně dostupných na matplace doporučujeme pro
+   zhotovení tohoto modelu filament PLA+.“
+3. **Mathematics & Geometry Models – 5-Model STL Bundle** (202) – „Tato sada od autora ForgeFiles obsahuje pět
+   různých 3D modelů zaměřených na matematiku a geometrii. Modely z kategorie matematických pomůcek slouží k názorné
+   demonstraci geometrických tvarů a prostorových vztahů. Licence umožňuje pouze osobní použití, takže vytištěné
+   předměty nelze dále prodávat. ¶ Při přípravě tisku doporučujeme díly umístit na podložku tak, aby vznikla co
+   největší styčná plocha, a dle tvaru jednotlivých těles případně zvolit podpěry. Pro zachování přesných
+   geometrických hran je vhodné zvolit jemnější výšku vrstvy a dostatečný počet obvodových stěn. Pro zhotovení této
+   sady vám v naší nabídce doporučujeme materiál PLA+.“
+4. **Miniature traffic cone for remote-controlled vehicles** (200) – „Tento model představuje miniaturní dopravní
+   kužel určený pro dálkově ovládaná vozidla. Slouží jako praktická rekvizita a překážka při tvorbě drah nebo nácviku
+   jízdy s RC modely. Autorem předlohy je Lucrais a naleznete ji na serveru Printables pod licencí CC BY NC ND pro
+   osobní využití. ¶ Při 3D tisku je vhodné umístit kužel základnou přímo na tiskovou podložku, což zajistí stabilitu
+   a eliminuje potřebu podpěr. Pro zachování plynulého zúženého tvaru a detailů doporučujeme zvolit jemnější výšku
+   vrstvy. Z dostupných materiálů u Matplace doporučujeme pro zhotovení tohoto dílu PLA+.“
+5. **Miniature Workshop – Single-Room Building** (189) – „Tento model představuje miniaturu jednorozměrné dílny od
+   autora Spiderpiggie, která spadá do kategorie budov. Slouží jako dekorativní stavba pro modeláře, stolní hry nebo
+   diorámata. Předloha pochází ze serveru Printables a vztahuje se na ni licence pro osobní použití. ¶ Při přípravě
+   tisku doporučujeme umístit model základnou na podložku, aby byla zajištěna stabilita konstrukce a minimalizovala
+   se potřeba podpěr. Pro zachování detailů drobných prvků stěn zvolte nižší výšku vrstvy. Z naší aktuální nabídky
+   doporučujeme pro zhotovení materiál PLA+.“
+
+Co na nich vidět: čte se to jako čeština, vykání drží, nic si nevymýšlí (bez rozměrů, kde nejsou), ale texty jsou
+si **podobné stavbou** („Tento model představuje…“, „Při přípravě tisku doporučujeme…“) a občas sklouznou k obecnosti
+(„zvažte použití podpěr“) nebo k chybě („jednorozměrné dílny“ za single-room). Před během na stovky stojí za to
+jednou upravit pravidla (zakázat úvod „Tento model představuje“, chtít konkrétnější radu k tisku, nebo nechat
+licenci a autora stranou – ty už stránka ukazuje) – to je změna jedné konstanty `CatalogEnricher::RULES`.
+Porovnání s Lite modelem viz 9.6.
+
+### 9.5 Sitemapy a admin
+
+- `Sitemaps::catalog()` jen `indexable()`, `lastmod` = `enriched_at ?? updated_at`; `catalogCounts()`;
+  `matplace:sitemap` tiskne „Inspiration catalogue: X indexable of Y shown pages, Z noindex; the index needs: …“.
+- `/admin/catalog`: počty „obohacených N“, „indexovaných N z M“ (s podmínkami v titulku), filtry **Obohaceno**
+  (ano/ne), **Indexováno** (ano/ne), řazení podle zobrazení; sloupce **Obohaceno** (datum + cena 1 ks) a **Index**
+  („ano“ / „ne – chybí: text, cena, soubor“); zaškrtávátka řádků + **„Obohatit vybrané (Gemini)“** (`POST
+  /admin/catalog/enrich`, fronta `ai`, volba „i ty, co text už mají“). Stránka modelu v adminu: původní popis zdroje
+  sbalený, „Obohaceno: … · index: …“, tlačítko „Napsat náš text (Gemini)“.
+
+### 9.6 Testy a místní ověření
+
+`tests/Feature/CatalogSeoTest.php` (4 testy, 104 tvrzení): stránka bez našeho textu je 200 pro lidi i v seznamu,
+má `noindex, follow`, bez canonicalu, s hreflang, není v sitemapě a `matplace:sitemap` hlásí 0 z 1; obohacený model
+se souborem a odhadem je indexovaný (canonical), náš text nahoře, originál sbalený, cena v `<dl>`, v sitemapě cs i en
+s `lastmod` = den obohacení; přepínač `index_requires=enriched` stačí text, bez založeného druhu není indexovatelné
+nic; `catalog:enrich --dry-run` nic nevolá a nezapisuje, naostro (Gemini přes `Http::fake`) zapíše cs i en, zachová
+originál, cenu, `ai_calls` s cenou podle configu, `--any` a `--force` se chovají, jak mají; admin počty, filtry,
+fronta (`Queue::fake`, fronta `ai`) a úloha, která obohacený model bez `force` nechá být. Upraven `SeoTest`
+(modely v sitemapě mají teď text + soubor + odhad; šablonový model tam není). Zelené dál: `SeoTest`, `CatalogTest`,
+`LocaleUrlTest`, `AdminContentTest` (63 testů); `pint --dirty`.
+
+Místní běh naostro: `catalog:enrich --any --top=5` s `gemini-3.8-flash` – 5 textů, 1 977 + 934 tokenů, 0,07 Kč.
+**Lite** (`GEMINI_TEXT_MODEL=gemini-3.5-flash-lite`, `--ids=687,684 --force`): 548 + 133 a 534 + 147 tokenů,
+**0,003 Kč na volání** (čtvrtina Flashe), texty kratší a o něco obecnější, stejná kostra i stejná chyba
+(„jednorozměrné dílny“): „Tento model představuje herní žeton s motivem myši, který je určen pro deskové hry a slouží
+jako ukazatel či figurka. Předlohu vytvořil autor Thoren66 a publikoval ji na portálu Printables. ¶ Pro optimální tisk
+doporučujeme položit model naplocho na podložku a nastavit menší výšku vrstvy pro zachování detailů. Z aktuální
+nabídky materiálu matplace Vám doporučujeme zvolit PLA+.“ Za 300 modelů jde o rozdíl ~4 Kč proti ~1 Kč – volba podle
+kvality textu, ne ceny; výchozí zůstává `gemini-3.8-flash`.
+
+### 9.7 Nasazení
+
+Migrace `2026_10_22_100000_catalog_models_enriched` (`enriched_at`, `enriched_price_czk`). `config:clear`,
+`view:clear`. **Pořadí na produkci**: (1) `php artisan catalog:enrich --dry-run` → čísla; (2) rozhodnout
+`CATALOG_INDEX_REQUIRES` (výchozí `enriched,price,file`; pravděpodobně `enriched`) a `GEMINI_TEXT_MODEL`
+(výchozí `gemini-3.8-flash`); (3) `php artisan catalog:enrich --top=5` → ukázky Romanovi; (4) po schválení
+`php artisan catalog:enrich` (300) a `php artisan matplace:sitemap`; do té doby sitemapa nese 0 katalogových adres
+a všechny stránky katalogu říkají `noindex, follow` – to je záměr (šablonové stránky ven z indexu), ne chyba.
+Search Console: po nasazení se v „Pages“ objeví pokles indexovaných stránek katalogu; to je čekané.
+
+### 9.8 Soubory
+
+`database/migrations/2026_10_22_100000_catalog_models_enriched.php`, `config/catalog.php` (`index_requires`,
+`enrich`), `config/ai.php` (`gemini`, ceny), `app/Engines/Ai/GeminiText.php`, `app/Domain/Catalog/CatalogEnricher.php`,
+`app/Domain/Catalog/ModelPricing.php` (`quoteCatalog`, `anyMaterial`, memo), `app/Models/CatalogModel.php`
+(`scopeIndexable`, `scopeIndexReady`, `isIndexable`, `indexGaps`, `isEnriched`, `original`), `app/Console/Commands/
+EnrichCatalog.php`, `app/Jobs/EnrichCatalogModel.php`, `app/Http/Controllers/InspirationController.php`,
+`resources/views/inspiration/show.blade.php`, `resources/views/layouts/app.blade.php` (`$robots`),
+`app/Support/Sitemaps.php`, `app/Console/Commands/BuildSitemap.php`, `app/Http/Controllers/Admin/CatalogController.php`
+(`index`, `enrich`), `routes/web.php`, `resources/views/admin/catalog/{index,edit}.blade.php`, `lang/{cs,en,es}/models.php`
+(`inspiration.original/size/estimate/price…`), `tests/Feature/CatalogSeoTest.php`, `tests/Feature/SeoTest.php`.

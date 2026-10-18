@@ -46,8 +46,30 @@ return [
             // documentation: 0.02 USD is an ASSUMPTION until Roman's plan says otherwise (also ai.meshy.credit_cents)
             'meshy-fine' => ['in' => 0, 'out' => 0, 'call' => 0.50],
             'meshy' => ['in' => 0, 'out' => 0, 'call' => 0.40],
+            // Gemini text models by tokens, USD per million (a Lite line before its plain one). The 2.5 figures are Google's list
+            // prices; the 3.x lines are an ASSUMPTION copied from them (18 Oct 2026, the 2.5 models are closed to new accounts and
+            // the API points at gemini-3.8-flash) – check them in the Google AI console and correct here. The picture models of
+            // the card photos stay at a flat price per call.
+            'gemini-2.5-flash-lite' => ['in' => 0.10, 'out' => 0.40],
+            'gemini-2.5-flash' => ['in' => 0.30, 'out' => 2.50],
+            'gemini-3.5-flash-lite' => ['in' => 0.10, 'out' => 0.40],
+            'gemini-3.1-flash-lite' => ['in' => 0.10, 'out' => 0.40],
+            'gemini-flash-lite' => ['in' => 0.10, 'out' => 0.40],
+            'gemini-3.8-flash' => ['in' => 0.30, 'out' => 2.50],
+            'gemini-3.5-flash' => ['in' => 0.30, 'out' => 2.50],
+            'gemini-flash' => ['in' => 0.30, 'out' => 2.50],
             'gemini' => ['in' => 0, 'out' => 0, 'call' => 0.04],
         ],
+    ],
+
+    // Gemini for text: the descriptions of the inspiration catalogue (catalog:enrich, App\Engines\Ai\GeminiText). The 2.5
+    // models are closed to accounts made after mid-2026 (HTTP 404 on 18 Oct 2026); gemini-3.8-flash is what the API points
+    // at, gemini-3.5-flash-lite the cheaper choice when the texts read well enough
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY', ''),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'text_model' => env('GEMINI_TEXT_MODEL', 'gemini-3.8-flash'),
+        'timeout' => 90,
     ],
     'daily_limits' => [
         'describe' => (int) env('AI_LIMIT_DESCRIBE', 20),   // photo identifications per visitor per day

@@ -96,6 +96,15 @@ return [
         'open_at' => 'Abrir en :source',
         'tags' => 'Etiquetas',
         'similar' => 'Modelos parecidos',
+        // the page with a text of ours (catalog:enrich): the facts beside the call to print, the source's text folded under ours
+        'original' => 'Descripción original del autor (:language)',
+        'size' => 'Lado mayor',
+        'size_value' => 'unos :mm mm',
+        'estimate' => 'Estimación de impresión',
+        'estimate_value' => 'unos :grams g de filamento, :time',
+        'price' => 'Precio con nosotros',
+        'price_value' => 'desde :price (:material, 1 ud.)',
+        'price_note' => 'El precio exacto lo da el cálculo una vez subido el archivo.',
     ],
 
     'search' => [

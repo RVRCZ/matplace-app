@@ -6,6 +6,8 @@
     // a tool switched off for the public, opened by an admin (App\Http\Middleware\ToolGate): said on the page, kept out of search engines
     $hiddenTool = request()->attributes->get('hidden_tool');
     $noindex = ! empty($noindex) || $hiddenTool || \App\Support\Locales::noindex() || ! config('seo.indexable', true);
+    // a page that stays reachable but is not for search engines ("noindex, follow": the inspiration catalogue without a text of its own)
+    $robots = $robots ?? null;
     $canonical = $canonical ?? \App\Support\Locales::canonical();
     $alternates = $noindex ? [] : \App\Support\Locales::alternates();
     $ogImage = $ogImage ?? ($toolSeo ? \App\Http\Controllers\OgController::url('tool', str_replace('_', '-', $tool)) : \App\Http\Controllers\OgController::url('site', 'home'));
@@ -27,6 +29,8 @@
     <meta name="twitter:card" content="summary_large_image">
     @if($noindex)
         <meta name="robots" content="noindex, nofollow">
+    @elseif($robots)
+        <meta name="robots" content="{{ $robots }}">
     @elseif($canonical)
         <link rel="canonical" href="{{ $canonical }}">
     @endif

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\CatalogModel;
 use App\Support\Sitemaps;
 use Illuminate\Console\Command;
 
@@ -22,6 +23,10 @@ class BuildSitemap extends Command
             $this->line(sprintf('%-36s %6d', $file, $count));
         }
         $this->info(count($written).' files, '.array_sum($written).' addresses, index at '.url('/sitemap.xml'));
+        // the inspiration catalogue: only pages with something of their own are listed, the rest answer "noindex, follow"
+        $c = $sitemaps->catalogCounts();
+        $this->line(sprintf('Inspiration catalogue: %d indexable of %d shown pages, %d noindex (not listed); the index needs: %s.',
+            $c['indexable'], $c['shown'], $c['shown'] - $c['indexable'], implode(', ', CatalogModel::indexNeeds()) ?: 'nothing'));
 
         return self::SUCCESS;
     }
