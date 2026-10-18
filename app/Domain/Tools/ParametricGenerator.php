@@ -127,6 +127,51 @@ final class ParametricGenerator
         return $choices;
     }
 
+    /**
+     * A tool's presets as the page gets them: a colour given as a list of spools becomes the first one the palette has
+     * (its code, or "name:<words>" = the first spool whose names hold those words); none of them = the tool picks itself.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function presets(string $kind): array
+    {
+        $palette = app(Palette::class);
+        $items = null;
+        $pick = function (array $wanted) use ($palette, &$items): ?string {
+            foreach ($wanted as $code) {
+                if (str_starts_with($code, 'name:')) {
+                    $items ??= $palette->all();
+                    $words = explode(' ', Palette::plain(substr($code, 5)));
+                    foreach ($items as $item) {
+                        if (array_filter($words, fn (string $w) => ! str_contains((string) $item['search'], $w)) === []) {
+                            return $item['code'];
+                        }
+                    }
+                } elseif ($palette->has($code)) {
+                    return $code;
+                }
+            }
+
+            return null;
+        };
+        $out = [];
+        foreach (self::PRESETS[$kind] ?? [] as $name => $values) {
+            foreach ((array) ($values['part_colors'] ?? []) as $part => $color) {
+                if (is_array($color)) {
+                    $code = $pick($color);
+                    if ($code === null) {
+                        unset($values['part_colors'][$part]);
+                    } else {
+                        $values['part_colors'][$part] = $code;
+                    }
+                }
+            }
+            $out[$name] = $values;
+        }
+
+        return $out;
+    }
+
     public static function fontPath(?string $typeface, string $fallback = 'sans'): string
     {
         return base_path((self::FONTS[$typeface ?? ''] ?? self::FONTS[$fallback])[0]);
@@ -153,7 +198,8 @@ final class ParametricGenerator
         // the shape is ours (a gingerbread man, a heart, a star, a tree), the visitor brings the name: no picture, no picture's fields
         'gingerbread' => ['width' => [50, 150, 90, 1], 'thickness' => [2, 6, 3, 0.2], 'relief' => [0.4, 1.2, 0.6, 0.2], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_EYELET,
         // a medal: the eyelet takes a link of the chain (a bar of 4 mm), `links` is how many of them are printed next to it
-        'medallion' => ['width' => [50, 120, 80, 1], 'thickness' => [3, 6, 4, 0.2], 'frame' => [0, 5, 2, 0.1]] + self::SHAPE_FIELDS + ['eye_pos' => [0, 100, 0, 0.5], 'eye_hole' => [5, 8, 6, 0.5], 'eye_wall' => [2, 4, 3, 0.1], 'links' => [0, 40, 20, 1]],
+        // a medal lies face down: no colours stacked on it (relief), its motif `depth` deep in the bottom layers, the eyelet always on top
+        'medallion' => ['width' => [40, 120, 60, 1], 'thickness' => [3, 6, 3, 0.2], 'frame' => [0, 5, 2, 0.1]] + ['colors_n' => [1, 8, 4, 1], 'bg_strength' => [0, 100, 30, 1], 'smooth' => [0, 1, 0.3, 0.05], 'contrast' => [50, 150, 100, 1], 'brightness' => [50, 150, 100, 1], 'saturation' => [0, 200, 100, 1]] + ['depth' => [0.4, 1, 0.6, 0.2], 'eye_hole' => [5, 8, 6, 0.5], 'eye_wall' => [2, 4, 3, 0.1], 'links' => [0, 80, 40, 1]],
         // a charm for a bag with holes: `bag_hole` is the hole of the bag the pin goes through, `bag_wall` how thick the bag is there
         'bag_charm' => ['width' => [30, 80, 45, 1], 'thickness' => [4, 8, 5, 0.2], 'frame' => [0, 3, 1.5, 0.1]] + self::SHAPE_FIELDS + ['bag_hole' => [6, 20, 12, 0.5], 'bag_wall' => [1, 10, 4, 0.5]],
         // held, not hung: a clip for a drinking straw of `straw_d`, and the tongue of a can opener; both sit on the outline at `eye_pos`
@@ -252,7 +298,7 @@ final class ParametricGenerator
         'topper' => ['template' => ['number', 'heart', 'star', 'circle', 'none'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
         'tray' => ['body' => ['image', 'circle'], 'floor' => ['engraved', 'colors', 'plain'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'badge' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script'], 'mount' => ['glue', 'none']],
-        'medallion' => ['body' => ['circle', 'star', 'hex'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'medallion' => ['body' => ['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'photo_organizer' => ['body' => ['image', 'circle'], 'inside' => ['grid', 'holes', 'open']],
         'bag_charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'straw' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -339,7 +385,7 @@ final class ParametricGenerator
     public const MAX_STROKE_POINTS = 48;
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
-        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
+        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['isolate', 'invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'insert' => ['notch'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole', 'hidden'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
@@ -354,7 +400,7 @@ final class ParametricGenerator
         // a shape cut out or standing has no plate: what belongs to the plate shows only with it
         'logo' => ['bevel' => ['mode', ['cutout']], 'shape' => ['mode', ['relief', 'height']], 'plate' => ['mode', ['relief', 'height']], 'margin' => ['mode', ['relief', 'height']], 'base_h' => ['mode', ['standing']]],
         'cookie' => self::HANG_WHEN + self::SHAPE_WHEN, 'name_letter' => self::HANG_WHEN + self::SHAPE_WHEN,
-        'medallion' => self::SHAPE_WHEN, 'bag_charm' => self::SHAPE_WHEN,
+        'medallion' => ['bg_strength' => ['remove_bg', ['on']]], 'bag_charm' => self::SHAPE_WHEN,
         // the clip and the tongue are always there: their place on the outline is not hidden behind a flag
         'straw' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']]], 'opener' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']]],
         // one colour and no picture in the floor: what belongs to the picture's colours never shows ("none" is no value of the choice)
@@ -404,9 +450,19 @@ final class ParametricGenerator
     /** things that hang only when asked to (a biscuit, a big letter): the eyelet's sizes show with the tick */
     private const HANG_WHEN = ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]];
 
+    /** the dark plate of a medal: the farm's black or dark blue, a built-in black without a farm */
+    private const MEDAL_PLATE = ['01_PLA+_cerny', '44_c_MATTE_PLA+_BLACK', 'name:black', 'black'];
+
     private const SHAPE_WHEN = ['bg_strength' => ['remove_bg', ['on']], 'eye_pos' => ['eyelet', ['on']], 'eye_hole' => ['eyelet', ['on']], 'eye_wall' => ['eyelet', ['on']], 'relief' => ['flush', ['off']]];
 
     public const PRESETS = [
+        // a medal for each place: the number in its metal, the plate dark so it shines. A colour is a list of spools, the
+        // first the farm has is taken (presets()); "name:" looks a spool up by its name, a built-in name stands in without a farm
+        'medallion' => [
+            'place1' => ['line1' => '1', 'typeface' => 'archivo', 'part_colors' => ['color_1' => ['39_PLA_Silk_zlata_Silk_Gold', 'name:silk gold', 'yellow'], 'body' => self::MEDAL_PLATE]],
+            'place2' => ['line1' => '2', 'typeface' => 'archivo', 'part_colors' => ['color_1' => ['43_PLA_Silk_stribrna_Silk_Silver', 'name:silk silver', 'grey'], 'body' => self::MEDAL_PLATE]],
+            'place3' => ['line1' => '3', 'typeface' => 'archivo', 'part_colors' => ['color_1' => ['name:marrakech', 'name:marrákeš', '40_PLA_Silk_medena_Silk_Copper', 'name:silk copper', 'orange'], 'body' => self::MEDAL_PLATE]],
+        ],
         // compositions to start from; colours are named, each becomes the farm's nearest spool. The last four are the
         // products of the forms (nameplate, key ring, ornament, big letter), for a visitor who wants to lay them out by hand
         'compose' => [

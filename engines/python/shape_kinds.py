@@ -46,12 +46,13 @@ PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "g
 LIMITS = {
     "width": (10, 250), "height": (6, 250), "wall": (1.2, 3), "thickness": (1.2, 15), "frame": (0, 10), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
-    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 40), "cell": (20, 80), "hole_d": (8, 40), "bag_hole": (6, 20), "bag_wall": (1, 10), "straw_d": (5, 14),
+    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 80), "depth": (0.4, 1.0), "cell": (20, 80), "hole_d": (8, 40), "bag_hole": (6, 20), "bag_wall": (1, 10), "straw_d": (5, 14),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
-          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex"), "photo_organizer": ("image", "circle"), "bag_charm": ("image", "circle", "rect"), "straw": ("image", "circle"), "opener": ("image", "circle", "rect")}
+          "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex", "shield", "octagon", "rosette", "heart"), "photo_organizer": ("image", "circle"), "bag_charm": ("image", "circle", "rect"), "straw": ("image", "circle"), "opener": ("image", "circle", "rect")}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
+LEM = 0.8                   # how high the rim on the back of a medal stands
 GAP = 6.0                   # between the two earrings on the bed
 
 
@@ -92,14 +93,42 @@ def _star(M, R, r):
 
 def _shape(M, body, D):
     """A geometric body centred on the origin and the radius of the circle that fits inside it."""
-    C = M.CrossSection
+    C, J = M.CrossSection, M.JoinType.Round
     if body == "circle":
         return C.circle(D / 2, 160), D / 2
     if body == "hex":
         return C.circle(D / 2, 6).rotate(30), D / 2 * math.cos(math.pi / 6)
+    if body == "octagon":
+        return C.circle(D / 2 / math.cos(math.pi / 8), 8).rotate(22.5), D / 2       # flat on top, as wide as asked across the flats
     if body == "star":
         R, r = D / 2, 0.55 * D / 2
         return _star(M, R, r), R * r * math.sin(math.pi / 5) / math.sqrt(R * R + r * r - 2 * R * r * math.cos(math.pi / 5)) - 0.6
+    if body == "rosette":
+        # a disc with a scalloped edge: eighteen little bumps round it, the picture inside the plain disc
+        s = 0.07 * D
+        base = D / 2 - s
+        bumps = [C.circle(s, 32).translate([base * math.cos(2 * math.pi * i / 18), base * math.sin(2 * math.pi * i / 18)]) for i in range(18)]
+        return C.compose([C.circle(base, 160)] + bumps).offset(0.01, J, 2.0, 16), base - 0.3 * s
+    if body in ("heart", "shield"):
+        if body == "heart":
+            # two lobes and a point, as wide as asked
+            a = 1.0
+            lobe = C.circle(a, 96)
+            tip = C.square([0.02, 0.02]).translate([-0.01, -2.35 * a])
+            shape = (lobe.translate([-0.85 * a, 0]) + tip).hull() + (lobe.translate([0.85 * a, 0]) + tip).hull()
+        else:
+            # flat on top with rounded corners, straight sides to the middle, then curving in to a point
+            pts = [(-1.0, 0.0), (-1.0, 1.0), (1.0, 1.0), (1.0, 0.0)]
+            pts += [(math.cos(0.5 * math.pi * i / 24), -1.3 * math.sin(0.5 * math.pi * i / 24)) for i in range(1, 25)]
+            pts += [(-math.cos(0.5 * math.pi * i / 24), -1.3 * math.sin(0.5 * math.pi * i / 24)) for i in range(24, 0, -1)]
+            shape = C([pts[::-1]]).offset(-0.08, J, 2.0, 24).offset(0.08, J, 2.0, 24)      # counter-clockwise: the points run clockwise
+        x0, y0, x1, y1 = shape.bounds()
+        shape = shape.scale([D / (x1 - x0)] * 2)
+        x0, y0, x1, y1 = shape.bounds()
+        shape = shape.translate([-(x0 + x1) / 2, -(y0 + y1) / 2])
+        # the picture goes where the biggest disc fits: the shape is moved so that its centre is the origin
+        cx, cy, room = _roomiest(M, shape, 1e9)         # asks for more room than there is: the biggest disc, not the middle
+        return shape.translate([-cx, -cy]), room
     return S.rounded_rect(M, D, D, min(8.0, D / 10)).translate([-D / 2, -D / 2]), D / 2     # square
 
 
@@ -186,32 +215,90 @@ def _caption(M, p, layers, info, text, body_kind, fit_d, warn):
 
 
 LINK = (30.0, 18.0, 4.0, 0.4)    # a chain link: long, wide, the bar, and how much narrower than the bar its gap is (it snaps in)
-LINK_ROW = 7                     # links in a row on the bed
+CHAIN_BED = 220.0                # the medal and its chain are one plate of the smallest bed of the farm's printers
+LINK_FLAT = 1.0                  # the flat strip a link stands on, too narrow to see once printed
+LINK_OVERHANG = 45.0             # the steepest the underside of a link leans out, from the vertical: prints without supports
+LINK_SLICES = 16                 # points up each side of the round bar's profile
 
 
-def _chain(M, count, tall, medal_w, medal_h):
+def _link_profile(bar):
     """
-    Open links of a chain: an oval ring with a gap in the middle of one long side, where a chain under load does not
-    pull. As tall as the medal's plate, so they are printed in its one filament. They are laid round a medal whose
-    corner is at the origin: first beside it, as high as it reaches, then in rows above it, never wider than a row of
-    seven, so the whole plate fits a bed of 250 mm. Returns (solid, width and depth of the plate with the medal) or None.
+    The bar of a link seen across: a circle of `bar` whose underside is cut by two straight slopes LINK_OVERHANG from
+    the vertical, down to a flat LINK_FLAT wide on the bed (a round bar would start in mid-air). Returns (height,
+    the half-width at a height, the height of the circle's centre).
     """
-    C, J = M.CrossSection, M.JoinType.Round
+    r, a = bar / 2, math.radians(LINK_OVERHANG)
+    tx, tz = r * math.cos(a), -r * math.sin(a)               # where the slope leaves the circle, from its centre
+    drop = (tx - LINK_FLAT / 2) / math.tan(a)                # how far the slope runs down to the flat
+    centre = -tz + drop
+    height = centre + r
+
+    def half(z):
+        if z <= drop:
+            return LINK_FLAT / 2 + z * math.tan(a)
+        dz = z - centre
+        return math.sqrt(max(r * r - dz * dz, 0.0))
+
+    return height, half, centre
+
+
+def _link(M):
+    """
+    One open link: an oval ring with a gap in the middle of one long side, where a chain under load does not pull. The
+    bar is round (_link_profile): soft in the hand, and it prints lying on the bed without supports. The gap is
+    narrower than the bar by `snap`, so the neighbour, pushed through, clicks in and stays.
+    """
+    import numpy as np
+    C = M.CrossSection
     long, wide, bar, snap = LINK
-    gap = min(bar, tall) - snap                              # the neighbour goes through by its thinner side
-    oval = (C.circle(wide / 2, 64).translate([wide / 2, wide / 2]) + C.circle(wide / 2, 64).translate([long - wide / 2, wide / 2])).hull()
-    link = oval - oval.offset(-bar, J, 2.0, 32) - C.square([gap, bar + 2]).translate([long / 2 - gap / 2, wide - bar - 1])
+    gap = bar - snap
+    height, half, _ = _link_profile(bar)
+    mid = wide / 2 - bar / 2                                 # the radius of the line the bar runs along, at the round ends
+    zs = [height * i / LINK_SLICES for i in range(LINK_SLICES + 1)]
+    right = [(half(z), z) for z in zs]
+    profile = [(x, z) for x, z in right] + [(-x, z) for x, z in reversed(right)]
+    # the round ends: the profile turned half a circle round the end's centre
+    ring = C([[(mid + x, z) for x, z in profile]])
+    end = M.Manifold.revolve(ring, 24, 180.0)
+    ends = end.rotate([0, 0, -90]).translate([long - wide / 2, wide / 2, 0]) + end.rotate([0, 0, 90]).translate([wide / 2, wide / 2, 0])
+    # the straight sides: the profile drawn out along x
+    side = C([profile]).extrude(long - wide + 0.02)
+    to_x = np.array([[0.0, 0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0]])
+    sides = [side.transform(to_x).translate([wide / 2 - 0.01, wide / 2 + s * mid, 0]) for s in (-1, 1)]
+    link = _fused(M, [ends] + sides)
+    cut = M.Manifold.cube([gap, bar + 2, height + 2]).translate([long / 2 - gap / 2, wide - bar - 1, -1])
+    return link - cut
+
+
+def _fused(M, solids):
+    """Overlapping solids as one (compose only lays disjoint ones side by side)."""
+    out = solids[0]
+    for s in solids[1:]:
+        out = out + s
+    return out
+
+
+def _chain(M, count, medal_w, medal_h):
+    """
+    The links laid round a medal whose corner is at the origin: first beside it, as high as it reaches, then in rows
+    above it, all inside a bed of CHAIN_BED. Links that do not fit are left out (the tool says how many fit).
+    Returns (solid, width and depth of the plate with the medal, how many links are on it) or None.
+    """
+    long, wide, _, _ = LINK
     if count < 1:
         return None
-    one = link.extrude(tall)
+    one = _link(M)
     step_x, step_y = long + 3.0, wide + 3.0
-    widest = LINK_ROW * step_x - 3.0
-    beside = (max(0, int((widest - medal_w - 4.0 + 3.0) // step_x)), max(0, int((medal_h + 3.0) // step_y)))      # columns, rows next to the medal
+    row = int((CHAIN_BED + 3.0) // step_x)
+    beside = (max(0, int((CHAIN_BED - medal_w - 4.0 + 3.0) // step_x)), max(0, int((medal_h + 3.0) // step_y)))      # columns, rows next to the medal
     spots = [(medal_w + 4.0 + c * step_x, r * step_y) for r in range(beside[1]) for c in range(beside[0])]
-    spots += [((i % LINK_ROW) * step_x, medal_h + 4.0 + (i // LINK_ROW) * step_y) for i in range(max(0, count - len(spots)))]
+    above = max(0, int((CHAIN_BED - medal_h - 4.0 - wide) // step_y) + 1)
+    spots += [((i % row) * step_x, medal_h + 4.0 + (i // row) * step_y) for i in range(above * row)]
     spots = spots[:count]
+    if not spots:
+        return None
     return (M.Manifold.compose([one.translate([x, y, 0]) for x, y in spots]),
-            max([medal_w] + [x + long for x, _ in spots]), max([medal_h] + [y + wide for _, y in spots]))
+            max([medal_w] + [x + long for x, _ in spots]), max([medal_h] + [y + wide for _, y in spots]), len(spots))
 
 
 INSIDES = ("grid", "holes", "open")
@@ -318,7 +405,12 @@ def build(M, Invalid, p, product):
         if floor_mode not in ("engraved", "colors", "plain"):
             raise Invalid("bad_choice", "floor")
         flush, rim, bevel = floor_mode == "colors", False, False       # colours of a floor can only be inlaid: the walls stand in the same layers
-    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread", "medallion")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter"))
+    # a medal lies face down: its motif is the bottom layers, smooth from the bed, in its own colour beside the plate's
+    # (two filaments in the same layers: printed by parts, never a change by height); the eyelet always on top of it
+    face_down = product == "medallion"
+    if face_down:
+        flush, rim, bevel = False, False, False
+    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter")) or face_down
     biscuit = product == "cookie"                             # a picture or a silhouette as dough, icing piped on it by hand
     cookie = product in ("gingerbread", "name_letter", "topper")      # the shape is ours, the visitor brings the name
     warn = []
@@ -360,7 +452,8 @@ def build(M, Invalid, p, product):
             art = S.fit(art, width_mm=w0 * k)
             pal = options["palette"]
             first = options["assign"].get("1")
-            code = first or (min(pal, key=lambda f: _light(f[1]))[0] if pal else "")
+            # letters dark on a light plate; a medal the other way round, its number shines on a dark plate
+            code = first or ((max if face_down else min)(pal, key=lambda f: _light(f[1]))[0] if pal else "")
             hx = dict((c, h) for c, h in pal).get(code, "#222222")
             layers = [{"index": 1, "rgb": hx, "code": code, "hex": hx, "share": 1.0, "own": art, "stack": art}]
             info = {"source": "text", "silhouette": art, "size": list(S.size(art)), "found": 1, "wanted": 1, "background": "alpha", "missing_chars": tinfo.get("missing_chars", [])}
@@ -450,12 +543,19 @@ def build(M, Invalid, p, product):
     notes = {}
     hole2d = None
     ring_out = None
+    medal2d = body2d                                         # the medal without its eyelet: its rim follows this
     if eyelet:
         hole_d, wall = n("eye_hole", 3), n("eye_wall", 2)
         travel = S.dense(S.outer_ring(body2d))
         if cookie and info.get("top"):
             travel = S.started(travel, info["top"])
-        px, py, nx, ny = S.along(travel, n("eye_pos", 0) / 100.0)
+        if face_down:
+            # straight above the middle, where the outline is highest there: a medal hangs straight
+            bx0, by0, bx1, by1 = body2d.bounds()
+            mid = (bx0 + bx1) / 2
+            px, py, nx, ny = mid, (body2d ^ C.square([0.4, by1 - by0 + 2]).translate([mid - 0.2, by0 - 1])).bounds()[3], 0.0, 1.0
+        else:
+            px, py, nx, ny = S.along(travel, n("eye_pos", 0) / 100.0)
         reach = hole_d / 2 + wall / 2                        # the hole stays outside the shape, half the wall bites into it
         cx, cy = px + nx * reach, py + ny * reach
         ring_out = C.circle(hole_d / 2 + wall, 64).translate([cx, cy])
@@ -495,6 +595,12 @@ def build(M, Invalid, p, product):
     if hole2d is not None:
         for layer in layers:
             layer["own"], layer["stack"] = layer["own"] - hole2d, layer["stack"] - hole2d
+    if face_down:
+        # the motif is seen from below once the medal is turned over: mirrored left to right, a number reads right
+        mx0, _, mx1, _ = body2d.bounds()
+        for layer in layers:
+            layer["own"] = layer["own"].scale([-1.0, 1.0]).translate([mx0 + mx1, 0])
+            layer["stack"] = layer["stack"].scale([-1.0, 1.0]).translate([mx0 + mx1, 0])
 
     # ── heights ─────────────────────────────────────────────────────────────────────────────────────────────────
     pocketed = product in ("magnet", "badge")                # a pocket in the back: for a magnet, or for the sticky dot of a badge reel
@@ -508,7 +614,11 @@ def build(M, Invalid, p, product):
     if mount in ("glue", "press") and t < mag_h + 0.8:
         t = round(mag_h + 0.8, 2)                             # a floor of four layers over the magnet
         notes["thickened"] = t
-    if flush:
+    depth = n("depth", 0.6)
+    if face_down:
+        top = t
+        solids = [(layer, layer["own"].extrude(depth)) for layer in layers]
+    elif flush:
         top = t
         solids = [(layer, layer["own"].extrude(INLAY).translate([0, 0, t - INLAY])) for layer in layers]
     else:
@@ -521,11 +631,20 @@ def build(M, Invalid, p, product):
         for i in range(4):
             body = body + plate2d.offset(-c * (i + 1) / 4, J, 2.0, 16).extrude(c / 4 + 0.01).translate([0, 0, t - c + c * i / 4 - 0.01])
     whole = body
-    if flush:
+    if flush or face_down:
         pocket = None
         for layer, _ in solids:
             pocket = layer["own"] if pocket is None else pocket + layer["own"]
-        body = body - pocket.extrude(INLAY + 1).translate([0, 0, t - INLAY])
+        if pocket is not None:
+            body = body - (pocket.extrude(depth + 1).translate([0, 0, -1]) if face_down else pocket.extrude(INLAY + 1).translate([0, 0, t - INLAY]))
+    if face_down:
+        # a rim 2 mm wide on the back (the top of the print) frames the medal; it is the plate's, no filament of its own
+        lem2d = medal2d - medal2d.offset(-2.0, J, 2.0, 32)
+        if ring_out is not None:
+            lem2d = lem2d - ring_out.offset(0.01, J, 2.0, 24)
+        if not lem2d.is_empty():
+            lem = lem2d.extrude(LEM + 0.01).translate([0, 0, t - 0.01])
+            body, whole, top = body + lem, whole + lem, t + LEM
     if dish:
         rise = n("height", 15)
         if rise < t + 3:
@@ -584,18 +703,24 @@ def build(M, Invalid, p, product):
     if product == "medallion":
         # the links lie round the medal on the bed and belong to its plate: one part, one filament
         bx0, by0, bx1, by1 = body2d.bounds()
-        chain = _chain(M, int(n("links", 20)), t, bx1 - bx0, by1 - by0)
+        asked = int(n("links", 40))
+        chain = _chain(M, asked, bx1 - bx0, by1 - by0)
         if chain is not None:
             links = chain[0].translate([bx0, by0, 0])
             body, whole = body + links, whole + links
-            notes["chain"] = {"links": int(n("links", 20)), "length": round(int(n("links", 20)) * (LINK[0] - 2 * LINK[2]) / 10.0) * 10}
+            h, _, c = _link_profile(LINK[2])
+            notes["chain"] = {"links": chain[3], "length": round(chain[3] * (LINK[0] - 2 * LINK[2]) / 10.0) * 10,
+                              "profile": {"height": round(h, 2), "flat": LINK_FLAT, "overhang": LINK_OVERHANG}}
+            if chain[3] < asked:
+                notes["chain"]["asked"] = asked
+                warn.append("links_cut")
 
     if grip is not None:
         body, whole = body + grip, whole + grip
         solids = [(layer, s - grip) for layer, s in solids]      # where the clip stands, the colours give way to it
     beside = None                                            # what lies on the bed next to the product: the plate's width, depth, and its own height
     if chain is not None:
-        beside = (chain[1], chain[2], 0.0)
+        beside = (chain[1], chain[2], _link_profile(LINK[2])[0])
     if biscuit and bool(p.get("tray", False)):
         # a little tray to show the biscuit on: its outline with a millimetre of air, a rim 2 mm wide, a floor of 1.6 mm.
         # Lower than the biscuit is thick, so no change of filament for the icing reaches it.
@@ -637,8 +762,8 @@ def build(M, Invalid, p, product):
         spools = sorted(p.get("palette") or [], key=lambda f: -_light(f[1]))
         body_color = own or dish_color or ((spools[0][0], spools[0][1]) if spools else ("", "#ede6d6"))
     elif is_text:
-        pal = sorted(p.get("palette") or [], key=lambda f: -_light(f[1]))
-        body_color = own or ((pal[0][0], pal[0][1]) if pal else ("", "#ede6d6"))       # letters dark, the plate light
+        pal = sorted(p.get("palette") or [], key=lambda f: _light(f[1]) if face_down else -_light(f[1]))
+        body_color = own or ((pal[0][0], pal[0][1]) if pal else ("", "#2b2b2e" if face_down else "#ede6d6"))       # letters dark, the plate light; a medal the other way round
     else:
         # the plate is the picture's lowest colour unless the visitor gives it its own: no filament is changed for it,
         # so a picture of two colours is one change, which is what the farm prints today
@@ -682,19 +807,23 @@ def build(M, Invalid, p, product):
         paint["rim"] = rim_color[1]
     # the one solid the price and a one-colour print are made from: everything fused, a hair of overlap between the layers
     fused = whole
-    if not flush:
+    if not flush and not face_down:
         for i, (layer, solid) in enumerate(solids):
             fused = fused + layer["stack"].extrude(step + 0.01).translate([0, 0, t + i * step - 0.01])
     if has_rim:
         fused = fused + rim_solid.translate([0, 0, -0.01])
     parts["all"] = laid(fused)
     parts["_pieces"] = {"all": pieces}
+    if face_down:
+        # the preview shows the medal as it is worn: turned over, its face up and the number reading right
+        parts["use"] = parts["all"].rotate([0, 180, 0])
+        parts["_pieces"]["use"] = [(name, solid.rotate([0, 180, 0])) for name, solid in pieces]
 
     # ── what the print needs ───────────────────────────────────────────────────────────────────────────────────
     # the print from the bed up, band by band: which filaments each band of layers holds. One filament in every band =
     # the colours can be changed by height; two in one band = only a printer that changes filament by itself
-    bands = [(0.0, "body", [body_color] + ([(c["code"], c["hex"]) for c in listed] if flush else []))]
-    if flush:
+    bands = [(0.0, "body", [body_color] + ([(c["code"], c["hex"]) for c in listed] if flush or face_down else []))]
+    if flush or face_down:
         if has_rim:
             bands.append((t, "rim", [rim_color]))
     else:

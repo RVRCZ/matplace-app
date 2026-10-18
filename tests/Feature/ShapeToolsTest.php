@@ -518,39 +518,97 @@ class ShapeToolsTest extends TestCase
         $this->assertArrayNotHasKey('caption', $this->meta($this->preview('charm', ['artwork' => 'lib:colour/smiling-star', 'line1' => 'Jana', 'width' => 40])->assertOk())['notes']);
     }
 
-    public function test_a_medal_brings_the_links_of_its_chain_in_its_own_filament(): void
+    /** The x of the middle of an STL's surface (binary STL, every triangle weighed by its area), and its lowest and highest x. */
+    private static function middleX(string $stl): array
     {
-        $star = ['artwork' => 'lib:colour/smiling-star', 'width' => 80, 'thickness' => 4];
-        $bare = $this->meta($this->preview('medallion', $star + ['links' => 0], 'all', true)->assertOk());
-        $chained = $this->meta($this->preview('medallion', $star + ['links' => 20], 'all', true)->assertOk());
-        // a round plate as wide as asked with an eyelet on top; without links it is the whole plate
-        $this->assertEqualsWithDelta(80, $bare['bbox']['x'], 0.1);
-        $this->assertGreaterThan(85, $bare['bbox']['y']);
-        $this->assertArrayNotHasKey('chain', $bare['notes']);
-        $this->assertSame($bare['notes']['outer'], $bare['notes']['each']);
-        // twenty links: each an open oval of 30 x 18 with a bar of 4, as tall as the plate; 22 mm of chain apiece
-        $link = (M_PI * 9 * 9 + 12 * 18 - (M_PI * 5 * 5 + 12 * 10) - 3.6 * 4) * 4;
-        $this->assertEqualsWithDelta(20 * $link, $chained['volume_mm3'] - $bare['volume_mm3'], 0.02 * 20 * $link);
-        $this->assertSame(['links' => 20, 'length' => 440], $chained['notes']['chain']);
-        // they belong to the plate: the same parts, filaments and changes, and nothing taller than the medal
-        $this->assertSame($bare['notes']['parts'], $chained['notes']['parts']);
-        $this->assertSame($bare['notes']['filaments'], $chained['notes']['filaments']);
-        $this->assertSame($bare['notes']['color_changes'], $chained['notes']['color_changes']);
-        $this->assertSame($bare['bbox']['z'], $chained['bbox']['z']);
-        $this->assertSame($bare['notes']['each'], $chained['notes']['each']);
-        // the medal keeps its corner of the bed (the eyelet is dragged where it was), the links lie beside and above it
-        $this->assertSame($bare['notes']['eyelet'], $chained['notes']['eyelet']);
-        $this->assertGreaterThan($bare['bbox']['x'] + 30, $chained['bbox']['x']);
-        // the biggest medal with the longest chain is still one plate of a 250 mm bed
-        $most = $this->meta($this->preview('medallion', ['artwork' => 'lib:colour/smiling-star', 'width' => 120, 'links' => 40])->assertOk());
-        $this->assertLessThanOrEqual(240, max($most['bbox']['x'], $most['bbox']['y']));
-        $this->assertSame(880, $most['notes']['chain']['length']);
-        // a number in a star: letters dark on a light plate, one change, links in the plate's filament
-        $first = $this->meta($this->preview('medallion', ['line1' => '1', 'body' => 'star', 'width' => 70, 'links' => 4])->assertOk());
+        $n = unpack('V', substr($stl, 80, 4))[1];
+        $sum = $weight = 0.0;
+        $lo = INF;
+        $hi = -INF;
+        for ($i = 0; $i < $n; $i++) {
+            $v = array_values(unpack('f12', substr($stl, 84 + 50 * $i, 48)));
+            [$ax, $ay, $az, $bx, $by, $bz, $cx, $cy, $cz] = array_slice($v, 3);
+            $area = sqrt((($by - $ay) * ($cz - $az) - ($bz - $az) * ($cy - $ay)) ** 2 + (($bz - $az) * ($cx - $ax) - ($bx - $ax) * ($cz - $az)) ** 2 + (($bx - $ax) * ($cy - $ay) - ($by - $ay) * ($cx - $ax)) ** 2) / 2;
+            $sum += $area * ($ax + $bx + $cx) / 3;
+            $weight += $area;
+            $lo = min($lo, $ax, $bx, $cx);
+            $hi = max($hi, $ax, $bx, $cx);
+        }
+
+        return [$sum / max($weight, 1e-9), $lo, $hi];
+    }
+
+    public function test_a_medal_lies_face_down_with_its_motif_smooth_on_the_bed_and_a_round_chain_beside_it(): void
+    {
+        $one = ['line1' => '1', 'typeface' => 'archivo'];
+        // what the tool starts with: 60 mm and forty links, all of it one plate of a 220 mm bed
+        $first = $this->meta($this->preview('medallion', $one, 'all', true)->assertOk());
+        $this->assertSame(['links' => 40, 'length' => 880, 'profile' => ['height' => 4.33, 'flat' => 1, 'overhang' => 45]], $first['notes']['chain']);
+        $this->assertLessThanOrEqual(220, max($first['bbox']['x'], $first['bbox']['y']));
+        $this->assertSame([], $first['notes']['warnings']);
+
+        // the number is its own part in the bottom three layers, beside the plate in the same layers: printed by parts,
+        // never a change of filament by height
+        $parts = collect($first['parts'])->keyBy('name');
+        $this->assertSame(['body', 'color_1'], $first['notes']['parts']);
+        $this->assertEqualsWithDelta(0.0, $parts['color_1']['bbox'][2], 0.001, 'the motif lies on the bed');
+        $this->assertEqualsWithDelta(0.6, $parts['color_1']['bbox'][5], 0.001, 'three layers of 0.2 mm');
+        $this->assertEqualsWithDelta(0.0, $parts['body']['bbox'][2], 0.001);
+        $this->assertTrue($first['notes']['multi_material']);
+        $this->assertSame([], $first['notes']['color_changes']);
         $this->assertSame(2, $first['notes']['filaments']);
-        $this->assertCount(1, $first['notes']['color_changes']);
-        $this->preview('medallion', $star + ['links' => 41])->assertStatus(422);
-        $this->get('/tools/medallion')->assertOk()->assertSee('data-param="links"', false);
+        // a dark plate, a light number (here the built-in colours: no farm in this test)
+        $this->assertGreaterThan(Palette::lab($first['notes']['body_color']['hex'])[0] + 40, Palette::lab($first['notes']['colors'][0]['hex'])[0]);
+        $deeper = $this->meta($this->preview('medallion', $one + ['depth' => 1, 'links' => 0], 'all', true)->assertOk());
+        $this->assertEqualsWithDelta(1.0, collect($deeper['parts'])->firstWhere('name', 'color_1')['bbox'][5], 0.001);
+
+        // mirrored: an L seen from above has its stem on the right, so turned over it reads right
+        $plate = $this->meta($this->preview('medallion', ['line1' => 'L', 'links' => 0])->assertOk());
+        $letter = $this->preview('medallion', ['line1' => 'L', 'links' => 0], 'color_1')->assertOk();
+        [$mid, $lo, $hi] = self::middleX($letter->streamedContent() ?: $letter->getContent());
+        $this->assertGreaterThan(($lo + $hi) / 2 + 2, $mid, 'the stem of the L lies right of its middle');
+
+        // the eyelet on top, on the axis; a rim on the back: 0.8 mm over the plate of 3 mm
+        $this->assertEqualsWithDelta($plate['bbox']['x'] / 2, $plate['notes']['eyelet']['x'], 0.1);
+        $this->assertEqualsWithDelta(3.8, $plate['bbox']['z'], 0.01);
+
+        // the links: round bars on a flat of 1 mm, as tall as the round bar needs, 838 mm³ each
+        $bare = $this->meta($this->preview('medallion', $one + ['links' => 0])->assertOk());
+        $this->assertEqualsWithDelta(40 * 838.3, $first['volume_mm3'] - $bare['volume_mm3'], 40 * 8);
+        $this->assertEqualsWithDelta(4.33, $first['bbox']['z'], 0.01, 'the links stand a little over the medal');
+
+        // seven shapes, each one closed solid on the bed with the eyelet on its axis
+        foreach (['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'] as $body) {
+            $m = $this->meta($this->preview('medallion', ['line1' => '2', 'body' => $body, 'links' => 0], 'all', true)->assertOk());
+            $this->assertEqualsWithDelta($body === 'hex' ? 60 * cos(M_PI / 6) : 60, $m['bbox']['x'], 0.6, $body);      // a hexagon is 60 mm across its corners
+            $this->assertEqualsWithDelta($m['bbox']['x'] / 2, $m['notes']['eyelet']['x'], 0.6, $body);
+            $this->assertSame(['body', 'color_1'], $m['notes']['parts'], $body);
+            foreach ($m['parts'] as $piece) {
+                $this->assertEqualsWithDelta(0.0, $piece['bbox'][2], 0.001, $body.' '.$piece['name']);
+            }
+        }
+
+        // more links than fit one bed: as many as fit, and the tool says so
+        $long = $this->meta($this->preview('medallion', $one + ['links' => 80])->assertOk());
+        $this->assertSame(54, $long['notes']['chain']['links']);
+        $this->assertSame(80, $long['notes']['chain']['asked']);
+        $this->assertContains('links_cut', $long['notes']['warnings']);
+        $this->assertLessThanOrEqual(220, max($long['bbox']['x'], $long['bbox']['y']));
+        // the biggest medal with forty links is still one plate of 220 mm
+        $big = $this->meta($this->preview('medallion', $one + ['width' => 120])->assertOk());
+        $this->assertSame(40, $big['notes']['chain']['links']);
+        $this->assertLessThanOrEqual(220, max($big['bbox']['x'], $big['bbox']['y']));
+
+        // a picture in colours lies face down the same way: every colour its own part in the bottom layers
+        $star = $this->meta($this->preview('medallion', ['artwork' => 'lib:colour/smiling-star', 'links' => 0], 'all', true)->assertOk());
+        $this->assertGreaterThan(2, count($star['notes']['parts']));
+        foreach ($star['parts'] as $piece) {
+            if ($piece['name'] !== 'body') {
+                $this->assertLessThanOrEqual(0.601, $piece['bbox'][5], $piece['name']);
+            }
+        }
+        $this->preview('medallion', $one + ['links' => 81])->assertStatus(422);
+        $this->get('/tools/medallion')->assertOk()->assertSee('data-param="links"', false)->assertSee('data-preset="place1"', false);
     }
 
     public function test_an_organizer_is_a_tall_dish_with_compartments_or_round_holes(): void

@@ -1,0 +1,47 @@
+{
+    "param.preset.place1": [
+        "1. místo",
+        "1st place",
+        "1.er puesto"
+    ],
+    "param.preset.place2": [
+        "2. místo",
+        "2nd place",
+        "2.º puesto"
+    ],
+    "param.preset.place3": [
+        "3. místo",
+        "3rd place",
+        "3.er puesto"
+    ],
+    "param.o.shape.shield": [
+        "Štít",
+        "Shield",
+        "Escudo"
+    ],
+    "param.o.shape.octagon": [
+        "Osmiúhelník",
+        "Octagon",
+        "Octógono"
+    ],
+    "param.o.shape.rosette": [
+        "Rozeta",
+        "Rosette",
+        "Roseta"
+    ],
+    "param.o.shape.heart": [
+        "Srdce",
+        "Heart",
+        "Corazón"
+    ],
+    "param.f.medallion.depth": [
+        "Hloubka motivu",
+        "Depth of the motif",
+        "Profundidad del motivo"
+    ],
+    "param.shape.warn.links_cut": [
+        "Na jednu podložku 220 × 220 mm se všechny články nevejdou. Vytiskne se jich tolik, kolik ukazuje počet u řetězu. Na delší řetěz zmenšete medaili, nebo objednejte druhou medaili se zbývajícími články.",
+        "Not all the links fit one bed of 220 × 220 mm. As many are printed as the count by the chain says. For a longer chain make the medal smaller, or order a second medal with the links that are missing.",
+        "No caben todos los eslabones en una cama de 220 × 220 mm. Se imprimen tantos como indica el número junto a la cadena. Para una cadena más larga, reduzca la medalla o pida una segunda medalla con los eslabones que faltan."
+    ]
+}

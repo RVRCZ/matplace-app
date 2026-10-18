@@ -62,7 +62,7 @@ final class ToolSeo
     /** The parameters an example is drawn from: the named preset with the example's own values on top. */
     public static function exampleParams(string $tool, array $example): array
     {
-        $preset = isset($example['preset']) ? (array) (ParametricGenerator::PRESETS[$tool][$example['preset']] ?? []) : [];
+        $preset = isset($example['preset']) ? (array) (ParametricGenerator::presets($tool)[$example['preset']] ?? []) : [];
 
         return (array) ($example['params'] ?? []) + $preset;
     }

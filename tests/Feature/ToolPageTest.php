@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\Palette;
 use App\Domain\Tools\ParametricGenerator;
 use App\Domain\Tools\ReliefGenerator;
 use App\Domain\Tools\ToolInput;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Api\GenerationController;
 use App\Models\User;
 use App\Support\PreviewMeta;
 use App\Support\WarningTexts;
+use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Lang;
@@ -243,7 +245,7 @@ class ToolPageTest extends TestCase
                 continue;                                   // opens empty and waits for the visitor's picture (the drawer insert)
             }
             $given = $texts + ($sample ? ['artwork' => $sample] : []) + ($kind === 'papel' ? ['border_mm' => 20] : []);       // the panel opens as a cut-out
-            $presets = ParametricGenerator::PRESETS[$kind] ?? [];
+            $presets = ParametricGenerator::presets($kind);      // as the page gets them: colours resolved to spools
             $states[$key] = [$kind, ($presets[$route->defaults['preset'] ?? ''] ?? []) + $given];
             foreach ($presets as $name => $preset) {
                 $states[$key.' · '.$name] = [$kind, $preset + $given];
@@ -310,6 +312,33 @@ class ToolPageTest extends TestCase
             }
         }
         $this->assertSame([], $keys, 'pages that hand their script keys without a text');
+    }
+
+    public function test_the_medal_opens_at_first_place_and_offers_the_three_places(): void
+    {
+        // without the farm the places take the built-in colours: yellow, grey and orange numbers on a black plate
+        $built = ParametricGenerator::presets('medallion');
+        $this->assertSame(['place1', 'place2', 'place3'], array_keys($built));
+        $this->assertSame(['1', '2', '3'], array_column($built, 'line1'));
+        $this->assertSame(['yellow', 'grey', 'orange'], array_map(fn ($p) => $p['part_colors']['color_1'], array_values($built)));
+        $this->assertSame('black', $built['place1']['part_colors']['body']);
+
+        // with the farm's catalogue: gold, silver and copper Silk (no Marrakech bronze in the catalogue yet) on black PLA+
+        $this->seed(FarmSeeder::class);
+        app()->forgetInstance(Palette::class);
+        $farm = ParametricGenerator::presets('medallion');
+        $this->assertSame(['39_PLA_Silk_zlata_Silk_Gold', '43_PLA_Silk_stribrna_Silk_Silver', '40_PLA_Silk_medena_Silk_Copper'], array_map(fn ($p) => $p['part_colors']['color_1'], array_values($farm)));
+        $this->assertSame('01_PLA+_cerny', $farm['place3']['part_colors']['body']);
+
+        foreach (['cs' => ['1. místo', '2. místo', '3. místo', 'Štít', 'Rozeta'], 'en' => ['1st place', '2nd place', '3rd place', 'Shield', 'Rosette'], 'es' => ['1.er puesto', '2.º puesto', '3.er puesto', 'Escudo', 'Roseta']] as $lang => $words) {
+            $page = $this->get($this->localized('/tools/medallion', $lang))->assertOk();
+            foreach ($words as $word) {
+                $page->assertSee($word);
+            }
+            $page->assertSee('data-preset="place1"', false)->assertSee('data-preset="place3"', false);
+            $this->assertStringContainsString('39_PLA_Silk_zlata_Silk_Gold', $page->getContent(), 'the page hands its script the farm\'s spool');
+            $this->assertDoesNotMatchRegularExpression('/>\s*(param|tools)\.[a-z_.0-9]+\s*</', $page->getContent(), $lang);
+        }
     }
 
     public function test_the_parametric_page_keeps_its_fields_and_adds_sliders_units_and_colours(): void

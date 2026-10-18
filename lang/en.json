@@ -1781,5 +1781,14 @@
     "auth.guard.turnstile": "Please complete the check under the form and send it again.",
     "site.examples.item.qr": "QR sign with a stand, :size",
     "site.examples.item.organizer": "Drawer organiser, :size",
-    "site.examples.item.box": "Box with a lid, :size"
+    "site.examples.item.box": "Box with a lid, :size",
+    "param.preset.place1": "1st place",
+    "param.preset.place2": "2nd place",
+    "param.preset.place3": "3rd place",
+    "param.o.shape.shield": "Shield",
+    "param.o.shape.octagon": "Octagon",
+    "param.o.shape.rosette": "Rosette",
+    "param.o.shape.heart": "Heart",
+    "param.f.medallion.depth": "Depth of the motif",
+    "param.shape.warn.links_cut": "Not all the links fit one bed of 220 × 220 mm. As many are printed as the count by the chain says. For a longer chain make the medal smaller, or order a second medal with the links that are missing."
 }

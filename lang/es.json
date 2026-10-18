@@ -1781,5 +1781,14 @@
     "auth.guard.turnstile": "Complete la verificación bajo el formulario y envíelo de nuevo.",
     "site.examples.item.qr": "Cartel QR con soporte, :size",
     "site.examples.item.organizer": "Organizador de cajón, :size",
-    "site.examples.item.box": "Caja con tapa, :size"
+    "site.examples.item.box": "Caja con tapa, :size",
+    "param.preset.place1": "1.er puesto",
+    "param.preset.place2": "2.º puesto",
+    "param.preset.place3": "3.er puesto",
+    "param.o.shape.shield": "Escudo",
+    "param.o.shape.octagon": "Octógono",
+    "param.o.shape.rosette": "Roseta",
+    "param.o.shape.heart": "Corazón",
+    "param.f.medallion.depth": "Profundidad del motivo",
+    "param.shape.warn.links_cut": "No caben todos los eslabones en una cama de 220 × 220 mm. Se imprimen tantos como indica el número junto a la cadena. Para una cadena más larga, reduzca la medalla o pida una segunda medalla con los eslabones que faltan."
 }
