@@ -381,3 +381,111 @@ přijatý projde, nedostupný Cloudflare projde; příkaz: `--dry-run`, bez `--f
 `--force` smaže jen dva roboty, `--days` platí; admin: počet na tlačítku, bez potvrzení nic, zákazník nic, admin smaže.
 Dál `AccountsTest`, `AdminUsersTest`, `SeoTest`, `AdminContentTest` (registrace v testech posílají razítko
 `registerStamp()` z `tests/TestCase.php`): 54 testů OK, `pint` čistý. JS se neměnil (`build` netřeba).
+
+## 11. Vstupní stránky a Core Web Vitals (18. 10. 2026)
+
+Zadání `docs/prompts/vstupni-stranky.md` (TODO #24–27, audit SEO). Větev `feature/landing-pages` z `main` 874ce6c.
+Šest stránek: hlavní (kalkulace, nástroj `calc`), busta `/tools/figure`, mazlíček `/tools/pet-figurine`, QR cedulka,
+organizér, krabička. Logiku nástrojů, kalkulaci, farmu ani platby jsem neměnil.
+
+### 11.1 Bloky pod nástrojem
+
+Šablona `tools/_landing.blade.php`, vložená do stávajícího `tools/_content.blade.php` (obsah pod nástrojem, kde už je
+úvod, postup a časté otázky). Texty `lang/{cs,en,es}/landing.php`, vazby `config/landing.php` (vlastní soubor místo
+šesti dlouhých řádků v `config/tools.php`), logika `App\Support\LandingPage`.
+
+- **Takhle to dopadlo**: příklady s fotkou, rozměry, materiálem, hmotností, dobou tisku, cenou a odkazem na kalkulaci.
+  Blok `calculator/_examples` (z audit-rest) teď umí jen jeden nástroj. Ukáže se jen s `SITE_EXAMPLES=true`, do té
+  doby nikde. Čísla jsou z matplace.com: busta 80/120/150 mm 99/130/200 Kč (AG.md), a nově výchozí modely nástrojů
+  změřené 18. 10. (skript, cesta `price-<nástroj>`, kalkulace bez objednávky): **QR cedulka** 70 × 83 × 3 mm, 14 g,
+  25 min, 99 Kč (`/c/lomf0wzlshw4`); **organizér** 200 × 120 × 40 mm (3 × 2), 115 g, 2 h 27 min, 250 Kč
+  (`/c/l1gr0izblzwr`); **krabička** 84 × 54 × 32 mm, 28 g, 34 min, 99 Kč (`/c/nku29wz4vieb`). Vše PLA+, 1 kus, bez
+  dopravy. Mazlíček čísla nemá (generování stojí kredity).
+- **Než objednáte**: 5–7 otázek na stránku ve třech jazycích (doba tisku a doručení, doprava, materiál a barva,
+  přesnost a míry, co když se nelíbí nebo nesedí, účet, stažení, poškozený model, čitelnost a velikost QR, počet kusů).
+  Nové otázky neopakují ty, které stránka už má v Častých otázkách. **Otázky o tisku u nás** (doba doručení,
+  doprava, kusy, cena, reklamace) mají příznak `farm` a ukážou se jen tomu, komu se farma nabízí
+  (`FarmGate::offered`). Dnes tedy adminům, a až Roman farmu otevře, všem. Doprava se bere z `config/farm.php` v měně
+  návštěvníka (Česko 99 / 149 Kč, Slovensko od 149 Kč, EU od 199 Kč), limit modelů z fotky z `ai.daily_limits`.
+- **FAQPage JSON-LD**: jedna na stránku, otázky nástroje i „Než objednáte“, vždy jen ty, které stránka ukazuje
+  (layout).
+- **Pro koho**: tři použití s rozměrem (QR: kavárna 70 mm, ubytování s Wi‑Fi 100 mm, obchod u pokladny; busta: dárek
+  120 mm, kolega/trenér, pro sebe 80 mm; organizér: dílna, kuchyň, psací stůl; krabička: elektronika, drobnosti, dárek).
+- **Kam dál**: podobné nástroje (jen veřejné) a články blogu (jen publikované v jazyce stránky). Odkazy na
+  `kolik-stoji-3d-tisk-na-zakazku-v-roce-2026`, `jak-pripravit-stl-soubor-pro-3d-tisk`,
+  `pla-vs-petg-vs-asa-jaky-material-vybrat` a `jak-vznika-busta-z-fotky` se ukážou samy, až je session 1 vydá. Kdyby
+  změnila adresu, stačí upravit `config/landing.php`.
+- Mimochodem: ve španělském textu reliéfu bylo azbukové „а“ ve slově „flojа“ (opraveno).
+
+### 11.2 Core Web Vitals
+
+Měřeno Lighthousem 12.6 (výkon, mobil = simulované pomalé 4G a 4× pomalejší procesor, desktop = preset), skript
+`scripts/lighthouse_landing.mjs` (Lighthouse z `npx`, žádná závislost v repu). **Produkce před** je matplace.com
+18. 10. večer. **Lokálně před a po** je stejný server `php artisan serve` (bez komprese, proto jsou čísla horší než
+produkce a porovnávat dává smysl jen lokál s lokálem).
+
+**Produkce před (mobil):**
+
+| stránka | skóre | LCP | FCP | CLS | TBT | JS | font |
+|---|---|---|---|---|---|---|---|
+| `/` (→ `/en`) | 66 | 3,92 s | 3,91 s | **0,243** | 0 | 238 kB | 345 kB |
+| busta | 74 | 4,23 s | 4,20 s | 0 | 0 | 238 kB | 345 kB |
+| mazlíček | 73 | 4,15 s | 3,91 s | 0,049 | 228 ms | 238 kB | 345 kB |
+| QR | 63 | 4,75 s | 4,09 s | 0,015 | 400 ms | 238 kB | 345 kB |
+| organizér | 68 | 4,49 s | 4,10 s | 0,017 | 303 ms | 238 kB | 345 kB |
+| krabička | 70 | 4,45 s | 4,11 s | 0,015 | 244 ms | 238 kB | 345 kB |
+
+Desktop měl 97–100 (LCP 0,5–0,9 s). Příčiny: font Inter 353 kB a jeden JS 244 kB (gzip, 885 kB bez komprese, z toho
+three.js většina; „unused JS“ 55–77 %) se stahují hned s HTML. CLS na hlavní stránce dělala výměna fontu: odstavec se
+přelomil jinak a pole pro soubor pod ním poskočilo. TBT je spuštění 3D náhledu.
+
+**Opravy (levné):**
+1. **Font**: jen latinka, kterou píšeme (čeština, angličtina, španělština, interpunkce, €, šipky, ★ ♥ ◇ ○ ●),
+   `public/fonts/InterLatin.woff2`, **114 kB místo 352 kB** (pyftsubset, všechny vlastnosti fontu zachované: `cv11`,
+   `ss03`, `tnum`; osy `wght` a `opsz`). `InterVariable.woff2` zůstává jako zdroj.
+2. **Náhradní font se stejnými metrikami** (`Inter Fallback`: Arial s `size-adjust 107,4 %` a přepsanými výškami):
+   text při výměně fontu neposkočí. Font se navíc přednačítá (`<link rel="preload">`).
+3. **JS ve dvou částech**: vstupní `app.js` má **16 kB (6 kB gzip) místo 885 kB** a obsahuje jen věci webu (měření,
+   menu, lišta). Kalkulačka, nástroje a three.js jsou chunk `calc/boot.ts`, který se stáhne hned a spustí po
+   `DOMContentLoaded`. Stránka se tedy vykreslí, než se začne parsovat 3D. Náhledy modelů v seznamech
+   (`site/thumbs.ts`) načítají prohlížeč až u prvního obrázku. Zkoušel jsem i start až po prvním vykresleném snímku:
+   FCP vyšlo stejně, ale TBT a skóre hůř, takže jsem ho nepoužil.
+4. **LCP obrázek** stránek busty a mazlíčka (ukázka v prohlížeči) má `fetchpriority="high"`. Rozměry obrázků už
+   všude jsou a mimo první obrazovku `loading="lazy"`. Skripty třetích stran žádné nejsou.
+
+**Lokálně před → po (mobil):**
+
+| stránka | skóre | FCP | LCP | CLS | TBT |
+|---|---|---|---|---|---|
+| `/` | 57 → 64 | 8,36 → 4,54 s | 8,90 → 7,92 s | 0,032 → 0 | 0 → 0 |
+| busta | 45 → 60 | 8,25 → 5,99 s | 8,72 → 7,69 s | 0,216 → 0 | 164 → 27 ms |
+| mazlíček | 44 → 60 | 8,26 → 6,13 s | 8,72 → 7,83 s | 0,221 → 0 | 171 → 27 ms |
+| QR | 51 → 58 | 8,41 → 6,02 s | 8,71 → 9,63 s | 0,065 → 0,005 | 270 → 133 ms |
+| organizér | 49 → 57 | 8,41 → 6,21 s | 9,23 → 8,11 s | 0,082 → 0 | 309 → 172 ms |
+| krabička | 50 → 57 | 8,41 → 6,24 s | 8,94 → 7,87 s | 0,071 → 0 | 282 → 199 ms |
+
+Desktop lokálně 83–89 → 88–95 (FCP 1,45 → 0,87–0,93 s, CLS na 0–0,027). Font 344 → 112 kB na každé stránce.
+Lokální LCP zůstává vysoko, protože lokální server neposílá komprimované HTML (110–150 kB místo 25–33 kB) ani CSS
+(88 kB místo 14 kB). To na produkci odpadá. **Po nasazení** změřit produkci:
+`node scripts/lighthouse_landing.mjs https://matplace.com prod-after` (stejné stránky, čísla do tabulky výše).
+
+**Ověřeno, že nástroje fungují i s kódem načteným zvlášť** (lokálně, 390 px, cs): `--pages=catalogue` přes 60 stránek
+nástrojů a `/`, `/tools`, `/login`, `/account`: 41 s modelem, 19 prázdných (nástroje se souborem, busta, mazlíček,
+reliéf, mapa; stejně jako v §4.2), **žádná chyba skriptu** a žádný vodorovný posun. Cesty nástroj → kalkulace,
+soubor → cena, stažení, QR Wi‑Fi, obnovení kalkulace (3 ks zůstanou) a neplatný soubor dopadly stejně jako v §9.5.
+`scripts/check_bundle.mjs` teď čeká i na spuštění nástrojů z druhé části.
+
+**Testy:** `tests/Feature/LandingPagesTest.php` (5 testů: bloky na všech stránkách ve třech jazycích, platné JSON-LD,
+otázky stránky = otázky ve FAQPage, žádná dvakrát, čísla doplněná; otázky o farmě jen při nabízené farmě i pro admina;
+odkazy na veřejné nástroje a jen publikované články v jazyce stránky; výsledky za přepínačem a jen pro svůj nástroj;
+5–7 otázek a tři použití v každém jazyce se stejnými příznaky farmy). `DesignTokensTest` hlídá podmnožinu fontu,
+náhradní font a přednačtení. Běh: `LandingPagesTest`, `ToolPageTest`, `WebRound2Test`, `AuditRestTest`, `SeoTest`,
+`DesignTokensTest`, `ToolsCatalogTest`, `ToolsFlowTest`, `CalculationFlowTest`: 72 testů OK. `pint`, `tsc` a `build`
+(s kontrolou bundlu) jsou čisté.
+
+### 11.3 Co chybí od Romana
+
+- **Fotky výtisků** pro „Takhle to dopadlo“ (busta 80/120/150 mm, QR cedulka, organizér, krabička; ideálně čtverec
+  800 × 800 px na neutrálním pozadí). Cesta do `photo` u položky v `config/site.php`, pak `SITE_EXAMPLES=true`.
+- Otevření farmy (`farm.public`): do té doby návštěvník neuvidí otázky o objednávce, dopravě a reklamaci.
+- Potvrzení „Zásilkovna 1 až 2 pracovní dny“ (stejné jako v zakázce, AH §9.3).
