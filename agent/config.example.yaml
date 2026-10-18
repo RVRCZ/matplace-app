@@ -30,6 +30,8 @@ printers:
   #   ip: 192.168.8.44                                     # reserve this IP in the router
   #   # camera: true                                       # picture from the printer's own camera (needs the package av)
   #   # light: false                                       # switch the camera light on during a print (not verified on Kobra X)
+  #   # auto_leveling: true                                # the printer levels the bed before every print (as after the Slicer Next)
+  #   # package: true                                      # the file goes up as a .gcode.3mf package with a thumbnail; false = bare G-code (README)
 
   # Simulated printer — try the whole order flow without a machine (see README, "Zkouška bez tiskárny").
   # - key: kobra-s1-01

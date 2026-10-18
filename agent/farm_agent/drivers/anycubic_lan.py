@@ -7,8 +7,9 @@ through the protocol the Anycubic Slicer Next uses on the local network (client:
   reports    MQTT/TLS <ip>:9883, anycubic/anycubicCloud/v1/printer/public/<model>/<device>/<type>/report
   status     query `info` (state, temperatures, `project` while printing, `last_project` after it, `urls`)
   upload     POST <urls.fileUploadurl> (http://<ip>:18910/gcode_upload?s=<token>), multipart field `file`
-  start      MQTT slicer/.../print  action start: filename, filetype 1, project_type 1, ams_settings.ams_box_mapping
-             [{paint_index = T<n> of the G-code, ams_index = spool position}], task_settings (as the Slicer Next sends it)
+  start      MQTT slicer/.../print  action start, the whole shape the Slicer Next sends: filename, url (placeholder),
+             md5, filesize, filetype 1, project_type 1, ams_settings.ams_box_mapping [{paint 0 -> spool position}],
+             task_settings; the file as a .gcode.3mf package (anycubic_pkg)
   control    MQTT slicer/.../print  action pause | resume | stop
   camera     <urls.rtspUrl> = HTTP-FLV (H.264) on :18088; one frame decoded with PyAV (`pip install av`), else no picture
   light      MQTT web/.../light {"type": 3 (camera light), "status": 0|1, "brightness"} - only with `light: true`
@@ -25,7 +26,6 @@ import io
 import json
 import logging
 import os
-import re
 import threading
 import time
 import uuid
@@ -33,6 +33,7 @@ from typing import Callable, Optional
 
 import aiohttp
 
+from .anycubic_pkg import config_value, facts_of, package, prepared_gcode, rgb_of
 from .base import (ERROR, IDLE, JOB_CANCELLED, JOB_DONE, JOB_FAILED, JOB_PAUSED, JOB_PRINTING, OFFLINE, PAUSED, PRINTING,
                    DriverError, JobStatus, PrinterDriver, PrinterStatus)
 
@@ -43,18 +44,26 @@ PREFIX = "anycubic/anycubicCloud/v1"
 # what the dashboard says when the printer answers but is not in LAN mode (structured key, the dashboard words it)
 CLOUD_MODE = "cloud_mode"
 
+# the `url` the Anycubic Slicer Next puts into every LAN start (its own placeholder): the printer prints the file it
+# was given and never fetches it, but refuses a start that has no url at all (18 Oct 2026)
+SLICER_URL = "https://anycubic.com/store/aaa.gcode"
+
 # project.state -> job state; the printer's own words (Kobra X firmware 2.0.2.2: "printing", "finished"; the Kobra 3
 # family adds "stoped" [sic] for a cancelled print and "failed")
 JOB_STATES = {
     "printing": JOB_PRINTING, "preheating": JOB_PRINTING, "busy": JOB_PRINTING, "downloading": JOB_PRINTING,
     "checking": JOB_PRINTING, "leveling": JOB_PRINTING, "resuming": JOB_PRINTING, "pausing": JOB_PRINTING,
-    # the start of a Kobra X print (18 Oct 2026: "ace_filament_feeding" first) and the S1 sequence
-    "ace_filament_feeding": JOB_PRINTING, "auto_leveling": JOB_PRINTING, "vibrating": JOB_PRINTING,
+    # the start of a Kobra X print (18 Oct 2026: heating, then "extfilbox_filament_feeding" from the rack or
+    # "ace_filament_feeding" from an ACE) and the S1 sequence; anything unknown counts as printing too
+    "ace_filament_feeding": JOB_PRINTING, "extfilbox_filament_feeding": JOB_PRINTING, "auto_leveling": JOB_PRINTING, "vibrating": JOB_PRINTING,
     "flow_calibrating": JOB_PRINTING, "resumed": JOB_PRINTING, "updated": JOB_PRINTING, "init": JOB_PRINTING,
-    "nozzle_heating": JOB_PRINTING, "hotbed_heating": JOB_PRINTING,
+    "nozzle_heating": JOB_PRINTING, "hotbed_heating": JOB_PRINTING, "nozzle_purging": JOB_PRINTING, "nozzle_cooling": JOB_PRINTING,
+    "nozzle_wiping": JOB_PRINTING,
+    # a stop takes a few seconds ("stopping", the printer still busy) before the task ends as "stoped"
+    "stopping": JOB_PRINTING,
     "paused": JOB_PAUSED,
     "finished": JOB_DONE, "complete": JOB_DONE, "done": JOB_DONE,
-    "stoped": JOB_CANCELLED, "stopped": JOB_CANCELLED, "canceled": JOB_CANCELLED, "cancelled": JOB_CANCELLED, "stoping": JOB_CANCELLED,
+    "stoped": JOB_CANCELLED, "stopped": JOB_CANCELLED, "canceled": JOB_CANCELLED, "cancelled": JOB_CANCELLED,
     "failed": JOB_FAILED, "error": JOB_FAILED,
 }
 
@@ -78,6 +87,7 @@ class KobraLink:
         self._lock = threading.Lock()
         self._cond = threading.Condition()
         self._reports: dict[str, dict] = {}
+        self._history: dict[str, list[dict]] = {}     # the last reports of each type, newest last
         self._seq: dict[str, int] = {}
 
     def connect(self) -> None:
@@ -113,6 +123,8 @@ class KobraLink:
         kind = parts[-2] if parts[-1] == "report" else parts[-1]
         with self._cond:
             self._reports[kind] = data
+            self._history.setdefault(kind, []).append(data)
+            del self._history[kind][:-50]
             self._seq[kind] = self._seq.get(kind, 0) + 1
             self._cond.notify_all()
         if self.on_report:
@@ -121,6 +133,19 @@ class KobraLink:
     def last(self, kind: str) -> Optional[dict]:
         with self._cond:
             return self._reports.get(kind)
+
+    def count(self, kind: str) -> int:
+        """How many reports of this type arrived so far (to tell a new one from an old one)."""
+        with self._cond:
+            return self._seq.get(kind, 0)
+
+    def since(self, kind: str, n: int) -> list[dict]:
+        """The reports of this type that came after the first n (a count() taken before a command), oldest first.
+        A printer answers a start with two reports within a millisecond (the refusal, then the task's "update"), so
+        the last one alone is not the answer."""
+        with self._cond:
+            kept, total = self._history.get(kind, []), self._seq.get(kind, 0)
+            return list(kept[len(kept) - (total - n):]) if total > n else []
 
     def publish(self, kind: str, action: str, data, *, web: bool = False) -> str:
         if not self._client or not self._hs:
@@ -157,6 +182,12 @@ class AnycubicLanDriver(PrinterDriver):
         self.start_wait = float(options.get("start_wait", 120))
         self.start_poll = float(options.get("start_poll", 5))
         self.upload_timeout = float(options.get("upload_timeout", 600))
+        self.answer_wait = float(options.get("answer_wait", 8))     # the printer's report on a start
+        self.answer_poll = float(options.get("answer_poll", 1))
+        self.as_package = bool(options.get("package", True))        # the file goes up as .gcode.3mf (anycubic_pkg)
+        self.auto_leveling = bool(options.get("auto_leveling", True))   # the printer levels before every print
+        self.start_attempts = int(options.get("start_attempts", 3))
+        self.busy_retry = float(options.get("busy_retry", 5))
         self.retry_seconds = float(options.get("retry_seconds", 30))
         self.camera = bool(options.get("camera", True))
         self.use_light = bool(options.get("light", False))
@@ -167,6 +198,8 @@ class AnycubicLanDriver(PrinterDriver):
         self._task: Optional[asyncio.Task] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._last_state: Optional[str] = None
+        # the task that ended by a report (a cancelled one leaves no trace in last_project), until the next start
+        self._ended: Optional[dict] = None
         self._urls: dict = {}
         self._opening = asyncio.Lock()
 
@@ -222,7 +255,12 @@ class AnycubicLanDriver(PrinterDriver):
 
     def _heard(self, kind: str, data: dict) -> None:
         """Called in paho's thread for every report: a change of the printer's state wakes the agent at once."""
-        state = (data.get("data") or {}).get("state") if isinstance(data.get("data"), dict) else data.get("state")
+        details = data.get("data") if isinstance(data.get("data"), dict) else {}
+        if kind == "print" and data.get("action") == "stop" and data.get("state") == "stoped" and details.get("filename"):
+            # a cancelled task is gone from the next info report and never enters last_project (18 Oct 2026):
+            # remembered here, so the agent hears "cancelled" and not "the printer no longer reports this print"
+            self._ended = {"status": JOB_CANCELLED, **details}
+        state = details.get("state") if details else data.get("state")
         if kind in ("info", "print", "status") and state and state != self._last_state:
             self._last_state = state
             if self.on_change and self._loop:
@@ -274,6 +312,9 @@ class AnycubicLanDriver(PrinterDriver):
         }
         project = d.get("project") if isinstance(d.get("project"), dict) else None
         state = str(d.get("state") or "")
+        # an uploaded file the printer only noted (a task in "init" on a "free" printer) is no print: the printer is idle
+        if project and state == "free" and str(project.get("state") or "") == "init":
+            project = None
         if project:
             job_state = JOB_STATES.get(str(project.get("state") or ""), JOB_PRINTING)
             if job_state == JOB_PRINTING and int(project.get("pause") or 0) in PAUSED_FLAGS:
@@ -286,6 +327,9 @@ class AnycubicLanDriver(PrinterDriver):
             printer_state = IDLE if state in ("free", "") else (ERROR if state in ("error", "failed") else PRINTING)
             if job_state in (JOB_PRINTING, JOB_PAUSED):     # a "last" project that still says printing is over
                 job_state = JOB_FAILED if printer_state == ERROR else JOB_DONE
+            ended = self._ended
+            if ended and _base_name(str(ended.get("filename") or "")) != _base_name(str((last or {}).get("filename") or "")):
+                project, job_state = ended, str(ended["status"])
         if project and project.get("total_layers"):
             telemetry["layer"] = f"{project.get('curr_layer', 0)}/{project['total_layers']}"
         if project and printer_state in (PRINTING, PAUSED) and project.get("remain_time") is not None:
@@ -332,18 +376,52 @@ class AnycubicLanDriver(PrinterDriver):
         url = self._urls.get("fileUploadurl")
         if not url:
             raise DriverError("the printer offers no upload address (urls.fileUploadurl missing in its info)")
-        await self._upload(url, gcode_path, filename)
-        # The start the Slicer Next sends (captured 18 Oct 2026, docs/AM.md): T<n> in the G-code is a "paint" the printer
-        # maps to a spool position by ams_box_mapping. Without the mapping a Kobra X takes the task and stays in "init".
-        paint = _paint_of(gcode_path)
-        mapping = {"paint_index": paint, "ams_index": int(slot), "paint_color": [0, 0, 0, 255]}
-        mapping.update(await self._spool(int(slot)))
-        log.info("%s: starting %s (T%d -> spool position %d)", self.key, filename, paint, slot)
-        await self._send("print", "start", {
-            "taskid": "-1", "filename": filename, "filepath": None, "filetype": 1, "project_type": 1,
-            "ams_settings": {"use_ams": True, "ams_box_mapping": [mapping]},
-            "task_settings": {"auto_leveling": 1, "vibration_compensation": 0, "flow_calibration": 0, "dry_mode": 0},
-        })
+        await self._clear_stale()
+        self._ended = None
+        # What the Slicer Next sends (captured and tried out 18 Oct 2026, docs/AM.md): T<n> in the G-code is a "paint"
+        # the printer maps to a spool position by ams_box_mapping. matplace's GcodeSlot wrote the spool position as
+        # T<n> (docs/V.md), so the file goes up as paint 0 and that position goes into the mapping. The file needs the
+        # Slicer's paint_info and statistics lines (anycubic_pkg), and the start the fields the Slicer sends (url, md5,
+        # filesize, the whole task_settings): without them the printer refuses it with 10301 "device busy, state unknown".
+        with open(gcode_path, "rb") as fh:
+            raw = fh.read()
+        facts = facts_of(raw)
+        position = facts.tool if facts.tool else int(slot)
+        colour, material = await self._spool(position, config_value(raw, b"filament_colour") or "#000000", config_value(raw, b"filament_type") or "PLA")
+        if self.as_package:
+            data, _ = package(raw, colour, material)
+            upload_name = filename + ".3mf" if filename.lower().endswith(".gcode") else filename
+        else:
+            data, upload_name = prepared_gcode(raw, colour, material, facts), filename
+        await self._upload(url, data, upload_name)
+        rgba = rgb_of(colour) + [255]
+        mapping = {"paint_index": 0, "ams_index": position, "paint_color": rgba, "ams_color": rgba, "material_type": material.split()[0].upper()}
+        log.info("%s: starting %s (T%d -> spool position %d, %s %s)", self.key, filename, facts.tool, position, material, colour)
+        command = {
+            # the printer prints the file just uploaded and never fetches the address: the Slicer sends this very
+            # placeholder, and a start without url, md5 and filesize is refused
+            "taskid": "-1", "url": SLICER_URL, "filename": filename, "md5": hashlib.md5(data).hexdigest(),  # noqa: S324
+            "filepath": None, "filetype": 1, "project_type": 1, "filesize": len(data),
+            "ams_settings": {"use_ams": True, "padding1": 0, "padding2": 0, "padding3": 0, "ams_box_mapping": [mapping]},
+            "task_settings": {"auto_leveling": 1 if self.auto_leveling else 0, "vibration_compensation": 0, "flow_calibration": 0, "dry_mode": 0,
+                              "ai_settings": {"status": 0, "count": 32765, "type": 32, "mode": 0},
+                              "timelapse": {"status": 0, "count": 32765, "type": 32, "mode": 0},
+                              "drying_settings": {"status": 0, "target_temp": 0, "duration": 0, "remain_time": 0},
+                              "model_objects_skip_parts": []},
+        }
+        # the printer answers a start on print/report at once: "checking" when it takes it, "failed" with a code when not
+        link = await self._ensure()
+        for attempt in range(1, self.start_attempts + 1):
+            seen = link.count("print")
+            await self._send("print", "start", command)
+            refusal = await self._start_answer(link, seen)
+            if not refusal:
+                break
+            code, text = refusal
+            if code != 10301 or attempt == self.start_attempts:
+                raise DriverError(f"print start refused: {code} {text}".strip())
+            log.info("%s: the printer is still busy with the file (%s), start again in %.0f s", self.key, code, self.busy_retry)
+            await asyncio.sleep(self.busy_retry)
         deadline = time.monotonic() + self.start_wait
         while True:
             await asyncio.sleep(self.start_poll)
@@ -358,43 +436,68 @@ class AnycubicLanDriver(PrinterDriver):
             if time.monotonic() > deadline:
                 raise DriverError(f"print start: the printer did not begin {filename} in {self.start_wait:.0f} s")
 
-    async def _spool(self, slot: int) -> dict:
-        """Colour and material of the spool at this position of the printer's own rack (box id -1), as the start command
-        carries them. The Slicer Next mapped the rack's position 1 to ams_index 1 (18 Oct 2026). Unknown: nothing."""
+    async def _start_answer(self, link: KobraLink, seen: int) -> Optional[tuple[int, str]]:
+        """The printer's answer to a start: None when it took it (or said nothing), else (code, text) of the refusal."""
+        deadline = time.monotonic() + self.answer_wait
+        while time.monotonic() < deadline:
+            await asyncio.sleep(self.answer_poll)
+            for report in link.since("print", seen):
+                if report.get("action") != "start":
+                    continue
+                if report.get("state") == "failed":
+                    return int(report.get("code") or 0), str(report.get("msg") or "")
+                return None
+        return None
+
+    async def _clear_stale(self) -> None:
+        """A task the printer only noted and never began ("init" on a free printer: a start it refused) is ended first;
+        print/stop does that (18 Oct 2026)."""
+        project = ((await self._ask("info")).get("data") or {}).get("project") or {}
+        if not project:
+            return
+        log.info("%s: stopping the stale task %s (%s)", self.key, project.get("filename"), project.get("state"))
+        await self._send("print", "stop", {"taskid": "-1"})
+        for _ in range(10):
+            await asyncio.sleep(self.answer_poll * 2)
+            if not (((await self._ask("info")).get("data") or {}).get("project")):
+                return
+        log.info("%s: the stale task is still there, starting anyway", self.key)
+
+    async def _spool(self, position: int, colour: str, material: str) -> tuple[str, str]:
+        """Colour (#rrggbb) and material of the spool at this position of the printer's own rack (box id -1): what the
+        file and the start say the print is made of. Position n is ams_index n and "n+1" on the screen (18 Oct 2026).
+        When the printer does not tell, the G-code's own values stand."""
         try:
             report = await self._ask("multiColorBox", "getInfo")
         except DriverError as e:
             log.info("%s: no spool information (%s)", self.key, e)
-            return {}
+            return colour, material
         boxes = (report.get("data") or {}).get("multi_color_box") or []
         rack = next((b for b in boxes if b.get("id") == -1), boxes[0] if boxes else {})
-        spool = next((s for s in rack.get("slots") or [] if s.get("index") == slot), None)
+        spool = next((s for s in rack.get("slots") or [] if s.get("index") == position), None)
         if not spool:
-            return {}
-        color = list(spool.get("color") or [0, 0, 0])[:3] + [255]
-        material = str(spool.get("type") or "PLA").split()[0].upper()     # "PLA Silk" -> "PLA", as the Slicer sends it
-        return {"ams_color": color, "material_type": material}
+            return colour, material
+        rgb = list(spool.get("color") or [])[:3]
+        return ("#%02X%02X%02X" % tuple(rgb) if len(rgb) == 3 else colour), str(spool.get("type") or material)
 
-    async def _upload(self, url: str, path: str, filename: str) -> None:
-        size = os.path.getsize(path)
-        with open(path, "rb") as fh:
-            md5 = hashlib.md5(fh.read()).hexdigest()  # noqa: S324 - the printer's checksum, not security
+    async def _upload(self, url: str, data: bytes, filename: str) -> None:
+        size = len(data)
+        md5 = hashlib.md5(data).hexdigest()  # noqa: S324 - the printer's checksum, not security
         # the form exactly as Anycubic Slicer Next 2.0.0.3 sends it (captured 18 Oct 2026, docs/AM.md): the name first as a
         # plain field, then the file in the field "gcode", and its size in X-File-Length. Anything else is
         # {"code": 19005, "message": "Parsing form fail"}.
         form = aiohttp.FormData()
         form.add_field("filename", filename)
+        form.add_field("gcode", io.BytesIO(data), filename=filename, content_type="application/octet-stream")
         headers = {"X-File-Length": str(size), "User-Agent": "matplace-farm-agent"}
-        with open(path, "rb") as fh:
-            form.add_field("gcode", fh, filename=filename, content_type="application/octet-stream")
-            try:
-                async with aiohttp.ClientSession() as s:
-                    async with s.post(url, data=form, headers=headers, timeout=aiohttp.ClientTimeout(total=self.upload_timeout)) as r:
-                        body = await r.text()
-                        if r.status >= 400:
-                            raise DriverError(f"upload: HTTP {r.status} {body[:200]}")
-            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                raise DriverError(f"upload: {e.__class__.__name__} {e}") from e
+        try:
+            async with aiohttp.ClientSession() as s:
+                async with s.post(url, data=form, headers=headers, timeout=aiohttp.ClientTimeout(total=self.upload_timeout)) as r:
+                    body = await r.text()
+                    if r.status >= 400:
+                        raise DriverError(f"upload: HTTP {r.status} {body[:200]}")
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            raise DriverError(f"upload: {e.__class__.__name__} {e}") from e
         log.info("%s: uploaded %s (%d bytes, md5 %s): %s", self.key, filename, size, md5, body[:200])
         try:
             answer = json.loads(body) if body else {}
@@ -427,18 +530,6 @@ def _num(v) -> Optional[float]:
 def _base_name(name: str) -> str:
     """The name the printer reports may carry a folder; ".gcode.3mf" is reported as ".gcode"."""
     return os.path.basename(name.replace("\\", "/"))
-
-
-def _paint_of(path: str) -> int:
-    """The tool the G-code selects (matplace's GcodeSlot writes "T<n>" after the start macro); 0 when it selects none."""
-    with open(path, "r", encoding="utf-8", errors="replace") as fh:
-        for i, line in enumerate(fh):
-            m = re.match(r"\s*T(\d+)\b", line)
-            if m:
-                return int(m.group(1))
-            if i > 400:
-                break
-    return 0
 
 
 def _flv_frame(url: str) -> Optional[bytes]:

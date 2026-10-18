@@ -5,168 +5,119 @@ Nic se nemerguje ani nenasazuje. Server se nemění.
 
 ## 1. Co je hotové
 
-- `agent/farm_agent/drivers/anycubic_lan.py`, registrovaný jako `anycubic_lan` v `drivers/__init__.py`.
-- `agent/tests/test_anycubic_lan.py`: 11 testů s falešným spojením a falešnou adresou pro nahrání. Celá sada agenta
-  má 44 testů a všechny projdou (`python -m pytest agent/tests`).
-- Verze agenta je `0.2.0`. Aktualizované jsou `requirements.txt`, `config.example.yaml` (blok Kobra X), `README.md`
-  (oddíl „Kobra X…“ a konfigurace) a `config.py` (komentář).
+- `agent/farm_agent/drivers/anycubic_lan.py` (ovladač, registrovaný jako `anycubic_lan`) a
+  `agent/farm_agent/drivers/anycubic_pkg.py` (soubor pro tiskárnu: řádky, které firmware čte, a balíček `.gcode.3mf`).
+- Testy: `agent/tests/test_anycubic_lan.py` (15, falešné spojení a falešná adresa pro nahrání, chová se jako skutečná
+  Kobra X 18. 10.) a `agent/tests/test_anycubic_pkg.py` (4). Celá sada agenta: 51 testů, všechny projdou
+  (`python -m pytest agent/tests`).
+- Verze agenta `0.2.0`; `requirements.txt`, `config.example.yaml` (blok Kobra X), `README.md` (oddíl „Kobra X…“,
+  tabulka voleb) a `config.py` (komentář).
+- **Na skutečné Kobra X ověřeno 18. 10. 2026 (§4):** nahrání, start s naším produkčním G-code (zahřátí podle
+  `G9111`, cívka podle `T1` = Rack pozice 2), průběh, zrušení, stav po zrušení, kamera.
 
-## 2. Protokol: co jsem na Kobra X ověřila
+## 2. Protokol: co Kobra X dělá
 
-Tiskárna 192.168.8.44 („Anycubic Kobra X“, `modelId` 20030, firmware 2.0.2.2, `ctrlType: lan`). Všechno v tomto
-oddílu jsou jen čtení: handshake, dotazy a stream kamery.
+Tiskárna 192.168.8.44 („Anycubic Kobra X“, `modelId` 20030, firmware 2.0.2.2, `ctrlType: lan`).
 
-| Co | Výsledek |
+| Co | Jak |
 |---|---|
-| handshake `GET :18910/info` → `/ctrl` → MQTT/TLS `:9883` | funguje přes `kobra_connect` (commit 3edba24) |
-| `info` (téma `web/.../info`, akce `query`) | `state` (`free`), `temp`, `project` (při tisku) / `last_project`, `features`, `urls.fileUploadurl` = `http://IP:18910/gcode_upload?s=<token>`, `urls.rtspUrl` = `http://IP:18088/live/<id>` |
-| `last_project` | `filename` (`….gcode` i u tisku ze `.gcode.3mf`), `state` `finished`, `print_time` v minutách (364 u tisku 5 h 51 min), `supplies_usage` v mm, `progress` 1 po dokončení (nepoužitelné, ovladač dává 100 %), `curr_layer`/`total_layers` |
-| `print` query | žádná odpověď (prázdný report) |
-| `tempature`, `fan` | odpovídají, ale `info` už to obsahuje |
-| `file` `listLocal` (cesty `/`, `""`, `/local`, slicer i web) | odmítnuto: `code 10112`, „参数设定失败“ (nastavení parametru selhalo). Na Kobra X má jiný tvar a nikde není popsaný. Ovladač seznam souborů nepotřebuje. |
-| `multiColorBox` `getInfo` | box −1 (vestavěný, 4 sloty) a box 0, každý s `slots[]` (`type`, `color`, `status` 5 = zavedeno, `consumables_percent`), `loaded_slot` −1 |
-| kamera `rtspUrl` | HTTP-FLV, H.264, odpovídá i bez `video/startCapture`. Snímek přes PyAV (`av` 18.1) má 73 kB a 1280×720 (kamera tiskárny, nízký pohled). `:18910/camera/snapshot` vrací 404. |
-
-**Nahrání souboru (bod 2 zadání).** Jak tiskárna chce soubor na `/gcode_upload` přijmout, není popsané nikde:
-v `kobra-connect` (jeho most do Moonrakeru nahrávání výslovně nepodporuje), v Rinkhals, v `stribor/anycubic_kobrax`
-ani v `chrisfore/anycubic_ha_local`. Řetězce v knihovnách Slicer Next to neprozradí a jeho logy jsou z doby
-cloudového režimu. Ovladač proto používá nejpravděpodobnější tvar: `POST <fileUploadurl>` s multipart polem `file`,
-pak MQTT `print/start` s `filename`, `filepath "/"`, `filetype 1`, `task_mode 1`, `taskid "-1"`. Potom 5 minut
-čeká, než tiskárna začne tisknout, a když nezačne, ohlásí chybu. **Ověření na tiskárně čeká** (§4).
+| handshake | `GET :18910/info` → podepsaný `POST /ctrl` → AES → MQTT/TLS `:9883` (`kobra_connect`, commit 3edba24) |
+| stav | `info` query (téma `web/.../info`): `state` `free`/`busy`, `temp`, `project` (běžící úloha) / `last_project`, `features`, `urls` |
+| `project.state` při startu | `init` → `checking` → `printing` → `hotbed_heating` / `nozzle_heating` → `extfilbox_filament_feeding` (Rack; z ACE `ace_filament_feeding`) → `nozzle_purging` → `printing` → `auto_leveling` → `nozzle_cooling` → `nozzle_wiping` → tisk; zrušení: `stopping` (pár s, tiskárna `busy`) → `stoped` |
+| `last_project` | `filename` bez `.3mf`, `print_time` v minutách, `supplies_usage` v mm, `progress` 1 po dokončení (ovladač dává 100 %) |
+| nahrání | `POST urls.fileUploadurl` (`:18910/gcode_upload?s=<token>`), hlavička `X-File-Length`, multipart: pole `filename` (text), pak pole `gcode` (soubor); cokoli jiného → `{"code":19005,"message":"Parsing form fail"}`; odpověď `{"code":200,"data":{"gcode":"<jméno bez .3mf>"}}` |
+| start | MQTT `slicer/.../print`, `action start` – **celý tvar, jaký posílá Slicer Next** (§4c): `taskid "-1"`, `url` (zástupná adresa Sliceru), `filename` (bez `.3mf`), `md5`, `filesize`, `filepath null`, `filetype 1`, `project_type 1`, `ams_settings {use_ams, padding1-3, ams_box_mapping [{paint_index, ams_index, paint_color, ams_color, material_type}]}`, `task_settings {auto_leveling, vibration_compensation, flow_calibration, dry_mode, ai_settings, timelapse, drying_settings, model_objects_skip_parts}` |
+| odpověď na start | `print/report` `action start`: `state checking` (vzala) nebo `state failed` + `code` (např. 10301 „设备忙,情况未知“ = zařízení zaneprázdněné, situace neznámá); hned za tím `action update`/`init` |
+| pauza, pokračování, zrušení | `print` `pause` / `resume` / `stop` (`taskid "-1"`); `stop` ukončí i úlohu jen založenou (`init`) |
+| cívky | `multiColorBox` `getInfo` (téma web): box `id −1` = Rack (4 pozice), `id 0` = ACE; `slots[].index` 0–3, `type`, `color`, `status` 5 = zavedeno; `ams_index` = index v Racku, na displeji index + 1 |
+| kamera | `urls.rtspUrl` = HTTP-FLV H.264 na `:18088/live/<id>`, bez `video/startCapture`; snímek přes PyAV |
+| soubory | `listLocal` Kobra X odmítá (10112); `fileDetails {root: "local", filename}` vrací, co tiskárna ze souboru přečetla (`paint_infos`, `model_dimensions`, `png_image`, čas, vrstvy) |
 
 ## 3. Jak ovladač pracuje
 
-- Spojení drží ve vlastním vlákně (paho) přes `KobraLink`. Opakovaný pokus o spojení je každých 30 s (`retry_seconds`)
-  a při každém dotazu, který spojení nenajde. Souběžné pokusy hlídá zámek: dřív se při startu otevřela dvě spojení,
-  na skutečné tiskárně to byla vidět jako dvojí „connected“, teď je jedno.
-- **Cloudový režim** (`ctrlType: cloud`): `status()` vrátí `offline` s `telemetry.link = "cloud_mode"`, příkazy
-  hlásí „the printer is not in LAN mode“.
-- **Mapování stavů:**
-  - `project.state` `printing`/`preheating`/`busy`/`leveling`… → tiskne, `pause` 1 nebo 2 → pauza.
-  - `finished` → hotovo, `stoped` (tak to píše firmware) → zrušeno, `failed`/`error` → chyba s `err_msg`.
-  - Bez `project` je tiskárna `free`, tedy idle, a poslední úloha se bere z `last_project`.
-  - Tvary dat pro server jsou stejné jako u Moonrakeru. Telemetrie `layer` a `remain_min` se počítá jako u Kobra S1.
-- **Změna stavu** slyšená z MQTT reportu agenta hned probudí (`on_change`).
-- `head()` vrací `None`: poloha hlavy v LAN protokolu není, časosběr jde po minutách. `dry()` je výchozí chyba
-  (Kobra X sušičku nemá). `reset()` nic nevyčistí: chybu potvrdí obsluha na displeji, ovladač ji jen ohlásí.
-- **Světlo** (`light` téma, typ 3) jen s `light: true`, na Kobra X neověřené.
-- **Soubory v úložišti tiskárny ovladač nikdy nemaže.**
+- Spojení ve vlastním vlákně (paho) přes `KobraLink`; hlášení z tiskárny si pamatuje i s historií, protože na start
+  přijdou dvě hlášení během milisekundy (odmítnutí, pak `update`/`init`). Znovupřipojení každých 30 s a při dotazu
+  bez spojení, pod zámkem.
+- **Cloudový režim** (`ctrlType: cloud`): `status()` = `offline` s `telemetry.link = "cloud_mode"`, příkazy hlásí
+  „the printer is not in LAN mode“.
+- **Stav:** `project.state` podle tabulky výše; `pause` 1/2 = pauza; `finished` = hotovo, `stoped` = zrušeno,
+  `failed`/`error` = chyba s `err_msg`; neznámý stav = tiskne. Úloha `init` na volné tiskárně (založená, nikdy
+  nespuštěná) je idle. Telemetrie `layer`, `remain_min` jako u Kobra S1. Změna stavu z MQTT probudí agenta hned.
+- **Start:** (1) tiskárna musí být idle; (2) založenou nespuštěnou úlohu ukončí `print/stop`; (3) přečte G-code:
+  `T<n>` od GcodeSlot říká pozici cívky, barvu a materiál zjistí z Racku (`multiColorBox`), jinak z konfigurace Orcy;
+  (4) soubor nahraje jako `.gcode.3mf` (`package: true`, výchozí) nebo jako holý G-code (`package: false`), v obou
+  případech s `T0` = barva 0 a řádky `paint_info`/`statistics` (§4c); (5) pošle start v plném tvaru Sliceru
+  s přiřazením barva 0 → `ams_index` = pozice; (6) čte odpověď: při 10301 start zopakuje (3×, po 5 s), jiný kód ohlásí;
+  (7) čeká, až tiskárna skutečně tiskne (`busy` a ne `init`), nejvýš `start_wait` (120 s).
+- `head()` = `None` (poloha hlavy v LAN protokolu není, časosběr po minutách). `dry()` výchozí chyba. `reset()`
+  nic nevyčistí, chybu potvrdí obsluha na displeji. Světlo jen s `light: true` (neověřeno). Soubory v tiskárně
+  ovladač nikdy nemaže.
 
-## 4a. Zkouška 18. 10. 2026 po Romanově souhlasu: nahrání tiskárna nevezme
+## 4. Zkoušky na skutečné tiskárně 18. 10. 2026
 
-Roman v okně session 4 napsal „spusť zkoušku na Kobra X“. Výsledek:
+### 4a. Čtení (dopoledne)
 
-- **`POST /gcode_upload?s=<token>` odmítne všechny tvary formuláře**, vždy `HTTP 200 {"code": 19005, "message":
-  "Parsing form fail"}`. Vyzkoušeno:
-  - pole `file` samotné (tak to dělal ovladač 3c08c74),
-  - `file` + `filename`/`md5`/`filesize`,
-  - `file` + `filename`/`md5`/`size`,
-  - `file` + `fileKey`/`filesize`/`md5`,
-  - pole `gcode`, `files` a `uploadfile`.
+Handshake, stav, teploty, kamera (73 kB), `multiColorBox`, `listLocal` (10112). Nic se neposílalo.
 
-  Formulář selže už při čtení, takže soubor se neuložil a tisk se nespustil. Ovladač to hlásí správně jako
-  `DriverError("upload refused: 19005 Parsing form fail")`. Žádný veřejný kód ani dokumentace tvar tohoto požadavku
-  nepopisuje: kobra-connect, Rinkhals, stribor/anycubic_kobrax, chrisfore/anycubic_ha_local, metheos/anycubic-s1-mqtt-bridge,
-  WaresWichall/hass-anycubic_cloud ani Nino6689/anycubic-lan.
-- Port 80 (gkapi kompatibilní s OctoPrintem, jak ho má S1 Max) na Kobra X neodpovídá.
-- Další krok podle zadání, tedy `print/start` s `url` na malý HTTP server na tomto PC (192.168.8.90), **zastavila
-  kontrola oprávnění v session**. Server přístupný z celé sítě a vzdálený start se jí nezdály bezpečné. Nic se
-  neodeslalo.
-- Tiskárna zůstala nedotčená a ve stavu `free` (ověřeno ve 12:11), nic se nezahřálo. `T1` ani `G9111` tedy ověřené
-  nejsou.
+### 4b. Nahrání: tvar formuláře (12:27)
 
-**Co dál (rozhodne Roman):**
-1. **Zachytit, co posílá Slicer Next:** Roman pošle kostku ze Sliceru Next v LAN režimu na Kobra X („Odeslat do
-   tiskárny“) a provoz se při tom zachytí (Wireshark nebo vestavěný `pktmon`, port 18910). Z toho je přesný tvar
-   `/gcode_upload` i `print/start` a ovladač se upraví. Je to nejjistější cesta.
-2. **Povolit zkoušku s `url`** (pravidlo oprávnění pro tento skript, nebo ji Roman spustí sám:
-   `scratchpad/kx_url_start.py`). Když tiskárna soubor z adresy stáhne, agent bude soubory vydávat sám
-   (volba `serve_port`).
-3. **Poloautomat:** obsluha pošle soubor ze Sliceru Next, agent ho spustí podle jména a dál hlídá, pozastaví a zruší.
-   To ovladač umí už teď, jen bez nahrání.
+Roman připojil Kobra X ve Sliceru Next (záložka „LAN Printer“; síť byla ve Windows „veřejná“, proto Slicer tiskárnu
+neviděl) a poslal kostku; `pktmon` (`scratchpad/kx_capture.ps1`, dekódování `kx_decode.py`) zachytil
+`POST /gcode_upload` s hlavičkou `X-File-Length`, polem `filename` a polem `gcode` se souborem `.gcode.3mf`
+(tabulka v §2). Do té doby tiskárna všechny moje tvary odmítala (19005).
 
-## 4b. Zachyceno, jak nahrává Slicer Next (18. 10. 2026, 12:27)
+### 4c. Start: co firmware potřebuje (12:48–13:49)
 
-Roman připojil Kobra X ve Sliceru Next přes záložku „LAN Printer“. Síť byla v Profilu Windows jako veřejná a Slicer
-tiskárnu do té doby neviděl. Pak poslal malou kostku a `pktmon` (`scratchpad/kx_capture.ps1`,
-dekódování `scratchpad/kx_decode.py`) zachytil tenhle požadavek:
+Odposlech na brokeru tiskárny (`scratchpad/kx_sniff.py`, jen odběr `anycubic/#`) zachytil start ze Sliceru i hlášení
+tiskárny. Pokusy, všechny na kostce 10 mm (Romanovo svolení přímo v okně session), po každém `print/stop`
+a kontrola, že tiskárna je `free`:
 
-```
-POST /gcode_upload?s=<token z info.urls.fileUploadurl> HTTP/1.1
-User-Agent: AnycubicSlicerNext/2.0.0.3
-X-BBL-Client-Name / -Type / -Version / Device-ID / Language / OS-Type / OS-Version   (identifikace klienta)
-X-File-Length: 58163
-Content-Type: multipart/form-data; boundary=…
-  part 1: name="filename"                         value "1018-1226-Cube_plate(01)_PLA_0.2_13m2s.gcode.3mf"
-  part 2: name="gcode"; filename="<stejný název>"  application/octet-stream, 58163 B (zip: .gcode.3mf)
-```
+| čas | soubor | příkaz | výsledek |
+|---|---|---|---|
+| 12:48, 12:58, 13:06 | náš holý `.gcode` (`T1`) | strohý (bez `url`/`md5`/`filesize`, bez/s přiřazením) | 10301, úloha zůstala v `init` |
+| 13:22 | náš `.gcode` + řádek `; paint_info` | strohý | 10301; hlášení `update` mělo v `code` smetí |
+| 13:35 (E1) | balíček ze Sliceru (jeho kostka) jako `mptest-slicer.gcode.3mf` | **plný tvar Sliceru** | **vzala**: 220/60 °C, zavedení z Racku pozice 2 (`channel_no 2`, `loaded_slot 1`) |
+| 13:38 (E1m) | tentýž balíček | strohý | **10301** → rozhoduje tvar příkazu |
+| 13:43 (E2') | náš holý `.gcode` s `T0`, `paint_info` a `statistics` (`anycubic_pkg.prepared_gcode`) | plný | **vzala**: podložka 55, tryska 225 (naše `G9111`), Rack pozice 2, `nozzle_purging`, `printing`, `auto_leveling`, `nozzle_cooling` 180, `nozzle_wiping`; `stop` → `stoped` → `free` |
+| 13:47 (E3) | náš balíček `.gcode.3mf` (`anycubic_pkg.package`) | plný | **vzala**, stejný průběh |
 
-- Start tisku jde potom přes MQTT/TLS na portu 9883, takže ze záznamu není čitelný. Tiskárna pak hlásí `project` se
-  `state` `ace_filament_feeding` a později `printing`, `filename` bez `.3mf`, `project_type` 1 a `task_id` "-1".
-- **Ovladač je opravený:** pole `filename`, za ním `gcode`, hlavička `X-File-Length`. Falešná tiskárna v testech
-  teď stejně jako skutečná odmítne jakýkoli jiný tvar (19005). Do mapy stavů přibyly `ace_filament_feeding`,
-  `auto_leveling`, `vibrating`, `flow_calibrating`, `resumed` a `updated`.
-- Ovladač si během Romanova tisku přečetl stav správně: printing, tryska 219/220 °C, podložka 63/60 °C, název
-  souboru sedí a kamera dala snímek 67 kB.
-- **Zbývá ověřit** na volné tiskárně s Romanovým svolením:
-  - jestli tiskárna vezme náš **čistý `.gcode`** (Slicer posílá `.gcode.3mf`) a `print/start` s `filetype` 1;
-  - co udělá s `T1` a `G9111`.
+Závěry:
+- **Příkaz:** bez `url`, `md5` a `filesize` (a zbytku tvaru Sliceru) firmware start odmítne 10301, i u souboru ze
+  Sliceru. `md5`/`filesize` tiskárna nekontroluje (Slicer posílá hodnoty ze vzoru dokumentace), `url` nestahuje (tiskne
+  nahraný soubor). Ovladač posílá skutečné `md5` a `filesize` nahraného souboru a `url` Sliceru jako zástupný text.
+- **Soubor:** firmware čte z G-code řádek `; paint_info = [{"material_type","paint_color","paint_index"}]` (v hlavičce a
+  v bloku `ams_info` na konci) a blok `statistics` (`model_size` = rozměry na displeji). Orca 2.4 je nepíše, a bez
+  nich hlášení `update`/`init` nese smetí a start neprojde. `anycubic_pkg` je doplní; holý `.gcode` s nimi stačí,
+  balíček `.gcode.3mf` navíc dá tiskárně náhled a je to formát Sliceru (výchozí).
+- **`T<n>` a GcodeSlot:** pro tento firmware je `T<n>` „barva n“ projektu a cívku určuje `ams_box_mapping`. Ovladač
+  proto v souboru nahradí `T<n>` za `T0` (barva 0) a pozici `n` pošle jako `ams_index`. `GcodeSlot::retarget` se
+  měnit nemusí; `M104/M109` před `T` nevadí. Vícebarevný tisk (víc `T`) tímhle zatím neřeším.
+- **`G9111 bedTemp=55 extruderTemp=225`** firmware vzal (nahřál přesně na to).
+- `auto_leveling 1` jako Slicer: tiskárna vyrovnává před každým tiskem (volba `auto_leveling`).
+- Úloha, kterou tiskárna jen založila (`init`), neblokuje start ze Sliceru, ale je lepší ji ukončit; `print/stop` to
+  umí (ovladač to dělá před startem). Restart tiskárny nebyl nikdy potřeba.
 
-  Když `.gcode` nevezme, agent ho před nahráním zabalí do `.gcode.3mf` (`Metadata/plate_1.gcode` + md5), jak to
-  dělá Slicer.
+### 4d. Celý průchod ovladačem (E4, 13:50–13:52)
 
-## 4c. Náš `.gcode` ano, start bez přiřazení ne; zachycený start ze Sliceru (18. 10., 12:48–12:55)
+`scratchpad/kx_drive.py start` → `watch` → `snapshot` → `cancel` s ovladačem z této větve, výchozí volby
+(`package: true`): balíček `mptest-cube10.gcode.3mf` (24 210 B) nahrán, log „starting mptest-cube10.gcode
+(T1 -> spool position 1, PLA Silk #FF7F32)“, za 6 s „the printer took“; stav `printing`, tryska 113 → 228 °C
+(cíl 225), podložka 53 → 56 °C (cíl 55), název souboru sedí; snímek z kamery 81 kB; `cancel()` → do 5 s `idle`,
+tiskárna `free`, bez úlohy. Nic na tiskárně nezůstalo rozdělané.
 
-- Roman spustil `kx_drive.py start mptest-cube10.gcode` (ovladač e7323e7) sám. **Nahrání čistého `.gcode` prošlo.**
-  Tiskárna pak založila `project` `mptest-cube10.gcode` se `state` `init`, ale zůstala `free`. Tři minuty nic
-  nenahřála (cíl 0 °C) a displej usnul.
-- Odposlech na brokeru tiskárny (`scratchpad/kx_sniff.py`, jen přihlášení k odběru `anycubic/#`, nic neposílá) zachytil
-  start ze Sliceru Next při Romanově dalším tisku:
-  ```json
-  {"type":"print","action":"start","data":{"taskid":"-1","filename":"1018-1254-Cube_plate(01)_PLA_0.2_13m2s.gcode",
-   "filepath":null,"filetype":1,"project_type":1,"url":…,"md5":…,"filesize":…,
-   "ams_settings":{"use_ams":true,"ams_box_mapping":[{"paint_index":0,"ams_index":1,"paint_color":[0,0,0,255],
-     "ams_color":[255,127,50,255],"material_type":"PLA"}]},
-   "task_settings":{"auto_leveling":1,"vibration_compensation":0,"flow_calibration":0,"dry_mode":0,…}}}
-  ```
-  `md5`, `filesize`, `msgid` a `timestamp` jsou hodnoty ze šablony v dokumentaci (943c0d…, 188000, rok 2022), tiskárna
-  je nekontroluje. Pak přijdou reporty `print/report`: `update`/`init` → `start`/`checking` → `printing` →
-  `nozzle_heating` (cíl 220) / `hotbed_heating` (60), před tím `getSliceParam` a `fileDetails`.
-- **`T<n>` v G-code znamená „barva n“ projektu.** Na fyzickou pozici ji přiřadí `ams_box_mapping` (`paint_index` →
-  `ams_index`). Ovladač (commit níže) teď posílá `paint_index` = `T` z naší G-code (GcodeSlot píše `T<slot>`),
-  `ams_index` = pozice od serveru a `ams_color`/`material_type` ze `multiColorBox` getInfo (Rack, box id −1).
-  K tomu `task_settings` s vyrovnáním a `filepath: null`. Úloha v `init` na volné tiskárně se jako rozběhnutý tisk
-  nepočítá.
-- **Předpoklad k ověření:** `ams_index` čísluje pozice Racku (0–3). Slicer poslal 1 pro oranžovou a ta je v Racku
-  na indexu 1. Stejná barva je ale i v ACE na indexu 0, takže čtení to nerozhodlo; rozhodne další start.
-
-## 4. Zkouška startu na skutečné tiskárně – čeká
-
-Řídící session předala 18. 10. Romanovo „CX je volná“ a produkční G-code kostky 10 mm
-(`C:\Users\roman\Downloads\kx-cube10.gcode`, 106 138 B, ~5 min, `G9111 bedTemp=55 extruderTemp=225`,
-`M104/M109 S225`, `T1`). Spuštění tisku z mé session ale zastavila kontrola oprávnění („Real-World Transactions“).
-Souhlas předaný jinou session tam neplatí, musí přijít od Romana v tomto okně. Připravený postup (skript
-`scratchpad/kx_drive.py` s ovladačem z této větve):
-
-1. `start mptest-cube10.gcode`: nahrání, `print/start`, čekání na tisk. Zapíše odpověď `/gcode_upload`.
-2. `watch`: průběh, vrstvy, zbývající minuty, snímek kamery.
-3. `cancel`: `print/stop`, kontrola, že tiskárna je zase `free` a úloha `cancelled`.
-4. Výsledek do tohoto oddílu: jestli Kobra X vzala `T1` (vestavěný box, slot 1 = oranžové PLA Silk, zavedeno) a
-   `G9111` se zahřátím, a jestli se `GcodeSlot::retarget` pro Kobra X musí změnit.
-
-Když `/gcode_upload` multipart pole `file` nevezme, jsou další na řadě: `print/start` s `url` na malý HTTP server
-agenta, a nakonec poloautomat (obsluha pošle soubor ze Sliceru Next a agent ho spustí podle jména).
+Nález při zrušení: tiskárna zrušenou úlohu **nezapíše do `last_project`** (zůstává tam poslední dokončený tisk),
+takže po zrušení hlásí jen „volná“ a starou dokončenou úlohu. Ovladač si proto zapamatuje hlášení
+`print/report stop` → `stoped` (s názvem souboru) a po něm hlásí úlohu jako zrušenou, dokud nezačne další.
 
 ## 5. Instalace agenta na PC farmy (pro řídící)
 
-- `requirements.txt` nově obsahuje:
-  - `kobra-connect @ https://github.com/rvanderp3/kobra-connect/archive/3edba24….zip`, zip místo git, takže na PC
-    farmy není potřeba git. Stáhne závislosti `paho-mqtt`, `cryptography`, `flatbuffers`, `websocket-client` a
-    `requests` (`aiohttp` už je).
-  - `av>=12`: kamera Kobra X. Wheel pro Windows obsahuje ffmpeg, samostatný ffmpeg netřeba. Zip agenta tím naroste
-    jen o `requirements.txt`, balíčky se stáhnou při instalaci.
-- Stávající instalace: `venv\Scripts\python.exe -m pip install -r requirements.txt`, pak restart služby agenta.
-- `config.yaml` na PC farmy: blok `key: <klíč C1 v adminu>`, `driver: anycubic_lan`, `ip: 192.168.8.44`. Tiskárnu
-  v `/admin/farm/printers` přepnout z `manual` na `agent` až po zkoušce v §4.
-- Server: beze změny. `telemetry.link = "cloud_mode"` nástěnka ukáže jako neznámý klíč. Jestli ho má převést do
-  věty, je to drobná změna nástěnky pro řídící.
+- `requirements.txt` nově: `kobra-connect @ https://github.com/rvanderp3/kobra-connect/archive/3edba24….zip` (zip,
+  git netřeba; stáhne `paho-mqtt`, `cryptography`, `flatbuffers`, `websocket-client`, `requests`) a `av>=12` (kamera;
+  wheel pro Windows má ffmpeg v sobě). `anycubic_pkg` je čistá knihovna, nic dalšího.
+- Stávající instalace: `venv\Scripts\python.exe -m pip install -r requirements.txt`, restart služby agenta.
+- `config.yaml` na PC farmy: blok `key: kobra-x-01`, `driver: anycubic_lan`, `ip: 192.168.8.44` (Roman tiskárnu
+  v `/admin/farm/printers` už přepnul na „Automaticky přes agenta“, agent Agent1 S1; dokud na PC farmy neběží 0.2.0
+  s tímhle blokem, je v adminu offline a žádná zakázka na ni nejde).
+- PC farmy musí vidět tiskárnu v síti (stejná LAN; firewall Windows pro Python povolit, nebo síť jako soukromou).
+  Tiskárna musí zůstat v LAN režimu (odpojená od cloudu Anycubic).
+- Server: beze změny. `telemetry.link = "cloud_mode"` nástěnka zatím ukáže jako neznámý klíč.

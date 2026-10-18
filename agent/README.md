@@ -102,6 +102,8 @@ Viz `config.example.yaml`. Token lze místo souboru předat proměnnou prostřed
 | `printers[].ip` | jen `anycubic_lan`: IP tiskárny (rezervovat v routeru) |
 | `printers[].camera` | jen `anycubic_lan`: snímek z vlastní kamery tiskárny (výchozí `true`, potřebuje balíček `av`) |
 | `printers[].light` | jen `anycubic_lan`: rozsvěcet světlo kamery (výchozí `false`, na Kobra X zatím neověřeno) |
+| `printers[].auto_leveling` | jen `anycubic_lan`: tiskárna si před každým tiskem vyrovná podložku, jako po odeslání ze Sliceru Next (výchozí `true`) |
+| `printers[].package` | jen `anycubic_lan`: soubor poslat jako balíček `.gcode.3mf` s náhledem (jako Slicer Next) místo holého G-code s doplněnými řádky; obě cesty ověřené na Kobra X 18. 10. 2026 (`docs/AM.md`) |
 | `printers[].url` | Moonraker, `http://IP:7125` |
 | `printers[].snapshot_url` | snímek z kamery, u Rinkhals `http://IP/webcam/?action=snapshot` |
 | `printers[].light_device` | světlo komory (Moonraker power device); výchozí `chamber_light` = Rinkhals. Agent ho rozsvítí před startem tisku a zhasne po jeho konci, v adminu jsou tlačítka Rozsvítit/Zhasnout. `""` = tiskárna světlo nemá |

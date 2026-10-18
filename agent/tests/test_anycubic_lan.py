@@ -9,6 +9,9 @@ import asyncio
 import os
 import sys
 import tempfile
+import hashlib
+import io
+import zipfile
 import unittest
 
 from aiohttp import web
@@ -46,6 +49,7 @@ class FakeLink:
         self.p = printer
         self.on_report = on_report
         self.open = False
+        self.reports, self.history, self.seq = {}, {}, {}
 
     def connect(self):
         self.p.opened += 1
@@ -55,6 +59,22 @@ class FakeLink:
 
     def close(self):
         self.open = False
+
+    def report(self, kind, data):
+        self.reports[kind] = data
+        self.history.setdefault(kind, []).append(data)
+        self.seq[kind] = self.seq.get(kind, 0) + 1
+        if self.on_report:
+            self.on_report(kind, data)
+
+    def since(self, kind, n):
+        return self.history.get(kind, [])[n:]
+
+    def last(self, kind):
+        return self.reports.get(kind)
+
+    def count(self, kind):
+        return self.seq.get(kind, 0)
 
     @property
     def connected(self):
@@ -72,8 +92,18 @@ class FakeLink:
             raise LinkError("not connected")
         self.p.sent.append((kind, action, data))
         info = self.p.info
-        if (kind, action) == ("print", "start") and not (data.get("ams_settings") or {}).get("ams_box_mapping"):
-            # what the Kobra X did on 18 Oct 2026: the task is noted, nothing heats, the printer stays free
+        if (kind, action) == ("print", "start") and self.p.busy_starts > 0:
+            # still reading the uploaded file: refused like on 18 Oct 2026
+            self.p.busy_starts -= 1
+            self.report("print", {"action": "start", "state": "failed", "code": 10301, "msg": "设备忙,情况未知"})
+            return "msg"
+        if (kind, action) == ("print", "start"):
+            self.report("print", {"action": "start", "state": "checking", "code": 200, "msg": "done"})
+        incomplete = not (data.get("ams_settings") or {}).get("ams_box_mapping") or not data.get("url") or not data.get("md5") or not data.get("filesize")
+        if (kind, action) == ("print", "start") and incomplete:
+            # what the Kobra X did on 18 Oct 2026 to a start without the mapping, or without url/md5/filesize: the
+            # task is noted ("init"), nothing heats, the printer stays free, and print/report says 10301
+            self.report("print", {"action": "start", "state": "failed", "code": 10301, "msg": "设备忙,情况未知"})
             info.update(state="free", project={"state": "init", "filename": data["filename"], "progress": 0, "pause": 0})
         elif (kind, action) == ("print", "start") and self.p.begins:
             info.update(state="busy", project={"state": "printing", "filename": data["filename"], "progress": 0, "pause": 0,
@@ -83,7 +113,12 @@ class FakeLink:
         elif (kind, action) == ("print", "resume") and info.get("project"):
             info["project"] = dict(info["project"], pause=0, state="printing")
         elif (kind, action) == ("print", "stop") and info.get("project"):
-            info.update(state="free", last_project=dict(info["project"], state="stoped"), project=None)
+            # as the Kobra X does (18 Oct 2026): the task is gone, last_project stays the earlier finished print,
+            # only the stop report names the cancelled file
+            gone = info["project"]
+            info.update(state="free", project=None)
+            self.report("print", {"action": "stop", "state": "stoped", "code": 10601, "msg": "用户发起",
+                                  "data": {"taskid": "-1", "filename": gone["filename"], "progress": gone.get("progress", 0), "print_time": 0}})
         return "msg"
 
 
@@ -93,6 +128,7 @@ class FakePrinter:
         self.refuse = None        # LinkError text connect() raises (CLOUD_MODE, "timed out"...)
         self.dropped = False      # the link went down after connecting
         self.begins = True
+        self.busy_starts = 0      # how many starts the printer refuses with 10301 (busy reading the file)
         self.opened = 0
         self.sent = []
         self.uploads = []
@@ -127,13 +163,16 @@ class FakePrinter:
         if int(request.headers["X-File-Length"]) != len(body) or form["filename"] != f.filename:
             return web.json_response({"code": 19005, "message": "Parsing form fail"})
         self.uploads.append((request.query.get("s"), f.filename, body))
+        # the printer reads the file by itself and shows it as a task in "init" (still free)
+        self.info.update(project={"state": "init", "filename": f.filename, "progress": 0, "pause": 0})
         return web.json_response({"code": 200, "message": "success"})
 
 
 class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
     async def driver(self, printer: FakePrinter, **options):
         d = create("kobra-x-01", "anycubic_lan", {"ip": "192.168.8.44", "_link": printer.link, "start_poll": 0.01,
-                                                  "start_wait": 0.5, "retry_seconds": 60, **options})
+                                                  "start_wait": 0.5, "retry_seconds": 60, "answer_poll": 0.01,
+                                                  "answer_wait": 0.1, "busy_retry": 0.01, **options})
         await d.connect()
         self.addAsyncCleanup(d.close)
         return d
@@ -142,7 +181,9 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
         fd, path = tempfile.mkstemp(suffix=".gcode")
         with os.fdopen(fd, "wb") as fh:
             # the start of a farm G-code after GcodeSlot (kx-cube10.gcode, 18 Oct 2026)
-            fh.write(f";FLAVOR:Klipper\nG9111 bedTemp=55 extruderTemp=225\nM109 S225\nT{tool} ; slot chosen by matplace farm\nG1 X10 Y10\n".encode())
+            fh.write((f"; HEADER_BLOCK_START\n; generated by OrcaSlicer 2.4.0-beta\n; total layer number: 50\n; HEADER_BLOCK_END\n\n"
+                      f"G9111 bedTemp=55 extruderTemp=225\nM109 S225\nT{tool} ; slot chosen by matplace farm\nG1 X10 Y10\n"
+                      f"; CONFIG_BLOCK_START\n; filament_colour = #F2754E\n; filament_type = PLA\n; CONFIG_BLOCK_END\n").encode())
         self.addCleanup(os.remove, path)
         return path
 
@@ -182,20 +223,32 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
             d = await self.driver(p)
             await d.status()
             await d.start(self.gcode(tool=1), "mp7-cube.gcode", 1)
-            self.assertEqual("tok", p.uploads[0][0])
-            self.assertEqual("mp7-cube.gcode", p.uploads[0][1])
-            self.assertIn(b"T1", p.uploads[0][2])
+            token, name, body = p.uploads[0]
+            self.assertEqual(("tok", "mp7-cube.gcode.3mf"), (token, name))
+            # the package carries the G-code as paint 0 with the rack spool's colour and material in the lines the
+            # firmware reads (anycubic_pkg; the spool itself is chosen by the start's mapping)
+            with zipfile.ZipFile(io.BytesIO(body)) as z:
+                gcode = z.read("Metadata/plate_1.gcode")
+            self.assertIn(b"\nT0 ; slot chosen by matplace farm\n", gcode)
+            self.assertIn(b'; paint_info = [{"material_type":"PLA","paint_color":[255,127,50],"paint_index":0}]\n; HEADER_BLOCK_END', gcode)
             kind, action, data = p.sent[-1]
             self.assertEqual(("print", "start", "mp7-cube.gcode", "-1", 1, 1), (kind, action, data["filename"], data["taskid"], data["filetype"], data["project_type"]))
-            # the G-code's T1 goes to the rack's position 1 with the colour and the material of the spool there
-            self.assertEqual([{"paint_index": 1, "ams_index": 1, "paint_color": [0, 0, 0, 255], "ams_color": [255, 127, 50, 255], "material_type": "PLA"}],
+            # the start as the Slicer Next sends it: url, the upload's md5 and size, the mapping T1 -> rack position 1
+            self.assertEqual((hashlib.md5(body).hexdigest(), len(body)), (data["md5"], data["filesize"]))
+            self.assertTrue(data["url"].startswith("https://"))
+            self.assertEqual([{"paint_index": 0, "ams_index": 1, "paint_color": [255, 127, 50, 255], "ams_color": [255, 127, 50, 255], "material_type": "PLA"}],
                              data["ams_settings"]["ams_box_mapping"])
             self.assertTrue(data["ams_settings"]["use_ams"])
-            self.assertEqual(1, data["task_settings"]["auto_leveling"])
+            self.assertEqual((1, []), (data["task_settings"]["auto_leveling"], data["task_settings"]["model_objects_skip_parts"]))
             await d.cancel()
             self.assertEqual(("print", "stop"), p.sent[-1][:2])
             s = await d.status()
-            self.assertEqual((IDLE, JOB_CANCELLED), (s.state, s.job.status))
+            # the printer's last_project still names the earlier finished print; the cancelled one is told from the stop report
+            self.assertEqual((IDLE, JOB_CANCELLED, "mp7-cube.gcode"), (s.state, s.job.status, s.job.filename))
+            self.assertEqual("old part_PLA_0.2_5h51m15s.gcode", p.info["last_project"]["filename"])
+            # until the next start, which forgets it
+            await d.start(self.gcode(tool=1), "mp8-cube.gcode", 1)
+            self.assertEqual((PRINTING, "mp8-cube.gcode"), ((s := await d.status()).state, s.job.filename))
 
     async def test_start_refuses_a_busy_printer_and_says_when_the_print_never_began(self):
         async with FakePrinter() as p:
@@ -209,6 +262,30 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
             p.begins = False
             with self.assertRaisesRegex(DriverError, "did not begin"):
                 await d.start(self.gcode(), "mp8-cube.gcode", 0)
+
+    async def test_a_start_refused_while_the_printer_reads_the_file_is_sent_again(self):
+        async with FakePrinter() as p:
+            p.busy_starts = 2
+            d = await self.driver(p)
+            await d.start(self.gcode(tool=1), "mp10-cube.gcode", 1)
+            self.assertEqual(3, sum(1 for k, a, _ in p.sent if (k, a) == ("print", "start")))
+            self.assertEqual(PRINTING, (await d.status()).state)
+
+    async def test_a_start_refused_for_good_is_told_with_the_printers_code(self):
+        async with FakePrinter() as p:
+            p.busy_starts = 5
+            d = await self.driver(p, start_attempts=2)
+            with self.assertRaisesRegex(DriverError, "10301"):
+                await d.start(self.gcode(), "mp11-cube.gcode", 0)
+
+    async def test_a_stale_task_the_printer_only_noted_is_stopped_before_the_start(self):
+        async with FakePrinter() as p:
+            p.info.update(state="free", project={"state": "init", "filename": "refused-earlier.gcode", "progress": 0, "pause": 0})
+            d = await self.driver(p)
+            self.assertEqual(IDLE, (await d.status()).state, "a noted task on a free printer is no print")
+            await d.start(self.gcode(tool=1), "mp12-cube.gcode", 1)
+            self.assertEqual(("print", "stop"), p.sent[0][:2])
+            self.assertEqual(PRINTING, (await d.status()).state)
 
     async def test_pause_and_resume_go_to_the_printer(self):
         async with FakePrinter() as p:
