@@ -47,3 +47,13 @@ Roman 18. 10. 2026 natočil průchod podle `docs/prompts/video-printables.md` (z
 
 Soubory v `out\`, `docs/AK.md` (co je kde, délky, co chybí: telefon, model), větev s JSON, skriptem, druhem `howto`
 a testy, `pint`, `tsc`, `build`, zpráva řídící session. Roman video posoudí a schválí v administraci.
+
+## 4. Doplněno 18. 10. (řídící)
+
+- Záznam: 1920 × 1080, 60 fps, 4 min 44 s, zvuk AAC (nepoužít). Prohlížeč není v F11 (záložky a lišta jsou vidět);
+  v sestřihu ořízni obraz na obsah okna, nebo nech, ať je vidět adresa.
+- Model: **Cell Phone Stand**, autor **Pit Demon** (@Demon), https://www.printables.com/model/767024-cell-phone-stand,
+  licence **CC0 Public Domain** (komerční využití i remix dovolený, uvedení původu nepovinné). Do popisu videa:
+  „Model: Cell Phone Stand od Pit Demon (Printables, CC0)“ s odkazem.
+- ffmpeg na PC: `C:\Users\roman\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-9.0.2-full_build\bin\ffmpeg.exe`
+  (v nových shellech i jako `ffmpeg`).
