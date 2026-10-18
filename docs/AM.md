@@ -85,6 +85,36 @@ Roman v okně session 4 napsal „spusť zkoušku na Kobra X“. Výsledek:
 3. **Poloautomat:** obsluha pošle soubor ze Sliceru Next, agent ho spustí podle jména a dál hlídá, pozastaví a zruší.
    To ovladač umí už teď, jen bez nahrání.
 
+## 4b. Zachyceno, jak nahrává Slicer Next (18. 10. 2026, 12:27)
+
+Roman připojil Kobra X ve Sliceru Next přes záložku „LAN Printer“. Síť byla v Profilu Windows jako veřejná a Slicer
+tiskárnu do té doby neviděl. Pak poslal malou kostku a `pktmon` (`scratchpad/kx_capture.ps1`,
+dekódování `scratchpad/kx_decode.py`) zachytil tenhle požadavek:
+
+```
+POST /gcode_upload?s=<token z info.urls.fileUploadurl> HTTP/1.1
+User-Agent: AnycubicSlicerNext/2.0.0.3
+X-BBL-Client-Name / -Type / -Version / Device-ID / Language / OS-Type / OS-Version   (identifikace klienta)
+X-File-Length: 58163
+Content-Type: multipart/form-data; boundary=…
+  part 1: name="filename"                         value "1018-1226-Cube_plate(01)_PLA_0.2_13m2s.gcode.3mf"
+  part 2: name="gcode"; filename="<stejný název>"  application/octet-stream, 58163 B (zip: .gcode.3mf)
+```
+
+- Start tisku jde potom přes MQTT/TLS na portu 9883, takže ze záznamu není čitelný. Tiskárna pak hlásí `project` se
+  `state` `ace_filament_feeding` a později `printing`, `filename` bez `.3mf`, `project_type` 1 a `task_id` "-1".
+- **Ovladač je opravený:** pole `filename`, za ním `gcode`, hlavička `X-File-Length`. Falešná tiskárna v testech
+  teď stejně jako skutečná odmítne jakýkoli jiný tvar (19005). Do mapy stavů přibyly `ace_filament_feeding`,
+  `auto_leveling`, `vibrating`, `flow_calibrating`, `resumed` a `updated`.
+- Ovladač si během Romanova tisku přečetl stav správně: printing, tryska 219/220 °C, podložka 63/60 °C, název
+  souboru sedí a kamera dala snímek 67 kB.
+- **Zbývá ověřit** na volné tiskárně s Romanovým svolením:
+  - jestli tiskárna vezme náš **čistý `.gcode`** (Slicer posílá `.gcode.3mf`) a `print/start` s `filetype` 1;
+  - co udělá s `T1` a `G9111`.
+
+  Když `.gcode` nevezme, agent ho před nahráním zabalí do `.gcode.3mf` (`Metadata/plate_1.gcode` + md5), jak to
+  dělá Slicer.
+
 ## 4. Zkouška startu na skutečné tiskárně – čeká
 
 Řídící session předala 18. 10. Romanovo „CX je volná“ a produkční G-code kostky 10 mm

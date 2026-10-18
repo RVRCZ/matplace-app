@@ -46,6 +46,9 @@ CLOUD_MODE = "cloud_mode"
 JOB_STATES = {
     "printing": JOB_PRINTING, "preheating": JOB_PRINTING, "busy": JOB_PRINTING, "downloading": JOB_PRINTING,
     "checking": JOB_PRINTING, "leveling": JOB_PRINTING, "resuming": JOB_PRINTING, "pausing": JOB_PRINTING,
+    # the start of a Kobra X print (18 Oct 2026: "ace_filament_feeding" first) and the S1 sequence
+    "ace_filament_feeding": JOB_PRINTING, "auto_leveling": JOB_PRINTING, "vibrating": JOB_PRINTING,
+    "flow_calibrating": JOB_PRINTING, "resumed": JOB_PRINTING, "updated": JOB_PRINTING,
     "paused": JOB_PAUSED,
     "finished": JOB_DONE, "complete": JOB_DONE, "done": JOB_DONE,
     "stoped": JOB_CANCELLED, "stopped": JOB_CANCELLED, "canceled": JOB_CANCELLED, "cancelled": JOB_CANCELLED, "stoping": JOB_CANCELLED,
@@ -346,12 +349,17 @@ class AnycubicLanDriver(PrinterDriver):
         size = os.path.getsize(path)
         with open(path, "rb") as fh:
             md5 = hashlib.md5(fh.read()).hexdigest()  # noqa: S324 - the printer's checksum, not security
+        # the form exactly as Anycubic Slicer Next 2.0.0.3 sends it (captured 18 Oct 2026, docs/AM.md): the name first as a
+        # plain field, then the file in the field "gcode", and its size in X-File-Length. Anything else is
+        # {"code": 19005, "message": "Parsing form fail"}.
         form = aiohttp.FormData()
+        form.add_field("filename", filename)
+        headers = {"X-File-Length": str(size), "User-Agent": "matplace-farm-agent"}
         with open(path, "rb") as fh:
-            form.add_field("file", fh, filename=filename, content_type="application/octet-stream")
+            form.add_field("gcode", fh, filename=filename, content_type="application/octet-stream")
             try:
                 async with aiohttp.ClientSession() as s:
-                    async with s.post(url, data=form, timeout=aiohttp.ClientTimeout(total=self.upload_timeout)) as r:
+                    async with s.post(url, data=form, headers=headers, timeout=aiohttp.ClientTimeout(total=self.upload_timeout)) as r:
                         body = await r.text()
                         if r.status >= 400:
                             raise DriverError(f"upload: HTTP {r.status} {body[:200]}")

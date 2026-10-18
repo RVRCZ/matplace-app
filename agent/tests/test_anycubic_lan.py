@@ -101,9 +101,17 @@ class FakePrinter:
         await self.runner.cleanup()
 
     async def upload(self, request):
+        """Like the Kobra X: the name as a plain field first, then the file in "gcode", the size in X-File-Length;
+        any other form is refused the way the printer refused it on 18 Oct 2026."""
         form = await request.post()
-        f = form["file"]
-        self.uploads.append((request.query.get("s"), f.filename, f.file.read()))
+        names = list(form.keys())
+        f = form.get("gcode")
+        if names[:2] != ["filename", "gcode"] or not hasattr(f, "file") or not request.headers.get("X-File-Length"):
+            return web.json_response({"code": 19005, "message": "Parsing form fail"})
+        body = f.file.read()
+        if int(request.headers["X-File-Length"]) != len(body) or form["filename"] != f.filename:
+            return web.json_response({"code": 19005, "message": "Parsing form fail"})
+        self.uploads.append((request.query.get("s"), f.filename, body))
         return web.json_response({"code": 200, "message": "success"})
 
 
