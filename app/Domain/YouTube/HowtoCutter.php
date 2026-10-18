@@ -111,15 +111,15 @@ class HowtoCutter
         return implode("\n", $out);
     }
 
-    /** The YouTube title and description: the text of the spec, the model's credit, our link (video_howto) and the music. */
+    /** The YouTube title and description: the call with our link first (video_howto), the text of the spec, the model's credit and the music. */
     public function description(array $spec, ?string $music): array
     {
         $model = (array) ($spec['model'] ?? []);
         $credit = isset($model['url'])
             ? sprintf('Model: %s od %s (Printables, %s) – %s', $model['name'] ?? '', $model['author'] ?? '', $model['licence'] ?? '', $model['url'])
             : 'MODEL: …';
-        $text = trim((string) ($spec['description'] ?? ''))."\n\n".$credit."\n\n"
-            .'Vyzkoušejte to: '.$this->link($spec);
+        $text = $this->videos->callLine($this->videos->link(null, FarmVideo::KIND_HOWTO, 'youtube', $this->target($spec)))."\n"
+            .trim((string) ($spec['description'] ?? ''))."\n\n".$credit;
         if ($music) {
             $text .= "\n\n".__('youtube.video.music', ['track' => FarmVideos::musicCredit(basename($music))], config('youtube.language'));
         }
@@ -127,12 +127,13 @@ class HowtoCutter
         return ['title' => mb_substr((string) ($spec['youtube_title'] ?? $spec['title']['cs'] ?? 'Matplace'), 0, 100), 'description' => $text."\n\n#3Dprinting #Printables"];
     }
 
-    /** Our site with the how-to campaign; `site` in the spec when the video is built away from the server (the local APP_URL is not the site). */
-    private function link(array $spec): string
+    /**
+     * Where the video sends its viewers, on every channel: `link` of the spec (a path, the home page when missing) on
+     * `site` (built away from the server the local APP_URL is not the site).
+     */
+    public function target(array $spec): string
     {
-        $link = $this->videos->link(null, FarmVideo::KIND_HOWTO);
-
-        return isset($spec['site']) ? rtrim((string) $spec['site'], '/').'/?'.parse_url($link, PHP_URL_QUERY) : $link;
+        return rtrim((string) ($spec['site'] ?? config('app.url')), '/').'/'.ltrim((string) ($spec['link'] ?? '/'), '/');
     }
 
     /** The track: the one the spec names, else one of the library picked by the video's name (the same on every build). */

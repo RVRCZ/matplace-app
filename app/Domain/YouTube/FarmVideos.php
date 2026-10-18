@@ -106,10 +106,11 @@ class FarmVideos
     /**
      * A how-to video (farm:howto-video) waits for the admin like the others: one row per variant (16:9 and Short).
      * Built again, a row not on YouTube yet takes the new file and texts; one already there stays (the admin replaces it).
+     * $link = the spec's target (HowtoCutter::target), where Facebook sends people too.
      *
      * @param  'wide'|'short'  $variant
      */
-    public function queueHowto(string $name, string $variant, string $path, string $title, string $description, ?string $music): FarmVideo
+    public function queueHowto(string $name, string $variant, string $path, string $title, string $description, ?string $music, ?string $link = null): FarmVideo
     {
         $video = FarmVideo::where('kind', FarmVideo::KIND_HOWTO)->get()->first(fn (FarmVideo $v) => ($v->meta['name'] ?? null) === $name && ($v->meta['variant'] ?? null) === $variant)
             ?? new FarmVideo(['kind' => FarmVideo::KIND_HOWTO, 'status' => FarmVideo::STATUS_PENDING]);
@@ -117,7 +118,7 @@ class FarmVideos
             return $video;
         }
         $video->fill(['path' => $path, 'title' => $title, 'description' => $variant === 'short' ? $description."\n\n#Shorts" : $description, 'music' => $music,
-            'meta' => ['name' => $name, 'variant' => $variant], 'status' => FarmVideo::STATUS_PENDING, 'error' => null, 'approved_at' => null])->save();
+            'meta' => array_filter(['name' => $name, 'variant' => $variant, 'link' => $link]), 'status' => FarmVideo::STATUS_PENDING, 'error' => null, 'approved_at' => null])->save();
         if ($variant === 'wide') {
             $this->tellAdmin($video, null);   // one mail for the pair
         }
@@ -258,6 +259,7 @@ class FarmVideos
         if (! $public) {
             throw new YouTubeError('locked_private', (string) $video->error);
         }
+        $this->commentLink($video);
 
         return $video;
     }
@@ -383,6 +385,9 @@ class FarmVideos
                 $fill += ['status' => FarmVideo::STATUS_PUBLISHED, 'published_at' => $video->scheduled_at ?? now(), 'error' => null];
             }
             $video->update($fill);
+            if (($fill['status'] ?? null) === FarmVideo::STATUS_PUBLISHED) {
+                $this->commentLink($video);
+            }
             $n++;
         }
 
@@ -519,12 +524,64 @@ class FarmVideos
         return rtrim((string) preg_replace('#^https?://(www\.)?#', '', $this->toolUrl($order)), '/');
     }
 
-    /** The tool's page marked with the video's campaign (video_short, video_wide, video_weekly), so the visits can be counted. */
-    public function link(?FarmOrder $order, string $kind): string
+    /**
+     * Where a video sends its viewers, the one place for YouTube, Facebook and Instagram: the page of the tool that made
+     * the model, else the home page (it is the calculator with the file field); $target overrides it (a how-to video's
+     * spec). Marked with the channel (utm_source youtube|facebook|instagram) and the kind (utm_campaign video_short,
+     * video_wide, video_weekly, video_howto), so /admin/stats counts the visits per channel and kind.
+     */
+    public function link(?FarmOrder $order, string $kind, string $source = 'youtube', ?string $target = null): string
     {
-        $url = $this->toolUrl($order);
+        $url = $target ?: $this->toolUrl($order);
+        if ((string) parse_url($url, PHP_URL_PATH) === '') {
+            $url .= '/';
+        }
 
-        return ($url === rtrim((string) config('app.url'), '/') ? $url.'/' : $url).'?'.http_build_query(['utm_source' => 'youtube', 'utm_medium' => 'social', 'utm_campaign' => 'video_'.$kind]);
+        return $url.(str_contains($url, '?') ? '&' : '?').http_build_query(['utm_source' => $source, 'utm_medium' => 'social', 'utm_campaign' => 'video_'.$kind]);
+    }
+
+    /** A video row's link on a channel: its print's tool page, the how-to spec's target (meta.link), the weekly cut the home page. */
+    public function linkOf(FarmVideo $video, string $source = 'youtube'): string
+    {
+        $kind = $video->kind ?? FarmVideo::KIND_SHORT;
+
+        return $this->link($kind === FarmVideo::KIND_WEEKLY ? null : $video->order, $kind, $source, $kind === FarmVideo::KIND_HOWTO ? ($video->meta['link'] ?? null) : null);
+    }
+
+    /** A text written for YouTube with our links marked for another channel: the same pages, that channel's utm_source. */
+    public function forChannel(string $text, string $source): string
+    {
+        return str_replace('utm_source=youtube&', 'utm_source='.$source.'&', $text);
+    }
+
+    /**
+     * The first line of every description, the call with the link: YouTube shows two lines before "more" (a Short even
+     * less). A tool's page invites to make one's own, the home page to upload a model.
+     */
+    public function callLine(string $url, ?string $locale = null): string
+    {
+        $tool = trim((string) parse_url($url, PHP_URL_PATH), '/') !== '';
+
+        return __($tool ? 'youtube.video.cta_tool' : 'youtube.video.cta', ['url' => $url], $locale ?? config('youtube.language'));
+    }
+
+    /**
+     * With YOUTUBE_PIN_COMMENT the channel writes the call with the link under its public video once (meta.comment_id).
+     * YouTube has no API for pinning: the admin pins it in Studio. Off by default, because commentThreads.insert needs
+     * the scope youtube.force-ssl, i.e. Roman connecting the channel again in /admin/youtube (docs/AK.md §4).
+     */
+    public function commentLink(FarmVideo $video): void
+    {
+        if (! config('youtube.pin_comment') || ! $video->youtube_id || ! empty($video->meta['comment_id'])) {
+            return;
+        }
+        try {
+            $id = $this->youtube->comment($video->youtube_id, $this->callLine($this->linkOf($video)));
+            $video->update(['meta' => ['comment_id' => $id] + (array) $video->meta]);
+        } catch (YouTubeError $e) {
+            // a token from before the scope (insufficientPermissions) or the quota: the video stays as it is
+            Log::warning('YouTube link comment failed', ['video' => $video->id, 'reason' => $e->reason, 'error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -620,10 +677,10 @@ class FarmVideos
         return $name;
     }
 
-    /** What was printed and how, the link with the kind's campaign, the music credit; the Short gets its hashtags. */
+    /** The call with the link first (the tool's page or the home page, the kind's campaign), what was printed and how, the music credit; the Short gets its hashtags. */
     public function defaultDescription(FarmOrder $order, ?string $music = null, string $kind = FarmVideo::KIND_SHORT): string
     {
-        $text = __('youtube.video.description', $this->facts($order, $kind), config('youtube.language'));
+        $text = __('youtube.video.description', $this->facts($order) + ['cta' => $this->callLine($this->link($order, $kind))], config('youtube.language'));
         if ($music) {
             $text .= "\n\n".__('youtube.video.music', ['track' => self::musicCredit($music)], config('youtube.language'));
         }
@@ -641,7 +698,7 @@ class FarmVideos
     {
         $locale = config('youtube.language');
         $lines = array_map(fn ($c) => sprintf('%d:%02d %s', intdiv((int) $c[0], 60), (int) $c[0] % 60, $c[1]).($c[2] ? ' – '.$c[2] : ''), $chapters);
-        $text = __('youtube.weekly.description', ['dates' => $dates, 'count' => count($chapters), 'url' => $this->link(null, FarmVideo::KIND_WEEKLY)], $locale)."\n\n".implode("\n", $lines);
+        $text = __('youtube.weekly.description', ['dates' => $dates, 'count' => count($chapters), 'cta' => $this->callLine($this->link(null, FarmVideo::KIND_WEEKLY), $locale)], $locale)."\n\n".implode("\n", $lines);
         if ($music) {
             $text .= "\n\n".__('youtube.video.music', ['track' => self::musicCredit($music)], $locale);
         }
@@ -649,7 +706,7 @@ class FarmVideos
         return $text."\n\n#3Dprinting #timelapse";
     }
 
-    private function facts(FarmOrder $order, string $kind = FarmVideo::KIND_SHORT): array
+    private function facts(FarmOrder $order): array
     {
         $order->loadMissing(['color.material', 'printer']);
         $minutes = (int) ($order->actual_minutes ?: $order->est_minutes);
@@ -659,8 +716,6 @@ class FarmVideos
             'color' => $order->color?->displayName() ?? '',
             'printer' => $order->printer?->model ?: ($order->printer?->name ?? ''),
             'time' => $minutes >= 60 ? intdiv($minutes, 60).' h '.($minutes % 60).' min' : $minutes.' min',
-            // marked, so the people a video brings can be counted (YouTube often sends no referrer), per kind of video
-            'url' => $this->link(null, $kind),
         ];
     }
 }

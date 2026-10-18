@@ -27,12 +27,14 @@ return [
         'tail' => ':time de impresión en :seconds s',
         'tail_plain' => ':time de impresión 3D',
         'title' => 'Time-lapse de impresión 3D – :material :color',
-        'description' => "Time-lapse de una impresión de nuestra granja de impresión 3D.\n\nMaterial: :material :color\nImpresora: :printer\nTiempo de impresión: :time\n\n¿Quiere imprimir algo también? Suba un modelo, haga una foto o descríbalo con palabras y verá el precio al instante: :url\n\nPublicado con el consentimiento del cliente.",
+        'cta' => 'Suba un modelo y verá el precio al instante: :url',
+        'cta_tool' => 'Haga el suyo: :url',
+        'description' => ":cta\nTime-lapse de una impresión de nuestra granja de impresión 3D.\n\nMaterial: :material :color\nImpresora: :printer\nTiempo de impresión: :time\n\nPublicado con el consentimiento del cliente.",
     ],
 
     'weekly' => [
         'card' => 'Esta semana en la granja',
         'title' => 'Esta semana en la granja – :dates',
-        'description' => "Lo que imprimió esta semana (:dates) nuestra granja de impresión 3D: :count impresiones en time-lapse. Cada pieza tiene un capítulo con un enlace a la herramienta en la que se creó.\n\n¿Quieres imprimir algo tú también? Sube un modelo, fotografía un objeto o descríbelo con palabras y verás el precio al instante: :url\n\nPublicamos los vídeos con el consentimiento de nuestros clientes.",
+        'description' => ":cta\nLo que imprimió esta semana (:dates) nuestra granja de impresión 3D: :count impresiones en time-lapse. Cada pieza tiene un capítulo con un enlace a la herramienta en la que se creó.\n\nPublicamos los vídeos con el consentimiento de nuestros clientes.",
     ],
 ];

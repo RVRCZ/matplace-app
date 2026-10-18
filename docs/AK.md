@@ -113,3 +113,105 @@ adresní řádek s odkazem na zakázku a boční lišta Firefoxu. Obsah je vlož
    - Roman schválí v `/admin/youtube`.
 5. Celá sada 689 testů OK (s ffmpeg 9.0.2), `pint`, `tsc`, `npm run build` čisté.
 6. Titulky SRT se na YouTube nahrávají ručně ve Studiu (API je neposílá); vypálené v obraze jsou tak jako tak.
+
+## 4. Kam vedou odkazy z videí (TODO #21, větev `feature/video-links`)
+
+Zadání: `docs/prompts/video-odkazy.md`. Roman se 18. 10. při schvalování videí F26‑000085 ptal, kam vede odkaz.
+
+**Dřív**:
+- Popis na YouTube vedl vždy na hlavní stránku (`link(null, …)`), i když koncová karta ukazovala adresu nástroje.
+- Facebook a Instagram posílaly na hlavní stránku s `utm_campaign=video`, bez rozlišení druhu.
+- Odkaz byl až v pátém odstavci popisu, takže ho bez rozkliknutí „více“ nikdo neviděl.
+
+### 4.1 Jedno místo pravdy
+
+`FarmVideos::link($order, $kind, $source = 'youtube', $target = null)` určuje odkaz pro všechny kanály:
+- **cíl**: stránka nástroje, ve kterém model vznikl (`origin tool`, `lithophane` i `relief` → `/tools/relief`,
+  `generated` → `/tools/figure`). Jinak hlavní stránka, která je zároveň kalkulací s polem pro soubor.
+  `$target` cíl přepíše (instruktážní video).
+- **utm**: `utm_source` = kanál (`youtube`, `facebook`, `instagram`), `utm_medium=social`,
+  `utm_campaign=video_<druh>`.
+
+Pomocné metody:
+- `FarmVideos::linkOf($video, $source)` vybere odkaz pro řádek videa. Týdenní sestřih → hlavní stránka,
+  instruktážní video → `meta.link`.
+- `FarmVideos::forChannel($text, $source)` přepíše v textu z YouTube `utm_source=youtube` na kanál. Stránka zůstane
+  stejná, změní se jen značka.
+- Koncová karta (`address()`) bere stejný `toolUrl()`, takže adresa na kartě sedí s odkazem v popisu (ověřeno testem).
+
+| druh | kanál | cíl | utm_source | utm_campaign |
+|---|---|---|---|---|
+| Short tisku | YouTube (popis, komentář) | nástroj, jinak hlavní stránka | youtube | video_short |
+| Short tisku | Facebook video, Facebook příspěvek s odkazem | totéž | facebook | video_short |
+| Short tisku | Instagram Reel (text, odkaz v něm není klikací) | totéž | instagram | video_short |
+| 16:9 tisku | YouTube | nástroj, jinak hlavní stránka | youtube | video_wide |
+| týdenní sestřih | YouTube, první řádek popisu | hlavní stránka | youtube | video_weekly |
+| týdenní sestřih | YouTube, kapitoly | nástroj každého kusu, jinak hlavní stránka | youtube | video_weekly |
+| instruktážní 16:9 | YouTube | `site` + `link` ze specifikace (dnes `https://matplace.com/`) | youtube | video_howto |
+| instruktážní Short | YouTube, Facebook, Instagram | totéž | youtube / facebook / instagram | video_howto |
+
+Facebook a Instagram dostávají jen Shorty: 16:9 a týdenní sestřih zůstávají na YouTube, jako dosud.
+
+V `/admin/stats` (zdroj × kampaň) se tak návštěvy dají rozdělit podle kanálu i druhu videa. Starší facebookové
+příspěvky mají `utm_campaign=video`.
+
+### 4.2 Odkaz v prvních dvou řádcích popisu
+
+YouTube bez rozkliknutí ukáže první dva řádky popisu, Shorts ještě méně. Popis všech druhů proto začíná výzvou
+s odkazem (`FarmVideos::callLine`, klíče `youtube.video.cta` a `cta_tool`):
+- hlavní stránka: „Nahrajte model a hned uvidíte cenu: https://matplace.com/?…“,
+- nástroj: „Udělejte si vlastní: https://matplace.com/tools/…?…“.
+
+Pořadí popisu tisku: výzva s odkazem → věta o videu → materiál, tiskárna, doba tisku → „Video zveřejňujeme se
+souhlasem zákazníka.“ → kredit hudby → hashtagy.
+
+Ostatní druhy:
+- týdenní sestřih: výzva → věta o týdnu → souhlas → kapitoly → hudba → hashtagy,
+- instruktážní video: výzva → text ze specifikace → kredit modelu → hudba → hashtagy (`popis.txt`).
+
+Texty jsou ve třech jazycích (cs, en, es v `lang/*/youtube.php`).
+
+Instruktážní video:
+- Cíl je ve specifikaci: nový klíč `"link": "/"` v `scripts/video/howto.json` (cesta na webu `site`).
+- `HowtoCutter::target()` ho skládá.
+- `farm:howto-video --queue` ho uloží do `meta.link` řádku, podle něj pak vede i odkaz na Facebooku.
+
+**Rozpracované řádky**:
+- Videa už čekající ve frontě (třeba F26‑000085) mají popis z doby zařazení, starý.
+- Nový popis dostane jen nově zařazené video. U čekajícího stačí v `/admin/youtube` přepsat první řádek, nebo řádek
+  zamítnout a nechat zařadit znovu.
+- Facebook a Instagram berou odkaz z nového místa i u starých řádků (přepíše se jen `utm_source`).
+
+### 4.3 Připnutý komentář s odkazem (připravený, vypnutý)
+
+Co jde přes API (YouTube Data API v3, ověřeno v dokumentaci 18. 10. 2026):
+- **Vložit komentář** jde: `commentThreads.insert` (`part=snippet`, povinné `snippet.channelId`, `snippet.videoId`,
+  `snippet.topLevelComment.snippet.textOriginal`). Stojí 50 jednotek kvóty.
+- **Připnout komentář přes API nejde.** `comments.setModerationStatus` zná jen `heldForReview`, `published`
+  a `rejected`, a zdroj `commentThread` nemá žádné pole pro připnutí. Připnout se dá jen ručně ve Studiu (u komentáře
+  ⋮ → Připnout), jedno kliknutí na video.
+- **Rozsah**: `commentThreads.insert` přijímá jen `https://www.googleapis.com/auth/youtube.force-ssl`. Dnešní token
+  má `https://www.googleapis.com/auth/youtube` (`YouTubeClient::SCOPE`), a ten podle dokumentace nestačí.
+
+Co je v kódu, všechno za přepínačem `YOUTUBE_PIN_COMMENT=false` (výchozí; `config/youtube.php` `pin_comment`,
+`.env.example`):
+- **Rozsah při připojení**: `YouTubeClient::scopes()` při zapnutém přepínači žádá při připojení kanálu i
+  `youtube.force-ssl`. Vypnutý přepínač nechává připojení beze změny.
+- **Vložení komentáře**: `YouTubeClient::comment($videoId, $text)` volá `commentThreads.insert` a vrací id vlákna.
+- **Kdy se komentář píše**: `FarmVideos::commentLink($video)` napíše výzvu s odkazem (tentýž první řádek jako
+  v popisu) jednou, když je video veřejné:
+  - po `publish()` s výsledkem „public“,
+  - nebo když ho `refreshStats()` najde veřejné (zveřejněné ve Studiu nebo plánovačem YouTube).
+- **Proč až u veřejného**: soukromé a naplánované video komentáře nemá.
+- **Opakování**: id se zapíše do `meta.comment_id`, druhý komentář se nepíše.
+- **Selhání**: token bez rozsahu (`insufficientPermissions`) nebo kvóta se zapíše do logu, video zůstane, jak je.
+
+Skutečné volání neproběhlo, testy mají Google podvržený. Kroky k zapnutí, až to Roman schválí:
+1. Na serveru `YOUTUBE_PIN_COMMENT=true` a `php artisan config:cache`.
+2. Ověřit, že projekt `matplace-youtube` v Google Cloud má rozsah `youtube.force-ssl` na obrazovce souhlasu
+   (OAuth consent screen → Data access). Pokud ne, přidat ho. Citlivý rozsah u neověřené aplikace znamená varování
+   při souhlasu, stejně jako dnes.
+3. Roman v `/admin/youtube` kanál odpojí a znovu připojí, Google se zeptá na nový souhlas
+   s rozšířeným rozsahem.
+4. Od té chvíle dostane každé nově zveřejněné video komentář. Připnout ho Roman musí ve Studiu.
+5. Pro už zveřejněná videa se dá komentář dopsat ručně, `commentLink()` je veřejná metoda (tinker).

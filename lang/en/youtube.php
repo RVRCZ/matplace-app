@@ -27,12 +27,14 @@ return [
         'tail' => ':time of printing in :seconds s',
         'tail_plain' => ':time of 3D printing',
         'title' => '3D print time-lapse – :material :color',
-        'description' => "Time-lapse of a print from our 3D print farm.\n\nMaterial: :material :color\nPrinter: :printer\nPrint time: :time\n\nWant something printed too? Upload a model, take a photo or describe it in words and see the price right away: :url\n\nPublished with the customer's consent.",
+        'cta' => 'Upload a model and see the price right away: :url',
+        'cta_tool' => 'Make your own: :url',
+        'description' => ":cta\nTime-lapse of a print from our 3D print farm.\n\nMaterial: :material :color\nPrinter: :printer\nPrint time: :time\n\nPublished with the customer's consent.",
     ],
 
     'weekly' => [
         'card' => 'This week on the farm',
         'title' => 'This week on the farm – :dates',
-        'description' => "What our 3D print farm printed this week (:dates): :count prints in time-lapse. Every piece has a chapter with a link to the tool it was made in.\n\nWant something printed too? Upload a model, take a photo of an object or describe it in words and see the price right away: :url\n\nWe publish the videos with our customers' consent.",
+        'description' => ":cta\nWhat our 3D print farm printed this week (:dates): :count prints in time-lapse. Every piece has a chapter with a link to the tool it was made in.\n\nWe publish the videos with our customers' consent.",
     ],
 ];

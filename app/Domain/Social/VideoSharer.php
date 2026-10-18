@@ -56,15 +56,17 @@ final class VideoSharer
             if ($done->has($platform)) {
                 continue;   // posted, or failed and waiting for the admin
             }
-            $text = trim($video->title."\n\n".$video->description);
+            // the description's links lead where they lead on YouTube, marked for this platform
+            $source = $platform === 'instagram' ? 'instagram' : 'facebook';
+            $text = $this->videos->forChannel(trim($video->title."\n\n".$video->description), $source);
             $post = SocialPost::create(['platform' => $platform, 'subject_type' => self::SUBJECT, 'subject_id' => $video->id, 'text' => $text,
                 'link' => $video->watchUrl(), 'status' => SocialPost::STATUS_DRAFT, 'created_by' => $video->decided_by]);
             try {
                 $id = match ($platform) {
                     'instagram' => $this->meta->postReelToInstagram(URL::temporarySignedRoute('social.video', now()->addDays(2), ['video' => $video->id]), $text),
                     // a plain post with a clickable link to the site (the video post's link is only text); the preview card is the site's OG picture
-                    'facebook_link' => $this->meta->postToPage($text, $this->siteLink($post)),
-                    default => $this->meta->postVideoToPage(Storage::disk(config('farm.disk'))->path($path), (string) $video->title, (string) $video->description),
+                    'facebook_link' => $this->meta->postToPage($text, $this->siteLink($video, $post)),
+                    default => $this->meta->postVideoToPage(Storage::disk(config('farm.disk'))->path($path), (string) $video->title, $this->videos->forChannel((string) $video->description, $source)),
                 };
                 $post->update(['status' => SocialPost::STATUS_POSTED, 'external_id' => $id, 'posted_at' => now()]);
                 $n++;
@@ -83,10 +85,10 @@ final class VideoSharer
         return $n;
     }
 
-    /** The site with the campaign tags of a video post, written on the row too. */
-    private function siteLink(SocialPost $post): string
+    /** The video's own target (FarmVideos::linkOf: the tool's page, the how-to's, the home page) marked for Facebook, written on the row too. */
+    private function siteLink(FarmVideo $video, SocialPost $post): string
     {
-        $link = rtrim((string) config('app.url'), '/').'/?'.http_build_query(['utm_source' => 'facebook', 'utm_medium' => 'social', 'utm_campaign' => 'video']);
+        $link = $this->videos->linkOf($video, 'facebook');
         $post->update(['link' => $link]);
 
         return $link;
