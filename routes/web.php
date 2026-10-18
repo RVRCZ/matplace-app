@@ -529,6 +529,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/stats/search', [AdminStatsController::class, 'search'])->name('stats.search');
     Route::get('/stats/speed', [AdminStatsController::class, 'speed'])->name('stats.speed');
     Route::get('/ai', [AdminStatsController::class, 'ai'])->name('ai.index');
+    Route::post('/ai/limits', [AdminStatsController::class, 'aiLimits'])->name('ai.limits');
 
     // which tools of config/tools.php the public sees (an admin opens the hidden ones to try them)
     Route::get('/tools', [AdminToolController::class, 'index'])->name('tools.index');

@@ -25,11 +25,45 @@ final class FarmSettings
 
     public function set(string $key, mixed $value): void
     {
-        if (! array_key_exists($key, (array) config('farm.settings'))) {
+        if (! array_key_exists($key, (array) config('farm.settings')) && ! $this->isAiLimit($key)) {
             throw new \InvalidArgumentException("Unknown farm setting '{$key}'.");
         }
         FarmSetting::updateOrCreate(['key' => $key], ['value' => $value]);
         $this->overrides = null;
+    }
+
+    /**
+     * The daily AI limits (config/ai.php `daily_limits`) the admin set at /admin/ai, stored as `ai.<key>` in the same
+     * table as the farm's switches (Roman, 18 Oct 2026: a second phone on the house Wi-Fi hit the guest's one a day).
+     *
+     * @return array<string, array{value: int, default: int, set: bool}>
+     */
+    public function aiLimits(): array
+    {
+        $defaults = (array) ((require config_path('ai.php'))['daily_limits'] ?? []);
+        $out = [];
+        foreach (array_keys((array) config('ai.daily_limits')) as $key) {
+            $over = $this->overrides()['ai.'.$key] ?? null;
+            $out[$key] = ['value' => (int) ($over ?? config('ai.daily_limits.'.$key)), 'default' => (int) ($defaults[$key] ?? 0), 'set' => $over !== null];
+        }
+
+        return $out;
+    }
+
+    /** The admin's AI limits over the config, so every place that reads config('ai.daily_limits.*') sees them. */
+    public function applyAiLimits(): void
+    {
+        foreach (array_keys((array) config('ai.daily_limits')) as $key) {
+            $over = $this->overrides()['ai.'.$key] ?? null;
+            if ($over !== null) {
+                config(['ai.daily_limits.'.$key => (int) $over]);
+            }
+        }
+    }
+
+    private function isAiLimit(string $key): bool
+    {
+        return str_starts_with($key, 'ai.') && array_key_exists(substr($key, 3), (array) config('ai.daily_limits'));
     }
 
     public function infillFor(string $strength): int

@@ -19,6 +19,29 @@
     @foreach([7, 30, 90] as $d)<a href="{{ route('admin.ai.index', ['days' => $d]) }}" class="chip {{ $stats['days'] === $d ? 'chip-on' : '' }}">{{ $d }} dní</a>@endforeach
 </div>
 
+{{-- the daily limits the site enforces (config/ai.php defaults, the admin's values in farm_settings); counted per
+     IP address + anonymous session + account together, so two phones on one Wi-Fi share the guest's count --}}
+<form method="post" action="{{ route('admin.ai.limits') }}" class="card mt-4 p-4">
+    @csrf
+    <h2 class="font-bold">Denní limity</h2>
+    <p class="mt-1 text-xs text-slate-500">Kolik volání za den smí udělat jeden návštěvník (host = bez účtu, počítá se podle IP adresy a zařízení dohromady) a celý web. Výchozí hodnoty jsou z <code>config/ai.php</code>; uložené platí hned, bez nasazení.</p>
+    @php
+        $labels = ['generate_guest' => 'Model z fotky nebo textu · host', 'generate_user' => 'Model z fotky nebo textu · účet', 'generate_printer' => 'Model z fotky nebo textu · tiskař',
+            'generate_global' => 'Model z fotky nebo textu · celý web', 'describe' => 'Popis z fotky · návštěvník', 'advise' => 'Rada k tisku · návštěvník',
+            'advise_global' => 'Rada k tisku · celý web', 'design' => 'Návrh z popisu · návštěvník', 'design_global' => 'Návrh z popisu · celý web'];
+    @endphp
+    <div class="mt-3 grid gap-3 sm:grid-cols-3">
+        @foreach($limits as $key => $l)
+            <label class="block text-sm font-semibold">{{ $labels[$key] ?? $key }}
+                <input type="number" name="{{ $key }}" value="{{ old($key, $l['value']) }}" min="0" max="100000" step="1" required class="field">
+                <span class="mt-1 block text-xs font-normal text-slate-500">výchozí {{ $l['default'] }}{{ $l['set'] && $l['value'] !== $l['default'] ? ', nastaveno v administraci' : '' }}</span>
+                @error($key)<span class="mt-1 block text-xs font-normal text-red-700">{{ $message }}</span>@enderror
+            </label>
+        @endforeach
+    </div>
+    <button type="submit" class="btn-ink mt-3">Uložit limity</button>
+</form>
+
 <dl class="mt-3 grid gap-3 sm:grid-cols-4">
     <div class="card p-4"><dt class="text-xs font-semibold uppercase text-muted">Náklady za období</dt><dd class="mt-1 text-2xl font-extrabold">{{ $czk($stats['total']['cost']) }}</dd><dd class="text-xs text-muted">{{ $stats['total']['calls'] }} volání</dd></div>
     <div class="card p-4"><dt class="text-xs font-semibold uppercase text-muted">Na návštěvníka</dt><dd class="mt-1 text-2xl font-extrabold">{{ $stats['per_visitor'] !== null ? $czk($stats['per_visitor']) : '—' }}</dd><dd class="text-xs text-muted">{{ $stats['visitors'] }} návštěvníků</dd></div>

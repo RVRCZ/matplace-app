@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Farm\FarmSettings;
 use App\Domain\Stats\AiActivity;
 use App\Domain\Stats\Funnel;
 use App\Domain\Stats\Overview;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SearchQuery;
 use App\Support\Locales;
 use App\Support\ToolSeo;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -32,11 +34,24 @@ class StatsController extends Controller
         return view('admin.stats.funnel', ['stats' => $funnel->compute($days, $source, $locale, $tool), 'o' => $overview->compute($days), 'source' => $source, 'locale' => $locale, 'tool' => $tool, 'tools' => ToolSeo::tools()]);
     }
 
-    public function ai(Request $request, AiActivity $activity): View
+    public function ai(Request $request, AiActivity $activity, FarmSettings $settings): View
     {
         $days = in_array((int) $request->query('days'), [7, 30, 90], true) ? (int) $request->query('days') : 30;
 
-        return view('admin.ai.index', ['stats' => $activity->summary($days)]);
+        return view('admin.ai.index', ['stats' => $activity->summary($days), 'limits' => $settings->aiLimits()]);
+    }
+
+    /** The daily AI limits (generations per guest, account, printer, the whole site…) set on the AI page, kept in farm_settings. */
+    public function aiLimits(Request $request, FarmSettings $settings): RedirectResponse
+    {
+        $keys = array_keys($settings->aiLimits());
+        $data = $request->validate(array_fill_keys($keys, ['required', 'integer', 'min:0', 'max:100000']));
+        foreach ($keys as $key) {
+            $settings->set('ai.'.$key, (int) $data[$key]);
+        }
+        $settings->applyAiLimits();
+
+        return redirect()->route('admin.ai.index')->with('status', 'Denní limity jsou uložené; platí hned.');
     }
 
     /** How long customers wait for the server: queue, repair, slicing… per step (matplace:perf-report on a page). */

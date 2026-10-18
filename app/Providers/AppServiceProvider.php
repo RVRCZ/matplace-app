@@ -64,6 +64,8 @@ class AppServiceProvider extends ServiceProvider
                 // the spare-part inquiry is the marketplace's tool: on offer when the marketplace is, by the same switch
                 // (its page would answer 404 to the visitors of a marketplace switched on here and not in .env: ToolGate)
                 config(['tools.spare.available' => (bool) $s->get('marketplace')]);
+                // the daily AI limits the admin set at /admin/ai (config/ai.php holds the defaults)
+                $s->applyAiLimits();
             }
         } catch (\Throwable) {
             // no database yet (first install, artisan key:generate…): the .env defaults stand
