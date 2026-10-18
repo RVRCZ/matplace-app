@@ -30,7 +30,10 @@ printers:
   #   ip: 192.168.8.44                                     # reserve this IP in the router
   #   # camera: true                                       # picture from the printer's own camera (needs the package av)
   #   # light: true                                        # the camera light on during a print, off after it
-  #   # layer_window: 0                                    # seconds the head counts as parked after a reported layer change (0 = dwell + 1)
+  #   # park_lead_min: 2.2                                 # the head reaches the park 2.2-4.0 s AFTER the printer reports the layer (measured);
+  #   # park_lead: 4.0                                     #   with the printer's dwell >= 2.3 s the agent takes one picture in the sure window
+  #   # park_window_min: 0.5                               # a sure window shorter than this is not used (the agent looks every 0.25 s)
+  #   # layer_window: 0                                    # by hand: seconds the park is a planned position after a reported layer (0 = measured timing)
   #   # auto_leveling: true                                # the printer levels the bed before every print (as after the Slicer Next)
   #   # package: true                                      # the file goes up as a .gcode.3mf package with a thumbnail; false = bare G-code (README)
 

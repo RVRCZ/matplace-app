@@ -102,7 +102,9 @@ Viz `config.example.yaml`. Token lze místo souboru předat proměnnou prostřed
 | `printers[].ip` | jen `anycubic_lan`: IP tiskárny (rezervovat v routeru) |
 | `printers[].camera` | jen `anycubic_lan`: snímek z vlastní kamery tiskárny (výchozí `true`, potřebuje balíček `av`) |
 | `printers[].light` | jen `anycubic_lan`: rozsvěcet světlo kamery před tiskem a zhasnout po něm (výchozí `true`) |
-| `printers[].layer_window` | jen `anycubic_lan`: kolik sekund po ohlášené změně vrstvy ovladač hlásí hlavu v parku (výchozí `0` = dwell tiskárny + 1 s) |
+| `printers[].park_lead_min`, `park_lead` | jen `anycubic_lan`: za kolik sekund po ohlášené vrstvě hlava nejdřív / nejpozději dojede do parku (Kobra X změřeno 2,2 / 4,0 s – tiskárna hlásí vrstvu při načtení G‑kódu, napřed před pohybem); s `dwell` tiskárny ≥ 2,3 s z toho vzniká jisté okno a agent fotí jeden snímek, jinak sérii |
+| `printers[].park_window_min` | jen `anycubic_lan`: nejkratší jisté okno, které se ještě použije (výchozí 0,5 s) |
+| `printers[].layer_window` | jen `anycubic_lan`: ruční přepsání – kolik sekund po ohlášené vrstvě hlásit park jako plánovanou polohu (výchozí `0` = podle změřeného předstihu) |
 | `printers[].auto_leveling` | jen `anycubic_lan`: tiskárna si před každým tiskem vyrovná podložku, jako po odeslání ze Sliceru Next (výchozí `true`) |
 | `printers[].package` | jen `anycubic_lan`: soubor poslat jako balíček `.gcode.3mf` s náhledem (jako Slicer Next) místo holého G-code s doplněnými řádky; obě cesty ověřené na Kobra X 18. 10. 2026 (`docs/AM.md`) |
 | `printers[].url` | Moonraker, `http://IP:7125` |
