@@ -1774,5 +1774,6 @@
     "site.examples.other_currency": "The calculation shows the price in your currency.",
     "site.examples.preview": "A preview of the model, not a photo of the print",
     "site.examples.open": "Open the calculation",
-    "calc.status.not_model": "We cannot read this file as a 3D model: it is damaged, empty or of another kind. Try another file (STL, 3MF, STEP and others)."
+    "calc.status.not_model": "We cannot read this file as a 3D model: it is damaged, empty or of another kind. Try another file (STL, 3MF, STEP and others).",
+    "auth.guard.limited": "Many accounts have been made from this address today; please try again later. Already have an account? Log in."
 }

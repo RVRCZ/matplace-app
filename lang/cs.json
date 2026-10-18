@@ -1774,5 +1774,6 @@
     "site.examples.other_currency": "Cenu ve vaší měně ukáže kalkulace.",
     "site.examples.preview": "Náhled modelu, ne fotka výtisku",
     "site.examples.open": "Otevřít kalkulaci",
-    "calc.status.not_model": "Tenhle soubor neumíme přečíst jako 3D model: je poškozený, prázdný nebo jiného druhu. Zkuste jiný soubor (STL, 3MF, STEP a další)."
+    "calc.status.not_model": "Tenhle soubor neumíme přečíst jako 3D model: je poškozený, prázdný nebo jiného druhu. Zkuste jiný soubor (STL, 3MF, STEP a další).",
+    "auth.guard.limited": "Z této adresy dnes přibylo už hodně registrací, další zkuste prosím později. Máte už účet? Přihlaste se."
 }

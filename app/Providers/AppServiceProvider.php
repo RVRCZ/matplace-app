@@ -13,10 +13,12 @@ use App\Domain\Tools\ToolVisibility;
 use App\Events\AccountErasing;
 use App\Models\Event as Visit;
 use App\Routing\LocalizedUrlGenerator;
+use App\Support\RegisterGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Routing\UrlGenerator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
@@ -93,5 +95,21 @@ class AppServiceProvider extends ServiceProvider
         // the admin tries the tools in bursts and is not counted
         RateLimiter::for('uploads', fn (Request $r) => $r->user()?->isAdmin() ? Limit::none() : Limit::perMinute(20)->by($r->ip()));
         RateLimiter::for('calculations', fn (Request $r) => $r->user()?->isAdmin() ? Limit::none() : Limit::perMinute(60)->by($r->ip()));
+        // registrations from one address (IPv6 by its /64): 3 an hour, 5 a day. Only a registration that made an account
+        // counts (a typo in the password is no registration); over the limit the form says so, as a page (docs/AH.md §10)
+        RateLimiter::for('register', function (Request $r) {
+            $ip = RegisterGuard::ipKey($r);
+            $made = fn () => Auth::check();
+            $page = function (Request $request, array $headers) {
+                $request->session()->flashInput($request->except(['password', '_token', 't']));   // the form stays filled in
+
+                return response()->view('auth.register', ['limited' => true], 429, $headers);
+            };
+
+            return [
+                Limit::perHour(RegisterGuard::PER_HOUR)->by('register-h:'.$ip)->after($made)->response($page),
+                Limit::perDay(RegisterGuard::PER_DAY)->by('register-d:'.$ip)->after($made)->response($page),
+            ];
+        });
     }
 }

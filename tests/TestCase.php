@@ -15,6 +15,12 @@ abstract class TestCase extends BaseTestCase
         config(['farm.settings.delivery_modes' => ['pickup', 'packeta_point', 'packeta_home']]);
     }
 
+    /** What the registration form adds to a post besides the fields a person fills in (App\Support\RegisterGuard). */
+    protected function registerStamp(): array
+    {
+        return [];
+    }
+
     /** Address of a page in a language: Czech has no prefix, the others /en/… and /es/… */
     protected function localized(string $path, string $locale = 'cs'): string
     {

@@ -1,0 +1,7 @@
+{
+    "auth.guard.limited": [
+        "Z této adresy dnes přibylo už hodně registrací, další zkuste prosím později. Máte už účet? Přihlaste se.",
+        "Many accounts have been made from this address today; please try again later. Already have an account? Log in.",
+        "Hoy ya se han creado muchas cuentas desde esta dirección; inténtelo más tarde. ¿Ya tiene una cuenta? Inicie sesión."
+    ]
+}

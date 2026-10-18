@@ -5,6 +5,8 @@
     <h1 class="text-2xl font-extrabold">{{ __('auth.register') }}</h1>
     <p class="mt-1 text-sm text-slate-500">{{ __('auth.register_hint') }}</p>
     @include('partials.flash')
+    {{-- too many registrations from this address (named limiter `register`): said here, the form stays --}}
+    @if(! empty($limited))<p class="note-warn mt-3 text-sm" role="alert">{{ __('auth.guard.limited') }}</p>@endif
     @include('partials.oauth')
     <form method="post" action="{{ route('register') }}" class="mt-4 space-y-3">
         @csrf

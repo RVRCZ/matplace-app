@@ -1774,5 +1774,6 @@
     "site.examples.other_currency": "El cálculo muestra el precio en su moneda.",
     "site.examples.preview": "Vista previa del modelo, no una foto de la impresión",
     "site.examples.open": "Abrir el cálculo",
-    "calc.status.not_model": "No podemos leer este archivo como modelo 3D: está dañado, vacío o es de otro tipo. Pruebe otro archivo (STL, 3MF, STEP y otros)."
+    "calc.status.not_model": "No podemos leer este archivo como modelo 3D: está dañado, vacío o es de otro tipo. Pruebe otro archivo (STL, 3MF, STEP y otros).",
+    "auth.guard.limited": "Hoy ya se han creado muchas cuentas desde esta dirección; inténtelo más tarde. ¿Ya tiene una cuenta? Inicie sesión."
 }

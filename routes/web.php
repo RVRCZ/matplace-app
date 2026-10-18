@@ -198,7 +198,7 @@ $pages = function () {
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
         Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1')->name('login.attempt');
         Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:6,1')->name('register.store');
+        Route::post('/register', [AuthController::class, 'register'])->middleware(['throttle:6,1', 'throttle:register'])->name('register.store');
         Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
         Route::post('/forgot-password', [AuthController::class, 'sendReset'])->middleware('throttle:6,1')->name('password.email');
         Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
