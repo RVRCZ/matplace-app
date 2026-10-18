@@ -64,8 +64,9 @@ class ToolPageTest extends TestCase
                 ->assertSee('data-view="top"', false)->assertSee('id="tool-xray"', false)->assertSee('id="tool-bed"', false)->assertSee('id="tool-spread"', false)
                 ->assertSee('id="tool-undo"', false)->assertSee('id="tool-restore"', false)
                 ->assertSee('window.MP_TOOL', false)->assertSee(__('tools.'.$key.'.title'));
-            // one orange button on the screen: the main action of the price card
-            $this->assertSame(1, substr_count($html, 'class="btn-primary'), $key);
+            // one orange button on the screen: the main action of the price card; a bust or a pet has its "Create" in the
+            // photo dialog, and while that is on the screen the way on waits in grey (app.css, #figure-create)
+            $this->assertSame(str_contains($html, 'id="figure-create"') ? 2 : 1, substr_count($html, 'class="btn-primary'), $key);
             // every section named in the steps exists
             preg_match_all('/data-nav="([a-z]+)"/', $html, $nav);
             preg_match_all('/data-section="([a-z]+)"/', $html, $sections);
@@ -520,7 +521,6 @@ class ToolPageTest extends TestCase
             }
             $this->assertStringContainsString('id="figure-drop"', $page, $url);
             $this->assertStringContainsString(e(__('photo.add')), $page, $url);
-            $this->assertStringContainsString(e(__('toolpage.sample.minutes')), $page, $url);
             $limits = strpos($page, e(__('figure.limits', ['n' => 1, 'm' => 3])));
             $this->assertNotFalse($limits, $url);
             $this->assertLessThan(strpos($page, 'id="figure-submit"'), $limits, "{$url}: the limit and the time come before the button");
@@ -670,5 +670,43 @@ class ToolPageTest extends TestCase
         }
         // a tool with a model from the start keeps the plain empty line
         $this->assertStringNotContainsString('data-file-for=', (string) $this->get('/tools/box')->getContent());
+    }
+
+    /** docs/AH.md §8 (Roman, 18 Oct 2026): the photo dialog of a bust and a pet takes photos away again and makes the model. */
+    public function test_the_photo_dialog_has_remove_buttons_the_consent_and_create(): void
+    {
+        config(['ai.daily_limits.generate_guest' => 1, 'ai.daily_limits.generate_user' => 3]);
+        $seen = 0;
+        foreach (['/tools/figure' => ['figure.consent', 'figure.submit'], '/tools/pet-figurine' => ['pet.consent', 'pet.submit']] as $url => [$consent, $submit]) {
+            $page = (string) $this->get($url)->assertOk()->getContent();
+            if (! str_contains($page, 'id="figure-drop"')) {
+                continue;                                   // the generator is off here
+            }
+            $seen++;
+            preg_match('/<div id="figure-drop".*?\n<\/div>/s', $page, $dialog);
+            $this->assertNotEmpty($dialog, $url);
+            $d = $dialog[0];
+            // the pictures with their crosses are drawn by figure.ts into this box; the pick is a button of its own now
+            $this->assertStringContainsString('id="figure-drop-thumbs"', $d, $url);
+            $this->assertStringContainsString('id="figure-drop-pick"', $d, $url);
+            // the consent mirrored from the panel (no name: only the panel's travels with the form), with its red frame
+            $this->assertMatchesRegularExpression('/<input id="figure-drop-consent" type="checkbox" required/', $d);
+            $this->assertStringNotContainsString('name="consent"', $d, $url);
+            $this->assertStringContainsString(e(__($consent)), $d, $url);
+            // the limit and the time beside the one orange Create, which waits for the front photo
+            $this->assertStringContainsString(e(__('figure.limits', ['n' => 1, 'm' => 3])), $d, $url);
+            $this->assertStringContainsString('2 až 4 minuty', $d, $url);
+            $this->assertMatchesRegularExpression('/<button type="button" id="figure-create" class="btn-primary[^"]*" disabled>/', $d);
+            $this->assertStringContainsString(e(__($submit)), $d, $url);
+            $this->assertStringContainsString('id="figure-drop-msg"', $d, $url);
+            // the script has the words for the crosses
+            $this->assertStringContainsString(e(__('figure.remove')), $page, $url);
+        }
+        $css = (string) file_get_contents(resource_path('css/app.css'));
+        $this->assertStringContainsString('#tool-page:has(#tool-empty:not(.hidden) #figure-create) #tool-go', $css, 'one orange action while the dialog shows');
+        $this->assertStringNotContainsString('1 až 3 minuty', __('toolpage.sample.minutes'));
+        if ($seen === 0) {
+            $this->markTestSkipped('The generator is off here.');
+        }
     }
 }

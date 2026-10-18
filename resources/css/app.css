@@ -116,6 +116,9 @@
     #tool-panel fieldset { min-width: 0; }
     /* the rows of a composition (param.ts) wrap their small buttons; the tables of the text under a tool scroll inside */
     #compose-layers > div { flex-wrap: wrap; }
+    /* while the photo dialog of a bust or a pet is on the screen its "Create" is the one orange action: the way on to the
+       price (still disabled, there is no model yet) waits as a grey outline */
+    #tool-page:has(#tool-empty:not(.hidden) #figure-create) #tool-go { @apply border border-slate-400 bg-card text-ink; }
     #about-tool table { @apply block max-w-full overflow-x-auto; }
     #tool-panel table { @apply block max-w-full overflow-x-auto; }
     .tool-sec-no { @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white; counter-increment: tool-section; }
@@ -185,6 +188,8 @@
 
 @media (width < 64rem) {
     #tool-viewbar:not([data-open]) { display: none; }
+    /* the photo dialog of a bust or a pet holds the whole start (photos, consent, Create): the viewer is taller while it is there */
+    #tool-stage:has(#tool-empty:not(.hidden) #figure-drop) #tool-viewer { height: 60vh; }
     #tool-view-toggle[aria-expanded='true'] svg:last-child { rotate: 180deg; }
     #param-dims > div.text-muted { display: none; }
     #param-dims:not(:has(> div.flex)) { display: none; }

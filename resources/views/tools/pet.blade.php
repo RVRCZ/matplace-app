@@ -6,7 +6,7 @@
 @php
     $say = ['generating' => 'pet.generating', 'done' => 'pet.done', 'failed' => 'pet.failed', 'rejected' => 'pet.rejected', 'skipped_view' => 'figure.skipped_view',
         'view.left' => 'figure.view.left', 'view.back' => 'figure.view.back', 'view.right' => 'figure.view.right', 'limit' => 'figure.limit', 'global_limit' => 'figure.global_limit',
-        'need_photo' => 'figure.need_photo', 'need_consent' => 'figure.need_consent', 'limit.register' => 'figure.limit.register', 'back' => 'pet.back', 'gone' => 'pet.gone', 'thin' => 'pet.thin', 'thin.ok' => 'pet.thin.ok',
+        'need_photo' => 'figure.need_photo', 'need_consent' => 'figure.need_consent', 'limit.register' => 'figure.limit.register', 'remove' => 'figure.remove', 'back' => 'pet.back', 'gone' => 'pet.gone', 'thin' => 'pet.thin', 'thin.ok' => 'pet.thin.ok',
         'rebase.working' => 'pet.rebase.working', 'rebase.failed' => 'pet.rebase.failed',
         'rejected.no_animal' => 'pet.rejected.no_animal', 'rejected.person' => 'pet.rejected.person', 'rejected.several' => 'pet.rejected.several', 'rejected.cropped' => 'pet.rejected.cropped'];
     $i18n = collect($say)->mapWithKeys(fn ($key, $as) => ['figure.'.$as => __($key, ['n' => ':n', 'm' => ':m', 'mm' => ':mm', 'view' => ':view'])])->all()
@@ -25,7 +25,7 @@
 
 @section('viewer-empty'){{ __('pet.step.model') }}@endsection
 
-@section('viewer-drop')@include('tools._figure_drop', ['sample' => __('toolpage.sample.minutes')])@endsection
+@section('viewer-drop')@include('tools._figure_drop', ['consent' => __('pet.consent'), 'limits' => __('figure.limits', ['n' => $guestLimit, 'm' => $userLimit]), 'submit' => __('pet.submit')])@endsection
 
 @section('panel')
 <form id="figure-form" data-kind="pet" novalidate>

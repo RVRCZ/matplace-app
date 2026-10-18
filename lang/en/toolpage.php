@@ -20,7 +20,7 @@ return [
     // a tool that starts from a photo shows a printed piece of it until there is a model (tools/page.blade.php)
     'sample' => 'A finished print, as an example',
     'sample.minute' => 'Upload a photo and see the model in about a minute.',
-    'sample.minutes' => 'Upload a photo and see the model in 1 to 3 minutes.',
+    'sample.minutes' => 'Upload a photo and see the model in 2 to 4 minutes.',
     'views' => 'View',
     'view.iso' => '3D',
     'view.top' => 'Top',

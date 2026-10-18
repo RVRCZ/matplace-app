@@ -163,3 +163,42 @@ návrh**. U každého je, kdo ho řeší.
   písmo zadané v `px` (žádné jsem na stránkách nástrojů nenašel).
 - Cesty přes objednávku a platbu (přihlášený zákazník, kredit, karta) skript neprochází: potřebují účet, farmu otevřenou
   pro zkoušku a testovací režim banky (řídící, audit bod 7).
+
+## 8. Dialog „Přidat fotky“ u busty a mazlíčka (Roman, 18. 10. 2026; zadání §6)
+
+Roman: „přidat mazání fotek, kdyby se klient spletl, a přidat do toho dialogu rovnou generovat, ať nemusí na konec
+stránky.“ Větev `feature/photo-dialog` z `main` 2556c68. Soubory: `tools/_figure_drop.blade.php`, `figure.ts`,
+`figure.blade.php`, `pet.blade.php`, `app.css`, `lang/*/toolpage.php`.
+
+- **Dialog už není jedno velké tlačítko.** Je to karta s vlastními prvky: „Přidat fotky“ (klepnutí otevře výběr:
+  nejdřív fotku zepředu, potom volné strany; přetažení je rozdělí stejně), náhledy, souhlas, řádek s limitem a časem,
+  „Vytvořit figurku“ / „Vytvořit model“ a místo pro hlášku.
+- **Křížek u každého náhledu** (zepředu, zleva, zezadu, zprava) fotku odebere stejně jako křížek v panelu: je to
+  tentýž `input`, panel i dialog se drží v souladu. Po odebrání fotky zepředu se nadpis vrátí na „Přidat fotky“
+  a „Vytvořit“ se vypne, dokud fotka zepředu znovu nebude.
+- **Vytvořit přímo v dialogu:** oranžové tlačítko, povolené, jakmile je fotka zepředu. Klepnutí spustí totéž
+  odeslání jako tlačítko v panelu (`form.requestSubmit()`), takže platí stejné kontroly, zmenšení fotek a hlášky.
+  Dialog pak jako dosud vystřídá tečkové logo a na telefonu se stránka posune na prohlížeč. Souhlas v dialogu je
+  zrcadlem zaškrtávátka v panelu (oběma směry; odesílá se jen to z panelu) a má stejný trvalý červený rámeček.
+  Chybějící souhlas hlásí dialog sám, ne řádek na konci stránky.
+- **Jedna oranžová akce:** dokud je dialog na obrazovce, je „Spočítat cenu a možnosti tisku“ (bez modelu stejně
+  vypnuté) šedě obrysové (`app.css`, pravidlo s `#figure-create`). Tlačítko v panelu zůstává inkoustové.
+- **Čas:** řádek s limitem v dialogu říká „Zdarma 1 model denně bez účtu, 3 s účtem. Model vzniká 2 až 4 minuty.“
+  (text řídící session). Samostatnou větu o čase v dialogu už neopakuji. Věta ukázky
+  `toolpage.sample.minutes` je přepsaná na „2 až 4 minuty“ ve všech třech jazycích.
+- **Telefon:** dialog s náhledy, souhlasem a tlačítkem se do prohlížeče 46 vh nevešel (tlačítko bylo useknuté). Dokud
+  je dialog vidět, má prohlížeč na telefonu 60 vh (506 px na 390 × 844, 480 px na 360 × 800). Po vybrání fotky
+  zepředu se schová nápověda „Klepněte nebo sem fotky přetáhněte…“. Na 360 i 390 px je celý dialog v okně a stránka
+  nepřetéká do šířky.
+- **Ověřeno v prohlížeči** (skript v chromu, 390 px, odeslání zachycené před sítí, žádné generování): dvě fotky →
+  dva náhledy s křížky, „Přidat další stranu“; křížek u fotky zepředu → fotka zmizí z panelu i z dialogu, „Přidat
+  fotky“, Vytvořit vypnuté; Vytvořit bez souhlasu → „Zaškrtněte prosím souhlas.“ v dialogu; souhlas v dialogu
+  zaškrtne i panel; Vytvořit se souhlasem → formulář odeslán jednou.
+- **Snímky:** `docs/img/audit/{figure,pet-figurine}-{390,1366}-cs-dialog-before.webp` (před) a
+  `…-{360,390,1366}-cs-dialog-after.webp` (po, se dvěma fotkami a klepnutím na Vytvořit bez souhlasu),
+  `pet-figurine-390-cs-dialog-empty.webp` (prázdný dialog).
+- **Test:** `ToolPageTest::test_the_photo_dialog_has_remove_buttons_the_consent_and_create` (pick, místo pro náhledy,
+  zrcadlený souhlas bez `name` a s `required`, limit a čas, vypnuté oranžové Vytvořit, místo pro hlášku, text pro
+  křížky, pravidlo jedné oranžové). Test jedné oranžové akce na stránce (`test_every_tool_route_renders_the_shared_page`)
+  počítá u busty a mazlíčka s tlačítkem dialogu.
+- **Neověřeno:** skutečné vygenerování modelu z dialogu (kredity); odeslání je tatáž funkce jako z panelu.
