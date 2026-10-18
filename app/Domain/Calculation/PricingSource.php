@@ -2,6 +2,7 @@
 
 namespace App\Domain\Calculation;
 
+use App\Domain\Farm\FarmPricingProfile;
 use App\Models\PrinterProfile;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -18,13 +19,13 @@ final class PricingSource
 
     public function __construct(private readonly PriceEngine $engine) {}
 
-    /** Marketplace off: the farm's own list is the one and only price, for everybody. */
-    private function farmOnly(): ?array
+    /** Marketplace off: the farm's own list is the one and only price, for everybody – in the kind of the material chosen. */
+    private function farmOnly(?string $materialCode = null): ?array
     {
         if (config('features.marketplace') || ! config('farm.enabled')) {
             return null;
         }
-        $p = app(\App\Domain\Farm\FarmPricingProfile::class)->profile();
+        $p = app(FarmPricingProfile::class)->profile($materialCode);
 
         return $p ? [$p] : null;
     }
@@ -33,7 +34,7 @@ final class PricingSource
     public function resolve(string $materialCode, ?User $viewer = null, ?float $lat = null, ?float $lng = null): array
     {
         $materialCode = strtoupper($materialCode);
-        if ($farm = $this->farmOnly()) {
+        if ($farm = $this->farmOnly($materialCode)) {
             return ['profiles' => $farm, 'context' => ['farm' => true]];
         }
         $own = $viewer?->isPrinter() ? $viewer->printerProfile : null;
@@ -73,8 +74,8 @@ final class PricingSource
     /** Rebuild the same price lists later (worker) from a stored context. */
     public function fromContext(?array $context, string $materialCode): array
     {
-        if (! empty($context['farm']) || ($farm = $this->farmOnly())) {
-            return $this->farmOnly() ?? $this->engine->orientationProfiles();
+        if (! empty($context['farm']) || ($farm = $this->farmOnly($materialCode))) {
+            return $this->farmOnly($materialCode) ?? $this->engine->orientationProfiles();
         }
         if (! $context || ! empty($context['orientation'])) {
             return $this->engine->orientationProfiles();

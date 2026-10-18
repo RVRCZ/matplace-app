@@ -2,6 +2,8 @@
 
 return [
     'price_label' => 'Tisk u nás (:material)',
+    // the farm has no kind of the material chosen: the price is counted in the cheapest kind loaded, and says so
+    'price_label_cheapest' => 'Tisk u nás (nejlevnější druh u nás: :material)',
     'cta' => 'Objednat tisk',
     'cta_hint' => 'Zatím nic neplatíte: otevře se objednávka, kde vyberete barvu a doručení a uvidíte konečnou cenu. Platí se až na jejím konci, kreditem nebo kartou.',
     'calc_parts_by_colour' => 'Díly mají různé barvy: u nás se každý díl vytiskne zvlášť ze své cívky, jeden tisk za druhým, cena je za všechny díly. Pro tisk doma stáhněte projekt s barvami.',

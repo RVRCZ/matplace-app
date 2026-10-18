@@ -2,6 +2,8 @@
 
 return [
     'price_label' => 'Printed by us (:material)',
+    // the farm has no kind of the material chosen: the price is counted in the cheapest kind loaded, and says so
+    'price_label_cheapest' => 'Printed by us (our cheapest kind: :material)',
     'cta' => 'Order the print',
     'cta_hint' => 'Nothing to pay yet: the order opens, you pick the colour and delivery and see the final price. You pay only at its end, with credit or by card.',
     'calc_parts_by_colour' => 'The parts have different colours: we print every part on its own from its own spool, one print after another; the price covers all the parts. For printing at home, download the project with the colours.',

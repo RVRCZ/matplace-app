@@ -4,7 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\AnonymousSession;
 use App\Models\Calculation;
+use App\Models\FarmColor;
+use App\Models\FarmMaterial;
+use App\Models\FarmPrinter;
 use App\Models\ModelFile;
+use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -154,5 +158,45 @@ class CalculationFlowTest extends TestCase
             }
         }
         $this->assertLessThan(120 * 1024, filesize(public_path('img/home/hero-1536.webp')));      // a light first screen
+    }
+
+    /**
+     * "Tisk u nás" prices in the farm's kind of the material chosen; when the farm has none, in the cheapest kind loaded,
+     * weighed as that kind (the slicer weighed the model in the lighter material) and the label says which kind it took.
+     * Before: every material was priced as PLA+ with its own grams, so ASA came out cheaper than PLA+ (18 Oct 2026).
+     */
+    public function test_the_farm_price_counts_with_the_kind_of_the_chosen_material_or_says_which_kind_it_took(): void
+    {
+        config(['features.marketplace' => false, 'farm.enabled' => true]);
+        Storage::fake('farm');
+        $this->seed(FarmSeeder::class);   // one spool loaded: white PLA+
+        $uuid = $this->postJson('/api/uploads', ['file' => $this->cube()])->json('file.uuid');
+        $calc = fn (string $material) => $this->postJson('/api/calculations', ['file' => $uuid, 'material' => $material, 'quality' => 'standard', 'infill' => 15])->assertCreated()->json('calculation');
+
+        $pla = $calc('PLA');
+        $this->assertCount(1, $pla['prices']);
+        $this->assertSame(__('farm.price_label', ['material' => 'PLA+']), $pla['prices'][0]['label'], 'PLA+ is the farm\'s PLA');
+
+        // ASA is not loaded: the farm would print it in PLA+, so the lighter ASA grams are weighed as PLA+ – the same plastic
+        // volume costs the same, and the label says what was counted with
+        $asa = $calc('ASA');
+        $this->assertSame(__('farm.price_label_cheapest', ['material' => 'PLA+']), $asa['prices'][0]['label']);
+        $this->assertLessThan($pla['slicer']['grams'], $asa['slicer']['grams'], 'the slicer weighs ASA lighter');
+        $this->assertEqualsWithDelta($pla['prices'][0]['unit']['material'], $asa['prices'][0]['unit']['material'], 0.3);
+        $this->assertStringContainsString('nejlevnější druh u nás: PLA+', $asa['prices'][0]['label']);
+
+        // the farm loads ASA: the ASA calculation takes the ASA kind, its price per gram and its label; ASA is dearer than PLA+
+        $kind = FarmMaterial::where('code', 'ASA')->firstOrFail();
+        $kind->update(['enabled' => true]);
+        $black = FarmColor::create(['farm_material_id' => $kind->id, 'code' => 'ASA_black', 'name' => 'černá', 'name_en' => 'black', 'hex' => '#111111', 'enabled' => true, 'in_stock' => true]);
+        FarmPrinter::where('key', 'kobra-s1-01')->firstOrFail()->slots()->where('slot', 0)->firstOrFail()->update(['farm_color_id' => $black->id, 'remaining_g' => 800, 'enabled' => true]);
+        $loaded = $calc('ASA');
+        $this->assertSame(__('farm.price_label', ['material' => 'ASA']), $loaded['prices'][0]['label']);
+        $this->assertGreaterThan($pla['prices'][0]['unit']['material'], $loaded['prices'][0]['unit']['material'], 'ASA per piece costs more than PLA+, as /materials says');
+        $this->assertEqualsWithDelta($asa['slicer']['grams'] * $kind->price_per_gram * 1.0, $loaded['prices'][0]['unit']['material'], 0.05, 'ASA grams at the ASA price');
+        // a calculation shared later tells the same kind (the farm's list is read again, not the stored one)
+        $this->assertSame($loaded['prices'][0]['label'], $this->getJson('/api/calculations/'.$loaded['token'])->json('calculation.prices.0.label'));
+        // PLA stays PLA+: the dearer ASA kind is not "the cheapest"
+        $this->assertSame(__('farm.price_label', ['material' => 'PLA+']), $calc('PLA')['prices'][0]['label']);
     }
 }
