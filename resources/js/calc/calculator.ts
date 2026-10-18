@@ -360,7 +360,7 @@ function poll(token: string): void {
             const c = await getCalculation(token);
             if (state.calc?.token !== token) return; // superseded by a newer calculation
             state.calc = c;
-            if (c.file) { state.file = c.file; showNearest(c.file); }
+            if (c.file) { state.file = c.file; showNearest(c.file); renderSize(); }
             if (c.status === 'done') {
                 setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false);
                 renderPrecise(c);
@@ -583,6 +583,7 @@ async function handleFile(file: File): Promise<void> {
     try {
         const info = await uploadFile(file, state.geo ? { volume_mm3: state.geo.volume_mm3, area_mm2: state.geo.area_mm2 } : undefined);
         state.file = info;
+        renderSize();     // a file the browser could not read shows its size as soon as the server measured it
         requestPrecise();
     } catch (e) {
         setStatus('calc.status.failed', false);
@@ -627,7 +628,14 @@ function bindControls(): void {
     const infill = $('infill') as HTMLInputElement;
     infill.oninput = () => { state.params.infill = Number(infill.value); $('infill-val').textContent = `${infill.value} %`; onParamsChanged(); };
     const qty = $('quantity') as HTMLInputElement;
-    qty.onchange = () => { state.params.quantity = Math.max(1, Math.min(1000, Number(qty.value) || 1)); qty.value = String(state.params.quantity); onParamsChanged(); };
+    // the number of pieces needs no new slice (the plate layout and the price are counted on the server in a moment),
+    // so it is counted again at once instead of waiting for "Recalculate" (Roman, 18 Oct 2026: the order button sat idle)
+    let qtyTimer: number | undefined;
+    qty.onchange = () => {
+        state.params.quantity = Math.max(1, Math.min(1000, Number(qty.value) || 1)); qty.value = String(state.params.quantity);
+        window.clearTimeout(qtyTimer);
+        qtyTimer = window.setTimeout(() => { if (state.file || state.geo) recalculate(); }, 400);
+    };
     const recalc = document.getElementById('cta-recalc');
     // the button sits under the settings, the numbers above them: bring the result back into view
     if (recalc) recalc.onclick = () => { recalculate(); $('price-main').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };

@@ -68,7 +68,7 @@ export function bootFarmCta(): void {
         btn.disabled = true; show(note, false);
         try {
             const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-            const res = await fetch(btn.dataset.store, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ calc: m[1] }) });
+            const res = await fetch(btn.dataset.store, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ calc: m[1], copies: Number((document.getElementById('quantity') as HTMLInputElement | null)?.value) || undefined }) });
             const json = await res.json().catch(() => ({})) as { url?: string; message?: string };
             if (res.ok && json.url) { location.href = json.url; return; }
             // the farm said why not (closed, daily limit, e-mail not confirmed…): said here, the button stays

@@ -1185,7 +1185,7 @@
     "figure.step.photo": "Photo and pedestal",
     "figure.step.model": "Model and price",
     "figure.step.wait": "The model takes 2 to 4 minutes. You can leave and come back by the link that is in the address bar now.",
-    "calc.size.title": "Print size",
+    "calc.size.title": "Model size",
     "calc.size.hint": "Change any one dimension; the others follow in the same ratio.",
     "calc.size.x": "Width",
     "calc.size.y": "Depth",
