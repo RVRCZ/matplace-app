@@ -1778,5 +1778,8 @@
     "auth.guard.limited": "Z této adresy dnes přibylo už hodně registrací, další zkuste prosím později. Máte už účet? Přihlaste se.",
     "auth.guard.retry": "Zkuste to prosím znovu: formulář vypršel nebo byl odeslán příliš rychle.",
     "user.verify.registered_ask": "Účet je založený. Pro ověření e‑mailu :email klepněte v účtu na „Poslat odkaz znovu“.",
-    "auth.guard.turnstile": "Potvrďte prosím ověření pod formulářem a odešlete ho znovu."
+    "auth.guard.turnstile": "Potvrďte prosím ověření pod formulářem a odešlete ho znovu.",
+    "site.examples.item.qr": "QR cedulka se stojánkem, :size",
+    "site.examples.item.organizer": "Organizér do zásuvky, :size",
+    "site.examples.item.box": "Krabička s víčkem, :size"
 }

@@ -64,7 +64,7 @@ return [
         'order' => [
             ['q' => '¿Qué tamaño debe tener el cartel para que se lea?', 'a' => 'En una mesa o un mostrador bastan los 70 mm por defecto; cada módulo del código mide entonces unos 2 mm. En una pared o en la entrada, donde se lee desde más lejos, elija un cartel mayor. En cada tamaño la herramienta muestra el tamaño del módulo y comprueba que el código se lea.'],
             ['q' => '¿Cuántos puedo pedir a la vez?', 'farm' => true, 'a' => 'Hasta 64 en un pedido. El cálculo muestra cuántos caben en una placa (el cartel por defecto: 6 en 250 × 250 mm); las demás placas se imprimen una tras otra.'],
-            ['q' => '¿Cuánto tardan la impresión y la entrega?', 'farm' => true, 'a' => 'El cartel por defecto se imprime en unos 27 minutos. Enviamos el mismo día en que termina, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cuánto tardan la impresión y la entrega?', 'farm' => true, 'a' => 'El cartel por defecto de 70 mm se imprime en unos 25 minutos. Enviamos el mismo día en que termina, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
             ['q' => '¿Aguanta el cartel en el exterior?', 'a' => 'Para la mesa y el interior basta el PLA. Para sol directo y lluvia elija un material marcado para exterior en la comparación de materiales del cálculo.'],
             ['q' => '¿Y si el código no se lee?', 'a' => 'Pruebe el enlace con el móvil desde la vista previa en la pantalla antes de pedir. La herramienta vigila el tamaño del módulo y el contraste; si la impresión no se lee por un defecto de impresión, la reclama.'],
             ['q' => '¿Necesito una cuenta?', 'a' => 'No para el diseño ni la descarga. Solo la necesita para pedir la impresión con nosotros.'],
@@ -80,7 +80,7 @@ return [
         'order' => [
             ['q' => '¿Cómo mido el cajón?', 'a' => 'Mida el ancho y el fondo interiores en el punto más estrecho (las esquinas del fondo suelen ser redondeadas) y reste de 2 a 3 mm para que el organizador entre y salga. Elija una altura unos milímetros menor que la del cajón, o no cerrará.'],
             ['q' => '¿Qué tan exactas son las medidas?', 'a' => 'Una impresora mantiene las medidas con unas décimas de milímetro, y una pieza grande puede encoger un poco al enfriarse. Por eso deje de 2 a 3 mm de holgura alrededor.'],
-            ['q' => '¿Cuánto cuesta y cuánto tarda en imprimirse?', 'farm' => true, 'a' => 'Depende sobre todo del tamaño y la altura. El cálculo muestra el tiempo exacto y el precio antes de pedir nada; un organizador grande se imprime durante varias horas.'],
+            ['q' => '¿Cuánto cuesta y cuánto tarda en imprimirse?', 'farm' => true, 'a' => 'Depende sobre todo del tamaño y la altura. Un organizador de 200 × 120 × 40 mm con 3 × 2 compartimentos se imprime en unas dos horas y media y sale por 250 CZK (PLA+, sin envío). El cálculo muestra el tiempo y el precio exactos antes de pedir nada.'],
             ['q' => '¿Cabe un organizador grande en la impresora?', 'a' => 'El cálculo muestra enseguida si cabe en la impresora. Si es demasiado grande, divida el cajón en dos organizadores o use las bandejas modulares.'],
             ['q' => '¿Qué material?', 'a' => 'Para un cajón de oficina o taller basta el PLA. Para el baño o cerca del horno elija PETG, que soporta mejor el calor y la humedad.'],
             ['q' => '¿Y si no encaja?', 'farm' => true, 'a' => 'Fabricamos la impresión con sus medidas, por eso no se puede devolver sin motivo. Si no coincide con las medidas del pedido, es un defecto y lo reclama.'],
@@ -96,7 +96,7 @@ return [
         'order' => [
             ['q' => '¿Cómo mido lo que va dentro?', 'a' => 'Mida el objeto en su punto más ancho y añada de 1 a 2 mm por cada lado. La herramienta usa las medidas interiores y calcula las exteriores según las paredes y el fondo.'],
             ['q' => '¿Qué tan exacto es el ajuste?', 'a' => 'Una impresora mantiene las medidas con unas décimas de milímetro. La tapa tiene 0,25 mm de holgura, que puede cambiar; pruébela en la primera caja de una serie nueva.'],
-            ['q' => '¿Cuánto cuesta y cuánto tarda en imprimirse?', 'farm' => true, 'a' => 'Una caja pequeña se imprime en una hora aproximadamente; el cálculo muestra el precio y el tiempo exacto antes de pedir nada. Enviamos el mismo día en que termina, en días laborables.'],
+            ['q' => '¿Cuánto cuesta y cuánto tarda en imprimirse?', 'farm' => true, 'a' => 'Una caja de 84 × 54 × 32 mm con tapa se imprime en unos 35 minutos y sale por 99 CZK (PLA+, sin envío). Para otras medidas el cálculo muestra el precio y el tiempo antes de pedir nada. Enviamos el mismo día en que termina, en días laborables.'],
             ['q' => '¿Qué material?', 'a' => 'Para cosas pequeñas y electrónica dentro basta el PLA. Para calor o humedad elija PETG.'],
             ['q' => '¿Cuánto cuesta el envío?', 'farm' => true, 'a' => 'Con Packeta a un punto de recogida en Chequia :cz_point, a domicilio :cz_home, a Eslovaquia desde :sk_point, a otros países de la UE desde :eu_point.'],
             ['q' => '¿Necesito una cuenta?', 'a' => 'No para el diseño ni la descarga. Solo la necesita para pedir la impresión con nosotros.'],

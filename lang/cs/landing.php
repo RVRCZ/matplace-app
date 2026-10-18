@@ -65,7 +65,7 @@ return [
         'order' => [
             ['q' => 'Jak velká má cedulka být, aby šla načíst?', 'a' => 'Na stůl nebo pult stačí výchozích 70 mm, jedno pole kódu má pak kolem 2 mm. Na zeď nebo ke vchodu, kde se čte z větší dálky, zvolte větší cedulku. Nástroj u každé velikosti ukáže velikost pole a hlídá, aby šel kód přečíst.'],
             ['q' => 'Kolik kusů mohu objednat najednou?', 'farm' => true, 'a' => 'Až 64 v jedné objednávce. Kalkulace ukáže, kolik se jich vejde na jednu podložku (výchozí cedulka 6 kusů na 250 × 250 mm), další podložky se tisknou za sebou.'],
-            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Výchozí cedulka se tiskne asi 27 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Výchozí cedulka 70 mm se tiskne asi 25 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
             ['q' => 'Vydrží cedulka venku?', 'a' => 'Na stůl a dovnitř stačí PLA. Na přímé slunce a déšť zvolte materiál, který je v kalkulaci v porovnání materiálů označený pro venkovní použití.'],
             ['q' => 'Co když kód nepůjde načíst?', 'a' => 'Odkaz si vyzkoušejte telefonem z náhledu na obrazovce ještě před objednáním. Nástroj hlídá velikost pole a kontrast; když výtisk kvůli vadě tisku načíst nejde, reklamujete ho.'],
             ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete až na objednávku tisku u nás.'],
@@ -81,7 +81,7 @@ return [
         'order' => [
             ['q' => 'Jak správně změřit zásuvku?', 'a' => 'Změřte vnitřní šířku a hloubku v nejužším místě (u dna bývají rohy zaoblené) a odečtěte 2 až 3 mm, aby šel organizér vložit i vyndat. Výšku zvolte o pár milimetrů nižší, než je zásuvka, jinak se nezavře.'],
             ['q' => 'Jak přesně rozměry sedí?', 'a' => 'Tiskárna drží rozměr v řádu desetin milimetru a velký díl se po vychladnutí může nepatrně smrštit. Proto počítejte s vůlí 2 až 3 mm kolem dokola.'],
-            ['q' => 'Kolik stojí a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Záleží hlavně na velikosti a výšce. Kalkulace ukáže přesnou dobu tisku a cenu dřív, než cokoli objednáte; větší organizér se tiskne několik hodin.'],
+            ['q' => 'Kolik stojí a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Záleží hlavně na velikosti a výšce. Organizér 200 × 120 × 40 mm se 3 × 2 přihrádkami se tiskne asi dvě a půl hodiny a vyjde na 250 Kč (PLA+, bez dopravy). Kalkulace ukáže přesnou dobu a cenu dřív, než cokoli objednáte.'],
             ['q' => 'Vejde se velký organizér na tiskárnu?', 'a' => 'Kalkulace hned ukáže, jestli se vejde na tiskárnu. Když je moc velký, rozdělte zásuvku na dva organizéry, nebo použijte modulární misky.'],
             ['q' => 'Z jakého materiálu?', 'a' => 'Do zásuvky v kanceláři nebo dílně stačí PLA. Do koupelny nebo blízko trouby zvolte PETG, které lépe snáší teplo a vlhko.'],
             ['q' => 'Co když nepasuje?', 'farm' => true, 'a' => 'Výtisk vyrábíme na zakázku podle vašich rozměrů, proto ho nejde bez důvodu vrátit. Když neodpovídá rozměrům z objednávky, je to vada a reklamujete ji.'],
@@ -97,7 +97,7 @@ return [
         'order' => [
             ['q' => 'Jak změřit, co se má vejít dovnitř?', 'a' => 'Změřte věc v nejširším místě a přidejte 1 až 2 mm na každou stranu. Nástroj zadává vnitřní rozměry, vnější dopočítá podle stěn a dna.'],
             ['q' => 'Jak přesně krabička sedí?', 'a' => 'Tiskárna drží rozměr v řádu desetin milimetru. Víčko má vůli 0,25 mm, kterou můžete změnit; u první krabičky z nové sady ji vyzkoušejte.'],
-            ['q' => 'Kolik stojí a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Malá krabička se tiskne zhruba hodinu, cenu a přesnou dobu ukáže kalkulace dřív, než cokoli objednáte. Odesíláme v den, kdy tisk skončí, v pracovní dny.'],
+            ['q' => 'Kolik stojí a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Krabička 84 × 54 × 32 mm s víčkem se tiskne asi 35 minut a vyjde na 99 Kč (PLA+, bez dopravy). Pro jiné rozměry ukáže cenu a dobu kalkulace dřív, než cokoli objednáte. Odesíláme v den, kdy tisk skončí, v pracovní dny.'],
             ['q' => 'Z jakého materiálu?', 'a' => 'Na drobnosti a elektroniku uvnitř stačí PLA. Do tepla nebo vlhka zvolte PETG.'],
             ['q' => 'Kolik stojí doprava?', 'farm' => true, 'a' => 'Zásilkovnou na výdejní místo v Česku :cz_point, domů :cz_home, na Slovensko od :sk_point, do dalších zemí EU od :eu_point.'],
             ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete až na objednávku tisku u nás.'],

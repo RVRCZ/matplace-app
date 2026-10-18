@@ -1778,5 +1778,8 @@
     "auth.guard.limited": "Many accounts have been made from this address today; please try again later. Already have an account? Log in.",
     "auth.guard.retry": "Please try again: the form expired or was sent too quickly.",
     "user.verify.registered_ask": "Your account is ready. To confirm :email, tap “Send the link again” in your account.",
-    "auth.guard.turnstile": "Please complete the check under the form and send it again."
+    "auth.guard.turnstile": "Please complete the check under the form and send it again.",
+    "site.examples.item.qr": "QR sign with a stand, :size",
+    "site.examples.item.organizer": "Drawer organiser, :size",
+    "site.examples.item.box": "Box with a lid, :size"
 }

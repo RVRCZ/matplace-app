@@ -21,14 +21,14 @@
             <article class="card flex flex-col overflow-hidden">
                 <figure class="relative bg-studio">
                     @if($i['photo'])
-                        <img src="{{ asset($i['photo']) }}" alt="{{ __('site.examples.item.'.$i['tool'], ['mm' => $i['mm']]) }}" width="800" height="800" loading="lazy" class="aspect-square w-full object-cover">
+                        <img src="{{ asset($i['photo']) }}" alt="{{ __('site.examples.item.'.$i['tool'], ['mm' => $i['mm'], 'size' => $i['size'] ?? '']) }}" width="800" height="800" loading="lazy" class="aspect-square w-full object-cover">
                     @else
                         @include('tools.picture', ['key' => $i['tool']])
                         <figcaption class="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-semibold text-ink shadow-sm">{{ __('site.examples.preview') }}</figcaption>
                     @endif
                 </figure>
                 <div class="flex flex-1 flex-col p-4">
-                    <h3 class="text-lg font-semibold text-ink">{{ __('site.examples.item.'.$i['tool'], ['mm' => $i['mm']]) }}</h3>
+                    <h3 class="text-lg font-semibold text-ink">{{ __('site.examples.item.'.$i['tool'], ['mm' => $i['mm'], 'size' => $i['size'] ?? '']) }}</h3>
                     <p class="mt-1 text-sm text-muted">{{ __('site.examples.meta', ['material' => $i['material'], 'g' => $i['grams'], 'time' => $i['minutes'] >= 60 ? intdiv($i['minutes'], 60).' h '.($i['minutes'] % 60).' min' : $i['minutes'].' min']) }}</p>
                     @if(isset($i['price'][$currency]))
                         <p class="mt-2 text-2xl font-extrabold text-ink">{{ \App\Support\Money::of($i['price'][$currency], $currency)->format() }} <span class="text-sm font-normal text-muted">{{ __('site.examples.price_note') }}</span></p>

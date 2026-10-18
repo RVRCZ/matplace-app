@@ -64,7 +64,7 @@ return [
         'order' => [
             ['q' => 'How big must the sign be to scan?', 'a' => 'On a table or a counter the default 70 mm is enough; one module of the code is then about 2 mm. On a wall or at the entrance, where it is read from further away, choose a bigger sign. At every size the tool shows the module size and checks that the code reads.'],
             ['q' => 'How many can I order at once?', 'farm' => true, 'a' => 'Up to 64 in one order. The calculation shows how many fit on one plate (the default sign: 6 on 250 × 250 mm); further plates print one after another.'],
-            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The default sign prints in about 27 minutes. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The default 70 mm sign prints in about 25 minutes. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
             ['q' => 'Will the sign last outdoors?', 'a' => 'On a table and indoors PLA is enough. For direct sun and rain choose a material marked for outdoor use in the material comparison of the calculation.'],
             ['q' => 'What if the code does not scan?', 'a' => 'Try the link with your phone from the preview on the screen before you order. The tool checks the module size and the contrast; if the print does not scan because of a printing defect, you claim it.'],
             ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only to order a print from us.'],
@@ -80,7 +80,7 @@ return [
         'order' => [
             ['q' => 'How do I measure the drawer?', 'a' => 'Measure the inside width and depth at the narrowest point (the corners at the bottom are often rounded) and take off 2 to 3 mm so the organiser goes in and out. Choose a height a few millimetres lower than the drawer, or it will not close.'],
             ['q' => 'How exact are the sizes?', 'a' => 'A printer keeps sizes to a few tenths of a millimetre, and a large part may shrink a little as it cools. So allow 2 to 3 mm of play all round.'],
-            ['q' => 'How much is it and how long does it print?', 'farm' => true, 'a' => 'Mostly a matter of size and height. The calculation shows the exact print time and price before you order anything; a large organiser prints for several hours.'],
+            ['q' => 'How much is it and how long does it print?', 'farm' => true, 'a' => 'Mostly a matter of size and height. An organiser of 200 × 120 × 40 mm with 3 × 2 compartments prints in about two and a half hours and comes to 250 CZK (PLA+, without delivery). The calculation shows the exact time and price before you order anything.'],
             ['q' => 'Will a large organiser fit the printer?', 'a' => 'The calculation shows straight away whether it fits the printer. If it is too big, split the drawer into two organisers or use the modular trays.'],
             ['q' => 'Which material?', 'a' => 'PLA is enough for a drawer in an office or a workshop. For the bathroom or near the oven choose PETG, which copes better with heat and damp.'],
             ['q' => 'What if it does not fit?', 'farm' => true, 'a' => 'We make the print to your sizes, so it cannot be returned without a reason. If it does not match the sizes of the order, that is a defect and you claim it.'],
@@ -96,7 +96,7 @@ return [
         'order' => [
             ['q' => 'How do I measure what goes inside?', 'a' => 'Measure the item at its widest point and add 1 to 2 mm on each side. The tool takes the inside sizes and works out the outside from the walls and the bottom.'],
             ['q' => 'How exact is the fit?', 'a' => 'A printer keeps sizes to a few tenths of a millimetre. The lid has 0.25 mm of play, which you can change; try it on the first box of a new set.'],
-            ['q' => 'How much is it and how long does it print?', 'farm' => true, 'a' => 'A small box prints in about an hour; the calculation shows the price and the exact time before you order anything. We dispatch on the day the print ends, on working days.'],
+            ['q' => 'How much is it and how long does it print?', 'farm' => true, 'a' => 'A box of 84 × 54 × 32 mm with its lid prints in about 35 minutes and comes to 99 CZK (PLA+, without delivery). For other sizes the calculation shows the price and the time before you order anything. We dispatch on the day the print ends, on working days.'],
             ['q' => 'Which material?', 'a' => 'PLA is enough for small things and electronics inside. For heat or damp choose PETG.'],
             ['q' => 'How much is delivery?', 'farm' => true, 'a' => 'With Packeta to a pickup point in the Czech Republic :cz_point, to your door :cz_home, to Slovakia from :sk_point, to other EU countries from :eu_point.'],
             ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only to order a print from us.'],
