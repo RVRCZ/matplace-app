@@ -6,6 +6,7 @@ use App\Domain\Calculation\MaterialCatalog;
 use App\Domain\Calculation\PricingProfile;
 use App\Models\FarmMaterial;
 use App\Models\FarmPrinter;
+use Illuminate\Support\Collection;
 
 /**
  * The farm's price list in the shape the calculator understands, so the calculator and the tool pages show the farm's
@@ -16,6 +17,9 @@ use App\Models\FarmPrinter;
  */
 final class FarmPricingProfile
 {
+    /** @var Collection<int, FarmMaterial>|null what is loaded, read once per instance (the config payload asks per material) */
+    private ?Collection $loaded = null;
+
     public function __construct(private readonly FarmSettings $settings, private readonly OrderService $orders, private readonly MaterialCatalog $materials) {}
 
     /**
@@ -25,7 +29,7 @@ final class FarmPricingProfile
      */
     public function profile(?string $materialCode = null): ?PricingProfile
     {
-        $loaded = $this->orders->loadedMaterials();   // the cheapest first
+        $loaded = $this->loaded ??= $this->orders->loadedMaterials();   // the cheapest first
         $wanted = $materialCode !== null && trim($materialCode) !== '' ? strtoupper(trim($materialCode)) : null;
         $material = ($wanted !== null ? $loaded->first(fn (FarmMaterial $m) => self::matches($m, $wanted)) : null) ?? $loaded->first();
         $printer = $material ? $this->orders->printerFor($material) : FarmPrinter::where('enabled', true)->first();
