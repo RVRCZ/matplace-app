@@ -419,6 +419,35 @@ jednou upravit pravidla (zakázat úvod „Tento model představuje“, chtít k
 licenci a autora stranou – ty už stránka ukazuje) – to je změna jedné konstanty `CatalogEnricher::RULES`.
 Porovnání s Lite modelem viz 9.6.
 
+#### 9.4a Po doladění pravidel (větev `feature/catalog-enrich-rules`, 18. 10. 2026 večer)
+
+`CatalogEnricher::RULES` nově: začít věcí samou (nikdy „Tento model…“ ani názvem), nejmenovat autora, zdroj ani
+licenci (stránka je ukazuje), v `p2` konkrétně – která plocha leží na podložce, podpěry ano/ne a kde, výška vrstvy
+v mm (0,28 / 0,2 / 0,12), stěny a výplň jen když jde o pevnost, provedení z našich druhů s důvodem, žádné „zvažte
+podpěry podle geometrie“; obměňovat začátky vět; číst název podle významu, ne podoby slov („single-room“ = o jedné
+místnosti, ne „jednorozměrný“), české tiskařské termíny, neznámé slovo opsat, nehádat. Prompt o ~400 tokenů delší
+(≈ 800 + 170 tokenů, 0,015 Kč na volání). Tytéž tři modely znovu (`--ids=687,690,684 --force`):
+
+1. **Tabletop Mouse Player Token** – „Herní žeton s motivem myši poslouží jako figurka nebo počítadlo pro deskové hry.
+   Předmět najde uplatnění při sledování tahů i označování pozic hráčů na herním plánu. ¶ Spodní plochou se díl pokládá
+   přímo na tiskovou podložku, kde drží bez nutnosti generovat podpěry. Pro ostré vykreslení drobného reliéfu zvolte
+   výšku vrstvy 0,12 mm. Z naší nabídky doporučujeme materiál PLA+, který drobným herním prvkům dodá spolehlivou
+   odolnost a čisté detaily.“
+2. **Miniature traffic cone for remote-controlled vehicles** – „Miniaturní dopravní kužel slouží jako funkční překážka
+   nebo vizuální doplněk při stavbě drah pro dálkově ovládaná vozidla. Uplatní se při nácviku přesné jízdy s RC modely
+   i při vytyčování slalomových tras. ¶ Předlohu položte rovnou spodní základnou na podložku, díky čemuž kužel
+   vytisknete zcela bez podpěr. K zajištění hladkého přechodu zkosených stěn zvolte výšku vrstvy 0,2 mm. Z naší nabídky
+   doporučujeme materiál PLA+, který poskytne dostatečnou pevnost a odolnost při drobných nárazech autíček.“
+3. **Miniature Workshop – Single-Room Building** – „Miniatura jednopokojové dílny poslouží modelářům jako stavba do
+   diorámat, na kolejiště nebo při hraní stolních her. Domek představuje samostatný prvek zázemí a pomáhá dotvořit
+   věrné kulisy scény. ¶ Objekt umístěte na podložku celou plochou spodní základny, díky čemuž tisk proběhne bez
+   nutnosti podpěr. Pro vykreslení textury zdiva a jemných detailů zvolte výšku vrstvy 0,12 mm. Doporučujeme materiál
+   PLA+, který spolehlivě zajistí přesné linie a stabilitu tenkých částí.“
+
+Úvody jsou různé, autor a licence pryč, rada k tisku má plochu, podpěry i výšku vrstvy, „single-room“ je správně.
+Co zůstává: PLA+ všude (místně je založený jen on) a rada je z názvu a kategorie, ne z geometrie souboru, kterou
+nástroj nevidí – u tvarů, kde to není zřejmé, může být „bez podpěr“ odvážné. Dál ladit až podle produkčních ukázek.
+
 ### 9.5 Sitemapy a admin
 
 - `Sitemaps::catalog()` jen `indexable()`, `lastmod` = `enriched_at ?? updated_at`; `catalogCounts()`;
