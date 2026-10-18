@@ -61,6 +61,9 @@ function leadRange(days: number[]): string {
     return lo === hi ? String(lo) : `${lo}–${hi}`;
 }
 
+/** A calculation that failed because the file is no model we can read says so: "Recalculate" would not help (docs/AH.md §9). */
+const failedKey = (c: { error?: string | null; file?: { status?: string } | null } | null): string => (c?.error === 'file_processing_failed' || c?.file?.status === 'failed' ? 'calc.status.not_model' : 'calc.status.failed');
+
 function setStatus(key: string, spinning: boolean): void {
     $('status').textContent = t(key);
     $('status-spinner').classList.toggle('hidden', !spinning);
@@ -369,7 +372,7 @@ function poll(token: string): void {
                 return;
             }
             if (c.status === 'failed') {
-                setStatus('calc.status.failed', false);
+                setStatus(failedKey(c), false);
                 return;
             }
             setStatus(c.file && c.file.status !== 'ready' && !BROWSER_FORMATS.includes(c.file.ext) ? 'calc.status.converting' : 'calc.status.queued', true);
@@ -833,7 +836,7 @@ async function restore(c: CalcInfo): Promise<void> {
     $('file-badge').textContent = c.file?.name ?? '';
     if (c.file?.stl_url) await showServerStl(c.file.stl_url);
     if (c.status === 'done') { setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false); renderPrecise(c); enableDownload(c.file); }
-    else if (c.status === 'failed') { setStatus('calc.status.failed', false); renderRough(); }
+    else if (c.status === 'failed') { setStatus(failedKey(c), false); renderRough(); }
     else { renderRough(); poll(c.token); }
 }
 
@@ -849,7 +852,7 @@ export async function openFile(uuid: string): Promise<void> {
             state.file = info;
             $('file-badge').textContent = info.name;
             if (info.status === 'ready') break;
-            if (info.status === 'failed') { setStatus('calc.status.failed', false); return; }
+            if (info.status === 'failed') { setStatus('calc.status.not_model', false); return; }
         } catch { /* retry */ }
         await new Promise((r) => setTimeout(r, 1500));
     }

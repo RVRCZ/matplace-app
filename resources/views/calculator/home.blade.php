@@ -85,6 +85,11 @@
         <p class="mt-6 text-center"><a href="{{ route('tools') }}" class="btn-secondary">{{ __('home.tools.all_count', ['n' => count(\App\Domain\Tools\ToolVisibility::listed())]) }} →</a></p>
     </section>
 
+    {{-- prints with their price: off until the photos of the prints come (config/site.php) --}}
+    @if(config('site.examples'))
+        @include('calculator._examples')
+    @endif
+
     {{-- how it goes --}}
     <section class="-mx-4 mt-14 bg-white/60 px-4 py-12" aria-labelledby="home-steps">
         <p class="text-xs font-bold uppercase tracking-[0.14em] text-action">{{ __('home.steps.kicker') }}</p>

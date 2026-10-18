@@ -92,7 +92,8 @@ const ORDER = /Objednat tisk|Vytisknout u nás|Chci to vyrobit|Order the print|P
 
 /**
  * The paths of the audit (point 13). Steps: go (a page), file (selector, path), type (selector, text), click (selector),
- * clickText (a pattern of the words of a button or a link), nav (the step that follows loads a page), wait, shot.
+ * clickText (a pattern of the words of a button or a link), nav (the step that follows loads a page), wait, shot,
+ * reload (the page again, as F5), read (a JS expression whose value is written to the facts).
  */
 const FLOWS = {
     'file-price': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 25000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
@@ -101,6 +102,8 @@ const FLOWS = {
     'qr-web': [['go', '/tools/qr'], ['wait', 4000], ['type', '[data-text="url"]', 'https://matplace.com/tools'], ['wait', 6000], ['shot']],
     'qr-wifi': [['go', '/tools/qr'], ['wait', 4000], ['type', '[data-text="url"]', 'WIFI:T:WPA;S:Domov;P:heslo 123;;'], ['wait', 6000], ['shot']],
     'bad-file': [['go', '/'], ['file', '#file-input', FIXTURES.broken], ['wait', 12000], ['shot']],
+    // the calculation keeps what was set: 3 pieces, recalculated, the page reloaded (and back from the next page)
+    'calc-keep': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 20000], ['type', '#quantity', '3'], ['click', '#cta-recalc'], ['wait', 12000], ['read', "document.getElementById('quantity').value + ' ks, ' + location.pathname"], ['reload'], ['wait', 6000], ['read', "document.getElementById('quantity').value + ' ks, ' + location.pathname + ', ' + document.getElementById('status').textContent"], ['shot']],
     'photo-limit': [['go', '/tools/relief'], ['wait', 3000], ['file', '#relief-photo', FIXTURES.big], ['wait', 1000], ['click', '#relief-form button.btn-ink'], ['wait', 4000], ['shot']],
 };
 
@@ -301,6 +304,8 @@ async function walk(flow, width, lang, port) {
         for (const [what, a, b] of FLOWS[flow]) {
             if (what === 'go') { const loaded = once('Page.loadEventFired'); await cdp('Page.navigate', { url: BASE + pathOf(a, lang) }); await loaded; await sleep(1500); }
             else if (what === 'nav') navigation = once('Page.loadEventFired', 30000);
+            else if (what === 'reload') { const loaded = once('Page.loadEventFired'); await cdp('Page.reload', {}); await loaded; await sleep(1500); }
+            else if (what === 'read') steps.push({ step: 'read', value: await evaluate(cdp, a) });
             else if (what === 'wait') { if (navigation) { await navigation; navigation = null; await sleep(1500); } await sleep(a); }
             else if (what === 'file') {
                 const { root } = await cdp('DOM.getDocument', { depth: 0 });

@@ -1765,5 +1765,14 @@
     "farm.order.why.kind": "otro material (:from → :to)",
     "farm.order.why.settings": "otros ajustes de impresión (tamaño, cantidad, calidad o resistencia)",
     "farm.order.why.time": "tiempo de impresión :from → :to",
-    "farm.order.reslicing": "Calculando de nuevo…"
+    "farm.order.reslicing": "Calculando de nuevo…",
+    "site.examples.title": "Ejemplos con su precio",
+    "site.examples.lead": "Cálculos reales de nuestra granja. El precio es por la impresión con nosotros, sin envío; el exacto para su modelo lo verá en el cálculo.",
+    "site.examples.item.figure": "Busto a partir de una foto, :mm mm de alto",
+    "site.examples.meta": ":material · 1 pieza · :g g · impresión :time",
+    "site.examples.price_note": "sin envío",
+    "site.examples.other_currency": "El cálculo muestra el precio en su moneda.",
+    "site.examples.preview": "Vista previa del modelo, no una foto de la impresión",
+    "site.examples.open": "Abrir el cálculo",
+    "calc.status.not_model": "No podemos leer este archivo como modelo 3D: está dañado, vacío o es de otro tipo. Pruebe otro archivo (STL, 3MF, STEP y otros)."
 }

@@ -1765,5 +1765,14 @@
     "farm.order.why.kind": "jiný materiál (:from → :to)",
     "farm.order.why.settings": "jiné nastavení tisku (velikost, kusy, kvalita nebo pevnost)",
     "farm.order.why.time": "doba tisku :from → :to",
-    "farm.order.reslicing": "Počítám znovu…"
+    "farm.order.reslicing": "Počítám znovu…",
+    "site.examples.title": "Příklady s cenou",
+    "site.examples.lead": "Skutečné kalkulace naší farmy. Cena je za tisk u nás, bez dopravy; přesnou pro váš model uvidíte v kalkulaci.",
+    "site.examples.item.figure": "Busta z fotky, výška :mm mm",
+    "site.examples.meta": ":material · 1 kus · :g g · tisk :time",
+    "site.examples.price_note": "bez dopravy",
+    "site.examples.other_currency": "Cenu ve vaší měně ukáže kalkulace.",
+    "site.examples.preview": "Náhled modelu, ne fotka výtisku",
+    "site.examples.open": "Otevřít kalkulaci",
+    "calc.status.not_model": "Tenhle soubor neumíme přečíst jako 3D model: je poškozený, prázdný nebo jiného druhu. Zkuste jiný soubor (STL, 3MF, STEP a další)."
 }

@@ -1765,5 +1765,14 @@
     "farm.order.why.kind": "another material (:from → :to)",
     "farm.order.why.settings": "other print settings (size, quantity, quality or strength)",
     "farm.order.why.time": "print time :from → :to",
-    "farm.order.reslicing": "Calculating again…"
+    "farm.order.reslicing": "Calculating again…",
+    "site.examples.title": "Examples with their price",
+    "site.examples.lead": "Real calculations of our farm. The price is for the print with us, without delivery; the exact one for your model is in the calculation.",
+    "site.examples.item.figure": "Bust from a photo, :mm mm high",
+    "site.examples.meta": ":material · 1 piece · :g g · print :time",
+    "site.examples.price_note": "without delivery",
+    "site.examples.other_currency": "The calculation shows the price in your currency.",
+    "site.examples.preview": "A preview of the model, not a photo of the print",
+    "site.examples.open": "Open the calculation",
+    "calc.status.not_model": "We cannot read this file as a 3D model: it is damaged, empty or of another kind. Try another file (STL, 3MF, STEP and others)."
 }

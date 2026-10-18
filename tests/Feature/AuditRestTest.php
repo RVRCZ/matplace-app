@@ -134,6 +134,20 @@ class AuditRestTest extends TestCase
         $this->assertSame('v den, kdy tisk skončí, v pracovní dny (co se dotiskne o víkendu, odešleme v pondělí)', __('farm.order.tl.dispatch'));
     }
 
+    public function test_the_examples_with_a_price_wait_for_the_photos_behind_a_switch(): void
+    {
+        $this->get('/')->assertOk()->assertDontSee('id="home-examples"', false);
+        config(['site.examples' => true]);
+        $html = (string) $this->get('/')->assertOk()->getContent();
+        $this->assertStringContainsString('id="home-examples"', $html);
+        $this->assertStringContainsString('Busta z fotky, výška 80 mm', $html);
+        $this->assertMatchesRegularExpression('/99\s*Kč/u', $html);
+        $this->assertStringContainsString(e(__('site.examples.preview')), $html, 'a preview says it is not a photo of a print');
+        $this->assertStringContainsString(url('/c/vxauvlvidinz'), $html);
+        // in euros the block does not invent a price: the calculation shows it
+        $this->withCookie('currency', 'EUR')->get('/en')->assertOk()->assertSee('Bust from a photo, 150 mm high');
+    }
+
     public function test_every_text_of_the_home_page_the_calculation_the_order_and_the_account_exists_in_all_three_languages(): void
     {
         $files = array_merge(

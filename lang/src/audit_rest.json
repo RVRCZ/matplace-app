@@ -98,5 +98,50 @@
         "Počítám znovu…",
         "Calculating again…",
         "Calculando de nuevo…"
+    ],
+    "site.examples.title": [
+        "Příklady s cenou",
+        "Examples with their price",
+        "Ejemplos con su precio"
+    ],
+    "site.examples.lead": [
+        "Skutečné kalkulace naší farmy. Cena je za tisk u nás, bez dopravy; přesnou pro váš model uvidíte v kalkulaci.",
+        "Real calculations of our farm. The price is for the print with us, without delivery; the exact one for your model is in the calculation.",
+        "Cálculos reales de nuestra granja. El precio es por la impresión con nosotros, sin envío; el exacto para su modelo lo verá en el cálculo."
+    ],
+    "site.examples.item.figure": [
+        "Busta z fotky, výška :mm mm",
+        "Bust from a photo, :mm mm high",
+        "Busto a partir de una foto, :mm mm de alto"
+    ],
+    "site.examples.meta": [
+        ":material · 1 kus · :g g · tisk :time",
+        ":material · 1 piece · :g g · print :time",
+        ":material · 1 pieza · :g g · impresión :time"
+    ],
+    "site.examples.price_note": [
+        "bez dopravy",
+        "without delivery",
+        "sin envío"
+    ],
+    "site.examples.other_currency": [
+        "Cenu ve vaší měně ukáže kalkulace.",
+        "The calculation shows the price in your currency.",
+        "El cálculo muestra el precio en su moneda."
+    ],
+    "site.examples.preview": [
+        "Náhled modelu, ne fotka výtisku",
+        "A preview of the model, not a photo of the print",
+        "Vista previa del modelo, no una foto de la impresión"
+    ],
+    "site.examples.open": [
+        "Otevřít kalkulaci",
+        "Open the calculation",
+        "Abrir el cálculo"
+    ],
+    "calc.status.not_model": [
+        "Tenhle soubor neumíme přečíst jako 3D model: je poškozený, prázdný nebo jiného druhu. Zkuste jiný soubor (STL, 3MF, STEP a další).",
+        "We cannot read this file as a 3D model: it is damaged, empty or of another kind. Try another file (STL, 3MF, STEP and others).",
+        "No podemos leer este archivo como modelo 3D: está dañado, vacío o es de otro tipo. Pruebe otro archivo (STL, 3MF, STEP y otros)."
     ]
 }
