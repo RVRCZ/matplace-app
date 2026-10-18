@@ -274,7 +274,7 @@ return [
         'object' => ['quick' => 'Prueba rápida (cubo, voladizos, puente, hilos)', 'detailed' => 'Prueba detallada (cubo 20 mm, voladizos hasta 80°, puentes 15/25 mm, hilos, paredes, agujeros, unión de capas)', 'ironing' => 'Planchado (superficie 30 × 30 mm)', 'seam' => 'Costura (cilindro, caja redondeada, cono, cubo)', 'temp_tower' => 'Torre de temperatura'],
     ],
 
-    'finish' => ['solid' => '', 'matte' => 'mate', 'silk' => 'Silk', 'luminous' => 'luminoso', 'glitter' => 'brillante', 'special' => 'especial', 'flex' => 'flexible', 'cf' => 'CF'],
+    'finish' => ['solid' => '', 'matte' => 'mate', 'silk' => 'Silk', 'luminous' => 'luminoso', 'glitter' => 'brillante', 'metallic' => 'metálico', 'special' => 'especial', 'flex' => 'flexible', 'cf' => 'CF'],
 
     'admin' => [
         'nav' => ['dashboard' => 'Impresoras y cola', 'orders' => 'Pedidos', 'printers' => 'Impresoras', 'materials' => 'Materiales y colores', 'settings' => 'Precios y reglas', 'agents' => 'Agentes', 'credit' => 'Crédito', 'tuning' => 'Ajuste de materiales', 'photobox' => 'Caja de fotos', 'videos' => 'Vídeos en YouTube'],

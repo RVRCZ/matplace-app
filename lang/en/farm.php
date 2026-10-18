@@ -274,7 +274,7 @@ return [
         'object' => ['quick' => 'Quick test (cube, overhangs, bridge, stringing)', 'detailed' => 'Detailed test (20 mm cube, overhangs to 80°, 15/25 mm bridges, stringing, walls, holes, layer bond)', 'ironing' => 'Ironing (30 × 30 mm plateau)', 'seam' => 'Seam (cylinder, rounded box, cone, cube)', 'temp_tower' => 'Temperature tower'],
     ],
 
-    'finish' => ['solid' => '', 'matte' => 'matte', 'silk' => 'Silk', 'luminous' => 'glow', 'glitter' => 'glitter', 'special' => 'special', 'flex' => 'flexible', 'cf' => 'CF'],
+    'finish' => ['solid' => '', 'matte' => 'matte', 'silk' => 'Silk', 'luminous' => 'glow', 'glitter' => 'glitter', 'metallic' => 'metallic', 'special' => 'special', 'flex' => 'flexible', 'cf' => 'CF'],
 
     'admin' => [
         'nav' => ['dashboard' => 'Printers and queue', 'orders' => 'Orders', 'printers' => 'Printers', 'materials' => 'Materials and colours', 'settings' => 'Prices and rules', 'agents' => 'Agents', 'credit' => 'Credit', 'tuning' => 'Material tuning', 'photobox' => 'Photo box', 'videos' => 'YouTube videos'],

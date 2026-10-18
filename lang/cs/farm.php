@@ -274,7 +274,7 @@ return [
         'object' => ['quick' => 'Rychlý test (kostka, převisy, most, stringing)', 'detailed' => 'Podrobný test (kostka 20 mm, převisy do 80°, mosty 15/25 mm, stringing, stěny, otvory, spoj vrstev)', 'ironing' => 'Žehlení (plošina 30 × 30 mm)', 'seam' => 'Šev (válec, zaoblený hranol, kužel, kostka)', 'temp_tower' => 'Teplotní věž'],
     ],
 
-    'finish' => ['solid' => '', 'matte' => 'matný', 'silk' => 'Silk', 'luminous' => 'svítící', 'glitter' => 'třpytivý', 'special' => 'speciální', 'flex' => 'flexibilní', 'cf' => 'CF'],
+    'finish' => ['solid' => '', 'matte' => 'matný', 'silk' => 'Silk', 'luminous' => 'svítící', 'glitter' => 'třpytivý', 'metallic' => 'metalický', 'special' => 'speciální', 'flex' => 'flexibilní', 'cf' => 'CF'],
 
     'admin' => [
         'nav' => ['dashboard' => 'Tiskárny a fronta', 'orders' => 'Zakázky', 'printers' => 'Tiskárny', 'materials' => 'Materiály a barvy', 'settings' => 'Ceny a pravidla', 'agents' => 'Agenti', 'credit' => 'Kredit', 'tuning' => 'Ladění materiálů', 'photobox' => 'Foto-box', 'videos' => 'Videa na YouTube'],

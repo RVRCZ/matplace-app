@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FarmMaterial extends Model
 {
-    public const FINISHES = ['solid', 'matte', 'silk', 'luminous', 'glitter', 'special', 'flex', 'cf'];
+    // metallic: PLA with metal particles (SUNLU PLA-Metallic, 18 Oct 2026), printed like a matte PLA+
+    public const FINISHES = ['solid', 'matte', 'silk', 'luminous', 'glitter', 'metallic', 'special', 'flex', 'cf'];
 
     /** The farm's own brand: every kind and colour of the first catalogue; a label names any other maker. */
     public const DEFAULT_MAKER = 'Matplace';

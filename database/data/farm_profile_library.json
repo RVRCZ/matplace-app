@@ -7,6 +7,7 @@
     "PLA/luminous": { "nozzle_temp": 215, "nozzle_temp_first": 220, "bed_temp": 55 },
     "PLA/glitter": { "nozzle_temp": 220, "nozzle_temp_first": 225, "bed_temp": 55 },
     "PLA/special": { "nozzle_temp": 220, "nozzle_temp_first": 225, "bed_temp": 55 },
+    "PLA/metallic": { "nozzle_temp": 225, "nozzle_temp_first": 230, "bed_temp": 60 },
     "PLA+/solid": { "nozzle_temp": 220, "nozzle_temp_first": 225, "bed_temp": 60 },
     "PLA+/matte": { "nozzle_temp": 225, "nozzle_temp_first": 230, "bed_temp": 60 },
     "PETG/solid": { "nozzle_temp": 255, "nozzle_temp_first": 255, "bed_temp": 75 },
@@ -57,6 +58,17 @@
           "pressure_advance": ["0.03"]
         },
         "_note": "abrasive: hardened nozzle in the long run; Anycubic prints its Glow at 190, Bambu at 220, the farm stays at 215"
+      },
+      "metallic": {
+        "nozzle_temp": 225,
+        "nozzle_temp_first": 230,
+        "bed_temp": 60,
+        "filament": {
+          "filament_max_volumetric_speed": ["12"],
+          "filament_retraction_length": ["0.5"],
+          "pressure_advance": ["0.032"]
+        },
+        "_note": "SUNLU PLA-Metallic (Brass Gold, Marrakech Bronze, Azurite; label: 210-240 at 100-200 mm/s, bed 50-60): printed like the PLA+ matte (Roman, 18 Oct 2026)"
       },
       "glitter": {
         "nozzle_temp": 220,
@@ -271,6 +283,16 @@
         "bed_temp": 65,
         "filament": {
           "filament_max_volumetric_speed": ["13"],
+          "pressure_advance": ["0.03"]
+        }
+      },
+      "metallic": {
+        "nozzle_temp": 225,
+        "nozzle_temp_first": 230,
+        "bed_temp": 65,
+        "filament": {
+          "filament_max_volumetric_speed": ["13"],
+          "filament_retraction_length": ["0.8"],
           "pressure_advance": ["0.03"]
         }
       },
