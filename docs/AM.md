@@ -115,6 +115,31 @@ Content-Type: multipart/form-data; boundary=…
   Když `.gcode` nevezme, agent ho před nahráním zabalí do `.gcode.3mf` (`Metadata/plate_1.gcode` + md5), jak to
   dělá Slicer.
 
+## 4c. Náš `.gcode` ano, start bez přiřazení ne; zachycený start ze Sliceru (18. 10., 12:48–12:55)
+
+- Roman spustil `kx_drive.py start mptest-cube10.gcode` (ovladač e7323e7) sám. **Nahrání čistého `.gcode` prošlo.**
+  Tiskárna pak založila `project` `mptest-cube10.gcode` se `state` `init`, ale zůstala `free`. Tři minuty nic
+  nenahřála (cíl 0 °C) a displej usnul.
+- Odposlech na brokeru tiskárny (`scratchpad/kx_sniff.py`, jen přihlášení k odběru `anycubic/#`, nic neposílá) zachytil
+  start ze Sliceru Next při Romanově dalším tisku:
+  ```json
+  {"type":"print","action":"start","data":{"taskid":"-1","filename":"1018-1254-Cube_plate(01)_PLA_0.2_13m2s.gcode",
+   "filepath":null,"filetype":1,"project_type":1,"url":…,"md5":…,"filesize":…,
+   "ams_settings":{"use_ams":true,"ams_box_mapping":[{"paint_index":0,"ams_index":1,"paint_color":[0,0,0,255],
+     "ams_color":[255,127,50,255],"material_type":"PLA"}]},
+   "task_settings":{"auto_leveling":1,"vibration_compensation":0,"flow_calibration":0,"dry_mode":0,…}}}
+  ```
+  `md5`, `filesize`, `msgid` a `timestamp` jsou hodnoty ze šablony v dokumentaci (943c0d…, 188000, rok 2022), tiskárna
+  je nekontroluje. Pak přijdou reporty `print/report`: `update`/`init` → `start`/`checking` → `printing` →
+  `nozzle_heating` (cíl 220) / `hotbed_heating` (60), před tím `getSliceParam` a `fileDetails`.
+- **`T<n>` v G-code znamená „barva n“ projektu.** Na fyzickou pozici ji přiřadí `ams_box_mapping` (`paint_index` →
+  `ams_index`). Ovladač (commit níže) teď posílá `paint_index` = `T` z naší G-code (GcodeSlot píše `T<slot>`),
+  `ams_index` = pozice od serveru a `ams_color`/`material_type` ze `multiColorBox` getInfo (Rack, box id −1).
+  K tomu `task_settings` s vyrovnáním a `filepath: null`. Úloha v `init` na volné tiskárně se jako rozběhnutý tisk
+  nepočítá.
+- **Předpoklad k ověření:** `ams_index` čísluje pozice Racku (0–3). Slicer poslal 1 pro oranžovou a ta je v Racku
+  na indexu 1. Stejná barva je ale i v ACE na indexu 0, takže čtení to nerozhodlo; rozhodne další start.
+
 ## 4. Zkouška startu na skutečné tiskárně – čeká
 
 Řídící session předala 18. 10. Romanovo „CX je volná“ a produkční G-code kostky 10 mm

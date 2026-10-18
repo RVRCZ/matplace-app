@@ -29,6 +29,16 @@ FREE = {
 }
 
 
+# multiColorBox/getInfo of the Kobra X on 18 Oct 2026: the rack (id -1) and an ACE (id 0)
+BOXES = [
+    {"id": -1, "status": 1, "loaded_slot": -1, "slots": [
+        {"index": 0, "type": "PLA Silk", "color": [0, 43, 73], "status": 5}, {"index": 1, "type": "PLA Silk", "color": [255, 127, 50], "status": 5},
+        {"index": 2, "type": "PLA Silk", "color": [33, 39, 33], "status": 5}, {"index": 3, "type": "PLA+", "color": [255, 255, 255], "status": 5}]},
+    {"id": 0, "status": 1, "loaded_slot": -1, "slots": [
+        {"index": 0, "type": "PLA Silk", "color": [255, 127, 50], "status": 5}, {"index": 1, "type": "PLA Metal", "color": [0, 53, 148], "status": 5}]},
+]
+
+
 class FakeLink:
     """Stands for KobraLink. `begins`: a start command turns into a running project (False: the printer ignores it)."""
 
@@ -53,6 +63,8 @@ class FakeLink:
     def ask(self, kind, action="query", data=None, *, web=True, timeout=8.0):
         if not self.connected:
             raise LinkError("not connected")
+        if (kind, action) == ("multiColorBox", "getInfo"):
+            return {"type": kind, "state": "done", "code": 200, "data": {"multi_color_box": BOXES}}
         return {"type": kind, "state": "done", "code": 200, "data": dict(self.p.info)}
 
     def publish(self, kind, action, data, *, web=False):
@@ -60,7 +72,10 @@ class FakeLink:
             raise LinkError("not connected")
         self.p.sent.append((kind, action, data))
         info = self.p.info
-        if (kind, action) == ("print", "start") and self.p.begins:
+        if (kind, action) == ("print", "start") and not (data.get("ams_settings") or {}).get("ams_box_mapping"):
+            # what the Kobra X did on 18 Oct 2026: the task is noted, nothing heats, the printer stays free
+            info.update(state="free", project={"state": "init", "filename": data["filename"], "progress": 0, "pause": 0})
+        elif (kind, action) == ("print", "start") and self.p.begins:
             info.update(state="busy", project={"state": "printing", "filename": data["filename"], "progress": 0, "pause": 0,
                                                "curr_layer": 0, "total_layers": 50, "remain_time": 6, "print_time": 0})
         elif (kind, action) == ("print", "pause") and info.get("project"):
@@ -123,10 +138,11 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
         self.addAsyncCleanup(d.close)
         return d
 
-    def gcode(self) -> str:
+    def gcode(self, tool: int = 0) -> str:
         fd, path = tempfile.mkstemp(suffix=".gcode")
         with os.fdopen(fd, "wb") as fh:
-            fh.write(b";FLAVOR:Klipper\nG28\nT0\nG1 X10 Y10\n")
+            # the start of a farm G-code after GcodeSlot (kx-cube10.gcode, 18 Oct 2026)
+            fh.write(f";FLAVOR:Klipper\nG9111 bedTemp=55 extruderTemp=225\nM109 S225\nT{tool} ; slot chosen by matplace farm\nG1 X10 Y10\n".encode())
         self.addCleanup(os.remove, path)
         return path
 
@@ -165,12 +181,17 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
         async with FakePrinter() as p:
             d = await self.driver(p)
             await d.status()
-            await d.start(self.gcode(), "mp7-cube.gcode", 0)
+            await d.start(self.gcode(tool=1), "mp7-cube.gcode", 1)
             self.assertEqual("tok", p.uploads[0][0])
             self.assertEqual("mp7-cube.gcode", p.uploads[0][1])
-            self.assertIn(b"T0", p.uploads[0][2])
+            self.assertIn(b"T1", p.uploads[0][2])
             kind, action, data = p.sent[-1]
-            self.assertEqual(("print", "start", "mp7-cube.gcode", "-1"), (kind, action, data["filename"], data["taskid"]))
+            self.assertEqual(("print", "start", "mp7-cube.gcode", "-1", 1, 1), (kind, action, data["filename"], data["taskid"], data["filetype"], data["project_type"]))
+            # the G-code's T1 goes to the rack's position 1 with the colour and the material of the spool there
+            self.assertEqual([{"paint_index": 1, "ams_index": 1, "paint_color": [0, 0, 0, 255], "ams_color": [255, 127, 50, 255], "material_type": "PLA"}],
+                             data["ams_settings"]["ams_box_mapping"])
+            self.assertTrue(data["ams_settings"]["use_ams"])
+            self.assertEqual(1, data["task_settings"]["auto_leveling"])
             await d.cancel()
             self.assertEqual(("print", "stop"), p.sent[-1][:2])
             s = await d.status()

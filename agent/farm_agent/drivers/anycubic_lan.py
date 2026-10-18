@@ -7,7 +7,8 @@ through the protocol the Anycubic Slicer Next uses on the local network (client:
   reports    MQTT/TLS <ip>:9883, anycubic/anycubicCloud/v1/printer/public/<model>/<device>/<type>/report
   status     query `info` (state, temperatures, `project` while printing, `last_project` after it, `urls`)
   upload     POST <urls.fileUploadurl> (http://<ip>:18910/gcode_upload?s=<token>), multipart field `file`
-  start      MQTT slicer/.../print  {"type": "print", "action": "start", "data": {"filename", "filepath", "filetype", "taskid": "-1"}}
+  start      MQTT slicer/.../print  action start: filename, filetype 1, project_type 1, ams_settings.ams_box_mapping
+             [{paint_index = T<n> of the G-code, ams_index = spool position}], task_settings (as the Slicer Next sends it)
   control    MQTT slicer/.../print  action pause | resume | stop
   camera     <urls.rtspUrl> = HTTP-FLV (H.264) on :18088; one frame decoded with PyAV (`pip install av`), else no picture
   light      MQTT web/.../light {"type": 3 (camera light), "status": 0|1, "brightness"} - only with `light: true`
@@ -24,6 +25,7 @@ import io
 import json
 import logging
 import os
+import re
 import threading
 import time
 import uuid
@@ -48,7 +50,8 @@ JOB_STATES = {
     "checking": JOB_PRINTING, "leveling": JOB_PRINTING, "resuming": JOB_PRINTING, "pausing": JOB_PRINTING,
     # the start of a Kobra X print (18 Oct 2026: "ace_filament_feeding" first) and the S1 sequence
     "ace_filament_feeding": JOB_PRINTING, "auto_leveling": JOB_PRINTING, "vibrating": JOB_PRINTING,
-    "flow_calibrating": JOB_PRINTING, "resumed": JOB_PRINTING, "updated": JOB_PRINTING,
+    "flow_calibrating": JOB_PRINTING, "resumed": JOB_PRINTING, "updated": JOB_PRINTING, "init": JOB_PRINTING,
+    "nozzle_heating": JOB_PRINTING, "hotbed_heating": JOB_PRINTING,
     "paused": JOB_PAUSED,
     "finished": JOB_DONE, "complete": JOB_DONE, "done": JOB_DONE,
     "stoped": JOB_CANCELLED, "stopped": JOB_CANCELLED, "canceled": JOB_CANCELLED, "cancelled": JOB_CANCELLED, "stoping": JOB_CANCELLED,
@@ -330,20 +333,47 @@ class AnycubicLanDriver(PrinterDriver):
         if not url:
             raise DriverError("the printer offers no upload address (urls.fileUploadurl missing in its info)")
         await self._upload(url, gcode_path, filename)
-        # the G-code selects the spool itself (T<slot> after the start macro); the start command carries no mapping
-        log.info("%s: starting %s (slot %d)", self.key, filename, slot + 1)
-        await self._send("print", "start", {"taskid": "-1", "filename": filename, "filepath": "/", "filetype": 1, "task_mode": 1})
+        # The start the Slicer Next sends (captured 18 Oct 2026, docs/AM.md): T<n> in the G-code is a "paint" the printer
+        # maps to a spool position by ams_box_mapping. Without the mapping a Kobra X takes the task and stays in "init".
+        paint = _paint_of(gcode_path)
+        mapping = {"paint_index": paint, "ams_index": int(slot), "paint_color": [0, 0, 0, 255]}
+        mapping.update(await self._spool(int(slot)))
+        log.info("%s: starting %s (T%d -> spool position %d)", self.key, filename, paint, slot)
+        await self._send("print", "start", {
+            "taskid": "-1", "filename": filename, "filepath": None, "filetype": 1, "project_type": 1,
+            "ams_settings": {"use_ams": True, "ams_box_mapping": [mapping]},
+            "task_settings": {"auto_leveling": 1, "vibration_compensation": 0, "flow_calibration": 0, "dry_mode": 0},
+        })
         deadline = time.monotonic() + self.start_wait
         while True:
             await asyncio.sleep(self.start_poll)
             now = await self.status()
-            if now.state in (PRINTING, PAUSED) and (not now.job or now.job.filename == _base_name(filename)):
+            # a task the printer only noted ("init") on a printer still "free" has not begun
+            begun = now.telemetry.get("printer_state") not in ("free", None)
+            if begun and now.state in (PRINTING, PAUSED) and (not now.job or now.job.filename == _base_name(filename)):
                 log.info("%s: the printer took %s", self.key, filename)
                 return
             if now.state == ERROR:
                 raise DriverError(f"print start: the printer reports an error: {now.telemetry.get('error') or 'no message'}")
             if time.monotonic() > deadline:
                 raise DriverError(f"print start: the printer did not begin {filename} in {self.start_wait:.0f} s")
+
+    async def _spool(self, slot: int) -> dict:
+        """Colour and material of the spool at this position of the printer's own rack (box id -1), as the start command
+        carries them. The Slicer Next mapped the rack's position 1 to ams_index 1 (18 Oct 2026). Unknown: nothing."""
+        try:
+            report = await self._ask("multiColorBox", "getInfo")
+        except DriverError as e:
+            log.info("%s: no spool information (%s)", self.key, e)
+            return {}
+        boxes = (report.get("data") or {}).get("multi_color_box") or []
+        rack = next((b for b in boxes if b.get("id") == -1), boxes[0] if boxes else {})
+        spool = next((s for s in rack.get("slots") or [] if s.get("index") == slot), None)
+        if not spool:
+            return {}
+        color = list(spool.get("color") or [0, 0, 0])[:3] + [255]
+        material = str(spool.get("type") or "PLA").split()[0].upper()     # "PLA Silk" -> "PLA", as the Slicer sends it
+        return {"ams_color": color, "material_type": material}
 
     async def _upload(self, url: str, path: str, filename: str) -> None:
         size = os.path.getsize(path)
@@ -397,6 +427,18 @@ def _num(v) -> Optional[float]:
 def _base_name(name: str) -> str:
     """The name the printer reports may carry a folder; ".gcode.3mf" is reported as ".gcode"."""
     return os.path.basename(name.replace("\\", "/"))
+
+
+def _paint_of(path: str) -> int:
+    """The tool the G-code selects (matplace's GcodeSlot writes "T<n>" after the start macro); 0 when it selects none."""
+    with open(path, "r", encoding="utf-8", errors="replace") as fh:
+        for i, line in enumerate(fh):
+            m = re.match(r"\s*T(\d+)\b", line)
+            if m:
+                return int(m.group(1))
+            if i > 400:
+                break
+    return 0
 
 
 def _flv_frame(url: str) -> Optional[bytes]:
