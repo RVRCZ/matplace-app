@@ -624,3 +624,13 @@ po nasazení, které sahá na profily, se spouští jedna kalkulace na produkci.
 **Potvrzení z tisku 17. 10. 2026 večer (Roman):** figurka psa F26-000079 (PLA+ matný bílý, U #1, bez podstavce, seříznuté
 tlapky) vyšla dobře a vyšší teplota PLA+ matného (225/230 °C z knihovny místo 215/225) je podle Romana lepší. Řádek
 U #1 PLA+ matný vlastní teplotu nemá, bere ji z druhu, tedy z knihovny.
+
+## 21. Kobra X odpovídá v LAN režimu (18. 10. 2026)
+
+Roman zapnul na Kobře X LAN režim; z jeho PC (stejná síť) jsem pustil `C:\Users\roman\Desktop\kobra-x-test\kobra_x_test.ps1
+-Ip 192.168.8.44`: porty 18910 (handshake) i 9883 (MQTT/TLS) otevřené, 80 a 7125 ne; klient kobra-connect (Apache‑2.0)
+udělal handshake a `query_info()` vrátil Anycubic Kobra X, firmware 2.0.2.2, stav free, teploty 29/25 °C, features mimo
+jiné `gcode_3mf_support`, `camera_timelapse_support`, `pre_cancel_support`. Klient umí start souboru z úložiště
+tiskárny, pauzu, zrušení, teploty, ventilátor, výpis souborů; **nahrání souboru v něm není** (cloud používá `url` ve
+startu, LAN cesta se musí ověřit). Zadáno: `docs/prompts/kobra-x-agent.md` (ovladač `anycubic_lan`, agent 0.2.0,
+session 4). V LAN režimu je tiskárna odpojená od cloudu Anycubic.
