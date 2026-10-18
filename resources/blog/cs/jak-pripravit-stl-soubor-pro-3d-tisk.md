@@ -74,7 +74,7 @@ Kalkulace na hlavní stránce drobné chyby opravuje sama. Když model prošel o
 
 - **Rozměry.** Po nahrání vidíte rozměry modelu v milimetrech. Když nesedí, změňte velikost posuvníkem.
 - **Větší než tiskárna.** Nástroj [Rozdělení modelu na díly](/tools/split) model rozřeže na díly s kolíky nebo rybinovými klíči, které se vejdou na podložku. Pro opravdu velké kusy je [V životní velikosti](/tools/life-size), který model zvětší, vydutí a rozdělí najednou.
-- **Masivní model.** [Vydutit model](/tools/hollow) udělá dutý model se stěnou a odtokovými otvory a spočítá ušetřené gramy.
+- **Masivní model.** [Vydutit model](/tools/hollow) udělá dutý model se stěnou a odtokovými otvory a spočítá ušetřené gramy. Oba nástroje s příklady popisuje článek [Rozdělení a vydutí 3D modelu](/blog/rozdeleni-a-vyduteni-3d-modelu).
 - **Orientace.** Plochou stranu dolů, nejdetailnější nahoru, převisy pod 45°. V kalkulaci model můžete otočit a hned vidíte, jak se změní doba tisku.
 
 ## Krok 6: Slicer

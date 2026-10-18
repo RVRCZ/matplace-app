@@ -66,7 +66,7 @@ Do dalších zemí EU stojí doprava od 199 Kč podle země. Zásilka do 2 kg ni
 ## Jak ušetřit
 
 - **Zmenšete model.** Poloviční výška znamená zhruba osminu materiálu. Velikost změníte posuvníkem přímo v kalkulaci.
-- **Vydutěte velké kusy.** Nástroj [Vydutit model](/tools/hollow) udělá z plného modelu dutý se stěnou 1,5 až 6 mm a spočítá ušetřené gramy i koruny.
+- **Vydutěte velké kusy.** Nástroj [Vydutit model](/tools/hollow) udělá z plného modelu dutý se stěnou 1,5 až 6 mm a spočítá ušetřené gramy i koruny. Váleček ⌀ 120 × 200 mm po vydutí stojí 500 Kč místo 910 Kč, viz [Rozdělení a vydutí 3D modelu](/blog/rozdeleni-a-vyduteni-3d-modelu).
 - **Tiskněte víc kusů najednou.** Příprava zakázky se platí jednou: deset kostek 20 mm stojí 150 Kč, tedy 15 Kč za kus.
 - **Zůstaňte u PLA+**, pokud nepotřebujete teplu nebo slunci odolný materiál.
 
