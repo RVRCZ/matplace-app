@@ -41,6 +41,8 @@
     {{-- amounts are printed by scripts the same way the server prints them (resources/js/site/money.ts) --}}
     <script>window.MP_MONEY = {{ \Illuminate\Support\Js::from(\App\Support\Currency::forScripts()) }};</script>
     @include('partials.measure')
+    {{-- the text font starts with the page, not after the stylesheet asked for it (docs/AH.md §11) --}}
+    <link rel="preload" href="/fonts/InterLatin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="alternate icon" href="/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">

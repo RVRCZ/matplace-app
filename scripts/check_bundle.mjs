@@ -16,19 +16,21 @@ globalThis.window = globalThis;
 globalThis.self = globalThis;
 globalThis.document = {
     documentElement: { lang: 'cs' }, body: el(), visibilityState: 'visible',
-    getElementById: () => null, querySelector: () => null, querySelectorAll: () => [],
+    getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], getElementsByTagName: () => [], head: el(),
     createElement: el, createElementNS: el,
-    addEventListener: (name, fn) => { if (name === 'DOMContentLoaded') domReady = fn; },
+    addEventListener: (name, fn) => { if (name === 'DOMContentLoaded') { const prev = domReady; domReady = prev ? () => { prev(); fn(); } : fn; } },
 };
 globalThis.location = { search: '', href: 'http://localhost/' };
 globalThis.history = { replaceState: noop };
 try { Object.defineProperty(globalThis, 'navigator', { value: { userAgent: 'node' }, configurable: true }); } catch { /* read-only in some node versions */ }
-globalThis.requestAnimationFrame = noop;
+globalThis.requestAnimationFrame = (fn) => setTimeout(fn, 0);
 globalThis.ResizeObserver = class { observe() {} };
 
 try {
     await import(pathToFileURL(join(root, 'public/build', entry)).href);
     if (domReady) domReady(); // boot functions must tolerate pages without their elements
+    // the calculator and the tools are a chunk of their own (resources/js/app.ts): booted once it has loaded
+    if (globalThis.mpCalcReady) await globalThis.mpCalcReady;
     console.log('bundle ok:', entry);
 } catch (e) {
     console.error('BUNDLE CRASHES ON A PLAIN PAGE:', e?.message ?? e);

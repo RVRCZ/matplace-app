@@ -41,10 +41,16 @@ class DesignTokensTest extends TestCase
     public function test_typeface_and_shape_are_the_agreed_ones(): void
     {
         $css = (string) file_get_contents(__DIR__.'/../../resources/css/app.css');
-        $this->assertStringContainsString("url('/fonts/InterVariable.woff2')", $css);
+        // the Latin subset of Inter (docs/AH.md §11), with a fallback of the same size so the swap moves nothing,
+        // preloaded by the layout; the full file stays as the source of the subset
+        $this->assertStringContainsString("url('/fonts/InterLatin.woff2')", $css);
         $this->assertStringContainsString('font-display: swap', $css);
+        $this->assertMatchesRegularExpression("/--font-sans: 'Inter', 'Inter Fallback'/", $css);
+        $this->assertStringContainsString('size-adjust: 107.4%', $css);
         $this->assertStringNotContainsString('fonts.googleapis.com', $css);
         $this->assertFileExists(__DIR__.'/../../public/fonts/InterVariable.woff2');
+        $this->assertLessThan(150 * 1024, filesize(__DIR__.'/../../public/fonts/InterLatin.woff2'), 'the subset stays small');
+        $this->assertStringContainsString('<link rel="preload" href="/fonts/InterLatin.woff2" as="font" type="font/woff2" crossorigin>', (string) file_get_contents(__DIR__.'/../../resources/views/layouts/app.blade.php'));
         $this->assertFileExists(__DIR__.'/../../public/fonts/Inter-LICENSE.txt');
         $this->assertMatchesRegularExpression('/--font-weight-extrabold:\s*600/', $css);
         $this->assertMatchesRegularExpression('/--radius-2xl:\s*0\.75rem/', $css);

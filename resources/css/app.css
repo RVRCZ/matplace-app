@@ -3,13 +3,24 @@
 @source '../**/*.blade.php';
 @source '../**/*.ts';
 
-/* Inter (SIL OFL 1.1, public/fonts/Inter-LICENSE.txt): one variable file from our own server, no font CDN. */
+/* Inter (SIL OFL 1.1, public/fonts/Inter-LICENSE.txt): one variable file from our own server, no font CDN. Only the
+   Latin letters our three languages use (Czech, English, Spanish, punctuation, euro, arrows): 114 kB instead of 352 kB
+   (docs/AH.md §11; made with pyftsubset from InterVariable.woff2, which stays as the full source). */
 @font-face {
     font-family: 'Inter';
     font-style: normal;
     font-weight: 100 900;
     font-display: swap;
-    src: url('/fonts/InterVariable.woff2') format('woff2');
+    src: url('/fonts/InterLatin.woff2') format('woff2');
+}
+/* Until Inter has come, the system's Arial drawn to Inter's size: the text does not jump when the font swaps (CLS) */
+@font-face {
+    font-family: 'Inter Fallback';
+    src: local('Arial'), local('Helvetica'), local('Liberation Sans');
+    ascent-override: 90.2%;
+    descent-override: 22.48%;
+    line-gap-override: 0%;
+    size-adjust: 107.4%;
 }
 
 /*
@@ -19,7 +30,7 @@
  * ink, grey or outlined (.btn-secondary, .btn-quiet, .chip-on, .seg-on). Shadows: shadow-sm only.
  */
 @theme {
-    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     /* one scale: 14 / 16 / 18 / 24 / 30 (12 stays for fine print); headings 600, text 400 */
     --text-xl: 1.125rem;
     --text-xl--line-height: 1.5;
