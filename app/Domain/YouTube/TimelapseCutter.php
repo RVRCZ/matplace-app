@@ -302,8 +302,13 @@ class TimelapseCutter
             file_put_contents($file, $text);
         }
         @unlink($cut->out);
-        $r = Process::timeout($timeout)->run($cut->command((string) config('farm.ffmpeg', 'ffmpeg')));
-        array_map(fn ($f) => @unlink($f), [...array_keys($cut->lists), ...array_keys($cut->texts)]);
+        // a long graph (a how-to video, a big weekly cut) goes through a file: Windows cuts long command lines
+        $graphFile = strlen($cut->graph) > 6000 ? $cut->out.'.filter.txt' : null;
+        if ($graphFile) {
+            file_put_contents($graphFile, $cut->graph);
+        }
+        $r = Process::timeout($timeout)->run($cut->command((string) config('farm.ffmpeg', 'ffmpeg'), $graphFile));
+        array_map(fn ($f) => @unlink($f), [...array_keys($cut->lists), ...array_keys($cut->texts), ...$graphFile ? [$graphFile] : []]);
         if (! $r->successful() || ! is_file($cut->out)) {
             Log::warning('Farm video failed', ['kind' => $cut->kind, 'out' => $cut->out, 'error' => mb_substr($r->errorOutput(), 0, 500)]);
 
@@ -323,7 +328,7 @@ class TimelapseCutter
     }
 
     /** The track's file, null when it is not in the library. */
-    private function musicFile(string $track): ?string
+    public function musicFile(string $track): ?string
     {
         $file = rtrim((string) config('youtube.music_dir'), '/\\').'/'.basename($track);
 
@@ -341,8 +346,8 @@ class TimelapseCutter
         return null;
     }
 
-    /** The track under the whole video at youtube.music_volume, cut to its length (looped when shorter), faded out at the end. */
-    private function withMusic(VideoCut $cut, ?string $music): VideoCut
+    /** The track under the whole video at youtube.music_volume (or $volume), cut to its length (looped when shorter), faded out at the end. */
+    public function withMusic(VideoCut $cut, ?string $music, ?float $volume = null): VideoCut
     {
         if (! $music) {
             return $cut;
@@ -350,7 +355,7 @@ class TimelapseCutter
         $input = count(array_keys($cut->inputs, '-i', true));
         $fade = min((float) config('youtube.music_fade_out', 1.5), $cut->seconds / 2);
         $audio = sprintf('[%d:a]atrim=duration=%s,asetpts=PTS-STARTPTS,volume=%s,afade=t=in:st=0:d=0.5,afade=t=out:st=%s:d=%s[a]',
-            $input, VideoCut::number($cut->seconds), VideoCut::number((float) config('youtube.music_volume', 0.8)), VideoCut::number($cut->seconds - $fade), VideoCut::number($fade));
+            $input, VideoCut::number($cut->seconds), VideoCut::number($volume ?? (float) config('youtube.music_volume', 0.8)), VideoCut::number($cut->seconds - $fade), VideoCut::number($fade));
 
         return new VideoCut($cut->kind, $cut->out, $cut->lists, $cut->texts, [...$cut->inputs, '-stream_loop', '-1', '-i', $music],
             $cut->graph.';'.$audio, $cut->seconds, $cut->growth, $cut->fps, $music, $cut->crf, $cut->chapters);
@@ -433,13 +438,13 @@ class TimelapseCutter
     }
 
     /** The bold DejaVu that ships with dompdf: the same file on every install, covers Czech and Spanish. */
-    private function font(): string
+    public function font(): string
     {
         return $this->path((string) config('farm.font', base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf')));
     }
 
     /** A file name inside the filter graph: forward slashes, the drive colon escaped. */
-    private function path(string $file): string
+    public function path(string $file): string
     {
         return str_replace(['\\', ':'], ['/', '\\:'], $file);
     }

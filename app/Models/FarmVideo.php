@@ -42,7 +42,10 @@ class FarmVideo extends Model
     /** "Tento týden na farmě": the prints of a week, no order (path, meta: week and orders) */
     public const KIND_WEEKLY = 'weekly';
 
-    public const KINDS = [self::KIND_SHORT, self::KIND_WIDE, self::KIND_WEEKLY];
+    /** A how-to video cut from a screen recording (farm:howto-video), no order (path, meta: name, variant wide|short) */
+    public const KIND_HOWTO = 'howto';
+
+    public const KINDS = [self::KIND_SHORT, self::KIND_WIDE, self::KIND_WEEKLY, self::KIND_HOWTO];
 
     protected $fillable = ['farm_order_id', 'kind', 'path', 'meta', 'status', 'youtube_id', 'title', 'description', 'error', 'uploaded_at', 'published_at', 'decided_by', 'decided_at', 'approved_at', 'scheduled_at', 'share', 'views', 'likes', 'comments', 'stats_at', 'score', 'music'];
 
