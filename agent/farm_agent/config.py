@@ -10,7 +10,7 @@ import yaml
 @dataclass
 class PrinterConfig:
     key: str                     # the printer's "key" in the matplace admin
-    driver: str                  # moonraker | mock
+    driver: str                  # moonraker | anycubic_lan | mock
     options: dict = field(default_factory=dict)
 
 

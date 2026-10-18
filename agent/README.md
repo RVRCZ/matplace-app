@@ -11,8 +11,9 @@ zákazník ──> matplace (beta.matplace.com) <── HTTPS, jen odchozí ─�
 - Jeden agent obslouží libovolný počet tiskáren (jeden blok v `config.yaml` na tiskárnu).
 - Tisk **nikdy nezačne sám od sebe**. Agent jen plní příkaz `start`, který matplace vydá až poté, co obsluha
   v administraci potvrdí „podložka je volná“. Spuštěním se potvrzení spotřebuje.
-- Komunikace s tiskárnou je schovaná za ovladačem (`farm_agent/drivers/`): teď `moonraker` a `mock`,
-  později třeba `prusalink` nebo `simplyprint` — jeden nový soubor, zbytek se nemění.
+- Komunikace s tiskárnou je schovaná za ovladačem (`farm_agent/drivers/`): teď `moonraker` (Kobra S1 s Rinkhals),
+  `anycubic_lan` (Kobra X s původním firmwarem v LAN režimu) a `mock`, později třeba `prusalink` nebo `simplyprint` —
+  jeden nový soubor, zbytek se nemění.
 
 ## Ověřené verze
 
@@ -97,10 +98,32 @@ Viz `config.example.yaml`. Token lze místo souboru předat proměnnou prostřed
 | `poll_seconds` | jak často se agent hlásí a ptá na práci (výchozí 5 s); změnu stavu tiskárny posílá hned (websocket) |
 | `snapshot_seconds` | jak často posílá snímek z kamery běžícího tisku (výchozí 15 s; živý náhled, server si nechává jeden za minutu pro časosběr) |
 | `printers[].key` | klíč tiskárny v administraci |
-| `printers[].driver` | `moonraker` nebo `mock` |
+| `printers[].driver` | `moonraker`, `anycubic_lan` nebo `mock` |
+| `printers[].ip` | jen `anycubic_lan`: IP tiskárny (rezervovat v routeru) |
+| `printers[].camera` | jen `anycubic_lan`: snímek z vlastní kamery tiskárny (výchozí `true`, potřebuje balíček `av`) |
+| `printers[].light` | jen `anycubic_lan`: rozsvěcet světlo kamery (výchozí `false`, na Kobra X zatím neověřeno) |
+| `printers[].auto_leveling` | jen `anycubic_lan`: tiskárna si před každým tiskem vyrovná podložku, jako po odeslání ze Sliceru Next (výchozí `true`) |
+| `printers[].package` | jen `anycubic_lan`: soubor poslat jako balíček `.gcode.3mf` s náhledem (jako Slicer Next) místo holého G-code s doplněnými řádky; obě cesty ověřené na Kobra X 18. 10. 2026 (`docs/AM.md`) |
 | `printers[].url` | Moonraker, `http://IP:7125` |
 | `printers[].snapshot_url` | snímek z kamery, u Rinkhals `http://IP/webcam/?action=snapshot` |
 | `printers[].light_device` | světlo komory (Moonraker power device); výchozí `chamber_light` = Rinkhals. Agent ho rozsvítí před startem tisku a zhasne po jeho konci, v adminu jsou tlačítka Rozsvítit/Zhasnout. `""` = tiskárna světlo nemá |
+
+## Kobra X a další Anycubic s původním firmwarem (`anycubic_lan`)
+
+Kobra X nemá Rinkhals ani Moonraker. Agent s ní mluví stejným protokolem jako Anycubic Slicer Next v LAN režimu
+(knihovna `kobra-connect`, podrobnosti a ověření v `docs/AM.md`).
+
+1. **Na tiskárně zapnout LAN režim** (Nastavení → Síť → LAN mode). Tiskárna se tím odpojí od cloudu Anycubic
+   (aplikace v telefonu ji pak nevidí); Slicer Next ji najde v síti. Dokud je v cloudovém režimu, nástěnka ji ukazuje
+   jako nedostupnou s důvodem „není v LAN režimu“.
+2. IP tiskárny rezervovat v routeru a zapsat do `config.yaml` (`driver: anycubic_lan`, `ip: …`).
+3. Balíčky: `requirements.txt` je už obsahuje (`kobra-connect` přišpendlený na commit, `av` pro kameru). Stará instalace
+   agenta (0.1.x) je dostane příkazem `venv\Scripts\python.exe -m pip install -r requirements.txt`.
+
+Co ovladač umí: stav (volná / tiskne / pauza / chyba), teploty, průběh, vrstvy, zbývající minuty, název souboru;
+nahrání G-code do tiskárny a start; pauza, pokračování, zrušení; snímek z kamery tiskárny (HTTP-FLV, jeden snímek
+dekóduje `av`). Neumí: polohu hlavy (časosběr jde po minutách, ne po vrstvách), sušičku, reset chyby (chybu potvrdí
+obsluha na displeji). Soubory v úložišti tiskárny nikdy nemaže.
 
 ## Zkouška bez tiskárny (mock)
 
