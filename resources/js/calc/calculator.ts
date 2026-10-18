@@ -13,6 +13,12 @@ import { renderAdvice } from './advice';
 import { bootDownload, setDownload, refresh as refreshDownload, openWhenReady as openDownloadWhenReady } from './download';
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
+/**
+ * The start page in the language of this page (/, /en, /es): the address the calculator falls back to. The API takes
+ * its language from the page that calls it (Locales::forApi, the Referer), so a plain "/" here would make the next
+ * calculation answer with a Czech /c/<code> on an English page.
+ */
+const homeUrl = (): string => routes()?.home ?? '/';
 
 interface MaterialProps { heat: number; strength: number; flexible: boolean; outdoor: string; food: string; time: number; price: number }
 interface MaterialCfg { code: string; density: number; lay: string[]; sliceable: boolean; label: string; hint: string; props?: MaterialProps | null }
@@ -542,7 +548,7 @@ function showHero(): void {
     state.file = null; state.calc = null; state.geometry = null; state.geo = null;
     $('result').classList.add('hidden');
     $('hero').classList.remove('hidden');
-    history.replaceState(null, '', '/');
+    history.replaceState(null, '', homeUrl());
 }
 
 function heroError(msg: string | null): void {
@@ -888,7 +894,7 @@ export function boot(): void {
         if (note && query.get('note')) note.value = (query.get('note') ?? '').slice(0, 900);
         if (query.get('download') === '1') openDownloadWhenReady();
         buildMaterials();
-        history.replaceState(null, '', '/');
+        history.replaceState(null, '', homeUrl());
         openFile(open);
     }
 }
