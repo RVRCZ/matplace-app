@@ -19,9 +19,9 @@ Podle `docs/AUDIT.md` (body 3, 4, 5, 6, 11) a `docs/Z.md`; dosud vedeno jako „
    navigace pro palec (dnes drobná: Nástroje, Cena ze souboru, Přihlásit, cs/en/es, Kč/€): dotykové plochy
    ≥ 44 × 44 px, jazyk a měna tišší; žádný vodorovný posun na 360, 390, 768, 1280; text 200 %; formuláře
    s otevřenou klávesnicí. Měřit skriptem (výška prvků, `scrollWidth`, velikost tlačítek) a čísla do AH.md.
-2. **Hlavní stránka (bod 3)**: sdělení podle auditu: „Váš nápad vytiskneme ve 3D. Nahrajte soubor nebo si výrobek
-   vytvořte z fotky, textu či rozměrů. Cenu zjistíte před objednáním.“ + tišší řádek „Máte vlastní tiskárnu? Model si
-   můžete stáhnout.“ Jeden sloupec zůstává (Roman 16. 10.). Tři jazyky.
+2. **Hlavní stránka (bod 3)**: sdělení podle auditu („Váš nápad vytiskneme ve 3D…“, „Máte vlastní tiskárnu? Model si
+   můžete stáhnout.“) **už na produkci je** (řídící, 17. 10.); jen zkontroluj en/es a že na 360/390 nezabere celou
+   výšku (bod 1). Jeden sloupec zůstává (Roman 16. 10.).
 3. **Akce a stavy v kalkulaci a zakázce (bod 5)**: „Vytisknout u nás“ jasně jako začátek objednávky (zakázka vzniká
    nezaplacená, nic se neplatí); každý přechod má stav načítání / úspěch / chyba; zpět a obnovení stránky nic neztratí
    (zakázka má token; kalkulace: ověřit); neúspěšný přesný výpočet zachová zadání a odhad (dnes ano, ověřit).
