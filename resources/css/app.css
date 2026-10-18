@@ -148,7 +148,7 @@
     .shape-tile img { @apply h-full w-full object-contain opacity-80; }
     .shape-tile:has(:checked) img { filter: invert(1); opacity: 1; }
     /* a number with its unit inside the field, on the right */
-    .tool-unit { @apply relative block w-28 max-w-[40vw] shrink-0; }   /* max: with the text at 200 % the field may not push the row off the screen */
+    .tool-unit { @apply relative block w-28 max-w-[36vw] shrink-0; }   /* max: with the text at 200 % the field may not push the row off the screen */
     .tool-unit::after { content: attr(data-unit); @apply pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted; }
     .tool-unit .field { @apply min-h-10 pr-9 text-right; }
     .tool-unit[data-unit=''] .field { @apply pr-3; }
