@@ -32,7 +32,7 @@ Generování má denní limit: jeden model denně zdarma bez účtu, víc s úč
 Spousta věcí, které lidé tisknou, potřebuje přesné rozměry, ne odhad. Na ně jsou nástroje, do kterých zadáte čísla a text a model vznikne hned, zdarma a bez generování:
 
 - [Organizér na míru](/tools/organizer) a [krabička na míru](/tools/box) přesně do zásuvky nebo na věc (návody: [organizér](/blog/organizer-do-supliku-na-miru), [krabička](/blog/krabicka-na-miru)),
-- [stojánek na telefon](/tools/phone-stand) a [držák na cokoliv](/tools/holder) (návod: [stojánek](/blog/stojanek-na-telefon-na-miru)),
+- [stojánek na telefon](/tools/phone-stand) a [držák na cokoliv](/tools/holder) (návody: [stojánek](/blog/stojanek-na-telefon-na-miru), [držák](/blog/drzak-na-zed-na-miru)),
 - [cedulka, jmenovka, klíčenka](/tools/sign) a [3D nápis](/tools/text) (návod: [cedulka a klíčenka](/blog/cedulka-jmenovka-a-klicenka-se-jmenem)),
 - [váza a obal na květináč](/tools/vase) (návod: [váza](/blog/vaza-a-obal-na-kvetinac-na-miru)),
 - [3D mapa města nebo krajiny](/tools/map) z OpenStreetMap (návod: [3D mapa](/blog/3d-mapa-mesta-z-openstreetmap)).

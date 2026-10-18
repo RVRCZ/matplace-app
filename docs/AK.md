@@ -425,3 +425,72 @@ Druhou dávku vybrala řídící session 18. 10. Pravidla jsou stejná jako u pr
 | 3d-mapa-mesta-z-openstreetmap | detail mapy, budovy, silnice a řeka v různých barvách |
 | litofanie-z-fotky | litofanie s portrétem proti oknu, vedle stejná destička bez světla |
 | litofanie-z-fotky | lampa s fotkou kolem dokola, rozsvícená |
+
+### 5.7 Třetí dávka článků k nástrojům
+
+Třetí dávku vybrala řídící session 18. 10. Je to poslední dávka, dál pokračuje až na pokyn. Nové články mají
+`published_at` 18. 10. 2026 22:00 UTC.
+
+| článek (slug) | `article` u nástroje | čísla (kalkulace na produkci 18. 10., PLA+) |
+|---|---|---|
+| `drzak-na-zed-na-miru` | `holder` | kolébka na ovladač 27 g 1 h 12 min 100 Kč; hák na sluchátka 11 g 27 min 99 Kč; klip na koště 8 g 21 min 99 Kč |
+| `vykrajovatko-na-cukrovi-podle-vlastniho-tvaru` | `cutter` | „Ela“ 82 × 54 mm 13 g 31 min 99 Kč; „5“ 72 × 93 mm 12 g 25 min 99 Kč |
+| `vanocni-ozdoba-z-obrazku` | `ornament` | perníček 80 mm 10 g 18 min 99 Kč; 6 kusů 160 Kč (jedna barva) |
+| `klicenka-a-privesek-z-obrazku` | `keychain`, `charm` | přívěsek duch 45 mm 3 g 7 min 99 Kč; „Ela“ 60 mm 4 g 11 min 99 Kč |
+| `rozdeleni-a-vyduteni-3d-modelu` | `split`, `hollow`, `life_size` | váleček ⌀ 120 × 200: plný 503 g 910 Kč → vydutý (stěna 2,5 mm, 3 otvory) 223 g 6 h 36 min 500 Kč; ⌀ 120 × 320 rozdělený na 2 díly se 4 kolíky 814 g 13 h 8 min 1 440 Kč |
+
+**Jak čísla vznikla**:
+- Nástroje se volaly na produkci jako u návštěvníka: `/api/tools/param` a `/api/files/{uuid}/edit` (hollow,
+  split).
+- Váleček je vygenerovaný testovací soubor.
+- Celkem to bylo 11 modelů, 2 nahrání a 12 výpočtů, User-Agent `matplace-session1-blog`.
+
+**Odkazy ze starších článků na nové**:
+- cena → vydutí,
+- příprava STL → rozdělení a vydutí,
+- AI → držák.
+
+`config/tools.php` má teď `article` u 23 nástrojů.
+
+### 5.8 Fotky výtisků: souhrnný seznam pro Romana
+
+Všech 30 zástupných míst ze všech tří dávek (`<!-- foto: … -->` v článku, při vykreslení se nezobrazí). Postup:
+1. Fotku uložit jako `public/img/blog/<slug>/<název>.webp`.
+2. Zástupné místo nahradit řádkem `![popis](/img/blog/<slug>/<název>.webp)`.
+3. Spustit `blog:sync`.
+
+Na jedno focení se dá spojit víc řádků, třeba busta s figurkou psa (2, 3, 4) nebo klíčenky s cedulkami (15, 16, 27,
+28).
+
+| # | článek | fotka |
+|---|---|---|
+| 1 | cena-3d-tisku-z-modelu | kalkulace na telefonu s nahraným modelem, cenou a dobou tisku |
+| 2 | figurka-z-fotky-busta-a-mazlicek | vytištěná busta a figurka psa vedle sebe na poličce |
+| 3 | figurka-z-fotky-busta-a-mazlicek | moderní a antická busta, vytištěné |
+| 4 | figurka-z-fotky-busta-a-mazlicek | figurka psa ve stylu miniatura a kreslená |
+| 5 | qr-cedulka-a-wifi-stojanek | QR cedulka s Wi‑Fi ve stojánku na stole, telefon nabízí připojení |
+| 6 | qr-cedulka-a-wifi-stojanek | detail dvoubarevné cedulky, světlá destička a tmavý kód |
+| 7 | organizer-do-supliku-na-miru | vytištěný organizér v kuchyňské zásuvce s příbory |
+| 8 | organizer-do-supliku-na-miru | organizér na stole s kancelářskými potřebami |
+| 9 | krabicka-na-miru | vytištěná krabička s víčkem a elektronikou uvnitř |
+| 10 | krabicka-na-miru | krabička s nasazeným a sundaným víčkem |
+| 11 | stojanek-na-telefon-na-miru | vytištěný stojánek A‑rám s telefonem na pracovním stole |
+| 12 | stojanek-na-telefon-na-miru | nízký klín s telefonem a vlnka vedle sebe |
+| 13 | vaza-a-obal-na-kvetinac-na-miru | spirálová váza z PLA Silk se sušenými květinami |
+| 14 | vaza-a-obal-na-kvetinac-na-miru | hladká a žebrovaná váza vedle sebe |
+| 15 | cedulka-jmenovka-a-klicenka-se-jmenem | klíčenky se jmény ve dvou barvách a cedulka na dveře |
+| 16 | cedulka-jmenovka-a-klicenka-se-jmenem | detail dvoubarevné cedulky, písmo jinou barvou než deska |
+| 17 | 3d-mapa-mesta-z-openstreetmap | vytištěná 3D mapa městského centra ve třech barvách |
+| 18 | 3d-mapa-mesta-z-openstreetmap | detail mapy, budovy, silnice a řeka v různých barvách |
+| 19 | litofanie-z-fotky | litofanie s portrétem proti oknu, vedle stejná destička bez světla |
+| 20 | litofanie-z-fotky | lampa s fotkou kolem dokola, rozsvícená |
+| 21 | drzak-na-zed-na-miru | držák na dálkový ovladač na zdi vedle gauče |
+| 22 | drzak-na-zed-na-miru | klip na násadu koštěte a hák na sluchátka |
+| 23 | vykrajovatko-na-cukrovi-podle-vlastniho-tvaru | vykrajovátko se jménem a vykrojené cukroví na plechu |
+| 24 | vykrajovatko-na-cukrovi-podle-vlastniho-tvaru | vykrajovátko s razítkem a cukroví s otištěnou tváří |
+| 25 | vanocni-ozdoba-z-obrazku | barevné ozdoby (perníček, stromek) na vánočním stromku |
+| 26 | vanocni-ozdoba-z-obrazku | detail ozdoby, barvy ve vrstvách nad sebou |
+| 27 | klicenka-a-privesek-z-obrazku | několik barevných klíčenek a přívěsků na kroužku |
+| 28 | klicenka-a-privesek-z-obrazku | kost se jménem Rex a přívěsek ve tvaru ducha |
+| 29 | rozdeleni-a-vyduteni-3d-modelu | velká busta vytištěná ze dvou dílů, slepená |
+| 30 | rozdeleni-a-vyduteni-3d-modelu | vydutý model rozříznutý napůl, vidět stěna a dutina |

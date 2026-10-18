@@ -68,7 +68,7 @@ return [
         ['params' => ['style' => 'ribbon', 'width' => 70, 'band' => 10]],
         ['params' => ['style' => 'silhouette', 'artwork' => 'lib:animals/dog', 'back' => 100]],
     ]]],
-    'holder' => ['route' => 'tools.holder', 'intent' => 'create', 'categories' => ['home', 'parts'], 'available' => true, 'verified' => '2026-09-29', 'seo' => ['examples' => [
+    'holder' => ['route' => 'tools.holder', 'intent' => 'create', 'categories' => ['home', 'parts'], 'available' => true, 'article' => 'drzak-na-zed-na-miru', 'verified' => '2026-09-29', 'seo' => ['examples' => [
         ['preset' => 'remote'],
         ['preset' => 'headphones'],
         ['preset' => 'broom'],
@@ -137,7 +137,7 @@ return [
             ['preset' => 'extrude', 'params' => ['artwork' => 'lib:nature/oak-leaf', 'line1' => '', 'width' => 100, 'thickness' => 3, 'bevel' => true]],
             ['preset' => 'extrude', 'params' => ['artwork' => 'lib:hearts-stars/star', 'line1' => '', 'width' => 60, 'thickness' => 20]],
         ]]],
-    'cutter' => ['route' => 'tools.cutter', 'intent' => 'create', 'categories' => ['craft', 'names'], 'available' => true, 'seo' => ['examples' => [
+    'cutter' => ['route' => 'tools.cutter', 'intent' => 'create', 'categories' => ['craft', 'names'], 'available' => true, 'article' => 'vykrajovatko-na-cukrovi-podle-vlastniho-tvaru', 'seo' => ['examples' => [
         ['params' => ['width' => 70, 'line1' => 'Ela', 'typeface' => 'script']],
         ['params' => ['width' => 60, 'line1' => '5', 'typeface' => 'sans', 'edge' => 'sharp']],
         ['params' => ['width' => 90, 'line1' => 'MAMA', 'typeface' => 'serif', 'edge' => 'straight']],
@@ -180,7 +180,7 @@ return [
         ['params' => ['shape' => 'rect', 'width' => 240, 'line1' => 'CAFÉ', 'line2' => 'LUNA']],
     ]]],
     // a picture or a name in the colours of filaments (engines/python/shape_kinds.py): the pictures are of our own library
-    'ornament' => ['route' => 'tools.ornament', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
+    'ornament' => ['route' => 'tools.ornament', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'article' => 'vanocni-ozdoba-z-obrazku', 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/gingerbread-man', 'width' => 80]],
         ['params' => ['artwork' => 'lib:colour/christmas-tree-colour', 'width' => 90, 'colors_n' => 5]],
         ['params' => ['artwork' => 'lib:colour/christmas-ball', 'width' => 70, 'frame' => 0]],
@@ -231,14 +231,14 @@ return [
         ['params' => ['line1' => 'Tomáš', 'height' => 150, 'letter_face' => 'serif', 'typeface' => 'sans']],
         ['params' => ['line1' => 'Ivana', 'height' => 100, 'thickness' => 12]],
     ]]],
-    'charm' => ['route' => 'tools.charm', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => [
+    'charm' => ['route' => 'tools.charm', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'article' => 'klicenka-a-privesek-z-obrazku', 'seo' => ['examples' => [
         ['params' => ['artwork' => 'lib:colour/happy-ghost', 'width' => 45]],
         ['params' => ['artwork' => 'lib:colour/smiling-star', 'width' => 50, 'eye_pos' => 0]],
         ['params' => ['line1' => 'Ela', 'typeface' => 'script', 'width' => 60]],
     ]]],
     // the card opens the composer of layers with a key ring in it; the quick form (a name, or a picture in several colours)
     // stays under ?form=1 and for the designs made with it
-    'keychain' => ['route' => 'tools.keychain', 'intent' => 'create', 'categories' => ['names', 'images'], 'available' => true,
+    'keychain' => ['route' => 'tools.keychain', 'intent' => 'create', 'categories' => ['names', 'images'], 'available' => true, 'article' => 'klicenka-a-privesek-z-obrazku',
         'card' => ['kind' => 'compose', 'preset' => 'keyring'],
         'seo' => ['kind' => 'compose', 'examples' => [
             ['preset' => 'keyring'],
@@ -306,12 +306,12 @@ return [
         ['fixture' => 'mesto', 'params' => ['lat' => 50.0875, 'lon' => 14.4213, 'type' => 'landscape', 'style' => 'sleek', 'side' => '5000', 'size' => 150, 'name' => 'Kopec', 'exaggeration' => 2]],
     ]]],
     // the card of a file tool is its own output: a vase of the vase tool at 300 mm, cut for the farm's bed
-    'split' => ['route' => 'tools.split', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []],
+    'split' => ['route' => 'tools.split', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'article' => 'rozdeleni-a-vyduteni-3d-modelu', 'seo' => ['examples' => []],
         'card' => ['edit' => 'split', 'kind' => 'vase', 'preset' => 'smooth', 'params' => ['height' => 300, 'top_d' => 120, 'bottom_d' => 90], 'edit_params' => ['joint' => 'pins']]],
     // the hollow's card is a big letter with a quarter taken out, so the wall shows; life size is a vase of the vase tool at 400 mm, cut for the bed
-    'hollow' => ['route' => 'tools.hollow', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []],
+    'hollow' => ['route' => 'tools.hollow', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'article' => 'rozdeleni-a-vyduteni-3d-modelu', 'seo' => ['examples' => []],
         'card' => ['edit' => 'hollow', 'kind' => 'name_letter', 'params' => ['line1' => 'Ela', 'height' => 120, 'thickness' => 15], 'edit_params' => ['wall' => 2.5, 'view' => 'cut']]],
-    'life_size' => ['route' => 'tools.life_size', 'intent' => 'file', 'categories' => ['edit', 'images'], 'available' => true, 'seo' => ['examples' => []],
+    'life_size' => ['route' => 'tools.life_size', 'intent' => 'file', 'categories' => ['edit', 'images'], 'available' => true, 'article' => 'rozdeleni-a-vyduteni-3d-modelu', 'seo' => ['examples' => []],
         'card' => ['edit' => 'life_size', 'kind' => 'vase', 'preset' => 'smooth', 'params' => ['height' => 180, 'top_d' => 62, 'bottom_d' => 54], 'edit_params' => ['height_cm' => 40, 'joint' => 'pins']]],
     // the puzzle's card is a logo plate of the logo tool cut into 3 × 4 pieces with knobs
     'puzzle' => ['route' => 'tools.puzzle', 'intent' => 'file', 'categories' => ['edit', 'toys', 'images'], 'available' => true, 'seo' => ['examples' => []],
