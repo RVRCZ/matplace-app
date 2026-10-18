@@ -121,3 +121,53 @@ takže po zrušení hlásí jen „volná“ a starou dokončenou úlohu. Ovlada
 - PC farmy musí vidět tiskárnu v síti (stejná LAN; firewall Windows pro Python povolit, nebo síť jako soukromou).
   Tiskárna musí zůstat v LAN režimu (odpojená od cloudu Anycubic).
 - Server: beze změny. `telemetry.link = "cloud_mode"` nástěnka zatím ukáže jako neznámý klíč.
+
+## 6. Měnič ACE: 3 + 4 pozice (agent 0.2.1, větev `feature/agent-kobra-x-ace`, 18. 10. 2026)
+
+Zadání `docs/prompts/kobra-x-menic.md`: Roman má na Kobře X připojený měnič, Rack 3 + ACE 4 = 7 cívek; ovladač 0.2.0
+posílal cívku jen do Racku.
+
+### 6a. Co tiskárna hlásí (`multiColorBox getInfo`, čtení 18. 10. ~14:10)
+
+```
+head_tools_model 1
+BOX id=-1 model_id=40002 status=1 loaded_slot=-1 temp=0 humidity=0          (Rack tiskárny)
+    index 0  PLA Silk  [0,43,73]      status 5  edit_status 1  100 %
+    index 1  PLA Silk  [255,127,50]   status 5  edit_status 1  100 %
+    index 2  PLA Silk  [33,39,33]     status 5  edit_status 1  100 %
+    index 3  PLA+      [255,255,255]  status 5  edit_status 3    0 %         (vstup měniče; na displeji dlaždice „ACE“)
+BOX id=0  model_id=40002 status=1 loaded_slot=-1 temp=28 humidity=38       (ACE)
+    index 0  PLA Silk  [255,127,50]   status 5
+    index 1  PLA Metal [0,53,148]     status 5
+    index 2  PLA Metal [101,137,70]   status 4
+    index 3  PLA Metal [242,169,0]    status 5
+```
+- Rack hlásí 4 sloty i s měničem; index 3 je obsazený vstupem měniče (`edit_status 3`, 0 %), displej ukazuje Rack 1–3
+  a dlaždici ACE. ACE je `id 0`, sloty 0–3, na displeji ACE 1–4. `status` 5 = zavedeno, 4 = připraveno.
+- Během zavádění z Racku (§4) hlásil box `−1` `loaded_slot 1` a report `extfilbox` `current_filament "0-1"`,
+  `print/report` `channel_no 2`. Dotazy `extfilbox` tiskárna neodpovídá, hlásí sama.
+- Žádný veřejný kód nestartuje tisk z ACE na Kobře X. Jediný známý vzorec je z cloudového API Anycubicu
+  (hass-anycubic_cloud, `printer_properties.py`): `ams_index = box × 4 + slot`, bez pole pro box, kde box je **pořadí
+  v seznamu** `multi_color_box`. Pro Kobru X je seznam [Rack (`id −1`), ACE (`id 0`)] → Rack 0–3, ACE 4–7; start ze
+  Sliceru s `ams_index 1` zavedl z Racku, což s tím souhlasí.
+
+### 6b. Ovladač
+
+- `spools()`: pozice živě z `getInfo`, Rack první, pak ACE podle `id`; Rack dává 3 pozice s měničem (jinak 4), ACE 4.
+  Slot matplace `n` = n‑tá pozice v tomhle pořadí: Rack 1–3 = sloty 0–2, ACE 1–4 = sloty 3–6; bez měniče Rack 1–4 =
+  sloty 0–3. `Position.ams_index = pořadí boxu × 4 + index` (Rack 0–3, ACE 4–7).
+- `spool_at(slot)`: pozice s barvou a materiálem pro `paint_info` a `ams_box_mapping`; slot mimo rozsah →
+  `DriverError("slot 5: the printer offers 4 spool positions (Rack 1, …)")`, bez nahrání. Když tiskárna boxy
+  nehlásí, slot se bere jako index Racku a barva z G-code.
+- `status()` při tisku přidá `telemetry.spool` („ACE 1“) a `telemetry.slot` (slot matplace) podle `loaded_slot`.
+- Stavy `extfilbox_filament_feeding` i `ace_filament_feeding` = zavádí (tiskne).
+- Testy: dva boxy 3 + 4 i jeden (4); start ze slotů 2, 3, 6 (ams_index 2, 4, 7 s barvou té pozice); slot 4 bez
+  měniče = chyba bez nahrání; zavedená cívka ACE 1 v telemetrii. Celkem 53 testů.
+
+### 6c. Ověření na tiskárně – čeká
+
+`ams_index` 4–7 pro ACE je odvozený vzorec, ne zachycený start. Zkouška (po Romanově „volná“ v okně session 4 a po
+přepnutí C1 na ruční v adminu, protože agent na PC farmy by se o tiskárnu přetahoval): kostka ze slotu 3 = ACE 1
+(oranžové PLA Silk, zavedeno) – čekám `ace_filament_feeding`, box `0` `loaded_slot 0`, `channel_no`; zrušení → free.
+Pak kostka ze slotu 0 (Rack 1, tmavě modré PLA Silk), ať je vidět, že Rack dál funguje. G-code pro slot 3 je kopie
+`kx-cube10.gcode` s `T3` (GcodeSlot by ho tak napsal), pro slot 0 s `T0`.

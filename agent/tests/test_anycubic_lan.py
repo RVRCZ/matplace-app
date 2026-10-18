@@ -6,6 +6,7 @@ The fake link answers the `info` query from a dict the test edits (shaped like t
 and acts on the commands the driver publishes: start begins a project, pause and stop change it.
 """
 import asyncio
+import copy
 import os
 import sys
 import tempfile
@@ -32,13 +33,15 @@ FREE = {
 }
 
 
-# multiColorBox/getInfo of the Kobra X on 18 Oct 2026: the rack (id -1) and an ACE (id 0)
+# multiColorBox/getInfo of the Kobra X on 18 Oct 2026 with an ACE attached: the rack (id -1) lists 4 slots, its index 3
+# being the ACE's feed (edit_status 3, 0 %), and the ACE (id 0) its 4
 BOXES = [
     {"id": -1, "status": 1, "loaded_slot": -1, "slots": [
-        {"index": 0, "type": "PLA Silk", "color": [0, 43, 73], "status": 5}, {"index": 1, "type": "PLA Silk", "color": [255, 127, 50], "status": 5},
-        {"index": 2, "type": "PLA Silk", "color": [33, 39, 33], "status": 5}, {"index": 3, "type": "PLA+", "color": [255, 255, 255], "status": 5}]},
-    {"id": 0, "status": 1, "loaded_slot": -1, "slots": [
-        {"index": 0, "type": "PLA Silk", "color": [255, 127, 50], "status": 5}, {"index": 1, "type": "PLA Metal", "color": [0, 53, 148], "status": 5}]},
+        {"index": 0, "type": "PLA Silk", "color": [0, 43, 73], "status": 5, "edit_status": 1}, {"index": 1, "type": "PLA Silk", "color": [255, 127, 50], "status": 5, "edit_status": 1},
+        {"index": 2, "type": "PLA Silk", "color": [33, 39, 33], "status": 5, "edit_status": 1}, {"index": 3, "type": "PLA+", "color": [255, 255, 255], "status": 5, "edit_status": 3, "consumables_percent": 0}]},
+    {"id": 0, "status": 1, "loaded_slot": -1, "temp": 28, "humidity": 38, "slots": [
+        {"index": 0, "type": "PLA Silk", "color": [255, 127, 50], "status": 5}, {"index": 1, "type": "PLA Metal", "color": [0, 53, 148], "status": 5},
+        {"index": 2, "type": "PLA Metal", "color": [101, 137, 70], "status": 4}, {"index": 3, "type": "PLA Metal", "color": [242, 169, 0], "status": 5}]},
 ]
 
 
@@ -84,7 +87,7 @@ class FakeLink:
         if not self.connected:
             raise LinkError("not connected")
         if (kind, action) == ("multiColorBox", "getInfo"):
-            return {"type": kind, "state": "done", "code": 200, "data": {"multi_color_box": BOXES}}
+            return {"type": kind, "state": "done", "code": 200, "data": {"multi_color_box": copy.deepcopy(self.p.boxes)}}
         return {"type": kind, "state": "done", "code": 200, "data": dict(self.p.info)}
 
     def publish(self, kind, action, data, *, web=False):
@@ -129,6 +132,7 @@ class FakePrinter:
         self.dropped = False      # the link went down after connecting
         self.begins = True
         self.busy_starts = 0      # how many starts the printer refuses with 10301 (busy reading the file)
+        self.boxes = copy.deepcopy(BOXES)
         self.opened = 0
         self.sent = []
         self.uploads = []
@@ -277,6 +281,48 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
             d = await self.driver(p, start_attempts=2)
             with self.assertRaisesRegex(DriverError, "10301"):
                 await d.start(self.gcode(), "mp11-cube.gcode", 0)
+
+    async def test_the_spool_positions_run_across_the_rack_and_the_ace_as_the_printer_lists_them(self):
+        async with FakePrinter() as p:
+            d = await self.driver(p)
+            s = await d.spools()
+            self.assertEqual(2, s.boxes)
+            self.assertEqual([("Rack 1", -1, 0, 0), ("Rack 2", -1, 1, 1), ("Rack 3", -1, 2, 2), ("ACE 1", 0, 0, 4), ("ACE 2", 0, 1, 5), ("ACE 3", 0, 2, 6), ("ACE 4", 0, 3, 7)],
+                             [(q.name, q.box, q.index, q.ams_index) for q in s.positions])
+            self.assertEqual([0, 1, 2, 3, 4, 5, 6], [q.slot for q in s.positions])
+            self.assertEqual(("#003594", "PLA Metal", 5), ((q := s.at(4)).colour, q.material, q.status))
+            self.assertIsNone(s.loaded)
+            # the rack alone: four positions, no ACE
+            p.boxes = [p.boxes[0]]
+            s = await d.spools()
+            self.assertEqual(["Rack 1", "Rack 2", "Rack 3", "Rack 4"], [q.name for q in s.positions])
+            self.assertEqual((0, 3), ((q := s.at(3)).ordinal, q.ams_index))
+            with self.assertRaisesRegex(DriverError, r"slot 5: the printer offers 4 spool positions \(Rack 1, Rack 2, Rack 3, Rack 4\)"):
+                await d.spool_at(4, "#000000", "PLA")
+
+    async def test_a_start_from_the_ace_maps_the_paint_to_the_ace_position(self):
+        async with FakePrinter() as p:
+            d = await self.driver(p)
+            for slot, name, ams_index, colour, material in ((2, "Rack 3", 2, [33, 39, 33, 255], "PLA"), (3, "ACE 1", 4, [255, 127, 50, 255], "PLA"), (6, "ACE 4", 7, [242, 169, 0, 255], "PLA")):
+                await d.start(self.gcode(tool=slot), f"mp{slot}-cube.gcode", slot)
+                data = p.sent[-1][2]
+                self.assertEqual([{"paint_index": 0, "ams_index": ams_index, "paint_color": colour, "ams_color": colour, "material_type": material}],
+                                 data["ams_settings"]["ams_box_mapping"], name)
+                with zipfile.ZipFile(io.BytesIO(p.uploads[-1][2])) as z:
+                    self.assertIn(b"\nT0 ; slot chosen by matplace farm\n", z.read("Metadata/plate_1.gcode"))
+                await d.cancel()
+            # the ACE's spool in the head is told as the screen names it and as matplace's slot
+            await d.start(self.gcode(tool=3), "mp13-cube.gcode", 3)
+            p.boxes[1]["loaded_slot"] = 0
+            s = await d.status()
+            self.assertEqual((PRINTING, "ACE 1", 3), (s.state, s.telemetry["spool"], s.telemetry["slot"]))
+            # a slot the printer has not: no upload, a clear refusal
+            p.boxes = [p.boxes[0]]
+            await d.cancel()
+            uploads = len(p.uploads)
+            with self.assertRaisesRegex(DriverError, "slot 5: the printer offers 4 spool positions"):
+                await d.start(self.gcode(tool=4), "mp14-cube.gcode", 4)
+            self.assertEqual(uploads, len(p.uploads))
 
     async def test_a_stale_task_the_printer_only_noted_is_stopped_before_the_start(self):
         async with FakePrinter() as p:

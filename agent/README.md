@@ -120,6 +120,11 @@ Kobra X nemá Rinkhals ani Moonraker. Agent s ní mluví stejným protokolem jak
 3. Balíčky: `requirements.txt` je už obsahuje (`kobra-connect` přišpendlený na commit, `av` pro kameru). Stará instalace
    agenta (0.1.x) je dostane příkazem `venv\Scripts\python.exe -m pip install -r requirements.txt`.
 
+**Pozice cívek (sloty v matplace):** ovladač je čte z tiskárny (`multiColorBox`), nic se nenastavuje. Rack tiskárny
+je první, měnič ACE za ním: s měničem Rack 1–3 = sloty 0–2 a ACE 1–4 = sloty 3–6 (čtvrtý vstup Racku bere měnič),
+bez měniče Rack 1–4 = sloty 0–3. Slot, který tiskárna nemá, start odmítne s výpisem pozic. Na nástěnce je při tisku
+vidět, která pozice je zavedená (`spool`, `slot`).
+
 Co ovladač umí: stav (volná / tiskne / pauza / chyba), teploty, průběh, vrstvy, zbývající minuty, název souboru;
 nahrání G-code do tiskárny a start; pauza, pokračování, zrušení; snímek z kamery tiskárny (HTTP-FLV, jeden snímek
 dekóduje `av`). Neumí: polohu hlavy (časosběr jde po minutách, ne po vrstvách), sušičku, reset chyby (chybu potvrdí
