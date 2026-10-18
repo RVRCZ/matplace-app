@@ -333,7 +333,7 @@ Snímky jsou pro 390 px cs a en a pro 1280 px cs, čísla všech šířek ve `fa
 | 4 | překážka | hlavička, přihlášení, patička, kalkulace: plochy menší než 44 px | **opraveno** |
 | 5 | překážka | kalkulace neměla `h1` | **opraveno** |
 | 6 | překážka | cookie lišta (115 px) zakrývá na stránce nástroje kartu akce, dokud se nevybere | zmírněno (místo pod stránkou, pole nad lištou); úplně jen jiným tvarem lišty |
-| 7 | překážka | z `/en/tools/qr` vede „Get the price…“ na `/c/<kód>` bez `/en` (stránka je anglicky podle relace, sdílený odkaz otevře česky); API kalkulace vrací `route('calc.share')` bez jazyka | neopraveno (`CalculationController`) |
+| 7 | překážka | z `/en/tools/qr` vede „Get the price…“ na `/c/<kód>` bez `/en` (stránka je anglicky podle relace, sdílený odkaz otevře česky); API kalkulace vrací `route('calc.share')` bez jazyka | **opraveno** (větev `feature/calc-locale`): příčina nebyla v `CalculationController` (API bere jazyk z Refereru, `Locales::forApi`), ale v `calculator.ts`, které po `?open=` přepsalo adresu na pevné `/`; teď na `MP_ROUTES.home` (`/en`, `/es`). Průchod: `/en/tools/qr` → `/en/c/…` |
 | 8 | překážka | po nahrání na `/` zůstává `h1` stránky skrytý slogan (adresa už je `/c/…`), vlastní `h1` dostane kalkulace až po obnovení | neopraveno, drobné |
 | 9 | neověřený návrh | „1 až 2 pracovní dny“ u Zásilkovny: potvrdit, nebo nahradit vlastním měřením | Roman |
 | 10 | chyba (mimo tuto větev) | `SeoTest::test_every_tool_has_its_page_content_in_three_languages`: nástroj `gcode` nemá `lang/*/tools_seo/gcode.php` | session 2 / řídící |

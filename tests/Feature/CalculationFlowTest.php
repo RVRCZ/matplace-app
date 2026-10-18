@@ -66,6 +66,29 @@ class CalculationFlowTest extends TestCase
         $this->get('/api/files/'.$uuid.'/model.stl')->assertOk()->assertHeader('Content-Type', 'model/stl');
     }
 
+    /**
+     * A calculation started on an English or Spanish page lives at /en/c/… or /es/c/… (AH.md §9.6 #7): the API answers
+     * in the language of the page that calls it, and the calculator falls back to the start page of its own language,
+     * never to "/" (which made the next calculation Czech on an English page).
+     */
+    public function test_a_calculation_keeps_the_language_of_the_page_it_came_from(): void
+    {
+        $uuid = $this->postJson('/api/uploads', ['file' => $this->cube()])->json('file.uuid');
+        $params = ['file' => $uuid, 'material' => 'PLA', 'quality' => 'standard', 'infill' => 15];
+        foreach (['en', 'es'] as $lang) {
+            // what the browser sends: the page as the Referer (the tool page opens /en?open=<file>)
+            $url = $this->postJson('/api/calculations', $params, ['Referer' => url("/{$lang}?open={$uuid}")])->assertCreated()->json('calculation.url');
+            $this->assertSame(url("/{$lang}/c/".basename($url)), $url, $lang);
+            $this->get(parse_url($url, PHP_URL_PATH))->assertOk()->assertSee('<html lang="'.$lang.'"', false);
+            $this->assertStringStartsWith(url("/{$lang}/c/"), (string) $this->postJson('/api/calculations', $params, ['X-Locale' => $lang])->json('calculation.url'));
+            // the page tells the calculator where its start page is
+            $this->get("/{$lang}?open={$uuid}")->assertOk()->assertSee('home: '.json_encode(url("/{$lang}")), false);
+        }
+        $url = $this->postJson('/api/calculations', $params, ['Referer' => url("/?open={$uuid}")])->json('calculation.url');
+        $this->assertSame(url('/c/'.basename($url)), $url, 'Czech has no prefix');
+        $this->get('/')->assertOk()->assertSee('home: '.json_encode(url('/')), false);
+    }
+
     public function test_same_params_reuse_cached_slice(): void
     {
         $uuid = $this->postJson('/api/uploads', ['file' => $this->cube()])->json('file.uuid');
