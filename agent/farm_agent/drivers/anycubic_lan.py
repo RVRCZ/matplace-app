@@ -71,6 +71,9 @@ JOB_STATES = {
 # project.pause: 0 printing, 1 paused, 2 pausing, 3 resuming, 4 stopping (kobra_connect.models.PauseState)
 PAUSED_FLAGS = (1, 2)
 
+# the light the camera looks with (light/report type 3; 1 is the head light, 2 a chamber light on other models)
+LIGHT_CAMERA = 3
+
 # the printer's own spool rack (box id -1) offers 4 positions; with an ACE unit attached only 3, the ACE's feed takes
 # the 4th (the printer still lists it, with edit_status 3; Kobra X, 18 Oct 2026)
 RACK_ID = -1
@@ -101,11 +104,18 @@ class Position:
 
 @dataclass
 class Spools:
-    """The printer's spool positions in matplace's order, and the one whose spool is in the head right now."""
+    """The printer's spool positions in matplace's order, the one whose spool is in the head right now, and the
+    ACE's dryer as the dashboard's telemetry keys (dryer_state off|drying, dryer_temp, dryer_target, dryer_remain_min,
+    dryer_rh; empty without an ACE)."""
 
     positions: list
     loaded: Optional[Position] = None
     boxes: int = 0
+    dryer: dict = None  # type: ignore[assignment]
+
+    def __post_init__(self) -> None:
+        if self.dryer is None:
+            self.dryer = {}
 
     def at(self, slot: int) -> Optional[Position]:
         return next((p for p in self.positions if p.slot == slot), None)
@@ -230,7 +240,7 @@ class AnycubicLanDriver(PrinterDriver):
         self.busy_retry = float(options.get("busy_retry", 5))
         self.retry_seconds = float(options.get("retry_seconds", 30))
         self.camera = bool(options.get("camera", True))
-        self.use_light = bool(options.get("light", False))
+        self.use_light = bool(options.get("light", True))
         # tests hand in a fake link (no network); the real one is KobraLink
         self._make_link: Callable[[str, Callable], KobraLink] = options.get("_link") or (lambda ip, cb: KobraLink(ip, cb))
         self._link: Optional[KobraLink] = None
@@ -242,6 +252,12 @@ class AnycubicLanDriver(PrinterDriver):
         # progress report of the running task (its minutes and millimetres)
         self._ended: Optional[dict] = None
         self._last_progress: dict = {}
+        # the layer-synced time-lapse (docs/AM.md §7): where the farm's G-code parks the head after every layer (its
+        # first line says), the layer the printer last reported and when it changed
+        self._park: Optional[tuple] = None          # (x, y, dwell s, travel mm/s)
+        self._layer: Optional[int] = None
+        self._layer_at: float = 0.0
+        self.layer_window = float(options.get("layer_window", 0))   # seconds head() reports the park after a change; 0 = dwell + 1
         self._urls: dict = {}
         self._opening = asyncio.Lock()
 
@@ -309,6 +325,7 @@ class AnycubicLanDriver(PrinterDriver):
                 self._ended = {**numbers, **details, "status": ended, "err_msg": str(data.get("msg") or "") if ended == JOB_FAILED else ""}
             elif "progress" in details:
                 self._last_progress = details          # print_time (minutes) and supplies_usage (mm) of the running task
+                self._note_layer(details.get("curr_layer"))
         state = details.get("state") if details else data.get("state")
         if kind in ("info", "print", "status") and state and state != self._last_state:
             self._last_state = state
@@ -350,16 +367,29 @@ class AnycubicLanDriver(PrinterDriver):
             telemetry = {"link": CLOUD_MODE} if self._problem == CLOUD_MODE else {}
             return PrinterStatus(OFFLINE, telemetry)
         status = self._map(report.get("data") or {})
-        if status.state in (PRINTING, PAUSED):
-            # which spool is in the head, as the screen names it and as matplace's slot (the operator checks the colour)
-            try:
-                loaded = (await self.spools()).loaded
-            except DriverError:
-                loaded = None
-            if loaded:
-                status.telemetry["spool"] = loaded.name
-                status.telemetry["slot"] = loaded.slot
+        await self._extras(status)
         return status
+
+    async def _extras(self, status: PrinterStatus) -> None:
+        """What the dashboard shows besides the print: the spool in the head (as the screen names it and as matplace's
+        slot), the ACE's dryer with the keys the dashboard reads (dryer_state...), and the camera light. Each is a
+        query of its own; one that fails leaves its keys out."""
+        try:
+            spools = await self.spools()
+        except DriverError:
+            spools = None
+        if spools:
+            if spools.loaded and status.state in (PRINTING, PAUSED):
+                status.telemetry["spool"] = spools.loaded.name
+                status.telemetry["slot"] = spools.loaded.slot
+            status.telemetry.update(spools.dryer)
+        try:
+            lights = ((await self._ask("light")).get("data") or {}).get("lights") or []
+        except DriverError:
+            lights = []
+        camera = next((l for l in lights if isinstance(l, dict) and l.get("type") == LIGHT_CAMERA), None)
+        if camera:
+            status.telemetry["light"] = "on" if int(camera.get("status") or 0) else "off"
 
     def _map(self, d: dict) -> PrinterStatus:
         self._urls = d.get("urls") or self._urls
@@ -389,6 +419,8 @@ class AnycubicLanDriver(PrinterDriver):
             ended = self._ended
             if ended and _base_name(str(ended.get("filename") or "")) != _base_name(str((last or {}).get("filename") or "")):
                 project, job_state = ended, str(ended["status"])
+        if project and printer_state in (PRINTING, PAUSED):
+            self._note_layer(project.get("curr_layer"))
         if project and project.get("total_layers"):
             telemetry["layer"] = f"{project.get('curr_layer', 0)}/{project['total_layers']}"
         if project and printer_state in (PRINTING, PAUSED) and project.get("remain_time") is not None:
@@ -419,11 +451,54 @@ class AnycubicLanDriver(PrinterDriver):
             log.debug("%s: snapshot failed: %s", self.key, e)
             return None
 
+    async def dry(self, on: bool, temp: int = 45, minutes: int = 240) -> None:
+        """The dryer of the first ACE unit: multiColorBox setDry with drying_status {status 1, target_temp, duration in
+        minutes}; status 0 stops it (the shape chrisfore captured on a Kobra S1 Max; Kobra X: docs/AM.md §7). The
+        printer's own rack has no dryer."""
+        spools = await self.spools()
+        ace = next((p.box for p in spools.positions if p.box != RACK_ID), None)
+        if ace is None:
+            raise DriverError("this printer has no ACE unit to dry in")
+        wanted = {"status": 1, "target_temp": int(temp), "duration": int(minutes)} if on else {"status": 0}
+        report = await self._ask("multiColorBox", "setDry", {"multi_color_box": [{"id": ace, "drying_status": wanted}]})
+        if report.get("state") == "failed" or report.get("code") not in (None, 0, 200):
+            raise DriverError(f"dryer: {report.get('code')} {report.get('msg') or ''}".strip())
+        log.info("%s: dryer %s", self.key, f"{temp} °C for {minutes} min" if on else "off")
+
+    async def head(self) -> Optional[tuple[float, float, Optional[float]]]:
+        """The park position while the head should stand there: the farm's G-code parks the head after every layer
+        (its first line says where and for how long), and the printer reports the new layer within about two seconds
+        (print/report every ~2 s, no coordinates; docs/AM.md §7). Reported as a planned position (speed None), so the
+        agent takes a burst of pictures and keeps the stillest. None otherwise, so the agent sees the head leave."""
+        if not self._park or self._layer is None:
+            return None
+        window = self.layer_window or (self._park[2] + 1.0)
+        if time.monotonic() - self._layer_at <= window:
+            return self._park[0], self._park[1], None
+        return None
+
+    def _note_layer(self, layer) -> None:
+        """A layer the printer reports (print/report or info): the moment it changes is when the head goes to park."""
+        if layer is None:
+            return
+        try:
+            n = int(layer)
+        except (TypeError, ValueError):
+            return
+        if self._layer is None:
+            self._layer = n
+        elif n != self._layer:
+            self._layer = n
+            if n >= 2:      # the farm's G-code parks from the second layer on (TimelapseGcode skips the first marker)
+                self._layer_at = time.monotonic()
+
     async def light(self, on: bool) -> None:
+        """The camera light (type 3): the printer itself switches it on while it feeds and levels, and reports
+        light/control {type, status, brightness} (18 Oct 2026); the same shape switches it from here."""
         if not self.use_light:
             return
         try:
-            await self._send("light", "control", {"type": 3, "status": 1 if on else 0, "brightness": 100 if on else 0}, web=True)
+            await self._send("light", "control", {"type": LIGHT_CAMERA, "status": 1 if on else 0, "brightness": 100 if on else 0}, web=True)
         except DriverError as e:
             log.debug("%s: light %s failed: %s", self.key, "on" if on else "off", e)
 
@@ -437,6 +512,7 @@ class AnycubicLanDriver(PrinterDriver):
             raise DriverError("the printer offers no upload address (urls.fileUploadurl missing in its info)")
         await self._clear_stale()
         self._ended, self._last_progress = None, {}
+        self._layer, self._layer_at = None, 0.0
         # What the Slicer Next sends (captured and tried out 18 Oct 2026, docs/AM.md): T<n> in the G-code is a "paint"
         # the printer maps to a spool position by ams_box_mapping. matplace's GcodeSlot wrote the spool position as
         # T<n> (docs/V.md), so the file goes up as paint 0 and that position goes into the mapping. The file needs the
@@ -444,6 +520,7 @@ class AnycubicLanDriver(PrinterDriver):
         # filesize, the whole task_settings): without them the printer refuses it with 10301 "device busy, state unknown".
         with open(gcode_path, "rb") as fh:
             raw = fh.read()
+        self._park = _park_of(raw)
         facts = facts_of(raw)
         slot_no = facts.tool if facts.tool else int(slot)
         pos = await self.spool_at(slot_no, config_value(raw, b"filament_colour") or "#000000", config_value(raw, b"filament_type") or "PLA")
@@ -545,6 +622,13 @@ class AnycubicLanDriver(PrinterDriver):
                 if int(box.get("loaded_slot", -1)) == p.index:
                     spools.loaded = p
                 spools.positions.append(p)
+            if not rack and not spools.dryer:
+                # the ACE's dryer (the first ACE; a second one is not shown): the keys the dashboard reads
+                dry = box.get("drying_status") if isinstance(box.get("drying_status"), dict) else {}
+                on = bool(int(dry.get("status") or 0))
+                spools.dryer = {"dryer_state": "drying" if on else "off", "dryer_temp": _num(box.get("temp")) or 0,
+                                "dryer_target": (_num(dry.get("target_temp")) or 0) if on else 0,
+                                "dryer_remain_min": int(dry.get("remain_time") or 0) if on else 0, "dryer_rh": _num(box.get("humidity")) or 0}
         return spools
 
     async def spool_at(self, slot: int, colour: str, material: str) -> Position:
@@ -606,6 +690,19 @@ class AnycubicLanDriver(PrinterDriver):
 
 def _num(v) -> Optional[float]:
     return round(float(v), 1) if isinstance(v, (int, float)) else None
+
+
+def _park_of(raw: bytes) -> Optional[tuple[float, float, float, float]]:
+    """(x, y, dwell s, travel mm/s) from the first line the farm writes into a layer-synced G-code
+    ("; matplace timelapse park_x=250 park_y=250 dwell=1000 travel=200 frames=49"), None for any other file."""
+    first = raw.split(b"\n", 1)[0].decode("utf-8", "replace")
+    if not first.startswith("; matplace timelapse "):
+        return None
+    values = dict(p.split("=", 1) for p in first.split() if "=" in p)
+    try:
+        return float(values["park_x"]), float(values["park_y"]), float(values.get("dwell", 1000)) / 1000.0, float(values.get("travel", 200))
+    except (KeyError, ValueError):
+        return None
 
 
 def _base_name(name: str) -> str:

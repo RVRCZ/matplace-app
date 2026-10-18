@@ -199,3 +199,57 @@ print“). Oprava v 0.2.1: ovladač si z hlášení `print/report` pamatuje posl
 úlohu s těmito čísly, dokud nezačne další start. Test s falešnou tiskárnou končí stejně jako skutečná. Omezení: je
 to paměť procesu; když agent spadne mezi dokončením a dalším dotazem, konec se ztratí a platí dosavadní chování
 agenta (úloha „ztracena“). Tiskárna sama konec jinak neuchovává (aspoň u úloh s `taskid "-1"`).
+
+## 7. Časosběr po vrstvách, světlo, sušení (agent 0.2.2, větev `feature/agent-kobra-x-timelapse`, 18. 10. 2026)
+
+Zadání `docs/prompts/kobra-x-casosber.md`. Zjištěno čtením z tiskárny a z kódu integrací (chrisfore/anycubic_ha_local,
+stribor/anycubic_kobrax, Rinkhals, hass-anycubic_cloud); ověření příkazů na tiskárně v §7d.
+
+### 7a. Světlo
+
+- Kobra X má světlo kamery (`type 3`); firmware ho sám zapíná při zavádění a vyrovnávání a hlásí
+  `light/report {action control, data {type 3, status 0|1, brightness}}` (zachyceno během tisků v §4 a §6).
+- Příkaz: téma `web/.../light`, `{type: "light", action: "control", data: {type: 3, status: 1|0, brightness: 100|0}}`
+  (stejný tvar používá stribor na Kobře X). Stav: `light` `query` → `{"lights": [{"type": 3, "status", "brightness"}]}`
+  (ověřeno čtením 18. 10.). `type 1` = světlo hlavy, `type 2` = komora (jen S1); Kobra X hlásí jen `type 3`.
+- Ovladač: `light(on)` posílá `control` (výchozí `light: true`), `status()` dává `telemetry.light` = `on`/`off`.
+
+### 7b. Sušení
+
+- Příkaz (chrisfore, zachyceno na S1 Max): `multiColorBox` `setDry`,
+  `{"multi_color_box": [{"id": 0, "drying_status": {"status": 1, "target_temp": 45, "duration": <minuty>}}]}`;
+  stop = `drying_status {"status": 0}`. Odpověď `multiColorBox/report` `action setDry`, `state success`.
+- Stav v `getInfo`: box ACE `temp`, `humidity`, `drying_status {status, target_temp, duration, remain_time}`.
+  Kobra X 18. 10.: ACE `temp 28`, `humidity 38`, `drying_status` vše 0. Vestavěný Rack (`id −1`) sušičku nemá.
+- Ovladač: `dry(on, temp, minutes)` na první ACE (`id 0`); bez ACE `DriverError("this printer has no ACE unit to dry
+  in")`. Telemetrie s klíči nástěnky: `dryer_state` (`off`/`drying`), `dryer_temp`, `dryer_target`, `dryer_remain_min`,
+  `dryer_rh`. Jednotka `remain_time` (minuty?) a rozsahy teplot z displeje: doplnit po zkoušce.
+
+### 7c. Časosběr
+
+- **Vlastní časosběr tiskárny:** tiskárna si videa ukládá – `file` `listVideo` vrací
+  `{"records": [{"filename": "Dragon Textured_PLA_0.2_9h20m-20260524170046_3.mp4", "fileSize": 78779, "createTime":
+  1779615629, "fileKey": "", "main_file_name": …}]}` (video z května z cloudového tisku). V LAN ale není cesta, jak ho
+  stáhnout: HTTP na 18910/18088 vrací 404 pro všechny vyzkoušené cesty (`/video/<jméno>`, `/timelapse/…`, …), akce
+  `file` `videoDetails`/`getVideoUrl`/`downloadVideo` a témata `video`/`timelapse` neodpovídají, `fileKey` je prázdný
+  (plní ho cloud při nahrání). Žádná integrace to nemá. `task_settings.timelapse {status, count, type, mode}` ze
+  startu Sliceru nikde popsaný není (v cloudu je `camera_timelapse: 0|1`). → Nepoužitelné bez cloudu; nezapínám.
+- **Vrstva z hlášení:** `print/report` během tisku nese `curr_layer`, `progress`, `print_time`, `supplies_usage`,
+  `remain_time`, ale **žádné souřadnice** (ani v jiné integraci). Hlášení chodí periodicky zhruba každé 2 s (změřeno
+  z tisku v §6c: 15:47:00–15:49:12 intervaly 1–5 s, nejčastěji 2 s), vrstva v nich mění hodnotu podle postupu tisku.
+  Změna vrstvy tedy dorazí se zpožděním 0 až ~2 s po skutečné změně. Farma parkuje hned za `; AFTER_LAYER_CHANGE`:
+  zdvih, přejezd na 250/250 (~1 s), `G4 P<dwell>`, návrat. S `dwell 1000` je hlava v parku asi 1–2 s po změně, a to
+  hlášení často nestihne; s `dwell 3000` (1–4 s po změně) ano.
+- Ovladač: z první řádky G-kódu (`; matplace timelapse park_x=250 park_y=250 dwell=1000 …`) si vezme park a dwell;
+  změny vrstvy sleduje z `print/report` i z `info` (od vrstvy 2, první značku farma přeskakuje) a po dobu
+  `layer_window` (výchozí dwell + 1 s) vrací `head()` = park jako *plánovanou polohu* (rychlost `None`). Agent pak,
+  jako u Kobra S1 bez `motion_report`, nafotí sérii snímků (okno 2,5 s + dwell + 0,8 s, po 0,3 s) a pošle nejklidnější.
+  Agent se nemění. Návrh: C1 `dwell` 3000 ms v adminu (parametr tiskárny), až to měření potvrdí (§7d).
+
+### 7d. Ověření na tiskárně – čeká na Romanovo svolení v okně session 4
+
+1. Světlo: `light(True)`/`light(False)` a `light query` mezi tím.
+2. Sušení: `dry(True, 45, 10)`, `getInfo` po minutě (teplota, zbývající čas, jednotka), `dry(False)`.
+3. Parkovací kostka `kx-cube10-park.gcode` (od řídící; dwell 1000) a varianta s dwell 3000 (`G4 P3000`, hlavička
+   `dwell=3000`): start přes ovladač, při každé ohlášené změně vrstvy série snímků po 0,3 s s časem od hlášení,
+   výběr nejklidnějšího (`pick_still` z agenta); kolik z 49 parků má vybraný snímek hlavu v parku.

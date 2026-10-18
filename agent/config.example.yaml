@@ -29,7 +29,8 @@ printers:
   #   driver: anycubic_lan
   #   ip: 192.168.8.44                                     # reserve this IP in the router
   #   # camera: true                                       # picture from the printer's own camera (needs the package av)
-  #   # light: false                                       # switch the camera light on during a print (not verified on Kobra X)
+  #   # light: true                                        # the camera light on during a print, off after it
+  #   # layer_window: 0                                    # seconds the head counts as parked after a reported layer change (0 = dwell + 1)
   #   # auto_leveling: true                                # the printer levels the bed before every print (as after the Slicer Next)
   #   # package: true                                      # the file goes up as a .gcode.3mf package with a thumbnail; false = bare G-code (README)
 
