@@ -199,3 +199,100 @@ print“). Oprava v 0.2.1: ovladač si z hlášení `print/report` pamatuje posl
 úlohu s těmito čísly, dokud nezačne další start. Test s falešnou tiskárnou končí stejně jako skutečná. Omezení: je
 to paměť procesu; když agent spadne mezi dokončením a dalším dotazem, konec se ztratí a platí dosavadní chování
 agenta (úloha „ztracena“). Tiskárna sama konec jinak neuchovává (aspoň u úloh s `taskid "-1"`).
+
+## 7. Časosběr po vrstvách, světlo, sušení (agent 0.2.2, větev `feature/agent-kobra-x-timelapse`, 18. 10. 2026)
+
+Zadání `docs/prompts/kobra-x-casosber.md`. Zjištěno čtením z tiskárny a z kódu integrací (chrisfore/anycubic_ha_local,
+stribor/anycubic_kobrax, Rinkhals, hass-anycubic_cloud); ověření příkazů na tiskárně v §7d.
+
+### 7a. Světlo
+
+- Kobra X má světlo kamery (`type 3`); firmware ho sám zapíná při zavádění a vyrovnávání a hlásí
+  `light/report {action control, data {type 3, status 0|1, brightness}}` (zachyceno během tisků v §4 a §6).
+- Příkaz: téma `web/.../light`, `{type: "light", action: "control", data: {type: 3, status: 1|0, brightness: 100|0}}`
+  (stejný tvar používá stribor na Kobře X). Stav: `light` `query` → `{"lights": [{"type": 3, "status", "brightness"}]}`
+  (ověřeno čtením 18. 10.). `type 1` = světlo hlavy, `type 2` = komora (jen S1); Kobra X hlásí jen `type 3`.
+- Ovladač: `light(on)` posílá `control` (výchozí `light: true`), `status()` dává `telemetry.light` = `on`/`off`.
+
+### 7b. Sušení
+
+- Příkaz (chrisfore, zachyceno na S1 Max): `multiColorBox` `setDry`,
+  `{"multi_color_box": [{"id": 0, "drying_status": {"status": 1, "target_temp": 45, "duration": <minuty>}}]}`;
+  stop = `drying_status {"status": 0}`. Odpověď `multiColorBox/report` `action setDry`, `state success`.
+- Stav v `getInfo`: box ACE `temp`, `humidity`, `drying_status {status, target_temp, duration, remain_time}`.
+  Kobra X 18. 10.: ACE `temp 28`, `humidity 38`, `drying_status` vše 0. Vestavěný Rack (`id −1`) sušičku nemá.
+- Ovladač: `dry(on, temp, minutes)` na první ACE (`id 0`); bez ACE `DriverError("this printer has no ACE unit to dry
+  in")`. Telemetrie s klíči nástěnky: `dryer_state` (`off`/`drying`), `dryer_temp`, `dryer_target`, `dryer_remain_min`,
+  `dryer_rh`. Jednotka `remain_time` (minuty?) a rozsahy teplot z displeje: doplnit po zkoušce.
+
+### 7c. Časosběr
+
+- **Vlastní časosběr tiskárny:** tiskárna si videa ukládá – `file` `listVideo` vrací
+  `{"records": [{"filename": "Dragon Textured_PLA_0.2_9h20m-20260524170046_3.mp4", "fileSize": 78779, "createTime":
+  1779615629, "fileKey": "", "main_file_name": …}]}` (video z května z cloudového tisku). V LAN ale není cesta, jak ho
+  stáhnout: HTTP na 18910/18088 vrací 404 pro všechny vyzkoušené cesty (`/video/<jméno>`, `/timelapse/…`, …), akce
+  `file` `videoDetails`/`getVideoUrl`/`downloadVideo` a témata `video`/`timelapse` neodpovídají, `fileKey` je prázdný
+  (plní ho cloud při nahrání). Žádná integrace to nemá. `task_settings.timelapse {status, count, type, mode}` ze
+  startu Sliceru nikde popsaný není (v cloudu je `camera_timelapse: 0|1`). → Nepoužitelné bez cloudu; nezapínám.
+- **Vrstva z hlášení:** `print/report` během tisku nese `curr_layer`, `progress`, `print_time`, `supplies_usage`,
+  `remain_time`, ale **žádné souřadnice** (ani v jiné integraci). Hlášení chodí periodicky zhruba každé 2 s (změřeno
+  z tisku v §6c: 15:47:00–15:49:12 intervaly 1–5 s, nejčastěji 2 s), vrstva v nich mění hodnotu podle postupu tisku.
+  Změna vrstvy tedy dorazí se zpožděním 0 až ~2 s po skutečné změně. Farma parkuje hned za `; AFTER_LAYER_CHANGE`:
+  zdvih, přejezd na 250/250 (~1 s), `G4 P<dwell>`, návrat. S `dwell 1000` je hlava v parku asi 1–2 s po změně, a to
+  hlášení často nestihne; s `dwell 3000` (1–4 s po změně) ano.
+- Ovladač: z první řádky G-kódu (`; matplace timelapse park_x=250 park_y=250 dwell=1000 …`) si vezme park a dwell;
+  změny vrstvy sleduje z `print/report` i z `info` (od vrstvy 2, první značku farma přeskakuje). Odhad „hlášení
+  přijde 0–2 s po změně“ se měřením (§7d) ukázal mylný: hlášení přichází 2,2–4,0 s **před** parkem, protože firmware
+  hlásí vrstvu při načtení G‑kódu. `head()` proto hlásí park podle změřeného předstihu (§7d). Agent se nemění.
+
+### 7c'. Kamera: stream musí číst vlastní socket, ne HTTP vrstva ffmpeg
+
+První měření parkování (16:24) dalo z každé série jen **jeden** snímek, ~10 s po hlášení vrstvy: `snapshot()` 0.2.0
+otvíral `av.open(http://…:18088/live/<id>)` pro každý snímek a první snímek trval ~10 s. Příčina (16:32–16:40,
+`scratchpad/kx_stream_raw.py`, `kx_stream_fileobj.py`): tiskárna streamuje **živě a hned** (HTTP 206, `video/x-flv`,
+souvisle ~43 kB/s, jedna hlavička FLV na začátku, 10 snímků/s H.264 1280×720), ale ffmpeg přes svůj HTTP čtenář
+stream ~10 s sonduje, pak vydá dávku ~100 nasbíraných snímků a na dalších paketech padá („Invalid data found“ /
+„Immediate exit requested“) – i po `video/startCapture` (tiskárna odpoví `initSuccess`, `joinSuccess`,
+`pushStarted`; `stopCapture` → `pushStopped`; na obsah streamu v LAN to vliv nemá, stream jede bez něj).
+Řešení v ovladači (`_StreamBody`, `Camera`): tělo HTTP odpovědi čte vlastní socket a PyAV dostane souborový objekt
+s `format="flv"`, `probesize 65536`, `analyzeduration 0`, `fflags nobuffer`; vadný paket se přeskočí. Stream drží
+vlákno, dokud někdo chce snímky (zavře se po 20 s bez požadavku). Změřeno (`kx_cam_timing.py`): první snímek
+**3,6–4,1 s** po otevření (čeká na klíčový snímek), další **okamžitě** (0,00–0,02 s) a vždy čerstvé; po 25 s nečinnosti
+znovu 4,1 s. Při tisku agent chce snímky každých 15 s, takže stream zůstává otevřený a série po 0,3 s jsou skutečné.
+
+### 7d. Ověření na tiskárně (18. 10. 2026 od 16:22, Romanovo „proveď zkoušky“ v okně session 4, C1 ruční)
+
+1. **Světlo** (`scratchpad/kx_light_dry_test.py`): `light(True)` → za 2 s `light query` `status 1` → telemetrie
+   `light: on`; `light(False)` → `off`. Funguje; výchozí `light: true`.
+2. **Sušení**: `dry(True, 45, 10)` → tiskárna odpověděla `success`; `getInfo` po 10–60 s: `drying_status {status 1,
+   target_temp 45, duration 600, remain_time 9}`, box `temp 29`, `humidity 36–37` → telemetrie `dryer_state drying`,
+   `dryer_target 45`, `dryer_remain_min 9`, `dryer_temp 29`, `dryer_rh 37`. Jednotky: v příkazu `duration` = **minuty**,
+   v hlášení `duration` = sekundy a `remain_time` = **minuty**. Za minutu se box neohřál (29 °C), ACE hřeje pomalu.
+   `dry(False)` → `drying_status` vše 0, telemetrie `off`. Rozsahy z displeje (PLA 45 °C, PETG 55 °C, max. minuty)
+   jsem nečetla; ovladač posílá, co mu nástěnka dá.
+3. **Parkovací kostka** (`kx-cube10-park.gcode`, dwell 1000, a varianta dwell 3000; park přepsán na X0 Y130 podle
+   Romana – kamera je vpravo, hlava v parku vlevo je od ní dál; `scratchpad/kx_timelapse_test.py` = ovladač + emulace
+   série snímků agenta, bez vyrovnání podložky, 12 parků a zrušení; poloha hlavy ve snímcích změřena jako střed a
+   plocha bílé hlavy, `kx_park_analyse2.py`):
+
+   **Dwell 1000 (16:42–16:49):** v každé sérii 14 snímků po 0,3 s od hlášení vrstvy. Hlava je v parku (malá, vlevo)
+   **2,2–4,0 s PO hlášení vrstvy**, pokaždé asi 1 s (dwell): vrstva 3: 2,3–3,0 s; 4: 2,3–2,9; 5: 3,0–3,7; 6: 2,7–3,4;
+   7: 3,0–3,6; 8: 4,0–4,3+; 9: 3,0–3,7; 10: 2,2–2,8; 11: 3,2–3,5; 12: 4,0–4,3+; 13: 3,7–4,0+. Tiskárna tedy hlásí
+   vrstvu, když G‑kód **načte**, a hlava do parku dojede až o 2,2–4,0 s později (plánovač jede napřed; rozptyl podle
+   délky drah před parkem). Výběr nejklidnějšího snímku (`pick_still`) vybral u 10mm kostky v 11 z 11 vrstev snímek
+   s hlavou **u kostky**, ne v parku: při tisku malé kostky se hlava mezi snímky po 0,3 s skoro nehýbe, takže
+   „nejklidnější“ není „zaparkovaná“. S dwell 1 s žádné jisté okno není (začátek parku 2,2–4,0 s, konec 3,2–5,0 s).
+
+   **Dwell 3000 (16:49–16:55):** série 20 snímků po 0,3 s. Park začíná 2,1–3,8 s po hlášení (vrstvy 3–13: 2,2; 2,1;
+   3,8; 3,6; 2,8; 2,9; 2,2; 2,2; 3,0; 2,9; 2,7) a končí 5,5–6,6 s (trvá ~3,3 s). Průnik přes všechny vrstvy:
+   **4,0–5,2 s po hlášení je hlava v parku vždy** (11 z 11; i s nejpozdějšími starty 4,0 s z běhu s dwell 1000 vychází
+   konec 7,0 s). Žádný tisk nezůstal rozdělaný; obě kostky zrušeny po 12 parcích, tiskárna `free`.
+
+   **Závěr a ovladač:** `head()` počítá s předstihem hlášení `park_lead_min` 2,2 s až `park_lead` 4,0 s (volby). Když
+   dwell dá jisté okno `[hlášení + 4,0 s, hlášení + 2,2 s + dwell]` aspoň 0,5 s dlouhé (dwell ≥ 2,3 s), hlásí v něm
+   park jako **skutečnou stojící polohu** (rychlost 0) a agent udělá **jeden snímek** hned při prvním dotazu v okně
+   (dotazuje se 4× za s). S kratším dwell hlásí park jako plánovanou polohu od 2,2 s po dobu dwell + 1,8 s a agent
+   dělá sérii s výběrem nejklidnějšího – u malých dílů nespolehlivě. **Doporučení pro C1: `dwell` 3000 ms v adminu**
+   (parametr tiskárny; 49 vrstev = +2,5 min, server to do odhadu připočítá), park X0 Y130. Agent ani server se nemění.
+   Rozptyl předstihu (1,8 s) závisí na tom, kolik G‑kódu má plánovač před parkem načteno; u dílů s dlouhými rovnými
+   drahami může být předstih delší – když by se snímky míjely, zvětšit `park_lead` (volba v configu) nebo dwell.

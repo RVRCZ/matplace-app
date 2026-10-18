@@ -26,6 +26,7 @@ import io
 import json
 import logging
 import os
+import socket
 import threading
 import time
 import uuid
@@ -71,6 +72,9 @@ JOB_STATES = {
 # project.pause: 0 printing, 1 paused, 2 pausing, 3 resuming, 4 stopping (kobra_connect.models.PauseState)
 PAUSED_FLAGS = (1, 2)
 
+# the light the camera looks with (light/report type 3; 1 is the head light, 2 a chamber light on other models)
+LIGHT_CAMERA = 3
+
 # the printer's own spool rack (box id -1) offers 4 positions; with an ACE unit attached only 3, the ACE's feed takes
 # the 4th (the printer still lists it, with edit_status 3; Kobra X, 18 Oct 2026)
 RACK_ID = -1
@@ -101,11 +105,18 @@ class Position:
 
 @dataclass
 class Spools:
-    """The printer's spool positions in matplace's order, and the one whose spool is in the head right now."""
+    """The printer's spool positions in matplace's order, the one whose spool is in the head right now, and the
+    ACE's dryer as the dashboard's telemetry keys (dryer_state off|drying, dryer_temp, dryer_target, dryer_remain_min,
+    dryer_rh; empty without an ACE)."""
 
     positions: list
     loaded: Optional[Position] = None
     boxes: int = 0
+    dryer: dict = None  # type: ignore[assignment]
+
+    def __post_init__(self) -> None:
+        if self.dryer is None:
+            self.dryer = {}
 
     def at(self, slot: int) -> Optional[Position]:
         return next((p for p in self.positions if p.slot == slot), None)
@@ -230,7 +241,8 @@ class AnycubicLanDriver(PrinterDriver):
         self.busy_retry = float(options.get("busy_retry", 5))
         self.retry_seconds = float(options.get("retry_seconds", 30))
         self.camera = bool(options.get("camera", True))
-        self.use_light = bool(options.get("light", False))
+        self._camera: Optional[Camera] = None
+        self.use_light = bool(options.get("light", True))
         # tests hand in a fake link (no network); the real one is KobraLink
         self._make_link: Callable[[str, Callable], KobraLink] = options.get("_link") or (lambda ip, cb: KobraLink(ip, cb))
         self._link: Optional[KobraLink] = None
@@ -242,6 +254,15 @@ class AnycubicLanDriver(PrinterDriver):
         # progress report of the running task (its minutes and millimetres)
         self._ended: Optional[dict] = None
         self._last_progress: dict = {}
+        # the layer-synced time-lapse (docs/AM.md §7): where the farm's G-code parks the head after every layer (its
+        # first line says), the layer the printer last reported and when it changed
+        self._park: Optional[tuple] = None          # (x, y, dwell s, travel mm/s)
+        self._layer: Optional[int] = None
+        self._layer_at: float = 0.0
+        self.layer_window = float(options.get("layer_window", 0))   # by hand: seconds head() reports the park after a report (0 = measured timing)
+        self.park_lead_min = float(options.get("park_lead_min", 2.2))   # the head reaches the park this long after the report at the earliest
+        self.park_lead = float(options.get("park_lead", 4.0))           # ... and at the latest (measured 2.2-4.0 s, docs/AM.md §7d)
+        self.park_window_min = float(options.get("park_window_min", 0.5))   # a sure window shorter than this is no use (the agent looks every 0.25 s)
         self._urls: dict = {}
         self._opening = asyncio.Lock()
 
@@ -253,6 +274,9 @@ class AnycubicLanDriver(PrinterDriver):
     async def close(self) -> None:
         if self._task:
             self._task.cancel()
+        if self._camera:
+            self._camera.stop()
+            self._camera = None
         if self._link:
             await asyncio.to_thread(self._link.close)
             self._link = None
@@ -309,6 +333,7 @@ class AnycubicLanDriver(PrinterDriver):
                 self._ended = {**numbers, **details, "status": ended, "err_msg": str(data.get("msg") or "") if ended == JOB_FAILED else ""}
             elif "progress" in details:
                 self._last_progress = details          # print_time (minutes) and supplies_usage (mm) of the running task
+                self._note_layer(details.get("curr_layer"))
         state = details.get("state") if details else data.get("state")
         if kind in ("info", "print", "status") and state and state != self._last_state:
             self._last_state = state
@@ -350,16 +375,29 @@ class AnycubicLanDriver(PrinterDriver):
             telemetry = {"link": CLOUD_MODE} if self._problem == CLOUD_MODE else {}
             return PrinterStatus(OFFLINE, telemetry)
         status = self._map(report.get("data") or {})
-        if status.state in (PRINTING, PAUSED):
-            # which spool is in the head, as the screen names it and as matplace's slot (the operator checks the colour)
-            try:
-                loaded = (await self.spools()).loaded
-            except DriverError:
-                loaded = None
-            if loaded:
-                status.telemetry["spool"] = loaded.name
-                status.telemetry["slot"] = loaded.slot
+        await self._extras(status)
         return status
+
+    async def _extras(self, status: PrinterStatus) -> None:
+        """What the dashboard shows besides the print: the spool in the head (as the screen names it and as matplace's
+        slot), the ACE's dryer with the keys the dashboard reads (dryer_state...), and the camera light. Each is a
+        query of its own; one that fails leaves its keys out."""
+        try:
+            spools = await self.spools()
+        except DriverError:
+            spools = None
+        if spools:
+            if spools.loaded and status.state in (PRINTING, PAUSED):
+                status.telemetry["spool"] = spools.loaded.name
+                status.telemetry["slot"] = spools.loaded.slot
+            status.telemetry.update(spools.dryer)
+        try:
+            lights = ((await self._ask("light")).get("data") or {}).get("lights") or []
+        except DriverError:
+            lights = []
+        camera = next((l for l in lights if isinstance(l, dict) and l.get("type") == LIGHT_CAMERA), None)
+        if camera:
+            status.telemetry["light"] = "on" if int(camera.get("status") or 0) else "off"
 
     def _map(self, d: dict) -> PrinterStatus:
         self._urls = d.get("urls") or self._urls
@@ -389,6 +427,8 @@ class AnycubicLanDriver(PrinterDriver):
             ended = self._ended
             if ended and _base_name(str(ended.get("filename") or "")) != _base_name(str((last or {}).get("filename") or "")):
                 project, job_state = ended, str(ended["status"])
+        if project and printer_state in (PRINTING, PAUSED):
+            self._note_layer(project.get("curr_layer"))
         if project and project.get("total_layers"):
             telemetry["layer"] = f"{project.get('curr_layer', 0)}/{project['total_layers']}"
         if project and printer_state in (PRINTING, PAUSED) and project.get("remain_time") is not None:
@@ -410,20 +450,83 @@ class AnycubicLanDriver(PrinterDriver):
         return PrinterStatus(printer_state, {k: v for k, v in telemetry.items() if v not in (None, "")}, job)
 
     async def snapshot(self) -> Optional[bytes]:
+        """The latest picture of the printer's camera stream. The stream is kept open while pictures are wanted (a
+        burst of them for the layer time-lapse needs one every 0.3 s; opening the stream takes ~10 s, the first key
+        frame) and closed after 20 s without a request."""
         url = self._urls.get("rtspUrl")
         if not self.camera or not url:
             return None
+        if self._camera is None or self._camera.url != url:
+            if self._camera:
+                self._camera.stop()
+            self._camera = Camera(url, f"cam-{self.key}")
         try:
-            return await asyncio.wait_for(asyncio.to_thread(_flv_frame, url), timeout=20)
+            return await asyncio.wait_for(asyncio.to_thread(self._camera.frame), timeout=20)
         except Exception as e:  # noqa: BLE001 - a missing picture never disturbs a print
             log.debug("%s: snapshot failed: %s", self.key, e)
             return None
 
+    async def dry(self, on: bool, temp: int = 45, minutes: int = 240) -> None:
+        """The dryer of the first ACE unit: multiColorBox setDry with drying_status {status 1, target_temp, duration in
+        minutes}; status 0 stops it (the shape chrisfore captured on a Kobra S1 Max; Kobra X: docs/AM.md §7). The
+        printer's own rack has no dryer."""
+        spools = await self.spools()
+        ace = next((p.box for p in spools.positions if p.box != RACK_ID), None)
+        if ace is None:
+            raise DriverError("this printer has no ACE unit to dry in")
+        wanted = {"status": 1, "target_temp": int(temp), "duration": int(minutes)} if on else {"status": 0}
+        report = await self._ask("multiColorBox", "setDry", {"multi_color_box": [{"id": ace, "drying_status": wanted}]})
+        if report.get("state") == "failed" or report.get("code") not in (None, 0, 200):
+            raise DriverError(f"dryer: {report.get('code')} {report.get('msg') or ''}".strip())
+        log.info("%s: dryer %s", self.key, f"{temp} °C for {minutes} min" if on else "off")
+
+    async def head(self) -> Optional[tuple[float, float, Optional[float]]]:
+        """Where the head is, as far as a printer without coordinates lets us say (docs/AM.md §7d). The farm's G-code
+        parks the head after every layer (its first line says where and for how long). The printer reports the new
+        layer when it reads the G-code, 2.2-4.0 s BEFORE the head reaches the park (the planner runs ahead; measured
+        on 11 layers, 18 Oct 2026). So, with the report at T and the dwell D:
+          - D long enough for a sure window (D >= park_lead - park_lead_min + 0.5 s, i.e. 3 s): the park is reported
+            as a real, standing position (speed 0) during [T + park_lead, T + park_lead_min + D], and the agent takes
+            one picture there;
+          - a shorter D: the park is reported as a planned position (speed None) from T + park_lead_min for D + the
+            spread, and the agent takes a burst of pictures and keeps the stillest (less sure on small parts).
+        None outside, so the agent sees the head leave."""
+        if not self._park or self._layer is None:
+            return None
+        since = time.monotonic() - self._layer_at
+        dwell = self._park[2]
+        if self.layer_window:                                   # a window set by hand: planned position, as before
+            return (self._park[0], self._park[1], None) if since <= self.layer_window else None
+        sure_from, sure_to = self.park_lead, self.park_lead_min + dwell
+        if sure_to - sure_from >= self.park_window_min:
+            return (self._park[0], self._park[1], 0.0) if sure_from <= since <= sure_to else None
+        spread = self.park_lead - self.park_lead_min
+        if self.park_lead_min <= since <= self.park_lead_min + dwell + spread:
+            return self._park[0], self._park[1], None
+        return None
+
+    def _note_layer(self, layer) -> None:
+        """A layer the printer reports (print/report or info): the moment it changes is when the head goes to park."""
+        if layer is None:
+            return
+        try:
+            n = int(layer)
+        except (TypeError, ValueError):
+            return
+        if self._layer is None:
+            self._layer = n
+        elif n != self._layer:
+            self._layer = n
+            if n >= 2:      # the farm's G-code parks from the second layer on (TimelapseGcode skips the first marker)
+                self._layer_at = time.monotonic()
+
     async def light(self, on: bool) -> None:
+        """The camera light (type 3): the printer itself switches it on while it feeds and levels, and reports
+        light/control {type, status, brightness} (18 Oct 2026); the same shape switches it from here."""
         if not self.use_light:
             return
         try:
-            await self._send("light", "control", {"type": 3, "status": 1 if on else 0, "brightness": 100 if on else 0}, web=True)
+            await self._send("light", "control", {"type": LIGHT_CAMERA, "status": 1 if on else 0, "brightness": 100 if on else 0}, web=True)
         except DriverError as e:
             log.debug("%s: light %s failed: %s", self.key, "on" if on else "off", e)
 
@@ -437,6 +540,7 @@ class AnycubicLanDriver(PrinterDriver):
             raise DriverError("the printer offers no upload address (urls.fileUploadurl missing in its info)")
         await self._clear_stale()
         self._ended, self._last_progress = None, {}
+        self._layer, self._layer_at = None, 0.0
         # What the Slicer Next sends (captured and tried out 18 Oct 2026, docs/AM.md): T<n> in the G-code is a "paint"
         # the printer maps to a spool position by ams_box_mapping. matplace's GcodeSlot wrote the spool position as
         # T<n> (docs/V.md), so the file goes up as paint 0 and that position goes into the mapping. The file needs the
@@ -444,6 +548,7 @@ class AnycubicLanDriver(PrinterDriver):
         # filesize, the whole task_settings): without them the printer refuses it with 10301 "device busy, state unknown".
         with open(gcode_path, "rb") as fh:
             raw = fh.read()
+        self._park = _park_of(raw)
         facts = facts_of(raw)
         slot_no = facts.tool if facts.tool else int(slot)
         pos = await self.spool_at(slot_no, config_value(raw, b"filament_colour") or "#000000", config_value(raw, b"filament_type") or "PLA")
@@ -545,6 +650,13 @@ class AnycubicLanDriver(PrinterDriver):
                 if int(box.get("loaded_slot", -1)) == p.index:
                     spools.loaded = p
                 spools.positions.append(p)
+            if not rack and not spools.dryer:
+                # the ACE's dryer (the first ACE; a second one is not shown): the keys the dashboard reads
+                dry = box.get("drying_status") if isinstance(box.get("drying_status"), dict) else {}
+                on = bool(int(dry.get("status") or 0))
+                spools.dryer = {"dryer_state": "drying" if on else "off", "dryer_temp": _num(box.get("temp")) or 0,
+                                "dryer_target": (_num(dry.get("target_temp")) or 0) if on else 0,
+                                "dryer_remain_min": int(dry.get("remain_time") or 0) if on else 0, "dryer_rh": _num(box.get("humidity")) or 0}
         return spools
 
     async def spool_at(self, slot: int, colour: str, material: str) -> Position:
@@ -608,21 +720,138 @@ def _num(v) -> Optional[float]:
     return round(float(v), 1) if isinstance(v, (int, float)) else None
 
 
+def _park_of(raw: bytes) -> Optional[tuple[float, float, float, float]]:
+    """(x, y, dwell s, travel mm/s) from the first line the farm writes into a layer-synced G-code
+    ("; matplace timelapse park_x=250 park_y=250 dwell=1000 travel=200 frames=49"), None for any other file."""
+    first = raw.split(b"\n", 1)[0].decode("utf-8", "replace")
+    if not first.startswith("; matplace timelapse "):
+        return None
+    values = dict(p.split("=", 1) for p in first.split() if "=" in p)
+    try:
+        return float(values["park_x"]), float(values["park_y"]), float(values.get("dwell", 1000)) / 1000.0, float(values.get("travel", 200))
+    except (KeyError, ValueError):
+        return None
+
+
 def _base_name(name: str) -> str:
     """The name the printer reports may carry a folder; ".gcode.3mf" is reported as ".gcode"."""
     return os.path.basename(name.replace("\\", "/"))
 
 
-def _flv_frame(url: str) -> Optional[bytes]:
-    """The first picture of the printer's HTTP-FLV stream as JPEG (PyAV decodes H.264 without an ffmpeg install)."""
-    try:
-        import av  # noqa: WPS433 - optional
-    except ImportError:
-        log.debug("PyAV is not installed: no camera picture")
-        return None
-    with av.open(url, options={"rw_timeout": "8000000"}, timeout=10) as container:
-        for frame in container.decode(video=0):
-            buf = io.BytesIO()
-            frame.to_image().save(buf, format="JPEG", quality=80)
-            return buf.getvalue()
-    return None
+class _StreamBody:
+    """The body of the printer's HTTP-FLV stream as a file object for PyAV. ffmpeg's own HTTP reader probes the
+    stream for ~10 s, then hands over a burst of a hundred frames and fails on the next ones (Kobra X, 18 Oct 2026);
+    fetched by a plain socket and demuxed as FLV with a short probe, the stream decodes live at 10 pictures a second,
+    the first one ~4 s after the connection (the first key frame)."""
+
+    def __init__(self, url: str, timeout: float = 15.0):
+        parts = url.split("/", 3)                     # http: / / host:port / path
+        host, _, port = parts[2].partition(":")
+        self.sock = socket.create_connection((host, int(port or 80)), timeout=timeout)
+        self.sock.sendall(f"GET /{parts[3] if len(parts) > 3 else ''} HTTP/1.1\r\nHost: {parts[2]}\r\nUser-Agent: matplace-farm-agent\r\nAccept: */*\r\n\r\n".encode())
+        head = b""
+        while b"\r\n\r\n" not in head:
+            more = self.sock.recv(4096)
+            if not more:
+                raise OSError("the camera stream closed before its headers")
+            head += more
+        status, _, self._rest = head.partition(b"\r\n\r\n")
+        if b" 200 " not in status[:20] and b" 206 " not in status[:20]:
+            first_line = status.split(b"\r\n", 1)[0].decode("latin-1")
+            raise OSError(f"camera stream: {first_line}")
+
+    def read(self, n: int = -1) -> bytes:
+        if self._rest:
+            out, self._rest = (self._rest[:n], self._rest[n:]) if n > 0 else (self._rest, b"")
+            return out
+        return self.sock.recv(n if n > 0 else 65536)
+
+    def close(self) -> None:
+        try:
+            self.sock.close()
+        except OSError:
+            pass
+
+
+class Camera:
+    """The printer's HTTP-FLV camera stream (H.264, decoded by PyAV without an ffmpeg install, see _StreamBody), read
+    in a thread of its own while pictures are wanted: the latest frame is always at hand, so a picture costs nothing
+    but the JPEG encoding - the layer time-lapse takes a burst of them 0.3 s apart. Without a request for
+    `idle_seconds` the stream is closed; the next request opens it again (~4 s to the first picture)."""
+
+    def __init__(self, url: str, name: str, idle_seconds: float = 20.0):
+        self.url = url
+        self.name = name
+        self.idle_seconds = idle_seconds
+        self._lock = threading.Lock()
+        self._ready = threading.Condition(self._lock)
+        self._frame = None            # the latest decoded frame
+        self._seq = 0
+        self._jpeg: Optional[tuple[int, bytes]] = None
+        self._wanted = 0.0            # when a picture was last asked for
+        self._thread: Optional[threading.Thread] = None
+        self._stop = threading.Event()
+        self._error: Optional[str] = None
+
+    def frame(self, wait: float = 15.0) -> Optional[bytes]:
+        """The latest picture as JPEG; starts the stream when it is not running and waits for its first frame."""
+        with self._lock:
+            self._wanted = time.monotonic()
+            if not self._thread or not self._thread.is_alive():
+                self._stop.clear()
+                self._frame, self._error = None, None
+                self._thread = threading.Thread(target=self._run, name=self.name, daemon=True)
+                self._thread.start()
+            deadline = time.monotonic() + wait
+            while self._frame is None and self._error is None and time.monotonic() < deadline:
+                self._ready.wait(deadline - time.monotonic())
+            if self._frame is None:
+                return None
+            if self._jpeg and self._jpeg[0] == self._seq:
+                return self._jpeg[1]
+            frame, seq = self._frame, self._seq
+        buf = io.BytesIO()
+        frame.to_image().save(buf, format="JPEG", quality=80)
+        with self._lock:
+            self._jpeg = (seq, buf.getvalue())
+        return buf.getvalue()
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def _run(self) -> None:
+        try:
+            import av  # noqa: WPS433 - optional
+        except ImportError:
+            with self._lock:
+                self._error = "PyAV is not installed: no camera picture"
+                self._ready.notify_all()
+            log.debug("%s", self._error)
+            return
+        body = None
+        try:
+            body = _StreamBody(self.url)
+            with av.open(body, format="flv", options={"probesize": "65536", "analyzeduration": "0", "fflags": "nobuffer"}) as container:
+                stream = container.streams.video[0]
+                stream.thread_type = "AUTO"
+                for packet in container.demux(stream):
+                    try:
+                        frames = packet.decode()
+                    except Exception:  # noqa: BLE001 - a damaged packet: the next key frame heals the picture
+                        continue
+                    for frame in frames:
+                        with self._lock:
+                            self._frame, self._seq = frame, self._seq + 1
+                            self._ready.notify_all()
+                    with self._lock:
+                        idle = time.monotonic() - self._wanted
+                    if self._stop.is_set() or idle > self.idle_seconds:
+                        break
+        except Exception as e:  # noqa: BLE001 - the stream went away: the next request opens it again
+            with self._lock:
+                self._error = f"{e.__class__.__name__}: {e}"
+                self._ready.notify_all()
+            log.debug("%s: camera stream ended: %s", self.name, e)
+        finally:
+            if body:
+                body.close()

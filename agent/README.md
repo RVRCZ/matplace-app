@@ -101,7 +101,10 @@ Viz `config.example.yaml`. Token lze místo souboru předat proměnnou prostřed
 | `printers[].driver` | `moonraker`, `anycubic_lan` nebo `mock` |
 | `printers[].ip` | jen `anycubic_lan`: IP tiskárny (rezervovat v routeru) |
 | `printers[].camera` | jen `anycubic_lan`: snímek z vlastní kamery tiskárny (výchozí `true`, potřebuje balíček `av`) |
-| `printers[].light` | jen `anycubic_lan`: rozsvěcet světlo kamery (výchozí `false`, na Kobra X zatím neověřeno) |
+| `printers[].light` | jen `anycubic_lan`: rozsvěcet světlo kamery před tiskem a zhasnout po něm (výchozí `true`) |
+| `printers[].park_lead_min`, `park_lead` | jen `anycubic_lan`: za kolik sekund po ohlášené vrstvě hlava nejdřív / nejpozději dojede do parku (Kobra X změřeno 2,2 / 4,0 s – tiskárna hlásí vrstvu při načtení G‑kódu, napřed před pohybem); s `dwell` tiskárny ≥ 2,3 s z toho vzniká jisté okno a agent fotí jeden snímek, jinak sérii |
+| `printers[].park_window_min` | jen `anycubic_lan`: nejkratší jisté okno, které se ještě použije (výchozí 0,5 s) |
+| `printers[].layer_window` | jen `anycubic_lan`: ruční přepsání – kolik sekund po ohlášené vrstvě hlásit park jako plánovanou polohu (výchozí `0` = podle změřeného předstihu) |
 | `printers[].auto_leveling` | jen `anycubic_lan`: tiskárna si před každým tiskem vyrovná podložku, jako po odeslání ze Sliceru Next (výchozí `true`) |
 | `printers[].package` | jen `anycubic_lan`: soubor poslat jako balíček `.gcode.3mf` s náhledem (jako Slicer Next) místo holého G-code s doplněnými řádky; obě cesty ověřené na Kobra X 18. 10. 2026 (`docs/AM.md`) |
 | `printers[].url` | Moonraker, `http://IP:7125` |
@@ -127,8 +130,12 @@ vidět, která pozice je zavedená (`spool`, `slot`).
 
 Co ovladač umí: stav (volná / tiskne / pauza / chyba), teploty, průběh, vrstvy, zbývající minuty, název souboru;
 nahrání G-code do tiskárny a start; pauza, pokračování, zrušení; snímek z kamery tiskárny (HTTP-FLV, jeden snímek
-dekóduje `av`). Neumí: polohu hlavy (časosběr jde po minutách, ne po vrstvách), sušičku, reset chyby (chybu potvrdí
-obsluha na displeji). Soubory v úložišti tiskárny nikdy nemaže.
+dekóduje `av`); světlo kamery (zapne před tiskem, zhasne po něm, stav na nástěnce); sušičku měniče ACE (start
+s teplotou a minutami, stop, teplota a vlhkost na nástěnce); časosběr po vrstvách: tiskárna polohu hlavy nehlásí,
+ale hlásí číslo vrstvy, a tak ovladač po každé ohlášené změně vrstvy po dobu parkování říká agentovi „hlava je
+v parku“ a agent vybere nejklidnější snímek (viz `docs/AM.md` §7; dwell tiskárny v adminu nastavit podle měření).
+Neumí: reset chyby (chybu potvrdí obsluha na displeji), vlastní časosběr tiskárny (video si tiskárna ukládá, ale
+v LAN ho nejde stáhnout). Soubory v úložišti tiskárny nikdy nemaže.
 
 ## Zkouška bez tiskárny (mock)
 
