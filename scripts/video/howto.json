@@ -1,0 +1,57 @@
+{
+    "name": "printables-howto",
+    "out_dir": "C:/Users/roman/Desktop/video/out",
+    "title": {"cs": "Model z Printables vytištěný na matplace", "en": "A Printables model printed at matplace"},
+    "address": "matplace.com",
+    "site": "https://matplace.com",
+    "youtube_title": "Model z Printables vytištěný na matplace – od stažení po výtisk",
+    "description": "Jak nechat vytisknout hotový model z Printables: stáhnete soubor, nahrajete ho na matplace.com, hned vidíte cenu a dobu tisku, vyberete barvu z cívek naší farmy a objednáte. Tisk sledujete živě a dostanete časosběrné video.",
+    "model": {"name": "Cell Phone Stand", "author": "Pit Demon", "licence": "CC0", "url": "https://www.printables.com/model/767024-cell-phone-stand"},
+    "music": "donnysombrero-up-in-the-air-499093.mp3",
+    "music_volume": 0.6,
+    "sources": {
+        "screen": {"path": "C:/Users/roman/Desktop/video/2026-10-18 10-20-58.mp4", "crop": [42, 108, 1878, 947]},
+        "timelapse": {"path": "C:/Users/roman/Desktop/video/F26-000085/wide.mp4"},
+        "timelapse_square": {"path": "C:/Users/roman/Desktop/video/F26-000085/short.mp4"},
+        "phone": {"path": "C:/Users/roman/Desktop/video/vec-1.mp4"}
+    },
+    "blur": [
+        {"source": "screen", "from": 135.5, "to": 137.4, "box": [1350, 800, 230, 130], "why": "phone number, page scrolling in"},
+        {"source": "screen", "from": 137.2, "to": 137.7, "box": [1350, 455, 230, 470], "why": "phone number while the page jumps"},
+        {"source": "screen", "from": 137.2, "to": 139.6, "box": [1350, 455, 230, 60], "why": "phone number"},
+        {"source": "screen", "from": 139.0, "to": 139.7, "box": [1350, 455, 230, 190], "why": "phone number while the page scrolls"},
+        {"source": "screen", "from": 139.0, "to": 141.3, "box": [1350, 585, 230, 60], "why": "phone number"},
+        {"source": "screen", "from": 150.0, "to": 156.6, "box": [1350, 585, 230, 60], "why": "phone number"}
+    ],
+    "wide": [
+        {"card": "intro", "seconds": 2.5},
+        {"source": "screen", "from": 11.5, "to": 31.5, "speed": 2.5, "caption": {"cs": "1. Vyberte model na Printables", "en": "1. Pick a model on Printables"}},
+        {"source": "screen", "from": 31.5, "to": 43.5, "speed": 1.5, "caption": {"cs": "Cell Phone Stand od Pit Demon", "en": "Cell Phone Stand by Pit Demon"}},
+        {"source": "screen", "from": 43.5, "to": 51, "speed": 1.5, "caption_at": "top", "caption": {"cs": "Stáhněte soubor – licence CC0", "en": "Download the file – CC0 licence"}},
+        {"source": "screen", "from": 57.5, "to": 67.5, "speed": 1.5, "caption": {"cs": "2. Nahrajte ho na matplace.com", "en": "2. Upload it to matplace.com"}},
+        {"source": "screen", "from": 67.5, "to": 74, "speed": 3},
+        {"source": "screen", "from": 74, "to": 92, "speed": 1.5, "caption_seconds": 4, "caption": {"cs": "3. Cena a doba tisku za pár vteřin", "en": "3. Price and print time in seconds"}},
+        {"source": "screen", "from": 92, "to": 101, "speed": 1.5, "caption_at": "top", "caption": {"cs": "Vytisknout u nás", "en": "Print it with us"}},
+        {"source": "screen", "from": 101, "to": 108, "speed": 2, "caption": {"cs": "4. Zakázka s přesnou cenou", "en": "4. The order with the exact price"}},
+        {"source": "screen", "from": 108, "to": 134, "speed": 2.5, "caption_seconds": 4, "caption": {"cs": "Barvy z cívek na farmě, každá má svůj kód", "en": "Colours from the farm's spools, each with its code"}},
+        {"source": "screen", "from": 134, "to": 141, "speed": 2.5, "caption_at": "top", "caption_seconds": 2.8, "caption": {"cs": "5. Doprava: Zásilkovna nebo vyzvednutí", "en": "5. Delivery: pickup point or collection"}},
+        {"source": "screen", "from": 144.3, "to": 150.5, "speed": 2.5},
+        {"source": "screen", "from": 150.5, "to": 156.5, "speed": 1.5, "caption_at": "top", "caption": {"cs": "Souhlas s podmínkami a zaplatit", "en": "Accept the terms and pay"}},
+        {"source": "screen", "from": 156.5, "to": 160, "speed": 1, "caption": {"cs": "Zakázka je ve frontě", "en": "The order is in the queue"}},
+        {"source": "screen", "from": 217, "to": 225, "speed": 1, "caption_seconds": 4, "caption": {"cs": "6. Tiskne se – snímky z tiskárny vidíte živě", "en": "6. Printing – watch the printer's camera live"}},
+        {"source": "timelapse", "from": 1.5, "to": -3, "fit": 20, "caption": {"cs": "Časosběr tisku", "en": "Time-lapse of the print"},
+            "missing": {"seconds": 4, "text": {"cs": "Tady bude časosběr tisku", "en": "The print's time-lapse goes here"}}},
+        {"source": "phone", "from": 0, "to": 0, "fit": 12, "caption": {"cs": "Hotovo", "en": "Done"}},
+        {"card": "end", "seconds": 3}
+    ],
+    "short": [
+        {"card": "intro", "seconds": 1.5},
+        {"source": "screen", "from": 59, "to": 67, "speed": 2, "short_crop": [980, 520, 1000], "caption": {"cs": "Model z Printables nahrajte na matplace", "en": "Upload a Printables model to matplace"}},
+        {"source": "screen", "from": 74, "to": 86, "speed": 1.5, "short_crop": [950, 470, 1000], "caption_seconds": 4, "caption": {"cs": "Cena a doba tisku hned", "en": "Price and print time at once"}},
+        {"source": "screen", "from": 118, "to": 131, "speed": 3, "short_crop": [1350, 540, 900], "caption": {"cs": "Barva z cívek na farmě", "en": "A colour from our spools"}},
+        {"source": "timelapse_square", "from": 0.5, "to": -0.5, "fit": 15, "caption": {"cs": "Tiskneme na farmě", "en": "Printed on our farm"},
+            "missing": {"seconds": 3, "text": {"cs": "Tady bude časosběr", "en": "Time-lapse goes here"}}},
+        {"source": "phone", "from": 0, "to": 0, "fit": 6, "caption": {"cs": "Hotovo", "en": "Done"}},
+        {"card": "end", "seconds": 2}
+    ]
+}

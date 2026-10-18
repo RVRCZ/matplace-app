@@ -1,7 +1,8 @@
 {{-- one waiting video: the Short, the 16:9 or the weekly cut, with its own approval --}}
-@php($file = $v->kind === 'weekly' ? $v->path : ($v->kind === 'wide' ? $v->order?->timelapse_wide_path : ($v->order?->timelapse_short_path ?: $v->order?->timelapse_path)))
+@php($file = in_array($v->kind, ['weekly', 'howto'], true) ? $v->path : ($v->kind === 'wide' ? $v->order?->timelapse_wide_path : ($v->order?->timelapse_short_path ?: $v->order?->timelapse_path)))
+@php($vertical = $v->kind === 'howto' && ($v->meta['variant'] ?? null) === 'short')
 <div>
-    <h3 class="text-sm font-bold">{{ $kindNames[$v->kind] ?? $v->kind }}
+    <h3 class="text-sm font-bold">{{ $kindNames[$v->kind] ?? $v->kind }}{{ $v->kind === 'howto' ? ($vertical ? ' · Short 9:16' : ' · 16:9') : '' }}
         @if($v->score !== null)
             <span class="float-right rounded-full px-2 py-0.5 text-xs font-bold {{ $v->score >= 60 ? 'bg-ok-soft text-ok' : ($v->score >= 35 ? 'bg-action-soft text-action-dark' : 'bg-slate-100 text-slate-500') }}"
                   title="Odhad zajímavosti z délky tisku, počtu vrstev a detailu (0–100)">zajímavost {{ $v->score }}</span>
@@ -9,7 +10,7 @@
     </h3>
     @if($file)
         <video src="{{ route('admin.youtube.file', $v) }}?v={{ @filemtime(Storage::disk(config('farm.disk'))->path($file)) }}" controls playsinline preload="metadata"
-               class="mt-2 w-full rounded-xl border border-slate-200 {{ $v->kind === 'short' && $v->order?->timelapse_short_path ? 'mx-auto max-w-sm' : '' }}"></video>
+               class="mt-2 w-full rounded-xl border border-slate-200 {{ $vertical ? 'mx-auto max-w-[16rem]' : ($v->kind === 'short' && $v->order?->timelapse_short_path ? 'mx-auto max-w-sm' : '') }}"></video>
     @endif
     <p class="mt-2 text-sm font-semibold">{{ $label[$v->status] ?? $v->status }}
         @if($v->studioUrl())<a href="{{ $v->studioUrl() }}" target="_blank" rel="noopener" class="ml-2 text-xs font-normal underline">otevřít v YouTube Studiu</a>@endif
@@ -29,7 +30,7 @@
                 <label class="flex items-center gap-1"><input type="radio" name="when" value="now" class="accent-action"> hned</label>
             </div>
             {{-- the page and Instagram take the Short only: one video per print there --}}
-            @if($metaAvailable && $v->kind === 'short')
+            @if($metaAvailable && ($v->kind === 'short' || $vertical))
                 @php($chosen = $v->share ?? ['facebook', 'facebook_link', 'instagram'])
                 <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-700">
                     <input type="hidden" name="share_choice" value="1">

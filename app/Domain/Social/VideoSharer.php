@@ -31,9 +31,10 @@ final class VideoSharer
         if (! $this->meta->available()) {
             return 0;
         }
-        // only the Short: the 16:9 of the same print stays on YouTube (one video per print on the page and Instagram)
-        $videos = FarmVideo::with('order')->where('kind', FarmVideo::KIND_SHORT)->whereNotNull('share')->where(fn ($q) => $q->where('status', FarmVideo::STATUS_PUBLISHED)
-            ->orWhere(fn ($q) => $q->where('status', FarmVideo::STATUS_SCHEDULED)->where('scheduled_at', '<=', now())))->get();
+        // only Shorts (a print's, a how-to video's vertical one): the 16:9 stays on YouTube (one video per print on the page and Instagram)
+        $videos = FarmVideo::with('order')->whereIn('kind', [FarmVideo::KIND_SHORT, FarmVideo::KIND_HOWTO])->whereNotNull('share')->where(fn ($q) => $q->where('status', FarmVideo::STATUS_PUBLISHED)
+            ->orWhere(fn ($q) => $q->where('status', FarmVideo::STATUS_SCHEDULED)->where('scheduled_at', '<=', now())))->get()
+            ->filter(fn (FarmVideo $v) => $v->kind === FarmVideo::KIND_SHORT || ($v->meta['variant'] ?? null) === 'short');
         $n = 0;
         foreach ($videos as $video) {
             $n += $this->share($video);
@@ -45,8 +46,8 @@ final class VideoSharer
     /** @return int platforms posted to now */
     public function share(FarmVideo $video): int
     {
-        $order = $video->order;
-        if (! $order || ! $order->video_consent || ! $this->videos->eligible($order)) {
+        $path = $this->videos->pathOf($video);
+        if (! $this->videos->consented($video) || $path === '' || ! Storage::disk(config('farm.disk'))->exists($path)) {
             return 0;
         }
         $done = SocialPost::where('subject_type', self::SUBJECT)->where('subject_id', $video->id)->get()->keyBy('platform');
@@ -63,7 +64,7 @@ final class VideoSharer
                     'instagram' => $this->meta->postReelToInstagram(URL::temporarySignedRoute('social.video', now()->addDays(2), ['video' => $video->id]), $text),
                     // a plain post with a clickable link to the site (the video post's link is only text); the preview card is the site's OG picture
                     'facebook_link' => $this->meta->postToPage($text, $this->siteLink($post)),
-                    default => $this->meta->postVideoToPage(Storage::disk(config('farm.disk'))->path($this->videos->file($order)), (string) $video->title, (string) $video->description),
+                    default => $this->meta->postVideoToPage(Storage::disk(config('farm.disk'))->path($path), (string) $video->title, (string) $video->description),
                 };
                 $post->update(['status' => SocialPost::STATUS_POSTED, 'external_id' => $id, 'posted_at' => now()]);
                 $n++;

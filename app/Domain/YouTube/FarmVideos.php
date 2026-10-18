@@ -103,9 +103,36 @@ class FarmVideos
         return $video;
     }
 
-    /** Every customer in it still agrees: the order's consent, for the weekly cut every order in it. */
+    /**
+     * A how-to video (farm:howto-video) waits for the admin like the others: one row per variant (16:9 and Short).
+     * Built again, a row not on YouTube yet takes the new file and texts; one already there stays (the admin replaces it).
+     *
+     * @param  'wide'|'short'  $variant
+     */
+    public function queueHowto(string $name, string $variant, string $path, string $title, string $description, ?string $music): FarmVideo
+    {
+        $video = FarmVideo::where('kind', FarmVideo::KIND_HOWTO)->get()->first(fn (FarmVideo $v) => ($v->meta['name'] ?? null) === $name && ($v->meta['variant'] ?? null) === $variant)
+            ?? new FarmVideo(['kind' => FarmVideo::KIND_HOWTO, 'status' => FarmVideo::STATUS_PENDING]);
+        if ($video->youtube_id) {
+            return $video;
+        }
+        $video->fill(['path' => $path, 'title' => $title, 'description' => $variant === 'short' ? $description.'
+
+#Shorts' : $description, 'music' => $music,
+            'meta' => ['name' => $name, 'variant' => $variant], 'status' => FarmVideo::STATUS_PENDING, 'error' => null, 'approved_at' => null])->save();
+        if ($variant === 'wide') {
+            $this->tellAdmin($video, null);   // one mail for the pair
+        }
+
+        return $video;
+    }
+
+    /** Every customer in it still agrees: the order's consent, for the weekly cut every order in it; a how-to video is ours. */
     public function consented(FarmVideo $video): bool
     {
+        if ($video->kind === FarmVideo::KIND_HOWTO) {
+            return true;
+        }
         if ($video->kind === FarmVideo::KIND_WEEKLY) {
             $ids = (array) ($video->meta['orders'] ?? []);
 
@@ -118,7 +145,7 @@ class FarmVideos
     /** May go up: the file is there and everybody in it agrees. */
     private function allowed(FarmVideo $video): bool
     {
-        if ($video->kind === FarmVideo::KIND_WEEKLY) {
+        if (in_array($video->kind, [FarmVideo::KIND_WEEKLY, FarmVideo::KIND_HOWTO], true)) {
             return $video->path && Storage::disk(config('farm.disk'))->exists($video->path) && $this->consented($video);
         }
 
@@ -317,7 +344,7 @@ class FarmVideos
         if ($to === '') {
             return;
         }
-        $what = $order ? 'Časosběr zakázky '.$order->number : 'Týdenní sestřih '.($video->meta['week'] ?? '');
+        $what = $order ? 'Časosběr zakázky '.$order->number : ($video->kind === FarmVideo::KIND_HOWTO ? 'Instruktážní video '.($video->meta['name'] ?? '') : 'Týdenní sestřih '.($video->meta['week'] ?? ''));
         try {
             Mail::to($to)->queue(new FarmAdminAlert('Video ke schválení: '.($order->number ?? $video->title), [
                 $video->youtube_id
@@ -467,7 +494,7 @@ class FarmVideos
     public function pathOf(FarmVideo $video): string
     {
         return match ($video->kind) {
-            FarmVideo::KIND_WEEKLY => (string) $video->path,
+            FarmVideo::KIND_WEEKLY, FarmVideo::KIND_HOWTO => (string) $video->path,
             FarmVideo::KIND_WIDE => (string) $video->order?->timelapse_wide_path,
             default => $video->order ? $this->file($video->order) : '',
         };

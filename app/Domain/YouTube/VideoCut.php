@@ -40,14 +40,20 @@ final class VideoCut
         return array_sum(array_map('count', $this->lists));
     }
 
-    /** @return list<string> */
-    public function command(string $ffmpeg): array
+    /**
+     * @param  ?string  $graphFile  the graph read from this file (`-/filter_complex`, ffmpeg 7+): a long graph does not fit
+     *                              into a Windows command line (cmd.exe stops at 8191 characters)
+     * @return list<string>
+     */
+    public function command(string $ffmpeg, ?string $graphFile = null): array
     {
         return [
             $ffmpeg, '-y', '-loglevel', 'error', ...$this->inputs,
-            '-filter_complex', $this->graph, '-map', '[v]',
+            ...$graphFile ? ['-/filter_complex', $graphFile] : ['-filter_complex', $this->graph], '-map', '[v]',
             ...$this->music ? ['-map', '[a]', '-c:a', 'aac', '-b:a', '160k'] : [],
-            '-r', (string) $this->fps, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', (string) $this->crf, '-pix_fmt', 'yuv420p', '-movflags', '+faststart', $this->out,
+            '-r', (string) $this->fps, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', (string) $this->crf, '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+            // the planned length, whatever ffmpeg makes of the concat list's last frame (9.0 holds it once more than 7.1)
+            '-t', self::number($this->seconds), $this->out,
         ];
     }
 

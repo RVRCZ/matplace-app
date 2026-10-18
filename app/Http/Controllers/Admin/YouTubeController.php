@@ -49,7 +49,7 @@ class YouTubeController extends Controller
             'configured' => $this->youtube->configured(),
             'account' => YouTubeAccount::current(),
             // the likely hits first (FarmVideos::score); the Short and the 16:9 of one print side by side
-            'waiting' => $waiting->groupBy(fn ($v) => $v->farm_order_id ? 'order'.$v->farm_order_id : 'video'.$v->id)
+            'waiting' => $waiting->groupBy(fn ($v) => $v->farm_order_id ? 'order'.$v->farm_order_id : ($v->kind === FarmVideo::KIND_HOWTO ? 'howto'.($v->meta['name'] ?? '') : 'video'.$v->id))
                 ->map(fn ($group) => $group->sortBy(fn ($v) => array_search($v->kind, FarmVideo::KINDS, true))->values()),
             // what the end of each waiting video shows (the cleaned piece from the photo box), by order id
             'finish' => $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED])->whereNotNull('farm_order_id')
