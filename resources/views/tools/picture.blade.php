@@ -6,7 +6,7 @@
     @php $v = '?v='.filemtime(public_path($base.'-800.jpg')); @endphp
     <picture>
         <source type="image/webp" srcset="{{ asset($base.'-480.webp').$v }} 480w, {{ asset($base.'-800.webp').$v }} 800w" sizes="{{ $sizes ?? '(min-width: 1024px) 340px, (min-width: 640px) 50vw, 100vw' }}">
-        <img src="{{ asset($base.'-800.jpg').$v }}" alt="" width="800" height="533" loading="{{ !empty($eager) ? 'eager' : 'lazy' }}" decoding="async" class="block aspect-[3/2] h-auto w-full bg-[#F3EEE6] object-cover">
+        <img src="{{ asset($base.'-800.jpg').$v }}" alt="" width="800" height="533" loading="{{ !empty($eager) ? 'eager' : 'lazy' }}" @if(!empty($eager)) fetchpriority="high" @endif decoding="async" class="block aspect-[3/2] h-auto w-full bg-[#F3EEE6] object-cover">
     </picture>
 @else
     @include('tools.art', ['key' => $key])

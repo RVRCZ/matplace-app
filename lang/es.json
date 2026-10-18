@@ -1778,5 +1778,8 @@
     "auth.guard.limited": "Hoy ya se han creado muchas cuentas desde esta dirección; inténtelo más tarde. ¿Ya tiene una cuenta? Inicie sesión.",
     "auth.guard.retry": "Inténtelo de nuevo: el formulario caducó o se envió demasiado rápido.",
     "user.verify.registered_ask": "Su cuenta está lista. Para confirmar :email, pulse «Enviar el enlace de nuevo» en su cuenta.",
-    "auth.guard.turnstile": "Complete la verificación bajo el formulario y envíelo de nuevo."
+    "auth.guard.turnstile": "Complete la verificación bajo el formulario y envíelo de nuevo.",
+    "site.examples.item.qr": "Cartel QR con soporte, :size",
+    "site.examples.item.organizer": "Organizador de cajón, :size",
+    "site.examples.item.box": "Caja con tapa, :size"
 }

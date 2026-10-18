@@ -45,13 +45,17 @@
     {{-- amounts are printed by scripts the same way the server prints them (resources/js/site/money.ts) --}}
     <script>window.MP_MONEY = {{ \Illuminate\Support\Js::from(\App\Support\Currency::forScripts()) }};</script>
     @include('partials.measure')
+    {{-- the text font starts with the page, not after the stylesheet asked for it (docs/AH.md §11) --}}
+    <link rel="preload" href="/fonts/InterLatin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="alternate icon" href="/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
     @if($toolSeo)
         @if($toolSeo['steps'])<x-jsonld :data="\App\Support\Schema::howTo($toolSeo['h1'], $toolSeo['description'], $toolSeo['steps'], \App\Support\ToolSeo::url($tool), array_column(\App\Support\ToolSeo::examples($tool), 'url'))" />@endif
-        @if($toolSeo['faq'])<x-jsonld :data="\App\Support\Schema::faq($toolSeo['faq'])" />@endif
+        {{-- one FAQPage: the tool's questions and, on a landing page, "before you order" (only what the page shows) --}}
+        @php $faqAll = array_merge($toolSeo['faq'], \App\Support\LandingPage::order($tool)); @endphp
+        @if($faqAll)<x-jsonld :data="\App\Support\Schema::faq($faqAll)" />@endif
     @endif
     @stack('head')
 </head>

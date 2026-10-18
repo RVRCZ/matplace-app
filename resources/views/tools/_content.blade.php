@@ -10,6 +10,9 @@
         <p class="mt-3 leading-relaxed">{{ $paragraph }}</p>
     @endforeach
 
+    {{-- a landing page (config/landing.php): results, before you order, who it is for --}}
+    @include('tools._landing', ['tool' => $tool, 'part' => 'top'])
+
     @if($seo['steps'])
         <h3 class="mt-8 text-lg font-bold text-ink">{{ __('site.tool.how') }}</h3>
         <ol class="mt-3 space-y-3">
@@ -84,6 +87,8 @@
             @endforeach
         </div>
     @endif
+
+    @include('tools._landing', ['tool' => $tool, 'part' => 'next'])
 
     <p class="mt-8 text-sm text-muted">{{ __('site.tool.more') }} <a href="{{ route('tools') }}" class="font-semibold text-action-dark underline">{{ __('footer.tools') }}</a></p>
 </section>

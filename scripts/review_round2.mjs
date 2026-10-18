@@ -105,6 +105,9 @@ const FLOWS = {
     'bad-file': [['go', '/'], ['file', '#file-input', FIXTURES.broken], ['wait', 12000], ['shot']],
     // the calculation keeps what was set: 3 pieces, recalculated, the page reloaded (and back from the next page)
     'calc-keep': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 20000], ['type', '#quantity', '3'], ['click', '#cta-recalc'], ['wait', 12000], ['read', "document.getElementById('quantity').value + ' ks, ' + location.pathname"], ['reload'], ['wait', 6000], ['read', "document.getElementById('quantity').value + ' ks, ' + location.pathname + ', ' + document.getElementById('status').textContent"], ['shot']],
+    // what a tool's default model costs on the farm (docs/AH.md §11, the "how it turned out" numbers): price-<tool>
+    ...Object.fromEntries(['qr', 'organizer', 'box', 'sign', 'modular'].map((t) => [`price-${t}`, [['go', `/tools/${t}`], ['wait', 6000], ['nav'], ['click', '#tool-go'], ['wait', 30000],
+        ['read', "[location.pathname, document.getElementById('price-main')?.textContent, document.getElementById('price-orient')?.textContent, document.getElementById('dims-badge')?.textContent, document.getElementById('stat-grams')?.textContent, document.getElementById('status')?.textContent].map((x) => (x || '').trim()).join(' | ')"]]])),
     'photo-limit': [['go', '/tools/relief'], ['wait', 3000], ['file', '#relief-photo', FIXTURES.big], ['wait', 1000], ['click', '#relief-form button.btn-ink'], ['wait', 4000], ['shot']],
 };
 

@@ -3,13 +3,14 @@
  * into view, one shared off-screen 3D viewer draws it, the picture goes into the <img> and is sent to the server
  * (data-thumb-store), so the next visit gets a plain image. One at a time: browsers allow only a few 3D contexts.
  */
-import { Viewer } from '../calc/viewer';
-import { loadGeometryFromUrl } from '../calc/loaders';
+// the 3D viewer comes with the first picture to draw, not with every page (docs/AH.md §11)
+import type { Viewer } from '../calc/viewer';
 
 let viewer: Viewer | null = null;
 
-function stage(): Viewer {
+async function stage(): Promise<Viewer> {
     if (viewer) return viewer;
+    const { Viewer } = await import('../calc/viewer');
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-hidden', 'true');
     canvas.style.cssText = 'position:fixed;left:-9999px;top:0;width:480px;height:360px;pointer-events:none';
@@ -19,8 +20,9 @@ function stage(): Viewer {
 }
 
 async function draw(img: HTMLImageElement): Promise<void> {
+    const { loadGeometryFromUrl } = await import('../calc/loaders');
     const geometry = await loadGeometryFromUrl(img.dataset.thumbStl as string);
-    const v = stage();
+    const v = await stage();
     v.setGeometry(geometry, 1, img.dataset.thumbKind ?? null);
     const picture = await v.snapshot();
     if (!picture) return;

@@ -1,0 +1,17 @@
+{
+    "site.examples.item.qr": [
+        "QR cedulka se stojánkem, :size",
+        "QR sign with a stand, :size",
+        "Cartel QR con soporte, :size"
+    ],
+    "site.examples.item.organizer": [
+        "Organizér do zásuvky, :size",
+        "Drawer organiser, :size",
+        "Organizador de cajón, :size"
+    ],
+    "site.examples.item.box": [
+        "Krabička s víčkem, :size",
+        "Box with a lid, :size",
+        "Caja con tapa, :size"
+    ]
+}
