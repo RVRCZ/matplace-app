@@ -193,6 +193,7 @@ class FarmCatalogController extends Controller
             'timelapse.crop_x' => ['nullable', 'integer', 'min:0', 'max:8000'],
             'timelapse.crop_y' => ['nullable', 'integer', 'min:0', 'max:8000'],
             'timelapse.crop_size' => ['nullable', 'integer', 'min:100', 'max:8000'],
+            'timelapse.sync' => ['nullable', 'boolean'],
             'slots' => ['nullable', 'array', 'max:16'],
             'slots.*.color' => ['nullable', function (string $attr, mixed $value, \Closure $fail) {
                 if ($value !== 'new' && ! FarmColor::whereKey($value)->exists()) {

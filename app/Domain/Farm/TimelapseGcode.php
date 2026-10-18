@@ -63,6 +63,9 @@ final class TimelapseGcode
         $dwell = max(300, min(5000, (int) ($o['dwell_ms'] ?? 1000)));
         $lift = max(0.2, min(5.0, (float) ($o['lift_mm'] ?? 0.6)));
         $travel = (int) round(60 * max(50, min(600, (float) ($o['travel_mm_s'] ?? 200))));
+        // a firmware that counts the layer when it READS ";LAYER_CHANGE" (Kobra X, docs/AM.md §7) reports it while the
+        // head is still printing the old layer: M400 right before the marker makes the report wait for the head
+        $sync = ! empty($o['sync']);
 
         $z = 0.0;
         $f = null;
@@ -71,8 +74,11 @@ final class TimelapseGcode
         $frames = 0;
         $absoluteE = false;
         for ($raw = $first; $raw !== false; $raw = fgets($in)) {
-            fwrite($out, $raw);
             $line = rtrim($raw, "\r\n");
+            if ($sync && $seen >= 1 && str_starts_with($line, ';LAYER_CHANGE')) {
+                fwrite($out, "M400 ; matplace timelapse: the layer is finished before the firmware reads the marker\n");
+            }
+            fwrite($out, $raw);
             if (str_starts_with($line, 'G1 ') || str_starts_with($line, 'G0 ')) {
                 $code = strstr($line, ';', true);
                 $code = $code === false ? $line : $code;
@@ -121,7 +127,7 @@ final class TimelapseGcode
             return null;
         }
 
-        return sprintf('%s park_x=%s park_y=%s dwell=%d travel=%d frames=%d', self::HEADER, $px, $py, $dwell, (int) round($travel / 60), $frames);
+        return sprintf('%s park_x=%s park_y=%s dwell=%d travel=%d frames=%d', self::HEADER, $px, $py, $dwell, (int) round($travel / 60), $frames).($sync ? ' sync=m400' : '');
     }
 
     /** Park position and dwell written by apply(), for the agent and the tests; null for an untouched file. */

@@ -68,7 +68,7 @@ class FarmPrinter extends Model
     {
         return array_merge([
             'mode' => $this->exists ? 'off' : 'consent', 'park_x' => (float) $this->bed_x, 'park_y' => (float) $this->bed_y, 'dwell_ms' => 1000, 'lift_mm' => 0.6,
-            'travel_mm_s' => 200, 'crop_x' => null, 'crop_y' => null, 'crop_size' => null,
+            'travel_mm_s' => 200, 'sync' => false, 'crop_x' => null, 'crop_y' => null, 'crop_size' => null,
         ], array_filter((array) $this->timelapse, fn ($v) => $v !== null && $v !== ''));
     }
 

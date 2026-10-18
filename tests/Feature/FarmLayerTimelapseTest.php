@@ -72,6 +72,23 @@ GCODE;
         $this->assertSame($out, TimelapseGcode::apply($out, ['park_x' => 1, 'park_y' => 1]), 'applied once only');
     }
 
+    /** Kobra X: the firmware reports a layer when it reads ";LAYER_CHANGE", so with `sync` the head finishes the layer first (M400). */
+    public function test_sync_makes_the_firmware_wait_for_the_head_before_every_layer_marker_but_the_first(): void
+    {
+        $out = TimelapseGcode::apply(self::ORCA, ['park_x' => 0, 'park_y' => 130, 'dwell_ms' => 3000, 'sync' => true]);
+
+        $this->assertSame(['park_x' => 0.0, 'park_y' => 130.0, 'dwell_ms' => 3000, 'travel_mm_s' => 200, 'frames' => 2], TimelapseGcode::header($out));
+        $this->assertStringStartsWith('; matplace timelapse park_x=0 park_y=130 dwell=3000 travel=200 frames=2 sync=m400', $out);
+        $this->assertStringContainsString("M83 ; use relative distances for extrusion\n;LAYER_CHANGE\n;Z:0.2", $out, 'no wait before the first layer');
+        $this->assertStringContainsString("G1 X100 Y100 E.5 F3000\nM400 ; matplace timelapse: the layer is finished before the firmware reads the marker\n;LAYER_CHANGE\n;Z:0.4", $out);
+        $this->assertStringContainsString("G1 X110 Y100 E.5 F3000\nM400 ; matplace timelapse: the layer is finished before the firmware reads the marker\n;LAYER_CHANGE\n;Z:0.6", $out);
+        $this->assertSame(2, substr_count($out, 'M400'));
+        $this->assertStringNotContainsString('M400', TimelapseGcode::apply(self::ORCA, ['park_x' => 0, 'park_y' => 130]), 'off without the option');
+        // the printer's setting: off unless the admin ticked it
+        $this->assertFalse((new FarmPrinter)->timelapseSettings()['sync']);
+        $this->assertTrue((new FarmPrinter(['timelapse' => ['sync' => '1']]))->timelapseSettings()['sync'] === '1');
+    }
+
     public function test_parking_time_is_counted_per_stop(): void
     {
         // 2 stops, 170 mm from the middle of a 250 mm plate to (240, 250): 1.2 s dwell + 1.7 s there and back + lift ≈ 3.3 s each

@@ -80,6 +80,7 @@
             <label class="{{ $lb }}">Short – výřez X, Y (px)
                 <span class="flex gap-2"><input type="number" min="0" name="timelapse[crop_x]" value="{{ old('timelapse.crop_x', $tl['crop_x']) }}" class="{{ $in }}"><input type="number" min="0" name="timelapse[crop_y]" value="{{ old('timelapse.crop_y', $tl['crop_y']) }}" class="{{ $in }}"></span></label>
             <label class="{{ $lb }}">Short – strana čtverce (px)<input type="number" min="100" name="timelapse[crop_size]" value="{{ old('timelapse.crop_size', $tl['crop_size']) }}" class="{{ $in }}"></label>
+            <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="timelapse[sync]" value="1" @checked(old('timelapse.sync', $tl['sync'] ?? false))> Vrstva až po dojetí hlavy (M400; Kobra X hlásí vrstvu už při čtení G‑kódu)</label>
         </div>
         @if($printer->exists && $printer->snapshot_path)
             {{-- the Short's square over the last camera picture; follows the fields while typing --}}
