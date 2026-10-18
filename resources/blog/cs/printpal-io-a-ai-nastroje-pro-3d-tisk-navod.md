@@ -47,7 +47,7 @@ Na většinu těchto úloh má matplace.com vlastní nástroj zdarma, s cenou ti
 | Figurku mazlíčka z fotky | PrintPal.io | [Figurka mazlíčka z fotky](/tools/pet-figurine) |
 | Bustu člověka z fotky | Meshy (obrázek na 3D) | [Busta nebo figurka z fotky](/tools/figure) |
 | Model z popisu | Meshy, PrintPal.io | [hlavní stránka](/), „Mám fotku nebo nápad“ |
-| 3D mapu města | PrintPal.io | [3D mapa města nebo krajiny](/tools/map) |
+| 3D mapu města | PrintPal.io | [3D mapa města nebo krajiny](/tools/map), návod [3D mapa z OpenStreetMap](/blog/3d-mapa-mesta-z-openstreetmap) |
 | Jmenovku, nápis | PrintPal.io | [Cedulka, jmenovka, klíčenka](/tools/sign), [3D nápis](/tools/text) |
 | QR cedulku s Wi‑Fi | PrintPal.io (jmenovky) | [QR cedulka a stojánek](/tools/qr) |
 | Vázu podle rozměrů | Sloyd | [Váza a obal na květináč](/tools/vase) |

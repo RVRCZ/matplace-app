@@ -385,3 +385,43 @@ nahradíte řádkem `![popis](/img/blog/<slug>/<název>.webp)`, stejně jako v �
 | krabicka-na-miru | krabička s nasazeným a sundaným víčkem |
 
 Obálky (`cover`) nových článků jsou prázdné. Náhled pro sdílení kreslí `route('og')`, jako u článků bez obálky.
+
+### 5.6 Druhá dávka článků k nástrojům
+
+Druhou dávku vybrala řídící session 18. 10. Pravidla jsou stejná jako u první (§5.5). Nové články mají
+`published_at` 18. 10. 2026 21:00 UTC.
+
+| článek (slug) | `article` u nástroje | čísla (kalkulace na produkci 18. 10., PLA+) |
+|---|---|---|
+| `stojanek-na-telefon-na-miru` | `phone_stand` | klín 80 mm 60° 39 g 1 h 8 min 120 Kč; A‑rám 75 mm 65° 65 g 1 h 45 min 170 Kč |
+| `vaza-a-obal-na-kvetinac-na-miru` | `vase` | hladká 160 mm 76 g 1 h 57 min 190 Kč; spirálová 180 mm 80 g 5 h 7 min 280 Kč; obal 120 mm s drenáží 99 g 3 h 45 min 260 Kč |
+| `cedulka-jmenovka-a-klicenka-se-jmenem` | `sign`, `text` | klíčenka „Jana“ 2 g 5 min 99 Kč; 10 klíčenek 99 Kč celkem; „Ela“ 99 Kč; cedulka „Novákovi 12“ 173 × 69 mm 30 g 46 min 99 Kč |
+| `3d-mapa-mesta-z-openstreetmap` | `map` | Staré Město 500 m, deska 150 mm, Hladká: 85 g 3 h 42 min 240 Kč (jedna barva) |
+| `litofanie-z-fotky` | `relief` | panel 100 × 75 mm se stojánkem 27 g 1 h 9 min 100 Kč; lampa E27 ⌀ 100 × 150 mm 111 g 2 h 29 min 250 Kč |
+
+**Jak čísla vznikla**:
+- Nástroje se volaly na produkci jako u návštěvníka: `/api/tools/param`, `/api/tools/map` a `/api/tools/relief`.
+- Litofanie vznikla z vygenerovaného obrázku s přechodem, ne z fotky člověka.
+- Celkem to bylo 13 modelů a 13 výpočtů, User-Agent `matplace-session1-blog`.
+- Obal na květináč s podmiskou hlásí `exceeds_typical_bed`: oba díly vedle sebe měří 287 mm. V článku je proto
+  cena bez podmisky a věta o upozornění kalkulace.
+
+**Odkazy ze starších článků na nové**:
+- fotky → litofanie,
+- AI → stojánek, váza, cedulka a mapa,
+- printpal → mapa.
+
+**Fotky výtisků** (zástupná místa `<!-- foto: … -->`, postup jako v §5.5):
+
+| článek | fotka |
+|---|---|
+| stojanek-na-telefon-na-miru | vytištěný stojánek A‑rám s telefonem na pracovním stole |
+| stojanek-na-telefon-na-miru | nízký klín s telefonem a vlnka vedle sebe |
+| vaza-a-obal-na-kvetinac-na-miru | spirálová váza z PLA Silk se sušenými květinami |
+| vaza-a-obal-na-kvetinac-na-miru | hladká a žebrovaná váza vedle sebe |
+| cedulka-jmenovka-a-klicenka-se-jmenem | klíčenky se jmény ve dvou barvách a cedulka na dveře |
+| cedulka-jmenovka-a-klicenka-se-jmenem | detail dvoubarevné cedulky, písmo jinou barvou než deska |
+| 3d-mapa-mesta-z-openstreetmap | vytištěná 3D mapa městského centra ve třech barvách |
+| 3d-mapa-mesta-z-openstreetmap | detail mapy, budovy, silnice a řeka v různých barvách |
+| litofanie-z-fotky | litofanie s portrétem proti oknu, vedle stejná destička bez světla |
+| litofanie-z-fotky | lampa s fotkou kolem dokola, rozsvícená |

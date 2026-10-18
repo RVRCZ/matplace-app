@@ -58,7 +58,7 @@ return [
         ['params' => ['inner_w' => 40, 'inner_d' => 40, 'inner_h' => 20, 'lid' => false, 'radius' => 8]],
     ]]],
     // `design`: the page has the field "describe what it should look like" (App\Domain\Tools\DesignAgent)
-    'phone_stand' => ['route' => 'tools.phone_stand', 'intent' => 'create', 'categories' => ['home'], 'available' => true, 'design' => true, 'seo' => ['examples' => [
+    'phone_stand' => ['route' => 'tools.phone_stand', 'intent' => 'create', 'categories' => ['home'], 'available' => true, 'article' => 'stojanek-na-telefon-na-miru', 'design' => true, 'seo' => ['examples' => [
         ['params' => ['style' => 'desk', 'width' => 75, 'angle' => 65]],
         ['params' => ['style' => 'wedge', 'width' => 80, 'angle' => 60, 'depth' => 70]],
         ['params' => ['style' => 'wall', 'width' => 80, 'screws' => true]],
@@ -83,7 +83,7 @@ return [
         ['params' => ['count' => 2, 'cable' => 10, 'wall' => 8]],
         ['params' => ['count' => 6, 'cable' => 4, 'screws' => true]],
     ]]],
-    'vase' => ['route' => 'tools.vase', 'intent' => 'create', 'categories' => ['home', 'craft'], 'available' => true, 'seo' => ['examples' => [
+    'vase' => ['route' => 'tools.vase', 'intent' => 'create', 'categories' => ['home', 'craft'], 'available' => true, 'article' => 'vaza-a-obal-na-kvetinac-na-miru', 'seo' => ['examples' => [
         ['preset' => 'spiral'],
         ['preset' => 'smooth'],
         ['preset' => 'pot', 'params' => ['saucer' => true, 'drainage' => true]],
@@ -93,10 +93,10 @@ return [
     // session D (docs/X.md): a pet figurine from a photo, on top of the figure tool. A generator makes it, so it has no
     // examples of its own (as the figure has none)
     'pet' => ['route' => 'tools.pet', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'article' => 'figurka-z-fotky-busta-a-mazlicek', 'seo' => ['examples' => []]],
-    'relief' => ['route' => 'tools.relief', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => []]],
+    'relief' => ['route' => 'tools.relief', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'article' => 'litofanie-z-fotky', 'seo' => ['examples' => []]],
     'gifts' => ['route' => 'tools.gifts', 'intent' => 'create', 'categories' => ['names'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['kind' => 'sign', 'preset' => 'keyring', 'params' => ['line1' => 'Ela']]],
-    'sign' => ['route' => 'tools.sign', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true, 'seo' => ['examples' => [
+    'sign' => ['route' => 'tools.sign', 'intent' => 'create', 'categories' => ['names', 'signs'], 'available' => true, 'article' => 'cedulka-jmenovka-a-klicenka-se-jmenem', 'seo' => ['examples' => [
         ['preset' => 'keyring', 'params' => ['line1' => 'Jana']],
         ['preset' => 'door', 'params' => ['line1' => 'Novákovi', 'line2' => '12']],
         ['preset' => 'name', 'params' => ['line1' => 'Ela']],
@@ -113,7 +113,7 @@ return [
             ]]],
             ['preset' => 'cloud'],
         ]]],
-    'text' => ['route' => 'tools.text', 'intent' => 'create', 'categories' => ['names', 'signs', 'home'], 'available' => true,
+    'text' => ['route' => 'tools.text', 'intent' => 'create', 'categories' => ['names', 'signs', 'home'], 'available' => true, 'article' => 'cedulka-jmenovka-a-klicenka-se-jmenem',
         'card' => ['kind' => 'sign', 'preset' => 'stand', 'params' => ['line1' => 'HOME']],
         'seo' => ['kind' => 'sign', 'examples' => [
             ['preset' => 'stand', 'params' => ['line1' => 'HOME']],
@@ -300,7 +300,7 @@ return [
     ]]],
     // session B (docs/W.md): a 3D map of a city or a landscape from open data. The examples are drawn from the fixture of
     // the tests (tests/fixtures/maps), so that `matplace:tool-examples map` needs no network; `fixture` names it
-    'map' => ['route' => 'tools.map', 'intent' => 'create', 'categories' => ['home', 'craft'], 'available' => true, 'seo' => ['examples' => [
+    'map' => ['route' => 'tools.map', 'intent' => 'create', 'categories' => ['home', 'craft'], 'available' => true, 'article' => '3d-mapa-mesta-z-openstreetmap', 'seo' => ['examples' => [
         ['fixture' => 'mesto', 'params' => ['lat' => 50.0875, 'lon' => 14.4213, 'type' => 'city', 'style' => 'sleek', 'side' => '500', 'size' => 150, 'name' => 'Staré Město']],
         ['fixture' => 'mesto', 'params' => ['lat' => 50.0875, 'lon' => 14.4213, 'type' => 'city', 'style' => 'miniature', 'side' => '500', 'size' => 150, 'name' => 'Staré Město', 'green' => true]],
         ['fixture' => 'mesto', 'params' => ['lat' => 50.0875, 'lon' => 14.4213, 'type' => 'landscape', 'style' => 'sleek', 'side' => '5000', 'size' => 150, 'name' => 'Kopec', 'exaggeration' => 2]],
