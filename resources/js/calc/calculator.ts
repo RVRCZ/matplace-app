@@ -4,7 +4,7 @@ import { moldReport } from './mold';
 import { Viewer, twoColorRegions, Piece } from './viewer';
 import { loadGeometry, loadGeometryFromUrl, extensionOf, BROWSER_FORMATS } from './loaders';
 import { stats, normaliseUnits, GeoStats } from './geometry';
-import { estimate, price, range, RoughConfig, Profile, Params } from './rough';
+import { estimate, price, profilesFor, range, RoughConfig, Profile, Params } from './rough';
 import { uploadFile, createCalculation, getCalculation, getFile, CalcInfo, FileInfo } from './api';
 import { bootInquiry } from './inquiry';
 import { renderCheck } from './check';
@@ -182,7 +182,8 @@ function renderRough(): void {
     const g = state.geo ?? (state.file && state.file.volume_mm3 != null ? { volume_mm3: state.file.volume_mm3, area_mm2: state.file.area_mm2, bbox: state.file.bbox!, triangles: 0 } : null);
     if (!g) return;
     const est = estimate(cfg.rough, material(state.params.material).density, { volume_mm3: g.volume_mm3, area_mm2: g.area_mm2 }, state.params);
-    const bds = cfg.orientation_profiles.map((p) => price(cfg.round_to, p, est.grams, est.minutes, state.params.quantity));
+    // the farm's list of this very material (one per material, the kind it would print it with); every list on the marketplace
+    const bds = profilesFor(cfg.orientation_profiles, state.params.material).map((p) => price(cfg.round_to, p, est.grams, est.minutes, state.params.quantity));
     const q = state.params.quantity;
     const s = state.params.scale;
     $('dims-badge').textContent = `${fmt.format(g.bbox.x * s)} × ${fmt.format(g.bbox.y * s)} × ${fmt.format(g.bbox.z * s)} mm`;
@@ -231,8 +232,12 @@ function renderCompare(base: { grams: number; minutes: number } | null, precise:
         const minutes = Math.max(1, Math.round(base.minutes * (p.time / cur.props!.time)));
         let cost = '';
         if (priced) {
-            const totals = cfg.orientation_profiles.map((prof) => price(cfg.round_to, { ...prof, price_per_gram: prof.price_per_gram * (p.price / cur.props!.price) }, grams, minutes, q).total);
-            cost = `<td class="py-1 pr-2 font-semibold">${same && precise ? '' : '≈ '}${priceText(Math.min(...totals))}</td>`;
+            // the farm names a list per material (its price per gram in the kind it would print that material with); the marketplace's
+            // lists are scaled by the material's price factor against the chosen one
+            const own = cfg.orientation_profiles.some((prof) => prof.material);
+            const profs = own ? profilesFor(cfg.orientation_profiles, m.code) : cfg.orientation_profiles.map((prof) => ({ ...prof, price_per_gram: prof.price_per_gram * (p.price / cur.props!.price) }));
+            const totals = profs.map((prof) => price(cfg.round_to, prof, grams, minutes, q).total);
+            cost = `<td class="py-1 pr-2 font-semibold">${totals.length ? `${same && precise ? '' : '≈ '}${priceText(Math.min(...totals))}` : '—'}</td>`;
         }
         const dots = '●'.repeat(p.strength) + '○'.repeat(Math.max(0, 3 - p.strength));
         return `<tr data-material="${m.code}" class="cursor-pointer border-t border-slate-100 ${same ? 'bg-action-soft' : 'hover:bg-slate-50'}" title="${same ? t('compare.chosen') : t('compare.pick')}">`
@@ -262,8 +267,8 @@ function orientPrice(r: [number, number] | null, rough: boolean): void {
     el.textContent = t('calc.price.orient', { price: `${rough ? '≈ ' : ''}${txt}` }) + (q > 1 ? ` ${t('calc.price.per_piece')} ≈ ${priceText(Math.round(r[0] / q))}.` : '');
     el.classList.remove('hidden');
 }
-// the farm's single price list: the calculator prices like the marketplace does, with one list
-const farmPriced = () => !marketplace() && cfg.orientation_profiles.length === 1 && cfg.orientation_profiles[0].key === 'farm';
+// the farm's own price list (one per material): the calculator prices like the marketplace does, with that list
+const farmPriced = () => !marketplace() && cfg.orientation_profiles.length > 0 && cfg.orientation_profiles.every((p) => p.key === 'farm');
 
 /**
  * Without the marketplace the result card is about the print, not about money: the headline is the print time,

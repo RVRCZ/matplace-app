@@ -25,6 +25,21 @@ export interface Profile {
     lead_time_days: number;
     qty_discounts?: { from: number; pct: number }[];
     time_factor?: number;
+    /** the farm's list for one calculator material (its kind of that material, or the cheapest kind weighed as that kind); absent on marketplace lists */
+    material?: string;
+    label?: string;
+}
+
+/**
+ * The lists that price a material: the farm sends one list per material (price per gram already in the kind it would
+ * print with), so the instant estimate and the exact price count with the same kind; lists without a material (the
+ * marketplace's) apply to every material. A material no list names (resin on an FDM farm) gets none.
+ */
+export function profilesFor(profiles: Profile[], material: string): Profile[] {
+    const own = profiles.filter((p) => p.material);
+    if (!own.length) return profiles;
+    const code = material.toUpperCase();
+    return own.filter((p) => (p.material ?? '').toUpperCase() === code);
 }
 
 export interface Params {

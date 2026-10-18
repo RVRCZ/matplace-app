@@ -15,6 +15,29 @@ use Illuminate\Http\JsonResponse;
 /** Constants the browser needs for the instant estimate and the form (also inlined into the page). */
 class ConfigController extends Controller
 {
+    /**
+     * The farm's price list for every FDM material of the calculator, each marked with its material: the kind of that
+     * material when one is loaded, else the cheapest loaded kind weighed as that material (FarmPricingProfile). Empty
+     * when the marketplace is on, the farm is off or nothing is loaded.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function farmProfiles(MaterialCatalog $materials): array
+    {
+        if (config('features.marketplace') || ! config('farm.enabled')) {
+            return [];
+        }
+        $farm = app(FarmPricingProfile::class);
+        $out = [];
+        foreach ($materials->all() as $m) {
+            if (($m['technology'] ?? 'fdm') === 'fdm' && ($profile = $farm->toArray((string) $m['code']))) {
+                $out[] = $profile + ['material' => (string) $m['code']];
+            }
+        }
+
+        return $out;
+    }
+
     /** @param  bool  $colors  the filament palette too (tool pages and the API; the calculator does not need its 250 rows) */
     public static function payload(MaterialCatalog $materials, ConverterChain $converters, bool $colors = false): array
     {
@@ -30,7 +53,9 @@ class ConfigController extends Controller
             'marketplace' => (bool) config('features.marketplace'),   // false: no prices in the calculator, only the slicer's facts
             'farm' => (bool) config('farm.enabled'),
             'rough' => config('pricing.rough'),
-            'orientation_profiles' => (! config('features.marketplace') && config('farm.enabled') && ($fp = app(FarmPricingProfile::class)->toArray())) ? [$fp] : config('pricing.orientation_profiles'),
+            // the farm's list per material, so the instant estimate counts with the kind the exact price will (FarmPricingProfile);
+            // the marketplace's orientation lists when there is no farm price at all
+            'orientation_profiles' => self::farmProfiles($materials) ?: config('pricing.orientation_profiles'),
             'round_to' => config('pricing.round_to'),
             'currency' => config('pricing.currency'),
             'max_scale' => config('pricing.max_scale'),
