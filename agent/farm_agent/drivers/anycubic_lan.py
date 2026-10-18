@@ -259,7 +259,10 @@ class AnycubicLanDriver(PrinterDriver):
         self._park: Optional[tuple] = None          # (x, y, dwell s, travel mm/s)
         self._layer: Optional[int] = None
         self._layer_at: float = 0.0
-        self.layer_window = float(options.get("layer_window", 0))   # seconds head() reports the park after a change; 0 = dwell + 1
+        self.layer_window = float(options.get("layer_window", 0))   # by hand: seconds head() reports the park after a report (0 = measured timing)
+        self.park_lead_min = float(options.get("park_lead_min", 2.2))   # the head reaches the park this long after the report at the earliest
+        self.park_lead = float(options.get("park_lead", 4.0))           # ... and at the latest (measured 2.2-4.0 s, docs/AM.md §7d)
+        self.park_window_min = float(options.get("park_window_min", 0.5))   # a sure window shorter than this is no use (the agent looks every 0.25 s)
         self._urls: dict = {}
         self._opening = asyncio.Lock()
 
@@ -478,14 +481,27 @@ class AnycubicLanDriver(PrinterDriver):
         log.info("%s: dryer %s", self.key, f"{temp} °C for {minutes} min" if on else "off")
 
     async def head(self) -> Optional[tuple[float, float, Optional[float]]]:
-        """The park position while the head should stand there: the farm's G-code parks the head after every layer
-        (its first line says where and for how long), and the printer reports the new layer within about two seconds
-        (print/report every ~2 s, no coordinates; docs/AM.md §7). Reported as a planned position (speed None), so the
-        agent takes a burst of pictures and keeps the stillest. None otherwise, so the agent sees the head leave."""
+        """Where the head is, as far as a printer without coordinates lets us say (docs/AM.md §7d). The farm's G-code
+        parks the head after every layer (its first line says where and for how long). The printer reports the new
+        layer when it reads the G-code, 2.2-4.0 s BEFORE the head reaches the park (the planner runs ahead; measured
+        on 11 layers, 18 Oct 2026). So, with the report at T and the dwell D:
+          - D long enough for a sure window (D >= park_lead - park_lead_min + 0.5 s, i.e. 3 s): the park is reported
+            as a real, standing position (speed 0) during [T + park_lead, T + park_lead_min + D], and the agent takes
+            one picture there;
+          - a shorter D: the park is reported as a planned position (speed None) from T + park_lead_min for D + the
+            spread, and the agent takes a burst of pictures and keeps the stillest (less sure on small parts).
+        None outside, so the agent sees the head leave."""
         if not self._park or self._layer is None:
             return None
-        window = self.layer_window or (self._park[2] + 1.0)
-        if time.monotonic() - self._layer_at <= window:
+        since = time.monotonic() - self._layer_at
+        dwell = self._park[2]
+        if self.layer_window:                                   # a window set by hand: planned position, as before
+            return (self._park[0], self._park[1], None) if since <= self.layer_window else None
+        sure_from, sure_to = self.park_lead, self.park_lead_min + dwell
+        if sure_to - sure_from >= self.park_window_min:
+            return (self._park[0], self._park[1], 0.0) if sure_from <= since <= sure_to else None
+        spread = self.park_lead - self.park_lead_min
+        if self.park_lead_min <= since <= self.park_lead_min + dwell + spread:
             return self._park[0], self._park[1], None
         return None
 
