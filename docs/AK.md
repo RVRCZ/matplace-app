@@ -106,4 +106,5 @@ adresní řádek s odkazem na zakázku a boční lišta Firefoxu. Obsah je vlož
    - zkopírovat `out\*.mp4` na server,
    - spustit `php artisan farm:howto-video scripts/video/howto.json --out=<složka> --skip-build --queue`,
    - Roman schválí v `/admin/youtube`.
-5. Titulky SRT se na YouTube nahrávají ručně ve Studiu (API je neposílá); vypálené v obraze jsou tak jako tak.
+5. Celá sada 689 testů OK (s ffmpeg 9.0.2), `pint`, `tsc`, `npm run build` čisté.
+6. Titulky SRT se na YouTube nahrávají ručně ve Studiu (API je neposílá); vypálené v obraze jsou tak jako tak.
