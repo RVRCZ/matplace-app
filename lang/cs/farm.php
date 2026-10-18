@@ -2,8 +2,8 @@
 
 return [
     'price_label' => 'Tisk u nás (:material)',
-    'cta' => 'VYTISKNOUT',
-    'cta_hint' => 'Tiskárnu si na dobu tisku pronajmete: tiskne se váš soubor. Platíte kreditem, tisk se spustí hned, jak je tiskárna volná.',
+    'cta' => 'Objednat tisk',
+    'cta_hint' => 'Zatím nic neplatíte: otevře se objednávka, kde vyberete barvu a doručení a uvidíte konečnou cenu. Platí se až na jejím konci, kreditem nebo kartou.',
     'calc_parts_by_colour' => 'Díly mají různé barvy: u nás se každý díl vytiskne zvlášť ze své cívky, jeden tisk za druhým, cena je za všechny díly. Pro tisk doma stáhněte projekt s barvami.',
     'calc_nearest' => 'U nás vytiskneme: :list',
     'calc_nearest_out' => '(není skladem)',

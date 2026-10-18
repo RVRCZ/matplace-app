@@ -1,19 +1,20 @@
 {{-- The one working entrance: drop a file, take a photo or describe it. Ids are used by calculator.ts and search.ts. --}}
-        <label id="dropzone" class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-action bg-white px-4 py-8 text-center transition hover:border-action hover:bg-action-soft">
-            <svg class="h-10 w-10 text-action" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-            <span class="mt-3 text-lg font-semibold">{{ __('hero.drop') }}</span>
-            <span class="mt-1 text-sm text-slate-500">{{ __('hero.formats', ['formats' => $formats, 'max' => $config['max_upload_mb']]) }}</span>
+        <label id="dropzone" class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-action bg-white px-4 py-5 text-center sm:py-8 transition hover:border-action hover:bg-action-soft">
+            <svg class="h-8 w-8 text-action sm:h-10 sm:w-10" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+            <span class="mt-2 text-lg font-semibold sm:mt-3">{{ __('hero.drop') }}</span>
+            {{-- the common formats and the limit; the whole list on a hover and for a screen reader (audit 10/2026, bod 3) --}}
+            <span class="mt-1 text-sm text-slate-500" title="{{ $formats }}">{{ __('hero.formats_short', ['max' => $config['max_upload_mb']]) }}<span class="sr-only"> ({{ $formats }})</span></span>
             <input id="file-input" type="file" class="sr-only" accept="{{ implode(',', array_map(fn ($f) => '.' . $f, $config['formats'])) }}">
         </label>
 
         <div class="mt-3 flex flex-wrap gap-2 text-sm {{ !empty($centered) ? 'justify-center' : '' }}">
-            <button type="button" class="rounded-full bg-action px-4 py-2 font-semibold text-white" onclick="document.getElementById('file-input').click()">{{ __('hero.choose_file') }}</button>
+            <button type="button" class="min-h-11 rounded-full bg-action px-4 py-2 font-semibold text-white" onclick="document.getElementById('file-input').click()">{{ __('hero.choose_file') }}</button>
             @if($mode !== 'printer')
                 @if($config['vision'])
-                    <button type="button" id="hero-photo-btn" class="inline-flex items-center gap-1.5 rounded-full border border-action bg-white px-4 py-2 font-semibold text-action-dark"><x-icon name="camera" class="h-4 w-4" />{{ __('hero.photo') }}</button>
+                    <button type="button" id="hero-photo-btn" class="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-action bg-white px-4 py-2 font-semibold text-action-dark"><x-icon name="camera" class="h-4 w-4" />{{ __('hero.photo') }}</button>
                     <input id="photo-input" type="file" accept="image/*" capture="environment" class="sr-only">
                 @endif
-                <button type="button" id="hero-text-btn" class="inline-flex items-center gap-1.5 rounded-full border border-action bg-white px-4 py-2 font-semibold text-action-dark"><x-icon name="type" class="h-4 w-4" />{{ __('hero.text') }}</button>
+                <button type="button" id="hero-text-btn" class="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-action bg-white px-4 py-2 font-semibold text-action-dark"><x-icon name="type" class="h-4 w-4" />{{ __('hero.text') }}</button>
             @endif
         </div>
         <form id="search-form" class="mt-3 hidden gap-2 sm:flex">

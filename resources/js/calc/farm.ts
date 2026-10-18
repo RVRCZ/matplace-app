@@ -58,21 +58,25 @@ export function bootFarmCta(): void {
     const note = $('cta-farm-note');
     const wait = note?.textContent ?? '';
     btn.addEventListener('click', async () => {
-        // the calculator rewrites the address to /c/{token} once the calculation exists
-        const m = location.pathname.match(/^\/c\/([A-Za-z0-9_-]+)/);
+        // the calculator rewrites the address to /c/{token} (/en/c/{token} in another language) once the calculation exists
+        const m = location.pathname.match(/^(?:\/[a-z]{2})?\/c\/([A-Za-z0-9_-]+)/);
         if (!m) { if (note) note.textContent = wait; show(note, true); return; }
         const start = `${btn.dataset.url}?calc=${encodeURIComponent(m[1])}`;
         // a guest signs in first and goes on from the start page
         if (!btn.dataset.store) { location.href = start; return; }
-        // signed in: the order is made now and its page opens (material, settings, colours, price)
+        // signed in: the order is made now and its page opens (material, settings, colours, price); the button says it works
+        const label = btn.innerHTML;
         btn.disabled = true; show(note, false);
+        btn.textContent = btn.dataset.busy || label;
+        btn.setAttribute('aria-busy', 'true');
+        const done = (): void => { btn.innerHTML = label; btn.disabled = false; btn.removeAttribute('aria-busy'); };
         try {
             const csrf = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
             const res = await fetch(btn.dataset.store, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify({ calc: m[1], copies: Number((document.getElementById('quantity') as HTMLInputElement | null)?.value) || undefined }) });
             const json = await res.json().catch(() => ({})) as { url?: string; message?: string };
             if (res.ok && json.url) { location.href = json.url; return; }
             // the farm said why not (closed, daily limit, e-mail not confirmed…): said here, the button stays
-            if ((res.status === 422 || res.status === 403) && json.message) { if (note) note.textContent = json.message; show(note, true); btn.disabled = false; return; }
+            if ((res.status === 422 || res.status === 403) && json.message) { if (note) note.textContent = json.message; show(note, true); done(); return; }
         } catch { /* offline for a moment: the start page tries again */ }
         location.href = start;
     });
@@ -490,6 +494,28 @@ export function bootFarmOrder(): void {
             + (ship > 0 ? row(tr('farm.order.b_shipping'), ship) : '') + row(tr('farm.order.b_total'), (total() ?? p.total), true);
     };
 
+    // what the price was made of before a new calculation: said again when the new one comes back with another price
+    let before: { total: number | null; printer: string | null; kind: string | null; minutes: number | null; settings: string } | null = null;
+    const kindOf = (): string | null => state.colors.find((c) => c.slot === picked)?.kind ?? null;
+    const settingsKey = (): string => [state.quality, state.strength, state.supports_mode, state.copies, state.scale, state.unit, !!state.by_parts, settingsOf(state.settings)].join('|');
+    const sayWhy = (): void => {
+        const box = $('farm-price-why');
+        if (!box || !before || state.status !== 'sliced') return;
+        const now = total();
+        if (now === null) return;                                       // the delivery quote is not back yet
+        const was = before; before = null;
+        if (was.total === null || Math.abs(now - was.total) < 0.005) { show(box, false); return; }
+        const printer = state.printer?.name ?? null;
+        const kind = kindOf();
+        const reasons = [
+            printer && was.printer && printer !== was.printer ? tr('farm.order.why.printer', { from: was.printer, to: printer }) : '',
+            kind && was.kind && kind !== was.kind ? tr('farm.order.why.kind', { from: was.kind, to: kind }) : '',
+            settingsKey() !== was.settings ? tr('farm.order.why.settings') : '',
+            state.minutes !== null && was.minutes !== null && state.minutes !== was.minutes ? tr('farm.order.why.time', { from: duration(was.minutes), to: duration(state.minutes) }) : '',
+        ].filter(Boolean);
+        box.textContent = `${tr('farm.order.why.lead', { from: money(was.total), to: money(now) })} ${reasons.join(', ')}.`.replace(/:\s*\.$/, '.');
+        show(box, true);
+    };
     const render = (): void => {
         const s = state;
         const working = s.status === 'uploaded';
@@ -523,6 +549,12 @@ export function bootFarmOrder(): void {
                 show(copiesLine, s.copies > 1);
             }
             $('farm-time')!.textContent = duration(s.minutes!);
+            const tlPrint = $('farm-tl-print');
+            if (tlPrint) tlPrint.textContent = tr('farm.order.tl.print', { time: duration(s.minutes!) });
+            const tlDelivery = $('farm-tl-delivery');
+            const chosen = s.status === 'sliced' ? delivery : s.delivery;
+            if (tlDelivery) tlDelivery.textContent = tr(chosen === 'pickup' ? 'farm.order.tl.pickup' : chosen ? 'farm.order.tl.parcel' : 'farm.order.tl.none');
+            show($('farm-tl-dispatch'), chosen !== 'pickup');
             $('farm-grams')!.textContent = `${s.grams} g${s.meters ? ` · ${s.meters} m` : ''}`;
             $('farm-supports')!.textContent = tr(s.supports ? 'farm.order.supports_yes' : s.supports_mode === 'off' ? 'farm.order.supports_off' : 'farm.order.supports_no');
             renderBreakdown();
@@ -581,6 +613,7 @@ export function bootFarmOrder(): void {
             // another colour may mean another machine and another kind of filament: the numbers above must be computed again first
             const recolor = picked !== null && state.colors.find((c) => c.slot === picked)?.sliced === false;
             show($('farm-recolor'), recolor); show($('farm-recolor-note'), recolor); show($('farm-pay-recolor'), recolor); show($('farm-pay-btn'), !recolor);
+            sayWhy();
         }
 
         const print = s.print && ['sent', 'printing', 'paused', 'done', 'unknown'].includes(s.print.status) && ['queued', 'printing', 'done', 'handed_over'].includes(s.status) ? s.print : null;
@@ -675,8 +708,15 @@ export function bootFarmOrder(): void {
     $('farm-copies')?.addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); wanted.copies = Math.max(1, Math.min(64, Math.round(v) || 1)); render(); });
     $('farm-presets')?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = $<HTMLButtonElement>('farm-reslice');
+        const recolor = $<HTMLButtonElement>('farm-recolor');
+        before = { total: total(), printer: state.printer?.name ?? null, kind: kindOf(), minutes: state.minutes, settings: settingsKey() };
+        // the request takes a moment: the buttons say so and cannot be pressed twice
+        [btn, recolor].forEach((b) => { if (b) { b.disabled = true; b.dataset.label = b.textContent ?? ''; b.textContent = tr('farm.order.reslicing'); } });
+        show($('farm-error'), false);
         const r = await post(cfg.routes.reslice, { ...wanted, slot: picked });
-        if (r.ok) { state = r.json as unknown as FarmState; picked = state.slot ?? null; wanted.by_parts = !!state.by_parts; render(); poll(); } else { const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); }
+        [btn, recolor].forEach((b) => { if (b) { b.disabled = false; b.textContent = b.dataset.label ?? ''; } });
+        if (r.ok) { state = r.json as unknown as FarmState; picked = state.slot ?? null; wanted.by_parts = !!state.by_parts; render(); poll(); } else { before = null; const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); }
     });
     document.querySelectorAll<HTMLElement>('#farm-delivery .seg').forEach((b) => b.addEventListener('click', () => { delivery = b.dataset.value!; render(); }));
     $('farm-country')?.addEventListener('change', (e) => { country = (e.target as HTMLSelectElement).value; render(); });

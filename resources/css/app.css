@@ -56,6 +56,9 @@
     /* numbers line up under each other: sizes, prices, tables */
     :where(input[type='number'], output, dd, td, .num) { font-variant-numeric: tabular-nums; }
     body { font-feature-settings: 'cv11', 'ss03'; }
+    /* room for the cookie bar while it shows (resources/js/site/bar.ts) */
+    html { scroll-padding-bottom: var(--consent-h, 0px); }
+    body { padding-bottom: var(--consent-h, 0px); }
 }
 
 @layer components {
@@ -67,6 +70,8 @@
     .chip-on { @apply border-ink bg-ink text-white; }
 
     .card { @apply rounded-xl border border-line bg-card shadow-sm; }
+    /* a link of the header: a thumb's height (44 px) whatever its words (audit 10/2026, bod 4) */
+    .nav-link { @apply inline-flex min-h-11 items-center rounded-lg px-2 hover:bg-slate-50 hover:text-slate-900; }
     .btn-primary { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 bg-action text-white hover:bg-action-dark; }
     .btn-secondary { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 border border-slate-400 bg-card text-ink hover:border-ink; }
     .btn-quiet { @apply inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-3 text-center font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 border border-line bg-card text-ink hover:border-muted; }
@@ -143,7 +148,7 @@
     .shape-tile img { @apply h-full w-full object-contain opacity-80; }
     .shape-tile:has(:checked) img { filter: invert(1); opacity: 1; }
     /* a number with its unit inside the field, on the right */
-    .tool-unit { @apply relative block w-28 max-w-[40vw] shrink-0; }   /* max: with the text at 200 % the field may not push the row off the screen */
+    .tool-unit { @apply relative block w-28 max-w-[36vw] shrink-0; }   /* max: with the text at 200 % the field may not push the row off the screen */
     .tool-unit::after { content: attr(data-unit); @apply pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted; }
     .tool-unit .field { @apply min-h-10 pr-9 text-right; }
     .tool-unit[data-unit=''] .field { @apply pr-3; }

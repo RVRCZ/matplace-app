@@ -202,3 +202,146 @@ stránky.“ Větev `feature/photo-dialog` z `main` 2556c68. Soubory: `tools/_fi
   křížky, pravidlo jedné oranžové). Test jedné oranžové akce na stránce (`test_every_tool_route_renders_the_shared_page`)
   počítá u busty a mazlíčka s tlačítkem dialogu.
 - **Neověřeno:** skutečné vygenerování modelu z dialogu (kredity); odeslání je tatáž funkce jako z panelu.
+
+## 9. Etapa 1, zbytek: mobil, hlavní stránka, akce a stavy, cena a doručení, slovník, cesty (18. 10. 2026)
+
+Zadání `docs/prompts/audit-etapa1-zbytek.md` (body 3, 4, 5, 6, 11 a úkol A auditu; dosud řídící). Větev
+`feature/audit-rest` z `main` dab9592, worktree `C:\matplace-edit-wt`. Platby (`OrderFlow`, `Wallet`) a trychtýř
+měření jsem neměnil. Měřeno skriptem `scripts/review_round2.mjs` na lokálním serveru s touto větví, čísla v
+`docs/img/audit/facts.json` (klíče `*-rest*` a `flow-*`).
+
+### 9.1 Mobil (bod 4)
+
+**Hlavička.** Dřív dva řádky drobných odkazů, všechny 20 px vysoké (Nástroje 56 × 20, Cena ze souboru 113 × 20,
+Přihlásit 54 × 20, cs/en/es 28 × 20, Kč/€ 26 × 20). Teď na telefonu jeden řádek: logo, **Nástroje**, **Přihlásit**
+(nebo Můj účet) a tiché menu „☰ CS · Kč“. V menu je Cena ze souboru, jazyk (celé názvy), měna a Odhlásit. Na
+počítači zůstává celá řada a v menu „CS · Kč ▾“ jsou jen jazyk a měna. Každý odkaz a tlačítko má aspoň 44 px
+(`.nav-link`). Menu se zavírá klepnutím vedle a klávesou Esc (`resources/js/site/menu.ts`). Snímky:
+`home-360-cs-before` → `home-360-cs-rest`, `home-360-es-menu`, `home-1280-es-menu`.
+
+**Úvod hlavní stránky** (360 × 800, podle snímků): dřív končilo pole pro soubor na 650 px a tlačítka na 700 px. Teď
+pole končí na 500 px a tlačítka na 557 px, pod nimi jsou výhody a začátek „Mám 3D soubor“. Pomohly k tomu formáty na
+jeden řádek („STL, 3MF, STEP a další formáty, do 120 MB“; celý seznam má čtečka a `title`), cesta Myšlenka → Návrh →
+Výrobek na jeden řádek, nižší pole a hlavička 52 px. Nadpis „Váš nápad vytiskneme ve 3D.“ a věta pod ním jsou
+řídící (už v main), en a es jsem zkontroloval. **Cena** je na kalkulaci na první obrazovce na 360 i 390 px: karta s
+dobou tisku a orientační cenou je na telefonu nad prohlížečem (`flow-file-price-390-cs-1`).
+
+| měření | před | po |
+|---|---|---|
+| malé dotykové plochy na první obrazovce (`/`) | 11 (9 v hlavičce, Nahrát soubor 130 × 38, Popsat slovy 143 × 38) | **0** na 360, 390, 768, 1280 (cs, en) |
+| totéž na kalkulaci `/c/…` | pole velikosti 42 px, Kusů 38, rozbalovací řádky 20, výběry formy 37, Poradit s tiskem 34 | **0** na telefonu |
+| přihlášení a registrace | pole 38 px, odkazy 20 px, patička 20 px (18 ploch) | **0** |
+| katalog | „All“ 43 × 44 | 0 |
+| vodorovný posun (360, 390, 768, 1280; `/`, `/tools`, `/login`, `/c/…`, qr, busta) | žádný | žádný |
+| text 200 % | `/` cs přetékal na 418 px (slovo „vytiskneme“), `/c/…` na 463 px (řádek „Na podložku…“ vedle Kusů), qr 360 o 2 px (pole Velikost) | **0 ze 40** stránek a šířek, qr, cedulka, krabička, reliéf 0 na 360 a 390 |
+| cookie lišta, výška na 360 px | 119 px cs, 139 px en, tlačítka 34 px | **115 px** cs i en, tlačítka 44 px |
+| klávesnice (okno o 40 % nižší, každé pole zaostřené: je vidět a nic ho nezakrývá) | – | qr 5/5, cedulka 9/9, busta 3/3, přihlášení 2/2, registrace 3/3, kalkulace 4/4; s lištou i bez ní |
+
+- **Cookie lišta** dál zakrývá na stránce nástroje kartu s hlavní akcí, dokud člověk nevybere (qr, busta na 360 i 390).
+  Stránka si teď pod koncem drží místo na výšku lišty a pole zaostřené klávesnicí nebo tabulátorem se zastaví nad ní
+  (`--consent-h`, `resources/js/site/bar.ts`). Zmenšit ji víc nejde bez menších tlačítek.
+- **Skript** umí `--keyboard` (pole s otevřenou klávesnicí), hlásí slova, která přečnívají ze svého boxu
+  (`wideText`; tak se našla věta vedle Kusů), a cesty mají kroky `reload` a `read`. V Git Bash je potřeba
+  `MSYS_NO_PATHCONV=1`, jinak se z `--pages=/c/…` stane `C:/…`.
+
+### 9.2 Akce a stavy v kalkulaci a zakázce (bod 5)
+
+- **„Objednat tisk“** (dřív „VYTISKNOUT“; en „Order the print“, es „Pedir la impresión“) s větou: „Zatím nic
+  neplatíte: otevře se objednávka, kde vyberete barvu a doručení a uvidíte konečnou cenu. Platí se až na jejím konci,
+  kreditem nebo kartou.“ Host čte, že se nejdřív přihlásí. Zakázka vzniká nezaplacená (bez čísla a `paid_at`; test).
+  Po klepnutí tlačítko říká „Zakládám objednávku…“ a nejde stisknout znovu. Odmítnutí (zavřeno, limit, neověřený
+  e-mail) vrátí tlačítko a ukáže důvod.
+- **Chyba:** tlačítko hledalo kalkulaci jen v adrese `/c/<kód>`. Na `/en/c/…` a `/es/c/…` ji nenašlo a ukazovalo jen
+  „počkejte na přesný výpočet“. Opraveno (`farm.ts`).
+- Kalkulace: „Mám tiskárnu, stáhnout“ → **„Stáhnout model“** (jako na stránce nástroje). „Přepočítat“ zůstává
+  inkoustové, oranžová patří objednávce.
+- **Zakázka, „Přepočítat“ a „Přepočítat pro zvolenou barvu“:** při čekání „Počítám znovu…“, tlačítka vypnutá, chyba
+  v `#farm-error` a tlačítko se vrátí.
+- **Zpět a obnovení:** kalkulace zapíše každý přepočet do adresy `/c/<kód>` i s nastavením. Průchodem `calc-keep`:
+  kostka, Kusů 3, Přepočítat, F5 → „3 ks, /c/qj4zo2mfbdl6, Přesný výpočet“. Nastavení, které člověk nepřepočítal,
+  obnovení nevrátí (kalkulace ho hlásí jako neaktuální). Zakázka má token a stav čte ze serveru.
+- **Neúspěšný výpočet** zachová zadání i odhad (kód: `catch` jen přepne stav). **Neplatný soubor** (text místo STL)
+  dřív končil „Cena je odhad… Zkuste Přepočítat.“, což nepomůže. Teď: „Tenhle soubor neumíme přečíst jako 3D model:
+  je poškozený, prázdný nebo jiného druhu. Zkuste jiný soubor (STL, 3MF, STEP a další).“ (`calc.status.not_model`,
+  když server vrátí `file_processing_failed`; `flow-bad-file-390-cs-1`).
+- Kalkulace má vlastní **`h1`** s názvem modelu (dřív jen skrytý slogan; §5 #8). Na hlavní stránce zůstává jediným
+  `h1` slogan.
+- „Pokračovat“ / „Spočítat cenu a možnosti tisku“ na stránce nástroje jsem neměnil. **Rozpor k ověření:** zadání píše
+  „Roman 17. 10. rozhodl Pokračovat“, `docs/AUDIT.md` (odpovědi 17. 10.) „platí audit“ a v main i na produkci je
+  „Spočítat cenu a možnosti tisku“.
+
+### 9.3 Cena a doručení (bod 6)
+
+- Zakázka má pod cenou blok **Tisk / Odeslání / Doručení**: „Tisk: 2 h 10 min na tiskárně; začne, jakmile je tiskárna
+  volná“ · „Odeslání: v den, kdy tisk skončí, v pracovní dny (co se dotiskne o víkendu, odešleme v pondělí)“ ·
+  „Doručení: Zásilkovna obvykle do 1 až 2 pracovních dnů po odeslání v Česku, do zahraničí déle“ (u osobního odběru:
+  „výtisk je připravený v den, kdy tisk skončí, napíšeme vám“ a řádek Odeslání zmizí) · „Časy jsou odhad: když je
+  tiskárna obsazená, tisk začne později, a doručení závisí na dopravci.“ **Ke kontrole Romanem:** „1 až 2 pracovní dny“
+  Zásilkovny je obecný údaj dopravce, ne naše měření.
+- **Proč se cena změnila:** po přepočtu (jiná barva v jiném stroji, jiné nastavení) stránka napíše například „Cena se
+  po přepočtu změnila ze 120 Kč na 150 Kč: tiskne jiná tiskárna (U #1 → K1), jiný materiál (PLA+ → PETG), doba tisku
+  1 h 5 min → 1 h 40 min.“ Porovnává cenu, tiskárnu, druh barvy, nastavení a čas před přepočtem a po něm. Když se cena
+  nezmění, nic nepíše.
+- **Souhrn před platbou proti účtování (jen čtení):** stránka posílá zobrazenou částku (`total()` = cena barvy +
+  doprava z nabídky). `OrderFlow::pay` spočítá cenu znovu (`priceFor` se strojem a barvou z volby) a při rozdílu nad
+  0,009 platbu odmítne s „Cena se mezitím změnila na …“. Z kreditu se drží `price_total`, tedy totéž číslo. Doplatek
+  kartou je zaokrouhlený nahoru na celé (`Math.ceil`), zbytek do koruny zůstane jako kredit. Zaplacenou zakázku, kterou
+  je potřeba nařezat pro jiný stroj, server nařeže znovu a cena zůstává, jak byla nabídnutá.
+- **Příklady s cenou:** blok `calculator/_examples.blade.php` za `config('site.examples')` (`SITE_EXAMPLES`, vypnuto).
+  Busta 80 / 120 / 150 mm, PLA+, 14 / 40 / 72 g, 99 / 130 / 200 Kč bez dopravy (kalkulace z produkce, AG.md), odkaz na
+  kalkulaci, obrázek karty nástroje se štítkem „Náhled modelu, ne fotka výtisku“. V eurech cenu nevymýšlí („Cenu ve
+  vaší měně ukáže kalkulace.“). Až budou fotky: `photo` u položky v `config/site.php`, pak zapnout.
+
+### 9.4 Slovník (bod 11)
+
+- Digitální výsledek „model“ / „3D model“ / „soubor“ (Stáhnout model, „Tenhle soubor neumíme přečíst jako 3D model“),
+  fyzický „výtisk“ / „tisk“ (Objednat tisk, „výtisk je připravený“). Akce: vytvořit (nástroje) / stáhnout model /
+  objednat tisk / zaplatit („Zaplatit kreditem a spustit tisk“, beze změny).
+- „Zdarma“ s limitem: katalog dřív sliboval „Všechno je zdarma a bez registrace“, teď „Nástroje jsou zdarma a bez
+  registrace; tvorba z fotky má denní limit.“ Výhoda na hlavní stránce „Nástroje zdarma, z fotky 1 model denně bez
+  účtu“ bere číslo z `ai.daily_limits.generate_guest` (mění se v /admin/ai). Forma v kalkulaci: „Zdarma. Forma vzniká
+  desítky sekund…“ (dřív „pár vteřin“; §5 #10).
+- **Test chybějících klíčů** (`AuditRestTest::test_every_text_of_the_home_page_the_calculation_the_order_and_the_account_exists_in_all_three_languages`):
+  šablony `calculator/*`, `farm/*`, `account/*`, layout a cookie lišta, texty v šabloně i seznamy předávané skriptům
+  (i seznam `$keys` zakázky). Našel 3 klíče `check.*_ok.impact` bez překladu. Skript je u kontrol „v pořádku“ nikdy
+  neukazuje, proto jsem je ze seznamu vyřadil. Skener je společný se stránkami nástrojů (`ToolPageTest::keysIn`).
+
+### 9.5 Cesty (úkol A)
+
+`node scripts/review_round2.mjs --flows=all --widths=390,360,768,1280 --langs=cs,en`: 64 průchodů, všechny doběhly.
+Snímky jsou pro 390 px cs a en a pro 1280 px cs, čísla všech šířek ve `facts.json`.
+
+| cesta | kroky | co se stane | snímky |
+|---|---|---|---|
+| soubor → cena → objednávka | `/`, kostka 20 mm, 25 s | `/c/<kód>`: „Přesný výpočet“, 13 min, orientační cena 120 Kč, karta ceny první na telefonu; host tlačítko objednávky nevidí (farma pro hosty zavřená) | `flow-file-price-390-cs-1`, `-2` |
+| nástroj → kalkulace → objednávka | `/tools/qr`, Spočítat cenu… | „Připravuji model…“, za ~10 s kalkulace téhož modelu, 6 ks na podložku | `flow-tool-price-390-cs-1…3` |
+| model → stažení | `/tools/box`, Stáhnout model | menu 3MF OrcaSlicer/Bambu, PrusaSlicer, STL | `flow-download-390-cs-1` |
+| QR web | adresa `https://matplace.com/tools` | náhled 70 × 83,1 × 3,4 mm, 2 barvy, 33 × 33 polí | `flow-qr-web-390-cs-1` |
+| QR Wi-Fi | typ Wi-Fi, síť „Domov“, heslo `heslo 123;"x` | 37 × 37 polí, 1,9 mm, čitelnost ověřená (skript dřív psal `WIFI:` do adresy; pole Wi-Fi jsou od 17. 10.) | `flow-qr-wifi-390-cs-1` |
+| neplatný soubor | `/`, `broken.stl` | „Tenhle soubor neumíme přečíst jako 3D model…“ | `flow-bad-file-390-cs-1` |
+| fotka nad limit | reliéf, 16 MB | „Fotka je větší než 15 MB, zmenšete ji prosím.“, nic se neodešle | `flow-photo-limit-390-cs-1` |
+| kalkulace po obnovení | kostka, Kusů 3, Přepočítat, F5 | 3 ks, stejná adresa, přesný výpočet | `flow-calc-keep-390-cs-1` |
+| zakázka (přihlášený) | – | **neprošlo v prohlížeči:** lokální účet není admin a roli admina mi automatický režim nedovolil přidat. Stránka zakázky je ověřená testy (vykreslení ve 3 jazycích, blok Tisk/Odeslání/Doručení, texty pro skript) | – |
+
+### 9.6 Nálezy
+
+| # | druh | co | stav |
+|---|---|---|---|
+| 1 | chyba | „Objednat tisk“ nefungovalo na `/en/c/…` a `/es/c/…` (hledalo jen `/c/`) | **opraveno** |
+| 2 | chyba | neplatný soubor radil „Zkuste Přepočítat“ | **opraveno** |
+| 3 | chyba | text 200 %: `/`, kalkulace a pole Velikost u nástrojů přetékaly na 360 a 390 px | **opraveno** |
+| 4 | překážka | hlavička, přihlášení, patička, kalkulace: plochy menší než 44 px | **opraveno** |
+| 5 | překážka | kalkulace neměla `h1` | **opraveno** |
+| 6 | překážka | cookie lišta (115 px) zakrývá na stránce nástroje kartu akce, dokud se nevybere | zmírněno (místo pod stránkou, pole nad lištou); úplně jen jiným tvarem lišty |
+| 7 | překážka | z `/en/tools/qr` vede „Get the price…“ na `/c/<kód>` bez `/en` (stránka je anglicky podle relace, sdílený odkaz otevře česky); API kalkulace vrací `route('calc.share')` bez jazyka | neopraveno (`CalculationController`) |
+| 8 | překážka | po nahrání na `/` zůstává `h1` stránky skrytý slogan (adresa už je `/c/…`), vlastní `h1` dostane kalkulace až po obnovení | neopraveno, drobné |
+| 9 | neověřený návrh | „1 až 2 pracovní dny“ u Zásilkovny: potvrdit, nebo nahradit vlastním měřením | Roman |
+| 10 | chyba (mimo tuto větev) | `SeoTest::test_every_tool_has_its_page_content_in_three_languages`: nástroj `gcode` nemá `lang/*/tools_seo/gcode.php` | session 2 / řídící |
+
+### 9.7 Testy
+
+`tests/Feature/AuditRestTest.php` (6 testů: hlavička a menu, krátké formáty a `h1` kalkulace, „Objednat tisk“
+nezaplacené, zakázka Tisk/Odeslání/Doručení a texty pro skript, příklady za přepínačem, chybějící klíče).
+`ToolPageTest::keysIn` je sdílený skener. Běh: `AuditRestTest`, `ToolPageTest`, `WebRound2Test`, `CalculationFlowTest`,
+`FarmPagesTest`, `ShippingCurrencyTest`, `CatalogTest`, `ToolsCatalogTest`, `ToolsFlowTest`, `AccountsTest`, `AuthTest`,
+`SeoTest`, `FarmOrderFlowTest`, `FarmCardPaymentTest`: 146 testů zelených po poslední změně, `SeoTest` zelený kromě nálezu 10. `pint`, `tsc` a `build` jsou čisté.

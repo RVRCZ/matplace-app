@@ -8,7 +8,8 @@
         'farm.order.blocked_approval', 'farm.order.cancel_confirm', 'farm.order.b_time', 'farm.order.b_material', 'farm.order.b_fixed', 'farm.order.b_min',
         'farm.order.b_net', 'farm.order.b_vat', 'farm.order.b_shipping', 'farm.order.b_total', 'models.price.to_author', 'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line', 'farm.order.second_color', 'farm.order.changes_title', 'farm.order.change_title', 'farm.order.change_same', 'farm.order.change_same_hint', 'farm.order.change_first', 'farm.order.change_line', 'farm.order.parts_title', 'farm.order.parts_hint', 'farm.order.part_main', 'farm.order.part_line', 'farm.order.kind_all', 'farm.order.codes_hint', 'farm.order.by_parts',
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m', 'farm.order.cancel_running_confirm', 'farm.order.supports_hide', 'farm.order.supports_show',
-        'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.too_big_pickup', 'farm.delivery.none', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track'];
+        'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.too_big_pickup', 'farm.delivery.none', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track',
+        'farm.order.tl.print', 'farm.order.tl.parcel', 'farm.order.tl.pickup', 'farm.order.tl.none', 'farm.order.why.lead', 'farm.order.why.printer', 'farm.order.why.kind', 'farm.order.why.settings', 'farm.order.why.time', 'farm.order.reslicing'];
     $farmCfg = [
         'state' => $state,
         'prefill' => $prefill,
@@ -76,13 +77,23 @@
                         <span class="pb-1 text-xs text-slate-500">{{ __('farm.order.with_vat') }}</span>
                     </div>
                     <p id="farm-copies-line" class="mt-1 hidden text-sm font-semibold text-slate-700"></p>
+                    {{-- after a new calculation: why the price is not what it was (another machine, another material, other settings) --}}
+                    <p id="farm-price-why" class="mt-2 hidden rounded-lg bg-action-soft px-3 py-2 text-sm text-ink" role="status"></p>
                     <dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
                         <div><dt class="text-slate-500">{{ __('farm.order.time') }}</dt><dd id="farm-time" class="font-semibold">—</dd></div>
                         <div><dt class="text-slate-500">{{ __('farm.order.weight') }}</dt><dd id="farm-grams" class="font-semibold">—</dd></div>
                         <div><dt class="text-slate-500">{{ __('farm.order.supports') }}</dt><dd id="farm-supports" class="font-semibold">—</dd></div>
                     </dl>
-                    <details class="mt-3 text-sm">
-                        <summary class="cursor-pointer text-action-dark">{{ __('farm.order.breakdown') }}</summary>
+                    {{-- print, dispatch and delivery apart, each an estimate (audit 10/2026, bod 6; Roman 17 Oct: a parcel leaves
+                         on the day its print ends, on working days) --}}
+                    <dl id="farm-timeline" class="mt-3 space-y-1 rounded-xl bg-slate-50 p-3 text-sm">
+                        <div><dt class="inline font-semibold text-slate-700">{{ __('farm.order.tl.print_label') }}:</dt> <dd id="farm-tl-print" class="inline"></dd></div>
+                        <div id="farm-tl-dispatch"><dt class="inline font-semibold text-slate-700">{{ __('farm.order.tl.dispatch_label') }}:</dt> <dd class="inline">{{ __('farm.order.tl.dispatch') }}</dd></div>
+                        <div><dt class="inline font-semibold text-slate-700">{{ __('farm.order.tl.delivery_label') }}:</dt> <dd id="farm-tl-delivery" class="inline"></dd></div>
+                        <p class="pt-1 text-xs text-slate-500">{{ __('farm.order.tl.estimate') }}</p>
+                    </dl>
+                    <details class="mt-1 text-sm">
+                        <summary class="cursor-pointer py-3 text-action-dark">{{ __('farm.order.breakdown') }}</summary>
                         <dl id="farm-breakdown" class="mt-2 space-y-1"></dl>
                     </details>
                 </div>

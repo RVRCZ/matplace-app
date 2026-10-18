@@ -12,11 +12,13 @@
  *   hScroll: the page is wider than the window (scrollWidth > innerWidth);
  *   small: buttons and links on the first screen smaller than 44 × 44 px (their words), main: the size of the main action;
  *   bar: what the cookie bar covers (with --bar); focus: with --tabs=N, how many of N Tab presses land on something
- *   visible in the window with a visible outline; --zoom=200 sets the text to 200 % (the root font size) first.
+ *   visible in the window with a visible outline; --zoom=200 sets the text to 200 % (the root font size) first;
+ *   keyboard: with --keyboard (phones), the window loses the height of an open keyboard (40 %) and every visible field
+ *   gets the focus in turn: is it inside the window and not covered (by the cookie bar, a sticky row)?
  *
  *   node scripts/review_round2.mjs --base=http://127.0.0.1:8013 --out=docs/img/audit [--pages=qr,sign,box,figure,relief,tools,home]
  *        [--widths=360,390,768,1280] [--langs=cs,en] [--suffix=1] [--full] [--bar] [--zoom=200] [--tabs=12]
- *        [--then=<js run after load>] [--wait=4000]
+ *        [--then=<js run after load>] [--wait=4000] [--keyboard]
  *
  * Paths (--flows=a,b or --flows=all): a few steps each, a webp after every step (flow-<name>-<width>-<lang>-<n>.webp),
  * and for every step where it is and what it says (the address, the h1, an alert or a status line). FLOWS below lists
@@ -47,6 +49,7 @@ const THEN = arg('then', null);
 const ZOOM = Number(arg('zoom', 0)) || 0;
 const TABS = Number(arg('tabs', 0)) || 0;
 const BAR = Boolean(arg('bar', false));
+const KEYBOARD = Boolean(arg('keyboard', false));
 const CHROME = process.env.CHROME ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const PATHS = { tools: '/tools', home: '/' };
 const pathOf = (page, lang) => {
@@ -89,15 +92,19 @@ const ORDER = /Objednat tisk|Vytisknout u nás|Chci to vyrobit|Order the print|P
 
 /**
  * The paths of the audit (point 13). Steps: go (a page), file (selector, path), type (selector, text), click (selector),
- * clickText (a pattern of the words of a button or a link), nav (the step that follows loads a page), wait, shot.
+ * clickText (a pattern of the words of a button or a link), nav (the step that follows loads a page), wait, shot,
+ * reload (the page again, as F5), read (a JS expression whose value is written to the facts).
  */
 const FLOWS = {
     'file-price': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 25000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
     'tool-price': [['go', '/tools/qr'], ['wait', 6000], ['shot'], ['nav'], ['click', '#tool-go'], ['wait', 20000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
     'download': [['go', '/tools/box'], ['wait', 6000], ['click', '#tool-download'], ['wait', 600], ['shot']],
     'qr-web': [['go', '/tools/qr'], ['wait', 4000], ['type', '[data-text="url"]', 'https://matplace.com/tools'], ['wait', 6000], ['shot']],
-    'qr-wifi': [['go', '/tools/qr'], ['wait', 4000], ['type', '[data-text="url"]', 'WIFI:T:WPA;S:Domov;P:heslo 123;;'], ['wait', 6000], ['shot']],
+    // Wi-Fi has its own fields since 17 Oct 2026 (docs/AI.md): the kind, the network, the password
+    'qr-wifi': [['go', '/tools/qr'], ['wait', 4000], ['click', '[data-choice="content"][value="wifi"]'], ['wait', 800], ['type', '[data-text="ssid"]', 'Domov'], ['type', '[data-text="password"]', 'heslo 123;"x'], ['wait', 6000], ['shot']],
     'bad-file': [['go', '/'], ['file', '#file-input', FIXTURES.broken], ['wait', 12000], ['shot']],
+    // the calculation keeps what was set: 3 pieces, recalculated, the page reloaded (and back from the next page)
+    'calc-keep': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 20000], ['type', '#quantity', '3'], ['click', '#cta-recalc'], ['wait', 12000], ['read', "document.getElementById('quantity').value + ' ks, ' + location.pathname"], ['reload'], ['wait', 6000], ['read', "document.getElementById('quantity').value + ' ks, ' + location.pathname + ', ' + document.getElementById('status').textContent"], ['shot']],
     'photo-limit': [['go', '/tools/relief'], ['wait', 3000], ['file', '#relief-photo', FIXTURES.big], ['wait', 1000], ['click', '#relief-form button.btn-ink'], ['wait', 4000], ['shot']],
 };
 
@@ -174,6 +181,12 @@ const FACTS = `(() => {
         // what sticks out: the innermost elements whose right edge is past the width
         wide: [...document.querySelectorAll('body *')].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.right > W0 + 1 && ![...el.children].some((c) => c.getBoundingClientRect().right > W0 + 1); })
             .slice(0, 6).map((el) => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + ' ' + (el.getAttribute('class') || '').split(' ').slice(0, 3).join('.') + ' ' + Math.round(el.getBoundingClientRect().right)),
+        // words that stick out of their box (a word too long for a column at 200 %), outside boxes that scroll or clip (sr-only)
+        wideText: (() => { const out = []; const scrolls = (el) => { for (let p = el; p; p = p.parentElement) { const o = getComputedStyle(p).overflowX; if (o !== 'visible') return true; } return false; };
+            const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
+            while ((n = tw.nextNode()) && out.length < 6) { if (!n.textContent.trim()) continue; const r = document.createRange(); r.selectNodeContents(n); const b = r.getBoundingClientRect();
+                if (b.width > 0 && b.right > W0 + 1 && !scrolls(n.parentElement)) out.push(n.parentElement.tagName.toLowerCase() + (n.parentElement.id ? '#' + n.parentElement.id : '') + ' ' + n.textContent.trim().slice(0, 30) + ' ' + Math.round(b.right)); }
+            return out; })(),
         small: small.slice(0, 12), smallCount: small.length, bar: covers, says: alert.slice(0, 4),
         // a tool page: empty (nothing yet), loading (busy badge or the logo of dots), a model (its size in the status line) or an error
         state: !q('#tool-status') ? null : [...document.querySelectorAll('#tool-error, .note-error')].some(seen) ? 'error'
@@ -190,6 +203,26 @@ const FOCUSED = `(() => {
     const inView = r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight;
     const ring = (s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0) || s.boxShadow !== 'none';
     return { ok: inView && ring, what: (el.id ? '#' + el.id : el.tagName.toLowerCase()) + ' ' + (el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 30) };
+})()`;
+
+/** Every visible field gets the focus as a tap would give it: is it in the window, and is it what a finger hits there? */
+const TYPED = `(async () => {
+    const fields = [...document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=submit]), textarea, select')]
+        .filter((el) => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && !el.closest('.hidden, [hidden], .sr-only, .is-off, details:not([open]) > :not(summary)') && !el.disabled; }).slice(0, 12);
+    const out = [];
+    for (const el of fields) {
+        el.focus();
+        // a phone brings the focused field into view, above the keyboard, keeping the page's scroll padding
+        el.scrollIntoView({ block: 'nearest' });
+        await new Promise((r) => setTimeout(r, 150));
+        const r = el.getBoundingClientRect();
+        const inside = r.top >= 0 && r.bottom <= innerHeight;
+        const hit = document.elementFromPoint(r.left + Math.min(12, r.width / 2), r.top + r.height / 2);
+        const covered = !hit || !(hit === el || el.contains(hit) || hit.contains(el) || (hit.tagName === 'LABEL' && hit.control === el));
+        out.push({ field: (el.id ? '#' + el.id : el.name ? el.tagName.toLowerCase() + '[' + el.name + ']' : el.tagName.toLowerCase() + [...el.attributes].filter((a) => a.name.startsWith('data-') || a.name === 'type').map((a) => '[' + a.name + '=' + a.value.slice(0, 16) + ']').join('')) + ' ' + Math.round(r.top) + '..' + Math.round(r.bottom) + '/' + innerHeight, ok: inside && !covered, by: covered && hit ? (hit.closest('[id]')?.id || hit.tagName.toLowerCase()) : null });
+        el.blur();
+    }
+    return out;
 })()`;
 
 async function prepare(cdp, width, lang) {
@@ -210,6 +243,15 @@ async function measure(cdp, width) {
     await evaluate(cdp, `window.__mpWidth = ${width}`);
     if (ZOOM) await evaluate(cdp, `document.documentElement.style.fontSize = '${ZOOM}%'`);
     const facts = await evaluate(cdp, FACTS);
+    if (KEYBOARD && screen(width).touch) {
+        const s = screen(width);
+        await cdp('Emulation.setDeviceMetricsOverride', { width, height: Math.round(s.height * 0.6), deviceScaleFactor: s.scale, mobile: true });
+        await sleep(300);
+        const typed = await evaluate(cdp, TYPED);
+        await cdp('Emulation.setDeviceMetricsOverride', { width, height: s.height, deviceScaleFactor: s.scale, mobile: true });
+        facts.keyboard = `${typed.filter((t) => t.ok).length}/${typed.length}`;
+        facts.keyboardMissed = typed.filter((t) => !t.ok).map((t) => t.field + (t.by ? ' under ' + t.by : ' outside'));
+    }
     if (TABS) {
         const seen = [];
         for (let i = 0; i < TABS; i++) {
@@ -263,6 +305,8 @@ async function walk(flow, width, lang, port) {
         for (const [what, a, b] of FLOWS[flow]) {
             if (what === 'go') { const loaded = once('Page.loadEventFired'); await cdp('Page.navigate', { url: BASE + pathOf(a, lang) }); await loaded; await sleep(1500); }
             else if (what === 'nav') navigation = once('Page.loadEventFired', 30000);
+            else if (what === 'reload') { const loaded = once('Page.loadEventFired'); await cdp('Page.reload', {}); await loaded; await sleep(1500); }
+            else if (what === 'read') steps.push({ step: 'read', value: await evaluate(cdp, a) });
             else if (what === 'wait') { if (navigation) { await navigation; navigation = null; await sleep(1500); } await sleep(a); }
             else if (what === 'file') {
                 const { root } = await cdp('DOM.getDocument', { depth: 0 });

@@ -5,6 +5,8 @@ import { bootPickup } from './pickup';
 import { bootDesigner } from './designer';
 import { bootModelPage } from './model_page';
 import { bootMeasure } from './measure';
+import { bootMenu } from './menu';
+import { bootBar } from './bar';
 
 export function bootSite(): void {
     bootThumbs();
@@ -13,4 +15,6 @@ export function bootSite(): void {
     bootDesigner();
     bootModelPage();
     bootMeasure();
+    bootMenu();
+    bootBar();
 }
