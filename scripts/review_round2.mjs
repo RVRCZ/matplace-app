@@ -100,7 +100,8 @@ const FLOWS = {
     'tool-price': [['go', '/tools/qr'], ['wait', 6000], ['shot'], ['nav'], ['click', '#tool-go'], ['wait', 20000], ['shot'], ['nav'], ['clickText', ORDER], ['wait', 5000], ['shot']],
     'download': [['go', '/tools/box'], ['wait', 6000], ['click', '#tool-download'], ['wait', 600], ['shot']],
     'qr-web': [['go', '/tools/qr'], ['wait', 4000], ['type', '[data-text="url"]', 'https://matplace.com/tools'], ['wait', 6000], ['shot']],
-    'qr-wifi': [['go', '/tools/qr'], ['wait', 4000], ['type', '[data-text="url"]', 'WIFI:T:WPA;S:Domov;P:heslo 123;;'], ['wait', 6000], ['shot']],
+    // Wi-Fi has its own fields since 17 Oct 2026 (docs/AI.md): the kind, the network, the password
+    'qr-wifi': [['go', '/tools/qr'], ['wait', 4000], ['click', '[data-choice="content"][value="wifi"]'], ['wait', 800], ['type', '[data-text="ssid"]', 'Domov'], ['type', '[data-text="password"]', 'heslo 123;"x'], ['wait', 6000], ['shot']],
     'bad-file': [['go', '/'], ['file', '#file-input', FIXTURES.broken], ['wait', 12000], ['shot']],
     // the calculation keeps what was set: 3 pieces, recalculated, the page reloaded (and back from the next page)
     'calc-keep': [['go', '/'], ['file', '#file-input', FIXTURES.cube], ['wait', 20000], ['type', '#quantity', '3'], ['click', '#cta-recalc'], ['wait', 12000], ['read', "document.getElementById('quantity').value + ' ks, ' + location.pathname"], ['reload'], ['wait', 6000], ['read', "document.getElementById('quantity').value + ' ks, ' + location.pathname + ', ' + document.getElementById('status').textContent"], ['shot']],
@@ -180,8 +181,8 @@ const FACTS = `(() => {
         // what sticks out: the innermost elements whose right edge is past the width
         wide: [...document.querySelectorAll('body *')].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.right > W0 + 1 && ![...el.children].some((c) => c.getBoundingClientRect().right > W0 + 1); })
             .slice(0, 6).map((el) => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + ' ' + (el.getAttribute('class') || '').split(' ').slice(0, 3).join('.') + ' ' + Math.round(el.getBoundingClientRect().right)),
-        // words that stick out of their box (a word too long for a column at 200 %), outside boxes that scroll on their own
-        wideText: (() => { const out = []; const scrolls = (el) => { for (let p = el; p; p = p.parentElement) { const o = getComputedStyle(p).overflowX; if (o === 'auto' || o === 'scroll') return true; } return false; };
+        // words that stick out of their box (a word too long for a column at 200 %), outside boxes that scroll or clip (sr-only)
+        wideText: (() => { const out = []; const scrolls = (el) => { for (let p = el; p; p = p.parentElement) { const o = getComputedStyle(p).overflowX; if (o !== 'visible') return true; } return false; };
             const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
             while ((n = tw.nextNode()) && out.length < 6) { if (!n.textContent.trim()) continue; const r = document.createRange(); r.selectNodeContents(n); const b = r.getBoundingClientRect();
                 if (b.width > 0 && b.right > W0 + 1 && !scrolls(n.parentElement)) out.push(n.parentElement.tagName.toLowerCase() + (n.parentElement.id ? '#' + n.parentElement.id : '') + ' ' + n.textContent.trim().slice(0, 30) + ' ' + Math.round(b.right)); }

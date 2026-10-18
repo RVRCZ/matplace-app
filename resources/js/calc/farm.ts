@@ -58,8 +58,8 @@ export function bootFarmCta(): void {
     const note = $('cta-farm-note');
     const wait = note?.textContent ?? '';
     btn.addEventListener('click', async () => {
-        // the calculator rewrites the address to /c/{token} once the calculation exists
-        const m = location.pathname.match(/^\/c\/([A-Za-z0-9_-]+)/);
+        // the calculator rewrites the address to /c/{token} (/en/c/{token} in another language) once the calculation exists
+        const m = location.pathname.match(/^(?:\/[a-z]{2})?\/c\/([A-Za-z0-9_-]+)/);
         if (!m) { if (note) note.textContent = wait; show(note, true); return; }
         const start = `${btn.dataset.url}?calc=${encodeURIComponent(m[1])}`;
         // a guest signs in first and goes on from the start page

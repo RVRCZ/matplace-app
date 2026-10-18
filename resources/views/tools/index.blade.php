@@ -28,9 +28,9 @@
         <input id="tool-search" type="search" class="field !mt-0 !pl-10" placeholder="{{ __('tools.search') }} · {{ __('tools.search.hint') }}" autocomplete="off">
     </div>
     <div class="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0" role="group" aria-label="{{ __('tools.filter') }}">
-        <button type="button" class="chip chip-on inline-flex min-h-11 shrink-0 items-center" data-filter="all" aria-pressed="true">{{ __('tools.cat.all') }}</button>
+        <button type="button" class="chip chip-on inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center" data-filter="all" aria-pressed="true">{{ __('tools.cat.all') }}</button>
         @foreach($cats as $c)
-            <button type="button" class="chip inline-flex min-h-11 shrink-0 items-center whitespace-nowrap" data-filter="{{ $c }}" aria-pressed="false">{{ __('tools.cats.'.$c) }}</button>
+            <button type="button" class="chip inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap" data-filter="{{ $c }}" aria-pressed="false">{{ __('tools.cats.'.$c) }}</button>
         @endforeach
     </div>
     {{-- nothing found: say so, offer the way back and the tools the words come closest to (tools/index script) --}}

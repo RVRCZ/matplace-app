@@ -9,12 +9,12 @@
     <form method="post" action="{{ route('register') }}" class="mt-4 space-y-3">
         @csrf
         <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
-        <label class="block text-sm font-semibold">{{ __('auth.name') }}<input name="name" required value="{{ old('name') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
-        <label class="block text-sm font-semibold">{{ __('auth.email') }}<input name="email" type="email" required autocomplete="email" value="{{ old('email') }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
-        <label class="block text-sm font-semibold">{{ __('auth.password') }}<input name="password" type="password" required minlength="8" autocomplete="new-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+        <label class="block text-sm font-semibold">{{ __('auth.name') }}<input name="name" required value="{{ old('name') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+        <label class="block text-sm font-semibold">{{ __('auth.email') }}<input name="email" type="email" required autocomplete="email" value="{{ old('email') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+        <label class="block text-sm font-semibold">{{ __('auth.password') }}<input name="password" type="password" required minlength="8" autocomplete="new-password" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
         <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="terms" value="1" required class="mt-1"> <span>{{ __('auth.terms') }}</span></label>
         <button class="w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('auth.register') }}</button>
     </form>
-    <div class="mt-4 text-sm"><a href="{{ route('login') }}" class="text-action-dark">{{ __('auth.have_account') }}</a></div>
+    <div class="mt-4 text-sm"><a href="{{ route('login') }}" class="inline-flex min-h-11 items-center text-action-dark">{{ __('auth.have_account') }}</a></div>
 </div>
 @endsection
