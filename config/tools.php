@@ -13,6 +13,7 @@
  *             ['kind' => generator, 'preset' => …, 'params' => […], 'colors' => [part => filament]]. A generator draws its own
  *             first example. Tools with neither (price from a file, repair, check, mold, figure, relief) keep the picture
  *             they have until a photo of a print replaces it.
+ * article:    slug of the blog article about the tool (resources/blog/cs/<slug>.md, docs/AK.md §5); the tool's page links it
  * verified:   'YYYY-MM-DD' = the day a print of this tool's output was checked on the farm. The card and the tool's page
  *             then say "verified by printing <date>". No key = no badge: Roman writes the dates of what he has printed.
  * seo:        the tool's page as content for search engines. The texts live in lang/<locale>/tools_seo/<tool>.php
@@ -22,9 +23,9 @@
  *             `schema` = the kind of thing the page describes for structured data (HowTo and FAQPage always).
  */
 return [
-    'calc' => ['route' => 'home', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []]],
-    'repair' => ['route' => 'tools.repair', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []]],
-    'check' => ['route' => 'tools.check', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'seo' => ['examples' => []]],
+    'calc' => ['route' => 'home', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'article' => 'cena-3d-tisku-z-modelu', 'seo' => ['examples' => []]],
+    'repair' => ['route' => 'tools.repair', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'article' => 'jak-pripravit-stl-soubor-pro-3d-tisk', 'seo' => ['examples' => []]],
+    'check' => ['route' => 'tools.check', 'intent' => 'file', 'categories' => ['edit'], 'available' => true, 'article' => 'jak-pripravit-stl-soubor-pro-3d-tisk', 'seo' => ['examples' => []]],
     'mold' => ['route' => 'tools.mold', 'intent' => 'file', 'categories' => ['edit', 'craft'], 'available' => true, 'seo' => ['examples' => [
         // drawn on tests/fixtures/mold/bust.stl (matplace:tool-examples mold); the keys match the gallery of tools/mold.blade.php
         ['key' => 'rigid2', 'params' => ['type' => 'rigid', 'parts' => 2]],
@@ -35,12 +36,12 @@ return [
     ]]],
     'personalize' => ['route' => 'tools.personalize', 'intent' => 'file', 'categories' => ['edit', 'names'], 'available' => false],
 
-    'organizer' => ['route' => 'tools.organizer', 'intent' => 'create', 'categories' => ['home'], 'available' => true, 'seo' => ['examples' => [
+    'organizer' => ['route' => 'tools.organizer', 'intent' => 'create', 'categories' => ['home'], 'available' => true, 'article' => 'organizer-do-supliku-na-miru', 'seo' => ['examples' => [
         ['preset' => 'drawer'],
         ['preset' => 'office'],
         ['preset' => 'parts'],
     ]]],
-    'modular' => ['route' => 'tools.modular', 'intent' => 'create', 'categories' => ['home'], 'available' => true, 'seo' => ['examples' => [
+    'modular' => ['route' => 'tools.modular', 'intent' => 'create', 'categories' => ['home'], 'available' => true, 'article' => 'organizer-do-supliku-na-miru', 'seo' => ['examples' => [
         ['params' => ['inner_w' => 300, 'inner_d' => 150, 'height' => 40, 'cols' => 6, 'rows' => 3, 'bins' => [
             ['x' => 0, 'y' => 0, 'w' => 2, 'h' => 3, 'color' => 'blue'], ['x' => 2, 'y' => 0, 'w' => 2, 'h' => 1, 'color' => 'white'], ['x' => 4, 'y' => 0, 'w' => 2, 'h' => 1, 'color' => 'white'], ['x' => 2, 'y' => 1, 'w' => 4, 'h' => 2, 'color' => 'orange'],
         ]]],
@@ -51,7 +52,7 @@ return [
             ['x' => 0, 'y' => 0, 'w' => 1, 'h' => 2, 'color' => 'green'], ['x' => 1, 'y' => 0, 'w' => 2, 'h' => 1, 'color' => 'white'], ['x' => 1, 'y' => 1, 'w' => 2, 'h' => 1, 'color' => 'white'], ['x' => 3, 'y' => 0, 'w' => 1, 'h' => 2, 'color' => 'green'],
         ]]],
     ]]],
-    'box' => ['route' => 'tools.box', 'intent' => 'create', 'categories' => ['home', 'parts'], 'available' => true, 'verified' => '2026-10-10', 'seo' => ['examples' => [
+    'box' => ['route' => 'tools.box', 'intent' => 'create', 'categories' => ['home', 'parts'], 'available' => true, 'article' => 'krabicka-na-miru', 'verified' => '2026-10-10', 'seo' => ['examples' => [
         ['params' => ['inner_w' => 80, 'inner_d' => 50, 'inner_h' => 30, 'lid' => true]],
         ['params' => ['inner_w' => 120, 'inner_d' => 80, 'inner_h' => 40, 'lid' => true, 'cable_slot' => true, 'cable_d' => 8, 'radius' => 6]],
         ['params' => ['inner_w' => 40, 'inner_d' => 40, 'inner_h' => 20, 'lid' => false, 'radius' => 8]],
@@ -88,10 +89,10 @@ return [
         ['preset' => 'pot', 'params' => ['saucer' => true, 'drainage' => true]],
         ['params' => ['profile' => 'neck', 'style' => 'ribs', 'flute_shape' => 'round', 'waists' => 2, 'height' => 200, 'top_d' => 70, 'bottom_d' => 64, 'ribs' => 14, 'flute' => 14]],
     ]]],
-    'figure' => ['route' => 'tools.figure', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => []]],
+    'figure' => ['route' => 'tools.figure', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'article' => 'jak-vznika-busta-z-fotky', 'seo' => ['examples' => []]],
     // session D (docs/X.md): a pet figurine from a photo, on top of the figure tool. A generator makes it, so it has no
     // examples of its own (as the figure has none)
-    'pet' => ['route' => 'tools.pet', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => []]],
+    'pet' => ['route' => 'tools.pet', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'article' => 'figurka-z-fotky-busta-a-mazlicek', 'seo' => ['examples' => []]],
     'relief' => ['route' => 'tools.relief', 'intent' => 'create', 'categories' => ['images', 'names'], 'available' => true, 'seo' => ['examples' => []]],
     'gifts' => ['route' => 'tools.gifts', 'intent' => 'create', 'categories' => ['names'], 'available' => true, 'seo' => ['examples' => []],
         'card' => ['kind' => 'sign', 'preset' => 'keyring', 'params' => ['line1' => 'Ela']]],
@@ -119,7 +120,7 @@ return [
             ['preset' => 'stand', 'params' => ['line1' => 'Ela', 'typeface' => 'script', 'text_height' => 40, 'thickness' => 15, 'artwork' => 'lib:hearts-stars/heart', 'motif_at' => 'right']],
             ['preset' => 'stand', 'params' => ['line1' => 'KAVÁRNA', 'line2' => 'u Jany', 'typeface' => 'bebas', 'text_height' => 35, 'thickness' => 20]],
         ]]],
-    'qr' => ['route' => 'tools.qr', 'intent' => 'create', 'categories' => ['signs', 'sell'], 'available' => true, 'verified' => '2026-10-04', 'seo' => ['examples' => [
+    'qr' => ['route' => 'tools.qr', 'intent' => 'create', 'categories' => ['signs', 'sell'], 'available' => true, 'article' => 'qr-cedulka-a-wifi-stojanek', 'verified' => '2026-10-04', 'seo' => ['examples' => [
         ['params' => ['size' => 70, 'url' => 'https://matplace.com', 'label' => 'matplace.com']],
         ['params' => ['size' => 90, 'content' => 'wifi', 'ssid' => 'Kavarna', 'password' => 'dobrakava', 'label' => 'Wi-Fi', 'stand' => true]],
         ['params' => ['size' => 40, 'url' => 'https://matplace.com/models', 'label' => '', 'hole' => true]],
