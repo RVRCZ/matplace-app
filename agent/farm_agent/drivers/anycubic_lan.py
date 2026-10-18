@@ -29,6 +29,7 @@ import os
 import threading
 import time
 import uuid
+from dataclasses import dataclass
 from typing import Callable, Optional
 
 import aiohttp
@@ -69,6 +70,45 @@ JOB_STATES = {
 
 # project.pause: 0 printing, 1 paused, 2 pausing, 3 resuming, 4 stopping (kobra_connect.models.PauseState)
 PAUSED_FLAGS = (1, 2)
+
+# the printer's own spool rack (box id -1) offers 4 positions; with an ACE unit attached only 3, the ACE's feed takes
+# the 4th (the printer still lists it, with edit_status 3; Kobra X, 18 Oct 2026)
+RACK_ID = -1
+RACK_POSITIONS, RACK_POSITIONS_WITH_ACE, ACE_POSITIONS = 4, 3, 4
+
+
+@dataclass
+class Position:
+    """One spool position as matplace numbers it (slot 0.. across the rack and then the ACE units) and as the printer
+    addresses it (box id, index in the box, ams_index of the start command)."""
+
+    slot: int
+    box: int            # the box's id: -1 the rack, 0.. an ACE unit
+    ordinal: int        # the box's place in the order rack, ACE, second ACE...
+    index: int          # the slot's index inside the box
+    name: str           # "Rack 2", "ACE 1": the position as the screen shows it
+    colour: str = "#000000"
+    material: str = "PLA"
+    status: int = 0     # the printer's slot status (5 loaded, 4 ready)
+
+    @property
+    def ams_index(self) -> int:
+        """What the start's ams_box_mapping calls the position: the boxes in the order the printer lists them, four
+        numbers each (rack 0-3, ACE 4-7). Verified 18 Oct 2026: the Slicer Next addressed the rack's index 1 as 1, and
+        ams_index 4 fed from the ACE's slot 0 (report "ace_filament_feeding", unit_no 1, channel_no 1; docs/AM.md §6)."""
+        return self.ordinal * 4 + self.index
+
+
+@dataclass
+class Spools:
+    """The printer's spool positions in matplace's order, and the one whose spool is in the head right now."""
+
+    positions: list
+    loaded: Optional[Position] = None
+    boxes: int = 0
+
+    def at(self, slot: int) -> Optional[Position]:
+        return next((p for p in self.positions if p.slot == slot), None)
 
 
 class LinkError(Exception):
@@ -198,8 +238,10 @@ class AnycubicLanDriver(PrinterDriver):
         self._task: Optional[asyncio.Task] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._last_state: Optional[str] = None
-        # the task that ended by a report (a cancelled one leaves no trace in last_project), until the next start
+        # the task that ended by a report (it leaves no trace in last_project), until the next start, and the last
+        # progress report of the running task (its minutes and millimetres)
         self._ended: Optional[dict] = None
+        self._last_progress: dict = {}
         self._urls: dict = {}
         self._opening = asyncio.Lock()
 
@@ -256,10 +298,17 @@ class AnycubicLanDriver(PrinterDriver):
     def _heard(self, kind: str, data: dict) -> None:
         """Called in paho's thread for every report: a change of the printer's state wakes the agent at once."""
         details = data.get("data") if isinstance(data.get("data"), dict) else {}
-        if kind == "print" and data.get("action") == "stop" and data.get("state") == "stoped" and details.get("filename"):
-            # a cancelled task is gone from the next info report and never enters last_project (18 Oct 2026):
-            # remembered here, so the agent hears "cancelled" and not "the printer no longer reports this print"
-            self._ended = {"status": JOB_CANCELLED, **details}
+        if kind == "print" and details.get("filename"):
+            name = _base_name(str(details["filename"]))
+            ended = {"finished": JOB_DONE, "failed": JOB_FAILED, "stoped": JOB_CANCELLED, "stopped": JOB_CANCELLED}.get(str(data.get("state") or ""))
+            if ended:
+                # a task that ended, by finishing, failing or a stop, is gone from the next info report and never
+                # enters last_project (Kobra X, 18 Oct 2026): remembered here with the numbers of its last progress
+                # report, so the agent hears "done" or "cancelled" and not "the printer no longer reports this print"
+                numbers = self._last_progress if _base_name(str(self._last_progress.get("filename") or "")) == name else {}
+                self._ended = {**numbers, **details, "status": ended, "err_msg": str(data.get("msg") or "") if ended == JOB_FAILED else ""}
+            elif "progress" in details:
+                self._last_progress = details          # print_time (minutes) and supplies_usage (mm) of the running task
         state = details.get("state") if details else data.get("state")
         if kind in ("info", "print", "status") and state and state != self._last_state:
             self._last_state = state
@@ -300,7 +349,17 @@ class AnycubicLanDriver(PrinterDriver):
             log.debug("%s: status failed: %s", self.key, e)
             telemetry = {"link": CLOUD_MODE} if self._problem == CLOUD_MODE else {}
             return PrinterStatus(OFFLINE, telemetry)
-        return self._map(report.get("data") or {})
+        status = self._map(report.get("data") or {})
+        if status.state in (PRINTING, PAUSED):
+            # which spool is in the head, as the screen names it and as matplace's slot (the operator checks the colour)
+            try:
+                loaded = (await self.spools()).loaded
+            except DriverError:
+                loaded = None
+            if loaded:
+                status.telemetry["spool"] = loaded.name
+                status.telemetry["slot"] = loaded.slot
+        return status
 
     def _map(self, d: dict) -> PrinterStatus:
         self._urls = d.get("urls") or self._urls
@@ -377,7 +436,7 @@ class AnycubicLanDriver(PrinterDriver):
         if not url:
             raise DriverError("the printer offers no upload address (urls.fileUploadurl missing in its info)")
         await self._clear_stale()
-        self._ended = None
+        self._ended, self._last_progress = None, {}
         # What the Slicer Next sends (captured and tried out 18 Oct 2026, docs/AM.md): T<n> in the G-code is a "paint"
         # the printer maps to a spool position by ams_box_mapping. matplace's GcodeSlot wrote the spool position as
         # T<n> (docs/V.md), so the file goes up as paint 0 and that position goes into the mapping. The file needs the
@@ -386,8 +445,9 @@ class AnycubicLanDriver(PrinterDriver):
         with open(gcode_path, "rb") as fh:
             raw = fh.read()
         facts = facts_of(raw)
-        position = facts.tool if facts.tool else int(slot)
-        colour, material = await self._spool(position, config_value(raw, b"filament_colour") or "#000000", config_value(raw, b"filament_type") or "PLA")
+        slot_no = facts.tool if facts.tool else int(slot)
+        pos = await self.spool_at(slot_no, config_value(raw, b"filament_colour") or "#000000", config_value(raw, b"filament_type") or "PLA")
+        colour, material = pos.colour, pos.material
         if self.as_package:
             data, _ = package(raw, colour, material)
             upload_name = filename + ".3mf" if filename.lower().endswith(".gcode") else filename
@@ -395,8 +455,8 @@ class AnycubicLanDriver(PrinterDriver):
             data, upload_name = prepared_gcode(raw, colour, material, facts), filename
         await self._upload(url, data, upload_name)
         rgba = rgb_of(colour) + [255]
-        mapping = {"paint_index": 0, "ams_index": position, "paint_color": rgba, "ams_color": rgba, "material_type": material.split()[0].upper()}
-        log.info("%s: starting %s (T%d -> spool position %d, %s %s)", self.key, filename, facts.tool, position, material, colour)
+        mapping = {"paint_index": 0, "ams_index": pos.ams_index, "paint_color": rgba, "ams_color": rgba, "material_type": material.split()[0].upper()}
+        log.info("%s: starting %s (T%d -> slot %d = %s, ams_index %d, %s %s)", self.key, filename, facts.tool, slot_no, pos.name, pos.ams_index, material, colour)
         command = {
             # the printer prints the file just uploaded and never fetches the address: the Slicer sends this very
             # placeholder, and a start without url, md5 and filesize is refused
@@ -463,22 +523,43 @@ class AnycubicLanDriver(PrinterDriver):
                 return
         log.info("%s: the stale task is still there, starting anyway", self.key)
 
-    async def _spool(self, position: int, colour: str, material: str) -> tuple[str, str]:
-        """Colour (#rrggbb) and material of the spool at this position of the printer's own rack (box id -1): what the
-        file and the start say the print is made of. Position n is ams_index n and "n+1" on the screen (18 Oct 2026).
-        When the printer does not tell, the G-code's own values stand."""
+    async def spools(self) -> Spools:
+        """The spool positions the printer has, in matplace's order: the rack (box id -1) first, then the ACE units by
+        id; slot n is the n-th position across them. With an ACE attached the rack offers 3 positions, alone 4
+        (RACK_POSITIONS). Raises DriverError when the printer does not tell."""
+        report = await self._ask("multiColorBox", "getInfo")
+        boxes = [b for b in (report.get("data") or {}).get("multi_color_box") or [] if isinstance(b, dict)]
+        boxes.sort(key=lambda b: (int(b.get("id", 0)) != RACK_ID, int(b.get("id", 0))))
+        spools = Spools(positions=[], boxes=len(boxes))
+        for ordinal, box in enumerate(boxes):
+            box_id = int(box.get("id", 0))
+            rack = box_id == RACK_ID
+            count = (RACK_POSITIONS_WITH_ACE if len(boxes) > 1 else RACK_POSITIONS) if rack else ACE_POSITIONS
+            unit = "Rack" if rack else ("ACE" if ordinal <= 1 else f"ACE{ordinal}")
+            slots = sorted((s for s in box.get("slots") or [] if isinstance(s, dict)), key=lambda s: int(s.get("index", 0)))[:count]
+            for s in slots:
+                rgb = list(s.get("color") or [])[:3]
+                p = Position(slot=len(spools.positions), box=box_id, ordinal=ordinal, index=int(s.get("index", 0)),
+                             name=f"{unit} {int(s.get('index', 0)) + 1}", colour="#%02X%02X%02X" % tuple(rgb) if len(rgb) == 3 else "#000000",
+                             material=str(s.get("type") or "PLA"), status=int(s.get("status") or 0))
+                if int(box.get("loaded_slot", -1)) == p.index:
+                    spools.loaded = p
+                spools.positions.append(p)
+        return spools
+
+    async def spool_at(self, slot: int, colour: str, material: str) -> Position:
+        """The position matplace's slot means on this printer, with the spool's colour and material (what the file and
+        the start say the print is made of). A printer that does not tell its boxes gets the slot as the rack's index
+        and the G-code's own colour and material; a slot beyond the positions is refused with the list."""
         try:
-            report = await self._ask("multiColorBox", "getInfo")
+            spools = await self.spools()
         except DriverError as e:
-            log.info("%s: no spool information (%s)", self.key, e)
-            return colour, material
-        boxes = (report.get("data") or {}).get("multi_color_box") or []
-        rack = next((b for b in boxes if b.get("id") == -1), boxes[0] if boxes else {})
-        spool = next((s for s in rack.get("slots") or [] if s.get("index") == position), None)
-        if not spool:
-            return colour, material
-        rgb = list(spool.get("color") or [])[:3]
-        return ("#%02X%02X%02X" % tuple(rgb) if len(rgb) == 3 else colour), str(spool.get("type") or material)
+            log.info("%s: no spool information (%s): slot %d taken as the rack's index", self.key, e, slot)
+            return Position(slot=slot, box=RACK_ID, ordinal=0, index=slot, name=f"position {slot + 1}", colour=colour, material=material)
+        p = spools.at(slot)
+        if not p:
+            raise DriverError(f"slot {slot + 1}: the printer offers {len(spools.positions)} spool positions ({', '.join(q.name for q in spools.positions)})")
+        return p
 
     async def _upload(self, url: str, data: bytes, filename: str) -> None:
         size = len(data)
