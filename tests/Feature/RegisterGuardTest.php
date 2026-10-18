@@ -2,15 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Models\CreditTransaction;
+use App\Models\ModelFile;
+use App\Models\OauthIdentity;
 use App\Models\User;
+use App\Models\UserRole;
 use App\Notifications\VerifyEmailAddress;
 use App\Support\RegisterGuard;
+use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\MeshFixtures;
 use Tests\TestCase;
 
 /**
@@ -132,6 +142,78 @@ class RegisterGuardTest extends TestCase
         // Cloudflare down: let through (the limits and the signed time still stand), written to the log
         $answer = fn () => throw new ConnectionException('timeout');
         $this->register('during-outage@example.com', '95.182.114.251', ['cf-turnstile-response' => 'any'])->assertRedirect(route('account'));
+    }
+
+    /** @return array<string, User> the accounts of the prune tests: two robots and everything that must stay */
+    private function accounts(): array
+    {
+        Storage::fake('models');
+        Storage::fake('farm');
+        Mail::fake();
+        $this->seed(FarmSeeder::class);
+        $old = now()->subDays(8);
+        $make = fn (string $email, bool $verified = false, $at = null) => tap(User::factory()->unverified()->create(['email' => $email, 'name' => 'Test']), function (User $u) use ($verified, $at, $old) {
+            $u->forceFill(['created_at' => $at ?? $old, 'email_verified_at' => $verified ? $old : null])->save();
+            $u->setRole(User::ROLE_CUSTOMER, true);
+        });
+        $a = [
+            'robot1' => $make('robot1@gmail.com'), 'robot2' => $make('robot2@gmail.com'),
+            'fresh' => $make('fresh@gmail.com', false, now()->subDays(2)),          // not seven days old yet
+            'verified' => $make('verified@example.com', true),
+            'credit' => $make('credit@example.com'), 'model' => $make('model@example.com'), 'google' => $make('google@example.com'),
+            'order' => $make('order@example.com'), 'designer' => $make('designer@example.com'),
+        ];
+        CreditTransaction::create(['user_id' => $a['credit']->id, 'type' => CreditTransaction::TYPE_TOPUP, 'amount' => 100, 'currency' => 'CZK']);
+        ModelFile::create(['uuid' => (string) Str::uuid(), 'owner_user_id' => $a['model']->id, 'original_name' => 'a.stl', 'ext' => 'stl', 'size_bytes' => 1, 'sha256' => str_repeat('0', 64), 'storage_path' => 'x', 'status' => ModelFile::STATUS_READY]);
+        OauthIdentity::create(['user_id' => $a['google']->id, 'provider' => 'google', 'provider_id' => 'g-1']);
+        $a['designer']->setRole(User::ROLE_DESIGNER, true);
+        // an order the person never paid still keeps the account
+        $path = sys_get_temp_dir().'/mp_prune_'.uniqid().'.stl';
+        MeshFixtures::cubeStl($path, 20);
+        $a['order']->forceFill(['email_verified_at' => now()])->save();          // ordering needs a confirmed e-mail
+        $uuid = $this->actingAs($a['order'])->postJson('/api/uploads', ['file' => new UploadedFile($path, 'part.stl', null, null, true)])->json('file.uuid');
+        $this->actingAs($a['order'])->postJson('/farm/orders', ['file' => $uuid])->assertCreated();
+        $a['order']->forceFill(['email_verified_at' => null])->save();
+        ModelFile::where('uuid', $uuid)->update(['owner_user_id' => null]);       // the order alone, not the model, keeps it
+        Auth::logout();
+
+        return $a;
+    }
+
+    public function test_the_command_lists_and_deletes_only_unconfirmed_accounts_nobody_used(): void
+    {
+        $a = $this->accounts();
+        $this->artisan('users:prune-unverified', ['--days' => 7, '--dry-run' => true])
+            ->expectsOutputToContain('robot1@gmail.com')->expectsOutputToContain('2 unconfirmed accounts')->expectsOutputToContain('Nothing deleted (--dry-run).')
+            ->doesntExpectOutputToContain('credit@example.com')->assertSuccessful();
+        // without --force nothing goes either; --dry-run wins over --force
+        $this->artisan('users:prune-unverified')->expectsOutputToContain('add --force')->assertSuccessful();
+        $this->artisan('users:prune-unverified', ['--dry-run' => true, '--force' => true])->assertSuccessful();
+        $this->assertSame(9, User::count());
+
+        $this->artisan('users:prune-unverified', ['--force' => true])->expectsOutputToContain('Deleted 2 accounts.')->assertSuccessful();
+        $this->assertSame(['credit', 'designer', 'fresh', 'google', 'model', 'order', 'verified'], collect($a)->filter(fn ($u) => User::whereKey($u->id)->exists())->keys()->sort()->values()->all());
+        $this->assertSame(0, UserRole::whereIn('user_id', [$a['robot1']->id, $a['robot2']->id])->count());
+        // --days counts: two days old goes with --days=1
+        $this->artisan('users:prune-unverified', ['--days' => 1, '--force' => true])->expectsOutputToContain('Deleted 1 accounts.');
+        $this->assertFalse(User::whereKey($a['fresh']->id)->exists());
+    }
+
+    public function test_the_admin_sees_how_many_and_deletes_them_with_a_confirmation(): void
+    {
+        $a = $this->accounts();
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $page = $this->actingAs($admin)->get('/admin/users?unverified=1')->assertOk();
+        $page->assertSee('Smazat neověřené (2)')->assertSee('id="users-prune"', false)->assertSee('neověřený')->assertDontSee('admin-'.$admin->email);
+        // a customer cannot: the admin gate sends them away and nothing is deleted (the count below)
+        $this->actingAs($a['verified'])->post('/admin/users/prune-unverified', ['confirm' => 1])->assertRedirect();
+        // without the confirmation nothing happens
+        $this->actingAs($admin)->post('/admin/users/prune-unverified')->assertSessionHasErrors('confirm');
+        $this->assertSame(10, User::count());
+        $this->actingAs($admin)->post('/admin/users/prune-unverified', ['confirm' => 1])->assertRedirect()->assertSessionHas('status');
+        $this->assertSame(8, User::count());
+        $this->actingAs($admin)->get('/admin/users')->assertOk()->assertSee('Smazat neověřené (0)');
     }
 
     public function test_a_mistake_in_the_form_is_not_a_registration_and_ipv6_counts_by_its_64(): void

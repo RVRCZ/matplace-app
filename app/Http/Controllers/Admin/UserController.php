@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Account\AccountEraser;
+use App\Domain\Account\UnverifiedAccounts;
 use App\Domain\Designer\DesignerProfiles;
 use App\Domain\Farm\Wallet;
 use App\Http\Controllers\Controller;
@@ -26,7 +27,7 @@ class UserController extends Controller
 {
     public const ROLES = ['admin', 'designer'];
 
-    public function index(Request $request): View
+    public function index(Request $request, UnverifiedAccounts $unverified): View
     {
         $q = trim((string) $request->query('q'));
         $role = in_array($request->query('role'), self::ROLES, true) ? (string) $request->query('role') : null;
@@ -36,12 +37,15 @@ class UserController extends Controller
             ->addSelect(['balance' => CreditTransaction::selectRaw('coalesce(sum(amount), 0)')->whereColumn('user_id', 'users.id')])
             ->when($q !== '', fn ($w) => $w->where(fn ($x) => $x->where('name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%")->orWhere('phone', 'like', "%{$q}%")))
             ->when($role, fn ($w) => $w->whereHas('roles', fn ($r) => $r->where('role', $role)->whereNull('disabled_at')))
+            ->when($request->query('unverified') === '1', fn ($w) => $w->whereNull('email_verified_at'))
             ->when($request->query('deleted') === '1', fn ($w) => $w->whereNotNull('anonymized_at'))
             ->when($request->query('deleted') !== '1', fn ($w) => $w->whereNull('anonymized_at'))
             ->orderByDesc('id')->paginate(50)->withQueryString();
 
         return view('admin.users.index', [
-            'users' => $users, 'q' => $q, 'role' => $role, 'deleted' => $request->query('deleted') === '1',
+            'users' => $users, 'q' => $q, 'role' => $role, 'deleted' => $request->query('deleted') === '1', 'unverified' => $request->query('unverified') === '1',
+            // what "delete unconfirmed" would take now: shown on its button, so the confirmation names a number
+            'prunable' => $unverified->query()->count(),
             'counts' => [
                 'all' => User::whereNull('anonymized_at')->count(),
                 'verified' => User::whereNotNull('email_verified_at')->whereNull('anonymized_at')->count(),
@@ -49,6 +53,15 @@ class UserController extends Controller
                 'month' => User::where('created_at', '>=', now()->subDays(30))->count(),
             ],
         ]);
+    }
+
+    /** Deletes the unconfirmed accounts nobody used (older than 7 days); the same as `users:prune-unverified --force`. */
+    public function pruneUnverified(Request $request, UnverifiedAccounts $unverified): RedirectResponse
+    {
+        $request->validate(['confirm' => ['accepted']]);
+        $gone = $unverified->prune(UnverifiedAccounts::DAYS, $request->user()->id);
+
+        return back()->with('status', "Smazáno {$gone} neověřených účtů starších než ".UnverifiedAccounts::DAYS.' dní (bez zakázek, kreditu, modelů a přihlášení přes Google/Facebook).');
     }
 
     public function show(Request $request, User $user, Wallet $wallet): View
