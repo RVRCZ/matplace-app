@@ -7,16 +7,17 @@ Session 1, větev `feature/howto-video` (z `origin/main` 00f87e8), 18. 10. 2026.
 
 | soubor | co | délka | velikost obrazu |
 |---|---|---|---|
-| `printables-howto.mp4` | hlavní video 16:9, 30 fps, AAC | 1:48 (s časosběrem, bez telefonu) | 1920 × 1080 |
-| `printables-howto-short.mp4` | Short 9:16, 30 fps, AAC | 0:35 (s časosběrem, bez telefonu) | 1080 × 1920 |
+| `printables-howto.mp4` | hlavní video 16:9, 30 fps, AAC | 1:53 | 1920 × 1080 |
+| `printables-howto-short.mp4` | Short 9:16, 30 fps, AAC | 0:40 | 1080 × 1920 |
 | `popis.txt` | název a popis pro YouTube (cs): text, model a autor (CC0) s odkazem, `https://matplace.com/?…utm_campaign=video_howto`, kredit hudby | | |
 | `titulky.cs.srt`, `titulky.en.srt` | titulky 16:9 (stejné jako vypálené v obraze) | | |
 | `titulky-short.cs.srt`, `titulky-short.en.srt` | titulky Shortu | | |
 
 Snímky z videa jsou v `docs/img/howto/`: úvod, Printables, cena, barvy, platba s rozmazaným telefonem, Short
-a časosběr (`casosber.jpg`, `short-casosber.jpg`).
+a časosběr (`casosber.jpg`, `short-casosber.jpg`), hotový výrobek (`hotovo.jpg`).
 
-Verze 18. 10. 13:39 (s časosběrem F26-000085) nahradila ranní; ranní výstupy jsou v `out\old-1059\`.
+Verze 18. 10. 17:05 má časosběr F26-000085 i záběr hotového výrobku (`vec-1.mp4`). Předchozí verze jsou v `out\old-1059\`
+(ranní, s kartou místo časosběru) a `out\old-1339\` (s časosběrem, bez záběru výrobku).
 
 **Pořadí 16:9**:
 1. úvod 2,5 s: název cs/en a adresa,
@@ -33,14 +34,14 @@ Verze 18. 10. 13:39 (s časosběrem F26-000085) nahradila ranní; ranní výstup
 12. „ve frontě“,
 13. „tiskne se“ s prvním snímkem z kamery,
 14. časosběr F26-000085 (U #1, PLA Silk měděná, dotištěno 11:32 UTC), 30 s stlačeno na 20 s, titulek „Časosběr tisku“,
-15. záběr telefonem (až bude; teď vynechaný bez prázdného místa),
+15. záběr hotového stojánku s telefonem (`vec-1.mp4`, 3,6 s při 60 fps zpomalené na 0,75×, tedy 4,8 s), titulek „Hotovo“,
 16. závěr s logem a matplace.com 3 s.
 
 Průchod je zrychlený 1,5 až 3×; delší statické části (fronta 2:40–3:36, konec záznamu) jsou vystřižené. Titulky
 cs/en jsou u každého kroku 2,8 až 4 s, na tmavém pruhu dole. Nahoře jsou tam, kde jsou dole tlačítka: Vytisknout,
 doprava, platba.
 
-**Short**: úvod 1,5 s → nahrání → cena → barvy → časosběr (čtvercový `short.mp4` 15 s, titulek „Tiskneme na farmě“) → telefon (až bude)
+**Short**: úvod 1,5 s → nahrání → cena → barvy → časosběr (čtvercový `short.mp4` 15 s, titulek „Tiskneme na farmě“) → hotový výrobek (0,75×, okno na stojánek `short_crop` [1050, 540, 1200])
 → závěr 2 s.
 - Výřez stránky 16:9 běží přes střed a za ním je tentýž obraz rozmazaný.
 - Titulky jsou větší (62/46 px) a zalamují se.
@@ -102,11 +103,11 @@ adresní řádek s odkazem na zakázku a boční lišta Firefoxu. Obsah je vlož
    do konce −3,1 s: střih na kartu s logem je v 31,533 s, −3 by trefilo přesně tu hranici, proto o desetinu dřív.
    `short.mp4` (720 × 720) od 0,5 s (první snímek je hotový výrobek) do konce −0,5 s. `timelapse.mp4`
    (1280 × 720) se nepoužívá, `wide.mp4` má plné rozlišení.
-2. **Záběr telefonem** `C:\Users\roman\Desktop\video\vec-1.mp4`: přidá se sám (16:9 na 12 s, Short 6 s), titulek
-   „Hotovo“.
+2. **Záběr výrobku** `vec-1.mp4`: hotovo 18. 10. Má jen 3,6 s, `fit` umí jen zrychlit, proto `speed: 0.75`
+   (zdroj má 60 fps, zpomalení je plynulé).
 3. **Stránka zakázky „hotovo“** s přehraným časosběrem (krok 5 natáčecího návodu) v záznamu není; video končí
    časosběrem a záběrem telefonu.
-4. Po doplnění telefonu: `php artisan farm:howto-video scripts/video/howto.json`. Lokálně jsou potřeba `FFMPEG_BIN`
+4. Postavení znovu: `php artisan farm:howto-video scripts/video/howto.json`. Lokálně jsou potřeba `FFMPEG_BIN`
    (winget ffmpeg 9.0.2) a `YOUTUBE_MUSIC_DIR` se zvolenou skladbou. Pak:
    - zkopírovat `out\*.mp4` na server,
    - spustit `php artisan farm:howto-video scripts/video/howto.json --out=<složka> --skip-build --queue`,

@@ -42,7 +42,7 @@
         {"source": "screen", "from": 217, "to": 225, "speed": 1, "caption_seconds": 4, "caption": {"cs": "6. Tiskne se – snímky z tiskárny vidíte živě", "en": "6. Printing – watch the printer's camera live"}},
         {"source": "timelapse", "from": 1.5, "to": -3.1, "fit": 20, "caption": {"cs": "Časosběr tisku", "en": "Time-lapse of the print"},
             "missing": {"seconds": 4, "text": {"cs": "Tady bude časosběr tisku", "en": "The print's time-lapse goes here"}}},
-        {"source": "phone", "from": 0, "to": 0, "fit": 12, "caption": {"cs": "Hotovo", "en": "Done"}},
+        {"source": "phone", "from": 0, "to": 0, "speed": 0.75, "caption": {"cs": "Hotovo", "en": "Done"}},
         {"card": "end", "seconds": 3}
     ],
     "short": [
@@ -52,7 +52,7 @@
         {"source": "screen", "from": 118, "to": 131, "speed": 3, "short_crop": [1350, 540, 900], "caption": {"cs": "Barva z cívek na farmě", "en": "A colour from our spools"}},
         {"source": "timelapse_square", "from": 0.5, "to": -0.5, "fit": 15, "caption": {"cs": "Tiskneme na farmě", "en": "Printed on our farm"},
             "missing": {"seconds": 3, "text": {"cs": "Tady bude časosběr", "en": "Time-lapse goes here"}}},
-        {"source": "phone", "from": 0, "to": 0, "fit": 6, "caption": {"cs": "Hotovo", "en": "Done"}},
+        {"source": "phone", "from": 0, "to": 0, "speed": 0.75, "short_crop": [1050, 540, 1200], "caption": {"cs": "Hotovo", "en": "Done"}},
         {"card": "end", "seconds": 2}
     ]
 }
