@@ -1777,5 +1777,6 @@
     "calc.status.not_model": "Tenhle soubor neumíme přečíst jako 3D model: je poškozený, prázdný nebo jiného druhu. Zkuste jiný soubor (STL, 3MF, STEP a další).",
     "auth.guard.limited": "Z této adresy dnes přibylo už hodně registrací, další zkuste prosím později. Máte už účet? Přihlaste se.",
     "auth.guard.retry": "Zkuste to prosím znovu: formulář vypršel nebo byl odeslán příliš rychle.",
-    "user.verify.registered_ask": "Účet je založený. Pro ověření e‑mailu :email klepněte v účtu na „Poslat odkaz znovu“."
+    "user.verify.registered_ask": "Účet je založený. Pro ověření e‑mailu :email klepněte v účtu na „Poslat odkaz znovu“.",
+    "auth.guard.turnstile": "Potvrďte prosím ověření pod formulářem a odešlete ho znovu."
 }

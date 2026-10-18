@@ -16,6 +16,11 @@
         <label class="block text-sm font-semibold">{{ __('auth.name') }}<input name="name" required value="{{ old('name') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
         <label class="block text-sm font-semibold">{{ __('auth.email') }}<input name="email" type="email" required autocomplete="email" value="{{ old('email') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
         <label class="block text-sm font-semibold">{{ __('auth.password') }}<input name="password" type="password" required minlength="8" autocomplete="new-password" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
+        @if(\App\Support\RegisterGuard::turnstileOn())
+            {{-- Cloudflare Turnstile (on with its keys, docs/AH.md §10): usually no puzzle, a check in the background --}}
+            <div class="cf-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" data-language="{{ app()->getLocale() }}"></div>
+            @push('head')<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>@endpush
+        @endif
         <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="terms" value="1" required class="mt-1"> <span>{{ __('auth.terms') }}</span></label>
         <button class="w-full rounded-xl bg-action px-4 py-3 font-semibold text-white">{{ __('auth.register') }}</button>
     </form>

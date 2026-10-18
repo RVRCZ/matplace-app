@@ -6,7 +6,9 @@ use App\Models\User;
 use App\Notifications\VerifyEmailAddress;
 use App\Support\RegisterGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -101,6 +103,35 @@ class RegisterGuardTest extends TestCase
         $this->travel(1)->days();
         $this->register('tomorrow@example.com');
         Notification::assertSentTo(User::where('email', 'tomorrow@example.com')->firstOrFail(), VerifyEmailAddress::class);
+    }
+
+    public function test_turnstile_waits_behind_its_keys_and_then_asks_cloudflare(): void
+    {
+        // one stub for the whole test (the first matching stub wins); what it answers changes below
+        $answer = fn () => Http::response(['success' => false, 'error-codes' => ['invalid-input-response']]);
+        Http::fake(['challenges.cloudflare.com/*' => function () use (&$answer) {
+            return $answer();
+        }]);
+        // off (no keys): the form as it was, nothing asked
+        $this->get('/register')->assertOk()->assertDontSee('cf-turnstile', false)->assertDontSee('challenges.cloudflare.com', false);
+        $this->register('plain@example.com')->assertRedirect(route('account'));
+        Http::assertNothingSent();
+
+        // on: the widget is on the form and Cloudflare decides
+        config(['services.turnstile.site_key' => '0x4AAA-site', 'services.turnstile.secret' => '0x4AAA-secret']);
+        Auth::logout();
+        $this->get('/en/register')->assertOk()->assertSee('class="cf-turnstile" data-sitekey="0x4AAA-site" data-language="en"', false)
+            ->assertSee('https://challenges.cloudflare.com/turnstile/v0/api.js', false);
+        $this->register('robot@gmail.com', '95.182.114.251', ['cf-turnstile-response' => 'made-up'])->assertSessionHasErrors('turnstile');
+        $this->register('robot2@gmail.com', '95.182.114.251')->assertSessionHasErrors('turnstile');       // no token at all
+        $this->assertSame(0, User::where('email', 'like', 'robot%')->count());
+        Http::assertSent(fn ($r) => $r->url() === 'https://challenges.cloudflare.com/turnstile/v0/siteverify' && $r['secret'] === '0x4AAA-secret' && $r['response'] === 'made-up' && $r['remoteip'] === '95.182.114.251');
+
+        $answer = fn () => Http::response(['success' => true]);
+        $this->register('person@example.com', '95.182.114.251', ['cf-turnstile-response' => 'real-token'])->assertRedirect(route('account'));
+        // Cloudflare down: let through (the limits and the signed time still stand), written to the log
+        $answer = fn () => throw new ConnectionException('timeout');
+        $this->register('during-outage@example.com', '95.182.114.251', ['cf-turnstile-response' => 'any'])->assertRedirect(route('account'));
     }
 
     public function test_a_mistake_in_the_form_is_not_a_registration_and_ipv6_counts_by_its_64(): void

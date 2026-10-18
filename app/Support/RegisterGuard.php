@@ -3,9 +3,12 @@
 namespace App\Support;
 
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * What stops a robot that fills in the real registration form (docs/AH.md §10; 58 accounts "Test" in a day from six
@@ -57,6 +60,40 @@ class RegisterGuard
     public static function firstToday(Request $request): bool
     {
         return Cache::add('register-mail:'.self::ipKey($request).':'.now()->toDateString(), 1, now()->endOfDay());
+    }
+
+    /** Turnstile is on when both of its keys are set (config/services.php). */
+    public static function turnstileOn(): bool
+    {
+        return filled(config('services.turnstile.site_key')) && filled(config('services.turnstile.secret'));
+    }
+
+    /**
+     * Cloudflare's word on the token the widget put into the form. A missing or refused token stops the registration;
+     * Cloudflare not answering does not (the limits and the signed time still stand), it is written to the log.
+     */
+    public static function turnstilePasses(Request $request): bool
+    {
+        $token = (string) $request->input('cf-turnstile-response', '');
+        if ($token === '') {
+            return false;
+        }
+        try {
+            $answer = Http::asForm()->timeout(5)->post((string) config('services.turnstile.verify_url'), [
+                'secret' => config('services.turnstile.secret'), 'response' => $token, 'remoteip' => $request->ip(),
+            ]);
+        } catch (ConnectionException $e) {
+            Log::warning('turnstile unreachable, registration let through', ['error' => $e->getMessage()]);
+
+            return true;
+        }
+        if (! $answer->successful()) {
+            Log::warning('turnstile answered '.$answer->status().', registration let through');
+
+            return true;
+        }
+
+        return $answer->json('success') === true;
     }
 
     /** The address a limit counts: IPv4 as it is, IPv6 by its /64 (one household or one server gets a whole /64). */

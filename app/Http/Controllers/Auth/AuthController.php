@@ -65,6 +65,11 @@ class AuthController extends Controller
 
             return back()->withInput($request->except(['password', 't']))->withErrors(['t' => __('auth.guard.retry')]);
         }
+        if (RegisterGuard::turnstileOn() && ! RegisterGuard::turnstilePasses($request)) {
+            Log::info('register refused', ['reason' => 'turnstile', 'ip' => $request->ip()]);
+
+            return back()->withInput($request->except(['password', 't', 'cf-turnstile-response']))->withErrors(['turnstile' => __('auth.guard.turnstile')]);
+        }
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],

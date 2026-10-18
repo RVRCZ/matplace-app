@@ -13,5 +13,10 @@
         "Účet je založený. Pro ověření e‑mailu :email klepněte v účtu na „Poslat odkaz znovu“.",
         "Your account is ready. To confirm :email, tap “Send the link again” in your account.",
         "Su cuenta está lista. Para confirmar :email, pulse «Enviar el enlace de nuevo» en su cuenta."
+    ],
+    "auth.guard.turnstile": [
+        "Potvrďte prosím ověření pod formulářem a odešlete ho znovu.",
+        "Please complete the check under the form and send it again.",
+        "Complete la verificación bajo el formulario y envíelo de nuevo."
     ]
 }

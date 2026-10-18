@@ -1777,5 +1777,6 @@
     "calc.status.not_model": "We cannot read this file as a 3D model: it is damaged, empty or of another kind. Try another file (STL, 3MF, STEP and others).",
     "auth.guard.limited": "Many accounts have been made from this address today; please try again later. Already have an account? Log in.",
     "auth.guard.retry": "Please try again: the form expired or was sent too quickly.",
-    "user.verify.registered_ask": "Your account is ready. To confirm :email, tap “Send the link again” in your account."
+    "user.verify.registered_ask": "Your account is ready. To confirm :email, tap “Send the link again” in your account.",
+    "auth.guard.turnstile": "Please complete the check under the form and send it again."
 }
