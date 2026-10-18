@@ -115,6 +115,34 @@ class BlogSyncTest extends TestCase
         }
     }
 
+    public function test_a_tool_and_its_article_link_each_other(): void
+    {
+        $files = BlogSync::files();
+        $tools = array_filter(config('tools'), fn ($t) => isset($t['article']));
+        $this->assertGreaterThanOrEqual(5, count($tools));
+        foreach ($tools as $key => $tool) {
+            $slug = $tool['article'];
+            if ($slug === 'jak-vznika-busta-z-fotky') {
+                continue;   // in the database, written from docs/blog; it starts with a link to the figure tool
+            }
+            $this->assertArrayHasKey($slug, $files, "{$key}: no article {$slug}");
+            $path = route($tool['route'], [], false);
+            $this->assertStringContainsString('('.$path.')', (string) file_get_contents($files[$slug]), "{$slug} does not link back to {$key} ({$path})");
+        }
+    }
+
+    public function test_the_photo_places_are_not_shown_until_the_photos_come(): void
+    {
+        $places = 0;
+        foreach (BlogSync::files() as $slug => $path) {
+            $article = BlogSync::parse((string) file_get_contents($path));
+            $places += substr_count($article['body'], '<!-- foto:');
+            $html = (new Post(['body' => ['cs' => $article['body']], 'format' => Post::FORMAT_MARKDOWN]))->html('cs');
+            $this->assertStringNotContainsString('foto:', $html, "{$slug} shows a photo place");
+        }
+        $this->assertGreaterThan(0, $places);
+    }
+
     public function test_the_article_page_shows_co_dal_with_a_working_link(): void
     {
         $this->artisan('blog:sync')->assertSuccessful();

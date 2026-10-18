@@ -14,7 +14,7 @@ Generativní model se učil na velkém množství 3D modelů. Z fotky odhadne ce
 Na matplace.com to funguje v těchto nástrojích:
 
 - **[Busta nebo figurka z fotky](/tools/figure).** Jedna fotka zepředu, volitelně z boků a zezadu. Asi za minutu je hotový model s podstavcem a jménem, výška 30 až 250 mm. Celý postup s cenami popisuje článek [Jak vzniká busta z fotky](/blog/jak-vznika-busta-z-fotky).
-- **[Figurka mazlíčka z fotky](/tools/pet-figurine).** Pes nebo kočka ve třech stylech, podstavec se jménem a kontrola tenkých nohou.
+- **[Figurka mazlíčka z fotky](/tools/pet-figurine).** Pes nebo kočka ve třech stylech, podstavec se jménem a kontrola tenkých nohou. Obě figurky srovnává článek [Figurka z fotky](/blog/figurka-z-fotky-busta-a-mazlicek).
 - **[Reliéf a litofanie z fotky](/tools/relief).** Fotka se nepromění v těleso, ale v obrázek z různě silného plastu. Proti světlu ukáže fotku, kde je plast tenčí, prosvítá víc.
 - **Hrubý model předmětu.** Na [hlavní stránce](/) zvolte „Mám fotku nebo nápad“ a nahrajte fotku jednoho předmětu na světlém pozadí. Když hotový model nenajdeme, vytvoříme z fotky hrubý tvar. Rozměr pak nastavte podle skutečnosti.
 

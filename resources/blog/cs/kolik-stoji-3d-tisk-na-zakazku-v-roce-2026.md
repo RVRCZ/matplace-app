@@ -14,7 +14,7 @@ Cenu 3D tisku nemusíte odhadovat. Nahrajte model na [hlavní stránku](/) a za 
 3. Změňte velikost, materiál nebo počet kusů a cena se přepočítá.
 4. Když se vám cena hodí, tlačítkem „Vytisknout“ vyberete barvu z cívek, které jsou právě v tiskárnách, a zakázku zaplatíte.
 
-Bez registrace a bez závazku. Model si můžete také stáhnout a vytisknout na své tiskárně.
+Bez registrace a bez závazku. Model si můžete také stáhnout a vytisknout na své tiskárně. Co všechno kalkulace ukáže a nastaví, popisuje článek [Cena 3D tisku z modelu](/blog/cena-3d-tisku-z-modelu).
 
 Nemáte model? Na hlavní stránce zvolte „Mám fotku nebo nápad“ a popište, co potřebujete. Najdeme hotový model, nebo z popisu vytvoříme hrubý tvar. Pro dárky a věci na míru jsou tu [nástroje](/tools), třeba [bustu z fotky](/tools/figure) nebo [stojánek na telefon](/tools/phone-stand).
 

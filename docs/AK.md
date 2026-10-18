@@ -337,3 +337,51 @@ User-Agent obsahuje `matplace-session1-blog`.
 - Šest článků z WordPressu je jen česky, proto jsem je jen česky přepsal. Sync na ostatní jazyky nesahá.
 - Překlad by znamenal doplnit `en`/`es` do téhož řádku. Příkaz se dá rozšířit o `resources/blog/en|es/`, až to
   bude potřeba.
+
+### 5.5 Články k nástrojům (§1a zadání), první pětice
+
+Roman doplnil (přes řídící session 18. 10.): po starých článcích napsat články k nástrojům a článek s nástrojem
+propojit oběma směry. Hotová je první pětice. Pořadí dál: další nástroje po dávkách, po každé dávce push.
+
+| článek (slug) | nástroj, `article` v `config/tools.php` | čísla (kalkulace na produkci 18. 10., PLA+) |
+|---|---|---|
+| `cena-3d-tisku-z-modelu` | `calc` (hlavní stránka) | kostka 20 mm 99 Kč, stojánek 120 Kč, organizér 200 × 120 × 40 250 Kč, váleček ⌀ 120 × 200 910 Kč |
+| `figurka-z-fotky-busta-a-mazlicek` | `pet`; `figure` → `jak-vznika-busta-z-fotky` | busty 99/130/200 Kč (článek o bustě); mazlíček bez ceny, nová figurka by stála kredity Tripo |
+| `qr-cedulka-a-wifi-stojanek` | `qr` | web 70 mm 14 g 25 min 99 Kč; Wi‑Fi 90 mm se stojánkem 35 g 1 h 1 min 110 Kč (jedna barva, cena dvou barev je až u objednávky) |
+| `organizer-do-supliku-na-miru` | `organizer`, `modular` | 100 × 80 × 30 2 × 2 41 g 57 min 110 Kč; 200 × 120 × 40 2 × 3 115 g 2 h 27 min 250 Kč; 300 × 400 × 50 hlásí `exceeds_typical_bed` |
+| `krabicka-na-miru` | `box` | 80 × 50 × 30 bez víčka 28 g 34 min 99 Kč; s víčkem 41 g 51 min 110 Kč |
+
+Dále: `check` a `repair` → `jak-pripravit-stl-soubor-pro-3d-tisk`.
+
+**Jak čísla vznikla**: modely nástrojů vznikly na produkci jako u návštěvníka (`POST /api/tools/param`), pak se
+spočítaly v kalkulaci. Bylo to 7 modelů a 7 výpočtů, User-Agent `matplace-session1-blog`. Wi‑Fi cedulka nesla
+ukázková data z příkladu nástroje (síť „Kavarna“).
+
+**Odkazy oběma směry**:
+- Každý článek má v „Co dál“ odkaz na svůj nástroj.
+- Klíč `article` u nástroje říká, na který článek má stránka nástroje odkázat. Zobrazí ho session 3 ve vstupních
+  stránkách.
+- Test `test_a_tool_and_its_article_link_each_other` hlídá, že článek existuje a odkazuje zpět na route nástroje.
+- Staré články odkazují na nové: cena → kalkulace, fotky → figurka, AI → organizér a krabička, printpal → QR.
+
+**Nové články mají `published_at` 18. 10. 2026 20:00 UTC**, `blog:sync` je tedy po nasazení rovnou zveřejní.
+Kdyby měly počkat na fotky, stačí jim v hlavičce dát `published_at` prázdné.
+
+**Fotky výtisků dodá Roman.** V textu je zástupné místo `<!-- foto: … -->`. Při vykreslení zmizí (Markdown se
+renderuje bez HTML, test to hlídá). Fotku vložíte do `public/img/blog/<slug>/<název>.webp` a zástupné místo
+nahradíte řádkem `![popis](/img/blog/<slug>/<název>.webp)`, stejně jako v článku o bustě.
+
+| článek | fotka |
+|---|---|
+| cena-3d-tisku-z-modelu | kalkulace na telefonu s nahraným modelem, cenou a dobou tisku (stačí snímek obrazovky) |
+| figurka-z-fotky-busta-a-mazlicek | vytištěná busta a figurka psa vedle sebe na poličce |
+| figurka-z-fotky-busta-a-mazlicek | moderní a antická busta, vytištěné |
+| figurka-z-fotky-busta-a-mazlicek | figurka psa ve stylu miniatura a kreslená |
+| qr-cedulka-a-wifi-stojanek | QR cedulka s Wi‑Fi ve stojánku na stole, telefon nabízí připojení |
+| qr-cedulka-a-wifi-stojanek | detail dvoubarevné cedulky, světlá destička a tmavý kód |
+| organizer-do-supliku-na-miru | vytištěný organizér v kuchyňské zásuvce s příbory |
+| organizer-do-supliku-na-miru | organizér na stole s kancelářskými potřebami |
+| krabicka-na-miru | vytištěná krabička s víčkem a elektronikou uvnitř |
+| krabicka-na-miru | krabička s nasazeným a sundaným víčkem |
+
+Obálky (`cover`) nových článků jsou prázdné. Náhled pro sdílení kreslí `route('og')`, jako u článků bez obálky.

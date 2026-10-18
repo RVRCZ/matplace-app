@@ -49,6 +49,7 @@ Na většinu těchto úloh má matplace.com vlastní nástroj zdarma, s cenou ti
 | Model z popisu | Meshy, PrintPal.io | [hlavní stránka](/), „Mám fotku nebo nápad“ |
 | 3D mapu města | PrintPal.io | [3D mapa města nebo krajiny](/tools/map) |
 | Jmenovku, nápis | PrintPal.io | [Cedulka, jmenovka, klíčenka](/tools/sign), [3D nápis](/tools/text) |
+| QR cedulku s Wi‑Fi | PrintPal.io (jmenovky) | [QR cedulka a stojánek](/tools/qr) |
 | Vázu podle rozměrů | Sloyd | [Váza a obal na květináč](/tools/vase) |
 | Krabičku, držák na míru | OpenSCAD | [Krabička na míru](/tools/box), [Držák na cokoliv](/tools/holder) |
 
