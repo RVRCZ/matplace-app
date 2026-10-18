@@ -178,7 +178,7 @@ class FarmVideosCutTest extends TestCase
             $this->assertGreaterThanOrEqual(10, $start - $starts[$i]);
         }
         $this->assertStringContainsString('/tools/vase?utm_source=youtube&utm_medium=social&utm_campaign=video_weekly', $m[1][3]);
-        $this->assertStringContainsString('Hudba: Artist - Song', (string) $video->description);
+        $this->assertStringContainsString('Hudba: Artist – Song (YouTube Audio Library)', (string) $video->description);
         Process::assertRan(fn (PendingProcess $p) => in_array('-stream_loop', $p->command, true) && str_contains(implode(' ', $p->command), 'concat=n=5'));
         Mail::assertQueued(FarmAdminAlert::class, fn ($mail) => str_contains($mail->subjectLine, 'Video ke schválení'));
 

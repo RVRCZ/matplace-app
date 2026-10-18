@@ -443,8 +443,16 @@ class FarmVideos
     public function pickMusic(FarmOrder $order): ?string
     {
         $tracks = $this->tracks();
+        if (! $tracks) {
+            return null;
+        }
+        // the tracks the last videos used, newest first: no track comes again before the others had their turn
+        // (17 Oct 2026: two prints sixteen orders apart got the same track out of sixteen, and Roman heard it at once)
+        $recent = FarmVideo::whereNotNull('music')->where('farm_order_id', '!=', $order->id)->orderByDesc('id')->limit(200)->pluck('music')->unique()->values()->all();
+        $fresh = array_values(array_diff($tracks, array_slice($recent, 0, count($tracks) - 1)));
+        $pool = $fresh ?: $tracks;
 
-        return $tracks ? $tracks[$order->id % count($tracks)] : null;
+        return $pool[$order->id % count($pool)];
     }
 
     /** The square Short when it was built (it grows the channel), else the customer's time-lapse. */

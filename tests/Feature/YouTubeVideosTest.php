@@ -582,4 +582,25 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame('Melodic Techno 03 Extended Version Moogify – taureon (Pixabay)', FarmVideos::musicCredit('taureon-melodic-techno-03-extended-version-moogify-9867.mp3'));
         $this->assertSame('nameless', FarmVideos::musicCredit('nameless.mp3'));
     }
+
+    public function test_a_track_does_not_come_again_before_the_others_had_their_turn(): void
+    {
+        $dir = sys_get_temp_dir().'/mp_music_'.uniqid();
+        mkdir($dir);
+        foreach (['A - One.mp3', 'B - Two.mp3', 'C - Three.mp3'] as $f) {
+            touch($dir.'/'.$f);
+        }
+        config(['youtube.music_dir' => $dir]);
+        $videos = app(FarmVideos::class);
+        $picked = [];
+        for ($i = 0; $i < 3; $i++) {
+            $order = $this->paidOrder(consent: true);
+            $picked[] = $track = $videos->pickMusic($order);
+            FarmVideo::forceCreate(['farm_order_id' => $order->id, 'status' => FarmVideo::STATUS_PENDING, 'title' => 'T', 'music' => $track]);
+        }
+        // three prints in a row, three different tracks (17 Oct 2026: two prints sixteen orders apart shared one of sixteen)
+        $this->assertCount(3, array_unique($picked));
+        // the fourth starts the round again
+        $this->assertContains($videos->pickMusic($this->paidOrder(consent: true)), $picked);
+    }
 }

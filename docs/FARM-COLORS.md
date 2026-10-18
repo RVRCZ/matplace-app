@@ -620,3 +620,7 @@ Po nasazení knihovny (13:40 UTC) selhávala každá kalkulace na webu: „Slice
 neviděly, protože řežou falešným slicerem. Nahlásila session 4 (14:50 UTC), hotfix ce7d49c nasazen ~14:25 UTC, ověřeno
 kalkulací přes API (busta: 61 min, 26,9 g). Od teď `tests/Unit/OrcaProfilesJsonTest.php` načítá každý profil a knihovnu;
 po nasazení, které sahá na profily, se spouští jedna kalkulace na produkci.
+
+**Potvrzení z tisku 17. 10. 2026 večer (Roman):** figurka psa F26-000079 (PLA+ matný bílý, U #1, bez podstavce, seříznuté
+tlapky) vyšla dobře a vyšší teplota PLA+ matného (225/230 °C z knihovny místo 215/225) je podle Romana lepší. Řádek
+U #1 PLA+ matný vlastní teplotu nemá, bere ji z druhu, tedy z knihovny.
