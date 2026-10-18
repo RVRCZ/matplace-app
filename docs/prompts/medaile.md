@@ -37,8 +37,10 @@ s příčkou 4 mm, všechno jeden díl `body` stejně vysoký, barvy změnou po 
    změna po výšce; počet vrstev s výměnou drž malý (proto 3). Řetěz i očko se tisknou v barvě těla, bez výměn. Ověř,
    že kalkulace i farma takový návrh berou (dvě barvy ve stejné výšce = `by_parts`), a že se lícová plocha dotýká
    podložky (text zrcadlit, aby po otočení četl správně!).
-4. **Články řetězu zakulacené**: profil článku oblý (nahoře půlkruh, dole rovná plocha na podložce, ať jde tisk bez
-   podpěr), zachovat zacvaknutí (mezera o 0,4 mm užší než příčka; `LINK` v `shape_kinds.py`); oválný tvar článku
+4. **Články řetězu zakulacené i dole, bez podpěr** (Roman 18. 10. večer): profil článku kruhový ⌀ 4 mm, dole jen
+   malá rovná ploška ~1 mm (zaoblení začíná pod úhlem, který FDM utáhne bez podpěr: převis do 50°, u tak malého
+   poloměru to drží); po vytištění ploška není vidět. Ověř řezem (Orca v kalkulaci: žádné podpěry, žádná varování
+   převisu) a napiš skutečný úhel. Variantu „články stojí na hraně“ nedělej (40 malých dílů na hraně se kácí). Zachovat zacvaknutí (mezera o 0,4 mm užší než příčka; `LINK` v `shape_kinds.py`); oválný tvar článku
    zůstává. Napiš, jak jsi profil udělal (sweep / zaoblení hran) a kolik přidal filamentu na 40 článků.
 5. **Tvary medaile**: ke kruhu, hvězdě a šestiúhelníku přidat **štít**, **osmiúhelník**, **rozetu** (vroubkovaný
    okraj) a **srdce**; okraj medaile s lemem 2 mm (lehce vystouplý rámeček na lícové straně nepřekáží, protože líc je
