@@ -52,6 +52,39 @@ pak MQTT `print/start` s `filename`, `filepath "/"`, `filetype 1`, `task_mode 1`
 - **Světlo** (`light` téma, typ 3) jen s `light: true`, na Kobra X neověřené.
 - **Soubory v úložišti tiskárny ovladač nikdy nemaže.**
 
+## 4a. Zkouška 18. 10. 2026 po Romanově souhlasu: nahrání tiskárna nevezme
+
+Roman v okně session 4 napsal „spusť zkoušku na Kobra X“. Výsledek:
+
+- **`POST /gcode_upload?s=<token>` odmítne všechny tvary formuláře**, vždy `HTTP 200 {"code": 19005, "message":
+  "Parsing form fail"}`. Vyzkoušeno:
+  - pole `file` samotné (tak to dělal ovladač 3c08c74),
+  - `file` + `filename`/`md5`/`filesize`,
+  - `file` + `filename`/`md5`/`size`,
+  - `file` + `fileKey`/`filesize`/`md5`,
+  - pole `gcode`, `files` a `uploadfile`.
+
+  Formulář selže už při čtení, takže soubor se neuložil a tisk se nespustil. Ovladač to hlásí správně jako
+  `DriverError("upload refused: 19005 Parsing form fail")`. Žádný veřejný kód ani dokumentace tvar tohoto požadavku
+  nepopisuje: kobra-connect, Rinkhals, stribor/anycubic_kobrax, chrisfore/anycubic_ha_local, metheos/anycubic-s1-mqtt-bridge,
+  WaresWichall/hass-anycubic_cloud ani Nino6689/anycubic-lan.
+- Port 80 (gkapi kompatibilní s OctoPrintem, jak ho má S1 Max) na Kobra X neodpovídá.
+- Další krok podle zadání, tedy `print/start` s `url` na malý HTTP server na tomto PC (192.168.8.90), **zastavila
+  kontrola oprávnění v session**. Server přístupný z celé sítě a vzdálený start se jí nezdály bezpečné. Nic se
+  neodeslalo.
+- Tiskárna zůstala nedotčená a ve stavu `free` (ověřeno ve 12:11), nic se nezahřálo. `T1` ani `G9111` tedy ověřené
+  nejsou.
+
+**Co dál (rozhodne Roman):**
+1. **Zachytit, co posílá Slicer Next:** Roman pošle kostku ze Sliceru Next v LAN režimu na Kobra X („Odeslat do
+   tiskárny“) a provoz se při tom zachytí (Wireshark nebo vestavěný `pktmon`, port 18910). Z toho je přesný tvar
+   `/gcode_upload` i `print/start` a ovladač se upraví. Je to nejjistější cesta.
+2. **Povolit zkoušku s `url`** (pravidlo oprávnění pro tento skript, nebo ji Roman spustí sám:
+   `scratchpad/kx_url_start.py`). Když tiskárna soubor z adresy stáhne, agent bude soubory vydávat sám
+   (volba `serve_port`).
+3. **Poloautomat:** obsluha pošle soubor ze Sliceru Next, agent ho spustí podle jména a dál hlídá, pozastaví a zruší.
+   To ovladač umí už teď, jen bez nahrání.
+
 ## 4. Zkouška startu na skutečné tiskárně – čeká
 
 Řídící session předala 18. 10. Romanovo „CX je volná“ a produkční G-code kostky 10 mm
