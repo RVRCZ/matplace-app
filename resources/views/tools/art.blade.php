@@ -57,6 +57,11 @@
         @case('mosaic')
             @foreach([0,1,2,3,4] as $r)@foreach([0,1,2,3,4,5,6] as $c)<rect x="{{ 25 + $c * 10 }}" y="{{ 14 + $r * 10 }}" width="9" height="9" rx="1.5" fill="{{ [$a, $d, $l, $ink, '#FFF3D6'][($r * 3 + $c * 2 + ($r % 2)) % 5] }}"/>@endforeach @endforeach
             @break
+        @case('gcode')
+            {{-- a model out of G-code: the layers of a print stacked into a block, the file beside it --}}
+            @foreach([58, 50, 42, 34] as $i => $y)<path d="M36 {{ $y }} L60 {{ $y - 12 }} L84 {{ $y }} L60 {{ $y + 12 }}Z" fill="{{ $i % 2 ? $l : $a }}"/><path d="M36 {{ $y }} L60 {{ $y + 12 }} V{{ $y + 20 }} L36 {{ $y + 8 }}Z" fill="{{ $a }}"/><path d="M60 {{ $y + 12 }} L84 {{ $y }} V{{ $y + 8 }} L60 {{ $y + 20 }}Z" fill="{{ $d }}"/>@endforeach
+            <path d="M14 16 H30 L36 22 V46 H14Z" fill="#fff" stroke="{{ $g }}" stroke-width="2"/><text x="17" y="38" font-size="8" font-weight="700" fill="{{ $ink }}" font-family="sans-serif">G1</text>
+            @break
         @case('calc')
             <path d="M40 14 H70 L84 28 V66 H40Z" fill="#fff" stroke="{{ $g }}" stroke-width="2"/><path d="M70 14 V28 H84" fill="{{ $g }}"/><path d="M50 50 L62 44 L74 50 L62 56Z" fill="{{ $l }}"/><path d="M50 50 L62 56 V66 L50 60Z" fill="{{ $a }}"/><path d="M62 56 L74 50 V60 L62 66Z" fill="{{ $d }}"/><text x="47" y="38" font-size="9" font-weight="700" fill="{{ $ink }}" font-family="sans-serif">STL</text>
             @break

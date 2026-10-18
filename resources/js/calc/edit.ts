@@ -12,11 +12,12 @@ import { estimate } from './rough';
 import { FileInfo } from './api';
 
 interface Cfg { op: string; upload: string; files: string; parts: string; home: string; from: string | null; formats: string[]; maxMb: number; beds: Record<string, number[] | null>; margin: number; farmMargin: number; config: PriceConfig & { bed_mm: { x: number; y: number; z: number } }; i18n: Record<string, string> }
-interface ColorInfo { key?: number; part?: string; name: string; hex: string; extruder: number | null; sources?: string[]; triangles: number; share: number; kind?: string; bodies?: number }
+interface ColorInfo { key?: number; part?: string | null; name: string; hex: string; extruder: number | null; sources?: string[]; triangles: number; share: number; kind?: string; bodies?: number; grams?: number | null }
 interface Analysis { bbox: { x: number; y: number; z: number }; fits: boolean; planes: Record<'x' | 'y' | 'z', number[]> | null; pieces: number | null; too_many: boolean; repaired: boolean; factor?: number; scaled?: number[]; hollow?: boolean; wall?: number; colors?: ColorInfo[]; has_colors?: boolean; not_3mf?: boolean; split_triangles?: number; girth?: number; target?: number; already_hollow?: boolean }
 interface MapPiece { n: number; part: string; cell: number[]; lo: number[]; hi: number[]; volume_mm3: number; down: [string, number] | null; number_at: number[] | null }
 interface Hollow { wall: number; pitch: number; cavity_mm3: number; saved_g: number; drains: number; drain_at: number[][]; drain_d: number }
-interface Report { op: string; stage?: string; planes?: Record<string, number[]>; joint?: string; pins?: number; keys?: number; pieces?: number; cells?: number[]; model?: number[]; warnings?: string[]; map?: MapPiece[]; too_big?: string[]; repaired?: boolean; parts?: string[]; pieces_tris?: Piece[]; volume_in_mm3?: number; hollow?: Hollow | null; factor?: number; scaled?: number[]; grams?: number; rows?: number; cols?: number; lock?: string; knob?: number | boolean; clearance?: number; source?: string | null; frame?: { rim: number; base: number; height: number } | null; cavity?: string; cavity_mm?: Record<string, number>; min_wall?: number; floor?: number; grow_to?: number; bottle?: number[]; neck?: { d: number; h: number }; cut_mm?: number; wall?: number; cork?: { h: number }; label?: { w: number; h: number; text: string }; axis?: string; segments?: number; ball_d?: number; joined?: number; cuts?: number[]; colors?: ColorInfo[]; depth?: number; shells?: number; inlays?: number; bases?: number; split_triangles?: number; dish?: number[]; pocket?: number[]; footprint?: number[]; drain?: string; drains?: number; girth_inner?: number; target?: number; hollowed?: boolean; already_hollow?: boolean; opened?: boolean; windows?: unknown[]; straps?: number; groove?: number[]; slider?: number[]; play?: number; detents?: number }
+interface Report { op: string; stage?: string; planes?: Record<string, number[]>; joint?: string; pins?: number; keys?: number; pieces?: number; cells?: number[]; model?: number[]; warnings?: string[]; map?: MapPiece[]; too_big?: string[]; repaired?: boolean; parts?: string[]; pieces_tris?: Piece[]; volume_in_mm3?: number; hollow?: Hollow | null; factor?: number; scaled?: number[]; grams?: number; rows?: number; cols?: number; lock?: string; knob?: number | boolean; clearance?: number; source?: string | null; frame?: { rim: number; base: number; height: number } | null; cavity?: string; cavity_mm?: Record<string, number>; min_wall?: number; floor?: number; grow_to?: number; bottle?: number[]; neck?: { d: number; h: number }; cut_mm?: number; wall?: number; cork?: { h: number }; label?: { w: number; h: number; text: string }; axis?: string; segments?: number; ball_d?: number; joined?: number; cuts?: number[]; colors?: ColorInfo[]; depth?: number; shells?: number; inlays?: number; bases?: number; split_triangles?: number; dish?: number[]; pocket?: number[]; footprint?: number[]; drain?: string; drains?: number; girth_inner?: number; target?: number; hollowed?: boolean; already_hollow?: boolean; opened?: boolean; windows?: unknown[]; straps?: number; groove?: number[]; slider?: number[]; play?: number; detents?: number;
+    flavour?: string; slicer?: string; printer?: string; profile?: string; layer_height?: number; line_width?: number; layers?: number; lines?: number; truncated?: boolean; open_loops?: number; time_s?: number | null; filament_g?: number | null; filament_m?: number | null; colors_mode?: 'one' | 'height' | 'parts'; color_changes?: { z: number; hex: string }[] }
 type Edited = FileInfo & { edit?: Report | null; tool?: { kind: string; params: Record<string, unknown> & { each?: number[][]; parts?: string[] }; url: string } | null };
 
 // the pieces in calm colours that read as different, the pins and keys grey
@@ -199,8 +200,23 @@ export function bootEdit(stage: Stage): void {
         try {
             const fd = new FormData(); fd.append('file', file);
             const up = await fetch(cfg.upload, { method: 'POST', credentials: 'same-origin', headers, body: fd });
-            if (!up.ok) throw new Error('upload');
+            if (!up.ok) {
+                if (up.status === 422 && cfg.op === 'gcode') { say('bad_format', { f: cfg.formats.join(', ').toUpperCase() }); return; }
+                throw new Error('upload');
+            }
             say('processing');
+            if (cfg.op === 'gcode') {
+                // the upload is the operation: the file that comes back is the model, made in the queue
+                const file = await untilMade((await up.json()).file as Edited);
+                if (file.status !== 'ready') {
+                    const code = String(file.error ?? '').split(':')[0];
+                    say(cfg.i18n[`edit.${cfg.op}.error.${code}`] ? `error.${code}` : 'model_failed');
+                    return;
+                }
+                say(null);
+                await showMade(file);
+                return;
+            }
             const info = await stage.untilReady((await up.json()).file);
             if (info.status !== 'ready') { say('model_failed'); return; }
             await haveModel(info);
@@ -318,6 +334,18 @@ export function bootEdit(stage: Stage): void {
             lines.push((r.min_wall ?? 0) >= 2 ? t('report.wall', { w: nf.format(r.min_wall ?? 0) }) : t('report.thin', { w: nf.format(r.min_wall ?? 0), h: nf.format(r.grow_to ?? 0) }));
             lines.push(t('report.floor', { f: nf.format(r.floor ?? 0) }));
         }
+        if (cfg.op === 'gcode') {
+            if (r.slicer) lines.push(t('report.slicer', { s: r.slicer }));
+            if (r.printer || r.profile) lines.push(t('report.printer', { p: r.printer || '–', f: r.profile || '–' }));
+            lines.push(t('report.layers', { l: r.layers ?? 0, h: nf.format(r.layer_height ?? 0), w: nf.format(r.line_width ?? 0), n: nf.format(r.lines ?? 0) }));
+            if (r.time_s || r.filament_g) {
+                const s = r.time_s ?? 0; const hh = Math.floor(s / 3600); const mm = Math.round((s % 3600) / 60);
+                lines.push(t('report.time', { t: s ? (hh ? t('hours', { h: hh, m: mm }) : t('minutes', { m: mm })) : '–', g: nf.format(r.filament_g ?? 0), m: nf.format(r.filament_m ?? 0) }));
+            }
+            const n = (r.colors ?? []).length;
+            lines.push(r.colors_mode === 'parts' ? t('report.colors.parts', { n }) : r.colors_mode === 'height' ? t('report.colors.height', { n, z: (r.color_changes ?? []).map((c) => nf.format(c.z)).join(', ') }) : t('report.colors.one'));
+            lines.push(t('report.cast'));
+        }
         if (cfg.op === 'puzzle') {
             lines.push(t('report', { c: r.cols ?? 0, r: r.rows ?? 0, n: r.pieces ?? 0, l: r.lock === 'pins' ? t('report.pins', { n: r.pins ?? 0 }) : t('report.tabs', { k: Number(r.knob ?? 0), p: nf.format(r.clearance ?? 0) }) }));
             if (r.frame) lines.push(t('report.frame', { w: nf.format(r.frame.rim), b: nf.format(r.frame.base), h: nf.format(r.frame.height) }));
@@ -330,9 +358,9 @@ export function bootEdit(stage: Stage): void {
         } else if (cfg.op === 'life_size' || cfg.op === 'wearable') lines.push(t('report.one'));
         if (r.repaired) lines.push(t('report.repaired'));
         $('edit-report').innerHTML = lines.map((s) => `<p class="mt-2 first:mt-0">${esc(s)}</p>`).join('');
-        if (cfg.op === 'colors' && r.colors) $('edit-report').insertAdjacentHTML('beforeend', `<p class="mt-2 flex flex-wrap gap-1.5">${r.colors.map(swatch).join('')}</p>`);
+        if ((cfg.op === 'colors' || cfg.op === 'gcode') && r.colors) $('edit-report').insertAdjacentHTML('beforeend', `<p class="mt-2 flex flex-wrap gap-1.5">${r.colors.map(swatch).join('')}</p>`);
         const by: Record<string, string[]> = {};
-        (r.warnings ?? []).filter((w) => !(cfg.op === 'hollow' && w === 'coarse_grid') && !(cfg.op === 'holder' && w === 'wall_thin')).forEach((w) => { (by.result = by.result ?? []).push(t(`warn.${w}`, { n: (r.too_big ?? []).map(partLabel).join(', ') })); });
+        (r.warnings ?? []).filter((w) => !(cfg.op === 'hollow' && w === 'coarse_grid') && !(cfg.op === 'holder' && w === 'wall_thin')).forEach((w) => { (by.result = by.result ?? []).push(t(`warn.${w}`, { n: cfg.op === 'gcode' ? nf.format(w === 'truncated' ? (r.lines ?? 0) : (r.open_loops ?? 0)) : (r.too_big ?? []).map(partLabel).join(', ') })); });
         stage.warnings(by);
         result.classList.remove('hidden'); wait.classList.add('hidden');
         if (file.stl_url) {
@@ -341,8 +369,8 @@ export function bootEdit(stage: Stage): void {
             viewer.setPlanes(null);
             stage.show(geom, { kind: null, pieces: r.pieces_tris ?? null });
             viewer.getPieces().forEach((p, i) => viewer.setPieceColor(i, p.name.startsWith('piece_') ? PIECES[(Number(p.name.slice(6)) - 1) % PIECES.length] : p.name.startsWith('segment_') ? PIECES[(Number(p.name.slice(8)) - 1) % PIECES.length] : p.name === 'body' ? null : p.name === 'frame' ? '#4A4A4F' : '#8C9199'));
-            // the parts of a coloured 3MF in the file's own colours
-            if (cfg.op === 'colors' && r.colors) { const hexOf: Record<string, string> = {}; r.colors.forEach((c) => { if (c.part) hexOf[c.part] = c.hex; }); viewer.getPieces().forEach((p, i) => { if (hexOf[p.name]) viewer.setPieceColor(i, hexOf[p.name]); }); }
+            // the parts of a coloured 3MF, or of a print read out of G-code, in the file's own colours
+            if ((cfg.op === 'colors' || cfg.op === 'gcode') && r.colors) { const hexOf: Record<string, string> = {}; r.colors.forEach((c) => { if (c.part) hexOf[c.part] = c.hex; }); viewer.getPieces().forEach((p, i) => { if (hexOf[p.name]) viewer.setPieceColor(i, hexOf[p.name]); }); }
             // a hollow model looks the same outside: the x-ray shows what was done
             if ((cfg.op === 'hollow' || cfg.op === 'holder') && $('tool-xray').getAttribute('aria-pressed') !== 'true') $('tool-xray').click();
         }
@@ -355,6 +383,8 @@ export function bootEdit(stage: Stage): void {
             { label: stage.t('toolpage.download.prusa'), hint: stage.t('toolpage.download.project.hint'), icon: 'file-box', href: `${open}&slicer=prusaslicer` },
         ];
         if (file.stl_url) items.push({ label: stage.t('toolpage.download.whole'), href: file.stl_url, download: `${file.name.replace(/\.[^.]+$/, '')}.stl` });
+        // a print of colours side by side, read out of G-code: a plain 3MF with an object per colour for the visitor's own slicer
+        if (cfg.op === 'gcode' && r.colors_mode === 'parts') items.push({ label: t('download.colors'), icon: 'file-box', href: `${cfg.parts}/${file.uuid}/colors.3mf` });
         // a flexi prints in one go, assembled: its segments are not offered one by one
         if ((file.parts ?? []).length > 1 && cfg.op !== 'flexi_cut') {
             items.push({ heading: stage.t('toolpage.download.parts') });
@@ -395,6 +425,12 @@ export function bootEdit(stage: Stage): void {
     /** Back to the model and the settings: the planes on the model again, the result put away. */
     const again = (): void => {
         made = null;
+        if (cfg.op === 'gcode') {
+            stage.downloads([]); stage.go({ disabled: true, href: null }); stage.warnings({});
+            result.classList.add('hidden'); wait.classList.remove('hidden');
+            stage.reveal('file');
+            return;
+        }
         if (modelGeom) stage.show(modelGeom.clone(), { kind: null });
         if ($('tool-xray').getAttribute('aria-pressed') === 'true') $('tool-xray').click();
         stage.status(model?.bbox ? { bbox: model.bbox } : null);
@@ -429,6 +465,7 @@ export function bootEdit(stage: Stage): void {
         stage.fetchFile(cfg.from).then((f) => stage.untilReady(f)).then(async (info) => {
             const edited = info as Edited;
             if (info.status !== 'ready') { say('model_failed'); return; }
+            if (cfg.op === 'gcode' && edited.tool?.kind === 'gcode') { await showMade(edited); return; }
             if (edited.edit?.source && edited.tool?.kind === cfg.op) {
                 const src = await stage.untilReady(await stage.fetchFile(edited.edit.source as string));
                 if (src.status === 'ready') { await haveModel(src); await showMade(edited); return; }

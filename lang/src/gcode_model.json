@@ -1,0 +1,90 @@
+{
+    "tools.gcode.title": ["Model z G‑kódu", "Model from G-code", "Modelo desde G-code"],
+    "tools.gcode.hint": [
+        "Máte jen G‑kód? Z drah tisku složíme model, který jde znovu vytisknout, spočítat a objednat; vícebarevný tisk dostane díl na každou barvu.",
+        "Only the G-code left? We rebuild a model from the print paths that can be printed again, priced and ordered; a multi-colour print gets a part per colour.",
+        "¿Solo le queda el G-code? Reconstruimos un modelo a partir de las trayectorias de impresión que se puede volver a imprimir, calcular y pedir; una impresión multicolor recibe una pieza por color."
+    ],
+    "tools.gcode.action": ["Vytvořit model z G‑kódu", "Make a model from G-code", "Crear un modelo desde G-code"],
+    "tools.keywords.gcode": [
+        "gcode g-kód g-code převod stl 3mf model z tisku vícebarevný rekonstrukce orca bambu prusa anycubic cura dráhy",
+        "gcode g-code to stl 3mf model from print paths multi-colour rebuild orca bambu prusa anycubic cura",
+        "gcode g-code a stl 3mf modelo desde impresión multicolor reconstrucción orca bambu prusa anycubic cura"
+    ],
+    "edit.gcode.lead": [
+        "Nahrajte soubor .gcode z Orcy, Anycubic Sliceru, Bambu Studia, PrusaSliceru nebo Cury a z drah stěn složíme vodotěsný model, vrstvu po vrstvě: podpěry, límec a čisticí věž pryč. Vícebarevný tisk dostane díl na každou barvu, nebo výměny filamentu po výšce.",
+        "Upload a .gcode from Orca, Anycubic Slicer, Bambu Studio, PrusaSlicer or Cura and we rebuild a watertight model from the wall paths, layer by layer: supports, brim and the prime tower left out. A multi-colour print gets a part per colour, or filament changes by height.",
+        "Suba un .gcode de Orca, Anycubic Slicer, Bambu Studio, PrusaSlicer o Cura y reconstruimos un modelo estanco a partir de las paredes, capa a capa: sin soportes, borde ni torre de purga. Una impresión multicolor recibe una pieza por color, o cambios de filamento por altura."
+    ],
+    "edit.gcode.tip": [
+        "Model je odlitek výtisku, ne původní návrh: má schodky vrstev a detaily tenčí než šířka linky chybí. Na opakovaný tisk, cenu a objednávku to stačí.",
+        "The model is a cast of the print, not the original design: it has the steps of the layers, and details thinner than a line are gone. For printing again, pricing and ordering it is enough.",
+        "El modelo es un molde de la impresión, no el diseño original: tiene los escalones de las capas y faltan los detalles más finos que una línea. Para volver a imprimir, calcular y pedir, basta."
+    ],
+    "edit.gcode.apply": ["Vytvořit model", "Make the model", "Crear el modelo"],
+    "edit.gcode.hint": [
+        "Zdarma. Model vzniká hned po nahrání; z hlavičky přečteme tiskárnu, profil, čas a spotřebu filamentu.",
+        "Free. The model is made right after the upload; the printer, the profile, the time and the filament come from the header.",
+        "Gratis. El modelo se crea justo después de subirlo; la impresora, el perfil, el tiempo y el filamento salen de la cabecera."
+    ],
+    "edit.gcode.settings": [
+        "Nic nenastavujete: model vzniká z drah vnějších stěn tak, jak je slicer uložil. Co se přečetlo z hlavičky, uvidíte u výsledku.",
+        "Nothing to set: the model comes from the outer wall paths as the slicer wrote them. What the header said shows with the result.",
+        "No hay nada que ajustar: el modelo sale de las paredes exteriores tal como las guardó el laminador. Lo leído en la cabecera aparece con el resultado."
+    ],
+    "edit.gcode.pick": ["Přetáhněte sem soubor .gcode nebo klepněte a vyberte", "Drop a .gcode file here or click to choose", "Arrastre aquí un archivo .gcode o haga clic para elegirlo"],
+    "edit.gcode.bad_format": [
+        "To není G‑kód. Nahrajte soubor .gcode z Orcy, Anycubic Sliceru, Bambu Studia, PrusaSliceru nebo Cury.",
+        "That is not G-code. Upload a .gcode file from Orca, Anycubic Slicer, Bambu Studio, PrusaSlicer or Cura.",
+        "Eso no es G-code. Suba un archivo .gcode de Orca, Anycubic Slicer, Bambu Studio, PrusaSlicer o Cura."
+    ],
+    "edit.gcode.uploading": ["Nahrávám G‑kód…", "Uploading the G-code…", "Subiendo el G-code…"],
+    "edit.gcode.processing": ["Čtu G‑kód a skládám model…", "Reading the G-code and building the model…", "Leyendo el G-code y construyendo el modelo…"],
+    "edit.gcode.working": ["Skládám model z drah tisku…", "Building the model from the print paths…", "Construyendo el modelo a partir de las trayectorias…"],
+    "edit.gcode.stage.queued": ["Čeká ve frontě…", "Waiting in the queue…", "Esperando en la cola…"],
+    "edit.gcode.stage.parsing": ["Čtu dráhy tisku…", "Reading the print paths…", "Leyendo las trayectorias…"],
+    "edit.gcode.stage.layers": ["Skládám vrstvy…", "Laying the layers…", "Componiendo las capas…"],
+    "edit.gcode.stage.building": ["Stavím těleso…", "Building the solid…", "Construyendo el sólido…"],
+    "edit.gcode.stage.done": ["Měřím hotový model…", "Measuring the finished model…", "Midiendo el modelo terminado…"],
+    "edit.gcode.report.slicer": ["Vytvořil :s.", "Made by :s.", "Creado por :s."],
+    "edit.gcode.report.printer": ["Tiskárna :p, profil :f.", "Printer :p, profile :f.", "Impresora :p, perfil :f."],
+    "edit.gcode.report.layers": [":l vrstev po :h mm, šířka linky :w mm, :n řádků G‑kódu.", ":l layers of :h mm, line width :w mm, :n lines of G-code.", ":l capas de :h mm, ancho de línea :w mm, :n líneas de G-code."],
+    "edit.gcode.report.time": ["Tisk :t, filament :g g (:m m).", "Print :t, filament :g g (:m m).", "Impresión :t, filamento :g g (:m m)."],
+    "edit.gcode.report.colors.one": ["Jedna barva.", "One colour.", "Un color."],
+    "edit.gcode.report.colors.height": [
+        ":n barvy po výšce: jeden díl, výměna filamentu ve výšce :z mm. Tisk u nás ji provede sám, stažený projekt ji má vloženou.",
+        ":n colours by height: one part, a filament change at :z mm. A print with us does it by itself, the downloaded project carries it.",
+        ":n colores por altura: una pieza, cambio de filamento a :z mm. Una impresión con nosotros lo hace sola; el proyecto descargado lo lleva."
+    ],
+    "edit.gcode.report.colors.parts": [
+        ":n barvy vedle sebe: jeden díl na barvu. U nás se tisknou po dílech, pro svou tiskárnu si stáhněte 3MF po barvách.",
+        ":n colours side by side: one part per colour. With us they print part by part; for your own printer download the 3MF by colours.",
+        ":n colores uno junto a otro: una pieza por color. Con nosotros se imprimen por piezas; para su impresora descargue el 3MF por colores."
+    ],
+    "edit.gcode.report.cast": [
+        "Model je odlitek výtisku, ne původní návrh: schodky vrstev zůstávají a detaily pod šířkou linky chybí.",
+        "The model is a cast of the print, not the original design: the steps of the layers stay and details under a line width are gone.",
+        "El modelo es un molde de la impresión, no el diseño original: quedan los escalones de las capas y faltan los detalles por debajo del ancho de línea."
+    ],
+    "edit.gcode.hours": [":h h :m min", ":h h :m min", ":h h :m min"],
+    "edit.gcode.minutes": [":m min", ":m min", ":m min"],
+    "edit.gcode.download.colors": ["3MF po barvách (objekt na barvu)", "3MF by colours (an object per colour)", "3MF por colores (un objeto por color)"],
+    "edit.gcode.warn.truncated": [
+        "Soubor je moc velký: vzali jsme prvních :n řádků, vršek modelu chybí.",
+        "The file is too big: we took the first :n lines, the top of the model is missing.",
+        "El archivo es demasiado grande: tomamos las primeras :n líneas, falta la parte superior del modelo."
+    ],
+    "edit.gcode.warn.open_loops": [
+        ":n obrysů stěn nešlo uzavřít a nejsou v modelu; drobnosti mohou chybět.",
+        ":n wall outlines could not be closed and are not in the model; small details may be missing.",
+        ":n contornos de pared no se pudieron cerrar y no están en el modelo; pueden faltar detalles pequeños."
+    ],
+    "edit.gcode.error.no_walls": [
+        "V souboru nejsou žádné obrysy stěn. Je to G‑kód z FDM sliceru (Orca, Anycubic, Bambu, Prusa, Cura)?",
+        "There are no wall outlines in the file. Is it G-code from an FDM slicer (Orca, Anycubic, Bambu, Prusa, Cura)?",
+        "El archivo no contiene contornos de pared. ¿Es un G-code de un laminador FDM (Orca, Anycubic, Bambu, Prusa, Cura)?"
+    ],
+    "edit.gcode.error.not_gcode": ["To není G‑kód.", "That is not G-code.", "Eso no es G-code."],
+    "edit.gcode.error.empty_result": ["Z drah nevzniklo žádné těleso.", "No solid came out of the paths.", "De las trayectorias no salió ningún sólido."],
+    "edit.gcode.error.too_big": ["Soubor je moc velký, limit je :max MB.", "The file is too big, the limit is :max MB.", "El archivo es demasiado grande, el límite es :max MB."]
+}

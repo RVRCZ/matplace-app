@@ -24,7 +24,7 @@ class ToolPageTest extends TestCase
     use RefreshDatabase;
 
     /** tool key → the script module that drives its page */
-    private const MODULES = ['relief' => 'relief', 'mold' => 'mold', 'repair' => 'repair', 'check' => 'check', 'figure' => 'figure', 'filament_art' => 'art', 'split' => 'edit', 'hollow' => 'edit', 'life_size' => 'edit', 'puzzle' => 'edit', 'holder_model' => 'edit', 'potion' => 'edit', 'flexi_cut' => 'edit', 'colors' => 'edit', 'soap_model' => 'edit', 'wearable' => 'edit', 'slider' => 'edit'];
+    private const MODULES = ['relief' => 'relief', 'mold' => 'mold', 'repair' => 'repair', 'check' => 'check', 'figure' => 'figure', 'filament_art' => 'art', 'split' => 'edit', 'hollow' => 'edit', 'life_size' => 'edit', 'puzzle' => 'edit', 'holder_model' => 'edit', 'potion' => 'edit', 'flexi_cut' => 'edit', 'colors' => 'edit', 'soap_model' => 'edit', 'wearable' => 'edit', 'slider' => 'edit', 'gcode' => 'edit'];
 
     /** warnings that are advice on the technique, said whatever the numbers are: a thread and a sealing lip are tried on one piece first */
     private const ADVICE = ['thread_try', 'seal_try'];
@@ -181,7 +181,7 @@ class ToolPageTest extends TestCase
         // mold have texts of their own (edit.*, map.*, mold.*); every other engine file is a parametric tool's.
         $codes = [];
         foreach (glob(base_path('engines/python/*.py')) as $file) {
-            if (in_array(basename($file, '.py'), ['art_tool', 'colors_tool', 'edit_tool', 'map_tool', 'mold_tool'], true)) {
+            if (in_array(basename($file, '.py'), ['art_tool', 'colors_tool', 'edit_tool', 'gcode_tool', 'map_tool', 'mold_tool'], true)) {
                 continue;
             }
             foreach (preg_grep('/warn/', (array) file($file)) as $line) {

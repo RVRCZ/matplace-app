@@ -188,6 +188,8 @@ $pages = function () {
     Route::get('/tools/soap-from-model', [EditToolsController::class, 'edit'])->defaults('op', 'soap')->name('tools.soap_model');
     Route::get('/tools/wearable', [EditToolsController::class, 'edit'])->defaults('op', 'wearable')->name('tools.wearable');
     Route::get('/tools/slider', [EditToolsController::class, 'edit'])->defaults('op', 'slider')->name('tools.slider');
+    // a model out of a G-code file (session 2, docs/AL.md): the same page, the upload itself is the operation
+    Route::get('/tools/gcode-model', [EditToolsController::class, 'edit'])->defaults('op', 'gcode')->name('tools.gcode');
     // session B (docs/W.md): a 3D map of a city or a landscape from OpenStreetMap and the height tiles
     Route::get('/tools/map', [MapToolController::class, 'show'])->name('tools.map');
 
@@ -393,6 +395,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('tools/art', [EditApiController::class, 'artCreate'])->middleware('throttle:20,1,art_create')->name('tools.art');
     Route::post('tools/art/zip', [EditApiController::class, 'artZip'])->middleware('throttle:12,1,art_zip')->name('tools.art.zip');
     Route::get('tools/edit/{modelFile}/guide', [EditApiController::class, 'guide'])->middleware('file')->name('tools.edit.guide');
+    Route::post('tools/gcode', [EditApiController::class, 'gcode'])->middleware('throttle:10,1,gcode')->name('tools.gcode.store');
+    Route::get('tools/edit/{modelFile}/colors.3mf', [EditApiController::class, 'colors3mf'])->middleware(['file:project', 'throttle:20,1,colors3mf'])->name('tools.edit.colors3mf');
     Route::get('tools/edit/{modelFile}/{part}.stl', [EditApiController::class, 'part'])->middleware(['file', 'throttle:60,1,edit_part'])->name('tools.edit.part');
     Route::post('tools/map/places', [MapApiController::class, 'places'])->middleware('throttle:30,1,map_places')->name('tools.map.places');
     Route::post('tools/map/preview', [MapApiController::class, 'preview'])->middleware('throttle:20,1,map_preview')->name('tools.map.preview');

@@ -6,15 +6,18 @@
         'joint.pins', 'joint.dovetail', 'joint.none', 'report.tabs', 'report.frame', 'part.frame', 'report.wall', 'report.thin', 'report.floor', 'report.cork', 'report.label', 'report.solid', 'part.body', 'part.cork', 'part.label', 'part.segment', 'report.joints', 'report.none',
         'warn.does_not_fit', 'warn.many_pieces', 'warn.no_room_for_pins', 'warn.key_as_pins', 'warn.too_big', 'warn.nothing_to_hollow', 'warn.no_room_for_drain', 'warn.coarse_grid', 'warn.tall_gets_pins', 'warn.piece_split', 'warn.too_thin_for_pins',
         'error.fits_already', 'error.too_heavy', 'error.too_small', 'error.too_big', 'error.not_watertight', 'error.edit_failed', 'error.too_tall', 'error.pieces_too_small', 'warn.wall_thin', 'error.too_short', 'warn.small_foot', 'warn.solid_bottle', 'warn.label_failed', 'warn.joint_no_room', 'warn.segment_split', 'error.segments_too_short',
+        'report.slicer', 'report.printer', 'report.layers', 'report.time', 'report.colors.one', 'report.colors.height', 'report.colors.parts', 'report.cast', 'hours', 'minutes', 'download.colors', 'stage.parsing', 'stage.layers', 'stage.building', 'warn.truncated', 'warn.open_loops', 'error.no_walls', 'error.not_gcode',
         'found', 'none', 'not_3mf', 'majority', 'filament', 'report.parts', 'part.color', 'warn.inlay_failed', 'warn.recess_failed', 'warn.body_open', 'warn.many_colors', 'error.no_colors', 'error.not_3mf', 'error.empty', 'error.empty_result', 'report.drain.grooves', 'report.drain.grid', 'report.drain.ribs', 'report.drain.none', 'report.already', 'report.cuts', 'warn.no_opening', 'report.detents', 'error.too_thin', 'error.too_narrow'];
-    $i18n = collect(['check.page.max', 'toolpage.status.empty', 'param.too_fast'])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $config['max_upload_mb']])])
+    // the model out of G-code takes a bigger file than the models (its own limit); the page says the limit it has
+    $maxMb = $op === 'gcode' ? \App\Domain\Tools\ModelEditor::GCODE_MAX_MB : (int) $config['max_upload_mb'];
+    $i18n = collect(['check.page.max', 'toolpage.status.empty', 'param.too_fast'])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $maxMb])])
         ->merge(collect($keys)->mapWithKeys(fn ($k) => ['edit.'.$op.'.'.$k => \Illuminate\Support\Facades\Lang::has('edit.'.$op.'.'.$k) ? \App\Support\NextStep::text('edit.'.$op.'.'.$k) : \App\Support\NextStep::text('edit.'.$k)])
             // a text nobody wrote goes nowhere: the script then says its general line ("working", "the edit failed") instead of the key
             ->reject(fn ($text, $key) => $text === 'edit.'.\Illuminate\Support\Str::after($key, 'edit.'.$op.'.')))->all();
     $sections = ['file' => __('toolpage.section.file'), 'settings' => __('toolpage.section.settings'), 'result' => __('toolpage.section.result')];
-    $icon = ['split' => 'scissors', 'hollow' => 'box', 'life_size' => 'maximize', 'scale' => 'maximize', 'puzzle' => 'grid-3x3', 'holder' => 'box', 'potion' => 'sparkles', 'flexi_cut' => 'link', 'colors' => 'palette', 'soap' => 'box', 'wearable' => 'person-standing', 'slider' => 'sliders-horizontal'][$op] ?? 'box';
-    // only a 3MF carries colours: the splitter's page takes nothing else
-    $formats = $op === 'colors' ? ['3mf'] : $config['formats'];
+    $icon = ['split' => 'scissors', 'hollow' => 'box', 'life_size' => 'maximize', 'scale' => 'maximize', 'puzzle' => 'grid-3x3', 'holder' => 'box', 'potion' => 'sparkles', 'flexi_cut' => 'link', 'colors' => 'palette', 'soap' => 'box', 'wearable' => 'person-standing', 'slider' => 'sliders-horizontal', 'gcode' => 'layers'][$op] ?? 'box';
+    // only a 3MF carries colours: the splitter's page takes nothing else; the model out of G-code takes G-code alone (up to its own limit)
+    $formats = $op === 'colors' ? ['3mf'] : ($op === 'gcode' ? ['gcode'] : $config['formats']);
 @endphp
 
 @extends('tools.page', ['fileInput' => 'edit-file', 'tool' => ['holder' => 'holder_model', 'soap' => 'soap_model'][$op] ?? $op, 'module' => 'edit', 'lead' => __('edit.'.$op.'.lead'), 'available' => $available, 'unavailable' => __('edit.unavailable'),
@@ -24,8 +27,8 @@
 <script>
     window.MP_EDIT = {
         op: @json($op),
-        upload: @json(route('api.uploads.store')), files: @json(url('/api/files')), parts: @json(url('/api/tools/edit')), home: @json(route('home')), from: @json($from),
-        formats: {{ \Illuminate\Support\Js::from($formats) }}, maxMb: {{ (int) $config['max_upload_mb'] }},
+        upload: @json($op === 'gcode' ? route('api.tools.gcode.store') : route('api.uploads.store')), files: @json(url('/api/files')), parts: @json(url('/api/tools/edit')), home: @json(route('home')), from: @json($from),
+        formats: {{ \Illuminate\Support\Js::from($formats) }}, maxMb: {{ (int) $maxMb }},
         beds: {{ \Illuminate\Support\Js::from($beds) }}, margin: {{ \App\Domain\Tools\ModelEditor::MARGIN }}, farmMargin: {{ (float) ($config['bed_margin_mm'] ?? 0) }},
         config: {{ \Illuminate\Support\Js::from(\Illuminate\Support\Arr::except($config, ['colors'])) }},
         i18n: {{ \Illuminate\Support\Js::from($i18n) }},
@@ -33,7 +36,7 @@
 </script>
 @endpush
 
-@section('viewer-empty'){{ __('edit.pick') }}@endsection
+@section('viewer-empty'){{ __(\Illuminate\Support\Facades\Lang::has('edit.'.$op.'.pick') ? 'edit.'.$op.'.pick' : 'edit.pick') }}@endsection
 
 @section('stage')
     {{-- where the pieces of a split model sit in the whole: a map per level, with the numbers engraved on the pieces --}}
@@ -47,8 +50,8 @@
         <label id="edit-drop" class="block cursor-pointer rounded-xl border-2 border-dashed border-line p-6 text-center hover:border-ink">
             <input id="edit-file" type="file" class="sr-only" accept="{{ collect($formats)->map(fn ($f) => '.'.$f)->join(',') }}">
             <x-icon name="upload" class="mx-auto h-7 w-7 text-muted" />
-            <span class="mt-1 block font-medium text-ink">{{ __('edit.pick') }}</span>
-            <span class="block text-sm text-muted">{{ strtoupper(implode(', ', $formats)) }} · {{ __('check.page.max', ['max' => $config['max_upload_mb']]) }}</span>
+            <span class="mt-1 block font-medium text-ink">{{ __(\Illuminate\Support\Facades\Lang::has('edit.'.$op.'.pick') ? 'edit.'.$op.'.pick' : 'edit.pick') }}</span>
+            <span class="block text-sm text-muted">{{ strtoupper(implode(', ', $formats)) }} · {{ __('check.page.max', ['max' => $maxMb]) }}</span>
             <span id="edit-source" class="mt-2 hidden text-sm font-medium text-ink"></span>
         </label>
         <p id="edit-status" class="note-warn hidden text-sm" role="status" aria-live="polite"></p>
@@ -120,6 +123,10 @@
                 @include('tools._num', ['key' => 'depth', 'f' => $fields['depth'], 'label' => __('edit.f.depth'), 'unit' => 'mm', 'when' => ''])
             </div>
             <p class="text-sm text-muted">{{ __('edit.colors.depth.hint') }}</p>
+        @endif
+        @if($op === 'gcode')
+            {{-- nothing to set: the model is made as the file is uploaded; the button stays for the script, out of sight --}}
+            <p class="text-sm text-muted">{{ __('edit.gcode.settings') }}</p>
         @endif
         @if($op === 'soap')
             @foreach(['foot', 'drain'] as $choice)
@@ -321,7 +328,7 @@
                 </label>
             @endforeach
         @endif
-        <button id="edit-go" class="btn-ink w-full gap-1.5" disabled><x-icon :name="$icon" class="h-4 w-4" />{{ __('edit.'.$op.'.apply') }}</button>
+        <button id="edit-go" class="btn-ink w-full gap-1.5 {{ $op === 'gcode' ? 'hidden' : '' }}" disabled><x-icon :name="$icon" class="h-4 w-4" />{{ __('edit.'.$op.'.apply') }}</button>
         <p class="text-xs text-muted">{{ __('edit.'.$op.'.hint') }}</p>
     </x-tool-section>
 
