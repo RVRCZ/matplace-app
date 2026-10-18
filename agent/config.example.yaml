@@ -24,6 +24,13 @@ printers:
   #   url: http://192.168.8.22:7125
   #   snapshot_url: http://192.168.8.22/webcam/?action=snapshot
 
+  # Kobra X (stock Anycubic firmware): the printer must be in LAN mode - it then leaves the Anycubic cloud (README).
+  # - key: kobra-x-01
+  #   driver: anycubic_lan
+  #   ip: 192.168.8.44                                     # reserve this IP in the router
+  #   # camera: true                                       # picture from the printer's own camera (needs the package av)
+  #   # light: false                                       # switch the camera light on during a print (not verified on Kobra X)
+
   # Simulated printer — try the whole order flow without a machine (see README, "Zkouška bez tiskárny").
   # - key: kobra-s1-01
   #   driver: mock

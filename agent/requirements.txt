@@ -1,2 +1,7 @@
 aiohttp>=3.9,<4
 PyYAML>=6,<7
+# anycubic_lan driver (Kobra X in LAN mode): the LAN client, pinned to the commit verified on 18 Oct 2026 (docs/AM.md);
+# a zip address, so pip needs no git on the farm PC
+kobra-connect @ https://github.com/rvanderp3/kobra-connect/archive/3edba24606d7122c4a68accd09af937ba4fdbd08.zip
+# one picture from the printer's HTTP-FLV camera stream (H.264); without it the Kobra X simply has no snapshot
+av>=12
