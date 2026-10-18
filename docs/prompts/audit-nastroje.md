@@ -56,3 +56,20 @@ katalog a průchod webem.
 
 Push `feature/audit-tools`, AH.md (změny, tabulka cest, snímky, známá omezení), testy, `pint`, `tsc`, `build`, zpráva
 řídící session.
+
+## 6. Doplněk 18. 10. 2026 (Roman): dialog „Přidat fotky“ u busty a mazlíčka
+
+Roman: „nahrávání fotek u mazlíčka je super, ale přidat mazání fotek, kdyby se klient spletl, a přidat do toho dialogu
+rovnou generovat, ať nemusí na konec stránky.“ Platí pro `_figure_drop.blade.php` (busta i mazlíček), `figure.ts`, `photo.ts`.
+
+1. **Mazání fotek v dialogu:** u každého náhledu (zepředu, zleva, zezadu, zprava) křížek, který fotku odebere; stejné
+   chování jako křížky v panelu (jeden `input`, panel i dialog se drží v souladu). Po odebrání hlavní fotky se dialog
+   vrátí do stavu „Vyberte nebo vyfoťte“.
+2. **Tlačítko „Vytvořit figurku“ / „Vytvořit model“ přímo v dialogu:** hlavní akce (oranžová; tlačítko v panelu pak
+   není oranžové, aby na obrazovce byla jedna), povolená, jakmile je hlavní fotka; vedle něj souhlas (totéž
+   zaškrtávátko jako v panelu, zrcadlené, s trvalým červeným rámečkem dokud není zaškrtnuté) a řádek s limitem a časem.
+   Klepnutí spustí totéž odeslání (`form.requestSubmit()`), dialog se promění v tečkové logo jako dnes. Při chybějícím
+   souhlasu hláška u dialogu, ne dole.
+3. Věta v dialogu „model uvidíte za 1 až 3 minuty“ → „2 až 4 minuty“ (ostatní texty už řídící přepsala).
+4. Snímky 390 a 1366 před a po do `docs/img/audit/`, test v `ToolPageTest` (dialog nese tlačítko a křížky).
+Větev `feature/audit-tools` (nebo nová z main, kam je tvoje práce už sloučená), zpráva řídící session.
