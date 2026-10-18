@@ -7,16 +7,17 @@ Session 1, větev `feature/howto-video` (z `origin/main` 00f87e8), 18. 10. 2026.
 
 | soubor | co | délka | velikost obrazu |
 |---|---|---|---|
-| `printables-howto.mp4` | hlavní video 16:9, 30 fps, AAC | 1:48 (s časosběrem, bez telefonu) | 1920 × 1080 |
-| `printables-howto-short.mp4` | Short 9:16, 30 fps, AAC | 0:35 (s časosběrem, bez telefonu) | 1080 × 1920 |
+| `printables-howto.mp4` | hlavní video 16:9, 30 fps, AAC | 1:53 | 1920 × 1080 |
+| `printables-howto-short.mp4` | Short 9:16, 30 fps, AAC | 0:40 | 1080 × 1920 |
 | `popis.txt` | název a popis pro YouTube (cs): text, model a autor (CC0) s odkazem, `https://matplace.com/?…utm_campaign=video_howto`, kredit hudby | | |
 | `titulky.cs.srt`, `titulky.en.srt` | titulky 16:9 (stejné jako vypálené v obraze) | | |
 | `titulky-short.cs.srt`, `titulky-short.en.srt` | titulky Shortu | | |
 
 Snímky z videa jsou v `docs/img/howto/`: úvod, Printables, cena, barvy, platba s rozmazaným telefonem, Short
-a časosběr (`casosber.jpg`, `short-casosber.jpg`).
+a časosběr (`casosber.jpg`, `short-casosber.jpg`), hotový výrobek (`hotovo.jpg`).
 
-Verze 18. 10. 13:39 (s časosběrem F26-000085) nahradila ranní; ranní výstupy jsou v `out\old-1059\`.
+Verze 18. 10. 17:05 má časosběr F26-000085 i záběr hotového výrobku (`vec-1.mp4`). Předchozí verze jsou v `out\old-1059\`
+(ranní, s kartou místo časosběru) a `out\old-1339\` (s časosběrem, bez záběru výrobku).
 
 **Pořadí 16:9**:
 1. úvod 2,5 s: název cs/en a adresa,
@@ -33,14 +34,14 @@ Verze 18. 10. 13:39 (s časosběrem F26-000085) nahradila ranní; ranní výstup
 12. „ve frontě“,
 13. „tiskne se“ s prvním snímkem z kamery,
 14. časosběr F26-000085 (U #1, PLA Silk měděná, dotištěno 11:32 UTC), 30 s stlačeno na 20 s, titulek „Časosběr tisku“,
-15. záběr telefonem (až bude; teď vynechaný bez prázdného místa),
+15. záběr hotového stojánku s telefonem (`vec-1.mp4`, 3,6 s při 60 fps zpomalené na 0,75×, tedy 4,8 s), titulek „Hotovo“,
 16. závěr s logem a matplace.com 3 s.
 
 Průchod je zrychlený 1,5 až 3×; delší statické části (fronta 2:40–3:36, konec záznamu) jsou vystřižené. Titulky
 cs/en jsou u každého kroku 2,8 až 4 s, na tmavém pruhu dole. Nahoře jsou tam, kde jsou dole tlačítka: Vytisknout,
 doprava, platba.
 
-**Short**: úvod 1,5 s → nahrání → cena → barvy → časosběr (čtvercový `short.mp4` 15 s, titulek „Tiskneme na farmě“) → telefon (až bude)
+**Short**: úvod 1,5 s → nahrání → cena → barvy → časosběr (čtvercový `short.mp4` 15 s, titulek „Tiskneme na farmě“) → hotový výrobek (0,75×, okno na stojánek `short_crop` [1050, 540, 1200])
 → závěr 2 s.
 - Výřez stránky 16:9 běží přes střed a za ním je tentýž obraz rozmazaný.
 - Titulky jsou větší (62/46 px) a zalamují se.
@@ -102,14 +103,116 @@ adresní řádek s odkazem na zakázku a boční lišta Firefoxu. Obsah je vlož
    do konce −3,1 s: střih na kartu s logem je v 31,533 s, −3 by trefilo přesně tu hranici, proto o desetinu dřív.
    `short.mp4` (720 × 720) od 0,5 s (první snímek je hotový výrobek) do konce −0,5 s. `timelapse.mp4`
    (1280 × 720) se nepoužívá, `wide.mp4` má plné rozlišení.
-2. **Záběr telefonem** `C:\Users\roman\Desktop\video\vec-1.mp4`: přidá se sám (16:9 na 12 s, Short 6 s), titulek
-   „Hotovo“.
+2. **Záběr výrobku** `vec-1.mp4`: hotovo 18. 10. Má jen 3,6 s, `fit` umí jen zrychlit, proto `speed: 0.75`
+   (zdroj má 60 fps, zpomalení je plynulé).
 3. **Stránka zakázky „hotovo“** s přehraným časosběrem (krok 5 natáčecího návodu) v záznamu není; video končí
    časosběrem a záběrem telefonu.
-4. Po doplnění telefonu: `php artisan farm:howto-video scripts/video/howto.json`. Lokálně jsou potřeba `FFMPEG_BIN`
+4. Postavení znovu: `php artisan farm:howto-video scripts/video/howto.json`. Lokálně jsou potřeba `FFMPEG_BIN`
    (winget ffmpeg 9.0.2) a `YOUTUBE_MUSIC_DIR` se zvolenou skladbou. Pak:
    - zkopírovat `out\*.mp4` na server,
    - spustit `php artisan farm:howto-video scripts/video/howto.json --out=<složka> --skip-build --queue`,
    - Roman schválí v `/admin/youtube`.
 5. Celá sada 689 testů OK (s ffmpeg 9.0.2), `pint`, `tsc`, `npm run build` čisté.
 6. Titulky SRT se na YouTube nahrávají ručně ve Studiu (API je neposílá); vypálené v obraze jsou tak jako tak.
+
+## 4. Kam vedou odkazy z videí (TODO #21, větev `feature/video-links`)
+
+Zadání: `docs/prompts/video-odkazy.md`. Roman se 18. 10. při schvalování videí F26‑000085 ptal, kam vede odkaz.
+
+**Dřív**:
+- Popis na YouTube vedl vždy na hlavní stránku (`link(null, …)`), i když koncová karta ukazovala adresu nástroje.
+- Facebook a Instagram posílaly na hlavní stránku s `utm_campaign=video`, bez rozlišení druhu.
+- Odkaz byl až v pátém odstavci popisu, takže ho bez rozkliknutí „více“ nikdo neviděl.
+
+### 4.1 Jedno místo pravdy
+
+`FarmVideos::link($order, $kind, $source = 'youtube', $target = null)` určuje odkaz pro všechny kanály:
+- **cíl**: stránka nástroje, ve kterém model vznikl (`origin tool`, `lithophane` i `relief` → `/tools/relief`,
+  `generated` → `/tools/figure`). Jinak hlavní stránka, která je zároveň kalkulací s polem pro soubor.
+  `$target` cíl přepíše (instruktážní video).
+- **utm**: `utm_source` = kanál (`youtube`, `facebook`, `instagram`), `utm_medium=social`,
+  `utm_campaign=video_<druh>`.
+
+Pomocné metody:
+- `FarmVideos::linkOf($video, $source)` vybere odkaz pro řádek videa. Týdenní sestřih → hlavní stránka,
+  instruktážní video → `meta.link`.
+- `FarmVideos::forChannel($text, $source)` přepíše v textu z YouTube `utm_source=youtube` na kanál. Stránka zůstane
+  stejná, změní se jen značka.
+- Koncová karta (`address()`) bere stejný `toolUrl()`, takže adresa na kartě sedí s odkazem v popisu (ověřeno testem).
+
+| druh | kanál | cíl | utm_source | utm_campaign |
+|---|---|---|---|---|
+| Short tisku | YouTube (popis, komentář) | nástroj, jinak hlavní stránka | youtube | video_short |
+| Short tisku | Facebook video, Facebook příspěvek s odkazem | totéž | facebook | video_short |
+| Short tisku | Instagram Reel (text, odkaz v něm není klikací) | totéž | instagram | video_short |
+| 16:9 tisku | YouTube | nástroj, jinak hlavní stránka | youtube | video_wide |
+| týdenní sestřih | YouTube, první řádek popisu | hlavní stránka | youtube | video_weekly |
+| týdenní sestřih | YouTube, kapitoly | nástroj každého kusu, jinak hlavní stránka | youtube | video_weekly |
+| instruktážní 16:9 | YouTube | `site` + `link` ze specifikace (dnes `https://matplace.com/`) | youtube | video_howto |
+| instruktážní Short | YouTube, Facebook, Instagram | totéž | youtube / facebook / instagram | video_howto |
+
+Facebook a Instagram dostávají jen Shorty: 16:9 a týdenní sestřih zůstávají na YouTube, jako dosud.
+
+V `/admin/stats` (zdroj × kampaň) se tak návštěvy dají rozdělit podle kanálu i druhu videa. Starší facebookové
+příspěvky mají `utm_campaign=video`.
+
+### 4.2 Odkaz v prvních dvou řádcích popisu
+
+YouTube bez rozkliknutí ukáže první dva řádky popisu, Shorts ještě méně. Popis všech druhů proto začíná výzvou
+s odkazem (`FarmVideos::callLine`, klíče `youtube.video.cta` a `cta_tool`):
+- hlavní stránka: „Nahrajte model a hned uvidíte cenu: https://matplace.com/?…“,
+- nástroj: „Udělejte si vlastní: https://matplace.com/tools/…?…“.
+
+Pořadí popisu tisku: výzva s odkazem → věta o videu → materiál, tiskárna, doba tisku → „Video zveřejňujeme se
+souhlasem zákazníka.“ → kredit hudby → hashtagy.
+
+Ostatní druhy:
+- týdenní sestřih: výzva → věta o týdnu → souhlas → kapitoly → hudba → hashtagy,
+- instruktážní video: výzva → text ze specifikace → kredit modelu → hudba → hashtagy (`popis.txt`).
+
+Texty jsou ve třech jazycích (cs, en, es v `lang/*/youtube.php`).
+
+Instruktážní video:
+- Cíl je ve specifikaci: nový klíč `"link": "/"` v `scripts/video/howto.json` (cesta na webu `site`).
+- `HowtoCutter::target()` ho skládá.
+- `farm:howto-video --queue` ho uloží do `meta.link` řádku, podle něj pak vede i odkaz na Facebooku.
+
+**Rozpracované řádky**:
+- Videa už čekající ve frontě (třeba F26‑000085) mají popis z doby zařazení, starý.
+- Nový popis dostane jen nově zařazené video. U čekajícího stačí v `/admin/youtube` přepsat první řádek, nebo řádek
+  zamítnout a nechat zařadit znovu.
+- Facebook a Instagram berou odkaz z nového místa i u starých řádků (přepíše se jen `utm_source`).
+
+### 4.3 Připnutý komentář s odkazem (připravený, vypnutý)
+
+Co jde přes API (YouTube Data API v3, ověřeno v dokumentaci 18. 10. 2026):
+- **Vložit komentář** jde: `commentThreads.insert` (`part=snippet`, povinné `snippet.channelId`, `snippet.videoId`,
+  `snippet.topLevelComment.snippet.textOriginal`). Stojí 50 jednotek kvóty.
+- **Připnout komentář přes API nejde.** `comments.setModerationStatus` zná jen `heldForReview`, `published`
+  a `rejected`, a zdroj `commentThread` nemá žádné pole pro připnutí. Připnout se dá jen ručně ve Studiu (u komentáře
+  ⋮ → Připnout), jedno kliknutí na video.
+- **Rozsah**: `commentThreads.insert` přijímá jen `https://www.googleapis.com/auth/youtube.force-ssl`. Dnešní token
+  má `https://www.googleapis.com/auth/youtube` (`YouTubeClient::SCOPE`), a ten podle dokumentace nestačí.
+
+Co je v kódu, všechno za přepínačem `YOUTUBE_PIN_COMMENT=false` (výchozí; `config/youtube.php` `pin_comment`,
+`.env.example`):
+- **Rozsah při připojení**: `YouTubeClient::scopes()` při zapnutém přepínači žádá při připojení kanálu i
+  `youtube.force-ssl`. Vypnutý přepínač nechává připojení beze změny.
+- **Vložení komentáře**: `YouTubeClient::comment($videoId, $text)` volá `commentThreads.insert` a vrací id vlákna.
+- **Kdy se komentář píše**: `FarmVideos::commentLink($video)` napíše výzvu s odkazem (tentýž první řádek jako
+  v popisu) jednou, když je video veřejné:
+  - po `publish()` s výsledkem „public“,
+  - nebo když ho `refreshStats()` najde veřejné (zveřejněné ve Studiu nebo plánovačem YouTube).
+- **Proč až u veřejného**: soukromé a naplánované video komentáře nemá.
+- **Opakování**: id se zapíše do `meta.comment_id`, druhý komentář se nepíše.
+- **Selhání**: token bez rozsahu (`insufficientPermissions`) nebo kvóta se zapíše do logu, video zůstane, jak je.
+
+Skutečné volání neproběhlo, testy mají Google podvržený. Kroky k zapnutí, až to Roman schválí:
+1. Na serveru `YOUTUBE_PIN_COMMENT=true` a `php artisan config:cache`.
+2. Ověřit, že projekt `matplace-youtube` v Google Cloud má rozsah `youtube.force-ssl` na obrazovce souhlasu
+   (OAuth consent screen → Data access). Pokud ne, přidat ho. Citlivý rozsah u neověřené aplikace znamená varování
+   při souhlasu, stejně jako dnes.
+3. Roman v `/admin/youtube` kanál odpojí a znovu připojí, Google se zeptá na nový souhlas
+   s rozšířeným rozsahem.
+4. Od té chvíle dostane každé nově zveřejněné video komentář. Připnout ho Roman musí ve Studiu.
+5. Pro už zveřejněná videa se dá komentář dopsat ručně, `commentLink()` je veřejná metoda (tinker).

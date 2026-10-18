@@ -27,12 +27,14 @@ return [
         'tail' => ':time tisku za :seconds s',
         'tail_plain' => ':time 3D tisku',
         'title' => 'Časosběr 3D tisku – :material :color',
-        'description' => "Časosběrné video tisku z naší 3D tiskové farmy.\n\nMateriál: :material :color\nTiskárna: :printer\nDoba tisku: :time\n\nChcete si také nechat něco vytisknout? Nahrajte model, vyfoťte předmět nebo ho popište slovy a hned uvidíte cenu: :url\n\nVideo zveřejňujeme se souhlasem zákazníka.",
+        'cta' => 'Nahrajte model a hned uvidíte cenu: :url',
+        'cta_tool' => 'Udělejte si vlastní: :url',
+        'description' => ":cta\nČasosběrné video tisku z naší 3D tiskové farmy.\n\nMateriál: :material :color\nTiskárna: :printer\nDoba tisku: :time\n\nVideo zveřejňujeme se souhlasem zákazníka.",
     ],
 
     'weekly' => [
         'card' => 'Tento týden na farmě',
         'title' => 'Tento týden na farmě – :dates',
-        'description' => "Co se tento týden (:dates) tisklo na naší 3D tiskové farmě: :count tisků v časosběru. Každý kus má kapitolu s odkazem na nástroj, ve kterém vznikl.\n\nChcete si také nechat něco vytisknout? Nahrajte model, vyfoťte předmět nebo ho popište slovy a hned uvidíte cenu: :url\n\nVidea zveřejňujeme se souhlasem zákazníků.",
+        'description' => ":cta\nCo se tento týden (:dates) tisklo na naší 3D tiskové farmě: :count tisků v časosběru. Každý kus má kapitolu s odkazem na nástroj, ve kterém vznikl.\n\nVidea zveřejňujeme se souhlasem zákazníků.",
     ],
 ];

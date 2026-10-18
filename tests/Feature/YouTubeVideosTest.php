@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Farm\FarmSettings;
 use App\Domain\YouTube\FarmVideos;
+use App\Domain\YouTube\YouTubeClient;
 use App\Engines\Social\FakeMetaClient;
 use App\Jobs\UploadFarmVideo;
 use App\Mail\FarmAdminAlert;
@@ -37,6 +38,9 @@ class YouTubeVideosTest extends TestCase
     private User $user;
 
     private User $admin;
+
+    /** What Google says to a link comment (commentThreads.insert): 200 or 403 for a token without youtube.force-ssl */
+    private int $commentStatus = 200;
 
     protected function setUp(): void
     {
@@ -117,6 +121,10 @@ class YouTubeVideosTest extends TestCase
             }
             if (str_contains($url, '/youtube/v3/channels')) {
                 return Http::response(['items' => [['id' => 'UC123', 'snippet' => ['title' => 'Matplace – 3D']]]]);
+            }
+            if (str_contains($url, '/youtube/v3/commentThreads') && $r->method() === 'POST') {
+                return $this->commentStatus === 200 ? Http::response(['id' => 'thread-1'])
+                    : Http::response(['error' => ['code' => 403, 'message' => 'Request had insufficient authentication scopes.', 'errors' => [['reason' => 'insufficientPermissions']]]], 403);
             }
 
             return Http::response(['error' => 'unexpected '.$r->method().' '.$url], 500);
@@ -483,7 +491,7 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(['facebook_video', 'facebook', 'instagram_reel'], array_column(FakeMetaClient::$posts, 'platform'));
         $this->assertStringEndsWith('timelapse.mp4', FakeMetaClient::$posts[0]['image'], 'the page gets the file itself');
         $this->assertStringContainsString("Váza\n\nPopis", FakeMetaClient::$posts[0]['message']);
-        $this->assertSame(url('/').'/?utm_source=facebook&utm_medium=social&utm_campaign=video', FakeMetaClient::$posts[1]['link'], 'the link post points at the site');
+        $this->assertSame(url('/').'/?utm_source=facebook&utm_medium=social&utm_campaign=video_short', FakeMetaClient::$posts[1]['link'], 'the link post points where YouTube does');
         $reelUrl = FakeMetaClient::$posts[2]['image'];
         $this->assertStringContainsString("/social/videos/{$video->id}.mp4?", $reelUrl, 'Instagram fetches the video from a signed address');
         $this->get($reelUrl)->assertOk()->assertHeader('Content-Type', 'video/mp4');
@@ -516,6 +524,117 @@ class YouTubeVideosTest extends TestCase
         $this->actingAs($this->admin)->post("/admin/youtube/videos/{$v3->id}/publish", ['title' => 'Třetí', 'description' => '', 'when' => 'now', 'share_choice' => 1])->assertRedirect();
         $this->assertSame([], $v3->refresh()->share);
         $this->artisan('social:videos')->expectsOutputToContain('posted: 0');
+    }
+
+    public function test_every_kind_and_channel_leads_to_the_tool_or_the_home_page_from_one_place(): void
+    {
+        $order = $this->paidOrder(consent: true);
+        $videos = app(FarmVideos::class);
+        $home = url('/').'/';
+        $tag = fn (string $source, string $kind) => '?utm_source='.$source.'&utm_medium=social&utm_campaign=video_'.$kind;
+
+        // a customer's own file: the home page (the calculator) everywhere
+        foreach (['youtube', 'facebook', 'instagram'] as $source) {
+            foreach (['short', 'wide', 'weekly'] as $kind) {
+                $this->assertSame($home.$tag($source, $kind), $videos->link($order, $kind, $source));
+            }
+        }
+        // a model from a tool: the tool's page for the print's own videos, the weekly cut keeps the home page
+        $order->modelFile->forceFill(['origin' => 'tool', 'origin_ref' => 'lithophane'])->save();
+        $order->refresh();
+        $short = FarmVideo::create(['title' => 'V', 'farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_SHORT, 'status' => FarmVideo::STATUS_PENDING]);
+        $weekly = FarmVideo::create(['title' => 'T', 'kind' => FarmVideo::KIND_WEEKLY, 'status' => FarmVideo::STATUS_PENDING, 'meta' => ['week' => '2026-W42', 'orders' => [$order->id]]]);
+        $howto = FarmVideo::create(['title' => 'N', 'kind' => FarmVideo::KIND_HOWTO, 'status' => FarmVideo::STATUS_PENDING, 'meta' => ['name' => 'x', 'variant' => 'short', 'link' => 'https://matplace.com/']]);
+        $this->assertSame(url('/tools/relief').$tag('instagram', 'short'), $videos->linkOf($short, 'instagram'), 'lithophane and relief share the relief tool');
+        $this->assertSame($home.$tag('facebook', 'weekly'), $videos->linkOf($weekly, 'facebook'));
+        $this->assertSame('https://matplace.com/'.$tag('youtube', 'howto'), $videos->linkOf($howto));
+        $this->assertSame(rtrim((string) preg_replace('#^https?://#', '', url('/tools/relief')), '/'), $videos->address($order), 'the end card names the page the link opens');
+
+        // a YouTube text for another channel: the same pages, that channel's mark
+        $this->assertSame('Vlastní: '.url('/tools/relief').$tag('facebook', 'short'), $videos->forChannel('Vlastní: '.url('/tools/relief').$tag('youtube', 'short'), 'facebook'));
+    }
+
+    public function test_the_link_is_in_the_first_two_lines_of_every_description(): void
+    {
+        $order = $this->paidOrder(consent: true);
+        $order->forceFill(['timelapse_short_path' => $order->dir().'/short.mp4'])->save();
+        $videos = app(FarmVideos::class);
+        $firstTwo = fn (string $text) => implode("\n", array_slice(explode("\n", $text), 0, 2));
+
+        foreach (['cs', 'en', 'es'] as $locale) {
+            config(['youtube.language' => $locale]);
+            foreach (['short', 'wide'] as $kind) {
+                $text = $videos->defaultDescription($order, 'Artist - Song.mp3', $kind);
+                $this->assertStringContainsString(url('/').'/?utm_source=youtube&utm_medium=social&utm_campaign=video_'.$kind, $firstTwo($text), "$locale $kind");
+                $this->assertStringNotContainsString(':cta', $text);
+            }
+            $weekly = $videos->weeklyDescription('12.–18. 10.', [[0.0, 'Váza', null]], null);
+            $this->assertStringContainsString('utm_campaign=video_weekly', $firstTwo($weekly), "$locale weekly");
+            $this->assertStringContainsString('0:00 Váza', $weekly, 'the chapters stay');
+        }
+        config(['youtube.language' => 'cs']);
+        $short = $videos->defaultDescription($order, 'Artist - Song.mp3', 'short');
+        $this->assertStringStartsWith('Nahrajte model a hned uvidíte cenu: http', $short);
+        $this->assertStringEndsWith("Hudba: Artist – Song (YouTube Audio Library)\n\n#Shorts #3Dprinting #timelapse", $short, 'the music credit, then the hashtags last');
+        $order->modelFile->forceFill(['origin' => 'tool', 'origin_ref' => 'vase'])->save();
+        $this->assertStringStartsWith('Udělejte si vlastní: '.url('/tools/vase').'?utm_source=youtube', $videos->defaultDescription($order->refresh(), null, 'wide'));
+    }
+
+    public function test_the_facebook_and_instagram_texts_carry_their_own_mark_to_the_same_page(): void
+    {
+        FakeMetaClient::reset();
+        $this->connectedChannel();
+        $this->fakeGoogle();
+        $order = $this->paidOrder(consent: true);
+        $order->modelFile->forceFill(['origin' => 'tool', 'origin_ref' => 'vase'])->save();
+        $this->filmed($order);
+        $video = app(FarmVideos::class)->queueFor($order)->refresh();
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza', 'description' => (string) $video->description, 'when' => 'now', 'share_choice' => 1, 'share' => ['facebook', 'facebook_link', 'instagram']])->assertRedirect();
+        $this->artisan('social:videos')->expectsOutputToContain('posted: 3')->assertSuccessful();
+
+        $page = url('/tools/vase').'?utm_source=';
+        $this->assertStringContainsString($page.'facebook&utm_medium=social&utm_campaign=video_short', FakeMetaClient::$posts[0]['message']);
+        $this->assertSame($page.'facebook&utm_medium=social&utm_campaign=video_short', FakeMetaClient::$posts[1]['link']);
+        $this->assertStringContainsString($page.'instagram&utm_medium=social&utm_campaign=video_short', FakeMetaClient::$posts[2]['message']);
+        $this->assertStringNotContainsString('utm_source=youtube', implode(' ', array_column(FakeMetaClient::$posts, 'message')));
+        $this->assertStringContainsString('utm_source=youtube', (string) $video->refresh()->description, 'YouTube keeps its own');
+    }
+
+    public function test_the_link_comment_waits_behind_its_switch_and_its_scope(): void
+    {
+        $this->connectedChannel();
+        $client = app(YouTubeClient::class);
+        $this->assertStringNotContainsString('force-ssl', urldecode($client->authUrl('https://x/cb', 's')), 'today: the scope the channel was connected with');
+
+        // off (the default): a public video gets no comment, Google is not asked
+        $this->fakeGoogle();
+        $order = $this->paidOrder(consent: true);
+        $this->filmed($order);
+        $video = app(FarmVideos::class)->queueFor($order)->refresh();
+        $this->actingAs($this->admin)->post("/admin/youtube/videos/{$video->id}/publish", ['title' => 'Váza', 'description' => 'Popis', 'when' => 'now'])->assertRedirect();
+        $this->assertSame(FarmVideo::STATUS_PUBLISHED, $video->refresh()->status);
+        Http::assertNotSent(fn (HttpRequest $r) => str_contains($r->url(), 'commentThreads'));
+
+        // on: connecting asks for youtube.force-ssl too; a video that turns public gets the call with the link, once
+        config(['youtube.pin_comment' => true]);
+        $this->assertStringContainsString('https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.force-ssl', urldecode($client->authUrl('https://x/cb', 's')));
+        $video->update(['status' => FarmVideo::STATUS_UPLOADED]);
+        app(FarmVideos::class)->refreshStats();   // made public in Studio
+        app(FarmVideos::class)->commentLink($video->refresh());
+        $comments = fn () => Http::recorded(fn (HttpRequest $r) => str_contains($r->url(), 'commentThreads'));
+        $this->assertCount(1, $comments());
+        [$request] = $comments()->first();
+        $this->assertStringEndsWith('/commentThreads?part=snippet', $request->url());
+        $this->assertSame(['channelId' => 'UC123', 'videoId' => 'vid123', 'topLevelComment' => ['snippet' => ['textOriginal' => 'Nahrajte model a hned uvidíte cenu: '.url('/').'/?utm_source=youtube&utm_medium=social&utm_campaign=video_short']]], $request['snippet']);
+        $this->assertSame([FarmVideo::STATUS_PUBLISHED, 'thread-1'], [$video->status, $video->meta['comment_id']]);
+
+        // a token without the scope: the video stays as it is, the log says why
+        $this->commentStatus = 403;
+        $other = FarmVideo::create(['title' => 'W', 'farm_order_id' => $order->id, 'kind' => FarmVideo::KIND_WIDE, 'status' => FarmVideo::STATUS_PUBLISHED, 'youtube_id' => 'vid456']);
+        app(FarmVideos::class)->commentLink($other);
+        $this->assertCount(2, $comments());
+        $this->assertNull($other->refresh()->meta);
+        $this->assertSame(FarmVideo::STATUS_PUBLISHED, $other->status);
     }
 
     public function test_an_unaudited_project_leaves_the_video_private_and_the_admin_is_told(): void

@@ -106,12 +106,13 @@ class HowtoVideoTest extends TestCase
         $this->assertStringContainsString('crop=1000:563:400:219,scale=1080:-2', $short['cut']->graph);
         $this->assertGreaterThan(1, substr_count((string) collect($short['cut']->texts)->first(fn ($t) => str_starts_with($t, 'Krok jedna')), "\n") + 1);
 
-        // the description: our text, the model's credit, our link with its campaign, the music credit
+        // the description: the call with our link first (YouTube shows two lines), our text, the model's credit, the music credit
         ['title' => $title, 'description' => $text] = $howto->description($this->spec(), $cut->music);
         $this->assertSame('Zkušební návod', $title);
         $this->assertStringContainsString('Model: Cell Phone Stand od Pit Demon (Printables, CC0) – https://www.printables.com/model/767024-cell-phone-stand', $text);
         $this->assertStringContainsString('utm_campaign=video_howto', $text);
-        $this->assertStringContainsString('Vyzkoušejte to: https://matplace.com/?utm_source=youtube&utm_medium=social&utm_campaign=video_howto', $howto->description($this->spec(['site' => 'https://matplace.com']), null)['description']);
+        $this->assertStringStartsWith("Nahrajte model a hned uvidíte cenu: https://matplace.com/?utm_source=youtube&utm_medium=social&utm_campaign=video_howto\nPopis videa.", $howto->description($this->spec(['site' => 'https://matplace.com']), null)['description']);
+        $this->assertStringStartsWith('Udělejte si vlastní: https://matplace.com/tools/vase?utm_source=youtube&utm_medium=social&utm_campaign=video_howto', $howto->description($this->spec(['site' => 'https://matplace.com', 'link' => 'tools/vase']), null)['description'], 'the spec names where it leads');
         $this->assertStringContainsString('Hudba: Artist – Song (YouTube Audio Library)', $text);
         $this->assertStringContainsString('MODEL: …', $howto->description($this->spec(['model' => []]), null)['description'], 'no model yet: a line to fill in');
     }
@@ -131,10 +132,12 @@ class HowtoVideoTest extends TestCase
         foreach (['test-howto.mp4', 'test-howto-short.mp4', 'popis.txt', 'titulky.cs.srt', 'titulky.en.srt'] as $file) {
             $this->assertFileExists($this->dir.'/out/'.$file);
         }
-        $this->assertStringStartsWith("Zkušební návod\n\nPopis videa.", (string) file_get_contents($this->dir.'/out/popis.txt'));
+        $this->assertStringStartsWith("Zkušební návod\n\nNahrajte model a hned uvidíte cenu: ".url('/').'/?utm_source=youtube&utm_medium=social&utm_campaign=video_howto'."\nPopis videa.", (string) file_get_contents($this->dir.'/out/popis.txt'));
 
         $rows = FarmVideo::where('kind', FarmVideo::KIND_HOWTO)->orderBy('id')->get();
-        $this->assertSame([['name' => 'test-howto', 'variant' => 'wide'], ['name' => 'test-howto', 'variant' => 'short']], $rows->pluck('meta')->all());
+        $home = url('/').'/';
+        $this->assertSame([['name' => 'test-howto', 'variant' => 'wide', 'link' => $home], ['name' => 'test-howto', 'variant' => 'short', 'link' => $home]], $rows->pluck('meta')->all());
+        $this->assertSame($home.'?utm_source=facebook&utm_medium=social&utm_campaign=video_howto', app(FarmVideos::class)->linkOf($rows[1], 'facebook'), 'Facebook goes where the spec leads');
         $this->assertSame([FarmVideo::STATUS_PENDING, FarmVideo::STATUS_PENDING], $rows->pluck('status')->all());
         $this->assertSame([null, null], $rows->pluck('farm_order_id')->all());
         $this->assertSame(['howto/test-howto.mp4', 'howto/test-howto-short.mp4'], $rows->pluck('path')->all());

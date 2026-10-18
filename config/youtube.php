@@ -15,6 +15,10 @@ return [
     'language' => env('YOUTUBE_LANGUAGE', 'cs'),          // titles and descriptions are written in the channel's language
     'tags' => ['3D tisk', '3D printing', 'timelapse', 'Matplace'],
 
+    // the call with the link as the channel's comment under every public video (pinned by hand in Studio, the API
+    // cannot pin); needs the scope youtube.force-ssl = connecting the channel again in /admin/youtube (docs/AK.md §4)
+    'pin_comment' => (bool) env('YOUTUBE_PIN_COMMENT', false),
+
     // background music under every video the farm builds (the customer's, the Short, the 16:9 and the weekly cut):
     // MP3s from the YouTube Audio Library, "Title - Artist.mp3" (the name goes into the description as the credit);
     // one track per order for all its versions, taken in turn by order id; empty folder = silent videos

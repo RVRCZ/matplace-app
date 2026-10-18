@@ -80,7 +80,7 @@ class FarmHowtoVideo extends Command
             }
             $stored = 'howto/'.basename($path);
             $disk->put($stored, fopen($path, 'rb'));
-            $video = $videos->queueHowto((string) $spec['name'], $variant, $stored, $title, $description, $music ? basename($music) : null);
+            $video = $videos->queueHowto((string) $spec['name'], $variant, $stored, $title, $description, $music ? basename($music) : null, $howto->target($spec));
             $this->info(sprintf('  %s → /admin/youtube (%s)', $variant, $video->youtube_id ? 'already on YouTube: replace it there' : FarmVideo::STATUS_PENDING));
         }
 

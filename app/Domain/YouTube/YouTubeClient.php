@@ -27,6 +27,9 @@ class YouTubeClient
 
     public const SCOPE = 'https://www.googleapis.com/auth/youtube';
 
+    /** commentThreads.insert takes only this one (YOUTUBE_PIN_COMMENT); asking for it means a new consent on connecting. */
+    public const SCOPE_COMMENTS = 'https://www.googleapis.com/auth/youtube.force-ssl';
+
     public function configured(): bool
     {
         return (string) config('youtube.client_id') !== '' && (string) config('youtube.client_secret') !== '';
@@ -38,12 +41,17 @@ class YouTubeClient
             'client_id' => config('youtube.client_id'),
             'redirect_uri' => $redirect,
             'response_type' => 'code',
-            'scope' => self::SCOPE,
+            'scope' => $this->scopes(),
             'access_type' => 'offline',
             'prompt' => 'consent',          // always hand out a refresh token, also on a second connect
             'include_granted_scopes' => 'true',
             'state' => $state,
         ]);
+    }
+
+    public function scopes(): string
+    {
+        return self::SCOPE.(config('youtube.pin_comment') ? ' '.self::SCOPE_COMMENTS : '');
     }
 
     /** OAuth callback: keep the refresh token and remember which channel it belongs to. Replaces an earlier connection. */
@@ -166,6 +174,23 @@ class YouTubeClient
         }
 
         return $out;
+    }
+
+    /**
+     * The channel's own comment under its video (commentThreads.insert, 50 quota units, scope youtube.force-ssl);
+     * returns the comment thread's id. The API cannot pin it: that is one click in Studio.
+     */
+    public function comment(string $videoId, string $text): string
+    {
+        $account = YouTubeAccount::current();
+        $r = $this->api()->post(self::API.'/commentThreads?part=snippet', ['snippet' => [
+            'channelId' => (string) $account?->channel_id, 'videoId' => $videoId, 'topLevelComment' => ['snippet' => ['textOriginal' => $text]],
+        ]]);
+        if (! $r->successful() || ! $r->json('id')) {
+            throw YouTubeError::from($r, 'Comment');
+        }
+
+        return (string) $r->json('id');
     }
 
     /** Remove the video from YouTube; a video that is already gone counts as removed. */
