@@ -160,17 +160,27 @@ final class Sitemaps
         );
     }
 
-    /** Every language version of every shown model, one after another (lazily: the catalogue has thousands). */
+    /**
+     * Every language version of every model worth indexing (CatalogModel::scopeIndexable: a text of our own, a price,
+     * the file – config/catalog.php `index_requires`), one after another (lazily: the catalogue has thousands). The
+     * other pages say "noindex, follow" and are not listed; `lastmod` is the day the text of ours was written.
+     */
     private function catalog(): \Generator
     {
-        foreach (CatalogModel::shown()->whereNotNull('slug')->orderBy('id')->lazy(1000) as $model) {
+        foreach (CatalogModel::indexable()->orderBy('catalog_models.id')->lazy(1000) as $model) {
             $languages = $model->locales();
             foreach ($languages as $locale) {
-                if ($url = $this->entry('catalog.show', ['catalogModel' => $model->slug], $languages, $locale, $model->updated_at)) {
+                if ($url = $this->entry('catalog.show', ['catalogModel' => $model->slug], $languages, $locale, $model->enriched_at ?? $model->updated_at)) {
                     yield $url;
                 }
             }
         }
+    }
+
+    /** @return array{shown: int, indexable: int} how much of the inspiration catalogue the sitemap carries */
+    public function catalogCounts(): array
+    {
+        return ['shown' => CatalogModel::shown()->count(), 'indexable' => CatalogModel::indexable()->count()];
     }
 
     /**

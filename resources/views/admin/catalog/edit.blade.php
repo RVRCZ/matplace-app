@@ -31,9 +31,20 @@
             </label>
         @endforeach
         @if($offered)<p class="mt-1 text-xs text-amber-800">V polích je návrh od AI. Do katalogu se zapíše až uložením.</p>@endif
+        {{-- the source's own text once a text of ours replaced it (catalog:enrich); read here, never edited --}}
+        @if($original = $model->original())
+            <details class="mt-3 rounded-xl border border-slate-200 p-3 text-sm"><summary class="cursor-pointer font-semibold">Původní popis zdroje ({{ $original['locale'] }}), zachovaný pod naším textem</summary><p class="mt-2 whitespace-pre-line text-slate-600">{{ $original['text'] }}</p></details>
+        @endif
+        @php $gaps = $model->indexGaps(); $gapWords = ['enriched' => 'text', 'price' => 'cena', 'file' => 'soubor']; @endphp
+        <p class="mt-2 text-xs text-slate-500">Obohaceno: {{ $model->enriched_at?->format('j. n. Y H:i') ?? 'ne' }}{{ $model->enriched_price_czk ? ' · cena 1 ks '.round($model->enriched_price_czk).' Kč' : '' }} · index: {{ $gaps === [] ? 'ano' : 'ne (chybí '.implode(', ', array_map(fn ($g) => $gapWords[$g] ?? $g, $gaps)).')' }}</p>
 
         <label class="mt-3 flex items-center gap-2"><input type="checkbox" name="visible" value="1" @checked(old('visible', $model->getAttribute('visible'))) class="h-4 w-4 accent-action"> Viditelný v katalogu</label>
         <button class="btn-primary mt-3 text-sm">Uložit</button>
+    </form>
+    {{-- a text of ours for this one model, written by the queue (Gemini); the page is indexed once it also has a price and the file --}}
+    <form method="post" action="{{ route('admin.catalog.enrich') }}" class="lg:col-start-1 -mt-2 text-sm" onsubmit="return confirm('Napsat text přes Gemini (do fronty)? Současný popis se přesune pod „původní popis zdroje“.')">@csrf
+        <input type="hidden" name="ids[]" value="{{ $model->id }}"><input type="hidden" name="force" value="1">
+        <button class="btn-quiet text-sm">{{ $model->isEnriched() ? 'Napsat náš text znovu (Gemini)' : 'Napsat náš text (Gemini)' }}</button>
     </form>
 
     <aside class="space-y-3 text-sm">

@@ -179,9 +179,12 @@ class SeoTest extends TestCase
     public function test_sitemaps_list_a_page_only_in_the_languages_it_exists_in(): void
     {
         $card = $this->printableCard();
-        CatalogModel::create(['legacy_id' => 1, 'slug' => 'only-czech', 'title' => 'Only Czech', 'description' => ['cs' => 'Jen česky.'], 'source' => 'printables', 'visible' => true]);
-        CatalogModel::create(['legacy_id' => 2, 'slug' => 'translated', 'title' => 'Translated', 'description' => ['cs' => 'Česky.', 'en' => 'In English.'], 'source' => 'printables', 'visible' => true]);
-        CatalogModel::create(['legacy_id' => 3, 'slug' => 'hidden', 'title' => 'Hidden', 'description' => ['cs' => 'Skrytý.'], 'source' => 'printables', 'visible' => false]);
+        // the inspiration catalogue lists only pages with something of their own: a text of ours, a price, the file (CatalogSeoTest)
+        $own = ['enriched_at' => now(), 'file_available' => true, 'est_minutes' => 60, 'est_grams' => 20];
+        CatalogModel::create(['legacy_id' => 1, 'slug' => 'only-czech', 'title' => 'Only Czech', 'description' => ['cs' => 'Jen česky.'], 'source' => 'printables', 'visible' => true] + $own);
+        CatalogModel::create(['legacy_id' => 2, 'slug' => 'translated', 'title' => 'Translated', 'description' => ['cs' => 'Česky.', 'en' => 'In English.'], 'source' => 'printables', 'visible' => true] + $own);
+        CatalogModel::create(['legacy_id' => 3, 'slug' => 'hidden', 'title' => 'Hidden', 'description' => ['cs' => 'Skrytý.'], 'source' => 'printables', 'visible' => false] + $own);
+        CatalogModel::create(['legacy_id' => 4, 'slug' => 'template-only', 'title' => 'Template only', 'description' => ['cs' => 'Jen šablona.'], 'source' => 'printables', 'visible' => true]);
         Post::create(['slug' => 'cesky-clanek', 'title' => ['cs' => 'Český článek'], 'body' => ['cs' => 'Text.'], 'published_at' => now()->subDay()]);
         Post::create(['slug' => 'both', 'title' => ['cs' => 'Oba', 'en' => 'Both'], 'body' => ['cs' => 'Text.', 'en' => 'Text.'], 'published_at' => now()->subDay()]);
         Post::create(['slug' => 'draft', 'title' => ['cs' => 'Koncept'], 'body' => ['cs' => 'Text.'], 'published_at' => null]);
@@ -215,6 +218,7 @@ class SeoTest extends TestCase
         $this->assertStringContainsString('<loc>'.url('/en/model/translated').'</loc>', $catalog);
         $this->assertStringNotContainsString(url('/es/model/translated'), $catalog);
         $this->assertStringNotContainsString('hidden', $catalog);
+        $this->assertStringNotContainsString('template-only', $catalog, 'a page without a text of its own is not for search engines');
 
         $this->assertStringContainsString('<loc>'.url('/blog/cesky-clanek').'</loc>', $read('sitemap-blog-cs.xml'));
         $this->assertStringContainsString('<loc>'.url('/en/blog/both').'</loc>', $read('sitemap-blog-en.xml'));

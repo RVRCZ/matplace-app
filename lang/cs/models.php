@@ -96,6 +96,15 @@ return [
         'open_at' => 'Otevřít na :source',
         'tags' => 'Štítky',
         'similar' => 'Podobné modely',
+        // the page with a text of ours (catalog:enrich): the facts beside the call to print, the source's text folded under ours
+        'original' => 'Původní popis autora (:language)',
+        'size' => 'Největší rozměr',
+        'size_value' => 'asi :mm mm',
+        'estimate' => 'Odhad tisku',
+        'estimate_value' => 'asi :grams g filamentu, :time',
+        'price' => 'Cena u nás',
+        'price_value' => 'od :price (:material, 1 ks)',
+        'price_note' => 'Přesnou cenu spočítá kalkulace po nahrání souboru.',
     ],
 
     'search' => [

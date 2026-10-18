@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Catalog\ModelPricing;
 use App\Engines\DTO\ModelCandidate;
 use App\Support\Locales;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,12 +26,114 @@ class CatalogModel extends Model
         'legacy_id', 'slug', 'title', 'description', 'source_locale', 'keywords', 'source', 'external_id', 'external_url', 'preview_url',
         'thumbnail_path', 'images', 'license', 'license_restricted', 'author_name', 'category', 'category_id', 'tags', 'view_count',
         'est_grams', 'est_minutes', 'max_mm', 'file_available', 'model_file_id', 'visible', 'ai_confidence', 'ai_mismatch', 'ai_reason',
+        'enriched_at', 'enriched_price_czk',
     ];
 
     protected $casts = [
         'description' => 'array', 'images' => 'array', 'tags' => 'array', 'file_available' => 'bool', 'visible' => 'bool',
         'license_restricted' => 'bool', 'view_count' => 'int', 'ai_mismatch' => 'bool', 'ai_confidence' => 'float',
+        'enriched_at' => 'datetime', 'enriched_price_czk' => 'float',
     ];
+
+    /** The key of `description` that keeps the source's own text once a text of ours replaced it (not a language). */
+    public const ORIGINAL = 'original';
+
+    /** Everything a page may be asked to have before search engines get it (config/catalog.php `index_requires`). */
+    public const INDEX_NEEDS = ['enriched', 'price', 'file'];
+
+    /** @return list<string> what config asks of an indexable page, in the order of INDEX_NEEDS */
+    public static function indexNeeds(): array
+    {
+        return array_values(array_intersect(self::INDEX_NEEDS, (array) config('catalog.index_requires', self::INDEX_NEEDS)));
+    }
+
+    /**
+     * Pages search engines may index: shown, and with everything config asks for – a text of our own, a real price
+     * (the author's printable card, or the old site's slicer figures with a kind loaded on the farm), the file. The
+     * sitemap lists exactly these; every other page says "noindex, follow" (Roman, 18 Oct 2026).
+     */
+    public function scopeIndexable(Builder $query): Builder
+    {
+        $needs = self::indexNeeds();
+        $query->shown();
+        if (in_array('enriched', $needs, true)) {
+            $query->whereNotNull('catalog_models.enriched_at');
+        }
+
+        return $this->scopeIndexReady($query, array_values(array_diff($needs, ['enriched'])));
+    }
+
+    /**
+     * The conditions of an indexable page that enrichment cannot add (the file, the price): what `catalog:enrich`
+     * picks by, so that no money goes into a page that could not be indexed anyway.
+     *
+     * @param  list<string>|null  $needs  null = what config asks, minus `enriched`
+     */
+    public function scopeIndexReady(Builder $query, ?array $needs = null): Builder
+    {
+        $needs ??= array_values(array_diff(self::indexNeeds(), ['enriched']));
+        if (in_array('file', $needs, true)) {
+            $query->where(fn (Builder $w) => $w->where('catalog_models.file_available', true)->orWhereNotNull('catalog_models.model_file_id')
+                ->orWhereHas('designerModels', fn (Builder $d) => $d->printable()));
+        }
+        if (in_array('price', $needs, true)) {
+            if (! app(ModelPricing::class)->anyMaterial()) {
+                return $query->whereRaw('1 = 0');   // nothing loaded on the farm: no price can be named for anything
+            }
+            $query->where(fn (Builder $w) => $w->where(fn (Builder $e) => $e->where('catalog_models.est_minutes', '>', 0)->where('catalog_models.est_grams', '>', 0))
+                ->orWhereHas('designerModels', fn (Builder $d) => $d->printable()->whereNotNull('slice_summary')));
+        }
+
+        return $query;
+    }
+
+    /** May search engines index this page? The same rule as the sitemap's (scopeIndexable), asked for one model. */
+    public function isIndexable(): bool
+    {
+        return (bool) $this->getAttribute('visible') && $this->slug !== null && static::query()->indexable()->whereKey($this->id)->exists();
+    }
+
+    /**
+     * What this page still lacks to be indexed, of what config asks (`enriched`, `price`, `file`); empty = indexable.
+     *
+     * @return list<string>
+     */
+    public function indexGaps(): array
+    {
+        $needs = self::indexNeeds();
+        $card = in_array('file', $needs, true) || in_array('price', $needs, true) ? $this->printableCard() : null;
+        $gaps = [];
+        if (in_array('enriched', $needs, true) && ! $this->isEnriched()) {
+            $gaps[] = 'enriched';
+        }
+        if (in_array('price', $needs, true) && ! (app(ModelPricing::class)->anyMaterial() && (($this->est_minutes > 0 && $this->est_grams > 0) || ($card && ! empty($card->slice_summary))))) {
+            $gaps[] = 'price';
+        }
+        if (in_array('file', $needs, true) && ! ($this->file_available || $this->model_file_id || $card)) {
+            $gaps[] = 'file';
+        }
+
+        return $gaps;
+    }
+
+    /** A text of our own was written for this model (catalog:enrich or the admin). */
+    public function isEnriched(): bool
+    {
+        return $this->enriched_at !== null;
+    }
+
+    /**
+     * The source's own text, kept beside ours once we wrote one: shown folded under "the author's original description".
+     *
+     * @return array{text: string, locale: string}|null
+     */
+    public function original(): ?array
+    {
+        $d = (array) $this->description;
+        $text = trim((string) ($d[self::ORIGINAL] ?? ''));
+
+        return $text !== '' ? ['text' => $text, 'locale' => (string) ($this->source_locale ?: 'en')] : null;
+    }
 
     public function getRouteKeyName(): string
     {
