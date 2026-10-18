@@ -345,3 +345,39 @@ nezaplacené, zakázka Tisk/Odeslání/Doručení a texty pro skript, příklady
 `ToolPageTest::keysIn` je sdílený skener. Běh: `AuditRestTest`, `ToolPageTest`, `WebRound2Test`, `CalculationFlowTest`,
 `FarmPagesTest`, `ShippingCurrencyTest`, `CatalogTest`, `ToolsCatalogTest`, `ToolsFlowTest`, `AccountsTest`, `AuthTest`,
 `SeoTest`, `FarmOrderFlowTest`, `FarmCardPaymentTest`: 146 testů zelených po poslední změně, `SeoTest` zelený kromě nálezu 10. `pint`, `tsc` a `build` jsou čisté.
+
+## 10. Registrace proti robotům (18. 10. 2026)
+
+Zadání `docs/prompts/registrace-boti.md` (TODO #23). Za den vzniklo 57 účtů „Test“ (55× gmail) z šesti adres, jeden
+každých 20–30 minut. Robot vyplní skutečný formulář: honeypot `website` ani `throttle:6,1` ho nezastaví. Každá
+registrace poslala ověřovací mail přes Gmail SMTP na cizí adresu. Větev `feature/register-guard` z `main` 4b96b59,
+pět kroků, každý v jednom commitu. Přihlášení přes Google/Facebook, účet, kalkulaci ani farmu jsem neměnil.
+
+| krok | co | kde |
+|---|---|---|
+| 1 | limiter `register`: **3 registrace za hodinu a 5 za den z jedné adresy** (IPv6 podle /64). Počítá se jen registrace, která založila účet (překlep v hesle se nepočítá). Nad limitem stránka registrace s hláškou „Z této adresy dnes přibylo už hodně registrací…“, formulář zůstane vyplněný, kód 429. `throttle:6,1` zůstává. | `AppServiceProvider`, `RegisterGuard::ipKey`, `routes/web.php` |
+| 2 | **podepsaný čas vyplnění**: formulář nese pole `t` (`Crypt` s `APP_KEY`). Odesláno do 4 s, po 2 h, bez pole nebo s cizím → zpět na formulář: „Zkuste to prosím znovu: formulář vypršel nebo byl odeslán příliš rychle.“ Vyplněné zůstane všechno kromě hesla. Odmítnutí jde do logu (`register refused`, důvod a adresa). | `RegisterGuard::stamp/refusal`, `AuthController` |
+| 3 | **ověřovací mail jen první registraci z adresy za den**. Další účet z téže adresy týž den vznikne, ale mail nedostane. Hláška po registraci řekne „pro ověření klepněte v účtu na Poslat odkaz znovu“ a tlačítko na stránce účtu mail pošle. Člověk, který se registruje sám, nic nepozná. | `RegisterGuard::firstToday`, `User::$verificationMailWithheld` |
+| 4 | **Cloudflare Turnstile připravený, vypnutý.** S `TURNSTILE_SITE_KEY` a `TURNSTILE_SECRET` v `.env` má formulář widget a `register` ověří token přes `siteverify`. Chybějící nebo odmítnutý token → zpět s „Potvrďte prosím ověření…“. Když Cloudflare neodpoví, registrace projde a zapíše se varování do logu (limity a čas pořád platí). Bez klíčů se nemění nic. | `config/services.php`, `.env.example`, `RegisterGuard::turnstile*` |
+| 5 | **úklid**: v `/admin/users` filtr „neověřené“ a tlačítko „Smazat neověřené (n)“ s potvrzením, plus `php artisan users:prune-unverified --days=7 [--dry-run] [--force]`. Příkaz vždy vypíše seznam, maže jen s `--force` a `--dry-run` má přednost. Maže natrvalo jen neověřené účty starší než N dní **bez** zakázky (i nezaplacené), řádku kreditu, modelu, kalkulace, přihlášení přes Google/Facebook, designérského profilu a role mimo zákazníka. Každý účet se těsně před smazáním zkontroluje znovu. | `App\Domain\Account\UnverifiedAccounts`, `PruneUnverifiedUsers`, `Admin\UserController` |
+
+**Co Roman zapne (Turnstile, zdarma, bez přesunu DNS):** dash.cloudflare.com → účet → Turnstile → Add widget, doména
+`matplace.com`, režim „Managed“. Klíče Site Key a Secret Key dát do `.env` na serveru (`TURNSTILE_SITE_KEY=…`,
+`TURNSTILE_SECRET=…`), potom `php artisan config:cache`. Vypne se smazáním obou řádků.
+
+**Po nasazení (řídící):** `php artisan users:prune-unverified --days=1 --dry-run` ukáže účty „Test“ starší než den
+(`--days` má minimum 1). Smazat s `--force` až po Romanově slově. Po sedmi dnech stačí tlačítko v adminu.
+
+**Podmínka limitu:** `$request->ip()` musí být adresa návštěvníka. Dnes je, protože nginx předává PHP přímo a šest
+adres robotů je vidět v datech, která používají totéž `ip()`. Kdyby web někdy šel přes proxy (Cloudflare proxy, load
+balancer), je potřeba `trustProxies` v `bootstrap/app.php`, jinak by limit 3 za hodinu sdíleli všichni.
+
+**Testy:** `tests/Feature/RegisterGuardTest.php` (7 testů): 4. registrace za hodinu = 429 se stránkou a vyplněným
+formulářem, za hodinu další, po pěti za den konec, jiná adresa nedotčená; překlep se nepočítá, IPv6 podle /64; čas do
+4 s, po 2 h, chybějící a vymyšlený = chyba a vyplněný formulář, po 5 s projde, texty ve třech jazycích; mail jen první
+registraci z adresy a dne, druhá dostane mail přes „Poslat znovu“, další den zase hned (`Notification::fake`);
+Turnstile vypnutý = bez widgetu a bez dotazu, zapnutý = widget s jazykem, odmítnutý a chybějící token neprojde,
+přijatý projde, nedostupný Cloudflare projde; příkaz: `--dry-run`, bez `--force` a `--dry-run --force` nic nesmaže,
+`--force` smaže jen dva roboty, `--days` platí; admin: počet na tlačítku, bez potvrzení nic, zákazník nic, admin smaže.
+Dál `AccountsTest`, `AdminUsersTest`, `SeoTest`, `AdminContentTest` (registrace v testech posílají razítko
+`registerStamp()` z `tests/TestCase.php`): 54 testů OK, `pint` čistý. JS se neměnil (`build` netřeba).
