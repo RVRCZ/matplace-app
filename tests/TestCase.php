@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Support\RegisterGuard;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -18,7 +19,8 @@ abstract class TestCase extends BaseTestCase
     /** What the registration form adds to a post besides the fields a person fills in (App\Support\RegisterGuard). */
     protected function registerStamp(): array
     {
-        return [];
+        // the form as a person sends it: shown a while ago (RegisterGuard refuses under 4 s and over 2 h)
+        return ['t' => RegisterGuard::stamp(now()->getTimestamp() - 10)];
     }
 
     /** Address of a page in a language: Czech has no prefix, the others /en/… and /es/… */

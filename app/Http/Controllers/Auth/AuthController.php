@@ -6,6 +6,7 @@ use App\Domain\Social\SocialPublisher;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Locales;
+use App\Support\RegisterGuard;
 use App\Support\Track;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\View\View;
@@ -13,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 
@@ -52,11 +54,17 @@ class AuthController extends Controller
     {
         $this->rememberOrigin($request);
 
-        return view('auth.register');
+        // the moment the form was shown, signed: a robot that posts at once, or an old form, is sent back (RegisterGuard)
+        return view('auth.register', ['stamp' => RegisterGuard::stamp()]);
     }
 
     public function register(Request $request): RedirectResponse
     {
+        if ($reason = RegisterGuard::refusal($request->input('t'))) {
+            Log::info('register refused', ['reason' => $reason, 'ip' => $request->ip()]);
+
+            return back()->withInput($request->except(['password', 't']))->withErrors(['t' => __('auth.guard.retry')]);
+        }
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],

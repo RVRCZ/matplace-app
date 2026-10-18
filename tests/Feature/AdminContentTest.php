@@ -473,7 +473,7 @@ class AdminContentTest extends TestCase
     public function test_conversions_go_to_meta_only_with_marketing_consent_and_with_the_email_hashed(): void
     {
         Notification::fake();
-        $register = fn (string $email) => $this->post('/register', ['name' => 'Eva', 'email' => $email, 'password' => 'tajneheslo1', 'terms' => 1])->assertRedirect();
+        $register = fn (string $email) => $this->post('/register', ['name' => 'Eva', 'email' => $email, 'password' => 'tajneheslo1', 'terms' => 1] + $this->registerStamp())->assertRedirect();
 
         $register('bez-souhlasu@example.com');
         $this->post('/logout');

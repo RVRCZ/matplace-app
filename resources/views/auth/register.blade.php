@@ -11,6 +11,8 @@
     <form method="post" action="{{ route('register') }}" class="mt-4 space-y-3">
         @csrf
         <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+        {{-- when the form was shown, signed (App\Support\RegisterGuard): sent too soon or hours later, the form comes back --}}
+        <input type="hidden" name="t" value="{{ $stamp ?? \App\Support\RegisterGuard::stamp() }}">
         <label class="block text-sm font-semibold">{{ __('auth.name') }}<input name="name" required value="{{ old('name') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
         <label class="block text-sm font-semibold">{{ __('auth.email') }}<input name="email" type="email" required autocomplete="email" value="{{ old('email') }}" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>
         <label class="block text-sm font-semibold">{{ __('auth.password') }}<input name="password" type="password" required minlength="8" autocomplete="new-password" class="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal"></label>

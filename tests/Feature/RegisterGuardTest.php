@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\RegisterGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Testing\TestResponse;
@@ -45,6 +46,34 @@ class RegisterGuardTest extends TestCase
         $this->register('bot6@gmail.com')->assertRedirect(route('account'));
         $this->register('bot7@gmail.com')->assertStatus(429);
         $this->assertSame(6, User::count());
+    }
+
+    public function test_the_form_must_have_been_open_for_four_seconds_and_at_most_two_hours(): void
+    {
+        $form = (string) $this->get('/register')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/<input type="hidden" name="t" value="[^"]{20,}">/', $form, 'the form carries its signed time');
+
+        $send = fn (array $t) => $this->withServerVariables(['REMOTE_ADDR' => '31.57.107.185'])->from('/register')
+            ->post('/register', ['name' => 'Test', 'email' => 'fast@gmail.com', 'password' => 'tajneheslo1', 'terms' => 1] + $t);
+        $now = now()->getTimestamp();
+        // posted a second after the page came: back to the form, filled in, no account
+        $send(['t' => RegisterGuard::stamp($now - 1)])->assertRedirect('/register')->assertSessionHasErrors('t')
+            ->assertSessionHasInput('email', 'fast@gmail.com')->assertSessionMissing('_old_input.password');
+        $this->assertSame(__('auth.guard.retry'), session('errors')->first('t'));
+        // a form left open for more than two hours, a missing and a made-up time: the same
+        $send(['t' => RegisterGuard::stamp($now - 7201)])->assertSessionHasErrors('t');
+        $send([])->assertSessionHasErrors('t');
+        $send(['t' => base64_encode('register:'.($now - 60))])->assertSessionHasErrors('t');
+        $this->assertSame(0, User::count());
+        // the page shows why, and the form is filled in again
+        $this->get('/register')->assertSee(__('auth.guard.retry'))->assertSee('value="fast@gmail.com"', false);
+        // after five seconds it goes through
+        $send(['t' => RegisterGuard::stamp($now - 5)])->assertRedirect(route('account'));
+        $this->assertSame(1, User::count());
+        foreach (['cs', 'en', 'es'] as $locale) {
+            $this->assertNotSame('auth.guard.retry', __('auth.guard.retry', [], $locale));
+            $this->assertNotSame('auth.guard.limited', __('auth.guard.limited', [], $locale));
+        }
     }
 
     public function test_a_mistake_in_the_form_is_not_a_registration_and_ipv6_counts_by_its_64(): void

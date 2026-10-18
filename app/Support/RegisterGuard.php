@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * What stops a robot that fills in the real registration form (docs/AH.md §10; 58 accounts "Test" in a day from six
@@ -14,6 +16,38 @@ class RegisterGuard
     public const PER_HOUR = 3;
 
     public const PER_DAY = 5;
+
+    /** A person needs a few seconds for the form; a page left open longer than this is sent again from a fresh one. */
+    public const MIN_SECONDS = 4;
+
+    public const MAX_SECONDS = 7200;
+
+    /** The moment the form was shown, signed with APP_KEY (field `t`): a robot cannot write its own. */
+    public static function stamp(?int $at = null): string
+    {
+        return Crypt::encryptString('register:'.($at ?? now()->getTimestamp()));
+    }
+
+    /**
+     * Why a posted form is refused, or null when it is fine: missing / forged (not ours), early (under 4 s), late (over 2 h).
+     */
+    public static function refusal(mixed $stamp, ?int $now = null): ?string
+    {
+        if (! is_string($stamp) || $stamp === '') {
+            return 'missing';
+        }
+        try {
+            $plain = Crypt::decryptString($stamp);
+        } catch (DecryptException) {
+            return 'forged';
+        }
+        if (! preg_match('/^register:(\d+)$/', $plain, $m)) {
+            return 'forged';
+        }
+        $age = ($now ?? now()->getTimestamp()) - (int) $m[1];
+
+        return $age < self::MIN_SECONDS ? 'early' : ($age > self::MAX_SECONDS ? 'late' : null);
+    }
 
     /** The address a limit counts: IPv4 as it is, IPv6 by its /64 (one household or one server gets a whole /64). */
     public static function ipKey(Request $request): string
