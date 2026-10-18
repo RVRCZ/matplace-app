@@ -102,7 +102,10 @@ Viz `config.example.yaml`. Token lze místo souboru předat proměnnou prostřed
 | `printers[].ip` | jen `anycubic_lan`: IP tiskárny (rezervovat v routeru) |
 | `printers[].camera` | jen `anycubic_lan`: snímek z vlastní kamery tiskárny (výchozí `true`, potřebuje balíček `av`) |
 | `printers[].light` | jen `anycubic_lan`: rozsvěcet světlo kamery před tiskem a zhasnout po něm (výchozí `true`) |
-| `printers[].park_lead_min`, `park_lead` | jen `anycubic_lan`: za kolik sekund po ohlášené vrstvě hlava nejdřív / nejpozději dojede do parku (Kobra X změřeno 2,2 / 4,0 s – tiskárna hlásí vrstvu při načtení G‑kódu, napřed před pohybem); s `dwell` tiskárny ≥ 2,3 s z toho vzniká jisté okno a agent fotí jeden snímek, jinak sérii |
+| `printers[].park_lead_min`, `park_lead` | jen `anycubic_lan`: za kolik sekund po ohlášené vrstvě hlava nejdřív / nejpozději dojede do parku. Nenastavené = podle hlavičky G‑kódu: se `sync=m400` (server vloží před značku vrstvy `M400`) 0 / 2,0 s, bez něj 2,2 / 4,0 s (Kobra X hlásí vrstvu při načtení G‑kódu, napřed před pohybem; u větších dílů i víc). S `dwell` tiskárny ≥ 2,5 s z toho vzniká jisté okno a agent fotí jeden snímek, jinak sérii |
+| `printers[].camera_check` | jen `anycubic_lan`: park hlásit až podle živého snímku – když hlava zmizí ze středu obrazu (výchozí `true`; kamera musí hlavu při tisku vidět, jinak rozhoduje čas) |
+| `printers[].head_region` | jen `anycubic_lan`: část obrazu, kterou tisknoucí hlava vyplňuje (zlomky vlevo, nahoře, vpravo, dole; výchozí `[0.375, 0.11, 0.75, 0.61]` pro kameru Kobra X) |
+| `printers[].head_away` | jen `anycubic_lan`: nejvýš tolik jasných bodů v `head_region` = hlava je pryč (výchozí 20; při tisku je jich 100–300, v parku 0–1) |
 | `printers[].park_window_min` | jen `anycubic_lan`: nejkratší jisté okno, které se ještě použije (výchozí 0,5 s) |
 | `printers[].layer_window` | jen `anycubic_lan`: ruční přepsání – kolik sekund po ohlášené vrstvě hlásit park jako plánovanou polohu (výchozí `0` = podle změřeného předstihu) |
 | `printers[].auto_leveling` | jen `anycubic_lan`: tiskárna si před každým tiskem vyrovná podložku, jako po odeslání ze Sliceru Next (výchozí `true`) |

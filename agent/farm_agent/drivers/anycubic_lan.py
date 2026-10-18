@@ -256,13 +256,24 @@ class AnycubicLanDriver(PrinterDriver):
         self._last_progress: dict = {}
         # the layer-synced time-lapse (docs/AM.md §7): where the farm's G-code parks the head after every layer (its
         # first line says), the layer the printer last reported and when it changed
-        self._park: Optional[tuple] = None          # (x, y, dwell s, travel mm/s)
+        self._park: Optional[tuple] = None          # (x, y, dwell s, travel mm/s, sync)
+        self._frames = options.get("_frames")       # tests hand in pictures (a callable giving JPEG bytes) instead of the camera
         self._layer: Optional[int] = None
         self._layer_at: float = 0.0
         self.layer_window = float(options.get("layer_window", 0))   # by hand: seconds head() reports the park after a report (0 = measured timing)
-        self.park_lead_min = float(options.get("park_lead_min", 2.2))   # the head reaches the park this long after the report at the earliest
-        self.park_lead = float(options.get("park_lead", 4.0))           # ... and at the latest (measured 2.2-4.0 s, docs/AM.md §7d)
+        # when the head reaches the park after the printer reports the layer, at the earliest and at the latest: measured
+        # 2.2-4.0 s on a cube (docs/AM.md §7d), longer on bigger parts; with the server's M400 before the layer marker
+        # (sync=m400 in the park line) only the park move itself remains, 0-2 s. None = by the park line.
+        self.park_lead_min: Optional[float] = _opt_float(options, "park_lead_min")
+        self.park_lead: Optional[float] = _opt_float(options, "park_lead")
         self.park_window_min = float(options.get("park_window_min", 0.5))   # a sure window shorter than this is no use (the agent looks every 0.25 s)
+        # the camera as the position sensor (docs/AM.md §7e): the park is told only when the picture shows the head
+        # away; head_region = the part of the picture the printing head fills (fractions left, top, right, bottom),
+        # head_away = at most this many bright pixels there when the head is parked; camera_check: false = timing only
+        self.camera_check = bool(options.get("camera_check", True))
+        self.head_region = tuple(float(v) for v in options.get("head_region", (0.375, 0.11, 0.75, 0.61)))
+        self.head_away = int(options.get("head_away", 20))
+        self._head_seen = 0          # the most bright pixels seen while printing: a camera that never sees the head is not trusted
         self._urls: dict = {}
         self._opening = asyncio.Lock()
 
@@ -453,6 +464,8 @@ class AnycubicLanDriver(PrinterDriver):
         """The latest picture of the printer's camera stream. The stream is kept open while pictures are wanted (a
         burst of them for the layer time-lapse needs one every 0.3 s; opening the stream takes ~10 s, the first key
         frame) and closed after 20 s without a request."""
+        if self._frames:
+            return self._frames()
         url = self._urls.get("rtspUrl")
         if not self.camera or not url:
             return None
@@ -494,16 +507,33 @@ class AnycubicLanDriver(PrinterDriver):
         if not self._park or self._layer is None:
             return None
         since = time.monotonic() - self._layer_at
-        dwell = self._park[2]
+        x, y, dwell, _travel, sync = self._park
         if self.layer_window:                                   # a window set by hand: planned position, as before
-            return (self._park[0], self._park[1], None) if since <= self.layer_window else None
-        sure_from, sure_to = self.park_lead, self.park_lead_min + dwell
+            return (x, y, None) if since <= self.layer_window else None
+        lead_min = self.park_lead_min if self.park_lead_min is not None else (0.0 if sync == "m400" else 2.2)
+        lead_max = self.park_lead if self.park_lead is not None else (2.0 if sync == "m400" else 4.0)
+        # the camera decides when it can: within the whole span the park may fall into, the park is told the moment
+        # the picture shows the head away (docs/AM.md §7e)
+        if self.camera_check and lead_min <= since <= lead_max + dwell:
+            seen = await self._head_pixels()
+            if seen is not None:
+                if seen > self.head_away:
+                    self._head_seen = max(self._head_seen, seen)
+                    return None
+                if self._head_seen >= 2 * self.head_away:       # the camera has seen the head print: it can tell "away"
+                    return x, y, 0.0
+        sure_from, sure_to = lead_max, lead_min + dwell
         if sure_to - sure_from >= self.park_window_min:
-            return (self._park[0], self._park[1], 0.0) if sure_from <= since <= sure_to else None
-        spread = self.park_lead - self.park_lead_min
-        if self.park_lead_min <= since <= self.park_lead_min + dwell + spread:
-            return self._park[0], self._park[1], None
+            return (x, y, 0.0) if sure_from <= since <= sure_to else None
+        spread = lead_max - lead_min
+        if lead_min <= since <= lead_min + dwell + spread:
+            return x, y, None
         return None
+
+    async def _head_pixels(self) -> Optional[int]:
+        """How much of the head the camera sees right now (head_in_view), None without a picture."""
+        jpeg = await self.snapshot()
+        return head_in_view(jpeg, self.head_region) if jpeg else None
 
     def _note_layer(self, layer) -> None:
         """A layer the printer reports (print/report or info): the moment it changes is when the head goes to park."""
@@ -720,17 +750,41 @@ def _num(v) -> Optional[float]:
     return round(float(v), 1) if isinstance(v, (int, float)) else None
 
 
-def _park_of(raw: bytes) -> Optional[tuple[float, float, float, float]]:
-    """(x, y, dwell s, travel mm/s) from the first line the farm writes into a layer-synced G-code
-    ("; matplace timelapse park_x=250 park_y=250 dwell=1000 travel=200 frames=49"), None for any other file."""
+def _park_of(raw: bytes) -> Optional[tuple[float, float, float, float, str]]:
+    """(x, y, dwell s, travel mm/s, sync) from the first line the farm writes into a layer-synced G-code
+    ("; matplace timelapse park_x=250 park_y=250 dwell=1000 travel=200 frames=49 sync=m400"), None for any other
+    file. `sync` says what the server did about the printer's planner running ahead ("m400": an M400 before every
+    layer marker, so the marker is read only when the layer's moves are done), "" when nothing."""
     first = raw.split(b"\n", 1)[0].decode("utf-8", "replace")
     if not first.startswith("; matplace timelapse "):
         return None
     values = dict(p.split("=", 1) for p in first.split() if "=" in p)
     try:
-        return float(values["park_x"]), float(values["park_y"]), float(values.get("dwell", 1000)) / 1000.0, float(values.get("travel", 200))
+        return (float(values["park_x"]), float(values["park_y"]), float(values.get("dwell", 1000)) / 1000.0, float(values.get("travel", 200)),
+                str(values.get("sync", "")).lower())
     except (KeyError, ValueError):
         return None
+
+
+def head_in_view(jpeg: bytes, region: tuple[float, float, float, float], bright: int = 200) -> Optional[int]:
+    """How much of the print head the camera sees: the number of bright pixels in `region` (fractions of the picture:
+    left, top, right, bottom) of the picture scaled to 320 x 180. The Kobra X head is a white box; while it prints it
+    fills the middle of the picture (100-300 pixels there), parked at X0 it stands small at the right edge (0-1 pixel in
+    the middle band; 18 Oct 2026). None when the picture cannot be read (or Pillow is missing)."""
+    try:
+        from PIL import Image  # noqa: WPS433 - optional, installed on the farm PC (install-farma.ps1)
+        im = Image.open(io.BytesIO(jpeg)).convert("L").resize((320, 180))
+    except Exception:  # noqa: BLE001 - no picture, no opinion
+        return None
+    x0, y0, x1, y1 = (int(region[0] * 320), int(region[1] * 180), int(region[2] * 320), int(region[3] * 180))
+    px = im.load()
+    return sum(1 for y in range(y0, y1) for x in range(x0, x1) if px[x, y] > bright)
+
+
+def _opt_float(options: dict, key: str) -> Optional[float]:
+    """A number option, None when it is not set (so a default can depend on something else)."""
+    value = options.get(key)
+    return None if value is None or value == "" else float(value)
 
 
 def _base_name(name: str) -> str:

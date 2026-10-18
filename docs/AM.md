@@ -296,3 +296,34 @@ znovu 4,1 s. Při tisku agent chce snímky každých 15 s, takže stream zůstá
    (parametr tiskárny; 49 vrstev = +2,5 min, server to do odhadu připočítá), park X0 Y130. Agent ani server se nemění.
    Rozptyl předstihu (1,8 s) závisí na tom, kolik G‑kódu má plánovač před parkem načteno; u dílů s dlouhými rovnými
    drahami může být předstih delší – když by se snímky míjely, zvětšit `park_lead` (volba v configu) nebo dwell.
+
+## 7e. Kamera jako čidlo polohy, značka `sync=m400` (agent 0.2.3, větev `feature/agent-kobra-x-camera-sensor`, 18. 10. 2026)
+
+**Co ukázala první zakázka (F26‑000086, C1 v automatickém režimu, dwell 3000, park X0 Y130, agent 0.2.2):** z 17
+vrstvových snímků v `Desktop\kx-frames\F26-000086\frames_layer` (17:36–17:45) má **13 hlavu v parku** (malá, vpravo
+nahoře u x≈276 ze 320) a **4 hlavu uprostřed** u dílu (t = 50, 107, 177 a 359 s od prvního snímku; měřeno středem a
+plochou bílé hlavy, `kx_park_analyse2.py`). Řídící hlásila „všech 15 uprostřed“ – špatně, hlava v parku je malá a
+daleko, na náhled vypadá jako kus rámu. Těch 4 „uprostřed“ je předstih hlášení delší než 4,0 s: díl má delší dráhy než
+10mm kostka, plánovač načte značku vrstvy dřív a jisté okno 4,0–5,2 s hlavu ještě nestihne. Rozptyl předstihu roste
+s dílem, pevná čísla nestačí.
+
+**Dvě opravy, které se doplňují:**
+
+1. **Server (main 4030397, řídící):** s volbou `sync` na formuláři tiskárny vloží před každou značku vrstvy (kromě první)
+   `M400` – firmware značku načte až po dokončení pohybů vrstvy, předstih plánovače tak zmizí a zbývá jen vlastní
+   přejezd do parku (~1 s) a dwell. Hlavička G‑kódu končí ` sync=m400`.
+2. **Ovladač 0.2.3:** `_park_of` čte i `sync`; nenastavené `park_lead_min`/`park_lead` jsou podle něj **0,0 / 2,0 s**
+   (`sync=m400`), bez značky dál 2,2 / 4,0 s. S dwell 3000 a m400 je jisté okno 2,0–3,0 s po hlášení. Navíc **kamera
+   jako čidlo** (`head_in_view`): v celém rozmezí, kam může park padnout (`lead_min` až `lead_max + dwell`), se při
+   každém dotazu agenta (4× za s) vezme aktuální snímek streamu (okamžitý, §7c'), zmenší na 320×180 a spočítají se
+   jasné body (> 200) ve střední části `head_region` (zlomky 0,375–0,75 × 0,11–0,61; nastaveno z F26‑000086: tisknoucí
+   hlava tam dává 100–300 bodů, zaparkovaná 0–1). Dokud je hlava vidět (> `head_away` 20), park se nehlásí; jakmile
+   zmizí **a kamera už hlavu při tisku viděla** (≥ 2× `head_away`, aby kamera, která hlavu nevidí nikdy, nerozhodovala),
+   hlásí se park jako stojící poloha a agent udělá jeden snímek. Když kamera nerozhodne (bez snímku, nebo hlavu zatím
+   neviděla), platí časování jako v 0.2.2. `camera_check: false` kameru vyřadí.
+
+**Ověřeno jen testy** (`tests/test_anycubic_lan.py`: hlavička se `sync`, jisté okno s m400, kamera hlásí park při
+zmizení hlavy ze středu – 61 testů), ne na tiskárně (tiskne zakázka). Ověří se na další zakázce z `frames_layer`:
+správně má být hlava na všech snímcích vpravo nahoře malá. Instalace: jen soubory `agent/` (žádný nový balíček,
+Pillow už je), restart agenta. Doporučení pro C1: `sync` zapnuto, dwell 3000 (s m400 by stačilo i 2000: okno 2,0–2,0 s
+je sice nulové, ale kamera rozhodne dřív), `park_lead*` nechat nenastavené.
