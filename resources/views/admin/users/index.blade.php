@@ -19,8 +19,18 @@
             @foreach(\App\Http\Controllers\Admin\UserController::ROLES as $r)<option value="{{ $r }}" @selected($role === $r)>{{ $r }}</option>@endforeach
         </select>
     </label>
+    <label class="flex items-center gap-1 pb-2"><input type="checkbox" name="unverified" value="1" @checked($unverified) class="h-4 w-4 accent-action"> neověřené</label>
     <label class="flex items-center gap-1 pb-2"><input type="checkbox" name="deleted" value="1" @checked($deleted) class="h-4 w-4 accent-action"> smazané účty</label>
     <button class="btn-quiet min-h-0 px-3 py-2 text-sm">Hledat</button>
+</form>
+
+{{-- accounts robots leave behind (docs/AH.md §10): never one with an order, credit, a model, a calculation, a Google/Facebook sign-in or a role --}}
+<form id="users-prune" method="post" action="{{ route('admin.users.prune') }}" class="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-sm"
+      onsubmit="return confirm(@js('Smazat natrvalo '.$prunable.' neověřených účtů starších než '.\App\Domain\Account\UnverifiedAccounts::DAYS.' dní? Účty se zakázkou, kreditem, modelem nebo přihlášením přes Google/Facebook zůstanou.'))">
+    @csrf
+    <input type="hidden" name="confirm" value="1">
+    <span class="flex-1 text-slate-600">Neověřené účty starší než {{ \App\Domain\Account\UnverifiedAccounts::DAYS }} dní, které nic nemají (žádná zakázka, kredit, model, kalkulace, přihlášení přes Google/Facebook ani role): <strong>{{ $prunable }}</strong>. Totéž z příkazové řádky: <code>php artisan users:prune-unverified --dry-run</code>.</span>
+    <button class="btn-quiet min-h-0 px-3 py-2 text-sm" @disabled($prunable === 0)>Smazat neověřené ({{ $prunable }})</button>
 </form>
 
 <div class="card mt-3 overflow-x-auto">

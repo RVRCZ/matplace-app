@@ -99,7 +99,7 @@ class AccountsTest extends TestCase
 
         // ?role=printer comes from old links: it is ignored, nobody becomes a printer
         $this->withUnencryptedCookie(AnonymousSession::COOKIE, $session->token)
-            ->post('/en/register?role=printer', ['name' => 'Roman', 'email' => 'Roman@Example.com', 'password' => 'secret123', 'terms' => 1, 'role' => 'printer'])
+            ->post('/en/register?role=printer', ['name' => 'Roman', 'email' => 'Roman@Example.com', 'password' => 'secret123', 'terms' => 1, 'role' => 'printer'] + $this->registerStamp())
             ->assertRedirect('/en/account')->assertSessionHas('status');
         $user = User::where('email', 'roman@example.com')->firstOrFail();
         $this->assertTrue($user->hasRole('customer'));
@@ -533,7 +533,7 @@ class AccountsTest extends TestCase
         $this->post('/login', ['email' => $user->email, 'password' => 'secret123'])->assertSessionHasErrors('email');
         $this->assertGuest();
         // the address is free for a new account
-        $this->post('/register', ['name' => 'Roman', 'email' => 'gone@example.com', 'password' => 'secret123', 'terms' => 1])->assertRedirect(route('account'));
+        $this->post('/register', ['name' => 'Roman', 'email' => 'gone@example.com', 'password' => 'secret123', 'terms' => 1] + $this->registerStamp())->assertRedirect(route('account'));
     }
 
     public function test_an_account_without_a_password_confirms_the_deletion_from_its_mailbox(): void

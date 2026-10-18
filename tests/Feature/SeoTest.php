@@ -303,7 +303,7 @@ class SeoTest extends TestCase
         $this->assertSame([['type' => 'search', 'meta' => ['results' => 0]]], json_decode((string) $search->headers->get(ForwardEvents::HEADER), true));
 
         // an event of a request that ends in a redirect waits for the page the browser lands on, once
-        $this->post('/register', ['name' => 'Eva', 'email' => 'eva@example.com', 'password' => 'tajneheslo1', 'terms' => 1])->assertRedirect();
+        $this->post('/register', ['name' => 'Eva', 'email' => 'eva@example.com', 'password' => 'tajneheslo1', 'terms' => 1] + $this->registerStamp())->assertRedirect();
         $this->assertSame(1, Event::where('type', 'register')->count());
         $landing = $this->get('/account')->assertOk();
         $this->assertStringContainsString('register', $this->measure($landing)['events'][0]['type'] ?? '');

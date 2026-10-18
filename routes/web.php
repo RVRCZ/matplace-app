@@ -198,7 +198,7 @@ $pages = function () {
         Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
         Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1')->name('login.attempt');
         Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-        Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:6,1')->name('register.store');
+        Route::post('/register', [AuthController::class, 'register'])->middleware(['throttle:6,1', 'throttle:register'])->name('register.store');
         Route::get('/forgot-password', [AuthController::class, 'showForgot'])->name('password.request');
         Route::post('/forgot-password', [AuthController::class, 'sendReset'])->middleware('throttle:6,1')->name('password.email');
         Route::get('/reset-password/{token}', [AuthController::class, 'showReset'])->name('password.reset');
@@ -540,6 +540,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/tools/{tool}', [AdminToolController::class, 'update'])->where('tool', '[a-z0-9_]+')->name('tools.update');
 
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    // accounts robots left behind: unconfirmed, older than 7 days, nothing of their own (docs/AH.md §10)
+    Route::post('/users/prune-unverified', [AdminUserController::class, 'pruneUnverified'])->name('users.prune');
     Route::get('/users/{user}', [AdminUserController::class, 'show'])->whereNumber('user')->name('users.show');
     Route::post('/users/{user}/role', [AdminUserController::class, 'role'])->whereNumber('user')->name('users.role');
     Route::post('/users/{user}/reset-link', [AdminUserController::class, 'resetLink'])->whereNumber('user')->middleware('throttle:10,1,admin-reset')->name('users.reset');

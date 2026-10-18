@@ -6,6 +6,7 @@ use App\Domain\Social\SocialPublisher;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Locales;
+use App\Support\RegisterGuard;
 use App\Support\Track;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\View\View;
@@ -13,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 
@@ -52,11 +54,22 @@ class AuthController extends Controller
     {
         $this->rememberOrigin($request);
 
-        return view('auth.register');
+        // the moment the form was shown, signed: a robot that posts at once, or an old form, is sent back (RegisterGuard)
+        return view('auth.register', ['stamp' => RegisterGuard::stamp()]);
     }
 
     public function register(Request $request): RedirectResponse
     {
+        if ($reason = RegisterGuard::refusal($request->input('t'))) {
+            Log::info('register refused', ['reason' => $reason, 'ip' => $request->ip()]);
+
+            return back()->withInput($request->except(['password', 't']))->withErrors(['t' => __('auth.guard.retry')]);
+        }
+        if (RegisterGuard::turnstileOn() && ! RegisterGuard::turnstilePasses($request)) {
+            Log::info('register refused', ['reason' => 'turnstile', 'ip' => $request->ip()]);
+
+            return back()->withInput($request->except(['password', 't', 'cf-turnstile-response']))->withErrors(['turnstile' => __('auth.guard.turnstile')]);
+        }
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],
@@ -74,13 +87,19 @@ class AuthController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
         $this->claim($request);
-        // sends the verification e-mail (User::sendEmailVerificationNotification) in the language of the page
+        // sends the verification e-mail (User::sendEmailVerificationNotification) in the language of the page; a second
+        // account from the same address today gets it only on "send again" (RegisterGuard::firstToday)
+        $mailed = RegisterGuard::firstToday($request);
+        $user->verificationMailWithheld = ! $mailed;
+        if (! $mailed) {
+            Log::info('register: verification mail withheld', ['user' => $user->id, 'ip' => $request->ip()]);
+        }
         event(new Registered($user));
         // the same id goes to the pixel in the browser and to the Conversions API, so Meta counts the registration once
         Track::event('register', $user, ['kind' => 'email', 'event_id' => 'register-'.$user->id]);
         app(SocialPublisher::class)->conversion('register', 'register-'.$user->id, $request, $user->email);
 
-        return redirect()->intended(route('account'))->with('status', __('user.verify.registered', ['email' => $user->email]));
+        return redirect()->intended(route('account'))->with('status', __($mailed ? 'user.verify.registered' : 'user.verify.registered_ask', ['email' => $user->email]));
     }
 
     public function logout(Request $request): RedirectResponse

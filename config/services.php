@@ -47,6 +47,14 @@ return [
         'redirect' => env('FACEBOOK_REDIRECT_URI', '/auth/facebook/callback'),
     ],
 
+    // Cloudflare Turnstile on the registration form (docs/AH.md §10): on only when both keys are set (free account,
+    // no DNS move); without them the form is as it was
+    'turnstile' => [
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret' => env('TURNSTILE_SECRET'),
+        'verify_url' => 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+    ],
+
     // Measurement, loaded in the browser only after the visitor agreed in the cookie bar (App\Support\Consent)
     'ga4' => ['id' => env('GA_MEASUREMENT_ID')],
     'meta' => [
