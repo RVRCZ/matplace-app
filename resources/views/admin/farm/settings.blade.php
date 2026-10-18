@@ -55,6 +55,14 @@
             <label class="{{ $lb }}">Verze podmínek<input name="terms_version" required value="{{ old('terms_version', $settings['terms_version']) }}" class="{{ $in }}"></label>
             <label class="{{ $lb }}">E-mail obsluhy (upozornění)<input type="email" name="admin_email" value="{{ old('admin_email', $settings['admin_email']) }}" class="{{ $in }}"></label>
         </div>
+        {{-- what goes to that address: one mail per event of an order (OrderFlow::alertAdmin); problems also cover a printer offline or a start that failed --}}
+        <div class="mt-3 flex flex-wrap items-center gap-4 text-sm" id="farm-notify">
+            <span class="text-xs font-semibold text-slate-600">E-maily obsluze:</span>
+            @foreach(['paid' => 'zaplaceno (nová zakázka)', 'printing' => 'tiskne se', 'done' => 'dotištěno (se snímkem z kamery)', 'problem' => 'problémy (selhání, zrušení, tiskárna offline)'] as $kind => $label)
+                <label class="flex items-center gap-2"><input type="checkbox" name="notify_{{ $kind }}" value="1" @checked($settings['notify_'.$kind]) class="h-4 w-4 accent-action"> {{ $label }}</label>
+            @endforeach
+            <span class="text-xs text-slate-500">Jeden e-mail na událost; bez e-mailu obsluhy nechodí nic.</span>
+        </div>
         <div class="mt-3 flex flex-wrap gap-4 text-sm">
             <label class="flex items-center gap-2"><input type="checkbox" name="require_approval" value="1" @checked($settings['require_approval']) class="h-4 w-4 accent-action"> Každou zaplacenou zakázku před tiskem ručně schválit</label>
             @foreach(['packeta_point', 'packeta_home', 'pickup'] as $mode)
