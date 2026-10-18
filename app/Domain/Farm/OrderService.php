@@ -240,7 +240,7 @@ final class OrderService
             ->where('farm_color_id', $main->farm_color_id)->where('enabled', true)
             ->whereHas('printer', fn ($q) => $q->where('enabled', true))
             ->get()
-            ->filter(fn (FarmPrinterSlot $s) => $s->id === $main->id || ($s->printer->isOnline() && $s->printer->takesQuality($quality) && (! $dims || $s->printer->fits($dims))))
+            ->filter(fn (FarmPrinterSlot $s) => $s->kindFitsPrinter() && ($s->id === $main->id || ($s->printer->isOnline() && $s->printer->takesQuality($quality) && (! $dims || $s->printer->fits($dims)))))
             ->sortBy(fn (FarmPrinterSlot $s) => [$s->id === $main->id ? 0 : 1, $s->printer->readyForAutoStart() ? 0 : 1, $s->id]);
         $out = collect();
         foreach ($firsts as $first) {
@@ -422,17 +422,20 @@ final class OrderService
         return $out;
     }
 
-    /** The other spools of the same machine a second colour can come from: same plastic family, enough left. */
+    /**
+     * The other spools of the same machine a second colour can come from: same plastic family, enough left, and a kind
+     * the machine may feed (a kind that breaks in the changer only from a manual printer, FarmPrinterSlot::kindFitsPrinter).
+     */
     public function secondSpools(FarmPrinterSlot $main): Collection
     {
         $main->loadMissing('color.material');
 
-        return FarmPrinterSlot::with('color.material')
+        return FarmPrinterSlot::with(['color.material', 'printer'])
             ->where('farm_printer_id', $main->farm_printer_id)->where('id', '!=', $main->id)
             ->where('enabled', true)->whereNotNull('farm_color_id')
             ->whereHas('color', fn ($q) => $q->where('enabled', true))
             ->get()
-            ->filter(fn (FarmPrinterSlot $s) => $s->color->id !== $main->color?->id && self::family($s->color->material) === self::family($main->color?->material) && $s->availableGrams() > 30)
+            ->filter(fn (FarmPrinterSlot $s) => $s->color->id !== $main->color?->id && self::family($s->color->material) === self::family($main->color?->material) && $s->availableGrams() > 30 && $s->kindFitsPrinter())
             ->values();
     }
 
@@ -459,7 +462,9 @@ final class OrderService
     /**
      * Colours on offer before an order exists: every enabled colour loaded in an enabled slot of an enabled, online
      * printer that takes this quality, with at least MIN_SPOOL_G left; one entry per colour (a machine ready to start
-     * first, then the smaller plate), in the order of the colour window (colorOrder).
+     * first, then the smaller plate), in the order of the colour window (colorOrder). A colour of a kind that breaks
+     * in the changer counts only from a printer in manual mode (FarmPrinterSlot::kindFitsPrinter) – the same rule the
+     * admin's slot forms keep, kept here too for slots loaded before the kind got its flag.
      *
      * @return Collection<int, array{slot: FarmPrinterSlot, color: FarmColor, printer: FarmPrinter}>
      */
@@ -472,7 +477,7 @@ final class OrderService
             ->whereHas('printer', fn ($q) => $q->where('enabled', true))
             ->whereHas('color', fn ($q) => $q->where('enabled', true)->whereHas('material', fn ($m) => $m->where('enabled', true)))
             ->get()
-            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->takesQuality($quality) && $s->availableGrams() >= self::MIN_SPOOL_G)
+            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->takesQuality($quality) && $s->availableGrams() >= self::MIN_SPOOL_G && $s->kindFitsPrinter())
             ->sortBy(fn (FarmPrinterSlot $s) => [$s->printer->readyForAutoStart() ? 0 : 1, $s->printer->bedVolume(), $s->id])
             ->unique('farm_color_id')
             ->sortBy(fn (FarmPrinterSlot $s) => self::colorOrder($s->color))
@@ -525,7 +530,7 @@ final class OrderService
             ->get()
             // any machine of the farm the model goes on and that takes this quality: a colour on another machine means
             // slicing again for it at payment
-            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->fits($dims) && $s->printer->takesQuality((string) $order->quality) && $s->availableGrams() >= self::MIN_SPOOL_G)
+            ->filter(fn (FarmPrinterSlot $s) => $s->printer->isOnline() && $s->printer->fits($dims) && $s->printer->takesQuality((string) $order->quality) && $s->availableGrams() >= self::MIN_SPOOL_G && $s->kindFitsPrinter())
             ->map(fn (FarmPrinterSlot $s) => ['slot' => $s, 'color' => $s->color, 'printer' => $s->printer, 'enough' => $s->availableGrams() >= $need])
             ->values();
     }

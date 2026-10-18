@@ -115,7 +115,7 @@
 
     <section class="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 class="font-bold">Sloty (cívky)</h2>
-        <p class="text-xs text-slate-500">Zákazník vidí jen barvy v zapnutých slotech. Číslo slotu je číslo nástroje v G-code (slot 1 = T0). {{ __('farm.admin.new_color_hint') }}</p>
+        <p class="text-xs text-slate-500">Zákazník vidí jen barvy v zapnutých slotech. Číslo slotu je číslo nástroje v G-code (slot 1 = T0). {{ __('farm.admin.new_color_hint') }} {{ __('farm.admin.manual_only_slots_hint') }}</p>
         <div class="mt-2 space-y-2">
             @for($i = 0; $i < $slotCount; $i++)
                 @php $s = $slots->get($i); $isNew = old("slots.$i.color") === 'new'; @endphp
@@ -124,11 +124,13 @@
                     <label class="{{ $lb }}">Barva
                         <select name="slots[{{ $i }}][color]" data-slot-color="{{ $i }}" class="{{ $in }}"><option value="">— prázdný —</option>
                             <option value="new" @selected($isNew)>{{ __('farm.admin.new_color') }}</option>
-                            @foreach($colors->groupBy(fn ($c) => $c->material->label()) as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected(! $isNew && (int) old("slots.$i.color", $s?->farm_color_id) === $c->id)>{{ $c->fullLabel() }}</option>@endforeach</optgroup>@endforeach
+                            {{-- a kind that breaks in the changer says so in its group: it goes only into a manual printer --}}
+                            @foreach($colors->groupBy(fn ($c) => $c->material->label().($c->material->manual_only ? ' · '.__('farm.admin.manual_only_short') : '')) as $kind => $group)<optgroup label="{{ $kind }}">@foreach($group as $c)<option value="{{ $c->id }}" @selected(! $isNew && (int) old("slots.$i.color", $s?->farm_color_id) === $c->id)>{{ $c->fullLabel() }}</option>@endforeach</optgroup>@endforeach
                         </select>
                     </label>
                     <label class="{{ $lb }}">Zbývá (g)<input type="number" step="1" min="0" name="slots[{{ $i }}][remaining_g]" value="{{ old("slots.$i.remaining_g", $s ? round($s->remaining_g) : 0) }}" class="{{ $in }}"></label>
                     <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="slots[{{ $i }}][enabled]" value="1" @checked(old("slots.$i.enabled", $s?->enabled)) class="h-4 w-4 accent-action"> nabízet</label>
+                    @error("slots.$i.color")<p class="text-xs text-red-700 sm:col-span-4">{{ $message }}</p>@enderror
                 </div>
                 {{-- a spool the catalogue does not know: typed in right here, created with the printer (FarmCatalogController::newColor) --}}
                 <div data-slot-new="{{ $i }}" class="{{ $isNew ? '' : 'hidden' }} ml-0 grid gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-2 sm:ml-[3.5rem] sm:grid-cols-[1fr_1fr_1fr_1fr_5rem_1fr]">

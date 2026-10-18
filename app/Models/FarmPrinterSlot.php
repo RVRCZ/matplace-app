@@ -31,6 +31,22 @@ class FarmPrinterSlot extends Model
         return $this->printer->shortCode().($this->slot + 1);
     }
 
+    /**
+     * May this spool be offered from this machine? A kind that breaks in the filament changer (FarmMaterial::manual_only)
+     * is fed straight from the holder by a person, so it is offered only from a printer in manual mode; such a colour
+     * in a slot of an agent-driven machine (old data, or a machine switched to the agent since) counts as not loaded.
+     */
+    public function kindFitsPrinter(): bool
+    {
+        return self::kindFits($this->printer, $this->color);
+    }
+
+    /** The same rule before a slot exists: would this colour be allowed in a slot of this printer? */
+    public static function kindFits(?FarmPrinter $printer, ?FarmColor $color): bool
+    {
+        return ! $color?->material?->isManualOnly() || ! $printer?->isAgentDriven();
+    }
+
     /** Filament already promised to orders that have not finished printing. */
     public function reservedGrams(): float
     {
