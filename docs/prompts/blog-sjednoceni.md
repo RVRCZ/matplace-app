@@ -41,6 +41,18 @@ z WordPressu dělal `app/Console/Commands/ImportBlog.php`):
 6. Angličtina a španělština: zjisti, odkud bere sitemap-blog-en/es články (překlady v tabulce? stejné slugy?) a napiš
    do AK.md; překládej jen, když to blog dnes umí a dělá; jinak jen cs.
 
+## 1a. Doplněk od Romana (18. 10. večer): články k našim nástrojům, prolinkované
+
+Po přepsání šesti článků napiš **nové články k hlavním nástrojům**, každý jako návod s výsledkem a cenou, a všechny
+články i stránky nástrojů **vzájemně prolinkuj** (článek → nástroj → článek, blok „Co dál“ na obou koncích; stránky
+nástrojů dostanou odkaz na článek přes `config/tools.php` klíč `article` a session 3 ho ukáže v bloku „odkazy dál“,
+domluv se s ní přes řídící). První pětice podle vstupních stránek: **cena 3D tisku z modelu** (kalkulace), **figurka
+z fotky** (busta + mazlíček, s ukázkami rozměrů a cen), **QR cedulka a Wi‑Fi stojánek** (kavárna, ubytování, obchod),
+**organizér na míru** (jak změřit prostor), **krabička na míru**. Pak další nástroje podle `config/tools.php`
+(model z G‑kódu, mapa, reliéf z fotky, litofán, papel picado, forma na odlévání…), vždy jeden článek = jeden nástroj
+nebo skupina. Fotky výtisků dodá Roman (zástupné místo v markdownu `![fotka výtisku](TODO)` a seznam potřebných
+fotek do AK.md). Pořadí: nejdřív šest starých článků, pak pětice, pak zbytek po dávkách s push po každé dávce.
+
 ## 2. Testy a hotovo
 
 `BlogSyncTest`: `--dry-run` nic nezapíše; sync založí/aktualizuje podle slugu; druhé spuštění beze změny; stará
