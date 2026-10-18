@@ -297,33 +297,38 @@ znovu 4,1 s. Při tisku agent chce snímky každých 15 s, takže stream zůstá
    Rozptyl předstihu (1,8 s) závisí na tom, kolik G‑kódu má plánovač před parkem načteno; u dílů s dlouhými rovnými
    drahami může být předstih delší – když by se snímky míjely, zvětšit `park_lead` (volba v configu) nebo dwell.
 
-## 7e. Kamera jako čidlo polohy, značka `sync=m400` (agent 0.2.3, větev `feature/agent-kobra-x-camera-sensor`, 18. 10. 2026)
+## 7e. První zakázka F26‑000086: hlava v parku 340 z 349 snímků; „kamera jako čidlo“ (0.2.3) stažena; předstih se `sync=m400`; nuly ve statistice (agent 0.2.4, větev `feature/agent-kobra-x-stats`, 18. 10. 2026)
 
-**Co ukázala první zakázka (F26‑000086, C1 v automatickém režimu, dwell 3000, park X0 Y130, agent 0.2.2):** z 17
-vrstvových snímků v `Desktop\kx-frames\F26-000086\frames_layer` (17:36–17:45) má **13 hlavu v parku** (malá, vpravo
-nahoře u x≈276 ze 320) a **4 hlavu uprostřed** u dílu (t = 50, 107, 177 a 359 s od prvního snímku; měřeno středem a
-plochou bílé hlavy, `kx_park_analyse2.py`). Řídící hlásila „všech 15 uprostřed“ – špatně, hlava v parku je malá a
-daleko, na náhled vypadá jako kus rámu. Těch 4 „uprostřed“ je předstih hlášení delší než 4,0 s: díl má delší dráhy než
-10mm kostka, plánovač načte značku vrstvy dřív a jisté okno 4,0–5,2 s hlavu ještě nestihne. Rozptyl předstihu roste
-s dílem, pevná čísla nestačí.
+**Snímky** (349 vrstvových v `Desktop\kx-frames\F26-000086rames_layer`, 15:39–17:23 UTC, agent 0.2.2, dwell 3000, park
+X0 Y130, bez M400): kamera je na mostě hlavy a dívá se podél osy X; hlava v parku X0 stojí na konci mostu **uprostřed
+obrazu** (střední velikost, díl pod ní v ose pohledu) – ne „malá vpravo“, jak jsem řídící napsala z prvních 17 snímků
+(to byl jas lišty mostu v rohu). Měřeno korelací oblasti hlavy s mediánem všech snímků (nezávislé na expozici,
+`scratchpad/f26-000086-corr.txt`): 340 snímků ≥ 0,96 = hlava v parku, **8 snímků 0,32–0,46 = hlava jinde** (velká,
+blízko kamery, rozmazaná pohybem): 1792337995.472, 1792338052.829, 1792338122.600, 1792338304.691 (+50, +107, +177,
++359 s – spodní vrstvy s dlouhými drahami výplně), 1792338488.614 (+543 s), 1792343649.097, 1792344015.011,
+1792344137.114 (+5704, +6069, +6192 s – horní vrstvy); 1792343830.897 (0,84) je v parku, ale rozmazaná (přijíždí nebo
+odjíždí). Časování 0.2.2 (okno 4,0–5,2 s po hlášení) tedy sedělo v 97 % vrstev; vedle jsou vrstvy, kde plánovač načte
+značku víc než 4 s před parkem (dlouhé rovné dráhy) – přesně to řeší M400.
 
-**Dvě opravy, které se doplňují:**
+**Proč „kamera jako čidlo“ z 0.2.3 nejde a 0.2.4 ji vynechává:** počet jasných bodů (> 200) ve středním pásu rostl během
+tisku z 0 na 1 300 **u zaparkované hlavy** – kamera mění expozici podle scény (tmavý díl roste, světlo se odráží) a
+bílá hlava se dostane nad práh. V prvních 17 snímcích prahování náhodou sedělo (tisknoucí hlava blízko lampy jasná,
+parkovaná ještě šedá); na celé zakázce by `head()` od ~26. minuty park nehlásil vůbec (hlava „pořád vidět“ → žádný
+snímek vrstvy). Jas oblasti parku dopadl stejně. Spolehlivá je až korelace s mediánem (šablona z vlastních snímků), tu
+ale ovladač v reálném čase bez reference nemá. Proto 0.2.4: **jen časování**; volby `camera_check`, `head_region`,
+`head_away` zrušeny (0.2.3 nebyl nikde nainstalován).
 
-1. **Server (main 4030397, řídící):** s volbou `sync` na formuláři tiskárny vloží před každou značku vrstvy (kromě první)
-   `M400` – firmware značku načte až po dokončení pohybů vrstvy, předstih plánovače tak zmizí a zbývá jen vlastní
-   přejezd do parku (~1 s) a dwell. Hlavička G‑kódu končí ` sync=m400`.
-2. **Ovladač 0.2.3:** `_park_of` čte i `sync`; nenastavené `park_lead_min`/`park_lead` jsou podle něj **0,0 / 2,0 s**
-   (`sync=m400`), bez značky dál 2,2 / 4,0 s. S dwell 3000 a m400 je jisté okno 2,0–3,0 s po hlášení. Navíc **kamera
-   jako čidlo** (`head_in_view`): v celém rozmezí, kam může park padnout (`lead_min` až `lead_max + dwell`), se při
-   každém dotazu agenta (4× za s) vezme aktuální snímek streamu (okamžitý, §7c'), zmenší na 320×180 a spočítají se
-   jasné body (> 200) ve střední části `head_region` (zlomky 0,375–0,75 × 0,11–0,61; nastaveno z F26‑000086: tisknoucí
-   hlava tam dává 100–300 bodů, zaparkovaná 0–1). Dokud je hlava vidět (> `head_away` 20), park se nehlásí; jakmile
-   zmizí **a kamera už hlavu při tisku viděla** (≥ 2× `head_away`, aby kamera, která hlavu nevidí nikdy, nerozhodovala),
-   hlásí se park jako stojící poloha a agent udělá jeden snímek. Když kamera nerozhodne (bez snímku, nebo hlavu zatím
-   neviděla), platí časování jako v 0.2.2. `camera_check: false` kameru vyřadí.
+**Výchozí předstih se `sync=m400`** (server main 4030397 vkládá `M400` před značku vrstvy, hlavička ` sync=m400`): M400
+nechá parser čekat, až dojedou pohyby vrstvy, značka se tedy čte se **stojící** hlavou (t = 0); přejezd do parku trvá
+T ≈ 1–1,5 s, hlášení `print/report` přijde 0–2 s po čtení (chodí periodicky po ~2 s). Vůči hlášení park začíná
+T − L ∈ [−1,0; 1,5] s a končí o dwell později → jisté okno `[park_lead, park_lead_min + dwell]` = **[1,5; dwell − 1,0]**,
+s dwell 3000 **1,5–2,0 s po hlášení**. Výchozí `park_lead_min` −1,0 / `park_lead` 1,5 (0.2.3 mělo 0 / 2,0 – při hlášení
+zpožděném o 2 s by snímek padl na odjezd hlavy). Bez značky zůstává 2,2 / 4,0. Ověří se na další zakázce z
+`frames_layer` stejnou korelací; při míjení zvětšit dwell (3500 → okno 1,5–2,5 s), ne předstih.
 
-**Ověřeno jen testy** (`tests/test_anycubic_lan.py`: hlavička se `sync`, jisté okno s m400, kamera hlásí park při
-zmizení hlavy ze středu – 61 testů), ne na tiskárně (tiskne zakázka). Ověří se na další zakázce z `frames_layer`:
-správně má být hlava na všech snímcích vpravo nahoře malá. Instalace: jen soubory `agent/` (žádný nový balíček,
-Pillow už je), restart agenta. Doporučení pro C1: `sync` zapnuto, dwell 3000 (s m400 by stačilo i 2000: okno 2,0–2,0 s
-je sice nulové, ale kamera rozhodne dřív), `park_lead*` nechat nenastavené.
+**Statistika úlohy 143 = 0 min, 0 mm:** z odposlechu (`kx_sniff_ace.log`, 15:53:08) tiskárna sekundu před `finished`
+pošle `print/report` `state printing` s daty jen `{filename, progress 0, taskid}`; ovladač 0.2.1–0.2.3 si ukládal celé
+poslední hlášení s `progress`, takže tahle řádka **přepsala** `print_time`/`supplies_usage` prázdnem a konec měl nuly
+(v §6c jsem čísla četla z odposlechu, ne z ovladače). 0.2.4: hlášení téhož souboru se slučují (nové klíče přepisují,
+chybějící zůstávají); falešná tiskárna v testech teď posílá i chladicí a holé hlášení, test konce by bez opravy padl.
+Instalace: soubory `agent/`, restart agenta; nic na serveru.

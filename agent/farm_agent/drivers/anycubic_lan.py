@@ -257,23 +257,17 @@ class AnycubicLanDriver(PrinterDriver):
         # the layer-synced time-lapse (docs/AM.md §7): where the farm's G-code parks the head after every layer (its
         # first line says), the layer the printer last reported and when it changed
         self._park: Optional[tuple] = None          # (x, y, dwell s, travel mm/s, sync)
-        self._frames = options.get("_frames")       # tests hand in pictures (a callable giving JPEG bytes) instead of the camera
         self._layer: Optional[int] = None
         self._layer_at: float = 0.0
         self.layer_window = float(options.get("layer_window", 0))   # by hand: seconds head() reports the park after a report (0 = measured timing)
-        # when the head reaches the park after the printer reports the layer, at the earliest and at the latest: measured
-        # 2.2-4.0 s on a cube (docs/AM.md §7d), longer on bigger parts; with the server's M400 before the layer marker
-        # (sync=m400 in the park line) only the park move itself remains, 0-2 s. None = by the park line.
+        # when the head reaches the park after the printer reports the layer, at the earliest and at the latest: the
+        # printer reports the layer when it reads the marker, ahead of the head by its planner, measured 2.2-4.0 s on a
+        # cube and up to 5+ s on long infill lines (docs/AM.md §7d, §7e); with the server's M400 before the marker
+        # (sync=m400 in the park line) the marker is read with the head standing, the park move takes 1-1.5 s and the
+        # report follows the read by 0-2 s, so -1.0 to 1.5 s. None = by the park line.
         self.park_lead_min: Optional[float] = _opt_float(options, "park_lead_min")
         self.park_lead: Optional[float] = _opt_float(options, "park_lead")
         self.park_window_min = float(options.get("park_window_min", 0.5))   # a sure window shorter than this is no use (the agent looks every 0.25 s)
-        # the camera as the position sensor (docs/AM.md §7e): the park is told only when the picture shows the head
-        # away; head_region = the part of the picture the printing head fills (fractions left, top, right, bottom),
-        # head_away = at most this many bright pixels there when the head is parked; camera_check: false = timing only
-        self.camera_check = bool(options.get("camera_check", True))
-        self.head_region = tuple(float(v) for v in options.get("head_region", (0.375, 0.11, 0.75, 0.61)))
-        self.head_away = int(options.get("head_away", 20))
-        self._head_seen = 0          # the most bright pixels seen while printing: a camera that never sees the head is not trusted
         self._urls: dict = {}
         self._opening = asyncio.Lock()
 
@@ -343,7 +337,11 @@ class AnycubicLanDriver(PrinterDriver):
                 numbers = self._last_progress if _base_name(str(self._last_progress.get("filename") or "")) == name else {}
                 self._ended = {**numbers, **details, "status": ended, "err_msg": str(data.get("msg") or "") if ended == JOB_FAILED else ""}
             elif "progress" in details:
-                self._last_progress = details          # print_time (minutes) and supplies_usage (mm) of the running task
+                # print_time (minutes) and supplies_usage (mm) of the running task, kept across the sparse reports the
+                # printer sends at the end ({filename, progress 0} a second before "finished", 18 Oct 2026: F26-000086
+                # reached the server with 0 min and 0 mm because that report had replaced the numbers)
+                same = _base_name(str(self._last_progress.get("filename") or "")) == name
+                self._last_progress = {**self._last_progress, **details} if same else details
                 self._note_layer(details.get("curr_layer"))
         state = details.get("state") if details else data.get("state")
         if kind in ("info", "print", "status") and state and state != self._last_state:
@@ -464,8 +462,6 @@ class AnycubicLanDriver(PrinterDriver):
         """The latest picture of the printer's camera stream. The stream is kept open while pictures are wanted (a
         burst of them for the layer time-lapse needs one every 0.3 s; opening the stream takes ~10 s, the first key
         frame) and closed after 20 s without a request."""
-        if self._frames:
-            return self._frames()
         url = self._urls.get("rtspUrl")
         if not self.camera or not url:
             return None
@@ -510,18 +506,8 @@ class AnycubicLanDriver(PrinterDriver):
         x, y, dwell, _travel, sync = self._park
         if self.layer_window:                                   # a window set by hand: planned position, as before
             return (x, y, None) if since <= self.layer_window else None
-        lead_min = self.park_lead_min if self.park_lead_min is not None else (0.0 if sync == "m400" else 2.2)
-        lead_max = self.park_lead if self.park_lead is not None else (2.0 if sync == "m400" else 4.0)
-        # the camera decides when it can: within the whole span the park may fall into, the park is told the moment
-        # the picture shows the head away (docs/AM.md §7e)
-        if self.camera_check and lead_min <= since <= lead_max + dwell:
-            seen = await self._head_pixels()
-            if seen is not None:
-                if seen > self.head_away:
-                    self._head_seen = max(self._head_seen, seen)
-                    return None
-                if self._head_seen >= 2 * self.head_away:       # the camera has seen the head print: it can tell "away"
-                    return x, y, 0.0
+        lead_min = self.park_lead_min if self.park_lead_min is not None else (-1.0 if sync == "m400" else 2.2)
+        lead_max = self.park_lead if self.park_lead is not None else (1.5 if sync == "m400" else 4.0)
         sure_from, sure_to = lead_max, lead_min + dwell
         if sure_to - sure_from >= self.park_window_min:
             return (x, y, 0.0) if sure_from <= since <= sure_to else None
@@ -529,11 +515,6 @@ class AnycubicLanDriver(PrinterDriver):
         if lead_min <= since <= lead_min + dwell + spread:
             return x, y, None
         return None
-
-    async def _head_pixels(self) -> Optional[int]:
-        """How much of the head the camera sees right now (head_in_view), None without a picture."""
-        jpeg = await self.snapshot()
-        return head_in_view(jpeg, self.head_region) if jpeg else None
 
     def _note_layer(self, layer) -> None:
         """A layer the printer reports (print/report or info): the moment it changes is when the head goes to park."""
@@ -764,21 +745,6 @@ def _park_of(raw: bytes) -> Optional[tuple[float, float, float, float, str]]:
                 str(values.get("sync", "")).lower())
     except (KeyError, ValueError):
         return None
-
-
-def head_in_view(jpeg: bytes, region: tuple[float, float, float, float], bright: int = 200) -> Optional[int]:
-    """How much of the print head the camera sees: the number of bright pixels in `region` (fractions of the picture:
-    left, top, right, bottom) of the picture scaled to 320 x 180. The Kobra X head is a white box; while it prints it
-    fills the middle of the picture (100-300 pixels there), parked at X0 it stands small at the right edge (0-1 pixel in
-    the middle band; 18 Oct 2026). None when the picture cannot be read (or Pillow is missing)."""
-    try:
-        from PIL import Image  # noqa: WPS433 - optional, installed on the farm PC (install-farma.ps1)
-        im = Image.open(io.BytesIO(jpeg)).convert("L").resize((320, 180))
-    except Exception:  # noqa: BLE001 - no picture, no opinion
-        return None
-    x0, y0, x1, y1 = (int(region[0] * 320), int(region[1] * 180), int(region[2] * 320), int(region[3] * 180))
-    px = im.load()
-    return sum(1 for y in range(y0, y1) for x in range(x0, x1) if px[x, y] > bright)
 
 
 def _opt_float(options: dict, key: str) -> Optional[float]:
