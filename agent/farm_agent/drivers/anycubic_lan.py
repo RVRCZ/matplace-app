@@ -93,8 +93,9 @@ class Position:
 
     @property
     def ams_index(self) -> int:
-        """What the start's ams_box_mapping calls the position. The Slicer Next addressed the rack's index 1 as 1
-        (18 Oct 2026); an ACE position is taken as the next block of four (rack 0-3, ACE 4-7), see docs/AM.md §6."""
+        """What the start's ams_box_mapping calls the position: the boxes in the order the printer lists them, four
+        numbers each (rack 0-3, ACE 4-7). Verified 18 Oct 2026: the Slicer Next addressed the rack's index 1 as 1, and
+        ams_index 4 fed from the ACE's slot 0 (report "ace_filament_feeding", unit_no 1, channel_no 1; docs/AM.md §6)."""
         return self.ordinal * 4 + self.index
 
 
@@ -237,8 +238,10 @@ class AnycubicLanDriver(PrinterDriver):
         self._task: Optional[asyncio.Task] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._last_state: Optional[str] = None
-        # the task that ended by a report (a cancelled one leaves no trace in last_project), until the next start
+        # the task that ended by a report (it leaves no trace in last_project), until the next start, and the last
+        # progress report of the running task (its minutes and millimetres)
         self._ended: Optional[dict] = None
+        self._last_progress: dict = {}
         self._urls: dict = {}
         self._opening = asyncio.Lock()
 
@@ -295,10 +298,17 @@ class AnycubicLanDriver(PrinterDriver):
     def _heard(self, kind: str, data: dict) -> None:
         """Called in paho's thread for every report: a change of the printer's state wakes the agent at once."""
         details = data.get("data") if isinstance(data.get("data"), dict) else {}
-        if kind == "print" and data.get("action") == "stop" and data.get("state") == "stoped" and details.get("filename"):
-            # a cancelled task is gone from the next info report and never enters last_project (18 Oct 2026):
-            # remembered here, so the agent hears "cancelled" and not "the printer no longer reports this print"
-            self._ended = {"status": JOB_CANCELLED, **details}
+        if kind == "print" and details.get("filename"):
+            name = _base_name(str(details["filename"]))
+            ended = {"finished": JOB_DONE, "failed": JOB_FAILED, "stoped": JOB_CANCELLED, "stopped": JOB_CANCELLED}.get(str(data.get("state") or ""))
+            if ended:
+                # a task that ended, by finishing, failing or a stop, is gone from the next info report and never
+                # enters last_project (Kobra X, 18 Oct 2026): remembered here with the numbers of its last progress
+                # report, so the agent hears "done" or "cancelled" and not "the printer no longer reports this print"
+                numbers = self._last_progress if _base_name(str(self._last_progress.get("filename") or "")) == name else {}
+                self._ended = {**numbers, **details, "status": ended, "err_msg": str(data.get("msg") or "") if ended == JOB_FAILED else ""}
+            elif "progress" in details:
+                self._last_progress = details          # print_time (minutes) and supplies_usage (mm) of the running task
         state = details.get("state") if details else data.get("state")
         if kind in ("info", "print", "status") and state and state != self._last_state:
             self._last_state = state
@@ -426,7 +436,7 @@ class AnycubicLanDriver(PrinterDriver):
         if not url:
             raise DriverError("the printer offers no upload address (urls.fileUploadurl missing in its info)")
         await self._clear_stale()
-        self._ended = None
+        self._ended, self._last_progress = None, {}
         # What the Slicer Next sends (captured and tried out 18 Oct 2026, docs/AM.md): T<n> in the G-code is a "paint"
         # the printer maps to a spool position by ams_box_mapping. matplace's GcodeSlot wrote the spool position as
         # T<n> (docs/V.md), so the file goes up as paint 0 and that position goes into the mapping. The file needs the

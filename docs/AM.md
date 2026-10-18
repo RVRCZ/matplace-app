@@ -42,7 +42,9 @@ Tiskárna 192.168.8.44 („Anycubic Kobra X“, `modelId` 20030, firmware 2.0.2.
   „the printer is not in LAN mode“.
 - **Stav:** `project.state` podle tabulky výše; `pause` 1/2 = pauza; `finished` = hotovo, `stoped` = zrušeno,
   `failed`/`error` = chyba s `err_msg`; neznámý stav = tiskne. Úloha `init` na volné tiskárně (založená, nikdy
-  nespuštěná) je idle. Telemetrie `layer`, `remain_min` jako u Kobra S1. Změna stavu z MQTT probudí agenta hned.
+  nespuštěná) je idle. Skončenou úlohu (dotištěnou, zrušenou, selhanou) si ovladač pamatuje z hlášení tiskárny
+  (§6d), protože v `last_project` se neobjeví. Telemetrie `layer`, `remain_min` jako u Kobra S1, při tisku `spool`
+  a `slot` (zavedená pozice). Změna stavu z MQTT probudí agenta hned.
 - **Start:** (1) tiskárna musí být idle; (2) založenou nespuštěnou úlohu ukončí `print/stop`; (3) přečte G-code:
   `T<n>` od GcodeSlot říká pozici cívky, barvu a materiál zjistí z Racku (`multiColorBox`), jinak z konfigurace Orcy;
   (4) soubor nahraje jako `.gcode.3mf` (`package: true`, výchozí) nebo jako holý G-code (`package: false`), v obou
@@ -164,10 +166,36 @@ BOX id=0  model_id=40002 status=1 loaded_slot=-1 temp=28 humidity=38       (ACE)
 - Testy: dva boxy 3 + 4 i jeden (4); start ze slotů 2, 3, 6 (ams_index 2, 4, 7 s barvou té pozice); slot 4 bez
   měniče = chyba bez nahrání; zavedená cívka ACE 1 v telemetrii. Celkem 53 testů.
 
-### 6c. Ověření na tiskárně – čeká
+### 6c. Ověřeno na tiskárně (18. 10. 2026, 15:38; Romanovo „proveď zkoušku“ v okně session 4, C1 v ručním režimu)
 
-`ams_index` 4–7 pro ACE je odvozený vzorec, ne zachycený start. Zkouška (po Romanově „volná“ v okně session 4 a po
-přepnutí C1 na ruční v adminu, protože agent na PC farmy by se o tiskárnu přetahoval): kostka ze slotu 3 = ACE 1
-(oranžové PLA Silk, zavedeno) – čekám `ace_filament_feeding`, box `0` `loaded_slot 0`, `channel_no`; zrušení → free.
-Pak kostka ze slotu 0 (Rack 1, tmavě modré PLA Silk), ať je vidět, že Rack dál funguje. G-code pro slot 3 je kopie
-`kx-cube10.gcode` s `T3` (GcodeSlot by ho tak napsal), pro slot 0 s `T0`.
+Kostka `kx-cube10.gcode` s `T3` (jak by ji napsal GcodeSlot pro slot 3), `kx_drive.py start … 3` s ovladačem
+0.2.1: log „starting mptest-cube10-t3.gcode (T3 -> slot 3 = ACE 1, ams_index 4, PLA Silk #FF7F32)“, tiskárna start
+vzala za 6 s, nahřála 225/55 °C a pak:
+
+```
+15:39:48 print/report start  state=ace_filament_feeding  data={"channel_no": 1, "unit_no": 1, "taskid": "-1"}
+15:39:49 extfilbox/report    current_filament "1-0"
+```
+
+tedy **zavedla z ACE, pozice 1** (`unit_no 1` = druhý box v pořadí = ACE, `channel_no 1` = index 0 + 1;
+`current_filament` = „<pořadí boxu>-<index>“, u Racku dříve „0-1“). Vzorec `ams_index = pořadí boxu × 4 + index`
+platí: Rack 0–3, ACE 4–7. Roman nechal kostku dotisknout. Zkouška ze slotu 0 (Rack 1) se nedělala: Rack byl
+ověřený už v §4 (slot 1 = Rack 2) a liší se jen indexem.
+
+Průběh (čtení `info` + `getInfo` po 10 s): `ace_filament_feeding` 15:39:48–15:40:29 (box 0 `loaded_slot 0`),
+`nozzle_purging`, `nozzle_wiping`, `nozzle_cooling` (180 → 140), vyrovnání, od 15:47 `printing` s `progress`,
+`curr_layer`/50 a `remain_time` v minutách, 15:52:03 vrstva 50/50, pak `hotbed_cooling_off`, `nozzle_cooling_off`,
+15:53:09 `print/report` **`state finished`** (`filename`, `progress 100`) a `status/report workReport free`. Průběžná
+`print/report` nesou `print_time` (min) a `supplies_usage` (mm; na konci 403 mm = 0,63 g odpovídá Orce). Telemetrie
+ovladače během tisku: `spool "ACE 1"`, `slot 3`.
+
+### 6d. Nález: dokončený tisk v `last_project` není
+
+Po dokončení tiskárna hlásí `free`, `project null` a v `last_project` **pořád starý tisk** (Spring-Lock z 17. 10.,
+z cloudové úlohy), ne naši kostku; stejně jako po zrušení (§4d). Ovladač 0.2.0 by tedy po dotištění hlásil starou
+dokončenou úlohu a agent by zakázku po několika dotazech uzavřel jako „selhala“ („the printer no longer reports this
+print“). Oprava v 0.2.1: ovladač si z hlášení `print/report` pamatuje poslední průběh úlohy (`print_time`,
+`supplies_usage`) a její konec (`finished` → hotovo, `stoped` → zrušeno, `failed` → chyba s `msg`) a po něm hlásí
+úlohu s těmito čísly, dokud nezačne další start. Test s falešnou tiskárnou končí stejně jako skutečná. Omezení: je
+to paměť procesu; když agent spadne mezi dokončením a dalším dotazem, konec se ztratí a platí dosavadní chování
+agenta (úloha „ztracena“). Tiskárna sama konec jinak neuchovává (aspoň u úloh s `taskid "-1"`).

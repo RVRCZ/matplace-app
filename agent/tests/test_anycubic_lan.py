@@ -50,6 +50,7 @@ class FakeLink:
 
     def __init__(self, printer: "FakePrinter", on_report):
         self.p = printer
+        self.p.links.append(self)
         self.on_report = on_report
         self.open = False
         self.reports, self.history, self.seq = {}, {}, {}
@@ -133,10 +134,21 @@ class FakePrinter:
         self.begins = True
         self.busy_starts = 0      # how many starts the printer refuses with 10301 (busy reading the file)
         self.boxes = copy.deepcopy(BOXES)
+        self.links = []
         self.opened = 0
         self.sent = []
         self.uploads = []
         self.runner = None
+
+    def finish(self, print_time: int, supplies_usage: float):
+        """The print ran to its end as the Kobra X tells it (18 Oct 2026): progress reports with the minutes and the
+        millimetres, then "finished"; the task is gone and last_project still names the earlier print."""
+        gone = self.info["project"]
+        self.info.update(state="free", project=None)
+        for link in self.links:
+            link.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"taskid": "-1", "filename": gone["filename"], "progress": 99,
+                                                                                               "curr_layer": 50, "total_layers": 50, "print_time": print_time, "supplies_usage": supplies_usage}})
+            link.report("print", {"action": "start", "state": "finished", "code": 200, "data": {"taskid": "-1", "filename": gone["filename"], "progress": 100, "remain_time": 0}})
 
     def link(self, ip, on_report):
         return FakeLink(self, on_report)
@@ -323,6 +335,17 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
             with self.assertRaisesRegex(DriverError, "slot 5: the printer offers 4 spool positions"):
                 await d.start(self.gcode(tool=4), "mp14-cube.gcode", 4)
             self.assertEqual(uploads, len(p.uploads))
+
+    async def test_a_finished_print_is_told_from_the_printers_report_not_from_last_project(self):
+        async with FakePrinter() as p:
+            d = await self.driver(p)
+            await d.start(self.gcode(tool=1), "mp15-cube.gcode", 1)
+            p.finish(print_time=5, supplies_usage=403)
+            s = await d.status()
+            self.assertEqual((IDLE, JOB_DONE, "mp15-cube.gcode", 100.0, 300, 403.0),
+                             (s.state, s.job.status, s.job.filename, s.job.progress, s.job.print_duration, s.job.filament_used))
+            self.assertEqual("old part_PLA_0.2_5h51m15s.gcode", p.info["last_project"]["filename"], "the printer's last_project never learns of it")
+            self.assertEqual(s.job.status, (await d.status()).job.status, "and it stays told until the next start")
 
     async def test_a_stale_task_the_printer_only_noted_is_stopped_before_the_start(self):
         async with FakePrinter() as p:
