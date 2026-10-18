@@ -1,5 +1,5 @@
 @php
-    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent', 'figure.limit.register'])
+    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent', 'figure.limit.register', 'figure.remove'])
         ->mapWithKeys(fn ($k) => [$k => __($k, ['n' => ':n', 'm' => ':m'])])->all() + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB]), 'photo.add' => __('photo.add'), 'photo.add.more' => __('photo.add.more'), 'figure.view.front' => __('figure.view.front')];
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-center text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action';
 @endphp
@@ -15,7 +15,7 @@
 
 @section('viewer-empty'){{ __('figure.step.model') }}@endsection
 
-@section('viewer-drop')@include('tools._figure_drop', ['sample' => __('toolpage.sample.minutes')])@endsection
+@section('viewer-drop')@include('tools._figure_drop', ['consent' => __('figure.consent'), 'limits' => __('figure.limits', ['n' => $guestLimit, 'm' => $userLimit]), 'submit' => __('figure.submit')])@endsection
 
 @section('panel')
 <form id="figure-form" novalidate>

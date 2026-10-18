@@ -50,8 +50,12 @@ export function bootFigure(stage: Stage): void {
         part('data-view-remove', view)?.classList.toggle('hidden', !f);
         dropped();
     };
-    // the photos picked in the empty viewer (tools/_figure_drop.blade.php): the same inputs, small pictures of them there
+    // the photos picked in the empty viewer (tools/_figure_drop.blade.php): the same inputs, small pictures of them there,
+    // each with a cross that takes it away again (as the cross in the panel does), and the model made from there
     const drop = document.getElementById('figure-drop');
+    const create = document.getElementById('figure-create') as HTMLButtonElement | null;
+    const dropMsg = document.getElementById('figure-drop-msg');
+    const sayInDrop = (text: string): void => { if (!dropMsg) return; dropMsg.textContent = text; dropMsg.classList.toggle('hidden', text === ''); };
     const dropped = (): void => {
         const thumbs = document.getElementById('figure-drop-thumbs');
         if (!drop || !thumbs) return;
@@ -62,15 +66,25 @@ export function bootFigure(stage: Stage): void {
             const src = part<HTMLImageElement>('data-view-preview', view)?.getAttribute('src');
             if (!src) return;
             const box = document.createElement('span');
-            box.className = 'flex flex-col items-center gap-0.5 text-xs text-muted';
+            box.className = 'relative flex flex-col items-center gap-0.5 text-xs text-muted';
             const img = document.createElement('img');
-            img.src = src; img.alt = ''; img.className = 'h-14 w-14 rounded-lg object-cover';
-            box.append(img, t(`figure.view.${view}`));
+            img.src = src; img.alt = ''; img.className = 'h-12 w-12 rounded-lg object-cover';
+            const x = document.createElement('button');
+            x.type = 'button'; x.dataset.dropRemove = view;
+            x.className = 'absolute -right-2 -top-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-line bg-card text-ink shadow-sm hover:border-ink';
+            x.setAttribute('aria-label', `${t('figure.remove')}: ${t(`figure.view.${view}`)}`); x.title = t('figure.remove');
+            x.innerHTML = '<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-x"/></svg>';
+            x.addEventListener('click', (e) => { e.stopPropagation(); clear(view); mark(view, false); calm(); msg.textContent = ''; sayInDrop(''); });
+            box.append(img, x, t(`figure.view.${view}`));
             thumbs.appendChild(box);
         });
         thumbs.classList.toggle('hidden', chosen.length === 0); thumbs.classList.toggle('flex', chosen.length > 0);
+        // without the front photo it asks for one again, and there is nothing to make yet
+        const front = Boolean(photo.files?.length);
         const title = drop.querySelector('[data-drop-title]');
-        if (title) title.textContent = t(chosen.length ? 'photo.add.more' : 'photo.add');
+        if (title) title.textContent = t(front ? 'photo.add.more' : 'photo.add');
+        drop.querySelector('[data-drop-hint]')?.classList.toggle('hidden', front);     // room for the rest once the front photo is there
+        if (create) create.disabled = !front;
     };
     // a tap asks for the front first, then for the sides still free; a drop fills them in the same order
     const free = (): HTMLInputElement => inputs.find((i) => !i.files?.length) ?? inputs[0];
@@ -79,13 +93,28 @@ export function bootFigure(stage: Stage): void {
         input.dispatchEvent(new Event('change'));
     };
     if (drop) {
-        drop.addEventListener('click', () => free().click());
+        document.getElementById('figure-drop-pick')?.addEventListener('click', () => free().click());
         const area = document.getElementById('tool-empty') ?? drop;
         area.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('border-ink'); });
         area.addEventListener('dragleave', () => drop.classList.remove('border-ink'));
         area.addEventListener('drop', (e) => {
             e.preventDefault(); drop.classList.remove('border-ink');
             [...(e.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith('image/')).slice(0, inputs.length).forEach((f) => put(free(), f));
+        });
+        // the consent there is the panel's one, mirrored both ways (only the panel's travels with the form)
+        const mine = $('figure-consent') as HTMLInputElement;
+        const theirs = document.getElementById('figure-drop-consent') as HTMLInputElement | null;
+        if (theirs) {
+            theirs.checked = mine.checked;
+            theirs.addEventListener('change', () => { mine.checked = theirs.checked; if (theirs.checked) sayInDrop(''); });
+            mine.addEventListener('change', () => { theirs.checked = mine.checked; });
+        }
+        // "Create" there: the same submit as the button in the panel; a missing consent is said right there
+        create?.addEventListener('click', () => {
+            if (!photo.files?.length) { free().click(); return; }
+            if (!mine.checked) { sayInDrop(t('figure.need_consent')); theirs?.focus(); return; }
+            sayInDrop('');
+            form.requestSubmit();
         });
     }
     const mark = (view: string, bad: boolean) => {
