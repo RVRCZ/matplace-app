@@ -579,17 +579,32 @@ class ToolPageTest extends TestCase
      */
     public static function toolPageKeys(): array
     {
+        return self::keysIn(array_merge(glob(resource_path('views/tools/*.blade.php')), glob(resource_path('views/components/tool-*.blade.php'))));
+    }
+
+    /**
+     * The texts a set of templates asks for: written in the template, or in a list handed to the scripts
+     * (collect([...])->mapWithKeys(…) or a $keys = [...] list mapped the same way, as the order page does).
+     *
+     * @param  list<string>  $files
+     * @return array<string, list<string>> per file
+     */
+    public static function keysIn(array $files): array
+    {
         $out = [];
-        foreach (array_merge(glob(resource_path('views/tools/*.blade.php')), glob(resource_path('views/components/tool-*.blade.php'))) as $file) {
+        foreach ($files as $file) {
             $src = (string) file_get_contents($file);
             preg_match_all('/(?:__|trans|NextStep::text)\(\s*\'([a-z0-9_.\-]+)\'\s*[,)]/i', $src, $direct);
-            preg_match_all('/collect\(\[([^\]]*)\]\)\s*->mapWithKeys\(fn \(\$k\) => \[\$k => (?:__|\\\\App\\\\Support\\\\NextStep::text)\(\$k/', $src, $lists);
+            preg_match_all('/(?:collect\(\[([^\]]*)\]\)\s*->mapWithKeys\(fn \(\$k\) => \[\$k => (?:__|\\\\App\\\\Support\\\\NextStep::text)\(\$k|\$keys = \[([^\]]*)\];)/', $src, $lists);
+            // a $keys list counts only where it is handed over whole (elsewhere its keys are parts joined later)
+            $whole = str_contains($src, 'collect($keys)->mapWithKeys(fn ($k) => [$k => __($k)])');
+            $lists[1] = array_merge(array_filter($lists[1]), $whole ? array_filter($lists[2]) : []);
             $keys = $direct[1];
             foreach ($lists[1] as $list) {
                 preg_match_all('/\'([a-z0-9_.\-]+)\'/i', $list, $more);
                 $keys = array_merge($keys, $more[1]);
             }
-            $out[basename($file)] = array_values(array_unique(array_filter($keys, fn ($k) => str_contains($k, '.') && ! str_ends_with($k, '.'))));
+            $out[basename(dirname($file)).'/'.basename($file)] = array_values(array_unique(array_filter($keys, fn ($k) => str_contains($k, '.') && ! str_ends_with($k, '.'))));
         }
 
         return $out;
@@ -600,7 +615,7 @@ class ToolPageTest extends TestCase
         $all = self::toolPageKeys();
         $count = array_sum(array_map('count', $all));
         $this->assertGreaterThan(450, $count, 'the scan finds the texts of the templates');
-        $this->assertContains('figure.generating', $all['figure.blade.php'], 'and those of the lists for the scripts');
+        $this->assertContains('figure.generating', $all['tools/figure.blade.php'], 'and those of the lists for the scripts');
         $missing = [];
         foreach ($all as $file => $keys) {
             foreach ($keys as $key) {

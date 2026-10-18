@@ -2,8 +2,8 @@
 
 return [
     'price_label' => 'Printed by us (:material)',
-    'cta' => 'Print it with us',
-    'cta_hint' => 'We print it on our own printer. You pay with credit and the print starts as soon as the printer is free.',
+    'cta' => 'Order the print',
+    'cta_hint' => 'Nothing to pay yet: the order opens, you pick the colour and delivery and see the final price. You pay only at its end, with credit or by card.',
     'calc_parts_by_colour' => 'The parts have different colours: we print every part on its own from its own spool, one print after another; the price covers all the parts. For printing at home, download the project with the colours.',
     'calc_nearest' => 'We would print it from: :list',
     'calc_nearest_out' => '(out of stock)',
