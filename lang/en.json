@@ -1112,7 +1112,7 @@
     "mold.split.auto": "Automatic",
     "mold.split.at": ":n % from the edge",
     "mold.apply": "Make the mold",
-    "mold.hint": "Free, a few seconds. The model stays; the mold opens as a new file.",
+    "mold.hint": "Free. The mold takes some tens of seconds; the model stays and the mold opens as a new file.",
     "mold.working": "Building the mold…",
     "mold.failed": "The mold could not be made. The model has to be a closed body between 5 and 400 mm.",
     "mold.unavailable": "Mold making is not available right now. Try later.",
@@ -1747,5 +1747,6 @@
     "edit.gcode.error.no_walls": "There are no wall outlines in the file. Is it G-code from an FDM slicer (Orca, Anycubic, Bambu, Prusa, Cura)?",
     "edit.gcode.error.not_gcode": "That is not G-code.",
     "edit.gcode.error.empty_result": "No solid came out of the paths.",
-    "edit.gcode.error.too_big": "The file is too big, the limit is :max MB."
+    "edit.gcode.error.too_big": "The file is too big, the limit is :max MB.",
+    "hero.formats_short": "STL, 3MF, STEP and other formats, up to :max MB"
 }

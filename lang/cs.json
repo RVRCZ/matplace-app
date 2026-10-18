@@ -1112,7 +1112,7 @@
     "mold.split.auto": "Automaticky",
     "mold.split.at": ":n % od kraje",
     "mold.apply": "Vytvořit formu",
-    "mold.hint": "Zdarma, pár vteřin. Model zůstane, forma se otevře jako nový soubor.",
+    "mold.hint": "Zdarma. Forma vzniká desítky sekund; model zůstane a forma se otevře jako nový soubor.",
     "mold.working": "Stavím formu…",
     "mold.failed": "Formu se nepodařilo vytvořit. Model musí být uzavřené těleso od 5 do 400 mm.",
     "mold.unavailable": "Tvorba forem teď není dostupná. Zkuste to později.",
@@ -1747,5 +1747,6 @@
     "edit.gcode.error.no_walls": "V souboru nejsou žádné obrysy stěn. Je to G‑kód z FDM sliceru (Orca, Anycubic, Bambu, Prusa, Cura)?",
     "edit.gcode.error.not_gcode": "To není G‑kód.",
     "edit.gcode.error.empty_result": "Z drah nevzniklo žádné těleso.",
-    "edit.gcode.error.too_big": "Soubor je moc velký, limit je :max MB."
+    "edit.gcode.error.too_big": "Soubor je moc velký, limit je :max MB.",
+    "hero.formats_short": "STL, 3MF, STEP a další formáty, do :max MB"
 }

@@ -1112,7 +1112,7 @@
     "mold.split.auto": "Automática",
     "mold.split.at": ":n % desde el borde",
     "mold.apply": "Crear el molde",
-    "mold.hint": "Gratis, unos segundos. El modelo se conserva; el molde se abre como archivo nuevo.",
+    "mold.hint": "Gratis. El molde tarda unas decenas de segundos; el modelo se conserva y el molde se abre como archivo nuevo.",
     "mold.working": "Construyendo el molde…",
     "mold.failed": "No se pudo crear el molde. El modelo debe ser un cuerpo cerrado de 5 a 400 mm.",
     "mold.unavailable": "La creación de moldes no está disponible ahora. Inténtalo más tarde.",
@@ -1747,5 +1747,6 @@
     "edit.gcode.error.no_walls": "El archivo no contiene contornos de pared. ¿Es un G-code de un laminador FDM (Orca, Anycubic, Bambu, Prusa, Cura)?",
     "edit.gcode.error.not_gcode": "Eso no es G-code.",
     "edit.gcode.error.empty_result": "De las trayectorias no salió ningún sólido.",
-    "edit.gcode.error.too_big": "El archivo es demasiado grande, el límite es :max MB."
+    "edit.gcode.error.too_big": "El archivo es demasiado grande, el límite es :max MB.",
+    "hero.formats_short": "STL, 3MF, STEP y otros formatos, hasta :max MB"
 }

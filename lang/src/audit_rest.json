@@ -1,0 +1,12 @@
+{
+    "hero.formats_short": [
+        "STL, 3MF, STEP a další formáty, do :max MB",
+        "STL, 3MF, STEP and other formats, up to :max MB",
+        "STL, 3MF, STEP y otros formatos, hasta :max MB"
+    ],
+    "mold.hint": [
+        "Zdarma. Forma vzniká desítky sekund; model zůstane a forma se otevře jako nový soubor.",
+        "Free. The mold takes some tens of seconds; the model stays and the mold opens as a new file.",
+        "Gratis. El molde tarda unas decenas de segundos; el modelo se conserva y el molde se abre como archivo nuevo."
+    ]
+}

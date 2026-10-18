@@ -53,39 +53,63 @@
 </head>
 <body class="min-h-full bg-page text-ink antialiased">
     @include('partials.icons')
+    {{-- a thumb's header (audit 10/2026, bod 4): every target at least 44 px high; on a phone one row with Tools and
+         the account, the rest (price from a file, language, currency) in a quiet menu, so the first screen keeps its height --}}
+    @php
+        $languages = \App\Support\Locales::switcher();
+        $currencyOpen = ! \App\Support\Currency::locked();
+        $showModels = \Illuminate\Support\Facades\Cache::remember('nav.models', 600, fn () => \App\Models\DesignerModel::printable()->count()) >= 6;
+    @endphp
     <header class="border-b border-slate-200 bg-white">
-        <div class="mx-auto flex {{ empty($wide) ? 'max-w-6xl' : 'max-w-[1600px]' }} items-center justify-between gap-2 px-4 py-2">
-            <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2" aria-label="matplace"><img src="/img/logo-header.webp" alt="matplace" width="299" height="180" class="h-10 w-auto sm:h-12" fetchpriority="high"></a>
-            <nav class="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm text-slate-600 sm:gap-x-4">
+        <div class="mx-auto flex {{ empty($wide) ? 'max-w-6xl' : 'max-w-[1600px]' }} items-center justify-between gap-2 px-4 py-1 sm:py-2">
+            <a href="{{ route('home') }}" class="-ml-1 flex min-h-11 shrink-0 items-center px-1" aria-label="matplace"><img src="/img/logo-header.webp" alt="matplace" width="299" height="180" class="h-9 w-auto sm:h-12" fetchpriority="high"></a>
+            <nav id="site-nav" class="flex min-w-0 items-center justify-end text-sm text-slate-600 sm:gap-x-1" aria-label="{{ __('nav.main') }}">
                 {{-- the designers' catalogue leads the menu only once it has something to show (Z.md N7: it opened on "no model yet") --}}
-                @if(\Illuminate\Support\Facades\Cache::remember('nav.models', 600, fn () => \App\Models\DesignerModel::printable()->count()) >= 6)
-                <a href="{{ route('models.index') }}" class="hover:text-slate-900">{{ __('models.nav') }}</a>
+                @if($showModels)
+                <a href="{{ route('models.index') }}" class="nav-link max-sm:hidden">{{ __('models.nav') }}</a>
                 @endif
-                <a href="{{ route('tools') }}" class="hover:text-slate-900">{{ __('footer.tools') }}</a>
-                <a href="{{ route('home') }}" class="hover:text-slate-900">{{ __('nav.price') }}</a>
+                <a href="{{ route('tools') }}" class="nav-link">{{ __('footer.tools') }}</a>
+                <a href="{{ route('home') }}" class="nav-link max-sm:hidden">{{ __('nav.price') }}</a>
                 @auth
-                    <a href="{{ route('account') }}" class="font-medium hover:text-slate-900">{{ __('nav.account') }}</a>
+                    <a href="{{ route('account') }}" class="nav-link font-medium">{{ __('nav.account') }}</a>
                     {{-- signing out is reachable from every page, not only from the bottom of the account --}}
-                    <form method="post" action="{{ route('logout') }}" class="inline">@csrf<button type="submit" class="hover:text-slate-900">{{ __('auth.logout') }}</button></form>
+                    <form method="post" action="{{ route('logout') }}" class="max-sm:hidden">@csrf<button type="submit" class="nav-link">{{ __('auth.logout') }}</button></form>
                 @else
-                    <a href="{{ route('login') }}" class="font-medium hover:text-slate-900">{{ __('nav.login') }}</a>
+                    <a href="{{ route('login') }}" class="nav-link font-medium">{{ __('nav.login') }}</a>
                 @endauth
-                @if($languages = \App\Support\Locales::switcher())
-                    <span class="flex items-center gap-0.5 text-xs sm:gap-1" aria-label="{{ __('site.language') }}">
-                        @foreach($languages as $l => $href)
-                            <a href="{{ $href }}" hreflang="{{ $l }}" lang="{{ $l }}" title="{{ __('site.languages.'.$l) }}" @if(app()->getLocale() === $l) aria-current="true" @endif class="rounded px-1.5 py-0.5 uppercase {{ app()->getLocale() === $l ? 'bg-slate-800 text-white' : 'hover:text-slate-900' }}">{{ $l }}</a>
-                        @endforeach
-                    </span>
-                @endif
-                {{-- prices in crowns or euros; gone once the account has a currency of its own (the first payment fixes it) --}}
-                @unless(\App\Support\Currency::locked())
-                    <form method="post" action="{{ route('currency') }}" class="flex items-center gap-0.5 text-xs sm:gap-1" aria-label="{{ __('site.currency') }}">
-                        @csrf
-                        @foreach(\App\Support\Money::CURRENCIES as $code)
-                            <button type="submit" name="currency" value="{{ $code }}" title="{{ __('site.currencies.'.$code) }}" @if(\App\Support\Currency::current() === $code) aria-current="true" @endif class="rounded px-1.5 py-0.5 {{ \App\Support\Currency::current() === $code ? 'bg-slate-800 text-white' : 'hover:text-slate-900' }}">{{ \App\Support\Money::symbol($code) }}</button>
-                        @endforeach
-                    </form>
-                @endunless
+                <details id="site-menu" class="relative {{ $languages || $currencyOpen ? '' : 'sm:hidden' }}" data-menu>
+                    <summary class="nav-link cursor-pointer list-none gap-1 text-xs text-muted [&::-webkit-details-marker]:hidden" aria-label="{{ __('nav.menu') }}">
+                        <x-icon name="menu" class="h-5 w-5 text-ink sm:hidden" />
+                        <span class="uppercase">{{ app()->getLocale() }}</span>@if($currencyOpen)<span aria-hidden="true">·</span><span>{{ \App\Support\Money::symbol(\App\Support\Currency::current()) }}</span>@endif
+                        <x-icon name="chevron-down" class="h-3.5 w-3.5 max-sm:hidden" />
+                    </summary>
+                    <div class="absolute right-0 top-full z-50 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-white p-2 text-sm text-ink shadow-sm">
+                        {{-- what the phone's row has no room for --}}
+                        <div class="border-b border-line pb-1 sm:hidden">
+                            <a href="{{ route('home') }}" class="nav-link w-full">{{ __('nav.price') }}</a>
+                            @if($showModels)<a href="{{ route('models.index') }}" class="nav-link w-full">{{ __('models.nav') }}</a>@endif
+                            @auth<form method="post" action="{{ route('logout') }}">@csrf<button type="submit" class="nav-link w-full">{{ __('auth.logout') }}</button></form>@endauth
+                        </div>
+                        @if($languages)
+                            <div class="px-2 pt-2 text-xs font-semibold text-muted">{{ __('site.language') }}</div>
+                            <div class="grid grid-cols-3 gap-1 p-1" aria-label="{{ __('site.language') }}">
+                                @foreach($languages as $l => $href)
+                                    <a href="{{ $href }}" hreflang="{{ $l }}" lang="{{ $l }}" title="{{ __('site.languages.'.$l) }}" @if(app()->getLocale() === $l) aria-current="true" @endif class="flex min-h-11 items-center justify-center rounded-lg px-1 {{ app()->getLocale() === $l ? 'bg-ink text-white' : 'hover:bg-slate-100' }}">{{ __('site.languages.'.$l) }}</a>
+                                @endforeach
+                            </div>
+                        @endif
+                        {{-- prices in crowns or euros; gone once the account has a currency of its own (the first payment fixes it) --}}
+                        @if($currencyOpen)
+                            <div class="px-2 pt-2 text-xs font-semibold text-muted">{{ __('site.currency') }}</div>
+                            <form method="post" action="{{ route('currency') }}" class="grid grid-cols-2 gap-1 p-1" aria-label="{{ __('site.currency') }}">
+                                @csrf
+                                @foreach(\App\Support\Money::CURRENCIES as $code)
+                                    <button type="submit" name="currency" value="{{ $code }}" title="{{ __('site.currencies.'.$code) }}" @if(\App\Support\Currency::current() === $code) aria-current="true" @endif class="flex min-h-11 items-center justify-center rounded-lg px-1 {{ \App\Support\Currency::current() === $code ? 'bg-ink text-white' : 'hover:bg-slate-100' }}">{{ \App\Support\Money::symbol($code) }} · {{ $code }}</button>
+                                @endforeach
+                            </form>
+                        @endif
+                    </div>
+                </details>
             </nav>
         </div>
     </header>

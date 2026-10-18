@@ -20,18 +20,20 @@
     <div class="mx-auto max-w-2xl pt-2 text-center lg:pt-8">
         <div class="min-w-0">
             <p class="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-action"><span class="h-1.5 w-1.5 rounded-full bg-action" aria-hidden="true"></span>{{ __('home.eyebrow') }}</p>
-            <h1 class="mt-4 text-[2.6rem] font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">{{ __('home.title.a') }}<br><span class="text-action">{{ __('home.title.c') }}</span></h1>
-            <p class="mx-auto mt-4 max-w-md text-base leading-relaxed text-muted sm:text-lg">{{ $tx('home.lead') }}</p>
+            @php $titleTag = empty($initial) ? 'h1' : 'p'; @endphp{{-- a calculation (/c/<code>) has the model's name as its h1 --}}
+            <{{ $titleTag }} class="mt-3 break-words text-[2.4rem] font-extrabold leading-[1.05] tracking-tight text-ink sm:mt-4 sm:text-6xl">{{ __('home.title.a') }}<br><span class="text-action">{{ __('home.title.c') }}</span></{{ $titleTag }}>
+            <p class="mx-auto mt-3 max-w-md text-base leading-relaxed text-muted sm:mt-4 sm:text-lg">{{ $tx('home.lead') }}</p>
             {{-- the quieter second way (audit 10/2026, bod 3): the model can be downloaded for one's own printer --}}
             <p class="mx-auto mt-2 max-w-md text-sm text-muted">{{ __('home.printer_note') }}</p>
-            <ol class="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm font-semibold text-ink" aria-label="{{ __('home.path') }}">
+            {{-- one line on a phone too: the first screen has the file field and the price promise on it (audit 10/2026, bod 4) --}}
+            <ol class="mt-3 flex flex-wrap items-center justify-center gap-x-1 gap-y-1 text-xs font-semibold text-ink sm:mt-4 sm:gap-x-2 sm:text-sm" aria-label="{{ __('home.path') }}">
                 @foreach(['idea', 'design', 'product'] as $i => $stage)
                     @if($i)<li class="text-action" aria-hidden="true">→</li>@endif
-                    <li class="rounded-full border border-line bg-card px-3 py-1">{{ __('home.path.'.$stage) }}</li>
+                    <li class="rounded-full border border-line bg-card px-2 py-0.5 sm:px-3 sm:py-1">{{ __('home.path.'.$stage) }}</li>
                 @endforeach
             </ol>
 
-            <div class="mt-5">
+            <div class="mt-4 sm:mt-5">
                 @include('calculator.inputs', ['centered' => true])
             </div>
 
@@ -73,7 +75,7 @@
         <p class="text-xs font-bold uppercase tracking-[0.14em] text-action">{{ __('home.tools.kicker') }}</p>
         <div class="mt-2 flex flex-wrap items-end justify-between gap-3">
             <div><h2 id="home-tools" class="text-3xl font-extrabold tracking-tight text-ink">{{ __('home.tools.title') }}</h2><p class="mt-1 text-muted">{{ __('home.tools.lead') }}</p></div>
-            <a href="{{ route('tools') }}" class="font-semibold text-ink underline-offset-4 hover:underline">{{ __('home.tools.all') }} →</a>
+            <a href="{{ route('tools') }}" class="inline-flex min-h-11 items-center font-semibold text-ink underline-offset-4 hover:underline">{{ __('home.tools.all') }} →</a>
         </div>
         <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             @foreach($homeTools as $key => $tool)
