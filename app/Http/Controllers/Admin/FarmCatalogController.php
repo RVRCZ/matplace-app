@@ -84,6 +84,14 @@ class FarmCatalogController extends Controller
             'slots.*.*.enabled' => ['nullable', 'boolean'],
         ]);
         $changed = 0;
+        $notices = [];
+        // the changer rule for every machine first, so a refusal at one slot leaves no machine half saved
+        foreach ($data['slots'] as $printerId => $slots) {
+            if ($printer = FarmPrinter::find((int) $printerId)) {
+                [$data['slots'][$printerId], $said] = $this->manualOnlyRule($printer, $printer->mode, $slots, "slots.$printerId.%d.color");
+                array_push($notices, ...$said);
+            }
+        }
         foreach ($data['slots'] as $printerId => $slots) {
             $printer = FarmPrinter::find((int) $printerId);
             if (! $printer) {
@@ -101,7 +109,46 @@ class FarmCatalogController extends Controller
         }
         app(ProfileLibrary::class)->sync();
 
-        return redirect()->route('admin.farm.printers')->with('status', __('farm.admin.slots_saved', ['n' => $changed]));
+        return redirect()->route('admin.farm.printers')->with('status', __('farm.admin.slots_saved', ['n' => $changed]))->with('error', $notices ? implode(' ', $notices) : null);
+    }
+
+    /**
+     * The rule of kinds that break in the filament changer (FarmMaterial::manual_only), applied to the slot rows about
+     * to be saved on a machine that runs (or is about to run) through the agent: a colour of such a kind newly put into
+     * a slot is refused at that slot ("put it into a printer in manual mode"); one that already sat there – the machine
+     * was switched from manual to the agent, or the kind got its flag after the spool was loaded – stays in the slot
+     * but switched off, and the notice names it, so the operator moves the spool. A manual machine takes anything.
+     *
+     * @param  array<int|string, array<string, mixed>>  $rows  slot index → color, remaining_g, enabled
+     * @param  string  $field  the request field of a slot's colour, with %d for the slot index (the validation error)
+     * @return array{0: array<int|string, array<string, mixed>>, 1: list<string>} the rows (enabled cleared where needed) and the notices
+     *
+     * @throws ValidationException
+     */
+    private function manualOnlyRule(FarmPrinter $printer, string $mode, array $rows, string $field): array
+    {
+        if ($mode !== FarmPrinter::MODE_AGENT) {
+            return [$rows, []];
+        }
+        $ids = array_filter(array_map(fn ($r) => is_numeric($r['color'] ?? null) ? (int) $r['color'] : 0, $rows));
+        $colors = $ids ? FarmColor::with('material')->whereIn('id', $ids)->get()->keyBy('id') : collect();
+        $stored = $printer->exists ? $printer->slots()->pluck('farm_color_id', 'slot') : collect();
+        $notices = [];
+        foreach ($rows as $i => $r) {
+            $color = $colors->get((int) ($r['color'] ?? 0));
+            if (! $color || ! $color->material?->isManualOnly()) {
+                continue;
+            }
+            if ((int) ($stored[(int) $i] ?? 0) !== (int) $color->id) {
+                throw ValidationException::withMessages([sprintf($field, $i) => __('farm.admin.manual_only_refused', ['color' => $color->fullLabel(), 'printer' => $printer->name])]);
+            }
+            if (! empty($r['enabled'])) {
+                $notices[] = __('farm.admin.manual_only_disabled', ['n' => (int) $i + 1, 'color' => $color->fullLabel(), 'printer' => $printer->name]);
+            }
+            $rows[$i]['enabled'] = 0;
+        }
+
+        return [$rows, $notices];
     }
 
     /** Every maker named so far, ours first: the suggestions under the "výrobce" fields. */
@@ -173,8 +220,13 @@ class FarmCatalogController extends Controller
             if (trim((string) ($s['new']['name'] ?? '')) === '' || empty($s['new']['material'])) {
                 throw ValidationException::withMessages(["slots.$index.new.name" => __('farm.admin.new_color_needs')]);
             }
+            // a new colour of a kind that breaks in the changer is not even created for a machine run by the agent
+            if ($data['mode'] === FarmPrinter::MODE_AGENT && ($newKind = FarmMaterial::find((int) $s['new']['material']))?->isManualOnly()) {
+                throw ValidationException::withMessages(["slots.$index.color" => __('farm.admin.manual_only_refused', ['color' => $newKind->label().', '.trim((string) $s['new']['name']), 'printer' => $data['name']])]);
+            }
             $data['slots'][$index]['color'] = $this->newColor($request, $s['new'], (int) $index)->id;
         }
+        [$data['slots'], $notices] = $this->manualOnlyRule($printer ?? new FarmPrinter(['name' => $data['name']]), $data['mode'], $data['slots'] ?? [], 'slots.%d.color');
         foreach (['process_profiles', 'machine_overrides', 'process_overrides'] as $json) {
             $data[$json] = isset($data[$json]) && $data[$json] !== '' ? json_decode($data[$json], true) : null;
         }
@@ -201,7 +253,7 @@ class FarmCatalogController extends Controller
         }
         app(ProfileLibrary::class)->sync();
 
-        return redirect()->route('admin.farm.printers')->with('status', __('farm.admin.saved'));
+        return redirect()->route('admin.farm.printers')->with('status', __('farm.admin.saved'))->with('error', $notices ? implode(' ', $notices) : null);
     }
 
     /**
@@ -289,6 +341,8 @@ class FarmCatalogController extends Controller
         $data['manufacturer'] = $maker;
         $data['filament_overrides'] = ! empty($data['filament_overrides']) ? json_decode($data['filament_overrides'], true) : null;
         $data['enabled'] = $request->boolean('enabled');
+        // breaks in the changer: its colours only in the slots of manual printers (FarmPrinterSlot::kindFits)
+        $data['manual_only'] = $request->boolean('manual_only');
         $kind = $material ?? new FarmMaterial;
         $kind->fill($data)->save();
         // a new kind (or a re-enabled one) gets its tuning row on every machine with the best known starting values

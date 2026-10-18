@@ -3,7 +3,8 @@
 @php
     $in = 'mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm font-normal';
     $lb = 'block text-xs font-semibold text-slate-600';
-    $groups = $colors->groupBy(fn ($c) => $c->material->label());
+    // a kind that breaks in the changer says so in its group: it goes only into a printer in manual mode
+    $groups = $colors->groupBy(fn ($c) => $c->material->label().($c->material->manual_only ? ' · '.__('farm.admin.manual_only_short') : ''));
 @endphp
 
 @section('content')
@@ -24,7 +25,7 @@
         @php $slots = $p->slots->keyBy('slot'); $count = max(4, $slots->count()); $planned = $plan[$p->key] ?? []; @endphp
         <section class="rounded-2xl border border-slate-200 bg-white p-3" data-printer="{{ $p->key }}">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 class="font-bold">{{ $p->name }} <span class="text-xs font-normal text-slate-500">{{ $p->key }} · {{ $p->model }}</span></h2>
+                <h2 class="font-bold">{{ $p->name }} <span class="text-xs font-normal text-slate-500">{{ $p->key }} · {{ $p->model }} · {{ __('farm.admin.mode.'.$p->mode) }}</span></h2>
                 @if($planned)<span class="text-xs text-slate-500">{{ __('farm.admin.slots_plan') }}: {{ collect($planned)->map(fn ($x, $i) => ($i + 1).' '.($x['label'] ?? '? '.$x['want']))->implode(' · ') }}</span>@endif
             </div>
             <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -41,6 +42,7 @@
                             <label class="flex items-center gap-1 pb-2 text-xs"><input type="checkbox" name="slots[{{ $p->id }}][{{ $i }}][enabled]" value="1" data-enabled @checked($s?->enabled) class="h-4 w-4 accent-action"> {{ __('farm.admin.slots_offer') }}</label>
                         </div>
                         @if($want && ! $want['id'])<p class="mt-1 text-[11px] text-amber-700">{{ __('farm.admin.slots_plan_unknown', ['want' => $want['want']]) }}</p>@endif
+                        @error("slots.{$p->id}.{$i}.color")<p class="mt-1 text-[11px] text-red-700">{{ $message }}</p>@enderror
                     </div>
                 @endfor
             </div>

@@ -43,7 +43,7 @@
                 @csrf
                 {{-- everything folded on arrival (Roman, 18 Oct 2026); the kind the address points at opens (script below) --}}
                 <details @if(! $m->exists && $template) open @endif>
-                    <summary class="cursor-pointer font-bold">{{ $m->exists ? $m->label().' · '.$m->colors->count().' barev'.($m->enabled ? '' : ' · vypnuto') : '+ Nový druh materiálu' }}</summary>
+                    <summary class="cursor-pointer font-bold">{{ $m->exists ? $m->label().' · '.$m->colors->count().' barev'.($m->enabled ? '' : ' · vypnuto').($m->manual_only ? ' · '.__('farm.admin.manual_only_short') : '') : '+ Nový druh materiálu' }}</summary>
                     @if(! $m->exists && $template)<p class="mt-1 text-xs text-slate-500">{{ __('farm.admin.copy_kind_hint', ['kind' => $template->label()]) }}</p>@endif
                     <div class="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
                         <label class="{{ $lb }}">Kód<input name="code" required value="{{ $m->code }}" placeholder="PETG" class="{{ $in }}"></label>
@@ -62,6 +62,8 @@
                         <label class="{{ $lb }} sm:col-span-2">Další přepisy profilu (JSON)<input name="filament_overrides" value="{{ $json($m->filament_overrides) }}" class="{{ $in }} font-mono text-xs"></label>
                         <label class="{{ $lb }} sm:col-span-3 lg:col-span-6">Poznámka pro obsluhu<input name="notes" value="{{ $m->notes }}" maxlength="500" class="{{ $in }}"></label>
                     </div>
+                    {{-- a kind that breaks in the changer (glow-in-the-dark): its colours only into the slots of manual printers --}}
+                    <label class="mt-2 flex items-start gap-2 text-sm"><input type="checkbox" name="manual_only" value="1" @checked($m->manual_only) class="mt-0.5 h-4 w-4 shrink-0 accent-action"><span>{{ __('farm.admin.manual_only') }} <span class="block text-xs font-normal text-slate-500">{{ __('farm.admin.manual_only_hint') }}</span></span></label>
                     <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
                         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="enabled" value="1" @checked($m->enabled) class="h-4 w-4 accent-action"> Nabízet zákazníkům (profil je ověřený)</label>
                         <span class="flex items-center gap-3 text-sm">

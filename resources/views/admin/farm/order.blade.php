@@ -94,6 +94,8 @@
                 <dt class="text-slate-500">E-mail</dt><dd>{{ $order->user?->email }} <span class="text-xs text-slate-500">(@money($balance))</span></dd>
                 <dt class="text-slate-500">{{ __('farm.admin.nav.printers') }}</dt><dd>{{ $order->printer?->name ?? '—' }} · slot {{ ($order->slot?->slot ?? 0) + 1 }}</dd>
                 <dt class="text-slate-500">{{ __('farm.order.color') }}</dt><dd>{{ $order->material?->code }} {{ $order->color?->name ?? '—' }}@if($order->slot) <span class="font-mono text-xs" title="farma, tiskárna, slot">{{ $order->slot->code() }}</span>@endif
+                    {{-- a spool of a kind that breaks in the changer: the operator feeds it straight from the holder --}}
+                    @if($order->manualOnly())<span class="ml-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800" data-manual-only>{{ __('farm.admin.manual_only_badge') }}</span>@endif
                     @if(count($order->spoolLines()) > 1)<span class="block text-xs text-slate-600">{{ $order->spoolText() }}</span>@endif</dd>
                 @if($changeSlots = $order->colorSlots())
                     @php($changeColors = \App\Models\FarmColor::whereIn('id', array_column($changeSlots, 'color_id'))->get()->keyBy('id'))

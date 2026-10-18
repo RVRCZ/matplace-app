@@ -228,6 +228,18 @@ class FarmOrder extends Model
         }.($l['code'] ? ' ('.$l['code'].')' : ''), $this->spoolLines()));
     }
 
+    /**
+     * Does the print take a spool of a kind that breaks in the filament changer (FarmMaterial::manual_only)? Such a
+     * spool is fed straight from the holder by a person: the operator's badge on the order and the dashboard says why
+     * the print goes by hand. Any of the order's colours counts: the first, a second, a change, a part.
+     */
+    public function manualOnly(): bool
+    {
+        $ids = array_filter(array_map('intval', array_merge([$this->farm_color_id, $this->second_color_id], array_column($this->colorSlots(), 'color_id'), array_column($this->partPlates(), 'color_id'))));
+
+        return $ids && FarmColor::whereIn('id', $ids)->whereHas('material', fn ($q) => $q->where('manual_only', true))->exists();
+    }
+
     /** The most spools one print may use, the first one counted: one ACE holds four. */
     public const MAX_COLORS = 4;
 

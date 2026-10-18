@@ -112,8 +112,8 @@
                 @php $job = $row['job']; @endphp
                 <div class="mt-3 rounded-xl border border-slate-200 p-3">
                     <div class="text-sm font-semibold">{{ __('farm.admin.running') }}: <a class="underline" href="{{ route('admin.farm.orders.show', $job->order) }}">{{ $job->order->number }}</a> · {{ $job->order->modelFile?->original_name }}</div>
-                    {{-- which spools the job takes: farm, printer, slot ("U33") --}}
-                    @if($spools = $job->order->spoolText())<div class="mt-0.5 text-xs text-slate-600">{{ $spools }}</div>@endif
+                    {{-- which spools the job takes: farm, printer, slot ("U33"); a badge when one is fed straight from the holder --}}
+                    @if($spools = $job->order->spoolText())<div class="mt-0.5 text-xs text-slate-600">{{ $spools }}@if($job->order->manualOnly()) <span class="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800" data-manual-only>{{ __('farm.admin.manual_only_badge') }}</span>@endif</div>@endif
                     <div class="mt-1 text-xs text-slate-600">{{ $job->status }} · {{ round($job->progress) }} % @if($job->message)· {{ $job->message }}@endif</div>
                     <div class="mt-1 h-2 overflow-hidden rounded-full bg-slate-200"><div class="h-full bg-action" style="width: {{ min(100, $job->progress) }}%"></div></div>
                     @if($p->isAgentDriven())
@@ -131,7 +131,7 @@
             <ol class="mt-1 space-y-1 text-sm">
                 @forelse($row['queue'] as $q)
                     <li class="flex flex-wrap justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2">
-                        <span><a class="underline" href="{{ route('admin.farm.orders.show', $q['order']) }}">{{ $q['order']->number }}</a> · {{ $q['order']->modelFile?->original_name }} · {{ $q['order']->spoolText() ?: $q['order']->color?->name }}</span>
+                        <span><a class="underline" href="{{ route('admin.farm.orders.show', $q['order']) }}">{{ $q['order']->number }}</a> · {{ $q['order']->modelFile?->original_name }} · {{ $q['order']->spoolText() ?: $q['order']->color?->name }}@if($q['order']->manualOnly()) <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800" data-manual-only>{{ __('farm.admin.manual_only_badge') }}</span>@endif</span>
                         @if($q['eta'])<span class="text-xs text-slate-600">{{ __('farm.admin.eta', ['start' => $dur($q['eta']['start_in']), 'finish' => $dur($q['eta']['finish_in'])]) }}</span>@endif
                     </li>
                 @empty
@@ -141,7 +141,9 @@
 
             <p class="mt-3 text-xs text-slate-500">
                 @foreach($p->slots as $s)
-                    <span class="mr-2 inline-flex items-center gap-1 {{ $s->enabled ? '' : 'opacity-40' }}"><span class="inline-block h-3 w-3 rounded-full border border-slate-300" style="background: {{ $s->color?->hex ?? '#fff' }}"></span><span class="font-mono">{{ $s->code() }}</span>: {{ $s->color?->fullLabel() ?? '—' }} ({{ round($s->remaining_g) }} g)</span>
+                    {{-- struck through: a kind that breaks in the changer sitting in a machine run by the agent – not offered, move the spool --}}
+                    @php $fits = \App\Models\FarmPrinterSlot::kindFits($p, $s->color); @endphp
+                    <span class="mr-2 inline-flex items-center gap-1 {{ $s->enabled ? '' : 'opacity-40' }} {{ $fits ? '' : 'line-through decoration-amber-700' }}" @if(! $fits) title="{{ __('farm.admin.manual_only_refused', ['color' => $s->color?->fullLabel(), 'printer' => $p->name]) }}" @endif><span class="inline-block h-3 w-3 rounded-full border border-slate-300" style="background: {{ $s->color?->hex ?? '#fff' }}"></span><span class="font-mono">{{ $s->code() }}</span>: {{ $s->color?->fullLabel() ?? '—' }} ({{ round($s->remaining_g) }} g)</span>
                 @endforeach
                 <a href="{{ route('admin.farm.printers.edit', $p) }}" class="underline">{{ __('farm.admin.nav.printers') }}</a>
             </p>

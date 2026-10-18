@@ -15,9 +15,19 @@ class FarmMaterial extends Model
 
     protected $attributes = ['finish' => 'solid', 'manufacturer' => self::DEFAULT_MAKER, 'sort' => 100];
 
-    protected $fillable = ['code', 'name', 'manufacturer', 'finish', 'filament_profile', 'filament_overrides', 'density', 'nozzle_temp', 'nozzle_temp_first', 'bed_temp', 'price_per_gram', 'notes', 'enabled', 'sort'];
+    protected $fillable = ['code', 'name', 'manufacturer', 'finish', 'manual_only', 'filament_profile', 'filament_overrides', 'density', 'nozzle_temp', 'nozzle_temp_first', 'bed_temp', 'price_per_gram', 'notes', 'enabled', 'sort'];
 
-    protected $casts = ['filament_overrides' => 'array', 'density' => 'float', 'price_per_gram' => 'float', 'enabled' => 'bool', 'nozzle_temp' => 'int', 'nozzle_temp_first' => 'int', 'bed_temp' => 'int', 'sort' => 'int'];
+    protected $casts = ['filament_overrides' => 'array', 'density' => 'float', 'price_per_gram' => 'float', 'enabled' => 'bool', 'manual_only' => 'bool', 'nozzle_temp' => 'int', 'nozzle_temp_first' => 'int', 'bed_temp' => 'int', 'sort' => 'int'];
+
+    /**
+     * A kind that breaks in the filament changer (glow-in-the-dark PLA snapped in the ACE, F26-000065 cancelled; Roman,
+     * 14 Oct 2026): its spools are fed straight from the holder by a person, so its colours go only into the slots of
+     * a printer in manual mode (FarmPrinterSlot::kindFits) and are offered only from there.
+     */
+    public function isManualOnly(): bool
+    {
+        return (bool) $this->manual_only;
+    }
 
     /** "PLA+ matt", "PETG Prusament" — what a person calls this kind; the maker is said only when it is not ours. */
     public function label(): string
@@ -44,7 +54,7 @@ class FarmMaterial extends Model
     /** A new kind with this one's profile, temperatures and price, to be renamed by the admin. */
     public function copy(): self
     {
-        return new self($this->only(['name', 'manufacturer', 'finish', 'filament_profile', 'filament_overrides', 'density', 'nozzle_temp', 'nozzle_temp_first', 'bed_temp', 'price_per_gram', 'notes', 'sort']) + ['code' => $this->code, 'enabled' => false]);
+        return new self($this->only(['name', 'manufacturer', 'finish', 'manual_only', 'filament_profile', 'filament_overrides', 'density', 'nozzle_temp', 'nozzle_temp_first', 'bed_temp', 'price_per_gram', 'notes', 'sort']) + ['code' => $this->code, 'enabled' => false]);
     }
 
     /**
