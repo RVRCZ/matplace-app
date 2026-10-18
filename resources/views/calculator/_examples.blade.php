@@ -4,12 +4,18 @@
 --}}
 @php
     $currency = \App\Support\Currency::current();
-    $items = collect(config('site.example_items', []))->filter(fn ($i) => \App\Domain\Tools\ToolVisibility::isPublic($i['tool']));
+    // a landing page shows the prints of its own tool ($only), the home page all of them
+    $items = collect(config('site.example_items', []))->filter(fn ($i) => \App\Domain\Tools\ToolVisibility::isPublic($i['tool']) && (empty($only) || $i['tool'] === $only));
 @endphp
 @if($items->isNotEmpty())
-<section id="home-examples" class="mt-14" aria-labelledby="home-examples-title">
-    <h2 id="home-examples-title" class="text-3xl font-extrabold tracking-tight text-ink">{{ __('site.examples.title') }}</h2>
-    <p class="mt-1 text-muted">{{ __('site.examples.lead') }}</p>
+<section id="{{ empty($only) ? 'home-examples' : 'landing-result' }}" class="{{ empty($only) ? 'mt-14' : 'mt-10' }}" aria-labelledby="home-examples-title">
+    @if(empty($only))
+        <h2 id="home-examples-title" class="text-3xl font-extrabold tracking-tight text-ink">{{ __('site.examples.title') }}</h2>
+        <p class="mt-1 text-muted">{{ __('site.examples.lead') }}</p>
+    @else
+        <h3 id="home-examples-title" class="text-lg font-bold text-ink">{{ __('landing.titles.result') }}</h3>
+        <p class="mt-1 text-sm text-muted">{{ __('landing.titles.result_lead') }}</p>
+    @endif
     <div class="mt-6 grid gap-4 sm:grid-cols-3">
         @foreach($items as $i)
             <article class="card flex flex-col overflow-hidden">

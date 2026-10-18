@@ -17,7 +17,7 @@ return [
     'faq' => [
         ['q' => '¿Qué diferencia hay entre litofanía y relieve?', 'a' => 'La litofanía muestra la imagen solo a contraluz, por ejemplo en una ventana o ante una lámpara. El relieve se ve sin luz, porque las zonas claras de la foto sobresalen de la placa.'],
         ['q' => '¿Cómo funciona la lámpara?', 'a' => 'La foto se enrolla en un tubo del perímetro que indique; dentro hay una pared lisa y un fondo con un agujero de Ø 40 mm para un portalámparas E27 (o Ø 28 mm para E14). También puede elegir un fondo abierto para una tira LED o uno cerrado para una vela LED.'],
-        ['q' => '¿Qué foto queda mejor?', 'a' => 'Un retrato o una foto con buen contraste. Los controles de brillo, contraste y medios tonos mejoran una foto flojа; la herramienta indica cuántos tonos de grosor de 0,2 mm resultan.'],
+        ['q' => '¿Qué foto queda mejor?', 'a' => 'Un retrato o una foto con buen contraste. Los controles de brillo, contraste y medios tonos mejoran una foto floja; la herramienta indica cuántos tonos de grosor de 0,2 mm resultan.'],
         ['q' => '¿De qué material se imprime la litofanía?', 'a' => 'De blanco, para que la luz la atraviese. El panel se imprime de pie y macizo, la lámpara de pie sobre su fondo y el relieve tumbado sin soportes.'],
         ['q' => '¿Guardan mi foto?', 'a' => 'No. La foto solo se usa para calcular el modelo y se descarta enseguida. Si vuelve a los ajustes, tendrá que elegirla de nuevo.'],
         ['q' => '¿Qué tamaño puede tener el modelo?', 'a' => 'Un panel hasta 250 × 250 mm, una lámpara con perímetro hasta 400 mm (unos 127 mm de diámetro) y hasta 250 mm de alto. La litofanía tiene como máximo 5 mm de grosor y su punto más fino desde 0,4 mm.'],
