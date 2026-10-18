@@ -143,5 +143,15 @@
         "Tenhle soubor neumíme přečíst jako 3D model: je poškozený, prázdný nebo jiného druhu. Zkuste jiný soubor (STL, 3MF, STEP a další).",
         "We cannot read this file as a 3D model: it is damaged, empty or of another kind. Try another file (STL, 3MF, STEP and others).",
         "No podemos leer este archivo como modelo 3D: está dañado, vacío o es de otro tipo. Pruebe otro archivo (STL, 3MF, STEP y otros)."
+    ],
+    "tools.lead": [
+        "Vyberte, s čím přicházíte. Nástroje jsou zdarma a bez registrace; tvorba z fotky má denní limit.",
+        "Pick what you come with. The tools are free and need no account; making a model from a photo has a daily limit.",
+        "Elija con qué llega. Las herramientas son gratis y sin registro; crear un modelo a partir de una foto tiene un límite diario."
+    ],
+    "home.benefit.free_tools": [
+        "Nástroje zdarma, z fotky :n model denně bez účtu",
+        "Free tools, :n model a day from a photo without an account",
+        "Herramientas gratis, :n modelo al día a partir de una foto sin cuenta"
     ]
 }
