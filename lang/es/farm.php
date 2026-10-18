@@ -2,6 +2,8 @@
 
 return [
     'price_label' => 'Impreso por nosotros (:material)',
+    // the farm has no kind of the material chosen: the price is counted in the cheapest kind loaded, and says so
+    'price_label_cheapest' => 'Impreso por nosotros (nuestro tipo más barato: :material)',
     'cta' => 'Pedir la impresión',
     'cta_hint' => 'Todavía no paga nada: se abre el pedido, elige el color y la entrega y ve el precio final. Se paga solo al final, con crédito o con tarjeta.',
     'calc_parts_by_colour' => 'Las piezas tienen colores distintos: imprimimos cada pieza por separado desde su propia bobina, una impresión tras otra; el precio incluye todas las piezas. Para imprimir en casa, descargue el proyecto con los colores.',
