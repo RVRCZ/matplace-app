@@ -165,12 +165,15 @@ class FakePrinter:
 
     def finish(self, print_time: int, supplies_usage: float):
         """The print ran to its end as the Kobra X tells it (18 Oct 2026): progress reports with the minutes and the
-        millimetres, then "finished"; the task is gone and last_project still names the earlier print."""
+        millimetres, cooling reports without a file, a bare {filename, progress 0} a second before "finished", then
+        "finished"; the task is gone and last_project still names the earlier print."""
         gone = self.info["project"]
         self.info.update(state="free", project=None)
         for link in self.links:
             link.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"taskid": "-1", "filename": gone["filename"], "progress": 99,
                                                                                                "curr_layer": 50, "total_layers": 50, "print_time": print_time, "supplies_usage": supplies_usage}})
+            link.report("print", {"action": "start", "state": "hotbed_cooling_off", "code": 200, "data": {"taskid": "-1"}})
+            link.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"taskid": "-1", "filename": gone["filename"], "progress": 0}})
             link.report("print", {"action": "start", "state": "finished", "code": 200, "data": {"taskid": "-1", "filename": gone["filename"], "progress": 100, "remain_time": 0}})
 
     def link(self, ip, on_report):
@@ -205,17 +208,6 @@ class FakePrinter:
         # the printer reads the file by itself and shows it as a task in "init" (still free)
         self.info.update(project={"state": "init", "filename": f.filename, "progress": 0, "pause": 0})
         return web.json_response({"code": 200, "message": "success"})
-
-
-def _picture(head_at: tuple) -> bytes:
-    """A camera picture like the Kobra X's: dark, with the white head as a box at `head_at` (left, top, right, bottom
-    of 320 x 180), as JPEG."""
-    from PIL import Image, ImageDraw
-    im = Image.new("RGB", (320, 180), (40, 40, 40))
-    ImageDraw.Draw(im).rectangle(head_at, fill=(250, 250, 250))
-    buf = io.BytesIO()
-    im.save(buf, format="JPEG", quality=85)
-    return buf.getvalue()
 
 
 class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
@@ -448,46 +440,33 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((250.0, 250.0, 1.0, 200.0, ""), _park_of(b"; matplace timelapse park_x=250 park_y=250 dwell=1000 travel=200 frames=49\n"))
         self.assertIsNone(_park_of(b"; HEADER_BLOCK_START\n"))
 
-    async def test_with_the_synced_marker_the_sure_window_starts_two_seconds_after_the_report(self):
+    async def test_with_the_synced_marker_the_park_may_begin_before_the_report_and_the_sure_window_follows(self):
         async with FakePrinter() as p:
-            d = await self.driver(p, park_window_min=0.05, camera_check=False)
+            d = await self.driver(p, park_window_min=0.05)
             await d.start(self.gcode(tool=1, park=True, dwell=3000, sync="m400"), "mp19-cube.gcode", 1)
-            # with sync=m400 the defaults are 0 / 2.0 s; scaled ten times here (0 by the default, 0.2 set): the sure
-            # window is 0.2-0.3 s after the report
-            d._park = (d._park[0], d._park[1], 0.3, d._park[3], "m400")
-            d.park_lead_min, d.park_lead = None, 0.2
+            # with sync=m400 the marker is read with the head standing, the park move takes 1-1.5 s and the report
+            # follows the read by 0-2 s: the park begins -1.0 to 1.5 s after the report and ends dwell later. Scaled
+            # ten times here (-0.1 / 0.15, dwell 0.4): the sure window is 0.15-0.3 s after the report
+            d._park = (d._park[0], d._park[1], 0.4, d._park[3], "m400")
+            d.park_lead_min, d.park_lead = -0.1, 0.15
             p.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"filename": "mp19-cube.gcode", "progress": 4, "curr_layer": 2}})
             self.assertIsNone(await d.head())
-            await asyncio.sleep(0.25)
+            await asyncio.sleep(0.2)
             self.assertEqual((250.0, 250.0, 0.0), await d.head())
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.15)
             self.assertIsNone(await d.head())
 
-    async def test_the_camera_tells_the_park_when_the_head_is_out_of_the_middle(self):
-        from farm_agent.drivers.anycubic_lan import head_in_view
-        printing, parked = _picture(head_at=(130, 70, 190, 110)), _picture(head_at=(265, 60, 290, 100))
-        self.assertGreater(head_in_view(printing, (0.375, 0.11, 0.75, 0.61)), 100)
-        self.assertLessEqual(head_in_view(parked, (0.375, 0.11, 0.75, 0.61)), 1)
-        self.assertIsNone(head_in_view(b"not a picture", (0.375, 0.11, 0.75, 0.61)))
-        shown = {"jpeg": printing}
+    async def test_the_synced_defaults_put_the_picture_one_and_a_half_to_two_seconds_after_the_report(self):
         async with FakePrinter() as p:
-            d = await self.driver(p, park_lead_min=0.0, park_lead=0.2, park_window_min=0.05, _frames=lambda: shown["jpeg"])
-            await d.start(self.gcode(tool=1, park=True, dwell=3000), "mp20-cube.gcode", 1)
-            d._park = (d._park[0], d._park[1], 0.3, d._park[3], "")
-            p.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"filename": "mp20-cube.gcode", "progress": 4, "curr_layer": 2}})
-            # the head prints in the middle: no park, whatever the clock says
-            await asyncio.sleep(0.22)
-            self.assertIsNone(await d.head(), "the camera sees the head printing, even inside the timing window")
-            # the head leaves the middle: the park, at once, as a standing position
-            shown["jpeg"] = parked
-            self.assertEqual((250.0, 250.0, 0.0), await d.head())
-            # a camera that never saw the head print is not trusted: timing decides
-            d2 = await self.driver(p, park_lead_min=0.0, park_lead=0.2, park_window_min=0.05, _frames=lambda: parked)
-            await d2.cancel()
-            await d2.start(self.gcode(tool=1, park=True, dwell=3000), "mp21-cube.gcode", 1)
-            d2._park = (d2._park[0], d2._park[1], 0.3, d2._park[3], "")
-            p.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"filename": "mp21-cube.gcode", "progress": 4, "curr_layer": 2}})
-            self.assertIsNone(await d2.head(), "too early by the clock and the camera has no reference yet")
+            d = await self.driver(p)
+            await d.start(self.gcode(tool=1, park=True, dwell=3000, sync="m400"), "mp19-cube.gcode", 1)
+            p.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"filename": "mp19-cube.gcode", "progress": 4, "curr_layer": 2}})
+            await asyncio.sleep(1.3)
+            self.assertIsNone(await d.head(), "the report may follow the read by 2 s: the head may still be on its way")
+            await asyncio.sleep(0.3)
+            self.assertEqual((250.0, 250.0, 0.0), await d.head(), "1.5-2.0 s after the report the head stands in the park whatever the delay was")
+            await asyncio.sleep(0.6)
+            self.assertIsNone(await d.head(), "by 2 s after a report that came late the dwell is over")
 
     async def test_with_a_short_dwell_the_park_is_a_planned_position_for_a_burst_of_pictures(self):
         async with FakePrinter() as p:

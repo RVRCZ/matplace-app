@@ -30,11 +30,9 @@ printers:
   #   ip: 192.168.8.44                                     # reserve this IP in the router
   #   # camera: true                                       # picture from the printer's own camera (needs the package av)
   #   # light: true                                        # the camera light on during a print, off after it
-  #   # park_lead_min: 0.0                                 # when the head reaches the park after the printer reports the layer: unset = by the
-  #   # park_lead: 2.0                                     #   G-code (sync=m400: 0-2 s, else 2.2-4 s); dwell >= 2.5 s gives a sure window
-  #   # camera_check: true                                 # the park is told when the live picture shows the head out of the middle
-  #   # head_region: [0.375, 0.11, 0.75, 0.61]             # the part of the picture the printing head fills (Kobra X camera)
-  #   # head_away: 20                                      # at most this many bright pixels there = the head is parked
+  #   # park_lead_min: 2.2                                 # when the head reaches the park after the printer reports the layer: unset = by the
+  #   # park_lead: 4.0                                     #   G-code (sync=m400: -1.0 to 1.5 s, else 2.2-4 s); the picture is taken in
+  #                                                        #   [park_lead, park_lead_min + dwell], so dwell 3000 ms gives 1.5-2.0 s with M400
   #   # park_window_min: 0.5                               # a sure window shorter than this is not used (the agent looks every 0.25 s)
   #   # layer_window: 0                                    # by hand: seconds the park is a planned position after a reported layer (0 = measured timing)
   #   # auto_leveling: true                                # the printer levels the bed before every print (as after the Slicer Next)
