@@ -1,2 +1,100 @@
-<!-- title: Array | excerpt: Array | cover: blog/20260529_103838_b25cfca0.webp | published_at:  -->
-Array
+<!-- lang: cs | title: PrintPal.io a 4 další AI nástroje, které ti vytvoří 3D model za pár minut (návod 2026) | excerpt: Vlastní 3D model bez Blenderu a bez modelářských dovedností? V roce 2026 to není sci-fi. Ukážeme krok za krokem PrintPal.io a další AI nástroje, kterými si zadáš popis nebo fotku — a za 5 minut máš STL připravené k tisku. | cover: blog/20260529_103838_b25cfca0.webp | published_at:  -->
+<p><em>Publikováno: 29. května 2026 · Doba čtení: ~9 minut</em></p>
+<h2>Vlastní 3D model bez profesionálních programů</h2>
+<p>Před třemi lety jsi měl(a) na výběr dvě cesty: stáhnout hotový model z Printables nebo Thingiverse, anebo se posadit k Blenderu a začít se učit. Obě cesty mají háček. Hotový model ti nemusí pasovat na míru, vlastní design vyžaduje desítky hodin praxe.</p>
+<p>V roce 2026 se objevila třetí cesta: <strong>AI generátory 3D modelů</strong>. Napíšeš popis ("malý slon s pohyblivými nohama, výška 6 cm"), nahraješ fotku domácího mazlíčka nebo vybereš adresu města — a za pár minut máš STL soubor k tisku. Kvalita ještě neodpovídá tomu, co udělá zkušený designer ve Fusion 360, ale na 80 % běžných potřeb to stačí.</p>
+<p>V tomto návodu si projdeme <strong>PrintPal.io</strong> jako nejkomplexnější nástroj pro běžného uživatele, plus 4 alternativy pro konkrétní use cases. Na konci přidám tip, co s hotovým STL souborem, pokud nemáš vlastní 3D tiskárnu.</p>
+<p>
+💡 Pokud jste začátečník a chceš nejdřív obecný úvod, co AI generátory 3D modelů jsou, mrkni na náš starší článek <a href="/blog/generovani-3d-modelu-pomoci-ai">Generování 3D modelů pomocí AI: Z fotky nebo nápadu k hotové věci</a>.
+</p>
+<h2>PrintPal.io: švýcarský nůž pro AI 3D tisk</h2>
+<p><strong><a href="https://printpal.io/explore" rel="nofollow noopener" target="_blank">PrintPal.io</a></strong> je webová platforma, která pod jednou střechou kombinuje několik AI nástrojů pro 3D tisk. Místo specializace na jednu věc nabízí cca 6 generátorů, mezi kterými se přepínáš podle toho, co chceš vytvořit.</p>
+<h3>Co PrintPal.io umí</h3>
+<ul>
+<li><strong>Text-to-3D model</strong> — popíšeš slovy, dostaneš STL</li>
+<li><strong>Pet figurka z fotky</strong> — nahraješ fotku domácího mazlíčka, AI z něj vytvoří 3D model</li>
+<li><strong>3D mapa města</strong> — zadáš adresu nebo souřadnice, dostaneš reliéfní mapu okolí</li>
+<li><strong>Articulated / pohyblivé modely</strong> — generátor, který automaticky rozdělí model na klouby pro print-in-place tisk</li>
+<li><strong>Jmenovky a 3D nápisy</strong> — zadáš text + font, dostaneš model jmenovky</li>
+<li><strong>Click mechanism editor</strong> — editor mechanických spojů, klipsů a snap-fitů</li>
+</ul>
+<h3>Tutorial 1: Vlastní text-to-3D model za 5 minut</h3>
+<ol>
+<li><strong>Otevři <a href="https://printpal.io/explore" rel="nofollow noopener" target="_blank">printpal.io</a></strong> a v menu zvol "Text to 3D".</li>
+<li><strong>Napiš popis</strong> v angličtině (čeština funguje hůř). Buď co nejkonkrétnější: místo <em>"dragon"</em> raději <em>"small flexible dragon with articulated body, smooth surface, 8cm long, no supports needed"</em>.</li>
+<li><strong>Vyber styl</strong> — realistický, low-poly, cartoon, abstraktní. Pro 3D tisk se obvykle hodí low-poly nebo cartoon, vyhnou se přespříliš jemným detailům, které malé tiskárny nevytisknou.</li>
+<li><strong>Klikni "Generate"</strong> a počkej 30–90 sekund. Většina free plánů má limit na denní počet generací.</li>
+<li><strong>Zkontroluj náhled</strong> a stáhni .STL nebo .OBJ.</li>
+</ol>
+<h3>Tutorial 2: Pet figurka z fotky mazlíčka</h3>
+<p>To je asi nejviditelnější use case PrintPal.io a dělá to skvěle. Vhodné jako dárek nebo memento.</p>
+<ol>
+<li>V menu zvol "Pet to Figurine".</li>
+<li>Nahraj 1–3 fotky tvého mazlíčka. Ideální je <strong>ostrá fotka z boku za dobrého světla</strong>, kde je vidět celé tělo. Detail obličeje pomůže.</li>
+<li>AI ti za ~2 minuty vygeneruje 3D model. Můžeš ho ještě upravit (postoj, výška).</li>
+<li>Stáhni STL a vytiskni (nebo nech vytisknout — viz konec článku).</li>
+</ol>
+<h3>Tutorial 3: 3D mapa tvého města</h3>
+<p>Pekný dárek pro někoho, kdo má vztah ke konkrétnímu místu. Nebo prostě dekorace.</p>
+<ol>
+<li>V menu zvol "3D City Map".</li>
+<li>Zadej adresu nebo GPS souřadnice. PrintPal stáhne data z OpenStreetMap.</li>
+<li>Nastav <strong>poloměr</strong> (typicky 200–800 m kolem středu) a <strong>výšku</strong> reliéfu budov.</li>
+<li>Vyber, jestli chceš jen budovy, nebo i ulice/řeku.</li>
+<li>Stáhni STL — obvykle ~50–200 g materiálu podle velikosti.</li>
+</ol>
+<h2>Alternativy: 4 další nástroje pro specifické use cases</h2>
+<h3>1. Meshy.ai — nejkvalitnější text-to-3D</h3>
+<p><a href="https://www.meshy.ai" rel="nofollow noopener" target="_blank">Meshy</a> má aktuálně asi nejlepší kvalitu text-to-3D. Free tier dává cca 200 kreditů měsíčně (zhruba 20–30 generací). Funguje i image-to-3D. Hodí se pro figurky, dekoraci, props pro foto.</p>
+<p><strong>Plus:</strong> kvalita topologie, hladké povrchy. <strong>Mínus:</strong> občas selže s mechanickými díly (šrouby, ozubená kola).</p>
+<h3>2. Sloyd.ai — parametrické modely (drahokami pro mechaniku)</h3>
+<p><a href="https://www.sloyd.ai" rel="nofollow noopener" target="_blank">Sloyd</a> generuje modely podle <strong>parametrů</strong>, ne podle textového popisu. Vybereš typ (židle, nábytek, váza, sklenice…) a posuvníky nastavíš výšku, šířku, počet noh atd. Vhodné pro funkční předměty, ne pro figurky.</p>
+<p><strong>Plus:</strong> přesné rozměry, dobrá geometrie pro tisk. <strong>Mínus:</strong> omezený výběr kategorií.</p>
+<h3>3. Luma AI Genie — premium kvalita</h3>
+<p><a href="https://lumalabs.ai/genie" rel="nofollow noopener" target="_blank">Luma Genie</a> je text-to-3D s velmi high-fidelity výstupem. Hodí se na vizualizace a renders, ale pro 3D tisk je geometrie občas příliš detailní — bude potřebovat ruční úpravu v Blenderu.</p>
+<p><strong>Plus:</strong> nejlepší vizuální kvalita. <strong>Mínus:</strong> potřeba post-processing, drahý plán pro velkou produkci.</p>
+<h3>4. 3DGPT (a další OpenSCAD generátory) — kód místo modelu</h3>
+<p>Nástroje jako <a href="https://3dgpt.app" rel="nofollow noopener" target="_blank">3DGPT</a> nebo Claude / ChatGPT s OpenSCAD generují <strong>kód</strong>, který popisuje geometrii matematicky. Hodí se pro <strong>přesné mechanické díly</strong> (držáky, vložky, parametrické krabičky) — zadáš rozměry v mm a dostaneš model na milimetr přesný.</p>
+<p><strong>Plus:</strong> precizní pro funkční tisk, editovatelný kód, jednoduchá customizace. <strong>Mínus:</strong> nevhodné pro organické tvary (figurky, sochy).</p>
+<h2>Které nástroje použít pro co</h2>
+<table>
+<thead>
+<tr>
+<th>Chceš vytisknout</th>
+<th>Doporučený nástroj</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>Figurku domácího mazlíčka</td><td>PrintPal.io (Pet to Figurine)</td></tr>
+<tr><td>Dekoraci podle popisu</td><td>Meshy.ai nebo PrintPal Text-to-3D</td></tr>
+<tr><td>3D mapu města jako dárek</td><td>PrintPal.io (3D City Map)</td></tr>
+<tr><td>Funkční držák / vložku na míru</td><td>3DGPT (OpenSCAD)</td></tr>
+<tr><td>Vázu, sklenici, nábytek</td><td>Sloyd.ai (parametricky)</td></tr>
+<tr><td>Articulated drak, ryba, had</td><td>PrintPal.io (Articulated generator)</td></tr>
+<tr><td>Premium dárkový kus</td><td>Luma AI Genie + ruční úprava</td></tr>
+</tbody>
+</table>
+<h2>3 tipy, aby AI model šel skutečně vytisknout</h2>
+<ol>
+<li><strong>Vyhni se příliš tenkým stěnám.</strong> AI občas generuje stěny pod 1 mm, které FDM tiskárna nezvládne. V slicer (PrusaSlicer, OrcaSlicer) zkontroluj <strong>minimum wall thickness</strong> a případně model zesílit funkcí "Solidify" v Blenderu.</li>
+<li><strong>Ověř manifoldness</strong> (zda model nemá díry nebo překryvy). Webový nástroj <a href="https://makeprintable.com" rel="nofollow noopener" target="_blank">MakePrintable</a> nebo PrusaSlicer "Repair" obvykle problémy opraví automaticky.</li>
+<li><strong>Zvol orientaci kvůli supportům.</strong> AI ti dá model "jak vyzařuje", ne v optimální tiskové orientaci. Otoč jej tak, aby <strong>největší plochá strana byla dole</strong> a převisy maximálně 45°.</li>
+</ol>
+<h2>Máš STL a co teď? Vytisknout přes matplace</h2>
+<p>Jakmile máš STL z AI generátoru, máš dvě cesty:</p>
+<ol>
+<li><strong>Vytisknout sám</strong> — pokud vlastníš 3D tiskárnu. Nahraj soubor do PrusaSliceru, nastav PLA/PETG, spusť.</li>
+<li><strong>Nechat vytisknout přes českou síť tiskáren</strong> — pokud nemáš tiskárnu, nebo chceš barvu/materiál, který tvoje tiskárna neumí. Na <strong><a href="/">matplace.com</a></strong> nahraješ STL, popíšeš co potřebuješ (barva, velikost, kvalita), do 24 hodin ti přijde 5–15 nabídek z naší sítě 100+ tiskáren po celé ČR. Vybereš nejlepší a zaplatíš přímo tiskárně.</li>
+</ol>
+<p>
+Máš hotový AI model a chceš ho vytisknout?<br>
+<a href="/poptat">Pošli ho na matplace a do 24 h máš nabídky →</a>
+</p>
+<h2>Závěr: AI nenahradí designera, ale otevírá dveře všem ostatním</h2>
+<p>AI generátory 3D modelů v roce 2026 nedělají perfektní modely. Mechanické díly s vysokými tolerancemi je lepší stále modelovat v Fusion 360, sběratelské figurky s detailem v ZBrushi. <strong>Ale pro 80 % běžných potřeb</strong> — hračka pro dítě, dárková figurka, dekorace, mapka města — je rozdíl mezi 5 minutami s PrintPal.io a 5 hodinami v Blenderu obrovský.</p>
+<p>Pokud jsi ještě nikdy 3D model nedělal(a), <strong>začni s PrintPal.io Text-to-3D</strong>. Pro pet figurky tam taky. Pro precizní mechaniku si zkus 3DGPT s OpenSCAD. A jakmile máš STL, máš k dispozici jeden krok navíc: nechat to vytisknout přes <a href="/">matplace</a>, místo abys investoval do vlastní tiskárny.</p>
+<hr>
+<p>
+<strong>Související články:</strong><br>
+<a href="/blog/generovani-3d-modelu-pomoci-ai">Generování 3D modelů pomocí AI: Z fotky nebo nápadu k hotové věci</a> · <a href="/blog/vytvoreni-stl-z-fotek-pomoci-ai-kompletni-navod-pro-3d-tisk-2026">Vytvoření STL z fotek pomocí AI</a> · <a href="/blog/jak-pripravit-stl-soubor-pro-3d-tisk">Jak připravit STL soubor pro 3D tisk</a>
+</p>

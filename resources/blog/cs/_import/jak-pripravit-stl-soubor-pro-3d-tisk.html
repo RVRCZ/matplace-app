@@ -1,2 +1,143 @@
-<!-- title: Array | excerpt: Array | cover: blog/20260427_212222_fbd300f8.jpg | published_at: 2026-04-27 19:07:37 -->
-Array
+<!-- lang: cs | title: Jak připravit STL soubor pro 3D tisk: Kompletní průvodce 2026 | excerpt: Naučte se, jak správně připravit STL soubor pro 3D tisk. Krok za krokem — od exportu přes opravu chyb až po nastavení sliceru. Bez zbytečných problémů při tisku. | cover: blog/20260427_212222_fbd300f8.jpg | published_at: 2026-04-27 19:07:37 -->
+<p>Od exportu z CAD programu přes opravu chyb až po nastavení sliceru — krok za krokem.</p>
+<p>
+Export z 5 CAD programů
+Oprava chyb zdarma
+Nastavení sliceru
+</p>
+<p>
+<a href="/tiskar/poptat">Poptat 3D tisk</a>
+<a href="/katalog">Prohlédnout katalog →</a>
+</p>
+<p>Připravujete svůj první 3D tisk a nevíte, jak správně exportovat STL soubor? Nebo se vám tisk nedaří kvůli chybám v modelu? Tento průvodce vás provede celým procesem — od exportu z CAD programu až po finální kontrolu před tiskem.</p>
+<p>Špatně připravený STL soubor je nejčastější příčina neúspěšného 3D tisku. Stačí pár minut navíc při přípravě a ušetříte si hodiny ladění, plýtvání materiálem a frustrace.</p>
+<h2>Co je STL soubor?</h2>
+<p>STL (STereoLithography) je formát souboru, který popisuje 3D geometrii pomocí trojúhelníkových plošek. Jde o <strong>standardní formát pro 3D tisk</strong> — rozumí mu prakticky každý slicer i 3D tiskárna na světě.</p>
+<p><strong>Pouze geometrie</strong><br>Žádné barvy, textury ani materiály</p>
+<p><strong>Trojúhelníková síť</strong><br>Mesh ze stovek tisíc plošek</p>
+<p><strong>Binární STL</strong><br>Menší velikost, rychlejší načítání</p>
+<p><strong>Univerzální</strong><br>Podporovaný všemi slicery</p>
+<h2>Krok 1: Export STL souboru z CAD programu</h2>
+<h3>Fusion 360</h3>
+<ol>
+<li>Pravé tlačítko na model</li>
+<li>Vyberte <strong>Save As Mesh</strong></li>
+<li>Formát: <strong>STL (Binary)</strong></li>
+<li>Refinement: <strong>High</strong> nebo <strong>Medium</strong></li>
+</ol>
+<h3>Tinkercad</h3>
+<ol>
+<li>Klikněte na <strong>Export</strong> vpravo nahoře</li>
+<li>Vyberte <strong>.STL</strong></li>
+<li>Soubor se stáhne automaticky</li>
+</ol>
+<h3>SolidWorks</h3>
+<ol>
+<li><strong>File → Save As</strong></li>
+<li>Typ souboru: <strong>STL (*.stl)</strong></li>
+<li>Options → Resolution: <strong>Fine</strong></li>
+<li>Jednotky: <strong>Millimeters</strong></li>
+</ol>
+<h3>Blender</h3>
+<ol>
+<li><strong>File → Export → STL</strong></li>
+<li>Zaškrtněte <strong>Selection Only</strong></li>
+<li>Forward: Y Forward, Up: Z Up</li>
+<li>Scale: <strong>1.00</strong></li>
+</ol>
+<h3>FreeCAD</h3>
+<ol>
+<li>Vyberte objekt</li>
+<li><strong>File → Export</strong></li>
+<li>Formát: <strong>STL Mesh (*.stl)</strong></li>
+</ol>
+<h2>Krok 2: Správné nastavení rozlišení</h2>
+<table>
+<thead><tr>
+<th>Rozlišení</th>
+<th>Počet trojúhelníků</th>
+<th>Použití</th>
+</tr></thead>
+<tbody>
+<tr><td>Nízké</td><td>1 000 – 10 000</td><td>Hrubé prototypy, jednoduché tvary</td></tr>
+<tr><td>Střední</td><td>10 000 – 100 000</td><td>Standardní tisk, většina modelů</td></tr>
+<tr><td>Vysoké</td><td>100 000 – 500 000</td><td>Detailní modely, figurky, šperky</td></tr>
+<tr><td>Velmi vysoké</td><td>nad 500 000</td><td>Náročné modely, sochy, organické tvary</td></tr>
+</tbody>
+</table>
+<p>
+<strong>Tip:</strong> Pro běžný FDM tisk stačí 50 000–100 000 trojúhelníků. Pro resin tisk může být užitečných 200 000+. Příliš vysoké rozlišení nezlepší kvalitu tisku, jen zvětší soubor.
+</p>
+<h2>Krok 3: Kontrola a oprava STL souboru</h2>
+<p><strong>Non-manifold geometrie</strong><br>Model není uzavřený, má díry nebo překrývající se plochy</p>
+<p><strong>Inverted normals</strong><br>Plochy směřují dovnitř místo ven</p>
+<p><strong>Self-intersecting faces</strong><br>Plochy se protínají samy se sebou</p>
+<p><strong>Příliš tenké stěny</strong><br>Pod 0,8 mm neudrží tvar při tisku</p>
+<h3>Nástroje pro opravu (zdarma)</h3>
+<p><strong>Microsoft 3D Builder</strong><br>Windows — automatická oprava jedním kliknutím</p>
+<p><strong>Meshmixer</strong><br>Autodesk — pokročilé opravy a analýza</p>
+<p><strong>Blender</strong><br>Manuální oprava, plugin 3D Print Toolbox</p>
+<p><strong>Netfabb Online</strong><br>Nahrajte soubor, opravte v prohlížeči</p>
+<p>
+<strong>Pro začátečníky:</strong> Microsoft 3D Builder — klikněte na Repair a uložte. Vyřeší to 90 % problémů automaticky.
+</p>
+<h2>Krok 4: Kontrola rozměrů a orientace</h2>
+<h3>Jednotky a měřítko</h3>
+<p>STL formát <strong>neukládá jednotky</strong> — slicer předpokládá milimetry. Pokud váš model vyšel v palcích nebo centimetrech, bude tisk extrémně malý nebo velký. Vždy zkontrolujte v sliceru.</p>
+<h3>Orientace modelu</h3>
+<ul>
+<li>Nejdetailnější strana <strong>nahoru</strong></li>
+<li>Plochá strana <strong>dolů</strong></li>
+<li>Minimalizujte převisy nad 45°</li>
+<li>Síly zatížení <strong>napříč</strong> vrstvami</li>
+</ul>
+<h2>Krok 5: Příprava ve sliceru</h2>
+<p>Nejpoužívanější slicery: <strong>PrusaSlicer, Cura, Bambu Studio, OrcaSlicer</strong></p>
+<h3>Výška vrstvy</h3>
+<ul>
+<li>0,1 mm — vysoká kvalita</li>
+<li>0,2 mm — standard</li>
+<li>0,3 mm — rychlý tisk</li>
+</ul>
+<h3>Výplň (Infill)</h3>
+<ul>
+<li>10–20 % — dekorace</li>
+<li>30–50 % — funkční díly</li>
+<li>80–100 % — namáhané díly</li>
+</ul>
+<h3>Podpory</h3>
+<ul>
+<li>Zapněte nad 45°</li>
+<li>Tree supports — méně materiálu</li>
+<li>Touching buildplate</li>
+</ul>
+<h3>Brim / Raft</h3>
+<ul>
+<li>Brim — adheze drobných modelů</li>
+<li>Raft — pro ABS a problém. materiály</li>
+</ul>
+<h2>Nejčastější chyby začátečníků</h2>
+<p><strong>Špatné jednotky</strong> — export v palcích místo mm → model 25x větší nebo menší</p>
+<p><strong>Příliš tenké stěny</strong> — pod 0,8 mm se na FDM tiskárně nevytvoří správně</p>
+<p><strong>Ignorování převisů</strong> — bez podpor se převisy nad 45° propadnou</p>
+<p><strong>Špatná orientace</strong> — tisk figurky vleže místo vstoje může zničit detaily</p>
+<p><strong>Velké soubory</strong> — přes 100 MB znamená zbytečně vysoké rozlišení</p>
+<p><strong>Export bez kontroly</strong> — vždy zkontrolujte STL v opravném nástroji</p>
+<h2>Kdy si nechat STL připravit profesionálem?</h2>
+<p>Pokud nemáte zkušenost s CAD programy, potřebujete optimalizovat model nebo má model složité chyby — poptejte <strong>přípravu STL souboru u tiskárny přímo přes matplace.com</strong>. Mnoho tiskáren nabízí kromě tisku i přípravu modelu a opravu STL za přijatelnou cenu.</p>
+<a href="/tiskar/poptat">Poptat přípravu modelu</a>
+<h2>Často kladené otázky</h2>
+<h3>Jaký je rozdíl mezi STL a 3MF?</h3>
+<p>3MF je modernější formát, který uchovává barvy, materiály i metadata. Pro běžný tisk stačí STL, pro multibarevný tisk je výhodnější 3MF.</p>
+<h3>Jak velký by měl být STL soubor?</h3>
+<p>Pro běžný tisk obvykle 5–50 MB. Soubor přes 100 MB má pravděpodobně zbytečně vysoké rozlišení.</p>
+<h3>Můžu STL přímo poslat do tiskárny?</h3>
+<p>Ne, STL musí projít slicerem, který ho převede na G-kód — instrukce pro tiskárnu.</p>
+<h3>Co dělat, když nemám CAD program?</h3>
+<p>Použijte zdarma: <strong>Tinkercad</strong> (online, jednoduchý), <strong>Fusion 360</strong> (nekomerční použití), <strong>FreeCAD</strong> (open source) nebo <strong>Blender</strong> (organické tvary).</p>
+<h2>Potřebujete pomoct s přípravou nebo tiskem?</h2>
+<p>Na matplace.com najdete ověřené tiskárny po celé ČR. Stačí zadat poptávku zdarma a do 24 hodin dostanete nabídky.</p>
+<p>
+<a href="/tiskar/poptat">Poptat 3D tisk zdarma</a>
+<a href="/tiskarny">Zobrazit tiskárny</a>
+</p>

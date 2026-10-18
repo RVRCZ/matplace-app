@@ -1,2 +1,89 @@
-<!-- title: Array | excerpt: Array | cover: blog/20260512_204822_96fc073b.webp | published_at: 2026-05-12 20:48:31 -->
-Array
+<!-- lang: cs | title: Vytvoření STL z fotek pomocí AI: Kompletní návod pro 3D tisk (2026) | excerpt: Naučte se, jak vytvořit STL model z fotek pomocí AI a připravit ho na 3D tisk. Srovnání nástrojů, návod krok za krokem a praktické tipy pro kvalitní výsledek. | cover: blog/20260512_204822_96fc073b.webp | published_at: 2026-05-12 20:48:31 -->
+<p>Aktualizováno: 12. května 2026 · Doba čtení: ~7 minut</p>
+<figure>
+<figcaption>Zjednodušené schéma: AI promění sérii fotek v tisknutelný STL model.</figcaption>
+</figure>
+<p><strong>Vytvoření STL z fotek pomocí AI</strong> ještě před pár lety znělo jako sci-fi. Dnes stačí pár snímků z mobilu, jedna webová služba a během několika minut máte hotový 3D model připravený k tisku. V tomto článku si projdeme, jak celý proces funguje, jaké nástroje aktuálně dávají nejlepší výsledky a na co si dát pozor, aby vám tiskárna na FDM nebo resinu nevyhodila zmetek.</p>
+<strong>Obsah článku</strong>
+<ul>
+<li><a href="#co-je-stl">Co je STL a proč ho potřebujete</a></li>
+<li><a href="#jak-to-funguje">Jak AI vyrobí 3D model z fotek</a></li>
+<li><a href="#nastroje">Nejlepší AI nástroje v roce 2026</a></li>
+<li><a href="#navod">Návod krok za krokem</a></li>
+<li><a href="#tipy-foceni">Tipy pro focení, které funguje</a></li>
+<li><a href="#priprava-tisk">Příprava modelu pro 3D tisk</a></li>
+<li><a href="#faq">Časté otázky</a></li>
+</ul>
+<h2>Co je STL a proč ho potřebujete</h2>
+<p>STL (Stereolithography) je <strong>standardní formát pro 3D tisk</strong>. Popisuje povrch objektu jako síť trojúhelníků a rozumí mu prakticky každý slicer — PrusaSlicer, Bambu Studio, Cura i Chitubox. Pokud chcete cokoliv vytisknout, potřebujete STL (případně modernější 3MF). Klasická cesta vede přes CAD software jako Fusion 360 nebo Blender, jenže to vyžaduje čas a dovednosti. AI tuhle zkratku zkrátila na pár kliknutí.</p>
+<h2>Jak AI vyrobí 3D model z fotek</h2>
+<p>Pod kapotou se kombinují dvě technologie:</p>
+<figure>
+<figcaption>Při focení obejděte předmět dokola a snímejte ho po 10–15 stupních z různých úhlů.</figcaption>
+</figure>
+<h3>Fotogrammetrie</h3>
+<p>Starší, ale stále silný přístup. Algoritmus porovná desítky až stovky fotek stejného objektu z různých úhlů, najde stejné body a z jejich posunů spočítá hloubku a tvar. Výsledkem je <strong>point cloud</strong>, který se pak převede na mesh a uloží jako STL.</p>
+<h3>Neural Radiance Fields (NeRF) a Gaussian Splatting</h3>
+<p>Modernější metoda. Neuronová síť se „naučí" scénu jako kontinuální funkci — pro každý bod v prostoru ví, jak má vypadat. Funguje i s méně fotkami a hůře osvětlenými předměty. Tuto technologii používá Luma AI, Polycam nebo Kiri Engine.</p>
+<h3>Generativní AI z jediné fotky</h3>
+<p>Nejnovější trend. Modely jako <strong>Tripo, Meshy, CSM nebo Hyper3D Rodin</strong> umí dohádat 3D model i z jednoho snímku. Skvělé pro hračky, figurky a stylizované objekty. U přesných replik reálných předmětů ale pořád vede klasická fotogrammetrie z více úhlů.</p>
+<h2>Nejlepší AI nástroje pro tvorbu STL v roce 2026</h2>
+<table>
+<thead>
+<tr><th>Nástroj</th><th>Typ</th><th>Cena</th><th>Pro koho</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Kiri Engine</strong></td><td>Mobil + web, fotogrammetrie + NeRF</td><td>Free + Pro</td><td>Začátečníci, rychlé skeny předmětů</td></tr>
+<tr><td><strong>Polycam</strong></td><td>Mobil (iOS/Android)</td><td>Free + Pro</td><td>Skenování v terénu, lokace, sochy</td></tr>
+<tr><td><strong>Luma AI</strong></td><td>Web, Gaussian Splatting</td><td>Free</td><td>Vizuálně náročné scény</td></tr>
+<tr><td><strong>Meshroom</strong></td><td>Desktop, open-source</td><td>Zdarma</td><td>Pokročilí, plná kontrola</td></tr>
+<tr><td><strong>Tripo / Meshy</strong></td><td>Generativní AI z 1 fotky</td><td>Free + kredity</td><td>Figurky, koncepty, hračky</td></tr>
+<tr><td><strong>RealityCapture</strong></td><td>Desktop, profi</td><td>Free pro neziskové použití</td><td>Maximální kvalita, velké projekty</td></tr>
+</tbody>
+</table>
+<p>
+<strong>Tip:</strong> Pokud začínáte, doporučuji Kiri Engine — má free verzi, mobilní aplikaci a STL export rovnou v ní. Nemusíte nic instalovat.
+</p>
+<h2>Návod krok za krokem: jak vytvořit STL z fotek pomocí AI</h2>
+<h3>1. Vyfoťte předmět</h3>
+<p>Postavte objekt na dobře osvětlené místo s rovnoměrným pozadím. Pohybujte se okolo něj a foťte zhruba po 10–15 stupních. Pro malý předmět stačí 40–60 fotek, pro větší objekt klidně 100+. Fotky musí mít překryv minimálně 60–70 %.</p>
+<h3>2. Nahrajte fotky do AI nástroje</h3>
+<p>V Kiri Engine, Polycamu nebo Lumě jednoduše vytvoříte nový projekt a fotky nahrajete. Cloud-based služby zvládnou výpočet za 5–30 minut podle počtu snímků.</p>
+<h3>3. Zkontrolujte výsledný mesh</h3>
+<p>Před exportem si model prohlédněte. Pokud má díry, šum okolo nebo chybějící části, vraťte se k focení. Většina nástrojů umí mesh oříznout a vyhladit přímo v rozhraní.</p>
+<h3>4. Exportujte jako STL</h3>
+<p>Vyberte formát <strong>STL</strong> (binary verze je menší než ASCII). Některé nástroje nabízejí i OBJ nebo GLB — pokud potřebujete texturu, použijte OBJ, ale pro samotný 3D tisk vám STL bohatě stačí.</p>
+<h3>5. Opravte mesh pro tisk</h3>
+<p>Stáhněte si zdarma <strong>Meshmixer</strong>, <strong>Blender</strong> nebo online <strong>Microsoft 3D Builder</strong>. Spusťte automatickou opravu — uzavřete díry, sjednoťte normály, vytvořte „watertight" geometrii. Bez tohoto kroku slicer často hází chyby.</p>
+<h2>Tipy pro focení, které opravdu funguje</h2>
+<ul>
+<li><strong>Rozptýlené světlo</strong> — vyhněte se přímému slunci a tvrdým stínům. Nejlepší je zatažený den nebo softbox.</li>
+<li><strong>Matný povrch</strong> — lesklé a průhledné objekty AI mate. Pomůže nástřik křídovým sprejem nebo trochou pudru.</li>
+<li><strong>Pevný foťák</strong> — stativ nebo gimbal výrazně zlepší ostrost. Rozmazané fotky algoritmus zahodí.</li>
+<li><strong>Texturované pozadí</strong> — položte pod předmět noviny nebo deku se vzorem. AI lépe pozná, odkud fotíte.</li>
+<li><strong>Foťte ve dvou výškách</strong> — jednou shora dolů (cca 45°) a podruhé z úrovně objektu. Pokryjete tak i spodní hrany.</li>
+</ul>
+<h2>Příprava modelu pro 3D tisk</h2>
+<p>Vygenerovaný STL bývá technicky funkční, ale často potřebuje doladit:</p>
+<ul>
+<li><strong>Měřítko</strong> — fotogrammetrie nezná reálnou velikost. Změřte referenční rozměr na předmětu a v sliceru ho nastavte.</li>
+<li><strong>Decimace</strong> — modely z AI mívají miliony trojúhelníků. Snižte počet na 100–500 tisíc, jinak slicer trpí.</li>
+<li><strong>Orientace na podložce</strong> — nakloňte model tak, aby měl co nejméně přesahů. Ušetří vám podpory a čas tisku.</li>
+<li><strong>Tloušťka stěn</strong> — pokud AI vyrobí tenké plochy pod 1 mm, ručně je v Blenderu zesilte (Solidify modifier).</li>
+</ul>
+<p>
+<strong>Tip pro resinové tiskaře:</strong> Před slicováním v Chituboxu vždy spusťte „Detect Islands" — AI modely občas obsahují plovoucí trojúhelníky, které by ve vaně způsobily smetí.
+</p>
+<h2>Časté otázky</h2>
+Kolik fotek skutečně potřebuji?
+Pro malý předmět 40–60, pro větší objekt 80–150. Méně než 30 obvykle nestačí na uzavřený mesh.
+Funguje to i z fotek z mobilu?
+Ano, moderní mobily (iPhone 12+, vlajkové lodě Samsungu, Pixely) mají kvalitu víc než dostatečnou. Důležitější je světlo a překryv snímků než megapixely.
+Můžu vytvořit STL z jedné jediné fotky?
+Generativní AI jako Tripo nebo Meshy to umí, ale výsledek je spíš odhad než přesná replika. Pro figurky a kreativní použití skvělé, pro funkční díly ne.
+Je to zdarma?
+Free verze stačí na běžné použití. Pro export ve vyšším rozlišení nebo více skenů měsíčně se platí 5–30 USD měsíčně podle nástroje.
+Jak je to s autorskými právy?
+Pokud skenujete vlastní předmět, máte volnou ruku. Skenování soch, designových výrobků nebo licencovaných figurek bez svolení je rizikové — komerční využití raději konzultujte.
+<h2>Závěr</h2>
+<p>Vytvoření STL z fotek pomocí AI dnes zvládne během dopoledne i absolutní začátečník. Stačí slušný mobil, trocha trpělivosti při focení a jeden z dostupných AI nástrojů — Kiri Engine pro start, Polycam pro mobilitu, Meshroom pro plnou kontrolu nebo Tripo pro generativní hrátky. Klíč k pěkně tisknutelnému modelu je v dobrých fotkách a pětiminutové opravě meshe před slicováním. Jakmile si proces jednou projdete, otevře se vám úplně nová cesta, jak digitalizovat svět kolem sebe a posílat ho rovnou do tiskárny.</p>
