@@ -202,10 +202,8 @@ class HowtoCutter
         $csHeight = count($csLines) * (int) round($cs * 1.3);
         $band = 2 * $pad + $csHeight + count($enLines) * (int) round($en * 1.3);
         $y = $short ? 1280 : (($seg['caption_at'] ?? 'bottom') === 'top' ? 0 : $h - $band);
-        $texts[$work.'_cs.txt'] = implode('
-', $csLines);
-        $texts[$work.'_en.txt'] = implode('
-', $enLines);
+        $texts[$work.'_cs.txt'] = implode("\n", $csLines);
+        $texts[$work.'_en.txt'] = implode("\n", $enLines);
         $on = sprintf("enable='lt(t,%s)'", VideoCut::number($seconds));
 
         return implode(',', [
@@ -240,8 +238,7 @@ class HowtoCutter
         $y = intdiv($h - $total, 2);
         $parts = [$bg];
         foreach ($blocks as [$lines, $size, $color, $suffix]) {
-            $texts[$work.$suffix.'.txt'] = implode('
-', $lines);
+            $texts[$work.$suffix.'.txt'] = implode("\n", $lines);
             $parts[] = $this->text($work.$suffix.'.txt', $size, $y, $color);
             $y += count($lines) * (int) round($size * 1.3) + $gap;
         }

@@ -116,9 +116,7 @@ class FarmVideos
         if ($video->youtube_id) {
             return $video;
         }
-        $video->fill(['path' => $path, 'title' => $title, 'description' => $variant === 'short' ? $description.'
-
-#Shorts' : $description, 'music' => $music,
+        $video->fill(['path' => $path, 'title' => $title, 'description' => $variant === 'short' ? $description."\n\n#Shorts" : $description, 'music' => $music,
             'meta' => ['name' => $name, 'variant' => $variant], 'status' => FarmVideo::STATUS_PENDING, 'error' => null, 'approved_at' => null])->save();
         if ($variant === 'wide') {
             $this->tellAdmin($video, null);   // one mail for the pair
