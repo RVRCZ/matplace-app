@@ -60,6 +60,11 @@ return [
         'snapshot_keep' => 1,               // snapshots kept per order (the last one is what people see)
         'terms_version' => '2026-10',
         'admin_email' => env('FARM_ADMIN_EMAIL', env('MAIL_FROM_ADDRESS')),
+        // ── what the operator is mailed about (OrderFlow::alertAdmin; one mail per event; Roman, 18 Oct 2026) ──
+        'notify_paid' => true,              // a customer paid: who, what, which spool, where it prints and when
+        'notify_printing' => true,          // an agent's printer began the first plate
+        'notify_done' => true,              // the last plate came off, with the camera's last picture
+        'notify_problem' => true,           // print failed, cancelled by the customer, start failed, printer offline, error pending, currency
 
         // ── product switches (the admin's value wins over .env; see App\Providers\AppServiceProvider) ──
         'marketplace' => (bool) env('FEATURE_MARKETPLACE', false),   // printers' marketplace: price lists, inquiries, quotes

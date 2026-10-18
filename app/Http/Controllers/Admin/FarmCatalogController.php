@@ -485,6 +485,10 @@ class FarmCatalogController extends Controller
         $data['marketplace'] = $request->boolean('marketplace');
         $data['farm_open'] = $request->boolean('farm_open');
         $data['farm_public'] = $request->boolean('farm_public');
+        // which events the operator is mailed about (OrderFlow::alertAdmin); a box left empty switches that kind off
+        foreach (['paid', 'printing', 'done', 'problem'] as $kind) {
+            $data['notify_'.$kind] = $request->boolean('notify_'.$kind);
+        }
         $data['delivery_modes'] = array_values(array_intersect(['packeta_point', 'packeta_home', 'pickup'], (array) $request->input('delivery_modes', []))) ?: ['packeta_point', 'packeta_home'];
         foreach ($data as $key => $value) {
             $settings->set($key, $value);

@@ -124,7 +124,7 @@ final class AgentService
                     $pending = $job->message === self::ERROR_PENDING;
                     if (! $pending) {
                         $job->fill(['status' => FarmPrintJob::STATUS_UNKNOWN, 'message' => self::ERROR_PENDING])->save();
-                        $this->flow->alertAdmin(__('farm.admin.mail.error_pending', ['number' => $order->number, 'printer' => $printer->name]), $order, [__('farm.admin.mail.error_pending_text')]);
+                        $this->flow->alertAdmin(__('farm.admin.mail.error_pending', ['number' => $order->number, 'printer' => $printer->name], 'cs'), $order, [...$this->flow->orderLines($order), __('farm.admin.mail.error_pending_text', [], 'cs')]);
                         break;
                     }
                     if ($job->updated_at && $job->updated_at->gt(now()->subSeconds(60))) {
@@ -151,7 +151,8 @@ final class AgentService
         if (! $ok && $command->type === FarmCommand::TYPE_START && $job && $job->isActive()) {
             // nothing was started: the order goes back to the queue and waits for a person, the plate state is unknown
             $job->update(['status' => FarmPrintJob::STATUS_FAILED, 'message' => $command->result, 'finished_at' => now()]);
-            $this->flow->alertAdmin(__('farm.admin.mail.start_failed', ['printer' => $command->printer->name]), $job->order, [(string) $command->result]);
+            $this->flow->alertAdmin(__('farm.admin.mail.start_failed', ['number' => $job->order->number, 'printer' => $command->printer->name], 'cs'), $job->order,
+                [...$this->flow->orderLines($job->order), __('farm.admin.mail.line_what', ['what' => (string) $command->result], 'cs'), __('farm.admin.mail.line_next_start_failed', [], 'cs')]);
             Log::warning('Farm start command failed', ['command' => $command->id, 'message' => $message]);
         }
     }
@@ -180,9 +181,12 @@ final class AgentService
             $recently = $printer->offline_alerted_at !== null && $printer->offline_alerted_at->gt(now()->subHours(self::ALERT_GAP_HOURS));
             $tell = ($printer->last_seen_at !== null || $jobs->isNotEmpty()) && ($jobs->isNotEmpty() || ! $recently);
             if ($tell) {
-                $this->flow->alertAdmin(__('farm.admin.mail.offline', ['printer' => $printer->name]), $jobs->first()?->order, [
-                    __('farm.admin.mail.offline_since', ['time' => $printer->last_seen_at?->format('j. n. H:i') ?? '—']),
-                ]);
+                $order = $jobs->first()?->order;
+                $this->flow->alertAdmin(
+                    $order ? __('farm.admin.mail.offline_order', ['number' => $order->number, 'printer' => $printer->name], 'cs') : __('farm.admin.mail.offline', ['printer' => $printer->name], 'cs'),
+                    $order,
+                    [...($order ? $this->flow->orderLines($order) : []), __('farm.admin.mail.offline_since', ['time' => $printer->last_seen_at?->format('j. n. H:i') ?? '—'], 'cs')],
+                );
                 $count++;
             }
             $printer->update(['offline_notified_at' => now(), 'offline_alerted_at' => $tell ? now() : $printer->offline_alerted_at, 'state' => FarmPrinter::STATE_UNKNOWN]);

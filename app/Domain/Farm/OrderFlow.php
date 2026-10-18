@@ -16,13 +16,17 @@ use App\Models\FarmPrintJob;
 use App\Models\Payment;
 use App\Support\Money;
 use App\Support\Track;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * The only place an order changes its status. Every move checks the allowed transitions, writes the history,
- * moves the credit (hold → capture / give back) and tells the customer.
+ * moves the credit (hold → capture / give back), tells the customer and – for a payment, the first plate starting
+ * on an agent's machine, the last plate done, a failure or the customer's cancellation – the operator (alertAdmin).
  */
 final class OrderFlow
 {
@@ -31,6 +35,15 @@ final class OrderFlow
         FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING, FarmOrder::STATUS_DONE,
         FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_FAILED, FarmOrder::STATUS_CANCELLED,
     ];
+
+    /** The kinds of mail the operator can switch off one by one in the farm's settings (`notify_<kind>`). */
+    public const ADMIN_KINDS = ['paid', 'printing', 'done', 'problem'];
+
+    /** A camera picture bigger than this is shrunk before it rides along with the "done" mail, or left out. */
+    public const SNAPSHOT_MAX_BYTES = 300 * 1024;
+
+    /** The order being paid right now: what its queueing would say goes into the one "paid" mail, not into a second one. */
+    private ?int $paying = null;
 
     public function __construct(private readonly Wallet $wallet, private readonly FarmSettings $settings, private readonly OrderService $orders, private readonly Shipping $shipping, private readonly ShippingCarrier $carrier) {}
 
@@ -134,17 +147,26 @@ final class OrderFlow
         });
 
         $wanted = PrintProfile::for($offer['printer'], $offer['color']->material, $offer['color'])->sliceFingerprint();
-        if ($wanted !== ($order->slice_params['profile_fingerprint'] ?? null) || $offer['printer']->id !== $slicedFor) {
-            // this spool (or this kind on this machine) prints with other slicer settings than the order was sliced with,
-            // or sits in another machine: slice again, the paid order waits meanwhile (the price stays as quoted)
-            $order->forceFill(['status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'slicing'])->save();
-            $order->events()->create(['from' => FarmOrder::STATUS_PAID, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'system', 'note' => $offer['printer']->id !== $slicedFor ? 'reslice for '.$offer['printer']->key : 'reslice for the tuned profile']);
-            PrepareFarmOrder::dispatch($order->id);
-        } elseif ($this->settings->get('require_approval')) {
-            $this->alertAdmin(__('farm.admin.mail.approve', ['number' => $order->number]), $order);
-        } else {
-            $this->move($order, FarmOrder::STATUS_QUEUED, 'system');
+        $this->paying = $order->id;
+        try {
+            if ($wanted !== ($order->slice_params['profile_fingerprint'] ?? null) || $offer['printer']->id !== $slicedFor) {
+                // this spool (or this kind on this machine) prints with other slicer settings than the order was sliced with,
+                // or sits in another machine: slice again, the paid order waits meanwhile (the price stays as quoted)
+                $order->forceFill(['status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'slicing'])->save();
+                $order->events()->create(['from' => FarmOrder::STATUS_PAID, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'system', 'note' => $offer['printer']->id !== $slicedFor ? 'reslice for '.$offer['printer']->key : 'reslice for the tuned profile']);
+                PrepareFarmOrder::dispatch($order->id);
+                $situation = 'reslice';
+            } elseif ($this->settings->get('require_approval')) {
+                $situation = 'approval';   // the "paid" mail says so; no second mail about the approval
+            } else {
+                $this->move($order, FarmOrder::STATUS_QUEUED, 'system');
+                $situation = 'queued';
+            }
+        } finally {
+            $this->paying = null;
         }
+        // one mail to the operator per payment: who, what, which spool, where it prints and when (or what it waits for)
+        $this->adminPaid($order->refresh(), $situation);
 
         return $order->refresh();
     }
@@ -232,6 +254,7 @@ final class OrderFlow
         if (in_array($to, self::NOTIFY, true) && $order->paid_at !== null) {
             $this->notifyCustomer($order);
         }
+        $this->adminEvent($order, $to, $actor);
 
         return $order;
     }
@@ -241,10 +264,7 @@ final class OrderFlow
     {
         $order->forceFill(['error' => $code, 'error_detail' => $detail, 'stage' => null]);
         if ($order->canMoveTo(FarmOrder::STATUS_FAILED)) {
-            $this->move($order, FarmOrder::STATUS_FAILED, $actor, $actorId, $code);   // keeps the error: only other targets clear it
-            if ($order->paid_at !== null) {
-                $this->alertAdmin(__('farm.admin.mail.failed', ['number' => $order->number, 'reason' => $code]), $order);
-            }
+            $this->move($order, FarmOrder::STATUS_FAILED, $actor, $actorId, $code);   // keeps the error: only other targets clear it; the operator's mail goes from move()
         } else {
             $order->save();
         }
@@ -275,8 +295,10 @@ final class OrderFlow
     {
         if ($order->printer) {
             app(Dispatcher::class)->kick($order->printer);
-            if (! $order->printer->isAgentDriven()) {
-                $this->alertAdmin(__('farm.admin.mail.manual', ['number' => $order->number, 'printer' => $order->printer->name]), $order);
+            // a manual machine: a person must start the print. Said in the "paid" mail when the order is being paid right
+            // now (and that mail goes out); on its own after an approval, a new slice or a return to the queue
+            if (! $order->printer->isAgentDriven() && ($this->paying !== $order->id || ! $this->settings->get('notify_paid'))) {
+                $this->alertAdmin($this->t('manual', ['number' => $order->number, 'printer' => $order->printer->name]), $order, [...$this->orderLines($order), $this->t('line_manual_start')], 'printing');
             }
         }
     }
@@ -364,17 +386,247 @@ final class OrderFlow
         }
     }
 
-    public function alertAdmin(string $subject, ?FarmOrder $order = null, array $lines = []): void
+    /**
+     * A mail to the operator (`admin_email`), queued like the customer's; nothing goes out without an address or when
+     * the admin switched that kind off (`notify_paid` … `notify_problem` in the farm's settings). Only the mail's
+     * failure is logged; the farm never stops for it.
+     *
+     * @param  string[]  $lines
+     * @param  string  $kind  paid | printing | done | problem (ADMIN_KINDS)
+     * @param  string|null  $attachment  a JPEG to ride along (the camera's last picture)
+     */
+    public function alertAdmin(string $subject, ?FarmOrder $order = null, array $lines = [], string $kind = 'problem', ?string $attachment = null): void
     {
         $to = (string) $this->settings->get('admin_email');
-        if ($to === '') {
+        if ($to === '' || ! $this->settings->get('notify_'.$kind)) {
             return;
         }
         try {
-            Mail::to($to)->queue(new FarmAdminAlert($subject, $lines, $order ? route('admin.farm.orders.show', $order) : route('admin.farm.printers')));
+            Mail::to($to)->queue(new FarmAdminAlert($subject, $lines, $order ? route('admin.farm.orders.show', $order) : route('admin.farm.printers'), $kind, $attachment));
         } catch (\Throwable $e) {
             Log::warning('Farm admin mail failed', ['error' => $e->getMessage()]);
         }
+    }
+
+    // ── the operator's mails about one order ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * What a status change means for the operator. The status machine fires once per transition, so one event is one
+     * mail: an agent reporting "printing" every few seconds moves the order only the first time (AgentService), and a
+     * print of several plates says "printing" at its first plate and "done" after its last (plateFinished).
+     */
+    private function adminEvent(FarmOrder $order, string $to, string $actor): void
+    {
+        if ($to === FarmOrder::STATUS_PRINTING && (int) $order->plates_done === 0 && $order->printer?->isAgentDriven()) {
+            $this->adminPrinting($order);      // a manual machine was started by the operator: nothing to tell
+        } elseif ($to === FarmOrder::STATUS_DONE) {
+            $this->adminDone($order);
+        } elseif ($to === FarmOrder::STATUS_FAILED && $order->paid_at !== null) {
+            $this->adminFailed($order);
+        } elseif ($to === FarmOrder::STATUS_CANCELLED && $actor === 'user' && $order->paid_at !== null) {
+            $this->adminCancelled($order);
+        }
+    }
+
+    /** @param string $situation queued | approval | reslice – what happened to the order right after the payment */
+    private function adminPaid(FarmOrder $order, string $situation): void
+    {
+        $lines = $this->orderLines($order);
+        $lines[] = $this->t('line_copies', ['n' => $order->copies]).($order->plates > 1 ? ', '.$this->t('line_plates', ['n' => $order->plates]) : '');
+        if ($total = $order->total()) {
+            $lines[] = $this->t('line_price', ['total' => $total->format()]);
+        }
+        $lines[] = $this->t('line_delivery', ['how' => $this->deliveryText($order)]);
+        if ($order->note) {
+            $lines[] = $this->t('line_note', ['note' => mb_substr($order->note, 0, 300)]);
+        }
+        $lines[] = $this->queueLine($order, $situation);
+        if ($situation === 'queued' && $order->printer && ! $order->printer->isAgentDriven()) {
+            $lines[] = $this->t('line_manual_start');
+        }
+        $subject = match ($situation) {
+            'approval' => $this->t('paid_approval', ['number' => $order->number]),
+            'reslice' => $this->t('paid_reslice', ['number' => $order->number, 'printer' => (string) $order->printer?->name]),
+            default => $this->t('paid', ['number' => $order->number]),
+        };
+        $this->alertAdmin($subject, $order, $lines, 'paid');
+    }
+
+    private function adminPrinting(FarmOrder $order): void
+    {
+        $lines = $this->orderLines($order);
+        if ($order->plates > 1) {
+            $lines[] = ucfirst($this->t('line_plate', ['n' => $order->nextPlate(), 'of' => $order->plates]));
+        }
+        if ($e = app(Dispatcher::class)->estimate($order, $this->settings)) {
+            $lines[] = $this->t('line_finish', ['in' => self::duration($e['finish_in']), 'at' => $this->clock(now()->addMinutes($e['finish_in']))]);
+        }
+        $this->alertAdmin($this->t('printing', ['number' => $order->number, 'printer' => (string) $order->printer?->name]), $order, $lines, 'printing');
+    }
+
+    private function adminDone(FarmOrder $order): void
+    {
+        $minutes = (int) ($order->actual_minutes ?? $order->est_minutes ?? 0);
+        $lines = $this->orderLines($order);
+        $lines[] = $this->t('line_duration', ['duration' => self::duration($minutes)]).($order->actual_minutes === null ? ' '.$this->t('estimated') : '');
+        if ($grams = $order->actual_grams ?? $order->est_grams) {
+            $lines[] = $this->t('line_filament', ['grams' => round((float) $grams)]).($order->actual_grams === null ? ' '.$this->t('estimated') : '');
+        }
+        $lines[] = match (true) {
+            $order->isTest() => $this->t('line_next_test'),
+            $order->isParcel() => $this->t('line_next_parcel', ['where' => $this->deliveryText($order)]),
+            default => $this->t('line_next_pickup'),
+        };
+        $snapshot = $this->snapshotFor($order);
+        if ($snapshot) {
+            $lines[] = $this->t('line_snapshot');
+        }
+        $this->alertAdmin($this->t('done', ['number' => $order->number, 'printer' => (string) $order->printer?->name, 'duration' => self::duration($minutes)]), $order, $lines, 'done', $snapshot);
+    }
+
+    private function adminFailed(FarmOrder $order): void
+    {
+        $code = (string) ($order->error ?: 'failed');
+        $what = Lang::has('farm.admin.mail.reason.'.$code, 'cs') ? $this->t('reason.'.$code) : (Lang::has('farm.error.'.$code, 'cs') ? Lang::get('farm.error.'.$code, [], 'cs') : $code);
+        $job = $order->latestJob();
+        $lines = $this->orderLines($order);
+        $lines[] = $this->t('line_what', ['what' => trim($what.' '.($order->error_detail ? '('.$order->error_detail.')' : ''))]);
+        if ($job) {
+            $where = ($order->printer?->name ?? '—').($order->plates > 1 ? ', '.$this->t('line_plate', ['n' => $job->plate, 'of' => $order->plates]) : '').', '.$this->t('line_progress', ['percent' => round((float) $job->progress)]);
+            $lines[] = $this->t('line_where', ['where' => $where]);
+        }
+        $lines[] = $this->t('line_next_failed');
+        $this->alertAdmin($this->t('failed', ['number' => $order->number, 'reason' => $code]), $order, $lines, 'problem');
+    }
+
+    private function adminCancelled(FarmOrder $order): void
+    {
+        $price = (array) $order->price;
+        $kept = (float) ($price['charged_on_cancel'] ?? 0);
+        $percent = (float) ($price['printed_percent'] ?? 0);
+        $currency = (string) ($order->currency ?: Money::CZK);
+        $lines = $this->orderLines($order);
+        $lines[] = $this->t('line_when', ['time' => $this->clock(now(), 'j. n. Y H:i')]);
+        $lines[] = $this->t('line_refund', ['amount' => Money::of(max(0.0, (float) $order->price_total - $kept), $currency)->format()]);
+        if ($kept > 0) {
+            $lines[] = $this->t('line_kept', ['amount' => Money::of($kept, $currency)->format(), 'percent' => round($percent)]);
+        }
+        $lines[] = $percent > 0 || $order->started_at ? $this->t('line_printed_yes', ['percent' => round($percent)]) : $this->t('line_printed_no');
+        $this->alertAdmin($this->t('cancelled', ['number' => $order->number]), $order, $lines, 'problem');
+    }
+
+    /**
+     * Who, what, which spools, which machine: the lines every mail about an order starts with.
+     *
+     * @return list<string>
+     */
+    public function orderLines(FarmOrder $order): array
+    {
+        $user = $order->user;
+        $who = trim(($user?->name ? $user->name.' ' : '').($user?->email ? '('.$user->email.')' : '')) ?: $this->t('guest');
+        $file = $order->modelFile;
+        $name = (string) ($file?->original_name ?: '—');
+        $lines = [
+            $this->t('line_customer', ['who' => $who]),
+            $file && $file->origin === 'tool' ? $this->t('line_model_tool', ['name' => $name, 'tool' => $file->kind()]) : $this->t('line_model', ['name' => $name]),
+        ];
+        if ($spools = $order->spoolText() ?: (string) $order->color?->name) {
+            $lines[] = $this->t('line_spools', ['spools' => $spools]);
+        }
+        if ($printer = $order->printer) {
+            $lines[] = $this->t('line_printer', ['printer' => $printer->name.' ('.$printer->shortCode().')', 'mode' => $this->t($printer->isAgentDriven() ? 'line_mode_agent' : 'line_mode_manual')]);
+        }
+
+        return $lines;
+    }
+
+    /** When the order starts and ends, as the queue sees it right after the payment. */
+    private function queueLine(FarmOrder $order, string $situation): string
+    {
+        if ($situation === 'reslice') {
+            return $this->t('line_queue_reslice', ['printer' => (string) $order->printer?->name]);
+        }
+        if ($situation === 'approval') {
+            return $this->t('line_queue_approval');
+        }
+        if ($order->printer && ! $order->printer->isAgentDriven()) {
+            return $this->t('line_queue_manual');
+        }
+        $e = app(Dispatcher::class)->estimate($order, $this->settings);
+        if (! $e) {
+            return $this->t('line_queue_unknown');
+        }
+        $finish = self::duration($e['finish_in']);
+
+        return match ($e['blocked']) {
+            'offline' => $this->t('line_queue_offline', ['finish' => $finish]),
+            'plate' => $this->t('line_queue_plate', ['finish' => $finish]),
+            default => $e['start_in'] <= 0 ? $this->t('line_queue_now', ['finish' => $finish]) : $this->t('line_queue_wait', ['start' => self::duration($e['start_in']), 'n' => $e['ahead'], 'finish' => $finish]),
+        };
+    }
+
+    /** "Výdejní místo: Z-BOX Praha 4 (CZ)", "Doručení domů: Dlouhá 1, Praha, 110 00 (CZ)", "Osobní odběr". */
+    private function deliveryText(FarmOrder $order): string
+    {
+        $a = (array) $order->shipping_address;
+        $label = Lang::get('farm.delivery.'.$order->delivery, [], 'cs');
+        $place = match ($order->delivery) {
+            Shipping::POINT => (string) ($a['pickup_point_name'] ?? ''),
+            Shipping::HOME => implode(', ', array_filter([$a['street'] ?? null, $a['city'] ?? null, $a['zip'] ?? null])),
+            default => '',
+        };
+        $place = trim($place.(! empty($a['country']) ? ' ('.$a['country'].')' : ''));
+
+        return $place !== '' ? $label.': '.$place : $label;
+    }
+
+    /**
+     * The camera's last picture of this print as a file to attach: as it is up to SNAPSHOT_MAX_BYTES, else shrunk to
+     * 1280 px beside it, else nothing (the mail says so by leaving the line out).
+     */
+    private function snapshotFor(FarmOrder $order): ?string
+    {
+        $job = $order->printJobs()->reorder()->whereNotNull('snapshot_path')->latest('id')->first();
+        $disk = Storage::disk(config('farm.disk'));
+        if (! $job || ! $disk->exists($job->snapshot_path)) {
+            return null;
+        }
+        $path = $disk->path($job->snapshot_path);
+        if (filesize($path) <= self::SNAPSHOT_MAX_BYTES) {
+            return $path;
+        }
+        if (! function_exists('imagecreatefromjpeg') || ! ($img = @imagecreatefromjpeg($path))) {
+            return null;
+        }
+        $width = imagesx($img);
+        if ($width > 1280) {
+            $img = imagescale($img, 1280) ?: $img;
+        }
+        $small = $disk->path($order->dir().'/snapshot_mail.jpg');
+        imagejpeg($img, $small, 70);
+        imagedestroy($img);
+
+        return is_file($small) && filesize($small) <= self::SNAPSHOT_MAX_BYTES ? $small : null;
+    }
+
+    /** The operator reads Czech whatever the customer's language was when the event happened. */
+    private function t(string $key, array $replace = []): string
+    {
+        return Lang::get('farm.admin.mail.'.$key, $replace, 'cs');
+    }
+
+    /** A time as the operator's clock shows it (the app runs in UTC). */
+    private function clock(\DateTimeInterface $at, string $format = 'H:i'): string
+    {
+        return Carbon::instance($at)->setTimezone((string) config('farm.operator_timezone', 'Europe/Prague'))->format($format);
+    }
+
+    /** "1 h 47 min", "12 min". */
+    public static function duration(int $minutes): string
+    {
+        $minutes = max(0, $minutes);
+
+        return $minutes >= 60 ? intdiv($minutes, 60).' h '.($minutes % 60).' min' : $minutes.' min';
     }
 
     /** F26-000123: year + running number. */
