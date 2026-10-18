@@ -246,10 +246,30 @@ stribor/anycubic_kobrax, Rinkhals, hass-anycubic_cloud); ověření příkazů n
   jako u Kobra S1 bez `motion_report`, nafotí sérii snímků (okno 2,5 s + dwell + 0,8 s, po 0,3 s) a pošle nejklidnější.
   Agent se nemění. Návrh: C1 `dwell` 3000 ms v adminu (parametr tiskárny), až to měření potvrdí (§7d).
 
-### 7d. Ověření na tiskárně – čeká na Romanovo svolení v okně session 4
+### 7c'. Kamera: stream musí číst vlastní socket, ne HTTP vrstva ffmpeg
 
-1. Světlo: `light(True)`/`light(False)` a `light query` mezi tím.
-2. Sušení: `dry(True, 45, 10)`, `getInfo` po minutě (teplota, zbývající čas, jednotka), `dry(False)`.
-3. Parkovací kostka `kx-cube10-park.gcode` (od řídící; dwell 1000) a varianta s dwell 3000 (`G4 P3000`, hlavička
-   `dwell=3000`): start přes ovladač, při každé ohlášené změně vrstvy série snímků po 0,3 s s časem od hlášení,
-   výběr nejklidnějšího (`pick_still` z agenta); kolik z 49 parků má vybraný snímek hlavu v parku.
+První měření parkování (16:24) dalo z každé série jen **jeden** snímek, ~10 s po hlášení vrstvy: `snapshot()` 0.2.0
+otvíral `av.open(http://…:18088/live/<id>)` pro každý snímek a první snímek trval ~10 s. Příčina (16:32–16:40,
+`scratchpad/kx_stream_raw.py`, `kx_stream_fileobj.py`): tiskárna streamuje **živě a hned** (HTTP 206, `video/x-flv`,
+souvisle ~43 kB/s, jedna hlavička FLV na začátku, 10 snímků/s H.264 1280×720), ale ffmpeg přes svůj HTTP čtenář
+stream ~10 s sonduje, pak vydá dávku ~100 nasbíraných snímků a na dalších paketech padá („Invalid data found“ /
+„Immediate exit requested“) – i po `video/startCapture` (tiskárna odpoví `initSuccess`, `joinSuccess`,
+`pushStarted`; `stopCapture` → `pushStopped`; na obsah streamu v LAN to vliv nemá, stream jede bez něj).
+Řešení v ovladači (`_StreamBody`, `Camera`): tělo HTTP odpovědi čte vlastní socket a PyAV dostane souborový objekt
+s `format="flv"`, `probesize 65536`, `analyzeduration 0`, `fflags nobuffer`; vadný paket se přeskočí. Stream drží
+vlákno, dokud někdo chce snímky (zavře se po 20 s bez požadavku). Změřeno (`kx_cam_timing.py`): první snímek
+**3,6–4,1 s** po otevření (čeká na klíčový snímek), další **okamžitě** (0,00–0,02 s) a vždy čerstvé; po 25 s nečinnosti
+znovu 4,1 s. Při tisku agent chce snímky každých 15 s, takže stream zůstává otevřený a série po 0,3 s jsou skutečné.
+
+### 7d. Ověření na tiskárně (18. 10. 2026 od 16:22, Romanovo „proveď zkoušky“ v okně session 4, C1 ruční)
+
+1. **Světlo** (`scratchpad/kx_light_dry_test.py`): `light(True)` → za 2 s `light query` `status 1` → telemetrie
+   `light: on`; `light(False)` → `off`. Funguje; výchozí `light: true`.
+2. **Sušení**: `dry(True, 45, 10)` → tiskárna odpověděla `success`; `getInfo` po 10–60 s: `drying_status {status 1,
+   target_temp 45, duration 600, remain_time 9}`, box `temp 29`, `humidity 36–37` → telemetrie `dryer_state drying`,
+   `dryer_target 45`, `dryer_remain_min 9`, `dryer_temp 29`, `dryer_rh 37`. Jednotky: v příkazu `duration` = **minuty**,
+   v hlášení `duration` = sekundy a `remain_time` = **minuty**. Za minutu se box neohřál (29 °C), ACE hřeje pomalu.
+   `dry(False)` → `drying_status` vše 0, telemetrie `off`. Rozsahy z displeje (PLA 45 °C, PETG 55 °C, max. minuty)
+   jsem nečetla; ovladač posílá, co mu nástěnka dá.
+3. **Parkovací kostka** (`kx-cube10-park.gcode`, dwell 1000, a varianta dwell 3000; `scratchpad/kx_timelapse_test.py`
+   = ovladač + emulace série snímků agenta, bez vyrovnání podložky, 12 parků a zrušení): výsledek níže.

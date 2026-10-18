@@ -26,6 +26,7 @@ import io
 import json
 import logging
 import os
+import socket
 import threading
 import time
 import uuid
@@ -240,6 +241,7 @@ class AnycubicLanDriver(PrinterDriver):
         self.busy_retry = float(options.get("busy_retry", 5))
         self.retry_seconds = float(options.get("retry_seconds", 30))
         self.camera = bool(options.get("camera", True))
+        self._camera: Optional[Camera] = None
         self.use_light = bool(options.get("light", True))
         # tests hand in a fake link (no network); the real one is KobraLink
         self._make_link: Callable[[str, Callable], KobraLink] = options.get("_link") or (lambda ip, cb: KobraLink(ip, cb))
@@ -269,6 +271,9 @@ class AnycubicLanDriver(PrinterDriver):
     async def close(self) -> None:
         if self._task:
             self._task.cancel()
+        if self._camera:
+            self._camera.stop()
+            self._camera = None
         if self._link:
             await asyncio.to_thread(self._link.close)
             self._link = None
@@ -442,11 +447,18 @@ class AnycubicLanDriver(PrinterDriver):
         return PrinterStatus(printer_state, {k: v for k, v in telemetry.items() if v not in (None, "")}, job)
 
     async def snapshot(self) -> Optional[bytes]:
+        """The latest picture of the printer's camera stream. The stream is kept open while pictures are wanted (a
+        burst of them for the layer time-lapse needs one every 0.3 s; opening the stream takes ~10 s, the first key
+        frame) and closed after 20 s without a request."""
         url = self._urls.get("rtspUrl")
         if not self.camera or not url:
             return None
+        if self._camera is None or self._camera.url != url:
+            if self._camera:
+                self._camera.stop()
+            self._camera = Camera(url, f"cam-{self.key}")
         try:
-            return await asyncio.wait_for(asyncio.to_thread(_flv_frame, url), timeout=20)
+            return await asyncio.wait_for(asyncio.to_thread(self._camera.frame), timeout=20)
         except Exception as e:  # noqa: BLE001 - a missing picture never disturbs a print
             log.debug("%s: snapshot failed: %s", self.key, e)
             return None
@@ -710,16 +722,120 @@ def _base_name(name: str) -> str:
     return os.path.basename(name.replace("\\", "/"))
 
 
-def _flv_frame(url: str) -> Optional[bytes]:
-    """The first picture of the printer's HTTP-FLV stream as JPEG (PyAV decodes H.264 without an ffmpeg install)."""
-    try:
-        import av  # noqa: WPS433 - optional
-    except ImportError:
-        log.debug("PyAV is not installed: no camera picture")
-        return None
-    with av.open(url, options={"rw_timeout": "8000000"}, timeout=10) as container:
-        for frame in container.decode(video=0):
-            buf = io.BytesIO()
-            frame.to_image().save(buf, format="JPEG", quality=80)
-            return buf.getvalue()
-    return None
+class _StreamBody:
+    """The body of the printer's HTTP-FLV stream as a file object for PyAV. ffmpeg's own HTTP reader probes the
+    stream for ~10 s, then hands over a burst of a hundred frames and fails on the next ones (Kobra X, 18 Oct 2026);
+    fetched by a plain socket and demuxed as FLV with a short probe, the stream decodes live at 10 pictures a second,
+    the first one ~4 s after the connection (the first key frame)."""
+
+    def __init__(self, url: str, timeout: float = 15.0):
+        parts = url.split("/", 3)                     # http: / / host:port / path
+        host, _, port = parts[2].partition(":")
+        self.sock = socket.create_connection((host, int(port or 80)), timeout=timeout)
+        self.sock.sendall(f"GET /{parts[3] if len(parts) > 3 else ''} HTTP/1.1\r\nHost: {parts[2]}\r\nUser-Agent: matplace-farm-agent\r\nAccept: */*\r\n\r\n".encode())
+        head = b""
+        while b"\r\n\r\n" not in head:
+            more = self.sock.recv(4096)
+            if not more:
+                raise OSError("the camera stream closed before its headers")
+            head += more
+        status, _, self._rest = head.partition(b"\r\n\r\n")
+        if b" 200 " not in status[:20] and b" 206 " not in status[:20]:
+            first_line = status.split(b"\r\n", 1)[0].decode("latin-1")
+            raise OSError(f"camera stream: {first_line}")
+
+    def read(self, n: int = -1) -> bytes:
+        if self._rest:
+            out, self._rest = (self._rest[:n], self._rest[n:]) if n > 0 else (self._rest, b"")
+            return out
+        return self.sock.recv(n if n > 0 else 65536)
+
+    def close(self) -> None:
+        try:
+            self.sock.close()
+        except OSError:
+            pass
+
+
+class Camera:
+    """The printer's HTTP-FLV camera stream (H.264, decoded by PyAV without an ffmpeg install, see _StreamBody), read
+    in a thread of its own while pictures are wanted: the latest frame is always at hand, so a picture costs nothing
+    but the JPEG encoding - the layer time-lapse takes a burst of them 0.3 s apart. Without a request for
+    `idle_seconds` the stream is closed; the next request opens it again (~4 s to the first picture)."""
+
+    def __init__(self, url: str, name: str, idle_seconds: float = 20.0):
+        self.url = url
+        self.name = name
+        self.idle_seconds = idle_seconds
+        self._lock = threading.Lock()
+        self._ready = threading.Condition(self._lock)
+        self._frame = None            # the latest decoded frame
+        self._seq = 0
+        self._jpeg: Optional[tuple[int, bytes]] = None
+        self._wanted = 0.0            # when a picture was last asked for
+        self._thread: Optional[threading.Thread] = None
+        self._stop = threading.Event()
+        self._error: Optional[str] = None
+
+    def frame(self, wait: float = 15.0) -> Optional[bytes]:
+        """The latest picture as JPEG; starts the stream when it is not running and waits for its first frame."""
+        with self._lock:
+            self._wanted = time.monotonic()
+            if not self._thread or not self._thread.is_alive():
+                self._stop.clear()
+                self._frame, self._error = None, None
+                self._thread = threading.Thread(target=self._run, name=self.name, daemon=True)
+                self._thread.start()
+            deadline = time.monotonic() + wait
+            while self._frame is None and self._error is None and time.monotonic() < deadline:
+                self._ready.wait(deadline - time.monotonic())
+            if self._frame is None:
+                return None
+            if self._jpeg and self._jpeg[0] == self._seq:
+                return self._jpeg[1]
+            frame, seq = self._frame, self._seq
+        buf = io.BytesIO()
+        frame.to_image().save(buf, format="JPEG", quality=80)
+        with self._lock:
+            self._jpeg = (seq, buf.getvalue())
+        return buf.getvalue()
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def _run(self) -> None:
+        try:
+            import av  # noqa: WPS433 - optional
+        except ImportError:
+            with self._lock:
+                self._error = "PyAV is not installed: no camera picture"
+                self._ready.notify_all()
+            log.debug("%s", self._error)
+            return
+        body = None
+        try:
+            body = _StreamBody(self.url)
+            with av.open(body, format="flv", options={"probesize": "65536", "analyzeduration": "0", "fflags": "nobuffer"}) as container:
+                stream = container.streams.video[0]
+                stream.thread_type = "AUTO"
+                for packet in container.demux(stream):
+                    try:
+                        frames = packet.decode()
+                    except Exception:  # noqa: BLE001 - a damaged packet: the next key frame heals the picture
+                        continue
+                    for frame in frames:
+                        with self._lock:
+                            self._frame, self._seq = frame, self._seq + 1
+                            self._ready.notify_all()
+                    with self._lock:
+                        idle = time.monotonic() - self._wanted
+                    if self._stop.is_set() or idle > self.idle_seconds:
+                        break
+        except Exception as e:  # noqa: BLE001 - the stream went away: the next request opens it again
+            with self._lock:
+                self._error = f"{e.__class__.__name__}: {e}"
+                self._ready.notify_all()
+            log.debug("%s: camera stream ended: %s", self.name, e)
+        finally:
+            if body:
+                body.close()
