@@ -91,8 +91,17 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
         return Locales::supported($this->locale) ? $this->locale : Locales::DEFAULT;
     }
 
+    /**
+     * Set by the registration for a second account from the same address on the same day (docs/AH.md §10): the
+     * verification mail waits for "send again" on the account page, so a robot cannot make us mail strangers.
+     */
+    public bool $verificationMailWithheld = false;
+
     public function sendEmailVerificationNotification(): void
     {
+        if ($this->verificationMailWithheld) {
+            return;
+        }
         $this->notify(new VerifyEmailAddress);
     }
 

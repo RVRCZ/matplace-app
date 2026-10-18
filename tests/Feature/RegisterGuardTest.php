@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\VerifyEmailAddress;
 use App\Support\RegisterGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -17,15 +19,14 @@ class RegisterGuardTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** One registration from an address, as a browser sends it; signed out afterwards so the next one can come. */
+    /** One registration from an address, as a browser sends it, by a visitor who is signed out (the last one signed in). */
     private function register(string $email, string $ip = '31.56.204.42', array $extra = []): TestResponse
     {
-        $r = $this->withServerVariables(['REMOTE_ADDR' => $ip])
-            ->post('/register', ['name' => 'Test', 'email' => $email, 'password' => 'tajneheslo1', 'terms' => 1] + $extra + $this->registerStamp());
         Auth::logout();
         $this->flushSession();
 
-        return $r;
+        return $this->withServerVariables(['REMOTE_ADDR' => $ip])
+            ->post('/register', ['name' => 'Test', 'email' => $email, 'password' => 'tajneheslo1', 'terms' => 1] + $extra + $this->registerStamp());
     }
 
     public function test_an_address_makes_three_accounts_an_hour_and_five_a_day(): void
@@ -74,6 +75,32 @@ class RegisterGuardTest extends TestCase
             $this->assertNotSame('auth.guard.retry', __('auth.guard.retry', [], $locale));
             $this->assertNotSame('auth.guard.limited', __('auth.guard.limited', [], $locale));
         }
+    }
+
+    public function test_only_the_first_registration_from_an_address_today_gets_the_mail_at_once(): void
+    {
+        Notification::fake();
+        $this->register('first@example.com')->assertSessionHas('status', __('user.verify.registered', ['email' => 'first@example.com']));
+        $first = User::where('email', 'first@example.com')->firstOrFail();
+        Notification::assertSentTo($first, VerifyEmailAddress::class);
+
+        // the second account from the same address the same day: made, but no mail to a stranger's inbox
+        $this->register('second@gmail.com')->assertRedirect(route('account'))
+            ->assertSessionHas('status', __('user.verify.registered_ask', ['email' => 'second@gmail.com']));
+        $second = User::where('email', 'second@gmail.com')->firstOrFail();
+        Notification::assertNotSentTo($second, VerifyEmailAddress::class);
+        // another address mails at once again
+        $this->register('neighbour@example.com', '89.24.10.7');
+        Notification::assertSentTo(User::where('email', 'neighbour@example.com')->firstOrFail(), VerifyEmailAddress::class);
+
+        // the person behind the second account asks for it on the account page and gets it
+        $this->actingAs($second)->post(route('verification.send'))->assertRedirect();
+        Notification::assertSentTo($second, VerifyEmailAddress::class);
+
+        // the next day the address mails at once again
+        $this->travel(1)->days();
+        $this->register('tomorrow@example.com');
+        Notification::assertSentTo(User::where('email', 'tomorrow@example.com')->firstOrFail(), VerifyEmailAddress::class);
     }
 
     public function test_a_mistake_in_the_form_is_not_a_registration_and_ipv6_counts_by_its_64(): void

@@ -4,6 +4,7 @@ namespace App\Support;
 
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 
 /**
@@ -47,6 +48,15 @@ class RegisterGuard
         $age = ($now ?? now()->getTimestamp()) - (int) $m[1];
 
         return $age < self::MIN_SECONDS ? 'early' : ($age > self::MAX_SECONDS ? 'late' : null);
+    }
+
+    /**
+     * Is this the first registration from the address today? The first one gets the verification mail right away,
+     * the next ones only when the person asks for it on the account page (a robot then mails nobody).
+     */
+    public static function firstToday(Request $request): bool
+    {
+        return Cache::add('register-mail:'.self::ipKey($request).':'.now()->toDateString(), 1, now()->endOfDay());
     }
 
     /** The address a limit counts: IPv4 as it is, IPv6 by its /64 (one household or one server gets a whole /64). */

@@ -82,13 +82,19 @@ class AuthController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
         $this->claim($request);
-        // sends the verification e-mail (User::sendEmailVerificationNotification) in the language of the page
+        // sends the verification e-mail (User::sendEmailVerificationNotification) in the language of the page; a second
+        // account from the same address today gets it only on "send again" (RegisterGuard::firstToday)
+        $mailed = RegisterGuard::firstToday($request);
+        $user->verificationMailWithheld = ! $mailed;
+        if (! $mailed) {
+            Log::info('register: verification mail withheld', ['user' => $user->id, 'ip' => $request->ip()]);
+        }
         event(new Registered($user));
         // the same id goes to the pixel in the browser and to the Conversions API, so Meta counts the registration once
         Track::event('register', $user, ['kind' => 'email', 'event_id' => 'register-'.$user->id]);
         app(SocialPublisher::class)->conversion('register', 'register-'.$user->id, $request, $user->email);
 
-        return redirect()->intended(route('account'))->with('status', __('user.verify.registered', ['email' => $user->email]));
+        return redirect()->intended(route('account'))->with('status', __($mailed ? 'user.verify.registered' : 'user.verify.registered_ask', ['email' => $user->email]));
     }
 
     public function logout(Request $request): RedirectResponse
