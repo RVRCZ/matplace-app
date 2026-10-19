@@ -530,6 +530,10 @@ class AnycubicLanDriver(PrinterDriver):
             return
         if self._layer is None:
             self._layer = n
+        elif n == 0 and self._layer:
+            # while it changes the spool the printer reports layer 0 and then the real layer again (F26-000089,
+            # 19 Oct 2026, docs/AM.md §8b): not a new layer, the head is at the prime tower, not in the park
+            return
         elif n != self._layer:
             self._layer = n
             if n >= 2:      # the farm's G-code parks from the second layer on (TimelapseGcode skips the first marker)

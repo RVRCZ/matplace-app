@@ -480,6 +480,29 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(0.45)
             self.assertEqual((250.0, 250.0, 0.0), await d.head())
 
+    async def test_the_layer_0_reported_during_a_spool_change_is_not_a_new_layer(self):
+        async with FakePrinter() as p:
+            d = await self.driver(p, park_lead_min=0.0, park_lead=0.1, park_window_min=0.05)
+            await d.start(self.gcode(tool=1, park=True, dwell=3000), "mp40-badge.gcode", 1)
+            d._park = (d._park[0], d._park[1], 0.3, d._park[3], "")      # sure window 0.1-0.3 s after a layer report
+
+            def report(layer):
+                p.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"filename": "mp40-badge.gcode", "progress": 8, "curr_layer": layer}})
+
+            report(2)
+            await asyncio.sleep(0.15)
+            self.assertEqual((250.0, 250.0, 0.0), await d.head(), "layer 2: the park window opens")
+            await asyncio.sleep(0.3)
+            self.assertIsNone(await d.head())
+            # a spool change in the middle of layer 2: the printer says layer 0, then layer 2 again (F26-000089)
+            report(0)
+            report(2)
+            await asyncio.sleep(0.15)
+            self.assertIsNone(await d.head(), "back to the same layer after the change: no park, the head is at the prime tower")
+            report(3)
+            await asyncio.sleep(0.15)
+            self.assertEqual((250.0, 250.0, 0.0), await d.head(), "the next real layer parks as usual")
+
     def test_the_park_line_may_say_the_server_synced_the_layer_marker(self):
         from farm_agent.drivers.anycubic_lan import _park_of
         self.assertEqual((0.0, 130.0, 3.0, 200.0, "m400"), _park_of(b"; matplace timelapse park_x=0 park_y=130 dwell=3000 travel=200 frames=349 sync=m400\n; HEADER"))
