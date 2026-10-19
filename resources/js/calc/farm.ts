@@ -453,10 +453,16 @@ export function bootFarmOrder(): void {
         const hint0 = $('farm-second')?.querySelector<HTMLElement>('p');
         const list0 = $('farm-second-colors');
         const dot0 = (hex: string): string => `<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:${esc(hex)}"></span>`;
+        const colorTitle = $('farm-color-title');
+        if (colorTitle) colorTitle.textContent = colorTitle.dataset.plain ?? '';
         if (state.by_parts && (state.parts ?? []).length) {
             // printed by parts: every part takes this colour's spool or another spool of its machine – one plate for all of them
-            // when the machine changes spools itself, else one plate after another
-            const parts = state.parts ?? [];
+            // when the machine changes spools itself, else one plate after another. The first part (the plate, the box) is
+            // the colour chosen above: it has no row of its own below, the list above is named after it
+            const parts = (state.parts ?? []).slice(1);
+            const first = (state.parts ?? [])[0];
+            if (first) partSlots[first.part] = null;
+            if (colorTitle && first) colorTitle.textContent = `${colorTitle.dataset.plain ?? ''}: ${first.label}`;
             const all = c ? [{ slot: c.slot, name: c.name, kind: c.kind ?? '', hex: c.hex, photo: c.photo, code: c.code ?? null }, ...(c.second ?? [])] : [];
             // the spools of one machine only: a spool of another machine names that machine's first-colour slot as `main`, and
             // once a part took one, the other parts may pick that machine's spools alone (the last choice decides the machine)
@@ -498,6 +504,7 @@ export function bootFarmOrder(): void {
                     render();
                 }));
             }
+            paintTones();      // the model in the parts' colours right away, not only after the next slice
             return;
         }
         // a plate with a raised text, a picture in colours one on another: every change picks a spool of this machine
