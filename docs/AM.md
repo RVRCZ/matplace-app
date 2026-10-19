@@ -387,3 +387,39 @@ paint_color 255,215,0, ams_color barva cívky}, {paint 1, ams_index 6 (ACE 3), p
 `md5`/`filesize` balíčku, `auto_leveling 1`. Makro výměny: Slicer Next ho zapsal jen jako zakomentované řádky
 (`;;; G1 …`, `;;; M400 …`) kolem holého `T<n>` – změnu dělá firmware sám; `M600` je v souboru jen v komentáři
 `machine_pause_gcode`. Skutečný tisk: až po Romanově svolení v okně session 4, C1 v ručním režimu, odposlech vedle.
+
+### 8b. První dvoubarevná zakázka na Kobře X: F26‑000089 (19. 10. 2026 22:13–23:52, agent 0.2.5, odposlech `scratchpad/kx_sniff_medal.py` → `kx_medal.log`)
+
+Zkušební medaile (řídící: `print.hot.multi0to4_1to1-….gcode`, `; matplace filaments T0=4 T1=1`, tělo = slot 4 = ACE 2
+azuritová, vložka = slot 1 = Rack 2 červená, 22 vrstev, odhad 1 h 42 min, tiskárna hlásí `channel_no` = index pozice + 1,
+extfilbox `current_filament` = `<box>-<index>`: `0-1` Rack 2, `1-1` ACE 2). Start přes farmu prošel napoprvé (balíček,
+žádné odmítnutí), celý tisk bez zásahu; já jen poslouchala (Romanovo „odposlech ok“ v okně session 4).
+
+**Sekvence před tiskem** (delší než u kostky 18. 10.): 22:13:56 `extfilbox_filament_feeding` ch 2 (tiskárna napřed zavede
+cívku, která byla v hlavě z minula – Rack 2, ne barvu 0 z mapování) → `nozzle_purging` → 22:14:40 `nozzle_cooling` 180,
+`nozzle_wiping` → `nozzle_cooling` 140 → 22:15:16 `auto_leveling` → 22:17:29 **`z_offset_calibrating`** → `hotbed_cooling_off`
+→ `auto_leveling` → `hotbed_heating` 60 → **`frequency_sweeping`** → 22:17:57 `nozzle_heating` 230 → 22:18:33 druhé
+zavedení Rack 2 + `nozzle_purging` → 22:19:51 hlášena vrstva 1 (čtení napřed) → **22:20:24 `filament_cutting`** = první
+`T0` souboru (ř. 53, před první značkou vrstvy a čisticí čárou) → `extfilbox_filament_unfeeding` ch 2 → 22:20:38
+`ace_filament_feeding` unit 1 ch 2 → 22:21:22 `nozzle_purging` → 22:21:57 tisk vrstvy 1 azuritem. Nic se netisklo
+špatnou barvou (první extruze je čisticí čára za značkou vrstvy, po výměně). Dva nové stavy (`z_offset_calibrating`,
+`frequency_sweeping`) + `filament_cutting`, `extfilbox_filament_unfeeding`, `ace_filament_unfeeding`: ovladač je bere
+jako tisk (neznámý stav = tisk), ty s „filament“ jdou do telemetrie `spool_change`.
+
+**Výměny za běhu** (vše samo, firmware na holé `T<n>`; cut → odvedení → zavedení → proplach):
+| # | kdy | z → na | odvedení | zavedení | celkem |
+|---|-----|--------|----------|----------|--------|
+| 1 | 22:20:24 | Rack 2 → ACE 2 | rack 6 s | ACE 44 s | ~66 s |
+| 2 | 22:29:28 | ACE 2 → Rack 2 | **ACE 51 s** | rack 7 s | ~72 s |
+| 3 | 22:32:31 | Rack 2 → ACE 2 | rack 9 s | ACE 44 s | ~65 s |
+Odvedení z ACE trvá 51 s, z Racku 6–9 s; zavedení z ACE 44 s, z Racku 7 s. Před výměnou tiskárna nastaví teplotu
+nové cívky (`nozzle_heating 230` / `nozzle_cooling 225`). `multiColorBox` `loaded_slot`: Rack index 1 → −1 → ACE
+index 1 (telemetrie `spool`/`slot` ukazuje správnou cívku). Během výměny hlásí `curr_layer 0` a po ní zase
+skutečnou vrstvu (L2 → L0 → L2): ovladač 0.2.5 to bere jako novou vrstvu → agent udělá jeden snímek časosběru
+navíc s hlavou u věže (tady 2×); 0.2.6 hlášení vrstvy 0 po již viděné vrstvě ignoruje.
+
+**Konec:** 23:50:35 poslední plné hlášení `print_time 92`, `supplies_usage 13595` (mm, ≈ 40 g; Slicer 12,4 g u
+zkušebního souboru, u medaile jiný objem), 23:51:11 `hotbed_cooling_off`/`nozzle_cooling_off`, 23:52:15 holé
+`{filename, progress 0}`, 23:52:17 `finished` – přesně tvar, na který míří oprava 0.2.4: úloha má mít na serveru
+`print_duration_s 5520` a `filament_used_mm 13595` (řídící ověří). Celkem 98 min od startu (tiskárna 92 min od
+první vrstvy), odhad Sliceru 102 min.
