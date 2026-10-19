@@ -151,6 +151,9 @@ def facts_of(raw: bytes) -> Facts:
     f.paints = filaments_of(raw)
     lo, hi = _pair(config_value(raw, b"first_layer_print_min")), _pair(config_value(raw, b"first_layer_print_max"))
     f.bbox = (lo[0], lo[1], hi[0], hi[1])
+    if lo == hi == (0.0, 0.0):
+        # the Anycubic Slicer Next writes no first_layer_print lines (19 Oct 2026): the objects' outlines then
+        f.bbox = _bbox_of_objects(raw) or f.bbox
     f.height = _float(_header(raw, b"max_z_height"))
     f.layer_height = _float(config_value(raw, b"layer_height")) or 0.2
     f.nozzle = _float(config_value(raw, b"nozzle_diameter")) or 0.4
@@ -196,11 +199,12 @@ def filaments_of(raw: bytes) -> dict[int, int]:
     return {int(t): int(s) for t, s in re.findall(rb"T(\d+)=(\d+)", m.group(1))}
 
 
-def package(raw: bytes, colour: str, material: str, filaments: list | None = None) -> tuple[bytes, Facts]:
+def package(raw: bytes, colour: str, material: str, filaments: list | None = None, renumber: dict | None = None) -> tuple[bytes, Facts]:
     """The .gcode.3mf bytes for this G-code, printed in `colour` (#rrggbb) and `material` (PLA...) as paint 0, or in
-    `filaments` ((colour, material) per paint) when the plate has several."""
+    `filaments` ((colour, material) per paint) when the plate has several, its T<slot> lines renumbered to the paints
+    by `renumber` (slot -> paint)."""
     facts = facts_of(raw)
-    gcode = prepared_gcode(raw, colour, material, facts, filaments)
+    gcode = prepared_gcode(raw, colour, material, facts, filaments, renumber)
     paints = filaments or [(colour, material)]
     rgb = rgb_of(paints[0][0])
     big, small = _png(512, 512, rgb), _png(128, 128, rgb)
@@ -254,15 +258,19 @@ def package(raw: bytes, colour: str, material: str, filaments: list | None = Non
     return buf.getvalue(), facts
 
 
-def prepared_gcode(raw: bytes, colour: str, material: str, facts: Facts | None = None, filaments: list | None = None) -> bytes:
+def prepared_gcode(raw: bytes, colour: str, material: str, facts: Facts | None = None, filaments: list | None = None,
+                   renumber: dict | None = None) -> bytes:
     """The G-code as it goes into the package: the paint_info header line, the ams_info and statistics blocks at the
     end (each only when the file has none). One filament (`filaments` None): the T<n> GcodeSlot wrote becomes T0 and
-    `colour`/`material` are paint 0. Several (`filaments` = (colour, material) per paint, docs/AM.md §8): the T<n>
-    lines stay, they are the paints the start's mapping takes to the spools."""
+    `colour`/`material` are paint 0. Several (`filaments` = (colour, material) per paint, docs/AM.md §8): the farm
+    writes the spool's slot as T<slot> (Rinkhals takes that as it is), this firmware wants the paint, so every tool
+    line is renumbered by `renumber` (slot -> paint); the paints are what the start's mapping takes to the spools."""
     facts = facts or facts_of(raw)
     out = raw
     if filaments is None and facts.tool:
         out = re.sub(rb"^(\s*)T\d+\b", rb"\1T0", out, count=1, flags=re.M)
+    elif renumber:
+        out = re.sub(rb"^([ \t]*)T(\d+)\b", lambda m: m.group(1) + b"T%d" % renumber.get(int(m.group(2)), int(m.group(2))), out, flags=re.M)
     paints = filaments or [(colour, material)]
     info = json.dumps([{"material_type": m.split()[0].upper(), "paint_color": rgb_of(c), "paint_index": i} for i, (c, m) in enumerate(paints)],
                       separators=(",", ":")).encode()
@@ -324,6 +332,17 @@ def _float(text: str) -> float:
         return float(text.split(",")[0]) if text else 0.0
     except ValueError:
         return 0.0
+
+
+def _bbox_of_objects(raw: bytes) -> tuple[float, float, float, float] | None:
+    """x min, y min, x max, y max over the outlines of "EXCLUDE_OBJECT_DEFINE NAME=... POLYGON=[[x,y],...]" lines,
+    None when the file has none."""
+    xs, ys = [], []
+    for line in re.findall(rb"^EXCLUDE_OBJECT_DEFINE [^\r\n]*POLYGON=([^\r\n]*)", raw, re.M):
+        for x, y in re.findall(rb"\[(-?[\d.]+),(-?[\d.]+)\]", line):
+            xs.append(float(x))
+            ys.append(float(y))
+    return (min(xs), min(ys), max(xs), max(ys)) if xs else None
 
 
 def _pair(text: str) -> tuple[float, float]:

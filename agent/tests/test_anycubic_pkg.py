@@ -68,15 +68,15 @@ TWO = b"""; HEADER_BLOCK_START
 ; EXECUTABLE_BLOCK_START
 G9111 bedTemp=55 extruderTemp=225
 M117
-T0 ; colour by matplace farm
+T2 ; matplace slot for filament 0
 ; first_layer_print_min = 100,100
 ; first_layer_print_max = 140,120
 ;LAYER_CHANGE
 ;Z:0.2
 G1 X1 Y1 E1
-T1 ; colour by matplace farm
+T5 ; matplace slot for filament 1
 G1 X2 Y2 E1
-T0
+T2
 G1 X3 Y3 E1
 ; EXECUTABLE_BLOCK_END
 
@@ -100,19 +100,24 @@ G1 X3 Y3 E1
 class PackageTest(unittest.TestCase):
     def test_a_plate_of_several_filaments_keeps_its_tool_changes_and_names_every_paint(self):
         f = facts_of(TWO)
-        self.assertEqual(({0: 2, 1: 5}, [0, 1], 0, ["#F2754E", "#003594"], ["PLA", "PLA"], ["GFPLA", "GFPLA"]), (f.paints, f.tools, f.tool, f.colours, f.materials, f.filament_ids))
+        self.assertEqual(({0: 2, 1: 5}, [2, 5], 2, ["#F2754E", "#003594"], ["PLA", "PLA"], ["GFPLA", "GFPLA"]), (f.paints, f.tools, f.tool, f.colours, f.materials, f.filament_ids))
         self.assertEqual(([1.5, 0.25], [4.47, 0.75], 5.22), (f.metres_each, f.grams_each, f.grams))
         self.assertAlmostEqual(1.75, f.metres)
         self.assertEqual(({}, [1]), (filaments_of(ORCA), tools_of(ORCA)))
         self.assertEqual({0: 0, 1: 3, 2: 6}, filaments_of(b"; HEADER_BLOCK_START\n; matplace filaments T0=0 T1=3 T2=6\n"))
-        # the spools' colours and materials are the paints; the T lines stay as they are
-        g = prepared_gcode(TWO, "#000000", "PLA", filaments=[("#212721", "PLA Silk"), ("#658946", "PLA Metal")])
-        self.assertIn(b"\nT0 ; colour by matplace farm\n", g)
-        self.assertIn(b"\nT1 ; colour by matplace farm\nG1 X2 Y2 E1\nT0\n", g)
+        # a Slicer Next file has no first_layer_print lines: the outlines of the objects give the bounding box
+        self.assertEqual((95.0, 95.0, 155.0, 135.0), facts_of(b"EXCLUDE_OBJECT_DEFINE NAME=body_id_0_copy_0 CENTER=125,125 POLYGON=[[95,125],[155,125],[125,95]]\n"
+                                                              b"EXCLUDE_OBJECT_DEFINE NAME=inlay_id_1_copy_0 CENTER=125,125 POLYGON=[[122,115],[128,135]]\n").bbox)
+        # the paints' colours and the spools' materials; the file's T<slot> become T<paint>
+        g = prepared_gcode(TWO, "#000000", "PLA", filaments=[("#212721", "PLA Silk"), ("#658946", "PLA Metal")], renumber={2: 0, 5: 1})
+        self.assertIn(b"\nT0 ; matplace slot for filament 0\n", g)
+        self.assertIn(b"\nT1 ; matplace slot for filament 1\nG1 X2 Y2 E1\nT0\nG1 X3 Y3 E1\n", g)
+        self.assertNotIn(b"\nT2", g)
+        self.assertNotIn(b"\nT5", g)
         self.assertIn(b'; paint_info = [{"material_type":"PLA","paint_color":[33,39,33],"paint_index":0},{"material_type":"PLA","paint_color":[101,137,70],"paint_index":1}]\n; HEADER_BLOCK_END', g)
         self.assertIn(b"; ams_info = begin\n; paint_info = [{\"material_type\":\"PLA\",\"paint_color\":[33,39,33],\"paint_index\":0},{\"material_type\":\"PLA\",\"paint_color\":[101,137,70],\"paint_index\":1}]\n; ams_info = end", g)
         self.assertIn(b"; statistics = begin\n; used_filament = 1.75\n; print_time = 25m 10s\n; model_size = 40.00,20.00,4.00\n; total_layers = 50\n", g)
-        data, facts = package(TWO, "#000000", "PLA", filaments=[("#212721", "PLA Silk"), ("#658946", "PLA Metal")])
+        data, facts = package(TWO, "#000000", "PLA", filaments=[("#212721", "PLA Silk"), ("#658946", "PLA Metal")], renumber={2: 0, 5: 1})
         with zipfile.ZipFile(io.BytesIO(data)) as z:
             self.assertEqual(g, z.read("Metadata/plate_1.gcode"))
             plate = json.loads(z.read("Metadata/plate_1.json"))

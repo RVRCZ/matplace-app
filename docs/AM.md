@@ -340,21 +340,22 @@ na díl), `GcodeSlot` přemapuje `T<n>` na sloty a do hlavičky napíše `; matp
 Ovladač Kobra X k tomu:
 
 - **Čtení** (`anycubic_pkg.filaments_of`, `tools_of`, `config_values`): řádek `; matplace filaments` kdekoli v prvních
-  16 kB (i za řádkem časosběru) → `T<n>` → slot matplace; `tools_of` = všechna `T<n>` v souboru (změny uprostřed
-  tisku); z bloku CONFIG seznamy `filament_colour`, `filament_type`, `filament_ids` (oddělovač `;`) a z řádků
+  16 kB (i za řádkem časosběru) → barva `T<n>` → slot matplace; soubor sám vybírá cívky jako `T<slot>` (jediný tvar farmy,
+  Rinkhals ho bere přímo; `tools_of` = všechna `T<slot>` v souboru, změny uprostřed tisku); z bloku CONFIG seznamy `filament_colour`, `filament_type`, `filament_ids` (oddělovač `;`) a z řádků
   `filament used [mm]`/`[g]` spotřeba po extruderech (oddělovač `,`). Bez toho řádku vše jako dosud (jeden filament).
 - **Pozice** (`_paint_positions`): pro každou barvu `spool_at(slot)` – barva a materiál z cívky tiskárny (bez informací
-  o boxech slot = index Racku jako dosud). Odmítne **před nahráním**: mezera v barvách (`T0 T2`), `T<n>` v souboru bez
-  položky v řádku, slot mimo pozice (`T1: slot 10: the printer offers 7 spool positions (…)`).
-- **Soubor** (`prepared_gcode(filaments=…)`, `package(filaments=…)`): `T<n>` zůstávají (u jednoho filamentu dál
-  `T<n>` → `T0`); `paint_info` v hlavičce i v `ams_info` má položku na každou barvu (`paint_index` = n, barva a
-  materiál cívky); `slice_info.config` má `<filament id="n+1" … used_m used_g>` z řádků po extruderech, `plate_1.json`
+  o boxech slot = index Racku jako dosud). Odmítne **před nahráním**: mezera v barvách (`T0 T2`), dvě barvy z jednoho
+  slotu, `T<slot>` v souboru, který řádek nemapuje, slot mimo pozice (`T1: slot 10: the printer offers 7 spool positions (…)`).
+- **Soubor** (`prepared_gcode(filaments=…, renumber=…)`, `package(…)`): každý řádek `T<slot>` se přečísluje na
+  `T<barva>` (firmware čte `T<n>` jako barvu n, ověřeno 18. 10.; u jednoho filamentu dál `T<n>` → `T0`); `paint_info` v hlavičce i v `ams_info` má položku na každou barvu (`paint_index` = n, barva projektu,
+  materiál cívky; řádku, kterou už soubor má – Slicer Next ji píše sám – nechá); `slice_info.config` má `<filament id="n+1" … used_m used_g>` z řádků po extruderech, `plate_1.json`
   `filament_colors`/`filament_ids` pro všechny, `weight` = `total filament used [g]`, `statistics.used_filament` =
   součet metrů; náhledy barvou první cívky.
-- **Start**: `ams_box_mapping` = položka na barvu `{paint_index n, ams_index pozice, paint_color = ams_color = barva
-  cívky, material_type}` – tak Slicer Next mapuje barvy projektu na cívky (zachyceno 18. 10.: `paint_index 1 →
-  ams_index 1`, `paint_color` projektu černá, `ams_color` cívky oranžová; já dávám barvu cívky do obou – projektová je
-  na farmě bezvýznamná, cívku vybral zákazník). Log startu vypíše všechna `T<n> → slot = pozice`.
+- **Start**: `ams_box_mapping` = položka na barvu `{paint_index n, ams_index pozice, paint_color = barva projektu
+  (řádek `filament_colour` souboru; Slicer Next ji má i ve své řádce `paint_info`, která v souboru zůstává),
+  ams_color = barva cívky, material_type}` – přesně tak Slicer Next mapuje barvy projektu na cívky (zachyceno 18. 10.:
+  `paint_index 1 → ams_index 1`, `paint_color` projektu černá, `ams_color` cívky oranžová). U jednoho filamentu dál
+  barva cívky v obou (ověřeno). Log startu vypíše všechna `T<n> → slot = pozice`.
 - **Za běhu**: `multiColorBox` `loaded_slot` se při výměně mění → telemetrie `spool`/`slot` ukazuje cívku v hlavě jako
   dosud; `project.state` obsahující `filament` (`extfilbox_filament_feeding`, `ace_filament_feeding`; při výměně
   nejspíš i odvádění) jde do telemetrie `spool_change`. Neznámé stavy = tisk (jako dosud), výměna tisk „neukončí“.
@@ -366,3 +367,23 @@ Ovladač Kobra X k tomu:
   čas výměny → §8a.
 - Testy: `test_anycubic_pkg` (fixture TWO: fakta, G‑kód, balíček), `test_anycubic_lan` (start se dvěma barvami →
   mapování, balíček, `spool_change`; tři odmítnutí před nahráním). Moonraker beze změny (`T<n>` = pozice ACE).
+
+### 8a. Zkouška nasucho s prvním G‑kódem session 2 (19. 10. 2026, `scratchpad/kx_dry_run_multi.py`, falešná tiskárna s boxy Kobry X z 18. 10.)
+
+Soubor `Desktop\matplace-two-filaments-T0slot2-T1slot5.gcode` (535 kB, 20 248 řádků, **AnycubicSlicerNext 2.0.0.3**,
+15 vrstev, 55 min, 8,57 + 3,86 g, čisticí věž): řádek 2 `; matplace filaments T0=2 T1=5`; soubor vybírá cívky jako
+**`T2`/`T5`** (16 řádků, první na ř. 53 za `M104/M109` od GcodeSlot) – tedy sloty, tvar pro Rinkhals. Firmware Kobry X
+čte `T<n>` jako barvu n (ověřeno 18. 10.), proto ovladač každý `T<slot>` **přečísluje** na `T<barva>` (`renumber`
+slot → barva z řádku); session 2 nic nemění, jeden tvar souboru slouží oběma tiskárnám. Dřívější verze (4a4c0bd)
+by soubor odmítla („selects T2 T5, which the filament line does not name“) – bezpečně, ale k ničemu.
+
+Co by tiskárna dostala: balíček `.gcode.3mf` 111 kB (16 souborů); G‑kód s **vlastní** řádkou `paint_info` Sliceru
+Next (barvy projektu 255,215,0 a 32,32,32) v hlavičce i v `ams_info`, s jeho `statistics` (`used_filament 4.17`,
+`model_size 60.00,60.00,3.00`) – ovladač nic nepřidává, jen přečísluje; 16 řádků `T0`/`T1`; `slice_info.config`
+`weight 12.43`, `<filament id=1 … color="#FFD700" used_m 2.87 used_g 8.57>`, `<filament id=2 … "#202020" 1.29 3.86>`;
+`plate_1.json` `bbox_all [95,95,155,155]` (Slicer Next nepíše `first_layer_print_min/max`, ovladač bere obrysy
+z `EXCLUDE_OBJECT_DEFINE`; shoduje se s `model_size` 60×60). Start: `ams_box_mapping` `[{paint 0, ams_index 2 (Rack 3),
+paint_color 255,215,0, ams_color barva cívky}, {paint 1, ams_index 6 (ACE 3), paint_color 32,32,32, ams_color cívky}]`,
+`md5`/`filesize` balíčku, `auto_leveling 1`. Makro výměny: Slicer Next ho zapsal jen jako zakomentované řádky
+(`;;; G1 …`, `;;; M400 …`) kolem holého `T<n>` – změnu dělá firmware sám; `M600` je v souboru jen v komentáři
+`machine_pause_gcode`. Skutečný tisk: až po Romanově svolení v okně session 4, C1 v ručním režimu, odposlech vedle.
