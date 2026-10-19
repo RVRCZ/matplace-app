@@ -1802,5 +1802,6 @@
     "param.o.medallion.raised": "Vystouplý",
     "param.f.medallion.motif_size": "Velikost motivu",
     "param.flag.medallion.border": "Lem",
-    "param.flag.medallion.border.hint": "Okraj 2 mm kolem medaile v barvě motivu."
+    "param.flag.medallion.border.hint": "Okraj 2 mm kolem medaile v barvě motivu.",
+    "param.medallion.depth.hint": "Jen v těchto vrstvách tiskárna střídá dvě cívky, nad nimi tiskne jednou barvou. Výměn podle řezu: 0,4 mm ≈ 2, 0,6 mm ≈ 4, 0,8 mm ≈ 4, 1,0 mm ≈ 6."
 }

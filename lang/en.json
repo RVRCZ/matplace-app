@@ -1802,5 +1802,6 @@
     "param.o.medallion.raised": "Raised",
     "param.f.medallion.motif_size": "Size of the motif",
     "param.flag.medallion.border": "Rim",
-    "param.flag.medallion.border.hint": "A 2 mm border round the medal in the motif's colour."
+    "param.flag.medallion.border.hint": "A 2 mm border round the medal in the motif's colour.",
+    "param.medallion.depth.hint": "Only in these layers does the printer switch between two spools; above them it prints in one colour. Changes by the slice: 0.4 mm ≈ 2, 0.6 mm ≈ 4, 0.8 mm ≈ 4, 1.0 mm ≈ 6."
 }

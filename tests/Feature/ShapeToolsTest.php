@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Domain\Farm\Palette;
 use App\Domain\Tools\ParametricGenerator;
-use App\Engines\Repair\PythonTool;
 use App\Models\ModelFile;
 use App\Support\PreviewMeta;
 use App\Support\ToolSeo;
@@ -559,6 +558,10 @@ class ShapeToolsTest extends TestCase
         $this->assertEqualsWithDelta(0.6, $parts['color_1']['bbox'][5], 0.001, 'three layers of 0.2 mm');
         $this->assertEqualsWithDelta(60, $parts['color_1']['bbox'][3] - $parts['color_1']['bbox'][0], 0.2, 'the rim round the medal is the motif\'s');
         $this->assertEqualsWithDelta(4.4, $first['bbox']['z'], 0.01, 'level: nothing stands out of the plate');
+        // deeper on request (fewer or more changes of filament: the page says how many the slice gives)
+        $deep = $this->meta($this->preview('medallion', $one + ['depth' => 1, 'links' => 0], 'all', true)->assertOk());
+        $this->assertEqualsWithDelta(1.0, collect($deep['parts'])->firstWhere('name', 'color_1')['bbox'][5], 0.001);
+        $this->get('/tools/medallion')->assertOk()->assertSee('data-param="depth"', false)->assertSee('1,0 mm ≈ 6');
 
         // the number without the rim: 55 % of the width across, smaller and bigger as asked
         $bare = $this->meta($this->preview('medallion', $one + ['border' => false, 'links' => 0], 'all', true)->assertOk());

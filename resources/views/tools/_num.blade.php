@@ -8,4 +8,6 @@
         </span>
     </div>
     <span id="range-{{ $key }}" class="sr-only">{{ $f[0] }}–{{ $f[1] }} {{ $unit }}</span>
+    {{-- a tool's own word under the slider, when it has one (a medal's depth: how many changes of filament it costs) --}}
+    @if(isset($kind) && \Illuminate\Support\Facades\Lang::has('param.'.$kind.'.'.$key.'.hint'))<p class="hint mt-1 !text-xs">{{ __('param.'.$kind.'.'.$key.'.hint') }}</p>@endif
 </div>
