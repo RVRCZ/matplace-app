@@ -7,6 +7,7 @@ and acts on the commands the driver publishes: start begins a project, pause and
 """
 import asyncio
 import copy
+import time
 import os
 import sys
 import tempfile
@@ -479,6 +480,22 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
             await d.status()
             await asyncio.sleep(0.45)
             self.assertEqual((250.0, 250.0, 0.0), await d.head())
+
+    async def test_the_camera_stream_is_kept_open_while_the_printer_prints(self):
+        from farm_agent.drivers.anycubic_lan import Camera
+        async with FakePrinter() as p:
+            p.info["urls"] = {"rtspUrl": "http://127.0.0.1:9/live/none"}       # nothing listens: the stream fails, the wish is what counts
+            d = await self.driver(p, camera=True)
+            self.assertEqual(IDLE, (await d.status()).state)
+            self.assertIsNone(d._camera, "an idle printer wants no stream")
+            p.info.update(state="busy", project={"state": "printing", "filename": "mp41-cube.gcode", "progress": 10, "pause": 0, "curr_layer": 5, "total_layers": 50})
+            self.assertEqual(PRINTING, (await d.status()).state)
+            self.assertIsInstance(d._camera, Camera)
+            self.assertLess(time.monotonic() - d._camera._wanted, 1.0, "every status poll of a print keeps the stream wanted")
+            wanted = d._camera._wanted
+            await asyncio.sleep(0.05)
+            await d.status()
+            self.assertGreater(d._camera._wanted, wanted)
 
     async def test_the_layer_0_reported_during_a_spool_change_is_not_a_new_layer(self):
         async with FakePrinter() as p:

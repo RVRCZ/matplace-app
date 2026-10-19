@@ -423,3 +423,15 @@ zkušebního souboru, u medaile jiný objem), 23:51:11 `hotbed_cooling_off`/`noz
 `{filename, progress 0}`, 23:52:17 `finished` – přesně tvar, na který míří oprava 0.2.4: úloha má mít na serveru
 `print_duration_s 5520` a `filament_used_mm 13595` (řídící ověří). Celkem 98 min od startu (tiskárna 92 min od
 první vrstvy), odhad Sliceru 102 min.
+
+**Vrstvové snímky F26‑000089 (23, `Desktop\kx-frames\F26-000089\frames_layer`, korelace `scratchpad/kx_frames_corr.py`):**
+15 v parku, 2 od věže po výměnách (1792441878.242, 1792442039.493 – vrstva 0 → stejná vrstva, viz výše), **6 s hlavou
+mimo park** (1792442256.337, 1792442515.631, 1792443016.056, 1792444365.522, 1792445135.557, 1792446599.391). Soubor
+zakázky **neměl `sync=m400`** (řídící: volba C1 se cestou timelapseFor → fileFor ztratila; opravuje server), ovladač
+tedy jel 2,2/4,0 a okno 4,0–5,2 s. Čas snímku vůči prvnímu `print/report` s novou vrstvou v odposlechu: všechny v parku
+**2,0–3,2 s**, všechny mimo park **4,4–6,1 s** – dvě těsné skupiny s odstupem ~3,5 s (hodiny PC farmy jsou zřejmě ~2 s
+pozadu za tímto PC, absolutní čísla neberu; rozdíl skupin ano). Rozptyl předstihu plánovače by dal spojité rozložení,
+ne dvě skupiny; ~3,5–4 s je přesně otevření zavřeného streamu kamery (první klíčový snímek, §7c'). Ovladač stream
+zavíral po 20 s bez požadavku a živé snímky agenta ho zjevně neudržely; snímek vrstvy pak přišel o 4 s později, kdy
+hlava už byla zpátky u dílu. **0.2.7:** během tisku `status()` (každých 5 s) stream „chce“ (`Camera.keep()`), zavře se
+až 20 s po tisku; `_note_layer` ignoruje vrstvu 0 (0.2.6). Ověření M400 + −1,0/1,5 s zůstává na další zakázce.

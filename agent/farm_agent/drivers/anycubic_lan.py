@@ -446,6 +446,8 @@ class AnycubicLanDriver(PrinterDriver):
             telemetry["layer"] = f"{project.get('curr_layer', 0)}/{project['total_layers']}"
         if project and printer_state in (PRINTING, PAUSED) and project.get("remain_time") is not None:
             telemetry["remain_min"] = int(project.get("remain_time") or 0)
+        if printer_state in (PRINTING, PAUSED):
+            self._keep_camera()
         error = d.get("error") or d.get("err_msg") or ""
         if printer_state == ERROR and error:
             telemetry["error"] = " ".join(str(error).split())[:160]
@@ -466,18 +468,30 @@ class AnycubicLanDriver(PrinterDriver):
         """The latest picture of the printer's camera stream. The stream is kept open while pictures are wanted (a
         burst of them for the layer time-lapse needs one every 0.3 s; opening the stream takes ~10 s, the first key
         frame) and closed after 20 s without a request."""
-        url = self._urls.get("rtspUrl")
-        if not self.camera or not url:
+        if not self._camera_ready():
             return None
-        if self._camera is None or self._camera.url != url:
-            if self._camera:
-                self._camera.stop()
-            self._camera = Camera(url, f"cam-{self.key}")
         try:
             return await asyncio.wait_for(asyncio.to_thread(self._camera.frame), timeout=20)
         except Exception as e:  # noqa: BLE001 - a missing picture never disturbs a print
             log.debug("%s: snapshot failed: %s", self.key, e)
             return None
+
+    def _camera_ready(self) -> bool:
+        """The Camera for the printer's current stream address, made when the address is known; False without one."""
+        url = self._urls.get("rtspUrl")
+        if not self.camera or not url:
+            return False
+        if self._camera is None or self._camera.url != url:
+            if self._camera:
+                self._camera.stop()
+            self._camera = Camera(url, f"cam-{self.key}")
+        return True
+
+    def _keep_camera(self) -> None:
+        """While the printer prints, the stream stays open (status() says so every poll): the layer time-lapse must
+        get its picture at once, not ~4 s later when the head is back at the part (docs/AM.md §8b)."""
+        if self._camera_ready():
+            self._camera.keep()
 
     async def dry(self, on: bool, temp: int = 45, minutes: int = 240) -> None:
         """The dryer of the first ACE unit: multiColorBox setDry with drying_status {status 1, target_temp, duration in
@@ -865,15 +879,26 @@ class Camera:
         self._stop = threading.Event()
         self._error: Optional[str] = None
 
+    def keep(self) -> None:
+        """Keep the stream open (start it when it is not running) without waiting for a picture: during a print the
+        layer time-lapse needs a picture within a second or two, and a closed stream costs ~4 s to open (F26-000089,
+        19 Oct 2026: every late layer frame showed the head already back at the part, docs/AM.md §8b)."""
+        with self._lock:
+            self._wanted = time.monotonic()
+            self._start_locked()
+
+    def _start_locked(self) -> None:
+        if not self._thread or not self._thread.is_alive():
+            self._stop.clear()
+            self._frame, self._error = None, None
+            self._thread = threading.Thread(target=self._run, name=self.name, daemon=True)
+            self._thread.start()
+
     def frame(self, wait: float = 15.0) -> Optional[bytes]:
         """The latest picture as JPEG; starts the stream when it is not running and waits for its first frame."""
         with self._lock:
             self._wanted = time.monotonic()
-            if not self._thread or not self._thread.is_alive():
-                self._stop.clear()
-                self._frame, self._error = None, None
-                self._thread = threading.Thread(target=self._run, name=self.name, daemon=True)
-                self._thread.start()
+            self._start_locked()
             deadline = time.monotonic() + wait
             while self._frame is None and self._error is None and time.monotonic() < deadline:
                 self._ready.wait(deadline - time.monotonic())
