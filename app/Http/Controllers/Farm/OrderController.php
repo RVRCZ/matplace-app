@@ -594,6 +594,18 @@ class OrderController extends Controller
         return response()->file($path, ['Content-Type' => 'model/stl', 'Cache-Control' => 'private, max-age=60']);
     }
 
+    /** One part of an order printed by parts, as its own plate will print it (prepared: repaired, scaled, turned). */
+    public function partModel(Request $request, FarmOrder $order, string $part): BinaryFileResponse
+    {
+        $this->authorizeOrder($request, $order);
+        abort_if($order->hidesModelFrom($request->user()), 403);
+        $plate = collect($order->partPlates())->firstWhere('part', $part);
+        $path = $plate && ! empty($plate['stl_path']) ? Storage::disk(config('farm.disk'))->path((string) $plate['stl_path']) : null;
+        abort_unless($path && is_file($path), 404);
+
+        return response()->file($path, ['Content-Type' => 'model/stl', 'Cache-Control' => 'private, max-age=60']);
+    }
+
     /** Support structures of the slice, as line segments for the 3D preview. */
     public function supports(Request $request, FarmOrder $order): BinaryFileResponse
     {
@@ -715,6 +727,9 @@ class OrderController extends Controller
             'hex' => ($order->modelFile?->tool_params['part_colors'][$p['part']]['hex'] ?? null) ?: null,
             'slot_id' => ($p['slot_id'] ?? null) ?: null, 'name' => $partSpools->get($p['slot_id'] ?? 0)?->color?->displayName(), 'slot_code' => $partSpools->get($p['slot_id'] ?? 0)?->code(),
             'copies' => (int) ($p['copies'] ?? $order->copies), 'minutes' => $p['minutes'] ?? null, 'grams' => $p['grams'] ?? null,
+            // the part's own plate for the preview, in the colour of its spool (the design's colour until one is chosen)
+            'spool_hex' => $partSpools->get($p['slot_id'] ?? 0)?->color?->hex,
+            'model_url' => ! empty($p['stl_path']) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.part_model', [$order, $p['part']]).'?v='.($order->updated_at?->timestamp ?? 0) : null,
         ], $partPlates, array_keys($partPlates));
 
         return [
