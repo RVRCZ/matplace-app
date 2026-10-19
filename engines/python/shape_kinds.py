@@ -885,8 +885,11 @@ def build(M, Invalid, p, product):
         notes["color_change_mm"] = changes[0]["z"]          # one change is what the farm and the slicer projects already know
     if eyelet or grip is not None:
         # the outline the eyelet travels on, for dragging it in the preview: 120 points evenly spread along it, the
-        # first one where eye_pos is 0, so a point's place in the list is the share of the way round
-        notes["outline"] = [[round(c - o, 1) for c, o in zip(S.along(travel, i / 120.0)[:2], (x0, y0))] for i in range(120)]
+        # first one where eye_pos is 0, so a point's place in the list is the share of the way round. A medal's eyelet
+        # sits on its axis and is not dragged: without the outline the page shows no grip (in the preview of a medal
+        # turned face up the grip stood where the eyelet is printed, a red dot among the links)
+        if not medal:
+            notes["outline"] = [[round(c - o, 1) for c, o in zip(S.along(travel, i / 120.0)[:2], (x0, y0))] for i in range(120)]
         notes["eyelet"]["x"], notes["eyelet"]["y"] = round(notes["eyelet"]["x"] - x0, 2), round(notes["eyelet"]["y"] - y0, 2)
         notes["eyelet"]["z"] = round(t, 2)
     if "magnet" in notes:
