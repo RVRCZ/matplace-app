@@ -52,9 +52,10 @@ final class OrcaSlicer implements Slicer
             // takes which; the project is sliced where it stands (--arrange 0), the mesh given is the whole plate for its size
             if ($params->filaments && $params->project) {
                 $files = [];
+                $colours = self::filamentColours($params->filaments);
                 foreach (array_values($params->filaments) as $i => $f) {
                     $name = $this->machineVariant((string) ($f['profile'] ?? ''), $params->profiles['machine'] ?? null);
-                    $files[] = $this->patched($this->profileFile($name) ?? $filament, ((array) ($f['overrides'] ?? [])) + $pairing, $work.'/filament_'.($i + 1).'.json');
+                    $files[] = $this->patched($this->profileFile($name) ?? $filament, ['filament_colour' => [$colours[$i]]] + ((array) ($f['overrides'] ?? [])) + $pairing, $work.'/filament_'.($i + 1).'.json');
                 }
                 $filament = implode(';', $files);
             }
@@ -236,6 +237,35 @@ final class OrcaSlicer implements Slicer
             }
         }
         throw new SlicerException("Slicer profile missing: {$name}");
+    }
+
+    /**
+     * One colour per filament of a plate, `#RRGGBB`, no two alike: the spool's own where known, a palette otherwise.
+     * Orca sizes its colour vector by what the profiles say and reads it for every filament a part uses: the farm's
+     * profiles carry no `filament_colour`, so the vector stayed one long and the second filament read past its end
+     * (2.4.0-beta: a segfault on the server, an access violation on Windows, 19 Oct 2026). Two filaments of one
+     * colour make Orca drop the prime tower ("only 1 filament colour"), so a twin is nudged a shade.
+     *
+     * @param  list<array{colour?: ?string}>  $filaments
+     * @return list<string>
+     */
+    public static function filamentColours(array $filaments): array
+    {
+        $palette = ['#F2754E', '#2E86DE', '#27AE60', '#F1C40F', '#8E44AD', '#E84393'];
+        $out = [];
+        foreach (array_values($filaments) as $i => $f) {
+            $hex = strtoupper(ltrim(trim((string) ($f['colour'] ?? '')), '#'));
+            if (strlen($hex) === 3) {
+                $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+            }
+            $colour = preg_match('/^[0-9A-F]{6}$/', $hex) ? '#'.$hex : $palette[$i % count($palette)];
+            while (in_array($colour, $out, true)) {
+                $colour = sprintf('#%06X', (hexdec(substr($colour, 1)) + 0x010101) & 0xFFFFFF);
+            }
+            $out[] = $colour;
+        }
+
+        return $out;
     }
 
     /**

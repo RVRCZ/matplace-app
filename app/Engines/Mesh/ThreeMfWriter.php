@@ -6,9 +6,10 @@ use App\Engines\Exceptions\EngineException;
 
 /**
  * A plain 3MF with one object per part, each told which filament prints it (Metadata/model_settings.config, the
- * way OrcaSlicer and its forks read it; verified with Anycubic Slicer Next 2.0 on 19 Oct 2026: the CLI slices such a
- * file with one filament per object and a prime tower, `--load-filament-ids` it refused). Coordinates are kept as
- * they are: the farm places the parts on the plate itself and slices with `--arrange 0`.
+ * way OrcaSlicer and its forks read it; verified on 19 Oct 2026 with Anycubic Slicer Next 2.0 and with OrcaSlicer
+ * 2.4.0-beta, the farm's: "found 3mf from other vendor, split as instance", the extruder of each object honoured –
+ * what made Orca fall over was the filament profiles' missing colours, see OrcaSlicer::filamentColours). Coordinates
+ * are kept as they are: the farm places the parts on the plate itself and slices with `--arrange 0`.
  */
 final class ThreeMfWriter
 {

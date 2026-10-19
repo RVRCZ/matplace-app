@@ -440,6 +440,49 @@ class PrepareFarmOrder implements ShouldQueue
     public const ONE_PLATE_PROCESS = ['enable_prime_tower' => '1', 'prime_tower_width' => '25', 'flush_into_infill' => '1', 'flush_into_objects' => '0', 'flush_into_support' => '1'];
 
     /**
+     * The prime tower's room: as wide as ONE_PLATE_PROCESS makes it, the profiles' 5 mm brim, a depth that grows with
+     * the changes a layer can hold (Orca 2.4: 9 mm for two filaments of the medal, 19 Oct 2026), a gap to the parts.
+     */
+    public const TOWER = ['width' => 25.0, 'brim' => 5.0, 'depth_per_filament' => 12.0, 'gap' => 3.0];
+
+    /**
+     * Where the prime tower goes on a plate whose parts stay where the tool laid them (`size` = their bounds together,
+     * centred on the bed): the free band below them when it is deep enough for the tower, else the band left of them
+     * when it is wide enough for it, else the parts are pushed off the band that can be made deep enough, and the
+     * tower goes there. Null when no band can hold it: Orca puts the tower where its profile says (the top left,
+     * 15/220) and stops when it lands on a part (the medal, 19 Oct 2026: "gcode path conflicts between WipeTower
+     * and body", -101), so a plate without room for the tower prints by parts.
+     *
+     * @param  array{0: float, 1: float, 2: float}  $size
+     * @return ?array{x: float, y: float, shift: array{0: float, 1: float}}
+     */
+    public static function towerSpot(array $size, Dimensions $bed, float $margin, int $filaments): ?array
+    {
+        $t = self::TOWER;
+        $depth = $t['depth_per_filament'] * max(1, $filaments - 1);
+        $needY = $depth + 2 * $t['brim'] + $t['gap'];     // below the parts: the tower's depth runs across the band
+        $needX = $t['width'] + 2 * $t['brim'] + $t['gap'];   // left of the parts: its width does
+        $bandY = ($bed->y - $size[1]) / 2 - $margin;     // the free room on either side once the parts are centred
+        $bandX = ($bed->x - $size[0]) / 2 - $margin;
+        $below = ['x' => round($bed->x / 2 - $t['width'] / 2, 2), 'y' => round($margin + $t['brim'], 2)];
+        $left = ['x' => round($margin + $t['brim'], 2), 'y' => round($bed->y / 2 - $depth / 2, 2)];
+        if ($bandY >= $needY) {
+            return $below + ['shift' => [0.0, 0.0]];
+        }
+        if ($bandX >= $needX) {
+            return $left + ['shift' => [0.0, 0.0]];
+        }
+        if (2 * $bandY >= $needY) {
+            return $below + ['shift' => [0.0, round($needY - $bandY, 2)]];   // pushed up: the band below grows to what the tower needs
+        }
+        if (2 * $bandX >= $needX) {
+            return $left + ['shift' => [round($needX - $bandX, 2), 0.0]];
+        }
+
+        return null;
+    }
+
+    /**
      * An order by parts whose parts print together: one plate, one G-code, a filament per spool (`T0`…`T<n-1>` in the
      * file, the prime tower between them), the machine changing spools as it goes. Possible when the machine is run
      * by an agent (a changer; an operator feeds one spool), there is one copy, the spools are at most MAX_COLORS and
@@ -512,8 +555,18 @@ class PrepareFarmOrder implements ShouldQueue
 
             return $skip('fit');   // the parts as designed do not fit the plate together: one plate each
         }
-        // every part moved by the same vector: the middle of the plate, standing on it; the parts keep their places against each other
-        $move = [$bed->x / 2 - ($lo[0] + $hi[0]) / 2, $bed->y / 2 - ($lo[1] + $hi[1]) / 2, -$lo[2]];
+        // the prime tower needs a band of its own beside the parts (it must not land on one); the parts give way to it
+        $tower = self::towerSpot($size, $bed, $margin / 2, count($index));
+        if (! $tower) {
+            foreach ($paths as $rel) {
+                @unlink($disk->path($rel).'.raw');
+            }
+
+            return $skip('fit');   // the parts fill the plate, no room for the tower: one plate each
+        }
+        // every part moved by the same vector: the middle of the plate (off the tower's band), standing on it; the parts
+        // keep their places against each other
+        $move = [$bed->x / 2 - ($lo[0] + $hi[0]) / 2 + $tower['shift'][0], $bed->y / 2 - ($lo[1] + $hi[1]) / 2 + $tower['shift'][1], -$lo[2]];
         $volumes = [];
         foreach ($paths as $i => $rel) {
             StlFile::translate($disk->path($rel).'.raw', $disk->path($rel), $move);
@@ -588,7 +641,9 @@ class PrepareFarmOrder implements ShouldQueue
         foreach ($index as $key => $n) {
             $spool = is_int($key) ? $spools->get($key) : null;
             $profile = $spool && $spool->color ? PrintProfile::for($printer, $spool->color->material, $spool->color) : $setup['profile'];
-            $filaments[$n] = ['profile' => $profile->filamentProfile, 'overrides' => $profile->filament, 'volume_mm3' => 0.0, 'slot_id' => $spool?->id, 'color_id' => $spool?->farm_color_id];
+            // the spool's colour goes to the slicer: Orca wants one per filament (its colour vector must reach every
+            // filament a part uses) and purges by the distance between them
+            $filaments[$n] = ['profile' => $profile->filamentProfile, 'overrides' => $profile->filament, 'colour' => $spool?->color?->hex, 'volume_mm3' => 0.0, 'slot_id' => $spool?->id, 'color_id' => $spool?->farm_color_id];
         }
         foreach ($filamentOf as $i => $n) {
             $filaments[$n]['volume_mm3'] += (float) $volumes[$i];
@@ -596,7 +651,8 @@ class PrepareFarmOrder implements ShouldQueue
         ksort($filaments);
         $projectRel = $order->dir().'/plate.3mf';
         ThreeMfWriter::write($disk->path($projectRel), array_map(fn ($i, $p) => ['name' => (string) $p['part'], 'stl' => $disk->path($paths[$i]), 'extruder' => $filamentOf[$i] + 1], array_keys($skeleton), $skeleton));
-        $params = $setup['params']->withFilaments(array_map(fn ($f) => ['profile' => $f['profile'], 'overrides' => $f['overrides'], 'volume_mm3' => round($f['volume_mm3'], 1)], $filaments), $disk->path($projectRel), self::ONE_PLATE_PROCESS);
+        $process = self::ONE_PLATE_PROCESS + ['wipe_tower_x' => [(string) $tower['x']], 'wipe_tower_y' => [(string) $tower['y']]];
+        $params = $setup['params']->withFilaments(array_map(fn ($f) => ['profile' => $f['profile'], 'overrides' => $f['overrides'], 'colour' => $f['colour'], 'volume_mm3' => round($f['volume_mm3'], 1)], $filaments), $disk->path($projectRel), $process);
         try {
             $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($plateRel), $params));
         } catch (\Throwable $e) {
@@ -636,7 +692,8 @@ class PrepareFarmOrder implements ShouldQueue
                 'profile_layers' => $setup['profile']->layers, 'profile_fingerprint' => $setup['profile']->sliceFingerprint(),
                 'profile_hashes' => $this->profileHashes($setup['profiles']), 'preparer' => $preparer->name(), 'sliced_at' => now()->toIso8601String(),
                 'timelapse_minutes' => $parking, 'by_parts' => true, 'one_plate' => true,
-                'filaments' => array_map(fn ($f) => ['slot_id' => $f['slot_id'], 'color_id' => $f['color_id'], 'profile' => $f['profile']], $filaments),
+                'filaments' => array_map(fn ($f) => ['slot_id' => $f['slot_id'], 'color_id' => $f['color_id'], 'profile' => $f['profile'], 'colour' => $f['colour']], $filaments),
+                'tower' => ['x' => $tower['x'], 'y' => $tower['y'], 'shift' => $tower['shift']],
             ],
             'slice_result' => $result->toArray() + ['plates' => 1, 'parts' => array_map(fn ($p) => ['part' => $p['part'], 'extruder' => $p['extruder'], 'grams' => $p['grams']], $plates)],
             'est_minutes' => (int) round($result->minutes) + $parking,
