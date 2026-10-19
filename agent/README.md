@@ -128,6 +128,13 @@ je první, měnič ACE za ním: s měničem Rack 1–3 = sloty 0–2 a ACE 1–4
 bez měniče Rack 1–4 = sloty 0–3. Slot, který tiskárna nemá, start odmítne s výpisem pozic. Na nástěnce je při tisku
 vidět, která pozice je zavedená (`spool`, `slot`).
 
+**Více filamentů na jedné podložce:** když G‑kód nese řádek farmy `; matplace filaments T0=<slot> T1=<slot> …`,
+ovladač nechá `T<n>` v souboru (jsou to barvy 0..n‑1 projektu) a ve startu pošle `ams_box_mapping` s položkou pro
+každou barvu – cívku na výměnu si tiskárna bere z měniče sama. Barva, materiál a spotřeba každé cívky jdou do
+balíčku `.gcode.3mf`. Mezera v barvách, `T<n>` bez položky nebo slot mimo pozice = start odmítnutý před nahráním. Při
+výměně uprostřed tisku ukazuje nástěnka zaváděnou pozici (`spool`, `slot`) a stav výměny (`spool_change`). Ověření na
+tiskárně viz `docs/AM.md` §8.
+
 Co ovladač umí: stav (volná / tiskne / pauza / chyba), teploty, průběh, vrstvy, zbývající minuty, název souboru;
 nahrání G-code do tiskárny a start; pauza, pokračování, zrušení; snímek z kamery tiskárny (HTTP-FLV, jeden snímek
 dekóduje `av`); světlo kamery (zapne před tiskem, zhasne po něm, stav na nástěnce); sušičku měniče ACE (start

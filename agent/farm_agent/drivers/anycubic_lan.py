@@ -8,7 +8,7 @@ through the protocol the Anycubic Slicer Next uses on the local network (client:
   status     query `info` (state, temperatures, `project` while printing, `last_project` after it, `urls`)
   upload     POST <urls.fileUploadurl> (http://<ip>:18910/gcode_upload?s=<token>), multipart field `file`
   start      MQTT slicer/.../print  action start, the whole shape the Slicer Next sends: filename, url (placeholder),
-             md5, filesize, filetype 1, project_type 1, ams_settings.ams_box_mapping [{paint 0 -> spool position}],
+             md5, filesize, filetype 1, project_type 1, ams_settings.ams_box_mapping [{paint n -> spool position}, one per filament of the plate],
              task_settings; the file as a .gcode.3mf package (anycubic_pkg)
   control    MQTT slicer/.../print  action pause | resume | stop
   camera     <urls.rtspUrl> = HTTP-FLV (H.264) on :18088; one frame decoded with PyAV (`pip install av`), else no picture
@@ -438,6 +438,10 @@ class AnycubicLanDriver(PrinterDriver):
                 project, job_state = ended, str(ended["status"])
         if project and printer_state in (PRINTING, PAUSED):
             self._note_layer(project.get("curr_layer"))
+            if "filament" in str(project.get("state") or ""):
+                # feeding or unloading a spool ("extfilbox_filament_feeding", "ace_filament_feeding" at the start; a
+                # plate of several filaments changes spools in the middle of the print, docs/AM.md §8)
+                telemetry["spool_change"] = str(project["state"])
         if project and project.get("total_layers"):
             telemetry["layer"] = f"{project.get('curr_layer', 0)}/{project['total_layers']}"
         if project and printer_state in (PRINTING, PAUSED) and project.get("remain_time") is not None:
@@ -561,24 +565,31 @@ class AnycubicLanDriver(PrinterDriver):
             raw = fh.read()
         self._park = _park_of(raw)
         facts = facts_of(raw)
-        slot_no = facts.tool if facts.tool else int(slot)
-        pos = await self.spool_at(slot_no, config_value(raw, b"filament_colour") or "#000000", config_value(raw, b"filament_type") or "PLA")
-        colour, material = pos.colour, pos.material
+        if facts.paints:
+            # a plate of several filaments (docs/AM.md §8): the farm's line names the slot of every T<n>, the file keeps
+            # its T<n> as the paints and the mapping takes each paint to its spool
+            positions = await self._paint_positions(facts)
+            filaments = [(p.colour, p.material) for p in positions]
+        else:
+            slot_no = facts.tool if facts.tool else int(slot)
+            positions = [await self.spool_at(slot_no, config_value(raw, b"filament_colour") or "#000000", config_value(raw, b"filament_type") or "PLA")]
+            filaments = None
+        colour, material = positions[0].colour, positions[0].material
         if self.as_package:
-            data, _ = package(raw, colour, material)
+            data, _ = package(raw, colour, material, filaments)
             upload_name = filename + ".3mf" if filename.lower().endswith(".gcode") else filename
         else:
-            data, upload_name = prepared_gcode(raw, colour, material, facts), filename
+            data, upload_name = prepared_gcode(raw, colour, material, facts, filaments), filename
         await self._upload(url, data, upload_name)
-        rgba = rgb_of(colour) + [255]
-        mapping = {"paint_index": 0, "ams_index": pos.ams_index, "paint_color": rgba, "ams_color": rgba, "material_type": material.split()[0].upper()}
-        log.info("%s: starting %s (T%d -> slot %d = %s, ams_index %d, %s %s)", self.key, filename, facts.tool, slot_no, pos.name, pos.ams_index, material, colour)
+        log.info("%s: starting %s (%s)", self.key, filename,
+                 "; ".join(f"T{i} -> slot {p.slot} = {p.name}, ams_index {p.ams_index}, {p.material} {p.colour}" for i, p in enumerate(positions)))
         command = {
             # the printer prints the file just uploaded and never fetches the address: the Slicer sends this very
             # placeholder, and a start without url, md5 and filesize is refused
             "taskid": "-1", "url": SLICER_URL, "filename": filename, "md5": hashlib.md5(data).hexdigest(),  # noqa: S324
             "filepath": None, "filetype": 1, "project_type": 1, "filesize": len(data),
-            "ams_settings": {"use_ams": True, "padding1": 0, "padding2": 0, "padding3": 0, "ams_box_mapping": [mapping]},
+            "ams_settings": {"use_ams": True, "padding1": 0, "padding2": 0, "padding3": 0,
+                             "ams_box_mapping": [_mapping_of(i, p) for i, p in enumerate(positions)]},
             "task_settings": {"auto_leveling": 1 if self.auto_leveling else 0, "vibration_compensation": 0, "flow_calibration": 0, "dry_mode": 0,
                               "ai_settings": {"status": 0, "count": 32765, "type": 32, "mode": 0},
                               "timelapse": {"status": 0, "count": 32765, "type": 32, "mode": 0},
@@ -670,6 +681,26 @@ class AnycubicLanDriver(PrinterDriver):
                                 "dryer_remain_min": int(dry.get("remain_time") or 0) if on else 0, "dryer_rh": _num(box.get("humidity")) or 0}
         return spools
 
+    async def _paint_positions(self, facts) -> list[Position]:
+        """The spool position of every paint of a plate of several filaments: the farm's line says T<n>=<slot> for
+        T0..T<n-1> (docs/AL.md §10). A gap in the paints, a T<n> the file selects but the line does not name, or a
+        slot the printer does not have is refused: the printer would print the wrong spool or nothing."""
+        paints = sorted(facts.paints)
+        if paints != list(range(len(paints))):
+            raise DriverError("the filament line must name T0..T%d, it names %s" % (len(paints) - 1, " ".join(f"T{p}" for p in paints)))
+        unnamed = [t for t in facts.tools if t not in facts.paints]
+        if unnamed:
+            raise DriverError("the G-code selects %s, which the filament line does not name" % " ".join(f"T{t}" for t in unnamed))
+        positions = []
+        for paint in paints:
+            colour = facts.colours[paint] if paint < len(facts.colours) else "#000000"
+            material = facts.materials[paint] if paint < len(facts.materials) else "PLA"
+            try:
+                positions.append(await self.spool_at(facts.paints[paint], colour, material))
+            except DriverError as e:
+                raise DriverError(f"T{paint}: {e}") from e
+        return positions
+
     async def spool_at(self, slot: int, colour: str, material: str) -> Position:
         """The position matplace's slot means on this printer, with the spool's colour and material (what the file and
         the start say the print is made of). A printer that does not tell its boxes gets the slot as the rack's index
@@ -729,6 +760,13 @@ class AnycubicLanDriver(PrinterDriver):
 
 def _num(v) -> Optional[float]:
     return round(float(v), 1) if isinstance(v, (int, float)) else None
+
+
+def _mapping_of(paint: int, pos: Position) -> dict:
+    """One entry of the start's ams_box_mapping: paint n of the file printed from this spool position. The colour of
+    the spool stands for the paint's too - the customer chose the spool, the project's own colour means nothing."""
+    rgba = rgb_of(pos.colour) + [255]
+    return {"paint_index": paint, "ams_index": pos.ams_index, "paint_color": rgba, "ams_color": rgba, "material_type": pos.material.split()[0].upper()}
 
 
 def _park_of(raw: bytes) -> Optional[tuple[float, float, float, float, str]]:

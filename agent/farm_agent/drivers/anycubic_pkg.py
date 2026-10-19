@@ -17,7 +17,9 @@ Slicer Next 2.0.0.3 uploads was captured and is rebuilt here around our own G-co
 
 The spool is chosen by the start command's ams_box_mapping (paint -> position), the firmware's own mechanism, so the
 G-code's T<n> (matplace's GcodeSlot writes the spool position there, docs/V.md) is turned into T0 = paint 0 and the
-position it named goes into the mapping. Values the metadata needs come from Orca's own comment lines.
+position it named goes into the mapping. A plate of several filaments (docs/AM.md §8) comes with the farm's line
+"; matplace filaments T0=<slot> T1=<slot> ..." instead: its T<n> are the paints 0..n-1, they stay in the file, and the
+mapping takes each one to the slot named. Values the metadata needs come from Orca's own comment lines.
 """
 from __future__ import annotations
 
@@ -28,7 +30,7 @@ import re
 import struct
 import zipfile
 import zlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 CONTENT_TYPES = b"""<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -123,7 +125,14 @@ class Facts:
     support: bool = False
     object_name: str = "model"
     filament_id: str = "GFPLA"
-    tool: int = 0                              # the T<n> the G-code selects
+    tool: int = 0                              # the T<n> the G-code selects first
+    tools: list = field(default_factory=list)  # every distinct T<n> it selects, in order of first use
+    paints: dict = field(default_factory=dict)  # T<n> -> matplace slot from the farm's "; matplace filaments" line ({} = one filament)
+    colours: list = field(default_factory=list)      # per Orca filament, as the config block lists them: colour,
+    materials: list = field(default_factory=list)    # material, filament id,
+    filament_ids: list = field(default_factory=list)
+    metres_each: list = field(default_factory=list)  # and what the print uses of each
+    grams_each: list = field(default_factory=list)
 
 
 def facts_of(raw: bytes) -> Facts:
@@ -132,7 +141,14 @@ def facts_of(raw: bytes) -> Facts:
     f.time_text = config_value(raw, b"estimated printing time (normal mode)")
     f.seconds = _seconds(f.time_text)
     f.grams = _float(config_value(raw, b"total filament used [g]") or config_value(raw, b"filament used [g]"))
-    f.metres = _float(config_value(raw, b"filament used [mm]")) / 1000.0
+    f.metres_each = [_float(v) / 1000.0 for v in config_values(raw, b"filament used [mm]", ",")]
+    f.grams_each = [_float(v) for v in config_values(raw, b"filament used [g]", ",")]
+    f.metres = sum(f.metres_each)
+    f.colours = config_values(raw, b"filament_colour")
+    f.materials = config_values(raw, b"filament_type")
+    f.filament_ids = config_values(raw, b"filament_ids")
+    f.tools = tools_of(raw)
+    f.paints = filaments_of(raw)
     lo, hi = _pair(config_value(raw, b"first_layer_print_min")), _pair(config_value(raw, b"first_layer_print_max"))
     f.bbox = (lo[0], lo[1], hi[0], hi[1])
     f.height = _float(_header(raw, b"max_z_height"))
@@ -160,18 +176,45 @@ def tool_of(raw: bytes) -> int:
     return 0
 
 
-def package(raw: bytes, colour: str, material: str) -> tuple[bytes, Facts]:
-    """The .gcode.3mf bytes for this G-code, printed in `colour` (#rrggbb) and `material` (PLA...) as paint 0."""
+def tools_of(raw: bytes) -> list[int]:
+    """Every distinct T<n> the G-code selects, in the order of first use: a plate of several filaments changes the tool
+    in the middle of the print."""
+    seen: list[int] = []
+    for m in re.finditer(rb"^[ \t]*T(\d+)\b", raw, re.M):
+        n = int(m.group(1))
+        if n not in seen:
+            seen.append(n)
+    return seen
+
+
+def filaments_of(raw: bytes) -> dict[int, int]:
+    """T<n> -> matplace slot from the line the farm writes into a plate of several filaments
+    ("; matplace filaments T0=2 T1=5", docs/AL.md §10), {} when the file has none."""
+    m = re.search(rb"^; matplace filaments((?:[ \t]+T\d+=\d+)+)", raw[:16384], re.M)
+    if not m:
+        return {}
+    return {int(t): int(s) for t, s in re.findall(rb"T(\d+)=(\d+)", m.group(1))}
+
+
+def package(raw: bytes, colour: str, material: str, filaments: list | None = None) -> tuple[bytes, Facts]:
+    """The .gcode.3mf bytes for this G-code, printed in `colour` (#rrggbb) and `material` (PLA...) as paint 0, or in
+    `filaments` ((colour, material) per paint) when the plate has several."""
     facts = facts_of(raw)
-    gcode = prepared_gcode(raw, colour, material, facts)
-    rgb = rgb_of(colour)
+    gcode = prepared_gcode(raw, colour, material, facts, filaments)
+    paints = filaments or [(colour, material)]
+    rgb = rgb_of(paints[0][0])
     big, small = _png(512, 512, rgb), _png(128, 128, rgb)
     md5 = hashlib.md5(gcode).hexdigest().upper().encode()  # noqa: S324 - the printer's checksum
     x0, y0, x1, y1 = facts.bbox
     plate = {"bbox_all": [x0, y0, x1, y1],
              "bbox_objects": [{"area": round((x1 - x0) * (y1 - y0), 1), "bbox": [x0, y0, x1, y1], "id": 1, "layer_height": facts.layer_height, "name": facts.object_name}],
-             "bed_type": facts.bed_type, "filament_colors": [colour], "filament_ids": [0], "first_extruder": 0, "is_seq_print": False,
+             "bed_type": facts.bed_type, "filament_colors": [c for c, _ in paints], "filament_ids": list(range(len(paints))), "first_extruder": 0, "is_seq_print": False,
              "nozzle_diameter": facts.nozzle, "version": 2}
+    # one <filament> per paint with what the print uses of it (Orca's per-extruder usage lines; the totals for one filament)
+    filament_lines = "".join(
+        f'    <filament id="{i + 1}" tray_info_idx="{_xml(facts.filament_ids[i] if i < len(facts.filament_ids) else facts.filament_id)}" type="{_xml(m)}" color="{c}" '
+        f'used_m="{(facts.metres_each[i] if i < len(facts.metres_each) else facts.metres):.2f}" used_g="{(facts.grams_each[i] if i < len(facts.grams_each) else facts.grams):.2f}" />\n'
+        for i, (c, m) in enumerate(paints))
     slice_info = (
         '<?xml version="1.0" encoding="UTF-8"?>\n<config>\n  <header>\n'
         '    <header_item key="X-ACNext-Client-Type" value="slicer"/>\n'
@@ -187,8 +230,8 @@ def package(raw: bytes, colour: str, material: str) -> tuple[bytes, Facts]:
         '    <metadata key="label_object_enabled" value="false"/>\n'
         '    <metadata key="filament_maps" value="1 1 1 1 1"/>\n'
         f'    <object identify_id="1" name="{_xml(facts.object_name)}" skipped="false" />\n'
-        f'    <filament id="1" tray_info_idx="{_xml(facts.filament_id)}" type="{_xml(material)}" color="{colour}" used_m="{facts.metres:.2f}" used_g="{facts.grams:.2f}" />\n'
-        '  </plate>\n</config>\n'
+        + filament_lines
+        + '  </plate>\n</config>\n'
     ).encode()
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -211,14 +254,18 @@ def package(raw: bytes, colour: str, material: str) -> tuple[bytes, Facts]:
     return buf.getvalue(), facts
 
 
-def prepared_gcode(raw: bytes, colour: str, material: str, facts: Facts | None = None) -> bytes:
-    """The G-code as it goes into the package: T<n> -> T0, the paint_info header line, the ams_info and statistics
-    blocks at the end (each only when the file has none)."""
+def prepared_gcode(raw: bytes, colour: str, material: str, facts: Facts | None = None, filaments: list | None = None) -> bytes:
+    """The G-code as it goes into the package: the paint_info header line, the ams_info and statistics blocks at the
+    end (each only when the file has none). One filament (`filaments` None): the T<n> GcodeSlot wrote becomes T0 and
+    `colour`/`material` are paint 0. Several (`filaments` = (colour, material) per paint, docs/AM.md §8): the T<n>
+    lines stay, they are the paints the start's mapping takes to the spools."""
     facts = facts or facts_of(raw)
     out = raw
-    if facts.tool:
+    if filaments is None and facts.tool:
         out = re.sub(rb"^(\s*)T\d+\b", rb"\1T0", out, count=1, flags=re.M)
-    info = json.dumps([{"material_type": material.split()[0].upper(), "paint_color": rgb_of(colour), "paint_index": 0}], separators=(",", ":")).encode()
+    paints = filaments or [(colour, material)]
+    info = json.dumps([{"material_type": m.split()[0].upper(), "paint_color": rgb_of(c), "paint_index": i} for i, (c, m) in enumerate(paints)],
+                      separators=(",", ":")).encode()
     if b"; paint_info" not in out:
         line = b"; paint_info = " + info + b"\n"
         end = out.find(b"; HEADER_BLOCK_END")
@@ -248,6 +295,15 @@ def config_value(raw: bytes, key: bytes) -> str:
     if not m:
         return ""
     return m.group(1).split(b";")[0].strip().strip(b'"').decode("utf-8", "replace")
+
+
+def config_values(raw: bytes, key: bytes, sep: str = ";") -> list[str]:
+    """All values of "; <key> = a;b;c", one per filament (Orca separates config values by ";", the usage lines
+    "filament used [g] = a, b" by ","), [] when there is no such line."""
+    m = re.search(rb"^; " + re.escape(key) + rb" = ([^\r\n]*)", raw, re.M)
+    if not m:
+        return []
+    return [v.strip().strip('"') for v in m.group(1).decode("utf-8", "replace").split(sep) if v.strip()]
 
 
 def _header(raw: bytes, key: bytes) -> str:
