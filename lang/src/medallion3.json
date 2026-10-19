@@ -1,0 +1,17 @@
+{
+    "param.c.medallion.motif": ["Motiv", "Motif", "Motivo"],
+    "param.c.medallion.motif.hint": [
+        "Zarovnaný: motiv je v rovině s plackou a tiskne se k podložce, hladký; dvě barvy v jedné podložce (tiskárna s měničem). Vystouplý: motiv vystupuje 0,6 mm, změna barvy po výšce.",
+        "Flush: the motif is level with the plate and printed against the bed, smooth; two colours in one plate (a printer with a spool changer). Raised: the motif stands out 0.6 mm, the colour changes by height.",
+        "Enrasado: el motivo queda a ras de la placa y se imprime contra la cama, liso; dos colores en una placa (impresora con cambiador). En relieve: el motivo sobresale 0,6 mm, el color cambia por altura."
+    ],
+    "param.o.medallion.flush": ["Zarovnaný", "Flush", "Enrasado"],
+    "param.o.medallion.raised": ["Vystouplý", "Raised", "En relieve"],
+    "param.f.medallion.motif_size": ["Velikost motivu", "Size of the motif", "Tamaño del motivo"],
+    "param.flag.medallion.border": ["Lem", "Rim", "Borde"],
+    "param.flag.medallion.border.hint": [
+        "Okraj 2 mm kolem medaile v barvě motivu.",
+        "A 2 mm border round the medal in the motif's colour.",
+        "Un borde de 2 mm alrededor de la medalla en el color del motivo."
+    ]
+}

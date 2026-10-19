@@ -54,7 +54,7 @@ final class ParametricGenerator
     public const SECTIONS = ['papel' => ['frame' => 'input', 'placement' => 'size']];
 
     /** kind → the choice the first step opens with, before the picture (what is made of the picture) */
-    public const FIRST = ['papel' => 'treatment', 'qr' => 'content'];
+    public const FIRST = ['papel' => 'treatment', 'qr' => 'content', 'medallion' => 'motif'];
 
     /** fields of the input section that sit folded under "adjust the photo" */
     public const FOLDED = ['contrast', 'brightness', 'saturation'];
@@ -180,7 +180,7 @@ final class ParametricGenerator
     /** Tools of the family whose text goes under the picture, not instead of it: a page opened with a name keeps its sample picture. */
     public const CAPTIONED = ['badge'];
 
-    public const SAMPLE = ['phone_stand' => 'lib:animals/cat', 'papel' => 'lib:holidays/sugar-skull', 'notes' => 'lib:animals/cat', 'hair_tie' => 'lib:hearts-stars/crown', 'candle_stand' => 'lib:holidays/christmas-tree', 'svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star', 'medallion' => 'lib:colour/smiling-star', 'photo_organizer' => 'lib:nature/cloud', 'bag_charm' => 'lib:colour/red-heart', 'straw' => 'lib:colour/smiling-star', 'opener' => 'lib:colour/paw-badge'];
+    public const SAMPLE = ['phone_stand' => 'lib:animals/cat', 'papel' => 'lib:holidays/sugar-skull', 'notes' => 'lib:animals/cat', 'hair_tie' => 'lib:hearts-stars/crown', 'candle_stand' => 'lib:holidays/christmas-tree', 'svg_to_stl' => 'lib:animals/cat', 'nameplate' => 'lib:hearts-stars/star', 'charm' => 'lib:colour/happy-ghost', 'earrings' => 'lib:colour/red-heart', 'ornament' => 'lib:colour/gingerbread-man', 'magnet' => 'lib:colour/paw-badge', 'coaster' => 'lib:colour/snowman', 'cookie' => 'lib:colour/gingerbread-man', 'tray' => 'lib:colour/paw-badge', 'badge' => 'lib:colour/smiling-star', 'photo_organizer' => 'lib:nature/cloud', 'bag_charm' => 'lib:colour/red-heart', 'straw' => 'lib:colour/smiling-star', 'opener' => 'lib:colour/paw-badge'];
 
     /** kind → field → [min, max, default, step]; integers have step 1 */
     public const FIELDS = [
@@ -198,10 +198,10 @@ final class ParametricGenerator
         // the shape is ours (a gingerbread man, a heart, a star, a tree), the visitor brings the name: no picture, no picture's fields
         'gingerbread' => ['width' => [50, 150, 90, 1], 'thickness' => [2, 6, 3, 0.2], 'relief' => [0.4, 1.2, 0.6, 0.2], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_EYELET,
         // a medal: the eyelet takes a link of the chain (a bar of 4 mm), `links` is how many of them are printed next to it
-        // a medal face up, its motif raised and changed by height; the plate as thick as a link (4.4 mm), else the links' tops
-        // would print in the motif's colour. The eyelet always on top. (Face down with the motif inlaid, `inlay`, waits
-        // for a farm that prints two filaments in one plate: docs/P.md §8.)
-        'medallion' => ['width' => [40, 120, 60, 1], 'thickness' => [3, 6, 4.4, 0.2], 'frame' => [0, 5, 2, 0.1]] + self::SHAPE_FIELDS + ['eye_hole' => [5, 8, 6, 0.5], 'eye_wall' => [2, 4, 3, 0.1], 'links' => [0, 80, 40, 1]],
+        // a medal: `motif` flush (face down, the motif level with the plate, two filaments in one plate) or raised (face up,
+        // a change by height; the plate then as thick as a link, else the links' tops would print in the motif's colour).
+        // The motif a share of the width (motif_size, %), the eyelet always on top (docs/P.md §8b)
+        'medallion' => ['width' => [40, 120, 60, 1], 'thickness' => [3, 6, 4.4, 0.2], 'frame' => [0, 5, 2, 0.1], 'motif_size' => [20, 95, 55, 1]] + self::SHAPE_FIELDS + ['eye_hole' => [5, 8, 6, 0.5], 'eye_wall' => [2, 4, 3, 0.1], 'links' => [0, 80, 40, 1]],
         // a charm for a bag with holes: `bag_hole` is the hole of the bag the pin goes through, `bag_wall` how thick the bag is there
         'bag_charm' => ['width' => [30, 80, 45, 1], 'thickness' => [4, 8, 5, 0.2], 'frame' => [0, 3, 1.5, 0.1]] + self::SHAPE_FIELDS + ['bag_hole' => [6, 20, 12, 0.5], 'bag_wall' => [1, 10, 4, 0.5]],
         // held, not hung: a clip for a drinking straw of `straw_d`, and the tongue of a can opener; both sit on the outline at `eye_pos`
@@ -300,7 +300,7 @@ final class ParametricGenerator
         'topper' => ['template' => ['number', 'heart', 'star', 'circle', 'none'], 'typeface' => ['script', 'sans', 'serif', 'mono']],
         'tray' => ['body' => ['image', 'circle'], 'floor' => ['engraved', 'colors', 'plain'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'badge' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script'], 'mount' => ['glue', 'none']],
-        'medallion' => ['body' => ['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
+        'medallion' => ['motif' => ['flush', 'raised'], 'body' => ['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'photo_organizer' => ['body' => ['image', 'circle'], 'inside' => ['grid', 'holes', 'open']],
         'bag_charm' => ['body' => ['image', 'circle', 'rect'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
         'straw' => ['body' => ['image', 'circle'], 'typeface' => ['sans', 'serif', 'mono', 'script']],
@@ -335,7 +335,7 @@ final class ParametricGenerator
         'topper' => ['line1' => [20, false, 'Olivia'], 'number' => [3, false, '2']],
         'tray' => ['line1' => [16, false, ''], 'line2' => [16, false, '']],
         'badge' => ['line1' => [16, false, '']],
-        'medallion' => ['line1' => [16, false, ''], 'line2' => [16, false, '']],
+        'medallion' => ['line1' => [16, false, '1'], 'line2' => [16, false, '']],      // a medal starts as the first place
         'bag_charm' => ['line1' => [16, false, ''], 'line2' => [16, false, '']],
         'straw' => ['line1' => [12, false, ''], 'line2' => [12, false, '']], 'opener' => ['line1' => [16, false, ''], 'line2' => [16, false, '']],
         'sign' => ['line1' => [40, true, 'Jana'], 'line2' => [40, false, ''], 'line3' => [40, false, '']],
@@ -358,7 +358,7 @@ final class ParametricGenerator
     public const MAIN = [
         'name_cup' => ['width', 'height'], 'beads' => ['size', 'hole'],
         'charm' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'keychain' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'earrings' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'], 'ornament' => ['width', 'thickness', 'frame', 'eye_pos', 'eye_hole'],
-        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'straw_d', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
+        'magnet' => ['width', 'thickness', 'frame', 'mag_d', 'mag_h'], 'coaster' => ['width', 'thickness', 'frame'], 'gingerbread' => ['width', 'thickness', 'eye_pos', 'eye_hole'], 'name_letter' => ['height', 'thickness'], 'cookie' => ['width', 'thickness', 'frame'], 'topper' => ['width', 'text_size', 'text_y', 'spike', 'spikes'], 'tray' => ['width', 'height', 'frame'], 'badge' => ['width', 'thickness', 'frame', 'mag_d'], 'medallion' => ['width', 'motif_size', 'thickness', 'frame', 'links'], 'photo_organizer' => ['width', 'height', 'cell', 'hole_d'], 'bag_charm' => ['width', 'thickness', 'bag_hole', 'bag_wall'], 'straw' => ['width', 'thickness', 'straw_d', 'eye_pos'], 'opener' => ['width', 'thickness', 'eye_pos'],
         'organizer' => ['width', 'depth', 'height', 'rows', 'cols', 'radius'], 'box' => ['inner_w', 'inner_d', 'inner_h', 'radius'], 'phone_stand' => ['width', 'device', 'angle', 'back', 'depth', 'vent', 'thickness', 'radius', 'cutout_size', 'rib_pitch', 'band', 'across'],
         'cable_holder' => ['count', 'cable', 'depth'], 'modular' => ['inner_w', 'inner_d', 'height', 'cols', 'rows', 'radius'], 'vase' => ['height', 'top_d', 'bottom_d', 'waists', 'waist_at', 'ribs', 'flute', 'twist'], 'sign' => ['text_height', 'thickness', 'relief', 'radius'], 'logo' => ['width', 'thickness', 'base_h'], 'stamp' => ['width', 'relief'], 'qr' => ['size'], 'stencil' => ['width', 'margin'], 'papel' => ['width', 'height', 'base', 'relief', 'thickness'], 'notes' => ['width', 'pad', 'depth', 'thickness'], 'hair_tie' => ['width', 'post_h', 'post_d', 'thickness'], 'candle_stand' => ['width', 'jar_d', 'thickness'], 'insert' => ['depth', 'gap', 'margin'], 'compose' => ['thickness', 'step'], 'lightbox' => ['width', 'depth'], 'cutter' => ['width', 'height', 'wall', 'flange'], 'holder' => ['obj_w', 'obj_d', 'height', 'hook_h', 'bend', 'edge'], 'cap' => ['size_a', 'size_b', 'outer', 'height', 'pitch', 'mouth', 'edge'],
     ];
@@ -387,7 +387,7 @@ final class ParametricGenerator
     public const MAX_STROKE_POINTS = 48;
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
-        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
+        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'border'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['isolate', 'invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'insert' => ['notch'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole', 'hidden'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
@@ -402,7 +402,7 @@ final class ParametricGenerator
         // a shape cut out or standing has no plate: what belongs to the plate shows only with it
         'logo' => ['bevel' => ['mode', ['cutout']], 'shape' => ['mode', ['relief', 'height']], 'plate' => ['mode', ['relief', 'height']], 'margin' => ['mode', ['relief', 'height']], 'base_h' => ['mode', ['standing']]],
         'cookie' => self::HANG_WHEN + self::SHAPE_WHEN, 'name_letter' => self::HANG_WHEN + self::SHAPE_WHEN,
-        'medallion' => ['bg_strength' => ['remove_bg', ['on']]], 'bag_charm' => self::SHAPE_WHEN,
+        'medallion' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['motif', ['raised']]], 'bag_charm' => self::SHAPE_WHEN,
         // the clip and the tongue are always there: their place on the outline is not hidden behind a flag
         'straw' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']]], 'opener' => ['bg_strength' => ['remove_bg', ['on']], 'relief' => ['flush', ['off']]],
         // one colour and no picture in the floor: what belongs to the picture's colours never shows ("none" is no value of the choice)
@@ -452,8 +452,8 @@ final class ParametricGenerator
     /** things that hang only when asked to (a biscuit, a big letter): the eyelet's sizes show with the tick */
     private const HANG_WHEN = ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]];
 
-    /** the dark plate of a medal: the farm's black or dark blue, a built-in black without a farm */
-    private const MEDAL_PLATE = ['01_PLA+_cerny', '44_c_MATTE_PLA+_BLACK', 'name:black', 'black'];
+    /** a medal's number and rim: red Silk, else red PLA+, a built-in red without a farm (Roman, 19 Oct 2026) */
+    private const MEDAL_MOTIF = ['44_PLA_Silk_cervena_Silk_Red', '05_PLA+_cerveny', 'name:silk red', 'red'];
 
     private const SHAPE_WHEN = ['bg_strength' => ['remove_bg', ['on']], 'eye_pos' => ['eyelet', ['on']], 'eye_hole' => ['eyelet', ['on']], 'eye_wall' => ['eyelet', ['on']], 'relief' => ['flush', ['off']]];
 
@@ -461,9 +461,9 @@ final class ParametricGenerator
         // a medal for each place: the number in its metal, the plate dark so it shines. A colour is a list of spools, the
         // first the farm has is taken (presets()); "name:" looks a spool up by its name, a built-in name stands in without a farm
         'medallion' => [
-            'place1' => ['line1' => '1', 'typeface' => 'archivo', 'part_colors' => ['color_1' => ['39_PLA_Silk_zlata_Silk_Gold', 'name:silk gold', 'yellow'], 'body' => self::MEDAL_PLATE]],
-            'place2' => ['line1' => '2', 'typeface' => 'archivo', 'part_colors' => ['color_1' => ['43_PLA_Silk_stribrna_Silk_Silver', 'name:silk silver', 'grey'], 'body' => self::MEDAL_PLATE]],
-            'place3' => ['line1' => '3', 'typeface' => 'archivo', 'part_colors' => ['color_1' => ['name:marrakech', 'name:marrákeš', '40_PLA_Silk_medena_Silk_Copper', 'name:silk copper', 'orange'], 'body' => self::MEDAL_PLATE]],
+            'place1' => ['line1' => '1', 'typeface' => 'archivo', 'part_colors' => ['body' => ['39_PLA_Silk_zlata_Silk_Gold', 'name:silk gold', 'yellow'], 'color_1' => self::MEDAL_MOTIF]],
+            'place2' => ['line1' => '2', 'typeface' => 'archivo', 'part_colors' => ['body' => ['43_PLA_Silk_stribrna_Silk_Silver', 'name:silk silver', 'grey'], 'color_1' => self::MEDAL_MOTIF]],
+            'place3' => ['line1' => '3', 'typeface' => 'archivo', 'part_colors' => ['body' => ['name:marrakech', 'name:marrákeš', '40_PLA_Silk_medena_Silk_Copper', 'name:silk copper', 'orange'], 'color_1' => self::MEDAL_MOTIF]],
         ],
         // compositions to start from; colours are named, each becomes the farm's nearest spool. The last four are the
         // products of the forms (nameplate, key ring, ornament, big letter), for a visitor who wants to lay them out by hand
@@ -1121,6 +1121,12 @@ final class ParametricGenerator
             // whether colours share a layer, which only a printer that changes filament by itself can print
             $clean['color_changes'] = array_values((array) ($notes['color_changes'] ?? []));
             $clean['multi_material'] = ! empty($notes['multi_material']);
+            // a flush medal: its parts share layers, so they print together on one plate or not at all (never apart)
+            if (! empty($notes['one_plate_required'])) {
+                $clean['one_plate_required'] = true;
+            } else {
+                unset($clean['one_plate_required']);
+            }
         }
         if ($kind === 'papel' && ($clean['treatment'] ?? '') === 'portrait') {
             // the backing and the dark layer on it: the filaments the tool chose stay with the design, and so does the one

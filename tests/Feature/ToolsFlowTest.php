@@ -483,11 +483,18 @@ class ToolsFlowTest extends TestCase
         $free[0]->update(['farm_color_id' => $gold->id, 'remaining_g' => 800, 'enabled' => true]);
         $free[1]->update(['farm_color_id' => $black->id, 'remaining_g' => 800, 'enabled' => true]);
 
-        // first place: a gold one raised on a black plate, forty links; one change of filament where the number starts
-        $made = $this->actingAs($user)->postJson('/api/tools/param', ['kind' => 'medallion', 'params' => ['line1' => '1', 'part_colors' => ['color_1' => '#d4a531', 'body' => '#1b1b1d']]])->assertCreated();
+        // a flush medal (the tool's own choice) carries what the farm needs: two filaments in one plate, never apart
+        $flush = ModelFile::where('uuid', $this->actingAs($user)->postJson('/api/tools/param', ['kind' => 'medallion', 'params' => ['line1' => '1']])->assertCreated()->json('file.uuid'))->firstOrFail();
+        $this->assertTrue($flush->tool_params['multi_material']);
+        $this->assertTrue($flush->tool_params['one_plate_required']);
+        $this->assertSame([], (array) $flush->tool_params['color_changes']);
+
+        // a raised one: a gold one on a black plate, forty links; one change of filament where the number starts
+        $made = $this->actingAs($user)->postJson('/api/tools/param', ['kind' => 'medallion', 'params' => ['line1' => '1', 'motif' => 'raised', 'part_colors' => ['color_1' => '#d4a531', 'body' => '#1b1b1d']]])->assertCreated();
         $file = ModelFile::where('uuid', $made->json('file.uuid'))->firstOrFail();
         $this->assertSame(['body', 'color_1'], $file->tool_params['parts']);
         $this->assertFalse((bool) ($file->tool_params['multi_material'] ?? false));
+        $this->assertArrayNotHasKey('one_plate_required', $file->tool_params);
         $this->assertSame([4.4], array_column((array) $file->tool_params['color_changes'], 'z'));
 
         // the farm prints one plate, never a part on its own: the plate from the black spool, the change to the gold one

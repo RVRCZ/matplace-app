@@ -46,13 +46,12 @@ PRODUCTS = ("charm", "keychain", "earrings", "ornament", "magnet", "coaster", "g
 LIMITS = {
     "width": (10, 250), "height": (6, 250), "wall": (1.2, 3), "thickness": (1.2, 15), "frame": (0, 10), "relief": (0.2, 2), "colors_n": (1, 8), "bg_strength": (0, 100), "smooth": (0, 1),
     "contrast": (50, 150), "brightness": (50, 150), "saturation": (0, 200), "eye_pos": (0, 100), "eye_hole": (1.5, 8), "eye_wall": (1.2, 4),
-    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 80), "depth": (0.4, 1.0), "cell": (20, 80), "hole_d": (8, 40), "bag_hole": (6, 20), "bag_wall": (1, 10), "straw_d": (5, 14),
+    "mag_d": (4, 30), "mag_h": (0.4, 6), "mag_gap": (0, 0.4), "text_size": (30, 150), "text_y": (-60, 60), "spike": (30, 100), "spikes": (1, 2), "links": (0, 80), "depth": (0.4, 1.0), "motif_size": (20, 95), "cell": (20, 80), "hole_d": (8, 40), "bag_hole": (6, 20), "bag_wall": (1, 10), "straw_d": (5, 14),
 }
 BODIES = {"charm": ("image", "circle", "rect"), "keychain": ("rect", "image", "circle"), "earrings": ("image", "circle"), "ornament": ("image", "circle", "star"),
           "magnet": ("image", "circle", "rect"), "coaster": ("circle", "square", "hex"), "gingerbread": ("image",), "name_letter": ("image",), "cookie": ("image", "circle"), "topper": ("image",), "tray": ("image", "circle"), "badge": ("image", "circle", "rect"), "medallion": ("circle", "star", "hex", "shield", "octagon", "rosette", "heart"), "photo_organizer": ("image", "circle"), "bag_charm": ("image", "circle", "rect"), "straw": ("image", "circle"), "opener": ("image", "circle", "rect")}
 MOUNTS = ("glue", "press", "through", "none")
 INLAY = 0.6                 # how deep inlaid colours go: three layers, nothing of the plate shows through
-LEM = 0.8                   # how high the rim on the back of a medal stands
 GAP = 6.0                   # between the two earrings on the bed
 
 
@@ -405,12 +404,17 @@ def build(M, Invalid, p, product):
         if floor_mode not in ("engraved", "colors", "plain"):
             raise Invalid("bad_choice", "floor")
         flush, rim, bevel = floor_mode == "colors", False, False       # colours of a floor can only be inlaid: the walls stand in the same layers
-    # a medal: face up, its motif raised and changed by height, a rim round it in the motif's first colour, the eyelet
-    # always on top of it. With `inlay` it lies face down instead: the motif is the bottom layers, smooth from the bed, in
-    # its own colour beside the plate's. Two filaments in the same layers need a printer that prints both in one plate;
-    # the farm does not yet, so the page does not offer it (docs/P.md §8)
+    # a medal, its eyelet always on top of it, its rim (`border`) in the motif's first colour. `motif`:
+    #   flush   face down: the motif is the bottom layers, level with the plate and smooth from the bed, in its own colour
+    #           beside the plate's. Two filaments in the same layers: one plate on a printer that changes spools
+    #           (notes.one_plate_required, never a part on its own plate; docs/P.md §8b)
+    #   raised  face up: the motif stands one step out of the plate and the colour changes by height
     medal = product == "medallion"
-    face_down = medal and bool(p.get("inlay", False))
+    motif = p.get("motif", "flush") if medal else None
+    if medal and motif not in ("flush", "raised"):
+        raise Invalid("bad_choice", "motif")
+    face_down = medal and (motif == "flush" or bool(p.get("inlay", False)))
+    border = medal and bool(p.get("border", True))
     if medal:
         flush, rim, bevel = False, False, False
     eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter")) or medal
@@ -451,7 +455,8 @@ def build(M, Invalid, p, product):
         elif is_text:
             art, tinfo = S.text(M, lines[:2], p.get("font"), 10, scales=[1.0, 0.7])
             w0, h0 = S.size(art)
-            k = (2 * (inner_r - 1.0) / math.hypot(w0, h0)) if geometric else art_w / w0
+            reach = min(2 * (inner_r - 1.0), width * n("motif_size", 55) / 100.0) if medal else 2 * (inner_r - 1.0)      # a medal's number: a share of its width
+            k = (reach / math.hypot(w0, h0)) if geometric else art_w / w0
             art = S.fit(art, width_mm=w0 * k)
             pal = options["palette"]
             first = options["assign"].get("1")
@@ -465,7 +470,7 @@ def build(M, Invalid, p, product):
                 probe = dict(options, fit=("circle", 100.0), n=1)
                 kept = S.colors(M, art_path, 100.0, probe)[1]["background"] == "kept"
                 # a whole photo fills the body to its edge, a cut-out motif sits inside it
-                options["fit"] = ("cover", 2 * inner_r, 2 * inner_r) if kept else ("circle", 2 * (inner_r - 1.0))
+                options["fit"] = ("cover", 2 * inner_r, 2 * inner_r) if kept else ("circle", min(2 * (inner_r - 1.0), width * n("motif_size", 55) / 100.0) if medal else 2 * (inner_r - 1.0))
             layers, info = S.colors(M, art_path, art_w, options)
             if product == "badge" and lines:
                 if geometric and info["background"] == "kept":
@@ -624,8 +629,9 @@ def build(M, Invalid, p, product):
             # a change of filament by height colours everything above it on the bed, links too: they stay under the plate's top
             t = round(tall, 2)
             notes["thickened"] = t
-    if medal and not face_down and layers:
-        # the rim round the medal goes with the motif's first colour, one step high: every band of layers keeps one filament
+    if border and layers:
+        # the rim round the medal goes with the motif's first colour: raised, one step high (every band of layers keeps
+        # one filament); flush, in the same bottom layers as the motif, smooth on the face
         lem2d = medal2d - medal2d.offset(-2.0, J, 2.0, 32)
         if ring_out is not None:
             lem2d = lem2d - ring_out.offset(0.01, J, 2.0, 24)
@@ -654,14 +660,6 @@ def build(M, Invalid, p, product):
             pocket = layer["own"] if pocket is None else pocket + layer["own"]
         if pocket is not None:
             body = body - (pocket.extrude(depth + 1).translate([0, 0, -1]) if face_down else pocket.extrude(INLAY + 1).translate([0, 0, t - INLAY]))
-    if face_down:
-        # a rim 2 mm wide on the back (the top of the print) frames the medal; it is the plate's, no filament of its own
-        lem2d = medal2d - medal2d.offset(-2.0, J, 2.0, 32)
-        if ring_out is not None:
-            lem2d = lem2d - ring_out.offset(0.01, J, 2.0, 24)
-        if not lem2d.is_empty():
-            lem = lem2d.extrude(LEM + 0.01).translate([0, 0, t - 0.01])
-            body, whole, top = body + lem, whole + lem, t + LEM
     if dish:
         rise = n("height", 15)
         if rise < t + 3:
@@ -871,7 +869,7 @@ def build(M, Invalid, p, product):
     notes.update({
         "outer": [round(w_all, 1), round(h_all, 1), round(max(top, beside[2] if beside else 0.0, grip.bounding_box()[5] if grip is not None else 0.0), 1)], "each": [round(span, 1), round(each_h, 1), round(max(top, grip.bounding_box()[5] if grip is not None else 0.0), 1)], "copies": 2 if product == "earrings" else 1,
         "colors": listed, "body_color": {"code": body_color[0], "hex": body_color[1]}, "paint": paint, "parts": [name for name, _ in pieces],
-        "filaments": len(filaments), "multi_material": bool(multi), "color_changes": changes, "found": info["found"], "wanted": info["wanted"],
+        "filaments": len(filaments), "multi_material": bool(multi), "one_plate_required": bool(face_down and multi), "color_changes": changes, "found": info["found"], "wanted": info["wanted"],
         "background": info["background"], "source": info["source"], "warnings": warn, "thin_pct": thin, "missing_chars": info.get("missing_chars", []),
     })
     if has_rim:
