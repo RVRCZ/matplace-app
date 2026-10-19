@@ -87,6 +87,11 @@ GCODE;
         // the printer's setting: off unless the admin ticked it
         $this->assertFalse((new FarmPrinter)->timelapseSettings()['sync']);
         $this->assertTrue((new FarmPrinter(['timelapse' => ['sync' => '1']]))->timelapseSettings()['sync'] === '1');
+        // ... and it reaches the G-code options of an order (F26-000089 printed without M400 because this key was dropped)
+        $printer = new FarmPrinter(['mode' => FarmPrinter::MODE_AGENT, 'timelapse' => ['mode' => 'always', 'park_x' => 0, 'park_y' => 130, 'dwell_ms' => 3000, 'sync' => '1']]);
+        $options = $printer->timelapseFor(new FarmOrder(['kind' => FarmOrder::KIND_PRINT]));
+        $this->assertSame('1', $options['sync'] ?? null);
+        $this->assertStringContainsString('sync=m400', TimelapseGcode::apply(self::ORCA, $options));
     }
 
     public function test_parking_time_is_counted_per_stop(): void

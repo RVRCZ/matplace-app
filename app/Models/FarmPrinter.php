@@ -79,7 +79,7 @@ class FarmPrinter extends Model
         $on = in_array($order->kind, [FarmOrder::KIND_PRINT, FarmOrder::KIND_SHOWCASE], true) && $this->mode === self::MODE_AGENT
             && ($t['mode'] === 'always' || ($t['mode'] === 'consent' && $order->video_consent));
 
-        return $on ? array_intersect_key($t, array_flip(['park_x', 'park_y', 'dwell_ms', 'lift_mm', 'travel_mm_s'])) : null;
+        return $on ? array_intersect_key($t, array_flip(['park_x', 'park_y', 'dwell_ms', 'lift_mm', 'travel_mm_s', 'sync'])) : null;
     }
 
     public function agent(): BelongsTo
