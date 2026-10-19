@@ -85,6 +85,7 @@ return [
         'parts_one_machine' => 'Todas las piezas deben salir de las bobinas de una sola impresora: tras la primera elección quedan solo las suyas.',
         'one_plate_required' => 'Los colores de este diseño están en una misma capa: se imprime entero en una impresora que cambia bobinas, de una unidad en una. Solo se ofrecen las bobinas de esas impresoras.',
         'one_plate_copies' => 'Este diseño se imprime de una unidad en una. Ponga 1 unidad, o pídalo varias veces.',
+        'one_plate_single' => 'Este diseño se imprime de una unidad en una.',
         'b_changes' => 'Cambios de color',
         'b_changes_value' => ':n× (la purga está en el material, el tiempo en el tiempo de impresión)',
         'part_line' => ':part: :name',
