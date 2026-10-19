@@ -2,11 +2,11 @@
 
 return [
     'title' => 'Medal for the winners on a chain: 1st, 2nd and 3rd place',
-    'description' => 'A winner\'s medal with a gold, silver or bronze number, smooth from lying face down, and a chain of 40 snap-in links. We print it or you download it.',
+    'description' => 'A winner\'s medal with a raised gold, silver or bronze number on a dark plate and a chain of 40 snap-in links. We print it, or you download the model.',
     'h1' => 'Medal for the winners on a chain: gold, silver and bronze',
     'intro' => [
         'The tool makes a medal for the winners of a children\'s race, a tournament, a school contest or a kids\' day. One click chooses 1st, 2nd or 3rd place: the number in gold, silver or bronze on a dark plate. You can change the number, a name in two lines of up to 16 characters or your own picture, and the colours too. The plate comes in seven shapes: circle, star, hexagon, octagon, shield, a rosette with a scalloped edge and a heart, 40 to 120 mm wide, 60 mm to begin with.',
-        'The medal prints face down. The number or picture lies in the bottom three layers beside the plate, so it comes out as smooth as the glass of the bed and in another colour, with no change of filament by height. The back has a rim of 2 mm and the eyelet is always on top, on the axis. A chain is printed next to the medal: 40 links to begin with, round 4 mm bars that snap into one another. Forty links make a chain of about 88 cm, and with a 60 mm medal they fit one bed of 220 × 220 mm.',
+        'The number or picture stands out from the plate and prints in a second colour: the printer changes filament once, at the height where the number starts. A rim of 2 mm in the number\'s colour runs round the medal and the eyelet is always on top, on the axis. A chain is printed next to the medal: 40 links to begin with, round 4 mm bars that snap into one another. The plate is 4.4 mm thick, as tall as a link, so the whole chain stays in the plate\'s colour. Forty links make a chain of about 88 cm, and with a 60 mm medal they fit one bed of 220 × 220 mm.',
     ],
     'steps' => [
         ['name' => 'Choose the place', 'text' => '1st, 2nd or 3rd place: the number gets gold, silver or bronze, the plate a dark colour. You can still change the number, a name, a picture and the colours.'],
@@ -15,7 +15,7 @@ return [
         ['name' => 'Order the print or download', 'text' => 'Next to the preview you see the dimensions; the exact price is shown by the calculator after "Continue". The model and the slicer project download for free, without signing up.'],
     ],
     'faq' => [
-        ['q' => 'Why is the medal printed face down?', 'a' => 'The face that lies on the bed comes out as smooth and shiny as the bed. The number sits in the bottom three layers (0.6 mm) beside the plate, each in its own colour: the printer lays them side by side in those layers only and then goes on in one colour. The number is mirrored so it reads right once the medal is turned over.'],
+        ['q' => 'How is a gold number printed on a black plate?', 'a' => 'The plate, the chain and the eyelet print in black up to 4.4 mm. There the printer changes filament once and prints the raised number and the rim round the medal in gold. That is why the plate is as thick as a link of the chain: the chain stays below the change and comes out all black.'],
         ['q' => 'What colours do the places have?', 'a' => '1st place gold PLA Silk, 2nd place silver PLA Silk, 3rd place bronze (metallic when we have it loaded, otherwise copper PLA Silk). The plate is dark so the number stands out. When ordering you choose from the spools loaded in the printers right now.'],
         ['q' => 'How long a chain do I need?', 'a' => 'For a child 60 to 70 cm will do, that is 28 to 32 links; for an adult 80 to 90 cm, that is 36 to 40 links. The chain goes over the head, it has no clasp.'],
         ['q' => 'How do the links join?', 'a' => 'Each link is an oval of 30 × 18 mm with a round 4 mm bar and a gap in the middle of a long side. The gap is a little under half a millimetre narrower than the link, so the neighbour snaps in. Underneath, the link stands on a narrow flat and the rounding starts at 45°, so it prints without supports.'],

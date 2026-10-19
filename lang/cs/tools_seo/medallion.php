@@ -2,11 +2,11 @@
 
 return [
     'title' => 'Medaile pro vítěze s řetězem: 1., 2. a 3. místo',
-    'description' => 'Medaile pro vítěze se zlatou, stříbrnou nebo bronzovou číslicí, hladkou lícem na podložce, a řetězem ze 40 článků. Vytiskneme ji, nebo model stáhnete.',
+    'description' => 'Medaile pro vítěze se vystouplou zlatou, stříbrnou nebo bronzovou číslicí na tmavé destičce a řetězem ze 40 článků. Vytiskneme ji, nebo model stáhnete.',
     'h1' => 'Medaile pro vítěze s řetězem: zlatá, stříbrná a bronzová',
     'intro' => [
         'Nástroj vytvoří medaili pro vítěze dětského závodu, turnaje, školní soutěže nebo dětského dne. Jedním klepnutím zvolíte 1., 2. nebo 3. místo: číslice ve zlaté, stříbrné nebo bronzové barvě na tmavé destičce. Číslo, jméno do dvou řádků po 16 znacích nebo vlastní obrázek můžete změnit, stejně jako barvy. Destička má sedm tvarů: kruh, hvězdu, šestiúhelník, osmiúhelník, štít, rozetu s vroubkovaným okrajem a srdce, široká je 40 až 120 mm, výchozí 60 mm.',
-        'Medaile se tiskne lícem dolů. Číslice nebo obrázek leží ve spodních třech vrstvách vedle destičky, takže vyjde hladká jako sklo podložky a v jiné barvě, bez výměny filamentu ve výšce. Na zadní straně je lem 2 mm a očko je vždy nahoře na ose. Vedle medaile se vytiskne řetěz: výchozích 40 článků s kulatým průřezem 4 mm, které do sebe zacvaknete. Čtyřicet článků dá řetěz kolem 88 cm a s medailí 60 mm se vejdou na jednu podložku 220 × 220 mm.',
+        'Číslice nebo obrázek vystupuje nad destičku a tiskne se druhou barvou: tiskárna vymění filament ve výšce, kde číslice začíná, jednou za celý tisk. Kolem medaile je lem 2 mm v barvě číslice a očko je vždy nahoře na ose. Vedle medaile se vytiskne řetěz: výchozích 40 článků s kulatým průřezem 4 mm, které do sebe zacvaknete. Destička je silná 4,4 mm, stejně jako článek, aby řetěz zůstal celý v barvě destičky. Čtyřicet článků dá řetěz kolem 88 cm a s medailí 60 mm se vejdou na jednu podložku 220 × 220 mm.',
     ],
     'steps' => [
         ['name' => 'Zvolte místo', 'text' => '1. místo, 2. místo, nebo 3. místo: číslice dostane zlatou, stříbrnou nebo bronzovou barvu, destička tmavou. Číslo, jméno, obrázek i barvy dál měníte.'],
@@ -15,7 +15,7 @@ return [
         ['name' => 'Objednejte tisk, nebo stáhněte', 'text' => 'Vedle náhledu vidíte rozměry, přesnou cenu ukáže kalkulace po „Pokračovat“. Model i projekt pro slicer stáhnete zdarma a bez registrace.'],
     ],
     'faq' => [
-        ['q' => 'Proč se medaile tiskne lícem dolů?', 'a' => 'Líc, který leží na podložce, vyjde hladký a lesklý jako podložka. Číslice je ve spodních třech vrstvách (0,6 mm) vedle destičky, každá v jiné barvě: tiskárna je tiskne vedle sebe jen v těch vrstvách, pak už pokračuje jednou barvou. Číslici jsme zrcadlili, aby po otočení četla správně.'],
+        ['q' => 'Jak se tiskne zlatá číslice na černé destičce?', 'a' => 'Destička, řetěz i očko se tisknou černě do výšky 4,4 mm. Tam tiskárna jednou vymění filament a vytiskne vystouplou číslici a lem kolem medaile zlatě. Proto je destička stejně silná jako článek řetězu: řetěz pod výměnou zůstane celý černý.'],
         ['q' => 'Jaké barvy mají jednotlivá místa?', 'a' => '1. místo zlatá PLA Silk, 2. místo stříbrná PLA Silk, 3. místo bronzová (metalická, když ji máme založenou, jinak měděná PLA Silk). Destička je tmavá, aby číslice vynikla. Při objednávce vybíráte z cívek, které jsou právě v tiskárnách.'],
         ['q' => 'Jak dlouhý řetěz potřebuju?', 'a' => 'Pro dítě stačí 60 až 70 cm, tedy 28 až 32 článků; pro dospělého 80 až 90 cm, tedy 36 až 40 článků. Řetěz se přetahuje přes hlavu, nemá zapínání.'],
         ['q' => 'Jak se články spojují?', 'a' => 'Každý článek je ovál 30 × 18 mm s kulatým průřezem 4 mm a mezerou uprostřed delší strany. Mezera je o necelý půlmilimetr užší než článek, takže soused do ní zacvakne. Dole má článek úzkou plošku, na které leží, a zaoblení začíná pod úhlem 45°, takže se tiskne bez podpěr.'],

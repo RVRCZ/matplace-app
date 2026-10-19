@@ -198,8 +198,10 @@ final class ParametricGenerator
         // the shape is ours (a gingerbread man, a heart, a star, a tree), the visitor brings the name: no picture, no picture's fields
         'gingerbread' => ['width' => [50, 150, 90, 1], 'thickness' => [2, 6, 3, 0.2], 'relief' => [0.4, 1.2, 0.6, 0.2], 'eye_hole' => [3, 6, 4, 0.5]] + self::SHAPE_EYELET,
         // a medal: the eyelet takes a link of the chain (a bar of 4 mm), `links` is how many of them are printed next to it
-        // a medal lies face down: no colours stacked on it (relief), its motif `depth` deep in the bottom layers, the eyelet always on top
-        'medallion' => ['width' => [40, 120, 60, 1], 'thickness' => [3, 6, 3, 0.2], 'frame' => [0, 5, 2, 0.1]] + ['colors_n' => [1, 8, 4, 1], 'bg_strength' => [0, 100, 30, 1], 'smooth' => [0, 1, 0.3, 0.05], 'contrast' => [50, 150, 100, 1], 'brightness' => [50, 150, 100, 1], 'saturation' => [0, 200, 100, 1]] + ['depth' => [0.4, 1, 0.6, 0.2], 'eye_hole' => [5, 8, 6, 0.5], 'eye_wall' => [2, 4, 3, 0.1], 'links' => [0, 80, 40, 1]],
+        // a medal face up, its motif raised and changed by height; the plate as thick as a link (4.4 mm), else the links' tops
+        // would print in the motif's colour. The eyelet always on top. (Face down with the motif inlaid, `inlay`, waits
+        // for a farm that prints two filaments in one plate: docs/P.md §8.)
+        'medallion' => ['width' => [40, 120, 60, 1], 'thickness' => [3, 6, 4.4, 0.2], 'frame' => [0, 5, 2, 0.1]] + self::SHAPE_FIELDS + ['eye_hole' => [5, 8, 6, 0.5], 'eye_wall' => [2, 4, 3, 0.1], 'links' => [0, 80, 40, 1]],
         // a charm for a bag with holes: `bag_hole` is the hole of the bag the pin goes through, `bag_wall` how thick the bag is there
         'bag_charm' => ['width' => [30, 80, 45, 1], 'thickness' => [4, 8, 5, 0.2], 'frame' => [0, 3, 1.5, 0.1]] + self::SHAPE_FIELDS + ['bag_hole' => [6, 20, 12, 0.5], 'bag_wall' => [1, 10, 4, 0.5]],
         // held, not hung: a clip for a drinking straw of `straw_d`, and the tongue of a can opener; both sit on the outline at `eye_pos`

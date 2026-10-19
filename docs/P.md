@@ -682,3 +682,34 @@ Od Romana podle ohlasu na YouTube (video „Medaile s řetězem“, 933 zhlédnu
 - Jestli je líc s číslem hladký a barvy vedle sebe se nepřetírají: číslo v první vrstvě musí tiskárna tisknout druhou
   tryskou nebo z druhé cívky (Kobra S1 s ACE, Kobra X).
 - Jestli ploška 1 mm drží článek na podložce, nebo se kraj první vrstvy zvedá.
+
+### 8a. Lícem nahoru, změna po výšce (19. 10. 2026)
+
+**Proč**: farma tiskne „po dílech“ každý díl na samostatné podložce (`PrepareFarmOrder`: `part-1.stl`,
+`part-2.stl`). Dva filamenty v jedné podložce zatím neumí, `multi_material` se ve farmě nikde nečte. Medaile lícem
+dolů by tedy vyšla jako dvě věci: černá deska s prázdnou kapsou 0,6 mm a samostatná zlatá jednička 0,6 mm. Řídící
+session rozhodla:
+- teď medaile lícem nahoru se změnou po výšce,
+- tisk dvou filamentů v jedné podložce je nová práce farmy.
+
+**Jak je to teď**:
+- **Číslo nebo obrázek** vystupuje nad desku o `relief` (výchozí 0,6). Barvy obrázku se mění po výšce jako
+  v kole 1, jednička je jedna výměna.
+- **Lem 2 mm** kolem medaile je součástí prvního dílu motivu (`color_1`): je v jeho barvě a jeden krok vysoký, takže
+  každé pásmo vrstev drží jeden filament.
+- **Deska 4,4 mm**, stejně jako článek (4,33 mm zaokrouhleno na vrstvy). Výměna filamentu po výšce barví celou
+  podložku, i řetěz; články proto musí končit pod výměnou. S články a tenčí deskou ji nástroj zvedne na 4,4 mm
+  (`notes.thickened`). Bez článků zůstane, jak je zadaná.
+- **Zrcadlení**: žádné.
+- **Očko** zůstává nahoře na ose.
+- **Předvolby, tvary, 60 mm / 40 článků a kulaté články** zůstávají beze změny.
+- **Farma**: `medallion` už není v `OrderService::ASSEMBLED`. Objednávka je jedna podložka: deska z tmavé cívky,
+  výměna na zlatou ve 4,4 mm (`ToolsFlowTest`).
+
+**Varianta lícem dolů** je v enginu dál, za volbou `inlay` (a `depth`). Stránka ji nenabízí, `clean()` ji z formuláře
+nepustí. Test `test_a_medal_face_down_with_its_motif_inlaid_waits_in_the_engine` ji staví přímo přes
+`param_tool.py`. Zapnout ji jde, až farma vytiskne dva filamenty v jedné podložce:
+1. přidat `inlay` do FLAGS a `depth` do FIELDS medaile,
+2. vrátit `medallion` do ASSEMBLED, nebo nový druh tisku.
+
+**Ukázky** jsou překreslené lícem nahoru. Karta zůstává studiovou fotkou.

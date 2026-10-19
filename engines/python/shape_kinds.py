@@ -405,12 +405,15 @@ def build(M, Invalid, p, product):
         if floor_mode not in ("engraved", "colors", "plain"):
             raise Invalid("bad_choice", "floor")
         flush, rim, bevel = floor_mode == "colors", False, False       # colours of a floor can only be inlaid: the walls stand in the same layers
-    # a medal lies face down: its motif is the bottom layers, smooth from the bed, in its own colour beside the plate's
-    # (two filaments in the same layers: printed by parts, never a change by height); the eyelet always on top of it
-    face_down = product == "medallion"
-    if face_down:
+    # a medal: face up, its motif raised and changed by height, a rim round it in the motif's first colour, the eyelet
+    # always on top of it. With `inlay` it lies face down instead: the motif is the bottom layers, smooth from the bed, in
+    # its own colour beside the plate's. Two filaments in the same layers need a printer that prints both in one plate;
+    # the farm does not yet, so the page does not offer it (docs/P.md §8)
+    medal = product == "medallion"
+    face_down = medal and bool(p.get("inlay", False))
+    if medal:
         flush, rim, bevel = False, False, False
-    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter")) or face_down
+    eyelet = (bool(p.get("eyelet", False)) and product in ("charm", "keychain", "earrings", "ornament", "gingerbread")) or (bool(p.get("hang", False)) and product in ("cookie", "name_letter")) or medal
     biscuit = product == "cookie"                             # a picture or a silhouette as dough, icing piped on it by hand
     cookie = product in ("gingerbread", "name_letter", "topper")      # the shape is ours, the visitor brings the name
     warn = []
@@ -453,7 +456,7 @@ def build(M, Invalid, p, product):
             pal = options["palette"]
             first = options["assign"].get("1")
             # letters dark on a light plate; a medal the other way round, its number shines on a dark plate
-            code = first or ((max if face_down else min)(pal, key=lambda f: _light(f[1]))[0] if pal else "")
+            code = first or ((max if medal else min)(pal, key=lambda f: _light(f[1]))[0] if pal else "")
             hx = dict((c, h) for c, h in pal).get(code, "#222222")
             layers = [{"index": 1, "rgb": hx, "code": code, "hex": hx, "share": 1.0, "own": art, "stack": art}]
             info = {"source": "text", "silhouette": art, "size": list(S.size(art)), "found": 1, "wanted": 1, "background": "alpha", "missing_chars": tinfo.get("missing_chars", [])}
@@ -549,7 +552,7 @@ def build(M, Invalid, p, product):
         travel = S.dense(S.outer_ring(body2d))
         if cookie and info.get("top"):
             travel = S.started(travel, info["top"])
-        if face_down:
+        if medal:
             # straight above the middle, where the outline is highest there: a medal hangs straight
             bx0, by0, bx1, by1 = body2d.bounds()
             mid = (bx0 + bx1) / 2
@@ -615,6 +618,20 @@ def build(M, Invalid, p, product):
         t = round(mag_h + 0.8, 2)                             # a floor of four layers over the magnet
         notes["thickened"] = t
     depth = n("depth", 0.6)
+    if medal and not face_down and int(n("links", 40)) > 0:
+        tall = math.ceil(_link_profile(LINK[2])[0] / 0.2 - 1e-6) * 0.2
+        if t < tall - 1e-6:
+            # a change of filament by height colours everything above it on the bed, links too: they stay under the plate's top
+            t = round(tall, 2)
+            notes["thickened"] = t
+    if medal and not face_down and layers:
+        # the rim round the medal goes with the motif's first colour, one step high: every band of layers keeps one filament
+        lem2d = medal2d - medal2d.offset(-2.0, J, 2.0, 32)
+        if ring_out is not None:
+            lem2d = lem2d - ring_out.offset(0.01, J, 2.0, 24)
+        if not lem2d.is_empty():
+            layers[0]["own"] = layers[0]["own"] + lem2d
+            layers[0]["stack"] = layers[0]["stack"] + lem2d
     if face_down:
         top = t
         solids = [(layer, layer["own"].extrude(depth)) for layer in layers]
@@ -762,8 +779,8 @@ def build(M, Invalid, p, product):
         spools = sorted(p.get("palette") or [], key=lambda f: -_light(f[1]))
         body_color = own or dish_color or ((spools[0][0], spools[0][1]) if spools else ("", "#ede6d6"))
     elif is_text:
-        pal = sorted(p.get("palette") or [], key=lambda f: _light(f[1]) if face_down else -_light(f[1]))
-        body_color = own or ((pal[0][0], pal[0][1]) if pal else ("", "#2b2b2e" if face_down else "#ede6d6"))       # letters dark, the plate light; a medal the other way round
+        pal = sorted(p.get("palette") or [], key=lambda f: _light(f[1]) if medal else -_light(f[1]))
+        body_color = own or ((pal[0][0], pal[0][1]) if pal else ("", "#2b2b2e" if medal else "#ede6d6"))       # letters dark, the plate light; a medal the other way round
     else:
         # the plate is the picture's lowest colour unless the visitor gives it its own: no filament is changed for it,
         # so a picture of two colours is one change, which is what the farm prints today
