@@ -1790,5 +1790,10 @@
     "param.o.shape.rosette": "Rosette",
     "param.o.shape.heart": "Heart",
     "param.f.medallion.depth": "Depth of the motif",
-    "param.shape.warn.links_cut": "Not all the links fit one bed of 220 × 220 mm. As many are printed as the count by the chain says. For a longer chain make the medal smaller, or order a second medal with the links that are missing."
+    "param.shape.warn.links_cut": "Not all the links fit one bed of 220 × 220 mm. As many are printed as the count by the chain says. For a longer chain make the medal smaller, or order a second medal with the links that are missing.",
+    "farm.order.tl.printing": "printing, about :time left",
+    "farm.order.tl.printing_now": "printing now",
+    "farm.order.tl.printing_end": "printing, about to finish",
+    "farm.order.tl.done": "printed",
+    "farm.order.tl.dispatched": "sent"
 }

@@ -10,6 +10,7 @@ import { BufferGeometry } from 'three';
 import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
 import { money as moneyText } from '../site/money';
+import { timelinePrint, timelineDispatch } from './order_timeline';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
 /** A colour on offer: one per colour, with the codes of every spool of it that could print the order ("U33" = farm U, printer 3, slot 3). */
@@ -563,8 +564,13 @@ export function bootFarmOrder(): void {
                 show(copiesLine, s.copies > 1);
             }
             $('farm-time')!.textContent = duration(s.minutes!);
+            // the print line follows the order: the time on the printer, what is left while it prints, printed (order_timeline.ts)
             const tlPrint = $('farm-tl-print');
-            if (tlPrint) tlPrint.textContent = tr('farm.order.tl.print', { time: duration(s.minutes!) });
+            const printLine = timelinePrint(s, tr, duration);
+            if (tlPrint) tlPrint.textContent = printLine ?? '';
+            show($('farm-timeline'), printLine !== null);
+            const tlDispatch = $('farm-tl-dispatch-text');
+            if (tlDispatch) tlDispatch.textContent = timelineDispatch(s, tr) ?? tlDispatch.dataset.rule ?? '';
             const tlDelivery = $('farm-tl-delivery');
             const chosen = s.status === 'sliced' ? delivery : s.delivery;
             if (tlDelivery) tlDelivery.textContent = tr(chosen === 'pickup' ? 'farm.order.tl.pickup' : chosen ? 'farm.order.tl.parcel' : 'farm.order.tl.none');

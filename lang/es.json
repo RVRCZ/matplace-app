@@ -1790,5 +1790,10 @@
     "param.o.shape.rosette": "Roseta",
     "param.o.shape.heart": "Corazón",
     "param.f.medallion.depth": "Profundidad del motivo",
-    "param.shape.warn.links_cut": "No caben todos los eslabones en una cama de 220 × 220 mm. Se imprimen tantos como indica el número junto a la cadena. Para una cadena más larga, reduzca la medalla o pida una segunda medalla con los eslabones que faltan."
+    "param.shape.warn.links_cut": "No caben todos los eslabones en una cama de 220 × 220 mm. Se imprimen tantos como indica el número junto a la cadena. Para una cadena más larga, reduzca la medalla o pida una segunda medalla con los eslabones que faltan.",
+    "farm.order.tl.printing": "imprimiendo, quedan unos :time",
+    "farm.order.tl.printing_now": "imprimiendo ahora",
+    "farm.order.tl.printing_end": "imprimiendo, a punto de terminar",
+    "farm.order.tl.done": "impreso",
+    "farm.order.tl.dispatched": "enviado"
 }
