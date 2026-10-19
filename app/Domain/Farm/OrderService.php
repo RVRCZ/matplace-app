@@ -331,8 +331,9 @@ final class OrderService
         }
         $kind = (string) $file->origin_ref;
         if (isset(ParametricGenerator::FIELDS[$kind])) {
-            // only parts that are objects of their own; the colour layers of a picture or a sign print as one piece
-            $parts = in_array($kind, self::ASSEMBLED, true) ? ParametricGenerator::partsOf($kind, (array) $file->tool_params) : [];
+            // only parts that are objects of their own; the colour layers of a picture or a sign print as one piece – unless
+            // the design says its colours must print together on one plate (a medal with its motif flush: body + colours)
+            $parts = in_array($kind, self::ASSEMBLED, true) || $file->onePlateRequired() ? ParametricGenerator::partsOf($kind, (array) $file->tool_params) : [];
         } else {
             $parts = $kind === 'colors' ? [] : ModelEditor::partsOf($file);
         }
@@ -494,11 +495,12 @@ final class OrderService
      *
      * @return Collection<int, array{slot: FarmPrinterSlot, color: FarmColor, printer: FarmPrinter, enough: bool, codes: list<string>}>
      */
-    public function availableColors(FarmOrder $order): Collection
+    public function availableColors(FarmOrder $order, bool $changerOnly = false): Collection
     {
         // one entry per colour: prefer a slot with enough filament, the machine the order is sliced for, then the one
-        // that can start soonest
+        // that can start soonest; a design that must print on one plate sees the machines that change spools alone
         $slots = $this->availableSlots($order)
+            ->filter(fn ($r) => ! $changerOnly || $r['printer']->isAgentDriven())
             ->sortBy(fn ($r) => [$r['enough'] ? 0 : 1, $r['printer']->id === $order->farm_printer_id ? 0 : 1, $r['printer']->readyForAutoStart() ? 0 : 1, $r['slot']->id])
             ->values();
         $codes = $slots->groupBy(fn ($r) => $r['color']->id)->map(fn ($rows) => $rows->map(fn ($r) => $r['slot']->code())->unique()->values()->all());

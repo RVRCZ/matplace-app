@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Domain\Farm\GcodeSlot;
+use App\Domain\Farm\OrderService;
+use App\Domain\Farm\Wallet;
 use App\Engines\Mesh\StlFile;
 use App\Mail\FarmAdminAlert;
 use App\Models\FarmAgent;
@@ -234,5 +236,66 @@ class FarmOnePlateTest extends TestCase
         $this->assertSame([$this->white->id, $this->red->id], array_column($order->partPlates(), 'slot_id'));
         $this->assertSame(FarmOrder::STATUS_QUEUED, $order->status);
         $this->assertSame((float) $main['total'], (float) $order->price_total, 'the customer pays what the page said');
+    }
+
+    /**
+     * A design that says `one_plate_required` (a medal with its motif flush in the first layers) never falls back to
+     * parts on separate plates: by parts from the start, only the spools of machines with a changer, one piece, and
+     * when that cannot be, the order stops with a reason instead of printing a loose motif (docs/AL.md §10.8).
+     */
+    public function test_a_design_that_must_print_on_one_plate_stops_with_a_reason_instead_of_falling_back(): void
+    {
+        $file = $this->design();
+        $file->forceFill(['tool_params' => ['one_plate_required' => true] + $file->tool_params])->save();
+        $this->assertTrue($file->onePlateRequired());
+        // the parts of a generator's design are listed by the flag alone (the raised medal is no assembled design)
+        $medal = new ModelFile(['origin' => 'tool', 'origin_ref' => 'medallion', 'tool_params' => ['parts' => ['body', 'color_1', 'color_2'], 'one_plate_required' => true]]);
+        $this->assertSame(['body', 'color_1', 'color_2'], OrderService::designParts($medal));
+        $medal->tool_params = ['parts' => ['body', 'color_1']];
+        $this->assertSame([], OrderService::designParts($medal), 'without the flag a medal prints as one piece (its raised motif by height)');
+
+        // by parts from the start, without any colour named: the order reaches the one-plate slice
+        $plain = FarmOrder::where('token', basename($this->actingAs($this->user)->postJson('/farm/orders', ['file' => $file->uuid, 'color' => $this->white->farm_color_id])->assertCreated()->json('url')))->firstOrFail();
+        $this->assertTrue($plain->isByParts());
+
+        // a second machine run by hand holds the same white: not offered for this design, offered for any other
+        $max = FarmPrinter::where('key', 'kobra-3-max-01')->firstOrFail();
+        $max->slots()->where('slot', 0)->firstOrFail()->update(['farm_color_id' => $this->white->farm_color_id, 'remaining_g' => 900, 'enabled' => true]);
+        $order = $this->order($file, ['part_color' => ['color_2' => $this->red->farm_color_id]]);
+        $this->assertTrue($order->onePlate(), 'two spools of the agent\'s machine: one plate');
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $this->assertTrue($state['one_plate_required']);
+        $white = collect($state['colors'])->first(fn ($c) => $c['slot'] === $this->white->id);
+        $this->assertSame([$this->white->code()], $white['codes'], 'the Max (manual) is not among the spools of this colour');
+        $this->assertNotContains($max->slots()->where('slot', 0)->value('id'), array_column($white['second'], 'slot'));
+        $other = $this->order($this->design(), ['part_color' => ['color_2' => $this->red->farm_color_id]]);
+        $otherWhite = collect($this->actingAs($this->user)->getJson("/farm/orders/{$other->token}/status")->json('colors'))->first(fn ($c) => $c['slot'] === $this->white->id);
+        $this->assertContains($max->shortCode().'1', $otherWhite['codes'], 'an ordinary design may go to the Max');
+
+        // two copies: stopped, not printed by parts; the customer reads why
+        $two = $this->order($file, ['part_color' => ['color_2' => $this->red->farm_color_id], 'copies' => 2]);
+        $this->assertSame(FarmOrder::STATUS_FAILED, $two->status);
+        $this->assertSame('one_plate_needed', $two->error);
+        $this->assertSame('copies', $two->error_detail);
+        $this->assertNull($two->gcode_path);
+        $this->assertSame('one_plate_needed', $this->actingAs($this->user)->getJson("/farm/orders/{$two->token}/status")->json('error'));
+        $this->assertStringContainsString('jedné vrstvě', __('farm.error.one_plate_needed'));
+
+        // a machine run by hand: stopped as well, with the reason for the operator
+        $this->s1->update(['mode' => FarmPrinter::MODE_MANUAL]);
+        $manual = $this->order($file, ['part_color' => ['color_2' => $this->red->farm_color_id]]);
+        $this->assertSame([FarmOrder::STATUS_FAILED, 'one_plate_needed', 'manual'], [$manual->status, $manual->error, $manual->error_detail]);
+        $this->s1->update(['mode' => FarmPrinter::MODE_AGENT]);
+
+        // paid after the machine went to manual operation: refused before any money moves, with the same reason
+        $this->credit(5000);
+        $main = collect($state['colors'])->first(fn ($c) => $c['slot'] === $this->white->id);
+        $this->s1->update(['mode' => FarmPrinter::MODE_MANUAL]);
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $main['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $main['total'], 'part_slots' => ['color_2' => $this->red->id]])
+            ->assertStatus(422)->assertJsonPath('error', 'one_plate_needed');
+        $this->assertSame(5000.0, app(Wallet::class)->balance($this->user)->amount);
+        $this->s1->update(['mode' => FarmPrinter::MODE_AGENT, 'last_seen_at' => now()]);
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $main['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $main['total'], 'part_slots' => ['color_2' => $this->red->id]])
+            ->assertOk()->assertJsonPath('status', 'queued');
     }
 }

@@ -171,7 +171,8 @@ class OrderController extends Controller
         $changePick = array_map(fn ($i) => ($want = (int) ($wantedChanges[$i] ?? 0)) && $machine->contains($want) ? $want : 0, array_keys($changes));
         // by parts: ticked on from the start when the design names different colours for its parts or is a picture of stacked plates
         $partHex = array_map(fn ($part) => ($file->tool_params['part_colors'][$part]['hex'] ?? null) ?: null, array_combine($parts, $parts) ?: []);
-        $byParts = ($wish['by_parts'] ?? null) !== null ? (bool) $wish['by_parts'] : (count($parts) >= 2 && ($file->kind() === ArtGenerator::KIND || count(array_unique(array_filter($partHex))) >= 2));
+        // … or must print its colours together on one plate (a medal with its motif flush): by parts from the start, so the order reaches the one-plate slice
+        $byParts = ($wish['by_parts'] ?? null) !== null ? (bool) $wish['by_parts'] : (count($parts) >= 2 && ($file->kind() === ArtGenerator::KIND || $file->onePlateRequired() || count(array_unique(array_filter($partHex))) >= 2));
         // a design in one colour chosen freely on its page (a blue box): the spool nearest to that colour; designs that
         // name several colours (changes, parts, a QR code) pick theirs above and below
         $oneHex = ! $named && ! $byParts && ! $changes ? ((string) ($bodyHex ?: (collect((array) ($file->tool_params['part_colors'] ?? []))->first()['hex'] ?? '')) ?: null) : null;
@@ -687,8 +688,10 @@ class OrderController extends Controller
         $this->orders->alignCurrency($order, $currency);
         $job = $order->latestJob();
         $check = (array) $order->check;
+        // a design that must print on one plate takes only machines that change spools (an operator feeds one at a time)
+        $required = (bool) $order->modelFile?->onePlateRequired();
         $colors = $order->status === FarmOrder::STATUS_SLICED
-            ? $this->orders->availableColors($order)->map(fn ($r) => [
+            ? $this->orders->availableColors($order, $required)->map(fn ($r) => [
                 'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'finish' => $r['color']->material->finish, 'photo' => $r['color']->photoUrl(),
                 // the spools of this colour that could print the order, this entry's own first ("U33"): farm, printer, slot
                 'code' => $r['codes'][0] ?? null, 'codes' => $r['codes'],
@@ -697,6 +700,7 @@ class OrderController extends Controller
                 // a plate with a raised text: the colours the text can have next to this colour of the plate – from every
                 // machine that holds this colour (the order goes where both spools are, machineFor)
                 'second' => ($order->wantedChanges() || $order->isByParts() ? $this->orders->secondSpoolsAcross($r['slot'], $order) : collect())
+                    ->filter(fn ($s) => ! $required || $s->printer->isAgentDriven())->values()
                     ->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'main' => $s->main_slot_id, 'code' => $s->code()])->values()->all(),
                 // the time, the weight and the price on the page were computed for this colour's machine and kind
                 'sliced' => $r['printer']->id === $order->farm_printer_id && $r['color']->material->id === $order->farm_material_id
@@ -741,6 +745,8 @@ class OrderController extends Controller
             // the parts print together on one plate, the machine changing spools (so many times) – or one plate each
             'one_plate' => $order->onePlate(),
             'filament_changes' => (int) ($order->slice_result['changes'] ?? 0),
+            // the design's colours share a layer: one plate on a machine with a changer, one piece, or nothing (docs/AL.md §10.8)
+            'one_plate_required' => $required,
             // how many separately printed parts the design has: two or more, and the order page offers "print them apart"
             'part_count' => $order->status === FarmOrder::STATUS_SLICED && $order->modelFile ? count(OrderService::designParts($order->modelFile)) : 0,
             'max_colors' => FarmOrder::MAX_COLORS,

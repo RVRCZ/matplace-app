@@ -82,6 +82,10 @@ final class OrderFlow
         if (! $offer['enough']) {
             throw new FarmRefusal('filament_low');
         }
+        // a design whose colours share a layer prints on one plate of a machine with a changer, one piece at a time, or not at all
+        if ($order->modelFile?->onePlateRequired() && (! $offer['printer']->isAgentDriven() || (int) $order->copies !== 1)) {
+            throw new FarmRefusal('one_plate_needed');
+        }
 
         // the spools of the changes, one per change of the design (bottom to top): the chosen spool itself or another one
         // of its machine; an older page names just the one second colour

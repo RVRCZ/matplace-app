@@ -202,6 +202,17 @@ class ModelFile extends Model
         return $this->origin === 'tool' && (array_key_exists($this->kind(), ParametricGenerator::FIELDS) || in_array($this->kind(), [ArtGenerator::KIND, MapBuilder::KIND, ...ModelEditor::KINDS], true));
     }
 
+    /**
+     * A design whose colours share a layer and only make sense printed together (a medal with its motif flush in the
+     * first layers: printed by parts the motif would come out as a loose numeral): the farm prints it on one plate
+     * with a machine that changes spools, or not at all (PrepareFarmOrder, docs/AL.md §10.8). The tool says so in
+     * `tool_params.one_plate_required`.
+     */
+    public function onePlateRequired(): bool
+    {
+        return $this->origin === 'tool' && ! empty($this->tool_params['one_plate_required']);
+    }
+
     /** Organic AI meshes print best with tree supports. */
     public function wantsTreeSupports(): bool
     {

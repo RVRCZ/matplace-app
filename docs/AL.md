@@ -632,7 +632,33 @@ GcodeColorChanges, SupportLines, StlFile, MarketplaceSwitch, FarmManualOnlyKinds
   seskupení přijdou novým řezem při platbě.
 - Session 1 zapne `inlay` u medaile až po sloučení; Kobra X ověří session 4 (ams_box_mapping z hlavičky).
 
-### 10.8 Soubory
+### 10.8 Povinná jedna podložka (`one_plate_required`, TODO #32 §2)
+
+Větev `feature/one-plate-required` (z `main` 844aac9), 19. 10. 2026. Medaile se zarovnaným motivem (motif = flush,
+session 1) dá do `tool_params` `one_plate_required: true` (+ `multi_material`): po dílech by motiv vyšel jako volná
+jednička, po výšce nejde. Proto:
+
+- `ModelFile::onePlateRequired()`; `OrderService::designParts`: u návrhu s příznakem díly z
+  `ParametricGenerator::partsOf` (body + color_n) i mimo `ASSEMBLED` – `medallion` v `ASSEMBLED` není (vystouplá
+  varianta jde po výšce jako jeden kus). `OrderController::preselect`: `by_parts` zapnuté od začátku i bez
+  `part_colors`, ať zakázka vůbec dojde do `prepareOnePlate()`.
+- `PrepareFarmOrder`: vrátí‑li `prepareOnePlate()` false a návrh příznak má, zakázka **nejde po dílech**, ale skončí
+  `failed` s důvodem **`one_plate_needed`** a detailem, proč (`one_plate_skipped` v `timings`: `manual`, `copies`,
+  `two_machines`, `one_spool`, `filaments`, `fit`, `slicer`, `no_gcode`). Zákazník čte `farm.error.one_plate_needed`
+  („dvě barvy v jedné vrstvě… zvolte cívky z jedné tiskárny s měničem a 1 ks, nebo jednobarevné provedení; kredit
+  vrácen“), kredit zpět a mail obsluze „problém“ jako u každého selhání po platbě (`OrderFlow::fail`), s důvodem
+  `farm.admin.mail.reason.one_plate_needed`.
+- Stránka zakázky (`status`): u takového návrhu jen barvy a druhé cívky **strojů přes agenta** (s měničem), `one_plate_required`
+  v JSON; `farm.ts` říká, že se tiskne vcelku a po jednom kuse (`farm.order.one_plate_required`), a u `copies > 1`
+  varuje předem (`one_plate_copies`, i v poznámce u počtu kusů). **Platba** (`OrderFlow::pay`): ruční stroj nebo
+  `copies ≠ 1` → `FarmRefusal('one_plate_needed')` (422, `farm.refuse.one_plate_needed`), nic se nestrhne.
+- Test `FarmOnePlateTest::test_a_design_that_must_print_on_one_plate_stops_with_a_reason_instead_of_falling_back`:
+  `designParts` podle příznaku (medaile bez něj = []), by_parts od začátku, ruční Max se stejnou bílou mimo nabídku
+  (u obyčejného návrhu v ní je), `copies 2` → failed/`copies`, ruční tiskárna → failed/`manual`, platba na ručním
+  stroji → 422 a kredit nedotčen, na agentním → queued. `FarmOrderFlowTest` dál zelený.
+- Netknuto: `ParametricGenerator` (zápis příznaku z poznámek enginu do `tool_params` dělá session 1 u medaile).
+
+### 10.9 Soubory
 
 `app/Jobs/PrepareFarmOrder.php` (`prepareOnePlate`, `ONE_PLATE_PROCESS`), `app/Domain/Farm/GcodeSlot.php`
 (`retargetMany`, `fileForMany`, `FILAMENTS_LINE`), `app/Domain/Farm/PrintProfile.php` (`tempsForFilaments`),
