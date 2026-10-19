@@ -108,6 +108,45 @@ final class StlFile
         return [($hi[0] - $lo[0]) * $factor, ($hi[1] - $lo[1]) * $factor, ($hi[2] - $lo[2]) * $factor];
     }
 
+    /**
+     * Writes a copy moved by [dx, dy, dz] (binary STL): the parts of one plate keep their places against each other
+     * when all of them are moved by the same vector.
+     *
+     * @param  array{0:float,1:float,2:float}  $move
+     */
+    public static function translate(string $inPath, string $outPath, array $move): int
+    {
+        return self::transform($inPath, self::beginBinary($outPath), 1.0, $move);
+    }
+
+    /**
+     * Several STLs as one binary STL (the shells side by side, nothing merged): what the check, the preview and the
+     * size of a plate of several parts look at.
+     *
+     * @param  list<string>  $inPaths
+     */
+    public static function concat(array $inPaths, string $outPath): int
+    {
+        $fh = self::beginBinary($outPath);
+        $n = 0;
+        foreach ($inPaths as $in) {
+            foreach (self::records($in) as $block) {
+                $out = '';
+                foreach ($block as $v) {
+                    $a = [$v[4], $v[5], $v[6]];
+                    $b = [$v[7], $v[8], $v[9]];
+                    $c = [$v[10], $v[11], $v[12]];
+                    $out .= pack('f12v', ...array_merge(self::normal($a, $b, $c), $a, $b, $c, [0]));
+                }
+                fwrite($fh, $out);
+                $n += count($block);
+            }
+        }
+        self::endBinary($fh, $n);
+
+        return $n;
+    }
+
     /** Writes a uniformly scaled binary STL copy. */
     public static function scale(string $inPath, string $outPath, float $factor): int
     {

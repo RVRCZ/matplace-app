@@ -10,13 +10,16 @@ final class GcodeStats
      * read into one string. The same patterns and the same "first one wins" as the string functions, so the same
      * numbers.
      *
-     * @return array{grams: ?float, minutes: ?int, meters: ?float, minutes_by_mode: array<string,int>, layers: ?int, has_supports: bool}
+     * @return array{grams: ?float, minutes: ?int, meters: ?float, minutes_by_mode: array<string,int>, layers: ?int, has_supports: bool, filament_grams: list<float>, changes: int}
      */
     public static function fromFile(string $path, int $block = 8388608): array
     {
         $patterns = [
             'grams_total' => '/total filament used \[g\]\s*=\s*([\d.]+)/',
             'grams' => '/filament used \[g\]\s*=\s*([\d.]+)/',
+            // a plate with several filaments: one figure per filament ("8.57, 3.86") and how often the machine changed it
+            'grams_list' => '/^; filament used \[g\]\s*=\s*([\d., ]+)/m',
+            'changes' => '/^; total filament change\s*=\s*(\d+)/m',
             'mm' => '/^; (?:total )?filament used \[mm\]\s*=\s*([\d., ]+)/m',
             'm' => '/^; (?:total )?filament used \[m\]\s*=\s*([\d., ]+)/m',
             'normal' => '/estimated printing time \(normal mode\)\s*=\s*(.+)/',
@@ -74,9 +77,12 @@ final class GcodeStats
             $modes['normal'] = $minutes;
         }
 
+        $list = isset($first['grams_list']) ? array_values(array_map('floatval', array_filter(array_map('trim', explode(',', $first['grams_list'])), fn ($s) => $s !== ''))) : [];
+
         return [
             'grams' => $grams, 'minutes' => $minutes, 'meters' => $meters, 'minutes_by_mode' => $modes,
             'layers' => isset($first['layers']) ? (int) $first['layers'] : null, 'has_supports' => isset($first['supports']),
+            'filament_grams' => count($list) > 1 ? $list : [], 'changes' => (int) ($first['changes'] ?? 0),
         ];
     }
 
@@ -90,6 +96,27 @@ final class GcodeStats
         }
 
         return null;
+    }
+
+    /**
+     * Grams per filament of a plate with several filaments ("8.57, 3.86" → [8.57, 3.86]); [] for one filament.
+     *
+     * @return list<float>
+     */
+    public static function filamentGrams(string $gcode): array
+    {
+        if (! preg_match('/^; filament used \[g\]\s*=\s*([\d., ]+)/m', $gcode, $m)) {
+            return [];
+        }
+        $list = array_values(array_map('floatval', array_filter(array_map('trim', explode(',', $m[1])), fn ($s) => $s !== '')));
+
+        return count($list) > 1 ? $list : [];
+    }
+
+    /** How many times the machine changes the filament on the plate (OrcaSlicer's `total filament change`). */
+    public static function changes(string $gcode): int
+    {
+        return preg_match('/^; total filament change\s*=\s*(\d+)/m', $gcode, $m) ? (int) $m[1] : 0;
     }
 
     /** Filament length in metres; multi-slot machines list one value per slot ("3681.80, 0.00, 0.00, 0.00"). */

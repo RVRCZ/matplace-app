@@ -415,6 +415,38 @@ class FarmOrder extends Model
         return $this->slot;
     }
 
+    /**
+     * An order by parts whose parts print together on one plate, a filament per spool, the machine changing spools as
+     * it goes (PrepareFarmOrder::prepareOnePlate, docs/AL.md §10): one G-code with `T0`…`T<n-1>`.
+     */
+    public function onePlate(): bool
+    {
+        return $this->isByParts() && ! empty($this->slice_params['one_plate']);
+    }
+
+    /**
+     * Filament index (T0 = 0) → the slot it comes from, for a plate of several filaments; [] otherwise. Parts that share
+     * a spool share the filament; a part without a spool yet falls back to the order's main slot.
+     *
+     * @return array<int, int>
+     */
+    public function filamentSlots(): array
+    {
+        if (! $this->onePlate()) {
+            return [];
+        }
+        $ids = array_filter(array_map('intval', array_column($this->partPlates(), 'slot_id')));
+        $numbers = $ids ? FarmPrinterSlot::whereIn('id', $ids)->pluck('slot', 'id') : collect();
+        $out = [];
+        foreach ($this->partPlates() as $p) {
+            $n = max(0, (int) ($p['extruder'] ?? 1) - 1);
+            $out[$n] ??= (int) ($numbers[(int) ($p['slot_id'] ?? 0)] ?? ($this->slot?->slot ?? 0));
+        }
+        ksort($out);
+
+        return $out;
+    }
+
     /** The G-code of one plate: every full plate shares the main file, a partly filled last plate has its own; by parts, every plate its own. */
     public function absoluteGcodePath(?int $plate = null): ?string
     {

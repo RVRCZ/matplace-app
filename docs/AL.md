@@ -500,3 +500,148 @@ EnrichCatalog.php`, `app/Jobs/EnrichCatalogModel.php`, `app/Http/Controllers/Ins
 `app/Support/Sitemaps.php`, `app/Console/Commands/BuildSitemap.php`, `app/Http/Controllers/Admin/CatalogController.php`
 (`index`, `enrich`), `routes/web.php`, `resources/views/admin/catalog/{index,edit}.blade.php`, `lang/{cs,en,es}/models.php`
 (`inspiration.original/size/estimate/price…`), `tests/Feature/CatalogSeoTest.php`, `tests/Feature/SeoTest.php`.
+
+---
+
+# Jedna podložka, dva až čtyři filamenty (TODO #31, část session 2)
+
+Session 2, větev `feature/multi-filament-plate` (z `main` 31b2d8d), 19. 10. 2026. Zadání:
+`docs/prompts/vice-filamentu-podlozka.md` §1. Session 4 dělá mapování v ovladači Kobry X (AM.md §8).
+Nemergováno, nenasazeno; skutečný řez jen místně (AnycubicSlicerNext 2.0.0.3 CLI s profily farmy), tisk žádný.
+
+## 10. Co a jak
+
+Farma uměla změnu barvy po výšce (`GcodeSlot::colorChanges`) a tisk **po dílech** na samostatných podložkách
+(`PrepareFarmOrder::prepareParts`). Teď umí i **díly spolu na jedné podložce, filament na cívku**, stroj mění cívky
+sám – vložený motiv ve stejných vrstvách, vícebarevná klíčenka, logo v jiné barvě ve stejné výšce.
+
+### 10.1 Kdy (pojistky)
+
+`PrepareFarmOrder::prepareOnePlate()` běží před `prepareParts()` pro každou zakázku `by_parts` a **vrátí false**
+(nic nezměněno, jede se po dílech jako dosud), když: tiskárna není přes agenta (ruční obsluha vede jednu cívku);
+`copies > 1` (rozložení více kusů z více dílů na jednu podložku zatím není – limit); cívky dílů nejsou všechny z téže
+tiskárny; filamentů (cívek, díly téže cívky sdílejí filament) je < 2 (není co měnit → po dílech v jedné barvě jako
+dosud) nebo > `FarmOrder::MAX_COLORS` (4) nebo víc než má stroj pozic; díly, jak je nástroj položil (jako celek,
+bez otáčení), se nevejdou na použitelnou plochu; nebo slicer selže (věž se nevejde, filamenty se nerozlišily) – pak
+se to zaloguje (`one_plate_failed` v `timings`) a tisk jde po dílech. Víc než 4 barvy odmítá už `spoolsForParts`
+(`too_many_colors`) při vzniku zakázky; cívky ze dvou strojů odmítá `machineFor` při platbě (`color_gone`) a na stránce
+zakázky je po první volbě nabídka jen z téže tiskárny (`farm.ts`, `main` cívky).
+
+### 10.2 Řez
+
+1. Díly ze stavebnice (`OrderService::partStl`) zvětšené měřítkem zakázky, všechny **posunuté týmž vektorem** na
+   střed podložky a na Z = 0 (`StlFile::translate`; vzájemná poloha z návrhu zůstává), slepené do `plate.stl`
+   (`StlFile::concat`) pro kontrolu (`ModelValidator::judge` nad výsledkem preparátoru s `keepPose`) a náhled
+   (`print.stl`).
+2. **`plate.3mf`** (`App\Engines\Mesh\ThreeMfWriter`): plain 3MF, objekt na díl, souřadnice jak jsou, a
+   `Metadata/model_settings.config` s `extruder` na objekt – tak Orca a její forky čtou přiřazení filamentu
+   (ověřeno CLI; `--load-filament-ids` CLI odmítá kódem -2).
+3. `SliceParams::withFilaments()`: pole filamentů (profil + přepisy z `PrintProfile::for(tiskárna, druh cívky, cívka)`
+   – teploty po filamentu jsou tedy už v řezu – a objem dílů na filament), `project` = 3MF, do procesu
+   `ONE_PLATE_PROCESS` = `enable_prime_tower 1, prime_tower_width 25, flush_into_infill 1, flush_into_objects 0,
+   flush_into_support 1` (přepíše tiskárnino `enable_prime_tower 0`). `OrcaSlicer::slice()` při `project`:
+   `--load-filaments f1;f2;…` (každý patchnutý o párování se strojem jako dosud), `--arrange 0`, vstup 3MF; po řezu
+   kontrola, že hlavička má gramy na tolik filamentů, kolik jich bylo (jinak výjimka → po dílech). Profily farmy
+   jsou na to připravené: `machine.json` má `single_extruder_multi_material 1` a `change_filament_gcode` ACE,
+   `process_*` věž (`prime_volume 30`, `wiping_volumes_extruders 70`), `flush_volumes_matrix` 280 mm³ mezi cizími.
+4. `GcodeStats::fromFile` nově čte `; filament used [g] = 8.57, 3.86` → `filament_grams` a
+   `; total filament change = 15` → `changes`; `SliceResult` je nese (`filamentGrams`, `changes`). `FakeSlicer` dělá
+   totéž naoko (gramy podle objemů dílů +10 % věž, výměna na vrstvu a filament, +3 min na výměnu, T0/T1 v souboru,
+   seznamy `filament_colour`/`filament_type`).
+5. Zakázka: `plates 1`, `part_plates[*].extruder` (1 = T0), `gramy` na díl z filamentu, `slice_params.one_plate = true`
+   + `filaments` (slot, barva, profil), `slice_result.filament_grams/changes`, `est_grams` = součet filamentů **včetně
+   věže a proplachu**, `est_minutes` včetně výměn; cena jako dosud (gramy × cena druhu hlavní cívky, čas × sazba) +
+   `price.changes` (počet výměn; řádek „Výměny barvy: n×“ v rozpisu). `FarmOrder::onePlate()`, `filamentSlots()`
+   (index filamentu → číslo slotu).
+
+### 10.3 Pozice cívek: hlavička pro agenta (tvar dohodnutý s řídící a session 4)
+
+`GcodeSlot::retargetMany($gcode, [0 => slotA, 1 => slotB], teploty po filamentu)` / `fileForMany()`:
+
+- hned za první řádek souboru: **`; matplace filaments T0=2 T1=5`** (0‑based sloty, T0..Tn‑1 bez mezer; každé T<n>
+  v souboru má položku – T<n> bez položky padá na T0, což testuje `GcodeSlotTest`);
+- každý řádek `T<n>` → `T<slot> ; matplace slot for filament n` (Rinkhals bere přímo; i `T[next_extruder]` z makra
+  výměny je v souboru jako řádek `T1`, takže se přemapuje také);
+- `M104/M109` před prvním `T` (ACE odmítá studenou trysku) na první vrstvu filamentu 0; `G9111` start na teploty
+  filamentu 0; `M104/M109` dál podle **právě aktivního filamentu** (cívky mohou po platbě změnit druh), `M140/M190`
+  na podložku filamentu 0;
+- CONFIG blok Orcy netknutý: `filament_colour = #a;#b`, `filament_type = PLA;PLA`, `filament used [mm]/[g] = a, b`
+  (ovladač Kobry X z nich bere spotřebu po extruderech).
+
+`Dispatcher::start` dává do payloadu startu `filaments: {0: slot, 1: slot}` (vedle `slot` = T0), `AgentController::gcode`
+i admin stažení dávají tuhle kopii; `PrintProfile::tempsForFilaments()` teploty po filamentu.
+
+### 10.4 Zakázka, nástěnka, mail
+
+- Výběr cívky na díl (`farm.ts`): po první volbě cívky jiného stroje (`second[].main` = slot první barvy na tom
+  stroji) zůstávají pro ostatní díly jen cívky téhož stroje; text „Díly se tisknou spolu na jedné podložce; tiskárna
+  mění cívky sama (n výměn)“ (`farm.order.parts_one_plate`), upozornění `parts_one_machine`, řádek
+  `b_changes` v rozpisu. `status` JSON: `one_plate`, `filament_changes`, díly s `plate 1`.
+- **Platba** (`OrderFlow::pay`): změnily‑li se cívky dílů proti řezu (jiná cívka u dílu, nebo po dílech → jedna
+  podložka), zakázka se **řeže znovu** (cena zůstává, jak ji zákazník viděl) – dřív se po dílech jen přemapoval slot.
+- Admin zakázka: odznak „jedna podložka · Výměny barvy n× · T0→slot 3 T1→slot 1“, díly jako T0/T1 s gramy; nástěnka
+  a mail obsluze (`spoolText`, „tiskne se“) jmenují všechny cívky dílů – beze změny kódu, řádky dílů už tam byly.
+
+### 10.5 Skutečný řez místně (náhradní „medaile“)
+
+`inlay` medaile od session 1 v `main` není (zadání: „medal inlay postponed“), proto náhrada se stejnou stavbou: disk
+Ø 60 × 3 mm s průchozí kapsou 6 × 20 mm (tělo, filament 1) a trámek, který ji vyplní (vložka, filament 2) – dva
+objekty ve **stejných vrstvách**, nejhorší případ (výměna v každé vrstvě). AnycubicSlicerNext 2.0.0.3 CLI, profily
+farmy (machine.json S1 250 × 250, process_standard 0,2 mm, 2× filament_pla s jinou barvou), `ONE_PLATE_PROCESS`:
+
+| | |
+|---|---|
+| výsledek | `plate_1.gcode` 0,54 MB, 15 vrstev, **15 výměn**, věž 25 mm vlevo nahoře (X 15–40, Y 220–233) |
+| filament | `8.57, 3.86` g (celkem 12,43 g; objem dílů 8 119 + 360 mm³ ≈ 10,5 g → **věž + proplach ≈ 1,9 g**) |
+| čas | **55 min 21 s** (bez výměn by disk trval ~15 min: ACE výměna ≈ 2,7 min, `M400 P2730` + čištění) |
+| přiřazení | `model_settings.config` ✓, `--load-filament-ids` ✗ (exit −2) |
+| přemapování | `fileForMany([0=>2, 1=>5], teploty 220/230, podložka 60)` → viz soubory na Desktopu |
+
+Soubory pro session 4 (zkouška nasucho): `C:\Users\roman\Desktop\matplace-two-filaments-T0slot2-T1slot5.gcode`
+(přemapovaný) a `…-raw.gcode` (surový). **Co z čísel plyne pro Romana:** u vložky přes celou výšku stojí každá vrstva
+jednu výměnu (~3 min na S1 + ACE); medaile lícem dolů s motivem jen v prvních vrstvách (0,6 mm = 3 vrstvy) má
+3 výměny ≈ +9 min a ~0,5 g proplachu – to je ten případ, pro který se to dělá. Cena to zohlední sama (minuty a gramy
+jsou z hlavičky).
+
+### 10.6 Testy
+
+`tests/Unit/GcodeSlotTest.php` (3): `retargetMany` (hlavička na 2. řádku, T→slot, ohřev před prvním T, teploty po
+filamentu, CONFIG seznamy netknuté, neznámé T<n> → T0, prázdná mapa nic nemění), `fileForMany` (jednou, znovu při
+jiných teplotách), `GcodeStats` (gramy po filamentu, výměny, jeden filament → nic), `ThreeMfWriter` (objekt na díl,
+sdílené vrcholy 16/24 u kvádru, `extruder` v configu, escapování), `StlFile::translate/concat`.
+`tests/Feature/FarmOnePlateTest.php` (3): dva díly ze dvou cívek agentní S1 → jedna podložka (3MF se dvěma objekty,
+extrudery 1/2, díly posunuté spolu na střed, `filament_grams` 2, `changes` > 0, `price.changes`, věž v přepisech,
+status `one_plate`, admin kopie s hlavičkou `T0=<w> T1=<r>` a přemapovanými T, admin stránka s odznakem, platba →
+start s `filaments`, kopie pro agenta s hlavičkou, mail „tiskne se“ s oběma cívkami, done po jedné podložce); po
+dílech, když `copies 2`, ruční tiskárna, nebo obě části z hlavní cívky; jiné cívky při platbě → nový řez na jednu
+podložku za původní cenu. Dál zelené (seznam v commitu): FarmOrderFlow, StandPartsFarm, FarmOrderColors,
+FarmAdminNotify, FarmPages, FarmLayerTimelapse, FarmPreparedCache, PlateLayoutFarm, CalculationFlow, GcodeStats,
+GcodeColorChanges, SupportLines, StlFile, MarketplaceSwitch, FarmManualOnlyKinds; `pint`, `tsc`, `build`.
+
+### 10.7 Limity a co dál
+
+- `copies > 1` → po dílech (rozložit n kusů z více dílů se společným posunem: `PlateLayout::replicate` na slepený
+  celek + stejné transformace na díly – příští krok, když bude poptávka).
+- Díly se neotáčejí (jen jak je nástroj položil); otočení o 90°, kdyby se tak vešly, není.
+- Věž stojí tam, kam ji Orca dá (levý horní roh); u modelu přes celou podložku může kolidovat → slicer selže → po
+  dílech. `prime_tower_width 25` a objemy proplachu z profilu (280 mm³ cizí, `wiping_volumes_extruders 70`) nebyly
+  laděny na skutečném tisku – první tisk na S1 + ACE ukáže, zda stačí (zbytky barvy ve vložce) nebo je moc.
+- `flush_into_infill` posílá proplach do výplně dílů: u vložky v jiné barvě viditelné jen zevnitř; u průsvitných
+  materiálů vypnout.
+- Zákazník bez zvolené barvy při vzniku zakázky: každý díl svůj filament (profil hlavního druhu); správné druhy a
+  seskupení přijdou novým řezem při platbě.
+- Session 1 zapne `inlay` u medaile až po sloučení; Kobra X ověří session 4 (ams_box_mapping z hlavičky).
+
+### 10.8 Soubory
+
+`app/Jobs/PrepareFarmOrder.php` (`prepareOnePlate`, `ONE_PLATE_PROCESS`), `app/Domain/Farm/GcodeSlot.php`
+(`retargetMany`, `fileForMany`, `FILAMENTS_LINE`), `app/Domain/Farm/PrintProfile.php` (`tempsForFilaments`),
+`app/Domain/Farm/OrderFlow.php` (nový řez při změně cívek dílů), `app/Domain/Farm/OrderService.php` (`price.changes`),
+`app/Domain/Farm/Dispatcher.php` (payload `filaments`), `app/Models/FarmOrder.php` (`onePlate`, `filamentSlots`),
+`app/Engines/DTO/SliceParams.php` (`filaments`, `project`, `withFilaments`), `app/Engines/DTO/SliceResult.php`
+(`filamentGrams`, `changes`), `app/Engines/Slicer/{OrcaSlicer,FakeSlicer,GcodeStats}.php`,
+`app/Engines/Mesh/ThreeMfWriter.php` (nový), `app/Engines/Mesh/StlFile.php` (`translate`, `concat`),
+`app/Http/Controllers/Farm/{AgentController,OrderController}.php`, `app/Http/Controllers/Admin/FarmOrderController.php`,
+`resources/views/admin/farm/order.blade.php`, `resources/js/calc/farm.ts`, `lang/{cs,en,es}/farm.php`
+(`order.parts_one_plate/parts_one_machine/b_changes/b_changes_value`), `tests/Unit/GcodeSlotTest.php`,
+`tests/Feature/FarmOnePlateTest.php`.

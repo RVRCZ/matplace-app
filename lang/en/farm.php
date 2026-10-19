@@ -80,6 +80,11 @@ return [
         'parts_title' => 'The parts and their colours',
         'parts_hint' => 'Every part prints on its own from its own spool, part after part on one machine. At most :max colours.',
         'part_main' => 'The main colour',
+        // the parts together on one plate, the machine changing spools as it goes (docs/AL.md §10)
+        'parts_one_plate' => 'The parts print together on one plate; the printer changes the spools itself (:n changes). Pick the spools of one printer.',
+        'parts_one_machine' => 'All parts must come from the spools of one printer: after the first choice only its spools remain.',
+        'b_changes' => 'Colour changes',
+        'b_changes_value' => ':n× (the purge is in the material, the time in the print time)',
         'part_line' => ':part: :name',
         'changes_title' => 'The colours one on another',
         'changes_hint' => 'Colours one on another: the printer makes every change itself at the height where the next colour starts. At most :max colours in one print.',
