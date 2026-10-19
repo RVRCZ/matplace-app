@@ -569,17 +569,22 @@ class AnycubicLanDriver(PrinterDriver):
             # a plate of several filaments (docs/AM.md §8): the farm's line names the slot of every T<n>, the file keeps
             # its T<n> as the paints and the mapping takes each paint to its spool
             positions = await self._paint_positions(facts)
-            filaments = [(p.colour, p.material) for p in positions]
+            # the file selects the spools as T<slot> (the farm's one form, Rinkhals takes it as it is): renumbered to
+            # T<paint> for this firmware. The paints keep the project's colours (the file's filament_colour; a Slicer
+            # Next file carries them in its own paint_info line, which stays) and take the spools' materials; the
+            # spool's colour is the mapping's ams_color
+            renumber = {slot_no: paint for paint, slot_no in facts.paints.items()}
+            filaments = [(facts.colours[i] if i < len(facts.colours) else p.colour, p.material) for i, p in enumerate(positions)]
         else:
             slot_no = facts.tool if facts.tool else int(slot)
             positions = [await self.spool_at(slot_no, config_value(raw, b"filament_colour") or "#000000", config_value(raw, b"filament_type") or "PLA")]
-            filaments = None
+            filaments, renumber = None, None
         colour, material = positions[0].colour, positions[0].material
         if self.as_package:
-            data, _ = package(raw, colour, material, filaments)
+            data, _ = package(raw, colour, material, filaments, renumber)
             upload_name = filename + ".3mf" if filename.lower().endswith(".gcode") else filename
         else:
-            data, upload_name = prepared_gcode(raw, colour, material, facts, filaments), filename
+            data, upload_name = prepared_gcode(raw, colour, material, facts, filaments, renumber), filename
         await self._upload(url, data, upload_name)
         log.info("%s: starting %s (%s)", self.key, filename,
                  "; ".join(f"T{i} -> slot {p.slot} = {p.name}, ams_index {p.ams_index}, {p.material} {p.colour}" for i, p in enumerate(positions)))
@@ -589,7 +594,7 @@ class AnycubicLanDriver(PrinterDriver):
             "taskid": "-1", "url": SLICER_URL, "filename": filename, "md5": hashlib.md5(data).hexdigest(),  # noqa: S324
             "filepath": None, "filetype": 1, "project_type": 1, "filesize": len(data),
             "ams_settings": {"use_ams": True, "padding1": 0, "padding2": 0, "padding3": 0,
-                             "ams_box_mapping": [_mapping_of(i, p) for i, p in enumerate(positions)]},
+                             "ams_box_mapping": [_mapping_of(i, p, filaments[i][0] if filaments else p.colour) for i, p in enumerate(positions)]},
             "task_settings": {"auto_leveling": 1 if self.auto_leveling else 0, "vibration_compensation": 0, "flow_calibration": 0, "dry_mode": 0,
                               "ai_settings": {"status": 0, "count": 32765, "type": 32, "mode": 0},
                               "timelapse": {"status": 0, "count": 32765, "type": 32, "mode": 0},
@@ -683,14 +688,19 @@ class AnycubicLanDriver(PrinterDriver):
 
     async def _paint_positions(self, facts) -> list[Position]:
         """The spool position of every paint of a plate of several filaments: the farm's line says T<n>=<slot> for
-        T0..T<n-1> (docs/AL.md §10). A gap in the paints, a T<n> the file selects but the line does not name, or a
-        slot the printer does not have is refused: the printer would print the wrong spool or nothing."""
+        T0..T<n-1> (docs/AL.md §10) and the file selects the spools as T<slot>. A gap in the paints, two paints from
+        one slot, a T<slot> the file selects but the line does not map, or a slot the printer does not have is
+        refused: the printer would print the wrong spool or nothing."""
         paints = sorted(facts.paints)
         if paints != list(range(len(paints))):
             raise DriverError("the filament line must name T0..T%d, it names %s" % (len(paints) - 1, " ".join(f"T{p}" for p in paints)))
-        unnamed = [t for t in facts.tools if t not in facts.paints]
-        if unnamed:
-            raise DriverError("the G-code selects %s, which the filament line does not name" % " ".join(f"T{t}" for t in unnamed))
+        slots = list(facts.paints.values())
+        if len(set(slots)) != len(slots):
+            raise DriverError("the filament line gives two paints the same slot (%s)" % " ".join(f"T{p}={s}" for p, s in sorted(facts.paints.items())))
+        unmapped = [t for t in facts.tools if t not in slots]
+        if unmapped:
+            raise DriverError("the G-code selects %s, which the filament line does not map to a paint (it maps slots %s)"
+                              % (" ".join(f"T{t}" for t in unmapped), " ".join(str(s) for s in slots)))
         positions = []
         for paint in paints:
             colour = facts.colours[paint] if paint < len(facts.colours) else "#000000"
@@ -762,11 +772,11 @@ def _num(v) -> Optional[float]:
     return round(float(v), 1) if isinstance(v, (int, float)) else None
 
 
-def _mapping_of(paint: int, pos: Position) -> dict:
-    """One entry of the start's ams_box_mapping: paint n of the file printed from this spool position. The colour of
-    the spool stands for the paint's too - the customer chose the spool, the project's own colour means nothing."""
-    rgba = rgb_of(pos.colour) + [255]
-    return {"paint_index": paint, "ams_index": pos.ams_index, "paint_color": rgba, "ams_color": rgba, "material_type": pos.material.split()[0].upper()}
+def _mapping_of(paint: int, pos: Position, paint_colour: str) -> dict:
+    """One entry of the start's ams_box_mapping: paint n of the file, in `paint_colour` (the file's colour of it, as
+    the Slicer Next sends; one filament: the spool's), printed from this spool position (ams_color the spool's)."""
+    return {"paint_index": paint, "ams_index": pos.ams_index, "paint_color": rgb_of(paint_colour) + [255], "ams_color": rgb_of(pos.colour) + [255],
+            "material_type": pos.material.split()[0].upper()}
 
 
 def _park_of(raw: bytes) -> Optional[tuple[float, float, float, float, str]]:

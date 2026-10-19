@@ -129,9 +129,9 @@ bez měniče Rack 1–4 = sloty 0–3. Slot, který tiskárna nemá, start odmí
 vidět, která pozice je zavedená (`spool`, `slot`).
 
 **Více filamentů na jedné podložce:** když G‑kód nese řádek farmy `; matplace filaments T0=<slot> T1=<slot> …`,
-ovladač nechá `T<n>` v souboru (jsou to barvy 0..n‑1 projektu) a ve startu pošle `ams_box_mapping` s položkou pro
-každou barvu – cívku na výměnu si tiskárna bere z měniče sama. Barva, materiál a spotřeba každé cívky jdou do
-balíčku `.gcode.3mf`. Mezera v barvách, `T<n>` bez položky nebo slot mimo pozice = start odmítnutý před nahráním. Při
+ovladač přečísluje `T<slot>` v souboru na `T<barva>` (firmware čte `T<n>` jako barvu n projektu) a ve startu pošle `ams_box_mapping` s položkou pro
+každou barvu (barva projektu, pozice a barva cívky) – cívku na výměnu si tiskárna bere z měniče sama. Materiál
+a spotřeba každé barvy jdou do balíčku `.gcode.3mf`. Mezera v barvách, `T<slot>` bez položky nebo slot mimo pozice = start odmítnutý před nahráním. Při
 výměně uprostřed tisku ukazuje nástěnka zaváděnou pozici (`spool`, `slot`) a stav výměny (`spool_change`). Ověření na
 tiskárně viz `docs/AM.md` §8.
 
