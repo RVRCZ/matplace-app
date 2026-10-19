@@ -332,3 +332,37 @@ poslední hlášení s `progress`, takže tahle řádka **přepsala** `print_tim
 (v §6c jsem čísla četla z odposlechu, ne z ovladače). 0.2.4: hlášení téhož souboru se slučují (nové klíče přepisují,
 chybějící zůstávají); falešná tiskárna v testech teď posílá i chladicí a holé hlášení, test konce by bez opravy padl.
 Instalace: soubory `agent/`, restart agenta; nic na serveru.
+
+## 8. Jedna podložka, více filamentů (agent 0.2.5, větev `feature/agent-multi-mapping`, 19. 10. 2026) – bez tiskárny
+
+Zadání `docs/prompts/vice-filamentu-podlozka.md`: session 2 řeže podložku s díly v několika filamentech (Orca, extruder
+na díl), `GcodeSlot` přemapuje `T<n>` na sloty a do hlavičky napíše `; matplace filaments T0=<slot> T1=<slot> …`.
+Ovladač Kobra X k tomu:
+
+- **Čtení** (`anycubic_pkg.filaments_of`, `tools_of`, `config_values`): řádek `; matplace filaments` kdekoli v prvních
+  16 kB (i za řádkem časosběru) → `T<n>` → slot matplace; `tools_of` = všechna `T<n>` v souboru (změny uprostřed
+  tisku); z bloku CONFIG seznamy `filament_colour`, `filament_type`, `filament_ids` (oddělovač `;`) a z řádků
+  `filament used [mm]`/`[g]` spotřeba po extruderech (oddělovač `,`). Bez toho řádku vše jako dosud (jeden filament).
+- **Pozice** (`_paint_positions`): pro každou barvu `spool_at(slot)` – barva a materiál z cívky tiskárny (bez informací
+  o boxech slot = index Racku jako dosud). Odmítne **před nahráním**: mezera v barvách (`T0 T2`), `T<n>` v souboru bez
+  položky v řádku, slot mimo pozice (`T1: slot 10: the printer offers 7 spool positions (…)`).
+- **Soubor** (`prepared_gcode(filaments=…)`, `package(filaments=…)`): `T<n>` zůstávají (u jednoho filamentu dál
+  `T<n>` → `T0`); `paint_info` v hlavičce i v `ams_info` má položku na každou barvu (`paint_index` = n, barva a
+  materiál cívky); `slice_info.config` má `<filament id="n+1" … used_m used_g>` z řádků po extruderech, `plate_1.json`
+  `filament_colors`/`filament_ids` pro všechny, `weight` = `total filament used [g]`, `statistics.used_filament` =
+  součet metrů; náhledy barvou první cívky.
+- **Start**: `ams_box_mapping` = položka na barvu `{paint_index n, ams_index pozice, paint_color = ams_color = barva
+  cívky, material_type}` – tak Slicer Next mapuje barvy projektu na cívky (zachyceno 18. 10.: `paint_index 1 →
+  ams_index 1`, `paint_color` projektu černá, `ams_color` cívky oranžová; já dávám barvu cívky do obou – projektová je
+  na farmě bezvýznamná, cívku vybral zákazník). Log startu vypíše všechna `T<n> → slot = pozice`.
+- **Za běhu**: `multiColorBox` `loaded_slot` se při výměně mění → telemetrie `spool`/`slot` ukazuje cívku v hlavě jako
+  dosud; `project.state` obsahující `filament` (`extfilbox_filament_feeding`, `ace_filament_feeding`; při výměně
+  nejspíš i odvádění) jde do telemetrie `spool_change`. Neznámé stavy = tisk (jako dosud), výměna tisk „neukončí“.
+- **Neověřeno na tiskárně**: `paint_info` s více položkami je rekonstrukce podle Sliceru (jedna položka ověřená
+  18. 10.); co tiskárna hlásí při výměně uprostřed tisku (stavy, pořadí `loaded_slot`), zda `T<n>` z Orcy stačí
+  (Slicer Next možná vkládá vlastní makro výměny – G‑kód session 2 ukáže) a jak dlouho výměna trvá. **Plán zkoušky**
+  (až bude G‑kód session 2 a Romanovo svolení v okně session 4, C1 v ručním režimu): malý dvoubarevný díl,
+  `scratchpad/kx_sniff.py` běží vedle, zaznamenat `print/report` při každé změně, `multiColorBox/getInfo` `loaded_slot`,
+  čas výměny → §8a.
+- Testy: `test_anycubic_pkg` (fixture TWO: fakta, G‑kód, balíček), `test_anycubic_lan` (start se dvěma barvami →
+  mapování, balíček, `spool_change`; tři odmítnutí před nahráním). Moonraker beze změny (`T<n>` = pozice ACE).
