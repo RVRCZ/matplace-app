@@ -213,11 +213,16 @@ def _caption(M, p, layers, info, text, body_kind, fit_d, warn):
     return layers, info
 
 
-LINK = (30.0, 18.0, 4.0, 0.4)    # a chain link: long, wide, the bar, and how much narrower than the bar its gap is (it snaps in)
+# a chain link: long, wide, the bar, and how far apart the round tips of its gap are. The neighbour's bar (4 mm) goes
+# through 1.6 mm only when the link opens 2.4 mm in its plane: about 19 N by hand and 1.2 % strain at the far side, well
+# under what PLA takes (docs/P.md §8c). With 3.6 mm between flat ends (round 3) the chain came apart by itself.
+LINK = (30.0, 18.0, 4.0, 1.6)
 CHAIN_BED = 220.0                # the medal and its chain are one plate of the smallest bed of the farm's printers
 LINK_FLAT = 1.0                  # the flat strip a link stands on, too narrow to see once printed
 LINK_OVERHANG = 45.0             # the steepest the underside of a link leans out, from the vertical: prints without supports
 LINK_SLICES = 16                 # points up each side of the round bar's profile
+MEDAL_ROUND = 1.0                # a medal's outline is rounded by this much at its top and its bottom
+MEDAL_STEPS = 10                 # slabs of each rounded edge: a tenth of a millimetre, finer than a layer
 
 
 def _link_profile(bar):
@@ -244,13 +249,14 @@ def _link_profile(bar):
 def _link(M):
     """
     One open link: an oval ring with a gap in the middle of one long side, where a chain under load does not pull. The
-    bar is round (_link_profile): soft in the hand, and it prints lying on the bed without supports. The gap is
-    narrower than the bar by `snap`, so the neighbour, pushed through, clicks in and stays.
+    bar is round (_link_profile): soft in the hand, and it prints lying on the bed without supports. Both ends of the
+    gap are round, the bar's profile turned round its end (a half ball on the same slopes underneath), `tips` apart:
+    much less than the bar, so the neighbour clicks in and stays.
     """
     import numpy as np
     C = M.CrossSection
-    long, wide, bar, snap = LINK
-    gap = bar - snap
+    long, wide, bar, tips = LINK
+    gap = tips + bar                                         # the cut; each round end reaches half a bar back into it
     height, half, _ = _link_profile(bar)
     mid = wide / 2 - bar / 2                                 # the radius of the line the bar runs along, at the round ends
     zs = [height * i / LINK_SLICES for i in range(LINK_SLICES + 1)]
@@ -266,7 +272,37 @@ def _link(M):
     sides = [side.transform(to_x).translate([wide / 2 - 0.01, wide / 2 + s * mid, 0]) for s in (-1, 1)]
     link = _fused(M, [ends] + sides)
     cut = M.Manifold.cube([gap, bar + 2, height + 2]).translate([long / 2 - gap / 2, wide - bar - 1, -1])
-    return link - cut
+    cap = M.Manifold.revolve(C([[(0.0, 0.0)] + right + [(0.0, height)]]), 24, 360.0)      # its back half lies in the bar
+    return link - cut + cap.translate([long / 2 - gap / 2, wide - bar / 2, 0]) + cap.translate([long / 2 + gap / 2, wide - bar / 2, 0])
+
+
+def _soft_plate(M, outline, t, r):
+    """
+    A medal's plate with its outline rounded by r: at the top a quarter round, at the bottom as a link stands on the bed
+    (_link_profile): round down to where it leans out LINK_OVERHANG, then straight at that slope to the bed, so it
+    prints without supports. In slabs of a tenth of a millimetre; the hole of the eyelet is rounded the same way.
+    """
+    J = M.JoinType.Round
+    a = math.radians(LINK_OVERHANG)
+    z45 = r * (1 - math.sin(a))                              # where the round leans out as far as a print allows
+
+    def inset(z):
+        if z < z45:
+            return r * (1 - math.cos(a)) + (z45 - z) * math.tan(a)
+        if z < r:
+            return r - math.sqrt(max(r * r - (r - z) ** 2, 0.0))
+        if z > t - r:
+            return r - math.sqrt(max(r * r - (z - t + r) ** 2, 0.0))
+        return 0.0
+
+    dz = r / MEDAL_STEPS
+    solid = outline.extrude(t - 2 * r + 0.02).translate([0, 0, r - 0.01])
+    for i in range(MEDAL_STEPS):
+        for z0 in (i * dz, t - r + i * dz):
+            ring = outline.offset(-inset(z0 + dz / 2), J, 2.0, 32)
+            if not ring.is_empty():
+                solid = solid + ring.extrude(dz + 0.01).translate([0, 0, z0 - (0.01 if z0 > 0 else 0.0)])
+    return solid
 
 
 def _fused(M, solids):
@@ -629,9 +665,17 @@ def build(M, Invalid, p, product):
             # a change of filament by height colours everything above it on the bed, links too: they stay under the plate's top
             t = round(tall, 2)
             notes["thickened"] = t
+    soft = MEDAL_ROUND if medal else 0.0
+    if medal and not face_down:
+        # raised: what stands on the plate stands on the flat of its top, inside the rounded edge
+        flat = plate2d.offset(-soft, J, 2.0, 32)
+        for layer in layers:
+            layer["own"], layer["stack"] = layer["own"] ^ flat, layer["stack"] ^ flat
+        medal2d = medal2d.offset(-soft, J, 2.0, 32)
     if border and layers:
         # the rim round the medal goes with the motif's first colour: raised, one step high (every band of layers keeps
-        # one filament); flush, in the same bottom layers as the motif, smooth on the face
+        # one filament); flush, in the same bottom layers as the motif, smooth on the face, its outer edge rounded with
+        # the plate's
         lem2d = medal2d - medal2d.offset(-2.0, J, 2.0, 32)
         if ring_out is not None:
             lem2d = lem2d - ring_out.offset(0.01, J, 2.0, 24)
@@ -647,7 +691,12 @@ def build(M, Invalid, p, product):
     else:
         top = t + count * step
         solids = [(layer, layer["stack"].extrude(step).translate([0, 0, t + i * step])) for i, layer in enumerate(layers)]
-    body = _rounded_top(M, plate2d, t, ROUND) if biscuit else plate2d.extrude(t)
+    if medal:
+        body = _soft_plate(M, plate2d, t, soft) if soft > 0 else plate2d.extrude(t)
+        if face_down:
+            solids = [(layer, s ^ body) for layer, s in solids]      # the motif and the rim take the rounded edge of the face
+    else:
+        body = _rounded_top(M, plate2d, t, ROUND) if biscuit else plate2d.extrude(t)
     if bevel and not rim and edge >= 0.4 and not biscuit:
         c = min(0.8, edge, t * 0.3)
         body = plate2d.extrude(t - c)
@@ -725,7 +774,7 @@ def build(M, Invalid, p, product):
             body, whole = body + links, whole + links
             h, _, c = _link_profile(LINK[2])
             notes["chain"] = {"links": chain[3], "length": round(chain[3] * (LINK[0] - 2 * LINK[2]) / 10.0) * 10,
-                              "profile": {"height": round(h, 2), "flat": LINK_FLAT, "overhang": LINK_OVERHANG}}
+                              "profile": {"height": round(h, 2), "flat": LINK_FLAT, "overhang": LINK_OVERHANG}, "tips": LINK[3]}
             if chain[3] < asked:
                 notes["chain"]["asked"] = asked
                 warn.append("links_cut")
@@ -830,6 +879,7 @@ def build(M, Invalid, p, product):
     parts["all"] = laid(fused)
     parts["_pieces"] = {"all": pieces}
     if face_down:
+        parts["_shared"] = True                              # one plate: every part where the medal has it
         # the preview shows the medal as it is worn: turned over, its face up and the number reading right
         parts["use"] = parts["all"].rotate([0, 180, 0])
         parts["_pieces"]["use"] = [(name, solid.rotate([0, 180, 0])) for name, solid in pieces]

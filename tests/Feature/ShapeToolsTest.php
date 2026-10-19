@@ -538,6 +538,25 @@ class ShapeToolsTest extends TestCase
         return [$sum / max($weight, 1e-9), $lo, $hi];
     }
 
+    /** How wide (in x) an STL is at the height z: the corners that lie there. */
+    private static function spanAt(string $stl, float $z): float
+    {
+        $n = unpack('V', substr($stl, 80, 4))[1];
+        $lo = INF;
+        $hi = -INF;
+        for ($i = 0; $i < $n; $i++) {
+            $v = array_values(unpack('f12', substr($stl, 84 + 50 * $i, 48)));
+            for ($c = 0; $c < 3; $c++) {
+                if (abs($v[5 + 3 * $c] - $z) < 0.002) {
+                    $lo = min($lo, $v[3 + 3 * $c]);
+                    $hi = max($hi, $v[3 + 3 * $c]);
+                }
+            }
+        }
+
+        return $hi - $lo;
+    }
+
     /** How many separate bodies a binary STL holds: triangles that share a corner belong together. */
     private static function bodies(string $stl): int
     {
@@ -565,7 +584,7 @@ class ShapeToolsTest extends TestCase
         $one = ['line1' => '1', 'typeface' => 'archivo'];
         // what the tool starts with: flush, the number at 55 % of 60 mm, a rim, forty links, one plate of a 220 mm bed
         $first = $this->meta($this->preview('medallion', $one, 'all', true)->assertOk());
-        $this->assertSame(['links' => 40, 'length' => 880, 'profile' => ['height' => 4.33, 'flat' => 1, 'overhang' => 45]], $first['notes']['chain']);
+        $this->assertSame(['links' => 40, 'length' => 880, 'profile' => ['height' => 4.33, 'flat' => 1, 'overhang' => 45], 'tips' => 1.6], $first['notes']['chain']);
         $this->assertLessThanOrEqual(220, max($first['bbox']['x'], $first['bbox']['y']));
         $this->assertSame([], $first['notes']['warnings']);
 
@@ -585,6 +604,18 @@ class ShapeToolsTest extends TestCase
         $this->assertSame(2, self::bodies($red->streamedContent() ?: $red->getContent()), 'the rim and the one');
         $this->assertLessThanOrEqual(60.01, $parts['color_1']['bbox'][3]);
         $this->assertLessThanOrEqual($parts['body']['bbox'][4], $parts['color_1']['bbox'][4]);
+        // the outline rounded by 1 mm (round 4): on the bed the face starts 0.59 mm in (a 45° slope up to the round), the
+        // back a quarter round; the rim takes the rounding of the face, its face stays flat
+        $plate = $this->preview('medallion', $one + ['links' => 0])->assertOk();
+        $plate = $plate->streamedContent() ?: $plate->getContent();
+        $this->assertEqualsWithDelta(60 - 2 * 0.536, self::spanAt($plate, 0.0), 0.05, 'the face on the bed');
+        $this->assertEqualsWithDelta(60 - 2 * 0.688, self::spanAt($plate, 4.4), 0.05, 'the back');
+        $rim = $red->streamedContent() ?: $red->getContent();
+        $this->assertEqualsWithDelta(60 - 2 * 0.536, self::spanAt($rim, 0.0), 0.05);
+        // one plate: the part lies where the medal has it, not moved to its own corner (the farm puts the parts together
+        // by their coordinates; 0.06 mm off was a conflict of paths in the slicer)
+        $this->assertEqualsWithDelta($parts['color_1']['bbox'][0], self::middleX($rim)[1], 0.01);
+        $this->assertGreaterThan(0.05, self::middleX($rim)[1]);
         // its eyelet is not dragged: no outline, so the page shows no grip (it stood among the links of the turned preview)
         $this->assertArrayNotHasKey('outline', $first['notes']);
         // deeper on request (fewer or more changes of filament: the page says how many the slice gives)
@@ -596,6 +627,9 @@ class ShapeToolsTest extends TestCase
         $bare = $this->meta($this->preview('medallion', $one + ['border' => false, 'links' => 0], 'all', true)->assertOk());
         $box = collect($bare['parts'])->firstWhere('name', 'color_1')['bbox'];
         $this->assertEqualsWithDelta(0.55 * 60, hypot($box[3] - $box[0], $box[4] - $box[1]), 1.0);
+        // the number alone as the farm gets it: in the middle of the medal, not in its corner
+        $number = $this->preview('medallion', $one + ['border' => false, 'links' => 0], 'color_1')->assertOk();
+        $this->assertEqualsWithDelta($box[0], self::middleX($number->streamedContent() ?: $number->getContent())[1], 0.01);
         $big = collect($this->meta($this->preview('medallion', $one + ['border' => false, 'links' => 0, 'motif_size' => 80], 'all', true)->assertOk())['parts'])->firstWhere('name', 'color_1')['bbox'];
         $this->assertGreaterThan(1.3 * ($box[4] - $box[1]), $big[4] - $big[1]);
 
@@ -607,9 +641,9 @@ class ShapeToolsTest extends TestCase
         // the eyelet on top, on the axis
         $this->assertEqualsWithDelta($bare['bbox']['x'] / 2, $bare['notes']['eyelet']['x'], 0.1);
 
-        // the links: round bars on a flat of 1 mm, 838 mm³ each
+        // the links: round bars on a flat of 1 mm, round ends 1.6 mm apart, 846 mm³ each
         $chainless = $this->meta($this->preview('medallion', $one + ['links' => 0])->assertOk());
-        $this->assertEqualsWithDelta(40 * 838.3, $first['volume_mm3'] - $chainless['volume_mm3'], 40 * 8);
+        $this->assertEqualsWithDelta(40 * 845.9, $first['volume_mm3'] - $chainless['volume_mm3'], 40 * 2);
 
         // seven shapes, each one closed solid on the bed with the eyelet on its axis
         foreach (['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'] as $body) {
@@ -656,6 +690,8 @@ class ShapeToolsTest extends TestCase
         $this->assertEqualsWithDelta(4.4, $parts['color_1']['bbox'][2], 0.001);
         $this->assertEqualsWithDelta(5.0, $parts['color_1']['bbox'][5], 0.001);
         $this->assertEqualsWithDelta(4.4, $parts['body']['bbox'][5], 0.001, 'nothing of the plate or the chain above the change');
+        // the rim stands on the flat of the top, inside the plate's rounded edge (1 mm)
+        $this->assertEqualsWithDelta(58.0, $parts['color_1']['bbox'][3] - $parts['color_1']['bbox'][0], 0.1);
 
         // not mirrored: as printed, the stem of an L is left of its middle
         $letter = $this->preview('medallion', ['line1' => 'L', 'links' => 0, 'border' => false, 'motif' => 'raised'], 'color_1')->assertOk();

@@ -1042,12 +1042,18 @@ def main(argv):
         # a builder that knows its pieces itself (a picture in colours: every colour a part) says so; the others are
         # recognised in the finished solid
         named = parts.pop("_pieces", {})
+        shared = parts.pop("_shared", False)
         key = part if (part != "all" and part in parts) else ("use" if (view == "use" and "use" in parts) else "all")
         solid = parts[key]
         if solid.is_empty() or solid.status() != M.Error.NoError or solid.volume() <= 0:
             raise Invalid("empty_result")
         x0, y0, z0, x1, y1, z1 = solid.bounding_box()
-        solid = solid.translate([-x0, -y0, -z0])
+        at = (x0, y0, z0)
+        if shared and key not in ("all", "use"):
+            # parts printed side by side in one plate (a medal face down): each in the place the whole has it, so the
+            # farm and the order page can put them together again (a rim rounded at its edge starts off the corner)
+            at = parts["all"].bounding_box()[:3]
+        solid = solid.translate([-at[0], -at[1], -at[2]])
         listed = []
         if with_parts:
             chunks, at = [], 0
