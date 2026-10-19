@@ -129,6 +129,7 @@ final class OrderFlow
         }
 
         $slicedFor = $order->farm_printer_id;
+        $partSpoolsBefore = array_map('intval', array_column($order->partPlates(), 'slot_id'));
         DB::transaction(function () use ($order, $offer, $delivery, $destination, $ip, $price, $note, $second, $picked, $partPlates, $currency) {
             $order->fill([
                 'farm_printer_id' => $offer['printer']->id, 'farm_printer_slot_id' => $offer['slot']->id, 'farm_color_id' => $offer['color']->id,
@@ -147,13 +148,16 @@ final class OrderFlow
         });
 
         $wanted = PrintProfile::for($offer['printer'], $offer['color']->material, $offer['color'])->sliceFingerprint();
+        // an order by parts was sliced for the spools it had: other spools for the parts mean other kinds, another
+        // grouping of the parts, or a plate of several filaments where there were separate plates – sliced again
+        $partsChanged = $order->isByParts() && array_map('intval', array_column($order->partPlates(), 'slot_id')) !== $partSpoolsBefore;
         $this->paying = $order->id;
         try {
-            if ($wanted !== ($order->slice_params['profile_fingerprint'] ?? null) || $offer['printer']->id !== $slicedFor) {
+            if ($wanted !== ($order->slice_params['profile_fingerprint'] ?? null) || $offer['printer']->id !== $slicedFor || $partsChanged) {
                 // this spool (or this kind on this machine) prints with other slicer settings than the order was sliced with,
                 // or sits in another machine: slice again, the paid order waits meanwhile (the price stays as quoted)
                 $order->forceFill(['status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'slicing'])->save();
-                $order->events()->create(['from' => FarmOrder::STATUS_PAID, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'system', 'note' => $offer['printer']->id !== $slicedFor ? 'reslice for '.$offer['printer']->key : 'reslice for the tuned profile']);
+                $order->events()->create(['from' => FarmOrder::STATUS_PAID, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'system', 'note' => $offer['printer']->id !== $slicedFor ? 'reslice for '.$offer['printer']->key : ($partsChanged ? 'reslice for the spools of the parts' : 'reslice for the tuned profile')]);
                 PrepareFarmOrder::dispatch($order->id);
                 $situation = 'reslice';
             } elseif ($this->settings->get('require_approval')) {

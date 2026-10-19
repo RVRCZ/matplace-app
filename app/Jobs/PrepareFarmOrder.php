@@ -18,7 +18,10 @@ use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\SliceParams;
 use App\Engines\Farm\PhpPrintPreparer;
 use App\Engines\Gcode\SupportLines;
+use App\Engines\Mesh\StlFile;
+use App\Engines\Mesh\ThreeMfWriter;
 use App\Models\FarmOrder;
+use App\Models\FarmPrinterSlot;
 use App\Models\ModelFile;
 use App\Support\Stopwatch;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -93,7 +96,11 @@ class PrepareFarmOrder implements ShouldQueue
 
         try {
             if ($order->isByParts()) {
-                // every part its own plate from its own spool: checked, laid out, sliced and priced one after another
+                // the parts together on one plate, a filament per spool, when the machine can change spools and they fit
+                // (docs/AL.md §10); else every part its own plate from its own spool, one after another
+                if ($this->prepareOnePlate($order, $preparer, $slicer, $settings, $orders, $flow, $clock, $disk, $bed)) {
+                    return;
+                }
                 $this->prepareParts($order, $preparer, $slicer, $settings, $orders, $flow, $clock, $disk, $bed);
 
                 return;
@@ -419,6 +426,169 @@ class PrepareFarmOrder implements ShouldQueue
         ])->save();
         $clock->note('print_minutes', $order->est_minutes)->note('parts', count($plates));
         $this->price($order, $printer, $settings, $orders, $flow, $clock);
+    }
+
+    /** The process settings of a plate that changes filaments: the prime tower on, the purge into the infill where it can go. */
+    public const ONE_PLATE_PROCESS = ['enable_prime_tower' => '1', 'prime_tower_width' => '25', 'flush_into_infill' => '1', 'flush_into_objects' => '0', 'flush_into_support' => '1'];
+
+    /**
+     * An order by parts whose parts print together: one plate, one G-code, a filament per spool (`T0`…`T<n-1>` in the
+     * file, the prime tower between them), the machine changing spools as it goes. Possible when the machine is run
+     * by an agent (a changer; an operator feeds one spool), there is one copy, the spools are at most MAX_COLORS and
+     * all of this machine, the parts as the tool laid them fit the plate, and the slicer manages it. Returns false,
+     * with nothing of the order changed, when it is not: the caller prints the parts one plate each.
+     */
+    private function prepareOnePlate(FarmOrder $order, PrintPreparer $preparer, Slicer $slicer, FarmSettings $settings, OrderService $orders, OrderFlow $flow, Stopwatch $clock, $disk, Dimensions $bed): bool
+    {
+        $file = $order->modelFile;
+        $printer = $order->printer;
+        $skeleton = $order->partPlates();
+        if (count($skeleton) < 2 || ! $printer->isAgentDriven() || (int) $order->copies !== 1) {
+            return false;
+        }
+        $slotIds = array_values(array_unique(array_filter(array_map(fn ($p) => (int) ($p['slot_id'] ?? 0), $skeleton))));
+        $spools = $slotIds ? FarmPrinterSlot::with('color.material')->whereIn('id', $slotIds)->get()->keyBy('id') : collect();
+        if ($spools->contains(fn (FarmPrinterSlot $s) => (int) $s->farm_printer_id !== (int) $printer->id)) {
+            return false;   // spools of two machines: no one plate prints that
+        }
+        // a filament per spool (parts of one spool share it); a part without a spool yet (no colour chosen) one of its own
+        $index = [];
+        $filamentOf = [];
+        foreach ($skeleton as $i => $p) {
+            $key = (int) ($p['slot_id'] ?? 0) ?: 'part'.$i;
+            $index[$key] ??= count($index);
+            $filamentOf[$i] = $index[$key];
+        }
+        if (count($index) < 2 || count($index) > FarmOrder::MAX_COLORS || count($index) > max(1, $printer->slots()->count())) {
+            return false;
+        }
+
+        $margin = 2 * (float) $settings->get('bed_margin_mm');
+        $usable = new Dimensions($bed->x - $margin, $bed->y - $margin, $bed->z);
+        $scale = $order->unit_scale * (float) ($order->scale ?: 1);
+        File::ensureDirectoryExists($disk->path($order->dir()));
+        $order->update(['stage' => 'checking']);
+        $paths = [];
+        $lo = [INF, INF, INF];
+        $hi = [-INF, -INF, -INF];
+        foreach ($skeleton as $i => $p) {
+            $src = $orders->partStl($file, (string) $p['part']) ?? throw new \RuntimeException('The part '.$p['part'].' of the design cannot be built.');
+            $rel = $order->dir().'/plate-part-'.($i + 1).'.stl';
+            try {
+                StlFile::scale($src['path'], $disk->path($rel).'.raw', $scale);
+            } finally {
+                if ($src['temp']) {
+                    @unlink($src['path']);
+                }
+            }
+            [$l, $h] = StlFile::bounds($disk->path($rel).'.raw');
+            for ($k = 0; $k < 3; $k++) {
+                $lo[$k] = min($lo[$k], $l[$k]);
+                $hi[$k] = max($hi[$k], $h[$k]);
+            }
+            $paths[$i] = $rel;
+        }
+        $size = [$hi[0] - $lo[0], $hi[1] - $lo[1], $hi[2] - $lo[2]];
+        if (! is_finite($lo[0]) || $size[0] > $usable->x || $size[1] > $usable->y || $size[2] > $usable->z) {
+            foreach ($paths as $rel) {
+                @unlink($disk->path($rel).'.raw');
+            }
+
+            return false;   // the parts as designed do not fit the plate together: one plate each
+        }
+        // every part moved by the same vector: the middle of the plate, standing on it; the parts keep their places against each other
+        $move = [$bed->x / 2 - ($lo[0] + $hi[0]) / 2, $bed->y / 2 - ($lo[1] + $hi[1]) / 2, -$lo[2]];
+        $volumes = [];
+        foreach ($paths as $i => $rel) {
+            StlFile::translate($disk->path($rel).'.raw', $disk->path($rel), $move);
+            @unlink($disk->path($rel).'.raw');
+            $volumes[$i] = StlFile::stats($disk->path($rel))->volumeMm3;
+        }
+        $plateRel = $order->dir().'/plate.stl';
+        StlFile::concat(array_map(fn ($rel) => $disk->path($rel), $paths), $disk->path($plateRel));
+        $printRel = $order->dir().'/print.stl';
+        @unlink($disk->path($printRel).'.stage');
+        $mesh = $clock->measure('prepare', fn () => $preparer->prepare($disk->path($plateRel), $disk->path($printRel), 1.0, $bed, true));
+        @unlink($disk->path($printRel).'.stage');
+        $verdict = ModelValidator::judge($mesh, $bed, ['min_model_mm' => (float) $settings->get('min_model_mm'), 'bed_margin_mm' => (float) $settings->get('bed_margin_mm')]);
+        $raw = Dimensions::fromArray((array) $file->bbox);
+        $order->check = $verdict + ['mesh' => $mesh->toArray(), 'unit_guess' => ModelValidator::guessUnit($raw, $bed), 'raw_dims' => $raw->toArray(), 'piece_dims' => $mesh->bbox->toArray(), 'max_copies' => 1];
+        $order->orientation = $mesh->orientation;
+        $order->print_stl_path = $printRel;
+        $order->save();
+        if (! $verdict['ok']) {
+            $flow->fail($order, $verdict['errors'][0]['code'], 'system');
+
+            return true;
+        }
+
+        // ── slice: a 3MF with an object per part, each told its filament; a filament profile per spool ────────────
+        $order->update(['stage' => 'slicing']);
+        $setup = $this->sliceSetup($order, $settings);
+        $filaments = [];
+        foreach ($index as $key => $n) {
+            $spool = is_int($key) ? $spools->get($key) : null;
+            $profile = $spool && $spool->color ? PrintProfile::for($printer, $spool->color->material, $spool->color) : $setup['profile'];
+            $filaments[$n] = ['profile' => $profile->filamentProfile, 'overrides' => $profile->filament, 'volume_mm3' => 0.0, 'slot_id' => $spool?->id, 'color_id' => $spool?->farm_color_id];
+        }
+        foreach ($filamentOf as $i => $n) {
+            $filaments[$n]['volume_mm3'] += (float) $volumes[$i];
+        }
+        ksort($filaments);
+        $projectRel = $order->dir().'/plate.3mf';
+        ThreeMfWriter::write($disk->path($projectRel), array_map(fn ($i, $p) => ['name' => (string) $p['part'], 'stl' => $disk->path($paths[$i]), 'extruder' => $filamentOf[$i] + 1], array_keys($skeleton), $skeleton));
+        $params = $setup['params']->withFilaments(array_map(fn ($f) => ['profile' => $f['profile'], 'overrides' => $f['overrides'], 'volume_mm3' => round($f['volume_mm3'], 1)], $filaments), $disk->path($projectRel), self::ONE_PLATE_PROCESS);
+        try {
+            $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($plateRel), $params));
+        } catch (\Throwable $e) {
+            // the slicer could not do the plate (the tower found no room, the filaments were not kept apart…): one plate each
+            Log::warning('One-plate slice failed, the parts print one plate each', ['order' => $order->id, 'error' => $e->getMessage()]);
+            $clock->note('one_plate_failed', mb_substr($e->getMessage(), 0, 200));
+
+            return false;
+        }
+        $clock->merge($result->timings);
+        if (! $result->gcodePath || ! is_file($result->gcodePath)) {
+            return false;
+        }
+        $gcodeRel = $order->dir().'/print.gcode';
+        File::move($result->gcodePath, $disk->path($gcodeRel));
+        $supportsBin = $disk->path($order->dir().'/supports.bin');
+        if (! $result->supportsUsed || ! SupportLines::extract($disk->path($gcodeRel), $supportsBin)) {
+            @unlink($supportsBin);
+        }
+        $timelapse = $printer->timelapseFor($order);
+        $parking = $timelapse ? (int) round(TimelapseGcode::extraMinutesForFile($disk->path($gcodeRel), $timelapse, (float) $printer->bed_x, (float) $printer->bed_y)) : 0;
+        $plates = [];
+        foreach ($skeleton as $i => $p) {
+            $n = $filamentOf[$i];
+            $plates[] = ['part' => (string) $p['part'], 'slot_id' => (int) ($p['slot_id'] ?? 0), 'color_id' => (int) ($p['color_id'] ?? 0), 'copies' => 1, 'extruder' => $n + 1,
+                'stl_path' => $paths[$i], 'grams' => isset($result->filamentGrams[$n]) ? round((float) $result->filamentGrams[$n], 1) : null, 'minutes' => $i === 0 ? (int) round($result->minutes) : null];
+        }
+        $order->check = ['max_copies' => 1] + (array) $order->check;
+        $order->fill([
+            'plates' => 1, 'plates_done' => 0, 'plate_copies' => 1, 'rest_copies' => null, 'rest_gcode_path' => null,
+            'part_plates' => $plates,
+            'gcode_path' => $gcodeRel, 'gcode_sha256' => hash_file('sha256', $disk->path($gcodeRel)),
+            'slice_params' => [
+                'engine' => $slicer->name(), 'printer' => ['id' => $printer->id, 'key' => $printer->key, 'model' => $printer->model],
+                'material' => $order->material->code, 'quality' => $setup['quality'], 'layer_mm' => $setup['layer'], 'strength' => $order->strength, 'copies' => $order->copies,
+                'infill_percent' => $setup['infill'], 'unit_scale' => $order->unit_scale, 'scale' => (float) $order->scale, 'profiles' => $setup['profiles'], 'overrides' => $params->overrides,
+                'profile_layers' => $setup['profile']->layers, 'profile_fingerprint' => $setup['profile']->sliceFingerprint(),
+                'profile_hashes' => $this->profileHashes($setup['profiles']), 'preparer' => $preparer->name(), 'sliced_at' => now()->toIso8601String(),
+                'timelapse_minutes' => $parking, 'by_parts' => true, 'one_plate' => true,
+                'filaments' => array_map(fn ($f) => ['slot_id' => $f['slot_id'], 'color_id' => $f['color_id'], 'profile' => $f['profile']], $filaments),
+            ],
+            'slice_result' => $result->toArray() + ['plates' => 1, 'parts' => array_map(fn ($p) => ['part' => $p['part'], 'extruder' => $p['extruder'], 'grams' => $p['grams']], $plates)],
+            'est_minutes' => (int) round($result->minutes) + $parking,
+            'est_grams' => round($result->grams, 1),
+            'est_meters' => round((float) ($result->meters ?? 0), 2),
+            'supports_used' => $result->supportsUsed,
+        ])->save();
+        $clock->note('print_minutes', $order->est_minutes)->note('parts', count($plates))->note('one_plate', true)->note('filament_changes', $result->changes);
+        $this->price($order, $printer, $settings, $orders, $flow, $clock);
+
+        return true;
     }
 
     /** Fingerprints of the profile files: the same names with different content would not be the same print. */

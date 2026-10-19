@@ -14,7 +14,8 @@ import { money as moneyText } from '../site/money';
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
 /** A colour on offer: one per colour, with the codes of every spool of it that could print the order ("U33" = farm U, printer 3, slot 3). */
 interface Color { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; codes?: string[]; enough: boolean; price: Price; total: number; starts_now: boolean; sliced: boolean; second?: Second[] }
-interface Second { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null }
+/** A spool for a second colour or a part; `main` names the first colour's slot on its machine when it sits in another machine than the chosen spool. */
+interface Second { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; main?: number | null }
 /** One spool of the order as chosen so far (FarmOrder::spoolLines). */
 interface SpoolLine { role: string; n: number | null; part: string | null; name: string; kind: string; hex: string | null; code: string | null }
 const UNIT_MM: Record<string, number> = { mm: 1, cm: 10, in: 25.4, m: 1000 };
@@ -28,7 +29,7 @@ interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
@@ -236,6 +237,8 @@ export function bootFarmOrder(): void {
     const byHand = new Set<number>();                                  // rows where "no change" was chosen on purpose
     // printed by parts: the spool of every part (null = the main colour), kept while the machine holds it
     const partSlots: Record<string, number | null> = Object.fromEntries((state.parts ?? []).map((p) => [p.part, p.slot_id ?? null]));
+    // the machine the last part spool was picked from (its first-colour slot), so every part stays on one machine
+    let lastMain: number | null = null;
     const partByHand = new Set<string>();
     const changeHeights = (): number[] => (state.changes ?? []).map((c) => c.z);
     let geom: BufferGeometry | null = null;
@@ -387,9 +390,15 @@ export function bootFarmOrder(): void {
         const list0 = $('farm-second-colors');
         const dot0 = (hex: string): string => `<span class="h-10 w-10 shrink-0 rounded-lg border border-slate-200" style="background:${esc(hex)}"></span>`;
         if (state.by_parts && (state.parts ?? []).length) {
-            // printed by parts: every part takes this colour's spool or another spool of its machine, one plate after another
+            // printed by parts: every part takes this colour's spool or another spool of its machine – one plate for all of them
+            // when the machine changes spools itself, else one plate after another
             const parts = state.parts ?? [];
-            const offer = c ? [{ slot: c.slot, name: c.name, kind: c.kind ?? '', hex: c.hex, photo: c.photo, code: c.code ?? null }, ...(c.second ?? [])] : [];
+            const all = c ? [{ slot: c.slot, name: c.name, kind: c.kind ?? '', hex: c.hex, photo: c.photo, code: c.code ?? null }, ...(c.second ?? [])] : [];
+            // the spools of one machine only: a spool of another machine names that machine's first-colour slot as `main`, and
+            // once a part took one, the other parts may pick that machine's spools alone (the last choice decides the machine)
+            const mainOf = (slot: number | null | undefined): number | null => (slot === null || slot === undefined || slot === c?.slot) ? null : ((c?.second ?? []).find((s) => s.slot === slot)?.main ?? c?.slot ?? null);
+            const chosenMain = lastMain ?? parts.map((p) => mainOf(partSlots[p.part])).find((m) => m !== null && m !== c?.slot) ?? null;
+            const offer = chosenMain === null || chosenMain === c?.slot ? all.filter((o) => o.slot === c?.slot || mainOf(o.slot) === null || mainOf(o.slot) === c?.slot) : all.filter((o) => o.slot === c?.slot || mainOf(o.slot) === chosenMain);
             parts.forEach((p) => {
                 const cur = partSlots[p.part];
                 if (cur !== null && cur !== undefined && offer.some((o) => o.slot === cur)) return;
@@ -402,7 +411,8 @@ export function bootFarmOrder(): void {
             });
             show($('farm-second'), offer.length > 0);
             if (heading0) heading0.textContent = tr('farm.order.parts_title');
-            if (hint0) hint0.textContent = tr('farm.order.parts_hint', { max: String(state.max_colors ?? 4) });
+            const machines = new Set(all.map((o) => mainOf(o.slot) ?? c?.slot ?? 0)).size;
+            if (hint0) hint0.textContent = (state.one_plate ? tr('farm.order.parts_one_plate', { n: String(state.filament_changes ?? 0) }) : tr('farm.order.parts_hint', { max: String(state.max_colors ?? 4) })) + (machines > 1 ? ` ${tr('farm.order.parts_one_machine')}` : '');
             if (list0 && offer.length) {
                 const tile = (part: string, slot: number | null, name: string, kind: string, swatch: string, code: string | null | undefined): string => {
                     const on = slot === null ? partSlots[part] === null || partSlots[part] === c?.slot : slot === partSlots[part];
@@ -418,6 +428,7 @@ export function bootFarmOrder(): void {
                     const part = b.dataset.part ?? '';
                     partSlots[part] = b.dataset.second ? Number(b.dataset.second) : null;
                     if (partSlots[part] === null) partByHand.add(part); else partByHand.delete(part);
+                    lastMain = mainOf(partSlots[part]);
                     render();
                 }));
             }
@@ -487,7 +498,10 @@ export function bootFarmOrder(): void {
         if (!p) { box.innerHTML = ''; return; }
         const ship = p.shipping;
         const row = (k: string, v: number, strong = false) => `<div class="flex justify-between ${strong ? 'font-semibold' : ''}"><dt>${esc(k)}</dt><dd>${esc(money(v))}</dd></div>`;
+        const changesN = Number((p as { changes?: number }).changes ?? 0);
         box.innerHTML = row(tr('farm.order.b_time'), p.time) + row(tr('farm.order.b_material'), p.material) + row(tr('farm.order.b_fixed'), p.fixed)
+            // one plate of several filaments: how often the machine changes the spool (the purge is in the material line, the time in the time line)
+            + (state.one_plate && changesN > 0 ? `<div class="flex justify-between text-xs text-slate-500"><dt>${esc(tr('farm.order.b_changes'))}</dt><dd>${esc(tr('farm.order.b_changes_value', { n: String(changesN) }))}</dd></div>` : '')
             + (p.min_price_applied ? `<div class="text-xs text-slate-500">${esc(tr('farm.order.b_min'))}</div>` : '')
             + row(tr('farm.order.b_net'), p.net) + row(tr('farm.order.b_vat', { p: p.inputs.vat_percent }), p.vat)
             + ((p.royalty ?? 0) > 0 ? row(tr('models.price.to_author'), p.royalty ?? 0) : '')

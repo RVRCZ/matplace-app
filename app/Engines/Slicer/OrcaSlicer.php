@@ -48,14 +48,27 @@ final class OrcaSlicer implements Slicer
             $pairing = $params->profiles ? ['compatible_printers' => [(string) (json_decode((string) File::get($machine), true)['name'] ?? '')], 'compatible_printers_condition' => ''] : [];
             $filamentName = $this->machineVariant($params->profiles['filament'] ?? null, $params->profiles['machine'] ?? null);
             $filament = $this->patched($this->profileFile($filamentName) ?? $this->profile('filaments', $params->materialCode, 'material'), ($params->overrides['filament'] ?? []) + $pairing, $work.'/filament.json');
+            // a plate of several filaments: a profile per filament (its own kind and temperatures), the 3MF says which part
+            // takes which; the project is sliced where it stands (--arrange 0), the mesh given is the whole plate for its size
+            if ($params->filaments && $params->project) {
+                $files = [];
+                foreach (array_values($params->filaments) as $i => $f) {
+                    $name = $this->machineVariant((string) ($f['profile'] ?? ''), $params->profiles['machine'] ?? null);
+                    $files[] = $this->patched($this->profileFile($name) ?? $filament, ((array) ($f['overrides'] ?? [])) + $pairing, $work.'/filament_'.($i + 1).'.json');
+                }
+                $filament = implode(';', $files);
+            }
             $process = $this->profileFile($params->profiles['process'] ?? null) ?? $this->profile('processes', $params->quality, 'quality');
             // we put the model in the middle of the bed ourselves: the slicer's own arranging turns it as it likes
             // (Baby Turtle, 27 Sep 2026: by 90°), and then neither the preview of supports nor our plate layout fits
-            if ($bed = $this->bedOf($machine)) {
+            if (! $params->project && ($bed = $this->bedOf($machine))) {
                 $size = $clock->measure('mesh', fn () => StlFile::place($mesh, $work.'/placed.stl', 1.0, $bed['cx'], $bed['cy']));
                 if ($size[0] <= $bed['x'] && $size[1] <= $bed['y']) {
                     $placed = $work.'/placed.stl';
                 }
+            }
+            if ($params->project) {
+                $placed = $params->project;
             }
 
             $attempt = function (bool $supports) use ($work, $mesh, $placed, $params, $filament, $process, $machine, $pairing, $clock): array {
@@ -130,6 +143,10 @@ final class OrcaSlicer implements Slicer
             $stats = GcodeStats::fromFile($gcodePath);
             $grams = $stats['grams'];
             $minutes = $stats['minutes'];
+            if ($params->filaments && count($stats['filament_grams']) < count($params->filaments)) {
+                // the slicer put every part on one filament: the plate would print in one colour, not what was ordered
+                throw new SlicerException('The slicer did not keep the filaments apart: '.count($stats['filament_grams']).' of '.count($params->filaments).' in the header.');
+            }
             if ($grams === null) {
                 throw new SlicerException('Could not parse filament grams from gcode.');
             }
@@ -163,11 +180,13 @@ final class OrcaSlicer implements Slicer
                 supportsUsed: $supportsUsed,
                 gcodePath: $keep,
                 warnings: $warnings,
-                raw: ['engine' => 'orca', 'tree_supports' => ($wantSupports || $autoSupports) && $params->treeSupports, 'filament' => basename($filament), 'process' => basename($process), 'machine' => basename($machine)],
+                raw: ['engine' => 'orca', 'tree_supports' => ($wantSupports || $autoSupports) && $params->treeSupports, 'filament' => implode(';', array_map('basename', explode(';', $filament))), 'process' => basename($process), 'machine' => basename($machine)],
                 meters: $meters,
                 minutesByMode: $byMode,
                 layers: $layers,
                 timings: $clock->toArray(),
+                filamentGrams: $stats['filament_grams'],
+                changes: $stats['changes'],
             );
         } finally {
             File::deleteDirectory($work);

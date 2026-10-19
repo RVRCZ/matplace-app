@@ -85,6 +85,11 @@ return [
         'parts_title' => 'Díly a jejich barvy',
         'parts_hint' => 'Každý díl se tiskne zvlášť ze své cívky, díl po dílu na jedné tiskárně. Nejvýš :max barvy.',
         'part_main' => 'Hlavní barva',
+        // the parts together on one plate, the machine changing spools as it goes (docs/AL.md §10)
+        'parts_one_plate' => 'Díly se tisknou spolu na jedné podložce; tiskárna mění cívky sama (:n výměn). Cívky vybírejte z jedné tiskárny.',
+        'parts_one_machine' => 'Všechny díly musí být z cívek jedné tiskárny: po první volbě zůstávají jen její cívky.',
+        'b_changes' => 'Výměny barvy',
+        'b_changes_value' => ':n× (proplach je v materiálu, čas v době tisku)',
         'part_line' => ':part: :name',
         'changes_title' => 'Barvy nad sebou',
         'recolor' => 'Přepočítat pro zvolenou barvu',

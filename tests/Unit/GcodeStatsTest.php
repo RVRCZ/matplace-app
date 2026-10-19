@@ -70,7 +70,8 @@ G1 Y2
         foreach ($samples as $name => $g) {
             file_put_contents($dir.'/g.gcode', $g);
             $want = ['grams' => GcodeStats::grams($g), 'minutes' => GcodeStats::minutes($g), 'meters' => GcodeStats::meters($g),
-                'minutes_by_mode' => GcodeStats::minutesByMode($g), 'layers' => GcodeStats::layers($g), 'has_supports' => GcodeStats::hasSupports($g)];
+                'minutes_by_mode' => GcodeStats::minutesByMode($g), 'layers' => GcodeStats::layers($g), 'has_supports' => GcodeStats::hasSupports($g),
+                'filament_grams' => GcodeStats::filamentGrams($g), 'changes' => GcodeStats::changes($g)];
             foreach ([7, 64, 1000, 8388608] as $block) {
                 $this->assertSame($want, GcodeStats::fromFile($dir.'/g.gcode', $block), "$name, blocks of $block");
             }

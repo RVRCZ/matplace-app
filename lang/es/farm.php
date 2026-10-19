@@ -80,6 +80,11 @@ return [
         'parts_title' => 'Las piezas y sus colores',
         'parts_hint' => 'Cada pieza se imprime por separado desde su propia bobina, pieza tras pieza en una máquina. Como máximo :max colores.',
         'part_main' => 'El color principal',
+        // the parts together on one plate, the machine changing spools as it goes (docs/AL.md §10)
+        'parts_one_plate' => 'Las piezas se imprimen juntas en una placa; la impresora cambia las bobinas sola (:n cambios). Elija bobinas de una sola impresora.',
+        'parts_one_machine' => 'Todas las piezas deben salir de las bobinas de una sola impresora: tras la primera elección quedan solo las suyas.',
+        'b_changes' => 'Cambios de color',
+        'b_changes_value' => ':n× (la purga está en el material, el tiempo en el tiempo de impresión)',
         'part_line' => ':part: :name',
         'changes_title' => 'Los colores uno sobre otro',
         'changes_hint' => 'Colores uno sobre otro: la impresora hace cada cambio sola a la altura donde empieza el siguiente color. Como máximo :max colores por impresión.',

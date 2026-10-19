@@ -566,7 +566,9 @@ final class OrderService
         ]));
         $parcel = $this->shipping->price($delivery, $country, $this->shipping->parcelGrams($order), $currency);
 
-        return self::inCurrency($price, $currency, (float) $parcel?->amount) + ['delivery' => $delivery, 'country' => $delivery === Shipping::PICKUP ? null : $country];
+        return self::inCurrency($price, $currency, (float) $parcel?->amount) + ['delivery' => $delivery, 'country' => $delivery === Shipping::PICKUP ? null : $country,
+            // a plate of several filaments: how often the machine changes the spool (the purge is in the grams already; the time in the minutes)
+            'changes' => (int) ($order->slice_result['changes'] ?? 0)];
     }
 
     /**

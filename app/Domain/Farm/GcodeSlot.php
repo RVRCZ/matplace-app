@@ -133,6 +133,95 @@ final class GcodeSlot
         return $out;
     }
 
+    /** The header line that tells the agent of the Kobra X which slot every filament of a plate comes from. */
+    public const FILAMENTS_LINE = '; matplace filaments';
+
+    /**
+     * A plate of several filaments: the slicer wrote `T0`…`T<n-1>` for the filaments of the project (one per part, the
+     * prime tower between them); the copy for the printer maps every one to the slot its spool sits in, says so in the
+     * header (`; matplace filaments T0=2 T1=5`, within the first 16 kB, 0-based slots, every T<n> of the file listed –
+     * the Kobra X agent turns it into ams_box_mapping, Rinkhals takes the T lines as they are), heats the nozzle
+     * before the first spool is selected (as retarget does), and writes each filament's own temperatures where the
+     * slicer set them for that filament, when the spools' kinds say so. The slicer's own CONFIG lists
+     * (`filament_colour`, `filament_type`, `filament used [g]`) stay as written: the agent reads them.
+     *
+     * @param  array<int, int>  $slots  filament index (T0 = 0) → slot
+     * @param  array<int, array{nozzle?: int, nozzle_first?: int, bed?: int}>  $temps  by filament index; empty = keep the sliced ones
+     */
+    public static function retargetMany(string $gcode, array $slots, array $temps = []): string
+    {
+        ksort($slots);
+        if (! $slots) {
+            return $gcode;
+        }
+        $header = self::FILAMENTS_LINE.' '.implode(' ', array_map(fn ($n, $slot) => 'T'.$n.'='.(int) $slot, array_keys($slots), $slots));
+        $first = $temps[0] ?? [];
+        $hot = (int) (($first['nozzle_first'] ?? 0) ?: (($first['nozzle'] ?? 0) ? $first['nozzle'] + 5 : 0));
+        if ($hot < 100 && preg_match('/^G9111 bedTemp=\d+ extruderTemp=(\d+)/m', $gcode, $g)) {
+            $hot = (int) $g[1];
+        }
+        $heat = $hot >= 100 ? 'M104 S'.$hot." ; matplace slot: heat before the spool change\nM109 S".$hot." ; matplace slot: wait for it\n" : '';
+
+        $out = [];
+        $current = 0;        // the filament printing now: its temperatures apply to the M104/M109 lines that follow
+        $toolSeen = false;
+        foreach (preg_split('/(?<=\n)/', $gcode) as $line) {
+            $bare = rtrim($line, "\r\n");
+            if (preg_match('/^T(\d)[ \t]*(?:;.*)?$/', $bare, $m)) {
+                $n = (int) $m[1];
+                $slot = $slots[$n] ?? $slots[0];
+                $out[] = ($toolSeen ? '' : $heat).'T'.$slot.' ; matplace slot for filament '.$n."\n";
+                $toolSeen = true;
+                $current = $n;
+
+                continue;
+            }
+            $t = $temps[$current] ?? [];
+            if ($t && ! empty($t['nozzle']) && preg_match('/^(M10[49]) S(?!0\b)\d+(?=\s*(?:;(?! matplace (?:tower|slot))|$))/', $bare) && ! str_contains($bare, '; matplace slot')) {
+                $out[] = preg_replace('/^(M10[49]) S\d+/', '$1 S'.(int) $t['nozzle'], $bare)."\n";
+
+                continue;
+            }
+            $out[] = $line;
+        }
+        $gcode = implode('', $out);
+        if (! $toolSeen) {
+            // no tool line at all (a one-filament file): the first filament's slot right after the start macro
+            $gcode = (string) preg_replace('/^(M117[ \t]*\r?\n)/m', '$1'.$heat.'T'.$slots[0]." ; matplace slot for filament 0\n", $gcode, 1);
+        }
+        if ($first && ! empty($first['nozzle'])) {
+            $firstLayer = (int) (($first['nozzle_first'] ?? 0) ?: $first['nozzle'] + 5);
+            $bed = (int) ($first['bed'] ?? 0);
+            $gcode = (string) preg_replace_callback('/^G9111 bedTemp=(\d+) extruderTemp=(\d+)/m', fn ($m) => 'G9111 bedTemp='.($bed ?: $m[1]).' extruderTemp='.$firstLayer, $gcode, 1);
+            if ($bed) {
+                $gcode = (string) preg_replace('/^(M1[49]0) S(?!0\b)\d+(?=\s*(?:;|$))/m', '$1 S'.$bed, $gcode);
+            }
+        }
+        // the map in the header: after the first line of the file, so a file with a long CONFIG block still carries it up front
+        $cut = strpos($gcode, "\n");
+
+        return $cut === false ? $header."\n".$gcode : substr($gcode, 0, $cut + 1).$header."\n".substr($gcode, $cut + 1);
+    }
+
+    /**
+     * The retargeted copy of a plate of several filaments, next to the original (reused while the original is older).
+     *
+     * @param  array<int, int>  $slots  filament index → slot
+     * @param  array<int, array{nozzle?: int, nozzle_first?: int, bed?: int}>  $temps  by filament index
+     */
+    public static function fileForMany(string $gcodePath, array $slots, array $temps = []): string
+    {
+        ksort($slots);
+        $tag = '.hot.multi'.implode('_', array_map(fn ($n, $s) => $n.'to'.(int) $s, array_keys($slots), $slots))
+            .($temps ? '-'.substr(sha1(json_encode($temps)), 0, 8) : '');
+        $target = preg_replace('/\.gcode$/', '', $gcodePath).$tag.'.gcode';
+        if (! is_file($target) || filemtime($target) < filemtime($gcodePath)) {
+            file_put_contents($target, self::retargetMany((string) file_get_contents($gcodePath), $slots, $temps));
+        }
+
+        return $target;
+    }
+
     /** @return array{nozzle?: int, nozzle_first?: int, bed?: int} the spool's own temperatures, else its kind's */
     public static function tempsOf(FarmColor|FarmMaterial|null $of): array
     {

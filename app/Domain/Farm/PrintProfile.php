@@ -7,6 +7,7 @@ use App\Models\FarmMaterial;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
 use App\Models\FarmPrinterMaterial;
+use App\Models\FarmPrinterSlot;
 
 /**
  * What a print is sliced and heated with, put together from the layers that know something about it. The more
@@ -109,6 +110,33 @@ final class PrintProfile
         }
 
         return self::tempsFor($order);
+    }
+
+    /**
+     * The temperatures of every filament of a plate of several filaments (FarmOrder::onePlate), by filament index:
+     * those of the spool the filament comes from, the order's own for a filament without a spool yet.
+     *
+     * @return array<int, array{nozzle?: int, nozzle_first?: int, bed?: int}>
+     */
+    public static function tempsForFilaments(FarmOrder $order): array
+    {
+        if (! $order->onePlate() || ! $order->printer) {
+            return [];
+        }
+        $ids = array_filter(array_map('intval', array_column($order->partPlates(), 'slot_id')));
+        $spools = $ids ? FarmPrinterSlot::with('color.material')->whereIn('id', $ids)->get()->keyBy('id') : collect();
+        $out = [];
+        foreach ($order->partPlates() as $p) {
+            $n = max(0, (int) ($p['extruder'] ?? 1) - 1);
+            if (isset($out[$n])) {
+                continue;
+            }
+            $spool = $spools->get((int) ($p['slot_id'] ?? 0));
+            $out[$n] = $spool && $spool->color ? self::for($order->printer, $spool->color->material, $spool->color)->temps : self::tempsFor($order);
+        }
+        ksort($out);
+
+        return $out;
     }
 
     public static function tempsFor(FarmOrder $order): array

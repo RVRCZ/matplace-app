@@ -51,7 +51,9 @@ final class Dispatcher
         ]);
         FarmCommand::create([
             'farm_printer_id' => $printer->id, 'farm_print_job_id' => $job->id, 'type' => FarmCommand::TYPE_START,
-            'payload' => ['job_id' => $job->id, 'filename' => $job->remote_filename, 'slot' => $slot, 'plate' => $plate, 'sha256_slot0' => $gcode && is_file($gcode) ? hash_file('sha256', $gcode) : $order->gcode_sha256],
+            // a plate of several filaments names the slot of every one (T0 = first); the file's header says the same
+            'payload' => ['job_id' => $job->id, 'filename' => $job->remote_filename, 'slot' => $slot, 'plate' => $plate, 'sha256_slot0' => $gcode && is_file($gcode) ? hash_file('sha256', $gcode) : $order->gcode_sha256]
+                + ($order->onePlate() ? ['filaments' => $order->filamentSlots()] : []),
         ]);
         $printer->update(['bed_clear' => false]);
 

@@ -711,7 +711,7 @@ class OrderController extends Controller
         $partPlates = $order->partPlates();
         $partSpools = $partPlates ? FarmPrinterSlot::with(['color', 'printer'])->whereIn('id', array_filter(array_column($partPlates, 'slot_id')))->get()->keyBy('id') : collect();
         $parts = array_map(fn ($p, $i) => [
-            'part' => $p['part'], 'plate' => $i + 1, 'label' => OrderService::partLabel($order->modelFile, (string) $p['part']),
+            'part' => $p['part'], 'plate' => $order->onePlate() ? 1 : $i + 1, 'label' => OrderService::partLabel($order->modelFile, (string) $p['part']),
             'hex' => ($order->modelFile?->tool_params['part_colors'][$p['part']]['hex'] ?? null) ?: null,
             'slot_id' => ($p['slot_id'] ?? null) ?: null, 'name' => $partSpools->get($p['slot_id'] ?? 0)?->color?->displayName(), 'slot_code' => $partSpools->get($p['slot_id'] ?? 0)?->code(),
             'copies' => (int) ($p['copies'] ?? $order->copies), 'minutes' => $p['minutes'] ?? null, 'grams' => $p['grams'] ?? null,
@@ -723,6 +723,9 @@ class OrderController extends Controller
             'changes' => $parts ? [] : $changes,
             'by_parts' => $order->isByParts(),
             'parts' => $parts,
+            // the parts print together on one plate, the machine changing spools (so many times) – or one plate each
+            'one_plate' => $order->onePlate(),
+            'filament_changes' => (int) ($order->slice_result['changes'] ?? 0),
             // how many separately printed parts the design has: two or more, and the order page offers "print them apart"
             'part_count' => $order->status === FarmOrder::STATUS_SLICED && $order->modelFile ? count(OrderService::designParts($order->modelFile)) : 0,
             'max_colors' => FarmOrder::MAX_COLORS,

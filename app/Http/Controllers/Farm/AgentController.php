@@ -65,7 +65,10 @@ class AgentController extends Controller
         abort_unless($job->printer->farm_agent_id === $this->agent($request)->id && $job->isActive(), 404);
         $source = $job->order->absoluteGcodePath($job->plate);
         abort_unless($source && is_file($source), 404);
-        $path = GcodeSlot::fileFor($source, $job->slot, PrintProfile::tempsForPlate($job->order, $job->plate), $job->order->isByParts() ? [] : $job->order->colorChanges());
+        // a plate of several filaments maps every T<n> to its slot (and says so in the header); any other plate selects its one slot
+        $path = $job->order->onePlate()
+            ? GcodeSlot::fileForMany($source, $job->order->filamentSlots(), PrintProfile::tempsForFilaments($job->order))
+            : GcodeSlot::fileFor($source, $job->slot, PrintProfile::tempsForPlate($job->order, $job->plate), $job->order->isByParts() ? [] : $job->order->colorChanges());
         // the head steps out of the camera's way after every layer (only machines and orders set up for it)
         if ($timelapse = $job->printer->timelapseFor($job->order)) {
             $path = TimelapseGcode::fileFor($path, $timelapse);
