@@ -538,6 +538,28 @@ class ShapeToolsTest extends TestCase
         return [$sum / max($weight, 1e-9), $lo, $hi];
     }
 
+    /** How many separate bodies a binary STL holds: triangles that share a corner belong together. */
+    private static function bodies(string $stl): int
+    {
+        $n = unpack('V', substr($stl, 80, 4))[1];
+        $parent = [];
+        $find = function (string $k) use (&$parent, &$find): string {
+            return $parent[$k] === $k ? $k : ($parent[$k] = $find($parent[$k]));
+        };
+        for ($i = 0; $i < $n; $i++) {
+            $v = array_values(unpack('f12', substr($stl, 84 + 50 * $i, 48)));
+            $keys = [];
+            for ($c = 0; $c < 3; $c++) {
+                $keys[] = $k = sprintf('%.3f %.3f %.3f', $v[3 + 3 * $c], $v[4 + 3 * $c], $v[5 + 3 * $c]);
+                $parent[$k] ??= $k;
+            }
+            $parent[$find($keys[1])] = $find($keys[0]);
+            $parent[$find($keys[2])] = $find($keys[0]);
+        }
+
+        return count(array_unique(array_map($find, array_keys($parent))));
+    }
+
     public function test_a_medal_lies_face_down_with_its_number_level_with_the_plate_and_a_round_chain_beside_it(): void
     {
         $one = ['line1' => '1', 'typeface' => 'archivo'];
@@ -558,6 +580,13 @@ class ShapeToolsTest extends TestCase
         $this->assertEqualsWithDelta(0.6, $parts['color_1']['bbox'][5], 0.001, 'three layers of 0.2 mm');
         $this->assertEqualsWithDelta(60, $parts['color_1']['bbox'][3] - $parts['color_1']['bbox'][0], 0.2, 'the rim round the medal is the motif\'s');
         $this->assertEqualsWithDelta(4.4, $first['bbox']['z'], 0.01, 'level: nothing stands out of the plate');
+        // the number's part is the number and the rim, nothing else, all of it within the medal (60 mm plus its eyelet)
+        $red = $this->preview('medallion', $one, 'color_1')->assertOk();
+        $this->assertSame(2, self::bodies($red->streamedContent() ?: $red->getContent()), 'the rim and the one');
+        $this->assertLessThanOrEqual(60.01, $parts['color_1']['bbox'][3]);
+        $this->assertLessThanOrEqual($parts['body']['bbox'][4], $parts['color_1']['bbox'][4]);
+        // its eyelet is not dragged: no outline, so the page shows no grip (it stood among the links of the turned preview)
+        $this->assertArrayNotHasKey('outline', $first['notes']);
         // deeper on request (fewer or more changes of filament: the page says how many the slice gives)
         $deep = $this->meta($this->preview('medallion', $one + ['depth' => 1, 'links' => 0], 'all', true)->assertOk());
         $this->assertEqualsWithDelta(1.0, collect($deep['parts'])->firstWhere('name', 'color_1')['bbox'][5], 0.001);
