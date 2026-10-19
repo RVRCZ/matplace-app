@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Farm\Palette;
 use App\Domain\Tools\ParametricGenerator;
+use App\Engines\Repair\PythonTool;
 use App\Models\ModelFile;
 use App\Support\PreviewMeta;
 use App\Support\ToolSeo;
@@ -538,7 +539,7 @@ class ShapeToolsTest extends TestCase
         return [$sum / max($weight, 1e-9), $lo, $hi];
     }
 
-    public function test_a_medal_lies_face_down_with_its_motif_smooth_on_the_bed_and_a_round_chain_beside_it(): void
+    public function test_a_medal_has_its_number_raised_in_one_change_and_a_round_chain_beside_it(): void
     {
         $one = ['line1' => '1', 'typeface' => 'archivo'];
         // what the tool starts with: 60 mm and forty links, all of it one plate of a 220 mm bed
@@ -547,35 +548,39 @@ class ShapeToolsTest extends TestCase
         $this->assertLessThanOrEqual(220, max($first['bbox']['x'], $first['bbox']['y']));
         $this->assertSame([], $first['notes']['warnings']);
 
-        // the number is its own part in the bottom three layers, beside the plate in the same layers: printed by parts,
-        // never a change of filament by height
+        // face up: the plate 4.4 mm, the number raised one step on it, one change of filament where it starts; the links
+        // stay under the change, so they print in the plate's filament
         $parts = collect($first['parts'])->keyBy('name');
         $this->assertSame(['body', 'color_1'], $first['notes']['parts']);
-        $this->assertEqualsWithDelta(0.0, $parts['color_1']['bbox'][2], 0.001, 'the motif lies on the bed');
-        $this->assertEqualsWithDelta(0.6, $parts['color_1']['bbox'][5], 0.001, 'three layers of 0.2 mm');
-        $this->assertEqualsWithDelta(0.0, $parts['body']['bbox'][2], 0.001);
-        $this->assertTrue($first['notes']['multi_material']);
-        $this->assertSame([], $first['notes']['color_changes']);
+        $this->assertFalse($first['notes']['multi_material']);
+        $this->assertSame([4.4], array_column($first['notes']['color_changes'], 'z'));
+        $this->assertEqualsWithDelta(4.4, $parts['color_1']['bbox'][2], 0.001);
+        $this->assertEqualsWithDelta(5.0, $parts['color_1']['bbox'][5], 0.001);
+        $this->assertEqualsWithDelta(4.4, $parts['body']['bbox'][5], 0.001, 'nothing of the plate or the chain above the change');
         $this->assertSame(2, $first['notes']['filaments']);
         // a dark plate, a light number (here the built-in colours: no farm in this test)
         $this->assertGreaterThan(Palette::lab($first['notes']['body_color']['hex'])[0] + 40, Palette::lab($first['notes']['colors'][0]['hex'])[0]);
-        $deeper = $this->meta($this->preview('medallion', $one + ['depth' => 1, 'links' => 0], 'all', true)->assertOk());
-        $this->assertEqualsWithDelta(1.0, collect($deeper['parts'])->firstWhere('name', 'color_1')['bbox'][5], 0.001);
 
-        // mirrored: an L seen from above has its stem on the right, so turned over it reads right
-        $plate = $this->meta($this->preview('medallion', ['line1' => 'L', 'links' => 0])->assertOk());
+        // the number reads as it is printed: an L has its stem on the left of its middle
+        $plate = $this->meta($this->preview('medallion', ['line1' => 'L', 'links' => 0], 'all', true)->assertOk());
         $letter = $this->preview('medallion', ['line1' => 'L', 'links' => 0], 'color_1')->assertOk();
-        [$mid, $lo, $hi] = self::middleX($letter->streamedContent() ?: $letter->getContent());
-        $this->assertGreaterThan(($lo + $hi) / 2 + 2, $mid, 'the stem of the L lies right of its middle');
-
-        // the eyelet on top, on the axis; a rim on the back: 0.8 mm over the plate of 3 mm
+        $lPart = collect($plate['parts'])->firstWhere('name', 'color_1');
+        $this->assertGreaterThan(50, $lPart['bbox'][3] - $lPart['bbox'][0], 'the number\'s part carries the rim round the medal');
+        // the eyelet on top, on the axis; the rim goes with the number's colour, one step high
         $this->assertEqualsWithDelta($plate['bbox']['x'] / 2, $plate['notes']['eyelet']['x'], 0.1);
-        $this->assertEqualsWithDelta(3.8, $plate['bbox']['z'], 0.01);
+        $this->assertEqualsWithDelta(5.0, $plate['bbox']['z'], 0.01);
+        $this->assertNotEmpty($letter->streamedContent() ?: $letter->getContent());
 
-        // the links: round bars on a flat of 1 mm, as tall as the round bar needs, 838 mm³ each
+        // a thin plate without links stays thin; with links it grows to the height of a link and says so
+        $thin = $this->meta($this->preview('medallion', $one + ['thickness' => 3, 'links' => 0])->assertOk());
+        $this->assertEqualsWithDelta(3.6, $thin['bbox']['z'], 0.01);
+        $this->assertArrayNotHasKey('thickened', $thin['notes']);
+        $thick = $this->meta($this->preview('medallion', $one + ['thickness' => 3])->assertOk());
+        $this->assertSame(4.4, $thick['notes']['thickened']);
+
+        // the links: round bars on a flat of 1 mm, 838 mm³ each
         $bare = $this->meta($this->preview('medallion', $one + ['links' => 0])->assertOk());
         $this->assertEqualsWithDelta(40 * 838.3, $first['volume_mm3'] - $bare['volume_mm3'], 40 * 8);
-        $this->assertEqualsWithDelta(4.33, $first['bbox']['z'], 0.01, 'the links stand a little over the medal');
 
         // seven shapes, each one closed solid on the bed with the eyelet on its axis
         foreach (['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'] as $body) {
@@ -583,9 +588,8 @@ class ShapeToolsTest extends TestCase
             $this->assertEqualsWithDelta($body === 'hex' ? 60 * cos(M_PI / 6) : 60, $m['bbox']['x'], 0.6, $body);      // a hexagon is 60 mm across its corners
             $this->assertEqualsWithDelta($m['bbox']['x'] / 2, $m['notes']['eyelet']['x'], 0.6, $body);
             $this->assertSame(['body', 'color_1'], $m['notes']['parts'], $body);
-            foreach ($m['parts'] as $piece) {
-                $this->assertEqualsWithDelta(0.0, $piece['bbox'][2], 0.001, $body.' '.$piece['name']);
-            }
+            $this->assertCount(1, $m['notes']['color_changes'], $body);
+            $this->assertEqualsWithDelta(0.0, collect($m['parts'])->firstWhere('name', 'body')['bbox'][2], 0.001, $body);
         }
 
         // more links than fit one bed: as many as fit, and the tool says so
@@ -594,21 +598,31 @@ class ShapeToolsTest extends TestCase
         $this->assertSame(80, $long['notes']['chain']['asked']);
         $this->assertContains('links_cut', $long['notes']['warnings']);
         $this->assertLessThanOrEqual(220, max($long['bbox']['x'], $long['bbox']['y']));
-        // the biggest medal with forty links is still one plate of 220 mm
         $big = $this->meta($this->preview('medallion', $one + ['width' => 120])->assertOk());
         $this->assertSame(40, $big['notes']['chain']['links']);
         $this->assertLessThanOrEqual(220, max($big['bbox']['x'], $big['bbox']['y']));
-
-        // a picture in colours lies face down the same way: every colour its own part in the bottom layers
-        $star = $this->meta($this->preview('medallion', ['artwork' => 'lib:colour/smiling-star', 'links' => 0], 'all', true)->assertOk());
-        $this->assertGreaterThan(2, count($star['notes']['parts']));
-        foreach ($star['parts'] as $piece) {
-            if ($piece['name'] !== 'body') {
-                $this->assertLessThanOrEqual(0.601, $piece['bbox'][5], $piece['name']);
-            }
-        }
         $this->preview('medallion', $one + ['links' => 81])->assertStatus(422);
-        $this->get('/tools/medallion')->assertOk()->assertSee('data-param="links"', false)->assertSee('data-preset="place1"', false);
+        $this->get('/tools/medallion')->assertOk()->assertSee('data-param="links"', false)->assertSee('data-preset="place1"', false)->assertDontSee('data-param="depth"', false);
+    }
+
+    public function test_a_medal_face_down_with_its_motif_inlaid_waits_in_the_engine(): void
+    {
+        // `inlay` is not offered on the page (the farm prints one filament per plate); the engine keeps it ready
+        $generator = app(ParametricGenerator::class);
+        $forTool = (new \ReflectionMethod($generator, 'forTool'))->invoke($generator, 'medallion', ParametricGenerator::clean('medallion', ['line1' => 'L', 'typeface' => 'archivo', 'links' => 0]));
+        $this->assertArrayNotHasKey('inlay', ParametricGenerator::clean('medallion', ['line1' => '1', 'inlay' => true]), 'the page cannot ask for it');
+        $path = tempnam(sys_get_temp_dir(), 'medal').'.stl';
+        $python = app(PythonTool::class);
+        $params = $path.'.json';                       // the palette makes it longer than a command line may be
+        file_put_contents($params, (string) json_encode($forTool + ['inlay' => true, 'depth' => 0.6]));
+        $meta = $python->runScript('param_tool.py', ['medallion', $path, '@'.$params, 'color_1', 'print'], 60);
+        @unlink($path);
+        @unlink($params);
+        $notes = (array) ($meta['notes'] ?? []);
+        $this->assertSame(['body', 'color_1'], $notes['parts'] ?? null, json_encode($meta));
+        $this->assertTrue($notes['multi_material']);
+        $this->assertSame([], $notes['color_changes']);
+        $this->assertEqualsWithDelta(0.6, $meta['bbox']['z'] ?? 0, 0.001, 'the motif in the bottom three layers');
     }
 
     public function test_an_organizer_is_a_tall_dish_with_compartments_or_round_holes(): void

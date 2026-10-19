@@ -467,7 +467,7 @@ class ToolsFlowTest extends TestCase
         $this->assertSame('cap', $this->postJson('/api/tools/param', ['kind' => 'cap', 'params' => $base + ['style' => 'plug']])->assertCreated()->json('file.kind'));
     }
 
-    public function test_a_medal_goes_to_the_farm_by_parts_number_and_plate_from_two_spools(): void
+    public function test_a_medal_goes_to_the_farm_as_one_plate_with_the_number_from_the_second_spool(): void
     {
         if (! app(ParametricGenerator::class)->available()) {
             $this->markTestSkipped('Python with manifold3d is not installed.');
@@ -483,19 +483,18 @@ class ToolsFlowTest extends TestCase
         $free[0]->update(['farm_color_id' => $gold->id, 'remaining_g' => 800, 'enabled' => true]);
         $free[1]->update(['farm_color_id' => $black->id, 'remaining_g' => 800, 'enabled' => true]);
 
-        // first place: a gold one on a black plate, face down, forty links
+        // first place: a gold one raised on a black plate, forty links; one change of filament where the number starts
         $made = $this->actingAs($user)->postJson('/api/tools/param', ['kind' => 'medallion', 'params' => ['line1' => '1', 'part_colors' => ['color_1' => '#d4a531', 'body' => '#1b1b1d']]])->assertCreated();
         $file = ModelFile::where('uuid', $made->json('file.uuid'))->firstOrFail();
         $this->assertSame(['body', 'color_1'], $file->tool_params['parts']);
-        $this->assertTrue((bool) ($file->tool_params['multi_material'] ?? false), 'two colours in the same layers');
-        $this->assertSame([], (array) ($file->tool_params['color_changes'] ?? []), 'never a change by height');
+        $this->assertFalse((bool) ($file->tool_params['multi_material'] ?? false));
+        $this->assertSame([4.4], array_column((array) $file->tool_params['color_changes'], 'z'));
 
-        // the order starts by parts: the plate from the black spool, the number from the gold one
+        // the farm prints one plate, never a part on its own: the plate from the black spool, the change to the gold one
         $order = $this->startOrder($user, 'file='.$file->uuid);
-        $this->assertTrue($order->isByParts());
+        $this->assertFalse($order->isByParts());
         $this->assertSame($black->id, self::picked($order, 'color'));
-        $this->assertSame($gold->id, self::picked($order, 'part_color[color_1]'));
-        $this->assertSame([], (array) $order->color_changes);
+        $this->assertSame($gold->id, self::picked($order, 'change_color[0]'));
     }
 
     public function test_calculator_compares_materials_for_the_model(): void
