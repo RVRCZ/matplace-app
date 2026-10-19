@@ -1,0 +1,27 @@
+{
+    "farm.order.tl.printing": [
+        "tiskne se, zbývá asi :time",
+        "printing, about :time left",
+        "imprimiendo, quedan unos :time"
+    ],
+    "farm.order.tl.printing_now": [
+        "právě se tiskne",
+        "printing now",
+        "imprimiendo ahora"
+    ],
+    "farm.order.tl.printing_end": [
+        "tiskne se, dokončení každou chvíli",
+        "printing, about to finish",
+        "imprimiendo, a punto de terminar"
+    ],
+    "farm.order.tl.done": [
+        "dotištěno",
+        "printed",
+        "impreso"
+    ],
+    "farm.order.tl.dispatched": [
+        "odesláno",
+        "sent",
+        "enviado"
+    ]
+}

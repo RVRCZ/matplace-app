@@ -129,7 +129,15 @@ class AuditRestTest extends TestCase
             foreach (['farm.order.why.lead', 'farm.order.why.printer', 'farm.order.why.kind', 'farm.order.tl.parcel', 'farm.order.tl.pickup', 'farm.order.reslicing'] as $key) {
                 $this->assertStringContainsString($key, $html, "{$key} ({$lang})");
             }
+            // the print line follows the order (resources/js/calc/order_timeline.ts, checked by scripts/check_order_timeline.mjs
+            // in every state): printing with what is left and the plate, printed, sent – F26-000088, 19 Oct 2026
+            foreach (['farm.order.tl.printing', 'farm.order.tl.printing_now', 'farm.order.tl.printing_end', 'farm.order.tl.done', 'farm.order.tl.dispatched', 'farm.copies.plate_of'] as $key) {
+                $this->assertStringContainsString($key, $html, "{$key} ({$lang})");
+                $this->assertNotSame($key, __($key), "{$key} ({$lang})");
+            }
+            $this->assertStringContainsString('id="farm-tl-dispatch-text" class="inline" data-rule="'.e(__('farm.order.tl.dispatch')).'"', $html);
         }
+        $this->assertSame('tiskne se, zbývá asi :time', __('farm.order.tl.printing', [], 'cs'));
         app()->setLocale('cs');
         $this->assertSame('v den, kdy tisk skončí, v pracovní dny (co se dotiskne o víkendu, odešleme v pondělí)', __('farm.order.tl.dispatch'));
     }

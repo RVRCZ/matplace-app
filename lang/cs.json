@@ -1790,5 +1790,10 @@
     "param.o.shape.rosette": "Rozeta",
     "param.o.shape.heart": "Srdce",
     "param.f.medallion.depth": "Hloubka motivu",
-    "param.shape.warn.links_cut": "Na jednu podložku 220 × 220 mm se všechny články nevejdou. Vytiskne se jich tolik, kolik ukazuje počet u řetězu. Na delší řetěz zmenšete medaili, nebo objednejte druhou medaili se zbývajícími články."
+    "param.shape.warn.links_cut": "Na jednu podložku 220 × 220 mm se všechny články nevejdou. Vytiskne se jich tolik, kolik ukazuje počet u řetězu. Na delší řetěz zmenšete medaili, nebo objednejte druhou medaili se zbývajícími články.",
+    "farm.order.tl.printing": "tiskne se, zbývá asi :time",
+    "farm.order.tl.printing_now": "právě se tiskne",
+    "farm.order.tl.printing_end": "tiskne se, dokončení každou chvíli",
+    "farm.order.tl.done": "dotištěno",
+    "farm.order.tl.dispatched": "odesláno"
 }

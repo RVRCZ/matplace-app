@@ -278,6 +278,13 @@ dobou tisku a orientační cenou je na telefonu nad prohlížečem (`flow-file-p
   „výtisk je připravený v den, kdy tisk skončí, napíšeme vám“ a řádek Odeslání zmizí) · „Časy jsou odhad: když je
   tiskárna obsazená, tisk začne později, a doručení závisí na dopravci.“ **Ke kontrole Romanem:** „1 až 2 pracovní dny“
   Zásilkovny je obecný údaj dopravce, ne naše měření.
+- **Řádek Tisk podle stavu zakázky** (Roman 19. 10. 2026 na F26‑000088: při tisku 8 %, podložka 1 z 2, blok psal
+  „začne, jakmile je tiskárna volná“; větev `feature/order-status-block`). Před zaplacením a ve frontě zůstává
+  „1 h 30 min na tiskárně; začne, jakmile je tiskárna volná“. Při tisku „tiskne se, zbývá asi 1 h 23 min · podložka
+  1 z 2“ (odhad dokončení farmy `queue.finish_in`, jinak zbytek doby tisku podle průběhu). Na konci „tiskne se,
+  dokončení každou chvíli“, po dotištění „dotištěno“ a po předání balíku Odeslání „odesláno“. U zrušené nebo
+  neúspěšné zakázky se blok neukáže. Logika je čistá funkce `resources/js/calc/order_timeline.ts`, kterou
+  `scripts/check_order_timeline.mjs` ověřuje na 12 stavech při každém `npm run build`.
 - **Proč se cena změnila:** po přepočtu (jiná barva v jiném stroji, jiné nastavení) stránka napíše například „Cena se
   po přepočtu změnila ze 120 Kč na 150 Kč: tiskne jiná tiskárna (U #1 → K1), jiný materiál (PLA+ → PETG), doba tisku
   1 h 5 min → 1 h 40 min.“ Porovnává cenu, tiskárnu, druh barvy, nastavení a čas před přepočtem a po něm. Když se cena
