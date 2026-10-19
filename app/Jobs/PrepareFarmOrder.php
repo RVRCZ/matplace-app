@@ -101,6 +101,13 @@ class PrepareFarmOrder implements ShouldQueue
                 if ($this->prepareOnePlate($order, $preparer, $slicer, $settings, $orders, $flow, $clock, $disk, $bed)) {
                     return;
                 }
+                if ($file->onePlateRequired()) {
+                    // the colours of this design share a layer: by parts the motif would come out loose – the order stops
+                    // here and says what it needs (a machine with a changer, spools of one machine, one piece)
+                    $flow->fail($order, 'one_plate_needed', 'system', detail: (string) ($clock->toArray()['one_plate_skipped'] ?? ''));
+
+                    return;
+                }
                 $this->prepareParts($order, $preparer, $slicer, $settings, $orders, $flow, $clock, $disk, $bed);
 
                 return;
@@ -443,13 +450,21 @@ class PrepareFarmOrder implements ShouldQueue
         $file = $order->modelFile;
         $printer = $order->printer;
         $skeleton = $order->partPlates();
-        if (count($skeleton) < 2 || ! $printer->isAgentDriven() || (int) $order->copies !== 1) {
-            return false;
+        // why it is not one plate, for the record (timings) and for the failure of a design that needs one
+        $skip = fn (string $why) => (bool) $clock->note('one_plate_skipped', $why) && false;
+        if (count($skeleton) < 2) {
+            return $skip('parts');
+        }
+        if (! $printer->isAgentDriven()) {
+            return $skip('manual');
+        }
+        if ((int) $order->copies !== 1) {
+            return $skip('copies');
         }
         $slotIds = array_values(array_unique(array_filter(array_map(fn ($p) => (int) ($p['slot_id'] ?? 0), $skeleton))));
         $spools = $slotIds ? FarmPrinterSlot::with('color.material')->whereIn('id', $slotIds)->get()->keyBy('id') : collect();
         if ($spools->contains(fn (FarmPrinterSlot $s) => (int) $s->farm_printer_id !== (int) $printer->id)) {
-            return false;   // spools of two machines: no one plate prints that
+            return $skip('two_machines');   // spools of two machines: no one plate prints that
         }
         // a filament per spool (parts of one spool share it); a part without a spool yet (no colour chosen) one of its own
         $index = [];
@@ -460,7 +475,7 @@ class PrepareFarmOrder implements ShouldQueue
             $filamentOf[$i] = $index[$key];
         }
         if (count($index) < 2 || count($index) > FarmOrder::MAX_COLORS || count($index) > max(1, $printer->slots()->count())) {
-            return false;
+            return $skip(count($index) < 2 ? 'one_spool' : 'filaments');
         }
 
         $margin = 2 * (float) $settings->get('bed_margin_mm');
@@ -494,7 +509,7 @@ class PrepareFarmOrder implements ShouldQueue
                 @unlink($disk->path($rel).'.raw');
             }
 
-            return false;   // the parts as designed do not fit the plate together: one plate each
+            return $skip('fit');   // the parts as designed do not fit the plate together: one plate each
         }
         // every part moved by the same vector: the middle of the plate, standing on it; the parts keep their places against each other
         $move = [$bed->x / 2 - ($lo[0] + $hi[0]) / 2, $bed->y / 2 - ($lo[1] + $hi[1]) / 2, -$lo[2]];
@@ -545,11 +560,11 @@ class PrepareFarmOrder implements ShouldQueue
             Log::warning('One-plate slice failed, the parts print one plate each', ['order' => $order->id, 'error' => $e->getMessage()]);
             $clock->note('one_plate_failed', mb_substr($e->getMessage(), 0, 200));
 
-            return false;
+            return $skip('slicer');
         }
         $clock->merge($result->timings);
         if (! $result->gcodePath || ! is_file($result->gcodePath)) {
-            return false;
+            return $skip('no_gcode');
         }
         $gcodeRel = $order->dir().'/print.gcode';
         File::move($result->gcodePath, $disk->path($gcodeRel));

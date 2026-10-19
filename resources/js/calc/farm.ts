@@ -30,7 +30,7 @@ interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
-    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number;
+    unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean;
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
@@ -476,7 +476,9 @@ export function bootFarmOrder(): void {
             show($('farm-second'), offer.length > 0);
             if (heading0) heading0.textContent = tr('farm.order.parts_title');
             const machines = new Set(all.map((o) => mainOf(o.slot) ?? c?.slot ?? 0)).size;
-            if (hint0) hint0.textContent = (state.one_plate ? tr('farm.order.parts_one_plate', { n: String(state.filament_changes ?? 0) }) : tr('farm.order.parts_hint', { max: String(state.max_colors ?? 4) })) + (machines > 1 ? ` ${tr('farm.order.parts_one_machine')}` : '');
+            if (hint0) hint0.textContent = (state.one_plate ? tr('farm.order.parts_one_plate', { n: String(state.filament_changes ?? 0) }) : tr('farm.order.parts_hint', { max: String(state.max_colors ?? 4) }))
+                + (state.one_plate_required ? ` ${tr('farm.order.one_plate_required')}` : '') + (machines > 1 ? ` ${tr('farm.order.parts_one_machine')}` : '')
+                + (state.one_plate_required && (state.copies ?? 1) > 1 ? ` ${tr('farm.order.one_plate_copies')}` : '');
             if (list0 && offer.length) {
                 const tile = (part: string, slot: number | null, name: string, kind: string, swatch: string, code: string | null | undefined): string => {
                     const on = slot === null ? partSlots[part] === null || partSlots[part] === c?.slot : slot === partSlots[part];
@@ -654,8 +656,9 @@ export function bootFarmOrder(): void {
         const copiesNote = $('farm-copies-note');
         if (copiesNote) {
             const more = s.max_copies && wanted.copies > s.max_copies ? ` ${tr('farm.copies.more_plates', { p: Math.ceil(wanted.copies / s.max_copies) })}` : '';
-            copiesNote.textContent = s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) + more : '';
-            show(copiesNote, !!s.max_copies);
+            // a design that must print on one plate goes one piece at a time: said here before the price is asked for
+            copiesNote.textContent = s.one_plate_required ? tr('farm.order.one_plate_copies') : (s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) + more : '');
+            show(copiesNote, !!s.max_copies || !!s.one_plate_required);
         }
         const note = $('farm-unit-note')!;
         const guess = s.unit_guess;
