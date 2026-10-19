@@ -713,3 +713,71 @@ nepustí. Test `test_a_medal_face_down_with_its_motif_inlaid_waits_in_the_engine
 2. vrátit `medallion` do ASSEMBLED, nebo nový druh tisku.
 
 **Ukázky** jsou překreslené lícem nahoru. Karta zůstává studiovou fotkou.
+
+### 8b. Kolo 3: zarovnaný motiv, velikost motivu, lem, nové barvy (19. 10. 2026)
+
+Zadání: `docs/prompts/medaile-kolo3.md` (TODO #32). Od 19. 10. farma umí jednu podložku se dvěma až čtyřmi
+filamenty (TODO #31, AL.md §10), takže lícem dolů jde tisknout.
+
+- **Volba `motif`** (první volba stránky, `ParametricGenerator::FIRST`):
+  - **`flush`, zarovnaný** (výchozí): lícem dolů, motiv a lem jsou ve spodních 0,6 mm jako díl `color_1` vedle
+    desky, zrcadlený. Návrh nese `multi_material: true` a `one_plate_required: true` (v `tool_params`, zapisuje
+    `ParametricGenerator` z notes).
+  - **`raised`, vystouplý**: kolo 2b (lícem nahoru, změna po výšce, deska aspoň 4,4 mm kvůli článkům).
+  - Bývalá volba `inlay` v enginu zůstává jako alias pro `flush`.
+- **Velikost motivu** (`motif_size`, 20–95 % šířky, výchozí 55 %):
+  - u textu je to úhlopříčka bloku textu, u obrázku průměr kruhu, do kterého se vejde;
+  - nikdy přes vnitřní okraj (`frame`);
+  - jednička na 60 mm má 19,8 × 26,4 mm, dřív vyplnila kruh až po okraj 2 mm.
+- **Lem** (`border`, výchozí zapnutý, je ve `FLAGS_ON`): 2 mm podél obrysu medaile, mimo očko, vždy v první barvě
+  motivu. Zarovnaný ve spodních vrstvách, vystouplý jeden krok nad deskou. Lem na rubu z kola 2 je pryč.
+- **Výchozí barvy předvoleb**:
+  - medaile a řetěz `body`: zlatá 39, stříbrná 43, bronzová (marrákešská podle jména, jinak měděná 40);
+  - číslo a lem `color_1`: červená Silk `44_PLA_Silk_cervena_Silk_Red`, jinak `05_PLA+_cerveny`, bez farmy `red`.
+  - Medaile otvírá 1. místo, má výchozí text „1“ a nemá ukázkový obrázek: s předvolbou se stejně neukazoval, a test
+    stavu stránky by jinak stavěl hvězdičku na 55 % a hlásil tenké čáry.
+- **Farma** (session 2, větev `feature/one-plate-required`):
+  - `designParts` dává díly návrhu s `one_plate_required` bez ohledu na ASSEMBLED,
+  - `by_parts` je zapnuté od začátku,
+  - když jedna podložka nejde, zakázka skončí chybou `one_plate_needed`.
+  - Medaile v ASSEMBLED není: vystouplá se po dílech tisknout nesmí.
+- **Stránka**:
+  - volba „Motiv“ s vysvětlením,
+  - posuvník „Velikost motivu“ v %,
+  - zaškrtávátko „Lem“,
+  - texty v cs/en/es (`lang/src/medallion3.json`), lead, tip a stránka pro vyhledávače přepsané.
+- **Testy**:
+  - `ShapeToolsTest` zarovnaná medaile: výchozí stav, díl v 0–0,6, lem v dílu motivu, 55 % i 80 %, zrcadlení,
+    7 tvarů, obrázek, 220 × 220, neplatný `motif` 422;
+  - `ShapeToolsTest` vystouplá medaile: změna ve 4,4, nezrcadlená, zesílení desky;
+  - `ToolPageTest`: předvolby bez farmy i s katalogem, texty ve třech jazycích;
+  - `ToolsFlowTest`: zarovnaná nese příznaky, vystouplá jde na farmu jako jedna podložka se změnou.
+- **Ukázky** jsou překreslené:
+  1. zlatá kulatá medaile s červenou jedničkou a lemem,
+  2. stříbrný štít s červenou dvojkou,
+  3. bronzová (měděná) rozeta s červenou trojkou,
+  vše po 40 článcích.
+  Karta zůstává studiovou fotkou. Nová fotka podle ukázky 1 je pro session E nebo Romana.
+
+**Hloubka motivu a výměny filamentu (upřesnění od Romana 19. 10.)**:
+- Motiv a lem jsou jen ve spodních vrstvách. V těchto vrstvách je vedle nich placka v druhé barvě. Nad nimi je už jen
+  placka, očko a řetěz jednou barvou, bez výměn. Řetěz i očko jsou celé v barvě placky.
+- Pole **„Hloubka motivu“** (`depth`, 0,4–1,0 mm, výchozí 0,6) se ukazuje jen u zarovnaného motivu, jako posuvník
+  mezi hlavními poli. Pod ním je odhad výměn z řezu. Nápověda u číselného pole (`param.<tool>.<field>.hint`) se nově
+  vypisuje i v `tools/_num.blade.php`.
+- **Řez**:
+  - Nástroj: AnycubicSlicerNext 2.0.0.3 CLI, tak, jak řeže farma jednu podložku (AL.md §10).
+  - Vstup: 3MF s objektem na díl (`ThreeMfWriter`, `body` filament 1, `color_1` filament 2), `machine.json`,
+    `process_standard.json` + `PrepareFarmOrder::ONE_PLATE_PROCESS` (čisticí věž 25 mm), 2× `filament_pla.json`.
+  - Model: výchozí medaile 60 mm, „1“, lem, 40 článků.
+
+| hloubka motivu | vrstvy | `total filament change` | filament (placka, motiv) | čas |
+|---|---|---|---|---|
+| 0,4 mm | 2 | **2** | 39,54 g + 0,86 g | 1 h 36 min |
+| 0,6 mm (výchozí) | 3 | **4** | 39,95 g + 1,40 g | 1 h 42 min |
+| 0,8 mm | 4 | **4** | 39,94 g + 1,56 g | 1 h 42 min |
+| 1,0 mm | 5 | **6** | 40,24 g + 2,19 g | 1 h 48 min |
+
+Slicer střídá pořadí barev po vrstvách, takže sudý počet vrstev nestojí výměnu navíc (2·⌈n/2⌉). V G-kódu není
+`;TYPE:Support`. Pro srovnání: tatáž medaile jednou barvou (vystouplá bez výměn) má 38,6 g a 1 h 26 min. Výměny a věž
+tedy stojí asi 16 minut a 1,4 g.

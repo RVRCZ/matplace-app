@@ -1795,5 +1795,13 @@
     "farm.order.tl.printing_now": "printing now",
     "farm.order.tl.printing_end": "printing, about to finish",
     "farm.order.tl.done": "printed",
-    "farm.order.tl.dispatched": "sent"
+    "farm.order.tl.dispatched": "sent",
+    "param.c.medallion.motif": "Motif",
+    "param.c.medallion.motif.hint": "Flush: the motif is level with the plate and printed against the bed, smooth; two colours in one plate (a printer with a spool changer). Raised: the motif stands out 0.6 mm, the colour changes by height.",
+    "param.o.medallion.flush": "Flush",
+    "param.o.medallion.raised": "Raised",
+    "param.f.medallion.motif_size": "Size of the motif",
+    "param.flag.medallion.border": "Rim",
+    "param.flag.medallion.border.hint": "A 2 mm border round the medal in the motif's colour.",
+    "param.medallion.depth.hint": "Only in these layers does the printer switch between two spools; above them it prints in one colour. Changes by the slice: 0.4 mm ≈ 2, 0.6 mm ≈ 4, 0.8 mm ≈ 4, 1.0 mm ≈ 6."
 }

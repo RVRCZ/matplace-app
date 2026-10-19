@@ -1795,5 +1795,13 @@
     "farm.order.tl.printing_now": "právě se tiskne",
     "farm.order.tl.printing_end": "tiskne se, dokončení každou chvíli",
     "farm.order.tl.done": "dotištěno",
-    "farm.order.tl.dispatched": "odesláno"
+    "farm.order.tl.dispatched": "odesláno",
+    "param.c.medallion.motif": "Motiv",
+    "param.c.medallion.motif.hint": "Zarovnaný: motiv je v rovině s plackou a tiskne se k podložce, hladký; dvě barvy v jedné podložce (tiskárna s měničem). Vystouplý: motiv vystupuje 0,6 mm, změna barvy po výšce.",
+    "param.o.medallion.flush": "Zarovnaný",
+    "param.o.medallion.raised": "Vystouplý",
+    "param.f.medallion.motif_size": "Velikost motivu",
+    "param.flag.medallion.border": "Lem",
+    "param.flag.medallion.border.hint": "Okraj 2 mm kolem medaile v barvě motivu.",
+    "param.medallion.depth.hint": "Jen v těchto vrstvách tiskárna střídá dvě cívky, nad nimi tiskne jednou barvou. Výměn podle řezu: 0,4 mm ≈ 2, 0,6 mm ≈ 4, 0,8 mm ≈ 4, 1,0 mm ≈ 6."
 }

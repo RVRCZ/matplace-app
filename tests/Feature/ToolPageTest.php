@@ -316,21 +316,21 @@ class ToolPageTest extends TestCase
 
     public function test_the_medal_opens_at_first_place_and_offers_the_three_places(): void
     {
-        // without the farm the places take the built-in colours: yellow, grey and orange numbers on a black plate
+        // without the farm the places take the built-in colours: yellow, grey and orange medals with a red number
         $built = ParametricGenerator::presets('medallion');
         $this->assertSame(['place1', 'place2', 'place3'], array_keys($built));
         $this->assertSame(['1', '2', '3'], array_column($built, 'line1'));
-        $this->assertSame(['yellow', 'grey', 'orange'], array_map(fn ($p) => $p['part_colors']['color_1'], array_values($built)));
-        $this->assertSame('black', $built['place1']['part_colors']['body']);
+        $this->assertSame(['yellow', 'grey', 'orange'], array_map(fn ($p) => $p['part_colors']['body'], array_values($built)));
+        $this->assertSame('red', $built['place1']['part_colors']['color_1']);
 
-        // with the farm's catalogue: gold, silver and copper Silk (no Marrakech bronze in the catalogue yet) on black PLA+
+        // with the farm's catalogue: gold, silver and copper Silk medals (no Marrakech bronze in the catalogue yet), red Silk number
         $this->seed(FarmSeeder::class);
         app()->forgetInstance(Palette::class);
         $farm = ParametricGenerator::presets('medallion');
-        $this->assertSame(['39_PLA_Silk_zlata_Silk_Gold', '43_PLA_Silk_stribrna_Silk_Silver', '40_PLA_Silk_medena_Silk_Copper'], array_map(fn ($p) => $p['part_colors']['color_1'], array_values($farm)));
-        $this->assertSame('01_PLA+_cerny', $farm['place3']['part_colors']['body']);
+        $this->assertSame(['39_PLA_Silk_zlata_Silk_Gold', '43_PLA_Silk_stribrna_Silk_Silver', '40_PLA_Silk_medena_Silk_Copper'], array_map(fn ($p) => $p['part_colors']['body'], array_values($farm)));
+        $this->assertSame('44_PLA_Silk_cervena_Silk_Red', $farm['place3']['part_colors']['color_1']);
 
-        foreach (['cs' => ['1. místo', '2. místo', '3. místo', 'Štít', 'Rozeta'], 'en' => ['1st place', '2nd place', '3rd place', 'Shield', 'Rosette'], 'es' => ['1.er puesto', '2.º puesto', '3.er puesto', 'Escudo', 'Roseta']] as $lang => $words) {
+        foreach (['cs' => ['1. místo', '2. místo', '3. místo', 'Štít', 'Rozeta', 'Zarovnaný', 'Vystouplý', 'Velikost motivu', 'Lem'], 'en' => ['1st place', '2nd place', '3rd place', 'Shield', 'Rosette', 'Flush', 'Raised', 'Size of the motif', 'Rim'], 'es' => ['1.er puesto', '2.º puesto', '3.er puesto', 'Escudo', 'Roseta', 'Enrasado', 'En relieve', 'Tamaño del motivo', 'Borde']] as $lang => $words) {
             $page = $this->get($this->localized('/tools/medallion', $lang))->assertOk();
             foreach ($words as $word) {
                 $page->assertSee($word);

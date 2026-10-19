@@ -1795,5 +1795,13 @@
     "farm.order.tl.printing_now": "imprimiendo ahora",
     "farm.order.tl.printing_end": "imprimiendo, a punto de terminar",
     "farm.order.tl.done": "impreso",
-    "farm.order.tl.dispatched": "enviado"
+    "farm.order.tl.dispatched": "enviado",
+    "param.c.medallion.motif": "Motivo",
+    "param.c.medallion.motif.hint": "Enrasado: el motivo queda a ras de la placa y se imprime contra la cama, liso; dos colores en una placa (impresora con cambiador). En relieve: el motivo sobresale 0,6 mm, el color cambia por altura.",
+    "param.o.medallion.flush": "Enrasado",
+    "param.o.medallion.raised": "En relieve",
+    "param.f.medallion.motif_size": "Tamaño del motivo",
+    "param.flag.medallion.border": "Borde",
+    "param.flag.medallion.border.hint": "Un borde de 2 mm alrededor de la medalla en el color del motivo.",
+    "param.medallion.depth.hint": "Solo en estas capas la impresora alterna dos bobinas; por encima imprime en un color. Cambios según el laminado: 0,4 mm ≈ 2, 0,6 mm ≈ 4, 0,8 mm ≈ 4, 1,0 mm ≈ 6."
 }
