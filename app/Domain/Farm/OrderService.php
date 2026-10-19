@@ -355,7 +355,10 @@ final class OrderService
         if (str_starts_with($part, 'bin_')) {
             return __('param.part.bin', ['s' => str_replace('x', ' × ', substr($part, 4))]);
         }
-        foreach ($kind === ArtGenerator::KIND ? ["edit.art.part.$stem"] : (isset(ParametricGenerator::FIELDS[$kind]) ? ["param.part.$part.$kind", "param.part.$part", "param.part.$stem"] : ["edit.$kind.part.$stem", "edit.part.$stem"]) as $key) {
+        // the tools of a picture in colours name their parts on their own page (plate, colour n, rim): the same words here,
+        // so no part reads "color_1", nor "only the box" (the generic word for a body) outside the box
+        $shape = (ParametricGenerator::FAMILY[$kind] ?? null) === 'shape' ? ["param.shape.part.$part.$kind", "param.shape.part.$stem.$kind", "param.shape.part.$stem"] : [];
+        foreach ($kind === ArtGenerator::KIND ? ["edit.art.part.$stem"] : (isset(ParametricGenerator::FIELDS[$kind]) ? ["param.part.$part.$kind", ...$shape, "param.part.$part", "param.part.$stem"] : ["edit.$kind.part.$stem", "edit.part.$stem"]) as $key) {
             if (Lang::has($key)) {
                 return __($key, ['n' => $n]);
             }

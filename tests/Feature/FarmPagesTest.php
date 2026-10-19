@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Domain\Farm\FarmGate;
 use App\Domain\Farm\FarmSettings;
+use App\Domain\Farm\OrderService;
 use App\Domain\Farm\PlateLayout;
 use App\Domain\Farm\Wallet;
+use App\Domain\Tools\ParametricGenerator;
 use App\Models\FarmAgent;
 use App\Models\FarmColor;
 use App\Models\FarmCommand;
@@ -55,6 +57,39 @@ class FarmPagesTest extends TestCase
         $url = $this->actingAs($this->user)->postJson('/farm/orders', ['file' => $uuid])->json('url');
 
         return FarmOrder::where('token', basename($url))->firstOrFail();
+    }
+
+    public function test_every_part_of_an_order_by_parts_has_a_name_and_only_the_box_is_a_box(): void
+    {
+        // every part a tool can hand to an order by parts: what partsOf gives with everything on, and for the tools of a
+        // picture in colours the plate, the colours, the rim and the icing
+        $everything = ['lid' => 1, 'purpose' => 'pot', 'saucer' => 1, 'handle' => 'knob', 'mode' => 'standing', 'style' => 'flatpack', 'treatment' => 'portrait',
+            'two_color' => 1, 'stand' => 1, 'tray' => 1, 'bins' => [['w' => 1, 'h' => 2]], 'parts' => ['body', 'stamp', 'rim', 'color_1', 'color_2', 'icing_1', 'layer_1', 'layer_2']];
+        $box = __('param.part.body');
+        foreach (['cs', 'en', 'es'] as $locale) {
+            app()->setLocale($locale);
+            foreach (array_keys(ParametricGenerator::FIELDS) as $kind) {
+                $file = new ModelFile(['origin' => 'tool', 'origin_ref' => $kind]);
+                $parts = ParametricGenerator::partsOf($kind, $everything);
+                if ($kind === 'phone_stand') {
+                    $parts = array_merge($parts, ParametricGenerator::partsOf($kind, ['style' => 'ribbon']));
+                }
+                foreach (array_unique($parts) as $part) {
+                    $label = OrderService::partLabel($file, $part);
+                    $this->assertNotSame($part, $label, "{$kind} {$part} ({$locale}) has no name");
+                    $this->assertDoesNotMatchRegularExpression('/^(param|edit)\./', $label, "{$kind} {$part} ({$locale})");
+                    if ($part === 'body' && $kind !== 'box') {
+                        $this->assertNotSame(__('param.part.body', [], $locale), $label, "{$kind}: its body is no box ({$locale})");
+                    }
+                }
+            }
+        }
+        app()->setLocale('cs');
+        // the medal (Roman's order 194): the plate with its chain, and the number with its rim
+        $medal = new ModelFile(['origin' => 'tool', 'origin_ref' => 'medallion']);
+        $this->assertSame(['Placka a řetěz', 'Číslo a lem', 'Barva 2', 'Lem'], array_map(fn ($p) => OrderService::partLabel($medal, $p), ['body', 'color_1', 'color_2', 'rim']));
+        $this->assertSame('Jen krabička', OrderService::partLabel(new ModelFile(['origin' => 'tool', 'origin_ref' => 'box']), 'body'));
+        $this->assertNotSame('', $box);
     }
 
     public function test_customer_pages_render_in_all_languages(): void

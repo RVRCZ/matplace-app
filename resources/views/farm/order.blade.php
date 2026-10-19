@@ -124,7 +124,7 @@
                     {{-- the kinds loaded right now (PLA, PLA+, PETG…): a filter over the colours below, the colour sets the kind --}}
                     <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.material') }}</div>
                     <div id="farm-kinds" class="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="{{ __('farm.order.material') }}"></div>
-                    <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.order.color') }}</div>
+                    <div id="farm-color-title" class="mt-4 text-sm font-semibold text-slate-700" data-plain="{{ __('farm.order.color') }}">{{ __('farm.order.color') }}</div>
                     <p class="text-xs text-slate-600">{{ __('farm.order.colors_now') }}</p>
                     <p class="text-xs text-slate-500">{{ __('farm.order.codes_hint') }}</p>
                     <div id="farm-colors" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="{{ __('farm.order.color') }}"></div>
