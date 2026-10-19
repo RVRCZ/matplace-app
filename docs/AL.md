@@ -680,9 +680,53 @@ Test `FarmOnePlateTest::test_parts_that_share_walls_are_checked_one_by_one_and_k
 vložka mezi nimi se společnými stěnami: slepené nemanifold, po dílech vodotěsné, zakázka nařezaná, 2 tělesa, poloha
 vložky zachovaná).
 
+#### 10.8b Řez na produkční Orce 2.4.0-beta (větev `feature/one-plate-orca`, 19. 10. 2026)
+
+Zakázky 191–193 (Kobra X, cívky C1/6 + C1/2) skončily `one_plate_needed` s detailem `slicer`: Orca 2.4.0-beta
+(AppImage pod xvfb) spadla se Segmentation fault. Ověřeno místně **touž verzí** (Windows portable build z GitHubu,
+`orca-slicer.exe` v CLI režimu – na konzoli nic nepíše, vše je v `00000.log` v cwd), na náhradní medaili i na
+skutečných dílech zakázky (`Desktop\one-plate-debug\plate-part-{1,2}.stl`):
+
+- **Pád = chybějící `filament_colour`.** Farmní filament profily mají jen `default_filament_colour`; Orca si vektor
+  barev nastaví podle toho, co profily říkají (1 položka), a u dílu na extruderu 2 sáhne za jeho konec – na Linuxu
+  segfault, na Windows -1073741819 (access violation) uprostřed řezu („Detecting solid surfaces…“). Totéž se dvěma
+  STL a `--load-filament-ids 1,2` bez jakéhokoli 3MF, takže 3MF v tom nehraje. S `filament_colour` v každé kopii
+  profilu řez projde; odlišná jména / `filament_settings_id` nepomáhají a nejsou potřeba. `OrcaSlicer::filamentColours`:
+  barva cívky (`FarmColor::hex`, nově v `filaments[].colour`), bez ní paleta, dvojník posunut o odstín (dvě stejné
+  barvy = Orca věž vypne, „only 1 filament colour“).
+- **-6 (`CLI_DATA_FILE_ERROR`, „basic_ios::clear: iostream error“)** z ručních pokusů na serveru není z našeho 3MF:
+  Orca 2.4 náš plain 3MF čte („found 3mf from other vendor, split as instance“, `Metadata/model_settings.config` s
+  `extruder` na objektu bere – `_BBS_3MF_Importer`, bbs_3mf.cpp:2000 a 2158). -6 vrací `catch (std::exception&)`
+  kolem načítání modelu (OrcaSlicer.cpp:1876) a `ios_base::failure` s tímto textem hází `save_string_file` zálohy
+  modelu (`model.get_backup_path()/origin.txt`, bbs_3mf.cpp:1436) do `$TMPDIR/orcaslicer_model/<den>/<čas>#<pid>#<id>`
+  – ruční shell bez zapisovatelného `TMPDIR`/`HOME` (job dává `HOME` = `TMPDIR` = pracovní adresář). Prusa
+  `Metadata/Slic3r_PE_model.config` Orca ignoruje (oba díly na T0), Bambu struktura (`project_settings.config`,
+  `plate_1.json`) není potřeba.
+- **-17 (`CLI_PROCESS_NOT_COMPATIBLE`)** z ručního pokusu se dvěma STL: surové `process_standard.json` má
+  `compatible_printers` Kobra S1, s `machine_kobrax.json` bez párování Orca odmítne (OrcaSlicer.cpp:2652: „process not
+  compatible with printer“). `OrcaSlicer.php` kopie páruje (`compatible_printers` = jméno stroje) – ověřeno: bez
+  párování -17, s ním 0.
+- Za barvami druhá zeď: **-101 (`CLI_GCODE_PATH_CONFLICTS`)** „gcode path conflicts found between WipeTower and
+  body“. Věž stojí, kde říká profil (`wipe_tower_x/y` = 15/220, vlevo nahoře), a medaile 195 × 176,5 mm na středu
+  podložky 260 tam sahá; s `--arrange 0` ji nikdo neumístí (arrange by rozhodil díly). Umisťujeme ji sami:
+  `PrepareFarmOrder::towerSpot(size, bed, margin, filaments)` – pruh **pod díly** (věž 25 mm z `ONE_PLATE_PROCESS`,
+  lem 5, mezera 3, hloubka 12 mm × (filamenty − 1); změřeno 9 mm při dvou), jinak pruh **vlevo** (38 mm), jinak
+  díly **posunout** z pruhu, který lze udělat dost hluboký, jinak `skip('fit')` (= po dílech, u povinné jedné
+  podložky `one_plate_needed`/`fit`). `wipe_tower_x/y` jdou do process overrides, záznam v `slice_params.tower`.
+  Otočená věž (`wipe_tower_rotation_angle 90` v levém pruhu) vyjela z podložky (-102), nepoužito.
+- Ověření přes vlastní třídy (`ThreeMfWriter` + `OrcaSlicer`, scratchpad `mf/e2e.php`), skutečná medaile:
+  **Kobra X 3 výměny, 1 h 28 min, 36,4 + 0,5 g**, věž x 117,75–144,6, y 9,1–18,0; **S1 + ACE 1 h 33 min, 39,8 +
+  0,5 g**. `flush_volumes_matrix` si Orca spočítá z barev (× `flush_multiplier 0.3`: bílá→červená 78 mm³, zpět 177);
+  objemy proplachu zůstávají neladěné (10.7).
+- Testy: `tests/Unit/OnePlateTowerTest.php` (místa věže, barvy), `FarmOnePlateTest` (věž pod díly, `wipe_tower_x/y`
+  v overrides, barvy cívek ve `slice_params.filaments`); 187 testů farm/agent/G-code zelených.
+- Pro řídící: v produkčních profilech není co měnit. Ruční pokusy pouštět s `HOME=$w TMPDIR=$w` (existující
+  zapisovatelný adresář) a s kopiemi profilů, jak je dělá `OrcaSlicer.php` (párování + `filament_colour`). Orca 2.4
+  `--load-filament-ids` bere (Slicer Next ne); nepoužíváme, extruder říká 3MF.
+
 ### 10.9 Soubory
 
-`app/Jobs/PrepareFarmOrder.php` (`prepareOnePlate`, `ONE_PLATE_PROCESS`), `app/Domain/Farm/GcodeSlot.php`
+`app/Jobs/PrepareFarmOrder.php` (`prepareOnePlate`, `ONE_PLATE_PROCESS`, `towerSpot`, `TOWER`), `app/Domain/Farm/GcodeSlot.php`
 (`retargetMany`, `fileForMany`, `FILAMENTS_LINE`), `app/Domain/Farm/PrintProfile.php` (`tempsForFilaments`),
 `app/Domain/Farm/OrderFlow.php` (nový řez při změně cívek dílů), `app/Domain/Farm/OrderService.php` (`price.changes`),
 `app/Domain/Farm/Dispatcher.php` (payload `filaments`), `app/Models/FarmOrder.php` (`onePlate`, `filamentSlots`),
@@ -692,4 +736,4 @@ vložky zachovaná).
 `app/Http/Controllers/Farm/{AgentController,OrderController}.php`, `app/Http/Controllers/Admin/FarmOrderController.php`,
 `resources/views/admin/farm/order.blade.php`, `resources/js/calc/farm.ts`, `lang/{cs,en,es}/farm.php`
 (`order.parts_one_plate/parts_one_machine/b_changes/b_changes_value`), `tests/Unit/GcodeSlotTest.php`,
-`tests/Feature/FarmOnePlateTest.php`.
+`tests/Unit/OnePlateTowerTest.php`, `tests/Feature/FarmOnePlateTest.php`.

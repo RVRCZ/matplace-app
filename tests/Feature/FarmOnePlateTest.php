@@ -126,6 +126,13 @@ class FarmOnePlateTest extends TestCase
         $this->assertCount(2, $order->slice_result['filament_grams']);
         $this->assertGreaterThan(0, $order->slice_result['changes']);
         $this->assertSame('1', $order->slice_params['overrides']['process']['enable_prime_tower'], 'the prime tower is on for this plate');
+        // the tower has a band of its own below the parts and every filament its spool's colour (Orca 2.4 falls over without)
+        $tower = $order->slice_params['tower'];
+        $this->assertEquals([0, 0], $tower['shift'], 'small parts stay centred');
+        $this->assertSame(7.0, (float) $tower['y'], 'below the parts: the bed margin and the brim');
+        $this->assertSame([(string) $tower['x']], $order->slice_params['overrides']['process']['wipe_tower_x']);
+        $this->assertSame([(string) $tower['y']], $order->slice_params['overrides']['process']['wipe_tower_y']);
+        $this->assertSame([$this->white->color->hex, '#C01818'], array_column($order->slice_params['filaments'], 'colour'));
         $this->assertEqualsWithDelta(array_sum($order->slice_result['filament_grams']), $order->est_grams, 0.2, 'the grams of the plate are those of its filaments, purge included');
         $this->assertGreaterThan(0, $order->price['changes']);
         $disk = Storage::disk('farm');
