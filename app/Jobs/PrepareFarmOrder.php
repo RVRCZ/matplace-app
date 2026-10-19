@@ -15,6 +15,7 @@ use App\Domain\Farm\TowerGcode;
 use App\Engines\Contracts\PrintPreparer;
 use App\Engines\Contracts\Slicer;
 use App\Engines\DTO\Dimensions;
+use App\Engines\DTO\PreparedMesh;
 use App\Engines\DTO\SliceParams;
 use App\Engines\Farm\PhpPrintPreparer;
 use App\Engines\Gcode\SupportLines;
@@ -519,14 +520,57 @@ class PrepareFarmOrder implements ShouldQueue
             @unlink($disk->path($rel).'.raw');
             $volumes[$i] = StlFile::stats($disk->path($rel))->volumeMm3;
         }
+        // every part checked and repaired on its own, as a plate of its own would be: where the motif sits in a pocket of
+        // the body the two share faces, and the parts glued into one mesh look non-manifold to any check (the medal of
+        // 19 Oct 2026: 1 371 bad edges, "3 862 bodies") although each part is watertight. The preparer sets a part at
+        // the origin; it is moved back to where the plate has it, so the parts keep their places against each other.
+        $rules = ['min_model_mm' => (float) $settings->get('min_model_mm'), 'bed_margin_mm' => (float) $settings->get('bed_margin_mm')];
+        $raw = Dimensions::fromArray((array) $file->bbox);
+        $meshes = [];
+        foreach ($paths as $i => $rel) {
+            $placed = $disk->path($rel);
+            $prepared = $placed.'.prepared';
+            @unlink($prepared.'.stage');
+            $partMesh = $clock->measure('prepare', fn () => $preparer->prepare($placed, $prepared, 1.0, $bed, true));
+            @unlink($prepared.'.stage');
+            [$wasLo, $wasHi] = StlFile::bounds($placed);
+            [$nowLo, $nowHi] = StlFile::bounds($prepared);
+            StlFile::translate($prepared, $placed, [($wasLo[0] + $wasHi[0] - $nowLo[0] - $nowHi[0]) / 2, ($wasLo[1] + $wasHi[1] - $nowLo[1] - $nowHi[1]) / 2, $wasLo[2] - $nowLo[2]]);
+            @unlink($prepared);
+            $volumes[$i] = $partMesh->volumeMm3;
+            $verdict = ModelValidator::judge($partMesh, $bed, $rules);
+            if (! $verdict['ok']) {
+                $order->check = $verdict + ['part' => (string) $skeleton[$i]['part'], 'mesh' => $partMesh->toArray(), 'unit_guess' => ModelValidator::guessUnit($raw, $bed), 'raw_dims' => $raw->toArray(), 'piece_dims' => $partMesh->bbox->toArray(), 'max_copies' => 1];
+                $order->save();
+                $flow->fail($order, $verdict['errors'][0]['code'], 'system', detail: (string) $skeleton[$i]['part']);
+
+                return true;
+            }
+            $meshes[$i] = $partMesh;
+        }
+        // the plate as a whole for the preview, the size and the record: the parts side by side, nothing merged, nothing re-checked
         $plateRel = $order->dir().'/plate.stl';
         StlFile::concat(array_map(fn ($rel) => $disk->path($rel), $paths), $disk->path($plateRel));
         $printRel = $order->dir().'/print.stl';
-        @unlink($disk->path($printRel).'.stage');
-        $mesh = $clock->measure('prepare', fn () => $preparer->prepare($disk->path($plateRel), $disk->path($printRel), 1.0, $bed, true));
-        @unlink($disk->path($printRel).'.stage');
-        $verdict = ModelValidator::judge($mesh, $bed, ['min_model_mm' => (float) $settings->get('min_model_mm'), 'bed_margin_mm' => (float) $settings->get('bed_margin_mm')]);
-        $raw = Dimensions::fromArray((array) $file->bbox);
+        copy($disk->path($plateRel), $disk->path($printRel));
+        [$lo, $hi] = StlFile::bounds($disk->path($plateRel));
+        $all = collect($meshes);
+        $mesh = new PreparedMesh(
+            path: $disk->path($printRel),
+            watertight: $all->every(fn (PreparedMesh $m) => $m->watertight === true) ? true : ($all->contains(fn (PreparedMesh $m) => $m->watertight === false) ? false : null),
+            wasWatertight: $all->every(fn (PreparedMesh $m) => $m->wasWatertight),
+            repaired: $all->contains(fn (PreparedMesh $m) => $m->repaired),
+            openEdges: (int) $all->sum(fn (PreparedMesh $m) => $m->openEdges),
+            bbox: new Dimensions($hi[0] - $lo[0], $hi[1] - $lo[1], $hi[2] - $lo[2]),
+            volumeMm3: (float) $all->sum(fn (PreparedMesh $m) => $m->volumeMm3),
+            areaMm2: (float) $all->sum(fn (PreparedMesh $m) => $m->areaMm2),
+            triangles: (int) $all->sum(fn (PreparedMesh $m) => $m->triangles),
+            shells: (int) $all->sum(fn (PreparedMesh $m) => $m->shells),
+            orientation: ['method' => 'as-built', 'changed' => false, 'parts' => count($meshes)],
+            engine: $all->first()->engine,
+            footprint: $all->first()->footprint,
+        );
+        $verdict = ModelValidator::judge($mesh, $bed, $rules);
         $order->check = $verdict + ['mesh' => $mesh->toArray(), 'unit_guess' => ModelValidator::guessUnit($raw, $bed), 'raw_dims' => $raw->toArray(), 'piece_dims' => $mesh->bbox->toArray(), 'max_copies' => 1];
         $order->orientation = $mesh->orientation;
         $order->print_stl_path = $printRel;

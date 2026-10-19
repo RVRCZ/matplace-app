@@ -657,7 +657,7 @@ export function bootFarmOrder(): void {
         if (copiesNote) {
             const more = s.max_copies && wanted.copies > s.max_copies ? ` ${tr('farm.copies.more_plates', { p: Math.ceil(wanted.copies / s.max_copies) })}` : '';
             // a design that must print on one plate goes one piece at a time: said here before the price is asked for
-            copiesNote.textContent = s.one_plate_required ? tr('farm.order.one_plate_copies') : (s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) + more : '');
+            copiesNote.textContent = s.one_plate_required ? tr(wanted.copies > 1 ? 'farm.order.one_plate_copies' : 'farm.order.one_plate_single') : (s.max_copies ? tr('farm.copies.max', { n: s.max_copies }) + more : '');
             show(copiesNote, !!s.max_copies || !!s.one_plate_required);
         }
         const note = $('farm-unit-note')!;

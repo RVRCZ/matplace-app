@@ -658,6 +658,28 @@ jednička, po výšce nejde. Proto:
   stroji → 422 a kredit nedotčen, na agentním → queued. `FarmOrderFlowTest` dál zelený.
 - Netknuto: `ParametricGenerator` (zápis příznaku z poznámek enginu do `tool_params` dělá session 1 u medaile).
 
+#### 10.8a Kontrola po dílech (větev `feature/one-plate-check`, 19. 10. 2026)
+
+Romanova zarovnaná medaile (kalkulace `hzpad07vvtz6`, C1) padla v kontrole: „Model má díry v povrchu (3 816
+otevřených hran)… 3 862 samostatných těles.“ Příčina ověřená na STL té zakázky (`Desktop\one-plate-debug`):
+díly jsou samy o sobě v pořádku (`StlTopology`: tělo 147 876 trojúhelníků, 0 otevřených/0 nemanifold; motiv 1 464,
+0/0; python preparátor: tělo po opravě vodotěsné, **41 těles** = placka + 40 článků řetězu, motiv 2 tělesa), ale
+slepený `plate.stl` má **1 371 nemanifold hran** – motiv sedí v kapse placky a **stěny obou dílů jsou totožné
+plochy**; po sloučení vrcholů jsou hrany sdílené čtyřmi trojúhelníky, pymeshfix to „opraví“ na 3 862 těles s 3 816
+otevřenými hranami. Kontrola i oprava běžely nad slepeným souborem.
+
+Oprava: `prepareOnePlate()` připraví a posoudí **každý díl zvlášť** (`$preparer->prepare(... keepPose)` +
+`ModelValidator::judge`, jako tisk po dílech; opravený díl se vrátí na své místo na podložce posunem o rozdíl středů
+bbox před/po, takže vzájemná poloha dílů zůstává; do 3MF jde opravený díl), slepený `plate.stl`/`print.stl` slouží
+jen náhledu a rozměrům – `check.mesh` je složený z dílů (vodotěsnost = všechny díly, tělesa = součet, objem = součet,
+bbox = celek, `orientation.parts`), `judge` nad celkem jen na velikost. Selhání dílu nese jeho jméno v detailu.
+K tomu chybějící překlady na stránce zakázky: JS bere texty z výčtu v `resources/views/farm/order.blade.php`
+(ne z celého `farm.order`), doplněno `parts_one_plate`, `parts_one_machine`, `b_changes(_value)`,
+`one_plate_required`, `one_plate_copies` a nové `one_plate_single` („tiskne se po jednom kuse“, když je 1 ks).
+Test `FarmOnePlateTest::test_parts_that_share_walls_are_checked_one_by_one_and_keep_their_places` (dva bloky +
+vložka mezi nimi se společnými stěnami: slepené nemanifold, po dílech vodotěsné, zakázka nařezaná, 2 tělesa, poloha
+vložky zachovaná).
+
 ### 10.9 Soubory
 
 `app/Jobs/PrepareFarmOrder.php` (`prepareOnePlate`, `ONE_PLATE_PROCESS`), `app/Domain/Farm/GcodeSlot.php`

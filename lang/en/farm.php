@@ -85,6 +85,7 @@ return [
         'parts_one_machine' => 'All parts must come from the spools of one printer: after the first choice only its spools remain.',
         'one_plate_required' => 'The colours of this design lie in one layer: it prints as a whole on a printer that changes spools, one piece at a time. Only the spools of such printers are offered.',
         'one_plate_copies' => 'This design prints one piece at a time. Set 1 piece, or order it several times.',
+        'one_plate_single' => 'This design prints one piece at a time.',
         'b_changes' => 'Colour changes',
         'b_changes_value' => ':n× (the purge is in the material, the time in the print time)',
         'part_line' => ':part: :name',

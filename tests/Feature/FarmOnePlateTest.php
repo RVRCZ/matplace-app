@@ -6,6 +6,7 @@ use App\Domain\Farm\GcodeSlot;
 use App\Domain\Farm\OrderService;
 use App\Domain\Farm\Wallet;
 use App\Engines\Mesh\StlFile;
+use App\Engines\Mesh\StlTopology;
 use App\Mail\FarmAdminAlert;
 use App\Models\FarmAgent;
 use App\Models\FarmColor;
@@ -297,5 +298,53 @@ class FarmOnePlateTest extends TestCase
         $this->s1->update(['mode' => FarmPrinter::MODE_AGENT, 'last_seen_at' => now()]);
         $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $main['slot'], 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $main['total'], 'part_slots' => ['color_2' => $this->red->id]])
             ->assertOk()->assertJsonPath('status', 'queued');
+    }
+
+    /**
+     * A motif sitting in a pocket of the body shares its walls with it: glued into one mesh the two look non-manifold
+     * (the medal of 19 Oct 2026 on production: 1 371 bad edges, "3 862 bodies", the order failed as not watertight),
+     * although each part is closed. Every part is checked on its own; the plate as a whole is only measured.
+     */
+    public function test_parts_that_share_walls_are_checked_one_by_one_and_keep_their_places(): void
+    {
+        $path = sys_get_temp_dir().'/mp_pocket_'.uniqid().'.stl';
+        MeshFixtures::cubeStl($path, 20);
+        $uuid = $this->actingAs($this->user)->postJson('/api/uploads', ['file' => new UploadedFile($path, 'medal.stl', null, null, true)])->assertCreated()->json('file.uuid');
+        $file = ModelFile::where('uuid', $uuid)->firstOrFail();
+        $dir = dirname(Storage::disk(ModelFile::DISK)->path($file->storage_path)).'/parts';
+        mkdir($dir, 0777, true);
+        // the body: two blocks with a 6 mm gap between them; the motif: the block that fills the gap, its walls on theirs
+        StlFile::writeBox($dir.'/left.stl', 7, 20, 3);
+        StlFile::writeBox($dir.'/right-at-origin.stl', 7, 20, 3);
+        StlFile::translate($dir.'/right-at-origin.stl', $dir.'/right.stl', [13.0, 0.0, 0.0]);
+        StlFile::concat([$dir.'/left.stl', $dir.'/right.stl'], $dir.'/body.stl');
+        StlFile::writeBox($dir.'/motif-at-origin.stl', 6, 20, 3);
+        StlFile::translate($dir.'/motif-at-origin.stl', $dir.'/color_1.stl', [7.0, 0.0, 0.0]);
+        StlFile::concat([$dir.'/body.stl', $dir.'/color_1.stl'], $dir.'/glued.stl');
+        $this->assertTrue(StlTopology::check($dir.'/body.stl')['watertight']);
+        $this->assertTrue(StlTopology::check($dir.'/color_1.stl')['watertight']);
+        $this->assertFalse(StlTopology::check($dir.'/glued.stl')['watertight'], 'glued together the shared walls are non-manifold');
+        $file->forceFill(['origin' => 'tool', 'origin_ref' => 'gcode', 'tool_params' => [
+            'parts' => ['body', 'color_1'], 'multi_material' => true, 'one_plate_required' => true,
+            'part_colors' => ['body' => ['hex' => '#f4f4f0'], 'color_1' => ['hex' => '#c01818']],
+        ]])->save();
+
+        $order = $this->order($file, ['part_color' => ['color_1' => $this->red->farm_color_id]]);
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status, 'checked part by part, the plate is sliced');
+        $this->assertTrue($order->onePlate());
+        $this->assertTrue($order->check['ok']);
+        $this->assertTrue($order->check['mesh']['watertight']);
+        $this->assertSame(2, $order->check['mesh']['shells'], 'one shell counted per part');
+        $this->assertSame(['x' => 20.0, 'y' => 20.0, 'z' => 3.0], array_map(fn ($v) => round((float) $v, 2), $order->check['mesh']['bbox']));
+        $this->assertSame(2, $order->orientation['parts']);
+        // the parts kept their places against each other after each was checked alone: the motif's left wall 7 mm in from the body's
+        $disk = Storage::disk('farm');
+        [$bodyLo] = StlFile::bounds($disk->path($order->dir().'/plate-part-1.stl'));
+        [$motifLo, $motifHi] = StlFile::bounds($disk->path($order->dir().'/plate-part-2.stl'));
+        $this->assertEqualsWithDelta(7.0, $motifLo[0] - $bodyLo[0], 0.001);
+        $this->assertEqualsWithDelta(6.0, $motifHi[0] - $motifLo[0], 0.001);
+        $this->assertEqualsWithDelta(0.0, $motifLo[2], 0.001);
+        $this->assertFileExists($disk->path($order->dir().'/print.stl'));
+        $this->assertTrue($disk->exists($order->dir().'/plate.3mf'));
     }
 }

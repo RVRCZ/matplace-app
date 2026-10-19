@@ -90,6 +90,7 @@ return [
         'parts_one_machine' => 'Všechny díly musí být z cívek jedné tiskárny: po první volbě zůstávají jen její cívky.',
         'one_plate_required' => 'Barvy tohoto návrhu leží v jedné vrstvě: tiskne se vcelku na tiskárně s měničem cívek, po jednom kuse. Nabízíme jen cívky takových tiskáren.',
         'one_plate_copies' => 'Tento návrh se tiskne po jednom kuse. Nastavte 1 ks, nebo objednejte víckrát.',
+        'one_plate_single' => 'Tento návrh se tiskne po jednom kuse.',
         'b_changes' => 'Výměny barvy',
         'b_changes_value' => ':n× (proplach je v materiálu, čas v době tisku)',
         'part_line' => ':part: :name',
