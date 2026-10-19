@@ -6,7 +6,7 @@
  *   bootFarmDashboard  /admin/farm: buttons post over fetch, the answer is a short toast, cards redraw in place
  */
 import { icon } from '../site/icon';
-import { BufferGeometry } from 'three';
+import { BufferGeometry, Float32BufferAttribute } from 'three';
 import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
 import { money as moneyText } from '../site/money';
@@ -25,7 +25,7 @@ const clampScale = (v: number, max: number) => Math.max(0.25, Math.min(max || 4,
 /** One change of the design: where (mm, as printed), the colour it was made in, and the spool chosen for it so far. */
 interface Change { z: number; hex: string; code: string | null; slot_id: number | null; name?: string | null }
 /** One part of a design printed by parts: its plate, the colour the design names for it, and the spool chosen so far. */
-interface Part { part: string; plate: number; label: string; hex: string | null; slot_id: number | null; name?: string | null; copies: number; minutes?: number | null; grams?: number | null }
+interface Part { part: string; plate: number; label: string; hex: string | null; slot_id: number | null; name?: string | null; copies: number; minutes?: number | null; grams?: number | null; spool_hex?: string | null; model_url?: string | null }
 interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
@@ -84,12 +84,62 @@ export function bootFarmCta(): void {
     });
 }
 
-/** Admin order page: the model in its print pose, nothing else. */
+/** Admin order page: the model in its print pose; an order by parts as its plates, each in the colour of its spool. */
 export function bootFarmAdminViewer(): void {
     const canvas = $<HTMLCanvasElement>('admin-farm-viewer');
     if (!canvas?.dataset.model) return;
     const viewer = new Viewer(canvas);
+    let parts: { url: string; hex: string | null }[] = [];
+    try { parts = JSON.parse(canvas.dataset.parts ?? '[]'); } catch { parts = []; }
+    if (parts.length >= 2) {
+        loadParts(parts.map((x) => x.url), canvas.dataset.together === '1').then(({ geom, flags }) => { viewer.setGeometry(geom, 1, null); viewer.paint(partPaint(flags, parts.map((x) => x.hex))); }).catch(() => undefined);
+        return;
+    }
     loadGeometryFromUrl(canvas.dataset.model).then((g) => viewer.setGeometry(g, 1, null)).catch(() => undefined);
+}
+
+/**
+ * An order printed by parts as it comes off the machines. Every part on its own plate (prepared on its own, so the parts
+ * do not share coordinates): laid side by side 10 mm apart, standing on the bed. All parts on one plate, the machine
+ * changing spools (`together`): every part was moved by the same vector, so they stay where they are, assembled. Every
+ * triangle is flagged with its part, so FacePaint colours each part in the colour of its spool.
+ */
+async function loadParts(urls: string[], together = false): Promise<{ geom: BufferGeometry; flags: Uint8Array }> {
+    const loaded = await Promise.all(urls.map((u) => loadGeometryFromUrl(u)));
+    const chunks: Float32Array[] = [];
+    const counts: number[] = [];
+    let x = 0;
+    loaded.forEach((g0) => {
+        const g = g0.index ? g0.toNonIndexed() : g0;
+        g.computeBoundingBox();
+        const b = g.boundingBox!;
+        const pos = g.getAttribute('position');
+        const out = new Float32Array(pos.count * 3);
+        for (let v = 0; v < pos.count; v++) {
+            out[v * 3] = together ? pos.getX(v) : pos.getX(v) - b.min.x + x;
+            out[v * 3 + 1] = together ? pos.getY(v) : pos.getY(v) - (b.min.y + b.max.y) / 2;
+            out[v * 3 + 2] = together ? pos.getZ(v) : pos.getZ(v) - b.min.z;
+        }
+        chunks.push(out);
+        counts.push(pos.count / 3);
+        x += b.max.x - b.min.x + 10;
+    });
+    const all = new Float32Array(chunks.reduce((n, c) => n + c.length, 0));
+    let at = 0;
+    chunks.forEach((c) => { all.set(c, at); at += c.length; });
+    const geom = new BufferGeometry();
+    geom.setAttribute('position', new Float32BufferAttribute(all, 3));
+    geom.computeVertexNormals();
+    const flags = new Uint8Array(all.length / 9);
+    let t = 0;
+    counts.forEach((n, i) => { flags.fill(i, t, t + n); t += n; });
+    return { geom, flags };
+}
+
+/** The parts in their colours: the spool's as the swatches show it, the viewer's default for a part without one. */
+function partPaint(flags: Uint8Array, hexes: (string | null)[]): FacePaint {
+    const rgb = hexes.map((h) => deep(rgbOf(h ?? '')));
+    return { flags, color: (f) => rgb[f] ?? rgb[0] };
 }
 
 /** "#rrggbb" as numbers 0..1; anything else is the default blue of the viewer. */
@@ -243,8 +293,21 @@ export function bootFarmOrder(): void {
     const partByHand = new Set<string>();
     const changeHeights = (): number[] => (state.changes ?? []).map((c) => c.z);
     let geom: BufferGeometry | null = null;
+    let partFlags: Uint8Array | null = null;          // an order by parts shown as its plates: the part of every triangle
+    // the colour a part prints in: the spool chosen for it (none = the main colour), the design's own colour before that
+    const partHex = (p: Part): string | null => {
+        const c = state.colors.find((x) => x.slot === picked);
+        if (state.status !== 'sliced') return p.spool_hex ?? p.hex ?? state.color?.hex ?? null;
+        const chosen = partSlots[p.part] ?? null;
+        const offer = c ? [{ slot: c.slot, hex: c.hex }, ...(c.second ?? [])] : [];
+        return (chosen === null ? c?.hex : offer.find((x) => x.slot === chosen)?.hex) ?? p.hex ?? c?.hex ?? null;
+    };
     // the model as the machine will print it: the first colour, then every change at its height
     const paintTones = (): void => {
+        if (partFlags) {
+            viewer.paint(partPaint(partFlags, (state.parts ?? []).map(partHex)));
+            return;
+        }
         const c = state.colors.find((x) => x.slot === picked);
         const first = (state.status === 'sliced' ? c?.hex : state.color?.hex) ?? null;
         const spools = c ? [{ slot: c.slot, hex: c.hex }, ...(c.second ?? [])] : [];
@@ -682,10 +745,20 @@ export function bootFarmOrder(): void {
 
         // the model in the colour that will print it; once paid, the chosen colour
         if (s.status !== 'sliced') viewer.setColor(s.color?.hex ?? null, s.color?.finish ?? null);
-        if (s.model_url && s.model_url !== shownModel) {
-            shownModel = s.model_url;
+        // printed by parts: every part's own plate, side by side in its colour (the print STL is the first plate alone)
+        const partUrls = s.by_parts ? (s.parts ?? []).map((p) => p.model_url ?? '') : [];
+        const asParts = partUrls.length >= 2 && partUrls.every((u) => u !== '');
+        const modelKey = asParts ? (s.one_plate ? '1 ' : '') + partUrls.join(' ') : s.model_url;
+        if (modelKey && modelKey !== shownModel) {
+            shownModel = modelKey;
             shownSupports = '';
-            loadGeometryFromUrl(s.model_url).then((g) => { geom = cutForTones(g, (s.changes ?? []).map((x) => x.z)); viewer.setGeometry(geom, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTones(); showSupports(); }).catch(() => { shownModel = ''; });
+            if (asParts) {
+                viewer.setSupports(null);
+                loadParts(partUrls, !!s.one_plate).then(({ geom: g, flags }) => { geom = g; partFlags = flags; viewer.setGeometry(g, 1, null); paintTones(); }).catch(() => { shownModel = ''; });
+            } else {
+                partFlags = null;
+                loadGeometryFromUrl(modelKey).then((g) => { geom = cutForTones(g, (s.changes ?? []).map((x) => x.z)); viewer.setGeometry(geom, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTones(); showSupports(); }).catch(() => { shownModel = ''; });
+            }
         } else {
             showSupports();
         }
@@ -697,7 +770,7 @@ export function bootFarmOrder(): void {
         const url = state.supports_url;
         show(toggle, !!url);
         if (!url) { if (shownSupports) { viewer.setSupports(null); shownSupports = ''; } return; }
-        if (url === shownSupports || !shownModel) return;
+        if (url === shownSupports || !shownModel || partFlags) return;      // the supports belong to the first plate alone
         shownSupports = url;
         fetch(url, { credentials: 'same-origin' }).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject())).then((buf) => { if (shownSupports === url) viewer.setSupports(buf, supportsOn); }).catch(() => { shownSupports = ''; });
     };

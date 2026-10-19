@@ -335,6 +335,7 @@ Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 // ── Files of a farm order (not pages: one address for every language) ────────
 Route::middleware('auth')->group(function () {
     Route::get('/farm/orders/{order}/model.stl', [OrderController::class, 'model'])->name('farm.orders.model');
+    Route::get('/farm/orders/{order}/parts/{part}.stl', [OrderController::class, 'partModel'])->where('part', '[A-Za-z0-9_-]+')->name('farm.orders.part_model');
     Route::get('/farm/orders/{order}/supports.bin', [OrderController::class, 'supports'])->name('farm.orders.supports');
     Route::get('/farm/orders/{order}/snapshot', [OrderController::class, 'snapshot'])->name('farm.orders.snapshot');
     Route::get('/farm/orders/{order}/timelapse.mp4', [OrderController::class, 'timelapse'])->name('farm.orders.timelapse');

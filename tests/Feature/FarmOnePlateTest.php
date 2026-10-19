@@ -153,10 +153,16 @@ class FarmOnePlateTest extends TestCase
         $this->assertSame($order->slice_result['changes'], $state['filament_changes']);
         $this->assertSame([1, 1], array_column($state['parts'], 'plate'));
         $this->assertSame([$this->white->id, $this->red->id], array_column($state['parts'], 'slot_id'));
+        // the preview: every part from its own STL, in the plate's coordinates (the page keeps them where they are)
+        foreach ($order->partPlates() as $i => $plate) {
+            $file = $this->actingAs($this->user)->get($state['parts'][$i]['model_url'])->assertOk();
+            $this->assertSame(file_get_contents($disk->path($plate['stl_path'])), $file->streamedContent() ?: $file->getContent());
+        }
 
         // the operator's copy maps the filaments to the slots and names them up front
         $admin = User::factory()->create();
         $admin->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($admin)->get(route('admin.farm.orders.show', $order))->assertOk()->assertSee('data-together="1"', false)->assertSee('data-parts=', false);
         $copy = (string) file_get_contents($this->actingAs($admin)->get("/admin/farm/orders/{$order->token}/print.gcode")->assertOk()->baseResponse->getFile()->getPathname());
         $this->assertStringContainsString("\n".GcodeSlot::FILAMENTS_LINE." T0={$this->white->slot} T1={$this->red->slot}\n", substr($copy, 0, 16384));
         $this->assertStringContainsString("\nT{$this->white->slot} ; matplace slot for filament 0\n", $copy);

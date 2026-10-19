@@ -925,6 +925,28 @@ T2 ; slot chosen by matplace farm
         $this->assertSame($redSlot->id, $state['parts'][1]['slot_id']);
         $this->assertSame($red->displayName(), $state['parts'][1]['name']);
 
+        // the order page shows every part as its own plate in the colour of its spool: each part has its STL
+        $this->assertSame(strtolower('#C01818'), strtolower((string) $state['parts'][1]['spool_hex']));
+        foreach ($order->partPlates() as $i => $plate) {
+            $url = $state['parts'][$i]['model_url'];
+            $this->assertStringContainsString("/farm/orders/{$order->token}/parts/{$plate['part']}.stl", $url);
+            $file = $this->actingAs($this->user)->get($url)->assertOk()->assertHeader('Content-Type', 'model/stl');
+            $this->assertSame(file_get_contents(Storage::disk(config('farm.disk'))->path($plate['stl_path'])), $file->streamedContent() ?: $file->getContent());
+        }
+        $this->assertNotSame($state['parts'][0]['model_url'], $state['parts'][1]['model_url']);
+        $this->actingAs(User::factory()->create())->get("/farm/orders/{$order->token}/parts/lid.stl")->assertNotFound();
+        $this->actingAs($this->user)->get("/farm/orders/{$order->token}/parts/rim.stl")->assertNotFound();
+        $this->actingAs($this->user)->get("/farm/orders/{$plain->token}/parts/lid.stl")->assertNotFound();
+        // the admin's look at the order: both plates, the lid red
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $html = $this->actingAs($admin)->get(route('admin.farm.orders.show', $order))->assertOk()->getContent();
+        preg_match('/data-parts="([^"]+)"/', (string) $html, $m);
+        $views = json_decode(html_entity_decode($m[1] ?? '[]'), true);
+        $this->assertCount(2, $views);
+        $this->assertSame('#c01818', strtolower((string) $views[1]['hex']));
+        $this->actingAs($admin)->get($views[1]['url'])->assertOk();
+
         // paid with the spools of the order page; a spool of another machine is refused
         $this->credit(20000);
         $main = collect($state['colors'])->first(fn ($c) => $c['slot'] === $mainSlot->id);

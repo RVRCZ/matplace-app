@@ -16,7 +16,14 @@
 <div class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
     <div class="space-y-4">
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <canvas id="admin-farm-viewer" data-model="{{ route('farm.orders.model', $order) }}" class="block h-[45vh] w-full touch-none"></canvas>
+            @php
+                // an order by parts: every plate with the colour of its spool (the design's colour while none is chosen)
+                $partViews = collect($order->partPlates())->filter(fn ($p) => ! empty($p['stl_path']))->map(fn ($p) => [
+                    'url' => route('farm.orders.part_model', [$order, $p['part']]),
+                    'hex' => \App\Models\FarmPrinterSlot::with('color')->find($p['slot_id'] ?? 0)?->color?->hex ?? ($order->modelFile?->tool_params['part_colors'][$p['part']]['hex'] ?? null),
+                ])->values();
+            @endphp
+            <canvas id="admin-farm-viewer" data-model="{{ route('farm.orders.model', $order) }}" @if($partViews->count() >= 2) data-parts="{{ $partViews->toJson() }}" @if($order->onePlate()) data-together="1" @endif @endif class="block h-[45vh] w-full touch-none"></canvas>
         </div>
         @if($order->timelapse_path)
             <figure class="rounded-2xl border border-slate-200 bg-white p-3">
