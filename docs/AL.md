@@ -724,11 +724,60 @@ skutečných dílech zakázky (`Desktop\one-plate-debug\plate-part-{1,2}.stl`):
   zapisovatelný adresář) a s kopiemi profilů, jak je dělá `OrcaSlicer.php` (párování + `filament_colour`). Orca 2.4
   `--load-filament-ids` bere (Slicer Next ne); nepoužíváme, extruder říká 3MF.
 
+#### 10.8c Cívky dílů z jiného stroje než hlavní barva (větev `feature/one-plate-slots`, 20. 10. 2026)
+
+Zakázka 198 (medaile kolo 4, kalkulace `1bpysz8rbw08`) na U1 skončila `one_plate_needed`/`two_machines`: tiskárna U1,
+ale `part_plates` body: slot 54 (C1/6) a color_1: slot 46 (C1/2). Příčina není v předvýběru (ten mapuje barvy dílů na
+cívky stroje hlavní barvy, `spoolsForParts`), ale v **přepočtu**: tlačítko „Přepočítat“ posílalo `slot: picked` bez
+cívek dílů a `OrderService::reslice` přepnul tiskárnu/hlavní cívku na stroj nové barvy, `part_plates` nechal staré –
+stroj U1, cívky C1. Řez pak musel skončit `two_machines`.
+
+- `OrderService::partPlatesOn(main, plates, wantedSlotIds, carry)`: cívky dílů na stroji hlavní cívky. Díl s cívkou
+  jmenovanou stránkou ji dostane, je‑li na tomto stroji, cizí stroj = **`FarmRefusal('one_machine')`** (422,
+  `farm.refuse.one_machine`: „Cívky pro díly musí být z jedné tiskárny – té, kde je hlavní barva“), neexistující
+  `color_gone`; díl bez jmenované cívky si nechá svou, drží‑li ji tento stroj, jinak **stejnou barvu tohoto stroje**,
+  jinak hlavní barvu (při platbě – `carry false` – rovnou hlavní, stránka jmenuje všechny díly). Limit MAX_COLORS jako dřív.
+- `reslice(..., partSlotIds)`: při změně cívky (`$chosen`) nebo s jmenovanými cívkami přemapuje `part_plates`
+  (`partPlatesOn`); `OrderController::reslice` bere `part_slots`; **`farm.ts`** je s přepočtem posílá
+  (`...otherSlots()`). `machineFor` při cívkách dvou strojů vrací `one_machine` místo `color_gone`; `quote` vrací důvod
+  odmítnutí, ne vždy `color_gone`; `OrderFlow::pay` používá `partPlatesOn(offer, …, carry false)` – cizí cívka je 422
+  `one_machine` před platbou, ne `failed` po řezu.
+- Pojistka v jobu (`PrepareFarmOrder::handle`): mají‑li díly cívku jiného stroje než hlavní cívka (stav zakázky 198),
+  přemapuje je na stejné barvy stroje hlavní cívky (`timings.part_spools_moved`); nemá‑li stroj jejich barvu, zakázka
+  skončí **`parts_machine`** (`farm.error.parts_machine`, i v admin mailu) – tiše vyměnit barvu dílu nechceme (motiv v
+  barvě těla = prázdná medaile).
+- `farm.ts`: `lastMain` (stroj poslední volby cívky dílu) platí jen dokud ten stroj drží novou hlavní barvu; jinak se
+  zapomene, nabídka dílů je stroj hlavní barvy a cívky, které na něm nejsou, se shodí (nikdy se nepošle cizí).
+- Test `FarmOnePlateTest::test_the_parts_follow_the_first_colour_to_another_machine_and_a_foreign_spool_is_refused`
+  (druhý agentní stroj kobra‑s1‑02 s modrou + stejnou červenou: přepočet na modrou bez cívek dílů → díly na druhém
+  stroji, tyč z jeho červené, jedna podložka; S1 červená jmenovaná u dílu → 422 `one_machine` u reslice, quote i pay;
+  vnucené cizí cívky → job je přesune, bez barvy → `parts_machine`).
+**Doplněk od Romana (táž větev): zákazník vybírá barvy, stroj hledá systém.**
+
+- Stránka zakázky pracuje s **barvami**, ne se sloty. `status` dává u každé hlavní barvy `color_id` a `machines`:
+  každý stroj, který ji drží a mohl by zakázku tisknout (`OrderService::firstsAcross`, u povinné jedné podložky jen
+  agentní), s jeho slotem hlavní barvy (`main`, `code`, `name`) a jeho ostatními cívkami (`colors`: `slot`,
+  `color_id`, …). Díly mají `color_id`. `farm.ts` drží `partColours` (díl → barva, null = hlavní); u každého dílu
+  nabízí jen barvy, které **některý stroj drží spolu s hlavní barvou a s barvami ostatních dílů** (`offerFor`, po
+  barvách bez duplicit); `machine` = první stroj (pořadí serveru: stroj zakázky, připravený k autostartu), který má
+  všechny zvolené; `resolved()` = slot hlavní barvy na něm + slot barvy každého dílu na něm – to jde do `quote`,
+  `reslice` i `pay`, **nikdy sloty dvou strojů**. Když zvolenou kombinaci nedrží žádný stroj (stane se jen změnou
+  stavu farmy mezi načteními), stránka řekne `farm.order.colors_no_machine` („Tyhle barvy spolu nemáme v jedné
+  tiskárně…“) a tlačítko platby je vypnuté (`noMachine()`); `parts_one_machine` přeformulováno (cs/en/es). Díl
+  uložený na hlavní cívce zůstává „hlavní barva“ (`partByHand`), ostatní bez barvy dostanou nejbližší k barvě návrhu.
+- Vznik zakázky: `OrderService::machineForColors(main, colorIds)` – stroj, který má hlavní barvu i všechny barvy dílů
+  (nejdřív stroj hlavní cívky z `offeredColors`, pak další z `firstsAcross`); `create` na něj zakázku rovnou posadí.
+  Nemá‑li žádný stroj celou sadu, zůstává stroj hlavní barvy a díl bez své barvy se tiskne v hlavní (`spoolsForParts`).
+- Testy: `machines`/`color_id` ve stavu (modrá jen na druhém stroji s jeho červenou, bílá jen na S1 s červenou);
+  `test_the_order_starts_on_the_machine_that_holds_every_colour_chosen` (bílá na obou, modrá jen na druhém → zakázka
+  na druhém, jedna podložka; zelená nikde → díl v bílé).
+
 ### 10.9 Soubory
 
-`app/Jobs/PrepareFarmOrder.php` (`prepareOnePlate`, `ONE_PLATE_PROCESS`, `towerSpot`, `TOWER`), `app/Domain/Farm/GcodeSlot.php`
+`app/Jobs/PrepareFarmOrder.php` (`prepareOnePlate`, `ONE_PLATE_PROCESS`, `towerSpot`, `TOWER`, pojistka cívek dílů), `app/Domain/Farm/GcodeSlot.php`
 (`retargetMany`, `fileForMany`, `FILAMENTS_LINE`), `app/Domain/Farm/PrintProfile.php` (`tempsForFilaments`),
-`app/Domain/Farm/OrderFlow.php` (nový řez při změně cívek dílů), `app/Domain/Farm/OrderService.php` (`price.changes`),
+`app/Domain/Farm/OrderFlow.php` (nový řez při změně cívek dílů, `partPlatesOn` při platbě), `app/Domain/Farm/OrderService.php` (`price.changes`,
+`partPlatesOn`, `firstsAcross`, `machineForColors`, `one_machine` v `machineFor`),
 `app/Domain/Farm/Dispatcher.php` (payload `filaments`), `app/Models/FarmOrder.php` (`onePlate`, `filamentSlots`),
 `app/Engines/DTO/SliceParams.php` (`filaments`, `project`, `withFilaments`), `app/Engines/DTO/SliceResult.php`
 (`filamentGrams`, `changes`), `app/Engines/Slicer/{OrcaSlicer,FakeSlicer,GcodeStats}.php`,

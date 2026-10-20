@@ -74,6 +74,14 @@ final class OrderService
         if (! $printer || ! $material) {
             throw new FarmRefusal('no_printer');
         }
+        // the parts in colours of their own: the machine that holds the first colour and every one of them (the customer
+        // picks colours, the farm the machine); when none holds them all, the first colour's machine prints the parts it
+        // cannot colour in the first colour (spoolsForParts)
+        if ($chosen && $partColorIds && ($first = $this->machineForColors($chosen['slot'], array_values($partColorIds), null, $quality))
+            && $first->id !== $chosen['slot']->id && ($dims === null || $first->printer->fits($dims))) {
+            $chosen = ['slot' => $first, 'color' => $first->color, 'printer' => $first->printer];
+            [$printer, $material] = [$chosen['printer'], $chosen['color']->material];
+        }
         // the colours of a plate with a text or of a picture in filament colours, chosen on the start page: spools of the
         // same machine, one per change of the design (an older caller names just the one second colour)
         $picked = $chosen ? $this->spoolsForChanges($chosen['slot'], $file->colorChanges((ModelValidator::UNITS[$unit] ?? 1.0) * $scale), $changeColorIds ?? ($secondColorId ? [$secondColorId] : [])) : [];
@@ -120,7 +128,7 @@ final class OrderService
      * @param  array<string, mixed>|null  $settings  the "advanced" numbers (PrintSettings::FIELDS); null = leave as they are, [] = back to the presets
      * @param  bool|null  $byParts  print the parts of the design separately (each from its own spool) or together; null = leave as it is
      */
-    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null, ?int $slotId = null, ?array $settings = null, ?bool $byParts = null): FarmOrder
+    public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null, ?int $slotId = null, ?array $settings = null, ?bool $byParts = null, ?array $partSlotIds = null): FarmOrder
     {
         if (! in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED], true) || $order->paid_at !== null) {
             throw new FarmRefusal('locked');
@@ -152,6 +160,12 @@ final class OrderService
         $parts = $byParts !== null && $byParts !== $order->isByParts() ? self::designParts($order->modelFile) : [];
         if (count($parts) >= 2) {
             $order->fill(['by_parts' => $byParts, 'part_plates' => $byParts ? $this->spoolsForParts($order->slot()->first(), $parts, []) : null, 'color_changes' => $byParts ? null : $order->color_changes]);
+        }
+        // the parts' spools follow the first colour to its machine (the same colour there, else the first colour), and
+        // the spools the page names come along – one machine's only (order 198, 20 Oct 2026: the first colour moved to
+        // another machine, the parts kept the old machine's spools, and no machine could print that)
+        if ($order->isByParts() && ($chosen || $partSlotIds !== null) && ($main = $order->slot()->first())) {
+            $order->part_plates = $this->partPlatesOn($main, $order->partPlates(), $partSlotIds ?? []);
         }
         // a machine kept for fine work hands the order back when the customer asks for a coarser quality
         if ($order->printer && ! $order->printer->takesQuality($quality)) {
@@ -233,17 +247,8 @@ final class OrderService
      */
     public function secondSpoolsAcross(FarmPrinterSlot $main, ?FarmOrder $order = null, string $quality = 'standard'): Collection
     {
-        $main->loadMissing(['color.material', 'printer']);
-        $dims = $order && is_array($order->check['dims'] ?? null) ? Dimensions::fromArray($order->check['dims']) : null;
-        $quality = $this->knownQuality($order ? (string) $order->quality : $quality);
-        $firsts = FarmPrinterSlot::with(['color.material', 'printer'])
-            ->where('farm_color_id', $main->farm_color_id)->where('enabled', true)
-            ->whereHas('printer', fn ($q) => $q->where('enabled', true))
-            ->get()
-            ->filter(fn (FarmPrinterSlot $s) => $s->kindFitsPrinter() && ($s->id === $main->id || ($s->printer->isOnline() && $s->printer->takesQuality($quality) && (! $dims || $s->printer->fits($dims)))))
-            ->sortBy(fn (FarmPrinterSlot $s) => [$s->id === $main->id ? 0 : 1, $s->printer->readyForAutoStart() ? 0 : 1, $s->id]);
         $out = collect();
-        foreach ($firsts as $first) {
+        foreach ($this->firstsAcross($main, $order, $quality) as $first) {
             foreach ($this->secondSpools($first) as $spool) {
                 if ($out->contains(fn (FarmPrinterSlot $s) => $s->farm_color_id === $spool->farm_color_id)) {
                     continue;
@@ -254,6 +259,47 @@ final class OrderService
         }
 
         return $out->sortBy(fn (FarmPrinterSlot $s) => self::colorOrder($s->color))->values();
+    }
+
+    /**
+     * The first colour's slot on every machine that holds it and could print the order (or any order of this quality,
+     * before one exists): the main's own machine first, then the ones ready to start.
+     *
+     * @return Collection<int, FarmPrinterSlot>
+     */
+    public function firstsAcross(FarmPrinterSlot $main, ?FarmOrder $order = null, string $quality = 'standard'): Collection
+    {
+        $main->loadMissing(['color.material', 'printer']);
+        $dims = $order && is_array($order->check['dims'] ?? null) ? Dimensions::fromArray($order->check['dims']) : null;
+        $quality = $this->knownQuality($order ? (string) $order->quality : $quality);
+
+        return FarmPrinterSlot::with(['color.material', 'printer'])
+            ->where('farm_color_id', $main->farm_color_id)->where('enabled', true)
+            ->whereHas('printer', fn ($q) => $q->where('enabled', true))
+            ->get()
+            ->filter(fn (FarmPrinterSlot $s) => $s->kindFitsPrinter() && ($s->id === $main->id || ($s->printer->isOnline() && $s->printer->takesQuality($quality) && (! $dims || $s->printer->fits($dims)))))
+            ->sortBy(fn (FarmPrinterSlot $s) => [$s->id === $main->id ? 0 : 1, $s->printer->readyForAutoStart() ? 0 : 1, $s->id])
+            ->values();
+    }
+
+    /**
+     * The first colour's slot on the machine that holds every colour named with it (the parts of a design, each in a
+     * colour of its own): the customer picks colours, the farm the machine – the main's own when it has them all, else
+     * the first other one that has (firstsAcross); null when no single machine holds the set.
+     *
+     * @param  list<int|null>  $colorIds
+     */
+    public function machineForColors(FarmPrinterSlot $main, array $colorIds, ?FarmOrder $order = null, string $quality = 'standard'): ?FarmPrinterSlot
+    {
+        $wanted = array_values(array_unique(array_filter(array_map('intval', $colorIds), fn ($id) => $id > 0 && $id !== (int) $main->farm_color_id)));
+        foreach ($this->firstsAcross($main, $order, $quality) as $first) {
+            $held = $this->secondSpools($first)->map(fn (FarmPrinterSlot $s) => (int) $s->farm_color_id)->all();
+            if (! array_diff($wanted, $held)) {
+                return $first;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -272,12 +318,16 @@ final class OrderService
         $ids = array_values(array_unique(array_filter(array_map('intval', $otherSlotIds), fn ($id) => $id > 0 && $id !== (int) $slot->id)));
         $printers = $ids ? FarmPrinterSlot::whereIn('id', $ids)->pluck('farm_printer_id')->map(fn ($id) => (int) $id)->unique() : collect();
         if ($printers->count() > 1) {
-            throw new FarmRefusal('color_gone');   // spools of two machines: no single machine prints that
+            throw new FarmRefusal('one_machine');   // spools of two machines: no single machine prints that
         }
         $printerId = (int) ($printers->first() ?? $slot->farm_printer_id);
-
-        return $offers->first(fn ($r) => $r['color']->id === (int) $slot->farm_color_id && $r['printer']->id === $printerId)
+        $offer = $offers->first(fn ($r) => $r['color']->id === (int) $slot->farm_color_id && $r['printer']->id === $printerId)
             ?? $offers->first(fn ($r) => $r['slot']->id === $slot->id);
+        if ($offer && $printers->isNotEmpty() && (int) $offer['printer']->id !== $printerId) {
+            throw new FarmRefusal('one_machine');   // the other spools' machine does not hold the first colour: no machine prints that
+        }
+
+        return $offer;
     }
 
     /**
@@ -418,6 +468,47 @@ final class OrderService
             $slot = $id && $id !== (int) $main->farm_color_id ? $others->first(fn (FarmPrinterSlot $s) => (int) $s->farm_color_id === $id) : null;
             $slot ??= $main;
             $out[] = ['part' => $part, 'slot_id' => (int) $slot->id, 'color_id' => (int) $slot->farm_color_id];
+        }
+        if (count(array_unique(array_merge([(int) $main->farm_color_id], array_column($out, 'color_id')))) > FarmOrder::MAX_COLORS) {
+            throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
+        }
+
+        return $out;
+    }
+
+    /**
+     * The spools of the parts on the machine of `$main` (the first colour as chosen). A part the page names a spool for
+     * (`$wantedSlotIds`, part → slot) gets it when this machine holds it; another machine's spool is refused
+     * (`one_machine`: the page offers one machine's spools, and no machine prints a mix). A part nobody named keeps the
+     * spool it had when this machine holds it, else takes this machine's spool of the same colour, else the first colour
+     * – or, with `$carry` false (payment: the page names every part), the first colour straight away.
+     *
+     * @param  list<array<string, mixed>>  $plates  the order's part plates (FarmOrder::partPlates)
+     * @param  array<string, int|null>  $wantedSlotIds
+     * @return list<array<string, mixed>> the plates with the `slot_id` and `color_id` of this machine
+     *
+     * @throws FarmRefusal one_machine | color_gone | too_many_colors
+     */
+    public function partPlatesOn(FarmPrinterSlot $main, array $plates, array $wantedSlotIds = [], bool $carry = true): array
+    {
+        $main->loadMissing('color');
+        $others = $this->secondSpools($main);
+        $out = [];
+        foreach ($plates as $plate) {
+            $wanted = (int) ($wantedSlotIds[(string) $plate['part']] ?? 0);
+            $had = (int) ($plate['slot_id'] ?? 0);
+            if ($wanted && $wanted !== (int) $main->id) {
+                $spool = $others->firstWhere('id', $wanted);
+                if (! $spool) {
+                    $foreign = FarmPrinterSlot::find($wanted);
+                    throw new FarmRefusal($foreign && (int) $foreign->farm_printer_id !== (int) $main->farm_printer_id ? 'one_machine' : 'color_gone');
+                }
+            } elseif ($wanted || ! $carry || ! $had || $had === (int) $main->id) {
+                $spool = $main;
+            } else {
+                $spool = $others->firstWhere('id', $had) ?? $others->first(fn (FarmPrinterSlot $s) => (int) $s->farm_color_id === (int) ($plate['color_id'] ?? 0)) ?? $main;
+            }
+            $out[] = ['slot_id' => (int) $spool->id, 'color_id' => (int) $spool->farm_color_id] + $plate;
         }
         if (count(array_unique(array_merge([(int) $main->farm_color_id], array_column($out, 'color_id')))) > FarmOrder::MAX_COLORS) {
             throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
