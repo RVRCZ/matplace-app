@@ -781,3 +781,62 @@ filamenty (TODO #31, AL.md §10), takže lícem dolů jde tisknout.
 Slicer střídá pořadí barev po vrstvách, takže sudý počet vrstev nestojí výměnu navíc (2·⌈n/2⌉). V G-kódu není
 `;TYPE:Support`. Pro srovnání: tatáž medaile jednou barvou (vystouplá bez výměn) má 38,6 g a 1 h 26 min. Výměny a věž
 tedy stojí asi 16 minut a 1,4 g.
+
+### 8c. Kolo 4: zaoblené hrany medaile, kulaté konce článků, menší mezera (20. 10. 2026)
+
+Zadání: `docs/prompts/medaile-kolo4.md` (TODO #33), po prvním dvoubarevném výtisku F26‑000089 na Kobře X.
+
+- **Zaoblený obrys medaile** (`_soft_plate`, `MEDAL_ROUND = 1.0`), u obou motivů:
+  - Nahoře plná čtvrtkružnice 1 mm.
+  - Dole, kde leží líc (u vystouplého motivu rub), zaoblení 1 mm jako u článků: kruh jen tam, kde se nevyklání víc
+    než 45° od svislice, pod ním rovný sklon 45° k podložce. Líc tak začíná 0,59 mm od obrysu.
+  - Model je ve vrstvičkách po 0,1 mm (polovina vrstvy), ve slicu jsou schody neviditelné.
+  - Zaoblená je jen vnější hrana placky (kruh, hvězda, štít…). Očko i jeho otvor se zaoblí stejně, zadarmo, protože
+    jde o tentýž obrys.
+  - Lem a motiv: u zarovnaného motivu zůstává líc plochý v rovině podložky. Vnější hrana lemu dostane zaoblení
+    placky, takže kraj je ve spodních 0,6 mm v barvě lemu, nad ním v barvě placky. U vystouplého motivu stojí lem
+    i motiv na ploše vršku, uvnitř zaoblení: lem je pořád 2 mm, jen o 1 mm dál od kraje (58 mm napříč).
+- **Kulaté konce článků**: konec mezery je profil článku otočený kolem osy konce, tedy půlkoule ⌀ 4 nahoře a stejné
+  zkosení 45° s ploškou 1 mm dole. Bez podpěr.
+- **Menší mezera**: `LINK = (30, 18, 4, 1.6)`, čtvrté číslo je nově vzdálenost špiček kulatých konců. Dřív byla mezera
+  3,6 mm mezi rovnými konci, teď jsou špičky od sebe 1,6 mm, tedy o 2 mm méně. Výpočet zacvaknutí:
+  - Sousední příčka ⌀ 4 projde, když se článek ve své rovině rozevře o 4 − 1,6 = **2,4 mm** (přesah).
+  - Článek jako zakřivený nosník (střednice: rovné strany 12 mm ve vzdálenosti 14 mm, oblouky R 7), dvě síly na
+    špičkách mezery: ∫y²ds = 5 585 mm³, I = π·4⁴/64 = 12,6 mm⁴.
+  - Síla F = δ·E·I / ∫y²ds ≈ 2,4 · 3 500 · 12,6 / 5 585 ≈ **19 N** (asi 2 kg v prstech).
+  - Nejvíc namáhaná je protější strana (rameno 14 mm): poměrné prodloužení ε = 14 · 2 · 2,4 / 5 585 ≈ **1,2 %**. PLA
+    pruží asi do 2–3 %, takže článek se rozevře a vrátí. Nepovolí sám od sebe: tah řetězu medaili (40 g) je
+    o dva řády menší než 19 N.
+  - Kdyby to bylo moc tuhé nebo moc volné, mění se jediné číslo `LINK[3]` (1,6). Notes nesou `chain.tips`.
+  - Objem článku 845,9 mm³ (dřív 838,3), 4 398 trojúhelníků.
+- **Díly v jednom rámu** (`parts["_shared"]`, `param_tool.py`; oprava chyby, která je v produkci):
+  - Dosud `param_tool.py` posunul každý díl do jeho vlastního rohu. Farma (`PrepareFarmOrder::prepareOnePlate`)
+    i náhled zakázky ale skládají díly podle jejich souřadnic.
+  - U medaile s lemem to sedělo jen náhodou: lem začínal v rohu placky. Bez lemu (`border` vypnutý) dostala farma
+    číslo v rohu placky (0, 0) místo na (20, 17), ověřeno proti `main`.
+  - Se zaobleným lemem by byl lem posunutý o 0,06 mm.
+  - Teď díl medaile lícem dolů leží tam, kde ho má celá medaile. Platí jen pro díly s `_shared` (dnes zarovnaná
+    medaile). Velikost dílu v `bbox` zůstává jeho vlastní.
+- **Ukázky** jsou překreslené (`matplace:tool-examples medallion --force`), protože je vidět zaoblení i kulaté konce.
+- **Testy** (`ShapeToolsTest`):
+  - šířka líce na podložce 60 − 2 · 0,536 a rubu 60 − 2 · 0,688,
+  - lem zaoblený s plackou,
+  - díl lemu v rámu medaile,
+  - `chain.tips`, objem článků,
+  - vystouplý lem 58 mm na ploše vršku.
+
+**Řez** (AnycubicSlicerNext 2.0.0.3 CLI; profily farmy: `machine.json`, `process_standard.json`, `filament_pla.json`).
+Model: výchozí medaile 60 mm, „1“, lem, 40 článků.
+
+| co | podpěry | filament | čas |
+|---|---|---|---|
+| jedna podložka, dva filamenty (3MF po dílech + `ONE_PLATE_PROCESS`), hloubka 0,6 | vypnuté jako na farmě | 40,10 g + 1,37 g, `total filament change` = 4 | 1 h 43 min |
+| totéž v kole 3 | vypnuté | 39,95 g + 1,40 g, 4 výměny | 1 h 42 min |
+| celá medaile jednou barvou | **zapnuté** (`tree(auto)`, práh 30°) | 39,40 g | 1 h 27 min |
+
+S povolenými podpěrami slicer žádnou nepostavil: v G-kódu není `;TYPE:Support` ani `;TYPE:Overhang wall`, 22 vrstev.
+Dvoubarevnou podložku se zapnutými podpěrami Orca neřeže vůbec. Hlásí konflikt drah mezi díly, a to i u kola 3, takže
+tak se řez dělat nedá. Farma podpěry nezapíná.
+
+**Co ověří až tisk**: jestli jde článek s přesahem 2,4 mm zacvaknout rukou bez prasknutí. Jestli ne, stačí změnit
+`LINK[3]` (třeba na 2,0). Dál jestli spodní zaoblení 45° nechá na líci čistý kraj lemu.
