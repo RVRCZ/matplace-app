@@ -82,7 +82,8 @@ return [
         'part_main' => 'El color principal',
         // the parts together on one plate, the machine changing spools as it goes (docs/AL.md §10)
         'parts_one_plate' => 'Las piezas se imprimen juntas en una placa; la impresora cambia las bobinas sola (:n cambios). Elija bobinas de una sola impresora.',
-        'parts_one_machine' => 'Todas las piezas deben salir de las bobinas de una sola impresora: tras la primera elección quedan solo las suyas.',
+        'parts_one_machine' => 'Todos los colores deben estar en una sola impresora junto con el color principal: a cada pieza le ofrecemos solo los colores que van con los demás.',
+        'colors_no_machine' => 'Estos colores no los tenemos juntos en una sola impresora. Elija otra combinación: a cada pieza le ofrecemos solo los colores que van juntos.',
         'one_plate_required' => 'Los colores de este diseño están en una misma capa: se imprime entero en una impresora que cambia bobinas, de una unidad en una. Solo se ofrecen las bobinas de esas impresoras.',
         'one_plate_copies' => 'Este diseño se imprime de una unidad en una. Ponga 1 unidad, o pídalo varias veces.',
         'one_plate_single' => 'Este diseño se imprime de una unidad en una.',
@@ -179,6 +180,7 @@ return [
         'print_cancelled' => 'La impresión se detuvo. Le hemos devuelto el crédito.',
         'operator' => 'El operador detuvo el pedido. Le hemos devuelto el crédito.',
         'one_plate_needed' => 'Este diseño tiene dos colores en una misma capa, por eso solo se imprime entero en una impresora que cambia bobinas. Elija bobinas de una impresora así (ACE o Rack) y una unidad, o la versión de un solo color. Le hemos devuelto el crédito.',
+        'parts_machine' => 'Las bobinas de las piezas no están en la impresora para la que se calculó el pedido. Elíjalas de nuevo en la página del pedido.',
     ],
 
     'warn' => [
@@ -206,6 +208,7 @@ return [
         'delivery_point' => 'El punto de recogida no corresponde al país elegido o ya no existe. Elija otro, por favor.',
         'delivery_address' => 'Indique, por favor, el nombre, el teléfono y la dirección completa.',
         'color_gone' => 'Este color ya no está en la impresora. Elija otro.',
+        'one_machine' => 'Las bobinas de las piezas deben ser de una sola impresora, la que tiene el color principal. Elíjalas de nuevo.',
         'one_plate_needed' => 'Este diseño tiene dos colores en una misma capa: solo se imprime entero en una impresora que cambia bobinas, de una en una. Elija bobinas de esa impresora y 1 unidad, o la versión de un solo color.',
         'too_many_colors' => 'Una impresión puede tener como máximo :n colores, tantas bobinas tiene cargadas una máquina a la vez. Deje algún color igual que el anterior, o una colores en el diseño.',
         'filament_low' => 'No queda suficiente material en esta bobina. Elija otro color.',
@@ -405,7 +408,8 @@ return [
             'guest' => 'invitado',
             'estimated' => '(estimación)',
             'reason' => ['print_failed' => 'la impresora informó de un fallo de impresión', 'print_cancelled' => 'la impresión se detuvo en la impresora', 'operator' => 'detenida por el operador', 'slicing_failed' => 'no se pudo preparar el G-code',
-                'one_plate_needed' => 'el diseño tiene dos colores en una capa y no cupo en una sola placa (impresora manual, varias unidades, bobinas de dos máquinas, no cabía o falló el laminador)'],
+                'one_plate_needed' => 'el diseño tiene dos colores en una capa y no cupo en una sola placa (impresora manual, varias unidades, bobinas de dos máquinas, no cabía o falló el laminador)',
+                'parts_machine' => 'las bobinas de las piezas están en otra máquina que el color principal y esa máquina no tiene sus colores'],
             'line_customer' => 'Cliente: :who',
             'line_model' => 'Modelo: :name',
             'line_model_tool' => 'Modelo: :name (herramienta :tool)',

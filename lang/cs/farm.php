@@ -87,7 +87,8 @@ return [
         'part_main' => 'Hlavní barva',
         // the parts together on one plate, the machine changing spools as it goes (docs/AL.md §10)
         'parts_one_plate' => 'Díly se tisknou spolu na jedné podložce; tiskárna mění cívky sama (:n výměn). Cívky vybírejte z jedné tiskárny.',
-        'parts_one_machine' => 'Všechny díly musí být z cívek jedné tiskárny: po první volbě zůstávají jen její cívky.',
+        'parts_one_machine' => 'Všechny barvy musí být v jedné tiskárně spolu s hlavní barvou: u každého dílu nabízíme jen barvy, které s ostatními jdou dohromady.',
+        'colors_no_machine' => 'Tyhle barvy spolu nemáme v jedné tiskárně. Vyberte jinou kombinaci – u každého dílu nabízíme jen barvy, které jdou dohromady.',
         'one_plate_required' => 'Barvy tohoto návrhu leží v jedné vrstvě: tiskne se vcelku na tiskárně s měničem cívek, po jednom kuse. Nabízíme jen cívky takových tiskáren.',
         'one_plate_copies' => 'Tento návrh se tiskne po jednom kuse. Nastavte 1 ks, nebo objednejte víckrát.',
         'one_plate_single' => 'Tento návrh se tiskne po jednom kuse.',
@@ -179,6 +180,7 @@ return [
         'print_cancelled' => 'Tisk byl zastaven. Kredit jsme vám vrátili.',
         'operator' => 'Zakázku zastavila obsluha. Kredit jsme vám vrátili.',
         'one_plate_needed' => 'Tento návrh má dvě barvy v jedné vrstvě, proto se tiskne jen vcelku na tiskárně s měničem cívek. Zvolte cívky z jedné tiskárny s měničem (ACE nebo Rack) a jeden kus, nebo jednobarevné provedení. Kredit jsme vám vrátili.',
+        'parts_machine' => 'Cívky dílů nejsou v tiskárně, pro kterou se zakázka počítala. Vyberte je prosím na stránce zakázky znovu.',
     ],
 
     'warn' => [
@@ -206,6 +208,7 @@ return [
         'delivery_point' => 'Výdejní místo neodpovídá zvolené zemi nebo už neexistuje. Vyberte prosím jiné.',
         'delivery_address' => 'Doplňte prosím jméno, telefon a celou adresu.',
         'color_gone' => 'Tahle barva už v tiskárně není. Vyberte prosím jinou.',
+        'one_machine' => 'Cívky pro díly musí být z jedné tiskárny – té, kde je hlavní barva. Vyberte je prosím znovu.',
         'one_plate_needed' => 'Tento návrh má dvě barvy v jedné vrstvě: tiskne se jen vcelku na tiskárně s měničem cívek a po jednom kuse. Zvolte cívky takové tiskárny a 1 ks, nebo jednobarevné provedení.',
         'too_many_colors' => 'Jeden tisk může mít nejvýš :n barvy, tolik cívek má tiskárna založených najednou. Nechte některou barvu stejnou jako předchozí, nebo barvy v návrhu slučte.',
         'filament_low' => 'Na téhle cívce už není dost materiálu. Vyberte prosím jinou barvu.',
@@ -405,7 +408,8 @@ return [
             'guest' => 'host',
             'estimated' => '(odhad)',
             'reason' => ['print_failed' => 'tiskárna nahlásila selhání tisku', 'print_cancelled' => 'tisk byl na tiskárně zastaven', 'operator' => 'zastavila obsluha', 'slicing_failed' => 'nepodařilo se připravit G‑kód',
-                'one_plate_needed' => 'návrh má dvě barvy v jedné vrstvě a nešel na jednu podložku (ruční tiskárna, víc kusů, cívky ze dvou strojů, nevešel se, nebo slicer selhal)'],
+                'one_plate_needed' => 'návrh má dvě barvy v jedné vrstvě a nešel na jednu podložku (ruční tiskárna, víc kusů, cívky ze dvou strojů, nevešel se, nebo slicer selhal)',
+                'parts_machine' => 'cívky dílů jsou z jiného stroje než hlavní barva a ten stroj jejich barvy nemá'],
             'line_customer' => 'Zákazník: :who',
             'line_model' => 'Model: :name',
             'line_model_tool' => 'Model: :name (nástroj :tool)',

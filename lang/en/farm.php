@@ -82,7 +82,8 @@ return [
         'part_main' => 'The main colour',
         // the parts together on one plate, the machine changing spools as it goes (docs/AL.md §10)
         'parts_one_plate' => 'The parts print together on one plate; the printer changes the spools itself (:n changes). Pick the spools of one printer.',
-        'parts_one_machine' => 'All parts must come from the spools of one printer: after the first choice only its spools remain.',
+        'parts_one_machine' => 'All colours must sit in one printer together with the main colour: every part is offered only the colours that go with the others.',
+        'colors_no_machine' => 'We do not have these colours together in one printer. Pick another combination – every part is offered only the colours that go together.',
         'one_plate_required' => 'The colours of this design lie in one layer: it prints as a whole on a printer that changes spools, one piece at a time. Only the spools of such printers are offered.',
         'one_plate_copies' => 'This design prints one piece at a time. Set 1 piece, or order it several times.',
         'one_plate_single' => 'This design prints one piece at a time.',
@@ -179,6 +180,7 @@ return [
         'print_cancelled' => 'The print was stopped. Your credit has been returned.',
         'operator' => 'The operator stopped the order. Your credit has been returned.',
         'one_plate_needed' => 'This design has two colours in one layer, so it prints only as a whole on a printer that changes spools. Pick the spools of one such printer (ACE or Rack) and one piece, or a one-colour version. Your credit has been returned.',
+        'parts_machine' => 'The spools of the parts are not in the printer the order was computed for. Please pick them again on the order page.',
     ],
 
     'warn' => [
@@ -206,6 +208,7 @@ return [
         'delivery_point' => 'The pickup point does not match the chosen country or no longer exists. Please choose another one.',
         'delivery_address' => 'Please fill in the name, the phone and the whole address.',
         'color_gone' => 'This colour is no longer in the printer. Please pick another one.',
+        'one_machine' => 'The spools of the parts must come from one printer – the one holding the main colour. Please pick them again.',
         'one_plate_needed' => 'This design has two colours in one layer: it prints only as a whole on a printer that changes spools, one piece at a time. Pick the spools of such a printer and 1 piece, or a one-colour version.',
         'too_many_colors' => 'One print can have at most :n colours, that is how many spools a machine holds at once. Keep one colour the same as the one before, or merge colours in the design.',
         'filament_low' => 'There is not enough filament left on this spool. Please pick another colour.',
@@ -405,7 +408,8 @@ return [
             'guest' => 'guest',
             'estimated' => '(estimate)',
             'reason' => ['print_failed' => 'the printer reported a failed print', 'print_cancelled' => 'the print was stopped on the printer', 'operator' => 'stopped by the operator', 'slicing_failed' => 'the G-code could not be prepared',
-                'one_plate_needed' => 'the design has two colours in one layer and could not go on one plate (manual printer, several copies, spools of two machines, did not fit, or the slicer failed)'],
+                'one_plate_needed' => 'the design has two colours in one layer and could not go on one plate (manual printer, several copies, spools of two machines, did not fit, or the slicer failed)',
+                'parts_machine' => 'the parts\' spools sit in another machine than the first colour and that machine lacks their colours'],
             'line_customer' => 'Customer: :who',
             'line_model' => 'Model: :name',
             'line_model_tool' => 'Model: :name (tool :tool)',

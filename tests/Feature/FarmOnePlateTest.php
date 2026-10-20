@@ -354,4 +354,95 @@ class FarmOnePlateTest extends TestCase
         $this->assertFileExists($disk->path($order->dir().'/print.stl'));
         $this->assertTrue($disk->exists($order->dir().'/plate.3mf'));
     }
+
+    public function test_the_parts_follow_the_first_colour_to_another_machine_and_a_foreign_spool_is_refused(): void
+    {
+        // a second machine run by an agent: blue in slot 0, the same red as the S1's in slot 1
+        $other = FarmPrinter::where('key', 'kobra-s1-02')->firstOrFail();
+        $other->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $this->agent->id, 'last_seen_at' => now(), 'state' => FarmPrinter::STATE_IDLE, 'enabled' => true]);
+        $blueColor = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->whereNotIn('id', [$this->white->farm_color_id, $this->red->farm_color_id])->firstOrFail();
+        $blueColor->update(['hex' => '#2050B0', 'enabled' => true]);
+        [$blue, $otherRed] = $other->slots()->orderBy('slot')->take(2)->get()->all();
+        $blue->update(['farm_color_id' => $blueColor->id, 'remaining_g' => 800, 'enabled' => true]);
+        $otherRed->update(['farm_color_id' => $this->red->farm_color_id, 'remaining_g' => 800, 'enabled' => true]);
+
+        // ordered on the S1: the plate white, the bar red – one plate there
+        $file = $this->design();
+        $order = $this->order($file, ['part_color' => ['color_2' => $this->red->farm_color_id]]);
+        $this->assertSame($this->s1->id, $order->farm_printer_id);
+        $this->assertSame([$this->white->id, $this->red->id], array_column($order->partPlates(), 'slot_id'));
+
+        // the customer moves the first colour to the other machine's blue and recalculates, the page naming no part spools
+        // (the order page before 20 Oct 2026, order 198): the parts follow – the bar from that machine's red
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $entry = collect($state['colors'])->firstWhere('hex', '#2050B0');
+        $this->assertSame($blue->id, $entry['slot']);
+        // the page works by colours: every first colour lists the machines holding it with their other spools, so a part is
+        // offered only what one machine holds together with the first colour and the other parts' colours
+        $this->assertSame($blueColor->id, $entry['color_id']);
+        $this->assertSame([$blue->id], array_column($entry['machines'], 'main'), 'blue sits in the second machine alone');
+        $this->assertSame([[$otherRed->id, $this->red->farm_color_id]], array_map(fn ($m) => [$m['colors'][0]['slot'], $m['colors'][0]['color_id']], $entry['machines']));
+        $white = collect($state['colors'])->firstWhere('slot', $this->white->id);
+        $this->assertSame([$this->white->id], array_column($white['machines'], 'main'), 'white sits in the S1 alone');
+        $this->assertSame([$this->red->farm_color_id], array_column($white['machines'][0]['colors'], 'color_id'));
+        $this->assertSame([$this->white->farm_color_id, $this->red->farm_color_id], array_column($state['parts'], 'color_id'));
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'slot' => $blue->id])->assertOk();
+        $order->refresh();
+        $this->assertSame($other->id, $order->farm_printer_id);
+        $this->assertSame([$blue->id, $otherRed->id], array_column($order->partPlates(), 'slot_id'), 'the same colour on the new machine, the first part on the first colour');
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
+        $this->assertTrue($order->onePlate(), 'one plate on the new machine, not failed for spools of two machines');
+
+        // the S1's red named for the bar while the first colour is the other machine's: refused up front, with its reason
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard', 'slot' => $blue->id, 'part_slots' => ['color_2' => $this->red->id]])
+            ->assertStatus(422)->assertJsonPath('error', 'one_machine');
+        $this->credit(20000);
+        $state = $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json();
+        $main = collect($state['colors'])->firstWhere('slot', $blue->id);
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/quote", ['slot' => $blue->id, 'delivery' => 'pickup', 'part_slots' => ['color_2' => $this->red->id]])
+            ->assertStatus(422)->assertJsonPath('error', 'one_machine');
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/pay", ['slot' => $blue->id, 'delivery' => 'pickup', 'terms' => true, 'expected_total' => $main['total'], 'part_slots' => ['color_2' => $this->red->id]])
+            ->assertStatus(422)->assertJsonPath('error', 'one_machine');
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->refresh()->status);
+        $this->assertSame([$blue->id, $otherRed->id], array_column($order->partPlates(), 'slot_id'), 'nothing of the refused payment stuck');
+
+        // an order that already holds spools of two machines (order 198 as it stood): the job moves them to the first
+        // colour's machine when it has their colours – and stops with a reason when it does not
+        $foreign = array_map(fn ($p) => $p['part'] === 'color_2' ? ['slot_id' => $this->red->id, 'color_id' => $this->red->farm_color_id] + $p : $p, $order->partPlates());
+        $order->forceFill(['part_plates' => $foreign])->save();
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard'])->assertOk();
+        $order->refresh();
+        $this->assertSame([$blue->id, $otherRed->id], array_column($order->partPlates(), 'slot_id'));
+        $this->assertSame(FarmOrder::STATUS_SLICED, $order->status);
+        $this->assertTrue($order->onePlate());
+        $otherRed->update(['enabled' => false]);
+        $order->forceFill(['part_plates' => $foreign])->save();
+        $this->actingAs($this->user)->postJson("/farm/orders/{$order->token}/reslice", ['quality' => 'standard', 'strength' => 'standard'])->assertOk();
+        $order->refresh();
+        $this->assertSame(FarmOrder::STATUS_FAILED, $order->status);
+        $this->assertSame('parts_machine', $order->error);
+        $this->assertStringContainsString(__('farm.error.parts_machine'), $this->actingAs($this->user)->getJson("/farm/orders/{$order->token}/status")->assertOk()->json('error_text'));
+    }
+
+    public function test_the_order_starts_on_the_machine_that_holds_every_colour_chosen(): void
+    {
+        // white in both machines, blue in the second alone, green nowhere
+        $other = FarmPrinter::where('key', 'kobra-s1-02')->firstOrFail();
+        $other->update(['mode' => FarmPrinter::MODE_AGENT, 'farm_agent_id' => $this->agent->id, 'last_seen_at' => now(), 'state' => FarmPrinter::STATE_IDLE, 'enabled' => true]);
+        [$blueColor, $greenColor] = FarmColor::whereHas('material', fn ($q) => $q->where('code', 'like', 'PLA%'))->whereNotIn('id', [$this->white->farm_color_id, $this->red->farm_color_id])->orderBy('id')->take(2)->get()->all();
+        $blueColor->update(['hex' => '#2050B0', 'enabled' => true]);
+        $greenColor->update(['hex' => '#30A040', 'enabled' => true]);
+        [$otherWhite, $blue] = $other->slots()->orderBy('slot')->take(2)->get()->all();
+        $otherWhite->update(['farm_color_id' => $this->white->farm_color_id, 'remaining_g' => 800, 'enabled' => true]);
+        $blue->update(['farm_color_id' => $blueColor->id, 'remaining_g' => 800, 'enabled' => true]);
+
+        // the customer picks white and blue; the farm picks the machine that has both
+        $order = $this->order($this->design(), ['part_color' => ['color_2' => $blueColor->id]]);
+        $this->assertSame($other->id, $order->farm_printer_id);
+        $this->assertSame([$otherWhite->id, $blue->id], array_column($order->partPlates(), 'slot_id'));
+        $this->assertTrue($order->onePlate());
+        // a colour no machine holds together with white: that part prints in white, as it always did
+        $same = $this->order($this->design(), ['part_color' => ['color_2' => $greenColor->id]]);
+        $this->assertSame([$this->white->farm_color_id, $this->white->farm_color_id], array_column($same->partPlates(), 'color_id'));
+    }
 }

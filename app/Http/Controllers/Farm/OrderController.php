@@ -409,11 +409,14 @@ class OrderController extends Controller
             'settings.bottom' => ['nullable', 'integer', 'min:0', 'max:10'],
             'settings.ironing' => ['nullable', 'in:'.implode(',', PrintSettings::CHOICES['ironing'])],
             'by_parts' => ['nullable', 'boolean'],
+            // the spools picked for the parts so far: they travel with the first colour (one machine's only)
+            'part_slots' => ['nullable', 'array', 'max:16'], 'part_slots.*' => ['nullable', 'integer'],
         ]);
         try {
             $this->orders->reslice($order, $data['quality'], $data['strength'], $data['unit'] ?? null, isset($data['copies']) ? (int) $data['copies'] : null, isset($data['scale']) ? (float) $data['scale'] : null, $data['supports'] ?? null, isset($data['slot']) ? (int) $data['slot'] : null,
                 $request->exists('settings') ? (array) $request->input('settings', []) : null,   // [] = back to the presets, absent = leave as they are
-                $request->has('by_parts') && $data['by_parts'] !== null ? (bool) $data['by_parts'] : null);
+                $request->has('by_parts') && $data['by_parts'] !== null ? (bool) $data['by_parts'] : null,
+                isset($data['part_slots']) ? array_map('intval', (array) $data['part_slots']) : null);
         } catch (FarmRefusal $e) {
             return response()->json(['error' => $e->reason, 'message' => $e->text()], 422);
         }
@@ -436,7 +439,7 @@ class OrderController extends Controller
             $first = $order->status === FarmOrder::STATUS_SLICED ? FarmPrinterSlot::find((int) $data['slot']) : null;
             $offer = $first ? $this->orders->machineFor($order, $first, array_merge(array_values((array) ($data['change_slots'] ?? [])), array_values((array) ($data['part_slots'] ?? [])))) : null;
         } catch (FarmRefusal $e) {
-            $offer = null;
+            return response()->json(['error' => $e->reason, 'message' => $e->text()], 422);   // spools of two machines, say
         }
         if (! $offer) {
             return response()->json(['error' => 'color_gone', 'message' => __('farm.refuse.color_gone')], 422);
@@ -702,6 +705,15 @@ class OrderController extends Controller
                 'second' => ($order->wantedChanges() || $order->isByParts() ? $this->orders->secondSpoolsAcross($r['slot'], $order) : collect())
                     ->filter(fn ($s) => ! $required || $s->printer->isAgentDriven())->values()
                     ->map(fn ($s) => ['slot' => $s->id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'main' => $s->main_slot_id, 'code' => $s->code()])->values()->all(),
+                'color_id' => $r['color']->id,
+                // printed by parts: every machine that holds this colour, with its first-colour slot and its other spools – the
+                // page offers each part the colours one machine holds together with the first colour and the other parts'
+                // choices, and sends that one machine's slots (the customer picks colours, the farm the machine)
+                'machines' => $order->isByParts() ? $this->orders->firstsAcross($r['slot'], $order)
+                    ->filter(fn ($f) => ! $required || $f->printer->isAgentDriven())
+                    ->map(fn ($f) => ['main' => $f->id, 'name' => $f->printer->name, 'code' => $f->code(), 'colors' => $this->orders->secondSpools($f)
+                        ->map(fn ($s) => ['slot' => $s->id, 'color_id' => $s->farm_color_id, 'name' => $s->color->displayName(), 'kind' => $s->color->material->label(), 'hex' => $s->color->hex, 'finish' => $s->color->material->finish, 'photo' => $s->color->photoUrl(), 'code' => $s->code()])->values()->all()])
+                    ->values()->all() : [],
                 // the time, the weight and the price on the page were computed for this colour's machine and kind
                 'sliced' => $r['printer']->id === $order->farm_printer_id && $r['color']->material->id === $order->farm_material_id
                     && ($order->farm_color_id === null || $order->farm_color_id === $r['color']->id),
@@ -729,7 +741,7 @@ class OrderController extends Controller
         $parts = array_map(fn ($p, $i) => [
             'part' => $p['part'], 'plate' => $order->onePlate() ? 1 : $i + 1, 'label' => OrderService::partLabel($order->modelFile, (string) $p['part']),
             'hex' => ($order->modelFile?->tool_params['part_colors'][$p['part']]['hex'] ?? null) ?: null,
-            'slot_id' => ($p['slot_id'] ?? null) ?: null, 'name' => $partSpools->get($p['slot_id'] ?? 0)?->color?->displayName(), 'slot_code' => $partSpools->get($p['slot_id'] ?? 0)?->code(),
+            'slot_id' => ($p['slot_id'] ?? null) ?: null, 'color_id' => ($p['color_id'] ?? null) ?: null, 'name' => $partSpools->get($p['slot_id'] ?? 0)?->color?->displayName(), 'slot_code' => $partSpools->get($p['slot_id'] ?? 0)?->code(),
             'copies' => (int) ($p['copies'] ?? $order->copies), 'minutes' => $p['minutes'] ?? null, 'grams' => $p['grams'] ?? null,
             // the part's own plate for the preview, in the colour of its spool (the design's colour until one is chosen)
             'spool_hex' => $partSpools->get($p['slot_id'] ?? 0)?->color?->hex,

@@ -14,9 +14,13 @@ import { timelinePrint, timelineDispatch } from './order_timeline';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
 /** A colour on offer: one per colour, with the codes of every spool of it that could print the order ("U33" = farm U, printer 3, slot 3). */
-interface Color { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; codes?: string[]; enough: boolean; price: Price; total: number; starts_now: boolean; sliced: boolean; second?: Second[] }
+interface Color { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; codes?: string[]; enough: boolean; price: Price; total: number; starts_now: boolean; sliced: boolean; second?: Second[]; color_id?: number; machines?: Machine[] }
 /** A spool for a second colour or a part; `main` names the first colour's slot on its machine when it sits in another machine than the chosen spool. */
 interface Second { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; main?: number | null }
+/** One spool of a machine that holds the first colour (by parts): the colour it is, and its slot there. */
+interface Spool { slot: number; color_id: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null }
+/** A machine holding the first colour: its slot of it (`main`, with its code) and its other spools; the parts' colours must all be here. */
+interface Machine { main: number; name: string; code?: string | null; colors: Spool[] }
 /** One spool of the order as chosen so far (FarmOrder::spoolLines). */
 interface SpoolLine { role: string; n: number | null; part: string | null; name: string; kind: string; hex: string | null; code: string | null }
 const UNIT_MM: Record<string, number> = { mm: 1, cm: 10, in: 25.4, m: 1000 };
@@ -25,7 +29,7 @@ const clampScale = (v: number, max: number) => Math.max(0.25, Math.min(max || 4,
 /** One change of the design: where (mm, as printed), the colour it was made in, and the spool chosen for it so far. */
 interface Change { z: number; hex: string; code: string | null; slot_id: number | null; name?: string | null }
 /** One part of a design printed by parts: its plate, the colour the design names for it, and the spool chosen so far. */
-interface Part { part: string; plate: number; label: string; hex: string | null; slot_id: number | null; name?: string | null; copies: number; minutes?: number | null; grams?: number | null; spool_hex?: string | null; model_url?: string | null }
+interface Part { part: string; plate: number; label: string; hex: string | null; slot_id: number | null; color_id?: number | null; name?: string | null; copies: number; minutes?: number | null; grams?: number | null; spool_hex?: string | null; model_url?: string | null }
 interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
@@ -273,24 +277,33 @@ export function bootFarmOrder(): void {
     let quoting = '';
     // the price depends on the machine, and a second or part spool may move the order to another machine holding the
     // same first colour: the quote carries those spools too
-    const otherSlots = (): { change_slots: (number | null)[]; part_slots: Record<string, number | null> | undefined } => ({ change_slots: changes, part_slots: state.by_parts ? Object.fromEntries((state.parts ?? []).map((p) => [p.part, partSlots[p.part] ?? null])) : undefined });
-    const quoteKey = (): string => `${picked}|${delivery}|${country}|${JSON.stringify(otherSlots())}`;
+    const otherSlots = (): { change_slots: (number | null)[]; part_slots: Record<string, number | null> | undefined } => ({ change_slots: changes, part_slots: resolved().part_slots });
+    const quoteKey = (): string => `${resolved().slot}|${delivery}|${country}|${JSON.stringify(otherSlots())}`;
     const askQuote = async (): Promise<void> => {
         const key = quoteKey();
         if (!kind() || picked === null || quoted?.key === key || quoting === key) return;
         quoting = key;
-        const r = await post(cfg.routes.quote, { slot: picked, delivery, country, ...otherSlots() });
+        const r = await post(cfg.routes.quote, { slot: resolved().slot, delivery, country, ...otherSlots() });
         if (quoting === key) quoting = '';
         if (r.ok && key === quoteKey()) { quoted = { key, price: r.json.price as unknown as Price, total: Number(r.json.total) }; render(); }
     };
     // the spool of every change of the design (bottom to top); null = no change there, the colour before goes on
     let changes: (number | null)[] = (state.changes ?? []).map((c) => c.slot_id ?? null);
     const byHand = new Set<number>();                                  // rows where "no change" was chosen on purpose
-    // printed by parts: the spool of every part (null = the main colour), kept while the machine holds it
-    const partSlots: Record<string, number | null> = Object.fromEntries((state.parts ?? []).map((p) => [p.part, p.slot_id ?? null]));
-    // the machine the last part spool was picked from (its first-colour slot), so every part stays on one machine
-    let lastMain: number | null = null;
-    const partByHand = new Set<string>();
+    // printed by parts: the colour of every part (null = the first colour) – the customer picks colours, the farm the machine:
+    // the one that holds the first colour and every part's colour (`machine`, found when the colours are rendered); a part
+    // stored on the first colour's spool was put there on purpose and stays so
+    const partColours: Record<string, number | null> = Object.fromEntries((state.parts ?? []).map((p) => [p.part, p.color_id ?? null]));
+    const partByHand = new Set<string>((state.parts ?? []).slice(1).filter((p) => p.slot_id !== null && p.color_id === (state.parts ?? [])[0]?.color_id).map((p) => p.part));
+    let machine: Machine | null = null;
+    // what the server gets: the first colour's slot on that machine and, per part, its colour's slot there – never two machines'
+    const resolved = (): { slot: number | null; part_slots: Record<string, number | null> | undefined } => {
+        if (!state.by_parts) return { slot: picked, part_slots: undefined };
+        const main = machine ? machine.main : picked;
+        return { slot: main, part_slots: Object.fromEntries((state.parts ?? []).map((p) => { const id = partColours[p.part] ?? null; const s = id !== null && machine ? machine.colors.find((x) => x.color_id === id)?.slot : undefined; return [p.part, s ?? main]; })) };
+    };
+    // colours chosen that no single machine holds together: said on the page, nothing is sent
+    const noMachine = (): boolean => !!state.by_parts && machine === null && (state.parts ?? []).slice(1).some((p) => (partColours[p.part] ?? null) !== null);
     const changeHeights = (): number[] => (state.changes ?? []).map((c) => c.z);
     let geom: BufferGeometry | null = null;
     let partFlags: Uint8Array | null = null;          // an order by parts shown as its plates: the part of every triangle
@@ -298,9 +311,9 @@ export function bootFarmOrder(): void {
     const partHex = (p: Part): string | null => {
         const c = state.colors.find((x) => x.slot === picked);
         if (state.status !== 'sliced') return p.spool_hex ?? p.hex ?? state.color?.hex ?? null;
-        const chosen = partSlots[p.part] ?? null;
-        const offer = c ? [{ slot: c.slot, hex: c.hex }, ...(c.second ?? [])] : [];
-        return (chosen === null ? c?.hex : offer.find((x) => x.slot === chosen)?.hex) ?? p.hex ?? c?.hex ?? null;
+        const id = partColours[p.part] ?? null;
+        const spools = (c?.machines ?? []).flatMap((m) => m.colors);
+        return (id === null || id === c?.color_id ? c?.hex : spools.find((x) => x.color_id === id)?.hex) ?? p.hex ?? c?.hex ?? null;
     };
     // the model as the machine will print it: the first colour, then every change at its height
     const paintTones = (): void => {
@@ -456,51 +469,57 @@ export function bootFarmOrder(): void {
         const colorTitle = $('farm-color-title');
         if (colorTitle) colorTitle.textContent = colorTitle.dataset.plain ?? '';
         if (state.by_parts && (state.parts ?? []).length) {
-            // printed by parts: every part takes this colour's spool or another spool of its machine – one plate for all of them
-            // when the machine changes spools itself, else one plate after another. The first part (the plate, the box) is
-            // the colour chosen above: it has no row of its own below, the list above is named after it
+            // printed by parts: the customer picks a colour for every part, the farm the machine – the one that holds the first
+            // colour and every part's colour (one plate for all of them when it changes spools itself, else one plate after
+            // another). A part is offered the colours some machine holds together with the first colour and the other parts'
+            // colours, so what is sent (resolved) is always one machine's slots. The first part (the plate, the body) is the
+            // colour chosen above: it has no row of its own below, the list above is named after it
             const parts = (state.parts ?? []).slice(1);
             const first = (state.parts ?? [])[0];
-            if (first) partSlots[first.part] = null;
+            if (first) partColours[first.part] = null;
             if (colorTitle && first) colorTitle.textContent = `${colorTitle.dataset.plain ?? ''}: ${first.label}`;
-            const all = c ? [{ slot: c.slot, name: c.name, kind: c.kind ?? '', hex: c.hex, photo: c.photo, code: c.code ?? null }, ...(c.second ?? [])] : [];
-            // the spools of one machine only: a spool of another machine names that machine's first-colour slot as `main`, and
-            // once a part took one, the other parts may pick that machine's spools alone (the last choice decides the machine)
-            const mainOf = (slot: number | null | undefined): number | null => (slot === null || slot === undefined || slot === c?.slot) ? null : ((c?.second ?? []).find((s) => s.slot === slot)?.main ?? c?.slot ?? null);
-            const chosenMain = lastMain ?? parts.map((p) => mainOf(partSlots[p.part])).find((m) => m !== null && m !== c?.slot) ?? null;
-            const offer = chosenMain === null || chosenMain === c?.slot ? all.filter((o) => o.slot === c?.slot || mainOf(o.slot) === null || mainOf(o.slot) === c?.slot) : all.filter((o) => o.slot === c?.slot || mainOf(o.slot) === chosenMain);
+            const machines = c?.machines ?? [];
+            const holds = (m: Machine, colours: (number | null)[]): boolean => colours.every((id) => id === null || m.colors.some((s) => s.color_id === id));
+            parts.forEach((p) => { if (partColours[p.part] === c?.color_id) partColours[p.part] = null; });
+            const offerFor = (part: string): Spool[] => {
+                const others = parts.filter((p) => p.part !== part).map((p) => partColours[p.part] ?? null);
+                const out: Spool[] = [];
+                machines.filter((m) => holds(m, others)).forEach((m) => m.colors.forEach((s) => { if (!out.some((o) => o.color_id === s.color_id)) out.push(s); }));
+                return out;
+            };
             parts.forEach((p) => {
-                const cur = partSlots[p.part];
-                if (cur !== null && cur !== undefined && offer.some((o) => o.slot === cur)) return;
-                partSlots[p.part] = null;
+                const offer = offerFor(p.part);
+                const cur = partColours[p.part] ?? null;
+                if (cur !== null && offer.some((o) => o.color_id === cur)) return;
+                partColours[p.part] = null;
                 if (partByHand.has(p.part) || !offer.length || !p.hex) return;
-                // nothing chosen yet (a fresh order, another machine): the spool nearest to the colour the design names
+                // nothing chosen yet (a fresh order, a colour no machine holds with the others): the colour nearest to the design's
                 const far = (hex: string): number => { const a = rgbOf(hex); const b = rgbOf(p.hex ?? ''); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
-                const near = [...offer].sort((a, b) => far(a.hex) - far(b.hex))[0];
-                partSlots[p.part] = near && near.slot !== c?.slot ? near.slot : null;
+                partColours[p.part] = [...offer].sort((a, b) => far(a.hex) - far(b.hex))[0]?.color_id ?? null;
             });
-            show($('farm-second'), offer.length > 0);
+            machine = machines.find((m) => holds(m, parts.map((p) => partColours[p.part] ?? null))) ?? null;
+            const any = machines.some((m) => m.colors.length > 0);
+            show($('farm-second'), any);
             if (heading0) heading0.textContent = tr('farm.order.parts_title');
-            const machines = new Set(all.map((o) => mainOf(o.slot) ?? c?.slot ?? 0)).size;
-            if (hint0) hint0.textContent = (state.one_plate ? tr('farm.order.parts_one_plate', { n: String(state.filament_changes ?? 0) }) : tr('farm.order.parts_hint', { max: String(state.max_colors ?? 4) }))
-                + (state.one_plate_required ? ` ${tr('farm.order.one_plate_required')}` : '') + (machines > 1 ? ` ${tr('farm.order.parts_one_machine')}` : '')
+            if (hint0) hint0.textContent = (noMachine() ? `${tr('farm.order.colors_no_machine')} ` : '')
+                + (state.one_plate ? tr('farm.order.parts_one_plate', { n: String(state.filament_changes ?? 0) }) : tr('farm.order.parts_hint', { max: String(state.max_colors ?? 4) }))
+                + (state.one_plate_required ? ` ${tr('farm.order.one_plate_required')}` : '') + (machines.length > 1 ? ` ${tr('farm.order.parts_one_machine')}` : '')
                 + (state.one_plate_required && (state.copies ?? 1) > 1 ? ` ${tr('farm.order.one_plate_copies')}` : '');
-            if (list0 && offer.length) {
-                const tile = (part: string, slot: number | null, name: string, kind: string, swatch: string, code: string | null | undefined): string => {
-                    const on = slot === null ? partSlots[part] === null || partSlots[part] === c?.slot : slot === partSlots[part];
-                    return `<button type="button" role="radio" aria-checked="${on}" data-part="${esc(part)}" data-second="${slot ?? ''}"
+            if (list0 && any) {
+                const tile = (part: string, s: Spool | null, name: string, kind: string, swatch: string, code: string | null | undefined): string => {
+                    const on = s === null ? (partColours[part] ?? null) === null : partColours[part] === s.color_id;
+                    return `<button type="button" role="radio" aria-checked="${on}" data-part="${esc(part)}" data-colour="${s?.color_id ?? ''}"
                         class="flex items-center gap-2 rounded-xl border bg-white p-2 text-left text-sm ${on ? 'border-action ring-2 ring-action' : 'border-slate-300'}">
                         ${swatch}<span class="min-w-0"><span class="font-semibold">${esc(name)}</span>${kind ? `<br><span class="text-xs text-slate-500">${esc(kind)}</span>` : ''}${code ? `<br>${codeTag([code])}` : ''}</span>
                     </button>`;
                 };
                 list0.innerHTML = parts.map((p) => `<div class="col-span-full mt-1 text-xs font-semibold text-slate-700">${esc(p.label)}${p.minutes ? ` <span class="font-normal text-slate-500">· ${p.minutes} min, ${p.grams ?? ''} g</span>` : ''}</div>`
                     + tile(p.part, null, tr('farm.order.part_main'), c?.name ?? '', dot0(c?.hex ?? '#ffffff'), c?.code)
-                    + offer.filter((o) => o.slot !== c?.slot).map((o) => tile(p.part, o.slot, o.name, o.kind ?? '', o.photo ? `<img src="${esc(o.photo)}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">` : dot0(o.hex), o.code)).join('')).join('');
+                    + offerFor(p.part).map((o) => tile(p.part, o, o.name, o.kind ?? '', o.photo ? `<img src="${esc(o.photo)}" alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover">` : dot0(o.hex), o.code)).join('')).join('');
                 list0.querySelectorAll<HTMLButtonElement>('button[data-part]').forEach((b) => b.addEventListener('click', () => {
                     const part = b.dataset.part ?? '';
-                    partSlots[part] = b.dataset.second ? Number(b.dataset.second) : null;
-                    if (partSlots[part] === null) partByHand.add(part); else partByHand.delete(part);
-                    lastMain = mainOf(partSlots[part]);
+                    partColours[part] = b.dataset.colour ? Number(b.dataset.colour) : null;
+                    if (partColours[part] === null) partByHand.add(part); else partByHand.delete(part);
                     render();
                 }));
             }
@@ -552,9 +571,11 @@ export function bootFarmOrder(): void {
         const spools = [{ slot: c.slot, name: c.name, kind: c.kind ?? '', hex: c.hex, code: c.code ?? null }, ...(c.second ?? []).map((s) => ({ slot: s.slot, name: s.name, kind: s.kind ?? '', hex: s.hex, code: s.code ?? null }))];
         const tag = (label: string, s: { name: string; kind: string; hex: string; code: string | null }): string => `<li class="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-2.5 py-1">
             <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-slate-300" style="background:${esc(s.hex)}"></span>${label ? `<span class="text-slate-500">${esc(label)}</span>` : ''}<span class="font-semibold">${esc(s.name)}</span><span class="text-xs text-slate-500">${esc(s.kind)}</span>${s.code ? codeTag([s.code]) : ''}</li>`;
-        const tags = [tag('', spools[0])];
+        // the first colour with the code of its spool on the machine the parts settled on
+        const tags = [tag('', machine && machine.main !== c.slot ? { ...spools[0], code: machine.code ?? spools[0].code } : spools[0])];
         if (state.by_parts) {
-            (state.parts ?? []).forEach((p) => { const s = spools.find((x) => x.slot === partSlots[p.part]); if (s && s.slot !== c.slot) tags.push(tag(`${p.label}:`, s)); });
+            const held = machine?.colors ?? (c.machines ?? []).flatMap((m) => m.colors);
+            (state.parts ?? []).forEach((p) => { const id = partColours[p.part] ?? null; const s = id === null || id === c.color_id ? null : held.find((x) => x.color_id === id); if (s) tags.push(tag(`${p.label}:`, { name: s.name, kind: s.kind ?? '', hex: s.hex, code: s.code ?? null })); });
         } else {
             (state.changes ?? []).forEach((w, i) => {
                 const s = spools.find((x) => x.slot === changes[i]);
@@ -695,7 +716,7 @@ export function bootFarmOrder(): void {
             const short = total() !== null ? Math.max(0, total()! - s.balance) : 0;
             payBtn.dataset.need = short > 0.005 ? String(Math.ceil(short)) : '';
             payBtn.textContent = payBtn.dataset.need ? (s.balance > 0.005 ? tr('farm.order.pay_card_rest', { amount: money(Math.ceil(short)), balance: money(s.balance) }) : tr('farm.order.pay_card', { amount: money(Math.ceil(short)) })) : tr('farm.order.pay');
-            payBtn.disabled = picked === null || total() === null || deliveryMissing() !== null || !($('farm-terms') as HTMLInputElement).checked;
+            payBtn.disabled = picked === null || total() === null || deliveryMissing() !== null || noMachine() || !($('farm-terms') as HTMLInputElement).checked;
             const topup = $<HTMLAnchorElement>('farm-topup');
             if (topup && payBtn.dataset.need) { topup.href = `${cfg.routes.topup}&need=${payBtn.dataset.need}`; show(topup, true); } else show(topup, false);
             // back from the card payment: the page waits for the bank's word; a payment that arrived but could not start the order says so
@@ -817,7 +838,8 @@ export function bootFarmOrder(): void {
         // the request takes a moment: the buttons say so and cannot be pressed twice
         [btn, recolor].forEach((b) => { if (b) { b.disabled = true; b.dataset.label = b.textContent ?? ''; b.textContent = tr('farm.order.reslicing'); } });
         show($('farm-error'), false);
-        const r = await post(cfg.routes.reslice, { ...wanted, slot: picked });
+        // the spools of the parts travel with the first colour: the server keeps them on its machine (20 Oct 2026, order 198)
+        const r = await post(cfg.routes.reslice, { ...wanted, slot: resolved().slot, ...otherSlots() });
         [btn, recolor].forEach((b) => { if (b) { b.disabled = false; b.textContent = b.dataset.label ?? ''; } });
         if (r.ok) { state = r.json as unknown as FarmState; picked = state.slot ?? null; wanted.by_parts = !!state.by_parts; render(); poll(); } else { before = null; const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); }
     });
@@ -843,7 +865,7 @@ export function bootFarmOrder(): void {
         btn.disabled = true; btn.textContent = tr('farm.order.paying'); show(errBox, false); show($('farm-topup'), false);
         // short of credit: the gateway's page for what is missing; the webhook then pays the order with these very choices
         const r = await post(btn.dataset.need ? cfg.routes.checkout : cfg.routes.pay, {
-            slot: picked, change_slots: changes, part_slots: state.by_parts ? Object.fromEntries((state.parts ?? []).map((p) => [p.part, partSlots[p.part] ?? picked])) : undefined, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
+            slot: resolved().slot, change_slots: changes, part_slots: resolved().part_slots, delivery, terms: ($('farm-terms') as HTMLInputElement).checked, expected_total: total(),
             video_consent: ($('farm-video-consent') as HTMLInputElement | null)?.checked ?? false,
             note: (form.elements.namedItem('note') as HTMLTextAreaElement).value, address: kind() ? address : null,
         });

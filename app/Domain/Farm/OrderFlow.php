@@ -112,20 +112,9 @@ final class OrderFlow
         }
         $second = $picked && $picked[0]['slot_id'] !== $offer['slot']->id ? $others->firstWhere('id', $picked[0]['slot_id']) : null;
 
-        // an order printed by parts: every part takes the chosen spool itself or another spool of its machine
-        $partPlates = null;
-        if ($order->isByParts()) {
-            $spools = $this->orders->secondSpools($offer['slot']);
-            $partPlates = [];
-            foreach ($order->partPlates() as $plate) {
-                $id = (int) ($partSlotIds[$plate['part']] ?? 0);
-                $spool = ! $id || $id === (int) $offer['slot']->id ? $offer['slot'] : ($spools->firstWhere('id', $id) ?? throw new FarmRefusal('color_gone'));
-                $partPlates[] = ['slot_id' => (int) $spool->id, 'color_id' => (int) $spool->farm_color_id] + $plate;
-            }
-            if (count(array_unique(array_merge([(int) $offer['slot']->farm_color_id], array_column($partPlates, 'color_id')))) > FarmOrder::MAX_COLORS) {
-                throw new FarmRefusal('too_many_colors', ['n' => FarmOrder::MAX_COLORS]);
-            }
-        }
+        // an order printed by parts: every part takes the chosen spool itself or another spool of its machine; a spool of
+        // another machine is refused (one_machine), not sliced for and found out after the payment
+        $partPlates = $order->isByParts() ? $this->orders->partPlatesOn($offer['slot'], $order->partPlates(), (array) $partSlotIds, false) : null;
 
         $price = $this->orders->priceFor($order, $offer['printer'], $delivery, $offer['color']->material, $destination['country'] ?? null, $currency);
         if ($expectedTotal !== null && abs($expectedTotal - $price['total']) > 0.009) {

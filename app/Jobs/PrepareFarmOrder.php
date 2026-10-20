@@ -96,6 +96,20 @@ class PrepareFarmOrder implements ShouldQueue
         }
 
         try {
+            if ($order->isByParts() && ($main = $order->slot) && ($slotIds = array_filter(array_map('intval', array_column($order->partPlates(), 'slot_id'))))
+                && FarmPrinterSlot::whereIn('id', $slotIds)->where('farm_printer_id', '!=', $main->farm_printer_id)->exists()) {
+                // the parts' spools sit in another machine than the first colour (order 198, 20 Oct 2026: the page moved the
+                // first colour and the parts kept the old machine's spools): the same colours on this machine, or the order
+                // stops and says so rather than slicing for spools no machine of this G-code holds
+                $plates = $orders->partPlatesOn($main, $order->partPlates());
+                if (array_column($plates, 'color_id') !== array_map('intval', array_column($order->partPlates(), 'color_id'))) {
+                    $flow->fail($order, 'parts_machine', 'system');
+
+                    return;
+                }
+                $order->update(['part_plates' => $plates]);
+                $clock->note('part_spools_moved', count($slotIds));
+            }
             if ($order->isByParts()) {
                 // the parts together on one plate, a filament per spool, when the machine can change spools and they fit
                 // (docs/AL.md §10); else every part its own plate from its own spool, one after another
