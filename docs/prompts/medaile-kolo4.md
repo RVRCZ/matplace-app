@@ -24,3 +24,4 @@ testy enginu, ukázky jen když se změní vzhled). Ověř řezem (bez podpěr, 
 2. **Mezera mezi půlkoulemi o dalších 1,2 mm menší** (1,6 → 0,4 mm); spočítat přesah a sílu zacvaknutí, do P.md; `LINK[3]` = 0,4.
 
 Větev `feature/medallion-round5` z main, P.md §8d, řez bez podpěr, push + zpráva; po nasazení zkušební kalkulace.
+3. **Žehlení horní plochy placky** (Roman 22. 10.): návrh medaile nese `tool_params.process = {ironing_type: topmost}` (přepínač „Žehlení horní plochy“, výchozí ano, „+ několik minut“); farma a kalkulace přepis převezmou (session 2, feature/design-process-hints, whitelist klíčů ironing_*; AL.md §10.9).
