@@ -48,12 +48,24 @@ final class AccessLog
                 }
                 yield [
                     'ip' => $m[1], 'time' => $at->getTimestamp(), 'method' => $m[3],
-                    'path' => '/'.trim((string) parse_url($m[4], PHP_URL_PATH), '/'),
+                    'path' => self::path($m[4]),
                     'status' => (int) $m[5], 'referer' => $m[6] ?? '', 'agent' => $m[7] ?? '',
                 ];
             }
             fclose($handle);
         }
+    }
+
+    /**
+     * The path of a request target as the application sees it: without the query, a full URL reduced to its path.
+     * A target that starts with "//" stays a path (parse_url would take "//blog/x" for a host "blog"; scanners send
+     * such targets on purpose).
+     */
+    public static function path(string $target): string
+    {
+        $path = preg_match('~^[a-z][a-z0-9+.-]*://~i', $target) ? (string) parse_url($target, PHP_URL_PATH) : (string) preg_replace('/[?#].*$/s', '', $target);
+
+        return '/'.trim($path, '/');
     }
 
     /** A request for one of the page's own files: what a browser fetches after the page and a robot does not. */

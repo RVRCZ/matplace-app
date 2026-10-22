@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\DB;
  *   burst      one address opened many "new visitors" in a day and none of them did anything else — a browser
  *              keeps its cookie, a robot does not
  *   no-assets  (with --logs) whoever fetched the page never fetched a stylesheet or a script of the site
+ *   scanner    (with --logs) the page was asked for as a scanner asks: from a bare IP address as the referer, or
+ *              for an address of another system (Bots::scanner)
  *
  * Nothing is deleted and no IP address or User-Agent is written anywhere; a visit already confirmed by its browser
  * or by an action is never touched. Running it again changes nothing.
@@ -124,12 +126,12 @@ class EventsBots extends Command
         $byDay = [];
         foreach ($visits as $v) {
             $day = substr((string) $v->created_at, 0, 10);
-            $byDay[$day] ??= ['day' => $day, 'unconfirmed' => 0, 'agent' => 0, 'burst' => 0, 'no-assets' => 0, 'left' => 0];
+            $byDay[$day] ??= ['day' => $day, 'unconfirmed' => 0, 'agent' => 0, 'burst' => 0, 'no-assets' => 0, 'scanner' => 0, 'left' => 0];
             $byDay[$day]['unconfirmed']++;
             $byDay[$day][$verdict[$v->id] ?? 'left']++;
         }
         ksort($byDay);
-        $this->table(['day', 'unconfirmed visits', 'robot by name', 'robot by burst', 'robot by log', 'left as people'], array_map('array_values', $byDay));
+        $this->table(['day', 'unconfirmed visits', 'robot by name', 'robot by burst', 'robot by log', 'scanner', 'left as people'], array_map('array_values', $byDay));
         $this->info(sprintf('%d visits since %s, %d unconfirmed; %d are robots, %d stay.', $total, $since->toDateString(), $visits->count(), count($verdict), $visits->count() - count($verdict)));
 
         if ($this->option('missing')) {
@@ -178,6 +180,7 @@ class EventsBots extends Command
         $hits = [];         // visit id → list of [client number, same address as the session]
         $ipOf = $visits->pluck('ip', 'id');
         $missing = [];
+        $scanned = [];      // visit id → its own line was a scanner's
         $log = new AccessLog($files);
         foreach ($log->read() as $line) {
             if ($line['time'] < $from - 86400) {
@@ -189,15 +192,20 @@ class EventsBots extends Command
                 $clients[$key][1] = true;
             }
             if ($line['method'] === 'GET' && $line['status'] === 200) {
+                $scan = Bots::scanner($line['path'], $line['referer']);
                 foreach ($wanted[$line['time'].'|'.$line['path']] ?? [] as $id) {
                     $hits[$id][] = [$key, $ipOf[$id] === $line['ip']];
+                    if ($scan && $ipOf[$id] === $line['ip']) {
+                        $scanned[$id] = true;
+                    }
                 }
             }
             if ($line['status'] === 404 && $line['time'] >= $from && $line['time'] < $liveFrom && in_array($line['method'], ['GET', 'HEAD'], true) && MissingPage::worthKeeping($line['path'])) {
                 $m = &$missing[$line['path']];
                 $m ??= ['hits' => 0, 'bots' => 0, 'first' => $line['time'], 'last' => $line['time'], 'referer' => null];
                 $m['hits']++;
-                $m['bots'] += Bots::byAgent($line['agent']) !== null || $line['method'] === 'HEAD' ? 1 : 0;
+                // a scanner is a robot whatever it calls itself (Bots::scanner: its address, or a referer of a bare IP)
+                $m['bots'] += Bots::byAgent($line['agent']) !== null || $line['method'] === 'HEAD' || Bots::scanner($line['path'], $line['referer']) ? 1 : 0;
                 $m['last'] = max($m['last'], $line['time']);
                 $m['first'] = min($m['first'], $line['time']);
                 $host = strtolower((string) parse_url($line['referer'], PHP_URL_HOST));
@@ -214,6 +222,11 @@ class EventsBots extends Command
 
         $verdict = [];
         foreach ($hits as $id => $candidates) {
+            if (isset($scanned[$id])) {
+                $verdict[$id] = 'scanner';
+
+                continue;
+            }
             // the line from the session's own address when there is one; otherwise every line of that second and page
             $own = array_filter($candidates, fn (array $c) => $c[1]);
             $why = null;

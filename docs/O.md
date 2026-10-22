@@ -151,3 +151,23 @@ merge jen fast‑forward, `composer install`, `npm ci && npm run build`, `migrat
 - **YouTube Studio** – odkud chodí diváci a kolik jich kliklo na odkaz v popisu; s UTM v popisu teď uvidíme
   druhou půlku u nás.
 - **Meta pixel / Conversions API** – beze změny, jen se souhlasem.
+
+## Skenery (TODO #36, 19. 10. 2026)
+
+Skenery zranitelností se v přehledu za 7 dní počítaly jako lidé: /wp 276 „lidí“, /phpinfo 77, /_profiler/phpinfo 89,
+/credentials 33 s refererem `178.104.162.164//.aws/credentials` a spamové slugy `/119211/is-binary-options…`.
+`App\Support\Bots::scanner(cesta, referer)` je teď pozná, a to všude: návštěva skeneru je `crawl` se zdrojem
+`scanner` (nikdy osoba), jeho 404 je robotí zásah (živě i z logu) a import logu označí starou návštěvu `bot =
+scanner`. Pozná je podle cesty (`/wp*`, `*.php`, `/phpinfo`, `/_profiler`, tečkové soubory jako `.aws` a `.env`,
+`/credentials`, `/vendor/`, `/cgi-bin`, `/phpmyadmin`, číselný spamový slug) a podle refereru (holá IP adresa
+místo domény, nebo referer, který je sám cestou skeneru). Seznam „Adresy, které neexistují“ třídí řádky až při
+čtení, takže platí i pro stará data. Řádky skenerů v něm nejsou a místo nich je jedno číslo „skenery: n“ (v adminu
+i v týdenním e‑mailu).
+
+**„/blog“ s refererem wp-login.php:** to není sražení cesty. `/blog//wp-login.php` zůstává v aplikaci i ve čtení
+logu celé a seznam ho jako `.php` nesbírá. Na `/blog` se ale v logu ořízne `/blog/?author=1` (WordPress sken
+uživatelů). Referer s IP serveru ukazuje, že skenery míří na `http://178.104.162.164/…`. Nginx jim tam (default
+server) vrací 404 a do společného access logu je zapíše bez hostitele, takže vypadají jako 404 na matplace.com.
+Doporučení pro server: default server s vlastním `access_log` (nebo `return 444`), pak se do logu webu nedostanou
+vůbec. Mimochodem opraveno čtení logu: cíl začínající `//` vzal `parse_url` za hostitele (`//blog/x` → `/x`,
+`//wp-login.php` → `/`). Teď se čte jako cesta, stejně jako v aplikaci.

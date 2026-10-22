@@ -132,7 +132,7 @@
                         @endforelse
                     </tbody>
                 </table>
-                <p class="border-t border-slate-100 px-3 py-2 text-xs text-slate-500">Kam lidé chodí a nic tam není: kandidáti na přesměrování v <code>config/legacy.php</code>. Pokusy o cizí systémy (wp-login.php apod.) a chybějící obrázky se nesbírají.</p>
+                <p id="stats-scanners" class="border-t border-slate-100 px-3 py-2 text-xs text-slate-500">Kam lidé chodí a nic tam není: kandidáti na přesměrování v <code>config/legacy.php</code>. Skenery (cizí systémy jako /wp, /phpinfo, /.env, /credentials, spamové adresy a dotazy s odkazem z holé IP adresy) se nepočítají ani mezi lidi, ani sem: <strong>skenery: {{ $o['scanners'] }}</strong>. Chybějící obrázky se nesbírají.</p>
             </div>
         </div>
     </div>

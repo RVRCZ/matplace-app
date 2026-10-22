@@ -5,8 +5,10 @@ namespace App\Domain\Stats;
 use App\Models\Event;
 use App\Models\MissingPage;
 use App\Models\SearchQuery;
+use App\Support\Bots;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -51,6 +53,7 @@ final class Overview
             'funnel' => $this->funnel($from, $until, $before, $people, $previous),
             'searches' => $this->searches($from, $until),
             'missing' => $this->missing($from),
+            'scanners' => $this->scanners($from),
             'robots' => $this->robots($from, $until),
         ];
     }
@@ -193,15 +196,34 @@ final class Overview
 
     /**
      * Addresses that were not found, the ones people asked for first: candidates for a redirect in config/legacy.php.
+     * What scanners ask for (Bots::scanner: other systems' addresses, or a referer of a bare IP address) is no
+     * candidate and stays out; it is one number of its own (scanners()). Judged when read, so older rows obey too.
      *
      * @return list<array{path: string, people: int, robots: int, referer: ?string, last: ?Carbon}>
      */
     private function missing(Carbon $from): array
     {
+        return $this->missingRows($from)->reject(fn ($r) => $this->scanned($r))->take(30)
+            ->map(fn ($r) => ['path' => (string) $r->path, 'people' => (int) $r->people, 'robots' => (int) $r->robots, 'referer' => $r->referer, 'last' => $r->last_at])->values()->all();
+    }
+
+    /** How often scanners asked for something that is not here (every hit of their rows, people's column too). */
+    private function scanners(Carbon $from): int
+    {
+        return (int) $this->missingRows($from)->filter(fn ($r) => $this->scanned($r))->sum(fn ($r) => (int) $r->people + (int) $r->robots);
+    }
+
+    /** @return Collection<int, object> */
+    private function missingRows(Carbon $from)
+    {
         return MissingPage::where('last_at', '>=', $from)
             ->selectRaw('path, referer, last_at, ((hits - bot_hits) + (log_hits - log_bot_hits)) as people, (bot_hits + log_bot_hits) as robots')
-            ->orderByDesc('people')->orderByDesc('robots')->limit(30)->get()
-            ->map(fn ($r) => ['path' => (string) $r->path, 'people' => (int) $r->people, 'robots' => (int) $r->robots, 'referer' => $r->referer, 'last' => $r->last_at])->all();
+            ->orderByDesc('people')->orderByDesc('robots')->get()->toBase();
+    }
+
+    private function scanned(object $row): bool
+    {
+        return Bots::scanner((string) $row->path, $row->referer ? 'http://'.$row->referer : null);
     }
 
     /**

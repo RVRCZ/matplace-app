@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Stats\AccessLog;
 use App\Domain\Stats\Funnel;
 use App\Domain\Stats\Humans;
 use App\Domain\Stats\Overview;
@@ -353,6 +354,72 @@ class StatsTest extends TestCase
         Mail::fake();
         $this->artisan('matplace:stats-report --to=roman@example.com')->assertSuccessful();
         Mail::assertSent(StatsReportMail::class, fn ($mail) => $mail->hasTo('roman@example.com') && str_contains($mail->render(), 'Odkud přišli') && str_contains($mail->report['subject'], '2 lidí'));
+    }
+
+    /** TODO #36: what scanners ask for is a robot's everywhere – people, pages, the list of missing addresses (one number). */
+    public function test_scanners_are_robots_everywhere_and_one_number_in_the_missing_list(): void
+    {
+        // their addresses, and the referer they write themselves (a bare IP, or another system's address)
+        foreach (['/wp', '/wp/', '/wp-login.php', '/wordpress/wp-admin', '/xmlrpc.php', '/phpinfo', '/phpinfo.php', '/_profiler/phpinfo', '/.aws/credentials', '/.env', '/credentials', '/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php', '/119211/is-binary-options-trading-legal', '/blog//wp-login.php', '/cgi-bin/x'] as $path) {
+            $this->assertTrue(Bots::scanner($path), $path);
+        }
+        foreach (['/', '/tools/vase', '/blog', '/blog/jak-vznika-busta-z-fotky', '/c/abc123', '/en/tools/qr', '/model/drak', '/stary-cenik', '/wpisy', '/tools/cable-holder'] as $path) {
+            $this->assertFalse(Bots::scanner($path), $path);
+        }
+        $this->assertTrue(Bots::scanner('/blog', 'http://178.104.162.164/blog/wp-login.php'));
+        $this->assertTrue(Bots::scanner('/credentials', 'http://178.104.162.164//.aws/credentials'));
+        $this->assertTrue(Bots::scanner('/', 'http://[2a01:4f8::1]/'));
+        $this->assertTrue(Bots::scanner('/blog', 'https://example.org/wp-login.php'));
+        $this->assertFalse(Bots::scanner('/blog', 'https://www.google.com/search?q=matplace'));
+        $this->assertFalse(Bots::scanner('/tools/vase', 'https://matplace.com/tools'));
+
+        // live: a scanner on a missing address is a robot's hit; on a page it is a crawl, never a visit of a person
+        $this->get('/phpinfo', ['User-Agent' => self::BROWSER])->assertNotFound();
+        $this->assertSame([1, 1], [MissingPage::sole()->hits, MissingPage::sole()->bot_hits]);
+        $this->get('/blog', ['User-Agent' => self::BROWSER, 'Referer' => 'http://178.104.162.164/blog/wp-login.php'])->assertOk();
+        $this->assertSame(0, Event::where('type', 'visit')->count());
+        $this->assertSame(['scanner'], Event::where('type', 'crawl')->pluck('source')->all());
+
+        // the overview: the rows of scanners (also old ones, counted as people before) leave the list for one number
+        $this->travelTo('2026-10-19 12:00:00');
+        MissingPage::query()->delete();
+        $row = fn (string $path, int $people, int $robots, ?string $referer = null) => MissingPage::create(['path' => $path, 'hits' => $people + $robots, 'bot_hits' => $robots, 'referer' => $referer, 'first_at' => '2026-10-13 10:00:00', 'last_at' => '2026-10-18 10:00:00']);
+        $row('/wp', 276, 76);
+        $row('/phpinfo', 77, 0);
+        $row('/_profiler/phpinfo', 89, 0);
+        $row('/credentials', 33, 0, '178.104.162.164//.aws/credentials');
+        $row('/119211/is-binary-options-trading-legal', 5, 2);
+        $row('/blog', 239, 0, '178.104.162.164/blog/wp-login.php');
+        $row('/stary-cenik', 3, 1, 'www.seznam.cz/hledani');
+        $o = app(Overview::class)->compute(7, now()->startOfDay());
+        $this->assertSame(['/stary-cenik'], array_column($o['missing'], 'path'));
+        $this->assertSame(276 + 76 + 77 + 89 + 33 + 5 + 2 + 239, $o['scanners']);
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($admin)->get('/admin/stats')->assertOk()->assertSee('skenery: 797')->assertDontSee('/_profiler/phpinfo');
+        $this->artisan('matplace:stats-report --print')->expectsOutputToContain('Skenery (cizí systémy, spamové adresy, odkaz z holé IP): 797×')->assertSuccessful();
+
+        // the log reads paths as the application does: a target starting with "//" is a path (parse_url took "//blog/x"
+        // for the host "blog"), no query, double slashes inside stay
+        $this->assertSame(['/blog//wp-login.php', '/blog/x'], [AccessLog::path('/blog//wp-login.php'), AccessLog::path('//blog/x')]);
+        $this->assertSame(['/blog', '/wp-login.php', '/'], [AccessLog::path('/blog/?author=1'), AccessLog::path('http://178.104.162.164/wp-login.php'), AccessLog::path('/')]);
+
+        // and the log's verdicts: an old visit whose own line came from a bare IP is a scanner's; a scanner's 404 is a robot's
+        MissingPage::query()->delete();
+        $visit = Event::create(['session_id' => AnonymousSession::start('203.0.113.50', self::BROWSER)->id, 'type' => 'visit', 'source' => 'direct', 'locale' => 'cs', 'meta' => ['path' => '/blog']]);
+        $visit->forceFill(['created_at' => '2026-10-15 10:00:00'])->save();
+        $log = storage_path('framework/testing/access-'.uniqid().'.log');
+        @mkdir(dirname($log), 0777, true);
+        file_put_contents($log, implode("\n", [
+            '203.0.113.50 - - [15/Oct/2026:10:00:00 +0000] "GET /blog/?author=1 HTTP/1.1" 200 512 "http://178.104.162.164/blog/wp-login.php" "'.self::BROWSER.'"',
+            '203.0.113.50 - - [15/Oct/2026:10:00:01 +0000] "GET /build/assets/app.css HTTP/1.1" 200 512 "-" "'.self::BROWSER.'"',
+            '203.0.113.51 - - [15/Oct/2026:10:05:00 +0000] "GET /phpinfo HTTP/1.1" 404 10 "-" "'.self::BROWSER.'"',
+        ])."\n");
+        MissingPage::query()->delete();
+        $this->artisan('matplace:events-bots', ['--since' => '2026-10-10', '--logs' => $log, '--missing' => true])->assertSuccessful();
+        $this->assertSame('scanner', $visit->fresh()->meta['bot'] ?? null);
+        $this->assertSame([1, 1], [MissingPage::sole()->log_hits, MissingPage::sole()->log_bot_hits]);
+        @unlink($log);
     }
 
     public function test_robot_pages_are_folded_after_a_month_and_the_rest_stays(): void

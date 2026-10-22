@@ -13,6 +13,9 @@ use Illuminate\Http\Request;
  *   it does not introduce itself as a browser at all (no "Mozilla/", or no User-Agent),
  *   it is a HEAD request, or it does not ask for a page (no text/html in Accept).
  *
+ *   it is a scanner: it asks for addresses of other systems (wp-login.php, /phpinfo, /.env …), or says it came from a
+ *   page of a bare IP address or from such an address (scanners set the address they try as the referer).
+ *
  * A robot that pretends to be a browser passes all of this. It is told apart later: a real browser runs the page's
  * script, which confirms the visit (Track::seen); a visit nobody confirmed is not counted as a person.
  */
@@ -48,6 +51,32 @@ final class Bots
     /** words no browser carries in its name */
     private const WORDS = '/bot|crawl|spider|slurp|preview|lighthouse|pagespeed|headless|phantomjs|curl|wget|python|monitor|scan|fetch|feed|archiver|validator|scrapy|httpclient|okhttp|java\/|go-http|libwww|axios|node-fetch|guzzle/i';
 
+    /**
+     * Addresses only a scanner asks for: other systems' pages and files, server secrets, spam slugs (docs/O.md).
+     * None of them is a page of ours; old WordPress addresses of matplace.cz redirect (301) since 17 Oct 2026.
+     */
+    private const SCANNER_PATH = '~^/(?:(?:wp|wordpress)(?:[/-]|$)|.*\.(?:php\d?|asp|aspx|jsp|cgi|env|ini|sql|bak|yml|yaml|log)$|(?:.*/)?\.[a-z0-9_-]+|_profiler|phpinfo|credentials|vendor/|cgi-bin|phpmyadmin|pma(?:/|$)|actuator|solr|_ignition|telescope|owa(?:/|$)|autodiscover|boaform|hnap1|server-status|\d{3,}/[a-z0-9-]+)~i';
+
+    /** Is it a scanner: the address asked for, or the page it says it came from? */
+    public static function scanner(string $path, ?string $referer = null): bool
+    {
+        if (preg_match(self::SCANNER_PATH, '/'.ltrim($path, '/')) === 1) {
+            return true;
+        }
+        $referer = trim((string) $referer);
+        if ($referer === '') {
+            return false;
+        }
+        $host = trim((string) parse_url($referer, PHP_URL_HOST), '[]');
+        // nobody follows a link from a page of a bare IP address (ours, 178.104.162.164, or anyone's): a scanner wrote it
+        if ($host !== '' && filter_var($host, FILTER_VALIDATE_IP)) {
+            return true;
+        }
+        $from = (string) parse_url($referer, PHP_URL_PATH);
+
+        return $from !== '' && preg_match(self::SCANNER_PATH, '/'.ltrim($from, '/')) === 1;
+    }
+
     /** The robot's family, `other` for a robot nobody listed, null for a browser. */
     public static function byAgent(?string $agent): ?string
     {
@@ -74,6 +103,9 @@ final class Bots
         $family = self::byAgent($request->userAgent());
         if ($family !== null) {
             return $family;
+        }
+        if (self::scanner($request->path(), $request->headers->get('referer'))) {
+            return 'scanner';
         }
         if ($request->isMethod('HEAD')) {
             return 'other';
