@@ -40,6 +40,9 @@ final class OrderService
         }
         // whatever came in (STL, 3MF, STEP, OBJ…), the upload pipeline normalised it to an STL; only a file that failed
         // that or is still being processed cannot be printed
+        if ($file->error === 'too_many_triangles') {
+            throw new FarmRefusal('too_many_triangles', ['max' => number_format((int) config('engines.mesh.max_triangles') / 1e6, 0)]);
+        }
         if (! $file->isReady()) {
             throw new FarmRefusal('not_ready');
         }

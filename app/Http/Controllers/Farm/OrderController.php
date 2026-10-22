@@ -769,6 +769,9 @@ class OrderController extends Controller
             'stage_total' => count(self::STAGES),
             'error' => $order->error,
             'error_text' => $order->error ? __('farm.error.'.$order->error, $this->errorDataFor($order, $check)) : null,
+            // a model of millions of triangles takes minutes to check and slice (thinned first, docs/AL.md §10.11): said while it works
+            'big_model' => ($triangles = (int) ($order->modelFile?->triangles ?? 0)) > (int) config('engines.mesh.decimate_above')
+                ? __('farm.order.big_model', ['n' => number_format($triangles / 1e6, 1, app()->getLocale() === 'en' ? '.' : ',', '')]) : null,
             'quality' => $order->quality,
             'strength' => $order->strength,
             'copies' => $order->copies,

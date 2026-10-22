@@ -7,6 +7,7 @@ use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\SliceParams;
 use App\Engines\DTO\SliceResult;
 use App\Engines\Exceptions\SlicerException;
+use App\Engines\Mesh\MeshDecimator;
 use App\Engines\Mesh\StlFile;
 use App\Support\Stopwatch;
 use Illuminate\Support\Facades\File;
@@ -40,7 +41,7 @@ final class OrcaSlicer implements Slicer
         $work = $this->workDir('job');
         $clock = new Stopwatch;
         try {
-            $mesh = $clock->measure('mesh', fn () => $this->prepareMesh($meshPath, $params, $work));
+            $mesh = $clock->measure('mesh', fn () => $this->prepareMesh($meshPath, $params, $work, $clock));
             $placed = null;
             $machine = $this->patched($this->profileFile($params->profiles['machine'] ?? null) ?? $this->config['profiles'].'/'.$this->config['machine'], $params->overrides['machine'] ?? [], $work.'/machine.json');
             // a farm printer pairs its own machine profile with the shared process/filament profiles (written for the
@@ -199,8 +200,22 @@ final class OrcaSlicer implements Slicer
         return StlFile::stats($meshPath)->bbox;
     }
 
-    private function prepareMesh(string $meshPath, SliceParams $params, string $work): string
+    private function prepareMesh(string $meshPath, SliceParams $params, string $work, ?Stopwatch $clock = null): string
     {
+        // a mesh of millions of triangles is thinned first (MeshDecimator, docs/AL.md §10.11): the slicer and the scaling
+        // below work on the thinned copy, the file given stays as it is
+        $decimator = app(MeshDecimator::class);
+        if ($decimator->wants($meshPath)) {
+            $thin = $work.'/thin.stl';
+            $r = $decimator->decimate($meshPath, $thin);
+            $clock?->note('decimate_s', $r['seconds'])->note('triangles_in', $r['before'])->note('triangles_sliced', $r['after'] ?? $r['before']);
+            if ($r['applied']) {
+                $clock?->note('decimate_deviation_mm', $r['deviation_mm'])->note('decimate_peak_mm', $r['peak_mm'] ?? null);
+                $meshPath = $thin;
+            } else {
+                $clock?->note('decimate_skipped', $r['reason']);
+            }
+        }
         if (abs($params->scale - 1.0) < 1e-6) {
             return $meshPath;
         }

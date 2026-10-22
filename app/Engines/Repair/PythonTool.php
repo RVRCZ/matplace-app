@@ -3,10 +3,11 @@
 namespace App\Engines\Repair;
 
 use App\Engines\Exceptions\EngineException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Process;
 
 /** Thin runner around engines/python/mesh_tool.py (trimesh, optional cadquery). Returns the tool's JSON output. */
-final class PythonTool
+final class PythonTool implements ScriptRunner
 {
     private ?array $probe = null;
 
@@ -56,7 +57,7 @@ final class PythonTool
     {
         if ($this->probe === null) {
             // the probe imports the CAD kernel (seconds): ask once an hour, not on every page view
-            $cached = \Illuminate\Support\Facades\Cache::get('python_probe:'.md5((string) $this->config['bin']));
+            $cached = Cache::get('python_probe:'.md5((string) $this->config['bin']));
             if (is_array($cached) && ! empty($cached['ok'])) {
                 return $this->probe = $cached;
             }
@@ -65,7 +66,7 @@ final class PythonTool
                 $json = json_decode(trim($r->output()), true);
                 $this->probe = ($r->successful() && is_array($json)) ? $json : ['ok' => false];
                 if (! empty($this->probe['ok'])) {
-                    \Illuminate\Support\Facades\Cache::put('python_probe:'.md5((string) $this->config['bin']), $this->probe, 3600);
+                    Cache::put('python_probe:'.md5((string) $this->config['bin']), $this->probe, 3600);
                 }
             } catch (\Throwable) {
                 $this->probe = ['ok' => false];

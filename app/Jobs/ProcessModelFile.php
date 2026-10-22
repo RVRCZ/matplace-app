@@ -62,6 +62,11 @@ class ProcessModelFile implements ShouldQueue
             });
 
             $report = $clock->measure('analyse', fn () => $repair->check($stlAbs));
+            if ($report->triangles > (int) config('engines.mesh.max_triangles')) {
+                // beyond what thinning before the slice (MeshDecimator) can make printable in reasonable time: the customer
+                // is told to thin the model at home (the error code is what the pages read)
+                throw new \RuntimeException('too_many_triangles');
+            }
             $file->stl_path = $stlRel;
             $file->bbox = $report->bbox->toArray();
             $file->volume_mm3 = $report->volumeMm3;

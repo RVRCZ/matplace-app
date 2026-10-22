@@ -1815,5 +1815,7 @@
     "farm.order.ship.free": "Envío con Packeta: gratis",
     "farm.order.pay_total": "Total a pagar :total (impresión :print, envío :shipping)",
     "param.flag.medallion.ironing": "Planchar la superficie superior",
-    "param.flag.medallion.ironing.hint": "Tras la última capa la boquilla vuelve a pasar sobre la parte superior de la placa, que queda lisa y brillante. La impresión tarda unos minutos más (unos 12 en una medalla de 60 mm)."
+    "param.flag.medallion.ironing.hint": "Tras la última capa la boquilla vuelve a pasar sobre la parte superior de la placa, que queda lisa y brillante. La impresión tarda unos minutos más (unos 12 en una medalla de 60 mm).",
+    "calc.status.big_model": "Modelo grande (:n millones de triángulos): el laminado tarda varios minutos.",
+    "calc.status.too_many_triangles": "El modelo tiene más de :max millones de triángulos, más de lo que nuestras impresoras pueden calcular. Reduzca los triángulos en un programa (Blender: Decimate, Meshmixer: Reduce) y súbalo de nuevo."
 }

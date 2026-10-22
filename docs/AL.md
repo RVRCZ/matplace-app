@@ -815,6 +815,98 @@ tiskárna, zákazník („pokročilé“) a admin – návrh nic. Teď:
   bez/s nápovědou: `params.overrides.process` jen povolené klíče, víc minut a vyšší cena).
 - Session 1 dá medaili `tool_params.process = {ironing_type: topmost}` (přepínač na stránce nástroje; bez žehlení klíč
   chybí). Její měření: medaile bez žehlení 1 h 44 min, se žehlením 1 h 56 min.
+
+## 10.11 Velké sítě: zjednodušení před řezem (TODO #37, větev `feature/big-mesh-decimate`, 22. 10. 2026)
+
+Drak 89 MB / 1 804 554 trojúhelníků (49 těles, 146 × 163 × 42 mm, kalkulace `hmuvckjcojji`, zakázka 207 na B8 se
+scale 1,473 → 240 mm): kalkulace ~5 min, řez zakázky ~10 min (Orca 315 % CPU, 1,8 GB), stránka jen „počítá“.
+
+### 10.11.1 Co se děje
+
+- **`engines/python/decimate_tool.py`** (`in out target max_dev max_peak [samples]` → JSON): quadric edge collapse
+  (`fast_simplification` přes trimesh, na serveru je – edit tool ho používá od R.md) **tělo po těle** – na celé síti
+  kolaps svařuje tělesa dohromady a nechává stovky nemanifold hran (drak: 169 hran s jednou plochou, 92 se třemi+) a
+  pymeshfix na celku zahodí všechno kromě největšího tělesa (49 → 1, objem −80 %). Každé ztenčené těleso se **spraví
+  samo**: pryč „ploutve“ (hrany se 3+ plochami), `fill_holes`, pymeshfix jako poslední (jedno těleso = nic nezahodí);
+  těleso, které nevyjde vodotěsné, v jednom kuse a s objemem do 1 %, zůstane původní. Celek musí být vodotěsný, mít
+  stejný počet těles a objem do 0,5 %.
+- **Odchylka se měří, ne předpokládá**: body navzorkované na obou površích proti druhému (10 000 + 10 000); přijato,
+  když **99. percentil ≤ `max_deviation_mm` (0,05)** a **nejhorší bod ≤ `max_deviation_peak_mm` (0,15 = pod vrstvu)**;
+  nevyjde‑li cíl, zkusí se jednou dvojnásobek cíle. Vzdálenost bez `rtree` (na serveru není): síť se pro hledání
+  rozdělí na trojúhelníky ≤ 1 mm (`subdivide_to_size`, jen index), nejbližší středy vždy drží skutečný trojúhelník pod
+  bodem, vzdálenost přesně na skutečných trojúhelnících, body nad limitem ještě koulí (přesné). Předchozí pokusy:
+  nejbližší vrcholy (k‑NN) selhávaly na velkých trojúhelnících draka (self‑test ukazoval 1,6 mm na vlastní síti),
+  koule poloměru nejdelší hrany (21,9 mm) dělala 276 M dvojic.
+- **`App\Engines\Mesh\MeshDecimator`** (`wants(path)` podle počtu trojúhelníků z hlavičky STL – `StlFile::triangleCount`;
+  `decimate(in, out)` nikdy nevyhodí, vrací `applied` + čísla/důvod), config **`engines.mesh`**: `decimate_above`
+  400 000, `decimate_target` 350 000, `max_deviation_mm` 0,05, `max_deviation_peak_mm` 0,15, `decimate_timeout` 240 s,
+  `max_triangles` 6 000 000 (env `MESH_*`).
+- Kde: **`OrcaSlicer::prepareMesh`** (kalkulace i farma – jedna podložka s STL, po dílech, po výšce, test; před
+  scale, ztenčená kopie `thin.stl` v pracovním adresáři, originál se nemění) a **`PrepareFarmOrder::prepareOnePlate`**
+  (každý díl zvlášť do `.thin`, 3MF bere ztenčené, pak smazat). `timings`: `decimate_s`, `triangles_in`,
+  `triangles_sliced`, `decimate_deviation_mm`, `decimate_peak_mm`, při přeskočení `decimate_skipped` (důvod:
+  `not_watertight`, `deviation`, `shape`, `small_enough`, `missing_fast_simplification`, `error`). Kontrola/oprava
+  farmy běží na plné síti (správnost), ztenčení až pro řez.
+- **Text pro zákazníka**: `/api/uploads` i kalkulace dávají `file.big_model` (+ `triangles`); kalkulátor při „Počítám
+  přesně…“ přidá `calc.status.big_model` („Velký model (1,8 mil. trojúhelníků), řez trvá několik minut.“, cs/en/es),
+  stránka zakázky `big_model` ve stavu (`farm.order.big_model`, „kontrola a řez trvají několik minut“) za textem fáze.
+- **Pojistka**: `ProcessModelFile` nad `max_triangles` soubor odmítne (`error = too_many_triangles`, status failed,
+  `stl_path` se neuloží); kalkulátor `calc.status.too_many_triangles`, farma `FarmRefusal('too_many_triangles')`
+  (422, `farm.refuse.too_many_triangles`: „Zmenšete počet trojúhelníků v programu (Blender: Decimate, Meshmixer:
+  Reduce)“). Upload je stejně omezen 120 MB (≈ 2,4 M trojúhelníků binárního STL), limit 6 M je pro jiné formáty.
+
+### 10.11.2 Měření na drakovi (místně, Orca 2.4.0‑beta Windows, profil S1, stromové podpěry, scale 1,473)
+
+| síť | trojúhelníků | zjednodušení | řez Orca (místně) | výsledek |
+|---|---|---|---|---|
+| originál | 1 804 554 | – | **5 min 51 s** | 15 h 21 min, 210,0 g |
+| tělo po těle, agg 7/4 (dřívější pokus) | 625 506 | 20 s | **4 min 41 s** (z toho stromové podpěry 46 s, export G‑kódu 16 h tisku ~1 min, 3,4 GB) | 15 h 56 min, 214,0 g |
+| tělo po těle + oprava, cíl 350 k (dřívější pokus) | 352 682 | 20 s | **4 min 32 s** | 16 h 30 min, 220,6 g (špička odchylky 0,43 mm – proto nástroj 350 k zamítne) |
+| tělo po těle 625 k **bez podpěr** | 625 506 | – | **1 min 22 s** | 14 h 17 min, 198,8 g (Orca jen varuje „floating regions“, G‑kód dá) |
+| **nástroj, cíl 350 k → druhý pokus 700 k** | **702 240** | **24,5 s** (načtení 6,6, rozdělení 4,7, ztenčení 3,1, kontrola 2,8) | **4 min 33 s** | 15 h 32 min, 209,9 g (originál 15 h 21 min, 210,0 g); p99 0,023 mm, špička 0,0499 mm, objem −0,05 %, 49 těles |
+
+Cíl 350 k na drakovi neprošel (nejhorší bod 0,29–0,43 mm – jemné šupiny jsou na úrovni trojúhelníků), 700 k ano i
+pod Romanovo 0,05 mm jako maximum. **Čas Orcy ale trojúhelníky neurčují**: 1,8 M → 350 k ušetřilo 23 %, zatímco
+**stromové podpěry stojí ~3 min 20 s ze 4 min 41 s** (625 k s podpěrami 4:41, bez podpěr 1:22; Orca log: „organic tree
+support 46 s“ + rozhraní podpěr, delší G‑kód, export 3,4 GB RAM). Farma řeže **jednou** – tiskárny mají v
+`process_overrides` `enable_support 1` + `tree(auto)`, takže `$wantSupports` je od začátku true a „auto → použité“
+znamená, že Orca podpěry opravdu postavila; kalkulace řeže jednou bez podpěr (Orca při plovoucích tělesech jen
+varuje). Dvojí řez (`timings.double`) nastává jen tehdy, když Orca bez podpěr nevrátí G‑kód vůbec – u draka ne.
+Pod minutu takový model nejde dostat zjednodušením sítě; viz §10.11.3.
+
+### 10.11.3 Co z toho plyne a co dál (k rozhodnutí)
+
+1. **Stromové podpěry** u 240 mm draka jsou ~70 % času řezu na farmě. Páka je v profilu, ne v síti: `support_type
+   normal(auto)` nebo jiné parametry stromu (`tree_support_branch_distance`, `support_interface_*`) pro velké modely –
+   rozhodnutí Romana / session F, ne této větve. Kalkulace (bez podpěr) je po zjednodušení řádově 1–2 min i s nahráním
+   90 MB a opravou sítě.
+2. **Export a parsování G‑kódu 16hodinového tisku** (3,4 GB RAM při exportu v Orce; `GcodeStats::fromFile` pak soubor
+   čte): nezávislé na síti.
+3. `timings` **se ukládají** (migrace `2026_10_12_100000_perf_timings`: sloupec `timings` JSON u `farm_orders` i
+   `calculations`), ne do `slice_params`/`result`: klíče `mesh_s`, `slice1_s`, `slice2_s`, `double`, `slice1_error`,
+   `orca_wait_s`, `parse_s`, `gcode_mb`, `prepare_s`, nově `decimate_s`, `triangles_in`, `triangles_sliced`,
+   `decimate_deviation_mm`, `decimate_peak_mm`, `decimate_skipped`. Export G‑kódu uvnitř Orcy zvlášť měřit nejde
+   (je součástí `slice1_s`).
+4. Kalkulace a zakázka řežou tentýž model dvakrát (jiný stroj/profil/scale) – cache řezů (`CachedSlicer`) pomůže jen
+   při shodných parametrech.
+5. Ztenčení samo: 25 s u draka (z toho 11 s načtení + rozdělení těles v trimesh); u sítí do ~1 M trojúhelníků řádově
+   10 s. Při `decimate_above` 400 k se netýká běžných modelů (typicky 50–300 k).
+
+### 10.11.4 Testy a soubory
+
+`tests/Unit/MeshDecimatorTest.php` (počet trojúhelníků binární/ASCII STL; `MeshDecimator` se zástupným
+`ScriptRunner`: práh, volání s cíli a limity, přijetí/odmítnutí/pád; **skutečné ztenčení koule 327 680 → 40 000
+přes `decimate_tool.py`**, p99 i špička v limitu, přeskočeno bez Pythonu s `fast_simplification`),
+`tests/Feature/BigMeshTest.php` (`big_model` v `/api/uploads`, v kalkulaci a ve stavu zakázky; odmítnutí nad
+`max_triangles` v kalkulátoru i na farmě s radou). Soubory: `engines/python/decimate_tool.py` (nový),
+`app/Engines/Mesh/{MeshDecimator,StlFile}.php` (`triangleCount`), `app/Engines/Repair/{ScriptRunner,PythonTool}.php`
+(rozhraní pro testy), `app/Engines/Slicer/OrcaSlicer.php` (`prepareMesh`), `app/Jobs/{PrepareFarmOrder,ProcessModelFile}.php`,
+`app/Domain/Farm/OrderService.php`, `app/Http/Controllers/{Api/UploadController,Farm/OrderController}.php`,
+`app/Providers/EngineServiceProvider.php`, `config/engines.php` (`mesh`), `resources/js/calc/{api,calculator,farm}.ts`,
+`lang/{cs,en,es}/farm.php` (`order.big_model`, `refuse.too_many_triangles`), `lang/{cs,en,es}.json`
+(`calc.status.big_model`, `calc.status.too_many_triangles`). Nasazení: nic nového v `.env` (volitelně `MESH_*`),
+Python na serveru musí mít `fast_simplification` a `pymeshfix` v `/opt/matplace-py` (bez nich nástroj odpoví
+`missing_…` a řeže se originál), `npm run build`.
 - **Žehlení jen placky** (poznámka session 1: `topmost` žehlí i vršek motivu/lemu v 0,6 mm, ~2 min navíc, a ten povrch
   hned překryje další vrstva těla): na jedné podložce dostane každý díl kromě prvního v `Metadata/model_settings.config`
   vlastní `<metadata key="ironing_type" value="no ironing"/>` (`ThreeMfWriter` bere `process` per objekt; Orca per‑object

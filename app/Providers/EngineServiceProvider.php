@@ -35,6 +35,7 @@ use App\Engines\Import\Sources;
 use App\Engines\Mail\FakeMailbox;
 use App\Engines\Mail\GmailMailbox;
 use App\Engines\Mail\Mailbox;
+use App\Engines\Mesh\MeshDecimator;
 use App\Engines\Payment\FakeGateway;
 use App\Engines\Payment\StripeGateway;
 use App\Engines\Project\CompositeProjectExporter;
@@ -70,6 +71,7 @@ class EngineServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PythonTool::class, fn () => new PythonTool(config('engines.python')));
+        $this->app->singleton(MeshDecimator::class, fn ($app) => new MeshDecimator($app->make(PythonTool::class), (array) config('engines.mesh')));
 
         $this->app->singleton(Slicer::class, function ($app) {
             return match (config('engines.slicer')) {
