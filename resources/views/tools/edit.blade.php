@@ -7,7 +7,7 @@
         'warn.does_not_fit', 'warn.many_pieces', 'warn.no_room_for_pins', 'warn.key_as_pins', 'warn.too_big', 'warn.nothing_to_hollow', 'warn.no_room_for_drain', 'warn.coarse_grid', 'warn.tall_gets_pins', 'warn.piece_split', 'warn.too_thin_for_pins',
         'error.fits_already', 'error.too_heavy', 'error.too_small', 'error.too_big', 'error.not_watertight', 'error.edit_failed', 'error.too_tall', 'error.pieces_too_small', 'warn.wall_thin', 'error.too_short', 'warn.small_foot', 'warn.solid_bottle', 'warn.label_failed', 'warn.joint_no_room', 'warn.segment_split', 'error.segments_too_short',
         'report.slicer', 'report.printer', 'report.layers', 'report.time', 'report.colors.one', 'report.colors.height', 'report.colors.parts', 'report.cast', 'hours', 'minutes', 'download.colors', 'stage.parsing', 'stage.layers', 'stage.building', 'warn.truncated', 'warn.open_loops', 'error.no_walls', 'error.not_gcode',
-        'found', 'none', 'not_3mf', 'majority', 'filament', 'report.parts', 'part.color', 'warn.inlay_failed', 'warn.recess_failed', 'warn.body_open', 'warn.many_colors', 'error.no_colors', 'error.not_3mf', 'error.empty', 'error.empty_result', 'report.drain.grooves', 'report.drain.grid', 'report.drain.ribs', 'report.drain.none', 'report.already', 'report.cuts', 'warn.no_opening', 'report.detents', 'error.too_thin', 'error.too_narrow'];
+        'found', 'none', 'not_3mf', 'majority', 'filament', 'report.parts', 'part.color', 'warn.inlay_failed', 'warn.recess_failed', 'warn.body_open', 'warn.many_colors', 'error.no_colors', 'error.not_3mf', 'error.empty', 'error.empty_result', 'report.drain.grooves', 'report.drain.grid', 'report.drain.ribs', 'report.drain.none', 'report.already', 'report.cuts', 'warn.no_opening', 'report.detents', 'error.too_thin', 'error.too_narrow', 'auto_skip.not_watertight'];
     // the model out of G-code takes a bigger file than the models (its own limit); the page says the limit it has
     $maxMb = $op === 'gcode' ? \App\Domain\Tools\ModelEditor::GCODE_MAX_MB : (int) $config['max_upload_mb'];
     $i18n = collect(['check.page.max', 'toolpage.status.empty', 'param.too_fast'])->mapWithKeys(fn ($k) => [$k => __($k, ['max' => $maxMb])])
@@ -28,7 +28,7 @@
     window.MP_EDIT = {
         op: @json($op),
         upload: @json($op === 'gcode' ? route('api.tools.gcode.store') : route('api.uploads.store')), files: @json(url('/api/files')), parts: @json(url('/api/tools/edit')), home: @json(route('home')), from: @json($from),
-        formats: {{ \Illuminate\Support\Js::from($formats) }}, maxMb: {{ (int) $maxMb }},
+        formats: {{ \Illuminate\Support\Js::from($formats) }}, maxMb: {{ (int) $maxMb }}, auto: @json((bool) config('tools.'.$op.'.auto_apply', false)),
         beds: {{ \Illuminate\Support\Js::from($beds) }}, margin: {{ \App\Domain\Tools\ModelEditor::MARGIN }}, farmMargin: {{ (float) ($config['bed_margin_mm'] ?? 0) }},
         config: {{ \Illuminate\Support\Js::from(\Illuminate\Support\Arr::except($config, ['colors'])) }},
         i18n: {{ \Illuminate\Support\Js::from($i18n) }},

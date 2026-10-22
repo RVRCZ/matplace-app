@@ -314,8 +314,9 @@ return [
         'card' => ['edit' => 'hollow', 'kind' => 'name_letter', 'params' => ['line1' => 'Ela', 'height' => 120, 'thickness' => 15], 'edit_params' => ['wall' => 2.5, 'view' => 'cut']]],
     'life_size' => ['route' => 'tools.life_size', 'intent' => 'file', 'categories' => ['edit', 'images'], 'available' => true, 'article' => 'rozdeleni-a-vyduteni-3d-modelu', 'seo' => ['examples' => []],
         'card' => ['edit' => 'life_size', 'kind' => 'vase', 'preset' => 'smooth', 'params' => ['height' => 180, 'top_d' => 62, 'bottom_d' => 54], 'edit_params' => ['height_cm' => 40, 'joint' => 'pins']]],
-    // the puzzle's card is a logo plate of the logo tool cut into 3 × 4 pieces with knobs
-    'puzzle' => ['route' => 'tools.puzzle', 'intent' => 'file', 'categories' => ['edit', 'toys', 'images'], 'available' => true, 'seo' => ['examples' => []],
+    // the puzzle's card is a logo plate of the logo tool cut into 3 × 4 pieces with knobs. `auto_apply`: an uploaded model
+    // is cut with the settings as they stand right away (the result shows at once), unless it is no model for the tool
+    'puzzle' => ['route' => 'tools.puzzle', 'intent' => 'file', 'categories' => ['edit', 'toys', 'images'], 'available' => true, 'auto_apply' => true, 'seo' => ['examples' => []],
         'card' => ['edit' => 'puzzle', 'kind' => 'logo', 'params' => ['mode' => 'relief', 'shape' => 'rect', 'width' => 120, 'line1' => 'PUZZLE', 'line2' => '2026'], 'edit_params' => ['rows' => 3, 'cols' => 4, 'lock' => 'tabs']]],
     // a holder out of a model: a big letter of the letter tool, stood up to 130 mm, with a can's cavity taken out of its top
     'holder_model' => ['route' => 'tools.holder_model', 'intent' => 'file', 'categories' => ['edit', 'home'], 'available' => true, 'seo' => ['examples' => []],

@@ -221,6 +221,7 @@ return [
     'puzzle.lead' => 'Un modelo plano (un relieve, un logotipo, una litofanía, un posavasos) cortado en puzle: una cuadrícula de piezas con pestañas clásicas, o con cortes rectos y pasadores ocultos en los lados, números grabados por debajo y una bandeja opcional.',
     'puzzle.tip' => 'Las piezas se imprimen planas, boca arriba, sin soportes; las pestañas tienen 0,2 mm de holgura, así que encajan sin lijar. Los pasadores ocultos de Ø 3 mm son una pieza aparte. La bandeja se imprime por separado y el puzle se coloca dentro.',
     'puzzle.hint' => 'Gratis, unos segundos. El modelo se conserva; el puzle se abre como un archivo nuevo.',
+    'puzzle.auto_skip.not_watertight' => 'El modelo no es un cuerpo cerrado, así que no hemos cortado el puzle de inmediato. El botón «Hacer el puzle» intentará repararlo; es más fiable repararlo antes con la herramienta de reparación.',
     'puzzle.apply' => 'Hacer el puzle',
     'puzzle.working' => 'Cortando el puzle…',
     'puzzle.report' => 'Un puzle de :c × :r = :n piezas, :l.',

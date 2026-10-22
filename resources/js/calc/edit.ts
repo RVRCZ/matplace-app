@@ -11,7 +11,7 @@ import { loadGeometryFromUrl } from './loaders';
 import { estimate } from './rough';
 import { FileInfo } from './api';
 
-interface Cfg { op: string; upload: string; files: string; parts: string; home: string; from: string | null; formats: string[]; maxMb: number; beds: Record<string, number[] | null>; margin: number; farmMargin: number; config: PriceConfig & { bed_mm: { x: number; y: number; z: number } }; i18n: Record<string, string> }
+interface Cfg { op: string; upload: string; files: string; parts: string; home: string; from: string | null; formats: string[]; maxMb: number; auto: boolean; beds: Record<string, number[] | null>; margin: number; farmMargin: number; config: PriceConfig & { bed_mm: { x: number; y: number; z: number } }; i18n: Record<string, string> }
 interface ColorInfo { key?: number; part?: string | null; name: string; hex: string; extruder: number | null; sources?: string[]; triangles: number; share: number; kind?: string; bodies?: number; grams?: number | null }
 interface Analysis { bbox: { x: number; y: number; z: number }; fits: boolean; planes: Record<'x' | 'y' | 'z', number[]> | null; pieces: number | null; too_many: boolean; repaired: boolean; factor?: number; scaled?: number[]; hollow?: boolean; wall?: number; colors?: ColorInfo[]; has_colors?: boolean; not_3mf?: boolean; split_triangles?: number; girth?: number; target?: number; already_hollow?: boolean }
 interface MapPiece { n: number; part: string; cell: number[]; lo: number[]; hi: number[]; volume_mm3: number; down: [string, number] | null; number_at: number[] | null }
@@ -170,7 +170,24 @@ export function bootEdit(stage: Stage): void {
     };
     const analyseSoon = (): void => { window.clearTimeout(timer); timer = window.setTimeout(() => { void analyse(); }, 300); };
 
-    const haveModel = async (info: FileInfo): Promise<void> => {
+    /**
+     * Why a tool that makes its result at once (`auto_apply`: the puzzle) does not make it for this model: the key of
+     * the line to say, or '' when the analysis has already said why, or null when nothing stands in the way. The
+     * button still tries it.
+     */
+    const autoBlock = (info: FileInfo): [string, Record<string, string | number>] | null => {
+        if (go.disabled) return ['', {}];
+        if ((info.issues ?? []).includes('not_watertight')) return ['auto_skip.not_watertight', {}];
+        if (cfg.op === 'puzzle' && info.bbox) {
+            // the tool's own limits (edit_tool.puzzle_solid): flat up to 80 mm, pieces at least 12 mm
+            const p = settings(); const rows = Number(p.rows) || 3; const cols = Number(p.cols) || 4;
+            if (info.bbox.z > 80) return ['error.too_tall', {}];
+            if (Math.min(info.bbox.x / cols, info.bbox.y / rows) < 12) return ['error.pieces_too_small', { n: `${cols} x ${rows}` }];
+        }
+        return null;
+    };
+
+    const haveModel = async (info: FileInfo, auto = false): Promise<void> => {
         model = info; made = null; analysis = null; planes = null;
         stage.keep(info.uuid);         // a step back or a reload opens the same model again
         source.textContent = `${info.name} · ${info.bbox ? [info.bbox.x, info.bbox.y, info.bbox.z].map((v) => Math.round(v)).join(' × ') + ' mm' : ''}`;
@@ -188,6 +205,12 @@ export function bootEdit(stage: Stage): void {
         go.disabled = false;
         await analyse();
         stage.reveal('settings');
+        if (auto && cfg.auto) {
+            // one plain result: made at once from the settings as they stand; changed settings and the button make it again
+            const block = autoBlock(info);
+            if (!block) await build();
+            else if (block[0]) say(block[0], block[1]);
+        }
     };
 
     const upload = async (file: File): Promise<void> => {
@@ -219,7 +242,7 @@ export function bootEdit(stage: Stage): void {
             }
             const info = await stage.untilReady((await up.json()).file);
             if (info.status !== 'ready') { say('model_failed'); return; }
-            await haveModel(info);
+            await haveModel(info, true);
         } catch {
             say('failed');
         } finally {
@@ -470,7 +493,7 @@ export function bootEdit(stage: Stage): void {
                 const src = await stage.untilReady(await stage.fetchFile(edited.edit.source as string));
                 if (src.status === 'ready') { await haveModel(src); await showMade(edited); return; }
             }
-            await haveModel(info);
+            await haveModel(info, true);
         }).catch(() => say('failed'));
     }
 }
