@@ -488,6 +488,13 @@ class ToolsFlowTest extends TestCase
         $this->assertTrue($flush->tool_params['multi_material']);
         $this->assertTrue($flush->tool_params['one_plate_required']);
         $this->assertSame([], (array) $flush->tool_params['color_changes']);
+        // its top ironed unless the visitor says no: the farm and the calculation lay this over their process profile
+        $this->assertSame(['ironing_type' => 'topmost'], $flush->tool_params['process']);
+        $plain = ModelFile::where('uuid', $this->actingAs($user)->postJson('/api/tools/param', ['kind' => 'medallion', 'params' => ['line1' => '1', 'ironing' => false]])->assertCreated()->json('file.uuid'))->firstOrFail();
+        $this->assertArrayNotHasKey('process', $plain->tool_params);
+        // nobody writes the slicer's settings through the form
+        $sly = ModelFile::where('uuid', $this->actingAs($user)->postJson('/api/tools/param', ['kind' => 'medallion', 'params' => ['line1' => '1', 'ironing' => false, 'process' => ['ironing_type' => 'top', 'wall_loops' => 9]]])->assertCreated()->json('file.uuid'))->firstOrFail();
+        $this->assertArrayNotHasKey('process', $sly->tool_params);
 
         // a raised one: a gold one on a black plate, forty links; one change of filament where the number starts
         $made = $this->actingAs($user)->postJson('/api/tools/param', ['kind' => 'medallion', 'params' => ['line1' => '1', 'motif' => 'raised', 'part_colors' => ['color_1' => '#d4a531', 'body' => '#1b1b1d']]])->assertCreated();
@@ -496,6 +503,7 @@ class ToolsFlowTest extends TestCase
         $this->assertFalse((bool) ($file->tool_params['multi_material'] ?? false));
         $this->assertArrayNotHasKey('one_plate_required', $file->tool_params);
         $this->assertSame([4.4], array_column((array) $file->tool_params['color_changes'], 'z'));
+        $this->assertSame(['ironing_type' => 'topmost'], $file->tool_params['process']);
 
         // the farm prints one plate, never a part on its own: the plate from the black spool, the change to the gold one
         $order = $this->startOrder($user, 'file='.$file->uuid);

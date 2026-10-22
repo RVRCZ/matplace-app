@@ -840,3 +840,68 @@ tak se řez dělat nedá. Farma podpěry nezapíná.
 
 **Co ověří až tisk**: jestli jde článek s přesahem 2,4 mm zacvaknout rukou bez prasknutí. Jestli ne, stačí změnit
 `LINK[3]` (třeba na 2,0). Dál jestli spodní zaoblení 45° nechá na líci čistý kraj lemu.
+
+### 8d. Kolo 5: plochý vršek článku, mezera 0,4 mm, žehlení vršku placky (22. 10. 2026)
+
+Zadání: doplněk z 22. 10. v `docs/prompts/medaile-kolo4.md` (TODO #34), po Romanově výtisku článku kola 4. Na fotu
+jsou švy na vršku: horní vrstvy kruhového profilu jsou tenké proužky, které se špatně přilepují.
+
+- **Profil článku je souměrný podle osy** (`_link_profile`):
+  - dole i nahoře ploška stejně široká, k ní sklon 45° k místu, kde ho kruh ⌀ 4 tečně přebírá;
+  - pod osou i nad ní stejný počet vrstev;
+  - kulaté konce mezery jsou tentýž profil otočený kolem osy konce, takže mají vršek na výšce plošky.
+- **Výška článku 4,0 mm** (`LINK_HEIGHT`): 20 vrstev po 0,2, 10 pod osou a 10 nad ní, plošky 1,66 mm. Proč ne 4,4 mm
+  (22 vrstev, plošky 1,26 mm, blíž zadaným „~1 mm“):
+  - Žehlení `topmost` žehlí nejvyšší vrstvu každého objektu.
+  - Při výšce 4,4 mm jsou vršky 40 článků ve stejné vrstvě jako vršek placky a žehlí se taky: 39,5 m drah navíc,
+    **+23 min**.
+  - Při výšce 4,0 mm se žehlí jen placka: 18,6 m drah, **+12 min**.
+  - Vystouplá medaile se teď s články zesiluje na 4,0 mm místo 4,4 mm (`notes.thickened`).
+  - Kdyby Roman chtěl užší plošky, je to jediné číslo `LINK_HEIGHT = 4.4`, za cenu žehlení článků.
+- **Mezera 0,4 mm** (`LINK = (30, 18, 4, 0.4)`), o 1,2 mm méně než v kole 4:
+  - Přesah: příčka ⌀ 4 projde, když se článek ve své rovině rozevře o 4 − 0,4 = **3,6 mm**.
+  - Stejný model jako v §8c: ∫y²ds = 5 585 mm³ a I profilu ve směru rozevření 12,8 mm⁴ (spočteno z profilu).
+  - Síla F = 3,6 · 3 500 · 12,8 / 5 585 ≈ **29 N** (asi 3 kg v prstech; kolo 4: 19 N).
+  - Prodloužení na protější straně ε = 14 · 2 · 3,6 / 5 585 ≈ **1,8 %** (kolo 4: 1,2 %).
+  - PLA pruží asi do 2–3 %, rezerva je menší než v kole 4. Kdyby článek při zacvaknutí praskal na protější straně,
+    vrátit `LINK[3]` na 0,8 (1,6 %, 26 N).
+  - Mezi špičkami při slicování zůstává 0,4 mm, tedy šířka jedné dráhy. Obrysy obou konců jsou od sebe 0,8 mm
+    (středy drah), takže se neslijí. Na první vrstvě je mezera mnohem větší (plošky konců mají ⌀ 1,66).
+  - Objem článku 852,5 mm³, 4 984 trojúhelníků.
+- **Žehlení horní plochy** (zaškrtávátko `ironing` u medaile, výchozí zapnuté, `FLAGS_ON`):
+  - Návrh nese `tool_params.process = {ironing_type: topmost}`, zapisuje ho `ParametricGenerator::create`. Farma
+    a kalkulace ho převezmou do přepisů procesu (session 2, `feature/design-process-hints`).
+  - Průtok, rychlost a rozteč žehlení zůstávají z profilu farmy (10 %, 30 mm/s, 0,15 mm).
+  - Z formuláře `process` projít nejde: `clean()` zná jen svoje klíče (test).
+  - Vypnuté zaškrtávátko: v návrhu žádný `process`.
+  - Nápověda v cs/en/es (`lang/src/medallion5.json`) říká „asi 12 minut u medaile 60 mm“, ne jen „několik minut“.
+  - Platí pro obě varianty motivu. U vystouplé medaile je nejvyšší plochou vršek čísla a lemu.
+- **Ukázky** jsou překreslené (nižší článek s ploškou nahoře).
+- **Testy**:
+  - `ShapeToolsTest`: profil (4,0 / 1,66 / 45°), `tips` 0,4, objem článků, zesílení vystouplé na 4,0, zaškrtávátko
+    na stránce;
+  - `ToolsFlowTest`: `process` u zarovnané i vystouplé medaile, bez `process` při vypnutém, `process` z formuláře
+    neprojde.
+
+**Řez** (AnycubicSlicerNext 2.0.0.3 CLI, profily farmy). Model: výchozí medaile 60 mm, „1“, lem, 40 článků, jedna
+podložka, dva filamenty.
+
+| varianta | filament | výměny | čas |
+|---|---|---|---|
+| kolo 5, bez žehlení | 41,01 g + 1,37 g | 4 | 1 h 44 min |
+| kolo 5, `ironing_type = topmost` | 41,08 g + 1,38 g | 4 | **1 h 56 min** |
+| zkouška: článek 4,4 mm, se žehlením | 42,92 g + 1,38 g | 4 | 2 h 13 min |
+| celá medaile jednou barvou, podpěry **povolené** | 40,31 g | – | 1 h 29 min |
+
+S povolenými podpěrami nevznikla žádná podpěra ani převislá stěna (`;TYPE:Support` ani `;TYPE:Overhang wall`).
+
+Kde se žehlí (součet drah `;TYPE:Ironing` podle výšky, kolo 5):
+- **4,4 mm, vršek placky**: 18,6 m, asi 10 min.
+- **0,6 mm, vršek dílu čísla a lemu**: 3,7 m, asi 2 min. Je to samostatný objekt, takže `topmost` žehlí i jeho
+  vršek, i když ho pak zakryje placka. Ušetřit to jde jen žehlením po objektech (nastavení objektu v 3MF), a to je
+  práce farmy (session 2).
+
+**Co ověří až tisk**:
+- jestli vršek článku s ploškou drží,
+- jestli jde článek s přesahem 3,6 mm zacvaknout rukou bez prasknutí,
+- jak vypadá žehlený rub medaile.

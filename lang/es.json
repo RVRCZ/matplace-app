@@ -1807,5 +1807,7 @@
     "param.part.body.medallion": "Placa y cadena",
     "param.part.color_1.medallion": "Número y borde",
     "param.part.body.box": "Solo la caja",
-    "param.part.layer": "Capa :n"
+    "param.part.layer": "Capa :n",
+    "param.flag.medallion.ironing": "Planchar la superficie superior",
+    "param.flag.medallion.ironing.hint": "Tras la última capa la boquilla vuelve a pasar sobre la parte superior de la placa, que queda lisa y brillante. La impresión tarda unos minutos más (unos 12 en una medalla de 60 mm)."
 }

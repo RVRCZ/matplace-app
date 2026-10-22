@@ -214,11 +214,12 @@ def _caption(M, p, layers, info, text, body_kind, fit_d, warn):
 
 
 # a chain link: long, wide, the bar, and how far apart the round tips of its gap are. The neighbour's bar (4 mm) goes
-# through 1.6 mm only when the link opens 2.4 mm in its plane: about 19 N by hand and 1.2 % strain at the far side, well
-# under what PLA takes (docs/P.md §8c). With 3.6 mm between flat ends (round 3) the chain came apart by itself.
-LINK = (30.0, 18.0, 4.0, 1.6)
+# through 0.4 mm only when the link opens 3.6 mm in its plane: about 28 N by hand and 1.8 % strain at the far side, under
+# what PLA takes (docs/P.md §8d). With 3.6 mm between flat ends (round 3) the chain came apart by itself, with 1.6 mm
+# between round ends (round 4) still too easily.
+LINK = (30.0, 18.0, 4.0, 0.4)
 CHAIN_BED = 220.0                # the medal and its chain are one plate of the smallest bed of the farm's printers
-LINK_FLAT = 1.0                  # the flat strip a link stands on, too narrow to see once printed
+LINK_HEIGHT = 4.0                # 20 layers of 0.2, 10 under the bar's axis and 10 over it; the flats come out 1.66 mm
 LINK_OVERHANG = 45.0             # the steepest the underside of a link leans out, from the vertical: prints without supports
 LINK_SLICES = 16                 # points up each side of the round bar's profile
 MEDAL_ROUND = 1.0                # a medal's outline is rounded by this much at its top and its bottom
@@ -227,23 +228,26 @@ MEDAL_STEPS = 10                 # slabs of each rounded edge: a tenth of a mill
 
 def _link_profile(bar):
     """
-    The bar of a link seen across: a circle of `bar` whose underside is cut by two straight slopes LINK_OVERHANG from
-    the vertical, down to a flat LINK_FLAT wide on the bed (a round bar would start in mid-air). Returns (height,
-    the half-width at a height, the height of the circle's centre).
+    The bar of a link seen across, the same above its axis as under it: a circle of `bar` whose underside runs in two
+    straight slopes LINK_OVERHANG from the vertical down to a flat on the bed (a round bar would start in mid-air), and
+    whose top runs up the same way to a flat as wide (a full round ends in thin strips of the last layers that do not
+    hold, Roman's print of 22 Oct 2026). LINK_HEIGHT tall. Returns (height, the half-width at a height, the height of
+    the circle's centre, how high the slopes reach from the bed and down from the top).
     """
     r, a = bar / 2, math.radians(LINK_OVERHANG)
-    tx, tz = r * math.cos(a), -r * math.sin(a)               # where the slope leaves the circle, from its centre
-    drop = (tx - LINK_FLAT / 2) / math.tan(a)                # how far the slope runs down to the flat
-    centre = -tz + drop
-    height = centre + r
+    height = LINK_HEIGHT
+    centre = height / 2
+    drop = centre - r * math.sin(a)                          # where the slope leaves the circle, from the bed
+    flat = r * math.cos(a) - drop * math.tan(a)              # half the flat
 
     def half(z):
+        z = min(z, height - z)                               # the top mirrors the bottom
         if z <= drop:
-            return LINK_FLAT / 2 + z * math.tan(a)
+            return flat + z * math.tan(a)
         dz = z - centre
         return math.sqrt(max(r * r - dz * dz, 0.0))
 
-    return height, half, centre
+    return height, half, centre, drop
 
 
 def _link(M):
@@ -257,9 +261,9 @@ def _link(M):
     C = M.CrossSection
     long, wide, bar, tips = LINK
     gap = tips + bar                                         # the cut; each round end reaches half a bar back into it
-    height, half, _ = _link_profile(bar)
+    height, half, _, drop = _link_profile(bar)
     mid = wide / 2 - bar / 2                                 # the radius of the line the bar runs along, at the round ends
-    zs = [height * i / LINK_SLICES for i in range(LINK_SLICES + 1)]
+    zs = [0.0] + [drop + (height - 2 * drop) * i / LINK_SLICES for i in range(LINK_SLICES + 1)] + [height]
     right = [(half(z), z) for z in zs]
     profile = [(x, z) for x, z in right] + [(-x, z) for x, z in reversed(right)]
     # the round ends: the profile turned half a circle round the end's centre
@@ -772,9 +776,9 @@ def build(M, Invalid, p, product):
         if chain is not None:
             links = chain[0].translate([bx0, by0, 0])
             body, whole = body + links, whole + links
-            h, _, c = _link_profile(LINK[2])
+            h, half, _, _ = _link_profile(LINK[2])
             notes["chain"] = {"links": chain[3], "length": round(chain[3] * (LINK[0] - 2 * LINK[2]) / 10.0) * 10,
-                              "profile": {"height": round(h, 2), "flat": LINK_FLAT, "overhang": LINK_OVERHANG}, "tips": LINK[3]}
+                              "profile": {"height": round(h, 2), "flat": round(2 * half(0.0), 2), "overhang": LINK_OVERHANG}, "tips": LINK[3]}
             if chain[3] < asked:
                 notes["chain"]["asked"] = asked
                 warn.append("links_cut")

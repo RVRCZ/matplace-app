@@ -1807,5 +1807,7 @@
     "param.part.body.medallion": "Plate and chain",
     "param.part.color_1.medallion": "Number and rim",
     "param.part.body.box": "Box only",
-    "param.part.layer": "Layer :n"
+    "param.part.layer": "Layer :n",
+    "param.flag.medallion.ironing": "Iron the top surface",
+    "param.flag.medallion.ironing.hint": "After the last layer the nozzle passes over the top of the plate once more, leaving it smooth and glossy. The print takes a few minutes longer (about 12 for a 60 mm medal)."
 }
