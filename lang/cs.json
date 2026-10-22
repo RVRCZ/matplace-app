@@ -1813,5 +1813,7 @@
     "farm.order.ship.parcel": "Doprava Zásilkovna: :amount",
     "farm.order.ship.counting": "Doprava Zásilkovna: počítám…",
     "farm.order.ship.free": "Doprava Zásilkovna: zdarma",
-    "farm.order.pay_total": "Celkem k zaplacení :total (tisk :print, doprava :shipping)"
+    "farm.order.pay_total": "Celkem k zaplacení :total (tisk :print, doprava :shipping)",
+    "param.flag.medallion.ironing": "Žehlení horní plochy",
+    "param.flag.medallion.ironing.hint": "Tryska po poslední vrstvě ještě jednou přejede horní plochu placky, ta je pak hladká a lesklá. Tisk se prodlouží o několik minut (asi 12 u medaile 60 mm)."
 }

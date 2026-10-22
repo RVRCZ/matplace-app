@@ -584,7 +584,7 @@ class ShapeToolsTest extends TestCase
         $one = ['line1' => '1', 'typeface' => 'archivo'];
         // what the tool starts with: flush, the number at 55 % of 60 mm, a rim, forty links, one plate of a 220 mm bed
         $first = $this->meta($this->preview('medallion', $one, 'all', true)->assertOk());
-        $this->assertSame(['links' => 40, 'length' => 880, 'profile' => ['height' => 4.33, 'flat' => 1, 'overhang' => 45], 'tips' => 1.6], $first['notes']['chain']);
+        $this->assertSame(['links' => 40, 'length' => 880, 'profile' => ['height' => 4, 'flat' => 1.66, 'overhang' => 45], 'tips' => 0.4], $first['notes']['chain']);
         $this->assertLessThanOrEqual(220, max($first['bbox']['x'], $first['bbox']['y']));
         $this->assertSame([], $first['notes']['warnings']);
 
@@ -641,9 +641,10 @@ class ShapeToolsTest extends TestCase
         // the eyelet on top, on the axis
         $this->assertEqualsWithDelta($bare['bbox']['x'] / 2, $bare['notes']['eyelet']['x'], 0.1);
 
-        // the links: round bars on a flat of 1 mm, round ends 1.6 mm apart, 846 mm³ each
+        // the links: round bars with a flat of 1.66 mm under and over the axis (10 layers each side), lower than the plate
+        // (its top alone is ironed), round ends 0.4 mm apart, 853 mm³ each
         $chainless = $this->meta($this->preview('medallion', $one + ['links' => 0])->assertOk());
-        $this->assertEqualsWithDelta(40 * 845.9, $first['volume_mm3'] - $chainless['volume_mm3'], 40 * 2);
+        $this->assertEqualsWithDelta(40 * 852.5, $first['volume_mm3'] - $chainless['volume_mm3'], 40 * 2);
 
         // seven shapes, each one closed solid on the bed with the eyelet on its axis
         foreach (['circle', 'star', 'hex', 'shield', 'octagon', 'rosette', 'heart'] as $body) {
@@ -675,7 +676,8 @@ class ShapeToolsTest extends TestCase
         $this->assertLessThanOrEqual(220, max($wide['bbox']['x'], $wide['bbox']['y']));
         $this->preview('medallion', $one + ['links' => 81])->assertStatus(422);
         $this->preview('medallion', $one + ['motif' => 'sideways'])->assertStatus(422);
-        $this->get('/tools/medallion')->assertOk()->assertSee('data-param="motif_size"', false)->assertSee('data-preset="place1"', false);
+        $this->get('/tools/medallion')->assertOk()->assertSee('data-param="motif_size"', false)->assertSee('data-preset="place1"', false)
+            ->assertSee('data-flag="ironing"', false)->assertSee('Žehlení horní plochy')->assertSee('několik minut');
     }
 
     public function test_a_raised_medal_changes_colour_once_and_keeps_its_chain_under_the_change(): void
@@ -703,7 +705,7 @@ class ShapeToolsTest extends TestCase
         $this->assertEqualsWithDelta(3.6, $thin['bbox']['z'], 0.01);
         $this->assertArrayNotHasKey('thickened', $thin['notes']);
         $thick = $this->meta($this->preview('medallion', $one + ['thickness' => 3])->assertOk());
-        $this->assertSame(4.4, $thick['notes']['thickened']);
+        $this->assertEquals(4.0, $thick['notes']['thickened']);
     }
 
     public function test_an_organizer_is_a_tall_dish_with_compartments_or_round_holes(): void

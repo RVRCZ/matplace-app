@@ -387,7 +387,7 @@ final class ParametricGenerator
     public const MAX_STROKE_POINTS = 48;
 
     public const FLAGS = ['name_cup' => ['base'], 'beads' => ['two_sides'], 'charm' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'keychain' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'], 'earrings' => ['remove_bg', 'eyelet', 'mirror', 'flush', 'rim', 'bevel'], 'ornament' => ['remove_bg', 'eyelet', 'flush', 'rim', 'bevel'],
-        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'border'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
+        'magnet' => ['remove_bg', 'flush', 'rim', 'bevel'], 'coaster' => ['remove_bg', 'grooves', 'flush', 'rim', 'bevel'], 'gingerbread' => ['eyelet', 'flush', 'bevel'], 'name_letter' => ['hang', 'stand', 'flush', 'bevel'], 'cookie' => ['remove_bg', 'hang', 'tray', 'flush'], 'topper' => ['flush'], 'tray' => ['remove_bg'], 'badge' => ['remove_bg', 'flush', 'rim', 'bevel'], 'medallion' => ['remove_bg', 'border', 'ironing'], 'photo_organizer' => ['remove_bg'], 'bag_charm' => ['remove_bg', 'flush', 'rim', 'bevel'], 'straw' => ['remove_bg', 'flush', 'rim'], 'opener' => ['remove_bg', 'flush', 'rim'],
         'box' => ['lid', 'cable_slot'], 'phone_stand' => ['cable', 'screws'], 'cable_holder' => ['screws'], 'modular' => ['tray'], 'vase' => ['drainage', 'saucer'], 'sign' => ['keyring', 'border', 'bevel', 'two_color'], 'logo' => ['invert', 'bevel'], 'stamp' => ['invert'], 'stencil' => ['invert'], 'papel' => ['isolate', 'invert', 'scallop', 'string_holes'], 'notes' => ['pen', 'invert'], 'hair_tie' => ['invert'], 'candle_stand' => ['invert'], 'insert' => ['notch'], 'lightbox' => ['invert'], 'qr' => ['stand', 'hole', 'hidden'], 'cutter' => ['stamp', 'invert'], 'holder' => ['mount'], 'cap' => ['grip']];
 
     /** kind → field, flag or choice → [choice key, values it belongs to]; the form hides it for the other choices. The key may also be a flag, its values are then on | off. */
@@ -447,7 +447,7 @@ final class ParametricGenerator
     ];
 
     /** flags that start switched on */
-    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides', 'scallop', 'string_holes', 'pen', 'notch', 'isolate'];
+    public const FLAGS_ON = ['cable', 'window', 'drainage', 'saucer', 'border', 'stamp', 'mount', 'grip', 'remove_bg', 'eyelet', 'base', 'two_sides', 'scallop', 'string_holes', 'pen', 'notch', 'isolate', 'ironing'];
 
     /** things that hang only when asked to (a biscuit, a big letter): the eyelet's sizes show with the tick */
     private const HANG_WHEN = ['eye_pos' => ['hang', ['on']], 'eye_hole' => ['hang', ['on']], 'eye_wall' => ['hang', ['on']]];
@@ -1127,6 +1127,12 @@ final class ParametricGenerator
             } else {
                 unset($clean['one_plate_required']);
             }
+        }
+        // settings of the slicing process the design asks for, which the farm and the calculation lay over their profile
+        // (Orca's own names; flow, speed and spacing of the ironing stay the farm's): the medal's top ironed, smooth
+        unset($clean['process']);
+        if (! empty($clean['ironing'])) {
+            $clean['process'] = ['ironing_type' => 'topmost'];
         }
         if ($kind === 'papel' && ($clean['treatment'] ?? '') === 'portrait') {
             // the backing and the dark layer on it: the filaments the tool chose stay with the design, and so does the one
