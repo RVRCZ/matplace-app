@@ -67,6 +67,19 @@ return [
         'work_dir' => env('ORCA_WORK_DIR', storage_path('app/slicer')),
     ],
 
+    // Very fine meshes (a scanned dragon, 1.8 M triangles, 22 Oct 2026) keep the slicer busy for minutes: above `above`
+    // the mesh is thinned to about `target` triangles before it is sliced (quadric decimation, engines/python/decimate_tool.py),
+    // only while the worst deviation stays within `max_deviation_mm` and the mesh stays watertight; the original is what
+    // the customer sees and downloads. Above `max_triangles` a file is refused on upload with the advice to thin it at home.
+    'mesh' => [
+        'decimate_above' => (int) env('MESH_DECIMATE_ABOVE', 400000),
+        'decimate_target' => (int) env('MESH_DECIMATE_TARGET', 350000),
+        'max_deviation_mm' => (float) env('MESH_DECIMATE_DEVIATION_MM', 0.05),        // the 99th percentile of the surface distance
+        'max_deviation_peak_mm' => (float) env('MESH_DECIMATE_PEAK_MM', 0.15),       // the worst sampled point (under a layer)
+        'decimate_timeout' => (int) env('MESH_DECIMATE_TIMEOUT', 240),
+        'max_triangles' => (int) env('MESH_MAX_TRIANGLES', 6000000),
+    ],
+
     'python' => [
         'bin' => env('PYTHON_BIN', PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3'),
         'timeout' => (int) env('PYTHON_TIMEOUT', 240),

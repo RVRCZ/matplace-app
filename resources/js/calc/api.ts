@@ -4,6 +4,8 @@ export interface FileInfo {
     ext: string;
     status: string;
     error: string | null;
+    triangles?: number | null;
+    big_model?: boolean;          // millions of triangles: thinned before the slice, the slice takes minutes (docs/AL.md §10.11)
     bbox: { x: number; y: number; z: number } | null;
     volume_mm3: number | null;
     area_mm2: number | null;

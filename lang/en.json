@@ -1815,5 +1815,7 @@
     "farm.order.ship.free": "Delivery by Packeta: free",
     "farm.order.pay_total": "To pay :total (print :print, delivery :shipping)",
     "param.flag.medallion.ironing": "Iron the top surface",
-    "param.flag.medallion.ironing.hint": "After the last layer the nozzle passes over the top of the plate once more, leaving it smooth and glossy. The print takes a few minutes longer (about 12 for a 60 mm medal)."
+    "param.flag.medallion.ironing.hint": "After the last layer the nozzle passes over the top of the plate once more, leaving it smooth and glossy. The print takes a few minutes longer (about 12 for a 60 mm medal).",
+    "calc.status.big_model": "A large model (:n million triangles): slicing takes several minutes.",
+    "calc.status.too_many_triangles": "The model has over :max million triangles, more than our printers can work out. Reduce the triangles in a program (Blender: Decimate, Meshmixer: Reduce) and upload it again."
 }

@@ -355,6 +355,24 @@ final class StlFile
         return ! str_starts_with(ltrim(substr($head, 0, 6)), 'solid');
     }
 
+    /** How many triangles the file holds: from the header of a binary STL at once, counted through an ASCII one. */
+    public static function triangleCount(string $path): int
+    {
+        if (self::isBinary($path)) {
+            return max(0, intdiv(filesize($path) - self::BINARY_HEADER - 4, self::TRIANGLE_BYTES));
+        }
+        $n = 0;
+        $fh = fopen($path, 'rb');
+        while (($line = fgets($fh)) !== false) {
+            if (str_contains($line, 'facet normal')) {
+                $n++;
+            }
+        }
+        fclose($fh);
+
+        return $n;
+    }
+
     /**
      * Streams triangles as [[ax,ay,az],[bx,by,bz],[cx,cy,cz]].
      *

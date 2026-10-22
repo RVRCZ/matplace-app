@@ -68,11 +68,20 @@ function leadRange(days: number[]): string {
 }
 
 /** A calculation that failed because the file is no model we can read says so: "Recalculate" would not help (docs/AH.md §9). */
-const failedKey = (c: { error?: string | null; file?: { status?: string } | null } | null): string => (c?.error === 'file_processing_failed' || c?.file?.status === 'failed' ? 'calc.status.not_model' : 'calc.status.failed');
+const failedKey = (c: { error?: string | null; file?: { status?: string; error?: string | null } | null } | null): string => (c?.file?.error === 'too_many_triangles' ? 'calc.status.too_many_triangles' : (c?.error === 'file_processing_failed' || c?.file?.status === 'failed' ? 'calc.status.not_model' : 'calc.status.failed'));
 
 function setStatus(key: string, spinning: boolean): void {
     $('status').textContent = t(key);
     $('status-spinner').classList.toggle('hidden', !spinning);
+}
+
+/** "Počítám přesně…" – and, for a model of millions of triangles, why it takes minutes (the server thins it first, docs/AL.md §10.11). */
+function setComputing(file: FileInfo | null | undefined, key = 'calc.status.queued'): void {
+    setStatus(key, true);
+    if (file?.big_model && file.triangles) {
+        const million = (file.triangles / 1e6).toFixed(1).replace('.', document.documentElement.lang === 'en' ? '.' : ',');
+        $('status').textContent += ` ${t('calc.status.big_model').replace(':n', million)}`;
+    }
 }
 
 /** The model as stored (scale 1): measured in the browser, or what the server measured. */
@@ -386,7 +395,7 @@ function poll(token: string): void {
                 setStatus(failedKey(c), false);
                 return;
             }
-            setStatus(c.file && c.file.status !== 'ready' && !BROWSER_FORMATS.includes(c.file.ext) ? 'calc.status.converting' : 'calc.status.queued', true);
+            setComputing(c.file, c.file && c.file.status !== 'ready' && !BROWSER_FORMATS.includes(c.file.ext) ? 'calc.status.converting' : 'calc.status.queued');
             state.pollTimer = window.setTimeout(tick, 1500);
         } catch {
             state.pollTimer = window.setTimeout(tick, 3000);
@@ -491,7 +500,7 @@ function requestPrecise(): void {
     window.clearTimeout(state.debounce);
     state.debounce = window.setTimeout(async () => {
         try {
-            setStatus('calc.status.queued', true);
+            setComputing(state.file);
             enableQuote(null);
             const c = await createCalculation({
                 file: state.file!.uuid,

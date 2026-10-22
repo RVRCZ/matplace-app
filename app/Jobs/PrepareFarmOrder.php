@@ -19,6 +19,7 @@ use App\Engines\DTO\PreparedMesh;
 use App\Engines\DTO\SliceParams;
 use App\Engines\Farm\PhpPrintPreparer;
 use App\Engines\Gcode\SupportLines;
+use App\Engines\Mesh\MeshDecimator;
 use App\Engines\Mesh\StlFile;
 use App\Engines\Mesh\ThreeMfWriter;
 use App\Models\FarmOrder;
@@ -671,7 +672,25 @@ class PrepareFarmOrder implements ShouldQueue
         // below the plaque's next layer, ironing its top would only cost minutes – its object says "no ironing" itself
         $hints = $order->modelFile?->processHints() ?? [];
         $inlay = ($hints['ironing_type'] ?? 'no ironing') !== 'no ironing' ? ['ironing_type' => 'no ironing'] : [];
-        ThreeMfWriter::write($disk->path($projectRel), array_map(fn ($i, $p) => ['name' => (string) $p['part'], 'stl' => $disk->path($paths[$i]), 'extruder' => $filamentOf[$i] + 1, 'process' => $i > 0 ? $inlay : []], array_keys($skeleton), $skeleton));
+        // a part of millions of triangles is thinned for the slicer alone (MeshDecimator, docs/AL.md §10.11): the placed
+        // parts stay as they are for the preview and the record, the 3MF takes the thinned copies
+        $decimator = app(MeshDecimator::class);
+        $slicePaths = $paths;
+        foreach ($paths as $i => $rel) {
+            if ($decimator->wants($disk->path($rel))) {
+                $r = $clock->measure('decimate', fn () => $decimator->decimate($disk->path($rel), $disk->path($rel).'.thin'));
+                $clock->note('triangles_in_'.($i + 1), $r['before'])->note('triangles_sliced_'.($i + 1), $r['after'] ?? $r['before']);
+                if ($r['applied']) {
+                    $slicePaths[$i] = $rel.'.thin';
+                }
+            }
+        }
+        ThreeMfWriter::write($disk->path($projectRel), array_map(fn ($i, $p) => ['name' => (string) $p['part'], 'stl' => $disk->path($slicePaths[$i]), 'extruder' => $filamentOf[$i] + 1, 'process' => $i > 0 ? $inlay : []], array_keys($skeleton), $skeleton));
+        foreach ($slicePaths as $i => $rel) {
+            if ($rel !== $paths[$i]) {
+                @unlink($disk->path($rel));   // the 3MF holds the thinned geometry now
+            }
+        }
         $process = self::ONE_PLATE_PROCESS + ['wipe_tower_x' => [(string) $tower['x']], 'wipe_tower_y' => [(string) $tower['y']]];
         $params = $setup['params']->withFilaments(array_map(fn ($f) => ['profile' => $f['profile'], 'overrides' => $f['overrides'], 'colour' => $f['colour'], 'volume_mm3' => round($f['volume_mm3'], 1)], $filaments), $disk->path($projectRel), $process);
         try {

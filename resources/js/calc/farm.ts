@@ -32,7 +32,7 @@ interface Change { z: number; hex: string; code: string | null; slot_id: number 
 /** One part of a design printed by parts: its plate, the colour the design names for it, and the spool chosen so far. */
 interface Part { part: string; plate: number; label: string; hex: string | null; slot_id: number | null; color_id?: number | null; name?: string | null; copies: number; minutes?: number | null; grams?: number | null; spool_hex?: string | null; model_url?: string | null }
 interface FarmState {
-    token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null;
+    token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null; big_model?: string | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
     unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean;
@@ -620,7 +620,7 @@ export function bootFarmOrder(): void {
     const render = (): void => {
         const s = state;
         const working = s.status === 'uploaded';
-        $('farm-status')!.textContent = working && s.stage ? tr(`farm.stage.${s.stage}`) : s.status_text;
+        $('farm-status')!.textContent = (working && s.stage ? tr(`farm.stage.${s.stage}`) : s.status_text) + (working && s.big_model ? ` ${s.big_model}` : '');
         // what is happening right now, as a step of the whole preparation
         const step = working && s.stage_step ? s.stage_step : 0;
         show($('farm-progress'), step > 0);
