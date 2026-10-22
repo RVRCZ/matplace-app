@@ -221,6 +221,7 @@ return [
     'puzzle.lead' => 'A flat model (a relief, a logo, a lithophane, a coaster) cut into a jigsaw: a grid of pieces with classic knobs, or with straight cuts and hidden pins in the sides, numbers engraved underneath and an optional tray.',
     'puzzle.tip' => 'The pieces print flat, face up, without supports; the knobs have 0.2 mm of play, so they fit without sanding. The hidden pins of Ø 3 mm are a piece of their own. The tray prints separately and the puzzle goes into it.',
     'puzzle.hint' => 'Free, a few seconds. The model stays, the puzzle opens as a new file.',
+    'puzzle.auto_skip.not_watertight' => 'The model is not a closed body, so we did not cut the puzzle right away. The “Make the puzzle” button tries to repair it; repairing it first with the model repair tool is more reliable.',
     'puzzle.apply' => 'Make the puzzle',
     'puzzle.working' => 'Cutting the puzzle…',
     'puzzle.report' => 'A puzzle of :c × :r = :n pieces, :l.',

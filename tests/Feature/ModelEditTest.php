@@ -204,6 +204,12 @@ class ModelEditTest extends TestCase
     public function test_a_flat_model_becomes_a_jigsaw_with_knobs_or_hidden_pins(): void
     {
         $this->get('/tools/puzzle')->assertOk()->assertSee(__('tools.puzzle.title'))->assertSee('data-module="edit"', false)->assertSee(__('edit.o.lock.tabs'));
+        // an uploaded model is cut at once with the settings as they stand (config tools.puzzle.auto_apply); the page says
+        // why when it does not (a model that is no closed body, too tall, pieces too small); the tools with values to
+        // choose wait for the button
+        $this->get('/tools/puzzle')->assertSee('auto: true', false)->assertSee('edit.puzzle.auto_skip.not_watertight', false)->assertSee('edit.puzzle.error.pieces_too_small', false);
+        $this->get('/tools/hollow')->assertSee('auto: false', false);
+        $this->get('/tools/split')->assertSee('auto: false', false);
         $uuid = $this->box(120, 90, 6, 'plate.stl');
         $r = $this->postJson('/api/files/'.$uuid.'/edit', ['op' => 'puzzle', 'rows' => 3, 'cols' => 4, 'lock' => 'tabs', 'frame' => true])->assertCreated();
         $r->assertJsonPath('file.kind', 'puzzle')->assertJsonPath('file.status', 'ready');

@@ -221,6 +221,7 @@ return [
     'puzzle.lead' => 'Plochý model (reliéf, logo, litofanie, podtácek) rozřežeme na puzzle: mřížka dílků s klasickými zámky, nebo s rovnými řezy a skrytými kolíky v bocích, čísla vyrytá zespodu a volitelný rámeček.',
     'puzzle.tip' => 'Dílky se tisknou naplocho lícem nahoru, bez podpěr; zámky mají vůli 0,2 mm, takže do sebe zapadnou bez broušení. Skryté kolíky Ø 3 mm jsou samostatný díl. Rámeček se tiskne zvlášť a puzzle se do něj vloží.',
     'puzzle.hint' => 'Zdarma, pár vteřin. Model zůstane, puzzle se otevře jako nový soubor.',
+    'puzzle.auto_skip.not_watertight' => 'Model není uzavřené těleso, puzzle jsme proto hned nenařezali. Tlačítko „Udělat puzzle“ ho zkusí opravit; spolehlivější je opravit ho nejdřív v nástroji Oprava modelu.',
     'puzzle.apply' => 'Udělat puzzle',
     'puzzle.working' => 'Řežu puzzle…',
     'puzzle.report' => 'Puzzle :c × :r = :n dílků, :l.',
