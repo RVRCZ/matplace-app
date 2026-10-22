@@ -1807,5 +1807,11 @@
     "param.part.body.medallion": "Placa y cadena",
     "param.part.color_1.medallion": "Número y borde",
     "param.part.body.box": "Solo la caja",
-    "param.part.layer": "Capa :n"
+    "param.part.layer": "Capa :n",
+    "farm.order.ship.choose": "El envío depende de la forma elegida abajo",
+    "farm.order.ship.pickup": "Recogida: gratis",
+    "farm.order.ship.parcel": "Envío con Packeta: :amount",
+    "farm.order.ship.counting": "Envío con Packeta: calculando…",
+    "farm.order.ship.free": "Envío con Packeta: gratis",
+    "farm.order.pay_total": "Total a pagar :total (impresión :print, envío :shipping)"
 }

@@ -1,5 +1,6 @@
-// The "Print" line of the order page in every state of an order (resources/js/calc/order_timeline.ts), with the
-// Czech words of lang/cs.json: node scripts/check_order_timeline.mjs (exits 1 when a line is not what it should be).
+// The "Print" line of the order page in every state of an order (resources/js/calc/order_timeline.ts) and its price
+// lines (order_price.ts), with the Czech words of lang/cs.json: node scripts/check_order_timeline.mjs (exits 1 when a
+// line is not what it should be).
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -37,5 +38,22 @@ for (const [s, [print, dispatch]] of cases) {
     const got = [mod.timelinePrint(s, tr, duration), mod.timelineDispatch(s, tr)];
     if (got[0] !== print || got[1] !== dispatch) { bad++; console.error('WRONG', s.status, JSON.stringify(got), 'expected', JSON.stringify([print, dispatch])); }
 }
-console.log(bad ? `${bad} of ${cases.length} lines wrong` : `order timeline ok: ${cases.length} states`);
+// the price lines (resources/js/calc/order_price.ts): the print without delivery, the delivery line by the way chosen
+const price = await import('data:text/javascript;base64,' + Buffer.from((await build({ entryPoints: [join(root, 'resources/js/calc/order_price.ts')], bundle: true, format: 'esm', write: false })).outputFiles[0].text).toString('base64'));
+const money = (n) => `${n} Kč`;
+const quote = { total: 259, shipping: 99 };
+const priceCases = [
+    [price.printOnly(quote), 160],
+    [price.printOnly({ total: 160, shipping: 0 }), 160],
+    [price.printOnly(null), null],
+    [price.shippingText('packeta_point', quote, true, tr, money), 'Doprava Zásilkovna: 99 Kč'],
+    [price.shippingText('packeta_home', { total: 309, shipping: 149 }, true, tr, money), 'Doprava Zásilkovna: 149 Kč'],
+    [price.shippingText('packeta_point', null, true, tr, money), 'Doprava Zásilkovna: počítám…'],
+    [price.shippingText('pickup', null, true, tr, money), 'Vyzvednutí: zdarma'],
+    [price.shippingText('', null, true, tr, money), 'Doprava podle způsobu doručení níže'],
+    [price.shippingText('', null, false, tr, money), ''],
+    [price.shippingText('packeta_point', { total: 160, shipping: 0 }, false, tr, money), 'Doprava Zásilkovna: zdarma'],
+];
+priceCases.forEach(([got, want], i) => { if (got !== want) { bad++; console.error('WRONG price line', i, JSON.stringify(got), 'expected', JSON.stringify(want)); } });
+console.log(bad ? `${bad} lines wrong` : `order timeline ok: ${cases.length} states; price lines ok: ${priceCases.length}`);
 process.exit(bad ? 1 : 0);

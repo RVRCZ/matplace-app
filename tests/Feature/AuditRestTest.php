@@ -136,7 +136,19 @@ class AuditRestTest extends TestCase
                 $this->assertNotSame($key, __($key), "{$key} ({$lang})");
             }
             $this->assertStringContainsString('id="farm-tl-dispatch-text" class="inline" data-rule="'.e(__('farm.order.tl.dispatch')).'"', $html);
+            // Roman, 22 Oct 2026: no price breakdown for the customer; the big number is the print, the delivery a line
+            // under it by the way chosen, the sum only at the payment (resources/js/calc/order_price.ts)
+            $this->assertStringNotContainsString('farm-breakdown', $html);
+            $this->assertStringNotContainsString(e(__('farm.order.breakdown')), $html);
+            $this->assertStringContainsString('id="farm-shipping-line"', $html);
+            $this->assertStringContainsString('id="farm-pay-total"', $html);
+            foreach (['farm.order.ship.choose', 'farm.order.ship.pickup', 'farm.order.ship.parcel', 'farm.order.ship.counting', 'farm.order.ship.free', 'farm.order.pay_total'] as $key) {
+                $this->assertStringContainsString($key, $html, "{$key} ({$lang})");
+                $this->assertNotSame($key, __($key), "{$key} ({$lang})");
+            }
         }
+        $this->assertSame('Doprava Zásilkovna: 99 Kč', __('farm.order.ship.parcel', ['amount' => '99 Kč'], 'cs'));
+        $this->assertSame('Vyzvednutí: zdarma', __('farm.order.ship.pickup', [], 'cs'));
         $this->assertSame('tiskne se, zbývá asi :time', __('farm.order.tl.printing', [], 'cs'));
         app()->setLocale('cs');
         $this->assertSame('v den, kdy tisk skončí, v pracovní dny (co se dotiskne o víkendu, odešleme v pondělí)', __('farm.order.tl.dispatch'));

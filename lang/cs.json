@@ -1807,5 +1807,11 @@
     "param.part.body.medallion": "Placka a řetěz",
     "param.part.color_1.medallion": "Číslo a lem",
     "param.part.body.box": "Jen krabička",
-    "param.part.layer": "Vrstva :n"
+    "param.part.layer": "Vrstva :n",
+    "farm.order.ship.choose": "Doprava podle způsobu doručení níže",
+    "farm.order.ship.pickup": "Vyzvednutí: zdarma",
+    "farm.order.ship.parcel": "Doprava Zásilkovna: :amount",
+    "farm.order.ship.counting": "Doprava Zásilkovna: počítám…",
+    "farm.order.ship.free": "Doprava Zásilkovna: zdarma",
+    "farm.order.pay_total": "Celkem k zaplacení :total (tisk :print, doprava :shipping)"
 }
