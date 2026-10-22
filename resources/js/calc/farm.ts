@@ -11,6 +11,7 @@ import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
 import { money as moneyText } from '../site/money';
 import { timelinePrint, timelineDispatch } from './order_timeline';
+import { printOnly, shippingText } from './order_price';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
 /** A colour on offer: one per colour, with the codes of every spool of it that could print the order ("U33" = farm U, printer 3, slot 3). */
@@ -368,6 +369,15 @@ export function bootFarmOrder(): void {
         if (delivery === 'pickup') return c.total;
         return kind() && quoted?.key === quoteKey() ? quoted.total : null;
     };
+    // the price of the print alone (with VAT and the designer's share, without delivery): the big number of the page.
+    // Before payment the picked colour's (or the delivery quote's, the country may change the VAT), after it the order's
+    const priceNow = (): Price | null => (state.status === 'sliced' && ((kind() && quoted?.key === quoteKey() ? quoted.price : null) ?? state.colors.find((x) => x.slot === picked)?.price)) || state.price;
+    const printPrice = (): number | null => printOnly(priceNow());
+    // the small line under it: what the delivery chosen costs (before payment), or what it cost (after) – order_price.ts
+    const shippingLine = (): string => {
+        const open = state.status === 'sliced';
+        return shippingText(open ? delivery : state.delivery, open ? (kind() && quoted?.key === quoteKey() ? quoted.price : null) : state.price, open, tr, money);
+    };
 
     // delivery: the kinds on offer with their price for the chosen country, the country, the pickup point or the address
     const renderDelivery = (): void => {
@@ -585,23 +595,6 @@ export function bootFarmOrder(): void {
         box.innerHTML = tags.join('');
     };
 
-    const renderBreakdown = (): void => {
-        // before payment the breakdown follows the picked colour (its kind's price per gram, its machine's rate)
-        const p = (state.status === 'sliced' && ((kind() && quoted?.key === quoteKey() ? quoted.price : null) ?? state.colors.find((x) => x.slot === picked)?.price)) || state.price;
-        const box = $('farm-breakdown')!;
-        if (!p) { box.innerHTML = ''; return; }
-        const ship = p.shipping;
-        const row = (k: string, v: number, strong = false) => `<div class="flex justify-between ${strong ? 'font-semibold' : ''}"><dt>${esc(k)}</dt><dd>${esc(money(v))}</dd></div>`;
-        const changesN = Number((p as { changes?: number }).changes ?? 0);
-        box.innerHTML = row(tr('farm.order.b_time'), p.time) + row(tr('farm.order.b_material'), p.material) + row(tr('farm.order.b_fixed'), p.fixed)
-            // one plate of several filaments: how often the machine changes the spool (the purge is in the material line, the time in the time line)
-            + (state.one_plate && changesN > 0 ? `<div class="flex justify-between text-xs text-slate-500"><dt>${esc(tr('farm.order.b_changes'))}</dt><dd>${esc(tr('farm.order.b_changes_value', { n: String(changesN) }))}</dd></div>` : '')
-            + (p.min_price_applied ? `<div class="text-xs text-slate-500">${esc(tr('farm.order.b_min'))}</div>` : '')
-            + row(tr('farm.order.b_net'), p.net) + row(tr('farm.order.b_vat', { p: p.inputs.vat_percent }), p.vat)
-            + ((p.royalty ?? 0) > 0 ? row(tr('models.price.to_author'), p.royalty ?? 0) : '')
-            + (ship > 0 ? row(tr('farm.order.b_shipping'), ship) : '') + row(tr('farm.order.b_total'), (total() ?? p.total), true);
-    };
-
     // what the price was made of before a new calculation: said again when the new one comes back with another price
     let before: { total: number | null; printer: string | null; kind: string | null; minutes: number | null; settings: string } | null = null;
     const kindOf = (): string | null => state.colors.find((c) => c.slot === picked)?.kind ?? null;
@@ -609,7 +602,7 @@ export function bootFarmOrder(): void {
     const sayWhy = (): void => {
         const box = $('farm-price-why');
         if (!box || !before || state.status !== 'sliced') return;
-        const now = total();
+        const now = printPrice();
         if (now === null) return;                                       // the delivery quote is not back yet
         const was = before; before = null;
         if (was.total === null || Math.abs(now - was.total) < 0.005) { show(box, false); return; }
@@ -649,7 +642,10 @@ export function bootFarmOrder(): void {
         const hasResult = s.minutes !== null && s.status !== 'uploaded' && !(s.status === 'failed' && !s.number);
         show($('farm-result'), hasResult);
         if (hasResult) {
-            $('farm-price')!.textContent = total() !== null ? money(total()!) : '—';
+            const print = printPrice();
+            $('farm-price')!.textContent = print !== null ? money(print) : '—';
+            const shipLine = $('farm-shipping-line');
+            if (shipLine) { shipLine.textContent = shippingLine(); show(shipLine, shipLine.textContent !== ''); }
             const copiesLine = $('farm-copies-line');
             if (copiesLine) {
                 // "9 pieces on 2 plates (5 + 4), printed one after another" when one plate is not enough
@@ -670,7 +666,6 @@ export function bootFarmOrder(): void {
             show($('farm-tl-dispatch'), chosen !== 'pickup');
             $('farm-grams')!.textContent = `${s.grams} g${s.meters ? ` · ${s.meters} m` : ''}`;
             $('farm-supports')!.textContent = tr(s.supports ? 'farm.order.supports_yes' : s.supports_mode === 'off' ? 'farm.order.supports_off' : 'farm.order.supports_no');
-            renderBreakdown();
         }
 
         // presets stay editable until the order is paid; a failed check can be retried with other units
@@ -717,6 +712,13 @@ export function bootFarmOrder(): void {
             payBtn.dataset.need = short > 0.005 ? String(Math.ceil(short)) : '';
             payBtn.textContent = payBtn.dataset.need ? (s.balance > 0.005 ? tr('farm.order.pay_card_rest', { amount: money(Math.ceil(short)), balance: money(s.balance) }) : tr('farm.order.pay_card', { amount: money(Math.ceil(short)) })) : tr('farm.order.pay');
             payBtn.disabled = picked === null || total() === null || deliveryMissing() !== null || noMachine() || !($('farm-terms') as HTMLInputElement).checked;
+            // the sum is said here, where it is paid: the print and the delivery
+            const payTotal = $('farm-pay-total');
+            if (payTotal) {
+                const sum = total(); const print = printPrice();
+                payTotal.textContent = sum !== null && print !== null && delivery ? tr('farm.order.pay_total', { total: money(sum), print: money(print), shipping: money(Math.max(0, sum - print)) }) : '';
+                show(payTotal, payTotal.textContent !== '');
+            }
             const topup = $<HTMLAnchorElement>('farm-topup');
             if (topup && payBtn.dataset.need) { topup.href = `${cfg.routes.topup}&need=${payBtn.dataset.need}`; show(topup, true); } else show(topup, false);
             // back from the card payment: the page waits for the bank's word; a payment that arrived but could not start the order says so
@@ -834,7 +836,7 @@ export function bootFarmOrder(): void {
         e.preventDefault();
         const btn = $<HTMLButtonElement>('farm-reslice');
         const recolor = $<HTMLButtonElement>('farm-recolor');
-        before = { total: total(), printer: state.printer?.name ?? null, kind: kindOf(), minutes: state.minutes, settings: settingsKey() };
+        before = { total: printPrice(), printer: state.printer?.name ?? null, kind: kindOf(), minutes: state.minutes, settings: settingsKey() };
         // the request takes a moment: the buttons say so and cannot be pressed twice
         [btn, recolor].forEach((b) => { if (b) { b.disabled = true; b.dataset.label = b.textContent ?? ''; b.textContent = tr('farm.order.reslicing'); } });
         show($('farm-error'), false);

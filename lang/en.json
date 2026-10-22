@@ -1807,5 +1807,11 @@
     "param.part.body.medallion": "Plate and chain",
     "param.part.color_1.medallion": "Number and rim",
     "param.part.body.box": "Box only",
-    "param.part.layer": "Layer :n"
+    "param.part.layer": "Layer :n",
+    "farm.order.ship.choose": "Delivery depends on the way chosen below",
+    "farm.order.ship.pickup": "Pickup: free",
+    "farm.order.ship.parcel": "Delivery by Packeta: :amount",
+    "farm.order.ship.counting": "Delivery by Packeta: calculating…",
+    "farm.order.ship.free": "Delivery by Packeta: free",
+    "farm.order.pay_total": "To pay :total (print :print, delivery :shipping)"
 }

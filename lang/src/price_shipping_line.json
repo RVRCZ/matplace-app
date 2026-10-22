@@ -1,0 +1,32 @@
+{
+    "farm.order.ship.choose": [
+        "Doprava podle způsobu doručení níže",
+        "Delivery depends on the way chosen below",
+        "El envío depende de la forma elegida abajo"
+    ],
+    "farm.order.ship.pickup": [
+        "Vyzvednutí: zdarma",
+        "Pickup: free",
+        "Recogida: gratis"
+    ],
+    "farm.order.ship.parcel": [
+        "Doprava Zásilkovna: :amount",
+        "Delivery by Packeta: :amount",
+        "Envío con Packeta: :amount"
+    ],
+    "farm.order.ship.counting": [
+        "Doprava Zásilkovna: počítám…",
+        "Delivery by Packeta: calculating…",
+        "Envío con Packeta: calculando…"
+    ],
+    "farm.order.ship.free": [
+        "Doprava Zásilkovna: zdarma",
+        "Delivery by Packeta: free",
+        "Envío con Packeta: gratis"
+    ],
+    "farm.order.pay_total": [
+        "Celkem k zaplacení :total (tisk :print, doprava :shipping)",
+        "To pay :total (print :print, delivery :shipping)",
+        "Total a pagar :total (impresión :print, envío :shipping)"
+    ]
+}

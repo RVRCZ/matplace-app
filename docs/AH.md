@@ -285,6 +285,16 @@ dobou tisku a orientační cenou je na telefonu nad prohlížečem (`flow-file-p
   dokončení každou chvíli“, po dotištění „dotištěno“ a po předání balíku Odeslání „odesláno“. U zrušené nebo
   neúspěšné zakázky se blok neukáže. Logika je čistá funkce `resources/js/calc/order_timeline.ts`, kterou
   `scripts/check_order_timeline.mjs` ověřuje na 12 stavech při každém `npm run build`.
+- **Cena bez dopravy, doprava zvlášť** (Roman 22. 10. 2026, větev `feature/price-shipping-line`). „Rozpis ceny“ na
+  stránce zakázky zákazník už nevidí (neotvíral ho), admin náhled zakázky ho má dál. Velké číslo je cena **tisku** s DPH
+  (s podílem autora u modelů designérů) **bez dopravy**. Pod ním malým písmem řádek podle zvoleného doručení:
+  „Doprava Zásilkovna: 99 Kč“, „Vyzvednutí: zdarma“, „Doprava Zásilkovna: počítám…“, dokud nepřijde nabídka. Bez volby
+  „Doprava podle způsobu doručení níže“. Řádek se přepočítá při každé změně doručení nebo země. Celkovou částku říká až
+  blok platby: „Celkem k zaplacení 259 Kč (tisk 160 Kč, doprava 99 Kč)“ nad tlačítkem a karta s doplatkem jako dřív.
+  Výpočet ceny se nezměnil (velké číslo je `total − shipping` z téže ceny) a platba posílá dál celek (`expected_total`).
+  Věta „proč se cena změnila“ teď porovnává cenu tisku. Kalkulace dopravu nikde neukazuje („Orientační cena tisku u
+  nás“ je bez dopravy), tam se nic neměnilo. Logika textů je čistá funkce `resources/js/calc/order_price.ts`, kterou
+  stejný skript ověřuje na 10 případech.
 - **Proč se cena změnila:** po přepočtu (jiná barva v jiném stroji, jiné nastavení) stránka napíše například „Cena se
   po přepočtu změnila ze 120 Kč na 150 Kč: tiskne jiná tiskárna (U #1 → K1), jiný materiál (PLA+ → PETG), doba tisku
   1 h 5 min → 1 h 40 min.“ Porovnává cenu, tiskárnu, druh barvy, nastavení a čas před přepočtem a po něm. Když se cena
