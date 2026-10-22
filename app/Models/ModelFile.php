@@ -98,6 +98,44 @@ class ModelFile extends Model
         };
     }
 
+    /**
+     * What a design may ask of the slicing process itself: key → Orca's own words, or a pattern for a number. Ironing
+     * (a medal's plaque gets a smooth top), the top surface pattern. Anything else a tool writes is dropped.
+     */
+    public const PROCESS_HINTS = [
+        'ironing_type' => ['no ironing', 'top', 'topmost', 'solid'],
+        'ironing_pattern' => ['concentric', 'zig-zag'],
+        'ironing_flow' => '/^(?:100|[1-9]\d?)%$/',
+        'ironing_speed' => '/^(?:[1-9]\d?|1\d\d|200)$/',
+        'ironing_spacing' => '/^0\.\d{1,3}$/',
+        'top_surface_pattern' => ['concentric', 'zig-zag', 'monotonic', 'monotonicline', 'alignedrectilinear', 'hilbertcurve', 'archimedeanchords', 'octagramspiral'],
+    ];
+
+    /**
+     * The process settings a design asks for (`tool_params.process`, written by its tool; a medal irons the top of
+     * its plaque), checked against PROCESS_HINTS. The farm and the calculator slice with them as process overrides,
+     * below the farm's own tuning and the customer's choices (PrepareFarmOrder::sliceSetup, docs/AL.md §10.10), so the
+     * minutes and the price count them.
+     *
+     * @return array<string, string>
+     */
+    public function processHints(): array
+    {
+        $raw = $this->origin === 'tool' && is_array($this->tool_params['process'] ?? null) ? $this->tool_params['process'] : [];
+        $out = [];
+        foreach (self::PROCESS_HINTS as $key => $rule) {
+            if (! isset($raw[$key]) || ! is_scalar($raw[$key])) {
+                continue;
+            }
+            $value = trim((string) $raw[$key]);
+            if (is_array($rule) ? in_array($value, $rule, true) : (bool) preg_match($rule, $value)) {
+                $out[$key] = $value;
+            }
+        }
+
+        return $out;
+    }
+
     /** For generated models: the generation token and whether it can be changed in words. */
     public function generationInfo(): ?array
     {

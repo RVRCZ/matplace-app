@@ -28,6 +28,8 @@ final class CalculationService
         if (! $this->materials->has($sliceParams->materialCode)) {
             $sliceParams = SliceParams::fromArray(['material' => $this->materials->defaultCode()] + $params);
         }
+        // what the design asks of the slicing process (a medal irons its top): sliced and priced with it, as the farm does
+        $sliceParams = $sliceParams->withProcess($file->processHints());
 
         // Geometry: server statistics when the file is processed, otherwise what the browser measured.
         $volume = $file->volume_mm3 ?? ($clientGeometry['volume_mm3'] ?? null);

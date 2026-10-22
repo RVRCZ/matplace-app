@@ -44,6 +44,9 @@ final class FakeSlicer implements Slicer
 
         $grams = round($est['grams'] * 1.03, 1); // "precise" differs slightly from rough on purpose
         $minutes = (int) round($est['minutes'] * 0.97);
+        if (($params->overrides['process']['ironing_type'] ?? 'no ironing') !== 'no ironing') {
+            $minutes = (int) round($minutes * 1.15);   // the ironing pass over the top surfaces takes its minutes, as a real slice does
+        }
         $meters = round($grams / 1.24 / (M_PI * 0.875 ** 2), 2); // 1.75 mm PLA
         $layers = max(1, (int) ceil($stats->bbox->z * $params->scale / ['draft' => 0.28, 'standard' => 0.2, 'fine' => 0.12][$params->quality]));
         // a plate of several filaments: the grams split by the parts' volumes (a prime tower adds a tenth), a change on

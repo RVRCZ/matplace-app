@@ -75,7 +75,8 @@ class SliceCalculation implements ShouldQueue
             ->note('triangles', $file->triangles);
 
         try {
-            $result = $clock->measure('slice', fn () => $slicer->slice($file->absoluteStlPath(), SliceParams::fromArray(['tree' => $file->wantsTreeSupports()] + $calc->params)));
+            // the stored params carry no overrides (a client could write any): the design's own process hints go on again here
+            $result = $clock->measure('slice', fn () => $slicer->slice($file->absoluteStlPath(), SliceParams::fromArray(['tree' => $file->wantsTreeSupports()] + $calc->params)->withProcess($file->processHints())));
             $clock->merge($result->timings)->note('print_minutes', $result->minutes);
             $calc->timings = $clock->toArray();   // saved together with the result
             $clock->measure('price', fn () => $service->applySlice($calc, $result, $slicer->name()));

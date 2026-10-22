@@ -785,4 +785,41 @@ stroj U1, cívky C1. Řez pak musel skončit `two_machines`.
 `app/Http/Controllers/Farm/{AgentController,OrderController}.php`, `app/Http/Controllers/Admin/FarmOrderController.php`,
 `resources/views/admin/farm/order.blade.php`, `resources/js/calc/farm.ts`, `lang/{cs,en,es}/farm.php`
 (`order.parts_one_plate/parts_one_machine/b_changes/b_changes_value`), `tests/Unit/GcodeSlotTest.php`,
-`tests/Unit/OnePlateTowerTest.php`, `tests/Feature/FarmOnePlateTest.php`.
+`tests/Unit/OnePlateTowerTest.php`, `tests/Feature/FarmOnePlateTest.php`. K §10.10: `app/Models/ModelFile.php`
+(`PROCESS_HINTS`, `processHints`), `app/Engines/DTO/SliceParams.php` (`withProcess`), `app/Engines/Slicer/FakeSlicer.php`
+(minuty žehlení), `app/Domain/Calculation/CalculationService.php`, `app/Jobs/SliceCalculation.php`,
+`resources/views/farm/order.blade.php` (řádek `farm.advanced.design_ironing`), `tests/Feature/CalculationFlowTest.php`.
+
+### 10.10 Procesní nápovědy návrhu (`tool_params.process`, větev `feature/design-process-hints`, 22. 10. 2026)
+
+Roman chce u medaile žehlení horní plochy placky; dosud mohl process přepisy dát jen profil, řádky druhu/cívky,
+tiskárna, zákazník („pokročilé“) a admin – návrh nic. Teď:
+
+- `ModelFile::processHints()`: z `tool_params['process']` návrhu z nástroje (`origin = tool`) jen klíče z whitelistu
+  `ModelFile::PROCESS_HINTS` s hodnotami, které Orca zná: `ironing_type` (`no ironing` | `top` | `topmost` | `solid`),
+  `ironing_pattern` (`concentric` | `zig-zag`), `ironing_flow` (`1–100%`), `ironing_speed` (1–200), `ironing_spacing`
+  (`0.xxx`), `top_surface_pattern` (Orcovy vzory). Cizí klíče a cizí hodnoty se zahodí (`wall_loops: 9` nic neudělá).
+- Farma (`PrepareFarmOrder::sliceSetup`, tedy všechny cesty – jedna podložka, po dílech, po výšce, test): pořadí
+  **profil < návrh < tiskárna (`process_overrides`) < řádky druhu/cívky (`PrintProfile`) < `layer_height` < zákazník
+  (`PrintSettings`) < admin**. Návrh tedy přebije jen soubor profilu (`ironing_type: no ironing`), ne ladění farmy
+  (`ironing_spacing` u jiné trysky: blok s `TestPrintService::ironingFor` běží i pro nápovědu návrhu) ani zákazníkovu
+  volbu v „pokročilých“ (ta může žehlení přepnout na `top`; vypnout ho zákazník nemůže – přepínač je na stránce nástroje).
+- Kalkulace: `CalculationService::create` i `SliceCalculation` dají `SliceParams::withProcess($file->processHints())`
+  (uložené `params` nápovědy nesou v `overrides.process` – jiný klíč cache, jiná cena; job je bere znovu ze souboru,
+  z uložených params ne, aby klient nemohl podstrčit libovolné přepisy). Orca je zapíše do kopie procesu jako vždy
+  (`OrcaSlicer` project i prostá cesta); `FakeSlicer` při žehlení přidá 15 % minut, aby testy viděly cenu. Hrubý odhad
+  před řezem žehlení nezná (počítá z objemu).
+- Stránka zakázky: řádek „Žehlení horní plochy podle návrhu: …“ u pokročilých nastavení (server‑side, `farm.advanced.design_ironing`).
+- Testy: `FarmOnePlateTest` (návrh s `ironing_type topmost` + `wall_loops 9` → v `slice_params.overrides.process` jen
+  `ironing_type`), `CalculationFlowTest::test_a_design_s_process_hints_reach_the_slice_and_the_price` (stejná kostka
+  bez/s nápovědou: `params.overrides.process` jen povolené klíče, víc minut a vyšší cena).
+- Session 1 dá medaili `tool_params.process = {ironing_type: topmost}` (přepínač na stránce nástroje; bez žehlení klíč
+  chybí). Její měření: medaile bez žehlení 1 h 44 min, se žehlením 1 h 56 min.
+- **Žehlení jen placky** (poznámka session 1: `topmost` žehlí i vršek motivu/lemu v 0,6 mm, ~2 min navíc, a ten povrch
+  hned překryje další vrstva těla): na jedné podložce dostane každý díl kromě prvního v `Metadata/model_settings.config`
+  vlastní `<metadata key="ironing_type" value="no ironing"/>` (`ThreeMfWriter` bere `process` per objekt; Orca per‑object
+  config čte i z cizího 3MF – ověřeno místně Orcou 2.4.0‑beta: vložka s per‑object `wall_loops 1` ztratila vnitřní
+  stěny, tělo si nechalo 28). Nápověda žehlení tedy platí prvnímu dílu (tělo/placka); po dílech (každý díl svou
+  podložkou) by žehlil každý díl – u medaile s `one_plate_required` to nenastane. Skutečná medaile místně (Orca 2.4,
+  Kobra X): bez žehlení 1 h 28 min, s `topmost` **1 h 38 min 45 s**, žehlení jen v Z 4,4 (vršek placky) – motiv v kapse
+  Orca 2.4 nežehlí ani bez per‑object vypnutí (rozdíl 1 s), takže ta pojistka je pro návrhy s odkrytým vrškem vložky.

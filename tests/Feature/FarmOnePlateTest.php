@@ -84,6 +84,8 @@ class FarmOnePlateTest extends TestCase
         $file->forceFill(['origin' => 'tool', 'origin_ref' => 'gcode', 'tool_params' => [
             'parts' => ['color_1', 'color_2'], 'multi_material' => true,
             'part_colors' => ['color_1' => ['hex' => '#f4f4f0'], 'color_2' => ['hex' => '#c01818']],
+            // the design asks for an ironed top (a medal's plaque); a key no design may set is dropped
+            'process' => ['ironing_type' => 'topmost', 'wall_loops' => '9'],
         ]])->save();
 
         return $file;
@@ -126,6 +128,16 @@ class FarmOnePlateTest extends TestCase
         $this->assertCount(2, $order->slice_result['filament_grams']);
         $this->assertGreaterThan(0, $order->slice_result['changes']);
         $this->assertSame('1', $order->slice_params['overrides']['process']['enable_prime_tower'], 'the prime tower is on for this plate');
+        // the design's own process hint reached the slice (and so the minutes and the price), the foreign key did not
+        $this->assertSame('topmost', $order->slice_params['overrides']['process']['ironing_type']);
+        $this->assertArrayNotHasKey('wall_loops', $order->slice_params['overrides']['process']);
+        // … and the 3MF tells the slicer to iron the first part alone: the inlay's own object switches ironing off
+        $zip = new \ZipArchive;
+        $zip->open(Storage::disk('farm')->path($order->dir().'/plate.3mf'));
+        $config = (string) $zip->getFromName('Metadata/model_settings.config');
+        $zip->close();
+        $this->assertStringContainsString('<object id="1"><metadata key="name" value="color_1"/><metadata key="extruder" value="1"/></object>', $config);
+        $this->assertStringContainsString('<object id="2"><metadata key="name" value="color_2"/><metadata key="extruder" value="2"/><metadata key="ironing_type" value="no ironing"/></object>', $config);
         // the tower has a band of its own below the parts and every filament its spool's colour (Orca 2.4 falls over without)
         $tower = $order->slice_params['tower'];
         $this->assertEquals([0, 0], $tower['shift'], 'small parts stay centred');
