@@ -55,8 +55,11 @@ final class WeeklyReport
             $sections[] = ['title' => 'Hledali a v našem katalogu nenašli', 'lines' => array_map(fn (array $s) => sprintf('„%s“ — %d×', $s['query'], $s['searches']), array_slice($o['searches']['empty'], 0, 10))];
         }
         $missing = array_values(array_filter($o['missing'], fn (array $m) => $m['people'] > 0));
-        if ($missing) {
-            $sections[] = ['title' => 'Adresy, které neexistují (kandidáti na přesměrování)', 'lines' => array_map(fn (array $m) => sprintf('%s — %d× lidé, %d× roboti%s', $m['path'], $m['people'], $m['robots'], $m['referer'] ? ', odkaz z '.$m['referer'] : ''), array_slice($missing, 0, 10))];
+        if ($missing || ($o['scanners'] ?? 0) > 0) {
+            $lines = array_map(fn (array $m) => sprintf('%s — %d× lidé, %d× roboti%s', $m['path'], $m['people'], $m['robots'], $m['referer'] ? ', odkaz z '.$m['referer'] : ''), array_slice($missing, 0, 10));
+            // what scanners asked for is no candidate: one number (Bots::scanner)
+            $lines[] = sprintf('Skenery (cizí systémy, spamové adresy, odkaz z holé IP): %d×', (int) ($o['scanners'] ?? 0));
+            $sections[] = ['title' => 'Adresy, které neexistují (kandidáti na přesměrování)', 'lines' => $lines];
         }
 
         $robots = [];
