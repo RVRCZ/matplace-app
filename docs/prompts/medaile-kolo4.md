@@ -17,3 +17,10 @@ lepší“). Chybí:
 Větev **`feature/medallion-round4`** z aktuálního `main`, `docs/P.md` §8c. Soubory jako dřív (`shape_kinds.py`,
 testy enginu, ukázky jen když se změní vzhled). Ověř řezem (bez podpěr, převis ≤ 45°), gramy a čas pro 60 mm + 40
 článků do P.md. Pravidla jako dosud; push + zpráva řídící session; po nasazení zkušební kalkulace (výchozí stav).
+
+## Doplněk 22. 10. (po výtisku článku, foto Romana)
+
+1. **Vršek článku**: horní vrstvy profilu jsou tenké proužky, které se špatně přilepují (viz foto: švy na vršku). Udělat profil symetrický: nahoře stejná ploška ~1 mm jako dole (stejný počet vrstev nad a pod osou), ne plný čtvrtkruh do špičky; zaoblení se zakončí ploškou. Totéž u půlkoulí na koncích (vrchol zarovnat na výšku plošky).
+2. **Mezera mezi půlkoulemi o dalších 1,2 mm menší** (1,6 → 0,4 mm); spočítat přesah a sílu zacvaknutí, do P.md; `LINK[3]` = 0,4.
+
+Větev `feature/medallion-round5` z main, P.md §8d, řez bez podpěr, push + zpráva; po nasazení zkušební kalkulace.
