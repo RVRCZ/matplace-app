@@ -14,7 +14,8 @@ use App\Engines\Exceptions\EngineException;
 final class ThreeMfWriter
 {
     /**
-     * @param  list<array{name: string, stl: string, extruder: int}>  $objects  binary or ASCII STL per part, extruder 1-based
+     * @param  list<array{name: string, stl: string, extruder: int, process?: array<string, string>}>  $objects  binary or
+     *                                                                                                           ASCII STL per part, extruder 1-based, process settings of this object alone (Orca's per-object config: `ironing_type` off for an inlay)
      */
     public static function write(string $path, array $objects): void
     {
@@ -33,7 +34,13 @@ final class ThreeMfWriter
             $name = htmlspecialchars((string) $o['name'], ENT_XML1 | ENT_QUOTES, 'UTF-8');
             $resources .= '<object id="'.$id.'" name="'.$name.'" type="model">'.self::mesh((string) $o['stl']).'</object>';
             $build .= '<item objectid="'.$id.'" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>';
-            $config .= '<object id="'.$id.'"><metadata key="name" value="'.$name.'"/><metadata key="extruder" value="'.max(1, (int) $o['extruder']).'"/></object>';
+            $own = '';
+            foreach ((array) ($o['process'] ?? []) as $key => $value) {
+                if (is_string($key) && preg_match('/^[a-z][a-z0-9_]{1,60}$/', $key) && is_scalar($value)) {
+                    $own .= '<metadata key="'.$key.'" value="'.htmlspecialchars((string) $value, ENT_XML1 | ENT_QUOTES, 'UTF-8').'"/>';
+                }
+            }
+            $config .= '<object id="'.$id.'"><metadata key="name" value="'.$name.'"/><metadata key="extruder" value="'.max(1, (int) $o['extruder']).'"/>'.$own.'</object>';
         }
         $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
             .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'

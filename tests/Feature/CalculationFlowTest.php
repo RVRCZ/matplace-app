@@ -71,6 +71,32 @@ class CalculationFlowTest extends TestCase
     }
 
     /**
+     * A design may ask the slicer for something of its own (a medal irons the top of its plaque, docs/AL.md §10.10):
+     * the calculation slices and prices with it, and takes only the keys a design may set, with values Orca knows.
+     */
+    public function test_a_design_s_process_hints_reach_the_slice_and_the_price(): void
+    {
+        $uuid = $this->postJson('/api/uploads', ['file' => $this->cube()])->assertCreated()->json('file.uuid');
+        $ask = fn () => $this->postJson('/api/calculations', ['file' => $uuid, 'material' => 'PLA', 'quality' => 'standard', 'infill' => 15, 'quantity' => 1])->assertCreated()->json('calculation');
+        $plain = $ask();
+        $this->assertSame('done', $plain['status']);
+        $this->assertArrayNotHasKey('overrides', $plain['params']);
+
+        $file = ModelFile::where('uuid', $uuid)->firstOrFail();
+        $file->forceFill(['origin' => 'tool', 'origin_ref' => 'medallion', 'tool_params' => ['process' => ['ironing_type' => 'topmost', 'ironing_flow' => '12%', 'wall_loops' => '9', 'ironing_speed' => 'fast', 'ironing_pattern' => 'spiral']]])->save();
+        $this->assertSame(['ironing_type' => 'topmost', 'ironing_flow' => '12%'], $file->processHints());
+        $ironed = $ask();
+        $this->assertSame('done', $ironed['status']);
+        $this->assertNotSame($plain['token'], $ironed['token'], 'another slice, not the cached one');
+        $this->assertSame(['ironing_type' => 'topmost', 'ironing_flow' => '12%'], $ironed['params']['overrides']['process']);
+        $this->assertGreaterThan($plain['slicer']['minutes'], $ironed['slicer']['minutes'], 'the ironing pass takes its minutes');
+        $this->assertGreaterThan($plain['prices'][0]['unit']['time'], $ironed['prices'][0]['unit']['time'], 'and the price counts them (a 20 mm cube sits on the minimum price, so the time part is what moves)');
+        // a client cannot write overrides of its own: only the design's hints are applied
+        $tricked = $this->postJson('/api/calculations', ['file' => $uuid, 'material' => 'PLA', 'quality' => 'standard', 'infill' => 15, 'quantity' => 1, 'overrides' => ['process' => ['wall_loops' => '9']]])->assertCreated()->json('calculation');
+        $this->assertSame(['ironing_type' => 'topmost', 'ironing_flow' => '12%'], $tricked['params']['overrides']['process']);
+    }
+
+    /**
      * A calculation started on an English or Spanish page lives at /en/c/… or /es/c/… (AH.md §9.6 #7): the API answers
      * in the language of the page that calls it, and the calculator falls back to the start page of its own language,
      * never to "/" (which made the next calculation Czech on an English page).

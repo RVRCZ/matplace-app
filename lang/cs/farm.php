@@ -41,6 +41,7 @@ return [
         'infill' => 'Výplň (%)', 'walls' => 'Perimetry (stěny)', 'top' => 'Horní vrstvy', 'bottom' => 'Spodní vrstvy',
         'ironing' => 'Žehlení horní plochy', 'ironing_none' => 'bez žehlení (předvolba)', 'ironing_topmost' => 'jen nejvyšší plocha', 'ironing_top' => 'všechny horní plochy',
         'ironing_hint' => 'Žehlení přejede horní plochy horkou tryskou skoro bez materiálu a vyhladí je; tisk se prodlouží o minuty až desítky minut podle velikosti ploch.',
+        'design_ironing' => 'podle návrhu :mode – tisk je o několik minut delší.',
         'note' => 'Prázdné pole znamená hodnotu z předvoleb výše. Výplň 5 až 100 %, 1 až 6 perimetrů, 0 až 10 vrstev. Cena se po změně přepočítá.',
     ],
     'units' => [

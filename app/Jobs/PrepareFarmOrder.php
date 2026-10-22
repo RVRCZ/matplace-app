@@ -281,9 +281,12 @@ class PrepareFarmOrder implements ShouldQueue
             'process' => $printer->process_profiles[$quality] ?? null,
             'filament' => $profile->filamentProfile,
         ];
+        // what the design asks of the process (a medal irons its top, ModelFile::processHints): below the farm's own tuning –
+        // the layer, the kind's and the spool's rows, the printer's overrides – and below the customer's and the admin's choices
+        $hints = $order->modelFile?->processHints() ?? [];
         $overrides = [
             'machine' => (array) $printer->machine_overrides,
-            'process' => ['layer_height' => (string) $layer] + $profile->process + (array) $printer->process_overrides,
+            'process' => ['layer_height' => (string) $layer] + $profile->process + (array) $printer->process_overrides + $hints,
             'filament' => $profile->filament,
         ];
         if ($order->isTest()) {
@@ -301,7 +304,7 @@ class PrepareFarmOrder implements ShouldQueue
             $overrides['process']['enable_support'] = '0';
         }
         $overrides['process'] = PrintSettings::process($custom) + $overrides['process'];
-        if (isset($custom['ironing']) && abs((float) $printer->nozzle_mm - 0.4) > 0.001) {
+        if ((isset($custom['ironing']) || ($hints['ironing_type'] ?? 'no ironing') !== 'no ironing') && abs((float) $printer->nozzle_mm - 0.4) > 0.001) {
             // the profiles write the ironing pass for a 0.4 nozzle; a finer or coarser one irons at its own spacing
             // unless the kind's row on this machine says otherwise (TestPrintService::ironingFor, as the test prints do)
             $fine = TestPrintService::ironingFor((float) $printer->nozzle_mm);
@@ -664,7 +667,11 @@ class PrepareFarmOrder implements ShouldQueue
         }
         ksort($filaments);
         $projectRel = $order->dir().'/plate.3mf';
-        ThreeMfWriter::write($disk->path($projectRel), array_map(fn ($i, $p) => ['name' => (string) $p['part'], 'stl' => $disk->path($paths[$i]), 'extruder' => $filamentOf[$i] + 1], array_keys($skeleton), $skeleton));
+        // the design's ironing is for its first part (the plaque of a medal): an inlay in a pocket (the motif, the rim) ends
+        // below the plaque's next layer, ironing its top would only cost minutes – its object says "no ironing" itself
+        $hints = $order->modelFile?->processHints() ?? [];
+        $inlay = ($hints['ironing_type'] ?? 'no ironing') !== 'no ironing' ? ['ironing_type' => 'no ironing'] : [];
+        ThreeMfWriter::write($disk->path($projectRel), array_map(fn ($i, $p) => ['name' => (string) $p['part'], 'stl' => $disk->path($paths[$i]), 'extruder' => $filamentOf[$i] + 1, 'process' => $i > 0 ? $inlay : []], array_keys($skeleton), $skeleton));
         $process = self::ONE_PLATE_PROCESS + ['wipe_tower_x' => [(string) $tower['x']], 'wipe_tower_y' => [(string) $tower['y']]];
         $params = $setup['params']->withFilaments(array_map(fn ($f) => ['profile' => $f['profile'], 'overrides' => $f['overrides'], 'colour' => $f['colour'], 'volume_mm3' => round($f['volume_mm3'], 1)], $filaments), $disk->path($projectRel), $process);
         try {

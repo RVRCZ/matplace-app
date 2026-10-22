@@ -31,6 +31,18 @@ final class SliceParams
         return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $profiles, $overrides, true, $this->filaments, $this->project);
     }
 
+    /** The same run with these process settings on top of any it has (what a design asks for, ModelFile::processHints). */
+    public function withProcess(array $process): self
+    {
+        if (! $process) {
+            return $this;
+        }
+        $overrides = $this->overrides;
+        $overrides['process'] = $process + (array) ($overrides['process'] ?? []);
+
+        return new self($this->materialCode, $this->quality, $this->infillPercent, $this->supports, $this->scale, $this->vaseMode, $this->treeSupports, $this->profiles, $overrides, $this->keepGcode, $this->filaments, $this->project);
+    }
+
     /**
      * The same run over a 3MF of several parts, one filament each (the process overrides on top are what a plate with
      * filament changes needs: the prime tower).

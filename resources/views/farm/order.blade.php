@@ -182,6 +182,10 @@
                     </div>
                     <p class="mt-2 text-xs text-slate-500">{{ __('farm.advanced.note') }} {{ __('farm.advanced.ironing_hint') }}</p>
                 </details>
+                @if(($ironing = $order->modelFile?->processHints()['ironing_type'] ?? 'no ironing') !== 'no ironing')
+                    {{-- the design itself asks for an ironed top (a medal's plaque, ModelFile::processHints): said here, the choice above may still change it --}}
+                    <p id="farm-design-ironing" class="mt-2 text-xs text-slate-600"><span class="font-semibold text-slate-700">{{ __('farm.advanced.ironing') }}:</span> {{ __('farm.advanced.design_ironing', ['mode' => __('farm.advanced.ironing_'.($ironing === 'top' ? 'top' : 'topmost'))]) }}</p>
+                @endif
                 <div class="mt-4 text-sm font-semibold text-slate-700">{{ __('farm.size.label') }} <span id="farm-size-pct" class="font-normal text-action-dark"></span> <button id="farm-size-reset" type="button" class="hidden text-xs font-semibold text-action-dark underline">{{ __('farm.size.reset') }}</button></div>
                 <div class="mt-2 grid grid-cols-3 gap-2">
                     @foreach(['x', 'y', 'z'] as $axis)
