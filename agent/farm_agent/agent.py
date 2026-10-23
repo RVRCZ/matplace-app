@@ -151,7 +151,8 @@ class Agent:
     def __init__(self, config: Config, server: Optional[Server] = None):
         self.config = config
         self.server = server or Server(config.server, config.token, config.verify_tls)
-        self.workers = {p.key: PrinterWorker(p.key, create(p.key, p.driver, p.options), config.work_dir) for p in config.printers}
+        # a driver may keep a small memory in the work dir (anycubic_lan: the running print's minutes and millimetres)
+        self.workers = {p.key: PrinterWorker(p.key, create(p.key, p.driver, {**p.options, "_work_dir": config.work_dir}), config.work_dir) for p in config.printers}
         self._wake = asyncio.Event()
         self._state_file = os.path.join(config.work_dir, "state.json")
         self._tasks: set[asyncio.Task] = set()
