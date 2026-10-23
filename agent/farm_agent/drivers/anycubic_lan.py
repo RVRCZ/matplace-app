@@ -254,6 +254,10 @@ class AnycubicLanDriver(PrinterDriver):
         # progress report of the running task (its minutes and millimetres)
         self._ended: Optional[dict] = None
         self._last_progress: dict = {}
+        # the last numbers also on disk (the agent's work_dir), so a print that ends after a restart of the agent
+        # still gets its minutes and millimetres (docs/AM.md §9)
+        self._memory_file = os.path.join(str(options["_work_dir"]), f"{key}.progress.json") if options.get("_work_dir") else None
+        self._remembered_name, self._remembered_at = "", 0.0
         # the layer-synced time-lapse (docs/AM.md §7): where the farm's G-code parks the head after every layer (its
         # first line says), the layer the printer last reported and when it changed
         self._park: Optional[tuple] = None          # (x, y, dwell s, travel mm/s, sync)
@@ -339,15 +343,66 @@ class AnycubicLanDriver(PrinterDriver):
             elif "progress" in details:
                 # print_time (minutes) and supplies_usage (mm) of the running task, kept across the sparse reports the
                 # printer sends at the end ({filename, progress 0} a second before "finished", 18 Oct 2026: F26-000086
-                # reached the server with 0 min and 0 mm because that report had replaced the numbers)
+                # reached the server with 0 min and 0 mm because that report had replaced the numbers), and never
+                # taken back by a later report that says less or nothing: they only grow while a print runs
                 same = _base_name(str(self._last_progress.get("filename") or "")) == name
-                self._last_progress = {**self._last_progress, **details} if same else details
+                merged = {**self._last_progress, **details} if same else dict(details)
+                if same:
+                    for key in ("print_time", "supplies_usage"):
+                        old, new = _num(self._last_progress.get(key)), _num(details.get(key))
+                        if old and (new is None or new < old):
+                            merged[key] = self._last_progress[key]
+                self._last_progress = merged
+                self._remember(merged)
                 self._note_layer(details.get("curr_layer"))
         state = details.get("state") if details else data.get("state")
         if kind in ("info", "print", "status") and state and state != self._last_state:
             self._last_state = state
             if self.on_change and self._loop:
                 asyncio.run_coroutine_threadsafe(self.on_change(), self._loop)
+
+    def _remember(self, progress: dict) -> None:
+        """The running task's numbers to disk, at once for a new file and then at most once a minute: an agent
+        restarted in the middle of a 15-hour print must not end it with 0 min and 0 mm (job 154, 23 Oct 2026)."""
+        if not self._memory_file or not (progress.get("print_time") or progress.get("supplies_usage")):
+            return      # a report without numbers (the bare one before "finished") must not wipe a memory that has them
+        name = _base_name(str(progress.get("filename") or ""))
+        now = time.monotonic()
+        if name == self._remembered_name and now - self._remembered_at < 60:
+            return
+        try:
+            with open(self._memory_file, "w", encoding="utf-8") as fh:
+                json.dump({"filename": name, "print_time": progress.get("print_time"), "supplies_usage": progress.get("supplies_usage")}, fh)
+            self._remembered_name, self._remembered_at = name, now
+        except OSError as e:
+            log.debug("%s: progress not remembered: %s", self.key, e)
+
+    def _recalled(self) -> dict:
+        """What the disk remembers of the last print's numbers, {} without a memory."""
+        if not self._memory_file:
+            return {}
+        try:
+            with open(self._memory_file, encoding="utf-8") as fh:
+                data = json.load(fh)
+            return data if isinstance(data, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    def _with_numbers(self, project: dict) -> dict:
+        """A project that ended, with its minutes and millimetres filled in from what the reports said of the same
+        file when it carries none: the printer's last_project (a task may show up there without them), a project
+        that lingers as "finished", or a finish after a restart of the agent (then from the disk)."""
+        name = _base_name(str(project.get("filename") or ""))
+        if not name or (project.get("print_time") and project.get("supplies_usage")):
+            return project
+        out = dict(project)
+        for source in (self._ended or {}, self._last_progress, self._recalled()):
+            if _base_name(str(source.get("filename") or "")) != name:
+                continue
+            for key in ("print_time", "supplies_usage"):
+                if not out.get(key) and source.get(key):
+                    out[key] = source[key]
+        return out
 
     async def _ensure(self) -> KobraLink:
         if not self._link or not self._link.connected:
@@ -436,6 +491,8 @@ class AnycubicLanDriver(PrinterDriver):
             ended = self._ended
             if ended and _base_name(str(ended.get("filename") or "")) != _base_name(str((last or {}).get("filename") or "")):
                 project, job_state = ended, str(ended["status"])
+        if project and job_state in (JOB_DONE, JOB_CANCELLED, JOB_FAILED):
+            project = self._with_numbers(project)
         if project and printer_state in (PRINTING, PAUSED):
             self._note_layer(project.get("curr_layer"))
             if "filament" in str(project.get("state") or ""):

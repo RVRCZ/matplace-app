@@ -435,3 +435,33 @@ ne dvě skupiny; ~3,5–4 s je přesně otevření zavřeného streamu kamery (p
 zavíral po 20 s bez požadavku a živé snímky agenta ho zjevně neudržely; snímek vrstvy pak přišel o 4 s později, kdy
 hlava už byla zpátky u dílu. **0.2.7:** během tisku `status()` (každých 5 s) stream „chce“ (`Camera.keep()`), zavře se
 až 20 s po tisku; `_note_layer` ignoruje vrstvu 0 (0.2.6). Ověření M400 + −1,0/1,5 s zůstává na další zakázce.
+
+### 8c. Drak F26‑000097 (22.–23. 10. 2026, 15 h, 306 vrstev, první zakázka s dwell 4000): časosběr uzavřen
+
+Korelace s mediánem celého tisku tu selhává (116 „mimo park“ v souvislém bloku 0,63): vysoký díl mění scénu, medián z
+celku není reference. S **lokální** referencí (medián 10 sousedních snímků, `scratchpad/f26-000097-local.txt`):
+**303 z 306 v parku ostře**, 3 v parku s rozmazanou podložkou (dojíždí/odjíždí: 1792702544.194, 1792740448.601,
+1792740889.817), **0 s hlavou mimo park**. Ověřeno: M400 + předstih −1,0/1,5 s + dwell 4000 + stream kamery držený
+při tisku (0.2.7). Případné doladění bez kódu: `park_lead: 2.0` v configu C1 (okno 2,0–3,0 s) by odstranilo i ty tři
+rozmazané; nechávám na řídící. Časosběr Kobry X tím považuji za hotový.
+
+## 9. Konec dlouhého tisku s nulami podruhé: úloha 154 (agent 0.2.8, větev `feature/agent-stats-long`, 23. 10. 2026)
+
+Drak F26‑000097 (15 h přes noc, agent 0.2.7) skončil na serveru s `print_duration_s 0`, `filament_used_mm 0` – stejný
+příznak jako úloha 143 před opravou 0.2.4, ale cesta musí být jiná (holé hlášení před `finished` už se slučuje). Log
+agenta z PC farmy nemám (vyžádán); bez něj jsem uzavřela všechny cesty, které v ovladači k nulám vedou:
+
+1. **`last_project` tiskárny jmenuje dotištěný soubor** (u krátkých tisků 18. 10. se to nestávalo; dlouhý tisk dokončený
+   „normálně“ tam může být) **bez `print_time`/`supplies_usage`**: `_map` dával přednost `last_project` před
+   zapamatovaným koncem (`_ended`), jakmile oba jmenovaly stejný soubor. Teď každý skončený projekt projde
+   `_with_numbers`: chybějící minuty a milimetry doplní z `_ended`, z posledního plného hlášení, nebo z disku.
+2. **Projekt v `info` zůstane jako `finished` bez čísel** – totéž doplnění.
+3. **Pozdní hlášení s výslovnými nulami** (`print_time 0, supplies_usage 0`): čísla za běhu tisku jen rostou, hlášení,
+   které říká míň nebo nic, je nevezme zpět (`_heard`).
+4. **Restart agenta během tisku** (Windows v noci): ovladač si poslední čísla ukládá na disk (`<work_dir>/<key>.progress.json`,
+   při novém souboru hned, pak nejvýš jednou za minutu; hlášení bez čísel paměť nepřepíše); po restartu je konec
+   téhož souboru vezme z disku. Agent předává `_work_dir` všem ovladačům (ostatní ho ignorují).
+
+Testy: pozdní nuly, `last_project`/`info` bez čísel, restart přes work_dir (68). Co přesně se stalo úloze 154, řekne až
+log (restart agenta / spojení v noci; řádek konce úlohy). Pojistku na serveru (done s 0 → rozdíl started/finished,
+spotřeba z řezu) dělá session 2.

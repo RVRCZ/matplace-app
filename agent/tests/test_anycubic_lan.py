@@ -164,15 +164,17 @@ class FakePrinter:
         for link in self.links:
             link.report(kind, data)
 
-    def finish(self, print_time: int, supplies_usage: float):
+    def finish(self, print_time: int, supplies_usage: float, full: bool = True):
         """The print ran to its end as the Kobra X tells it (18 Oct 2026): progress reports with the minutes and the
         millimetres, cooling reports without a file, a bare {filename, progress 0} a second before "finished", then
-        "finished"; the task is gone and last_project still names the earlier print."""
+        "finished"; the task is gone and last_project still names the earlier print. `full` False: the last full
+        progress report is not sent (an agent restarted at the end never heard one)."""
         gone = self.info["project"]
         self.info.update(state="free", project=None)
         for link in self.links:
-            link.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"taskid": "-1", "filename": gone["filename"], "progress": 99,
-                                                                                               "curr_layer": 50, "total_layers": 50, "print_time": print_time, "supplies_usage": supplies_usage}})
+            if full:
+                link.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"taskid": "-1", "filename": gone["filename"], "progress": 99,
+                                                                                                   "curr_layer": 50, "total_layers": 50, "print_time": print_time, "supplies_usage": supplies_usage}})
             link.report("print", {"action": "start", "state": "hotbed_cooling_off", "code": 200, "data": {"taskid": "-1"}})
             link.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"taskid": "-1", "filename": gone["filename"], "progress": 0}})
             link.report("print", {"action": "start", "state": "finished", "code": 200, "data": {"taskid": "-1", "filename": gone["filename"], "progress": 100, "remain_time": 0}})
@@ -422,6 +424,50 @@ class AnycubicLanTest(unittest.IsolatedAsyncioTestCase):
                              (s.state, s.job.status, s.job.filename, s.job.progress, s.job.print_duration, s.job.filament_used))
             self.assertEqual("old part_PLA_0.2_5h51m15s.gcode", p.info["last_project"]["filename"], "the printer's last_project never learns of it")
             self.assertEqual(s.job.status, (await d.status()).job.status, "and it stays told until the next start")
+
+    async def test_the_numbers_of_a_print_never_go_down_and_a_late_report_of_zeros_does_not_take_them(self):
+        async with FakePrinter() as p:
+            d = await self.driver(p)
+            await d.start(self.gcode(tool=1), "mp50-dragon.gcode", 1)
+            p.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"taskid": "-1", "filename": "mp50-dragon.gcode", "progress": 98, "print_time": 900, "supplies_usage": 61000}})
+            p.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"taskid": "-1", "filename": "mp50-dragon.gcode", "progress": 100, "print_time": 0, "supplies_usage": 0}})
+            p.finish(print_time=0, supplies_usage=0, full=False)
+            s = await d.status()
+            self.assertEqual((JOB_DONE, 900 * 60, 61000.0), (s.job.status, s.job.print_duration, s.job.filament_used))
+
+    async def test_a_finished_print_the_printer_lists_without_numbers_gets_them_from_its_reports(self):
+        async with FakePrinter() as p:
+            d = await self.driver(p)
+            await d.start(self.gcode(tool=1), "mp51-dragon.gcode", 1)
+            p.finish(print_time=900, supplies_usage=61000)
+            # the printer's last_project names the print this time, without the minutes and the millimetres
+            p.info["last_project"] = {"state": "finished", "filename": "mp51-dragon.gcode", "progress": 1}
+            s = await d.status()
+            self.assertEqual((IDLE, JOB_DONE, 900 * 60, 61000.0), (s.state, s.job.status, s.job.print_duration, s.job.filament_used))
+            # or the task lingers in the info as "finished" without them
+            p.info.update(state="free", project={"state": "finished", "filename": "mp51-dragon.gcode", "progress": 100, "pause": 0}, last_project=copy.deepcopy(FREE["last_project"]))
+            s = await d.status()
+            self.assertEqual((IDLE, JOB_DONE, 900 * 60, 61000.0), (s.state, s.job.status, s.job.print_duration, s.job.filament_used))
+
+    async def test_the_numbers_survive_a_restart_of_the_agent_through_the_work_dir(self):
+        work_dir = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(work_dir, ignore_errors=True))
+        async with FakePrinter() as p:
+            d = await self.driver(p, _work_dir=work_dir)
+            await d.start(self.gcode(tool=1), "mp52-dragon.gcode", 1)
+            p.report("print", {"action": "start", "state": "printing", "code": 200, "data": {"taskid": "-1", "filename": "mp52-dragon.gcode", "progress": 60, "print_time": 540, "supplies_usage": 36000}})
+            self.assertTrue(os.path.isfile(os.path.join(work_dir, "kobra-x-01.progress.json")))
+            await d.close()
+            # the agent comes back (its first status poll opens the link); the printer finishes without another full report
+            again = await self.driver(p, _work_dir=work_dir)
+            self.assertEqual(PRINTING, (await again.status()).state)
+            p.finish(print_time=0, supplies_usage=0, full=False)
+            s = await again.status()
+            self.assertEqual((JOB_DONE, 540 * 60, 36000.0), (s.job.status, s.job.print_duration, s.job.filament_used))
+            # a memory of another file is no use
+            await again.start(self.gcode(tool=1), "mp53-cube.gcode", 1)
+            p.finish(print_time=0, supplies_usage=0, full=False)
+            self.assertEqual((JOB_DONE, 0, 0.0), ((s := await again.status()).job.status, s.job.print_duration, s.job.filament_used))
 
     async def test_the_light_is_switched_as_the_printer_itself_does_and_its_state_is_told(self):
         async with FakePrinter() as p:
