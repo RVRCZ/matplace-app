@@ -50,7 +50,7 @@
                 <h3 class="mt-3 font-semibold">Print jobs</h3>
                 <ul class="mt-1 space-y-1 text-xs text-slate-600">
                     @foreach($order->printJobs as $j)
-                        <li>#{{ $j->id }} · {{ $j->status }} · {{ round($j->progress) }} % · slot {{ $j->slot + 1 }} @if($j->print_duration_s)· {{ round($j->print_duration_s / 60) }} min @endif @if($j->filament_used_mm)· {{ round($j->filament_used_mm / 1000, 2) }} m @endif @if($j->message)· {{ $j->message }}@endif</li>
+                        <li>#{{ $j->id }} · {{ $j->status }} · {{ round($j->progress) }} % · slot {{ $j->slot + 1 }} @if($j->print_duration_s)· {{ $j->stats_estimated ? '≈ ' : '' }}{{ round($j->print_duration_s / 60) }} min @endif @if($j->filament_used_mm)· {{ $j->stats_estimated ? '≈ ' : '' }}{{ round($j->filament_used_mm / 1000, 2) }} m @endif @if($j->stats_estimated)· {{ __('farm.admin.estimated_stats') }} @endif @if($j->message)· {{ $j->message }}@endif</li>
                     @endforeach
                 </ul>
             @endif
@@ -162,7 +162,7 @@
 
         <form method="post" action="{{ route('admin.farm.orders.actuals', $order) }}" class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">@csrf
             <h2 class="font-bold">{{ __('farm.admin.actuals') }}</h2>
-            <p class="text-xs text-slate-500">{{ __('farm.admin.actuals_hint') }} @if($order->actual_source)({{ $order->actual_source }})@endif</p>
+            <p class="text-xs text-slate-500">{{ __('farm.admin.actuals_hint') }} @if($order->actual_source)({{ $order->actual_source }}@if($order->stats_estimated), {{ __('farm.admin.estimated_stats') }}@endif)@endif</p>
             <div class="mt-2 grid grid-cols-2 gap-2">
                 <label class="text-xs font-semibold text-slate-600">{{ __('farm.admin.actual_minutes') }}<input type="number" name="actual_minutes" min="1" value="{{ $order->actual_minutes }}" placeholder="{{ $order->est_minutes }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal"></label>
                 <label class="text-xs font-semibold text-slate-600">{{ __('farm.admin.actual_grams') }}<input type="number" step="0.1" name="actual_grams" min="0.1" value="{{ $order->actual_grams }}" placeholder="{{ $order->est_grams }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal"></label>

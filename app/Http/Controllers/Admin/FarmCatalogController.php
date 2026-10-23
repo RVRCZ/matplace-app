@@ -289,7 +289,9 @@ class FarmCatalogController extends Controller
     {
         $out = [];
         $orders = FarmOrder::whereIn('status', [FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER])->whereNotNull('farm_printer_id')
-            ->where(fn ($q) => $q->whereNotNull('actual_minutes')->orWhereNotNull('actual_grams'))->latest('id')->limit(500)->get();
+            ->where(fn ($q) => $q->whereNotNull('actual_minutes')->orWhereNotNull('actual_grams'))
+            ->where('stats_estimated', false)   // numbers the printer never gave (estimated from the clock and the slice) would only echo the estimate
+            ->latest('id')->limit(500)->get();
         foreach ($orders->groupBy('farm_printer_id') as $printerId => $rows) {
             $t = $rows->filter(fn ($o) => $o->actual_minutes && $o->est_minutes);
             $w = $rows->filter(fn ($o) => $o->actual_grams && $o->est_grams);

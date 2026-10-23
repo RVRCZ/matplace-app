@@ -386,6 +386,7 @@ return [
         'quality' => 'Calidad de la impresión (1–5)',
         'quality_note' => 'Nota de calidad (para ajustar el material)',
         'actuals_hint' => 'Sirve para calibrar las correcciones de precio de la impresora.',
+        'estimated_stats' => 'estimación: la impresora no dio cifras, el tiempo sale del reloj del trabajo y el filamento del laminado',
         'refund' => 'Devolver el crédito',
         'history' => 'Historial',
         'calibration' => 'Calibración de :n impresiones: tiempo × :time, peso × :weight',

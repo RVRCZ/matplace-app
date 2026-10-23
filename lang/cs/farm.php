@@ -386,6 +386,7 @@ return [
         'quality' => 'Kvalita výtisku (1–5)',
         'quality_note' => 'Poznámka ke kvalitě (pro ladění materiálu)',
         'actuals_hint' => 'Slouží ke kalibraci korekcí ceny u tiskárny.',
+        'estimated_stats' => 'odhad – tiskárna čísla nedodala, doba z hodin úlohy a filament z řezu',
         'refund' => 'Vrátit kredit',
         'history' => 'Historie',
         'calibration' => 'Kalibrace z :n tisků: čas × :time, hmotnost × :weight',

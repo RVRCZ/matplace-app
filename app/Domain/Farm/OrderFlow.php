@@ -282,10 +282,13 @@ final class OrderFlow
         return $this->move($order, FarmOrder::STATUS_DONE, $actor, $actorId, $order->plates > 1 ? "plate {$done}/{$order->plates} printed" : null);
     }
 
-    /** Measured values after a print (from the agent or typed in by the operator): the calibration data. */
-    public function recordActuals(FarmOrder $order, ?int $minutes, ?float $grams, string $source): void
+    /**
+     * Measured values after a print (from the agent or typed in by the operator): the calibration data. Estimated ones
+     * (the printer gave no numbers, AgentService::ensureStats) are marked, so the mail says so and the statistics leave them out.
+     */
+    public function recordActuals(FarmOrder $order, ?int $minutes, ?float $grams, string $source, bool $estimated = false): void
     {
-        $order->forceFill(array_filter(['actual_minutes' => $minutes, 'actual_grams' => $grams], fn ($v) => $v !== null) + ['actual_source' => $source])->save();
+        $order->forceFill(array_filter(['actual_minutes' => $minutes, 'actual_grams' => $grams], fn ($v) => $v !== null) + ['actual_source' => $source, 'stats_estimated' => $estimated])->save();
     }
 
     private function onQueued(FarmOrder $order): void
@@ -465,9 +468,9 @@ final class OrderFlow
     {
         $minutes = (int) ($order->actual_minutes ?? $order->est_minutes ?? 0);
         $lines = $this->orderLines($order);
-        $lines[] = $this->t('line_duration', ['duration' => self::duration($minutes)]).($order->actual_minutes === null ? ' '.$this->t('estimated') : '');
+        $lines[] = $this->t('line_duration', ['duration' => self::duration($minutes)]).($order->actual_minutes === null || $order->stats_estimated ? ' '.$this->t('estimated') : '');
         if ($grams = $order->actual_grams ?? $order->est_grams) {
-            $lines[] = $this->t('line_filament', ['grams' => round((float) $grams)]).($order->actual_grams === null ? ' '.$this->t('estimated') : '');
+            $lines[] = $this->t('line_filament', ['grams' => round((float) $grams)]).($order->actual_grams === null || $order->stats_estimated ? ' '.$this->t('estimated') : '');
         }
         $lines[] = match (true) {
             $order->isTest() => $this->t('line_next_test'),

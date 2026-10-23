@@ -28,12 +28,13 @@ class FarmPrintJob extends Model
 
     protected $fillable = [
         'farm_order_id', 'farm_printer_id', 'slot', 'plate', 'status', 'remote_filename', 'progress', 'telemetry', 'print_duration_s',
-        'filament_used_mm', 'message', 'snapshot_path', 'snapshot_at', 'started_at', 'finished_at', 'reported_at',
+        'filament_used_mm', 'stats_estimated', 'message', 'snapshot_path', 'snapshot_at', 'started_at', 'paused_at', 'paused_s', 'finished_at', 'reported_at',
     ];
 
     protected $casts = [
         'slot' => 'int', 'plate' => 'int', 'progress' => 'float', 'telemetry' => 'array', 'print_duration_s' => 'int', 'filament_used_mm' => 'float',
-        'snapshot_at' => 'datetime', 'started_at' => 'datetime', 'finished_at' => 'datetime', 'reported_at' => 'datetime',
+        'stats_estimated' => 'bool', 'paused_s' => 'int',
+        'snapshot_at' => 'datetime', 'started_at' => 'datetime', 'paused_at' => 'datetime', 'finished_at' => 'datetime', 'reported_at' => 'datetime',
     ];
 
     public function order(): BelongsTo
