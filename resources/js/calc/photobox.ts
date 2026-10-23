@@ -71,22 +71,26 @@ export function bootPhotobox(): void {
         // a real still from the sensor where the browser can take one, else the current video frame; some webcams
         // (Trust Teza on Windows, 22 Oct 2026) answer takePhoto() with a black picture while the preview is fine, so
         // a still that comes back dark is thrown away and the frame is used
-        const IC = (window as unknown as { ImageCapture?: new (t: MediaStreamTrack) => { takePhoto(): Promise<Blob> } }).ImageCapture;
-        if (IC) {
-            try {
-                const shot = await new IC(track).takePhoto();
-                if (!(await dark(shot))) return shot;
-            } catch { /* fall back to the frame */ }
-        }
         const el = video(v);
         const c = document.createElement('canvas');
         c.width = el.videoWidth; c.height = el.videoHeight;
         c.getContext('2d')!.drawImage(el, 0, 0);
-        return await new Promise((r) => c.toBlob((b) => r(b), 'image/jpeg', 0.92));
+        const frame: Blob | null = await new Promise((r) => c.toBlob((b) => r(b), 'image/jpeg', 0.92));
+        const IC = (window as unknown as { ImageCapture?: new (t: MediaStreamTrack) => { takePhoto(): Promise<Blob> } }).ImageCapture;
+        if (IC && frame) {
+            try {
+                const shot = await new IC(track).takePhoto();
+                // the still is kept only when it is about as bright as the preview the operator just saw
+                const [bs, bf] = await Promise.all([brightness(shot), brightness(frame)]);
+                if (bs !== null && bf !== null && bs >= 12 && bs >= bf * 0.4) return shot;
+                say('Snímek z kamery vyšel tmavý, beru obraz z náhledu.');
+            } catch { /* fall back to the frame */ }
+        }
+        return frame;
     }
 
-    /** True when the picture is (nearly) all black: mean brightness of a 32 × 32 sample under 12 of 255, or it does not decode. */
-    async function dark(blob: Blob): Promise<boolean> {
+    /** Mean brightness 0–255 of a 32 × 32 sample of the picture, null when it does not decode. */
+    async function brightness(blob: Blob): Promise<number | null> {
         try {
             const bmp = await createImageBitmap(blob);
             const c = document.createElement('canvas');
@@ -97,9 +101,9 @@ export function bootPhotobox(): void {
             const d = ctx.getImageData(0, 0, 32, 32).data;
             let sum = 0;
             for (let i = 0; i < d.length; i += 4) sum += (d[i] + d[i + 1] + d[i + 2]) / 3;
-            return sum / (d.length / 4) < 12;
+            return sum / (d.length / 4);
         } catch {
-            return true;
+            return null;
         }
     }
 
