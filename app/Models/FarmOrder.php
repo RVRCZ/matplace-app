@@ -72,7 +72,7 @@ class FarmOrder extends Model
     protected $casts = [
         'unit_scale' => 'float', 'scale' => 'float', 'copies' => 'int', 'plates' => 'int', 'plates_done' => 'int', 'plate_copies' => 'int', 'rest_copies' => 'int', 'shipping_address' => 'array', 'check' => 'array', 'orientation' => 'array', 'test_params' => 'array',
         'print_settings' => 'array', 'admin_overrides' => 'array', 'slice_params' => 'array', 'slice_result' => 'array', 'price' => 'array', 'est_minutes' => 'int', 'est_grams' => 'float',
-        'est_meters' => 'float', 'supports_used' => 'bool', 'price_total' => 'float', 'actual_minutes' => 'int', 'actual_grams' => 'float',
+        'est_meters' => 'float', 'supports_used' => 'bool', 'price_total' => 'float', 'actual_minutes' => 'int', 'actual_grams' => 'float', 'stats_estimated' => 'bool',
         'terms_accepted_at' => 'datetime', 'paid_at' => 'datetime', 'approved_at' => 'datetime', 'queued_at' => 'datetime',
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime', 'attention_cleared_at' => 'datetime',
         'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',

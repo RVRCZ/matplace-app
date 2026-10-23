@@ -165,6 +165,7 @@ class FarmAdminNotifyTest extends TestCase
         $this->assertSame($order->number.' dotištěno ('.$printer->name.', 1 h 47 min)', $done[0]->subjectLine);
         $this->assertLine($done[0], 'Doba tisku: 1 h 47 min');
         $this->assertLine($done[0], 'Filament: '.round((float) $order->actual_grams).' g');
+        $this->assertFalse($order->stats_estimated, 'numbers that came from the printer are no estimate');
         $this->assertLine($done[0], 'vyzvedne osobně');
         $this->assertLine($done[0], 'snímek z kamery');
         $this->assertSame(Storage::disk('farm')->path($rel), $done[0]->attachment);
@@ -261,6 +262,72 @@ class FarmAdminNotifyTest extends TestCase
         $this->assertSame($third->number.' zrušil zákazník', $cancelled->subjectLine);
         $this->assertLine($cancelled, 'Vráceno zákazníkovi: '.$third->total()->format());
         $this->assertLine($cancelled, 'Tisklo se: ne');
+    }
+
+    /**
+     * The Kobra X after a 15-hour dragon (job 154, 23 Oct 2026) said "done" with 0 s and 0 mm. The job gets its duration
+     * from its own clock (pauses taken off) and the filament from the slice, both marked as estimates, so the mail, the
+     * admin's page and the statistics do not show 0 min / 0 g – and the command does the same for a job closed before.
+     */
+    public function test_a_print_the_printer_gave_no_numbers_for_gets_them_estimated_and_marked(): void
+    {
+        [$printer, $auth] = $this->agentPrinter();
+        $this->sync($auth);
+        $this->credit(2000);
+        $order = $this->pay($this->order());
+        $cmd = $this->startJob($printer, $auth);
+        $this->travelTo(now()->startOfMinute());
+        $this->sync($auth, 'printing', ['id' => $cmd['job_id'], 'status' => 'printing', 'progress' => 1]);
+        $this->travel(30)->minutes();
+        $this->sync($auth, 'printing', ['id' => $cmd['job_id'], 'status' => 'paused', 'progress' => 40]);
+        $this->travel(10)->minutes();
+        $this->sync($auth, 'printing', ['id' => $cmd['job_id'], 'status' => 'printing', 'progress' => 41]);
+        $this->travel(80)->minutes();
+        $this->sync($auth, 'idle', ['id' => $cmd['job_id'], 'status' => 'done', 'progress' => 100, 'print_duration' => 0, 'filament_used' => 0]);
+        $job = FarmPrintJob::findOrFail($cmd['job_id']);
+        $this->assertTrue($job->stats_estimated);
+        $this->assertSame(600, $job->paused_s);
+        $this->assertSame(110 * 60, $job->print_duration_s, 'two hours on the clock less the ten minutes paused');
+        $this->assertGreaterThan(0, $job->filament_used_mm);
+        $order->refresh();
+        $this->assertSame(FarmOrder::STATUS_DONE, $order->status);
+        $this->assertSame(110, $order->actual_minutes);
+        $this->assertEqualsWithDelta((float) $order->est_grams, (float) $order->actual_grams, 0.2, 'the filament of the slice');
+        $this->assertTrue($order->stats_estimated);
+        $this->assertSame('agent', $order->actual_source);
+        $done = $this->alerts('done');
+        $this->assertCount(1, $done);
+        $this->assertSame($order->number.' dotištěno ('.$printer->name.', 1 h 50 min)', $done[0]->subjectLine);
+        $this->assertLine($done[0], 'Doba tisku: 1 h 50 min (odhad)');
+        $this->assertLine($done[0], 'Filament: '.round((float) $order->est_grams).' g (odhad)');
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($admin)->get(route('admin.farm.orders.show', $order))->assertOk()->assertSee(__('farm.admin.estimated_stats'));
+
+        // a job closed before this change (job 154 as it stands): the command fills it the same way
+        $job->update(['print_duration_s' => 0, 'filament_used_mm' => 0, 'stats_estimated' => false]);
+        $order->forceFill(['actual_minutes' => null, 'actual_grams' => null, 'stats_estimated' => false])->save();
+        $this->artisan('farm:job-stats', ['--job' => $job->id])->assertSuccessful();
+        $this->assertSame(110 * 60, $job->refresh()->print_duration_s);
+        $this->assertTrue($job->stats_estimated);
+        $this->assertSame(110, $order->refresh()->actual_minutes);
+        $this->assertTrue($order->stats_estimated);
+
+        // a print that fails without numbers keeps at least how long it ran; what it used nobody knows
+        $this->travelBack();
+        $second = $this->pay($this->order());
+        $cmd2 = $this->startJob($printer, $auth);
+        $this->travelTo(now()->startOfMinute());
+        $this->sync($auth, 'printing', ['id' => $cmd2['job_id'], 'status' => 'printing', 'progress' => 5]);
+        $this->travel(20)->minutes();
+        $this->sync($auth, 'idle', ['id' => $cmd2['job_id'], 'status' => 'failed', 'progress' => 30, 'print_duration' => 0, 'message' => 'thermal runaway']);
+        $failed = FarmPrintJob::findOrFail($cmd2['job_id']);
+        $this->assertSame(FarmPrintJob::STATUS_FAILED, $failed->status);
+        $this->assertSame(20 * 60, $failed->print_duration_s);
+        $this->assertNull($failed->filament_used_mm);
+        $this->assertTrue($failed->stats_estimated);
+        $this->assertSame(FarmOrder::STATUS_FAILED, $second->refresh()->status);
+        $this->travelBack();
     }
 
     public function test_switched_off_kinds_and_an_empty_address_send_nothing(): void

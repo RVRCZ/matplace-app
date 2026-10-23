@@ -386,6 +386,7 @@ return [
         'quality' => 'Print quality (1–5)',
         'quality_note' => 'Quality note (for tuning the material)',
         'actuals_hint' => 'Used to calibrate the printer\'s price corrections.',
+        'estimated_stats' => 'estimate – the printer gave no numbers, the time from the job\'s clock and the filament from the slice',
         'refund' => 'Return the credit',
         'history' => 'History',
         'calibration' => 'Calibration from :n prints: time × :time, weight × :weight',

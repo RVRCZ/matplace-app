@@ -93,6 +93,12 @@ final class AgentService
             case 'paused':
                 $job->status = $status === 'paused' ? FarmPrintJob::STATUS_PAUSED : FarmPrintJob::STATUS_PRINTING;
                 $job->started_at ??= now();
+                // pauses are counted: the fallback duration of a print the printer gave no numbers for leaves them out
+                if ($status === 'paused') {
+                    $job->paused_at ??= now();
+                } else {
+                    $this->closePause($job);
+                }
                 $job->save();
                 if ($order->status === FarmOrder::STATUS_QUEUED) {
                     $this->flow->move($order, FarmOrder::STATUS_PRINTING, 'agent');
@@ -100,12 +106,11 @@ final class AgentService
                 break;
 
             case 'done':
-                $job->fill(['status' => FarmPrintJob::STATUS_DONE, 'progress' => 100, 'finished_at' => now()])->save();
-                // the whole order's actuals: every finished plate of it added up
-                $doneJobs = $order->printJobs()->where('status', FarmPrintJob::STATUS_DONE)->get();
-                $seconds = (int) $doneJobs->sum('print_duration_s');
-                $grams = $doneJobs->sum(fn (FarmPrintJob $j) => (float) ($this->grams($j, $order) ?? 0));
-                $this->flow->recordActuals($order, $seconds ? (int) ceil($seconds / 60) : null, $grams > 0 ? round($grams, 1) : null, 'agent');
+                $this->closePause($job);
+                $job->fill(['status' => FarmPrintJob::STATUS_DONE, 'progress' => 100, 'finished_at' => now()]);
+                $this->ensureStats($job, $order);
+                $job->save();
+                $this->recordOrderActuals($order);
                 if ($order->status === FarmOrder::STATUS_QUEUED) {
                     $this->flow->move($order, FarmOrder::STATUS_PRINTING, 'agent');
                 }
@@ -131,7 +136,10 @@ final class AgentService
                         break;   // said again too soon: still the same moment
                     }
                 }
-                $job->fill(['status' => $status === 'failed' ? FarmPrintJob::STATUS_FAILED : FarmPrintJob::STATUS_CANCELLED, 'finished_at' => now()])->save();
+                $this->closePause($job);
+                $job->fill(['status' => $status === 'failed' ? FarmPrintJob::STATUS_FAILED : FarmPrintJob::STATUS_CANCELLED, 'finished_at' => now()]);
+                $this->ensureStats($job, $order, durationOnly: true);   // how long it ran, at least; what it used nobody knows
+                $job->save();
                 if (in_array($order->status, [FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING], true)) {
                     $this->flow->fail($order, $status === 'failed' ? 'print_failed' : 'print_cancelled', 'agent', detail: $job->message === self::ERROR_PENDING ? null : $job->message);
                 }
@@ -227,9 +235,87 @@ final class AgentService
         if (! $job->filament_used_mm) {
             return null;
         }
-        $density = (float) ($order->material?->density ?? 1.24);
 
-        return round($job->filament_used_mm * M_PI * 0.875 ** 2 / 1000 * $density, 1);
+        return round($job->filament_used_mm * M_PI * 0.875 ** 2 / 1000 * self::density($order), 1);
+    }
+
+    private static function density(FarmOrder $order): float
+    {
+        return (float) ($order->material?->density ?? 1.24);
+    }
+
+    /** A pause that is still open is added to the job's paused seconds and closed. */
+    private function closePause(FarmPrintJob $job): void
+    {
+        if ($job->paused_at) {
+            $job->paused_s = (int) $job->paused_s + max(0, (int) $job->paused_at->diffInSeconds(now()));
+            $job->paused_at = null;
+        }
+    }
+
+    /**
+     * A job that ends without numbers from the printer (the Kobra X after a 15-hour dragon, job 154, 23 Oct 2026:
+     * done with 0 s and 0 mm) gets them estimated and says so (`stats_estimated`): the duration from its own clock
+     * (started → finished, pauses taken off; the order's estimate for its plate when it never said it started), the
+     * filament from the order's slice for that plate. Fills the job in place; the caller saves.
+     */
+    public function ensureStats(FarmPrintJob $job, FarmOrder $order, bool $durationOnly = false): void
+    {
+        $estimated = false;
+        if ((int) $job->print_duration_s <= 0) {
+            $finished = $job->finished_at ?? now();
+            $seconds = $job->started_at ? (int) $job->started_at->diffInSeconds($finished) - (int) $job->paused_s : 0;
+            if ($seconds < 60) {
+                $seconds = (int) round(self::plateShare($order, $job) * 60 * (int) ($order->est_minutes ?? 0));
+            }
+            if ($seconds > 0) {
+                $job->print_duration_s = $seconds;
+                $estimated = true;
+            }
+        }
+        if (! $durationOnly && (float) $job->filament_used_mm <= 0) {
+            $grams = self::plateShare($order, $job, grams: true);
+            if ($grams > 0) {
+                $job->filament_used_mm = round($grams / (M_PI * 0.875 ** 2 / 1000 * self::density($order)), 1);
+                $estimated = true;
+            }
+        }
+        if ($estimated) {
+            $job->stats_estimated = true;
+        }
+    }
+
+    /**
+     * How much of the order's estimate this job's plate is: its part's grams for an order printed by parts, else the
+     * plate's share of the copies; as grams or as a fraction.
+     */
+    private static function plateShare(FarmOrder $order, FarmPrintJob $job, bool $grams = false): float
+    {
+        $plate = max(1, (int) $job->plate);
+        $plates = max(1, (int) $order->plates);
+        if ($order->isByParts() && ! $order->onePlate()) {
+            $part = $order->partPlates()[$plate - 1] ?? null;
+            if ($grams && isset($part['grams'])) {
+                return (float) $part['grams'];
+            }
+            if (! $grams && isset($part['minutes']) && $order->est_minutes) {
+                return (float) $part['minutes'] / (float) $order->est_minutes;
+            }
+        }
+        $layout = $order->plateLayout();
+        $copies = max(1, (int) array_sum($layout));
+        $share = isset($layout[$plate - 1]) ? (float) $layout[$plate - 1] / $copies : 1 / $plates;
+
+        return $grams ? round($share * (float) ($order->est_grams ?? 0), 1) : $share;
+    }
+
+    /** The whole order's actuals: every finished plate of it added up, estimates marked. */
+    public function recordOrderActuals(FarmOrder $order): void
+    {
+        $doneJobs = $order->printJobs()->where('status', FarmPrintJob::STATUS_DONE)->get();
+        $seconds = (int) $doneJobs->sum('print_duration_s');
+        $grams = $doneJobs->sum(fn (FarmPrintJob $j) => (float) ($this->grams($j, $order) ?? 0));
+        $this->flow->recordActuals($order, $seconds ? (int) ceil($seconds / 60) : null, $grams > 0 ? round($grams, 1) : null, 'agent', $doneJobs->contains(fn (FarmPrintJob $j) => $j->stats_estimated));
     }
 
     /** Telemetry is shown, not analysed: keep a small flat structure whatever the agent sends. */

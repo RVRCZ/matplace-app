@@ -892,6 +892,29 @@ Pod minutu takový model nejde dostat zjednodušením sítě; viz §10.11.3.
 5. Ztenčení samo: 25 s u draka (z toho 11 s načtení + rozdělení těles v trimesh); u sítí do ~1 M trojúhelníků řádově
    10 s. Při `decimate_above` 400 k se netýká běžných modelů (typicky 50–300 k).
 
+## 10.12 Úloha bez čísel z tiskárny: doba a filament odhadem (větev `feature/job-stats-fallback`, 23. 10. 2026)
+
+Úloha 154 (drak na Kobře X, 15 h přes noc) skončila `done` s `print_duration_s 0` a `filament_used_mm 0` (agent po
+dlouhém tisku čísla nedostal; ovladač ladí session 4). Server má pojistku:
+
+- **`AgentService::ensureStats(job, order, durationOnly)`** při `done` (a `failed`/`cancelled` jen doba): nulová doba →
+  `started_at → finished_at` minus pauzy (`paused_at`/`paused_s` se nově počítají při přechodech printing ↔ paused;
+  starší úlohy pauzy neznají); když úloha nikdy neřekla „printing“ (bez `started_at`), podíl odhadu zakázky pro tu
+  podložku; nulová spotřeba → gramy z řezu zakázky pro tu podložku (díl u tisku po dílech – `part_plates[].grams`,
+  jinak podíl kopií podložky z `est_grams`) přepočtené na mm (hustota druhu). Úloha dostane **`stats_estimated`**,
+  zakázka přes `recordOrderActuals` → `recordActuals(..., estimated)` také (`farm_orders.stats_estimated`).
+- Mail „dotištěno“ přidá „(odhad)“ i k odhadnutým skutečným hodnotám; admin stránka zakázky u úlohy „≈ 110 min · ≈ 12,3 m
+  · odhad – tiskárna čísla nedodala…“ a u skutečných hodnot „(agent, odhad …)“; **kalibrační statistika**
+  (`FarmCatalogController::calibration`) odhadnuté zakázky vynechává (opisovaly by odhad).
+- Migrace `2026_10_23_100000_farm_job_stats_estimated` (`farm_print_jobs.paused_at/paused_s/stats_estimated`,
+  `farm_orders.stats_estimated`).
+- **Dopočet úlohy 154** (a všech dalších s nulami): `php artisan farm:job-stats --job=154`, nebo
+  `php artisan farm:job-stats --missing` (každá done/failed/cancelled úloha s 0 s nebo 0 mm); vypíše před → po. Úloha
+  154 nemá pauzy zaznamenané (sloupce jsou nové), doba = started → finished.
+- Test `FarmAdminNotifyTest::test_a_print_the_printer_gave_no_numbers_for_gets_them_estimated_and_marked` (2 h na
+  hodinách, 10 min pauza → 110 min, filament z řezu, mail i admin stránka s odhadem, příkaz na znovu vynulovanou úlohu,
+  selhaný tisk s 20 min bez spotřeby); u skutečného hlášení `stats_estimated` false.
+
 ### 10.11.4 Testy a soubory
 
 `tests/Unit/MeshDecimatorTest.php` (počet trojúhelníků binární/ASCII STL; `MeshDecimator` se zástupným
