@@ -5,7 +5,7 @@
     $formats = strtoupper(implode(', ', $config['formats']));
     $i18n = collect([
         'calc.status.reading','calc.status.rough','calc.status.uploading','calc.status.queued','calc.status.done',
-        'calc.status.failed','calc.status.not_model','calc.status.converting','calc.price.from','calc.price.range','calc.price.per_piece',
+        'calc.status.failed','calc.status.not_model','calc.status.converting','calc.status.big_model','calc.price.from','calc.price.range','calc.price.per_piece',
         'calc.days','calc.cta.copied','calc.error.read','calc.error.upload','calc.error.too_big','calc.est_only',
         'calc.profile.budget','calc.profile.standard','calc.profile.express','calc.profile.mine','calc.others_from',
         'calc.breakdown.material','calc.breakdown.time','calc.breakdown.setup','calc.breakdown.total','calc.breakdown.discount','calc.breakdown.margin','calc.breakdown.min_price','calc.breakdown.rounded',
