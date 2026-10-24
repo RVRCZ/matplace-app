@@ -126,6 +126,7 @@ return [
         'change' => 'Změnit',
         'recolor_first' => 'Zvolili jste barvu z jiné tiskárny: nahoře nejdřív přepočítejte cenu, pak půjde zaplatit.',
         'colors_now' => 'Barvy, které jsou právě založené v tiskárně',
+        'while_slicing' => 'Volby můžete měnit i teď. Přepočet s novým nastavením spustíte tlačítkem, až výpočet doběhne.',
         'no_colors' => 'Teď není žádná tiskárna připravená. Zkuste to prosím za chvíli.',
         'low_filament' => 'na cívce je málo materiálu',
         'starts_now' => 'Tiskárna je volná, tisk začne hned.',

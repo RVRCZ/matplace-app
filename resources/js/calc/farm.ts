@@ -670,7 +670,10 @@ export function bootFarmOrder(): void {
 
         // presets stay editable until the order is paid; a failed check can be retried with other units
         const editable = s.status === 'sliced' || (s.status === 'failed' && !s.number);
-        show($('farm-presets'), editable);
+        // the choices stay on the page while the slice runs (Roman, 24 Oct 2026: "after Recalculate all the choices
+        // vanished"): what is changed meanwhile waits for the button, which comes back with the result
+        show($('farm-presets'), editable || working);
+        show($('farm-presets-wait'), working);
         document.querySelectorAll<HTMLElement>('#farm-presets [data-group]').forEach((g) => g.querySelectorAll<HTMLElement>('.seg').forEach((b) => b.classList.toggle('seg-on', b.dataset.value === String(wanted[g.dataset.group as 'quality' | 'strength' | 'supports']))));
         ($('farm-unit') as HTMLSelectElement).value = wanted.unit;
         renderSizeInputs();
@@ -700,7 +703,8 @@ export function bootFarmOrder(): void {
         show($('farm-reslice'), editable && (wanted.by_parts !== !!s.by_parts || wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005 || settingsOf(wanted.settings) !== settingsOf(s.settings)));
 
         show($('farm-pay'), s.status === 'sliced');
-        show($('farm-material'), s.status === 'sliced');
+        show($('farm-material'), s.status === 'sliced' || (working && s.colors.length > 0));
+        if (working && s.colors.length > 0) renderColors();
         if (s.status === 'sliced') {
             renderColors();
             renderSummary();
@@ -834,6 +838,7 @@ export function bootFarmOrder(): void {
     $('farm-copies')?.addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); wanted.copies = Math.max(1, Math.min(64, Math.round(v) || 1)); render(); });
     $('farm-presets')?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (state.status === 'uploaded') return;   // a slice is running: the choices made now are taken when it is done
         const btn = $<HTMLButtonElement>('farm-reslice');
         const recolor = $<HTMLButtonElement>('farm-recolor');
         before = { total: printPrice(), printer: state.printer?.name ?? null, kind: kindOf(), minutes: state.minutes, settings: settingsKey() };

@@ -119,6 +119,7 @@
             {{-- step 2 of 3, until paid: material and colours (one list, chosen once), quality and the print settings --}}
             <form id="farm-presets" class="hidden rounded-2xl border border-slate-200 bg-white p-4">
                 <h2 class="text-base font-bold text-slate-800">{{ __('farm.order.step_material') }}</h2>
+                <p id="farm-presets-wait" class="mt-1 hidden text-xs text-slate-600">{{ __('farm.order.while_slicing') }}</p>
                 <div id="farm-material" class="mt-3 hidden scroll-mt-4">
                     {{-- the kinds loaded right now (PLA, PLA+, PETG…): a filter over the colours below, the colour sets the kind --}}
                     <div class="text-sm font-semibold text-slate-700">{{ __('farm.order.material') }}</div>

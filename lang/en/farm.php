@@ -126,6 +126,7 @@ return [
         'change' => 'Change',
         'recolor_first' => 'You picked a colour from another printer: recalculate the price above first, then you can pay.',
         'colors_now' => 'Colours loaded in the printer right now',
+        'while_slicing' => 'You can change the choices now as well. Recalculate with the new settings with the button once this computation is done.',
         'no_colors' => 'No printer is ready at the moment. Please try again in a while.',
         'low_filament' => 'not enough filament on the spool',
         'starts_now' => 'The printer is free, the print starts right away.',

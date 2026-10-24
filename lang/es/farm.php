@@ -126,6 +126,7 @@ return [
         'change' => 'Cambiar',
         'recolor_first' => 'Eligió un color de otra impresora: recalcule primero el precio arriba y luego podrá pagar.',
         'colors_now' => 'Colores cargados ahora mismo en la impresora',
+        'while_slicing' => 'Puede cambiar las opciones también ahora. Recalcule con la nueva configuración con el botón cuando termine este cálculo.',
         'no_colors' => 'Ahora no hay ninguna impresora lista. Inténtelo dentro de un rato.',
         'low_filament' => 'queda poco material en la bobina',
         'starts_now' => 'La impresora está libre, la impresión empieza enseguida.',
