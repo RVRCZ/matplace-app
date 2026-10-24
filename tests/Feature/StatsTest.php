@@ -505,6 +505,59 @@ class StatsTest extends TestCase
         $this->assertArrayNotHasKey('bot', $one->fresh()->meta);
     }
 
+    /**
+     * 24 Oct 2026 on production: the first rule took unconfirmed visits in (robots nobody counts as people, 60 000 a
+     * week) and its dry run "found" 2 500 wave visitors on a day of 19 people. Only visits counted as people's are
+     * judged, and the recount of the people is a recount, not a difference.
+     */
+    public function test_robots_nobody_confirmed_make_no_wave_and_the_people_sharing_their_browser_stay(): void
+    {
+        $this->travelTo('2026-10-21 12:00:00');
+        $chrome = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
+        // the browser's confirmation exists since 1 Oct (Humans::since)
+        Event::create(['session_id' => AnonymousSession::start('192.0.2.1', $chrome)->id, 'type' => 'visit', 'source' => 'google', 'locale' => 'cs', 'meta' => ['path' => '/', 'js' => true]])
+            ->forceFill(['created_at' => '2026-10-01 08:00:00'])->save();
+        // 20 Oct: 3 000 robots in a browser's clothes nobody confirmed, the most common browser, every hour, all over the catalogue
+        $sessions = [];
+        foreach (range(1, 3000) as $i) {
+            $sessions[] = ['token' => 'r'.$i, 'ip' => '203.0.113.'.($i % 250), 'user_agent' => $chrome, 'created_at' => '2026-10-20 00:00:00', 'updated_at' => '2026-10-20 00:00:00'];
+        }
+        foreach (array_chunk($sessions, 500) as $chunk) {
+            DB::table('anonymous_sessions')->insert($chunk);
+        }
+        $ids = DB::table('anonymous_sessions')->where('token', 'like', 'r%')->orderBy('id')->pluck('id')->all();
+        $events = [];
+        foreach ($ids as $i => $id) {
+            $events[] = ['session_id' => $id, 'type' => 'visit', 'source' => 'direct', 'locale' => 'en', 'meta' => json_encode(['path' => '/model/m-'.$i]), 'created_at' => sprintf('2026-10-20 %02d:%02d:00', intdiv($i, 125), $i % 60)];
+        }
+        foreach (array_chunk($events, 500) as $chunk) {
+            DB::table('events')->insert($chunk);
+        }
+        // and 30 people the same day with the same browser, each one page, direct, confirmed (a few an hour)
+        foreach (range(0, 29) as $i) {
+            $session = AnonymousSession::start('89.24.7.'.$i, $chrome)->id;
+            Event::create(['session_id' => $session, 'type' => 'visit', 'source' => 'direct', 'locale' => 'en', 'meta' => ['path' => '/model/p-'.$i, 'js' => true]])
+                ->forceFill(['created_at' => sprintf('2026-10-20 %02d:%02d:00', intdiv($i, 3) + 8, 10 * ($i % 3))])->save();
+        }
+        $this->assertSame(30, Event::people()->where('created_at', '>=', '2026-10-20')->where('created_at', '<', '2026-10-21')->distinct()->count('session_id'));
+
+        // the robots are no candidates: no wave, nobody leaves, and the recount says the same
+        $this->artisan('matplace:stats-wave', ['--since' => '2026-10-20', '--until' => '2026-10-21', '--dry-run' => true])
+            ->expectsOutputToContain('0 visitors of waves')->expectsOutputToContain('| 2026-10-20 | 30         | 0                 | 30           |')->assertSuccessful();
+
+        // a real wave of confirmed visitors the same day is still found, and the recount takes exactly them out
+        foreach (range(1, 12) as $i) {
+            $session = AnonymousSession::start('185.220.101.'.$i, $chrome)->id;
+            Event::create(['session_id' => $session, 'type' => 'visit', 'source' => 'direct', 'locale' => 'en', 'meta' => ['path' => '/model/w-'.$i, 'js' => true]])
+                ->forceFill(['created_at' => sprintf('2026-10-20 03:%02d:00', $i)])->save();
+        }
+        $this->artisan('matplace:stats-wave', ['--since' => '2026-10-20', '--until' => '2026-10-21', '--dry-run' => true])
+            ->expectsOutputToContain('12 visitors of waves')->expectsOutputToContain('| 2026-10-20 | 42         | 12                | 30           |')->assertSuccessful();
+        $this->artisan('matplace:stats-wave', ['--since' => '2026-10-20', '--until' => '2026-10-21'])->assertSuccessful();
+        $this->assertSame(12, Event::where('meta->bot', 'wave')->count());
+        $this->assertSame(30, Event::people()->where('created_at', '>=', '2026-10-20')->where('created_at', '<', '2026-10-21')->distinct()->count('session_id'));
+    }
+
     public function test_a_failed_sign_in_is_written_down_with_the_address_not_the_e_mail(): void
     {
         Log::spy();

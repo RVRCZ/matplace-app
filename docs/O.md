@@ -180,8 +180,16 @@ vůbec. Mimochodem opraveno čtení logu: cíl začínající `//` vzal `parse_u
 stránky, a projde tak potvrzením „prohlížeč“, které roboty jinak drží venku.
 
 **Pravidlo** (`App\Domain\Stats\Waves`, příkaz `matplace:stats-wave`):
-- **Kandidát** je návštěva bez refereru a kampaně (`direct`), jejíž sezení nic neudělalo (žádná akce z
-  `Track::ACTIONS`, žádné `act`) a otevřelo nejvýš jednu stránku.
+- **Kandidát** je jen návštěva, která se dnes počítá mezi lidi (podmínka `Event::people()`: potvrzená skriptem
+  prohlížeče). Musí přijít bez refereru a kampaně (`direct`), její sezení nesmí nic udělat (žádná akce z
+  `Track::ACTIONS`, žádné `act`) a smí otevřít nejvýš jednu stránku. Roboty, které nikdo nepotvrdil, pravidlo
+  nechává být, protože mezi lidi se nepočítají už teď. **Oprava 24. 10.:** první verze je brala taky (60 000 za
+  týden). Dry-run na produkci tak „našel“ 2 545 návštěvníků vln v den s 19 lidmi a člověk se stejným běžným
+  prohlížečem by v takové hodině spadl do jejich skupiny. Řídící session hodinové spouštění na den vypnula, naostro
+  se nic neoznačilo. Test `test_robots_nobody_confirmed_make_no_wave_and_the_people_sharing_their_browser_stay`:
+  3 000 nepotvrzených robotů a 30 lidí se stejným prohlížečem dají 0 vln a 30 lidí. Skutečná potvrzená vlna (12 za
+  hodinu) se najde dál.
+- Tabulka dry-runu „lidé potom“ **lidi přepočítá** (stejná podmínka, navržené vlny vyjmuté), neodečítá.
 - **Vlna** je aspoň **8 kandidátů za jednu hodinu** se stejným otiskem:
   - stejný prohlížeč (User-Agent a jazyk) **přes mnoho různých stránek** (aspoň polovina různých): procházení
     katalogu, ne sdílený odkaz;

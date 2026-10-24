@@ -4,6 +4,7 @@ namespace App\Domain\Stats;
 
 use App\Models\Event;
 use App\Support\Track;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -12,7 +13,10 @@ use Illuminate\Support\Facades\DB;
  * day, each one page of the catalogue or /login, all direct). It runs the page's script, so it passes the browser's
  * confirmation that keeps robots out; what gives it away is that the many visitors are one:
  *
- *   a candidate   a visit without a referer or campaign (direct), whose session did nothing (no action of
+ *   a candidate   a visit that counts as a person's today (Event::people(): confirmed by the browser's script;
+ *                 robots nobody confirmed are left as they are and never counted here – 24 Oct 2026 the first
+ *                 version took them in, thousands an hour, and a person with a common browser fell into their
+ *                 groups), without a referer or campaign (direct), whose session did nothing (no action of
  *                 Track::ACTIONS, no `act`) and opened at most one page;
  *   a wave        within one clock hour, at least MIN candidates share a fingerprint:
  *                 the same browser (User-Agent and language), or the same network (IPv4 /24, IPv6 /48), over many
@@ -75,11 +79,8 @@ final class Waves
     private function candidates(Carbon $from, Carbon $until): array
     {
         $grammar = DB::connection()->getQueryGrammar();
-        $visits = DB::table('events as v')->leftJoin('anonymous_sessions as s', 's.id', '=', 'v.session_id')
-            ->where('v.type', Event::VISIT)->where('v.created_at', '>=', $from)->where('v.created_at', '<', $until)
-            ->whereNotNull('v.session_id')->where('v.source', 'direct')->whereNull('v.utm')
-            ->whereNull('v.meta->staff')->whereNull('v.meta->act')
-            ->where(fn ($q) => $q->whereNull('v.meta->bot')->orWhere('v.meta->bot', self::MARK))
+        $visits = $this->people($from, $until)->leftJoin('anonymous_sessions as s', 's.id', '=', 'v.session_id')
+            ->where('v.source', 'direct')->whereNull('v.utm')->whereNull('v.meta->act')
             ->selectRaw('v.id, v.session_id, v.created_at, v.locale, s.ip, s.user_agent, '.$grammar->wrap('v.meta->path').' as path')
             ->orderBy('v.id')->get();
         if ($visits->isEmpty()) {
@@ -96,6 +97,40 @@ final class Waves
         $busy = $busy->flip();
 
         return $visits->reject(fn ($v) => isset($busy[$v->session_id]))->values()->all();
+    }
+
+    /**
+     * The visits that count as people's (the condition of Event::people()), a wave's own included: the visits a wave
+     * may be found among, and the people a recount starts from.
+     */
+    private function people(Carbon $from, Carbon $until): Builder
+    {
+        $since = Humans::since();
+
+        return DB::table('events as v')->where('v.type', Event::VISIT)->where('v.created_at', '>=', $from)->where('v.created_at', '<', $until)
+            ->whereNotNull('v.session_id')->whereNull('v.meta->staff')
+            ->where(fn ($q) => $q->whereNull('v.meta->bot')->orWhere('v.meta->bot', self::MARK))
+            ->when($since, fn ($q) => $q->where(fn ($w) => $w->where('v.created_at', '<', $since)->orWhere('v.meta->js', true)->orWhere('v.meta->act', true)));
+    }
+
+    /**
+     * People per day once the given visits are a wave's (and no other visit is): the recount the overview would show.
+     *
+     * @param  list<int>  $wave
+     * @return array<string, int> day → people
+     */
+    public function peopleByDay(Carbon $from, Carbon $until, array $wave): array
+    {
+        $out = [];
+        $wave = array_flip($wave);
+        foreach ($this->people($from, $until)->orderBy('v.id')->get(['v.id', 'v.session_id', 'v.created_at']) as $v) {
+            if (! isset($wave[$v->id])) {
+                $out[substr((string) $v->created_at, 0, 10)][$v->session_id] = true;
+            }
+        }
+        ksort($out);
+
+        return array_map('count', $out);
     }
 
     /** One network: IPv4 by its /24, IPv6 by its /48 (one provider's customer, one data centre's rack). */
