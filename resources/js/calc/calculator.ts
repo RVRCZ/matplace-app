@@ -3,6 +3,8 @@ import { BufferGeometry, Float32BufferAttribute } from 'three';
 import { moldReport } from './mold';
 import { Viewer, twoColorRegions, Piece } from './viewer';
 import { loadGeometry, loadGeometryFromUrl, extensionOf, BROWSER_FORMATS } from './loaders';
+import ParseWorker from './parse.worker?worker';
+import type { ParseReply } from './parse.worker';
 import { stats, normaliseUnits, GeoStats } from './geometry';
 import { estimate, price, profilesFor, range, RoughConfig, Profile, Params } from './rough';
 import { uploadFile, createCalculation, getCalculation, getFile, CalcInfo, FileInfo } from './api';
@@ -571,6 +573,40 @@ function heroError(msg: string | null): void {
     el.classList.toggle('hidden', !msg);
 }
 
+/** From this size a model is read in a worker; a smaller one is faster on the page itself (no second copy of three). */
+const WORKER_FROM_BYTES = 20 * 1024 * 1024;
+
+/**
+ * The model read into a geometry with its volume, area and box: a big STL or OBJ in a worker, so the page keeps
+ * breathing and the upload keeps going; everything else, and a browser without workers, on the page as before.
+ */
+async function readModel(file: File): Promise<{ geom: BufferGeometry; stats: GeoStats } | null> {
+    const ext = extensionOf(file.name);
+    if (file.size >= WORKER_FROM_BYTES && (ext === 'stl' || ext === 'obj') && typeof Worker !== 'undefined') {
+        let reply: ParseReply | null = null;
+        try {
+            reply = await new Promise<ParseReply>((resolve, reject) => {
+                const worker = new ParseWorker();
+                worker.onmessage = (e: MessageEvent<ParseReply>) => { resolve(e.data); worker.terminate(); };
+                worker.onerror = (e) => { reject(new Error(e.message)); worker.terminate(); };
+                worker.postMessage(file);
+            });
+        } catch {
+            reply = null;   // the worker could not be started: the page reads the file itself
+        }
+        if (reply) {
+            if (!reply.ok) throw new Error(reply.error);
+            if (!reply.model) return null;
+            const geom = new BufferGeometry();
+            geom.setAttribute('position', new Float32BufferAttribute(reply.model.position, 3));
+            if (reply.model.normal) geom.setAttribute('normal', new Float32BufferAttribute(reply.model.normal, 3));
+            return { geom, stats: reply.model.stats };
+        }
+    }
+    const geom = await loadGeometry(file);
+    return geom ? { geom, stats: stats(geom) } : null;
+}
+
 async function handleFile(file: File): Promise<void> {
     heroError(null);
     const ext = extensionOf(file.name);
@@ -591,9 +627,10 @@ async function handleFile(file: File): Promise<void> {
 
     // 2) meanwhile: parse in the browser, show model + rough price
     try {
-        const geom = await loadGeometry(file);
-        if (geom) {
-            let s = stats(geom);
+        const read = await readModel(file);
+        if (read) {
+            const geom = read.geom;
+            let s = read.stats;
             const k = normaliseUnits(geom, s);
             if (k !== 1) s = stats(geom);
             state.geometry = geom;
