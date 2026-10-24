@@ -139,12 +139,13 @@
 
     <p class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
         <strong>Roboti:</strong>
-        @if($o['robots']['pages'] === 0 && $o['unconfirmed'] === 0)
+        @if($o['robots']['pages'] === 0 && $o['unconfirmed'] === 0 && $o['waves'] === 0)
             v tomhle období žádné stránky.
         @else
             {{ $o['robots']['pages'] }} stránek —
             @foreach($o['robots']['by'] as $name => $r){{ $name }} {{ $r['pages'] }} ({{ $r['addresses'] }} adres)@if(! $loop->last), @endif @endforeach
             @if($o['unconfirmed'] > 0) · a {{ $o['unconfirmed'] }} návštěv „prohlížečů“, které žádný prohlížeč nepotvrdil (roboti v převleku).@endif
+            @if($o['waves'] > 0) · <span id="stats-waves">vlny: {{ $o['waves'] }}</span> (jeden stroj za mnoho „lidí“: stejný prohlížeč přes mnoho stránek nebo stejná síť, každý jen jedna stránka a nic dalšího).@endif
         @endif
         <span class="text-slate-500">Mezi lidi se nepočítají; vyhledávače takhle čtou web kvůli výsledkům hledání.</span>
     </p>

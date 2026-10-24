@@ -69,6 +69,9 @@ final class WeeklyReport
         if ($o['unconfirmed'] > 0) {
             $robots[] = sprintf('Roboti vydávající se za prohlížeč (návštěvy, které žádný prohlížeč nepotvrdil): %d', $o['unconfirmed']);
         }
+        if (($o['waves'] ?? 0) > 0) {
+            $robots[] = sprintf('Vlny (jeden stroj za mnoho „lidí“): %d', $o['waves']);
+        }
         $sections[] = ['title' => 'Roboti (nepočítají se mezi lidi)', 'lines' => $robots ?: ['Žádné stránky.']];
 
         return [
