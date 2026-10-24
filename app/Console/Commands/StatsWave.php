@@ -33,16 +33,15 @@ class StatsWave extends Command
         $add = array_values(array_diff(array_keys($found), $marked));
         $drop = array_values(array_diff($marked, array_keys($found)));
 
-        // people per day before and after (the people of the overview: Event::people())
+        // people per day now (the overview's Event::people()) and counted again with these waves out – not a difference
+        $before = Event::people()->where('created_at', '>=', $since)->where('created_at', '<', $until)->get(['session_id', 'created_at'])
+            ->groupBy(fn ($e) => $e->created_at->toDateString())->map(fn ($day) => $day->pluck('session_id')->unique()->count());
+        $after = $waves->peopleByDay($since, $until, array_keys($found));
+        $wave = Event::whereIn('id', array_keys($found))->get(['session_id', 'created_at'])
+            ->groupBy(fn ($e) => $e->created_at->toDateString())->map(fn ($day) => $day->pluck('session_id')->unique()->count());
         $days = [];
-        $before = Event::people()->where('created_at', '>=', $since)->where('created_at', '<', $until)->selectRaw('DATE(created_at) as day, COUNT(DISTINCT session_id) as n')->groupBy('day')->pluck('n', 'day');
-        $wave = Event::whereIn('id', array_keys($found))->selectRaw('DATE(created_at) as day, COUNT(DISTINCT session_id) as n')->groupBy('day')->pluck('n', 'day');
-        $returned = Event::whereIn('id', $drop)->selectRaw('DATE(created_at) as day, COUNT(DISTINCT session_id) as n')->groupBy('day')->pluck('n', 'day');
-        $newly = Event::whereIn('id', $add)->selectRaw('DATE(created_at) as day, COUNT(DISTINCT session_id) as n')->groupBy('day')->pluck('n', 'day');
-        foreach ($before->keys()->merge($wave->keys())->unique()->sort() as $day) {
-            $now = (int) ($before[$day] ?? 0);
-            $after = $now - (int) ($newly[$day] ?? 0) + (int) ($returned[$day] ?? 0);
-            $days[] = [$day, $now, (int) ($wave[$day] ?? 0), $after];
+        foreach ($before->keys()->merge(array_keys($after))->merge($wave->keys())->unique()->sort() as $day) {
+            $days[] = [$day, (int) ($before[$day] ?? 0), (int) ($wave[$day] ?? 0), (int) ($after[$day] ?? 0)];
         }
         $this->table(['day', 'people now', 'visitors of waves', 'people after'], $days);
         $why = array_count_values($found);
