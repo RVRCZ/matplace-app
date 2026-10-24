@@ -171,3 +171,46 @@ server) vrací 404 a do společného access logu je zapíše bez hostitele, tak�
 Doporučení pro server: default server s vlastním `access_log` (nebo `return 444`), pak se do logu webu nedostanou
 vůbec. Mimochodem opraveno čtení logu: cíl začínající `//` vzal `parse_url` za hostitele (`//blog/x` → `/x`,
 `//wp-login.php` → `/`). Teď se čte jako cesta, stejně jako v aplikaci.
+
+## Vlny (TODO #40, 24. 10. 2026)
+
+23. a 24. 10. hlásil přehled 323 a 177 „lidí“ za den (17.–22. 10. bylo 16–69). Posledních 24 h 495 „lidí“, všichni
+`direct`, 492 `en`, každý jediná stránka `/model/<slug>` (katalog, zhruba podle abecedy) nebo `/login` (29×),
+1 kalkulace a 0 zakázek (čísla řídící session z produkce). Je to jeden stroj: headless prohlížeč spustí skript
+stránky, a projde tak potvrzením „prohlížeč“, které roboty jinak drží venku.
+
+**Pravidlo** (`App\Domain\Stats\Waves`, příkaz `matplace:stats-wave`):
+- **Kandidát** je návštěva bez refereru a kampaně (`direct`), jejíž sezení nic neudělalo (žádná akce z
+  `Track::ACTIONS`, žádné `act`) a otevřelo nejvýš jednu stránku.
+- **Vlna** je aspoň **8 kandidátů za jednu hodinu** se stejným otiskem:
+  - stejný prohlížeč (User-Agent a jazyk) **přes mnoho různých stránek** (aspoň polovina různých): procházení
+    katalogu, ne sdílený odkaz;
+  - nebo stejná síť (IPv4 /24, IPv6 /48) přes mnoho různých stránek;
+  - nebo stejná síť na přihlašovacích stránkách (`/login`, `/register`, `/forgot-password`), které nikdo nesdílí.
+- Návštěvy vlny dostanou `meta.bot = wave` (a `meta.wave` = prohlížeč / síť). Z lidí zmizí a v přehledu, v adminu
+  („vlny: n“ u robotů) i v týdenním e‑mailu jsou jedním číslem. Příkaz běží každou hodinu (`hourlyAt(5)`) za
+  posledních 48 h a umí i vrátit: kdo mezitím něco udělal, značku ztratí. Nic se nemaže.
+
+**Proč to nesebere lidi:** u nás chodí 16–69 lidí za den, tedy pár za hodinu. Sdílený odkaz (třeba 10 lidí ve stejném
+iPhonu během hodiny) míří na jednu stránku, často z jedné mobilní sítě, protože operátoři sdílejí adresy (CGNAT), a
+pravidlo „mnoho různých stránek“ ho nechá být. Kdo otevře druhou stránku, spočítá cenu nebo se přihlásí, kandidátem
+není. Testy (`StatsTest::test_a_wave_is_one_machine_and_the_people_of_the_days_before_stay`) mají šest dní lidí
+s těmito „podobami“, 7 podobných pod prahem, lidi s druhou stránkou, s kalkulací a z Googlu. Všech 20 lidí denně
+zůstane, vlna 40 návštěv za hodinu a 12× `/login` z jedné sítě odejdou.
+
+**Co ověřit na produkci (z této session nešlo):** automatický režim mi nedovolil číst produkční databázi, takže
+otisk vlny (IP, user agent, kadence) a dopad na 17.–22. 10. jsem z dat neviděl. Pravidlo je postavené na číslech
+zadání. Ověření je jeden příkaz, který nic nemění:
+
+    php artisan matplace:stats-wave --since=2026-10-17 --dry-run
+
+Tabulka po dnech „lidé teď / návštěvy vln / lidé potom“. Pro 17.–22. 10. má být rozdíl nejvýš ~1 člověk, pro 23. a
+24. 10. mají zbýt jednotky. Když vlna projde (jiný prohlížeč na každou návštěvu a jiná síť), ukáže to tabulka a práh
+`--min` se dá snížit. Pak totéž bez `--dry-run` a týdenní tabulka je přepočítaná.
+
+**/login:** zobrazení stránky `/login` (GET) není pokus o přihlášení. Neúspěšná přihlášení se dosud nikam
+nezapisovala, takže hádání hesel nešlo ověřit ani zpětně. Teď se každé zapíše do logu aplikace: `login failed` s IP
+a 12 znaky otisku e‑mailu (ne e‑mail). Hádání ukáže
+`grep "login failed" storage/logs/laravel.log | grep -o '"ip":"[^"]*"' | sort | uniq -c | sort -rn | head`.
+`POST /login` už má limit 6 za minutu z jedné adresy. Kdyby log ukázal hádání, další krok je denní limit podle IP,
+jako u registrace (`RegisterGuard`).

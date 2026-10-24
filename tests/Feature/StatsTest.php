@@ -17,6 +17,7 @@ use App\Support\Bots;
 use App\Support\Track;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -420,6 +421,95 @@ class StatsTest extends TestCase
         $this->assertSame('scanner', $visit->fresh()->meta['bot'] ?? null);
         $this->assertSame([1, 1], [MissingPage::sole()->log_hits, MissingPage::sole()->log_bot_hits]);
         @unlink($log);
+    }
+
+    /** TODO #40: one machine passing for hundreds of people (23–24 Oct 2026) leaves the people; people stay, also look-alikes. */
+    public function test_a_wave_is_one_machine_and_the_people_of_the_days_before_stay(): void
+    {
+        $this->travelTo('2026-10-24 12:00:00');
+        $iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1';
+        $wave = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+        $n = 0;
+        $visit = function (string $at, string $path, string $agent, string $ip, string $source = 'direct', string $locale = 'cs', array $then = []) use (&$n): Event {
+            $n++;
+            $session = AnonymousSession::start($ip, $agent)->id;
+            $v = Event::create(['session_id' => $session, 'type' => 'visit', 'source' => $source, 'locale' => $locale, 'meta' => ['path' => $path, 'js' => true]]);
+            $v->forceFill(['created_at' => $at])->save();
+            Event::create(['session_id' => $session, 'type' => 'page', 'subject_type' => 'page', 'meta' => ['path' => $path]])->forceFill(['created_at' => $at])->save();
+            foreach ($then as [$type, $meta]) {
+                Event::create(['session_id' => $session, 'type' => $type, 'subject_type' => $type === 'page' ? 'page' : null, 'meta' => $meta ?: null])->forceFill(['created_at' => $at])->save();
+            }
+
+            return $v;
+        };
+        // the people of 17–22 Oct, with what looks like a wave and is not
+        foreach (['2026-10-17', '2026-10-18', '2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22'] as $d => $day) {
+            // a link shared in a chat: ten people, the same phone, ONE page, within an hour
+            foreach (range(1, 10) as $i) {
+                $visit(sprintf('%s 18:%02d:00', $day, $i), '/tools/qr', $iphone, "89.24.{$d}.{$i}");
+            }
+            // seven look-alikes over different pages in an hour: under the threshold
+            foreach (range(1, 7) as $i) {
+                $visit(sprintf('%s 09:%02d:00', $day, 10 + $i), "/model/vec-{$i}", $wave, "77.48.{$d}.".(10 + $i), 'direct', 'en');
+            }
+            // people who went on: a second page, a calculation, from Google
+            $visit("{$day} 11:00:00", '/model/drak', $wave, '31.30.1.1', 'direct', 'en', [['page', ['path' => '/tools/vase']]]);
+            $visit("{$day} 11:05:00", '/', $wave, '31.30.1.2', 'direct', 'cs', [['calculation', []]]);
+            $visit("{$day} 11:10:00", '/model/drak', $wave, '31.30.1.3', 'google');
+        }
+        // the wave: 23 Oct, 40 "visitors" in an hour, one browser, the catalogue in alphabetical order; 24 Oct, /login
+        // twelve times from one network with changing browsers
+        foreach (range(1, 40) as $i) {
+            $visit(sprintf('2026-10-23 03:%02d:00', $i), '/model/'.chr(96 + (int) ceil($i / 2)).'-'.$i, $wave, '185.220.101.'.$i, 'direct', 'en');
+        }
+        foreach (range(1, 12) as $i) {
+            $visit(sprintf('2026-10-24 05:%02d:00', $i), '/login', "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/12{$i}.0.0.0 Safari/537.36", '45.134.26.'.$i, 'direct', 'en');
+        }
+        // a real person on the 23rd
+        $visit('2026-10-23 15:00:00', '/tools/box', $iphone, '89.24.9.9', 'seznam');
+
+        $perDay = fn () => Event::people()->selectRaw('DATE(created_at) as day, COUNT(DISTINCT session_id) as n')->groupBy('day')->pluck('n', 'day')->all();
+        $before = $perDay();
+        $this->artisan('matplace:stats-wave', ['--since' => '2026-10-17', '--dry-run' => true])
+            ->expectsOutputToContain('52 visitors of waves (40 by one browser over many pages, 12 from one network)')->expectsOutputToContain('Dry run')->assertSuccessful();
+        $this->assertSame($before, $perDay(), 'a dry run changes nothing');
+
+        $this->artisan('matplace:stats-wave', ['--since' => '2026-10-17'])->assertSuccessful();
+        $after = $perDay();
+        // 17–22 Oct: every person stays (20 a day: the shared link, the look-alikes, those who went on)
+        foreach (array_keys($before) as $day) {
+            if (! str_starts_with((string) $day, '2026-10-23') && ! str_starts_with((string) $day, '2026-10-24')) {
+                $this->assertSame($before[$day], $after[$day], (string) $day);
+            }
+        }
+        $this->assertSame(20, array_values($after)[0]);
+        $day = fn (array $a, string $d) => collect($a)->first(fn ($n, $k) => str_starts_with((string) $k, $d));
+        $this->assertSame([41, 1], [$day($before, '2026-10-23'), $day($after, '2026-10-23')]);
+        $this->assertSame([12, null], [$day($before, '2026-10-24'), $day($after, '2026-10-24')]);
+        $this->assertSame(52, Event::where('meta->bot', 'wave')->count());
+
+        // the overview: the people without the wave, the wave one number; the page and the weekly mail say it
+        $o = app(Overview::class)->compute(7, now());
+        $this->assertSame(52, $o['waves']);
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($admin)->get('/admin/stats')->assertOk()->assertSee('vlny: 52');
+        // the weekly mail counts whole days up to midnight: the wave of the 23rd, not yet the one of today
+        $this->artisan('matplace:stats-report --print')->expectsOutputToContain('Vlny (jeden stroj za mnoho „lidí“): 40')->assertSuccessful();
+
+        // running again changes nothing; a "visitor" of the wave who then counts a price is a person again
+        $this->artisan('matplace:stats-wave', ['--since' => '2026-10-17'])->expectsOutputToContain('0 newly marked, 0 unmarked')->assertSuccessful();
+        $one = Event::where('meta->bot', 'wave')->orderBy('id')->first();
+        Event::create(['session_id' => $one->session_id, 'type' => 'calculation']);
+        $this->artisan('matplace:stats-wave', ['--since' => '2026-10-17'])->expectsOutputToContain('1 unmarked')->assertSuccessful();
+        $this->assertArrayNotHasKey('bot', $one->fresh()->meta);
+    }
+
+    public function test_a_failed_sign_in_is_written_down_with_the_address_not_the_e_mail(): void
+    {
+        Log::spy();
+        $this->withServerVariables(['REMOTE_ADDR' => '45.134.26.7'])->post('/login', ['email' => 'nikdo@example.com', 'password' => 'spatne-heslo'])->assertSessionHasErrors('email');
+        Log::shouldHaveReceived('info')->withArgs(fn ($message, $context = []) => $message === 'login failed' && ($context['ip'] ?? '') === '45.134.26.7' && ($context['email'] ?? '') === substr(hash('sha256', 'nikdo@example.com'), 0, 12) && ! str_contains(json_encode($context), 'nikdo'))->once();
     }
 
     public function test_robot_pages_are_folded_after_a_month_and_the_rest_stays(): void

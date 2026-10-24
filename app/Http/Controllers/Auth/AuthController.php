@@ -37,6 +37,9 @@ class AuthController extends Controller
         // a deleted (anonymised) account has no way in
         $credentials = ['email' => strtolower($data['email']), 'password' => $data['password'], fn ($query) => $query->whereNull('anonymized_at')];
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            // so a guessing of passwords can be seen (docs/O.md "Vlny"): the address and a mark of the e-mail, not the e-mail
+            Log::info('login failed', ['ip' => $request->ip(), 'email' => substr(hash('sha256', strtolower($data['email'])), 0, 12)]);
+
             return back()->withInput($request->only('email'))->withErrors(['email' => __('auth.failed')]);
         }
         if ($request->user()->blocked_at) {

@@ -45,6 +45,8 @@ final class Overview
             'confirmed_since' => Humans::since(),
             'people' => $people, 'people_before' => $previous,
             'unconfirmed' => $this->unconfirmed($from, $until),
+            // one machine passing for many people (matplace:stats-wave): out of the people, one number of its own
+            'waves' => Waves::count($from, $until),
             'daily' => $this->daily($from, $until),
             'sources' => $this->grouped('source', $from, $until, $before),
             'locales' => $this->grouped('locale', $from, $until, $before),
