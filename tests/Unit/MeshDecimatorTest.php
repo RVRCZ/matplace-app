@@ -98,6 +98,53 @@ final class MeshDecimatorTest extends TestCase
         $this->assertSame(['applied' => false, 'reason' => 'error'], ['applied' => $r['applied'], 'reason' => $r['reason']]);
     }
 
+    public function test_the_same_file_thinned_again_is_answered_from_the_remembered_copy_without_python(): void
+    {
+        MeshFixtures::cubeStl($this->dir.'/cube.stl', 10);
+        mkdir($this->dir.'/cache');
+        $calls = [];
+        $python = $this->runner(function (array $args) {
+            MeshFixtures::cubeStl($args[1], 10);
+
+            return ['ok' => true, 'before' => 12, 'after' => 8, 'deviation_mm' => 0.01, 'peak_mm' => 0.02, 'watertight' => true, 'seconds' => 0.4];
+        }, $calls);
+        $config = ['decimate_above' => 10, 'decimate_target' => 8, 'max_deviation_mm' => 0.05, 'decimate_timeout' => 240, 'decimate_cache' => $this->dir.'/cache'];
+        $d = new MeshDecimator($python, $config);
+        $first = $d->decimate($this->dir.'/cube.stl', $this->dir.'/thin.stl');
+        $this->assertTrue($first['applied']);
+        $this->assertArrayNotHasKey('cached', $first);
+        $this->assertCount(1, $calls);
+        $this->assertCount(2, glob($this->dir.'/cache/*') ?: [], 'the thinned file and its answer are remembered');
+
+        // the same bytes under another name, in another place: no Python, the remembered copy
+        copy($this->dir.'/cube.stl', $this->dir.'/print.stl');
+        $again = (new MeshDecimator($python, $config))->decimate($this->dir.'/print.stl', $this->dir.'/thin2.stl');
+        $this->assertCount(1, $calls, 'the script did not run again');
+        $this->assertTrue($again['cached']);
+        $this->assertSame([true, 12, 8, 0.01], [$again['applied'], $again['before'], $again['after'], $again['deviation_mm']]);
+        $this->assertFileEquals($this->dir.'/thin.stl', $this->dir.'/thin2.stl');
+
+        // other limits are another thinning; a file that could not be thinned is remembered as such, a crash is not
+        $other = (new MeshDecimator($python, ['max_deviation_mm' => 0.1] + $config))->decimate($this->dir.'/cube.stl', $this->dir.'/thin3.stl');
+        $this->assertCount(2, $calls);
+        $this->assertArrayNotHasKey('cached', $other);
+        MeshFixtures::cubeStl($this->dir.'/box.stl', 20);
+        $failing = $this->runner(fn () => ['ok' => false, 'reason' => 'deviation', 'before' => 12], $calls);
+        $this->assertFalse((new MeshDecimator($failing, $config))->decimate($this->dir.'/box.stl', $this->dir.'/thin4.stl')['applied']);
+        $r = (new MeshDecimator($failing, $config))->decimate($this->dir.'/box.stl', $this->dir.'/thin5.stl');
+        $this->assertSame([false, 'deviation', true], [$r['applied'], $r['reason'], $r['cached']]);
+        $this->assertCount(3, $calls, 'a final answer is not asked for twice');
+        MeshFixtures::cubeStl($this->dir.'/crash.stl', 30);
+        $broken = $this->runner(fn () => throw new \RuntimeException('python gone'), $calls);
+        (new MeshDecimator($broken, $config))->decimate($this->dir.'/crash.stl', $this->dir.'/thin6.stl');
+        (new MeshDecimator($broken, $config))->decimate($this->dir.'/crash.stl', $this->dir.'/thin7.stl');
+        $this->assertCount(5, $calls, 'a crash is tried again next time');
+        foreach (glob($this->dir.'/cache/*') ?: [] as $f) {
+            @unlink($f);
+        }
+        @rmdir($this->dir.'/cache');
+    }
+
     public function test_the_script_thins_a_fine_sphere_and_keeps_its_shape(): void
     {
         $python = config('engines.python.bin') ?: (PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3');

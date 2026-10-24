@@ -77,6 +77,9 @@ return [
         'max_deviation_mm' => (float) env('MESH_DECIMATE_DEVIATION_MM', 0.05),        // the 99th percentile of the surface distance
         'max_deviation_peak_mm' => (float) env('MESH_DECIMATE_PEAK_MM', 0.15),       // the worst sampled point (under a layer)
         'decimate_timeout' => (int) env('MESH_DECIMATE_TIMEOUT', 240),
+        // thinned files remembered by their bytes and the limits (30 days): a model calculated, re-sliced or printed again
+        // skips the minute of Python; empty switches it off
+        'decimate_cache' => env('MESH_DECIMATE_CACHE', storage_path('app/mesh-cache')),
         'max_triangles' => (int) env('MESH_MAX_TRIANGLES', 6000000),
     ],
 
