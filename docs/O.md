@@ -216,6 +216,13 @@ Tabulka po dnech „lidé teď / návštěvy vln / lidé potom“. Pro 17.–22.
 24. 10. mají zbýt jednotky. Když vlna projde (jiný prohlížeč na každou návštěvu a jiná síť), ukáže to tabulka a práh
 `--min` se dá snížit. Pak totéž bez `--dry-run` a týdenní tabulka je přepočítaná.
 
+**Výsledek na produkci (řídící session, 24. 10. 2026 10:40 UTC):** první verze (bez podmínky potvrzení) označila
+nasucho 14 297 „návštěvníků vln“ (17. 10. 2 545 při 19 lidech), proto byla hodinu vypnutá; opravená verze dala
+17.–22. 10. beze změny (19 / 69 / 19 / 38 / 16 / 33 lidí, 0 vln), 23. 10. 323 → 10 lidí (313 vln), 24. 10. 188 → 21
+(167 vln); celkem 480 návštěvníků vln, všech 480 „jeden prohlížeč přes mnoho stránek“, 0 podle sítě. Pak naostro:
+označeno 480, 0 odznačeno. Přehled za 7 dní potom: 215 lidí (týden předtím 212), vlny 480, nepotvrzených 60 917,
+skenerů 1 969; zdroje direct 161, facebook 19, youtube 18; trychtýř 215 → 72 kalkulací → 16 nahrání → 1 zakázka.
+
 **/login:** zobrazení stránky `/login` (GET) není pokus o přihlášení. Neúspěšná přihlášení se dosud nikam
 nezapisovala, takže hádání hesel nešlo ověřit ani zpětně. Teď se každé zapíše do logu aplikace: `login failed` s IP
 a 12 znaky otisku e‑mailu (ne e‑mail). Hádání ukáže
