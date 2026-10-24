@@ -13,7 +13,11 @@ Schedule::command('farm:weekly-video')->weeklyOn(0, '18:00')->timezone('Europe/P
 Schedule::command('matplace:sitemap')->dailyAt('04:40');
 // events older than 13 months (pages fetched by robots: 30 days) are folded into a daily summary and deleted
 Schedule::command('matplace:events-rollup')->dailyAt('03:50');
-Schedule::command('matplace:stats-wave')->hourlyAt(5)->withoutOverlapping();   // one machine passing for many people: out of the people (docs/O.md "Vlny")
+// one machine passing for many people: out of the people (docs/O.md "Vlny"). OFF since 24 Oct 2026: the dry run on production
+// found 2 500 "wave" visitors on a day of 19 people, because the candidates include visits no browser confirmed (not people
+// at all) and a confirmed person sharing a common browser with them in the hour would be marked too; back on once the
+// candidates are confirmed visits only (TODO #40)
+// Schedule::command('matplace:stats-wave')->hourlyAt(5)->withoutOverlapping();
 // the week in numbers for the owner: people, sources, funnel, what was published (docs/O.md)
 Schedule::command('matplace:stats-report')->weeklyOn(1, '07:00')->timezone('Europe/Prague');
 // who carries parcels where changes rarely; a failed download keeps last week's list
