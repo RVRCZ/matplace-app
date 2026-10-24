@@ -583,7 +583,13 @@ async function handleFile(file: File): Promise<void> {
     $('file-badge').textContent = file.name;
     setStatus('calc.status.reading', true);
 
-    // 1) instant: parse in the browser, show model + rough price
+    // 1) at once: the upload starts before the browser reads the file, so the server's measuring and slicing do not wait
+    // for the picture and the rough price (a 90 MB dragon: the browser alone took Roman a long wait, 24 Oct 2026);
+    // the browser's volume and area used to travel with it, the server does not use them
+    const upload = uploadFile(file);
+    upload.catch(() => undefined);   // judged below, after the model is shown
+
+    // 2) meanwhile: parse in the browser, show model + rough price
     try {
         const geom = await loadGeometry(file);
         if (geom) {
@@ -602,9 +608,10 @@ async function handleFile(file: File): Promise<void> {
         setStatus('calc.status.converting', true);
     }
 
-    // 2) background: upload → precise slice
+    // 3) the upload that has been running all along → precise slice
     try {
-        const info = await uploadFile(file, state.geo ? { volume_mm3: state.geo.volume_mm3, area_mm2: state.geo.area_mm2 } : undefined);
+        const info = await upload;
+        if (state.localFile !== file) return;   // another file was chosen meanwhile: this one is history
         state.file = info;
         renderSize();     // a file the browser could not read shows its size as soon as the server measured it
         requestPrecise();
