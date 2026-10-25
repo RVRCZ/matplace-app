@@ -6,6 +6,7 @@ use App\Models\DesignerModel;
 use App\Models\DesignerProfile;
 use App\Models\Event;
 use App\Models\FarmOrder;
+use App\Models\Payment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route as MatchedRoute;
@@ -68,7 +69,7 @@ final class Track
     ];
 
     /** What only a person does. One of these makes the visit a person's even when its script never called home. */
-    public const ACTIONS = ['upload', 'generate', 'calculation', 'order_created', 'order_paid', 'register', 'search', 'designer_enabled', 'designer_import', 'designer_file_uploaded'];
+    public const ACTIONS = ['upload', 'generate', 'calculation', 'order_created', 'order_paid', 'topup_started', 'topup', 'register', 'search', 'designer_enabled', 'designer_import', 'designer_file_uploaded'];
 
     /** Pages whose address names public content; any other address with a parameter is kept as its pattern (/c/{calculation}): private links carry tokens. */
     private const PUBLIC_PAGES = ['printers.show', 'designers.show', 'collections.show', 'blog.show', 'models.show', 'catalog.category', 'catalog.show'];
@@ -274,6 +275,32 @@ final class Track
             ]);
         } catch (\Throwable $e) {
             Log::warning('Card payment was not recorded', ['order' => $order->id, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Credit arrived from the gateway (the webhook, no visitor behind it): one `topup` with the amount, in the visit
+     * that started it (`topup_started` with the same event_id) when there was one. A webhook delivered twice writes it
+     * once. `kind` says whether the money was asked for by an order's page (order) or on the credit page (topup).
+     */
+    public static function toppedUp(Payment $payment): ?Event
+    {
+        try {
+            $id = 'topup-'.$payment->id;
+            if (Event::where('type', 'topup')->where('meta->event_id', $id)->exists()) {
+                return null;
+            }
+            $started = Event::where('type', 'topup_started')->where('meta->event_id', $id)->latest('id')->first();
+
+            return Event::create([
+                'session_id' => $started?->session_id, 'user_id' => $payment->user_id, 'locale' => $started?->locale ?? Locales::current(), 'type' => 'topup',
+                'source' => $started?->source ?? 'direct', 'ref_slug' => $started?->ref_slug, 'utm' => $started?->utm,
+                'meta' => self::clean(['value' => (float) $payment->amount, 'currency' => (string) $payment->currency, 'event_id' => $id, 'kind' => $payment->purpose === Payment::PURPOSE_ORDER ? 'order' : 'topup']),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Top-up was not recorded', ['payment' => $payment->id, 'error' => $e->getMessage()]);
 
             return null;
         }

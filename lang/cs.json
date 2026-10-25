@@ -1822,5 +1822,11 @@
     "calc.status.big_only_n": "Velký model (:n mil. trojúhelníků): přesnou cenu a dobu tisku spočítáme při objednávce, trvá to několik minut.",
     "calc.price.orient_range": "Orientační cena tisku u nás: :price. Podle podpěr, tvaru, barvy a tiskárny ji upřesníme při objednávce.",
     "calc.price.shape_hint": "Podle podpěr a tvaru upřesníme při objednávce.",
-    "calc.time.range": "asi :lo až :hi"
+    "calc.time.range": "asi :lo až :hi",
+    "farm.order.ship.total": "Celkem k zaplacení :total",
+    "farm.order.ship.total_estimate": "Celkem asi :total, dopravu upřesní dopravce",
+    "farm.order.pay_note_round": "Kartou platíte přesně :amount; pár haléřů navíc zůstane jako kredit.",
+    "farm.order.pay_note_min": "Nejmenší platba kartou je :amount; co přesahuje cenu, zůstane jako kredit na další tisk.",
+    "farm.order.step_material_hint": "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; cena se přepočítá podle vaší volby.",
+    "farm.order.step_order_hint": "Zvolte doručení a zaplaťte kartou nebo z kreditu. Tisk začne po zaplacení."
 }

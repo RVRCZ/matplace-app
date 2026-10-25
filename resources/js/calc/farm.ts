@@ -11,7 +11,7 @@ import { Viewer, FacePaint, cutAtHeight, deep } from './viewer';
 import { loadGeometryFromUrl } from './loaders';
 import { money as moneyText } from '../site/money';
 import { timelinePrint, timelineDispatch } from './order_timeline';
-import { printOnly, shippingText } from './order_price';
+import { printOnly, shippingText, totalText } from './order_price';
 import { estimate as roughEstimate, shapeOf, rangeFactors, type RoughConfig } from './rough';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
@@ -46,6 +46,8 @@ interface FarmState {
     settings?: Record<string, number> | null; admin_overrides?: Record<string, string> | null;
     dims: { x: number; y: number; z: number } | null; warnings: string[]; orientation_changed: boolean; supports: boolean; supports_mode: string; color_change_mm: number | null; second_color: { name: string; hex: string } | null;
     minutes: number | null; grams: number | null; meters: number | null; price: Price | null; total: number | null; currency: string;
+    /** the smallest amount the card can be charged in this currency (the gateway's floor); a smaller shortfall is charged as this */
+    min_charge?: number;
     shipping: Shipping | null; destination: string | null; tracking_url: string | null;
     colors: Color[]; color: { name: string; hex: string; finish?: string | null; code?: string | null } | null; spools?: SpoolLine[]; delivery: string; balance: number; model_url: string | null; supports_url: string | null;
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; cancel_keep: number | null;
@@ -695,6 +697,7 @@ export function bootFarmOrder(): void {
 
         const hasResult = s.minutes !== null && s.status !== 'uploaded' && !(s.status === 'failed' && !s.number);
         show($('farm-result'), hasResult);
+        show($('farm-total-line'), false);   // filled below once the delivery on offer is known (sliced)
         if (hasResult) {
             const print = printPrice();
             $('farm-price')!.textContent = print !== null ? money(print) : '—';
@@ -779,11 +782,27 @@ export function bootFarmOrder(): void {
             renderDelivery();
             // short of credit: the button pays what is missing by card (the order starts when the bank confirms it);
             // a top-up of the account stays as the second way
+            // the sum with the delivery right under the price: exact from the quote, until then from the carrier's list
+            const totalLine = $('farm-total-line');
+            if (totalLine) {
+                const k = kind();
+                const offered = k ? (s.shipping?.countries[country]?.[k] ?? null) : null;
+                totalLine.textContent = totalText(delivery, printPrice(), k && quoted?.key === quoteKey() ? quoted.price : null, offered, tr, money);
+                show(totalLine, totalLine.textContent !== '');
+            }
             const payBtn = $('farm-pay-btn') as HTMLButtonElement;
             const short = total() !== null ? Math.max(0, total()! - s.balance) : 0;
-            payBtn.dataset.need = short > 0.005 ? String(Math.ceil(short)) : '';
-            payBtn.textContent = payBtn.dataset.need ? (s.balance > 0.005 ? tr('farm.order.pay_card_rest', { amount: money(Math.ceil(short)), balance: money(s.balance) }) : tr('farm.order.pay_card', { amount: money(Math.ceil(short)) })) : tr('farm.order.pay');
+            // what the card takes: the shortfall rounded up to whole crowns or euros, never under the gateway's smallest charge
+            const need = short > 0.005 ? Math.max(Math.ceil(short), s.min_charge ?? 0) : 0;
+            payBtn.dataset.need = need > 0 ? String(need) : '';
+            payBtn.textContent = need > 0 ? (s.balance > 0.005 ? tr('farm.order.pay_card_rest', { amount: money(need), balance: money(s.balance) }) : tr('farm.order.pay_card', { amount: money(need) })) : tr('farm.order.pay');
             payBtn.disabled = picked === null || total() === null || deliveryMissing() !== null || noMachine() || !($('farm-terms') as HTMLInputElement).checked;
+            // under the button: the card takes a little more than the shortfall (rounding, or the gateway's floor), the rest stays as credit
+            const payNote = $('farm-pay-note');
+            if (payNote) {
+                payNote.textContent = need > 0 && need - short > 0.005 ? tr(need - Math.ceil(short) > 0.005 ? 'farm.order.pay_note_min' : 'farm.order.pay_note_round', { amount: money(need) }) : '';
+                show(payNote, payNote.textContent !== '');
+            }
             // the sum is said here, where it is paid: the print and the delivery
             const payTotal = $('farm-pay-total');
             if (payTotal) {

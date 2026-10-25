@@ -13,6 +13,19 @@ export function printOnly(p: PriceParts | null): number | null {
 }
 
 /**
+ * The sum with the delivery, under the price (the sales path, 25 Oct 2026): exact once the delivery quote is here
+ * (`quoted`), before that the print plus the carrier's list price for the country (`offered`), said as an estimate;
+ * pickup is the print alone. '' when nothing is chosen or the print is not priced yet.
+ */
+export function totalText(way: string, print: number | null, quoted: PriceParts | null, offered: number | null, tr: Tr, money: (n: number) => string): string {
+    if (!way || print === null) return '';
+    if (way === 'pickup') return tr('farm.order.ship.total', { total: money(print) });
+    if (quoted) return tr('farm.order.ship.total', { total: money(quoted.total) });
+    if (offered !== null) return tr('farm.order.ship.total_estimate', { total: money(Math.round((print + offered) * 100) / 100) });
+    return '';
+}
+
+/**
  * The delivery line. `way` = the delivery chosen ('' none yet), `price` = the price with that delivery (null while the
  * delivery quote is on its way), `open` = the order is not paid yet (then nothing chosen asks to choose).
  */

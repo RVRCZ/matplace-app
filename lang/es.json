@@ -1822,5 +1822,11 @@
     "calc.status.big_only_n": "Modelo grande (:n millones de triángulos): el precio y el tiempo de impresión exactos se calculan al pedir, tarda varios minutos.",
     "calc.price.orient_range": "Precio orientativo de impresión con nosotros: :price. Lo precisaremos según los soportes, la forma, el color y la impresora al pedir.",
     "calc.price.shape_hint": "Lo precisaremos según los soportes y la forma al pedir.",
-    "calc.time.range": "unos :lo a :hi"
+    "calc.time.range": "unos :lo a :hi",
+    "farm.order.ship.total": "Total a pagar :total",
+    "farm.order.ship.total_estimate": "Unos :total en total, el transportista confirma el envío",
+    "farm.order.pay_note_round": "Con tarjeta paga exactamente :amount; los céntimos de más quedan como crédito.",
+    "farm.order.pay_note_min": "El pago mínimo con tarjeta es :amount; lo que supere el precio queda como crédito para su próxima impresión.",
+    "farm.order.step_material_hint": "Elija el color y los ajustes de impresión. Todavía no paga nada; el precio sigue su elección.",
+    "farm.order.step_order_hint": "Elija la entrega y pague con tarjeta o con el crédito. La impresión empieza al pagar."
 }

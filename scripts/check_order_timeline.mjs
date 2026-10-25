@@ -53,6 +53,13 @@ const priceCases = [
     [price.shippingText('', null, true, tr, money), 'Doprava podle způsobu doručení níže'],
     [price.shippingText('', null, false, tr, money), ''],
     [price.shippingText('packeta_point', { total: 160, shipping: 0 }, false, tr, money), 'Doprava Zásilkovna: zdarma'],
+    // the sum with the delivery under the price: exact from the quote, estimated from the list price, pickup = the print
+    [price.totalText('packeta_point', 160, quote, 99, tr, money), 'Celkem k zaplacení 259 Kč'],
+    [price.totalText('packeta_point', 160, null, 99, tr, money), 'Celkem asi 259 Kč, dopravu upřesní dopravce'],
+    [price.totalText('pickup', 160, null, null, tr, money), 'Celkem k zaplacení 160 Kč'],
+    [price.totalText('', 160, null, 99, tr, money), ''],
+    [price.totalText('packeta_home', null, null, 149, tr, money), ''],
+    [price.totalText('packeta_home', 160, null, null, tr, money), ''],
 ];
 priceCases.forEach(([got, want], i) => { if (got !== want) { bad++; console.error('WRONG price line', i, JSON.stringify(got), 'expected', JSON.stringify(want)); } });
 console.log(bad ? `${bad} lines wrong` : `order timeline ok: ${cases.length} states; price lines ok: ${priceCases.length}`);

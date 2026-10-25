@@ -1822,5 +1822,11 @@
     "calc.status.big_only_n": "A large model (:n million triangles): the exact price and print time are worked out when you order, that takes several minutes.",
     "calc.price.orient_range": "Print price with us, to orient by: :price. We narrow it down by the supports, the shape, the colour and the printer when you order.",
     "calc.price.shape_hint": "Narrowed down by the supports and the shape when you order.",
-    "calc.time.range": "about :lo to :hi"
+    "calc.time.range": "about :lo to :hi",
+    "farm.order.ship.total": "To pay :total",
+    "farm.order.ship.total_estimate": "About :total in total, the carrier confirms the delivery",
+    "farm.order.pay_note_round": "You pay exactly :amount by card; the odd cents stay as credit.",
+    "farm.order.pay_note_min": "The smallest card payment is :amount; whatever exceeds the price stays as credit for your next print.",
+    "farm.order.step_material_hint": "Pick the colour and the print settings. Nothing to pay yet; the price follows your choice.",
+    "farm.order.step_order_hint": "Choose the delivery and pay by card or from credit. The print starts once paid."
 }
