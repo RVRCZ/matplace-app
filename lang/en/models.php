@@ -4,6 +4,7 @@
 return [
     'nav' => 'Models',
     'title' => 'Models to print',
+    'seo_title' => 'Designers\' models we print for you',   // the title tag; the h1 stays short
     'title_suffix' => 'printed to order',
     'description' => 'Models by designers that we print and ship to you. Pick a material and a number of pieces and see the price at once.',
     'description_one' => 'The model “:title” by the designer :name. We print and ship it.',
@@ -75,6 +76,7 @@ return [
 
     'inspiration' => [
         'title' => 'Inspiration',
+        'seo_title' => '3D models to print from Printables and MakerWorld',
         'title_suffix' => '3D model',
         'description' => 'Thousands of 3D models from Printables, MakerWorld and other sites in one place, each with a link to its source and its licence.',
         'description_one' => 'The 3D model “:title”: link to the source, licence and whether it can be printed.',

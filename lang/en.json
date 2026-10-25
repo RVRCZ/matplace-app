@@ -1830,5 +1830,13 @@
     "results": "results",
     "Go to page :page": "Go to page :page",
     "calc.price.shipping_pickup": "+ delivery from :from (Packeta) or free pickup in person, exact by the delivery chosen when ordering.",
-    "calc.price.shipping": "+ delivery from :from (Packeta), exact by the delivery chosen when ordering."
+    "calc.price.shipping": "+ delivery from :from (Packeta), exact by the delivery chosen when ordering.",
+    "calc.trust.title": "Printing with us in numbers",
+    "calc.trust.printed": ":n paid prints finished,",
+    "calc.trust.recent": ":n of them in the last 30 days.",
+    "calc.trust.days": "Usually :d days from payment to handover.",
+    "calc.trust.videos": ":n videos of prints on YouTube.",
+    "calc.trust.video": "This is how we print",
+    "calc.trust.examples": "Prices from our calculations",
+    "calc.trust.examples_note": "Real calculations of the farm; open one and change the size or the material."
 }

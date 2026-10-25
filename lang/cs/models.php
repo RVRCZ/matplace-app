@@ -4,6 +4,7 @@
 return [
     'nav' => 'Modely',
     'title' => 'Modely k tisku',
+    'seo_title' => 'Modely od designérů k tisku u nás',   // the title tag; the h1 stays short
     'title_suffix' => 'tisk na zakázku',
     'description' => 'Modely od designérů, které vám vytiskneme a pošleme. Vyberte materiál a počet kusů, cenu vidíte hned.',
     'description_one' => 'Model „:title“ od designéra :name. Vytiskneme a pošleme.',
@@ -75,6 +76,7 @@ return [
 
     'inspiration' => [
         'title' => 'Inspirace',
+        'seo_title' => '3D modely k tisku z Printables a MakerWorldu',
         'title_suffix' => '3D model',
         'description' => 'Tisíce 3D modelů z Printables, MakerWorldu a dalších webů na jednom místě. U každého najdete odkaz na zdroj a licenci.',
         'description_one' => '3D model „:title“: odkaz na zdroj, licence a možnost tisku.',

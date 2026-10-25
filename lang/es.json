@@ -1830,5 +1830,13 @@
     "results": "resultados",
     "Go to page :page": "Ir a la página :page",
     "calc.price.shipping_pickup": "+ envío desde :from (Packeta) o recogida gratis en persona, exacto según la entrega elegida al pedir.",
-    "calc.price.shipping": "+ envío desde :from (Packeta), exacto según la entrega elegida al pedir."
+    "calc.price.shipping": "+ envío desde :from (Packeta), exacto según la entrega elegida al pedir.",
+    "calc.trust.title": "Imprimir con nosotros en cifras",
+    "calc.trust.printed": ":n impresiones pagadas terminadas,",
+    "calc.trust.recent": ":n de ellas en los últimos 30 días.",
+    "calc.trust.days": "Normalmente :d días desde el pago hasta la entrega.",
+    "calc.trust.videos": ":n vídeos de impresiones en YouTube.",
+    "calc.trust.video": "Así imprimimos",
+    "calc.trust.examples": "Precios de nuestros cálculos",
+    "calc.trust.examples_note": "Cálculos reales de la granja; ábralos y cambie el tamaño o el material."
 }

@@ -185,6 +185,9 @@ return [
     'search.clear' => 'Zrušit hledání a filtr',
     'search.related' => 'Možná hledáte:',
     // what a visitor comes for: the row of intents above the categories (config/tool_intents.php, docs/AN.md §4)
+    // the page for search engines (docs/AN.md §7): what is here and what the visitor comes for, in a sentence; :n = tools on offer
+    'seo.title' => 'Nástroje pro 3D tisk: z fotky, jména či QR',
+    'seo.description' => ':n nástrojů zdarma: z fotky, jména, loga nebo rozměrů vznikne model, hned vidíte cenu tisku a můžete ho stáhnout nebo objednat.',
     'aims' => 'Na co to potřebujete:',
     'aim' => ['gift' => 'Dárek', 'photo' => 'Z fotky', 'home' => 'Domácnost', 'spare' => 'Náhradní díl', 'business' => 'Pro firmu'],
     'synonyms' => [

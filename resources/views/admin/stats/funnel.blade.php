@@ -7,8 +7,11 @@
         'model_view|tool_view|calculation|generate' => 'Stránka modelu nebo výstup nástroje', 'download' => 'Stáhl model',
         'register' => 'Registrace', 'designer_enabled' => 'Zapnul designérský profil', 'designer_import' => 'Import portfolia', 'designer_file_uploaded' => 'Nahrál soubor pro farmu',
         'model_ready' => 'Model hotový', 'price_shown' => 'Viděl přesnou cenu', 'order_started|order_created' => 'Začal objednávku', 'checkout_started' => 'Šel zaplatit',
+        // the sales path (docs/AN.md §9)
+        'upload|failed:upload' => 'Nahrání začalo (i odmítnuté)', 'upload' => 'Nahráno', 'order_started' => 'Klepl na Vytisknout u nás',
+        'register|register_visit|order_created' => 'Registrace (nebo už měl účet)', 'order_created' => 'Zakázka založena', 'checkout_started|topup_started' => 'Platba začala (karta nebo dobití)',
     ];
-    $paths = ['customer' => 'Zákazník', 'owner' => 'Majitel tiskárny', 'designer' => 'Designér', 'order' => 'Objednávka (audit)'];
+    $paths = ['sales' => 'Prodejní cesta', 'customer' => 'Zákazník', 'owner' => 'Majitel tiskárny', 'designer' => 'Designér', 'order' => 'Objednávka (audit)'];
     $sources = ['google' => 'Google', 'seznam' => 'Seznam', 'bing' => 'Bing', 'facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube' => 'YouTube', 'designer' => 'Odkaz designéra', 'direct' => 'Přímo', 'other' => 'Ostatní'];
 @endphp
 
@@ -71,8 +74,8 @@
 @endphp
 <h2 class="mt-6 font-bold">Měření podle auditu</h2>
 <p class="mt-1 text-xs text-slate-500">Události „model hotový“, „viděl cenu“, „začal objednávku“, „šel zaplatit“ a chyby se zapisují od nasazení měření (docs/AJ.md); starší návštěvy je nemají. U každého podílu je velikost vzorku n: při 6 až 12 lidech denně jsou závěry o konverzi možné až po týdnech.</p>
-<div class="mt-2 grid gap-3 sm:grid-cols-3">
-    @foreach(['price' => 'Návštěvníci s cenou', 'paid_of_started' => 'Zahájené objednávky zaplacené', 'download' => 'Úspěšná stažení'] as $key => $label)
+<div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    @foreach(['price' => 'Návštěvníci s cenou', 'paid_of_started' => 'Zahájené objednávky zaplacené', 'download' => 'Úspěšná stažení', 'topup' => 'Dobití kreditu dokončená'] as $key => $label)
         <div class="rounded-2xl border border-slate-200 bg-white p-3"><div class="text-xs text-slate-500">{{ $label }}</div><div class="text-lg font-bold">{{ $pct($audit['shares'][$key]) }}</div><div class="text-xs text-slate-500">{{ $audit['shares'][$key]['k'] }} z n = {{ $audit['shares'][$key]['n'] }}</div></div>
     @endforeach
 </div>
@@ -80,7 +83,7 @@
     <table class="w-full text-left text-sm">
         <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2">Chyby v kroku</th><th class="px-3 py-2 text-right">Zkusili (n)</th><th class="px-3 py-2 text-right">S chybou</th><th class="px-3 py-2 text-right">Podíl</th></tr></thead>
         <tbody class="divide-y divide-slate-100">
-            @foreach(['model' => 'Model (nahrání, nástroj, generování)', 'calculation' => 'Výpočet ceny', 'checkout' => 'Platba', 'download' => 'Stažení'] as $step => $label)
+            @foreach(['upload' => 'Nahrání souboru (formát, velikost)', 'model' => 'Model (nahrání, nástroj, generování)', 'calculation' => 'Výpočet ceny', 'checkout' => 'Platba (karta, dobití, kredit)', 'download' => 'Stažení'] as $step => $label)
                 <tr><td class="px-3 py-2 font-semibold">{{ $label }}</td><td class="px-3 py-2 text-right">{{ $audit['errors'][$step]['n'] }}</td><td class="px-3 py-2 text-right">{{ $audit['errors'][$step]['k'] }}</td><td class="px-3 py-2 text-right">{{ $pct($audit['errors'][$step]) }}</td></tr>
             @endforeach
         </tbody>

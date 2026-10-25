@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\MapApiController;
 use App\Http\Controllers\Api\ModelFileController;
 use App\Http\Controllers\Api\ModelPreviewController;
 use App\Http\Controllers\Api\PlateController;
+use App\Http\Controllers\Api\RefusedController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SeenController;
 use App\Http\Controllers\Api\ThreadController;
@@ -370,6 +371,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('calc/plate', [PlateController::class, 'show'])->middleware('throttle:60,1,plate')->name('calc.plate');
     // the page's script confirms that a browser really showed the page (our own statistics: people, not robots)
     Route::post('seen', SeenController::class)->middleware('throttle:120,1,seen')->name('seen');
+    // the page's script says a file was refused before any upload (the format, the size): the funnel's "upload began" step (docs/AN.md §9)
+    Route::post('refused', RefusedController::class)->middleware('throttle:30,1,refused')->name('refused');
     Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1,search')->name('search');
     Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1,describe')->name('describe');
     Route::post('generate', [GenerationController::class, 'store'])->middleware('throttle:10,1,generate')->name('generate.store');

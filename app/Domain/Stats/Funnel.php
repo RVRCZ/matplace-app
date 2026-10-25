@@ -13,6 +13,8 @@ use App\Models\Event;
  *   customer        visit → upload or generate → calculation → paid order
  *   printer owner   visit → a model's page or a tool's output → download
  *   designer        visit → registration → designer profile → import → file for the farm
+ *   sales           visit → upload began → uploaded → calculation → price shown → "Print with us" → the registration
+ *                   gate → order → payment began → paid (the sales path, docs/AN.md §9)
  *
  * A step counts the visitors (browser sessions) who did it and every step before it, inside the chosen period.
  * The same numbers are broken down by where the visit came from, by language and by tool.
@@ -35,6 +37,10 @@ final class Funnel
         'owner' => [['visit'], ['model_view', 'tool_view', 'calculation', 'generate'], ['download']],
         'designer' => [['visit'], ['register'], ['designer_enabled'], ['designer_import'], ['designer_file_uploaded']],
         'order' => [['visit'], ['model_ready'], ['price_shown'], ['order_started', 'order_created'], ['checkout_started'], ['order_paid']],
+        // "upload began" = an upload or a refused one (the browser's and the server's refusals, docs/AN.md §9); the registration gate is
+        // passed by registering, by landing on /register, or by an order made with an account that was there already; the
+        // payment begins with the card (checkout_started) or with a top-up of credit (topup_started, session 2)
+        'sales' => [['visit'], ['upload', 'failed:upload'], ['upload'], ['calculation'], ['price_shown'], ['order_started'], ['register', 'register_visit', 'order_created'], ['order_created'], ['checkout_started', 'topup_started'], ['order_paid']],
     ];
 
     /** How visitors are split for the audit: by the kind of device, new or returning, and the way they came in. */
@@ -42,10 +48,20 @@ final class Funnel
 
     /** Where failures are counted, and what counts as an attempt of that step. */
     public const ATTEMPTS = [
+        'upload' => ['upload', 'failed:upload'],
         'model' => ['upload', 'generate', 'model_ready', 'failed:model', 'failed:generate'],
         'calculation' => ['calculation', 'price_shown', 'failed:calculation'],
-        'checkout' => ['checkout_started', 'failed:checkout'],
+        'checkout' => ['checkout_started', 'topup_started', 'failed:checkout', 'failed:pay'],
         'download' => ['download', 'failed:download'],
+    ];
+
+    /** What counts as a failure of each step (a refused upload, a payment the farm refused from credit: `failed:pay`, session 2). */
+    public const FAILS = [
+        'upload' => ['failed:upload'],
+        'model' => ['failed:model', 'failed:generate'],
+        'calculation' => ['failed:calculation'],
+        'checkout' => ['failed:checkout', 'failed:pay'],
+        'download' => ['failed:download'],
     ];
 
     /** A browser of a phone or a tablet, from the user agent its anonymous session was started with. */
@@ -178,6 +194,10 @@ final class Funnel
                     };
                     $s['marks'][$mark] = true;
                     $s['visits'] += $e->type === Event::VISIT ? 1 : 0;
+                    // the registration page reached (the visit that landed there, or a page view the browser confirmed): the gate of the sales path
+                    if (($e->type === Event::VISIT || $e->type === Event::PAGE) && ($meta['path'] ?? '') === '/register') {
+                        $s['marks']['register_visit'] = true;
+                    }
                     // the way in: the first thing the visitor did towards a model; only who did nothing is told by
                     // the first page of a tool or of a model they looked at
                     $s['entry'] ??= match (true) {
@@ -256,7 +276,7 @@ final class Funnel
 
         $errors = [];
         foreach (self::ATTEMPTS as $step => $marks) {
-            $errors[$step] = $share(fn ($s) => $has($s, $marks), fn ($s) => isset($s['marks']['failed:'.$step]) || ($step === 'model' && isset($s['marks']['failed:generate'])));
+            $errors[$step] = $share(fn ($s) => $has($s, $marks), fn ($s) => $has($s, self::FAILS[$step]));
         }
 
         return [
@@ -265,6 +285,8 @@ final class Funnel
                 'price' => $share(fn () => true, fn ($s) => $has($s, ['price_shown'])),
                 'paid_of_started' => $share(fn ($s) => $has($s, ['order_started', 'order_created']), fn ($s) => $has($s, ['order_paid'])),
                 'download' => $share(fn ($s) => $has($s, self::ATTEMPTS['download']), fn ($s) => $has($s, ['download'])),
+                // a top-up of credit begun and finished (topup_started, topup: session 2, docs/AN.md §9)
+                'topup' => $share(fn ($s) => $has($s, ['topup_started', 'topup']), fn ($s) => $has($s, ['topup'])),
             ],
             'errors' => $errors,
         ];

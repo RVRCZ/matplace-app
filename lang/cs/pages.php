@@ -14,15 +14,15 @@ return [
                 'h' => 'Co děláme',
                 'p' => [
                     'matplace vznikl z jednoduché myšlenky: 3D tisk má být dostupný každému, kdo má nápad, ne jen tomu, kdo má doma tiskárnu.',
-                    'Nahrajete vlastní model, vyberete si model od designéra nebo si výrobek vytvoříte v některém z našich nástrojů. Model zkontrolujeme, natočíme pro tisk a spočítáme přesnou cenu. Vy vyberete barvu a způsob doručení, zaplatíte kreditem a tiskárna začne tisknout.',
+                    'Nahrajete vlastní model, vyberete si model od designéra nebo si výrobek vytvoříte v některém z našich nástrojů. Model zkontrolujeme, natočíme pro tisk a spočítáme přesnou cenu. Vy vyberete barvu a způsob doručení, na konci objednávky zaplatíte kartou nebo z kreditu a tiskárna začne tisknout.',
                 ],
             ],
             [
                 'h' => 'Jak to funguje',
                 'li' => [
-                    'Nahrajte soubor, vyberte model z katalogu nebo si ho vytvořte v nástroji.',
-                    'Prohlédněte si náhled, dobu tisku, spotřebu materiálu a cenu včetně DPH.',
-                    'Vyberte barvu, kvalitu a doručení a zaplaťte z kreditu.',
+                    'Nahrajte soubor, vyberte model z katalogu nebo si ho vytvořte v nástroji; zatím nic neplatíte.',
+                    'Hned vidíte náhled, dobu tisku, spotřebu materiálu a cenu včetně DPH, bez registrace a bez placení.',
+                    'V objednávce vyberete barvu, kvalitu a doručení a až na jejím konci zaplatíte kartou nebo z kreditu.',
                     'Sledujte průběh tisku na stránce zakázky. Hotový výtisk vám pošleme Packetou na výdejní místo nebo až domů.',
                 ],
             ],
@@ -30,7 +30,7 @@ return [
                 'h' => 'Tiskneme sami',
                 'p' => [
                     'Všechny zakázky tiskne naše vlastní tisková farma v Česku. Zakázky nepředáváme nikomu dalšímu, za výsledek odpovídáme my.',
-                    'Kredit se při objednání jen zablokuje a strhne se až po dokončení tisku. Když tisk nezačne nebo se nepovede naší vinou, vrátí se celý.',
+                    'Zaplacená částka se při objednání jen zablokuje a strhne se až po dotisknutí. Když tisk nezačne nebo se nepovede naší vinou, vrátí se celá.',
                 ],
             ],
             [
@@ -113,7 +113,7 @@ return [
             ],
             [
                 'q' => 'Jak se platí a co je kredit?',
-                'a' => 'Tisky se platí z předplaceného kreditu, který si dobijete kartou přes platební bránu Stripe. V korunách lze dobít 100 až 20 000 Kč, v eurech 5 až 800 €. Při zaplacení zakázky se částka na kreditu zablokuje a strhne se až po dokončení tisku. Dobírku nenabízíme a nevyčerpaný kredit nevyplácíme v penězích.',
+                'a' => 'Cenu znáte před zaplacením. Zaplatíte kartou (Stripe) nebo z kreditu na účtu. Kartou platíte přesně cenu zakázky zaokrouhlenou nahoru na celé koruny nebo eura; pár haléřů navíc zůstane jako kredit na další tisk. Kredit si můžete dobít i předem (100 až 20 000 Kč, 5 až 800 €). Částka se při zaplacení zablokuje a strhne až po dotisknutí; když tisk nezačne nebo se nepovede naší vinou, vrátí se celá. Dobírku nenabízíme a nevyčerpaný kredit nevyplácíme v penězích.',
             ],
             [
                 'q' => 'V jaké měně platím?',
@@ -121,11 +121,11 @@ return [
             ],
             [
                 'q' => 'Co když se tisk nepovede?',
-                'a' => 'Když tisk nezačne nebo se nepovede naší vinou, zablokovaný kredit se vám vrátí celý a dáme vám vědět e-mailem. Tisk pak můžete objednat znovu.',
+                'a' => 'Když tisk nezačne nebo se nepovede naší vinou, zablokovaná částka se vám vrátí celá a dáme vám vědět e-mailem. Tisk pak můžete objednat znovu.',
             ],
             [
                 'q' => 'Mohu zakázku zrušit?',
-                'a' => 'Ano, na stránce zakázky, dokud tisk neskončil. Před začátkem tisku se vrátí celý kredit. Pokud už tisk běží, naúčtujeme poplatek za přípravu a vytištěnou část a zbytek vrátíme; částku uvidíte před potvrzením zrušení.',
+                'a' => 'Ano, na stránce zakázky, dokud tisk neskončil. Před začátkem tisku se vrátí celá částka. Pokud už tisk běží, naúčtujeme poplatek za přípravu a vytištěnou část a zbytek vrátíme; částku uvidíte před potvrzením zrušení.',
             ],
             [
                 'q' => 'Mohu si model stáhnout a vytisknout na vlastní tiskárně?',

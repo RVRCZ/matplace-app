@@ -14,15 +14,15 @@ return [
                 'h' => 'What we do',
                 'p' => [
                     'matplace grew out of a simple idea: 3D printing should be open to anyone with an idea, not only to people who have a printer at home.',
-                    'You upload your own model, pick a designer\'s model or make a product in one of our tools. We check the model, orient it for printing and work out the exact price. You choose the colour and the delivery method, pay with credit and the printer starts printing.',
+                    'You upload your own model, pick a designer\'s model or make a product in one of our tools. We check the model, orient it for printing and work out the exact price. You choose the colour and the delivery method, pay at the end of the order by card or from credit, and the printer starts printing.',
                 ],
             ],
             [
                 'h' => 'How it works',
                 'li' => [
-                    'Upload a file, pick a model from the catalogue or make one in a tool.',
-                    'Look at the preview, the print time, the material used and the price including VAT.',
-                    'Choose the colour, quality and delivery, and pay from your credit.',
+                    'Upload a file, pick a model from the catalogue or make one in a tool; you pay nothing yet.',
+                    'You see the preview, the print time, the material used and the price including VAT at once, with no sign-up and no payment.',
+                    'In the order you choose the colour, quality and delivery, and only at its end you pay by card or from credit.',
                     'Follow the print on the order page. We send the finished print by Packeta to a pickup point or to your door.',
                 ],
             ],
@@ -30,7 +30,7 @@ return [
                 'h' => 'We print it ourselves',
                 'p' => [
                     'Every order is printed on our own print farm in Czechia. We do not pass orders on to anyone else, so the result is our responsibility.',
-                    'When you order, the credit is only held; it is charged once the print is finished. If the print does not start or fails through our fault, all of it comes back.',
+                    'When you order, the amount paid is only held; it is charged once the print is finished. If the print does not start or fails through our fault, all of it comes back.',
                 ],
             ],
             [
@@ -113,7 +113,7 @@ return [
             ],
             [
                 'q' => 'How do I pay, and what is credit?',
-                'a' => 'Prints are paid from prepaid credit, which you top up by card through the Stripe payment gateway. A top-up can be 100 to 20,000 Kč in crowns or €5 to €800 in euros. When you pay for an order, the amount is held on your credit and charged only once the print is finished. We do not offer cash on delivery, and unused credit is not paid out in cash.',
+                'a' => 'You know the price before you pay. You pay by card (Stripe) or from the credit on your account. By card you pay exactly the price of the order rounded up to whole crowns or euros; the few pennies over stay as credit for the next print. You can also top up credit in advance (100 to 20,000 Kč, €5 to €800). The amount is held when you pay and charged only once the print is finished; if the print does not start or fails through our fault, all of it comes back. We do not offer cash on delivery, and unused credit is not paid out in cash.',
             ],
             [
                 'q' => 'Which currency do I pay in?',
@@ -121,11 +121,11 @@ return [
             ],
             [
                 'q' => 'What if the print fails?',
-                'a' => 'If the print does not start or fails through our fault, the held credit comes back in full and we tell you by e-mail. You can then order the print again.',
+                'a' => 'If the print does not start or fails through our fault, the held amount comes back in full and we tell you by e-mail. You can then order the print again.',
             ],
             [
                 'q' => 'Can I cancel an order?',
-                'a' => 'Yes, on the order page, until the print is finished. Before printing starts, all the credit comes back. If the print is already running, we charge the handling fee and the part already printed and return the rest; you see the amount before you confirm the cancellation.',
+                'a' => 'Yes, on the order page, until the print is finished. Before printing starts, the whole amount comes back. If the print is already running, we charge the handling fee and the part already printed and return the rest; you see the amount before you confirm the cancellation.',
             ],
             [
                 'q' => 'Can I download a model and print it on my own printer?',

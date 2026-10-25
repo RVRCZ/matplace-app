@@ -4,6 +4,7 @@
 return [
     'nav' => 'Modelos',
     'title' => 'Modelos para imprimir',
+    'seo_title' => 'Modelos de diseñadores que imprimimos',   // the title tag; the h1 stays short
     'title_suffix' => 'impresión por encargo',
     'description' => 'Modelos de diseñadores que imprimimos y le enviamos. Elija el material y el número de piezas y vea el precio al momento.',
     'description_one' => 'El modelo «:title» del diseñador :name. Lo imprimimos y se lo enviamos.',
@@ -75,6 +76,7 @@ return [
 
     'inspiration' => [
         'title' => 'Inspiración',
+        'seo_title' => 'Modelos 3D de Printables y MakerWorld',
         'title_suffix' => 'modelo 3D',
         'description' => 'Miles de modelos 3D de Printables, MakerWorld y otros sitios en un solo lugar, cada uno con el enlace a su fuente y su licencia.',
         'description_one' => 'El modelo 3D «:title»: enlace a la fuente, licencia y si se puede imprimir.',

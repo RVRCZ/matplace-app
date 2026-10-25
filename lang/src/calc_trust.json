@@ -1,0 +1,10 @@
+{
+    "calc.trust.title": ["Tisk u nás v číslech", "Printing with us in numbers", "Imprimir con nosotros en cifras"],
+    "calc.trust.printed": [":n zaplacených výtisků dokončeno,", ":n paid prints finished,", ":n impresiones pagadas terminadas,"],
+    "calc.trust.recent": [":n z toho za posledních 30 dní.", ":n of them in the last 30 days.", ":n de ellas en los últimos 30 días."],
+    "calc.trust.days": ["Od zaplacení k předání obvykle :d dní.", "Usually :d days from payment to handover.", "Normalmente :d días desde el pago hasta la entrega."],
+    "calc.trust.videos": [":n videí z tisku na YouTube.", ":n videos of prints on YouTube.", ":n vídeos de impresiones en YouTube."],
+    "calc.trust.video": ["Takhle tiskneme", "This is how we print", "Así imprimimos"],
+    "calc.trust.examples": ["Ceny z našich kalkulací", "Prices from our calculations", "Precios de nuestros cálculos"],
+    "calc.trust.examples_note": ["Skutečné kalkulace z farmy; otevřete je a upravte si velikost nebo materiál.", "Real calculations of the farm; open one and change the size or the material.", "Cálculos reales de la granja; ábralos y cambie el tamaño o el material."]
+}

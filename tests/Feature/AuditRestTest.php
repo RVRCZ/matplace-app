@@ -175,6 +175,8 @@ class AuditRestTest extends TestCase
             glob(resource_path('views/farm/*.blade.php')),
             glob(resource_path('views/account/*.blade.php')),
             [resource_path('views/layouts/app.blade.php'), resource_path('views/partials/consent.blade.php')],
+            // the sales path (docs/AN.md): the catalogue of tools, the two catalogues of models
+            [resource_path('views/tools/index.blade.php'), resource_path('views/tools/card.blade.php'), resource_path('views/tools/card_row.blade.php'), resource_path('views/models/index.blade.php'), resource_path('views/inspiration/index.blade.php')],
         );
         $all = ToolPageTest::keysIn($files);
         $this->assertGreaterThan(300, array_sum(array_map('count', $all)), 'the scan finds the texts of these templates');

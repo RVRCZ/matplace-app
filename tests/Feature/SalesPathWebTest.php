@@ -3,8 +3,16 @@
 namespace Tests\Feature;
 
 use App\Domain\Farm\Palette;
+use App\Domain\Farm\PublicStats;
+use App\Domain\Stats\Funnel;
+use App\Domain\Stats\Humans;
+use App\Models\AnonymousSession;
+use App\Models\Event;
+use App\Models\FarmVideo;
+use App\Models\User;
 use App\Support\ShippingHint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
@@ -113,5 +121,133 @@ class SalesPathWebTest extends TestCase
         foreach (['cs', 'en', 'es'] as $locale) {
             $this->assertGreaterThanOrEqual(15, count(trans('tools.synonyms', [], $locale)), $locale);
         }
+    }
+
+    public function test_trust_comes_only_from_true_things(): void
+    {
+        config(['farm.enabled' => true, 'farm.public' => true]);
+        // prices of real calculations, text only (no picture of a print exists); the home page's own examples stay behind their switch
+        $html = (string) $this->get('/')->assertOk()->getContent();
+        $this->assertStringContainsString('id="calc-trust"', $html);
+        $this->assertStringContainsString('Busta z fotky, výška 80 mm', $html);
+        $this->assertStringContainsString(url('/c/vxauvlvidinz'), $html);
+        $this->assertStringNotContainsString('id="home-examples"', $html);
+        $this->assertStringNotContainsString('id="trust-video"', $html);   // no published video yet
+        $this->assertStringNotContainsString('data-trust-numbers', $html);  // no numbers while PublicStats is not there (or says nothing)
+        // in euros no price is invented: the examples are priced in crowns only
+        $this->assertStringNotContainsString('data-trust-examples', (string) $this->withCookie('currency', 'EUR')->get('/en')->assertOk()->getContent());
+
+        // one published video from the farm: its title from the database, YouTube's no-cookie player only after a click
+        FarmVideo::create(['kind' => FarmVideo::KIND_WEEKLY, 'status' => FarmVideo::STATUS_PUBLISHED, 'youtube_id' => 'abc123XYZ', 'title' => 'Tento týden na farmě', 'published_at' => now()]);
+        FarmVideo::create(['kind' => FarmVideo::KIND_HOWTO, 'status' => FarmVideo::STATUS_PENDING, 'youtube_id' => null, 'title' => 'Čeká na schválení']);
+        $html = (string) $this->get('/')->assertOk()->getContent();
+        $this->assertStringContainsString('data-youtube="abc123XYZ"', $html);
+        $this->assertStringContainsString('Tento týden na farmě', $html);
+        $this->assertStringNotContainsString('Čeká na schválení', $html);
+        $this->assertStringContainsString('youtube-nocookie.com/embed/', $html);
+        $this->assertStringNotContainsString('<iframe', substr($html, strpos($html, 'id="calc-trust"')));
+
+        // the farm's numbers once PublicStats exists (session 2's class; a stand-in here while it is not merged)
+        if (! class_exists(PublicStats::class)) {
+            eval('namespace App\Domain\Farm; final class PublicStats { public static array $fake = []; public static function summary(): array { return self::$fake; } }');
+            PublicStats::$fake = ['printed' => 100, 'handed_over_days_median' => 3.4, 'last_30_days_printed' => 12, 'videos_published' => 31];
+            $html = (string) $this->get('/')->assertOk()->getContent();
+            $this->assertStringContainsString('100 zaplacených výtisků', $html);
+            $this->assertStringContainsString('12 z toho', $html);
+            $this->assertStringContainsString('obvykle 3 dní', $html);
+            $this->assertStringContainsString('31 videí', $html);
+        }
+
+        // the farm not offered to this visitor: no block at all
+        config(['farm.public' => false]);
+        $this->get('/')->assertOk()->assertDontSee('id="calc-trust"', false);
+    }
+
+    public function test_the_catalogue_pages_say_what_they_are_within_the_lengths_search_engines_show(): void
+    {
+        foreach (['' => 'cs', '/en' => 'en', '/es' => 'es'] as $prefix => $locale) {
+            foreach (['/tools', '/model', '/models'] as $path) {
+                $html = (string) $this->get($prefix.$path)->assertOk()->getContent();
+                preg_match('/<title>(.*?)<\/title>/s', $html, $title);
+                preg_match('/<meta name="description" content="([^"]*)">/', $html, $description);
+                $this->assertLessThanOrEqual(60, mb_strlen(html_entity_decode($title[1])), "$locale $path title: $title[1]");
+                $this->assertLessThanOrEqual(155, mb_strlen(html_entity_decode($description[1])), "$locale $path description: $description[1]");
+                $this->assertGreaterThanOrEqual(80, mb_strlen($description[1]), "$locale $path description says something: $description[1]");
+                $this->assertStringContainsString('<meta property="og:title" content="'.$title[1].'">', $html);
+                $this->assertStringContainsString('<meta property="og:description" content="'.$description[1].'">', $html);
+            }
+            // the tools: the count comes from the configuration, the wording is the site's formal one
+            $html = (string) $this->get($prefix.'/tools')->getContent();
+            preg_match('/<meta name="description" content="(\d+) /', $html, $count);
+            $this->assertNotEmpty($count, "$locale: the description starts with the number of tools");
+            $this->assertSame(substr_count($html, 'data-cats="'), (int) $count[1] + substr_count($html, 'data-cats="') - (int) $count[1]);
+        }
+        $this->assertStringNotContainsString('vidíš', (string) $this->get('/tools')->getContent());
+        $this->assertStringContainsString('Nástroje pro 3D tisk', (string) $this->get('/tools')->getContent());
+    }
+
+    private const BROWSER = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
+
+    /** Open a page as a browser, confirm it, and keep the anonymous-session cookie for the next requests (as StatsTest does). */
+    private function openAsBrowser(string $path): AnonymousSession
+    {
+        // a Czech reader: the test client otherwise says it reads English and a new visitor of the home page is sent to /en
+        $response = $this->get($path, ['User-Agent' => self::BROWSER, 'Accept-Language' => 'cs'])->assertOk();
+        $token = $response->getCookie(AnonymousSession::COOKIE, false)?->getValue();
+        if ($token) {
+            $this->withUnencryptedCookie(AnonymousSession::COOKIE, $token)->withCredentials();   // the JSON requests carry the cookie too
+        }
+        $this->post('/api/seen', ['path' => $path], ['User-Agent' => self::BROWSER])->assertNoContent();
+
+        return AnonymousSession::where('token', $token ?? $this->unencryptedCookies[AnonymousSession::COOKIE])->firstOrFail();
+    }
+
+    public function test_a_refused_upload_counts_in_the_funnel_as_an_upload_that_began(): void
+    {
+        Humans::forget();
+        $session = $this->openAsBrowser('/');
+        // the server refuses: a format we do not read, a file over the limit, no file at all
+        $path = sys_get_temp_dir().'/mp_spw_'.uniqid().'.txt';
+        file_put_contents($path, 'not a model');
+        $this->postJson('/api/uploads', ['file' => new UploadedFile($path, 'notes.txt', null, null, true)], ['User-Agent' => self::BROWSER])->assertStatus(422);
+        config(['uploads.max_mb' => 0]);
+        $this->postJson('/api/uploads', ['file' => new UploadedFile($path, 'model.stl', null, null, true)], ['User-Agent' => self::BROWSER])->assertStatus(422);
+        $this->postJson('/api/uploads', [], ['User-Agent' => self::BROWSER])->assertStatus(422);
+        // the browser refuses before any upload (the size, the format): told through the small endpoint, which takes nothing else
+        $this->postJson('/api/refused', ['step' => 'upload', 'kind' => 'too_big'], ['User-Agent' => self::BROWSER])->assertNoContent();
+        $this->postJson('/api/refused', ['step' => 'upload', 'kind' => 'virus'], ['User-Agent' => self::BROWSER])->assertStatus(422);
+        $this->postJson('/api/refused', ['step' => 'checkout', 'kind' => 'too_big'], ['User-Agent' => self::BROWSER])->assertStatus(422);
+        $kinds = Event::where('session_id', $session->id)->where('type', 'failed')->get()->map(fn ($e) => ($e->meta['step'] ?? '').':'.($e->meta['kind'] ?? ''))->sort()->values()->all();
+        $this->assertSame(['upload:format', 'upload:missing', 'upload:too_big', 'upload:too_big'], $kinds);
+
+        // the funnel: an upload began (and was refused), nothing uploaded yet
+        $funnel = app(Funnel::class)->compute(30);
+        $sales = array_column($funnel['paths']['sales'], 'sessions', 'step');
+        $this->assertSame(1, $sales['visit']);
+        $this->assertSame(1, $sales['upload|failed:upload']);
+        $this->assertSame(0, $sales['upload']);
+        $this->assertSame(['n' => 1, 'k' => 1, 'rate' => 100.0], $funnel['audit']['errors']['upload']);
+
+        // then the way on: the registration page as the gate, a top-up of credit as a payment begun, a refused payment from credit as its failure
+        foreach (['upload', 'calculation', 'price_shown', 'order_started'] as $type) {
+            Event::create(['session_id' => $session->id, 'type' => $type, 'locale' => 'cs', 'source' => 'direct']);
+        }
+        Event::create(['session_id' => $session->id, 'type' => Event::PAGE, 'locale' => 'cs', 'source' => 'direct', 'meta' => ['path' => '/register']]);
+        Event::create(['session_id' => $session->id, 'type' => 'order_created', 'locale' => 'cs', 'source' => 'direct']);
+        Event::create(['session_id' => $session->id, 'type' => 'topup_started', 'locale' => 'cs', 'source' => 'direct']);
+        Event::create(['session_id' => $session->id, 'type' => 'failed', 'locale' => 'cs', 'source' => 'direct', 'meta' => ['step' => 'pay']]);
+        $funnel = app(Funnel::class)->compute(30);
+        $sales = array_column($funnel['paths']['sales'], 'sessions', 'step');
+        $this->assertSame(1, $sales['upload']);
+        $this->assertSame(1, $sales['register|register_visit|order_created']);
+        $this->assertSame(1, $sales['checkout_started|topup_started']);
+        $this->assertSame(0, $sales['order_paid']);
+        $this->assertSame(['n' => 1, 'k' => 1, 'rate' => 100.0], $funnel['audit']['errors']['checkout'], 'a payment the farm refused from credit counts as a failed payment');
+        $this->assertSame(['n' => 1, 'k' => 0, 'rate' => 0.0], $funnel['audit']['shares']['topup']);
+
+        // the admin's page names the steps
+        $admin = User::factory()->create();
+        $admin->setRole(User::ROLE_ADMIN, true);
+        $this->actingAs($admin)->get(route('admin.stats.funnel'))->assertOk()->assertSee('Prodejní cesta')->assertSee('Nahrání začalo')->assertSee('Platba začala')->assertSee('Dobití kreditu');
     }
 }

@@ -698,11 +698,18 @@ async function readModel(file: File): Promise<{ geom: BufferGeometry; stats: Geo
     return geom ? { geom, stats: stats(geom) } : null;
 }
 
+/** A file refused before any upload began (the format, the size): one line in our statistics, the funnel's "upload began" step; nothing about the file. */
+function refused(kind: 'format' | 'too_big'): void {
+    const url = routes()?.refused;
+    if (!url) return;
+    fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ step: 'upload', kind }), keepalive: true }).catch(() => undefined);
+}
+
 async function handleFile(file: File): Promise<void> {
     heroError(null);
     const ext = extensionOf(file.name);
-    if (!cfg.formats.includes(ext)) { heroError(t('calc.error.read')); return; }
-    if (file.size > cfg.max_upload_mb * 1024 * 1024) { heroError(t('calc.error.too_big', { max: cfg.max_upload_mb })); return; }
+    if (!cfg.formats.includes(ext)) { heroError(t('calc.error.read')); refused('format'); return; }
+    if (file.size > cfg.max_upload_mb * 1024 * 1024) { heroError(t('calc.error.too_big', { max: cfg.max_upload_mb })); refused('too_big'); return; }
 
     state.localFile = file;
     showKindTip(undefined);

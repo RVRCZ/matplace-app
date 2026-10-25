@@ -29,15 +29,22 @@ class UploadController extends Controller
         $maxKb = (int) config('uploads.max_mb', 120) * 1024;
         $formats = $converters->inputFormats();
 
-        $request->validate([
-            'file' => ['required', 'file', 'max:'.$maxKb],
-            'volume_mm3' => ['nullable', 'numeric', 'min:0'],
-            'area_mm2' => ['nullable', 'numeric', 'min:0'],
-        ]);
+        try {
+            $request->validate([
+                'file' => ['required', 'file', 'max:'.$maxKb],
+                'volume_mm3' => ['nullable', 'numeric', 'min:0'],
+                'area_mm2' => ['nullable', 'numeric', 'min:0'],
+            ]);
+        } catch (ValidationException $e) {
+            // an upload that began and was refused is a step of the funnel (docs/AN.md §9): the size over the limit, or no file at all
+            Track::event('failed', null, ['step' => 'upload', 'kind' => $request->hasFile('file') ? 'too_big' : 'missing']);
+            throw $e;
+        }
 
         $upload = $request->file('file');
         $ext = strtolower($upload->getClientOriginalExtension());
         if (! in_array($ext, $formats, true)) {
+            Track::event('failed', null, ['step' => 'upload', 'kind' => 'format']);
             throw ValidationException::withMessages(['file' => __('upload.unsupported', ['formats' => strtoupper(implode(', ', $formats))])]);
         }
 

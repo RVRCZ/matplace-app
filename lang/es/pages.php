@@ -14,15 +14,15 @@ return [
                 'h' => 'Qué hacemos',
                 'p' => [
                     'matplace nació de una idea sencilla: la impresión 3D debe estar al alcance de cualquiera que tenga una idea, no solo de quien tiene una impresora en casa.',
-                    'Usted sube su propio modelo, elige el modelo de un diseñador o crea un producto con una de nuestras herramientas. Revisamos el modelo, lo orientamos para la impresión y calculamos el precio exacto. Usted elige el color y la forma de entrega, paga con crédito y la impresora empieza a imprimir.',
+                    'Usted sube su propio modelo, elige el modelo de un diseñador o crea un producto con una de nuestras herramientas. Revisamos el modelo, lo orientamos para la impresión y calculamos el precio exacto. Usted elige el color y la forma de entrega, paga al final del pedido con tarjeta o con crédito y la impresora empieza a imprimir.',
                 ],
             ],
             [
                 'h' => 'Cómo funciona',
                 'li' => [
-                    'Suba un archivo, elija un modelo del catálogo o créelo con una herramienta.',
-                    'Vea la vista previa, el tiempo de impresión, el material necesario y el precio con IVA.',
-                    'Elija el color, la calidad y la entrega, y pague con su crédito.',
+                    'Suba un archivo, elija un modelo del catálogo o créelo con una herramienta; de momento no paga nada.',
+                    'Ve enseguida la vista previa, el tiempo de impresión, el material necesario y el precio con IVA, sin registro y sin pagar.',
+                    'En el pedido elige el color, la calidad y la entrega, y solo al final paga con tarjeta o con crédito.',
                     'Siga la impresión en la página del pedido. Le enviamos la pieza terminada con Packeta a un punto de recogida o a domicilio.',
                 ],
             ],
@@ -30,7 +30,7 @@ return [
                 'h' => 'Imprimimos nosotros',
                 'p' => [
                     'Todos los pedidos se imprimen en nuestra propia granja de impresión en Chequia. No pasamos los pedidos a nadie más, así que del resultado respondemos nosotros.',
-                    'Al pedir, el crédito solo se retiene; se cobra cuando la impresión termina. Si la impresión no empieza o falla por nuestra causa, se devuelve entero.',
+                    'Al pedir, el importe pagado solo se retiene; se cobra cuando la impresión termina. Si la impresión no empieza o falla por nuestra causa, se devuelve entero.',
                 ],
             ],
             [
@@ -113,7 +113,7 @@ return [
             ],
             [
                 'q' => '¿Cómo se paga y qué es el crédito?',
-                'a' => 'Las impresiones se pagan con crédito prepago, que usted recarga con tarjeta a través de la pasarela de pago Stripe. Se puede recargar de 100 a 20 000 Kč en coronas o de 5 a 800 € en euros. Al pagar un pedido, el importe se retiene en su crédito y solo se cobra cuando la impresión termina. No ofrecemos pago contra reembolso y el crédito sin usar no se devuelve en efectivo.',
+                'a' => 'Conoce el precio antes de pagar. Paga con tarjeta (Stripe) o con el crédito de su cuenta. Con tarjeta paga exactamente el precio del pedido redondeado hacia arriba a coronas o euros enteros; los céntimos de más quedan como crédito para la próxima impresión. También puede recargar crédito por adelantado (de 100 a 20 000 Kč, de 5 a 800 €). El importe se retiene al pagar y solo se cobra cuando la impresión termina; si la impresión no empieza o falla por nuestra causa, se devuelve entero. No ofrecemos pago contra reembolso y el crédito sin usar no se devuelve en efectivo.',
             ],
             [
                 'q' => '¿En qué moneda pago?',
@@ -121,11 +121,11 @@ return [
             ],
             [
                 'q' => '¿Qué pasa si la impresión falla?',
-                'a' => 'Si la impresión no empieza o falla por nuestra causa, el crédito retenido se le devuelve entero y le avisamos por correo. Después puede volver a pedir la impresión.',
+                'a' => 'Si la impresión no empieza o falla por nuestra causa, el importe retenido se le devuelve entero y le avisamos por correo. Después puede volver a pedir la impresión.',
             ],
             [
                 'q' => '¿Puedo cancelar un pedido?',
-                'a' => 'Sí, en la página del pedido, mientras la impresión no haya terminado. Antes de que empiece la impresión se devuelve todo el crédito. Si ya está en marcha, cobramos la tarifa de preparación y la parte ya impresa y devolvemos el resto; verá el importe antes de confirmar la cancelación.',
+                'a' => 'Sí, en la página del pedido, mientras la impresión no haya terminado. Antes de que empiece la impresión se devuelve todo el importe. Si ya está en marcha, cobramos la tarifa de preparación y la parte ya impresa y devolvemos el resto; verá el importe antes de confirmar la cancelación.',
             ],
             [
                 'q' => '¿Puedo descargar un modelo e imprimirlo en mi impresora?',

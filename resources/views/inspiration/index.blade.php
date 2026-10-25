@@ -1,5 +1,5 @@
 @extends('layouts.app', [
-    'title' => ($category ? $category->label().' · ' : '').__('models.inspiration.title').' · matplace',
+    'title' => ($category ? $category->label().' · ' : '').__('models.inspiration.'.($category ? 'title' : 'seo_title')).' · matplace',
     'description' => __('models.inspiration.description'),
     // search results and deep pages of a list are not pages of their own for search engines
     'noindex' => $q !== '',

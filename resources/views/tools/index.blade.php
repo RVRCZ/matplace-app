@@ -1,5 +1,3 @@
-@extends('layouts.app', ['title' => __('tools.title').' · matplace'])
-
 @php
     // the spare-part inquiry needs printers to answer it: marketplace only, by the live switch (the admin toggles it at runtime)
     // what is on offer: the config and the admin's switch (/admin/tools) together
@@ -17,6 +15,8 @@
     $aims = \App\Domain\Tools\ToolIntents::all($all->all());
     $sections = ['file' => 'have-file', 'create' => 'create', 'spare' => 'spare'];
 @endphp
+{{-- the title and the description say what is here and for whom, with today's count of tools (docs/AN.md §7) --}}
+@extends('layouts.app', ['title' => __('tools.seo.title').' · matplace', 'description' => __('tools.seo.description', ['n' => $all->count()])])
 
 @section('content')
 <div class="mx-auto max-w-5xl">

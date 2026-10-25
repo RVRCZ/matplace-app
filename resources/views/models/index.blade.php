@@ -1,5 +1,5 @@
 {{-- until the catalogue has enough cards it stays out of search engines (noindex, follow, the language twins stay; like the inspiration pages without a text of ours), reachable as before (docs/AN.md §1) --}}
-@extends('layouts.app', ['title' => __('models.title').' · matplace', 'description' => __('models.description'), 'robots' => \App\Models\DesignerModel::enoughToShow() ? null : 'noindex, follow'])
+@extends('layouts.app', ['title' => __('models.seo_title').' · matplace', 'description' => __('models.description'), 'robots' => \App\Models\DesignerModel::enoughToShow() ? null : 'noindex, follow'])
 
 @section('content')
 @php

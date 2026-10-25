@@ -185,6 +185,9 @@ return [
     'search.clear' => 'Quitar la búsqueda y el filtro',
     'search.related' => 'Quizá busca:',
     // what a visitor comes for: the row of intents above the categories (config/tool_intents.php, docs/AN.md §4)
+    // the page for search engines (docs/AN.md §7): what is here and what the visitor comes for, in a sentence; :n = tools on offer
+    'seo.title' => 'Herramientas 3D: de una foto, un nombre o un QR',
+    'seo.description' => ':n herramientas gratis: de una foto, un nombre, un logo o unas medidas nace un modelo; ve el precio al momento y puede descargarlo o pedirlo.',
     'aims' => 'Para qué lo necesita:',
     'aim' => ['gift' => 'Un regalo', 'photo' => 'De una foto', 'home' => 'El hogar', 'spare' => 'Una pieza de repuesto', 'business' => 'Para empresas'],
     'synonyms' => [
