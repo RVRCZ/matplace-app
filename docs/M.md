@@ -209,6 +209,29 @@ Příklady (odhad → nové rozpětí, řez): kalkulace 554 (150 × 90 × 100 mm
 **mimo**: dutý kompaktní tvar s hustotou 0,2 vypadá pro vzorec snadno. Z 13 minutí ceny je 10 drak (týž soubor 10×, cena
 1,29–1,62×): u sítí přes milion trojúhelníků je rozpětí stále úzké, 83 %.
 
+
+**Produkce 25. 10. 2026 (řídící session, `php artisan matplace:estimate-range /tmp/odhad-prod-20261025.csv --export=400`, kopie dat `docs/data/odhad-vs-rez-2026-10-25-prod.csv`):**
+
+400 calculations, 210 distinct shapes (odhad-prod-20261025.csv).
+
+| what | inside | above / below | median hi/lo | p90 hi/lo | shapes fully inside |
+|---|---|---|---|---|---|
+| price, the range the page showed | 329/400 (82.2 %) | 37 / 34 | 1.53 | 3.17 | 77.6 % |
+| price, the range by shape of today's constants | 387/400 (96.8 %) | 5 / 8 | 2.14 | 2.75 | 95.2 % |
+| time, the range by shape of today's constants | 385/400 (96.2 %) | 8 / 7 | 3.39 | 4.38 | 94.8 % |
+
+| class | n | price inside | price median hi/lo | time inside | time median hi/lo |
+|---|---|---|---|---|---|
+| flat, under 20 mm | 123 | 99.2 % | 1.89 | 95.1 % | 2.17 |
+| tall, 80 mm and more | 127 | 95.3 % | 2.27 | 96.9 % | 3.95 |
+| thin, under 0.1 g/cm³ of its box | 133 | 94.0 % | 2.25 | 100.0 % | 4.08 |
+| compact, 0.3 g/cm³ and more | 95 | 98.9 % | 1.89 | 97.9 % | 1.92 |
+| supports on | 63 | 100.0 % | 2.75 | 98.4 % | 3.85 |
+| supports left to the slicer | 204 | 95.1 % | 2.17 | 94.6 % | 3.68 |
+| supports off | 133 | 97.7 % | 1.88 | 97.7 % | 2.40 |
+| small, estimate under 30 min | 77 | 100.0 % | 2.29 | 98.7 % | 3.20 |
+| over a million triangles | 21 | 85.7 % | 2.25 | 100.0 % | 3.80 |
+
 ### 6.4 Co není ověřené a limity
 
 - Podíl převisů v CSV není (sbírá se až od téhle větve), takže jeho vliv na „nechat slicer“ je odhad: zvedá horní mez
