@@ -1828,5 +1828,11 @@
     "home.start.part": "I need a part",
     "home.start.part.hint": "A box, a holder, a cap or your own file. Printed exactly to measure.",
     "home.start.firm": "For a business",
-    "home.start.firm.hint": "QR signs, logos, name tags and coasters with your brand, even one at a time."
+    "home.start.firm.hint": "QR signs, logos, name tags and coasters with your brand, even one at a time.",
+    "farm.order.ship.total": "To pay :total",
+    "farm.order.ship.total_estimate": "About :total in total, the carrier confirms the delivery",
+    "farm.order.pay_note_round": "You pay exactly :amount by card; the odd cents stay as credit.",
+    "farm.order.pay_note_min": "The smallest card payment is :amount; whatever exceeds the price stays as credit for your next print.",
+    "farm.order.step_material_hint": "Pick the colour and the print settings. Nothing to pay yet; the price follows your choice.",
+    "farm.order.step_order_hint": "Choose the delivery and pay by card or from credit. The print starts once paid."
 }

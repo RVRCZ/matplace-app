@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Support\Currency;
 use App\Support\CurrencyMismatch;
 use App\Support\Money;
+use App\Support\Track;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -73,6 +74,8 @@ class CreditController extends Controller
             'user_id' => $request->user()->id, 'gateway' => $gateway->name(), 'amount' => $data['amount'],
             'currency' => $currency, 'status' => Payment::STATUS_PENDING,
         ]);
+        // the customer goes to the gateway for credit: measured here, the credit itself when the webhook brings it (Track::toppedUp)
+        Track::event('topup_started', null, ['value' => (float) $data['amount'], 'currency' => $currency, 'event_id' => 'topup-'.$payment->id]);
         $back = array_filter(['back' => $data['back'] ?? null]);
         try {
             $url = $gateway->checkoutUrl($payment->load('user'), route('account.credit', ['paid' => 1] + $back), route('account.credit', $back));
@@ -109,7 +112,9 @@ class CreditController extends Controller
                 $payment->update(['status' => Payment::STATUS_PAID, 'paid_at' => now(), 'raw' => $event['raw']]);
             }
             try {
-                $this->wallet->topUp($payment);   // idempotent; the first one fixes the currency of the account
+                if ($this->wallet->topUp($payment)) {   // idempotent; the first one fixes the currency of the account
+                    Track::toppedUp($payment);
+                }
                 if ($payment->purpose === Payment::PURPOSE_ORDER) {
                     // paid from the order's page: the credit just arrived is spent on that order right away
                     app(OrderFlow::class)->payFromCard($payment->fresh());

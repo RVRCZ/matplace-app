@@ -9,6 +9,7 @@ use App\Domain\Tools\ArtGenerator;
 use App\Domain\Tools\MapBuilder;
 use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\ParametricGenerator;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ModelFile extends Model
 {
+    use HasFactory;
+
     public const DISK = 'models';
 
     public const STATUS_UPLOADED = 'uploaded';

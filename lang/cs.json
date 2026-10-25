@@ -1828,5 +1828,11 @@
     "home.start.part": "Potřebuji díl",
     "home.start.part.hint": "Krabička, držák, krytka nebo vlastní soubor. Vytiskneme ho přesně na míru.",
     "home.start.firm": "Pro firmu",
-    "home.start.firm.hint": "QR cedulky, loga, jmenovky a podtácky s vaší značkou, i po kusech."
+    "home.start.firm.hint": "QR cedulky, loga, jmenovky a podtácky s vaší značkou, i po kusech.",
+    "farm.order.ship.total": "Celkem k zaplacení :total",
+    "farm.order.ship.total_estimate": "Celkem asi :total, dopravu upřesní dopravce",
+    "farm.order.pay_note_round": "Kartou platíte přesně :amount; pár haléřů navíc zůstane jako kredit.",
+    "farm.order.pay_note_min": "Nejmenší platba kartou je :amount; co přesahuje cenu, zůstane jako kredit na další tisk.",
+    "farm.order.step_material_hint": "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; cena se přepočítá podle vaší volby.",
+    "farm.order.step_order_hint": "Zvolte doručení a zaplaťte kartou nebo z kreditu. Tisk začne po zaplacení."
 }

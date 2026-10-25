@@ -1096,3 +1096,98 @@ ASCII přepsané). Soubory: `app/Domain/Farm/{BigModel (nový),OrderService}.php
 - §8 zadání (zjednodušit zdrojový model jednou při nahrání a odvozovat z něj print.stl) neděláno.
 - Spolehlivé 350 k: deterministická kontrola špičky v `decimate_tool.py` (§11.4). Čas Orcy u draka drží podpěry
   (§10.11.2), ne trojúhelníky – viz měření v §11.4.
+
+# Prodejní cesta, část farma: platba bez povinného kreditu, celek s dopravou hned, čísla farmy, měření (session 2)
+
+Větev `feature/sales-path-farm` (z `main` bf112cb), 25. 10. 2026. Zadání `docs/prompts/prodejni-cesta-farma.md`
+(Roman 25. 10. večer, body 2, 3, 6, 7 a 13 celého zadání). Nemergováno, nenasazeno; merguje řídící.
+
+## 12. Co se změnilo
+
+### 12.1 Platba: karta platí zakázku, kredit není podmínka (úkol 1)
+
+Mechanismus zůstal (Payment na chybějící částku, hold, Wallet, `expected_total`, „Cena se mezitím změnila“). Změnila se
+slova a jedna hrana:
+
+- **Tlačítko** podle stavu: kredit stačí „Zaplatit z kreditu a spustit tisk“ (`farm.order.pay`), nula „Zaplatit kartou
+  :amount a spustit tisk“, část „Doplatit kartou :amount (:balance máte v kreditu) a spustit tisk“ (bylo). Pod tlačítkem
+  `#farm-pay-note`: „Kartou platíte přesně :amount; pár haléřů navíc zůstane jako kredit.“ jen když zaokrouhlení nahoru
+  něco nechá; „Nejmenší platba kartou je :amount; co přesahuje cenu, zůstane jako kredit na další tisk.“ když zasáhne
+  minimum brány.
+- **Minimum brány**: Stripe nevezme méně než zhruba 0,50 USD, dosud by doplatek 4 Kč (zákazník má 95 Kč kreditu na
+  zakázku za 99 Kč) skončil chybou brány. `config/farm.php` `payments.min_charge` CZK 15, EUR 0,5 (env
+  `FARM_MIN_CHARGE_CZK/EUR`); `OrderController::checkout` účtuje `max(ceil(chybí), minimum)`, stav zakázky nese
+  `min_charge`, stránka s ním počítá tlačítko i větu pod ním. Zbytek zůstává jako kredit (jako dosud u zaokrouhlení).
+  V eurech se účtují celá eura nahoru (bylo), minimum 0,50 €.
+- **Texty** (`lang/{cs,en,es}/farm.php`): `farm.lead` („zaplatíte kartou nebo z kreditu“), `order.pay_short` (už ne „dobít
+  kartou“; klíč stránka neužívá, zůstal pro jistotu), `order.card_kept` („dokončete platbu tlačítkem níže“),
+  `credit.lead` (kredit = účet, dobíjet předem nemusíte), `terms.items[3]` = jednotné dlouhé znění ze zadání,
+  `refuse.credit` („Na účtu je o :missing méně, než zakázka stojí. Rozdíl zaplatíte kartou tlačítkem…“). E‑maily
+  zákazníkovi „Kredit jsme vám vrátili“ zůstaly: vracíme opravdu na kredit. Nikde už není „musíte dobít“ ani „dobít
+  kartou“ (test to hlídá regulárním výrazem ve třech jazycích).
+
+### 12.2 Celek s dopravou hned na stránce zakázky (úkol 2)
+
+- **Předvýběr doručení** (`OrderController::preselectedDelivery`, ve stavu `delivery` u nezaplacené zakázky): způsob
+  poslední zaplacené zakázky zákazníka, pokud je ještě v nabídce; jinak osobní odběr, je‑li zapnutý (zdarma); jinak
+  levnější druh zásilky do země profilu podle `Shipping::price` (CZ: výdejní místo 99 Kč před domů 149 Kč; AT jen domů).
+  Zaplacená zakázka ukazuje, co bylo zvoleno. Výpočet ceny dopravy (`Shipping::price`, `offer`, quote) beze změny.
+- **Řádek celku pod cenou** (`#farm-total-line`, hned pod řádkem dopravy v první kartě): „Celkem k zaplacení 259 Kč“ po
+  příchodu nabídky dopravce, do té doby „Celkem asi 259 Kč, dopravu upřesní dopravce“ z ceníku v `shipping.countries`
+  (tisk + ceníková cena pro zemi a druh); u odběru „Celkem k zaplacení 160 Kč“. Čistá funkce `totalText` v
+  `resources/js/calc/order_price.ts`, `scripts/check_order_timeline.mjs` ji kontroluje v 6 případech při každém
+  `npm run build` (celkem 16 cenových řádků, 12 stavů časové osy). Blok platby říká celek jako dosud.
+- Ověření na 390 a 1280 px v prohlížeči **neproběhlo** (stránka zakázky chce přihlášení admina, headless průchod
+  řídící nedělá; testy ověřují, že prvky a texty jsou ve stránce ve 3 jazycích). Rozložení: řádek je v téže kartě jako
+  cena, nad blokem Tisk/Odeslání/Doručení, takže na 390 px je vidět bez rolování k tlačítku platby – prosím o pohled
+  Romana při nasazení.
+
+### 12.3 `App\Domain\Farm\PublicStats` (úkol 3, commit 56461b0, session 3 informována)
+
+`PublicStats::summary(): array{printed, handed_over_days_median, last_30_days_printed, videos_published}`, keš 1 h
+(`forget()`, `compute()` mimo keš): printed = zakázky s `paid_at` ve stavu done nebo handed_over; medián dní od `paid_at`
+k události přechodu do handed_over za posledních 50 předaných (null bez předání); printed s `finished_at` za 30 dní;
+`FarmVideo` published. Factories `FarmOrder` (stavy `paid()`, `done()`, `handedOver()`), `FarmOrderEvent`, `FarmVideo`
+(`published()`), `ModelFile` (+ `HasFactory` na modelech). Test `PublicStatsTest` (co se počítá a co ne, posledních 50
+a sudý počet, nuly a keš).
+
+### 12.4 Měření dobití a platby (úkol 4)
+
+- `topup_started` při `POST /account/credit` (`value`, `currency`, `event_id` = `topup-<payment>`), `topup` při připsání
+  (`Track::toppedUp` z webhooku po úspěšném `Wallet::topUp`; stejné `event_id`, `kind` topup nebo order podle toho, zda
+  kredit šel ze stránky zakázky; zapsáno do návštěvy, která dobití začala; webhook podruhé nic nepřidá). Oba typy
+  v `Track::ACTIONS` (trychtýř je vidí jako činy člověka). Do `Track::SHARED` (GA, Meta) jsem je nepřidal – posílá se
+  dál jen `upload … order_paid` s poli `kind, tool, value, currency, order, results, event_id`, bez osobních údajů a bez
+  názvů souborů (ověřeno pohledem na `SHARED_META`).
+- `failed` se `step: pay` u odmítnuté platby kreditem (`OrderController::pay`, FarmRefusal: `price_changed`,
+  `color_gone`, `filament_low`…); nedostatek kreditu (402 → karta) chybou není. Platba kartou nechává `step: checkout`.
+  **Pozor pro session 3:** `App\Domain\Stats\Funnel` má krok `checkout => ['checkout_started', 'failed:checkout']`;
+  odmítnutí platby kreditem teď padá do `failed:pay`, trychtýř ať počítá obojí.
+- `order_paid` nese `value` a `currency` u obou cest (kredit v `OrderController::payFromRequest`, karta v
+  `Track::paidByCard`), test to kontroluje.
+
+### 12.5 Texty kroků zakázky (úkol 5)
+
+Pod nadpisem kroku 2 „Materiál a způsob tisku“: „Vyberte barvu a nastavení tisku. Zatím nic neplatíte; cena se přepočítá
+podle vaší volby.“ Pod krokem 3 „Objednávka“: „Zvolte doručení a zaplaťte kartou nebo z kreditu. Tisk začne po
+zaplacení.“ (`farm.order.step_material_hint`, `step_order_hint`, cs/en/es přes `lang/src/sales_path_farm.json`).
+Slovník AH.md §9.4 dodržen (tisk/výtisk, zaplatit). Opakování „zaplatíte kreditem“ v `farm.lead` nahrazeno.
+
+### 12.6 Testy a soubory
+
+`tests/Feature/FarmSalesPathTest.php` (minimum brány 15 Kč a zbytek jako kredit, celá eura a 0,50 €, změna ceny, předvýběr
+doručení ve všech větvích, slova ve 3 jazycích + prvky stránky, události topup_started/topup/failed:pay/order_paid),
+`PublicStatsTest`, `scripts/check_order_timeline.mjs` (+6 případů). Spuštěno: `FarmSalesPathTest|FarmCardPaymentTest|AuditRestTest|FarmOrderFlowTest|FarmBigModelFlowTest|PublicStatsTest|ShippingCurrencyTest|FarmPagesTest|FarmWalletTest|FarmStatusColumnsTest|FarmAdminNotifyTest|AuditEventsTest` = 99 testů, 2 904 asercí, zelené (5 min); pint `--dirty` prošel. Build: `npm run build` prošel (tsc, vite, `check_bundle`, `check_order_timeline` 12 stavů + 16 cenových řádků, `ShapeRangeTest` 8 vektorů).
+Soubory: `app/Domain/Farm/PublicStats.php` (nový), `app/Http/Controllers/Farm/{OrderController,CreditController}.php`,
+`app/Support/Track.php`, `app/Models/{FarmOrder,FarmOrderEvent,FarmVideo,ModelFile}.php` (HasFactory),
+`database/factories/{FarmOrder,FarmOrderEvent,FarmVideo,ModelFile}Factory.php`, `config/farm.php`
+(`payments.min_charge`), `resources/js/calc/{farm,order_price}.ts`, `resources/views/farm/order.blade.php`,
+`scripts/check_order_timeline.mjs`, `lang/{cs,en,es}/farm.php`, `lang/src/sales_path_farm.json` → `lang/{cs,en,es}.json`.
+
+### 12.7 Nevyřešené a doporučení
+
+- Pohled na stránku zakázky na 390/1280 px po nasazení (viz 12.2).
+- `Funnel` krok checkout a `failed:pay` (session 3).
+- Doporučení, ne změna: stránka kreditu (`/account/credit`) dál nabízí dobití 100 až 20 000 Kč; pro cestu „zaplatit
+  kartou“ ji zákazník nepotřebuje, mohla by ustoupit do účtu jako „historie plateb“. Zakázky pod 15 Kč doplatku se
+  nyní účtují 15 Kč; kdyby to vadilo, lze doplatek pod minimem odpustit (dar ~10 Kč) místo účtování víc.

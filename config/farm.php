@@ -156,6 +156,9 @@ return [
 
     'payments' => [
         'gateway' => env('FARM_PAYMENT_GATEWAY', 'stripe'),   // stripe | fake
+        // the smallest amount the gateway takes (Stripe: about 0.50 USD): a shortfall under it is charged as this much and
+        // the rest stays as credit (the page says so under the button)
+        'min_charge' => ['CZK' => (float) env('FARM_MIN_CHARGE_CZK', 15), 'EUR' => (float) env('FARM_MIN_CHARGE_EUR', 0.5)],
         'stripe' => [
             'secret' => env('STRIPE_SECRET_KEY'),
             'publishable' => env('STRIPE_PUBLISHABLE_KEY'),
