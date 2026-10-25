@@ -436,6 +436,27 @@ return [
         ],
     ],
 
+    // 3D printing for businesses: the business intent of the tools as a page of its own (docs/AN.md §8); the delivery prices are
+    // filled from config/farm.php (:cz_point, :cz_home, :eu_point), the tools and the prices from their configuration
+    'business' => [
+        'title' => '3D printing for businesses: QR signs, logos, tags',
+        'h1' => '3D printing for businesses',
+        'description' => 'Small runs for businesses on our own print farm: QR signs, logos, name plates, coasters and key tags. Price at once, VAT document, EU delivery.',
+        'lead' => 'A logo, a text or a link becomes a model in a minute, you see the price at once and order the print without waiting for a quote. We print on our own farm in Czechia and the result is our responsibility.',
+        'sections' => [
+            ['h' => 'What we print for businesses', 'p' => ['Open a tool, put in the logo, the text or the link, and the model is ready. Nothing is downloaded and nothing is paid until you order.'], 'tools' => ['qr', 'logo', 'badge', 'sign', 'nameplate', 'stencil', 'stamp', 'coaster', 'keychain', 'lightbox', 'text']],
+            ['h' => 'What it costs', 'p' => ['The price comes from the material and the print time and you see it before you order, VAT included. Examples from our real calculations:'], 'prices' => true, 'li' => ['You set the number of pieces in the calculator and see the price of the whole run at once; we print several pieces on one plate.', 'The price is for the print; delivery is added by the delivery you choose when ordering.']],
+            ['h' => 'How to order', 'li' => ['Make the model in a tool or upload your own file (STL, 3MF, STEP); you pay nothing yet.', 'You see the price including VAT and the print time at once, with no sign-up.', 'In the order you choose the colour, quality, number of pieces and delivery, and only at its end you pay by card or from credit.', 'You follow the print on the order page; we dispatch on the day the print finishes, on working days.']],
+            ['h' => 'Delivery and the document', 'p' => ['We send by Packeta to a pickup point (in Czechia :cz_point) or to an address (:cz_home), to EU countries from :eu_point. We send the VAT document of the order by e-mail on request.']],
+            ['h' => 'Who prints', 'p' => ['matplace s.r.o., company ID 22499008, Rybná 716/24, 110 00 Prague 1. Orders are printed on our own print farm in Czechia; we pass them on to nobody. Questions: info@matplace.com.']],
+        ],
+        'items' => [
+            ['q' => 'Do we get a VAT document?', 'a' => 'Yes. The price in the calculator includes VAT and we send the document of the order by e-mail on request.'],
+            ['q' => 'Can you do larger runs?', 'a' => 'You set the number of pieces in the calculator; larger runs are printed on several plates one after another and you see the price before you order. For hundreds of pieces write to info@matplace.com.'],
+            ['q' => 'Can we send our own logo or a finished model?', 'a' => 'Yes. Put the logo as an SVG or a picture into the Logo tool; upload a finished model (STL, 3MF, STEP) to the calculator and see the price at once.'],
+            ['q' => 'How long does it take?', 'a' => 'You see the print time of every model in advance. We dispatch the finished print on the day it finishes, on working days; what finishes at the weekend leaves on Monday.'],
+        ],
+    ],
     'cookies' => [
         'title' => 'Cookies',
         'description' => 'Cookies on matplace: necessary ones for sign-in, language and currency, our own cookie-free statistics, and Google Analytics and Meta only with consent.',

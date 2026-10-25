@@ -188,6 +188,7 @@ return [
     // the page for search engines (docs/AN.md §7): what is here and what the visitor comes for, in a sentence; :n = tools on offer
     'seo.title' => '3D printing tools: from a photo, a name or a QR',
     'seo.description' => ':n free tools: a photo, a name, a logo or sizes become a model, you see the print price at once and can download it or order it.',
+    'aim.business_page' => 'Everything for businesses on one page: prices, VAT document, delivery',
     'aims' => 'What is it for:',
     'aim' => ['gift' => 'A gift', 'photo' => 'From a photo', 'home' => 'The home', 'spare' => 'A spare part', 'business' => 'For a business'],
     'synonyms' => [

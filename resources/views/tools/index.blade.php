@@ -37,6 +37,10 @@
             <button type="button" class="chip inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap" data-aim="{{ $aim }}" data-tools="{{ implode(' ', $keys) }}" aria-pressed="false">{{ __('tools.aim.'.$aim) }}</button>
         @endforeach
     </div>
+    {{-- an intent with a page of its own (businesses): named while that intent is on --}}
+    @if(isset($aims['business']) && \Illuminate\Support\Facades\Route::has('pages.business'))
+        <p class="mt-2 text-sm" data-aim-page="business" hidden><a href="{{ route('pages.business') }}" class="text-action-dark underline">{{ __('tools.aim.business_page') }}</a></p>
+    @endif
     @endif
     <div class="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0" role="group" aria-label="{{ __('tools.filter') }}">
         <button type="button" class="chip chip-on inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center" data-filter="all" aria-pressed="true">{{ __('tools.cat.all') }}</button>
@@ -162,6 +166,7 @@
         if (shown === 0) related(wanted);
         chips.forEach((o) => { const on = o.dataset.filter === cat; o.classList.toggle('chip-on', on); o.setAttribute('aria-pressed', on ? 'true' : 'false'); });
         aims.forEach((o) => { const on = o.dataset.aim === aim; o.classList.toggle('chip-on', on); o.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+        document.querySelectorAll('[data-aim-page]').forEach((n) => { n.hidden = n.dataset.aimPage !== aim; });
     };
     // nothing found: the tools that match any one of the words (any category), else our picks
     const related = (wanted) => {

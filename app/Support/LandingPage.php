@@ -72,7 +72,7 @@ final class LandingPage
     }
 
     /** The numbers the answers name: delivery (config/farm.php, in the visitor's currency) and the daily limit of models from a photo. */
-    private static function numbers(): array
+    public static function numbers(): array
     {
         $currency = Currency::current();
         $zones = (array) config('farm.shipping.zones', []);

@@ -10,6 +10,7 @@ use App\Models\AnonymousSession;
 use App\Models\Event;
 use App\Models\FarmVideo;
 use App\Models\User;
+use App\Support\Money;
 use App\Support\ShippingHint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -249,5 +250,46 @@ class SalesPathWebTest extends TestCase
         $admin = User::factory()->create();
         $admin->setRole(User::ROLE_ADMIN, true);
         $this->actingAs($admin)->get(route('admin.stats.funnel'))->assertOk()->assertSee('Prodejní cesta')->assertSee('Nahrání začalo')->assertSee('Platba začala')->assertSee('Dobití kreditu');
+    }
+
+    public function test_businesses_get_a_page_of_their_own_with_tools_prices_and_the_way_to_order(): void
+    {
+        config(['farm.enabled' => true, 'farm.public' => true]);
+        foreach (['' => 'cs', '/en' => 'en', '/es' => 'es'] as $prefix => $locale) {
+            $page = $this->get($prefix.'/business')->assertOk();
+            $html = (string) $page->getContent();
+            preg_match('/<title>(.*?)<\/title>/s', $html, $title);
+            preg_match('/<meta name="description" content="([^"]*)">/', $html, $description);
+            $this->assertLessThanOrEqual(60, mb_strlen(html_entity_decode($title[1])), "$locale title: $title[1]");
+            $this->assertLessThanOrEqual(155, mb_strlen(html_entity_decode($description[1])), "$locale description: $description[1]");
+            $page->assertSee('<h1 class="text-2xl font-extrabold text-ink">'.__('pages.business.h1', [], $locale).'</h1>', false);
+            // the tools of the business intent as cards (those on offer), at least six of them
+            $this->assertGreaterThanOrEqual(6, substr_count(substr($html, strpos($html, 'data-page-tools')), 'data-key="'), "$locale: the tools");
+            foreach (['qr', 'logo', 'badge'] as $key) {
+                $this->assertStringContainsString('data-key="'.$key.'"', $html);
+            }
+            // the questions are structured data too, the language twins are named, the page is indexable
+            $this->assertStringContainsString('"@type":"FAQPage"', $html);
+            $this->assertStringContainsString('rel="alternate" hreflang="en"', $html);
+            $this->assertStringNotContainsString('noindex', $html);
+        }
+        // prices of real calculations in crowns; in euros no price is invented; delivery prices come from the configuration
+        $cs = (string) $this->get('/business')->getContent();
+        $this->assertStringContainsString('data-page-prices', $cs);
+        $this->assertStringContainsString('QR cedulka se stojánkem', $cs);
+        $this->assertMatchesRegularExpression('/99\s*Kč/u', $cs);
+        $this->assertStringContainsString('výdejní místo (v Česku 99', $cs);
+        $this->assertStringNotContainsString(':cz_point', $cs);
+        $eur = (string) $this->withCookie('currency', 'EUR')->get('/en/business')->getContent();
+        $this->assertStringNotContainsString('data-page-prices', $eur);
+        $this->assertStringContainsString(__('site.examples.other_currency', [], 'en'), $eur);
+        $this->assertStringContainsString(Money::of(4.0, 'EUR')->format('en'), $eur);   // the pickup point in Czechia in euros, written the English way
+        // the sitemap lists it, the tools catalogue leads to it from the business intent
+        $dir = sys_get_temp_dir().'/mp_spw_'.uniqid();
+        config(['seo.sitemap_dir' => $dir]);
+        $this->artisan('matplace:sitemap')->assertSuccessful();
+        $this->assertStringContainsString(route('pages.business'), (string) file_get_contents($dir.'/sitemap-tools-cs.xml'));
+        File::deleteDirectory($dir);
+        $this->get('/tools')->assertOk()->assertSee('data-aim-page="business"', false)->assertSee('href="'.route('pages.business').'"', false);
     }
 }

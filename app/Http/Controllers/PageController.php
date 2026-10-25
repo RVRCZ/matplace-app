@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Farm\OrderService;
+use App\Support\LandingPage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Lang;
 
@@ -16,6 +17,7 @@ class PageController extends Controller
     public const PAGES = [
         'about' => 'about', 'contact' => 'contact', 'faq' => 'faq', 'complaints' => 'complaints',
         'terms' => 'terms', 'business_terms' => 'business-terms', 'cookies' => 'cookies',
+        'business' => 'business',   // 3D printing for businesses: the business intent of the tools as a page (docs/AN.md §8)
     ];
 
     /** What we print from: the materials of the price calculator with what each stands up to, and what is loaded right now. */
@@ -34,6 +36,12 @@ class PageController extends Controller
     {
         abort_unless(isset(self::PAGES[$page]) && Lang::has('pages.'.$page.'.title'), 404);
 
-        return view('pages.static', ['key' => $page, 'page' => (array) __('pages.'.$page), 'updated' => Lang::has('pages.updated') ? __('pages.updated') : null]);
+        // today's delivery prices in the visitor's currency where a text names them (:cz_point …, App\Support\LandingPage)
+        $numbers = LandingPage::numbers();
+        $fill = function ($value) use (&$fill, $numbers) {
+            return is_array($value) ? array_map($fill, $value) : (is_string($value) ? strtr($value, $numbers) : $value);
+        };
+
+        return view('pages.static', ['key' => $page, 'page' => $fill((array) __('pages.'.$page)), 'updated' => Lang::has('pages.updated') ? __('pages.updated') : null]);
     }
 }

@@ -436,6 +436,27 @@ return [
         ],
     ],
 
+    // 3D tisk pro firmy: the business intent of the tools as a page of its own (docs/AN.md §8); the delivery prices are
+    // filled from config/farm.php (:cz_point, :cz_home, :eu_point), the tools and the prices from their configuration
+    'business' => [
+        'title' => '3D tisk pro firmy: QR cedulky, loga, visačky',
+        'h1' => '3D tisk pro firmy',
+        'description' => 'Malé série pro firmy na vlastní tiskové farmě: QR cedulky, loga, jmenovky, podtácky a klíčenky. Cena hned, doklad s DPH, doprava po EU.',
+        'lead' => 'Z loga, textu nebo odkazu vznikne model za minutu, cenu vidíte hned a výtisk objednáte bez čekání na nabídku. Tiskneme na vlastní farmě v Česku a za výsledek odpovídáme my.',
+        'sections' => [
+            ['h' => 'Co firmám tiskneme', 'p' => ['Každý nástroj otevřete, vložíte logo, text nebo odkaz a model je hotový. Nic se nestahuje a nic se neplatí, dokud neobjednáte.'], 'tools' => ['qr', 'logo', 'badge', 'sign', 'nameplate', 'stencil', 'stamp', 'coaster', 'keychain', 'lightbox', 'text']],
+            ['h' => 'Kolik to stojí', 'p' => ['Cena se počítá z materiálu a doby tisku a vidíte ji před objednáním, včetně DPH. Příklady z našich skutečných kalkulací:'], 'prices' => true, 'li' => ['Počet kusů zadáte v kalkulaci a hned vidíte cenu celé série; na jednu podložku tiskneme víc kusů najednou.', 'Cena je za tisk, doprava se přičte podle doručení, které vyberete v objednávce.']],
+            ['h' => 'Jak objednat', 'li' => ['Vytvořte model v nástroji nebo nahrajte vlastní soubor (STL, 3MF, STEP); zatím nic neplatíte.', 'Hned vidíte cenu včetně DPH a dobu tisku, bez registrace.', 'V objednávce vyberete barvu, kvalitu, počet kusů a doručení a až na jejím konci zaplatíte kartou nebo z kreditu.', 'Průběh tisku sledujete na stránce zakázky; odesíláme v den dotisknutí, v pracovní dny.']],
+            ['h' => 'Doprava a doklad', 'p' => ['Posíláme Packetou na výdejní místo (v Česku :cz_point) nebo na adresu (:cz_home), do zemí EU od :eu_point. Doklad o zakázce s DPH vám na požádání pošleme e-mailem.']],
+            ['h' => 'Kdo tiskne', 'p' => ['matplace s.r.o., IČO 22499008, Rybná 716/24, 110 00 Praha 1. Zakázky tiskne naše vlastní tisková farma v Česku, nikomu je nepředáváme. Dotazy: info@matplace.com.']],
+        ],
+        'items' => [
+            ['q' => 'Dostaneme doklad s DPH?', 'a' => 'Ano. Cena v kalkulaci je včetně DPH a doklad o zakázce vám na požádání pošleme e-mailem.'],
+            ['q' => 'Umíte větší série?', 'a' => 'Počet kusů zadáte v kalkulaci; větší série tiskneme na několik podložek za sebou a cenu vidíte před objednáním. Na stovky kusů nám napište na info@matplace.com.'],
+            ['q' => 'Můžeme poslat vlastní logo nebo hotový model?', 'a' => 'Ano. Logo jako SVG nebo obrázek vložíte do nástroje Logo, hotový model (STL, 3MF, STEP) nahrajete do kalkulace a hned vidíte cenu.'],
+            ['q' => 'Jak dlouho to trvá?', 'a' => 'Dobu tisku vidíte u každého modelu předem. Hotový výtisk odesíláme v den dotisknutí, v pracovní dny; co se dotiskne o víkendu, odejde v pondělí.'],
+        ],
+    ],
     'cookies' => [
         'title' => 'Cookies',
         'description' => 'Jaké cookies matplace používá: nezbytné pro přihlášení, jazyk a měnu, vlastní statistika bez cookies a Google Analytics a Meta pixel jen s vaším souhlasem.',

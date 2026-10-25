@@ -188,6 +188,7 @@ return [
     // the page for search engines (docs/AN.md §7): what is here and what the visitor comes for, in a sentence; :n = tools on offer
     'seo.title' => 'Herramientas 3D: de una foto, un nombre o un QR',
     'seo.description' => ':n herramientas gratis: de una foto, un nombre, un logo o unas medidas nace un modelo; ve el precio al momento y puede descargarlo o pedirlo.',
+    'aim.business_page' => 'Todo para empresas en una página: precios, factura con IVA, envío',
     'aims' => 'Para qué lo necesita:',
     'aim' => ['gift' => 'Un regalo', 'photo' => 'De una foto', 'home' => 'El hogar', 'spare' => 'Una pieza de repuesto', 'business' => 'Para empresas'],
     'synonyms' => [

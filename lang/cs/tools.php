@@ -188,6 +188,7 @@ return [
     // the page for search engines (docs/AN.md §7): what is here and what the visitor comes for, in a sentence; :n = tools on offer
     'seo.title' => 'Nástroje pro 3D tisk: z fotky, jména či QR',
     'seo.description' => ':n nástrojů zdarma: z fotky, jména, loga nebo rozměrů vznikne model, hned vidíte cenu tisku a můžete ho stáhnout nebo objednat.',
+    'aim.business_page' => 'Vše pro firmy na jedné stránce: ceny, doklad s DPH, doprava',
     'aims' => 'Na co to potřebujete:',
     'aim' => ['gift' => 'Dárek', 'photo' => 'Z fotky', 'home' => 'Domácnost', 'spare' => 'Náhradní díl', 'business' => 'Pro firmu'],
     'synonyms' => [

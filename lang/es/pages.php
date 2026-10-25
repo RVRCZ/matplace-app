@@ -436,6 +436,27 @@ return [
         ],
     ],
 
+    // Impresión 3D para empresas: the business intent of the tools as a page of its own (docs/AN.md §8); the delivery prices are
+    // filled from config/farm.php (:cz_point, :cz_home, :eu_point), the tools and the prices from their configuration
+    'business' => [
+        'title' => 'Impresión 3D para empresas: QR, logos, placas',
+        'h1' => 'Impresión 3D para empresas',
+        'description' => 'Series cortas para empresas en nuestra granja de impresión: carteles QR, logos, placas, posavasos y llaveros. Precio al momento, factura con IVA, envío UE.',
+        'lead' => 'De un logo, un texto o un enlace nace un modelo en un minuto, ve el precio enseguida y pide la impresión sin esperar un presupuesto. Imprimimos en nuestra propia granja en Chequia y del resultado respondemos nosotros.',
+        'sections' => [
+            ['h' => 'Qué imprimimos para empresas', 'p' => ['Abra una herramienta, ponga el logo, el texto o el enlace y el modelo está listo. No se descarga nada ni se paga nada hasta que pida.'], 'tools' => ['qr', 'logo', 'badge', 'sign', 'nameplate', 'stencil', 'stamp', 'coaster', 'keychain', 'lightbox', 'text']],
+            ['h' => 'Cuánto cuesta', 'p' => ['El precio sale del material y del tiempo de impresión y lo ve antes de pedir, con IVA. Ejemplos de nuestros cálculos reales:'], 'prices' => true, 'li' => ['El número de piezas lo indica en la calculadora y ve enseguida el precio de toda la serie; imprimimos varias piezas en una misma placa.', 'El precio es por la impresión; el envío se añade según la entrega que elija al pedir.']],
+            ['h' => 'Cómo pedir', 'li' => ['Cree el modelo con una herramienta o suba su propio archivo (STL, 3MF, STEP); de momento no paga nada.', 'Ve enseguida el precio con IVA y el tiempo de impresión, sin registro.', 'En el pedido elige el color, la calidad, el número de piezas y la entrega, y solo al final paga con tarjeta o con crédito.', 'Sigue la impresión en la página del pedido; enviamos el mismo día en que termina, en días laborables.']],
+            ['h' => 'Envío y factura', 'p' => ['Enviamos con Packeta a un punto de recogida (en Chequia :cz_point) o a domicilio (:cz_home), a países de la UE desde :eu_point. La factura del pedido con IVA se la enviamos por correo si la pide.']],
+            ['h' => 'Quién imprime', 'p' => ['matplace s.r.o., CIF 22499008, Rybná 716/24, 110 00 Praga 1. Los pedidos los imprime nuestra propia granja de impresión en Chequia; no los pasamos a nadie. Consultas: info@matplace.com.']],
+        ],
+        'items' => [
+            ['q' => '¿Recibimos factura con IVA?', 'a' => 'Sí. El precio de la calculadora incluye el IVA y la factura del pedido se la enviamos por correo si la pide.'],
+            ['q' => '¿Hacen series más grandes?', 'a' => 'El número de piezas lo indica en la calculadora; las series grandes se imprimen en varias placas seguidas y ve el precio antes de pedir. Para cientos de piezas escríbanos a info@matplace.com.'],
+            ['q' => '¿Podemos enviar nuestro logo o un modelo terminado?', 'a' => 'Sí. Ponga el logo como SVG o imagen en la herramienta Logo; suba un modelo terminado (STL, 3MF, STEP) a la calculadora y verá el precio al momento.'],
+            ['q' => '¿Cuánto tarda?', 'a' => 'El tiempo de impresión de cada modelo lo ve de antemano. Enviamos la pieza el mismo día en que termina, en días laborables; lo que termina el fin de semana sale el lunes.'],
+        ],
+    ],
     'cookies' => [
         'title' => 'Cookies',
         'description' => 'Qué cookies usa matplace: las necesarias para la sesión, el idioma y la moneda, estadísticas propias sin cookies y Google Analytics y Meta solo si acepta.',
