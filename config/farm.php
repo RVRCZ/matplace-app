@@ -14,11 +14,10 @@ return [
     'disk' => 'farm',
 
     // A big model's order is not sliced before the customer has chosen the settings and confirmed the colour
-    // (App\Domain\Farm\BigModel, docs/AL.md §11): big = over engines.mesh.decimate_above triangles, or the calculator's
-    // slice of the same file took longer than `slice_seconds`. The page says how long the slice will take: the
+    // (docs/AL.md §11). What is big is decided with the first page in one place (App\Domain\Calculation\BigModel:
+    // engines.mesh.decimate_above triangles, engines.mesh.big_slice_s). The page says how long the slice will take: the
     // calculation's slice with a margin, or `seconds_per_million` triangles, never under `min_seconds`.
     'big_model' => [
-        'slice_seconds' => (int) env('FARM_BIG_MODEL_SLICE_S', env('MESH_BIG_SLICE_S', 60)),   // one threshold with the first page (engines.mesh.big_slice_s) unless the farm sets its own
         'seconds_per_million' => (int) env('FARM_BIG_MODEL_S_PER_M', 150),
         'min_seconds' => (int) env('FARM_BIG_MODEL_MIN_S', 120),
         // an order of a big model nobody asked the exact price for is cancelled after this many days (matplace:prune)
