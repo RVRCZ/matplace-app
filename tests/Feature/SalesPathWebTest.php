@@ -288,8 +288,8 @@ class SalesPathWebTest extends TestCase
         $dir = sys_get_temp_dir().'/mp_spw_'.uniqid();
         config(['seo.sitemap_dir' => $dir]);
         $this->artisan('matplace:sitemap')->assertSuccessful();
-        $this->assertStringContainsString(route('pages.business'), (string) file_get_contents($dir.'/sitemap-tools-cs.xml'));
+        $this->assertStringContainsString(route('tools.business'), (string) file_get_contents($dir.'/sitemap-tools-cs.xml'));
         File::deleteDirectory($dir);
-        $this->get('/tools')->assertOk()->assertSee('data-aim-page="business"', false)->assertSee('href="'.route('pages.business').'"', false);
+        $this->get('/tools')->assertOk()->assertSee('data-aim-page="business"', false)->assertSee('href="'.route('tools.business').'"', false);
     }
 }

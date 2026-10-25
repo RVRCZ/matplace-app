@@ -115,7 +115,7 @@ final class Sitemaps
         }
         foreach (array_keys(PageController::PAGES) as $page) {
             if (Lang::hasForLocale('pages.'.$page.'.title', $locale)) {
-                $urls[] = $all('pages.'.$page);
+                $urls[] = $all(PageController::routeName($page));
             }
         }
         $urls[] = $all('privacy');

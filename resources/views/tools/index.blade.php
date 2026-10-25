@@ -38,8 +38,8 @@
         @endforeach
     </div>
     {{-- an intent with a page of its own (businesses): named while that intent is on --}}
-    @if(isset($aims['business']) && \Illuminate\Support\Facades\Route::has('pages.business'))
-        <p class="mt-2 text-sm" data-aim-page="business" hidden><a href="{{ route('pages.business') }}" class="text-action-dark underline">{{ __('tools.aim.business_page') }}</a></p>
+    @if(isset($aims['business']) && \Illuminate\Support\Facades\Route::has('tools.business'))
+        <p class="mt-2 text-sm" data-aim-page="business" hidden><a href="{{ route('tools.business') }}" class="text-action-dark underline">{{ __('tools.aim.business_page') }}</a></p>
     @endif
     @endif
     <div class="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0" role="group" aria-label="{{ __('tools.filter') }}">

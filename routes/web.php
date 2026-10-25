@@ -110,7 +110,7 @@ $pages = function () {
     Route::get('/wp/{any}', fn () => redirect('/blog', 301))->where('any', '.*');
     Route::get('/materials', [PageController::class, 'materials'])->name('materials');
     foreach (PageController::PAGES as $page => $path) {
-        Route::get('/'.$path, PageController::class)->defaults('page', $page)->name('pages.'.$page);
+        Route::get('/'.$path, PageController::class)->defaults('page', $page)->name(PageController::routeName($page));
     }
 
     Route::get('/models', [ModelCatalogController::class, 'index'])->name('models.index');

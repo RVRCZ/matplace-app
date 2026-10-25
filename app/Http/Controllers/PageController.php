@@ -20,6 +20,12 @@ class PageController extends Controller
         'business' => 'business',   // 3D printing for businesses: the business intent of the tools as a page (docs/AN.md §8)
     ];
 
+    /** The name of a page's route: `pages.<page>`, except the page for businesses, which the home page and the tools know as `tools.business`. */
+    public static function routeName(string $page): string
+    {
+        return $page === 'business' ? 'tools.business' : 'pages.'.$page;
+    }
+
     /** What we print from: the materials of the price calculator with what each stands up to, and what is loaded right now. */
     public function materials(OrderService $orders): View
     {
