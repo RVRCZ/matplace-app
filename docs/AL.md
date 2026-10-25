@@ -1043,8 +1043,11 @@ Co trvalo u kalkulace 554 (`wait_s` 23 s, 2,7 M trojúhelníků), měřeno míst
 | `convert`: binární STL přepsané trojúhelník po trojúhelníku v PHP (`StlFile::scale(1.0)`) | **7,6 s** | **0,2 s** – zdravý binární soubor (velikost = hlavička + 50 B × počet, `StlFile::binaryCount`, hlavička nezačíná „solid“) se **zkopíruje**; ASCII nebo binární soubor s hlavičkou „solid“ se přepíše jako dosud (`timings.convert = copy`) |
 | `analyse`: `mesh_tool.py check` přes trimesh (načtení se svařením vrcholů 38 s + rozdělení na tělesa 34 s + zbytek) | **85 s** | **16 s** – binární STL od `engines.mesh.fast_check_above` trojúhelníků (400 000) měří **numpy** (`mesh_tool.py fast_report`): box, povrch, objem (součet čtyřstěnů), vodotěsnost (každá hrana ve dvou stěnách, jednou v každém směru, vrcholy bit po bitu – tak je binární STL zapsané, −0,0 se srovná na 0,0), tělesa (komponenty grafu vrcholů přes scipy); výsledek na drakovi do posledního místa stejný jako trimesh (74 878,37 mm³, 83 807,34 mm², 49 těles, vodotěsný) |
 
-Server je zhruba 3× rychlejší než tenhle stroj (ztenčení draka 52 s proti 141 s), takže z 23 s čekání by měly zbýt
-jednotky sekund; ověří řídící na produkci po nasazení (`model_files.timings`: `convert_s`, `analyse_s`, `convert`).
+**Produkce, drak 1,8 M (řídící session, 25. 10. 2026, `model_files.timings`):** před nasazením soubor 619 `convert_s`
+3,06 + `analyse_s` 14,19 = **17,3 s** (kalkulace `wait_s` 23 s); po nasazení soubor 620 `convert = copy` 0,08 s +
+`analyse_s` 2,98 = **3,1 s** (kalkulace `wait_s` 3,3 s). Řídící při slučování přidala `Calculation\BigModel::triangles()`:
+hned po nahrání soubor ještě nikdo nezměřil (`triangles` null), odpověď uploadu říkala „není velký“ a drak se na první
+stránce spočítal celý (150 s); u binárního STL se teď počet bere z hlavičky (`StlFile::triangleCount`).
 Profil numpy cesty: nejvíc stojí řazení 5,4 M vrcholů (`lexsort` sbalených bitů) a tři `np.sort` hran; strukturované
 `np.unique` bylo ~10× pomalejší.
 
@@ -1056,10 +1059,11 @@ Profil numpy cesty: nejvíc stojí řazení 5,4 M vrcholů (`lexsort` sbalených
 | změna volby před potvrzením barvy | další řez, 4+ min každá | **nic** – jen se přepočítá orientační cena |
 | změna volby během řezu | čekala na tlačítko po doběhnutí, pak další řez | řez se zruší (výsledek zahozen) a spustí znovu: zákazník čeká jen na poslední |
 | řezů na zakázku | 1 + počet změn | **1** + počet změn učiněných až během řezu |
-| po nahrání (2,7 M, kalkulace 554) | `wait_s` 23 s (přepis PHP + trimesh) | odhad jednotek sekund (místně 93 s → 16 s na 1,8 M), ověřit na produkci |
+| po nahrání (drak 1,8 M, produkce) | 17,3 s zpracování, kalkulace čekala `wait_s` 23 s (přepis PHP + trimesh) | **3,1 s** zpracování, `wait_s` **3,3 s** (kopie + numpy; změřeno řídící 25. 10. po nasazení) |
 
-Skutečný průchod na produkci (zakázka draka přes novou stránku) ještě nebyl – nic nenasazeno; čísla řezu jsou z B8 a
-z místního měření.
+Nasazeno 25. 10. 2026 (main ea9c7a6, sjednocený práh 2f8e293). Čísla po nahrání jsou z produkce; čísla řezu zakázky
+jsou z B8 a z místního měření – průchod draka přes novou stránku zakázky (čekání → tlačítko → jeden řez) ještě nikdo
+neprošel, řídící měří první stránku (`rough_only`).
 
 ### 11.7 Testy a soubory
 
