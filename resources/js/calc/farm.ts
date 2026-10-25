@@ -12,7 +12,7 @@ import { loadGeometryFromUrl } from './loaders';
 import { money as moneyText } from '../site/money';
 import { timelinePrint, timelineDispatch } from './order_timeline';
 import { printOnly, shippingText } from './order_price';
-import { estimate as roughEstimate, type RoughConfig } from './rough';
+import { estimate as roughEstimate, shapeOf, rangeFactors, type RoughConfig } from './rough';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
 /** A colour on offer: one per colour, with the codes of every spool of it that could print the order ("U33" = farm U, printer 3, slot 3). Its price once sliced; before that the rates the page estimates with. */
@@ -628,7 +628,10 @@ export function bootFarmOrder(): void {
         const floor = roundUp(f.min_price * (1 + f.vat_percent / 100), f.rounding);
         // crowns are where the rates are defined; an account in euros sees them at the farm's rate, rounded up to ten cents
         const toCur = (czk: number): number => (state.currency === 'EUR' ? Math.ceil((czk / e.eur_rate) * 10) / 10 : czk);
-        return { low: toCur(Math.max(floor, Math.floor((total * e.rough.range_low) / step) * step)), high: toCur(Math.ceil((total * e.rough.range_high) / step) * step), minutes };
+        // the range by the shape, as the first page counts it (rough.ts rangeFactors, docs/M.md §6): the model's box as it
+        // prints, the estimated grams, no overhang measure here (counted on the wide side), the supports choice
+        const factors = rangeFactors(e.rough.range, shapeOf(state.dims, 1, per.grams, null), wanted.supports === 'on' ? true : wanted.supports === 'off' ? false : null, per.minutes);
+        return { low: toCur(Math.max(floor, Math.floor((total * factors.price[0]) / step) * step)), high: toCur(Math.ceil((total * factors.price[1]) / step) * step), minutes };
     };
     const renderEstimate = (awaiting: boolean, working: boolean): void => {
         const box = $('farm-estimate');
