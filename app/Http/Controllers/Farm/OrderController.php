@@ -865,9 +865,14 @@ class OrderController extends Controller
         }
         $card = $order->designer_model_id ? $order->designerModel : null;
 
+        // the overhang share the first page measured in the browser (ShapeRange, docs/M.md §6): the range here follows it too
+        $rough = Calculation::query()->where('model_file_id', $file->id)->whereNotNull('rough')->latest('id')->value('rough');
+        $overhang = is_array($rough) && isset($rough['shape']['overhang_share']) && is_numeric($rough['shape']['overhang_share']) ? (float) $rough['shape']['overhang_share'] : null;
+
         return [
             'volume_mm3' => (float) $file->volume_mm3,
             'area_mm2' => $file->area_mm2 !== null ? (float) $file->area_mm2 : null,
+            'overhang_share' => $overhang,
             'rough' => Arr::only((array) config('pricing.rough'), ['perimeters', 'line_width_mm', 'shell_fraction_fallback', 'support_factor', 'minutes_per_gram', 'overhead_minutes', 'quality_time_factor', 'quality_layer_mm', 'range']),
             'strengths' => array_map(fn ($s) => (int) ($s['infill'] ?? 15), (array) $this->settings->get('strengths')),
             'rates' => ['fixed_fee' => (float) $this->settings->get('fixed_fee'), 'min_price' => (float) $this->settings->get('min_price'), 'vat_percent' => $this->shipping->vatPercent('CZ'), 'rounding' => (float) $this->settings->get('rounding')],
