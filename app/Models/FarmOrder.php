@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Farm\OrderService;
 use App\Support\Money;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class FarmOrder extends Model
 {
+    use HasFactory;
+
     public const STATUS_AWAITING_CHOICES = 'awaiting_choices';   // a big model: waits for the customer's choices and colour before it is sliced at all (docs/AL.md §11)
 
     public const STATUS_UPLOADED = 'uploaded';        // model taken over, being checked / oriented / sliced

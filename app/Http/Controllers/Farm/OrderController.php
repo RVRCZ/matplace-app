@@ -471,10 +471,20 @@ class OrderController extends Controller
             // the top-up page asks for what is missing, in the currency the order is priced in
             return response()->json(['error' => 'credit', 'message' => __('farm.refuse.credit', ['missing' => $e->missingMoney()->format()]), 'missing' => $e->missing(), 'topup_url' => route('account.credit', ['need' => $e->missing(), 'back' => $order->token])], 402);
         } catch (FarmRefusal $e) {
-            Track::event('failed', $order->modelFile, ['step' => 'checkout', 'code' => $e->reason, 'order' => $order->id]);
+            // refused with the money there (the price moved, the spool is gone): a failure of the payment step, not of the card
+            Track::event('failed', $order->modelFile, ['step' => 'pay', 'code' => $e->reason, 'order' => $order->id]);
 
             return response()->json(['error' => $e->reason, 'message' => $e->text()] + $e->data, 422);
         }
+    }
+
+    /**
+     * The smallest amount the gateway takes in this currency (config farm.payments.min_charge; Stripe refuses less than
+     * about 0.50 USD): a shortfall under it is charged as this much and the rest stays as credit.
+     */
+    public static function minCharge(string $currency): float
+    {
+        return max(0.0, (float) (config('farm.payments.min_charge.'.strtoupper($currency)) ?? 0));
     }
 
     /**
@@ -491,7 +501,8 @@ class OrderController extends Controller
         try {
             return $this->payFromRequest($request, $order, $flow, $videos, $data);
         } catch (InsufficientCredit $e) {
-            $amount = (float) ceil($e->missing());   // whole crowns or euros; the odd heller stays as credit
+            // whole crowns or euros, never under the gateway's smallest charge; what is over the shortfall stays as credit
+            $amount = max((float) ceil($e->missing()), self::minCharge($e->currency));
             $payment = Payment::create([
                 'user_id' => $request->user()->id, 'farm_order_id' => $order->id, 'gateway' => $gateway->name(), 'purpose' => Payment::PURPOSE_ORDER,
                 'amount' => $amount, 'currency' => $e->currency, 'status' => Payment::STATUS_PENDING,
@@ -832,7 +843,10 @@ class OrderController extends Controller
             'color' => $order->color ? ['name' => $order->color->material->label().' '.$order->color->displayName(), 'hex' => $order->color->hex, 'finish' => $order->color->material->finish, 'code' => $order->slot?->code()] : null,
             // every spool of the order as chosen so far, with its code: the summary over the payment, the line under the number
             'spools' => $order->spoolLines(),
-            'delivery' => $order->delivery,
+            // not paid yet: the delivery the page opens with (the last one used, else the cheapest), so the sum with the
+            // delivery is on the page at once; paid: the one chosen
+            'delivery' => $order->paid_at !== null ? $order->delivery : $this->preselectedDelivery($order, $request),
+            'min_charge' => self::minCharge($currency),
             'balance' => $this->wallet->balance($request->user()->id === $order->user_id ? $request->user() : $order->user)->amount,
             'model_url' => ($order->print_stl_path || $order->modelFile?->stl_path) && ! $order->hidesModelFrom($request->user()) ? route('farm.orders.model', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
@@ -883,6 +897,37 @@ class OrderController extends Controller
             'royalty_cap' => (float) config('catalog.royalty_cap', 0.30),
             'eur_rate' => Money::rate(),
         ];
+    }
+
+    /**
+     * The delivery an unpaid order's page opens with, so the line of the delivery and the sum with it are there at once
+     * (the sales path, 25 Oct 2026): the way the customer's last paid order went when it is still on offer, else the
+     * cheapest way to the country of the profile (pickup when the farm offers it, else the kind of parcel that costs
+     * less). The customer changes it on the page; the price of a parcel is asked for as before (quote).
+     */
+    private function preselectedDelivery(FarmOrder $order, Request $request): string
+    {
+        $modes = $this->shipping->modes();
+        $last = FarmOrder::where('user_id', $order->user_id)->whereNotNull('paid_at')->where('id', '!=', $order->id)->latest('paid_at')->value('delivery');
+        if ($last && in_array($last, $modes, true)) {
+            return (string) $last;
+        }
+        if (in_array(Shipping::PICKUP, $modes, true)) {
+            return Shipping::PICKUP;
+        }
+        $owner = $request->user()->id === $order->user_id ? $request->user() : $order->user;
+        $country = strtoupper((string) ($owner?->country ?: 'CZ'));
+        $currency = $this->currencyFor($order, $request);
+        $grams = $this->shipping->parcelGrams($order);
+        $prices = [];
+        foreach ([Shipping::POINT, Shipping::HOME] as $mode) {
+            if (in_array($mode, $modes, true) && ($p = $this->shipping->price($mode, $country, $grams, $currency)) !== null) {
+                $prices[$mode] = $p->amount;
+            }
+        }
+        asort($prices);
+
+        return (string) (array_key_first($prices) ?? ($modes[0] ?? Shipping::POINT));
     }
 
     /** "Z-BOX Praha 9, Českomoravská 12" or "Roman Vzor, Dlouhá 1, 301 00 Plzeň, Česko": where the parcel goes, for the paid order. */

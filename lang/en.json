@@ -957,7 +957,7 @@
     "home.hero_alt": "A printed spiral vase, an organizer with pens, a phone stand and a name pendant on a desk in front of a 3D printer",
     "home.caption": "Everything in the picture was made with our tools.",
     "home.caption_note": "Illustration",
-    "home.start.file": "I have a 3D file",
+    "home.start.file": "I have a 3D model",
     "home.start.file.hint": "Upload the model and see the price of making it at once.",
     "home.start.idea": "I have a photo or an idea",
     "home.start.idea.hint": "Describe what you need. We find a model or create one.",
@@ -1838,5 +1838,17 @@
     "calc.trust.videos": ":n videos of prints on YouTube.",
     "calc.trust.video": "This is how we print",
     "calc.trust.examples": "Prices from our calculations",
-    "calc.trust.examples_note": "Real calculations of the farm; open one and change the size or the material."
+    "calc.trust.examples_note": "Real calculations of the farm; open one and change the size or the material.",
+    "home.start.gift": "I want a gift",
+    "home.start.gift.hint": "With a name, from a photo or with a dedication. Pick one and see the price at once.",
+    "home.start.part": "I need a part",
+    "home.start.part.hint": "A box, a holder, a cap or your own file. Printed exactly to measure.",
+    "home.start.firm": "For a business",
+    "home.start.firm.hint": "QR signs, logos, name tags and coasters with your brand, even one at a time.",
+    "farm.order.ship.total": "To pay :total",
+    "farm.order.ship.total_estimate": "About :total in total, the carrier confirms the delivery",
+    "farm.order.pay_note_round": "You pay exactly :amount by card; the odd cents stay as credit.",
+    "farm.order.pay_note_min": "The smallest card payment is :amount; whatever exceeds the price stays as credit for your next print.",
+    "farm.order.step_material_hint": "Pick the colour and the print settings. Nothing to pay yet; the price follows your choice.",
+    "farm.order.step_order_hint": "Choose the delivery and pay by card or from credit. The print starts once paid."
 }

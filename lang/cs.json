@@ -957,7 +957,7 @@
     "home.hero_alt": "Vytištěná spirálová váza, organizér s tužkami, stojánek na telefon a přívěsek se jménem na stole před 3D tiskárnou",
     "home.caption": "Všechno na obrázku vzniklo v našich nástrojích.",
     "home.caption_note": "Ilustrace",
-    "home.start.file": "Mám 3D soubor",
+    "home.start.file": "Mám 3D model",
     "home.start.file.hint": "Nahrajte model a hned uvidíte cenu jeho výroby.",
     "home.start.idea": "Mám fotku nebo nápad",
     "home.start.idea.hint": "Popište, co potřebujete. Najdeme model nebo ho vytvoříme.",
@@ -1838,5 +1838,17 @@
     "calc.trust.videos": ":n videí z tisku na YouTube.",
     "calc.trust.video": "Takhle tiskneme",
     "calc.trust.examples": "Ceny z našich kalkulací",
-    "calc.trust.examples_note": "Skutečné kalkulace z farmy; otevřete je a upravte si velikost nebo materiál."
+    "calc.trust.examples_note": "Skutečné kalkulace z farmy; otevřete je a upravte si velikost nebo materiál.",
+    "home.start.gift": "Chci dárek",
+    "home.start.gift.hint": "Se jménem, z fotky nebo s věnováním. Vyberete a hned vidíte cenu.",
+    "home.start.part": "Potřebuji díl",
+    "home.start.part.hint": "Krabička, držák, krytka nebo vlastní soubor. Vytiskneme ho přesně na míru.",
+    "home.start.firm": "Pro firmu",
+    "home.start.firm.hint": "QR cedulky, loga, jmenovky a podtácky s vaší značkou, i po kusech.",
+    "farm.order.ship.total": "Celkem k zaplacení :total",
+    "farm.order.ship.total_estimate": "Celkem asi :total, dopravu upřesní dopravce",
+    "farm.order.pay_note_round": "Kartou platíte přesně :amount; pár haléřů navíc zůstane jako kredit.",
+    "farm.order.pay_note_min": "Nejmenší platba kartou je :amount; co přesahuje cenu, zůstane jako kredit na další tisk.",
+    "farm.order.step_material_hint": "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; cena se přepočítá podle vaší volby.",
+    "farm.order.step_order_hint": "Zvolte doručení a zaplaťte kartou nebo z kreditu. Tisk začne po zaplacení."
 }

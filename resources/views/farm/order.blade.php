@@ -9,7 +9,7 @@
         'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line', 'farm.order.second_color', 'farm.order.changes_title', 'farm.order.change_title', 'farm.order.change_same', 'farm.order.change_same_hint', 'farm.order.change_first', 'farm.order.change_line', 'farm.order.parts_title', 'farm.order.parts_hint', 'farm.order.part_main', 'farm.order.part_line', 'farm.order.parts_one_plate', 'farm.order.parts_one_machine', 'farm.order.colors_no_machine', 'farm.order.one_plate_required', 'farm.order.one_plate_copies', 'farm.order.one_plate_single', 'farm.order.kind_all', 'farm.order.codes_hint', 'farm.order.by_parts',
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m', 'farm.order.cancel_running_confirm', 'farm.order.supports_hide', 'farm.order.supports_show',
         'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.too_big_pickup', 'farm.delivery.none', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track',
-        'farm.order.tl.print', 'farm.order.tl.printing', 'farm.order.tl.printing_now', 'farm.order.tl.printing_end', 'farm.order.tl.done', 'farm.order.tl.dispatched', 'farm.order.tl.parcel', 'farm.order.tl.pickup', 'farm.order.tl.none', 'farm.order.why.lead', 'farm.order.why.printer', 'farm.order.why.kind', 'farm.order.why.settings', 'farm.order.why.time', 'farm.order.reslicing', 'farm.order.while_slicing', 'farm.order.while_slicing_big', 'farm.order.estimate_range', 'farm.order.estimate_time', 'farm.order.estimate_wait', 'farm.order.estimate_running', 'farm.order.slice_start', 'farm.order.slice_start_hint', 'farm.order.restart_slice', 'farm.recalculate', 'farm.order.ship.choose', 'farm.order.ship.pickup', 'farm.order.ship.parcel', 'farm.order.ship.counting', 'farm.order.ship.free', 'farm.order.pay_total'];
+        'farm.order.tl.print', 'farm.order.tl.printing', 'farm.order.tl.printing_now', 'farm.order.tl.printing_end', 'farm.order.tl.done', 'farm.order.tl.dispatched', 'farm.order.tl.parcel', 'farm.order.tl.pickup', 'farm.order.tl.none', 'farm.order.why.lead', 'farm.order.why.printer', 'farm.order.why.kind', 'farm.order.why.settings', 'farm.order.why.time', 'farm.order.reslicing', 'farm.order.ship.total', 'farm.order.ship.total_estimate', 'farm.order.pay_note_round', 'farm.order.pay_note_min', 'farm.order.while_slicing', 'farm.order.while_slicing_big', 'farm.order.estimate_range', 'farm.order.estimate_time', 'farm.order.estimate_wait', 'farm.order.estimate_running', 'farm.order.slice_start', 'farm.order.slice_start_hint', 'farm.order.restart_slice', 'farm.recalculate', 'farm.order.ship.choose', 'farm.order.ship.pickup', 'farm.order.ship.parcel', 'farm.order.ship.counting', 'farm.order.ship.free', 'farm.order.pay_total'];
     $farmCfg = [
         'state' => $state,
         'prefill' => $prefill,
@@ -92,6 +92,8 @@
                     {{-- the big number is the print (with VAT); delivery is its own small line under it, by the way chosen below,
                          and the sum of both is said only where it is paid (Roman, 22 Oct 2026) --}}
                     <p id="farm-shipping-line" class="mt-1 text-sm text-slate-600" aria-live="polite"></p>
+                    {{-- the sum with the delivery right here (the sales path, 25 Oct 2026): exact once the carrier's quote is in, an estimate before --}}
+                    <p id="farm-total-line" class="mt-1 hidden text-sm font-semibold text-slate-800" aria-live="polite"></p>
                     <p id="farm-copies-line" class="mt-1 hidden text-sm font-semibold text-slate-700"></p>
                     {{-- after a new calculation: why the price is not what it was (another machine, another material, other settings) --}}
                     <p id="farm-price-why" class="mt-2 hidden rounded-lg bg-action-soft px-3 py-2 text-sm text-ink" role="status"></p>
@@ -132,6 +134,7 @@
             {{-- step 2 of 3, until paid: material and colours (one list, chosen once), quality and the print settings --}}
             <form id="farm-presets" class="hidden rounded-2xl border border-slate-200 bg-white p-4">
                 <h2 class="text-base font-bold text-slate-800">{{ __('farm.order.step_material') }}</h2>
+                <p class="mt-1 text-xs text-slate-600">{{ __('farm.order.step_material_hint') }}</p>
                 <p id="farm-presets-wait" class="mt-1 hidden text-xs text-slate-600">{{ __('farm.order.while_slicing') }}</p>
                 <div id="farm-material" class="mt-3 hidden scroll-mt-4">
                     {{-- the kinds loaded right now (PLA, PLA+, PETG…): a filter over the colours below, the colour sets the kind --}}
@@ -228,6 +231,7 @@
             {{-- step 3 of 3: the order – what was chosen above (only shown here), delivery, terms, pay --}}
             <form id="farm-pay" class="hidden rounded-2xl border border-line bg-action-soft p-4">
                 <h2 class="text-base font-bold text-slate-800">{{ __('farm.order.step_order') }}</h2>
+                <p class="mt-1 text-xs text-slate-600">{{ __('farm.order.step_order_hint') }}</p>
                 <div class="mt-2 flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">{{ __('farm.order.summary_colors') }}
                     <a href="#farm-material" id="farm-change-colors" class="text-xs font-semibold text-action-dark underline">{{ __('farm.order.change') }}</a></div>
                 <ul id="farm-summary" class="mt-2 flex flex-wrap gap-2 text-sm" aria-live="polite"></ul>
@@ -285,6 +289,8 @@
                 {{-- what is paid: the print and the delivery together, once the delivery is known --}}
                 <p id="farm-pay-total" class="mt-3 hidden text-sm text-ink" aria-live="polite"></p>
                 <button id="farm-pay-btn" type="submit" class="mt-3 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" disabled>{{ __('farm.order.pay') }}</button>
+                {{-- the card takes whole crowns or euros and never less than the gateway's floor: what is over the price stays as credit --}}
+                <p id="farm-pay-note" class="mt-2 hidden text-xs text-slate-600" aria-live="polite"></p>
             </form>
 
             {{-- the customer's YouTube switch, once the order is paid --}}

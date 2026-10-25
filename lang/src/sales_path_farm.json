@@ -1,0 +1,32 @@
+{
+    "farm.order.ship.total": [
+        "Celkem k zaplacení :total",
+        "To pay :total",
+        "Total a pagar :total"
+    ],
+    "farm.order.ship.total_estimate": [
+        "Celkem asi :total, dopravu upřesní dopravce",
+        "About :total in total, the carrier confirms the delivery",
+        "Unos :total en total, el transportista confirma el envío"
+    ],
+    "farm.order.pay_note_round": [
+        "Kartou platíte přesně :amount; pár haléřů navíc zůstane jako kredit.",
+        "You pay exactly :amount by card; the odd cents stay as credit.",
+        "Con tarjeta paga exactamente :amount; los céntimos de más quedan como crédito."
+    ],
+    "farm.order.pay_note_min": [
+        "Nejmenší platba kartou je :amount; co přesahuje cenu, zůstane jako kredit na další tisk.",
+        "The smallest card payment is :amount; whatever exceeds the price stays as credit for your next print.",
+        "El pago mínimo con tarjeta es :amount; lo que supere el precio queda como crédito para su próxima impresión."
+    ],
+    "farm.order.step_material_hint": [
+        "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; cena se přepočítá podle vaší volby.",
+        "Pick the colour and the print settings. Nothing to pay yet; the price follows your choice.",
+        "Elija el color y los ajustes de impresión. Todavía no paga nada; el precio sigue su elección."
+    ],
+    "farm.order.step_order_hint": [
+        "Zvolte doručení a zaplaťte kartou nebo z kreditu. Tisk začne po zaplacení.",
+        "Choose the delivery and pay by card or from credit. The print starts once paid.",
+        "Elija la entrega y pague con tarjeta o con el crédito. La impresión empieza al pagar."
+    ]
+}

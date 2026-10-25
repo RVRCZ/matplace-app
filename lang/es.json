@@ -957,7 +957,7 @@
     "home.hero_alt": "Un jarrón en espiral impreso, un organizador con bolígrafos, un soporte de móvil y un colgante con nombre sobre una mesa ante una impresora 3D",
     "home.caption": "Todo lo que ve en la imagen se hizo con nuestras herramientas.",
     "home.caption_note": "Ilustración",
-    "home.start.file": "Tengo un archivo 3D",
+    "home.start.file": "Tengo un modelo 3D",
     "home.start.file.hint": "Suba el modelo y vea al instante el precio de fabricarlo.",
     "home.start.idea": "Tengo una foto o una idea",
     "home.start.idea.hint": "Describa lo que necesita. Encontramos un modelo o lo creamos.",
@@ -1838,5 +1838,17 @@
     "calc.trust.videos": ":n vídeos de impresiones en YouTube.",
     "calc.trust.video": "Así imprimimos",
     "calc.trust.examples": "Precios de nuestros cálculos",
-    "calc.trust.examples_note": "Cálculos reales de la granja; ábralos y cambie el tamaño o el material."
+    "calc.trust.examples_note": "Cálculos reales de la granja; ábralos y cambie el tamaño o el material.",
+    "home.start.gift": "Quiero un regalo",
+    "home.start.gift.hint": "Con nombre, de una foto o con dedicatoria. Elija y vea el precio al instante.",
+    "home.start.part": "Necesito una pieza",
+    "home.start.part.hint": "Una caja, un soporte, una tapa o su propio archivo. Impreso a medida.",
+    "home.start.firm": "Para una empresa",
+    "home.start.firm.hint": "Letreros QR, logotipos, identificadores y posavasos con su marca, incluso por unidades.",
+    "farm.order.ship.total": "Total a pagar :total",
+    "farm.order.ship.total_estimate": "Unos :total en total, el transportista confirma el envío",
+    "farm.order.pay_note_round": "Con tarjeta paga exactamente :amount; los céntimos de más quedan como crédito.",
+    "farm.order.pay_note_min": "El pago mínimo con tarjeta es :amount; lo que supere el precio queda como crédito para su próxima impresión.",
+    "farm.order.step_material_hint": "Elija el color y los ajustes de impresión. Todavía no paga nada; el precio sigue su elección.",
+    "farm.order.step_order_hint": "Elija la entrega y pague con tarjeta o con el crédito. La impresión empieza al pagar."
 }

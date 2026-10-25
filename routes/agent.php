@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\Farm\AgentController;
 use App\Http\Controllers\Farm\CreditController;
 use Illuminate\Support\Facades\Route;
@@ -17,3 +18,6 @@ Route::prefix('api/agent')->name('agent.')->middleware(['farm.agent', 'throttle:
 });
 
 Route::post('webhooks/payments/{name}', [CreditController::class, 'webhook'])->middleware('throttle:120,1')->name('webhooks.payments');
+
+// what a browser would have blocked under the Content-Security-Policy (config/security.php): stateless, no session, no CSRF
+Route::post('csp-report', CspReportController::class)->middleware('throttle:60,1')->name('csp.report');

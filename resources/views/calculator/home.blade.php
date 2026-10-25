@@ -47,16 +47,23 @@
 
     @include('calculator.search_results')
 
-    {{-- three ways in, each one a real action --}}
-    {{-- a spare part is an inquiry to printers: only with the marketplace --}}
-    <nav aria-label="{{ __('tools.intents') }}" class="mt-10 grid divide-y divide-line border-y border-line {{ $spare ? 'sm:grid-cols-3' : 'sm:grid-cols-2' }} sm:divide-x sm:divide-y-0">
-        @foreach(array_filter([
+    {{-- five ways in, each one a real action (TODO #45): a file, a photo or an idea, a gift, a part, a business --}}
+    {{-- a spare part is an inquiry to printers with the marketplace; without it the part leads to the part tools --}}
+    @php
+        $toolsUrl = route('tools');
+        $wrench = 'M14.7 6.3a4 4 0 00-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z';
+        $ways = array_filter([
             ['file', 'M7 3h7l5 5v13H7zM14 3v5h5', '#', 'file'],
             ['idea', 'M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z', '#', 'idea'],
-            $spare ? ['spare', 'M14.7 6.3a4 4 0 00-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z', route('tools.spare'), null] : null,
-        ]) as [$k, $path, $href, $tile])
-            <a href="{{ $href }}" @if($tile) data-tile="{{ $tile }}" @endif @if($k === 'file') onclick="document.getElementById('file-input').click();return false;" @endif
-               class="group flex items-start gap-3 px-1 py-5 sm:px-5 sm:first:pl-0 sm:last:pr-0">
+            \Illuminate\Support\Facades\Route::has('tools.gifts') ? ['gift', 'M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z', route('tools.gifts'), null] : null,
+            $spare ? ['spare', $wrench, route('tools.spare'), null] : ['part', $wrench, $toolsUrl.'#parts', null],
+            ['firm', 'M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16', \Illuminate\Support\Facades\Route::has('tools.business') ? route('tools.business') : $toolsUrl.'#signs', null],
+        ]);
+    @endphp
+    <nav aria-label="{{ __('tools.intents') }}" class="mt-10 grid divide-y divide-line border-y border-line lg:grid-cols-5 lg:divide-x lg:divide-y-0" data-ways>
+        @foreach($ways as [$k, $path, $href, $tile])
+            <a href="{{ $href }}" data-way="{{ $k }}" @if($tile) data-tile="{{ $tile }}" @endif @if($k === 'file') onclick="document.getElementById('file-input').click();return false;" @endif
+               class="group flex items-start gap-3 px-1 py-4 sm:px-5 lg:first:pl-0 lg:last:pr-0">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-action-soft text-action-dark" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $path }}"/></svg></span>
                 <span class="min-w-0 flex-1"><span class="block font-bold text-ink">{{ __('home.start.'.$k) }}</span><span class="block text-sm text-muted">{{ __('home.start.'.$k.'.hint') }}</span></span>
                 <span class="mt-1 text-ink transition group-hover:translate-x-0.5" aria-hidden="true">→</span>

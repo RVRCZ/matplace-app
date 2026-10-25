@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** History of an order: every status change with who made it. Written once, never edited. */
 class FarmOrderEvent extends Model
 {
+    use HasFactory;
+
     public const UPDATED_AT = null;
 
     protected $fillable = ['farm_order_id', 'from', 'to', 'actor', 'actor_id', 'note'];
