@@ -136,7 +136,7 @@ class UploadController extends Controller
             'bbox' => $f->bbox,
             'volume_mm3' => $f->volume_mm3,
             'area_mm2' => $f->area_mm2,
-            'triangles' => $f->triangles,
+            'triangles' => $f->triangles ?? (BigModel::triangles($f) ?: null),   // right after the upload: the binary STL header
             // millions of triangles (thinned before the slice, docs/AL.md §10.11) or a slice that took over a minute last time: the
             // calculator shows the estimate with a range and no slice, the order page slices after the choices (TODO #41)
             'big_model' => BigModel::is($f),
