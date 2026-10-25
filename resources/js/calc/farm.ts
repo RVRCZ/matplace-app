@@ -20,7 +20,7 @@ interface Color { slot: number; name: string; kind?: string; hex: string; finish
 /** What the price of a colour is made of on its machine: the kind's price per gram and density, the machine's rate and factors (PriceCalculator). */
 interface Rates { price_per_gram: number; density: number; hourly_rate: number; time_factor: number; weight_factor: number }
 /** A big model before its slice (docs/AL.md §11): what the rough price is computed from, the way the calculator's first page does it. */
-interface EstimateCfg { volume_mm3: number; area_mm2: number | null; overhang_share: number | null; rough: RoughConfig; strengths: Record<string, number>; rates: { fixed_fee: number; min_price: number; vat_percent: number; rounding: number }; royalty_czk: number; royalty_cap: number; eur_rate: number }
+interface EstimateCfg { volume_mm3: number; area_mm2: number | null; overhang_share: number | null; triangles?: number | null; rough: RoughConfig; strengths: Record<string, number>; rates: { fixed_fee: number; min_price: number; vat_percent: number; rounding: number }; royalty_czk: number; royalty_cap: number; eur_rate: number }
 /** A spool for a second colour or a part; `main` names the first colour's slot on its machine when it sits in another machine than the chosen spool. */
 interface Second { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; main?: number | null }
 /** One spool of a machine that holds the first colour (by parts): the colour it is, and its slot there. */
@@ -630,7 +630,7 @@ export function bootFarmOrder(): void {
         const toCur = (czk: number): number => (state.currency === 'EUR' ? Math.ceil((czk / e.eur_rate) * 10) / 10 : czk);
         // the range by the shape, as the first page counts it (rough.ts rangeFactors, docs/M.md §6): the model's box as it
         // prints, the estimated grams, the overhang share the first page measured (unknown counts on the wide side), the supports choice
-        const factors = rangeFactors(e.rough.range, shapeOf(state.dims, 1, per.grams, e.overhang_share ?? null), wanted.supports === 'on' ? true : wanted.supports === 'off' ? false : null, per.minutes);
+        const factors = rangeFactors(e.rough.range, shapeOf(state.dims, 1, per.grams, e.overhang_share ?? null, e.triangles ?? null), wanted.supports === 'on' ? true : wanted.supports === 'off' ? false : null, per.minutes);
         return { low: toCur(Math.max(floor, Math.floor((total * factors.price[0]) / step) * step)), high: toCur(Math.ceil((total * factors.price[1]) / step) * step), minutes };
     };
     const renderEstimate = (awaiting: boolean, working: boolean): void => {

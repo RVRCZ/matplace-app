@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Farm;
 
+use App\Domain\Calculation\BigModel as Threshold;
 use App\Domain\Farm\BigModel;
 use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmRefusal;
@@ -873,6 +874,8 @@ class OrderController extends Controller
             'volume_mm3' => (float) $file->volume_mm3,
             'area_mm2' => $file->area_mm2 !== null ? (float) $file->area_mm2 : null,
             'overhang_share' => $overhang,
+            // the mesh's triangles raise the lower bound of the range (ShapeRange, docs/M.md §6.6); measured, or read off a binary STL's header
+            'triangles' => Threshold::triangles($file) ?: null,
             'rough' => Arr::only((array) config('pricing.rough'), ['perimeters', 'line_width_mm', 'shell_fraction_fallback', 'support_factor', 'minutes_per_gram', 'overhead_minutes', 'quality_time_factor', 'quality_layer_mm', 'range']),
             'strengths' => array_map(fn ($s) => (int) ($s['infill'] ?? 15), (array) $this->settings->get('strengths')),
             'rates' => ['fixed_fee' => (float) $this->settings->get('fixed_fee'), 'min_price' => (float) $this->settings->get('min_price'), 'vat_percent' => $this->shipping->vatPercent('CZ'), 'rounding' => (float) $this->settings->get('rounding')],
