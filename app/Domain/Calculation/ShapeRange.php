@@ -8,8 +8,10 @@ namespace App\Domain\Calculation;
  * The estimate counts grams from volume and area and minutes from the grams. The slicer's time also depends on what
  * the grams cannot see: thin walls, lattices and long thin parts (little material in a big box = long paths), height
  * (many layers), supports, and overhangs the slicer bridges or holds up. Each of those raises the upper bound; a small
- * print lowers the lower bound (the fixed minutes of the estimate are too many for it). Calibrated on 400 calculations
- * against their slices (docs/data/odhad-vs-rez-2026-10-24.csv): 97 % of the prices and 96 % of the print times land
+ * print lowers the lower bound (the fixed minutes of the estimate are too many for it); a surface of hundreds of
+ * thousands of triangles (a scanned or sculpted model: short perimeters everywhere) raises the lower bound, because
+ * such a model never prints faster than the estimate (docs/M.md §6.6, the dragon). Calibrated on 400 calculations
+ * against their slices (docs/data/odhad-vs-rez-2026-10-25-prod.csv): 96 % of the prices and of the print times land
  * inside. The browser has the same formula in resources/js/calc/rough.ts (rangeFactors); keep both in sync
  * (tests/Unit/ShapeRangeTest, scripts/check_rough_range.mjs). `php artisan matplace:estimate-range` recounts the hits from a CSV.
  */
@@ -24,14 +26,16 @@ final class ShapeRange
      * @param  ?float  $overhangShare  share of the surface facing down steeper than 45° (the browser measures it); null = unknown
      * @param  ?bool  $supports  the customer's choice: on, off, null = the slicer decides
      * @param  int  $minutes  the estimated print time of one piece
+     * @param  ?int  $triangles  the mesh's triangles; null = unknown, the lower bound stays where a plain mesh has it
      * @return array{time: array{float, float}, price: array{float, float}} [low, high] as factors of the estimate
      */
-    public function factors(?float $heightMm, ?float $fillGcm3, ?float $overhangShare, ?bool $supports, int $minutes): array
+    public function factors(?float $heightMm, ?float $fillGcm3, ?float $overhangShare, ?bool $supports, int $minutes, ?int $triangles = null): array
     {
         $height = $heightMm === null ? 1.0 : self::ramp($heightMm, $this->cfg['height_mm']);
         $thin = $fillGcm3 === null ? 1.0 : 1 - self::ramp($fillGcm3, $this->cfg['fill_g_cm3']);
         $small = 1 - self::ramp((float) $minutes, $this->cfg['small_minutes']);
         $overhang = $overhangShare === null ? 0.0 : self::ramp($overhangShare, $this->cfg['overhang_share']);
+        $fine = $triangles === null || $triangles <= 0 ? 0.0 : self::ramp((float) $triangles, $this->cfg['triangles']);
         $out = [];
         foreach (['time', 'price'] as $k) {
             $c = $this->cfg[$k];
@@ -39,7 +43,7 @@ final class ShapeRange
             // such prints, raised towards "on" the more of the surface hangs over (the farm may add supports after all)
             $s = $supports === true ? (float) $c['supports'] : ($supports === false ? 1.0 : (float) $c['auto'] + ((float) $c['supports'] - (float) $c['auto']) * $overhang);
             $out[$k] = [
-                round((float) $c['low'] * (1 - (float) $c['small'] * $small), 4),
+                round((float) $c['low'] * (1 + (float) ($c['low_triangles'] ?? 0) * $fine) * (1 - (float) $c['small'] * $small), 4),
                 round((float) $c['high'] * (1 + (float) $c['height'] * $height) * (1 + (float) $c['thin'] * $thin) * $s, 4),
             ];
         }

@@ -56,7 +56,7 @@ final class CalculationService
 
         if ($volume !== null) {
             // the shape the range follows: the file's box once it is measured (else the browser's), the browser's overhang measure
-            $shape = ['bbox' => $file->bbox ?: ($clientGeometry['bbox'] ?? null), 'overhang_share' => $clientGeometry['overhang_share'] ?? null];
+            $shape = ['bbox' => $file->bbox ?: ($clientGeometry['bbox'] ?? null), 'overhang_share' => $clientGeometry['overhang_share'] ?? null, 'triangles' => BigModel::triangles($file) ?: ($clientGeometry['triangles'] ?? null)];
             $calc->rough = $this->roughFor((float) $volume, $area !== null ? (float) $area : null, $sliceParams, $quantity, $source['profiles'], $shape);
         }
 
@@ -106,7 +106,7 @@ final class CalculationService
 
     /**
      * @param  PricingProfile[]|null  $profiles
-     * @param  ?array{bbox?: ?array, overhang_share?: ?float}  $shape  what is known of the model's shape; the range follows it (ShapeRange), nothing = the widest
+     * @param  ?array{bbox?: ?array, overhang_share?: ?float, triangles?: ?int}  $shape  what is known of the model's shape; the range follows it (ShapeRange), nothing = the widest
      */
     public function roughFor(float $volumeMm3, ?float $areaMm2, SliceParams $p, int $quantity, ?array $profiles = null, ?array $shape = null): array
     {
@@ -126,7 +126,8 @@ final class CalculationService
         $height = $bbox ? (float) ($bbox['z'] ?? 0) * $p->scale : null;
         $fill = $bbox ? ShapeRange::fill((float) $est['grams'], $bbox, $p->scale) : null;
         $overhang = isset($shape['overhang_share']) ? max(0.0, min(1.0, (float) $shape['overhang_share'])) : null;
-        $factors = $this->range->factors($height, $fill, $overhang, $p->supports, (int) $est['minutes']);
+        $triangles = isset($shape['triangles']) && (int) $shape['triangles'] > 0 ? (int) $shape['triangles'] : null;
+        $factors = $this->range->factors($height, $fill, $overhang, $p->supports, (int) $est['minutes'], $triangles);
         [$min, $max] = $this->prices->range($breakdowns, $factors['price']);
 
         return $est + [
@@ -136,7 +137,7 @@ final class CalculationService
             'minutes_min' => max(1, (int) floor($est['minutes'] * $factors['time'][0])),
             'minutes_max' => max(1, (int) ceil($est['minutes'] * $factors['time'][1])),
             'range' => $factors,
-            'shape' => ['height_mm' => $height !== null ? round($height, 1) : null, 'fill_g_cm3' => $fill !== null ? round($fill, 4) : null, 'overhang_share' => $overhang],
+            'shape' => ['height_mm' => $height !== null ? round($height, 1) : null, 'fill_g_cm3' => $fill !== null ? round($fill, 4) : null, 'overhang_share' => $overhang, 'triangles' => $triangles],
             'prices' => array_map(fn ($b) => $b->toArray(), $breakdowns),
         ];
     }

@@ -45,6 +45,7 @@ class CalculationEstimateRangeTest extends TestCase
         $this->assertEqualsWithDelta(20.0, $rough['shape']['height_mm'], 1e-9);                        // the file's own box, measured on upload
         $this->assertEqualsWithDelta(3.5 / 8, $rough['shape']['fill_g_cm3'], 0.01);  // 3.5 g in 8 cm³
         $this->assertSame(0.1, $rough['shape']['overhang_share']);                    // what the browser measured
+        $this->assertSame(12, $rough['shape']['triangles']);                          // the file's own count (a cube)
         $this->assertSame(['time', 'price'], array_keys($rough['range']));
         $this->assertLessThan(1.0, $rough['range']['price'][0]);
         $this->assertGreaterThan(1.0, $rough['range']['price'][1]);

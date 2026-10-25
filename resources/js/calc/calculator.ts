@@ -210,7 +210,7 @@ function roughNow(): { est: { grams: number; minutes: number }; factors: RangeFa
     if (!g) return null;
     const est = estimate(cfg.rough, material(state.params.material).density, { volume_mm3: g.volume_mm3, area_mm2: g.area_mm2 }, state.params);
     // the browser measured the overhangs when it read the file itself; a file only the server could read has no such measure
-    const shape = shapeOf(g.bbox, state.params.scale, est.grams, state.geo?.overhang_share ?? null);
+    const shape = shapeOf(g.bbox, state.params.scale, est.grams, state.geo?.overhang_share ?? null, state.geo?.triangles || state.file?.triangles || null);
     return { est, factors: rangeFactors(cfg.rough.range, shape, state.params.supports, est.minutes), bbox: g.bbox };
 }
 
@@ -551,7 +551,7 @@ function calcPayload(): Record<string, unknown> {
         file: state.file!.uuid,
         ...state.params,
         supports: state.params.supports === null ? 'auto' : state.params.supports ? 1 : 0,
-        geometry: state.geo ? { volume_mm3: state.geo.volume_mm3, area_mm2: state.geo.area_mm2, bbox: state.geo.bbox, overhang_share: Math.round(state.geo.overhang_share * 1000) / 1000 } : undefined,
+        geometry: state.geo ? { volume_mm3: state.geo.volume_mm3, area_mm2: state.geo.area_mm2, bbox: state.geo.bbox, overhang_share: Math.round(state.geo.overhang_share * 1000) / 1000, triangles: state.geo.triangles } : undefined,
     };
 }
 

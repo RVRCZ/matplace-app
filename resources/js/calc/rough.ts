@@ -20,17 +20,20 @@ export interface RangeConfig {
     fill_g_cm3: [number, number];
     small_minutes: [number, number];
     overhang_share: [number, number];
+    triangles: [number, number];
     time: RangeTerms;
     price: RangeTerms;
 }
 
-export interface RangeTerms { high: number; height: number; thin: number; supports: number; auto: number; low: number; small: number }
+export interface RangeTerms { high: number; height: number; thin: number; supports: number; auto: number; low: number; small: number; low_triangles?: number }
 
 /** What the estimate cannot see and the range follows: null = unknown (counted on the wide side). */
 export interface Shape {
     height_mm: number | null;
     fill_g_cm3: number | null;
     overhang_share: number | null;
+    /** a surface of hundreds of thousands of triangles never prints faster than the estimate: the lower bound rises (docs/M.md §6.6) */
+    triangles?: number | null;
 }
 
 /** [low, high] as factors of the estimate's minutes and of the price counted from it. */
@@ -136,12 +139,13 @@ export function price(roundTo: number, prof: Profile, grams: number, minutes: nu
 }
 
 /** The shape the range follows, from the model's box as it prints, the estimated grams and the browser's overhang measure. */
-export function shapeOf(bbox: { x: number; y: number; z: number } | null, scale: number, grams: number, overhangShare: number | null): Shape {
+export function shapeOf(bbox: { x: number; y: number; z: number } | null, scale: number, grams: number, overhangShare: number | null, triangles: number | null = null): Shape {
     const mm3 = bbox ? bbox.x * bbox.y * bbox.z * scale * scale * scale : 0;
     return {
         height_mm: bbox ? bbox.z * scale : null,
         fill_g_cm3: mm3 > 0 ? grams / (mm3 / 1000) : null,
         overhang_share: overhangShare,
+        triangles,
     };
 }
 
@@ -154,18 +158,20 @@ function ramp(v: number, edges: [number, number]): number {
 
 /**
  * How far the slice may land from the estimate (ShapeRange.php): thin walls, lattices and long thin parts (little
- * material in a big box), height, supports and overhangs raise the upper bound; a small print lowers the lower one.
- * Unknown height or fill count on the wide side.
+ * material in a big box), height, supports and overhangs raise the upper bound; a small print lowers the lower one, a
+ * surface of hundreds of thousands of triangles raises it (such a model never prints faster than the estimate).
+ * Unknown height or fill count on the wide side; unknown triangles leave the lower bound where a plain mesh has it.
  */
 export function rangeFactors(cfg: RangeConfig, shape: Shape, supports: boolean | null, minutes: number): RangeFactors {
     const height = shape.height_mm === null ? 1 : ramp(shape.height_mm, cfg.height_mm);
     const thin = shape.fill_g_cm3 === null ? 1 : 1 - ramp(shape.fill_g_cm3, cfg.fill_g_cm3);
     const small = 1 - ramp(minutes, cfg.small_minutes);
     const overhang = shape.overhang_share === null ? 0 : ramp(shape.overhang_share, cfg.overhang_share);
+    const fine = shape.triangles == null || shape.triangles <= 0 || !cfg.triangles ? 0 : ramp(shape.triangles, cfg.triangles);
     const one = (c: RangeTerms): [number, number] => {
         const s = supports === true ? c.supports : supports === false ? 1 : c.auto + (c.supports - c.auto) * overhang;
         return [
-            Math.round(c.low * (1 - c.small * small) * 1e4) / 1e4,
+            Math.round(c.low * (1 + (c.low_triangles ?? 0) * fine) * (1 - c.small * small) * 1e4) / 1e4,
             Math.round(c.high * (1 + c.height * height) * (1 + c.thin * thin) * s * 1e4) / 1e4,
         ];
     };

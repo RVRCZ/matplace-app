@@ -259,3 +259,45 @@ Příklady (odhad → nové rozpětí, řez): kalkulace 554 (150 × 90 × 100 mm
 `lang/src/calc_estimate_range.json` → `lang/{cs,en,es}.json`, `scripts/check_rough_range.mjs` (+ `package.json`
 build), testy `tests/Unit/ShapeRangeTest`, `tests/Feature/CalculationEstimateRangeTest`, `tests/Unit/PriceEngineTest`
 (rozpětí s faktory).
+
+### 6.6 Drak po nasazení: dolní mez doby tisku stoupá s počtem trojúhelníků (větev `feature/calc-range-floor`, 25. 10. 2026)
+
+Romanův průchod drakem (kalkulace jokfcgmvlury, 146 × 163 × 42 mm, 1,8 mil. trojúhelníků) ukázal „asi 1 h 30 min až
+6 h 30 min“; řezy téhož draka dávají 6 h 36 min bez podpěr a 7 h 08 min se stromovými podpěrami. Horní mez tedy sedí,
+dolní mez byla nesmysl: odhad minut je u takového tvaru 2 až 3× pod skutečností a symetrické rozpětí ho jen roztáhlo.
+
+**Co data říkají.** Návrh byl zvednout dolní mez u tvarů „málo gramů na cm³ kvádru a velký podíl převisů“. Na CSV to
+neprošlo: podíl převisů u draka je jen **5 %** (`engines/python/overhang_tool.py`, stejná míra jako v prohlížeči – drak
+leží naplocho, povrch míří nahoru a do stran), a hustota sama o sobě dolní mez zvednout nedovolí: mezi tenkými tvary
+(pod 0,12 g/cm³) jsou tisky s řezem pod odhadem (p05 poměru řez/odhad 0,91 u vypnutých podpěr, 0,99 u „nechat slicer“).
+Spolehlivý signál je **počet trojúhelníků**: skenovaný nebo sochařský povrch (stovky tisíc a víc) nikdy netiskne rychleji
+než odhad (přes 400 000: p05 1,32, medián 2,38) – každá vrstva je samé krátké perimetry. Export z 24. 10. měl u poloviny
+řádků trojúhelníky prázdné, proto kalibrace běžela na produkčním exportu z 25. 10. (úplné trojúhelníky a měřítko) a
+export z 24. 10. slouží jako kontrola.
+
+**Změna.** Dolní mez dostala člen `low_triangles` (rampa `triangles` 200 000 → 1 000 000): `lo = low × (1 + low_triangles × R)
+× (1 − small × T)`, pro čas i cenu 0,6 (`config/pricing.php`). Horní mez se nemění. Výběr konstant: aspoň 97 % řezů
+zůstane nad dolní mezí na obou CSV a nejmenší medián šířky; silnější varianty (0,7 od 100 000) srážely třídu přes
+400 000 trojúhelníků na 91 % (modely 489, 320, 249 s řezem kolem odhadu). Trojúhelníky nese `rough.shape.triangles`;
+server je bere z měření souboru nebo z hlavičky binárního STL (`BigModel::triangles`), prohlížeč z vlastního čtení.
+Stránka zakázky volá `shapeOf(dims, 1, grams, overhang)` bez trojúhelníků → její dolní mez zůstává jako dřív (širší);
+stačí předat trojúhelníky souboru jako pátý parametr.
+
+| co (produkční export 25. 10., 400 kalkulací) | uvnitř | nad / pod | medián hi/lo | p90 hi/lo |
+|---|---|---|---|---|
+| doba tisku, nasazené rozpětí | 385/400 (96,2 %) | 8 / 7 | 3,39 | 4,38 |
+| doba tisku, s členem trojúhelníků | 383/400 (95,8 %) | 8 / 9 | 3,10 | 4,15 |
+| cena, nasazené rozpětí | 387/400 (96,8 %) | 5 / 8 | 2,14 | 2,75 |
+| cena, s členem trojúhelníků | 385/400 (96,2 %) | 5 / 10 | 2,00 | 2,67 |
+
+Export z 24. 10. (kontrola): čas 384/400 (96,0 %), medián 3,21; cena 387/400 (96,8 %), medián 2,11. Třída přes milion
+trojúhelníků: čas 100 % uvnitř, medián šířky 3,80 → 2,38; 200 000 až milion: 94,4 %, 3,40. Drak (kalkulace 555, odhad
+2 h 15 min): dolní mez 1 h 45 min → **2 h 50 min**, horní 6 h 40 min zůstává (řez 6 h 37 min); cena 110–250 Kč →
+200–250 Kč (řez 220). Rozptyl je pořád velký, protože horní mez je správně a odhad sám je u takového tvaru 3× nízko;
+užší by to bylo jen s lepším odhadem času (dráha stěn z plochy místo minut z gramů), na to chybí v datech plocha a objem.
+
+**Pro příští kalibraci.** `matplace:estimate-range --export` od teď vypisuje i `volume_mm3`, `area_mm2`, `shell_mm3`,
+`material_mm3` (z `rough`) a `overhang_share` (z `rough.shape`, u starých kalkulací bez něj `--overhang` ho změří
+z uloženého STL nástrojem `overhang_tool.py`, soubor jednou, i když byl počítán desetkrát). S tím půjde zkusit odhad času
+ze stěn a výplně zvlášť a ověřit člen převisů na skutečných řezech. Kontrola příkazu ve `read()` bere `overhang_share`
+a `triangles` z CSV, když tam jsou.
