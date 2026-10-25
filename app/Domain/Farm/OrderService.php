@@ -21,6 +21,7 @@ use App\Support\Currency;
 use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -100,7 +101,9 @@ final class OrderService
         // a big model is not sliced before the customer has chosen: the order waits for the button on its page
         $big = BigModel::judge($file, $calculation);
 
-        $order = FarmOrder::create([
+        // the order and its first event together: one that cannot write its history is not made at all (orders 218–221,
+        // 25 Oct 2026: the event column was too narrow for the new state and the orders stayed without a history)
+        $order = DB::transaction(fn () => tap(FarmOrder::create([
             'token' => Str::random(32),
             'user_id' => $user->id,
             'model_file_id' => $file->id,
@@ -129,9 +132,9 @@ final class OrderService
             'designer_model_id' => $card?->id,
             'catalog_model_id' => $inspiration?->id,
             'note' => $inspiration?->attribution(),
-        ]);
-        $order->events()->create(['to' => $order->status, 'actor' => 'user', 'actor_id' => $user->id,
-            'note' => $big['big'] ? 'big model ('.($big['reason'] === 'slice_time' ? 'calculation sliced in '.round((float) $big['slice_s']).' s' : number_format($big['triangles'] / 1e6, 1, '.', '').' M triangles').'): the slice waits for the choices' : null]);
+        ]), fn (FarmOrder $order) => $order->events()->create(['to' => $order->status, 'actor' => 'user', 'actor_id' => $user->id,
+            'note' => $big['big'] ? 'big model ('.($big['reason'] === 'slice_time' ? 'calculation sliced in '.round((float) $big['slice_s']).' s' : number_format($big['triangles'] / 1e6, 1, '.', '').' M triangles').'): the slice waits for the choices' : null])));
+        // after the commit: a worker that picks the job up before the row is there would find no order and give up
         if (! $big['big']) {
             PrepareFarmOrder::dispatch($order->id);
         }
@@ -201,9 +204,11 @@ final class OrderService
             $order->farm_printer_id = $printer->id;
             $order->farm_material_id = $material->id;
         }
-        $order->save();
-        $order->events()->create(['from' => $from, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'user', 'actor_id' => $order->user_id,
-            'note' => $first ? 'slice started by the customer' : ($restart ? 'choices changed while slicing: run '.$order->slice_run.' replaces run '.($order->slice_run - 1) : 'reslice')]);
+        DB::transaction(function () use ($order, $from, $first, $restart) {
+            $order->save();
+            $order->events()->create(['from' => $from, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'user', 'actor_id' => $order->user_id,
+                'note' => $first ? 'slice started by the customer' : ($restart ? 'choices changed while slicing: run '.$order->slice_run.' replaces run '.($order->slice_run - 1) : 'reslice')]);
+        });
         if (! $first) {
             // the first slice of a waiting order was counted when the order was made (slicesToday counts the day's orders)
             Cache::add($this->sliceCounterKey($order->user), 0, now()->endOfDay());
