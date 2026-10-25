@@ -112,7 +112,7 @@ final class FarmBigModelFlowTest extends TestCase
         $this->assertSame(['price_per_gram', 'density', 'hourly_rate', 'time_factor', 'weight_factor'], array_keys($state['colors'][0]['rates']));
         $this->assertTrue(collect($state['colors'])->contains('sliced', true), 'the colour the order started with is ticked first');
         $this->assertEqualsWithDelta(8000.0, $state['estimate']['volume_mm3'], 1.0);
-        $this->assertSame(['perimeters', 'line_width_mm', 'shell_fraction_fallback', 'support_factor', 'minutes_per_gram', 'overhead_minutes', 'quality_time_factor', 'quality_layer_mm', 'range_low', 'range_high'], array_keys($state['estimate']['rough']));
+        $this->assertSame(['perimeters', 'line_width_mm', 'shell_fraction_fallback', 'support_factor', 'minutes_per_gram', 'overhead_minutes', 'quality_time_factor', 'quality_layer_mm', 'range'], array_keys($state['estimate']['rough']));
         $this->assertSame(['low' => 10, 'standard' => 15, 'high' => 30], $state['estimate']['strengths']);
         $this->assertSame(['fixed_fee', 'min_price', 'vat_percent', 'rounding'], array_keys($state['estimate']['rates']));
         $this->assertTrue($state['can_cancel']);
