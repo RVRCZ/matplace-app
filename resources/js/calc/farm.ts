@@ -12,10 +12,15 @@ import { loadGeometryFromUrl } from './loaders';
 import { money as moneyText } from '../site/money';
 import { timelinePrint, timelineDispatch } from './order_timeline';
 import { printOnly, shippingText } from './order_price';
+import { estimate as roughEstimate, type RoughConfig } from './rough';
 
 interface Price { time: number; material: number; fixed: number; min_price_applied: boolean; net: number; vat: number; shipping: number; total: number; print_total: number; royalty?: number; inputs: { vat_percent: number } }
-/** A colour on offer: one per colour, with the codes of every spool of it that could print the order ("U33" = farm U, printer 3, slot 3). */
-interface Color { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; codes?: string[]; enough: boolean; price: Price; total: number; starts_now: boolean; sliced: boolean; second?: Second[]; color_id?: number; machines?: Machine[] }
+/** A colour on offer: one per colour, with the codes of every spool of it that could print the order ("U33" = farm U, printer 3, slot 3). Its price once sliced; before that the rates the page estimates with. */
+interface Color { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; codes?: string[]; enough: boolean; price: Price | null; total: number | null; rates?: Rates; starts_now: boolean; sliced: boolean; second?: Second[]; color_id?: number; machines?: Machine[] }
+/** What the price of a colour is made of on its machine: the kind's price per gram and density, the machine's rate and factors (PriceCalculator). */
+interface Rates { price_per_gram: number; density: number; hourly_rate: number; time_factor: number; weight_factor: number }
+/** A big model before its slice (docs/AL.md §11): what the rough price is computed from, the way the calculator's first page does it. */
+interface EstimateCfg { volume_mm3: number; area_mm2: number | null; rough: RoughConfig; strengths: Record<string, number>; rates: { fixed_fee: number; min_price: number; vat_percent: number; rounding: number }; royalty_czk: number; royalty_cap: number; eur_rate: number }
 /** A spool for a second colour or a part; `main` names the first colour's slot on its machine when it sits in another machine than the chosen spool. */
 interface Second { slot: number; name: string; kind?: string; hex: string; finish?: string | null; photo: string | null; code?: string | null; main?: number | null }
 /** One spool of a machine that holds the first colour (by parts): the colour it is, and its slot there. */
@@ -33,6 +38,8 @@ interface Change { z: number; hex: string; code: string | null; slot_id: number 
 interface Part { part: string; plate: number; label: string; hex: string | null; slot_id: number | null; color_id?: number | null; name?: string | null; copies: number; minutes?: number | null; grams?: number | null; spool_hex?: string | null; model_url?: string | null }
 interface FarmState {
     token: string; number: string | null; status: string; status_text: string; stage: string | null; stage_step: number | null; stage_total: number; error: string | null; error_text: string | null; big_model?: string | null;
+    /** a big model: sliced only on the customer's word (awaiting_choices), the rough price until then; `choosing` = the colours are on offer right now */
+    big?: boolean; choosing?: boolean; slice_minutes?: number | null; slice_run?: number; estimate?: EstimateCfg | null;
     quality: string; strength: string; copies: number; max_copies: number | null; plates: number; plates_done: number; plate_layout: number[]; plate_now: number | null;
     scale: number; raw_bbox: { x: number; y: number; z: number } | null; slot: number | null; printer: { name: string; bed: string } | null;
     unit: string; unit_guess: { unit: string; confident: boolean } | null; second_slot?: number | null; changes?: Change[]; max_colors?: number; by_parts?: boolean; parts?: Part[]; part_count?: number; one_plate?: boolean; filament_changes?: number; one_plate_required?: boolean;
@@ -311,7 +318,7 @@ export function bootFarmOrder(): void {
     // the colour a part prints in: the spool chosen for it (none = the main colour), the design's own colour before that
     const partHex = (p: Part): string | null => {
         const c = state.colors.find((x) => x.slot === picked);
-        if (state.status !== 'sliced') return p.spool_hex ?? p.hex ?? state.color?.hex ?? null;
+        if (!state.choosing) return p.spool_hex ?? p.hex ?? state.color?.hex ?? null;
         const id = partColours[p.part] ?? null;
         const spools = (c?.machines ?? []).flatMap((m) => m.colors);
         return (id === null || id === c?.color_id ? c?.hex : spools.find((x) => x.color_id === id)?.hex) ?? p.hex ?? c?.hex ?? null;
@@ -323,9 +330,9 @@ export function bootFarmOrder(): void {
             return;
         }
         const c = state.colors.find((x) => x.slot === picked);
-        const first = (state.status === 'sliced' ? c?.hex : state.color?.hex) ?? null;
+        const first = (state.choosing ? c?.hex : state.color?.hex) ?? null;
         const spools = c ? [{ slot: c.slot, hex: c.hex }, ...(c.second ?? [])] : [];
-        const picks = (state.changes ?? []).map((w, i) => (state.status === 'sliced' ? spools.find((s) => s.slot === changes[i])?.hex ?? null : (w.slot_id === null ? null : w.hex)));
+        const picks = (state.changes ?? []).map((w, i) => (state.choosing ? spools.find((s) => s.slot === changes[i])?.hex ?? null : (w.slot_id === null ? null : w.hex)));
         viewer.paint(geom && changeHeights().length && first ? multiTone(geom, changeHeights(), first, picks) : null);
     };
     let timer = 0;
@@ -595,6 +602,46 @@ export function bootFarmOrder(): void {
         box.innerHTML = tags.join('');
     };
 
+    /**
+     * A big model before (or during) its slice: the price estimated from the model's volume and surface and the choices
+     * on the page, the way the calculator's first page estimates (rough.ts) and the way the farm prices (PriceCalculator:
+     * hours × factor × rate + grams × factor × price per gram + fee, the minimum, VAT, rounded up), as a range the way the
+     * first page shows it. Null until a colour is picked (the kind and the machine set the rates).
+     */
+    const roundUp = (v: number, step: number): number => (step <= 0 ? Math.round(v * 100) / 100 : Math.round(Math.ceil(Math.round((v / step) * 1e6) / 1e6) * step * 100) / 100);
+    const estimateNow = (): { low: number; high: number; minutes: number } | null => {
+        const e = state.estimate;
+        const c = state.colors.find((x) => x.slot === picked);
+        if (!e || !c?.rates) return null;
+        const infill = Number(wanted.settings.infill ?? e.strengths[wanted.strength] ?? 15);
+        const per = roughEstimate(e.rough, c.rates.density, { volume_mm3: e.volume_mm3, area_mm2: e.area_mm2 }, { material: c.kind ?? '', quality: wanted.quality, infill, supports: null, scale: wanted.scale * (UNIT_MM[wanted.unit] ?? 1), quantity: 1 });
+        const copies = Math.max(1, wanted.copies);
+        const grams = per.grams * copies;
+        const minutes = per.minutes * copies;
+        const r = c.rates;
+        const f = e.rates;
+        const sum = (minutes / 60) * r.time_factor * r.hourly_rate + grams * r.weight_factor * r.price_per_gram + f.fixed_fee;
+        const print = roundUp(Math.max(sum, f.min_price) * (1 + f.vat_percent / 100), f.rounding);
+        const royalty = e.royalty_czk > 0 ? Math.floor(Math.min(e.royalty_czk, (e.royalty_cap * print) / copies)) * copies : 0;
+        const total = print + royalty;
+        const step = Math.max(1, f.rounding);
+        const floor = roundUp(f.min_price * (1 + f.vat_percent / 100), f.rounding);
+        // crowns are where the rates are defined; an account in euros sees them at the farm's rate, rounded up to ten cents
+        const toCur = (czk: number): number => (state.currency === 'EUR' ? Math.ceil((czk / e.eur_rate) * 10) / 10 : czk);
+        return { low: toCur(Math.max(floor, Math.floor((total * e.rough.range_low) / step) * step)), high: toCur(Math.ceil((total * e.rough.range_high) / step) * step), minutes };
+    };
+    const renderEstimate = (awaiting: boolean, working: boolean): void => {
+        const box = $('farm-estimate');
+        if (!box) return;
+        const est = state.big && (awaiting || working) ? estimateNow() : null;
+        show(box, est !== null);
+        if (!est) return;
+        $('farm-estimate-price')!.textContent = tr('farm.order.estimate_range', { from: money(est.low), to: money(est.high) });
+        $('farm-estimate-time')!.textContent = tr('farm.order.estimate_time', { time: duration(est.minutes) });
+        const n = state.slice_minutes ?? 1;
+        $('farm-estimate-wait')!.textContent = tr(awaiting ? 'farm.order.estimate_wait' : 'farm.order.estimate_running', { n });
+    };
+
     // what the price was made of before a new calculation: said again when the new one comes back with another price
     let before: { total: number | null; printer: string | null; kind: string | null; minutes: number | null; settings: string } | null = null;
     const kindOf = (): string | null => state.colors.find((c) => c.slot === picked)?.kind ?? null;
@@ -620,6 +667,10 @@ export function bootFarmOrder(): void {
     const render = (): void => {
         const s = state;
         const working = s.status === 'uploaded';
+        // a big model (docs/AL.md §11): waiting for the choices and the colour before any slice; while its slice runs a
+        // change of the choices starts it over
+        const awaiting = s.status === 'awaiting_choices';
+        const restartable = working && !!s.big && !s.number;
         $('farm-status')!.textContent = (working && s.stage ? tr(`farm.stage.${s.stage}`) : s.status_text) + (working && s.big_model ? ` ${s.big_model}` : '');
         // what is happening right now, as a step of the whole preparation
         const step = working && s.stage_step ? s.stage_step : 0;
@@ -671,9 +722,11 @@ export function bootFarmOrder(): void {
         // presets stay editable until the order is paid; a failed check can be retried with other units
         const editable = s.status === 'sliced' || (s.status === 'failed' && !s.number);
         // the choices stay on the page while the slice runs (Roman, 24 Oct 2026: "after Recalculate all the choices
-        // vanished"): what is changed meanwhile waits for the button, which comes back with the result
-        show($('farm-presets'), editable || working);
-        show($('farm-presets-wait'), working);
+        // vanished"): what is changed meanwhile waits for the button, which comes back with the result – for a big
+        // model the button is there at once and starts the slice over
+        show($('farm-presets'), editable || working || awaiting);
+        const wait = $('farm-presets-wait');
+        if (wait) { wait.textContent = tr(restartable ? 'farm.order.while_slicing_big' : 'farm.order.while_slicing'); show(wait, working); }
         document.querySelectorAll<HTMLElement>('#farm-presets [data-group]').forEach((g) => g.querySelectorAll<HTMLElement>('.seg').forEach((b) => b.classList.toggle('seg-on', b.dataset.value === String(wanted[g.dataset.group as 'quality' | 'strength' | 'supports']))));
         ($('farm-unit') as HTMLSelectElement).value = wanted.unit;
         renderSizeInputs();
@@ -695,16 +748,28 @@ export function bootFarmOrder(): void {
         if (adv && Object.keys(wanted.settings).length && !adv.open) adv.open = true;
         const partsBox = $('farm-by-parts-box');
         if (partsBox) {
-            const many = s.status === 'sliced' && (s.part_count ?? 0) >= 2;
+            const many = !!s.choosing && (s.part_count ?? 0) >= 2;
             partsBox.classList.toggle('hidden', !many); partsBox.classList.toggle('flex', many);
             ($('farm-by-parts') as HTMLInputElement).checked = wanted.by_parts;
             $('farm-by-parts-title')!.textContent = tr('farm.order.by_parts', { n: s.part_count ?? 0 });
         }
-        show($('farm-reslice'), editable && (wanted.by_parts !== !!s.by_parts || wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005 || settingsOf(wanted.settings) !== settingsOf(s.settings)));
+        const changed = wanted.by_parts !== !!s.by_parts || wanted.quality !== s.quality || wanted.strength !== s.strength || wanted.supports !== (s.supports_mode || 'auto') || wanted.unit !== s.unit || wanted.copies !== (s.copies || 1) || Math.abs(wanted.scale - (s.scale || 1)) > 0.0005 || settingsOf(wanted.settings) !== settingsOf(s.settings);
+        const reslice = $<HTMLButtonElement>('farm-reslice');
+        // while a big model is being sliced another colour is a change too: the running slice is for the one it started with
+        show(reslice, (editable && changed) || (restartable && (changed || (picked !== null && picked !== s.slot))));
+        if (reslice && !reslice.disabled) reslice.textContent = tr(restartable ? 'farm.order.restart_slice' : 'farm.recalculate');
+        // a big model waiting for the choices: one button starts the exact computation for the colour and the settings above
+        show($('farm-slice-box'), awaiting);
+        if (awaiting) {
+            const start = $<HTMLButtonElement>('farm-slice-start');
+            if (start && start.dataset.label === undefined) start.disabled = picked === null || noMachine() || !s.colors.length;
+            $('farm-slice-hint')!.textContent = tr('farm.order.slice_start_hint', { n: s.slice_minutes ?? 1 });
+        }
 
         show($('farm-pay'), s.status === 'sliced');
-        show($('farm-material'), s.status === 'sliced' || (working && s.colors.length > 0));
-        if (working && s.colors.length > 0) renderColors();
+        show($('farm-material'), !!s.choosing);
+        if (s.choosing && s.status !== 'sliced') renderColors();
+        renderEstimate(awaiting, working);   // after the colours: the picked colour's kind and machine set the rates
         if (s.status === 'sliced') {
             renderColors();
             renderSummary();
@@ -781,7 +846,7 @@ export function bootFarmOrder(): void {
         show($('farm-repeat'), ['done', 'handed_over', 'cancelled', 'failed'].includes(s.status));
 
         // the model in the colour that will print it; once paid, the chosen colour
-        if (s.status !== 'sliced') viewer.setColor(s.color?.hex ?? null, s.color?.finish ?? null);
+        if (!s.choosing) viewer.setColor(s.color?.hex ?? null, s.color?.finish ?? null);
         // printed by parts: every part's own plate, side by side in its colour (the print STL is the first plate alone)
         const partUrls = s.by_parts ? (s.parts ?? []).map((p) => p.model_url ?? '') : [];
         const asParts = partUrls.length >= 2 && partUrls.every((u) => u !== '');
@@ -794,7 +859,7 @@ export function bootFarmOrder(): void {
                 loadParts(partUrls, !!s.one_plate).then(({ geom: g, flags }) => { geom = g; partFlags = flags; viewer.setGeometry(g, 1, null); paintTones(); }).catch(() => { shownModel = ''; });
             } else {
                 partFlags = null;
-                loadGeometryFromUrl(modelKey).then((g) => { geom = cutForTones(g, (s.changes ?? []).map((x) => x.z)); viewer.setGeometry(geom, 1, null); viewer.setColor((s.status === 'sliced' ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTones(); showSupports(); }).catch(() => { shownModel = ''; });
+                loadGeometryFromUrl(modelKey).then((g) => { geom = cutForTones(g, (s.changes ?? []).map((x) => x.z)); viewer.setGeometry(geom, 1, null); viewer.setColor((s.choosing ? state.colors.find((x) => x.slot === picked)?.hex : s.color?.hex) ?? null); paintTones(); showSupports(); }).catch(() => { shownModel = ''; });
             }
         } else {
             showSupports();
@@ -826,9 +891,9 @@ export function bootFarmOrder(): void {
             if (res.ok) { state = await res.json(); render(); }
         } catch { /* offline for a moment: try again */ }
         const fast = state.status === 'uploaded';
-        const live = ['paid', 'queued', 'printing', 'sliced', 'done'].includes(state.status);
+        const live = ['paid', 'queued', 'printing', 'sliced', 'awaiting_choices', 'done'].includes(state.status);
         // while it prints the page follows the camera: a new picture every 15 s
-        if (fast || live) timer = window.setTimeout(poll, fast ? 2000 : state.status === 'printing' ? 15000 : state.status === 'sliced' ? 20000 : 8000);
+        if (fast || live) timer = window.setTimeout(poll, fast ? 2000 : state.status === 'printing' ? 15000 : ['sliced', 'awaiting_choices'].includes(state.status) ? 20000 : 8000);
     };
 
     document.querySelectorAll<HTMLElement>('#farm-presets [data-group] .seg').forEach((b) => b.addEventListener('click', () => {
@@ -838,16 +903,19 @@ export function bootFarmOrder(): void {
     $('farm-copies')?.addEventListener('input', (e) => { const v = Number((e.target as HTMLInputElement).value); wanted.copies = Math.max(1, Math.min(64, Math.round(v) || 1)); render(); });
     $('farm-presets')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (state.status === 'uploaded') return;   // a slice is running: the choices made now are taken when it is done
+        // a slice of a small model is running: the choices made now are taken when it is done. A big model's slice is
+        // started over with the new choices (the server drops the running one's result, docs/AL.md §11)
+        if (state.status === 'uploaded' && !state.big) return;
         const btn = $<HTMLButtonElement>('farm-reslice');
         const recolor = $<HTMLButtonElement>('farm-recolor');
+        const start = $<HTMLButtonElement>('farm-slice-start');
         before = { total: printPrice(), printer: state.printer?.name ?? null, kind: kindOf(), minutes: state.minutes, settings: settingsKey() };
         // the request takes a moment: the buttons say so and cannot be pressed twice
-        [btn, recolor].forEach((b) => { if (b) { b.disabled = true; b.dataset.label = b.textContent ?? ''; b.textContent = tr('farm.order.reslicing'); } });
+        [btn, recolor, start].forEach((b) => { if (b) { b.disabled = true; b.dataset.label = b.textContent ?? ''; b.textContent = tr('farm.order.reslicing'); } });
         show($('farm-error'), false);
         // the spools of the parts travel with the first colour: the server keeps them on its machine (20 Oct 2026, order 198)
         const r = await post(cfg.routes.reslice, { ...wanted, slot: resolved().slot, ...otherSlots() });
-        [btn, recolor].forEach((b) => { if (b) { b.disabled = false; b.textContent = b.dataset.label ?? ''; } });
+        [btn, recolor, start].forEach((b) => { if (b) { b.disabled = false; b.textContent = b.dataset.label ?? ''; delete b.dataset.label; } });
         if (r.ok) { state = r.json as unknown as FarmState; picked = state.slot ?? null; wanted.by_parts = !!state.by_parts; render(); poll(); } else { before = null; const err = $('farm-error')!; err.textContent = String(r.json.message ?? ''); show(err, true); }
     });
     document.querySelectorAll<HTMLElement>('#farm-delivery .seg').forEach((b) => b.addEventListener('click', () => { delivery = b.dataset.value!; render(); }));
@@ -855,6 +923,8 @@ export function bootFarmOrder(): void {
     pointBox?.addEventListener('pickup:change', () => render());
     $('farm-address')?.addEventListener('input', () => render());
     $('farm-recolor')?.addEventListener('click', () => ($('farm-presets') as HTMLFormElement | null)?.requestSubmit());
+    // "Spočítat přesnou cenu": the same request as a recalculation, the first one of a waiting big model
+    $('farm-slice-start')?.addEventListener('click', () => ($('farm-presets') as HTMLFormElement | null)?.requestSubmit());
     // "Změnit" in the summary: back up to the colours, chosen only there
     $('farm-change-colors')?.addEventListener('click', (e) => { e.preventDefault(); $('farm-material')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     $('farm-terms')?.addEventListener('change', render);

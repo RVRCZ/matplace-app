@@ -161,7 +161,7 @@ class FarmOrderController extends Controller
     /** Manual status change. On a manual printer this is how "printing" and "done" happen at all. */
     public function status(Request $request, FarmOrder $order): RedirectResponse
     {
-        $data = $request->validate(['to' => ['required', 'string', 'max:14'], 'note' => ['nullable', 'string', 'max:500'], 'tracking' => ['nullable', 'string', 'max:80']]);
+        $data = $request->validate(['to' => ['required', 'string', 'max:20'], 'note' => ['nullable', 'string', 'max:500'], 'tracking' => ['nullable', 'string', 'max:80']]);
         if (! $order->canMoveTo($data['to'])) {
             return back()->with('error', __('farm.admin.bad_transition'));
         }

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Domain\Farm\OrderFlow;
 use App\Engines\Contracts\MeshRepair;
 use App\Engines\Converter\ConverterChain;
 use App\Engines\Mesh\StlFile;
@@ -52,10 +53,20 @@ class ProcessModelFile implements ShouldQueue
             $stlAbs = $disk->path($stlRel);
             File::ensureDirectoryExists(dirname($stlAbs));
 
-            $clock->measure('convert', function () use ($file, $converters, $in, $stlAbs) {
+            $clock->measure('convert', function () use ($file, $converters, $in, $stlAbs, $clock) {
                 if ($file->ext === 'stl') {
-                    // normalise (ASCII → binary, consistent header) by rewriting through StlFile
-                    StlFile::scale($in, $stlAbs, 1.0);
+                    // a sound binary STL is what everything downstream wants already: copied as it is. Rewriting it
+                    // triangle by triangle in PHP took most of the 23 s a calculation of 2.7 M triangles waited for its
+                    // file (24 Oct 2026, docs/AL.md §11); an ASCII file, or a binary one whose header says "solid"
+                    // (slicers take that for ASCII), is still rewritten into a binary one with a plain header
+                    if (StlFile::binaryCount($in) > 0 && ! str_starts_with((string) file_get_contents($in, false, null, 0, 5), 'solid')) {
+                        $clock->note('convert', 'copy');
+                        if (! @copy($in, $stlAbs)) {
+                            StlFile::scale($in, $stlAbs, 1.0);
+                        }
+                    } else {
+                        StlFile::scale($in, $stlAbs, 1.0);
+                    }
                 } else {
                     $converters->convert($in, 'stl', $stlAbs);
                 }
@@ -106,5 +117,11 @@ class ProcessModelFile implements ShouldQueue
         // a failed file fails its orders there, with the farm's own reason
         FarmOrder::where('model_file_id', $file->id)->where('status', FarmOrder::STATUS_UPLOADED)->pluck('id')
             ->each(fn (int $id) => PrepareFarmOrder::dispatch($id));
+        if ($file->status === ModelFile::STATUS_FAILED) {
+            // a big model waiting for its customer's choices has no job to fail it: failed here
+            $flow = app(OrderFlow::class);
+            FarmOrder::where('model_file_id', $file->id)->where('status', FarmOrder::STATUS_AWAITING_CHOICES)->get()
+                ->each(fn (FarmOrder $o) => $flow->fail($o, 'file_unreadable', 'system', detail: $file->error));
+        }
     }
 }

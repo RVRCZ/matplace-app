@@ -127,6 +127,17 @@ return [
         'recolor_first' => 'Eligió un color de otra impresora: recalcule primero el precio arriba y luego podrá pagar.',
         'colors_now' => 'Colores cargados ahora mismo en la impresora',
         'while_slicing' => 'Puede cambiar las opciones también ahora. Recalcule con la nueva configuración con el botón cuando termine este cálculo.',
+        // a big model (docs/AL.md §11): sliced only after the customer confirms the colour; until then a rough price
+        'while_slicing_big' => 'Puede cambiar las opciones también ahora. Tras un cambio pulse Recalcular: el cálculo en curso se descarta y empieza de nuevo con la nueva configuración.',
+        'estimate_title' => 'Precio orientativo',
+        'estimate_range' => 'de :from a :to',
+        'estimate_time' => 'tiempo de impresión aprox. :time',
+        'estimate_note' => 'Cifra orientativa según el volumen del modelo y sus opciones; el precio exacto según el color y la impresora puede variar.',
+        'estimate_wait' => 'El precio exacto lo calculamos cuando confirme el color; tarda unos :n min.',
+        'estimate_running' => 'Calculando el precio exacto para el color y la configuración elegidos, unos :n min. Mientras tanto vale el precio orientativo.',
+        'slice_start' => 'Calcular el precio exacto',
+        'slice_start_hint' => 'Elija el color y la configuración y lance el cálculo exacto. En un modelo grande tarda unos :n min, por eso no se lanza solo.',
+        'restart_slice' => 'Recalcular (el cálculo empieza de nuevo)',
         'no_colors' => 'Ahora no hay ninguna impresora lista. Inténtelo dentro de un rato.',
         'low_filament' => 'queda poco material en la bobina',
         'starts_now' => 'La impresora está libre, la impresión empieza enseguida.',
@@ -165,7 +176,7 @@ return [
     'stage_step' => 'paso :n de :total',
 
     'status' => [
-        'uploaded' => 'En preparación', 'sliced' => 'Listo para pedir', 'paid' => 'Pagado', 'queued' => 'En cola',
+        'uploaded' => 'En preparación', 'awaiting_choices' => 'Esperando sus opciones', 'sliced' => 'Listo para pedir', 'paid' => 'Pagado', 'queued' => 'En cola',
         'printing' => 'Imprimiendo', 'done' => 'Terminado, pendiente de entrega', 'done_parcel' => 'Terminado, preparando el envío', 'handed_over' => 'Entregado', 'failed' => 'Fallido', 'cancelled' => 'Cancelado',
     ],
 

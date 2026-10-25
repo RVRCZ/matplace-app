@@ -938,3 +938,155 @@ Python na serveru musí mít `fast_simplification` a `pymeshfix` v `/opt/matplac
   podložkou) by žehlil každý díl – u medaile s `one_plate_required` to nenastane. Skutečná medaile místně (Orca 2.4,
   Kobra X): bez žehlení 1 h 28 min, s `topmost` **1 h 38 min 45 s**, žehlení jen v Z 4,4 (vršek placky) – motiv v kapse
   Orca 2.4 nežehlí ani bez per‑object vypnutí (rozdíl 1 s), takže ta pojistka je pro návrhy s odkrytým vrškem vložky.
+
+# Zakázka velkého modelu: řez až po volbách a potvrzení barvy (TODO #41, session 2)
+
+Větev `feature/order-flow-big` (z `main` b74f733), 25. 10. 2026. Zadání `docs/prompts/flow-objednavky.md`; první stránku
+kalkulace dělá session 3 (`feature/calc-estimate-range`). Nemergováno, nenasazeno.
+
+## 11. Co se děje
+
+### 11.1 Malý a velký model
+
+Práh je na jednom místě, **`App\Domain\Farm\BigModel::judge(file, calculation)`**: model je velký, když má přes
+`engines.mesh.decimate_above` trojúhelníků (400 000), **nebo** když přesný řez téhož souboru na první stránce trval přes
+`farm.big_model.slice_seconds` (60 s; `calculations.timings.slice_s` kalkulace, ze které zakázka vznikla, jinak poslední
+dokončené kalkulace téhož souboru – kalkulace obsloužená z cache kalkulací `slice_s` nemá a přeskočí se). Verdikt se
+zapíše na zakázku (`farm_orders.big_model`), aby se později nepřeklápěl.
+
+- **Malý model**: beze změny – `uploaded` hned při založení, `PrepareFarmOrder` ihned, přeřez po změně tlačítkem.
+- **Velký model**: zakázka vznikne ve **stavu `awaiting_choices`** (nový stav, `FarmOrder::STATUS_AWAITING_CHOICES`;
+  sloupec `status` rozšířen na 20 znaků), nic se nespustí. Událost v historii: `∅ → awaiting_choices` s poznámkou
+  „big model (1.8 M triangles): the slice waits for the choices“ nebo „calculation sliced in 230 s“. Mail obsluze
+  žádný (`OrderFlow::NOTIFY` i `adminEvent` stav neznají), zákazníkovi také ne.
+- Stránka zakázky ve stavu `awaiting_choices` ukazuje volby (barvy a druhy podle strojů, kvalita, pevnost, podpěry, kusy,
+  jednotky, rozměr, pokročilé), **orientační cenu** a jedno tlačítko **„Spočítat přesnou cenu“** (`#farm-slice-start`).
+  Barvy jsou v nabídce, i když zakázka ještě není připravená: `OrderService::availableSlots` vezme místo `check.dims`
+  box souboru v jednotce a měřítku zakázky; „dost materiálu“ platí pro všechny cívky (odhad gramů není), skutečná kontrola
+  přijde po řezu jako dnes.
+- **Orientační cena** se počítá **v prohlížeči** (`farm.ts estimateNow`): stejný odhad jako první stránka
+  (`rough.ts estimate` – objem a povrch souboru, kvalita, výplň podle pevnosti nebo pokročilé pole, měřítko × jednotka,
+  podpěry se nezapočítávají stejně jako na první stránce) a stejný výpočet ceny jako farma (`PriceCalculator`: hodiny ×
+  faktor stroje × sazba + gramy × faktor × cena druhu + poplatek, minimum, DPH, zaokrouhlení nahoru, odměna designéra
+  s čepicí), jako **rozpětí** `range_low`–`range_high` (0,85–1,25) jako na první stránce, účet v eurech kurzem farmy.
+  Konstanty posílá server ve stavu zakázky: `estimate` (objem, povrch, `pricing.rough`, výplně pevností, poplatky, odměna,
+  kurz) a u každé barvy `colors[].rates` (cena za gram a hustota druhu, sazba a faktory stroje); `colors[].price` je před
+  řezem `null`. Pod cenou „doba tisku asi 1 h 40 min“ a věta „Přesnou cenu spočítáme po potvrzení barvy, trvá to asi
+  N min“ – N = `slice_minutes` ze `slice_estimate_s` (`BigModel::estimateSeconds`: `slice_s` kalkulace × 1,2 + 15 s,
+  bez kalkulace `seconds_per_million` × miliony trojúhelníků, nejméně `min_seconds` 120 s).
+- **Tlačítko** pošle totéž co „Přepočítat“ (`POST …/reslice` s volbami a slotem barvy): `OrderService::reslice` z
+  `awaiting_choices` zakázku přesune do `uploaded` (událost „slice started by the customer“), `slice_run` = 1, a spustí
+  `PrepareFarmOrder(orderId, run)`. Denní limit se nepřičte podruhé (`slicesToday` zakázku započítal při založení).
+  Zavřená farma (`FarmGate::open`) řez zákazníkovi odmítne (`closed`), admin projde. Objednat a zaplatit jde až po
+  `sliced` jako dnes.
+
+### 11.2 Změna voleb během řezu
+
+Během řezu velkého modelu zůstávají volby i barvy na stránce (`choosing` ve stavu je true pro `sliced`,
+`awaiting_choices` a `uploaded` nezaplacené velké zakázky). Změna volby nebo barvy ukáže tlačítko **„Přepočítat (výpočet
+začne znovu)“**; stisk pošle `reslice`, server (`FarmOrder::sliceRestartable`) zvýší **`slice_run`**, zapíše událost
+„choices changed while slicing: run 2 replaces run 1“ a spustí další `PrepareFarmOrder` s novým číslem běhu. Běžící
+úloha se zastavit nedá (Orca je proces), ale **její výsledek je neplatný**: `PrepareFarmOrder::overtaken()` porovná
+`slice_run` na začátku, po přípravě sítě, po řezu a před oceněním, a předběhnutý běh zakázku nepřesune (ani do `sliced`,
+ani do `failed` – `fail()` je obalené), G-kód smaže, `timings` nezapíše. Nový běh čeká na zámku `WithoutOverlapping`
+(releaseAfter 5 s) – proto `$tries` 40 → 400, jinak by po 200 s čekání spadl na MaxAttempts a zakázka zůstala
+v `uploaded`. Malý model se během řezu dál chová jako dosud (tlačítko až po doběhnutí, `locked`).
+
+### 11.3 Nový stav všude, kde na stavu záleží
+
+`TRANSITIONS`: `awaiting_choices → uploaded | failed | cancelled`. `cancellableByCustomer` ano (zrušení = `cancelled`,
+nic nebylo drženo). „Moje tisky“ filtr „Rozpracované“, `AccountEraser` (smazaný účet zakázku zruší), admin stránka
+zakázky a seznamy přes `farm.status.awaiting_choices` („Čeká na vaše volby“, en „Waiting for your choices“, es
+„Esperando sus opciones“), admin ruční změna stavu (`max:14` → `max:20`). `ProcessModelFile`: selhaný soubor
+zakázku ve stavu `awaiting_choices` rovnou převede na `failed` (`file_unreadable`), protože ji žádná úloha nevezme.
+**Úklid**: `matplace:prune` zruší zakázky `awaiting_choices` starší než `farm.big_model.waiting_days` (7) jako
+`cancelled` od systému s poznámkou „no choices within 7 days“ (nezaplacené `sliced` zakázky se dál neuklízejí, jako dosud).
+
+### 11.4 Tolerance zjednodušení podle vrstvy (§6 zadání)
+
+`MeshDecimator::decimate(path, out, layerMm)` dostane výšku vrstvy a `limits(layer)` vrátí **p99 = vrstva / 4, nejhorší
+bod = vrstva** (0,2 → 0,05 / 0,2; 0,28 → 0,07 / 0,28; 0,12 → 0,03 / 0,12); bez vrstvy platí pevné `max_deviation_mm` /
+`max_deviation_peak_mm` z configu. Limity jsou v klíči cache (`<hash>-<target>-<p99>-<peak>`), takže se zjednodušení pro
+jemnou a hrubou kvalitu nepomíchají. Vrstvu dodává `OrcaSlicer::prepareMesh` (farma: `overrides.process.layer_height`,
+kalkulace: `pricing.rough.quality_layer_mm` podle kvality) a `PrepareFarmOrder::prepareOnePlate` (`$setup['layer']`);
+do `timings` přibylo `decimate_limits`.
+
+Měřeno místně na drakovi (1 804 554 trojúhelníků, `decimate_tool.py`, cíl 350 000, 25. 10. 2026, stroj zároveň
+běžel testy – časy jsou orientační):
+
+| limity (p99 / špička) | výsledek | p99 | špička | objem | čas |
+|---|---|---|---|---|---|
+| 0,05 / 0,15 (dosud) | 350 k neprošlo → **702 240** | 0,023 | 0,041 | −0,05 % | 141 s |
+| 0,05 / 0,20 (běžná, 0,2 mm) | **352 682** | 0,047 | 0,151 | −0,16 % | 61 s |
+| 0,07 / 0,28 (hrubá, 0,28 mm) | 350 k neprošlo → 702 240 | 0,024 | 0,066 | −0,05 % | 77 s |
+| 0,03 / 0,12 (jemná, 0,12 mm) | 350 k neprošlo → 702 240 | 0,024 | 0,046 | −0,05 % | 94 s |
+
+Co z toho plyne: u běžné kvality 350 k prošlo, u hrubé (volnější limit!) ve stejném běhu ne. Kontrola nejhoršího bodu
+stojí na **10 000 náhodných vzorcích** na každém povrchu: skutečná špička 350k sítě draka leží kolem 0,3 mm (dřívější
+nález „jediný bod 0,32 mm“), takže zda ji vzorek trefí, je náhoda – jednou vyjde 0,151, jindy přes limit. Jde o vlastnost
+`decimate_tool.py` (vzorkování), ne limitů; chceme‑li 350 k spolehlivě, musí špičku měřit deterministicky (všechny vrcholy
+ztenčené sítě proti originálu) nebo víc vzorků. Druhý pokus 2× cíl (700 k) je vždy záchrana, jako dosud.
+Řez Orcou místně (2.4.0‑beta Windows, profil S1, stromové podpěry, 146 mm bez měřítka, stroj zároveň běžel testy):
+**352 682 trojúhelníků 1 min 51 s, 702 240 trojúhelníků 2 min 00 s** (oba 208 vrstev, 80,1 g, 7 h 06 min); polovina
+trojúhelníků ušetří ~8 % času Orcy, ne polovinu – jak už ukázalo §10.11.2, čas drží podpěry a export G‑kódu. Přínos
+tolerance podle vrstvy je tedy hlavně to, že se zjednodušení pro každou kvalitu pamatuje zvlášť a správně; na čase
+řezu draka to znát skoro není.
+
+### 11.5 Zpracování po nahrání (§7 zadání)
+
+Co trvalo u kalkulace 554 (`wait_s` 23 s, 2,7 M trojúhelníků), měřeno místně na drakovi (1,8 M, 90 MB):
+
+| krok `ProcessModelFile` | dosud | nyní |
+|---|---|---|
+| `convert`: binární STL přepsané trojúhelník po trojúhelníku v PHP (`StlFile::scale(1.0)`) | **7,6 s** | **0,2 s** – zdravý binární soubor (velikost = hlavička + 50 B × počet, `StlFile::binaryCount`, hlavička nezačíná „solid“) se **zkopíruje**; ASCII nebo binární soubor s hlavičkou „solid“ se přepíše jako dosud (`timings.convert = copy`) |
+| `analyse`: `mesh_tool.py check` přes trimesh (načtení se svařením vrcholů 38 s + rozdělení na tělesa 34 s + zbytek) | **85 s** | **16 s** – binární STL od `engines.mesh.fast_check_above` trojúhelníků (400 000) měří **numpy** (`mesh_tool.py fast_report`): box, povrch, objem (součet čtyřstěnů), vodotěsnost (každá hrana ve dvou stěnách, jednou v každém směru, vrcholy bit po bitu – tak je binární STL zapsané, −0,0 se srovná na 0,0), tělesa (komponenty grafu vrcholů přes scipy); výsledek na drakovi do posledního místa stejný jako trimesh (74 878,37 mm³, 83 807,34 mm², 49 těles, vodotěsný) |
+
+Server je zhruba 3× rychlejší než tenhle stroj (ztenčení draka 52 s proti 141 s), takže z 23 s čekání by měly zbýt
+jednotky sekund; ověří řídící na produkci po nasazení (`model_files.timings`: `convert_s`, `analyse_s`, `convert`).
+Profil numpy cesty: nejvíc stojí řazení 5,4 M vrcholů (`lexsort` sbalených bitů) a tři `np.sort` hran; strukturované
+`np.unique` bylo ~10× pomalejší.
+
+### 11.6 Čísla před → po (drak, zakázka B8 z 24. 10.)
+
+| | před | po |
+|---|---|---|
+| příchod na stránku zakázky → cena | **4 min 15 s** (řez začal sám: ztenčení 52 s + Orca 3 min 16 s + 7 s) | **orientační cena hned** (v prohlížeči, bez řezu); přesná **po stisku tlačítka** = jeden řez, stejné 4 min 15 s (s trefou do cache ztenčení ~3 min 25 s); stránka říká „asi 5 min“ (`slice_s` kalkulace 230 s × 1,2 + 15) |
+| změna volby před potvrzením barvy | další řez, 4+ min každá | **nic** – jen se přepočítá orientační cena |
+| změna volby během řezu | čekala na tlačítko po doběhnutí, pak další řez | řez se zruší (výsledek zahozen) a spustí znovu: zákazník čeká jen na poslední |
+| řezů na zakázku | 1 + počet změn | **1** + počet změn učiněných až během řezu |
+| po nahrání (2,7 M, kalkulace 554) | `wait_s` 23 s (přepis PHP + trimesh) | odhad jednotek sekund (místně 93 s → 16 s na 1,8 M), ověřit na produkci |
+
+Skutečný průchod na produkci (zakázka draka přes novou stránku) ještě nebyl – nic nenasazeno; čísla řezu jsou z B8 a
+z místního měření.
+
+### 11.7 Testy a soubory
+
+`tests/Feature/FarmBigModelFlowTest.php` (velký model čeká a nic neřeže; stav, texty, admin a „moje tisky“; tlačítko
+spustí řez a platba jde dál; kalkulace přes 60 s dělá model velkým i bez tokenu kalkulace; změna během řezu předběhne
+běžící úlohu – předběhnutý běh zakázku nepřesune, ani když dořeže; malý model jako dosud; úklid po týdnu, zavřená farma,
+zrušení zákazníkem), `tests/Unit/MeshDecimatorTest.php` (limity podle vrstvy, v argumentech skriptu i v klíči cache),
+`tests/Unit/MeshToolFastCheckTest.php` (numpy kontrola = trimesh na kostce, dvou tělesech s dírou; ASCII jde starou
+cestou; přeskočí se bez Pythonu s numpy/scipy/trimesh), `tests/Feature/BigMeshTest.php` (binární STL zkopírované,
+ASCII přepsané). Soubory: `app/Domain/Farm/{BigModel (nový),OrderService}.php`, `app/Models/FarmOrder.php`,
+`app/Jobs/{PrepareFarmOrder,ProcessModelFile}.php`, `app/Http/Controllers/Farm/OrderController.php` (`describe`:
+`big`, `choosing`, `slice_minutes`, `slice_run`, `estimate`, `colors[].rates`), `app/Http/Controllers/Admin/FarmOrderController.php`,
+`app/Console/Commands/PruneData.php`, `app/Domain/Account/AccountEraser.php`, `app/Engines/Mesh/{MeshDecimator,StlFile}.php`,
+`app/Engines/Slicer/OrcaSlicer.php`, `app/Engines/Repair/TrimeshRepair.php`, `engines/python/mesh_tool.py`,
+`config/{farm,engines}.php` (`farm.big_model`, `engines.mesh.fast_check_above`), migrace
+`2026_10_25_100000_farm_orders_deferred_slice`, `resources/js/calc/farm.ts`, `resources/views/farm/order.blade.php`,
+`lang/{cs,en,es}/farm.php` (`status.awaiting_choices`, `order.estimate_*`, `order.slice_start*`, `order.restart_slice`,
+`order.while_slicing_big`).
+
+### 11.8 Nasazení a co zbývá
+
+- Nasazení: `php artisan migrate` (rozšíření `status` + tři sloupce), `npm run build` (farm.ts), nic nového v `.env`
+  (volitelně `FARM_BIG_MODEL_SLICE_S`, `FARM_BIG_MODEL_S_PER_M`, `FARM_BIG_MODEL_MIN_S`, `FARM_BIG_MODEL_WAITING_DAYS`,
+  `MESH_FAST_CHECK_ABOVE`). Python na serveru potřebuje numpy a scipy (má – `decimate_tool.py` je používá); bez scipy
+  numpy cesta nepočítá tělesa (vrátí 1).
+- Se session 3: zakázka z kalkulace bez přesného řezu funguje už teď (`store` bere z kalkulace jen parametry; `slice_s`
+  pak chybí a práh rozhodnou trojúhelníky). Až první stránka velký model neřeže, bude `slice_s` pro velké modely vždy
+  chybět a N minut půjde z trojúhelníků (`seconds_per_million` 150 → drak 1,8 M = 270 s ≈ 5 min; kalibrovat podle
+  `farm_orders.timings` velkých zakázek).
+- §8 zadání (zjednodušit zdrojový model jednou při nahrání a odvozovat z něj print.stl) neděláno.
+- Spolehlivé 350 k: deterministická kontrola špičky v `decimate_tool.py` (§11.4). Čas Orcy u draka drží podpěry
+  (§10.11.2), ne trojúhelníky – viz měření v §11.4.

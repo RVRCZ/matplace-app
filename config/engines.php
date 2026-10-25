@@ -81,6 +81,9 @@ return [
         // skips the minute of Python; empty switches it off
         'decimate_cache' => env('MESH_DECIMATE_CACHE', storage_path('app/mesh-cache')),
         'max_triangles' => (int) env('MESH_MAX_TRIANGLES', 6000000),
+        // the check after an upload (mesh_tool.py check): a binary STL of at least this many triangles is measured with
+        // numpy alone instead of trimesh (23 s of a 2.7 M upload's wait on the server, 24 Oct 2026); 0 = always trimesh
+        'fast_check_above' => (int) env('MESH_FAST_CHECK_ABOVE', 400000),
     ],
 
     'python' => [

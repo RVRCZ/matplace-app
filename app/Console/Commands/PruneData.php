@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Domain\Farm\OrderFlow;
 use App\Domain\Tools\Artwork;
 use App\Jobs\BuildFarmTimelapse;
+use App\Models\FarmOrder;
 use App\Models\GenerationRequest;
 use App\Models\ModelFile;
 use Illuminate\Console\Command;
@@ -14,7 +16,8 @@ use Illuminate\Support\Facades\Storage;
  * Retention: what nobody claimed does not stay forever.
  *  - identification photos older than 1 day (the description stays, the picture goes),
  *  - anonymous model files + calculations older than N days that no account, inquiry or quote refers to,
- *  - leftover slicer gcode older than 7 days.
+ *  - leftover slicer gcode older than 7 days,
+ *  - farm orders of big models whose customer never asked for the exact price (awaiting_choices for a week).
  */
 class PruneData extends Command
 {
@@ -98,6 +101,20 @@ class PruneData extends Command
 
         // pictures uploaded into the tools stay 30 days ("my pictures")
         $temp += Artwork::prune($dry);
+
+        // a big model's order waits for the customer's choices (docs/AL.md §11); one nobody came back to is closed
+        // like any unpaid order the customer walked away from: cancelled, nothing was held
+        $waitingDays = max(1, (int) config('farm.big_model.waiting_days', 7));
+        $flow = app(OrderFlow::class);
+        $waiting = 0;
+        FarmOrder::where('status', FarmOrder::STATUS_AWAITING_CHOICES)->where('created_at', '<', now()->subDays($waitingDays))->get()
+            ->each(function (FarmOrder $o) use (&$waiting, $dry, $flow, $waitingDays) {
+                $waiting++;
+                if (! $dry) {
+                    $flow->move($o, FarmOrder::STATUS_CANCELLED, 'system', null, "no choices within {$waitingDays} days");
+                }
+            });
+        $this->line("farm orders waiting for choices cancelled: {$waiting}");
 
         $this->info(($dry ? '[dry-run] ' : '')."photos={$photos} files={$files} gcodes={$gcodes} temp={$temp}");
 

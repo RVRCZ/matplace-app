@@ -145,6 +145,43 @@ final class MeshDecimatorTest extends TestCase
         @rmdir($this->dir.'/cache');
     }
 
+    public function test_the_limits_follow_the_layer_the_mesh_is_sliced_at_and_are_part_of_the_remembered_key(): void
+    {
+        MeshFixtures::cubeStl($this->dir.'/cube.stl', 10);
+        mkdir($this->dir.'/cache');
+        $calls = [];
+        $python = $this->runner(function (array $args) {
+            MeshFixtures::cubeStl($args[1], 10);
+
+            return ['ok' => true, 'before' => 12, 'after' => 8, 'deviation_mm' => 0.01, 'peak_mm' => 0.02, 'watertight' => true, 'seconds' => 0.4];
+        }, $calls);
+        $config = ['decimate_above' => 10, 'decimate_target' => 8, 'max_deviation_mm' => 0.05, 'max_deviation_peak_mm' => 0.15, 'decimate_timeout' => 240, 'decimate_cache' => $this->dir.'/cache'];
+        $d = new MeshDecimator($python, $config);
+        // a quarter of the layer at the 99th percentile, the layer itself at the worst point; the config without a layer
+        $this->assertSame([0.05, 0.2], $d->limits(0.2));
+        $this->assertSame([0.07, 0.28], $d->limits(0.28));
+        $this->assertSame([0.03, 0.12], $d->limits(0.12));
+        $this->assertSame([0.05, 0.15], $d->limits(null));
+        $this->assertSame([0.05, 0.15], $d->limits(0.0));
+
+        $standard = $d->decimate($this->dir.'/cube.stl', $this->dir.'/t1.stl', 0.2);
+        $this->assertSame(['8', '0.05', '0.2'], array_slice($calls[0][1], 2), 'the script gets the limits of the layer');
+        $this->assertSame([0.05, 0.2], $standard['limits']);
+        $draft = $d->decimate($this->dir.'/cube.stl', $this->dir.'/t2.stl', 0.28);
+        $this->assertSame(['8', '0.07', '0.28'], array_slice($calls[1][1], 2));
+        $this->assertArrayNotHasKey('cached', $draft, 'another layer is another thinning, not the remembered one');
+        $again = $d->decimate($this->dir.'/cube.stl', $this->dir.'/t3.stl', 0.2);
+        $this->assertTrue($again['cached']);
+        $this->assertSame([0.05, 0.2], $again['limits']);
+        $this->assertCount(2, $calls, 'the same layer is answered from the remembered copy');
+        $this->assertCount(4, glob($this->dir.'/cache/*') ?: [], 'two thinnings remembered, each with its own limits in the name');
+        $this->assertCount(2, glob($this->dir.'/cache/*-0.05-0.2.*') ?: []);
+        foreach (glob($this->dir.'/cache/*') ?: [] as $f) {
+            @unlink($f);
+        }
+        @rmdir($this->dir.'/cache');
+    }
+
     public function test_the_script_thins_a_fine_sphere_and_keeps_its_shape(): void
     {
         $python = config('engines.python.bin') ?: (PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3');

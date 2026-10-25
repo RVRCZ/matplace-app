@@ -18,7 +18,8 @@ final class TrimeshRepair implements MeshRepair
 
     public function check(string $meshPath): MeshReport
     {
-        $out = $this->python->run(['check', $meshPath]);
+        // a binary STL of millions of triangles is measured with numpy alone (seconds instead of a minute of trimesh)
+        $out = $this->python->run(['check', $meshPath, (string) (int) config('engines.mesh.fast_check_above', 400000)]);
         if (empty($out['ok'])) {
             throw new RepairException('Mesh check failed: '.($out['error'] ?? 'unknown'));
         }
