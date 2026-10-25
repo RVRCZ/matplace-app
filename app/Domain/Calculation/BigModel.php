@@ -2,8 +2,10 @@
 
 namespace App\Domain\Calculation;
 
+use App\Engines\Mesh\StlFile;
 use App\Models\Calculation;
 use App\Models\ModelFile;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * A model too big for the slice on the first page (TODO #41, docs/prompts/kalkulace-odhad.md): millions of triangles
@@ -15,7 +17,7 @@ final class BigModel
 {
     public static function is(ModelFile $f): bool
     {
-        if ((int) $f->triangles > (int) config('engines.mesh.decimate_above')) {
+        if (self::triangles($f) > (int) config('engines.mesh.decimate_above')) {
             return true;
         }
         $limit = (float) config('engines.mesh.big_slice_s', 60);
@@ -30,5 +32,24 @@ final class BigModel
             ->first(['id', 'timings']);
 
         return (float) (($last?->timings ?? [])['slice_s'] ?? 0) > $limit;
+    }
+
+    /**
+     * The triangles of the file: as measured, or, right after the upload when nothing has measured it yet, from the
+     * header of a binary STL (a dragon of 1.8 M triangles was calculated in full on 25 Oct 2026 because the upload's
+     * answer came before the measuring and said "not big").
+     */
+    public static function triangles(ModelFile $f): int
+    {
+        $n = (int) $f->triangles;
+        if ($n > 0 || $f->ext !== 'stl') {
+            return $n;
+        }
+        $path = $f->absoluteStlPath() ?? ($f->storage_path ? Storage::disk(ModelFile::DISK)->path($f->storage_path) : null);
+        if ($path && is_file($path) && StlFile::isBinary($path)) {
+            return StlFile::triangleCount($path);
+        }
+
+        return $n;
     }
 }
