@@ -948,11 +948,13 @@ kalkulace dělá session 3 (`feature/calc-estimate-range`). Nemergováno, nenasa
 
 ### 11.1 Malý a velký model
 
-Práh je na jednom místě, **`App\Domain\Farm\BigModel::judge(file, calculation)`**: model je velký, když má přes
+Práh je na jednom místě pro první stránku i farmu, **`App\Domain\Calculation\BigModel`** (`is`, `reason`,
+`lastSliceSeconds`; po sloučení se session 3 jeden pomocník místo dvou, 25. 10.): model je velký, když má přes
 `engines.mesh.decimate_above` trojúhelníků (400 000), **nebo** když přesný řez téhož souboru na první stránce trval přes
-`farm.big_model.slice_seconds` (60 s; `calculations.timings.slice_s` kalkulace, ze které zakázka vznikla, jinak poslední
-dokončené kalkulace téhož souboru – kalkulace obsloužená z cache kalkulací `slice_s` nemá a přeskočí se). Verdikt se
-zapíše na zakázku (`farm_orders.big_model`), aby se později nepřeklápěl.
+`engines.mesh.big_slice_s` (60 s; `calculations.timings.slice_s` kalkulace, ze které zakázka vznikla, jinak poslední
+dokončené kalkulace téhož souboru – kalkulace obsloužená z cache kalkulací `slice_s` nemá a přeskočí se).
+**`App\Domain\Farm\BigModel::judge(file, calculation)`** k tomu přidá důvod a odhad doby řezu. Verdikt se zapíše na
+zakázku (`farm_orders.big_model`), aby se později nepřeklápěl.
 
 - **Malý model**: beze změny – `uploaded` hned při založení, `PrepareFarmOrder` ihned, přeřez po změně tlačítkem.
 - **Velký model**: zakázka vznikne ve **stavu `awaiting_choices`** (nový stav, `FarmOrder::STATUS_AWAITING_CHOICES`;
@@ -1080,8 +1082,8 @@ ASCII přepsané). Soubory: `app/Domain/Farm/{BigModel (nový),OrderService}.php
 ### 11.8 Nasazení a co zbývá
 
 - Nasazení: `php artisan migrate` (rozšíření `status` + tři sloupce), `npm run build` (farm.ts), nic nového v `.env`
-  (volitelně `FARM_BIG_MODEL_SLICE_S`, `FARM_BIG_MODEL_S_PER_M`, `FARM_BIG_MODEL_MIN_S`, `FARM_BIG_MODEL_WAITING_DAYS`,
-  `MESH_FAST_CHECK_ABOVE`). Python na serveru potřebuje numpy a scipy (má – `decimate_tool.py` je používá); bez scipy
+  (volitelně `MESH_BIG_SLICE_S`, `FARM_BIG_MODEL_S_PER_M`, `FARM_BIG_MODEL_MIN_S`, `FARM_BIG_MODEL_WAITING_DAYS`,
+  `MESH_FAST_CHECK_ABOVE`). Nasazeno řídící session 25. 10. 2026 ~15:35 UTC (main ea9c7a6) spolu se session 3. Python na serveru potřebuje numpy a scipy (má – `decimate_tool.py` je používá); bez scipy
   numpy cesta nepočítá tělesa (vrátí 1).
 - Se session 3: zakázka z kalkulace bez přesného řezu funguje už teď (`store` bere z kalkulace jen parametry; `slice_s`
   pak chybí a práh rozhodnou trojúhelníky). Až první stránka velký model neřeže, bude `slice_s` pro velké modely vždy

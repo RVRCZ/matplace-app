@@ -175,8 +175,8 @@ final class FarmBigModelFlowTest extends TestCase
         $byFile = $this->order(['file' => $uuid]);
         $this->assertSame(FarmOrder::STATUS_AWAITING_CHOICES, $byFile->status);
 
-        // the threshold is a setting
-        config(['farm.big_model.slice_seconds' => 300]);
+        // the threshold is a setting, the same one the first page uses
+        config(['engines.mesh.big_slice_s' => 300]);
         $this->assertSame(FarmOrder::STATUS_SLICED, $this->order(['file' => $uuid])->status);
     }
 
