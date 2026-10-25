@@ -29,7 +29,8 @@ export interface CalcInfo {
     status: string;
     error: string | null;
     params: Record<string, unknown>;
-    rough: { grams: number; minutes: number; price_min: number; price_max: number; prices: unknown[] } | null;
+    /** the estimate; minutes_min/max, range and shape say how far the slice may land by the model's shape (docs/M.md §6) */
+    rough: { grams: number; minutes: number; price_min: number; price_max: number; minutes_min?: number; minutes_max?: number; range?: { time: [number, number]; price: [number, number] }; shape?: { height_mm: number | null; fill_g_cm3: number | null; overhang_share: number | null }; prices: unknown[] } | null;
     slicer: { grams: number; meters?: number | null; minutes: number; minutes_by_mode?: Record<string, number>; layers?: number | null; dims: { x: number; y: number; z: number }; supports_used: boolean; warnings: string[] } | null;
     prices: { profile: string; label: string | null; total: number; lead_time_days: number; unit: { material: number; time: number; royalty: number }; setup: number; quantity: number }[] | null;
     file: FileInfo | null;

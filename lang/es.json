@@ -1817,5 +1817,10 @@
     "param.flag.medallion.ironing": "Planchar la superficie superior",
     "param.flag.medallion.ironing.hint": "Tras la última capa la boquilla vuelve a pasar sobre la parte superior de la placa, que queda lisa y brillante. La impresión tarda unos minutos más (unos 12 en una medalla de 60 mm).",
     "calc.status.big_model": "Modelo grande (:n millones de triángulos): el laminado tarda varios minutos.",
-    "calc.status.too_many_triangles": "El modelo tiene más de :max millones de triángulos, más de lo que nuestras impresoras pueden calcular. Reduzca los triángulos en un programa (Blender: Decimate, Meshmixer: Reduce) y súbalo de nuevo."
+    "calc.status.too_many_triangles": "El modelo tiene más de :max millones de triángulos, más de lo que nuestras impresoras pueden calcular. Reduzca los triángulos en un programa (Blender: Decimate, Meshmixer: Reduce) y súbalo de nuevo.",
+    "calc.status.big_only": "Modelo grande: el precio y el tiempo de impresión exactos se calculan al pedir, tarda varios minutos.",
+    "calc.status.big_only_n": "Modelo grande (:n millones de triángulos): el precio y el tiempo de impresión exactos se calculan al pedir, tarda varios minutos.",
+    "calc.price.orient_range": "Precio orientativo de impresión con nosotros: :price. Lo precisaremos según los soportes, la forma, el color y la impresora al pedir.",
+    "calc.price.shape_hint": "Lo precisaremos según los soportes y la forma al pedir.",
+    "calc.time.range": "unos :lo a :hi"
 }

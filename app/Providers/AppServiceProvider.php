@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Domain\Calculation\MaterialCatalog;
 use App\Domain\Calculation\PriceEngine;
 use App\Domain\Calculation\RoughEstimator;
+use App\Domain\Calculation\ShapeRange;
 use App\Domain\Designer\DesignerProfiles;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\Palette;
@@ -33,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(MaterialCatalog::class, fn () => new MaterialCatalog(config('materials')));
         $this->app->singleton(PriceEngine::class, fn () => new PriceEngine(config('pricing')));
         $this->app->singleton(RoughEstimator::class, fn ($app) => new RoughEstimator(config('pricing.rough'), $app->make(MaterialCatalog::class)));
+        $this->app->singleton(ShapeRange::class, fn () => new ShapeRange(config('pricing.rough.range')));
         // scoped: the admin's overrides are read once per request / queue job, never kept across them
         $this->app->scoped(FarmSettings::class);
         // the colour catalogue is read once per request: a page with twenty swatch fields asks it twenty times

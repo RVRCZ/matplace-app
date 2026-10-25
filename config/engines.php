@@ -73,6 +73,9 @@ return [
     // the customer sees and downloads. Above `max_triangles` a file is refused on upload with the advice to thin it at home.
     'mesh' => [
         'decimate_above' => (int) env('MESH_DECIMATE_ABOVE', 400000),
+        // a file whose last slice on the first page took longer than this is "big" too: the calculator shows its estimate with a
+        // range and leaves the slice to the order page (TODO #41, App\Domain\Calculation\BigModel); 0 switches the rule off
+        'big_slice_s' => (int) env('MESH_BIG_SLICE_S', 60),
         'decimate_target' => (int) env('MESH_DECIMATE_TARGET', 350000),
         'max_deviation_mm' => (float) env('MESH_DECIMATE_DEVIATION_MM', 0.05),        // the 99th percentile of the surface distance
         'max_deviation_peak_mm' => (float) env('MESH_DECIMATE_PEAK_MM', 0.15),       // the worst sampled point (under a layer)

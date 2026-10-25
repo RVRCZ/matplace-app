@@ -1,0 +1,27 @@
+{
+    "calc.status.big_only": [
+        "Velký model: přesnou cenu a dobu tisku spočítáme při objednávce, trvá to několik minut.",
+        "A large model: the exact price and print time are worked out when you order, that takes several minutes.",
+        "Modelo grande: el precio y el tiempo de impresión exactos se calculan al pedir, tarda varios minutos."
+    ],
+    "calc.status.big_only_n": [
+        "Velký model (:n mil. trojúhelníků): přesnou cenu a dobu tisku spočítáme při objednávce, trvá to několik minut.",
+        "A large model (:n million triangles): the exact price and print time are worked out when you order, that takes several minutes.",
+        "Modelo grande (:n millones de triángulos): el precio y el tiempo de impresión exactos se calculan al pedir, tarda varios minutos."
+    ],
+    "calc.price.orient_range": [
+        "Orientační cena tisku u nás: :price. Podle podpěr, tvaru, barvy a tiskárny ji upřesníme při objednávce.",
+        "Print price with us, to orient by: :price. We narrow it down by the supports, the shape, the colour and the printer when you order.",
+        "Precio orientativo de impresión con nosotros: :price. Lo precisaremos según los soportes, la forma, el color y la impresora al pedir."
+    ],
+    "calc.price.shape_hint": [
+        "Podle podpěr a tvaru upřesníme při objednávce.",
+        "Narrowed down by the supports and the shape when you order.",
+        "Lo precisaremos según los soportes y la forma al pedir."
+    ],
+    "calc.time.range": [
+        "asi :lo až :hi",
+        "about :lo to :hi",
+        "unos :lo a :hi"
+    ]
+}

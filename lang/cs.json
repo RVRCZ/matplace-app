@@ -1817,5 +1817,10 @@
     "param.flag.medallion.ironing": "Žehlení horní plochy",
     "param.flag.medallion.ironing.hint": "Tryska po poslední vrstvě ještě jednou přejede horní plochu placky, ta je pak hladká a lesklá. Tisk se prodlouží o několik minut (asi 12 u medaile 60 mm).",
     "calc.status.big_model": "Velký model (:n mil. trojúhelníků), řez trvá několik minut.",
-    "calc.status.too_many_triangles": "Model má přes :max milionů trojúhelníků, to naše tiskárny nespočítají. Zmenšete počet trojúhelníků v programu (Blender: Decimate, Meshmixer: Reduce) a nahrajte ho znovu."
+    "calc.status.too_many_triangles": "Model má přes :max milionů trojúhelníků, to naše tiskárny nespočítají. Zmenšete počet trojúhelníků v programu (Blender: Decimate, Meshmixer: Reduce) a nahrajte ho znovu.",
+    "calc.status.big_only": "Velký model: přesnou cenu a dobu tisku spočítáme při objednávce, trvá to několik minut.",
+    "calc.status.big_only_n": "Velký model (:n mil. trojúhelníků): přesnou cenu a dobu tisku spočítáme při objednávce, trvá to několik minut.",
+    "calc.price.orient_range": "Orientační cena tisku u nás: :price. Podle podpěr, tvaru, barvy a tiskárny ji upřesníme při objednávce.",
+    "calc.price.shape_hint": "Podle podpěr a tvaru upřesníme při objednávce.",
+    "calc.time.range": "asi :lo až :hi"
 }

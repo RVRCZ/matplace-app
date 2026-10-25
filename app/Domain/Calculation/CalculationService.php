@@ -19,9 +19,14 @@ final class CalculationService
         private readonly PriceEngine $prices,
         private readonly MaterialCatalog $materials,
         private readonly PricingSource $pricingSource,
+        private readonly ShapeRange $range,
     ) {}
 
-    public function create(ModelFile $file, array $params, ?AnonymousSession $session, ?User $user, ?array $clientGeometry = null): Calculation
+    /**
+     * @param  bool  $sliceNow  false: the estimate alone, nothing is queued (a big model on the first page, TODO #41: the order page
+     *                          slices once the customer has chosen); a finished slice of the same settings is still reused
+     */
+    public function create(ModelFile $file, array $params, ?AnonymousSession $session, ?User $user, ?array $clientGeometry = null, bool $sliceNow = true): Calculation
     {
         $sliceParams = SliceParams::fromArray($params);
         $quantity = max(1, min(1000, (int) ($params['quantity'] ?? 1)));
@@ -50,7 +55,9 @@ final class CalculationService
         $calc->status = Calculation::STATUS_ROUGH;
 
         if ($volume !== null) {
-            $calc->rough = $this->roughFor((float) $volume, $area !== null ? (float) $area : null, $sliceParams, $quantity, $source['profiles']);
+            // the shape the range follows: the file's box once it is measured (else the browser's), the browser's overhang measure
+            $shape = ['bbox' => $file->bbox ?: ($clientGeometry['bbox'] ?? null), 'overhang_share' => $clientGeometry['overhang_share'] ?? null];
+            $calc->rough = $this->roughFor((float) $volume, $area !== null ? (float) $area : null, $sliceParams, $quantity, $source['profiles'], $shape);
         }
 
         // Reuse a finished slice for the same file + parameters instead of slicing again (prices are recomputed:
@@ -80,6 +87,9 @@ final class CalculationService
         $calc->save();
 
         $sliceable = in_array($sliceParams->materialCode, $this->materials->sliceable(), true);
+        if ($sliceable && ! $sliceNow) {
+            return $calc;   // stays rough: the estimate with its range is the answer until the order page slices
+        }
         if ($sliceable) {
             $calc->status = Calculation::STATUS_QUEUED;
             $calc->save();
@@ -94,8 +104,11 @@ final class CalculationService
         return $calc;
     }
 
-    /** @param  PricingProfile[]|null  $profiles */
-    public function roughFor(float $volumeMm3, ?float $areaMm2, SliceParams $p, int $quantity, ?array $profiles = null): array
+    /**
+     * @param  PricingProfile[]|null  $profiles
+     * @param  ?array{bbox?: ?array, overhang_share?: ?float}  $shape  what is known of the model's shape; the range follows it (ShapeRange), nothing = the widest
+     */
+    public function roughFor(float $volumeMm3, ?float $areaMm2, SliceParams $p, int $quantity, ?array $profiles = null, ?array $shape = null): array
     {
         $est = $this->rough->estimate(
             volumeMm3: $volumeMm3,
@@ -109,11 +122,21 @@ final class CalculationService
         );
         $profiles ??= $this->prices->orientationProfiles();
         $breakdowns = $this->prices->priceAll($est['grams'], $est['minutes'], $quantity, $profiles);
-        [$min, $max] = $this->prices->range($breakdowns, rough: true);
+        $bbox = is_array($shape['bbox'] ?? null) ? $shape['bbox'] : null;
+        $height = $bbox ? (float) ($bbox['z'] ?? 0) * $p->scale : null;
+        $fill = $bbox ? ShapeRange::fill((float) $est['grams'], $bbox, $p->scale) : null;
+        $overhang = isset($shape['overhang_share']) ? max(0.0, min(1.0, (float) $shape['overhang_share'])) : null;
+        $factors = $this->range->factors($height, $fill, $overhang, $p->supports, (int) $est['minutes']);
+        [$min, $max] = $this->prices->range($breakdowns, $factors['price']);
 
         return $est + [
             'price_min' => $min,
             'price_max' => $max,
+            // how far the slice may land, by the shape (docs/M.md §6): the page shows the time as this range, the order page recounts from the factors
+            'minutes_min' => max(1, (int) floor($est['minutes'] * $factors['time'][0])),
+            'minutes_max' => max(1, (int) ceil($est['minutes'] * $factors['time'][1])),
+            'range' => $factors,
+            'shape' => ['height_mm' => $height !== null ? round($height, 1) : null, 'fill_g_cm3' => $fill !== null ? round($fill, 4) : null, 'overhang_share' => $overhang],
             'prices' => array_map(fn ($b) => $b->toArray(), $breakdowns),
         ];
     }

@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 
 class CalculationController extends Controller
 {
-    /** POST /api/calculations — {file: uuid, material, quality, infill, supports, scale, quantity, geometry?} */
+    /** POST /api/calculations — {file: uuid, material, quality, infill, supports, scale, quantity, geometry?, rough_only?} */
     public function store(Request $request, CalculationService $service): JsonResponse
     {
         $data = $request->validate([
@@ -28,6 +28,12 @@ class CalculationController extends Controller
             'geometry' => ['nullable', 'array'],
             'geometry.volume_mm3' => ['nullable', 'numeric', 'min:0'],
             'geometry.area_mm2' => ['nullable', 'numeric', 'min:0'],
+            'geometry.overhang_share' => ['nullable', 'numeric', 'min:0', 'max:1'],   // the range by shape (ShapeRange) follows the browser's measure of the overhangs and the box
+            'geometry.bbox' => ['nullable', 'array'],
+            'geometry.bbox.x' => ['nullable', 'numeric', 'min:0'],
+            'geometry.bbox.y' => ['nullable', 'numeric', 'min:0'],
+            'geometry.bbox.z' => ['nullable', 'numeric', 'min:0'],
+            'rough_only' => ['nullable', 'boolean'],   // a big model on the first page: the estimate and its range, no slice (TODO #41)
         ]);
 
         $file = ModelFile::where('uuid', $data['file'])->firstOrFail();
@@ -37,6 +43,7 @@ class CalculationController extends Controller
             $request->attributes->get('anon_session'),
             $request->user(),
             $data['geometry'] ?? null,
+            ! $request->boolean('rough_only'),
         );
         Track::event('calculation', $file, array_filter(['tool' => $file->origin === 'tool' ? $file->kind() : null]));
 
