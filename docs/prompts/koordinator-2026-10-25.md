@@ -8,7 +8,7 @@ Jsi **nová řídící session** webu matplace.com. Nejdřív si přečti, v tom
    a hlavně `project_coordinator_handoff.md` (stav den po dni do 25. 10., gotchas nasazení) a `reference_home_printers.md`.
 3. `docs/TODO.md` (řádky #1 až #42; otevřené jsou hlavně #41 a #42, zbytek čeká na Romana).
 
-Pracuješ v `C:\matplace-farmcolors-wt` na větvi `feature/farm-colors` (= main, HEAD 297edc3, na GitHubu i na
+Pracuješ v `C:\matplace-farmcolors-wt` na větvi `feature/farm-colors` (= main, HEAD cbd4e79, na GitHubu i na
 serveru). Piš česky, krátce, bez pomlček. Roman je majitel a rozhoduje; klíče a .env dává jen on.
 
 ## Co se změnilo od stálého promptu
@@ -41,8 +41,8 @@ serveru). Piš česky, krátce, bez pomlček. Roman je majitel a rozhoduje; klí
 
 - **#41 flow velkých modelů** je nasazené celé. Zbývá: Romanův průchod drakem stránkou zakázky (zakázka 222 čeká na
   volby: `/farm/orders/ENY4F408gYLMXsFs56gr13qbBkuvXuFL`, tlačítko „Spočítat přesnou cenu“ = jeden řez); potom poslat
-  session 2 `farm_orders.timings` + `slice_run` pro AL.md §11.6. Session 2 má doplnit transakci kolem
-  `OrderService::create` a zvážit, zda z kalkulace nejít rovnou na stránku zakázky (krok „Tisknout na naší tiskárně“
+  session 2 `farm_orders.timings` + `slice_run` pro AL.md §11.6. Transakce kolem `OrderService::create` a test šířek stavových
+  sloupců (`FarmStatusColumnsTest`) jsou hotové a nasazené (server fc861b1). Session 2 má zvážit, zda z kalkulace nejít rovnou na stránku zakázky (krok „Tisknout na naší tiskárně“
   stahuje 90 MB STL do náhledu). Session 3 má posunout odhad doby u tvarů s dlouhými drahami nahoru (drak: ukázáno
   1 h 30 min až 6 h 30 min, skutečnost 6 h 36 min až 7 h 08 min). Až odevzdají: sloučit, testy, nasadit.
 - **#42 G‑kódy z tiskáren:** farma B (B1 až B8, K1, Kobra 3 Max) je mimo domácí síť; buď stejný postup na PC farmy B,
