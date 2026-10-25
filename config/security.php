@@ -31,7 +31,8 @@ return [
             'default-src' => ["'self'"],
             'script-src' => ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://connect.facebook.net', 'https://challenges.cloudflare.com', 'https://widget.packeta.com'],
             'style-src' => ["'self'", "'unsafe-inline'"],
-            'img-src' => ["'self'", 'data:', 'blob:', 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://www.googletagmanager.com', 'https://www.facebook.com', 'https://i.ytimg.com', 'https://widget.packeta.com', 'https://*.packeta.com'],
+            // media.printables.com: pictures of the inspiration catalogue's models without a thumbnail of our own (CatalogModel::thumbUrl, the first report-only hit of 25 Oct 2026)
+            'img-src' => ["'self'", 'data:', 'blob:', 'https://media.printables.com', 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://www.googletagmanager.com', 'https://www.facebook.com', 'https://i.ytimg.com', 'https://widget.packeta.com', 'https://*.packeta.com'],
             'font-src' => ["'self'", 'data:'],
             'connect-src' => ["'self'", 'https://www.google-analytics.com', 'https://*.google-analytics.com', 'https://analytics.google.com', 'https://stats.g.doubleclick.net', 'https://www.googletagmanager.com', 'https://www.facebook.com', 'https://widget.packeta.com', 'https://*.packeta.com'],
             'frame-src' => ['https://www.youtube-nocookie.com', 'https://www.youtube.com', 'https://challenges.cloudflare.com', 'https://widget.packeta.com'],
