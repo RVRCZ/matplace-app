@@ -127,6 +127,17 @@ return [
         'recolor_first' => 'You picked a colour from another printer: recalculate the price above first, then you can pay.',
         'colors_now' => 'Colours loaded in the printer right now',
         'while_slicing' => 'You can change the choices now as well. Recalculate with the new settings with the button once this computation is done.',
+        // a big model (docs/AL.md §11): sliced only after the customer confirms the colour; until then a rough price
+        'while_slicing_big' => 'You can change the choices now as well. After a change press Recalculate: the running computation is dropped and starts over with the new settings.',
+        'estimate_title' => 'Rough price',
+        'estimate_range' => ':from to :to',
+        'estimate_time' => 'print time about :time',
+        'estimate_note' => 'A rough figure from the model\'s volume and your choices; the exact price for the colour and the printer may differ.',
+        'estimate_wait' => 'We work out the exact price once you confirm the colour; it takes about :n min.',
+        'estimate_running' => 'Working out the exact price for the chosen colour and settings, about :n min. The rough price holds meanwhile.',
+        'slice_start' => 'Work out the exact price',
+        'slice_start_hint' => 'Pick the colour and the settings, then start the exact computation. For a large model it takes about :n min, which is why it does not run on its own.',
+        'restart_slice' => 'Recalculate (the computation starts over)',
         'no_colors' => 'No printer is ready at the moment. Please try again in a while.',
         'low_filament' => 'not enough filament on the spool',
         'starts_now' => 'The printer is free, the print starts right away.',
@@ -165,7 +176,7 @@ return [
     'stage_step' => 'step :n of :total',
 
     'status' => [
-        'uploaded' => 'Being prepared', 'sliced' => 'Ready to order', 'paid' => 'Paid', 'queued' => 'In the queue',
+        'uploaded' => 'Being prepared', 'awaiting_choices' => 'Waiting for your choices', 'sliced' => 'Ready to order', 'paid' => 'Paid', 'queued' => 'In the queue',
         'printing' => 'Printing', 'done' => 'Done, waiting for handover', 'done_parcel' => 'Done, getting ready to ship', 'handed_over' => 'Handed over', 'failed' => 'Failed', 'cancelled' => 'Cancelled',
     ],
 

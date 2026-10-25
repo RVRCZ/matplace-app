@@ -32,7 +32,7 @@ final class AccountEraser
         }
         // orders that were never paid are simply dropped (outside the transaction: the flow sends its own commands)
         $flow = app(OrderFlow::class);
-        FarmOrder::where('user_id', $user->id)->whereIn('status', [FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_SLICED])->whereNull('paid_at')->get()
+        FarmOrder::where('user_id', $user->id)->whereIn('status', [FarmOrder::STATUS_AWAITING_CHOICES, FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_SLICED])->whereNull('paid_at')->get()
             ->each(fn (FarmOrder $o) => $o->canMoveTo(FarmOrder::STATUS_CANCELLED) ? $flow->move($o, FarmOrder::STATUS_CANCELLED, 'user', $user->id, 'account deleted') : null);
 
         $avatar = $user->avatar_path;

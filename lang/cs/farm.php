@@ -127,6 +127,17 @@ return [
         'recolor_first' => 'Zvolili jste barvu z jiné tiskárny: nahoře nejdřív přepočítejte cenu, pak půjde zaplatit.',
         'colors_now' => 'Barvy, které jsou právě založené v tiskárně',
         'while_slicing' => 'Volby můžete měnit i teď. Přepočet s novým nastavením spustíte tlačítkem, až výpočet doběhne.',
+        // a big model (docs/AL.md §11): sliced only after the customer confirms the colour; until then a rough price
+        'while_slicing_big' => 'Volby můžete měnit i teď. Po změně stiskněte Přepočítat: běžící výpočet se zruší a začne znovu s novým nastavením.',
+        'estimate_title' => 'Orientační cena',
+        'estimate_range' => ':from až :to',
+        'estimate_time' => 'doba tisku asi :time',
+        'estimate_note' => 'Orientačně podle objemu modelu a zvolených voleb; přesná cena podle barvy a tiskárny se může lišit.',
+        'estimate_wait' => 'Přesnou cenu spočítáme po potvrzení barvy, trvá to asi :n min.',
+        'estimate_running' => 'Počítáme přesnou cenu podle zvolené barvy a nastavení, trvá to asi :n min. Zatím platí orientační cena.',
+        'slice_start' => 'Spočítat přesnou cenu',
+        'slice_start_hint' => 'Vyberte barvu a nastavení a spusťte přesný výpočet. U velkého modelu trvá asi :n min, proto neběží sám.',
+        'restart_slice' => 'Přepočítat (výpočet začne znovu)',
         'no_colors' => 'Teď není žádná tiskárna připravená. Zkuste to prosím za chvíli.',
         'low_filament' => 'na cívce je málo materiálu',
         'starts_now' => 'Tiskárna je volná, tisk začne hned.',
@@ -165,7 +176,7 @@ return [
     'stage_step' => 'krok :n z :total',
 
     'status' => [
-        'uploaded' => 'Připravuje se', 'sliced' => 'Připraveno k objednání', 'paid' => 'Zaplaceno', 'queued' => 'Ve frontě',
+        'uploaded' => 'Připravuje se', 'awaiting_choices' => 'Čeká na vaše volby', 'sliced' => 'Připraveno k objednání', 'paid' => 'Zaplaceno', 'queued' => 'Ve frontě',
         'printing' => 'Tiskne se', 'done' => 'Hotovo, čeká na převzetí', 'done_parcel' => 'Hotovo, chystáme k odeslání', 'handed_over' => 'Vydáno', 'failed' => 'Nepodařilo se', 'cancelled' => 'Zrušeno',
     ],
 

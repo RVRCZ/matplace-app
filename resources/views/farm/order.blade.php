@@ -9,7 +9,7 @@
         'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line', 'farm.order.second_color', 'farm.order.changes_title', 'farm.order.change_title', 'farm.order.change_same', 'farm.order.change_same_hint', 'farm.order.change_first', 'farm.order.change_line', 'farm.order.parts_title', 'farm.order.parts_hint', 'farm.order.part_main', 'farm.order.part_line', 'farm.order.parts_one_plate', 'farm.order.parts_one_machine', 'farm.order.colors_no_machine', 'farm.order.one_plate_required', 'farm.order.one_plate_copies', 'farm.order.one_plate_single', 'farm.order.kind_all', 'farm.order.codes_hint', 'farm.order.by_parts',
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m', 'farm.order.cancel_running_confirm', 'farm.order.supports_hide', 'farm.order.supports_show',
         'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.too_big_pickup', 'farm.delivery.none', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track',
-        'farm.order.tl.print', 'farm.order.tl.printing', 'farm.order.tl.printing_now', 'farm.order.tl.printing_end', 'farm.order.tl.done', 'farm.order.tl.dispatched', 'farm.order.tl.parcel', 'farm.order.tl.pickup', 'farm.order.tl.none', 'farm.order.why.lead', 'farm.order.why.printer', 'farm.order.why.kind', 'farm.order.why.settings', 'farm.order.why.time', 'farm.order.reslicing', 'farm.order.ship.choose', 'farm.order.ship.pickup', 'farm.order.ship.parcel', 'farm.order.ship.counting', 'farm.order.ship.free', 'farm.order.pay_total'];
+        'farm.order.tl.print', 'farm.order.tl.printing', 'farm.order.tl.printing_now', 'farm.order.tl.printing_end', 'farm.order.tl.done', 'farm.order.tl.dispatched', 'farm.order.tl.parcel', 'farm.order.tl.pickup', 'farm.order.tl.none', 'farm.order.why.lead', 'farm.order.why.printer', 'farm.order.why.kind', 'farm.order.why.settings', 'farm.order.why.time', 'farm.order.reslicing', 'farm.order.while_slicing', 'farm.order.while_slicing_big', 'farm.order.estimate_range', 'farm.order.estimate_time', 'farm.order.estimate_wait', 'farm.order.estimate_running', 'farm.order.slice_start', 'farm.order.slice_start_hint', 'farm.order.restart_slice', 'farm.recalculate', 'farm.order.ship.choose', 'farm.order.ship.pickup', 'farm.order.ship.parcel', 'farm.order.ship.counting', 'farm.order.ship.free', 'farm.order.pay_total'];
     $farmCfg = [
         'state' => $state,
         'prefill' => $prefill,
@@ -70,6 +70,19 @@
                 <p id="farm-printer" class="mt-1 hidden text-xs text-slate-500"></p>
                 <p id="farm-error" class="mt-2 hidden rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"></p>
                 <ul id="farm-warnings" class="mt-2 space-y-1 text-sm text-amber-700"></ul>
+
+                {{-- a big model before its slice (docs/AL.md §11): the rough price from the model's volume and the choices below,
+                     as a range like the calculator's first page; the exact one comes with the button in the form --}}
+                <div id="farm-estimate" class="hidden">
+                    <div class="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('farm.order.estimate_title') }}</div>
+                    <div class="mt-1 flex items-end gap-2">
+                        <span id="farm-estimate-price" class="text-3xl font-extrabold tracking-tight">—</span>
+                        <span class="pb-1 text-xs text-slate-500">{{ __('farm.order.with_vat') }}</span>
+                    </div>
+                    <p id="farm-estimate-time" class="mt-1 text-sm text-slate-600"></p>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('farm.order.estimate_note') }}</p>
+                    <p id="farm-estimate-wait" class="mt-2 rounded-lg bg-action-soft px-3 py-2 text-sm text-ink" role="status"></p>
+                </div>
 
                 <div id="farm-result" class="hidden">
                     <div class="mt-2 flex items-end gap-2">
@@ -205,6 +218,11 @@
                 </label>
                 <p id="farm-unit-note" class="mt-1 hidden text-xs text-amber-800"></p>
                 <button id="farm-reslice" type="submit" class="btn-secondary mt-3 hidden w-full text-sm">{{ __('farm.recalculate') }}</button>
+                {{-- a big model waiting for the choices: one button starts the exact computation for the colour and the settings above --}}
+                <div id="farm-slice-box" class="hidden">
+                    <p id="farm-slice-hint" class="mt-3 text-xs text-slate-600"></p>
+                    <button id="farm-slice-start" type="button" class="mt-2 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50">{{ __('farm.order.slice_start') }}</button>
+                </div>
             </form>
 
             {{-- step 3 of 3: the order – what was chosen above (only shown here), delivery, terms, pay --}}

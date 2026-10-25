@@ -38,12 +38,22 @@ use Illuminate\Support\Facades\Storage;
  * material's profile, store the G-code with everything needed to produce it again, price it.
  * Started when the order is made and again by ProcessModelFile when its file is ready, like SliceCalculation; two
  * copies never run at once (WithoutOverlapping), and the later one finds the order no longer "uploaded".
+ *
+ * A big model's slice is asked for by the customer and may be asked for again while it runs (other choices,
+ * docs/AL.md §11): every slice is a numbered run (`slice_run` on the order, `$run` here), the job checks between its
+ * steps whether it is still the current run, and a run that was overtaken leaves the order to the next one (nothing
+ * of its result moves the order on; the files it wrote are overwritten by the run that follows). The slicer itself
+ * cannot be interrupted, so an overtaken run costs its minutes of Orca but no wrong price.
  */
 class PrepareFarmOrder implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 40;
+    /**
+     * The attempts are mostly releases: a run that follows another of the same order waits for its lock five seconds
+     * at a time (middleware), and a big model's slice takes minutes – enough releases to outlast the job's timeout.
+     */
+    public int $tries = 400;
 
     public int $backoff = 3;
 
@@ -52,10 +62,26 @@ class PrepareFarmOrder implements ShouldQueue
     /** When it was put in the queue (epoch): the wait in the queue is part of the customer's wait. */
     public ?float $queuedAt = null;
 
-    public function __construct(public readonly int $orderId)
+    /** @param  int|null  $run  which slice of the order this is (FarmOrder::slice_run); null = whichever is current (the file's safety net) */
+    public function __construct(public readonly int $orderId, public readonly ?int $run = null)
     {
         $this->onQueue(config('queue.interactive'));
         $this->queuedAt = microtime(true);
+    }
+
+    /** The order asked for another slice since this run was dispatched: this run's result would be for choices nobody wants. */
+    private function overtaken(FarmOrder $order): bool
+    {
+        return $this->run !== null && (int) FarmOrder::whereKey($order->id)->value('slice_run') !== $this->run;
+    }
+
+    /** A verdict of this run reaches the order only while it is the current run. */
+    private function fail(OrderFlow $flow, FarmOrder $order, string $code, ?string $detail = null): void
+    {
+        if ($this->overtaken($order)) {
+            return;
+        }
+        $flow->fail($order, $code, 'system', detail: $detail);
     }
 
     /** Several workers: two recalculations of one order never write its files at the same time. */
@@ -67,12 +93,12 @@ class PrepareFarmOrder implements ShouldQueue
     public function handle(PrintPreparer $preparer, Slicer $slicer, FarmSettings $settings, OrderService $orders, OrderFlow $flow): void
     {
         $order = FarmOrder::with(['modelFile', 'printer', 'material'])->find($this->orderId);
-        if (! $order || $order->status !== FarmOrder::STATUS_UPLOADED) {
+        if (! $order || $order->status !== FarmOrder::STATUS_UPLOADED || $this->overtaken($order)) {
             return;
         }
         $file = $order->modelFile;
         if (! $file || $file->status === ModelFile::STATUS_FAILED) {
-            $flow->fail($order, 'file_unreadable', 'system', detail: $file?->error);
+            $this->fail($flow, $order, 'file_unreadable', $file?->error);
 
             return;
         }
@@ -81,7 +107,7 @@ class PrepareFarmOrder implements ShouldQueue
         }
         $printer = $order->printer;
         if (! $printer) {
-            $flow->fail($order, 'no_printer', 'system');
+            $this->fail($flow, $order, 'no_printer');
 
             return;
         }
@@ -91,7 +117,7 @@ class PrepareFarmOrder implements ShouldQueue
         // a first slice is waited for from the upload, a re-slice (other quality, colour, printer) from the click
         $reslice = $order->slice_params !== null;
         $clock = (new Stopwatch)->note('started', round(microtime(true), 1))->note('reslice', $reslice)->since('queue', $this->queuedAt)
-            ->note('triangles', $file->triangles);
+            ->note('triangles', $file->triangles)->note('run', $this->run);
         if (! $reslice) {
             $clock->since('wait', $order->created_at?->getTimestamp());
         }
@@ -104,7 +130,7 @@ class PrepareFarmOrder implements ShouldQueue
                 // stops and says so rather than slicing for spools no machine of this G-code holds
                 $plates = $orders->partPlatesOn($main, $order->partPlates());
                 if (array_column($plates, 'color_id') !== array_map('intval', array_column($order->partPlates(), 'color_id'))) {
-                    $flow->fail($order, 'parts_machine', 'system');
+                    $this->fail($flow, $order, 'parts_machine');
 
                     return;
                 }
@@ -120,7 +146,7 @@ class PrepareFarmOrder implements ShouldQueue
                 if ($file->onePlateRequired()) {
                     // the colours of this design share a layer: by parts the motif would come out loose – the order stops
                     // here and says what it needs (a machine with a changer, spools of one machine, one piece)
-                    $flow->fail($order, 'one_plate_needed', 'system', detail: (string) ($clock->toArray()['one_plate_skipped'] ?? ''));
+                    $this->fail($flow, $order, 'one_plate_needed', (string) ($clock->toArray()['one_plate_skipped'] ?? ''));
 
                     return;
                 }
@@ -138,6 +164,11 @@ class PrepareFarmOrder implements ShouldQueue
                 : $preparer->prepare($file->absoluteStlPath(), $disk->path($stlRel), $order->unit_scale * (float) ($order->scale ?: 1), $bed, $file->builtForPrinting()));
             $clock->note('prepare_cached', (bool) ($mesh->orientation['reused'] ?? false));
             @unlink($disk->path($order->dir().'/print.stl.stage'));   // the tool's running commentary ends with it
+            if ($this->overtaken($order)) {
+                $clock->note('overtaken', 'prepare');
+
+                return;
+            }
             $piece = $mesh;
             $margin = 2 * (float) $settings->get('bed_margin_mm');
             $usable = new Dimensions($bed->x - $margin, $bed->y - $margin, $bed->z);
@@ -172,7 +203,7 @@ class PrepareFarmOrder implements ShouldQueue
             $order->print_stl_path = $stlRel;
             $order->save();
             if (! $verdict['ok']) {
-                $flow->fail($order, $verdict['errors'][0]['code'], 'system');
+                $this->fail($flow, $order, $verdict['errors'][0]['code']);
 
                 return;
             }
@@ -183,6 +214,15 @@ class PrepareFarmOrder implements ShouldQueue
             $result = $clock->measure('slice', fn () => $slicer->slice($disk->path($stlRel), $params));
             $clock->merge($result->timings);
             $postStart = hrtime(true);
+            if ($this->overtaken($order)) {
+                // the choices changed while the slicer ran: this G-code is for nobody, the next run writes its own
+                $clock->note('overtaken', 'slice');
+                if ($result->gcodePath) {
+                    @unlink($result->gcodePath);
+                }
+
+                return;
+            }
             if (! $result->gcodePath || ! is_file($result->gcodePath)) {
                 throw new \RuntimeException('Slicer returned no G-code.');
             }
@@ -250,12 +290,15 @@ class PrepareFarmOrder implements ShouldQueue
         } catch (\Throwable $e) {
             Log::warning('PrepareFarmOrder failed', ['order' => $order->id, 'error' => $e->getMessage()]);
             $clock->note('failed', true);
-            $flow->fail($order, 'slicing_failed', 'system', detail: mb_substr($e->getMessage(), 0, 1000));
+            $this->fail($flow, $order, 'slicing_failed', mb_substr($e->getMessage(), 0, 1000));
         } finally {
-            // only the column: whatever the steps above saved stays as it is
+            // only the column: whatever the steps above saved stays as it is. An overtaken run leaves the timings to the
+            // run that replaced it (which may have written its own already).
             $clock->note('finished', round(microtime(true), 1));
             $clock->add('total', (float) $clock->toArray()['finished'] - (float) $clock->toArray()['started']);
-            FarmOrder::whereKey($order->id)->update(['timings' => json_encode($clock->toArray())]);
+            if (! $this->overtaken($order)) {
+                FarmOrder::whereKey($order->id)->update(['timings' => json_encode($clock->toArray())]);
+            }
         }
     }
 
@@ -322,6 +365,11 @@ class PrepareFarmOrder implements ShouldQueue
     /** The sliced order gets its price and moves on: to the customer (sliced), or straight on when nobody pays or has paid already. */
     private function price(FarmOrder $order, $printer, FarmSettings $settings, OrderService $orders, OrderFlow $flow, Stopwatch $clock): void
     {
+        if ($this->overtaken($order)) {
+            $clock->note('overtaken', 'price');   // sliced for choices the customer has changed meanwhile: the next run prices its own
+
+            return;
+        }
         if ($order->isFree()) {
             // the farm's own print (test or YouTube showcase): nobody pays, it goes straight to the queue
             $order->fill(['stage' => null])->save();
@@ -407,7 +455,7 @@ class PrepareFarmOrder implements ShouldQueue
             if (! $verdict['ok']) {
                 $order->check = $verdict + ['part' => $plate['part']] + (array) $order->check;
                 $order->save();
-                $flow->fail($order, $verdict['errors'][0]['code'], 'system', detail: (string) $plate['part']);
+                $this->fail($flow, $order, $verdict['errors'][0]['code'], (string) $plate['part']);
 
                 return;
             }
@@ -613,7 +661,7 @@ class PrepareFarmOrder implements ShouldQueue
             if (! $verdict['ok']) {
                 $order->check = $verdict + ['part' => (string) $skeleton[$i]['part'], 'mesh' => $partMesh->toArray(), 'unit_guess' => ModelValidator::guessUnit($raw, $bed), 'raw_dims' => $raw->toArray(), 'piece_dims' => $partMesh->bbox->toArray(), 'max_copies' => 1];
                 $order->save();
-                $flow->fail($order, $verdict['errors'][0]['code'], 'system', detail: (string) $skeleton[$i]['part']);
+                $this->fail($flow, $order, $verdict['errors'][0]['code'], (string) $skeleton[$i]['part']);
 
                 return true;
             }
@@ -647,7 +695,7 @@ class PrepareFarmOrder implements ShouldQueue
         $order->print_stl_path = $printRel;
         $order->save();
         if (! $verdict['ok']) {
-            $flow->fail($order, $verdict['errors'][0]['code'], 'system');
+            $this->fail($flow, $order, $verdict['errors'][0]['code']);
 
             return true;
         }
@@ -678,7 +726,7 @@ class PrepareFarmOrder implements ShouldQueue
         $slicePaths = $paths;
         foreach ($paths as $i => $rel) {
             if ($decimator->wants($disk->path($rel))) {
-                $r = $clock->measure('decimate', fn () => $decimator->decimate($disk->path($rel), $disk->path($rel).'.thin'));
+                $r = $clock->measure('decimate', fn () => $decimator->decimate($disk->path($rel), $disk->path($rel).'.thin', (float) $setup['layer']));
                 $clock->note('triangles_in_'.($i + 1), $r['before'])->note('triangles_sliced_'.($i + 1), $r['after'] ?? $r['before']);
                 if ($r['applied']) {
                     $slicePaths[$i] = $rel.'.thin';

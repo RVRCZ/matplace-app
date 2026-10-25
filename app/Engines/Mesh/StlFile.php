@@ -355,6 +355,21 @@ final class StlFile
         return ! str_starts_with(ltrim(substr($head, 0, 6)), 'solid');
     }
 
+    /** The triangle count of a sound binary STL (its size is exactly the header plus the records); null for anything else. */
+    public static function binaryCount(string $path): ?int
+    {
+        $size = @filesize($path);
+        if ($size === false || $size < self::BINARY_HEADER + 4) {
+            return null;
+        }
+        $fh = fopen($path, 'rb');
+        $head = fread($fh, self::BINARY_HEADER + 4);
+        fclose($fh);
+        $count = (int) unpack('V', substr($head, self::BINARY_HEADER, 4))[1];
+
+        return $size === self::BINARY_HEADER + 4 + $count * self::TRIANGLE_BYTES ? $count : null;
+    }
+
     /** How many triangles the file holds: from the header of a binary STL at once, counted through an ASCII one. */
     public static function triangleCount(string $path): int
     {

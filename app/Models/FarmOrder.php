@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class FarmOrder extends Model
 {
+    public const STATUS_AWAITING_CHOICES = 'awaiting_choices';   // a big model: waits for the customer's choices and colour before it is sliced at all (docs/AL.md §11)
+
     public const STATUS_UPLOADED = 'uploaded';        // model taken over, being checked / oriented / sliced
 
     public const STATUS_SLICED = 'sliced';            // price known, waiting for the customer
@@ -41,6 +43,7 @@ class FarmOrder extends Model
     public const KIND_SHOWCASE = 'showcase';      // a print for the YouTube channel (App\Domain\YouTube\ShowcasePrints): no price, sliced → queued
 
     public const TRANSITIONS = [
+        self::STATUS_AWAITING_CHOICES => [self::STATUS_UPLOADED, self::STATUS_FAILED, self::STATUS_CANCELLED],
         self::STATUS_UPLOADED => [self::STATUS_SLICED, self::STATUS_FAILED, self::STATUS_CANCELLED],
         self::STATUS_SLICED => [self::STATUS_UPLOADED, self::STATUS_PAID, self::STATUS_CANCELLED, self::STATUS_QUEUED],   // → queued: tests only (OrderFlow)
         self::STATUS_PAID => [self::STATUS_QUEUED, self::STATUS_CANCELLED],
@@ -59,7 +62,7 @@ class FarmOrder extends Model
 
     protected $fillable = [
         'quality_rating', 'quality_note', 'timelapse_path', 'kind', 'farm_printer_material_id', 'test_params',
-        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'error', 'error_detail', 'quality', 'strength', 'supports', 'second_slot_id', 'second_color_id', 'color_changes', 'by_parts', 'part_plates', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
+        'token', 'number', 'user_id', 'model_file_id', 'status', 'stage', 'big_model', 'slice_run', 'slice_estimate_s', 'error', 'error_detail', 'quality', 'strength', 'supports', 'second_slot_id', 'second_color_id', 'color_changes', 'by_parts', 'part_plates', 'copies', 'plates', 'plates_done', 'plate_copies', 'rest_copies', 'unit_scale', 'scale',
         'farm_material_id', 'farm_color_id', 'farm_printer_id', 'farm_printer_slot_id', 'delivery', 'shipping_address', 'note',
         'print_settings', 'admin_overrides', 'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'rest_gcode_path', 'slice_params', 'slice_result', 'est_minutes',
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
@@ -77,6 +80,7 @@ class FarmOrder extends Model
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime', 'attention_cleared_at' => 'datetime',
         'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',
         'shipping_price' => 'float', 'shipped_at' => 'datetime', 'timings' => 'array', 'color_changes' => 'array', 'by_parts' => 'bool', 'part_plates' => 'array',
+        'big_model' => 'bool', 'slice_run' => 'int', 'slice_estimate_s' => 'int',
     ];
 
     /** What the customer pays (or paid), in the order's own currency. */
@@ -371,7 +375,19 @@ class FarmOrder extends Model
     /** Before it starts for free; a running print too, paid for as far as it got (OrderFlow::onStopped). */
     public function cancellableByCustomer(): bool
     {
-        return in_array($this->status, [self::STATUS_UPLOADED, self::STATUS_SLICED, self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING], true);
+        return in_array($this->status, [self::STATUS_AWAITING_CHOICES, self::STATUS_UPLOADED, self::STATUS_SLICED, self::STATUS_PAID, self::STATUS_QUEUED, self::STATUS_PRINTING], true);
+    }
+
+    /** The order has not been sliced yet and is not being sliced: a big model waiting for the customer's choices (docs/AL.md §11). */
+    public function awaitsChoices(): bool
+    {
+        return $this->status === self::STATUS_AWAITING_CHOICES;
+    }
+
+    /** A slice is running right now for an unpaid big model: a change of the choices starts it over (OrderService::reslice). */
+    public function sliceRestartable(): bool
+    {
+        return $this->status === self::STATUS_UPLOADED && $this->big_model && $this->paid_at === null && $this->kind === self::KIND_PRINT;
     }
 
     /** Directory on the farm disk holding this order's print STL, G-code and snapshots. */

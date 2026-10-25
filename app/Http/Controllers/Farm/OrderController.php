@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Farm;
 
+use App\Domain\Farm\BigModel;
 use App\Domain\Farm\Dispatcher;
 use App\Domain\Farm\FarmRefusal;
 use App\Domain\Farm\FarmSettings;
@@ -34,6 +35,7 @@ use App\Support\Track;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -264,7 +266,7 @@ class OrderController extends Controller
     {
         $filters = ['open', FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_CANCELLED, FarmOrder::STATUS_FAILED];
         $filter = in_array($request->query('status'), $filters, true) ? (string) $request->query('status') : null;
-        $open = [FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_SLICED, FarmOrder::STATUS_PAID, FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING];
+        $open = [FarmOrder::STATUS_AWAITING_CHOICES, FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_SLICED, FarmOrder::STATUS_PAID, FarmOrder::STATUS_QUEUED, FarmOrder::STATUS_PRINTING];
 
         return view('farm.orders', [
             'orders' => FarmOrder::with(['modelFile', 'color'])->where('user_id', $request->user()->id)->where('kind', FarmOrder::KIND_PRINT)
@@ -277,9 +279,10 @@ class OrderController extends Controller
     }
 
     /**
-     * A new order, sliced at once. From the calculator ("Print with us": `calc`, the calculation's settings and kind
-     * of plastic), from the start page (`file`, or a designer's card), with the colours asked for or preselected
-     * (preselect); the customer then picks material, settings and colours once, on the order page.
+     * A new order, sliced at once – or, for a big model, waiting for the choices first (OrderService::create,
+     * docs/AL.md §11). From the calculator ("Print with us": `calc`, the calculation's settings and kind of plastic),
+     * from the start page (`file`, or a designer's card), with the colours asked for or preselected (preselect); the
+     * customer then picks material, settings and colours once, on the order page.
      */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
@@ -328,7 +331,7 @@ class OrderController extends Controller
         try {
             $order = $this->orders->create($request->user(), $file, $quality, (string) ($data['strength'] ?? $from['strength'] ?? 'standard'), $data['unit'] ?? null,
                 (int) ($data['copies'] ?? $from['copies'] ?? 1), (float) ($data['scale'] ?? $from['scale'] ?? 1), $pick['color'], (string) ($data['supports'] ?? $from['supports'] ?? 'auto'), null, $card, $inspiration,
-                $pick['changes'] ?: null, $pick['by_parts'] ? $pick['parts'] : null, $from['material'] ?? null);
+                $pick['changes'] ?: null, $pick['by_parts'] ? $pick['parts'] : null, $from['material'] ?? null, $calc);
             Track::event('order_created', $card ?? $order->modelFile, array_filter(['order' => $order->id, 'tool' => $order->modelFile?->origin === 'tool' ? $order->modelFile->kind() : null]));
         } catch (FarmRefusal $e) {
             return $request->expectsJson()
@@ -693,12 +696,20 @@ class OrderController extends Controller
         $check = (array) $order->check;
         // a design that must print on one plate takes only machines that change spools (an operator feeds one at a time)
         $required = (bool) $order->modelFile?->onePlateRequired();
-        $colors = $order->status === FarmOrder::STATUS_SLICED
+        $sliced = $order->status === FarmOrder::STATUS_SLICED;
+        // the colours are on offer once the price is known – and before any slice for a big model, which is sliced for
+        // the colour the customer confirms (awaiting_choices) and again when the choices change while it runs (docs/AL.md §11)
+        $choosing = $sliced || $order->awaitsChoices() || $order->sliceRestartable();
+        $colors = $choosing
             ? $this->orders->availableColors($order, $required)->map(fn ($r) => [
                 'slot' => $r['slot']->id, 'name' => $r['color']->displayName(), 'kind' => $r['color']->material->label(), 'hex' => $r['color']->hex, 'finish' => $r['color']->material->finish, 'photo' => $r['color']->photoUrl(),
                 // the spools of this colour that could print the order, this entry's own first ("U33"): farm, printer, slot
                 'code' => $r['codes'][0] ?? null, 'codes' => $r['codes'],
-                'enough' => $r['enough'], 'price' => $price = $this->orders->priceFor($order, $r['printer'], Shipping::PICKUP, $r['color']->material, null, $currency), 'total' => $price['total'],
+                'enough' => $r['enough'],
+                // the price for this colour's machine and kind once sliced; before that the page estimates it from these rates
+                'price' => $price = $sliced ? $this->orders->priceFor($order, $r['printer'], Shipping::PICKUP, $r['color']->material, null, $currency) : null, 'total' => $price['total'] ?? null,
+                'rates' => ['price_per_gram' => (float) $r['color']->material->price_per_gram, 'density' => (float) ($r['color']->material->density ?: 1.24),
+                    'hourly_rate' => (float) ($r['printer']->hourly_rate ?? $this->settings->get('hourly_rate')), 'time_factor' => (float) ($r['printer']->time_factor ?: 1), 'weight_factor' => (float) ($r['printer']->weight_factor ?: 1)],
                 'starts_now' => $r['printer']->readyForAutoStart() && ! $this->settings->get('require_approval'),
                 // a plate with a raised text: the colours the text can have next to this colour of the plate – from every
                 // machine that holds this colour (the order goes where both spools are, machineFor)
@@ -760,10 +771,16 @@ class OrderController extends Controller
             // the design's colours share a layer: one plate on a machine with a changer, one piece, or nothing (docs/AL.md §10.8)
             'one_plate_required' => $required,
             // how many separately printed parts the design has: two or more, and the order page offers "print them apart"
-            'part_count' => $order->status === FarmOrder::STATUS_SLICED && $order->modelFile ? count(OrderService::designParts($order->modelFile)) : 0,
+            'part_count' => $choosing && $order->modelFile ? count(OrderService::designParts($order->modelFile)) : 0,
             'max_colors' => FarmOrder::MAX_COLORS,
             'status' => $order->status,
             'status_text' => $order->statusText(),
+            // a big model (docs/AL.md §11): sliced only on the customer's word, the page estimates the price until then
+            'big' => (bool) $order->big_model,
+            'choosing' => $choosing,
+            'slice_minutes' => $order->big_model ? BigModel::minutes($order->slice_estimate_s) : null,
+            'slice_run' => (int) $order->slice_run,
+            'estimate' => $this->estimateFor($order),
             'stage' => $stage = $this->stageOf($order),
             'stage_step' => $stage ? (array_search($stage, self::STAGES, true) ?: 0) + 1 : null,
             'stage_total' => count(self::STAGES),
@@ -830,6 +847,33 @@ class OrderController extends Controller
             ] : null,
             'can_cancel' => $order->cancellableByCustomer(),
             'final' => in_array($order->status, [FarmOrder::STATUS_HANDED_OVER, FarmOrder::STATUS_CANCELLED], true),
+        ];
+    }
+
+    /**
+     * What the page needs to estimate the price of a big model before it is sliced, the way the calculator's first page
+     * does (resources/js/calc/rough.ts, the same constants as App\Domain\Calculation\RoughEstimator) and the way the farm
+     * prices (PriceCalculator): the model's volume and surface, the rough constants, the farm's fees in crowns, the
+     * designer's reward, and the rate for an account in euros. The kind's price per gram and density and the machine's
+     * rates ride with every colour (`colors[].rates`). Null once the order is paid or for a small model.
+     */
+    private function estimateFor(FarmOrder $order): ?array
+    {
+        $file = $order->modelFile;
+        if (! $order->big_model || $order->paid_at !== null || ! $file || $file->volume_mm3 === null) {
+            return null;
+        }
+        $card = $order->designer_model_id ? $order->designerModel : null;
+
+        return [
+            'volume_mm3' => (float) $file->volume_mm3,
+            'area_mm2' => $file->area_mm2 !== null ? (float) $file->area_mm2 : null,
+            'rough' => Arr::only((array) config('pricing.rough'), ['perimeters', 'line_width_mm', 'shell_fraction_fallback', 'support_factor', 'minutes_per_gram', 'overhead_minutes', 'quality_time_factor', 'quality_layer_mm', 'range_low', 'range_high']),
+            'strengths' => array_map(fn ($s) => (int) ($s['infill'] ?? 15), (array) $this->settings->get('strengths')),
+            'rates' => ['fixed_fee' => (float) $this->settings->get('fixed_fee'), 'min_price' => (float) $this->settings->get('min_price'), 'vat_percent' => $this->shipping->vatPercent('CZ'), 'rounding' => (float) $this->settings->get('rounding')],
+            'royalty_czk' => $card && $card->profile?->user_id !== $order->user_id ? (float) $card->royalty_czk : 0.0,
+            'royalty_cap' => (float) config('catalog.royalty_cap', 0.30),
+            'eur_rate' => Money::rate(),
         ];
     }
 

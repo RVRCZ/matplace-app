@@ -55,6 +55,27 @@ final class BigMeshTest extends TestCase
         $this->assertNull($this->actingAs($user)->getJson(str_replace(url('/'), '', $r->json('url')).'/status')->assertOk()->json('big_model'));
     }
 
+    public function test_a_sound_binary_stl_is_taken_as_it_is_and_an_ascii_one_is_rewritten(): void
+    {
+        // rewriting a binary file triangle by triangle in PHP took most of the wait of a big upload (docs/AL.md §11)
+        $up = $this->postJson('/api/uploads', ['file' => $this->cube()])->assertCreated();
+        $file = ModelFile::where('uuid', $up->json('file.uuid'))->firstOrFail();
+        $this->assertSame(ModelFile::STATUS_READY, $file->status);
+        $this->assertSame('copy', $file->timings['convert']);
+        $this->assertSame(Storage::disk('models')->get($file->storage_path), Storage::disk('models')->get($file->stl_path), 'the same bytes');
+        $this->assertSame(12, $file->triangles);
+        $this->assertEqualsWithDelta(8000.0, $file->volume_mm3, 0.1);
+
+        $path = sys_get_temp_dir().'/mp_big_ascii_'.uniqid().'.stl';
+        MeshFixtures::cubeStlAscii($path, 20);
+        $up = $this->postJson('/api/uploads', ['file' => new UploadedFile($path, 'cube.stl', null, null, true)])->assertCreated();
+        $file = ModelFile::where('uuid', $up->json('file.uuid'))->firstOrFail();
+        $this->assertSame(ModelFile::STATUS_READY, $file->status);
+        $this->assertArrayNotHasKey('convert', $file->timings);
+        $this->assertStringStartsWith('matplace scaled', Storage::disk('models')->get($file->stl_path), 'an ASCII file becomes a binary one with our header');
+        $this->assertSame(12, $file->triangles);
+    }
+
     public function test_a_model_beyond_the_limit_is_refused_on_upload_with_the_advice_to_thin_it(): void
     {
         config(['engines.mesh.max_triangles' => 10]);   // a cube has 12

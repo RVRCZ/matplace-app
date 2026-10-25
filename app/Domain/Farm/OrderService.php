@@ -7,6 +7,7 @@ use App\Domain\Tools\ModelEditor;
 use App\Domain\Tools\ParametricGenerator;
 use App\Engines\DTO\Dimensions;
 use App\Jobs\PrepareFarmOrder;
+use App\Models\Calculation;
 use App\Models\CatalogModel;
 use App\Models\DesignerModel;
 use App\Models\FarmColor;
@@ -30,9 +31,14 @@ final class OrderService
     public function __construct(private readonly FarmSettings $settings, private readonly PriceCalculator $prices, private readonly Shipping $shipping) {}
 
     /**
+     * A small model is sliced at once; a big one (BigModel: millions of triangles, or a calculation that took over a
+     * minute to slice) waits in `awaiting_choices` until the customer has chosen the settings and confirmed the colour,
+     * and the page shows a rough price meanwhile (docs/AL.md §11). `$calculation` is the one the order comes from, when
+     * it comes from the calculator: its slice time is part of the verdict and of the minutes the page promises.
+     *
      * @throws FarmRefusal with a code the UI translates: not_ready, too_big, daily_limit, no_printer
      */
-    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null, ?string $materialCode = null): FarmOrder
+    public function create(User $user, ModelFile $file, string $quality = 'standard', string $strength = 'standard', ?string $unit = null, int $copies = 1, float $scale = 1.0, ?int $colorId = null, string $supports = 'auto', ?int $secondColorId = null, ?DesignerModel $card = null, ?CatalogModel $inspiration = null, ?array $changeColorIds = null, ?array $partColorIds = null, ?string $materialCode = null, ?Calculation $calculation = null): FarmOrder
     {
         $scale = max(0.25, min((float) config('pricing.max_scale', 4), $scale));
         if (! FarmGate::open($user)) {
@@ -91,13 +97,17 @@ final class OrderService
         $second = $picked && $picked[0]['slot_id'] !== $chosen['slot']->id ? FarmPrinterSlot::with('color')->find($picked[0]['slot_id']) : null;
         // the parts of the design printed separately, each from its own spool: one plate per part, laid out when it is prepared
         $partPlates = $partColorIds !== null ? $this->spoolsForParts($chosen['slot'] ?? null, self::designParts($file), $partColorIds) : [];
+        // a big model is not sliced before the customer has chosen: the order waits for the button on its page
+        $big = BigModel::judge($file, $calculation);
 
         $order = FarmOrder::create([
             'token' => Str::random(32),
             'user_id' => $user->id,
             'model_file_id' => $file->id,
-            'status' => FarmOrder::STATUS_UPLOADED,
-            'stage' => 'checking',
+            'status' => $big['big'] ? FarmOrder::STATUS_AWAITING_CHOICES : FarmOrder::STATUS_UPLOADED,
+            'stage' => $big['big'] ? null : 'checking',
+            'big_model' => $big['big'],
+            'slice_estimate_s' => $big['big'] ? $big['estimate_s'] : null,
             'quality' => $this->knownQuality($quality),
             'strength' => $this->knownStrength($strength),
             'supports' => $supports === 'off' ? 'off' : 'auto',
@@ -120,27 +130,41 @@ final class OrderService
             'catalog_model_id' => $inspiration?->id,
             'note' => $inspiration?->attribution(),
         ]);
-        $order->events()->create(['to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'user', 'actor_id' => $user->id]);
-        PrepareFarmOrder::dispatch($order->id);
+        $order->events()->create(['to' => $order->status, 'actor' => 'user', 'actor_id' => $user->id,
+            'note' => $big['big'] ? 'big model ('.($big['reason'] === 'slice_time' ? 'calculation sliced in '.round((float) $big['slice_s']).' s' : number_format($big['triangles'] / 1e6, 1, '.', '').' M triangles').'): the slice waits for the choices' : null]);
+        if (! $big['big']) {
+            PrepareFarmOrder::dispatch($order->id);
+        }
 
         return $order;
     }
 
-    /** Another quality, strength or unit: slice again (counts towards the daily limit, like a new order). */
     /**
+     * Another quality, strength or unit: slice again (counts towards the daily limit, like a new order). The same
+     * call is the first slice of a big model waiting for the choices (`awaiting_choices` → the button on the page;
+     * the order was counted when it was made) and, while a big model is being sliced, a change of the choices: the
+     * running slice is overtaken (`slice_run` moves on, PrepareFarmOrder throws a stale result away) and a new one
+     * starts with the new choices (docs/AL.md §11).
+     *
      * @param  array<string, mixed>|null  $settings  the "advanced" numbers (PrintSettings::FIELDS); null = leave as they are, [] = back to the presets
      * @param  bool|null  $byParts  print the parts of the design separately (each from its own spool) or together; null = leave as it is
      */
     public function reslice(FarmOrder $order, string $quality, string $strength, ?string $unit, ?int $copies = null, ?float $scale = null, ?string $supports = null, ?int $slotId = null, ?array $settings = null, ?bool $byParts = null, ?array $partSlotIds = null): FarmOrder
     {
-        if (! in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED], true) || $order->paid_at !== null) {
+        $first = $order->awaitsChoices();
+        $restart = $order->sliceRestartable();
+        if ((! in_array($order->status, [FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED], true) && ! $first && ! $restart) || $order->paid_at !== null) {
             throw new FarmRefusal('locked');
+        }
+        if ($first && ! FarmGate::open($order->user)) {
+            throw new FarmRefusal('closed');   // the farm closed while the order waited; an admin goes on
         }
         $this->assertDailyLimit($order->user);
         $from = $order->status;
         $quality = $this->knownQuality($quality);
         $order->fill([
             'status' => FarmOrder::STATUS_UPLOADED, 'stage' => 'checking', 'error' => null, 'error_detail' => null,
+            'slice_run' => (int) $order->slice_run + 1,
             'quality' => $quality, 'strength' => $this->knownStrength($strength),
             'supports' => $supports === null ? $order->supports : ($supports === 'off' ? 'off' : 'auto'),
             'copies' => $copies === null ? $order->copies : max(1, min(PlateLayout::MAX_COPIES, $copies)),
@@ -178,10 +202,14 @@ final class OrderService
             $order->farm_material_id = $material->id;
         }
         $order->save();
-        $order->events()->create(['from' => $from, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'user', 'actor_id' => $order->user_id, 'note' => 'reslice']);
-        Cache::add($this->sliceCounterKey($order->user), 0, now()->endOfDay());
-        Cache::increment($this->sliceCounterKey($order->user));
-        PrepareFarmOrder::dispatch($order->id);
+        $order->events()->create(['from' => $from, 'to' => FarmOrder::STATUS_UPLOADED, 'actor' => 'user', 'actor_id' => $order->user_id,
+            'note' => $first ? 'slice started by the customer' : ($restart ? 'choices changed while slicing: run '.$order->slice_run.' replaces run '.($order->slice_run - 1) : 'reslice')]);
+        if (! $first) {
+            // the first slice of a waiting order was counted when the order was made (slicesToday counts the day's orders)
+            Cache::add($this->sliceCounterKey($order->user), 0, now()->endOfDay());
+            Cache::increment($this->sliceCounterKey($order->user));
+        }
+        PrepareFarmOrder::dispatch($order->id, (int) $order->slice_run);
 
         return $order;
     }
@@ -617,6 +645,8 @@ final class OrderService
     public function availableSlots(FarmOrder $order): Collection
     {
         $dims = is_array($order->check['dims'] ?? null) ? Dimensions::fromArray($order->check['dims']) : null;
+        // not prepared yet (a big model waiting for the choices): the file's own box in the chosen unit and size
+        $dims ??= is_array($order->modelFile?->bbox) ? Dimensions::fromArray($order->modelFile->bbox)->scaled((float) ($order->unit_scale ?: 1) * (float) ($order->scale ?: 1)) : null;
         if (! $dims) {
             return collect();
         }

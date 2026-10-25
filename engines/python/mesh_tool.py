@@ -3,7 +3,8 @@
 Mesh utility for matplace engines (trimesh, optional pymeshfix, optional cadquery/OCP for CAD formats).
 
   mesh_tool.py probe                                  -> {"ok": true, "trimesh": "x.y.z", "pymeshfix": bool, "cad": bool}
-  mesh_tool.py check <in>                             -> geometry + topology report (mm)
+  mesh_tool.py check <in> [fast_above]                -> geometry + topology report (mm); a binary STL of at least
+                                                          fast_above triangles (400 000) is measured with numpy alone
   mesh_tool.py repair <in> <out.stl>                  -> repaired binary STL + report
   mesh_tool.py convert <in> <out.stl>                 -> any trimesh-readable mesh format to binary STL (scene merged)
   mesh_tool.py normalize <in> <out.stl> <max_mm> <yup 0|1> [clean,pedestal,solid] [extras-json]
@@ -28,6 +29,86 @@ def out(obj):
 
 def fail(msg):
     out({"ok": False, "error": str(msg)})
+
+
+FAST_CHECK_ABOVE = 400_000
+
+
+def fast_report(path, above=FAST_CHECK_ABOVE):
+    """
+    A big binary STL measured with numpy alone (TODO #41 §7, docs/AL.md §11): trimesh's loading (it merges vertices
+    by hashing) and the split into bodies took 85 s on a 1.8 M-triangle scan here, 23 s of a calculation's wait on
+    the server; the same figures take a few seconds this way. The same keys as report(): the box, the surface, the
+    volume (the signed sum of the triangles' tetrahedra; of an open mesh it is what it is, the farm checks and
+    repairs before any print), closed = every edge lies in exactly two faces, once each way (bit-identical vertices,
+    which is how exporters write a binary STL), bodies = connected pieces of the vertex graph. None for anything
+    that is not a binary STL of at least `above` triangles, so the ordinary path runs.
+    """
+    import os
+    import numpy as np
+    with open(path, "rb") as fh:
+        head = fh.read(84)
+    if len(head) < 84 or above <= 0:
+        return None
+    n = int(np.frombuffer(head[80:84], dtype="<u4")[0])
+    if n < above or os.path.getsize(path) != 84 + 50 * n:
+        return None
+    rec = np.dtype([("n", "<f4", (3,)), ("v", "<f4", (3, 3)), ("a", "<u2")])
+    v32 = np.fromfile(path, dtype=rec, count=n, offset=84)["v"] + np.float32(0.0)   # + 0.0 folds -0.0 into 0.0
+    tri = v32.astype(np.float64)   # (n, 3 corners, xyz)
+    flat = tri.reshape(-1, 3)
+    lo, hi = flat.min(axis=0), flat.max(axis=0)
+    if float((hi - lo).max()) > 2000:   # the same unit guess as load(): inches
+        tri *= 25.4
+        lo, hi = lo * 25.4, hi * 25.4
+    a, b, c = tri[:, 0], tri[:, 1], tri[:, 2]
+    area = float(0.5 * np.linalg.norm(np.cross(b - a, c - a), axis=1).sum())
+    volume = float(np.einsum("ij,ij->i", a, np.cross(b, c)).sum() / 6.0)
+    # topology on the vertices as written (bit for bit, the way a binary STL repeats a corner): an index per distinct
+    # corner by sorting packed bit patterns – a structured unique or a three-key lexsort of floats takes many times longer
+    bits = v32.reshape(-1, 3).view(np.uint32)
+    k1 = (bits[:, 0].astype(np.uint64) << np.uint64(32)) | bits[:, 1].astype(np.uint64)
+    k2 = bits[:, 2]
+    order = np.lexsort((k2, k1))
+    s1, s2 = k1[order], k2[order]
+    fresh = np.empty(len(s1), dtype=bool)
+    fresh[0] = True
+    fresh[1:] = (s1[1:] != s1[:-1]) | (s2[1:] != s2[:-1])
+    inv = np.empty(len(s1), dtype=np.int64)
+    inv[order] = np.cumsum(fresh) - 1
+    faces = inv.reshape(-1, 3)
+    nv = int(faces.max()) + 1 if len(faces) else 0
+    e = np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]])
+    # closed = every edge in exactly two faces; wound one way = no directed edge twice (run lengths of sorted keys)
+    und = np.sort(np.minimum(e[:, 0], e[:, 1]) * nv + np.maximum(e[:, 0], e[:, 1]))
+    starts = np.flatnonzero(np.concatenate(([True], und[1:] != und[:-1], [True])))
+    closed = bool(len(und) and np.all(np.diff(starts) == 2))
+    directed = np.sort(e[:, 0] * nv + e[:, 1])
+    watertight = closed and not bool(np.any(directed[1:] == directed[:-1]))
+    try:
+        from scipy.sparse import coo_matrix
+        from scipy.sparse.csgraph import connected_components
+        shells = int(connected_components(coo_matrix((np.ones(len(e), dtype=np.int8), (e[:, 0], e[:, 1])), shape=(nv, nv)), directed=False)[0])
+    except Exception:  # noqa: BLE001 - without scipy the bodies are not counted
+        shells = 1
+    issues = []
+    if not watertight:
+        issues.append("not_watertight")
+    if shells > 1:
+        issues.append("multiple_shells")
+    if watertight and volume < 0:
+        issues.append("flipped_normals")
+    return {
+        "ok": True, "fast": True,
+        "watertight": watertight,
+        "volume_mm3": abs(volume),
+        "area_mm2": area,
+        "bbox": {"x": float(hi[0] - lo[0]), "y": float(hi[1] - lo[1]), "z": float(hi[2] - lo[2])},
+        "triangles": n,
+        "shells": shells,
+        "flipped_normals": "flipped_normals" in issues,
+        "issues": sorted(set(issues)),
+    }
 
 
 def load(path):
@@ -1227,7 +1308,8 @@ def main(argv):
                 cad = False
             out({"ok": True, "trimesh": trimesh.__version__, "pymeshfix": pf, "cad": cad})
         if cmd == "check":
-            out(report(load(argv[2])))
+            above = int(float(argv[3])) if len(argv) > 3 else FAST_CHECK_ABOVE
+            out(fast_report(argv[2], above) or report(load(argv[2])))
         if cmd == "convert":
             m = load(argv[2])
             m.export(argv[3], file_type="stl")

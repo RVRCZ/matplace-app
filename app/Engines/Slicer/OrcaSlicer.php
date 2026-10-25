@@ -207,8 +207,11 @@ final class OrcaSlicer implements Slicer
         $decimator = app(MeshDecimator::class);
         if ($decimator->wants($meshPath)) {
             $thin = $work.'/thin.stl';
-            $r = $decimator->decimate($meshPath, $thin);
-            $clock?->note('decimate_s', $r['seconds'])->note('triangles_in', $r['before'])->note('triangles_sliced', $r['after'] ?? $r['before']);
+            // the limits follow the layer of this slice: the farm names it in its process overrides, the calculator's
+            // quality has the one of its process profile (config pricing.rough.quality_layer_mm, the same ladder)
+            $layer = (float) ($params->overrides['process']['layer_height'] ?? config('pricing.rough.quality_layer_mm.'.$params->quality) ?? 0.2);
+            $r = $decimator->decimate($meshPath, $thin, $layer > 0 ? $layer : null);
+            $clock?->note('decimate_s', $r['seconds'])->note('triangles_in', $r['before'])->note('triangles_sliced', $r['after'] ?? $r['before'])->note('decimate_limits', $r['limits'] ?? null);
             if ($r['applied']) {
                 $clock?->note('decimate_deviation_mm', $r['deviation_mm'])->note('decimate_peak_mm', $r['peak_mm'] ?? null);
                 $meshPath = $thin;
