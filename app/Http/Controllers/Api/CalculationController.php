@@ -33,6 +33,7 @@ class CalculationController extends Controller
             'geometry.bbox.x' => ['nullable', 'numeric', 'min:0'],
             'geometry.bbox.y' => ['nullable', 'numeric', 'min:0'],
             'geometry.bbox.z' => ['nullable', 'numeric', 'min:0'],
+            'geometry.triangles' => ['nullable', 'integer', 'min:0'],
             'rough_only' => ['nullable', 'boolean'],   // a big model on the first page: the estimate and its range, no slice (TODO #41)
         ]);
 

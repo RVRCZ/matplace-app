@@ -24,10 +24,11 @@ return [
             'fill_g_cm3' => [0.04, 0.2],      // the thinness term is full under 0.04 g per cm³ of the model's box, nothing above 0.2 (thin walls, lattices, long thin parts)
             'small_minutes' => [15, 30],      // the lower bound drops for prints estimated under 30 min (the fixed minutes of the estimate are too many for them)
             'overhang_share' => [0.05, 0.3],  // supports left to the slicer: the supports term rises from `auto` to `supports` as the overhanging share of the surface grows
+            'triangles' => [200000, 1000000], // the lower bound rises with the mesh's triangles from 200 000 to a million: a scanned or sculpted surface never prints faster than the estimate (docs/M.md §6.6)
             // high = the upper bound of a flat, compact print without supports; height, thin = what the terms add at full; supports, auto = by the
-            // supports choice (off = nothing); low = the lower bound; small = what a tiny print loses of it
-            'time' => ['high' => 1.25, 'height' => 0.2, 'thin' => 1.2, 'supports' => 1.2, 'auto' => 1.2, 'low' => 0.78, 'small' => 0.5],
-            'price' => ['high' => 1.05, 'height' => 0.1, 'thin' => 0.2, 'supports' => 1.4, 'auto' => 1.15, 'low' => 0.7, 'small' => 0.3],
+            // supports choice (off = nothing); low = the lower bound; small = what a tiny print loses of it; low_triangles = what a mesh of a million triangles adds to it
+            'time' => ['high' => 1.25, 'height' => 0.2, 'thin' => 1.2, 'supports' => 1.2, 'auto' => 1.2, 'low' => 0.78, 'small' => 0.5, 'low_triangles' => 0.6],
+            'price' => ['high' => 1.05, 'height' => 0.1, 'thin' => 0.2, 'supports' => 1.4, 'auto' => 1.15, 'low' => 0.7, 'small' => 0.3, 'low_triangles' => 0.6],
         ],
     ],
 

@@ -23,13 +23,16 @@ class ShapeRangeTest extends TestCase
     public static function vectors(): array
     {
         return [
-            // height, fill g/cm³, overhang share, supports, minutes → [low, high] of the time and of the price
+            // height, fill g/cm³, overhang share, supports, minutes[, triangles] → [low, high] of the time and of the price
             'flat compact, no supports, 12 min' => [[10.0, 0.5, 0.0, false, 12], ['time' => [0.39, 1.25], 'price' => [0.49, 1.05]]],
             'tall thin, slicer decides, 200 min' => [[120.0, 0.03, 0.0, null, 200], ['time' => [0.78, 3.96], 'price' => [0.7, 1.5939]]],
             'half way up both ramps, hangs over, 22.5 min' => [[57.5, 0.1, 0.5, null, 22], ['time' => [0.572, 2.8875], 'price' => [0.588, 1.7364]]],
             'supports on' => [[50.0, 0.1, 0.1, true, 60], ['time' => [0.78, 2.8412], 'price' => [0.7, 1.7218]]],
             'nothing known of the shape' => [[null, null, null, null, 100], ['time' => [0.78, 3.96], 'price' => [0.7, 1.5939]]],
             'calculation 554 (150 × 90 × 100 mm, 62.7 g)' => [[100.0, 0.046, 0.2, null, 103], ['time' => [0.78, 3.879], 'price' => [0.7, 1.7905]]],
+            // the dragon (146 × 163 × 40 mm, 1.8 M triangles): the lower bound rises by the triangles, the upper one stays (docs/M.md §6.6)
+            'dragon, 1.8 M triangles' => [[40.0, 0.085, 0.05, null, 135, 1804554], ['time' => [1.248, 2.9581], 'price' => [1.12, 1.4217]]],
+            'plain mesh of 300 000 triangles' => [[10.0, 0.5, 0.0, false, 100, 300000], ['time' => [0.8385, 1.25], 'price' => [0.7525, 1.05]]],
         ];
     }
 
@@ -51,6 +54,8 @@ class ShapeRangeTest extends TestCase
         $hangs = $r->factors(10.0, 0.5, 0.5, null, 60);
         $supports = $r->factors(10.0, 0.5, 0.0, true, 60);
         $tiny = $r->factors(10.0, 0.5, 0.0, false, 10);
+        $fine = $r->factors(10.0, 0.5, 0.0, false, 60, 2000000);
+        $coarse = $r->factors(10.0, 0.5, 0.0, false, 60, 20000);
         foreach (['time', 'price'] as $k) {
             $this->assertGreaterThan($flat[$k][1], $tall[$k][1], "$k: height widens the top");
             $this->assertGreaterThan($flat[$k][1], $thin[$k][1], "$k: thinness widens the top");
@@ -59,6 +64,9 @@ class ShapeRangeTest extends TestCase
             $this->assertGreaterThanOrEqual($auto[$k][1], $supports[$k][1], "$k: supports on is the widest supports term");
             $this->assertSame($flat[$k][0], $tall[$k][0], "$k: the shape leaves the bottom alone");
             $this->assertLessThan($flat[$k][0], $tiny[$k][0], "$k: a tiny print lowers the bottom");
+            $this->assertGreaterThan(1.0, $fine[$k][0], "$k: millions of triangles raise the bottom above the estimate");
+            $this->assertSame($flat[$k][1], $fine[$k][1], "$k: triangles leave the top alone");
+            $this->assertSame($flat[$k], $coarse[$k], "$k: a coarse mesh is a plain mesh");
             $this->assertLessThan(1.0, $flat[$k][0]);
             $this->assertGreaterThan(1.0, $flat[$k][1]);
         }
