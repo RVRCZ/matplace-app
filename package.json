@@ -3,7 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "tsc --noEmit -p . && vite build && node scripts/check_bundle.mjs && node scripts/check_order_timeline.mjs",
+        "build": "tsc --noEmit -p . && vite build && node scripts/check_bundle.mjs && node scripts/check_order_timeline.mjs && node scripts/check_rough_range.mjs",
         "dev": "vite",
         "check": "node scripts/check_bundle.mjs"
     },

@@ -84,8 +84,14 @@ final class PriceEngine
         return $out;
     }
 
-    /** [min, max] over a list of breakdowns; rough estimates widen it by the configured range. */
-    public function range(array $breakdowns, bool $rough = false): array
+    /**
+     * [min, max] over a list of breakdowns. With the factors of an estimate ([low, high] of the price by the model's shape,
+     * ShapeRange) the ends move out by them and land on the rounding step: the range the page shows before the slice.
+     *
+     * @param  PriceBreakdown[]  $breakdowns
+     * @param  ?array{float, float}  $factors
+     */
+    public function range(array $breakdowns, ?array $factors = null): array
     {
         if (! $breakdowns) {
             return [0.0, 0.0];
@@ -93,10 +99,10 @@ final class PriceEngine
         $totals = array_map(fn (PriceBreakdown $b) => $b->total, $breakdowns);
         $min = min($totals);
         $max = max($totals);
-        if ($rough) {
+        if ($factors) {
             $step = max(1, (int) ($this->pricing['round_to'] ?? 1));
-            $min = floor($min * (float) $this->pricing['rough']['range_low'] / $step) * $step;
-            $max = ceil($max * (float) $this->pricing['rough']['range_high'] / $step) * $step;
+            $min = floor($min * (float) $factors[0] / $step) * $step;
+            $max = ceil($max * (float) $factors[1] / $step) * $step;
         }
 
         return [(float) $min, (float) $max];

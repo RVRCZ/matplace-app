@@ -77,7 +77,7 @@ class PriceEngineTest extends TestCase
         $this->assertSame('budget', $all[0]->profileKey);
         [$min, $max] = $e->range($all);
         $this->assertLessThanOrEqual($max, $min);
-        [$rmin, $rmax] = $e->range($all, rough: true);
+        [$rmin, $rmax] = $e->range($all, [0.85, 1.25]);
         $this->assertLessThanOrEqual($min, $rmin);
         $this->assertGreaterThanOrEqual($max, $rmax);
     }

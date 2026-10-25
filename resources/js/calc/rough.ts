@@ -1,5 +1,5 @@
 /**
- * Instant estimate in the browser. Mirrors app/Domain/Calculation/RoughEstimator.php and PriceEngine.php.
+ * Instant estimate in the browser. Mirrors app/Domain/Calculation/RoughEstimator.php, PriceEngine.php and ShapeRange.php.
  * Constants come from window.MP_CONFIG (config/pricing.php + materials). Keep both sides in sync.
  */
 export interface RoughConfig {
@@ -11,9 +11,30 @@ export interface RoughConfig {
     overhead_minutes: number;
     quality_time_factor: Record<string, number>;
     quality_layer_mm: Record<string, number>;
-    range_low: number;
-    range_high: number;
+    range: RangeConfig;
 }
+
+/** How far the slice may land from the estimate, by the shape (config/pricing.php rough.range, docs/M.md §6). */
+export interface RangeConfig {
+    height_mm: [number, number];
+    fill_g_cm3: [number, number];
+    small_minutes: [number, number];
+    overhang_share: [number, number];
+    time: RangeTerms;
+    price: RangeTerms;
+}
+
+export interface RangeTerms { high: number; height: number; thin: number; supports: number; auto: number; low: number; small: number }
+
+/** What the estimate cannot see and the range follows: null = unknown (counted on the wide side). */
+export interface Shape {
+    height_mm: number | null;
+    fill_g_cm3: number | null;
+    overhang_share: number | null;
+}
+
+/** [low, high] as factors of the estimate's minutes and of the price counted from it. */
+export interface RangeFactors { time: [number, number]; price: [number, number] }
 
 export interface Profile {
     key: string;
@@ -114,14 +135,52 @@ export function price(roundTo: number, prof: Profile, grams: number, minutes: nu
     };
 }
 
-export function range(cfg: RoughConfig, roundTo: number, totals: number[], rough: boolean): [number, number] {
+/** The shape the range follows, from the model's box as it prints, the estimated grams and the browser's overhang measure. */
+export function shapeOf(bbox: { x: number; y: number; z: number } | null, scale: number, grams: number, overhangShare: number | null): Shape {
+    const mm3 = bbox ? bbox.x * bbox.y * bbox.z * scale * scale * scale : 0;
+    return {
+        height_mm: bbox ? bbox.z * scale : null,
+        fill_g_cm3: mm3 > 0 ? grams / (mm3 / 1000) : null,
+        overhang_share: overhangShare,
+    };
+}
+
+/** 0 up to the first edge, 1 from the second, straight between. */
+function ramp(v: number, edges: [number, number]): number {
+    const [a, b] = edges;
+    if (b <= a) return v >= b ? 1 : 0;
+    return Math.max(0, Math.min(1, (v - a) / (b - a)));
+}
+
+/**
+ * How far the slice may land from the estimate (ShapeRange.php): thin walls, lattices and long thin parts (little
+ * material in a big box), height, supports and overhangs raise the upper bound; a small print lowers the lower one.
+ * Unknown height or fill count on the wide side.
+ */
+export function rangeFactors(cfg: RangeConfig, shape: Shape, supports: boolean | null, minutes: number): RangeFactors {
+    const height = shape.height_mm === null ? 1 : ramp(shape.height_mm, cfg.height_mm);
+    const thin = shape.fill_g_cm3 === null ? 1 : 1 - ramp(shape.fill_g_cm3, cfg.fill_g_cm3);
+    const small = 1 - ramp(minutes, cfg.small_minutes);
+    const overhang = shape.overhang_share === null ? 0 : ramp(shape.overhang_share, cfg.overhang_share);
+    const one = (c: RangeTerms): [number, number] => {
+        const s = supports === true ? c.supports : supports === false ? 1 : c.auto + (c.supports - c.auto) * overhang;
+        return [
+            Math.round(c.low * (1 - c.small * small) * 1e4) / 1e4,
+            Math.round(c.high * (1 + c.height * height) * (1 + c.thin * thin) * s * 1e4) / 1e4,
+        ];
+    };
+    return { time: one(cfg.time), price: one(cfg.price) };
+}
+
+/** [min, max] over the lists' totals; with the factors of an estimate the ends move out by them and land on the rounding step. */
+export function range(roundTo: number, totals: number[], factors: [number, number] | null): [number, number] {
     if (!totals.length) return [0, 0];
     let min = Math.min(...totals);
     let max = Math.max(...totals);
-    if (rough) {
+    if (factors) {
         const step = Math.max(1, roundTo);
-        min = Math.floor((min * cfg.range_low) / step) * step;
-        max = Math.ceil((max * cfg.range_high) / step) * step;
+        min = Math.floor((min * factors[0]) / step) * step;
+        max = Math.ceil((max * factors[1]) / step) * step;
     }
     return [min, max];
 }

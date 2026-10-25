@@ -15,8 +15,20 @@ return [
         'overhead_minutes' => 8,
         'quality_time_factor' => ['draft' => 0.75, 'standard' => 1.0, 'fine' => 1.6],
         'quality_layer_mm' => ['draft' => 0.28, 'standard' => 0.20, 'fine' => 0.12],
-        'range_low' => 0.85,                 // rough price range = estimate × [low, high]
-        'range_high' => 1.25,
+        // How far the slice may land from the estimate, by the shape of the model (TODO #41, docs/M.md §6; App\Domain\Calculation\ShapeRange
+        // and resources/js/calc/rough.ts rangeFactors). Calibrated on 400 calculations against their slices (docs/data/odhad-vs-rez-2026-10-24.csv):
+        // the price lands inside 97 % of the time (82 % with the flat 0.85–1.25 before), the print time 96 %; `php artisan matplace:estimate-range`
+        // recounts the hits from such a CSV.
+        'range' => [
+            'height_mm' => [15, 100],         // the height term grows from nothing at 15 mm to full at 100 mm (many layers)
+            'fill_g_cm3' => [0.04, 0.2],      // the thinness term is full under 0.04 g per cm³ of the model's box, nothing above 0.2 (thin walls, lattices, long thin parts)
+            'small_minutes' => [15, 30],      // the lower bound drops for prints estimated under 30 min (the fixed minutes of the estimate are too many for them)
+            'overhang_share' => [0.05, 0.3],  // supports left to the slicer: the supports term rises from `auto` to `supports` as the overhanging share of the surface grows
+            // high = the upper bound of a flat, compact print without supports; height, thin = what the terms add at full; supports, auto = by the
+            // supports choice (off = nothing); low = the lower bound; small = what a tiny print loses of it
+            'time' => ['high' => 1.25, 'height' => 0.2, 'thin' => 1.2, 'supports' => 1.2, 'auto' => 1.2, 'low' => 0.78, 'small' => 0.5],
+            'price' => ['high' => 1.05, 'height' => 0.1, 'thin' => 0.2, 'supports' => 1.4, 'auto' => 1.15, 'low' => 0.7, 'small' => 0.3],
+        ],
     ],
 
     // Platform orientation profiles (Kč). Replaced by real printer pricing profiles from step 2.

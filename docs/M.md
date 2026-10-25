@@ -112,3 +112,127 @@ Nouzově jde vrátit vše do `default` řádkem `QUEUE_INTERACTIVE=default` v `.
 ## Čísla po nasazení
 
 _(doplnit z `matplace:perf-report`)_
+
+## 6. Rozpětí odhadu podle tvaru a velký model bez řezu (TODO #41, větev `feature/calc-estimate-range`, 25. 10. 2026)
+
+Zadání `docs/prompts/kalkulace-odhad.md` (session 3). Data: `docs/data/odhad-vs-rez-2026-10-24.csv` – 400 hotových kalkulací
+(250 různých tvarů; drak s 1,8 mil. trojúhelníků je tam 10×, dvě jeho velikosti), odhad proti řezu. Nic z toho není nasazeno.
+
+### 6.1 Co se změnilo
+
+1. **Velký model dostane na první stránce jen odhad.** Práh na jednom místě, `App\Domain\Calculation\BigModel::is()`:
+   přes `engines.mesh.decimate_above` trojúhelníků (400 000), **nebo** poslední hotový řez téhož souboru trval přes
+   `engines.mesh.big_slice_s` (60 s, `MESH_BIG_SLICE_S`, 0 pravidlo vypne). `UploadController::describe` ho posílá jako
+   `big_model`. Prohlížeč pak přesný řez nevolá: `POST /api/calculations` s `rough_only=1` založí kalkulaci ve stavu
+   `rough` – odhad, rozpětí, žádný `slicer`, nic ve frontě (`CalculationService::create(..., sliceNow: false)`); hotový
+   řez stejného nastavení se vrátí jako dřív (`done`). Místo „Počítám přesně…“ stojí bez kolečka „Velký model (1,8 mil.
+   trojúhelníků): přesnou cenu a dobu tisku spočítáme při objednávce, trvá to několik minut.“ Odkaz `/c/<token>` funguje
+   (stav `rough` se nepolluje, stránka ukáže odhad), stažení modelu funguje bez řezu, tlačítko „Vytisknout u nás“ dostane
+   kalkulaci s `rough`, `params`, `file` a **bez `slicer`** – stránka zakázky (session 2) ji musí přijmout a řezat sama.
+   Malý model jako dřív.
+2. **Rozpětí ceny podle tvaru.** `App\Domain\Calculation\ShapeRange::factors()` a zrcadlo `rangeFactors()` v
+   `resources/js/calc/rough.ts`; konstanty v `config/pricing.php` → `rough.range` (nahradily ploché `range_low/high`
+   0,85–1,25). Server ukládá do `calculations.rough` navíc `minutes_min`, `minutes_max`, `range` (faktory) a `shape`
+   (výška, g/cm³ kvádru, podíl převisů), takže stránka zakázky může rozpětí přepočítat podle voleb a měření před → po
+   jde z databáze.
+3. **Doba tisku jako rozpětí** („asi 1 h 20 min až 3 h 30 min“, dolní mez dolů a horní nahoru na 5 min pod hodinu, 10 min
+   do tří hodin, půl hodiny nad; `minutesRangeText` v `calculator.ts`). Jedno číslo až po přesném řezu. V režimu farmy
+   je rozpětí titulkem karty (o stupeň menším písmem), na tržišti stojí u „Doba tisku“.
+4. **Texty** (`lang/src/calc_estimate_range.json`, cs/en/es): `calc.status.big_only`, `calc.status.big_only_n`,
+   `calc.price.orient_range` („Orientační cena tisku u nás: ≈ 90 – 210 Kč. Podle podpěr, tvaru, barvy a tiskárny ji
+   upřesníme při objednávce.“), `calc.price.shape_hint` (tržiště, pod cenou), `calc.time.range` („asi :lo až :hi“).
+   Klíče jsou v seznamu `$i18n` v `calculator/index.blade.php`.
+5. **Měření**: `php artisan matplace:estimate-range <csv>` spočítá z CSV v tomhle formátu zásahy a šířky (uložené
+   rozpětí i rozpětí z dnešních konstant přepočtené podle tvaru řádku) a vypíše tabulky níže v markdownu;
+   `php artisan matplace:estimate-range soubor.csv --export=400` nejdřív takové CSV vypíše z databáze (posledních N
+   hotových kalkulací, sloupce řídící session plus `scale`, `rough_minutes_min`, `rough_minutes_max`). Produkční měření
+   udělá řídící session: export → příkaz → tabulka sem.
+
+### 6.2 Jak rozpětí vzniká
+
+Odhad (`RoughEstimator`, beze změny) počítá gramy z objemu a plochy a minuty z gramů. Řez se od něj liší hlavně tam, kde
+gramy nevidí práci tiskárny; na datech byla nejsilnější **hustota materiálu v obalovém kvádru** (korelace s poměrem
+řez/odhad −0,55 na logaritmech: tenké stěny, mřížky, dlouhé tenké díly = málo materiálu ve velké krabici = dlouhé dráhy)
+a **výška** (+0,51: hodně vrstev), pak podpěry. Faktory horní a dolní meze:
+
+```
+hi = high × (1 + height × H) × (1 + thin × F) × S        H = rampa výšky 15 → 100 mm (0 … 1)
+lo = low  × (1 − small × T)                               F = 1 − rampa hustoty 0,04 → 0,2 g/cm³ (tenký = 1)
+                                                          T = 1 − rampa odhadnutých minut 15 → 30 (malý tisk = 1)
+S: podpěry zapnuté → supports; vypnuté → 1; nechat slicer → auto + (supports − auto) × rampa podílu převisů 5 → 30 %
+```
+
+| | high | height | thin | supports | auto | low | small |
+|---|---|---|---|---|---|---|---|
+| doba tisku | 1,25 | 0,2 | 1,2 | 1,2 | 1,2 | 0,78 | 0,5 |
+| cena | 1,05 | 0,1 | 0,2 | 1,4 | 1,15 | 0,7 | 0,3 |
+
+Cena se mění méně než čas, protože materiál (který odhad trefuje: medián 1,00, p90 1,13) je její velká část. Podíl
+převisů měří prohlížeč z normál trojúhelníků při čtení souboru (`geometry.ts stats()`: plocha stěn skloněných dolů přes
+45°, bez dna; síť obrácená naruby se pozná podle záporného objemu) a posílá ho s kalkulací (`geometry.overhang_share`,
+`geometry.bbox`); server bez něj počítá „nechat slicer“ jako `auto`. Neznámá výška nebo hustota (soubor ještě nezměřený
+a prohlížeč ho neumí přečíst) se počítá jako vysoký a tenký, tedy na širokou stranu.
+
+Kalibrace: hledání po mřížce (souřadnicový sestup) nad 400 řádky CSV s cílem ≥ 95 % zásahů a nejmenší střední šířkou
+(log), zvlášť pro horní a dolní mez, zvlášť cena a čas; pak zaokrouhlení konstant a kontrola. Na odloženém vzorku
+(kalibrace na lichých id, kontrola na sudých a naopak) vychází 93–96 %, tedy čísla níže jsou trochu optimistická.
+Konstanty jsou v `config/pricing.php`; referenční vektory drží PHP a TypeScript při sobě
+(`tests/Unit/ShapeRangeTest`, `scripts/check_rough_range.mjs` v `npm run build`).
+
+### 6.3 Čísla z CSV, před → po (`php artisan matplace:estimate-range docs/data/odhad-vs-rez-2026-10-24.csv`)
+
+| co | uvnitř | nad / pod | medián hi/lo | p90 hi/lo | tvary celé uvnitř |
+|---|---|---|---|---|---|
+| cena, rozpětí, které stránka ukázala (0,85–1,25) | 329/400 (82,2 %) | 37 / 34 | 1,53 | 3,17 | 80,0 % |
+| cena, rozpětí podle tvaru | 387/400 (96,8 %) | 5 / 8 | 2,14 | 2,75 | 95,6 % |
+| doba tisku, kdyby měla totéž 0,85–1,25 (dnes jedno číslo) | 172/400 (43,0 %) | 162 / 66 | 1,47 | 1,47 | 38,0 % |
+| doba tisku, rozpětí podle tvaru | 385/400 (96,2 %) | 8 / 7 | 3,39 | 4,38 | 95,2 % |
+
+Pro srovnání ploché kvantily bez tvaru by na 95 % potřebovaly cenu 0,66–1,50 (medián šířky 2,29) a čas 0,54–2,78 (5,16).
+
+| třída | n | cena uvnitř | cena medián hi/lo | čas uvnitř | čas medián hi/lo |
+|---|---|---|---|---|---|
+| plochý, pod 20 mm | 123 | 99,2 % | 1,89 | 95,1 % | 2,17 |
+| vysoký, 80 mm a víc | 127 | 95,3 % | 2,27 | 96,9 % | 3,95 |
+| tenký, pod 0,1 g/cm³ kvádru | 133 | 94,0 % | 2,25 | 100,0 % | 4,08 |
+| kompaktní, 0,3 g/cm³ a víc | 95 | 98,9 % | 1,89 | 97,9 % | 1,92 |
+| podpěry zapnuté | 63 | 100,0 % | 2,75 | 98,4 % | 3,85 |
+| podpěry nechat slicer | 204 | 95,1 % | 2,17 | 94,6 % | 3,68 |
+| podpěry vypnuté | 133 | 97,7 % | 1,88 | 97,7 % | 2,40 |
+| malý, odhad pod 30 min | 77 | 100,0 % | 2,29 | 98,7 % | 3,20 |
+| přes milion trojúhelníků | 18 | 83,3 % | 2,25 | 100,0 % | 3,80 |
+
+Příklady (odhad → nové rozpětí, řez): kalkulace 554 (150 × 90 × 100 mm, 0,046 g/cm³) odhad 1 h 43 min a 130 Kč → čas
+1 h 20 min až 6 h 40 min (řez 3 h 03 min), cena 90–210 Kč (řez 150; dřív 110–170). Drak 555 (146 × 163 × 42 mm) odhad
+2 h 15 min a 170 Kč → 1 h 45 min až 6 h 40 min (řez 6 h 37 min), 110–250 Kč (řez 220; dřív 140–220). Kalkulace 461
+(60 × 60 × 100 mm) odhad 1 h 56 min a 180 Kč → 1 h 30 min až 3 h 31 min, 120–240 Kč, řez 5 h 29 min a 280 Kč –
+**mimo**: dutý kompaktní tvar s hustotou 0,2 vypadá pro vzorec snadno. Z 13 minutí ceny je 10 drak (týž soubor 10×, cena
+1,29–1,62×): u sítí přes milion trojúhelníků je rozpětí stále úzké, 83 %.
+
+### 6.4 Co není ověřené a limity
+
+- Podíl převisů v CSV není (sbírá se až od téhle větve), takže jeho vliv na „nechat slicer“ je odhad: zvedá horní mez
+  ceny nejvýš k faktoru podpěr (1,4), čas nemění (na datech měly tisky s podpěrami stejný horní faktor jako „auto“).
+  Nikdy nezužuje pod to, co CSV ověřilo.
+- CSV nemá měřítko: `bbox` je soubor, gramy jsou po zvětšení; řádky se zvětšením ≠ 1 mají hustotu posunutou. Export
+  z příkazu už `scale` nese.
+- Kalibrace je na stejných datech jako kontrola (odložený vzorek 93–96 %); 250 tvarů, drak 10×. Produkční měření za
+  pár týdnů ukáže, jestli 95 % drží – příkaz je připravený.
+- Počet těles (zadání) jsem nepřidal: v datech není a v prohlížeči by u 1,8 mil. trojúhelníků stál sekundy (union–find).
+- V prohlížeči zkoušeno jen lokálně s tenkou deskou 120 × 2 × 150 mm (kalkulace přes API s `rough_only`, pak `/c/<token>`
+  v headless Chrome přes `scripts/review_round2.mjs`, šířky 390 a 1280): status bez kolečka, titulek „asi 45 min až
+  1 h 50 min“, věta o rozpětí ceny, bez vodorovného posuvu a bez chyb JS; přesný výsledek téhož souboru ukazuje jedno
+  číslo jako dřív. Drak lokálně není, cesta s `big_model` z nahrání běžela jen v testech.
+- Stránka zakázky (session 2) zatím kalkulaci bez `slicer` neumí; do té doby tlačítko farmy u velkého modelu založí
+  zakázku, která si řeže sama (jako dnes – farma řeže vždy znovu), jen bez čísla z první stránky.
+
+### 6.5 Soubory
+
+`app/Domain/Calculation/{BigModel,ShapeRange}.php`, `CalculationService` (`sliceNow`, `roughFor(..., $shape)`),
+`PriceEngine::range($factors)`, `Api\CalculationController` (`rough_only`, `geometry.bbox`, `geometry.overhang_share`),
+`Api\UploadController::describe` (`big_model` přes `BigModel`), `AppServiceProvider` (singleton `ShapeRange`),
+`Console\Commands\EstimateRange`, `config/pricing.php` (`rough.range`), `config/engines.php` (`mesh.big_slice_s`),
+`resources/js/calc/{rough,geometry,calculator,api}.ts`, `resources/views/calculator/index.blade.php` (klíče),
+`lang/src/calc_estimate_range.json` → `lang/{cs,en,es}.json`, `scripts/check_rough_range.mjs` (+ `package.json`
+build), testy `tests/Unit/ShapeRangeTest`, `tests/Feature/CalculationEstimateRangeTest`, `tests/Unit/PriceEngineTest`
+(rozpětí s faktory).

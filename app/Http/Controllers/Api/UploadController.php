@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Calculation\BigModel;
 use App\Domain\Farm\Palette;
 use App\Domain\Tools\MapBuilder;
 use App\Domain\Tools\ModelCheck;
@@ -136,8 +137,9 @@ class UploadController extends Controller
             'volume_mm3' => $f->volume_mm3,
             'area_mm2' => $f->area_mm2,
             'triangles' => $f->triangles,
-            // millions of triangles: thinned before the slice (docs/AL.md §10.11), the pages say the slice takes minutes
-            'big_model' => (int) $f->triangles > (int) config('engines.mesh.decimate_above'),
+            // millions of triangles (thinned before the slice, docs/AL.md §10.11) or a slice that took over a minute last time: the
+            // calculator shows the estimate with a range and no slice, the order page slices after the choices (TODO #41)
+            'big_model' => BigModel::is($f),
             // a box with its lid is two bodies on one plate by design, not a defect
             // a box with its lid, or the two halves of a mold, are two bodies on one plate by design, not a defect
             'issues' => array_values(array_diff($f->mesh_report['issues'] ?? [], self::partsOf($f) || in_array($f->kind(), ['logo', 'qr', 'stamp', 'mold'], true) || ! empty($f->tool_params['stand']) ? ['multiple_shells'] : [])),

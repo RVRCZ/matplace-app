@@ -6,7 +6,7 @@ import { loadGeometry, loadGeometryFromUrl, extensionOf, BROWSER_FORMATS } from 
 import ParseWorker from './parse.worker?worker';
 import type { ParseReply } from './parse.worker';
 import { stats, normaliseUnits, GeoStats } from './geometry';
-import { estimate, price, profilesFor, range, RoughConfig, Profile, Params } from './rough';
+import { estimate, price, profilesFor, range, rangeFactors, shapeOf, RangeFactors, RoughConfig, Profile, Params } from './rough';
 import { uploadFile, createCalculation, getCalculation, getFile, CalcInfo, FileInfo } from './api';
 import { bootInquiry } from './inquiry';
 import { renderCheck } from './check';
@@ -84,6 +84,22 @@ function setComputing(file: FileInfo | null | undefined, key = 'calc.status.queu
         const million = (file.triangles / 1e6).toFixed(1).replace('.', document.documentElement.lang === 'en' ? '.' : ',');
         $('status').textContent += ` ${t('calc.status.big_model').replace(':n', million)}`;
     }
+}
+
+/** "1,8" for a model of 1.8 million triangles, null under a million. */
+function millions(file: FileInfo | null | undefined): string | null {
+    if (!file?.triangles || file.triangles < 1e6) return null;
+    return (file.triangles / 1e6).toFixed(1).replace('.', document.documentElement.lang === 'en' ? '.' : ',');
+}
+
+/**
+ * A big model is not sliced on this page (TODO #41): the estimate with its range is the answer, the order page slices once
+ * the customer has chosen. Said without a spinner: nothing is being waited for.
+ */
+function setBigOnly(file: FileInfo | null | undefined): void {
+    const n = millions(file);
+    setStatus(n ? 'calc.status.big_only_n' : 'calc.status.big_only', false);
+    if (n) $('status').textContent = t('calc.status.big_only_n', { n });
 }
 
 /** The model as stored (scale 1): measured in the browser, or what the server measured. */
@@ -188,34 +204,59 @@ function sizeTyped(axis: 'x' | 'y' | 'z', wanted: number): void {
     onParamsChanged();
 }
 
+/** The estimate for the model as it is set, and how far the slice may land from it by the model's shape (docs/M.md §6). */
+function roughNow(): { est: { grams: number; minutes: number }; factors: RangeFactors; bbox: { x: number; y: number; z: number } } | null {
+    const g = state.geo ?? (state.file && state.file.volume_mm3 != null ? { volume_mm3: state.file.volume_mm3, area_mm2: state.file.area_mm2, bbox: state.file.bbox! } : null);
+    if (!g) return null;
+    const est = estimate(cfg.rough, material(state.params.material).density, { volume_mm3: g.volume_mm3, area_mm2: g.area_mm2 }, state.params);
+    // the browser measured the overhangs when it read the file itself; a file only the server could read has no such measure
+    const shape = shapeOf(g.bbox, state.params.scale, est.grams, state.geo?.overhang_share ?? null);
+    return { est, factors: rangeFactors(cfg.rough.range, shape, state.params.supports, est.minutes), bbox: g.bbox };
+}
+
 /** Rough numbers from browser geometry — under a second, on every slider move. */
 function renderRough(): void {
-    const g = state.geo ?? (state.file && state.file.volume_mm3 != null ? { volume_mm3: state.file.volume_mm3, area_mm2: state.file.area_mm2, bbox: state.file.bbox!, triangles: 0 } : null);
-    if (!g) return;
-    const est = estimate(cfg.rough, material(state.params.material).density, { volume_mm3: g.volume_mm3, area_mm2: g.area_mm2 }, state.params);
+    const r = roughNow();
+    if (!r) return;
+    const { est, factors, bbox: g } = r;
     // the farm's list of this very material (one per material, the kind it would print it with); every list on the marketplace
     const bds = profilesFor(cfg.orientation_profiles, state.params.material).map((p) => price(cfg.round_to, p, est.grams, est.minutes, state.params.quantity));
     const q = state.params.quantity;
     const s = state.params.scale;
-    $('dims-badge').textContent = `${fmt.format(g.bbox.x * s)} × ${fmt.format(g.bbox.y * s)} × ${fmt.format(g.bbox.z * s)} mm`;
+    $('dims-badge').textContent = `${fmt.format(g.x * s)} × ${fmt.format(g.y * s)} × ${fmt.format(g.z * s)} mm`;
     renderSize();
     $('stat-grams').textContent = `≈ ${fmt.format(est.grams * q)} g`;
-    $('stat-time').textContent = `≈ ${minutesText(est.minutes * q)}`;
+    // the time as a range: the estimate counts minutes from grams, the shape says how far the slicer may land from them
+    const minutes = minutesRangeText(est.minutes * q, factors.time);
+    $('stat-time').textContent = minutes;
     renderCompare({ grams: est.grams, minutes: est.minutes }, false);
     if (!marketplace()) {
         // the design page is about the print; the farm's list gives a price to orient by, the binding one comes with the order
-        renderFacts({ minutes: est.minutes * q, grams: est.grams * q, rough: true });
-        const [olo, ohi] = range(cfg.rough, cfg.round_to, bds.map((b) => b.total), true);
+        renderFacts({ minutes: est.minutes * q, grams: est.grams * q, rough: true, range: minutes });
+        const [olo, ohi] = range(cfg.round_to, bds.map((b) => b.total), factors.price);
         orientPrice(farmPriced() ? [olo, ohi] : null, true);
         return;
     }
-    const [lo, hi] = range(cfg.rough, cfg.round_to, bds.map((b) => b.total), true);
+    const [lo, hi] = range(cfg.round_to, bds.map((b) => b.total), factors.price);
     $('price-main').textContent = lo === hi ? fmt.format(lo) : `${fmt.format(lo)} – ${fmt.format(hi)}`;
-    $('price-sub').textContent = q > 1 ? `${t('calc.price.per_piece')} ≈ ${fmt.format(Math.round(lo / q))} – ${fmt.format(Math.round(hi / q))}` : '';
+    $('price-sub').textContent = [q > 1 ? `${t('calc.price.per_piece')} ≈ ${fmt.format(Math.round(lo / q))} – ${fmt.format(Math.round(hi / q))}` : '', t('calc.price.shape_hint')].filter(Boolean).join(' · ');
     const leads = bds.map((b) => b.lead_time_days);
     $('stat-lead').textContent = t('calc.days', { n: leadRange(leads) });
     renderBreakdown(bds.map((b) => ({ ...b, label: t(`calc.profile.${b.profile}`) })), true);
     if (!material(state.params.material).sliceable) $('price-sub').textContent = t('calc.est_only');
+}
+
+/** "asi 1 h 40 min až 3 h": the estimate's minutes with how far the slice may land, rounded the way one says a time. */
+function minutesRangeText(minutes: number, factors: [number, number]): string {
+    const lo = Math.max(1, roundMinutes(minutes * factors[0], false));
+    const hi = Math.max(lo, roundMinutes(minutes * factors[1], true));
+    return lo === hi ? `≈ ${minutesText(lo)}` : t('calc.time.range', { lo: minutesText(lo), hi: minutesText(hi) });
+}
+
+/** To 5 minutes under an hour, 10 minutes under three hours, half an hour above; down for the low end, up for the high end. */
+function roundMinutes(m: number, up: boolean): number {
+    const step = m < 60 ? 5 : m < 180 ? 10 : 30;
+    return (up ? Math.ceil(m / step) : Math.floor(m / step)) * step;
 }
 
 const marketplace = () => cfg.marketplace !== false;
@@ -275,7 +316,8 @@ function orientPrice(r: [number, number] | null, rough: boolean): void {
     const q = state.params.quantity;
     // the farm's list is in crowns; the visitor reads it in their own currency
     const txt = r[0] === r[1] ? priceText(r[0]) : `${priceText(r[0])} – ${priceText(r[1])}`;
-    el.textContent = t('calc.price.orient', { price: `${rough ? '≈ ' : ''}${txt}` }) + (q > 1 ? ` ${t('calc.price.per_piece')} ≈ ${priceText(Math.round(r[0] / q))}.` : '');
+    // the estimate's range says what narrows it down (supports, shape, colour, printer); the exact price just where it is made binding
+    el.textContent = t(rough ? 'calc.price.orient_range' : 'calc.price.orient', { price: `${rough ? '≈ ' : ''}${txt}` }) + (q > 1 ? ` ${t('calc.price.per_piece')} ≈ ${priceText(Math.round(r[0] / q))}.` : '');
     el.classList.remove('hidden');
 }
 // the farm's own price list (one per material): the calculator prices like the marketplace does, with that list
@@ -285,9 +327,12 @@ const farmPriced = () => !marketplace() && cfg.orientation_profiles.length > 0 &
  * Without the marketplace the result card is about the print, not about money: the headline is the print time,
  * with the machine's speed modes when the slicer knows them, then material, layers and supports.
  */
-function renderFacts(f: { minutes: number; grams: number; meters?: number | null; modes?: Record<string, number>; layers?: number | null; supports?: boolean; rough: boolean }): void {
+function renderFacts(f: { minutes: number; grams: number; meters?: number | null; modes?: Record<string, number>; layers?: number | null; supports?: boolean; rough: boolean; range?: string }): void {
     const approx = f.rough ? '≈ ' : '';
-    $('price-main').textContent = approx + minutesText(f.minutes);
+    // the estimate's time as a range ("asi 1 h 40 min až 3 h") is long for the headline: a size smaller while it shows
+    $('price-main').textContent = f.range ?? approx + minutesText(f.minutes);
+    $('price-main').classList.toggle('text-3xl', !!f.range);
+    $('price-main').classList.toggle('text-4xl', !f.range);
     const modes = f.modes && Object.keys(f.modes).length > 1 ? f.modes : null;
     $('price-sub').innerHTML = modes
         ? Object.entries(modes).map(([k, v]) => `<span class="mr-3">${t(`calc.mode.${k}`)}: <strong>${minutesText(v * state.params.quantity)}</strong></span>`).join('')
@@ -351,7 +396,7 @@ function renderPrecise(c: CalcInfo): void {
         $('price-sub').textContent = parts.filter(Boolean).join(' · ');
     } else {
         const totals = c.prices.map((p) => p.total);
-        const [lo, hi] = range(cfg.rough, cfg.round_to, totals, false);
+        const [lo, hi] = range(cfg.round_to, totals, null);
         $('price-main').textContent = lo === hi ? fmt.format(lo) : `${fmt.format(lo)} – ${fmt.format(hi)}`;
         const real = c.prices.filter((p) => (p as { printer_profile_id?: number | null }).printer_profile_id);
         const sub = [q > 1 ? `${t('calc.price.per_piece')} ${fmt.format(Math.round(lo / q))} – ${fmt.format(Math.round(hi / q))}` : ''];
@@ -395,6 +440,10 @@ function poll(token: string): void {
             }
             if (c.status === 'failed') {
                 setStatus(failedKey(c), false);
+                return;
+            }
+            if (c.status === 'rough') {   // a big model's calculation is never queued: the estimate is the answer (TODO #41)
+                renderRough(); setBigOnly(c.file); enableDownload(c.file);
                 return;
             }
             setComputing(c.file, c.file && c.file.status !== 'ready' && !BROWSER_FORMATS.includes(c.file.ext) ? 'calc.status.converting' : 'calc.status.queued');
@@ -496,6 +545,49 @@ function enableDownload(file: FileInfo | null): void {
     );
 }
 
+/** What a calculation is made from: the file, the settings, and what the browser measured (the box and the overhangs shape the range). */
+function calcPayload(): Record<string, unknown> {
+    return {
+        file: state.file!.uuid,
+        ...state.params,
+        supports: state.params.supports === null ? 'auto' : state.params.supports ? 1 : 0,
+        geometry: state.geo ? { volume_mm3: state.geo.volume_mm3, area_mm2: state.geo.area_mm2, bbox: state.geo.bbox, overhang_share: Math.round(state.geo.overhang_share * 1000) / 1000 } : undefined,
+    };
+}
+
+/** The numbers for the file as it is set: the exact slice for a small model, the estimate alone for a big one (TODO #41). */
+function requestNumbers(): void {
+    if (state.file?.big_model) requestRough();
+    else requestPrecise();
+}
+
+/**
+ * A big model (millions of triangles, or a slice that took over a minute last time) is not sliced on this page: the
+ * calculation is made for the share link and the order button, the estimate with its range is the answer, and the
+ * order page slices once the customer has chosen (docs/prompts/kalkulace-odhad.md). A finished slice of the same
+ * settings still comes back exact.
+ */
+function requestRough(): void {
+    if (!state.file) return;
+    window.clearTimeout(state.debounce);
+    state.debounce = window.setTimeout(async () => {
+        const file = state.file;
+        try {
+            setBigOnly(file);
+            enableQuote(null);
+            const c = await createCalculation({ ...calcPayload(), rough_only: 1 });
+            if (state.file !== file) return;   // another file was chosen meanwhile: this one is history
+            state.calc = c;
+            history.replaceState(null, '', c.url);
+            if (c.status === 'done') { setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false); renderPrecise(c); }
+            else setBigOnly(c.file ?? file);
+            enableDownload(c.file ?? file);   // "I have a printer": the model is there to download, slice or no slice
+        } catch {
+            setStatus('calc.status.failed', false);
+        }
+    }, 700);
+}
+
 /** Ask the server for a precise calculation (debounced on slider moves). */
 function requestPrecise(): void {
     if (!state.file) return;
@@ -504,12 +596,7 @@ function requestPrecise(): void {
         try {
             setComputing(state.file);
             enableQuote(null);
-            const c = await createCalculation({
-                file: state.file!.uuid,
-                ...state.params,
-                supports: state.params.supports === null ? 'auto' : state.params.supports ? 1 : 0,
-                geometry: state.geo ? { volume_mm3: state.geo.volume_mm3, area_mm2: state.geo.area_mm2 } : undefined,
-            });
+            const c = await createCalculation(calcPayload());
             state.calc = c;
             history.replaceState(null, '', c.url);
             if (c.status === 'done') {
@@ -549,7 +636,7 @@ function recalculate(): void {
     document.getElementById('cta-recalc')?.classList.remove('ring-4', 'ring-action/40');
     renderRough();
     refreshDownload();
-    requestPrecise();
+    requestNumbers();
 }
 
 function showResult(): void {
@@ -651,7 +738,7 @@ async function handleFile(file: File): Promise<void> {
         if (state.localFile !== file) return;   // another file was chosen meanwhile: this one is history
         state.file = info;
         renderSize();     // a file the browser could not read shows its size as soon as the server measured it
-        requestPrecise();
+        requestNumbers();
     } catch (e) {
         setStatus('calc.status.failed', false);
         heroError(t('calc.error.upload'));
@@ -901,6 +988,7 @@ async function restore(c: CalcInfo): Promise<void> {
     if (c.file?.stl_url) await showServerStl(c.file.stl_url);
     if (c.status === 'done') { setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false); renderPrecise(c); enableDownload(c.file); }
     else if (c.status === 'failed') { setStatus(failedKey(c), false); renderRough(); }
+    else if (c.status === 'rough') { renderRough(); setBigOnly(c.file); enableDownload(c.file); }   // a big model: never sliced here (TODO #41)
     else { renderRough(); poll(c.token); }
 }
 
@@ -932,7 +1020,7 @@ export async function openFile(uuid: string): Promise<void> {
     renderSize();                                   // the server already measured the file: the size shows before the model has loaded
     if (state.file?.stl_url) await showServerStl(state.file.stl_url);
     renderRough();
-    requestPrecise();
+    requestNumbers();
 }
 
 export function boot(): void {
