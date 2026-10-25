@@ -1,0 +1,12 @@
+{
+    "calc.price.shipping_pickup": [
+        "+ doprava od :from (Zásilkovna) nebo osobní odběr zdarma, přesně podle doručení zvoleného v objednávce.",
+        "+ delivery from :from (Packeta) or free pickup in person, exact by the delivery chosen when ordering.",
+        "+ envío desde :from (Packeta) o recogida gratis en persona, exacto según la entrega elegida al pedir."
+    ],
+    "calc.price.shipping": [
+        "+ doprava od :from (Zásilkovna), přesně podle doručení zvoleného v objednávce.",
+        "+ delivery from :from (Packeta), exact by the delivery chosen when ordering.",
+        "+ envío desde :from (Packeta), exacto según la entrega elegida al pedir."
+    ]
+}

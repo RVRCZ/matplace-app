@@ -13,6 +13,8 @@
     // "our picks" (Roman, 17 Oct 2026, the audit point 8): chosen by hand until there are data on what people use;
     // the ones that are not on offer here are left out
     $picks = collect(['gifts', 'organizer', 'box', 'qr', 'figure'])->filter(fn ($k) => $all->has($k));
+    // what the visitor comes for (config/tool_intents.php): a chip with the keys of its tools, only intents with something behind them
+    $aims = \App\Domain\Tools\ToolIntents::all($all->all());
     $sections = ['file' => 'have-file', 'create' => 'create', 'spare' => 'spare'];
 @endphp
 
@@ -27,7 +29,16 @@
         <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
         <input id="tool-search" type="search" class="field !mt-0 !pl-10" placeholder="{{ __('tools.search') }} · {{ __('tools.search.hint') }}" autocomplete="off">
     </div>
-    <div class="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0" role="group" aria-label="{{ __('tools.filter') }}">
+    @if($aims)
+    {{-- the intents first (a gift, from a photo, the home, a spare part, for a business): one row, scrolling on a phone like the categories --}}
+    <div class="-mx-4 mt-3 flex items-center gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0" role="group" aria-label="{{ __('tools.aims') }}">
+        <span class="shrink-0 text-sm text-muted">{{ __('tools.aims') }}</span>
+        @foreach($aims as $aim => $keys)
+            <button type="button" class="chip inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap" data-aim="{{ $aim }}" data-tools="{{ implode(' ', $keys) }}" aria-pressed="false">{{ __('tools.aim.'.$aim) }}</button>
+        @endforeach
+    </div>
+    @endif
+    <div class="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0" role="group" aria-label="{{ __('tools.filter') }}">
         <button type="button" class="chip chip-on inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center" data-filter="all" aria-pressed="true">{{ __('tools.cat.all') }}</button>
         @foreach($cats as $c)
             <button type="button" class="chip inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap" data-filter="{{ $c }}" aria-pressed="false">{{ __('tools.cats.'.$c) }}</button>
@@ -102,8 +113,15 @@
     const alike = (w) => (w.length < 3 ? [w] : [w, ...same.filter((g) => g.some((s) => s.startsWith(w) || (s.length > 3 && w.startsWith(s)))).flat()]);
     const chips = [...document.querySelectorAll('[data-filter]')];
     const cards = [...document.querySelectorAll('[data-tool-section] [data-cats]')];
+    // the words of a tool live on its big card only; a phone row looks them up by key (a third less HTML)
+    const wordsOf = new Map(cards.filter((c) => c.dataset.words !== undefined).map((c) => [c.dataset.key, c.dataset.words]));
+    const wordsIn = (c) => c.dataset.words ?? wordsOf.get(c.dataset.key) ?? '';
+    // an intent (a gift, from a photo…) is a filter like a category, by the keys of its tools; one of the two is on at a time
+    const aims = [...document.querySelectorAll('[data-aim]')];
+    const aimTools = new Map(aims.map((b) => [b.dataset.aim, new Set(b.dataset.tools.split(' '))]));
     const search = document.getElementById('tool-search');
     let cat = 'all';
+    let aim = null;
     // the folds of the phone: what the visitor opened stays open; a filter opens what it shows and gives the rest back after
     const folds = [...document.querySelectorAll('#tool-cats [data-cat]')];
     const opened = new Set(folds.slice(0, 1).map((s) => s.dataset.cat));
@@ -120,15 +138,16 @@
     }));
     const apply = () => {
         const words = plain(search.value).split(/\s+/).filter(Boolean);
-        const filtered = cat !== 'all' || words.length > 0;
+        const filtered = cat !== 'all' || aim !== null || words.length > 0;
         let shown = 0;
         const once = new Set();      // a phone row of a tool already shown in an earlier category (while searching)
         const wanted = words.map(alike);
         cards.forEach((c) => {
-            let on = (cat === 'all' || c.dataset.cats.split(' ').includes(cat)) && wanted.every((alts) => alts.some((w) => c.dataset.words.includes(w)));
+            const text = wordsIn(c);
+            let on = (cat === 'all' || c.dataset.cats.split(' ').includes(cat)) && (aim === null || aimTools.get(aim).has(c.dataset.key)) && wanted.every((alts) => alts.some((w) => text.includes(w)));
             const group = c.closest('[data-cat]');
             if (group && cat !== 'all' && group.dataset.cat !== cat) on = false;
-            if (group && on && words.length) { if (once.has(c.dataset.key)) on = false; else once.add(c.dataset.key); }
+            if (group && on && (words.length || aim !== null)) { if (once.has(c.dataset.key)) on = false; else once.add(c.dataset.key); }
             c.hidden = !on;
             if (on && !group) shown++;
         });
@@ -138,16 +157,17 @@
             count.textContent = filtered ? s.querySelectorAll('[data-cats]:not([hidden])').length : count.dataset.total;
             fold(s, filtered || opened.has(s.dataset.cat));
         });
-        document.querySelectorAll('[data-when-unfiltered]').forEach((n) => { n.hidden = cat !== 'all' || words.length > 0; });
+        document.querySelectorAll('[data-when-unfiltered]').forEach((n) => { n.hidden = filtered; });
         document.getElementById('tool-none').classList.toggle('hidden', shown > 0);
         if (shown === 0) related(wanted);
         chips.forEach((o) => { const on = o.dataset.filter === cat; o.classList.toggle('chip-on', on); o.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+        aims.forEach((o) => { const on = o.dataset.aim === aim; o.classList.toggle('chip-on', on); o.setAttribute('aria-pressed', on ? 'true' : 'false'); });
     };
     // nothing found: the tools that match any one of the words (any category), else our picks
     const related = (wanted) => {
         const list = document.getElementById('tool-none-related');
         const big = cards.filter((c) => !c.closest('[data-cat]'));
-        let near = big.filter((c) => wanted.some((alts) => alts.some((w) => w.length > 2 && c.dataset.words.includes(w))));
+        let near = big.filter((c) => wanted.some((alts) => alts.some((w) => w.length > 2 && wordsIn(c).includes(w))));
         if (!near.length) near = [...document.querySelectorAll('#tool-picks [data-key]')].map((p) => big.find((c) => c.dataset.key === p.dataset.key)).filter(Boolean);
         list.innerHTML = '';
         near.slice(0, 5).forEach((c) => {
@@ -160,19 +180,22 @@
     // the category and the words live in the address (#names, ?q=box): the step back from a tool finds the list as it was left
     const remember = () => {
         const q = search.value.trim();
-        history.replaceState(null, '', location.pathname + (q ? '?q=' + encodeURIComponent(q) : '') + (cat === 'all' ? '' : '#' + cat));
+        history.replaceState(null, '', location.pathname + (q ? '?q=' + encodeURIComponent(q) : '') + (aim !== null ? '#' + aim : cat === 'all' ? '' : '#' + cat));
     };
+    // a category or an intent, never both: the chip pressed again gives the whole list back
     const pick = (to, keep = true) => {
-        cat = chips.some((o) => o.dataset.filter === to) ? to : 'all';
+        if (aimTools.has(to)) { aim = aim === to ? null : to; cat = 'all'; }
+        else { cat = chips.some((o) => o.dataset.filter === to) ? to : 'all'; aim = null; }
         if (keep) remember();
         apply();
     };
     chips.forEach((b) => b.addEventListener('click', () => pick(b.dataset.filter)));
+    aims.forEach((b) => b.addEventListener('click', () => pick(b.dataset.aim)));
     search.addEventListener('input', () => { apply(); remember(); });
     document.getElementById('tool-none-clear').addEventListener('click', () => { search.value = ''; pick('all'); search.focus(); });
     const asked = new URLSearchParams(location.search).get('q');
     if (asked) { search.value = asked.slice(0, 80); apply(); }
-    const fromHash = () => { const h = location.hash.slice(1); if (chips.some((o) => o.dataset.filter === h)) pick(h, false); };
+    const fromHash = () => { const h = location.hash.slice(1); if (chips.some((o) => o.dataset.filter === h) || aimTools.has(h)) pick(h, false); };
     window.addEventListener('hashchange', fromHash);
     fromHash();
 })();

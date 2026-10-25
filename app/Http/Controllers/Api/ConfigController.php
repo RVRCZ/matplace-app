@@ -10,6 +10,7 @@ use App\Engines\Contracts\ModelGenerator;
 use App\Engines\Converter\ConverterChain;
 use App\Engines\DTO\SliceParams;
 use App\Http\Controllers\Controller;
+use App\Support\ShippingHint;
 use Illuminate\Http\JsonResponse;
 
 /** Constants the browser needs for the instant estimate and the form (also inlined into the page). */
@@ -58,6 +59,8 @@ class ConfigController extends Controller
             'orientation_profiles' => self::farmProfiles($materials) ?: config('pricing.orientation_profiles'),
             'round_to' => config('pricing.round_to'),
             'currency' => config('pricing.currency'),
+            // what delivery adds, in the visitor's currency and for the country they most likely order to (an estimate; docs/AN.md §3)
+            'shipping_hint' => ShippingHint::text(),
             'max_scale' => config('pricing.max_scale'),
             'bed_mm' => config('pricing.bed_mm'),
             // the farm keeps this much clear at every edge of the plate: "N pieces fit" must count with it, or the order page says fewer

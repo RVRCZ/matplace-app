@@ -1822,5 +1822,13 @@
     "calc.status.big_only_n": "Velký model (:n mil. trojúhelníků): přesnou cenu a dobu tisku spočítáme při objednávce, trvá to několik minut.",
     "calc.price.orient_range": "Orientační cena tisku u nás: :price. Podle podpěr, tvaru, barvy a tiskárny ji upřesníme při objednávce.",
     "calc.price.shape_hint": "Podle podpěr a tvaru upřesníme při objednávce.",
-    "calc.time.range": "asi :lo až :hi"
+    "calc.time.range": "asi :lo až :hi",
+    "Pagination Navigation": "Stránkování",
+    "Showing": "Zobrazeno",
+    "to": "až",
+    "of": "z",
+    "results": "výsledků",
+    "Go to page :page": "Přejít na stránku :page",
+    "calc.price.shipping_pickup": "+ doprava od :from (Zásilkovna) nebo osobní odběr zdarma, přesně podle doručení zvoleného v objednávce.",
+    "calc.price.shipping": "+ doprava od :from (Zásilkovna), přesně podle doručení zvoleného v objednávce."
 }

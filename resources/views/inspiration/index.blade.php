@@ -8,7 +8,8 @@
 @section('content')
 <div class="mx-auto max-w-5xl">
     <h1 class="text-2xl font-extrabold sm:text-3xl">{{ $category ? $category->label() : __('models.inspiration.title') }}</h1>
-    <p class="mt-1 max-w-2xl text-slate-600">{{ __('models.inspiration.lead') }} <a href="{{ route('models.index') }}" class="text-action-dark underline">{{ __('models.inspiration.printable_link') }}</a></p>
+    {{-- the designers' catalogue is named only once it has enough to show (docs/AN.md §1): a link to an empty page is a blind alley --}}
+    <p class="mt-1 max-w-2xl text-slate-600">@if(\App\Models\DesignerModel::enoughToShow()){{ __('models.inspiration.lead') }} <a href="{{ route('models.index') }}" class="text-action-dark underline">{{ __('models.inspiration.printable_link') }}</a>@else{{ __('models.inspiration.lead_alone') }}@endif</p>
 
     <form method="get" action="{{ $category ? route('catalog.category', $category->slug) : route('catalog.index') }}" class="mt-4 flex gap-2" role="search">
         <input name="q" type="search" value="{{ $q }}" maxlength="100" placeholder="{{ __('models.inspiration.search') }}" aria-label="{{ __('models.inspiration.search') }}" class="field mt-0 flex-1">

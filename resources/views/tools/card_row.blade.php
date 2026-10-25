@@ -2,11 +2,10 @@
      the name, what is entered and two lines at most on the right. The whole row is one link; the search reads the same
      words as the big card. A row of "our picks" ($pick) stays out of the filter: it shows only while nothing is filtered. --}}
 @php
-    $keywords = __('tools.keywords.'.$key);
-    $words = __('tools.'.$key.'.title').' '.__('tools.'.$key.'.hint').' '.($keywords === 'tools.keywords.'.$key ? '' : $keywords);
     $input = \App\Domain\Tools\ToolInput::of($key, $tool);
 @endphp
-<a href="{{ route($tool['route']) }}" data-key="{{ $key }}" data-title="{{ __('tools.'.$key.'.title') }}" @unless(! empty($pick)) data-cats="{{ implode(' ', $tool['categories']) }}" data-words="{{ \App\Domain\Farm\Palette::plain($words) }}" @endunless class="card flex items-center gap-3 overflow-hidden p-2 pr-3 transition hover:border-ink">
+{{-- the words a tool is found by sit on its big card only (tools/card.blade.php): the row is found by its key, a third less HTML --}}
+<a href="{{ route($tool['route']) }}" data-key="{{ $key }}" data-title="{{ __('tools.'.$key.'.title') }}" @unless(! empty($pick)) data-cats="{{ implode(' ', $tool['categories']) }}" @endunless class="card flex items-center gap-3 overflow-hidden p-2 pr-3 transition hover:border-ink">
     <span class="block w-24 shrink-0 overflow-hidden rounded-lg bg-studio">@include('tools.picture', ['key' => $key, 'sizes' => '96px'])</span>
     <span class="min-w-0 flex-1">
         <span class="block font-semibold leading-snug text-ink">{{ __('tools.'.$key.'.title') }}</span>

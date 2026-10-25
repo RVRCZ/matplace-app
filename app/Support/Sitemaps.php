@@ -104,7 +104,10 @@ final class Sitemaps
     private function pages(string $locale): array
     {
         $all = fn (string $route) => $this->entry($route, [], Locales::SUPPORTED, $locale);
-        $urls = [$all('home'), $all('tools'), $all('models.index'), $all('catalog.index')];
+        $urls = [$all('home'), $all('tools'), $all('catalog.index')];
+        if (DesignerModel::enoughToShow()) {   // the designers' catalogue is listed once it has enough to show (it says noindex before)
+            $urls[] = $all('models.index');
+        }
         foreach (ToolSeo::tools() as $tool) {
             if ($tool !== 'calc') {
                 $urls[] = $all((string) config('tools')[$tool]['route']);

@@ -31,6 +31,10 @@ return [
     // catalog:enrich – how many of the most visited models by default, and how much of the source's text Gemini reads
     'enrich' => ['top' => 300, 'max_source_chars' => 3000],
 
+    // the designers' catalogue (/models) is in the menu, named by the inspiration catalogue, indexed and in the sitemap
+    // only from this many printable cards (DesignerModel::enoughToShow): a link to an empty page is a blind alley
+    'menu_from' => 6,
+
     // /models filter by the longest side of one piece, in mm: S up to, M up to, L above
     'sizes' => ['s' => 80, 'm' => 160],
 

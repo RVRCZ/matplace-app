@@ -1822,5 +1822,13 @@
     "calc.status.big_only_n": "Modelo grande (:n millones de triángulos): el precio y el tiempo de impresión exactos se calculan al pedir, tarda varios minutos.",
     "calc.price.orient_range": "Precio orientativo de impresión con nosotros: :price. Lo precisaremos según los soportes, la forma, el color y la impresora al pedir.",
     "calc.price.shape_hint": "Lo precisaremos según los soportes y la forma al pedir.",
-    "calc.time.range": "unos :lo a :hi"
+    "calc.time.range": "unos :lo a :hi",
+    "Pagination Navigation": "Paginación",
+    "Showing": "Mostrando",
+    "to": "a",
+    "of": "de",
+    "results": "resultados",
+    "Go to page :page": "Ir a la página :page",
+    "calc.price.shipping_pickup": "+ envío desde :from (Packeta) o recogida gratis en persona, exacto según la entrega elegida al pedir.",
+    "calc.price.shipping": "+ envío desde :from (Packeta), exacto según la entrega elegida al pedir."
 }

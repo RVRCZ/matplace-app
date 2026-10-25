@@ -66,7 +66,7 @@
     @php
         $languages = \App\Support\Locales::switcher();
         $currencyOpen = ! \App\Support\Currency::locked();
-        $showModels = \Illuminate\Support\Facades\Cache::remember('nav.models', 600, fn () => \App\Models\DesignerModel::printable()->count()) >= 6;
+        $showModels = \App\Models\DesignerModel::enoughToShow();
     @endphp
     <header class="border-b border-slate-200 bg-white">
         <div class="mx-auto flex {{ empty($wide) ? 'max-w-6xl' : 'max-w-[1600px]' }} items-center justify-between gap-2 px-4 py-1 sm:py-2">

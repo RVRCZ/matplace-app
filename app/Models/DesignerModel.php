@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
@@ -97,6 +98,16 @@ class DesignerModel extends Model
         return $query->where('designer_models.visible', true)->whereNotNull('model_file_id')->whereNotNull('author_confirmed_at')
             ->where('file_status', self::FILE_READY)
             ->whereHas('profile', fn (Builder $p) => $p->where('visible', true));
+    }
+
+    /**
+     * The catalogue of designers' models has enough to show: it is then in the menu, named by the inspiration catalogue,
+     * indexed and in the sitemap (config catalog.menu_from, docs/Z.md N7, docs/AN.md §1). One place for the rule; the count
+     * is cached ten minutes under `nav.models`.
+     */
+    public static function enoughToShow(): bool
+    {
+        return Cache::remember('nav.models', 600, fn () => static::printable()->count()) >= (int) config('catalog.menu_from', 6);
     }
 
     public function isPrintable(): bool

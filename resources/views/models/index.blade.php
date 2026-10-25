@@ -1,4 +1,5 @@
-@extends('layouts.app', ['title' => __('models.title').' · matplace', 'description' => __('models.description')])
+{{-- until the catalogue has enough cards it stays out of search engines (noindex, follow, the language twins stay; like the inspiration pages without a text of ours), reachable as before (docs/AN.md §1) --}}
+@extends('layouts.app', ['title' => __('models.title').' · matplace', 'description' => __('models.description'), 'robots' => \App\Models\DesignerModel::enoughToShow() ? null : 'noindex, follow'])
 
 @section('content')
 @php
@@ -35,9 +36,11 @@
     @if($cards->isEmpty())
         <div class="card mt-6 p-8 text-center">
             <p class="text-slate-600">{{ __('models.empty') }}</p>
+            {{-- the empty page leads on: a file of one's own (the calculator), the inspiration catalogue, the tools --}}
             <p class="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm">
-                <a href="{{ route('farm.start') }}" class="btn-primary">{{ __('models.own_file') }}</a>
+                <a href="{{ route('home') }}" class="btn-primary">{{ __('models.own_file') }}</a>
                 <a href="{{ route('catalog.index') }}" class="text-action-dark underline">{{ __('models.inspiration_link') }}</a>
+                <a href="{{ route('tools') }}" class="text-action-dark underline">{{ __('models.tools_link') }}</a>
             </p>
         </div>
     @else

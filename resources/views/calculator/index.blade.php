@@ -95,6 +95,8 @@
                     </div>
                     <div id="price-sub" class="mt-1 text-sm text-slate-500"></div>
                     <p id="price-orient" class="mt-1 hidden text-sm text-slate-600"></p>
+                    {{-- what delivery adds (config/farm.php shipping, the visitor's currency): the price above is for the print alone --}}
+                    <p id="price-shipping" class="hidden text-xs text-slate-500"></p>
 
                     {{-- size and quantity first: what the customer decides, right under the price they decide it by --}}
                     <div class="mt-3 rounded-xl bg-slate-50 p-3">

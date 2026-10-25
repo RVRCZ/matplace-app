@@ -29,6 +29,7 @@ interface Config {
     bed_mm: { x: number; y: number; z: number }; bed_margin_mm?: number; materials: MaterialCfg[]; default_material: string;
     formats: string[]; max_upload_mb: number; lay: Record<string, string>;
     marketplace?: boolean;   // false: the calculator shows the slicer's facts and no prices (the farm has its own)
+    shipping_hint?: string | null;   // what delivery adds, worded by the server for the visitor's country and currency
 }
 
 // MP_CONFIG exists only on calculator pages; this module is bundled into every page, so stay safe at import time.
@@ -311,14 +312,17 @@ function renderCompare(base: { grams: number; minutes: number } | null, precise:
 /** The farm's list price as a line to orient by; the binding price comes on the order page after colour and printer are chosen. */
 function orientPrice(r: [number, number] | null, rough: boolean): void {
     const el = document.getElementById('price-orient');
+    const ship = document.getElementById('price-shipping');
     if (!el) return;
-    if (!r) { el.classList.add('hidden'); return; }
+    if (!r) { el.classList.add('hidden'); ship?.classList.add('hidden'); return; }
     const q = state.params.quantity;
     // the farm's list is in crowns; the visitor reads it in their own currency
     const txt = r[0] === r[1] ? priceText(r[0]) : `${priceText(r[0])} – ${priceText(r[1])}`;
     // the estimate's range says what narrows it down (supports, shape, colour, printer); the exact price just where it is made binding
     el.textContent = t(rough ? 'calc.price.orient_range' : 'calc.price.orient', { price: `${rough ? '≈ ' : ''}${txt}` }) + (q > 1 ? ` ${t('calc.price.per_piece')} ≈ ${priceText(Math.round(r[0] / q))}.` : '');
     el.classList.remove('hidden');
+    // the print alone is priced above; what delivery adds comes worded by the server for this visitor (ShippingHint)
+    if (ship) { ship.textContent = cfg.shipping_hint ?? ''; ship.classList.toggle('hidden', !cfg.shipping_hint); }
 }
 // the farm's own price list (one per material): the calculator prices like the marketplace does, with that list
 const farmPriced = () => !marketplace() && cfg.orientation_profiles.length > 0 && cfg.orientation_profiles.every((p) => p.key === 'farm');

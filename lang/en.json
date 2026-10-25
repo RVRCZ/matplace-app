@@ -1822,5 +1822,13 @@
     "calc.status.big_only_n": "A large model (:n million triangles): the exact price and print time are worked out when you order, that takes several minutes.",
     "calc.price.orient_range": "Print price with us, to orient by: :price. We narrow it down by the supports, the shape, the colour and the printer when you order.",
     "calc.price.shape_hint": "Narrowed down by the supports and the shape when you order.",
-    "calc.time.range": "about :lo to :hi"
+    "calc.time.range": "about :lo to :hi",
+    "Pagination Navigation": "Pagination Navigation",
+    "Showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "results": "results",
+    "Go to page :page": "Go to page :page",
+    "calc.price.shipping_pickup": "+ delivery from :from (Packeta) or free pickup in person, exact by the delivery chosen when ordering.",
+    "calc.price.shipping": "+ delivery from :from (Packeta), exact by the delivery chosen when ordering."
 }
