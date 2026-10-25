@@ -957,7 +957,7 @@
     "home.hero_alt": "Un jarrón en espiral impreso, un organizador con bolígrafos, un soporte de móvil y un colgante con nombre sobre una mesa ante una impresora 3D",
     "home.caption": "Todo lo que ve en la imagen se hizo con nuestras herramientas.",
     "home.caption_note": "Ilustración",
-    "home.start.file": "Tengo un archivo 3D",
+    "home.start.file": "Tengo un modelo 3D",
     "home.start.file.hint": "Suba el modelo y vea al instante el precio de fabricarlo.",
     "home.start.idea": "Tengo una foto o una idea",
     "home.start.idea.hint": "Describa lo que necesita. Encontramos un modelo o lo creamos.",
@@ -1822,5 +1822,11 @@
     "calc.status.big_only_n": "Modelo grande (:n millones de triángulos): el precio y el tiempo de impresión exactos se calculan al pedir, tarda varios minutos.",
     "calc.price.orient_range": "Precio orientativo de impresión con nosotros: :price. Lo precisaremos según los soportes, la forma, el color y la impresora al pedir.",
     "calc.price.shape_hint": "Lo precisaremos según los soportes y la forma al pedir.",
-    "calc.time.range": "unos :lo a :hi"
+    "calc.time.range": "unos :lo a :hi",
+    "home.start.gift": "Quiero un regalo",
+    "home.start.gift.hint": "Con nombre, de una foto o con dedicatoria. Elija y vea el precio al instante.",
+    "home.start.part": "Necesito una pieza",
+    "home.start.part.hint": "Una caja, un soporte, una tapa o su propio archivo. Impreso a medida.",
+    "home.start.firm": "Para una empresa",
+    "home.start.firm.hint": "Letreros QR, logotipos, identificadores y posavasos con su marca, incluso por unidades."
 }

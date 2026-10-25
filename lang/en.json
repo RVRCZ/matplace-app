@@ -957,7 +957,7 @@
     "home.hero_alt": "A printed spiral vase, an organizer with pens, a phone stand and a name pendant on a desk in front of a 3D printer",
     "home.caption": "Everything in the picture was made with our tools.",
     "home.caption_note": "Illustration",
-    "home.start.file": "I have a 3D file",
+    "home.start.file": "I have a 3D model",
     "home.start.file.hint": "Upload the model and see the price of making it at once.",
     "home.start.idea": "I have a photo or an idea",
     "home.start.idea.hint": "Describe what you need. We find a model or create one.",
@@ -1822,5 +1822,11 @@
     "calc.status.big_only_n": "A large model (:n million triangles): the exact price and print time are worked out when you order, that takes several minutes.",
     "calc.price.orient_range": "Print price with us, to orient by: :price. We narrow it down by the supports, the shape, the colour and the printer when you order.",
     "calc.price.shape_hint": "Narrowed down by the supports and the shape when you order.",
-    "calc.time.range": "about :lo to :hi"
+    "calc.time.range": "about :lo to :hi",
+    "home.start.gift": "I want a gift",
+    "home.start.gift.hint": "With a name, from a photo or with a dedication. Pick one and see the price at once.",
+    "home.start.part": "I need a part",
+    "home.start.part.hint": "A box, a holder, a cap or your own file. Printed exactly to measure.",
+    "home.start.firm": "For a business",
+    "home.start.firm.hint": "QR signs, logos, name tags and coasters with your brand, even one at a time."
 }

@@ -73,6 +73,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Content-Security-Policy reports (App\Http\Controllers\CspReportController), one line per distinct violation an hour
+        'csp' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/csp.log'),
+            'level' => 'info',
+            'days' => 30,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

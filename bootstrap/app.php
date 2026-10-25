@@ -11,6 +11,7 @@ use App\Http\Middleware\LegacyRedirects;
 use App\Http\Middleware\RecordMissing;
 use App\Http\Middleware\RecordVisit;
 use App\Http\Middleware\RememberReferral;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\ToolGate;
 use App\Models\AnonymousSession;
@@ -42,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ToolGate::class,
             RecordVisit::class,
             ForwardEvents::class,
+            SecurityHeaders::class,   // Permissions-Policy and the Content-Security-Policy (config/security.php)
         ]);
         // addresses of the old site are answered before routing (config/legacy.php)
         $middleware->prepend(LegacyRedirects::class);

@@ -1,0 +1,9 @@
+{
+    "home.start.file": ["Mám 3D model", "I have a 3D model", "Tengo un modelo 3D"],
+    "home.start.gift": ["Chci dárek", "I want a gift", "Quiero un regalo"],
+    "home.start.gift.hint": ["Se jménem, z fotky nebo s věnováním. Vyberete a hned vidíte cenu.", "With a name, from a photo or with a dedication. Pick one and see the price at once.", "Con nombre, de una foto o con dedicatoria. Elija y vea el precio al instante."],
+    "home.start.part": ["Potřebuji díl", "I need a part", "Necesito una pieza"],
+    "home.start.part.hint": ["Krabička, držák, krytka nebo vlastní soubor. Vytiskneme ho přesně na míru.", "A box, a holder, a cap or your own file. Printed exactly to measure.", "Una caja, un soporte, una tapa o su propio archivo. Impreso a medida."],
+    "home.start.firm": ["Pro firmu", "For a business", "Para una empresa"],
+    "home.start.firm.hint": ["QR cedulky, loga, jmenovky a podtácky s vaší značkou, i po kusech.", "QR signs, logos, name tags and coasters with your brand, even one at a time.", "Letreros QR, logotipos, identificadores y posavasos con su marca, incluso por unidades."]
+}

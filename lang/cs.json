@@ -957,7 +957,7 @@
     "home.hero_alt": "Vytištěná spirálová váza, organizér s tužkami, stojánek na telefon a přívěsek se jménem na stole před 3D tiskárnou",
     "home.caption": "Všechno na obrázku vzniklo v našich nástrojích.",
     "home.caption_note": "Ilustrace",
-    "home.start.file": "Mám 3D soubor",
+    "home.start.file": "Mám 3D model",
     "home.start.file.hint": "Nahrajte model a hned uvidíte cenu jeho výroby.",
     "home.start.idea": "Mám fotku nebo nápad",
     "home.start.idea.hint": "Popište, co potřebujete. Najdeme model nebo ho vytvoříme.",
@@ -1822,5 +1822,11 @@
     "calc.status.big_only_n": "Velký model (:n mil. trojúhelníků): přesnou cenu a dobu tisku spočítáme při objednávce, trvá to několik minut.",
     "calc.price.orient_range": "Orientační cena tisku u nás: :price. Podle podpěr, tvaru, barvy a tiskárny ji upřesníme při objednávce.",
     "calc.price.shape_hint": "Podle podpěr a tvaru upřesníme při objednávce.",
-    "calc.time.range": "asi :lo až :hi"
+    "calc.time.range": "asi :lo až :hi",
+    "home.start.gift": "Chci dárek",
+    "home.start.gift.hint": "Se jménem, z fotky nebo s věnováním. Vyberete a hned vidíte cenu.",
+    "home.start.part": "Potřebuji díl",
+    "home.start.part.hint": "Krabička, držák, krytka nebo vlastní soubor. Vytiskneme ho přesně na míru.",
+    "home.start.firm": "Pro firmu",
+    "home.start.firm.hint": "QR cedulky, loga, jmenovky a podtácky s vaší značkou, i po kusech."
 }
