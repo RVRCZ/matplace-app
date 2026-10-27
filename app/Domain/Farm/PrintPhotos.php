@@ -100,20 +100,21 @@ final class PrintPhotos
 
     /**
      * The order's photo: rendered into the public disk under prints/<token>/ (an earlier one goes) and remembered on
-     * the order. Returns the meta as stored.
+     * the order. Returns the meta as stored; `source` is the photo it was made from on the farm disk when the caller
+     * knows it (the photo box's photo, the admin's upload), so a later photo or a redo can tell where it came from.
      *
-     * @return array{bg: string, cut: bool, coverage: ?float, at: string, files: array<string, string>}
+     * @return array{bg: string, cut: bool, coverage: ?float, at: string, source: ?string, files: array<string, string>}
      *
      * @throws EngineException
      */
-    public function attach(FarmOrder $order, string $source, ?string $bg = null): array
+    public function attach(FarmOrder $order, string $source, ?string $bg = null, ?string $sourceRel = null): array
     {
         $disk = Storage::disk(self::DISK);
         $dir = 'prints/'.$order->token;
         $disk->deleteDirectory($dir);
         $r = $this->render($source, $disk->path($dir), 'photo', $bg);
         $rel = fn (string $abs): string => $dir.'/'.basename($abs);
-        $meta = ['bg' => $r['bg'], 'cut' => $r['cut'], 'coverage' => $r['coverage'], 'at' => now()->toIso8601String(), 'files' => array_map($rel, $r['files'])];
+        $meta = ['bg' => $r['bg'], 'cut' => $r['cut'], 'coverage' => $r['coverage'], 'at' => now()->toIso8601String(), 'source' => $sourceRel, 'files' => array_map($rel, $r['files'])];
         $order->forceFill(['photo_path' => $rel($r['files']['web']), 'photo_meta' => $meta])->save();
 
         return $meta;

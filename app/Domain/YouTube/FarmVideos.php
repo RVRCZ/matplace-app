@@ -841,13 +841,13 @@ class FarmVideos
 
     private function facts(FarmOrder $order): array
     {
-        $order->loadMissing(['color.material', 'printer']);
+        $order->loadMissing(['color.material']);
         $minutes = (int) ($order->actual_minutes ?: $order->est_minutes);
 
+        // no printer line: the description says the material and the time only (Roman, 27 Oct 2026)
         return [
             'material' => $order->color?->material?->label() ?? '',
             'color' => $order->color?->displayName() ?? '',
-            'printer' => $order->printer?->model ?: ($order->printer?->name ?? ''),
             'time' => $minutes >= 60 ? intdiv($minutes, 60).' h '.($minutes % 60).' min' : $minutes.' min',
         ];
     }

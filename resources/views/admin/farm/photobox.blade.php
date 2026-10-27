@@ -64,7 +64,7 @@
                 @endforeach
             </div>
             @if(! $order->isTest())
-                <p class="mt-2 text-xs text-slate-500">Video zakázky končí fotkou označenou „do videa“: přednostně boční pohled (zleva, zprava), jinak z mobilu, jinak shora, vždy ta nejnovější. Po vyfocení nebo smazání se video přestaví samo.</p>
+                <p class="mt-2 text-xs text-slate-500">Video zakázky končí fotkou označenou „do videa“: přednostně boční pohled (zleva, zprava), jinak z mobilu, jinak shora, vždy ta nejnovější. U zakázky zákazníka se z ní nejdřív udělá upravená fotka (pozadí pryč, podklad studio, velikosti pro web a Short) a teprve ta jde do videa. Po vyfocení nebo smazání se video přestaví samo.</p>
             @endif
         </section>
     @endif

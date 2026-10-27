@@ -103,6 +103,8 @@ final class YouTubeChannelTest extends TestCase
         $this->assertSame(['ano', 'unlisted'], [$byId['vid5']['duplikat'], $byId['vid5']['navrh']], 'the 16:9 twin of a Short');
         $this->assertStringContainsString('utm_content=vid1', $byId['vid1']['novy_popis'], 'the proposed description names the video');
         $this->assertStringContainsString('#Shorts #3dtisk #3dtiskarna #dárek #figurka', $byId['vid1']['novy_popis']);
+        $this->assertStringNotContainsString('Tiskárna', $byId['vid1']['novy_popis'], 'the printer line is gone (Roman, 27 Oct 2026)');
+        $this->assertStringContainsString("\nMateriál: ", $byId['vid1']['novy_popis']);
         $this->assertStringNotContainsString('#Shorts', $byId['vid5']['novy_popis']);
         $this->assertSame([], $this->calls, 'the table from the database asks YouTube nothing');
 

@@ -128,7 +128,7 @@
                     <figure class="mt-3 hidden">
                         <video id="farm-timelapse" controls playsinline loop class="w-full rounded-xl border border-slate-200"></video>
                         <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.timelapse') }}
-                            <a id="farm-short" href="#" download class="ml-2 hidden font-semibold text-action-dark underline">{{ __('youtube.order.short_download') }}</a></figcaption>
+                            <a id="farm-short" href="{{ route('farm.orders.short', $order) }}" download class="ml-2 hidden font-semibold text-action-dark underline">{{ __('youtube.order.short_download') }}</a></figcaption>
                     </figure>
                 </div>
                 <p id="farm-queue" class="mt-3 hidden text-sm text-slate-600"></p>
@@ -289,7 +289,7 @@
 
                 <p id="farm-pay-error" class="mt-2 hidden text-sm text-red-700" role="alert"></p>
                 <p id="farm-card-note" class="mt-2 hidden rounded-lg bg-amber-50 p-3 text-sm text-amber-900" aria-live="polite"></p>
-                <a id="farm-topup" href="#" class="btn-secondary mt-2 hidden w-full text-sm">{{ __('farm.top_up') }}</a>
+                <a id="farm-topup" href="{{ route('account.credit', ['back' => $order->token]) }}" class="btn-secondary mt-2 hidden w-full text-sm">{{ __('farm.top_up') }}</a>
                 <p id="farm-pay-recolor" class="mt-3 hidden text-sm text-amber-900">{{ __('farm.order.recolor_first') }}</p>
                 {{-- what is paid: the print and the delivery together, once the delivery is known --}}
                 <p id="farm-pay-total" class="mt-3 hidden text-sm text-ink" aria-live="polite"></p>

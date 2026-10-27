@@ -16,7 +16,7 @@ return [
     'no_orders' => 'Nothing here yet.',
     'credit_balance' => 'Credit',
     'top_up' => 'Top up credit',
-    'slices_left' => 'You can calculate :n more models today.',
+    'slices_left' => '{0} You cannot calculate another model today.|{1} You can calculate :n more model today.|[2,*] You can calculate :n more models today.',
 
     'start' => [
         'model' => 'Model',
