@@ -6,6 +6,7 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Social\VideoSharer;
 use App\Jobs\UploadFarmVideo;
 use App\Mail\FarmAdminAlert;
+use App\Mail\FarmVideoPublished;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
 use App\Models\YouTubeAccount;
@@ -264,8 +265,34 @@ class FarmVideos
             throw new YouTubeError('locked_private', (string) $video->error);
         }
         $this->commentLink($video);
+        $this->tellCustomer($video);
 
         return $video;
+    }
+
+    /**
+     * "Your video is on YouTube": once, to the customer who agreed to share the print, with the link to watch and the
+     * way to the tool that made the model (utm_source=email, the video's id). Nobody else hears about a weekly cut or
+     * a how-to video; an account that switched mails off is left alone.
+     */
+    public function tellCustomer(FarmVideo $video): void
+    {
+        $order = $video->order;
+        $user = $order?->user;
+        if (! in_array($video->kind, [FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE], true) || ! $order || ! $user || ! $user->email || $user->notify_email === false
+            || ! $order->video_consent || $video->status !== FarmVideo::STATUS_PUBLISHED || ! $video->youtube_id || ! empty($video->meta['customer_mailed_at'])) {
+            return;
+        }
+        // one mail per print: the 16:9 twin of a Short that was already announced says nothing
+        if ($order->videos()->where('id', '!=', $video->id)->whereNotNull('meta->customer_mailed_at')->exists()) {
+            return;
+        }
+        try {
+            Mail::to($user->email)->locale($user->locale ?: config('app.locale'))->queue(new FarmVideoPublished($video, $this->link($order, (string) $video->kind, 'email', null, $video->youtube_id)));
+            $video->update(['meta' => ['customer_mailed_at' => now()->toIso8601String()] + (array) $video->meta]);
+        } catch (\Throwable $e) {
+            Log::warning('Video mail to the customer failed', ['video' => $video->id, 'error' => $e->getMessage()]);
+        }
     }
 
     /** Not for the channel: delete it from YouTube, remember the decision (a later consent does not upload it again). */
@@ -391,6 +418,7 @@ class FarmVideos
             $video->update($fill);
             if (($fill['status'] ?? null) === FarmVideo::STATUS_PUBLISHED) {
                 $this->commentLink($video);
+                $this->tellCustomer($video->refresh());
             }
             $n++;
         }

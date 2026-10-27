@@ -1342,3 +1342,53 @@ nasazení (frames + fotka z fotoboxu).
 ### 13.4.4 Ověření dávky 2
 
 `YouTubeVideosTest|FarmVideosCutTest|PrintPhotosTest|RembgBackgroundRemoverTest|SocialVideosTest|FarmHowtoVideoTest|FarmAdminNotifyTest|FarmPagesTest` = 58 testů, 1 825 asercí, zelené (2 přeskočené bez `FFMPEG_BIN`); `FarmVideosCutTest` s `FFMPEG_BIN` = 7 testů včetně skutečného renderu; pint prošel. Upravené testy: rozsah Shortu 15 až 25 s, délka a rozměry 1080×1920, háček, adresa a otázka v textech, fotka o 0,4 s kratší; hashtagy, komentář s cenou a `utm_content` ve Facebook/Instagram odkazech; 16:9 pár jen s `youtube.wide_uploads`.
+
+## 13.5 Dávka 3: tabulka titulků, přejmenování, playlisty, texty pro Studio, e‑mail zákazníkovi
+
+### 13.5.1 Tabulka titulků a `youtube:retitle` (úkol 4)
+
+- **`App\Domain\YouTube\ChannelCurator`** (nic nevolá YouTube, dokud se neřekne `--apply`): `rows()` = každé naše video
+  na YouTube (sloupce `id; druh; zakazka; nastroj; zverejneno; dnesni_titulek; zhlednuti; novy_titulek; novy_popis;
+  playlist; duplikat; navrh`), nejsledovanější první; `novy_titulek`/`novy_popis` z šablon dávky 2 (s `utm_content`
+  videa), `playlist` podle nástroje, `duplikat` = `ano` u 16:9 dvojčete Shortu (`navrh` = unlisted) nebo `stejný titul`
+  u shodných názvů; s `--api` přibudou i videa nahraná ručně (uploads playlist kanálu, 2–3 jednotky kvóty) s prázdnými
+  návrhy. `writeCsv`/`readCsv` středníkový CSS jako ostatní tabulky v `docs/data` (víceřádkový popis v uvozovkách, BOM
+  z tabulkového editoru se ořízne).
+- **`php artisan youtube:titles [--out=…] [--api]`** → `docs/data/youtube-titles-<rok>-<měsíc>.csv`.
+- **`php artisan youtube:retitle <csv> [--apply] [--unlist]`**: bez `--apply` jen vypíše plán („1 to rename, 1 to
+  unlist“); s `--apply` `videos.update part=snippet` (50 jednotek na video; `YouTubeClient::retitle`), popis se posílá
+  s `utm_content` a uloží se i k našemu řádku; `--unlist` přepne řádky s `navrh = unlisted` na unlisted
+  (`setPrivacy`, `meta.unlisted_at`). Idempotentní: druhý běh téže tabulky nic nemění.
+- **`docs/data/youtube-titles-2026-10.csv`** je předvyplněná pro 13 videí známých z auditu (návrhy titulků a playlistů,
+  bez `id`); zbylých 20 řádků a `id` doplní `youtube:titles --api` na produkci (řídící), pak schválí Roman, pak
+  `--apply`. Sedm horizontálních duplikátů najde tabulka sama (`duplikat = ano`); o `unlisted` rozhodne Roman.
+
+### 13.5.2 Playlisty přes API (úkol 5)
+
+`config/youtube.php` `playlists`: „Figurky z fotky“ (figure, pet, relief, papel), „Dárky se jménem“ (sign, nameplate,
+medallion, ornament, topper, name_cup, name_letter, charm, text, logo, stamp, gifts, personalize), „Pro domácnost“ (box,
+organizer, vase, phone_stand, cap, holder, cable_holder, tray, hair_tie, candle_stand, modular, gingerbread, cookie,
+qr, map, beads, notes, lightbox, stencil, cutter), „Jak to funguje“ (druhy howto a weekly). Vlastní soubor zákazníka do
+žádné (Roman ručně). `php artisan youtube:playlists` = plán z DB a z uložených id (`storage/app/youtube/playlists.json`,
+žádné volání); `--apply` = `playlists.list` (co už na kanálu je), `playlists.insert` pro chybějící, `playlistItems.insert`
+pro každé veřejné video, které v seznamu ještě není (`meta.playlist`); 50 jednotek na zápis.
+
+### 13.5.3 Texty pro Studio (úkol 6)
+
+`docs/data/youtube-kanal-texty.md`: popis kanálu česky s klíčovými slovy (anglický řádek na konci), odkazy do „O kanálu“
+(web a nástroje s UTM `channel`, Instagram, Facebook, e‑mail pro firmy – adresy k ověření Romanem), banner (text do
+bezpečné oblasti + tři složené fotky z fotoboxu), trailer (zkrácené video fotka → model → výtisk, 30–40 s, sestřih
+připravím po schválení přes `farm:howto-video`), doporučené video, pořadí sekcí, komunita.
+
+### 13.5.4 E‑mail zákazníkovi „vaše video“ (úkol 7)
+
+`App\Mail\FarmVideoPublished` (`mail.farm_video_published`, texty `youtube.mail.*` cs/en/es): předmět „Video vašeho
+tisku F26‑000123 je na YouTube“, tlačítko Přehrát, prosba o sdílení, odkaz na nástroj s `utm_source=email`,
+`utm_campaign=video_short`, `utm_content=<videoId>` (měření kliknutí v GA/statistice jako u videí). Posílá
+`FarmVideos::tellCustomer` po zveřejnění (`publish` naostro i `refreshStats`, když video zveřejní YouTube v naplánovaný
+čas nebo ručně Studio): jen Short/16:9 zakázky se souhlasem `video_consent`, účet s e‑mailem a `notify_email`, jednou na
+zakázku (`meta.customer_mailed_at`; dvojče 16:9 už nepíše), týdenní sestřih a návody nikomu.
+
+### 13.5.5 Ověření dávky 3
+
+`tests/Feature/YouTubeChannelTest.php` (4 testy: tabulka s návrhy, dvojčaty, stejnými tituly a ručními uploady + CSV tam a zpět; retitle jako dry run, pak `--apply` a `--unlist` proti falešnému Googlu; playlisty plán → `--apply` → znovu nic; e‑mail zákazníkovi jednou, s odkazy, ne bez souhlasu, ne při vypnutých mailech). Sada `YouTubeVideosTest|FarmVideosCutTest|YouTubeChannelTest|SocialVideosTest|FarmHowtoVideoTest|FarmAdminNotifyTest|PrintPhotosTest|AuditRestTest|RembgBackgroundRemoverTest` = 54 testů, 1 054 asercí, zelené (2 přeskočené bez `FFMPEG_BIN`); pint prošel. Žádné volání YouTube API naostro; žádná migrace, žádný build.

@@ -61,6 +61,15 @@ return [
         'text' => '#nápis', 'map' => '#mapa', 'default' => '#3dprinting',
     ],
 
+    'mail' => [
+        'subject' => 'The video of your print :number is on YouTube',
+        'title' => 'Your video is out',
+        'body' => 'The time-lapse of the print ":name" is published on our channel. Thank you for letting us show it.',
+        'watch' => 'Watch on YouTube',
+        'share' => 'If you like it, pass it on: every share helps a small farm more than an advert.',
+        'next' => 'Have the next model printed here: :url',
+    ],
+
     'weekly' => [
         'card' => 'This week on the farm',
         'title' => 'This week on the farm – :dates',

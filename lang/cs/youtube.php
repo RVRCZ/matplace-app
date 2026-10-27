@@ -64,6 +64,15 @@ return [
         'text' => '#nápis', 'map' => '#mapa', 'default' => '#3dprinting',
     ],
 
+    'mail' => [
+        'subject' => 'Video vašeho tisku :number je na YouTube',
+        'title' => 'Vaše video je venku',
+        'body' => 'Časosběr tisku „:name“ je zveřejněný na našem kanálu. Děkujeme, že jste ho dovolili ukázat.',
+        'watch' => 'Přehrát na YouTube',
+        'share' => 'Když se vám líbí, pošlete ho dál: každé sdílení pomáhá malé farmě víc než reklama.',
+        'next' => 'Další model si můžete nechat vytisknout tady: :url',
+    ],
+
     'weekly' => [
         'card' => 'Tento týden na farmě',
         'title' => 'Tento týden na farmě – :dates',
