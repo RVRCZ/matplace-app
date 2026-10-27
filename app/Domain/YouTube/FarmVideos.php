@@ -9,6 +9,7 @@ use App\Mail\FarmAdminAlert;
 use App\Models\FarmOrder;
 use App\Models\FarmVideo;
 use App\Models\YouTubeAccount;
+use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -53,7 +54,8 @@ class FarmVideos
         }
         $rows = [];
         $fresh = false;
-        foreach ([FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE] as $kind) {
+        // the 16:9 of the same print goes up only when youtube.wide_uploads says so (the audit of 27 Oct 2026: duplicates split the views)
+        foreach (config('youtube.wide_uploads') ? [FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE] : [FarmVideo::KIND_SHORT] as $kind) {
             if (! $this->eligible($order, $kind)) {
                 continue;
             }
@@ -184,7 +186,8 @@ class FarmVideos
 
             return;
         }
-        $video->update(['status' => FarmVideo::STATUS_UPLOADED, 'youtube_id' => $id, 'uploaded_at' => now()]);
+        // the links now know which video they come from (utm_content=<videoId>): the description on YouTube follows at the publish
+        $video->update(['status' => FarmVideo::STATUS_UPLOADED, 'youtube_id' => $id, 'uploaded_at' => now(), 'description' => self::withVideoId((string) $video->description, $id)]);
 
         // the customer changed their mind while the upload ran
         if ($order && ! $order->refresh()->video_consent) {
@@ -235,6 +238,7 @@ class FarmVideos
         if (! $this->consented($video)) {
             throw new YouTubeError('no_consent', 'The customer has taken the consent back.');
         }
+        $description = self::withVideoId($description, $video->youtube_id);
         if (! $now && $video->status === FarmVideo::STATUS_UPLOADED) {
             // private on YouTube: give it the slot and let YouTube flip it
             $at = $this->nextSlot();
@@ -530,22 +534,37 @@ class FarmVideos
      * spec). Marked with the channel (utm_source youtube|facebook|instagram) and the kind (utm_campaign video_short,
      * video_wide, video_weekly, video_howto), so /admin/stats counts the visits per channel and kind.
      */
-    public function link(?FarmOrder $order, string $kind, string $source = 'youtube', ?string $target = null): string
+    public function link(?FarmOrder $order, string $kind, string $source = 'youtube', ?string $target = null, ?string $content = null): string
     {
         $url = $target ?: $this->toolUrl($order);
         if ((string) parse_url($url, PHP_URL_PATH) === '') {
             $url .= '/';
         }
 
-        return $url.(str_contains($url, '?') ? '&' : '?').http_build_query(['utm_source' => $source, 'utm_medium' => 'social', 'utm_campaign' => 'video_'.$kind]);
+        // utm_content = the YouTube video id, so the statistics say which video sent the visitor (known after the upload)
+        return $url.(str_contains($url, '?') ? '&' : '?').http_build_query(array_filter(['utm_source' => $source, 'utm_medium' => 'social', 'utm_campaign' => 'video_'.$kind, 'utm_content' => $content]));
     }
 
-    /** A video row's link on a channel: its print's tool page, the how-to spec's target (meta.link), the weekly cut the home page. */
+    /** A video row's link on a channel: its print's tool page, the how-to spec's target (meta.link), the weekly cut the home page; marked with the video's id once it has one. */
     public function linkOf(FarmVideo $video, string $source = 'youtube'): string
     {
         $kind = $video->kind ?? FarmVideo::KIND_SHORT;
 
-        return $this->link($kind === FarmVideo::KIND_WEEKLY ? null : $video->order, $kind, $source, $kind === FarmVideo::KIND_HOWTO ? ($video->meta['link'] ?? null) : null);
+        return $this->link($kind === FarmVideo::KIND_WEEKLY ? null : $video->order, $kind, $source, $kind === FarmVideo::KIND_HOWTO ? ($video->meta['link'] ?? null) : null, $video->youtube_id ?: null);
+    }
+
+    /**
+     * Our links in a text written before the video had an id, marked with it now (`utm_content=<id>` after the
+     * campaign); links that carry a content mark already stay. The description is written when the video is queued and
+     * the id arrives with the upload.
+     */
+    public static function withVideoId(string $text, ?string $id): string
+    {
+        if ($id === null || $id === '') {
+            return $text;
+        }
+
+        return (string) preg_replace('/(utm_campaign=video_[a-z]+)(?![^\s"\'<>]*utm_content=)/', '$1&utm_content='.rawurlencode($id), $text);
     }
 
     /** A text written for YouTube with our links marked for another channel: the same pages, that channel's utm_source. */
@@ -576,12 +595,82 @@ class FarmVideos
             return;
         }
         try {
-            $id = $this->youtube->comment($video->youtube_id, $this->callLine($this->linkOf($video)));
+            $id = $this->youtube->comment($video->youtube_id, $this->commentText($video));
             $video->update(['meta' => ['comment_id' => $id] + (array) $video->meta]);
         } catch (YouTubeError $e) {
             // a token from before the scope (insufficientPermissions) or the quota: the video stays as it is
             Log::warning('YouTube link comment failed', ['video' => $video->id, 'reason' => $e->reason, 'error' => $e->getMessage()]);
         }
+    }
+
+    /** The channel's comment under a video: the call with the link (marked with the video) and, for a print, what it cost. */
+    public function commentText(FarmVideo $video): string
+    {
+        $locale = (string) config('youtube.language');
+        $call = $this->callLine($this->linkOf($video), $locale);
+        $price = $video->order ? $this->price($video->order, $locale) : null;
+
+        return $price !== null ? __('youtube.video.comment', ['cta' => $call, 'price' => $price], $locale) : $call;
+    }
+
+    /**
+     * The tool that made the model, as the texts know it (figure for a generated model, relief for a lithophane, the
+     * kind of a tool's design), null for a customer's own file.
+     */
+    public function toolKind(FarmOrder $order): ?string
+    {
+        $file = $order->modelFile;
+        if (! $file) {
+            return null;
+        }
+        if ($file->origin === 'generated') {
+            return 'figure';
+        }
+
+        return $file->origin === 'tool' ? (in_array($file->origin_ref, ['lithophane', 'relief'], true) ? 'relief' : (string) $file->kind()) : null;
+    }
+
+    /** What the print cost, rounded to whole crowns or euros, as the Short's end and the comment say it; null for a free print. */
+    public function price(FarmOrder $order, ?string $locale = null): ?string
+    {
+        if ($order->price_total === null || (float) $order->price_total <= 0) {
+            return null;
+        }
+
+        return Money::of(round((float) $order->price_total), (string) ($order->currency ?: Money::CZK))->format($locale ?? (string) config('youtube.language'));
+    }
+
+    /** "Cena: 99 Kč" on the Short's end; '' without a price (a showcase). */
+    public function priceLine(FarmOrder $order, ?string $locale = null): string
+    {
+        $price = $this->price($order, $locale);
+
+        return $price !== null ? __('youtube.video.price', ['price' => $price], $locale ?? (string) config('youtube.language')) : '';
+    }
+
+    /**
+     * The first second of a Short: what the viewer is about to see ("Z jedné fotky → busta"), by the tool that made the
+     * model; a customer's own file says what grows and in how long.
+     */
+    public function hook(FarmOrder $order, ?string $locale = null): string
+    {
+        $locale ??= (string) config('youtube.language');
+        $kind = $this->toolKind($order);
+        $key = 'youtube.hook.'.($kind ?? 'default');
+        $text = $kind !== null && __($key, [], $locale) !== $key ? __($key, [], $locale) : __('youtube.hook.default', ['time' => $this->facts($order)['time']], $locale);
+
+        return mb_substr($text, 0, 60);
+    }
+
+    /** The hashtags of a Short: the three of the channel and one to the subject (the tool), with #Shorts. */
+    public function hashtags(FarmOrder $order, ?string $locale = null): string
+    {
+        $locale ??= (string) config('youtube.language');
+        $kind = $this->toolKind($order);
+        $key = 'youtube.hashtag.'.($kind ?? 'default');
+        $topic = $kind !== null && __($key, [], $locale) !== $key ? __($key, [], $locale) : __('youtube.hashtag.default', [], $locale);
+
+        return '#Shorts '.__('youtube.video.hashtags', [], $locale).' '.$topic;
     }
 
     /**
@@ -601,18 +690,33 @@ class FarmVideos
             'line' => __($name !== null && $material !== '' ? 'youtube.video.card' : 'youtube.video.card_time', ['material' => $material, 'time' => $facts['time']], $locale)];
     }
 
-    /** "Louskáček – 6 h 10 min tisku za 25 s": what was printed, how long it took, how short the video is. */
+    /**
+     * "Busta z jedné fotky – 1 h 33 min tisku": what came out (the tool's hook, else the model's name) and the print
+     * time; never how short the video is (the viewer sees that). Unique on the channel: a second print of the same kind
+     * and time names its colour, a third its order.
+     */
     public function defaultTitle(FarmOrder $order, string $kind = FarmVideo::KIND_SHORT): string
     {
-        $locale = config('youtube.language');
+        $locale = (string) config('youtube.language');
         $facts = $this->facts($order);
-        $what = $this->modelName($order, $locale) ?? trim($facts['material'].' '.$facts['color']);
-        $seconds = $this->videoSeconds($kind === FarmVideo::KIND_WIDE ? (string) $order->timelapse_wide_path : $this->file($order));
-        $tail = $seconds
-            ? __('youtube.video.tail', ['time' => $facts['time'], 'seconds' => $seconds], $locale)
-            : __('youtube.video.tail_plain', ['time' => $facts['time']], $locale);
+        $tool = $this->toolKind($order);
+        $key = 'youtube.title.'.($tool ?? 'default');
+        if ($tool !== null && __($key, [], $locale) !== $key) {
+            $title = __('youtube.video.title_plain', ['name' => __($key, [], $locale), 'time' => $facts['time']], $locale);
+        } elseif (($name = $this->modelName($order, $locale)) !== null) {
+            $title = __('youtube.video.title_plain', ['name' => $name, 'time' => $facts['time']], $locale);
+        } else {
+            $title = __('youtube.video.title_unnamed', ['time' => $facts['time']], $locale);
+        }
+        $taken = fn (string $t) => FarmVideo::where('title', $t)->where('farm_order_id', '!=', $order->id)->whereNotIn('status', [FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_FAILED])->exists();
+        if ($taken($title) && trim($facts['color']) !== '') {
+            $title .= ' ('.trim($facts['color']).')';
+        }
+        if ($taken($title) && $order->number) {
+            $title .= ' · '.$order->number;
+        }
 
-        return mb_substr(($what !== '' ? $what.' – ' : '').$tail, 0, 100);
+        return mb_substr($title, 0, 100);
     }
 
     /** What the customer printed, in words: the tool's name, or the uploaded file's name tidied up. Null when nothing readable is left. */
@@ -678,14 +782,15 @@ class FarmVideos
     }
 
     /** The call with the link first (the tool's page or the home page, the kind's campaign), what was printed and how, the music credit; the Short gets its hashtags. */
-    public function defaultDescription(FarmOrder $order, ?string $music = null, string $kind = FarmVideo::KIND_SHORT): string
+    public function defaultDescription(FarmOrder $order, ?string $music = null, string $kind = FarmVideo::KIND_SHORT, ?string $videoId = null): string
     {
-        $text = __('youtube.video.description', $this->facts($order) + ['cta' => $this->callLine($this->link($order, $kind))], config('youtube.language'));
+        $locale = (string) config('youtube.language');
+        $text = __('youtube.video.description', $this->facts($order) + ['cta' => $this->callLine($this->link($order, $kind, 'youtube', null, $videoId), $locale)], $locale);
         if ($music) {
-            $text .= "\n\n".__('youtube.video.music', ['track' => self::musicCredit($music)], config('youtube.language'));
+            $text .= "\n\n".__('youtube.video.music', ['track' => self::musicCredit($music)], $locale);
         }
 
-        return $kind === FarmVideo::KIND_SHORT && $order->timelapse_short_path ? $text."\n\n#Shorts #3Dprinting #timelapse" : $text;
+        return $kind === FarmVideo::KIND_SHORT && $order->timelapse_short_path ? $text."\n\n".$this->hashtags($order, $locale) : $text;
     }
 
     /**

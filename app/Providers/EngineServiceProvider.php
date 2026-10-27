@@ -79,7 +79,7 @@ class EngineServiceProvider extends ServiceProvider
         $this->app->singleton(MeshDecimator::class, fn ($app) => new MeshDecimator($app->make(PythonTool::class), (array) config('engines.mesh')));
         // the background off a photo of a finished print (PrintPhotos, docs/AL.md §13): rembg asks the interpreter whether it is installed
         $this->app->singleton(BackgroundRemover::class, fn ($app) => match (config('engines.photo')) {
-            'rembg' => new RembgBackgroundRemover((array) config('engines.python') + ['photo_home' => (string) config('engines.photo_home')]),
+            'rembg' => new RembgBackgroundRemover((array) config('engines.python') + ['photo_home' => (string) config('engines.photo_home'), 'photo_numba_cache' => (string) config('engines.photo_numba_cache')]),
             'fake' => new FakeBackgroundRemover,
             default => new NoBackgroundRemover,
         });

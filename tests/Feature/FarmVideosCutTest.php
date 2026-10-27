@@ -57,7 +57,7 @@ class FarmVideosCutTest extends TestCase
     {
         $cutter = app(TimelapseCutter::class);
         $frames = fn (int $n) => collect(range(1, $n))->map(fn ($i) => "f{$i}.jpg");
-        foreach (['short' => [8, 14, 24], 'wide' => [20, 28, 30], 'weekly' => [8.5, 10, 30]] as $kind => [$min, $max, $fps]) {
+        foreach (['short' => [15, 25, 24], 'wide' => [20, 28, 30], 'weekly' => [8.5, 10, 30]] as $kind => [$min, $max, $fps]) {
             foreach ([200, 600, 5000] as $n) {
                 [$shown, $seconds] = $cutter->paced($frames($n), config("youtube.cut.$kind.growth"), $fps);
                 $growth = $shown->count() * $seconds;
@@ -84,14 +84,20 @@ class FarmVideosCutTest extends TestCase
         $cuts = (new BuildFarmTimelapse($order->id))->cuts($order);
         $this->assertSame(['customer', 'short', 'wide'], array_keys($cuts));
 
-        // the Short: 14 s of growing, under 20 s in all; the 16:9: 28 s of growing, under 45 s
-        $this->assertEqualsWithDelta(14.0, $cuts['short']->growth, 0.05);
-        $this->assertEqualsWithDelta(0.5 + 14 + 2, $cuts['short']->seconds, 0.05);
+        // the Short: the hook card, 25 s of growing, the piece held, the end with the price (no photo yet: the print stays); the 16:9: 28 s of growing, under 45 s
+        $this->assertEqualsWithDelta(25.0, $cuts['short']->growth, 0.05);
+        $this->assertEqualsWithDelta(1 + 25 + 1.5 + 3, $cuts['short']->seconds, 0.05);
+        $this->assertSame([1080, 1920, 24], [config('youtube.cut.short.width'), config('youtube.cut.short.height'), $cuts['short']->fps]);
+        $this->assertStringContainsString('crop=1080:1920,boxblur', $cuts['short']->graph, 'the camera picture blurred behind the square of the bed');
+        $this->assertSame(app(FarmVideos::class)->hook($order), str_replace('
+', ' ', $cuts['short']->texts[array_key_first(array_filter($cuts['short']->texts, fn ($k) => str_ends_with($k, 'short_hook.txt'), ARRAY_FILTER_USE_KEY))]), 'the hook card, wrapped to the width');
+        $this->assertContains(app(FarmVideos::class)->address($order), $cuts['short']->texts, 'the address of the tool at the end');
+        $this->assertContains('Co vytisknout příště?', $cuts['short']->texts, 'the question at the end');
         $this->assertEqualsWithDelta(28.0, $cuts['wide']->growth, 0.05);
         $this->assertEqualsWithDelta(1.5 + 28 + 2 + 3, $cuts['wide']->seconds, 0.05);
         $this->assertEqualsWithDelta(7 + 28 + 3 + 5, $cuts['customer']->seconds, 0.05);
         foreach ($cuts as $kind => $cut) {
-            // the frame lists add up to the planned growth (the Short also shows the finished piece first and last)
+            // the frame lists add up to the planned growth (the Short also holds the first frame under the hook and the last one)
             $listed = array_sum(array_column(array_merge(...array_values($cut->lists)), 1));
             $this->assertEqualsWithDelta($cut->growth + ($kind === 'short' ? 2.5 : 0), $listed, 0.01, $kind);
             $this->assertStringEndsWith('Artist - Song.mp3', (string) $cut->music, $kind);
@@ -218,18 +224,18 @@ class FarmVideosCutTest extends TestCase
             $this->assertTrue($info['audio'], "$kind has the track");
             $report[$kind] = $info + ['planned' => round($cuts[$kind]->seconds, 2), 'growth' => round($cuts[$kind]->growth, 2), 'frames' => $cuts[$kind]->frameCount()];
         }
-        $this->assertSame([720, 720], [$report['short']['width'], $report['short']['height']]);
+        $this->assertSame([1080, 1920], [$report['short']['width'], $report['short']['height']]);
         $this->assertSame([1920, 1080], [$report['wide']['width'], $report['wide']['height']]);
         $this->assertSame([1280, 720], [$report['customer']['width'], $report['customer']['height']]);
         $this->samples($report, [[$order->timelapse_short_path, 8, 'short'], [$order->timelapse_wide_path, 0.8, 'wide-title'], [$order->timelapse_wide_path, 14, 'wide'],
             [$order->timelapse_wide_path, $report['wide']['seconds'] - 1, 'wide-end'], [$order->timelapse_path, 20, 'customer']], $disk);
 
-        // the photo of the cleaned piece: the Short + 2 s - 0.5 s crossfade, the 16:9 and the customer's + 3 s
+        // the photo of the cleaned piece: the Short crossfades into it instead of holding the plate (0.4 s shorter), the 16:9 and the customer's + 3 s
         $disk->put($order->dir().'/photos/left.jpg', $this->picture(200, 'photo'));
         $order->forceFill(['test_params' => ['photos' => [['file' => $order->dir().'/photos/left.jpg', 'view' => 'left']]]])->save();
         $this->artisan('farm:timelapse', ['number' => $order->number])->assertSuccessful();
         $order->refresh();
-        $this->assertEqualsWithDelta($report['short']['seconds'] + 1.5, $this->probe($disk->path($order->timelapse_short_path))['seconds'], 0.3);
+        $this->assertEqualsWithDelta($report['short']['seconds'] - 0.4, $this->probe($disk->path($order->timelapse_short_path))['seconds'], 0.3);
         $this->assertEqualsWithDelta($report['wide']['seconds'] + 3.0, $this->probe($disk->path($order->timelapse_wide_path))['seconds'], 0.3);
         $this->assertEqualsWithDelta($report['customer']['seconds'] + 3.0, $this->probe($disk->path($order->timelapse_path))['seconds'], 0.3);
     }

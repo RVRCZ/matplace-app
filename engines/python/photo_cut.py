@@ -58,6 +58,10 @@ def main(argv):
         from rembg import new_session, remove
     except Exception as e:
         out({"ok": False, "error": "rembg_missing: " + str(e)[:120]})
+    home = os.environ.get("U2NET_HOME", "")
+    if home and not os.path.isfile(os.path.join(home, "u2net.onnx")):
+        # never download from a worker (minutes, and www-data cannot write the package's own cache): say so and leave
+        out({"ok": False, "error": "model_missing: " + os.path.join(home, "u2net.onnx")})
     try:
         session = new_session("u2net")
         cut = remove(im, session=session, post_process_mask=True)

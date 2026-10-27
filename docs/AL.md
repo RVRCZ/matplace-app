@@ -1281,3 +1281,64 @@ php artisan farm:photo /tmp/foto.jpg --order=F26-000222 --bg=studio          →
 Bez kroku 1 a 2 vše dál funguje: `--probe` řekne „not available“, fotky se jen napasují (`photo_meta.cut = false`) a po
 instalaci stačí fotku nahrát znovu. Pozor na paměť: onnxruntime drží model (~0,3 GB) po dobu běhu skriptu; skript končí po
 každé fotce. Nasazení dávky: `php artisan migrate` (dva nullable sloupce), `npm run build` (farm.ts), `storage:link` už je.
+
+## 13.4 Dávka 2: šablona Shorts, tituly, popisy, UTM, připnutý komentář
+
+### 13.4.1 Nová šablona Shorts (`TimelapseCutter::short`, od příštího videa)
+
+Svislé 1080×1920 (dřív čtverec 1080×1080), `config/youtube.php` `cut.short`: `growth` 15 až 25 s, `hook` 1 s, `hold`
+1,5 s, `end` 3 s, 24 fps.
+
+1. **Háček (první sekunda):** první snímek ztmavený (`drawbox black@0.55`) a přes něj věta podle nástroje zakázky
+   (`FarmVideos::hook`, texty `youtube.hook.*` cs/en/es: „Z jedné fotky → busta“, „Zákazník poslal rozměr → krabička“,
+   „Jméno → medaile s řetízkem“…; vlastní soubor zákazníka „Z modelu → výtisk za 1 h 33 min“), zalomená na šířku
+   (`wrap`). Fotku zákazníka u modelů z fotky **neukazujeme**: souhlas `video_consent` se týká časosběru, ne zdrojové
+   fotky obličeje; ukáže se jen háček.
+2. **Tělo:** čtverec podložky (`crop` tiskárny) přes celou šířku, za ním tentýž snímek rozmazaný a ztmavený
+   (`boxblur=20:4`, `eq=brightness=-0.15`); poslední snímek drží 1,5 s.
+3. **Konec (3 s):** složená fotka výtisku z dávky 1 (`PrintPhotos`, varianta `short` 9:16) prolnutá 0,4 s; bez fotky
+   zůstane hotový výtisk na podložce (nikdy prázdná podložka). Přes obraz „Cena: 99 Kč“ (`FarmVideos::priceLine`,
+   `price_total` zaokrouhlená na celé koruny nebo eura; u tisku zdarma nic), adresa nástroje `matplace.com/tools/figure`
+   (`address`), dole otázka „Co vytisknout příště?“ (`youtube.video.ask_short`). Logo v rohu po celou dobu, hudba z
+   Audio Library jako dosud.
+4. **16:9 duplikát** se už nenahrává: `FarmVideos::queueFor` řadí k YouTube jen Short; 16:9 se dál staví (zákaznické
+   video, týdenní sestřih) a nahrává jen s `YOUTUBE_WIDE_UPLOADS=true` (`youtube.wide_uploads`).
+
+Místní render skutečným ffmpeg 9 (`FFMPEG_BIN`, test `test_real_videos_from_numbered_frames…`): Short 1080×1920,
+25,1 s při 200 snímcích (háček 1 + růst 20 + držení 1,5 + konec 3; s fotkou o 0,4 s kratší kvůli prolnutí), zvuk ano.
+Ukázka: `C:\Users\roman\AppData\Local\Temp\claude\c--Users-roman-Documents-MatPlace-conceprt19092026\18e3d80f-ba4e-42a8-b6d7-75b3417a895b\scratchpad\video-samples\short-sample.mp4`
+(syntetické snímky testu: šedá podložka, oranžový kvádr) a snímky `short-at-0.5.jpg` (háček), `short-at-12.jpg` (tělo),
+`short-at-end.jpg` (konec s cenou 120 Kč, adresou, otázkou). Skutečný časosběr s fotkou vznikne první zakázkou po
+nasazení (frames + fotka z fotoboxu).
+
+### 13.4.2 Tituly, popisy, hashtagy, UTM, komentář (`FarmVideos`)
+
+- **Titul** (`defaultTitle`): „[co vzniklo] – [doba] tisku“ bez „za 29 s“: nástroj → `youtube.title.<kind>` („Busta
+  z jedné fotky – 1 h 33 min tisku“, „Organizér přesně do šuplíku – 2 h 27 min tisku“), vlastní soubor → očištěný název
+  modelu („Louskacek – 6 h 10 min tisku“), bez čitelného názvu „Co vyroste za 13 min 3D tisku“. Unikátní na kanálu:
+  stejný titul u jiné zakázky dostane barvu „(Bílá)“, třetí číslo zakázky.
+- **Popis** (`defaultDescription`): první řádek odkaz na konkrétní nástroj s UTM; „hotový kus a cenu vidíte na konci“;
+  materiál, tiskárna, doba; hudba; hashtagy Shortu `#Shorts #3dtisk #3dtiskarna #dárek` + jeden k tématu
+  (`youtube.hashtag.<kind>`: `#figurka`, `#qrkod`, `#krabička`, `#váza`, `#medaile`, `#vánoce`…, vlastní soubor
+  `#3dprinting`). 16:9 a týdenní sestřih beze změny hashtagů.
+- **`utm_content=<videoId>`**: `link(order, kind, source, target, content)` a `linkOf(video)` přidají obsah, jakmile má
+  video `youtube_id`; popis napsaný před uploadem se po uploadu přepíše (`withVideoId`: za `utm_campaign=video_<kind>`
+  doplní `&utm_content=<id>`, kde chybí) a při zveřejnění (`publish`) projde týmž, takže i adminem upravený popis odkaz
+  s id má. Facebook a Instagram texty (`forChannel`) id nesou také.
+- **Připnutý komentář** (`commentText`): „Udělejte si vlastní: <url s utm_content> Cena tohoto výtisku: 99 Kč.“
+  (`youtube.video.comment`); mechanismus beze změny (`YOUTUBE_PIN_COMMENT`, scope force‑ssl, připnutí ručně v Studiu).
+
+### 13.4.3 rembg na produkci (řídící 27. 10.: numba cache, chybějící model)
+
+- `RembgBackgroundRemover` předává skriptu `NUMBA_CACHE_DIR` (`engines.photo_numba_cache`, výchozí
+  `storage/app/numba`, složku vytvoří) vedle `U2NET_HOME`; `available()` = rembg nainstalován **a** model
+  `u2net.onnx` v `U2NET_HOME` (`probe()` si sondu pamatuje hodinu, klíč podle interpretu i domova modelu).
+- `photo_cut.py` bez modelu končí `model_missing` místo stahování z workeru; `PrintPhotos::attach` chybu výřezu
+  chytí a fotku jen napasuje (`cut=false`), úloha nespadne.
+- `farm:photo --probe` říká zvlášť „rembg: yes (2.0.85)“, „model u2net.onnx: no (looked in …)“ a výsledek.
+- Test `tests/Unit/RembgBackgroundRemoverTest` (sonda bez modelu = nedostupný, proměnné prostředí skriptu, složka
+  cache, chyba bez rembg).
+
+### 13.4.4 Ověření dávky 2
+
+`YouTubeVideosTest|FarmVideosCutTest|PrintPhotosTest|RembgBackgroundRemoverTest|SocialVideosTest|FarmHowtoVideoTest|FarmAdminNotifyTest|FarmPagesTest` = 58 testů, 1 825 asercí, zelené (2 přeskočené bez `FFMPEG_BIN`); `FarmVideosCutTest` s `FFMPEG_BIN` = 7 testů včetně skutečného renderu; pint prošel. Upravené testy: rozsah Shortu 15 až 25 s, délka a rozměry 1080×1920, háček, adresa a otázka v textech, fotka o 0,4 s kratší; hashtagy, komentář s cenou a `utm_content` ve Facebook/Instagram odkazech; 16:9 pár jen s `youtube.wide_uploads`.

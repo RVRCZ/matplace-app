@@ -107,4 +107,53 @@ return [
             ['t' => 'Envoltorio de regalo', 'text' => 'Una caja hecha a la medida del regalo, en el color que elija, con ranura para una cinta si quiere.'],
         ],
     ],
+
+    // páginas de entrada de la sesión N1 (docs/AP.md): SVG a STL, reparación, revisión
+    'svg_to_stl' => [
+        'order' => [
+            ['q' => '¿Cuánto extruir la forma para que se imprima y aguante?', 'a' => 'Al menos 0,6 mm, es decir, tres capas de 0,2 mm; una etiqueta o un letrero de puerta admite 2 a 3 mm, un colgante de llaves 4 a 6 mm y una forma que deba sostenerse sola, 20 mm o más. Cuanto más alta, más gramos y minutos; el cálculo lo recalcula tras cada cambio.'],
+            ['q' => '¿Cómo de finas pueden ser las líneas?', 'a' => 'Una boquilla de 0,4 mm necesita dos líneas juntas, así que al menos 0,8 mm. La herramienta marca de antemano las líneas de menos de 0,8 mm; engrósela en su editor o agrande la forma.'],
+            ['q' => '¿Cuánto cuesta una forma impresa y cuánto tarda?', 'farm' => true, 'a' => 'El gato de 80 mm extruido a 6 mm pesa 9,6 g y se imprime en 17 minutos, 99 CZK con nosotros, que es el pedido mínimo (PLA, sin envío). Una forma mayor o más alta muestra sus gramos, minutos y precio en el cálculo antes de encargar nada.'],
+            ['q' => '¿Puede ir el motivo en un color distinto de la base?', 'a' => 'Un contorno extruido es de un solo color. Si el motivo debe ir sobre una placa de otro color, cambie el acabado a relieve: los colores quedan uno sobre otro y la impresora los resuelve con un cambio de filamento a la altura de la placa, en nuestra granja o en casa.'],
+            ['q' => '¿Cuánto tarda el envío?', 'farm' => true, 'a' => 'Enviamos el mismo día en que termina la impresión, en días laborables. Packeta suele entregar en 1 a 2 días laborables en Chequia, a un punto de recogida por :cz_point, a domicilio por :cz_home; a Eslovaquia desde :sk_point, a la UE desde :eu_point.'],
+            ['q' => '¿Puedo seguir editando el resultado?', 'a' => 'Sí. El STL es un modelo normal: lo escala en la calculadora, la herramienta Puzle lo corta en piezas, Molde hace con él un molde de colada y Cortador de galletas fabrica un cortador con el mismo contorno.'],
+        ],
+        'who' => [
+            ['t' => 'Logotipo de empresa o club', 'text' => 'Un logotipo de un archivo vectorial como letrero de mesa, colgante de llaves o emblema en una puerta, de 60 a 120 mm, exactamente según el diseño.'],
+            ['t' => 'Pieza exacta de un plano 2D', 'text' => 'Un separador, una arandela, una plantilla o un inserto que tiene dibujado en CAD o en Inkscape: el ancho en milímetros, los huecos siguen siendo huecos.'],
+            ['t' => 'Dibujo e icono', 'text' => 'Un dibujo infantil convertido en contorno, un icono de Noun Project o una silueta de nuestra biblioteca como adorno, imán o colgante.'],
+        ],
+    ],
+
+    'repair' => [
+        'order' => [
+            ['q' => '¿Cómo sé que el modelo necesita reparación?', 'a' => 'El laminador avisa de non-manifold, aristas abiertas o malla no estanca, en la vista previa faltan trozos de superficie, o la impresión tiene agujeros y capas de más. Si no está seguro, suba antes el modelo a la revisión; dice qué falla y ofrece la reparación con un botón.'],
+            ['q' => '¿Cuánto tarda la reparación y qué tamaño de archivo admite?', 'a' => 'Un archivo de hasta 120 MB. Un modelo normal está listo en unos segundos; una malla con millones de triángulos, en menos de un minuto; la página dice qué está pasando.'],
+            ['q' => '¿Cuánto cuesta imprimir el modelo reparado?', 'farm' => true, 'a' => 'La reparación no cuesta nada. La impresión con nosotros la calcula la calculadora a partir de los gramos y los minutos; el pedido mínimo es de 99 CZK, y el busto de 60 × 52 × 78 mm del ejemplo sale por unas 110 CZK (PLA, sin envío).'],
+            ['q' => '¿Sirve la reparación también para un modelo de impresión en resina?', 'a' => 'Sí, el STL es el mismo para FDM y resina, y ambos necesitan una malla cerrada. Para resina, vacíe el modelo tras la reparación con orificios de drenaje: ahorra resina y la pieza no se agrieta.'],
+            ['q' => '¿Cómo recibo la impresión?', 'farm' => true, 'a' => 'La enviamos con Packeta a un punto de recogida (en Chequia :cz_point) o a una dirección en la UE. Enviamos el mismo día en que termina la impresión, en días laborables; en cuanto entregamos el paquete, llega un correo con el seguimiento.'],
+            ['q' => '¿Y si el laminador sigue avisando de un error tras la reparación?', 'a' => 'El informe dice qué no se pudo hacer: un trozo grande de superficie que falta o una pared sin grosor no se reconstruyen. El resto es trabajo manual en Blender o Meshmixer; el laminador suele pasar por alto fallos pequeños y la impresión sale bien.'],
+        ],
+        'who' => [
+            ['t' => 'Un modelo de internet', 'text' => 'Un soporte, una tapa o una figura de Printables, Thingiverse o MakerWorld que el laminador rechaza. La reparación tarda segundos y no cambia el tamaño.'],
+            ['t' => 'Un escaneo con el móvil', 'text' => 'La fotogrametría y los escáneres dejan agujeros y motas. La reparación los cierra y une los fragmentos; la forma del escaneo se mantiene.'],
+            ['t' => 'Una exportación de CAD o de un juego', 'text' => 'Un archivo de SketchUp, Tinkercad o un modelo de videojuego con caras invertidas y duplicadas. La reparación las gira y las elimina.'],
+        ],
+    ],
+
+    'check' => [
+        'order' => [
+            ['q' => '¿Mira la revisión también el grosor de las paredes?', 'a' => 'Solo la medida más fina de todo el modelo: menos de 0,8 mm es error, porque una boquilla de 0,4 mm no imprime esa pared. Un punto fino dentro de un modelo por lo demás grueso no lo detecta la revisión; eso lo muestra el laminador.'],
+            ['q' => '¿Qué pasa con un modelo que no supera la revisión?', 'a' => 'Los agujeros y las caras invertidas van a la reparación con un botón. Un modelo mayor que la impresora se reduce con la escala en la calculadora, o se divide en piezas con pasadores. Las unidades equivocadas se resuelven guardando de nuevo en milímetros.'],
+            ['q' => 'Si la revisión es correcta, ¿puedo encargar la impresión enseguida?', 'farm' => true, 'a' => 'Sí. El botón del precio abre el modelo en la calculadora, donde ve los gramos, el tiempo de impresión y el precio; el pedido mínimo es de 99 CZK. La misma revisión se ejecuta en el cálculo, así que nada se avisa dos veces.'],
+            ['q' => '¿Se revisan también STEP, 3MF y OBJ?', 'a' => 'Sí. Un STEP de CAD se convierte en malla y se revisa como un STL; en un 3MF se revisa la forma, los colores y los ajustes de impresión quedan aparte.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El cálculo muestra el tiempo de impresión. Enviamos el mismo día en que termina, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Guardan mi archivo?', 'a' => 'El archivo sirve para la revisión, la reparación y el cálculo y no se entrega a nadie más. La revisión no lo toca; el modelo que descarga es el mismo archivo que subió.'],
+        ],
+        'who' => [
+            ['t' => 'Antes de imprimir en casa', 'text' => 'Un modelo descargado antes de laminar: en unos segundos sabe si tiene las unidades correctas, una malla cerrada y si cabe en la cama.'],
+            ['t' => 'Taller, escuela, FabLab', 'text' => 'Archivos de alumnos hechos en Tinkercad y SketchUp: el informe le dice a cada uno qué corregir, sin instalar ningún programa.'],
+            ['t' => 'Antes de encargar con nosotros', 'text' => 'Cada modelo de nuestra granja pasa por la misma revisión. Quien la hace de antemano sabe que el pedido pasará sin preguntas.'],
+        ],
+    ],
 ];

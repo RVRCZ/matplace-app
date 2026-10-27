@@ -36,6 +36,17 @@ final class ToolSeo
     }
 
     /**
+     * The page's H1 on the query people search for ('heading' in lang/<locale>/tools_seo/<tool>.php, docs/AP.md §2):
+     * null when the texts have none, and the page keeps the tool's name as its heading.
+     */
+    public static function heading(string $tool, ?string $locale = null): ?string
+    {
+        $heading = trim((string) (self::texts($tool, $locale)['heading'] ?? ''));
+
+        return $heading === '' ? null : $heading;
+    }
+
+    /**
      * The pictures that exist, each with its caption.
      *
      * @return list<array{url: string, path: string, caption: string}>

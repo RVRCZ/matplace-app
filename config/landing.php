@@ -15,5 +15,9 @@ return [
         'qr' => ['related' => ['sign', 'nameplate', 'keychain'], 'blog' => ['kolik-stoji-3d-tisk-na-zakazku-v-roce-2026']],
         'organizer' => ['related' => ['modular', 'box', 'tray'], 'blog' => ['pla-vs-petg-vs-asa-jaky-material-vybrat']],
         'box' => ['related' => ['organizer', 'modular', 'cable_holder'], 'blog' => ['pla-vs-petg-vs-asa-jaky-material-vybrat']],
+        // the search entry pages of session N1 (docs/AP.md §1): file tools first
+        'svg_to_stl' => ['related' => ['logo', 'stamp', 'cutter', 'stencil'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk', 'cena-3d-tisku-z-modelu']],
+        'repair' => ['related' => ['check', 'hollow', 'split'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk', 'rozdeleni-a-vyduteni-3d-modelu']],
+        'check' => ['related' => ['repair', 'split', 'life_size'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk', 'cena-3d-tisku-z-modelu']],
     ],
 ];

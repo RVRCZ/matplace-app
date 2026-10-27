@@ -1,29 +1,31 @@
 <?php
 
+// Stránka pro dotaz „svg do stl“ (docs/AP.md §1, §3). 'heading' = H1 stránky, 'h1' = nadpis obsahu pod nástrojem.
 return [
-    'title' => 'SVG do STL: převod obrysu na 3D model online',
-    'description' => 'Nahrajete SVG nebo jednoduchý obrázek, zadáte šířku a výšku v milimetrech a stáhnete STL zdarma a bez registrace. Nebo vám tvar vytiskneme.',
-    'h1' => 'Převod SVG do STL: obrys vytažený do výšky',
+    'title' => 'SVG do STL online zdarma: obrys jako 3D model k tisku',
+    'heading' => 'Převod SVG do STL online zdarma',
+    'description' => 'Nahrajete SVG, PNG nebo napíšete text, zadáte šířku v milimetrech a výšku vytažení. Uzavřené STL stáhnete bez registrace, nebo tvar vytiskneme od 99 Kč.',
+    'h1' => 'Co převod SVG do STL umí a kde má hranice',
     'intro' => [
-        'Nástroj vezme vyplněné tvary ze souboru SVG a vytáhne je kolmo do výšky, kterou zadáte: od 0,6 do 50 mm. Šířku nastavíte od 20 do 250 mm a druhý rozměr se dopočítá podle poměru stran, takže model má přesně ty milimetry, které čtete vedle náhledu. Otvory uvnitř tvaru zůstávají otvory. Místo SVG jde nahrát i jednoduchý kontrastní obrázek PNG, JPG nebo WebP, vybrat motiv z knihovny, nebo napsat text.',
-        'Výsledek je uzavřené těleso připravené pro slicer, žádná děravá síť, kterou byste museli opravovat. Nástroj předem upozorní na čáry tenčí než 0,8 mm a napíše, z kolika samostatných kousků se tvar skládá. Horní hranu můžete nechat zkosit. Model stáhnete jako STL nebo jako hotový projekt pro slicer, anebo ho objednáte jako výtisk z naší tiskové farmy v barvě, která je právě založená v tiskárnách.',
+        'Nástroj vezme vyplněné tvary ze souboru SVG a vytáhne je kolmo do výšky, kterou zadáte: od 0,6 do 50 mm. Šířku nastavíte od 20 do 250 mm a druhý rozměr se dopočítá podle poměru stran, takže model má přesně ty milimetry, které čtete vedle náhledu; na jednotkách zapsaných v SVG nezáleží. Otvory uvnitř tvaru zůstávají otvory. Soubor SVG může mít do 400 kB a čáry bez výplně nástroj vynechá a řekne to. Místo SVG jde nahrát jednoduchý kontrastní obrázek PNG, JPG nebo WebP do 5 MB, vybrat siluetu z knihovny, nebo napsat text. Výsledek je uzavřené těleso s dnem, víkem a stěnami, které slicer vezme bez opravy. Nástroj předem upozorní na čáry tenčí než 0,8 mm, které se tryskou 0,4 mm netisknou čistě, a napíše, z kolika samostatných kousků se tvar skládá.',
+        'Příklad z 27. 10. 2026: silueta kočky z knihovny, šířka 80 mm, vytažená na 6 mm, vyšla 80 × 81 × 6 mm, 2 568 trojúhelníků a 17,7 cm³. Kalkulace na ni počítá 9,6 g PLA a 17 minut tisku, u nás za 99 Kč (nejnižší cena zakázky, bez dopravy; kalkulace /c/lfa9iggn3hls). Model si stáhnete zdarma a bez účtu jako STL, nebo jako projekt 3MF pro OrcaSlicer, Bambu Studio či PrusaSlicer s nastavením z kalkulace. Kdo tiskárnu nemá, nechá tvar vytisknout na naší farmě v barvě, která je právě založená v tiskárnách.',
     ],
     'steps' => [
-        ['name' => 'Nahrajte SVG', 'text' => 'Vyberete soubor SVG do 400 kB, nebo obrázek PNG, JPG či WebP do 5 MB. Na vyzkoušení je předvybraný motiv z knihovny.'],
-        ['name' => 'Zadejte šířku a výšku vytažení', 'text' => 'Šířku tvaru nastavíte posuvníkem nebo tažením šipky v náhledu, tloušťku od 0,6 do 50 mm. Zkosení horní hrany zapnete jedním zaškrtnutím.'],
-        ['name' => 'Zkontrolujte náhled', 'text' => 'Vedle náhledu čtete vnější rozměry, pod ním upozornění na tenké čáry nebo oddělené kousky.'],
-        ['name' => 'Stáhněte STL, nebo objednejte tisk', 'text' => 'Model stáhnete zdarma a bez registrace jako STL nebo jako projekt pro slicer. Výtisk z naší farmy zaplatíte z předplaceného kreditu.'],
+        ['name' => 'Nahrajte SVG, obrázek nebo text', 'text' => 'Soubor SVG do 400 kB, obrázek PNG, JPG či WebP do 5 MB, silueta z knihovny, nebo nápis. Na vyzkoušení je předvybraná kočka z knihovny.'],
+        ['name' => 'Zadejte šířku a výšku vytažení', 'text' => 'Šířku v milimetrech nastavíte posuvníkem nebo tažením šipky v náhledu, výšku od 0,6 do 50 mm. Zkosení horní hrany zapnete zaškrtnutím.'],
+        ['name' => 'Přečtěte si upozornění', 'text' => 'Vedle náhledu jsou vnější rozměry, pod ním poznámka o čarách pod 0,8 mm a o počtu oddělených kousků, pokud nějaké jsou.'],
+        ['name' => 'Stáhněte STL, nebo objednejte tisk', 'text' => 'STL nebo projekt pro slicer stáhnete zdarma a bez registrace. Tisk u nás pokračuje do kalkulace, kde vidíte gramy, minuty a cenu.'],
     ],
     'faq' => [
-        ['q' => 'Jaké SVG nástroj zpracuje?', 'a' => 'Soubor do 400 kB s vyplněnými tvary. Čáry bez výplně nástroj vynechá a napíše to; v kreslicím programu je proto předem převeďte na obrysy (v Inkscapu funkce Stroke to Path) a text na křivky.'],
-        ['q' => 'V jakých jednotkách model vyjde?', 'a' => 'V milimetrech. Na rozměrech zapsaných v SVG nezáleží: tvar se zvětší nebo zmenší na šířku, kterou zadáte, a druhý rozměr se dopočítá podle poměru stran.'],
-        ['q' => 'Proč se tvar skládá z několika kousků?', 'a' => 'Vytažený obrys nemá destičku, takže oddělené části kresby nic nespojuje. Nástroj napíše, kolik jich je. Mají-li držet pohromadě, přepněte provedení na reliéf na destičce.'],
-        ['q' => 'Můžu nahrát PNG nebo JPG místo SVG?', 'a' => 'Ano, jednoduchý obrázek s tmavým motivem na světlém pozadí. Převádí se v mřížce nejvýše 360 bodů na delší straně, SVG proto dá hladší hrany. Fotografie sem nepatří, na tu je nástroj Reliéf a litofanie.'],
-        ['q' => 'Jak vysoko jde tvar vytáhnout?', 'a' => 'Od 0,6 do 50 mm. Do 3 mm vznikne štítek nebo ozdoba, kolem 5 mm přívěsek či podtácek a od 20 mm tvar, který stojí sám.'],
-        ['q' => 'Jak zaplatím a jak výtisk dostanu?', 'a' => 'Platíte z předplaceného kreditu, který dobijete kartou; ceny vidíte v korunách nebo v eurech. Výtisk pošleme přes Packetu (Zásilkovnu) na výdejní místo či na adresu v EU.'],
+        ['q' => 'Proč slicer bere STL odsud bez chyb, když jiný převodník dal děravou síť?', 'a' => 'Každý obrys dostane dno, víko i stěny a tělesa se spojí do jedné uzavřené sítě. Slicer tak nehlásí otevřené hrany ani převrácené plochy a model nepotřebuje opravu.'],
+        ['q' => 'Jak připravit SVG, aby se převedlo celé?', 'a' => 'Všechno, co se má vytisknout, musí být vyplněný tvar. V Inkscapu převeďte čáry funkcí Stroke to Path a text funkcí Object to Path; stejně to umí Illustrator i Affinity. Vrstvy, masky a přechody nástroj nečte.'],
+        ['q' => 'Jak nastavím přesné rozměry v milimetrech?', 'a' => 'Zadáte šířku a druhý rozměr se dopočítá podle poměru stran, takže se tvar nezkreslí. Rozměry zapsané v SVG (px, mm, palce) se nepoužijí; platí to, co čtete vedle náhledu.'],
+        ['q' => 'Proč se tvar rozpadl na několik kousků?', 'a' => 'Vytažený obrys nemá destičku, takže oddělené části kresby nic nespojuje a nástroj napíše, kolik jich je. Mají-li držet pohromadě, přepněte provedení na reliéf na destičce, nebo kresbu v editoru spojte.'],
+        ['q' => 'Můžu nahrát PNG nebo JPG místo SVG?', 'a' => 'Ano, jednoduchý obrázek s tmavým motivem na světlém pozadí. Obrys se hledá v mřížce nejvýše 360 bodů na delší straně, takže SVG dá hladší hrany. Fotografie sem nepatří; na tu je nástroj Reliéf a litofanie.'],
+        ['q' => 'Je převod zdarma a potřebuji účet?', 'a' => 'Převod i stažení STL jsou zdarma a bez účtu, nahraný soubor nikomu neposíláme. Účet potřebujete, až když si tvar necháte vytisknout u nás; platí se z kreditu dobitého kartou a výtisk posíláme Zásilkovnou po EU.'],
     ],
     'examples' => [
-        'Silueta kočky z knihovny, 80 × 81 mm, vytažená na 6 mm.',
+        'Silueta kočky z knihovny, 80 × 81 mm, vytažená na 6 mm: 9,6 g, 17 minut tisku.',
         'Dubový list 100 × 62 mm, tloušťka 3 mm, se zkosenou horní hranou.',
         'Hvězda 60 × 57 mm vytažená do výšky 20 mm.',
     ],

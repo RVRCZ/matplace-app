@@ -1870,5 +1870,6 @@
     "calc.trust.photos": "Prints from the farm",
     "calc.trust.photo_alt": "A print from the matplace farm: :what",
     "calc.trust.photo_own": "a customer's model",
-    "calc.config_failed": "The calculator's settings could not be loaded. Please reload the page."
+    "calc.config_failed": "The calculator's settings could not be loaded. Please reload the page.",
+    "site.examples.item.svg_to_stl": "Cat silhouette from an SVG, :size"
 }
