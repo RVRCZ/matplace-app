@@ -1863,5 +1863,6 @@
     "site.feed.title": "matplace: nuevas herramientas y artículos sobre impresión 3D",
     "site.feed.description": "Novedades de matplace: herramientas para un modelo a partir de una foto, un nombre o unas medidas, y artículos sobre impresión 3D.",
     "site.footer.rss": "RSS",
-    "farm.order.photo_of_print": "Foto de su impresión"
+    "farm.order.photo_of_print": "Foto de su impresión",
+    "site.examples.item.svg_to_stl": "Silueta de gato de un SVG, :size"
 }

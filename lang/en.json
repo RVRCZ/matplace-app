@@ -1863,5 +1863,6 @@
     "site.feed.title": "matplace: new tools and articles on 3D printing",
     "site.feed.description": "What is new on matplace: tools for a model from a photo, a name or sizes, and articles on 3D printing.",
     "site.footer.rss": "RSS",
-    "farm.order.photo_of_print": "A photo of your print"
+    "farm.order.photo_of_print": "A photo of your print",
+    "site.examples.item.svg_to_stl": "Cat silhouette from an SVG, :size"
 }

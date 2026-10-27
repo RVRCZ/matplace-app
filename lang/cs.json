@@ -1863,5 +1863,6 @@
     "site.feed.title": "matplace: nové nástroje a články o 3D tisku",
     "site.feed.description": "Co je nového na matplace: nástroje na model z fotky, jména nebo rozměrů a články o 3D tisku.",
     "site.footer.rss": "RSS",
-    "farm.order.photo_of_print": "Fotka vašeho výtisku"
+    "farm.order.photo_of_print": "Fotka vašeho výtisku",
+    "site.examples.item.svg_to_stl": "Silueta kočky ze SVG, :size"
 }
