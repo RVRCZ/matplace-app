@@ -30,7 +30,12 @@ class FarmPhoto extends Command
     public function handle(PrintPhotos $photos): int
     {
         if ($this->option('probe')) {
-            $this->line('background remover: '.($photos->available() ? '<info>available</info>' : '<comment>not available</comment> (ENGINE_PHOTO='.config('engines.photo').', python '.config('engines.python.bin').', U2NET_HOME='.config('engines.photo_home').')'));
+            // the truth in two halves: rembg installed, the model in its place (without the model nothing is cut)
+            $probe = $photos->probe();
+            $this->line('engine: '.config('engines.photo').' · python: '.config('engines.python.bin').' · U2NET_HOME: '.config('engines.photo_home').' · NUMBA_CACHE_DIR: '.config('engines.photo_numba_cache'));
+            $this->line('rembg: '.(! empty($probe['ok']) ? '<info>yes</info>'.(isset($probe['rembg']) ? ' ('.$probe['rembg'].')' : '') : '<comment>no</comment>'.(isset($probe['error']) ? ' – '.$probe['error'] : '')));
+            $this->line('model u2net.onnx: '.(! empty($probe['model_present']) ? '<info>yes</info>' : '<comment>no</comment>'.(isset($probe['home']) ? ' (looked in '.$probe['home'].')' : '')));
+            $this->line('background remover: '.($photos->available() ? '<info>available</info>' : '<comment>not available – photos are fitted as they are</comment>'));
 
             return $photos->available() ? self::SUCCESS : self::FAILURE;
         }
