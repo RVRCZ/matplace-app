@@ -41,7 +41,7 @@
                 {{-- "from 99 Kč": the cheapest of the priced examples (config site.example_items), only in crowns (audit 26 Oct 2026, D15) --}}
                 @php $from = \App\Support\Currency::current() === \App\Support\Money::CZK ? collect((array) config('site.example_items'))->map(fn ($i) => $i['price']['CZK'] ?? null)->filter()->min() : null; @endphp
                 @foreach($mp ? ['real_prices', 'no_signup', 'share'] : ['free_tools', 'download', $from ? 'farm_from' : 'farm'] as $b)
-                    <li class="flex items-center gap-1.5"><svg class="h-3.5 w-3.5 text-action" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ __('home.benefit.'.$b, ['n' => (int) config('ai.daily_limits.generate_guest'), 'price' => $from ? \App\Support\Money::of((float) $from, \App\Support\Money::CZK)->format() : '']) }}</li>
+                    <li class="flex items-center gap-1.5"><svg class="h-3.5 w-3.5 text-action" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ $b === 'free_tools' ? trans_choice('home.benefit.free_tools_n', $n = (int) config('ai.daily_limits.generate_guest'), ['n' => $n]) : __('home.benefit.'.$b, ['price' => $from ? \App\Support\Money::of((float) $from, \App\Support\Money::CZK)->format() : '']) }}</li>
                 @endforeach
             </ul>
         </div>
