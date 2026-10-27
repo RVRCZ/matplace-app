@@ -9,8 +9,22 @@ return [
 
     // where `php artisan matplace:sitemap` writes the files the site serves at /sitemap.xml and /sitemap-*.xml
     'sitemap_dir' => storage_path('app/sitemaps'),
-    // exports of Google Search Console, search-console-<date>.csv, read by /admin/stats/tools (App\Domain\Stats\SearchConsole)
+    // exports of Google Search Console, search-console-<date>.csv, read by /admin/stats/tools while the API has no rows (App\Domain\Stats\SearchConsole)
     'search_console_dir' => env('SEARCH_CONSOLE_DIR', base_path('docs/data')),
+
+    /*
+     * Search Console through the API (docs/AN.md §14): the same Google Cloud OAuth client as YouTube unless its own is
+     * set; the callback https://matplace.com/admin/search-console/callback is registered in that client. The rows of
+     * one request (the API's most is 25 000), how far the first pull goes (the API keeps about 16 months), and how long
+     * a request waits after a 429 before its one retry.
+     */
+    'search_console' => [
+        'client_id' => env('SEARCH_CONSOLE_CLIENT_ID', env('YOUTUBE_CLIENT_ID')),
+        'client_secret' => env('SEARCH_CONSOLE_CLIENT_SECRET', env('YOUTUBE_CLIENT_SECRET')),
+        'row_limit' => 25000,
+        'first_pull_months' => 16,
+        'retry_seconds' => 60,
+    ],
 
     // <meta name="google-site-verification"> for Search Console
     'google_site_verification' => env('GOOGLE_SITE_VERIFICATION'),

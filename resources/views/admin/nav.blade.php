@@ -1,7 +1,7 @@
 {{-- The sections of the admin. Every admin page starts with this line; the farm has its own second line under it. --}}
 @php
     $sections = [
-        'Statistiky' => ['admin.stats.funnel', ['admin.stats.*']],
+        'Statistiky' => ['admin.stats.funnel', ['admin.stats.*', 'admin.search_console.*']],
         'Farma' => ['admin.farm.dashboard', ['admin.farm.*', 'admin.youtube.*']],
         'Katalog' => ['admin.catalog.index', ['admin.catalog.*']],
         'Nástroje' => ['admin.tools.index', ['admin.tools.*']],

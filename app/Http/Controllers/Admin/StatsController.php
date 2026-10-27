@@ -60,9 +60,12 @@ class StatsController extends Controller
     /** /admin/stats/tools: unique visitors with a tool per week, per tool with Search Console beside, where the embedded calculator was shown (docs/AN.md §12.3). */
     public function tools(Request $request, ToolUse $use): View
     {
-        $weeks = (int) $request->query('weeks', 12);
+        $weeks = in_array((int) $request->query('weeks', 12), ToolUse::PERIODS, true) ? (int) $request->query('weeks', 12) : 12;
+        $country = in_array($request->query('country'), SearchConsole::COUNTRIES, true) ? (string) $request->query('country') : 'all';
+        // Search Console for the same weeks (the API's rows, else the CSV export), for one country or all (docs/AN.md §14)
+        $console = SearchConsole::current(now()->startOfWeek()->subWeeks($weeks - 1), now(), $country);
 
-        return view('admin.stats.tools', ['use' => $use->weekly($weeks), 'weeks' => in_array($weeks, ToolUse::PERIODS, true) ? $weeks : 12, 'console' => SearchConsole::read(), 'embeds' => ToolUse::embeds(30)]);
+        return view('admin.stats.tools', ['use' => $use->weekly($weeks), 'weeks' => $weeks, 'country' => $country, 'console' => $console, 'embeds' => ToolUse::embeds(30)]);
     }
 
     public function speed(Request $request, Speed $speed): View

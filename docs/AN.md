@@ -294,3 +294,54 @@ autora, když je rozřezaná (`basis` card), jinak z `est_minutes`/`est_grams` s
 - Doporučení: (b) samostatně ne. Nejdřív (a) na 375 indexovaných, po 4 týdnech srovnat CTR ze Search Console a pak
   zvažovat rozšíření indexu o další obohacené modely se souborem, ne zúžení. Roman rozhodne, bez jeho slova se nic
   z toho nedělá.
+
+## 14. Search Console natrvalo přes API (větev `feature/search-console-api`, 27. 10. 2026)
+
+Roman: čísla ze Search Console bez ručního exportu. Brief `docs/prompts/search-console-api.md`. Nic nevolalo Google
+naostro: účet připojí Roman v adminu, první stažení pak spustí tlačítko nebo noc.
+
+### 14.1 Co je kde
+
+- **Připojení** (`App\Domain\Stats\SearchConsoleClient`, podle `YouTubeClient`, bez SDK): stejný OAuth klient jako YouTube
+  (`config/seo.php` `search_console.client_id/secret` = `SEARCH_CONSOLE_CLIENT_ID` nebo `YOUTUBE_CLIENT_ID`), rozsah jen
+  `webmasters.readonly`, `access_type=offline` + `prompt=consent` (vždy refresh token), callback přesně
+  `route('admin.search_console.callback')` = `https://matplace.com/admin/search-console/callback`. Po výměně kódu se
+  přečte `sites.list`; vlastnost se vybere sama, když je jediná nebo je to `sc-domain:<host>` / `APP_URL/`, jinak ji
+  vybere admin. Tokeny šifrované v `search_console_accounts` (`SearchConsoleAccount`, jeden řádek), odpojení = revoke.
+- **Admin `/admin/search-console`** (`Admin\SearchConsoleController`, chip „Search Console“ ve statistikách, sekce
+  Statistiky v admin navigaci): stav (.env, připojeno, vlastnost), výběr vlastnosti, „Stáhnout teď“, „Odpojit“, poslední
+  stažení a chyba, posledních 14 dní z databáze. Bez připojení vypíše, co má Roman kliknout v Google Cloud.
+- **Data** `search_console_rows` (migrace `2026_10_27_210000`): den, stránka (1000), dotaz (500, null = součet stránky),
+  země (ISO alpha-3 malými, `cze`), kliknutí, zobrazení, CTR, pozice; unikát `row_key` = sha1(den|stránka|dotaz|země),
+  protože MariaDB neuindexuje stránku vedle dotazu; index (den, země). Řádky bez dotazu jsou součty stránek (Search
+  Console v řádcích s dotazem anonymní dotazy vynechává, oba druhy se nikdy nesečtou na stejné číslo).
+- **Stahování** (`SearchConsolePull`, příkaz `searchconsole:pull [--days=3] [--since=YYYY-MM-DD]`): po dnech dva dotazy
+  `searchanalytics.query` (`page,country` a `page,query,country`), `rowLimit` 25 000 a `startRow` dokud odpověď není
+  kratší, `type=web`; upsert po 500 (idempotentní: stejný den podruhé = přepis). První běh účtu bez `--since` jde
+  16 měsíců zpět (tolik API drží, `first_pull_months`), `--since` dřív se zkrátí na to. 429 = jedna pauza
+  (`retry_seconds` 60) a opakování; `invalid_grant`/401 zapíše `last_error` a řekne „připojte znovu“. Rozvrh
+  `routes/console.php` denně 5:20 `--days=3` (Search Console má 2 až 3 dny zpoždění). Kvóta: 2 dotazy na den dat,
+  16 měsíců ≈ 1 000 dotazů + stránkování, hluboko pod limitem.
+- **Čtení** (`App\Domain\Stats\SearchConsole::current(od, do, země)`): z databáze, když má řádky (`source` api: součty
+  stránek se počítají, dotazy jen pojmenují top 5), jinak nejnovější CSV v `docs/data` jako dřív (`source` csv).
+  Stejný tvar pro oba zdroje (společný `aggregate`), navíc `by_locale` (jazyk podle prefixu adresy) u každého nástroje.
+  `/admin/stats/tools` bere období podle zvolených týdnů (4/12/26), řádek „Data ze Search Console (API) od … do …“,
+  filtr země (všechny / Česko / ostatní), rozpad zobrazení po jazycích pod číslem nástroje; vzhled jinak stejný.
+- Test `tests/Feature/SearchConsoleApiTest` (6 testů, falešný Google): připojení a callback, výběr vlastnosti, jen admin,
+  stahování po dnech a stránkách odpovědi (429 jednou), upsert dvakrát = stejné počty, první běh 16 měsíců, odmítnutý
+  grant, statistiky z DB s filtrem země i z CSV.
+
+### 14.2 Co klikne Roman (podle briefu)
+
+Google Cloud, projekt s YouTube: zapnout „Google Search Console API“; do OAuth klienta přidat redirect URI
+`https://matplace.com/admin/search-console/callback`; na obrazovce souhlasu (režim testování) rozsah
+`webmasters.readonly` a svůj účet mezi testovacími uživateli. Účet musí být vlastník nebo uživatel vlastnosti
+matplace.com. Pak `/admin/search-console` → Připojit → (vybrat vlastnost) → Stáhnout teď (první běh 16 měsíců, pár
+minut) – nebo nechat noci.
+
+### 14.3 Co zůstává
+
+- Země v CSV nejsou: filtr se ukazuje jen u dat z API.
+- Stránka `/model/<slug>` v Search Console: řádky má, do nástrojů se nepočítá (spadá do „ostatní stránky“, top 20);
+  pro katalog (§13) by stálo za to přidat součet „inspirace“ – malá úprava `SearchConsole::aggregate`.
+- Výmaz starých řádků neděláme (16 měsíců × stovky řádků denně = statisíce řádků, v pořádku).
