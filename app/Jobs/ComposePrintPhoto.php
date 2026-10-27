@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * A photo of the finished print arrived (the admin's upload, farm:photo): the background goes, the piece lands on its
- * backdrop in every size (PrintPhotos), and the videos of the print are built again so they end with it. rembg takes a
- * few seconds a photo and the videos minutes: a worker's job, never the request.
+ * A photo of the finished print arrived (the photo box, the admin's upload on the order, farm:photo): the background
+ * goes, the piece lands on its backdrop in every size (PrintPhotos), and the videos of the print are built again so
+ * they end with it. rembg takes a few seconds a photo and the videos minutes: a worker's job, never the request.
  */
 class ComposePrintPhoto implements ShouldQueue
 {
@@ -34,7 +34,7 @@ class ComposePrintPhoto implements ShouldQueue
             return;
         }
         try {
-            $photos->attach($order, $disk->path($this->sourceRel), $this->bg);
+            $photos->attach($order, $disk->path($this->sourceRel), $this->bg, $this->sourceRel);
         } catch (EngineException $e) {
             Log::warning('Print photo could not be composed', ['order' => $order->id, 'error' => $e->getMessage()]);
 

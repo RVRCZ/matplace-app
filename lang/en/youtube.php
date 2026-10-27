@@ -35,7 +35,7 @@ return [
         'hashtags' => '#3dtisk #3dtiskarna #dárek',
         'title_plain' => ':name – :time of printing',
         'title_unnamed' => 'What grows in :time of 3D printing',
-        'description' => ":cta\nTime-lapse of a print from our 3D print farm; the finished piece and its price are at the end.\n\nMaterial: :material :color\nPrinter: :printer\nPrint time: :time\n\nPublished with the customer's consent.",
+        'description' => ":cta\nTime-lapse of a print from our 3D print farm; the finished piece and its price are at the end.\n\nMaterial: :material :color\nPrint time: :time\n\nPublished with the customer's consent.",
     ],
 
     'hook' => [

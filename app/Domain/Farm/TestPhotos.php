@@ -79,4 +79,12 @@ final class TestPhotos
 
         return null;
     }
+
+    /** The file (farm disk) of the photo the print's video ends with, when there is one. */
+    public function finishFile(FarmOrder $order): ?string
+    {
+        $index = $this->finishIndex($order);
+
+        return $index === null ? null : ((string) ($this->all($order)[$index]['file'] ?? '') ?: null);
+    }
 }

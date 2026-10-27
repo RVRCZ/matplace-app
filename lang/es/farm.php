@@ -16,7 +16,7 @@ return [
     'no_orders' => 'Todavía no hay nada.',
     'credit_balance' => 'Crédito',
     'top_up' => 'Recargar crédito',
-    'slices_left' => 'Hoy puede calcular :n modelos más.',
+    'slices_left' => '{0} Hoy ya no puede calcular otro modelo.|{1} Hoy puede calcular :n modelo más.|[2,*] Hoy puede calcular :n modelos más.',
 
     'start' => [
         'model' => 'Modelo',

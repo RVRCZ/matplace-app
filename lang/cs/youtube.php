@@ -35,7 +35,7 @@ return [
         'hashtags' => '#3dtisk #3dtiskarna #dárek',
         'title_plain' => ':name – :time tisku',
         'title_unnamed' => 'Co vyroste za :time 3D tisku',
-        'description' => ":cta\nČasosběr tisku z naší 3D tiskové farmy; hotový kus a cenu vidíte na konci.\n\nMateriál: :material :color\nTiskárna: :printer\nDoba tisku: :time\n\nVideo zveřejňujeme se souhlasem zákazníka.",
+        'description' => ":cta\nČasosběr tisku z naší 3D tiskové farmy; hotový kus a cenu vidíte na konci.\n\nMateriál: :material :color\nDoba tisku: :time\n\nVideo zveřejňujeme se souhlasem zákazníka.",
     ],
 
     // the first second of a Short: what the viewer is about to see, by the tool that made the model (the hook)
