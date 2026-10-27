@@ -23,7 +23,9 @@ class LandingPagesTest extends TestCase
     private const PAGES = ['calc' => '/', 'figure' => '/tools/figure', 'pet' => '/tools/pet-figurine', 'qr' => '/tools/qr', 'organizer' => '/tools/organizer', 'box' => '/tools/box',
         // the search entry pages of session N1 (docs/AP.md §1)
         'svg_to_stl' => '/tools/svg-to-stl', 'repair' => '/tools/repair', 'check' => '/tools/check',
-        'hollow' => '/tools/hollow', 'split' => '/tools/split', 'gcode' => '/tools/gcode-model', 'relief' => '/tools/relief', 'map' => '/tools/map'];
+        'hollow' => '/tools/hollow', 'split' => '/tools/split', 'gcode' => '/tools/gcode-model', 'relief' => '/tools/relief', 'map' => '/tools/map',
+        // the Christmas tools (docs/AP.md §6)
+        'gingerbread' => '/tools/gingerbread', 'ornament' => '/tools/ornament', 'cutter' => '/tools/cookie-cutter', 'nameplate' => '/tools/nameplate', 'topper' => '/tools/cake-topper', 'name_letter' => '/tools/name-letter'];
 
     /** @return list<array<string, mixed>> the JSON-LD blocks of a page */
     private function jsonLd(string $html): array

@@ -238,4 +238,101 @@ return [
             ['t' => 'A landscape for a trip', 'text' => 'A hill, a dam or a valley as a relief with exaggeration, with roads and water on the surface; 2 to 20 km on one plate.'],
         ],
     ],
+
+    // the Christmas tools of session N1 (docs/AP.md §6): gingerbread, ornament, cutter, nameplate, topper, letter
+    'gingerbread' => [
+        'order' => [
+            ['q' => 'When should I order so that the gingerbreads arrive before Christmas?', 'farm' => true, 'a' => 'A 90 mm gingerbread prints in 20 minutes and printing starts as soon as a printer is free; we dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic. In December keep a reserve and order at least a week ahead.'],
+            ['q' => 'How do I hang the gingerbread?', 'a' => 'A ribbon, a string or an ornament hook goes through the eyelet at the top with its 3 to 6 mm hole. A 90 mm gingerbread weighs about 11 g, so it hangs even on a thin branch; move the eyelet to where the shape balances, the point of a star say.'],
+            ['q' => 'Which colours for the body and the icing?', 'a' => 'The classic is a brown body with white icing; red with gold, green with white or navy with silver look good too. Matte filaments hide the print layers better than glossy ones. You pick from the spools we have in stock right now.'],
+            ['q' => 'How much is delivery?', 'farm' => true, 'a' => 'With Packeta to a pickup point in the Czech Republic :cz_point, to your door :cz_home, to Slovakia from :sk_point, to other EU countries from :eu_point. Several gingerbreads in one order travel in one parcel.'],
+            ['q' => 'How do I print the gingerbread at home?', 'a' => 'Flat, face up, without supports, from PLA. The downloaded project for OrcaSlicer, Bambu Studio or PrusaSlicer carries a pause at the height of the icing: the printer stops, you swap the spool and the print goes on in white. A printer with several spools does it by itself.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the gingerbreads printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'Tree tags for the whole family', 'text' => 'Everyone gets their own gingerbread with a name: one costs 99 CZK, six of the same 140 CZK, another design for other names.'],
+            ['t' => 'A gift for a teacher or colleagues', 'text' => 'A 60 mm gingerbread with a name on a ribbon instead of a gift tag; after unwrapping it hangs on the tree.'],
+            ['t' => 'A nursery or a club', 'text' => 'Ornaments with the children’s names from your own printer: a project with one filament change, 20 minutes a piece.'],
+        ],
+    ],
+
+    'ornament' => [
+        'order' => [
+            ['q' => 'How much does an ornament cost from you and how long does it print?', 'farm' => true, 'a' => 'An 80 mm gingerbread man prints in 18 minutes and costs 99 CZK, which is the minimum order; six pieces come to 160 CZK, that is 27 CZK per ornament (PLA+, without delivery, calculation of 18 October 2026). The calculation shows the price of your ornament before you order anything.'],
+            ['q' => 'Can I make an ornament from a child’s drawing?', 'a' => 'Yes. Photograph the drawing on white paper from above in daylight, the tool removes the background and merges the colours into 2 to 4 filaments; thicken faint pencil lines with a marker. The ornament then follows the outline of the drawing, or you put it in a circle.'],
+            ['q' => 'How long does delivery take?', 'farm' => true, 'a' => 'We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point). Before Christmas, order in good time.'],
+            ['q' => 'How do I print the ornament at home in several colours?', 'a' => 'Flat, face up, without supports. The downloaded project carries filament changes at the heights of the colours; with one nozzle you swap spools at the pause, a printer with AMS, MMU or ACE swaps them by itself.'],
+            ['q' => 'Will the ornament last outdoors or by the fireplace?', 'a' => 'For a tree indoors PLA is enough. Near a radiator or a fireplace choose PETG, which takes more heat; a thin ornament does not suit sun and frost outdoors, and colours fade in direct sun.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the ornaments printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A tree of children’s drawings', 'text' => 'Every drawing as a 70 to 90 mm ornament in three colours with a ribbon eyelet; from one photo of the drawing in seconds.'],
+            ['t' => 'A company gift with a logo', 'text' => 'A logo from an SVG as an ornament in the company colours, up to four colours in one print, for customers and the team.'],
+            ['t' => 'For Grandma with the grandchildren’s names', 'text' => 'A name in one of thirty typefaces on a circle or a star, a different colour for every grandchild.'],
+        ],
+    ],
+
+    'cutter' => [
+        'order' => [
+            ['q' => 'How much does a cutter cost from you?', 'farm' => true, 'a' => 'A cutter of the name Ela (82 × 54 mm) prints in 31 minutes and costs 99 CZK, which is the minimum order (PLA+, without delivery, calculation of 18 October 2026). Every shape is its own design and calculation; the number of pieces of one shape you enter there.'],
+            ['q' => 'How do I cut so that the dough does not stick?', 'a' => 'Keep the dough chilled and dip the cutter in flour before every shape. Press straight down on the flange, do not twist, and push the shape out of the edge with a finger; a tapered edge cuts cleaner than a straight one.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A cutter prints in 25 to 35 minutes. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point). For Christmas baking, order in good time.'],
+            ['q' => 'How do I print the cutter at home?', 'a' => 'Flange down, without supports, from PLA or PETG; the downloaded project carries the 1 mm wall and the 0.2 mm layers of the calculation. The stamp, if one was made, prints next to it as a separate part.'],
+            ['q' => 'Can I make a set of letters for a name?', 'a' => 'Yes, in two ways: the whole name as one cutter for one biscuit (two lines of 20 characters), or a cutter of its own for every letter, ordered separately. For smaller letters choose a bold typeface so that the dough keeps its shape.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the cutter printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'Christmas biscuits with a name', 'text' => 'A name or initials in a script typeface, 80 to 120 mm, on gingerbread and shortbread for everyone at the table.'],
+            ['t' => 'A birthday number', 'text' => 'A 70 to 90 mm number on party biscuits; a year or an age as one piece.'],
+            ['t' => 'A logo on biscuits', 'text' => 'A logo from an SVG as a cutter and a stamp with the details inside, for a company event or a café.'],
+        ],
+    ],
+
+    'nameplate' => [
+        'order' => [
+            ['q' => 'How much do gift tags cost from you?', 'farm' => true, 'a' => 'A 70 mm tag with an eyelet prints in 10 minutes: one costs 99 CZK, which is the minimum order, ten of the same 120 CZK, that is 12 CZK each (PLA, without delivery, calculation of 27 October 2026). For different names you make a design for each; you see the price before you order anything.'],
+            ['q' => 'How do I hang the tag on a gift?', 'a' => 'Tick the eyelet: its 2 to 8 mm hole takes a ribbon or a string. A 70 mm tag weighs 5 g, so it hangs on a bow or a branch; without an eyelet you stick it to the wrapping paper with double-sided tape.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A tag prints in 10 to 25 minutes depending on size. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point). Before Christmas, order in good time.'],
+            ['q' => 'How do I print the tag at home in several colours?', 'a' => 'Flat, without supports. The downloaded project carries a filament change at the height of every layer; with one nozzle you swap the spool at the pause, a printer with AMS, MMU or ACE does it by itself. The STL is one body for a single-colour print.'],
+            ['q' => 'Will the tag last on a bag or keys?', 'a' => 'For a gift PLA is enough. For a backpack, keys or a collar choose PETG, keep the default layer thickness and an eyelet of at least 4 mm; letters at least 6 mm high stay legible after a year of wear.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the tags printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'Tags for Christmas gifts', 'text' => 'A 60 to 80 mm hexagon or star with an eyelet and a name in two colours: ten pieces for 120 CZK.'],
+            ['t' => 'A sign for a child’s door', 'text' => 'A 120 mm cloud or house with a name and a favourite animal, three colours, for a door or a shelf.'],
+            ['t' => 'A tag for a backpack and keys', 'text' => 'A bone, a shield or a ribbon of PETG with a 4 mm eyelet, the name and a phone number as two layers of text.'],
+        ],
+    ],
+
+    'topper' => [
+        'order' => [
+            ['q' => 'How much does a topper cost from you and when does it arrive?', 'farm' => true, 'a' => 'A topper with the number 2 and the name Olivia (110 mm) prints in 55 minutes and costs 99 CZK, which is the minimum order (PLA, without delivery, calculation of 27 October 2026). We dispatch on the day the print ends, on working days, Packeta delivers within 1 to 2 working days; for a party order at least a week ahead.'],
+            ['q' => 'How do I push the topper in so that it holds?', 'a' => 'Push the spikes into the cake up to the shape, best through the sponge, not just into the cream; two spikes hold better than one. Wrap them in cling film or push them into straws, and put the topper in only before serving.'],
+            ['q' => 'How much is delivery?', 'farm' => true, 'a' => 'With Packeta to a pickup point in the Czech Republic :cz_point, to your door :cz_home, to Slovakia from :sk_point, to other EU countries from :eu_point.'],
+            ['q' => 'How do I print the topper at home?', 'a' => 'Flat, face up, without supports, from PLA. The downloaded project carries a pause at the height of the name for the spool change; a printer with several spools does it by itself. 3 mm of thickness is enough so that it does not bend.'],
+            ['q' => 'Which colours should I choose?', 'a' => 'Gold or pink with a white name, black with white, or a glitter or Silk filament if we have it in stock. You pick at the order from the spools in the printers; a light name on a dark shape reads best in photos.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the topper printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A child’s birthday', 'text' => 'The age as a 110 mm number with the name in a script typeface, two 60 mm spikes, for 99 CZK.'],
+            ['t' => 'A wedding or an anniversary', 'text' => 'A 120 mm heart with "Ela a Tom" or a date, gold with white.'],
+            ['t' => 'New Year’s Eve and a company party', 'text' => 'Just a text without a shape: "2027", "Thank you" or the team’s name, 180 mm wide, 80 mm spikes.'],
+        ],
+    ],
+
+    'name_letter' => [
+        'order' => [
+            ['q' => 'How much does a letter cost from you?', 'farm' => true, 'a' => 'A letter E 120 mm high with the name Ela prints in 40 minutes and costs 99 CZK, which is the minimum order (PLA, without delivery, calculation of 27 October 2026). A 200 mm letter costs more by its grams and minutes; you see the price before you order anything.'],
+            ['q' => 'How do I hang the letter on a door?', 'a' => 'Tick the eyelet and hang it on a ribbon or a hook, or stick it on with double-sided tape; a 120 mm letter weighs 27 g. For a shelf 10 mm of thickness is enough, or the base with a groove from the same file.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 120 mm letter prints in 40 minutes, a 200 mm one in over an hour. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'How do I print the letter at home in two colours?', 'a' => 'Flat, face up, without supports. The downloaded project carries a pause at the height of the name for the spool change; the base prints next to it. A printer with AMS, MMU or ACE changes the colour by itself.'],
+            ['q' => 'Which colours suit it?', 'a' => 'Two contrasting ones: a pastel body with a white or dark name for a child’s room, black with gold for a table. Matte filaments hide the print layers better than glossy ones; you pick from the spools we have in stock.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the letter printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A gift for a birth or a christening', 'text' => 'A 120 to 150 mm letter with the baby’s name for the shelf above the cot; with "Ela 2026" as the date.'],
+            ['t' => 'A child’s door', 'text' => 'A 150 mm letter with an eyelet on a ribbon or on double-sided tape, colours to match the room.'],
+            ['t' => 'A wedding: initials for the table', 'text' => 'Two 150 mm letters with the names of the newlyweds, 10 mm thick so that they stand by themselves on the wedding table.'],
+        ],
+    ],
 ];

@@ -239,4 +239,101 @@ return [
             ['t' => 'Krajina na výlet', 'text' => 'Kopec, přehrada nebo údolí jako reliéf s převýšením, se silnicemi a vodou na povrchu; 2 až 20 km na jedné desce.'],
         ],
     ],
+
+    // vánoční nástroje session N1 (docs/AP.md §6): perníček, ozdoba, vykrajovátko, jmenovka, zápich, písmeno
+    'gingerbread' => [
+        'order' => [
+            ['q' => 'Do kdy objednat, aby perníčky dorazily do Vánoc?', 'farm' => true, 'a' => 'Perníček 90 mm se tiskne 20 minut a tisk začne, jakmile je tiskárna volná; odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů. V prosinci si nechte rezervu a objednejte aspoň týden předem.'],
+            ['q' => 'Jak perníček zavěsit?', 'a' => 'Očkem nahoře s otvorem 3 až 6 mm projde stužka, provázek i háček na ozdoby. Perníček 90 mm váží kolem 11 g, takže drží i na tenké větvi; očko posunete tam, kde má tvar těžiště, třeba na cíp hvězdy.'],
+            ['q' => 'Jakou barvu podkladu a polevy zvolit?', 'a' => 'Klasika je hnědý podklad a bílá poleva; dobře vypadá i červená se zlatou, zelená s bílou nebo tmavě modrá se stříbrnou. Matné filamenty skryjí vrstvy tisku lépe než lesklé. Vybíráte z cívek, které máme právě skladem.'],
+            ['q' => 'Kolik stojí doprava?', 'farm' => true, 'a' => 'Zásilkovnou na výdejní místo v Česku :cz_point, domů :cz_home, na Slovensko od :sk_point, do dalších zemí EU od :eu_point. Víc perníčků v jedné objednávce jede v jednom balíku.'],
+            ['q' => 'Jak perníček tisknout doma?', 'a' => 'Naplocho, lícem nahoru, bez podpěr, z PLA. Stažený projekt pro OrcaSlicer, Bambu Studio nebo PrusaSlicer má v sobě pauzu ve výšce polevy: tiskárna se zastaví, vyměníte cívku a tisk pokračuje bílou. Tiskárna s více cívkami to udělá sama.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si perníčky necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Jmenovky na stromeček pro celou rodinu', 'text' => 'Každý má svůj perníček se jménem: jeden stojí 99 Kč, šest stejných 140 Kč, pro další jména další návrh.'],
+            ['t' => 'Dárek pro učitelku a kolegy', 'text' => 'Perníček 60 mm se jménem na stužce místo jmenovky na balíčku; po rozbalení visí na stromečku.'],
+            ['t' => 'Školka a kroužek', 'text' => 'Ozdoby se jmény dětí z vlastní tiskárny: projekt s jednou výměnou filamentu, 20 minut na kus.'],
+        ],
+    ],
+
+    'ornament' => [
+        'order' => [
+            ['q' => 'Kolik stojí ozdoba u vás a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Perníček 80 mm se tiskne 18 minut a stojí 99 Kč, což je nejnižší cena zakázky; šest kusů vyjde na 160 Kč, tedy 27 Kč za ozdobu (PLA+, bez dopravy, kalkulace z 18. 10. 2026). Cenu vaší ozdoby ukáže kalkulace dřív, než cokoli objednáte.'],
+            ['q' => 'Můžu udělat ozdobu z dětské kresby?', 'a' => 'Ano. Kresbu na bílém papíře vyfoťte shora při denním světle, nástroj odstraní pozadí a barvy sloučí do 2 až 4 filamentů; jemné čáry tužkou zesilte fixem. Ozdoba pak kopíruje obrys kresby, nebo ji dáte do kruhu.'],
+            ['q' => 'Jak dlouho trvá doručení?', 'farm' => true, 'a' => 'Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point). Před Vánoci objednejte s předstihem.'],
+            ['q' => 'Jak ozdobu tisknout doma ve více barvách?', 'a' => 'Naplocho, lícem nahoru, bez podpěr. Stažený projekt má výměny filamentu ve výškách jednotlivých barev; s jednou tryskou cívky vyměníte při pauze, tiskárna s AMS, MMU nebo ACE je vymění sama.'],
+            ['q' => 'Vydrží ozdoba venku nebo u krbu?', 'a' => 'Na stromeček v bytě stačí PLA. Blízko topení nebo krbu zvolte PETG, které snese víc tepla; na slunce a mráz venku se tenká ozdoba nehodí, barvy na přímém slunci blednou.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si ozdoby necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Stromeček z dětských kreseb', 'text' => 'Každá kresba jako ozdoba 70 až 90 mm ve třech barvách, s očkem na stužku; z jedné fotky kresby za pár vteřin.'],
+            ['t' => 'Firemní dárek s logem', 'text' => 'Logo z SVG jako ozdoba ve firemních barvách, až čtyři barvy v jednom tisku, pro zákazníky i tým.'],
+            ['t' => 'Babičce se jmény vnoučat', 'text' => 'Jméno v jednom ze třiceti písem na kruhu nebo hvězdě, pro každé vnouče jiná barva.'],
+        ],
+    ],
+
+    'cutter' => [
+        'order' => [
+            ['q' => 'Kolik stojí vykrajovátko u vás?', 'farm' => true, 'a' => 'Vykrajovátko jména Ela (82 × 54 mm) se tiskne 31 minut a stojí 99 Kč, což je nejnižší cena zakázky (PLA+, bez dopravy, kalkulace z 18. 10. 2026). Každý tvar je vlastní návrh a vlastní kalkulace; počet kusů jednoho tvaru zadáte v ní.'],
+            ['q' => 'Jak vykrajovat, aby se těsto nelepilo?', 'a' => 'Těsto nechte vychladlé a vykrajovátko před každým tvarem namočte do mouky. Tlačte rovně za obrubu, nekruťte, a tvar vysuňte prstem z hrany; zúžená hrana řeže čistěji než rovná.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Vykrajovátko se tiskne 25 až 35 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point). Na vánoční pečení objednejte s předstihem.'],
+            ['q' => 'Jak vykrajovátko tisknout doma?', 'a' => 'Obrubou dolů, bez podpěr, z PLA nebo PETG; stažený projekt má stěnu 1 mm a vrstvu 0,2 mm z kalkulace. Razítko, pokud vzniklo, se tiskne vedle jako samostatný díl.'],
+            ['q' => 'Dá se udělat sada písmen na jméno?', 'a' => 'Ano, dvěma způsoby: celé jméno jako jedno vykrajovátko na jeden kus cukroví (dva řádky po 20 znacích), nebo pro každé písmeno vlastní vykrajovátko, které objednáte zvlášť. Na menší písmena zvolte tučné písmo, aby těsto drželo tvar.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si vykrajovátko necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Vánoční cukroví se jménem', 'text' => 'Jméno nebo iniciály v psacím písmu, 80 až 120 mm, na perníčky a linecké pro každého u stolu.'],
+            ['t' => 'Narozeninová číslice', 'text' => 'Číslice 70 až 90 mm na sušenky k oslavě; rok nebo věk jako jeden kus.'],
+            ['t' => 'Logo na sušenky', 'text' => 'Logo z SVG jako vykrajovátko a razítko s detaily uvnitř, na firemní akci nebo do kavárny.'],
+        ],
+    ],
+
+    'nameplate' => [
+        'order' => [
+            ['q' => 'Kolik stojí jmenovky na dárky u vás?', 'farm' => true, 'a' => 'Jmenovka 70 mm s očkem se tiskne 10 minut: jedna stojí 99 Kč, což je nejnižší cena zakázky, deset stejných 120 Kč, tedy 12 Kč za kus (PLA, bez dopravy, kalkulace z 27. 10. 2026). Pro různá jména uděláte návrh pro každé; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Jak jmenovku pověsit na dárek?', 'a' => 'Zaškrtněte očko: otvor 2 až 8 mm projde stužkou i provázkem. Jmenovka 70 mm váží 5 g, takže drží na mašli i na větvi; bez očka ji přilepíte na balicí papír oboustrannou páskou.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Jmenovka se tiskne 10 až 25 minut podle velikosti. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point). Před Vánoci objednejte s předstihem.'],
+            ['q' => 'Jak jmenovku tisknout doma ve více barvách?', 'a' => 'Naplocho, bez podpěr. Stažený projekt má výměnu filamentu ve výšce každé vrstvy; s jednou tryskou vyměníte cívku při pauze, tiskárna s AMS, MMU nebo ACE to udělá sama. STL je jedno těleso pro tisk jednou barvou.'],
+            ['q' => 'Vydrží jmenovka na tašce nebo na klíčích?', 'a' => 'Na dárek stačí PLA. Na batoh, klíče nebo obojek zvolte PETG, tloušťku vrstev nechte výchozí a očko aspoň 4 mm; písmo aspoň 6 mm vysoké zůstane čitelné i po roce nošení.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si jmenovky necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Jmenovky na vánoční dárky', 'text' => 'Šestiúhelník nebo hvězda 60 až 80 mm s očkem a jménem ve dvou barvách: deset kusů za 120 Kč.'],
+            ['t' => 'Cedulka na dveře pokojíčku', 'text' => 'Mrak nebo domek 120 mm se jménem a oblíbeným zvířetem, tři barvy, na dveře nebo poličku.'],
+            ['t' => 'Visačka na batoh a klíče', 'text' => 'Kost, štít nebo stuha z PETG s očkem 4 mm, jméno a telefonní číslo jako dvě vrstvy textu.'],
+        ],
+    ],
+
+    'topper' => [
+        'order' => [
+            ['q' => 'Kolik stojí zápich u vás a kdy dorazí?', 'farm' => true, 'a' => 'Zápich s číslem 2 a jménem Olivia (110 mm) se tiskne 55 minut a stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 27. 10. 2026). Odesíláme v den, kdy tisk skončí, v pracovní dny, Zásilkovna doručí do 1 až 2 pracovních dnů; na oslavu objednejte aspoň týden předem.'],
+            ['q' => 'Jak zápich zapíchnout, aby držel?', 'a' => 'Hroty zasuňte do dortu až po tvar, nejlépe skrz piškot, ne jen do krému; dva hroty drží lépe než jeden. Obalte je potravinářskou fólií nebo zasuňte do brček a zápich dejte do dortu až před podáváním.'],
+            ['q' => 'Kolik stojí doprava?', 'farm' => true, 'a' => 'Zásilkovnou na výdejní místo v Česku :cz_point, domů :cz_home, na Slovensko od :sk_point, do dalších zemí EU od :eu_point.'],
+            ['q' => 'Jak zápich tisknout doma?', 'a' => 'Naplocho, lícem nahoru, bez podpěr, z PLA. Stažený projekt má pauzu ve výšce jména pro výměnu cívky; tiskárna s více cívkami to udělá sama. Tloušťka 3 mm stačí, aby se neohýbal.'],
+            ['q' => 'Jaké barvy zvolit?', 'a' => 'Zlatá nebo růžová s bílým jménem, černá s bílým, nebo třpytivý a Silk filament, pokud ho máme skladem. Vybíráte při objednávce z cívek, které jsou v tiskárnách; světlé jméno na tmavém tvaru je na fotkách nejčitelnější.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si zápich necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Dětské narozeniny', 'text' => 'Číslo věku 110 mm se jménem psacím písmem, dva hroty 60 mm, za 99 Kč.'],
+            ['t' => 'Svatba a výročí', 'text' => 'Srdce 120 mm s nápisem „Ela a Tom“ nebo datem, zlatá s bílou.'],
+            ['t' => 'Silvestr a firemní oslava', 'text' => 'Jen nápis bez tvaru: „2027“, „Děkujeme“ nebo název týmu, 180 mm široký, hroty 80 mm.'],
+        ],
+    ],
+
+    'name_letter' => [
+        'order' => [
+            ['q' => 'Kolik stojí písmeno u vás?', 'farm' => true, 'a' => 'Písmeno E vysoké 120 mm se jménem Ela se tiskne 40 minut a stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 27. 10. 2026). Písmeno 200 mm je dražší podle gramů a minut; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Jak písmeno pověsit na dveře?', 'a' => 'Zaškrtněte očko a pověste ho na stužku nebo háček, nebo ho přilepte oboustrannou páskou; písmeno 120 mm váží 27 g. Na poličku stačí tloušťka 10 mm, nebo podstavec s drážkou z téhož souboru.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Písmeno 120 mm se tiskne 40 minut, 200 mm přes hodinu. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak písmeno tisknout doma ve dvou barvách?', 'a' => 'Naplocho, lícem nahoru, bez podpěr. Stažený projekt má pauzu ve výšce jména pro výměnu cívky; podstavec se tiskne vedle. Tiskárna s AMS, MMU nebo ACE vymění barvu sama.'],
+            ['q' => 'Jaké barvy se hodí?', 'a' => 'Dvě kontrastní: pastelové tělo s bílým nebo tmavým jménem do dětského pokoje, černá se zlatou na stůl. Matné filamenty skryjí vrstvy tisku lépe než lesklé; vybíráte z cívek, které máme skladem.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si písmeno necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Dárek k narození a ke křtinám', 'text' => 'Písmeno 120 až 150 mm se jménem miminka na poličku nad postýlku; k tomu „Ela 2026“ jako datum.'],
+            ['t' => 'Dveře dětského pokoje', 'text' => 'Písmeno 150 mm s očkem na stužce nebo na oboustranné pásce, barvy podle pokoje.'],
+            ['t' => 'Svatba: iniciály na stůl', 'text' => 'Dvě písmena 150 mm se jmény novomanželů, tloušťka 10 mm, aby stála sama na svatebním stole.'],
+        ],
+    ],
 ];
