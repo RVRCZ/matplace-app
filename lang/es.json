@@ -235,7 +235,7 @@
     "inquiry.title": "Solicitud",
     "inquiry.pcs": "uds.",
     "inquiry.error": "No se pudo enviar la solicitud. Revisa el correo y el código postal.",
-    "inquiry.wait_precise": "Espera al precio exacto y luego podrás solicitar la fabricación.",
+    "inquiry.wait_precise": "Espere al precio exacto y luego podrá solicitar la fabricación.",
     "inquiry.form.title": "Quiero fabricarlo",
     "inquiry.form.hint": "Enviamos el modelo a impresores cercanos que imprimen este material. Responden con un precio y tú eliges.",
     "inquiry.form.wanted_by": "Para cuándo lo necesitas",
@@ -1850,5 +1850,6 @@
     "farm.order.pay_note_round": "Con tarjeta paga exactamente :amount; los céntimos de más quedan como crédito.",
     "farm.order.pay_note_min": "El pago mínimo con tarjeta es :amount; lo que supere el precio queda como crédito para su próxima impresión.",
     "farm.order.step_material_hint": "Elija el color y los ajustes de impresión. Todavía no paga nada; el precio sigue su elección.",
-    "farm.order.step_order_hint": "Elija la entrega y pague con tarjeta o con el crédito. La impresión empieza al pagar."
+    "farm.order.step_order_hint": "Elija la entrega y pague con tarjeta o con el crédito. La impresión empieza al pagar.",
+    "home.benefit.farm_from": "O una impresión con nosotros desde :price"
 }

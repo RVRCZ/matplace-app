@@ -235,7 +235,7 @@
     "inquiry.title": "Poptávka",
     "inquiry.pcs": "ks",
     "inquiry.error": "Poptávku se nepodařilo odeslat. Zkontroluj e-mail a PSČ.",
-    "inquiry.wait_precise": "Počkej na přesnou cenu, pak můžeš poptat výrobu.",
+    "inquiry.wait_precise": "Počkejte na přesnou cenu, pak můžete poptat výrobu.",
     "inquiry.form.title": "Chci to vyrobit",
     "inquiry.form.hint": "Pošleme model tiskařům v okolí, kteří tisknou tenhle materiál. Ozvou se s cenou, vybereš si.",
     "inquiry.form.wanted_by": "Kdy to potřebuješ",
@@ -1850,5 +1850,6 @@
     "farm.order.pay_note_round": "Kartou platíte přesně :amount; pár haléřů navíc zůstane jako kredit.",
     "farm.order.pay_note_min": "Nejmenší platba kartou je :amount; co přesahuje cenu, zůstane jako kredit na další tisk.",
     "farm.order.step_material_hint": "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; cena se přepočítá podle vaší volby.",
-    "farm.order.step_order_hint": "Zvolte doručení a zaplaťte kartou nebo z kreditu. Tisk začne po zaplacení."
+    "farm.order.step_order_hint": "Zvolte doručení a zaplaťte kartou nebo z kreditu. Tisk začne po zaplacení.",
+    "home.benefit.farm_from": "Nebo tisk u nás od :price"
 }

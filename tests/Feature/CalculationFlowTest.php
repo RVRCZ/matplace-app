@@ -36,7 +36,8 @@ class CalculationFlowTest extends TestCase
 
     public function test_home_renders_without_account(): void
     {
-        $r = $this->get('/');
+        // a person's browser: a robot (and the test client's bare agent) gets no session (audit 26 Oct 2026, B9)
+        $r = $this->get('/', ['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0 Safari/537.36', 'Accept-Language' => 'cs']);
         $r->assertOk()->assertSee('matplace')->assertCookie(AnonymousSession::COOKIE);
         $this->assertSame(1, AnonymousSession::count());
     }

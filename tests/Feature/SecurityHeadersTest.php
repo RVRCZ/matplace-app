@@ -48,6 +48,18 @@ class SecurityHeadersTest extends TestCase
         $this->assertTrue($r->headers->has('Permissions-Policy'));
     }
 
+    public function test_another_name_of_the_site_is_kept_out_of_search_engines_and_the_timing_is_measured(): void
+    {
+        // the site's own name (config app.url) carries no such header (asked first: the test client keeps the last host)
+        $own = $this->get('/');
+        $own->assertOk();
+        $this->assertFalse($own->headers->has('X-Robots-Tag'));
+        $this->assertMatchesRegularExpression('/^app;dur=\d+(\.\d+)?$/', (string) $own->headers->get('Server-Timing'));
+        $r = $this->get('https://beta.matplace.com/');
+        $r->assertOk();
+        $this->assertSame('noindex, nofollow', $r->headers->get('X-Robots-Tag'));
+    }
+
     public function test_a_json_answer_has_no_policy(): void
     {
         config(['security.csp.mode' => 'enforce']);

@@ -38,8 +38,10 @@
             </div>
 
             <ul class="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-muted">
-                @foreach($mp ? ['real_prices', 'no_signup', 'share'] : ['free_tools', 'download', 'farm'] as $b)
-                    <li class="flex items-center gap-1.5"><svg class="h-3.5 w-3.5 text-action" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ __('home.benefit.'.$b, ['n' => (int) config('ai.daily_limits.generate_guest')]) }}</li>
+                {{-- "from 99 Kč": the cheapest of the priced examples (config site.example_items), only in crowns (audit 26 Oct 2026, D15) --}}
+                @php $from = \App\Support\Currency::current() === \App\Support\Money::CZK ? collect((array) config('site.example_items'))->map(fn ($i) => $i['price']['CZK'] ?? null)->filter()->min() : null; @endphp
+                @foreach($mp ? ['real_prices', 'no_signup', 'share'] : ['free_tools', 'download', $from ? 'farm_from' : 'farm'] as $b)
+                    <li class="flex items-center gap-1.5"><svg class="h-3.5 w-3.5 text-action" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 10.5l4 4 8-9"/></svg>{{ __('home.benefit.'.$b, ['n' => (int) config('ai.daily_limits.generate_guest'), 'price' => $from ? \App\Support\Money::of((float) $from, \App\Support\Money::CZK)->format() : '']) }}</li>
                 @endforeach
             </ul>
         </div>
@@ -62,12 +64,14 @@
     @endphp
     <nav aria-label="{{ __('tools.intents') }}" class="mt-10 grid divide-y divide-line border-y border-line lg:grid-cols-5 lg:divide-x lg:divide-y-0" data-ways>
         @foreach($ways as [$k, $path, $href, $tile])
-            <a href="{{ $href }}" data-way="{{ $k }}" @if($tile) data-tile="{{ $tile }}" @endif @if($k === 'file') onclick="document.getElementById('file-input').click();return false;" @endif
-               class="group flex items-start gap-3 px-1 py-4 sm:px-5 lg:first:pl-0 lg:last:pr-0">
+            {{-- a way that only runs a script (open the file field, open the search) is a button, not a link to "#" (audit 26 Oct 2026, A3) --}}
+            @php $tag = $href === '#' ? 'button' : 'a'; @endphp
+            <{{ $tag }} @if($tag === 'a') href="{{ $href }}" @else type="button" @endif data-way="{{ $k }}" @if($tile) data-tile="{{ $tile }}" @endif @if($k === 'file') onclick="document.getElementById('file-input').click();return false;" @endif
+               class="group flex w-full items-start gap-3 px-1 py-4 text-left sm:px-5 lg:first:pl-0 lg:last:pr-0">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-action-soft text-action-dark" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $path }}"/></svg></span>
                 <span class="min-w-0 flex-1"><span class="block font-bold text-ink">{{ __('home.start.'.$k) }}</span><span class="block text-sm text-muted">{{ __('home.start.'.$k.'.hint') }}</span></span>
                 <span class="mt-1 text-ink transition group-hover:translate-x-0.5" aria-hidden="true">→</span>
-            </a>
+            </{{ $tag }}>
         @endforeach
     </nav>
 

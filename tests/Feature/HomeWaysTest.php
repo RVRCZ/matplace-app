@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AnonymousSession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -27,7 +28,33 @@ class HomeWaysTest extends TestCase
             $this->assertStringContainsString('/tools#parts"', $html);
             $this->assertStringContainsString('/gifts"', $html);
         }
-        $this->assertStringContainsString('Mám 3D model', $this->get('/')->getContent());
+        $html = $this->get('/')->getContent();
+        $this->assertStringContainsString('Mám 3D model', $html);
+        // the two ways that only run a script are buttons, the others real links (audit 26 Oct 2026, A3)
+        $this->assertMatchesRegularExpression('~<button\s+type="button"\s+data-way="file"~', $html);
+        $this->assertMatchesRegularExpression('~<button\s+type="button"\s+data-way="idea"~', $html);
+        $this->assertMatchesRegularExpression('~<a\s+href="[^"]+"\s+data-way="gift"~', $html);
+        // no dead link inside the ways themselves (the calculator's two "#" links are session 3's, docs/prompts/audit-web-2.md)
+        preg_match('~<nav[^>]*data-ways>.*?</nav>~s', $html, $nav);
+        $this->assertNotEmpty($nav);
+        $this->assertStringNotContainsString('href="#"', $nav[0]);
+        // the hero names the price a print by us starts from (the cheapest priced example, crowns)
+        $this->assertStringContainsString('Nebo tisk u nás od 99', $html);
+    }
+
+    public function test_a_robot_fetching_a_page_gets_no_session_row_and_no_cookie(): void
+    {
+        $before = AnonymousSession::count();
+        $r = $this->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'])->get('/');
+        $this->assertSame(200, $r->status(), 'robot answer, Location: '.$r->headers->get('Location'));
+        $this->assertSame($before, AnonymousSession::count());
+        $this->assertNull($r->headers->getCookies() ? collect($r->headers->getCookies())->first(fn ($c) => $c->getName() === AnonymousSession::COOKIE) : null);
+        // a person gets both
+        // a Czech-reading person (the first visit of someone else is sent to their language, SetLocale)
+        $r = $this->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0 Safari/537.36', 'Accept-Language' => 'cs-CZ,cs;q=0.9'])->get('/');
+        $r->assertOk();
+        $this->assertSame($before + 1, AnonymousSession::count());
+        $this->assertNotNull(collect($r->headers->getCookies())->first(fn ($c) => $c->getName() === AnonymousSession::COOKIE));
     }
 
     public function test_the_order_of_the_ways_puts_the_file_first_and_the_business_last(): void

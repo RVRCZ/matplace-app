@@ -1850,5 +1850,6 @@
     "farm.order.pay_note_round": "You pay exactly :amount by card; the odd cents stay as credit.",
     "farm.order.pay_note_min": "The smallest card payment is :amount; whatever exceeds the price stays as credit for your next print.",
     "farm.order.step_material_hint": "Pick the colour and the print settings. Nothing to pay yet; the price follows your choice.",
-    "farm.order.step_order_hint": "Choose the delivery and pay by card or from credit. The print starts once paid."
+    "farm.order.step_order_hint": "Choose the delivery and pay by card or from credit. The print starts once paid.",
+    "home.benefit.farm_from": "Or a print by us from :price"
 }

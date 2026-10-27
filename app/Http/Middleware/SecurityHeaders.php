@@ -19,6 +19,16 @@ final class SecurityHeaders
         $cfg = (array) config('security');
         $mode = (string) ($cfg['csp']['mode'] ?? 'off');
 
+        // the same app under another name (beta.matplace.com) must not be indexed as a copy of the site (audit 26 Oct 2026, A1)
+        if (! self::canonicalHost($request)) {
+            $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
+        }
+        // how long the app took, for the browser's timing panel (audit B6)
+        $start = defined('LARAVEL_START') ? (float) LARAVEL_START : (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0);
+        if ($start > 0 && ! $response->headers->has('Server-Timing')) {
+            $response->headers->set('Server-Timing', sprintf('app;dur=%.1f', (microtime(true) - $start) * 1000));
+        }
+
         $headers = (array) ($cfg['headers'] ?? []);
         if ($mode === 'enforce') {
             $headers += (array) ($cfg['headers_enforced'] ?? []);
@@ -55,6 +65,15 @@ final class SecurityHeaders
         }
 
         return implode('; ', $parts);
+    }
+
+    /** The request came to the site's own name (config app.url); any other name is a copy that search engines must not keep. */
+    public static function canonicalHost(Request $request): bool
+    {
+        $own = strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+        $host = strtolower($request->getHost());
+
+        return $own === '' || $host === $own || $host === 'localhost' || $host === '127.0.0.1';
     }
 
     /** An HTML page (what a CSP is for); JSON answers, files and redirects without a body are left alone. */
