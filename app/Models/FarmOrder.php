@@ -70,7 +70,7 @@ class FarmOrder extends Model
         'print_settings', 'admin_overrides', 'check', 'orientation', 'print_stl_path', 'gcode_path', 'gcode_sha256', 'rest_gcode_path', 'slice_params', 'slice_result', 'est_minutes',
         'est_grams', 'est_meters', 'supports_used', 'price', 'price_total', 'currency', 'terms_version', 'terms_accepted_at',
         'terms_ip', 'paid_at', 'approved_at', 'approved_by', 'queued_at', 'started_at', 'finished_at', 'handed_at', 'tracking',
-        'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at', 'timelapse_short_path', 'timelapse_wide_path',
+        'actual_minutes', 'actual_grams', 'actual_source', 'video_consent', 'video_consent_at', 'timelapse_short_path', 'timelapse_wide_path', 'photo_path', 'photo_meta',
         'designer_model_id', 'royalty_czk', 'catalog_model_id',
         'shipping_price', 'packeta_packet_id', 'packeta_barcode', 'tracking_url', 'shipped_at', 'timings',
     ];
@@ -83,8 +83,34 @@ class FarmOrder extends Model
         'started_at' => 'datetime', 'finished_at' => 'datetime', 'handed_at' => 'datetime', 'attention_cleared_at' => 'datetime',
         'video_consent' => 'bool', 'video_consent_at' => 'datetime', 'royalty_czk' => 'float',
         'shipping_price' => 'float', 'shipped_at' => 'datetime', 'timings' => 'array', 'color_changes' => 'array', 'by_parts' => 'bool', 'part_plates' => 'array',
-        'big_model' => 'bool', 'slice_run' => 'int', 'slice_estimate_s' => 'int',
+        'big_model' => 'bool', 'slice_run' => 'int', 'slice_estimate_s' => 'int', 'photo_meta' => 'array',
     ];
+
+    /**
+     * The photo of the finished print on its backdrop (App\Domain\Farm\PrintPhotos): the public disk's path of one
+     * render – web (3:2, the default), webp (the same as WebP), short (9:16), square (1:1), cutout (the piece alone) –
+     * or null when the order has no photo or that render.
+     */
+    public function photoFile(string $variant = 'web'): ?string
+    {
+        $files = (array) ($this->photo_meta['files'] ?? []);
+        $rel = $files[$variant] ?? ($variant === 'web' ? $this->photo_path : null);
+
+        return $rel !== null && $rel !== '' ? (string) $rel : null;
+    }
+
+    /** The public address of one render of the order's photo (photoFile), when the file is there; the trust block and the order page show it. */
+    public function photoUrl(string $variant = 'web'): ?string
+    {
+        $rel = $this->photoFile($variant);
+
+        return $rel !== null && Storage::disk('public')->exists($rel) ? Storage::disk('public')->url($rel) : null;
+    }
+
+    public function hasPhoto(): bool
+    {
+        return $this->photoUrl() !== null;
+    }
 
     /** What the customer pays (or paid), in the order's own currency. */
     public function total(): ?Money
