@@ -194,4 +194,24 @@ class GenerationController extends Controller
             ], fn ($v) => $v !== null) : null,
         ];
     }
+
+    /**
+     * POST /api/generate/{generation}/notify {email} — "send me the result": a model from a photo takes 2 to 4 minutes, so
+     * the visitor may leave and get one e-mail with the link when it is done, with no account (App\Mail\GenerationReady,
+     * docs/AN.md §12.5). A model already done says so, the page shows it anyway.
+     */
+    public function notify(Request $request, GenerationRequest $generation): JsonResponse
+    {
+        $data = $request->validate(['email' => ['required', 'email:rfc', 'max:190']]);
+        if ($generation->status === 'done') {
+            return response()->json(['done' => true]);
+        }
+        if ($generation->status === 'failed') {
+            return response()->json(['failed' => true], 410);
+        }
+        $generation->forceFill(['notify_email' => $data['email'], 'notify_locale' => app()->getLocale()])->save();
+        Track::event('notify', $generation, ['kind' => 'generation']);
+
+        return response()->json(['ok' => true]);
+    }
 }

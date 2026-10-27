@@ -1,5 +1,5 @@
 @php
-    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent', 'figure.limit.register', 'figure.remove'])
+    $i18n = collect(['figure.generating', 'figure.done', 'figure.failed', 'figure.rejected', 'figure.skipped_view', 'figure.view.left', 'figure.view.back', 'figure.view.right', 'figure.limit', 'figure.global_limit', 'figure.need_photo', 'figure.need_consent', 'figure.limit.register', 'figure.remove', 'figure.notify.sent', 'figure.notify.failed'])
         ->mapWithKeys(fn ($k) => [$k => __($k, ['n' => ':n', 'm' => ':m'])])->all() + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB]), 'photo.add' => __('photo.add'), 'photo.add.more' => __('photo.add.more'), 'figure.view.front' => __('figure.view.front')];
     $choice = 'cursor-pointer rounded-lg border border-slate-300 bg-white text-center text-ink has-[:checked]:border-ink has-[:checked]:ring-1 has-[:checked]:ring-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-action';
 @endphp
@@ -96,6 +96,13 @@
         <button id="figure-submit" type="submit" class="btn-ink w-full gap-1.5"><x-icon name="sparkles" class="h-4 w-4" />{{ __('figure.submit') }}</button>
         <div id="figure-progress" class="hidden"><div class="h-2 w-full overflow-hidden rounded-full bg-slate-200"><div id="figure-bar" class="h-2 w-0 bg-ink transition-all"></div></div><p class="mt-1 text-xs text-muted">{{ __('figure.step.wait') }}</p></div>
         <p id="figure-msg" class="hint" aria-live="polite"></p>
+        {{-- "send me the result": a model takes 2 to 4 minutes; one e-mail with the link, nothing else (docs/AN.md §12.5) --}}
+        <form id="figure-notify" class="mt-2 rounded-lg bg-slate-50 p-3 text-sm" hidden>
+            <label for="figure-notify-email" class="block text-xs text-muted">{{ __('figure.notify.lead') }}</label>
+            <div class="mt-1 flex gap-2"><input id="figure-notify-email" type="email" required maxlength="190" autocomplete="email" placeholder="{{ __('figure.notify.email') }}" class="field !mt-0 min-w-0 flex-1 text-sm"><button type="submit" class="btn-secondary !min-h-11 px-3 text-sm">{{ __('figure.notify.send') }}</button></div>
+            <p class="mt-1 text-xs text-muted">{{ __('figure.notify.consent') }}</p>
+            <p class="mt-1 text-xs" data-notify-msg aria-live="polite"></p>
+        </form>
     </x-tool-section>
 </form>
 @endsection

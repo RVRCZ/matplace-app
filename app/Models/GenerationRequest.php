@@ -12,9 +12,10 @@ class GenerationRequest extends Model
         'paid_credit',
         'token', 'owner_user_id', 'anonymous_session_id', 'ip', 'type', 'prompt', 'image_path', 'views', 'description', 'engine',
         'external_id', 'status', 'cost_cents', 'result_model_file_id', 'error', 'image_sha256', 'target_mm', 'progress', 'source_request_id',
+        'notify_email', 'notify_locale', 'notified_at',   // "send me the result": one mail with the link when done (App\Mail\GenerationReady)
     ];
 
-    protected $casts = ['description' => 'array', 'views' => 'array', 'target_mm' => 'int', 'progress' => 'int', 'cost_cents' => 'int'];
+    protected $casts = ['description' => 'array', 'views' => 'array', 'target_mm' => 'int', 'progress' => 'int', 'cost_cents' => 'int', 'notified_at' => 'datetime'];
 
     /** Every stored photo of this request: front (image_path) plus the extra sides, view → relative path on the local disk. */
     public function photoPaths(): array

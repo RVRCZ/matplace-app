@@ -7,7 +7,7 @@
     $say = ['generating' => 'pet.generating', 'done' => 'pet.done', 'failed' => 'pet.failed', 'rejected' => 'pet.rejected', 'skipped_view' => 'figure.skipped_view',
         'view.left' => 'figure.view.left', 'view.back' => 'figure.view.back', 'view.right' => 'figure.view.right', 'limit' => 'figure.limit', 'global_limit' => 'figure.global_limit',
         'need_photo' => 'figure.need_photo', 'need_consent' => 'figure.need_consent', 'limit.register' => 'figure.limit.register', 'remove' => 'figure.remove', 'back' => 'pet.back', 'gone' => 'pet.gone', 'thin' => 'pet.thin', 'thin.ok' => 'pet.thin.ok',
-        'rebase.working' => 'pet.rebase.working', 'rebase.failed' => 'pet.rebase.failed',
+        'rebase.working' => 'pet.rebase.working', 'rebase.failed' => 'pet.rebase.failed', 'notify.sent' => 'figure.notify.sent', 'notify.failed' => 'figure.notify.failed',
         'rejected.no_animal' => 'pet.rejected.no_animal', 'rejected.person' => 'pet.rejected.person', 'rejected.several' => 'pet.rejected.several', 'rejected.cropped' => 'pet.rejected.cropped'];
     $i18n = collect($say)->mapWithKeys(fn ($key, $as) => ['figure.'.$as => __($key, ['n' => ':n', 'm' => ':m', 'mm' => ':mm', 'view' => ':view'])])->all()
         + ['photo.too_big' => __('photo.too_big', ['mb' => \App\Http\Controllers\Api\GenerationController::PHOTO_MB]), 'photo.add' => __('photo.add'), 'photo.add.more' => __('photo.add.more'), 'figure.view.front' => __('figure.view.front')];
@@ -128,6 +128,13 @@
         <button id="figure-submit" type="submit" class="btn-ink w-full gap-1.5"><x-icon name="sparkles" class="h-4 w-4" />{{ __('pet.submit') }}</button>
         <div id="figure-progress" class="hidden"><div class="h-2 w-full overflow-hidden rounded-full bg-slate-200"><div id="figure-bar" class="h-2 w-0 bg-ink transition-all"></div></div><p class="mt-1 text-xs text-muted">{{ __('pet.wait') }}</p></div>
         <p id="figure-msg" class="hint" aria-live="polite"></p>
+        {{-- "send me the result": a model takes 2 to 4 minutes; one e-mail with the link, nothing else (docs/AN.md §12.5) --}}
+        <form id="figure-notify" class="mt-2 rounded-lg bg-slate-50 p-3 text-sm" hidden>
+            <label for="figure-notify-email" class="block text-xs text-muted">{{ __('figure.notify.lead') }}</label>
+            <div class="mt-1 flex gap-2"><input id="figure-notify-email" type="email" required maxlength="190" autocomplete="email" placeholder="{{ __('figure.notify.email') }}" class="field !mt-0 min-w-0 flex-1 text-sm"><button type="submit" class="btn-secondary !min-h-11 px-3 text-sm">{{ __('figure.notify.send') }}</button></div>
+            <p class="mt-1 text-xs text-muted">{{ __('figure.notify.consent') }}</p>
+            <p class="mt-1 text-xs" data-notify-msg aria-live="polite"></p>
+        </form>
         {{-- once a figurine exists: its thinnest place, and another base under the same figure without a new generation --}}
         <p id="figure-thin-ok" class="hidden rounded-lg bg-ok-soft px-3 py-2 text-sm text-ok" aria-live="polite"></p>
         <div id="figure-rebase-box" class="hidden">

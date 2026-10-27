@@ -1852,5 +1852,16 @@
     "farm.order.step_material_hint": "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; cena se přepočítá podle vaší volby.",
     "farm.order.step_order_hint": "Zvolte doručení a zaplaťte kartou nebo z kreditu. Tisk začne po zaplacení.",
     "home.benefit.farm_from": "Nebo tisk u nás od :price",
+    "figure.notify.lead": "Trvá to 2 až 4 minuty. Nechcete čekat? Pošleme vám odkaz na hotový model e-mailem.",
+    "figure.notify.email": "váš e-mail",
+    "figure.notify.send": "Poslat odkaz",
+    "figure.notify.consent": "Jeden e-mail s odkazem, nic dalšího; adresu po odeslání smažeme.",
+    "figure.notify.sent": "Pošleme, jakmile bude model hotový.",
+    "figure.notify.failed": "E-mail se nepodařilo uložit, zkuste to znovu.",
+    "figure.mail.subject": "Váš model je hotový",
+    "figure.mail.body": "Dobrý den,\n\nmodel z vaší fotky je hotový. Otevřete ho tady:\n\n:url\n\nNa stránce ho otočíte, uvidíte cenu tisku u nás a můžete ho stáhnout pro svou tiskárnu. Odkaz je jen váš. Tento e-mail posíláme jednou, na vaši žádost; vaši adresu jsme po odeslání smazali.\n\nmatplace",
+    "site.feed.title": "matplace: nové nástroje a články o 3D tisku",
+    "site.feed.description": "Co je nového na matplace: nástroje na model z fotky, jména nebo rozměrů a články o 3D tisku.",
+    "site.footer.rss": "RSS",
     "farm.order.photo_of_print": "Fotka vašeho výtisku"
 }

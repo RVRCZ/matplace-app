@@ -195,12 +195,14 @@ export function bootFigure(stage: Stage): void {
     /** Waits for a generation to end and shows its model. */
     const follow = async (first: Generation, note = ''): Promise<void> => {
         let g: Generation | null = first;
+        if (g && g.status !== 'done' && g.status !== 'failed') notifyBox(g.token);
         while (g && g.status !== 'done' && g.status !== 'failed') {
             bar.style.width = `${Math.max(5, g.progress)}%`;
             dots?.say(msg.textContent ?? '', g.progress);
             await new Promise((r) => setTimeout(r, 3000));
             g = await fetchGeneration(g.token);
         }
+        notifyBox(null);
         // a failed model leaves the address: a reload starts from the form (kept), not from the failure
         if (!g || g.status === 'failed' || !g.file) { address(null); return idle(say('figure.failed', 'figure.failed')); }
         await present(g.file, note ? `${note} ${t('figure.done')}` : t('figure.done'));
@@ -221,6 +223,25 @@ export function bootFigure(stage: Stage): void {
         if (g.target_mm) { size.value = String(g.target_mm); sized(); }
         form.dispatchEvent(new Event('figure:filled'));
     };
+
+    // "send me the result": the e-mail form shows while the model is being made, with the token the mail will link to
+    const notify = document.getElementById('figure-notify') as HTMLFormElement | null;
+    let notifyToken: string | null = null;
+    const notifyBox = (token: string | null): void => { notifyToken = token; if (notify) notify.hidden = token === null; };
+    if (notify) {
+        notify.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!notifyToken) return;
+            const email = (notify.querySelector('input[type=email]') as HTMLInputElement).value.trim();
+            const out = notify.querySelector('[data-notify-msg]') as HTMLElement;
+            const send = notify.querySelector('button') as HTMLButtonElement;
+            try {
+                const res = await fetch(`${cfg.show}/${notifyToken}/notify`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ email }) });
+                out.textContent = t(res.ok ? 'figure.notify.sent' : 'figure.notify.failed');
+                if (res.ok) send.disabled = true;
+            } catch { out.textContent = t('figure.notify.failed'); }
+        };
+    }
 
     const address = (token: string | null): void => {
         const url = new URL(location.href);

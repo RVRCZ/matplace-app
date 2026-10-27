@@ -1852,5 +1852,16 @@
     "farm.order.step_material_hint": "Elija el color y los ajustes de impresión. Todavía no paga nada; el precio sigue su elección.",
     "farm.order.step_order_hint": "Elija la entrega y pague con tarjeta o con el crédito. La impresión empieza al pagar.",
     "home.benefit.farm_from": "O una impresión con nosotros desde :price",
+    "figure.notify.lead": "Tarda de 2 a 4 minutos. ¿No quiere esperar? Le enviamos el enlace al modelo terminado por correo.",
+    "figure.notify.email": "su correo",
+    "figure.notify.send": "Enviar el enlace",
+    "figure.notify.consent": "Un solo correo con el enlace, nada más; borramos la dirección después de enviarlo.",
+    "figure.notify.sent": "Lo enviamos en cuanto el modelo esté listo.",
+    "figure.notify.failed": "No se pudo guardar el correo, inténtelo de nuevo.",
+    "figure.mail.subject": "Su modelo está listo",
+    "figure.mail.body": "Hola:\n\nel modelo de su foto está listo. Ábralo aquí:\n\n:url\n\nEn la página puede girarlo, ver el precio de imprimirlo con nosotros y descargarlo para su impresora. El enlace es solo suyo. Enviamos este correo una vez, a petición suya; hemos borrado su dirección tras enviarlo.\n\nmatplace",
+    "site.feed.title": "matplace: nuevas herramientas y artículos sobre impresión 3D",
+    "site.feed.description": "Novedades de matplace: herramientas para un modelo a partir de una foto, un nombre o unas medidas, y artículos sobre impresión 3D.",
+    "site.footer.rss": "RSS",
     "farm.order.photo_of_print": "Foto de su impresión"
 }

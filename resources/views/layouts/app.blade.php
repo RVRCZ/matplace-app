@@ -48,6 +48,7 @@
     {{-- the text font starts with the page, not after the stylesheet asked for it (docs/AH.md §11) --}}
     <link rel="preload" href="/fonts/InterLatin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="alternate" type="application/rss+xml" title="{{ __('site.feed.title') }}" href="{{ route('feed') }}">
     <link rel="alternate icon" href="/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
@@ -151,6 +152,7 @@
                 @if(\App\Http\Controllers\CollectionPageController::has(app()->getLocale()))<a href="{{ route('collections.index') }}" class="inline-flex min-h-11 min-w-11 items-center justify-center underline hover:text-slate-900">{{ __('site.collections.title') }}</a>@endif
                 @if(in_array(app()->getLocale(), \App\Http\Controllers\BlogController::languages(), true))<a href="{{ route('blog.index') }}" class="inline-flex min-h-11 min-w-11 items-center justify-center underline hover:text-slate-900">{{ __('site.blog.title') }}</a>@endif
                 <a href="{{ route('embed') }}" class="inline-flex min-h-11 min-w-11 items-center justify-center underline hover:text-slate-900">{{ __('embed.footer_link') }}</a>
+                <a href="{{ route('feed') }}" class="inline-flex min-h-11 min-w-11 items-center justify-center underline hover:text-slate-900">{{ __('site.footer.rss') }}</a>
                 <a href="{{ config('youtube.channel_url') }}" target="_blank" rel="noopener" class="inline-flex min-h-11 items-center gap-1.5 hover:text-slate-900">
                     {{-- YouTube icon, as the brand guidelines allow for linking to a channel --}}
                     <svg viewBox="0 0 28 20" class="h-4 w-auto" aria-hidden="true"><path fill="#FF0000" d="M27.4 3.1A3.5 3.5 0 0 0 24.9.6C22.7 0 14 0 14 0S5.3 0 3.1.6A3.5 3.5 0 0 0 .6 3.1C0 5.3 0 10 0 10s0 4.7.6 6.9a3.5 3.5 0 0 0 2.5 2.5C5.3 20 14 20 14 20s8.7 0 10.9-.6a3.5 3.5 0 0 0 2.5-2.5c.6-2.2.6-6.9.6-6.9s0-4.7-.6-6.9Z"/><path fill="#FFF" d="m11.2 14.3 7.3-4.3-7.3-4.3v8.6Z"/></svg>
