@@ -61,6 +61,15 @@ return [
         'text' => '#nápis', 'map' => '#mapa', 'default' => '#3dprinting',
     ],
 
+    'mail' => [
+        'subject' => 'El vídeo de su impresión :number está en YouTube',
+        'title' => 'Su vídeo ya está publicado',
+        'body' => 'El time-lapse de la impresión «:name» está publicado en nuestro canal. Gracias por dejarnos mostrarlo.',
+        'watch' => 'Ver en YouTube',
+        'share' => 'Si le gusta, compártalo: cada vez que lo comparte ayuda a una granja pequeña más que un anuncio.',
+        'next' => 'La próxima pieza puede imprimirla aquí: :url',
+    ],
+
     'weekly' => [
         'card' => 'Esta semana en la granja',
         'title' => 'Esta semana en la granja – :dates',
