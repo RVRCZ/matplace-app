@@ -6,6 +6,7 @@ use App\Domain\Farm\PrintPhotos;
 use App\Domain\Farm\PublicStats;
 use App\Domain\Farm\TestPhotos;
 use App\Domain\YouTube\TimelapseCutter;
+use App\Engines\Exceptions\EngineException;
 use App\Engines\Photo\BackgroundRemover;
 use App\Engines\Photo\FakeBackgroundRemover;
 use App\Jobs\AddFinishPhotoToVideo;
@@ -299,6 +300,68 @@ final class PrintPhotosTest extends TestCase
         $this->artisan('farm:photo', ['--redo-videos' => true])->expectsOutputToContain('0 to compose')->assertSuccessful();
         $this->artisan('farm:photo', ['--redo-videos' => true, '--ids' => 'F26-000097,F26-999999'])->expectsOutputToContain('1 to compose')->expectsOutputToContain('No order F26-999999')->assertSuccessful();
         FakeBackgroundRemover::$coverage = null;
+    }
+
+    /** A black frame: what the photo box camera gives when it does not capture (F26-000097, 3840×2160 of nothing). */
+    private function blackPhoto(string $name = 'black.jpg'): string
+    {
+        $img = imagecreatetruecolor(640, 480);
+        imagefill($img, 0, 0, imagecolorallocate($img, 0, 0, 0));
+        imagejpeg($img, $this->tmp.'/'.$name, 90);
+        imagedestroy($img);
+
+        return $this->tmp.'/'.$name;
+    }
+
+    public function test_a_black_photo_is_no_photo_refused_at_the_photo_box_and_cleaned_up_by_the_redo(): void
+    {
+        $photos = app(PrintPhotos::class);
+        $admin = $this->admin();
+        $this->assertTrue(PrintPhotos::isDark(0.0, 0.0));
+        $this->assertFalse(PrintPhotos::isDark(138.0, 41.6));
+        $order = FarmOrder::factory()->paid()->done()->create();
+        try {
+            $photos->attach($order, $this->blackPhoto());
+            $this->fail('a black photo is not composed');
+        } catch (EngineException $e) {
+            $this->assertStringStartsWith('dark:', $e->getMessage());
+        }
+        $this->assertFalse($order->refresh()->hasPhoto());
+
+        // the photo box refuses it and the order remembers, until a real photo comes
+        $upload = fn (string $path) => new UploadedFile($path, basename($path), 'image/jpeg', null, true);
+        $this->actingAs($admin)->post(route('admin.farm.photos.store', $order), ['photos' => [$upload($this->blackPhoto('box.jpg'))], 'views' => ['left']])->assertSessionHas('error', __('farm.refuse.photo_dark'));
+        $order->refresh();
+        $this->assertSame([], $order->test_params['photos'] ?? []);
+        $this->assertNotEmpty($order->test_params['dark_photo_at']);
+        $this->assertFalse($order->hasPhoto());
+        $this->actingAs($admin)->post(route('admin.farm.photos.store', $order), ['photos' => [$upload($this->photo('real.jpg'))], 'views' => ['left']])->assertSessionHas('status');
+        $order->refresh();
+        $this->assertArrayNotHasKey('dark_photo_at', $order->test_params);
+        $this->assertTrue($order->hasPhoto());
+
+        // uploaded on the order page: the worker says why there is no photo
+        $plain = FarmOrder::factory()->paid()->done()->create();
+        $this->actingAs($admin)->post(route('admin.farm.orders.print_photo', $plain), ['photo' => $upload($this->blackPhoto('page.jpg'))])->assertRedirect();
+        $this->assertFalse($plain->refresh()->hasPhoto());
+        $this->assertStringStartsWith('dark:', $plain->photo_meta['error']);
+        $this->actingAs($admin)->get(route('admin.farm.orders.show', $plain))->assertOk()->assertSee('nepoužila');
+
+        // a black photo that got in before the check (F26-000097): the redo drops it, the composed black picture too
+        $legacy = FarmOrder::factory()->paid()->done()->create(['number' => 'F26-000097', 'timelapse_path' => 'orders/l/timelapse.mp4']);
+        $file = app(TestPhotos::class)->add($legacy, $this->photo('was-fine.jpg'), 'top')['file'];
+        Storage::disk('farm')->put($file, file_get_contents($this->blackPhoto('legacy.jpg')));
+        Storage::disk('public')->put('prints/'.$legacy->token.'/photo-web.jpg', 'black');
+        $legacy->forceFill(['photo_path' => 'prints/'.$legacy->token.'/photo-web.jpg', 'photo_meta' => ['bg' => 'studio', 'cut' => false, 'cut_error' => 'empty: …', 'source' => $file, 'files' => ['web' => 'prints/'.$legacy->token.'/photo-web.jpg']]])->save();
+        Queue::fake([AddFinishPhotoToVideo::class]);
+        $this->artisan('farm:photo', ['--redo-videos' => true, '--apply' => true, '--ids' => 'F26-000097'])->expectsOutputToContain('black photo')->assertSuccessful();
+        $legacy->refresh();
+        $this->assertFalse($legacy->hasPhoto());
+        $this->assertNull($legacy->photo_path);
+        $this->assertSame([], $legacy->test_params['photos']);
+        $this->assertNotEmpty($legacy->test_params['dark_photo_at']);
+        Storage::disk('farm')->assertMissing($file);
+        Queue::assertPushed(AddFinishPhotoToVideo::class, 1);
     }
 
     public function test_the_trust_block_gets_the_latest_photographed_prints(): void

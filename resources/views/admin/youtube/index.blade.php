@@ -1,7 +1,7 @@
 @extends('layouts.app', ['title' => __('farm.admin.nav.videos').' · admin', 'noindex' => true])
 
 @php
-    $label = ['pending' => 'Ke schválení (na YouTube zatím není)', 'queued' => 'Schváleno, čeká na nahrání', 'uploading' => 'Nahrává se', 'uploaded' => 'Na YouTube jako soukromé, čeká na zveřejnění', 'scheduled' => 'Naplánováno', 'published' => 'Zveřejněno', 'rejected' => 'Zamítnuto', 'withdrawn' => 'Zákazník odvolal souhlas', 'failed' => 'Nahrání selhalo'];
+    $label = ['pending' => 'Ke schválení (na YouTube zatím není)', 'queued' => 'Schváleno, čeká na nahrání', 'uploading' => 'Nahrává se', 'uploaded' => 'Na YouTube jako soukromé, čeká na zveřejnění', 'scheduled' => 'Naplánováno', 'published' => 'Zveřejněno', 'rejected' => 'Zamítnuto', 'missing' => 'Na YouTube už není (smazané video)', 'withdrawn' => 'Zákazník odvolal souhlas', 'failed' => 'Nahrání selhalo'];
     $tz = config('youtube.publish_timezone', 'Europe/Prague');
     $when = fn ($t) => ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'][$t->dayOfWeek].' '.$t->format('j. n. H:i');
     $viewNames = ['top' => 'shora', 'left' => 'zleva', 'right' => 'zprava', 'phone' => 'z mobilu'];
@@ -127,6 +127,8 @@
                     @elseif($fi !== null)
                         Na konci videí: fotka {{ $fi + 1 }} ({{ $viewNames[$o->test_params['photos'][$fi]['view'] ?? ''] ?? '' }}) z <a href="{{ route('admin.farm.photobox', ['order' => $o->token]) }}" class="underline">foto-boxu</a>, zatím s pozadím (upraví ji <code>farm:photo --redo-videos</code> nebo nové vyfocení)
                         <a href="{{ route('admin.farm.photos.show', [$o, $fi]) }}" target="_blank" rel="noopener"><img src="{{ route('admin.farm.photos.show', [$o, $fi]) }}?thumb=1" alt="" class="ml-1 inline-block h-10 w-10 rounded object-cover align-middle"></a>
+                    @elseif(! empty($o->test_params['dark_photo_at']))
+                        Fotka z foto-boxu byla černá (kamera nezachytila), vyfoťte ji znovu ve <a href="{{ route('admin.farm.photobox', ['order' => $o->token]) }}" class="underline">foto-boxu</a>.
                     @else
                         Bez fotky hotového kusu: <a href="{{ route('admin.farm.photobox', ['order' => $o->token]) }}" class="underline">vyfotit ve foto-boxu</a>, videa se pak přestaví sama.
                     @endif

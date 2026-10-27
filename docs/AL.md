@@ -1505,3 +1505,36 @@ dál zařazoval tři právě skryté duplikáty.
 Testy: `YouTubeChannelTest` (retitle: smazané video → `missing`, mimo tabulku, na admin stránce; druhý běh téže tabulky
 nic neposílá; playlisty: skrytý duplikát, unlisted podle YouTube a smazané video mimo, `--skip`, jeden `videos.list`),
 `FarmStatusColumnsTest` (nový stav se vejde) – zelené.
+
+### 13.6.8 Po přepočtu 097/079: černá fotka a stín přes pásmo dotyku
+
+Řídící po `--ids=F26-000097,F26-000079` (27. 10.): zdroj 097 je **celá černá fotka** 3840×2160 (kamera nezachytila;
+`photo_tool.py stats` → mean 0,0, std 0,0), takže výřez byl právem prázdný a „napasování“ dalo černý obrázek. Pes 079
+levitoval dál, ačkoli výřez je čistý (572×653, pevná maska 14–638, lem žádný).
+
+- **Černá / jednobarevná fotka není fotka** (`PrintPhotos::DARK_MEAN` 8, `DARK_STD` 2 z 255; `isDark`):
+  `photo_tool.py normalize` vrací `mean`/`std`, nový `photo_tool.py stats <in> -` totéž pro libovolný soubor.
+  - Příjem foto‑boxu (`TestPhotos::add`): černá fotka se smaže a odmítne (`farm.refuse.photo_dark` cs/en/es „Fotka je
+    černá nebo jednobarevná (kamera nezachytila). Vyfoťte ji znovu.“), zakázka si zapíše `test_params.dark_photo_at`;
+    další dobrá fotka záznam smaže. Ostatní kamery téhož záběru projdou normálně (každá fotka zvlášť).
+  - `PrintPhotos::render` (stránka zakázky, `farm:photo`, redo): před výřezem `stats`, černá → `EngineException
+    dark: …`; `ComposePrintPhoto` u zakázky bez fotky uloží `photo_meta.error` a stránka zakázky píše „Poslední fotka
+    se nepoužila: …“.
+  - `farm:photo --redo-videos --apply` (i s `--ids`): černý zdroj → složená fotka pryč (`photo_path` null), černá
+    fotka z foto‑boxu pryč (`TestPhotos::dropDark`, `dark_photo_at`), videa se přestaví bez ní; řádek „removed – black
+    photo (the camera did not capture): shoot it again“. `/admin/youtube` u takové zakázky: „Fotka z foto‑boxu byla
+    černá (kamera nezachytila), vyfoťte ji znovu ve foto‑boxu.“
+- **Stín přes pásmo dotyku** (`photo_compose.py ground_band`): příčina levitace nebyl lem ani offset – kus je focen
+  šikmo, takže vzdálenější tlapka končí v obraze o ~20 px výš než bližší; stín kreslený jen od nejnižšího bodu nechal
+  vzdálenější tlapku viset. Teď se pro každý sloupec vezme nejnižší pevný řádek masky; sloupce, jejichž dno leží do 8 %
+  výšky nad nejnižším bodem, jsou „pásmo dotyku“ (tlapky, ne břicho); elipsa má výšku poloviny hloubky pásma + 2,5 %
+  výšky kusu, střed uprostřed pásma (o 0,2 ry níž), šířku 1,2× rozpětí dotykových sloupců (min. 60 % šířky kusu),
+  rozostření 2 % šířky. Horní okraj tak překrývá vzdálenější tlapku, spodní leží pod bližší. Plochý kus (stojánek):
+  pásmo = i tam šikmý spodek, výsledek sedí. Ověřeno na výřezu psa ze serveru (`scratchpad/dog-final.jpg`, 3:2 i 9:16)
+  a na stojánku; sloupcový průchod maskou je ~450 ořezů, milisekundy.
+- Po nasazení: `php artisan farm:photo --redo-videos --apply --ids=F26-000097,F26-000079` (097 se vyčistí, 079 se
+  složí znovu).
+
+Testy: `PrintPhotosTest` (nový test: černá fotka → `dark:` výjimka, odmítnutí ve foto‑boxu + `dark_photo_at` + smazání
+po dobré fotce, nahrání na stránce zakázky → `photo_meta.error` + text, legacy 097 → redo vyčistí složenou i foto‑box,
+video se přestaví), `FarmTestPhotosTest` – zelené.

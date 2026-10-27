@@ -37,6 +37,10 @@ class ComposePrintPhoto implements ShouldQueue
             $photos->attach($order, $disk->path($this->sourceRel), $this->bg, $this->sourceRel);
         } catch (EngineException $e) {
             Log::warning('Print photo could not be composed', ['order' => $order->id, 'error' => $e->getMessage()]);
+            if (! $order->hasPhoto()) {
+                // the admin's page says why there is none (a black frame from the photo box, a file Python cannot read)
+                $order->forceFill(['photo_meta' => ['error' => mb_substr($e->getMessage(), 0, 200), 'source' => $this->sourceRel, 'at' => now()->toIso8601String()]])->save();
+            }
 
             return;
         }

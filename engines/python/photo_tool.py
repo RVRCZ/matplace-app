@@ -1,5 +1,6 @@
 """Photos of printed test objects: one JSON object on stdout.
 
+  stats <in> -                      {"ok": true, "mean", "std"} the brightness of the photo (a black frame has both ~0)
   normalize <in> <out> [max]        any photo (JPEG/PNG/WebP, HEIC when pillow-heif is installed) -> upright JPEG,
                                     long edge at most <max> px (default 4032)
   fit <in> <out> <max>              JPEG copy with the long edge at most <max> px (what the vision model sees)
@@ -9,7 +10,7 @@
 import json
 import sys
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageStat
 
 try:  # iPhone photos arrive as HEIC when they come through Drive or a desktop upload
     import pillow_heif
@@ -34,12 +35,21 @@ def load(path):
     return im.convert("RGB")
 
 
-def save(im, path):
+def brightness(im):
+    """Mean and spread of the grey levels on a small copy: a black frame (the camera did not capture, F26-000097)
+    or one flat colour has both near zero (PrintPhotos::isDark decides)."""
+    g = im.convert("L")
+    g.thumbnail((256, 256))
+    st = ImageStat.Stat(g)
+    return {"mean": round(st.mean[0], 2), "std": round(st.stddev[0], 2)}
+
+
+def save(im, path, facts=None):
     try:
         im.save(path, "JPEG", quality=90, optimize=True)
     except OSError:  # the optimizing encoder gives up on some large images; a plain save always works
         im.save(path, "JPEG", quality=90)
-    out({"ok": True, "w": im.width, "h": im.height})
+    out({"ok": True, "w": im.width, "h": im.height, **(facts or {})})
 
 
 def shrink(im, limit):
@@ -54,7 +64,10 @@ def main(argv):
         out({"ok": False, "error": "usage"})
     cmd, src, dst = argv[0], argv[1], argv[2]
     if cmd == "normalize":
-        save(shrink(load(src), int(argv[3]) if len(argv) > 3 else 4032), dst)
+        im = shrink(load(src), int(argv[3]) if len(argv) > 3 else 4032)
+        save(im, dst, brightness(im))
+    if cmd == "stats":
+        out({"ok": True, **brightness(load(src))})
     if cmd == "fit":
         save(shrink(load(src), int(argv[3])), dst)
     if cmd == "crop":

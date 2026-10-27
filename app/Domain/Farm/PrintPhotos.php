@@ -39,6 +39,11 @@ final class PrintPhotos
 
     public const MAX_COVERAGE = 0.98;
 
+    /** Under this mean grey level, or this spread of grey levels, a photo is a black frame (the camera did not capture) or one flat colour: nothing to show. */
+    public const DARK_MEAN = 8.0;
+
+    public const DARK_STD = 2.0;
+
     /** @param  array{bin?: string, timeout?: int}  $python  config engines.python */
     public function __construct(private readonly BackgroundRemover $remover, private readonly array $python) {}
 
@@ -70,6 +75,7 @@ final class PrintPhotos
     public function render(string $source, string $outDir, string $stem, ?string $bg = null): array
     {
         $bg = in_array($bg, self::BACKGROUNDS, true) ? $bg : self::DEFAULT;
+        $this->refuseDark($source);
         File::ensureDirectoryExists($outDir);
         $cutout = $outDir.'/'.$stem.'-cutout.png';
         $cut = false;
@@ -112,6 +118,35 @@ final class PrintPhotos
         return ['cut' => $cut, 'bg' => $bg, 'coverage' => $coverage, 'cut_error' => $cutError, 'files' => $files];
     }
 
+    /** Whether these grey levels (photo_tool.py stats / normalize) are a black frame or one flat colour. */
+    public static function isDark(?float $mean, ?float $std): bool
+    {
+        return $mean !== null && $std !== null && ($mean < self::DARK_MEAN || $std < self::DARK_STD);
+    }
+
+    /**
+     * F26-000097, 27 Oct 2026: a black 3840×2160 frame (the camera did not capture) went through the cut (empty) and
+     * the fit (a black picture) alike. Such a photo is no photo.
+     *
+     * @throws EngineException
+     */
+    private function refuseDark(string $source): void
+    {
+        $light = $this->brightness($source);
+        if ($light !== null && self::isDark($light['mean'], $light['std'])) {
+            throw new EngineException('dark: the photo is black or one flat colour (brightness '.$light['mean'].' of 255, spread '.$light['std'].'): the camera did not capture, shoot it again');
+        }
+    }
+
+    /** @return array{mean: float, std: float}|null the photo's brightness by photo_tool.py; null when it cannot say (the render says then) */
+    private function brightness(string $source): ?array
+    {
+        $r = Process::timeout(60)->run([$this->python['bin'] ?? 'python3', base_path('engines/python/photo_tool.py'), 'stats', $source, '-']);
+        $json = json_decode(trim($r->output()), true);
+
+        return is_array($json) && ! empty($json['ok']) && isset($json['mean'], $json['std']) ? ['mean' => (float) $json['mean'], 'std' => (float) $json['std']] : null;
+    }
+
     /** Whether a cut that kept this share of the photo is the piece, and not nothing or everything. */
     public static function pieceFound(?float $coverage): bool
     {
@@ -147,6 +182,7 @@ final class PrintPhotos
     {
         $disk = Storage::disk(self::DISK);
         $dir = 'prints/'.$order->token;
+        $this->refuseDark($source);   // before the photo the order has goes: a black frame must not take a good one away
         $disk->deleteDirectory($dir);
         $r = $this->render($source, $disk->path($dir), 'photo', $bg);
         $rel = fn (string $abs): string => $dir.'/'.basename($abs);
