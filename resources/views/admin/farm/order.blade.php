@@ -96,6 +96,25 @@
                 @endif
             </section>
         @endif
+        {{-- the photo of the finished print, made presentable in the worker (PrintPhotos): the end of the videos, the order page, the trust block --}}
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+            <h2 class="font-bold">Fotka výtisku</h2>
+            @if($order->photoUrl())
+                <a href="{{ $order->photoUrl() }}" target="_blank" rel="noopener"><img src="{{ $order->photoUrl() }}" alt="fotka výtisku" class="mt-2 w-full rounded-xl border border-slate-200"></a>
+                <p class="mt-1 text-xs text-slate-500">podklad {{ $order->photo_meta['bg'] ?? '—' }} · {{ ($order->photo_meta['cut'] ?? false) ? 'pozadí odstraněno' : 'pozadí ponecháno (rembg není k dispozici)' }}
+                    @if($order->photoUrl('short')) · <a class="underline" href="{{ $order->photoUrl('short') }}" target="_blank" rel="noopener">9:16</a>@endif
+                    @if($order->photoUrl('cutout')) · <a class="underline" href="{{ $order->photoUrl('cutout') }}" target="_blank" rel="noopener">výřez PNG</a>@endif</p>
+            @else
+                <p class="mt-1 text-xs text-slate-600">Zatím žádná. Fotka z fotoboxu nebo z telefonu; pozadí se odstraní a kus se položí na podklad ve velikostech pro web, Short a konec videa.</p>
+            @endif
+            <form method="post" action="{{ route('admin.farm.orders.print_photo', $order) }}" enctype="multipart/form-data" class="mt-2 flex flex-wrap items-center gap-2">@csrf
+                <input type="file" name="photo" accept="image/*,.heic" required class="text-xs">
+                <select name="bg" class="rounded-lg border border-slate-300 px-2 py-1 text-xs">
+                    @foreach(\App\Domain\Farm\PrintPhotos::BACKGROUNDS as $bg)<option value="{{ $bg }}" @selected($bg === ($order->photo_meta['bg'] ?? \App\Domain\Farm\PrintPhotos::DEFAULT))>{{ $bg }}</option>@endforeach
+                </select>
+                <button class="btn-quiet min-h-0 px-3 py-1.5 text-sm">Nahrát fotku výtisku</button>
+            </form>
+        </section>
         <section class="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
             <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
                 <dt class="text-slate-500">E-mail</dt><dd>{{ $order->user?->email }} <span class="text-xs text-slate-500">(@money($balance))</span></dd>

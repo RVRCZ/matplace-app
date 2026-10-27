@@ -45,6 +45,8 @@ return [
     'status.nofit.hint' => 'Podložka farmy má :bed mm. Zmenšete rozměr, nebo si stáhněte soubor pro větší tiskárnu.',
     'status.piece' => 'Vybraný díl: :name',
     'download' => 'Stáhnout model',
+    'share' => 'Sdílet',
+    'share.copied' => 'Odkaz zkopírován',
     'download.orca' => 'Projekt pro OrcaSlicer a Bambu Studio (3MF)',
     'download.prusa' => 'Projekt pro PrusaSlicer (3MF)',
     'download.project.hint' => 'Návrh se uloží a vyberete svou tiskárnu.',

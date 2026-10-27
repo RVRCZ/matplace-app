@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Domain\Calculation\RoughEstimator;
+use App\Domain\Farm\PrintPhotos;
 use App\Domain\Farm\TestPhotoJudge;
 use App\Domain\Farm\TestPhotos;
 use App\Domain\Tools\PrintAdvisor;
@@ -38,6 +39,10 @@ use App\Engines\Mail\Mailbox;
 use App\Engines\Mesh\MeshDecimator;
 use App\Engines\Payment\FakeGateway;
 use App\Engines\Payment\StripeGateway;
+use App\Engines\Photo\BackgroundRemover;
+use App\Engines\Photo\FakeBackgroundRemover;
+use App\Engines\Photo\NoBackgroundRemover;
+use App\Engines\Photo\RembgBackgroundRemover;
 use App\Engines\Project\CompositeProjectExporter;
 use App\Engines\Project\FakeProjectExporter;
 use App\Engines\Project\OrcaProjectExporter;
@@ -72,6 +77,13 @@ class EngineServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PythonTool::class, fn () => new PythonTool(config('engines.python')));
         $this->app->singleton(MeshDecimator::class, fn ($app) => new MeshDecimator($app->make(PythonTool::class), (array) config('engines.mesh')));
+        // the background off a photo of a finished print (PrintPhotos, docs/AL.md §13): rembg asks the interpreter whether it is installed
+        $this->app->singleton(BackgroundRemover::class, fn ($app) => match (config('engines.photo')) {
+            'rembg' => new RembgBackgroundRemover((array) config('engines.python') + ['photo_home' => (string) config('engines.photo_home'), 'photo_numba_cache' => (string) config('engines.photo_numba_cache')]),
+            'fake' => new FakeBackgroundRemover,
+            default => new NoBackgroundRemover,
+        });
+        $this->app->singleton(PrintPhotos::class, fn ($app) => new PrintPhotos($app->make(BackgroundRemover::class), (array) config('engines.python')));
 
         $this->app->singleton(Slicer::class, function ($app) {
             return match (config('engines.slicer')) {

@@ -26,7 +26,7 @@ final class Funnel
 {
     public const PERIODS = [7, 30, 90];
 
-    public const SOURCES = ['google', 'seznam', 'bing', 'facebook', 'instagram', 'youtube', 'designer', 'direct', 'other'];
+    public const SOURCES = ['google', 'seznam', 'bing', 'facebook', 'instagram', 'youtube', 'designer', 'embed', 'direct', 'other'];
 
     /**
      * path → steps; a step is the marks that satisfy it. "order" is the audit's way (docs/AUDIT.md bod 12, docs/AJ.md):

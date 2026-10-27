@@ -12,7 +12,7 @@
         'register|register_visit|order_created' => 'Registrace (nebo už měl účet)', 'order_created' => 'Zakázka založena', 'checkout_started|topup_started' => 'Platba začala (karta nebo dobití)',
     ];
     $paths = ['sales' => 'Prodejní cesta', 'customer' => 'Zákazník', 'owner' => 'Majitel tiskárny', 'designer' => 'Designér', 'order' => 'Objednávka (audit)'];
-    $sources = ['google' => 'Google', 'seznam' => 'Seznam', 'bing' => 'Bing', 'facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube' => 'YouTube', 'designer' => 'Odkaz designéra', 'direct' => 'Přímo', 'other' => 'Ostatní'];
+    $sources = ['google' => 'Google', 'seznam' => 'Seznam', 'bing' => 'Bing', 'facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube' => 'YouTube', 'designer' => 'Odkaz designéra', 'embed' => 'Vložená kalkulačka', 'direct' => 'Přímo', 'other' => 'Ostatní'];
 @endphp
 
 @section('content')
@@ -22,6 +22,7 @@
     <a href="{{ route('admin.stats.search') }}" class="chip">Vyhledávání</a>
     <a href="{{ route('admin.ai.index') }}" class="chip">AI aktivita</a>
     <a href="{{ route('admin.stats.speed') }}" class="chip">Rychlost</a>
+    <a href="{{ route('admin.stats.tools') }}" class="chip">Nástroje týdně</a>
 </nav>
 
 <div class="mt-3 flex gap-1 text-sm">@foreach(\App\Domain\Stats\Funnel::PERIODS as $d)<a href="{{ $link(['days' => $d]) }}" class="chip {{ $stats['days'] === $d ? 'chip-on' : '' }}">{{ $d }} dní</a>@endforeach</div>

@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\PlateController;
 use App\Http\Controllers\Api\RefusedController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SeenController;
+use App\Http\Controllers\Api\ShareController;
 use App\Http\Controllers\Api\ThreadController;
 use App\Http\Controllers\Api\ToolsApiController;
 use App\Http\Controllers\Api\UploadController;
@@ -47,8 +48,10 @@ use App\Http\Controllers\Designer\ProfileController as DesignerProfileController
 use App\Http\Controllers\Designer\VerificationController as DesignerVerificationController;
 use App\Http\Controllers\DesignerPageController;
 use App\Http\Controllers\EditToolsController;
+use App\Http\Controllers\EmbedController;
 use App\Http\Controllers\Farm\CreditController;
 use App\Http\Controllers\Farm\OrderController;
+use App\Http\Controllers\FeedController;
 use App\Http\Controllers\InquiryController;
 use App\Http\Controllers\InspirationController;
 use App\Http\Controllers\LocaleRedirectController;
@@ -109,6 +112,11 @@ $pages = function () {
     }
     Route::get('/wp/{any}', fn () => redirect('/blog', 301))->where('any', '.*');
     Route::get('/materials', [PageController::class, 'materials'])->name('materials');
+    // the calculator other sites embed: the page with the code, and the small page inside the frame (docs/AN.md §12)
+    Route::get('/embed', [EmbedController::class, 'index'])->name('embed');
+    // RSS of new articles and verified tools in this language (docs/AN.md §12.5)
+    Route::get('/feed', FeedController::class)->name('feed');
+    Route::get('/embed/calc', [EmbedController::class, 'calc'])->name('embed.calc');
     foreach (PageController::PAGES as $page => $path) {
         Route::get('/'.$path, PageController::class)->defaults('page', $page)->name(PageController::routeName($page));
     }
@@ -373,11 +381,15 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::post('seen', SeenController::class)->middleware('throttle:120,1,seen')->name('seen');
     // the page's script says a file was refused before any upload (the format, the size): the funnel's "upload began" step (docs/AN.md §9)
     Route::post('refused', RefusedController::class)->middleware('throttle:30,1,refused')->name('refused');
+    // the page's script says a result was shared (the share sheet or a copied link): a visit that costs nothing (docs/AN.md §12)
+    Route::post('shared', ShareController::class)->middleware('throttle:30,1,shared')->name('shared');
     Route::post('search', [SearchController::class, 'text'])->middleware('throttle:60,1,search')->name('search');
     Route::post('describe', [SearchController::class, 'describe'])->middleware('throttle:10,1,describe')->name('describe');
     Route::post('generate', [GenerationController::class, 'store'])->middleware('throttle:10,1,generate')->name('generate.store');
     Route::get('generate/{generation}', [GenerationController::class, 'show'])->name('generate.show');
     Route::post('generate/{generation}/refine', [GenerationController::class, 'refine'])->middleware('throttle:10,1,refine')->name('generate.refine');
+    // "send me the result": one e-mail with the link once the model is done (docs/AN.md §12.5)
+    Route::post('generate/{generation}/notify', [GenerationController::class, 'notify'])->middleware('throttle:10,1,notify')->name('generate.notify');
     Route::post('tools/sign', [ToolsApiController::class, 'sign'])->middleware('throttle:20,1,sign')->name('tools.sign');
     Route::post('tools/artwork', [ToolsApiController::class, 'artwork'])->middleware('throttle:30,1,artwork')->name('tools.artwork');
     Route::post('tools/param/preview', [ToolsApiController::class, 'paramPreview'])->middleware('throttle:90,1,preview')->name('tools.param.preview');
@@ -430,6 +442,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin/farm')->name('admin.far
     Route::post('/orders/{order}/approve', [$orders, 'approve'])->name('orders.approve');
     Route::post('/orders/{order}/status', [$orders, 'status'])->name('orders.status');
     Route::post('/orders/{order}/overrides', [$orders, 'overrides'])->name('orders.overrides');
+    Route::post('/orders/{order}/print-photo', [$orders, 'printPhoto'])->name('orders.print_photo');
     Route::post('/orders/{order}/actuals', [$orders, 'actuals'])->name('orders.actuals');
     Route::post('/orders/{order}/refund', [$orders, 'refund'])->name('orders.refund');
     Route::post('/orders/{order}/ship', [$orders, 'ship'])->name('orders.ship');
@@ -537,6 +550,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/stats', [AdminStatsController::class, 'funnel'])->name('stats.funnel');
     Route::get('/stats/search', [AdminStatsController::class, 'search'])->name('stats.search');
     Route::get('/stats/speed', [AdminStatsController::class, 'speed'])->name('stats.speed');
+    Route::get('/stats/tools', [AdminStatsController::class, 'tools'])->name('stats.tools');   // unique visitors with a tool per week, Search Console (docs/AN.md §12.3)
     Route::get('/ai', [AdminStatsController::class, 'ai'])->name('ai.index');
     Route::post('/ai/limits', [AdminStatsController::class, 'aiLimits'])->name('ai.limits');
 

@@ -60,6 +60,21 @@ class SecurityHeadersTest extends TestCase
         $this->assertSame('noindex, nofollow', $r->headers->get('X-Robots-Tag'));
     }
 
+    public function test_the_embedded_calculator_may_sit_in_any_frame(): void
+    {
+        config(['security.csp.mode' => 'enforce']);
+        $r = $this->get('/embed/calc');
+        $r->assertOk();
+        $csp = (string) $r->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString('frame-ancestors *', $csp);
+        $this->assertStringContainsString("default-src 'self'", $csp, 'the rest of the policy stays');
+        $this->assertFalse($r->headers->has('X-Frame-Options'));
+        // the site itself keeps its own frame rules
+        $own = $this->get('/tools');
+        $this->assertStringContainsString("frame-ancestors 'self'", (string) $own->headers->get('Content-Security-Policy'));
+        $this->assertSame('SAMEORIGIN', $own->headers->get('X-Frame-Options'));
+    }
+
     public function test_a_json_answer_has_no_policy(): void
     {
         config(['security.csp.mode' => 'enforce']);

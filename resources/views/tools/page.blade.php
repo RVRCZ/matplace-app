@@ -34,6 +34,7 @@
         'price' => isset($config['rough']) ? \Illuminate\Support\Arr::only($config, ['rough', 'orientation_profiles', 'round_to', 'materials', 'default_material']) : null,
         'artwork' => ['upload' => route('api.tools.artwork'), 'library' => route('api.artwork.library'), 'mine' => route('api.artwork.mine'), 'file' => url('/api/artwork/file')],
         'zip' => route('api.tools.param.zip'),
+        'shared' => route('api.shared'),   // the share event (ShareController)
         'i18n' => collect(\Illuminate\Support\Arr::dot(['toolpage' => trans('toolpage')]))->all() + ['farm.finish' => collect((array) trans('farm.finish'))->all()],
     ];
 @endphp
@@ -169,6 +170,8 @@
                     <button type="button" id="tool-download" class="btn-secondary w-full gap-1.5" aria-haspopup="menu" aria-expanded="false" aria-controls="tool-download-menu" disabled><x-icon name="download" class="h-4 w-4" />{{ __('toolpage.download') }}<x-icon name="chevron-down" class="h-4 w-4" /></button>
                     <div id="tool-download-menu" role="menu" class="absolute bottom-full right-0 z-20 mb-2 hidden w-72 rounded-xl border border-line bg-card p-1 text-sm shadow-sm"></div>
                 </div>
+                {{-- share the result: the phone's share sheet, else the link copied (Stage.shareable; docs/AN.md §12) --}}
+                <button type="button" id="tool-share" class="btn-secondary w-full gap-1.5 sm:w-auto" hidden data-copied="{{ __('toolpage.share.copied') }}"><x-icon name="share" class="h-4 w-4" />{{ __('toolpage.share') }}</button>
                 <button type="button" id="tool-go" class="btn-primary gap-1.5" disabled><span id="tool-go-label">{{ __('param.go') }}</span><x-icon name="arrow-right" class="h-4 w-4" /></button>
             </div>
             <p class="w-full text-xs text-muted">@hasSection('price-note')@yield('price-note')@else{{ \App\Support\NextStep::text('param.go.hint') }}@endif</p>

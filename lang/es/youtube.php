@@ -29,7 +29,36 @@ return [
         'title' => 'Time-lapse de impresión 3D – :material :color',
         'cta' => 'Suba un modelo y verá el precio al instante: :url',
         'cta_tool' => 'Haga el suyo: :url',
-        'description' => ":cta\nTime-lapse de una impresión de nuestra granja de impresión 3D.\n\nMaterial: :material :color\nImpresora: :printer\nTiempo de impresión: :time\n\nPublicado con el consentimiento del cliente.",
+        'price' => 'Precio: :price',
+        'ask_short' => '¿Qué imprimimos la próxima vez?',
+        'comment' => ':cta Esta impresión costó :price.',
+        'hashtags' => '#3dtisk #3dtiskarna #dárek',
+        'title_plain' => ':name – :time de impresión',
+        'title_unnamed' => 'Lo que crece en :time de impresión 3D',
+        'description' => ":cta\nTime-lapse de una impresión de nuestra granja de impresión 3D; la pieza terminada y su precio están al final.\n\nMaterial: :material :color\nImpresora: :printer\nTiempo de impresión: :time\n\nPublicado con el consentimiento del cliente.",
+    ],
+
+    'hook' => [
+        'figure' => 'Una foto → un busto', 'pet' => 'La foto de una mascota → una figura', 'relief' => 'Una foto → un relieve', 'papel' => 'Una foto → un retrato de papel',
+        'qr' => 'Un código QR que se puede tocar', 'box' => 'El cliente envió una medida → una caja', 'organizer' => 'La medida del cajón → un organizador',
+        'vase' => 'Unas curvas → un jarrón', 'sign' => 'Un nombre → un letrero', 'nameplate' => 'Un nombre → una placa de puerta', 'medallion' => 'Un nombre → una medalla con cadena',
+        'phone_stand' => 'Tres números → un soporte de móvil', 'cap' => 'Una tapa rota → una nueva', 'holder' => 'Una medida → un soporte', 'cable_holder' => 'Cables → un soporte',
+        'ornament' => 'Un nombre → un adorno navideño', 'gingerbread' => 'Un dibujo → un cortador', 'cookie' => 'Un dibujo → un cortador', 'topper' => 'Un nombre → un adorno de tarta',
+        'stamp' => 'Un logo → un sello', 'logo' => 'Un logo → 3D', 'text' => 'Un rótulo → 3D', 'map' => 'Una dirección → un mapa', 'default' => 'Un modelo → una impresión en :time',
+    ],
+    'title' => [
+        'figure' => 'Un busto a partir de una foto', 'pet' => 'La figura de una mascota a partir de una foto', 'relief' => 'Un relieve a partir de una foto', 'papel' => 'Un retrato de papel a partir de una foto',
+        'qr' => 'Un código QR que se puede tocar', 'box' => 'Una caja exactamente a medida', 'organizer' => 'Un organizador exacto para el cajón',
+        'vase' => 'Un jarrón sin costura', 'sign' => 'Un letrero con nombre', 'nameplate' => 'Una placa de puerta', 'medallion' => 'Una medalla con nombre y cadena',
+        'phone_stand' => 'Un soporte de móvil a medida', 'cap' => 'Una tapa nueva por una rota', 'holder' => 'Un soporte a medida', 'cable_holder' => 'Un soporte de cables a medida',
+        'ornament' => 'Un adorno navideño con nombre', 'gingerbread' => 'Un cortador de galletas con su propio dibujo', 'cookie' => 'Un cortador de galletas a medida', 'topper' => 'Un adorno de tarta con nombre',
+        'stamp' => 'Un sello a partir de un logo', 'logo' => 'Un logo en 3D', 'text' => 'Un rótulo en 3D', 'map' => 'El mapa de un lugar en 3D',
+    ],
+    'hashtag' => [
+        'figure' => '#figurka', 'pet' => '#mazlíček', 'relief' => '#reliéf', 'papel' => '#portrét', 'qr' => '#qrkod', 'box' => '#krabička', 'organizer' => '#organizér',
+        'vase' => '#váza', 'sign' => '#cedulka', 'nameplate' => '#jmenovka', 'medallion' => '#medaile', 'phone_stand' => '#stojánek', 'cap' => '#oprava', 'holder' => '#držák',
+        'cable_holder' => '#držák', 'ornament' => '#vánoce', 'gingerbread' => '#vánoce', 'cookie' => '#vykrajovátko', 'topper' => '#dort', 'stamp' => '#razítko', 'logo' => '#logo',
+        'text' => '#nápis', 'map' => '#mapa', 'default' => '#3dprinting',
     ],
 
     'weekly' => [

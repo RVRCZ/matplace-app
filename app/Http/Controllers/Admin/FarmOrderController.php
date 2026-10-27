@@ -8,6 +8,7 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\GcodeSlot;
 use App\Domain\Farm\OrderFlow;
 use App\Domain\Farm\OrderService;
+use App\Domain\Farm\PrintPhotos;
 use App\Domain\Farm\PrintProfile;
 use App\Domain\Farm\PrintSettings;
 use App\Domain\Farm\Wallet;
@@ -15,6 +16,7 @@ use App\Engines\Shipping\Parcel;
 use App\Engines\Shipping\ShippingCarrier;
 use App\Engines\Shipping\ShippingFailed;
 use App\Http\Controllers\Controller;
+use App\Jobs\ComposePrintPhoto;
 use App\Models\FarmCommand;
 use App\Models\FarmOrder;
 use App\Models\FarmPrinter;
@@ -127,6 +129,23 @@ class FarmOrderController extends Controller
         abort_unless($order->timelapse_path && Storage::disk(config('farm.disk'))->exists($order->timelapse_path), 404);
 
         return response()->file(Storage::disk(config('farm.disk'))->path($order->timelapse_path), ['Content-Type' => 'video/mp4']);
+    }
+
+    /**
+     * "Nahrát fotku výtisku": the photo from the photo box or a phone goes to the farm disk as it is and the worker makes
+     * it presentable (ComposePrintPhoto → PrintPhotos: the background off, a backdrop, every size) and rebuilds the
+     * print's videos so they end with it.
+     */
+    public function printPhoto(Request $request, FarmOrder $order): RedirectResponse
+    {
+        $data = $request->validate(['photo' => ['required', 'file', 'max:30720', 'mimes:jpg,jpeg,png,webp,heic'], 'bg' => ['nullable', 'in:'.implode(',', PrintPhotos::BACKGROUNDS)]]);
+        $rel = $order->dir().'/photos/print-source.'.strtolower((string) $data['photo']->getClientOriginalExtension());
+        $disk = Storage::disk(config('farm.disk'));
+        $disk->makeDirectory(dirname($rel));
+        $disk->putFileAs(dirname($rel), $data['photo'], basename($rel));
+        ComposePrintPhoto::dispatch($order->id, $rel, $data['bg'] ?? null);
+
+        return back()->with('status', 'Fotka se zpracovává (pozadí, podklad, velikosti); obnovte stránku za chvíli.');
     }
 
     /** The admin's process overrides for one order (JSON object of slicer settings), then a new slice. */

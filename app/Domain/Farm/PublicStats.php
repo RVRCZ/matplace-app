@@ -23,6 +23,9 @@ final class PublicStats
     /** The median of the handover takes the last this many handed-over orders. */
     public const MEDIAN_OF = 50;
 
+    /** The most photographed prints latestPhotos() remembers (one cache entry, sliced on the way out). */
+    public const PHOTOS_MAX = 12;
+
     /**
      * `printed` = paid orders that were printed (done or handed over); `handed_over_days_median` = days from the
      * payment to the handover (the event that moved the order to handed_over), the median of the last MEDIAN_OF, null
@@ -62,6 +65,41 @@ final class PublicStats
     public static function forget(): void
     {
         Cache::forget(self::CACHE_KEY);
+        Cache::forget(self::CACHE_KEY.':photos');
+    }
+
+    /**
+     * The latest photographed prints for the trust block (PrintPhotos): paid orders that were printed and have their
+     * photo, newest first, with the web render, its WebP, the 9:16 one, the tool that made the model (its kind, null
+     * for a customer's own file) and the order's number. Remembered for an hour like the figures.
+     *
+     * @return list<array{url: string, webp: ?string, short: ?string, tool: ?string, number: ?string, at: ?string}>
+     */
+    public static function latestPhotos(int $limit = 8): array
+    {
+        $limit = max(1, min(self::PHOTOS_MAX, $limit));
+
+        return array_slice(Cache::remember(self::CACHE_KEY.':photos', self::CACHE_SECONDS, function () {
+            $out = [];
+            $limit = self::PHOTOS_MAX;
+            $orders = FarmOrder::query()->with('modelFile')->whereNotNull('paid_at')->whereNotNull('photo_path')
+                ->whereIn('status', [FarmOrder::STATUS_DONE, FarmOrder::STATUS_HANDED_OVER])
+                ->orderByDesc('finished_at')->orderByDesc('id')->limit($limit * 2)->get();
+            foreach ($orders as $order) {
+                if (! ($url = $order->photoUrl())) {
+                    continue;
+                }
+                $file = $order->modelFile;
+                $out[] = ['url' => $url, 'webp' => $order->photoUrl('webp'), 'short' => $order->photoUrl('short'),
+                    'tool' => $file && ($file->origin === 'tool' || $file->origin === 'generated') ? ($file->origin === 'generated' ? 'figure' : $file->kind()) : null,
+                    'number' => $order->number, 'at' => $order->finished_at?->toDateString()];
+                if (count($out) >= $limit) {
+                    break;
+                }
+            }
+
+            return $out;
+        }), 0, $limit);
     }
 
     /** @param  list<float>  $sorted  ascending */

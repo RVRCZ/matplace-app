@@ -305,6 +305,7 @@ class YouTubeVideosTest extends TestCase
 
     public function test_the_short_and_the_wide_wait_side_by_side_carry_their_own_campaign_and_go_up_as_they_were_built(): void
     {
+        config(['youtube.wide_uploads' => true]);   // the 16:9 twin goes up only when asked for (the audit of 27 Oct 2026)
         $this->connectedChannel();
         $this->fakeGoogle();
         $dir = sys_get_temp_dir().'/mp_music_'.uniqid();
@@ -491,7 +492,7 @@ class YouTubeVideosTest extends TestCase
         $this->assertSame(['facebook_video', 'facebook', 'instagram_reel'], array_column(FakeMetaClient::$posts, 'platform'));
         $this->assertStringEndsWith('timelapse.mp4', FakeMetaClient::$posts[0]['image'], 'the page gets the file itself');
         $this->assertStringContainsString("Váza\n\nPopis", FakeMetaClient::$posts[0]['message']);
-        $this->assertSame(url('/').'/?utm_source=facebook&utm_medium=social&utm_campaign=video_short', FakeMetaClient::$posts[1]['link'], 'the link post points where YouTube does');
+        $this->assertSame(url('/').'/?utm_source=facebook&utm_medium=social&utm_campaign=video_short&utm_content=vid123', FakeMetaClient::$posts[1]['link'], 'the link post points where YouTube does');
         $reelUrl = FakeMetaClient::$posts[2]['image'];
         $this->assertStringContainsString("/social/videos/{$video->id}.mp4?", $reelUrl, 'Instagram fetches the video from a signed address');
         $this->get($reelUrl)->assertOk()->assertHeader('Content-Type', 'video/mp4');
@@ -575,7 +576,7 @@ class YouTubeVideosTest extends TestCase
         config(['youtube.language' => 'cs']);
         $short = $videos->defaultDescription($order, 'Artist - Song.mp3', 'short');
         $this->assertStringStartsWith('Nahrajte model a hned uvidíte cenu: http', $short);
-        $this->assertStringEndsWith("Hudba: Artist – Song (YouTube Audio Library)\n\n#Shorts #3Dprinting #timelapse", $short, 'the music credit, then the hashtags last');
+        $this->assertStringEndsWith("Hudba: Artist – Song (YouTube Audio Library)\n\n#Shorts #3dtisk #3dtiskarna #dárek #3dprinting", $short, 'the music credit, then the hashtags last: the channel\'s three and one to the subject');
         $order->modelFile->forceFill(['origin' => 'tool', 'origin_ref' => 'vase'])->save();
         $this->assertStringStartsWith('Udělejte si vlastní: '.url('/tools/vase').'?utm_source=youtube', $videos->defaultDescription($order->refresh(), null, 'wide'));
     }
@@ -593,9 +594,10 @@ class YouTubeVideosTest extends TestCase
         $this->artisan('social:videos')->expectsOutputToContain('posted: 3')->assertSuccessful();
 
         $page = url('/tools/vase').'?utm_source=';
-        $this->assertStringContainsString($page.'facebook&utm_medium=social&utm_campaign=video_short', FakeMetaClient::$posts[0]['message']);
-        $this->assertSame($page.'facebook&utm_medium=social&utm_campaign=video_short', FakeMetaClient::$posts[1]['link']);
-        $this->assertStringContainsString($page.'instagram&utm_medium=social&utm_campaign=video_short', FakeMetaClient::$posts[2]['message']);
+        // every channel's link names the video it came from (utm_content), so the statistics tell them apart
+        $this->assertStringContainsString($page.'facebook&utm_medium=social&utm_campaign=video_short&utm_content=vid123', FakeMetaClient::$posts[0]['message']);
+        $this->assertSame($page.'facebook&utm_medium=social&utm_campaign=video_short&utm_content=vid123', FakeMetaClient::$posts[1]['link']);
+        $this->assertStringContainsString($page.'instagram&utm_medium=social&utm_campaign=video_short&utm_content=vid123', FakeMetaClient::$posts[2]['message']);
         $this->assertStringNotContainsString('utm_source=youtube', implode(' ', array_column(FakeMetaClient::$posts, 'message')));
         $this->assertStringContainsString('utm_source=youtube', (string) $video->refresh()->description, 'YouTube keeps its own');
     }
@@ -625,7 +627,10 @@ class YouTubeVideosTest extends TestCase
         $this->assertCount(1, $comments());
         [$request] = $comments()->first();
         $this->assertStringEndsWith('/commentThreads?part=snippet', $request->url());
-        $this->assertSame(['channelId' => 'UC123', 'videoId' => 'vid123', 'topLevelComment' => ['snippet' => ['textOriginal' => 'Nahrajte model a hned uvidíte cenu: '.url('/').'/?utm_source=youtube&utm_medium=social&utm_campaign=video_short']]], $request['snippet']);
+        $this->assertSame(['channelId' => 'UC123', 'videoId' => 'vid123'], ['channelId' => $request['snippet']['channelId'], 'videoId' => $request['snippet']['videoId']]);
+        $comment = (string) $request['snippet']['topLevelComment']['snippet']['textOriginal'];
+        $this->assertStringStartsWith('Nahrajte model a hned uvidíte cenu: '.url('/').'/?utm_source=youtube&utm_medium=social&utm_campaign=video_short&utm_content=vid123', $comment, 'the link names the video');
+        $this->assertStringContainsString('Cena tohoto výtisku: ', $comment);
         $this->assertSame([FarmVideo::STATUS_PUBLISHED, 'thread-1'], [$video->status, $video->meta['comment_id']]);
 
         // a token without the scope: the video stays as it is, the log says why

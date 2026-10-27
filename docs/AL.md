@@ -1191,3 +1191,154 @@ Soubory: `app/Domain/Farm/PublicStats.php` (nový), `app/Http/Controllers/Farm/{
 - Doporučení, ne změna: stránka kreditu (`/account/credit`) dál nabízí dobití 100 až 20 000 Kč; pro cestu „zaplatit
   kartou“ ji zákazník nepotřebuje, mohla by ustoupit do účtu jako „historie plateb“. Zakázky pod 15 Kč doplatku se
   nyní účtují 15 Kč; kdyby to vadilo, lze doplatek pod minimem odpustit (dar ~10 Kč) místo účtování víc.
+
+# YouTube kanál a fotky z fotoboxu (TODO #48, session 2)
+
+Větev `feature/youtube-shorts` (z `main` 48fcf13), od 27. 10. 2026. Zadání `docs/prompts/youtube-kanal.md`, podklady
+`audit-youtube-2026-10-27.md` a `priority-navstevnost-2026-10-27.md` bod 6. Nemergováno, nenasazeno; merguje řídící
+(conceprt19092026-91). Žádné volání YouTube API naostro.
+
+## 13. Dávka 1: fotky výtisků bez pozadí a na pozadí
+
+### 13.1 Co se děje
+
+- **Fotková část ze `feature/tools-sell`** (jen ona, bez studia s Gemini a Claude): `app/Engines/Photo/{BackgroundRemover,
+  RembgBackgroundRemover,FakeBackgroundRemover,NoBackgroundRemover}.php`, `engines/python/photo_cut.py` (rembg u2net, výřez
+  RGBA PNG oříznutý na kus s 2 % okrajem, `--probe`), `engines/python/photo_backgrounds.py` + nakreslené textury
+  `public/img/backgrounds/{wood,paper,marble,concrete,linen}.jpg`. Config `engines.photo` (`ENGINE_PHOTO` rembg | fake |
+  none, výchozí rembg) a `engines.photo_home` (`U2NET_HOME`, výchozí `/opt/matplace-py/u2net`); vazba v
+  `EngineServiceProvider`; testy mají `ENGINE_PHOTO=fake` (elipsa uprostřed fotky).
+- **Nový `engines/python/photo_compose.py`**: výřez (nebo celá fotka, když rembg není) na podklad ve velikosti podle místa,
+  s měkkým vrženým stínem a tmavším kontaktním stínem pod kusem, kus stojí na „podlaze“ (3:2 na 78 % výšky, 9:16 na 58 %).
+  Podklady: `studio` (světle šedá vinětace, výchozí), `white`, `gradient` (chladný světlý přechod), textury podle jména.
+  JPEG q88 + volitelně WebP q82.
+- **`App\Domain\Farm\PrintPhotos`**: `render(source, outDir, stem, bg)` → `<stem>-cutout.png`, `-web.jpg` (1200×800) +
+  `-web.webp`, `-short.jpg` (1080×1920), `-square.jpg` (1080×1080); `attach(order, source, bg)` totéž do
+  `storage/app/public/prints/<token>/` a na zakázku (`farm_orders.photo_path` = web JPEG, `photo_meta` = všechny soubory,
+  podklad, `cut`, `coverage`, čas; migrace `2026_10_27_100000_farm_orders_print_photo`, žádný stavový sloupec);
+  `remove(order)`; `PrintPhotos::file(order, variant)`. Bez rembg (server dnes) se fotka jen napasuje a ořízne a `cut`
+  je false, takže nic nečeká na instalaci.
+- **`FarmOrder::photoUrl(variant = web|webp|short|square|cutout)`**, `photoFile()`, `hasPhoto()`: veřejná adresa přes disk
+  `public` (`/storage/prints/<token>/photo-web.jpg`).
+- **Příkaz `php artisan farm:photo`**: `--probe` (funguje rembg?), `<fotka> --order=F26-000123 [--bg=wood]` (fotka zakázky,
+  pak `AddFinishPhotoToVideo`, když má zakázka časosběr), `<složka> --match=20261010 [--out=…] [--bg=…]` (dávka pro Romana
+  místně: výstup do `--out`, výchozí `storage/app/photos-out/<den>`; nejstarší soubor první; u složky s `--order` se bere
+  nejnovější).
+- **Admin**: na stránce zakázky blok „Fotka výtisku“ s náhledem, podkladem a odkazy na 9:16 a výřez, formulář „Nahrát fotku
+  výtisku“ (soubor + podklad) → `POST /admin/farm/orders/{order}/print-photo` → zdroj na farm disk
+  `orders/<token>/photos/print-source.<ext>` → úloha `ComposePrintPhoto` ve workeru (`PrintPhotos::attach`, pak
+  `AddFinishPhotoToVideo` u zakázky s časosběrem). Stávající fotobox (`TestPhotos`, tři kamery) zůstal beze změny.
+- **Videa**: `TimelapseCutter::finishPhoto(order, variant)` bere nejdřív složenou fotku (čtvercový Short → `square`, 16:9 a
+  zákaznické → `web`), teprve pak fotku z fotoboxu jako dosud.
+- **Zákazník**: stav zakázky nese `photo_url`, stránka ukáže fotku pod náhledem modelu (`#farm-photo-box`, text
+  `farm.order.photo_of_print` cs/en/es).
+- **Blok důvěry (session 3)**: `PublicStats::latestPhotos(limit = 8)` → `[{url, webp, short, tool, number, at}]`
+  (zaplacené vytištěné zakázky s fotkou, nejnovější první, keš 1 h, `PublicStats::forget()` ji smaže), nebo
+  `FarmOrder::photoUrl()`. `config/site.php` `example_items.photo` zůstává null: až Roman vybere, stačí tam dát adresu
+  z `photoUrl()` nebo cestu `prints/<token>/photo-web.jpg` na disku `public` (čte session 3).
+
+### 13.2 Ověření
+
+- `tests/Feature/PrintPhotosTest.php` (5 testů): výřez + všechny velikosti + rozměry + WebP/PNG + nahrazení a smazání; bez
+  odstraňovače se fotka napasuje; příkaz pro zakázku (probe, bg, neznámá zakázka, neznámý podklad) i dávka se `--match`
+  (10 souborů ze dvou fotek); admin upload → worker → `photo_url` u zákazníka, stránka ve 3 jazycích, admin náhled, střihy
+  berou složenou fotku (square u Shortu, web u 16:9 a zákaznického), špatný soubor odmítnut; `latestPhotos`. Sada
+  `PrintPhotosTest|FarmVideosCutTest|YouTubeVideosTest|FarmTestPhotosTest|FarmPagesTest|PublicStatsTest|FarmOrderFlowTest|FarmStatusColumnsTest` = 93 testů,
+  2 493 asercí, zelené (2 přeskočené = skutečné renderování bez `FFMPEG_BIN`); pint, tsc i `npm run build` prošly.
+- **Skutečný rembg místně** (Store Python 3.11, `pip install --user rembg onnxruntime` → rembg s onnxruntime 1.31.1):
+  `farm:photo "C:\Users\roman\Pictures\Camera Roll" --match=20261022` = 2 fotky (spojovací článek řetězu z medaile),
+  výřez 52 % kusu, 34 s včetně stažení modelu u2net; výsledky
+  `C:\Users\roman\AppData\Local\Temp\claude\c--Users-roman-Documents-MatPlace-conceprt19092026\18e3d80f-ba4e-42a8-b6d7-75b3417a895b\scratchpad\photos-out\`
+  (`WIN_20261022_16_53_58_Pro-web.jpg`, `-short.jpg`, `-square.jpg`, `-cutout.png`). Kus je ostře vyříznutý, stín sedí,
+  vinětace studia je neutrální; u lesklých a bílých kusů bude třeba zkusit podklad `paper` nebo `gradient`.
+
+### 13.3 Instalace rembg na serveru (pro řídící)
+
+Předpoklad: Python prostředí enginů `/opt/matplace-py` (`PYTHON_BIN` v `.env`), uživatel workerů a php-fpm `www-data`.
+
+```
+# 1) balíčky do prostředí enginů (rembg 2.0.x + onnxruntime CPU; ~150 MB)
+sudo /opt/matplace-py/bin/pip install "rembg>=2.0.50,<3" onnxruntime
+/opt/matplace-py/bin/python -c "import rembg, onnxruntime; print(onnxruntime.__version__)"
+
+# 2) model u2net (~176 MB) do složky, kterou www-data čte; rembg si ho stáhne při prvním použití z GitHubu
+sudo mkdir -p /opt/matplace-py/u2net && sudo chown www-data:www-data /opt/matplace-py/u2net
+sudo -u www-data U2NET_HOME=/opt/matplace-py/u2net /opt/matplace-py/bin/python -c "from rembg import new_session; new_session('u2net')"
+ls -la /opt/matplace-py/u2net        # u2net.onnx (když tam není, rembg ho dal do ~/.u2net uživatele; přesunout sem)
+
+# 3) .env a config
+ENGINE_PHOTO=rembg
+U2NET_HOME=/opt/matplace-py/u2net
+php artisan config:cache && php artisan cache:forget photo_engine:rembg:<md5 PYTHON_BIN>   # nebo cache:clear; výsledek probe se pamatuje hodinu
+
+# 4) zkouška
+sudo -u www-data U2NET_HOME=/opt/matplace-py/u2net /opt/matplace-py/bin/python engines/python/photo_cut.py --probe
+    → {"ok": true, "rembg": "...", "model_present": true, "home": "/opt/matplace-py/u2net"}
+php artisan farm:photo --probe                                             → background remover: available
+php artisan farm:photo /tmp/foto.jpg --order=F26-000222 --bg=studio          → prints/<token>/photo-web.jpg
+```
+
+Bez kroku 1 a 2 vše dál funguje: `--probe` řekne „not available“, fotky se jen napasují (`photo_meta.cut = false`) a po
+instalaci stačí fotku nahrát znovu. Pozor na paměť: onnxruntime drží model (~0,3 GB) po dobu běhu skriptu; skript končí po
+každé fotce. Nasazení dávky: `php artisan migrate` (dva nullable sloupce), `npm run build` (farm.ts), `storage:link` už je.
+
+## 13.4 Dávka 2: šablona Shorts, tituly, popisy, UTM, připnutý komentář
+
+### 13.4.1 Nová šablona Shorts (`TimelapseCutter::short`, od příštího videa)
+
+Svislé 1080×1920 (dřív čtverec 1080×1080), `config/youtube.php` `cut.short`: `growth` 15 až 25 s, `hook` 1 s, `hold`
+1,5 s, `end` 3 s, 24 fps.
+
+1. **Háček (první sekunda):** první snímek ztmavený (`drawbox black@0.55`) a přes něj věta podle nástroje zakázky
+   (`FarmVideos::hook`, texty `youtube.hook.*` cs/en/es: „Z jedné fotky → busta“, „Zákazník poslal rozměr → krabička“,
+   „Jméno → medaile s řetízkem“…; vlastní soubor zákazníka „Z modelu → výtisk za 1 h 33 min“), zalomená na šířku
+   (`wrap`). Fotku zákazníka u modelů z fotky **neukazujeme**: souhlas `video_consent` se týká časosběru, ne zdrojové
+   fotky obličeje; ukáže se jen háček.
+2. **Tělo:** čtverec podložky (`crop` tiskárny) přes celou šířku, za ním tentýž snímek rozmazaný a ztmavený
+   (`boxblur=20:4`, `eq=brightness=-0.15`); poslední snímek drží 1,5 s.
+3. **Konec (3 s):** složená fotka výtisku z dávky 1 (`PrintPhotos`, varianta `short` 9:16) prolnutá 0,4 s; bez fotky
+   zůstane hotový výtisk na podložce (nikdy prázdná podložka). Přes obraz „Cena: 99 Kč“ (`FarmVideos::priceLine`,
+   `price_total` zaokrouhlená na celé koruny nebo eura; u tisku zdarma nic), adresa nástroje `matplace.com/tools/figure`
+   (`address`), dole otázka „Co vytisknout příště?“ (`youtube.video.ask_short`). Logo v rohu po celou dobu, hudba z
+   Audio Library jako dosud.
+4. **16:9 duplikát** se už nenahrává: `FarmVideos::queueFor` řadí k YouTube jen Short; 16:9 se dál staví (zákaznické
+   video, týdenní sestřih) a nahrává jen s `YOUTUBE_WIDE_UPLOADS=true` (`youtube.wide_uploads`).
+
+Místní render skutečným ffmpeg 9 (`FFMPEG_BIN`, test `test_real_videos_from_numbered_frames…`): Short 1080×1920,
+25,1 s při 200 snímcích (háček 1 + růst 20 + držení 1,5 + konec 3; s fotkou o 0,4 s kratší kvůli prolnutí), zvuk ano.
+Ukázka: `C:\Users\roman\AppData\Local\Temp\claude\c--Users-roman-Documents-MatPlace-conceprt19092026\18e3d80f-ba4e-42a8-b6d7-75b3417a895b\scratchpad\video-samples\short-sample.mp4`
+(syntetické snímky testu: šedá podložka, oranžový kvádr) a snímky `short-at-0.5.jpg` (háček), `short-at-12.jpg` (tělo),
+`short-at-end.jpg` (konec s cenou 120 Kč, adresou, otázkou). Skutečný časosběr s fotkou vznikne první zakázkou po
+nasazení (frames + fotka z fotoboxu).
+
+### 13.4.2 Tituly, popisy, hashtagy, UTM, komentář (`FarmVideos`)
+
+- **Titul** (`defaultTitle`): „[co vzniklo] – [doba] tisku“ bez „za 29 s“: nástroj → `youtube.title.<kind>` („Busta
+  z jedné fotky – 1 h 33 min tisku“, „Organizér přesně do šuplíku – 2 h 27 min tisku“), vlastní soubor → očištěný název
+  modelu („Louskacek – 6 h 10 min tisku“), bez čitelného názvu „Co vyroste za 13 min 3D tisku“. Unikátní na kanálu:
+  stejný titul u jiné zakázky dostane barvu „(Bílá)“, třetí číslo zakázky.
+- **Popis** (`defaultDescription`): první řádek odkaz na konkrétní nástroj s UTM; „hotový kus a cenu vidíte na konci“;
+  materiál, tiskárna, doba; hudba; hashtagy Shortu `#Shorts #3dtisk #3dtiskarna #dárek` + jeden k tématu
+  (`youtube.hashtag.<kind>`: `#figurka`, `#qrkod`, `#krabička`, `#váza`, `#medaile`, `#vánoce`…, vlastní soubor
+  `#3dprinting`). 16:9 a týdenní sestřih beze změny hashtagů.
+- **`utm_content=<videoId>`**: `link(order, kind, source, target, content)` a `linkOf(video)` přidají obsah, jakmile má
+  video `youtube_id`; popis napsaný před uploadem se po uploadu přepíše (`withVideoId`: za `utm_campaign=video_<kind>`
+  doplní `&utm_content=<id>`, kde chybí) a při zveřejnění (`publish`) projde týmž, takže i adminem upravený popis odkaz
+  s id má. Facebook a Instagram texty (`forChannel`) id nesou také.
+- **Připnutý komentář** (`commentText`): „Udělejte si vlastní: <url s utm_content> Cena tohoto výtisku: 99 Kč.“
+  (`youtube.video.comment`); mechanismus beze změny (`YOUTUBE_PIN_COMMENT`, scope force‑ssl, připnutí ručně v Studiu).
+
+### 13.4.3 rembg na produkci (řídící 27. 10.: numba cache, chybějící model)
+
+- `RembgBackgroundRemover` předává skriptu `NUMBA_CACHE_DIR` (`engines.photo_numba_cache`, výchozí
+  `storage/app/numba`, složku vytvoří) vedle `U2NET_HOME`; `available()` = rembg nainstalován **a** model
+  `u2net.onnx` v `U2NET_HOME` (`probe()` si sondu pamatuje hodinu, klíč podle interpretu i domova modelu).
+- `photo_cut.py` bez modelu končí `model_missing` místo stahování z workeru; `PrintPhotos::attach` chybu výřezu
+  chytí a fotku jen napasuje (`cut=false`), úloha nespadne.
+- `farm:photo --probe` říká zvlášť „rembg: yes (2.0.85)“, „model u2net.onnx: no (looked in …)“ a výsledek.
+- Test `tests/Unit/RembgBackgroundRemoverTest` (sonda bez modelu = nedostupný, proměnné prostředí skriptu, složka
+  cache, chyba bez rembg).
+
+### 13.4.4 Ověření dávky 2
+
+`YouTubeVideosTest|FarmVideosCutTest|PrintPhotosTest|RembgBackgroundRemoverTest|SocialVideosTest|FarmHowtoVideoTest|FarmAdminNotifyTest|FarmPagesTest` = 58 testů, 1 825 asercí, zelené (2 přeskočené bez `FFMPEG_BIN`); `FarmVideosCutTest` s `FFMPEG_BIN` = 7 testů včetně skutečného renderu; pint prošel. Upravené testy: rozsah Shortu 15 až 25 s, délka a rozměry 1080×1920, háček, adresa a otázka v textech, fotka o 0,4 s kratší; hashtagy, komentář s cenou a `utm_content` ve Facebook/Instagram odkazech; 16:9 pár jen s `youtube.wide_uploads`.

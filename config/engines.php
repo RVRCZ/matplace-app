@@ -14,6 +14,12 @@ return [
     'assistant' => env('ENGINE_ASSISTANT', 'claude'),     // claude | fake
     'social' => env('ENGINE_SOCIAL', 'meta'),             // meta | fake
     'mailbox' => env('ENGINE_MAILBOX', 'gmail'),          // gmail | fake — the shared inbox the admin answers from
+    // the background off a photo of a finished print (App\Domain\Farm\PrintPhotos): rembg | fake | none; rembg asks the
+    // interpreter once an hour whether it is installed and otherwise the photo is used as it is
+    'photo' => env('ENGINE_PHOTO', 'rembg'),
+    'photo_home' => env('U2NET_HOME', '/opt/matplace-py/u2net'),   // where rembg finds the u2net model (passed to the script as U2NET_HOME)
+    // numba (pymatting inside rembg) compiles into a cache next to its package, which www-data cannot write: a folder of ours instead
+    'photo_numba_cache' => env('NUMBA_CACHE_DIR', storage_path('app/numba')),
     // where the admin looks for models to add to the inspiration catalogue (the home page searches `search` below)
     'admin_search' => ['printables', 'makerworld', 'makeronline'],
 
