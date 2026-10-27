@@ -1851,5 +1851,6 @@
     "farm.order.pay_note_min": "El pago mínimo con tarjeta es :amount; lo que supere el precio queda como crédito para su próxima impresión.",
     "farm.order.step_material_hint": "Elija el color y los ajustes de impresión. Todavía no paga nada; el precio sigue su elección.",
     "farm.order.step_order_hint": "Elija la entrega y pague con tarjeta o con el crédito. La impresión empieza al pagar.",
-    "home.benefit.farm_from": "O una impresión con nosotros desde :price"
+    "home.benefit.farm_from": "O una impresión con nosotros desde :price",
+    "site.examples.item.svg_to_stl": "Silueta de gato de un SVG, :size"
 }

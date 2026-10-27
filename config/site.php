@@ -15,5 +15,7 @@ return [
         ['tool' => 'qr', 'mm' => 70, 'size' => '70 × 83 × 3 mm', 'material' => 'PLA+', 'grams' => 14, 'minutes' => 25, 'price' => ['CZK' => 99], 'calc' => 'lomf0wzlshw4', 'photo' => null],
         ['tool' => 'organizer', 'mm' => 200, 'size' => '200 × 120 × 40 mm', 'material' => 'PLA+', 'grams' => 115, 'minutes' => 147, 'price' => ['CZK' => 250], 'calc' => 'l1gr0izblzwr', 'photo' => null],
         ['tool' => 'box', 'mm' => 84, 'size' => '84 × 54 × 32 mm', 'material' => 'PLA+', 'grams' => 28, 'minutes' => 34, 'price' => ['CZK' => 99], 'calc' => 'nku29wz4vieb', 'photo' => null],
+        // the search entry pages of session N1 (docs/AP.md §2): the cat of the SVG to STL page, priced on matplace.com on 27 Oct 2026; the photo comes from session N3
+        ['tool' => 'svg_to_stl', 'mm' => 80, 'size' => '80 × 81 × 6 mm', 'material' => 'PLA', 'grams' => 9.6, 'minutes' => 17, 'price' => ['CZK' => 99], 'calc' => 'lfa9iggn3hls', 'photo' => null],
     ],
 ];

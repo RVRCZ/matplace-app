@@ -1851,5 +1851,6 @@
     "farm.order.pay_note_min": "Nejmenší platba kartou je :amount; co přesahuje cenu, zůstane jako kredit na další tisk.",
     "farm.order.step_material_hint": "Vyberte barvu a nastavení tisku. Zatím nic neplatíte; cena se přepočítá podle vaší volby.",
     "farm.order.step_order_hint": "Zvolte doručení a zaplaťte kartou nebo z kreditu. Tisk začne po zaplacení.",
-    "home.benefit.farm_from": "Nebo tisk u nás od :price"
+    "home.benefit.farm_from": "Nebo tisk u nás od :price",
+    "site.examples.item.svg_to_stl": "Silueta kočky ze SVG, :size"
 }

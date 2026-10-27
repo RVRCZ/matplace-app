@@ -1851,5 +1851,6 @@
     "farm.order.pay_note_min": "The smallest card payment is :amount; whatever exceeds the price stays as credit for your next print.",
     "farm.order.step_material_hint": "Pick the colour and the print settings. Nothing to pay yet; the price follows your choice.",
     "farm.order.step_order_hint": "Choose the delivery and pay by card or from credit. The print starts once paid.",
-    "home.benefit.farm_from": "Or a print by us from :price"
+    "home.benefit.farm_from": "Or a print by us from :price",
+    "site.examples.item.svg_to_stl": "Cat silhouette from an SVG, :size"
 }

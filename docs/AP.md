@@ -147,3 +147,52 @@ hledání (27. 10.). Stupnice: nízký = jednotky až desítky hledání měsí�
 5. **Dávky**: 1 = svg_to_stl, repair, check; 2 = hollow, split, gcode; 3 = relief, map, qr, organizer. Po každé push
    a zpráva řídící.
 6. Každý nástroj má jinou osnovu otázek podle toho, na co se lidé ptají (viz §1.1), žádný společný vzor.
+
+## 3. Dávka 1: SVG do STL, oprava, kontrola (27. 10. 2026)
+
+### 3.1 Co se změnilo
+
+- `app/Support/ToolSeo.php`: `heading()` (H1 na dotaz, nepovinný klíč). `resources/views/tools/page.blade.php`: H1 je
+  `heading`, když je; název nástroje pak stojí v řádku nad ním za odkazem „Nástroje“ (`id="tool-name"`). Ostatní
+  stránky beze změny.
+- `lang/{cs,en,es}/tools_seo/{svg_to_stl,repair,check}.php`: title a heading na dotaz, description do 155 znaků,
+  dva odstavce (co umí, limity, příklad s čísly), kroky, 6 otázek s jinou osnovou pro každý nástroj.
+- `lang/{cs,en,es}/landing.php` + `config/landing.php`: bloky Než objednáte (6 otázek, 2 s příznakem `farm`),
+  Pro koho (3), Kam dál (podobné nástroje + články) pro všechny tři nástroje.
+- `config/site.php`: položka `example_items` pro SVG do STL (kočka, `/c/lfa9iggn3hls`, `photo => null`, místo pro
+  fotku od N3); text `site.examples.item.svg_to_stl` přes `lang/src/tools_seo_n1.json` a `lang_add.py`.
+- `tests/Feature/LandingPagesTest.php`: tři nové stránky v seznamu `PAGES`.
+- `config/tools.php` beze změny: SVG do STL článek nemá, dostane ho v blogu (§5), `article` doplním s ním.
+
+### 3.2 Čísla a odkud jsou
+
+| nástroj | příklad | zdroj |
+|---|---|---|
+| SVG do STL | kočka z knihovny 80 mm, vytažení 6 mm: 80 × 81 × 6 mm, 2 568 trojúhelníků, 17,7 cm³; 9,6 g PLA, 17 min, 99 Kč | produkce 27. 10. jako návštěvník (`POST /api/tools/param` kind logo, mode cutout; kalkulace PLA standard), User‑Agent `matplace-n1-seo`, `/c/lfa9iggn3hls` |
+| oprava | busta 60 × 52 × 78 mm, 4 053 trojúhelníků, uměle rozbitá (3 díry, 25 zdvojených, 40 otočených ploch): 36 otevřených hran, 75 hran sdílených více plochami, 51 těles → 1 těleso, 4 068 trojúhelníků, objem 80,6 cm³, 1,4 s | `tests/fixtures/mold/bust.stl` rozbitá skriptem (scratchpad `repair/break.py`), nahraná na produkci (`/api/uploads`, `/api/files/{uuid}/repair`), stejná čísla dal lokální `repair_tool.py` (2,5 s) |
+| kontrola | tatáž busta: rozměr v pořádku, chyba „síť není uzavřená“, doporučení „51 samostatných těles“ | produkce, `check` z `/api/files/{uuid}` |
+| cena opravené busty „kolem 110 Kč, asi hodinu“ | odhad z busty 80 mm (99 Kč, 59 min, 14 g, AH.md §11) a objemu 80,6 cm³ (asi 100 g plná) | nepočítáno kalkulací, proto „kolem“ a „asi“ |
+
+Rozbitá busta na produkci: soubory `ab03c6d8-c3eb-49df-8b12-4c69e37fc86c` (nahraná) a `318a9751-3e97-4845-be09-1791805a91f9` (opravená).
+
+### 3.3 Ověření
+
+- Worktree neměl `public/build/manifest.json`, první běh testů proto dal 500 na každé stránce; po `npm run build`
+  spuštěno znovu: `LandingPagesTest|ToolPageTest|SeoTest|ToolsCatalogTest|AuditRestTest` (a CatalogSeoTest, který
+  filtr chytil) **49 testů, 10 437 assertions, OK** (358 s). `pint --dirty` čistý. TypeScript se neměnil.
+- Délky: title 50 až 59 znaků, description 151 až 157, heading 31 až 40 ve všech třech jazycích.
+- JSON‑LD: na všech 9 stránkách (3 nástroje × cs/en/es) dva platné bloky, HowTo a FAQPage s 10 otázkami (6 z
+  častých otázek + 4 z „Než objednáte“ bez příznaku farm; s otevřenou farmou 12). Ověřeno curl + json.loads na
+  lokálním serveru.
+- Sitemapa: `php artisan matplace:sitemap` lokálně, všechny tři stránky v `sitemap-tools-{cs,en,es}.xml`.
+- Snímky `docs/img/seo-n1/{svg-to-stl,repair,check}-{390,1280}-cs-1.webp` (`scripts/review_round2.mjs`, lokální server
+  na portu 8077; **port 8013 drží server jiné session**, proto první snímky ukázaly cizí worktree se starými texty).
+  H1 je na dotaz, název nástroje v řádku nad ním, bez vodorovného posunu, bez chyb skriptu.
+- Jen lokálně: SVG do STL na 390 px hlásí „Z těchto rozměrů se tvar nepodařilo vytvořit“ (na 1280 px model vznikne;
+  na matplace.com je na 390 px v pořádku, ověřeno stejným skriptem). Lokální engine, ne texty; nic jsem s tím nedělala.
+
+### 3.4 Co zůstalo
+
+- Fotky výtisků (N3): kočka ze SVG (`example_items`), opravená busta není k focení (jen soubor).
+- Článek pro SVG do STL (§5 blog) a `article` v `config/tools.php`.
+- Nasazení: řídící; po něm Search Console per URL (`/tools/svg-to-stl`, `/tools/repair`, `/tools/check` ×3 jazyky).

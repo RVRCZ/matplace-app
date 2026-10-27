@@ -49,10 +49,12 @@
 <div id="tool-page" data-tool="{{ $tool }}" data-module="{{ $module }}" class="grid gap-3 lg:grid-cols-[340px_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-4 lg:gap-y-0">
     {{-- ── the name and what it is ── --}}
     <header id="tool-head" class="order-1 min-w-0 lg:col-start-1 lg:row-start-1">
-        <a href="{{ route('tools') }}" class="-my-2 inline-flex min-h-11 items-center gap-1 text-sm text-muted hover:text-ink"><x-icon name="arrow-left" class="h-4 w-4" />{{ __('tools.title') }}</a>
+        @php $heading = \App\Support\ToolSeo::heading($tool); @endphp
+        {{-- a page people search for has its H1 on their query (tools_seo 'heading', docs/AP.md §2); the tool's name then stays on this line --}}
+        <a href="{{ route('tools') }}" class="-my-2 inline-flex min-h-11 items-center gap-1 text-sm text-muted hover:text-ink"><x-icon name="arrow-left" class="h-4 w-4" />{{ __('tools.title') }}</a>@if($heading)<span class="-my-2 inline-flex min-h-11 items-center text-sm text-muted" id="tool-name"><span class="mx-1.5" aria-hidden="true">·</span>{{ __('tools.'.$tool.'.title') }}</span>@endif
         {{-- the name and undo/redo side by side; with the text at 200 % the buttons go under the name, never off the screen --}}
         <div class="mt-1 flex flex-wrap items-start justify-between gap-2">
-            <h1 class="min-w-0 flex-1 basis-48 text-2xl font-semibold leading-tight text-ink">{{ __('tools.'.$tool.'.title') }}</h1>
+            <h1 class="min-w-0 flex-1 basis-48 text-2xl font-semibold leading-tight text-ink">{{ $heading ?? __('tools.'.$tool.'.title') }}</h1>
             <div class="flex shrink-0 gap-1" role="group" aria-label="{{ __('toolpage.history') }}">
                 <button type="button" id="tool-undo" class="tool-icon-btn" title="{{ __('toolpage.undo') }} (Ctrl+Z)" aria-label="{{ __('toolpage.undo') }}" disabled><x-icon name="undo-2" class="h-4 w-4" /></button>
                 <button type="button" id="tool-redo" class="tool-icon-btn" title="{{ __('toolpage.redo') }} (Ctrl+Shift+Z)" aria-label="{{ __('toolpage.redo') }}" disabled><x-icon name="redo-2" class="h-4 w-4" /></button>

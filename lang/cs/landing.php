@@ -108,4 +108,53 @@ return [
             ['t' => 'Dárkové balení', 'text' => 'Krabička na míru dárku, v barvě, kterou si vyberete, třeba s výřezem na stuhu.'],
         ],
     ],
+
+    // vstupní stránky session N1 (docs/AP.md): SVG do STL, oprava, kontrola
+    'svg_to_stl' => [
+        'order' => [
+            ['q' => 'Jak vysoko tvar vytáhnout, aby se dal vytisknout a držel?', 'a' => 'Nejméně 0,6 mm, to jsou tři vrstvy po 0,2 mm; štítek nebo nálepka na dveře snese 2 až 3 mm, přívěsek na klíče 4 až 6 mm a tvar, který má stát sám, 20 mm a víc. Čím výš, tím víc gramů a minut; kalkulace to přepočítá po každé změně.'],
+            ['q' => 'Jak tenké čáry se vytisknou?', 'a' => 'Tryska 0,4 mm potřebuje dvě linky vedle sebe, tedy aspoň 0,8 mm. Nástroj čáry pod 0,8 mm označí předem; v editoru je zesilte, nebo tvar zvětšete.'],
+            ['q' => 'Kolik stojí vytištěný tvar a jak dlouho se tiskne?', 'farm' => true, 'a' => 'Kočka 80 mm vytažená na 6 mm má 9,6 g a tiskne se 17 minut, u nás za 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy). Větší nebo vyšší tvar ukáže kalkulace v gramech, minutách a korunách dřív, než cokoli objednáte.'],
+            ['q' => 'Můžu mít motiv jinou barvou než podklad?', 'a' => 'Vytažený obrys je jedna barva. Když má být motiv na destičce jinou barvou, přepněte provedení na reliéf: barvy pak leží nad sebou a tiskárna je zvládne výměnou filamentu ve výšce destičky, u nás i doma.'],
+            ['q' => 'Jak dlouho trvá doručení?', 'farm' => true, 'a' => 'Odesíláme v den, kdy tisk skončí, v pracovní dny. Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů, na výdejní místo za :cz_point, domů za :cz_home; na Slovensko od :sk_point, do EU od :eu_point.'],
+            ['q' => 'Můžu výsledek dál upravovat?', 'a' => 'Ano. Vzniklý STL je obyčejný model: v kalkulaci ho zvětšíte nebo zmenšíte, nástroj Puzzle ho rozřeže na dílky, Forma z něj udělá formu na odlévání a Vykrajovátko ze stejného obrysu vyrobí vykrajovátko na těsto.'],
+        ],
+        'who' => [
+            ['t' => 'Logo firmy nebo klubu', 'text' => 'Logo z vektorového souboru jako cedulka na stůl, přívěsek na klíče nebo znak na dveře, 60 až 120 mm, přesně podle grafiky.'],
+            ['t' => 'Přesný díl z 2D výkresu', 'text' => 'Rozpěrka, podložka, šablona nebo vložka, kterou máte nakreslenou v CADu nebo v Inkscapu: šířka v milimetrech, otvory zůstanou otvory.'],
+            ['t' => 'Kresba a ikona', 'text' => 'Dětská kresba převedená na obrys, ikona z Noun Project nebo silueta z naší knihovny jako ozdoba, magnetka nebo přívěsek.'],
+        ],
+    ],
+
+    'repair' => [
+        'order' => [
+            ['q' => 'Jak poznám, že model potřebuje opravu?', 'a' => 'Slicer hlásí non‑manifold, otevřené hrany nebo neuzavřenou síť, v náhledu chybí kousky povrchu, nebo výtisk má díry a vrstvy navíc. Když si nejste jistí, nejdřív model nahrajte do kontroly; ta řekne, co je špatně, a opravu nabídne jedním tlačítkem.'],
+            ['q' => 'Jak dlouho oprava trvá a jak velký soubor zvládne?', 'a' => 'Soubor do 120 MB. Běžný model je hotový za pár vteřin, síť s miliony trojúhelníků do minuty; stránka říká, co se právě děje.'],
+            ['q' => 'Kolik stojí tisk opraveného modelu?', 'farm' => true, 'a' => 'Oprava nic nestojí. Tisk u nás spočítá kalkulace z gramů a minut; nejnižší cena zakázky je 99 Kč a busta 60 × 52 × 78 mm z příkladu vyjde kolem 110 Kč (PLA, bez dopravy).'],
+            ['q' => 'Pomůže oprava i modelu pro pryskyřicový tisk?', 'a' => 'Ano, STL je pro FDM i pryskyřici stejný a uzavřená síť je potřeba v obou. Pro pryskyřici model po opravě vydutíte s odtokovými otvory, ušetříte pryskyřici a díl nepraskne.'],
+            ['q' => 'Jak výtisk dostanu?', 'farm' => true, 'a' => 'Pošleme ho Zásilkovnou na výdejní místo (v Česku :cz_point) nebo na adresu v EU. Odesíláme v den, kdy tisk skončí, v pracovní dny; jakmile balík předáme, přijde e‑mail se sledováním.'],
+            ['q' => 'Co když slicer po opravě pořád hlásí chybu?', 'a' => 'Ve zprávě stojí, co se nepodařilo: chybějící velký kus povrchu nebo stěnu bez tloušťky nástroj nedoplní. Zbytek je ruční práce v Blenderu nebo Meshmixeru; drobné vady slicer často přejde a výtisk se povede.'],
+        ],
+        'who' => [
+            ['t' => 'Model z internetu', 'text' => 'Držák, krytka nebo figurka z Printables, Thingiverse nebo MakerWorldu, kterou slicer odmítá. Oprava trvá vteřiny a nemění rozměry.'],
+            ['t' => 'Sken z telefonu', 'text' => 'Fotogrammetrie a skenery nechávají díry a smítka. Oprava je zacelí a spojí úlomky, tvar skenu zůstane.'],
+            ['t' => 'Export z CADu nebo z hry', 'text' => 'Soubor ze SketchUpu, Tinkercadu nebo z herního modelu s převrácenými a zdvojenými plochami. Oprava je otočí a odstraní.'],
+        ],
+    ],
+
+    'check' => [
+        'order' => [
+            ['q' => 'Hlídá kontrola i tloušťku stěn?', 'a' => 'Jen nejtenčí rozměr celého modelu: pod 0,8 mm je chyba, protože tryska 0,4 mm takovou stěnu nevytiskne. Tenké místo uvnitř jinak silného modelu kontrola nenajde; to ukáže až slicer.'],
+            ['q' => 'Co se stane s modelem, který neprojde?', 'a' => 'Díry a převrácené plochy pošlete jedním tlačítkem do opravy. Model větší než tiskárna zmenšíte v kalkulaci měřítkem, nebo ho rozdělíte na díly s kolíky. Špatné jednotky vyřeší nové uložení v milimetrech.'],
+            ['q' => 'Projde-li kontrola, můžu rovnou objednat tisk?', 'farm' => true, 'a' => 'Ano. Tlačítko k ceně otevře model v kalkulaci, kde vidíte gramy, dobu tisku a cenu; nejnižší cena zakázky je 99 Kč. Stejná kontrola běží i v kalkulaci, takže nic nehlásí dvakrát.'],
+            ['q' => 'Kontroluje se i STEP, 3MF a OBJ?', 'a' => 'Ano. STEP z CADu se převede na síť a zkontroluje stejně jako STL; u 3MF se kontroluje tvar, barvy a nastavení tisku zůstávají stranou.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Dobu tisku ukáže kalkulace. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Ukládáte můj soubor?', 'a' => 'Soubor slouží ke kontrole, k opravě a ke kalkulaci a nikomu dalšímu ho neposíláme. Kontrola do něj nezasahuje; stažený model je stejný soubor, jaký jste nahráli.'],
+        ],
+        'who' => [
+            ['t' => 'Před tiskem doma', 'text' => 'Stažený model před slicováním: za pár vteřin víte, jestli má správné jednotky, uzavřenou síť a vejde se na podložku.'],
+            ['t' => 'Kroužek, škola, FabLab', 'text' => 'Soubory od studentů z Tinkercadu a SketchUpu: zpráva řekne každému, co má opravit, bez instalace programu.'],
+            ['t' => 'Před objednávkou u nás', 'text' => 'Stejnou kontrolou projde každý model na naší farmě. Kdo ji udělá předem, ví, že objednávka projde bez dotazů.'],
+        ],
+    ],
 ];
