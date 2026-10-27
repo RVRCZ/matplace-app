@@ -4,9 +4,9 @@
  * Response headers of the pages (App\Http\Middleware\SecurityHeaders, TODO #45). HSTS, nosniff and Referrer-Policy
  * are set by nginx (snippets/matplace-app-common.conf) and are not repeated here.
  *
- * The Content-Security-Policy starts in `report` mode: the browser sends what it would have blocked to /csp-report
- * (storage/logs/csp.log) and blocks nothing. After a week of clean reports the mode goes to `enforce` (then also
- * X-Frame-Options). The sources below are everything the pages load from elsewhere on 25 Oct 2026: Google Analytics 4
+ * The Content-Security-Policy ran in `report` mode from 25 to 27 Oct 2026 (the browser sends what it would have blocked to
+ * /csp-report, storage/logs/csp.log, and blocks nothing); since 27 Oct it is enforced (then also X-Frame-Options). The
+ * reports keep coming in enforce mode too: a new third party shows up there first. The sources below are everything the pages load from elsewhere on 25 Oct 2026: Google Analytics 4
  * and the Meta pixel (only with consent, partials/measure.blade.php), Cloudflare Turnstile on the registration page,
  * the Packeta pickup-point widget on the order page, YouTube embeds of the farm's videos. Stripe Checkout and the OAuth
  * logins are redirects of the whole page, which the policy does not restrict. The 3D previews draw into canvases and
@@ -31,7 +31,7 @@ return [
 
     'csp' => [
         // off | report | enforce
-        'mode' => env('CSP_MODE', 'report'),
+        'mode' => env('CSP_MODE', 'enforce'),   // enforced since 27 Oct 2026 (Roman: "zapni"); two days of reports showed only the sources below
         'report_uri' => '/csp-report',
         'directives' => [
             'default-src' => ["'self'"],
