@@ -28,6 +28,12 @@ final class YouTubeError extends \RuntimeException
         return in_array($this->reason, ['quotaExceeded', 'uploadLimitExceeded', 'rateLimitExceeded', 'userRateLimitExceeded', 'dailyLimitExceeded'], true);
     }
 
+    /** YouTube no longer knows the video (deleted in Studio): nothing to retry, our row says missing. */
+    public function isMissing(): bool
+    {
+        return in_array($this->reason, ['videoNotFound', 'notFound', 'playlistItemNotFound'], true) || $this->status === 404;
+    }
+
     /** The stored grant no longer works (revoked, password changed…): the channel has to be connected again. */
     public function needsReconnect(): bool
     {

@@ -51,8 +51,8 @@ final class ChannelCurator
                 'novy_titulek' => $order && in_array($video->kind, [FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE], true) ? $this->videos->defaultTitle($order, $video->kind) : '',
                 'novy_popis' => $order && in_array($video->kind, [FarmVideo::KIND_SHORT, FarmVideo::KIND_WIDE], true) ? $this->videos->defaultDescription($order, $video->music, $video->kind, $video->youtube_id) : '',
                 'playlist' => (string) ($this->playlistFor($video) ?? ''),
-                'duplikat' => $twin ? 'ano' : 'ne',
-                'navrh' => $twin ? 'unlisted' : '',
+                'duplikat' => $twin ? (empty($video->meta['unlisted_at']) ? 'ano' : 'ano (unlisted)') : 'ne',
+                'navrh' => $twin && empty($video->meta['unlisted_at']) ? 'unlisted' : '',
             ];
         }
         if ($api) {
@@ -122,6 +122,9 @@ final class ChannelCurator
                 continue;
             }
             $video = FarmVideo::where('youtube_id', $id)->first();
+            if ($video && $video->status === FarmVideo::STATUS_MISSING) {
+                continue;   // YouTube no longer knows it: nothing to rename
+            }
             $title = trim((string) ($row['novy_titulek'] ?? ''));
             $description = trim((string) ($row['novy_popis'] ?? ''));
             $titleNow = (string) ($video?->title ?? $row['dnesni_titulek'] ?? '');
@@ -130,8 +133,8 @@ final class ChannelCurator
             if (($title !== '' && $title !== $titleNow) || ($description !== '' && FarmVideos::withVideoId($description, $id) !== $descriptionNow)) {
                 $retitle[] = ['id' => $id, 'from' => $titleNow, 'to' => $title !== '' ? $title : $titleNow, 'description' => $description !== '' && $description !== $descriptionNow];
             }
-            if (trim((string) ($row['navrh'] ?? '')) === 'unlisted') {
-                $unlist[] = $id;
+            if (trim((string) ($row['navrh'] ?? '')) === 'unlisted' && empty($video?->meta['unlisted_at'])) {
+                $unlist[] = $id;   // once: a twin we hid already is not sent again
             }
         }
 
@@ -140,10 +143,11 @@ final class ChannelCurator
 
     /**
      * Renames (and, with $unlist, hides) on YouTube what the plan says, 50 quota units a video, and keeps the new
-     * texts on our rows. Dry run (the default of the command) only returns the plan.
+     * texts on our rows. A video YouTube no longer knows (deleted in Studio) is marked missing and left alone from
+     * then on. Dry run (the default of the command) only returns the plan.
      *
      * @param  list<array<string, string>>  $rows
-     * @return array{retitled: int, unlisted: int, failed: list<string>}
+     * @return array{retitled: int, unlisted: int, failed: list<string>, missing: list<string>}
      */
     public function apply(array $rows, bool $unlist = false): array
     {
@@ -152,7 +156,7 @@ final class ChannelCurator
         foreach ($rows as $row) {
             $byId[trim((string) ($row['id'] ?? ''))] = $row;
         }
-        $done = ['retitled' => 0, 'unlisted' => 0, 'failed' => []];
+        $done = ['retitled' => 0, 'unlisted' => 0, 'failed' => [], 'missing' => []];
         foreach ($plan['retitle'] as $change) {
             $video = FarmVideo::where('youtube_id', $change['id'])->first();
             $description = trim((string) ($byId[$change['id']]['novy_popis'] ?? '')) ?: (string) ($video?->description ?? '');
@@ -161,22 +165,45 @@ final class ChannelCurator
                 $video?->update(['title' => $change['to'], 'description' => $description !== '' ? FarmVideos::withVideoId($description, $change['id']) : $video->description]);
                 $done['retitled']++;
             } catch (YouTubeError $e) {
-                $done['failed'][] = $change['id'].': '.$e->getMessage();
+                if ($e->isMissing()) {
+                    $this->gone($change['id'], $e->getMessage());
+                    $done['missing'][] = $change['id'];
+                } else {
+                    $done['failed'][] = $change['id'].': '.$e->getMessage();
+                }
             }
         }
         if ($unlist) {
             foreach ($plan['unlist'] as $id) {
                 try {
                     $this->youtube->setPrivacy($id, 'unlisted');
-                    FarmVideo::where('youtube_id', $id)->update(['meta' => array_merge((array) (FarmVideo::where('youtube_id', $id)->value('meta') ?? []), ['unlisted_at' => now()->toIso8601String()])]);
+                    FarmVideo::where('youtube_id', $id)->update(['meta' => array_merge((array) (FarmVideo::where('youtube_id', $id)->value('meta') ?? []), ['unlisted_at' => now()->toIso8601String(), 'privacy' => 'unlisted'])]);
                     $done['unlisted']++;
                 } catch (YouTubeError $e) {
-                    $done['failed'][] = $id.': '.$e->getMessage();
+                    if ($e->isMissing()) {
+                        $this->gone($id, $e->getMessage());
+                        $done['missing'][] = $id;
+                    } else {
+                        $done['failed'][] = $id.': '.$e->getMessage();
+                    }
                 }
             }
         }
 
         return $done;
+    }
+
+    /** YouTube no longer knows the video: our row says missing, and the table, the stats and the playlists leave it out. */
+    private function gone(string $youtubeId, string $why): void
+    {
+        FarmVideo::where('youtube_id', $youtubeId)->whereIn('status', [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED])
+            ->update(['status' => FarmVideo::STATUS_MISSING, 'error' => mb_substr('YouTube: '.$why, 0, 500)]);
+    }
+
+    /** Public by what we know: not hidden by us (meta.unlisted_at) and not reported private or unlisted by YouTube (meta.privacy). */
+    private function publicByOurBook(FarmVideo $video): bool
+    {
+        return empty($video->meta['unlisted_at']) && in_array((string) ($video->meta['privacy'] ?? 'public'), ['public', ''], true);
     }
 
     /** The playlist a video belongs to by the tool of its print (config youtube.playlists), the how-to and weekly cuts by their kind; null when none fits. */
@@ -195,11 +222,15 @@ final class ChannelCurator
 
     /**
      * The playlists as they should be: for every name whether it exists on the channel (the ids we kept, else the
-     * channel's own list when asked) and the public videos of ours that belong in it and are not in it yet.
+     * channel's own list when asked) and the public videos of ours that belong in it and are not in it yet. Public
+     * means public: not the twins we unlisted (meta.unlisted_at), not what YouTube reports unlisted or private, and
+     * when the channel is asked (--apply) a videos.list (1 unit per 50) checks every candidate's privacy today; one
+     * YouTube no longer knows is marked missing. $skip leaves named video ids out by hand.
      *
+     * @param  list<string>  $skip
      * @return array<string, array{id: ?string, description: string, add: list<string>, has: int}>
      */
-    public function playlistPlan(bool $askChannel = false): array
+    public function playlistPlan(bool $askChannel = false, array $skip = []): array
     {
         $ids = $this->playlistIds();
         if ($askChannel) {
@@ -211,7 +242,22 @@ final class ChannelCurator
         foreach ((array) config('youtube.playlists') as $name => $spec) {
             $plan[$name] = ['id' => $ids[$name] ?? null, 'description' => (string) ($spec['description'] ?? ''), 'add' => [], 'has' => 0];
         }
-        foreach (FarmVideo::with('order.modelFile')->whereNotNull('youtube_id')->where('status', FarmVideo::STATUS_PUBLISHED)->orderBy('published_at')->get() as $video) {
+        $videos = FarmVideo::with('order.modelFile')->whereNotNull('youtube_id')->where('status', FarmVideo::STATUS_PUBLISHED)->orderBy('published_at')->orderBy('id')->get()
+            ->filter(fn (FarmVideo $v) => $this->publicByOurBook($v) && ! in_array((string) $v->youtube_id, $skip, true))->values();
+        if ($askChannel && $videos->isNotEmpty()) {
+            $facts = $this->youtube->statistics($videos->pluck('youtube_id')->all());
+            foreach ($videos as $video) {
+                $f = $facts[$video->youtube_id] ?? null;
+                if ($f === null && $facts !== []) {
+                    // a public video videos.list leaves out is gone (deleted in Studio); an empty answer for all is not trusted
+                    $this->gone((string) $video->youtube_id, 'videos.list does not know this video (deleted in Studio?)');
+                } elseif ($f !== null && $f['privacy'] !== '' && $f['privacy'] !== (string) ($video->meta['privacy'] ?? '')) {
+                    $video->update(['meta' => ['privacy' => $f['privacy']] + (array) $video->meta]);
+                }
+            }
+            $videos = $videos->filter(fn (FarmVideo $v) => isset($facts[$v->youtube_id]) && in_array($facts[$v->youtube_id]['privacy'], ['public', ''], true))->values();
+        }
+        foreach ($videos as $video) {
             $name = $this->playlistFor($video);
             if ($name === null || ! isset($plan[$name])) {
                 continue;
@@ -230,11 +276,12 @@ final class ChannelCurator
      * Makes the playlists that are missing and puts the videos in (playlists.insert and playlistItems.insert, 50 quota
      * units each). Returns what was done per playlist.
      *
+     * @param  list<string>  $skip  video ids to leave out by hand
      * @return array<string, array{id: string, created: bool, added: int, failed: list<string>}>
      */
-    public function syncPlaylists(): array
+    public function syncPlaylists(array $skip = []): array
     {
-        $plan = $this->playlistPlan(askChannel: true);
+        $plan = $this->playlistPlan(askChannel: true, skip: $skip);
         $ids = $this->playlistIds();
         $out = [];
         foreach ($plan as $name => $p) {

@@ -405,9 +405,18 @@ class FarmVideos
         foreach ($videos as $video) {
             $s = $stats[$video->youtube_id] ?? null;
             if (! $s) {
-                continue;       // deleted in Studio: an admin sees it has no numbers
+                // deleted in Studio: a public video videos.list leaves out is gone (a private one may only be invisible to
+                // another account, so it keeps its state); the table, the playlists and this refresh leave it out from now on
+                if ($stats !== [] && $video->status === FarmVideo::STATUS_PUBLISHED) {
+                    $video->update(['status' => FarmVideo::STATUS_MISSING, 'error' => 'YouTube: videos.list does not know this video (deleted in Studio?)']);
+                }
+
+                continue;
             }
             $fill = ['views' => $s['views'], 'likes' => $s['likes'], 'comments' => $s['comments'], 'stats_at' => now()];
+            if ($s['privacy'] !== '' && $s['privacy'] !== (string) ($video->meta['privacy'] ?? '')) {
+                $fill['meta'] = ['privacy' => $s['privacy']] + (array) $video->meta;   // unlisted by hand in Studio: no playlist for it
+            }
             if ($video->score === null && $video->order) {
                 $fill['score'] = $this->score($video->order);
             }

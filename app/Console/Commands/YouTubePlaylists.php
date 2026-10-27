@@ -15,15 +15,17 @@ use Illuminate\Console\Command;
  */
 class YouTubePlaylists extends Command
 {
-    protected $signature = 'youtube:playlists {--apply : make the playlists and put the videos in}';
+    protected $signature = 'youtube:playlists {--apply : make the playlists and put the videos in}
+        {--skip= : video ids to leave out by hand (comma-separated)}';
 
     protected $description = 'Plan or build the channel\'s playlists by the tool of every print (dry run unless --apply)';
 
     public function handle(ChannelCurator $curator): int
     {
+        $skip = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('skip')))));
         try {
             if (! $this->option('apply')) {
-                foreach ($curator->playlistPlan() as $name => $p) {
+                foreach ($curator->playlistPlan(skip: $skip) as $name => $p) {
                     $this->line('<info>'.$name.'</info> '.($p['id'] ? "({$p['id']})" : '(to be made)').': '.$p['has'].' in it, '.count($p['add']).' to add'.($p['add'] ? ': '.implode(', ', $p['add']) : ''));
                 }
                 $this->info('Dry run: nothing changed on YouTube. Add --apply once Roman has approved the playlists.');
@@ -31,7 +33,7 @@ class YouTubePlaylists extends Command
                 return self::SUCCESS;
             }
             $failed = 0;
-            foreach ($curator->syncPlaylists() as $name => $r) {
+            foreach ($curator->syncPlaylists($skip) as $name => $r) {
                 $failed += count($r['failed']);
                 $this->line('<info>'.$name.'</info> ('.$r['id'].')'.($r['created'] ? ' made' : '').': added '.$r['added'].($r['failed'] ? ', failed '.implode('; ', $r['failed']) : ''));
             }

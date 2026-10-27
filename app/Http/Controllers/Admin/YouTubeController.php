@@ -55,7 +55,7 @@ class YouTubeController extends Controller
             'finish' => $videos->whereIn('status', [FarmVideo::STATUS_PENDING, FarmVideo::STATUS_QUEUED, FarmVideo::STATUS_FAILED])->whereNotNull('farm_order_id')
                 ->mapWithKeys(fn ($v) => [$v->farm_order_id => $v->order ? $this->photos->finishIndex($v->order) : null])->all(),
             'kinds' => $this->byKind(),
-            'done' => $videos->whereIn('status', [FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN]),
+            'done' => $videos->whereIn('status', [FarmVideo::STATUS_SCHEDULED, FarmVideo::STATUS_PUBLISHED, FarmVideo::STATUS_REJECTED, FarmVideo::STATUS_WITHDRAWN, FarmVideo::STATUS_MISSING]),
             'nextSlot' => $this->videos->nextSlot()->timezone((string) config('youtube.publish_timezone', 'Europe/Prague')),
             // the Facebook page / Instagram: offered at the approval when Meta is connected, and what came of it per video
             'metaAvailable' => $this->meta->available(),

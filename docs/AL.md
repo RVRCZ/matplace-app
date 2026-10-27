@@ -1481,3 +1481,27 @@ Testy: `PrintPhotosTest` 7 / 146 (nový `test_a_cut_that_keeps_nothing_or_everyt
 prázdná a „celá“ maska → napasováno + `cut_error`, foto‑box to nezkouší znovu, legacy `empty` → redo plán → `--apply
 --ids` → `uncut` → dál `kept`, neznámé id), `FarmTestPhotosTest` – zelené; `FakeBackgroundRemover::$coverage` pro
 prázdnou masku.
+
+### 13.6.7 Po `youtube:retitle --apply --unlist` na produkci: smazaná videa a playlisty jen pro veřejná
+
+Roman řekl „spusť“; řídící 27. 10.: přejmenováno 31, unlisted 5, selhaly 3 – dvě z nich (0JeE3tnyJ9M, i3nD7iyqjRA,
+F26‑000086, 0 zhlédnutí) YouTube nezná („video cannot be found“), nejspíš smazaná v Studiu. Playlisty nespuštěny: plán
+dál zařazoval tři právě skryté duplikáty.
+
+- **Stav `missing`** (`FarmVideo::STATUS_MISSING`, 7 znaků do `status` varchar(12)): `YouTubeError::isMissing()`
+  (`videoNotFound`/`notFound`/404) → `ChannelCurator::apply` označí řádek `missing` s důvodem v `error` místo
+  „failed“; výpis příkazu „renamed N, unlisted N, failed N, missing on YouTube N“ + řádek za každé. `rows()`
+  (`youtube:titles`), `plan()`, `refreshStats` i playlisty takové video vynechávají; `/admin/youtube` ho ukáže mezi
+  vyřízenými jako „Na YouTube už není (smazané video)“. `refreshStats` navíc označí `missing` veřejné video, které
+  `videos.list` vynechá (soukromé ne – to může být jen neviditelné jinému účtu; prázdná odpověď pro všechny se nebere).
+- **Unlist jen jednou:** `plan()` nedává do `unlist` video, které má `meta.unlisted_at`; `--unlist` ukládá i
+  `meta.privacy = unlisted`; tabulka u takového dvojčete píše `duplikat = ano (unlisted)` a `navrh` prázdný.
+- **Playlisty jen pro veřejná videa:** `playlistPlan` bere z DB jen `published` bez `meta.unlisted_at` a s
+  `meta.privacy` public/neznámé; s `--apply` navíc jeden `videos.list` (1 jednotka na 50) pro všechny kandidáty –
+  neveřejné (Roman ručně v Studiu) vynechá a uloží `meta.privacy`, neznámé označí `missing`. `refreshStats` ukládá
+  `meta.privacy` při každém běhu. Nové **`--skip=id1,id2`** vynechá jmenovaná videa ručně (plán i `--apply`).
+- Třetí selhání z běhu řídící neznám (nebylo jmenováno); jiný důvod než 404 zůstává „failed“ a vypíše se.
+
+Testy: `YouTubeChannelTest` (retitle: smazané video → `missing`, mimo tabulku, na admin stránce; druhý běh téže tabulky
+nic neposílá; playlisty: skrytý duplikát, unlisted podle YouTube a smazané video mimo, `--skip`, jeden `videos.list`),
+`FarmStatusColumnsTest` (nový stav se vejde) – zelené.
