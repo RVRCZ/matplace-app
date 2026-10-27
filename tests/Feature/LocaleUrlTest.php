@@ -158,7 +158,7 @@ class LocaleUrlTest extends TestCase
         Route::getRoutes()->refreshNameLookups();
 
         $czech = $this->get('/only-czech/clanek')->assertOk();
-        $this->assertStringNotContainsString('<link rel="alternate"', $czech->getContent(), 'one language: no hreflang set');
+        $this->assertStringNotContainsString('<link rel="alternate" hreflang=', $czech->getContent(), 'one language: no hreflang set (the RSS link is rel="alternate" too)');
         $this->get('/en/only-czech/clanek')->assertNotFound()
             ->assertSee(__('site.not_found.untranslated_title', [], 'en'))
             ->assertSee('id="czech-version" href="'.url('/only-czech/clanek').'"', false);

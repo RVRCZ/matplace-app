@@ -30,7 +30,8 @@ class MarketplaceSwitchTest extends TestCase
     public function test_calculator_has_facts_and_no_prices(): void
     {
         $r = $this->get('/');
-        $r->assertOk()->assertSee('"marketplace":false', false)->assertDontSee('id="cta-make"', false)->assertDontSee('id="inquiry-panel"', false);
+        $r->assertOk()->assertDontSee('id="cta-make"', false)->assertDontSee('id="inquiry-panel"', false);
+        $this->assertFalse($this->calcConfig()['config']['marketplace'], 'the browser is told there is no marketplace (one cached JSON, docs/AN.md §12.4)');
         // no farm printer seeded here: no price list at all, the calculator shows the slicer's facts
         $this->assertSame([], $r->viewData('config')['orientation_profiles'] === config('pricing.orientation_profiles') ? [] : ['unexpected']);
         $r->assertSee(__('calc.facts.layers'))->assertDontSee(route('register', ['role' => 'printer']), false);

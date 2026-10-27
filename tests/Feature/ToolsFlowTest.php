@@ -133,8 +133,11 @@ class ToolsFlowTest extends TestCase
         $html = $page->getContent();
         $this->assertLessThan(strpos($html, 'id="materials"'), strpos($html, 'id="size-x"'), 'the size block comes before the material');
         $this->assertLessThan(strpos($html, 'id="stat-grams"'), strpos($html, 'id="quantity"'), 'size and quantity sit in the price card, under the price');
-        $page->assertSee('id="bed-fit"', false)->assertSee('"calc.fit.bed"', false)->assertSee('"calc.fit.none"', false);   // the wording reaches the browser's dictionary
-        $page->assertSee('"bed_margin_mm"', false);
+        $page->assertSee('id="bed-fit"', false);
+        $calc = $this->calcConfig();   // the wording and the margin reach the browser in the calculator's JSON (docs/AN.md §12.4)
+        $this->assertArrayHasKey('calc.fit.bed', $calc['i18n']);
+        $this->assertArrayHasKey('calc.fit.none', $calc['i18n']);
+        $this->assertArrayHasKey('bed_margin_mm', $calc['config']);
         $page->assertSee('id="cta-recalc"', false)->assertSee('id="price-orient"', false);                        // settings wait for "Recalculate"; the farm's price is a line to orient by                                                          // the farm's clear edge: the calculator counts pieces the way the farm does
         $page->assertSee('Kč');                                                                   // the farm's list prices the model: the number is money, not minutes
         foreach (['cs', 'en', 'es'] as $lang) {
@@ -515,7 +518,8 @@ class ToolsFlowTest extends TestCase
     public function test_calculator_compares_materials_for_the_model(): void
     {
         $page = $this->get('/')->assertOk();
-        $page->assertSee('id="mat-compare"', false)->assertSee('Porovnat materiály')->assertSee('"compare.col.heat"', false);
+        $page->assertSee('id="mat-compare"', false)->assertSee('Porovnat materiály');
+        $this->assertArrayHasKey('compare.col.heat', $this->calcConfig()['i18n']);
         $materials = collect(app(MaterialCatalog::class)->all())->keyBy('code');
         foreach (['PLA', 'PETG', 'ASA', 'TPU', 'PA'] as $code) {
             $p = $materials[$code]['props'];
