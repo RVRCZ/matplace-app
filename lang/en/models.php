@@ -109,6 +109,13 @@ return [
         'price' => 'Price with us',
         'price_value' => 'from :price (:material, 1 pc)',
         'price_note' => 'The exact price comes from the calculation once the file is uploaded.',
+        'calc_title' => 'Price and print time with us',
+        'calc_lead' => 'Computed from the model’s file in our slicer: one piece, :infill % infill, standard quality, about :grams g of filament. Delivery is added at the order.',
+        'calc_material' => 'Material',
+        'calc_time' => 'Print time',
+        'calc_price' => 'Price per piece',
+        'calc_note' => 'Computed on :date. You choose the colour, material and number of pieces at the order; the price is then recounted exactly.',
+        'calc_open' => 'Order a print of this model',
     ],
 
     'search' => [

@@ -16,7 +16,7 @@ return [
     'no_orders' => 'Zatím tu nic není.',
     'credit_balance' => 'Kredit',
     'top_up' => 'Dobít kredit',
-    'slices_left' => 'Dnes můžete spočítat ještě :n modelů.',
+    'slices_left' => '{0} Dnes už další model spočítat nemůžete.|{1} Dnes můžete spočítat ještě :n model.|[2,4] Dnes můžete spočítat ještě :n modely.|[5,*] Dnes můžete spočítat ještě :n modelů.',
 
     'start' => [
         'model' => 'Model',

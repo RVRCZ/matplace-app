@@ -55,6 +55,8 @@ class InspirationController extends Controller
             // the price of one piece as far as it can be named, and whether search engines may index the page
             // (only pages with something of their own: config/catalog.php `index_requires`; the rest say noindex, follow)
             'quote' => $pricing->quoteCatalog($model, $printable),
+            // the print time and the price in three materials from the slice of the model's own file (catalog:slice, docs/AN.md §13)
+            'sliced' => $pricing->sliced($model),
             'indexable' => $model->isIndexable(),
             'similar' => $model->category_id
                 ? CatalogModel::shown()->where('category_id', $model->category_id)->whereKeyNot($model->id)->orderByDesc('view_count')->limit(8)->get()

@@ -428,7 +428,7 @@ class CatalogTest extends TestCase
         $nc->assertSee('data-cta="print" data-use="personal"', false)->assertSee(__('models.inspiration.personal'))->assertSee(__('models.inspiration.upload_print'))
             ->assertSee(route('farm.start', ['source' => $closed->id]), false)->assertDontSee(__('models.inspiration.attribution'));
         $page->assertSee('data-use="commercial"', false);
-        $this->assertStringNotContainsString('<link rel="alternate"', $nc->getContent(), 'Czech only: no hreflang');
+        $this->assertStringNotContainsString('<link rel="alternate" hreflang=', $nc->getContent(), 'Czech only: no hreflang links (the RSS link is rel="alternate" too)');
 
         // a page exists only in the languages it has a text in; the others point to the Czech one
         $this->get('/en/model/phone-stand')->assertOk()->assertSee('A simple stand.');
@@ -471,8 +471,9 @@ class CatalogTest extends TestCase
         $this->assertSame(['matplace', 'inspiration', 'makerworld'], array_column($local, 'origin'));
         $this->assertSame([$card->publicUrl(), route('catalog.show', 'phone-stand'), 'https://makerworld.com/en/models/9'], array_column($local, 'externalUrl'));
         $this->assertSame('Jana Nováková', $local[0]['authorName']);
-        // the calculator page knows the words for both kinds of cards
-        $this->get('/')->assertOk()->assertSee('models.search.label_inspiration', false);
+        // the calculator page knows the words for both kinds of cards (its texts come as one cached JSON, docs/AN.md §12.4)
+        $this->assertSame(1, preg_match('/window\.MP_CONFIG_URL = "([^"]+)"/', (string) $this->get('/')->assertOk()->getContent(), $m));
+        $this->assertArrayHasKey('models.search.label_inspiration', (array) $this->get((string) json_decode('"'.$m[1].'"'))->assertOk()->json('i18n'));
     }
 
     public function test_translations_are_queued_only_for_printable_and_most_visited_models(): void

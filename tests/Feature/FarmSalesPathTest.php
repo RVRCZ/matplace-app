@@ -162,12 +162,33 @@ final class FarmSalesPathTest extends TestCase
             foreach (['farm-total-line', 'farm-pay-note', __('farm.order.step_material_hint'), __('farm.order.step_order_hint')] as $needle) {
                 $this->assertStringContainsString($needle, $html, "$needle ($lang)");
             }
+            // the two links the script fills later lead somewhere before it runs (the audit's href="#")
+            $this->assertMatchesRegularExpression('~id="farm-short" href="[^"#]*/farm/orders/'.$order->token.'/short\.mp4"~', $html, "short link ($lang)");
+            $this->assertMatchesRegularExpression('~id="farm-topup" href="[^"#]*/account/credit\?back='.$order->token.'"~', $html, "top-up link ($lang)");
+            $this->assertStringNotContainsString('href="#"', $html, "no placeholder links ($lang)");
             foreach (['farm.order.ship.total', 'farm.order.ship.total_estimate', 'farm.order.pay_note_round', 'farm.order.pay_note_min'] as $key) {
                 $this->assertStringContainsString($key, $html, "$key reaches the script ($lang)");
                 $this->assertNotSame($key, __($key), "$key ($lang)");
             }
         }
         app()->setLocale('cs');
+    }
+
+    public function test_the_start_page_counts_the_models_left_in_every_language(): void
+    {
+        $forms = [
+            'cs' => ['Dnes už další model spočítat nemůžete.', 'ještě 1 model.', 'ještě 3 modely.', 'ještě 7 modelů.'],
+            'en' => ['cannot calculate another model today', '1 more model today', '3 more models today', '7 more models today'],
+            'es' => ['otro modelo', '1 modelo más', '3 modelos más', '7 modelos más'],
+        ];
+        foreach ($forms as $lang => $expected) {
+            foreach ([0, 1, 3, 7] as $i => $n) {
+                $this->assertStringContainsString($expected[$i], trans_choice('farm.slices_left', $n, ['n' => $n], $lang), "$lang, $n left");
+            }
+        }
+        // a customer with a daily allowance reads the right form on the start page
+        app(FarmSettings::class)->set('daily_slices_per_user', 3);
+        $this->actingAs($this->user)->get('/farm')->assertOk()->assertSee('ještě 3 modely.');
     }
 
     public function test_the_top_up_and_a_refused_payment_are_measured(): void

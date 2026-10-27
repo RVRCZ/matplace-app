@@ -35,7 +35,7 @@ return [
         'hashtags' => '#3dtisk #3dtiskarna #dárek',
         'title_plain' => ':name – :time de impresión',
         'title_unnamed' => 'Lo que crece en :time de impresión 3D',
-        'description' => ":cta\nTime-lapse de una impresión de nuestra granja de impresión 3D; la pieza terminada y su precio están al final.\n\nMaterial: :material :color\nImpresora: :printer\nTiempo de impresión: :time\n\nPublicado con el consentimiento del cliente.",
+        'description' => ":cta\nTime-lapse de una impresión de nuestra granja de impresión 3D; la pieza terminada y su precio están al final.\n\nMaterial: :material :color\nTiempo de impresión: :time\n\nPublicado con el consentimiento del cliente.",
     ],
 
     'hook' => [

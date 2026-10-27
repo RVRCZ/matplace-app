@@ -2,6 +2,9 @@
 
 namespace App\Domain\Catalog;
 
+use App\Domain\Calculation\MaterialCatalog;
+use App\Domain\Calculation\PriceEngine;
+use App\Domain\Farm\FarmPricingProfile;
 use App\Domain\Farm\FarmSettings;
 use App\Domain\Farm\OrderService;
 use App\Domain\Farm\PriceCalculator;
@@ -45,9 +48,10 @@ final class ModelPricing
 
     /**
      * The price of one piece of an inspiration model, as far as it can be named: from its author's printable card
-     * (sliced here) when there is one, else from the grams and minutes the old site's slicer left on the row, in the
-     * cheapest kind loaded. `available` false when neither exists – the page then names no price and the model is not
-     * one of those worth indexing (config/catalog.php `index_requires`).
+     * (sliced here) when there is one, else from the slice of the model's own file (catalog:slice, the cheapest of the
+     * three materials), else from the grams and minutes the old site's slicer left on the row, in the cheapest kind
+     * loaded. `available` false when none exists – the page then names no price and the model is not one of those
+     * worth indexing (config/catalog.php `index_requires`).
      *
      * @return array{available: bool, basis?: string, material?: string, total?: float, total_czk?: float, currency?: string, total_text?: string, minutes?: int, grams?: float}
      */
@@ -59,6 +63,12 @@ final class ModelPricing
             if ($quote['available']) {
                 return $quote + ['basis' => 'card', 'total_czk' => Money::of((float) $quote['total'], (string) $quote['currency'])->to(Money::CZK)->amount];
             }
+        }
+        if ($model->hasSlice() && ($sliced = $this->sliced($model, $currency))) {
+            $cheapest = collect($sliced['rows'])->sortBy('total_czk')->first();
+
+            return ['available' => true, 'basis' => 'slice', 'material' => $cheapest['code'], 'total' => $cheapest['total'], 'total_czk' => $cheapest['total_czk'],
+                'currency' => $sliced['currency'], 'total_text' => $cheapest['total_text'], 'minutes' => $cheapest['minutes'], 'grams' => $cheapest['grams']];
         }
         $material = $this->materials()->first();
         if (! $material || (int) $model->est_minutes <= 0 || (float) $model->est_grams <= 0) {
@@ -81,6 +91,51 @@ final class ModelPricing
             'total' => $total->amount, 'total_czk' => (float) $price['print_total'], 'currency' => $currency, 'total_text' => $total->format(),
             'minutes' => (int) $model->est_minutes, 'grams' => (float) $model->est_grams,
         ];
+    }
+
+    /**
+     * One piece in each of the materials config/catalog.php `value_materials` names (PLA, PETG, ASA), from the slice of
+     * the model's own file (catalog:slice, docs/AN.md §13): the grams follow the materials' densities and the minutes
+     * their speed, as the calculator's comparison does (renderCompare), and the farm's list per material prices them
+     * (FarmPricingProfile: the kind of that material when one is loaded, else the cheapest kind, named as such). Null
+     * without a slice, without a loaded kind, or when no named material has a profile.
+     *
+     * @return array{rows: list<array{code: string, label: string, kind: string, minutes: int, grams: float, total: float, total_czk: float, total_text: string}>, currency: string, low: float, high: float}|null
+     */
+    public function sliced(CatalogModel $model, ?string $currency = null): ?array
+    {
+        if (! $model->hasSlice() || ! $this->anyMaterial()) {
+            return null;
+        }
+        $currency ??= Currency::current();
+        $catalog = app(MaterialCatalog::class);
+        $farm = app(FarmPricingProfile::class);
+        $engine = app(PriceEngine::class);
+        $items = collect($catalog->all())->keyBy('code');
+        $base = $items->get(strtoupper((string) $model->slice_material)) ?? $items->get($catalog->defaultCode());
+        $baseDensity = max(0.1, (float) ($base['density'] ?? 1.24));
+        $baseTime = max(0.1, (float) ($base['props']['time'] ?? 1.0));
+        $rows = [];
+        foreach ((array) config('catalog.value_materials', ['PLA', 'PETG', 'ASA']) as $code) {
+            $code = strtoupper((string) $code);
+            $m = $items->get($code);
+            $profile = $m && ($m['technology'] ?? 'fdm') === 'fdm' ? $farm->profile($code) : null;
+            if (! $m || ! $profile) {
+                continue;
+            }
+            $grams = (float) $model->slice_grams * ((float) $m['density'] / $baseDensity);
+            $minutes = max(1, (int) round((int) $model->slice_minutes * ((float) ($m['props']['time'] ?? 1.0) / $baseTime)));
+            $breakdown = $engine->price($grams, $minutes, 1, $profile);
+            $total = Money::czk($breakdown->total)->to($currency);
+            $rows[] = ['code' => $code, 'label' => __('materials.'.$code.'.label'), 'kind' => (string) $profile->label, 'minutes' => $breakdown->minutes,
+                'grams' => round($grams, 1), 'total' => $total->amount, 'total_czk' => $breakdown->total, 'total_text' => $total->format()];
+        }
+        if (! $rows) {
+            return null;
+        }
+        $totals = array_column($rows, 'total');
+
+        return ['rows' => $rows, 'currency' => $currency, 'low' => min($totals), 'high' => max($totals)];
     }
 
     /**

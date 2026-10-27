@@ -1392,3 +1392,64 @@ zakázku (`meta.customer_mailed_at`; dvojče 16:9 už nepíše), týdenní sest�
 ### 13.5.5 Ověření dávky 3
 
 `tests/Feature/YouTubeChannelTest.php` (4 testy: tabulka s návrhy, dvojčaty, stejnými tituly a ručními uploady + CSV tam a zpět; retitle jako dry run, pak `--apply` a `--unlist` proti falešnému Googlu; playlisty plán → `--apply` → znovu nic; e‑mail zákazníkovi jednou, s odkazy, ne bez souhlasu, ne při vypnutých mailech). Sada `YouTubeVideosTest|FarmVideosCutTest|YouTubeChannelTest|SocialVideosTest|FarmHowtoVideoTest|FarmAdminNotifyTest|PrintPhotosTest|AuditRestTest|RembgBackgroundRemoverTest` = 54 testů, 1 054 asercí, zelené (2 přeskočené bez `FFMPEG_BIN`); pint prošel. Žádné volání YouTube API naostro; žádná migrace, žádný build.
+
+## 13.6 Dávka 4: fotka z foto‑boxu u videa, zpětné zpracování, zbytky z auditu
+
+Roman: „fotky nahrávám k videím, je potřeba je upravit a dát jim pozadí, fotím jen ve fotoboxu.“ Cesta, kterou používá,
+je `/admin/youtube` → „foto‑box“ (`/admin/farm/photobox?order=…`) → `POST /admin/farm/orders/{order}/photos`
+(`FarmTestPhotoController::store`, `TestPhotos::add`), která dosud jen přestavěla videa s neupravenou fotkou
+(`AddFinishPhotoToVideo`). Model u2net je od 27. 10. na serveru (`/opt/matplace-py/u2net/…`, symlink na
+`U2NET_HOME/u2net.onnx`), takže výřez už jde i tam.
+
+### 13.6.1 Fotka z foto‑boxu u zakázky zákazníka jde přes `ComposePrintPhoto`
+
+- `FarmTestPhotoController::store`: u zakázky, která není test, se po uložení fotek vybere ta, kterou video končí
+  (`TestPhotos::finishFile` = zleva, jinak zprava, z mobilu, shora; nejnovější daného druhu), a zařadí se `ComposePrintPhoto($order, <soubor na
+  farm disku>)` – stejná práce jako u nahrání na stránce zakázky (§13.1): výřez rembg, podklad `studio`, varianty
+  `web`/`short`/`square` + WebP na public disku `prints/<token>/`, `photo_path` + `photo_meta` u zakázky, pak
+  `AddFinishPhotoToVideo` (když má zakázka časosběr). Hláška „Uloženo N fotek. Fotka do videa se připravuje (pozadí,
+  podklad); videa se pak přestaví.“; JSON navíc `composing`.
+- **Kdy se nic nedělá:** přibude‑li další pohled stejného kusu (shora k už hotovému bočnímu), fotka do videa se nemění
+  a videa se nepřestavují (dřív se přestavěla po každém nahrání, i se stejnou fotkou). Rozhoduje `photo_meta.source`
+  (nové pole, soubor na farm disku, ze kterého složená fotka vznikla – `PrintPhotos::attach(..., $sourceRel)`,
+  `ComposePrintPhoto` ho předává) a `photo_meta.cut`: složená fotka z jiného souboru nebo s pozadím (model chyběl)
+  → složit znovu; z téhož souboru a vyříznutá → nic.
+- **Smazání fotky** (`destroy`): byla‑li zdrojem složené fotky, složí se znovu z další v pořadí; není‑li žádná, složená
+  fotka se odstraní (`PrintPhotos::remove`) a videa se přestaví bez ní. Složená fotka z jiného souboru (nahrání na
+  stránce zakázky, starší bez `source`) zůstává, videa se nemění.
+- `/admin/youtube` u čekajících videí říká „Na konci videí: upravená fotka výtisku (pozadí odstraněno, podklad studio)“
+  s náhledem složené fotky; bez ní jako dřív „fotka N (zleva) z foto‑boxu, zatím s pozadím“. Foto‑box má větu navíc, co
+  se s fotkou zákazníkovy zakázky stane.
+
+### 13.6.2 `farm:photo --redo-videos` – zpětné zpracování už nahraných fotek
+
+```
+php artisan farm:photo --redo-videos            # plán, nic nemění
+php artisan farm:photo --redo-videos --apply    # složí a přestaví videa
+php artisan farm:photo --redo-videos --all      # i zakázky, které už vyříznutou fotku mají (jiný podklad, novější rembg)
+```
+
+Projde zakázky zákazníků (ne testy) s fotkou z foto‑boxu; sloupce `order · photo · today (none/fitted/cut) · videos to
+replace · plan/result`. Výchozí výběr = bez složené fotky (`none`) nebo složené s pozadím (`fitted`, model chyběl);
+`cut` zůstává (`kept`), s `--all` se bere taky. Zdroj = `photo_meta.source`, když ještě existuje, jinak dnešní fotka do
+videa. `--apply` skládá synchronně (rembg pár sekund na fotku, výpis `cut (73 % piece)`), videa přes
+`AddFinishPhotoToVideo` ve frontě: nahrané a naplánované kopie na YouTube se nahradí, **zveřejněná videa zůstávají**
+(nahradí je tlačítko v `/admin/youtube`). Bez dostupného rembg `--apply` odmítne („a redo would only fit the photos
+again“). `--bg=` platí i tady.
+
+### 13.6.3 Zbytky z auditu
+
+- `farm.slices_left` je `trans_choice` (cs `{0}|{1}|[2,4]|[5,*]`, en/es `{0}|{1}|[2,*]`): „Dnes můžete spočítat ještě
+  1 model / 3 modely / 7 modelů.“, nula = „Dnes už další model spočítat nemůžete.“ (`farm/start.blade.php`).
+- `farm/order.blade.php`: `#farm-short` má `href` na `farm.orders.short` zakázky a `#farm-topup` na `account.credit`
+  s `back=<token>` už ze serveru (skript je dál přepisuje: `short_url`, `&need=`); na stránce zakázky žádné `href="#"`.
+
+### 13.6.4 Popis videa bez řádku „Tiskárna“ (doplněk Romana 27. 10.)
+
+`youtube.video.description` cs/en/es: zůstává Materiál a Doba tisku, řádek s tiskárnou pryč; `FarmVideos::facts` už
+tiskárnu nenačítá. Platí pro nová videa i pro `youtube:titles` (tabulka); u už zapsané tabulky
+`docs/data/youtube-titles-2026-10.csv` řádek odebere řídící před `retitle`. E‑mail zákazníkovi tiskárnu neuváděl.
+
+### 13.6.5 Ověření dávky 4
+
+`PrintPhotosTest` 6 testů / 118 asercí (nový `test_the_photo_box_photo_of_a_customer_print_is_composed_for_its_videos_and_older_ones_can_be_redone`: foto‑box → složená fotka se `source`, další pohled nic, smazání → další v pořadí / bez fotky, `--redo-videos` plán, `--all`, `--apply`), `FarmTestPhotosTest` (testovací tisky beze změny), `FarmSalesPathTest` (odkazy bez `href="#"`, plurál ve třech jazycích + stránka `/farm`), `YouTubeChannelTest` (popis bez „Tiskárna“), `YouTubeVideosTest` – vše zelené 27. 10. 2026, pint čistý; bez změny TS žádný build (`scripts/check_order_timeline.mjs` ok). S pravým rembg na serveru nic z toho vyzkoušeno nebylo: řídící spustí `farm:photo --redo-videos` (plán), pak `--apply`, a Roman nahraje další fotku ve foto‑boxu.
