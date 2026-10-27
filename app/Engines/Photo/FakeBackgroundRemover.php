@@ -6,11 +6,14 @@ use App\Engines\Exceptions\EngineException;
 
 /**
  * Tests and local work without rembg: the middle of the photo (an ellipse) stays, the rest becomes transparent.
- * Small (at most 400 px) so the pixel loop is quick. Set $fail to make the next cut fail.
+ * Small (at most 400 px) so the pixel loop is quick. Set $fail to make the next cut fail, $coverage to have it keep
+ * nothing and claim that share (what rembg made of a photo it did not understand).
  */
 final class FakeBackgroundRemover implements BackgroundRemover
 {
     public static ?string $fail = null;
+
+    public static ?float $coverage = null;
 
     /** @var list<string> */
     public static array $calls = [];
@@ -18,6 +21,7 @@ final class FakeBackgroundRemover implements BackgroundRemover
     public static function reset(): void
     {
         self::$fail = null;
+        self::$coverage = null;
         self::$calls = [];
     }
 
@@ -31,6 +35,16 @@ final class FakeBackgroundRemover implements BackgroundRemover
         self::$calls[] = $source;
         if (self::$fail !== null) {
             throw new EngineException(self::$fail);
+        }
+        if (self::$coverage !== null) {
+            $empty = imagecreatetruecolor(8, 8);
+            imagealphablending($empty, false);
+            imagesavealpha($empty, true);
+            imagefill($empty, 0, 0, imagecolorallocatealpha($empty, 0, 0, 0, 127));
+            imagepng($empty, $target);
+            imagedestroy($empty);
+
+            return ['width' => 8, 'height' => 8, 'coverage' => self::$coverage];
         }
         $img = @imagecreatefromstring((string) @file_get_contents($source));
         if (! $img) {
