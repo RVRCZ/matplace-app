@@ -4,6 +4,7 @@ namespace App\Domain\Farm;
 
 use App\Engines\Repair\PythonTool;
 use App\Models\FarmOrder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -41,13 +42,31 @@ final class TestPhotos
         if (empty($r['ok'])) {
             throw new FarmRefusal(($r['error'] ?? '') === 'unreadable' && empty($r['heif']) ? 'photo_heic' : 'photo_unreadable');
         }
+        if (PrintPhotos::isDark(isset($r['mean']) ? (float) $r['mean'] : null, isset($r['std']) ? (float) $r['std'] : null)) {
+            // a black frame (the camera did not capture) or one flat colour: nothing to keep; the pages say shoot again
+            $disk->delete($file);
+            $order->forceFill(['test_params' => ['dark_photo_at' => now()->toIso8601String()] + (array) $order->test_params])->save();
+            throw new FarmRefusal('photo_dark');
+        }
         $thumb = substr($file, 0, -4).'-thumb.jpg';
         $this->python->runScript('photo_tool.py', ['fit', $disk->path($file), $disk->path($thumb), '480'], 60);
         $photo = ['file' => $file, 'thumb' => $thumb, 'view' => $view, 'w' => (int) $r['w'], 'h' => (int) $r['h'], 'at' => now()->toIso8601String()];
         $photos[] = $photo;
-        $order->forceFill(['test_params' => ['photos' => $photos] + (array) $order->test_params])->save();
+        $order->forceFill(['test_params' => ['photos' => $photos] + Arr::except((array) $order->test_params, 'dark_photo_at')])->save();
 
         return $photo;
+    }
+
+    /** A black frame found later (farm:photo --redo-videos): the photo goes, the order remembers why it has none. */
+    public function dropDark(FarmOrder $order, string $file): void
+    {
+        foreach ($this->all($order) as $i => $photo) {
+            if (($photo['file'] ?? null) === $file) {
+                $this->remove($order, $i);
+                break;
+            }
+        }
+        $order->forceFill(['test_params' => ['dark_photo_at' => now()->toIso8601String()] + (array) $order->test_params])->save();
     }
 
     public function remove(FarmOrder $order, int $index): void

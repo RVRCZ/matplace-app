@@ -71,6 +71,24 @@ def solid_box(piece):
     return box if box else (0, 0, piece.width, piece.height)
 
 
+def ground_band(piece, sy1):
+    """Where the piece touches the ground: the lowest solid row of every column; the columns whose bottom lies
+    within 8 % of the height above the lowest one are the parts that stand on it (in a photo taken at an angle the
+    far paw sits higher in the picture than the near one: the dog of F26-000079 floated 50 px over a shadow drawn
+    through the lowest point alone). Returns the band's top row and its left and right column, in piece pixels."""
+    solid = piece.getchannel("A").point(lambda v: 255 if v > 128 else 0)
+    near = {}
+    for col in range(piece.width):
+        box = solid.crop((col, 0, col + 1, piece.height)).getbbox()
+        if box and box[3] >= sy1 - piece.height * 0.08:
+            near[col] = box[3]
+    if not near:
+        return sy1, 0, piece.width
+    rows = sorted(near.values())
+    cols = sorted(near)
+    return rows[int(len(rows) * 0.05)], cols[0], cols[-1]
+
+
 def place(cut, size, portrait):
     """Where the piece stands: at most this share of the width and height, the solid bottom of its mask at the
     standing line; whatever faint fringe hangs under that bottom is cut away (our shadow takes its place)."""
@@ -79,17 +97,17 @@ def place(cut, size, portrait):
     max_h = h * (0.46 if portrait else 0.64)
     k = min(max_w / cut.width, max_h / cut.height)
     piece = cut.resize((max(1, round(cut.width * k)), max(1, round(cut.height * k))), Image.LANCZOS)
-    sx0, sy0, sx1, sy1 = solid_box(piece)
+    sy1 = solid_box(piece)[3]
     piece = piece.crop((0, 0, piece.width, min(piece.height, sy1 + 1)))   # one soft row of the edge stays
     x = (w - piece.width) // 2
     y = round(h * (0.58 if portrait else 0.78)) - sy1
-    return piece, x, max(0, y), (sx0, sx1, sy1)
+    return piece, x, max(0, y), sy1
 
 
-def shadow(canvas, piece, x, y, solid):
-    """A soft drop shadow from the piece's own alpha and a darker contact shadow: an ellipse a little wider than
-    the solid mask, its centre just under the mask's bottom row (never a fixed offset), so the piece stands on it."""
-    sx0, sx1, sy1 = solid
+def shadow(canvas, piece, x, y, sy1):
+    """A soft drop shadow from the piece's own alpha and a darker contact shadow: an ellipse over the ground band
+    (its top overlaps the far feet, its bottom lies under the near ones), as wide as the feet and a little more,
+    never a fixed offset from the frame."""
     alpha = piece.getchannel("A")
     blur = max(3, round(piece.width * 0.035))
     drop = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
@@ -100,11 +118,14 @@ def shadow(canvas, piece, x, y, solid):
     canvas.alpha_composite(drop)
     contact = Image.new("L", canvas.size, 0)
     d = ImageDraw.Draw(contact)
-    foot = y + sy1
-    cx = x + (sx0 + sx1) / 2
-    rx, ry = max(8, (sx1 - sx0) * 0.58), max(5, piece.height * 0.04)
-    d.ellipse([cx - rx, foot - ry * 0.6, cx + rx, foot + ry * 1.4], fill=120)
-    contact = contact.filter(ImageFilter.GaussianBlur(max(3, round(piece.width * 0.03))))
+    top, left, right = ground_band(piece, sy1)
+    depth = max(0, sy1 - top)
+    ry = depth / 2 + max(4, piece.height * 0.025)
+    cy = y + top + depth / 2 + 0.2 * ry
+    cx = x + (left + right) / 2
+    rx = max((right - left) * 0.6, piece.width * 0.3, 8)
+    d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=120)
+    contact = contact.filter(ImageFilter.GaussianBlur(max(2, round(piece.width * 0.02))))
     dark = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     dark.paste((10, 12, 16, 255), (0, 0), contact)
     canvas.alpha_composite(dark)
@@ -134,8 +155,8 @@ def main(argv):
             out({"ok": False, "error": "nothing_found"})
         piece = piece.crop(bbox)
         canvas = backdrop(bg, size, folder).convert("RGBA")
-        piece, x, y, solid = place(piece, size, portrait=h > w)
-        shadow(canvas, piece, x, y, solid)
+        piece, x, y, sy1 = place(piece, size, portrait=h > w)
+        shadow(canvas, piece, x, y, sy1)
         canvas.alpha_composite(piece, (x, y))
         result = canvas.convert("RGB")
     else:

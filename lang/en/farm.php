@@ -208,6 +208,7 @@ return [
         'photos_full' => 'This test already has :max photos. Delete one first.',
         'photo_heic' => 'The server cannot read HEIC photos. Please send it as a JPEG.',
         'photo_unreadable' => 'The file cannot be read as a photo.',
+        'photo_dark' => 'The photo is black or one flat colour (the camera did not capture). Take it again.',
         'closed' => 'The farm is not taking new orders right now. Please try again later.',
         'not_ready' => 'The model is not ready to print yet: it is still being processed or could not be converted. Try again in a moment, or upload an STL.',
         'too_big' => 'The file is larger than :max MB.',

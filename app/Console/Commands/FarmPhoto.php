@@ -177,7 +177,19 @@ class FarmPhoto extends Command
                     AddFinishPhotoToVideo::dispatch($order->id);
                 }
             } catch (EngineException $e) {
-                $rows[] = [$number, basename($source), $state, $videos, 'error: '.$e->getMessage()];
+                if (str_starts_with($e->getMessage(), 'dark:')) {
+                    // a black frame (the camera did not capture): nothing to show – the photo goes, the videos end without it
+                    if ($order->photo_path !== null || $order->hasPhoto()) {
+                        $photos->remove($order);
+                    }
+                    $testPhotos->dropDark($order, $source);
+                    if ($order->timelapse_path) {
+                        AddFinishPhotoToVideo::dispatch($order->id);
+                    }
+                    $rows[] = [$number, basename($source), $state, $videos, 'removed – black photo (the camera did not capture): shoot it again'];
+                } else {
+                    $rows[] = [$number, basename($source), $state, $videos, 'error: '.$e->getMessage()];
+                }
             }
         }
         $this->table(['order', 'photo', 'today', 'videos to replace', $apply ? 'result' : 'plan'], $rows);

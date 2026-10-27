@@ -56,6 +56,7 @@ class FarmTestPhotosTest extends TestCase
         $path = sys_get_temp_dir().'/mp_test_photo_'.uniqid().'.jpg';
         $im = imagecreatetruecolor($w, $h);
         imagefill($im, 0, 0, imagecolorallocate($im, 90, 160, 220));
+        imagefilledellipse($im, (int) ($w / 2), (int) ($h / 2), (int) ($w * 0.5), (int) ($h * 0.6), imagecolorallocate($im, 40, 60, 90));   // a piece: a flat colour counts as a lens that saw nothing
         imagejpeg($im, $path, 90);
 
         return new UploadedFile($path, 'IMG_0232.jpg', 'image/jpeg', null, true);

@@ -41,9 +41,12 @@ class YouTubeRetitle extends Command
             return self::SUCCESS;
         }
         $done = $curator->apply($rows, (bool) $this->option('unlist'));
-        $this->info("renamed {$done['retitled']}, unlisted {$done['unlisted']}, failed ".count($done['failed']));
+        $this->info("renamed {$done['retitled']}, unlisted {$done['unlisted']}, failed ".count($done['failed']).', missing on YouTube '.count($done['missing']));
         foreach ($done['failed'] as $f) {
             $this->error($f);
+        }
+        foreach ($done['missing'] as $id) {
+            $this->warn($id.': YouTube no longer knows this video (deleted in Studio?) – marked missing, left out of the table from now on');
         }
 
         return $done['failed'] ? self::FAILURE : self::SUCCESS;
