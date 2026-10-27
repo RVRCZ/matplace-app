@@ -828,8 +828,12 @@ function bindControls(): void {
     $('cta-share').onclick = async () => {
         const url = state.calc?.url ?? location.href;
         try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
-        if (navigator.share) { try { await navigator.share({ url }); } catch { /* cancelled */ } }
+        let how: 'share' | 'copy' = 'copy';
+        if (navigator.share) { try { await navigator.share({ url }); how = 'share'; } catch { /* cancelled */ } }
         const b = $('cta-share'); const old = b.textContent; b.textContent = t('calc.cta.copied'); setTimeout(() => (b.textContent = old), 1500);
+        // one `share` event in our statistics (and in GA when allowed): the kind and the tool the model came from, nothing else (docs/AN.md §12)
+        const shared = routes()?.shared;
+        if (shared) fetch(shared, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ kind: 'calc', tool: state.file?.tool?.kind ?? null, how }), keepalive: true }).catch(() => undefined);
     };
     bootDownload();
     bootInquiry(() => (state.calc && state.calc.status === 'done' ? state.calc.token : null));

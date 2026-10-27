@@ -23,7 +23,7 @@ import { FileInfo } from './api';
 import { loadGeometryFromUrl } from './loaders';
 
 export interface ToolCfg {
-    tool: string; module: string; locale: string; next: 'inquiry' | 'farm' | 'download'; home: string; files: string; tools: string; zip: string;
+    tool: string; module: string; locale: string; next: 'inquiry' | 'farm' | 'download'; home: string; files: string; tools: string; zip: string; shared?: string;
     bed: { x: number; y: number; z: number; margin: number };
     colors: PalettePayload;
     price: PriceConfig | null;
@@ -334,6 +334,26 @@ export class Stage {
         this.status({ bbox: file.bbox, pieces: (file.parts ?? []).length || 1 });
         this.fileDownloads(file, o.partLabel);
         this.go({ href: `${this.cfg.home}?open=${file.uuid}`, disabled: false, ...(o.goLabel ? { label: o.goLabel } : {}) });
+        this.shareable(`${this.cfg.home}?open=${file.uuid}`);
+    }
+
+    /**
+     * The result can be shared: the link to the model in the calculator through the phone's share sheet, else copied
+     * (the button says so for a moment). One `share` event in our statistics, nothing about the model (docs/AN.md §12).
+     */
+    shareable(url: string | null): void {
+        const b = this.el<HTMLButtonElement>('tool-share');
+        b.hidden = url === null;
+        if (url === null) return;
+        const label = b.innerHTML;
+        b.onclick = async () => {
+            const full = new URL(url, location.href).toString();
+            let how: 'share' | 'copy' = 'copy';
+            if (navigator.share) { try { await navigator.share({ title: document.title, url: full }); how = 'share'; } catch { return; } }
+            else { try { await navigator.clipboard.writeText(full); } catch { return; } }
+            b.textContent = b.dataset.copied ?? ''; setTimeout(() => { b.innerHTML = label; }, 1500);
+            if (this.cfg.shared) fetch(this.cfg.shared, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ kind: 'tool', tool: this.cfg.tool, how }), keepalive: true }).catch(() => undefined);
+        };
     }
 
     /** A drop zone with a hidden file input: a click, a drop, or the keyboard hand over one file. */

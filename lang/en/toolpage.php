@@ -45,6 +45,8 @@ return [
     'status.nofit.hint' => 'The farm\'s bed is :bed mm. Make it smaller, or download the file for a larger printer.',
     'status.piece' => 'Selected part: :name',
     'download' => 'Download the model',
+    'share' => 'Share',
+    'share.copied' => 'Link copied',
     'download.orca' => 'Project for OrcaSlicer and Bambu Studio (3MF)',
     'download.prusa' => 'Project for PrusaSlicer (3MF)',
     'download.project.hint' => 'The design is saved and you pick your printer.',
