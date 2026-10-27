@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\Storage;
  * The inspiration catalogue: models that live elsewhere (Printables, MakerWorld, MakerOnline, Cults3D), taken over
  * from the old site with their addresses (/model/{slug}). A page links to the source; the customer brings the file and
  * prints it on a rented printer. Every licence allows that for one's own use; `license_restricted` marks the ones
- * (non-commercial, paid, unknown) whose prints must not be sold, and the page says so.
+ * (non-commercial, paid, unknown) whose prints must not be sold, and the page says so. A model whose file we hold is
+ * sliced once (catalog:slice): its page then names the print time and the price in three materials (docs/AN.md §13).
  */
 class CatalogModel extends Model
 {
@@ -27,12 +28,14 @@ class CatalogModel extends Model
         'thumbnail_path', 'images', 'license', 'license_restricted', 'author_name', 'category', 'category_id', 'tags', 'view_count',
         'est_grams', 'est_minutes', 'max_mm', 'file_available', 'model_file_id', 'visible', 'ai_confidence', 'ai_mismatch', 'ai_reason',
         'enriched_at', 'enriched_price_czk',
+        'slice_minutes', 'slice_grams', 'slice_material', 'sliced_at', 'slice_error', 'slice_calculation_id',
     ];
 
     protected $casts = [
         'description' => 'array', 'images' => 'array', 'tags' => 'array', 'file_available' => 'bool', 'visible' => 'bool',
         'license_restricted' => 'bool', 'view_count' => 'int', 'ai_mismatch' => 'bool', 'ai_confidence' => 'float',
         'enriched_at' => 'datetime', 'enriched_price_czk' => 'float',
+        'slice_minutes' => 'int', 'slice_grams' => 'float', 'sliced_at' => 'datetime',
     ];
 
     /** The key of `description` that keeps the source's own text once a text of ours replaced it (not a language). */
@@ -81,6 +84,7 @@ class CatalogModel extends Model
                 return $query->whereRaw('1 = 0');   // nothing loaded on the farm: no price can be named for anything
             }
             $query->where(fn (Builder $w) => $w->where(fn (Builder $e) => $e->where('catalog_models.est_minutes', '>', 0)->where('catalog_models.est_grams', '>', 0))
+                ->orWhere(fn (Builder $s) => $s->whereNotNull('catalog_models.sliced_at')->where('catalog_models.slice_minutes', '>', 0))
                 ->orWhereHas('designerModels', fn (Builder $d) => $d->printable()->whereNotNull('slice_summary')));
         }
 
@@ -106,7 +110,7 @@ class CatalogModel extends Model
         if (in_array('enriched', $needs, true) && ! $this->isEnriched()) {
             $gaps[] = 'enriched';
         }
-        if (in_array('price', $needs, true) && ! (app(ModelPricing::class)->anyMaterial() && (($this->est_minutes > 0 && $this->est_grams > 0) || ($card && ! empty($card->slice_summary))))) {
+        if (in_array('price', $needs, true) && ! (app(ModelPricing::class)->anyMaterial() && (($this->est_minutes > 0 && $this->est_grams > 0) || $this->hasSlice() || ($card && ! empty($card->slice_summary))))) {
             $gaps[] = 'price';
         }
         if (in_array('file', $needs, true) && ! ($this->file_available || $this->model_file_id || $card)) {
@@ -143,6 +147,24 @@ class CatalogModel extends Model
     public function categoryRow(): BelongsTo
     {
         return $this->belongsTo(CatalogCategory::class, 'category_id');
+    }
+
+    /** The calculation the slice of the model's own file came from (catalog:slice): its page /c/<token> is where a visitor orders. */
+    public function sliceCalculation(): BelongsTo
+    {
+        return $this->belongsTo(Calculation::class, 'slice_calculation_id');
+    }
+
+    /** The file we hold of this model, when we hold one. */
+    public function modelFile(): BelongsTo
+    {
+        return $this->belongsTo(ModelFile::class, 'model_file_id');
+    }
+
+    /** The model's own file was sliced (catalog:slice, docs/AN.md §13): the page names the time and the price in three materials from it. */
+    public function hasSlice(): bool
+    {
+        return $this->sliced_at !== null && (int) $this->slice_minutes > 0 && (float) $this->slice_grams > 0;
     }
 
     /** Designers' cards of this very model (imported from the same address). */

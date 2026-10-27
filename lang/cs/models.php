@@ -109,6 +109,13 @@ return [
         'price' => 'Cena u nás',
         'price_value' => 'od :price (:material, 1 ks)',
         'price_note' => 'Přesnou cenu spočítá kalkulace po nahrání souboru.',
+        'calc_title' => 'Cena a doba tisku u nás',
+        'calc_lead' => 'Spočítáno ze souboru modelu v našem sliceru: jeden kus, výplň :infill %, standardní kvalita, asi :grams g filamentu. Doprava se připočítá při objednávce.',
+        'calc_material' => 'Materiál',
+        'calc_time' => 'Doba tisku',
+        'calc_price' => 'Cena za kus',
+        'calc_note' => 'Spočítáno :date. Barvu, materiál a počet kusů vyberete při objednávce; cena se pak přepočítá přesně.',
+        'calc_open' => 'Objednat výtisk tohoto modelu',
     ],
 
     'search' => [

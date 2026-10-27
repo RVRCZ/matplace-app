@@ -294,3 +294,63 @@ autora, když je rozřezaná (`basis` card), jinak z `est_minutes`/`est_grams` s
 - Doporučení: (b) samostatně ne. Nejdřív (a) na 375 indexovaných, po 4 týdnech srovnat CTR ze Search Console a pak
   zvažovat rozšíření indexu o další obohacené modely se souborem, ne zúžení. Roman rozhodne, bez jeho slova se nic
   z toho nedělá.
+
+## 13. Katalog Inspirace: cena ve třech materiálech a doba tisku z řezu souboru (větev `feature/catalog-value`, 27. 10. 2026)
+
+Roman rozhodl variantu (a) z §12.6; (b) se nedělá. Nic z toho neběželo na produkci: řezání spustí řídící po nasazení.
+
+### 13.1 Co je kde
+
+- **`php artisan catalog:slice`** (`App\Console\Commands\SliceCatalog`): rozřeže soubor modelu v tomto procesu (žádná fronta,
+  `SliceCalculation::dispatchSync`) s výchozími parametry kalkulace (`PLA`, standard, výplň 15 %, 1 ks) a zapíše do
+  `catalog_models` sloupce `slice_minutes`, `slice_grams`, `slice_material`, `sliced_at`, `slice_error` (120 znaků) a
+  `slice_calculation_id` (FK na `calculations`, při smazání null; migrace `2026_10_27_200000`, šířky proti MariaDB:
+  minuty unsigned int, gramy decimal(8,1)). Kalkulace vznikne přes `CalculationService::create(..., sliceNow: false)`,
+  patří nikomu (bez session i uživatele), hotový řez stejného souboru a nastavení se znovu použije, takže opakovaný běh
+  nad modelem nic nestojí. `--limit` (výchozí 50), `--sleep` sekund mezi modely (výchozí 10), `--ids`, `--indexed` (jen
+  indexovatelné), `--force` (znovu přes výsledek i chybu), `--dry-run` (vypíše kandidáty a počty, nic neřeže).
+  **Pořadí:** nejdřív indexovatelné modely (`scopeIndexable`, dnes 375), pak ostatní se souborem; v obou podle
+  návštěvnosti. Limit se bere z tohoto pořadí, takže `--limit=50` po nocích projde nejdřív indexované.
+  **Řezat lze jen model, jehož soubor držíme (`model_file_id`)**: `file_available` samo žádný soubor nenese (importér ho
+  nastavuje false, LocalCatalogSearch ho jen čte), příkaz vypíše, kolik takových modelů je. Chybějící nebo nehotový
+  soubor = `slice_error` (`file_missing`, `file_not_ready: …`, `file_missing_on_disk`) a běh jde dál; návratový kód
+  FAILURE jen když nic neprošlo.
+- **Model (`CatalogModel`)**: `hasSlice()`, relace `sliceCalculation()` a `modelFile()`; řez platí jako „cena“ pro
+  index (`scopeIndexReady` i `indexGaps`), takže obohacený model se souborem je po řezu indexovatelný i bez čísel starého webu.
+- **Ceny (`ModelPricing::sliced`)**: jeden kus v materiálech `config('catalog.value_materials')` = PLA, PETG, ASA: gramy
+  podle hustot (`config/materials.php`), minuty podle rychlosti materiálu (`props.time`) – stejně jako porovnání
+  materiálů v kalkulačce (`renderCompare`); ceník farmy pro daný materiál přes `FarmPricingProfile::profile($code)`
+  (druh toho materiálu, když je nahraný, jinak nejlevnější druh se štítkem „nejlevnější druh u nás“) a `PriceEngine::price`
+  (časový faktor tiskárny → zobrazená doba tisku je doba na farmě). Měna návštěvníka (`Currency::current()`).
+  `quoteCatalog` bere řez hned za kartou autora (`basis` slice), před odhadem starého webu.
+- **Stránka `/model/{slug}`**: blok `#model-calc` pod CTA: tabulka materiál / doba tisku / cena za kus, poznámka
+  s datem řezu a textem, že barvu, materiál a počet kusů vybere objednávka; řádek „Odhad tisku“ (čísla starého webu) se
+  po řezu skryje. **Objednat** (`models.inspiration.calc_open`) vede na stránku kalkulace `/c/<token>` – tam je model
+  načtený, kalkulačka a cesta na farmu; jen když licence prodej dovoluje (`license_restricted` false). U nekomerční
+  licence zůstává tabulka (co by to stálo) i původní text „vytiskněte si ho pro sebe“, bez odkazu.
+- **JSON-LD**: `Schema::product()` = `Product` (název, popis, obrázky, url) s `offers` jako `AggregateOffer`
+  (`lowPrice`/`highPrice` ze tří materiálů, `priceCurrency` podle návštěvníka, `offerCount` 3, `availability` InStock,
+  `itemCondition` New, `seller` = naše Organization), jen u prodejných modelů; `CreativeWork` zůstává na všech.
+- **Admin `/admin/catalog`**: ve sloupci obohacení „řez 27. 10.“ (title: minuty a gramy) nebo „řez selhal“ (title: chyba).
+- Texty `models.inspiration.calc_*` v `lang/*/models.php` (cs/en/es). Test `tests/Feature/CatalogValueTest` (pořadí,
+  zápis, chyby, dry-run, stránka, tři materiály, Product/Offer v Kč i €, nekomerční licence bez Offer).
+
+### 13.2 Jak to spustit na produkci (řídící)
+
+1. Nasadit (migrace přidá sloupce), `php artisan catalog:slice --dry-run` – vypíše počty: kolik modelů má soubor, kolik má
+   jen `file_available`, kolik je indexovatelných a kolik kandidátů.
+2. V noci `php artisan catalog:slice --limit=60 --sleep=15` (Orca 20–90 s na model, s pauzou ≈ 1 model/min → hodina na
+   běh); opakovat, dokud `Candidates` neklesne na 0. Indexované jdou první. Řezy jdou týmž slicerem jako objednávky
+   (`CachedSlicer` → Orca), proto `--sleep`: fronta farmy má mít volno.
+3. Zkontrolovat pár stránek (`/model/<slug>` s `#model-calc`, Rich Results Test na `Product`), `/admin/catalog` ukazuje „řez“.
+4. Chyby `slice_error` v adminu; `--force --ids=…` po opravě souboru.
+
+### 13.3 Co zůstává
+
+- Počty modelů se souborem na produkci neznám (DB nečtu); jestli jich je málo, cena ve třech materiálech se objeví jen
+  u nich – `file_available` bez souboru by chtělo import souborů (odkud?), to je rozhodnutí Romana.
+- Licence: `Offer` jen kde `license_restricted` false (CC0, CC BY, CC BY-SA, free_commercial); u CC BY zůstává povinnost
+  uvést autora – objednávka ji píše do poznámky (`attribution()`), stránka ji říká.
+- Google může u `Product` hlásit chybějící `review`/`aggregateRating` jako doporučení; recenze nemáme, nevymýšlíme.
+- Stránka kalkulace `/c/<token>` z katalogu: kalkulace patří nikomu; pokud by se někdy kalkulace promazávaly, FK dá null
+  a stránka ukáže tabulku bez tlačítka (`$sellable` to hlídá).

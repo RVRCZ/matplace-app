@@ -109,6 +109,13 @@ return [
         'price' => 'Precio con nosotros',
         'price_value' => 'desde :price (:material, 1 ud.)',
         'price_note' => 'El precio exacto lo da el cálculo una vez subido el archivo.',
+        'calc_title' => 'Precio y tiempo de impresión con nosotros',
+        'calc_lead' => 'Calculado a partir del archivo del modelo en nuestro slicer: una pieza, relleno :infill %, calidad estándar, unos :grams g de filamento. El envío se añade al pedir.',
+        'calc_material' => 'Material',
+        'calc_time' => 'Tiempo de impresión',
+        'calc_price' => 'Precio por pieza',
+        'calc_note' => 'Calculado el :date. El color, el material y el número de piezas se eligen al pedir; el precio se recalcula entonces con exactitud.',
+        'calc_open' => 'Pedir una impresión de este modelo',
     ],
 
     'search' => [

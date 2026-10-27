@@ -137,6 +137,26 @@ final class Schema
         ];
     }
 
+    /**
+     * A thing we sell a print of: an inspiration model with a slice of its own file (docs/AN.md §13). The offers are the
+     * price of one piece in each material as one AggregateOffer in the visitor's currency, sold by us; only where the
+     * licence allows a sale – elsewhere the page stays a CreativeWork alone.
+     *
+     * @param  list<string>  $images
+     * @param  list<float>  $prices  one per material, in $currency
+     */
+    public static function product(string $name, ?string $description, array $images, string $url, array $prices, string $currency): array
+    {
+        return [
+            '@type' => 'Product', 'name' => $name, 'description' => $description, 'image' => $images, 'url' => $url,
+            'offers' => $prices ? [
+                '@type' => 'AggregateOffer', 'priceCurrency' => $currency, 'lowPrice' => round(min($prices), 2), 'highPrice' => round(max($prices), 2), 'offerCount' => count($prices),
+                'availability' => 'https://schema.org/InStock', 'itemCondition' => 'https://schema.org/NewCondition', 'url' => $url,
+                'seller' => ['@id' => url('/').'#organization'],
+            ] : null,
+        ];
+    }
+
     /** @param  list<array{0: string, 1: string}>  $trail  [name, address] from the home page down */
     public static function breadcrumbs(array $trail): array
     {
