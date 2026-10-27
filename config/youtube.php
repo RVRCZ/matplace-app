@@ -35,13 +35,18 @@ return [
         'slowest_frame' => 0.2,
         // the customer's video on the order page: logo, 3 2 1, the print, the finished piece, the photo, thank you
         'customer' => ['growth' => [12, 28], 'hold' => 3.0, 'photo' => 3.0, 'fps' => 24],
-        // the square Short: the finished piece first, the print, the piece held, the photo; under 20 s
-        'short' => ['growth' => [8, 14], 'start' => 0.5, 'hold' => 2.0, 'photo' => 2.0, 'fps' => 24],
+        // the vertical Short (9:16, docs/AL.md §13.4): the hook card over the first frame, the print growing 15 to 25 s, the
+        // last frame held, the end with the photographed piece (or the print on the plate), the price and the tool's address
+        'short' => ['growth' => [15, 25], 'hook' => 1.0, 'hold' => 1.5, 'end' => 3.0, 'fps' => 24, 'width' => 1080, 'height' => 1920],
         // the classic 16:9: title, the print, the piece held, the photo, the card with the tool's address; under 45 s
         'wide' => ['growth' => [20, 28], 'title' => 1.5, 'hold' => 2.0, 'photo' => 3.0, 'end' => 3.0, 'fps' => 30, 'width' => 1920, 'height' => 1080],
         // "Tento týden na farmě": intro, every print of the week with its name, the closing card; 2 to 4 min
         'weekly' => ['growth' => [8.5, 10], 'piece_min' => 10.0, 'intro' => 3.0, 'end' => 4.0, 'max_seconds' => 240, 'min_prints' => 3, 'fps' => 30, 'width' => 1920, 'height' => 1080],
     ],
+
+    // the classic 16:9 of a print is built for the customer and the weekly cut but not uploaded next to its Short (the same
+    // time-lapse twice split the views and looked like spam, YouTube audit of 27 Oct 2026); on = upload both as before
+    'wide_uploads' => (bool) env('YOUTUBE_WIDE_UPLOADS', false),
 
     // quota ran out (about 6 uploads a day by default): try again after this many minutes
     'retry_after_minutes' => 360,

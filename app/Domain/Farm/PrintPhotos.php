@@ -33,10 +33,21 @@ final class PrintPhotos
     /** @param  array{bin?: string, timeout?: int}  $python  config engines.python */
     public function __construct(private readonly BackgroundRemover $remover, private readonly array $python) {}
 
-    /** Whether the background can be taken off here (rembg answers once an hour). */
+    /** Whether the background can be taken off here (rembg with its model; the answer is remembered for an hour). */
     public function available(): bool
     {
         return $this->remover->available();
+    }
+
+    /**
+     * What the remover says about itself: rembg's probe (installed, model present, home) or a line for the fake and
+     * for none; `farm:photo --probe` prints it.
+     *
+     * @return array<string, mixed>
+     */
+    public function probe(): array
+    {
+        return method_exists($this->remover, 'probe') ? $this->remover->probe() : ['ok' => $this->remover->available(), 'rembg' => $this->remover::class, 'model_present' => $this->remover->available()];
     }
 
     /**

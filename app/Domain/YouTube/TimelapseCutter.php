@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Storage;
  * Plans and renders the farm videos from the frames the agent sent during a print (settings in config youtube.cut):
  *
  *   customer  the order page: black, the logo, 3 2 1, the print grows, the finished piece, the photo, thank you
- *   short     square for Shorts and Reels: the finished piece first, the print, the piece held, the photo (under 20 s)
+ *   short     vertical 9:16 for Shorts and Reels: the hook card, the print growing, the piece held, the photographed piece
+ *             with the price and the tool's address, the question (docs/AL.md §13.4)
  *   wide      classic 16:9 at 1920×1080: title, the print, the piece held, the photo, the tool's address (under 45 s)
  *   weekly    "Tento týden na farmě": every print of a week with its name, 2 to 4 minutes, with chapters
  *
@@ -152,41 +153,73 @@ class TimelapseCutter
     }
 
     /**
-     * The square Short: the finished piece first (the first second decides), the layers growing, the piece held so
-     * the loop closes, the cleaned piece crossfading in, a small logo in the corner.
+     * The vertical Short (the YouTube audit of 27 Oct 2026): the first second is a card with the hook ("Z jedné fotky →
+     * busta") over the first frame, then the print grows (the square of the bed across the width, the same picture
+     * blurred behind it), the last frame is held, and the end shows the photographed piece (PrintPhotos' 9:16 render;
+     * without a photo the finished print stays on the plate) with the price, the address of the tool and the question
+     * that asks for a comment. A small logo sits in the corner throughout.
      */
     public function short(FarmOrder $order): VideoCut
     {
         $c = (array) config('youtube.cut.short');
-        $fps = (int) $c['fps'];
+        [$fps, $w, $h] = [(int) $c['fps'], (int) ($c['width'] ?? 1080), (int) ($c['height'] ?? 1920)];
         [$frames, $per] = $this->paced($this->frames($order), $c['growth'], $fps);
         $dir = $this->dir($order);
+        $locale = (string) config('youtube.language');
+        [$hook, $hold, $end] = [(float) $c['hook'], (float) $c['hold'], (float) $c['end']];
+        $first = (string) $frames->first();
         $last = (string) $frames->last();
-        $start = (float) $c['start'];
-        $hold = (float) $c['hold'];
-        $photoSeconds = (float) $c['photo'];
-        $timed = [[$last, $start], ...$this->timed($frames, $per), [$last, $hold]];
-        [$w, $h] = @getimagesize((string) $frames->first()) ?: [1280, 720];
-        [$cx, $cy, $side] = $this->crop($order, (int) $w, (int) $h);
-        $size = min(1080, $side - $side % 2);
-        $photo = $this->finishPhoto($order, 'square');
+        [$fw, $fh] = @getimagesize($first) ?: [1280, 720];
+        [$cx, $cy, $side] = $this->crop($order, (int) $fw, (int) $fh);
+        $photo = $this->finishPhoto($order, 'short');
+        $font = $this->font();
         $growth = $frames->count() * $per;
-        $printSeconds = $start + $growth + $hold;
+        $printSeconds = $hook + $growth + $hold;
+        $hookSize = (int) round($h * 0.038);
+        $texts = [
+            // the hook on as many lines as the width takes (drawtext does not wrap by itself)
+            $dir.'/short_hook.txt' => implode('
+', $this->wrap($this->videos->hook($order, $locale), $hookSize, $w)),
+            $dir.'/short_price.txt' => $this->videos->priceLine($order, $locale),
+            $dir.'/short_url.txt' => $this->videos->address($order),
+            $dir.'/short_ask.txt' => __('youtube.video.ask_short', [], $locale),
+        ];
+        $timed = [[$first, $hook], ...$this->timed($frames, $per), [$last, $hold]];
         $inputs = ['-f', 'concat', '-safe', '0', '-i', $dir.'/short.txt', '-i', public_path('img/logo.png')];
-        $graph = sprintf('[0:v]crop=%d:%d:%d:%d,scale=%d:%d,fps=%d,format=yuv420p,setsar=1,settb=AVTB[print];[1:v]scale=%d:-2[logo];',
-            $side, $side, $cx, $cy, $size, $size, $fps, (int) round($size * 0.22));
+        $top = (int) round(($h - $w) / 2 - $h * 0.04);   // the square a little above the middle: the hook above it, the price below
+        $line = fn (string $file, int $size, string $y, string $color, string $enable, bool $box = true) => sprintf("drawtext=fontfile='%s':textfile='%s':expansion=none:text_align=C:fontsize=%d:fontcolor=%s%s:x=(w-text_w)/2:y=%s:enable='%s'",
+            $font, $this->path($file), $size, $color, $box ? ':box=1:boxcolor=black@0.55:boxborderw='.(int) round($h * 0.012) : '', $y, $enable);
+        $graph = [
+            '[0:v]split[bg_src][fg_src]',
+            sprintf('[bg_src]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,boxblur=20:4,eq=brightness=-0.15,fps=%d,format=yuv420p,setsar=1[bg]', $w, $h, $w, $h, $fps),
+            sprintf('[fg_src]crop=%d:%d:%d:%d,scale=%d:%d:flags=lanczos,fps=%d,format=yuv420p,setsar=1[fg]', $side, $side, $cx, $cy, $w, $w, $fps),
+            sprintf('[bg][fg]overlay=0:%d[stage]', $top),
+            // the hook: the first second darkened, the sentence in the middle
+            sprintf("[stage]drawbox=x=0:y=0:w=iw:h=ih:color=black@0.55:t=fill:enable='lt(t,%s)',%s:line_spacing=%d,settb=AVTB[print]", VideoCut::number($hook), $line($dir.'/short_hook.txt', $hookSize, '(h-text_h)/2', 'white', 'lt(t,'.VideoCut::number($hook).')', false), (int) round($hookSize * 0.3)),
+            sprintf('[1:v]scale=%d:-2[logo]', (int) round($w * 0.16)),
+        ];
         if ($photo) {
-            array_push($inputs, '-loop', '1', '-t', VideoCut::number($photoSeconds + 1), '-i', $photo);
-            // the cleaned piece crossfades in after the finished print and stays to the end
-            $graph .= sprintf('[2:v]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,setsar=1,fps=%d,format=yuv420p,settb=AVTB,trim=duration=%s[photo];[print][photo]xfade=transition=fade:duration=0.5:offset=%s[body];',
-                $size, $size, $size, $size, $fps, VideoCut::number($photoSeconds), VideoCut::number($printSeconds - 0.5));
+            array_push($inputs, '-loop', '1', '-t', VideoCut::number($end + 1), '-i', $photo);
+            // the photographed piece crossfades in after the finished print and stays to the end
+            $graph[] = sprintf('[2:v]scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,setsar=1,fps=%d,format=yuv420p,trim=duration=%s,settb=AVTB[piece]', $w, $h, $w, $h, $fps, VideoCut::number($end));
+            $graph[] = sprintf('[print][piece]xfade=transition=fade:duration=0.4:offset=%s[body]', VideoCut::number($printSeconds - 0.4));
+            $seconds = $printSeconds + $end - 0.4;
+            $endAt = $printSeconds - 0.4;
         } else {
-            $graph .= '[print]null[body];';
+            // no photo yet: the finished print stays on the plate and the words come over it (never an empty plate)
+            $graph[] = sprintf('[print]tpad=stop_mode=clone:stop_duration=%s[body]', VideoCut::number($end));
+            $seconds = $printSeconds + $end;
+            $endAt = $printSeconds;
         }
-        $graph .= sprintf('[body][logo]overlay=%d:%d,format=yuv420p[v]', (int) round($size * 0.03), (int) round($size * 0.03));
+        $show = 'gte(t,'.VideoCut::number($endAt).')';
+        $graph[] = '[body]'.implode(',', array_filter([
+            $texts[$dir.'/short_price.txt'] !== '' ? $line($dir.'/short_price.txt', (int) round($h * 0.05), 'h*0.70', 'white', $show) : null,
+            $line($dir.'/short_url.txt', (int) round($h * 0.032), 'h*0.785', 'white', $show),
+            $line($dir.'/short_ask.txt', (int) round($h * 0.03), 'h*0.86', '0xe2e8f0', $show, false),
+        ])).'[texted]';
+        $graph[] = sprintf('[texted][logo]overlay=%d:%d,format=yuv420p[v]', (int) round($w * 0.03), (int) round($w * 0.03));
 
-        return $this->withMusic(new VideoCut('short', $dir.'/short.mp4', [$dir.'/short.txt' => $timed], [], $inputs, $graph,
-            $printSeconds + ($photo ? $photoSeconds - 0.5 : 0), $growth, $fps, null), $this->music($order));
+        return $this->withMusic(new VideoCut('short', $dir.'/short.mp4', [$dir.'/short.txt' => $timed], $texts, $inputs, implode(';', $graph), $seconds, $growth, $fps, null), $this->music($order));
     }
 
     /**
@@ -442,6 +475,28 @@ class TimelapseCutter
     private function dir(FarmOrder $order): string
     {
         return Storage::disk(config('farm.disk'))->path($order->dir());
+    }
+
+    /**
+     * A sentence on as many lines as the width takes at this font size (a bold DejaVu glyph is about 0.62 of the size
+     * wide): drawtext does not wrap by itself.
+     *
+     * @return list<string>
+     */
+    public function wrap(string $text, int $size, int $width): array
+    {
+        $max = max(8, (int) floor($width * 0.88 / ($size * 0.62)));
+        $lines = [''];
+        foreach (preg_split('/\s+/u', trim($text), -1, PREG_SPLIT_NO_EMPTY) as $word) {
+            $last = count($lines) - 1;
+            if ($lines[$last] !== '' && mb_strlen($lines[$last].' '.$word) > $max) {
+                $lines[] = $word;
+            } else {
+                $lines[$last] = trim($lines[$last].' '.$word);
+            }
+        }
+
+        return $lines;
     }
 
     /** The bold DejaVu that ships with dompdf: the same file on every install, covers Czech and Spanish. */

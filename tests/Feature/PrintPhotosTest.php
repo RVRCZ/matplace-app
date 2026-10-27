@@ -165,14 +165,14 @@ final class PrintPhotosTest extends TestCase
         $this->actingAs($customer)->get("/farm/orders/{$order->token}")->assertOk()->assertSee('farm-photo-box')->assertSee(__('farm.order.photo_of_print'));
         $this->actingAs($this->admin())->get(route('admin.farm.orders.show', $order))->assertOk()->assertSee('pozadí odstraněno');
 
-        // the videos end with the composed photo: the square for the square Short, the web render elsewhere
+        // the videos end with the composed photo: the 9:16 render for the vertical Short, the web render elsewhere
         Storage::disk('farm')->put($order->dir().'/frames/f0001.jpg', file_get_contents($this->photo('frame.jpg', 1280, 720)));
         foreach (range(2, 60) as $i) {
             Storage::disk('farm')->copy($order->dir().'/frames/f0001.jpg', $order->dir().'/frames/f'.str_pad((string) $i, 4, '0', STR_PAD_LEFT).'.jpg');
         }
         $cuts = app(TimelapseCutter::class)->cuts($order->fresh());
         $this->assertNotNull($cuts);
-        $this->assertContains(PrintPhotos::file($order, 'square'), $cuts['short']->inputs);
+        $this->assertContains(PrintPhotos::file($order, 'short'), $cuts['short']->inputs);
         $this->assertContains(PrintPhotos::file($order, 'web'), $cuts['wide']->inputs);
         $this->assertContains(PrintPhotos::file($order, 'web'), $cuts['customer']->inputs);
 
