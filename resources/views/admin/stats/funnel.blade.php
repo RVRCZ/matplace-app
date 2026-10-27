@@ -12,7 +12,7 @@
         'register|register_visit|order_created' => 'Registrace (nebo už měl účet)', 'order_created' => 'Zakázka založena', 'checkout_started|topup_started' => 'Platba začala (karta nebo dobití)',
     ];
     $paths = ['sales' => 'Prodejní cesta', 'customer' => 'Zákazník', 'owner' => 'Majitel tiskárny', 'designer' => 'Designér', 'order' => 'Objednávka (audit)'];
-    $sources = ['google' => 'Google', 'seznam' => 'Seznam', 'bing' => 'Bing', 'facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube' => 'YouTube', 'designer' => 'Odkaz designéra', 'direct' => 'Přímo', 'other' => 'Ostatní'];
+    $sources = ['google' => 'Google', 'seznam' => 'Seznam', 'bing' => 'Bing', 'facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube' => 'YouTube', 'designer' => 'Odkaz designéra', 'embed' => 'Vložená kalkulačka', 'direct' => 'Přímo', 'other' => 'Ostatní'];
 @endphp
 
 @section('content')

@@ -135,3 +135,42 @@ Sitemaps,LandingPage}.php`, `app/Domain/Tools/ToolIntents.php`, `app/Domain/Stat
 tools/card_row,calculator/index,calculator/_trust,pages/static,admin/stats/funnel}.blade.php`,
 `resources/js/calc/calculator.ts`, `lang/{cs,en,es}/{models,tools,pages,pagination}.php`, `lang/src/{pagination,
 calc_shipping,calc_trust}.json` → `lang/{cs,en,es}.json`, `tests/Feature/{SalesPathWebTest,AuditRestTest}.php`.
+
+## 12. Audit webu z 26. 10. a návštěvnost (větev `feature/audit-web-2`, 27. 10. 2026)
+
+Zadání `docs/prompts/audit-web-2.md` (úkoly 1 až 6 kvalita, 7 až 11 návštěvnost mají přednost). Větev z `origin/main`
+48fcf13. Nic nenasazeno, nic nemergováno. Netknuto: `calculator/home.blade.php`, farma, stránka zakázky, `tools_seo`, `landing`.
+
+### 12.1 Sdílet výsledek (úkol 7)
+
+- Kalkulace: tlačítko „Sdílet“ bylo (schránka + Web Share API); nově po sdílení pošle `POST /api/shared`
+  (`ShareController`, throttle 30/min) s `kind=calc`, `tool` = nástroj, ze kterého model vznikl, a `how` = share | copy.
+- Stránky nástrojů: tlačítko `#tool-share` vedle „Stáhnout model“ (`tools/page.blade.php`, ikona `i-share`), skryté do
+  výsledku; `Stage.shareable(url)` ho zapne z `fileResult()` s odkazem `/?open=<uuid>` (kalkulace otevře týž model a vede
+  k ceně i ke stažení). Web Share API, jinak schránka a „Odkaz zkopírován“ (cs/en/es v `toolpage.php`).
+- Měření: událost `share` (meta `kind`, `tool`, `code` = share | copy, nic o modelu) je v `Track::ACTIONS` (čin člověka)
+  i `Track::SHARED` (jde do GA se souhlasem). Test `AuditWeb2Test`.
+
+### 12.2 Vložitelná kalkulačka (úkol 8)
+
+- `/embed` (`EmbedController::index`, indexovatelná, v patičce „Kalkulačka na váš web“): kód `<iframe>` ke zkopírování,
+  živý náhled, pravidla; texty `lang/{cs,en,es}/embed.php`. Kód nese adresu `/embed/calc` v jazyce stránky.
+- `/embed/calc` (`layouts/embed.blade.php`: bez hlavičky, patičky, lišty cookies i skriptů třetích stran; `noindex`):
+  nahrání → server změří (čeká na `ready`) → `POST /api/calculations` (velký model `rough_only`) → hned odhad
+  (`rough.price_min…max`, doba jako rozpětí), pak přesná cena po řezu → „Otevřít na matplace.com“ = `/c/<kód>` s
+  `utm_source=embed&utm_medium=iframe&utm_campaign=<host stránky>`, nový panel. Skript `resources/js/embed.ts`
+  (vlastní vstup Vite, 3,7 kB, bez three.js; jen `calc/api.ts` a `site/money.ts`).
+- Cookies: v cizím rámu se `mp_sid` (SameSite=Lax) neposílá, každý požadavek dostane novou anonymní session; soubor i
+  kalkulace jsou „ničí“ a patří tomu, kdo má odkaz; `/c/<kód>` se otevírá v prvním kontextu jako obvykle. Nic nebylo
+  třeba uvolňovat.
+- Měření: `Track::classify` → zdroj `embed` pro `utm_source=embed` (`Funnel::SOURCES`, v `/admin/stats` „Vložená
+  kalkulačka“); každé načtení rámu z cizího webu zapíše událost `embed` s `meta.host` (jen hostname, nový klíč v
+  `Track::META`), tabulka hostů přijde se stránkou měření (§12.3).
+- CSP: dnes Report-Only, rám funguje. Pro režim enforce je třeba `frame-ancestors *` a žádné `X-Frame-Options` jen pro
+  `/embed/*`. Návrh pro `config/security.php` (řídící zapracuje do `SecurityHeaders`):
+  ```php
+  'paths' => [
+      'embed/*' => ['directives' => ['frame-ancestors' => ['*']], 'headers_enforced' => ['X-Frame-Options' => null]],
+  ],
+  ```
+  (první vzor, který `$request->is()` trefí, překryje direktivy a hlavičky; `null` hlavičku vynechá).

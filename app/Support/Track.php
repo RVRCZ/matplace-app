@@ -44,7 +44,7 @@ final class Track
      * Events the browser hears about as well, to pass them on to Google Analytics and the Meta pixel when the
      * visitor allowed it (resources/js/site/measure.ts). Page views are not among them: those tools count their own.
      */
-    public const SHARED = ['upload', 'generate', 'calculation', 'download', 'order_created', 'order_paid', 'register', 'designer_enabled', 'designer_file_uploaded', 'ref_visit', 'search'];
+    public const SHARED = ['upload', 'generate', 'calculation', 'download', 'order_created', 'order_paid', 'register', 'designer_enabled', 'designer_file_uploaded', 'ref_visit', 'search', 'share'];
 
     /** What of an event's details may leave the server: numbers and codes, never a text somebody typed. */
     private const SHARED_META = ['kind', 'tool', 'value', 'currency', 'order', 'results', 'event_id'];
@@ -60,7 +60,7 @@ final class Track
      * The keys an event's `meta` may have. Values are numbers, true/false, or short codes; `path` is an address of
      * ours already masked (self::pathOf). The markers bot/staff/js/act are set by this class itself.
      */
-    public const META = ['kind', 'tool', 'value', 'currency', 'order', 'results', 'event_id', 'path', 'printer', 'step', 'code', 'bot', 'staff', 'js', 'act'];
+    public const META = ['kind', 'tool', 'value', 'currency', 'order', 'results', 'event_id', 'path', 'printer', 'step', 'code', 'host', 'bot', 'staff', 'js', 'act'];   // host: the site an embedded calculator was shown on
 
     private const SITES = [
         'google' => ['google.'], 'seznam' => ['seznam.cz'], 'bing' => ['bing.com'],
@@ -69,7 +69,7 @@ final class Track
     ];
 
     /** What only a person does. One of these makes the visit a person's even when its script never called home. */
-    public const ACTIONS = ['upload', 'generate', 'calculation', 'order_created', 'order_paid', 'topup_started', 'topup', 'register', 'search', 'designer_enabled', 'designer_import', 'designer_file_uploaded'];
+    public const ACTIONS = ['upload', 'generate', 'calculation', 'order_created', 'order_paid', 'topup_started', 'topup', 'register', 'search', 'designer_enabled', 'designer_import', 'designer_file_uploaded', 'share'];
 
     /** Pages whose address names public content; any other address with a parameter is kept as its pattern (/c/{calculation}): private links carry tokens. */
     private const PUBLIC_PAGES = ['printers.show', 'designers.show', 'collections.show', 'blog.show', 'models.show', 'catalog.category', 'catalog.show'];
@@ -468,6 +468,9 @@ final class Track
     public static function classify(string $utmSource, string $referer, string $ownHost): string
     {
         $utmSource = strtolower($utmSource);
+        if ($utmSource === 'embed') {   // a link out of the calculator another site embedded (EmbedController, docs/AN.md §12)
+            return 'embed';
+        }
         foreach (array_keys(self::SITES) as $name) {
             if ($utmSource !== '' && str_contains($utmSource, $name)) {
                 return $name;

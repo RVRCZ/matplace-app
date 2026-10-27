@@ -5,7 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.ts'],
+            // embed.ts: the calculator inside another site's iframe, without three.js (resources/views/layouts/embed.blade.php)
+            input: ['resources/css/app.css', 'resources/js/app.ts', 'resources/js/embed.ts'],
             refresh: true,
         }),
         tailwindcss(),
