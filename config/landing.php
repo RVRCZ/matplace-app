@@ -22,5 +22,7 @@ return [
         'hollow' => ['related' => ['split', 'life_size', 'repair'], 'blog' => ['rozdeleni-a-vyduteni-3d-modelu', 'cena-3d-tisku-z-modelu']],
         'split' => ['related' => ['life_size', 'hollow', 'check'], 'blog' => ['rozdeleni-a-vyduteni-3d-modelu', 'jak-pripravit-stl-soubor-pro-3d-tisk']],
         'gcode' => ['related' => ['check', 'hollow', 'split'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk', 'cena-3d-tisku-z-modelu']],
+        'relief' => ['related' => ['figure', 'filament_art', 'lightbox'], 'blog' => ['litofanie-z-fotky', 'vytvoreni-stl-z-fotek-pomoci-ai-kompletni-navod-pro-3d-tisk-2026']],
+        'map' => ['related' => ['relief', 'nameplate', 'coaster'], 'blog' => ['3d-mapa-mesta-z-openstreetmap', 'cena-3d-tisku-z-modelu']],
     ],
 ];

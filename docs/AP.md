@@ -235,5 +235,52 @@ modely tam nejsou; proto se odchylka objemu nepřeměřovala a zůstala hodnota 
 
 ### 4.4 Co zůstalo
 
-- Článek pro G‑kód (blog §5) a jeho `article`; fotky od N3 nejsou potřeba (soubory, ne výtisky).
+- Článek pro G‑kód (blog §5) a jeho `article`; fotky nejsou potřeba (soubory, ne výtisky).
 - Nasazení: řídící; Search Console per URL (`/tools/hollow`, `/tools/split`, `/tools/gcode-model` ×3 jazyky).
+
+Řídící 27. 10.: dávka 1 sloučena do main 616cde5 a nasazena (server b943da6; konflikt jen v `lang/*.json`, vyřešen
+znovu přes `lang_add tools_seo_n1.json`). Fotky výtisků dělá session 2 (`FarmOrder::photoUrl()`,
+`PublicStats::latestPhotos()`), do příkladů je vybere Roman; `photo => null` zůstává. Opravuje bod 4 v §2, kde jsem
+psala o N3. Main 616cde5 jsem sloučila do své větve (e718bd8, bez konfliktu).
+
+## 5. Dávka 3: litofanie, mapa, QR cedulka, organizér (27. 10. 2026)
+
+### 5.1 Co se změnilo
+
+- `lang/{cs,en,es}/tools_seo/{relief,map,qr,organizer}.php`: title a heading na dotaz („Litofanie z fotky online
+  zdarma“, „3D mapa města k tisku z názvu místa“, „QR kód na 3D tisk: cedulka se stojánkem“, „Organizér do šuplíku na
+  míru“; en „Lithophane maker online, free“, „3D printed map of any city from its name“, „3D printed QR code: a sign
+  with a stand“, „Drawer organizer made to your drawer“), description do 155, dva odstavce s limity a příkladem
+  s cenou, 4 kroky, 6 otázek. U QR a organizéru otázky nepřekrývají bloky „Než objednáte“ z AH.md §11 (hlídá kontrola
+  duplicit v §5.3); nové otázky: proč nástroj chce kód zvětšit, víko a dělicí stěny, tisk organizéru doma.
+- `lang/{cs,en,es}/landing.php` + `config/landing.php`: bloky pro litofanii (světlo do lampy, tisk doma, fotka
+  z telefonu) a mapu (rozsah, tisk doma, obec bez výšek budov, rám); QR a organizér bloky z AH.md §11 beze změny.
+- `tests/Feature/LandingPagesTest.php`: relief a map v `PAGES` (10 stránek s bloky z 11 landing; `pet` v seznamu je).
+- `config/tools.php` beze změny: všechny čtyři mají `article` (litofanie-z-fotky, 3d-mapa-mesta-z-openstreetmap,
+  qr-cedulka-a-wifi-stojanek, organizer-do-supliku-na-miru).
+
+### 5.2 Čísla a odkud jsou
+
+| nástroj | příklad | zdroj |
+|---|---|---|
+| litofanie | panel 100 × 75 mm se stojánkem 27 g, 1 h 9 min, 100 Kč; lampa E27 ⌀ 100 × 150 mm 111 g, 2 h 29 min, 250 Kč | AK.md §5.6 (produkce 18. 10., PLA+, z vygenerovaného obrázku) |
+| mapa | Staré Město 500 m, deska 150 mm, Hladká: 85 g, 3 h 42 min, 240 Kč jednou barvou; měřítko asi 1 : 3 300 (500 m / 150 mm) | AK.md §5.6 (produkce 18. 10.) |
+| QR | web 70 × 83 × 3 mm 14 g, 25 min, 99 Kč (`/c/lomf0wzlshw4`); Wi‑Fi 90 mm se stojánkem 35 g, 1 h 1 min, 110 Kč | AH.md §11, AK.md §5.5 (produkce 18. 10.) |
+| organizér | 200 × 120 × 40 mm 3 × 2: 115 g, 2 h 27 min, 250 Kč (`/c/l1gr0izblzwr`); 100 × 80 × 30 mm 2 × 2: 41 g, 57 min, 110 Kč; 300 × 400 × 50 hlásí přesah podložky | AH.md §11, AK.md §5.5 |
+
+### 5.3 Ověření
+
+- `LandingPagesTest|ToolPageTest|SeoTest|ToolsCatalogTest` (+CatalogSeoTest): první běh 42 OK a 1 chyba (en/organizer
+  description 162 znaků), po zkrácení osmi en/es popisků `SeoTest` 12 testů OK; ostatní třídy se od prvního běhu
+  neměnily (jen řetězce description). `pint --dirty` čistý.
+- Délky: title 54 až 60, description 144 až 155, heading 28 až 50 (es organizér).
+- Kontrola duplicit: žádná otázka se neopakuje mezi častými otázkami a blokem Než objednáte (QR a organizér mají
+  bloky z AH.md §11).
+- JSON‑LD na 12 stránkách: HowTo + FAQPage s 10 otázkami, platné; H1 na dotaz ve třech jazycích.
+- Snímky `docs/img/seo-n1/{relief,map,qr,organizer}-{390,1280}-cs-1.webp`: bez vodorovného posunu, bez chyb skriptu.
+
+### 5.4 Co zůstalo
+
+- Tím je hotových všech 10 stránek z §1. Nasazení: řídící; pak Search Console per URL ×3 jazyky.
+- Fotky výtisků vybere Roman (session 2), `photo` v `example_items` zůstává null.
+- Dál: vánoční nástroje (§6), blog (§7), prolinkování (§8).

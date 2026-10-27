@@ -206,4 +206,37 @@ return [
             ['t' => 'Archiv na SD kartě', 'text' => 'Staré G‑kódy z tiskárny jako modely do katalogu: vidíte tvar, rozměry a cenu dalšího kusu.'],
         ],
     ],
+
+    // vstupní stránky session N1, dávka 3 (docs/AP.md §5): litofanie, mapa
+    'relief' => [
+        'order' => [
+            ['q' => 'Kolik stojí litofanie u vás?', 'farm' => true, 'a' => 'Panel 100 × 75 mm se stolním stojánkem vyšel na 100 Kč, lampa na objímku E27 o průměru 100 mm a výšce 150 mm na 250 Kč (bez dopravy, kalkulace z 18. 10. 2026). Tiskneme z bílého materiálu; přesnou cenu vaší fotky a velikosti ukáže kalkulace dřív, než cokoli objednáte.'],
+            ['q' => 'Jaké světlo dát do lampy?', 'a' => 'LED žárovku E27 nebo E14, nejvýš kolem 10 W; klasickou ani halogenovou ne, PLA měkne už kolem 55 °C. Teplá bílá dá obrazu jemnější odstíny, studená ostřejší kontrast. Do otevřeného dna se vejde LED pásek, do zavřeného LED svíčka.'],
+            ['q' => 'Jak litofanii tisknout doma?', 'a' => 'Panel nastojato a plný, lampa nastojato na dně, reliéf naležato bez podpěr; stažený projekt pro slicer má nastavení, které používáme my. Materiál bílý PLA; jiná barva obraz zabarví nebo zatemní.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Panel 100 × 75 mm se tiskne asi 1 h 9 min, lampa 150 mm asi 2 h 29 min. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Stačí fotka z telefonu?', 'a' => 'Ano. Na destičce 100 mm se stejně uplatní jen tolik detailu, kolik dá tryska 0,4 mm; rozhoduje kontrast a jeden hlavní motiv, ne rozlišení. Posuvníky jasu a kontrastu nastavte tak, aby nástroj hlásil co nejvíc odstínů, a náhled proti světlu ukáže výsledek.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne; fotku neukládáme a v modelu zůstává jen tvar. Účet potřebujete, až když si litofanii necháte vytisknout u nás.'],
+        ],
+        'who' => [
+            ['t' => 'Dárek z fotky', 'text' => 'Portrét, svatební nebo rodinná fotka jako panel 100 × 75 mm se stojánkem na poličku nebo k oknu; obraz se objeví, když za ni zasvítí slunce nebo lampa.'],
+            ['t' => 'Lampa do dětského pokoje', 'text' => 'Fotka kolem dokola válce s LED žárovkou E27: ve dne bílá lampa, večer rozsvícený obrázek.'],
+            ['t' => 'Reliéf na zeď', 'text' => 'Fotka nebo logo jako plastický obraz, který je vidět i bez světla; na památku, do kanceláře nebo jako cedule.'],
+        ],
+    ],
+
+    'map' => [
+        'order' => [
+            ['q' => 'Kolik stojí mapa u vás?', 'farm' => true, 'a' => 'Staré Město 500 m na desce 150 mm vyšlo na 240 Kč jednou barvou (85 g, bez dopravy, kalkulace z 18. 10. 2026). Barvy podkladu, silnic a budov vyberete při objednávce; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Jaký rozsah vybrat?', 'a' => 'Pro centrum nebo čtvrť 500 m, pro menší město 1 km, pro velké město 2 km; na desce 150 mm je u kilometru budova 20 m vysoká 3 mm. Větší území vyberte jako krajinu 2 až 20 km, kde je hlavní reliéf terénu a obce jsou nízké bloky.'],
+            ['q' => 'Jak mapu tisknout doma?', 'a' => 'Naplocho, bez podpěr, vrstva 0,2 mm. Projekt 3MF pro OrcaSlicer a PrusaSlicer má v sobě dvě výměny filamentu (silnice, budovy); tiskárna se zastaví, vyměníte cívku a tisk pokračuje. STL je jedno těleso pro tisk jednou barvou.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Mapa 150 mm se tiskne asi 3 h 42 min. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Moje obec nemá v mapě výšky budov. Co s tím?', 'a' => 'Budovy bez údaje dostanou výšku, kterou zadáte, třeba 8 m pro rodinné domy. Náhled oblasti ukáže, které budovy a ulice v OpenStreetMap jsou; co chybí, může kdokoli do OpenStreetMap doplnit a mapa to po aktualizaci dat převezme.'],
+            ['q' => 'Co bude na rámu?', 'a' => 'Vyvýšený název, který zadáte: jméno města, ulice nebo věnování. Rám jde i vypnout, deska pak končí hranou mapy.'],
+        ],
+        'who' => [
+            ['t' => 'Dárek z rodného města', 'text' => 'Centrum, kde někdo vyrostl nebo kde byla svatba: 500 m na desce 150 mm se jménem na rámu, ve třech barvách.'],
+            ['t' => 'Čtvrť, kampus, areál', 'text' => 'Pro architekty, školy a správce areálů: budovy se skutečnými výškami a ulice podle druhu, do minuty bez kreslení.'],
+            ['t' => 'Krajina na výlet', 'text' => 'Kopec, přehrada nebo údolí jako reliéf s převýšením, se silnicemi a vodou na povrchu; 2 až 20 km na jedné desce.'],
+        ],
+    ],
 ];
