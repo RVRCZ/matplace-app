@@ -15,7 +15,7 @@
     <a id="mp-pick-go" aria-disabled="true" class="btn-primary mt-4 w-full aria-disabled:pointer-events-none aria-disabled:opacity-50">{{ __('user.pick.download') }}</a>
     <p id="mp-pick-how" class="mt-2 text-xs text-slate-500" data-orca="{{ __('user.pick.how') }}" data-prusa="{{ __('user.pick.how_prusa') }}">{{ __('user.pick.how') }}</p>
     <div class="mt-4 flex items-center justify-between text-sm">
-        <a id="mp-pick-stl" href="#" class="text-action-dark underline">{{ __('user.pick.stl') }}</a>
+        <a id="mp-pick-stl" class="text-action-dark underline">{{ __('user.pick.stl') }}</a>
         <button type="button" id="mp-pick-close" class="text-slate-600 hover:text-ink">{{ __('user.pick.close') }}</button>
     </div>
 </dialog>

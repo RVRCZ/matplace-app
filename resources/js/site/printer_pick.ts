@@ -72,7 +72,7 @@ export function bootPrinterPick(): void {
         const stl = el<HTMLAnchorElement>('mp-pick-stl');
         if (stl) {
             stl.classList.toggle('hidden', !button.dataset.pickStl);
-            stl.href = button.dataset.pickStl ?? '#';
+            if (button.dataset.pickStl) stl.href = button.dataset.pickStl; else stl.removeAttribute('href');
             stl.setAttribute('download', (button.dataset.pickName ?? 'model').replace(/\.[^.]+$/, '') + '.stl');
         }
         dialog.showModal();

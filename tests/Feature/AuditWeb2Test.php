@@ -2,17 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Farm\PublicStats;
 use App\Domain\Stats\Funnel;
 use App\Domain\Stats\SearchConsole;
 use App\Domain\Stats\ToolUse;
 use App\Mail\GenerationReady;
 use App\Models\AnonymousSession;
 use App\Models\Event;
+use App\Models\FarmVideo;
 use App\Models\GenerationRequest;
 use App\Models\Post;
 use App\Models\User;
+use App\Support\NextStep;
 use App\Support\Track;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -164,5 +168,133 @@ class AuditWeb2Test extends TestCase
         $admin->setRole(User::ROLE_ADMIN, true);
         $this->actingAs($admin)->get(route('admin.stats.tools'))->assertOk()->assertSee('Nástroje týdně')->assertSee(__('tools.box.title'))->assertSee('1 500')->assertSee('blog.example.com');
         File::deleteDirectory($dir);
+    }
+
+    /** @return list<array<string, mixed>> every JSON-LD thing on the page */
+    private function things(string $html): array
+    {
+        preg_match_all('~application/ld\+json"[^>]*>(.*?)</script>~s', $html, $m);
+
+        return array_values(array_filter(array_map(fn (string $json) => json_decode($json, true), $m[1]), 'is_array'));
+    }
+
+    public function test_sentences_with_numbers_follow_the_count_in_three_languages(): void
+    {
+        config(['farm.enabled' => true, 'farm.public' => true]);
+        // the farm's figures as PublicStats remembers them, and two photographed prints (one from a tool, one a customer's own file)
+        Cache::put(PublicStats::CACHE_KEY, ['printed' => 1, 'handed_over_days_median' => 0.5, 'last_30_days_printed' => 1, 'videos_published' => 1], 3600);
+        Cache::put(PublicStats::CACHE_KEY.':photos', [
+            ['url' => 'https://cdn.example/p1.jpg', 'webp' => 'https://cdn.example/p1.webp', 'short' => null, 'tool' => 'box', 'number' => 'F26-000001', 'at' => '2026-10-20'],
+            ['url' => 'https://cdn.example/p2.jpg', 'webp' => null, 'short' => null, 'tool' => null, 'number' => 'F26-000002', 'at' => '2026-10-19'],
+        ], 3600);
+        FarmVideo::create(['kind' => FarmVideo::KIND_WEEKLY, 'status' => FarmVideo::STATUS_PUBLISHED, 'youtube_id' => 'abc123XYZ', 'title' => 'Mystický drak – 10 h 59 min tisku za 29 s', 'published_at' => now()]);
+
+        $cs = (string) $this->get('/', ['Accept-Language' => 'cs'])->assertOk()->getContent();
+        $this->assertStringContainsString('1 zaplacený výtisk dokončen,', $cs);
+        $this->assertStringContainsString('do jednoho dne', $cs);
+        $this->assertStringContainsString('1 video z tisku', $cs);
+        $this->assertStringContainsString('Mystický drak', $cs);   // the title from the database on the Czech page
+        $this->assertStringContainsString('data-trust-photos', $cs);
+        $this->assertStringContainsString('p1.webp', $cs);
+        $this->assertStringContainsString('alt="Výtisk z farmy matplace: '.e(__('tools.box.title')).'"', $cs);
+        $this->assertStringContainsString('alt="Výtisk z farmy matplace: model zákazníka"', $cs);
+
+        $en = (string) $this->get('/en')->assertOk()->getContent();
+        $this->assertStringContainsString('1 paid print finished,', $en);
+        $this->assertStringContainsString('within a day', $en);
+        $this->assertStringNotContainsString('1 days', $en);
+        $this->assertStringNotContainsString('Mystický drak', $en);   // a Czech title stays off the English page
+        $this->assertStringContainsString('A print from our farm', $en);
+        $this->assertStringContainsString('data-youtube="abc123XYZ"', $en);
+
+        $es = (string) $this->get('/es')->assertOk()->getContent();
+        $this->assertStringContainsString('en un día', $es);
+        $this->assertStringNotContainsString('1 días', $es);
+        $this->assertStringNotContainsString('Mystický drak', $es);
+        $this->assertStringContainsString('Una impresión de nuestra granja', $es);
+
+        // other counts, other forms; the median is rounded up and read as "within"
+        Cache::put(PublicStats::CACHE_KEY, ['printed' => 3, 'handed_over_days_median' => 3.4, 'last_30_days_printed' => 2, 'videos_published' => 2], 3600);
+        $cs = (string) $this->get('/', ['Accept-Language' => 'cs'])->assertOk()->getContent();
+        $this->assertStringContainsString('3 zaplacené výtisky dokončeny,', $cs);
+        $this->assertStringContainsString('do 4 dnů', $cs);
+        $this->assertStringContainsString('2 videa z tisku', $cs);
+
+        // the texts for the home page's benefit line and the photo tools' limit are written for trans_choice in all three languages
+        foreach (['cs' => ['3 modely denně', '1 model denně'], 'en' => ['3 models a day', '1 model a day'], 'es' => ['3 modelos al día', '1 modelo al día']] as $locale => [$three, $one]) {
+            app()->setLocale($locale);
+            $this->assertStringContainsString($three, trans_choice('home.benefit.free_tools_n', 3, ['n' => 3]), $locale);
+            $this->assertStringContainsString($one, trans_choice('home.benefit.free_tools_n', 1, ['n' => 1]), $locale);
+            $this->assertStringContainsString($three, trans_choice('figure.limits', 3, ['n' => 3, 'm' => 9]), $locale);
+            $this->assertStringContainsString($one, trans_choice('figure.limits', 1, ['n' => 1, 'm' => 3]), $locale);
+        }
+        app()->setLocale('cs');
+    }
+
+    public function test_the_calculator_and_the_tool_pages_have_no_dead_links(): void
+    {
+        foreach (['/', '/tools/qr', '/tools/box'] as $path) {
+            $html = (string) $this->get($path, ['Accept-Language' => 'cs'])->assertOk()->getContent();
+            $this->assertStringNotContainsString('href="#"', $html, $path);
+        }
+    }
+
+    public function test_the_calculator_reads_its_constants_and_texts_from_one_cached_json(): void
+    {
+        $html = (string) $this->get('/', ['Accept-Language' => 'cs'])->assertOk()->getContent();
+        $this->assertStringNotContainsString('window.MP_CONFIG =', $html);
+        $this->assertStringNotContainsString('window.MP_I18N =', $html);
+        $this->assertStringContainsString('rel="modulepreload"', $html);
+        $this->assertSame(1, preg_match('/window\.MP_CONFIG_URL = "([^"]+)"/', $html, $m));
+        $url = (string) json_decode('"'.$m[1].'"');
+        $this->assertStringContainsString('l=cs', $url);
+        $this->assertSame(1, preg_match('/[?&]v=[0-9a-f]{12}\b/', $url), 'a version of the content in the address: '.$url);
+
+        $json = $this->get($url)->assertOk()->assertHeader('Cache-Control', 'max-age=86400, public')->json();
+        $this->assertNotEmpty($json['config']['materials']);
+        $this->assertArrayHasKey('shipping_hint', $json['config']);
+        $this->assertSame(NextStep::text('calc.status.reading'), $json['i18n']['calc.status.reading']);
+        $this->assertStringContainsString('|', $json['i18n']['calc.days'], 'the forms of the plural travel as one text; the script picks one');
+
+        $en = $this->get(str_replace('l=cs', 'l=en', $url))->assertOk()->json();
+        $this->assertNotSame($json['i18n']['calc.status.reading'], $en['i18n']['calc.status.reading']);
+        $this->assertSame('PLA', $en['config']['default_material']);
+        $this->get(str_replace('l=cs', 'l=xx', $url))->assertNotFound();
+        $this->get(preg_replace('/m=\w+/', 'm=other', $url))->assertNotFound();
+    }
+
+    public function test_the_first_two_picks_of_the_tools_page_load_at_once(): void
+    {
+        $html = (string) $this->get('/tools', ['Accept-Language' => 'cs'])->assertOk()->getContent();
+        $picks = substr($html, (int) strpos($html, 'id="tool-picks"'));
+        $picks = substr($picks, 0, (int) strpos($picks, '</section>'));
+        $this->assertSame(2, preg_match_all('/loading="eager"/', $picks));
+        $this->assertSame(0, preg_match_all('/fetchpriority="high"/', $picks), 'the header\'s logo has the page\'s one priority already');
+        $this->assertSame(1, preg_match_all('/fetchpriority="high"/', $html), 'one picture per page gets the priority');
+    }
+
+    public function test_about_contact_and_materials_carry_structured_data(): void
+    {
+        foreach (['/about', '/contact'] as $path) {
+            $org = collect($this->things((string) $this->get($path, ['Accept-Language' => 'cs'])->assertOk()->getContent()))->first(fn (array $t) => ($t['@type'] ?? null) === 'Organization');
+            $this->assertNotNull($org, $path);
+            $this->assertSame('matplace s.r.o.', $org['legalName']);
+            $this->assertSame(['@type' => 'PropertyValue', 'propertyID' => 'IČO', 'value' => '22499008'], $org['identifier']);
+            $this->assertSame('Rybná 716/24', $org['address']['streetAddress']);
+            $this->assertSame('CZ', $org['address']['addressCountry']);
+            $this->assertSame('info@matplace.com', $org['email']);
+            $this->assertStringEndsWith('/img/logo.png', $org['logo']);
+            $this->assertArrayNotHasKey('vatID', $org, 'nothing invented: no VAT id is configured');
+        }
+        // the home page keeps the short form
+        $home = collect($this->things((string) $this->get('/', ['Accept-Language' => 'cs'])->assertOk()->getContent()))->first(fn (array $t) => ($t['@type'] ?? null) === 'Organization');
+        $this->assertArrayNotHasKey('legalName', $home);
+
+        $list = collect($this->things((string) $this->get('/en/materials')->assertOk()->getContent()))->first(fn (array $t) => ($t['@type'] ?? null) === 'ItemList');
+        $this->assertNotNull($list);
+        $this->assertSame(count($list['itemListElement']), $list['numberOfItems']);
+        $this->assertGreaterThan(1, $list['numberOfItems']);
+        $this->assertStringContainsString('/en/materials#', $list['itemListElement'][0]['url']);
+        $this->assertSame(1, $list['itemListElement'][0]['position']);
     }
 }

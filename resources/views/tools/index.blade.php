@@ -61,7 +61,8 @@
             <h2 id="tool-picks-h" class="text-xl font-semibold text-ink">{{ __('tools.picks') }}</h2>
             <p class="hint">{{ __('tools.picks.note') }}</p>
             <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                @foreach($picks as $key)@include('tools.card_row', ['key' => $key, 'tool' => $all[$key], 'pick' => true])@endforeach
+                {{-- the first two rows are on a phone's first screen: loaded at once; no priority, the header's logo has the page's one (docs/AN.md §12.4) --}}
+                @foreach($picks as $key)@include('tools.card_row', ['key' => $key, 'tool' => $all[$key], 'pick' => true, 'eager' => $loop->index < 2, 'priority' => false])@endforeach
             </div>
         </section>
     @endif
