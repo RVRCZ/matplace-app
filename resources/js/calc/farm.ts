@@ -53,6 +53,8 @@ interface FarmState {
     queue: { start_in: number; finish_in: number; ahead: number; blocked: string | null } | null; cancel_keep: number | null;
     print: { status: string; progress: number; snapshot_url: string | null; snapshot_at: string | null } | null;
     timelapse_url?: string | null;
+    /** the finished print photographed in the photo box, on its backdrop */
+    photo_url?: string | null;
     /** the last card payment made for this order from its page: what the gateway says and what the webhook did with it */
     card?: { status: string; result: string | null } | null;
     short_url?: string | null;
@@ -825,6 +827,11 @@ export function bootFarmOrder(): void {
 
         const print = s.print && ['sent', 'printing', 'paused', 'done', 'unknown'].includes(s.print.status) && ['queued', 'printing', 'done', 'handed_over'].includes(s.status) ? s.print : null;
         show($('farm-print'), !!print || !!s.timelapse_url);
+        const photo = $<HTMLImageElement>('farm-photo');
+        if (photo) {
+            show($('farm-photo-box'), !!s.photo_url);
+            if (s.photo_url && photo.getAttribute('src') !== s.photo_url) photo.src = s.photo_url;
+        }
         const video = $<HTMLVideoElement>('farm-timelapse');
         if (video) {
             show(video.parentElement, !!s.timelapse_url);
