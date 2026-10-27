@@ -18,8 +18,9 @@ use Illuminate\Support\Facades\Storage;
  *   php artisan farm:photo photo.jpg --order=F26-000123 [--bg=wood]      the order's photo: cut, backdrops, videos rebuilt
  *   php artisan farm:photo "C:\Users\roman\Pictures\Camera Roll" --match=20261010 [--out=folder] [--bg=studio]
  *                                                                          a batch into a folder (Roman's PC), to upload later
- *   php artisan farm:photo --redo-videos [--apply] [--all]                 customer prints photographed in the photo box
- *                                                                          composed again (missing or uncut; a plan without --apply)
+ *   php artisan farm:photo --redo-videos [--apply] [--all] [--ids=F26-000097]
+ *                                                                          customer prints photographed in the photo box composed
+ *                                                                          again (missing, fitted or empty; a plan without --apply)
  */
 class FarmPhoto extends Command
 {
@@ -31,7 +32,8 @@ class FarmPhoto extends Command
         {--probe : say whether the background remover works here and stop}
         {--redo-videos : customer prints photographed in the photo box whose composed photo is missing or keeps its background, a plan}
         {--apply : with --redo-videos, compose them and have their videos built again}
-        {--all : with --redo-videos, the prints with a cut photo too (another backdrop, a newer rembg)}';
+        {--all : with --redo-videos, the prints with a cut photo too (another backdrop, a newer rembg)}
+        {--ids= : with --redo-videos, only these orders (numbers or tokens, comma-separated), whatever their state}';
 
     protected $description = 'Take the background off a photo of a finished print and put the piece on a backdrop, for one order or a whole folder';
 
@@ -54,7 +56,9 @@ class FarmPhoto extends Command
             return self::FAILURE;
         }
         if ($this->option('redo-videos')) {
-            return $this->redo($photos, $testPhotos, $bg, (bool) $this->option('apply'), (bool) $this->option('all'));
+            $ids = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('ids')))));
+
+            return $this->redo($photos, $testPhotos, $bg, (bool) $this->option('apply'), (bool) $this->option('all'), $ids);
         }
         $path = (string) $this->argument('path');
         if ($path === '' || ! file_exists($path)) {
@@ -115,11 +119,15 @@ class FarmPhoto extends Command
     }
 
     /**
-     * The customers' prints photographed in the photo box before the composed photo existed, or while rembg had no
-     * model (the photo fitted with its background on): composed now from the photo they were made from (else the one
-     * the videos end with today), their videos built again. A plan unless --apply; --all takes the cut ones too.
+     * The customers' prints photographed in the photo box before the composed photo existed, while rembg had no
+     * model (the photo fitted with its background on) or before the empty-cut threshold (PrintPhotos::cutState none,
+     * fitted, empty): composed now from the photo they were made from (else the one the videos end with today), their
+     * videos built again. A plan unless --apply; --all takes the cut and the uncut ones too; --ids names the orders
+     * and takes them whatever their state.
+     *
+     * @param  list<string>  $ids
      */
-    private function redo(PrintPhotos $photos, TestPhotos $testPhotos, ?string $bg, bool $apply, bool $all): int
+    private function redo(PrintPhotos $photos, TestPhotos $testPhotos, ?string $bg, bool $apply, bool $all, array $ids = []): int
     {
         if ($apply && ! $photos->available()) {
             $this->error('The background remover is not available here (farm:photo --probe): a redo would only fit the photos again.');
@@ -129,17 +137,29 @@ class FarmPhoto extends Command
         $disk = Storage::disk(config('farm.disk'));
         $rows = [];
         $todo = 0;
-        foreach (FarmOrder::whereNotNull('test_params')->orderBy('id')->get() as $order) {
+        $orders = FarmOrder::whereNotNull('test_params')->orderBy('id');
+        if ($ids) {
+            $orders->where(fn ($q) => $q->whereIn('number', $ids)->orWhereIn('token', $ids));
+        }
+        $orders = $orders->get();
+        foreach (array_diff($ids, $orders->pluck('number')->all(), $orders->pluck('token')->all()) as $missing) {
+            $this->warn("No order {$missing}.");
+        }
+        foreach ($orders as $order) {
             $finish = $order->isTest() ? null : $testPhotos->finishFile($order);
             if ($finish === null) {
+                if ($ids) {
+                    $this->warn(($order->number ?: $order->token).': no photo from the photo box.');
+                }
+
                 continue;
             }
             $from = (string) ($order->photo_meta['source'] ?? '');
             $source = $from !== '' && $disk->exists($from) ? $from : $finish;
-            $state = ! $order->hasPhoto() ? 'none' : (empty($order->photo_meta['cut']) ? 'fitted' : 'cut');
+            $state = ! $order->hasPhoto() ? 'none' : PrintPhotos::cutState((array) $order->photo_meta);
             $videos = $order->videos()->whereIn('status', [FarmVideo::STATUS_UPLOADED, FarmVideo::STATUS_SCHEDULED])->count();
             $number = $order->number ?: $order->token;
-            if ($state === 'cut' && ! $all) {
+            if (in_array($state, ['cut', 'uncut'], true) && ! $all && ! $ids) {
                 $rows[] = [$number, basename($source), $state, $videos, 'kept'];
 
                 continue;
@@ -152,7 +172,7 @@ class FarmPhoto extends Command
             }
             try {
                 $meta = $photos->attach($order, $disk->path($source), $bg, $source);
-                $rows[] = [$number, basename($source), $state, $videos, $meta['cut'] ? 'cut ('.round(100 * (float) $meta['coverage']).' % piece)' : 'not cut'];
+                $rows[] = [$number, basename($source), $state, $videos, $meta['cut'] ? 'cut ('.round(100 * (float) $meta['coverage']).' % piece)' : 'fitted'.($meta['cut_error'] ? ' – '.$meta['cut_error'] : '')];
                 if ($order->timelapse_path) {
                     AddFinishPhotoToVideo::dispatch($order->id);
                 }

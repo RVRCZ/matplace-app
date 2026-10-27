@@ -256,6 +256,51 @@ final class PrintPhotosTest extends TestCase
         $this->actingAs($admin)->get(route('admin.farm.orders.show', $none))->assertOk()->assertSee('pozadí odstraněno');
     }
 
+    public function test_a_cut_that_keeps_nothing_or_everything_is_a_failed_cut_and_the_photo_is_fitted(): void
+    {
+        $photos = app(PrintPhotos::class);
+        $admin = $this->admin();
+        $order = FarmOrder::factory()->paid()->done()->create();
+        FakeBackgroundRemover::$coverage = 0.004;   // what rembg made of F26-000097 on 27 Oct 2026: an empty mask
+        $meta = $photos->attach($order, $this->photo('empty.jpg'));
+        $this->assertFalse($meta['cut']);
+        $this->assertStringStartsWith('empty', $meta['cut_error']);
+        $this->assertSame(0.004, $meta['coverage'], 'the share stays for the record');
+        $this->assertSame(['web', 'webp', 'short', 'square'], array_keys($meta['files']), 'no cut-out kept');
+        $this->assertSame('uncut', PrintPhotos::cutState($meta));
+        $this->assertSame([1200, 800], array_slice(getimagesize(PrintPhotos::file($order, 'web')), 0, 2), 'fitted as it is');
+        FakeBackgroundRemover::$coverage = 0.995;
+        $this->assertStringStartsWith('whole', $photos->attach($order, $this->photo('whole.jpg'))['cut_error']);
+        $this->actingAs($admin)->get(route('admin.farm.orders.show', $order))->assertOk()->assertSee('výřez nic nenašel');
+
+        // the photo box does not try again for another view of the same piece
+        FakeBackgroundRemover::$coverage = 0.0;
+        $box = FarmOrder::factory()->paid()->done()->create();
+        $upload = fn (string $name) => new UploadedFile($this->photo($name), $name, 'image/jpeg', null, true);
+        $this->actingAs($admin)->post(route('admin.farm.photos.store', $box), ['photos' => [$upload('box-left.jpg')], 'views' => ['left']])->assertRedirect();
+        $this->assertSame('uncut', PrintPhotos::cutState($box->refresh()->photo_meta));
+        $tries = count(FakeBackgroundRemover::$calls);
+        $this->actingAs($admin)->post(route('admin.farm.photos.store', $box), ['photos' => [$upload('box-top.jpg')], 'views' => ['top']])->assertRedirect();
+        $this->assertCount($tries, FakeBackgroundRemover::$calls, 'settled: the remover had its go');
+
+        // a photo cut before the threshold existed (an empty backdrop on the order and in the video): the redo takes
+        // it, this time fitted; afterwards left alone unless named by --ids or --all
+        $legacy = FarmOrder::factory()->paid()->done()->create(['number' => 'F26-000097']);
+        $file = app(TestPhotos::class)->add($legacy, $this->photo('legacy.jpg'), 'top')['file'];
+        $photos->attach($legacy, Storage::disk('farm')->path($file), null, $file);
+        $legacy->forceFill(['photo_meta' => ['cut' => true, 'cut_error' => null] + $legacy->photo_meta])->save();   // as the 27 Oct run stored it
+        $this->assertSame('empty', PrintPhotos::cutState($legacy->photo_meta));
+        $this->artisan('farm:photo', ['--redo-videos' => true])->expectsOutputToContain('empty')->expectsOutputToContain('1 to compose')->assertSuccessful();
+        $this->artisan('farm:photo', ['--redo-videos' => true, '--apply' => true, '--ids' => 'F26-000097'])->expectsOutputToContain('1 composed')->expectsOutputToContain('fitted – empty')->assertSuccessful();
+        $legacy->refresh();
+        $this->assertFalse($legacy->photo_meta['cut']);
+        $this->assertSame('uncut', PrintPhotos::cutState($legacy->photo_meta));
+        $this->assertSame($file, $legacy->photo_meta['source']);
+        $this->artisan('farm:photo', ['--redo-videos' => true])->expectsOutputToContain('0 to compose')->assertSuccessful();
+        $this->artisan('farm:photo', ['--redo-videos' => true, '--ids' => 'F26-000097,F26-999999'])->expectsOutputToContain('1 to compose')->expectsOutputToContain('No order F26-999999')->assertSuccessful();
+        FakeBackgroundRemover::$coverage = null;
+    }
+
     public function test_the_trust_block_gets_the_latest_photographed_prints(): void
     {
         Cache::flush();

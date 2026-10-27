@@ -1453,3 +1453,31 @@ tiskárnu nenačítá. Platí pro nová videa i pro `youtube:titles` (tabulka); 
 ### 13.6.5 Ověření dávky 4
 
 `PrintPhotosTest` 6 testů / 118 asercí (nový `test_the_photo_box_photo_of_a_customer_print_is_composed_for_its_videos_and_older_ones_can_be_redone`: foto‑box → složená fotka se `source`, další pohled nic, smazání → další v pořadí / bez fotky, `--redo-videos` plán, `--all`, `--apply`), `FarmTestPhotosTest` (testovací tisky beze změny), `FarmSalesPathTest` (odkazy bez `href="#"`, plurál ve třech jazycích + stránka `/farm`), `YouTubeChannelTest` (popis bez „Tiskárna“), `YouTubeVideosTest` – vše zelené 27. 10. 2026, pint čistý; bez změny TS žádný build (`scripts/check_order_timeline.mjs` ok). S pravým rembg na serveru nic z toho vyzkoušeno nebylo: řídící spustí `farm:photo --redo-videos` (plán), pak `--apply`, a Roman nahraje další fotku ve foto‑boxu.
+
+### 13.6.6 Po prvním ostrém běhu: prázdný výřez a stín pod kusem
+
+`farm:photo --redo-videos --apply` na produkci 27. 10. (řídící, skutečný rembg): 13 složených fotek, podíl kusu
+46–86 %, QR cedulka F26‑000064 výborná. Dvě chyby:
+
+- **F26‑000097 „cut (0 % piece)“** – rembg v záběru shora nic nenašel, výřez byl prázdný a u zakázky i na konci videa
+  skončil holý podklad se stínem. Práh: podíl kusu pod **3 %** (`PrintPhotos::MIN_COVERAGE`) nebo nad **98 %**
+  (`MAX_COVERAGE`, rembg nechal celou fotku) = selhání výřezu → fotka se jen napasuje (`cut=false`), důvod jde do
+  `photo_meta.cut_error` („empty: the remover found no piece (0.4 % of the photo)“), změřený podíl zůstává v
+  `coverage`. `PrintPhotos::cutState(meta)` = `cut` / `empty` (vyříznuto před prahem, prázdné) / `fitted` (rembg
+  nebyl) / `uncut` (rembg to zkusil a nenašel). Foto‑box pro `uncut` další pohled nezkouší znovu; `--redo-videos`
+  bere `none`, `fitted` a `empty`, `cut` i `uncut` nechává (`--all` bere vše). Nové **`--ids=F26-000097[,…]`** vezme
+  jen jmenované zakázky bez ohledu na stav (neznámé číslo ohlásí). Stránka zakázky píše „výřez prázdný – přepočítat
+  (farm:photo --redo-videos --apply --ids=…)“ resp. „pozadí ponecháno (výřez nic nenašel: …)“.
+- **F26‑000079 pes „levituje“ ~40 px** nad stínem. Příčina v `photo_compose.py`: rembg nechává pod kusem vlastní stín
+  fotky jako slabý lem (alpha 10–60); ořez podle alpha > 8 ho bral za součást kusu, takže „noha“ (spodek masky)
+  a dotykový stín ležely o lem níž. Teď: `solid_box` = maska s alpha > 128, kus stojí spodní hranou **pevné** masky
+  na stojné čáře, lem pod ní se odřízne (náš stín ho nahradí), dotyková elipsa má střed těsně pod touto hranou
+  (−0,6/+1,4 ry, ry = 4 % výšky) a šířku 1,16× pevné masky, žádný pevný offset. Ověřeno na syntetickém výřezu se
+  40px lemem (`scratchpad/halo-before.jpg` – levituje, `halo-after.jpg`/`halo-after-short.jpg` – stojí); skutečné
+  výřezy z fotoboxu, co mám lokálně, lem nemají (pevná = slabá maska), takže psa potvrdí až přepočet na produkci:
+  `farm:photo --redo-videos --apply --ids=F26-000097,F26-000079`.
+
+Testy: `PrintPhotosTest` 7 / 146 (nový `test_a_cut_that_keeps_nothing_or_everything_is_a_failed_cut_and_the_photo_is_fitted`:
+prázdná a „celá“ maska → napasováno + `cut_error`, foto‑box to nezkouší znovu, legacy `empty` → redo plán → `--apply
+--ids` → `uncut` → dál `kept`, neznámé id), `FarmTestPhotosTest` – zelené; `FakeBackgroundRemover::$coverage` pro
+prázdnou masku.

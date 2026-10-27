@@ -63,20 +63,33 @@ def backdrop(name, size, folder):
     return radial(size, (246, 247, 249), (206, 211, 218))
 
 
+def solid_box(piece):
+    """The box of the solid mask (alpha over 128): where the piece really is. rembg leaves the photo's own shadow
+    under a piece as a faint fringe (alpha 10-60), which would put the standing line and the contact shadow well
+    below the feet (the dog of F26-000079 floated 40 px, 27 Oct 2026)."""
+    box = piece.getchannel("A").point(lambda a: 255 if a > 128 else 0).getbbox()
+    return box if box else (0, 0, piece.width, piece.height)
+
+
 def place(cut, size, portrait):
-    """Where the piece stands: at most this share of the width and height, its feet at the standing line."""
+    """Where the piece stands: at most this share of the width and height, the solid bottom of its mask at the
+    standing line; whatever faint fringe hangs under that bottom is cut away (our shadow takes its place)."""
     w, h = size
     max_w = w * (0.80 if portrait else 0.78)
     max_h = h * (0.46 if portrait else 0.64)
     k = min(max_w / cut.width, max_h / cut.height)
     piece = cut.resize((max(1, round(cut.width * k)), max(1, round(cut.height * k))), Image.LANCZOS)
+    sx0, sy0, sx1, sy1 = solid_box(piece)
+    piece = piece.crop((0, 0, piece.width, min(piece.height, sy1 + 1)))   # one soft row of the edge stays
     x = (w - piece.width) // 2
-    y = round(h * (0.58 if portrait else 0.78)) - piece.height
-    return piece, x, max(0, y)
+    y = round(h * (0.58 if portrait else 0.78)) - sy1
+    return piece, x, max(0, y), (sx0, sx1, sy1)
 
 
-def shadow(canvas, piece, x, y):
-    """A soft drop shadow and a darker contact shadow under the piece, from its own alpha."""
+def shadow(canvas, piece, x, y, solid):
+    """A soft drop shadow from the piece's own alpha and a darker contact shadow: an ellipse a little wider than
+    the solid mask, its centre just under the mask's bottom row (never a fixed offset), so the piece stands on it."""
+    sx0, sx1, sy1 = solid
     alpha = piece.getchannel("A")
     blur = max(3, round(piece.width * 0.035))
     drop = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
@@ -87,9 +100,10 @@ def shadow(canvas, piece, x, y):
     canvas.alpha_composite(drop)
     contact = Image.new("L", canvas.size, 0)
     d = ImageDraw.Draw(contact)
-    foot = y + piece.height
-    rx, ry = piece.width * 0.46, max(4, piece.height * 0.035)
-    d.ellipse([x + piece.width / 2 - rx, foot - ry, x + piece.width / 2 + rx, foot + ry], fill=120)
+    foot = y + sy1
+    cx = x + (sx0 + sx1) / 2
+    rx, ry = max(8, (sx1 - sx0) * 0.58), max(5, piece.height * 0.04)
+    d.ellipse([cx - rx, foot - ry * 0.6, cx + rx, foot + ry * 1.4], fill=120)
     contact = contact.filter(ImageFilter.GaussianBlur(max(3, round(piece.width * 0.03))))
     dark = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     dark.paste((10, 12, 16, 255), (0, 0), contact)
@@ -120,8 +134,8 @@ def main(argv):
             out({"ok": False, "error": "nothing_found"})
         piece = piece.crop(bbox)
         canvas = backdrop(bg, size, folder).convert("RGBA")
-        piece, x, y = place(piece, size, portrait=h > w)
-        shadow(canvas, piece, x, y)
+        piece, x, y, solid = place(piece, size, portrait=h > w)
+        shadow(canvas, piece, x, y, solid)
         canvas.alpha_composite(piece, (x, y))
         result = canvas.convert("RGB")
     else:

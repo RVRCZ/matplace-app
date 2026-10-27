@@ -111,13 +111,15 @@ class FarmTestPhotoController extends Controller
 
     /**
      * The composed photo of the piece follows the photo box: made from the photo the videos end with (finishFile)
-     * whenever that is not the one it was made from, or the background is still on it (rembg had no model that day).
-     * Another view of the same piece changes nothing. Says whether a job was queued.
+     * whenever that is not the one it was made from, or the remover never had its go at it (no model that day, or an
+     * empty cut from before the threshold). Another view of the same piece changes nothing, and a photo rembg found
+     * nothing in stays fitted (PrintPhotos::cutState). Says whether a job was queued.
      */
     private function compose(FarmOrder $order): bool
     {
         $file = $this->photos->finishFile($order);
-        if ($file === null || ($order->hasPhoto() && ! empty($order->photo_meta['cut']) && ($order->photo_meta['source'] ?? null) === $file)) {
+        $settled = $order->hasPhoto() && in_array(PrintPhotos::cutState((array) $order->photo_meta), ['cut', 'uncut'], true);
+        if ($file === null || ($settled && ($order->photo_meta['source'] ?? null) === $file)) {
             return false;
         }
         ComposePrintPhoto::dispatch($order->id, $file);

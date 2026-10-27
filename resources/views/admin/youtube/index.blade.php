@@ -121,7 +121,7 @@
                 <p class="mt-1 text-xs text-slate-500">
                     @if($o->hasPhoto())
                         {{-- the photo from the photo box made presentable (ComposePrintPhoto): the videos end with this one --}}
-                        Na konci videí: upravená fotka výtisku ({{ ! empty($o->photo_meta['cut']) ? 'pozadí odstraněno' : 'bez výřezu' }}, podklad {{ $o->photo_meta['bg'] ?? 'studio' }})
+                        Na konci videí: upravená fotka výtisku ({{ \App\Domain\Farm\PrintPhotos::cutState((array) $o->photo_meta) === 'cut' ? 'pozadí odstraněno' : 'bez výřezu' }}, podklad {{ $o->photo_meta['bg'] ?? 'studio' }})
                         <a href="{{ $o->photoUrl() }}" target="_blank" rel="noopener"><img src="{{ $o->photoUrl() }}" alt="" class="ml-1 inline-block h-10 w-10 rounded object-cover align-middle"></a>
                         · <a href="{{ route('admin.farm.photobox', ['order' => $o->token]) }}" class="underline">foto-box</a>
                     @elseif($fi !== null)

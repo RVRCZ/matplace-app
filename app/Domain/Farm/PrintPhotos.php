@@ -30,6 +30,15 @@ final class PrintPhotos
 
     public const DISK = 'public';
 
+    /**
+     * The share of the photo a cut must keep to be the piece: under it the remover found nothing (an empty backdrop
+     * with a shadow went up on production on 27 Oct 2026, F26-000097, 0 %; real pieces in the photo box take 46–86 %),
+     * over it the remover kept the whole photo. Either way the photo is fitted as it is instead.
+     */
+    public const MIN_COVERAGE = 0.03;
+
+    public const MAX_COVERAGE = 0.98;
+
     /** @param  array{bin?: string, timeout?: int}  $python  config engines.python */
     public function __construct(private readonly BackgroundRemover $remover, private readonly array $python) {}
 
@@ -54,7 +63,7 @@ final class PrintPhotos
      * Renders one photo into `$outDir` as `<stem>-cutout.png` (when the cut worked), `<stem>-web.jpg` + `.webp`,
      * `<stem>-short.jpg`, `<stem>-square.jpg`.
      *
-     * @return array{cut: bool, bg: string, coverage: ?float, files: array<string, string>} absolute paths by name
+     * @return array{cut: bool, bg: string, coverage: ?float, cut_error: ?string, files: array<string, string>} absolute paths by name
      *
      * @throws EngineException when the composition itself fails (Python missing, the file not a picture)
      */
@@ -65,15 +74,20 @@ final class PrintPhotos
         $cutout = $outDir.'/'.$stem.'-cutout.png';
         $cut = false;
         $coverage = null;
+        $cutError = null;
         if ($this->remover->available()) {
             try {
                 $facts = $this->remover->cut($source, $cutout);
-                $cut = true;
                 $coverage = (float) $facts['coverage'];
+                if (! self::pieceFound($coverage)) {
+                    throw new EngineException(($coverage < self::MIN_COVERAGE ? 'empty: the remover found no piece (' : 'whole: the remover kept the whole photo (').round(100 * $coverage, 1).' % of the photo)');
+                }
+                $cut = true;
             } catch (EngineException $e) {
-                // the piece stays in its photo: said in the meta, the photo is still usable
+                // the piece stays in its photo: said in the meta (cut_error), the photo is still usable
                 Log::warning('Print photo: the background could not be taken off', ['file' => basename($source), 'error' => $e->getMessage()]);
                 @unlink($cutout);
+                $cutError = mb_substr($e->getMessage(), 0, 200);
             }
         }
         $files = $cut ? ['cutout' => $cutout] : [];
@@ -95,7 +109,29 @@ final class PrintPhotos
             }
         }
 
-        return ['cut' => $cut, 'bg' => $bg, 'coverage' => $coverage, 'files' => $files];
+        return ['cut' => $cut, 'bg' => $bg, 'coverage' => $coverage, 'cut_error' => $cutError, 'files' => $files];
+    }
+
+    /** Whether a cut that kept this share of the photo is the piece, and not nothing or everything. */
+    public static function pieceFound(?float $coverage): bool
+    {
+        return $coverage !== null && $coverage >= self::MIN_COVERAGE && $coverage <= self::MAX_COVERAGE;
+    }
+
+    /**
+     * What a stored meta says of the cut: `cut` (the piece on its backdrop), `empty` (cut before the threshold
+     * existed, nothing in it: worth a redo), `fitted` (the remover was not there that day: worth a redo), `uncut`
+     * (the remover had its go and failed: fitted, no use trying again unasked).
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    public static function cutState(array $meta): string
+    {
+        if (! empty($meta['cut'])) {
+            return self::pieceFound(isset($meta['coverage']) ? (float) $meta['coverage'] : null) ? 'cut' : 'empty';
+        }
+
+        return empty($meta['cut_error']) ? 'fitted' : 'uncut';
     }
 
     /**
@@ -103,7 +139,7 @@ final class PrintPhotos
      * the order. Returns the meta as stored; `source` is the photo it was made from on the farm disk when the caller
      * knows it (the photo box's photo, the admin's upload), so a later photo or a redo can tell where it came from.
      *
-     * @return array{bg: string, cut: bool, coverage: ?float, at: string, source: ?string, files: array<string, string>}
+     * @return array{bg: string, cut: bool, coverage: ?float, cut_error: ?string, at: string, source: ?string, files: array<string, string>}
      *
      * @throws EngineException
      */
@@ -114,7 +150,7 @@ final class PrintPhotos
         $disk->deleteDirectory($dir);
         $r = $this->render($source, $disk->path($dir), 'photo', $bg);
         $rel = fn (string $abs): string => $dir.'/'.basename($abs);
-        $meta = ['bg' => $r['bg'], 'cut' => $r['cut'], 'coverage' => $r['coverage'], 'at' => now()->toIso8601String(), 'source' => $sourceRel, 'files' => array_map($rel, $r['files'])];
+        $meta = ['bg' => $r['bg'], 'cut' => $r['cut'], 'coverage' => $r['coverage'], 'cut_error' => $r['cut_error'], 'at' => now()->toIso8601String(), 'source' => $sourceRel, 'files' => array_map($rel, $r['files'])];
         $order->forceFill(['photo_path' => $rel($r['files']['web']), 'photo_meta' => $meta])->save();
 
         return $meta;
