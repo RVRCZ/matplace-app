@@ -358,6 +358,8 @@ Route::get('/social/videos/{video}.mp4', [SocialVideoController::class, 'show'])
 // so a minute of live previews (90/min) would lock the create button (20/min) with "Too Many Attempts".
 Route::prefix('api')->name('api.')->group(function () {
     Route::get('config', [ConfigController::class, 'show'])->name('config');
+    // the calculator's constants and texts for one language and next step, cached for a day by the version in the address (docs/AN.md §12.4)
+    Route::get('calc-config', [ConfigController::class, 'calc'])->name('calc_config');
     Route::post('uploads', [UploadController::class, 'store'])->middleware('throttle:uploads')->name('uploads.store');
     Route::get('files/{modelFile}', [UploadController::class, 'show'])->name('files.show');
     Route::get('files/{modelFile}/model.stl', [ModelFileController::class, 'stl'])->middleware('file:stl')->name('files.stl');

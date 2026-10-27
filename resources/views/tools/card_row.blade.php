@@ -6,7 +6,7 @@
 @endphp
 {{-- the words a tool is found by sit on its big card only (tools/card.blade.php): the row is found by its key, a third less HTML --}}
 <a href="{{ route($tool['route']) }}" data-key="{{ $key }}" data-title="{{ __('tools.'.$key.'.title') }}" @unless(! empty($pick)) data-cats="{{ implode(' ', $tool['categories']) }}" @endunless class="card flex items-center gap-3 overflow-hidden p-2 pr-3 transition hover:border-ink">
-    <span class="block w-24 shrink-0 overflow-hidden rounded-lg bg-studio">@include('tools.picture', ['key' => $key, 'sizes' => '96px'])</span>
+    <span class="block w-24 shrink-0 overflow-hidden rounded-lg bg-studio">@include('tools.picture', ['key' => $key, 'sizes' => '96px', 'eager' => !empty($eager), 'priority' => !empty($priority)])</span>
     <span class="min-w-0 flex-1">
         <span class="block font-semibold leading-snug text-ink">{{ __('tools.'.$key.'.title') }}</span>
         <span class="mt-0.5 block text-xs font-medium text-ink">{{ __('tools.input.label') }}: {{ __('tools.input.'.$input) }}</span>

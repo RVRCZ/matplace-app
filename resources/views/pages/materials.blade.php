@@ -1,5 +1,10 @@
 @extends('layouts.app', ['title' => __('site.materials.title').' · matplace', 'description' => __('site.materials.description')])
 
+{{-- the materials as a list for search engines: the names and the anchors of the cards below (docs/AN.md §12.4) --}}
+@push('head')
+<x-jsonld :data="\App\Support\Schema::itemList(__('site.materials.title'), collect($materials)->map(fn ($m, $code) => ['name' => __('materials.'.$code.'.label'), 'url' => localized_route('materials').'#'.strtolower($code)])->values()->all(), __('site.materials.lead'))" />
+@endpush
+
 @section('content')
 <div class="mx-auto max-w-4xl">
     <h1 class="text-3xl font-extrabold tracking-tight text-ink">{{ __('site.materials.title') }}</h1>

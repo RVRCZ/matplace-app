@@ -34,6 +34,18 @@ return [
     // robots.txt: where crawlers need not go at all (the pages themselves say noindex as well)
     'robots_disallow' => ['/admin/', '/account/', '/api/', '/farm/orders/', '/webhooks/'],
 
+    // who runs the site, for the Organization structured data of the about and contact pages (the facts the contact page prints, lang/*/pages.php)
+    'organization' => [
+        'legal_name' => 'matplace s.r.o.',
+        'street' => 'Rybná 716/24',
+        'locality' => 'Praha 1',
+        'postal_code' => '110 00',
+        'country' => 'CZ',
+        'ico' => '22499008',
+        'vat_id' => env('SEO_VAT_ID'),
+        'email' => 'info@matplace.com',
+    ],
+
     // profiles of the brand elsewhere, for the Organization structured data (the YouTube channel is added from config/youtube.php)
     'same_as' => [
         'facebook' => env('SEO_FACEBOOK_URL'),

@@ -73,8 +73,9 @@ class SalesPathWebTest extends TestCase
     public function test_the_calculator_names_what_delivery_adds_in_the_visitors_currency(): void
     {
         config(['farm.enabled' => true, 'farm.public' => true]);
-        // the hint is worded on the server for the request at hand (the calculator page carries it in MP_CONFIG)
-        $this->get('/')->assertOk()->assertSee('shipping_hint', false);
+        // the hint is worded on the server for the request at hand (the calculator page fetches it in its JSON, docs/AN.md §12.4)
+        $this->assertSame(1, preg_match('/window\.MP_CONFIG_URL = "([^"]+)"/', (string) $this->get('/')->assertOk()->getContent(), $m));
+        $this->get((string) json_decode('"'.$m[1].'"'))->assertOk()->assertSee('shipping_hint', false);
         $cs = (string) ShippingHint::text();
         $this->assertStringContainsString('99', $cs);   // Czechia to a pickup point, config/farm.php
         $this->assertStringContainsString('Kč', $cs);

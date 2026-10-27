@@ -15,7 +15,7 @@
 
 @section('viewer-empty'){{ __('figure.step.model') }}@endsection
 
-@section('viewer-drop')@include('tools._figure_drop', ['consent' => __('figure.consent'), 'limits' => __('figure.limits', ['n' => $guestLimit, 'm' => $userLimit]), 'submit' => __('figure.submit')])@endsection
+@section('viewer-drop')@include('tools._figure_drop', ['consent' => __('figure.consent'), 'limits' => trans_choice('figure.limits', $guestLimit, ['n' => $guestLimit, 'm' => $userLimit]), 'submit' => __('figure.submit')])@endsection
 
 @section('panel')
 <form id="figure-form" novalidate>
@@ -92,7 +92,7 @@
         <p class="text-xs text-muted">{{ __('figure.privacy') }}</p>
 
         {{-- before the click: the free models a day and how long one takes (docs/AF.md §3) --}}
-        <p class="text-xs text-muted">{{ __('figure.limits', ['n' => $guestLimit, 'm' => $userLimit]) }}</p>
+        <p class="text-xs text-muted">{{ trans_choice('figure.limits', $guestLimit, ['n' => $guestLimit, 'm' => $userLimit]) }}</p>
         <button id="figure-submit" type="submit" class="btn-ink w-full gap-1.5"><x-icon name="sparkles" class="h-4 w-4" />{{ __('figure.submit') }}</button>
         <div id="figure-progress" class="hidden"><div class="h-2 w-full overflow-hidden rounded-full bg-slate-200"><div id="figure-bar" class="h-2 w-0 bg-ink transition-all"></div></div><p class="mt-1 text-xs text-muted">{{ __('figure.step.wait') }}</p></div>
         <p id="figure-msg" class="hint" aria-live="polite"></p>

@@ -3,33 +3,20 @@
 @php
     $mode = $mode ?? 'public';
     $formats = strtoupper(implode(', ', $config['formats']));
-    $i18n = collect([
-        'calc.status.reading','calc.status.rough','calc.status.uploading','calc.status.queued','calc.status.done',
-        'calc.status.failed','calc.status.not_model','calc.status.converting','calc.status.big_model','calc.status.big_only','calc.status.big_only_n','calc.price.orient_range','calc.price.shape_hint','calc.time.range','calc.price.from','calc.price.range','calc.price.per_piece',
-        'calc.days','calc.cta.copied','calc.error.read','calc.error.upload','calc.error.too_big','calc.est_only',
-        'calc.profile.budget','calc.profile.standard','calc.profile.express','calc.profile.mine','calc.others_from',
-        'calc.breakdown.material','calc.breakdown.time','calc.breakdown.setup','calc.breakdown.total','calc.breakdown.discount','calc.breakdown.margin','calc.breakdown.min_price','calc.breakdown.rounded',
-        'calc.warn.exceeds_typical_bed','calc.warn.supports_added','calc.warn.not_watertight',
-        'calc.warn.multiple_shells','calc.warn.flipped_normals','calc.printers_count',
-        'search.searching','search.identifying','search.none','search.error','search.not_image','search.daily_limit',
-        'models.search.open_print','models.search.open_inspiration','models.search.label_print','models.search.label_inspiration','search.open_source',
-        'search.size_guess','search.price_range','search.range_hint','search.have_file','search.generate','search.designer_soon','hero.soon','calc.size','calc.material','inquiry.error',
-        'search.gen_size','search.generating','search.gen_done','search.gen_failed','search.gen_daily_limit','search.gen_global_limit','search.gen_text_hint',
-        'refine.working','refine.failed','pedestal.working','pedestal.failed','mold.working','mold.failed','mold.unavailable','mold.report','mold.report.undercuts','mold.report.large','mold.report.parts','mold.report.filled','mold.report.silicone','mold.report.silicone.how','mold.report.angle','mold.verdict.rigid','mold.verdict.flexible','mold.verdict.silicone','calc.tip.mold','calc.tip.repaired','refine.photo_only','advice.title','advice.lead','advice.button','advice.working','advice.failed','advice.daily_limit','advice.unavailable','advice.level.important','advice.level.tip','advice.level.fine','advice.disclaimer','check.head.error','check.head.advice','check.head.ok','check.group.error','check.group.advice','check.group.ok','check.disclaimer','check.units_tiny','check.units_tiny.impact','check.units_huge','check.units_huge.impact','check.very_small','check.very_small.impact','check.exceeds_bed','check.exceeds_bed.impact','check.parts_fit','check.part_exceeds_bed','check.part_exceeds_bed.impact','check.size_ok','check.too_thin','check.too_thin.impact','check.watertight_ok','check.not_watertight','check.not_watertight.impact','check.flipped_normals','check.flipped_normals.impact','check.multiple_shells','check.multiple_shells.impact','check.heavy_mesh','check.heavy_mesh.impact','check.very_coarse','check.very_coarse.impact',
-        'calc.tip.organizer','calc.tip.modular','farm.calc_parts_by_colour','farm.calc_nearest','farm.calc_nearest_out','param.part.tray','param.part.bin','param.part.body.logo','param.part.stand.logo','param.part.body.vase','param.part.body.stamp','param.part.body.qr','param.part.body.lightbox','calc.tip.stencil','calc.tip.lightbox','param.part.face','param.part.diffuser','param.part.back','calc.tip.vase','calc.tip.logo','calc.tip.stamp','calc.tip.qr','calc.edit_design','param.part.saucer','param.part.handle','param.part.stand','calc.tip.box','calc.tip.phone_stand','calc.tip.cable_holder','download.parts','param.part.body','param.part.lid','calc.tip.generated','calc.tip.lithophane','calc.tip.relief','calc.tip.sign',
-        'calc.fit.bed','calc.fit.none','calc.fit.plates','calc.size.limit','calc.status.stale','calc.recalc','calc.price.orient','compare.col.material','compare.col.price','compare.col.time','compare.col.weight','compare.col.heat','compare.col.strength','compare.col.outdoor','compare.col.food','compare.outdoor.yes','compare.outdoor.limited','compare.outdoor.no','compare.food.liner','compare.food.no','compare.flexible','compare.pick','compare.chosen','calc.mode.normal','calc.mode.silent','calc.mode.sport','calc.facts.rough','calc.facts.material','calc.facts.layers','calc.facts.supports','calc.facts.supports_yes','calc.facts.supports_no','calc.facts.infill','calc.facts.length','calc.status.done_facts',
-    ])->mapWithKeys(fn ($k) => [$k => \App\Support\NextStep::text($k, ['max' => $config['max_upload_mb'], 'n' => ':n'])])->all();   // tips and warnings in the wording of the step that follows (inquiry, farm or download)
+    // the calculator's constants and the texts its scripts say come as one JSON the browser keeps for a day (App\Support\CalculatorTexts, docs/AN.md §12.4), not inline
+    $cfgUrl = \App\Support\CalculatorTexts::url($config);
 @endphp
 
 @push('head')
 <script>
-    window.MP_CONFIG = @json($config);
-    window.MP_I18N = @json($i18n);
+    window.MP_CONFIG_URL = @json($cfgUrl);
     window.MP_INITIAL = @json($initial);
     window.MP_MODE = @json($mode);
     window.MP_OWN_PROFILE_ID = @json($ownProfileId ?? null);
     window.MP_ROUTES = { home: @json(route('home')), uploads: @json(route('api.uploads.store')), calculations: @json(route('api.calculations.store')), calcShow: @json(url('/api/calculations')), plate: @json(route('api.calc.plate')), files: @json(url('/api/files')), search: @json(route('api.search')), describe: @json(route('api.describe')), refused: @json(route('api.refused')), shared: @json(route('api.shared')), inquiries: @json(route('api.inquiries.store')), generate: @json(route('api.generate.store')), generateShow: @json(url('/api/generate')), paramPart: @json(url('/api/tools/param')), printers: @json(route('api.printers')), printerShow: @json(url('/printers/id')), quoteStore: @json(auth()->check() && auth()->user()->isPrinter() ? route('printer.quotes.store') : null), csrf: @json(csrf_token()) };
 </script>
+{{-- the calculator chunk travels while app.ts fetches the JSON above; the chunk is imported once the JSON is here --}}
+<link rel="modulepreload" href="{{ \Illuminate\Support\Facades\Vite::asset('resources/js/calc/boot.ts') }}">
 @endpush
 
 @push('head')
@@ -39,6 +26,8 @@
 @endpush
 
 @section('content')
+{{-- shown by app.ts only when the calculator's JSON could not be fetched twice --}}
+<p id="mp-config-error" class="note-warn mb-3 hidden text-sm" role="alert">{{ __('calc.config_failed') }}</p>
 <div id="calculator" data-state="idle" data-mode="{{ $mode }}">
     @if(session('status') || session('error'))<div class="mx-auto mb-4 max-w-3xl">@include('partials.flash')</div>@endif
     @if($mode === 'printer')
@@ -71,7 +60,7 @@
                 </div>
                 <p id="kind-tip" class="hidden border-t border-slate-100 bg-action-soft px-4 py-2 text-sm text-action-dark"></p>
                 <div id="edit-design" class="hidden flex-wrap items-center gap-3 border-t border-slate-100 px-4 py-3">
-                    <a id="edit-design-link" href="#" class="btn-secondary text-sm">{{ __('calc.edit_design') }}</a>
+                    <a id="edit-design-link" href="{{ route('tools') }}" class="btn-secondary text-sm">{{ __('calc.edit_design') }}</a>
                     <span class="text-xs text-slate-500">{{ __('calc.edit_design.hint') }}</span>
                 </div>
             </div>
@@ -273,7 +262,7 @@
                         <p class="mt-1 text-xs text-slate-500">{{ __('download.check') }}</p>
                         <p id="dl-color" class="mt-2 hidden rounded-lg bg-action-soft px-3 py-2 text-sm text-ink" data-text="{{ __('download.color_change') }}"></p>
                     </div>
-                    <a id="dl-stl" href="#" class="mt-3 block text-center text-sm text-action-dark underline">{{ __('download.stl') }}</a>
+                    <a id="dl-stl" class="mt-3 block text-center text-sm text-action-dark underline">{{ __('download.stl') }}</a>
                     <div id="dl-parts" class="mt-2 hidden text-center text-sm"></div>
                 </div>
                 @if($mode !== 'printer' && $config['marketplace'])

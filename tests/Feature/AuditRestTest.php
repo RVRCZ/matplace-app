@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\FarmOrder;
 use App\Models\User;
+use App\Support\CalculatorTexts;
 use Database\Seeders\FarmSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -179,6 +180,8 @@ class AuditRestTest extends TestCase
             [resource_path('views/tools/index.blade.php'), resource_path('views/tools/card.blade.php'), resource_path('views/tools/card_row.blade.php'), resource_path('views/models/index.blade.php'), resource_path('views/inspiration/index.blade.php')],
         );
         $all = ToolPageTest::keysIn($files);
+        // the texts of the calculator's scripts moved from the template's list into one cached JSON (App\Support\CalculatorTexts, docs/AN.md §12.4)
+        $all['calculator/index.blade.php'] = array_values(array_unique(array_merge($all['calculator/index.blade.php'], CalculatorTexts::KEYS)));
         $this->assertGreaterThan(300, array_sum(array_map('count', $all)), 'the scan finds the texts of these templates');
         $this->assertContains('farm.order.why.lead', $all['farm/order.blade.php'], 'and those of the lists for the scripts');
         $this->assertContains('calc.status.failed', $all['calculator/index.blade.php']);

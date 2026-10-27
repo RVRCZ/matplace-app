@@ -1,0 +1,38 @@
+{
+    "home.benefit.free_tools_n": [
+        "{1} Nástroje zdarma, z fotky :n model denně bez účtu|[2,4] Nástroje zdarma, z fotky :n modely denně bez účtu|[5,*] Nástroje zdarma, z fotky :n modelů denně bez účtu",
+        "{1} Free tools, :n model a day from a photo without an account|[2,*] Free tools, :n models a day from a photo without an account",
+        "{1} Herramientas gratis, :n modelo al día a partir de una foto sin cuenta|[2,*] Herramientas gratis, :n modelos al día a partir de una foto sin cuenta"
+    ],
+    "figure.limits": [
+        "{1} Zdarma :n model denně bez účtu, :m s účtem. Model vzniká 2 až 4 minuty.|[2,4] Zdarma :n modely denně bez účtu, :m s účtem. Model vzniká 2 až 4 minuty.|[5,*] Zdarma :n modelů denně bez účtu, :m s účtem. Model vzniká 2 až 4 minuty.",
+        "{1} Free: :n model a day without an account, :m with one. The model takes 2 to 4 minutes.|[2,*] Free: :n models a day without an account, :m with one. The model takes 2 to 4 minutes.",
+        "{1} Gratis: :n modelo al día sin cuenta, :m con cuenta. El modelo tarda de 2 a 4 minutos.|[2,*] Gratis: :n modelos al día sin cuenta, :m con cuenta. El modelo tarda de 2 a 4 minutos."
+    ],
+    "calc.days": [
+        "{1} :n den|[2,4] :n dny|[5,*] :n dní",
+        "{1} :n day|[2,*] :n days",
+        "{1} :n día|[2,*] :n días"
+    ],
+    "calc.trust.printed": [
+        "{1} :n zaplacený výtisk dokončen,|[2,4] :n zaplacené výtisky dokončeny,|[5,*] :n zaplacených výtisků dokončeno,",
+        "{1} :n paid print finished,|[2,*] :n paid prints finished,",
+        "{1} :n impresión pagada terminada,|[2,*] :n impresiones pagadas terminadas,"
+    ],
+    "calc.trust.days": [
+        "{1} Od zaplacení k předání obvykle do jednoho dne.|[2,*] Od zaplacení k předání obvykle do :d dnů.",
+        "{1} Usually within a day from payment to handover.|[2,*] Usually within :d days from payment to handover.",
+        "{1} Normalmente en un día desde el pago hasta la entrega.|[2,*] Normalmente en :d días desde el pago hasta la entrega."
+    ],
+    "calc.trust.videos": [
+        "{1} :n video z tisku na YouTube.|[2,4] :n videa z tisku na YouTube.|[5,*] :n videí z tisku na YouTube.",
+        "{1} :n video of a print on YouTube.|[2,*] :n videos of prints on YouTube.",
+        "{1} :n vídeo de una impresión en YouTube.|[2,*] :n vídeos de impresiones en YouTube."
+    ],
+    "calc.trust.video_generic": ["Výtisk z naší farmy", "A print from our farm", "Una impresión de nuestra granja"],
+    "calc.trust.video_tool": ["Výtisk z naší farmy: :tool", "A print from our farm: :tool", "Una impresión de nuestra granja: :tool"],
+    "calc.trust.photos": ["Výtisky z farmy", "Prints from the farm", "Impresiones de la granja"],
+    "calc.trust.photo_alt": ["Výtisk z farmy matplace: :what", "A print from the matplace farm: :what", "Una impresión de la granja matplace: :what"],
+    "calc.trust.photo_own": ["model zákazníka", "a customer's model", "un modelo del cliente"],
+    "calc.config_failed": ["Nepodařilo se načíst nastavení kalkulace. Obnovte prosím stránku.", "The calculator's settings could not be loaded. Please reload the page.", "No se pudo cargar la configuración de la calculadora. Recargue la página."]
+}
