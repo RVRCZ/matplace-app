@@ -1,0 +1,13 @@
+{
+    "figure.notify.lead": ["Trvá to 2 až 4 minuty. Nechcete čekat? Pošleme vám odkaz na hotový model e-mailem.", "It takes 2 to 4 minutes. Rather not wait? We send you the link to the finished model by e-mail.", "Tarda de 2 a 4 minutos. ¿No quiere esperar? Le enviamos el enlace al modelo terminado por correo."],
+    "figure.notify.email": ["váš e-mail", "your e-mail", "su correo"],
+    "figure.notify.send": ["Poslat odkaz", "Send the link", "Enviar el enlace"],
+    "figure.notify.consent": ["Jeden e-mail s odkazem, nic dalšího; adresu po odeslání smažeme.", "One e-mail with the link, nothing else; we delete the address once it is sent.", "Un solo correo con el enlace, nada más; borramos la dirección después de enviarlo."],
+    "figure.notify.sent": ["Pošleme, jakmile bude model hotový.", "We send it as soon as the model is done.", "Lo enviamos en cuanto el modelo esté listo."],
+    "figure.notify.failed": ["E-mail se nepodařilo uložit, zkuste to znovu.", "The e-mail could not be saved, try again.", "No se pudo guardar el correo, inténtelo de nuevo."],
+    "figure.mail.subject": ["Váš model je hotový", "Your model is ready", "Su modelo está listo"],
+    "figure.mail.body": ["Dobrý den,\n\nmodel z vaší fotky je hotový. Otevřete ho tady:\n\n:url\n\nNa stránce ho otočíte, uvidíte cenu tisku u nás a můžete ho stáhnout pro svou tiskárnu. Odkaz je jen váš. Tento e-mail posíláme jednou, na vaši žádost; vaši adresu jsme po odeslání smazali.\n\nmatplace", "Hello,\n\nthe model from your photo is ready. Open it here:\n\n:url\n\nOn the page you can turn it, see the price of printing with us and download it for your own printer. The link is yours alone. We send this e-mail once, at your request; we deleted your address once it went out.\n\nmatplace", "Hola:\n\nel modelo de su foto está listo. Ábralo aquí:\n\n:url\n\nEn la página puede girarlo, ver el precio de imprimirlo con nosotros y descargarlo para su impresora. El enlace es solo suyo. Enviamos este correo una vez, a petición suya; hemos borrado su dirección tras enviarlo.\n\nmatplace"],
+    "site.feed.title": ["matplace: nové nástroje a články o 3D tisku", "matplace: new tools and articles on 3D printing", "matplace: nuevas herramientas y artículos sobre impresión 3D"],
+    "site.feed.description": ["Co je nového na matplace: nástroje na model z fotky, jména nebo rozměrů a články o 3D tisku.", "What is new on matplace: tools for a model from a photo, a name or sizes, and articles on 3D printing.", "Novedades de matplace: herramientas para un modelo a partir de una foto, un nombre o unas medidas, y artículos sobre impresión 3D."],
+    "site.footer.rss": ["RSS", "RSS", "RSS"]
+}

@@ -6,7 +6,9 @@ use App\Domain\Farm\FarmSettings;
 use App\Domain\Stats\AiActivity;
 use App\Domain\Stats\Funnel;
 use App\Domain\Stats\Overview;
+use App\Domain\Stats\SearchConsole;
 use App\Domain\Stats\Speed;
+use App\Domain\Stats\ToolUse;
 use App\Http\Controllers\Controller;
 use App\Models\SearchQuery;
 use App\Support\Locales;
@@ -55,6 +57,14 @@ class StatsController extends Controller
     }
 
     /** How long customers wait for the server: queue, repair, slicing… per step (matplace:perf-report on a page). */
+    /** /admin/stats/tools: unique visitors with a tool per week, per tool with Search Console beside, where the embedded calculator was shown (docs/AN.md §12.3). */
+    public function tools(Request $request, ToolUse $use): View
+    {
+        $weeks = (int) $request->query('weeks', 12);
+
+        return view('admin.stats.tools', ['use' => $use->weekly($weeks), 'weeks' => in_array($weeks, ToolUse::PERIODS, true) ? $weeks : 12, 'console' => SearchConsole::read(), 'embeds' => ToolUse::embeds(30)]);
+    }
+
     public function speed(Request $request, Speed $speed): View
     {
         $days = in_array((int) $request->query('days'), [1, 7, 30], true) ? (int) $request->query('days') : 7;

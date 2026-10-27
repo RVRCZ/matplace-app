@@ -1851,5 +1851,16 @@
     "farm.order.pay_note_min": "The smallest card payment is :amount; whatever exceeds the price stays as credit for your next print.",
     "farm.order.step_material_hint": "Pick the colour and the print settings. Nothing to pay yet; the price follows your choice.",
     "farm.order.step_order_hint": "Choose the delivery and pay by card or from credit. The print starts once paid.",
-    "home.benefit.farm_from": "Or a print by us from :price"
+    "home.benefit.farm_from": "Or a print by us from :price",
+    "figure.notify.lead": "It takes 2 to 4 minutes. Rather not wait? We send you the link to the finished model by e-mail.",
+    "figure.notify.email": "your e-mail",
+    "figure.notify.send": "Send the link",
+    "figure.notify.consent": "One e-mail with the link, nothing else; we delete the address once it is sent.",
+    "figure.notify.sent": "We send it as soon as the model is done.",
+    "figure.notify.failed": "The e-mail could not be saved, try again.",
+    "figure.mail.subject": "Your model is ready",
+    "figure.mail.body": "Hello,\n\nthe model from your photo is ready. Open it here:\n\n:url\n\nOn the page you can turn it, see the price of printing with us and download it for your own printer. The link is yours alone. We send this e-mail once, at your request; we deleted your address once it went out.\n\nmatplace",
+    "site.feed.title": "matplace: new tools and articles on 3D printing",
+    "site.feed.description": "What is new on matplace: tools for a model from a photo, a name or sizes, and articles on 3D printing.",
+    "site.footer.rss": "RSS"
 }

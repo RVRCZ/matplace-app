@@ -8,6 +8,7 @@ use App\Engines\Contracts\ModelGenerator;
 use App\Engines\DTO\GenerationHandle;
 use App\Engines\DTO\GenerationOptions;
 use App\Engines\DTO\GenerationStatus;
+use App\Mail\GenerationReady;
 use App\Models\GenerationRequest;
 use App\Models\ModelFile;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -148,6 +149,7 @@ class GenerateModel implements ShouldQueue
                 'storage_path' => $rel, 'origin' => 'generated', 'origin_ref' => $req->token, 'status' => ModelFile::STATUS_UPLOADED,
             ]);
             $req->update(['status' => 'done', 'progress' => 100, 'result_model_file_id' => $file->id] + ($measured ? ['description' => $measured + $req->description] : []));
+            GenerationReady::sendFor($req);   // "send me the result": the one mail with the link, if the visitor asked for it
             $this->forgetPhoto($req);
             ProcessModelFile::dispatch($file->id);
         } catch (\Throwable $e) {

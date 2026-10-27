@@ -9,6 +9,8 @@ return [
 
     // where `php artisan matplace:sitemap` writes the files the site serves at /sitemap.xml and /sitemap-*.xml
     'sitemap_dir' => storage_path('app/sitemaps'),
+    // exports of Google Search Console, search-console-<date>.csv, read by /admin/stats/tools (App\Domain\Stats\SearchConsole)
+    'search_console_dir' => env('SEARCH_CONSOLE_DIR', base_path('docs/data')),
 
     // <meta name="google-site-verification"> for Search Console
     'google_site_verification' => env('GOOGLE_SITE_VERIFICATION'),

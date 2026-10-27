@@ -174,3 +174,35 @@ Zadání `docs/prompts/audit-web-2.md` (úkoly 1 až 6 kvalita, 7 až 11 návšt
   ],
   ```
   (první vzor, který `$request->is()` trefí, překryje direktivy a hlavičky; `null` hlavičku vynechá).
+
+### 12.3 Měření návštěvnosti: nástroje týdně a Search Console (úkol 9)
+
+- `/admin/stats/tools` (`StatsController::tools`, chip „Nástroje týdně“ ve všech statistikách): **unikátní návštěvníci,
+  kteří v týdnu použili aspoň jeden nástroj** (`App\Domain\Stats\ToolUse::weekly`): prohlížeče (nebo přihlášení bez
+  session) s událostí `calculation`, `generate`, `download`, `order_started` nebo `share` nesoucí `tool`; pohled na
+  stránku nástroje se nepočítá, naši (`meta.staff`) ne. Týdny od pondělí (4, 12 nebo 26), celkem a po jazycích; tabulka
+  po nástrojích za poslední čtyři týdny.
+- **Search Console** (`App\Domain\Stats\SearchConsole`): export uložený jako `docs/data/search-console-<datum>.csv`
+  (nejnovější podle jména; adresář `seo.search_console_dir`), oddělovač podle první řádky, sloupce podle názvů
+  (Page/Query/Clicks/Impressions/Position i česky), čísla s mezerami a čárkou. Stránky nástrojů ve všech jazycích se
+  sečtou k nástroji (`/tools/<slug>` → klíč; hlavní stránka = `calc`), vedle použití tak stojí zobrazení → kliknutí
+  (CTR, vážená pozice, až pět dotazů, když je export má); ostatní stránky zvlášť. Bez souboru stránka říká, kam ho dát.
+  Roman export dodá.
+- Tamtéž tabulka **vložené kalkulačky**: hosty, kde se rám načetl, za 30 dní (`ToolUse::embeds`).
+
+### 12.4 (vyhrazeno: úkoly 1 až 6 níže)
+
+### 12.5 Návraty: e-mail s výsledkem a RSS (úkol 10)
+
+- **„Pošleme vám výsledek“** u busty a mazlíčka: zatímco se model dělá (2 až 4 minuty), pod stavem je formulář s e-mailem
+  (`#figure-notify` ve `figure.blade.php` i `pet.blade.php`, logika `figure.ts`: ukáže se se známým tokenem, i po
+  návratu na adresu běžícího modelu, zmizí po dokončení). `POST /api/generate/{token}/notify` (throttle 10/min) uloží
+  `notify_email` a `notify_locale` (migrace `2026_10_27_100000`), hotový model odpoví `done`, nepovedený 410. Úloha
+  `GenerateModel` po `done` zavolá `GenerationReady::sendFor()`: jeden e-mail (`mail.plain`, texty `figure.mail.*`
+  cs/en/es) s odkazem na stránku nástroje s `?generation=<token>` v jazyce návštěvníka; adresa se po odeslání smaže
+  (`notify_email` null, `notified_at`), podruhé se nepošle. Žádný účet, žádný newsletter; souhlas je ve větě u pole.
+  Událost `notify` (meta kind) pro měření návratů.
+- **RSS** `/feed` (`FeedController`, i `/en/feed`, `/es/feed`): zveřejněné články v jazyce adresy a nástroje s datem
+  ověření tiskem (`verified` je jediné datum, které nástroj má; bez něj se v kanálu neobjeví, dnes 6 nástrojů), 50
+  položek, `Cache-Control` 10 min, `<link rel="alternate" type="application/rss+xml">` v hlavičce každé stránky a odkaz
+  „RSS“ v patičce. Nové nástroje bez data ověření by potřebovaly klíč `since` v `config/tools.php` (doporučení).
