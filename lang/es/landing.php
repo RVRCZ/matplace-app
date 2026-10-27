@@ -156,4 +156,53 @@ return [
             ['t' => 'Antes de encargar con nosotros', 'text' => 'Cada modelo de nuestra granja pasa por la misma revisión. Quien la hace de antemano sabe que el pedido pasará sin preguntas.'],
         ],
     ],
+
+    // páginas de entrada de la sesión N1, lote 2 (docs/AP.md §4): vaciar, dividir, G-code
+    'hollow' => [
+        'order' => [
+            ['q' => '¿Cuánto ahorro en el precio de impresión con ustedes?', 'farm' => true, 'a' => 'Depende del tamaño. Un cilindro de ⌀ 120 × 200 mm costó 910 CZK macizo y 500 CZK vaciado con pared de 2,5 mm (PLA+, sin envío); en una pieza pequeña el precio no cambia, porque el pedido mínimo es de 99 CZK. La herramienta muestra la diferencia justo después del vaciado y el cálculo la confirma.'],
+            ['q' => '¿Se imprime un modelo hueco sin soportes?', 'a' => 'Por fuera, igual que uno macizo. Por dentro, el hueco tiene un techo que el laminador puentea o apuntala con soportes interiores; esos se sacuden por los orificios de drenaje tras imprimir. Para FDM elija una pared de 2 a 3 mm; el laminador la rellena además según sus ajustes.'],
+            ['q' => '¿Cómo vacío un modelo para impresión con resina?', 'a' => 'Pared de 2 a 3 mm y al menos dos orificios de 3 a 4 mm en el fondo, para que la resina salga y no se forme vacío. Un cilindro macizo de ⌀ 120 × 200 mm se tragaría 2,3 litros de resina; hueco, un cuarto de litro aproximadamente.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un modelo hueco se imprime en menos tiempo: el cilindro del ejemplo, en 6 h 36 min en lugar de 8 h 14 min. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Puedo lastrar el hueco con arena?', 'a' => 'Sí. Vierta arena o perdigones por los orificios del fondo y séllelos con pistola de silicona o un trozo de plástico. Un pisapapeles, un soporte de bandera o una figura quedan firmes y el modelo sigue siendo ligero de imprimir.'],
+            ['q' => '¿Es gratis el vaciado y necesito una cuenta?', 'a' => 'El vaciado y la descarga del modelo hueco son gratis y sin cuenta; el archivo sirve solo para el cálculo y no se entrega a nadie. Solo necesita cuenta cuando nos encarga el modelo impreso.'],
+        ],
+        'who' => [
+            ['t' => 'Figura o busto grande', 'text' => 'Por encima de 150 mm el hueco ahorra cientos de gramos; un modelo de más de 250 mm divídalo además en piezas que quepan en la impresora.'],
+            ['t' => 'Impresión con resina', 'text' => 'Una pieza maciza se agrieta y consume litros. Hueca, con pared de 2 a 3 mm y orificios de drenaje, se imprime limpia y barata.'],
+            ['t' => 'Pisapapeles y soportes', 'text' => 'Un hueco para arena o perdigones: una figura, un soporte de bandera o una peana quedan firmes y la impresión sigue siendo rápida.'],
+        ],
+    ],
+
+    'split' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta imprimir las piezas con ustedes?', 'farm' => true, 'a' => 'El cálculo suma todas las piezas y los pasadores: el cilindro de ⌀ 120 × 320 mm en dos piezas salió por 1.440 CZK (814 g, PLA+, sin envío). Encarga las piezas en un solo pedido y las recibe juntas.'],
+            ['q' => '¿Cuántos cortes harán falta?', 'a' => 'La herramienta lo dice tras subir el archivo: una figura de 60 cm necesita dos cortes para una cama de 250 mm, es decir, tres piezas. Puede mover los planos a donde la unión se esconda, por ejemplo a la cintura o al borde de la peana.'],
+            ['q' => '¿Qué pasadores uso y cuántos habrá?', 'a' => 'Los pasadores tienen 6 mm de diámetro y los agujeros 0,2 mm de holgura. La herramienta pone en cada unión tantos como quepan (el cilindro del ejemplo recibió cuatro) y los añade al archivo como pieza aparte; también sirven tacos de madera de Ø 6 mm.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El cálculo suma el tiempo de todas las piezas; el cilindro del ejemplo se imprimió en 13 h 8 min. Las piezas se imprimen una tras otra, enviamos el mismo día en que termina la última, en días laborables; Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Puedo agrandar el modelo al mismo tiempo?', 'a' => 'Para eso está la herramienta Tamaño real: indica la altura en centímetros y el modelo se escala y se divide de una vez. Aquí el modelo solo se corta; cambie el tamaño antes en la calculadora.'],
+            ['q' => '¿Es gratis la división y necesito una cuenta?', 'a' => 'La división y la descarga de las piezas son gratis y sin cuenta; el archivo sirve solo para el cálculo y no se entrega a nadie. Solo necesita cuenta cuando nos encarga las piezas impresas.'],
+        ],
+        'who' => [
+            ['t' => 'Figura a tamaño real', 'text' => 'Una estatua, un busto o un personaje de videojuego de más de 250 mm: piezas con pasadores, número en el corte y mapa de montaje.'],
+            ['t' => 'Cosplay y atrezo', 'text' => 'Un casco, una espada o un escudo más largos que la cama: las colas de milano aguantan sin pegamento y las piezas viajan desmontadas.'],
+            ['t' => 'Una pieza larga', 'text' => 'Un riel, una tapa o un soporte de más de 250 mm: un corte, dos pasadores, y la unión lijada y pintada no se nota.'],
+        ],
+    ],
+
+    'gcode' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta imprimir con ustedes un modelo a partir de G-code?', 'farm' => true, 'a' => 'Como con cualquier modelo: el cálculo lo lamina para nuestras impresoras y pone el precio según los gramos y los minutos; el tiempo y los gramos de la cabecera del G-code son solo orientativos. El pedido mínimo es de 99 CZK (PLA, sin envío).'],
+            ['q' => '¿No pueden imprimir directamente mi G-code?', 'a' => 'No. El G-code está escrito para una impresora y sus ajustes; nuestra granja imprime a partir de un modelo que lamina para su propia máquina y material. La conversión a modelo lo hace posible y, además, puede cambiar el tamaño o los colores.'],
+            ['q' => '¿Por qué la superficie del modelo es escalonada?', 'a' => 'El modelo lleva las capas de la impresión de la que procede, por ejemplo 0,2 mm. Al imprimir, los escalones quedan cubiertos por las capas nuevas y no se ven; tras agrandar el modelo, líjelos o imprima con una capa más fina.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'El cálculo muestra el tiempo de impresión. Enviamos el mismo día en que termina, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => 'Tengo un .gcode.3mf de Bambu Studio o un .bgcode de Prusa. ¿Qué hago?', 'a' => 'Un archivo .gcode.3mf es un zip: descomprímalo y suba el .gcode de su carpeta Metadata. La herramienta no lee .bgcode binario; en PrusaSlicer desactive el G-code binario en los ajustes de la impresora y exporte de nuevo, o convierta el archivo con la herramienta bgcode de Prusa.'],
+            ['q' => '¿Es gratis la conversión y necesito una cuenta?', 'a' => 'La conversión y la descarga son gratis y sin cuenta; el G-code sirve solo para la conversión y el cálculo y no se entrega a nadie. Solo necesita cuenta cuando nos encarga el modelo impreso.'],
+        ],
+        'who' => [
+            ['t' => 'Modelo de origen perdido', 'text' => 'La impresión salió bien, pero el STL desapareció. Del G-code de la tarjeta SD sale un modelo que vuelve a imprimir, escalar o recolorear.'],
+            ['t' => 'Un archivo de otra persona', 'text' => 'Solo le han dado un G-code para otra impresora. Como modelo lo lamina para la suya, o nos lo encarga impreso.'],
+            ['t' => 'Un archivo en la tarjeta SD', 'text' => 'G-codes antiguos de la impresora como modelos en un catálogo: ve la forma, el tamaño y el precio de otra pieza.'],
+        ],
+    ],
 ];

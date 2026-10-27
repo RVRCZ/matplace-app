@@ -157,4 +157,53 @@ return [
             ['t' => 'Před objednávkou u nás', 'text' => 'Stejnou kontrolou projde každý model na naší farmě. Kdo ji udělá předem, ví, že objednávka projde bez dotazů.'],
         ],
     ],
+
+    // vstupní stránky session N1, dávka 2 (docs/AP.md §4): vydutit, rozdělit, G‑kód
+    'hollow' => [
+        'order' => [
+            ['q' => 'Kolik ušetřím na ceně tisku u vás?', 'farm' => true, 'a' => 'Záleží na velikosti. Váleček ⌀ 120 × 200 mm stál plný 910 Kč a dutý se stěnou 2,5 mm 500 Kč (PLA+, bez dopravy); u malého dílu se cena nezmění, protože nejnižší cena zakázky je 99 Kč. Rozdíl ukáže nástroj hned po vydutění a kalkulace ho potvrdí.'],
+            ['q' => 'Tiskne se dutý model bez podpěr?', 'a' => 'Zvenku stejně jako plný. Uvnitř má dutina strop, který slicer buď překlene, nebo podepře vnitřními podpěrami; ty po tisku vysypete odtokovými otvory. Pro FDM volte stěnu 2 až 3 mm, slicer ji ještě vyplní podle svého nastavení.'],
+            ['q' => 'Jak vydutit model pro pryskyřicový tisk?', 'a' => 'Stěna 2 až 3 mm a aspoň dva otvory 3 až 4 mm ve dně, aby pryskyřice vytekla a nevznikl podtlak. Váleček ⌀ 120 × 200 mm by plný spolkl 2,3 litru pryskyřice, dutý asi čtvrt litru.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Dutý model se tiskne kratší dobu: váleček z příkladu 6 h 36 min místo 8 h 14 min. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Můžu dutinu zatížit pískem?', 'a' => 'Ano. Otvory ve dně nasypete písek nebo broky a zalepíte je tavnou pistolí nebo kouskem plastu. Těžítko, stojan na vlajku nebo figurka tak stojí pevně a model zůstává lehký na tisk.'],
+            ['q' => 'Je vydutění zdarma a potřebuji účet?', 'a' => 'Vydutění i stažení dutého modelu jsou zdarma a bez účtu, soubor slouží jen k výpočtu a nikomu ho neposíláme. Účet potřebujete, až když si model necháte vytisknout u nás.'],
+        ],
+        'who' => [
+            ['t' => 'Velká figura nebo busta', 'text' => 'Nad 150 mm ušetří dutina stovky gramů; model nad 250 mm ještě rozdělte na díly, které se vejdou na tiskárnu.'],
+            ['t' => 'Pryskyřicový tisk', 'text' => 'Plný díl praská a spotřebuje litry. Dutý se stěnou 2 až 3 mm a odtokovými otvory se tiskne čistě a levně.'],
+            ['t' => 'Těžítko a stojan', 'text' => 'Dutina na písek nebo broky: figurka, stojan na vlajku nebo podstavec stojí pevně a tisk zůstane rychlý.'],
+        ],
+    ],
+
+    'split' => [
+        'order' => [
+            ['q' => 'Kolik stojí tisk dílů u vás?', 'farm' => true, 'a' => 'Kalkulace sečte všechny díly i kolíky: váleček ⌀ 120 × 320 mm na dva díly vyšel na 1 440 Kč (814 g, PLA+, bez dopravy). Díly objednáte v jedné objednávce a dostanete je pohromadě.'],
+            ['q' => 'Kolik řezů bude potřeba?', 'a' => 'Nástroj to řekne po nahrání: figura vysoká 60 cm potřebuje na podložku 250 mm dva řezy, tedy tři díly. Roviny můžete posunout tam, kde se spoj schová, třeba do pasu nebo na hranu podstavce.'],
+            ['q' => 'Jaké kolíky použít a kolik jich bude?', 'a' => 'Kolíky mají průměr 6 mm a díry vůli 0,2 mm. Nástroj jich do každého spoje dá tolik, kolik se vejde (váleček z příkladu dostal čtyři) a přidá je do souboru jako samostatný díl; místo nich poslouží dřevěné kolíky Ø 6 mm.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Kalkulace sečte dobu všech dílů; váleček z příkladu se tiskl 13 h 8 min. Díly se tisknou za sebou, odesíláme v den, kdy skončí poslední, v pracovní dny; Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Můžu model zároveň zvětšit?', 'a' => 'Na to je nástroj Životní velikost: zadáte výšku v centimetrech a model se zvětší a rozdělí najednou. Tady se model jen řeže, velikost změníte předem v kalkulaci.'],
+            ['q' => 'Je rozdělení zdarma a potřebuji účet?', 'a' => 'Rozdělení i stažení dílů jsou zdarma a bez účtu, soubor slouží jen k výpočtu a nikomu ho neposíláme. Účet potřebujete, až když si díly necháte vytisknout u nás.'],
+        ],
+        'who' => [
+            ['t' => 'Figura v životní velikosti', 'text' => 'Socha, busta nebo postava z hry nad 250 mm: díly s kolíky, číslem v řezu a mapou, jak je složit.'],
+            ['t' => 'Cosplay a rekvizity', 'text' => 'Helma, meč nebo štít delší než podložka: rybinové klíče drží bez lepidla a díly jdou převážet rozložené.'],
+            ['t' => 'Dlouhý díl', 'text' => 'Lišta, kryt nebo držák delší než 250 mm: jeden řez, dva kolíky, spoj zabroušený a přetřený není vidět.'],
+        ],
+    ],
+
+    'gcode' => [
+        'order' => [
+            ['q' => 'Kolik stojí tisk modelu z G‑kódu u vás?', 'farm' => true, 'a' => 'Jako u každého modelu: kalkulace ho nařeže pro naše tiskárny a cenu spočítá z gramů a minut; čas a gramy z hlavičky G‑kódu jsou jen orientační. Nejnižší cena zakázky je 99 Kč (PLA, bez dopravy).'],
+            ['q' => 'Nemůžete vytisknout rovnou můj G‑kód?', 'a' => 'Ne. G‑kód je psaný pro jednu tiskárnu a její nastavení; naše farma tiskne z modelu, který nařeže pro svůj stroj a materiál. Převod na model to umožní a navíc můžete změnit velikost nebo barvy.'],
+            ['q' => 'Proč je povrch modelu schodovitý?', 'a' => 'Model nese vrstvy výtisku, ze kterého vznikl, třeba 0,2 mm. Při tisku se schodky překryjí novými vrstvami a vidět nejsou; po zvětšení modelu je přebruste, nebo tiskněte jemnější vrstvou.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Dobu tisku ukáže kalkulace. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Mám .gcode.3mf z Bambu Studia nebo .bgcode z Prusy. Co s tím?', 'a' => 'Soubor .gcode.3mf je zip: rozbalte ho a nahrajte .gcode ze složky Metadata. Binární .bgcode nástroj nečte; v PrusaSliceru vypněte binární G‑kód v nastavení tiskárny a exportujte znovu, nebo soubor převeďte nástrojem bgcode od Prusy.'],
+            ['q' => 'Je převod zdarma a potřebuji účet?', 'a' => 'Převod i stažení jsou zdarma a bez účtu, G‑kód slouží jen k převodu a kalkulaci a nikomu ho neposíláme. Účet potřebujete, až když si model necháte vytisknout u nás.'],
+        ],
+        'who' => [
+            ['t' => 'Ztracený zdrojový model', 'text' => 'Výtisk se povedl, ale STL je pryč. Z G‑kódu na SD kartě vznikne model, který znovu vytisknete, zvětšíte nebo přebarvíte.'],
+            ['t' => 'Soubor od někoho jiného', 'text' => 'Dostali jste jen G‑kód pro cizí tiskárnu. Jako model ho nařežete pro svou, nebo ho necháte vytisknout u nás.'],
+            ['t' => 'Archiv na SD kartě', 'text' => 'Staré G‑kódy z tiskárny jako modely do katalogu: vidíte tvar, rozměry a cenu dalšího kusu.'],
+        ],
+    ],
 ];

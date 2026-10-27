@@ -19,5 +19,8 @@ return [
         'svg_to_stl' => ['related' => ['logo', 'stamp', 'cutter', 'stencil'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk', 'cena-3d-tisku-z-modelu']],
         'repair' => ['related' => ['check', 'hollow', 'split'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk', 'rozdeleni-a-vyduteni-3d-modelu']],
         'check' => ['related' => ['repair', 'split', 'life_size'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk', 'cena-3d-tisku-z-modelu']],
+        'hollow' => ['related' => ['split', 'life_size', 'repair'], 'blog' => ['rozdeleni-a-vyduteni-3d-modelu', 'cena-3d-tisku-z-modelu']],
+        'split' => ['related' => ['life_size', 'hollow', 'check'], 'blog' => ['rozdeleni-a-vyduteni-3d-modelu', 'jak-pripravit-stl-soubor-pro-3d-tisk']],
+        'gcode' => ['related' => ['check', 'hollow', 'split'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk', 'cena-3d-tisku-z-modelu']],
     ],
 ];

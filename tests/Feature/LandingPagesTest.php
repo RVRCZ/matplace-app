@@ -22,7 +22,8 @@ class LandingPagesTest extends TestCase
     /** page → its address */
     private const PAGES = ['calc' => '/', 'figure' => '/tools/figure', 'pet' => '/tools/pet-figurine', 'qr' => '/tools/qr', 'organizer' => '/tools/organizer', 'box' => '/tools/box',
         // the search entry pages of session N1 (docs/AP.md §1)
-        'svg_to_stl' => '/tools/svg-to-stl', 'repair' => '/tools/repair', 'check' => '/tools/check'];
+        'svg_to_stl' => '/tools/svg-to-stl', 'repair' => '/tools/repair', 'check' => '/tools/check',
+        'hollow' => '/tools/hollow', 'split' => '/tools/split', 'gcode' => '/tools/gcode-model'];
 
     /** @return list<array<string, mixed>> the JSON-LD blocks of a page */
     private function jsonLd(string $html): array

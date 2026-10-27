@@ -196,3 +196,44 @@ Rozbitá busta na produkci: soubory `ab03c6d8-c3eb-49df-8b12-4c69e37fc86c` (nahr
 - Fotky výtisků (N3): kočka ze SVG (`example_items`), opravená busta není k focení (jen soubor).
 - Článek pro SVG do STL (§5 blog) a `article` v `config/tools.php`.
 - Nasazení: řídící; po něm Search Console per URL (`/tools/svg-to-stl`, `/tools/repair`, `/tools/check` ×3 jazyky).
+
+## 4. Dávka 2: vydutit, rozdělit, model z G‑kódu (27. 10. 2026)
+
+### 4.1 Co se změnilo
+
+- `lang/{cs,en,es}/tools_seo/{hollow,split,gcode}.php`: title a heading na dotaz („Vydutit 3D model online zdarma“,
+  „Rozdělit 3D model na díly online“, „Převod G‑kódu zpět na STL“; en „Hollow out a 3D model online, free“, „Split a 3D
+  model into parts online“, „Convert G-code back to STL“), description do 155, dva odstavce s limity a příkladem,
+  4 kroky, 6 otázek s vlastní osnovou (vydutit: kdy se vyplatí, stěna, otvory, tvar zvenku; rozdělit: kolíky vs. rybiny,
+  lepení, viditelnost spoje; G‑kód: přesnost, formáty včetně .gcode.3mf, barvy, chybějící detaily, vázový režim).
+- `lang/{cs,en,es}/landing.php` + `config/landing.php`: bloky pro všechny tři (6 otázek, 2 s `farm`; Pro koho 3; Kam dál
+  na životní velikost, opravu, kontrolu a články `rozdeleni-a-vyduteni-3d-modelu`, `cena-3d-tisku-z-modelu`,
+  `jak-pripravit-stl-soubor-pro-3d-tisk`).
+- `tests/Feature/LandingPagesTest.php`: tři stránky v `PAGES` (`/tools/gcode-model` je adresa G‑kódu).
+- `config/tools.php` beze změny: G‑kód článek nemá (blog §5), hollow a split mají `rozdeleni-a-vyduteni-3d-modelu`.
+- `example_items` nepřidávám: čísla z AK.md §5.7 jsou bez kódu kalkulace a váleček není k focení.
+
+### 4.2 Čísla a odkud jsou
+
+| nástroj | příklad | zdroj |
+|---|---|---|
+| vydutit | váleček ⌀ 120 × 200 mm plný 503 g, 8 h 14 min, 910 Kč → stěna 2,5 mm, 3 otvory: 223 g, 6 h 36 min, 500 Kč | AK.md §5.7 (produkce 18. 10., PLA+) |
+| vydutit, pryskyřice | plný 2,3 l, dutý asi 0,25 l | spočítáno z objemu (π·60²·200 = 2,26 l; plášť 98 000 mm² × 2,5 mm = 0,245 l), v textu označeno „spočítáno z objemu, ne tištěno“ |
+| rozdělit | váleček ⌀ 120 × 320 mm, 1 řez, 2 díly + 4 kolíky: 814 g, 13 h 8 min, 1 440 Kč | AK.md §5.7 (produkce 18. 10., PLA+) |
+| G‑kód | 5,6 MB, 191 475 řádků, 165 vrstev 0,2 mm, 36 min, 3,62 g → 91 × 57 × 16,5 mm, 522 384 trojúhelníků, 11,6 s; dvoubarevný 14 MB, 545 188 řádků, 39 vrstev 0,12 mm, 5 h 16 min, 81,5 g → color_1 48,6 g, color_2 32,9 g, 8,9 s | lokálně `engines/python/gcode_tool.py` na `Documents\MODELS\historie\gcode\source_PLA_0.2_35m59s.gcode` a `Nuclear 1_PLA_0.12_5h16m.gcode` (Anycubic Slicer Next, Kobra S1), 27. 10.; odchylka objemu 0,8 % je z AL.md (model z G‑kódu) |
+
+Poznámka: STL v `Documents\MODELS\historie` jsou samy výstupy nástroje z 25. 10. (stejný počet trojúhelníků), původní
+modely tam nejsou; proto se odchylka objemu nepřeměřovala a zůstala hodnota z AL.md.
+
+### 4.3 Ověření
+
+- `LandingPagesTest|ToolPageTest|SeoTest|ToolsCatalogTest` (+CatalogSeoTest): **43 testů, 10 537 assertions, OK**
+  (290 s). `pint --dirty` čistý.
+- Délky: title 52 až 60, description 144 až 155 (es/gcode 153 po zkrácení), heading 25 až 37.
+- JSON‑LD na všech 9 stránkách: HowTo + FAQPage s 10 otázkami, platné. H1 na dotaz ve třech jazycích.
+- Snímky `docs/img/seo-n1/{hollow,split,gcode-model}-{390,1280}-cs-1.webp`: bez vodorovného posunu, bez chyb skriptu.
+
+### 4.4 Co zůstalo
+
+- Článek pro G‑kód (blog §5) a jeho `article`; fotky od N3 nejsou potřeba (soubory, ne výtisky).
+- Nasazení: řídící; Search Console per URL (`/tools/hollow`, `/tools/split`, `/tools/gcode-model` ×3 jazyky).

@@ -156,4 +156,53 @@ return [
             ['t' => 'Before ordering from us', 'text' => 'Every model on our farm goes through the same check. Whoever runs it in advance knows the order will go through without questions.'],
         ],
     ],
+
+    // the search entry pages of session N1, batch 2 (docs/AP.md §4): hollow, split, G-code
+    'hollow' => [
+        'order' => [
+            ['q' => 'How much do I save on the print price with you?', 'farm' => true, 'a' => 'It depends on the size. A cylinder of ⌀ 120 × 200 mm cost 910 CZK solid and 500 CZK hollowed with a 2.5 mm wall (PLA+, without delivery); for a small part the price does not change, because the minimum order is 99 CZK. The tool shows the difference right after hollowing and the calculation confirms it.'],
+            ['q' => 'Does a hollow model print without supports?', 'a' => 'On the outside exactly like a solid one. Inside, the cavity has a ceiling that the slicer either bridges or props up with inner supports; you shake those out through the drain holes after printing. For FDM choose a 2 to 3 mm wall, the slicer still fills it according to its settings.'],
+            ['q' => 'How do I hollow a model for resin printing?', 'a' => 'A 2 to 3 mm wall and at least two holes of 3 to 4 mm in the bottom, so that the resin drains and no vacuum forms. A solid cylinder of ⌀ 120 × 200 mm would swallow 2.3 litres of resin, a hollow one about a quarter of a litre.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A hollow model prints in less time: the cylinder of the example in 6 h 36 min instead of 8 h 14 min. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'Can I weight the cavity with sand?', 'a' => 'Yes. Pour sand or shot in through the holes in the bottom and seal them with a glue gun or a piece of plastic. A paperweight, a flag stand or a figurine then stands firmly and the model stays light to print.'],
+            ['q' => 'Is hollowing free, and do I need an account?', 'a' => 'Hollowing and the download of the hollow model are free and need no account; the file serves only the computation and is passed to nobody. You need an account only when you have the model printed by us.'],
+        ],
+        'who' => [
+            ['t' => 'A large figure or bust', 'text' => 'Over 150 mm a cavity saves hundreds of grams; a model over 250 mm you also split into parts that fit the printer.'],
+            ['t' => 'Resin printing', 'text' => 'A solid part cracks and swallows litres. Hollow with a 2 to 3 mm wall and drain holes it prints cleanly and cheaply.'],
+            ['t' => 'A paperweight or a stand', 'text' => 'A cavity for sand or shot: a figurine, a flag stand or a base stands firmly and the print stays quick.'],
+        ],
+    ],
+
+    'split' => [
+        'order' => [
+            ['q' => 'How much does printing the parts cost with you?', 'farm' => true, 'a' => 'The calculation adds up all the parts and the pins: the cylinder of ⌀ 120 × 320 mm in two parts came to 1,440 CZK (814 g, PLA+, without delivery). You order the parts in one order and get them together.'],
+            ['q' => 'How many cuts will it take?', 'a' => 'The tool says after the upload: a figure 60 cm tall needs two cuts for a 250 mm bed, that is three parts. You can move the planes to where the joint hides, say the waist or the edge of the base.'],
+            ['q' => 'Which pins do I use and how many will there be?', 'a' => 'The pins are 6 mm in diameter and the holes have 0.2 mm of play. The tool puts as many into each joint as fit (the cylinder of the example got four) and adds them to the file as a separate part; wooden 6 mm dowels do the job too.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The calculation adds up the time of all the parts; the cylinder of the example printed in 13 h 8 min. The parts print one after another, we dispatch on the day the last one ends, on working days; Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'Can I scale the model up at the same time?', 'a' => 'That is what the Life size tool is for: you enter the height in centimetres and the model is scaled and split in one go. Here the model is only cut; change the size beforehand in the calculator.'],
+            ['q' => 'Is the split free, and do I need an account?', 'a' => 'The split and the download of the parts are free and need no account; the file serves only the computation and is passed to nobody. You need an account only when you have the parts printed by us.'],
+        ],
+        'who' => [
+            ['t' => 'A life-size figure', 'text' => 'A statue, a bust or a game character over 250 mm: parts with pins, a number in the cut and a map of how they go together.'],
+            ['t' => 'Cosplay and props', 'text' => 'A helmet, a sword or a shield longer than the bed: dovetail keys hold without glue and the parts travel taken apart.'],
+            ['t' => 'A long part', 'text' => 'A rail, a cover or a holder longer than 250 mm: one cut, two pins, and a sanded and painted joint does not show.'],
+        ],
+    ],
+
+    'gcode' => [
+        'order' => [
+            ['q' => 'How much does printing a model from G-code cost with you?', 'farm' => true, 'a' => 'As with any model: the calculation slices it for our printers and prices it from the grams and the minutes; the time and grams in the G-code header are only a guide. The minimum order is 99 CZK (PLA, without delivery).'],
+            ['q' => 'Can you not just print my G-code?', 'a' => 'No. G-code is written for one printer and its settings; our farm prints from a model it slices for its own machine and material. The conversion to a model makes that possible, and you can change the size or the colours on top.'],
+            ['q' => 'Why is the surface of the model stepped?', 'a' => 'The model carries the layers of the print it came from, 0.2 mm say. In printing the steps are covered by new layers and do not show; after scaling the model up, sand them or print with a finer layer.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The calculation shows the print time. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'I have a .gcode.3mf from Bambu Studio or a .bgcode from Prusa. What now?', 'a' => 'A .gcode.3mf file is a zip: unpack it and upload the .gcode from its Metadata folder. The tool does not read binary .bgcode; in PrusaSlicer switch binary G-code off in the printer settings and export again, or convert the file with Prusa’s bgcode tool.'],
+            ['q' => 'Is the conversion free, and do I need an account?', 'a' => 'The conversion and the download are free and need no account; the G-code serves only the conversion and the calculation and is passed to nobody. You need an account only when you have the model printed by us.'],
+        ],
+        'who' => [
+            ['t' => 'A lost source model', 'text' => 'The print came out well but the STL is gone. From the G-code on the SD card comes a model you print again, scale or recolour.'],
+            ['t' => 'A file from someone else', 'text' => 'You only got a G-code for a different printer. As a model you slice it for yours, or have it printed by us.'],
+            ['t' => 'An archive on the SD card', 'text' => 'Old G-codes from the printer as models in a catalogue: you see the shape, the size and the price of another piece.'],
+        ],
+    ],
 ];
