@@ -2,6 +2,7 @@
 
 namespace App\Domain\YouTube;
 
+use App\Domain\Farm\PrintPhotos;
 use App\Domain\Farm\TestPhotos;
 use App\Domain\Farm\TimelapseFrames;
 use App\Models\FarmOrder;
@@ -168,7 +169,7 @@ class TimelapseCutter
         [$w, $h] = @getimagesize((string) $frames->first()) ?: [1280, 720];
         [$cx, $cy, $side] = $this->crop($order, (int) $w, (int) $h);
         $size = min(1080, $side - $side % 2);
-        $photo = $this->finishPhoto($order);
+        $photo = $this->finishPhoto($order, 'square');
         $growth = $frames->count() * $per;
         $printSeconds = $start + $growth + $hold;
         $inputs = ['-f', 'concat', '-safe', '0', '-i', $dir.'/short.txt', '-i', public_path('img/logo.png')];
@@ -420,9 +421,15 @@ class TimelapseCutter
         return [max(0, min($w - $side, (int) $x)), max(0, min($h - $side, (int) $y)), $side - $side % 2];
     }
 
-    /** The cleaned piece from the photo box (TestPhotos::finishIndex says which one). */
-    private function finishPhoto(FarmOrder $order): ?string
+    /**
+     * The cleaned piece: the photo made presentable (PrintPhotos, the render that fits the video – the square for the
+     * square Short, the 3:2 web one elsewhere), else a photo of the photo box as it is (TestPhotos::finishIndex says which).
+     */
+    private function finishPhoto(FarmOrder $order, string $variant = 'web'): ?string
     {
+        if ($composed = PrintPhotos::file($order, $variant)) {
+            return $composed;
+        }
         $index = $this->photos->finishIndex($order);
         if ($index === null) {
             return null;

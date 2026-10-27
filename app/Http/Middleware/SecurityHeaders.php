@@ -29,9 +29,15 @@ final class SecurityHeaders
             $response->headers->set('Server-Timing', sprintf('app;dur=%.1f', (microtime(true) - $start) * 1000));
         }
 
+        // a path with rules of its own (config security.paths, the first pattern that fits): the calculator other sites
+        // embed may sit in any frame, so its directives and enforce-mode headers override the site's
+        $own = self::forPath($request, (array) ($cfg['paths'] ?? []));
+        $csp = (array) ($cfg['csp'] ?? []);
+        $csp['directives'] = ((array) ($own['directives'] ?? [])) + (array) ($csp['directives'] ?? []);
+
         $headers = (array) ($cfg['headers'] ?? []);
         if ($mode === 'enforce') {
-            $headers += (array) ($cfg['headers_enforced'] ?? []);
+            $headers = ((array) ($own['headers_enforced'] ?? [])) + (array) ($cfg['headers_enforced'] ?? []) + $headers;
         }
         foreach ($headers as $name => $value) {
             if (is_string($value) && $value !== '' && ! $response->headers->has($name)) {
@@ -42,7 +48,7 @@ final class SecurityHeaders
         if (in_array($mode, ['report', 'enforce'], true) && self::isDocument($response)) {
             $header = $mode === 'enforce' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only';
             if (! $response->headers->has($header)) {
-                $response->headers->set($header, self::policy($cfg['csp']));
+                $response->headers->set($header, self::policy($csp));
                 if (! empty($cfg['csp']['report_uri'])) {
                     $response->headers->set('Reporting-Endpoints', 'csp="'.url((string) $cfg['csp']['report_uri']).'"');
                 }
@@ -65,6 +71,18 @@ final class SecurityHeaders
         }
 
         return implode('; ', $parts);
+    }
+
+    /** The rules of the first path pattern (config security.paths, `$request->is()` syntax) the request falls under; [] for the rest. */
+    public static function forPath(Request $request, array $paths): array
+    {
+        foreach ($paths as $pattern => $rules) {
+            if (is_array($rules) && $request->is($pattern)) {
+                return $rules;
+            }
+        }
+
+        return [];
     }
 
     /** The request came to the site's own name (config app.url); any other name is a copy that search engines must not keep. */

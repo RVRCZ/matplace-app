@@ -852,6 +852,8 @@ class OrderController extends Controller
             'supports_url' => $order->absoluteSupportsPath() ? route('farm.orders.supports', $order).'?v='.($order->updated_at?->timestamp ?? 0) : null,
             'queue' => app(Dispatcher::class)->estimate($order, $this->settings),
             'timelapse_url' => $order->timelapse_path ? route('farm.orders.timelapse', $order) : null,
+            // the photo of the finished print on its backdrop (PrintPhotos), once the operator took one
+            'photo_url' => $order->photoUrl(),
             'short_url' => $order->timelapse_short_path ? route('farm.orders.short', $order) : null,
             // what stopping a running print would cost right now (the printed share)
             'cancel_keep' => $order->status === FarmOrder::STATUS_PRINTING && $job ? app(OrderFlow::class)->shareOfPrice((array) $order->price, (float) $job->progress / 100) : null,

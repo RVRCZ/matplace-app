@@ -1862,5 +1862,6 @@
     "figure.mail.body": "Hello,\n\nthe model from your photo is ready. Open it here:\n\n:url\n\nOn the page you can turn it, see the price of printing with us and download it for your own printer. The link is yours alone. We send this e-mail once, at your request; we deleted your address once it went out.\n\nmatplace",
     "site.feed.title": "matplace: new tools and articles on 3D printing",
     "site.feed.description": "What is new on matplace: tools for a model from a photo, a name or sizes, and articles on 3D printing.",
-    "site.footer.rss": "RSS"
+    "site.footer.rss": "RSS",
+    "farm.order.photo_of_print": "A photo of your print"
 }

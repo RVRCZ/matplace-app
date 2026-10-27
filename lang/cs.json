@@ -1862,5 +1862,6 @@
     "figure.mail.body": "Dobrý den,\n\nmodel z vaší fotky je hotový. Otevřete ho tady:\n\n:url\n\nNa stránce ho otočíte, uvidíte cenu tisku u nás a můžete ho stáhnout pro svou tiskárnu. Odkaz je jen váš. Tento e-mail posíláme jednou, na vaši žádost; vaši adresu jsme po odeslání smazali.\n\nmatplace",
     "site.feed.title": "matplace: nové nástroje a články o 3D tisku",
     "site.feed.description": "Co je nového na matplace: nástroje na model z fotky, jména nebo rozměrů a články o 3D tisku.",
-    "site.footer.rss": "RSS"
+    "site.footer.rss": "RSS",
+    "farm.order.photo_of_print": "Fotka vašeho výtisku"
 }

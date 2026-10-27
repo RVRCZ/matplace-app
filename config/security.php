@@ -23,6 +23,12 @@ return [
         'X-Frame-Options' => 'SAMEORIGIN',
     ],
 
+    // paths with rules of their own: the first pattern ($request->is) that fits overrides the directives below and, in enforce
+    // mode, the headers above (a null header is left out). The calculator other sites embed (/embed/calc) may sit in any frame.
+    'paths' => [
+        'embed/*' => ['directives' => ['frame-ancestors' => ['*']], 'headers_enforced' => ['X-Frame-Options' => null]],
+    ],
+
     'csp' => [
         // off | report | enforce
         'mode' => env('CSP_MODE', 'report'),

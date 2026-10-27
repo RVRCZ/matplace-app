@@ -53,6 +53,11 @@
                 <button type="button" id="farm-supports-toggle" class="absolute right-3 top-3 hidden rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow" aria-pressed="true">{{ __('farm.order.supports_hide') }}</button>
             </div>
             <p id="farm-oriented" class="hidden border-t border-slate-100 bg-action-soft px-4 py-2 text-sm text-action-dark">{{ __('farm.order.oriented') }}</p>
+            {{-- the finished print photographed in the photo box, on its backdrop (PrintPhotos) --}}
+            <figure id="farm-photo-box" class="hidden border-t border-slate-100 p-3">
+                <img id="farm-photo" alt="{{ __('farm.order.photo_of_print') }}" class="w-full rounded-xl" loading="lazy">
+                <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.photo_of_print') }}</figcaption>
+            </figure>
         </div>
 
         <div class="flex flex-col gap-4">
