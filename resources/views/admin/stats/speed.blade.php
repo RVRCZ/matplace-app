@@ -23,6 +23,7 @@
     <a href="{{ route('admin.ai.index') }}" class="chip">AI aktivita</a>
     <a href="{{ route('admin.stats.speed') }}" class="chip chip-on">Rychlost</a>
     <a href="{{ route('admin.stats.tools') }}" class="chip">Nástroje týdně</a>
+    <a href=\"{{ route('admin.search_console.index') }}\" class=\"chip\">Search Console</a>
 </nav>
 
 <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
