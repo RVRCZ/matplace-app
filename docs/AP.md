@@ -284,3 +284,111 @@ psala o N3. Main 616cde5 jsem sloučila do své větve (e718bd8, bez konfliktu).
 - Tím je hotových všech 10 stránek z §1. Nasazení: řídící; pak Search Console per URL ×3 jazyky.
 - Fotky výtisků vybere Roman (session 2), `photo` v `example_items` zůstává null.
 - Dál: vánoční nástroje (§6), blog (§7), prolinkování (§8).
+
+Řídící 27. 10.: dávka 2 sloučena (main d5b9a8b) a nasazena (server 94f4db8), dávka 3 sloučena (main 1ea8093) a nasazuje
+se; všech 10 stránek je na produkci. Po příštím merge main udělat `npm run build` (kalkulace bere konfiguraci
+z `/api/calc-config`).
+
+## 6. Vánoční nástroje: perníček, ozdoba, vykrajovátko, jmenovka, zápich, písmeno (27. 10. 2026)
+
+Zadání bod 3: texty na dotazy „vykrajovátko na míru“, „vánoční ozdoba se jménem“, „jmenovka na dárek 3D tisk“ a bloky
+s cenou z kalkulace. Nástroje: `gingerbread` (vánoční ozdoba se jménem), `ornament` (vánoční ozdoba z obrázku),
+`cutter` (vykrajovátko na míru; zadání psalo „cookie“, viz §1.2), `nameplate` (jmenovka na dárek; `sign` je rychlý
+formulář téhož a zůstává v „Kam dál“), `topper` (zápich do dortu, i na Silvestra), `name_letter` (písmeno se jménem jako
+dárek). Dva vánoční články jsou v blogu (§7).
+
+### 6.1 Co se změnilo
+
+- `lang/{cs,en,es}/tools_seo/{gingerbread,ornament,cutter,nameplate,topper,name_letter}.php`: title a heading na
+  dotaz (cs „Vánoční ozdoba se jménem: perníček na stromeček“, „Vánoční ozdoba na 3D tisk z obrázku nebo jména“,
+  „Vykrajovátko na míru ze jména nebo kresby“, „Jmenovka na dárek z 3D tiskárny“, „Zápich do dortu se jménem a číslem“,
+  „Velké písmeno se jménem jako dárek“; en „Christmas ornament with a name: a gingerbread for the tree“, „3D printed
+  Christmas ornament from a picture or a name“, „Custom cookie cutter from a name or a drawing“, „3D printed gift tag
+  with a name“, „Cake topper with a name and a number“, „A big letter with a name as a gift“), description do 155,
+  druhý odstavec s cenou z kalkulace, 6 otázek; otázka o platbě nahrazena užitečnou (délka jména a rok, velikost ozdoby
+  na stromeček, velikost vykrajovátka, sada jmenovek, rok na zápichu, datum místo jména).
+- `lang/{cs,en,es}/landing.php` + `config/landing.php`: bloky pro všech šest (6 otázek, 2 s `farm`: termín do Vánoc,
+  doprava, cena; 3 použití), Kam dál mezi vánočními nástroji a na články `vanocni-ozdoba-z-obrazku`,
+  `cedulka-jmenovka-a-klicenka-se-jmenem`, `vykrajovatko-na-cukrovi-podle-vlastniho-tvaru`,
+  `klicenka-a-privesek-z-obrazku`.
+- `tests/Feature/LandingPagesTest.php`: šest stránek v `PAGES` (celkem 17 z 17 v `config/landing.php`).
+- `config/tools.php` beze změny: gingerbread, nameplate, topper a name_letter článek nemají (vánoční články §7).
+
+### 6.2 Čísla a odkud jsou
+
+| nástroj | příklad | zdroj |
+|---|---|---|
+| perníček | panáček 90 mm „Ela“: 10,8 g, 20 min, 99 Kč (`/c/krswdwunexsg`); 6 kusů 140 Kč (`/c/qkmqrfmbzaln`) | produkce 27. 10., PLA, User‑Agent `matplace-n1-seo` |
+| ozdoba | perníček z knihovny 80 mm: 10 g, 18 min, 99 Kč; 6 kusů 160 Kč | AK.md §5.7 (produkce 18. 10., PLA+) |
+| vykrajovátko | „Ela“ 82 × 54 × 18 mm: 13 g, 31 min, 99 Kč; „5“ 72 × 93 mm: 12 g, 25 min, 99 Kč | AK.md §5.7 |
+| jmenovka | šestiúhelník 120 × 60 mm „Adéla“ s hvězdou: 14,5 g, 25 min, 99 Kč (`/c/v9fh1s1ogsob`); jmenovka na dárek 70 mm s očkem „Pro Elu“: 5,2 g, 10 min, 99 Kč, 10 kusů 120 Kč (`/c/udkkubsktt9d`) | produkce 27. 10., PLA (kind compose, preset plate / vlastní vrstvy) |
+| zápich | „2“ 110 mm + „Olivia“, dva hroty 60 mm: 30,1 g, 55 min, 99 Kč (`/c/4jdvyezywc3l`) | produkce 27. 10., PLA |
+| písmeno | „E“ 120 mm, 8 mm, „Ela“: 27 g, 40 min, 99 Kč (`/c/vhfifzrzy5in`) | produkce 27. 10., PLA |
+
+Kalkulace na produkci počítá jednu barvu (PLA, profil farmy); druhou barvu vybírá zákazník při objednávce. Rady
+o tisku doma (pauza ve výšce polevy, obrubou dolů, matné filamenty) vycházejí z textů nástrojů a z AK.md, ne z nového
+tisku; nic z této dávky se netisklo.
+
+### 6.3 Ověření
+
+- `LandingPagesTest|ToolPageTest|SeoTest|ToolsCatalogTest` (+CatalogSeoTest): **43 testů, 11 289 assertions, OK**
+  (303 s). `pint --dirty` čistý.
+- Délky: title 53 až 60, description 140 až 152, heading 28 až 61; otázky bez duplicit mezi častými otázkami a blokem;
+  příznaky `farm` stejné ve třech jazycích; všechny podobné nástroje veřejné.
+- JSON‑LD na 18 stránkách (6 nástrojů × 3 jazyky): HowTo + FAQPage s 10 otázkami, platné; H1 na dotaz.
+- Snímky `docs/img/seo-n1/{gingerbread,ornament,cookie-cutter,nameplate,cake-topper,name-letter}-{390,1280}-cs-1.webp`:
+  bez vodorovného posunu, bez chyb skriptu.
+
+### 6.4 Co zůstalo
+
+- Dva vánoční články (§7, termíny 6. a 13. 11.) a `article` pro gingerbread, nameplate, topper, name_letter s nimi.
+- Vánoční Shorts dělá session 2 (zadání bod 3 je sdílené).
+
+## 7. Blog: 1 až 2 články týdně (plán 27. 10. 2026)
+
+### 7.1 Co blog umí a co chybí
+
+- **Datum vydání dopředu funguje bez úpravy**: `Post::published()` bere jen `published_at <= now()` a `blog:sync`
+  zapíše `published_at` z hlavičky jen novému článku. Článek s budoucím datem v hlavičce se po `blog:sync` objeví sám
+  v daný den (výpis, detail, sitemapa, RSS); do té doby je koncept (404 pro návštěvníka, admin ho vidí). Rozložení
+  publikace je tedy jen věc dat v hlavičkách.
+- **Video a kalkulace do článku nejdou vložit**: Markdown se renderuje s `html_input => strip`, takže iframe ani
+  vlastní HTML v těle neprojde (správně). Doplním krátké značky na vlastním řádku, které `Post::html()` nahradí
+  šablonou: `[video: <youtube_id>]` nebo `[video: latest]` (zveřejněné `FarmVideo` s tím id, tmavý rámeček s názvem
+  a tlačítkem, YouTube nocookie až po kliknutí jako na stránkách nástrojů a na hlavní stránce; bez takového videa se
+  nevykreslí nic) a `[calc: <kód>]` (kalkulace `/c/<kód>`, hotová: karta s rozměry, gramy, dobou tisku a cenou
+  a odkazem; jinak jen odkaz). Zástupná slova na vlastním řádku projdou Markdownem jako odstavec a ten se vymění.
+- Produkce má na hlavní stránce zveřejněné video `2jtLXyMz3Sk` (poslední zveřejněné); seznam videí kanálu se odsud
+  přečíst nedá (stránka YouTube je jen skript), další id dodá řídící z `/admin/youtube`.
+
+### 7.2 Šest článků a termíny (`published_at` v hlavičce, UTC)
+
+| # | slug | dotaz / data | vydání |
+|---|---|---|---|
+| 1 | `svg-do-stl-logo-a-kresba-jako-3d-model` | „svg do stl“ (odhad), nástroj SVG do STL, `/c/lfa9iggn3hls` | út 3. 11. 2026 07:00 |
+| 2 | `vanocni-ozdoby-se-jmenem-z-3d-tiskarny` | „vánoční ozdoba se jménem“ (odhad), perníček + ozdoba + písmeno, `/c/krswdwunexsg`, `/c/qkmqrfmbzaln` | pá 6. 11. 2026 07:00 |
+| 3 | `jak-presne-odhadneme-cenu-bez-rezu-400-kalkulaci` | data: `docs/data/odhad-vs-rez-2026-10-25-prod-overhang.csv`, M.md §6 | út 10. 11. 2026 07:00 |
+| 4 | `jmenovky-na-darky-a-vykrajovatka-vanocni-dilna` | „jmenovka na dárek 3D tisk“, „vykrajovátko na míru“ (odhad), `/c/udkkubsktt9d`, `/c/v9fh1s1ogsob` | pá 13. 11. 2026 07:00 |
+| 5 | `gcode-zpet-na-stl-kdyz-se-ztratil-model` | „gcode do stl“ (odhad), nástroj Model z G‑kódu, čísla z §4.2 | út 17. 11. 2026 07:00 |
+| 6 | `co-lide-tisknou-nejcasteji-cisla-z-farmy` | data: `PublicStats` + výskyt nástrojů v kalkulacích a zakázkách (export od řídící, viz 7.4) | pá 20. 11. 2026 07:00 |
+
+Každý: místo pro 1 fotku výtisku (`<!-- foto: … -->`, fotky vybere Roman ze session 2), `[video: …]`, `[calc: …]`,
+blok „Co dál“ s odkazem na nástroj; nástroj dostane `article` v `config/tools.php` (svg_to_stl → 1, gingerbread
+a name_letter → 2, gcode → 5, nameplate a topper → 4).
+
+### 7.3 Čísla pro článek 3 (CSV 400 kalkulací z produkce 26. 9. až 25. 10. 2026, spočítáno 27. 10.)
+
+- gramy: odhad proti řezu medián +0,2 %, medián absolutní odchylky 5,9 %, do 10 % v 71 %, do 20 % v 82 % kalkulací;
+- minuty: medián −11,6 % (odhad bývá kratší), medián absolutní odchylky 23,6 %, do 20 % ve 46 %, do 30 % v 62 %;
+  podle největšího rozměru: do 50 mm 26 %, 50 až 100 mm 29 %, 100 až 200 mm 13 %, nad 200 mm 21 % (n 31/162/178/29);
+- cena: skutečná v rozpětí, které stránka ukázala, 329/400 (82 %), odhad přesně rovný výsledku 131× (33 %); nové
+  rozpětí podle tvaru (M.md §6.3) 96,8 %;
+- řez: medián 5,2 s, p90 36 s, nejdéle 272 s; trojúhelníky medián 39 656, nejvíc 2,7 milionu; podpěry slicer použil
+  u 65 ze 400; kvalita standard 390, fine 10; výplň 15 % u 391;
+- výsledná cena: medián 140 Kč, čtvrtiny 120 a 240 Kč, nejvíc 1 750 Kč, 12 % kalkulací na minimu 99 Kč.
+
+### 7.4 Co potřebuji od řídící (článek 6)
+
+Export z produkce (tinker, jen počty, žádná osobní data): kalkulace za posledních 90 dní podle původu souboru
+(`model_files.origin` upload / tool / generation a `origin_ref` = druh nástroje), zaplacené zakázky podle druhu
+nástroje a materiálu, medián gramů a doby tisku zaplacených zakázek, podíl dvoubarevných. Snippet pošlu ve zprávě.

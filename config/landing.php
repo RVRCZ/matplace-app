@@ -24,5 +24,12 @@ return [
         'gcode' => ['related' => ['check', 'hollow', 'split'], 'blog' => ['jak-pripravit-stl-soubor-pro-3d-tisk', 'cena-3d-tisku-z-modelu']],
         'relief' => ['related' => ['figure', 'filament_art', 'lightbox'], 'blog' => ['litofanie-z-fotky', 'vytvoreni-stl-z-fotek-pomoci-ai-kompletni-navod-pro-3d-tisk-2026']],
         'map' => ['related' => ['relief', 'nameplate', 'coaster'], 'blog' => ['3d-mapa-mesta-z-openstreetmap', 'cena-3d-tisku-z-modelu']],
+        // the Christmas tools (docs/AP.md §6)
+        'gingerbread' => ['related' => ['ornament', 'nameplate', 'cutter'], 'blog' => ['vanocni-ozdoba-z-obrazku', 'cedulka-jmenovka-a-klicenka-se-jmenem']],
+        'ornament' => ['related' => ['gingerbread', 'nameplate', 'charm'], 'blog' => ['vanocni-ozdoba-z-obrazku', 'klicenka-a-privesek-z-obrazku']],
+        'cutter' => ['related' => ['stamp', 'gingerbread', 'cookie'], 'blog' => ['vykrajovatko-na-cukrovi-podle-vlastniho-tvaru', 'vanocni-ozdoba-z-obrazku']],
+        'nameplate' => ['related' => ['sign', 'keychain', 'gingerbread'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem', 'klicenka-a-privesek-z-obrazku']],
+        'topper' => ['related' => ['name_letter', 'nameplate', 'cutter'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem', 'vykrajovatko-na-cukrovi-podle-vlastniho-tvaru']],
+        'name_letter' => ['related' => ['nameplate', 'topper', 'text'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem', 'vanocni-ozdoba-z-obrazku']],
     ],
 ];

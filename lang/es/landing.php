@@ -238,4 +238,101 @@ return [
             ['t' => 'Paisaje para una excursión', 'text' => 'Una colina, una presa o un valle como relieve con exageración, con carreteras y agua en la superficie; de 2 a 20 km en una sola placa.'],
         ],
     ],
+
+    // herramientas navideñas de la sesión N1 (docs/AP.md §6): galleta, adorno, cortador, placa, topper, letra
+    'gingerbread' => [
+        'order' => [
+            ['q' => '¿Cuándo encargar para que las galletas lleguen antes de Navidad?', 'farm' => true, 'a' => 'Una galleta de 90 mm se imprime en 20 minutos y la impresión empieza en cuanto hay una impresora libre; enviamos el mismo día en que termina, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia. En diciembre déjese margen y encargue al menos con una semana de antelación.'],
+            ['q' => '¿Cómo cuelgo la galleta?', 'a' => 'Por la argolla superior, con agujero de 3 a 6 mm, pasa una cinta, un cordel o un gancho de adorno. Una galleta de 90 mm pesa unos 11 g, así que cuelga incluso de una rama fina; mueva la argolla a donde la forma quede equilibrada, por ejemplo la punta de una estrella.'],
+            ['q' => '¿Qué colores elegir para la base y el glaseado?', 'a' => 'El clásico es base marrón con glaseado blanco; también quedan bien rojo con dorado, verde con blanco o azul marino con plateado. Los filamentos mate disimulan las capas mejor que los brillantes. Elige entre las bobinas que tenemos en stock ahora mismo.'],
+            ['q' => '¿Cuánto cuesta el envío?', 'farm' => true, 'a' => 'Con Packeta a un punto de recogida en Chequia :cz_point, a domicilio :cz_home, a Eslovaquia desde :sk_point, a otros países de la UE desde :eu_point. Varias galletas en un pedido viajan en un solo paquete.'],
+            ['q' => '¿Cómo imprimo la galleta en casa?', 'a' => 'En plano, boca arriba, sin soportes, en PLA. El proyecto descargado para OrcaSlicer, Bambu Studio o PrusaSlicer lleva una pausa a la altura del glaseado: la impresora se detiene, cambia la bobina y la impresión sigue en blanco. Una impresora con varias bobinas lo hace sola.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga las galletas impresas; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Etiquetas para el árbol de toda la familia', 'text' => 'Cada uno tiene su galleta con nombre: una cuesta 99 CZK; seis iguales, 140 CZK; para otros nombres, otro diseño.'],
+            ['t' => 'Un regalo para la maestra o los compañeros', 'text' => 'Una galleta de 60 mm con nombre en una cinta en lugar de la etiqueta del paquete; tras abrirlo, cuelga en el árbol.'],
+            ['t' => 'Guardería y taller', 'text' => 'Adornos con los nombres de los niños en su propia impresora: un proyecto con un cambio de filamento, 20 minutos por pieza.'],
+        ],
+    ],
+
+    'ornament' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un adorno con ustedes y cuánto tarda en imprimirse?', 'farm' => true, 'a' => 'Un muñeco de jengibre de 80 mm se imprime en 18 minutos y cuesta 99 CZK, que es el pedido mínimo; seis unidades salen por 160 CZK, es decir, 27 CZK por adorno (PLA+, sin envío, cálculo del 18 de octubre de 2026). El cálculo muestra el precio de su adorno antes de encargar nada.'],
+            ['q' => '¿Puedo hacer un adorno con el dibujo de un niño?', 'a' => 'Sí. Fotografíe el dibujo sobre papel blanco desde arriba con luz de día; la herramienta quita el fondo y funde los colores en 2 a 4 filamentos; repase con rotulador las líneas finas a lápiz. El adorno sigue entonces el contorno del dibujo, o lo pone en un círculo.'],
+            ['q' => '¿Cuánto tarda el envío?', 'farm' => true, 'a' => 'Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point). Antes de Navidad, encargue con tiempo.'],
+            ['q' => '¿Cómo imprimo el adorno en casa en varios colores?', 'a' => 'En plano, boca arriba, sin soportes. El proyecto descargado lleva cambios de filamento a las alturas de cada color; con una boquilla cambia las bobinas en la pausa, y una impresora con AMS, MMU o ACE las cambia sola.'],
+            ['q' => '¿Aguanta el adorno en el exterior o junto a la chimenea?', 'a' => 'Para un árbol en casa basta el PLA. Cerca de un radiador o una chimenea elija PETG, que soporta más calor; un adorno fino no va bien al sol y la helada en el exterior, y los colores se desvanecen al sol directo.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga los adornos impresos; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Un árbol de dibujos infantiles', 'text' => 'Cada dibujo como adorno de 70 a 90 mm en tres colores, con argolla para la cinta; de una foto del dibujo en segundos.'],
+            ['t' => 'Regalo de empresa con logotipo', 'text' => 'Un logotipo de un SVG como adorno en los colores de la empresa, hasta cuatro colores en una impresión, para clientes y equipo.'],
+            ['t' => 'Para la abuela con los nombres de los nietos', 'text' => 'Un nombre en una de treinta tipografías sobre un círculo o una estrella, un color distinto para cada nieto.'],
+        ],
+    ],
+
+    'cutter' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un cortador con ustedes?', 'farm' => true, 'a' => 'Un cortador del nombre Ela (82 × 54 mm) se imprime en 31 minutos y cuesta 99 CZK, que es el pedido mínimo (PLA+, sin envío, cálculo del 18 de octubre de 2026). Cada forma es un diseño y un cálculo propios; el número de unidades de una forma lo indica ahí.'],
+            ['q' => '¿Cómo corto para que la masa no se pegue?', 'a' => 'Mantenga la masa fría y pase el cortador por harina antes de cada forma. Presione recto sobre el reborde, sin girar, y saque la forma del filo con un dedo; un filo afilado corta más limpio que uno recto.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un cortador se imprime en 25 a 35 minutos. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point). Para la repostería navideña, encargue con tiempo.'],
+            ['q' => '¿Cómo imprimo el cortador en casa?', 'a' => 'Con el reborde abajo, sin soportes, en PLA o PETG; el proyecto descargado lleva la pared de 1 mm y las capas de 0,2 mm del cálculo. El sello, si se ha creado, se imprime al lado como pieza aparte.'],
+            ['q' => '¿Puedo hacer un juego de letras para un nombre?', 'a' => 'Sí, de dos maneras: el nombre entero como un solo cortador para una galleta (dos líneas de 20 caracteres), o un cortador propio para cada letra, encargado por separado. Para letras pequeñas elija una tipografía gruesa para que la masa conserve la forma.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el cortador impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Galletas navideñas con nombre', 'text' => 'Un nombre o unas iniciales en tipografía manuscrita, de 80 a 120 mm, para las galletas de jengibre y de mantequilla de cada comensal.'],
+            ['t' => 'Un número de cumpleaños', 'text' => 'Un número de 70 a 90 mm para las galletas de la fiesta; un año o una edad en una sola pieza.'],
+            ['t' => 'Un logotipo en las galletas', 'text' => 'Un logotipo de un SVG como cortador y sello con los detalles dentro, para un evento de empresa o una cafetería.'],
+        ],
+    ],
+
+    'nameplate' => [
+        'order' => [
+            ['q' => '¿Cuánto cuestan las etiquetas de regalo con ustedes?', 'farm' => true, 'a' => 'Una etiqueta de 70 mm con argolla se imprime en 10 minutos: una cuesta 99 CZK, que es el pedido mínimo; diez iguales, 120 CZK, es decir, 12 CZK cada una (PLA, sin envío, cálculo del 27 de octubre de 2026). Para nombres distintos hace un diseño por cada uno; ve el precio antes de encargar nada.'],
+            ['q' => '¿Cómo cuelgo la etiqueta en un regalo?', 'a' => 'Marque la argolla: su agujero de 2 a 8 mm admite una cinta o un cordel. Una etiqueta de 70 mm pesa 5 g, así que cuelga de un lazo o de una rama; sin argolla la pega al papel de regalo con cinta de doble cara.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Una etiqueta se imprime en 10 a 25 minutos según el tamaño. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point). Antes de Navidad, encargue con tiempo.'],
+            ['q' => '¿Cómo imprimo la etiqueta en casa en varios colores?', 'a' => 'En plano, sin soportes. El proyecto descargado lleva un cambio de filamento a la altura de cada capa; con una boquilla cambia la bobina en la pausa, y una impresora con AMS, MMU o ACE lo hace sola. El STL es un solo cuerpo para imprimir en un color.'],
+            ['q' => '¿Aguanta la etiqueta en una mochila o en las llaves?', 'a' => 'Para un regalo basta el PLA. Para una mochila, las llaves o un collar elija PETG, deje el grosor de capa por defecto y una argolla de al menos 4 mm; las letras de al menos 6 mm de alto siguen legibles tras un año de uso.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga las etiquetas impresas; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Etiquetas para los regalos de Navidad', 'text' => 'Un hexágono o una estrella de 60 a 80 mm con argolla y nombre en dos colores: diez unidades por 120 CZK.'],
+            ['t' => 'Letrero para la puerta infantil', 'text' => 'Una nube o una casa de 120 mm con el nombre y el animal favorito, tres colores, para la puerta o la estantería.'],
+            ['t' => 'Etiqueta para mochila y llaves', 'text' => 'Un hueso, un escudo o un lazo en PETG con argolla de 4 mm, el nombre y el teléfono como dos capas de texto.'],
+        ],
+    ],
+
+    'topper' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un topper con ustedes y cuándo llega?', 'farm' => true, 'a' => 'Un topper con el número 2 y el nombre Olivia (110 mm) se imprime en 55 minutos y cuesta 99 CZK, que es el pedido mínimo (PLA, sin envío, cálculo del 27 de octubre de 2026). Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta entrega en 1 a 2 días laborables; para una fiesta encargue al menos con una semana de antelación.'],
+            ['q' => '¿Cómo clavo el topper para que aguante?', 'a' => 'Clave las púas en la tarta hasta la forma, mejor a través del bizcocho y no solo en la crema; dos púas aguantan mejor que una. Envuélvalas en film o métalas en pajitas, y ponga el topper en la tarta solo antes de servir.'],
+            ['q' => '¿Cuánto cuesta el envío?', 'farm' => true, 'a' => 'Con Packeta a un punto de recogida en Chequia :cz_point, a domicilio :cz_home, a Eslovaquia desde :sk_point, a otros países de la UE desde :eu_point.'],
+            ['q' => '¿Cómo imprimo el topper en casa?', 'a' => 'En plano, boca arriba, sin soportes, en PLA. El proyecto descargado lleva una pausa a la altura del nombre para cambiar la bobina; una impresora con varias bobinas lo hace sola. Con 3 mm de grosor basta para que no se doble.'],
+            ['q' => '¿Qué colores elegir?', 'a' => 'Dorado o rosa con el nombre en blanco, negro con blanco, o un filamento con purpurina o Silk si lo tenemos en stock. Elige al hacer el pedido entre las bobinas de las impresoras; un nombre claro sobre una forma oscura es lo que mejor se lee en las fotos.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el topper impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Cumpleaños infantil', 'text' => 'La edad como número de 110 mm con el nombre en tipografía manuscrita, dos púas de 60 mm, por 99 CZK.'],
+            ['t' => 'Boda y aniversario', 'text' => 'Un corazón de 120 mm con «Ela a Tom» o una fecha, dorado con blanco.'],
+            ['t' => 'Nochevieja y fiesta de empresa', 'text' => 'Solo texto sin forma: «2027», «Gracias» o el nombre del equipo, 180 mm de ancho, púas de 80 mm.'],
+        ],
+    ],
+
+    'name_letter' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta una letra con ustedes?', 'farm' => true, 'a' => 'Una letra E de 120 mm de alto con el nombre Ela se imprime en 40 minutos y cuesta 99 CZK, que es el pedido mínimo (PLA, sin envío, cálculo del 27 de octubre de 2026). Una letra de 200 mm cuesta más según sus gramos y minutos; ve el precio antes de encargar nada.'],
+            ['q' => '¿Cómo cuelgo la letra en una puerta?', 'a' => 'Marque la argolla y cuélguela de una cinta o un gancho, o péguela con cinta de doble cara; una letra de 120 mm pesa 27 g. Para una estantería bastan 10 mm de grosor, o la peana con ranura del mismo archivo.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Una letra de 120 mm se imprime en 40 minutos; una de 200 mm, en más de una hora. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cómo imprimo la letra en casa en dos colores?', 'a' => 'En plano, boca arriba, sin soportes. El proyecto descargado lleva una pausa a la altura del nombre para cambiar la bobina; la peana se imprime al lado. Una impresora con AMS, MMU o ACE cambia el color sola.'],
+            ['q' => '¿Qué colores le van bien?', 'a' => 'Dos contrastados: un cuerpo pastel con el nombre en blanco u oscuro para una habitación infantil, negro con dorado para una mesa. Los filamentos mate disimulan las capas mejor que los brillantes; elige entre las bobinas que tenemos en stock.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga la letra impresa; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Regalo de nacimiento y bautizo', 'text' => 'Una letra de 120 a 150 mm con el nombre del bebé para la estantería sobre la cuna; con «Ela 2026» como fecha.'],
+            ['t' => 'La puerta de la habitación infantil', 'text' => 'Una letra de 150 mm con argolla en una cinta o con cinta de doble cara, en los colores de la habitación.'],
+            ['t' => 'Boda: iniciales para la mesa', 'text' => 'Dos letras de 150 mm con los nombres de los novios, de 10 mm de grosor para que se sostengan solas en la mesa nupcial.'],
+        ],
+    ],
 ];
