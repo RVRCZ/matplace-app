@@ -246,6 +246,12 @@ Zadání `docs/prompts/audit-web-2.md` (úkoly 1 až 6 kvalita, 7 až 11 návšt
 - **Fotky v bloku důvěry (dohoda se session 2).** `PublicStats::latestPhotos(4)` (jen když metoda existuje): mřížka
   čtyř fotek, WebP přes `<picture>`, `loading="lazy"`, alt „Výtisk z farmy matplace: <nástroj | model zákazníka>“
   (nástroj přes `config/tools.php`, titulek v jazyce stránky). Bez fotek se nic nevykreslí.
+- **Testy po dávkách B a C (opraveno 27. 10. večer, větev `fix/tests-after-calc-config`):** šest testů četlo texty
+  kalkulace z HTML nebo hledalo holé `<link rel="alternate"` (RSS je také alternate). Pomocník `TestCase::calcConfig()`
+  stáhne JSON z `window.MP_CONFIG_URL` a vrátí `config` + `i18n` (CustomColorTest, MarketplaceSwitchTest, ToolsFlowTest ×2);
+  LocaleUrlTest hledá `<link rel="alternate" hreflang=`. PapelPortraitTest padal jinak: `putenv('PAPEL_REMBG=off')` se do
+  Pythonu nedostal (Symfony Process dává potomkovi jen proměnné z `$_SERVER` při startu), takže test sledoval, co má
+  stroj nainstalované; `PythonTool::switches()` předává `PAPEL_REMBG` jménem.
 
 ### 12.5 Návraty: e-mail s výsledkem a RSS (úkol 10)
 

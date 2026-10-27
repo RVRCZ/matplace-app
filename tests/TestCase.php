@@ -23,6 +23,20 @@ abstract class TestCase extends BaseTestCase
         return ['t' => RegisterGuard::stamp(now()->getTimestamp() - 10)];
     }
 
+    /**
+     * The calculator's constants and the texts its scripts say, as the browser gets them: one cached JSON the page names
+     * in window.MP_CONFIG_URL (ConfigController::calc, docs/AN.md §12.4), not inline HTML any more.
+     *
+     * @return array{config: array<string, mixed>, i18n: array<string, string>}
+     */
+    protected function calcConfig(string $path = '/', array $headers = []): array
+    {
+        $html = (string) $this->get($path, $headers)->assertOk()->getContent();
+        $this->assertSame(1, preg_match('/window\.MP_CONFIG_URL = "([^"]+)"/', $html, $m), 'the page names its calculator JSON');
+
+        return (array) $this->get((string) json_decode('"'.$m[1].'"'))->assertOk()->json();
+    }
+
     /** Address of a page in a language: Czech has no prefix, the others /en/… and /es/… */
     protected function localized(string $path, string $locale = 'cs'): string
     {
