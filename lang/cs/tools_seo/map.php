@@ -1,12 +1,14 @@
 <?php
 
+// Stránka pro dotaz „3d mapa města k tisku“ (docs/AP.md §1, §5). 'heading' = H1 stránky, 'h1' = nadpis obsahu pod nástrojem.
 return [
-    'title' => '3D mapa města nebo krajiny k tisku z OpenStreetMap',
-    'description' => 'Zadejte město, obec nebo místo a dostanete 3D mapu k tisku: budovy s výškami, ulice a voda z OpenStreetMap, nebo reliéf krajiny. Do minuty, zdarma.',
-    'h1' => '3D mapa města nebo krajiny: z názvu místa rovnou model k tisku',
+    'title' => '3D mapa města k tisku z OpenStreetMap: model zdarma online',
+    'heading' => '3D mapa města k tisku z názvu místa',
+    'description' => 'Zadáte město, čtvrť nebo místo a do minuty máte 3D mapu k tisku: budovy s výškami, ulice a voda z OpenStreetMap, nebo reliéf krajiny. STL a 3MF zdarma.',
+    'h1' => 'Co mapa obsahuje, jak se tiskne ve třech barvách a kde jsou hranice',
     'intro' => [
-        'Napište město, obec, čtvrť nebo památku, vyberte rozsah a dostanete mapu jako tenkou desku k tisku. Město má budovy se skutečnými výškami z OpenStreetMap, ulice podle druhu od dálnic po pěšiny, řeky a rybníky zapuštěné do podkladu, železnici a parky. Krajina je reliéf terénu z výškových dat Mapzen s převýšením, s vodou a silnicemi na povrchu a obcemi jako nízkými bloky. Žádná umělá inteligence nic neodhaduje: data jsou přesná a model je hotový do minuty, bez účtu a zdarma.',
-        'Mapa se tiskne naplocho bez podpěr. Podklad, silnice a budovy jsou tři barvy nad sebou: na naší farmě se filament vymění sám ve dvou výškách, projekt pro vaši tiskárnu má výměny v sobě. Velikost desky 80 až 250 mm podle podložky, měřítko se dopočítá a ukáže, na rám přijde vyvýšený název. Ve stylu Miniatura mají budovy zaoblené rohy a jsou o půl vyšší, silnice širší a rám kulatý; Hladká drží přesné hrany a skutečné výšky. Před stavbou vidíte náhled oblasti shora, takže víte, co se vytiskne.',
+        'Napište město, obec, čtvrť nebo památku, vyberte rozsah a dostanete mapu jako tenkou desku k tisku. Město má budovy se skutečnými výškami z OpenStreetMap (kde výška chybí, platí ta, kterou zadáte), ulice podle druhu od dálnic po pěšiny, řeky a rybníky zapuštěné do podkladu, železnici a parky. Krajina je reliéf terénu z výškových dat Mapzen s rozlišením kolem 30 m a nastavitelným převýšením, s vodou a silnicemi na povrchu a obcemi jako nízkými bloky. Žádná umělá inteligence nic neodhaduje: data jsou přesná, na mapě je jejich datum a model je hotový do minuty. Rozsah města je 500 m, 1 km nebo 2 km, krajiny 2 až 20 km; deska má 80 až 250 mm podle podložky, měřítko se dopočítá a ukáže, na rám přijde vyvýšený název. Ve stylu Miniatura mají budovy zaoblené rohy a jsou o půl vyšší, ve stylu Hladká drží přesné hrany a skutečné výšky. Před stavbou vidíte náhled oblasti shora.',
+        'Příklad z kalkulace na produkci (18. 10. 2026, PLA+): pražské Staré Město, čtverec 500 m na desce 150 mm (měřítko asi 1 : 3 300), styl Hladká, má 85 g, tiskne se 3 h 42 min a stojí u nás 240 Kč jednou barvou, bez dopravy. Mapa se tiskne naplocho bez podpěr. Podklad, silnice a budovy jsou tři barvy nad sebou: na naší farmě se filament vymění sám ve dvou výškách, projekt 3MF pro OrcaSlicer a PrusaSlicer má výměny v sobě a STL je jedno těleso pro tisk jednou barvou. Bez účtu uděláte tři mapy denně, s účtem dvacet; náhled oblasti se do limitu nepočítá.',
     ],
     'steps' => [
         ['name' => 'Zadejte místo', 'text' => 'Název města, čtvrti, ulice nebo památky; nebo souřadnice. Vyberte, které místo myslíte, a zvolte město nebo krajinu a rozsah: město 500 m až 2 km, krajina 2 až 20 km.'],
@@ -23,7 +25,7 @@ return [
         ['q' => 'Kolik map můžu udělat?', 'a' => 'Mapové služby jsou veřejné, proto bez účtu tři mapy denně, s účtem dvacet. Náhled oblasti se do limitu nepočítá.'],
     ],
     'examples' => [
-        'Město 500 m na desce 150 mm, styl Hladká: budovy podle výšek, hlavní ulice, potok s rybníkem, železnice a rám s názvem.',
+        'Město 500 m na desce 150 mm, styl Hladká: budovy podle výšek, hlavní ulice, potok s rybníkem, železnice a rám s názvem; 85 g, 3 h 42 min.',
         'Totéž místo ve stylu Miniatura: zaoblené budovy o půl vyšší, širší ulice, park zapuštěný do podkladu.',
         'Krajina 5 km s kopcem uprostřed, převýšení 2×, na desce 150 mm.',
     ],

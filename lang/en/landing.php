@@ -205,4 +205,37 @@ return [
             ['t' => 'An archive on the SD card', 'text' => 'Old G-codes from the printer as models in a catalogue: you see the shape, the size and the price of another piece.'],
         ],
     ],
+
+    // the search entry pages of session N1, batch 3 (docs/AP.md §5): lithophane, map
+    'relief' => [
+        'order' => [
+            ['q' => 'How much does a lithophane cost from you?', 'farm' => true, 'a' => 'A 100 × 75 mm panel with a table stand came to 100 CZK, a lamp for an E27 socket 100 mm across and 150 mm high to 250 CZK (without delivery, calculation of 18 October 2026). We print in a white material; the exact price for your photo and size shows in the calculation before you order anything.'],
+            ['q' => 'What light goes into the lamp?', 'a' => 'An E27 or E14 LED bulb of about 10 W at most; no incandescent or halogen bulb, PLA softens at around 55 °C. Warm white gives the picture softer shades, cool white a sharper contrast. An open base takes an LED strip, a closed one an LED candle.'],
+            ['q' => 'How do I print a lithophane at home?', 'a' => 'The panel upright and solid, the lamp upright on its base, the relief flat without supports; the downloaded slicer project carries the settings we use. The material is white PLA; any other colour tints or darkens the picture.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 100 × 75 mm panel prints in about 1 h 9 min, a 150 mm lamp in about 2 h 29 min. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'Is a phone photo enough?', 'a' => 'Yes. On a 100 mm plate only as much detail as a 0.4 mm nozzle gives can show anyway; what counts is contrast and one main subject, not resolution. Set the brightness and contrast sliders so that the tool reports as many shades as possible, and the backlit preview shows the result.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download; the photo is not kept and only the shape stays in the model. You need an account only when you have the lithophane printed by us.'],
+        ],
+        'who' => [
+            ['t' => 'A gift from a photo', 'text' => 'A portrait, a wedding or family photo as a 100 × 75 mm panel with a stand for a shelf or a window; the picture appears when the sun or a lamp shines through it.'],
+            ['t' => 'A lamp for a child’s room', 'text' => 'The photo all round a cylinder with an E27 LED bulb: a white lamp by day, a lit picture in the evening.'],
+            ['t' => 'A relief for the wall', 'text' => 'A photo or a logo as a raised picture that shows without light; as a keepsake, for the office or as a sign.'],
+        ],
+    ],
+
+    'map' => [
+        'order' => [
+            ['q' => 'How much does a map cost from you?', 'farm' => true, 'a' => 'The Old Town of Prague, 500 m on a 150 mm plate, came to 240 CZK in one colour (85 g, without delivery, calculation of 18 October 2026). You pick the colours of the base, the roads and the buildings at the order; you see the price before you order anything.'],
+            ['q' => 'Which extent should I choose?', 'a' => 'For a centre or a district 500 m, for a small town 1 km, for a big city 2 km; on a 150 mm plate of a kilometre a 20 m building is 3 mm high. Choose a larger area as a landscape of 2 to 20 km, where the terrain relief is the main thing and towns are low blocks.'],
+            ['q' => 'How do I print the map at home?', 'a' => 'Flat, without supports, 0.2 mm layers. The 3MF project for OrcaSlicer and PrusaSlicer carries two filament changes (roads, buildings); the printer pauses, you swap the spool and the print goes on. The STL is one body for a single-colour print.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 150 mm map prints in about 3 h 42 min. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'My town has no building heights in the map. What then?', 'a' => 'Buildings without data get the height you enter, 8 m for family houses say. The preview of the area shows which buildings and streets OpenStreetMap has; anyone can add what is missing to OpenStreetMap, and the map takes it over once the data is refreshed.'],
+            ['q' => 'What goes on the frame?', 'a' => 'A raised name you enter: the name of the city, a street or a dedication. The frame can also be switched off, and the plate then ends at the edge of the map.'],
+        ],
+        'who' => [
+            ['t' => 'A gift of a home town', 'text' => 'The centre where someone grew up or where the wedding was: 500 m on a 150 mm plate with the name on the frame, in three colours.'],
+            ['t' => 'A district, a campus, a site', 'text' => 'For architects, schools and site managers: buildings with real heights and streets by kind, within a minute and without drawing.'],
+            ['t' => 'A landscape for a trip', 'text' => 'A hill, a dam or a valley as a relief with exaggeration, with roads and water on the surface; 2 to 20 km on one plate.'],
+        ],
+    ],
 ];

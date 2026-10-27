@@ -205,4 +205,37 @@ return [
             ['t' => 'Un archivo en la tarjeta SD', 'text' => 'G-codes antiguos de la impresora como modelos en un catálogo: ve la forma, el tamaño y el precio de otra pieza.'],
         ],
     ],
+
+    // páginas de entrada de la sesión N1, lote 3 (docs/AP.md §5): litofanía, mapa
+    'relief' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta una litofanía con ustedes?', 'farm' => true, 'a' => 'Un panel de 100 × 75 mm con soporte de mesa salió por 100 CZK; una lámpara para casquillo E27 de 100 mm de diámetro y 150 mm de alto, por 250 CZK (sin envío, cálculo del 18 de octubre de 2026). Imprimimos en material blanco; el precio exacto de su foto y tamaño lo muestra el cálculo antes de encargar nada.'],
+            ['q' => '¿Qué luz pongo en la lámpara?', 'a' => 'Una bombilla LED E27 o E14 de unos 10 W como máximo; nada de incandescente ni halógena, el PLA se ablanda hacia los 55 °C. La luz cálida da tonos más suaves; la fría, un contraste más marcado. En la base abierta cabe una tira LED; en la cerrada, una vela LED.'],
+            ['q' => '¿Cómo imprimo una litofanía en casa?', 'a' => 'El panel de pie y macizo, la lámpara de pie sobre su base, el relieve en plano sin soportes; el proyecto descargado para el laminador lleva los ajustes que usamos nosotros. El material es PLA blanco; cualquier otro color tiñe u oscurece la imagen.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un panel de 100 × 75 mm se imprime en 1 h 9 min aproximadamente; una lámpara de 150 mm, en unas 2 h 29 min. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Basta una foto del móvil?', 'a' => 'Sí. En una placa de 100 mm solo cabe el detalle que da una boquilla de 0,4 mm; lo que cuenta es el contraste y un solo motivo principal, no la resolución. Ajuste los deslizadores de brillo y contraste para que la herramienta indique el máximo de tonos, y la vista previa a contraluz muestra el resultado.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no; la foto no se guarda y en el modelo queda solo la forma. Solo necesita cuenta cuando nos encarga la litofanía impresa.'],
+        ],
+        'who' => [
+            ['t' => 'Un regalo a partir de una foto', 'text' => 'Un retrato, una foto de boda o de familia como panel de 100 × 75 mm con soporte para una estantería o la ventana; la imagen aparece cuando el sol o una lámpara la atraviesan.'],
+            ['t' => 'Una lámpara para la habitación infantil', 'text' => 'La foto alrededor de un cilindro con bombilla LED E27: de día una lámpara blanca, por la noche una imagen encendida.'],
+            ['t' => 'Un relieve para la pared', 'text' => 'Una foto o un logotipo como imagen en relieve que se ve sin luz; como recuerdo, para la oficina o como cartel.'],
+        ],
+    ],
+
+    'map' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un mapa con ustedes?', 'farm' => true, 'a' => 'La Ciudad Vieja de Praga, 500 m en placa de 150 mm, salió por 240 CZK en un color (85 g, sin envío, cálculo del 18 de octubre de 2026). Los colores de la base, las calles y los edificios los elige al hacer el pedido; ve el precio antes de encargar nada.'],
+            ['q' => '¿Qué extensión elegir?', 'a' => 'Para un centro o un barrio, 500 m; para una ciudad pequeña, 1 km; para una grande, 2 km; en una placa de 150 mm de un kilómetro, un edificio de 20 m mide 3 mm. Una zona mayor elíjala como paisaje de 2 a 20 km, donde lo principal es el relieve del terreno y los pueblos son bloques bajos.'],
+            ['q' => '¿Cómo imprimo el mapa en casa?', 'a' => 'En plano, sin soportes, capas de 0,2 mm. El proyecto 3MF para OrcaSlicer y PrusaSlicer lleva dos cambios de filamento (calles, edificios); la impresora se detiene, cambia la bobina y la impresión sigue. El STL es un solo cuerpo para imprimir en un color.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un mapa de 150 mm se imprime en unas 3 h 42 min. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => 'Mi pueblo no tiene alturas de edificios en el mapa. ¿Qué pasa?', 'a' => 'Los edificios sin datos reciben la altura que indique, por ejemplo 8 m para casas unifamiliares. La vista previa de la zona muestra qué edificios y calles tiene OpenStreetMap; lo que falte puede añadirlo cualquiera a OpenStreetMap, y el mapa lo tomará cuando se actualicen los datos.'],
+            ['q' => '¿Qué irá en el marco?', 'a' => 'Un nombre en relieve que usted indica: el de la ciudad, una calle o una dedicatoria. El marco también se puede desactivar, y la placa termina entonces en el borde del mapa.'],
+        ],
+        'who' => [
+            ['t' => 'Regalo de la ciudad natal', 'text' => 'El centro donde alguien creció o donde fue la boda: 500 m en placa de 150 mm con el nombre en el marco, en tres colores.'],
+            ['t' => 'Barrio, campus, recinto', 'text' => 'Para arquitectos, escuelas y gestores de recintos: edificios con alturas reales y calles por tipo, en un minuto y sin dibujar.'],
+            ['t' => 'Paisaje para una excursión', 'text' => 'Una colina, una presa o un valle como relieve con exageración, con carreteras y agua en la superficie; de 2 a 20 km en una sola placa.'],
+        ],
+    ],
 ];
