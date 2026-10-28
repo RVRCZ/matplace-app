@@ -13,6 +13,9 @@
     {{-- a landing page (config/landing.php): results, before you order, who it is for --}}
     @include('tools._landing', ['tool' => $tool, 'part' => 'top'])
 
+    {{-- the farm's photographed prints of this tool (docs/AN.md §15) --}}
+    @include('tools._photos', ['tool' => $tool])
+
     @if($seo['steps'])
         <h3 class="mt-8 text-lg font-bold text-ink">{{ __('site.tool.how') }}</h3>
         <ol class="mt-3 space-y-3">

@@ -77,6 +77,58 @@
     </div>
 @endif
 
+@if($weeklyConsole !== [] || $zeroClicks !== [])
+    @php
+        // the two latest calendar weeks Search Console has finished (its last day is a Sunday on or before the newest data)
+        $until = ! empty($console['until']) ? \Carbon\Carbon::parse($console['until']) : null;
+        $done = array_values(array_filter($keys, fn (string $from) => $until && \Carbon\Carbon::parse($from)->addDays(6)->lte($until)));
+        [$weekA, $weekB] = [$done[0] ?? null, $done[1] ?? null];
+        $delta = function (int $now, int $before): string {
+            $d = $now - $before;
+            $cls = $d > 0 ? 'text-ok' : ($d < 0 ? 'text-red-700' : 'text-slate-400');
+
+            return '<span class="ml-1 text-xs '.$cls.'">'.($d > 0 ? '+' : ($d < 0 ? '−' : '±')).number_format(abs($d), 0, ',', ' ').'</span>';
+        };
+        $weekTools = array_values(array_unique(array_merge(array_keys($weeklyConsole), array_keys($use['tools']))));
+        usort($weekTools, fn ($a, $b) => ($weeklyConsole[$b][$weekA ?? ''] ['impressions'] ?? 0) <=> ($weeklyConsole[$a][$weekA ?? ''] ['impressions'] ?? 0));
+    @endphp
+    @if($weekA)
+        <h2 class="mt-6 font-bold">Týden proti týdnu: zobrazení → kliknutí → použití</h2>
+        <p class="mt-1 text-xs text-slate-500">Poslední týden, který má Search Console celý ({{ $label($weekA) }} až {{ \Carbon\Carbon::parse($weekA)->addDays(6)->format('j. n.') }}), proti tomu před ním{{ $weekB ? ' (od '.$label($weekB).')' : '' }}; použití = unikátní návštěvníci s nástrojem v tom týdnu.</p>
+        <div class="mt-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white" data-week-table>
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2">Nástroj</th><th class="px-3 py-2 text-right">Zobrazení</th><th class="px-3 py-2 text-right">Kliknutí</th><th class="px-3 py-2 text-right">CTR</th><th class="px-3 py-2 text-right">Použití</th></tr></thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach($weekTools as $key)
+                        @php $a = $weeklyConsole[$key][$weekA] ?? ['impressions' => 0, 'clicks' => 0]; $b = $weekB ? ($weeklyConsole[$key][$weekB] ?? ['impressions' => 0, 'clicks' => 0]) : null; $ua = $use['tools'][$key][$weekA] ?? 0; $ub = $weekB ? ($use['tools'][$key][$weekB] ?? 0) : null; @endphp
+                        <tr>
+                            <td class="px-3 py-2 font-semibold">{{ \Illuminate\Support\Facades\Lang::has('tools.'.$key.'.title') ? __('tools.'.$key.'.title') : $key }}</td>
+                            <td class="px-3 py-2 text-right">{{ number_format($a['impressions'], 0, ',', ' ') }}@if($b){!! $delta($a['impressions'], $b['impressions']) !!}@endif</td>
+                            <td class="px-3 py-2 text-right">{{ number_format($a['clicks'], 0, ',', ' ') }}@if($b){!! $delta($a['clicks'], $b['clicks']) !!}@endif</td>
+                            <td class="px-3 py-2 text-right">{{ $pct($a['clicks'], $a['impressions']) }}</td>
+                            <td class="px-3 py-2 text-right">{{ $ua }}@if($ub !== null){!! $delta($ua, $ub) !!}@endif</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+    @if($zeroClicks !== [])
+        <h2 class="mt-6 font-bold">Dotazy bez kliknutí (28 dní)</h2>
+        <p class="mt-1 text-xs text-slate-500">Lidé nás na ně viděli a nikdo neklikl: námět pro texty stránek (N1) a blog. Stránka je jedna z těch, které se u dotazu ukázaly.</p>
+        <div class="mt-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white" data-zero-clicks>
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2">Dotaz</th><th class="px-3 py-2 text-right">Zobrazení</th><th class="px-3 py-2 text-right">Pozice</th><th class="px-3 py-2">Stránka</th></tr></thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach($zeroClicks as $q)
+                        <tr><td class="px-3 py-2">{{ $q['query'] }}</td><td class="px-3 py-2 text-right">{{ number_format($q['impressions'], 0, ',', ' ') }}</td><td class="px-3 py-2 text-right">{{ $q['position'] !== null ? str_replace('.', ',', (string) $q['position']) : '–' }}</td><td class="px-3 py-2 font-mono text-xs">{{ $q['page'] }}</td></tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+@endif
+
 <h2 class="mt-6 font-bold">Vložená kalkulačka: kde se ukázala (30 dní)</h2>
 <p class="mt-1 text-xs text-slate-500">Každé načtení rámu <code>/embed/calc</code> z cizího webu (docs/AN.md §12.2); návštěvy, které z něj přišly, jsou v cestách jako zdroj „Vložená kalkulačka“.</p>
 <div class="mt-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white">

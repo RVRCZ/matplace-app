@@ -1,0 +1,5 @@
+{
+    "tools.photos.title": ["Takhle to vytiskli", "How it came out", "Así quedó impreso"],
+    "tools.photos.lead": ["Skutečné výtisky z naší farmy, které si zákazníci nechali udělat tímto nástrojem.", "Real prints from our farm that customers had made with this tool.", "Impresiones reales de nuestra granja que los clientes encargaron con esta herramienta."],
+    "tools.photos.alt": ["Výtisk z nástroje :tool, :material, :date", "A print from the tool :tool, :material, :date", "Una impresión de la herramienta :tool, :material, :date"]
+}
