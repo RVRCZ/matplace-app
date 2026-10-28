@@ -2,6 +2,7 @@
 
 namespace App\Domain\Calculation;
 
+use App\Engines\DTO\Dimensions;
 use App\Engines\DTO\SliceParams;
 use App\Engines\DTO\SliceResult;
 use App\Jobs\SliceCalculation;
@@ -87,6 +88,15 @@ final class CalculationService
         $calc->save();
 
         $sliceable = in_array($sliceParams->materialCode, $this->materials->sliceable(), true);
+        if ($sliceable && self::printedByParts($file, $sliceParams->scale)) {
+            // a design of several parts larger than the plate (a filament picture of five plates and a frame, docs/AN.md §17.2):
+            // the slicer would refuse it as one piece; the farm prints it by parts on the order page, so here the estimate
+            // is the answer and the page says why
+            $calc->rough = ((array) $calc->rough) + ['by_parts' => true];
+            $calc->save();
+
+            return $calc;
+        }
         if ($sliceable && ! $sliceNow) {
             return $calc;   // stays rough: the estimate with its range is the answer until the order page slices
         }
@@ -102,6 +112,21 @@ final class CalculationService
         }
 
         return $calc;
+    }
+
+    /**
+     * A design of several parts whose whole does not fit the plate (config pricing.bed_mm, turned any way): sliced as one
+     * piece it fails, printed by parts it is what the order page does.
+     */
+    public static function printedByParts(ModelFile $file, float $scale = 1.0): bool
+    {
+        if (count($file->parts()) < 2 || ! is_array($file->bbox)) {
+            return false;
+        }
+        $bed = (array) config('pricing.bed_mm');
+        $dims = new Dimensions((float) ($file->bbox['x'] ?? 0) * $scale, (float) ($file->bbox['y'] ?? 0) * $scale, (float) ($file->bbox['z'] ?? 0) * $scale);
+
+        return ! $dims->fits((float) ($bed['x'] ?? 0), (float) ($bed['y'] ?? 0), (float) ($bed['z'] ?? 0));
     }
 
     /**

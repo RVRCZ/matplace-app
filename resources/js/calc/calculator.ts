@@ -109,9 +109,11 @@ function millions(file: FileInfo | null | undefined): string | null {
 
 /**
  * A big model is not sliced on this page (TODO #41): the estimate with its range is the answer, the order page slices once
- * the customer has chosen. Said without a spinner: nothing is being waited for.
+ * the customer has chosen. Said without a spinner: nothing is being waited for. The same for a design of several parts
+ * larger than the plate (docs/AN.md §17.2): the farm prints it by parts, the server says so in the estimate.
  */
-function setBigOnly(file: FileInfo | null | undefined): void {
+function setBigOnly(file: FileInfo | null | undefined, calc?: CalcInfo | null): void {
+    if ((calc as { rough?: { by_parts?: boolean } } | null | undefined)?.rough?.by_parts) { setStatus('calc.status.by_parts', false); return; }
     const n = millions(file);
     setStatus(n ? 'calc.status.big_only_n' : 'calc.status.big_only', false);
     if (n) $('status').textContent = t('calc.status.big_only_n', { n });
@@ -461,7 +463,7 @@ function poll(token: string): void {
                 return;
             }
             if (c.status === 'rough') {   // a big model's calculation is never queued: the estimate is the answer (TODO #41)
-                renderRough(); setBigOnly(c.file); enableDownload(c.file);
+                renderRough(); setBigOnly(c.file, c); enableDownload(c.file);
                 return;
             }
             setComputing(c.file, c.file && c.file.status !== 'ready' && !BROWSER_FORMATS.includes(c.file.ext) ? 'calc.status.converting' : 'calc.status.queued');
@@ -598,7 +600,7 @@ function requestRough(): void {
             state.calc = c;
             history.replaceState(null, '', c.url);
             if (c.status === 'done') { setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false); renderPrecise(c); }
-            else setBigOnly(c.file ?? file);
+            else setBigOnly(c.file ?? file, c);
             enableDownload(c.file ?? file);   // "I have a printer": the model is there to download, slice or no slice
         } catch {
             setStatus('calc.status.failed', false);
@@ -621,6 +623,8 @@ function requestPrecise(): void {
                 setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false);
                 renderPrecise(c);
                 enableDownload(c.file);
+            } else if (c.status === 'rough') {   // the server kept the estimate (a design printed by parts): nothing to wait for
+                renderRough(); setBigOnly(c.file, c); enableDownload(c.file);
             } else {
                 poll(c.token);
             }
@@ -1017,7 +1021,7 @@ async function restore(c: CalcInfo): Promise<void> {
     if (c.file?.stl_url) await showServerStl(c.file.stl_url);
     if (c.status === 'done') { setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false); renderPrecise(c); enableDownload(c.file); }
     else if (c.status === 'failed') { setStatus(failedKey(c), false); renderRough(); }
-    else if (c.status === 'rough') { renderRough(); setBigOnly(c.file); enableDownload(c.file); }   // a big model: never sliced here (TODO #41)
+    else if (c.status === 'rough') { renderRough(); setBigOnly(c.file, c); enableDownload(c.file); }   // a big model or a design printed by parts: never sliced here (TODO #41, docs/AN.md §17.2)
     else { renderRough(); poll(c.token); }
 }
 
