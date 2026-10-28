@@ -548,3 +548,119 @@ printables), bez ceny tisku u nás. Roman je posílá sám.
 
 Co zůstává na jiných: fotky výtisků (session 2, Roman vybere), Search Console export (Roman) a podle něj druhé kolo
 title/description, Google Business Profile založí Roman, vánoční Shorts session 2.
+
+## 12. Dalších 10 nástrojů, druhé kolo (plán 28. 10. 2026)
+
+Řídící po dávce C: dalších 10 stránek v pořadí podle potenciálu, po dávkách 3 až 4. Zbývající nástroje
+s `available => true` v `config/tools.php`: charm, earrings, bag_charm, beads, magnet, coaster, cap, cable_holder,
+text, notes, tray, puzzle, filament_art, papel, compose, modular, soap_model. Mosaic, insert, straw a opener mají
+`available => false`, stránku nemají, vynechány.
+
+Odhady stejnou stupnicí jako v §1. Search Console už od relace 3 sbírá řádky do `search_console_rows` (AN.md §14),
+jen na produkci; požádal jsem řídícího o výpis dotazů na stránky nástrojů. Odpověď 28. 10.: za 16 měsíců (4 354
+řádků) nemá žádná stránka nástroje ani jedno zobrazení; vyhledávání vidí jen hlavní stránku (394 zobrazení,
+84 kliknutí) a stránky katalogu `/model/…` (desítky zobrazení, skoro 0 kliknutí, často `?lang=en`). Pořadí tedy
+zůstává podle odhadů; data k nástrojům přijdou až po indexaci nových stránek, řídící je sleduje týdně. Title
+a popis stránek katalogu (dnes název modelu z Printables) stojí za úpravu, ale patří relaci 3.
+
+| # | nástroj | hlavní dotaz cs | hlavní dotaz en | odhad cs / en | dávka |
+|---|---|---|---|---|---|
+| 1 | `text` | 3d nápis na poličku tisk | 3d text generator for 3d printing | střední / vysoký | D |
+| 2 | `filament_art` | obraz z filamentu | filament painting generator free | nízký / vysoký | D |
+| 3 | `modular` | modulární organizér do zásuvky | modular drawer organizer generator | nízký / střední | D |
+| 4 | `cap` | víčko na míru 3d tisk | threaded cap generator 3d print | nízký / střední | E |
+| 5 | `coaster` | podtácek s fotkou 3d tisk | custom coaster 3d print generator | nízký / střední | E |
+| 6 | `magnet` | magnetka z fotky | custom fridge magnet 3d print | střední / střední | E |
+| 7 | `earrings` | náušnice 3d tisk vlastní | 3d printed earrings generator | nízký / střední | E |
+| 8 | `puzzle` | puzzle z 3d modelu | 3d printed puzzle generator | nízký / střední | F |
+| 9 | `cable_holder` | držák kabelů na stůl | cable holder generator 3d print | nízký / střední | F |
+| 10 | `charm` | přívěsek z obrázku | custom charm 3d print | nízký / nízký až střední | F |
+
+Důvody pořadí: `text` a `filament_art` mají globální anglické dotazy s velkým objemem (text to STL; HueForge
+zdarma online, kde je náš nástroj jedna z mála bezplatných alternativ v prohlížeči). `modular` navazuje na hotový
+organizér (společný článek `organizer-do-supliku-na-miru`). Dávka E jsou dárky k Vánocům a stránky vyjdou
+v listopadu, kdy se dárky hledají. Dávka F doplňuje stůl a domov.
+
+Vynecháno a proč: `bag_charm` (dotaz „bag charm“ je módní, ale spojení s 3D tiskem hledá málokdo; překrývá se
+s klíčenkou a přívěskem), `beads` (jen „korálky se jménem“, lidé hledají hotové sady), `notes`, `tray`, `compose`,
+`soap_model`, `papel` (úzké dotazy bez poptávky). Když Search Console ukáže jinak, vymění se za 9 a 10.
+
+Postup u každé dávky jako v §9: `heading` = H1 na dotaz, 2 úvody, kroky, 6 FAQ, 3 příklady s čísly z produkce
+(cookie `mp_test=1`), bloky v `landing.php` (u text, filament_art, modular, coaster, cable_holder a charm bloky
+z AH.md §11 už jsou, jen se doplní), `config/landing.php` related + blog, `LandingPagesTest::PAGES`, snímky
+390/1280, testy, push, zpráva řídícímu.
+
+### 12.1 Dávka D: stojící nápis, obraz z filamentu, modulární organizér (28. 10. 2026)
+
+- Soubory: `lang/{cs,en,es}/tools_seo/{text,filament_art,modular}.php` přepsány (title, heading, description, h1,
+  2 úvody, 4 až 5 kroků, 6 FAQ, 3 příklady), bloky v `lang/{cs,en,es}/landing.php` (6 otázek, farm 101000, 3 pro
+  koho), `config/landing.php` (text ↔ sign, name_letter, nameplate; filament_art ↔ relief, svg_to_stl, logo; modular ↔
+  organizer, box, holder; blog: cedulka + jmenovky, litofanie + ozdoba z obrázku, organizér + krabička),
+  `LandingPagesTest::PAGES` 29 stránek. H1 na dotaz: „3D nápis ze jména nebo slova, který stojí sám“, „Obraz
+  z filamentu: obrázek nebo fotka jako vrstvy barevného plastu“, „Modulární organizér do zásuvky na míru z volných
+  misek“ (en: 3D text generator for 3D printing, filament painting generator, modular drawer organizer generator).
+- Čísla z produkce (28. 10., PLA, cookie `mp_test=1`): nápis HOME Archivo Black 30 mm, hloubka 12 mm, 144 × 34 mm:
+  21,1 g, 40 min, 99 Kč (`/c/bkdbbtgjavzn`); dvouřádkový KAVÁRNA u Jany Bebas Neue 30 mm, hloubka 20 mm: 55,7 g,
+  1 h 53 min, 130 Kč (`/c/qxcoca4ayqkb`); sněhulák z knihovny jako vrstvený obraz ze 4 desek v kulatém rámu 120 mm:
+  105,6 g, 2 h 46 min, 200 Kč (`/c/tmwh0ok9ixpv`); sněhulák 100 mm ze 3 desek bez rámu 25,3 g, 46 min, 99 Kč
+  (`/c/iljuoz61xdug`); perníček jako jeden tisk 120 mm, 4 barvy: 15,9 g, 26 min, 99 Kč (`/c/etcdmot38mpy`); čtyři
+  misky tří velikostí 300 × 150 × 40 mm (mřížka 6 × 3): 188 g, 3 h 45 min, 310 Kč (`/c/fsgkqtoncl9f`). Obraz
+  z filamentu jde přes `POST /api/tools/art` (scratchpad `art_create.py`), ne přes `/api/tools/param`.
+- **Nález pro řídícího (ne moje):** vrstvený obraz 180 mm z 5 desek s rámem dá soubor 232 × 551 × 25 mm (desky
+  a rám vedle sebe), `POST /api/calculations` ho řeže jako jednu podložku a **selže** („Slice failed (no gcode)…“,
+  `/c/9rs4xrseapqu`); zůstane jen hrubý odhad 343 g, 390 až 770 Kč. Tisk po dílech umí až objednávka
+  (`OrderService` by_parts), veřejná kalkulace ne. Totéž potká každý vrstvený obraz nad zhruba 120 mm s rámem
+  (120 mm: 228 × 268 mm ještě prošlo). Na stránce o tom nepíšu; příklad je 120 mm.
+- Rozhodnutí: `heading` i u nástroje `text`, i když je to preset nástroje `sign` (`/tools/text` = sign, as=text,
+  preset=stand); texty se berou z `tools_seo/text.php`, nástroj sám se nemění. Organizér z jednoho kusu má rozsah
+  30 až 400 mm, ale nad 250 mm se nevejde na podložku, proto FAQ u modulárního říká „zásuvka do 250 mm“. Obraz
+  z filamentu nemá vlastní článek (`article` není), „Kam dál“ vede na litofanii a ozdobu z obrázku; článek
+  o obrazu z filamentu je kandidát na další dávku blogu. Věta o HueForge je obecný popis (průsvit tenkých vrstev,
+  výměny ve sliceru), bez čísel.
+- Duplicita FAQ ↔ Než objednáte: u `text` se opakovalo „Jak nápis tisknout doma?“ (chytil to i `LandingPagesTest`),
+  v bloku nahrazeno otázkou o přilepení na stěnu (zadní strana je po tisku na zádech rovná).
+- Ověření: `SeoTest|ToolsCatalogTest|CatalogSeoTest` 20 testů OK, `LandingPagesTest` po opravě 5 testů, 3 007
+  assertions, OK; `pint` čistý; title 54 až 60, description 150 až 154 ve všech třech jazycích; H1 = heading,
+  JSON‑LD HowTo + FAQPage 10 otázek na třech stránkách (lokální server 8077); snímky
+  `docs/img/seo-n1/{text,filament-art,modular-organizer}-{390,1280}-cs-1.webp` bez posunu a bez chyb („Generátor
+  cedulek teď není dostupný“ je jen lokální engine). Vložka `[farm:]` a články: `BlogEmbedsTest` 4 testy,
+  `BlogSyncTest` 9 testů OK (commit 15f3099b).
+
+## 13. Další 4 články po 20. 11. (plán 28. 10. 2026)
+
+Řídící: čtyři články na listopad a prosinec, stejná pravidla (video, kalkulace, místo pro fotku). Termíny
+navazují na rytmus úterý a pátek z §7.2:
+
+| datum | slug (návrh) | téma | data |
+|---|---|---|---|
+| út 24. 11. | `vanocni-darky-z-3d-tisku-do-24-12-terminy` | vánoční dárky z 3D tisku do 24. 12. s termíny výroby a dopravy | medián předání z `PublicStats`, doprava Packeta, nástroje z §6 a §12 E |
+| pá 27. 11. | `jak-zjistit-cenu-3d-tisku` | jak zjistit cenu 3D tisku: z čeho se skládá, odhad bez řezu, kalkulace | M.md §6 (rozsah odhadu), `[calc:]` vložky, 400 kalkulací z §7.3 |
+| út 1. 12. | `3d-tisk-praha-jak-to-u-nas-chodi` | 3D tisk Praha jako článek ke vstupní stránce `/3d-tisk-praha` | §8, `PublicStats`, bez osobního odběru (zatím není) |
+| pá 4. 12. | `co-noveho-na-farme-v-listopadu` | co nového na farmě v listopadu podle `PublicStats` | čísla za listopad nejsou dřív než 1. 12.; řešení v §13.1 |
+
+Napsáno 28. 10. 2026, všechny čtyři v `resources/blog/cs` s datem dopředu (`Post::published()` je pustí samo, na
+produkci po nasazení `php artisan blog:sync`), titulky 61 až 71 znaků, výtah 189 až 230 znaků (meta popis bere
+prvních 155), místo na fotku jako komentář, „Co dál“ nejvýše 3 odkazy (hlídá `BlogSyncTest`). Vložky: dárky
+`[calc:]` písmeno, jmenovky, perníček, zápich, světelný nápis, misky + `[video: Fd72RTnqYDE]`; cena `[calc:]` HOME
+(99 Kč: materiál 19 + čas 6 + příprava 30, pod minimem) a misky (310 Kč: 226 + 49 + 30) + `[video: latest]`; Praha
+`[calc:]` logo a světelný nápis + `[video: 2GqbDiH_mGg]`; listopad `[farm: 2026-11]` + `[video: latest]`.
+
+K rozhodnutí řídícího (napsal jsem, co z dosavadních čísel plyne, nic víc): termíny v článku o dárcích (drobnosti
+do pá 18. 12., tisky na hodiny do st 16. 12., busty a víc kusů do pá 11. 12.) vycházejí z mediánu předání do dne,
+odeslání v den dotisknutí a Zásilkovny 1 až 2 pracovní dny; vánoční rozvoz dopravců vyhlášený v prosinci může
+termíny posunout, článek to říká a slibuje doplnění. Článek o listopadu jmenuje, co bude v listopadu nové na webu
+podle stavu z 28. 10. (stránky nástrojů včetně dávky D, vánoční nástroje, `/3d-tisk-praha`, fotky výtisků, blog
+dvakrát týdně) a na prosinec slibuje dávku E (víčko, podtácek, magnetka, náušnice); kdyby se plán změnil, upravit
+před 4. 12. Vlastní fotky ke článkům nemám, místo je v komentáři.
+
+### 13.1 Čísla za měsíc při zobrazení: vložka `[farm: 2026-11]` (28. 10. 2026)
+
+Listopadová čísla nejsou dřív než 1. 12. a článek vyjde 4. 12., proto je nepíšu do textu. `BlogEmbeds` dostal
+třetí vložku `[farm: <RRRR-MM>]` (řídící souhlasil 28. 10.): `App\Support\FarmMonthStats::month()` spočítá za
+kalendářní měsíc stejně jako `PublicStats` celou farmu (jen čtení, paměť hodinu): dokončené výtisky (zaplacené,
+`done` nebo `handed_over`, `finished_at` v měsíci), medián dnů od zaplacení k předání (události `handed_over`
+v měsíci), videa zveřejněná na YouTube v měsíci, nejčastější tři nástroje podle `ModelFile::kind()` (generovaná
+figurka jako `figure`, jako v `PublicStats::latestPhotos`) a počet vlastních souborů zákazníků. Pohled
+`blog/_farm_month.blade.php` je karta jako u kalkulace, texty `site.blog.farm.*` (`lang/src/blog_n1.json`).
+Text článku čísla nejmenuje, mluví o kartě; kdo článek otevře v prosinci, vidí listopad spočítaný ze zakázek
+ve chvíli zobrazení. Špatný měsíc (třeba `2026-13`) vloží nic. Test v `BlogEmbedsTest`.

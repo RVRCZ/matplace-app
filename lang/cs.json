@@ -1930,5 +1930,12 @@
     "farm.refund.admin.confirm": "Opravdu vrátit peníze na kartu? Nejde to vzít zpět.",
     "farm.refund.admin.nothing": "Není co vrátit: karta nic nezaplatila, nebo už je vše vrácené, nebo peníze v kreditu zákazník mezitím utratil.",
     "farm.refund.admin.failed_now": "Brána vrácení odmítla: :error",
-    "farm.refund.admin.sent": "Na kartu jde :amount."
+    "farm.refund.admin.sent": "Na kartu jde :amount.",
+    "site.blog.farm.title": "Farma: :month",
+    "site.blog.farm.printed": "Dokončené výtisky: :n",
+    "site.blog.farm.median": "Medián od zaplacení k předání: :days dne",
+    "site.blog.farm.videos": "Videa z tisku zveřejněná na YouTube: :n",
+    "site.blog.farm.tools": "Nejčastější nástroje: :tools",
+    "site.blog.farm.uploads": "Vlastní soubory zákazníků: :n",
+    "site.blog.farm.note": "Čísla se počítají ze zakázek farmy ve chvíli, kdy se stránka zobrazí."
 }

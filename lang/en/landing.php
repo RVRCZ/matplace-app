@@ -482,4 +482,52 @@ return [
             ['t' => 'A night light with a name', 'text' => 'A child’s name, 120 mm, with an LED module and a remote, a soft light for the room.'],
         ],
     ],
+    // standing 3D text (docs/AP.md §12, batch D)
+    'text' => [
+        'order' => [
+            ['q' => 'How much does the text cost from you?', 'farm' => true, 'a' => 'The word HOME, 144 mm, costs 99 CZK (PLA, without delivery, calculation of 28 October 2026), the two-line text KAVÁRNA u Jany 130 CZK. The price grows with the number of letters, the height and the depth; you see it before you order anything, for several pieces too.'],
+            ['q' => 'Which text and typeface suit it?', 'a' => 'A short word or a name in a bold sans serif stands most firmly; use scripts from 30 mm up. The tool ties accents with a short tie, and the symbols below the fields go in with one tap.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'HOME prints in 40 minutes, the two-line text in 1 h 53 min. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
+            ['q' => 'Can the text be stuck to a wall?', 'a' => 'Yes. The text prints on its back, so the back face is flat and smooth; stick it to a wall or a door with double-sided tape. For hanging, the sign with an eyelet is the better choice, the text has none.'],
+            ['q' => 'Will the text last in a sunny shop window?', 'a' => 'Indoors PLA is enough. For a shop window in the sun choose PETG or ASA; PLA softens next to warm glass. Split a text longer than 250 mm into two lines or two words.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the text printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A name for the shelf in a child’s room', 'text' => 'A script 40 mm tall with a heart or a star on the same foot, 15 mm deep.'],
+            ['t' => 'A word for a café or office desk', 'text' => 'OPEN, HOME or the name of the business in Bebas Neue, 30 to 50 mm, a fifth as deep as it is tall.'],
+            ['t' => 'Place names for a wedding table', 'text' => 'The guests’ names in the same typeface, each as its own design; for a tag with a plate there is the Sign tool.'],
+        ],
+    ],
+    // filament art (docs/AP.md §12, batch D)
+    'filament_art' => [
+        'order' => [
+            ['q' => 'How much does the picture cost from you?', 'farm' => true, 'a' => 'The snowman of four plates in a round 120 mm frame costs 200 CZK, the gingerbread man as one print 120 mm wide 99 CZK (PLA, without delivery, calculation of 28 October 2026). The price grows with the width and the number of plates; you see it before you order anything.'],
+            ['q' => 'Which picture should I upload?', 'a' => 'A drawing or a logo with a few solid colours, a PNG or JPG with a clear background, or an SVG. A photo the tool simplifies to its main colours in "painting" mode; a greyscale portrait is better off as a lithophane.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The snowman prints in 2 h 46 min, the gingerbread man in 26 minutes. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
+            ['q' => 'How do I print the picture at home?', 'a' => 'Flat, without supports, 0.2 mm layers, PLA. Every plate from its own spool; for one print the project holds filament changes at the heights of the colours, the printer stops and you swap the spool.'],
+            ['q' => 'How is the picture assembled and hung?', 'a' => 'Glue the plates by the guide from the back to the front with superglue; the posts go under the plate in front of them. The frame has a slot for a nail in its back; with room for an LED strip there is a slot for the cable at the bottom.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the picture printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A child’s drawing on the bedroom wall', 'text' => 'A photographed drawing as a layered picture of 150 to 200 mm from 4 to 6 plates in a frame; the bold lines of a drawing suit the layers.'],
+            ['t' => 'A company logo at the reception', 'text' => 'The SVG of the logo as plates in a square 250 mm frame with room for an LED strip; you pick the colours from our spools to match the brand.'],
+            ['t' => 'A gift from a photo or a motif', 'text' => 'A poster-like picture from a photo in "painting" mode, 180 mm, or a motif from the library as one print without gluing.'],
+        ],
+    ],
+    // modular organizer of bins (docs/AP.md §12, batch D)
+    'modular' => [
+        'order' => [
+            ['q' => 'How much does a set of bins cost from you?', 'farm' => true, 'a' => 'Four bins in three sizes for a 300 × 150 mm drawer, 40 mm high, cost 310 CZK (PLA, without delivery, calculation of 28 October 2026). The price grows with the size, the height and the number of bins; you see it before you order anything.'],
+            ['q' => 'How do I measure the drawer?', 'a' => 'The inside width and depth at the bottom of the drawer, 1 to 2 mm off both. Make the bins at least 5 mm lower than the clear height of the drawer so that it closes.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'Four bins print in 3 h 45 min, a bigger set proportionally longer. We ship on the day the print finishes, on working days, and Packeta in Czechia usually delivers within 1 to 2 working days (to a pick-up point :cz_point).'],
+            ['q' => 'How do I print the bins at home?', 'a' => 'Floor down, without supports, 0.2 mm layers, PLA or PETG. Every bin from its own spool, or several at once on one bed; the slicer project has the bins laid out side by side.'],
+            ['q' => 'Will the bins last in the kitchen and the workshop?', 'a' => 'For cutlery, cosmetics and the office PLA is enough. For a workshop with screws and tools, or near heat, choose PETG. Wash the bins by hand, not in the dishwasher.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the set printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A drawer of cosmetics or jewellery', 'text' => 'Six to eight bins 30 mm high in different colours, one long one for brushes.'],
+            ['t' => 'A workshop and screws', 'text' => 'Equal square bins 40 mm high on an 8 × 4 grid, every other one in another colour so the contents are found.'],
+            ['t' => 'An office desk', 'text' => 'Four bins in an outer 240 × 120 mm tray for pens, clips and cables; the tray keeps the set together.'],
+        ],
+    ],
 ];

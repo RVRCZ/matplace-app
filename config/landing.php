@@ -43,5 +43,9 @@ return [
         'holder' => ['related' => ['cable_holder', 'phone_stand', 'box'], 'blog' => ['drzak-na-zed-na-miru', 'pla-vs-petg-vs-asa-jaky-material-vybrat']],
         'stamp' => ['related' => ['cutter', 'logo', 'svg_to_stl'], 'blog' => ['vykrajovatko-na-cukrovi-podle-vlastniho-tvaru', 'svg-do-stl-logo-a-kresba-jako-3d-model']],
         'lightbox' => ['related' => ['logo', 'sign', 'name_letter'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem', 'svg-do-stl-logo-a-kresba-jako-3d-model']],
+        // the second ten (docs/AP.md §12), batch D
+        'text' => ['related' => ['sign', 'name_letter', 'nameplate'], 'blog' => ['cedulka-jmenovka-a-klicenka-se-jmenem', 'jmenovky-na-darky-a-vykrajovatka-vanocni-dilna']],
+        'filament_art' => ['related' => ['relief', 'svg_to_stl', 'logo'], 'blog' => ['litofanie-z-fotky', 'vanocni-ozdoba-z-obrazku']],
+        'modular' => ['related' => ['organizer', 'box', 'holder'], 'blog' => ['organizer-do-supliku-na-miru', 'krabicka-na-miru']],
     ],
 ];

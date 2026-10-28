@@ -1930,5 +1930,12 @@
     "farm.refund.admin.confirm": "¿Devolver de verdad el dinero a la tarjeta? No se puede deshacer.",
     "farm.refund.admin.nothing": "Nada que devolver: la tarjeta no pagó nada, ya se devolvió todo o el cliente gastó el crédito entretanto.",
     "farm.refund.admin.failed_now": "La pasarela rechazó la devolución: :error",
-    "farm.refund.admin.sent": ":amount vuelve a la tarjeta."
+    "farm.refund.admin.sent": ":amount vuelve a la tarjeta.",
+    "site.blog.farm.title": "La granja: :month",
+    "site.blog.farm.printed": "Impresiones terminadas: :n",
+    "site.blog.farm.median": "Mediana del pago a la entrega: :days días",
+    "site.blog.farm.videos": "Vídeos de impresión publicados en YouTube: :n",
+    "site.blog.farm.tools": "Herramientas más usadas: :tools",
+    "site.blog.farm.uploads": "Archivos propios de los clientes: :n",
+    "site.blog.farm.note": "Las cifras se calculan a partir de los pedidos de la granja en el momento en que se muestra la página."
 }

@@ -1930,5 +1930,12 @@
     "farm.refund.admin.confirm": "Really return the money to the card? It cannot be undone.",
     "farm.refund.admin.nothing": "Nothing to return: the card paid nothing, everything is back already, or the customer spent the credit meanwhile.",
     "farm.refund.admin.failed_now": "The gateway refused the refund: :error",
-    "farm.refund.admin.sent": ":amount is going back to the card."
+    "farm.refund.admin.sent": ":amount is going back to the card.",
+    "site.blog.farm.title": "The farm: :month",
+    "site.blog.farm.printed": "Prints finished: :n",
+    "site.blog.farm.median": "Median from payment to handover: :days days",
+    "site.blog.farm.videos": "Time-lapses published on YouTube: :n",
+    "site.blog.farm.tools": "Most used tools: :tools",
+    "site.blog.farm.uploads": "Customers' own files: :n",
+    "site.blog.farm.note": "The figures are counted from the farm's orders at the moment the page is shown."
 }
