@@ -97,6 +97,14 @@ en/es stejně. Test ověřuje délky (≤ 60 / ≤ 155) a Open Graph na všech �
   `upload`, `checkout` počítá i `failed:pay` (session 2); podíl „dobití dokončená“ (`topup_started` → `topup`).
   `/admin/stats` cestu ukazuje první, s názvy kroků.
 
+**Objednávka bez účtu (session G, od 28. 10. 2026):** `order_created` a `checkout_started` vznikají i bez `user_id`,
+`order_paid` se připojí k návštěvě, která zakázku založila, a `register` s `meta.kind = checkout` přijde až PO `order_paid`
+(účet vzniká ve webhooku platby). Trychtýř to unese beze změny logiky: kroky se počítají podle značek návštěvy bez ohledu
+na pořadí a krok prodejní cesty „Registrace, účet, nebo zakázka bez účtu“ (`register|register_visit|order_created`) host
+projde přes `order_created`; návštěva se počítá jednou (značky jsou booleovské). Sloupec „registrace“ v rozpadu podle
+zdroje teď zahrnuje i účty založené platbou (to je správně: účet vznikl). `refund` není čin člověka (není v
+`Track::ACTIONS`), do cest ani do lidí nevstupuje. Test v `SalesPathWebTest`.
+
 ## 10. Ověření (26. 10., lokálně, dev server 8013, `scripts/review_round2.mjs`, 390 i 1280 px)
 
 | scénář | jak | výsledek |

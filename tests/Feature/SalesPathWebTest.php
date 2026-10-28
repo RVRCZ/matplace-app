@@ -12,6 +12,7 @@ use App\Models\FarmVideo;
 use App\Models\User;
 use App\Support\Money;
 use App\Support\ShippingHint;
+use App\Support\Track;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -292,5 +293,29 @@ class SalesPathWebTest extends TestCase
         $this->assertStringContainsString(route('tools.business'), (string) file_get_contents($dir.'/sitemap-tools-cs.xml'));
         File::deleteDirectory($dir);
         $this->get('/tools')->assertOk()->assertSee('data-aim-page="business"', false)->assertSee('href="'.route('tools.business').'"', false);
+    }
+
+    public function test_a_guest_who_pays_without_an_account_walks_the_whole_sales_path_and_is_counted_once(): void
+    {
+        // guest checkout (session G, docs/AO.md): no register before the order; the account comes from the payment's webhook,
+        // so the register event (kind checkout) is written after order_paid into the visit that made the order
+        Humans::forget();
+        $session = $this->openAsBrowser('/');
+        foreach (['upload', 'calculation', 'price_shown', 'order_started', 'order_created', 'checkout_started', 'order_paid'] as $type) {
+            Event::create(['session_id' => $session->id, 'type' => $type, 'locale' => 'cs', 'source' => 'direct', 'meta' => $type === 'order_paid' ? ['kind' => 'card'] : null]);
+        }
+        $user = User::factory()->create();
+        Event::create(['session_id' => $session->id, 'user_id' => $user->id, 'type' => 'register', 'locale' => 'cs', 'source' => 'direct', 'meta' => ['kind' => 'checkout']]);
+        Event::create(['session_id' => $session->id, 'user_id' => $user->id, 'type' => 'refund', 'locale' => 'cs', 'source' => 'direct', 'meta' => ['kind' => 'print_failed', 'value' => 99, 'currency' => 'CZK']]);
+
+        $funnel = app(Funnel::class)->compute(30);
+        $sales = array_column($funnel['paths']['sales'], 'sessions', 'step');
+        foreach (['visit', 'upload', 'calculation', 'price_shown', 'order_started', 'register|register_visit|order_created', 'order_created', 'checkout_started|topup_started', 'order_paid'] as $step) {
+            $this->assertSame(1, $sales[$step], $step);
+        }
+        $this->assertSame(1, $funnel['sessions'], 'one visit, however many events and whoever it became');
+        $this->assertSame(['sessions' => 1, 'order_paid' => 1, 'download' => 0, 'designer_file_uploaded' => 0, 'register' => 1], $funnel['by_source']['direct']);
+        $this->assertSame(['n' => 1, 'k' => 1, 'rate' => 100.0], $funnel['audit']['shares']['paid_of_started']);
+        $this->assertNotContains('refund', Track::ACTIONS, 'a refund is not a person\'s act');
     }
 }
