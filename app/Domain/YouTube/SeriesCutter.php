@@ -25,6 +25,12 @@ use Illuminate\Support\Facades\Storage;
  */
 class SeriesCutter
 {
+    /** The shortest piece of growing print worth a segment of the monthly video, seconds. */
+    public const SEGMENT_MIN = 4.0;
+
+    /** @var array<string, ?float> lengths of the rendered videos by ffmpeg, asked once per file */
+    private array $durations = [];
+
     public function __construct(private readonly TimelapseCutter $cutter, private readonly FarmVideos $videos) {}
 
     // ── the price Short ──
@@ -317,25 +323,48 @@ class SeriesCutter
 
     /**
      * The rendered video a segment of the monthly cut comes from, where its growing print starts (after the title or
-     * the countdown) and how many seconds of it there are at least: the 16:9, else the customer's video; null without one.
+     * the countdown) and how many seconds of growing there are: the 16:9, else the customer's video; null without one
+     * or when the print grows for less than SEGMENT_MIN. The growing part is what the file holds minus what comes
+     * after it (the held piece, the photo, the end card – the customer's video ends with a black "thank you" card that
+     * must never land in the month's cut: 28 Oct 2026, a print of 18.8 s got a 12.5 s window); without ffmpeg to
+     * measure the file the kind's shortest growth is assumed.
      *
      * @return array{0: string, 1: float, 2: float}|null
      */
     private function segmentSource(FarmOrder $order): ?array
     {
         $disk = Storage::disk(config('farm.disk'));
+        $photo = $order->hasPhoto() ? 1 : 0;
         if ($order->timelapse_wide_path && $disk->exists($order->timelapse_wide_path)) {
             $wide = (array) config('youtube.cut.wide');
+            $file = $disk->path($order->timelapse_wide_path);
+            $after = (float) $wide['hold'] + (float) $wide['end'] + $photo * (float) $wide['photo'];
+            $max = $this->growing($file, (float) $wide['title'], $after, (float) $wide['growth'][0]);
 
-            return [$disk->path($order->timelapse_wide_path), (float) $wide['title'], (float) $wide['growth'][0] + (float) $wide['hold']];
+            return $max >= self::SEGMENT_MIN ? [$file, (float) $wide['title'], $max] : null;
         }
         if ($order->timelapse_path && $disk->exists($order->timelapse_path)) {
             $customer = (array) config('youtube.cut.customer');
+            $file = $disk->path($order->timelapse_path);
+            // the customer's video: logo and countdown 7 s, the print, the piece held, the photo, 5 s of thanks
+            $after = (float) $customer['hold'] + 5.0 + $photo * (float) $customer['photo'];
+            $max = $this->growing($file, 7.0, $after, (float) $customer['growth'][0]);
 
-            return [$disk->path($order->timelapse_path), 7.0, (float) $customer['growth'][0] + (float) $customer['hold']];
+            return $max >= self::SEGMENT_MIN ? [$file, 7.0, $max] : null;
         }
 
         return null;
+    }
+
+    /** Seconds of growing print in a rendered video: its length minus what is before and after; $assumed when ffmpeg cannot measure it. */
+    private function growing(string $file, float $before, float $after, float $assumed): float
+    {
+        if (! array_key_exists($file, $this->durations)) {
+            $this->durations[$file] = $this->cutter->duration($file);
+        }
+        $duration = $this->durations[$file];
+
+        return $duration === null ? $assumed : max(0.0, $duration - $before - $after);
     }
 
     /**
