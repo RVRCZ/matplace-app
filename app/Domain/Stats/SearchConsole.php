@@ -4,6 +4,7 @@ namespace App\Domain\Stats;
 
 use App\Models\SearchConsoleRow;
 use App\Support\Locales;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -87,6 +88,82 @@ final class SearchConsole
         $span = $base()->whereNull('query')->selectRaw('MIN(date) as first, MAX(date) as last')->first();
 
         return ['source' => 'api', 'from' => (string) ($span?->first ?? $from->format('Y-m-d')), 'until' => (string) ($span?->last ?? ''), 'country' => $country] + self::aggregate($rows, count($pages));
+    }
+
+    /**
+     * Impressions and clicks of every tool by calendar week (from Monday) for the last weeks, from the pages' totals in
+     * the database (docs/AN.md §15): what the tools page sets beside the week's users.
+     *
+     * @return array<string, array<string, array{impressions: int, clicks: int}>> tool → week start (Y-m-d) → numbers
+     */
+    public static function weeklyByTool(int $weeks, string $country = 'all'): array
+    {
+        $from = now()->startOfWeek()->subWeeks(max(1, $weeks) - 1);
+        $rows = self::scope($country)->whereNull('query')->where('date', '>=', $from->toDateString())
+            ->select('date', 'page', DB::raw('SUM(clicks) as clicks'), DB::raw('SUM(impressions) as impressions'))->groupBy('date', 'page')->get();
+        $slugs = self::slugs();
+        $out = [];
+        foreach ($rows as $r) {
+            $tool = self::toolOf((string) $r->page, $slugs);
+            if ($tool === null) {
+                continue;
+            }
+            $week = Carbon::parse((string) $r->date)->startOfWeek()->toDateString();
+            $w = &$out[$tool][$week];
+            $w ??= ['impressions' => 0, 'clicks' => 0];
+            $w['impressions'] += (int) $r->impressions;
+            $w['clicks'] += (int) $r->clicks;
+            unset($w);
+        }
+
+        return $out;
+    }
+
+    /**
+     * Queries people saw us for and never clicked, the most shown first (docs/AN.md §15): what a page or an article
+     * could answer better. One of the pages shown for the query comes along.
+     *
+     * @return list<array{query: string, impressions: int, position: ?float, page: string}>
+     */
+    public static function zeroClickQueries(int $days = 28, int $limit = 20, string $country = 'all'): array
+    {
+        $rows = self::scope($country)->whereNotNull('query')->where('date', '>=', now()->subDays($days)->toDateString())
+            ->select('query', DB::raw('SUM(clicks) as clicks'), DB::raw('SUM(impressions) as impressions'), DB::raw('SUM(position * impressions) as weighted'), DB::raw('MAX(page) as page'))
+            ->groupBy('query')->havingRaw('SUM(clicks) = 0')->orderByDesc('impressions')->orderBy('query')->limit(max(1, $limit))->get();
+
+        return $rows->map(fn ($r) => [
+            'query' => (string) $r->query, 'impressions' => (int) $r->impressions,
+            'position' => (int) $r->impressions > 0 ? round((float) $r->weighted / (int) $r->impressions, 1) : null, 'page' => self::pathOf((string) $r->page),
+        ])->all();
+    }
+
+    /**
+     * The inspiration pages (/model/<slug>, every language together) by impressions over the last days, the most shown
+     * first: which models are worth a file (/admin/catalog/files, docs/AN.md §15). Empty without rows.
+     *
+     * @return array<string, int> slug → impressions
+     */
+    public static function modelPages(int $days = 90, int $limit = 60): array
+    {
+        $rows = self::scope('all')->whereNull('query')->where('date', '>=', now()->subDays($days)->toDateString())->where('page', 'like', '%/model/%')
+            ->select('page', DB::raw('SUM(impressions) as impressions'))->groupBy('page')->get();
+        $out = [];
+        foreach ($rows as $r) {
+            if (preg_match('#^/model/([^/?]+)/?$#', self::pathOf((string) $r->page), $m)) {
+                $out[urldecode($m[1])] = ($out[urldecode($m[1])] ?? 0) + (int) $r->impressions;
+            }
+        }
+        arsort($out);
+
+        return array_slice($out, 0, max(1, $limit), true);
+    }
+
+    /** The rows of one country, or all (SearchConsoleRow). */
+    private static function scope(string $country)
+    {
+        return SearchConsoleRow::query()
+            ->when($country === 'cz', fn ($q) => $q->where('country', self::HOME))
+            ->when($country === 'other', fn ($q) => $q->where(fn ($w) => $w->where('country', '!=', self::HOME)->orWhereNull('country')));
     }
 
     /**

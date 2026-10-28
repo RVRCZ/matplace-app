@@ -1870,5 +1870,8 @@
     "calc.trust.photo_alt": "Una impresión de la granja matplace: :what",
     "calc.trust.photo_own": "un modelo del cliente",
     "calc.config_failed": "No se pudo cargar la configuración de la calculadora. Recargue la página.",
-    "site.examples.item.svg_to_stl": "Silueta de gato de un SVG, :size"
+    "site.examples.item.svg_to_stl": "Silueta de gato de un SVG, :size",
+    "tools.photos.title": "Así quedó impreso",
+    "tools.photos.lead": "Impresiones reales de nuestra granja que los clientes encargaron con esta herramienta.",
+    "tools.photos.alt": "Una impresión de la herramienta :tool, :material, :date"
 }

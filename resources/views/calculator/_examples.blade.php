@@ -19,9 +19,16 @@
     <div class="mt-6 grid gap-4 sm:grid-cols-3">
         @foreach($items as $i)
             <article class="card flex flex-col overflow-hidden">
+                @php $real = empty($i['photo']) ? \App\Domain\Tools\ToolPhotos::latest($i['tool']) : null; @endphp
                 <figure class="relative bg-studio">
                     @if($i['photo'])
                         <img src="{{ asset($i['photo']) }}" alt="{{ __('site.examples.item.'.$i['tool'], ['mm' => $i['mm'], 'size' => $i['size'] ?? '']) }}" width="800" height="800" loading="lazy" class="aspect-square w-full object-cover">
+                    @elseif($real)
+                        {{-- no hand-picked photo: the newest photographed print of the tool from the farm (App\Domain\Tools\ToolPhotos, docs/AN.md §15) --}}
+                        <picture>
+                            @if(! empty($real['webp']))<source type="image/webp" srcset="{{ $real['webp'] }}">@endif
+                            <img src="{{ $real['url'] }}" alt="{{ __('site.examples.item.'.$i['tool'], ['mm' => $i['mm'], 'size' => $i['size'] ?? '']) }}" width="600" height="600" loading="lazy" decoding="async" class="aspect-square w-full object-cover">
+                        </picture>
                     @else
                         @include('tools.picture', ['key' => $i['tool']])
                         <figcaption class="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-semibold text-ink shadow-sm">{{ __('site.examples.preview') }}</figcaption>

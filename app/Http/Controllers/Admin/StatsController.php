@@ -65,7 +65,12 @@ class StatsController extends Controller
         // Search Console for the same weeks (the API's rows, else the CSV export), for one country or all (docs/AN.md §14)
         $console = SearchConsole::current(now()->startOfWeek()->subWeeks($weeks - 1), now(), $country);
 
-        return view('admin.stats.tools', ['use' => $use->weekly($weeks), 'weeks' => $weeks, 'country' => $country, 'console' => $console, 'embeds' => ToolUse::embeds(30)]);
+        $api = ($console['source'] ?? null) === 'api';
+
+        return view('admin.stats.tools', ['use' => $use->weekly($weeks), 'weeks' => $weeks, 'country' => $country, 'console' => $console,
+            // the weeks of Search Console beside the weeks of use, and the queries nobody clicked (docs/AN.md §15)
+            'weeklyConsole' => $api ? SearchConsole::weeklyByTool($weeks, $country) : [], 'zeroClicks' => $api ? SearchConsole::zeroClickQueries(28, 20, $country) : [],
+            'embeds' => ToolUse::embeds(30)]);
     }
 
     public function speed(Request $request, Speed $speed): View

@@ -2,14 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Domain\Calculation\CalculationService;
-use App\Jobs\SliceCalculation;
-use App\Models\Calculation;
+use App\Domain\Catalog\CatalogSlicer;
 use App\Models\CatalogModel;
-use App\Models\ModelFile;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * The real print time and filament of an inspiration model, from a slice of its own file (docs/AN.md §13): one piece
@@ -38,10 +34,7 @@ class SliceCatalog extends Command
 
     protected $description = 'Slice the files of inspiration models for the price in three materials and the print time on their pages';
 
-    /** The calculator's defaults: what the page's price table counts from. */
-    public const PARAMS = ['material' => 'PLA', 'quality' => 'standard', 'infill' => 15, 'quantity' => 1];
-
-    public function handle(CalculationService $calculations): int
+    public function handle(CatalogSlicer $slicer): int
     {
         $limit = max(1, (int) $this->option('limit'));
         $sleep = max(0, (int) $this->option('sleep'));
@@ -72,7 +65,7 @@ class SliceCatalog extends Command
         $started = microtime(true);
         foreach ($models as $i => $model) {
             $t = microtime(true);
-            $note = $this->sliceOne($model, $calculations);
+            $note = $slicer->slice($model);
             $model->refresh();
             if ($model->sliced_at !== null && $model->slice_error === null && $note === null) {
                 $done++;
@@ -111,45 +104,6 @@ class SliceCatalog extends Command
         $rest = $base()->whereNotIn('catalog_models.id', $indexedIds)->get();
 
         return [$indexed->concat($rest), $indexedIds];
-    }
-
-    /** Slices one model in this process and writes the result (or the error) to it; returns what went wrong before the slicer, null otherwise. */
-    private function sliceOne(CatalogModel $model, CalculationService $calculations): ?string
-    {
-        $file = $model->modelFile;
-        if (! $file || $file->status === ModelFile::STATUS_DELETED || ! $file->isReady()) {
-            return $this->failModel($model, $file ? ($file->status === ModelFile::STATUS_FAILED ? 'file_processing_failed' : 'file_not_ready: '.$file->status) : 'file_missing');
-        }
-        if (! Storage::disk(ModelFile::DISK)->exists((string) $file->stl_path)) {
-            return $this->failModel($model, 'file_missing_on_disk');
-        }
-        // the estimate alone, nothing queued (a finished slice of the same file and settings is reused as done)
-        $calc = $calculations->create($file, self::PARAMS, null, null, null, false);
-        if ($calc->status !== Calculation::STATUS_DONE) {
-            $calc->status = Calculation::STATUS_QUEUED;
-            $calc->save();
-            SliceCalculation::dispatchSync($calc->id);
-            $calc->refresh();
-        }
-        $minutes = (int) ($calc->slicer['minutes'] ?? 0);
-        $grams = (float) ($calc->slicer['grams'] ?? 0);
-        if ($calc->status !== Calculation::STATUS_DONE || $minutes <= 0 || $grams <= 0) {
-            return $this->failModel($model, mb_substr((string) ($calc->error ?: 'slice_failed: '.$calc->status), 0, 120));
-        }
-        $model->forceFill([
-            'slice_minutes' => $minutes, 'slice_grams' => round($grams, 1), 'slice_material' => (string) ($calc->params['material'] ?? self::PARAMS['material']),
-            'sliced_at' => now(), 'slice_error' => null, 'slice_calculation_id' => $calc->id,
-        ])->save();
-
-        return null;
-    }
-
-    /** Writes why this model could not be sliced (the command's own fail() ends the run) and hands the reason back for the line. */
-    private function failModel(CatalogModel $model, string $error): string
-    {
-        $model->forceFill(['slice_error' => mb_substr($error, 0, 120)])->save();
-
-        return $error;
     }
 
     /** "1 h 47 min", "12 min". */
