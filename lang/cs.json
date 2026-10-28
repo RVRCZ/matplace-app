@@ -1939,5 +1939,11 @@
     "site.blog.farm.uploads": "Vlastní soubory zákazníků: :n",
     "site.blog.farm.note": "Čísla se počítají ze zakázek farmy ve chvíli, kdy se stránka zobrazí.",
     "farm.refuse.guest_limit": "Z této adresy přišlo za poslední hodinu hodně objednávek bez účtu. Zkuste to za :minutes min, nebo se přihlaste.",
-    "calc.status.by_parts": "Větší než podložka: vytiskneme po dílech, přesnou cenu spočítáme při objednávce."
+    "calc.status.by_parts": "Větší než podložka: vytiskneme po dílech, přesnou cenu spočítáme při objednávce.",
+    "farm.order.bar.pay": "Zaplatit z kreditu",
+    "farm.order.bar.pay_card": "Zaplatit kartou",
+    "farm.order.bar.pay_card_rest": "Doplatit kartou :amount",
+    "farm.order.bar.pick_color": "Vyberte barvu.",
+    "farm.order.bar.total": "Celkem k zaplacení",
+    "farm.order.bar.total_estimate": "Celkem asi, dopravu upřesní dopravce"
 }

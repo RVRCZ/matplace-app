@@ -1939,5 +1939,11 @@
     "site.blog.farm.uploads": "Customers' own files: :n",
     "site.blog.farm.note": "The figures are counted from the farm's orders at the moment the page is shown.",
     "farm.refuse.guest_limit": "Many orders without an account came from this address in the last hour. Try again in :minutes min, or sign in.",
-    "calc.status.by_parts": "Larger than the plate: we print it by parts and work out the exact price at the order."
+    "calc.status.by_parts": "Larger than the plate: we print it by parts and work out the exact price at the order.",
+    "farm.order.bar.pay": "Pay from credit",
+    "farm.order.bar.pay_card": "Pay by card",
+    "farm.order.bar.pay_card_rest": "Pay the rest by card: :amount",
+    "farm.order.bar.pick_color": "Choose a colour.",
+    "farm.order.bar.total": "To pay",
+    "farm.order.bar.total_estimate": "About, in total; the carrier confirms the delivery"
 }

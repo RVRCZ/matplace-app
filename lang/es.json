@@ -1939,5 +1939,11 @@
     "site.blog.farm.uploads": "Archivos propios de los clientes: :n",
     "site.blog.farm.note": "Las cifras se calculan a partir de los pedidos de la granja en el momento en que se muestra la página.",
     "farm.refuse.guest_limit": "Desde esta dirección llegaron muchos pedidos sin cuenta en la última hora. Inténtelo dentro de :minutes min o inicie sesión.",
-    "calc.status.by_parts": "Más grande que la placa: lo imprimimos por partes y calculamos el precio exacto al pedir."
+    "calc.status.by_parts": "Más grande que la placa: lo imprimimos por partes y calculamos el precio exacto al pedir.",
+    "farm.order.bar.pay": "Pagar con crédito",
+    "farm.order.bar.pay_card": "Pagar con tarjeta",
+    "farm.order.bar.pay_card_rest": "Pagar el resto con tarjeta: :amount",
+    "farm.order.bar.pick_color": "Elija un color.",
+    "farm.order.bar.total": "Total a pagar",
+    "farm.order.bar.total_estimate": "Aproximado, en total; el transportista confirma el envío"
 }

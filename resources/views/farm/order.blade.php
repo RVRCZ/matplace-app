@@ -9,7 +9,8 @@
         'farm.units.guess', 'farm.units.ask', 'farm.top_up', 'farm.copies.max', 'farm.copies.note', 'farm.copies.plates', 'farm.copies.plate_of', 'farm.copies.more_plates', 'farm.order.printer', 'farm.order.supports_off', 'farm.order.second_same', 'farm.order.second_same_hint', 'farm.order.second_line', 'farm.order.second_color', 'farm.order.changes_title', 'farm.order.change_title', 'farm.order.change_same', 'farm.order.change_same_hint', 'farm.order.change_first', 'farm.order.change_line', 'farm.order.parts_title', 'farm.order.parts_hint', 'farm.order.part_main', 'farm.order.part_line', 'farm.order.parts_one_plate', 'farm.order.parts_one_machine', 'farm.order.colors_no_machine', 'farm.order.one_plate_required', 'farm.order.one_plate_copies', 'farm.order.one_plate_single', 'farm.order.kind_all', 'farm.order.codes_hint', 'farm.order.by_parts',
         'farm.units.mm', 'farm.units.cm', 'farm.units.in', 'farm.units.m', 'farm.order.cancel_running_confirm', 'farm.order.supports_hide', 'farm.order.supports_show',
         'farm.delivery.free', 'farm.delivery.not_here', 'farm.delivery.too_big', 'farm.delivery.too_big_pickup', 'farm.delivery.none', 'farm.delivery.pick_point', 'farm.delivery.fill_address', 'farm.delivery.to', 'farm.delivery.track',
-        'farm.order.tl.print', 'farm.order.tl.printing', 'farm.order.tl.printing_now', 'farm.order.tl.printing_end', 'farm.order.tl.done', 'farm.order.tl.dispatched', 'farm.order.tl.parcel', 'farm.order.tl.pickup', 'farm.order.tl.none', 'farm.order.why.lead', 'farm.order.why.printer', 'farm.order.why.kind', 'farm.order.why.settings', 'farm.order.why.time', 'farm.order.reslicing', 'farm.order.ship.total', 'farm.order.ship.total_estimate', 'farm.order.pay_note_round', 'farm.order.pay_note_min', 'farm.order.while_slicing', 'farm.order.while_slicing_big', 'farm.order.estimate_range', 'farm.order.estimate_time', 'farm.order.estimate_wait', 'farm.order.estimate_running', 'farm.order.slice_start', 'farm.order.slice_start_hint', 'farm.order.restart_slice', 'farm.recalculate', 'farm.order.ship.choose', 'farm.order.ship.pickup', 'farm.order.ship.parcel', 'farm.order.ship.counting', 'farm.order.ship.free', 'farm.order.pay_total', 'farm.order.refunded'];
+        'farm.order.tl.print', 'farm.order.tl.printing', 'farm.order.tl.printing_now', 'farm.order.tl.printing_end', 'farm.order.tl.done', 'farm.order.tl.dispatched', 'farm.order.tl.parcel', 'farm.order.tl.pickup', 'farm.order.tl.none', 'farm.order.why.lead', 'farm.order.why.printer', 'farm.order.why.kind', 'farm.order.why.settings', 'farm.order.why.time', 'farm.order.reslicing', 'farm.order.ship.total', 'farm.order.ship.total_estimate', 'farm.order.pay_note_round', 'farm.order.pay_note_min', 'farm.order.while_slicing', 'farm.order.while_slicing_big', 'farm.order.estimate_range', 'farm.order.estimate_time', 'farm.order.estimate_wait', 'farm.order.estimate_running', 'farm.order.slice_start', 'farm.order.slice_start_hint', 'farm.order.restart_slice', 'farm.recalculate', 'farm.order.ship.choose', 'farm.order.ship.pickup', 'farm.order.ship.parcel', 'farm.order.ship.counting', 'farm.order.ship.free', 'farm.order.pay_total', 'farm.order.refunded',
+        'farm.order.bar.pay', 'farm.order.bar.pay_card', 'farm.order.bar.pay_card_rest', 'farm.order.bar.pick_color', 'farm.order.bar.total', 'farm.order.bar.total_estimate', 'farm.order.recolor_first'];
     $farmCfg = [
         'state' => $state,
         'prefill' => $prefill,
@@ -33,7 +34,7 @@
 @endpush
 
 @section('content')
-<div id="farm-order">
+<div id="farm-order" class="group/order">
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h1 class="text-xl font-extrabold sm:text-2xl">{{ __('farm.order.title', ['name' => $order->modelFile?->original_name]) }}</h1>
         <div class="flex items-center gap-3 text-sm">
@@ -47,29 +48,32 @@
         </div>
     </div>
 
-    <div class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-        {{-- model as it will be printed --}}
-        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <div class="relative">
-                <canvas id="farm-viewer" class="block h-[45vh] w-full touch-none lg:h-[70vh] {{ ($modelHidden ?? false) ? 'hidden' : '' }}"></canvas>
-                @if($modelHidden ?? false)
-                    {{-- a designer's model that is not offered for download: its picture instead of the 3D preview --}}
-                    @if($card?->coverUrl(false))<img src="{{ $card->coverUrl(false) }}" alt="{{ $card->title }}" class="h-[45vh] w-full bg-slate-50 object-contain lg:h-[70vh]">@else<div class="h-[45vh] bg-slate-50 lg:h-[70vh]"></div>@endif
-                @endif
-                <div id="farm-dims" class="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow"></div>
-                <button type="button" id="farm-supports-toggle" class="absolute right-3 top-3 hidden rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow" aria-pressed="true">{{ __('farm.order.supports_hide') }}</button>
+    <div class="mt-4 grid gap-4 lg:grid-cols-[1.2fr_1fr] lg:items-start">
+        {{-- the left column: the model and the price. While the customer chooses (data-choosing and .stick-stage, set by
+             farm.ts) it stays in the window on a desktop and the model gives way to the price card, never the other way
+             round; once paid (camera, time-lapse) it runs with the page (docs/AO.md §5) --}}
+        <div id="farm-side" class="flex min-w-0 flex-col gap-4 lg:group-data-[choosing]/order:overflow-y-auto">
+            {{-- model as it will be printed --}}
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white lg:group-data-[choosing]/order:flex lg:group-data-[choosing]/order:min-h-[180px] lg:group-data-[choosing]/order:flex-1 lg:group-data-[choosing]/order:flex-col">
+                <div class="relative lg:group-data-[choosing]/order:min-h-0 lg:group-data-[choosing]/order:flex-1">
+                    <canvas id="farm-viewer" class="block h-[45vh] w-full touch-none lg:h-[70vh] lg:group-data-[choosing]/order:h-full {{ ($modelHidden ?? false) ? 'hidden' : '' }}"></canvas>
+                    @if($modelHidden ?? false)
+                        {{-- a designer's model that is not offered for download: its picture instead of the 3D preview --}}
+                        @if($card?->coverUrl(false))<img src="{{ $card->coverUrl(false) }}" alt="{{ $card->title }}" class="h-[45vh] w-full bg-slate-50 object-contain lg:h-[70vh] lg:group-data-[choosing]/order:h-full">@else<div class="h-[45vh] bg-slate-50 lg:h-[70vh] lg:group-data-[choosing]/order:h-full"></div>@endif
+                    @endif
+                    <div id="farm-dims" class="absolute bottom-3 left-3 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow"></div>
+                    <button type="button" id="farm-supports-toggle" class="absolute right-3 top-3 hidden rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow" aria-pressed="true">{{ __('farm.order.supports_hide') }}</button>
+                </div>
+                <p id="farm-oriented" class="hidden border-t border-slate-100 bg-action-soft px-4 py-2 text-sm text-action-dark">{{ __('farm.order.oriented') }}</p>
+                {{-- the finished print photographed in the photo box, on its backdrop (PrintPhotos) --}}
+                <figure id="farm-photo-box" class="hidden border-t border-slate-100 p-3">
+                    <img id="farm-photo" alt="{{ __('farm.order.photo_of_print') }}" class="w-full rounded-xl" loading="lazy">
+                    <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.photo_of_print') }}</figcaption>
+                </figure>
             </div>
-            <p id="farm-oriented" class="hidden border-t border-slate-100 bg-action-soft px-4 py-2 text-sm text-action-dark">{{ __('farm.order.oriented') }}</p>
-            {{-- the finished print photographed in the photo box, on its backdrop (PrintPhotos) --}}
-            <figure id="farm-photo-box" class="hidden border-t border-slate-100 p-3">
-                <img id="farm-photo" alt="{{ __('farm.order.photo_of_print') }}" class="w-full rounded-xl" loading="lazy">
-                <figcaption class="mt-1 text-xs text-slate-500">{{ __('farm.order.photo_of_print') }}</figcaption>
-            </figure>
-        </div>
 
-        <div class="flex flex-col gap-4">
             {{-- status + numbers --}}
-            <div class="rounded-2xl border border-slate-200 bg-white p-4">
+            <div id="farm-card" class="shrink-0 rounded-2xl border border-slate-200 bg-white p-4">
                 <div class="flex items-center justify-between text-sm">
                     <span id="farm-status" class="font-semibold text-slate-700" role="status"></span>
                     <span id="farm-spinner" class="hidden h-4 w-4 animate-spin rounded-full border-2 border-action border-t-transparent"></span>
@@ -144,7 +148,9 @@
                 {{-- a paid order that leaves as a parcel: where it goes and, once sent, where to follow it --}}
                 <p id="farm-destination" class="mt-3 hidden text-sm text-slate-600"></p>
             </div>
+        </div>
 
+        <div class="flex flex-col gap-4">
             {{-- step 2 of 3, until paid: material and colours (one list, chosen once), quality and the print settings --}}
             <form id="farm-presets" class="hidden rounded-2xl border border-slate-200 bg-white p-4">
                 <h2 class="text-base font-bold text-slate-800">{{ __('farm.order.step_material') }}</h2>
@@ -309,7 +315,8 @@
                 <p id="farm-pay-recolor" class="mt-3 hidden text-sm text-amber-900">{{ __('farm.order.recolor_first') }}</p>
                 {{-- what is paid: the print and the delivery together, once the delivery is known --}}
                 <p id="farm-pay-total" class="mt-3 hidden text-sm text-ink" aria-live="polite"></p>
-                <button id="farm-pay-btn" type="submit" class="mt-3 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white disabled:opacity-50" disabled>{{ __('farm.order.pay') }}</button>
+                {{-- aria-disabled, not disabled: pressed before the order is complete it says what is missing (farm.ts payBlocker) --}}
+                <button id="farm-pay-btn" type="submit" class="mt-3 w-full rounded-xl bg-action px-4 py-3 font-semibold text-white aria-disabled:opacity-50" aria-disabled="true">{{ __('farm.order.pay') }}</button>
                 {{-- the card takes whole crowns or euros and never less than the gateway's floor: what is over the price stays as credit --}}
                 <p id="farm-pay-note" class="mt-2 hidden text-xs text-slate-600" aria-live="polite"></p>
             </form>
@@ -345,5 +352,13 @@
             </div>
         </div>
     </div>
+    {{-- the bar at the bottom of the window while the order waits for its payment, on a desktop and a phone alike
+         (components/action-bar.blade.php mirrors the pay button above and forwards its press): what is paid, what is
+         still missing; farm.ts fills it and shows it only while the payment box is on the page --}}
+    <x-action-bar for="farm-pay-btn" id="farm-bar" hidden>
+        <div id="farm-bar-total" class="action-bar-price rounded-md" aria-live="polite"></div>
+        <div id="farm-bar-sub" class="action-bar-sub" hidden></div>
+        <p id="farm-bar-error" class="text-xs text-red-700" role="alert" hidden></p>
+    </x-action-bar>
 </div>
 @endsection

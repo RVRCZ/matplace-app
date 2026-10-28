@@ -1,0 +1,32 @@
+{
+    "farm.order.bar.pay": [
+        "Zaplatit z kreditu",
+        "Pay from credit",
+        "Pagar con crédito"
+    ],
+    "farm.order.bar.pay_card": [
+        "Zaplatit kartou",
+        "Pay by card",
+        "Pagar con tarjeta"
+    ],
+    "farm.order.bar.pay_card_rest": [
+        "Doplatit kartou :amount",
+        "Pay the rest by card: :amount",
+        "Pagar el resto con tarjeta: :amount"
+    ],
+    "farm.order.bar.pick_color": [
+        "Vyberte barvu.",
+        "Choose a colour.",
+        "Elija un color."
+    ],
+    "farm.order.bar.total": [
+        "Celkem k zaplacení",
+        "To pay",
+        "Total a pagar"
+    ],
+    "farm.order.bar.total_estimate": [
+        "Celkem asi, dopravu upřesní dopravce",
+        "About, in total; the carrier confirms the delivery",
+        "Aproximado, en total; el transportista confirma el envío"
+    ]
+}
