@@ -1947,5 +1947,12 @@
     "farm.order.bar.total": "Total a pagar",
     "farm.order.bar.total_estimate": "Aproximado, en total; el transportista confirma el envío",
     "farm.order.bar.email": "Escriba un correo válido para la confirmación del pedido.",
-    "farm.order.bar.terms": "Confirme que acepta las condiciones de la granja de impresión."
+    "farm.order.bar.terms": "Confirme que acepta las condiciones de la granja de impresión.",
+    "edit.colors.painted": "¿Tiene un modelo con colores pintados? Suba el 3MF guardado en Bambu Studio, OrcaSlicer, Anycubic Slicer Next o PrusaSlicer: los colores que pintó con el pincel en el slicer los reconocemos también en la calculadora y los imprimimos en color.",
+    "calc.colors.count": "{1} El archivo tiene :n color pintado|[2,*] El archivo tiene :n colores pintados",
+    "calc.colors.merged": "{1} (y :n pequeño, fusionado)|[2,*] (y :n pequeños, fusionados)",
+    "calc.colors.price_one": "En un color :price",
+    "calc.colors.price_multi": "En color desde :price",
+    "calc.colors.order": "Imprimir en color",
+    "calc.colors.order_one": "Imprimir en un color"
 }

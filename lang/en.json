@@ -1947,5 +1947,12 @@
     "farm.order.bar.total": "To pay",
     "farm.order.bar.total_estimate": "About, in total; the carrier confirms the delivery",
     "farm.order.bar.email": "Fill in a valid e-mail for the order confirmation.",
-    "farm.order.bar.terms": "Confirm that you agree with the print farm terms."
+    "farm.order.bar.terms": "Confirm that you agree with the print farm terms.",
+    "edit.colors.painted": "Have a model with painted colours? Upload the 3MF saved in Bambu Studio, OrcaSlicer, Anycubic Slicer Next or PrusaSlicer: the colours you painted with the brush in the slicer are recognised in the calculator too, and we print them in colour.",
+    "calc.colors.count": "{1} The file has :n painted colour|[2,*] The file has :n painted colours",
+    "calc.colors.merged": "{1} (and :n small one, merged)|[2,*] (and :n small ones, merged)",
+    "calc.colors.price_one": "In one colour :price",
+    "calc.colors.price_multi": "In colour from :price",
+    "calc.colors.order": "Print in colour",
+    "calc.colors.order_one": "Print in one colour"
 }

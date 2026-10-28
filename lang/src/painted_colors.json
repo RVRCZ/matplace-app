@@ -1,0 +1,21 @@
+{
+    "edit.colors.painted": [
+        "Máte model s namalovanými barvami? Nahrajte 3MF uložený v Bambu Studio, OrcaSlicer, Anycubic Slicer Next nebo PrusaSlicer: barvy, které jste ve sliceru namalovali štětcem, poznáme i v kalkulaci a vytiskneme je barevně.",
+        "Have a model with painted colours? Upload the 3MF saved in Bambu Studio, OrcaSlicer, Anycubic Slicer Next or PrusaSlicer: the colours you painted with the brush in the slicer are recognised in the calculator too, and we print them in colour.",
+        "¿Tiene un modelo con colores pintados? Suba el 3MF guardado en Bambu Studio, OrcaSlicer, Anycubic Slicer Next o PrusaSlicer: los colores que pintó con el pincel en el slicer los reconocemos también en la calculadora y los imprimimos en color."
+    ],
+    "calc.colors.count": [
+        "{1} Soubor má :n namalovanou barvu|[2,4] Soubor má :n namalované barvy|[5,*] Soubor má :n namalovaných barev",
+        "{1} The file has :n painted colour|[2,*] The file has :n painted colours",
+        "{1} El archivo tiene :n color pintado|[2,*] El archivo tiene :n colores pintados"
+    ],
+    "calc.colors.merged": [
+        "{1} (a :n drobnou, sloučenou)|[2,4] (a :n drobné, sloučené)|[5,*] (a :n drobných, sloučených)",
+        "{1} (and :n small one, merged)|[2,*] (and :n small ones, merged)",
+        "{1} (y :n pequeño, fusionado)|[2,*] (y :n pequeños, fusionados)"
+    ],
+    "calc.colors.price_one": ["Jednobarevně :price", "In one colour :price", "En un color :price"],
+    "calc.colors.price_multi": ["Barevně od :price", "In colour from :price", "En color desde :price"],
+    "calc.colors.order": ["Vytisknout barevně", "Print in colour", "Imprimir en color"],
+    "calc.colors.order_one": ["Vytisknout jednobarevně", "Print in one colour", "Imprimir en un color"]
+}

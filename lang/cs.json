@@ -1947,5 +1947,12 @@
     "farm.order.bar.total": "Celkem k zaplacení",
     "farm.order.bar.total_estimate": "Celkem asi, dopravu upřesní dopravce",
     "farm.order.bar.email": "Vyplňte platný e-mail pro potvrzení zakázky.",
-    "farm.order.bar.terms": "Potvrďte souhlas s podmínkami tiskové farmy."
+    "farm.order.bar.terms": "Potvrďte souhlas s podmínkami tiskové farmy.",
+    "edit.colors.painted": "Máte model s namalovanými barvami? Nahrajte 3MF uložený v Bambu Studio, OrcaSlicer, Anycubic Slicer Next nebo PrusaSlicer: barvy, které jste ve sliceru namalovali štětcem, poznáme i v kalkulaci a vytiskneme je barevně.",
+    "calc.colors.count": "{1} Soubor má :n namalovanou barvu|[2,4] Soubor má :n namalované barvy|[5,*] Soubor má :n namalovaných barev",
+    "calc.colors.merged": "{1} (a :n drobnou, sloučenou)|[2,4] (a :n drobné, sloučené)|[5,*] (a :n drobných, sloučených)",
+    "calc.colors.price_one": "Jednobarevně :price",
+    "calc.colors.price_multi": "Barevně od :price",
+    "calc.colors.order": "Vytisknout barevně",
+    "calc.colors.order_one": "Vytisknout jednobarevně"
 }

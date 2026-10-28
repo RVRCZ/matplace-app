@@ -618,3 +618,34 @@ společné kusy níže (commit 19dfe46c a navazující). Žádná změna výpoč
   ní. Ověřeno jen v emulaci (rozměr okna), ne s otevřenou klávesnicí.
 - Stránky `check`, `mold`, `repair` mají vlastní layout mimo `tools/page` – beze změny; kdyby chtěly lištu, stačí
   `<x-action-bar>`.
+
+## 19. Namalované barvy v 3MF: náhled, řádek barev a dvě ceny v kalkulaci (větev `feature/calc-3mf-colors`, 28. 10. 2026)
+
+Zadání `docs/prompts/import-3mf-barvy.md` (Roman, TODO #50, želva z Anycubic Slicer Next). Rozbor při nahrání, data na
+souboru, cena, zakázka a farma dělá session 2 (`feature/import-3mf-colors`, AL.md §14); tvar dat domluven zprávami:
+- `file.groups: [{hex, from, to}]` (v `GET /api/files/{uuid}` i `calculation.file`): trojúhelníky `model.stl` seřazené po
+  barvách, `to` výlučně, souvisle od 0 do počtu; sloučená drobná barva je ve skupině barvy svého tělesa (náhled = tisk).
+- `file.colors: [{hex, share, merged, into?}]` podle podílu, práh sloučení 1 % (session 2, kvůli želvě), `file.colors_info:
+  {count, merged, too_many, status}`; jedna barva = `colors` null.
+- `calculation.colors: {one, multi, count}` (done i rough, měna jako `prices[0].total`).
+- `POST farm.orders.store` s `colors: 'painted' | 'one'`; farm.ts čte `data-colors` tlačítka `#cta-farm`.
+
+Moje část:
+- **Náhled** (`resources/js/calc/painted.ts`): `piecesFromGroups()` ověří, že běhy pokryjí model přesně jednou a v pořadí
+  (jinak náhled zůstane jednobarevný jako dnes), `paintGroups(viewer, groups, triangles)` = `setPieces` + `setPieceColor`
+  jako u dílů nástroje, `colorDots()` tečky. Kalkulace (`showPainted`): jakmile přijde soubor se `groups`, načte jednou
+  serverové seřazené STL místo prohlížečovy kopie a obarví ho; kamera stojí (`keepView` jen na tu výměnu). Zakázka je
+  session 2 (farm.ts): u by_parts už barví `loadParts`, jinak stačí `paintGroups` po `setGeometry`.
+- **Řádek barev v kartě ceny** (`#calc-colors`, `renderColors`): tečky hlavních barev a „Soubor má 2 namalované barvy
+  (a 2 drobné, sloučené)“ (tvary pro `plural()`, cs/en/es), pod tím „Barevně od X · Jednobarevně Y“ z `calculation.colors`.
+  Tlačítko farmy se u namalovaného souboru (≥ 2 hlavní barvy) jmenuje „Vytisknout barevně“ (`data-colors="painted"`,
+  i lišta telefonu přes `data-bar-label`), pod ním „Vytisknout jednobarevně“ (`#cta-farm-one`): nastaví `data-colors="one"`
+  a klikne na tlačítko farmy, pak vrátí. Bez barev je vše skryté a kalkulace je jako dnes. Karta roste dolů, nic nad ní
+  se nehýbe (§18).
+- **`/tools/colors`**: nad nahráním odstavec `edit.colors.painted` (Bambu Studio, OrcaSlicer, Anycubic Slicer Next,
+  PrusaSlicer). Pojem „namalované barvy“ v slovníku AH.md §9.4.
+- Test `PaintedColorsPageTest` (místa v kalkulaci, texty ve 3 jazycích a v JSON kalkulace, odstavec nástroje).
+
+Zbývá po API session 2: ověřit na želvě (`turtlescutieone2.3mf` ze scratchpadu) zeleno žlutý náhled, „2 namalované barvy
+(a 2 drobné, sloučené)“ a dvě ceny v headless Chrome; dnes bez dat ze serveru ověřeno jen to, že bez `groups` a `colors`
+se nic nemění.

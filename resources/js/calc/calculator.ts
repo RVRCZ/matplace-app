@@ -3,6 +3,7 @@ import { icon } from '../site/icon';
 import { BufferGeometry, Float32BufferAttribute } from 'three';
 import { moldReport } from './mold';
 import { Viewer, twoColorRegions, Piece } from './viewer';
+import { paintGroups, colorDots } from './painted';
 import { loadGeometry, loadGeometryFromUrl, extensionOf, BROWSER_FORMATS } from './loaders';
 import ParseWorker from './parse.worker?worker';
 import type { ParseReply } from './parse.worker';
@@ -458,10 +459,11 @@ function poll(token: string): void {
             const c = await getCalculation(token);
             if (state.calc?.token !== token) return; // superseded by a newer calculation
             state.calc = c;
-            if (c.file) { state.file = c.file; showNearest(c.file); renderSize(); }
+            if (c.file) { state.file = c.file; showNearest(c.file); renderSize(); void showPainted(c.file); }
             if (c.status === 'done') {
                 setStatus(marketplace() ? 'calc.status.done' : 'calc.status.done_facts', false);
                 renderPrecise(c);
+                renderColors(c.file, c);
                 enableDownload(c.file);
                 if (!state.geometry && c.file?.stl_url) await showServerStl(c.file.stl_url);
                 return;
@@ -490,6 +492,8 @@ async function showServerStl(url: string): Promise<void> {
         state.geo = stats(geom);
         const parts = partsByColour(geom, state.file?.tool?.params);
         viewer?.setGeometry(geom, state.params.scale, state.file?.kind ?? null, parts ? null : twoColorRegions(state.file?.tool?.params));
+        // colours painted in a slicer: the server's STL has its triangles sorted by colour, the runs paint it (docs/AN.md §19)
+        if (viewer && !parts && state.file?.groups && paintGroups(viewer, state.file.groups, triangleCount(geom))) paintedFor = state.file.uuid;
         if (viewer && parts) {
             viewer.setPieces(parts.pieces);
             parts.colors.forEach((hex, i) => { if (hex) viewer!.setPieceColor(i, hex); });
@@ -680,7 +684,7 @@ function showResult(): void {
 function showHero(): void {
     stopPolling();
     document.getElementById('calc-bar')?.setAttribute('hidden', '');
-    state.file = null; state.calc = null; state.geometry = null; state.geo = null;
+    state.file = null; state.calc = null; state.geometry = null; state.geo = null; paintedFor = null;
     $('result').classList.add('hidden');
     $('hero').classList.remove('hidden');
     history.replaceState(null, '', homeUrl());
@@ -777,6 +781,7 @@ async function handleFile(file: File): Promise<void> {
         if (state.localFile !== file) return;   // another file was chosen meanwhile: this one is history
         state.file = info;
         renderSize();     // a file the browser could not read shows its size as soon as the server measured it
+        void showPainted(info);
         requestNumbers();
     } catch (e) {
         setStatus('calc.status.failed', false);
@@ -993,6 +998,58 @@ function showNearest(file: FileInfo | null): void {
     el.innerHTML = `<span class="font-medium">${safe(before.trim())}</span>${list}${after?.trim() ? `<span>${safe(after.trim())}</span>` : ''}`;
 }
 
+/** The file whose painted colours the viewer shows (one load of the server's sorted STL per file). */
+let paintedFor: string | null = null;
+
+const triangleCount = (g: BufferGeometry): number => (g.index ? g.index.count : g.getAttribute('position').count) / 3;
+
+/**
+ * A 3MF with colours painted in a slicer: the browser read it in its own order, the server sorted the triangles by colour.
+ * Once the file says so (`groups`), the server's STL takes the viewer's place, painted run by run; the camera stays.
+ * Without groups nothing changes.
+ */
+/**
+ * The line of painted colours under the price: how many the file has (the small ones merged into the body's colour),
+ * the price in one colour and in colour, and the farm's button turned into "print in colour" with a second one for one colour.
+ * Hidden for a file without painted colours. Nothing above it moves: the card grows at its end.
+ */
+function renderColors(file: FileInfo | null, calc: CalcInfo | null): void {
+    const box = document.getElementById('calc-colors');
+    if (!box) return;
+    const colors = file?.colors ?? [];
+    const main = colors.filter((c) => !c.merged);
+    const small = colors.length - main.length;
+    const painted = main.length >= 2;
+    box.classList.toggle('hidden', !painted);
+    const farm = document.getElementById('cta-farm');
+    const one = document.getElementById('cta-farm-one');
+    if (farm) {
+        if (!farm.dataset.label) farm.dataset.label = farm.textContent?.trim() ?? '';
+        farm.dataset.colors = painted ? 'painted' : 'one';
+        const label = painted ? t('calc.colors.order') : farm.dataset.label;
+        const text = [...farm.childNodes].find((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim());
+        if (text) text.textContent = ` ${label} `;
+        farm.dataset.barLabel = label;   // the bar of a phone says the same (components/action-bar)
+    }
+    one?.classList.toggle('hidden', !painted);
+    if (!painted) return;
+    const line = $('calc-colors-line');
+    line.replaceChildren(colorDots(main.map((c) => c.hex)), plural('calc.colors.count', main.length, { n: main.length }) + (small > 0 ? ` ${plural('calc.colors.merged', small, { n: small })}` : ''));
+    const prices = $('calc-colors-prices');
+    const p = calc?.colors;
+    prices.classList.toggle('hidden', !p);
+    if (p) prices.textContent = `${t('calc.colors.price_multi', { price: priceText(p.multi) })} · ${t('calc.colors.price_one', { price: priceText(p.one) })}`;
+}
+
+async function showPainted(file: FileInfo | null): Promise<void> {
+    renderColors(file, state.calc);
+    if (!file?.groups?.length || !file.stl_url || paintedFor === file.uuid || !viewer) return;
+    paintedFor = file.uuid;
+    // the same model in another triangle order: the visitor's view stays (the viewer frames anew only a clearly different model)
+    viewer.keepView(true);
+    try { await showServerStl(file.stl_url); } finally { viewer?.keepView(false); }
+}
+
 /** Tool-specific line under the viewer: how this kind of model is meant to be printed. */
 function showKindTip(kind: string | undefined): void {
     showNearest(state.file);
@@ -1070,6 +1127,13 @@ export async function openFile(uuid: string): Promise<void> {
 export function boot(): void {
     if (!document.getElementById('calculator')) return;
     bindControls();
+    document.getElementById('cta-farm-one')?.addEventListener('click', () => {
+        const farm = document.getElementById('cta-farm');
+        if (!farm) return;
+        farm.dataset.colors = 'one';
+        farm.click();
+        farm.dataset.colors = (state.file?.colors ?? []).filter((c) => !c.merged).length >= 2 ? 'painted' : 'one';
+    });
     if (initial) { restore(initial); return; }
     const query = new URLSearchParams(location.search);
     const open = query.get('open');

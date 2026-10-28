@@ -20,6 +20,12 @@ export interface FileInfo {
     mold?: { parts?: number; pieces?: number; fill?: boolean; added_ml?: number; undercut_before_pct?: number; cast_url?: string; cast_flags_url?: string; type?: string; axis: string; angle_deg?: number | null; undercut_pct: number; verdict?: string; box: number[]; resin_ml: number; silicone_ml?: number; mold_cm3: number; wall: number; warnings: string[]; keys?: number; variant?: string; cast_ml?: number; core_ml?: number; vents?: number; funnel_at?: string; keys_type?: string; silicone_box_ml?: number; saving_pct?: number } | null;
     tool?: { kind: string; params: Record<string, unknown>; url: string } | null;
     nearest?: { hex: string; spool: { code: string; name: string; hex: string; material: string; finish: string; photo: string | null; in_stock: boolean } }[];
+    /** colours painted in a slicer (session 2's analysis on upload, docs/AN.md §19): the runs of the preview STL's triangles by colour */
+    groups?: { hex: string; from: number; to: number }[] | null;
+    /** the painted colours by share; `merged` = too small to print on its own, given to the body's colour */
+    colors?: { hex: string; share: number; merged?: boolean; into?: string }[] | null;
+    /** count = colours printed (at most 4, the rest merged: too_many), status of the analysis on upload */
+    colors_info?: { count: number; merged: number; too_many: boolean; status: string } | null;
     check?: { status: string; items: { level: 'error' | 'advice' | 'ok'; code: string; params: Record<string, string> }[] };
 }
 
@@ -34,6 +40,8 @@ export interface CalcInfo {
     slicer: { grams: number; meters?: number | null; minutes: number; minutes_by_mode?: Record<string, number>; layers?: number | null; dims: { x: number; y: number; z: number }; supports_used: boolean; warnings: string[] } | null;
     prices: { profile: string; label: string | null; total: number; lead_time_days: number; unit: { material: number; time: number; royalty: number }; setup: number; quantity: number }[] | null;
     file: FileInfo | null;
+    /** a painted file: the price of one piece in one colour and in colour (with the tower and the changes), in the prices' currency */
+    colors?: { one: number; multi: number; count: number } | null;
 }
 
 const routes = () => (window as unknown as { MP_ROUTES: Record<string, string> }).MP_ROUTES;
