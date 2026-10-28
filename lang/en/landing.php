@@ -417,4 +417,69 @@ return [
             ['t' => 'A set of three vases', 'text' => 'Smooth vases of 120, 160 and 200 mm in the same shape and one colour for a shelf or as a gift.'],
         ],
     ],
+
+    // batch C (docs/AP.md §9): logo, wall mount, stamp, lightbox sign
+    'logo' => [
+        'order' => [
+            ['q' => 'How much does a logo cost from you?', 'farm' => true, 'a' => 'A relief on a plate 100 mm wide costs 99 CZK, which is the minimum order (PLA, without delivery, calculation of 28 October 2026). A bigger sign or a standing logo is priced by grams and minutes; you see the price before you order anything, for several pieces too.'],
+            ['q' => 'How do I prepare the SVG of the logo?', 'a' => 'In one colour, with fills instead of strokes (Inkscape: Stroke to Path) and text converted to paths; gradients and masks are not read. Enlarge a logo with small text to at least 100 mm so that no line is under 0.8 mm.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 100 mm relief prints in 43 minutes, a 250 mm sign in over two hours. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'How do I print the logo at home in two colours?', 'a' => 'Flat, without supports. With a relief on a plate the downloaded project has a pause at the height where the motif begins: the printer stops, you swap the spool and the print goes on; a printer with AMS, MMU or ACE does it by itself. A standing logo and its base print as two parts.'],
+            ['q' => 'Will the logo last outdoors on a facade?', 'a' => 'Outdoors in sun and frost choose ASA, indoors PLA is enough, in the shade PETG. A logo over 250 mm does not fit the bed; split it into parts, or let the Split model tool cut it with pins.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the logo printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A sign for an office door', 'text' => 'A relief of the logo or the company name, 120 to 150 mm, in two colours, stuck on with double-sided tape.'],
+            ['t' => 'A logo for a reception or a counter', 'text' => 'A standing logo of 150 to 200 mm in a base with a groove, at least 2.4 mm thick, printed as two parts.'],
+            ['t' => 'Small things with a logo for a team', 'text' => 'A cut-out logo of 60 mm as a magnet or a pendant; for keychains with names there is the Keychain tool.'],
+        ],
+    ],
+
+    'holder' => [
+        'order' => [
+            ['q' => 'How much does a mount cost from you?', 'farm' => true, 'a' => 'A cradle for a remote 100 CZK, a hook for headphones 99 CZK, a clip for a broom 99 CZK (PLA+, without delivery, calculation of 18 October 2026); 99 CZK is the minimum order. Several mounts in one order come cheaper per piece; you see the price before you order anything.'],
+            ['q' => 'Which kind of mount for what?', 'a' => 'The cradle for a remote, a phone or glasses, the pocket for a bottle, tools and pens, the hook for headphones, a bag or keys with a loop, the clip for the handle of a broom, a mop or a rake. The presets set the sizes of common things, your own sizes overwrite them.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The clip prints in 21 minutes, the hook in 27 minutes, the cradle in 1 h 12 min. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'How do I fix the mount without drilling?', 'a' => 'Switch the holes off and stick the mount on with double-sided tape; it carries only light things like a remote or headphones. Where a screw is already in the wall, choose hanging on a screw: the head passes through the wide hole and the mount slides down into the slot.'],
+            ['q' => 'How do I print the mount at home?', 'a' => 'Flat with the back on the bed, without supports; the downloaded project carries the settings of the calculation. For heavier things raise the number of walls or the infill in your slicer and print from PETG.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the mount printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'Remotes by the sofa', 'text' => 'A 50 × 22 mm cradle on the side of a shelf or a side table, stuck on with tape; one for every remote.'],
+            ['t' => 'Tools in the workshop and garage', 'text' => 'Clips for handles and pockets for hammers from PETG on screws, sized to every piece.'],
+            ['t' => 'Headphones at the desk', 'text' => 'A 35 mm hook under the desktop or on the side of the monitor, the headphones out of the way.'],
+        ],
+    ],
+
+    'stamp' => [
+        'order' => [
+            ['q' => 'How much does a stamp cost from you?', 'farm' => true, 'a' => 'A 50 mm stamp with a handle costs 99 CZK, which is the minimum order (PLA, without delivery, calculation of 28 October 2026). A bigger stamp or more pieces is priced by grams and minutes; you see the price before you order anything.'],
+            ['q' => 'How do I make a maker’s mark for the bottom of mugs?', 'a' => 'Upload the logo as an SVG or type your initials, choose a raised motif, a width of 20 to 40 mm and a motif height of 1 to 1.5 mm; the impression in leather-hard clay is then clean. With a handle the stamp is easier to hold, without one you press it with your thumb.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'A 50 mm stamp prints in 28 minutes. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'Does the stamp suit soap and dough?', 'a' => 'Yes, anything soft that keeps the impression: soap, fondant, shortcrust dough, polymer clay. For a raised logo on soap choose a recessed motif. Printed plastic is meant for a brief touch with food; wash the stamp by hand, not in the dishwasher.'],
+            ['q' => 'How big a stamp should I choose?', 'a' => 'A maker’s mark 20 to 40 mm, a decorative stamp for ceramics 50 to 80 mm, 120 mm at most. The bigger the stamp, the more pressure it needs; press a large motif with a rolling pin over a plate without a handle instead.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the stamp printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A pottery studio', 'text' => 'A 30 mm maker’s mark for the bottom of mugs and bowls, a raised motif, with a handle.'],
+            ['t' => 'Soap making', 'text' => 'A 50 mm recessed motif that leaves a raised logo on the soap; a stamp from PETG takes the damp.'],
+            ['t' => 'Baking and fondant', 'text' => 'A "Hand made" stamp or a name for dough and fondant, from PLA, washed by hand.'],
+        ],
+    ],
+
+    'lightbox' => [
+        'order' => [
+            ['q' => 'How much do the parts cost from you?', 'farm' => true, 'a' => 'The sign OPEN of 180 mm, four parts, costs 180 CZK in one colour (PLA, without delivery, calculation of 28 October 2026). You order the diffuser in white as a second order from its own STL, or print it at home; you see the price before you order anything.'],
+            ['q' => 'What do I buy for the sign?', 'a' => 'A 5 V LED strip 8 or 10 mm wide in the length the tool lists under the preview, a USB cable with power (a phone charger is enough) and double-sided tape or glue. Choose a strip with a remote up to 18 × 8 mm.'],
+            ['q' => 'How long do printing and delivery take?', 'farm' => true, 'a' => 'The four parts of a 180 mm sign print in 2 h 17 min. We dispatch on the day the print ends, on working days, and Packeta usually delivers within 1 to 2 working days in the Czech Republic (to a pickup point :cz_point).'],
+            ['q' => 'How do I print the sign at home?', 'a' => 'The parts print flat; the downloaded project carries the settings of the calculation. The body, the mask and the back cover from dark PLA or PETG, the diffuser from white or translucent PLA; print the mask with the bridges inside the letters slower so that the bridges hold.'],
+            ['q' => 'How bright will the sign be?', 'a' => 'The strip gives the brightness, not the parts; the diffuser spreads the light so that the single LEDs do not show. A 5 V strip draws a few watts, so a USB charger is enough and the sign can glow all evening.'],
+            ['q' => 'Do I need an account?', 'a' => 'Not for the design or the download. You need one only when you have the parts printed by us; that is paid from credit topped up by card.'],
+        ],
+        'who' => [
+            ['t' => 'A café or a shop', 'text' => 'OPEN or the name of the business, 240 mm, for the shop window, a rectangle with an LED strip, from PETG for the sun.'],
+            ['t' => 'A home bar or games room', 'text' => 'A round 160 mm sign with a flat foot for a shelf, one word or a name.'],
+            ['t' => 'A night light with a name', 'text' => 'A child’s name, 120 mm, with an LED module and a remote, a soft light for the room.'],
+        ],
+    ],
 ];

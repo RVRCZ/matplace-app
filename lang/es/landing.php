@@ -417,4 +417,69 @@ return [
             ['t' => 'Un juego de tres jarrones', 'text' => 'Jarrones lisos de 120, 160 y 200 mm con la misma forma y un solo color para una estantería o como regalo.'],
         ],
     ],
+
+    // lote C (docs/AP.md §9): logotipo, soporte de pared, sello, cartel luminoso
+    'logo' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un logotipo con ustedes?', 'farm' => true, 'a' => 'Un relieve sobre placa de 100 mm de ancho cuesta 99 CZK, que es el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Un cartel mayor o un logotipo de pie se calcula por gramos y minutos; ve el precio antes de encargar nada, también para varias unidades.'],
+            ['q' => '¿Cómo preparo el SVG del logotipo?', 'a' => 'En un solo color, con rellenos en lugar de trazos (Inkscape: Stroke to Path) y el texto convertido en trazados; degradados y máscaras no se leen. Un logotipo con texto pequeño agrándelo al menos a 100 mm para que ninguna línea baje de 0,8 mm.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un relieve de 100 mm se imprime en 43 minutos; un cartel de 250 mm, en más de dos horas. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cómo imprimo el logotipo en casa en dos colores?', 'a' => 'En plano, sin soportes. En el relieve sobre placa el proyecto descargado lleva una pausa a la altura en que empieza el motivo: la impresora se detiene, cambia la bobina y la impresión sigue; una impresora con AMS, MMU o ACE lo hace sola. El logotipo de pie y su peana se imprimen como dos piezas.'],
+            ['q' => '¿Aguanta el logotipo en el exterior, en una fachada?', 'a' => 'En el exterior, con sol y heladas, elija ASA; en interiores basta el PLA; a la sombra, PETG. Un logotipo de más de 250 mm no cabe en la cama; divídalo en piezas o deje que la herramienta Dividir el modelo lo corte con pasadores.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el logotipo impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Cartel para la puerta de la oficina', 'text' => 'Un relieve del logotipo o del nombre de la empresa, de 120 a 150 mm, en dos colores, pegado con cinta de doble cara.'],
+            ['t' => 'Logotipo para la recepción o el mostrador', 'text' => 'Un logotipo de pie de 150 a 200 mm en una peana con ranura, de al menos 2,4 mm de grosor, impreso en dos piezas.'],
+            ['t' => 'Detalles con logotipo para el equipo', 'text' => 'Un logotipo recortado de 60 mm como imán o colgante; para llaveros con nombres está la herramienta Llavero.'],
+        ],
+    ],
+
+    'holder' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un soporte con ustedes?', 'farm' => true, 'a' => 'Una cuna para un mando, 100 CZK; un gancho para auriculares, 99 CZK; una pinza para una escoba, 99 CZK (PLA+, sin envío, cálculo del 18 de octubre de 2026); 99 CZK es el pedido mínimo. Varios soportes en un pedido salen más baratos por unidad; ve el precio antes de encargar nada.'],
+            ['q' => '¿Qué tipo de soporte para cada cosa?', 'a' => 'La cuna para un mando, un móvil o unas gafas; el bolsillo para una botella, herramientas y bolígrafos; el gancho para auriculares, un bolso o llaves con asa; la pinza para el mango de una escoba, una fregona o un rastrillo. Los ajustes predefinidos ponen las medidas de objetos corrientes; sus propias medidas los sustituyen.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'La pinza se imprime en 21 minutos; el gancho, en 27 minutos; la cuna, en 1 h 12 min. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cómo fijo el soporte sin taladrar?', 'a' => 'Desactive los agujeros y pegue el soporte con cinta de doble cara; solo aguanta cosas ligeras como un mando o unos auriculares. Donde ya hay un tornillo en la pared, elija colgar de un tornillo: la cabeza pasa por el agujero ancho y el soporte baja hasta la ranura.'],
+            ['q' => '¿Cómo imprimo el soporte en casa?', 'a' => 'En plano con la parte trasera sobre la cama, sin soportes; el proyecto descargado lleva los ajustes del cálculo. Para cosas pesadas, suba el número de paredes o el relleno en su laminador e imprima en PETG.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el soporte impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Mandos junto al sofá', 'text' => 'Una cuna de 50 × 22 mm en el lateral de una estantería o una mesita, pegada con cinta; una por cada mando.'],
+            ['t' => 'Herramientas en el taller y el garaje', 'text' => 'Pinzas para mangos y bolsillos para martillos en PETG con tornillos, con las medidas de cada pieza.'],
+            ['t' => 'Auriculares en el escritorio', 'text' => 'Un gancho de 35 mm bajo el tablero o en el lateral del monitor; los auriculares no estorban en la mesa.'],
+        ],
+    ],
+
+    'stamp' => [
+        'order' => [
+            ['q' => '¿Cuánto cuesta un sello con ustedes?', 'farm' => true, 'a' => 'Un sello de 50 mm con mango cuesta 99 CZK, que es el pedido mínimo (PLA, sin envío, cálculo del 28 de octubre de 2026). Un sello mayor o más unidades se calculan por gramos y minutos; ve el precio antes de encargar nada.'],
+            ['q' => '¿Cómo hago una marca de autor para la base de las tazas?', 'a' => 'Suba el logotipo como SVG o escriba sus iniciales, elija motivo en relieve, un ancho de 20 a 40 mm y una altura de motivo de 1 a 1,5 mm; la impronta en arcilla en dureza de cuero queda limpia. Con mango el sello se sujeta mejor; sin él, lo presiona con el pulgar.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Un sello de 50 mm se imprime en 28 minutos. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Sirve el sello para jabón y masa?', 'a' => 'Sí, para todo lo blando que conserve la impronta: jabón, fondant, masa quebrada, arcilla polimérica. Para un logotipo en relieve sobre jabón elija el motivo rebajado. El plástico impreso está pensado para un contacto breve con alimentos; lave el sello a mano, no en el lavavajillas.'],
+            ['q' => '¿Qué tamaño de sello elegir?', 'a' => 'Marca de autor, de 20 a 40 mm; sello decorativo para cerámica, de 50 a 80 mm; como máximo 120 mm. Cuanto mayor es el sello, más presión necesita; un motivo grande mejor imprímalo con un rodillo sobre una placa sin mango.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga el sello impreso; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Taller de cerámica', 'text' => 'Una marca de autor de 30 mm para la base de tazas y cuencos, motivo en relieve, con mango.'],
+            ['t' => 'Fabricación de jabón', 'text' => 'Un motivo rebajado de 50 mm que deja un logotipo en relieve sobre el jabón; un sello en PETG soporta la humedad.'],
+            ['t' => 'Repostería y fondant', 'text' => 'Un sello «Hand made» o un nombre para masa y fondant, en PLA, lavado a mano.'],
+        ],
+    ],
+
+    'lightbox' => [
+        'order' => [
+            ['q' => '¿Cuánto cuestan las piezas con ustedes?', 'farm' => true, 'a' => 'El cartel OPEN de 180 mm, cuatro piezas, cuesta 180 CZK en un solo color (PLA, sin envío, cálculo del 28 de octubre de 2026). El difusor en blanco lo encarga como segundo pedido a partir de su propio STL, o lo imprime en casa; ve el precio antes de encargar nada.'],
+            ['q' => '¿Qué compro para el cartel?', 'a' => 'Una tira LED de 5 V de 8 o 10 mm de ancho con la longitud que la herramienta indica bajo la vista previa, un cable USB con alimentación (basta un cargador de móvil) y cinta de doble cara o pegamento. Una tira con mando elíjala de hasta 18 × 8 mm.'],
+            ['q' => '¿Cuánto tardan la impresión y el envío?', 'farm' => true, 'a' => 'Las cuatro piezas de un cartel de 180 mm se imprimen en 2 h 17 min. Enviamos el mismo día en que termina la impresión, en días laborables, y Packeta suele entregar en 1 a 2 días laborables en Chequia (a un punto de recogida :cz_point).'],
+            ['q' => '¿Cómo imprimo el cartel en casa?', 'a' => 'Las piezas se imprimen en plano; el proyecto descargado lleva los ajustes del cálculo. El cuerpo, la máscara y la tapa trasera en PLA o PETG oscuro; el difusor en PLA blanco o translúcido; la máscara con puentes dentro de las letras imprímala más despacio para que los puentes aguanten.'],
+            ['q' => '¿Cuánto brillará el cartel?', 'a' => 'El brillo lo da la tira, no las piezas; el difusor reparte la luz para que no se vean los LED sueltos. Una tira de 5 V consume unos pocos vatios, así que basta un cargador USB y el cartel puede estar encendido toda la tarde.'],
+            ['q' => '¿Necesito una cuenta?', 'a' => 'Para el diseño y la descarga, no. Solo la necesita cuando nos encarga las piezas impresas; se paga con crédito recargado con tarjeta.'],
+        ],
+        'who' => [
+            ['t' => 'Cafetería y tienda', 'text' => 'OPEN o el nombre del negocio, 240 mm, para el escaparate, rectángulo con tira LED, en PETG para el sol.'],
+            ['t' => 'Bar en casa y sala de juegos', 'text' => 'Un cartel redondo de 160 mm con base plana para una estantería, una palabra o un nombre.'],
+            ['t' => 'Luz nocturna con nombre', 'text' => 'El nombre de un niño, 120 mm, con módulo LED y mando, luz suave para la habitación.'],
+        ],
+    ],
 ];

@@ -418,4 +418,69 @@ return [
             ['t' => 'Sada tří váz', 'text' => 'Hladké vázy 120, 160 a 200 mm stejného tvaru v jedné barvě na poličku nebo jako dárek.'],
         ],
     ],
+
+    // dávka C (docs/AP.md §9): logo, držák, razítko, světelný nápis
+    'logo' => [
+        'order' => [
+            ['q' => 'Kolik stojí logo u vás?', 'farm' => true, 'a' => 'Reliéf na destičce široký 100 mm stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Větší cedule nebo stojící logo se počítá z gramů a minut; cenu vidíte dřív, než cokoli objednáte, i pro víc kusů.'],
+            ['q' => 'Jak připravit SVG loga?', 'a' => 'Jednou barvou, s výplněmi místo čar (Inkscape: Stroke to Path) a textem převedeným na křivky; přechody a masky nástroj nečte. Logo s drobným textem zvětšete aspoň na 100 mm, aby čáry nebyly pod 0,8 mm.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Reliéf 100 mm se tiskne 43 minut, cedule 250 mm přes dvě hodiny. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak logo tisknout doma ve dvou barvách?', 'a' => 'Naplocho, bez podpěr. U reliéfu na destičce má stažený projekt pauzu ve výšce, kde motiv začíná: tiskárna se zastaví, vyměníte cívku a tisk pokračuje; tiskárna s AMS, MMU nebo ACE to udělá sama. Stojící logo a podstavec se tisknou jako dva díly.'],
+            ['q' => 'Vydrží logo venku na fasádě?', 'a' => 'Venku na slunci a v mrazu zvolte ASA, do interiéru stačí PLA, ve stínu PETG. Logo nad 250 mm se nevejde na podložku, rozdělte ho na díly nebo ho nechte nástrojem Rozdělit model rozřezat s kolíky.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si logo necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Cedule na dveře kanceláře', 'text' => 'Reliéf loga nebo názvu firmy 120 až 150 mm ve dvou barvách, přilepený oboustrannou páskou.'],
+            ['t' => 'Logo na recepci a pult', 'text' => 'Stojící logo 150 až 200 mm v podstavci s drážkou, tloušťka od 2,4 mm, tiskne se ze dvou dílů.'],
+            ['t' => 'Drobnosti s logem pro tým', 'text' => 'Vyříznutý tvar loga 60 mm jako magnetka nebo přívěsek; na klíčenky se jmény je nástroj Klíčenka.'],
+        ],
+    ],
+
+    'holder' => [
+        'order' => [
+            ['q' => 'Kolik stojí držák u vás?', 'farm' => true, 'a' => 'Kolébka na ovladač 100 Kč, hák na sluchátka 99 Kč, klip na koště 99 Kč (PLA+, bez dopravy, kalkulace z 18. 10. 2026); 99 Kč je nejnižší cena zakázky. Víc držáků v jedné objednávce vyjde na kus levněji; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Jaký typ držáku na co?', 'a' => 'Kolébka na ovladač, telefon nebo brýle, kapsa na lahev, nářadí a tužky, hák na sluchátka, tašku nebo klíče s uchem, klip na násadu koštěte, mopu nebo hrábí. Předvolby nastaví rozměry běžných věcí, vlastní rozměry je přepíšou.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Klip se tiskne 21 minut, hák 27 minut, kolébka 1 h 12 min. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak držák připevnit bez vrtání?', 'a' => 'Vypněte otvory a držák přilepte oboustrannou páskou; unese jen lehké věci jako ovladač nebo sluchátka. Tam, kde už ve zdi šroub je, zvolte zavěšení na šroub: hlava projde širokým otvorem a držák sjede do drážky.'],
+            ['q' => 'Jak držák tisknout doma?', 'a' => 'Naplocho zadní stranou na podložku, bez podpěr; stažený projekt má nastavení z kalkulace. Na těžší věci zvyšte ve sliceru počet stěn nebo výplň a tiskněte z PETG.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si držák necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Ovladače u gauče', 'text' => 'Kolébka 50 × 22 mm na bok police nebo stolku, přilepená páskou; na každý ovladač jedna.'],
+            ['t' => 'Nářadí v dílně a garáži', 'text' => 'Klipy na násady a kapsy na kladiva z PETG na šrouby, rozměry podle každého kusu.'],
+            ['t' => 'Sluchátka u stolu', 'text' => 'Hák 35 mm pod deskou stolu nebo na boku monitoru, sluchátka nepřekáží na stole.'],
+        ],
+    ],
+
+    'stamp' => [
+        'order' => [
+            ['q' => 'Kolik stojí razítko u vás?', 'farm' => true, 'a' => 'Razítko 50 mm s držadlem stojí 99 Kč, což je nejnižší cena zakázky (PLA, bez dopravy, kalkulace z 28. 10. 2026). Větší razítko nebo víc kusů se počítá z gramů a minut; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Jak udělat značku autora na dno hrnků?', 'a' => 'Nahrajte logo jako SVG nebo napište iniciály, zvolte vystouplý motiv, šířku 20 až 40 mm a výšku motivu 1 až 1,5 mm; otisk do kožené hlíny je pak čistý. S držadlem se razítko drží lépe, bez držadla ho otisknete palcem.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Razítko 50 mm se tiskne 28 minut. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Hodí se razítko na mýdlo a těsto?', 'a' => 'Ano, na vše měkké, co otisk podrží: mýdlo, fondán, linecké těsto, polymerovou hmotu. Pro vystouplé logo na mýdle zvolte zahloubený motiv. Tištěný plast je určený pro krátký dotyk s potravinou; razítko myjte ručně, do myčky nepatří.'],
+            ['q' => 'Jak velké razítko zvolit?', 'a' => 'Značka autora 20 až 40 mm, dekorační razítko na keramiku 50 až 80 mm, nejvíc 120 mm. Čím větší razítko, tím víc tlaku potřebuje; velký motiv raději otiskněte válečkem přes destičku bez držadla.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si razítko necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Keramická dílna', 'text' => 'Značka autora 30 mm na dno hrnků a misek, vystouplý motiv, s držadlem.'],
+            ['t' => 'Výroba mýdla', 'text' => 'Zahloubený motiv 50 mm, ze kterého na mýdle vystoupí logo; razítko z PETG snese vlhko.'],
+            ['t' => 'Pečení a fondán', 'text' => 'Razítko „Hand made“ nebo jméno do těsta a fondánu, z PLA, ručně mýt.'],
+        ],
+    ],
+
+    'lightbox' => [
+        'order' => [
+            ['q' => 'Kolik stojí díly u vás?', 'farm' => true, 'a' => 'Nápis OPEN 180 mm, čtyři díly, stojí 180 Kč v jedné barvě (PLA, bez dopravy, kalkulace z 28. 10. 2026). Difuzor v bílé si objednáte jako druhou zakázku z jeho vlastního STL, nebo ho vytisknete doma; cenu vidíte dřív, než cokoli objednáte.'],
+            ['q' => 'Co k nápisu koupit?', 'a' => 'LED pásek na 5 V široký 8 nebo 10 mm v délce, kterou nástroj vypíše pod náhledem, USB kabel s napájením (stačí nabíječka telefonu) a oboustrannou pásku nebo lepidlo. Pásek s dálkovým ovladačem volte do rozměru 18 × 8 mm.'],
+            ['q' => 'Jak dlouho trvá tisk a doručení?', 'farm' => true, 'a' => 'Čtyři díly nápisu 180 mm se tisknou 2 h 17 min. Odesíláme v den, kdy tisk skončí, v pracovní dny, a Zásilkovna v Česku obvykle doručí do 1 až 2 pracovních dnů (na výdejní místo :cz_point).'],
+            ['q' => 'Jak nápis tisknout doma?', 'a' => 'Díly se tisknou naplocho; stažený projekt má nastavení z kalkulace. Tělo, masku a zadní kryt z tmavého PLA nebo PETG, difuzor z bílého nebo průsvitného PLA; masku s můstky uvnitř písmen tiskněte pomaleji, aby můstky drželi.'],
+            ['q' => 'Jak jasný nápis bude?', 'a' => 'Jas dává pásek, ne díly; difuzor světlo rozptýlí tak, aby nebyly vidět jednotlivé diody. Pásek na 5 V má spotřebu v řádu jednotek wattů, takže stačí USB nabíječka a nápis může svítit celý večer.'],
+            ['q' => 'Potřebuji účet?', 'a' => 'Na návrh a stažení ne. Účet potřebujete, až když si díly necháte vytisknout u nás; platí se z kreditu dobitého kartou.'],
+        ],
+        'who' => [
+            ['t' => 'Kavárna a obchod', 'text' => 'OPEN nebo název podniku 240 mm do výlohy, obdélník s LED páskem, z PETG na slunce.'],
+            ['t' => 'Domácí bar a herna', 'text' => 'Kulatý nápis 160 mm s rovnou patou na polici, jedno slovo nebo jméno.'],
+            ['t' => 'Noční světlo se jménem', 'text' => 'Jméno dítěte 120 mm s LED modulem a ovladačem, tlumené světlo do pokojíčku.'],
+        ],
+    ],
 ];
