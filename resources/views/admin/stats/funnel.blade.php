@@ -9,7 +9,7 @@
         'model_ready' => 'Model hotový', 'price_shown' => 'Viděl přesnou cenu', 'order_started|order_created' => 'Začal objednávku', 'checkout_started' => 'Šel zaplatit',
         // the sales path (docs/AN.md §9)
         'upload|failed:upload' => 'Nahrání začalo (i odmítnuté)', 'upload' => 'Nahráno', 'order_started' => 'Klepl na Vytisknout u nás',
-        'register|register_visit|order_created' => 'Registrace (nebo už měl účet)', 'order_created' => 'Zakázka založena', 'checkout_started|topup_started' => 'Platba začala (karta nebo dobití)',
+        'register|register_visit|order_created' => 'Registrace, účet, nebo zakázka bez účtu', 'order_created' => 'Zakázka založena', 'checkout_started|topup_started' => 'Platba začala (karta nebo dobití)',
     ];
     $paths = ['sales' => 'Prodejní cesta', 'customer' => 'Zákazník', 'owner' => 'Majitel tiskárny', 'designer' => 'Designér', 'order' => 'Objednávka (audit)'];
     $sources = ['google' => 'Google', 'seznam' => 'Seznam', 'bing' => 'Bing', 'facebook' => 'Facebook', 'instagram' => 'Instagram', 'youtube' => 'YouTube', 'designer' => 'Odkaz designéra', 'embed' => 'Vložená kalkulačka', 'direct' => 'Přímo', 'other' => 'Ostatní'];
