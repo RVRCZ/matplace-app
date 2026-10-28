@@ -1658,3 +1658,20 @@ tabulky nevidí; zdroj bez Shortu = zákaznické video `-9.5`; chybějící soub
 → „ffmpeg failed:“ + text, `--keep` nechá `_open.txt`, nic ve frontě), `FarmVideosCutTest` – zelené. Pro řídící:
 `youtube:price-short --n=5 --dry-run --check-inputs` ukáže délky a okna (u starších čtvercových Shortů je vidět, kam
 `-5.7` padne), pak `youtube:price-short --n=5 --keep`; selže‑li, hláška řekne proč.
+
+### 13.7.7 Po prvním ostrém renderu: okno segmentu podle skutečné délky videa
+
+Řídící 28. 10. (ffmpeg 6.1.1 na serveru, oprava 13.7.6 nasazena): `--check-inputs` u price Shortu „every input is there“
+(starší Shorty 30,1 s → −5,7 s = 24,4 s; QR 16,3 s → 10,6 s), `series/price-2026-10-28-1.mp4` čeká ke schválení (drak,
+QR, váza, podstavec, socha bohyně). Měsíční `series/month-2026-10.mp4` (3:35) čeká také, ale kontrola ukázala u jednoho
+vstupu „window past the end“: zákaznické video 18,8 s, okno od 7 s na 12,5 s – `segmentSource` předpokládal nejkratší
+růst z configu (12 s), jenže `paced` krátký tisk zrychlí (`slowest_frame`), takže v tom videu je růstu jen pár sekund a
+okno bralo i drženou desku, fotku a **černou kartu „Děkujeme“** ze závěru zákaznického videa.
+
+Teď `segmentSource` změří soubor (`TimelapseCutter::duration`, jednou na soubor) a vezme jen rostoucí část: délka minus
+začátek (16:9 titulní karta 1,5 s; zákaznické logo + odpočet 7 s) minus konec (16:9: držení 2 + závěr 3 + fotka 3, má‑li
+zakázka fotku; zákaznické: držení 3 + díky 5 + fotka 3). Pod `SEGMENT_MIN` 4 s se tisk do měsíce nebere; bez ffmpeg
+(testy) platí dřívější odhad. Zakázka IGfFn9dQ… (18,8 s) tím z měsíce vypadne (0,8 s růstu), video bude o ten kus kratší.
+Test v `YouTubeSeriesTest` s částečným mockem `duration` (18,8 s → mimo; 30 s 16:9 → 20,5 s růstu; 15 s 16:9 → okno
+„from 1.5 s, 6 s“; žádný „window past the end“). Po nasazení stačí `farm:monthly-video --month=2026-10 --check-inputs
+--dry-run` a pak sestavit znovu (přestavba vezme nový soubor, dokud video není na YouTube).
