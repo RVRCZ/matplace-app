@@ -3396,7 +3396,7 @@
       {
         "step": "shot 1",
         "name": "flow-file-price-390-cs-1",
-        "path": "/c/ujufyhrglerk",
+        "path": "/c/mm7raenfpqzr",
         "h1": "Váš nápadvytiskneme ve 3D.",
         "h1Seen": false,
         "leadSeen": false,
@@ -3424,10 +3424,10 @@
         "smallCount": 0,
         "bar": null,
         "says": [
-          "Na podložku 250 × 250 mm se vejde až 100 ks najednou (v poloze jako v náhledu, 5 mm od sebe)."
+          "20 × 20 × 20 mm"
         ],
         "state": null,
-        "pageHeight": 3892,
+        "pageHeight": 5564,
         "fixed": []
       },
       {
@@ -3437,7 +3437,7 @@
       {
         "step": "shot 2",
         "name": "flow-file-price-390-cs-2",
-        "path": "/c/ujufyhrglerk",
+        "path": "/c/mm7raenfpqzr",
         "h1": "Váš nápadvytiskneme ve 3D.",
         "h1Seen": false,
         "leadSeen": false,
@@ -3465,10 +3465,10 @@
         "smallCount": 0,
         "bar": null,
         "says": [
-          "Na podložku 250 × 250 mm se vejde až 100 ks najednou (v poloze jako v náhledu, 5 mm od sebe)."
+          "20 × 20 × 20 mm"
         ],
         "state": null,
-        "pageHeight": 3892,
+        "pageHeight": 5564,
         "fixed": []
       }
     ]
@@ -3479,7 +3479,7 @@
       {
         "step": "shot 1",
         "name": "flow-file-price-1280-cs-1",
-        "path": "/c/oe8h5dxct6ag",
+        "path": "/c/e2mogtruljqg",
         "h1": "Váš nápadvytiskneme ve 3D.",
         "h1Seen": false,
         "leadSeen": false,
@@ -3504,8 +3504,11 @@
           "Na podložku 250 × 250 mm se vejde až 100 ks najednou (v poloze jako v náhledu, 5 mm od sebe)."
         ],
         "state": null,
-        "pageHeight": 2758,
-        "fixed": []
+        "pageHeight": 3749,
+        "fixed": [
+          "div",
+          "price-card"
+        ]
       },
       {
         "step": "clickText Objednat tisk|Vytisknout u nás|Chci to vyrobit|Order the print|Print it with us|I want it made",
@@ -3514,7 +3517,7 @@
       {
         "step": "shot 2",
         "name": "flow-file-price-1280-cs-2",
-        "path": "/c/oe8h5dxct6ag",
+        "path": "/c/e2mogtruljqg",
         "h1": "Váš nápadvytiskneme ve 3D.",
         "h1Seen": false,
         "leadSeen": false,
@@ -3539,8 +3542,11 @@
           "Na podložku 250 × 250 mm se vejde až 100 ks najednou (v poloze jako v náhledu, 5 mm od sebe)."
         ],
         "state": null,
-        "pageHeight": 2758,
-        "fixed": []
+        "pageHeight": 3749,
+        "fixed": [
+          "div",
+          "price-card"
+        ]
       }
     ]
   },
@@ -7177,7 +7183,7 @@
       {
         "step": "shot 1",
         "name": "flow-file-price-768-cs-1",
-        "path": "/c/2drbcicvkuwt",
+        "path": "/c/bao0x0tt6u7b",
         "h1": "Váš nápadvytiskneme ve 3D.",
         "h1Seen": false,
         "leadSeen": false,
@@ -7198,10 +7204,11 @@
         "smallCount": 0,
         "bar": null,
         "says": [
+          "20 × 20 × 20 mm",
           "Na podložku 250 × 250 mm se vejde až 100 ks najednou (v poloze jako v náhledu, 5 mm od sebe)."
         ],
         "state": null,
-        "pageHeight": 3249,
+        "pageHeight": 4305,
         "fixed": []
       },
       {
@@ -7211,7 +7218,7 @@
       {
         "step": "shot 2",
         "name": "flow-file-price-768-cs-2",
-        "path": "/c/2drbcicvkuwt",
+        "path": "/c/bao0x0tt6u7b",
         "h1": "Váš nápadvytiskneme ve 3D.",
         "h1Seen": false,
         "leadSeen": false,
@@ -7232,10 +7239,11 @@
         "smallCount": 0,
         "bar": null,
         "says": [
+          "20 × 20 × 20 mm",
           "Na podložku 250 × 250 mm se vejde až 100 ks najednou (v poloze jako v náhledu, 5 mm od sebe)."
         ],
         "state": null,
-        "pageHeight": 3249,
+        "pageHeight": 4305,
         "fixed": []
       }
     ]
@@ -12221,5 +12229,578 @@
     "pageHeight": 1562,
     "fixed": [],
     "errors": []
+  },
+  "qr-390-cs-st": {
+    "name": "qr-390-cs-st",
+    "url": "http://127.0.0.1:8013/tools/qr",
+    "path": "/tools/qr",
+    "h1": "QR kód na 3D tisk: cedulka se stojánkem",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": false,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": null,
+    "viewerSeen": true,
+    "viewerHeight": 388,
+    "sampleSeen": false,
+    "viewButtonsSeen": 0,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 390,
+    "wide": [],
+    "wideText": [],
+    "small": [],
+    "smallCount": 0,
+    "bar": null,
+    "says": [
+      "70 × 83,1 × 3,4 mm·2 barvy·vejde se na 250 mm"
+    ],
+    "state": "model",
+    "pageHeight": 7120,
+    "fixed": [
+      "div"
+    ],
+    "errors": []
+  },
+  "qr-768-cs-st": {
+    "name": "qr-768-cs-st",
+    "url": "http://127.0.0.1:8013/tools/qr",
+    "path": "/tools/qr",
+    "h1": "QR kód na 3D tisk: cedulka se stojánkem",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": "290x48",
+    "viewerSeen": true,
+    "viewerHeight": 471,
+    "sampleSeen": false,
+    "viewButtonsSeen": 0,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 768,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "1Vstup 87x30",
+      "2Rozměry 107x30",
+      "3Barvy 87x30",
+      "4Materiál a počet kusů 192x30"
+    ],
+    "smallCount": 4,
+    "bar": null,
+    "says": [
+      "70 × 83,1 × 3,4 mm·2 barvy·vejde se na 250 mm"
+    ],
+    "state": "model",
+    "pageHeight": 5085,
+    "fixed": [
+      "tool-nav",
+      "div"
+    ],
+    "errors": []
+  },
+  "qr-1280-cs-st": {
+    "name": "qr-1280-cs-st",
+    "url": "http://127.0.0.1:8013/tools/qr",
+    "path": "/tools/qr",
+    "h1": "QR kód na 3D tisk: cedulka se stojánkem",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": "290x48",
+    "viewerSeen": true,
+    "viewerHeight": 472,
+    "sampleSeen": false,
+    "viewButtonsSeen": 5,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 1280,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "#tool-undo Zpět 36x36",
+      "#tool-redo Vpřed 36x36",
+      "1Vstup 87x30",
+      "2Rozměry 107x30",
+      "3Barvy 87x30",
+      "4Materiál a počet kusů 192x30",
+      "Ukázat 74x40",
+      "3D 36x36",
+      "Shora 55x36",
+      "Zepředu 69x36",
+      "Ze strany 75x36",
+      "Zespodu 72x36"
+    ],
+    "smallCount": 15,
+    "bar": null,
+    "says": [
+      "70 × 83,1 × 3,4 mm·2 barvy·vejde se na 250 mm",
+      "Kód má 33 × 33 polí, jedno pole měří 2,1 mm a volný okraj 8,5 mm. Čitelnost návrhu v této velikosti jsme ověřili. Tiskne se dvoubarevně: stažený projekt má výmě"
+    ],
+    "state": "model",
+    "pageHeight": 3500,
+    "fixed": [
+      "tool-nav"
+    ],
+    "errors": []
+  },
+  "qr-1366-cs-st": {
+    "name": "qr-1366-cs-st",
+    "url": "http://127.0.0.1:8013/tools/qr",
+    "path": "/tools/qr",
+    "h1": "QR kód na 3D tisk: cedulka se stojánkem",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": "290x48",
+    "viewerSeen": true,
+    "viewerHeight": 440,
+    "sampleSeen": false,
+    "viewButtonsSeen": 5,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 1366,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "#tool-undo Zpět 36x36",
+      "#tool-redo Vpřed 36x36",
+      "1Vstup 87x30",
+      "2Rozměry 107x30",
+      "3Barvy 87x30",
+      "4Materiál a počet kusů 192x30",
+      "Ukázat 74x40",
+      "3D 36x36",
+      "Shora 55x36",
+      "Zepředu 69x36",
+      "Ze strany 75x36",
+      "Zespodu 72x36"
+    ],
+    "smallCount": 15,
+    "bar": null,
+    "says": [
+      "70 × 83,1 × 3,4 mm·2 barvy·vejde se na 250 mm",
+      "Kód má 33 × 33 polí, jedno pole měří 2,1 mm a volný okraj 8,5 mm. Čitelnost návrhu v této velikosti jsme ověřili. Tiskne se dvoubarevně: stažený projekt má výmě"
+    ],
+    "state": "model",
+    "pageHeight": 3468,
+    "fixed": [
+      "tool-nav"
+    ],
+    "errors": []
+  },
+  "box-390-cs-st": {
+    "name": "box-390-cs-st",
+    "url": "http://127.0.0.1:8013/tools/box",
+    "path": "/tools/box",
+    "h1": "Krabička na míru k 3D tisku",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": "290x48",
+    "viewerSeen": true,
+    "viewerHeight": 388,
+    "sampleSeen": false,
+    "viewButtonsSeen": 0,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 390,
+    "wide": [],
+    "wideText": [],
+    "small": [],
+    "smallCount": 0,
+    "bar": null,
+    "says": [
+      "84 × 54 × 31,6 mm·vejde se na 250 mm",
+      "Vnitřní rozměry80 × 50 × 30 mm"
+    ],
+    "state": "model",
+    "pageHeight": 6833,
+    "fixed": [
+      "div"
+    ],
+    "errors": []
+  },
+  "box-768-cs-st": {
+    "name": "box-768-cs-st",
+    "url": "http://127.0.0.1:8013/tools/box",
+    "path": "/tools/box",
+    "h1": "Krabička na míru k 3D tisku",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": "290x48",
+    "viewerSeen": true,
+    "viewerHeight": 471,
+    "sampleSeen": false,
+    "viewButtonsSeen": 0,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 768,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "1Rozměry 107x30",
+      "2Barvy 87x30",
+      "3Materiál a počet kusů 192x30"
+    ],
+    "smallCount": 3,
+    "bar": null,
+    "says": [
+      "84 × 54 × 31,6 mm·vejde se na 250 mm",
+      "Vnitřní rozměry80 × 50 × 30 mm"
+    ],
+    "state": "model",
+    "pageHeight": 4745,
+    "fixed": [
+      "tool-nav",
+      "div"
+    ],
+    "errors": []
+  },
+  "box-1280-cs-st": {
+    "name": "box-1280-cs-st",
+    "url": "http://127.0.0.1:8013/tools/box",
+    "path": "/tools/box",
+    "h1": "Krabička na míru k 3D tisku",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": "290x48",
+    "viewerSeen": true,
+    "viewerHeight": 492,
+    "sampleSeen": false,
+    "viewButtonsSeen": 5,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 1280,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "#tool-undo Zpět 36x36",
+      "#tool-redo Vpřed 36x36",
+      "1Rozměry 107x30",
+      "2Barvy 87x30",
+      "3Materiál a počet kusů 192x30",
+      "#p-inner_w 112x42",
+      "#p-inner_d 112x42",
+      "#p-inner_h 112x42",
+      "#p-radius 112x42",
+      "3D 36x36",
+      "Shora 55x36",
+      "Zepředu 69x36"
+    ],
+    "smallCount": 17,
+    "bar": null,
+    "says": [
+      "84 × 54 × 31,6 mm·vejde se na 250 mm",
+      "Vnitřní rozměry80 × 50 × 30 mm"
+    ],
+    "state": "model",
+    "pageHeight": 3383,
+    "fixed": [
+      "tool-nav"
+    ],
+    "errors": []
+  },
+  "box-1366-cs-st": {
+    "name": "box-1366-cs-st",
+    "url": "http://127.0.0.1:8013/tools/box",
+    "path": "/tools/box",
+    "h1": "Krabička na míru k 3D tisku",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": "290x48",
+    "viewerSeen": true,
+    "viewerHeight": 460,
+    "sampleSeen": false,
+    "viewButtonsSeen": 5,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 1366,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "#tool-undo Zpět 36x36",
+      "#tool-redo Vpřed 36x36",
+      "1Rozměry 107x30",
+      "2Barvy 87x30",
+      "3Materiál a počet kusů 192x30",
+      "#p-inner_w 112x42",
+      "#p-inner_d 112x42",
+      "#p-inner_h 112x42",
+      "#p-radius 112x42",
+      "3D 36x36",
+      "Shora 55x36",
+      "Zepředu 69x36"
+    ],
+    "smallCount": 17,
+    "bar": null,
+    "says": [
+      "84 × 54 × 31,6 mm·vejde se na 250 mm",
+      "Vnitřní rozměry80 × 50 × 30 mm"
+    ],
+    "state": "model",
+    "pageHeight": 3351,
+    "fixed": [
+      "tool-nav"
+    ],
+    "errors": []
+  },
+  "figure-390-cs-st": {
+    "name": "figure-390-cs-st",
+    "url": "http://127.0.0.1:8013/tools/figure",
+    "path": "/tools/figure",
+    "h1": "Busta nebo figurka z fotky",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": false,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": null,
+    "viewerSeen": true,
+    "viewerHeight": 506,
+    "sampleSeen": true,
+    "viewButtonsSeen": 0,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 390,
+    "wide": [],
+    "wideText": [],
+    "small": [],
+    "smallCount": 0,
+    "bar": null,
+    "says": [
+      "Rozměry a díly se ukážou s náhledem."
+    ],
+    "state": "empty",
+    "pageHeight": 6108,
+    "fixed": [
+      "div"
+    ],
+    "errors": []
+  },
+  "figure-768-cs-st": {
+    "name": "figure-768-cs-st",
+    "url": "http://127.0.0.1:8013/tools/figure",
+    "path": "/tools/figure",
+    "h1": "Busta nebo figurka z fotky",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": "292x50",
+    "viewerSeen": true,
+    "viewerHeight": 614,
+    "sampleSeen": true,
+    "viewButtonsSeen": 0,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 768,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "1Fotka 85x30",
+      "2Podstavec 118x30",
+      "3Materiál a počet kusů 192x30"
+    ],
+    "smallCount": 3,
+    "bar": null,
+    "says": [
+      "Rozměry a díly se ukážou s náhledem."
+    ],
+    "state": "empty",
+    "pageHeight": 5005,
+    "fixed": [
+      "tool-nav",
+      "div"
+    ],
+    "errors": []
+  },
+  "figure-1280-cs-st": {
+    "name": "figure-1280-cs-st",
+    "url": "http://127.0.0.1:8013/tools/figure",
+    "path": "/tools/figure",
+    "h1": "Busta nebo figurka z fotky",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": "292x50",
+    "viewerSeen": true,
+    "viewerHeight": 557,
+    "sampleSeen": true,
+    "viewButtonsSeen": 5,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 1280,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "#tool-undo Zpět 36x36",
+      "#tool-redo Vpřed 36x36",
+      "1Fotka 85x30",
+      "2Podstavec 118x30",
+      "3Materiál a počet kusů 192x30",
+      "Jak fotit, aby busta vyšla dobře 257x20",
+      "3D 36x36",
+      "Shora 55x36",
+      "Zepředu 69x36",
+      "Ze strany 75x36",
+      "Zespodu 72x36",
+      "#tool-fit Přizpůsobit 107x36"
+    ],
+    "smallCount": 14,
+    "bar": null,
+    "says": [
+      "Rozměry a díly se ukážou s náhledem."
+    ],
+    "state": "empty",
+    "pageHeight": 2935,
+    "fixed": [
+      "tool-nav"
+    ],
+    "errors": []
+  },
+  "figure-1366-cs-st": {
+    "name": "figure-1366-cs-st",
+    "url": "http://127.0.0.1:8013/tools/figure",
+    "path": "/tools/figure",
+    "h1": "Busta nebo figurka z fotky",
+    "h1Seen": true,
+    "leadSeen": true,
+    "goSeen": true,
+    "goLabel": "Spočítat cenu a možnosti tisku",
+    "main": "292x50",
+    "viewerSeen": true,
+    "viewerHeight": 525,
+    "sampleSeen": true,
+    "viewButtonsSeen": 5,
+    "cardsSeen": 0,
+    "firstCard": null,
+    "hScroll": false,
+    "scrollWidth": 1366,
+    "wide": [],
+    "wideText": [],
+    "small": [
+      "#tool-undo Zpět 36x36",
+      "#tool-redo Vpřed 36x36",
+      "1Fotka 85x30",
+      "2Podstavec 118x30",
+      "3Materiál a počet kusů 192x30",
+      "Jak fotit, aby busta vyšla dobře 257x20",
+      "3D 36x36",
+      "Shora 55x36",
+      "Zepředu 69x36",
+      "Ze strany 75x36",
+      "Zespodu 72x36",
+      "#tool-fit Přizpůsobit 107x36"
+    ],
+    "smallCount": 14,
+    "bar": null,
+    "says": [
+      "Rozměry a díly se ukážou s náhledem."
+    ],
+    "state": "empty",
+    "pageHeight": 2903,
+    "fixed": [
+      "tool-nav"
+    ],
+    "errors": []
+  },
+  "flow-file-price-1366-cs": {
+    "name": "flow-file-price-1366-cs",
+    "steps": [
+      {
+        "step": "shot 1",
+        "name": "flow-file-price-1366-cs-1",
+        "path": "/c/fjazbv0b2ttx",
+        "h1": "Váš nápadvytiskneme ve 3D.",
+        "h1Seen": false,
+        "leadSeen": false,
+        "goSeen": false,
+        "goLabel": null,
+        "main": null,
+        "viewerSeen": false,
+        "viewerHeight": null,
+        "sampleSeen": false,
+        "viewButtonsSeen": null,
+        "cardsSeen": 0,
+        "firstCard": null,
+        "hScroll": false,
+        "scrollWidth": 1366,
+        "wide": [],
+        "wideText": [],
+        "small": [],
+        "smallCount": 0,
+        "bar": null,
+        "says": [
+          "20 × 20 × 20 mm",
+          "Na podložku 250 × 250 mm se vejde až 100 ks najednou (v poloze jako v náhledu, 5 mm od sebe)."
+        ],
+        "state": null,
+        "pageHeight": 3749,
+        "fixed": [
+          "div",
+          "price-card"
+        ]
+      },
+      {
+        "step": "clickText Objednat tisk|Vytisknout u nás|Chci to vyrobit|Order the print|Print it with us|I want it made",
+        "clicked": null
+      },
+      {
+        "step": "shot 2",
+        "name": "flow-file-price-1366-cs-2",
+        "path": "/c/fjazbv0b2ttx",
+        "h1": "Váš nápadvytiskneme ve 3D.",
+        "h1Seen": false,
+        "leadSeen": false,
+        "goSeen": false,
+        "goLabel": null,
+        "main": null,
+        "viewerSeen": false,
+        "viewerHeight": null,
+        "sampleSeen": false,
+        "viewButtonsSeen": null,
+        "cardsSeen": 0,
+        "firstCard": null,
+        "hScroll": false,
+        "scrollWidth": 1366,
+        "wide": [],
+        "wideText": [],
+        "small": [],
+        "smallCount": 0,
+        "bar": null,
+        "says": [
+          "20 × 20 × 20 mm",
+          "Na podložku 250 × 250 mm se vejde až 100 ks najednou (v poloze jako v náhledu, 5 mm od sebe)."
+        ],
+        "state": null,
+        "pageHeight": 3749,
+        "fixed": [
+          "div",
+          "price-card"
+        ]
+      }
+    ]
   }
 }

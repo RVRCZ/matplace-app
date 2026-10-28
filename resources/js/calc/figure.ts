@@ -8,6 +8,7 @@
  * of the figure with a warning under 2.5 mm, and another base under the same figure without a new generation.
  * While a model is being made the viewer shows the logo of dots (particles.ts) with the phase and the percent.
  */
+import { focusCalm } from '../site/sticky';
 import type { Stage } from './tool_page';
 import { FileInfo } from './api';
 import { startParticles, viewerBox, type Particles } from './particles';
@@ -115,7 +116,7 @@ export function bootFigure(stage: Stage): void {
         // "Create" there: the same submit as the button in the panel; a missing consent is said right there
         create?.addEventListener('click', () => {
             if (!photo.files?.length) { free().click(); return; }
-            if (!mine.checked) { sayInDrop(t('figure.need_consent')); theirs?.focus(); return; }
+            if (!mine.checked) { sayInDrop(t('figure.need_consent')); focusCalm(theirs); return; }
             sayInDrop('');
             form.requestSubmit();
         });

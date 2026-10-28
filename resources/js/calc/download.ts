@@ -2,6 +2,7 @@
  * "I have a printer, download": pick your printer once, get a slicer project (3MF) with the model placed and the
  * settings filled in; the plain STL stays one click away. The choice is remembered in this browser.
  */
+import { revealIfHidden } from '../site/sticky';
 import { FileInfo } from './api';
 
 interface PrinterItem { id: string; model: string; slicer?: string; bed: { x: number; y: number; z: number }; materials: string[] }
@@ -96,7 +97,7 @@ export function bootDownload(): void {
             el<HTMLSelectElement>('dl-model')!.onchange = refresh;
         }
         fillModels();
-        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        revealIfHidden(panel);
     };
 }
 

@@ -1,3 +1,4 @@
+import { flash, revealIfHidden } from '../site/sticky';
 import { icon } from '../site/icon';
 import { BufferGeometry, Float32BufferAttribute } from 'three';
 import { moldReport } from './mold';
@@ -335,7 +336,10 @@ function orientPrice(r: [number, number] | null, rough: boolean): void {
     // the farm's list is in crowns; the visitor reads it in their own currency
     const txt = r[0] === r[1] ? priceText(r[0]) : `${priceText(r[0])} – ${priceText(r[1])}`;
     // the estimate's range says what narrows it down (supports, shape, colour, printer); the exact price just where it is made binding
-    el.textContent = t(rough ? 'calc.price.orient_range' : 'calc.price.orient', { price: `${rough ? '≈ ' : ''}${txt}` }) + (q > 1 ? ` ${t('calc.price.per_piece')} ≈ ${priceText(Math.round(r[0] / q))}.` : '');
+    // the amount in a span of its own: the bar of a phone mirrors it (components/action-bar)
+    const [before, after] = t(rough ? 'calc.price.orient_range' : 'calc.price.orient', { price: '\u0000' }).split('\u0000');
+    const span = document.createElement('span'); span.id = 'price-orient-amount'; span.textContent = `${rough ? '≈ ' : ''}${txt}`;
+    el.replaceChildren(before ?? '', span, (after ?? '') + (q > 1 ? ` ${t('calc.price.per_piece')} ≈ ${priceText(Math.round(r[0] / q))}.` : ''));
     el.classList.remove('hidden');
     // the print alone is priced above; what delivery adds comes worded by the server for this visitor (ShippingHint)
     if (ship) { ship.textContent = cfg.shipping_hint ?? ''; ship.classList.toggle('hidden', !cfg.shipping_hint); }
@@ -391,8 +395,12 @@ function renderBreakdown(bds: { profile: string; label?: string | null; printer_
 }
 
 /** Precise numbers from the server slice. */
+/** The price card gets a ring when the numbers it shows were asked for by a click elsewhere (Recalculate): nothing moves. */
+let flashNext = false;
+
 function renderPrecise(c: CalcInfo): void {
     if (!c.slicer || !c.prices) return;
+    if (flashNext) { flashNext = false; flash(document.getElementById('price-card')); }
     renderCompare({ grams: c.slicer.grams, minutes: c.slicer.minutes }, true);
     const q = state.params.quantity;
     if (!marketplace()) {
@@ -665,11 +673,13 @@ function showResult(): void {
     $('hero').classList.add('hidden');
     $('result').classList.remove('hidden');
     if (!viewer) viewer = new Viewer($('viewer') as HTMLCanvasElement);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('calc-bar')?.removeAttribute('hidden');   // a phone: the price and the way on at the bottom
+    revealIfHidden($('result'), 'start');   // the result replaces the hero at the top: the page moves only when it is not in view (docs/AN.md §18)
 }
 
 function showHero(): void {
     stopPolling();
+    document.getElementById('calc-bar')?.setAttribute('hidden', '');
     state.file = null; state.calc = null; state.geometry = null; state.geo = null;
     $('result').classList.add('hidden');
     $('hero').classList.remove('hidden');
@@ -821,7 +831,8 @@ function bindControls(): void {
     };
     const recalc = document.getElementById('cta-recalc');
     // the button sits under the settings, the numbers above them: bring the result back into view
-    if (recalc) recalc.onclick = () => { recalculate(); $('price-main').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
+    // the numbers stay where they are (the price card is on the screen from lg, the bar on a phone): the card flashes when they land
+    if (recalc) recalc.onclick = () => { flashNext = true; recalculate(); };
     const reset = document.getElementById('size-reset');
     if (reset) reset.onclick = () => { state.params.scale = 1; document.getElementById('size-limit')?.classList.add('hidden'); onParamsChanged(); };
     const scale = $('scale') as HTMLInputElement;
