@@ -41,6 +41,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -322,6 +323,16 @@ class OrderController extends Controller
             'designer_model' => ['nullable', 'integer'],
             'catalog_model' => ['nullable', 'integer'],
         ]);
+        // a guest: so many orders from one address an hour (a robot clearing its cookie gets a new session, not a new address)
+        if (! $request->user()) {
+            $key = 'farm-guest-order:'.$request->ip();
+            if (RateLimiter::tooManyAttempts($key, max(1, (int) config('farm.guest.orders_per_hour_ip', 10)))) {
+                $text = __('farm.refuse.guest_limit', ['minutes' => (int) ceil(RateLimiter::availableIn($key) / 60)]);
+
+                return $request->expectsJson() ? response()->json(['error' => 'guest_limit', 'message' => $text], 429) : back()->withInput()->with('error', $text);
+            }
+            RateLimiter::hit($key, 3600);
+        }
         $card = isset($data['designer_model']) ? DesignerModel::with('profile')->find((int) $data['designer_model']) : null;
         $calc = isset($data['calc']) && ! $card ? Calculation::with('modelFile')->where('token', $data['calc'])->first() : null;
         if (isset($data['designer_model'])) {

@@ -200,3 +200,57 @@ Změněné: `app/Engines/Contracts/PaymentGateway.php`, `app/Engines/Payment/{Fa
 `php artisan migrate` (jedna migrace), `npm run build`, `config:clear`, `view:clear`. V `.env` nic povinného
 (volitelně `FARM_AUTO_REPRINT`, `FARM_AUTO_REFUND`). Worker fronty musí běžet (job `RefundToCard`, jako maily).
 Klíč Stripe musí smět vytvářet refundy (běžný secret key smí; omezený klíč by potřeboval právo Refunds).
+
+## 3. Dávka 4+5: měření a omezení zneužití
+
+### 3.1 Měření (`App\Support\Track`)
+
+- `order_created` a `checkout_started` vznikají i za hosta (návštěva hosta, `user_id` null). `order_paid` kartou se
+  připojí k návštěvě, která zakázku založila (`Track::paidByCard`, beze změny; `user_id` je už účet z platby).
+- **`register` s `kind: checkout`** (`Track::registeredAtCheckout`) jednou za účet, který založila platba hosta, v
+  návštěvě, která zakázku založila; `meta` `kind`, `order`, `event_id register-<id>`. E‑mail existujícího účtu
+  registrace není.
+- **`refund`** (`Track::refunded`, §2) s `value`, `currency`, `order`, `kind` = důvod. Není v `Track::ACTIONS`.
+- Session 3 (`conceprt19092026-01`) dostala 28. 10. zprávu: registrace je v trychtýři volitelný krok, `register`
+  kind `checkout` přichází až po `order_paid`.
+
+### 3.2 Omezení
+
+- **Za hodinu z jedné adresy** nejvýš `farm.guest.orders_per_hour_ip` zakázek hosta (`FARM_GUEST_ORDERS_PER_HOUR_IP`,
+  10). Pak 429 `guest_limit` s „Z této adresy přišlo za poslední hodinu hodně objednávek bez účtu. Zkuste to za N min,
+  nebo se přihlaste.“ Tlačítko kalkulačky větu ukáže u sebe. Účty se do počtu nepočítají.
+- Denní limit `daily_slices_per_user` počítá hosta po relaci (§1). Dosavadní `throttle:20,1` u `store` zůstal.
+- Soubor hosta se tiskne až po zaplacení (beze změny: tisk začíná stavem `paid`). Stripe Radar beze změny.
+- **Úklid** (`matplace:prune`): zakázky hosta nezaplacené `farm.guest.unpaid_days` (`FARM_GUEST_UNPAID_DAYS`, 7) dní
+  ve stavech awaiting_choices, uploaded, sliced a failed se zruší systémem („guest order not paid within 7 days“).
+  Nic nebylo zablokované. Soubor zůstane relaci a odejde s anonymními soubory po 30 dnech (zrušená zakázka s ním,
+  `model_file_id` cascade).
+- **Pojistka v úklidu**: anonymní soubor, ze kterého tiskne zaplacená zakázka, se nesmaže. Smazání souboru by
+  zakázku smazalo s ním. Dnes ho platba převede na účet, takže jde jen o pojistku.
+
+### 3.3 Ověření
+
+- `FarmGuestCheckoutTest` (15 testů). Nové:
+  - `order_created` hosta bez účtu v návštěvě, `order_paid` ve stejné návštěvě, `register` kind checkout s návštěvou
+    a zakázkou; e‑mail existujícího účtu žádný `register`;
+  - třetí zakázka z adresy za hodinu (limit 2) → 429 `guest_limit`, účtu limit nevadí;
+  - `matplace:prune`: nezaplacená zakázka hosta starší 8 dní zrušená s poznámkou, čerstvá zůstala `sliced`,
+    zaplacená nezrušená a její (uměle anonymní, 40 dní starý) soubor nesmazaný.
+- Sada `Farm|AuditRest|Accounts|AuditEvents|SalesPathWeb|PublicStats|Shipping|Stats|Funnel|Prune`: **235 testů,
+  5 402 asercí, zelené** (3 přeskočené jako dřív, 13,6 min). `pint --dirty` a `npm run build` prošly.
+
+### 3.4 Soubory a nasazení
+
+`app/Support/Track.php` (`registeredAtCheckout`), `app/Domain/Farm/GuestCheckout.php`,
+`app/Http/Controllers/Farm/OrderController.php` (limit v `store`), `app/Console/Commands/PruneData.php`,
+`config/farm.php` (`farm.guest`), `resources/js/calc/farm.ts` (429 u tlačítka), `lang/src/guest_limits.json` →
+`lang/{cs,en,es}.json`, `tests/Feature/FarmGuestCheckoutTest.php`. Nasazení: bez migrace; `npm run build`,
+`config:clear`. V `.env` nic povinného.
+
+## 4. Co zbývá a co čeká na Romana
+
+- Rozhodnutí, jestli má být automatický opakovaný tisk a vracení na kartu hned zapnuté (výchozí ano; vypnout jde
+  `FARM_AUTO_REPRINT=false` a `FARM_AUTO_REFUND=false`).
+- První skutečné vrácení přes Stripe projde až na produkci: stojí za to sledovat první `payment_refunds` řádek a mail
+  obsluze.
+- Admin sekce „Vrátit na kartu“ v prohlížeči nikdo neviděl (ověřená jen testem, který čte HTML).

@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Storage;
  *  - identification photos older than 1 day (the description stays, the picture goes),
  *  - anonymous model files + calculations older than N days that no account, inquiry or quote refers to,
  *  - leftover slicer gcode older than 7 days,
- *  - farm orders of big models whose customer never asked for the exact price (awaiting_choices for a week).
+ *  - farm orders of big models whose customer never asked for the exact price (awaiting_choices for a week),
+ *  - guests' farm orders nobody paid within a week (docs/AO.md).
  */
 class PruneData extends Command
 {
@@ -44,6 +45,9 @@ class PruneData extends Command
             ->whereNotIn('id', DB::table('inquiries')->whereNotNull('model_file_id')->select('model_file_id'))
             ->whereNotIn('id', DB::table('quotes')->whereNotNull('model_file_id')->select('model_file_id'))
             ->whereNotIn('id', DB::table('catalog_models')->whereNotNull('model_file_id')->select('model_file_id'))
+            // a paid order prints from it (a guest's file is the account's after the payment, this only makes sure): the
+            // order would go with it (model_file_id cascades)
+            ->whereNotIn('id', DB::table('farm_orders')->whereNotNull('paid_at')->select('model_file_id'))
             ->each(function (ModelFile $f) use (&$files, $dry) {
                 $files++;
                 if (! $dry) {
@@ -115,6 +119,20 @@ class PruneData extends Command
                 }
             });
         $this->line("farm orders waiting for choices cancelled: {$waiting}");
+
+        // a guest's order nobody paid (docs/AO.md): cancelled after a week like the waiting ones; nothing was held. The
+        // file stays with the session and goes when anonymous files go (the cancelled order with it)
+        $guestDays = max(1, (int) config('farm.guest.unpaid_days', 7));
+        $guests = 0;
+        FarmOrder::whereNull('user_id')->whereNull('paid_at')->where('created_at', '<', now()->subDays($guestDays))
+            ->whereIn('status', [FarmOrder::STATUS_AWAITING_CHOICES, FarmOrder::STATUS_UPLOADED, FarmOrder::STATUS_SLICED, FarmOrder::STATUS_FAILED])->get()
+            ->each(function (FarmOrder $o) use (&$guests, $dry, $flow, $guestDays) {
+                $guests++;
+                if (! $dry) {
+                    $flow->move($o, FarmOrder::STATUS_CANCELLED, 'system', null, "guest order not paid within {$guestDays} days");
+                }
+            });
+        $this->line("unpaid guest orders cancelled: {$guests}");
 
         $this->info(($dry ? '[dry-run] ' : '')."photos={$photos} files={$files} gcodes={$gcodes} temp={$temp}");
 

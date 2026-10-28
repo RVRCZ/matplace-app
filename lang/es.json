@@ -1930,5 +1930,6 @@
     "farm.refund.admin.confirm": "¿Devolver de verdad el dinero a la tarjeta? No se puede deshacer.",
     "farm.refund.admin.nothing": "Nada que devolver: la tarjeta no pagó nada, ya se devolvió todo o el cliente gastó el crédito entretanto.",
     "farm.refund.admin.failed_now": "La pasarela rechazó la devolución: :error",
-    "farm.refund.admin.sent": ":amount vuelve a la tarjeta."
+    "farm.refund.admin.sent": ":amount vuelve a la tarjeta.",
+    "farm.refuse.guest_limit": "Desde esta dirección llegaron muchos pedidos sin cuenta en la última hora. Inténtelo dentro de :minutes min o inicie sesión."
 }

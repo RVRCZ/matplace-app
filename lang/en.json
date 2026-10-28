@@ -1930,5 +1930,6 @@
     "farm.refund.admin.confirm": "Really return the money to the card? It cannot be undone.",
     "farm.refund.admin.nothing": "Nothing to return: the card paid nothing, everything is back already, or the customer spent the credit meanwhile.",
     "farm.refund.admin.failed_now": "The gateway refused the refund: :error",
-    "farm.refund.admin.sent": ":amount is going back to the card."
+    "farm.refund.admin.sent": ":amount is going back to the card.",
+    "farm.refuse.guest_limit": "Many orders without an account came from this address in the last hour. Try again in :minutes min, or sign in."
 }

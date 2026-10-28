@@ -461,4 +461,62 @@ class FarmGuestCheckoutTest extends TestCase
 
         return ['slot' => $state['colors'][0]['slot'], 'total' => (float) $state['colors'][0]['total']];
     }
+
+    // ── §3: measured without an account, limits, the week's clean-up ───────────────────────────────────────────────
+
+    public function test_a_guest_order_is_measured_in_the_guest_s_visit_and_the_account_made_by_the_payment_is_a_checkout_registration(): void
+    {
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36');
+        [$order, , $user] = $this->paidGuestOrder();
+        $created = Event::where('type', 'order_created')->where('meta->order', $order->id)->sole();
+        $this->assertNull($created->user_id, 'made by a guest');
+        $this->assertNotNull($created->session_id);
+        $paid = Event::where('type', 'order_paid')->where('meta->order', $order->id)->sole();
+        $this->assertSame($created->session_id, $paid->session_id, 'the payment joins the visit that made the order');
+        $this->assertSame('card', $paid->meta['kind']);
+        $register = Event::where('type', 'register')->sole();
+        $this->assertSame($user->id, $register->user_id);
+        $this->assertSame($created->session_id, $register->session_id);
+        $this->assertEquals(['kind' => 'checkout', 'order' => $order->id, 'event_id' => 'register-'.$user->id], $register->meta);
+
+        // an e-mail that has an account already is no registration
+        User::factory()->create(['email' => 'uz@example.com']);
+        $this->paidGuestOrder('uz@example.com');
+        $this->assertSame(1, Event::where('type', 'register')->count());
+    }
+
+    public function test_a_guest_makes_only_so_many_orders_from_one_address_an_hour(): void
+    {
+        config(['farm.guest.orders_per_hour_ip' => 2]);
+        $this->guestOrder();
+        $this->guestOrder();
+        $path = sys_get_temp_dir().'/mp_guest_'.uniqid().'.stl';
+        MeshFixtures::cubeStl($path, 20.0);
+        $this->asGuest()->postJson('/api/uploads', ['file' => new UploadedFile($path, 'part.stl', null, null, true)])->assertCreated();
+        $file = ModelFile::latest('id')->firstOrFail();
+        $this->asGuest()->postJson('/farm/orders', ['file' => $file->uuid])->assertStatus(429)->assertJsonPath('error', 'guest_limit');
+        $this->assertSame(2, FarmOrder::count());
+        // an account is not limited by the guests' count
+        $user = User::factory()->create();
+        $this->ownOrder($user);
+        $this->assertSame(3, FarmOrder::count());
+    }
+
+    public function test_a_guest_order_nobody_paid_is_cancelled_after_a_week_and_a_paid_one_keeps_its_file(): void
+    {
+        [$paid] = $this->paidGuestOrder();
+        $unpaid = $this->guestOrder();
+        $fresh = $this->guestOrder();
+        FarmOrder::whereKey([$paid->id, $unpaid->id])->update(['created_at' => now()->subDays(8)]);
+        // the anonymous file of a paid order must survive the anonymous files' clean-up even when nobody owns it
+        ModelFile::whereKey($paid->model_file_id)->update(['owner_user_id' => null, 'created_at' => now()->subDays(40)]);
+
+        $this->artisan('matplace:prune')->assertSuccessful();
+
+        $this->assertSame(FarmOrder::STATUS_CANCELLED, $unpaid->refresh()->status);
+        $this->assertStringContainsString('guest order not paid within 7 days', $unpaid->events()->pluck('note')->implode(' | '));
+        $this->assertSame(FarmOrder::STATUS_SLICED, $fresh->refresh()->status);
+        $this->assertNotSame(FarmOrder::STATUS_CANCELLED, $paid->refresh()->status);
+        $this->assertNotNull(ModelFile::find($paid->model_file_id));
+    }
 }

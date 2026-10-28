@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\FarmOrder;
 use App\Models\Payment;
 use App\Models\PaymentRefund;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route as MatchedRoute;
@@ -276,6 +277,32 @@ final class Track
             ]);
         } catch (\Throwable $e) {
             Log::warning('Card payment was not recorded', ['order' => $order->id, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * An account made by a guest's card payment (App\Domain\Farm\GuestCheckout): a `register` of kind `checkout`, in the
+     * visit that made the order (the webhook is no visitor's request). Once per account.
+     */
+    public static function registeredAtCheckout(User $user, FarmOrder $order): ?Event
+    {
+        try {
+            $id = 'register-'.$user->id;
+            if (Event::where('type', 'register')->where('meta->event_id', $id)->exists()) {
+                return null;
+            }
+            $created = Event::where('type', 'order_created')->where('meta->order', $order->id)->latest('id')->first();
+
+            return Event::create([
+                'session_id' => $created?->session_id, 'user_id' => $user->id, 'locale' => $created?->locale ?? Locales::current(), 'type' => 'register',
+                'subject_type' => self::typeOf($user), 'subject_id' => $user->id,
+                'source' => $created?->source ?? 'direct', 'ref_slug' => $created?->ref_slug, 'utm' => $created?->utm,
+                'meta' => self::clean(['kind' => 'checkout', 'order' => $order->id, 'event_id' => $id]),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Registration at checkout was not recorded', ['user' => $user->id, 'error' => $e->getMessage()]);
 
             return null;
         }

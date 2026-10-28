@@ -1930,5 +1930,6 @@
     "farm.refund.admin.confirm": "Opravdu vrátit peníze na kartu? Nejde to vzít zpět.",
     "farm.refund.admin.nothing": "Není co vrátit: karta nic nezaplatila, nebo už je vše vrácené, nebo peníze v kreditu zákazník mezitím utratil.",
     "farm.refund.admin.failed_now": "Brána vrácení odmítla: :error",
-    "farm.refund.admin.sent": "Na kartu jde :amount."
+    "farm.refund.admin.sent": "Na kartu jde :amount.",
+    "farm.refuse.guest_limit": "Z této adresy přišlo za poslední hodinu hodně objednávek bez účtu. Zkuste to za :minutes min, nebo se přihlaste."
 }
